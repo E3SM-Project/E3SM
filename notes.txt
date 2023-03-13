@@ -1,15 +1,18 @@
-There are 2 changes in files under submodules that are not easy to change.
+This branch adds pm-cpu to maint-1.0, but there are still some changes
+required to get tests running.
 
-These are changes needed with higher version of GNU (all that is avail on PM)
+There are 2 changes in files under submodules, so will have to work out best way to fix.
 
-Need a change here to build. this is already done in master, but there are other changes we don't need --
-can just update source with the interface changes needed
+These are changes needed with higher version of GNU (which is all that is avail on PM)
+
+1) Need a change here to build. this is already done in master, but there are other changes we don't need --
+can just update source with the interface changes needed, by doing this:
 
 cp ODEMod.F90 components/clm/src/external_models/sbetr/src/betr/betr_math/ODEMod.F90
 
-needed to work-around issue with solver during runtime. this change modifies compiler
+2) Needed to work-around issue with solver during runtime. This change modifies compiler
 flags for ALL MPAS sources which is not necessary, but unable to only affect one source in MPAS
-in current master, we build one MPAS source file with a compiler flag to turn off very specific optimization,
+In current master, we build one MPAS source file with a compiler flag to turn off very specific optimization,
 however, in maint-1.0, the CMake logic is different and I can't do the same thing in Depends.
 But what I can do is add a flag here (which may need more guards) that turns off the optimization
 for all MPAS source files.
@@ -17,8 +20,9 @@ for all MPAS source files.
 cp Makefile.in.ACME components/mpas-source/src/Makefile.in.ACME
 
 -----------------------
-Here are two places that were failing with runtime segfault in DEBUG due to the compiler looking-ahead
-and trying to parse an experession B that should only be evaluated if A is true.
+Here are two places that were failing with runtime segfault in DEBUG (for some tests)
+due to the compiler looking-ahead and trying to parse an experession B that should only be evaluated if A is true.
+I think these changes are safe:
 
 cp RtmMod.F90 components/mosart/src/riverroute/RtmMod.F90
 cp micro_mg2_0.F90 components/cam/src/physics/cam/micro_mg2_0.F90

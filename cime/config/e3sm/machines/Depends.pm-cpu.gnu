@@ -1,7 +1,7 @@
+# Ideally, we want this one source file to have different compiler flags as is
+# case in current master, but the CIME in maint-1.0 does nto allow.
 # The flags for this ice_shortwave source in MPAS is not being modified
-ice_shortwave.o: ice_shortwave.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -fno-tree-pta $<
-#ice_shortwave.o: ice_shortwave.f90
+#ice_shortwave.o: ice_shortwave.F90
 #	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -fno-tree-pta $<
 
 cam_history.o: cam_history.F90

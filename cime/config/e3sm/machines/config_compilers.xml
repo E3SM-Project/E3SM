@@ -596,6 +596,7 @@ for mct, etc.
 
 <compiler COMPILER="gnu" MACH="pm-cpu">
   <ADD_FFLAGS> -fallow-argument-mismatch </ADD_FFLAGS>
+  <!-- one potential work-around for the mpas solver issue in maint-1.0 is to build all sources with folowing flag -->
   <!--ADD_FFLAGS> -fno-tree-pta </ADD_FFLAGS-->
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>

@@ -122,7 +122,7 @@
 
     <modules compiler="nvidia">
       <command name="load">PrgEnv-nvidia</command>
-      <command name="load">nvidia/21.11</command>
+      <command name="load">nvidia/22.5</command>
     </modules>
 
     <modules compiler="amdclang">
@@ -134,10 +134,10 @@
       <command name="load">craype-accel-host</command>
       <command name="load">cray-libsci</command>
       <command name="load">craype</command>
-      <command name="load">cray-mpich/8.1.15</command>
-      <command name="load">cray-hdf5-parallel/1.12.1.1</command>
-      <command name="load">cray-netcdf-hdf5parallel/4.8.1.1</command>
-      <command name="load">cray-parallel-netcdf/1.12.2.1</command>
+      <command name="load">cray-mpich/8.1.22</command>
+      <command name="load">cray-hdf5-parallel/1.12.2.1</command>
+      <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
+      <command name="load">cray-parallel-netcdf/1.12.3.1</command>
       <command name="load">cmake/3.22.0</command>
     </modules>
   </module_system>
@@ -155,6 +155,7 @@
     <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
     <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
     <env name="FI_CXI_RX_MATCH_MODE">software</env>
+    <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
   </environment_variables>
   <resource_limits>
     <resource name="RLIMIT_STACK">-1</resource>
