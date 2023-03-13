@@ -287,10 +287,6 @@ contains
 
               ! because we will project fields from rof to lnd grid, we need to define 
               !  the r2x fields to lnd grid on coupler side
-              
-              tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
-              tagtype = 1 ! dense
-              numco = 1 ! 
 
               volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
               
@@ -337,6 +333,9 @@ contains
               endif
 #endif
             endif
+            tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
+            tagtype = 1 ! dense
+            numco = 1 ! 
             ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags for seq_flds_r2x_fields on lnd cpl'
