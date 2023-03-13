@@ -97,8 +97,8 @@ _TESTS = {
 
     "eam_condidiag" : {
         "tests"   : (
-            "SMS_D_Ln5.ne4_oQU240.F2010",
-            "SMS_D_Ln5.ne4_oQU240.F2010.eam-condidiag_dcape",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-condidiag_dcape",
             "ERP_Ln18.ne4_oQU240.F2010.eam-condidiag_dcape",
             "ERP_Ln18.ne4_oQU240.F2010.eam-condidiag_rhi",
             )
@@ -127,7 +127,6 @@ _TESTS = {
 
     #atmopheric tests for extra coverage
     "e3sm_atm_extra_coverage" : {
-        "inherit" : ("eam_condidiag"),
         "tests" : (
             "SMS_Lm1.ne4_oQU240.F2010",
             "ERS_Ld31.ne4_oQU240.F2010",
@@ -138,6 +137,8 @@ _TESTS = {
 	    "SMS_D_Ln5.ne45pg2_ne45pg2.FAQP",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-implicit_stress",
             "ERS_Ld5.ne30_oECv3.F2010.eam-implicit_stress",
+            "ERP_Ln18.ne4_oQU240.F2010.eam-condidiag_dcape",
+            "ERP_Ln18.ne4_oQU240.F2010.eam-condidiag_rhi",
             )
         },
 
