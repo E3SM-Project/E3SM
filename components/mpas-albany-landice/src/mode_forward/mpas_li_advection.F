@@ -157,7 +157,8 @@ module li_advection
            layerNormalVelocity,   & ! normal component of velocity on cell edges at layer midpoints
            layerThickness,        & ! thickness of each layer
            layerThicknessOld,     & ! old layer thickness
-           layerThicknessEdge       ! layer thickness on upstream edge of cell
+           layerThicknessEdge,    & ! layer thickness on upstream edge of cell
+           normalVelocity           ! horizontal velocity on interfaces
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
            advectedTracers,       & ! values of advected tracers
@@ -283,6 +284,7 @@ module li_advection
 
       ! get arrays from the velocity pool
       call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
+      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
       call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLine', fluxAcrossGroundingLine)
       call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLineOnCells', fluxAcrossGroundingLineOnCells)
 
@@ -353,7 +355,7 @@ module li_advection
       if (trim(config_thickness_advection) .eq. 'fct') then
          allocate(tendLayerThickness(nVertLevels,nEdges))
          tendLayerThickness(:,:) = 0.0_RKIND
-         allocate(tend(nAdvCellsMax,2,nEdges))
+         allocate(tend(nTracers,nVertLevels,nEdges))
          tend(:,:,:) = 0.0_RKIND
       endif
 
@@ -448,11 +450,11 @@ module li_advection
                   err)
          elseif (trim(config_thickness_advection) .eq. 'fct') then
              ! TODO: Decide what to do about w (vertical vel).
-             ! For now, just setting it to 0 to try to get this to compile
+             ! For now, just setting it to 0 to try to get this to compile.
 
              call li_tracer_advection_fct_tend(&
                   tend, advectedTracers, layerThickness, &
-                  layerThicknessEdge * layerNormalVelocity, 0 * layerThickness, dt,    &
+                  layerThicknessEdge * layerNormalVelocity, 0 * normalVelocity, dt,    &
                   computeBudgets=.false.)!{{{
          endif
 
