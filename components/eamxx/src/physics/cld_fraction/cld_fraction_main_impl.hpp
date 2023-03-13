@@ -13,10 +13,14 @@ void CldFractionFunctions<S,D>
 ::main(
   const Int nj,
   const Int nk,
+  const Real ice_threshold,
+  const Real ice_4out_threshold,
   const view_2d<const Spack>& qi,
   const view_2d<const Spack>& liq_cld_frac,
   const view_2d<Spack>& ice_cld_frac,
-  const view_2d<Spack>& tot_cld_frac)
+  const view_2d<Spack>& tot_cld_frac,
+  const view_2d<Spack>& ice_cld_frac_4out,
+  const view_2d<Spack>& tot_cld_frac_4out)
 {
   using ExeSpace = typename KT::ExeSpace;
   const Int nk_pack = ekat::npack<Spack>(nk);
@@ -31,11 +35,15 @@ void CldFractionFunctions<S,D>
     const auto oqi   = ekat::subview(qi,   i);
     const auto oliq_cld_frac = ekat::subview(liq_cld_frac, i);
     const auto oice_cld_frac = ekat::subview(ice_cld_frac, i);
-    const auto otot_cld_frac = ekat::subview(tot_cld_frac,  i);
+    const auto otot_cld_frac = ekat::subview(tot_cld_frac, i);
+    const auto oice_cld_frac_4out = ekat::subview(ice_cld_frac_4out, i);
+    const auto otot_cld_frac_4out = ekat::subview(tot_cld_frac_4out, i);
 
-    calc_icefrac(team,nk,oqi,oice_cld_frac);
+    calc_icefrac(team,nk,ice_threshold,oqi,oice_cld_frac);
+    calc_icefrac(team,nk,ice_4out_threshold, oqi,oice_cld_frac_4out);
 
     calc_totalfrac(team,nk,oliq_cld_frac,oice_cld_frac,otot_cld_frac);
+    calc_totalfrac(team,nk,oliq_cld_frac,oice_cld_frac_4out,otot_cld_frac_4out);
   });
   Kokkos::fence();
 } // main
@@ -46,6 +54,7 @@ void CldFractionFunctions<S,D>
 ::calc_icefrac(
   const MemberType& team,
   const Int& nk,
+  const Real& threshold,
   const uview_1d<const Spack>& qi,
   const uview_1d<Spack>&       ice_cld_frac)
 {
@@ -53,7 +62,7 @@ void CldFractionFunctions<S,D>
   const Int nk_pack = ekat::npack<Spack>(nk);
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
-      const Real ice_frac_threshold = 1e-12;
+      const Real ice_frac_threshold = threshold;
       auto icecld = qi(k) > ice_frac_threshold;
       ice_cld_frac(k) = 0.0;
       ice_cld_frac(k).set(icecld, 1.0);

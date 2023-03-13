@@ -31,7 +31,6 @@ Fields:
       - RelativeHumidity
       - ZonalVapFlux
       - MeridionalVapFlux
-      - IceCloudMask
       - PotentialTemperature@tom
       - PotentialTemperature@500mb
  
