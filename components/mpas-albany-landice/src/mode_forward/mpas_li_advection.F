@@ -352,7 +352,8 @@ module li_advection
       ! define max number of advection cells as max number of edges*2
       nAdvCellsMax = maxEdges2
 
-      if (trim(config_thickness_advection) .eq. 'fct') then
+      if ((trim(config_thickness_advection) .eq. 'fct') .or. &
+          (trim(config_tracer_advection) .eq. 'fct' ) ) then
          allocate(tendLayerThickness(nVertLevels,nEdges))
          tendLayerThickness(:,:) = 0.0_RKIND
          allocate(tend(nTracers,nVertLevels,nEdges))
@@ -435,7 +436,8 @@ module li_advection
          advectedTracersOld(:,:,:) = advectedTracers(:,:,:)
 
          ! compute new values of layer thickness and tracers
-         if (trim(config_thickness_advection) .eq. 'fo') then
+         if ((trim(config_thickness_advection) .eq. 'fo') .and. &
+             (trim(config_tracer_advection) .eq. 'fo'))then
              call advect_thickness_tracers_upwind(&
                   dt,                      &
                   meshPool,                &
@@ -448,9 +450,24 @@ module li_advection
                   layerThickness,          &
                   advectedTracers,         &
                   err)
-         elseif (trim(config_thickness_advection) .eq. 'fct') then
+         elseif ((trim(config_thickness_advection) .eq. 'fo') .and. &
+                  trim(config_tracer_advection) .eq. 'fct') then
              ! TODO: Decide what to do about w (vertical vel).
              ! For now, just setting it to 0 to try to get this to compile.
+             call advect_thickness_tracers_upwind(&
+                  dt,                      &
+                  meshPool,                &
+                  layerNormalVelocity,     &
+                  layerThicknessEdge,      &
+                  layerThicknessOld,       &
+                  advectedTracersOld,      &
+                  cellMask,                &
+                  edgeMask,                &
+                  layerThickness,          &
+                  advectedTracers,         &
+                  err)
+             ! Reset tracers after fo advection for fct advection
+             advectedTracers(:,:,:) = advectedTracersOld(:,:,:)
 
              call li_tracer_advection_fct_tend(&
                   tend, advectedTracers, layerThickness, &
