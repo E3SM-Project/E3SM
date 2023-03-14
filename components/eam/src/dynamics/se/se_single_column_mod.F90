@@ -11,8 +11,9 @@ use time_manager, only: get_nstep, dtime, is_first_step, &
   is_first_restart_step, is_last_step
 use ppgrid, only: begchunk
 use pmgrid
+use parallel_mod, only: par
 #ifdef MODEL_THETA_L
-use element_ops, only: get_R_star
+use element_ops, only: get_R_star, get_pottemp
 use eos, only: pnh_and_exner_from_eos
 #endif
 use element_ops, only: get_temperature
