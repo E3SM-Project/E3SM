@@ -3054,6 +3054,7 @@
           <command name="use">/soft/modulefiles</command>
           <command name="load">spack cmake</command>
           <command name="use">/soft/restricted/CNDA/updates/modulefiles</command>
+          <command name="load">cray-pals</command>
         </modules>
 	<modules compiler="!gnu">
 	  <command name="load">oneapi/eng-compiler/2022.12.30.003</command>
