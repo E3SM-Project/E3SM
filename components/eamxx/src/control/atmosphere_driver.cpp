@@ -877,17 +877,18 @@ void AtmosphereDriver::set_initial_conditions ()
 
       if (fname == "phis") {
         // Topography (phis) is a special case that should
-        // be loaded from the topography file, where the 
-	// eamxx field "phis" corresponds to the name 
-	// "PHIS_d" on the GLL grid and "PHIS" on the PG2 
-	// grid in the topography file.
+        // be loaded from the topography file, where the
+        // eamxx field "phis" corresponds to the name
+        // "PHIS_d" on the GLL and Point grids and "PHIS"
+        // on the PG2 grid in the topography file.
         if (grid_name == "Physics PG2") {
           this_grid_topo_file_fnames.push_back("PHIS");
-        } else if (grid_name == "Physics GLL") {
+        } else if (grid_name == "Physics GLL" ||
+                   grid_name == "Point Grid") {
           this_grid_topo_file_fnames.push_back("PHIS_d");
         } else {
           EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
-	}
+        }
         this_grid_topo_eamxx_fnames.push_back("phis");
       } else if (c.size()==0) {
         // If this field is the parent of other subfields, we only read from file the subfields.
