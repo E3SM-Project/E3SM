@@ -212,8 +212,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    ! Determine whether it is time for an IOP update;
    ! doiopupdate set to true if model time step > next available IOP 
 
-   ! TODO MAKE restart friendly, needs lots of modification here!!!
-   if (use_iop) then
+   if (use_iop .and. masterproc) then
      if (is_first_step()) then 
        call setiopupdate_init()
      else
@@ -222,9 +221,22 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    end if
 
    if (single_column) then
+
+     ! If first restart step then ensure that IOP data is read
+     if (is_first_restart_step()) then
+       iop_update_phase1 = .false.
+       call scm_setinitial(elem)
+       if (masterproc) call readiopdata( iop_update_phase1,hyam,hybm )
+       call scm_broadcast()
+     endif
+
      iop_update_phase1 = .true. 
-     if (doiopupdate) call readiopdata( iop_update_phase1,hyam,hybm )
-     call scm_setfield(elem,iop_update_phase1)       
+     if ((is_first_restart_step() .or. doiopupdate) .and. masterproc) then
+       call readiopdata( iop_update_phase1,hyam,hybm )
+     endif
+     call scm_broadcast()
+
+     if (.not. dp_crm) call scm_setfield(elem,iop_update_phase1)
    endif
   
    call t_barrierf('sync_d_p_coupling', mpicom)
