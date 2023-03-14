@@ -10,12 +10,13 @@ module zm_conv_intr
 ! Author: D.B. Coleman
 ! January 2010 modified by J. Kay to add COSP simulator fields to physics buffer
 ! July 2015 B. Singh Added code for unified convective trasport
+! March 2023 X. Song added code for the initialization of convective microphysics
+!            and aerosol object, and the output of microphysical properties and tendencies
 !---------------------------------------------------------------------------------
    use shr_kind_mod, only: r8=>shr_kind_r8
    use physconst,    only: cpair                              
    use ppgrid,       only: pver, pcols, pverp, begchunk, endchunk
    use zm_conv,      only: zm_conv_evap, zm_convr, convtran, momtran, trigdcape_ull, trig_dcape_only
-!<songxl---------------
    use zm_conv,      only: zm_microp
    use zm_microphysics,  only: zm_aero_t, zm_microp_st
    use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_mode_num, rad_cnst_get_aer_mmr, &
@@ -26,7 +27,6 @@ module zm_conv_intr
    use physconst,        only: pi
 
    use spmd_utils,       only: masterproc
-!>songxl---------------
    use cam_history,  only: outfld, addfld, horiz_only, add_default
    use perf_mod
    use cam_logfile,  only: iulog 
@@ -50,14 +50,12 @@ module zm_conv_intr
       dp_flxsnw_idx, &
       dp_cldliq_idx, &
       dp_cldice_idx, &
-!<songxl 2014-11-20------------
       dlfzm_idx,     &     ! detrained convective cloud water mixing ratio.
       difzm_idx,     &     ! detrained convective cloud ice mixing ratio.
       dsfzm_idx,     &     ! detrained convective snow mixing ratio. 
       dnlfzm_idx,    &     ! detrained convective cloud water num concen.
       dnifzm_idx,    &     ! detrained convective cloud ice num concen.
       dnsfzm_idx,    &     ! detrained convective snow num concen.
-!>songxl 2014-11-20------------
       prec_dp_idx,   &
       snow_dp_idx
 
@@ -75,7 +73,6 @@ module zm_conv_intr
    logical  ::    convproc_do_gas 
    logical  ::    clim_modal_aero
 
-!<songxl 2014-11-20-----------
    integer  ::    dgnum_idx        = 0
    integer  ::    lambdadpcu_idx   = 0
    integer  ::    mudpcu_idx       = 0
@@ -127,7 +124,6 @@ subroutine zm_conv_register
     call pbuf_add_field('Q_STAR','global',dtype_r8,(/pcols,pver/), q_star_idx)
    endif
 
-!<songxl 2014-11-20---------
    ! detrained convective cloud water mixing ratio.
    call pbuf_add_field('DLFZM', 'physpkg', dtype_r8, (/pcols,pver/), dlfzm_idx)
    ! detrained convective cloud ice mixing ratio.
@@ -147,7 +143,6 @@ subroutine zm_conv_register
        
    end if
 
-!>songxl 2014-11-20---------
 
 
 end subroutine zm_conv_register
@@ -169,9 +164,8 @@ subroutine zm_conv_init(pref_edge)
   use phys_control,   only: phys_deepconv_pbl, phys_getopts, cam_physpkg_is
   use physics_buffer, only: pbuf_get_index
   use rad_constituents, only: rad_cnst_get_info 
-!<songxl 2014-11-20------
   use zm_microphysics, only: zm_mphyi
-!>songxl 2014-11-20------
+
 
   implicit none
 
@@ -185,13 +179,18 @@ subroutine zm_conv_init(pref_edge)
                             ! temperature, water vapor, cloud ice and cloud
                             ! liquid budgets.
   integer :: history_budget_histfile_num ! output history file number for budget fields
-!<songxl 2014-11-20----------
+
 !  integer :: nmodes 
 
   ! Aerosols
   integer :: i
   character(len=*), parameter :: routine = 'zm_conv_init'
-!>songxl 2014-11-20----------
+
+! Allocate the basic aero structure outside the zmconv_microp logical
+! This allows the aero structure to be passed
+! Note that all of the arrays inside this structure are conditionally allocated
+
+  allocate(aero(begchunk:endchunk))
 
 ! 
 ! Register fields with the output buffer
@@ -253,7 +252,7 @@ subroutine zm_conv_init(pref_edge)
        call addfld ('MCSP_shear',horiz_only,'A','m/s','vertical zonal wind shear')
     end if
 
-!<songxl 2014-11-20---------
+
 
     if (zm_microp) then
 
@@ -378,7 +377,6 @@ subroutine zm_conv_init(pref_edge)
 
     end if
 
-!>songxl 2014-11-20---------
 
     
     call phys_getopts( history_budget_out = history_budget, &
@@ -439,7 +437,6 @@ subroutine zm_conv_init(pref_edge)
     prec_dp_idx     = pbuf_get_index('PREC_DP')
     snow_dp_idx     = pbuf_get_index('SNOW_DP')
 
-!<songxl 2014-11-20----------
     lambdadpcu_idx  = pbuf_get_index('LAMBDADPCU')
     mudpcu_idx      = pbuf_get_index('MUDPCU')
     icimrdp_idx     = pbuf_get_index('ICIMRDP')
@@ -459,7 +456,6 @@ subroutine zm_conv_init(pref_edge)
 
        call rad_cnst_get_info(0, nmodes=nmodes, naero=nbulk)
 
-       allocate(aero(begchunk:endchunk))
 
        do i = begchunk, endchunk
           call zm_aero_init(nmodes, nbulk, aero(i))
@@ -615,17 +611,14 @@ subroutine zm_conv_init(pref_edge)
        end if
 
     end subroutine zm_aero_init
-!>songxl 2014-11-20-------------
 
 end subroutine zm_conv_init
 !=========================================================================================
 !subroutine zm_conv_tend(state, ptend, tdt)
 
 subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
-!<songxl 2014-11-20---
      tpert   ,dlftot  ,pflx    ,zdu      , &
      rliq    ,rice    ,&
-!>songxl 2014-11-20---
      ztodt   , &
      jctop   ,jcbot , &
      state   ,ptend_all   ,landfrac,  pbuf, mu, eu, &
@@ -649,10 +642,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
 
    ! Arguments
-!<songxl 2014-11-20--------
-!   type(physics_state), intent(in )   :: state          ! Physics state variables
    type(physics_state), target, intent(in ) :: state      ! Physics state variables
-!>songxl 2014-11-20---------
    type(physics_ptend), intent(out)   :: ptend_all      ! individual parameterization tendencies
    type(physics_buffer_desc), pointer :: pbuf(:)
 
@@ -668,9 +658,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    real(r8), intent(out) :: zdu(pcols,pver)    ! detraining mass flux
 
    real(r8), intent(out) :: rliq(pcols) ! reserved liquid (not yet in cldliq) for energy integrals
-!<songxl 11-20---------
    real(r8), intent(out) :: rice(pcols) ! reserved ice (not yet in cldice) for energy integrals
-!>songxl 11-20--------
    real(r8), intent(out):: mu(pcols,pver) 
    real(r8), intent(out):: eu(pcols,pver) 
    real(r8), intent(out):: du(pcols,pver) 
@@ -695,12 +683,10 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    ! Local variables
 
-!<songxl 11-20---------
     type(zm_microp_st)        :: microp_st 
 
 !   integer :: i,k,m
    integer :: i,k,l,m
-!>songxl 11-20--------
    integer :: ilon                      ! global longitude index of a column
    integer :: ilat                      ! global latitude index of a column
    integer :: nstep
@@ -718,10 +704,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    ! physics types
    type(physics_state) :: state1        ! locally modify for evaporation to use, not returned
-!<songxl 11-20---------
 !   type(physics_ptend) :: ptend_loc     ! package tendencies
    type(physics_ptend),target :: ptend_loc     ! package tendencies
-!>songxl 11-20--------
    ! physics buffer fields
    real(r8), pointer, dimension(:)   :: prec         ! total precipitation
    real(r8), pointer, dimension(:)   :: snow         ! snow from ZM convection 
@@ -741,7 +725,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    real(r8) :: dcape(pcols)                    ! dynamical cape
    real(r8) :: maxgsav(pcols)                  ! tmp array for recording and outfld to MAXI
 
-!<songxl 2014-11-20-----
    real(r8), pointer :: dlf(:,:)    ! detrained convective cloud water mixing ratio.
    real(r8), pointer :: dif(:,:)    ! detrained convective cloud ice mixing ratio.
    real(r8), pointer :: dsf(:,:)    ! detrained convective snow mixing ratio.
@@ -752,7 +735,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    real(r8), pointer :: lambdadpcu(:,:) ! slope of cloud liquid size distr
    real(r8), pointer :: mudpcu(:,:)     ! width parameter of droplet size distr
    real(r8), pointer :: qi(:,:)         ! wg grid slice of cloud ice.
-!>songxl 2014-11-20-----
 
    real(r8) :: jctop(pcols)  ! o row of top-of-deep-convection indices passed out.
    real(r8) :: jcbot(pcols)  ! o row of base of cloud indices passed out.
@@ -797,7 +779,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    logical  :: doslop_vwind
 
 
-!<songxl 2014-11-20-----------
    real(r8) :: sprd(pcols,pver)
    real(r8) :: frz(pcols,pver)
    real(r8)  precz_snum(pcols)
@@ -878,7 +859,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
        microp_st%fhmrm (pcols,pver) )    ! mass tendency due to homogeneous freezing of rain
     end if
 
-!>songxl 2014-11-20-----------
 
    doslop          = .false.
    doslop_heat     = .false.
@@ -959,7 +939,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
      end if
    end if
 
-!<songxl 2014-11-20------------------
    call pbuf_get_field(pbuf, icimrdp_idx,     qi )
    call pbuf_get_field(pbuf, dlfzm_idx,  dlf)
    call pbuf_get_field(pbuf, difzm_idx,  dif)
@@ -1002,7 +981,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    end if
 
 
-!>songxl 2014-11-20------------------
 
 
 !
@@ -1019,7 +997,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
                     dp ,dsubcld ,jt,maxg,ideep   , &
                     lengath ,ql      ,rliq  ,landfrac,  &
                     t_star, q_star, dcape, &  
-!<songxl 2014-11-20----------------------------
                     aero(lchnk), qi, dif, dnlf, dnif, dsf, dnsf, sprd, rice, frz, mudpcu, &
                     lambdadpcu,  microp_st)
 
@@ -1029,7 +1006,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
      dlftot(:,:) = dlf(:,:)  
    end if
 
-!>songxl 2014-11-20-------------
    
    call t_stopf ('zm_convr')
 
@@ -1187,9 +1163,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 !
    mcon(:ncol,:pver) = mcon(:ncol,:pver) * 100._r8/gravit
 
-!<songxl 2014-11-20-------
    call outfld('CMFMCDZM', mcon, pcols, lchnk)
-!>songxl 2014-11-20-------
 
    ! Store upward and downward mass fluxes in un-gathered arrays
    ! + convert from mb/s to kg/m^2/s
@@ -1214,10 +1188,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    call outfld('ZMDT    ',ftem           ,pcols   ,lchnk   )
    call outfld('ZMDQ    ',ptend_loc%q(1,1,1) ,pcols   ,lchnk   )
 
-!<songxl 2014-11-20--------
    if (zm_microp) call zm_conv_micro_outfld(microp_st, dlf, dif, dnlf, dnif, frz, lchnk, ncol)
 
-!>songxl 2014-11-20--------
 
    maxgsav(:) = 0._r8 ! zero if no convection. true mean to be MAXI/FREQZM
    pcont(:ncol) = state%ps(:ncol)
@@ -1267,10 +1239,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
          state1%t,state1%pmid,state1%pdel,state1%q(:pcols,:pver,1), &
          ptend_loc%s, tend_s_snwprd, tend_s_snwevmlt, ptend_loc%q(:pcols,:pver,1), &
          rprd, cld, ztodt, &
-!<songxl 2014-11-20--------- 
 !        prec, snow, ntprprd, ntsnprd , flxprec, flxsnow)
          prec, snow, ntprprd, ntsnprd , flxprec, flxsnow, sprd, old_snow)
-!>songxl 2014-11-20----------
     call t_stopf ('zm_conv_evap')
 
     evapcdp(:ncol,:pver) = ptend_loc%q(:ncol,:pver,1)
@@ -1289,13 +1259,12 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    call outfld('ZMNTPRPD', ntprprd, pcols, lchnk)
    call outfld('ZMNTSNPD', ntsnprd, pcols, lchnk)
    call outfld('ZMEIHEAT', ptend_loc%s, pcols, lchnk)
-!songxl 2014-11-20   call outfld('CMFMCDZM   ',mcon ,  pcols   ,lchnk   )
    call outfld('PRECCDZM   ',prec,  pcols   ,lchnk   )
 
 
 
    call outfld('PRECZ   ', prec   , pcols, lchnk)
-!<songxl 2014-11-20 -----------------
+
    if (zm_microp) then
       do i = 1,ncol
          if (prec(i) .gt. 0.0_r8) then
@@ -1306,7 +1275,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
       end do
       call outfld('PRECZ_SN', precz_snum, pcols, lchnk)
    end if
-!>songxl 2014-11-20 -------------------
 
   ! add tendency from this process to tend from other processes here
   call physics_ptend_sum(ptend_loc,ptend_all, ncol)
@@ -1381,7 +1349,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
                   ptend_loc%lq,state1%q, pcnst,  mu, md,   &
                   du, eu, ed, dp, dsubcld,  &
                   jt,maxg, ideep, 1, lengath,  &
-                  nstep,   fracis,  ptend_loc%q, fake_dpdry, ztodt)  !songxl 2014-11-20
+                  nstep,   fracis,  ptend_loc%q, fake_dpdry, ztodt)  
    call t_stopf ('convtran1')
 
    call outfld('ZMDICE ',ptend_loc%q(1,1,ixcldice) ,pcols   ,lchnk   )
@@ -1567,7 +1535,7 @@ subroutine zm_conv_tend_2( state,  ptend,  ztodt, pbuf,mu, eu, &
                      ptend%lq,state%q, pcnst,  mu, md,   &
                      du, eu, ed, dp, dsubcld,  &
                      jt,maxg,ideep, 1, lengath,  &
-                     nstep,   fracis,  ptend%q, dpdry,  ztodt)  !songxl 2014-11-20
+                     nstep,   fracis,  ptend%q, dpdry,  ztodt)  
       call t_stopf ('convtran2')
    end if
 
