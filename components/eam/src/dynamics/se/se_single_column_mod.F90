@@ -247,6 +247,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
   do k=1,nlev
     p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t1)
+    dpscm(:,:,k) = elem(ie)%state%dp3d(:,:,k,t1)
   end do
 
 #ifdef MODEL_THETA_L
@@ -308,8 +309,6 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     elem(ie)%state%Q(i,j,:nlev,m) = &
        elem(ie)%state%Qdp(i,j,:nlev,m,tlQdp)/dpscm(i,j,:nlev)
   enddo
-
-  elem(ie)%state%Q(i,j,:,:) = q_update(:,:)
 
   ! Update prognostic variables to the current values
 #ifdef MODEL_THETA_L
