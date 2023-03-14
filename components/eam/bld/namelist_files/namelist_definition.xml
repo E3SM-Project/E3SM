@@ -4262,12 +4262,6 @@ Use the specified surface properties.
 Default: FALSE
 </entry>
 
-<entry id="scm_nudge" type="logical" category="scam"
-       group="cam_inparm" valid_values="">
-Nudge SCM to observations (according to IOP file) for T and Q.
-Default: FALSE
-</entry>
-
 <entry id="iop_nudge_tscale" type="real" category="scam"
        group="cam_inparm" valid_values="">
 Time scale to nudge to IOP forcing file.
@@ -4282,6 +4276,18 @@ Default: FALSE
 <entry id="iop_dosubsidence" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Compute LS vertical transport using omega prescribed from IOP file.
+Default: FALSE
+</entry>
+
+<entry id="iop_nudge_tq" type="logical" category="scam"
+       group="cam_inparm" valid_values="">
+Use relaxation for temperature and moisture.
+Default: FALSE
+</entry>
+
+<entry id="iop_nudge_uv" type="logical" category="scam"
+       group="cam_inparm" valid_values="">
+Use relaxation for u and v winds.
 Default: FALSE
 </entry>
 

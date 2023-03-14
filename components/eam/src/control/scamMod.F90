@@ -166,7 +166,6 @@ module scamMod
   logical*4, public ::  iop_dosubsidence ! compute Eulerian LS vertical advection
   logical*4, public ::  iop_nudge_tq ! use relaxation for t and q
   logical*4, public ::  iop_nudge_uv ! use relaxation for u and v
-  logical*4, public ::  scm_nudge! use relaxation
   logical*4, public ::  scm_observed_aero ! use observed aerosols in SCM file
   logical*4, public ::  precip_off    ! turn off precipitation processes
   logical*4, public ::  scm_zero_non_iop_tracers ! initialize non-IOP-specified tracers to zero
@@ -181,7 +180,7 @@ module scamMod
 !=======================================================================
 
 subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
-        single_column_out,scm_iop_srf_prop_out, scm_nudge_out, &
+        single_column_out,scm_iop_srf_prop_out, iop_nudge_tq_out, iop_nudge_uv_out, &
         iop_nudge_tq_low_out, iop_nudge_tq_high_out, iop_nudge_tscale_out, &
         scm_crm_mode_out, scm_observed_aero_out, iop_dosubsidence_out, &
         scm_multcols_out, dp_crm_out, iop_perturb_high_out, &
@@ -192,7 +191,8 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    logical, intent(out), optional ::  single_column_out
    logical, intent(out), optional ::  scm_iop_srf_prop_out
    logical, intent(out), optional ::  iop_dosubsidence_out
-   logical, intent(out), optional ::  scm_nudge_out
+   logical, intent(out), optional ::  iop_nudge_tq_out
+   logical, intent(out), optional ::  iop_nudge_uv_out
    logical, intent(out), optional ::  scm_crm_mode_out
    logical, intent(out), optional ::  scm_observed_aero_out
    logical, intent(out), optional ::  precip_off_out
@@ -210,7 +210,8 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(single_column_out) )    single_column_out  = .false.
    if ( present(scm_iop_srf_prop_out) )scm_iop_srf_prop_out  = .false.
    if ( present(iop_dosubsidence_out) )iop_dosubsidence_out = .false.
-   if ( present(scm_nudge_out) )   scm_nudge_out  = .false.
+   if ( present(iop_nudge_tq_out) )   iop_nudge_tq_out  = .false.
+   if ( present(iop_nudge_uv_out) )   iop_nudge_uv_out  = .false.
    if ( present(iop_nudge_tq_low_out) ) iop_nudge_tq_low_out = 1050.0_r8
    if ( present(iop_nudge_tq_high_out) ) iop_nudge_tq_high_out = 0.e3_r8
    if ( present(iop_nudge_tscale_out) ) iop_nudge_tscale_out = 10800.0_r8
@@ -225,7 +226,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
 end subroutine scam_default_opts
 
 subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
-                         scm_iop_srf_prop_in, scm_nudge_in, &
+                         scm_iop_srf_prop_in, iop_nudge_tq_in, iop_nudge_uv_in, &
                          iop_nudge_tq_low_in, iop_nudge_tq_high_in, iop_nudge_tscale_in, &
                          scm_crm_mode_in, scm_observed_aero_in, iop_dosubsidence_in, &
                          scm_multcols_in, dp_crm_in, iop_perturb_high_in, &
@@ -236,7 +237,8 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   logical, intent(in), optional        :: single_column_in
   logical, intent(in), optional        :: scm_iop_srf_prop_in
   logical, intent(in), optional        :: iop_dosubsidence_in
-  logical, intent(in), optional        :: scm_nudge_in
+  logical, intent(in), optional        :: iop_nudge_tq_in
+  logical, intent(in), optional        :: iop_nudge_uv_in
   logical, intent(in), optional        :: scm_crm_mode_in
   logical, intent(in), optional        :: scm_observed_aero_in
   logical, intent(in), optional        :: precip_off_in
@@ -271,8 +273,12 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
      iop_dosubsidence=iop_dosubsidence_in
   endif
   
-  if (present (scm_nudge_in)) then
-     scm_nudge=scm_nudge_in
+  if (present (iop_nudge_tq_in)) then
+     iop_nudge_tq=iop_nudge_tq_in
+  endif
+
+  if (present (iop_nudge_uv_in)) then
+     iop_nudge_uv=iop_nudge_uv_in
   endif
   
   if (present (iop_nudge_tq_low_in)) then

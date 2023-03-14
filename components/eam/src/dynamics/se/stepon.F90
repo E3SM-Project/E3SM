@@ -211,7 +211,9 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    
    ! Determine whether it is time for an IOP update;
    ! doiopupdate set to true if model time step > next available IOP 
-   if (use_iop .and. .not. is_last_step()) then
+
+   ! TODO MAKE restart friendly, needs lots of modification here!!!
+   if (use_iop) then
      if (is_first_step()) then 
        call setiopupdate_init()
      else

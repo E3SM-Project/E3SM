@@ -170,7 +170,6 @@ real(r8) :: iop_perturb_high
 integer, parameter :: max_chars = 128
 character(len=max_chars) iopfile
 logical  :: scm_iop_srf_prop
-logical  :: scm_nudge
 logical  :: iop_dosubsidence
 logical  :: iop_nudge_tq
 logical  :: iop_nudge_uv
@@ -332,7 +331,7 @@ contains
    namelist /cam_inparm/ print_energy_errors
 
    ! scam
-    namelist /cam_inparm/ iopfile,scm_iop_srf_prop,scm_nudge, &
+    namelist /cam_inparm/ iopfile, scm_iop_srf_prop, iop_nudge_tq, iop_nudge_uv, &
                          iop_nudge_tq_low, iop_nudge_tq_high, iop_nudge_tscale, &
                          scm_crm_mode, scm_observed_aero, precip_off, &
                          scm_zero_non_iop_tracers, iop_perturb_high, dp_crm, &
@@ -374,7 +373,8 @@ contains
       call scam_default_opts(scmlat_out=scmlat,scmlon_out=scmlon, &
         single_column_out=single_column, &
         scm_iop_srf_prop_out=scm_iop_srf_prop,&
-        scm_nudge_out=scm_nudge, &
+        iop_nudge_tq_out=iop_nudge_tq, &
+        iop_nudge_uv_out=iop_nudge_uv, &
         iop_nudge_tq_low_out=iop_nudge_tq_low, &
         iop_nudge_tq_high_out=iop_nudge_tq_high, &
         iop_nudge_tscale_out=iop_nudge_tscale, &
@@ -456,7 +456,8 @@ contains
          call scam_setopts( scmlat_in=scmlat,scmlon_in=scmlon, &
                             iopfile_in=iopfile,single_column_in=single_column,&
                             scm_iop_srf_prop_in=scm_iop_srf_prop,&
-                            scm_nudge_in=scm_nudge, &
+                            iop_nudge_tq_in=iop_nudge_tq, &
+                            iop_nudge_uv_in=iop_nudge_uv, &
                             iop_nudge_tq_low_in=iop_nudge_tq_low, &
                             iop_nudge_tq_high_in=iop_nudge_tq_high, &
                             iop_nudge_tscale_in=iop_nudge_tscale, &

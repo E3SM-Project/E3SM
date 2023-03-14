@@ -218,7 +218,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
   logical :: t_before_advance, do_column_scm
   real(kind=real_kind), parameter :: rad2deg = 180.0_real_kind / SHR_CONST_PI
 
-  integer :: ie, k, i, j, t
+  integer :: ie, k, i, j, t, m, tlQdp
   real (kind=real_kind), dimension(np,np,nlev)  :: p, T_v, phi, pnh
   real (kind=real_kind), dimension(np,np,nlev+1) :: dpnh_dp_i
   real (kind=real_kind), dimension(np,np,nlev)  :: dp, exner, vtheta_dp, Rstar
@@ -236,6 +236,8 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
      t1=tl%n0
      t2=tl%np1
   endif
+
+  call TimeLevel_Qdp(tl,qsplit,tlQdp)
 
   ! For SCM only one column is considered
   ie = 1
@@ -289,12 +291,23 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
      temperature(i,j,:),stateQin(:,:),dt,temp_tend,&             ! In
      t_update,q_update,u_update,v_update)                        ! Out
 
-  ! Nudge to observations if desired
-  if (scm_nudge) then
+  ! Nudge to observations if desired, for T & Q only
+  if (iop_nudge_tq) then
     call advance_iop_nudging(dt,elem(ie)%state%ps_v(i,j,t1),& ! In
        t_update,q_update(:,1),&                               ! In
        t_update,q_update(:,1),relaxt,relaxq)                  ! Out
   endif
+
+  ! Update the q related arrays.  NOTE that Qdp array must
+  !  be updated first to ensure exact restarts
+  do m=1,pcnst
+    ! Update the Qdp array
+    elem(ie)%state%Qdp(i,j,:nlev,m,tlQdp) = &
+       q_update(:nlev,m) * dpscm(i,j,:nlev)
+    ! Update the Q array
+    elem(ie)%state%Q(i,j,:nlev,m) = &
+       elem(ie)%state%Qdp(i,j,:nlev,m,tlQdp)/dpscm(i,j,:nlev)
+  enddo
 
   elem(ie)%state%Q(i,j,:,:) = q_update(:,:)
 
