@@ -6,7 +6,7 @@ CreateDynamicsLib("theta-l_kokkos"  4   128   10)
 
 # Create the test
 set (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
-set (NEED_LIBS cld_fraction shoc spa p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share diagnostics)
+set (NEED_LIBS cld_fraction shoc nudging spa p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share diagnostics)
 CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_128levels "homme_shoc_cld_spa_p3_rrtmgp_128levels.cpp" "${NEED_LIBS}"
   LABELS ${TEST_LABELS}
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
@@ -63,7 +63,7 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 set (TEST_INPUT_FILES
   scream/init/spa_file_unified_and_complete_ne4_20220428.nc
   scream/init/${EAMxx_tests_IC_FILE_128lev}
-  cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc
+  cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(${file})

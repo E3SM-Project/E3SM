@@ -621,8 +621,8 @@ void AtmosphereDriver::initialize_output_managers () {
     ekat::ParameterList params;
     ekat::parse_yaml_file(fname,params);
     // Check if the filename prefix for this file has already been set.  If not, use the simulation casename.
-    if (not params.isParameter("Casename")) {
-      params.set<std::string>("Casename",m_casename+".scream.h"+std::to_string(om_tally));
+    if (not params.isParameter("filename_prefix")) {
+      params.set<std::string>("filename_prefix",m_casename+".scream.h"+std::to_string(om_tally));
       om_tally++;
     }
     // Add a new output manager
@@ -747,6 +747,7 @@ void AtmosphereDriver::restart_model ()
   ekat::ParameterList rest_pl;
   rest_pl.set<std::string>("Filename",filename);
   AtmosphereInput model_restart(m_atm_comm,rest_pl);
+  m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
 
   for (auto& it : m_field_mgrs) {
     if (fvphyshack and it.second->get_grid()->name() == "Physics GLL") continue;
@@ -846,8 +847,8 @@ void AtmosphereDriver::set_initial_conditions ()
   std::map<std::string,std::vector<std::string>> fields_inited;
 
   // Check which fields should be loaded from the topography file
-  std::map<std::string,std::vector<std::string>> topography_fields_names_nc;
-  std::map<std::string,std::vector<std::string>> topography_fields_names_eamxx;
+  std::map<std::string,std::vector<std::string>> topography_file_fields_names;
+  std::map<std::string,std::vector<std::string>> topography_eamxx_fields_names;
 
   // Helper lambda, to reduce code duplication
   auto process_ic_field = [&](const Field& f) {
@@ -873,22 +874,26 @@ void AtmosphereDriver::set_initial_conditions ()
       }
     } else if (not (fvphyshack and grid_name == "Physics PG2")) {
       auto& this_grid_ic_fnames = ic_fields_names[grid_name];
-      auto& this_grid_topo_fnames_nc = topography_fields_names_nc[grid_name];
-      auto& this_grid_topo_fnames_eamxx = topography_fields_names_eamxx[grid_name];
+      auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
+      auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
 
       auto c = f.get_header().get_children();
 
       if (fname == "phis") {
         // Topography (phis) is a special case that should
-        // be loaded from the topography file (assuming
-        // input files doesn't contain a value).
-        if (fvphyshack) {
-          this_grid_topo_fnames_nc.push_back("PHIS_d");
-          this_grid_topo_fnames_eamxx.push_back("phis");
+        // be loaded from the topography file, where the
+        // eamxx field "phis" corresponds to the name
+        // "PHIS_d" on the GLL and Point grids and "PHIS"
+        // on the PG2 grid in the topography file.
+        if (grid_name == "Physics PG2") {
+          this_grid_topo_file_fnames.push_back("PHIS");
+        } else if (grid_name == "Physics GLL" ||
+                   grid_name == "Point Grid") {
+          this_grid_topo_file_fnames.push_back("PHIS_d");
         } else {
-          this_grid_topo_fnames_nc.push_back("PHIS");
-          this_grid_topo_fnames_eamxx.push_back("phis");
-       }
+          EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
+        }
+        this_grid_topo_eamxx_fnames.push_back("phis");
       } else if (c.size()==0) {
         // If this field is the parent of other subfields, we only read from file the subfields.
         if (not ekat::contains(this_grid_ic_fnames,fname)) {
@@ -969,13 +974,12 @@ void AtmosphereDriver::set_initial_conditions ()
   // If a filename is specified, use it to load inputs on all grids
   if (ic_pl.isParameter("Filename")) {
     // Now loop over all grids, and load from file the needed fields on each grid (if any).
-    m_atm_logger->debug("    [EAMxx] Reading fields from file ...");
     const auto& file_name = ic_pl.get<std::string>("Filename");
+    m_atm_logger->info("    [EAMxx] IC filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
       read_fields_from_file (ic_fields_names[grid_name],it.first,file_name,m_current_ts);
     }
-    m_atm_logger->debug("    [EAMxx] Reading fields from file ... done!");
   }
 
   // If there were any fields that needed to be copied per the input yaml file, now we copy them.
@@ -1035,12 +1039,13 @@ void AtmosphereDriver::set_initial_conditions ()
 
   // Load topography from file if topography file is given.
   if (ic_pl.isParameter("topography_filename")) {
-    m_atm_logger->debug("    [EAMxx] Reading topography from file ...");
+    m_atm_logger->info("    [EAMxx] Reading topography from file ...");
     const auto& file_name = ic_pl.get<std::string>("topography_filename");
+    m_atm_logger->info("        filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      read_fields_from_file (topography_fields_names_nc[grid_name],
-                             topography_fields_names_eamxx[grid_name],
+      read_fields_from_file (topography_file_fields_names[grid_name],
+                             topography_eamxx_fields_names[grid_name],
                              it.first,file_name,m_current_ts);
     }
     m_atm_logger->debug("    [EAMxx] Processing topography from file ... done!");
@@ -1050,7 +1055,7 @@ void AtmosphereDriver::set_initial_conditions ()
     // separate IC param entry isn't given for the field).
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      EKAT_REQUIRE_MSG(topography_fields_names_nc[grid_name].size()==0,
+      EKAT_REQUIRE_MSG(topography_file_fields_names[grid_name].size()==0,
                       "Error! Topography data was requested in the FM, but no "
                       "topography_filename or entry matching the field name "
                       "was given in IC parameters.\n");

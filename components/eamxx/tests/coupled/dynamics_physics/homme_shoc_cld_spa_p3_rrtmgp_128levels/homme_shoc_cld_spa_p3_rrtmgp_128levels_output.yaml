@@ -1,12 +1,11 @@
 %YAML 1.1
 ---
-Casename: homme_shoc_cld_spa_p3_rrtmgp_128levels_output
+filename_prefix: homme_shoc_cld_spa_p3_rrtmgp_128levels_output
 Averaging Type: Instant
 Fields:
   Physics GLL:
     Field Names:
       # HOMME
-      - horiz_winds
       - ps
       - pseudo_density
       - omega
@@ -15,7 +14,6 @@ Fields:
       # SHOC
       - cldfrac_liq
       - eddy_diff_mom
-      - horiz_winds
       - sgs_buoy_flux
       - tke
       - inv_qc_relvar
@@ -46,6 +44,8 @@ Fields:
       - micro_vap_liq_exchange
       - precip_ice_surf_mass
       - precip_liq_surf_mass
+      # SHOC + HOMME
+      - horiz_winds
       # SHOC + P3
       - qc
       - qv

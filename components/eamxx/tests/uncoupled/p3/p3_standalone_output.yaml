@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-Casename: p3_standalone_output
+filename_prefix: p3_standalone_output
 Averaging Type: Instant
 Field Names:
   - T_mid

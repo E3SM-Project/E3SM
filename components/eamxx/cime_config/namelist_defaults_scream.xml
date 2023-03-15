@@ -5,8 +5,9 @@
 The file that defines all parameter input files for SCREAM. This file
 will be processed by SCREAM's buildnml script and produces the
 $case/namelist_scream.xml which is the fully resolved/processed
-info from this file. We recommend users use atm-config-chg for
-tweaking their $case/namelist_scream.xml file.
+info from this file. We highly recommend users use atmchange for
+tweaking their $case/namelist_scream.xml file. Direct edits will
+be lost if SCREAM_HACK_XML is not enabled.
 
 -->
 
@@ -302,23 +303,30 @@ tweaking their $case/namelist_scream.xml file.
     <Filename hgrid="ne30np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne30np4L128_20220823.nc</Filename> <!-- This will need to be updated to the new nccn name -->
     <Filename hgrid="ne0np4_conus_x4v1_lowcon" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_conusx4v1np4L72-topo12x_013023.nc</Filename>
 
+    <!-- List of default topography files on specific grids -->
     <topography_filename type="file">UNSET</topography_filename>
-    <topography_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc</topography_filename>
-    <topography_filename hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</topography_filename>
-    <topography_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc</topography_filename>
-    <topography_filename hgrid="ne30np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_16xdel2.c20200108.nc</topography_filename>
-    <topography_filename hgrid="ne30np4.pg2" COMPSET=".*X6T*">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.nc</topography_filename>
-    <topography_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4_16xdel2-PFC-consistentSGH.nc</topography_filename>
-    <topography_filename hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4pg2_16xdel2.nc</topography_filename>
-    <topography_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4_16xdel2_consistentSGH_20220429.nc</topography_filename>
-    <topography_filename hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4pg2_16xdel2_20200213.nc</topography_filename>
-    <topography_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4_16xconsistentSGH_20190212.nc</topography_filename>
-    <topography_filename hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</topography_filename>
-    <topography_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4_16xconsistentSGH_20190528.nc</topography_filename>
-    <topography_filename hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_16xconsistentSGH_20190528_converted.nc</topography_filename>
-    <topography_filename hgrid="ne1024np4.pg2" COMPSET=".*X6T*">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_x6t-SGH.nc</topography_filename>
-    <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
     <topography_filename hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</topography_filename>
+    <topography_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</topography_filename>
+    <topography_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_16xdel2.c20200108.nc</topography_filename>
+    <topography_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4pg2_16xdel2.nc</topography_filename>
+    <topography_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4pg2_16xdel2_20200213.nc</topography_filename>
+    <topography_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</topography_filename>
+    <topography_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_16xconsistentSGH_20190528_converted.nc</topography_filename>
+
+    <!-- In the case that *-X6T compset is requested: -->
+    <!-- The following grid have x6t topography files -->
+    <topography_filename hgrid="ne30np4" COMPSET=".*X6T*">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.nc</topography_filename>
+    <topography_filename hgrid="ne256np4" COMPSET=".*X6T*">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4pg2_x6t-SGH.nc</topography_filename>
+    <topography_filename hgrid="ne1024np4" COMPSET=".*X6T*">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_x6t-SGH.nc</topography_filename>
+    <!-- The following grids don't have x6t topography files. An error will be thrown
+         if the user attempts to run x6t compset without providing the field "phis". -->
+    <topography_filename hgrid="ne0np4_conus_x4v1_lowcon" COMPSET=".*X6T*">UNSET</topography_filename>
+    <topography_filename hgrid="ne4np4" COMPSET=".*X6T*">UNSET</topography_filename>
+    <topography_filename hgrid="ne120np4" COMPSET=".*X6T*">UNSET</topography_filename>
+    <topography_filename hgrid="ne512np4" COMPSET=".*X6T*">UNSET</topography_filename>
+
+    <!-- For aquaplanet run, unset the topography_filename and set phis=0 -->
+    <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
     <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
 
     <restart_casename>${CASE}.scream</restart_casename>
@@ -361,7 +369,7 @@ tweaking their $case/namelist_scream.xml file.
   <Scorpio>
     <output_yaml_files type="array(string)">${SRCROOT}/components/eamxx/data/scream_default_output.yaml</output_yaml_files>
     <model_restart>
-      <Casename>./${CASE}.scream</Casename>
+      <filename_prefix>./${CASE}.scream</filename_prefix>
       <output_control>
         <Frequency>${REST_N}</Frequency>
         <frequency_units>${REST_OPTION}</frequency_units>

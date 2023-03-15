@@ -10,7 +10,7 @@ CreateUnitTest(surface_coupling surface_coupling.cpp "${NEED_LIBS}" LABELS ${TES
 
 # Ensure test input files are present in the data dir
 GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
-GetInputFile(cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc)
+GetInputFile(cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc)
 
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml

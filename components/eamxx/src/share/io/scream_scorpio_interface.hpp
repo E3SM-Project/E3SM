@@ -63,6 +63,7 @@ namespace scorpio {
   void grid_write_data_array(const std::string &filename, const std::string &varname,
                              const T* hbuf, const int buf_size);
 
+
 extern "C" {
   /* Query whether the pio subsystem is inited or not */
   bool is_eam_pio_subsystem_inited();
@@ -70,6 +71,7 @@ extern "C" {
   bool is_file_open_c2f(const char*&& filename, const int& mode);
   int get_int_attribute_c2f (const char*&& filename, const char*&& attr_name);
   void set_int_attribute_c2f (const char*&& filename, const char*&& attr_name, const int& value);
+  void set_str_attribute_c2f (const char*&& filename, const char*&& attr_name, const char*&& value);
   int get_dimlen_c2f(const char*&& filename, const char*&& dimname);
   bool has_variable_c2f (const char*&& filename, const char*&& varname);
   /* Query a netCDF file for the time variable */

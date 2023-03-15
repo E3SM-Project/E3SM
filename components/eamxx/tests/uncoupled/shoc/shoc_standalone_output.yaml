@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-Casename: shoc_standalone_output
+filename_prefix: shoc_standalone_output
 Averaging Type: Instant
 Fields:
   Physics:
