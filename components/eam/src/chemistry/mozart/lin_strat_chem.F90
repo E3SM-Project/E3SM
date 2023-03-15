@@ -159,9 +159,8 @@ end subroutine linoz_readnl
 
     uci1_ndx    = get_rxt_ndx('uci1')
 
-    if (uci1_ndx <=0 ) then
-       !write(iulog,*) 'skip Linoz, need to have tracer O3LNZ at least '
-       write(iulog,*) 'skip Linoz, temporally change '
+    if (uci1_ndx <=0 .and. (.not. has_linoz_data)) then
+       write(iulog,*) 'Warning: Linoz is off! Be sure it is intended.'
        do_lin_strat_chem = .false.
        return
     end if
