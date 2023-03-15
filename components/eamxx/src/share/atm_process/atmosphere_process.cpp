@@ -127,8 +127,9 @@ void AtmosphereProcess::finalize (/* what inputs? */) {
 }
 
 void AtmosphereProcess::setup_tendencies_requests () {
-  auto tend_vec = m_params.get<std::vector<std::string>>("compute_tendencies",{});
-  if (tend_vec.size()==0) {
+  using vos_t = std::vector<std::string>;
+  auto tend_vec = m_params.get<vos_t>("compute_tendencies",{"NONE"});
+  if (tend_vec == vos_t{"NONE"}) {
     return;
   }
 
