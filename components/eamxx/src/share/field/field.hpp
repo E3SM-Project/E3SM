@@ -178,7 +178,7 @@ public:
     using nonconst_ST = typename std::remove_const<ST>::type;
     EKAT_REQUIRE_MSG ((field_valid_data_types().at<nonconst_ST>()==m_header->get_identifier().data_type()
                        or std::is_same<nonconst_ST,char>::value),
-		      "Error! Attempt to access raw field pointere with the wrong scalar type.\n");
+          "Error! Attempt to access raw field pointere with the wrong scalar type.\n");
     
     return reinterpret_cast<ST*>(get_view_impl<HD>().data());
   }
@@ -259,8 +259,10 @@ public:
   // Allocate the actual view
   void allocate_view ();
 
+#ifndef KOKKOS_ENABLE_CUDA
+  // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
-
+#endif
   template<HostOrDevice HD, typename ST>
   void deep_copy_impl (const ST value);
 
@@ -269,6 +271,8 @@ protected:
 
   template<CombineMode CM, HostOrDevice HD, typename ST>
   void update_impl (const Field& x, const ST alpha, const ST beta);
+
+protected:
 
   template<HostOrDevice HD>
   const get_view_type<char*,HD>&
