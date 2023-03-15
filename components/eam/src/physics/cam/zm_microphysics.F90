@@ -2890,22 +2890,22 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  nr(i,k-1) = max(nr(i,k-1),0._r8)
               end if
 
-              rprd(i,k-1)= (qnitend(i,k) + qrtend(i,k)+ qgtend(i,k) )*arcf(i,k) + dsfm(i,k-1)
-              sprd(i,k-1)= (qnitend(i,k)+qgtend(i,k)) *arcf(i,k) -fhmrm(i,k-1) + dsfm(i,k-1)
-              if (rprd(i,k-1).lt.0._r8) then
+              ! snow detrainment adjustment
+              dum = min((qnitend(i,k)+qrtend(i,k)+qgtend(i,k))*arcf(i,k),(qnitend(i,k)+qgtend(i,k))*arcf(i,k)-fhmrm(i,k-1))
+              if ( dum+dsfm(i,k-1).lt.0._r8) then
                  if (dsfm(i,k-1).ne.0._r8) then
-                    dsfn(i,k-1) = dsfn(i,k-1)*(dsfm(i,k-1)-rprd(i,k-1))/dsfm(i,k-1)
-                    dsfm(i,k-1) = -(qnitend(i,k) + qrtend(i,k)+ qgtend(i,k) )*arcf(i,k)
+                    dsfn(i,k-1) = dsfn(i,k-1)*(-dum*omsm)/dsfm(i,k-1)
+                    dsfm(i,k-1) = -dum*omsm
                     qnide(i,k)  = -dsfm(i,k-1)/du(i,k-1)
                     nsde(i,k)   = -dsfn(i,k-1)/du(i,k-1)
                     qni(i,k-1) = qni(i,k-1) + dz(i,k)*du(i,k-1)*(qni(i,k-1)-qnide(i,k))/mu(i,k-1)
                     ns(i,k-1)  =  ns(i,k-1) + dz(i,k)*du(i,k-1)*(ns(i,k-1)-nsde(i,k))/mu(i,k-1)
                     ns(i,k-1) = max(ns(i,k-1),0._r8)
                  end if
-                 rprd(i,k-1) = 0._r8
-                 sprd(i,k-1) = 0._r8
               end if
 
+              rprd(i,k-1)= (qnitend(i,k) + qrtend(i,k)+ qgtend(i,k) )*arcf(i,k) + dsfm(i,k-1)
+              sprd(i,k-1)= (qnitend(i,k)+qgtend(i,k)) *arcf(i,k) -fhmrm(i,k-1) + dsfm(i,k-1)
 
               ! cloud water
               if ( k.le.kqc(i) ) then

@@ -4015,16 +4015,8 @@ subroutine cldprp(lchnk   , &
             evp(i,k) = -ed(i,k)*q(i,k) + (md(i,k)*qd(i,k)-md(i,k+1)*qd(i,k+1))/dz(i,k)
             evp(i,k) = max(evp(i,k),0._r8)
             mdt = min(md(i,k+1),-small)
-            if (zm_microp) then
-              evp(i,k) = min(evp(i,k),rprd(i,k))
-              if (rprd(i,k)> 0._r8) then
-                sd(i,k+1) = (((rl+latice*sprd(i,k)/rprd(i,k))/cp*evp(i,k) -ed(i,k)*s(i,k))*dz(i,k) + md(i,k)*sd(i,k))/mdt
-              else
-                sd(i,k+1) = ((rl/cp*evp(i,k)-ed(i,k)*s(i,k))*dz(i,k) + md(i,k)*sd(i,k))/mdt
-              end if
-            else
-              sd(i,k+1) = ((rl/cp*evp(i,k)-ed(i,k)*s(i,k))*dz(i,k) + md(i,k)*sd(i,k))/mdt
-            end if
+            if (zm_microp)   evp(i,k) = min(evp(i,k),rprd(i,k))
+            sd(i,k+1) = ((rl/cp*evp(i,k)-ed(i,k)*s(i,k))*dz(i,k) + md(i,k)*sd(i,k))/mdt
             totevp(i) = totevp(i) - dz(i,k)*ed(i,k)*q(i,k)
          end if
       end do
@@ -4064,7 +4056,6 @@ subroutine cldprp(lchnk   , &
 ! cmeg is the cloud water condensed - rain water evaporated
 ! rprd is the cloud water converted to rain - (rain evaporated)
          cmeg(i,k) = cu(i,k) - evp(i,k)
-         if (rprd(i,k)> 0._r8) sprd(i,k) = sprd(i,k)-evp(i,k)*sprd(i,k)/rprd(i,k)
          rprd(i,k) = rprd(i,k)-evp(i,k)
       end do
    end do
