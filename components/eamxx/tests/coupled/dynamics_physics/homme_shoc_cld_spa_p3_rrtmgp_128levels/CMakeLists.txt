@@ -95,6 +95,7 @@ endif()
 
 # Check tendency calculation
 foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
+  set (BASE_TEST_NAME "homme_shoc_cld_spa_p3_rrtmgp_128levels")
   set (script ${SCREAM_BASE_DIR}/scripts/check-tendencies)
   set (fname ${BASE_TEST_NAME}_output.INSTANT.nsteps_x1.np${NRANKS}.nc)
   set (tname ${BASE_TEST_NAME}_tend_check_np${NRANKS})

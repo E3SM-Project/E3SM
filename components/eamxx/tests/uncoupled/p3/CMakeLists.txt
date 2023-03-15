@@ -45,8 +45,8 @@ endif()
 # Check tendency calculation
 foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
   set (script ${SCREAM_BASE_DIR}/scripts/check-tendencies)
-  set (fname ${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x1.np${NRANKS}.nc)
-  set (tname ${BASE_TEST_NAME}_tend_check_np${NRANKS})
+  set (fname p3_standalone_output.INSTANT.nsteps_x1.np${NRANKS}.nc)
+  set (tname p3_tend_check_np${NRANKS})
   add_test (NAME ${tname}
     COMMAND ${script} -f ${fname} -v qc T_mid -t p3_qc_tend p3_T_mid_tend
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})

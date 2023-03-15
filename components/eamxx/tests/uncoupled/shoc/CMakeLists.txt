@@ -50,8 +50,8 @@ endif()
 # Check tendency calculation
 foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
   set (script ${SCREAM_BASE_DIR}/scripts/check-tendencies)
-  set (fname ${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x1.np${NRANKS}.nc)
-  set (tname ${BASE_TEST_NAME}_tend_check_np${NRANKS})
+  set (fname shoc_standalone_output.INSTANT.nsteps_x1.np${NRANKS}.nc)
+  set (tname shoc_tend_check_np${NRANKS})
   add_test (NAME ${tname}
     COMMAND ${script} -f ${fname}
     -v T_mid qv tke horiz_winds sgs_buoy_flux eddy_diff_mom qc cldfrac_liq
