@@ -888,7 +888,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         for t,s in tests_success.items():
             if not s:
-                last_test = self.get_last_ctest_file(t,"Tests")
+                last_test = self.get_last_ctest_file(t,"TestsFailed")
                 last_build  = self.get_last_ctest_file(t,"Build")
                 last_config = self.get_last_ctest_file(t,"Configure")
                 if last_test is not None:
