@@ -11,10 +11,6 @@ namespace scream
 {
 
 // An enum for specifying fields data type
-// WARNING: if you add new data types, ensure that the underlying
-//          int value is such that, if i<j, then there is NO narrowing
-//          conversion going from i to j. If that's not possible, then
-//          you need to change the impl of is_narrowing_conversion below.
 enum class DataType {
   Invalid    = 0,
   IntType    = 1,
@@ -44,9 +40,7 @@ DataType get_data_type () {
 }
 
 inline bool is_narrowing_conversion (const DataType from, const DataType to) {
-  auto from_i = etoi(from);
-  auto to_i = etoi(to);
-  return from_i>to_i;
+  return (from==DataType::FloatType || from==DataType::DoubleType) && to==DataType::IntType;
 }
 
 inline std::string e2str (const DataType data_type) {
