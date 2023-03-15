@@ -65,7 +65,7 @@ def generate_metrics_dic(data, aerosol, season):
     metrics_dict = {
         "Surface Emission (Tg/yr)": f"{srfemis:.3f}",
         "Elevated Emission (Tg/yr)": f"{elvemis:.3f}",
-        "Sink (Tg/s)": f"{sink:.3f}",
+        "Sink (Tg/yr)": f"{sink:.3f}",
         "Dry Deposition (Tg/yr)": f"{drydep:.3f}",
         "Wet Deposition (Tg/yr)": f"{wetdep:.3f}",
         "Burden (Tg)": f"{burden_total:.3f}",
@@ -133,7 +133,7 @@ def run_diag(parameter: CoreParameter) -> CoreParameter:
                 metrics_dict_ref[aerosol] = {
                     "Surface Emission (Tg/yr)": f"{MISSING_VALUE:.3f}",
                     "Elevated Emission (Tg/yr)": f"{MISSING_VALUE:.3f}",
-                    "Sink (Tg/s)": f"{MISSING_VALUE:.3f}",
+                    "Sink (Tg/yr)": f"{MISSING_VALUE:.3f}",
                     "Dry Deposition (Tg/yr)": f"{MISSING_VALUE:.3f}",
                     "Wet Deposition (Tg/yr)": f"{MISSING_VALUE:.3f}",
                     "Burden (Tg)": f"{MISSING_VALUE:.3f}",

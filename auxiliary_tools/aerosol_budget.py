@@ -51,7 +51,7 @@ def generate_metrics_dic(data, aerosol, season):
     print(f'{aerosol} Lifetime (days): ',f'{burden_total/sink*365:.3f}')
     metrics_dict = {
     "Surface Emission (Tg/yr)": f'{srfemis:.3f}',
-    "Sink (Tg/s)": f'{sink:.3f}',
+    "Sink (Tg/yr)": f'{sink:.3f}',
     "Dry Deposition (Tg/yr)": f'{drydep:.3f}',
     "Wet Deposition (Tg/yr)": f'{wetdep:.3f}',
     "Burden (Tg)": f'{burden_total:.3f}',
@@ -98,7 +98,7 @@ for season in seasons:
         metrics_dict[aerosol] = generate_metrics_dic(test_data, aerosol, season)
         metrics_dict_ref[aerosol] = {
             "Surface Emission (Tg/yr)": f'{MISSING_VALUE:.3f}',
-            "Sink (Tg/s)": f'{MISSING_VALUE:.3f}',
+            "Sink (Tg/yr)": f'{MISSING_VALUE:.3f}',
             "Dry Deposition (Tg/yr)": f'{MISSING_VALUE:.3f}',
             "Wet Deposition (Tg/yr)": f'{MISSING_VALUE:.3f}',
             "Burden (Tg)": f'{MISSING_VALUE:.3f}',
