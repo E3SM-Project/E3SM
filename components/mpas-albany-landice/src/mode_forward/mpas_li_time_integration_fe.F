@@ -661,7 +661,8 @@ module li_time_integration_fe
       ! ===
       ! === Calculate layerThicknessEdge, which is needed for advection
       ! ===
-      if (trim(config_thickness_advection) == 'fo' .or. trim(config_tracer_advection) == 'fo') then
+      if (trim(config_thickness_advection) == 'fo' .or. trim(config_tracer_advection) == 'fo' .or. &
+          trim(config_thickness_advection) == 'fct' .or. trim(config_tracer_advection) == 'fct') then
          block => domain % blocklist
          do while (associated(block))
 

@@ -473,6 +473,14 @@ module li_advection
                   tend, advectedTracers, layerThicknessOld, &
                   layerThicknessEdge * layerNormalVelocity, 0 * normalVelocity, dt,    &
                   computeBudgets=.false.)!{{{
+         elseif ((trim(config_thickness_advection) .eq. 'fct') .and. &
+                  trim(config_tracer_advection) .eq. 'fct') then
+             call li_tracer_advection_fct_tend(&
+                  tend, advectedTracers, layerThicknessOld, &
+                  layerThicknessEdge * layerNormalVelocity, 0 * normalVelocity, dt,    &
+                  computeBudgets=.false.)
+             ! layerThickness is last tracer
+             layerThickness(:,:) = advectedTracers(nTracers,:,:) !layerThickness(:,:) + tend(nTracers,:,:) * dt
          endif
 
          if (config_print_thickness_advection_info) then
@@ -1080,7 +1088,8 @@ module li_advection
       !-----------------------------------------------------------------
 
       character (len=StrKIND), pointer :: &
-           config_thermal_solver
+           config_thermal_solver, &
+           config_thickness_advection
 
       logical, pointer :: &
            config_calculate_damage
@@ -1094,7 +1103,8 @@ module li_advection
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,             & ! interior ice temperature
            waterFrac,               & ! interior water fraction
-           enthalpy                   ! interior ice enthalpy
+           enthalpy,                & ! interior ice enthalpy
+           layerThickness
 
       real (kind=RKIND), dimension(:), pointer :: &
            surfaceAirTemperature,   & ! surface air temperature
@@ -1127,6 +1137,7 @@ module li_advection
 
       ! get arrays from geometry pool
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
       call mpas_pool_get_array(geometryPool, 'damage', damage)
 
       ! get arrays from thermal pool
@@ -1140,6 +1151,7 @@ module li_advection
       call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
       call mpas_pool_get_config(liConfigs, 'config_calculate_damage', config_calculate_damage)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
 
       ! initialize
       advectedTracers(:,:,:) = 0.0_RKIND
@@ -1212,6 +1224,23 @@ module li_advection
          ! TODO: Assess if this is the most appropriate option.  Other options would be setting damage equal to the existing value
          ! or the Nye zero stress value.  BISICLES implementation of the Bassis & Ma damage model sets damage associated with
          ! surface and basal accumulation as we are doing now.
+         surfaceTracers(iTracer,:) = 0.0_RKIND
+         basalTracers(iTracer,:) = 0.0_RKIND
+
+      endif
+
+      if (trim(config_thickness_advection) == 'fct') then
+         ! increment the tracer index
+         iTracer = iTracer + 1
+
+         ! copy 2d thickness to all vertical levels in the tracer array
+         !where (layerThickness(:,:) > 1.0e-10_RKIND)
+         !   advectedTracers(iTracer,:,:) = 1.0_RKIND
+         !elsewhere
+         !   advectedTracers(iTracer,:,:) = 0.0_RKIND
+         !endwhere
+         advectedTracers(iTracer,:,:)  = layerThickness(:,:)
+         ! Is this right?
          surfaceTracers(iTracer,:) = 0.0_RKIND
          basalTracers(iTracer,:) = 0.0_RKIND
 
