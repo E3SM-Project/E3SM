@@ -20,6 +20,7 @@ sys.path.append(_LIBDIR)
 from standard_script_setup          import *
 
 from CIME.case import Case
+from CIME.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -58,11 +59,18 @@ def _main_func(description):
 ###############################################################################
     sys.argv.extend([] if "ARGS_FOR_SCRIPT" not in os.environ else os.environ["ARGS_FOR_SCRIPT"].split())
 
+    ret = 0
     caseroot = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
-        success = case.case_post_run_io()
+        srcroot = case.get_value("SRCROOT")
 
-    sys.exit(0 if success else 1)
+        customize_path = os.path.join(srcroot, "cime_config", "customize")
+
+        config = Config.load(customize_path)
+
+        ret = config.case_post_run_io(case)
+
+    sys.exit(ret)
 
 if __name__ == "__main__":
     _main_func(__doc__)
