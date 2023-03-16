@@ -262,7 +262,11 @@ subroutine cam_run1(cam_in, cam_out)
    !
    call t_barrierf ('sync_phys_run1', mpicom)
    call t_startf ('phys_run1')
+#if defined(MMF_SAMXX)
+   call phys_run1(phys_state, dtime, phys_tend, pbuf2d,  cam_in, cam_out)
+#else
    call phys_run1(phys_state, dtime, phys_tend, pbuf2d,  cam_in, cam_out, phys_diag)
+#endif
    call t_stopf  ('phys_run1')
 
 end subroutine cam_run1
@@ -297,7 +301,11 @@ subroutine cam_run2( cam_out, cam_in )
    !
    call t_barrierf ('sync_phys_run2', mpicom)
    call t_startf ('phys_run2')
-   call phys_run2(phys_state, dtime, phys_tend, pbuf2d,  cam_out, cam_in, phys_diag )
+#if defined(MMF_SAMXX)
+   call phys_run2(phys_state, dtime, phys_tend, pbuf2d,  cam_out, cam_in)
+#else
+   call phys_run2(phys_state, dtime, phys_tend, pbuf2d,  cam_out, cam_in, phys_diag)
+#endif
    call t_stopf  ('phys_run2')
 
    !
@@ -476,7 +484,11 @@ subroutine cam_final( cam_out, cam_in )
 #endif
 
    call t_startf ('phys_final')
+#if defined(MMF_SAMXX)
+   call phys_final( phys_state, phys_tend , pbuf2d, )
+#else
    call phys_final( phys_state, phys_tend , pbuf2d, phys_diag )
+#endif
    call t_stopf ('phys_final')
 
    call t_startf ('stepon_final')

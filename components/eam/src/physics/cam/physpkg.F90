@@ -748,6 +748,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! local variables
     integer :: lchnk
     real(r8) :: dp1 = huge(1.0_r8) !set in namelist, assigned in cloud_fraction.F90
+    character(len=16)  :: deep_scheme      ! Default set in phys_control.F90
 
     !-----------------------------------------------------------------------
 
@@ -894,7 +895,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! In restart/branch/hybrid runs, these values are read from
     ! the restart file.
 
-    if (is_first_step()) then
+    call phys_getopts( deep_scheme_out   = deep_scheme )
+
+    if (is_first_step() .and. deep_scheme .eq. 'ZM') then
        do lchnk = begchunk, endchunk
           pbuf1d => pbuf_get_chunk(pbuf2d, lchnk)
           call dcape_diags_init( pbuf1d, pver )
