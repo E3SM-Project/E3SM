@@ -1503,7 +1503,6 @@ end subroutine clubb_init_cnst
    if (macmic_it > 99) then
       call endrun('clubb_tend_cam: macmic_it > 99. Revise checkpoint name for cnd_diag_checkpoint.')
    end if
-   write(char_macmic_it,'(i2.2)') macmic_it
 
 #ifdef CLUBB_SGS
 
@@ -1514,6 +1513,8 @@ end subroutine clubb_init_cnst
    !-----------------------------------------------------------------------------------------------!
    !-----------------------------------------------------------------------------------------------!
    !-----------------------------------------------------------------------------------------------!
+
+   write(char_macmic_it,'(i2.2)') macmic_it
 
    call t_startf('clubb_tend_cam_init')
    invrs_hdtime = 1._r8 / hdtime
