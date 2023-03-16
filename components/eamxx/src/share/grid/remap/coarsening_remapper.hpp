@@ -2,8 +2,9 @@
 #define SCREAM_COARSENING_REMAPPER_HPP
 
 #include "share/grid/remap/abstract_remapper.hpp"
-
 #include "scream_config.h"
+
+#include "ekat/ekat_pack.hpp"
 
 #include <mpi.h>
 

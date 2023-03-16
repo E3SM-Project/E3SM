@@ -13,6 +13,7 @@ atmosphere_processes:
   atm_procs_list: (shoc)
   shoc:
     number_of_subcycles: ${NUM_SUBCYCLES}
+    compute_tendencies: [all]
 
 grids_manager:
   Type: Mesh Free

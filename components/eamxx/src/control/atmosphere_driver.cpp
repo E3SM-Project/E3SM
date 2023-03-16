@@ -228,6 +228,9 @@ void AtmosphereDriver::create_grids()
   // Each process will grab what they need
   m_atm_process_group->set_grids(m_grids_manager);
 
+  // Also make each atm proc build requests for tendency fields, if needed
+  m_atm_process_group->setup_tendencies_requests();
+
   m_ad_status |= s_grids_created;
 
   stop_timer("EAMxx::create_grids");
@@ -1265,9 +1268,9 @@ initialize (const ekat::Comm& atm_comm,
 
   initialize_fields ();
 
-  initialize_output_managers ();
-
   initialize_atm_procs ();
+
+  initialize_output_managers ();
 }
 
 void AtmosphereDriver::run (const int dt) {
