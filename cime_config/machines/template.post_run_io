@@ -6,7 +6,9 @@
 """
 template to create a case post run script for I/O post processing.
 
-This should only ever be called by case.submit when on batch system. This script only exists as a way of providing batch directives. Use case.submit from the command line to run your case.
+This should only ever be called by case.submit when on batch system.
+This script only exists as a way of providing batch directives.
+Use case.submit from the command line to run your case.
 
 DO NOT RUN THIS SCRIPT MANUALLY
 """
@@ -61,6 +63,7 @@ def _main_func(description):
 
     ret = 0
     caseroot = parse_command_line(sys.argv, description)
+    # Load the case_post_run_io.py script and run I/O post processing steps
     with Case(caseroot, read_only=False) as case:
         srcroot = case.get_value("SRCROOT")
 

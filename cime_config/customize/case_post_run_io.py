@@ -1,6 +1,5 @@
 """
 Post run I/O processing
-case_post_run_io is a member of class Case from file case.py
 """
 import os
 from CIME.XML.standard_module_setup import *
