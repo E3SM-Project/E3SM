@@ -158,20 +158,33 @@ module ocn_time_integration_si
    type (field1DReal), pointer :: &
       SIvec_zh1_field,SIvec_wh0_field,SIvec_rh1_field   
                          ! field pointer for halo update
-   integer,dimension(:),allocatable :: recvDestList,recvSrcList, &
-                                       sendDestList,sendSrcList
-                         ! field pointer for halo update
-   real(kind=RKIND),dimension(:),allocatable :: sbuffer,rbuffer
-                         ! MPI buffers
+
    type (mpas_communication_list), pointer :: &
       sendList, recvList
-   type (mpas_multihalo_exchange_list), pointer :: &
-      fieldSendList, fieldRecvList, fieldCopyList
-                         ! MPI send & recv list
-   integer, dimension(:), pointer :: &
-      haloLayers,sendBufferOffset,recvBufferOffset,localNlist, &
-      sendEndPointID,sendProcID,recvEndPointID,recvProcID,localBlockID                         
+
    integer :: nSendCommList,nRecvCommList
+
+   integer,dimension(:),pointer :: haloLayers
+
+   type si_exchList
+      integer,allocatable,dimension(:) ::       &
+         destList,srcList
+   end type si_exchList
+
+   type si_halo
+      type(si_exchList),allocatable,dimension(:) :: exch
+      integer,allocatable,dimension(:) ::       &
+         endPointID,nList
+   end type si_halo
+
+   type si_local_mpi
+      real(kind=RKIND),allocatable,dimension(:) :: buffer,bufferOffset
+      type(si_halo),allocatable,dimension(:) :: halo
+      integer,allocatable,dimension(:) :: nExch
+      integer :: procID,nList,reqID
+   end type si_local_mpi
+   
+   type(si_local_mpi),allocatable,dimension(:) :: exchSend,exchRecv
 
 #ifdef USE_MAGMA
    magma_devptr_t :: dprec_ivmat,queue,dxvec,dyvec
@@ -3162,7 +3175,7 @@ module ocn_time_integration_si
 
       integer :: iHalo, nHaloLayers, threadNum, nAdded, i, j
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: commListPtr
+      type (mpas_communication_list), pointer :: commListPtr,commListPtr2
       type (field1dReal), pointer :: fieldCursor
 
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray,     &
@@ -3467,98 +3480,182 @@ module ocn_time_integration_si
 
 
       !--------------------------------------------------------------------
-      ! Get fields & Save sendList and recvList
-      !    - For more efficient halo exchange during solver iterations
-      !    - To enable GPU-aware MPI for halo exchange
-      !      during solver itareations
+      ! Initialization for the si_halo_exch routine
+      !    - Get fields & Save sendList and recvList
+      !    - Allocate send & recv buffer
+      !    - Define dest & source list
       !--------------------------------------------------------------------
+
+      call mpi_barrier(domain%dminfo%comm,ierr)
 
       threadNum = mpas_threading_get_thread_num()
       if ( threadNum == 0 ) then
          nHaloLayers = size( SIvec_rh1_field % sendList % halos)
          allocate(haloLayers(nHaloLayers))
          do iHalo = 1, nHaloLayers
-           haloLayers(iHalo) = iHalo
+            haloLayers(iHalo) = iHalo
          end do
       end if
-
-      call mpas_dmpar_exch_halo_field(SIvec_rh1_field)
 
       call mpas_dmpar_build_comm_lists(                                    &
                SIvec_rh1_field % sendList, SIvec_rh1_field % recvList,     &
                haloLayers, SIvec_rh1_field % dimsizes, sendList, recvList )
 
-      allocate( sbuffer(sendList % nList), rbuffer(recvList % nList), &
-                sendBufferOffset(nHaloLayers),recvBufferOffset(nHaloLayers) )
+      !-----------------------------------------------------------------
 
-      call mpas_log_write('aaa')
-      !----------
-      k = 0
-      do iHalo = 1,config_num_halos
-         sendBufferOffset(iHalo) = k
-         exchListPtr => SIvec_rh1_field % sendList                 &
-                                        % halos(haloLayers(iHalo)) &
-                                        % exchList
-         if (exchListPtr % endPointID == sendList % procID) then
-            do i = 1, exchListPtr % nList
-               k = k + 1
-            end do ! i
-         endif
-      end do
-      !----------
-      k = 0
-      do iHalo = 1,config_num_halos
-         recvBufferOffset(iHalo) = k
-         exchListPtr => SIvec_rh1_field % recvList                 &
-                                        % halos(haloLayers(iHalo)) &
-                                        % exchList
-         if (exchListPtr % endPointID == recvList % procID) then
-            do i = 1, exchListPtr % nList
-               k = k + 1
-            end do ! i
-         endif
-      end do
-      !----------
-      call mpas_log_write('bbb')
-
-      fieldSendList => SIvec_rh1_field % sendList
-      fieldRecvList => SIvec_rh1_field % recvList
-      fieldCopyList => SIvec_rh1_field % copyList
-
-      call mpas_log_write('ccc')
-
-   
-#ifdef MPAS_OPENACC
-      !$acc enter data copyin(sendList,recvList,haloLayers, &
-      !$acc    sbuffer,rbuffer,sendBufferOffset,recvBufferOffset,   &
-      !$acc    fieldSendList,fieldRecvList,fieldCopyList)
-#endif
-
-
-!     do iHalo = 1,nHaloLayers
-!        print*, iHalo, associated(fieldCopyList % halos(haloLayers(iHalo)) % exchList) &
-!                     , associated(fieldSendList % halos(haloLayers(iHalo)) % exchList) &
-!                     , associated(fieldRecvList % halos(haloLayers(iHalo)) % exchList)
-!     end do
-      commListPtr => recvList
-      iCell = 0
+      i = 0
+      commListPtr => sendList
       do while(associated(commListPtr))
-         iCell = iCell + 1
-         do iHalo = 1,nHaloLayers
-            exchListPtr => SIvec_rh1_field % recvList % halos(haloLayers(iHalo)) % exchList
-            k = 0
-            do while (associated(exchListPtr))
-               k = k + 1
-               print*,iCell,iHalo,k,commListPtr%nList,exchListPtr % nList
-               exchListPtr => exchListPtr % next
-            end do
-         end do
+         i = i + 1
          commListPtr => commListPtr % next
       end do
-      call mpas_log_write('ddd')
+      nSendCommList = i     
 
-      call mpi_barrier(domain%dminfo%comm,ierr)
-      stop
+      i = 0
+      commListPtr => recvList 
+      do while(associated(commListPtr))
+         i = i + 1
+         commListPtr => commListPtr % next
+      end do
+      nRecvCommList = i     
+
+      allocate(exchSend(nSendCommList))
+      allocate(exchRecv(nRecvCommList))
+
+      !-----------------------------------------------------------------
+      ! Exchange list for SEND
+
+      commListPtr => sendList 
+      i = 0
+      do while(associated(commListPtr))
+         i = i + 1
+
+         allocate(exchSend(i)%buffer(commListPtr%nList))
+         allocate(exchSend(i)%bufferOffset(nHaloLayers))
+         allocate(exchSend(i)%halo(nHaloLayers))
+         allocate(exchSend(i)%nExch(nHaloLayers))
+
+         exchSend(i)%procID = commListPtr%procID
+         exchSend(i)%nList  = commListPtr%nList
+      
+         nAdded = 0
+         do iHalo = 1,nHaloLayers
+            exchSend(i)%bufferOffset(iHalo) = nAdded
+            exchListPtr => SIvec_rh1_field % sendList %      &
+                           halos(haloLayers(iHalo)) % exchList
+            j = 0
+            do while (associated(exchListPtr))
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  do k = 1,exchListPtr % nList
+                     nAdded = nAdded + 1 
+                  end do
+               endif
+               j = j+1
+               exchListPtr => exchListPtr % next
+            end do
+ 
+            exchSend(i)%nExch(iHalo) = j
+
+            allocate(exchSend(i)%halo(iHalo)%endPointID(j))
+            allocate(exchSend(i)%halo(iHalo)%nList(j))
+            allocate(exchSend(i)%halo(iHalo)%exch(j))
+
+            exchListPtr => SIvec_rh1_field % sendList %      &
+                           halos(haloLayers(iHalo)) % exchList
+            j = 0
+            do while (associated(exchListPtr))
+               j = j+1
+               exchSend(i)%halo(iHalo)%endPointID(j) = exchListPtr % endPointID
+               exchSend(i)%halo(iHalo)%nList(j) = exchListPtr % nList
+
+               allocate(exchSend(i)%halo(iHalo)%exch(j)%destList(exchListPtr % nList))
+               allocate(exchSend(i)%halo(iHalo)%exch(j)%srcList(exchListPtr % nList))
+
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  do k = 1,exchListPtr % nList
+                     exchSend(i)%halo(iHalo)%exch(j)%destList(k) = &
+                        exchListPtr % destList(k) + exchSend(i)%bufferOffset(iHalo)
+                     exchSend(i)%halo(iHalo)%exch(j)%srcList(k) = &
+                        exchListPtr % srcList(k)
+                  end do
+               endif
+               exchListPtr => exchListPtr % next
+            end do
+
+         end do ! iHalo
+         commListPtr => commListPtr  % next
+      end do
+
+      !-----------------------------------------------------------------
+      ! Exchange list for RECV
+
+      commListPtr => recvList 
+      i = 0
+      do while(associated(commListPtr))
+         i = i + 1
+
+         allocate(exchRecv(i)%buffer(commListPtr%nList))
+         allocate(exchRecv(i)%bufferOffset(nHaloLayers))
+         allocate(exchRecv(i)%halo(nHaloLayers))
+         allocate(exchRecv(i)%nExch(nHaloLayers))
+
+         exchRecv(i)%procID = commListPtr%procID
+         exchRecv(i)%nList  = commListPtr%nList
+
+         nAdded = 0
+         do iHalo = 1,nHaloLayers
+            exchRecv(i)%bufferOffset(iHalo) = nAdded
+            exchListPtr => SIvec_rh1_field % recvList %      &
+                           halos(haloLayers(iHalo)) % exchList
+            j = 0
+            do while (associated(exchListPtr))
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  do k = 1,exchListPtr % nList
+                     nAdded = nAdded + 1 
+                  end do
+               endif
+               j = j+1
+               exchListPtr => exchListPtr % next
+            end do
+ 
+            exchRecv(i)%nExch(iHalo) = j
+
+            allocate(exchRecv(i)%halo(iHalo)%endPointID(j))
+            allocate(exchRecv(i)%halo(iHalo)%nList(j))
+            allocate(exchRecv(i)%halo(iHalo)%exch(j))
+
+            exchListPtr => SIvec_rh1_field % recvList %      &
+                           halos(haloLayers(iHalo)) % exchList
+            j = 0
+            do while (associated(exchListPtr))
+               j = j+1
+               exchRecv(i)%halo(iHalo)%endPointID(j) = exchListPtr % endPointID
+               exchRecv(i)%halo(iHalo)%nList(j) = exchListPtr % nList
+
+               allocate(exchRecv(i)%halo(iHalo)%exch(j)%destList(exchListPtr % nList))
+               allocate(exchRecv(i)%halo(iHalo)%exch(j)%srcList(exchListPtr % nList))
+
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  do k = 1,exchListPtr % nList
+                     exchRecv(i)%halo(iHalo)%exch(j)%destList(k) = &
+                        exchListPtr % destList(k)
+                     exchRecv(i)%halo(iHalo)%exch(j)%srcList(k) = &
+                        exchListPtr % srcList(k) + exchRecv(i)%bufferOffset(iHalo)
+                  end do
+               endif
+               exchListPtr => exchListPtr % next
+            end do
+
+         end do ! iHalo
+         commListPtr => commListPtr  % next
+      end do
+
+      !-----------------------------------------------------------------
+
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(exchSend,exchRecv)
+#endif
+
    end subroutine ocn_time_integration_si_init!}}}
 
 !***********************************************************************
@@ -4828,8 +4925,8 @@ module ocn_time_integration_si
          call si_precond(SIvec_z1,SIvec_zh1)
  
          call mpas_timer_start("si halo iter")
-!        call mpas_dmpar_exch_halo_field(SIvec_zh1_field)
-         call si_halo_exch(domain,SIvec_zh1_field,SIvec_zh1)
+         call mpas_dmpar_exch_halo_field(SIvec_zh1_field)
+!        call si_halo_exch(domain,SIvec_zh1)
          !$acc update device(SIvec_zh1)
          call mpas_timer_stop("si halo iter")
  
@@ -4995,88 +5092,75 @@ module ocn_time_integration_si
 !
 !-----------------------------------------------------------------------
 
-   subroutine si_halo_exch(domain,field,field_array) !{{{
+   subroutine si_halo_exch(domain,field_array) !{{{
 
       include 'mpif.h'
 
       type (domain_type), intent(inout) :: &
          domain  !< [inout] model state to advance forward
-
-      type (field1DReal), pointer, intent(inout)  :: field
+   
       real(kind=RKIND),dimension(:),intent(inout) :: field_array
       type (mpas_exchange_list), pointer :: exchListPtr
 
-      integer :: i, iHalo, mpi_ierr
+      integer :: i,iComm, iHalo, iExch, mpi_ierr
 
-      ! Initiate mpi_irecv calls
-      call MPI_Irecv(rbuffer, recvList % nList, MPI_REAL8,  &
-                     recvList % procID, recvList % procID,     &
-                     domain % dminfo % comm, recvList % reqID, &
-                     mpi_ierr)
+      ! Initiate mpi_irecv calls ---------------------------------------
+      do iComm = 1,nRecvCommList
+         call MPI_Irecv(                                               &
+              exchRecv(iComm)%buffer, exchRecv(iComm)%nList, MPI_REAL8,&
+              exchRecv(iComm)%procID, exchRecv(iComm)%procID,          &
+              domain%dminfo%comm, exchRecv(iComm)%reqID, mpi_ierr )
+      end do
 
-      do iHalo = 1,config_num_halos
-         exchListPtr => fieldSendList %                  &
-                        halos(haloLayers(iHalo)) % exchList
-         if (exchListPtr % endPointID == sendList % procID) then
-            !$acc parallel loop present(sbuffer,fieldSendList, &
-            !$acc    sendBufferOffset,field_array,haloLayers)
-            do i = 1, exchListPtr % nList
-               sbuffer(  fieldSendList % halos(haloLayers(iHalo)) &
-                                       % exchList % destList(i)   &
-                       + sendBufferOffset(iHalo)  )               &
-               = field_array(fieldSendList % halos(haloLayers(iHalo)) % exchList  % srcList(i))
-            end do ! i
-         endif
-      end do ! iHalo
+      ! Copy data into buffer, and initiate mpi_isend calls ------------
+      do iComm = 1,nSendCommList
+         do iHalo = 1,config_num_halos
+            do iExch = 1,exchSend(iComm)%nExch(iHalo)
+               if (exchSend(iComm)%halo(iHalo)%endPointID(iExch) == &
+                   exchSend(iComm)%procID) then
+                   do i = 1,exchSend(iComm)%halo(iHalo)%nList(iExch)
+                      exchSend(iComm)%buffer( exchSend(iComm)%  &
+                                                  halo(iHalo)%  &
+                                                  exch(iExch)%  &
+                                                 destList(i)) = &
+                      field_array(exchSend(iComm)%halo(iHalo)   &
+                                     %exch(iExch)%srcList(i))
+                   end do ! i
+               endif
+            end do ! iExch
+         end do ! iHalo
+         call MPI_Isend(                                               &
+              exchSend(iComm)%buffer, exchSend(iComm)%nList, MPI_REAL8,&
+              exchSend(iComm)%procID, domain%dminfo%my_proc_id,        &
+              domain%dminfo%comm, exchSend(iComm)%reqID, mpi_ierr )
+      end do ! iComm
 
-      call MPI_Isend(sbuffer, sendList % nList, MPI_REAL8,         &
-                     sendList % procID, domain % dminfo % my_proc_id, &
-                     domain % dminfo % comm, sendList % reqID,        &
-                     mpi_ierr)
+      ! Wait for mpi_irecv to finish, and unpack data from buffer ------
+      do iComm = 1,nRecvCommList
+         call MPI_Wait(exchRecv(iComm)%reqID,      &
+                       MPI_STATUS_IGNORE, mpi_ierr)
+         do iHalo = 1,config_num_halos
+            do iExch = 1,exchRecv(iComm)%nExch(iHalo)
+               if (exchRecv(iComm)%halo(iHalo)%endPointID(iExch) == &
+                   exchRecv(iComm)%procID) then
+                   do i = 1,exchRecv(iComm)%halo(iHalo)%nList(iExch)
+                      field_array(exchRecv(iComm)%halo(iHalo)    &
+                                     %exch(iExch)%destList(i)) = &
+                      exchRecv(iComm)%buffer(exchRecv(iComm)%    &
+                                                 halo(iHalo)%    &
+                                                 exch(iExch)%    &
+                                                 srcList(i))
+                   end do ! i
+               endif
+            end do ! iExch
+         end do ! iHalo
+      end do ! iComm
 
-      ! Handle local copy.
-!     do iHalo = 1,config_num_halos
-!        exchListPtr => fieldCopyList %                  &
-!                       halos(haloLayers(iHalo)) % exchList
-!        print*, fieldCopyList % halos(haloLayers(iHalo)) % exchList % endPointID
-!        if (exchListPtr % endPointID == field % block % localBlockID) then
-!           !$acc parallel loop present(field_array,fieldCopyList,haloLayers)
-!           print*,iHalo,exchListPtr % nList
-!           do i = 1, exchListPtr % nList
-!                field_array(i) = 1.0
-!                !field_array(fieldCopyList %halos(haloLayers(iHalo)) % exchList % destList(i)) = 1.0
-!                print*,iHalo,i,fieldCopyList %halos(haloLayers(iHalo)) % exchList % srcList(i)
-!                field_array(fieldCopyList %halos(haloLayers(iHalo)) % exchList % srcList(i)) = 1.0
-
-!                field_array(fieldCopyList %halos(haloLayers(iHalo)) % exchList % destList(i)) &
-!              = field_array(fieldCopyList %halos(haloLayers(iHalo)) % exchList % srcList(i))
-!           end do ! i
-!        endif
-!     end do ! iHalo
-
-      call MPI_Wait(recvList % reqID, MPI_STATUS_IGNORE, mpi_ierr)
-
-      do iHalo = 1,config_num_halos
-         exchListPtr => fieldRecvList %                  &
-                        halos(haloLayers(iHalo)) % exchList
-         if (exchListPtr % endPointID == recvList % procID) then
-            !$acc parallel loop present(rbuffer, ,haloLayers,&
-            !$acc    recvBufferOffset,field_array,fieldRecvList)
-            do i = 1, exchListPtr % nList
-               field_array(fieldRecvList %halos(haloLayers(iHalo)) % exchList % destList(i)) &
-               = rbuffer(  fieldRecvList %halos(haloLayers(iHalo)) % exchList % srcList(i)   &
-                         + recvBufferOffset(iHalo) )
-            end do ! i
-         endif
-      end do ! iHalo
-
-      call MPI_Wait(sendList % reqID, MPI_STATUS_IGNORE, mpi_ierr)
-
-      call mpas_log_write('eee')
-      call mpi_barrier(domain%dminfo%comm,mpi_ierr)
-
-      stop
-
+      ! Wait for mpi_isend to finish ----------------------------------
+      do iComm = 1,nSendCommList
+         call MPI_Wait(exchSend(iComm)%reqID,     &
+                       MPI_STATUS_IGNORE,mpi_ierr)
+      end do
 
    end subroutine si_halo_exch
 
@@ -5126,9 +5210,7 @@ module ocn_time_integration_si
       !$acc exit data delete(prec_ivmat)
 #endif
 
-      !$acc exit data delete(sendList,recvList,sbuffer,rbuffer, &
-      !$acc    sendBufferOffset,recvBufferOffset,haloLayers,    &
-      !$acc    fieldSendList, fieldRecvList,fieldCopyList)
+      !$acc exit data delete(exchSend,exchRecv)
 
 #endif
 
