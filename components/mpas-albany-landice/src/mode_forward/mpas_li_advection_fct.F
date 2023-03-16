@@ -79,7 +79,7 @@ module li_tracer_advection_fct
       ! Input parameters
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
+      real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
          tracers               !< [in] Current tracer values
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
@@ -659,6 +659,7 @@ module li_tracer_advection_fct
 #ifdef _ADV_TIMERS
         call mpas_timer_stop('advect diags horiz')
 #endif
+
 !TODO: implement vertical advection?
         !-----------------------------------------------------------------------
         !
@@ -986,6 +987,8 @@ module li_tracer_advection_fct
 !#ifdef _ADV_TIMERS
 !        call mpas_timer_stop('advect diags vert')
 !#endif
+        ! Update tracer array
+        tracers(iTracer,:,:) = tracerCur(:,:)
       end do ! iTracer loop
 !
 #ifdef _ADV_TIMERS

@@ -354,9 +354,9 @@ module li_advection
 
       if ((trim(config_thickness_advection) .eq. 'fct') .or. &
           (trim(config_tracer_advection) .eq. 'fct' ) ) then
-         allocate(tendLayerThickness(nVertLevels,nEdges))
+         allocate(tendLayerThickness(nVertLevels,nCells+1))
          tendLayerThickness(:,:) = 0.0_RKIND
-         allocate(tend(nTracers,nVertLevels,nEdges))
+         allocate(tend(nTracers,nVertLevels,nCells+1))
          tend(:,:,:) = 0.0_RKIND
       endif
 
