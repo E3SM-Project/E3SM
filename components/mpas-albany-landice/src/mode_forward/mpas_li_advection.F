@@ -470,7 +470,7 @@ module li_advection
              advectedTracers(:,:,:) = advectedTracersOld(:,:,:)
 
              call li_tracer_advection_fct_tend(&
-                  tend, advectedTracers, layerThickness, &
+                  tend, advectedTracers, layerThicknessOld, &
                   layerThicknessEdge * layerNormalVelocity, 0 * normalVelocity, dt,    &
                   computeBudgets=.false.)!{{{
          endif
