@@ -1234,13 +1234,7 @@ module li_advection
          iTracer = iTracer + 1
 
          ! copy 2d thickness to all vertical levels in the tracer array
-         !where (layerThickness(:,:) > 1.0e-10_RKIND)
-         !   advectedTracers(iTracer,:,:) = 1.0_RKIND
-         !elsewhere
-         !   advectedTracers(iTracer,:,:) = 0.0_RKIND
-         !endwhere
          advectedTracers(iTracer,:,:)  = layerThickness(:,:)
-         ! Is this right?
          surfaceTracers(iTracer,:) = 0.0_RKIND
          basalTracers(iTracer,:) = 0.0_RKIND
 
@@ -1249,7 +1243,7 @@ module li_advection
       ! Note: Other tracers (e.g., ice age) can be added here as needed.
       !       May need to increase maxTracers in the Registry.
       if (trim(config_tracer_advection) == 'fct') then
-         call li_tracer_advection_fct_shared_init(err1)
+         call li_tracer_advection_fct_shared_init(geometryPool, err1)
          call li_tracer_advection_fct_init(err2)
 
          if (err1 /= 0 .or. err2 /= 0) then

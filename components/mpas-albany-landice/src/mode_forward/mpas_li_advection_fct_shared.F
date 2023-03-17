@@ -29,6 +29,7 @@ module li_tracer_advection_fct_shared
 
    use li_config
    use li_mesh
+   use li_mask
 
    implicit none
    private
@@ -76,7 +77,7 @@ module li_tracer_advection_fct_shared
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_tracer_advection_fct_shared_init(err)!{{{
+   subroutine li_tracer_advection_fct_shared_init(geometryPool, err)!{{{
       use li_config
       use li_mesh
       !-----------------------------------------------------------------
@@ -84,6 +85,12 @@ module li_tracer_advection_fct_shared
       !-----------------------------------------------------------------
 
       integer, intent(out) :: err !< [out] Error flag
+
+      !-----------------------------------------------------------------
+      ! Input variables
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: geometryPool
 
       !-----------------------------------------------------------------
       ! Local variables
@@ -108,6 +115,8 @@ module li_tracer_advection_fct_shared
       ! End preamble
       !-------------
       ! Begin code
+
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
       err = 0 ! initialize error code
 
@@ -141,14 +150,12 @@ module li_tracer_advection_fct_shared
          cell2 = cellsOnEdge(2,iEdge)
 
          ! at boundaries, must stay at low order
-         do k = 1, nVertLevels
-            if (boundaryCell(k,cell1) == 1 .or. &
-                boundaryCell(k,cell2) == 1) then
-               advMaskHighOrder(k,iEdge) = 0.0_RKIND
-            else
-               advMaskHighOrder(k,iEdge) = 1.0_RKIND
-            end if
-         end do
+         if ( li_mask_is_dynamic_margin(cellMask(cell1)) .or. &
+              li_mask_is_dynamic_margin(cellMask(cell2)) ) then
+            advMaskHighOrder(:,iEdge) = 0.0_RKIND
+         else
+            advMaskHighOrder(:,iEdge) = 1.0_RKIND
+         end if
 
          ! do only if this edge flux is needed to update owned cells
          if (cell1 <= nCells .and. cell2 <= nCells) then
