@@ -1402,6 +1402,8 @@
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
+    <SAVE_TIMING_DIR>/usr/gdata/climdat</SAVE_TIMING_DIR> <!--Aaron-->
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS> <!--Aaron-->
     <CIME_OUTPUT_ROOT>/p/lscratchh/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -1433,7 +1435,8 @@
         <command name="load">git</command>
         <command name="load">intel/19.0.4</command>
         <command name="load">mvapich2/2.3</command>
-        <command name="load">cmake/3.14.5</command>
+        <!--default: <command name="load">cmake/3.14.5</command>, use 3.18.0 follow scream-->
+        <command name="load">cmake/3.18.0</command>
         <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">pnetcdf/1.9.0</command>
       </modules>
@@ -1441,11 +1444,12 @@
     <RUNDIR>/p/lscratchh/$CCSMUSER/ACME/$CASE/run</RUNDIR>
     <EXEROOT>/p/lscratchh/$CCSMUSER/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
-      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
+      <!--use 19.0.4-mvapich2-2.3 follow scream-->
+      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</env>
+      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="!mpi-serial">
-      <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-18.0.1-mvapich2-2.2/</env>
+      <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-19.0.4-mvapich2-2.3/</env>
     </environment_variables>
   </machine>
 
@@ -1454,6 +1458,9 @@
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
+    <PROJECT>cbronze</PROJECT>
+    <SAVE_TIMING_DIR>/usr/gdata/climdat</SAVE_TIMING_DIR> <!--Aaron-->
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS> <!--Aaron-->
     <CIME_OUTPUT_ROOT>/p/lscratchh/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -1485,7 +1492,8 @@
         <command name="load">git</command>
         <command name="load">intel/19.0.4</command>
         <command name="load">mvapich2/2.3</command>
-        <command name="load">cmake/3.14.5</command>
+        <!--default: <command name="load">cmake/3.14.5</command>, use 3.18.0 follow scream-->
+        <command name="load">cmake/3.18.0</command>
         <command name="load">netcdf-fortran/4.4.4</command>
         <command name="load">pnetcdf/1.9.0</command>
       </modules>
@@ -1493,11 +1501,13 @@
     <RUNDIR>/p/lscratchh/$CCSMUSER/ACME/$CASE/run</RUNDIR>
     <EXEROOT>/p/lscratchh/$CCSMUSER/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
-      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
+      <!--use 19.0.4-mvapich2-2.3 follow scream-->
+      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</env>
+      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</env>
+      <!--<env name="LD_LIBRARY_PATH">/usr/tce/packages/gcc/gcc-8.1.0/lib:/usr/tce/packages/gcc/gcc-8.1.0/lib64:$ENV{LD_LIBRARY_PATH}</env>-->
     </environment_variables>
     <environment_variables compiler="intel" mpilib="!mpi-serial">
-      <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-18.0.1-mvapich2-2.2/</env>
+      <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-19.0.4-mvapich2-2.3/</env>
     </environment_variables>
   </machine>
 
@@ -1586,7 +1596,7 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
-      <env name="PERL5LIB">/projects/ccsm/e3sm/libs/perl5</env>
+      <env name="PATH">/projects/ccsm/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
       <env name="MPAS_TOOL_DIR">/projects/ccsm/e3sm/tools/mpas</env>
       <env name="HDF5_DISABLE_VERSION_CHECK">1</env>
       <env name="labeling">-e PMI_LABEL_ERROUT=1</env>
