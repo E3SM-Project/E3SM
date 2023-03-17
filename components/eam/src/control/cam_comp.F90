@@ -471,20 +471,14 @@ subroutine cam_run1(cam_in, cam_out)
 #if ( defined SPMD )
    use mpishorthand,     only: mpicom
 #endif
-   use time_manager,     only: get_nstep, get_curr_date
+   use time_manager,     only: get_nstep
    use scamMod,          only: single_column
-#if defined(CLDERA_PROFILING)
-    use cldera_interface_mod, only: cldera_compute_stats
-#endif
 
    type(cam_in_t)  :: cam_in(begchunk:endchunk)
    type(cam_out_t) :: cam_out(begchunk:endchunk)
 
 #if ( defined SPMD )
    real(r8) :: mpi_wtime
-#endif
-#if defined(CLDERA_PROFILING)
-    integer :: ymd, yr, mon, day, tod
 #endif
 !-----------------------------------------------------------------------
 
@@ -508,16 +502,6 @@ subroutine cam_run1(cam_in, cam_out)
      call scam_use_iop_srf( cam_in)
    endif
 
-#if defined(CLDERA_PROFILING)
-   ! Compute stats here, since the first thing that happens in phys_run1 is the
-   ! writing of the physics state (possibly after some checks/setup, but nothing
-   ! that should change the values of state vars)
-   call get_curr_date( yr, mon, day, tod)
-   ymd = yr*10000 + mon*100 + day
-   call t_startf('cldera_compute_stats')
-   call cldera_compute_stats(ymd,tod)
-   call t_stopf('cldera_compute_stats')
-#endif
 
    !
    !----------------------------------------------------------
