@@ -745,7 +745,6 @@ end subroutine micro_p3_readnl
                               qsmall, &
                               mincld, &
                               inv_cp
-    use physics_utils, only: calculate_drymmr_from_wetmmr, calculate_wetmmr_from_drymmr
 
     !INPUT/OUTPUT VARIABLES
     type(physics_state),         intent(in)    :: state
@@ -853,6 +852,8 @@ end subroutine micro_p3_readnl
     real(rtype) :: cdnumc(pcols)
     real(rtype) :: icinc(pcols,pver)
     real(rtype) :: icwnc(pcols,pver)
+
+    real(rtype) :: ratio_local(pcols,pver)
 
 
     integer :: it                      !timestep counter                       -
@@ -984,22 +985,23 @@ end subroutine micro_p3_readnl
     !-------------------------
     !Since state constituents from the host model are  wet mixing ratios and P3 needs these
     !constituents in dry mixing ratios, we convert the wet mixing ratios to dry mixing ratio
-    !while assigning state constituents to the local variables
-    !NOTE:Function calculate_drymmr_from_wetmmr takes 3 arguments: (number of columns, wet mmr and
-    ! "wet" water vapor mixing ratio)
     !---------------------------------------------------------------------------------------
-    qv_wet_in   = state%q(:,:,1) ! Get "wet" water vapor mixing ratio from state
     !Compute dry mixing ratios for all the constituents
-    qv_dry(:ncol,:pver)      = calculate_drymmr_from_wetmmr(ncol, pver, qv_wet_in,              qv_wet_in)
-    qv_prev_dry(:ncol,:pver) = calculate_drymmr_from_wetmmr(ncol, pver, qv_prev_wet,            qv_wet_in)
-    cldliq(:ncol,:pver)      = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixcldliq),  qv_wet_in)
-    numliq(:ncol,:pver)      = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixnumliq),  qv_wet_in)
-    rain(:ncol,:pver)        = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixrain),    qv_wet_in)
-    numrain(:ncol,:pver)     = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixnumrain), qv_wet_in)
-    ice(:ncol,:pver)         = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixcldice),  qv_wet_in)
-    qm(:ncol,:pver)          = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixcldrim),  qv_wet_in) !Aaron, changed ixqm to ixcldrim to match Kai's code
-    numice(:ncol,:pver)      = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixnumice),  qv_wet_in)
-    rimvol(:ncol,:pver)      = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixrimvol),  qv_wet_in)
+
+    ratio_local(:ncol,:pver) = state%pdel(:ncol,:pver)/state%pdeldry(:ncol,:pver)
+
+    qv_dry     (:ncol,:pver) = state%q(:ncol,:pver,         1) *ratio_local(:ncol,:pver)
+    cldliq     (:ncol,:pver) = state%q(:ncol,:pver,  ixcldliq) *ratio_local(:ncol,:pver)
+    numliq     (:ncol,:pver) = state%q(:ncol,:pver,  ixnumliq) *ratio_local(:ncol,:pver)
+    rain       (:ncol,:pver) = state%q(:ncol,:pver,    ixrain) *ratio_local(:ncol,:pver)
+    numrain    (:ncol,:pver) = state%q(:ncol,:pver, ixnumrain) *ratio_local(:ncol,:pver)
+    ice        (:ncol,:pver) = state%q(:ncol,:pver,  ixcldice) *ratio_local(:ncol,:pver)
+    !Aaron, changed ixqm to ixcldrim to match Kai's code
+    qm         (:ncol,:pver) = state%q(:ncol,:pver,  ixcldrim) *ratio_local(:ncol,:pver)
+    numice     (:ncol,:pver) = state%q(:ncol,:pver,  ixnumice) *ratio_local(:ncol,:pver)
+    rimvol     (:ncol,:pver) = state%q(:ncol,:pver,  ixrimvol) *ratio_local(:ncol,:pver)
+
+    qv_prev_dry(:ncol,:pver) = qv_prev_wet(:ncol,:pver)     *ratio_local(:ncol,:pver)
 
     ! COMPUTE GEOMETRIC THICKNESS OF GRID & CONVERT T TO POTENTIAL TEMPERATURE
     !==============
@@ -1007,6 +1009,8 @@ end subroutine micro_p3_readnl
     ! used by all parameterizations, such as P3 and SHOC.
     ! This would take a bit more work, so we have decided to delay this task
     ! until a later stage of code cleanup.
+
+!OG REDO
     inv_exner(:ncol,:pver) = 1._rtype/((state%pmiddry(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
     do icol = 1,ncol
        do k = 1,pver
@@ -1014,6 +1018,8 @@ end subroutine micro_p3_readnl
           ! dz, but that is in a wet coordinate frame rather than dry.  Now that
           ! P3 is using dry MMR we instead calculated dz using virtual
           ! temperature and pressure.
+
+!OG REDO
           T_virtual  = state%t(icol,k) * (1.0 + qv_dry(icol,k)*(1.0*mwdry/mwh2o - 1.0))
           dz(icol,k) = (rair/gravit) * state%pdeldry(icol,k) * T_virtual / state%pmiddry(icol,k) 
           th(icol,k) = state%t(icol,k)*inv_exner(icol,k) 
@@ -1024,6 +1030,8 @@ end subroutine micro_p3_readnl
     ite     = state%ncol
     kts     = 1
     kte     = pver
+
+!OG REDO?
     pres    = state%pmiddry(:,:)
     ! Initialize the raidation dependent variables.
     mu      = 0.0_rtype !mucon
@@ -1184,17 +1192,19 @@ end subroutine micro_p3_readnl
     !================
     !Since the host model needs wet mixing ratio tendencies(state vector has wet mixing ratios),
     !we need to convert dry mixing ratios from P3 to wet mixing ratios before extracting tendencies
-    !NOTE: water vapor mixing ratio argument in calculate_wetmmr_from_drymmr function has to be dry water vapor mixing ratio
 
-    qv_wet_out(:ncol,:pver) = calculate_wetmmr_from_drymmr(ncol, pver, qv_dry,  qv_dry)
-    cldliq(:ncol,:pver)     = calculate_wetmmr_from_drymmr(ncol, pver, cldliq,  qv_dry)
-    numliq(:ncol,:pver)     = calculate_wetmmr_from_drymmr(ncol, pver, numliq,  qv_dry)
-    rain(:ncol,:pver)       = calculate_wetmmr_from_drymmr(ncol, pver, rain,    qv_dry)
-    numrain(:ncol,:pver)    = calculate_wetmmr_from_drymmr(ncol, pver, numrain, qv_dry)
-    ice(:ncol,:pver)        = calculate_wetmmr_from_drymmr(ncol, pver, ice,     qv_dry)
-    numice(:ncol,:pver)     = calculate_wetmmr_from_drymmr(ncol, pver, numice,  qv_dry)
-    qm(:ncol,:pver)         = calculate_wetmmr_from_drymmr(ncol, pver, qm,      qv_dry)
-    rimvol(:ncol,:pver)     = calculate_wetmmr_from_drymmr(ncol, pver, rimvol,  qv_dry)
+    ratio_local(:ncol,:pver) = state%pdeldry(:ncol,:pver)/state%pdel(:ncol,:pver)
+
+    qv_wet_out (:ncol,:pver) = qv_dry (:ncol,:pver) *ratio_local(:ncol,:pver)
+    cldliq     (:ncol,:pver) = cldliq (:ncol,:pver) *ratio_local(:ncol,:pver)
+    numliq     (:ncol,:pver) = numliq (:ncol,:pver) *ratio_local(:ncol,:pver)
+    rain       (:ncol,:pver) = rain   (:ncol,:pver) *ratio_local(:ncol,:pver)
+    numrain    (:ncol,:pver) = numrain(:ncol,:pver) *ratio_local(:ncol,:pver)
+    ice        (:ncol,:pver) = ice    (:ncol,:pver) *ratio_local(:ncol,:pver)
+    qm         (:ncol,:pver) = qm     (:ncol,:pver) *ratio_local(:ncol,:pver)
+    numice     (:ncol,:pver) = numice (:ncol,:pver) *ratio_local(:ncol,:pver)
+    rimvol     (:ncol,:pver) = rimvol (:ncol,:pver) *ratio_local(:ncol,:pver)
+
 
     temp(:ncol,:pver) = th(:ncol,:pver)/inv_exner(:ncol,:pver)
     ptend%s(:ncol,:pver)           = cpair*( temp(:ncol,:pver) - state%t(:ncol,:pver) )/dtime
