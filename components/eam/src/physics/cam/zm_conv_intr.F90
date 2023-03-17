@@ -98,6 +98,7 @@ subroutine zm_conv_register
 !----------------------------------------
 
   use physics_buffer, only : pbuf_add_field, dtype_r8
+  use misc_diagnostics,only: dcape_diags_register
 
   implicit none
 
@@ -124,6 +125,7 @@ subroutine zm_conv_register
     call pbuf_add_field('Q_STAR','global',dtype_r8,(/pcols,pver/), q_star_idx)
    endif
 
+
    ! detrained convective cloud water mixing ratio.
    call pbuf_add_field('DLFZM', 'physpkg', dtype_r8, (/pcols,pver/), dlfzm_idx)
    ! detrained convective cloud ice mixing ratio.
@@ -143,7 +145,9 @@ subroutine zm_conv_register
        
    end if
 
+! Variables for dCAPE diagnosis and decomposition
 
+   call dcape_diags_register( pcols )
 
 end subroutine zm_conv_register
 

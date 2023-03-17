@@ -536,6 +536,7 @@
       <value lib="kokkos">$SRCROOT/share/build/buildlib.kokkos</value>
       <value lib="gptl">$SRCROOT/share/build/buildlib.gptl</value>
       <value lib="pio">$CIMEROOT/CIME/build_scripts/buildlib.pio</value>
+      <value lib="spio">$CIMEROOT/CIME/build_scripts/buildlib.spio</value>
       <value lib="mct">$CIMEROOT/CIME/build_scripts/buildlib.mct</value>
       <value lib="csm_share">$SRCROOT/share/build/buildlib.csm_share</value>
       <value lib="mpi-serial">$CIMEROOT/CIME/build_scripts/buildlib.mpi-serial</value>
