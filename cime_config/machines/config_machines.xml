@@ -3073,9 +3073,12 @@
      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
      <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
      <environment_variables compiler="oneapi-ifx.*" mpilib="mpich">
-        <env name="HDF5_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/sunspot/software/hdf5/1.12.2/mpich-4.1a1/oneapi-2022.12.30.003</env>
-        <env name="NETCDF_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/sunspot/software/netcdf/4.8.0c-4.3.1cxx-4.6.0f-parallel/mpich-4.1a1/oneapi-2022.12.30.003</env>
-        <env name="PNETCDF_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/sunspot/software/pnetcdf/1.12.3/mpich-4.1a1/oneapi-2022.12.30.003</env>
+        <!-- Software libs based on a custom MPICH 4.2a1 build -->
+        <env name="LD_LIBRARY_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/sunspot/software/mpich/4.2a1/oneapi-2022.12.30.003/lib:$ENV{LD_LIBRARY_PATH}</env>
+        <env name="PATH">/lus/gila/projects/CSC249ADSE15_CNDA/sunspot/software/mpich/4.2a1/oneapi-2022.12.30.003/bin:$ENV{PATH}</env>
+        <env name="HDF5_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/sunspot/software/hdf5/1.12.2/mpich-4.2a1/oneapi-2022.12.30.003</env>
+        <env name="NETCDF_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/sunspot/software/netcdf/4.8.0c-4.3.1cxx-4.6.0f-parallel/mpich-4.2a1/oneapi-2022.12.30.003</env>
+        <env name="PNETCDF_PATH">/lus/gila/projects/CSC249ADSE15_CNDA/sunspot/software/pnetcdf/1.12.3/mpich-4.2a1/oneapi-2022.12.30.003</env>
      </environment_variables>
      <environment_variables mpilib="mpich" DEBUG="TRUE">
         <env name="HYDRA_TOPO_DEBUG">1</env>
