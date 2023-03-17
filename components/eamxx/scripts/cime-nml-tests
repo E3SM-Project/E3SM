@@ -205,6 +205,16 @@ class TestBuildnml(unittest.TestCase):
 
         self._chg_atmconfig([("cubed_sphere_map", "84")], case)
 
+    ###########################################################################
+    def test_atmchanges_on_arrays(self):
+    ###########################################################################
+        """
+        Test that atmchange works for array data
+        """
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+
+        self._chg_atmconfig([("surf_mom_flux", "40.0,2.0")], case)
+
 ###############################################################################
 def parse_command_line(args, desc):
 ###############################################################################
