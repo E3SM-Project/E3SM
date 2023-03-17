@@ -315,16 +315,16 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   m_orbital_mvelp = m_params.get<Int>("orbital_mvelp"       ,-9999);
 
   // Determine whether or not we are using a fixed solar zenith angle (positive value)
-  m_fixed_solar_zenith_angle = m_params.get<Real>("Fixed Solar Zenith Angle", -9999);
+  m_fixed_solar_zenith_angle = m_params.get<double>("Fixed Solar Zenith Angle", -9999);
 
   // Get prescribed surface values of greenhouse gases
-  m_co2vmr     = m_params.get<Real>("co2vmr", 388.717e-6);
-  m_n2ovmr     = m_params.get<Real>("n2ovmr", 323.141e-9);
-  m_ch4vmr     = m_params.get<Real>("ch4vmr", 1807.851e-9);
-  m_f11vmr     = m_params.get<Real>("f11vmr", 768.7644e-12);
-  m_f12vmr     = m_params.get<Real>("f12vmr", 531.2820e-12);
-  m_n2vmr      = m_params.get<Real>("n2vmr", 0.7906);
-  m_covmr      = m_params.get<Real>("covmr", 1.0e-7);
+  m_co2vmr     = m_params.get<double>("co2vmr", 388.717e-6);
+  m_n2ovmr     = m_params.get<double>("n2ovmr", 323.141e-9);
+  m_ch4vmr     = m_params.get<double>("ch4vmr", 1807.851e-9);
+  m_f11vmr     = m_params.get<double>("f11vmr", 768.7644e-12);
+  m_f12vmr     = m_params.get<double>("f12vmr", 531.2820e-12);
+  m_n2vmr      = m_params.get<double>("n2vmr", 0.7906);
+  m_covmr      = m_params.get<double>("covmr", 1.0e-7);
 
   // Whether or not to do MCICA subcolumn sampling
   m_do_subcol_sampling = m_params.get<bool>("do_subcol_sampling",true);
@@ -669,10 +669,10 @@ void RRTMGPRadiation::run_impl (const double dt) {
           // We read o3 in as a vmr already
         } else if (name == "n2") {
           // n2 prescribed as a constant value
-          Kokkos::deep_copy(d_vmr, m_params.get<Real>("n2vmr", 0.7906));
+          Kokkos::deep_copy(d_vmr, m_params.get<double>("n2vmr", 0.7906));
         } else if (name == "co") {
           // co prescribed as a constant value
-          Kokkos::deep_copy(d_vmr, m_params.get<Real>("covmr", 1.0e-7));
+          Kokkos::deep_copy(d_vmr, m_params.get<double>("covmr", 1.0e-7));
         } else {
           // This gives (dry) mass mixing ratios
           scream::physics::trcmix(

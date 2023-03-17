@@ -372,8 +372,8 @@ void AtmosphereDriver::setup_column_conservation_checks ()
 
   // Get tolerances for mass and energy checks from driver_option parameters.
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
-  const Real mass_error_tol   = driver_options_pl.get<Real>("mass_column_conservation_error_tolerance",   1e-10);
-  const Real energy_error_tol = driver_options_pl.get<Real>("energy_column_conservation_error_tolerance", 1e-14);
+  const Real mass_error_tol   = driver_options_pl.get<double>("mass_column_conservation_error_tolerance",   1e-10);
+  const Real energy_error_tol = driver_options_pl.get<double>("energy_column_conservation_error_tolerance", 1e-14);
 
   // Create energy checker
   auto conservation_check =

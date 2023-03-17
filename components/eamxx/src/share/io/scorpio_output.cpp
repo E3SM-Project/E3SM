@@ -1013,8 +1013,8 @@ create_diagnostic (const std::string& diag_field_name) {
     params.set("Grid Name",fid.get_grid_name());
     params.set("Field Layout",fid.get_layout());
     params.set("Field Units",fid.get_units());
-    params.set<Real>("Field Target Pressure", pres_level);
-    params.set<Real>("mask_value",m_fill_value);
+    params.set<double>("Field Target Pressure", pres_level);
+    params.set<double>("mask_value",m_fill_value);
   } else {
     diag_name = diag_field_name;
     m_diag_depends_on_diags[diag_field_name].resize(0);
