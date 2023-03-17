@@ -295,36 +295,24 @@ be lost if SCREAM_HACK_XML is not enabled.
     <Filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</Filename>
     <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</Filename>
     <Filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20220914.nc</Filename>
-    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-1_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20160801-topoadj16x_20221011.nc</Filename>
-    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-1-X6T_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20160801-topoadjx6t_20221011.nc</Filename>
-    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadj16x_20221012.nc</Filename>
-    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2-X6T_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20221011.nc</Filename>
+    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-1_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20160801-topoadjx6t_20221011.nc</Filename>
+    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20221011.nc</Filename>
     <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</Filename>
     <Filename hgrid="ne30np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne30np4L128_20220823.nc</Filename> <!-- This will need to be updated to the new nccn name -->
     <Filename hgrid="ne0np4_conus_x4v1_lowcon" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_conusx4v1np4L72-topo12x_013023.nc</Filename>
 
     <!-- List of default topography files on specific grids -->
     <topography_filename type="file">UNSET</topography_filename>
-    <topography_filename hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</topography_filename>
+    <!-- Rough topography available for ne30, ne256, and ne1024 -->
+    <topography_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.nc</topography_filename>
+    <topography_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4pg2_x6t-SGH.nc</topography_filename>
+    <topography_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_x6t-SGH.nc</topography_filename>
+    <!-- Currently no rough topography for ne4, ne120, or ne512. Use smooth topography file -->
     <topography_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</topography_filename>
-    <topography_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_16xdel2.c20200108.nc</topography_filename>
     <topography_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4pg2_16xdel2.nc</topography_filename>
-    <topography_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4pg2_16xdel2_20200213.nc</topography_filename>
     <topography_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</topography_filename>
-    <topography_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_16xconsistentSGH_20190528_converted.nc</topography_filename>
-
-    <!-- In the case that *-X6T compset is requested: -->
-    <!-- The following grid have x6t topography files -->
-    <topography_filename hgrid="ne30np4" COMPSET=".*X6T*">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.nc</topography_filename>
-    <topography_filename hgrid="ne256np4" COMPSET=".*X6T*">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4pg2_x6t-SGH.nc</topography_filename>
-    <topography_filename hgrid="ne1024np4" COMPSET=".*X6T*">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_x6t-SGH.nc</topography_filename>
-    <!-- The following grids don't have x6t topography files. An error will be thrown
-         if the user attempts to run x6t compset without providing the field "phis". -->
-    <topography_filename hgrid="ne0np4_conus_x4v1_lowcon" COMPSET=".*X6T*">UNSET</topography_filename>
-    <topography_filename hgrid="ne4np4" COMPSET=".*X6T*">UNSET</topography_filename>
-    <topography_filename hgrid="ne120np4" COMPSET=".*X6T*">UNSET</topography_filename>
-    <topography_filename hgrid="ne512np4" COMPSET=".*X6T*">UNSET</topography_filename>
-
+    <!-- Special case with non x6t or 16x topography file -->
+    <topography_filename hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</topography_filename>
     <!-- For aquaplanet run, unset the topography_filename and set phis=0 -->
     <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
     <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
@@ -401,6 +389,12 @@ be lost if SCREAM_HACK_XML is not enabled.
     <disable_diagnostics>False</disable_diagnostics>
     <dt_remap_factor constraints="ge 1">2</dt_remap_factor>
     <dt_tracer_factor constraints="ge 1">1</dt_tracer_factor>
+    <hv_ref_profiles>6</hv_ref_profiles>                <!-- Default (rough topography) -->
+    <hv_ref_profiles hgrid="ne4np4">0</hv_ref_profiles> <!-- Value for smooth topography/aquaplanet -->
+    <hv_ref_profiles hgrid="ne120np4">0</hv_ref_profiles>
+    <hv_ref_profiles hgrid="ne512np4">0</hv_ref_profiles>
+    <hv_ref_profiles hgrid="ne0np4_conus_x4v1_lowcon">0</hv_ref_profiles>
+    <hv_ref_profiles COMPSET=".*SCREAM%AQUA.*">0</hv_ref_profiles>
     <hypervis_order>2</hypervis_order>
     <hypervis_scaling>3.0</hypervis_scaling>
     <hypervis_subcycle>1</hypervis_subcycle>
@@ -415,7 +409,12 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nu_top hgrid="ne512np4">2.0e4</nu_top>
     <nu_top hgrid="ne1024np4">1.0e4</nu_top>
     <nu_top hgrid="ne0np4_conus_x4v1_lowcon">100000.0</nu_top>
-    <pgrad_correction COMPSET=".*X6T*">1</pgrad_correction>
+    <pgrad_correction>1</pgrad_correction>                <!-- Default (rough topography) -->
+    <pgrad_correction hgrid="ne4np4">0</pgrad_correction> <!-- Value for smooth topography/aquaplanet -->
+    <pgrad_correction hgrid="ne120np4">0</pgrad_correction>
+    <pgrad_correction hgrid="ne512np4">0</pgrad_correction>
+    <pgrad_correction hgrid="ne0np4_conus_x4v1_lowcon">0</pgrad_correction>
+    <pgrad_correction COMPSET=".*SCREAM%AQUA.*">0</pgrad_correction>
     <se_ftype valid_values="0,2">0</se_ftype>
     <se_geometry>sphere</se_geometry>
     <se_limiter_option>9</se_limiter_option>

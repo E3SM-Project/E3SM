@@ -28,26 +28,14 @@
   </compset>
 
   <compset>
-      <alias>F2010-SCREAMv1-DYAMOND1</alias> <!-- Coupled land-atm compset (using SCREAMv1), DYAMOND-1 initial conditions with 16x smoothed topography-->
+      <alias>F2010-SCREAMv1-DYAMOND1</alias> <!-- Coupled land-atm compset (using SCREAMv1), DYAMOND-1 initial conditions with X6T topography-->
       <lname>2010_SCREAM%DYAMOND-1_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
       <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
-      <alias>F2010-SCREAMv1-DYAMOND1-X6T</alias> <!-- Coupled land-atm compset (using SCREAMv1), DYAMOND-1 initial conditions with X6T topography-->
-      <lname>2010_SCREAM%DYAMOND-1-X6T_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
-      <support_level>Experimental, under development</support_level>
-  </compset>
-
-  <compset>
-      <alias>F2010-SCREAMv1-DYAMOND2</alias> <!-- Coupled land-atm compset (using SCREAMv1), DYAMOND-2 initial conditions with 16x smoothed topography-->
+      <alias>F2010-SCREAMv1-DYAMOND2</alias> <!-- Coupled land-atm compset (using SCREAMv1), DYAMOND-2 initial conditions with X6T topography-->
       <lname>2010_SCREAM%DYAMOND-2_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
-      <support_level>Experimental, under development</support_level>
-  </compset>
-
-  <compset>
-      <alias>F2010-SCREAMv1-DYAMOND2-X6T</alias> <!-- Coupled land-atm compset (using SCREAMv1), DYAMOND-2 initial conditions with X6T topography-->
-      <lname>2010_SCREAM%DYAMOND-2-X6T_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
       <support_level>Experimental, under development</support_level>
   </compset>
 
@@ -80,13 +68,6 @@
       <lname>2000_SCREAM%AQUA-noAero_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
       <support_level>Experimental, under development</support_level>
   </compset>
-
-  <compset>
-      <alias>F2010-SCREAMv1-X6T</alias> <!-- Coupled land-atm compset (using SCREAMv1), with X6T topography-->
-      <lname>2010_SCREAM%X6T_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
-      <support_level>Experimental, under development</support_level>
-  </compset>
-
 
   <entries>
 
