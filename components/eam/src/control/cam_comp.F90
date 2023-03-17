@@ -485,7 +485,7 @@ subroutine cam_final( cam_out, cam_in )
 
    call t_startf ('phys_final')
 #if defined(MMF_SAMXX)
-   call phys_final( phys_state, phys_tend , pbuf2d, )
+   call phys_final( phys_state, phys_tend , pbuf2d )
 #else
    call phys_final( phys_state, phys_tend , pbuf2d, phys_diag )
 #endif
