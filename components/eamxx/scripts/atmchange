@@ -44,7 +44,7 @@ def atm_config_chg(changes, no_buffer=False, reset=False):
         tree.write("namelist_scream.xml")
 
     if not no_buffer:
-        changes_str = " ".join(changes)
+        changes_str = " ".join(changes).replace(",",r"\,")
         run_cmd_no_fail(f"./xmlchange --append SCREAM_ATMCHANGE_BUFFER='{changes_str}'")
 
     return True
