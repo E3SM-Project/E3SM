@@ -384,6 +384,9 @@ module nudging
 #ifdef SPMD
   use mpishorthand
 #endif
+  !Jinbo Xie
+  use hycoef      ,only: hyam, hybm,ps0,psr
+  !Jinbo Xie
 
   ! Set all Global values and routines to private by default
   ! and then explicitly set their exposure.
@@ -493,6 +496,7 @@ module nudging
   logical            :: Nudge_Loc_PhysOut                   ! whether nudging tendency is calculated at the same 
                                                             ! location where the model state variables are written out
   real(r8)           :: Nudge_Tau                           ! nudge relaxation timescale
+  real(r8)           :: Nudge_Tau2                          ! nudge relaxation timescale2 for lower trop (zhang73)
   logical            :: Nudge_CurrentStep                   ! .true. if linearly interpolated to current model time step
   integer            :: Nudge_File_Ntime                    ! number of time slices per nudging data file 
   logical :: first_file                                     ! the flag for first nudge data
@@ -501,7 +505,6 @@ module nudging
   real(r8), allocatable, dimension(:,:,:,:) :: INTP_T       ! (pcols,pver,begchunk:endchunk,:)
   real(r8), allocatable, dimension(:,:,:,:) :: INTP_Q       ! (pcols,pver,begchunk:endchunk,:)
   real(r8), allocatable, dimension(:,:,:)   :: INTP_PS      ! (pcols,begchunk:endchunk,:)
-
 contains
   !================================================================
   subroutine nudging_readnl(nlfile)
@@ -540,7 +543,7 @@ contains
                          Nudge_Hwin_latDelta,Nudge_Hwin_lonDelta,      &
                          Nudge_Vwin_Lindex,Nudge_Vwin_Hindex,          &
                          Nudge_Vwin_Ldelta,Nudge_Vwin_Hdelta,          &
-                         Nudge_Method, Nudge_Tau, Nudge_Loc_PhysOut,   &
+                         Nudge_Method, Nudge_Tau,Nudge_Tau2,Nudge_Loc_PhysOut,   &
                          Nudge_CurrentStep, Nudge_File_Ntime
 
    ! Nudging is NOT initialized yet, For now
@@ -593,6 +596,7 @@ contains
    Nudge_Method       = 'Linear'
    Nudge_Loc_PhysOut  = .true.
    Nudge_Tau          = -999._r8
+   Nudge_Tau2         = -999._r8
    Nudge_CurrentStep  = .false.
    Nudge_File_Ntime   = 0
    ! Read in namelist values
@@ -634,10 +638,15 @@ contains
      write(iulog,*) 'NUDGING:  Nudge_Hwin_lon0=',Nudge_Hwin_lon0
      call endrun('nudging_readnl:: ERROR in namelist')
    endif
-
-   if((Nudge_Vwin_Lindex.gt.Nudge_Vwin_Hindex)                         .or. &
-      (Nudge_Vwin_Hindex.gt.float(pver+1)).or.(Nudge_Vwin_Hindex.lt.0.).or. &
-      (Nudge_Vwin_Lindex.gt.float(pver+1)).or.(Nudge_Vwin_Lindex.lt.0.)   ) then
+      
+!Jinbo Xie
+   !if((Nudge_Vwin_Lindex.gt.Nudge_Vwin_Hindex)                         .or. &
+   !  (Nudge_Vwin_Hindex.gt.float(pver+1)).or.(Nudge_Vwin_Hindex.lt.0.).or. &
+   !  (Nudge_Vwin_Lindex.gt.float(pver+1)).or.(Nudge_Vwin_Lindex.lt.0.)   ) then
+   !write(iulog,*)'Jinbo Xie Nudge_Vwin_Lindex,Nudge_Vwin_Hindex',Nudge_Vwin_Lindex,Nudge_Vwin_Hindex
+   if((Nudge_Vwin_Lindex.gt.Nudge_Vwin_Hindex)   .or. &
+      (Nudge_Vwin_Hindex.lt.0.).or. &
+      (Nudge_Vwin_Lindex.lt.0.)   ) then
      write(iulog,*) 'NUDGING: Window Lindex must be in [0,pver+1]'
      write(iulog,*) 'NUDGING: Window Hindex must be in [0,pver+1]'
      write(iulog,*) 'NUDGING: Lindex must be LE than Hindex'
@@ -717,6 +726,7 @@ contains
    call mpibcast(Nudge_Method,len(Nudge_Method),mpichar,0,mpicom)
    call mpibcast(Nudge_Loc_PhysOut,1,mpilog,0,mpicom)
    call mpibcast(Nudge_Tau,1,mpir8,0,mpicom)
+   call mpibcast(Nudge_Tau2,1,mpir8,0,mpicom)
    call mpibcast(Nudge_CurrentStep,1,mpilog,0,mpicom)
    call mpibcast(Nudge_File_Ntime,1,mpiint,0,mpicom)
 #endif
@@ -1021,6 +1031,7 @@ contains
      write(iulog,*) 'NUDGING: Nudge_Method        =',Nudge_Method
      write(iulog,*) 'NUDGING: Nudge_Loc_PhysOut   =',Nudge_Loc_PhysOut
      write(iulog,*) 'NUDGING: Nudge_Tau           =',Nudge_Tau
+     write(iulog,*) 'NUDGING: Nudge_Tau2          =',Nudge_Tau2
      write(iulog,*) 'NUDGING: Nudge_CurrentStep   =',Nudge_CurrentStep
      write(iulog,*) 'NUDGING: Nudge_File_Ntime    =',Nudge_File_Ntime
      write(iulog,*) ' '
@@ -2975,6 +2986,8 @@ contains
 
   !================================================================
   subroutine nudging_set_profile(rlat,rlon,Nudge_prof,Wprof,nlev)
+  !use tropopause,only : tropopause_find, TROP_ALG_HYBSTOB,TROP_ALG_CLIMATE, TROP_ALG_E90, tropopause_e90_3d !(zhang73)
+  !use ppgrid, only    : pver,pcols
    !
    ! NUDGING_SET_PROFILE: for the given lat,lon, and Nudging_prof, set
    !                      the verical profile of window coeffcients.
@@ -2986,13 +2999,19 @@ contains
    !--------------
    integer  nlev,Nudge_prof
    real(r8) rlat,rlon
-   real(r8) Wprof(nlev)
+   real(r8) Wprof(nlev),Wprof2(nlev)
+   !integer  :: tropLev(pcols) !(zhang73)
 
    ! Local values
    !----------------
    integer  ilev
    real(r8) Hcoef,latx,lonx,Vmax,Vmin
    real(r8) lon_lo,lon_hi,lat_lo,lat_hi,lev_lo,lev_hi
+   real(r8) levL,levH,levL2,levH2,levL2_delta,levH2_delta,scale_L2U,Nudge_Vwin_lo2,Nudge_Vwin_hi2 !(zhang73)
+   real(r8) Vmax2,Vmin2,lev_lo2,lev_hi2 !(zhang73)
+   !Jinbo Xie
+   real(r8) Nudge_hy_vert(nlev)
+   !Jinbo Xie
 
    !---------------
    ! set coeffcient
@@ -3038,11 +3057,55 @@ contains
 
      ! Load the RAW vertical window
      !------------------------------
+!Jinbo Xie set
+if (1.eq.1) then
+     !get the hybrid vertical coordinates
+     do ilev=1,nlev
+     Nudge_hy_vert(ilev) = hyam(ilev)*ps0 + hybm(ilev)*psr
+     enddo
+     Nudge_hy_vert=Nudge_hy_vert/100.
+     !
+
+!     call tropopause_find(state, tropLev, primary=TROP_ALG_HYBSTOB,backup=TROP_ALG_CLIMATE) !(zhang73)
+!     if(present(tropLev(icol)))then
+!       levH=Nudge_hy_vert(tropLev)
+!     else
+!       levH=Nudge_Vwin_Hindex
+!     end if
+     levL=Nudge_Vwin_Lindex
+     levH=Nudge_Vwin_Hindex
+     levL2 = levH
+     levH2 = Nudge_hy_vert(nlev)
+     levL2_delta = Nudge_Vwin_Hdelta
+     levH2_delta = Nudge_Vwin_Ldelta
+     scale_L2U = Nudge_Tau/Nudge_Tau2 !(zhang73)
+     Nudge_Vwin_hi2=Nudge_Vwin_hi*scale_L2U
+     Nudge_Vwin_lo2=Nudge_Vwin_lo*scale_L2U
+
+     !do ilev=12,24!1,10!nlev
+     do ilev=1,nlev !(zhang73)
+       !lev_lo=(Nudge_hy_vert(ilev)-Nudge_Vwin_Lindex)/Nudge_Vwin_Ldelta
+       !lev_hi=(Nudge_Vwin_Hindex-Nudge_hy_vert(ilev))/Nudge_Vwin_Hdelta
+       lev_lo=(Nudge_hy_vert(ilev)-levL)/Nudge_Vwin_Ldelta
+       lev_hi=(levH-Nudge_hy_vert(ilev))/Nudge_Vwin_Hdelta
+       lev_lo2 = (Nudge_hy_vert(ilev)-levL2)/levL2_delta
+       lev_hi2 = (levH2-Nudge_hy_vert(ilev))/levH2_delta
+       Wprof(ilev)=((1.+tanh(lev_lo))/2.)*((1.+tanh(lev_hi))/2.)
+       Wprof2(ilev)=((1.+tanh(lev_lo2))/2.)*((1.+tanh(lev_hi2))/2.)
+     end do
+     !write(iulog,*) "Jinbo Xie",Nudge_hy_vert
+     !write(iulog,*) "Jinbo Xie Wprof",Wprof
+     !write(iulog,*) "Jinbo Xie Wprof(12:24)",Wprof(12:24)
+else
+!Jinbo Xie set
      do ilev=1,nlev
        lev_lo=(float(ilev)-Nudge_Vwin_Lindex)/Nudge_Vwin_Ldelta
        lev_hi=(Nudge_Vwin_Hindex-float(ilev))/Nudge_Vwin_Hdelta
        Wprof(ilev)=((1.+tanh(lev_lo))/2.)*((1.+tanh(lev_hi))/2.)
      end do
+end if
+     !Jinbo Xie set
+
 
      ! Scale the Window function to span the values between Vlo and Vhi:
      !-----------------------------------------------------------------
@@ -3060,6 +3123,21 @@ contains
        Wprof(:)=(Wprof(:)-Vmin)/(Vmax-Vmin)
        Wprof(:)=Nudge_Vwin_lo + Wprof(:)*(Nudge_Vwin_hi-Nudge_Vwin_lo)
      endif
+     Vmax2=maxval(Wprof2)
+     Vmin2=minval(Wprof2)
+     if(Vmax2.le.Vmin2) then
+       Vmax2=max(Nudge_Vwin_lo2,Nudge_Vwin_hi2)
+       Wprof2(:)=Vmax2
+     else
+       Wprof2(:)=(Wprof2(:)-Vmin2)/(Vmax2-Vmin2)
+       Wprof2(:)=Nudge_Vwin_lo2 + Wprof2(:)*(Nudge_Vwin_hi2-Nudge_Vwin_lo2)
+     endif
+     Wprof(:)=Wprof(:)+Wprof2(:) !(zhang73)
+     if(masterproc) then
+        write(iulog,*) 'levL,levH,levL2,levH2,levL2_delta,levH2_delta,scale_L2U:',&
+                        levL,levH,levL2,levH2,levL2_delta,levH2_delta,scale_L2U
+        write(iulog,*) 'Wprof:',Wprof
+     end if
 
      ! The desired result is the product of the vertical profile
      ! and the horizontal window coeffcient.

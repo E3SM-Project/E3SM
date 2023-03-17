@@ -302,6 +302,14 @@
        Default: -999
        </entry>
 
+<entry id="Nudge_Tau2" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Use user-defined relaxation time scale (unit: hour).
+       If Nudge_Tau22 > 0, the relaxation time scale in lower troposphere is determined by Nudge_Tau2;
+       If not, the relaxation time scale is determined by Nudge_Times_Per_Day and nudging strength specified in the namelist (e.g. Nudge_Ucoef).
+       Default: -999
+       </entry>
+
 <entry id="Nudge_Loc_PhysOut" type="logical" category="nudging"
        group="nudging_nl" valid_values="" >
        If TRUE, change the location of calculation of nudging tendency to 
