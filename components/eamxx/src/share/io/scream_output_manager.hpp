@@ -115,7 +115,7 @@ protected:
 
   std::string compute_filename (const IOControl& control,
                                 const IOFileSpecs& file_specs,
-                                const std::string suffix,
+                                const bool is_checkpoint_step,
                                 const util::TimeStamp& timestamp) const;
 
   // Craft the restart parameter list
@@ -139,6 +139,8 @@ protected:
 
   // The output filename root
   std::string       m_casename;
+
+  std::vector<double> m_time_bnds;
 
   // How to combine multiple snapshots in the output: Instant, Max, Min, Average
   OutputAvgType     m_avg_type;

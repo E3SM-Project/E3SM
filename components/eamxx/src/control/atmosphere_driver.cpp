@@ -228,6 +228,9 @@ void AtmosphereDriver::create_grids()
   // Each process will grab what they need
   m_atm_process_group->set_grids(m_grids_manager);
 
+  // Also make each atm proc build requests for tendency fields, if needed
+  m_atm_process_group->setup_tendencies_requests();
+
   m_ad_status |= s_grids_created;
 
   stop_timer("EAMxx::create_grids");
@@ -306,16 +309,21 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
   }
 }
 
-void AtmosphereDriver::set_precipitation_fields_to_zero ()
+void AtmosphereDriver::reset_accummulated_fields ()
 {
-  auto phys_grid = m_grids_manager->get_grid("Physics");
+  constexpr Real zero = 0;
+  for (auto fm_it : m_field_mgrs) {
+    const auto& fm = fm_it.second;
+    if (not fm->has_group("ACCUMULATED")) {
+      continue;
+    }
 
-  const auto field_mgr = get_field_mgr(phys_grid->name());
-  if (field_mgr->has_field("precip_ice_surf_mass")) {
-    field_mgr->get_field("precip_ice_surf_mass").deep_copy(0.0);
-  }
-  if (field_mgr->has_field("precip_liq_surf_mass")) {
-    field_mgr->get_field("precip_liq_surf_mass").deep_copy(0.0);
+    auto accum_group = fm->get_field_group("ACCUMULATED");
+    for (auto f_it : accum_group.m_fields) {
+      auto& track = f_it.second->get_header().get_tracking();
+      f_it.second->deep_copy(zero);
+      track.set_accum_start_time(m_current_ts);
+    }
   }
 }
 
@@ -364,8 +372,8 @@ void AtmosphereDriver::setup_column_conservation_checks ()
 
   // Get tolerances for mass and energy checks from driver_option parameters.
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
-  const Real mass_error_tol   = driver_options_pl.get<Real>("mass_column_conservation_error_tolerance",   1e-10);
-  const Real energy_error_tol = driver_options_pl.get<Real>("energy_column_conservation_error_tolerance", 1e-14);
+  const Real mass_error_tol   = driver_options_pl.get<double>("mass_column_conservation_error_tolerance",   1e-10);
+  const Real energy_error_tol = driver_options_pl.get<double>("energy_column_conservation_error_tolerance", 1e-14);
 
   // Create energy checker
   auto conservation_check =
@@ -613,8 +621,8 @@ void AtmosphereDriver::initialize_output_managers () {
     ekat::ParameterList params;
     ekat::parse_yaml_file(fname,params);
     // Check if the filename prefix for this file has already been set.  If not, use the simulation casename.
-    if (not params.isParameter("Casename")) {
-      params.set<std::string>("Casename",m_casename+".scream.h"+std::to_string(om_tally));
+    if (not params.isParameter("filename_prefix")) {
+      params.set<std::string>("filename_prefix",m_casename+".scream.h"+std::to_string(om_tally));
       om_tally++;
     }
     // Add a new output manager
@@ -739,6 +747,7 @@ void AtmosphereDriver::restart_model ()
   ekat::ParameterList rest_pl;
   rest_pl.set<std::string>("Filename",filename);
   AtmosphereInput model_restart(m_atm_comm,rest_pl);
+  m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
 
   for (auto& it : m_field_mgrs) {
     if (fvphyshack and it.second->get_grid()->name() == "Physics GLL") continue;
@@ -775,11 +784,6 @@ void AtmosphereDriver::restart_model ()
 
   // Close files and finalize all pio data structs
   model_restart.finalize();
-
-  // Zero out precipitation fluxes for model restart.
-  // TODO: This should be a generic functions which sets "one-step" fields to
-  //       an identity value. See Issue #1767.
-  set_precipitation_fields_to_zero();
 
   m_atm_logger->info("  [EAMxx] restart_model ... done!");
 }
@@ -843,8 +847,8 @@ void AtmosphereDriver::set_initial_conditions ()
   std::map<std::string,std::vector<std::string>> fields_inited;
 
   // Check which fields should be loaded from the topography file
-  std::map<std::string,std::vector<std::string>> topography_fields_names_nc;
-  std::map<std::string,std::vector<std::string>> topography_fields_names_eamxx;
+  std::map<std::string,std::vector<std::string>> topography_file_fields_names;
+  std::map<std::string,std::vector<std::string>> topography_eamxx_fields_names;
 
   // Helper lambda, to reduce code duplication
   auto process_ic_field = [&](const Field& f) {
@@ -870,22 +874,26 @@ void AtmosphereDriver::set_initial_conditions ()
       }
     } else if (not (fvphyshack and grid_name == "Physics PG2")) {
       auto& this_grid_ic_fnames = ic_fields_names[grid_name];
-      auto& this_grid_topo_fnames_nc = topography_fields_names_nc[grid_name];
-      auto& this_grid_topo_fnames_eamxx = topography_fields_names_eamxx[grid_name];
+      auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
+      auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
 
       auto c = f.get_header().get_children();
 
       if (fname == "phis") {
         // Topography (phis) is a special case that should
-        // be loaded from the topography file (assuming
-        // input files doesn't contain a value).
-        if (fvphyshack) {
-          this_grid_topo_fnames_nc.push_back("PHIS_d");
-          this_grid_topo_fnames_eamxx.push_back("phis");
+        // be loaded from the topography file, where the
+        // eamxx field "phis" corresponds to the name
+        // "PHIS_d" on the GLL and Point grids and "PHIS"
+        // on the PG2 grid in the topography file.
+        if (grid_name == "Physics PG2") {
+          this_grid_topo_file_fnames.push_back("PHIS");
+        } else if (grid_name == "Physics GLL" ||
+                   grid_name == "Point Grid") {
+          this_grid_topo_file_fnames.push_back("PHIS_d");
         } else {
-          this_grid_topo_fnames_nc.push_back("PHIS");
-          this_grid_topo_fnames_eamxx.push_back("phis");
-       }
+          EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
+        }
+        this_grid_topo_eamxx_fnames.push_back("phis");
       } else if (c.size()==0) {
         // If this field is the parent of other subfields, we only read from file the subfields.
         if (not ekat::contains(this_grid_ic_fnames,fname)) {
@@ -966,13 +974,12 @@ void AtmosphereDriver::set_initial_conditions ()
   // If a filename is specified, use it to load inputs on all grids
   if (ic_pl.isParameter("Filename")) {
     // Now loop over all grids, and load from file the needed fields on each grid (if any).
-    m_atm_logger->debug("    [EAMxx] Reading fields from file ...");
     const auto& file_name = ic_pl.get<std::string>("Filename");
+    m_atm_logger->info("    [EAMxx] IC filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
       read_fields_from_file (ic_fields_names[grid_name],it.first,file_name,m_current_ts);
     }
-    m_atm_logger->debug("    [EAMxx] Reading fields from file ... done!");
   }
 
   // If there were any fields that needed to be copied per the input yaml file, now we copy them.
@@ -1032,12 +1039,13 @@ void AtmosphereDriver::set_initial_conditions ()
 
   // Load topography from file if topography file is given.
   if (ic_pl.isParameter("topography_filename")) {
-    m_atm_logger->debug("    [EAMxx] Reading topography from file ...");
+    m_atm_logger->info("    [EAMxx] Reading topography from file ...");
     const auto& file_name = ic_pl.get<std::string>("topography_filename");
+    m_atm_logger->info("        filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      read_fields_from_file (topography_fields_names_nc[grid_name],
-                             topography_fields_names_eamxx[grid_name],
+      read_fields_from_file (topography_file_fields_names[grid_name],
+                             topography_eamxx_fields_names[grid_name],
                              it.first,file_name,m_current_ts);
     }
     m_atm_logger->debug("    [EAMxx] Processing topography from file ... done!");
@@ -1047,7 +1055,7 @@ void AtmosphereDriver::set_initial_conditions ()
     // separate IC param entry isn't given for the field).
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      EKAT_REQUIRE_MSG(topography_fields_names_nc[grid_name].size()==0,
+      EKAT_REQUIRE_MSG(topography_file_fields_names[grid_name].size()==0,
                       "Error! Topography data was requested in the FM, but no "
                       "topography_filename or entry matching the field name "
                       "was given in IC parameters.\n");
@@ -1260,13 +1268,16 @@ initialize (const ekat::Comm& atm_comm,
 
   initialize_fields ();
 
-  initialize_output_managers ();
-
   initialize_atm_procs ();
+
+  initialize_output_managers ();
 }
 
 void AtmosphereDriver::run (const int dt) {
   start_timer("EAMxx::run");
+
+  // Zero out accumulated fields
+  reset_accummulated_fields();
 
   // Make sure the end of the time step is after the current start_time
   EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
@@ -1287,11 +1298,6 @@ void AtmosphereDriver::run (const int dt) {
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
   }
-
-  // We must zero out the precipitation flux after the output managers have run.
-  // TODO: This should be a generic functions which sets "one-step" fields to
-  //       an identity value. See Issue #1767.
-  set_precipitation_fields_to_zero();
 
 #ifdef SCREAM_HAS_MEMORY_USAGE
   long long my_mem_usage = get_mem_usage(MB);

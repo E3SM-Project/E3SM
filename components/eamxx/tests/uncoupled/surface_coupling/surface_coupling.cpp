@@ -304,8 +304,8 @@ void test_exports(const FieldManager& fm,
       EKAT_REQUIRE(0 == export_data_view(i, export_cpl_indices_view(15)));
       EKAT_REQUIRE(0 == export_data_view(i, export_cpl_indices_view(16)));
     } else {
-      EKAT_REQUIRE(export_constant_multiple_view(9 )*Faxa_rainl_h(i)       == 0.0); // These are set to 0 in do_export() so the values can't be
-      EKAT_REQUIRE(export_constant_multiple_view(10)*Faxa_snowl_h(i)       == 0.0); // checked here. It will be tested in the V1 CIME tests.
+      EKAT_REQUIRE(export_constant_multiple_view(9 )*Faxa_rainl_h(i)       == export_data_view(i, export_cpl_indices_view(9 )));
+      EKAT_REQUIRE(export_constant_multiple_view(10)*Faxa_snowl_h(i)       == export_data_view(i, export_cpl_indices_view(10)));
       EKAT_REQUIRE(export_constant_multiple_view(11)*sfc_flux_dir_nir_h(i) == export_data_view(i, export_cpl_indices_view(11)));
       EKAT_REQUIRE(export_constant_multiple_view(12)*sfc_flux_dir_vis_h(i) == export_data_view(i, export_cpl_indices_view(12)));
       EKAT_REQUIRE(export_constant_multiple_view(13)*sfc_flux_dif_nir_h(i) == export_data_view(i, export_cpl_indices_view(13)));

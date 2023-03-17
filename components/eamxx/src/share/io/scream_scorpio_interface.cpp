@@ -62,6 +62,10 @@ int nctype (const std::string& type) {
   }
 }
 /* ----------------------------------------------------------------- */
+void eam_init_pio_subsystem(const ekat::Comm& comm) {
+  MPI_Fint fcomm = MPI_Comm_c2f(comm.mpi_comm());
+  eam_init_pio_subsystem(fcomm);
+}
 
 void eam_init_pio_subsystem(const int mpicom, const int atm_id) {
   // TODO: Right now the compid has been hardcoded to 0 and the flag

@@ -170,6 +170,27 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   m_grids_mgr = grids_manager;
 }
 
+void AtmosphereProcessGroup::setup_tendencies_requests () {
+  auto is_tend = [](const std::string& name) -> bool
+  {
+    return name.size()>5 &&
+           name.substr(name.size()-5)=="_tend";
+  };
+
+  AtmosphereProcess::setup_tendencies_requests();
+  for (const auto& atm_proc : m_atm_processes) {
+    atm_proc->setup_tendencies_requests();
+
+    // Redo the add_field<Computed> for all XYZ_tend fields, since
+    // they were added *after* the call to set_grids.
+    for (const auto& req : atm_proc->get_computed_field_requests()) {
+      if (is_tend(req.fid.name())) {
+        add_field<Computed>(req);
+      }
+    }
+  }
+}
+
 void AtmosphereProcessGroup::
 gather_internal_fields  () {
   // For debug purposes

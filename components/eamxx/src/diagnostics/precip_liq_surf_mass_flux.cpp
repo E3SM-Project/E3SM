@@ -36,14 +36,22 @@ void PrecipLiqSurfMassFluxDiagnostic::set_grids(const std::shared_ptr<const Grid
 // =========================================================================================
 void PrecipLiqSurfMassFluxDiagnostic::compute_diagnostic_impl()
 {
-  const auto& precip_liq_surf_mass      = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
-  const auto& precip_liq_surf_mass_flux = m_diagnostic_output.get_view<Real*>();
-  const auto dt = m_dt;
-  
-  Kokkos::parallel_for("PrecipLiqMassFluxDiagnostic",
+  const auto& mass_field = get_field_in("precip_liq_surf_mass");
+  const auto& mass_view  = mass_field.get_view<const Real*>();
+  const auto& flux_view  = m_diagnostic_output.get_view<Real*>();
+
+  const auto& mass_track = mass_field.get_header().get_tracking();
+
+  const auto& t_start = mass_track.get_accum_start_time ();
+  const auto& t_now   = mass_track.get_time_stamp ();
+  const auto dt = t_now - t_start;
+
+  auto rhodt = PC::RHO_H2O*dt;
+
+  Kokkos::parallel_for("PrecipLiqSurfMassFluxDiagnostic",
                        KT::RangePolicy(0,m_num_cols),
                        KOKKOS_LAMBDA(const Int& icol) {
-    precip_liq_surf_mass_flux(icol) = precip_liq_surf_mass(icol)/PC::RHO_H2O/dt;
+    flux_view(icol) = mass_view(icol) / rhodt;
   });
 }
 // =========================================================================================
