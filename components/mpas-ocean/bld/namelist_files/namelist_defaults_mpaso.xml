@@ -333,12 +333,12 @@
 
 <!-- land_ice_fluxes -->
 <config_land_ice_flux_mode>'off'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="oQU240wLI">'standalone'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="oEC60to30v3wLI">'standalone'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="ECwISC30to60E1r2">'standalone'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="oRRS30to10v3wLI">'standalone'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="SOwISC12to60E2r4">'standalone'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="ECwISC30to60E2r1">'standalone'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="oQU240wLI">'pressure_only'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="oEC60to30v3wLI">'pressure_only'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="ECwISC30to60E1r2">'pressure_only'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="oRRS30to10v3wLI">'pressure_only'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="SOwISC12to60E2r4">'pressure_only'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="ECwISC30to60E2r1">'pressure_only'</config_land_ice_flux_mode>
 <config_land_ice_flux_formulation>'Jenkins'</config_land_ice_flux_formulation>
 <config_land_ice_flux_useHollandJenkinsAdvDiff>.false.</config_land_ice_flux_useHollandJenkinsAdvDiff>
 <config_land_ice_flux_attenuation_coefficient>10.0</config_land_ice_flux_attenuation_coefficient>
