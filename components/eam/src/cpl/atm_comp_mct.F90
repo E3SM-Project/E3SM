@@ -483,9 +483,6 @@ CONTAINS
     use pmgrid,          only: plev, plevp
     use constituents,    only: pcnst
     use shr_sys_mod,     only: shr_sys_flush
-#if defined(CLDERA_PROFILING)
-    use cldera_interface_mod, only: cldera_compute_stats
-#endif
 
     ! 
     ! Arguments
@@ -672,12 +669,6 @@ CONTAINS
       call memmon_dump_fort('memmon.out',SubName //':end::',lbnum)
       call memmon_reset_addr()
     endif
-#endif
-
-#if defined(CLDERA_PROFILING)
-    call t_startf('cldera_compute_stats')
-    call cldera_compute_stats(ymd,tod)
-    call t_stopf('cldera_compute_stats')
 #endif
 
   end subroutine atm_run_mct
