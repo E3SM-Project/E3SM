@@ -65,6 +65,7 @@ subroutine zm_conv_register
 !----------------------------------------
 
   use physics_buffer, only : pbuf_add_field, dtype_r8
+  use misc_diagnostics,only: dcape_diags_register
 
   implicit none
 
@@ -90,6 +91,10 @@ subroutine zm_conv_register
     ! moisturetendency from physics in n-1 time step 
     call pbuf_add_field('Q_STAR','global',dtype_r8,(/pcols,pver/), q_star_idx)
    endif
+
+! Variables for dCAPE diagnosis and decomposition
+
+   call dcape_diags_register( pcols )
 
 end subroutine zm_conv_register
 
