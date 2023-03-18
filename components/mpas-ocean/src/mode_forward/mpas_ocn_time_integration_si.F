@@ -159,32 +159,31 @@ module ocn_time_integration_si
       SIvec_zh1_field,SIvec_wh0_field,SIvec_rh1_field   
                          ! field pointer for halo update
 
-   type (mpas_communication_list), pointer :: &
-      sendList, recvList
+   type (mpas_communication_list), pointer :: sendList, recvList
 
    integer :: nSendCommList,nRecvCommList
 
    integer,dimension(:),pointer :: haloLayers
 
    type si_exchList
-      integer,allocatable,dimension(:) ::       &
-         destList,srcList
+      integer,allocatable,dimension(:) :: destList,srcList
    end type si_exchList
 
    type si_halo
       type(si_exchList),allocatable,dimension(:) :: exch
-      integer,allocatable,dimension(:) ::       &
-         endPointID,nList
+      integer,allocatable,dimension(:) :: endPointID,nList
    end type si_halo
 
    type si_local_mpi
-      real(kind=RKIND),allocatable,dimension(:) :: buffer,bufferOffset
       type(si_halo),allocatable,dimension(:) :: halo
-      integer,allocatable,dimension(:) :: nExch
+      real(kind=RKIND),allocatable,dimension(:) :: buffer
+      integer,allocatable,dimension(:) :: nExch,bufferOffset
       integer :: procID,nList,reqID
    end type si_local_mpi
    
    type(si_local_mpi),allocatable,dimension(:) :: exchSend,exchRecv
+
+   real(kind=RKIND),allocatable,dimension(:) :: sbuffer,rbuffer
 
 #ifdef USE_MAGMA
    magma_devptr_t :: dprec_ivmat,queue,dxvec,dyvec
@@ -3173,7 +3172,8 @@ module ocn_time_integration_si
 
       integer :: nCells, nEdges, ihh, imm, iss
 
-      integer :: iHalo, nHaloLayers, threadNum, nAdded, i, j
+      integer :: iHalo, nHaloLayers, threadNum, nAdded, i, j,iComm,iExch
+      integer :: nRecvTotList,nSendTotList
       type (mpas_exchange_list), pointer :: exchListPtr
       type (mpas_communication_list), pointer :: commListPtr,commListPtr2
       type (field1dReal), pointer :: fieldCursor
@@ -3287,10 +3287,6 @@ module ocn_time_integration_si
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
       call mpas_pool_get_array(statePool, 'ssh', ssh, 2)
-
-      call mpas_pool_get_field(diagnosticsPool, 'SIvec_zh1', SIvec_zh1_field,1)
-      call mpas_pool_get_field(diagnosticsPool, 'SIvec_wh0', SIvec_wh0_field,1)
-      call mpas_pool_get_field(diagnosticsPool, 'SIvec_rh1', SIvec_rh1_field,1)
 
       nCells = nCellsArray(config_num_halos)
       nEdges = nEdgesArray(config_num_halos+1)
@@ -3488,6 +3484,10 @@ module ocn_time_integration_si
 
       call mpi_barrier(domain%dminfo%comm,ierr)
 
+      call mpas_pool_get_field(diagnosticsPool, 'SIvec_zh1', SIvec_zh1_field,1)
+      call mpas_pool_get_field(diagnosticsPool, 'SIvec_wh0', SIvec_wh0_field,1)
+      call mpas_pool_get_field(diagnosticsPool, 'SIvec_rh1', SIvec_rh1_field,1)
+
       threadNum = mpas_threading_get_thread_num()
       if ( threadNum == 0 ) then
          nHaloLayers = size( SIvec_rh1_field % sendList % halos)
@@ -3504,20 +3504,26 @@ module ocn_time_integration_si
       !-----------------------------------------------------------------
 
       i = 0
+      nSendTotList = 0
       commListPtr => sendList
       do while(associated(commListPtr))
          i = i + 1
+         nSendTotList = nSendTotList + commListPtr%nList
          commListPtr => commListPtr % next
       end do
       nSendCommList = i     
 
       i = 0
+      nRecvTotList = 0
       commListPtr => recvList 
       do while(associated(commListPtr))
          i = i + 1
+         nRecvTotList = nRecvTotList + commListPtr%nList
          commListPtr => commListPtr % next
       end do
       nRecvCommList = i     
+
+      
 
       allocate(exchSend(nSendCommList))
       allocate(exchRecv(nRecvCommList))
@@ -3560,6 +3566,7 @@ module ocn_time_integration_si
             allocate(exchSend(i)%halo(iHalo)%nList(j))
             allocate(exchSend(i)%halo(iHalo)%exch(j))
 
+            nullify(exchListPtr)
             exchListPtr => SIvec_rh1_field % sendList %      &
                            halos(haloLayers(iHalo)) % exchList
             j = 0
@@ -3624,6 +3631,7 @@ module ocn_time_integration_si
             allocate(exchRecv(i)%halo(iHalo)%nList(j))
             allocate(exchRecv(i)%halo(iHalo)%exch(j))
 
+            nullify(exchListPtr)
             exchListPtr => SIvec_rh1_field % recvList %      &
                            halos(haloLayers(iHalo)) % exchList
             j = 0
@@ -3653,7 +3661,35 @@ module ocn_time_integration_si
       !-----------------------------------------------------------------
 
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(exchSend,exchRecv)
+      !$acc enter data copyin(exchRecv)
+      do iComm = 1,nRecvCommList
+         !$acc enter data copyin(exchRecv(iComm)%buffer, &
+         !$acc                   exchRecv(iComm)%halo)
+         do iHalo = 1,config_num_halos
+            !$acc enter data copyin(exchRecv(iComm)%halo(iHalo)%nList, &
+            !$acc                   exchRecv(iComm)%halo(iHalo)%exch )
+            do iExch = 1,exchRecv(iComm)%nExch(iHalo)
+               !$acc enter data copyin(                                   &
+               !$acc    exchRecv(iComm)%halo(iHalo)%exch(iExch)%destList, &
+               !$acc    exchRecv(iComm)%halo(iHalo)%exch(iExch)%srcList )
+            end do
+         end do
+      end do
+
+      !$acc enter data copyin(exchSend)
+      do iComm = 1,nSendCommList
+         !$acc enter data copyin(exchSend(iComm)%buffer, &
+         !$acc                   exchSend(iComm)%halo)
+         do iHalo = 1,config_num_halos
+            !$acc enter data copyin(exchSend(iComm)%halo(iHalo)%nList, &
+            !$acc                   exchSend(iComm)%halo(iHalo)%exch)
+            do iExch = 1,exchSend(iComm)%nExch(iHalo)
+               !$acc enter data copyin(                                   &
+               !$acc    exchSend(iComm)%halo(iHalo)%exch(iExch)%destList, &
+               !$acc    exchSend(iComm)%halo(iHalo)%exch(iExch)%srcList)
+            end do
+         end do
+      end do
 #endif
 
    end subroutine ocn_time_integration_si_init!}}}
@@ -4227,6 +4263,11 @@ module ocn_time_integration_si
          call magmaf_dgetvector( nPrecVec,dyvec, 1, &
                                  SIvec_out(1:nPrecVec), 1, queue)
 
+!        !$acc host_data use_device(SIvec_out)
+!        dxvec = loc(SIvec_in(1:nPrecVec))
+!        !$acc end host_data
+
+
 #elif defined(USE_CUBLAS)
 
          ! CUBLAS
@@ -4315,6 +4356,8 @@ module ocn_time_integration_si
                              SIvec_1,SIvec_2,SIvec_3,SIvec_4, &
                              SIvec_5,SIvec_6,SIvec_7)  
 
+      include 'mpif.h'
+
       type (domain_type), intent(in) :: &
          domain  !< [inout] model state to advance forward
 
@@ -4333,7 +4376,7 @@ module ocn_time_integration_si
       real(kind=RKIND), dimension(:), intent(out) :: &
          localProd,globalProd ! Array for global summation
 
-      integer :: iCell
+      integer :: iCell,ierr,threadNum
 
       call mpas_timer_start("si global reduction")
 
@@ -4531,18 +4574,23 @@ module ocn_time_integration_si
             !$acc end serial
 
             ! Global sum across CPUs
+            threadNum = mpas_threading_get_thread_num()
+            if ( threadNum == 0 ) then
 #ifdef USE_GPU_AWARE_MPI
             !$acc host_data use_device(localProd,globalProd)
 #else
             !$acc update host(localProd)
 #endif
-            call mpas_dmpar_sum_real_array(domain % dminfo, nfld, &
-                                           localProd, globalProd)
+!           call mpas_dmpar_sum_real_array(domain % dminfo, nfld, &
+!                                          localProd, globalProd)
+            call MPI_Allreduce(localProd,globalProd,nfld,MPI_REAL8, &
+                    MPI_SUM,domain%dminfo%comm,ierr)
 #ifdef USE_GPU_AWARE_MPI
             !$acc end host_data
 #else
             !$acc update device(globalProd)
 #endif
+            endif ! thread
 
          endif
 
@@ -4655,18 +4703,22 @@ module ocn_time_integration_si
             !$acc end serial
 
             ! Global sum across CPUs
+            if ( threadNum == 0 ) then
 #ifdef USE_GPU_AWARE_MPI
             !$acc host_data use_device(localProd,globalProd)
 #else
             !$acc update host(localProd)
 #endif
-            call mpas_dmpar_sum_real_array(domain % dminfo, nfld,      &
-                                           localProd,globalProd)
+!           call mpas_dmpar_sum_real_array(domain % dminfo, nfld,      &
+!                                          localProd,globalProd)
+            call MPI_Allreduce(localProd,globalProd,nfld,MPI_REAL8, &
+                    MPI_SUM,domain%dminfo%comm,ierr)
 #ifdef USE_GPU_AWARE_MPI
             !$acc end host_data
 #else
             !$acc update device(globalProd)
 #endif
+            endif ! thread
 
          endif
 
@@ -4925,9 +4977,11 @@ module ocn_time_integration_si
          call si_precond(SIvec_z1,SIvec_zh1)
  
          call mpas_timer_start("si halo iter")
-         call mpas_dmpar_exch_halo_field(SIvec_zh1_field)
-!        call si_halo_exch(domain,SIvec_zh1)
-         !$acc update device(SIvec_zh1)
+!        call mpas_dmpar_exch_halo_field(SIvec_zh1_field)
+         call si_halo_exch(domain,SIvec_zh1)
+!!#ifndef USE_GPU_AWARE_MPI
+!         !$acc update device(SIvec_zh1)
+!!#endif
          call mpas_timer_stop("si halo iter")
  
  
@@ -5102,15 +5156,18 @@ module ocn_time_integration_si
       real(kind=RKIND),dimension(:),intent(inout) :: field_array
       type (mpas_exchange_list), pointer :: exchListPtr
 
-      integer :: i,iComm, iHalo, iExch, mpi_ierr
+      integer,dimension(mpi_status_size) :: stats
 
-      ! Initiate mpi_irecv calls ---------------------------------------
-      do iComm = 1,nRecvCommList
-         call MPI_Irecv(                                               &
-              exchRecv(iComm)%buffer, exchRecv(iComm)%nList, MPI_REAL8,&
-              exchRecv(iComm)%procID, exchRecv(iComm)%procID,          &
-              domain%dminfo%comm, exchRecv(iComm)%reqID, mpi_ierr )
-      end do
+      integer :: i,iComm, iHalo, iExch, mpi_ierr, threadNum
+
+      threadNum = mpas_threading_get_thread_num()
+     
+      if ( threadNum == 0 ) then
+
+!#ifdef USE_GPU_AWARE_MPI
+
+
+!####################################
 
       ! Copy data into buffer, and initiate mpi_isend calls ------------
       do iComm = 1,nSendCommList
@@ -5118,6 +5175,7 @@ module ocn_time_integration_si
             do iExch = 1,exchSend(iComm)%nExch(iHalo)
                if (exchSend(iComm)%halo(iHalo)%endPointID(iExch) == &
                    exchSend(iComm)%procID) then
+                   !$acc parallel loop present(exchSend,field_array)
                    do i = 1,exchSend(iComm)%halo(iHalo)%nList(iExch)
                       exchSend(iComm)%buffer( exchSend(iComm)%  &
                                                   halo(iHalo)%  &
@@ -5129,21 +5187,32 @@ module ocn_time_integration_si
                endif
             end do ! iExch
          end do ! iHalo
-         call MPI_Isend(                                               &
+
+         !$acc host_data use_device(exchSend(iComm)%buffer,exchRecv(iComm)%buffer)
+         call MPI_SendRecv(                                            &
               exchSend(iComm)%buffer, exchSend(iComm)%nList, MPI_REAL8,&
               exchSend(iComm)%procID, domain%dminfo%my_proc_id,        &
-              domain%dminfo%comm, exchSend(iComm)%reqID, mpi_ierr )
+              exchRecv(iComm)%buffer, exchRecv(iComm)%nList, MPI_REAL8,&
+              exchRecv(iComm)%procID, exchRecv(iComm)%procID,          &
+              domain%dminfo%comm,stats, mpi_ierr )
+         !$acc end host_data
       end do ! iComm
 
-      ! Wait for mpi_irecv to finish, and unpack data from buffer ------
       do iComm = 1,nRecvCommList
-         call MPI_Wait(exchRecv(iComm)%reqID,      &
-                       MPI_STATUS_IGNORE, mpi_ierr)
          do iHalo = 1,config_num_halos
             do iExch = 1,exchRecv(iComm)%nExch(iHalo)
                if (exchRecv(iComm)%halo(iHalo)%endPointID(iExch) == &
                    exchRecv(iComm)%procID) then
+                   !$acc parallel loop gang present(exchRecv,field_array)
                    do i = 1,exchRecv(iComm)%halo(iHalo)%nList(iExch)
+                      print*,exchRecv(iComm)%buffer(exchRecv(iComm)%    &
+                                                 halo(iHalo)%    &
+                                                 exch(iExch)%    &
+                                                 srcList(i))
+                      !print*,exchRecv(iComm)%buffer(exchRecv(iComm)%    &
+                      !                           halo(iHalo)%    &
+                      !                           exch(iExch)%    &
+                      !                           srcList(i))
                       field_array(exchRecv(iComm)%halo(iHalo)    &
                                      %exch(iExch)%destList(i)) = &
                       exchRecv(iComm)%buffer(exchRecv(iComm)%    &
@@ -5156,11 +5225,87 @@ module ocn_time_integration_si
          end do ! iHalo
       end do ! iComm
 
-      ! Wait for mpi_isend to finish ----------------------------------
-      do iComm = 1,nSendCommList
-         call MPI_Wait(exchSend(iComm)%reqID,     &
-                       MPI_STATUS_IGNORE,mpi_ierr)
-      end do
+!####################################
+!      !$acc update host(field_array)
+
+!     ! Initiate mpi_irecv calls ---------------------------------------
+!     do iComm = 1,nRecvCommList
+!        !$acc host_data use_device(exchRecv(iComm)%buffer)
+!        call MPI_Irecv(                                               &
+!             exchRecv(iComm)%buffer, exchRecv(iComm)%nList, MPI_REAL8,&
+!             exchRecv(iComm)%procID, exchRecv(iComm)%procID,          &
+!             domain%dminfo%comm, exchRecv(iComm)%reqID, mpi_ierr )
+!        !$acc end host_data
+!     end do
+
+!     ! Copy data into buffer, and initiate mpi_isend calls ------------
+!     do iComm = 1,nSendCommList
+!        do iHalo = 1,config_num_halos
+!           do iExch = 1,exchSend(iComm)%nExch(iHalo)
+!              if (exchSend(iComm)%halo(iHalo)%endPointID(iExch) == &
+!                  exchSend(iComm)%procID) then
+!                  !$acc parallel loop present(exchSend,field_array)
+!                  do i = 1,exchSend(iComm)%halo(iHalo)%nList(iExch)
+!                     exchSend(iComm)%buffer( exchSend(iComm)%  &
+!                                                 halo(iHalo)%  &
+!                                                 exch(iExch)%  &
+!                                                destList(i)) = &
+!                     field_array(exchSend(iComm)%halo(iHalo)   &
+!                                    %exch(iExch)%srcList(i))
+!                  end do ! i
+!              endif
+!           end do ! iExch
+!        end do ! iHalo
+
+!        !$acc host_data use_device(exchSend(iComm)%buffer)
+!        call MPI_Isend(                                               &
+!             exchSend(iComm)%buffer, exchSend(iComm)%nList, MPI_REAL8,&
+!             exchSend(iComm)%procID, domain%dminfo%my_proc_id,        &
+!             domain%dminfo%comm, exchSend(iComm)%reqID, mpi_ierr )
+!        !$acc end host_data
+!     end do ! iComm
+
+!     ! Wait for mpi_irecv to finish, and unpack data from buffer ------
+!     do iComm = 1,nRecvCommList
+!        call MPI_Wait(exchRecv(iComm)%reqID,MPI_STATUS_IGNORE,mpi_ierr)
+!     end do ! iComm
+
+!     ! Wait for mpi_isend to finish ----------------------------------
+!     do iComm = 1,nSendCommList
+!        call MPI_Wait(exchSend(iComm)%reqID,MPI_STATUS_IGNORE,mpi_ierr)
+!     end do
+
+!     !$acc wait
+
+!     do iComm = 1,nRecvCommList
+!        do iHalo = 1,config_num_halos
+!           do iExch = 1,exchRecv(iComm)%nExch(iHalo)
+!              if (exchRecv(iComm)%halo(iHalo)%endPointID(iExch) == &
+!                  exchRecv(iComm)%procID) then
+!                  !$acc parallel loop gang present(exchRecv,field_array)
+!                  do i = 1,exchRecv(iComm)%halo(iHalo)%nList(iExch)
+!                     print*,exchRecv(iComm)%buffer(exchRecv(iComm)%    &
+!                                                halo(iHalo)%    &
+!                                                exch(iExch)%    &
+!                                                srcList(i))
+!                     field_array(exchRecv(iComm)%halo(iHalo)    &
+!                                    %exch(iExch)%destList(i)) = &
+!                     exchRecv(iComm)%buffer(exchRecv(iComm)%    &
+!                                                halo(iHalo)%    &
+!                                                exch(iExch)%    &
+!                                                srcList(i))
+!                  end do ! i
+!              endif
+!           end do ! iExch
+!        end do ! iHalo
+!     end do ! iComm
+
+
+      !$acc wait
+      call mpi_barrier(domain%dminfo%comm,mpi_ierr)
+      stop
+
+      endif ! threadNum
 
    end subroutine si_halo_exch
 
@@ -5179,7 +5324,7 @@ module ocn_time_integration_si
 
    subroutine ocn_time_integrator_si_variable_destroy() !{{{
 
-      integer :: info
+      integer :: info,iComm,iHalo,iExch
 
 #ifdef MPAS_OPENACC
 
@@ -5201,7 +5346,7 @@ module ocn_time_integration_si
       !$acc    SIcst_r00w0,SIcst_r00q0,SIcst_rho0,SIcst_rho1)
 
       if ( config_btr_si_partition_match_mode ) then
-      !$acc exit data delete(prec_ivmat,                             &
+      !$acc exit data delete(                                        &
       !$acc               globalReprodSum2fld1,globalReprodSum2fld2, &
       !$acc               globalReprodSum3fld1,globalReprodSum3fld2 )
       endif
@@ -5209,6 +5354,30 @@ module ocn_time_integration_si
 #ifndef USE_MAGMA
       !$acc exit data delete(prec_ivmat)
 #endif
+
+      do iComm = 1,nRecvCommList
+         do iHalo = 1,config_num_halos
+            do iExch = 1,exchRecv(iComm)%nExch(iHalo)
+               !$acc exit data delete(                                   &
+               !$acc    exchRecv(iComm)%halo(iHalo)%exch(iExch)%destList,&
+               !$acc    exchRecv(iComm)%halo(iHalo)%exch(iExch)%srcList )
+            end do
+            !$acc exit data delete(exchRecv(iComm)%halo(iHalo)%nList )
+         end do
+         !$acc exit data delete(exchRecv(iComm)%buffer )
+      end do
+
+      do iComm = 1,nSendCommList
+         do iHalo = 1,config_num_halos
+            do iExch = 1,exchSend(iComm)%nExch(iHalo)
+               !$acc exit data delete(                                   &
+               !$acc    exchSend(iComm)%halo(iHalo)%exch(iExch)%destList,&
+               !$acc    exchSend(iComm)%halo(iHalo)%exch(iExch)%srcList)
+            end do
+            !$acc exit data delete(exchSend(iComm)%halo(iHalo)%nList)
+         end do
+         !$acc exit data delete(exchSend(iComm)%buffer)
+      end do
 
       !$acc exit data delete(exchSend,exchRecv)
 
