@@ -258,8 +258,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   // Setup I/O structures
   init ();
-
-  std::cout << "stream inited, fill value: " << m_fill_value << "\n";
 }
 
 /* ---------------------------------------------------------- */
