@@ -207,9 +207,6 @@ void AtmosphereProcess::setup_tendencies_requests () {
         const auto& gname  = fid.get_grid_name();
         const auto& dtype  = fid.data_type();
 
-        std::cout << "found match for " << tn << ": " << it.fid.get_id_string() << ", g=("
-                 << ekat::join(it.groups,",") << "), ps=" << it.pack_size << ", pn=" << it.parent_name << "\n";
-
         // Check we did not process another field with same name
         if (grid_found!="" && gname!=grid_found) {
           multiple_matches_error(tn);

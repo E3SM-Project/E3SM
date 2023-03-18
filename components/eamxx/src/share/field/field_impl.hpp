@@ -360,8 +360,6 @@ update (const Field& x, const ST alpha, const ST beta)
       " - x/y data type  : " + e2str(dt) + "\n"
       " - coeff data type: " + e2str(dt_st) + "\n");
 
-  std::cout << "going from " + e2str(dt_st) + " to " + e2str(dt) + " does not cause narrowing.\n";
-  std::cout << " alpha=" << alpha << ", beta=" << beta << std::endl;
   if (dt==DataType::IntType) {
     return update_impl<CombineMode::ScaleUpdate,HD,int>(x,alpha,beta);
   } else if (dt==DataType::FloatType) {
@@ -388,8 +386,6 @@ scale (const ST beta)
       "Error! Coefficients alpha/beta may be narrowed when converted to x/y data type.\n"
       " - x/y data type  : " + e2str(dt) + "\n"
       " - coeff data type: " + e2str(dt_st) + "\n");
-  std::cout << "going from " + e2str(dt_st) + " to " + e2str(dt) + " does not cause narrowing.\n";
-  std::cout << " beta=" << beta << std::endl;
 
   if (dt==DataType::IntType) {
     return update_impl<CombineMode::Rescale,HD,int>(*this,ST(0),beta);
