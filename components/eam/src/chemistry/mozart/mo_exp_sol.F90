@@ -112,6 +112,9 @@ contains
        else
           do i = 1,ncol
              do k = ltrop(i)+1,pver
+                if (base_sol(i,k,l) < 1.0E-30_r8) then
+                      base_sol(i,k,l) = 1.0E-30_r8
+                endif
                 chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
                 chem_loss(i,k,l) = (base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) - base_sol(i,k,l))/delt
                 base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
@@ -133,6 +136,9 @@ contains
        l = clsmap(m,1)
         do i = 1,ncol
            do k = ltrop(i)+1,pver
+                if (base_sol_reset(i,k,l) < 1.0E-30_r8) then
+                      base_sol_reset(i,k,l) = 1.0E-30_r8
+                endif
               chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
               chemmp_loss(i,k,l) = (base_sol_reset(i,k,l)*exp(-delt*loss(i,k,m)/base_sol_reset(i,k,l)) - base_sol_reset(i,k,l))/delt
            end do
