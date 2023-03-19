@@ -1,0 +1,6 @@
+! Allow more tolerance by skipping all following consistency checks for testing purpose
+
+ check_finidat_year_consistency = .false.
+ check_dynpft_consistency = .false.
+ check_finidat_fsurdat_consistency = .false.
+ check_finidat_pct_consistency   = .false.
