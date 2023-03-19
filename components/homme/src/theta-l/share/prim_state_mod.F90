@@ -391,8 +391,10 @@ contains
                                    umax_local(1)," (",nint(umax_local(2)),")",usum_p
        write(iulog,109) "v     = ",vmin_local(1)," (",nint(vmin_local(2)),")",&
                                    vmax_local(1)," (",nint(vmax_local(2)),")",vsum_p
-       write(iulog,109) "w     = ",wmin_local(1)," (",nint(wmin_local(2)),")",&
-                                   wmax_local(1)," (",nint(wmax_local(2)),")",wsum_p
+       if(.not. theta_hydrostatic_mode) then
+         write(iulog,109) "w     = ",wmin_local(1)," (",nint(wmin_local(2)),")",&
+                                     wmax_local(1)," (",nint(wmax_local(2)),")",wsum_p
+       endif
 
        write(iulog,109) "vTh_dp= ",thetamin_local(1)," (",nint(thetamin_local(2)),")",&
                                    thetamax_local(1)," (",nint(thetamax_local(2)),")",thetasum_p

@@ -1,0 +1,45 @@
+%YAML 1.1
+---
+# This input file is for a free-standing rrtmgp test that runs using initial conditions read from a SCREAMv0 run
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+  atm_log_level: debug
+
+Time Stepping:
+  Time Step: ${ATM_TIME_STEP}
+  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+  Number of Steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: (rrtmgp)
+  rrtmgp:
+    column_chunk_size: ${COL_CHUNK_SIZE}
+    active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+    orbital_year: 1990
+    Can Initialize All Inputs: true
+    rad_frequency: 3
+    do_aerosol_rad: false
+    rrtmgp_coefficients_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-sw-g112-210809.nc
+    rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g128-210809.nc
+    rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
+    rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
+
+grids_manager:
+  Type: Mesh Free
+  number_of_global_columns: 218
+  number_of_vertical_levels: 72
+  geo_data_source: IC_FILE
+
+# Specifications for setting initial conditions
+initial_conditions:
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  aero_g_sw: 0.0
+  aero_ssa_sw: 0.0
+  aero_tau_sw: 0.0
+  aero_tau_lw: 0.0
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["rrtmgp_standalone_output${SUFFIX}.yaml"]
+...

@@ -1,0 +1,139 @@
+#!/usr/bin/env python3
+
+"""
+Gather results from a generic command distributed to known machines and
+known environments. You can use --local if you only want the environment
+management (used for Jenkins for example).
+
+It is expected that you are able to do a passwordless ssh to all
+machines and that the given repo on the target machines are clean.
+Since testbeds do not allow login via ssh key, you'll need to use kinit.
+
+It is expected that your current repo is clean and that your current commit
+is the one you want to test.
+
+If doing remote testing, it is expected that a usable repo exists on the
+target machine at location $HOME/scream-perf-$machine (unless you provide
+a different root via the --root-dir argument.
+
+A number of options support automatic magic strings. See the help for individual
+options to see which magic strings are supported.
+"""
+
+from utils import expect, check_minimum_python_version
+from git_utils import get_current_commit
+
+check_minimum_python_version(3, 5)
+
+import argparse, sys, pathlib
+
+from gather_all_data import GatherAllData
+from machines_specs import get_all_supported_machines
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <PERF-ANALYSIS-ARGS> [--verbose]
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Test scream on all platforms \033[0m
+    > {0} './scripts/test-all-scream -m $machine'
+
+    \033[1;32m# Do correctness testing locally for SCREAM (expects ./scream and ./scream-docs) \033[0m
+    > {0} './scripts/test-all-scream -m $machine' -l -m $machine
+
+    \033[1;32m# Do correctness testing for scream-docs micro apps \033[0m
+    > {0} './test-all $cxx_compiler $kokkos' -o
+
+    \033[1;32m# Do a scaling performance test for lin-interp on blake \033[0m
+    > {0} '$scream/scripts/perf-analysis ncol:8000 km1:128 km2:256 minthresh:0.001 repeat:10 --kokkos=$kokkos --test=lin-interp/li_ref --test=lin-interp/li_kokkos --test=lin-interp/li_vect -s ncol:2:128000' -m blake -o
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("run", help="What to run on the machine, cwd for the command will be root-dir. "
+                        "Supported magic strings: $cxx_compiler $f90_compiler $c_compiler $kokkos $machine $scream_docs $scream")
+
+    parser.add_argument("-c", "--commit", help="Commit to test. Default is current HEAD.")
+
+    parser.add_argument("-m", "--machine", dest="machines", action="append", choices=get_all_supported_machines(),
+                        help="Select which machines to run on, default is all")
+
+    parser.add_argument("-o", "--scream-docs", action="store_true", help="Test scream-docs instead of scream.")
+
+    parser.add_argument("-l", "--local", action="store_true",
+                        help="Run tests on local machine, only using this script to manage env and batch submission.")
+
+    parser.add_argument("-k", "--kokkos", help="Use to select specific kokkos installation. "
+                        "Only supported for scream-docs runs. "
+                        "Supported magic strings: $machine $cxx_compiler")
+
+    parser.add_argument("-r", "--root-dir",
+                        help="The root directory of the scream src you want to test. "
+                        "Default will be the scream src containing this script for local testing or "
+                        "$HOME/scream-perf-$machine/components/eamxx for remote testing or "
+                        "$HOME/scream-docs-perf-$machine/micro-apps for remote testing of scream-docs. "
+                        "References to $machine in this option will be automatically replaced with the machine name. "
+                        "Supported magic strings: $machine")
+
+    parser.add_argument("-d", "--dry-run", action="store_true",
+                        help="Do a dry run, commands will be printed but not executed")
+
+    args = parser.parse_args(args[1:])
+
+    if not args.machines:
+        args.machines = get_all_supported_machines()
+
+    expect(not (args.local and len(args.machines) > 1),
+           "Cannot run on multiple machines if local")
+
+    # Compute root!
+    script_home = pathlib.Path(__file__).resolve().parent.parent
+    if not args.root_dir:
+        if args.local:
+            if args.scream_docs:
+                args.root_dir = pathlib.Path().resolve() # cwd
+                expect(args.root_dir.name == "micro-apps",
+                       "Please do local scream-docs gathers from $scream-docs-repo/micro-apps")
+            else:
+                args.root_dir = script_home
+        else:
+            if args.scream_docs:
+                args.root_dir = pathlib.Path("~/scream-docs-perf-$machine/micro-apps")
+            else:
+                args.root_dir = pathlib.Path("~/scream-perf-$machine/components/eamxx")
+
+    else:
+        if args.local:
+            args.root_dir = pathlib.Path(args.root_dir).resolve()
+        else:
+            args.root_dir = pathlib.Path(args.root_dir)
+
+    # If doing remote testing, set remote repos to commit matching local commit
+    if not args.commit and not args.local:
+        if args.scream_docs:
+            args.commit = get_current_commit(short=True)
+            expect(args.commit, "Must be able to probe scream-docs commit. "
+                   "Please run from a scream-docs repo or provide --commit=<COMMIT>")
+        else:
+            args.commit = get_current_commit(short=True, repo=str(script_home))
+
+    return args
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    gad = GatherAllData(**vars(parse_command_line(sys.argv, description)))
+
+    success = gad.gather_all_data()
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

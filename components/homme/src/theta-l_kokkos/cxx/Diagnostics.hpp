@@ -9,6 +9,7 @@
 #include "EquationOfState.hpp"
 #include "ElementOps.hpp"
 #include "HybridVCoord.hpp"
+#include "Tracers.hpp"
 #include "KernelVariables.hpp"
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/ViewUtils.hpp"
@@ -65,36 +66,78 @@ private:
 public:
 
 
-  Diagnostics (const int num_elems, const bool theta_hydrostatic_mode) :
+  Diagnostics (const int num_elems, const int num_tracers, const bool theta_hydrostatic_mode) :
 #if ! defined(RESOLVE_ISSUE_WITH_ASSERTS)
-    m_policy(Homme::get_default_team_policy<ExecSpace,EnergyHalfTimesTag>(num_elems)),
+    m_policy_diag_scalars(Homme::get_default_team_policy<ExecSpace,DiagScalarsTag>(num_elems*num_tracers)),
+    m_policy_energy_halftimes(Homme::get_default_team_policy<ExecSpace,EnergyHalfTimesTag>(num_elems)),
 #else
-    m_policy(d_team_policy<EnergyHalfTimesTag>(num_elems)),
+    m_policy_diag_scalars(d_team_policy<DiagScalarsTag>(num_elems*num_tracers)),
+    m_policy_energy_halftimes(d_team_policy<EnergyHalfTimesTag>(num_elems)),
 #endif
-    m_tu(m_policy),
+    m_tu(m_policy_energy_halftimes),
     m_num_elems(num_elems),
+    m_num_tracers(num_tracers),
     m_theta_hydrostatic_mode(theta_hydrostatic_mode)
   {}
 
   void init (const ElementsState& state, const ElementsGeometry& geometry,
-             const HybridVCoord& hvcoord,  F90Ptr& elem_state_q_ptr,
-             F90Ptr& elem_accum_qvar_ptr,  F90Ptr& elem_accum_qmass_ptr,
-             F90Ptr& elem_accum_q1mass_ptr,F90Ptr& elem_accum_iener_ptr,
-             F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr);
+             const HybridVCoord& hvcoord,  const Tracers& tracers,
+             F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr,
+             F90Ptr& elem_accum_qmass_ptr, F90Ptr& elem_accum_q1mass_ptr,
+             F90Ptr& elem_accum_iener_ptr, F90Ptr& elem_accum_kener_ptr,
+             F90Ptr& elem_accum_pener_ptr);
 
   int requested_buffer_size () const;
   void init_buffers (const FunctorsBuffersManager& fbm);
 
-  void sync_diags_to_host ();
+  void sync_diagnostics_to_host ();
 
   void run_diagnostics (const bool before_advance, const int ivar);
 
   void prim_diag_scalars (const bool before_advance, const int ivar);
   void prim_energy_halftimes (const bool before_advance, const int ivar);
 
-  HostViewUnmanaged<Real*[QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> h_Q;
-
+  struct DiagScalarsTag {};
   struct EnergyHalfTimesTag {};
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const DiagScalarsTag&, const TeamMember& team) const {
+    KernelVariables kv(team, m_num_tracers);
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
+                         [&](const int &point_idx) {
+      const int igp = point_idx / NP;
+      const int jgp = point_idx % NP;
+
+      const auto Q   = viewAsReal(Homme::subview(m_tracers.Q,   kv.ie,         kv.iq, igp, jgp));
+      const auto qdp = viewAsReal(Homme::subview(m_tracers.qdp, kv.ie, t2_qdp, kv.iq, igp, jgp));
+
+      auto& Qvar =   d_Qvar  (kv.ie,m_ivar,kv.iq,igp,jgp);
+      auto& Qmass =  d_Qmass (kv.ie,m_ivar,kv.iq,igp,jgp);
+      auto& Q1mass = d_Q1mass(kv.ie,       kv.iq,igp,jgp);
+
+      // Compute Qvar
+      Qvar = 0.0;
+      Dispatch<>::parallel_reduce(kv.team, Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
+                                  [&](const int ilev, Real& accumulator){
+        accumulator += qdp(ilev)*Q(ilev);
+      }, Qvar);
+
+      // Compute Qmass
+      Qmass = 0.0;
+      Dispatch<>::parallel_reduce(kv.team, Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
+                                  [&](const int ilev, Real& accumulator){
+        accumulator += qdp(ilev);
+      }, Qmass);
+
+      // Compute Q1mass
+      Q1mass = 0.0;
+      Dispatch<>::parallel_reduce(kv.team, Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
+                                  [&](const int ilev, Real& accumulator){
+        accumulator += qdp(ilev);
+      }, Q1mass);
+    });
+  }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const EnergyHalfTimesTag&, const TeamMember& team) const {
@@ -159,14 +202,14 @@ public:
       ColumnOps::compute_midpoint_values(kv,Homme::subview(phi_i,igp,jgp),
                                             Homme::subview(phi,  igp,jgp));
 
-      auto& KEner = m_KEner(kv.ie,m_ivar,igp,jgp);
-      auto& PEner = m_PEner(kv.ie,m_ivar,igp,jgp);
-      auto& IEner = m_IEner(kv.ie,m_ivar,igp,jgp);
+      auto& KEner = d_KEner(kv.ie,m_ivar,igp,jgp);
+      auto& PEner = d_PEner(kv.ie,m_ivar,igp,jgp);
+      auto& IEner = d_IEner(kv.ie,m_ivar,igp,jgp);
 
       // Compute KEner
       KEner = 0.0;
       Dispatch<>::parallel_reduce(kv.team, Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
-                                  [=](const int ilev, Real& accumulator){
+                                  [&](const int ilev, Real& accumulator){
         accumulator += ((u(ilev)*u(ilev) + v(ilev)*v(ilev))/2.0) * dpt1_real(ilev);
       }, KEner);
 
@@ -174,7 +217,7 @@ public:
         Real sum = 0.0;
         auto w_i = viewAsReal(Homme::subview(m_state.m_w_i,kv.ie,t1,igp,jgp));
         Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
-                                    [=](const int ilev, Real& accumulator){
+                                    [&](const int ilev, Real& accumulator){
           accumulator += (w_i(ilev)*w_i(ilev) + w_i(ilev+1)*w_i(ilev+1))/4.0 *dpt1_real(ilev);
         },sum);
 
@@ -187,7 +230,7 @@ public:
       // Compute PEner
       PEner = 0.0;
       Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
-                                  [=](const int ilev, Real& accumulator){
+                                [&](const int ilev, Real& accumulator){
         accumulator += phi_real(ilev)*dpt1_real(ilev);
       },PEner);
 
@@ -195,7 +238,7 @@ public:
       IEner = 0.0;
       Kokkos::Real2 sum;
       Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
-                                  [=](const int ilev, Kokkos::Real2& accumulator){
+                                  [&](const int ilev, Kokkos::Real2& accumulator){
         accumulator.v[0] += PhysicalConstants::cp*vtheta_dp_real(ilev)*exner_real(ilev);
         accumulator.v[1] += (phi_i_real(ilev+1)-phi_i_real(ilev))*pnh_real(ilev);
       },sum);
@@ -212,29 +255,35 @@ private:
   HostViewUnmanaged<Real*[NUM_DIAG_TIMES][NP][NP]> h_KEner;
   HostViewUnmanaged<Real*[NUM_DIAG_TIMES][NP][NP]> h_PEner;
 
-  HostViewUnmanaged<Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]>     h_Qvar;
-  HostViewUnmanaged<Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]>     h_Qmass;
-  HostViewUnmanaged<Real*                [QSIZE_D][NP][NP]>     h_Q1mass;
+  ExecViewManaged<Real*[NUM_DIAG_TIMES][NP][NP]> d_IEner;
+  ExecViewManaged<Real*[NUM_DIAG_TIMES][NP][NP]> d_KEner;
+  ExecViewManaged<Real*[NUM_DIAG_TIMES][NP][NP]> d_PEner;
 
+  HostViewUnmanaged<Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]> h_Qvar;
+  HostViewUnmanaged<Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]> h_Qmass;
+  HostViewUnmanaged<Real*                [QSIZE_D][NP][NP]> h_Q1mass;
 
-  ExecViewManaged<Real*[NUM_DIAG_TIMES][NP][NP]>   m_IEner;
-  ExecViewManaged<Real*[NUM_DIAG_TIMES][NP][NP]>   m_KEner;
-  ExecViewManaged<Real*[NUM_DIAG_TIMES][NP][NP]>   m_PEner;
+  ExecViewManaged<Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]> d_Qvar;
+  ExecViewManaged<Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]> d_Qmass;
+  ExecViewManaged<Real*                [QSIZE_D][NP][NP]> d_Q1mass;
 
   HybridVCoord      m_hvcoord;
   EquationOfState   m_eos;
   ElementOps        m_elem_ops;
   ElementsState     m_state;
   ElementsGeometry  m_geometry;
+  Tracers           m_tracers;
   Buffers           m_buffers;
 
-  Kokkos::TeamPolicy<ExecSpace, EnergyHalfTimesTag> m_policy;
+  Kokkos::TeamPolicy<ExecSpace, DiagScalarsTag>     m_policy_diag_scalars;
+  Kokkos::TeamPolicy<ExecSpace, EnergyHalfTimesTag> m_policy_energy_halftimes;
   TeamUtils<ExecSpace> m_tu;
 
-  int t1,t1_qdp;
+  int t1,t1_qdp,t2_qdp;
 
   int m_ivar;
   int m_num_elems;
+  int m_num_tracers;
 
   bool m_theta_hydrostatic_mode;
 };

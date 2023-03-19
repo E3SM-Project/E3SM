@@ -139,7 +139,7 @@ SUBROUTINE shr_sys_chdir(path, rcode)
    call chdir(path(1:lenpath), errno=rcode)
 
 #else
-
+   rcode=-999
    write(s_logunit,F00) 'ERROR: no implementation of chdir for this architecture'
    call shr_sys_abort(subname//'no implementation of chdir for this machine')
 

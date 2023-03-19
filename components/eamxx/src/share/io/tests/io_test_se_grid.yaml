@@ -1,0 +1,11 @@
+%YAML 1.1
+---
+Casename: io_test_se_grid
+Averaging Type: Instant
+Max Snapshots Per File: 1
+Field Names: [field_1, field_2, field_3, field_packed]
+output_control:
+  MPI Ranks in Filename: true
+  Frequency: 1
+  frequency_units: nsteps
+...
