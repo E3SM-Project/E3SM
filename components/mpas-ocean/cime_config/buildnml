@@ -97,8 +97,8 @@ def buildnml(case, caseroot, compname):
             ic_prefix = 'oEC60to30v3wLI60lev.restart_theta_year26'
 
     elif ocn_grid == 'ECwISC30to60E1r2':
-        decomp_date = '200408'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230314'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.PHC2_monthlyClimatology.ECwISC30to60E1r02.200408.nc'
         analysis_mask_file = 'ECwISC30to60E1r02_transportTransects.nc'
         ic_date = '200408'
@@ -219,8 +219,8 @@ def buildnml(case, caseroot, compname):
             ic_prefix = 'mpaso.ARRM10to60E2r1.rstFrom1monthG-chrys'
 
     elif ocn_grid == 'EC30to60E2r2':
-        decomp_date = '200904'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230313'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.PHC2_monthlyClimatology.EC30to60E2r2.200910.nc'
         analysis_mask_file = 'EC30to60E2r2_mocBasinsAndTransects20210623.nc'
         ic_date = '210210'
@@ -235,8 +235,8 @@ def buildnml(case, caseroot, compname):
             eco_forcing_file = 'ecoForcingSurfaceMonthly.EC30to60E2r2.20201221.nc'
 
     elif ocn_grid == 'WC14to60E2r3':
-        decomp_date = '200714'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230313'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.PHC2_monthlyClimatology.WC14to60E2r3.200715.nc'
         analysis_mask_file = 'WC14to60E2r3_mocBasinsAndTransects20210623.nc'
         ic_date = '210210'
@@ -257,8 +257,8 @@ def buildnml(case, caseroot, compname):
             ic_prefix = 'mpaso.WCAtl12to45E2r4.rstFromG-anvil'
 
     elif ocn_grid == 'SOwISC12to60E2r4':
-        decomp_date = '210107'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230314'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.PHC2_monthlyClimatology.SOwISC12to60E2r4_nomask.210120.nc'
         analysis_mask_file = 'SOwISC12to60E2r4_mocBasinsAndTransects20210623.nc'
         ic_date = '210107'
