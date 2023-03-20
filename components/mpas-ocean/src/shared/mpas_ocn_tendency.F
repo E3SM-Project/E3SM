@@ -419,7 +419,6 @@ contains
                              vertAleTransportTop, tendVel, err)
 
       ! Add pressure gradient
-      call ocn_vel_pressure_grad_init(err)
       call ocn_vel_pressure_grad_tend(ssh, pressure, surfacePressure, &
                                montgomeryPotential, zMid, &
                                density, potentialDensity, &
