@@ -216,6 +216,13 @@ if (NOT SCREAM_SMALL_KERNELS)
   set(EKAT_DISABLE_WORKSPACE_SHARING TRUE CACHE STRING "")
 endif()
 
+### The following test only runs in docker container
+if (DEFINED ENV{IS_DOCKER})
+  set(IS_DOCKER $ENV{IS_DOCKER})
+else()
+  set(IS_DOCKER FALSE)
+endif()
+
 # Handle input root
 if (SCREAM_MACHINE AND NOT SCREAM_INPUT_ROOT)
     execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/query-cime ${SCREAM_MACHINE} DIN_LOC_ROOT
