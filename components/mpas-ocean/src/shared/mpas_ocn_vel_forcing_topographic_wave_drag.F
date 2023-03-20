@@ -209,11 +209,19 @@ contains
               call mpas_log_write("")
               call mpas_log_write(" Topographic wave drag scheme is: Zaron and Egbert")
               call mpas_log_write("")
-              topographicWaveDrag = topographicWaveDragCoeff*(bed_slope_edges**2)*topo_buoyancy_N1B*topo_buoyancy_N1V / (8.0_RKIND * 1.405189e-4_RKIND * pii**2)
-!              topographicWaveDrag = topographicWaveDragCoeff*topoDragTurnOff*50.0_RKIND*bottomDepthEdge*(bed_slope_edges**2)*((5.24e-3_RKIND)*1300.0_RKIND*(1 - exp(-bottomDepthEdge/1300.0_RKIND))/bottomDepthEdge)*((5.24e-3_RKIND)*exp(-bottomDepthEdge/1300.0_RKIND))/ (8 * 1.405189e-4_RKIND * pii**2)
-              ! C = G*H*(grad H)^2 * Nb * Nv / (8 pi^2 omega), take M2 omega = 1.405189e-4_RKIND
-!              Nv = (5.24e-3_RKIND)*1300*(1 - exp(-bottomDepth/1300))/bottomDepth
-!              Nb = (5.24e-3_RKIND)*exp(-bottomDepth/1300)
+!              topographicWaveDrag = topographicWaveDragCoeff*(bed_slope_edges**2)*topo_buoyancy_N1B*topo_buoyancy_N1V / (8.0_RKIND * 1.405189e-4_RKIND * pii**2)
+
+! Cze = Gamma H grad(H)^2 Nb Nbar / (8 pi^2 omega)
+! Gamma = 50
+! N(z) = N0 exp(z/1300)
+! N0 = 5.24 x 10^-3
+! z = 0 at surface
+! Nb is N(z) evaluated at z = -H
+! Nbar = 1300 N0 (1 - exp(-H/1300))/H
+              topographicWaveDrag = topographicWaveDragCoeff*topoDragTurnOff*50.0_RKIND*(bed_slope_edges**2)  * &
+                        (5.24e-3_RKIND*1300.0_RKIND*(1 - exp(-bottomDepthEdge/1300.0_RKIND))/bottomDepthEdge) * & ! Nbar
+                        (5.24e-3_RKIND*exp(-bottomDepthEdge/1300.0_RKIND))                                    / & ! Nb
+                        (8 * omegaM2 * pii**2)
           else if (config_topographic_wave_drag_scheme.EQ."LGF") then
               tensorScheme = .true.
               call mpas_log_write("")
