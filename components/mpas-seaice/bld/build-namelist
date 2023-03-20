@@ -487,7 +487,7 @@ add_default($nl, 'config_full_abort_write');
 # Namelist group: decomposition #
 #################################
 
-add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/ice/mpas-cice/${ICE_GRID}/${decomp_prefix}${date_stamp}.part.'");
+add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/ice/mpas-seaice/${ICE_GRID}/${decomp_prefix}${date_stamp}.part.'");
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
