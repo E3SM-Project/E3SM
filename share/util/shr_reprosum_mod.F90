@@ -562,7 +562,7 @@ module shr_reprosum_mod
                                          !  integer expansion to use
       integer :: max_level               ! maximum value in max_levels
 
-      real(r8) :: xmax_nsummands         ! dble of max_nsummands
+      real(r8) :: xmax_nsummands         ! real(max_nsummands,r8)
       real(r8) :: arr_lsum(nflds)        ! local sums
       real(r8) :: arr_gsum_fast(nflds)   ! global sum calculated using
                                          !  fast, nonreproducible,
@@ -704,7 +704,7 @@ module shr_reprosum_mod
 ! performance for loopb in shr_reprosum_int
             max_level = (64/nflds) + 1
             do ifld=1,nflds
-               if ((arr_gbl_max(ifld) .ge. 0.0_r8) .and. &
+               if ((arr_gbl_max(ifld) >= 0.0_r8) .and. &
                    (arr_max_levels(ifld) > 0)) then
 
                   arr_gmax_exp(ifld)  = exponent(arr_gbl_max(ifld))
@@ -756,7 +756,7 @@ module shr_reprosum_mod
 ! and sums over threads and tasks, and the smaller value used. This is
 ! equivalent to using max_nsummands as defined above.
 
-               xmax_nsummands = dble(max_nsummands)
+               xmax_nsummands = real(max_nsummands,r8)
                arr_max_shift = digits(1_i8) - (exponent(xmax_nsummands) + 1)
                if (arr_max_shift < 2) then
                   call shr_sys_abort('repro_sum failed: number of summands too '// &
@@ -823,7 +823,7 @@ module shr_reprosum_mod
                   arr_exp_tlmax = MINEXPONENT(1.0_r8)
                   if (.not. arr_gsum_infnan(ifld)) then
                      do isum=isum_beg(ithread),isum_end(ithread)
-                        if (arr(isum,ifld) .ne. 0.0_r8) then
+                        if (arr(isum,ifld) /= 0.0_r8) then
                            arr_exp = exponent(arr(isum,ifld))
                            arr_exp_tlmin = min(arr_exp,arr_exp_tlmin)
                            arr_exp_tlmax = max(arr_exp,arr_exp_tlmax)
@@ -888,7 +888,7 @@ module shr_reprosum_mod
 ! and sums over threads and tasks, and the smaller value used. This is
 ! equivalent to using max_nsummands as defined above.
 
-            xmax_nsummands = dble(max_nsummands)
+            xmax_nsummands = real(max_nsummands,r8)
             arr_max_shift = digits(1_i8) - (exponent(xmax_nsummands) + 1)
             if (arr_max_shift < 2) then
                call shr_sys_abort('repro_sum failed: number of summands too '// &
@@ -1201,7 +1201,7 @@ module shr_reprosum_mod
           do isum=isum_beg(ithread),isum_end(ithread)
             arr_remainder = 0.0_r8
 
-            if (arr(isum,ifld) .ne. 0.0_r8) then
+            if (arr(isum,ifld) /= 0.0_r8) then
                arr_exp   = exponent(arr(isum,ifld))
                arr_frac  = fraction(arr(isum,ifld))
 
@@ -1229,7 +1229,7 @@ module shr_reprosum_mod
                   ilevel = 1
                endif
 
-               if (ilevel .le. max_levels(ifld)) then
+               if (ilevel <= max_levels(ifld)) then
 ! apply first shift/truncate, add it to the relevant running
 ! sum, and calculate the remainder.
                   arr_remainder = scale(arr_frac,arr_shift)
@@ -1240,7 +1240,7 @@ module shr_reprosum_mod
 
 ! while the remainder is non-zero, continue to shift, truncate,
 ! sum, and calculate new remainder
-                  do while ((arr_remainder .ne. 0.0_r8) &
+                  do while ((arr_remainder /= 0.0_r8) &
                      .and. (ilevel < max_levels(ifld)))
                      ilevel = ilevel + 1
                      arr_remainder = scale(arr_remainder,arr_max_shift)
@@ -1253,7 +1253,7 @@ module shr_reprosum_mod
                endif
             endif
 
-            if (arr_remainder .ne. 0.0_r8) then
+            if (arr_remainder /= 0.0_r8) then
                not_exact(ifld,ithread) = 1
             endif
 
@@ -1268,7 +1268,7 @@ module shr_reprosum_mod
           do ilevel=max_levels(ifld),1,-1
              RX_8 = i8_arr_tlsum_level(ilevel,ifld,ithread)
              IX_8 = int(scale(RX_8,-arr_max_shift),i8)
-             if (IX_8 .ne. 0_i8) then
+             if (IX_8 /= 0_i8) then
                 i8_arr_tlsum_level(ilevel-1,ifld,ithread) = &
                    i8_arr_tlsum_level(ilevel-1,ifld,ithread) + IX_8
                 IX_8 = IX_8*(i8_radix**arr_max_shift)
@@ -1341,7 +1341,7 @@ module shr_reprosum_mod
 ! if validate is .true., test whether the summand upper bound
 !  was exceeded on any of the MPI tasks
          if (validate) then
-            if (i8_arr_gsum_level(ioffset-voffset+1) .ne. 0_i8) then
+            if (i8_arr_gsum_level(ioffset-voffset+1) /= 0_i8) then
                recompute = .true.
             endif
          endif
@@ -1355,7 +1355,7 @@ module shr_reprosum_mod
            do ilevel=max_levels(ifld),1,-1
              RX_8 = i8_arr_gsum_level(ioffset+ilevel)
              IX_8 = int(scale(RX_8,-arr_max_shift),i8)
-             if (IX_8 .ne. 0_i8) then
+             if (IX_8 /= 0_i8) then
                i8_arr_gsum_level(ioffset+ilevel-1) = i8_arr_gsum_level(ioffset+ilevel-1) &
                                                    + IX_8
                IX_8 = IX_8*(i8_radix**arr_max_shift)
@@ -1368,7 +1368,7 @@ module shr_reprosum_mod
 !     of accuracy arising from difference of large values when
 !     reconstructing r8 sum from integer vector)
            ilevel = 0
-           do while ((i8_arr_gsum_level(ioffset+ilevel) .eq. 0_i8) &
+           do while ((i8_arr_gsum_level(ioffset+ilevel) == 0_i8) &
                      .and. (ilevel < max_levels(ifld)))
              ilevel = ilevel + 1
            enddo
@@ -1381,7 +1381,7 @@ module shr_reprosum_mod
               endif
               do jlevel=ilevel,max_levels(ifld)-1
                  if (sign(1_i8,i8_arr_gsum_level(ioffset+jlevel)) &
-                     .ne. sign(1_i8,i8_arr_gsum_level(ioffset+jlevel+1))) then
+                     /= sign(1_i8,i8_arr_gsum_level(ioffset+jlevel+1))) then
                     i8_arr_gsum_level(ioffset+jlevel)   = i8_arr_gsum_level(ioffset+jlevel) &
                                                         - i8_sign
                     i8_arr_gsum_level(ioffset+jlevel+1) = i8_arr_gsum_level(ioffset+jlevel+1) &
@@ -1397,7 +1397,7 @@ module shr_reprosum_mod
             first = .true.
             do ilevel=max_levels(ifld),0,-1
 
-               if (i8_arr_gsum_level(ioffset+ilevel) .ne. 0_i8) then
+               if (i8_arr_gsum_level(ioffset+ilevel) /= 0_i8) then
                   jlevel = 1
 
 ! r8 representation of higher order bits in integer
@@ -1409,7 +1409,7 @@ module shr_reprosum_mod
                   RX_8 = (i8_arr_gsum_level(ioffset+ilevel) - IX_8)
 
 ! repeat using remainder
-                  do while (RX_8 .ne. 0.0_r8)
+                  do while (RX_8 /= 0.0_r8)
                      jlevel = jlevel + 1
                      X_8(jlevel) = RX_8
                      LX(jlevel) = exponent(RX_8)
@@ -1442,7 +1442,7 @@ module shr_reprosum_mod
 ! apply final exponent correction, scaling first if exponent is too small
 ! to apply directly
             corr_exp = curr_exp + exponent(arr_gsum(ifld))
-            if (corr_exp .ge. MINEXPONENT(1.0_r8)) then
+            if (corr_exp >= MINEXPONENT(1.0_r8)) then
                arr_gsum(ifld) = set_exponent(arr_gsum(ifld),corr_exp)
             else
                RX_8 = set_exponent(arr_gsum(ifld), &
@@ -1455,14 +1455,14 @@ module shr_reprosum_mod
 !  of levels of expansion, cancellation, .... Calculated by comparing lower
 !  bound on number of sigificant digits with number of digits in 1.0_r8 .
             if (validate) then
-               if (i8_arr_gsum_level(ioffset-voffset+2) .ne. 0_i8) then
+               if (i8_arr_gsum_level(ioffset-voffset+2) /= 0_i8) then
 
 ! find first nonzero level and use exponent for this level, then assume all
 ! subsequent levels contribute arr_max_shift digits.
                   sum_digits = 0
                   do ilevel=0,max_levels(ifld)
-                     if (sum_digits .eq. 0) then
-                        if (i8_arr_gsum_level(ioffset+ilevel) .ne. 0_i8) then
+                     if (sum_digits == 0) then
+                        if (i8_arr_gsum_level(ioffset+ilevel) /= 0_i8) then
                            X_8(1) = i8_arr_gsum_level(ioffset+ilevel)
                            LX(1)  = exponent(X_8(1))
                            sum_digits = LX(1)
