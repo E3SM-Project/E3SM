@@ -121,7 +121,7 @@ module shr_reprosum_mod
       ! recompute using different algorithm when difference between
       ! reproducible and nonreproducible sums is too great
       logical, intent(in), optional  :: repro_sum_recompute_in
-      ! flag indicating whether this process should output
+      ! flag indicating whether this MPI task should output
       ! log messages
       logical, intent(in), optional  :: repro_sum_master
       ! unit number for log messages
@@ -247,7 +247,7 @@ module shr_reprosum_mod
 ! used to return the values used.
 !
 ! Finally, the algorithm requires an upper bound on the number of
-! local summands across all processes. This will be calculated internally,
+! local summands across all MPI tasks. This will be calculated internally,
 ! using an MPI collective, but the value in the optional argument
 ! gbl_max_nsummands will be used instead if (1) it is present, (2)
 ! it is > 0, and (3) the maximum value and required number of levels
@@ -328,11 +328,11 @@ module shr_reprosum_mod
 
       integer,  intent(in),    optional :: gbl_max_nsummands
                                          ! maximum of nsummand over all
-                                         ! processes
+                                         ! MPI tasks
 
       integer,  intent(out),   optional :: gbl_max_nsummands_out
                                          ! calculated maximum nsummands
-                                         ! over all processes
+                                         ! over all MPI tasks
 
       integer,  intent(in),    optional :: gbl_count
                                          ! was total number of summands;
@@ -395,11 +395,11 @@ module shr_reprosum_mod
                                          !  input array
       integer :: omp_nthreads            ! number of OpenMP threads
       integer :: mpi_comm                ! MPI subcommunicator
-      integer :: mypid                   ! MPI process ID (COMM_WORLD)
-      integer :: tasks                   ! number of MPI processes
+      integer :: mypid                   ! MPI task ID (COMM_WORLD)
+      integer :: tasks                   ! number of MPI tasks
       integer :: ierr                    ! MPI error return
       integer :: ifld, isum, ithread     ! loop variables
-      integer :: max_nsummands           ! max nsummands over all processes
+      integer :: max_nsummands           ! max nsummands over all MPI tasks
                                          !  or threads (used in both ways)
 
       integer, allocatable :: isum_beg(:), isum_end(:)
@@ -488,7 +488,7 @@ module shr_reprosum_mod
                call mpi_comm_rank(MPI_COMM_WORLD, mypid, ierr)
                write(s_logunit,37) real(nan_count,r8), real(inf_count,r8), mypid
 37 format("SHR_REPROSUM_CALC: Input contains ",e12.5, &
-          " NaNs and ", e12.5, " INFs on process ", i7)
+          " NaNs and ", e12.5, " INFs on MPI task ", i7)
                call shr_sys_abort("shr_reprosum_calc ERROR: NaNs or INFs in input")
             endif
 
@@ -1113,11 +1113,11 @@ module shr_reprosum_mod
           enddo
 
 ! postprocess integer vector to eliminate potential for overlap in the following
-! sums over threads and processes: if value larger than or equal to
+! sums over threads and MPI tasks: if value larger than or equal to
 ! (radix(IX_8)**arr_max_shift), add this 'overlap' to next larger integer in
 ! vector, resulting in nonoverlapping ranges for each component. Note that
 ! "ilevel-1==0" corresponds to an extra level used to guarantee that the sums
-! over threads and processes do not overflow for ilevel==1.
+! over threads and MPI tasks do not overflow for ilevel==1.
           do ilevel=max_levels(ifld),1,-1
              RX_8 = i8_arr_tlsum_level(ilevel,ifld,ithread)
              IX_8 = int(scale(RX_8,-arr_max_shift),i8)
@@ -1192,7 +1192,7 @@ module shr_reprosum_mod
          ioffset = offset(ifld)
 
 ! if validate is .true., test whether the summand upper bound
-!  was exceeded on any of the processes
+!  was exceeded on any of the MPI tasks
          if (validate) then
             if (i8_arr_gsum_level(ioffset-voffset+1) .ne. 0_i8) then
                recompute = .true.
@@ -1356,7 +1356,7 @@ module shr_reprosum_mod
 !
       character(len=*), intent(in) :: name    ! distributed sum identifier
       integer,  intent(in) :: nflds           ! number of fields
-      logical,  intent(in) :: master          ! process that will write
+      logical,  intent(in) :: master          ! MPI task that will write
                                               !  warning messages?
       integer, optional, intent(in) :: logunit! unit warning messages
                                               !  written to
