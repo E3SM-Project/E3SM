@@ -224,40 +224,169 @@ module shr_reprosum_mod
 ! representation. An alternative is to use an 'almost always
 ! reproducible' floating point algorithm (DDPDD), as described below.
 !
+! Description of integer vector algorithm:
+!-----------------------------------------
+! The basic idea is to represent the mantissa of each floating point
+! value as an integer, add these integers, and then convert back to a
+! floating point value. For a real*8 value, there are enough digits in
+! an integer*8 variable to not lose any information (in the
+! mantissa). However, each of these integers would have a different
+! implicit exponent if done in a naive way, and so the sum would not
+! be accurate. Also, even with the same 'normalization', the sum might
+! exceed the maximum value representable by an integer*8, causing
+! an overflow. Instead, a vector of integers is generated, where a
+! given element (or level using the terminology used in the code) of
+! the vector is associated with a particular exponent. The mantissa
+! for a given floating point value is then converted to some number of
+! integer values, depending on the exponent of the floating point
+! value, the normalization of its mantissa, the maximum number of
+! summands, the number of participating MPI tasks and of OpenMP
+! threads, and the exponents associated with the levels of the integer
+! vector, and added into the appropriate levels of the integer
+! vector. Each MPI task has its own integer vector representing the
+! local sum. This is then summed across all participating MPI tasks
+! using an MPI_Allreduce, and, lastly, converted back to a floating
+! point value. Note that the same approach works for a vector of
+! integer*4 variables, simply requiring more levels, both for the full
+! summation vector and for each individual real*8 summand. This is a
+! compile time option in the code, in support of systems for which the
+! compiler or MPI library has issues when using integer*8. As
+! implemented, this algorithm should work for any floating point and
+! integer type as long as they share the same base. The code is
+! written as if for real*8 and integer*8 variables, but the only
+! dependence is on the types 'r8' and 'i8', which are defined in the
+! code, currently with reference to the corresponding types in
+! shr_kind_mod. This is how integer*4 support is implemented, by
+! defining i8 to be shr_kind_i4 instead of shr_kind_i8.
+!
+! For this to work, each MPI task must have the same number of levels
+! and same implicit exponent for each level. These levels must be
+! sufficient to represent the smallest and largest nonzero individual
+! summands (in absolute value) and the largest possible intermediate
+! sum, including the final sum. Most of the complexity in the
+! algorithm is in identifying the number of levels, the exponent
+! associated with each level, and the appropriate levels to target
+! when converting a floating point value into its integer vector
+! representation. There are also some subtleties in reconstructing the
+! final sum from the integer vector, as described below. For each
+! floating point value, the exponent and mantissa are extracted using
+! the fortran intrinsics 'exponent' and 'fraction'. The mantissa is
+! then 'shifted' to match the exponent for a target level in the
+! integer vector using the 'scale' intrinsic. 'int(X,i8)' is used
+! for the conversion for the given level, and subtraction between
+! this integer and the original 'shifted' value identifies the
+! remainder that will be converted to an integer for the next level
+! in the vector. The logic continues until the remainder is zero. As
+! mentioned above, the only requirement, due to the implementation
+! using these fortran intrinsics, is that floating point and integer
+! models use the same base, e.g.  
+!  radix(1.0_r8) == radix(1_i8)
+! for real*8 and integer*8. If not, then the alternative algorithm
+! mentioned above and described below is used instead. The integer
+! representation must also have enough digits for the potential growth
+! of the sum for each level, so could conceivably be too small for a
+! large number of summands. 
+!
+! Upper bounds on the total number of summands and on all intermediate
+! sums are calculated as
+!  <number of MPI tasks>*<max number of summands per MPI task>
+! and
+!  <number of MPI tasks>*<max number of summands per MPI task>
+!   *<max absolute value over all nonzero summands>
+! respectively. The maximum number of summands per MPI task and the
+! maximum absolute value over all nonzero summands are global
+! information that need to be determined with additional MPI
+! collectives. The minimum nonzero absolute value summand is also
+! global information. Fortunately, all of these can be determined with
+! a single MPI_Allreduce call, so only one more than that required for
+! the sum itself. (Note that, in actuality, the exponents of max and
+! min summands are determined, and these are used to calculate bounds
+! on the maximum and minimum, allowing the use of an MPI_INTEGER
+! vector in the MPI_Allreduce call.)
+!
+! The actual code is made a little messier by (a) supporting summation
+! of multiple fields without increasing the number of MPI_Allreduce
+! calls, (b) supporting OpenMP threading of the local arithmetic, (c)
+! allowing the user to specify estimates for the global information
+! (to avoid the additional MPI_Allreduce), (d) including a check of
+! whether user specified bounds were sufficient and, if not,
+! determining the actual bounds and recomputing the sum, and (e)
+! allowing the user to specify the maximum number of levels to use,
+! potentially losing accuracy but still preserving reproducibility and
+! being somewhat cheaper to compute.
+!
+! The conversion of the local summands to vectors of integers, the
+! summation of the local vectors of integers, and the summation of the
+! distributed vectors of integers will be exact (if optional parameters
+! are not used to decrease the accuracy - see below). However, the
+! conversion of the vector of integer representation to a floating
+! point value may be subject to rounding errors. Before the
+! conversion, the vector of integers is adjusted so that all elements
+! have the same sign, eliminating the possibility of catastrophic
+! cancellation. These are integer operations, so no accuracy is
+! lost. Next, each element of the vector of integers is converted to a
+! floating point value and added into the intermediate sum, in
+! smallest to largest order (in absolute value). Any rounding error is
+! in the least significant digit for each intermediate sum, and the
+! exponents for each summand are monotonically increasing, so the
+! rounding errors do not accumulate. Thus, the relative difference
+! between the 'exact' value and that calculated by this algorithm will
+! be approximately machine epsilon for 64-bit real values, and any
+! difference will be restricted to the 16th significant digit in a
+! decimal representation. This does mean that the values calculated
+! with the integer*8 internal representation could differ from those
+! calculated using the integer*4 internal representation, but the
+! differences will be in the least significant digits. Similarly, the
+! results may change (in the least significant digits) with a change
+! in system, compiler, or compiler flags. However, for a fixed
+! internal representation, processor architecture, compiler, and
+! compiler options, the result will (still) be reproducible with
+! respect to MPI task and OpenMP thread counts.
+!
+! Description of optional parameters for integer vector algorithm:
+!-----------------------------------------------------------------
 ! The accuracy of the integer vector algorithm is controlled by the
-! number of 'levels' of integer expansion. The algorithm will calculate
-! the number of levels that is required for the sum to be essentially
-! exact. (The sum as represented by the integer expansion will be exact,
-! but roundoff may perturb the least significant digit of the returned
-! real*8 representation of the sum.) The optional parameter arr_max_levels
-! can be used to override the calculated value. The optional parameter
-! arr_max_levels_out can be used to return the values used.
+! total number of levels of integer expansion. The algorithm
+! calculates the number of levels that is required for the sum to be
+! essentially exact. (The sum as represented by the integer expansion
+! is exact, but roundoff may perturb the least significant digit of
+! the returned floating point representation of the sum.) The optional
+! parameter arr_max_levels can be used to override the calculated
+! value for each field. The optional parameter arr_max_levels_out can
+! be used to return the values used.
 !
-! The algorithm also requires an upper bound on
-! the maximum summand (in absolute value) for each field, and will
-! calculate this internally. However, if the optional parameters
+! The algorithm requires an upper bound on the maximum summand
+! (in absolute value) for each field, and will calculate this internally
+! using an MPI_Allreduce. However, if the optional parameters
 ! arr_max_levels and arr_gbl_max are both set, then the algorithm will
-! use the values in arr_gbl_max for the upper bounds instead. If these
-! are not upper bounds, or if the upper bounds are not tight enough
-! to achieve the requisite accuracy, and if the optional parameter
-! repro_sum_validate is NOT set to .false., the algorithm will repeat the
-! computation with appropriate upper bounds. If only arr_gbl_max is present,
-! then the maxima are computed internally (and the specified values are
-! ignored). The optional parameter arr_gbl_max_out can be
-! used to return the values used.
+! use the values in arr_gbl_max for the upper bounds instead. If only
+! arr_gbl_max is present, then the maxima are computed internally
+! (and the specified values are ignored). The optional parameter
+! arr_gbl_max_out can be used to return the values used.
 !
-! Finally, the algorithm requires an upper bound on the number of
-! local summands across all MPI tasks. This will be calculated internally,
-! using an MPI collective, but the value in the optional argument
-! gbl_max_nsummands will be used instead if (1) it is present, (2)
-! it is > 0, and (3) the maximum value and required number of levels
-! are also specified. (If the maximum value is calculated, the same
-! MPI collective is used to determine the maximum number of local
-! summands.) The accuracy of the user-specified value is not checked.
-! However, if set to < 1, the value will instead be calculated. If the
-! optional parameter gbl_max_nsummands_out is present, then the value
-! used (gbl_max_nsummands if >= 1; calculated otherwise) will be
-! returned.
+! The algorithm also requires an upper bound on the number of
+! local summands across all MPI tasks. (By definition, the number of
+! local summands is the same for each field on a given MPI task, i.e.,
+! the input parameter nsummands.) This will be calculated internally,
+! using an MPI_Allreduce, but the value in the optional argument
+! gbl_max_nsummands will be used instead if (1) it is present,
+! (2) the value is > 0, and (3) the maximum values and required number
+! of levels are also specified. (If the maximum values are calculated,
+! then the same MPI_Allreduce is used to determine the maximum numbers
+! of local summands.) The accuracy of the user-specified value is not
+! checked. However, if set to < 1, the value will instead be calculated.
+! If the optional parameter gbl_max_nsummands_out is present,
+! then the value used (gbl_max_nsummands if >= 1; calculated otherwise)
+! will be returned.
+!
+! If the user-specified upper bounds on maximum summands are
+! inaccurate or if the user-specified upper bounds (maximum summands
+! and number of local summands) and numbers of levels causes
+! any of the global sums to have fewer than the expected
+! number of significant digits, and if the optional parameter
+! repro_sum_validate is NOT set to .false., then the algorithm will
+! repeat the computations with internally calculated values for
+! arr_max_levels, arr_gbl_max, and gbl_max_nsummands.
 !
 ! If requested (by setting shr_reprosum_reldiffmax >= 0.0 and passing in
 ! the optional rel_diff parameter), results are compared with a
@@ -265,30 +394,38 @@ module shr_reprosum_mod
 !
 ! Note that the cost of the algorithm is not strongly correlated with
 ! the number of levels, which primarily shows up as a (modest) increase
-! in cost of the MPI_Allreduce as a function of vector length. Rather the
-! cost is more a function of (a) the number of integers required to
-! represent an individual summand and (b) the number of MPI_Allreduce
-! calls. The number of integers required to represent an individual
-! summand is 1 or 2 when using 8-byte integers for 8-byte real summands
-! when the number of local summands is not too large. As the number of
-! local summands increases, the number of integers required increases.
-! The number of MPI_Allreduce calls is either 2 (specifying nothing) or
-! 1 (specifying gbl_max_nsummands, arr_max_levels, and arr_gbl_max
-! correctly). When specifying arr_max_levels and arr_gbl_max
+! in the cost of the MPI_Allreduce as a function of vector length.
+! Rather the cost is more a function of (a) the number of integers
+! required to represent an individual summand and (b) the number of
+! MPI_Allreduce calls. The number of integers required to represent an
+! individual summand is 1 or 2 when using 8-byte integers for 8-byte
+! real summands when the number of local summands and number of MPI
+! tasks are not too large. As the magnitude of either of these increase,
+! the number of integers required increases. The number of
+! MPI_Allreduce calls is either 2 (specifying nothing or just
+! arr_max_levels and arr_gbl_max correctly) or 1 (specifying
+! gbl_max_nsummands, arr_max_levels, and arr_gbl_max correctly).
+! When specifying arr_max_nsummands, arr_max_levels, or arr_gbl_max
 ! incorrectly, 3 or 4 MPI_Allreduce calls will be required.
 !
+! Description of alternative (DDPDD) algorithm:
+!----------------------------------------------
 ! The alternative algorithm is a minor modification of a parallel
 ! implementation of David Bailey's routine DDPDD by Helen He
-! and Chris Ding. Bailey uses the Knuth trick to implement quadruple
-! precision summation of double precision values with 10 double
-! precision operations. The advantage of this algorithm is that
+! and Chris Ding. See, for example,
+!  Y. He, and C. Ding, 'Using Accurate Arithmetics to Improve
+!  Numerical Reproducibility and Stability in Parallel Applications,'
+!  J. Supercomputing, vol. 18, no. 3, 2001, pp. 259–277
+! and the citations therein. Bailey uses the Knuth trick to implement
+! quadruple precision summation of double precision values with 10
+! double precision operations. The advantage of this algorithm is that
 ! it requires a single MPI_Allreduce and is less expensive per summand
 ! than is the integer vector algorithm. The disadvantage is that it
 ! is not guaranteed to be reproducible (though it is reproducible
-! much more often than is the standard algorithm). This alternative
-! is used when the optional parameter ddpdd_sum is set to .true. It is
-! also used if the integer vector algorithm radix assumption does not
-! hold.
+! much more often than is the standard floating point algorithm).
+! This alternative is used when the optional parameter ddpdd_sum is
+! set to .true. It is also used if the integer vector algorithm radix
+! assumption does not hold.
 !
 !----------------------------------------------------------------------
 !
@@ -758,10 +895,20 @@ module shr_reprosum_mod
                                   'large for integer vector algorithm' )
             endif
 
-! determine maximum number of levels required for each field
-! ((digits(0.0_r8) + (arr_gmax_exp(ifld)-arr_gmin_exp(ifld))) / arr_max_shift)
-! + 1 because first truncation probably does not involve a maximal shift
-! + 1 to guarantee that the integer division rounds up (not down)
+! Determine maximum number of levels required for each field.
+! Need enough levels to represent both the smallest and largest
+! nonzero summands (in absolute value), and any values in between.
+! The number of digits from the most significant digit in the
+! largest summand to the most significant digit in the smallest
+! summand is (arr_gmax_exp(ifld)-arr_gmin_exp(ifld)), and the maximum
+! number of digits needed to represent the smallest value is
+! digits(1.0_r8). Divide this total number of digits by the number of
+! digits per level (arr_max_shift) to get the number of levels
+!  ((digits(1.0_r8) + (arr_gmax_exp(ifld)-arr_gmin_exp(ifld))) / arr_max_shift)
+! with some tweaks:
+!  + 1 because first truncation for any given summand probably does
+!  not involve a maximal shift (but this adds only one to the total)
+!  + 1 to guarantee that the integer division rounds up (not down)
 ! (setting lower bound on max_level*nflds to be 64 to improve OpenMP
 !  performance for loopb in shr_reprosum_int)
             max_level = (64/nflds) + 1
@@ -876,7 +1023,6 @@ module shr_reprosum_mod
          repro_sum_stats(6) = repro_sum_stats(6) + gbl_lor_red
       endif
 
-
    end subroutine shr_reprosum_calc
 
 !
@@ -958,7 +1104,8 @@ module shr_reprosum_mod
                                    !  jlevels of X_8 ('part' of
                                    !  i8_arr_gsum_level)
       integer(i8) :: i8_sign       ! sign global sum
-      integer(i8) :: i8_radix      ! radix for i8 variables
+      integer(i8) :: i8_radix      ! radix for i8 variables (and r8
+                                   !  variables by earlier if-test)
 
       integer :: max_error(nflds,omp_nthreads)
                                    ! accurate upper bound on data?
@@ -1334,7 +1481,6 @@ module shr_reprosum_mod
          endif
 
       enddo
-
 
    end subroutine shr_reprosum_int
 
