@@ -20,7 +20,7 @@ math (EXPR MAC_MIC_SUBCYCLES "(${ATM_TIME_STEP} + ${SHOC_MAX_DT} - 1) / ${SHOC_M
 set (TEST_INPUT_FILES
   scream/init/${EAMxx_tests_IC_FILE_72lev}
   scream/init/spa_init_ne2np4.nc
-  scream/init/map_ne4np4_to_ne2np4_mono.nc
+  scream/maps/map_ne4np4_to_ne2np4_mono.nc
   scream/init/spa_file_unified_and_complete_ne4_20220428.nc
   cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
 )
