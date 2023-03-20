@@ -57,10 +57,7 @@ module ocn_time_integration_lts
    !--------------------------------------------------------------------
    public :: ocn_time_integrator_lts, &
              ocn_time_integration_lts_init, &
-             ocn_lts_tends, &
-             setConfigsForSlowTends, &
-             setConfigsForFastTends, &
-             resetConfigs
+             ocn_lts_tends
 
    contains
 
@@ -294,7 +291,6 @@ module ocn_time_integration_lts
     normalVelocityTendSum3rd(:,:) = 0.0_RKIND
     layerThicknessTendSum3rd(:,:) = 0.0_RKIND
 
-    ! TODO: do we still need this??
     if (associated(block % prev)) then
        call mpas_pool_get_subpool(block % prev % structs, 'tend_sum_1st', tendSum1stPool)
        call mpas_pool_get_subpool(block % prev % structs, 'tend_sum_2nd', tendSum2ndPool)
@@ -379,19 +375,10 @@ module ocn_time_integration_lts
 
     ! -------------------------------- COMPUTE SLOW TEND FOR ALL LTS REGIONS  -------------------------------
 
-    ! set configs to compute only the slow terms on the momentum equation
-    !call setConfigsForSlowTends()
-
     call mpas_timer_start("lts slow tend computation")
 
     ! SLOW TENDENCY COMPUTATION --- (this is only for the momentum equation)
-    !TODO the call below has to be uncommented if we fix the computation
-    !of the forcing in the framework
-    !call ocn_time_varying_forcing_get(domain % streamManager, domain, domain % clock)
     call ocn_tend_vel(domain,tendSlowPool, statePool, forcingPool, 1, domain % dminfo, dt)
-
-    ! set configs to compute only the fast terms on the momentum equation
-    !call setConfigsForFastTends()
 
     call mpas_timer_stop("lts slow tend computation")
 
@@ -1032,9 +1019,6 @@ module ocn_time_integration_lts
     !  A little clean up at the end
     !
 
-    ! reset configs
-    !call resetConfigs()
-
     call mpas_timer_start("lts cleanup phase")
 
     if (config_prescribe_velocity) then
@@ -1266,7 +1250,6 @@ module ocn_time_integration_lts
    endif
 
    ! inline computation of the diagnostics
-   ! TODO: check if this can be done using LTS regions
 
    ! layerThickEdgeFlux
    do iEdge = 1, nEdgesAll
@@ -1423,66 +1406,6 @@ module ocn_time_integration_lts
    end if
 
    end subroutine ocn_lts_tends!}}}
-
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-   subroutine setConfigsForSlowTends()!{{{
-
-   implicit none
-
-   ! pressure gradient tendency terms
-   config_use_time_varying_atmospheric_forcing = .true.
-
-   ! Coriolis and kinetic energy grad tendency term
-   config_disable_vel_coriolis = .false.
-
-   ! this computes the surface stress needs to be true if config_disable_vel_surface_stress = false
-   config_use_bulk_wind_stress = .true.
-   ! surface stress tendency term
-   config_disable_vel_surface_stress = .false.
-
-   ! forcing drag terms
-   config_disable_vel_topographic_wave_drag = .false.
-   config_disable_vel_explicit_bottom_drag = .false.
-
-   end subroutine setConfigsForSlowTends!}}}
-
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-   subroutine setConfigsForFastTends()!{{{
-
-   implicit none
-
-   config_use_time_varying_atmospheric_forcing = .false.
-
-   ! Coriolis and kinetic energy grad tendency term
-   config_disable_vel_coriolis = .true.
-
-   ! this computes the surface stress needs to be true if config_disable_vel_surface_stress = false
-   config_use_bulk_wind_stress = .false.
-   ! surface stress tendency term
-   config_disable_vel_surface_stress = .true.
-
-   ! forcing drag terms
-   config_disable_vel_topographic_wave_drag = .true.
-   config_disable_vel_explicit_bottom_drag = .true.
-
-   end subroutine setConfigsForFastTends!}}}
-
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-   subroutine resetConfigs()!{{{
-
-   implicit none
-
-   config_use_time_varying_atmospheric_forcing = .true.
-   config_disable_vel_coriolis = .false.
-   config_disable_vel_surface_stress = .false.
-   config_disable_vel_topographic_wave_drag = .false.
-   config_disable_vel_explicit_bottom_drag = .false.
-   config_use_bulk_wind_stress = .true.
-
-   end subroutine resetConfigs!}}}
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
