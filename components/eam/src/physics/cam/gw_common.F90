@@ -218,7 +218,14 @@ subroutine gw_prof (ncol, cpair, t, pmid, pint, rhoi, ti, nm, ni)
   end do
 
   ! Interior points use centered differences.
+#ifdef GWMOD1
+  ! interpolated to find interface temperature consistent with interface pressure
+  do k = 1, pver-1
+     ti(:,k) = t(:,k) + (pint(:,k)-pmid(:,k)) * (t(:,k+1)-t(:,k)) / (pmid(:,k+1)-pmid(:,k))
+  end do
+#else
   ti(:,1:pver-1) = midpoint_interp(t)
+#endif
   do k = 1, pver-1
      do i = 1, ncol
         rhoi(i,k) = pint(i,k) / (rair*ti(i,k))
