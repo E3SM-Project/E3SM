@@ -9,19 +9,21 @@ module shr_reprosum_mod
 ! Compute using either or both a scalable, reproducible algorithm and a
 ! scalable, nonreproducible algorithm:
 ! * Reproducible (scalable):
-!    Convert to fixed point (integer vector representation) to enable
-!    reproducibility when using MPI_Allreduce
+!    Convert each floating point summand to an integer vector
+!    representation, to enable reproducibility when using
+!    MPI_Allreduce, then convert the resulting global sum back to a
+!    floating point representation locally;
 ! * Alternative usually reproducible (scalable):
 !    Use parallel double-double algorithm due to Helen He and
-!    Chris Ding, based on David Bailey's/Don Knuth's DDPDD algorithm
+!    Chris Ding, based on David Bailey's/Don Knuth's DDPDD algorithm;
 ! * Nonreproducible (scalable):
 !    Floating point and MPI_Allreduce based.
 ! If computing both reproducible and nonreproducible sums, compare
 ! these and report relative difference (if absolute difference
 ! less than sum) or absolute difference back to calling routine.
 !
-! Author: P. Worley (based on suggestions from J. White for fixed
-!                    point algorithm and on He/Ding paper for ddpdd
+! Author: P. Worley (based on suggestions from J. White for integer
+!                    vector algorithm and on He/Ding paper for DDPDD
 !                    algorithm)
 !
 !-----------------------------------------------------------------------
@@ -109,7 +111,7 @@ module shr_reprosum_mod
 ! Author: P. Worley
 !-----------------------------------------------------------------------
 !------------------------------Arguments--------------------------------
-      ! Use DDPDD algorithm instead of fixed precision algorithm
+      ! Use DDPDD algorithm instead of integer vector algorithm
       logical, intent(in), optional :: repro_sum_use_ddpdd_in
       ! Allow INF or NaN in summands
       logical, intent(in), optional :: repro_sum_allow_infnan_in
@@ -167,7 +169,7 @@ module shr_reprosum_mod
               'distributed sum algorithm'
          else
             write(logunit,*) 'SHR_REPROSUM_SETOPTS: ',&
-              'Using fixed-point-based (scalable) reproducible ', &
+              'Using integer-vector-based (scalable) reproducible ', &
               'distributed sum algorithm'
          endif
 
@@ -189,7 +191,7 @@ module shr_reprosum_mod
                  'a serial algorithm.'
             else
                write(logunit,*) '                    ',&
-                 'If tolerance exceeded, fixed-precision is sum used ', &
+                 'If tolerance exceeded, integer-vector-based sum is used ', &
                  'but a warning is output.'
             endif
          else
@@ -214,12 +216,15 @@ module shr_reprosum_mod
 !----------------------------------------------------------------------
 !
 ! Purpose:
-! Compute the global sum of each field in "arr" using the indicated
+! Compute the global sum of each field in 'arr' using the indicated
 ! communicator with a reproducible yet scalable implementation based
-! on a fixed point algorithm. An alternative is to use an "almost
-! always reproducible" floating point algorithm, as described below.
+! on first converting each floating point summand into an equivalent
+! representation using a vector of integers, summing the integer
+! vectors, then converting the resulting sum back to a floating point
+! representation. An alternative is to use an 'almost always
+! reproducible' floating point algorithm (DDPDD), as described below.
 !
-! The accuracy of the fixed point algorithm is controlled by the
+! The accuracy of the integer vector algorithm is controlled by the
 ! number of "levels" of integer expansion. The algorithm will calculate
 ! the number of levels that is required for the sum to be essentially
 ! exact. (The sum as represented by the integer expansion will be exact,
@@ -278,11 +283,11 @@ module shr_reprosum_mod
 ! precision summation of double precision values with 10 double
 ! precision operations. The advantage of this algorithm is that
 ! it requires a single MPI_Allreduce and is less expensive per summand
-! than is the fixed precision algorithm. The disadvantage is that it
+! than is the integer vector algorithm. The disadvantage is that it
 ! is not guaranteed to be reproducible (though it is reproducible
 ! much more often than is the standard algorithm). This alternative
 ! is used when the optional parameter ddpdd_sum is set to .true. It is
-! also used if the fixed precision algorithm radix assumption does not
+! also used if the integer vector algorithm radix assumption does not
 ! hold.
 !
 !----------------------------------------------------------------------
@@ -300,7 +305,7 @@ module shr_reprosum_mod
 
       logical,  intent(in),    optional :: ddpdd_sum
                                          ! use ddpdd algorithm instead
-                                         ! of fixed precision algorithm
+                                         ! of integer vector algorithm
 
       logical,  intent(in),    optional :: allow_infnan
          ! if .true., allow INF or NaN input values.
@@ -349,8 +354,8 @@ module shr_reprosum_mod
 
       real(r8), intent(out),   optional :: rel_diff(2,nflds)
                                          ! relative and absolute
-                                         !  differences between fixed
-                                         !  and floating point sums
+                                         !  differences between integer
+                                         !  vector and floating point sums
 
       integer,  intent(in),    optional :: commid
                                          ! MPI communicator
@@ -426,7 +431,7 @@ module shr_reprosum_mod
                                          !  fast, nonreproducible,
                                          !  floating point alg.
       real(r8) :: abs_diff               ! absolute difference between
-                                         !  fixed and floating point
+                                         !  integer vector and floating point
                                          !  sums
 #ifdef _OPENMP
       integer omp_get_max_threads
@@ -618,7 +623,7 @@ module shr_reprosum_mod
                arr_max_shift = digits(0_i8) - (exponent(xmax_nsummands) + 1)
                if (arr_max_shift < 2) then
                   call shr_sys_abort('repro_sum failed: number of summands too '// &
-                                     'large for fixed precision algorithm' )
+                                     'large for integer vector algorithm' )
                endif
 
 ! calculate sum
@@ -750,7 +755,7 @@ module shr_reprosum_mod
             arr_max_shift = digits(0_i8) - (exponent(xmax_nsummands) + 1)
             if (arr_max_shift < 2) then
                call shr_sys_abort('repro_sum failed: number of summands too '// &
-                                  'large for fixed precision algorithm' )
+                                  'large for integer vector algorithm' )
             endif
 
 ! determine maximum number of levels required for each field
@@ -796,7 +801,7 @@ module shr_reprosum_mod
 
       endif
 
-! compare fixed and floating point results
+! compare integer vector and floating point results
       if ( present(rel_diff) ) then
          if (shr_reprosum_reldiffmax >= 0.0_r8) then
 
@@ -885,11 +890,14 @@ module shr_reprosum_mod
 !----------------------------------------------------------------------
 !
 ! Purpose:
-! Compute the global sum of each field in "arr" using the indicated
+! Compute the global sum of each field in 'arr' using the indicated
 ! communicator with a reproducible yet scalable implementation based
-! on a fixed point algorithm. The accuracy of the fixed point algorithm
-! is controlled by the number of "levels" of integer expansion, the
-! maximum value of which is specified by max_level.
+! on first converting each floating point summand into an equivalent
+! representation using a vector of integers, summing the integer
+! vectors, then converting the resulting sum back to a floating point
+! representation. The accuracy of the integer vector algorithm is
+! controlled by the number of 'levels' of integer expansion, the maximum
+! value of which is specified by max_level.
 !
 !----------------------------------------------------------------------
 !
@@ -1354,8 +1362,8 @@ module shr_reprosum_mod
                                               !  written to
       real(r8), intent(in) :: rel_diff(2,nflds)
                                               ! relative and absolute
-                                              !  differences between fixed
-                                              !  and floating point sums
+                                              !  differences between integer
+                                              !  vector and floating point sums
 
 !
 ! Local workspace
@@ -1402,7 +1410,7 @@ module shr_reprosum_mod
       if (exceeds_limit > 0) then
          if (master) then
             write(llogunit,*) trim(name), &
-                            ': difference in fixed and floating point sums ', &
+                            ': difference between integer vector and floating point sums ', &
                             ' exceeds tolerance in ', exceeds_limit, &
                             ' fields.'
             write(llogunit,*) '  Maximum relative diff: (rel)', &
