@@ -1,5 +1,5 @@
 module shr_reprosum_mod
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
 ! Purpose:
 ! Compute reproducible global sums of a set of arrays across an MPI
@@ -26,11 +26,11 @@ module shr_reprosum_mod
 !                    vector algorithm and on He/Ding paper for DDPDD
 !                    algorithm)
 !
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
 
-!-----------------------------------------------------------------------
-!- use statements ------------------------------------------------------
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
+!- use statements -------------------------------------------------------
+!------------------------------------------------------------------------
 #if ( defined noI8 )
    ! Workaround for when shr_kind_i8 is not supported.
    use shr_kind_mod,  only: r8 => shr_kind_r8, i8 => shr_kind_i4
@@ -47,49 +47,49 @@ module shr_reprosum_mod
                             shr_infnan_isposinf, shr_infnan_isneginf
    use perf_mod
 
-!-----------------------------------------------------------------------
-!- module boilerplate --------------------------------------------------
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
+!- module boilerplate ---------------------------------------------------
+!------------------------------------------------------------------------
    implicit none
    private
 
-!-----------------------------------------------------------------------
-!- include statements --------------------------------------------------
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
+!- include statements ---------------------------------------------------
+!------------------------------------------------------------------------
 #include <mpif.h>
 
    save
 
-!-----------------------------------------------------------------------
-! Public interfaces ----------------------------------------------------
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
+! Public interfaces -----------------------------------------------------
+!------------------------------------------------------------------------
    public :: &
       shr_reprosum_setopts,        &! set runtime options
       shr_reprosum_calc,           &! calculate distributed sum
       shr_reprosum_tolExceeded      ! utility function to check relative
                                     !  differences against the tolerance
 
-!-----------------------------------------------------------------------
-! Public data ----------------------------------------------------------
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
+! Public data -----------------------------------------------------------
+!------------------------------------------------------------------------
    logical, public     :: shr_reprosum_recompute = .false.
 
    real(r8), public    :: shr_reprosum_reldiffmax = -1.0_r8
 
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
 ! Private interfaces ----------------------------------------------------
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
    private :: &
       ddpdd,           &! double-double sum routine
       split_indices     ! split indices among OMP threads
 
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
 ! Private data ----------------------------------------------------------
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
 
-   !----------------------------------------------------------------------------
+   !---------------------------------------------------------------------
    ! shr_reprosum_mod options
-   !----------------------------------------------------------------------------
+   !---------------------------------------------------------------------
    logical            :: repro_sum_use_ddpdd = .false.
 
    logical            :: repro_sum_allow_infnan = .false.
@@ -106,11 +106,11 @@ module shr_reprosum_mod
                                    repro_sum_master,          &
                                    repro_sum_logunit          )
 
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
 ! Purpose: Set runtime options
 ! Author: P. Worley
-!-----------------------------------------------------------------------
-!------------------------------Arguments--------------------------------
+!------------------------------------------------------------------------
+!------------------------------Arguments---------------------------------
       ! Use DDPDD algorithm instead of integer vector algorithm
       logical, intent(in), optional :: repro_sum_use_ddpdd_in
       ! Allow INF or NaN in summands
@@ -126,11 +126,11 @@ module shr_reprosum_mod
       logical, intent(in), optional  :: repro_sum_master
       ! unit number for log messages
       integer, intent(in), optional  :: repro_sum_logunit
-!---------------------------Local Workspace-----------------------------
+!---------------------------Local Workspace------------------------------
       integer logunit            ! unit number for log messages
       logical master             ! local master?
       logical,save :: firstcall = .true.  ! first call
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
 
       if ( present(repro_sum_master) ) then
          master = repro_sum_master
@@ -213,7 +213,7 @@ module shr_reprosum_mod
                                  gbl_max_nsummands, gbl_max_nsummands_out,&
                                  gbl_count, repro_sum_validate,           &
                                  repro_sum_stats, rel_diff, commid        )
-!----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
 ! Purpose:
 ! Compute the global sum of each field in 'arr' using the indicated
@@ -427,7 +427,7 @@ module shr_reprosum_mod
 ! set to .true. It is also used if the integer vector algorithm radix
 ! assumption does not hold.
 !
-!----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
 ! Arguments
 !
@@ -575,9 +575,9 @@ module shr_reprosum_mod
       external omp_get_max_threads
 #endif
 !
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
-! initialize local statistics variables
+! Initialize local statistics variables
       gbl_lor_red = 0
       gbl_max_red = 0
       repro_sum_fast = 0
@@ -585,7 +585,7 @@ module shr_reprosum_mod
       repro_sum_both = 0
       nonrepro_sum = 0
 
-! set MPI communicator
+! Set MPI communicator
       if ( present(commid) ) then
          mpi_comm = commid
       else
@@ -593,26 +593,26 @@ module shr_reprosum_mod
       endif
       call t_barrierf('sync_repro_sum',mpi_comm)
 
-! check whether should abort if input contains NaNs or INFs
+! Check whether should abort if input contains NaNs or INFs
       abort_inf_nan = .not. repro_sum_allow_infnan
       if ( present(allow_infnan) ) then
          abort_inf_nan = .not. allow_infnan
       endif
 
-! with Fujitsu always abort on NaNs or INFs in input
+! With Fujitsu always abort on NaNs or INFs in input
 #ifdef CPRFJ
       abort_inf_nan = .true.
 #endif
 
       call t_startf('shr_reprosum_INF_NaN_Chk')
 
-! initialize flags to indicate that no NaNs or INFs are present in the input data
+! Initialize flags to indicate that no NaNs or INFs are present in the input data
       inf_nan_gchecks = .false.
       arr_gsum_infnan = .false.
 
       if (abort_inf_nan) then
 
-! check whether input contains NaNs or INFs, and abort if so
+! Check whether input contains NaNs or INFs, and abort if so
          nan_check = any(shr_infnan_isnan(arr))
          inf_check = any(shr_infnan_isinf(arr))
 
@@ -634,7 +634,7 @@ module shr_reprosum_mod
 #ifndef CPRFJ
       else
 
-! determine whether any fields contain NaNs or INFs, and avoid processing them
+! Determine whether any fields contain NaNs or INFs, and avoid processing them
 ! via integer expansions
          inf_nan_lchecks = .false.
 
@@ -659,13 +659,13 @@ module shr_reprosum_mod
 
       call t_stopf('shr_reprosum_INF_NaN_Chk')
 
-! check whether should use shr_reprosum_ddpdd algorithm
+! Check whether should use shr_reprosum_ddpdd algorithm
       use_ddpdd_sum = repro_sum_use_ddpdd
       if ( present(ddpdd_sum) ) then
          use_ddpdd_sum = ddpdd_sum
       endif
 
-! check whether intrinsic-based algorithm will work on this system
+! Check whether intrinsic-based algorithm will work on this system
 ! (requires floating point and integer bases to be the same)
 ! If not, always use ddpdd.
       use_ddpdd_sum = use_ddpdd_sum .or. (radix(1.0_r8) /= radix(1_i8))
@@ -684,23 +684,23 @@ module shr_reprosum_mod
 
          call t_startf('shr_reprosum_int')
 
-! get number of MPI tasks
+! Get number of MPI tasks
          call mpi_comm_size(mpi_comm, tasks, ierr)
 
-! get number of OpenMP threads
+! Get number of OpenMP threads
 #ifdef _OPENMP
          omp_nthreads = omp_get_max_threads()
 #else
          omp_nthreads = 1
 #endif
 
-! see if have sufficient information to not require max/min allreduce
+! See if have sufficient information to not require max/min allreduce
          recompute = .true.
          validate = .false.
          if ( present(arr_gbl_max) .and. present(arr_max_levels) ) then
             recompute = .false.
 
-! setting lower bound on max_level*nflds to be 64 to improve OpenMP
+! Setting lower bound on max_level*nflds to be 64 to improve OpenMP
 ! performance for loopb in shr_reprosum_int
             max_level = (64/nflds) + 1
             do ifld=1,nflds
@@ -718,7 +718,7 @@ module shr_reprosum_mod
 
             if (.not. recompute) then
 
-! determine maximum number of summands in local phases of the
+! Determine maximum number of summands in local phases of the
 ! algorithm
                call t_startf("repro_sum_allr_max")
                if ( present(gbl_max_nsummands) ) then
@@ -736,15 +736,15 @@ module shr_reprosum_mod
                endif
                call t_stopf("repro_sum_allr_max")
 
-! determine maximum shift. Shift needs to be small enough that summation
-!  does not exceed maximum number of digits in i8.
+! Determine maximum shift. Shift needs to be small enough that summation
+! does not exceed maximum number of digits in i8.
 
-! if requested, return max_nsummands before it is redefined
+! If requested, return max_nsummands before it is redefined
                if ( present( gbl_max_nsummands_out) ) then
                   gbl_max_nsummands_out = max_nsummands
                endif
 
-! summing within each thread first
+! Summing within each thread first
                max_nsummands = (max_nsummands/omp_nthreads) + 1
 ! then over threads and tasks
                max_nsummands = max(max_nsummands, tasks*omp_nthreads)
@@ -763,7 +763,7 @@ module shr_reprosum_mod
                                      'large for integer vector algorithm' )
                endif
 
-! calculate sum
+! Calculate sum
                if (present(repro_sum_validate)) then
                   validate = repro_sum_validate
                else
@@ -774,12 +774,12 @@ module shr_reprosum_mod
                                      arr_max_levels, max_level, arr_gsum_infnan, &
                                      validate, recompute, omp_nthreads, mpi_comm)
 
-! record statistics, etc.
+! Record statistics, etc.
                repro_sum_fast = 1
                if (recompute) then
                   repro_sum_both = 1
                else
-! if requested, return specified levels and upper bounds on maxima
+! If requested, return specified levels and upper bounds on maxima
                   if ( present(arr_max_levels_out) ) then
                      do ifld=1,nflds
                         arr_max_levels_out(ifld) = arr_max_levels(ifld)
@@ -794,23 +794,23 @@ module shr_reprosum_mod
             endif
          endif
 
-! do not have sufficient information; calculate global max/min and
+! Do not have sufficient information; calculate global max/min and
 ! use to compute required number of levels
          if (recompute) then
 
-! record statistic
+! Record statistic
             repro_sum_slow = 1
 
-! determine maximum and minimum (non-zero) summand values and
+! Determine maximum and minimum (non-zero) summand values and
 ! maximum number of local summands
 
-! allocate thread-specific work space
+! Allocate thread-specific work space
             allocate(arr_tlmax_exp(nflds,omp_nthreads))
             allocate(arr_tlmin_exp(nflds,omp_nthreads))
             allocate(isum_beg(omp_nthreads))
             allocate(isum_end(omp_nthreads))
 
-! split summand index range over OpenMP threads
+! Split summand index range over OpenMP threads
             call split_indices(nsummands, omp_nthreads, isum_beg, isum_end)
 
 !$omp parallel do      &
@@ -853,30 +853,30 @@ module shr_reprosum_mod
             arr_gmax_exp(:) = -arr_gextremes(1:nflds,1)
             arr_gmin_exp(:) =  arr_gextremes(1:nflds,2)
 
-! if a field is identically zero or contains INFs or NaNs, arr_gmin_exp
-!   still equals MAXEXPONENT and arr_gmax_exp still equals MINEXPONENT.
-!   In this case, set arr_gmin_exp = arr_gmax_exp = MINEXPONENT
+! If a field is identically zero or contains INFs or NaNs, arr_gmin_exp
+! still equals MAXEXPONENT and arr_gmax_exp still equals MINEXPONENT.
+! In this case, set arr_gmin_exp = arr_gmax_exp = MINEXPONENT
             do ifld=1,nflds
                arr_gmin_exp(ifld) = min(arr_gmax_exp(ifld),arr_gmin_exp(ifld))
             enddo
 
-! if requested, return upper bounds on observed maxima
+! If requested, return upper bounds on observed maxima
             if ( present(arr_gbl_max_out) ) then
                do ifld=1,nflds
                   arr_gbl_max_out(ifld) = scale(1.0_r8,arr_gmax_exp(ifld))
                enddo
             endif
 
-! if requested, return max_nsummands before it is redefined
+! If requested, return max_nsummands before it is redefined
             if ( present( gbl_max_nsummands_out) ) then
                gbl_max_nsummands_out = max_nsummands
             endif
 
-! determine maximum shift (same as in previous branch, but with calculated
-!  max_nsummands). Shift needs to be small enough that summation does not
-!  exceed maximum number of digits in i8.
+! Determine maximum shift (same as in previous branch, but with calculated
+! max_nsummands). Shift needs to be small enough that summation does not
+! exceed maximum number of digits in i8.
 
-! summing within each thread first
+! Summing within each thread first
             max_nsummands = (max_nsummands/omp_nthreads) + 1
 ! then over threads and tasks
             max_nsummands = max(max_nsummands, tasks*omp_nthreads)
@@ -917,8 +917,8 @@ module shr_reprosum_mod
                 ((digits(1.0_r8) + (arr_gmax_exp(ifld)-arr_gmin_exp(ifld))) &
                 / arr_max_shift)
                if ( present(arr_max_levels) .and. (.not. validate) ) then
-! if validate true, then computation with arr_max_levels failed
-!  previously
+! If validate true, then computation with arr_max_levels failed
+! previously
                   if ( arr_max_levels(ifld) > 0 ) then
                      max_levels(ifld) = &
                         min(arr_max_levels(ifld),max_levels(ifld))
@@ -928,14 +928,14 @@ module shr_reprosum_mod
                   max_level = max_levels(ifld)
             enddo
 
-! if requested, return calculated levels
+! If requested, return calculated levels
             if ( present(arr_max_levels_out) ) then
                do ifld=1,nflds
                   arr_max_levels_out(ifld) = max_levels(ifld)
                enddo
             endif
 
-! calculate sum
+! Calculate sum
             validate = .false.
             call shr_reprosum_int(arr, arr_gsum, nsummands, dsummands, &
                                   nflds, arr_max_shift, arr_gmax_exp, &
@@ -948,15 +948,15 @@ module shr_reprosum_mod
 
       endif
 
-! compare integer vector and floating point results
+! Compare integer vector and floating point results
       if ( present(rel_diff) ) then
          if (shr_reprosum_reldiffmax >= 0.0_r8) then
 
             call t_barrierf('sync_nonrepro_sum',mpi_comm)
             call t_startf('nonrepro_sum')
-! record statistic
+! Record statistic
             nonrepro_sum = 1
-! compute nonreproducible sum
+! Compute nonreproducible sum
             arr_lsum(:) = 0.0_r8
 !$omp parallel do      &
 !$omp default(shared)  &
@@ -976,7 +976,7 @@ module shr_reprosum_mod
 
             call t_stopf('nonrepro_sum')
 
-! determine differences
+! Determine differences
 !$omp parallel do      &
 !$omp default(shared)  &
 !$omp private(ifld, abs_diff)
@@ -1013,7 +1013,7 @@ module shr_reprosum_mod
          endif
       end do
 
-! return statistics
+! Return statistics
       if ( present(repro_sum_stats) ) then
          repro_sum_stats(1) = repro_sum_stats(1) + repro_sum_fast
          repro_sum_stats(2) = repro_sum_stats(2) + repro_sum_slow
@@ -1033,7 +1033,7 @@ module shr_reprosum_mod
                                 arr_max_shift, arr_gmax_exp, max_levels,    &
                                 max_level, skip_field, validate, recompute, &
                                 omp_nthreads, mpi_comm                      )
-!----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
 ! Purpose:
 ! Compute the global sum of each field in 'arr' using the indicated
@@ -1045,7 +1045,7 @@ module shr_reprosum_mod
 ! controlled by the number of 'levels' of integer expansion, the maximum
 ! value of which is specified by max_level.
 !
-!----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
 ! Arguments
 !
@@ -1155,7 +1155,7 @@ module shr_reprosum_mod
                                    !  from integer vector
 
 !
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
 ! Save radix of i8 variables in an i8 variable
       i8_radix = radix(IX_8)
 
@@ -1167,7 +1167,7 @@ module shr_reprosum_mod
         voffset = 1
       endif
 
-! compute offsets for each field
+! Compute offsets for each field
       offset(1) = voffset
       do ifld=2,nflds
          offset(ifld) = offset(ifld-1) &
@@ -1175,12 +1175,12 @@ module shr_reprosum_mod
       enddo
       veclth = offset(nflds) + max_levels(nflds)
 
-! split summand index range over OpenMP threads
+! Split summand index range over OpenMP threads
       call split_indices(nsummands, omp_nthreads, isum_beg, isum_end)
 
-! convert local summands to vector of integers and sum
+! Convert local summands to vector of integers and sum
 ! (Using scale instead of set_exponent because arr_remainder may not be
-!  'normal' after level 1 calculation)
+! 'normal' after level 1 calculation)
       i8_arr_lsum_level(:) = 0_i8
 
 !$omp parallel do      &
@@ -1205,18 +1205,18 @@ module shr_reprosum_mod
                arr_exp   = exponent(arr(isum,ifld))
                arr_frac  = fraction(arr(isum,ifld))
 
-! test that global maximum upper bound is an upper bound
+! Test that global maximum upper bound is an upper bound
                if (arr_exp > arr_gmax_exp(ifld)) then
                   max_error(ifld,ithread) = 1
                   exit
                endif
 
-! calculate first shift
+! Calculate first shift
                arr_shift = arr_max_shift - (arr_gmax_exp(ifld)-arr_exp)
 
-! determine first (probably) nonzero level (assuming initial fraction is
-!  'normal' - algorithm still works if this is not true)
-!  NOTE: this is critical; scale will set to zero if min exponent is too small.
+! Determine first (probably) nonzero level (assuming initial fraction is
+! 'normal' - algorithm still works if this is not true)
+! NOTE: this is critical; scale will set to zero if min exponent is too small.
                if (arr_shift < 1) then
                   ilevel = (1 + (arr_gmax_exp(ifld)-arr_exp))/arr_max_shift
                   arr_shift = ilevel*arr_max_shift - (arr_gmax_exp(ifld)-arr_exp)
@@ -1230,7 +1230,7 @@ module shr_reprosum_mod
                endif
 
                if (ilevel <= max_levels(ifld)) then
-! apply first shift/truncate, add it to the relevant running
+! Apply first shift/truncate, add it to the relevant running
 ! sum, and calculate the remainder.
                   arr_remainder = scale(arr_frac,arr_shift)
                   i8_arr_level = int(arr_remainder,i8)
@@ -1238,7 +1238,7 @@ module shr_reprosum_mod
                      i8_arr_tlsum_level(ilevel,ifld,ithread) + i8_arr_level
                   arr_remainder = arr_remainder - i8_arr_level
 
-! while the remainder is non-zero, continue to shift, truncate,
+! While the remainder is non-zero, continue to shift, truncate,
 ! sum, and calculate new remainder
                   do while ((arr_remainder /= 0.0_r8) &
                      .and. (ilevel < max_levels(ifld)))
@@ -1259,7 +1259,7 @@ module shr_reprosum_mod
 
           enddo
 
-! postprocess integer vector to eliminate potential for overlap in the following
+! Postprocess integer vector to eliminate potential for overlap in the following
 ! sums over threads and MPI tasks: if value larger than or equal to
 ! (radix(IX_8)**arr_max_shift), add this 'overlap' to next larger integer in
 ! vector, resulting in nonoverlapping ranges for each component. Note that
@@ -1280,7 +1280,7 @@ module shr_reprosum_mod
        call t_stopf('repro_sum_loopb')
       enddo
 
-! sum contributions from different threads
+! Sum contributions from different threads
       do ifld=1,nflds
          ioffset = offset(ifld)
          do ithread = 1,omp_nthreads
@@ -1292,7 +1292,7 @@ module shr_reprosum_mod
          enddo
       enddo
 
-! record if upper bound was inaccurate or if level expansion stopped
+! Record if upper bound was inaccurate or if level expansion stopped
 ! before full accuracy was achieved
       if (validate) then
          do ifld=1,nflds
@@ -1302,7 +1302,7 @@ module shr_reprosum_mod
          enddo
       endif
 
-! sum integer vector element-wise
+! Sum integer vector element-wise
 #if ( defined noI8 )
      ! Workaround for when shr_kind_i8 is not supported.
       call t_startf("repro_sum_allr_i4")
@@ -1320,12 +1320,12 @@ module shr_reprosum_mod
 !  1) arr_max_shift is the shift applied to fraction(arr_gmax) .
 !   When shifting back, need to 'add back in' true arr_gmax exponent. This was
 !   removed implicitly by working only with the fraction .
-!  2) want to add levels into sum in reverse order (smallest to largest). However,
+!  2) Want to add levels into sum in reverse order (smallest to largest). However,
 !   even this can generate floating point rounding errors if signs of integers
 !   alternate. To avoid this, do some arithmetic with integer vectors so that all
 !   components have the same sign. This should keep relative difference between
 !   using different integer sizes (e.g. i8 and i4) to machine epsilon
-!  3) assignment to X_8 will usually lose accuracy since maximum integer
+!  3) Assignment to X_8 will usually lose accuracy since maximum integer
 !   size is greater than the max number of 'digits' in r8 value (if xmax_nsummands
 !   correction not very large). Calculate remainder and add in first (since
 !   smaller). One correction is sufficient for r8 (53 digits) and i8 (63 digits).
@@ -1338,8 +1338,8 @@ module shr_reprosum_mod
          arr_gsum(ifld) = 0.0_r8
          ioffset = offset(ifld)
 
-! if validate is .true., test whether the summand upper bound
-!  was exceeded on any of the MPI tasks
+! If validate is .true., test whether the summand upper bound
+! was exceeded on any of the MPI tasks
          if (validate) then
             if (i8_arr_gsum_level(ioffset-voffset+1) /= 0_i8) then
                recompute = .true.
@@ -1348,8 +1348,8 @@ module shr_reprosum_mod
 
          if (.not. recompute) then
 
-! preprocess integer vector:
-!  a) if value larger than or equal to (radix(IX_8)**arr_max_shift), add this 'overlap'
+! Preprocess integer vector:
+!  a) If value larger than or equal to (radix(IX_8)**arr_max_shift), add this 'overlap'
 !     to next larger integer in vector, resulting in nonoverlapping ranges for each
 !     component. Note that have 'ilevel-1=0' level here as described above.
            do ilevel=max_levels(ifld),1,-1
@@ -1363,7 +1363,7 @@ module shr_reprosum_mod
                                                    - IX_8
              endif
            enddo
-!  b) subtract +/- 1 from larger and add +/- 1 to smaller when necessary
+!  b) Subtract +/- 1 from larger and add +/- 1 to smaller when necessary
 !     so that all vector components have the same sign (eliminating loss
 !     of accuracy arising from difference of large values when
 !     reconstructing r8 sum from integer vector)
@@ -1390,7 +1390,7 @@ module shr_reprosum_mod
               enddo
             endif
 
-! start with maximum shift, and work up to larger values
+! Start with maximum shift, and work up to larger values
             arr_shift = arr_gmax_exp(ifld) &
                         - max_levels(ifld)*arr_max_shift
             curr_exp = 0
@@ -1404,11 +1404,11 @@ module shr_reprosum_mod
                   X_8(jlevel) = i8_arr_gsum_level(ioffset+ilevel)
                   LX(jlevel)  = exponent(X_8(jlevel))
 
-! calculate remainder
+! Calculate remainder
                   IX_8 = int(X_8(jlevel),i8)
                   RX_8 = (i8_arr_gsum_level(ioffset+ilevel) - IX_8)
 
-! repeat using remainder
+! Repeat using remainder
                   do while (RX_8 /= 0.0_r8)
                      jlevel = jlevel + 1
                      X_8(jlevel) = RX_8
@@ -1417,7 +1417,7 @@ module shr_reprosum_mod
                      RX_8 = (i8_arr_gsum_level(ioffset+ilevel) - IX_8)
                   enddo
 
-! add in contributions, smaller to larger, rescaling for each
+! Add in contributions, smaller to larger, rescaling for each
 ! addition to guarantee that exponent of working summand is always
 ! larger than minexponent
                   do while (jlevel > 0)
@@ -1439,7 +1439,7 @@ module shr_reprosum_mod
                arr_shift = arr_shift + arr_max_shift
             enddo
 
-! apply final exponent correction, scaling first if exponent is too small
+! Apply final exponent correction, scaling first if exponent is too small
 ! to apply directly
             corr_exp = curr_exp + exponent(arr_gsum(ifld))
             if (corr_exp >= MINEXPONENT(1.0_r8)) then
@@ -1450,14 +1450,14 @@ module shr_reprosum_mod
                arr_gsum(ifld) = scale(RX_8,MINEXPONENT(1.0_r8))
             endif
 
-! if validate is .true. and some precision lost, test whether 'too much'
-!  was lost, due to too loose an upper bound, too stringent a limit on number
-!  of levels of expansion, cancellation, .... Calculated by comparing lower
-!  bound on number of sigificant digits with number of digits in 1.0_r8 .
+! If validate is .true. and some precision lost, test whether 'too much'
+! was lost, due to too loose an upper bound, too stringent a limit on number
+! of levels of expansion, cancellation, .... Calculated by comparing lower
+! bound on number of sigificant digits with number of digits in 1.0_r8 .
             if (validate) then
                if (i8_arr_gsum_level(ioffset-voffset+2) /= 0_i8) then
 
-! find first nonzero level and use exponent for this level, then assume all
+! Find first nonzero level and use exponent for this level, then assume all
 ! subsequent levels contribute arr_max_shift digits.
                   sum_digits = 0
                   do ilevel=0,max_levels(ifld)
@@ -1490,13 +1490,13 @@ module shr_reprosum_mod
 
    logical function shr_reprosum_tolExceeded (name, nflds, master, &
                                               logunit, rel_diff    )
-!----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
 ! Purpose:
 ! Test whether distributed sum exceeds tolerance and print out a
 ! warning message.
 !
-!----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
 ! Arguments
 !
@@ -1523,7 +1523,7 @@ module shr_reprosum_mod
       real(r8) :: max_abs_diff                ! maximum absolute difference
       integer  :: max_abs_diff_idx            ! field index for max. abs. diff.
 !
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
       shr_reprosum_tolExceeded = .false.
       if (shr_reprosum_reldiffmax < 0.0_r8) return
@@ -1534,7 +1534,7 @@ module shr_reprosum_mod
          llogunit = s_logunit
       endif
 
-      ! check that 'fast' reproducible sum is accurate enough.
+! Check that 'fast' reproducible sum is accurate enough.
       exceeds_limit = 0
       max_rel_diff = 0.0_r8
       max_abs_diff = 0.0_r8
@@ -1578,14 +1578,14 @@ module shr_reprosum_mod
 
    subroutine shr_reprosum_ddpdd (arr, arr_gsum, nsummands, dsummands,  &
                                   nflds, mpi_comm                       )
-!----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
 ! Purpose:
 ! Compute the global sum of each field in 'arr' using the indicated
 ! communicator with a reproducible yet scalable implementation based
 ! on He and Ding's implementation of the double-double algorithm.
 !
-!----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
 ! Arguments
 !
@@ -1617,7 +1617,7 @@ module shr_reprosum_mod
       logical, save :: first_time = .true.
 
 !
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
       call shr_reprosumx86_fix_start (old_cw)
 
@@ -1631,8 +1631,7 @@ module shr_reprosum_mod
 
          do isum=1,nsummands
 
-            ! Compute arr(isum,ifld) + arr_lsum_dd(ifld) using Knuth''s
-            ! trick.
+! Compute arr(isum,ifld) + arr_lsum_dd(ifld) using Knuth''s trick.
             t1 = arr(isum,ifld) + real(arr_lsum_dd(ifld))
             e  = t1 - arr(isum,ifld)
             t2 = ((real(arr_lsum_dd(ifld)) - e) &
@@ -1658,16 +1657,16 @@ module shr_reprosum_mod
 
    end subroutine shr_reprosum_ddpdd
 !
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
    subroutine DDPDD (dda, ddb, len, itype)
-!----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
 ! Purpose:
 ! Modification of original codes written by David H. Bailey
 ! This subroutine computes ddb(i) = dda(i)+ddb(i)
 !
-!----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
 ! Arguments
 !
@@ -1681,31 +1680,32 @@ module shr_reprosum_mod
       real(r8) e, t1, t2
       integer i
 !
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
       do i = 1, len
-!   Compute dda + ddb using Knuth's trick.
+
+! Compute dda + ddb using Knuth's trick.
          t1 = real(dda(i)) + real(ddb(i))
          e  = t1 - real(dda(i))
          t2 = ((real(ddb(i)) - e) + (real(dda(i)) - (t1 - e))) &
               + aimag(dda(i)) + aimag(ddb(i))
 
-!   The result is t1 + t2, after normalization.
+! The result is t1 + t2, after normalization.
          ddb(i) = cmplx ( t1 + t2, t2 - ((t1 + t2) - t1), r8 )
       enddo
 
 
    end subroutine DDPDD
 !
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
   subroutine split_indices(total,num_pieces,ibeg,iend)
-!----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
 ! Purpose:
 ! Split range into 'num_pieces'
 !
-!----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
 ! Arguments
 !
@@ -1717,7 +1717,7 @@ module shr_reprosum_mod
 !
     integer :: itmp1, itmp2, ioffset, i
 !
-!-----------------------------------------------------------------------
+!------------------------------------------------------------------------
 !
     itmp1 = total/num_pieces
     itmp2 = mod(total,num_pieces)
