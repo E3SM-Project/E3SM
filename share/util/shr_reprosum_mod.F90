@@ -225,7 +225,7 @@ module shr_reprosum_mod
 ! reproducible' floating point algorithm (DDPDD), as described below.
 !
 ! The accuracy of the integer vector algorithm is controlled by the
-! number of "levels" of integer expansion. The algorithm will calculate
+! number of 'levels' of integer expansion. The algorithm will calculate
 ! the number of levels that is required for the sum to be essentially
 ! exact. (The sum as represented by the integer expansion will be exact,
 ! but roundoff may perturb the least significant digit of the returned
@@ -1033,7 +1033,7 @@ module shr_reprosum_mod
 
 ! convert local summands to vector of integers and sum
 ! (Using scale instead of set_exponent because arr_remainder may not be
-!  "normal" after level 1 calculation)
+!  'normal' after level 1 calculation)
       i8_arr_lsum_level(:) = 0_i8
 
 !$omp parallel do      &
@@ -1116,7 +1116,7 @@ module shr_reprosum_mod
 ! sums over threads and MPI tasks: if value larger than or equal to
 ! (radix(IX_8)**arr_max_shift), add this 'overlap' to next larger integer in
 ! vector, resulting in nonoverlapping ranges for each component. Note that
-! "ilevel-1==0" corresponds to an extra level used to guarantee that the sums
+! 'ilevel-1==0' corresponds to an extra level used to guarantee that the sums
 ! over threads and MPI tasks do not overflow for ilevel==1.
           do ilevel=max_levels(ifld),1,-1
              RX_8 = i8_arr_tlsum_level(ilevel,ifld,ithread)
@@ -1171,7 +1171,7 @@ module shr_reprosum_mod
 
 ! Construct global sum from integer vector representation:
 !  1) arr_max_shift is the shift applied to fraction(arr_gmax) .
-!   When shifting back, need to "add back in" true arr_gmax exponent. This was
+!   When shifting back, need to 'add back in' true arr_gmax exponent. This was
 !   removed implicitly by working only with the fraction .
 !  2) want to add levels into sum in reverse order (smallest to largest). However,
 !   even this can generate floating point rounding errors if signs of integers
@@ -1204,7 +1204,7 @@ module shr_reprosum_mod
 ! preprocess integer vector:
 !  a) if value larger than or equal to (radix(IX_8)**arr_max_shift), add this 'overlap'
 !     to next larger integer in vector, resulting in nonoverlapping ranges for each
-!     component. Note that have "ilevel-1=0" level here as described above.
+!     component. Note that have 'ilevel-1=0' level here as described above.
            do ilevel=max_levels(ifld),1,-1
              RX_8 = i8_arr_gsum_level(ioffset+ilevel)
              IX_8 = int(scale(RX_8,-arr_max_shift),i8)
@@ -1388,7 +1388,7 @@ module shr_reprosum_mod
          llogunit = s_logunit
       endif
 
-      ! check that "fast" reproducible sum is accurate enough.
+      ! check that 'fast' reproducible sum is accurate enough.
       exceeds_limit = 0
       max_rel_diff = 0.0_r8
       max_abs_diff = 0.0_r8
@@ -1435,7 +1435,7 @@ module shr_reprosum_mod
 !----------------------------------------------------------------------
 !
 ! Purpose:
-! Compute the global sum of each field in "arr" using the indicated
+! Compute the global sum of each field in 'arr' using the indicated
 ! communicator with a reproducible yet scalable implementation based
 ! on He and Ding's implementation of the double-double algorithm.
 !
