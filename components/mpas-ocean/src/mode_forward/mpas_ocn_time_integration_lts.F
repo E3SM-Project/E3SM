@@ -1033,6 +1033,30 @@ module ocn_time_integration_lts
        end do
     end if
 
+    do iEdge = 1, nEdgesAll
+       normalTransportVelocity(:, iEdge) = normalVelocityNew(:, iEdge)
+    end do
+
+    call mpas_reconstruct(meshPool,  normalVelocityNew, &
+                          velocityX, velocityY, velocityZ,   &
+                          velocityZonal, velocityMeridional, &
+                          includeHalos = .true.)
+
+    call mpas_reconstruct(meshPool, gradSSH,          &
+                          gradSSHX, gradSSHY, gradSSHZ,    &
+                          gradSSHZonal, gradSSHMeridional, &
+                          includeHalos = .true.)
+
+    do iCell = 1, nCellsAll
+       surfaceVelocity(indexSurfaceVelocityZonal, iCell) = velocityZonal(1, iCell)
+       surfaceVelocity(indexSurfaceVelocityMeridional, iCell) = velocityMeridional(1, iCell)
+
+       SSHGradient(indexSSHGradientZonal, iCell) = gradSSHZonal(iCell)
+       SSHGradient(indexSSHGradientMeridional, iCell) = gradSSHMeridional(iCell)
+    end do
+
+    call ocn_time_average_coupled_accumulate( statePool, forcingPool, 2)
+
     do iCell = 1, nCellsAll
        surfaceVelocity(indexSurfaceVelocityZonal, iCell) = velocityZonal(1, iCell)
        surfaceVelocity(indexSurfaceVelocityMeridional, iCell) = velocityMeridional(1, iCell)
