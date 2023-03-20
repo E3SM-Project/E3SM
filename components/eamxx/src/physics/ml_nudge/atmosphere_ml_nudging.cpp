@@ -1,13 +1,11 @@
 #include "atmosphere_ml_nudging.hpp"
 
+#include <array>
+
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
 
-#include <array>
-
-namespace scream
-{
-  using namespace cld_fraction;
+namespace scream {
 // =========================================================================================
 MLNudging::MLNudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
@@ -59,15 +57,7 @@ void MLNudging::run_impl (const double /* dt */)
   auto qv          = get_field_in("qv").get_view<const Real**>();
   auto qv_nudging = get_field_out("qv_nudging").get_view<Real**>();
 
-// STRATEGY:: 
-// 1. Try calling any type of python code here, ignoring the SCREAM variables and data
-//    structures.
-// 2. Then try passing something from SCREAM, in this case the view to `qv_nudging`, a
-//    made-up variable for this test.  See if we can change the value of qv_nudging in
-//    python.
-// 3. Once we've accomplished 1 & 2 we can start experimenting with real SCREAM values,
-//    updating the state in python, grabbing all the variables we want to nudge.
-
+  // ML nudging proceess is not yet implemented
 }
 
 // =========================================================================================
@@ -77,4 +67,4 @@ void MLNudging::finalize_impl()
 }
 // =========================================================================================
 
-} // namespace scream
+}  // namespace scream

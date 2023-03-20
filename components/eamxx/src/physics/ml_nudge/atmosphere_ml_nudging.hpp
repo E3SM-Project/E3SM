@@ -1,7 +1,6 @@
 #ifndef SCREAM_ML_NUDGING_HPP
 #define SCREAM_ML_NUDGING_HPP
 
-#include "physics/cld_fraction/cld_fraction_functions.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 
