@@ -347,6 +347,10 @@
 <config_land_ice_flux_cp_ice>2.009e3</config_land_ice_flux_cp_ice>
 <config_land_ice_flux_rho_ice>918</config_land_ice_flux_rho_ice>
 <config_land_ice_flux_explicit_topDragCoeff>2.5e-3</config_land_ice_flux_explicit_topDragCoeff>
+<config_land_ice_flux_explicit_topDragCoeff ocn_grid="oEC60to30v3wLI">4.48e-3</config_land_ice_flux_explicit_topDragCoeff>
+<config_land_ice_flux_explicit_topDragCoeff ocn_grid="ECwISC30to60E1r2">4.48e-3</config_land_ice_flux_explicit_topDragCoeff>
+<config_land_ice_flux_explicit_topDragCoeff ocn_grid="SOwISC12to60E2r4">4.48e-3</config_land_ice_flux_explicit_topDragCoeff>
+<config_land_ice_flux_explicit_topDragCoeff ocn_grid="ECwISC30to60E2r1">4.48e-3</config_land_ice_flux_explicit_topDragCoeff>
 <config_land_ice_flux_ISOMIP_gammaT>1e-4</config_land_ice_flux_ISOMIP_gammaT>
 <config_land_ice_flux_rms_tidal_velocity>5e-2</config_land_ice_flux_rms_tidal_velocity>
 <config_land_ice_flux_jenkins_heat_transfer_coefficient>0.011</config_land_ice_flux_jenkins_heat_transfer_coefficient>
