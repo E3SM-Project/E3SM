@@ -181,7 +181,7 @@ module shr_reprosum_mod
               'Will abort if INF or NaN are included in summands'
          endif
 
-         if (shr_reprosum_reldiffmax >= 0._r8) then
+         if (shr_reprosum_reldiffmax >= 0.0_r8) then
             write(logunit,*) '                    ',&
               'with a maximum relative error tolerance of ', &
               shr_reprosum_reldiffmax
@@ -668,7 +668,7 @@ module shr_reprosum_mod
 ! check whether intrinsic-based algorithm will work on this system
 ! (requires floating point and integer bases to be the same)
 ! If not, always use ddpdd.
-      use_ddpdd_sum = use_ddpdd_sum .or. (radix(0._r8) /= radix(0_i8))
+      use_ddpdd_sum = use_ddpdd_sum .or. (radix(1.0_r8) /= radix(1_i8))
 
       if ( use_ddpdd_sum ) then
 
@@ -751,13 +751,13 @@ module shr_reprosum_mod
 ! A 'max' is used in the above calculation because the partial sum for
 ! each thread, calculated in shr_reprosum_int, is postprocessed so that
 ! each integer in the corresponding vector of integers is reduced in
-! magnitude to be less than (radix(IX_8)**arr_max_shift). Therefore,
+! magnitude to be less than (radix(1_i8)**arr_max_shift). Therefore,
 ! the maximum shift can be calculated separately for per thread sums
 ! and sums over threads and tasks, and the smaller value used. This is
 ! equivalent to using max_nsummands as defined above.
 
                xmax_nsummands = dble(max_nsummands)
-               arr_max_shift = digits(0_i8) - (exponent(xmax_nsummands) + 1)
+               arr_max_shift = digits(1_i8) - (exponent(xmax_nsummands) + 1)
                if (arr_max_shift < 2) then
                   call shr_sys_abort('repro_sum failed: number of summands too '// &
                                      'large for integer vector algorithm' )
@@ -819,8 +819,8 @@ module shr_reprosum_mod
             do ithread=1,omp_nthreads
                call t_startf('repro_sum_loopa')
                do ifld=1,nflds
-                  arr_exp_tlmin = MAXEXPONENT(1._r8)
-                  arr_exp_tlmax = MINEXPONENT(1._r8)
+                  arr_exp_tlmin = MAXEXPONENT(1.0_r8)
+                  arr_exp_tlmax = MINEXPONENT(1.0_r8)
                   if (.not. arr_gsum_infnan(ifld)) then
                      do isum=isum_beg(ithread),isum_end(ithread)
                         if (arr(isum,ifld) .ne. 0.0_r8) then
@@ -883,13 +883,13 @@ module shr_reprosum_mod
 ! A 'max' is used in the above calculation because the partial sum for
 ! each thread, calculated in shr_reprosum_int, is postprocessed so that
 ! each integer in the corresponding vector of integers is reduced in
-! magnitude to be less than (radix(IX_8)**arr_max_shift). Therefore,
+! magnitude to be less than (radix(1_i8)**arr_max_shift). Therefore,
 ! the maximum shift can be calculated separately for per thread sums
 ! and sums over threads and tasks, and the smaller value used. This is
 ! equivalent to using max_nsummands as defined above.
 
             xmax_nsummands = dble(max_nsummands)
-            arr_max_shift = digits(0_i8) - (exponent(xmax_nsummands) + 1)
+            arr_max_shift = digits(1_i8) - (exponent(xmax_nsummands) + 1)
             if (arr_max_shift < 2) then
                call shr_sys_abort('repro_sum failed: number of summands too '// &
                                   'large for integer vector algorithm' )
@@ -914,7 +914,7 @@ module shr_reprosum_mod
             max_level = (64/nflds) + 1
             do ifld=1,nflds
                max_levels(ifld) = 2 + &
-                ((digits(0.0_r8) + (arr_gmax_exp(ifld)-arr_gmin_exp(ifld))) &
+                ((digits(1.0_r8) + (arr_gmax_exp(ifld)-arr_gmin_exp(ifld))) &
                 / arr_max_shift)
                if ( present(arr_max_levels) .and. (.not. validate) ) then
 ! if validate true, then computation with arr_max_levels failed
@@ -957,7 +957,7 @@ module shr_reprosum_mod
 ! record statistic
             nonrepro_sum = 1
 ! compute nonreproducible sum
-            arr_lsum(:) = 0._r8
+            arr_lsum(:) = 0.0_r8
 !$omp parallel do      &
 !$omp default(shared)  &
 !$omp private(ifld, isum)
@@ -1087,7 +1087,7 @@ module shr_reprosum_mod
 ! Local workspace
 !
       integer, parameter  :: max_jlevel = &
-                                1 + (digits(0_i8)/digits(0.0_r8))
+                                1 + (digits(1_i8)/digits(1.0_r8))
 
       integer(i8) :: i8_arr_tlsum_level(0:max_level,nflds,omp_nthreads)
                                    ! integer vector representing local
@@ -1442,12 +1442,12 @@ module shr_reprosum_mod
 ! apply final exponent correction, scaling first if exponent is too small
 ! to apply directly
             corr_exp = curr_exp + exponent(arr_gsum(ifld))
-            if (corr_exp .ge. MINEXPONENT(1._r8)) then
+            if (corr_exp .ge. MINEXPONENT(1.0_r8)) then
                arr_gsum(ifld) = set_exponent(arr_gsum(ifld),corr_exp)
             else
                RX_8 = set_exponent(arr_gsum(ifld), &
-                                   corr_exp-MINEXPONENT(1._r8))
-               arr_gsum(ifld) = scale(RX_8,MINEXPONENT(1._r8))
+                                   corr_exp-MINEXPONENT(1.0_r8))
+               arr_gsum(ifld) = scale(RX_8,MINEXPONENT(1.0_r8))
             endif
 
 ! if validate is .true. and some precision lost, test whether 'too much'
