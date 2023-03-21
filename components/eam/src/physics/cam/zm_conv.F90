@@ -4061,6 +4061,12 @@ subroutine cldprp(lchnk   , &
 ! cmeg is the cloud water condensed - rain water evaporated
 ! rprd is the cloud water converted to rain - (rain evaporated)
          cmeg(i,k) = cu(i,k) - evp(i,k)
+         if (zm_microp) then
+           if (rprd(i,k)> 0._r8)  then
+              frz1(i,k) = frz1(i,k)- evp(i,k)*sprd(i,k)/rprd(i,k)
+              sprd(i,k) = sprd(i,k)- evp(i,k)*sprd(i,k)/rprd(i,k)
+           end if
+         end if
          rprd(i,k) = rprd(i,k)-evp(i,k)
       end do
    end do
