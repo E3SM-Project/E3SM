@@ -565,6 +565,12 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
 <flanduse_timeseries hgrid="ne30np4"       rcp="2.6" sim_year_range="1850-2100"
  use_crop=".false." >lnd/clm2/surfdata_map/surfdata.pftdyn_ne30np4_rcp2.6_simyr1850-2100_c130524.nc</flanduse_timeseries>
 
+<!-- Land Use Harmonization unified data sets for dynamic FATES land use change -->
+
+<fluh_timeseries hgrid="4x5" sim_year_range="1850-2015" use_cn=".false."
+ use_crop=".false." >lnd/clm2/luh/LUH2_states_transitions_management.timeseries_4x5_hist_simyr1850-2015_c230415.nc</fluh_timeseries>
+
+
 <!-- GLC mask datasets (relative to {csmdata}) -->
 <!-- Currently glc_grid is not being read from anywhere, so these rules are broken.  -->
 <!-- Until that is fixed, the first entry matching hgrid will be used. -->
@@ -2136,6 +2142,7 @@ this mask will have smb calculated over the entire global land surface
 <use_fates_logging             use_fates=".true.">.false.</use_fates_logging>
 <use_fates_cohort_age_tracking use_fates=".true.">.false.</use_fates_cohort_age_tracking>
 <use_fates_sp                  use_fates=".true.">.false.</use_fates_sp>
+<use_fates_luh                 use_fates=".true.">.false.</use_fates_luh>
 <fates_parteh_mode             use_fates=".true.">1</fates_parteh_mode>
 <fates_seeddisp_cadence        use_fates=".true.">0</fates_seeddisp_cadence>
 <use_fates_inventory_init      use_fates=".true.">.false.</use_fates_inventory_init>
