@@ -481,6 +481,7 @@ if ($CONTINUE_RUN eq 'TRUE') {
 } else {
 	add_default($nl, 'config_start_time', 'val'=>"'${RUN_STARTDATE}_${START_TOD}'");
 }
+add_default($nl, 'config_output_reference_time');
 
 ######################
 # Namelist group: io #
@@ -672,7 +673,7 @@ if ($ocn_wave eq 'true' ) {
 }
 
 #################################
-# Namelist group: wave coupling #
+# Namelist group: wave_coupling #
 #################################
 
 if ($ocn_wave eq 'true' ) {
