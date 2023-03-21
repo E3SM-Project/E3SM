@@ -318,6 +318,12 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    qrsc(1:ncol,1:pver) = 0.0_r8
    fns(1:ncol,1:pverp) = 0.0_r8
    fcns(1:ncol,1:pverp) = 0.0_r8
+
+   ofus(1:ncol,1:pverp) = 0.0_r8
+   ofds(1:ncol,1:pverp) = 0.0_r8
+   ofusc(1:ncol,1:pverp) = 0.0_r8
+   ofdsc(1:ncol,1:pverp) = 0.0_r8
+
    if (single_column.and.scm_crm_mode) then 
       fus(1:ncol,1:pverp) = 0.0_r8
       fds(1:ncol,1:pverp) = 0.0_r8
