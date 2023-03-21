@@ -24,6 +24,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : mhpgid         !    iMOAB app id for atm pgx grid, on atm pes
   use seq_comm_mct, only : atm_pg_active  ! flag if PG mesh instanced
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
+  use seq_comm_mct, only : mb_land_mesh   ! if true mesh for land
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
   use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
   use seq_comm_mct, only : mrofid, mbrxid  ! iMOAB id of moab rof app on comp pes and on coupler too
@@ -991,7 +992,7 @@ contains
       !-----------------------------------------------------
       !
       use iMOAB, only: iMOAB_RegisterApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh, &
-      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, &
+      iMOAB_WriteMesh, iMOAB_DefineTagStorage, &
       iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph, iMOAB_LoadMesh
       ! use component_mod,      only: component_exch_moab
       !
@@ -1342,12 +1343,15 @@ contains
 
          ! we are now on joint pes, compute comm graph between lnd and coupler model 
          typeA = 2 ! point cloud on component PEs, land
+         if (mb_land_mesh) then
+            typeA = 3
+         endif
          typeB = 3 ! full mesh on coupler pes, we just read it
          ierr = iMOAB_ComputeCommGraph( mlnid, mblxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
              typeA, typeB, id_old, id_join) 
          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in computing comm graph for rof model '
-            call shr_sys_abort(subname//' ERROR in computing comm graph for rof model ')
+            write(logunit,*) subname,' error in computing comm graph for lnd model '
+            call shr_sys_abort(subname//' ERROR in computing comm graph for lnd model ')
          endif
 
       endif

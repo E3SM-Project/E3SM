@@ -17,6 +17,7 @@ module lnd_comp_mct
 
 #ifdef HAVE_MOAB
   use seq_comm_mct,       only: mlnid! id of moab land app
+  use seq_comm_mct,       only: mb_land_mesh! true if land is full mesh
   use seq_comm_mct,       only: num_moab_exports
   use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields
 
@@ -350,6 +351,7 @@ contains
                    atm_gnam=atm_gnam           , &
                    lnd_gnam=lnd_gnam           )
     if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
+    mb_land_mesh = .not. samegrid_al ! global variable, saved in seq_comm
     call init_land_moab(bounds, samegrid_al)
     sameg_al = samegrid_al ! will use it for export too
 #endif
@@ -572,6 +574,7 @@ contains
     call mct_list_init(temp_list ,seq_flds_x2l_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 0 ! entity type is vertex for land, usually (bigrid case)
+    if (mb_land_mesh) ent_type = 1 
     if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2l_fields), ' lnd import check'
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)

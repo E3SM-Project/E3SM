@@ -1092,7 +1092,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     call seq_comm_setptrs(CPLID, iamroot=iamroot)
     
  ! find out the number of local elements in moab mesh ocean instance on coupler
-    ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC );
+    ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC )
     if (ierr .ne. 0) then
          write(logunit,*) subname,' error in getting info '
          call shr_sys_abort(subname//' error in getting info ')
