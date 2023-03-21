@@ -13,6 +13,10 @@ RUN mamba install --yes -c conda-forge \
             blas && \
             rm -rf /opt/conda/pkgs/*
 
+# Install dependencies
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt
+
 # install gcloud
 RUN apt-get update && apt-get install -y  apt-transport-https ca-certificates gnupg curl gettext
 
@@ -24,3 +28,4 @@ RUN gcloud config set project vcm-ml
 
 ENV OMPI_ALLOW_RUN_AS_ROOT=1
 ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+ENV IS_DOCKER=TRUE
