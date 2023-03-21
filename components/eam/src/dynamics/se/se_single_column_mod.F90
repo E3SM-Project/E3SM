@@ -197,7 +197,7 @@ end subroutine scm_setfield
 
 !=========================================================================
 
-subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
+subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
 ! 
   use scamMod, only: single_column, use_3dfrc
   use kinds, only : real_kind
@@ -207,6 +207,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
   use element_mod, only : element_t
   use physical_constants, only : Cp, Rgas, cpwater_vapor
   use time_mod
+  use hybrid_mod, only : hybrid_t
   use time_manager, only: get_nstep
   use shr_const_mod, only: SHR_CONST_PI
   use apply_iop_forcing_mod, only: advance_iop_forcing, advance_iop_nudging
@@ -215,10 +216,12 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
   type (element_t)     , intent(inout), target :: elem(:)
   type (hvcoord_t)                  :: hvcoord
   type (TimeLevel_t), intent(in)       :: tl
+  type(hybrid_t),             intent(in) :: hybrid
   logical :: t_before_advance, do_column_scm
   real(kind=real_kind), parameter :: rad2deg = 180.0_real_kind / SHR_CONST_PI
 
   integer :: ie, k, i, j, t, m, tlQdp
+  integer :: nelemd_todo, np_todo
   real (kind=real_kind), dimension(np,np,nlev)  :: p, T_v, phi, pnh
   real (kind=real_kind), dimension(np,np,nlev+1) :: dpnh_dp_i
   real (kind=real_kind), dimension(np,np,nlev)  :: dp, exner, vtheta_dp, Rstar
@@ -227,6 +230,8 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
   real (kind=real_kind), dimension(nlev,pcnst) :: stateQin, q_update
   real (kind=real_kind), dimension(nlev) :: temp_tend, t_update, u_update, v_update
   real (kind=real_kind), dimension(nlev) :: relaxt, relaxq
+  real (kind=real_kind), dimension(nlev) :: tdiff_dyn, qdiff_dyn
+  real (kind=real_kind), dimension(npsq,nlev) :: tdiff_out, qdiff_out
   real (kind=real_kind) :: temperature(np,np,nlev)
 
   if (t_before_advance) then
@@ -239,16 +244,32 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
   call TimeLevel_Qdp(tl,qsplit,tlQdp)
 
-  ! For SCM only one column is considered
-  ie = 1
+  ! Settings for traditional SCM run
+  nelemd_todo = 1
+  np_todo = 1
+
+  if (scm_multcols) then
+    nelemd_todo = nelemd
+    np_todo = np
+  endif
+
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
 
-  do k=1,nlev
-    p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t1)
-    dpscm(:,:,k) = elem(ie)%state%dp3d(:,:,k,t1)
-  end do
+  ! collect stats from dycore for analysis
+#ifdef MODEL_THETA_L
+  if (dp_crm) then
+    call crm_resolved_turb(elem,hvcoord,hybrid,t1,nelemd_todo,np_todo)
+  endif
+#endif
+
+  do ie=1,nelemd_todo
+
+    do k=1,nlev
+      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t1)
+      dpscm(:,:,k) = elem(ie)%state%dp3d(:,:,k,t1)
+    end do
 
 #ifdef MODEL_THETA_L
     ! If using the theta-l dycore then need to get the exner function
@@ -259,95 +280,113 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
         dp,elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i)
 #endif
 
-  dt=dtime
+    dt=dtime
 
-  ! Get temperature from dynamics state
-  call get_temperature(elem(ie),temperature,hvcoord,t1)
+    ! Get temperature from dynamics state
+    call get_temperature(elem(ie),temperature,hvcoord,t1)
 
-  ! For SCM we only consider one point
-  i=1
-  j=1
+    do j=1,np_todo
+      do i=1,np_todo
 
-  stateQin(:,:) = elem(ie)%state%Q(i,j,:,:)
+        stateQin(:,:) = elem(ie)%state%Q(i,j,:,:)
 
-  if (.not. use_3dfrc) then
-    temp_tend(:) = 0.0_real_kind
-  else
-    temp_tend(:) = elem(ie)%derived%fT(i,j,:)
-  endif
+        if (.not. use_3dfrc .or. dp_crm) then
+          temp_tend(:) = 0.0_real_kind
+        else
+          temp_tend(:) = elem(ie)%derived%fT(i,j,:)
+        endif
 
 #ifdef MODEL_THETA_L
-  ! At first time step the tendency term is set to the
-  !  initial condition temperature profile.  Do NOT use
-  !  as it will cause temperature profile to blow up.
-  if ( is_first_step() ) then
-    temp_tend(:) = 0.0
-  endif
+        ! At first time step the tendency term is set to the
+        !  initial condition temperature profile.  Do NOT use
+        !  as it will cause temperature profile to blow up.
+        if ( is_first_step() ) then
+          temp_tend(:) = 0.0
+        endif
 #endif
 
-  ! Call the main subroutine to update t, q, u, and v according to
-  !  large scale forcing as specified in IOP file.
-  call advance_iop_forcing(elem(ie)%state%ps_v(i,j,t1),&         ! In
-     elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,2,:,t1),& ! In
-     temperature(i,j,:),stateQin(:,:),dt,temp_tend,&             ! In
-     t_update,q_update,u_update,v_update)                        ! Out
+        ! Call the main subroutine to update t, q, u, and v according to
+        !  large scale forcing as specified in IOP file.
+        call advance_iop_forcing(elem(ie)%state%ps_v(i,j,t1),&        ! In
+          elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,2,:,t1),& ! In
+          temperature(i,j,:),stateQin(:,:),dt,temp_tend,&             ! In
+          t_update,q_update,u_update,v_update)                        ! Out
 
-  ! Nudge to observations if desired, for T & Q only
-  if (iop_nudge_tq) then
-    call advance_iop_nudging(dt,elem(ie)%state%ps_v(i,j,t1),& ! In
-       t_update,q_update(:,1),&                               ! In
-       t_update,q_update(:,1),relaxt,relaxq)                  ! Out
-  endif
+        ! Nudge to observations if desired, for T & Q only
+        if (iop_nudge_tq) then
+          call advance_iop_nudging(dt,elem(ie)%state%ps_v(i,j,t1),& ! In
+            t_update,q_update(:,1),&                                ! In
+            t_update,q_update(:,1),relaxt,relaxq)                   ! Out
+        endif
 
-  ! Update the q related arrays.  NOTE that Qdp array must
-  !  be updated first to ensure exact restarts
-  do m=1,pcnst
-    ! Update the Qdp array
-    elem(ie)%state%Qdp(i,j,:nlev,m,tlQdp) = &
-       q_update(:nlev,m) * dpscm(i,j,:nlev)
-    ! Update the Q array
-    elem(ie)%state%Q(i,j,:nlev,m) = &
-       elem(ie)%state%Qdp(i,j,:nlev,m,tlQdp)/dpscm(i,j,:nlev)
-  enddo
+        ! Update the q related arrays.  NOTE that Qdp array must
+        !  be updated first to ensure exact restarts
+        do m=1,pcnst
+          ! Update the Qdp array
+          elem(ie)%state%Qdp(i,j,:nlev,m,tlQdp) = &
+            q_update(:nlev,m) * dpscm(i,j,:nlev)
+          ! Update the Q array
+          elem(ie)%state%Q(i,j,:nlev,m) = &
+            elem(ie)%state%Qdp(i,j,:nlev,m,tlQdp)/dpscm(i,j,:nlev)
+        enddo
 
-  ! Update prognostic variables to the current values
+        ! Update prognostic variables to the current values
 #ifdef MODEL_THETA_L
-  ! If running theta-l model then the updated temperature needs
-  !   to be converted back to potential temperature on reference levels, 
-  !   which is what dp_coupling expects
-  call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
-  elem(ie)%state%vtheta_dp(i,j,:,t1) = (t_update(:)*Rstar(i,j,:)*dp(i,j,:))/&
+        ! If running theta-l model then the updated temperature needs
+        !   to be converted back to potential temperature on reference levels,
+        !   which is what dp_coupling expects
+        call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
+        elem(ie)%state%vtheta_dp(i,j,:,t1) = (t_update(:)*Rstar(i,j,:)*dp(i,j,:))/&
               (Rgas*exner(i,j,:))
 #else
-  elem(ie)%state%T(i,j,:,t1) = t_update(:)
+        elem(ie)%state%T(i,j,:,t1) = t_update(:)
 #endif
-  elem(ie)%state%v(i,j,1,:,t1) = u_update(:)
-  elem(ie)%state%v(i,j,2,:,t1) = v_update(:)
+        elem(ie)%state%v(i,j,1,:,t1) = u_update(:)
+        elem(ie)%state%v(i,j,2,:,t1) = v_update(:)
 
-  ! Evaluate the differences in state information from observed
-  !  (done for diganostic purposes only)
-  do k = 1, nlev
-    tdiff(k) = t_update(k)   - tobs(k)
-    qdiff(k) = q_update(k,1) - qobs(k)
-    udiff(k) = u_update(k)   - uobs(k)
-    vdiff(k) = v_update(k)   - vobs(k)
-  end do
+        ! Evaluate the differences in state information from observed
+        !  (done for diganostic purposes only)
+        do k = 1, nlev
+          tdiff_dyn(k) = t_update(k)   - tobs(k)
+          qdiff_dyn(k) = q_update(k,1) - qobs(k)
+        end do
 
-  ! Add various diganostic outfld calls
-  call outfld('TOBS',tobs,plon,begchunk)
-  call outfld('QOBS',qobs,plon,begchunk)
-  call outfld('TDIFF',tdiff,plon,begchunk)
-  call outfld('QDIFF',qdiff,plon,begchunk)
-  call outfld('DIVQ',divq,plon,begchunk)
-  call outfld('DIVT',divt,plon,begchunk)
-  call outfld('DIVQ3D',divq3d,plon,begchunk)
-  call outfld('DIVT3D',divt3d,plon,begchunk)
-  call outfld('PRECOBS',precobs,plon,begchunk)
-  call outfld('LHFLXOBS',lhflxobs,plon,begchunk)
-  call outfld('SHFLXOBS',shflxobs,plon,begchunk)
+        tdiff_out(i+(j-1)*np,:)=tdiff_dyn(:)
+        qdiff_out(i+(j-1)*np,:)=qdiff_dyn(:)
 
-  call outfld('TRELAX',relaxt,plon,begchunk)
-  call outfld('QRELAX',relaxq,plon,begchunk)
+      enddo
+    enddo
+
+    ! Add various diganostic outfld calls
+
+    if (scm_multcols) then
+      call outfld('TDIFF',tdiff_out,npsq,ie)
+      call outfld('QDIFF',qdiff_out,npsq,ie)
+    else
+      call outfld('TDIFF',tdiff_dyn,plon,begchunk)
+      call outfld('QDIFF',qdiff_dyn,plon,begchunk)
+    endif
+
+    call outfld('TOBS',tobs,plon,begchunk)
+    call outfld('QOBS',qobs,plon,begchunk)
+    call outfld('DIVQ',divq,plon,begchunk)
+    call outfld('DIVT',divt,plon,begchunk)
+    call outfld('DIVQ3D',divq3d,plon,begchunk)
+    call outfld('DIVT3D',divt3d,plon,begchunk)
+    call outfld('PRECOBS',precobs,plon,begchunk)
+    call outfld('LHFLXOBS',lhflxobs,plon,begchunk)
+    call outfld('SHFLXOBS',shflxobs,plon,begchunk)
+
+    call outfld('TRELAX',relaxt,plon,begchunk)
+    call outfld('QRELAX',relaxq,plon,begchunk)
+
+  enddo
+
+  if ((iop_nudge_tq .or. iop_nudge_uv) .and. dp_crm) then
+    ! If running in a doubly periodic CRM mode, then nudge the domain
+    !   based on the domain mean and observed quantities of T, Q, u, and v
+    call iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,dt)
+  endif
 
 end subroutine apply_SC_forcing
 
