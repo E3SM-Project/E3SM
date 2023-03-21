@@ -265,8 +265,8 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
 
    oful (:ncol,pverp-rrtmg_levs+1:pverp)= uflx(:ncol,rrtmg_levs:1:-1)
    ofdl (:ncol,pverp-rrtmg_levs+1:pverp)= dflx(:ncol,rrtmg_levs:1:-1)
-   ofulc(:ncol,pverp-rrtmg_levs+1:pverp)=uflxc(:ncol,rrtmg_levs:1:-1)
-   ofdlc(:ncol,pverp-rrtmg_levs+1:pverp)=dflxc(:ncol,rrtmg_levs:1:-1)
+   ofulc(:ncol,pverp-rrtmg_levs+1:pverp)= uflxc(:ncol,rrtmg_levs:1:-1)
+   ofdlc(:ncol,pverp-rrtmg_levs+1:pverp)= dflxc(:ncol,rrtmg_levs:1:-1)
 
    if (single_column.and.scm_crm_mode) then
       call outfld('FUL     ',ful,pcols,lchnk)

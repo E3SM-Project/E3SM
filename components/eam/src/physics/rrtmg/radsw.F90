@@ -160,7 +160,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    real(r8), intent(out) :: fns(pcols,pverp)   ! net flux at interfaces
    real(r8), intent(out) :: fcns(pcols,pverp)  ! net clear-sky flux at interfaces
 
-   ! < mahf708 2023-03-21 > note additional "o" at start of vars
+   ! note additional "o" at start of vars
    ! to distinguish from already used vars for CRM
    !
    ! additional up and down components
@@ -168,7 +168,6 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    real(r8), intent(out) :: ofds(pcols,pverp)   ! down flux
    real(r8), intent(out) :: ofusc(pcols,pverp)  ! up clear-sky flux
    real(r8), intent(out) :: ofdsc(pcols,pverp)  ! down clear-sky flux
-   ! < mahf708 2023-03-21 >
 
    real(r8), pointer, dimension(:,:,:) :: su ! shortwave spectral flux up
    real(r8), pointer, dimension(:,:,:) :: sd ! shortwave spectral flux down
@@ -635,10 +634,10 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    call ExpDayNite(qrsc,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pver)
    call ExpDayNite(fns,		Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
    call ExpDayNite(fcns,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-   call ExpDayNite(ofus,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-   call ExpDayNite(ofds,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-   call ExpDayNite(ofusc,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-   call ExpDayNite(ofdsc,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
+   call ExpDayNite(ofus,   Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
+   call ExpDayNite(ofds,   Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
+   call ExpDayNite(ofusc,  Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
+   call ExpDayNite(ofdsc,  Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
    call ExpDayNite(fsns,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
    call ExpDayNite(fsnt,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
    call ExpDayNite(fsntoa,	Nday, IdxDay, Nnite, IdxNite, 1, pcols)
