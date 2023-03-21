@@ -68,7 +68,7 @@ protected:
   void run_impl(const double dt) override;
   void finalize_impl() override;
 
-  // MAM4xx updates the 'tracers' group.
+  // performs some checks on the tracers group
   void set_computed_group_impl(const FieldGroup& group) override;
 
 private:
@@ -103,7 +103,6 @@ private:
         // conversion. qv is converted to dry mmr in the next parallel for.
         q_soag_(i,k)  = PF::calculate_drymmr_from_wetmmr(q_soag_(i,k), qv_(i,k));
         q_h2so4_(i,k) = PF::calculate_drymmr_from_wetmmr(q_h2so4_(i,k), qv_(i,k));
-        q_nh3_(i,k)   = PF::calculate_drymmr_from_wetmmr(q_nh3_(i,k), qv_(i,k));
 
         q_aitken_so4_(i,k) = PF::calculate_drymmr_from_wetmmr(q_aitken_so4_(i,k), qv_(i,k));
 
@@ -120,22 +119,24 @@ private:
     view_1d_int convert_wet_dry_idx_d_;
 
     // local atmospheric state column variables
-    view_2d_const T_mid_;  // temperature at grid midpoints [K]
-    view_2d_const p_mid_;  // total pressure at grid midpoints [Pa]
-    view_2d       qv_;     // water vapor mass mixing ratio, not const because it
-                           // must be converted from wet to dry [kg vapor/kg dry air]
-    view_2d       height_; // height at grid interfaces [m]
-    view_2d       pdel_;   // hydrostatic "pressure thickness" at grid
-                           // interfaces [Pa]
-    view_1d_const pblh_;   // planetary boundary layer height [m]
+    view_2d_const T_mid_;   // temperature at grid midpoints [K]
+    view_2d_const p_mid_;   // total pressure at grid midpoints [Pa]
+    view_2d       qv_;      // water vapor mass mixing ratio, not const because it
+                            // must be converted from wet to dry [kg vapor/kg dry air]
+    view_2d_const height_;  // height at grid interfaces [m]
+    view_2d_const pdel_;    // hydrostatic "pressure thickness" at grid
+                            // interfaces [Pa]
+    view_2d_const cloud_f_; // cloud fraction [-]
+    view_2d_const uv_;      // updraft velocity [m/s]
+    view_1d_const pblh_;    // planetary boundary layer height [m]
 
     // local aerosol-related gases
-    view_2d       q_soag_;  // secondary organic aerosol gas [kg gas/kg dry air]
-    view_2d       q_h2so4_; // H2SO3 gas [kg/kg dry air]
-    view_2d       q_nh3_;   // NH3 gas [kg/kg dry air]
+    view_2d q_soag_;  // secondary organic aerosol gas [kg gas/kg dry air]
+    view_2d q_h2so4_; // H2SO3 gas [kg/kg dry air]
 
     // local aerosols (more to appear as we improve this atm process)
-    view_2d       q_aitken_so4_; // SO4 aerosol in aitken mode [kg/kg dry air]
+    view_2d n_aitken_; // aitken mode number mixing ratio [1/kg dry air]
+    view_2d q_aitken_so4_; // SO4 mass mixing ratio in aitken mode [kg/kg dry air]
 
     // assigns local variables
     void set_variables(const int ncol, const int nlev,
@@ -147,7 +148,6 @@ private:
                        const view_1d_const& pblh,
                        const view_2d&       q_soag,
                        const view_2d&       q_h2so4,
-                       const view_2d&       q_nh3,
                        const view_2d&       q_aitken_so4) {
       ncol_ = ncol;
       nlev_ = nlev;
@@ -159,7 +159,6 @@ private:
       pblh_ = pblh;
       q_soag_ = q_soag;
       q_h2so4_ = q_h2so4;
-      q_nh3_ = q_nh3;
       q_aitken_so4_ = q_aitken_so4;
     } // set_variables
   }; // MAM4AerosolMicrophysics::Preprocess
@@ -182,7 +181,6 @@ private:
         // 2. "dry" water vapor mixing ratio
         q_soag_(i,k)  = PF::calculate_wetmmr_from_drymmr(q_soag_(i,k), qv_(i,k));
         q_h2so4_(i,k) = PF::calculate_wetmmr_from_drymmr(q_h2so4_(i,k), qv_(i,k));
-        q_nh3_(i,k)   = PF::calculate_wetmmr_from_drymmr(q_nh3_(i,k), qv_(i,k));
 
         q_aitken_so4_(i,k) = PF::calculate_wetmmr_from_drymmr(q_aitken_so4_(i,k), qv_(i,k));
 
@@ -198,7 +196,6 @@ private:
     // local aerosol-related gases
     view_2d       q_soag_;  // secondary organic aerosol gas [kg gas/kg dry air]
     view_2d       q_h2so4_; // H2SO3 gas [kg/kg dry air]
-    view_2d       q_nh3_;   // NH3 gas [kg/kg dry air]
 
     // local aerosols (more to appear as we improve this atm process)
     view_2d       q_aitken_so4_; // SO4 aerosol in aitken mode [kg/kg dry air]
@@ -209,14 +206,12 @@ private:
                        const view_2d& qv,
                        const view_2d& q_soag,
                        const view_2d& q_h2so4,
-                       const view_2d& q_nh3,
                        const view_2d& q_aitken_so4) {
       ncol_ = ncol;
       nlev_ = nlev;
       qv_ = qv;
       q_soag_ = q_soag;
       q_h2so4_ = q_h2so4;
-      q_nh3_ = q_nh3;
       q_aitken_so4_ = q_aitken_so4;
     } // set_variables
   }; // MAM4AerosolMicrophysics::Postprocess
@@ -230,6 +225,26 @@ private:
   // pre- and postprocessing scratch pads
   Preprocess preprocess_;
   Postprocess postprocess_;
+
+  // local atmospheric state column variables
+  view_2d_const T_mid_;   // temperature at grid midpoints [K]
+  view_2d_const p_mid_;   // total pressure at grid midpoints [Pa]
+  view_2d       qv_;      // water vapor mass mixing ratio, not const because it
+                          // must be converted from wet to dry [kg vapor/kg dry air]
+  view_2d_const height_;  // height at grid interfaces [m]
+  view_2d_const pdel_;    // hydrostatic "pressure thickness" at grid
+                          // interfaces [Pa]
+  view_2d_const cloud_f_; // cloud fraction [-]
+  view_2d_const uv_;      // updraft velocity [m/s]
+  view_1d_const pblh_;    // planetary boundary layer height [m]
+
+  // local aerosol-related gases
+  view_2d q_soag_;  // secondary organic aerosol gas [kg gas/kg dry air]
+  view_2d q_h2so4_; // H2SO3 gas [kg/kg dry air]
+
+  // local aerosols (more to appear as we improve this atm process)
+  view_2d n_aitken_; // aitken mode number mixing ratio [1/kg dry air]
+  view_2d q_aitken_so4_; // SO4 mass mixing ratio in aitken mode [kg/kg dry air]
 
   /*
   // WSM for internal local variables
