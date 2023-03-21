@@ -39,9 +39,9 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
                         pmid    ,aer_lw_abs,cld       ,tauc_lw,       &
                         qrl     ,qrlc      ,                          &
                         flns    ,flnt      ,flnsc     ,flntc  ,flwds, &
-                        flut    ,flutc     ,fnl       ,fcnl   ,fldsc,clm_rand_seed, &
+                        flut    ,flutc     ,fnl       ,fcnl   ,fldsc, &
                         oful    ,ofdl      ,ofulc     ,ofdlc        , &
-                        lu      ,ld        )
+                        clm_rand_seed, lu      ,ld        )
 
 !-----------------------------------------------------------------------
    use cam_history,         only: outfld
