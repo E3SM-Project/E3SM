@@ -40,6 +40,7 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
                         qrl     ,qrlc      ,                          &
                         flns    ,flnt      ,flnsc     ,flntc  ,flwds, &
                         flut    ,flutc     ,fnl       ,fcnl   ,fldsc,clm_rand_seed, &
+                        oful    ,ofdl      ,ofulc     ,ofdlc        , &
                         lu      ,ld        )
 
 !-----------------------------------------------------------------------
@@ -84,6 +85,10 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
    real(r8), intent(out) :: fldsc(pcols)         ! Down longwave clear flux at surface
    real(r8), intent(out) :: fcnl(pcols,pverp)    ! clear sky net flux at interfaces
    real(r8), intent(out) :: fnl(pcols,pverp)     ! net flux at interfaces
+   real(r8), intent(out) :: oful(pcols,pverp)    ! up flux at interfaces
+   real(r8), intent(out) :: ofdl(pcols,pverp)    ! down flux at interfaces
+   real(r8), intent(out) :: ofulc(pcols,pverp)   ! clear up flux at interfaces
+   real(r8), intent(out) :: ofdlc(pcols,pverp)   ! clear down flux at interfaces
 
    real(r8), pointer, dimension(:,:,:) :: lu ! longwave spectral flux up
    real(r8), pointer, dimension(:,:,:) :: ld ! longwave spectral flux down
@@ -257,6 +262,11 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
    fdl (:ncol,pverp-rrtmg_levs+1:pverp)= dflx(:ncol,rrtmg_levs:1:-1)
    fsul(:ncol,pverp-rrtmg_levs+1:pverp)=uflxc(:ncol,rrtmg_levs:1:-1)
    fsdl(:ncol,pverp-rrtmg_levs+1:pverp)=dflxc(:ncol,rrtmg_levs:1:-1)
+
+   oful (:ncol,pverp-rrtmg_levs+1:pverp)= uflx(:ncol,rrtmg_levs:1:-1)
+   ofdl (:ncol,pverp-rrtmg_levs+1:pverp)= dflx(:ncol,rrtmg_levs:1:-1)
+   ofulc(:ncol,pverp-rrtmg_levs+1:pverp)=uflxc(:ncol,rrtmg_levs:1:-1)
+   ofdlc(:ncol,pverp-rrtmg_levs+1:pverp)=dflxc(:ncol,rrtmg_levs:1:-1)
 
    if (single_column.and.scm_crm_mode) then
       call outfld('FUL     ',ful,pcols,lchnk)
