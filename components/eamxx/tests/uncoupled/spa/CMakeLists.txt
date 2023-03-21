@@ -22,12 +22,12 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/spa_standalone_output.yaml
 
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
-  ${EAMxx_tests_IC_FILE_72lev}
-  map_ne4np4_to_ne2np4_mono.nc
-  spa_file_unified_and_complete_ne4_20220428.nc
+  scream/init/${EAMxx_tests_IC_FILE_72lev}
+  scream/maps/map_ne4np4_to_ne2np4_mono.nc
+  scream/init/spa_file_unified_and_complete_ne4_20220428.nc
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
-  GetInputFile(scream/init/${file})
+  GetInputFile(${file})
 endforeach()
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
