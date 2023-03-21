@@ -151,7 +151,7 @@ contains
     integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
     integer                  :: fNoBubble, monotonicity
     ! will do comm graph over coupler PES, in 2-hop strategy
-    integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
+    integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph  <-> atm-lnd, rof-lnd
 
     integer                  :: type1, type2 ! type for computing graph; should be the same type for ocean, 3 (FV)
     integer                  :: tagtype, numco, tagindex
@@ -240,6 +240,7 @@ contains
                ! we do not compute intersection, so we will have to just send data from lnd to rof and viceversa, by GLOBAL_ID matching
                ! so we compute just a comm graph, between lnd and rof dofs, on the coupler; target is rof 
                ! land is full mesh
+               call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)
                type1 = 3; !  full mesh for lrofarnd now
                type2 = 3;  ! fv for target land
                ierr = iMOAB_ComputeCommGraph( mbrxid, mblxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
