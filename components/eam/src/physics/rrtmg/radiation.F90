@@ -642,6 +642,7 @@ end function radiation_nextsw_cday
           call addfld('FSDS'//diag(icall),  horiz_only,     'A',    'W/m2', 'Downwelling solar flux at surface', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true., &
                       standard_name='surface_downwelling_shortwave_flux_in_air')
+          ! < mahf708 2023-03-21 > as of now, FUS, FDS, FUSC, and FDSC are undefined as thus zeros
           call addfld('FUS'//diag(icall),  (/ 'ilev' /), 'I',     'W/m2', 'Shortwave upward flux', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FDS'//diag(icall),  (/ 'ilev' /), 'I',     'W/m2', 'Shortwave downward flux', &
@@ -650,6 +651,12 @@ end function radiation_nextsw_cday
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FDSC'//diag(icall),  (/ 'ilev' /), 'I',    'W/m2', 'Shortwave clear-sky downward flux', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          ! however, FNS and FNSC can be outputted:
+          call addfld('FNS'//diag(icall),  (/ 'ilev' /), 'I',    'W/m2', 'Shortwave net flux', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          call addfld('FNSC'//diag(icall),  (/ 'ilev' /), 'I',    'W/m2', 'Shortwave clear-sky net flux', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          ! < / mahf708 2023-03-21 >
           call addfld('FSNIRTOA'//diag(icall),  horiz_only,     'A','W/m2', &
                       'Net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
@@ -726,6 +733,7 @@ end function radiation_nextsw_cday
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FLNSC'//diag(icall), horiz_only,    'A',   'W/m2', 'Clearsky net longwave flux at surface', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          ! < mahf708 2023-03-21 > as of now, FUL, FDL, FULC, and FNLC are undefined as thus zeros
           call addfld('FUL'//diag(icall), (/ 'ilev' /),'I',     'W/m2', 'Longwave upward flux', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FDL'//diag(icall), (/ 'ilev' /),'I',     'W/m2', 'Longwave downward flux', &
@@ -734,6 +742,12 @@ end function radiation_nextsw_cday
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
           call addfld('FDLC'//diag(icall), (/ 'ilev' /),'I',    'W/m2', 'Longwave clear-sky downward flux', &
                       sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          ! however, FNL and FNLC can be outputted:
+          call addfld('FNL'//diag(icall),  (/ 'ilev' /), 'I',    'W/m2', 'Longwave net flux', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          call addfld('FNLC'//diag(icall),  (/ 'ilev' /), 'I',    'W/m2', 'Longwave clear-sky net flux', &
+                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
+          ! < / mahf708 2023-03-21 >
 
           if (history_amwg) then
              call add_default('QRL'//diag(icall),   1, ' ')
@@ -1404,6 +1418,10 @@ end function radiation_nextsw_cday
                   call outfld('FSN200'//diag(icall),fsn200,pcols,lchnk)
                   call outfld('FSN200C'//diag(icall),fsn200c,pcols,lchnk)
                   call outfld('SWCF'//diag(icall),swcf  ,pcols,lchnk)
+                  ! < mahf708 2023-03-21 >
+                  call outfld('FNS'//diag(icall),  fns,  pcols, lchnk)
+                  call outfld('FNSC'//diag(icall), fcns, pcols, lchnk)
+                  ! </ mahf708 2023-03-21 >
 
               end if ! (active_calls(icall))
           end do ! icall
@@ -1501,6 +1519,10 @@ end function radiation_nextsw_cday
                   call outfld('FLN200'//diag(icall),fln200,pcols,lchnk)
                   call outfld('FLN200C'//diag(icall),fln200c,pcols,lchnk)
                   call outfld('FLDS'//diag(icall),cam_out%flwds ,pcols,lchnk)
+                  ! < mahf708 2023-03-21 >
+                  call outfld('FNL'//diag(icall),  fnl,  pcols, lchnk)
+                  call outfld('FNLC'//diag(icall), fcnl, pcols, lchnk)
+                  ! < mahf708 2023-03-21 >
 
               end if
           end do
