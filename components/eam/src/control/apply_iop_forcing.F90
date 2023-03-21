@@ -120,7 +120,7 @@ subroutine advance_iop_forcing(ps_in, u_in, v_in, &         ! In
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
   !  Set U and V fields
 
-  if (have_v .and. have_u) then
+  if (have_v .and. have_u .and. .not. dp_crm) then
     do k=1,plev
       u_update(k) = uobs(k)
       v_update(k) = vobs(k)

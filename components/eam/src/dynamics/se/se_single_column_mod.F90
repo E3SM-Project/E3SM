@@ -158,7 +158,7 @@ subroutine scm_broadcast()
   call mpibcast(tground,1,mpir8,0,mpicom)
   call mpibcast(lhflxobs,1,mpir8,0,mpicom)
   call mpibcast(shflxobs,1,mpir8,0,mpicom)
-!  
+
   call mpibcast(tobs,plev,mpir8,0,mpicom)
   call mpibcast(qobs,plev,mpir8,0,mpicom)
   call mpibcast(uobs,plev,mpir8,0,mpicom)
@@ -257,7 +257,7 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
 !$omp parallel do private(k)
 #endif
 
-  ! collect stats from dycore for analysis
+  ! collect stats from dycore for analysis if running in DP CRM mode
 #ifdef MODEL_THETA_L
   if (dp_crm) then
     call crm_resolved_turb(elem,hvcoord,hybrid,t1,nelemd_todo,np_todo)
@@ -312,8 +312,8 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
           temperature(i,j,:),stateQin(:,:),dt,temp_tend,&             ! In
           t_update,q_update,u_update,v_update)                        ! Out
 
-        ! Nudge to observations if desired, for T & Q only
-        if (iop_nudge_tq) then
+        ! Nudge to observations if desired, for T & Q only if in SCM mode
+        if (iop_nudge_tq .and. .not. scm_multcols) then
           call advance_iop_nudging(dt,elem(ie)%state%ps_v(i,j,t1),& ! In
             t_update,q_update(:,1),&                                ! In
             t_update,q_update(:,1),relaxt,relaxq)                   ! Out

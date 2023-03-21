@@ -23,6 +23,7 @@ module scamMod
   use string_utils, only: to_lower
   use cam_abortutils,   only: endrun
   use phys_control, only: phys_getopts
+  use spmd_utils, only: masterproc
   use mpishorthand
 
   implicit none
@@ -333,79 +334,86 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
 #endif
 
   if( single_column) then
-     
-     if (plon /= 1 .or. plat /=1 ) then 
-        call endrun('SCAM_SETOPTS: must compile model for SCAM mode when namelist parameter single_column is .true.')
-     endif
-     
-     if (present (iopfile_in)) then
-        iopfile=trim(iopfile_in)
-        if (iopfile.ne."") then 
-           use_iop = .true.
-        else
-           call endrun('SCAM_SETOPTS: must specify IOP file for single column mode')
-        endif
-        call wrap_open (iopfile, NF90_NOWRITE, ncid)
-	
-	if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
-           use_replay = .true.
-        else
-           use_replay = .false.
-        endif
-	
-	if (use_replay) then
-	  call wrap_inq_dimid( ncid, 'ncol', londimid   )
-	  call wrap_inq_dimlen( ncid, londimid, lonsiz   )
-	  latsiz=lonsiz
-	else 
-	  call wrap_inq_dimid( ncid, 'lon', londimid   )
-          call wrap_inq_dimid( ncid, 'lat', latdimid   )
-          call wrap_inq_dimlen( ncid, londimid, lonsiz   )
-          call wrap_inq_dimlen( ncid, latdimid, latsiz   )
-	endif
 
-        call wrap_inq_varid( ncid, 'lon', lonid   )
-        call wrap_inq_varid( ncid, 'lat', latid   )
+    if (masterproc) then
+     
+      if (plon /= 1 .or. plat /=1 ) then
+         call endrun('SCAM_SETOPTS: must compile model for SCAM mode when namelist parameter single_column is .true.')
+      endif
 
-        if (present (scmlat_in) .and. present (scmlon_in) )then
-           scmlat=scmlat_in
-           scmlon=scmlon_in
-           if( scmlat .lt. -90._r8 .or. scmlat .gt. 90._r8) then
-              call endrun('SCAM_SETOPTS: SCMLAT must be between -90. and 90. degrees.')
-           elseif( scmlon .lt. 0._r8 .or. scmlon .gt. 360._r8) then
-              call endrun('SCAM_SETOPTS: SCMLON must be between 0. and 360. degrees.')
-           else
-              if (latsiz==1 .and. lonsiz==1) then
-                 ret = nf90_get_var(ncid, lonid, ioplon)
-                 if (ret/=NF90_NOERR) then
-                    call endrun('SCAM_SETOPTS: error reading longitude variable from iopfile')
-                 end if
-                 ret = nf90_get_var(ncid, latid, ioplat)
-                 if (ret/=NF90_NOERR) then
-                    call endrun('SCAM_SETOPTS: error reading latitude variable from iopfile')
-                 end if
-                 call shr_scam_GetCloseLatLon(ncid,scmlat,scmlon,ioplat,ioplon,latidx,lonidx)
-                 if (ioplon.lt. 0._r8) ioplon=ioplon+360._r8
-                 scmlat=ioplat
-                 scmlon=ioplon
-                 write(iulog,*)'For CAM Generated IOP using closest dataset lat and lon'
-              else
-                 if (use_replay) then
-                    call shr_scam_GetCloseLatLon(ncid,scmlat,scmlon,ioplat,ioplon,latidx,lonidx)
-                    scmlat=ioplat
-                    scmlon=ioplon
-                    write(iulog,*)'For CAM Generated IOP using closest dataset lat and lon'
-                 endif
-              endif
-           endif
-        else   
-           call endrun('namelist variables SCMLAT and SCMLON must be specified for single column mode')
-        endif
-     endif
-  else
+      if (present (iopfile_in)) then
+         iopfile=trim(iopfile_in)
+         if (iopfile.ne."") then
+            use_iop = .true.
+         else
+            call endrun('SCAM_SETOPTS: must specify IOP file for single column mode')
+         endif
+         call wrap_open (iopfile, NF90_NOWRITE, ncid)
+
+	 if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
+            use_replay = .true.
+         else
+            use_replay = .false.
+         endif
+
+	 if (use_replay) then
+	   call wrap_inq_dimid( ncid, 'ncol', londimid   )
+	   call wrap_inq_dimlen( ncid, londimid, lonsiz   )
+	   latsiz=lonsiz
+	 else
+	   call wrap_inq_dimid( ncid, 'lon', londimid   )
+           call wrap_inq_dimid( ncid, 'lat', latdimid   )
+           call wrap_inq_dimlen( ncid, londimid, lonsiz   )
+           call wrap_inq_dimlen( ncid, latdimid, latsiz   )
+	 endif
+
+         call wrap_inq_varid( ncid, 'lon', lonid   )
+         call wrap_inq_varid( ncid, 'lat', latid   )
+
+         if (present (scmlat_in) .and. present (scmlon_in) )then
+            scmlat=scmlat_in
+            scmlon=scmlon_in
+            if( scmlat .lt. -90._r8 .or. scmlat .gt. 90._r8) then
+               call endrun('SCAM_SETOPTS: SCMLAT must be between -90. and 90. degrees.')
+            elseif( scmlon .lt. 0._r8 .or. scmlon .gt. 360._r8) then
+               call endrun('SCAM_SETOPTS: SCMLON must be between 0. and 360. degrees.')
+            else
+               if (latsiz==1 .and. lonsiz==1) then
+                  ret = nf90_get_var(ncid, lonid, ioplon)
+                  if (ret/=NF90_NOERR) then
+                     call endrun('SCAM_SETOPTS: error reading longitude variable from iopfile')
+                  end if
+                  ret = nf90_get_var(ncid, latid, ioplat)
+                  if (ret/=NF90_NOERR) then
+                     call endrun('SCAM_SETOPTS: error reading latitude variable from iopfile')
+                  end if
+                  call shr_scam_GetCloseLatLon(ncid,scmlat,scmlon,ioplat,ioplon,latidx,lonidx)
+                  if (ioplon.lt. 0._r8) ioplon=ioplon+360._r8
+                  scmlat=ioplat
+                  scmlon=ioplon
+                  write(iulog,*)'For CAM Generated IOP using closest dataset lat and lon'
+               else
+                  if (use_replay) then
+                     call shr_scam_GetCloseLatLon(ncid,scmlat,scmlon,ioplat,ioplon,latidx,lonidx)
+                     scmlat=ioplat
+                     scmlon=ioplon
+                     write(iulog,*)'For CAM Generated IOP using closest dataset lat and lon'
+                  endif
+               endif
+            endif
+         else
+            call endrun('namelist variables SCMLAT and SCMLON must be specified for single column mode')
+         endif
+      endif
+     
+    endif ! masterproc check
+
+  else ! single_column check
+
      if (plon ==1 .and. plat ==1) then 
         call endrun('SCAM_SETOPTS: single_column namelist option must be set to true when running in single column mode')
      endif
+
   endif
 
 end subroutine scam_setopts
