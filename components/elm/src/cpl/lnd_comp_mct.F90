@@ -574,6 +574,7 @@ contains
     call mct_list_init(temp_list ,seq_flds_x2l_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 0 ! entity type is vertex for land, usually (bigrid case)
+    if (mb_land_mesh) ent_type = 1 
     if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2l_fields), ' lnd import check'
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
