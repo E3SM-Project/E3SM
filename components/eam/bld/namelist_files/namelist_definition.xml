@@ -4237,6 +4237,16 @@ If this is not specified then they are not read from IC file.
 Default: TRUE
 </entry>
 
+<!-- CLDERA dynamic tracers -->
+
+<entry id="cldera_dynamic_tracers_flag" type="logical" category="test_tracers"
+       group="cldera_dynamic_tracers_nl" valid_values="" >
+If true, CLDERA dynamic PV, PT tracers are included.  This variable should not be set
+by the user.  It will be set by build-namelist to be consistent with the
+'-cldera_dynamic_trcs' argument specified to configure.
+Default: set by configure
+</entry>
+
 <!-- CLDERA SAI tracers -->
 
 <entry id="cldera_sai_tracers_flag" type="logical" category="test_tracers"

@@ -152,6 +152,7 @@ subroutine phys_register
     use aoa_tracers,        only: aoa_tracers_register
     use cldera_sai_tracers, only: cldera_sai_tracers_register
     use cldera_passive_tracers, only: cldera_passive_tracers_register
+    use cldera_dynamic_tracers, only: cldera_dynamic_tracers_register
     use aircraft_emit,      only: aircraft_emit_register
     use cam_diagnostics,    only: diag_register
     use cloud_diagnostics,  only: cloud_diagnostics_register
@@ -324,6 +325,9 @@ subroutine phys_register
 
     ! Register CLDERA passive tracers
     call cldera_passive_tracers_register()
+    
+    ! Register CLDERA dynamic tracers
+    call cldera_dynamic_tracers_register()
     
     ! Register CLDERA stratospheric aerosol injection tracers
     call cldera_sai_tracers_register()
@@ -722,6 +726,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use aoa_tracers,        only: aoa_tracers_init
     use cldera_sai_tracers, only: cldera_sai_tracers_init
     use cldera_passive_tracers, only: cldera_passive_tracers_init
+    use cldera_dynamic_tracers, only: cldera_dynamic_tracers_init
     use rayleigh_friction,  only: rayleigh_friction_init
     use pbl_utils,          only: pbl_utils_init
     use vertical_diffusion, only: vertical_diffusion_init
@@ -794,6 +799,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! CLDERA passive tracers
     call cldera_passive_tracers_init()
+    
+    ! CLDERA dynamic tracers
+    call cldera_dynamic_tracers_init()
     
     ! CLDERA stratospheric aerosol injection tracers
     call cldera_sai_tracers_init()
@@ -1223,13 +1231,13 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        ! Dump dynamics variables to history buffers
        call diag_phys_writeout(phys_state(c))
 
-       ! --JH--: Allow advecting of CLDERA passive tendencies if enabled
+       ! --JH--: Allow evolution of CLDERA passive tendencies if enabled
        call cldera_passive_tracers_timestep_tend(phys_state(c), ptend(c), ztodt, dummy_cflx)
        call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
        call check_tracers_chng(phys_state(c), tracerint, "cldera_passive_tracers_timestep_tend", &
                                nstep, ztodt, dummy_cflx)
         
-       ! --JH--: Allow advancing of CLDERA SAI tendencies if enabled
+       ! --JH--: Allow evolution of CLDERA SAI tendencies if enabled
        call cldera_sai_tracers_timestep_tend(phys_state(c), ptend(c), ztodt, phys_state(c)%ncol) 
        call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
        call check_tracers_chng(phys_state(c),tracerint,"cldera_sai_tracers_timestep_tend",nstep,&
