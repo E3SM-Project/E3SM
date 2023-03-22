@@ -702,6 +702,22 @@ module restart_physics
         ! and if the values are used in the tphysbc physics before the 
         ! tphysac code has a chance to update the values that are 
         ! coming from boundary datasets.
+
+       ! +++ Update from 2022-09 +++
+       ! For some of the new process coupling options in EAM, some of the constituents'
+       ! cam_in%cflx are used not in tphysac but in the tphysbc call of the next time step. 
+       ! This means for an exact restart, we also need to write out cam_in%cflx(:,2:)
+       ! and then read them back in. Because the present subroutine is called before 
+       ! the atm_import subroutine in cpl/atm_import_export.F90, the following
+       ! initialize was moved from atm_import to here to avoid incorrectly zeroing out 
+       ! the values read from restart files
+       !
+       do c= begchunk, endchunk
+          cam_in(c)%cflx(:,2:) = 0._r8
+       end do
+       !
+       ! === Update from 2022-09 ===
+
         do m = 1, pcnst
 
            write(num,'(i4.4)') m
