@@ -648,7 +648,7 @@ def buildnml(case, caseroot, compname):
                 lines.append('       type="input"')
                 lines.append('       io_type="{}"'.format(ocn_pio_typename))
                 lines.append('       filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, u_tidal_rms_file))
-                lines.append('       input_interval="initial_only"')
+                lines.append('       input_interval="initial_only">')
                 lines.append('       packages="landIceFluxesPKG">')
                 lines.append('')
                 lines.append('       <var name="velocityTidalRMS"/>')
