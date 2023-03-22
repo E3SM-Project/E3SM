@@ -99,7 +99,8 @@ module li_tracer_advection_fct_shared
       integer :: &
          n, i, k,      &! loop indices for neighbor, vertical loops
          iEdge, iCell, &! loop indices for edge, cell loops
-         cell1, cell2   ! neighbor cell indices across edge
+         cell1, cell2, &   ! neighbor cell indices across edge
+         iNeighbor, jCell
 
       integer, dimension(:), allocatable :: &
          cellIndx       ! cell indices gathered from neighbors 
@@ -145,6 +146,18 @@ module li_tracer_advection_fct_shared
       allocate(cellIndx      (   maxEdges2 + 2), &
                cellIndxSorted(2, maxEdges2 + 2))
 
+      ! calculate boundaryCell. A boundary cell is one that
+      ! has at least one empty or non-dynamic neighbor
+      do iCell = 1, nCells
+         do iNeighbor = 1, nEdgesOnCell(iCell)
+            jCell = cellsOnCell(iNeighbor, iCell)
+            if (.not. li_mask_is_dynamic_ice(jCell)) then
+               boundaryCell(iCell) = 1.0_RKIND
+               exit ! no need to loop over more neigbors
+            endif
+         enddo
+      enddo
+
       ! Compute masks and coefficients
       do iEdge = 1, nEdges
          nAdvCellsForEdge(iEdge) = 0
@@ -152,8 +165,8 @@ module li_tracer_advection_fct_shared
          cell2 = cellsOnEdge(2,iEdge)
 
          ! at boundaries, must stay at low order
-         if ( (.not. li_mask_is_dynamic_ice(cellMask(cell1))) .or. &
-              (.not. li_mask_is_dynamic_ice(cellMask(cell2))) ) then
+         if (boundaryCell(cell1) == 1 .or. &
+             boundaryCell(cell2) == 1) then
             advMaskHighOrder(:,iEdge) = 0.0_RKIND
          else
             advMaskHighOrder(:,iEdge) = 1.0_RKIND

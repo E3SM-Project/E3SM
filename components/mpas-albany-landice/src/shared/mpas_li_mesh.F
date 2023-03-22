@@ -136,7 +136,7 @@ module li_mesh
       invAreaCell   ! inverse of area of each cell
 
    ! Multiplicative masks and vectors for various conditions
-   integer, public, dimension(:, :), allocatable :: &
+   integer, public, dimension(:), allocatable :: &
       boundaryEdge, &! mask for boundary edges    at each level
       boundaryCell, &! mask for boundary cells    at each level
       boundaryVertex ! mask for boundary vertices at each level
@@ -472,9 +472,9 @@ contains
                                edgeSignOnVertex)
 
       allocate ( &
-            boundaryEdge(nVertLevels, nEdges+1), &
-            boundaryCell(nVertLevels, nCells+1), &
-            boundaryVertex(nVertLevels, nVertices+1), &
+            boundaryEdge(nEdges+1), &
+            boundaryCell(nCells+1), &
+            boundaryVertex(nVertices+1), &
             invAreaCell(nCells+1))
 
       !-----------------------------------------------------------------
@@ -1287,7 +1287,7 @@ contains
       !maxLevelVertexTop(nVertices+1) = 0
 
       ! set boundary edge
-      boundaryEdge(:,1:nEdges+1)=1.0_RKIND
+      boundaryEdge(1:nEdges+1)=0.0_RKIND
       !edgeMask(1:nEdges+1)=0
 
       ! TODO: Replace this loop over levels with MALI levels
@@ -1298,16 +1298,16 @@ contains
       !end do
 
       ! Find cells and vertices that have an edge on the boundary
-      boundaryCell(:,1:nCells+1) = 0.0_RKIND
-      boundaryVertex(:,1:nVertices+1) = 0.0_RKIND
+      boundaryCell(1:nCells+1) = 0.0_RKIND
+      boundaryVertex(1:nVertices+1) = 0.0_RKIND
 
       do iEdge = 1, nEdges
       do k = 1, nVertLevels
-         if (boundaryEdge(k,iEdge) == 1) then
-            boundaryCell(k,cellsOnEdge(1,iEdge)) = 1.0_RKIND
-            boundaryCell(k,cellsOnEdge(2,iEdge)) = 1.0_RKIND
-            boundaryVertex(k,verticesOnEdge(1,iEdge)) = 1.0_RKIND
-            boundaryVertex(k,verticesOnEdge(2,iEdge)) = 1.0_RKIND
+         if (boundaryEdge(iEdge) == 1) then
+            boundaryCell(cellsOnEdge(1,iEdge)) = 1.0_RKIND
+            boundaryCell(cellsOnEdge(2,iEdge)) = 1.0_RKIND
+            boundaryVertex(verticesOnEdge(1,iEdge)) = 1.0_RKIND
+            boundaryVertex(verticesOnEdge(2,iEdge)) = 1.0_RKIND
          endif
       end do
       end do
