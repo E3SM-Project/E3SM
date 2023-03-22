@@ -582,8 +582,6 @@ contains
         !end if
     enddo
 
-    aod_tot(:,:) = aod_so2(:,:) + aod_sulf(:,:) + aod_ash(:,:)
-    
     ! record air mass on grid to history files
     call outfld('AOD',      aod(:), ncol, lchnk)
     call outfld('I_SW',     Isw(:), ncol, lchnk)
@@ -600,7 +598,7 @@ contains
     call cldera_set_field_part_data("aod_so2" ,lchnk-begchunk+1,aod_so2)
     call cldera_set_field_part_data("aod_ash" ,lchnk-begchunk+1,aod_ash)
     call cldera_set_field_part_data("aod_sulf",lchnk-begchunk+1,aod_sulf)
-    ! the aod_tot variable no longer exists in this version of the HSW++ implementation
+    ! the aod_tot variable was renamed to aod; this line should be updated
     ! call cldera_set_field_part_data("aod_tot" ,lchnk-begchunk+1,aod_tot)
 #endif
 
