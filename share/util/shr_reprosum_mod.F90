@@ -561,6 +561,9 @@ module shr_reprosum_mod
       integer :: max_levels(nflds)       ! maximum number of levels of
                                          !  integer expansion to use
       integer :: max_level               ! maximum value in max_levels
+      integer :: extra_levels            ! number of extra levels needed
+                                         !  to guarantee that sum over threads
+                                         !  or tasks does not cause overflow
 
       real(r8) :: xmax_nsummands         ! real(max_nsummands,r8)
       real(r8) :: arr_lsum(nflds)        ! local sums
@@ -736,15 +739,16 @@ module shr_reprosum_mod
                endif
                call t_stopf("repro_sum_allr_max")
 
-! Determine maximum shift. Shift needs to be small enough that summation
-! does not exceed maximum number of digits in i8.
+! Determine maximum shift. Shift needs to be small enough that summation,
+! in absolute value, does not exceed maximum value representable by i8.
 
 ! If requested, return max_nsummands before it is redefined
                if ( present( gbl_max_nsummands_out) ) then
                   gbl_max_nsummands_out = max_nsummands
                endif
 
-! Summing within each thread first
+! Summing within each thread first (adding 1 to max_nsummands
+! to ensure that integer division rounds up)
                max_nsummands = (max_nsummands/omp_nthreads) + 1
 ! then over threads and tasks
                max_nsummands = max(max_nsummands, tasks*omp_nthreads)
@@ -762,6 +766,25 @@ module shr_reprosum_mod
                   call shr_sys_abort('repro_sum failed: number of summands too '// &
                                      'large for integer vector algorithm' )
                endif
+! Note: by construction, each floating point value will be decomposed
+! into a vector of integers each component of which will be strictly
+! less than radix(1_i8)**arr_max_shift in absolute value, and the
+! summation of max_nsummands of these, again in absolute value, will
+! then be less than 
+!  radix(1_i8)**(arr_max_shift + exponent(xmax_nsummands))
+! or radix(1_i8)**(digits(1_i8) - 1). This is more conservative than
+! necessary, but it also allows the postprocessing mentioned above
+! (and described later) to proceed without danger of introducing
+! overflow. 
+
+! Determine additional number of levels needed to support the
+! postprocessing that reduces the magnitude of each component
+! of the integer vector of the partial sum for each thread
+! to be less than (radix(1_i8)**arr_max_shift).
+               extra_levels = (digits(1_i8) - 1)/arr_max_shift
+! Extra levels are indexed by (-(extra_levels-1):0)
+! Derivation of this is described in the comments in
+! shr_reprosum_int.
 
 ! Calculate sum
                if (present(repro_sum_validate)) then
@@ -771,8 +794,9 @@ module shr_reprosum_mod
                endif
                call shr_reprosum_int(arr, arr_gsum, nsummands, dsummands, &
                                      nflds, arr_max_shift, arr_gmax_exp, &
-                                     arr_max_levels, max_level, arr_gsum_infnan, &
-                                     validate, recompute, omp_nthreads, mpi_comm)
+                                     arr_max_levels, max_level, extra_levels, &
+                                     arr_gsum_infnan, validate, recompute, &
+                                     omp_nthreads, mpi_comm)
 
 ! Record statistics, etc.
                repro_sum_fast = 1
@@ -873,10 +897,11 @@ module shr_reprosum_mod
             endif
 
 ! Determine maximum shift (same as in previous branch, but with calculated
-! max_nsummands). Shift needs to be small enough that summation does not
-! exceed maximum number of digits in i8.
+! max_nsummands). Shift needs to be small enough that summation, in absolute
+! value, does not exceed maximum value representable by i8.
 
-! Summing within each thread first
+! Summing within each thread first (adding 1 to max_nsummands
+! to ensure that integer division rounds up)
             max_nsummands = (max_nsummands/omp_nthreads) + 1
 ! then over threads and tasks
             max_nsummands = max(max_nsummands, tasks*omp_nthreads)
@@ -894,6 +919,16 @@ module shr_reprosum_mod
                call shr_sys_abort('repro_sum failed: number of summands too '// &
                                   'large for integer vector algorithm' )
             endif
+! Note: by construction, each floating point value will be decomposed
+! into a vector of integers each component of which will be strictly
+! less than radix(1_i8)**arr_max_shift in absolute value, and the
+! summation of max_nsummands of these, again in absolute value, will
+! then be less than 
+!  radix(1_i8)**(arr_max_shift + exponent(xmax_nsummands))
+! or radix(1_i8)**(digits(1_i8) - 1). This is more conservative than
+! necessary, but it also allows the postprocessing mentioned above
+! (and described later) to proceed without danger of introducing
+! overflow. 
 
 ! Determine maximum number of levels required for each field.
 ! Need enough levels to represent both the smallest and largest
@@ -935,12 +970,22 @@ module shr_reprosum_mod
                enddo
             endif
 
+! Determine additional number of levels needed to support the
+! postprocessing that reduces the magnitude of each component
+! of the integer vector of the partial sum for each thread
+! to be less than (radix(1_i8)**arr_max_shift).
+            extra_levels = (digits(1_i8) - 1)/arr_max_shift
+! Extra levels are indexed by (-(extra_levels-1):0)
+! Derivation of this is described in the comments in
+! shr_reprosum_int.
+
 ! Calculate sum
             validate = .false.
             call shr_reprosum_int(arr, arr_gsum, nsummands, dsummands, &
                                   nflds, arr_max_shift, arr_gmax_exp, &
-                                  max_levels, max_level, arr_gsum_infnan, &
-                                  validate, recompute, omp_nthreads, mpi_comm)
+                                  max_levels, max_level, extra_levels, &
+                                  arr_gsum_infnan, validate, recompute, &
+                                  omp_nthreads, mpi_comm)
 
          endif
 
@@ -1031,8 +1076,8 @@ module shr_reprosum_mod
 
    subroutine shr_reprosum_int (arr, arr_gsum, nsummands, dsummands, nflds, &
                                 arr_max_shift, arr_gmax_exp, max_levels,    &
-                                max_level, skip_field, validate, recompute, &
-                                omp_nthreads, mpi_comm                      )
+                                max_level, extra_levels, skip_field,        &
+                                validate, recompute, omp_nthreads, mpi_comm )
 !------------------------------------------------------------------------
 !
 ! Purpose:
@@ -1062,6 +1107,10 @@ module shr_reprosum_mod
                                             !  of integer expansion
       integer,  intent(in) :: max_level     ! maximum value in
                                             !  max_levels
+      integer,  intent(in) :: extra_levels  ! number of extra levels
+                                            ! needed to guarantee that
+                                            ! sum over threads or tasks
+                                            ! does not cause overflow
       integer,  intent(in) :: omp_nthreads  ! number of OpenMP threads
       integer,  intent(in) :: mpi_comm      ! MPI subcommunicator
 
@@ -1089,15 +1138,15 @@ module shr_reprosum_mod
       integer, parameter  :: max_jlevel = &
                                 1 + (digits(1_i8)/digits(1.0_r8))
 
-      integer(i8) :: i8_arr_tlsum_level(0:max_level,nflds,omp_nthreads)
+      integer(i8) :: i8_arr_tlsum_level(-(extra_levels-1):max_level,nflds,omp_nthreads)
                                    ! integer vector representing local
                                    !  sum (per thread, per field)
-      integer(i8) :: i8_arr_lsum_level((max_level+3)*nflds)
+      integer(i8) :: i8_arr_lsum_level((max_level+extra_levels+2)*nflds)
                                    ! integer vector representing local
                                    !  sum
       integer(i8) :: i8_arr_level  ! integer part of summand for current
                                    !  expansion level
-      integer(i8) :: i8_arr_gsum_level((max_level+3)*nflds)
+      integer(i8) :: i8_arr_gsum_level((max_level+extra_levels+2)*nflds)
                                    ! integer vector representing global
                                    !  sum
       integer(i8) :: IX_8          ! integer representation of current
@@ -1126,6 +1175,8 @@ module shr_reprosum_mod
                                    !  expansion of current ifld
       integer :: voffset           ! modification to offset used to
                                    !  include validation metrics
+      integer :: min_level         ! index of minimum levels (including
+                                   !  extra levels) for i8_arr_tlsum_level
       integer :: ioffset           ! offset(ifld)
       integer :: jlevel            ! number of floating point 'pieces'
                                    !  extracted from a given i8 integer
@@ -1160,12 +1211,15 @@ module shr_reprosum_mod
       i8_radix = radix(IX_8)
 
 ! If validating upper bounds, reserve space for validation metrics
-! In both cases, reserve an extra level for overflow from the top level
+! In both cases, reserve extra levels for overflows from the top level
       if (validate) then
-        voffset = 3
+        voffset = extra_levels + 2
       else
-        voffset = 1
+        voffset = extra_levels
       endif
+
+! For convenience, define minimum level index for i8_arr_tlsum_level
+      min_level = -(extra_levels-1)
 
 ! Compute offsets for each field
       offset(1) = voffset
@@ -1259,18 +1313,73 @@ module shr_reprosum_mod
 
           enddo
 
-! Postprocess integer vector to eliminate potential for overlap in the following
-! sums over threads and MPI tasks: if value larger than or equal to
-! (radix(IX_8)**arr_max_shift), add this 'overlap' to next larger integer in
-! vector, resulting in nonoverlapping ranges for each component. Note that
-! 'ilevel-1==0' corresponds to an extra level used to guarantee that the sums
-! over threads and MPI tasks do not overflow for ilevel==1.
-          do ilevel=max_levels(ifld),1,-1
-             RX_8 = i8_arr_tlsum_level(ilevel,ifld,ithread)
-             IX_8 = int(scale(RX_8,-arr_max_shift),i8)
-             if (IX_8 /= 0_i8) then
+! Postprocess integer vector to eliminate possibility of overflow
+! during subsequent sum over threads and tasks, as per earlier
+! comment on logic behind definition of max_nsummands. If value at a
+! given level is larger than or equal to
+! (radix(1_i8)**arr_max_shift), subtract this 'overlap' from the
+! current value and add it (appropriately shifted) to the value at
+! the next smaller level in the vector.
+! (a) As described earlier, prior to this postprocessing the integer
+!     components are each strictly less than
+!     radix(1_i8)**(digits(1_i8) - 1) in absolute value. So, after
+!     shifting, the absolute value of the amount added to level
+!     max_levels(ifld)-1 from level max_levels(ifld) is less than
+!     radix(1_i8)**(digits(1_i8) - 1 - arr_max_shift) with the
+!     resulting sum, in absolute value, being less than
+!      (radix(1_i8)**(digits(1_i8) - 1))*(1 + radix(1_i8)**(-arr_max_shift)).
+!     Any overlap from this component is then added to the level
+!     max_levels(ifld)-2, etc., with resulting intermediate sums, in
+!     absolute value, for levels 1 to max_levels(ifld) being bounded
+!     from above by 
+!      (radix(1_i8)**(digits(1_i8) - 1))*sum{i=0,inf}(radix(1_i8)**(-i*arr_max_shift)).
+!     Since radix(1_i8) >= 2 and arr_max_shift is also required to be
+!     >= 2 (otherwise the code exits with an error) this is less than
+!     or equal to 
+!      (radix(1_i8)**(digits(1_i8) - 1))*sum{i=0,inf}(2**(-2i)),
+!     or
+!      (radix(1_i8)**(digits(1_i8) - 1))*(4/3).
+!     In summary, this shows that no absolute value generated during
+!     this process will exceed the maximum value representable in i8,
+!     i.e. (radix(1_i8)**(digits(1_i8)) - 1), as long as
+!     digits(1_i8) >= 2. 
+! (b) 'ilevel==0,...,-(extra_levels-1)' correspond to extra levels
+!     used to continue the above process until values at all levels
+!     are less than radix(1_i8)**arr_max_shift in absolute value
+!     (except level -(extra_levels-1), as described below). The
+!     result of shifting the overlap from level 1 to level 0, which
+!     is initially zero, is bounded in absolute value by 
+!      (radix(1_i8)**(digits(1_i8) - 1 - arr_max_shift))*(4/3).
+!     After removing any overlap from level 0, the upper bound for
+!     level -1, which is also initially zero, is
+!      (radix(1_i8)**(digits(1_i8) - 1 - 2*arr_max_shift))*(4/3).
+!     Continuing the process, when get to level -(extra_levels-1),
+!     the upper bound is
+!      (radix(1_i8)**(digits(1_i8) - 1 - extra_levels*arr_max_shift))*(4/3).
+!     If we define
+!      extra_levels = ceiling[(digits(1_i8) - 1)/arr_max_shift - 1]
+!     then the upper bound is
+!      (radix(1_i8)**(arr_max_shift))*(4/3).
+!     Setting 
+!      extra_levels = (digits(1_i8) - 1)/arr_max_shift
+!     is then a slightly conservative estimate that achieves the same
+!     upper bound. While the above upper bound at level
+!     -(extra_levels-1)is a factor of (4/3) larger than the target
+!     radix(1_i8)**arr_max_shift, it is still small enough so that
+!     the sum over threads and tasks, bounded from above in absolute
+!     value by 
+!      (radix(1_i8)**(digits(1_i8) - 1))*(4/3),
+!     will not cause an overflow at level -(extra_levels-1) as long as
+!     digits(1_i8) >= 2.
+          do ilevel=max_levels(ifld),min_level+1,-1
+             if (abs(i8_arr_tlsum_level(ilevel,ifld,ithread)) >= &
+                    (i8_radix**arr_max_shift)) then
+                
+                IX_8 = i8_arr_tlsum_level(ilevel,ifld,ithread) &
+                       / (i8_radix**arr_max_shift)
                 i8_arr_tlsum_level(ilevel-1,ifld,ithread) = &
                    i8_arr_tlsum_level(ilevel-1,ifld,ithread) + IX_8
+                
                 IX_8 = IX_8*(i8_radix**arr_max_shift)
                 i8_arr_tlsum_level(ilevel,ifld,ithread)   = &
                    i8_arr_tlsum_level(ilevel,ifld,ithread) - IX_8
@@ -1284,7 +1393,7 @@ module shr_reprosum_mod
       do ifld=1,nflds
          ioffset = offset(ifld)
          do ithread = 1,omp_nthreads
-            do ilevel = 0,max_levels(ifld)
+            do ilevel = min_level,max_levels(ifld)
                i8_arr_lsum_level(ioffset+ilevel) = &
                   i8_arr_lsum_level(ioffset+ilevel) &
                   + i8_arr_tlsum_level(ilevel,ifld,ithread)
@@ -1349,29 +1458,67 @@ module shr_reprosum_mod
          if (.not. recompute) then
 
 ! Preprocess integer vector:
-!  a) If value larger than or equal to (radix(IX_8)**arr_max_shift), add this 'overlap'
-!     to next larger integer in vector, resulting in nonoverlapping ranges for each
-!     component. Note that have 'ilevel-1=0' level here as described above.
-           do ilevel=max_levels(ifld),1,-1
-             RX_8 = i8_arr_gsum_level(ioffset+ilevel)
-             IX_8 = int(scale(RX_8,-arr_max_shift),i8)
-             if (IX_8 /= 0_i8) then
-               i8_arr_gsum_level(ioffset+ilevel-1) = i8_arr_gsum_level(ioffset+ilevel-1) &
-                                                   + IX_8
-               IX_8 = IX_8*(i8_radix**arr_max_shift)
-               i8_arr_gsum_level(ioffset+ilevel)   = i8_arr_gsum_level(ioffset+ilevel)   &
-                                                   - IX_8
-             endif
+!  a) If value larger than or equal to (radix(1_i8)**arr_max_shift),
+!     add this 'overlap' to the value at the next smaller level
+!     in the vector, resulting in nonoverlapping ranges for each
+!     component.
+!
+!     As before, no intermediate sums for levels
+!     max_levels(ifld) to -(extra_levels-2), in absolute value,
+!     will exceed the the maximum value representable in i8, but the
+!     upper bound on the final sum, in absolute value, at
+!     level -(extra_levels-1) is now 
+!      (radix(1_i8)**(digits(1_i8) - 1))*(4/3) + 
+!            + sum{i=1,inf}(radix(1_i8)**(-i*arr_max_shift))
+!      = (radix(1_i8)**(digits(1_i8) - 1))*
+!            ((4/3) + sum{i=1,inf}(radix(1_i8)**(-i*arr_max_shift)).
+!     which is less than or equal to 
+!      (radix(1_i8)**(digits(1_i8) - 1))*((4/3) + (1/3))
+!     or
+!      (radix(1_i8)**(digits(1_i8) - 1))*(5/3)
+!     which will not cause an overflow at level -(extra_levels-1)
+!     as long as digits(1_i8) >= 3.
+!
+!     Since the exponents associated with each successive level
+!     differ by arr_max_shift, monotonically decreasing with
+!     increasing level, the absolute value at each level after this
+!     preprocessing is strictly less than what can be represented at
+!     the next lower level (larger exponent). If nonzero, it is also
+!     strictly greater than what is represented at the next higher
+!     level (smaller exponent). Note that the smallest level,
+!     -(extra_levels-1), does not have to be less than
+!     (radix(1_i8)**arr_max_shift) for this 'nonoverlap' property to
+!     hold. 
+           do ilevel=max_levels(ifld),min_level+1,-1
+              if (abs(i8_arr_gsum_level(ioffset+ilevel)) >= &
+                     (i8_radix**arr_max_shift)) then
+
+                  IX_8 = i8_arr_gsum_level(ioffset+ilevel) &
+                         / (i8_radix**arr_max_shift)
+                  i8_arr_gsum_level(ioffset+ilevel-1) = &
+                     i8_arr_gsum_level(ioffset+ilevel-1) + IX_8
+
+                  IX_8 = IX_8*(i8_radix**arr_max_shift)
+                  i8_arr_gsum_level(ioffset+ilevel)   = &
+                     i8_arr_gsum_level(ioffset+ilevel) - IX_8
+              endif
            enddo
-!  b) Working consecutively from first level with a nonzero value up
-!     to level max_levels(ifld), subtract +/- 1 from level with larger
-!     exponent (e.g., ilevel) and add  +/- (i8_radix**arr_max_shift)
-!     to level with smaller exponent (ilevel+1) when necessary so that
-!     all vector components have the same sign. Treat a zero value at
-!     ilevel+1 as always a different sign from value at ilevel so that
-!     process always makes this nonzero. (Otherwise, the wrong sign
-!     could be reintroduced by subtracting from a zero value at the
-!     next step.)  
+!  b) Working consecutively from the first level with a nonzero value
+!     up to level max_levels(ifld), subtract +/- 1 from level with
+!     larger exponent (e.g., ilevel) and add  +/-
+!     (i8_radix**arr_max_shift) to level with smaller exponent
+!     (ilevel+1), when necessary, so that the value at ilevel+1
+!     has the same sign as the value at ilevel. Treat a zero value at
+!     ilevel+1 as always a different sign from the value at ilevel so
+!     that the process always makes this nonzero. (Otherwise, the
+!     wrong sign could be reintroduced by subtracting from a zero
+!     value at the next step.) When finished with the process values
+!     at all levels are either greater than or equal to zero or all
+!     are less than or equal to zero. Note that this can decrease (but
+!     not increase) the absolute value at level -(extra_levels-1) by
+!     1. All other levels are now less than or equal to
+!     (radix(1_i8)**arr_max_shift) in absolute value rather than
+!     strictly less than. 
            ilevel = 0
            do while ((i8_arr_gsum_level(ioffset+ilevel) == 0_i8) &
                      .and. (ilevel < max_levels(ifld)))
