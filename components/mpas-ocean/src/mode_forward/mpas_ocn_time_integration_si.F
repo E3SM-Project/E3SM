@@ -152,16 +152,17 @@ module ocn_time_integration_si
       nSiLargeIter       ! #iteration for the barotropic system
    character(len=5) :: si_algorithm ! Name of the iterative solver algorithm
 
-   integer :: ssh_sal_on
-
-   ! SI - halo exch related variables ----------------------------------                        
    type (field1DReal), pointer :: &
       SIvec_zh1_field,SIvec_wh0_field,SIvec_rh1_field   
                          ! field pointer for halo update
 
-   type (mpas_communication_list), pointer :: sendList, recvList
+   integer :: ssh_sal_on
+
+#ifdef USE_GPU_AWARE_MPI
+   ! SI - halo exch related variables ----------------------------------
 
    integer :: nSendCommList,nRecvCommList
+   integer :: nMaxSendList,nMaxRecvList
 
    integer,dimension(:),pointer :: haloLayers
 
@@ -181,9 +182,12 @@ module ocn_time_integration_si
       integer :: procID,nList,reqID
    end type si_local_mpi
    
-   type(si_local_mpi),allocatable,dimension(:) :: exchSend,exchRecv
+   type(si_local_mpi),allocatable,dimension(:),target :: exchSend,exchRecv
 
-   real(kind=RKIND),allocatable,dimension(:) :: sbuffer,rbuffer
+   real(kind=RKIND),pointer,dimension(:) :: sbuffer,rbuffer
+   real(kind=RKIND),allocatable,dimension(:) :: s1buffer,r1buffer
+#endif
+
 
 #ifdef USE_MAGMA
    magma_devptr_t :: dprec_ivmat,queue,dxvec,dyvec
@@ -1208,7 +1212,7 @@ module ocn_time_integration_si
             ! Stage 2.2 : Compution of the initial residual
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    
-            call mpas_timer_start("si btr outer residual")
+            call mpas_timer_start("si btr residual")
    
 #ifdef MPAS_OPENACC
             !$acc parallel loop gang                                    &
@@ -1290,10 +1294,14 @@ module ocn_time_integration_si
 
             call si_precond(SIvec_r0,SIvec_rh0)
    
-            call mpas_timer_start("si halo r0")
+            call mpas_timer_start("si 1st halo")
+#ifdef USE_GPU_AWARE_MPI
+            call si_halo_exch(domain,SIvec_rh0)
+#else
             call mpas_dmpar_field_halo_exch(domain, 'SIvec_rh0')
             !$acc update device(SIvec_rh0)
-            call mpas_timer_stop("si halo r0")
+#endif
+            call mpas_timer_stop("si 1st halo")
    
             ! SpMV -------------------------------------------------------!
    
@@ -1306,10 +1314,14 @@ module ocn_time_integration_si
 
                call si_precond(SIvec_w0,SIvec_wh0)
       
-               call mpas_timer_start("si halo r0")
+               call mpas_timer_start("si 1st halo")
+#ifdef USE_GPU_AWARE_MPI
+               call si_halo_exch(domain,SIvec_wh0)
+#else
                call mpas_dmpar_field_halo_exch(domain, 'SIvec_wh0')
                !$acc update device(SIvec_wh0)
-               call mpas_timer_stop("si halo r0")
+#endif
+               call mpas_timer_stop("si 1st halo")
       
                ! SpMV -------------------------------------------------------!
       
@@ -1318,12 +1330,14 @@ module ocn_time_integration_si
    
                ! Reduction --------------------------------------------------!
    
+               call mpas_timer_start("si 1st global reduction")
                call si_global_reduction(SIcst_allreduce_local2, &
                                    SIcst_allreduce_global2,     &
                                    globalReprodSum2fld1,        &
                                    globalReprodSum2fld2,        &
                                    si_algorithm,2,domain,       &
                                    SIvec_r00,SIvec_r0,SIvec_w0)
+               call mpas_timer_stop("si 1st global reduction")
    
                !$acc serial present(SIcst_r00r0,SIcst_r00w0,SIcst_rho0, &
                !$acc           SIcst_alpha0,SIcst_beta0,SIcst_omega0,   &
@@ -1345,12 +1359,15 @@ module ocn_time_integration_si
             else if ( si_algorithm == 'scg' ) then !!!
            
                ! Reduction --------------------------------------------------!
+
+               call mpas_timer_start("si 1st global reduction")
                call si_global_reduction(SIcst_allreduce_local2, &
                                    SIcst_allreduce_global2,     &
                                    globalReprodSum2fld1,        &
                                    globalReprodSum2fld2,        &
                                    si_algorithm,2,domain,       &
                                    SIvec_r0,SIvec_w0,SIvec_rh0)
+               call mpas_timer_stop("si 1st global reduction")
    
                !$acc serial present(SIcst_r0rh0,SIcst_w0rh0,SIcst_alpha0, &
                !$acc           SIcst_beta0,SIcst_gamma0,                  &
@@ -1366,7 +1383,7 @@ module ocn_time_integration_si
 
             end if !!!
    
-            call mpas_timer_stop("si btr outer residual")
+            call mpas_timer_stop("si btr residual")
    
    
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1374,7 +1391,7 @@ module ocn_time_integration_si
             !             - lagged values are sufficiently up to date
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    
-            call mpas_timer_start("si outer btr iteration")
+            call mpas_timer_start("si btr iteration")
 
             if ( si_algorithm == 'sbicg' ) then
                call si_solver_sbicg(domain,                                &
@@ -1394,7 +1411,7 @@ module ocn_time_integration_si
             !$acc update device(sshSubcycleNew)
             call mpas_timer_stop("si halo iter")
    
-            call mpas_timer_stop("si outer btr iteration")
+            call mpas_timer_stop("si btr iteration")
    
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             ! Stage 2.4 : The barotropic velocity update
@@ -1562,7 +1579,7 @@ module ocn_time_integration_si
             !             with lagged values
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    
-            call mpas_timer_start("si btr inner residual")
+            call mpas_timer_start("si btr residual")
    
             ! SpMV -------------------------------------------------------!
    
@@ -1660,8 +1677,12 @@ module ocn_time_integration_si
             call si_precond(SIvec_r0,SIvec_rh0)
    
             call mpas_timer_start("si halo r0")
+#ifdef USE_GPU_AWARE_MPI
+            call si_halo_exch(domain,SIvec_rh0)
+#else
             call mpas_dmpar_field_halo_exch(domain, 'SIvec_rh0')
             !$acc update device(SIvec_rh0)
+#endif
             call mpas_timer_stop("si halo r0")
    
             ! SpMV -------------------------------------------------------!
@@ -1675,8 +1696,12 @@ module ocn_time_integration_si
                call si_precond(SIvec_w0,SIvec_wh0)
       
                call mpas_timer_start("si halo r0")
+#ifdef USE_GPU_AWARE_MPI
+               call si_halo_exch(domain,SIvec_wh0)
+#else
                call mpas_dmpar_field_halo_exch(domain, 'SIvec_wh0')
                !$acc update device(SIvec_wh0)
+#endif
                call mpas_timer_stop("si halo r0")
       
                ! SpMV -------------------------------------------------------!
@@ -1733,13 +1758,13 @@ module ocn_time_integration_si
    
             end if !!!
 
-            call mpas_timer_stop("si btr inner residual")
+            call mpas_timer_stop("si btr residual")
    
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             ! Stage 2.6 : Main (inner) solver iterations
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    
-            call mpas_timer_start("si btr inner iteration")
+            call mpas_timer_start("si btr iteration")
 
             if ( si_algorithm == 'sbicg' ) then
                call si_solver_sbicg(domain,                                &
@@ -1756,7 +1781,7 @@ module ocn_time_integration_si
             !$acc update device(sshSubcycleNew)
             call mpas_timer_stop("si halo iter")
    
-            call mpas_timer_stop("si btr inner iteration")
+            call mpas_timer_stop("si btr iteration")
    
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             ! Stage 2.7 : The barotropic velocity update
@@ -1833,7 +1858,6 @@ module ocn_time_integration_si
             !$omp end parallel
 #endif
    
-
 #ifdef MPAS_OPENACC
             !$acc parallel loop gang &
             !$acc    present(edgeMask,cellsOnEdge,dcEdge,           &
@@ -1911,7 +1935,6 @@ module ocn_time_integration_si
             !$omp end parallel
 #endif
    
-   
             ! boundary update on F
             call mpas_timer_start("si halo btr vel")
             !$acc update host(barotropicThicknessFlux, &
@@ -1954,6 +1977,8 @@ module ocn_time_integration_si
          !-------------------------------------------------------------!
          ! END   Large barotropic system iteration loop
          !-------------------------------------------------------------!
+
+         call mpas_timer_stop("si btr vel")
 
          !$acc exit data copyout(sshNew,normalBarotropicVelocityNew)  &
          !$acc           delete (sshCur,bottomDepthEdge,              &
@@ -2064,8 +2089,6 @@ module ocn_time_integration_si
          deallocate(uTemp)
 
          call mpas_timer_stop('btr si ssh verif')
-
-         call mpas_timer_stop("si btr vel")
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          ! Stage 3: Tracer, density, pressure, vert velocity prediction
@@ -3141,6 +3164,8 @@ module ocn_time_integration_si
 !-----------------------------------------------------------------------
 
    subroutine ocn_time_integration_si_init(domain, dt)!{{{
+     
+      include 'mpif.h'
 
       !-----------------------------------------------------------------
       ! Input/output variables
@@ -3172,12 +3197,6 @@ module ocn_time_integration_si
 
       integer :: nCells, nEdges, ihh, imm, iss
 
-      integer :: iHalo, nHaloLayers, threadNum, nAdded, i, j,iComm,iExch
-      integer :: nRecvTotList,nSendTotList
-      type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: commListPtr,commListPtr2
-      type (field1dReal), pointer :: fieldCursor
-
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray,     &
          minLevelEdgeBot, maxLevelEdgeTop, minLevelCell, maxLevelCell
 
@@ -3205,6 +3224,13 @@ module ocn_time_integration_si
          normalVelocity             ! normal velocity (total)
 
       real (kind=RKIND), dimension(:), pointer :: ssh
+
+#ifdef USE_GPU_AWARE_MPI
+      type (mpas_communication_list), pointer :: sendList, recvList
+      type (mpas_communication_list), pointer :: commListPtr,commListPtr2
+      type (mpas_exchange_list), pointer :: exchListPtr
+      integer :: iHalo, nHaloLayers, threadNum, nAdded, i, j,iComm,iExch
+#endif
 
 #ifndef USE_LAPACK
       call mpas_log_write( &
@@ -3287,6 +3313,11 @@ module ocn_time_integration_si
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
       call mpas_pool_get_array(statePool, 'ssh', ssh, 2)
+
+      ! Get fields to use 1d-real halo exchange routine
+      call mpas_pool_get_field(diagnosticsPool, 'SIvec_zh1', SIvec_zh1_field,1)
+      call mpas_pool_get_field(diagnosticsPool, 'SIvec_wh0', SIvec_wh0_field,1)
+      call mpas_pool_get_field(diagnosticsPool, 'SIvec_rh1', SIvec_rh1_field,1)
 
       nCells = nCellsArray(config_num_halos)
       nEdges = nEdgesArray(config_num_halos+1)
@@ -3475,18 +3506,15 @@ module ocn_time_integration_si
       self_attraction_and_loading_beta = config_self_attraction_and_loading_beta
 
 
+#ifdef USE_GPU_AWARE_MPI
       !--------------------------------------------------------------------
       ! Initialization for the si_halo_exch routine
-      !    - Get fields & Save sendList and recvList
+      !    - Save sendList and recvList
       !    - Allocate send & recv buffer
       !    - Define dest & source list
       !--------------------------------------------------------------------
 
       call mpi_barrier(domain%dminfo%comm,ierr)
-
-      call mpas_pool_get_field(diagnosticsPool, 'SIvec_zh1', SIvec_zh1_field,1)
-      call mpas_pool_get_field(diagnosticsPool, 'SIvec_wh0', SIvec_wh0_field,1)
-      call mpas_pool_get_field(diagnosticsPool, 'SIvec_rh1', SIvec_rh1_field,1)
 
       threadNum = mpas_threading_get_thread_num()
       if ( threadNum == 0 ) then
@@ -3504,26 +3532,28 @@ module ocn_time_integration_si
       !-----------------------------------------------------------------
 
       i = 0
-      nSendTotList = 0
+      nMaxSendList = 0
       commListPtr => sendList
       do while(associated(commListPtr))
          i = i + 1
-         nSendTotList = nSendTotList + commListPtr%nList
+         if ( nMaxSendList < commListPtr%nList ) then
+              nMaxSendList = commListPtr%nList
+         endif
          commListPtr => commListPtr % next
       end do
-      nSendCommList = i     
+      nSendCommList = i
 
       i = 0
-      nRecvTotList = 0
-      commListPtr => recvList 
+      nMaxRecvList = 0
+      commListPtr => recvList
       do while(associated(commListPtr))
          i = i + 1
-         nRecvTotList = nRecvTotList + commListPtr%nList
+         if ( nMaxRecvList < commListPtr%nList ) then
+              nMaxRecvList = commListPtr%nList
+         endif
          commListPtr => commListPtr % next
       end do
-      nRecvCommList = i     
-
-      
+      nRecvCommList = i
 
       allocate(exchSend(nSendCommList))
       allocate(exchRecv(nRecvCommList))
@@ -3658,15 +3688,20 @@ module ocn_time_integration_si
          commListPtr => commListPtr  % next
       end do
 
+      nullify(sendList,recvList) 
       !-----------------------------------------------------------------
 
-#ifdef MPAS_OPENACC
+      !$acc enter data create(sbuffer,rbuffer)
+
       !$acc enter data copyin(exchRecv)
       do iComm = 1,nRecvCommList
          !$acc enter data copyin(exchRecv(iComm)%buffer, &
-         !$acc                   exchRecv(iComm)%halo)
+         !$acc                   exchRecv(iComm)%nExch,  &
+         !$acc                   exchRecv(iComm)%halo,   &
+         !$acc                   exchRecv(iComm)%procID)
          do iHalo = 1,config_num_halos
-            !$acc enter data copyin(exchRecv(iComm)%halo(iHalo)%nList, &
+            !$acc enter data copyin(exchRecv(iComm)%halo(iHalo)%nList,      &
+            !$acc                   exchRecv(iComm)%halo(iHalo)%endPointID, &
             !$acc                   exchRecv(iComm)%halo(iHalo)%exch )
             do iExch = 1,exchRecv(iComm)%nExch(iHalo)
                !$acc enter data copyin(                                   &
@@ -3679,9 +3714,12 @@ module ocn_time_integration_si
       !$acc enter data copyin(exchSend)
       do iComm = 1,nSendCommList
          !$acc enter data copyin(exchSend(iComm)%buffer, &
-         !$acc                   exchSend(iComm)%halo)
+         !$acc                   exchSend(iComm)%nExch,  &
+         !$acc                   exchSend(iComm)%halo,   &
+         !$acc                   exchSend(iComm)%procID)
          do iHalo = 1,config_num_halos
-            !$acc enter data copyin(exchSend(iComm)%halo(iHalo)%nList, &
+            !$acc enter data copyin(exchSend(iComm)%halo(iHalo)%nList,      &
+            !$acc                   exchSend(iComm)%halo(iHalo)%endPointID, &
             !$acc                   exchSend(iComm)%halo(iHalo)%exch)
             do iExch = 1,exchSend(iComm)%nExch(iHalo)
                !$acc enter data copyin(                                   &
@@ -4070,7 +4108,7 @@ module ocn_time_integration_si
                               SIvec_rh0(1:nPrecVec), 1, queue )
 #endif
 
-      !$acc enter data copyin(                                       &
+      !$acc enter data copyin(prec_ivmat,                            &
       !$acc    SIcst_allreduce_local2,SIcst_allreduce_global2,       &
       !$acc    SIcst_allreduce_local3,SIcst_allreduce_global3,       &
       !$acc    SIcst_allreduce_local9,SIcst_allreduce_global9,       &
@@ -4082,14 +4120,10 @@ module ocn_time_integration_si
       !$acc    SIcst_r00w0,SIcst_r00q0,SIcst_rho0,SIcst_rho1)
 
       if ( config_btr_si_partition_match_mode ) then
-      !$acc enter data copyin(prec_ivmat,                            &
+      !$acc enter data copyin(                                       &
       !$acc               globalReprodSum2fld1,globalReprodSum2fld2, &
       !$acc               globalReprodSum3fld1,globalReprodSum3fld2 )
       endif
-
-#ifndef USE_MAGMA
-      !$acc enter data copyin(prec_ivmat)
-#endif
 
 #ifdef USE_CUBLAS
 ! Dummy preconditioning for device copy CUBLAS-related arrays before
@@ -4259,14 +4293,15 @@ module ocn_time_integration_si
                                 nPrecVec, dxvec, 1, 0.0_RKIND,    &
                                           dyvec, 1, queue)
 
+#ifndef USE_GPU_AWARE_MPI
          ! GPU -> CPU copy the out vector for halo exch
          call magmaf_dgetvector( nPrecVec,dyvec, 1, &
                                  SIvec_out(1:nPrecVec), 1, queue)
-
-!        !$acc host_data use_device(SIvec_out)
-!        dxvec = loc(SIvec_in(1:nPrecVec))
-!        !$acc end host_data
-
+#else                                 
+         ! GPU -> GPU copy the out vector for halo exch
+         call magmaf_dcopyvector( nPrecVec,dyvec, 1, &
+                                  SIvec_out(1:nPrecVec), 1, queue)
+#endif                                 
 
 #elif defined(USE_CUBLAS)
 
@@ -4277,7 +4312,9 @@ module ocn_time_integration_si
                                       1, 0.0_RKIND,                 &
                                          SIvec_out(1:nPrecVec), 1)
          !$acc end host_data
+#ifndef USE_GPU_AWARE_MPI
          !$acc update host(SIvec_out)
+#endif
 
 #else
 
@@ -4303,7 +4340,7 @@ module ocn_time_integration_si
             SIvec_out(iCell) = SIvec_in(iCell) &
                              * prec_ivmat(iCell,1)
          end do
-#ifdef MPAS_OPENACC
+#if defined(MPAS_OPENACC) && !defined(USE_GPU_AWARE_MPI)
          !$acc update host(SIvec_out)
 #else
          !$omp end do
@@ -4322,7 +4359,7 @@ module ocn_time_integration_si
          do iCell = 1,nPrecVec
             SIvec_out(iCell) = SIvec_in(iCell)
          end do
-#ifdef MPAS_OPENACC
+#if defined(MPAS_OPENACC) && !defined(USE_GPU_AWARE_MPI)
          !$acc update host(SIvec_out)
 #else
          !$omp end do
@@ -4513,8 +4550,8 @@ module ocn_time_integration_si
 #else
             !$acc update host(localProd)
 #endif
-            call mpas_dmpar_sum_real_array(domain % dminfo, nfld,      &
-                                           localProd,globalProd)
+            call MPI_Allreduce(localProd,globalProd,nfld,MPI_REAL8, &
+                               MPI_SUM,domain%dminfo%comm,ierr)
 #ifdef USE_GPU_AWARE_MPI
             !$acc end host_data
 #else
@@ -4581,10 +4618,8 @@ module ocn_time_integration_si
 #else
             !$acc update host(localProd)
 #endif
-!           call mpas_dmpar_sum_real_array(domain % dminfo, nfld, &
-!                                          localProd, globalProd)
             call MPI_Allreduce(localProd,globalProd,nfld,MPI_REAL8, &
-                    MPI_SUM,domain%dminfo%comm,ierr)
+                               MPI_SUM,domain%dminfo%comm,ierr)
 #ifdef USE_GPU_AWARE_MPI
             !$acc end host_data
 #else
@@ -4804,7 +4839,9 @@ module ocn_time_integration_si
   
          call mpas_timer_start("si halo iter")
          call mpas_dmpar_exch_halo_field(SIvec_rh1_field)
+#ifndef USE_GPU_AWARE_MPI
          !$acc update device(SIvec_rh1)
+#endif
          call mpas_timer_stop("si halo iter")
   
   
@@ -4977,11 +5014,12 @@ module ocn_time_integration_si
          call si_precond(SIvec_z1,SIvec_zh1)
  
          call mpas_timer_start("si halo iter")
-!        call mpas_dmpar_exch_halo_field(SIvec_zh1_field)
+#ifdef USE_GPU_AWARE_MPI
          call si_halo_exch(domain,SIvec_zh1)
-!!#ifndef USE_GPU_AWARE_MPI
-!         !$acc update device(SIvec_zh1)
-!!#endif
+#else
+         call mpas_dmpar_exch_halo_field(SIvec_zh1_field)
+         !$acc update device(SIvec_zh1)
+#endif
          call mpas_timer_stop("si halo iter")
  
  
@@ -5099,8 +5137,12 @@ module ocn_time_integration_si
          call si_precond(SIvec_w1,SIvec_wh0) !wh1 -> wh0
  
          call mpas_timer_start("si halo iter")
+#ifdef USE_GPU_AWARE_MPI
+         call si_halo_exch(domain,SIvec_wh0)
+#else
          call mpas_dmpar_exch_halo_field(SIvec_wh0_field)
          !$acc update device(SIvec_wh0)
+#endif
          call mpas_timer_stop("si halo iter")
  
          ! SpMV ----------------------------------------------------!
@@ -5146,7 +5188,10 @@ module ocn_time_integration_si
 !
 !-----------------------------------------------------------------------
 
+#ifdef USE_GPU_AWARE_MPI
+
    subroutine si_halo_exch(domain,field_array) !{{{
+
 
       include 'mpif.h'
 
@@ -5154,6 +5199,7 @@ module ocn_time_integration_si
          domain  !< [inout] model state to advance forward
    
       real(kind=RKIND),dimension(:),intent(inout) :: field_array
+
       type (mpas_exchange_list), pointer :: exchListPtr
 
       integer,dimension(mpi_status_size) :: stats
@@ -5164,18 +5210,26 @@ module ocn_time_integration_si
      
       if ( threadNum == 0 ) then
 
-!#ifdef USE_GPU_AWARE_MPI
+      do iComm = 1,nRecvCommList
+         call mpas_timer_start("irecv")
+         ! Initiate mpi_irecv calls ---------------------------------------
+         rbuffer => exchRecv(iComm)%buffer
+         !$acc host_data use_device(rbuffer)
+         call MPI_Irecv(                                               &
+                             rbuffer, exchRecv(iComm)%nList, MPI_REAL8,&
+              exchRecv(iComm)%procID, exchRecv(iComm)%procID,          &
+              domain%dminfo%comm, exchRecv(iComm)%reqID, mpi_ierr )
+         !$acc end host_data
+         call mpas_timer_stop("irecv")
 
-
-!####################################
-
-      ! Copy data into buffer, and initiate mpi_isend calls ------------
-      do iComm = 1,nSendCommList
+         ! Copy data into buffer, and initiate mpi_isend calls ------------
+         call mpas_timer_start("send loop")
+         !$acc parallel loop present(exchSend,field_array)
          do iHalo = 1,config_num_halos
             do iExch = 1,exchSend(iComm)%nExch(iHalo)
                if (exchSend(iComm)%halo(iHalo)%endPointID(iExch) == &
                    exchSend(iComm)%procID) then
-                   !$acc parallel loop present(exchSend,field_array)
+                   !$acc loop vector
                    do i = 1,exchSend(iComm)%halo(iHalo)%nList(iExch)
                       exchSend(iComm)%buffer( exchSend(iComm)%  &
                                                   halo(iHalo)%  &
@@ -5187,32 +5241,32 @@ module ocn_time_integration_si
                endif
             end do ! iExch
          end do ! iHalo
+         call mpas_timer_stop("send loop")
 
-         !$acc host_data use_device(exchSend(iComm)%buffer,exchRecv(iComm)%buffer)
-         call MPI_SendRecv(                                            &
-              exchSend(iComm)%buffer, exchSend(iComm)%nList, MPI_REAL8,&
+         call mpas_timer_start("isend")
+         sbuffer => exchSend(iComm)%buffer
+         !$acc host_data use_device(sbuffer)
+         call MPI_Isend(                                               &
+                             sbuffer, exchSend(iComm)%nList, MPI_REAL8,&
               exchSend(iComm)%procID, domain%dminfo%my_proc_id,        &
-              exchRecv(iComm)%buffer, exchRecv(iComm)%nList, MPI_REAL8,&
-              exchRecv(iComm)%procID, exchRecv(iComm)%procID,          &
-              domain%dminfo%comm,stats, mpi_ierr )
+              domain%dminfo%comm, exchSend(iComm)%reqID, mpi_ierr )
          !$acc end host_data
+         call mpas_timer_stop("isend")
+
       end do ! iComm
 
+      ! Wait for mpi_irecv to finish, and unpack data from buffer ------
       do iComm = 1,nRecvCommList
+         call MPI_Wait(exchRecv(iComm)%reqID,stats,mpi_ierr)
+
+         call mpas_timer_start("recv loop")
+         !$acc parallel loop present(exchRecv,field_array)
          do iHalo = 1,config_num_halos
             do iExch = 1,exchRecv(iComm)%nExch(iHalo)
                if (exchRecv(iComm)%halo(iHalo)%endPointID(iExch) == &
                    exchRecv(iComm)%procID) then
-                   !$acc parallel loop gang present(exchRecv,field_array)
+                   !acc loop vector
                    do i = 1,exchRecv(iComm)%halo(iHalo)%nList(iExch)
-                      print*,exchRecv(iComm)%buffer(exchRecv(iComm)%    &
-                                                 halo(iHalo)%    &
-                                                 exch(iExch)%    &
-                                                 srcList(i))
-                      !print*,exchRecv(iComm)%buffer(exchRecv(iComm)%    &
-                      !                           halo(iHalo)%    &
-                      !                           exch(iExch)%    &
-                      !                           srcList(i))
                       field_array(exchRecv(iComm)%halo(iHalo)    &
                                      %exch(iExch)%destList(i)) = &
                       exchRecv(iComm)%buffer(exchRecv(iComm)%    &
@@ -5223,91 +5277,19 @@ module ocn_time_integration_si
                endif
             end do ! iExch
          end do ! iHalo
+         call mpas_timer_stop("recv loop")
       end do ! iComm
 
-!####################################
-!      !$acc update host(field_array)
-
-!     ! Initiate mpi_irecv calls ---------------------------------------
-!     do iComm = 1,nRecvCommList
-!        !$acc host_data use_device(exchRecv(iComm)%buffer)
-!        call MPI_Irecv(                                               &
-!             exchRecv(iComm)%buffer, exchRecv(iComm)%nList, MPI_REAL8,&
-!             exchRecv(iComm)%procID, exchRecv(iComm)%procID,          &
-!             domain%dminfo%comm, exchRecv(iComm)%reqID, mpi_ierr )
-!        !$acc end host_data
-!     end do
-
-!     ! Copy data into buffer, and initiate mpi_isend calls ------------
-!     do iComm = 1,nSendCommList
-!        do iHalo = 1,config_num_halos
-!           do iExch = 1,exchSend(iComm)%nExch(iHalo)
-!              if (exchSend(iComm)%halo(iHalo)%endPointID(iExch) == &
-!                  exchSend(iComm)%procID) then
-!                  !$acc parallel loop present(exchSend,field_array)
-!                  do i = 1,exchSend(iComm)%halo(iHalo)%nList(iExch)
-!                     exchSend(iComm)%buffer( exchSend(iComm)%  &
-!                                                 halo(iHalo)%  &
-!                                                 exch(iExch)%  &
-!                                                destList(i)) = &
-!                     field_array(exchSend(iComm)%halo(iHalo)   &
-!                                    %exch(iExch)%srcList(i))
-!                  end do ! i
-!              endif
-!           end do ! iExch
-!        end do ! iHalo
-
-!        !$acc host_data use_device(exchSend(iComm)%buffer)
-!        call MPI_Isend(                                               &
-!             exchSend(iComm)%buffer, exchSend(iComm)%nList, MPI_REAL8,&
-!             exchSend(iComm)%procID, domain%dminfo%my_proc_id,        &
-!             domain%dminfo%comm, exchSend(iComm)%reqID, mpi_ierr )
-!        !$acc end host_data
-!     end do ! iComm
-
-!     ! Wait for mpi_irecv to finish, and unpack data from buffer ------
-!     do iComm = 1,nRecvCommList
-!        call MPI_Wait(exchRecv(iComm)%reqID,MPI_STATUS_IGNORE,mpi_ierr)
-!     end do ! iComm
-
-!     ! Wait for mpi_isend to finish ----------------------------------
-!     do iComm = 1,nSendCommList
-!        call MPI_Wait(exchSend(iComm)%reqID,MPI_STATUS_IGNORE,mpi_ierr)
-!     end do
-
-!     !$acc wait
-
-!     do iComm = 1,nRecvCommList
-!        do iHalo = 1,config_num_halos
-!           do iExch = 1,exchRecv(iComm)%nExch(iHalo)
-!              if (exchRecv(iComm)%halo(iHalo)%endPointID(iExch) == &
-!                  exchRecv(iComm)%procID) then
-!                  !$acc parallel loop gang present(exchRecv,field_array)
-!                  do i = 1,exchRecv(iComm)%halo(iHalo)%nList(iExch)
-!                     print*,exchRecv(iComm)%buffer(exchRecv(iComm)%    &
-!                                                halo(iHalo)%    &
-!                                                exch(iExch)%    &
-!                                                srcList(i))
-!                     field_array(exchRecv(iComm)%halo(iHalo)    &
-!                                    %exch(iExch)%destList(i)) = &
-!                     exchRecv(iComm)%buffer(exchRecv(iComm)%    &
-!                                                halo(iHalo)%    &
-!                                                exch(iExch)%    &
-!                                                srcList(i))
-!                  end do ! i
-!              endif
-!           end do ! iExch
-!        end do ! iHalo
-!     end do ! iComm
-
-
-      !$acc wait
-      call mpi_barrier(domain%dminfo%comm,mpi_ierr)
-      stop
+      ! Wait for mpi_isend to finish ----------------------------------
+      do iComm = 1,nSendCommList
+         call MPI_Wait(exchSend(iComm)%reqID,MPI_STATUS_IGNORE,mpi_ierr)
+      end do
 
       endif ! threadNum
 
    end subroutine si_halo_exch
+
+#endif
 
 !***********************************************************************
 !
@@ -5334,7 +5316,7 @@ module ocn_time_integration_si
       info = magmaf_free( dyvec )
 #endif
 
-      !$acc exit data delete(                                        &
+      !$acc exit data delete(prec_ivmat,                             &
       !$acc    SIcst_allreduce_local2,SIcst_allreduce_global2,       &
       !$acc    SIcst_allreduce_local3,SIcst_allreduce_global3,       &
       !$acc    SIcst_allreduce_local9,SIcst_allreduce_global9,       &
@@ -5351,35 +5333,43 @@ module ocn_time_integration_si
       !$acc               globalReprodSum3fld1,globalReprodSum3fld2 )
       endif
 
-#ifndef USE_MAGMA
-      !$acc exit data delete(prec_ivmat)
-#endif
-
+#ifdef USE_GPU_AWARE_MPI
       do iComm = 1,nRecvCommList
          do iHalo = 1,config_num_halos
             do iExch = 1,exchRecv(iComm)%nExch(iHalo)
-               !$acc exit data delete(                                   &
-               !$acc    exchRecv(iComm)%halo(iHalo)%exch(iExch)%destList,&
+               !$acc exit data delete(                                    &
+               !$acc    exchRecv(iComm)%halo(iHalo)%exch(iExch)%destList, &
                !$acc    exchRecv(iComm)%halo(iHalo)%exch(iExch)%srcList )
             end do
-            !$acc exit data delete(exchRecv(iComm)%halo(iHalo)%nList )
+            !$acc exit data delete(exchRecv(iComm)%halo(iHalo)%nList,       &
+            !$acc                   exchRecv(iComm)%halo(iHalo)%endPointID, &
+            !$acc                   exchRecv(iComm)%halo(iHalo)%exch )
          end do
-         !$acc exit data delete(exchRecv(iComm)%buffer )
+         !$acc exit data delete(exchRecv(iComm)%buffer,  &
+         !$acc                   exchRecv(iComm)%nExch,  &
+         !$acc                   exchRecv(iComm)%halo,   &
+         !$acc                   exchRecv(iComm)%procID)
       end do
 
       do iComm = 1,nSendCommList
          do iHalo = 1,config_num_halos
             do iExch = 1,exchSend(iComm)%nExch(iHalo)
-               !$acc exit data delete(                                   &
-               !$acc    exchSend(iComm)%halo(iHalo)%exch(iExch)%destList,&
+               !$acc exit data delete(                                    &
+               !$acc    exchSend(iComm)%halo(iHalo)%exch(iExch)%destList, &
                !$acc    exchSend(iComm)%halo(iHalo)%exch(iExch)%srcList)
             end do
-            !$acc exit data delete(exchSend(iComm)%halo(iHalo)%nList)
+            !$acc exit data delete(exchSend(iComm)%halo(iHalo)%nList,       &
+            !$acc                   exchSend(iComm)%halo(iHalo)%endPointID, &
+            !$acc                   exchSend(iComm)%halo(iHalo)%exch)
          end do
-         !$acc exit data delete(exchSend(iComm)%buffer)
+         !$acc exit data delete(exchSend(iComm)%buffer,  &
+         !$acc                   exchSend(iComm)%nExch,  &
+         !$acc                   exchSend(iComm)%halo,   &
+         !$acc                   exchSend(iComm)%procID)
       end do
 
-      !$acc exit data delete(exchSend,exchRecv)
+      !$acc exit data delete(exchSend,exchRecv,sbuffer,rbuffer)
+#endif
 
 #endif
 
