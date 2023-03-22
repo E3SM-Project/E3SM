@@ -467,12 +467,13 @@ CONTAINS
                   !Following Emmons et al (2020, JAMES), the stomatal resistances for shaded and sunlit
                   !leaves should be added in parallel
                   ! rs = 1.0_r8 / ( fsun(pi)/rssun(pi) + (1.0_r8 - fsun(pi))/rssha(pi) )
-                  if (rssun(pi)==0._r8) then
-                     rs = 0.0_r8
-                  else
-                     rs = 1.0_r8 / ( fsun(pi)/rssun(pi) + (1.0_r8 - fsun(pi))/rssha(pi) )
-                  endif
-
+                  !if (rssun(pi)==0._r8) then
+                  !   rs = 0.0_r8
+                  !else
+                  !   rs = 1.0_r8 / ( fsun(pi)/rssun(pi) + (1.0_r8 - fsun(pi))/rssha(pi) )
+                  !endif
+                  ! set rs calculation back
+                  rs = 1.0_r8 / ( fsun(pi)/rssun(pi) + (1.0_r8 - fsun(pi))/rssha(pi) )  
                   if (rs==0._r8) then ! fvitt -- what to do when rs is zero ???
                      rsmx(ispec) = 1.e36_r8
                   else

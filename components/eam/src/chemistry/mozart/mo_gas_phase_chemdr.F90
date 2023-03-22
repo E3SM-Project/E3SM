@@ -1598,7 +1598,8 @@ contains
             drydepflx(:ncol,m) = sflx(:ncol,n)
             if ( any( sflx2(:ncol,n) /= 0._r8 ) ) then
               if ( .not. any( aer_species == n ) .and. adv_mass(n) /= 0._r8 ) then
-                do k = pver, 1, -1 ! loop from bottom to top
+                ! only apply dry depostion for first 10 layers      
+                do k = pver, pver-9, -1 ! loop from bottom to top
                   ! kg/m2, tracer mass
                   wrk(:ncol,k) = adv_mass(n)*vmr(:ncol,k,n)/mbar(:ncol,k) &
                                     *pdeldry(:ncol,k)*rga
