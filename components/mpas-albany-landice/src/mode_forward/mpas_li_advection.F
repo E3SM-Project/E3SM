@@ -324,7 +324,6 @@ module li_advection
       call mpas_pool_get_field(scratchPool, 'workTracerLevelCell', advectedTracersField)
       call mpas_allocate_scratch_field(advectedTracersField, .true.)
       advectedTracers => advectedTracersField % array
-      nTracers = size(advectedTracers,1)
 
       call mpas_pool_get_field(scratchPool, 'workLevelCell', layerThicknessOldField)
       call mpas_allocate_scratch_field(layerThicknessOldField, .true.)
@@ -401,7 +400,8 @@ module li_advection
                  thermalPool,       &
                  advectedTracers,   &
                  surfaceTracers,    &
-                 basalTracers)
+                 basalTracers,      &
+                 nTracers)
 
          else   ! no tracer advection; pass a tracer array full of zeroes
 
@@ -479,8 +479,10 @@ module li_advection
                   tend, advectedTracers, layerThicknessOld, &
                   layerThicknessEdge * layerNormalVelocity, 0 * normalVelocity, dt,    &
                   computeBudgets=.false.)
-             ! layerThickness is last tracer
-             layerThickness(:,:) = advectedTracers(nTracers,:,:) !layerThickness(:,:) + tend(nTracers,:,:) * dt
+             ! layerThickness is last tracer. Use this if passing layerThickness as tracer
+             layerThickness(:,:) = advectedTracers(nTracers,:,:)
+             ! Use this if passing array of ones as tracer
+             !layerThickness(:,:) = layerThickness(:,:) + tend(nTracers,:,:) * dt
          endif
 
          if (config_print_thickness_advection_info) then
@@ -1046,7 +1048,8 @@ module li_advection
          thermalPool,      &
          advectedTracers,  &
          surfaceTracers,   &
-         basalTracers)
+         basalTracers,     &
+         nTracers)
 
       use li_thermal, only: li_temperature_to_enthalpy_kelvin
       use li_tracer_advection_fct_shared!, only: li_tracer_advection_fct_shared_init
@@ -1081,6 +1084,7 @@ module li_advection
            basalTracers      ! tracer values for new ice at lower surface
                              ! dimension 1 = maxTracers, 2 = nCells
 
+      integer, intent(out)  :: nTracers
       !-----------------------------------------------------------------
       !
       ! local variables
@@ -1240,6 +1244,7 @@ module li_advection
 
       endif
 
+      nTracers = iTracer
       ! Note: Other tracers (e.g., ice age) can be added here as needed.
       !       May need to increase maxTracers in the Registry.
       if (trim(config_tracer_advection) == 'fct') then
