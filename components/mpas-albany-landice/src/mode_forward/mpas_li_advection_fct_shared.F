@@ -104,6 +104,8 @@ module li_tracer_advection_fct_shared
       integer, dimension(:), allocatable :: &
          cellIndx       ! cell indices gathered from neighbors 
 
+      integer, dimension(:), pointer :: cellMask
+
       integer, dimension(:,:), allocatable :: &
          cellIndxSorted ! nbr cell indices sorted
 
@@ -150,8 +152,8 @@ module li_tracer_advection_fct_shared
          cell2 = cellsOnEdge(2,iEdge)
 
          ! at boundaries, must stay at low order
-         if ( li_mask_is_dynamic_margin(cellMask(cell1)) .or. &
-              li_mask_is_dynamic_margin(cellMask(cell2)) ) then
+         if ( (.not. li_mask_is_dynamic_ice(cellMask(cell1))) .or. &
+              (.not. li_mask_is_dynamic_ice(cellMask(cell2))) ) then
             advMaskHighOrder(:,iEdge) = 0.0_RKIND
          else
             advMaskHighOrder(:,iEdge) = 1.0_RKIND

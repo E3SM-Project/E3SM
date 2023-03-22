@@ -72,9 +72,6 @@ module li_mesh
    integer, public, dimension(:), pointer :: &
       nEdgesOnEdge, &! number of edges connected to each edge point
       nEdgesOnCell, & ! number of edges associated with each cell center
-      cellMask, &
-      edgeMask, &
-      vertexMask, &
 !      minLevelCell, &! max ocean level at bottom of cell
 !      minLevelEdgeTop, &! max ocean level at top    of edge column
 !      minLevelEdgeBot, &! max ocean level at bottom of edge column
@@ -469,12 +466,6 @@ contains
       ! For masks, we wish to convert to real multiplicative masks
       ! so retrieve integer version pointers and allocate real masks
       ! Once these are converted in Registry, we can eliminate this.
-      call mpas_pool_get_array(meshPool, 'edgeMask', &
-                               edgeMask)
-      call mpas_pool_get_array(meshPool, 'vertexMask', &
-                               vertexMask)
-      call mpas_pool_get_array(meshPool, 'cellMask', &
-                               cellMask)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', &
                                edgeSignOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', &
@@ -625,9 +616,6 @@ contains
          !$acc                   meshDensity,              &
          !$acc                   angleEdge,                &
          !$acc                   distanceToCoast,          &
-         !$acc                   edgeMask,                 &
-         !$acc                   cellMask,                 &
-         !$acc                   vertexMask,               &
          !$acc                   boundaryEdge,             &
          !$acc                   boundaryCell,             &
          !$acc                   boundaryVertex,           &
@@ -755,9 +743,6 @@ contains
       !$acc                  meshDensity,       &
       !$acc                  angleEdge,         &
       !$acc                  distanceToCoast,   &
-      !$acc                  edgeMask,          &
-      !$acc                  cellMask,          &
-      !$acc                  vertexMask,        &
       !$acc                  boundaryEdge,      &
       !$acc                  boundaryCell,      &
       !$acc                  boundaryVertex,    &
@@ -790,10 +775,7 @@ contains
       ! If this becomes the only mesh structure and mesh pool is eliminated,
       !  then we will want to deallocate here instead of nullify.
 
-      nullify (edgeMask, &
-               cellMask, &
-               vertexMask, & 
-               nEdgesOnEdge, &
+      nullify (nEdgesOnEdge, &
                nEdgesOnCell, &
                !minLevelCell, &
                !minLevelEdgeTop, &
@@ -1049,12 +1031,6 @@ contains
       ! For masks, we converted to real masks, so need to recompute for
       ! updated values. Probably only the edgeSign masks need updating, but
       ! do them all to be sure.
-      call mpas_pool_get_array(meshPool, 'edgeMask', &
-                               edgeMask)
-      call mpas_pool_get_array(meshPool, 'vertexMask', &
-                               vertexMask)
-      call mpas_pool_get_array(meshPool, 'cellMask', &
-                               cellMask)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', &
                                edgeSignOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', &
@@ -1171,9 +1147,6 @@ contains
       !$acc               meshDensity,              &
       !$acc               angleEdge,                &
       !$acc               distanceToCoast,          &
-      !$acc               edgeMask,                 &
-      !$acc               cellMask,                 &
-      !$acc               vertexMask,               &
       !$acc               boundaryEdge,             &
       !$acc               boundaryCell,             &
       !$acc               boundaryVertex,           &
@@ -1321,15 +1294,12 @@ contains
       !do iEdge = 1, nEdges
       !do k= minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
       !   boundaryEdge(k,iEdge)=0.0_RKIND
-      !   edgeMask(k,iEdge)=1.0_RKIND
       !end do
       !end do
 
       ! Find cells and vertices that have an edge on the boundary
       boundaryCell(:,1:nCells+1) = 0.0_RKIND
-      !cellMask(1:nCells+1) = 0
       boundaryVertex(:,1:nVertices+1) = 0.0_RKIND
-      !vertexMask(1:nVertices+1) = 0
 
       do iEdge = 1, nEdges
       do k = 1, nVertLevels
@@ -1346,7 +1316,6 @@ contains
       !do k = 1, nVertLevels
       !   if ( minLevelCell(iCell) <= k .and. &
       !        maxLevelCell(iCell) >= k ) then
-      !      cellMask(k, iCell) = 1.0_RKIND
       !   end if
       !end do
       !end do
@@ -1355,7 +1324,6 @@ contains
       !do k = 1, nVertLevels
       !   if ( minLevelVertexTop(iVertex) <= k .and. &
       !        maxLevelVertexBot(iVertex) >= k ) then
-      !      vertexMask(k, iVertex) = 1.0_RKIND
       !   end if
       !end do
       !end do
