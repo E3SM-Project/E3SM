@@ -854,6 +854,7 @@ end subroutine micro_p3_readnl
     real(rtype) :: icwnc(pcols,pver)
 
     real(rtype) :: ratio_local(pcols,pver)
+    real(rtype) :: dtemp(pcols,pver)
 
 
     integer :: it                      !timestep counter                       -
@@ -1001,7 +1002,7 @@ end subroutine micro_p3_readnl
     numice     (:ncol,:pver) = state%q(:ncol,:pver,  ixnumice) *ratio_local(:ncol,:pver)
     rimvol     (:ncol,:pver) = state%q(:ncol,:pver,  ixrimvol) *ratio_local(:ncol,:pver)
 
-    qv_prev_dry(:ncol,:pver) = qv_prev_wet(:ncol,:pver)     *ratio_local(:ncol,:pver)
+    qv_prev_dry(:ncol,:pver) = qv_prev_wet(:ncol,:pver)        *ratio_local(:ncol,:pver)
 
     ! COMPUTE GEOMETRIC THICKNESS OF GRID & CONVERT T TO POTENTIAL TEMPERATURE
     !==============
@@ -1205,8 +1206,11 @@ end subroutine micro_p3_readnl
     numice     (:ncol,:pver) = numice (:ncol,:pver) *ratio_local(:ncol,:pver)
     rimvol     (:ncol,:pver) = rimvol (:ncol,:pver) *ratio_local(:ncol,:pver)
 
+    !new - old
+    dtemp(:ncol,:pver) = th(:ncol,:pver)/inv_exner(:ncol,:pver) - state%t(:ncol,:pver)
+    dtemp(:ncol,:pver) = dtemp(:ncol,:pver) *ratio_local(:ncol,:pver)    
 
-    temp(:ncol,:pver) = th(:ncol,:pver)/inv_exner(:ncol,:pver)
+    temp(:ncol,:pver) = dtemp(:ncol,:pver) + state%t(:ncol,:pver)
     ptend%s(:ncol,:pver)           = cpair*( temp(:ncol,:pver) - state%t(:ncol,:pver) )/dtime
     ptend%q(:ncol,:pver,1)         = ( max(0._rtype,qv_wet_out(:ncol,:pver)     ) - state%q(:ncol,:pver,1)         )/dtime
     ptend%q(:ncol,:pver,ixcldliq)  = ( max(0._rtype,cldliq(:ncol,:pver) ) - state%q(:ncol,:pver,ixcldliq)  )/dtime
