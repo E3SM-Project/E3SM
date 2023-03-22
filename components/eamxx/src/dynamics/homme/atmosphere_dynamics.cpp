@@ -253,11 +253,12 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
   auto& params  = c.get<SimulationParams>();
 
   const auto num_elems = c.get<Elements>().num_elems();
+  const auto num_tracers = c.get<Tracers>().num_tracers();
 
   auto& caar = c.create_if_not_there<CaarFunctor>(num_elems,params);
   auto& hvf  = c.create_if_not_there<HyperviscosityFunctor>(num_elems, params);
   auto& ff   = c.create_if_not_there<ForcingFunctor>(num_elems, num_elems, params.qsize);
-  auto& diag = c.create_if_not_there<Diagnostics> (num_elems,params.theta_hydrostatic_mode);
+  auto& diag = c.create_if_not_there<Diagnostics> (num_elems, num_tracers, params.theta_hydrostatic_mode);
   auto& vrm  = c.create_if_not_there<VerticalRemapManager>(num_elems);
 
   const bool need_dirk = (params.time_step_type==TimeStepType::ttype7_imex ||
