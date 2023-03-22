@@ -360,7 +360,6 @@ contains
            dtrotr_col(c)=0._r8
         end if
      end do
-     
      do pi = 1,max_patch_per_col
         do fc = 1,num_soilc
            c = filter_soilc(fc)
@@ -370,12 +369,12 @@ contains
 
               ! For non-crop -- natural vegetation and bare-soil
               if( veg_pp%itype(p)  <  nc3crop .and. cropf_col(c)  <  1.0_r8 )then
-                    if( btran2(p) .ne. spval) then
-                       if (btran2(p)  <=  1._r8 ) then
-                          btran_col(c) = btran_col(c)+btran2(p)*veg_pp%wtcol(p)
-                          wtlf(c)      = wtlf(c)+veg_pp%wtcol(p)
-                       end if
+                 if( btran2(p) .ne. spval) then
+                    if (btran2(p)  <=  1._r8 ) then
+                       btran_col(c) = btran_col(c)+btran2(p)*veg_pp%wtcol(p)
+                       wtlf(c)      = wtlf(c)+veg_pp%wtcol(p)
                     end if
+                 end if
                  if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .and. veg_pp%wtcol(p)  >  0._r8 )then
                     trotr1_col(c)=trotr1_col(c)+veg_pp%wtcol(p)*col_pp%wttopounit(c)
                  end if
@@ -449,7 +448,7 @@ contains
            end if
         end do
      end do
-     
+
      ! estimate annual decreased fractional coverage of BET+BDT
      ! land cover conversion in CLM4.5 is the same for each timestep except for the beginning
 
