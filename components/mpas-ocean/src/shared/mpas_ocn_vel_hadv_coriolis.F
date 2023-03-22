@@ -25,6 +25,7 @@ module ocn_vel_hadv_coriolis
    use ocn_constants
    use ocn_mesh
    use ocn_config
+   use mpas_constants
 
    implicit none
    private
@@ -43,6 +44,7 @@ module ocn_vel_hadv_coriolis
    !--------------------------------------------------------------------
 
    public :: ocn_vel_hadv_coriolis_tend, &
+             ocn_vel_hadv_coriolis_nonhydro_tend, &
              ocn_vel_hadv_coriolis_init
 
    !--------------------------------------------------------------------
@@ -260,6 +262,67 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine ocn_vel_hadv_coriolis_tend!}}}
+
+   subroutine ocn_vel_hadv_coriolis_nonhydro_tend(vertVelocityNonhydro, &
+                                                  tend, err)!{{{
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         vertVelocityNonhydro    !< [in] nonhydro vertical velocity
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
+         tend                 !< [inout] accumulated velocity tendency
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< [out] error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      integer ::       &
+         iEdge, j, k,  &! loop indices for edges, vertical
+         cell1, cell2, &! neighbor cell indices
+         kmin, kmax     ! min and max indices for vertical
+
+      real (kind=RKIND) :: &
+         b, &
+         n1
+
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
+
+      !*** Set error code and exit early if disabled
+      !*** Otherwise, start timer
+
+      err = 0
+
+      do iEdge = 1, nEdgesOwned
+         kmin = minLevelEdgeBot(iEdge)
+         kmax = maxLevelEdgeTop(iEdge)
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+         b = 2.0_RKIND * omega * cos(latEdge(iEdge))
+         n1 = cos(angleEdge(iEdge))
+         do k = kmin, kmax
+            tend(k,iEdge) = tend(k,iEdge) - &
+                          b*n1*(0.5_RKIND*(vertVelocityNonhydro(k,cell2) &
+                             + vertVelocityNonhydro(k,cell1)))
+         end do
+      end do
+
+   end subroutine ocn_vel_hadv_coriolis_nonhydro_tend!}}}
 
 !***********************************************************************
 !

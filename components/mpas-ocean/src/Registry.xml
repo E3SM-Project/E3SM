@@ -1854,14 +1854,16 @@
 			<var name="filteredSSHGradientMeridional"/>
 			<var name="forcingGroupNames"/>
 			<var name="forcingGroupRestartTimes"/>
-            <var name="gotmVertViscTopOfCell"/>
-            <var name="gotmVertDiffTopOfCell"/>
-            <var name="gotmTKETopOfCell"/>
-            <var name="gotmKbTopOfCell"/>
-            <var name="gotmEpsbTopOfCell"/>
-            <var name="gotmDissTopOfCell"/>
-            <var name="gotmLengthTopOfCell"/>
-            <var name="ssh_sal"/>
+                        <var name="nonhydrostaticPressure"/>
+                        <var name="vertVelocityNonhydro"/>
+                        <var name="gotmVertViscTopOfCell"/>
+                        <var name="gotmVertDiffTopOfCell"/>
+                        <var name="gotmTKETopOfCell"/>
+                        <var name="gotmKbTopOfCell"/>
+                        <var name="gotmEpsbTopOfCell"/>
+                        <var name="gotmDissTopOfCell"/>
+                        <var name="gotmLengthTopOfCell"/>
+                        <var name="ssh_sal"/>
 		</stream>
 
 		<stream name="output"

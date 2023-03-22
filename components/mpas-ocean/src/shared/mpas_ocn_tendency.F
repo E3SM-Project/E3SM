@@ -73,6 +73,8 @@ module ocn_tendency
    use ocn_vvel_advection
    use ocn_vvel_hmix_del2
 
+   use mpas_vector_reconstruction
+
    implicit none
    private
    save
@@ -335,10 +337,15 @@ subroutine ocn_tend_vvel(tendPool, statePool, forcingPool, meshPool, &
    if(config_disable_vvel_all_tend) return
 
    call mpas_timer_start("ocn_tend_vvel")
+
+   call mpas_reconstruct(meshPool,  normalVelocity, &
+                         velocityX, velocityY, velocityZ,   &
+                         velocityZonal, velocityMeridional)
+
    !
    ! velocity tendency: nonlinear Coriolis term and grad of kinetic energy
    !
-   call ocn_vvel_coriolis_tend(meshPool, normalVelocity, tend_vertVelocityNonhydro, err)
+   call ocn_vvel_coriolis_tend(meshPool, velocityZonal, tend_vertVelocityNonhydro, err)
 
    !
    ! velocity tendency: horizontal and vertical advection
@@ -435,6 +442,7 @@ end subroutine ocn_tend_vvel!}}}
       real (kind=RKIND), dimension(:,:), pointer, contiguous :: &
          normalVelocity,     &! normal velocity
          layerThickness, &
+         vertVelocityNonhydro, &
          nonhydrostaticPressure
 
       real (kind=RKIND), dimension(:,:,:), pointer, contiguous :: &
@@ -463,6 +471,8 @@ end subroutine ocn_tend_vvel!}}}
       call mpas_pool_get_array(statePool,   'ssh', ssh, timeLevel)
       call mpas_pool_get_array(tracersPool, 'activeTracers', &
                                              activeTracers, timeLevel)
+      call mpas_pool_get_array(statePool, 'vertVelocityNonhydro', &
+                                             vertVelocityNonhydro, timeLevel)
       call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', &
                                              nonhydrostaticPressure, timeLevel)
 
@@ -544,6 +554,12 @@ end subroutine ocn_tend_vvel!}}}
                                       normPlanetVortEdge, &
                                       layerThickEdgeFlux, normalVelocity, &
                                       kineticEnergyCell, tendVel, err)
+
+      ! Add nonhydrostatic Coriolis term if nonhydro model is on
+      if (config_enable_nonhydrostatic_mode) then
+         call ocn_vel_hadv_coriolis_nonhydro_tend(vertVelocityNonhydro, &
+                                                  tendVel, err)
+      end if
 
       ! Add vertical advection term -w du/dz
       call ocn_vel_vadv_tend(normalVelocity, layerThickEdgeFlux, &
