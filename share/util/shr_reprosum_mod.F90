@@ -1363,10 +1363,15 @@ module shr_reprosum_mod
                                                    - IX_8
              endif
            enddo
-!  b) Subtract +/- 1 from larger and add +/- 1 to smaller when necessary
-!     so that all vector components have the same sign (eliminating loss
-!     of accuracy arising from difference of large values when
-!     reconstructing r8 sum from integer vector)
+!  b) Working consecutively from first level with a nonzero value up
+!     to level max_levels(ifld), subtract +/- 1 from level with larger
+!     exponent (e.g., ilevel) and add  +/- (i8_radix**arr_max_shift)
+!     to level with smaller exponent (ilevel+1) when necessary so that
+!     all vector components have the same sign. Treat a zero value at
+!     ilevel+1 as always a different sign from value at ilevel so that
+!     process always makes this nonzero. (Otherwise, the wrong sign
+!     could be reintroduced by subtracting from a zero value at the
+!     next step.)  
            ilevel = 0
            do while ((i8_arr_gsum_level(ioffset+ilevel) == 0_i8) &
                      .and. (ilevel < max_levels(ifld)))
@@ -1380,12 +1385,14 @@ module shr_reprosum_mod
                  i8_sign = -1_i8
               endif
               do jlevel=ilevel,max_levels(ifld)-1
-                 if (sign(1_i8,i8_arr_gsum_level(ioffset+jlevel)) &
-                     /= sign(1_i8,i8_arr_gsum_level(ioffset+jlevel+1))) then
-                    i8_arr_gsum_level(ioffset+jlevel)   = i8_arr_gsum_level(ioffset+jlevel) &
-                                                        - i8_sign
-                    i8_arr_gsum_level(ioffset+jlevel+1) = i8_arr_gsum_level(ioffset+jlevel+1) &
-                                                        + i8_sign*(i8_radix**arr_max_shift)
+                 if ((sign(1_i8,i8_arr_gsum_level(ioffset+jlevel)) &
+                      /= sign(1_i8,i8_arr_gsum_level(ioffset+jlevel+1))) &
+                     .or. (i8_arr_gsum_level(ioffset+jlevel+1) == 0_i8)) then
+                    i8_arr_gsum_level(ioffset+jlevel)   = &
+                       i8_arr_gsum_level(ioffset+jlevel) - i8_sign
+                    i8_arr_gsum_level(ioffset+jlevel+1) = &
+                       i8_arr_gsum_level(ioffset+jlevel+1) &
+                       + i8_sign*(i8_radix**arr_max_shift)
                  endif
               enddo
             endif
