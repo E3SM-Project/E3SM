@@ -965,17 +965,18 @@ end subroutine linoz_readnl
     endif
 !       
     if (linoz_v3)then
-     if (o3lnz_ndx >0) then
+     if (o3_ndx >0) then
        ms=4
-       nx(1) = o3lnz_ndx
+       nx(1) = o3_ndx
        nx(2) = n2olnz_ndx
        nx(3) = noylnz_ndx
        nx(4) = ch4lnz_ndx 
-       mw(1) =  adv_mass(o3lnz_ndx)       
+       mw(1) =  adv_mass(o3_ndx)       
        mw(2) =  adv_mass(n2olnz_ndx)  
        mw(3) =  adv_mass(noylnz_ndx)
        mw(4) =  adv_mass(ch4lnz_ndx)   
        sfc_const(1:4,:ncol) = x_sfc(1:4,:ncol)
+       sfc_const(1,:ncol) = 30.0e-9_r8
        o3_lbl =9
      else
        ms=3
@@ -1024,7 +1025,7 @@ end subroutine linoz_readnl
        
        x_sfcsink(:ncol) = dx_mass(:ncol)/delta_t * KgtoTg * peryear ! saved in Tg/yr/m2 unit
     
-       if(o3lnz_ndx > 0 .and. j.eq.  o3lnz_ndx)  call outfld('LINOZ_O3SFCSINK',    x_sfcsink, ncol, lchnk)
+       if(o3_ndx > 0 .and. j.eq.  o3_ndx)  call outfld('LINOZ_O3SFCSINK',    x_sfcsink, ncol, lchnk)
        if(n2olnz_ndx >0 .and. j.eq. n2olnz_ndx)  call outfld('LINOZ_N2OSFCSRC',    x_sfcsink, ncol, lchnk)
        if(noylnz_ndx >0 .and. j.eq. noylnz_ndx)  call outfld('LINOZ_NOYSFCSINK',   x_sfcsink, ncol, lchnk)       
        if(ch4lnz_ndx >0 .and. j.eq. ch4lnz_ndx)  call outfld('LINOZ_CH4SFCSRC',    x_sfcsink, ncol, lchnk)
