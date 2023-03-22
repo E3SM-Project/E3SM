@@ -190,6 +190,9 @@ Switch on (off) age of air tracers: 0=off, 1=on.
 <entry id="cldera_sai_trcs" valid_values="0,1" value="0">
 Switch on (off) idealized stratospheric aerosol injection tracers: 0=off, 1=on.
 </entry>
+<entry id="cldera_passive_trcs" valid_values="0,1" value="0">
+Switch on (off) CLDERA aoa, e90, st80 tracers: 0=off, 1=on.
+</entry>
 <entry id="max_n_rad_cnst" value="30">
 Maximum number of constituents that are radiatively active or in any one
 diagnostic list.
@@ -366,6 +369,10 @@ CRM number of averaged columns in x for radiation
 </entry>
 <entry id="crm_ny_rad" value="1">
 CRM number of averaged columns in y for radiation
+</entry>
+
+<entry id="cldera_strat_volc" valid_values="0,1" value="0">
+Switch to enable prognostic volcanic aerosol treatment in stratosphere in MAM4 simulations: 0=off, 1=on.
 </entry>
 
 </config_definition>

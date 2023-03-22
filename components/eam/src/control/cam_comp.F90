@@ -69,8 +69,8 @@ module cam_comp
 !-----------------------------------------------------------------------
 !
 subroutine cam_init( cam_out, cam_in, mpicom_atm, &
-	             start_ymd, start_tod, ref_ymd, ref_tod, stop_ymd, stop_tod, &
-                    perpetual_run, perpetual_ymd, calendar)
+                     start_ymd, start_tod, ref_ymd, ref_tod, stop_ymd, stop_tod, &
+                     perpetual_run, perpetual_ymd, calendar)
 
    !-----------------------------------------------------------------------
    !
@@ -98,17 +98,18 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    use cam_pio_utils,    only: init_pio_subsystem
    use cam_instance,     only: inst_suffix
 #if defined(CLDERA_PROFILING)
-use iso_c_binding, only: c_loc
+   use iso_c_binding, only: c_loc
    use cldera_interface_mod, only: cldera_add_partitioned_field, max_str_len, &
-                                   cldera_get_field_names, &
-                                   cldera_set_field_partition, &
-                                   cldera_commit_all_fields
+                                   cldera_set_field_part_size, &
+                                   cldera_set_field_part_data, &
+                                   cldera_commit_all_fields,   &
+                                   cldera_commit_field
    use physics_buffer,   only: physics_buffer_desc, col_type_grid, pbuf_get_index, &
                                pbuf_get_field_rank, pbuf_get_field_dims, pbuf_get_field, &
                                pbuf_get_field_name, pbuf_has_field
    use ppgrid,           only: begchunk, endchunk, pcols, pver
-   use phys_grid,        only: get_ncols_p
-   use constituents,     only: cnst_get_ind
+   use phys_grid,        only: get_ncols_p, get_gcol_all_p, get_area_all_p
+   use constituents,     only: pcnst, cnst_name
 #endif
 
 #if ( defined SPMD )   
@@ -137,11 +138,13 @@ use iso_c_binding, only: c_loc
    logical :: log_print        ! Flag to print out log information or not
    character(len=cs) :: filein ! Input namelist filename
 #if defined(CLDERA_PROFILING)
-   character(len=max_str_len), allocatable :: cldera_field_names(:)
    character(len=max_str_len) :: fname
-   integer :: c, nfields, idx, ifield, rank, icmp, nparts, part_dim, ipart, fsize, ncols
+   integer :: c, nfields, idx, rank, icmp, nparts, part_dim, ipart, fsize, ncols
    integer :: nlcols
-   integer, allocatable :: dims(:), dims2(:)
+   integer :: dims(3)
+   integer, allocatable :: cols_gids(:)
+   real(r8), allocatable :: cols_area(:)
+   character(len=max_str_len) :: dimnames(3)
    logical :: in_pbuf, in_q
    real(r8), pointer :: field1d(:), field2d(:,:), field3d(:,:,:)
    type(physics_buffer_desc), pointer :: field_desc
@@ -222,82 +225,230 @@ use iso_c_binding, only: c_loc
    call intht()
 
 #if defined(CLDERA_PROFILING)
-   cldera_field_names = cldera_get_field_names()
-   nfields = size(cldera_field_names)
+   call t_startf('cldera_add_fields')
    nparts = endchunk - begchunk + 1
+
    ! All fields are partitioned over cols index, which is the first
    part_dim = 1
-   in_pbuf = .false.
-   in_q = .false.
-   ! do ifield=1,40
-   !    print *, pbuf_get_field_name(ifield)
-   ! enddo
-   allocate(dims2(2))
-   ! print *, "adding cldera fields"
-   ! print *, "pcols,pver:", pcols, pver
-   ! print *, "begchunk, endchunk:", begchunk, endchunk
    nlcols = 0
    do c = begchunk,endchunk
-    nlcols = nlcols +  get_ncols_p(c)
+     nlcols = nlcols +  get_ncols_p(c)
    enddo
-   ! print *, "num my cols:",nlcols
+   dimnames(1) = "ncol"
 
-   do ifield=1,nfields
-     fname = cldera_field_names(ifield)
+   ! Col GIDs and area
+   ! NOTE: .false. is to declare the field as a Copy of input data, rather than a view
+   dims(1) = nlcols
+   allocate(cols_gids(pcols))
+   allocate(cols_area(pcols))
+   call cldera_add_partitioned_field ("col_gids",1,dims,dimnames,nparts,part_dim,.false.,"int")
+   call cldera_add_partitioned_field ("area",1,dims,dimnames,nparts,part_dim,.false.)
+   do ipart = 1,nparts
+     c = begchunk+ipart-1
+     ncols = get_ncols_p(c)
 
-     ! print *, "- adding "//fname
+     call cldera_set_field_part_size("col_gids",ipart,ncols)
+     call cldera_set_field_part_size("area",ipart,ncols)
+   enddo
+   call cldera_commit_field("col_gids")
+   call cldera_commit_field("area")
+   do ipart = 1,nparts
+     c = begchunk+ipart-1
+     call get_gcol_all_p (c,pcols,cols_gids)
+     call cldera_set_field_part_data("col_gids",ipart,cols_gids)
+     call get_area_all_p(c,pcols,cols_area)
+     call cldera_set_field_part_data("area",ipart,cols_area)
+   enddo
 
-     if (pbuf_has_field(fname)) then
-       ! Use pbuf
-       idx = pbuf_get_index(fname)
-       in_pbuf = .true.
-       field_desc => pbuf2d(idx,begchunk)
+   ! PBUF fields
+   nfields = size(pbuf2d,1)
+   do idx=1,nfields
+     ! retrieve fields
+     fname = pbuf_get_field_name(idx)
 
-       ! Figure out rank
-       rank = pbuf_get_field_rank(idx)
-       dims = pbuf_get_field_dims(idx)
-     else
-       ! Try check constituents list.
-       ! NOTE: for now, if not in pbuf or Q, let's abort.
-       !       Later on, you *may* want to explore other options
-       call cnst_get_ind(fname,ind=idx,abrtf=.true.)
-       if (idx .ge. 1) then
-         in_q = .true.
+     ! retrieve field specs
+     field_desc => pbuf2d(idx,begchunk)
 
-         ! Rank and dims are given by Q
-         rank = 2
-         dims2(2) = pver
-         dims = dims2
-       endif
-     endif
+     rank = pbuf_get_field_rank(idx)
+     dims(:) = pbuf_get_field_dims(idx)
      dims(1) = nlcols
-     ! print *, "  rank:", rank
-     ! print *, "  dims:", dims
 
-     call cldera_add_partitioned_field(fname,dims,nparts,part_dim)
+     dimnames(2) = "lev"
+
+     call cldera_add_partitioned_field(fname,2,dims,dimnames,nparts,part_dim)
      do ipart = 1,nparts
        c = begchunk+ipart-1 ! Chunk
-       if (in_pbuf) then
-         ncols = get_ncols_p(c)
-         if (rank .eq. 1) then
-           call pbuf_get_field(pbuf2d, c, idx, field1d)
-           call cldera_set_field_partition(fname,ipart,ncols,field1d)
-         elseif (rank .eq. 2) then
-           call pbuf_get_field(pbuf2d, c, idx, field2d)
-           call cldera_set_field_partition(fname,ipart,ncols,field2d)
-         else 
-           call pbuf_get_field(pbuf2d, c, idx, field3d)
-           call cldera_set_field_partition(fname,ipart,ncols,field3d)
-         endif
-       else
-         ncols = phys_state(c)%ncol
-         field2d=>phys_state(c)%q(:,:,idx)
-         call cldera_set_field_partition(fname,ipart,ncols,field2d)
+       ncols = get_ncols_p(c)
+       call cldera_set_field_part_size(fname,ipart,ncols)
+       if (rank .eq. 1) then
+         call pbuf_get_field(pbuf2d, c, idx, field1d)
+         call cldera_set_field_part_data(fname,ipart,field1d)
+       elseif (rank .eq. 2) then
+         call pbuf_get_field(pbuf2d, c, idx, field2d)
+         call cldera_set_field_part_data(fname,ipart,field2d)
+       else 
+         call pbuf_get_field(pbuf2d, c, idx, field3d)
+         call cldera_set_field_part_data(fname,ipart,field3d)
        endif
      enddo
    enddo
 
+   ! TRACERS fields
+   do idx=1,pcnst
+     fname = cnst_name(idx)
+
+     call cldera_add_partitioned_field(fname,2,dims,dimnames,nparts,part_dim)
+     do ipart = 1,nparts
+       c = begchunk+ipart-1 ! Chunk
+       ncols = phys_state(c)%ncol
+       field2d=>phys_state(c)%q(:,:,idx)
+       call cldera_set_field_part_size(fname,ipart,ncols)
+       call cldera_set_field_part_data(fname,ipart,field2d)
+     enddo
+   enddo
+
+   ! STATE fields
+   dims(1) = nlcols
+   dimnames(1) = 'ncol'
+
+   !1d, horizontal
+   call cldera_add_partitioned_field("lat",1,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("lon",1,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("ps",1,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("psdry",1,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("phis",1,dims,dimnames,nparts,part_dim)
+
+   !2d, mid points
+   dims(2) = pver
+   dimnames(2) = 'lev'
+   call cldera_add_partitioned_field("T",2,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("u",2,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("v",2,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("s",2,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("omega",2,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("pmid",2,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("pmid_dry",2,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("pdel",2,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("pdel_dry",2,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("exner",2,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("zm",2,dims,dimnames,nparts,part_dim)
+
+   ! Last arg is view=false, since AOD fields are *not* views of EAM persistent data.
+   call cldera_add_partitioned_field("aod_tot", 2,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("aod_so2", 2,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("aod_ash", 2,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("aod_sulf",2,dims,dimnames,nparts,part_dim,.false.)
+
+   ! 2d, interfaces
+   dims(2) = pver+1
+   dimnames(2) = "ilev"
+   call cldera_add_partitioned_field("pint",2,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("pint_dry",2,dims,dimnames,nparts,part_dim)
+   call cldera_add_partitioned_field("zi",2,dims,dimnames,nparts,part_dim)
+
+   ! 1d, vertically integrated
+   call cldera_add_partitioned_field("te",1,dims,dimnames,nparts,part_dim) ! total energy
+   call cldera_add_partitioned_field("tw",1,dims,dimnames,nparts,part_dim) ! total water
+
+   ! Set fields data
+   do ipart = 1,nparts
+     c = begchunk+ipart-1 ! Chunk
+     ncols = phys_state(c)%ncol
+
+     ! 1d (horiz) fields
+     field1d => phys_state(c)%lat(:)
+     call cldera_set_field_part_size("lat",ipart,ncols)
+     call cldera_set_field_part_data("lat",ipart,field1d)
+
+     field1d => phys_state(c)%lon(:)
+     call cldera_set_field_part_size("lon",ipart,ncols)
+     call cldera_set_field_part_data("lon",ipart,field1d)
+
+     field1d => phys_state(c)%ps(:)
+     call cldera_set_field_part_size("ps",ipart,ncols)
+     call cldera_set_field_part_data("ps",ipart,field1d)
+
+     field1d => phys_state(c)%psdry(:)
+     call cldera_set_field_part_size("psdry",ipart,ncols)
+     call cldera_set_field_part_data("psdry",ipart,field1d)
+
+     field1d => phys_state(c)%phis(:)
+     call cldera_set_field_part_size("phis",ipart,ncols)
+     call cldera_set_field_part_data("phis",ipart,field1d)
+
+     ! 2d mid
+     field2d => phys_state(c)%t(:,:)
+     call cldera_set_field_part_size("T",ipart,ncols)
+     call cldera_set_field_part_data("T",ipart,field2d)
+
+     field2d => phys_state(c)%u(:,:)
+     call cldera_set_field_part_size("u",ipart,ncols)
+     call cldera_set_field_part_data("u",ipart,field2d)
+
+     field2d => phys_state(c)%v(:,:)
+     call cldera_set_field_part_size("v",ipart,ncols)
+     call cldera_set_field_part_data("v",ipart,field2d)
+
+     field2d => phys_state(c)%s(:,:)
+     call cldera_set_field_part_size("s",ipart,ncols)
+     call cldera_set_field_part_data("s",ipart,field2d)
+
+     field2d => phys_state(c)%omega(:,:)
+     call cldera_set_field_part_size("omega",ipart,ncols)
+     call cldera_set_field_part_data("omega",ipart,field2d)
+
+     field2d => phys_state(c)%pmid(:,:)
+     call cldera_set_field_part_size("pmid",ipart,ncols)
+     call cldera_set_field_part_data("pmid",ipart,field2d)
+
+     field2d => phys_state(c)%pmiddry(:,:)
+     call cldera_set_field_part_size("pmid_dry",ipart,ncols)
+     call cldera_set_field_part_data("pmid_dry",ipart,field2d)
+
+     field2d => phys_state(c)%pdel(:,:)
+     call cldera_set_field_part_size("pdel",ipart,ncols)
+     call cldera_set_field_part_data("pdel",ipart,field2d)
+
+     field2d => phys_state(c)%pdeldry(:,:)
+     call cldera_set_field_part_size("pdel_dry",ipart,ncols)
+     call cldera_set_field_part_data("pdel_dry",ipart,field2d)
+
+     field2d => phys_state(c)%exner(:,:)
+     call cldera_set_field_part_size("exner",ipart,ncols)
+     call cldera_set_field_part_data("exner",ipart,field2d)
+
+     field2d => phys_state(c)%zm(:,:)
+     call cldera_set_field_part_size("zm",ipart,ncols)
+     call cldera_set_field_part_data("zm",ipart,field2d)
+
+     ! 2d int
+     field2d => phys_state(c)%pint(:,:)
+     call cldera_set_field_part_size("pint",ipart,ncols)
+     call cldera_set_field_part_data("pint",ipart,field2d)
+     field2d => phys_state(c)%pintdry(:,:)
+     call cldera_set_field_part_size("pint_dry",ipart,ncols)
+     call cldera_set_field_part_data("pint_dry",ipart,field2d)
+     field2d => phys_state(c)%zi(:,:)
+     call cldera_set_field_part_size("zi",ipart,ncols)
+     call cldera_set_field_part_data("zi",ipart,field2d)
+
+     ! 1d, vertically integrated
+     field1d => phys_state(c)%te_cur(:)
+     call cldera_set_field_part_size("te",ipart,ncols)
+     call cldera_set_field_part_data("te",ipart,field1d)
+     field1d => phys_state(c)%tw_cur(:)
+     call cldera_set_field_part_size("tw",ipart,ncols)
+     call cldera_set_field_part_data("tw",ipart,field1d)
+
+     ! Copied field (AOD)
+     call cldera_set_field_part_size("aod_tot", ipart,ncols)
+     call cldera_set_field_part_size("aod_so2", ipart,ncols)
+     call cldera_set_field_part_size("aod_ash", ipart,ncols)
+     call cldera_set_field_part_size("aod_sulf",ipart,ncols)
+   enddo
+
    call cldera_commit_all_fields()
+   call t_stopf('cldera_add_fields')
 #endif
 
 
@@ -350,6 +501,7 @@ subroutine cam_run1(cam_in, cam_out)
    if (single_column) then
      call scam_use_iop_srf( cam_in)
    endif
+
 
    !
    !----------------------------------------------------------

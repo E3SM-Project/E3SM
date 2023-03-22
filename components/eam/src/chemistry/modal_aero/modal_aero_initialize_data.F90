@@ -370,7 +370,7 @@ contains
 
 
   !==============================================================
-  subroutine modal_aero_initialize(pbuf2d, imozart, species_class) 
+  subroutine modal_aero_initialize(pbuf2d, imozart, species_class)
 
        use constituents,          only: pcnst
        use physconst,             only: rhoh2o, mwh2o
@@ -607,7 +607,7 @@ loop:    do i = icldphy+1, pcnst
        if ( mam_amicphys_optaa > 0 ) then
           call modal_aero_calcsize_init( pbuf2d, species_class )
           call modal_aero_newnuc_init( mam_amicphys_optaa )
-          call modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in )
+          call modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in)
        else
           call modal_aero_rename_init
           !   calcsize call must follow rename call

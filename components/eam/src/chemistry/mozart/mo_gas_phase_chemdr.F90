@@ -792,7 +792,7 @@ contains
 
     call t_startf('aero_model_gasaerexch')
     call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
-                                tfld, pmid, pdel, mbar, relhum, &
+                                tfld, pmid, pdel, troplev, mbar, relhum, &
                                 zm,  qh2o, cwat, cldfr, ncldwtr, &
                                 invariants(:,:,indexm), invariants, del_h2so4_gasprod,  &
                                 vmr0, vmr, pbuf )

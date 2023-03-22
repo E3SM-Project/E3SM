@@ -737,6 +737,9 @@ if ($rad_volcaero){
     }
 }
 
+# Adding call for CLDERA prognostic stratospheric volcanic aerosol treatment
+my $cldera_strat_volc = $cfg->get('cldera_strat_volc'); #default should be no CLDERA treatment (0)
+
 #################
 # CAM namelists #
 #################
@@ -958,6 +961,9 @@ my $co2_cycle_rad_passive = ($nl->get_value('co2_cycle_rad_passive') =~ /$TRUE/i
 # If test tracers have been requested, set tracers_flag=.true.
 if ($cfg->get('nadv_tt')) { add_default($nl, 'tracers_flag', 'val'=>'.true.'); }
 if ($cfg->get('age_of_air_trcs')) { add_default($nl, 'aoa_tracers_flag', 'val'=>'.true.'); }
+
+# CLDERA AOA, E90, ST80_25 tracers
+if ($cfg->get('cldera_passive_trcs')) { add_default($nl,'cldera_passive_tracers_flag','val'=>'.true.');}
 
 # CLDERA SAI tracers
 if ($cfg->get('cldera_sai_trcs')) { add_default($nl, 'cldera_sai_tracers_flag', 'val'=>'.true.'); }

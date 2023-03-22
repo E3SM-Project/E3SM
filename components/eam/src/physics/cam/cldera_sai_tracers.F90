@@ -399,6 +399,14 @@ contains
     use cam_abortutils,  only: endrun 
     use ref_pres,        only: ptop_ref, psurf_ref
     use mpishorthand
+#if defined(CLDERA_PROFILING)
+    use ppgrid,         only: begchunk
+    use iso_c_binding, only: c_loc
+    use cldera_interface_mod, only: cldera_add_partitioned_field, max_str_len, &
+                                    cldera_set_field_part_size, &
+                                    cldera_set_field_part_data, &
+                                    cldera_commit_all_fields
+#endif
 
     ! Arguments
     type(physics_state), intent(inout) :: state              ! state variables
@@ -573,6 +581,8 @@ contains
         !     !call endrun()
         !end if
     enddo
+
+    aod_tot(:,:) = aod_so2(:,:) + aod_sulf(:,:) + aod_ash(:,:)
     
     ! record air mass on grid to history files
     call outfld('AOD',      aod(:), ncol, lchnk)
@@ -585,7 +595,14 @@ contains
     call outfld('COL_SULF', col_mass_sulf(:), ncol, lchnk)
     call outfld('COL_ASH',  col_mass_ash(:), ncol, lchnk)
     call outfld('COL_SAI',  col_mass_ash(:)+col_mass_so2(:)+col_mass_sulf(:), ncol, lchnk)
-    
+
+#if defined(CLDERA_PROFILING)
+    call cldera_set_field_part_data("aod_so2" ,lchnk-begchunk+1,aod_so2)
+    call cldera_set_field_part_data("aod_ash" ,lchnk-begchunk+1,aod_ash)
+    call cldera_set_field_part_data("aod_sulf",lchnk-begchunk+1,aod_sulf)
+    ! the aod_tot variable no longer exists in this version of the HSW++ implementation
+    ! call cldera_set_field_part_data("aod_tot" ,lchnk-begchunk+1,aod_tot)
+#endif
 
     ! =============== COMPUTE TENDENCIES ===============
     do i = 1, ncol

@@ -105,7 +105,7 @@ CONTAINS
 
   subroutine atm_init_mct( EClock, cdata_a, x2a_a, a2x_a, NLFilename )
 #if defined(CLDERA_PROFILING)
-    use cldera_interface_mod, only: cldera_init
+    use cldera_interface_mod, only: cldera_init, cldera_set_log_unit, cldera_set_masterproc
 #endif
 
     !-----------------------------------------------------------------------
@@ -178,10 +178,6 @@ CONTAINS
 
     if (first_time) then
 
-#if defined(CLDERA_PROFILING)
-       call cldera_init(mpicom_atm)
-#endif
-       
        call cam_instance_init(ATMID)
 
        ! Set filename specifier for restart surface file
@@ -312,6 +308,18 @@ CONTAINS
                perpetual_run=perpetual_run,               &
                perpetual_ymd=perpetual_ymd )
        end if
+
+#if defined(CLDERA_PROFILING)
+       ! Initialize CLDERA profiling *before* cam_init, since that's when
+       ! we'll try to register stuff in cldera, and if cldera is not inited,
+       ! all registration calls will return immediately
+       call t_startf('cldera_init')
+       call cldera_init(mpicom_atm,start_ymd,start_tod)
+       call cldera_set_log_unit (iulog)
+       call cldera_set_masterproc (masterproc)
+       call t_stopf('cldera_init')
+#endif
+
        !
        ! First phase of cam initialization 
        ! Initialize mpicom_atm, allocate cam_in and cam_out and determine 
@@ -385,7 +393,6 @@ CONTAINS
        call shr_file_setLogLevel(shrloglev)
 
        first_time = .false.
-
     else
        
        ! For initial run, run cam radiation/clouds and return
@@ -476,9 +483,6 @@ CONTAINS
     use pmgrid,          only: plev, plevp
     use constituents,    only: pcnst
     use shr_sys_mod,     only: shr_sys_flush
-#if defined(CLDERA_PROFILING)
-    use cldera_interface_mod, only: cldera_compute_stats
-#endif
 
     ! 
     ! Arguments
@@ -667,10 +671,6 @@ CONTAINS
     endif
 #endif
 
-#if defined(CLDERA_PROFILING)
-    call cldera_compute_stats(ymd,tod)
-#endif
-
   end subroutine atm_run_mct
 
   !================================================================================
@@ -690,7 +690,9 @@ CONTAINS
     call t_stopf('cam_final')
 
 #if defined(CLDERA_PROFILING)
-   call cldera_clean_up ()
+    call t_startf('cldera_clean_up')
+    call cldera_clean_up ()
+    call t_stopf('cldera_clean_up')
 #endif
 
   end subroutine atm_final_mct

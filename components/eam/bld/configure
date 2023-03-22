@@ -112,7 +112,6 @@ OPTIONS
   effect whether running EAM as part of CCSM or running in a EAM standalone mode:
 
      -[no]age_of_air_trcs Switch on [off] age of air tracers. Default: on for waccm_phys, otherwise off
-     -cldera_sai_trcs   Switch on idealized stratospheric aerosol injection tracers. Default: off
      -aquaplanet        Switch on aqua-planet mode w/ SST controlled by data ocean component in CIME
      -rce               Use homogenous conditions for radiative-convective equilibrium (RCE), normally used with aquaplanet
      -chem <name>       Build EAM with specified prognostic chemistry package
@@ -162,7 +161,7 @@ OPTIONS
                         The user does not need to set this if one of the waccm chemistry options
                         is chosen.
      -waccmx            Build EAM/WACCM with WACCM upper Thermosphere/Ionosphere extended package
-     
+
 
   Options relevent to SCAM mode:
 
@@ -283,8 +282,9 @@ OPTIONS
      -rrtmgpxx          Use RRTMGP++ code
 
   Options for CLDERA-E3SM
-
      -cldera_profiling  Build EAM with support for CLDERA profiling, linking to cldera-profiling
+     -cldera_sai_trcs   Switch on idealized stratospheric aerosol injection tracers. Default: off
+     -cldera_passive_trcs Switch on CLDERA passive tracers. Default: off
 EOF
 }
 
@@ -323,6 +323,7 @@ my %opts = (
 GetOptions(
     "age_of_air_trcs!"          => \$opts{'age_of_air_trcs'},
     "cldera_sai_trcs!"          => \$opts{'cldera_sai_trcs'},
+    "cldera_passive_trcs!"      => \$opts{'cldera_passive_trcs'},
     "aquaplanet"                => \$opts{'aquaplanet'},
     "cache=s"                   => \$opts{'cache'},
     "cachedir=s"                => \$opts{'cachedir'},
@@ -335,6 +336,7 @@ GetOptions(
     "ccsm_seq"                  => \$opts{'ccsm_seq'},
     "cflags=s"                  => \$opts{'cflags'},
     "chem=s"                    => \$opts{'chem'},
+    "cldera_strat_volc=s"       => \$opts{'cldera_strat_volc'},
     "cice_bsizex=s"             => \$opts{'cice_bsizex'},
     "cice_bsizey=s"             => \$opts{'cice_bsizey'},
     "cice_maxblocks=s"          => \$opts{'cice_maxblocks'},
@@ -355,7 +357,7 @@ GetOptions(
     "crm_dt=s"                  => \$opts{'crm_dt'},
     "crm_nx_rad=s"              => \$opts{'crm_nx_rad'},
     "crm_ny_rad=s"              => \$opts{'crm_ny_rad'},
-    "MMF_microphysics_scheme=s"     => \$opts{'MMF_microphysics_scheme'},
+    "MMF_microphysics_scheme=s" => \$opts{'MMF_microphysics_scheme'},
     "crm_adv=s"                 => \$opts{'crm_adv'},
     "crm=s"                     => \$opts{'crm'},
     "rrtmgpxx"                  => \$opts{'rrtmgpxx'},
@@ -879,6 +881,13 @@ if (defined $opts{'cldera_sai_trcs'}) {
 my $cldera_sai_trcs = $cfg_ref->get('cldera_sai_trcs') ? "ON" : "OFF";
 if ($print>=2) { print "CLDERA SAI tracer package: $cldera_sai_trcs$eol"; }
 
+# Allow user to turn on the cldera passive tracers
+if (defined $opts{'cldera_passive_trcs'}) {
+    $cfg_ref->set('cldera_passive_trcs', $opts{'cldera_passive_trcs'});
+}
+my $cldera_passive_trcs = $cfg_ref->get('cldera_passive_trcs') ? "ON" : "OFF";
+if ($print>=2) { print "CLDERA passive tracer package: $cldera_passive_trcs$eol"; }
+
 # waccmx option
 if (defined $opts{'waccmx'}) {
     $cfg_ref->set('waccmx', $opts{'waccmx'});
@@ -898,7 +907,6 @@ $cfg_ref->set('rain_evap_to_coarse_aero', $rain_evap_to_coarse_aero_opt);
 my $rain_evap_to_coarse_aero = $rain_evap_to_coarse_aero_opt ? 1:0;
 
 if ($print>=2) { print "Is rain_evap_to_coarse_aero active (0-NO; 1-YES)?: $rain_evap_to_coarse_aero$eol"; }
-
 
 #-----------------------------------------------------------------------------------------------
 
@@ -1356,6 +1364,15 @@ if (!$prog_species) {
   $cfg_ref->set('chem_src_dir', $chem_src_dir);
 }
 
+#CLDERA stratospheric volcanic aerosol treatment
+#initialize if not specified in cam_config_opts
+if (!defined $opts{'cldera_strat_volc'}) {
+    $opts{'cldera_strat_volc'} = 0;
+}
+my $cldera_strat_volc = $opts{'cldera_strat_volc'};
+$cfg_ref->set('cldera_strat_volc', $cldera_strat_volc);
+
+
 if (($chem_pkg ne 'none') || ($prog_species)) {
 
     # customize chemistry
@@ -1402,6 +1419,10 @@ if ($bc_dep_to_snow_updates == 1) {
 
 if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_mam4' || $chem_pkg eq 'trop_mam4_resus' || $chem_pkg eq 'trop_mam4_resus_soag' || $chem_pkg eq 'trop_mam4_resus_mom')) {
     $chem_cppdefs = "$chem_cppdefs  -DRAIN_EVAP_TO_COARSE_AERO "
+}
+
+if ($cldera_strat_volc == 1 && ($chem_pkg =~ '_mam4' || $chem_pkg =~ '_mam4_mom' || $chem_pkg =~ 'mam4_resus_mom')) {
+    $chem_cppdefs = "$chem_cppdefs  -DCLDERA_STRAT_VOLC "
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -1484,10 +1505,15 @@ else {
 	$nadv += 4;
         if ($print>=2) { print "Advected constituents added by the age of air tracer package: 4$eol"; }
     }
-    
+
     if ($cldera_sai_trcs eq "ON") {
 	$nadv += 3;
         if ($print>=2) { print "Advected constituents added by the CLDERA SAI tracer package: 5$eol"; }
+    }
+
+    if ($cldera_passive_trcs eq "ON") {
+	$nadv += 3;
+        if ($print>=2) { print "Advected constituents added by the CLDERA passive tracers package: 4$eol"; }
     }
 
     $cfg_ref->set('nadv', $nadv);

@@ -182,6 +182,7 @@ subroutine diag_init()
    call addfld ('T',(/ 'lev' /), 'A','K','Temperature',standard_name='air_temperature')
    call addfld ('U',(/ 'lev' /), 'A','m/s','Zonal wind',standard_name='eastward_wind')
    call addfld ('V',(/ 'lev' /), 'A','m/s','Meridional wind',standard_name='northward_wind')
+   call addfld ('PV',(/ 'lev' /),'A','m2 K/kg/s','Ertel Potential Vorticity')
    call addfld (cnst_name(1),(/ 'lev' /), 'A','kg/kg',cnst_longname(1))
 
    ! State before physics
@@ -446,6 +447,7 @@ subroutine diag_init()
       call add_default ('T       '  , 1, ' ')
       call add_default ('U       '  , 1, ' ')
       call add_default ('V       '  , 1, ' ')
+      call add_default ('PV      '  , 1, ' ')
       call add_default (cnst_name(1), 1, ' ')
       call add_default ('Z3      '  , 1, ' ')
       call add_default ('OMEGA   '  , 1, ' ')
@@ -638,6 +640,10 @@ subroutine diag_init()
    call addfld ('TREFHTMN',horiz_only,    'M','K','Minimum reference height temperature over output period')
    call addfld ('TREFHTMX',horiz_only,    'X','K','Maximum reference height temperature over output period')
    call addfld ('QREFHT',horiz_only,    'A','kg/kg','Reference height humidity', &
+    standard_name = 'specific_humidity')
+   call addfld ('QREFHTMN',horiz_only,    'M','kg/kg','Minimum reference height humidity', &
+    standard_name = 'specific_humidity')
+   call addfld ('QREFHTMX',horiz_only,    'X','kg/kg','Maximum reference height humidity', &
     standard_name = 'specific_humidity')
    call addfld ('U10',horiz_only,    'A','m/s','10m wind speed', &
      standard_name='wind_speed')
@@ -1017,6 +1023,7 @@ end subroutine diag_conv_tend_ini
     call outfld('PS      ',state%ps, pcols   ,lchnk   )
     call outfld('U       ',state%u , pcols   ,lchnk   )
     call outfld('V       ',state%v , pcols   ,lchnk   )
+    call outfld('PV      ',state%pv, pcols   ,lchnk   )
     do m=1,pcnst
        if ( cnst_cam_outfld(m) ) then
           call outfld(cnst_name(m),state%q(1,1,m),pcols ,lchnk )
@@ -2110,6 +2117,8 @@ subroutine diag_surf (cam_in, cam_out, ps, trefmxav, trefmnav )
     call outfld('TREFHTMX', cam_in%tref,      pcols, lchnk)
     call outfld('TREFHTMN', cam_in%tref,      pcols, lchnk)
     call outfld('QREFHT',   cam_in%qref,      pcols, lchnk)
+    call outfld('QREFHTMX', cam_in%qref,      pcols, lchnk)
+    call outfld('QREFHTMN', cam_in%qref,      pcols, lchnk)
     call outfld('U10',      cam_in%u10,       pcols, lchnk)
 ! 
 ! Calculate and output reference height RH (RHREFHT)

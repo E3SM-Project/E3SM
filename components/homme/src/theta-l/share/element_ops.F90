@@ -73,6 +73,7 @@ module element_ops
   public set_forcing_rayleigh_friction, set_theta_ref
   public copy_state, tests_finalize
   public state0
+  public get_pot_vort
 
   ! promote this to _real_kind after V2 code freeze
   real (kind=real_kind), public :: tref_lapse_rate=0.0065e0
@@ -96,6 +97,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   select case(name)
     case ('temperature','T'); call get_temperature(elem,field,hvcoord,nt)
     case ('pottemp','Th');    call get_pottemp(elem,field,hvcoord,nt,ntQ)
+    case ('potvort', 'PV');   call get_pot_vort(elem,field,hvcoord,nt)
     case ('phi','geo');       call get_phi(elem,field,phi_i,hvcoord,nt)
     case ('dpnh_dp');         call get_dpnh_dp(elem,field,hvcoord,nt)
     case ('pnh');             call get_nonhydro_pressure(elem,field,tmp ,hvcoord,nt)
@@ -169,6 +171,57 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   end select
  
   end subroutine get_field_i
+
+  !_____________________________________________________________________
+  subroutine get_pot_vort(elem,pot_vort,hvcoord,nt)
+  !
+  use physical_constants, only: g,rearth
+  use derivative_mod, only: partial_eta, vorticity_sphere, gradient_sphere, derivative_t, get_deriv
+  implicit none
+
+  type (element_t), intent(in)        :: elem
+  real (kind=real_kind), intent(out)  :: pot_vort(np,np,nlev)
+  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+  integer, intent(in) :: nt! time level
+
+  !   local
+  integer :: i, j, k
+  real(kind=real_kind), dimension(np,np,nlev) :: pottemp, rel_vort
+  real(kind=real_kind), dimension(nlev) :: da_deta, db_deta, du_deta, dv_deta
+  real(kind=real_kind), dimension(np, np, nlev, 2) :: grad_theta
+  real(kind=real_kind) :: eps = 1e-10
+  type (derivative_t)                    :: deriv
+
+  call get_deriv(deriv)
+  call get_pottemp(elem, pottemp, hvcoord, nt,-1)
+
+  da_deta = partial_eta(hvcoord%hyam, hvcoord%etam)
+  db_deta = partial_eta(hvcoord%hybm, hvcoord%etam)
+
+  do k=1,nlev
+      rel_vort(:, :, k) = vorticity_sphere(elem%state%v(:, :, :, k, nt), deriv, elem)
+      grad_theta(:, :, k, :) = gradient_sphere(pottemp(:, :, k), deriv, elem%Dinv)
+  end do
+
+  do j=1,np
+      do i=1,np
+        ! f ~ elem%fcor(i, j)
+        pot_vort(i, j, :) =  (rel_vort(i, j, :) + &
+                             elem%fcor(i, j)) * partial_eta(pottemp(i, j, :), hvcoord%etam)
+        pot_vort(i, j, :) = pot_vort(i, j, :) + &
+                            (partial_eta(elem%state%v(i,j,1,:,nt), hvcoord%etam) * & 
+                             grad_theta(i, j, :, 2)) 
+        pot_vort(i, j, :) = pot_vort(i, j, :) - &  
+                            (partial_eta(elem%state%v(i,j,2,:,nt), hvcoord%etam) * & 
+                             grad_theta(i, j, :, 1)) 
+        pot_vort(i, j, :) = pot_vort(i, j, :) * -1.0_real_kind * (g / & 
+                                                                 (hvcoord%ps0 *da_deta + & 
+                                                                  elem%state%ps_v(i,j,nt) * & 
+                                                                 db_deta))
+      end do
+  end do
+
+  end subroutine get_pot_vort
 
 
   !_____________________________________________________________________
