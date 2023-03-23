@@ -207,11 +207,19 @@ public:
     KOKKOS_INLINE_FUNCTION
     void operator()(const int icol) const {
       for (int ipack=0;ipack<m_npack;ipack++) {
-        // Update the atmospheric temperature and the previous temperature.
-        T_atm(icol,ipack)  = PF::calculate_T_from_theta(th_atm(icol,ipack),pmid(icol,ipack));
-        T_prev(icol,ipack) = T_atm(icol,ipack);
         const Spack& pseudo_density_pack(pseudo_density(icol,ipack));
         const Spack& pseudo_density_dry_pack(pseudo_density_dry(icol,ipack));
+
+        // Update the atmospheric temperature and the previous temperature.
+        {
+          // this computes rescaled dT
+          const Spack T_atm_before_p3 = T_atm(icol,ipack);
+          T_atm(icol,ipack)  = (PF::calculate_T_from_theta(th_atm(icol,ipack),pmid(icol,ipack)) - T_atm_before_p3)
+                             * pseudo_density_dry(icol,ipack) / pseudo_density(icol,ipack);
+          // add rescaled dT to T
+          T_atm(icol,ipack)  +=  T_atm_before_p3;
+        }
+        T_prev(icol,ipack) = T_atm(icol,ipack);
 
         /*----------------------------------------------------------------------------------------------------------------------
          *DRY-TO-WET MMRs:
