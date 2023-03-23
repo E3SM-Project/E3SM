@@ -91,7 +91,8 @@ _TESTS = {
             "SMS_R_Ld5.ne4_ne4.FSCM-ARM97.eam-scm",
             "SMS_D_Ln5.ne4_oQU240.F2010",
             "SMS_Ln5.ne4pg2_oQU480.F2010",
-            "ERS_D.ne4_oQU240.F2010.eam-hommexx"
+            "ERS_D.ne4_oQU240.F2010.eam-hommexx",
+            "SMS_Ln9_P24x1.ne4_ne4.FDPSCREAM-ARM97",
             )
         },
 
