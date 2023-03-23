@@ -179,7 +179,7 @@ module seq_frac_mct
   use iMOAB, only : iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, &
         iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh, &
         iMOAB_ApplyScalarProjectionWeights, iMOAB_SendElementTag, iMOAB_ReceiveElementTag, &
-        iMOAB_FreeSenderBuffers
+        iMOAB_FreeSenderBuffers, iMOAB_GetDoubleTagStorage
   
   use shr_kind_mod, only: CL => SHR_KIND_CL, CX => SHR_KIND_CX, CXX => SHR_KIND_CXX
   use iso_c_binding ! C_NULL_CHAR 
@@ -205,6 +205,8 @@ module seq_frac_mct
   integer, private :: seq_frac_debug = 1
   logical, private :: seq_frac_abort = .true.
   logical, private :: seq_frac_dead
+
+  integer :: local_size_mb_ocn ! use it to set/get ofrac from ocn to second ocean instance
 
   !--- standard ---
   real(r8),parameter :: eps_fracsum = 1.0e-02   ! allowed error in sum of fracs
@@ -325,6 +327,7 @@ contains
     integer id_join ! used for example for atm%cplcompid
     integer :: mpicom ! we are on coupler PES here
     character(30)            :: outfile, wopts
+
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_frac_init) '
@@ -626,6 +629,7 @@ contains
          endif
           ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC );
          arrSize = 5 * nvise(1) ! there are 5 tags 'afrac:ifrac:ofrac:ifrad:ofrad'
+         local_size_mb_ocn = nvise(1)
          allocate(tagValues(arrSize) )
          ent_type = 1  ! cell type, ocn is FV
          tagValues = 0. 
@@ -637,6 +641,13 @@ contains
        if (ice_present) then
           mapper_i2o => prep_ocn_get_mapper_SFi2o()
           call seq_map_map(mapper_i2o,fractions_i,fractions_o,fldlist='ofrac',norm=.false.)
+
+          tagname = 'ofrac'//C_NULL_CHAR
+          ent_type = 1! cells
+          allocate(tagValues(local_size_mb_ocn) )
+          ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, local_size_mb_ocn , ent_type, tagValues)
+          ierr = iMOAB_SetDoubleTagStorage ( mbofxid, tagname, local_size_mb_ocn , ent_type, tagValues)
+          deallocate(tagValues)
 
        else
        ! still need to TODO moab case when no sea ice
@@ -807,7 +818,6 @@ contains
   subroutine seq_frac_set(infodata, ice, ocn, fractions_a, fractions_i, fractions_o)
 
     use seq_comm_mct, only : mboxid !            iMOAB app id for ocn on cpl pes
-    use iMOAB, only :  iMOAB_SetDoubleTagStorageWithGid 
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(seq_infodata_type) , intent(in)    :: infodata
@@ -835,6 +845,7 @@ contains
     integer , save           ::   lSize, ent_type
     character(CXX)           :: tagname
     real(r8),    allocatable, save :: tagValues(:) ! used for setting some tags
+    real(r8),    allocatable, save :: tagValuesOfrac(:) ! used for setting some tags
     integer ,    allocatable, save :: GlobalIds(:) ! used for setting values associated with ids
 
     !----- formats -----
@@ -879,7 +890,9 @@ contains
           allocate(GlobalIds(lSize) )
           kgg = mct_aVect_indexIA(dom_o%data ,"GlobGridNum" ,perrWith=subName)
           GlobalIds = dom_i%data%iAttr(kgg,:)
+          allocate (tagValuesOfrac(local_size_mb_ocn))
           ent_type = 1 ! cells for mpas sea ice
+          first_time = .false.
        endif
 
           ! something like this:
@@ -902,8 +915,6 @@ contains
              write(logunit,*) subname,' error in setting ofrac on ice moab instance  '
              call shr_sys_abort(subname//' ERROR in setting ofrac on ice moab instance ')
           endif
-
-          first_time = .false.
        endif
 
        if (ocn_present) then
@@ -911,6 +922,11 @@ contains
           call seq_map_map(mapper_i2o, fractions_i, fractions_o, &
                fldlist='ofrac:ifrac',norm=.false.)
           call seq_frac_check(fractions_o, 'ocn set')
+          ! set the ofrac artificially on mbofxid instance, because it is needed for prep_aoxflux
+          tagname = 'ofrac'//C_NULL_CHAR
+          ent_type = 1! cells
+          ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, local_size_mb_ocn , ent_type, tagValuesOfrac)
+          ierr = iMOAB_SetDoubleTagStorage ( mbofxid, tagname, local_size_mb_ocn , ent_type, tagValuesOfrac)
        endif
 
 
