@@ -657,7 +657,6 @@ module li_advection
                  geometryPool,          &
                  thermalPool,           &
                  advectedTracers)
-
          endif
 
       elseif (trim(config_thickness_advection) .eq. 'none') then
@@ -1119,7 +1118,8 @@ module li_advection
            thickness                  ! ice thickness
 
       real (kind=RKIND), dimension(:), pointer :: &
-           damage ! damage
+           damage, & ! damage
+           passiveTracer
 
       real (kind=RKIND), pointer ::  &
            config_ice_density         ! ice density
@@ -1141,6 +1141,7 @@ module li_advection
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
       call mpas_pool_get_array(geometryPool, 'damage', damage)
+      call mpas_pool_get_array(geometryPool, 'passiveTracer', passiveTracer)
 
       ! get arrays from thermal pool
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -1231,6 +1232,15 @@ module li_advection
 
       endif
 
+      ! always advect passiveTracer
+      iTracer = iTracer + 1
+      ! copy 2d passiveTracer to all vertical levels in the tracer array
+      do k = 1, nVertLevels
+         advectedTracers(iTracer,k,:) = passiveTracer(:)
+      enddo
+      surfaceTracers(iTracer,:) = 0.0_RKIND
+      basalTracers(iTracer,:) = 0.0_RKIND
+ 
       if (trim(config_thickness_advection) == 'fct') then
          ! increment the tracer index
          iTracer = iTracer + 1
@@ -1327,7 +1337,8 @@ module li_advection
            thickness                  ! ice thickness
 
       real (kind=RKIND), dimension(:), pointer :: &
-           damage ! damage
+           damage, & ! damage
+           passiveTracer
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,             & ! interior ice temperature
@@ -1348,6 +1359,7 @@ module li_advection
       ! get arrays from geometry pool
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'damage', damage)
+      call mpas_pool_get_array(geometryPool, 'passiveTracer', passiveTracer)
 
       ! get arrays from thermal pool
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -1397,6 +1409,12 @@ module li_advection
             damage(iCell) = sum(advectedTracers(iTracer,:,iCell) * layerThicknessFractions)  ! thickness-weighted average
          enddo
       endif
+
+      ! Always advect passiveTracer
+      iTracer = iTracer + 1
+      do iCell = 1, nCellsSolve
+         passiveTracer(iCell) = sum(advectedTracers(iTracer,:,iCell) * layerThicknessFractions)  ! thickness-weighted average
+      enddo
 
       ! Note: Other tracers (e.g., ice age) can be added here as needed.
       !       May need to increase maxTracers in the Registry.

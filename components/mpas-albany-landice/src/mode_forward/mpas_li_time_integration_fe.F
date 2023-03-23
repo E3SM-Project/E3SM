@@ -755,7 +755,6 @@ module li_time_integration_fe
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel=1)
 
-
          allocate( masktmp(nCells + 1) )
          masktmp = 0
 
@@ -792,6 +791,7 @@ module li_time_integration_fe
       call mpas_dmpar_field_halo_exch(domain, 'waterFrac')
       call mpas_dmpar_field_halo_exch(domain, 'enthalpy')
       call mpas_dmpar_field_halo_exch(domain, 'damage')
+      call mpas_dmpar_field_halo_exch(domain, 'passiveTracer')
 
       call mpas_timer_stop("halo updates")
 
