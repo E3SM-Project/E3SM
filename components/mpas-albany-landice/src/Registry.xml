@@ -42,7 +42,7 @@
 		<dim name="nISMIP6OceanLayers" units="unitless"
 		     description="The number of layers in the ISMIP6 ocean temperature dataset."
 		/>
-		<dim name="maxTracersAdvect" definition="3" units="unitless"
+		<dim name="maxTracersAdvect" definition="4" units="unitless"
 		     description="The maximum number of tracers to be advected."
 		/>
 		<dim name="nRegions" definition="1" units="unitless"
