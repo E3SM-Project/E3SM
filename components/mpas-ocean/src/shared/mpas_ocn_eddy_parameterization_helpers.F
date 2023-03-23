@@ -74,11 +74,11 @@ module ocn_eddy_parameterization_helpers
      nCells = nCellsAll
      nEdges = nEdgesAll
      allocate(gradDensityEdge(nVertLevels, nEdges), &
-              dDensityDzTopOfCell(nVertLevels+1, nCells+1), &
-              gradDensityTopOfEdge(nVertLevels+1, nEdges), &
-              dDensityDzTopOfEdge(nVertLevels+1, nEdges), &
+              dDensityDzTopOfCell(nVertLevels, nCells), &
+              gradDensityTopOfEdge(nVertLevels, nEdges), &
+              dDensityDzTopOfEdge(nVertLevels, nEdges), &
               gradZMidEdge(nVertLevels, nEdges), &
-              gradZMidTopOfEdge(nVertLevels+1, nEdges))
+              gradZMidTopOfEdge(nVertLevels, nEdges))
 
      !$omp parallel
      !$omp do schedule(runtime) private(k)
@@ -102,7 +102,6 @@ module ocn_eddy_parameterization_helpers
         ! ghost cells above the top and below the bottom layers of the same depths and density.
         ! Essentially, this enforces the boundary condition (d density)/dz = 0 at the top and bottom.
         dDensityDzTopOfCell(1:minLevelCell(iCell),iCell) = 0.0_RKIND
-        dDensityDzTopOfCell(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
      end do
      !$omp end do
      !$omp end parallel
@@ -113,7 +112,7 @@ module ocn_eddy_parameterization_helpers
      !$omp parallel
      !$omp do schedule(runtime) private(k, cell1, cell2)
      do iEdge = 1, nEdges
-        do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)+1
+        do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
            cell1 = cellsOnEdge(1,iEdge)
            cell2 = cellsOnEdge(2,iEdge)
            dDensityDzTopOfEdge(k,iEdge) = 0.5_RKIND * (dDensityDzTopOfCell(k,cell1) + dDensityDzTopOfCell(k,cell2))
@@ -155,9 +154,7 @@ module ocn_eddy_parameterization_helpers
            ! Approximation of values on the top and bottom interfaces through the idea of having ghost cells
            ! above the top and below the bottom layers of the same depths and density.
            gradDensityTopOfEdge(minLevelEdgeBot(iEdge),iEdge) = gradDensityEdge(minLevelEdgeBot(iEdge),iEdge)
-           gradDensityTopOfEdge(maxLevelEdgeTop(iEdge)+1,iEdge) = gradDensityEdge(maxLevelEdgeTop(iEdge),iEdge)
            gradZMidTopOfEdge(minLevelEdgeBot(iEdge),iEdge) = gradZMidEdge(minLevelEdgeBot(iEdge),iEdge)
-           gradZMidTopOfEdge(maxLevelEdgeTop(iEdge)+1,iEdge) = gradZMidEdge(maxLevelEdgeTop(iEdge),iEdge)
         end if
      end do
      !$omp end do
@@ -165,7 +162,7 @@ module ocn_eddy_parameterization_helpers
      !$omp do schedule(runtime) private(k)
      do iEdge = 1, nEdges
         if (maxLevelEdgeTop(iEdge) .GE. minLevelEdgeBot(iEdge)) then
-           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)+1
+           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
               gradDensityEddy(k,iEdge) = (gradDensityTopOfEdge(k,iEdge) - dDensityDzTopOfEdge(k,iEdge) &
                                              * gradZMidTopOfEdge(k,iEdge))
            end do

@@ -805,6 +805,13 @@ contains
 
        call t_stop_lnd(event)
 
+   else
+       call alm_fates%wrap_WoodProducts(bounds, num_soilc, filter_soilc)
+
+       call WoodProducts(num_soilc, filter_soilc )
+
+       call CropHarvestPools(num_soilc, filter_soilc, dt)
+      
    end if
 
    if ( ero_ccycle ) then
