@@ -170,6 +170,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   const auto& pblh = get_field_in("pbl_height").get_view<Real*>();
   const auto& p_del = get_field_in("pseudo_density").get_view<const Real**>();
   const auto& cldfrac = get_field_in("cldfrac_tot").get_view<Real**>(); // FIXME: tot or liq?
+
   const auto& tracers = get_group_out("tracers");
   const auto& tracers_info = tracers.m_info;
   int num_tracers = tracers_info->size();
@@ -195,8 +196,8 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   p_mid_ = p_mid;
   qv_ = qv;
   pdel_ = p_del;
-  cloud_f_ = cloud_f; // FIXME??
-  uv_ = uv;
+//  cloud_f_ = cloud_f; // cloud fraction
+//  uv_ = uv; // updraft velocity
 
   // For now, set z_surf to zero.
   const Real z_surf = 0.0;
@@ -205,7 +206,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   auto q_aitken_so4_index  = tracers_info->m_subview_idx.at("q_aitken_so4");
   auto q_soag_index        = tracers_info->m_subview_idx.at("q_soag");
   auto q_h2so4_index       = tracers_info->m_subview_idx.at("q_h2so4");
-  int num_aero_tracers = 4; // for now, just 2 gases + aitken so4 n,q
+  int num_aero_tracers = 3; // for now, just 2 gases + aitken so4
   view_1d_int convert_wet_dry_idx_d("convert_wet_dry_idx_d", num_aero_tracers);
   auto convert_wet_dry_idx_h = Kokkos::create_mirror_view(convert_wet_dry_idx_d);
   for (int it=0, iq=0; it < num_tracers; ++it) {
@@ -236,8 +237,8 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   */
 
   // Setup WSM for internal local variables
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
-  // FIXME
+  // FIXME: do we need this?
+  //const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
   //workspace_mgr_.setup(buffer_.wsm_data, nlev_+1, 13+(n_wind_slots+n_trac_slots), default_policy);
 
   // FIXME: aerosol process initialization goes here!
@@ -245,10 +246,10 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
 void MAMMicrophysics::run_impl(const double dt) {
 
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
+  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
 
   // preprocess input
-  Kokkos::parallel_for("preprocess", default_policy, preprocess_);
+  Kokkos::parallel_for("preprocess", policy, preprocess_);
   Kokkos::fence();
 
   // Reset internal WSM variables.
@@ -256,6 +257,12 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   // nothing depends on simulation time (yet), so we can just use zero for now
   double t = 0.0;
+
+  // FIXME: for now, we set cloud fraction and updraft velocity to zero.
+  view_1d cloud_f("cloud fraction", nlev_);
+  view_1d uv("updraft velocity", nlev_);
+  Kokkos::deep_copy(cloud_f, 0.0);
+  Kokkos::deep_copy(uv, 0.0);
 
   // Compute nucleation tendencies on all local columns and accumulate them
   // into our tracer state.
@@ -269,8 +276,8 @@ void MAMMicrophysics::run_impl(const double dt) {
       ekat::subview(qv_, icol),
       ekat::subview(height_, icol),
       ekat::subview(pdel_, icol),
-      ekat::subview(cloud_f_, icol),
-      ekat::subview(uv_, icol), // FIXME: updraft velocity for ice nucleation
+      cloud_f,
+      uv,
       pblh_(icol));
 
     // extract column-specific subviews into aerosol prognostics
@@ -302,7 +309,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   });
 
   // postprocess output
-  Kokkos::parallel_for("postprocess", default_policy, postprocess_);
+  Kokkos::parallel_for("postprocess", policy, postprocess_);
   Kokkos::fence();
 }
 

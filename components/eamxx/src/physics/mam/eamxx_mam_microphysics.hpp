@@ -288,7 +288,7 @@ private:
   view_2d q_aitken_so4_; // SO4 mass mixing ratio in aitken mode [kg/kg dry air]
 
   // workspace manager for internal local variables
-  ekat::WorkspaceManager<Real, KT::Device> workspace_mgr_;
+  //ekat::WorkspaceManager<Real, KT::Device> workspace_mgr_;
   Buffer buffer_;
 
   // physics grid for column information
