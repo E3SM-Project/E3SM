@@ -66,7 +66,7 @@ module li_tracer_advection_fct
    subroutine li_tracer_advection_fct_tend( &
                                         tend, tracers, layerThickness, &
                                         normalThicknessFlux, w, dt,    &
-                                        computeBudgets)!{{{
+                                        nTracers, computeBudgets)!{{{
       use li_mesh
       !-----------------------------------------------------------------
       ! Input/Output parameters
@@ -91,8 +91,7 @@ module li_tracer_advection_fct
          dt                    !< [in] Timestep
 
       logical, intent(in) :: &
-         computeBudgets        !< [in] Flag to compute active tracer budgets
-
+         computeBudgets    !< [in] Flag to compute active tracer budgets
       !-----------------------------------------------------------------
       ! Local variables
       !-----------------------------------------------------------------
@@ -103,7 +102,7 @@ module li_tracer_advection_fct
          k,kmin, kmax, &! vert index variants
          kmin1, kmax1,    &! vert index variants
          iTracer,         &! tracer index
-         numTracers        ! total number of tracers
+         nTracers        ! total number of tracers
 
       real (kind=RKIND) ::  &
          signedFactor,      &! temp factor including flux sign
@@ -143,8 +142,6 @@ module li_tracer_advection_fct
 #ifdef _ADV_TIMERS
       call mpas_timer_start('allocates')
 #endif
-      ! Get dimensions
-      numTracers  = size(tracers,dim=1)
 
       ! allocate temporary arrays
       allocate(wgtTmp      (nVertLevels), &
@@ -231,7 +228,7 @@ module li_tracer_advection_fct
 #endif
 
       ! Loop over tracers. One tracer is advected at a time.
-      do iTracer = 1, numTracers
+      do iTracer = 1, nTracers
 
 #ifdef _ADV_TIMERS
         call mpas_timer_start('cell init')
