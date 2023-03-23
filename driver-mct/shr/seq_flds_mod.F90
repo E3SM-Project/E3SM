@@ -2155,9 +2155,7 @@ contains
        units    = ' '
        attname  = 'coszen_str'
        call metadata_set(attname, longname, stdname, units)
-    endif
 
-    if (rof_sed) then
        call seq_flds_add(l2x_fluxes,'Flrl_rofmud')
        call seq_flds_add(l2x_fluxes_to_rof,'Flrl_rofmud')
        call seq_flds_add(x2r_fluxes,'Flrl_rofmud')
@@ -2166,7 +2164,9 @@ contains
        units    = 'kg m-2 s-1'
        attname  = 'Flrl_rofmud'
        call metadata_set(attname, longname, stdname, units)
-    end if
+
+    endif
+
 	
     !-----------------------------
     ! rof->ocn (runoff) and rof->lnd (flooding)
