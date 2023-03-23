@@ -90,6 +90,8 @@ module li_tracer_advection_fct
       real (kind=RKIND), intent(in) :: &
          dt                    !< [in] Timestep
 
+      integer, intent(in) :: nTracers
+
       logical, intent(in) :: &
          computeBudgets    !< [in] Flag to compute active tracer budgets
       !-----------------------------------------------------------------
@@ -101,8 +103,7 @@ module li_tracer_advection_fct
          cell1, cell2,    &! neighbor cell indices
          k,kmin, kmax, &! vert index variants
          kmin1, kmax1,    &! vert index variants
-         iTracer,         &! tracer index
-         nTracers        ! total number of tracers
+         iTracer           ! tracer index
 
       real (kind=RKIND) ::  &
          signedFactor,      &! temp factor including flux sign

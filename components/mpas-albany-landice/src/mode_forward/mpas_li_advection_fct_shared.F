@@ -148,15 +148,19 @@ module li_tracer_advection_fct_shared
 
       ! calculate boundaryCell. A boundary cell is one that
       ! has at least one empty or non-dynamic neighbor
+      boundaryCell(:) = 0
       do iCell = 1, nCells
          do iNeighbor = 1, nEdgesOnCell(iCell)
             jCell = cellsOnCell(iNeighbor, iCell)
-            if (.not. li_mask_is_dynamic_ice(jCell)) then
-               boundaryCell(iCell) = 1.0_RKIND
+            if (.not. li_mask_is_dynamic_ice(cellMask(jCell))) then
+               boundaryCell(iCell) = 1
                exit ! no need to loop over more neigbors
             endif
          enddo
       enddo
+
+      call mpas_log_write('Marked $i boundary cells out of $i cells belonging to this processor', &
+                 intArgs=(/sum(boundaryCell(1:nCellsSolve)), nCellsSolve/))
 
       ! Compute masks and coefficients
       do iEdge = 1, nEdges
