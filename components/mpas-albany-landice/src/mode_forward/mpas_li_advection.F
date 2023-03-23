@@ -351,14 +351,6 @@ module li_advection
       ! define max number of advection cells as max number of edges*2
       nAdvCellsMax = maxEdges2
 
-      if ((trim(config_thickness_advection) .eq. 'fct') .or. &
-          (trim(config_tracer_advection) .eq. 'fct' ) ) then
-         allocate(tendLayerThickness(nVertLevels,nCells+1))
-         tendLayerThickness(:,:) = 0.0_RKIND
-         allocate(tend(nTracers,nVertLevels,nCells+1))
-         tend(:,:,:) = 0.0_RKIND
-      endif
-
       ! given the old thickness, compute the thickness in each layer
       call li_calculate_layerThickness(meshPool, thickness, layerThickness)
 
@@ -407,6 +399,14 @@ module li_advection
 
             advectedTracers(:,:,:) = 0.0_RKIND
 
+         endif
+
+         if ((trim(config_thickness_advection) .eq. 'fct') .or. &
+             (trim(config_tracer_advection) .eq. 'fct' ) ) then
+            allocate(tendLayerThickness(nVertLevels,nCells+1))
+            tendLayerThickness(:,:) = 0.0_RKIND
+            allocate(tend(nTracers,nVertLevels,nCells+1))
+            tend(:,:,:) = 0.0_RKIND
          endif
 
          ! Transport thickness and tracers using a first-order upwind scheme
