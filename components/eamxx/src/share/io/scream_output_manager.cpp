@@ -62,9 +62,14 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),
       "Error! The output control YAML file for " + m_casename + " is missing the sublist 'output_control'");
   auto& out_control_pl = m_params.sublist("output_control");
+  // Determine which timestamp to use a reference for output frequency.  Two options:
+  // 	1. use_case_as_start_reference: TRUE  - implies we want to calculate frequency from the beginning of the whole simulation, even if this is a restarted run.
+  // 	2. use_case_as_start_reference: FALSE - implies we want to base the frequency of output on when this particular simulation started.
+  // Note, (2) is needed for restarts since the restart frequency in CIME assumes a reference of when this run began.
+  const bool start_ref = out_control_pl.get<bool>("use_case_as_start_reference",!m_is_model_restart_output);
   m_output_control.frequency  = out_control_pl.get<int>("Frequency");
   m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
-  m_output_control.timestamp_of_last_write   = m_case_t0;
+  m_output_control.timestamp_of_last_write   = start_ref ? m_case_t0 : m_run_t0;
 
   // File specs
   m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",-1);
@@ -161,7 +166,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       // We can use the step counter in run_t0 to check at what point within an output interval
       // the previous simulation was stopped at.
       // NOTE: if you change the output frequency when you restart, this could lead to wonky behavior
-      m_output_control.nsamples_since_last_write = m_run_t0.get_num_steps() % m_output_control.frequency;
+      m_output_control.nsamples_since_last_write = m_run_t0.get_num_steps() % m_output_control.frequency; 
 
       if (has_restart_data) {
         using namespace scorpio;

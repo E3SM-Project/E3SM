@@ -80,6 +80,8 @@ struct IOControl {
       } else if (frequency_units == "nmonths" || frequency_units == "nyears") {
         // For months and years we need to be careful, can't just divide ts_diff by a set value.
         // First we make sure that if we are the same day of the month and at the same time of day.
+        // TODO: Potential bug, if the day of last write >=29 there is a chance that we won't write
+        //       in some subset of months, think Feb (28 days) and all of the months with only 30 days.
         if (ts.get_day() == timestamp_of_last_write.get_day() &&
             ts.sec_of_day() == timestamp_of_last_write.sec_of_day()) {
           auto diff = 0;
