@@ -210,7 +210,7 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
   use hybrid_mod, only : hybrid_t
   use time_manager, only: get_nstep
   use shr_const_mod, only: SHR_CONST_PI
-  use apply_iop_forcing_mod, only: advance_iop_forcing, advance_iop_nudging
+  use apply_iop_forcing_mod
 
   integer :: t1,t2,n,nets,nete,pp
   type (element_t)     , intent(inout), target :: elem(:)
@@ -227,8 +227,9 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
   real (kind=real_kind), dimension(np,np,nlev)  :: dp, exner, vtheta_dp, Rstar
   real (kind=real_kind), dimension(np,np,nlev) :: dpscm
   real (kind=real_kind) :: cp_star1, cp_star2, qval_t1, qval_t2, dt
-  real (kind=real_kind), dimension(nlev,pcnst) :: stateQin, q_update
+  real (kind=real_kind), dimension(nlev,pcnst) :: stateQ_in, q_update
   real (kind=real_kind), dimension(nlev) :: temp_tend, t_update, u_update, v_update
+  real (kind=real_kind), dimension(nlev) :: t_in, u_in, v_in
   real (kind=real_kind), dimension(nlev) :: relaxt, relaxq
   real (kind=real_kind), dimension(nlev) :: tdiff_dyn, qdiff_dyn
   real (kind=real_kind), dimension(npsq,nlev) :: tdiff_out, qdiff_out
@@ -288,7 +289,11 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
     do j=1,np_todo
       do i=1,np_todo
 
-        stateQin(:,:) = elem(ie)%state%Q(i,j,:,:)
+        ! Set initial profiles for current column
+        stateQ_in(:,:) = elem(ie)%state%Q(i,j,:,:)
+        t_in(:) = temperature(i,j,:)
+	u_in(:) = elem(ie)%state%v(i,j,1,:,t1)
+	v_in(:) = elem(ie)%state%v(i,j,2,:,t1)
 
         if (.not. use_3dfrc .or. dp_crm) then
           temp_tend(:) = 0.0_real_kind
@@ -305,12 +310,20 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
         endif
 #endif
 
+        ! Compute subsidence due to large-scale forcing if three-dimensional
+        !  forcing is not provided in the IOP forcing file and running in
+        !  doubly periodic CRM mode.  This does not need to be done for SCM.
+        if (dp_crm .and. iop_dosubsidence) then
+          call advance_iop_subsidence(dt,elem(ie)%state%ps_v(i,j,t1),& ! In
+          u_in,v_in,t_in,stateQ_in,&                                   ! In
+          u_in,v_in,t_in,stateQ_in)                                    ! Out
+	endif
+
         ! Call the main subroutine to update t, q, u, and v according to
         !  large scale forcing as specified in IOP file.
-        call advance_iop_forcing(elem(ie)%state%ps_v(i,j,t1),&        ! In
-          elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,2,:,t1),& ! In
-          temperature(i,j,:),stateQin(:,:),dt,temp_tend,&             ! In
-          t_update,q_update,u_update,v_update)                        ! Out
+        call advance_iop_forcing(dt,elem(ie)%state%ps_v(i,j,t1),& ! In
+          u_in,v_in,t_in,stateQ_in,temp_tend,&                     ! In
+          u_update,v_update,t_update,q_update)                    ! Out
 
         ! Nudge to observations if desired, for T & Q only if in SCM mode
         if (iop_nudge_tq .and. .not. scm_multcols) then

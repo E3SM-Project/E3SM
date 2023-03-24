@@ -12,32 +12,30 @@ implicit none
 
 public advance_iop_forcing
 public advance_iop_nudging
+public advance_iop_subsidence
 
 !=========================================================================
 contains
 !=========================================================================
 
-subroutine advance_iop_forcing(ps_in, u_in, v_in, &         ! In
-                    t_in, q_in, scm_dt, t_phys_frc,&        ! In
-                    t_update, q_update, u_update, v_update) ! Out
+subroutine advance_iop_forcing(scm_dt, ps_in, &             ! In
+                    u_in, v_in, t_in, q_in, t_phys_frc,&    ! In
+                    u_update, v_update, t_update, q_update) ! Out
 
-!----------------------------------------------------------------------- 
-! 
-! Purpose: 
+!-----------------------------------------------------------------------
+!
+! Purpose:
 ! Apply large scale forcing for t, q, u, and v as provided by the
 !   case IOP forcing file.
-! 
-! Author: 
+!
+! Author:
 ! Original version: Adopted from CAM3.5/CAM5
 ! Updated version for E3SM: Peter Bogenschutz (bogenschutz1@llnl.gov)
-!  and replaces the Forecast.F90 routine in CAM3.5/CAM5/CAM6/E3SMv1/E3SMv2
+!  and replaces the forecast.F90 routine in CAM3.5/CAM5/CAM6/E3SMv1/E3SMv2
 !
 !-----------------------------------------------------------------------
 
-  implicit none
-
   ! Input arguments
-
   real(r8), intent(in) :: ps_in             ! surface pressure [Pa]
   real(r8), intent(in) :: u_in(plev)        ! zonal wind [m/s]
   real(r8), intent(in) :: v_in(plev)        ! meridional wind [m/s]
@@ -53,7 +51,6 @@ subroutine advance_iop_forcing(ps_in, u_in, v_in, &         ! In
   real(r8), intent(out) :: v_update(plev)      ! updated meridional wind [m/s]
 
   ! Local variables
-
   real(r8) pmidm1(plev)  ! pressure at model levels
   real(r8) pintm1(plevp) ! pressure at model interfaces
   real(r8) pdelm1(plev)  ! pdel(k)   = pint  (k+1)-pint  (k)
@@ -72,7 +69,7 @@ subroutine advance_iop_forcing(ps_in, u_in, v_in, &         ! In
   real(r8) relaxt(plev)
   real(r8) relaxq(plev)
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! Perform weight averaged in pressure of the omega profile to get from
   !   the midpoint grid to the interface grid
 
@@ -88,7 +85,7 @@ subroutine advance_iop_forcing(ps_in, u_in, v_in, &         ! In
 
   wfldint(plevp) = 0.0_r8
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  Advance T and Q due to large scale forcing
 
   if (use_3dfrc) then
@@ -106,18 +103,18 @@ subroutine advance_iop_forcing(ps_in, u_in, v_in, &         ! In
     t_expan = 0._r8
 #ifndef MODEL_THETA_L
     ! this term is already taken into account through
-    !  LS vertical advection in theta-l dycore  
-    if (.not. use_3dfrc) then 
+    !  LS vertical advection in theta-l dycore
+    if (.not. use_3dfrc) then
       t_expan = scm_dt*wfld(k)*t_in(k)*rair/(cpair*pmidm1(k))
     endif
-#endif  
+#endif
     t_update(k) = t_in(k) + t_expan + scm_dt*(t_phys_frc(k) + t_lsf(k))
     do m=1,pcnst
       q_update(k,m) = q_in(k,m) + scm_dt*q_lsf(k,m)
     end do
   enddo
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  Set U and V fields
 
   if (have_v .and. have_u .and. .not. dp_crm) then
@@ -139,12 +136,13 @@ end subroutine advance_iop_forcing
 subroutine advance_iop_nudging(scm_dt, ps_in, t_in, q_in, &       ! In
                              t_update, q_update, relaxt, relaxq ) ! Out
 
-!----------------------------------------------------------------------- 
-! 
-! Purpose: 
+!-----------------------------------------------------------------------
+!
+! Purpose:
 ! Option to nudge t and q to observations as specified by the IOP file
 !-----------------------------------------------------------------------
 
+  ! Input arguments
   real(r8), intent(in) :: scm_dt           ! model time step [s]
   real(r8), intent(in) :: ps_in            ! surface pressure [Pa]
   real(r8), intent(in) :: t_in(plev)       ! temperature [K]
@@ -191,6 +189,102 @@ subroutine advance_iop_nudging(scm_dt, ps_in, t_in, q_in, &       ! In
   end do
 
 end subroutine advance_iop_nudging
+
+!=========================================================================
+
+subroutine advance_iop_subsidence(scm_dt, ps_in, &                    ! In
+                             u_in, v_in, t_in, q_in, &                ! In
+                             u_update, v_update, t_update, q_update ) ! Out
+
+!-----------------------------------------------------------------------
+!
+! Purpose:
+! Option to nudge t and q to observations as specified by the IOP file
+!-----------------------------------------------------------------------
+
+  ! Input arguments
+  real(r8), intent(in) :: scm_dt           ! model time step [s]
+  real(r8), intent(in) :: ps_in            ! surface pressure [Pa]
+  real(r8), intent(in) :: u_in(plev)       ! zonal wind [m/s]
+  real(r8), intent(in) :: v_in(plev)       ! meridional wind [m/s]
+  real(r8), intent(in) :: t_in(plev)       ! temperature [K]
+  real(r8), intent(in) :: q_in(plev,pcnst) ! tracer [vary]
+
+  ! Output arguments
+  real(r8), intent(out) :: u_update(plev)      ! zonal wind [m/s]
+  real(r8), intent(out) :: v_update(plev)      ! meridional wind [m/s]
+  real(r8), intent(out) :: t_update(plev)      ! temperature [m/s]
+  real(r8), intent(out) :: q_update(plev,pcnst)! tracer [vary]
+
+  ! Local variables
+  integer :: k, m, nlon
+  real(r8) :: fac, weight
+  real(r8) :: wfldint(plevp)
+  real(r8) pmidm1(plev)  ! pressure at model levels
+  real(r8) pintm1(plevp) ! pressure at model interfaces
+  real(r8) pdelm1(plev)  ! pdel(k)   = pint  (k+1)-pint  (k)
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! Perform weight averaged in pressure of the omega profile to get from
+  !   the midpoint grid to the interface grid
+
+  nlon = 1 ! number of columns for plevs0 routine
+  call plevs0(nlon, plon, plev, ps_in, pintm1, pmidm1, pdelm1)
+
+  wfldint(1) = 0.0_r8
+
+  do k=2,plev
+     weight = (pintm1(k) - pmidm1(k-1))/(pmidm1(k) - pmidm1(k-1))
+     wfldint(k) = (1.0_r8 - weight)*wfld(k-1) + weight*wfld(k)
+  end do
+
+  wfldint(plevp) = 0.0_r8
+
+  do k=2,plev-1
+    fac = scm_dt/(2.0_r8*pdelm1(k))
+    u_update(k) = u_in(k) &
+      - fac*(wfldint(k+1)*(u_in(k+1) - u_in(k)) &
+      + wfldint(k)*(u_in(k) - u_in(k-1)))
+    v_update(k) = v_in(k) &
+      - fac*(wfldint(k+1)*(v_in(k+1) - v_in(k)) &
+      + wfldint(k)*(v_in(k) - v_in(k-1)))
+    t_update(k) = t_in(k) &
+      - fac*(wfldint(k+1)*(t_in(k+1) - t_in(k)) &
+      + wfldint(k)*(t_in(k) - t_in(k-1)))
+
+    do m=1,pcnst
+      q_update(k,m) = q_update(k,m) &
+        - fac*(wfldint(k+1) * (q_update(k+1,m) - q_update(k,m)) &
+        + wfldint(k)*(q_update(k,m) - q_update(k-1,m)))
+    enddo
+  enddo
+
+  ! Top and bottom levels next
+  k = 1
+  fac = scm_dt/(2.0_r8*pdelm1(k))
+  u_update(k) = u_in(k) - fac*(wfldint(k+1)*(u_in(k+1) - u_in(k)))
+  v_update(k) = v_in(k) - fac*(wfldint(k+1)*(v_in(k+1) - v_in(k)))
+  t_update(k) = t_in(k) - fac*(wfldint(k+1)*(t_in(k+1) - t_in(k)))
+  do m=1,pcnst
+    q_update(k,m) = q_in(k,m) - fac*(wfldint(k+1)*(q_in(k+1,m) - q_in(k,m)))
+  enddo
+
+  ! Top and bottom levels next
+  k = 1
+  fac = scm_dt/(2.0_r8*pdelm1(plev))
+  u_update(k) = u_in(k) - fac*(wfldint(k)*(u_in(k) - u_in(k+1)))
+  v_update(k) = v_in(k) - fac*(wfldint(k)*(v_in(k) - v_in(k+1)))
+  t_update(k) = t_in(k) - fac*(wfldint(k)*(t_in(k) - t_in(k+1)))
+  do m=1,pcnst
+    q_update(k,m) = q_in(k,m) - fac*(wfldint(k)*(q_in(k,m) - q_in(k+1,m)))
+  enddo
+
+  ! thermal expansion term due to LS vertical advection
+  do k=1,plev
+    t_update(k) = t_update(k) + scm_dt*wfld(k)*t_in(k)*rair/(cpair*pmidm1(k))
+  enddo
+
+end subroutine advance_iop_subsidence
 
 !
 !-----------------------------------------------------------------------
