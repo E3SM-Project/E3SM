@@ -479,8 +479,9 @@ module li_advection
                   tend, advectedTracers, layerThicknessOld, &
                   layerThicknessEdge * layerNormalVelocity, 0 * normalVelocity, dt,    &
                   nTracers, computeBudgets=.false.)
-             ! layerThickness is last tracer.
-             layerThickness(:,:) = layerThickness(:,:) + tend(nTracers,:,:) * dt
+             !layerThickness is last tracer.
+             layerThickness(:,:) = advectedTracers(nTracers,:,:)
+             !layerThickness(:,:) = layerThickness(:,:) + tend(nTracers,:,:) * dt
          endif
 
          if (config_print_thickness_advection_info) then
@@ -1246,7 +1247,7 @@ module li_advection
          iTracer = iTracer + 1
 
          ! copy 2d thickness to all vertical levels in the tracer array
-         advectedTracers(iTracer,:,:) = 1.0_RKIND
+         advectedTracers(iTracer,:,:) = layerThickness(:,:) !1.0_RKIND
          surfaceTracers(iTracer,:) = 0.0_RKIND
          basalTracers(iTracer,:) = 0.0_RKIND
 
