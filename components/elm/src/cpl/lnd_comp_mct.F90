@@ -994,9 +994,9 @@ contains
         ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to create aream tag ')
-        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to set aream tag ')
+        ! ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
+        ! if (ierr > 0 )  &
+        !   call endrun('Error: fail to set aream tag ')
 
         deallocate(moabconn)
         ! use merge vertices new imoab method to fix cells
@@ -1095,9 +1095,9 @@ contains
         ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to create aream tag ')
-        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
-        if (ierr > 0 )  &
-          call endrun('Error: fail to set aream tag ')
+        ! ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
+        ! if (ierr > 0 )  &
+        !   call endrun('Error: fail to set aream tag ')
         ierr = iMOAB_UpdateMeshInfo( mlnid )
         if (ierr > 0 )  &
           call endrun('Error: fail to update mesh info ')

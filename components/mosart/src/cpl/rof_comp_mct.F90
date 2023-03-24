@@ -1031,9 +1031,9 @@ contains
 
     tagname='aream'//C_NULL_CHAR
 
-    ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, coords)
-    if (ierr > 0 )  &
-      call shr_sys_abort(sub//' Error: fail to set aream tag ')
+   !  ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, coords)
+   !  if (ierr > 0 )  &
+   !    call shr_sys_abort(sub//' Error: fail to set aream tag ')
 
     ierr = iMOAB_UpdateMeshInfo ( mrofid )
     if (ierr > 0 )  &

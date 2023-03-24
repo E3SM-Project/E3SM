@@ -1255,10 +1255,11 @@ CONTAINS
     if (ierr > 0 )  &
       call endrun('Error: fail to set area tag ')
 
-    tagname='aream'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, areavals)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to set aream tag ')
+      ! comment this out now
+   !  tagname='aream'//C_NULL_CHAR
+   !  ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, areavals)
+   !  if (ierr > 0 )  &
+   !    call endrun('Error: fail to set aream tag ')
 
     areavals = 1._r8 ! double
     tagname='mask'//C_NULL_CHAR
