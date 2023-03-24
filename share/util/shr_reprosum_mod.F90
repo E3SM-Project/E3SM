@@ -1519,7 +1519,7 @@ module shr_reprosum_mod
 !     1. All other levels are now less than or equal to
 !     (radix(1_i8)**arr_max_shift) in absolute value rather than
 !     strictly less than. 
-           ilevel = 0
+           ilevel = min_level
            do while ((i8_arr_gsum_level(ioffset+ilevel) == 0_i8) &
                      .and. (ilevel < max_levels(ifld)))
              ilevel = ilevel + 1
@@ -1549,7 +1549,7 @@ module shr_reprosum_mod
                         - max_levels(ifld)*arr_max_shift
             curr_exp = 0
             first = .true.
-            do ilevel=max_levels(ifld),0,-1
+            do ilevel=max_levels(ifld),min_level,-1
 
                if (i8_arr_gsum_level(ioffset+ilevel) /= 0_i8) then
                   jlevel = 1
@@ -1614,7 +1614,7 @@ module shr_reprosum_mod
 ! Find first nonzero level and use exponent for this level, then assume all
 ! subsequent levels contribute arr_max_shift digits.
                   sum_digits = 0
-                  do ilevel=0,max_levels(ifld)
+                  do ilevel=min_level,max_levels(ifld)
                      if (sum_digits == 0) then
                         if (i8_arr_gsum_level(ioffset+ilevel) /= 0_i8) then
                            X_8(1) = i8_arr_gsum_level(ioffset+ilevel)
