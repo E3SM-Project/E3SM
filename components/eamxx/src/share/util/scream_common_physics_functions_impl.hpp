@@ -269,10 +269,6 @@ void PhysicsFunctions<DeviceT>::calculate_wetmmr_from_drymmr(const MemberType& t
                        });
 }
 
-
-
-///////////////////////////////////////////////////////////////new code begin
-
 template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
@@ -297,11 +293,6 @@ void PhysicsFunctions<DeviceT>::calculate_wetmmr_from_drymmr_dp_based(const Memb
                          wetmmr(k) = calculate_wetmmr_from_drymmr_dp_based(drymmr(k),pseudo_density(k),pseudo_density_dry(k));
                        });
 }
-
-/////////////////////////////////////////////////////////////////new code end
-
-
-
 
 template<typename DeviceT>
 template<typename ScalarT>
