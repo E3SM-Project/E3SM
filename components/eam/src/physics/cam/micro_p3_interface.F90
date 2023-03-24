@@ -1011,8 +1011,7 @@ end subroutine micro_p3_readnl
     ! This would take a bit more work, so we have decided to delay this task
     ! until a later stage of code cleanup.
 
-!OG REDO
-    inv_exner(:ncol,:pver) = 1._rtype/((state%pmiddry(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
+    inv_exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
     do icol = 1,ncol
        do k = 1,pver
           ! Note, there is a state%zi variable that could be used to calculate
@@ -1022,7 +1021,7 @@ end subroutine micro_p3_readnl
 
 !OG REDO
           T_virtual  = state%t(icol,k) * (1.0 + qv_dry(icol,k)*(1.0*mwdry/mwh2o - 1.0))
-          dz(icol,k) = (rair/gravit) * state%pdeldry(icol,k) * T_virtual / state%pmiddry(icol,k) 
+          dz(icol,k) = (state%zi(icol,k) - state%zi(icol,k+1))/gravit
           th(icol,k) = state%t(icol,k)*inv_exner(icol,k) 
        end do
     end do
@@ -1032,7 +1031,7 @@ end subroutine micro_p3_readnl
     kts     = 1
     kte     = pver
 
-!OG REDO?
+!OG do we want dry or wet pressure here?
     pres    = state%pmiddry(:,:)
     ! Initialize the raidation dependent variables.
     mu      = 0.0_rtype !mucon

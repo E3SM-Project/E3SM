@@ -74,7 +74,7 @@ public:
         const Spack& pseudo_density_pack(pseudo_density(icol,ipack));
         const Spack& pseudo_density_dry_pack(pseudo_density_dry(icol,ipack));
 
-        //there is only one dz, computed from full pressure
+        //compute dz from full pressure
         dz(icol,ipack) = PF::calculate_dz(pseudo_density_pack, pmid_pack, T_atm_pack, qv(icol,ipack));
 
         /*----------------------------------------------------------------------------------------------------------------------
@@ -99,13 +99,10 @@ public:
         //Water vapor from previous time step
         qv_prev(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(qv_prev(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);
 
-        //use pack
-        //dz(icol,ipack) = PF::calculate_dz(pseudo_density_dry(icol,ipack), pmid_pack, T_atm_pack, qv(icol,ipack));
-
-        // Exner from full pressure?
+        // Exner from full pressure
         const auto& exner = PF::exner_function(pmid_pack);
         inv_exner(icol,ipack) = 1.0/exner;
-        // Potential temperature, from full pressure?
+        // Potential temperature, from full pressure
         th_atm(icol,ipack) = PF::calculate_theta_from_T(T_atm_pack,pmid_pack);
         // Cloud fraction
         // Set minimum cloud fraction - avoids division by zero
