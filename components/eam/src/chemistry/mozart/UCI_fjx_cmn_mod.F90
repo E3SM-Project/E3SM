@@ -12,8 +12,8 @@
       integer  NWBIN, NSBIN     ! dimensions of readin spec - NWBIN can zero out strat-wavels
 !-------------basic vertical grid----------these can be changed as needed, needed for dimensions
       integer, parameter :: &  !  these must e set to exact atmospheric dimensions
-            LPAR = 72,      &  !  # layers in model (one layer is added to go to ZTOP+ZZHT)
-            LWEPAR = 72 !47    !  # layers that have clouds (LWEtPAR < LPAR)
+            LPAR = PLEV,      &  !  # layers in model (one layer is added to go to ZTOP+ZZHT)
+            LWEPAR = PLEV !47    !  # layers that have clouds (LWEtPAR < LPAR)
       integer, parameter :: L_ = LPAR, L1_=L_+1, L2_ = L_+2
 !  L_ = # of CTM layers, L1_=L_+1 = # of CTM layer edges (radii)
 !  L2_ = L_+2 = total # of layer edges counting top (TAU=0)
