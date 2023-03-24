@@ -446,6 +446,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <tstep_type>9</tstep_type>
     <vert_remap_q_alg>10</vert_remap_q_alg>
     <transport_alg>0</transport_alg>
+    <vtheta_thresh>100.0</vtheta_thresh>
     <!-- pg2 settings -->
     <cubed_sphere_map hgrid=".*pg2">2</cubed_sphere_map>
     <!-- SL transport settings. SL defaults to on for pg2 configs. -->
