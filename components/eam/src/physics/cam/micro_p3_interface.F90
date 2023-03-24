@@ -1019,8 +1019,7 @@ end subroutine micro_p3_readnl
           ! P3 is using dry MMR we instead calculated dz using virtual
           ! temperature and pressure.
 
-!OG REDO
-          T_virtual  = state%t(icol,k) * (1.0 + qv_dry(icol,k)*(1.0*mwdry/mwh2o - 1.0))
+          T_virtual  = state%t(icol,k) * (1.0 + state%q(icol,k,1)*(mwdry/mwh2o - 1.0))
           dz(icol,k) = (state%zi(icol,k) - state%zi(icol,k+1))/gravit
           th(icol,k) = state%t(icol,k)*inv_exner(icol,k) 
        end do
