@@ -180,18 +180,36 @@ struct PhysicsFunctions
   KOKKOS_INLINE_FUNCTION
   static ScalarT calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv_dry);
 
+  //-----------------------------------------------------------------------------------------------//
+  // Computes drymmr (mass of a constituent divided by mass of dry air)
+  // for any wetmmr constituent (mass of a constituent divided by mass of wet air;
+  // commonly known as mixing ratio) using dry and wet pseudodensities
+  //   drymmr = wetmmr * pdel / pdeldry
+  // where
+  //   wetmmr             is the wet mass mixing ratio of a species
+  //   pseudo_density     is wet pseudodensity (pdel)
+  //   pseudo_density_dry is dry pseudodensity (pdeldry)
+  //-----------------------------------------------------------------------------------------------//
 
- 
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
   static ScalarT calculate_drymmr_from_wetmmr_dp_based(const ScalarT& wetmmr, 
                                                        const ScalarT& pseudo_density, const ScalarT& pseudo_density_dry);
 
+  //-----------------------------------------------------------------------------------------------//
+  // Computes wetmmr (mass of a constituent divided by mass of wet air)
+  // for any drymmr constituent (mass of a constituent divided by mass of dry air;
+  // commonly known as mixing ratio) using dry and wet pseudodensities
+  //   wetmmr = drymmr * pdeldry / pdelwet
+  // where
+  //   drymmr             is the dry mass mixing ratio of a species
+  //   pseudo_density     is wet pseudodensity (pdel)
+  //   pseudo_density_dry is dry pseudodensity (pdeldry)
+  //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
   static ScalarT calculate_wetmmr_from_drymmr_dp_based(const ScalarT& drymmr,
                                                        const ScalarT& pseudo_density, const ScalarT& pseudo_density_dry);
-
 
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer thickness using the equation of state:
