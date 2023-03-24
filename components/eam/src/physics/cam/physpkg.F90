@@ -1482,7 +1482,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use ionosphere,         only: ionos_intr ! WACCM-X ionosphere
     use tracers,            only: tracers_timestep_tend
     use aoa_tracers,        only: aoa_tracers_timestep_tend
-    use physconst,          only: rhoh2o, latvap,latice, rga
+    use physconst,          only: rhoh2o, latvap,latice, rga, gravit
     use aero_model,         only: aero_model_drydep
     use check_energy,       only: check_energy_chng, check_water, & 
                                   check_prect, check_qflx , &
@@ -1578,6 +1578,10 @@ subroutine tphysac (ztodt,   cam_in,  &
     logical :: l_gw_drag
     logical :: l_ac_energy_chk
 
+
+    real(r8) :: cc,mm,qq,pp,adjust
+
+
     !
     !-----------------------------------------------------------------------
     !
@@ -1647,6 +1651,27 @@ end if ! l_tracer_aero
     nstep = get_nstep()
     call check_tracers_init(state, tracerint)
 
+
+
+!save TE before physstep
+call check_energy_chng(state, tend, "assign_te_before_physstep", nstep, ztodt, zero, zero, zero, zero)
+
+state%te_before_physstep(:ncol)=state%te_cur(:ncol)
+!save water mass here
+state%tw_before(:ncol) = state%tw_cur(:ncol)
+!since QFLX is potentially modified below, save unmodified value is delta var temporarily
+!POTENTIALLY we also need to save SHF
+!introduce a new var as our old vars are all used in gmean
+state%cflx_raw(:ncol) = cam_in%cflx(:ncol,1)
+
+
+
+
+
+
+
+
+
 !!== KZ_WCON
 
     call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
@@ -1665,6 +1690,12 @@ end if ! l_tracer_aero
     call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
 
 !!== KZ_WCON
+
+
+state%cflx_new(:ncol) = cam_in%cflx(:ncol,1)
+
+
+
 
     call t_stopf('tphysac_init')
 
@@ -2796,10 +2827,69 @@ end if ! l_rad
     call tropopause_output(state)
     call t_stopf('tropopause')
 
+!save water after
+state%tw_after(:ncol) = state%tw_cur(:ncol)
+
+
+
+
     ! Save atmospheric fields to force surface models
     call t_startf('cam_export')
     call cam_export (state,cam_out,pbuf)
     call t_stopf('cam_export')
+
+
+!now fluxes: cflx(1) is kg/m2/sec
+!      cam_out%precc (i) = prec_dp(i)  + prec_sh(i)
+!      cam_out%precl (i) = prec_sed(i) + prec_pcw(i)
+!      cam_out%precsc(i) = snow_dp(i)  + snow_sh(i)
+!      cam_out%precsl(i) = snow_sed(i) + snow_pcw(i)
+! units [qflx] = [liquid water]
+! [1000.0  *( cam_out%precc(1:ncol)+cam_out%precl(1:ncol) - cam_out%precsc(1:ncol) - cam_out%precsl(1:ncol) ) )]
+
+
+!this is going to be after-before
+!cflx_raw contains unmodified by qneg4 or mass fixers value
+!this is the one to use with qneg?
+!NO mistake -- change in mass from qneg should be accounted separately!
+!state%deltaw_flux(:ncol) = state%cflx_raw(:ncol)
+
+state%deltaw_flux(:ncol) = state%cflx_raw(:ncol)
+
+state%deltaw_flux(:ncol) = state%deltaw_flux(:ncol) - &
+1000.0*(cam_out%precc(:ncol)+cam_out%precl(:ncol))
+
+state%deltaw_flux(:ncol) = state%deltaw_flux(:ncol) * ztodt
+
+state%deltaw_step(:ncol) = state%tw_after(:ncol) - state%tw_before(:ncol)
+
+
+!!!!!!!!!!!! NOTE THAT momentum fluxes from surf stresses most likely are not energetically 
+!!!!!!!!!!!! conserving and there is no contribution for them in cam_in%shf, 
+!!!!!!!!!!!! so a small leak/sink of energy is expected
+
+    !!!! now after cam_export      cam_out%precc , cam_out%precl are ready -- liquid+ice
+    !!!! and cam_out%precsc, cam_out%precsl -- only ice
+
+    !!!! compute net energy budget here
+    !!!! expected TE2 - TE1 = restom - ressurf
+    !    for TE2-TE1 we will use te_cur - te_before_physstep
+    !    for restom - ressurf we will use fluxes to/from atm following AMWG energy scripts
+
+    !my guess is that precc etc are fluxes, since CG script uses them like fluxes and
+    !they are called rates in cam exchange
+
+!here we use cflx and shf as after qneg4
+
+    state%delta_te(1:ncol)=state%te_cur(1:ncol)-state%te_before_physstep(:ncol)
+    state%rr(1:ncol) =                         &
+       ( fsnt(1:ncol) - flnt(1:ncol) )                    &
+     - ( fsns(1:ncol) - flns(1:ncol) - cam_in%shf(1:ncol) &
+     -        (latvap+latice)*cam_in%cflx(:ncol,1)        &
+     + 1000.0* latice        *( cam_out%precc(1:ncol)+cam_out%precl(1:ncol) - cam_out%precsc(1:ncol) - cam_out%precsl(1:ncol) ) )
+
+
+
 
     ! Write export state to history file
     call t_startf('diag_export')
