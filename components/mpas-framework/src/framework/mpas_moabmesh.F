@@ -138,9 +138,9 @@ module mpas_moabmesh
        enddo
        allocate(moab_vert_coords(3*currentVertex))
        do i1 =1, currentVertex
-         moab_vert_coords(3*i1-2) = xVertex(invMap(i1))
-         moab_vert_coords(3*i1-1) = yVertex(invMap(i1))
-         moab_vert_coords(3*i1  ) = zVertex(invMap(i1))
+         moab_vert_coords(3*i1-2) = xVertex(invMap(i1))/sphere_radius
+         moab_vert_coords(3*i1-1) = yVertex(invMap(i1))/sphere_radius
+         moab_vert_coords(3*i1  ) = zVertex(invMap(i1))/sphere_radius
          ! call mpas_log_write('i:: $i coords:: $r $r $r $r', intArgs=(/i1/), realArgs=(/moab_vert_coords(3*i1-2),moab_vert_coords(3*i1-1), moab_vert_coords(3*i1)/) )
        enddo
        dimcoord = 3*currentVertex
@@ -199,10 +199,12 @@ module mpas_moabmesh
        if (ierr > 0 )  &
           call errorout(ierr,'Error: fail to set area tag ')
 
-       tagname='aream'//C_NULL_CHAR
-       ierr = iMOAB_SetDoubleTagStorage ( pid, tagname, nCellsSolve , ent_type, data)
-       if (ierr > 0 )  &
-          call errorout(ierr,'Error: fail to set aream tag ')
+       ! set it to the same area, but change it eventually with the area from mapping routing (tempestremap for MOAB)
+       ! comment it 
+       ! tagname='aream'//C_NULL_CHAR
+       ! ierr = iMOAB_SetDoubleTagStorage ( pid, tagname, nCellsSolve , ent_type, data)
+       ! if (ierr > 0 )  &
+       !    call errorout(ierr,'Error: fail to set aream tag ')
 
        deallocate (moab_vert_coords)
        deallocate (data)
