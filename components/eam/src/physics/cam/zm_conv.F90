@@ -43,11 +43,11 @@ module zm_conv
   public trig_ull_only            ! true if to ULL along with default CAPE-based trigger
   public buoyan_dilute            ! subroutine that calculates CAPE
   public zm_microp                ! true for convective microphysics
-  public MCSP
-  public MCSP_heat_coeff
-  public MCSP_moisture_coeff
-  public MCSP_uwind_coeff
-  public MCSP_vwind_coeff
+  public MCSP                     ! true if running MCSP
+  public MCSP_heat_coeff          ! MCSP coefficient setting degree of dry static energy transport
+  public MCSP_moisture_coeff      ! MCSP coefficient setting degree of moisture transport
+  public MCSP_uwind_coeff         ! MCSP coefficient setting degree of zonal wind transport
+  public MCSP_vwind_coeff         ! MCSP coefficient setting degree of meridional wind transport
 
 !
 ! PUBLIC: data
@@ -127,7 +127,7 @@ module zm_conv
    
    integer,protected ::  limcnv   ! top interface level limit for convection
 
-   real(r8) :: tp_fac = unset_r8  ! PMA tunes tpert
+   real(r8) :: tp_fac = unset_r8  
    real(r8) :: auto_fac = unset_r8
    real(r8) :: accr_fac = unset_r8
    real(r8) :: micro_dcs= unset_r8
@@ -1237,7 +1237,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
                maxg    ,j0      ,jd      ,rl      ,lengath , &
                rgas    ,grav    ,cpres   ,msg     , &
                pflxg   ,evpg    ,cug     ,rprdg   ,limcnv  , &
-               landfracg, tpertg, &             !PMA adds tpert to the calculation
+               landfracg, tpertg, &  
                aero    ,qhat ,lambdadpcug,mudpcug ,sprdg   ,frzg ,  &
                qldeg   ,qideg   ,qsdeg   ,ncdeg   ,nideg   ,nsdeg,  &
                dsfmg   ,dsfng   ,loc_microp_st )   
@@ -3535,7 +3535,7 @@ subroutine cldprp(lchnk   , &
              hu(i,k) = hmn(i,mx(i)) + cp*tiedke_add 
              su(i,k) = s(i,mx(i)) + tiedke_add
            else
-             hu(i,k) = hmn(i,mx(i)) + cp*(tiedke_add+tp_fac*tpertg(i)) !PMA
+             hu(i,k) = hmn(i,mx(i)) + cp*(tiedke_add+tp_fac*tpertg(i)) 
              su(i,k) = s(i,mx(i)) + tiedke_add+tp_fac*tpertg(i)
            end if
          end if
