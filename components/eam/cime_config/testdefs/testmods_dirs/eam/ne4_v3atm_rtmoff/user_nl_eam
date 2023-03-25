@@ -1,7 +1,7 @@
 ! The settings needed for chemUCI-Linozv3 in v3atm's 4th full smoke test
 ! This is to ease testing with F20TR_chemUCI-Linozv3
 
- ncdata = '$DIN_LOC_ROOT/atm/cam/inic/homme/20220906.v2.LR.bi-grid.amip.chemUCI_Linozv3.eam.i.2000-01-01-00000.mapped_to_ne4np4.nc
+ ncdata = '$DIN_LOC_ROOT/atm/cam/inic/homme/20220906.v2.LR.bi-grid.amip.chemUCI_Linozv3.eam.i.2000-01-01-00000.mapped_to_ne4np4.nc'
  tropopause_e90_thrd    = 80.0e-9
  history_gaschmbudget_2D = .false.
  history_gaschmbudget_2D_levels = .false.
