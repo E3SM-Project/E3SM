@@ -164,12 +164,12 @@ subroutine micro_p3_readnl(nlfile)
      write(iulog,'(A50)') ' ----- P3 Namelist Values: -----'
      write(iulog,'(A29,1x,A19)')  'micro_p3_tableversion: ',   micro_p3_tableversion
      write(iulog,'(A20,1x,A100)') 'micro_p3_lookup_dir: ',     micro_p3_lookup_dir
-     write(iulog,'(A30,1x,L)')    'micro_aerosolactivation: ', micro_aerosolactivation
-     write(iulog,'(A30,1x,L)')    'micro_subgrid_cloud: ',     micro_subgrid_cloud
-     write(iulog,'(A30,1x,L)')    'micro_tend_output: ',       micro_tend_output
+     write(iulog,'(A30,1x,L1)')    'micro_aerosolactivation: ', micro_aerosolactivation
+     write(iulog,'(A30,1x,L1)')    'micro_subgrid_cloud: ',     micro_subgrid_cloud
+     write(iulog,'(A30,1x,L1)')    'micro_tend_output: ',       micro_tend_output
      write(iulog,'(A30,1x,8e12.4)') 'p3_qc_autocon_expon',        p3_qc_autocon_expon
      write(iulog,'(A30,1x,8e12.4)') 'p3_qc_accret_expon',         p3_qc_accret_expon
-     write(iulog,'(A30,1x,L)')    'do_prescribed_CCN: ',       do_prescribed_CCN
+     write(iulog,'(A30,1x,L1)')    'do_prescribed_CCN: ',       do_prescribed_CCN
 
   end if
 
