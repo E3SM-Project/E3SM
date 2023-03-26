@@ -475,7 +475,7 @@ CONTAINS
                   else if (rssun(pi) == 0._r8 .and. rssha(pi) > 0._r8) then
                      rs = rssha(pi)*(1._r8-fsun(pi))
                   else
-                     rs = 0._r8
+                     rs = 1.e36_r8
                   endif
 
                   if (rs==0._r8) then ! fvitt -- what to do when rs is zero ???
