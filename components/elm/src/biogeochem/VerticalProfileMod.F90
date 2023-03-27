@@ -249,19 +249,33 @@ contains
                rootfr_tot = rootfr_tot + col_cinput_rootfr(c,j) * dzsoi_decomp(j)
                surface_prof_tot = surface_prof_tot + surface_prof(j) * dzsoi_decomp(j)
             end do
-            if ( (altmax_lastyear_indx(c) > 0) .and. (rootfr_tot > 0._r8) .and. (surface_prof_tot > 0._r8) ) then
-               do j = 1,  min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
-                  nfixation_prof(c,j) = col_cinput_rootfr(c,j) / rootfr_tot
-                  if (j <= nlevbed) then
+            if(col_pp%is_fates(c))then
+               if ( (altmax_lastyear_indx(c) > 0) .and. (surface_prof_tot > 0._r8) ) then
+                  do j = 1,min(alt_ind, nlevbed)
+                     nfixation_prof(c,j) = surface_prof(j)/ surface_prof_tot
                      ndep_prof(c,j) = surface_prof(j)/ surface_prof_tot
                      pdep_prof(c,j) = surface_prof(j)/ surface_prof_tot
-                  end if
-               end do
+                  end do
+               else
+                  nfixation_prof(c,1) = 1./dzsoi_decomp(1)
+                  ndep_prof(c,1) = 1./dzsoi_decomp(1)
+                  pdep_prof(c,1) = 1./dzsoi_decomp(1)
+               endif
             else
-               nfixation_prof(c,1) = 1./dzsoi_decomp(1)
-               ndep_prof(c,1) = 1./dzsoi_decomp(1)
-               pdep_prof(c,1) = 1./dzsoi_decomp(1) 
-            endif
+               if ( (altmax_lastyear_indx(c) > 0) .and. (rootfr_tot > 0._r8) .and. (surface_prof_tot > 0._r8) ) then
+                  do j = 1,  min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
+                     nfixation_prof(c,j) = col_cinput_rootfr(c,j) / rootfr_tot
+                     if (j <= nlevbed) then
+                        ndep_prof(c,j) = surface_prof(j)/ surface_prof_tot
+                        pdep_prof(c,j) = surface_prof(j)/ surface_prof_tot
+                     end if
+                  end do
+               else
+                  nfixation_prof(c,1) = 1./dzsoi_decomp(1)
+                  ndep_prof(c,1) = 1./dzsoi_decomp(1)
+                  pdep_prof(c,1) = 1./dzsoi_decomp(1) 
+               endif
+            end if
          end do
 
       else
@@ -276,7 +290,6 @@ contains
          pdep_prof(begc:endc, :) = 1._r8
 
       end if
-
 
       ! check to make sure integral of all profiles = 1.
       do fc = 1,num_soilc
