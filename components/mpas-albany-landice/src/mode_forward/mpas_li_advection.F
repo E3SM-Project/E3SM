@@ -476,8 +476,8 @@ module li_advection
          elseif ((trim(config_thickness_advection) .eq. 'fct') .and. &
                   trim(config_tracer_advection) .eq. 'fct') then
              call li_tracer_advection_fct_tend(&
-                  tend, advectedTracers, layerThicknessOld, &
-                  layerThicknessEdge * layerNormalVelocity, 0 * normalVelocity, dt,    &
+                  tend, advectedTracers, layerThicknessOld * 0.0_RKIND + 1.0_RKIND, &
+                  layerNormalVelocity, 0 * normalVelocity, dt,    &
                   nTracers, computeBudgets=.false.)
              !layerThickness is last tracer.
              layerThickness(:,:) = advectedTracers(nTracers,:,:)
