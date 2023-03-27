@@ -174,7 +174,6 @@ logical  :: iop_dosubsidence
 logical  :: iop_nudge_tq
 logical  :: iop_nudge_uv
 logical  :: scm_diurnal_avg
-logical  :: scm_crm_mode
 logical  :: scm_observed_aero
 logical  :: precip_off
 logical  :: scm_multcols
@@ -333,7 +332,7 @@ contains
    ! scam
     namelist /cam_inparm/ iopfile, scm_iop_srf_prop, iop_nudge_tq, iop_nudge_uv, &
                          iop_nudge_tq_low, iop_nudge_tq_high, iop_nudge_tscale, &
-                         scm_crm_mode, scm_observed_aero, precip_off, &
+                         scm_observed_aero, precip_off, &
                          scm_zero_non_iop_tracers, iop_perturb_high, dp_crm, &
                          iop_dosubsidence, scm_zero_non_iop_tracers
 
@@ -378,7 +377,6 @@ contains
         iop_nudge_tq_low_out=iop_nudge_tq_low, &
         iop_nudge_tq_high_out=iop_nudge_tq_high, &
         iop_nudge_tscale_out=iop_nudge_tscale, &
-        scm_crm_mode_out=scm_crm_mode, &
         scm_observed_aero_out=scm_observed_aero, &
         precip_off_out=precip_off, &
         iop_dosubsidence_out=iop_dosubsidence, &
@@ -461,7 +459,6 @@ contains
                             iop_nudge_tq_low_in=iop_nudge_tq_low, &
                             iop_nudge_tq_high_in=iop_nudge_tq_high, &
                             iop_nudge_tscale_in=iop_nudge_tscale, &
-                            scm_crm_mode_in=scm_crm_mode, &
                             scm_observed_aero_in=scm_observed_aero, &
                             precip_off_in=precip_off, &
                             iop_dosubsidence_in=iop_dosubsidence,&

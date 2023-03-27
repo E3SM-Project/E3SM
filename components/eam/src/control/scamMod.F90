@@ -56,7 +56,6 @@ module scamMod
 
   logical, public ::  single_column         ! Using IOP file or not
   logical, public ::  use_iop               ! Using IOP file or not
-  logical, public ::  scm_crm_mode          ! column radiation mode
   logical, public ::  isrestart             ! If this is a restart step or not
   logical, public ::  scm_multcols          ! use SCM infrastructure across multiple columns
   logical, public ::  dp_crm                ! do doubly periodic cloud resolving model
@@ -183,7 +182,7 @@ module scamMod
 subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
         single_column_out,scm_iop_srf_prop_out, iop_nudge_tq_out, iop_nudge_uv_out, &
         iop_nudge_tq_low_out, iop_nudge_tq_high_out, iop_nudge_tscale_out, &
-        scm_crm_mode_out, scm_observed_aero_out, iop_dosubsidence_out, &
+        scm_observed_aero_out, iop_dosubsidence_out, &
         scm_multcols_out, dp_crm_out, iop_perturb_high_out, &
         precip_off_out, scm_zero_non_iop_tracers_out)
    !-----------------------------------------------------------------------
@@ -194,7 +193,6 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    logical, intent(out), optional ::  iop_dosubsidence_out
    logical, intent(out), optional ::  iop_nudge_tq_out
    logical, intent(out), optional ::  iop_nudge_uv_out
-   logical, intent(out), optional ::  scm_crm_mode_out
    logical, intent(out), optional ::  scm_observed_aero_out
    logical, intent(out), optional ::  precip_off_out
    logical, intent(out), optional ::  scm_multcols_out
@@ -217,7 +215,6 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(iop_nudge_tq_high_out) ) iop_nudge_tq_high_out = 0.e3_r8
    if ( present(iop_nudge_tscale_out) ) iop_nudge_tscale_out = 10800.0_r8
    if ( present(iop_perturb_high_out) ) iop_perturb_high_out = 1050.0_r8
-   if ( present(scm_crm_mode_out) )     scm_crm_mode_out  = .false.
    if ( present(scm_observed_aero_out)) scm_observed_aero_out = .false.
    if ( present(precip_off_out))        precip_off_out = .false.
    if ( present(scm_multcols_out))      scm_multcols_out = .false.
@@ -229,7 +226,7 @@ end subroutine scam_default_opts
 subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          scm_iop_srf_prop_in, iop_nudge_tq_in, iop_nudge_uv_in, &
                          iop_nudge_tq_low_in, iop_nudge_tq_high_in, iop_nudge_tscale_in, &
-                         scm_crm_mode_in, scm_observed_aero_in, iop_dosubsidence_in, &
+                         scm_observed_aero_in, iop_dosubsidence_in, &
                          scm_multcols_in, dp_crm_in, iop_perturb_high_in, &
                          precip_off_in, scm_zero_non_iop_tracers_in)
   !-----------------------------------------------------------------------
@@ -240,7 +237,6 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   logical, intent(in), optional        :: iop_dosubsidence_in
   logical, intent(in), optional        :: iop_nudge_tq_in
   logical, intent(in), optional        :: iop_nudge_uv_in
-  logical, intent(in), optional        :: scm_crm_mode_in
   logical, intent(in), optional        :: scm_observed_aero_in
   logical, intent(in), optional        :: precip_off_in
   logical, intent(in), optional        :: scm_multcols_in
@@ -298,10 +294,6 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
      iop_perturb_high=iop_perturb_high_in
   endif
 
-  if (present (scm_crm_mode_in)) then
-     scm_crm_mode=scm_crm_mode_in
-  endif
-
   if (present (scm_observed_aero_in)) then
      scm_observed_aero=scm_observed_aero_in
   endif
@@ -328,7 +320,6 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   call mpibcast(iop_nudge_tq_low,1,mpir8,0,mpicom)
   call mpibcast(iop_nudge_tscale,1,mpir8,0,mpicom)
   call mpibcast(iop_perturb_high,1,mpir8,0,mpicom)
-  call mpibcast(scm_crm_mode,1,mpilog,0,mpicom)
   call mpibcast(scm_observed_aero,1,mpilog,0,mpicom)
   call mpibcast(precip_off,1,mpilog,0,mpicom)
 #endif
@@ -971,12 +962,10 @@ endif !scm_observed_aero
      !!!!!!!force fill_end to be .true in getinterpncdata () for temperature !!!!!!!!
      if ( use_replay ) then
        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,'t', have_tsair, &
-          tsair(1), .true. , scm_crm_mode, &
-          dplevs, nlev, psobs, hyam, hybm, tobs, status )
+          tsair(1), .true. , dplevs, nlev, psobs, hyam, hybm, tobs, status )
      else
        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,'T', have_tsair, &
-          tsair(1), .true. , scm_crm_mode, &
-          dplevs, nlev, psobs, hyam, hybm, tobs, status )
+          tsair(1), .true. , dplevs, nlev, psobs, hyam, hybm, tobs, status )
      endif
      if ( status .ne. nf90_noerr ) then
        have_t = .false.
@@ -1020,8 +1009,7 @@ endif !scm_observed_aero
 
      !!!!!!!force fill_end to be .true in getinterpncdata () for humidity!!!!!!!!
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,  'q', have_srf, &
-       srf(1), .true., scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, qobs, status )
+       srf(1), .true., dplevs, nlev,psobs, hyam, hybm, qobs, status )
      if ( status .ne. nf90_noerr ) then
        have_q = .false.
        write(iulog,*)'Could not find variable q'
@@ -1032,7 +1020,7 @@ endif !scm_observed_aero
      endif
 
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,  'cld', .false., &
-       dummy, fill_ends, scm_crm_mode, dplevs, nlev,psobs, hyam, hybm, cldobs, status )
+       dummy, fill_ends, dplevs, nlev,psobs, hyam, hybm, cldobs, status )
      if ( status .ne. nf90_noerr ) then
        have_cld = .false.
      else
@@ -1040,7 +1028,7 @@ endif !scm_observed_aero
      endif
 
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,  'clwp', .false., &
-       dummy, fill_ends, scm_crm_mode, dplevs, nlev,psobs, hyam, hybm, clwpobs, status )
+       dummy, fill_ends, dplevs, nlev,psobs, hyam, hybm, clwpobs, status )
      if ( status .ne. nf90_noerr ) then
        have_clwp = .false.
      else
@@ -1057,9 +1045,8 @@ endif !scm_observed_aero
        have_srf = .true.
      endif
 
-     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-        'divq', have_srf, srf(1), fill_ends, scm_crm_mode, &
-        dplevs, nlev,psobs, hyam, hybm, divq(:,1), status )
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'divq', &
+        have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, divq(:,1), status )
      if ( status .ne. nf90_noerr ) then
        have_divq = .false.
      else
@@ -1077,8 +1064,7 @@ endif !scm_observed_aero
      endif
 
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'vertdivq', &
-        have_srf, srf(1), fill_ends, scm_crm_mode, &
-        dplevs, nlev,psobs, hyam, hybm, vertdivq(:,1), status )
+        have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, vertdivq(:,1), status )
      if ( status .ne. nf90_noerr ) then
        have_vertdivq = .false.
      else
@@ -1098,8 +1084,7 @@ endif !scm_observed_aero
      do m = 1, pcnst
 
        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_dten', &
-         have_srf, srf(1), fill_ends, scm_crm_mode, &
-         dplevs, nlev,psobs, hyam, hybm, divq3d(:,m), status )
+         have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, divq3d(:,m), status )
        if ( status .ne. nf90_noerr ) then
          have_cnst(m) = .false.
          divq3d(1:,m)=0._r8
@@ -1108,8 +1093,7 @@ endif !scm_observed_aero
        endif
 
        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_dqfx', &
-         have_srf, srf(1), fill_ends, scm_crm_mode, &
-         dplevs, nlev,psobs, hyam, hybm, coldata, status )
+         have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, coldata, status )
        if ( STATUS .NE. NF90_NOERR ) then
          dqfxcam=0._r8
        else
@@ -1117,8 +1101,7 @@ endif !scm_observed_aero
        endif
 
        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_alph', &
-          have_srf, srf(1), fill_ends, scm_crm_mode, &
-         dplevs, nlev,psobs, hyam, hybm, tmpdata, status )
+          have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, tmpdata, status )
        if ( status .ne. nf90_noerr ) then
          alphacam(m)=0._r8
        else
@@ -1131,8 +1114,7 @@ endif !scm_observed_aero
      if ( inumliq > 0 ) then
        have_srf = .false.
        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'NUMLIQ', &
-         have_srf, srf(1), fill_ends, scm_crm_mode, &
-         dplevs, nlev,psobs, hyam, hybm, numliqobs, status )
+         have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, numliqobs, status )
        if ( status .ne. nf90_noerr ) then
          have_numliq = .false.
        else
@@ -1144,8 +1126,7 @@ endif !scm_observed_aero
 
      have_srf = .false.
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'CLDLIQ', &
-       have_srf, srf(1), fill_ends, scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, cldliqobs, status )
+       have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, cldliqobs, status )
      if ( status .ne. nf90_noerr ) then
        have_cldliq = .false.
      else
@@ -1155,8 +1136,7 @@ endif !scm_observed_aero
      call cnst_get_ind('CLDICE', icldice)
 
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'CLDICE', &
-       have_srf, srf(1), fill_ends, scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, cldiceobs, status )
+       have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, cldiceobs, status )
      if ( status .ne. nf90_noerr ) then
        have_cldice = .false.
      else
@@ -1168,8 +1148,7 @@ endif !scm_observed_aero
         have_srf = .false.
 
         call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'NUMICE', &
-          have_srf, srf(1), fill_ends, scm_crm_mode, &
-          dplevs, nlev,psobs, hyam, hybm, numiceobs, status )
+          have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, numiceobs, status )
        if ( status .ne. nf90_noerr ) then
          have_numice = .false.
        else
@@ -1188,8 +1167,7 @@ endif !scm_observed_aero
      endif
 
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'divu', &
-       have_srf, srf(1), fill_ends, scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, divu, status )
+       have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, divu, status )
      if ( status .ne. nf90_noerr ) then
        have_divu = .false.
      else
@@ -1207,8 +1185,7 @@ endif !scm_observed_aero
      endif
 
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'divv', &
-       have_srf, srf(1), fill_ends, scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, divv, status )
+       have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, divv, status )
      if ( status .ne. nf90_noerr ) then
        have_divv = .false.
      else
@@ -1226,8 +1203,7 @@ endif !scm_observed_aero
      endif
 
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-       'divT', have_srf, srf(1), fill_ends, scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, divt, status )
+       'divT', have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, divt, status )
      if ( status .ne. nf90_noerr ) then
        have_divt = .false.
      else
@@ -1245,8 +1221,7 @@ endif !scm_observed_aero
      endif
 
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'vertdivT', &
-       have_srf, srf(1), fill_ends, scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, vertdivt, status )
+       have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, vertdivt, status )
      if ( status .ne. nf90_noerr ) then
        have_vertdivt = .false.
      else
@@ -1265,8 +1240,7 @@ endif !scm_observed_aero
      endif
 
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'divT3d', &
-       have_srf, srf(1), fill_ends, scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, divt3d, status )
+       have_srf, srf(1), fill_ends, dplevs, nlev,psobs, hyam, hybm, divt3d, status )
      if ( status .ne. nf90_noerr ) then
        have_divt3d = .false.
      else
@@ -1310,8 +1284,7 @@ endif !scm_observed_aero
 
      !!!!!!!force fill_end to be .true in getinterpncdata () for u-wind !!!!!!!!
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-       'u', have_srf, srf(1), .true. , scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, uobs, status )
+       'u', have_srf, srf(1), .true. , dplevs, nlev,psobs, hyam, hybm, uobs, status )
      if ( status .ne. nf90_noerr ) then
        have_u = .false.
      else
@@ -1328,8 +1301,7 @@ endif !scm_observed_aero
 
      !!!!!!!force fill_end to be .true in getinterpncdata () for v-wind !!!!!!!!
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-       'v', have_srf, srf(1), .true. , scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, vobs, status )
+       'v', have_srf, srf(1), .true. , dplevs, nlev,psobs, hyam, hybm, vobs, status )
      if ( status .ne. nf90_noerr ) then
        have_v = .false.
      else
@@ -1346,8 +1318,7 @@ endif !scm_observed_aero
      endif
 
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'Q1', &
-       .false., dummy, fill_ends, scm_crm_mode, & ! datasets don't contain Q1 at surface
-       dplevs, nlev,psobs, hyam, hybm, q1obs, status )
+       .false., dummy, fill_ends, dplevs, nlev,psobs, hyam, hybm, q1obs, status )
      if ( status .ne. nf90_noerr ) then
        have_q1 = .false.
      else
@@ -1355,8 +1326,7 @@ endif !scm_observed_aero
      endif
 
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'Q2', &
-        .false., dummy, fill_ends, scm_crm_mode, & ! datasets don't contain Q2 at surface
-        dplevs, nlev,psobs, hyam, hybm, q1obs, status )
+        .false., dummy, fill_ends, dplevs, nlev,psobs, hyam, hybm, q1obs, status )
      if ( status .ne. nf90_noerr ) then
        have_q2 = .false.
      else
@@ -1429,8 +1399,7 @@ endif !scm_observed_aero
      endif
      
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-       'omega', .true., ptend, fill_ends, scm_crm_mode, &
-        dplevs, nlev,psobs, hyam, hybm, wfld, status )
+       'omega', .true., ptend, fill_ends, dplevs, nlev,psobs, hyam, hybm, wfld, status )
      if ( status .ne. nf90_noerr ) then
         have_omega = .false.
         write(iulog,*)'Could not find variable omega'

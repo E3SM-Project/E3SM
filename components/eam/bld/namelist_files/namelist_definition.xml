@@ -4250,12 +4250,6 @@ Full pathname of IOP dataset.
 Default: set by build-namelist.
 </entry>
 
-<entry id="scm_crm_mode" type="logical" category="scam"
-       group="cam_inparm" valid_values="">
-Column radiation mode.
-Default: FALSE
-</entry>
-
 <entry id="scm_iop_srf_prop" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Use the specified surface properties.
