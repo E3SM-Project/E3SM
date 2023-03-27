@@ -60,8 +60,9 @@
       <dependency>(case.run and case.post_run_io) or case.test</dependency>
       <prereq>$DOUT_S</prereq>
       <runtime_parameters>
-	<task_count>1</task_count>
-	<walltime>0:20:00</walltime>
+        <task_count>1</task_count>
+        <tasks_per_node>1</tasks_per_node>
+        <walltime>0:20:00</walltime>
       </runtime_parameters>
     </job>
   </workflow_jobs>
