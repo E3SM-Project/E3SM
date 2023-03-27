@@ -2042,7 +2042,7 @@ this mask will have smb calculated over the entire global land surface
 <fates_parteh_mode             use_fates=".true.">1</fates_parteh_mode>
 <use_fates_inventory_init      use_fates=".true.">.false.</use_fates_inventory_init>
 <fates_inventory_ctrl_filename use_fates=".true."> "/dev/null" </fates_inventory_ctrl_filename>
-<!-- use_fates_nocomp              use_fates=".true." use_fates_sp=".true.">.true.</use_fates_nocomp> -->
+<use_fates_nocomp              use_fates=".true." use_fates_sp=".true.">.true.</use_fates_nocomp>
 <use_fates_nocomp              use_fates=".true."                      >.false.</use_fates_nocomp>
 <use_fates_fixed_biogeog       use_fates=".true." use_fates_sp=".true.">.true.</use_fates_fixed_biogeog>
 <use_fates_fixed_biogeog       use_fates=".true."                      >.false.</use_fates_fixed_biogeog>

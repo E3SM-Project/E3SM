@@ -1612,10 +1612,12 @@ contains
                ! Update history IO fields that depend on ecosystem dynamics
                ! ------------------------------------------------------------------------
                call fates_hist%flush_hvars(nc,upfreq_in=1)
-               !!call fates_hist%flush_hvars(nc,upfreq_in=5)
+               call fates_hist%flush_hvars(nc,upfreq_in=5)
                do s = 1,this%fates(nc)%nsites
                   call fates_hist%zero_site_hvars(this%fates(nc)%sites(s),     &
                        upfreq_in=1)
+                  call fates_hist%zero_site_hvars(this%fates(nc)%sites(s),     &
+                       upfreq_in=5)
                end do
                call fates_hist%update_history_dyn( nc, &
                     this%fates(nc)%nsites,                 &
@@ -2513,7 +2515,7 @@ end subroutine wrap_update_hifrq_hist
    use FatesIOVariableKindMod, only : site_fuel_r8, site_cwdsc_r8, site_scag_r8
    use FatesIOVariableKindMod, only : site_scagpft_r8, site_agepft_r8, site_agefuel_r8
    use FatesIOVariableKindMod, only : site_height_r8, site_elem_r8, site_elpft_r8
-   use FatesIOVariableKindMod, only : site_elcwd_r8, site_elage_r8, site_clscpf_r8
+   use FatesIOVariableKindMod, only : site_elcwd_r8, site_elage_r8
    use FatesIOVariableKindMod, only : site_coage_r8, site_coage_pft_r8
    use FatesIOVariableKindMod, only : site_can_r8, site_cnlf_r8, site_cnlfpft_r8
    use FatesIOVariableKindMod, only : site_cdpf_r8, site_cdsc_r8, site_cdam_r8
@@ -2966,9 +2968,6 @@ end subroutine wrap_update_hifrq_hist
    fates%agefuel_begin = 1
    fates%agefuel_end   = nlevage_fates * nfsc_fates
 
-   fates%clscpf_begin = 1
-   fates%clscpf_end = numpft_fates*nlevsclass_fates*nclmax_fates
-   
  end subroutine hlm_bounds_to_fates_bounds
 
 ! ======================================================================================

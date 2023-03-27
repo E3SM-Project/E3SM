@@ -210,7 +210,6 @@ contains
                     temp_solutionp(c,j) = 0.0_r8
                     col_ps%solutionp_vr(c,j) = 0.0_r8
                     col_ps%labilep_vr(c,j) = 0.0_r8
-
                  else
                        ! sorbp = smax*solutionp/(ks+solutionp)
                        ! sorbp + solutionp = smax*solutionp/(ks+solutionp) + solutionp = total p pool after competition
