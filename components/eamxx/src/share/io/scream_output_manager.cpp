@@ -198,6 +198,9 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   } else if (m_output_control.output_enabled() && m_run_t0==m_case_t0 && !m_is_model_restart_output) {
     this->run(m_run_t0);
   }
+
+  // Log this output stream
+  push_to_logger();
 }
 
 void OutputManager::setup_globals_map (const globals_map_t& globals) {
@@ -265,6 +268,13 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     }
   }
   stop_timer(timer_root+"::get_new_file"); 
+
+  // Log if we write output this step:
+  if (m_atm_logger && is_write_step) {
+    m_atm_logger->info("[EAMxx::output_manager] - Writing output:");
+    m_atm_logger->info("[EAMxx::output_manager]      CASE: " + m_casename); 
+    m_atm_logger->info("[EAMxx::output_manager]      FILE: " + filename); 
+  }
 
   // Run the output streams
   start_timer(timer_root+"::run_output_streams"); 
@@ -556,6 +566,35 @@ void set_file_header(const std::string& filename)
   set_str_attribute_c2f(filename.c_str(),"component","ATM");
   set_str_attribute_c2f(filename.c_str(),"conventions","");  // TODO
 
+}
+/*===============================================================================================*/
+void OutputManager::
+push_to_logger()
+{
+  // If no atm logger set then don't do anything
+  if (!m_atm_logger) return;
+
+  auto bool_to_string = [](const bool x) {
+    std::string y = x ? "YES" : "NO";
+    return y;
+  };
+
+  m_atm_logger->info("[EAMxx::output_manager] - New Output stream");
+  m_atm_logger->info("                      Case: " + m_casename);
+  m_atm_logger->info("                    Run t0: " + m_run_t0.to_string());
+  m_atm_logger->info("                   Case t0: " + m_case_t0.to_string());
+  m_atm_logger->info("              Reference t0: " + m_output_control.timestamp_of_last_write.to_string());
+  m_atm_logger->info("         Is Restart File ?: " + bool_to_string(m_is_model_restart_output));
+  m_atm_logger->info("        Is Restarted Run ?: " + bool_to_string(m_is_restarted_run));
+  m_atm_logger->info("            Averaging Type: " + e2str(m_avg_type));
+  m_atm_logger->info("          Output Frequency: " + std::to_string(m_output_control.frequency) + " " + m_output_control.frequency_units);
+  m_atm_logger->info("         Max snaps in file: " + std::to_string(m_output_file_specs.max_snapshots_in_file));  // TODO: add "not set" if the value is -1
+  m_atm_logger->info("      Includes Grid Data ?: " + bool_to_string(m_output_file_specs.save_grid_data));
+  // List each GRID - TODO
+  // List all FIELDS - TODO
+
+
+  
 }
 
 } // namespace scream
