@@ -67,9 +67,17 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   // 	2. use_case_as_start_reference: FALSE - implies we want to base the frequency of output on when this particular simulation started.
   // Note, (2) is needed for restarts since the restart frequency in CIME assumes a reference of when this run began.
   const bool start_ref = out_control_pl.get<bool>("use_case_as_start_reference",!m_is_model_restart_output);
-  m_output_control.frequency  = out_control_pl.get<int>("Frequency");
   m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
-  m_output_control.timestamp_of_last_write   = start_ref ? m_case_t0 : m_run_t0;
+  // In case output is disabled, no point in doing anything else
+  if (m_output_control.frequency_units=="none" || m_output_control.frequency_units=="never") {
+    m_output_disabled = true;
+    return;
+  }
+  m_output_control.frequency = out_control_pl.get<int>("Frequency");
+  EKAT_REQUIRE_MSG (m_output_control.frequency>0,
+      "Error! Invalid frequency (" + std::to_string(m_output_control.frequency) + ") in Output Control. Please, use positive number.\n");
+
+  m_output_control.timestamp_of_last_write = start_ref ? m_case_t0 : m_run_t0;
 
   // File specs
   m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",-1);
@@ -127,14 +135,19 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     // TODO: It would be great if there was an option where, if Checkpoint Control was not a sublist, we
     //       could query the restart control information and just use that. 
     auto& pl = m_params.sublist("Checkpoint Control");
-    m_checkpoint_control.frequency                 = pl.get<int>("Frequency");
     m_checkpoint_control.frequency_units           = pl.get<std::string>("frequency_units");
-    m_checkpoint_control.timestamp_of_last_write   = run_t0;
 
-    // File specs
-    m_checkpoint_file_specs.max_snapshots_in_file = 1;
-    m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
-    m_checkpoint_file_specs.save_grid_data = false;
+    if (m_checkpoint_control.frequency_units!="never" && m_checkpoint_control.frequency_units!="none") {
+      m_checkpoint_control.timestamp_of_last_write   = run_t0;
+      m_checkpoint_control.frequency = pl.get<int>("Frequency");
+      EKAT_REQUIRE_MSG (m_output_control.frequency>0,
+          "Error! Invalid frequency (" + std::to_string(m_checkpoint_control.frequency) + ") in Checkpoint Control. Please, use positive number.\n");
+
+      // File specs
+      m_checkpoint_file_specs.max_snapshots_in_file = 1;
+      m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
+      m_checkpoint_file_specs.save_grid_data = false;
+    }
   } else {
     // If there is no restart data or there is but no checkpoint control sublist then we initialize
     // the checkpoint control so that it never writes checkpoints.
@@ -202,6 +215,10 @@ add_global (const std::string& name, const ekat::any& global) {
 /*===============================================================================================*/
 void OutputManager::run(const util::TimeStamp& timestamp)
 {
+  // In case output is disabled, no point in doing anything else
+  if (m_output_disabled) {
+    return;
+  }
   using namespace scorpio;
 
   std::string timer_root = m_is_model_restart_output ? "EAMxx::IO::restart" : "EAMxx::IO::standard";

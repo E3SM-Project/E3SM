@@ -168,6 +168,9 @@ protected:
   // we might have to load an output checkpoint file (depending on avg type)
   bool m_is_restarted_run;
 
+  // If the user specifies freq units "none" or "never", output is disabled
+  bool m_output_disabled = false;
+
   // The initial time stamp of the simulation and run. For initial runs, they coincide,
   // but for restarted runs, run_t0>case_t0, with the former being the time at which the
   // restart happens, and the latter being the start time of the *original* run.
