@@ -216,11 +216,9 @@ if (NOT SCREAM_SMALL_KERNELS)
   set(EKAT_DISABLE_WORKSPACE_SHARING TRUE CACHE STRING "")
 endif()
 
-### The following test only runs in docker container
-if (DEFINED ENV{IS_DOCKER})
-  set(IS_DOCKER $ENV{IS_DOCKER})
-else()
-  set(IS_DOCKER FALSE)
+### The following test only runs on quartz or docker container
+if (NOT DEFINED RUN_ML_NUDGE_TEST)
+  set(RUN_ML_NUDGE_TEST FALSE)
 endif()
 
 # Handle input root
