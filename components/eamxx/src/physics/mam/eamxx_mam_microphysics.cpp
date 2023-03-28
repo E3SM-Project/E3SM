@@ -218,13 +218,12 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   Kokkos::deep_copy(convert_wet_dry_idx_d, convert_wet_dry_idx_h);
 
   preprocess_.set_variables(ncol_, nlev_, z_surf, convert_wet_dry_idx_d, T_mid,
-                            p_mid, qv, z_mid, z_iface, dz, p_del, pblh, q_soag,
-                            q_h2so4, q_nh3, q_aitken_so4);
+                            p_mid, qv, z_mid, z_iface, dz, pdel_, pblh, q_soag_,
+                            q_h2so4_, q_aitken_so4_);
 
   // FIXME: here we run the aerosol microphysics parameterizations
 
-  //postprocess_.set_variables(ncol_, nlev_, qv, q_soag, q_h2so4,
-  //                           q_nh3, q_aitken_so4);
+  //postprocess_.set_variables(ncol_, nlev_, qv, q_soag, q_h2so4, q_aitken_so4);
 
   // Set field property checks for the fields in this process
   /* e.g.
@@ -246,10 +245,11 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
 void MAMMicrophysics::run_impl(const double dt) {
 
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
+  const auto scan_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto policy      = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
 
-  // preprocess input
-  Kokkos::parallel_for("preprocess", policy, preprocess_);
+  // preprocess input -- needs a scan for the calculation of atm height
+  Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
 
   // Reset internal WSM variables.

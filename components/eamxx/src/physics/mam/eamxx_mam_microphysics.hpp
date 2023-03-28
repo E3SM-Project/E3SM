@@ -160,7 +160,7 @@ private:
                        const view_2d&       z_mid,
                        const view_2d&       z_iface,
                        const view_2d&       dz,
-                       const view_2d&       pdel,
+                       const view_2d_const& pdel,
                        const view_1d_const& pblh,
                        const view_2d&       q_soag,
                        const view_2d&       q_h2so4,
