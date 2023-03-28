@@ -3,14 +3,11 @@
 driver_options:
   atmosphere_dag_verbosity_level: 5
 
-Time Stepping:
-  # IMPORTANT: make sure Start Time equals to the initial run start time PLUS one time step
-  Time Step: 300
-  Number of Steps: 1
-  Run Start Time: [12, 05, 00]      # Hours, Minutes, Seconds
-  Run Start Date: [2021, 10, 12]    # Year, Month, Day
-  Case Start Time: [12, 00, 00]      # Hours, Minutes, Seconds
-  Case Start Date: [2021, 10, 12]    # Year, Month, Day
+time_stepping:
+  time_step: 300
+  number_of_steps: 1
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  case_t0: ${CASE_T0}  # YYYY-MM-DD-XXXXX
 
 initial_conditions:
   restart_casename: model_restart

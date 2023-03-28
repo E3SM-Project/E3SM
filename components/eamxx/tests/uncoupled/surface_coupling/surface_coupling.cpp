@@ -329,12 +329,9 @@ TEST_CASE("surface-coupling", "") {
   parse_yaml_file(fname,ad_params);
 
   // Parameters
-  auto& ts              = ad_params.sublist("Time Stepping");
-  const auto start_date = ts.get<std::vector<int>>("Start Date");
-  const auto start_time = ts.get<std::vector<int>>("Start Time");
-
-  util::TimeStamp t0 (start_date, start_time);
-  EKAT_ASSERT_MSG (t0.is_valid(), "Error! Invalid start date.\n");
+  auto& ts          = ad_params.sublist("time_stepping");
+  const auto t0_str = ts.get<std::string>("run_t0");
+  const auto t0     = util::str_to_time_stamp(t0_str);
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
   auto& proc_factory = AtmosphereProcessFactory::instance();

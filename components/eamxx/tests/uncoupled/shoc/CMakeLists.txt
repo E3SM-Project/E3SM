@@ -11,6 +11,7 @@ CreateUnitTest(shoc_standalone "shoc_standalone.cpp" "${NEED_LIBS}" LABELS ${TES
 # Set AD configurable options
 SetVarDependingOnTestSize(NUM_STEPS 2 5 48)
 set (ATM_TIME_STEP 1800)
+set (RUN_T0 2021-10-12-45000)
 
 # Determine num subcycles needed to keep shoc dt<=300s
 set (SHOC_MAX_DT 300)
@@ -34,8 +35,8 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 
-    set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x1.np${MPI_RANKS}.nc")
-    set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.nc")
+    set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x1.np${MPI_RANKS}.${RUN_T0}.nc")
+    set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.${RUN_T0}.nc")
 
     set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME}
@@ -50,7 +51,7 @@ endif()
 # Check tendency calculation
 foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
   set (script ${SCREAM_BASE_DIR}/scripts/check-tendencies)
-  set (fname shoc_standalone_output.INSTANT.nsteps_x1.np${NRANKS}.nc)
+  set (fname shoc_standalone_output.INSTANT.nsteps_x1.np${NRANKS}.${RUN_T0}.nc)
   set (tname shoc_tend_check_np${NRANKS})
   add_test (NAME ${tname}
     COMMAND ${script} -f ${fname}
@@ -66,7 +67,7 @@ endforeach()
 # components in all output NC files matches the content of corresponding components
 # of the vector quantities
 foreach (RANK RANGE ${TEST_RANK_START} ${TEST_RANK_END})
-  set (nc_file shoc_standalone_output.INSTANT.nsteps_x1.np${RANK}.nc)
+  set (nc_file shoc_standalone_output.INSTANT.nsteps_x1.np${RANK}.${RUN_T0}.nc)
   add_test (NAME check_U_V_slices_np${RANK}
             COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
             -s ${nc_file} -c "horiz_winds(:,:,1,:)=U(:,:,:)" "horiz_winds(:,:,2,:)=V(:,:,:)"
@@ -87,7 +88,7 @@ endforeach()
 ################################
 
 # These tests ensure that the compare-nc-files script doesn't always pass
-set (nc_file shoc_standalone_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.nc)
+set (nc_file shoc_standalone_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.${RUN_T0}.nc)
 
 # Legitimate diff
 add_test (NAME check_U_V_slices_fail_diff

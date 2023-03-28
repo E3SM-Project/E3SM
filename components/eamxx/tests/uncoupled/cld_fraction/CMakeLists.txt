@@ -8,6 +8,7 @@ CreateUnitTest(cld_fraction_standalone "cld_fraction_standalone.cpp" "${NEED_LIB
 # Set AD configurable options
 set (NUM_STEPS 1)
 set (ATM_TIME_STEP 1800)
+set (RUN_T0 2021-10-12-45000)
 
 # Configure yaml input file to run directory
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml

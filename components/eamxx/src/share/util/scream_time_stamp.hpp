@@ -79,7 +79,7 @@ TimeStamp operator- (const TimeStamp& ts, const int dt);
 int days_in_month (const int year, const int month);
 bool is_leap_year (const int year);
 
-// If input string is not of the format YYYY-MM-DD.hhmmss, returns an invalid time stamp
+// If input string is not of the format YYYY-MM-DD-XXXXX, returns an invalid time stamp
 TimeStamp str_to_time_stamp (const std::string& s);
 
 } // namespace util

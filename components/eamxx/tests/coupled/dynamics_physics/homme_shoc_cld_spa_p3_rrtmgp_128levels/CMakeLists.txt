@@ -16,6 +16,7 @@ CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_128levels "homme_shoc_cld_spa_p3_rrt
 # Set AD configurable options
 set (ATM_TIME_STEP 1800)
 SetVarDependingOnTestSize(NUM_STEPS 2 4 48)  # 1h 2h 24h
+set (RUN_T0 2021-10-12-45000)
 
 # Determine num subcycles needed to keep shoc dt<=300s
 set (SHOC_MAX_DT 300)
@@ -81,8 +82,8 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 
-    set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x1.np${MPI_RANKS}.nc")
-    set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.nc")
+    set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x1.np${MPI_RANKS}.${RUN_T0}.nc")
+    set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.${RUN_T0}.nc")
     set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
@@ -97,7 +98,7 @@ endif()
 foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
   set (BASE_TEST_NAME "homme_shoc_cld_spa_p3_rrtmgp_128levels")
   set (script ${SCREAM_BASE_DIR}/scripts/check-tendencies)
-  set (fname ${BASE_TEST_NAME}_output.INSTANT.nsteps_x1.np${NRANKS}.nc)
+  set (fname ${BASE_TEST_NAME}_output.INSTANT.nsteps_x1.np${NRANKS}.${RUN_T0}.nc)
   set (tname ${BASE_TEST_NAME}_tend_check_np${NRANKS})
   add_test (NAME ${tname}
     COMMAND ${script} -f ${fname} -v qv T_mid -t EAMxx_qv_tend EAMxx_T_mid_tend
