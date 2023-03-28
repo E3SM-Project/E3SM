@@ -120,17 +120,17 @@
         </ntasks>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+_SESP$" pesize="any">
-        <comment> --compset WCYCL* --res ne30pg2_EC30to60E2r2 on 8 nodes pure-MPI, ~1.5 sypd </comment>
+        <comment> --compset WCYCL* --res ne30pg2_EC30to60E2r2 on 16 nodes pure-MPI, ~2.7 sypd </comment>
         <ntasks>
-          <ntasks_atm>198</ntasks_atm>
-          <ntasks_lnd>198</ntasks_lnd>
-          <ntasks_rof>198</ntasks_rof>
-          <ntasks_ice>198</ntasks_ice>
-          <ntasks_ocn>90</ntasks_ocn>
-          <ntasks_cpl>198</ntasks_cpl>
+          <ntasks_atm>396</ntasks_atm>
+          <ntasks_lnd>396</ntasks_lnd>
+          <ntasks_rof>396</ntasks_rof>
+          <ntasks_ice>396</ntasks_ice>
+          <ntasks_ocn>180</ntasks_ocn>
+          <ntasks_cpl>396</ntasks_cpl>
         </ntasks>
         <rootpe>
-          <rootpe_ocn>198</rootpe_ocn>
+          <rootpe_ocn>396</rootpe_ocn>
         </rootpe>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+SGLC_SWAV_SIAC_SESP_BGC.*" pesize="any">
