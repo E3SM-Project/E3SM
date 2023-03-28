@@ -362,7 +362,11 @@ TimeStamp str_to_time_stamp (const std::string& s)
     return util::TimeStamp();
   }
   std::vector<int> date{std::stoi(YY),std::stoi(MM),std::stoi(DD)};
-  std::vector<int> time{std::stoi(tod)/10000,(std::stoi(tod)/100)%100,(std::stoi(tod))%100};
+  auto sec_of_day = std::stoi(tod);
+  auto hh = (sec_of_day / 60) / 60;
+  auto mm = (sec_of_day / 60) % 60;
+  auto ss =  sec_of_day % 60;
+  std::vector<int> time{hh,mm,ss};
 
   try {
     return util::TimeStamp(date,time);

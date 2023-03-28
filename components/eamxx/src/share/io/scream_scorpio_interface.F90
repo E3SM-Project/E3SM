@@ -678,15 +678,15 @@ contains
     ! TODO: revise the set_str_attribute code to allow the
     ! scream_output_manager.cpp to handle institutions too.
     ! NOTE: The use of //char(10)// causes each institution to be written on it's own line, makes it easier to read.
-    retval=pio_put_att (File, PIO_GLOBAL, 'institutions', 'LLNL (Lawrence Livermore National Laboratory, Livermore, CA 94550, USA); &
-      '//char(10)//'ANL (Argonne National Laboratory, Argonne, IL 60439, USA);  &
-      '//char(10)//'BNL (Brookhaven National Laboratory, Upton, NY 11973, USA); &
-      '//char(10)//'LANL (Los Alamos National Laboratory, Los Alamos, NM 87545, USA); &
-      '//char(10)//'LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); &
-      '//char(10)//'ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); &
-      '//char(10)//'PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); &
-      '//char(10)//'SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). &
-      '//char(10)//'Mailing address: LLNL Climate Program, c/o David C. Bader, Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
+    retval=pio_put_att (File, PIO_GLOBAL, 'institutions', 'LLNL (Lawrence Livermore National Laboratory, Livermore, CA 94550, USA);'  &
+      //char(10)//'ANL (Argonne National Laboratory, Argonne, IL 60439, USA); '  &
+      //char(10)//'BNL (Brookhaven National Laboratory, Upton, NY 11973, USA);'  &
+      //char(10)//'LANL (Los Alamos National Laboratory, Los Alamos, NM 87545, USA);'  &
+      //char(10)//'LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA);'  &
+      //char(10)//'ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA);'  &
+      //char(10)//'PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA);'  &
+      //char(10)//'SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA).'  &
+      //char(10)//'Mailing address: LLNL Climate Program, c/o David C. Bader, Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
 
   end subroutine eam_pio_createHeader
 !=====================================================================!

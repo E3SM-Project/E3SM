@@ -64,10 +64,13 @@ TEST_CASE ("time_stamp") {
     // Julian day = frac_of_year_in_days.fraction_of_day, with frac_of_year_in_days=0 at Jan 1st.
     REQUIRE (ts1.frac_of_year_in_days()==(284 + (17*3600+8*60+30)/86400.0));
     REQUIRE (ts1.get_num_steps()==0);
+  }
 
+  SECTION ("formatting") {
     REQUIRE (ts1.get_date_string()=="2021-10-12");
     REQUIRE (ts1.get_time_string()=="17:08:30");
     REQUIRE (ts1.to_string()=="2021-10-12-61710");
+    REQUIRE (util::str_to_time_stamp("2021-10-12-61710")==ts1);
   }
 
   SECTION ("comparisons") {
