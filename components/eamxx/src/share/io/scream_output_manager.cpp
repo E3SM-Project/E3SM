@@ -270,7 +270,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   stop_timer(timer_root+"::get_new_file"); 
 
   // Log if we write output this step:
-  if (m_atm_logger_set && is_write_step) {
+  if (m_atm_logger && is_write_step) {
     m_atm_logger->info("[EAMxx::output_manager] - Writing output:");
     m_atm_logger->info("[EAMxx::output_manager]      CASE: " + m_casename); 
     m_atm_logger->info("[EAMxx::output_manager]      FILE: " + filename); 
@@ -572,7 +572,7 @@ void OutputManager::
 push_to_logger()
 {
   // If no atm logger set then don't do anything
-  if (!m_atm_logger_set) return;
+  if (!m_atm_logger) return;
 
   auto bool_to_string = [](const bool x) {
     std::string y = x ? "YES" : "NO";

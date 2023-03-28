@@ -111,7 +111,6 @@ public:
   void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger)
     {
       m_atm_logger = atm_logger;
-      m_atm_logger_set = true;
     }
   void run (const util::TimeStamp& current_ts);
   void finalize();
@@ -179,7 +178,6 @@ protected:
 
   // The logger to be used throughout the ATM to log message
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
-  bool m_atm_logger_set = false;
 };
 
 } // namespace scream
