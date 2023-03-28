@@ -1147,6 +1147,9 @@ module shr_reprosum_mod
 !
 ! Local workspace
 !
+      integer, parameter  :: max_svlevel_factor = &
+                                1 + (digits(1_i8)/digits(1.0_r8))
+
       integer(i8) :: i8_arr_tlsum_level(-(extra_levels-1):max_level,nflds,omp_nthreads)
                                    ! integer vector representing local
                                    !  sum (per thread, per field)
@@ -1222,7 +1225,7 @@ module shr_reprosum_mod
                                    !  i8_arr_gsum_level
       real(r8) :: RX_8             ! r8 representation of (other)
                                    !  integers used in calculation.
-      real(r8) :: summand_vector(max_level)
+      real(r8) :: summand_vector((max_level+extra_levels)*max_svlevel_factor)
                                    ! vector of r8 values generated from
                                    !  integer vector representation to be
                                    !  summed to generate global sum
