@@ -26,7 +26,7 @@ TEST_CASE("rrtmgp-stand-alone", "") {
   // Load ad parameter list
   std::string inputfile = ekat::TestSession::get().params.at("inputfile");
   ekat::ParameterList ad_params("Atmosphere Driver");
-  REQUIRE_NOTHROW ( parse_yaml_file(inputfile,ad_params) );
+  parse_yaml_file(inputfile,ad_params);
 
   // Time stepping parameters
   auto& ts = ad_params.sublist("Time Stepping");

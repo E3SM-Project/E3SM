@@ -24,13 +24,6 @@ TEST_CASE("shoc-stand-alone", "") {
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
-  
-  #ifndef KOKKOS_ENABLE_HIP
-  REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
-  #else
-  parse_yaml_file(fname,ad_params);
-  #endif
-  
   parse_yaml_file(fname,ad_params) ;
 
   // Time stepping parameters

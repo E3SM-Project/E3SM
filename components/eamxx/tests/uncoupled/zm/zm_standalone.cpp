@@ -22,7 +22,7 @@ TEST_CASE("zm-standalone", "") {
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
-  REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
+  parse_yaml_file(fname,ad_params);
 
   // Time stepping parameters
   auto& ts = ad_params.sublist("Time Stepping");

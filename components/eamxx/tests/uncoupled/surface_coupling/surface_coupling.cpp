@@ -326,7 +326,7 @@ TEST_CASE("surface-coupling", "") {
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
-  REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
+  parse_yaml_file(fname,ad_params);
 
   // Parameters
   auto& ts              = ad_params.sublist("Time Stepping");

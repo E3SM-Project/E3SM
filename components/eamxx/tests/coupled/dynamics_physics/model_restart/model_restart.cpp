@@ -32,7 +32,7 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   const auto& session = ekat::TestSession::get();
   std::string fname = session.params.at("ifile");
   ekat::ParameterList ad_params("Atmosphere Driver");
-  REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
+  parse_yaml_file(fname,ad_params);
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
   // which rely on factory for process creation. The initialize method of the AD does that.

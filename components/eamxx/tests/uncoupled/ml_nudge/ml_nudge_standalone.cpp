@@ -11,14 +11,16 @@
 #include "physics/ml_nudge/atmosphere_ml_nudging.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
+
 namespace scream {
+
 TEST_CASE("ml_nudge-stand-alone", "") {
   using namespace scream;
   using namespace scream::control;
   namespace py      = pybind11;
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
-  REQUIRE_NOTHROW(parse_yaml_file(fname, ad_params));
+  parse_yaml_file(fname, ad_params);
 
   auto &ts              = ad_params.sublist("Time Stepping");
   const auto dt         = ts.get<int>("Time Step");
