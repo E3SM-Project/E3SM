@@ -867,7 +867,6 @@ end subroutine micro_p3_readnl
     integer :: icol, ncol, k
     integer :: psetcols, lchnk
     integer :: itim_old
-    real(rtype) :: T_virtual
 
     ! For rrtmg optics. specified distribution.
     real(rtype), parameter :: dcon   = 25.e-6_rtype         ! Convective size distribution effective radius (um)
@@ -987,8 +986,9 @@ end subroutine micro_p3_readnl
     !Since state constituents from the host model are  wet mixing ratios and P3 needs these
     !constituents in dry mixing ratios, we convert the wet mixing ratios to dry mixing ratio
     !---------------------------------------------------------------------------------------
-    !Compute dry mixing ratios for all the constituents
 
+    !Compute dry mixing ratios for all the constituents
+    !The conversion is done via calculation drymmr = (wetmmr * wetdp) / drydp
     ratio_local(:ncol,:pver) = state%pdel(:ncol,:pver)/state%pdeldry(:ncol,:pver)
 
     qv_dry     (:ncol,:pver) = state%q(:ncol,:pver,         1) *ratio_local(:ncol,:pver)
@@ -1019,7 +1019,6 @@ end subroutine micro_p3_readnl
           ! P3 is using dry MMR we instead calculated dz using virtual
           ! temperature and pressure.
 
-          T_virtual  = state%t(icol,k) * (1.0 + state%q(icol,k,1)*(mwdry/mwh2o - 1.0))
           dz(icol,k) = (state%zi(icol,k) - state%zi(icol,k+1))/gravit
           th(icol,k) = state%t(icol,k)*inv_exner(icol,k) 
        end do
@@ -1032,7 +1031,7 @@ end subroutine micro_p3_readnl
 
 !OG do we want dry or wet pressure here?
     pres    = state%pmiddry(:,:)
-    ! Initialize the raidation dependent variables.
+    ! Initialize the radiation dependent variables.
     mu      = 0.0_rtype !mucon
     lambdac = 0.0_rtype !(mucon + 1._rtype)/dcon
     dei     = 50.0_rtype !deicon
@@ -1204,8 +1203,11 @@ end subroutine micro_p3_readnl
     numice     (:ncol,:pver) = numice (:ncol,:pver) *ratio_local(:ncol,:pver)
     rimvol     (:ncol,:pver) = rimvol (:ncol,:pver) *ratio_local(:ncol,:pver)
 
-    !new - old
+    !compute temperature tendency as calculated by P3
     dtemp(:ncol,:pver) = th(:ncol,:pver)/inv_exner(:ncol,:pver) - state%t(:ncol,:pver)
+    !rescale temperature tendency to conserve entahly:
+    !physics is supposed to conserve quantity dp*(cpdry*T+Lv*qv+Ll*ql) with dp=wetdp, but 
+    !since P3 is dry, it conserves it for drydp. Scaling of temperature tendencies is required to fix it.
     dtemp(:ncol,:pver) = dtemp(:ncol,:pver) *ratio_local(:ncol,:pver)    
 
     temp(:ncol,:pver) = dtemp(:ncol,:pver) + state%t(:ncol,:pver)
