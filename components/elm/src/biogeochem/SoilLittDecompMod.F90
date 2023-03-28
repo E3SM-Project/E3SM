@@ -56,7 +56,7 @@ module SoilLittDecompMod
 
 contains
    !-----------------------------------------------------------------------
-    subroutine readSoilLittDecompParams ( ncid )
+    subroutine readSoilLittDecompParams ( ncid)
       !
       ! !DESCRIPTION:
       ! Read parameters
@@ -86,7 +86,7 @@ contains
     end subroutine readSoilLittDecompParams
 
 !-----------------------------------------------
-  subroutine SoilLittDecompAlloc (num_soilc, filter_soilc,    &
+  subroutine SoilLittDecompAlloc (bounds, num_soilc, filter_soilc,    &
                 num_soilp, filter_soilp,                        &
                 canopystate_vars, soilstate_vars,               &
                 cnstate_vars, ch4_vars, dtime)
@@ -105,6 +105,7 @@ contains
     ! !USES:
     use AllocationMod , only: Allocation2_ResolveNPLimit ! Phase-2 of CNAllocation
     ! !ARGUMENT:
+    type(bounds_type)        , intent(in)    :: bounds 
     integer                  , intent(in)    :: num_soilc          ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:)    ! filter for soil columns
     integer                  , intent(in)    :: num_soilp          ! number of soil patches in filter
@@ -197,18 +198,13 @@ contains
 
       ! column loop to calculate potential decomp rates and total immobilization
       ! demand.
-      call cpu_time(startt)
       !$acc enter data create(cn_decomp_pools(num_soilc,1:nlevdecomp,1:ndecomp_pools), &
-      !$acc                                     p_decomp_cpool_loss(num_soilc,1:nlevdecomp,1:ndecomp_cascade_transitions)) async(1)
+      !$acc                                     p_decomp_cpool_loss(num_soilc,1:nlevdecomp,1:ndecomp_cascade_transitions))
       !$acc enter data create(cp_decomp_pools(num_soilc,1:nlevdecomp,1:ndecomp_pools),&
-      !$acc                   immob(num_soilc,1:nlevdecomp) ,immob_p(num_soilc,1:nlevdecomp)  ) async(2)
-      !$acc enter data create(cp_decomp_pools_new(num_soilc,1:nlevdecomp,1:ndecomp_pools)) async(3)
-      !$acc wait
-      call cpu_time(stopt)
-      print *, "Local variable create:", (stopt-startt)*1.E+3,"ms"
+      !$acc                   immob(num_soilc,1:nlevdecomp) ,immob_p(num_soilc,1:nlevdecomp)  ) 
+      !$acc enter data create(cp_decomp_pools_new(num_soilc,1:nlevdecomp,1:ndecomp_pools)) 
       !! calculate c:n ratios of applicable pools
       print *, "Launching loop:", ndecomp_pools, nlevdecomp, num_soilc
-      call cpu_time(startt)
 
       !$acc parallel loop gang independent collapse(2) default(present)
       do l = 1, ndecomp_pools
@@ -235,15 +231,11 @@ contains
             end do
          end do
       end do
-      call cpu_time(stopt)
-      print *, "Decomp pool init time:", (stopt-startt)*1.E+3,"ms"
 
       ! calculate the non-nitrogen-limited fluxes
       ! these fluxes include the  "/ dt" term to put them on a
       ! per second basis, since the rate constants have been
       ! calculated on a per timestep basis.
-      call cpu_time(startt)
-
        !$acc parallel loop  gang independent collapse(2) default(present)
        do k = 1, ndecomp_cascade_transitions
           do j = 1,nlevdecomp
@@ -297,11 +289,8 @@ contains
              end do
           end do
        end do
-       call cpu_time(stopt)
-       print *, "Decomp Cascade Time ", (stopt-startt)*1.E+3,"ms"
 
       !$acc enter data create(sum_1,sum_2,sum_3,sum_4)
-      call cpu_time(startt)
       !$acc  parallel loop independent gang worker collapse(2) default(present) private(c,sum_1,sum_2,sum_3,sum_4)
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
@@ -329,10 +318,7 @@ contains
             gross_pmin_vr(c,j) = sum_4
          end do
       end do
-      call cpu_time(stopt)
-      print *, "PN Reduction time:",(stopt-startt)*1E+3,"ms"
 
-      call cpu_time(startt)
       !$acc parallel loop independent gang worker collapse(2) private(c,sum_1) default(present)
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
@@ -345,11 +331,8 @@ contains
             phr_vr(c,j) = sum_1
          end do
       end do
-      call cpu_time(stopt)
-      print *, "PHR_VR Reduction time:",(stopt-startt)*1E+3,"ms"
 
-
-      !$!acc loop independent gang worker vector collapse(2) private(j,fc,c)
+      !$acc parallel loop independent gang  vector collapse(2) default(present) 
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -358,33 +341,19 @@ contains
          end do
       end do
 
-
       !-------------------------------------------------------------------------------------------------
       ! 'call decomp_vertprofiles()' (calc nfixation_prof) is moved to EcosystemDynNoLeaching1
       ! 'nfixation_prof' is used in 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in Allocation1,2,3
       !-------------------------------------------------------------------------------------------------
-      call cpu_time(startt)
-      !$acc parallel loop gang independent default(present)
-      do j = 1,nlevdecomp
-         !$acc loop vector independent
-         do fc = 1, num_soilc
-            call nitrif_denitrif( c,fc,j, &
+      call nitrif_denitrif( num_soilc,filter_soilc, &
                      soilstate_vars,  ch4_vars )
-         end do
-      end do
-      call cpu_time(stopt)
-      print *, "nitrif_denitrif:",(stopt-startt)*1E+3,"ms"
 
       ! now that potential N immobilization is known, call allocation
       ! to resolve the competition between plants and soil heterotrophs
       ! for available soil mineral N resource.
       ! in addition, calculate fpi_vr, fpi_p_vr, & fgp
-      event = 'CNAllocation - phase-2'
-      call cpu_time(startt)
-      call Allocation2_ResolveNPLimit(num_soilc, filter_soilc, &
+      call Allocation2_ResolveNPLimit(bounds,num_soilc, filter_soilc, &
                cnstate_vars, soilstate_vars, dtime)
-      call cpu_time(stopt)
-      print *, "Allocation Phase 2:", (stopt-startt)*1E+3,"ms"
       ! column loop to calculate actual immobilization and decomp rates, following
       ! resolution of plant/heterotroph  competition for mineral N
       !-------------------------------------------------------------------------------------------------
@@ -489,7 +458,6 @@ contains
           end do
       end if
 
-#ifndef _OPENACC
    if (nu_com .ne. 'RD') then
       do fc = 1,num_soilc
           c = filter_soilc(fc)
@@ -526,7 +494,6 @@ contains
           end do
       end do
    end if
-#endif
 
       if (use_lch4) then
          !$acc parallel loop independent gang worker collapse(2) private(c,sum_1) default(present)

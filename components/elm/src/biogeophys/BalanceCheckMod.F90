@@ -370,7 +370,7 @@ contains
           if ((col_pp%itype(indexc) == icol_roof .or. &
                col_pp%itype(indexc) == icol_road_imperv .or. &
                col_pp%itype(indexc) == icol_road_perv) .and. &
-               abs(errh2o(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
+               abs(errh2o(indexc)) > 1.e-4_r8 ) then
 
              write(iulog,*)'clm urban model is stopping - error is greater than 1e-4 (mm)'
              write(iulog,*)'nstep                      = ',nstep
@@ -392,7 +392,7 @@ contains
              write(iulog,*)'elm model is stopping'
              call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
 
-          else if (abs(errh2o(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
+          else if (abs(errh2o(indexc)) > 1.e-4_r8 ) then
 
              write(iulog,*)'elm model is stopping - error is greater than 1e-4 (mm)'
              write(iulog,*)'colum number               = ',col_pp%gridcell(indexc)
@@ -749,7 +749,7 @@ contains
     ! Initialize column-level water balance at beginning of time step
     !
     ! !USES:
-    use subgridAveMod , only : p2c,c2g, urbanf, unity
+    use subgridAveMod , only : p2c_1d_filter_parallel,c2g_1d_parallel, urbanf, unity
     use elm_varpar    , only : nlevgrnd, nlevsoi, nlevurb
     use column_varcon , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon , only : icol_road_perv, icol_road_imperv
@@ -772,6 +772,7 @@ contains
     real(r8) :: h2osoi_liq_depth_intg(bounds%begc:bounds%endc)
     real(r8) :: h2osoi_ice_depth_intg(bounds%begc:bounds%endc)
     real(r8) :: wa_local_col(bounds%begc:bounds%endc)
+    real(r8) :: sum1,sum2,sum3
 
     associate(                                                                        &
          zi                        =>    col_pp%zi                                  , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
@@ -795,22 +796,29 @@ contains
          )
 
       ! Set to zero
-      begwb_col (bounds%begc:bounds%endc) = 0._r8
-      h2ocan_col(bounds%begc:bounds%endc) = 0._r8
-      h2osoi_liq_depth_intg(bounds%begc:bounds%endc) = 0._r8
-      h2osoi_ice_depth_intg(bounds%begc:bounds%endc) = 0._r8
-      h2osoi_liq_depth_intg_col(bounds%begc:bounds%endc) = 0._r8
-      h2osoi_ice_depth_intg_col(bounds%begc:bounds%endc) = 0._r8
+      !$acc enter data create( &
+      !$acc begwb_col (:), & 
+      !$acc h2ocan_col(:), &
+      !$acc h2osoi_liq_depth_intg(:), &
+      !$acc h2osoi_ice_depth_intg(:), &
+      !$acc wa_local_col(:), sum1,sum2,sum3 &
+      !$acc )
+      
+      !$acc parallel loop independent gang vector default(present) 
+      do c = bounds%begc, bounds%endc 
+         h2osoi_liq_depth_intg_col(c) = 0._r8
+         h2osoi_ice_depth_intg_col(c) = 0._r8
+         wa_local_col(c) = wa(c)
+      end do 
 
       ! Determine beginning water balance for time step
       ! pft-level canopy water averaged to column
 
-      call p2c(bounds, num_nolakec, filter_nolakec, &
+      call p2c_1d_filter_parallel(num_nolakec, filter_nolakec, &
             h2ocan_patch(bounds%begp:bounds%endp), &
             h2ocan_col(bounds%begc:bounds%endc))
 
-      wa_local_col(bounds%begc:bounds%endc) = wa(bounds%begc:bounds%endc)
-
+      !$acc parallel loop independent gang vector default(present)
       do f = 1, num_nolakec
          c = filter_nolakec(f)
          g = col_pp%gridcell(c)
@@ -824,57 +832,77 @@ contains
          begwb_col(c) = begwb_col(c) + total_plant_stored_h2o(c)
       end do
 
-      do j = 1, nlevgrnd
-         do f = 1, num_nolakec
-            c = filter_nolakec(f)
+      !$acc parallel loop independent gang worker default(present) private(c,sum1,sum2)
+      do f = 1, num_nolakec
+         sum1 = 0._r8
+         sum2 = 0._r8 
+         c = filter_nolakec(f)
+         !$acc loop reduction(+:sum1,sum2)
+         do j = 1, nlevgrnd
             if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
                  .or. col_pp%itype(c) == icol_roof) .and. j > nlevurb) then
             else
-               begwb_col(c) = begwb_col(c) + h2osoi_ice(c,j) + h2osoi_liq(c,j)
-               h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + h2osoi_liq(c,j)
-               h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + h2osoi_ice(c,j)
+               sum1 = sum1 + h2osoi_liq(c,j)
+               sum2 = sum2 + h2osoi_ice(c,j)
             end if
          end do
+         begwb_col(c) = begwb_col(c) + sum1 + sum2 
+         h2osoi_liq_depth_intg(c) = sum1 
+         h2osoi_ice_depth_intg(c) = sum2 
       end do
-
+      
+      !$acc parallel loop independent gang worker default(present) private(c,sum1,sum2)
       do f = 1, num_lakec
          c = filter_lakec(f)
+         sum1 = 0._r8 ; sum2 = 0._r8
          begwb_col(c) = h2osno(c)
+         !$acc loop reduction(+:sum1,sum2,sum3)
          do j = 1, nlevgrnd
-            begwb_col(c) = begwb_col(c) + h2osoi_ice(c,j) + h2osoi_liq(c,j)
-            h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + h2osoi_liq(c,j)
-            h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + h2osoi_ice(c,j)
+            sum1 = sum1 + h2osoi_liq(c,j)
+            sum2 = sum2 + h2osoi_ice(c,j)
          enddo
+         begwb_col(c) = begwb_col(c) + sum1 +sum2 
+         h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + sum1
+         h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + sum2
+
       end do
 
-      call c2g(bounds, begwb_col(bounds%begc:bounds%endc), &
+      call c2g_1d_parallel(bounds, begwb_col(bounds%begc:bounds%endc), &
            begwb_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= urbanf, l2g_scale_type=unity )
+           c2l_scale_type= urbanf, l2g_scale_type=unity,para=.true.)
 
-      call c2g(bounds, wa_local_col(bounds%begc:bounds%endc), &
+      call c2g_1d_parallel(bounds, wa_local_col(bounds%begc:bounds%endc), &
            beg_wa_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= urbanf, l2g_scale_type=unity )
+           c2l_scale_type= urbanf, l2g_scale_type=unity,para=.true. )
 
-      call c2g(bounds, h2ocan_col(bounds%begc:bounds%endc), &
+      call c2g_1d_parallel(bounds, h2ocan_col(bounds%begc:bounds%endc), &
            beg_h2ocan_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= urbanf, l2g_scale_type=unity )
+           c2l_scale_type= urbanf, l2g_scale_type=unity,para=.true. )
 
-      call c2g(bounds, h2osno(bounds%begc:bounds%endc), &
+      call c2g_1d_parallel(bounds, h2osno(bounds%begc:bounds%endc), &
            beg_h2osno_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= urbanf, l2g_scale_type=unity )
+           c2l_scale_type= urbanf, l2g_scale_type=unity,para=.true. )
 
-      call c2g(bounds, h2osfc(bounds%begc:bounds%endc), &
+      call c2g_1d_parallel(bounds, h2osfc(bounds%begc:bounds%endc), &
            beg_h2osfc_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= urbanf, l2g_scale_type=unity )
+           c2l_scale_type= urbanf, l2g_scale_type=unity,para=.true. )
 
-      call c2g(bounds, h2osoi_liq_depth_intg(bounds%begc:bounds%endc), &
+      call c2g_1d_parallel(bounds, h2osoi_liq_depth_intg(bounds%begc:bounds%endc), &
            beg_h2osoi_liq_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= urbanf, l2g_scale_type=unity )
+           c2l_scale_type= urbanf, l2g_scale_type=unity,para=.true. )
 
-      call c2g(bounds, h2osoi_ice_depth_intg(bounds%begc:bounds%endc), &
+      call c2g_1d_parallel(bounds, h2osoi_ice_depth_intg(bounds%begc:bounds%endc), &
            beg_h2osoi_ice_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= urbanf, l2g_scale_type=unity )
+           c2l_scale_type= urbanf, l2g_scale_type=unity,para=.true. )
 
+      !$acc exit data delete( &
+      !$acc begwb_col (:), & 
+      !$acc h2ocan_col(:), &
+      !$acc h2osoi_liq_depth_intg(:), &
+      !$acc h2osoi_ice_depth_intg(:), &
+      !$acc wa_local_col(:),sum1,sum2,sum3 &
+      !$acc )
+           
     end associate
 
   end subroutine BeginGridWaterBalance

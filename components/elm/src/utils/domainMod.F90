@@ -1,22 +1,22 @@
 module domainMod
 !-----------------------------------------------------------------------
 !BOP
-
+!
 ! !MODULE: domainMod
-
+!
 ! !DESCRIPTION:
 ! Module containing 2-d global surface boundary data information
-
+!
 ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
-  use shr_sys_mod , only : shr_sys_abort
-  use spmdMod     , only : masterproc
   use elm_varctl  , only : iulog
-
+  use spmdMod  , only : masterproc
+  use shr_sys_mod, only : shr_sys_abort 
+!
 ! !PUBLIC TYPES:
   implicit none
   private
-
+!
   public :: domain_type
 
   !--- this typically contains local domain info with arrays dim begg:endg ---
@@ -28,7 +28,7 @@ module domainMod
      character(len=8) :: elmlevel   ! grid type
      integer ,pointer :: mask(:)    ! land mask: 1 = land, 0 = ocean
      real(r8),pointer :: frac(:)    ! fractional land
-     real(r8),pointer :: topo(:)    ! topography 
+     real(r8),pointer :: topo(:)    ! topography
      integer ,pointer :: num_tunits_per_grd(:)    ! Number of topountis per grid to be used in subgrid decomposition
      real(r8),pointer :: latc(:)    ! latitude of grid cell (deg)
      real(r8),pointer :: lonc(:)    ! longitude of grid cell (deg)
@@ -62,9 +62,12 @@ module domainMod
      !! This is a type that holds only physically relevant fields of ldomain
      !! Needed to workaround gpu compiler issues.  Alternative may be to pass ldomain
      !! as arguments instead of by USE.
-     real(r8), pointer :: f_grd(:)
+     real(r8), pointer :: f_grd(:) 
      real(r8), pointer :: f_surf(:)
      real(r8), pointer :: firrig(:)
+     real(r8), pointer :: latc(:)    ! latitude of grid cell (deg)
+     real(r8), pointer :: lonc(:)    ! longitude of grid cell (deg)
+
      !real(r8), pointer :: area(:)  !Only in CNPBudgetMod?
      !real(r8), pointer :: frac(:)
      integer, pointer :: glcmask(:)
@@ -78,12 +81,13 @@ module domainMod
   public domain_init          ! allocates/nans domain types
   public domain_clean         ! deallocates domain types
   public domain_check         ! write out domain info
-  public :: domain_transfer 
-  !
+  public :: domain_transfer
+!
 ! !REVISION HISTORY:
 ! Originally elm_varsur by Mariana Vertenstein
 ! Migrated from elm_varsur to domainMod by T Craig
-
+!
+!
 !EOP
 !------------------------------------------------------------------------------
 
@@ -91,35 +95,36 @@ contains
 
 !------------------------------------------------------------------------------
 !BOP
-
+!
 ! !IROUTINE: domain_init
-
+!
 ! !INTERFACE:
-  subroutine domain_init(domain,isgrid2d,ni,nj,nbeg,nend,elmlevel)
-    use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
-
-! !DESCRIPTION:
-! This subroutine allocates and nans the domain type
-
-! !USES:
-
-! !ARGUMENTS:
-    implicit none
-    type(domain_type)   :: domain        ! domain datatype
-    logical, intent(in) :: isgrid2d      ! true => global grid is lat/lon
-    integer, intent(in) :: ni,nj         ! grid size, 2d
-    integer         , intent(in), optional  :: nbeg,nend  ! beg/end indices
-    character(len=*), intent(in), optional  :: elmlevel   ! grid type
-
-! !REVISION HISTORY:
-!   Created by T Craig
-
-! !LOCAL VARIABLES:
-!EOP
-    integer ier
-    integer nb,ne
-
-!------------------------------------------------------------------------------
+subroutine domain_init(domain,isgrid2d,ni,nj,nbeg,nend,elmlevel)
+        #define nan 1e36
+   !
+   ! !DESCRIPTION:
+   ! This subroutine allocates and nans the domain type
+   !
+   ! !USES:
+   !
+   ! !ARGUMENTS:
+   implicit none
+   type(domain_type)   :: domain        ! domain datatype
+   logical, intent(in) :: isgrid2d      ! true => global grid is lat/lon
+   integer, intent(in) :: ni,nj         ! grid size, 2d
+   integer         , intent(in), optional  :: nbeg,nend  ! beg/end indices
+   character(len=*), intent(in), optional  :: elmlevel   ! grid type
+   !
+   ! !REVISION HISTORY:
+   !   Created by T Craig
+   !
+   !
+   ! !LOCAL VARIABLES:
+   !EOP
+   integer ier
+   integer nb,ne
+   !
+   !------------------------------------------------------------------------------
 
     nb = 1
     ne = ni*nj
@@ -138,25 +143,21 @@ contains
     endif
     allocate(domain%mask(nb:ne),domain%frac(nb:ne),domain%latc(nb:ne), &
              domain%pftm(nb:ne),domain%area(nb:ne),domain%firrig(nb:ne),domain%lonc(nb:ne), &
-             domain%topo(nb:ne),domain%f_surf(nb:ne),domain%f_grd(nb:ne),domain%num_tunits_per_grd(nb:ne),domain%glcmask(nb:ne), &
-             domain%xCell(nb:ne),domain%yCell(nb:ne),stat=ier)
-    if (ier /= 0) then
-       call shr_sys_abort('domain_init ERROR: allocate mask, frac, lat, lon, area ')
-    endif
-
+             domain%topo(nb:ne),domain%f_surf(nb:ne),domain%f_grd(nb:ne),domain%glcmask(nb:ne), &
+             domain%num_tunits_per_grd(nb:ne), domain%xCell(nb:ne),domain%yCell(nb:ne),stat=ier)
+    if(ier /= 0) then 
+      call shr_sys_abort('domain_init ERROR: allocate mask, frac, lat, lon, area')
+    endif 
+    
     ! pflotran:beg-----------------------------------------------------
     ! 'nv' is user-defined, so it must be initialized or assigned value prior to call this subroutine
     if (domain%nv > 0 .and. domain%nv /= huge(1)) then
        if(.not.associated(domain%lonv)) then
            allocate(domain%lonv(nb:ne, 1:domain%nv), stat=ier)
-           if (ier /= 0) &
-           call shr_sys_abort('domain_init ERROR: allocate lonv ')
            domain%lonv     = nan
        endif
        if(.not.associated(domain%latv)) then
            allocate(domain%latv(nb:ne, 1:domain%nv))
-           if (ier /= 0) &
-           call shr_sys_abort('domain_init ERROR: allocate latv ')
            domain%latv     = nan
        endif
     end if
@@ -198,61 +199,55 @@ contains
 end subroutine domain_init
 !------------------------------------------------------------------------------
 !BOP
-
-! !IROUTINE: domain_clean
-
-! !INTERFACE:
-  subroutine domain_clean(domain)
-
-! !DESCRIPTION:
-! This subroutine deallocates the domain type
-
-! !ARGUMENTS:
-    implicit none
-    type(domain_type) :: domain        ! domain datatype
-
-! !REVISION HISTORY:
-!   Created by T Craig
-
-! !LOCAL VARIABLES:
-!EOP
-    integer ier
 !
-!------------------------------------------------------------------------------
-    if (domain%set) then
-       if (masterproc) then
-          write(iulog,*) 'domain_clean: cleaning ',domain%ni,domain%nj
-       endif
-       deallocate(domain%mask,domain%frac,domain%latc, &
-             domain%pftm,domain%area,domain%firrig,domain%lonc, &
-             domain%topo,domain%f_surf,domain%f_grd,domain%num_tunits_per_grd,domain%glcmask, &
-             domain%xCell,domain%yCell,stat=ier)
-       if (ier /= 0) then
-          call shr_sys_abort('domain_clean ERROR: deallocate mask, frac, lat, lon, area ')
-       endif
+! !IROUTINE: domain_clean
+!
+! !INTERFACE:
+subroutine domain_clean(domain)
+   !
+   ! !DESCRIPTION:
+   ! This subroutine deallocates the domain type
+   !
+   ! !ARGUMENTS:
+   implicit none
+   type(domain_type) :: domain        ! domain datatype
+   !
+   ! !REVISION HISTORY:
+   !   Created by T Craig
+   !
+   !
+   ! !LOCAL VARIABLES:
+   !EOP
+   integer ier
+   !
+   !------------------------------------------------------------------------------
+   if (domain%set) then
+      if (masterproc) then
+         write(iulog,*) 'domain_clean: cleaning ',domain%ni,domain%nj
+      endif
+      deallocate(domain%mask,domain%frac,domain%latc, &
+            domain%lonc,domain%area,domain%firrig,domain%pftm, &
+            domain%topo,domain%f_surf,domain%f_grd,domain%num_tunits_per_grd,domain%glcmask, &
+            domain%xCell,domain%yCell,stat=ier)
 
-       ! pflotran:beg-----------------------------------------------------
-       ! 'nv' is user-defined, so it must be initialized or assigned value prior to call this subroutine
-       if (domain%nv > 0 .and. domain%nv /= huge(1)) then
-          if (associated(domain%lonv)) then
-             deallocate(domain%lonv, stat=ier)
-             if (ier /= 0) &
-             call shr_sys_abort('domain_clean ERROR: deallocate lonv ')
-             nullify(domain%lonv)
-          endif
+      ! pflotran:beg-----------------------------------------------------
+      ! 'nv' is user-defined, so it must be initialized or assigned value prior to call this subroutine
+      if (domain%nv > 0 .and. domain%nv /= huge(1)) then
+         if (associated(domain%lonv)) then
+            deallocate(domain%lonv, stat=ier)
+            nullify(domain%lonv)
+         endif
 
-          if (associated(domain%latv)) then
-             deallocate(domain%latv, stat=ier)
-             if (ier /= 0) &
-             call shr_sys_abort('domain_clean ERROR: deallocate latv ')
-             nullify(domain%latv)
-          endif
-       endif
+         if (associated(domain%latv)) then
+            deallocate(domain%latv, stat=ier)
+            nullify(domain%latv)
+         endif
+      endif
        ! pflotran:beg-----------------------------------------------------
 
     else
        if (masterproc) then
-          write(iulog,*) 'domain_clean WARN: clean domain unecessary '
+         write(iulog,*) 'domain_clean WARN: clean domain unecessary '
        endif
     endif
 
@@ -268,50 +263,51 @@ end subroutine domain_init
 end subroutine domain_clean
 !------------------------------------------------------------------------------
 !BOP
-
-! !IROUTINE: domain_check
-
-! !INTERFACE:
-  subroutine domain_check(domain)
-
-! !DESCRIPTION:
-! This subroutine write domain info
-
-! !USES:
-
-! !ARGUMENTS:
-    implicit none
-    type(domain_type),intent(in)  :: domain        ! domain datatype
-
-! !REVISION HISTORY:
-!   Created by T Craig
-
-! !LOCAL VARIABLES:
 !
-!EOP
-!------------------------------------------------------------------------------
+! !IROUTINE: domain_check
+!
+! !INTERFACE:
+subroutine domain_check(domain)
+   !
+   ! !DESCRIPTION:
+   ! This subroutine write domain info
+   !
+   ! !USES:
+   !
+   ! !ARGUMENTS:
+   implicit none
+   type(domain_type),intent(in)  :: domain ! domain datatype
+   !
+   ! !REVISION HISTORY:
+   !   Created by T Craig
+   !
+   !
+   ! !LOCAL VARIABLES:
+   !
+   !EOP
+   !------------------------------------------------------------------------------
 
-  if (masterproc) then
-    write(iulog,*) '  domain_check set       = ',domain%set
-    write(iulog,*) '  domain_check decomped  = ',domain%decomped
-    write(iulog,*) '  domain_check ns        = ',domain%ns
-    write(iulog,*) '  domain_check ni,nj     = ',domain%ni,domain%nj
-    write(iulog,*) '  domain_check elmlevel  = ',trim(domain%elmlevel)
-    write(iulog,*) '  domain_check nbeg,nend = ',domain%nbeg,domain%nend
-    write(iulog,*) '  domain_check lonc      = ',minval(domain%lonc),maxval(domain%lonc)
-    write(iulog,*) '  domain_check latc      = ',minval(domain%latc),maxval(domain%latc)
-    write(iulog,*) '  domain_check mask      = ',minval(domain%mask),maxval(domain%mask)
-    write(iulog,*) '  domain_check frac      = ',minval(domain%frac),maxval(domain%frac)
-    write(iulog,*) '  domain_check topo      = ',minval(domain%topo),maxval(domain%topo)
-    write(iulog,*) '  domain_check num_tunits_per_grd      = ',minval(domain%num_tunits_per_grd),maxval(domain%num_tunits_per_grd)
-    write(iulog,*) '  domain_check firrig    = ',minval(domain%firrig),maxval(domain%firrig)
-    write(iulog,*) '  domain_check f_surf    = ',minval(domain%f_surf),maxval(domain%f_surf)
-    write(iulog,*) '  domain_check f_grd     = ',minval(domain%f_grd),maxval(domain%f_grd)
-    write(iulog,*) '  domain_check area      = ',minval(domain%area),maxval(domain%area)
-    write(iulog,*) '  domain_check pftm      = ',minval(domain%pftm),maxval(domain%pftm)
-    write(iulog,*) '  domain_check glcmask   = ',minval(domain%glcmask),maxval(domain%glcmask)
-    write(iulog,*) ' '
-  endif
+   if (masterproc) then
+      write(iulog,*) '  domain_check set       = ',domain%set
+      write(iulog,*) '  domain_check decomped  = ',domain%decomped
+      write(iulog,*) '  domain_check ns        = ',domain%ns
+      write(iulog,*) '  domain_check ni,nj     = ',domain%ni,domain%nj
+      write(iulog,*) '  domain_check elmlevel  = ',trim(domain%elmlevel)
+      write(iulog,*) '  domain_check nbeg,nend = ',domain%nbeg,domain%nend
+      write(iulog,*) '  domain_check lonc      = ',minval(domain%lonc),maxval(domain%lonc)
+      write(iulog,*) '  domain_check latc      = ',minval(domain%latc),maxval(domain%latc)
+      write(iulog,*) '  domain_check mask      = ',minval(domain%mask),maxval(domain%mask)
+      write(iulog,*) '  domain_check frac      = ',minval(domain%frac),maxval(domain%frac)
+      write(iulog,*) '  domain_check topo      = ',minval(domain%topo),maxval(domain%topo)
+      write(iulog,*) '  domain_check num_tunits_per_grd      = ',minval(domain%num_tunits_per_grd),maxval(domain%num_tunits_per_grd)
+      write(iulog,*) '  domain_check firrig    = ',minval(domain%firrig),maxval(domain%firrig)
+      write(iulog,*) '  domain_check f_surf    = ',minval(domain%f_surf),maxval(domain%f_surf)
+      write(iulog,*) '  domain_check f_grd     = ',minval(domain%f_grd),maxval(domain%f_grd)
+      write(iulog,*) '  domain_check area      = ',minval(domain%area),maxval(domain%area)
+      write(iulog,*) '  domain_check pftm      = ',minval(domain%pftm),maxval(domain%pftm)
+      write(iulog,*) '  domain_check glcmask   = ',minval(domain%glcmask),maxval(domain%glcmask)
+      write(iulog,*) ' '
+   endif
 
 end subroutine domain_check
 
@@ -326,13 +322,14 @@ subroutine domain_transfer()
    allocate(ldomain_gpu%f_surf (1:nend) )
    allocate(ldomain_gpu%firrig (1:nend) )
    allocate(ldomain_gpu%glcmask(1:nend) )
+   allocate(ldomain_gpu%latc(1:nend))
+   allocate(ldomain_gpu%lonc(1:nend))
    ldomain_gpu%f_grd(:)  = ldomain%f_grd(:)
    ldomain_gpu%f_surf(:)  = ldomain%f_surf(:)
    ldomain_gpu%firrig(:)  = ldomain%firrig(:)
    ldomain_gpu%glcmask(:) = ldomain%glcmask(:)
-
-   ! area(:)  !Only in CNPBudgetMod?
-   ! frac(:)
+   ldomain_gpu%latc(:) = ldomain%latc(:)
+   ldomain_gpu%lonc(:) = ldomain%lonc(:)
 
 end subroutine domain_transfer
 

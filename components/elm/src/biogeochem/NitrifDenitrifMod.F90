@@ -109,20 +109,17 @@ contains
   end subroutine readNitrifDenitrifParams
 
   !-----------------------------------------------------------------------
-  subroutine nitrif_denitrif( c,fc,j, &
-       soilstate_vars, ch4_vars)
+  subroutine nitrif_denitrif( num_soilc,filter_soilc,soilstate_vars, ch4_vars)
     !
     ! !DESCRIPTION:
     !  calculate nitrification and denitrification rates
     !
     ! !USES:
-      !$acc routine seq
     use SharedParamsMod , only : anoxia_wtsat,ParamsShareInst
     !
     ! !ARGUMENTS:
-    integer, intent(in), value  :: c, fc, j
-    ! integer                  , intent(in)    :: num_soilc         ! number of soil columns in filter
-    ! integer                  , intent(in)    :: filter_soilc(:)   ! filter for soil columns
+    integer                  , intent(in)    :: num_soilc         ! number of soil columns in filter
+    integer                  , intent(in)    :: filter_soilc(:)   ! filter for soil columns
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(ch4_type)           , intent(in)    :: ch4_vars
     !
@@ -153,6 +150,7 @@ contains
     real(r8) :: anaerobic_frac_sat, r_psi_sat, r_min_sat ! scalar values in sat portion for averaging
     real(r8) :: organic_max             ! organic matter content (kg/m3) where
                                         ! soil is assumed to act like peat
+    integer :: fc, j, c 
     !-----------------------------------------------------------------------
     associate(                                                                                     &
          watsat                        =>    soilstate_vars%watsat_col                           , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water at saturation (porosity) (nlevgrnd)
@@ -201,34 +199,32 @@ contains
          soil_bulkdensity              =>    col_nf%soil_bulkdensity              , & ! Output:  [real(r8) (:,:) ]  (kg soil / m3) bulk density of soil (including water)
          pot_f_nit_vr                  =>    col_nf%pot_f_nit_vr                  , & ! Output:  [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux
          pot_f_denit_vr                =>    col_nf%pot_f_denit_vr                , & ! Output:  [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux
-         n2_n2o_ratio_denit_vr         =>    col_nf%n2_n2o_ratio_denit_vr           & ! Output:  [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
+         n2_n2o_ratio_denit_vr         =>    col_nf%n2_n2o_ratio_denit_vr         ,  & ! Output:  [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
+         surface_tension_water => NitrifDenitrifParamsInst%surface_tension_water  , &
+
+         ! Set parameters from simple-structure model to calculate anoxic fratction (Arah and Vinten 1995)
+         rij_kro_a     => NitrifDenitrifParamsInst%rij_kro_a     ,&
+         rij_kro_alpha => NitrifDenitrifParamsInst%rij_kro_alpha ,&
+         rij_kro_beta  => NitrifDenitrifParamsInst%rij_kro_beta  ,&
+         rij_kro_gamma => NitrifDenitrifParamsInst%rij_kro_gamma ,&
+         rij_kro_delta => NitrifDenitrifParamsInst%rij_kro_delta ,&
+         organic_max => ParamsShareInst%organic_max &
          )
 
       ! Set maximum nitrification rate constant
-      k_nitr_max =  0.1_r8 / secspday   ! [1/sec] 10%/day  Parton et al., 2001
 
       ! Todo:  FIX(SPM,032414) - the explicit divide gives different results than when that
       ! value is placed in the parameters netcdf file.  To get bfb, keep the
       ! divide in source.
       !k_nitr_max = NitrifDenitrifParamsInst%k_nitr_max
 
-      surface_tension_water = NitrifDenitrifParamsInst%surface_tension_water
-
-      ! Set parameters from simple-structure model to calculate anoxic fratction (Arah and Vinten 1995)
-      rij_kro_a     = NitrifDenitrifParamsInst%rij_kro_a
-      rij_kro_alpha = NitrifDenitrifParamsInst%rij_kro_alpha
-      rij_kro_beta  = NitrifDenitrifParamsInst%rij_kro_beta
-      rij_kro_gamma = NitrifDenitrifParamsInst%rij_kro_gamma
-      rij_kro_delta = NitrifDenitrifParamsInst%rij_kro_delta
-
-      organic_max = ParamsShareInst%organic_max
-
       co2diff_con(1) =   0.1325_r8
       co2diff_con(2) =   0.0009_r8
-
-      ! do j = 1, nlevdecomp
-      !    do fc = 1,num_soilc
-            ! c = filter_soilc(fc)
+      !$acc parallel loop independent gang vector collapse(2) default(present)
+      do j = 1, nlevdecomp
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+             k_nitr_max =  0.1_r8 / secspday   ! [1/sec] 10%/day  Parton et al., 2001
 
             !---------------- calculate soil anoxia state
             ! calculate gas diffusivity of soil at field capacity here
@@ -377,8 +373,8 @@ contains
 
             ! final ratio expression
             n2_n2o_ratio_denit_vr(c,j) = max(0.16*ratio_k1(c,j), ratio_k1(c,j)*exp(-0.8 * ratio_no3_co2(c,j))) * fr_WFPS(c,j)
-      !    end do
-      ! end do
+         end do
+      end do
 
     end associate
 

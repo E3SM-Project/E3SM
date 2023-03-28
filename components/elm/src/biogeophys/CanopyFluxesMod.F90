@@ -1,7 +1,7 @@
 module CanopyFluxesMod
 
 #include "shr_assert.h"
-
+  
   !------------------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Performs calculation of leaf temperature and surface fluxes.
@@ -40,7 +40,6 @@ module CanopyFluxesMod
   use ColumnDataType        , only : col_es, col_ef, col_ws
   use VegetationType        , only : veg_pp
   use VegetationDataType    , only : veg_es, veg_ef, veg_ws, veg_wf
-
   !!! using elm_instMod messes with the compilation order
   !#fates_py use elm_instMod           , only : alm_fates, soil_water_retention_curve
   use timeinfoMod
@@ -106,10 +105,10 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds
-    integer, intent(in)  :: num_nolu_barep
-    integer, intent(in)  :: filter_nolu_barep(:)
-    integer, intent(in)  :: num_nolu_vegp
-    integer, intent(in)  :: filter_nolu_vegp(:)
+    integer                   , intent(in)    :: num_nolu_barep
+    integer                   , intent(in)    :: filter_nolu_barep(:)
+    integer                   , intent(in)    :: num_nolu_vegp
+    integer                   , intent(in)    :: filter_nolu_vegp(:)
     type(canopystate_type)    , intent(inout) :: canopystate_vars
     type(cnstate_type)        , intent(inout) :: cnstate_vars
     type(energyflux_type)     , intent(inout) :: energyflux_vars
@@ -119,7 +118,6 @@ contains
     type(soilstate_type)      , intent(inout) :: soilstate_vars
     type(ch4_type)            , intent(inout) :: ch4_vars
     type(photosyns_type)      , intent(inout) :: photosyns_vars
-    real(r8) :: dtime
     integer  ::  time
     !
     ! !LOCAL VARIABLES:
@@ -163,8 +161,8 @@ contains
     real(r8), parameter :: ria  = 0.5_r8             ! free parameter for stable formulation (currently = 0.5, "gamma" in Sakaguchi&Zeng,2008)
 
     real(r8) :: zldis(num_nolu_vegp)   ! reference height "minus" zero displacement height [m]
-    real(r8) :: zeta                      ! dimensionless height used in Monin-Obukhov theory
-    real(r8) :: wc                        ! convective velocity [m/s]
+    real(r8) :: zeta                   ! dimensionless height used in Monin-Obukhov theory
+    real(r8) :: wc                     ! convective velocity [m/s]
     real(r8) :: dth(num_nolu_vegp)     ! diff of virtual temp. between ref. height and surface
     real(r8) :: dthv(num_nolu_vegp)    ! diff of vir. poten. temp. between ref. height and surface
     real(r8) :: dqh(num_nolu_vegp)     ! diff of humidity between ref. height and surface
@@ -177,87 +175,87 @@ contains
     real(r8) :: temp2  (num_nolu_vegp) ! relation for specific humidity profile
     real(r8) :: temp22m(num_nolu_vegp) ! relation for specific humidity profile applied at 2-m
     real(r8) :: ustar  (num_nolu_vegp) ! friction velocity [m/s]
-    real(r8) :: tstar                     ! temperature scaling parameter
-    real(r8) :: qstar                     ! moisture scaling parameter
-    real(r8) :: thvstar                   ! virtual potential temperature scaling parameter
+    real(r8) :: tstar                  ! temperature scaling parameter
+    real(r8) :: qstar                  ! moisture scaling parameter
+    real(r8) :: thvstar                ! virtual potential temperature scaling parameter
     real(r8) :: taf(num_nolu_vegp)     ! air temperature within canopy space [K]
     real(r8) :: qaf(num_nolu_vegp)     ! humidity of canopy air [kg/kg]
-    real(r8) :: rpp                       ! fraction of potential evaporation from leaf [-]
-    real(r8) :: rppdry                    ! fraction of potential evaporation through transp [-]
-    real(r8) :: cf                        ! heat transfer coefficient from leaves [-]
-    real(r8) :: cf_bare                   ! heat transfer coefficient from bare ground [-]
+    real(r8) :: rpp                    ! fraction of potential evaporation from leaf [-]
+    real(r8) :: rppdry                 ! fraction of potential evaporation through transp [-]
+    real(r8) :: cf                     ! heat transfer coefficient from leaves [-]
+    real(r8) :: cf_bare                ! heat transfer coefficient from bare ground [-]
     real(r8) :: rb(num_nolu_vegp)      ! leaf boundary layer resistance [s/m]
     real(r8) :: rah(num_nolu_vegp,2)   ! thermal resistance [s/m]
     real(r8) :: raw(num_nolu_vegp,2)   ! moisture resistance [s/m]
-    real(r8) :: wta                       ! heat conductance for air [m/s]
+    real(r8) :: wta                    ! heat conductance for air [m/s]
     real(r8) :: wtg(num_nolu_vegp)     ! heat conductance for ground [m/s]
-    real(r8) :: wtl                       ! heat conductance for leaf [m/s]
+    real(r8) :: wtl                    ! heat conductance for leaf [m/s]
     real(r8) :: wta0(num_nolu_vegp)    ! normalized heat conductance for air [-]
     real(r8) :: wtl0(num_nolu_vegp)    ! normalized heat conductance for leaf [-]
-    real(r8) :: wtg0                      ! normalized heat conductance for ground [-]
+    real(r8) :: wtg0                   ! normalized heat conductance for ground [-]
     real(r8) :: wtal(num_nolu_vegp)    ! normalized heat conductance for air and leaf [-]
-    real(r8) :: wtga                      ! normalized heat cond. for air and ground  [-]
-    real(r8) :: wtaq                      ! latent heat conductance for air [m/s]
-    real(r8) :: wtlq                      ! latent heat conductance for leaf [m/s]
+    real(r8) :: wtga                   ! normalized heat cond. for air and ground  [-]
+    real(r8) :: wtaq                   ! latent heat conductance for air [m/s]
+    real(r8) :: wtlq                   ! latent heat conductance for leaf [m/s]
     real(r8) :: wtgq(num_nolu_vegp)    ! latent heat conductance for ground [m/s]
     real(r8) :: wtaq0(num_nolu_vegp)   ! normalized latent heat conductance for air [-]
     real(r8) :: wtlq0(num_nolu_vegp)   ! normalized latent heat conductance for leaf [-]
-    real(r8) :: wtgq0                     ! normalized heat conductance for ground [-]
+    real(r8) :: wtgq0                  ! normalized heat conductance for ground [-]
     real(r8) :: wtalq(num_nolu_vegp)   ! normalized latent heat cond. for air and leaf [-]
-    real(r8) :: wtgaq                     ! normalized latent heat cond. for air and ground [-]
+    real(r8) :: wtgaq                  ! normalized latent heat cond. for air and ground [-]
     real(r8) :: el(num_nolu_vegp)      ! vapor pressure on leaf surface [pa]
-    real(r8) :: deldT                     ! derivative of "el" on "t_veg" [pa/K]
+    real(r8) :: deldT                  ! derivative of "el" on "t_veg" [pa/K]
     real(r8) :: qsatl(num_nolu_vegp)   ! leaf specific humidity [kg/kg]
     real(r8) :: qsatldT(num_nolu_vegp) ! derivative of "qsatl" on "t_veg"
-    real(r8) :: e_ref2m                   ! 2 m height surface saturated vapor pressure [Pa]
-    real(r8) :: de2mdT                    ! derivative of 2 m height surface saturated vapor pressure on t_ref2m
-    real(r8) :: qsat_ref2m                ! 2 m height surface saturated specific humidity [kg/kg]
-    real(r8) :: dqsat2mdT                 ! derivative of 2 m height surface saturated specific humidity on t_ref2m
+    real(r8) :: e_ref2m                ! 2 m height surface saturated vapor pressure [Pa]
+    real(r8) :: de2mdT                 ! derivative of 2 m height surface saturated vapor pressure on t_ref2m
+    real(r8) :: qsat_ref2m             ! 2 m height surface saturated specific humidity [kg/kg]
+    real(r8) :: dqsat2mdT              ! derivative of 2 m height surface saturated specific humidity on t_ref2m
     real(r8) :: air(num_nolu_vegp)     ! atmos. radiation temporay set
     real(r8) :: bir(num_nolu_vegp)     ! atmos. radiation temporay set
     real(r8) :: cir(num_nolu_vegp)     ! atmos. radiation temporay set
-    real(r8) :: dc1,dc2                   ! derivative of energy flux [W/m2/K]
-    real(r8) :: delt                      ! temporary
+    real(r8) :: dc1,dc2                ! derivative of energy flux [W/m2/K]
+    real(r8) :: delt                   ! temporary
     real(r8) :: delq(num_nolu_vegp)    ! temporary
     real(r8) :: del(num_nolu_vegp)     ! absolute change in leaf temp in current iteration [K]
     real(r8) :: del2(num_nolu_vegp)    ! change in leaf temperature in previous iteration [K]
     real(r8) :: dele(num_nolu_vegp)    ! change in latent heat flux from leaf [K]
-    real(r8) :: dels                      ! change in leaf temperature in current iteration [K]
+    real(r8) :: dels                   ! change in leaf temperature in current iteration [K]
     real(r8) :: det(num_nolu_vegp)     ! maximum leaf temp. change in two consecutive iter [K]
     real(r8) :: efeb(num_nolu_vegp)    ! latent heat flux from leaf (previous iter) [mm/s]
-    real(r8) :: efeold                    ! latent heat flux from leaf (previous iter) [mm/s]
-    real(r8) :: efpot                     ! potential latent energy flux [kg/m2/s]
+    real(r8) :: efeold                 ! latent heat flux from leaf (previous iter) [mm/s]
+    real(r8) :: efpot                  ! potential latent energy flux [kg/m2/s]
     real(r8) :: efe(num_nolu_vegp)     ! water flux from leaf [mm/s]
-    real(r8) :: efsh                      ! sensible heat from leaf [mm/s]
+    real(r8) :: efsh                   ! sensible heat from leaf [mm/s]
     real(r8) :: obuold(num_nolu_vegp)  ! monin-obukhov length from previous iteration
     real(r8) :: tlbef(num_nolu_vegp)   ! leaf temperature from previous iteration [K]
-    real(r8) :: ecidif                    ! excess energies [W/m2]
+    real(r8) :: ecidif                 ! excess energies [W/m2]
     real(r8) :: err(num_nolu_vegp)     ! balance error
-    real(r8) :: erre                      ! balance error
+    real(r8) :: erre                   ! balance error
     real(r8) :: co2(num_nolu_vegp)     ! atmospheric co2 partial pressure (pa)
     real(r8) :: o2(num_nolu_vegp)      ! atmospheric o2 partial pressure (pa)
     real(r8) :: svpts(num_nolu_vegp)   ! saturation vapor pressure at t_veg (pa)
     real(r8) :: eah(num_nolu_vegp)     ! canopy air vapor pressure (pa)
-    real(r8) :: s_node                    ! vol_liq/eff_porosity
-    real(r8) :: smp_node                  ! matrix potential
-    real(r8) :: smp_node_lf               ! F. Li and S. Levis
-    real(r8) :: vol_liq                   ! partial volume of liquid water in layer
-    integer  :: itlef                     ! counter for leaf temperature iteration [-]
+    real(r8) :: s_node                 ! vol_liq/eff_porosity
+    real(r8) :: smp_node               ! matrix potential
+    real(r8) :: smp_node_lf            ! F. Li and S. Levis
+    real(r8) :: vol_liq                ! partial volume of liquid water in layer
+    integer  :: itlef                  ! counter for leaf temperature iteration [-]
     integer  :: nmozsgn(num_nolu_vegp) ! number of times stability changes sign
-    real(r8) :: w                         ! exp(-LSAI)
-    real(r8) :: csoilcn                   ! interpolated csoilc for less than dense canopies
-    real(r8) :: fm      ! needed for BGC only to diagnose 10m wind speed
-    real(r8) :: wtshi                     ! sensible heat resistance for air, grnd and leaf [-]
-    real(r8) :: wtsqi                     ! latent heat resistance for air, grnd and leaf [-]
-    integer  :: j                         ! soil/snow level index
-    integer  :: p                         ! patch index
-    integer  :: c                         ! column index
-    integer  :: l                         ! landunit index
-    integer  :: t                         ! topounit index
-    integer  :: g                         ! gridcell index
-    integer  :: fp                        ! lake filter pft index
-    integer  :: fn                        ! number of values in vegetated pft filter
-    integer  :: fnorig                    ! number of values in pft filter copy
+    real(r8) :: w                      ! exp(-LSAI)
+    real(r8) :: csoilcn                ! interpolated csoilc for less than dense canopies
+    real(r8) :: fm(1:num_nolu_vegp)    ! needed for BGC only to diagnose 10m wind speed
+    real(r8) :: wtshi                  ! sensible heat resistance for air, grnd and leaf [-]
+    real(r8) :: wtsqi                  ! latent heat resistance for air, grnd and leaf [-]
+    integer  :: j                      ! soil/snow level index
+    integer  :: p                      ! patch index
+    integer  :: c                      ! column index
+    integer  :: l                      ! landunit index
+    integer  :: t                      ! topounit index
+    integer  :: g                      ! gridcell index
+    integer  :: fp                     ! lake filter pft index
+    integer  :: fn                     ! number of values in vegetated pft filter
+    integer  :: fnorig                 ! number of values in pft filter copy
     integer  :: fporig(num_nolu_vegp)  ! temporary filter
     integer  :: fnold                       ! temporary copy of pft count
     integer  :: f                           ! filter index
@@ -292,12 +290,12 @@ contains
     real(r8) :: deficit                        ! difference between desired soil moisture level for this layer and
                                                ! current soil moisture level [kg/m2]
     real(r8) :: dt_veg(num_nolu_vegp)          ! change in t_veg, last iteration (Kelvin)
-    ! integer  :: filterc_tmp(num_nolu_vegp)     ! temporary variable
     integer  :: ft                             ! plant functional type index
     real(r8) :: temprootr,sum1
     integer  :: iv
     real :: startt, stopt,iterT1,iterT2
     integer :: filterp(num_nolu_vegp)  ! filter for iteration loop
+    integer :: converged(1:num_nolu_vegp), num_unconverged 
     character(len=64) :: event !! timing event
     !------------------------------------------------------------------------------
 
@@ -356,6 +354,13 @@ contains
          z0hv                 => frictionvel_vars%z0hv_patch               , & ! Output: [real(r8) (:)   ]  roughness length over vegetation, sensible heat [m]
          z0qv                 => frictionvel_vars%z0qv_patch               , & ! Output: [real(r8) (:)   ]  roughness length over vegetation, latent heat [m]
          rb1                  => frictionvel_vars%rb1_patch                , & ! Output: [real(r8) (:)   ]  boundary layer resistance (s/m)
+         forc_hgt_t_patch => frictionvel_vars%forc_hgt_t_patch , & ! Input:  [real(r8) (:) ] observational height of temperature at pft level [m]
+         forc_hgt_q_patch => frictionvel_vars%forc_hgt_q_patch , & ! Input:  [real(r8) (:) ] observational height of specific humidity at pft level [m]
+         vds              => frictionvel_vars%vds_patch        , & ! Output: [real(r8) (:) ] dry deposition velocity term (m/s) (for SO4 NH4NO3)
+         u10              => frictionvel_vars%u10_patch        , & ! Output: [real(r8) (:) ] 10-m wind (m/s) (for dust model)
+         u10_elm          => frictionvel_vars%u10_elm_patch    , & ! Output: [real(r8) (:) ] 10-m wind (m/s)
+         va               => frictionvel_vars%va_patch         , & ! Output: [real(r8) (:) ] atmospheric wind speed plus convective velocity (m/s)
+         fv               => frictionvel_vars%fv_patch         ,  & ! Output: [real(r8) (:) ] friction velocity (m/s) (for dust model)
 
          t_h2osfc             => col_es%t_h2osfc             , & ! Input:  [real(r8) (:)   ]  surface water temperature
          t_soisno             => col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
@@ -427,31 +432,26 @@ contains
         bsun                    => energyflux_vars%bsun_patch ! Output:[real(r8) (:)   ]  sunlit canopy transpiration wetness factor (0 to 1)
         bsha                    => energyflux_vars%bsha_patch ! Output:[real(r8) (:)   ]  sunlit canopy transpiration wetness factor (0 to 1)
       end if
-      !!NOTE:  Ensure dtime_mod and secs_curr replaces dtime and time !!!!
-      ! Determine step size
-      dtime = dtime_mod
-      time = secs_curr;
-      irrig_nsteps_per_day = ((irrig_length + (dtime - 1))/dtime)  ! round up
+
+     
       fn = num_nolu_vegp
-      filterp(:) = filter_nolu_vegp(:)
       ! First - set the following values over points where frac vegetation covered by snow is zero
       ! (e.g. btran, t_veg, rootr, rresis)
+      print *, "barep,vegp:",num_nolu_barep, num_nolu_vegp 
       call cpu_time(startt)
       if(num_nolu_barep > 0) then
-         !! need to check as OpenACC will still incur time cost launching kernel
-         !$acc parallel loop independent gang vector private(p,c,t) default(present)
+         !$acc parallel loop independent gang vector private(p,c,t) default(present) &
+         !$acc   present(t_veg(:), btran(:), rssun(:), rssha(:), lbl_rsc_h2o(:), thm(:) ) 
          do fp = 1,num_nolu_barep
             p = filter_nolu_barep(fp)
             c = veg_pp%column(p)
             t = veg_pp%topounit(p)
-            ! if (frac_veg_nosno(p) == 0) then
             btran(p) = 0._r8
             t_veg(p) = forc_t(t)
             cf_bare  = forc_pbot(t)/(SHR_CONST_RGAS*0.001_r8*thm(p))*1.e06_r8
             rssun(p) = 1._r8/1.e15_r8 * cf_bare
             rssha(p) = 1._r8/1.e15_r8 * cf_bare
             lbl_rsc_h2o(p)=0._r8
-            ! end if
          end do
          !$acc parallel loop independent gang default(present)
          do j = 1, nlevgrnd
@@ -462,14 +462,24 @@ contains
                rresis(p,j) = 0._r8
             end do
          end do
+         
+            
       end if
+      if(num_nolu_vegp == 0) return
+      !!NOTE:  Ensure dtime_mod and secs_curr replaces dtime and time !!!!
+      ! Determine step size
+      time = secs_curr;
+      irrig_nsteps_per_day = ((irrig_length + (dtime_mod - 1))/dtime_mod)  ! round up
+      !$acc enter data copyin(time,irrig_nsteps_per_day) 
 
-
-      !$acc enter data create(del(1:fn), efeb(1:fn), wtlq0(1:fn),wtalq(1:fn), &
-      !$acc    wtgq(1:fn), wtaq0(1:fn), obuold(1:fn),dayl_factor(1:fn),check_for_irrig(1:fn),zldis(1:fn) ) copyin(filterp(:))
+      !$acc enter data create(del(:), efeb(:), wtlq0(:),wtalq(:), &
+      !$acc    wtgq(:), wtaq0(:), obuold(:),dayl_factor(:),check_for_irrig(:),zldis(:) ) 
+      !$acc enter data create(filterp(:))
       ! Initialize
+
       !$acc parallel loop independent gang vector private(p) default(present) present(btran(:), btran2(:))
       do f = 1, fn
+         filterp(f) = filter_nolu_vegp(f) 
          p = filterp(f)
          del(f)    = 0._r8  ! change in leaf temperature from previous iteration
          efeb(f)   = 0._r8  ! latent head flux from leaf for previous iteration
@@ -498,19 +508,6 @@ contains
       call photosyns_vars_TimeStepInit(photosyns_vars,bounds)
 
       call cpu_time(stopt)
-      print *, "TIMING CanopyFluxes::Initialize ",(stopt-startt)*1.E+3,"ms"
-      ! ! -----------------------------------------------------------------
-      ! ! Filter patches where frac_veg_nosno IS NON-ZERO
-      ! ! -----------------------------------------------------------------
-      ! fn = 0
-      ! do fp = 1,num_nolu_vegp
-      !    p = filter_nolakeurbanp(fp)
-      !    if (frac_veg_nosno(p) /= 0) then
-      !       fn = fn + 1
-      !       filterp(fn) = p
-      !    end if
-      ! end do
-
 #ifndef _OPENACC
       if (use_fates) then
          !#fates_py call alm_fates%prep_canopyfluxes( bounds )
@@ -521,13 +518,7 @@ contains
       !      redundantly (eg. computing the same column variable 4 times)
       !      It would be best to make nolu_vegc filter.
       !assign the temporary filter
-      !
-      ! do f = 1, fn
-      !    p = filterp(f)
-      !    filterc_tmp(f)=veg_pp%column(p)
-      ! enddo
-
-      !
+      
       ! compute effective soil porosity
       call cpu_time(startt)
       call calc_effective_soilporosity(bounds,                          &
@@ -552,7 +543,6 @@ contains
            vol_liq = h2osoi_liqvol(bounds%begc:bounds%endc, 1:nlevgrnd) )
 
       call cpu_time(stopt)
-      print *, "TIMING CanopyFluxes::Soilporosity&h2oliq ",(stopt-startt)*1.E+3,"ms"
 
       ! set up perchroot options
       ! Better way to do this???
@@ -585,7 +575,7 @@ contains
               soilstate_vars=soilstate_vars      &
               )
          call cpu_time(stopt)
-         print *, "TIMING CanopyFluxes::root_moist_stress",(stopt-startt)*1.E+3,"ms"
+         !print *, "TIMING CanopyFluxes::root_moist_stress",(stopt-startt)*1.E+3,"ms"
       end if !use_fates
 
       ! Determine if irrigation is needed (over irrigated soil columns)
@@ -618,7 +608,6 @@ contains
          end if
 
       end do
-
 
       ! Now 'measure' soil water for the grid cells identified above and see if the
       ! soil is dry enough to warrant irrigation
@@ -657,7 +646,7 @@ contains
          end if        ! if (check_for_irrig(f) .and. .not. frozen_soil(f))
       end do           ! do f
       call cpu_time(stopt)
-      print *, "TIMING CanFlux::Irrigation",(stopt-startt)*1.E+3,"ms"
+      !print *, "TIMING CanFlux::Irrigation",(stopt-startt)*1.E+3,"ms"
 
       found = .false.
 
@@ -679,18 +668,12 @@ contains
          !!Moved this here to allow async compute/data create w/ loop below
          zldis(f) = forc_hgt_u_patch(p) - displa(p)
 
-         ! Check to see if the forcing height is below the canopy height
-         ! if (zldis(f) < 0._r8) then
-         !    found = .true.
-         !    index = p
-         ! end if
-
       end do
 
-      !$acc enter data create(air(1:fn),bir(1:fn), cir(1:fn), co2(1:fn),o2(1:fn),&
-      !$acc nmozsgn(1:fn), taf(1:fn),qaf(1:fn), ur(1:fn),dth(1:fn),dqh(1:fn),delq(1:fn), &
-      !$acc  dthv(1:fn), obu(1:fn),el(1:fn),qsatl(1:fn),qsatldT(1:fn), um(1:fn), &
-      !$acc  wta0(1:fn), err(1:fn), det(1:fn))
+      !$acc enter data create(air(:),bir(:), cir(:), co2(:),o2(:),&
+      !$acc nmozsgn(:), taf(:),qaf(:), ur(:),dth(:),dqh(:),delq(:), &
+      !$acc  dthv(:), obu(:),el(:),qsatl(:),qsatldT(:), um(:), &
+      !$acc  wta0(:), err(:), det(:))
 
       !$acc parallel loop independent gang vector default(present) private(p,c,t,g,deldT) present(thm(:),emv(:))
       do f = 1, fn
@@ -730,60 +713,64 @@ contains
       end do
 
       call cpu_time(stopt)
-      print *, "TIMING CanFlux::Create/Init Iteration ",(stopt-startt)*1.E+3,"ms"
+      !print *, "TIMING CanFlux::Create/Init Iteration ",(stopt-startt)*1.E+3,"ms"
 
       if (found) then
          if ( .not. use_fates ) then
-            !write(*,*)'Error: Forcing height is below canopy height for pft index '
+            write(*,*)'Error: Forcing height is below canopy height for pft index '
             call endrun(decomp_index=index, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
-
+      
+      !$acc enter data create(converged(:) ) 
       call cpu_time(startt)
       !$acc parallel loop independent gang vector default(present) private(p,c)
       do f = 1, fn
          p = filter_nolu_vegp(f)
          c = veg_pp%column(p)
-
+         converged(f) = 0 
          ! Initialize Monin-Obukhov length and wind speed
 
          call MoninObukIni(ur(f), thv(c), dthv(f), zldis(f), z0mv(p), um(f), obu(f))
 
       end do
       call cpu_time(stopt)
-      print *, "TIMING CanFlux::MO",(stopt-startt)*1.E+3,"ms"
-
+      
+      print *, "Starting Iteration :" 
       ! Set counter for leaf temperature iteration (itlef)
+      
+      num_unconverged = num_nolu_vegp  
       itlef = 0
-      fnorig = fn
-      !$acc enter data copyin(itlef) create(temp1(1:fn), temp2(1:fn),temp12m(1:fn),&
-      !$acc    temp22m(1:fn),ustar(1:fn),rah(1:fn,1:2),raw(1:fn,1:2), uaf(1:fn),rb(1:fn), &
-      !$acc     tlbef(1:fn), del(1:fn),del2(1:fn),svpts(1:fn),eah(1:fn), dt_veg(1:fn),wtg(1:fn), &
-      !$acc     wtl0(1:fn), wtal(1:fn), efe(1:fn), dele(1:fn))
+      !$acc enter data copyin(itlef) create(temp1(:), temp2(:),temp12m(:),&
+      !$acc    temp22m(:),ustar(:),rah(:,:),raw(:,:), uaf(:),rb(:), &
+      !$acc     tlbef(:), del(:),del2(:),svpts(:),eah(:), dt_veg(:),wtg(:), &
+      !$acc     wtl0(:), wtal(:), efe(:), dele(:),fm(:))
+      
       ! Begin stability iteration
       event = 'can_iter'
       call cpu_time(iterT1)
-      ITERATION : do while (itlef <= itmax .and. fn > 0)
-
+      ITERATION : do while (itlef <= itmax .and. num_unconverged > 0)
+        !$acc update device(itlef)  
         call cpu_time(startt)
         !$acc parallel loop independent gang vector private(p,f,fm) default(present)
         do f = 1, fn
+            if(converged(f)) cycle
             p = filterp(f)
-            call FrictionVelocity (f,p, &
+            call FrictionVelocity ( &
                         displa(p), z0mv(p), z0hv(p), z0qv(p), &
                         obu(f), itlef+1, ur(f), um(f), ustar(f), &
-                        temp1(f), temp2(f), temp12m(f), temp22m(f), fm, &
-                        frictionvel_vars)
-
+                        temp1(f), temp2(f), temp12m(f), temp22m(f), fm(f), &
+                        forc_hgt_u_patch(p), forc_hgt_t_patch(p), forc_hgt_q_patch(p), &
+                        vds(p), u10(p), u10_elm(p), va(p), fv(p))
         end do
         call cpu_time(stopt)
-        print *, "TIMING FV::",(stopt-startt)*1.E+3,"ms"
-
+        
         call cpu_time(startt)
         !$acc parallel loop independent gang vector default(present) private(p,c,t,g,&
         !$acc  cf, w,csoilb,ri, ricsoilc, csoilcn) present(ram1(:), rb1(:), rhaf(:),grnd_ch4_cond(:),t_veg(:),elai(:),btran(:),&
         !$acc  esai(:), temp2(:), htop(:), dleaf_patch(:), rah(:,:))
         do f = 1, fn
+           if(converged(f)) cycle
            p = filterp(f)
            c = veg_pp%column(p)
            t = veg_pp%topounit(p)
@@ -870,7 +857,6 @@ contains
 
         end do
         call cpu_time(stopt)
-        print *, "TIMING CanFlux::UpdateResis",(stopt-startt)*1.E+3,"ms"
 
 
          if ( use_fates ) then
@@ -891,7 +877,7 @@ contains
                !      canopystate_vars, photosyns_vars)
             else
               call cpu_time(startt)
-              call Photosynthesis(bounds,fn,filterp,&
+              call Photosynthesis(bounds,num_nolu_vegp,filterp,converged(1:num_nolu_vegp),&
                         svpts(1:num_nolu_vegp), eah(1:num_nolu_vegp),o2(1:num_nolu_vegp),&
                         co2(1:num_nolu_vegp), rb(1:num_nolu_vegp), btran(begp:endp), dayl_factor(1:num_nolu_vegp),&
                         surfalb_vars, solarabs_vars, canopystate_vars, photosyns_vars, 'sun', &
@@ -903,17 +889,15 @@ contains
                         photosyns_vars%psnsun_wp_patch   )
 
               call cpu_time(stopt)
-              print *, "TIMING CanopyFluxes::Photosynthesis - Sun",(stopt-startt)*1.E+3,"ms"
-
+              !print *, "TIMING CanopyFluxes::PhotosynthesisSun",(stopt-startt)*1.E+3,"ms"
             end if
 
             if ( use_c13 ) then
                call cpu_time(startt)
                call Fractionation (bounds, fn, filterp, &
-                     cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, &
-                    1)
+                     cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, 1)
                call cpu_time(stopt)
-               print *, "TIMING CanopyFluxes::Fractionation-Sun",(stopt-startt)*1.E+3,"ms"
+               !print *, "TIMING CanopyFluxes::Fractionation-Sun",(stopt-startt)*1.E+3,"ms"
             endif
 
             !$acc parallel loop independent gang vector default(present) private(p,c)
@@ -927,7 +911,7 @@ contains
 
             if ( .not. use_hydrstress ) then
                call cpu_time(startt)
-               call Photosynthesis(bounds,fn,filterp,&
+               call Photosynthesis(bounds,fn,filterp,converged, &
                         svpts(1:num_nolu_vegp), eah(1:num_nolu_vegp),o2(1:num_nolu_vegp),&
                         co2(1:num_nolu_vegp),rb(1:num_nolu_vegp), btran(begp:endp), dayl_factor(1:num_nolu_vegp),&
                         surfalb_vars, solarabs_vars, canopystate_vars, photosyns_vars, 'sha', &
@@ -939,14 +923,13 @@ contains
                         photosyns_vars%psnsha_wj_patch,photosyns_vars%psnsha_wp_patch   )
 
                call cpu_time(stopt)
-               print *, "TIMING  CanopyFluxes::Photosynthesis-Shade",(stopt-startt)*1.E+3,"ms"
-            end if
+               !print *, "TIMING CanopyFluxes::PhotosynthesisSha",(stopt-startt)*1.E+3,"ms" 
 
+            end if
 
             if ( use_c13 ) then
                call Fractionation (bounds, fn, filterp,  &
-                     cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, &
-                    0)
+                     cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, 0)
             end if
 
          end if ! end of if use_fates
@@ -956,6 +939,7 @@ contains
          !$acc  thm(:), canopy_cond(:),temp2(:), frac_veg_nosno(:), esai(:), fdry(:), wta0(:), h2ocan(:), &
          !$acc  laisha(:),rssha(:),btran(:), fwet(:), qflx_evap_veg(:), qflx_tran_veg(:),sabv(:), eflx_sh_veg(:) )
          do f = 1, fn
+            if(converged(f)) cycle 
             p = filterp(f)
             c = veg_pp%column(p)
             t = veg_pp%topounit(p)
@@ -1000,7 +984,7 @@ contains
                    rpp = fwet(p)
                  end if
                  !Check total evapotranspiration from leaves
-                 rpp = min(rpp, (qflx_tran_veg(p)+h2ocan(p)/dtime)/efpot)
+                 rpp = min(rpp, (qflx_tran_veg(p)+h2ocan(p)/dtime_mod)/efpot)
               else
                  rpp = 1._r8
               end if
@@ -1016,7 +1000,7 @@ contains
                   qflx_tran_veg(p) = 0._r8
                end if
                !Check total evapotranspiration from leaves
-               rpp = min(rpp, (qflx_tran_veg(p)+h2ocan(p)/dtime)/efpot)
+               rpp = min(rpp, (qflx_tran_veg(p)+h2ocan(p)/dtime_mod)/efpot)
               else
                !No transpiration if potential evaporation less than zero
                rpp = 1._r8
@@ -1105,8 +1089,8 @@ contains
             ! during the timestep.  This energy is later added to the
             ! sensible heat flux.
             if ( use_hydrstress ) then
-               ecidif = max(0._r8,qflx_evap_veg(p)-qflx_tran_veg(p)-h2ocan(p)/dtime)
-               qflx_evap_veg(p) = min(qflx_evap_veg(p),qflx_tran_veg(p)+h2ocan(p)/dtime)
+               ecidif = max(0._r8,qflx_evap_veg(p)-qflx_tran_veg(p)-h2ocan(p)/dtime_mod)
+               qflx_evap_veg(p) = min(qflx_evap_veg(p),qflx_tran_veg(p)+h2ocan(p)/dtime_mod)
             else
 
               ecidif = 0._r8
@@ -1115,8 +1099,8 @@ contains
               else
                qflx_tran_veg(p) = 0._r8
               end if
-              ecidif = max(0._r8, qflx_evap_veg(p)-qflx_tran_veg(p)-h2ocan(p)/dtime)
-              qflx_evap_veg(p) = min(qflx_evap_veg(p),qflx_tran_veg(p)+h2ocan(p)/dtime)
+              ecidif = max(0._r8, qflx_evap_veg(p)-qflx_tran_veg(p)-h2ocan(p)/dtime_mod)
+              qflx_evap_veg(p) = min(qflx_evap_veg(p),qflx_tran_veg(p)+h2ocan(p)/dtime_mod)
             end if
 
             ! The energy loss due to above two limits is added to
@@ -1164,52 +1148,45 @@ contains
 
          end do   ! end of filtered pft loop
          call cpu_time(stopt)
-         print *, "TIMING CanopyFluxes::Conductance loop",(stopt-startt)*1.E+3,"ms"
 
          !$acc parallel loop independent gang vector default(present) private(p,t)
          do f = 1, fn
+           if(converged(f)) cycle 
            p = filterp(f)
            t = veg_pp%topounit(p)
-           lbl_rsc_h2o(p) = getlblcef(forc_rho(t),t_veg(p))*uaf(f)/(uaf(f)**2._r8+1.e-10_r8)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
+           !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
+           lbl_rsc_h2o(p) = getlblcef(forc_rho(t),t_veg(p))*uaf(f)/(uaf(f)**2._r8+1.e-10_r8)   
          enddo
 
          ! Test for convergence
          call cpu_time(startt)
          itlef = itlef+1
          if (itlef > itmin) then
-            !$acc parallel loop independent gang vector default(present) private(p) present(det(1:fn), dele(1:fn))
+            fnold = 0 
+            num_unconverged = 0 
+            !$acc parallel loop independent gang vector default(present) private(p) present(det(1:fn), dele(1:fn)) &
+            !$acc   copy(num_unconverged) reduction(+:num_unconverged) 
             do f = 1, fn
+               if(converged(f)) cycle   
                p = filterp(f)
                dele(f) = abs(efe(f) - efeb(f))
                efeb(f) = efe(f)
                det(f)  = max(del(f),del2(f))
+               if((det(f) < dtmin .and. dele(f) < dlemin)) then 
+                  converged(f) = 1
+               else
+                 num_unconverged = num_unconverged + 1  
+               end if 
             end do
-
-            fnold = fn
-            fn = 0
-            !$acc serial
-            fn = 0
-            !$acc loop seq
-            do f = 1, fnold
-               p = filterp(f)
-               if (.not. (det(f) < dtmin .and. dele(f) < dlemin)) then
-                  fn = fn + 1
-                  filterp(fn) = p
-               end if
-            end do
-            !$acc end serial
          end if
          call cpu_time(stopt)
-         print *, "TIMING CanFlux::Convergence Test ",(stopt-startt)*1.E+3,"ms"
-
       end do ITERATION     ! End stability iteration
       call cpu_time(iterT2)
+      
       print *, "TIMING can_iter::",(iterT2-iterT1)*1.E+3,"ms"
-      fn = fnorig
-      filterp(1:fn) = fporig(1:fn)
 
       !$acc parallel loop independent gang vector default(present)
-      do f = 1, fn
+      do f = 1, num_nolu_vegp
          p = filter_nolu_vegp(f)
          c = veg_pp%column(p)
          t = veg_pp%topounit(p)
@@ -1286,7 +1263,7 @@ contains
 
          ! Update dew accumulation (kg/m2)
 
-         h2ocan(p) = max(0._r8,h2ocan(p)+(qflx_tran_veg(p)-qflx_evap_veg(p))*dtime)
+         h2ocan(p) = max(0._r8,h2ocan(p)+(qflx_tran_veg(p)-qflx_evap_veg(p))*dtime_mod)
 
       end do
       call cpu_time(stopt)
@@ -1294,49 +1271,45 @@ contains
 
       if ( use_fates ) then
 
-#ifndef _OPENACC
-        !#fates_py call alm_fates%wrap_accumulatefluxes(bounds,fn,filterp(1:fn))
-        !#fates_py call alm_fates%wrap_hydraulics_drive(bounds,fn,filterp(1:fn),soilstate_vars, &
-             !#fates_py solarabs_vars,energyflux_vars)
-#endif
+        #ifndef _OPENACC
+            !#fates_py call alm_fates%wrap_accumulatefluxes(bounds,fn,filterp(1:fn))
+            !#fates_py call alm_fates%wrap_hydraulics_drive(bounds,fn,filterp(1:fn),soilstate_vars, &
+                  !#fates_py solarabs_vars,energyflux_vars)
+        #endif
       else
 
          ! Determine total photosynthesis
          call cpu_time(startt)
-         call PhotosynthesisTotal(fn, filter_nolu_vegp, &
+         call PhotosynthesisTotal(num_nolu_vegp, filter_nolu_vegp, &
                cnstate_vars, canopystate_vars, photosyns_vars)
          call cpu_time(stopt)
          print *, "TIMING CanFlux::PhotosynthesisTotal ",(stopt-startt)*1.E+3, "ms"
          ! Filter out patches which have small energy balance errors; report others
-
-         fnold = fn
+         ! NOTE: filter out patches for what? This is the end of the subroutine.
+         fnold = num_nolu_vegp
          fn = 0
          do f = 1, fnold
             p = filterp(f)
             if (abs(err(f)) > 0.1_r8) then
                fn = fn + 1
                filterp(fn) = p
+               write(iulog,*) 'energy balance in canopy ',p,', err=',err(f)
             end if
          end do
 
-         do f = 1, fn
-            p = filterp(f)
-            write(iulog,*) 'energy balance in canopy ',p,', err=',err(f)
-         end do
-
       end if
-      !$acc exit data delete(del(1:fn), efeb(1:fn), wtlq0(1:fn),wtalq(1:fn), &
-      !$acc  wtgq(1:fn), wtaq0(1:fn), obuold(1:fn),dayl_factor(1:fn) , &
-      !$acc  check_for_irrig(1:fn), filterp(:),zldis(1:fn), &
-      !$acc  air(1:fn),bir(1:fn), cir(1:fn), co2(1:fn),o2(1:fn),&
-      !$acc  nmozsgn(1:fn), taf(1:fn),qaf(1:fn), ur(1:fn),dth(1:fn),dqh(1:fn),delq(1:fn), &
-      !$acc  dthv(1:fn), obu(1:fn),el(1:fn),qsatl(1:fn),qsatldT(1:fn), &
-      !$acc  temp1(1:fn), temp2(1:fn),temp12m(1:fn),&
-      !$acc  temp22m(1:fn),ustar(1:fn), um(1:fn),rah(1:fn,2),raw(1:fn,2), uaf(1:fn),rb(1:fn), &
-      !$acc  tlbef(1:fn), del(1:fn),del2(1:fn),svpts(1:fn),eah(1:fn),wta0(1:fn), err(1:fn), dt_veg(1:fn) ,wtg(1:fn), &
-      !$acc  wtal(:), wtl0(:), efe(1:fn), det(1:fn), dele(:))
+      !$acc exit data delete(del(:), efeb(:), wtlq0(:),wtalq(:), &
+      !$acc  wtgq(:), wtaq0(:), obuold(:),dayl_factor(:) , &
+      !$acc  check_for_irrig(:), filterp(:),zldis(:), &
+      !$acc  air(:),bir(:), cir(:), co2(:),o2(:),&
+      !$acc  nmozsgn(:), taf(:),qaf(:), ur(:),dth(:),dqh(:),delq(:), &
+      !$acc  dthv(:), obu(:),el(:),qsatl(:),qsatldT(:), &
+      !$acc  temp1(:), temp2(:),temp12m(:),&
+      !$acc  temp22m(:),ustar(:), um(:),rah(:,:),raw(:,:), uaf(:),rb(:), &
+      !$acc  tlbef(:), del(:),del2(:),svpts(:),eah(:),wta0(:), err(:), dt_veg(:) ,wtg(:), &
+      !$acc  wtal(:), wtl0(:), efe(:), det(:), dele(:), fm(:), converged(:)  )
+      !$acc exit data delete(time,irrig_nsteps_per_day, itlef) 
     end associate
-
 
   end subroutine CanopyFluxes
 

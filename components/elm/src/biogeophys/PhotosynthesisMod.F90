@@ -207,7 +207,7 @@ contains
 
 
   !------------------------------------------------------------------------------
-  subroutine Photosynthesis ( bounds, fn, filterp, &
+  subroutine Photosynthesis ( bounds, fn, filterp,converged, &
        esat_tv, eair, oair, cair, rb, btran, &
        dayl_factor, surfalb_vars, solarabs_vars, &
        canopystate_vars, photosyns_vars, phase, &
@@ -231,7 +231,8 @@ contains
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: fn                   ! size of pft filter
-    integer                , intent(in)    :: filterp(fn)          ! patch filter
+    integer                , intent(in)    :: filterp(1:fn)          ! patch filter
+    integer                , intent(in)    :: converged(1:fn) 
     real(r8)               , intent(in)    :: esat_tv( 1:fn )      ! saturation vapor pressure at t_veg (Pa) [pft]
     real(r8)               , intent(in)    :: eair(1:fn)           ! vapor pressure of canopy air (Pa) [pft]
     real(r8)               , intent(in)    :: oair(1:fn)           ! Atmospheric O2 partial pressure (Pa) [pft]
@@ -418,9 +419,11 @@ contains
       i_type = veg_pp%itype(p)
       fnr   = veg_vp%fnr(i_type)   !7.16_r8
       act25 = veg_vp%act25(i_type) !3.6_r8   !umol/mgRubisco/min
+      
       ! Convert rubisco activity units from umol/mgRubisco/min ->
       ! umol/gRubisco/s
       act25 = act25 * 1000.0_r8 / 60.0_r8
+      
       ! Activation energy, from:
       ! Bernacchi et al (2001) Plant, Cell and Environment 24:253-259
       ! Bernacchi et al (2003) Plant, Cell and Environment 26:1419-1430
@@ -430,6 +433,7 @@ contains
       jmaxha  = veg_vp%jmaxha(i_type) !50000._r8
       tpuha   = veg_vp%tpuha(i_type)  !72000._r8
       lmrha   = veg_vp%lmrha(i_type)  !46390._r8
+      
       ! High temperature deactivation, from:
       ! Leuning (2002) Plant, Cell and Environment 25:1205-1210
       ! The factor "c" scales the deactivation to a value of 1.0 at 25C
@@ -445,6 +449,7 @@ contains
 
       !$acc parallel loop independent gang vector default(present) private(p,c,t,i_type,kc25,ko25,sco,cp25)
       do f = 1, fn
+         if(converged(f)) cycle
          p = filterp(f)
          c = veg_pp%column(p)
          t = veg_pp%topounit(p)
@@ -479,13 +484,15 @@ contains
          cp(p) = cp25 * ft(t_veg(p), veg_vp%cpha(i_type) )!37830._r8
 
       end do
-      !$acc wait
+      
       ! Multi-layer parameters scaled by leaf nitrogen profile.
       ! Loop through each canopy layer to calculate nitrogen profile using
       ! cumulative lai at the midpoint of the layer
+      
       call cpu_time(startt)
-      !$acc parallel loop independent gang vector private(p) default(present)
+      !$acc parallel loop independent gang vector default(present)
       do f = 1, fn
+         if(converged(f)) cycle
          p = filterp(f)
          i_type = veg_pp%itype(p)
          if ( .not. nu_com_leaf_physiology) then
@@ -726,14 +733,17 @@ contains
          end do       ! canopy layer loop
       end do     ! patch loop
       call cpu_time(stopt)
-      print *, "TIMING Photosynthesis::NitrogenProfile ", (stopt-startt)*1.E+3,"ms"
       !==============================================================================!
       ! Leaf-level photosynthesis and stomatal conductance
       !==============================================================================!
-
-      !$acc parallel loop independent gang vector collapse(2) default(present) private(p,c,t)
-      do iv = 1, nrad(p)
-         do f = 1, fn
+      
+      !$acc parallel loop independent gang vector  default(present)
+      do f = 1, fn
+         if(converged(f)) cycle
+         p = filterp(f)
+         
+         !$acc loop seq 
+         do iv = 1, nrad(p)
             p = filterp(f)
             c = veg_pp%column(p)
             t = veg_pp%topounit(p)
@@ -849,7 +859,6 @@ contains
          end do       ! canopy layer loop
       end do          ! patch loop
       call cpu_time(stopt)
-      print *, "TIMING Photosynthesis::ci iterations ",(stopt-startt)*1.E+3, "ms"
       !==============================================================================!
       ! Canopy photosynthesis and stomatal conductance
       !==============================================================================!
@@ -860,6 +869,7 @@ contains
       call cpu_time(startt)
       !$acc parallel loop gang worker independent default(present)
       do f = 1, fn
+         if(converged(f)) cycle
          p = filterp(f)
          psncan = 0._r8
          psncan_wc = 0._r8
@@ -898,7 +908,6 @@ contains
       !$acc exit data delete(fnr,act25,vcmaxha,jmaxha,tpuha,lmrha,vcmaxhd,jmaxhd,tpuhd,lmrhd,lmrse,lmrc &
       !$acc ,jmax_z(:,:), lnc(:), kn(1:fn),psn_wc_z(1:fn,:nlevcan),psn_wj_z(1:fn,:nlevcan), psn_wp_z(1:fn,:nlevcan) )
       call cpu_time(stopt)
-      print *, "TIMING Photosynthesis::ReductionLoop",(stopt-startt)*1.E+3,"ms"
 
     end associate
 

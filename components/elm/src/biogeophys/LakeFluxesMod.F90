@@ -168,6 +168,11 @@ contains
          forc_hgt_u_patch =>    frictionvel_vars%forc_hgt_u_patch      , & ! Input:  [real(r8) (:)   ]  observational height of wind at pft level [m]
          forc_hgt_t_patch =>    frictionvel_vars%forc_hgt_t_patch      , & ! Input:  [real(r8) (:)   ]  observational height of temperature at pft level [m]
          forc_hgt_q_patch =>    frictionvel_vars%forc_hgt_q_patch      , & ! Input:  [real(r8) (:)   ]  observational height of specific humidity at pft level [m]
+         vds              => frictionvel_vars%vds_patch        , & ! Output: [real(r8) (:) ] dry deposition velocity term (m/s) (for SO4 NH4NO3)
+         u10              => frictionvel_vars%u10_patch        , & ! Output: [real(r8) (:) ] 10-m wind (m/s) (for dust model)
+         u10_elm          => frictionvel_vars%u10_elm_patch    , & ! Output: [real(r8) (:) ] 10-m wind (m/s)
+         va               => frictionvel_vars%va_patch         , & ! Output: [real(r8) (:) ] atmospheric wind speed plus convective velocity (m/s)
+         fv               => frictionvel_vars%fv_patch         ,  & ! Output: [real(r8) (:) ] friction velocity (m/s) (for dust model)
 
          q_ref2m          =>    veg_ws%q_ref2m          , & ! Output: [real(r8) (:)   ]  2 m height surface specific humidity (kg/kg)
          rh_ref2m         =>    veg_ws%rh_ref2m         , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)
@@ -215,7 +220,8 @@ contains
       !$acc parallel loop independent gang vector default(present) &
       !$acc  private(p,c,t,g,eg, degdT, qsatg, qsatgdT, thv, dthv, zldis, &
       !$acc  displa, z0mg, z0hg, z0qg, obu, iter, ur, um, ustar, &
-      !$acc  temp1, temp2, temp12m, temp22m,fm,e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
+      !$acc  temp1, temp2, temp12m, temp22m,fm,e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT) &
+      !$acc present(rh_ref2m(:)) 
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = veg_pp%column(p)
@@ -324,20 +330,21 @@ contains
          call MoninObukIni(ur, thv, dthv, zldis, z0mg, um, obu)
 
       iter = 1
-
+      
       ! Begin stability iteration
-
+      
       ITERATION : do while (iter <= niters )
 
          ! Determine friction velocity, and potential temperature and humidity
          ! profiles of the surface boundary layer
          if (nmozsgn >= 3) iter = niters+1 ! stop iterating
 
-         call FrictionVelocity(fp, p, &
+         call FrictionVelocity( &
               displa, z0mg, z0hg, z0qg, &
               obu, iter, ur, um, ustar, &
               temp1, temp2, temp12m, temp22m, &
-              fm, frictionvel_vars)
+              fm, forc_hgt_u_patch(p), forc_hgt_t_patch(p), forc_hgt_q_patch(p), &
+              vds(p), u10(p), u10_elm(p), va(p), fv(p))
 
             tgbef = t_grnd(c)
             if (t_grnd(c) > tfrz .and. t_lake(c,1) > tfrz .and. snl(c) == 0) then

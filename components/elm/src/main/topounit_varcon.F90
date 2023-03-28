@@ -108,7 +108,6 @@ module topounit_varcon
        endif    
        if (.not. readvar) then
           write(iulog,*)' ERROR: While reading number of topounits per grid from lfsurfdat file '
-          !call endrun(msg=errMsg(__FILE__, __LINE__))
         end if
   
        ! Make sure the number of topounits per grid consistent with the land mask
@@ -118,7 +117,6 @@ module topounit_varcon
                   'initialize1: landmask/Number of topounits mismatch'
              write(iulog,*)trim(subname),&
                   'More than 1 topounits where landmask = 0, gridcell index', n
-             !call endrun(msg=errMsg(__FILE__, __LINE__))
           endif
        enddo
     end if

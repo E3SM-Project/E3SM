@@ -18,7 +18,7 @@ module GapMortalityMod
   use VegetationDataType  , only : veg_cs, veg_cf, veg_ns, veg_nf
   use VegetationDataType  , only : veg_ps, veg_pf
 
-  use elm_varctl          , only : nu_com
+  use elm_varctl          , only : nu_com, iulog 
   use timeinfoMod , only : dayspyr_mod
   !
   implicit none
@@ -387,7 +387,6 @@ contains
             sum2 = gap_mortality_c_to_litr_cel_c(c,j)
             sum3 = gap_mortality_c_to_litr_lig_c(c,j)
             sum4 = gap_mortality_c_to_cwdc(c,j)
-
             !$acc loop vector reduction(+:sum1,sum2,sum3,sum4) private(wt_col,i_ivt,lprof_pj,fr_prof_pj,cr_prof_pj,st_prof_pj)
             do p = col_pp%pfti(c), col_pp%pftf(c)
                if ( veg_pp%active(p) ) then
@@ -418,7 +417,6 @@ contains
                   ! wood gap mortality carbon fluxes
                   sum4 = sum4 + (m_livestemc_to_litter(p) + m_deadstemc_to_litter(p)) * st_prof_pj &
                      + (m_livecrootc_to_litter(p) + m_deadcrootc_to_litter(p)) *  cr_prof_pj
-
                end if
             end do
             gap_mortality_c_to_litr_met_c(c,j) = sum1;

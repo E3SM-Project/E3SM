@@ -109,6 +109,10 @@ module pftvarcon
   !$acc declare create(npcropmax           )
   !$acc declare create(nc3crop             )
   !$acc declare create(nc3irrig            )
+  !$acc declare create(nmiscanthus      )
+  !$acc declare create(nmiscanthusirrig )
+  !$acc declare create(nswitchgrass     )
+  !$acc declare create(nswitchgrassirrig)
 
   ! Number of crop functional types actually used in the model. This includes each CFT for
   ! which is_pft_known_to_model is true. Note that this includes irrigated crops even if

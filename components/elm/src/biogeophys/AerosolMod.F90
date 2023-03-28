@@ -12,7 +12,7 @@ module AerosolMod
   use ColumnType       , only : col_pp
   use ColumnDataType   , only : col_ws, col_wf
 
-  use timeinfoMod
+  use timeinfoMod, only : dtime_mod 
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -38,7 +38,6 @@ contains
     ! (based on new snow level state, after SnowFilter is rebuilt.
     ! NEEDS TO BE AFTER SnowFiler is rebuilt in Hydrology2, otherwise there
     ! can be zero snow layers but an active column in filter)
-    !$acc routine seq
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in )   :: bounds
     integer               , intent(in)    :: num_on         ! number of column filter-ON points
@@ -48,10 +47,10 @@ contains
     type(aerosol_type)    , intent(inout) :: aerosol_vars
     !
     ! !LOCAL VARIABLES:
-    real(r8) :: dtime           ! land model time step (sec)
-    integer  :: g,l,c,j,fc      ! indices
+    integer  :: g,l,c,j,fc,snl_idx      ! indices
     real(r8) :: snowmass        ! liquid+ice snow mass in a layer [kg/m2]
     real(r8) :: snowcap_scl_fct ! temporary factor used to correct for snow capping
+    real(r8) :: sum1,sum2,sum3 
     !-----------------------------------------------------------------------
 
     associate(                                                &
@@ -92,22 +91,14 @@ contains
          mss_cnc_dst4  => aerosol_vars%mss_cnc_dst4_col       & ! Output: [real(r8) (:,:) ]  mass concentration of dust species 4 (col,lyr) [kg/kg]
          )
 
-      dtime = dtime_mod
-
-      do fc = 1, num_on
-         c = filter_on(fc)
-
-         ! Zero column-integrated aerosol mass before summation
-         mss_bc_col(c)  = 0._r8
-         mss_oc_col(c)  = 0._r8
-         mss_dst_col(c) = 0._r8
-
+      !$acc enter data create(sum1,sum2,sum3)
+      if(.not. use_extrasnowlayers) then 
+         !$acc parallel loop independent gang vector collapse(2) default(present) 
          do j = -nlevsno+1, 0
-
-            ! layer mass of snow:
-            snowmass = h2osoi_ice(c,j) + h2osoi_liq(c,j)
-
-            if (.not. use_extrasnowlayers) then
+            do fc = 1, num_on 
+               c = filter_on(fc)
+               ! layer mass of snow:
+               snowmass = h2osoi_ice(c,j) + h2osoi_liq(c,j)
                ! Correct the top layer aerosol mass to account for snow capping. 
                ! This approach conserves the aerosol mass concentration
                ! (but not the aerosol amss) when snow-capping is invoked
@@ -115,7 +106,7 @@ contains
                if (j == snl(c)+1) then
                   if (do_capsnow(c)) then 
 
-                     snowcap_scl_fct = snowmass / (snowmass + (qflx_snwcp_ice(c)*dtime))
+                     snowcap_scl_fct = snowmass / (snowmass + (qflx_snwcp_ice(c)*dtime_mod))
 
                      mss_bcpho(c,j) = mss_bcpho(c,j)*snowcap_scl_fct
                      mss_bcphi(c,j) = mss_bcphi(c,j)*snowcap_scl_fct
@@ -128,22 +119,30 @@ contains
                      mss_dst4(c,j)  = mss_dst4(c,j)*snowcap_scl_fct
                   endif
                endif
-            endif
+
+            end do 
+         end do 
+      end if 
+      
+      !$acc parallel loop independent gang vector collapse(2) default(present) 
+      do j = -nlevsno+1, 0
+         do fc = 1, num_on
+            c = filter_on(fc)
+
+            ! layer mass of snow:
+            snowmass = h2osoi_ice(c,j) + h2osoi_liq(c,j)
 
             if (j >= snl(c)+1) then
 
                mss_bctot(c,j)     = mss_bcpho(c,j) + mss_bcphi(c,j)
-               mss_bc_col(c)      = mss_bc_col(c)  + mss_bctot(c,j)
                mss_cnc_bcphi(c,j) = mss_bcphi(c,j) / snowmass
                mss_cnc_bcpho(c,j) = mss_bcpho(c,j) / snowmass
 
                mss_octot(c,j)     = mss_ocpho(c,j) + mss_ocphi(c,j)
-               mss_oc_col(c)      = mss_oc_col(c)  + mss_octot(c,j)
                mss_cnc_ocphi(c,j) = mss_ocphi(c,j) / snowmass
                mss_cnc_ocpho(c,j) = mss_ocpho(c,j) / snowmass
 
                mss_dsttot(c,j)    = mss_dst1(c,j)  + mss_dst2(c,j) + mss_dst3(c,j) + mss_dst4(c,j)
-               mss_dst_col(c)     = mss_dst_col(c) + mss_dsttot(c,j)
                mss_cnc_dst1(c,j)  = mss_dst1(c,j)  / snowmass
                mss_cnc_dst2(c,j)  = mss_dst2(c,j)  / snowmass
                mss_cnc_dst3(c,j)  = mss_dst3(c,j)  / snowmass
@@ -177,48 +176,80 @@ contains
             endif
          enddo
 
-         ! top-layer diagnostics
-         h2osno_top(c)  = h2osoi_ice(c,snl(c)+1) + h2osoi_liq(c,snl(c)+1) !TODO MV - is this correct to be placed here???
-         mss_bc_top(c)  = mss_bctot(c,snl(c)+1)
-         mss_oc_top(c)  = mss_octot(c,snl(c)+1)
-         mss_dst_top(c) = mss_dsttot(c,snl(c)+1)
+         
       enddo
+      !$acc parallel loop independent gang vector default(present)
+      do fc = 1, num_on
+         c = filter_on(fc)
+         snl_idx = snl(c)+1
+         ! top-layer diagnostics
+         h2osno_top(c)  = h2osoi_ice(c,snl_idx) + h2osoi_liq(c,snl_idx) !TODO MV - is this correct to be placed here???
+         mss_bc_top(c)  = mss_bctot(c,snl_idx)
+         mss_oc_top(c)  = mss_octot(c,snl_idx)
+         mss_dst_top(c) = mss_dsttot(c,snl_idx)
+      end do
+      
+      !$acc parallel loop gang worker independent default(present) private(sum1,sum2,sum3)
+      do fc = 1, num_on
+         c = filter_on(fc)
+         sum1 = 0._r8
+         sum2 = 0._r8 
+         sum3 = 0._r8
+         !$acc loop vector reduction(+:sum1,sum2,sum3) 
+         do j = snl(c)+1,0
+            if (j >= snl(c)+1) then
+               sum1 = sum1 + mss_bctot(c,j)
+               sum2 = sum2 + mss_octot(c,j)
+               sum3 = sum3 + mss_dsttot(c,j)
+            end if
+         end do 
+         mss_bc_col(c) = sum1 
+         mss_bc_col(c) = sum2 
+         mss_dst_col(c) = sum3 
+      end do 
 
       ! Zero mass variables in columns without snow
-
+      !$acc parallel loop independent gang vector default(present) 
       do fc = 1, num_off
          c = filter_off(fc)
-
          mss_bc_top(c)      = 0._r8
          mss_bc_col(c)      = 0._r8
-         mss_bcpho(c,:)     = 0._r8
-         mss_bcphi(c,:)     = 0._r8
-         mss_bctot(c,:)     = 0._r8
-         mss_cnc_bcphi(c,:) = 0._r8
-         mss_cnc_bcpho(c,:) = 0._r8
-
+         
          mss_oc_top(c)      = 0._r8
          mss_oc_col(c)      = 0._r8
-         mss_ocpho(c,:)     = 0._r8
-         mss_ocphi(c,:)     = 0._r8
-         mss_octot(c,:)     = 0._r8
-         mss_cnc_ocphi(c,:) = 0._r8
-         mss_cnc_ocpho(c,:) = 0._r8
-
+         
          mss_dst_top(c)     = 0._r8
          mss_dst_col(c)     = 0._r8
-         mss_dst1(c,:)      = 0._r8
-         mss_dst2(c,:)      = 0._r8
-         mss_dst3(c,:)      = 0._r8
-         mss_dst4(c,:)      = 0._r8
-         mss_dsttot(c,:)    = 0._r8
-
-         mss_cnc_dst1(c,:)  = 0._r8
-         mss_cnc_dst2(c,:)  = 0._r8
-         mss_cnc_dst3(c,:)  = 0._r8
-         mss_cnc_dst4(c,:)  = 0._r8
-
       enddo
+
+      !$acc parallel loop independent gang vector collapse(2) default(present)
+      do j=-nlevsno+1,0
+         do fc = 1, num_off
+            c = filter_off(fc)
+            mss_dst1(c,j)      = 0._r8
+            mss_dst2(c,j)      = 0._r8
+            mss_dst3(c,j)      = 0._r8
+            mss_dst4(c,j)      = 0._r8
+            mss_dsttot(c,j)    = 0._r8
+   
+            mss_cnc_dst1(c,j)  = 0._r8
+            mss_cnc_dst2(c,j)  = 0._r8
+            mss_cnc_dst3(c,j)  = 0._r8
+            mss_cnc_dst4(c,j)  = 0._r8
+            mss_ocpho(c,j)     = 0._r8
+            mss_ocphi(c,j)     = 0._r8
+            mss_octot(c,j)     = 0._r8
+            mss_cnc_ocphi(c,j) = 0._r8
+            mss_cnc_ocpho(c,j) = 0._r8
+
+            mss_bcpho(c,j)     = 0._r8
+            mss_bcphi(c,j)     = 0._r8
+            mss_bctot(c,j)     = 0._r8
+            mss_cnc_bcphi(c,j) = 0._r8
+            mss_cnc_bcpho(c,j) = 0._r8
+         end do 
+      end do 
+      !$acc exit data delete(sum1,sum2,sum3)
 
     end associate
 
@@ -230,7 +261,6 @@ contains
     !
     ! !DESCRIPTION:
     ! Compute aerosol fluxes through snowpack and aerosol deposition fluxes into top layere
-    !$acc routine seq
     ! !ARGUMENTS:
     type(bounds_type)  , intent(in)    :: bounds
     integer            , intent(in)    :: num_snowc       ! number of snow points in column filter
@@ -239,7 +269,6 @@ contains
     type(aerosol_type) , intent(inout) :: aerosol_vars
     !
     ! !LOCAL VARIABLES:
-    real(r8) :: dtime      ! land model time step (sec)
     integer  :: c,g,j,fc
     !-----------------------------------------------------------------------
 
@@ -289,6 +318,8 @@ contains
     ! (cloud-borne) aerosol, and "pho" flavors are interstitial
     ! aerosol. "wet" and "dry" fluxes of BC and OC specified here are
     ! purely diagnostic
+
+    !$acc parallel loop independent gang vector default(present)
     do c = bounds%begc,bounds%endc
        g = col_pp%gridcell(c)
 
@@ -324,6 +355,7 @@ contains
     ! species are distinguished in model, other fluxes (e.g., dry and
     ! wet BC/OC) are purely diagnostic.
 
+      !$acc parallel loop independent gang vector default(present)
       do c = bounds%begc,bounds%endc
          g = col_pp%gridcell(c)
 
@@ -359,19 +391,20 @@ contains
       ! is in the top layer after deposition, and is not immediately
       ! washed out before radiative calculations are done
 
-      dtime = dtime_mod
-
+      !$acc parallel loop independent gang vector default(present) &
+      !$acc present(mss_bcphi(:,:),mss_bcpho(:,:),mss_ocphi(:,:),mss_ocpho(:,:), &
+      !$acc  mss_dst1(:,:),mss_dst2(:,:),mss_dst3(:,:),mss_dst4(:,:))
       do fc = 1, num_snowc
          c = filter_snowc(fc)
-         mss_bcphi(c,snl(c)+1) = mss_bcphi(c,snl(c)+1) + (flx_bc_dep_phi(c)*dtime)
-         mss_bcpho(c,snl(c)+1) = mss_bcpho(c,snl(c)+1) + (flx_bc_dep_pho(c)*dtime)
-         mss_ocphi(c,snl(c)+1) = mss_ocphi(c,snl(c)+1) + (flx_oc_dep_phi(c)*dtime)
-         mss_ocpho(c,snl(c)+1) = mss_ocpho(c,snl(c)+1) + (flx_oc_dep_pho(c)*dtime)
+         mss_bcphi(c,snl(c)+1) = mss_bcphi(c,snl(c)+1) + (flx_bc_dep_phi(c)*dtime_mod)
+         mss_bcpho(c,snl(c)+1) = mss_bcpho(c,snl(c)+1) + (flx_bc_dep_pho(c)*dtime_mod)
+         mss_ocphi(c,snl(c)+1) = mss_ocphi(c,snl(c)+1) + (flx_oc_dep_phi(c)*dtime_mod)
+         mss_ocpho(c,snl(c)+1) = mss_ocpho(c,snl(c)+1) + (flx_oc_dep_pho(c)*dtime_mod)
 
-         mss_dst1(c,snl(c)+1) = mss_dst1(c,snl(c)+1) + (flx_dst_dep_dry1(c) + flx_dst_dep_wet1(c))*dtime
-         mss_dst2(c,snl(c)+1) = mss_dst2(c,snl(c)+1) + (flx_dst_dep_dry2(c) + flx_dst_dep_wet2(c))*dtime
-         mss_dst3(c,snl(c)+1) = mss_dst3(c,snl(c)+1) + (flx_dst_dep_dry3(c) + flx_dst_dep_wet3(c))*dtime
-         mss_dst4(c,snl(c)+1) = mss_dst4(c,snl(c)+1) + (flx_dst_dep_dry4(c) + flx_dst_dep_wet4(c))*dtime
+         mss_dst1(c,snl(c)+1) = mss_dst1(c,snl(c)+1) + (flx_dst_dep_dry1(c) + flx_dst_dep_wet1(c))*dtime_mod
+         mss_dst2(c,snl(c)+1) = mss_dst2(c,snl(c)+1) + (flx_dst_dep_dry2(c) + flx_dst_dep_wet2(c))*dtime_mod
+         mss_dst3(c,snl(c)+1) = mss_dst3(c,snl(c)+1) + (flx_dst_dep_dry3(c) + flx_dst_dep_wet3(c))*dtime_mod
+         mss_dst4(c,snl(c)+1) = mss_dst4(c,snl(c)+1) + (flx_dst_dep_dry4(c) + flx_dst_dep_wet4(c))*dtime_mod
       end do
 
     end associate

@@ -298,7 +298,7 @@ contains
             write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
             write(iulog,*)'leach                 = ',som_c_leached(c)*dt
             write(iulog,*)'begcb                 = ',col_begcb(c)
-            write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
+            write(iulog,*)'endcb                 = ',col_endcb(c)
             write(iulog,*)'totsomc               = ',col_cs%totsomc(c)
             write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
 

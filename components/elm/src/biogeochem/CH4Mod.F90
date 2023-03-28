@@ -1,7 +1,6 @@
 module CH4Mod
 
-#include "shr_assert.h"
-
+   #include "shr_assert.h"
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Module holding routines to calculate methane fluxes
@@ -17,7 +16,7 @@ module CH4Mod
   use elm_varcon         , only : catomw, s_con, d_con_w, d_con_g, c_h_inv, kh_theta, kh_tbase
   use landunit_varcon    , only : istdlak
   use clm_time_manager   , only : get_step_size, get_nstep
-  use elm_varctl         , only : iulog, use_cn, use_lch4, use_fates
+  use elm_varctl         , only : iulog, use_cn, use_lch4
   use abortutils         , only : endrun
   use decompMod          , only : bounds_type
   use SharedParamsMod    , only : ParamsShareInst
@@ -36,9 +35,7 @@ module CH4Mod
   use VegetationType     , only : veg_pp
   use VegetationDataType , only : veg_wf, veg_cs, veg_cf
   use timeinfoMod
-  use topounit_varcon    , only : max_topounits  
-  use ELMFatesInterfaceMod, only : hlm_fates_interface_type
-  
+
   !
   implicit none
   save
@@ -114,7 +111,6 @@ module CH4Mod
   end type CH4ParamsType
   type(CH4ParamsType), public ::  CH4ParamsInst
   !$acc declare create(CH4ParamsInst)
-
   type, public :: ch4_type
      real(r8), pointer :: ch4_prod_depth_sat_col     (:,:) =>null()! col CH4 production rate from methanotrophs (mol/m3/s) (nlevsoi)
      real(r8), pointer :: ch4_prod_depth_unsat_col   (:,:) =>null()! col CH4 production rate from methanotrophs (mol/m3/s) (nlevsoi)
@@ -135,6 +131,8 @@ module CH4Mod
      real(r8), pointer :: ch4_surf_ebul_sat_col      (:)   =>null()! col CH4 ebullition flux to atmosphere (after oxidation) (mol/m2/s)
      real(r8), pointer :: ch4_surf_ebul_unsat_col    (:)   =>null()! col CH4 ebullition flux to atmosphere (after oxidation) (mol/m2/s)
      real(r8), pointer :: ch4_surf_ebul_lake_col     (:)   =>null()! col CH4 ebullition flux to atmosphere (after oxidation) (mol/m2/s)
+     real(r8), pointer :: co2_aere_depth_sat_col     (:,:) =>null()! col CO2 loss rate via aerenchyma in each soil layer (mol/m3/s) (nlevsoi)
+     real(r8), pointer :: co2_aere_depth_unsat_col   (:,:) =>null()! col CO2 loss rate via aerenchyma in each soil layer (mol/m3/s) (nlevsoi)
      real(r8), pointer :: o2_oxid_depth_sat_col      (:,:) =>null()! col O2 consumption rate via oxidation in each soil layer (mol/m3/s) (nlevsoi)
      real(r8), pointer :: o2_oxid_depth_unsat_col    (:,:) =>null()! col O2 consumption rate via oxidation in each soil layer (mol/m3/s) (nlevsoi)
      real(r8), pointer :: o2_aere_depth_sat_col      (:,:) =>null()! col O2 gain rate via aerenchyma in each soil layer (mol/m3/s) (nlevsoi)
@@ -197,12 +195,10 @@ module CH4Mod
      procedure, public  :: Restart
 
   end type ch4_type
-  !------------------------------------------------------------------------
-
-contains
+contains 
 
   !------------------------------------------------------------------------
-  subroutine Init( this, bounds, cellorg_col )
+  subroutine Init( this, bounds,cellorg_col )
 
     class(ch4_type)               :: this
     type(bounds_type), intent(in) :: bounds
@@ -223,7 +219,7 @@ contains
     ! Allocate module variables and data structures
     !
     ! !USES:
-    use shr_infnan_mod, only: spval => shr_infnan_nan, assignment(=)
+    use shr_infnan_mod, only: nan => shr_infnan_nan, assignment(=)
     use elm_varpar    , only: nlevgrnd
     !
     ! !ARGUMENTS:
@@ -258,6 +254,8 @@ contains
     allocate(this%ch4_aere_depth_unsat_col   (begc:endc,1:nlevgrnd)) ;  this%ch4_aere_depth_unsat_col   (:,:) = nan
     allocate(this%ch4_tran_depth_sat_col     (begc:endc,1:nlevgrnd)) ;  this%ch4_tran_depth_sat_col     (:,:) = nan
     allocate(this%ch4_tran_depth_unsat_col   (begc:endc,1:nlevgrnd)) ;  this%ch4_tran_depth_unsat_col   (:,:) = nan
+    allocate(this%co2_aere_depth_sat_col     (begc:endc,1:nlevgrnd)) ;  this%co2_aere_depth_sat_col     (:,:) = nan
+    allocate(this%co2_aere_depth_unsat_col   (begc:endc,1:nlevgrnd)) ;  this%co2_aere_depth_unsat_col   (:,:) = nan
     allocate(this%ch4_surf_aere_sat_col      (begc:endc))            ;  this%ch4_surf_aere_sat_col      (:)   = nan
     allocate(this%ch4_surf_aere_unsat_col    (begc:endc))            ;  this%ch4_surf_aere_unsat_col    (:)   = nan
     allocate(this%ch4_ebul_depth_sat_col     (begc:endc,1:nlevgrnd)) ;  this%ch4_ebul_depth_sat_col     (:,:) = nan
@@ -686,13 +684,13 @@ contains
     real(r8)          , intent(in) :: cellorg_col (bounds%begc:, 1:)
     !
     ! !LOCAL VARIABLES:
-    integer               :: j ,g,l,c,p,t,ti,topi ! indices
+    integer               :: j ,g, l,c,p ! indices
     type(file_desc_t)     :: ncid        ! netcdf id
-    real(r8)     ,pointer :: zwt0_in (:,:) ! read in - zwt0 
-    real(r8)     ,pointer :: f0_in (:,:)   ! read in - f0 
-    real(r8)     ,pointer :: p3_in (:,:)   ! read in - p3 
-    real(r8)     ,pointer :: pH_in (:,:)   ! read in - pH 
-    logical               :: readvar 
+    real(r8)     ,pointer :: zwt0_in (:) ! read in - zwt0
+    real(r8)     ,pointer :: f0_in (:)   ! read in - f0
+    real(r8)     ,pointer :: p3_in (:)   ! read in - p3
+    real(r8)     ,pointer :: pH_in (:)   ! read in - pH
+    logical               :: readvar
     character(len=256)    :: locfn
     !-----------------------------------------------------------------------
 
@@ -702,10 +700,10 @@ contains
     ! Initialize time constant variables
     !----------------------------------------
 
-    allocate(zwt0_in(bounds%begg:bounds%endg,1:max_topounits))
-    allocate(f0_in(bounds%begg:bounds%endg,1:max_topounits))
-    allocate(p3_in(bounds%begg:bounds%endg,1:max_topounits))
-    if (usephfact) allocate(ph_in(bounds%begg:bounds%endg,1:max_topounits))
+    allocate(zwt0_in(bounds%begg:bounds%endg))
+    allocate(f0_in(bounds%begg:bounds%endg))
+    allocate(p3_in(bounds%begg:bounds%endg))
+    if (usephfact) allocate(ph_in(bounds%begg:bounds%endg))
 
     ! Methane code parameters for finundated
 
@@ -740,16 +738,13 @@ contains
 
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
-       t = col_pp%topounit(c)
-       topi = grc_pp%topi(g)
-       ti = t - topi + 1
 
        if (.not. fin_use_fsat) then
-          this%zwt0_col(c) = zwt0_in(g,ti)
-          this%f0_col(c)   = f0_in(g,ti)
-          this%p3_col(c)   = p3_in(g,ti)
+          this%zwt0_col(c) = zwt0_in(g)
+          this%f0_col(c)   = f0_in(g)
+          this%p3_col(c)   = p3_in(g)
        end if
-       if (usephfact) this%pH_col(c) = pH_in(g,ti)
+       if (usephfact) this%pH_col(c) = pH_in(g)
     end do
 
     deallocate(zwt0_in, f0_in, p3_in)
@@ -844,6 +839,8 @@ contains
        this%ch4_aere_depth_unsat_col   (c,nlevsoi+1:nlevgrnd) = 0._r8
        this%ch4_tran_depth_sat_col     (c,nlevsoi+1:nlevgrnd) = 0._r8
        this%ch4_tran_depth_unsat_col   (c,nlevsoi+1:nlevgrnd) = 0._r8
+       this%co2_aere_depth_sat_col     (c,nlevsoi+1:nlevgrnd) = 0._r8
+       this%co2_aere_depth_unsat_col   (c,nlevsoi+1:nlevgrnd) = 0._r8
        this%ch4_ebul_depth_sat_col     (c,nlevsoi+1:nlevgrnd) = 0._r8
        this%ch4_ebul_depth_unsat_col   (c,nlevsoi+1:nlevgrnd) = 0._r8
        this%conc_ch4_lake_col          (c,nlevsoi+1:nlevgrnd) = 0._r8
@@ -871,6 +868,7 @@ contains
           this%co2_oxid_depth_unsat_col   (c,:) = spval
           this%ch4_aere_depth_unsat_col   (c,:) = spval
           this%ch4_tran_depth_unsat_col   (c,:) = spval
+          this%co2_aere_depth_unsat_col   (c,:) = spval
           this%ch4_surf_aere_unsat_col    (c)   = spval
           this%ch4_ebul_depth_unsat_col   (c,:) = spval
           this%ch4_ebul_total_unsat_col   (c)   = spval
@@ -905,6 +903,8 @@ contains
           this%ch4_aere_depth_unsat_col   (c,:) = spval
           this%ch4_tran_depth_sat_col     (c,:) = spval
           this%ch4_tran_depth_unsat_col   (c,:) = spval
+          this%co2_aere_depth_sat_col     (c,:) = spval
+          this%co2_aere_depth_unsat_col   (c,:) = spval
           this%ch4_surf_aere_sat_col      (c)   = spval
           this%ch4_surf_aere_unsat_col    (c)   = spval
           this%ch4_ebul_depth_sat_col     (c,:) = spval
@@ -1303,19 +1303,18 @@ contains
        num_soilc, filter_soilc, &
        num_lakec, filter_lakec, &
        num_soilp, filter_soilp, &
-       atm2lnd_vars, lakestate_vars, canopystate_vars, soilstate_vars, soilhydrology_vars, &
-       energyflux_vars, ch4_vars, lnd2atm_vars, elm_fates )
+       lakestate_vars, canopystate_vars, soilstate_vars, soilhydrology_vars, &
+       energyflux_vars, ch4_vars, lnd2atm_vars )
     !
     ! !DESCRIPTION:
     ! Driver for the methane emissions model
     !
     ! !USES:
-    !  !$acc routine seq
-    use subgridAveMod      , only : p2c, c2g
-    use elm_varpar         , only : nlevgrnd, nlevdecomp
-    use pftvarcon          , only : noveg
-    use CH4varcon          , only : replenishlakec, allowlakeprod, ch4offline, fin_use_fsat
-    use elm_varcon         , only : secspday
+    use subgridAveMod , only : p2c_1d_filter_parallel, p2c_2d_parallel, c2g_1d_parallel, unity 
+    use elm_varpar    , only : nlevgrnd, nlevdecomp
+    use pftvarcon     , only : noveg
+    use CH4varcon     , only : replenishlakec, allowlakeprod, ch4offline, fin_use_fsat
+    use elm_varcon    , only : secspday
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -1325,7 +1324,6 @@ contains
     integer                  , intent(in)    :: filter_lakec(:)    ! column filter for lake points
     integer                  , intent(in)    :: num_soilp          ! number of soil points in pft filter
     integer                  , intent(in)    :: filter_soilp(:)    ! patch filter for soil points
-    type(atm2lnd_type)       , intent(inout) :: atm2lnd_vars       ! output ONLY for forcp_ch4 in ch4offline mode
     type(lakestate_type)     , intent(in)    :: lakestate_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(inout) :: soilstate_vars
@@ -1333,15 +1331,11 @@ contains
     type(energyflux_type)    , intent(inout) :: energyflux_vars
     type(ch4_type)           , intent(inout) :: ch4_vars
     type(lnd2atm_type)       , intent(inout) :: lnd2atm_vars
-    type(hlm_fates_interface_type), intent(inout) :: elm_fates
-    
-    real(r8)  :: dtime                                  ! land model time step (sec)
-
     !
     ! !LOCAL VARIABLES:
     integer  :: sat                                    ! 0 = unsatured, 1 = saturated
     logical  :: lake                                   ! lake or not lake
-    integer  :: j,fc,c,g,fp,p,t,pf,s                   ! indices
+    integer  :: j,fc,c,g,fp,p,t                        ! indices
     real(r8) :: dtime_ch4                              ! ch4 model time step (sec)
     integer  :: nstep
     integer  :: jwt(bounds%begc:bounds%endc)           ! index of the soil layer right above the water table (-)
@@ -1351,8 +1345,9 @@ contains
     real(r8) :: totalsat
     real(r8) :: totalunsat
     real(r8) :: dfsat
-    real(r8) :: rootfraction(bounds%begp:bounds%endp, 1:nlevgrnd)
-    real(r8) :: totcolch4_bef(bounds%begc:bounds%endc) ! g C / m^2
+    real(r8) :: rootfraction(1:num_soilp, 1:nlevgrnd)
+    real(r8) :: totsoilcolch4_bef(1:num_soilc) ! g C / m^2
+    real(r8) :: totlakecolch4_bef(1:num_lakec) ! g C / m^2
     real(r8) :: errch4                                 ! g C / m^2
     real(r8) :: zwt_actual
     real(r8) :: qflxlags                               ! Time to lag qflx_surf_lag (s)
@@ -1365,13 +1360,16 @@ contains
     real(r8) :: qflxlagd                               ! days to lag qflx_surf_lag in the tropics (days)
     real(r8) :: highlatfact                            ! multiple of qflxlagd for high latitudes
     integer  :: dummyfilter(1)                         ! empty filter
-    integer  :: nc                                     ! clump index
+    integer  :: erridx
+    real(r8) :: sum1,sum2,sum3
+    integer  :: begg,endg,begc,endc,begp,endp
+    real :: startt, stopt
     !-----------------------------------------------------------------------
 
     associate(                                                                 &
-         dz                   =>   col_pp%dz                                    , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)  (-nlevsno+1:nlevsoi)
-         zi                   =>   col_pp%zi                                    , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
-         z                    =>   col_pp%z                                     , & ! Input:  [real(r8) (:,:) ]  layer depth (m) (-nlevsno+1:nlevsoi)
+         dz                   =>   col_pp%dz                                 , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)  (-nlevsno+1:nlevsoi)
+         zi                   =>   col_pp%zi                                 , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
+         z                    =>   col_pp%z                                  , & ! Input:  [real(r8) (:,:) ]  layer depth (m) (-nlevsno+1:nlevsoi)
 
          forc_t               =>   top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)
          forc_pbot            =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
@@ -1385,7 +1383,7 @@ contains
          rootfr               =>   soilstate_vars%rootfr_patch               , & ! Input:  [real(r8) (:,:) ]  fraction of roots in each soil layer  (nlevgrnd)
          rootfr_col           =>   soilstate_vars%rootfr_col                 , & ! Output: [real(r8) (:,:) ]  fraction of roots in each soil layer  (nlevgrnd) (p2c)
 
-         frac_h2osfc          =>   col_ws%frac_h2osfc           , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+         frac_h2osfc          =>   col_ws%frac_h2osfc            , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
          qflx_surf            =>   col_wf%qflx_surf              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)
 
          conc_o2_sat          =>   ch4_vars%conc_o2_sat_col                  , & ! Input:  [real(r8) (:,:) ]  O2 conc  in each soil layer (mol/m3) (nlevsoi)
@@ -1427,41 +1425,81 @@ contains
          ch4co2f              =>   ch4_vars%ch4co2f_grc                      , & ! Output: [real(r8) (:)   ]  gridcell CO2 production from CH4 oxidation (g C/m**2/s)
          ch4prodg             =>   ch4_vars%ch4prodg_grc                     , & ! Output: [real(r8) (:)   ]  gridcell average CH4 production (g C/m^2/s)
          ch4_surf_flux_tot    =>   ch4_vars%ch4_surf_flux_tot_col            , & ! Output: [real(r8) (:)   ]  col CH4 flux to atm. (kg C/m**2/s)
-
-         nem_grc              =>   lnd2atm_vars%nem_grc                      , & ! Output: [real(r8) (:)   ]  gridcell average net methane correction to CO2 flux (g C/m^2/s)
-
-         begg                 =>   bounds%begg                               , &
-         endg                 =>   bounds%endg                               , &
-         begc                 =>   bounds%begc                               , &
-         endc                 =>   bounds%endc                               , &
-         begp                 =>   bounds%begp                               , &
-         endp                 =>   bounds%endp                                 &
+         !Added to pass directly to sat, unsat routines 
+         o2_decomp_depth_unsat  => ch4_vars%o2_decomp_depth_unsat_col , &
+         o2stress_unsat         => ch4_vars%o2stress_unsat_col        , &
+         ch4_aere_depth_unsat   => ch4_vars%ch4_aere_depth_unsat_col  , &
+         ch4_tran_depth_unsat   => ch4_vars%ch4_tran_depth_unsat_col  , &
+         ch4_ebul_depth_unsat   => ch4_vars%ch4_ebul_depth_unsat_col  , &
+         ch4_ebul_total_unsat   => ch4_vars%ch4_ebul_total_unsat_col  , &
+         co2_oxid_depth_unsat   => ch4_vars%co2_oxid_depth_unsat_col  , &
+         o2_oxid_depth_unsat    => ch4_vars%o2_oxid_depth_unsat_col   , &
+         o2_aere_depth_unsat    => ch4_vars%o2_aere_depth_unsat_col   , &
+         co2_aere_depth_unsat    => ch4_vars%co2_aere_depth_unsat_col , &
+         ch4stress_unsat        => ch4_vars%ch4stress_unsat_col       , &
+         co2_decomp_depth_unsat => ch4_vars%co2_decomp_depth_unsat_col, &
+         conc_o2_unsat          => ch4_vars%conc_o2_unsat_col         , &
+         ! Sat variables 
+         o2_decomp_depth_sat  => ch4_vars%o2_decomp_depth_sat_col  , &
+         o2stress_sat         => ch4_vars%o2stress_sat_col         , &
+         co2_aere_depth_sat   => ch4_vars%co2_aere_depth_sat_col   , &
+         ch4_aere_depth_sat   => ch4_vars%ch4_aere_depth_sat_col   , &
+         ch4_tran_depth_sat   => ch4_vars%ch4_tran_depth_sat_col   , &
+         ch4_ebul_depth_sat   => ch4_vars%ch4_ebul_depth_sat_col   , &
+         ch4_ebul_total_sat   => ch4_vars%ch4_ebul_total_sat_col   , &
+         co2_oxid_depth_sat   => ch4_vars%co2_oxid_depth_sat_col   , &
+         o2_oxid_depth_sat    => ch4_vars%o2_oxid_depth_sat_col    , &
+         o2_aere_depth_sat    => ch4_vars%o2_aere_depth_sat_col    , &
+         ch4stress_sat        => ch4_vars%ch4stress_sat_col        , &
+         co2_decomp_depth_sat => ch4_vars%co2_decomp_depth_sat_col , &
+         !
+         nem_grc              =>   lnd2atm_vars%nem_grc            , & ! Output: [real(r8) (:)   ]  gridcell average net methane correction to CO2 flux (g C/m^2/s)
+         redoxlag             => CH4ParamsInst%redoxlag , &
+         redoxlag_vertical    => CH4ParamsInst%redoxlag_vertical , &
+         atmch4               => CH4ParamsInst%atmch4      , &
+         qflxlagd             => CH4ParamsInst%qflxlagd    , &
+         highlatfact          => CH4ParamsInst%highlatfact   &
          )
+      
+      call cpu_time(startt) 
+      !$acc enter data create(&
+      !$acc jwt(:), &
+      !$acc ch4_prod_tot(:), &
+      !$acc ch4_oxid_tot(:), &
+      !$acc nem_col(:), &
+      !$acc rootfraction(:,:), &
+      !$acc totsoilcolch4_bef(:), &
+      !$acc totlakecolch4_bef(:), &
+      !$acc dummyfilter(:))
+      !$acc enter data create(sum1,sum2,sum3)
 
-      redoxlag          = CH4ParamsInst%redoxlag
-      redoxlag_vertical = CH4ParamsInst%redoxlag_vertical
-      atmch4            = CH4ParamsInst%atmch4
-      qflxlagd          = CH4ParamsInst%qflxlagd
-      highlatfact       = CH4ParamsInst%highlatfact
+      begg =   bounds%begg
+      endg =   bounds%endg
+      begc =   bounds%begc
+      endc =   bounds%endc
+      begp =   bounds%begp
+      endp =   bounds%endp
 
-      dtime = dtime_mod !get_step_size()
-      dtime_ch4 = dtime
+      dtime_ch4 = dtime_mod
       redoxlags = redoxlag*secspday ! days --> s
       redoxlags_vertical = redoxlag_vertical*secspday ! days --> s
       rgasm = rgas / 1000._r8
-
-      jwt(begc:endc)            = huge(1)
-      totcolch4_bef(begc:endc)  = spval
+      lake = .false.; sat = 0 
+      !$acc enter data copyin(redoxlags,redoxlags_vertical, dtime_ch4, lake, sat)
+      !$acc update device(rgasm) 
 
       ! Initialize local fluxes to zero: necessary for columns outside the filters because averaging up to gridcell will be done
-      ch4_surf_flux_tot(begc:endc) = 0._r8
-      ch4_prod_tot(begc:endc)      = 0._r8
-      ch4_oxid_tot(begc:endc)      = 0._r8
-      rootfraction(begp:endp,:)    = spval
-
+      ! ch4_surf_flux_tot(begc:endc) = 0._r8
       ! Adjustment to NEE for methane production - oxidation
-      nem_col(begc:endc)           = 0._r8
+      ! nem_col(begc:endc)           = 0._r8
 
+      !$acc parallel loop independent gang vector default(present)
+      do c = begc , endc 
+         ch4_surf_flux_tot(c) = 0._r8 
+         nem_col(c) = 0._r8
+      end do 
+
+      !$acc parallel loop independent gang vector default(present)
       do g= begg, endg
          ! using the first topounit on this gridcell for access to atmospheric forcing
          ! PET 8/10/2018 - replace this later once gas concentrations (c_atm) are also being tracked at
@@ -1470,26 +1508,25 @@ contains
          if (ch4offline) then
             forc_pch4(t) = atmch4*forc_pbot(t)
          else
-#ifndef _OPENACC
             if (forc_pch4(t) == 0._r8) then
-               write(iulog,*) 'not using ch4offline, but methane concentration not passed from the atmosphere'//&
-                     'to land model! CLM Model is stopping.'
-               call endrun(msg=' ERROR: Methane not being passed to atmosphere'//&
-                     errMsg(__FILE__, __LINE__))
+               !write(iulog,*) 'not using ch4offline, but methane concentration not passed from the atmosphere'//&
+               !      'to land model! CLM Model is stopping.'
+               !call endrun(msg=' ERROR: Methane not being passed to atmosphere'//errMsg(__FILE__, __LINE__))
+               print *, ' ERROR: Methane not being passed to atmosphere'
             end if
-#endif 
          end if
          c_atm(g,1) =  forc_pch4(t) / rgasm / forc_t(t) ! [mol/m3 air]
          c_atm(g,2) =  forc_po2(t)  / rgasm / forc_t(t) ! [mol/m3 air]
          c_atm(g,3) =  forc_pco2(t) / rgasm / forc_t(t) ! [mol/m3 air]
       end do
-
+      
       ! Initialize CH4 balance and calculate finundated
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1, num_soilc
          c = filter_soilc(fc)
          g = col_pp%gridcell(c)
 
-         totcolch4_bef(c) = totcolch4(c)
+         totsoilcolch4_bef(fc) = totcolch4(c)
          totcolch4(c) = 0._r8
 
          ! Update lagged surface runoff
@@ -1499,8 +1536,8 @@ contains
          else
             qflxlags = qflxlagd * secspday * highlatfact ! 60 days
          end if
-         qflx_surf_lag(c) = qflx_surf_lag(c) * exp(-dtime/qflxlags) &
-              + qflx_surf(c) * (1._r8 - exp(-dtime/qflxlags))
+         qflx_surf_lag(c) = qflx_surf_lag(c) * exp(-dtime_mod/qflxlags) &
+              + qflx_surf(c) * (1._r8 - exp(-dtime_mod/qflxlags))
 
          !There may be ways to improve this for irrigated crop columns...
          if (fin_use_fsat) then
@@ -1521,90 +1558,83 @@ contains
 
          ! Update lagged finundated for redox calculation
          if (redoxlags > 0._r8) then
-            finundated_lag(c) = finundated_lag(c) * exp(-dtime/redoxlags) &
-                 + finundated(c) * (1._r8 - exp(-dtime/redoxlags))
+            finundated_lag(c) = finundated_lag(c) * exp(-dtime_mod/redoxlags) &
+                 + finundated(c) * (1._r8 - exp(-dtime_mod/redoxlags))
          else
             finundated_lag(c) = finundated(c)
          end if
 
       end do
 
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1, num_lakec
          c = filter_lakec(fc)
 
-         totcolch4_bef(c) = totcolch4(c)
+         totlakecolch4_bef(fc) = totcolch4(c)
          totcolch4(c) = 0._r8
       end do
 
       ! Check to see if finundated changed since the last timestep.  If it increased, then reduce conc_ch4_sat
       ! proportionally.  If it decreased, then add flux to atm.
-
-      do j=1,nlevsoi
-         do fc = 1, num_soilc
-            c = filter_soilc(fc)
-
-            if (j==1) then
-               ch4_dfsat_flux(c) = 0._r8
-            end if
-
-            if (fsat_bef(c) /= spval .and. finundated(c) > fsat_bef(c)) then !Reduce conc_ch4_sat
+      !$acc parallel loop independent gang worker default(present) private(sum1)
+      do fc = 1, num_soilc
+         c = filter_soilc(fc)
+         sum1 = 0._r8
+         if (fsat_bef(c) /= spval .and. finundated(c) > fsat_bef(c)) then !Reduce conc_ch4_sat
+            !$acc loop independent vector 
+            do j=1,nlevsoi
                dfsat = finundated(c) - fsat_bef(c)
                conc_ch4_sat(c,j) = (fsat_bef(c)*conc_ch4_sat(c,j) + dfsat*conc_ch4_unsat(c,j)) / finundated(c)
-            else if (fsat_bef(c) /= spval .and. finundated(c) < fsat_bef(c)) then
-               ch4_dfsat_flux(c) = ch4_dfsat_flux(c) + (fsat_bef(c) - finundated(c))*(conc_ch4_sat(c,j) - conc_ch4_unsat(c,j)) * &
-                    dz(c,j) / dtime * catomw / 1000._r8 ! mol --> kg
-            end if
-         end do
+            end do 
+
+         else if (fsat_bef(c) /= spval .and. finundated(c) < fsat_bef(c)) then
+            !$acc loop vector reduction(+:sum1)
+            do j=1,nlevsoi 
+               sum1 = sum1 + (fsat_bef(c) - finundated(c))*(conc_ch4_sat(c,j) - conc_ch4_unsat(c,j)) * &
+                    dz(c,j) / dtime_mod * catomw / 1000._r8 ! mol --> kg
+            end do
+         end if
+         ch4_dfsat_flux(c) = sum1 
       end do
 
+      call cpu_time(stopt) 
+      print *, "TIMING Init : ",(stopt-startt)*1.E+3,"ms"
       !!!! Begin biochemistry
-
+      
       ! First for soil
       lake = .false.
-
       ! Do CH4 Annual Averages
       call ch4_annualupdate(bounds, &
            num_soilc, filter_soilc, &
-           num_soilp, filter_soilp, ch4_vars, dtime, 365.d0)
+           num_soilp, filter_soilp, ch4_vars, dtime_mod, 365.d0)
 
       ! Determine rootfr_col and also check for inactive columns
 
       if (nlevdecomp == 1) then
 
-         nc = bounds%clump_index
-         
          ! Set rootfraction to spval for non-veg points, unless veg_pp%wtcol > 0.99,
          ! in which case set it equal to uniform dist.
+         !$acc parallel loop independent gang vector default(present) collapse(2) 
+         do j=1, nlevsoi
+            do fp = 1, num_soilp
+               p = filter_soilp(fp)
+               c = veg_pp%column(p)
 
-         do fp = 1, num_soilp
-            p = filter_soilp(fp)
-            c = veg_pp%column(p)
-
-            if(.not. col_pp%is_fates(c) ) then
-               do j=1, nlevsoi
-                  if (veg_pp%itype(p) /= noveg) then
-                     rootfraction(p,j) = rootfr(p,j)
-                  else if (veg_pp%wtcol(p) < 0.99_r8) then
-                     rootfraction(p,j) = spval
-                  else
-                     rootfraction(p,j) = dz(c,j) / zi(c,nlevsoi)   ! Set equal to uniform distribution
-                  end if
-               end do
-            else
-               pf = p-col_pp%pfti(c)
-               s = elm_fates%f2hmap(nc)%hsites(c)
-               do j=1, elm_fates%fates(nc)%bc_in(s)%nlevsoil
-                  rootfraction(p,j) = elm_fates%fates(nc)%bc_out(s)%rootfr_pa(pf,j)
-               end do
-            end if
+               if (veg_pp%itype(p) /= noveg) then
+                  rootfraction(fp,j) = rootfr(p,j)
+               else if (veg_pp%wtcol(p) < 0.99_r8) then
+                  rootfraction(fp,j) = spval
+               else
+                  rootfraction(fp,j) = dz(c,j) / zi(c,nlevsoi)   ! Set equal to uniform distribution
+               end if
+            end do
          end do
 
-         
-         call p2c (bounds, nlevgrnd, &
+         call p2c_2d_parallel(bounds, nlevgrnd, &
               rootfraction(bounds%begp:bounds%endp, :), &
-              rootfr_col(bounds%begc:bounds%endc, :), &
-              0)
+              rootfr_col(bounds%begc:bounds%endc, :))
 
+         !$acc parallel loop independent gang vector default(present) collapse(2) 
          do j=1, nlevsoi
             do fc = 1, num_soilc
                c = filter_soilc(fc)
@@ -1616,11 +1646,12 @@ contains
       ! Determine grnd_ch4_cond_col
       ! Needed to use non-filter form above so that spval would be treated properly.
 
-      call p2c (bounds, num_soilc, filter_soilc, &
+      call p2c_1d_filter_parallel(num_soilc, filter_soilc, &
            grnd_ch4_cond_patch(bounds%begp:bounds%endp), &
            grnd_ch4_cond_col(bounds%begc:bounds%endc))
 
       ! Set the gridcell atmospheric CH4 and O2 concentrations
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1, num_soilc
          c = filter_soilc(fc)
          g = col_pp%gridcell(c)
@@ -1638,79 +1669,187 @@ contains
       ! Loop over saturated and unsaturated, non-lakes
       !------------------------------------------------
 
-      do sat = 0, 1 ! 0 == unsaturated; 1 = saturated
+      ! do sat = 0, 1 ! 0 == unsaturated; 1 = saturated
 
-         ! Get index of water table
-         if (sat == 0) then ! unsaturated
+      ! Get index of water table
+      ! if (sat == 0) then ! unsaturated
+      sat = 0 
+      call get_jwt (bounds, num_soilc, filter_soilc, jwt(begc:endc), &
+           soilstate_vars )
 
-            call get_jwt (bounds, num_soilc, filter_soilc, jwt(begc:endc), &
-                 soilstate_vars )
+      !$acc parallel loop independent gang vector default(present)
+      do fc = 1, num_soilc
+         c = filter_soilc(fc)
+         zwt_ch4_unsat(c) = zi(c,jwt(c))
+      end do
 
-            do fc = 1, num_soilc
-               c = filter_soilc(fc)
-               zwt_ch4_unsat(c) = zi(c,jwt(c))
+      ! Update lagged saturation status of layer
+      !$acc parallel loop independent gang vector default(present) collapse(2) 
+      do j=1,nlevsoi
+         do fc = 1, num_soilc
+            c = filter_soilc(fc)
 
-            end do
+            if (j > jwt(c) .and. redoxlags_vertical > 0._r8) then ! saturated currently
+               layer_sat_lag(c,j) = layer_sat_lag(c,j) * exp(-dtime_mod/redoxlags_vertical) &
+                    + (1._r8 - exp(-dtime_mod/redoxlags_vertical))
+            else if (redoxlags_vertical > 0._r8) then
+               layer_sat_lag(c,j) = layer_sat_lag(c,j) * exp(-dtime_mod/redoxlags_vertical)
+            else if (j > jwt(c)) then  ! redoxlags_vertical = 0
+               layer_sat_lag(c,j) = 1._r8
+            else
+               layer_sat_lag(c,j) = 0._r8
+            end if
+         end do
+      end do
 
-            ! Update lagged saturation status of layer
-            do j=1,nlevsoi
-               do fc = 1, num_soilc
-                  c = filter_soilc(fc)
 
-                  if (j > jwt(c) .and. redoxlags_vertical > 0._r8) then ! saturated currently
-                     layer_sat_lag(c,j) = layer_sat_lag(c,j) * exp(-dtime/redoxlags_vertical) &
-                          + (1._r8 - exp(-dtime/redoxlags_vertical))
-                  else if (redoxlags_vertical > 0._r8) then
-                     layer_sat_lag(c,j) = layer_sat_lag(c,j) * exp(-dtime/redoxlags_vertical)
-                  else if (j > jwt(c)) then  ! redoxlags_vertical = 0
-                     layer_sat_lag(c,j) = 1._r8
-                  else
-                     layer_sat_lag(c,j) = 0._r8
-                  end if
-               end do
-            end do
 
-         else ! saturated
-            do fc = 1, num_soilc
-               c = filter_soilc(fc)
-               jwt(c) = 0
-            end do
-         endif
+      ! calculate CH4 production in each soil layer
+      call ch4_prod (bounds, &
+           num_soilc, filter_soilc, &
+           num_soilp, filter_soilp, &
+           jwt(begc:endc), sat, lake, &
+           soilstate_vars, ch4_vars, dtime_mod, &
+           conc_o2_unsat(begc:endc,:), ch4_prod_depth_unsat(begc:endc,:), &
+           o2_decomp_depth_unsat(begc:endc,:), co2_decomp_depth_unsat(begc:endc,:) &
+           )
+      
 
-         ! calculate CH4 production in each soil layer
-         call ch4_prod (bounds, &
-              num_soilc, filter_soilc, &
-              num_soilp, filter_soilp, &
-              jwt(begc:endc), sat, lake, &
-              soilstate_vars, ch4_vars, dtime, elm_fates)
+      ! calculate CH4 oxidation in each soil layer
+      call ch4_oxid (bounds, &
+           num_soilc, filter_soilc, &
+           jwt(begc:endc), sat, lake, &
+           soilstate_vars, dtime_mod,&
+           ch4_oxid_depth_unsat(begc:endc,:), &
+           o2_oxid_depth_unsat(begc:endc,:),&
+           co2_oxid_depth_unsat(begc:endc,:), &   
+           conc_ch4_unsat(begc:endc,:), conc_o2_unsat(begc:endc,:), &
+           o2_decomp_depth_unsat(begc:endc,:)  )
 
-         ! calculate CH4 oxidation in each soil layer
-         call ch4_oxid (bounds, &
-              num_soilc, filter_soilc, &
-              jwt(begc:endc), sat, lake, &
-              soilstate_vars, ch4_vars, dtime)
+      
 
-         ! calculate CH4 aerenchyma losses in each soil layer
-         call ch4_aere (bounds, &
-              num_soilc, filter_soilc, &
-              num_soilp, filter_soilp, &
-              jwt(begc:endc), sat, lake, &
-              canopystate_vars, soilstate_vars, energyflux_vars, ch4_vars, dtime, elm_fates)
+      ! calculate CH4 aerenchyma losses in each soil layer
+      call ch4_aere (bounds, &
+           num_soilc, filter_soilc, &
+           num_soilp, filter_soilp, &
+           jwt(begc:endc), sat, lake, &
+           canopystate_vars, soilstate_vars,&
+           energyflux_vars, ch4_vars,dtime_mod, &
+           ch4_aere_depth_unsat(begc:endc,:), ch4_tran_depth_unsat(begc:endc,:), &
+           o2_aere_depth_unsat(begc:endc,:), &
+           co2_aere_depth_unsat(begc:endc,:), conc_ch4_unsat(begc:endc,:), &
+           conc_o2_unsat(begc:endc,:), ch4_oxid_depth_unsat(begc:endc,:),&
+           ch4_prod_depth_unsat(begc:endc,:))
 
-         ! calculate CH4 ebullition losses in each soil layer
-         call ch4_ebul (bounds, &
-              num_soilc, filter_soilc, &
-              jwt(begc:endc), sat, lake, &
-              atm2lnd_vars, lakestate_vars, soilstate_vars, ch4_vars, dtime)
+      ! calculate CH4 ebullition losses in each soil layer
+      call ch4_ebul (bounds, &
+           num_soilc, filter_soilc, &
+           jwt(begc:endc), sat, lake, &
+           lakestate_vars, soilstate_vars, ch4_vars, dtime_mod, &
+           ch4_ebul_depth_unsat(begc:endc,:), ch4_ebul_total_unsat(begc:endc),&
+           conc_ch4_unsat(begc:endc,:), &    
+           ch4_aere_depth_unsat(begc:endc,:), ch4_oxid_depth_unsat(begc:endc,:))
 
-         ! Solve CH4 reaction/diffusion equation
-         ! Competition for oxygen will occur here.
-         call ch4_tran (bounds, &
-              num_soilc, filter_soilc, &
-              jwt(begc:endc), dtime_ch4, sat, lake, &
-              soilstate_vars, energyflux_vars, ch4_vars, dtime)
 
-      enddo ! sat/unsat
+      ! Solve CH4 reaction/diffusion equation
+      ! Competition for oxygen will occur here.
+      call ch4_tran (bounds, &
+           num_soilc, filter_soilc, &
+           jwt(begc:endc), dtime_mod, sat, lake, &
+           soilstate_vars, energyflux_vars, ch4_vars, dtime_mod,&
+           o2_decomp_depth_unsat(begc:endc,:), o2stress_unsat(begc:endc,:), &
+           ch4_oxid_depth_unsat(begc:endc,:) ,& 
+           ch4_prod_depth_unsat(begc:endc,:), ch4_aere_depth_unsat(begc:endc,:), &
+           ch4_surf_aere_unsat(begc:endc) ,&
+           ch4_ebul_depth_unsat(begc:endc,:) ,&
+           ch4_ebul_total_unsat(begc:endc) ,&
+           ch4_surf_ebul_unsat(begc:endc) ,&   
+           ch4_surf_diff_unsat(begc:endc), o2_oxid_depth_unsat(begc:endc,:), &
+           o2_aere_depth_unsat(begc:endc,:), & 
+           ch4stress_unsat(begc:endc,:), co2_decomp_depth_unsat(begc:endc,:), &
+           conc_ch4_unsat(begc:endc,:), conc_o2_unsat(begc:endc,:) &
+           )
+
+      ! Saturated
+      sat = 1 
+      !$acc update device(sat)
+      !$acc parallel loop independent gang vector default(present)
+      do fc = 1, num_soilc
+         c = filter_soilc(fc)
+         jwt(c) = 0
+      end do
+
+      ! calculate CH4 production in each soil layer
+      call ch4_prod (bounds, &
+           num_soilc, filter_soilc, &
+           num_soilp, filter_soilp, &
+           jwt(begc:endc), sat, lake, &
+           soilstate_vars, ch4_vars, dtime_mod, &
+           conc_o2_sat(begc:endc,:), &
+           ch4_prod_depth_sat(begc:endc,:),&
+           o2_decomp_depth_sat(begc:endc,:), &
+           co2_decomp_depth_sat(begc:endc,:) &
+           )
+
+      ! calculate CH4 oxidation in each soil layer
+      call ch4_oxid (bounds, &
+           num_soilc, filter_soilc, &
+           jwt(begc:endc), sat, lake, &
+           soilstate_vars, dtime_mod,&
+           ch4_oxid_depth_sat(begc:endc,:), o2_oxid_depth_sat(begc:endc,:),&
+           co2_oxid_depth_sat(begc:endc,:), &   
+           conc_ch4_sat(begc:endc,:), conc_o2_sat(begc:endc,:), &
+           o2_decomp_depth_sat(begc:endc,:) )
+
+      ! calculate CH4 aerenchyma losses in each soil layer
+      call ch4_aere (bounds, &
+           num_soilc, filter_soilc, &
+           num_soilp, filter_soilp, &
+           jwt(begc:endc), sat, lake, &
+           canopystate_vars, soilstate_vars, energyflux_vars, ch4_vars,dtime_mod, &
+           ch4_aere_depth_sat(begc:endc,:), &
+           ch4_tran_depth_sat(begc:endc,:),&
+           o2_aere_depth_sat(begc:endc,:), &
+           co2_aere_depth_sat(begc:endc,:), & 
+           conc_ch4_sat(begc:endc,:), &
+           conc_o2_sat(begc:endc,:), &
+           ch4_oxid_depth_sat(begc:endc,:), &
+           ch4_prod_depth_sat(begc:endc,:))
+      
+      ! calculate CH4 ebullition losses in each soil layer
+      call ch4_ebul (bounds, &
+           num_soilc, filter_soilc, &
+           jwt(begc:endc), sat, lake, &
+           lakestate_vars, soilstate_vars, ch4_vars, dtime_mod, &
+           ch4_ebul_depth_sat(begc:endc,:), &
+           ch4_ebul_total_sat(begc:endc), &
+           conc_ch4_sat(begc:endc,:), &    
+           ch4_aere_depth_sat(begc:endc,:), &
+           ch4_oxid_depth_sat(begc:endc,:))
+      
+      ! Solve CH4 reaction/diffusion equation
+      ! Competition for oxygen will occur here.
+      call ch4_tran (bounds, &
+           num_soilc, filter_soilc, &
+           jwt(begc:endc), dtime_mod, sat, lake, &
+           soilstate_vars, energyflux_vars, ch4_vars, dtime_mod, &
+           o2_decomp_depth_sat(begc:endc,:), &
+           o2stress_sat(begc:endc,:), &
+           ch4_oxid_depth_sat(begc:endc,:),& 
+           ch4_prod_depth_sat(begc:endc,:), &
+           ch4_aere_depth_sat(begc:endc,:), &
+           ch4_surf_aere_sat(begc:endc), &
+           ch4_ebul_depth_sat(begc:endc,:),&
+           ch4_ebul_total_sat(begc:endc),&
+           ch4_surf_ebul_sat(begc:endc), &   
+           ch4_surf_diff_sat(begc:endc), &
+           o2_oxid_depth_sat(begc:endc,:), &
+           o2_aere_depth_sat(begc:endc,:), & 
+           ch4stress_sat(begc:endc,:), &
+           co2_decomp_depth_sat(begc:endc,:), &
+           conc_ch4_sat(begc:endc,:), &
+           conc_o2_sat(begc:endc,:) &
+           )
 
       !-------------------------------------------------
       ! Now do over lakes
@@ -1719,6 +1858,8 @@ contains
       if (allowlakeprod) then
          lake = .true.
          sat = 1
+         !$acc update device(lake,sat)
+         !$acc parallel loop independent gang vector default(present)
          do fc = 1, num_lakec
             c = filter_lakec(fc)
             jwt(c) = 0
@@ -1728,32 +1869,68 @@ contains
          call ch4_prod (bounds, &
               num_lakec, filter_lakec, &
               0, dummyfilter, jwt(begc:endc), sat, lake, &
-              soilstate_vars, ch4_vars, dtime, elm_fates)
+              soilstate_vars, ch4_vars, dtime_mod, &
+              conc_o2_sat(begc:endc,:), ch4_prod_depth_sat(begc:endc,:), &
+              o2_decomp_depth_sat(begc:endc,:), co2_decomp_depth_sat(begc:endc,:) &
+              )
 
          ! calculate CH4 oxidation in each lake layer
          call ch4_oxid (bounds, &
               num_lakec, filter_lakec, &
-              jwt(begc:endc), sat, lake, soilstate_vars, ch4_vars, dtime)
+              jwt(begc:endc), sat, lake, soilstate_vars, dtime_mod,&
+              ch4_oxid_depth_sat(begc:endc,:), o2_oxid_depth_sat(begc:endc,:), &
+              co2_oxid_depth_sat(begc:endc,:), &   
+              conc_ch4_sat(begc:endc,:), &
+              conc_o2_sat(begc:endc,:), &
+              o2_decomp_depth_sat(begc:endc,:) )
 
          ! calculate CH4 aerenchyma losses in each lake layer
          ! The p filter will not be used here; the relevant column vars will just be set to 0.
          call ch4_aere (bounds, &
               num_lakec, filter_lakec, &
               0, dummyfilter, jwt(begc:endc), sat, lake, &
-              canopystate_vars, soilstate_vars, energyflux_vars, ch4_vars, dtime, elm_fates)
+              canopystate_vars, soilstate_vars, energyflux_vars, ch4_vars, dtime_mod, &
+              ch4_aere_depth_sat(begc:endc,:), &
+              ch4_tran_depth_sat(begc:endc,:), &
+              o2_aere_depth_sat(begc:endc,:), &
+              co2_aere_depth_sat(begc:endc,:), &
+              conc_ch4_sat(begc:endc,:), &
+              conc_o2_sat(begc:endc,:), &
+              ch4_oxid_depth_sat(begc:endc,:), &
+              ch4_prod_depth_sat(begc:endc,:))
 
          ! calculate CH4 ebullition losses in each lake layer
          call ch4_ebul (bounds, &
               num_lakec, filter_lakec, &
               jwt(begc:endc), sat, lake, &
-              atm2lnd_vars, lakestate_vars, soilstate_vars,ch4_vars, dtime)
+              lakestate_vars, soilstate_vars,ch4_vars, dtime_mod, &
+              ch4_ebul_depth_sat(begc:endc,:), &
+              ch4_ebul_total_sat(begc:endc), &
+              conc_ch4_sat(begc:endc,:), &    
+              ch4_aere_depth_sat(begc:endc,:), &
+              ch4_oxid_depth_sat(begc:endc,:))
 
          ! Solve CH4 reaction/diffusion equation
          ! Competition for oxygen will occur here.
          call ch4_tran (bounds, &
               num_lakec, filter_lakec, &
-              jwt(begc:endc), dtime_ch4, sat, lake, &
-              soilstate_vars, energyflux_vars, ch4_vars, dtime)
+              jwt(begc:endc), dtime_mod, sat, lake, &
+              soilstate_vars, energyflux_vars, ch4_vars, dtime_mod, &
+              o2_decomp_depth_sat(begc:endc,:), &
+              o2stress_sat(begc:endc,:), &
+              ch4_oxid_depth_sat(begc:endc,:),& 
+              ch4_prod_depth_sat(begc:endc,:), &
+              ch4_aere_depth_sat(begc:endc,:), ch4_surf_aere_sat(begc:endc), &
+              ch4_ebul_depth_sat(begc:endc,:),ch4_ebul_total_sat(begc:endc), &
+              ch4_surf_ebul_sat(begc:endc), &   
+              ch4_surf_diff_sat(begc:endc), &
+              o2_oxid_depth_sat(begc:endc,:), &
+              o2_aere_depth_sat(begc:endc,:), & 
+              ch4stress_sat(begc:endc,:), &
+              co2_decomp_depth_sat(begc:endc,:), &
+              conc_ch4_sat(begc:endc,:),&
+              conc_o2_sat(begc:endc,:) &
+              )
 
       end if
 
@@ -1762,36 +1939,39 @@ contains
       !-------------------------------------------------
 
       ! First weight the soil columns by finundated.
-      do j=1,nlevsoi
-         do fc = 1, num_soilc
-            c = filter_soilc(fc)
+      !$acc parallel loop independent gang worker default(present) private(totalsat, totalunsat,sum1,sum2)
+      do fc = 1, num_soilc
+         c = filter_soilc(fc)
+         
+         totalsat = ch4_surf_diff_sat(c) + ch4_surf_aere_sat(c) + ch4_surf_ebul_sat(c)
+         totalunsat = ch4_surf_diff_unsat(c) + ch4_surf_aere_unsat(c) + ch4_surf_ebul_unsat(c)
+         ch4_surf_flux_tot(c) = (finundated(c)*totalsat + (1._r8 - finundated(c))*totalunsat) * catomw / 1000._r8
 
-            if (j == 1) then
-               totalsat = ch4_surf_diff_sat(c) + ch4_surf_aere_sat(c) + ch4_surf_ebul_sat(c)
-               totalunsat = ch4_surf_diff_unsat(c) + ch4_surf_aere_unsat(c) + ch4_surf_ebul_unsat(c)
-               ch4_surf_flux_tot(c) = (finundated(c)*totalsat + (1._r8 - finundated(c))*totalunsat) * &
-                    catomw / 1000._r8
-               !Convert from mol to kg C
-               ! ch4_oxid_tot and ch4_prod_tot are initialized to zero above
-            end if
+         !Convert from mol to kg C
+         ! ch4_oxid_tot and ch4_prod_tot are initialized to zero above 
+         sum1 = 0._r8 
+         sum2 = 0._r8
+         !$acc loop vector reduction(+:sum1,sum2)
+         do j=1,nlevsoi
 
-            ch4_oxid_tot(c) = ch4_oxid_tot(c) + (finundated(c)*ch4_oxid_depth_sat(c,j) + &
+            sum1 = sum1 + (finundated(c)*ch4_oxid_depth_sat(c,j) + &
                  (1._r8 - finundated(c))*ch4_oxid_depth_unsat(c,j))*dz(c,j) * catomw
             !Convert from mol to g C
-            ch4_prod_tot(c) = ch4_prod_tot(c) + (finundated(c)*ch4_prod_depth_sat(c,j) + &
+            sum2 = sum2 + (finundated(c)*ch4_prod_depth_sat(c,j) + &
                  (1._r8 - finundated(c))*ch4_prod_depth_unsat(c,j))*dz(c,j) * catomw
-            !Convert from mol to g C
-            if (j == nlevsoi) then
-               ! Adjustment to NEE flux to atm. for methane production
-               nem_col(c) = nem_col(c) - ch4_prod_tot(c)
-               ! Adjustment to NEE flux to atm. for methane oxidation
-               nem_col(c) = nem_col(c) + ch4_oxid_tot(c)
-            end if
+
          end do
+         ch4_oxid_tot(c) = sum1
+         ch4_prod_tot(c) = sum2  
+         ! Adjustment to NEE flux to atm. for methane production
+         nem_col(c) = nem_col(c) - ch4_prod_tot(c)
+         ! Adjustment to NEE flux to atm. for methane oxidation
+         nem_col(c) = nem_col(c) + ch4_oxid_tot(c)
       end do
 
       ! Correct for discrepancies in CH4 concentration from changing finundated
 
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1, num_soilc
          c = filter_soilc(fc)
 
@@ -1802,121 +1982,145 @@ contains
       end do
 
       if (allowlakeprod) then
-         do j=1,nlevsoi
-            do fc = 1, num_lakec
-               c = filter_lakec(fc)
+         !$acc parallel loop independent gang worker default(present) private(sum1,sum2)
+         do fc = 1, num_lakec
+            c = filter_lakec(fc)
+            ! ch4_oxid_tot and ch4_prod_tot are initialized to zero above
+            totalsat = ch4_surf_diff_sat(c) + ch4_surf_aere_sat(c) + ch4_surf_ebul_sat(c)
+            ch4_surf_flux_tot(c) = totalsat*catomw / 1000._r8
 
-               if (j == 1) then
-                  ! ch4_oxid_tot and ch4_prod_tot are initialized to zero above
-                  totalsat = ch4_surf_diff_sat(c) + ch4_surf_aere_sat(c) + ch4_surf_ebul_sat(c)
-                  ch4_surf_flux_tot(c) = totalsat*catomw / 1000._r8
-               end if
+            ch4_surf_diff_lake(c) = ch4_surf_diff_sat(c)
+            ch4_surf_ebul_lake(c) = ch4_surf_ebul_sat(c)
+            
+            sum1 = 0._r8
+            sum2 = 0._r8 
+            !$acc loop vector reduction(+:sum1,sum2)
+            do j=1,nlevsoi
+               sum1 = sum1 + ch4_oxid_depth_sat(c,j)*dz(c,j)*catomw
+               sum2 = sum2 + ch4_prod_depth_sat(c,j)*dz(c,j)*catomw
+            end do 
 
-               ch4_oxid_tot(c) = ch4_oxid_tot(c) + ch4_oxid_depth_sat(c,j)*dz(c,j)*catomw
-               ch4_prod_tot(c) = ch4_prod_tot(c) + ch4_prod_depth_sat(c,j)*dz(c,j)*catomw
+            ch4_oxid_tot(c) = ch4_oxid_tot(c) + sum1
+            ch4_prod_tot(c) = ch4_prod_tot(c) + sum2
 
+            ! Adjustment to NEE flux to atm. for methane production
+            if (.not. replenishlakec) then
+               nem_col(c) = nem_col(c) + ch4_prod_tot(c)
+               ! Here this is positive because it is actually the CO2 that comes off with the methane
+               ! NOTE THIS MODE ASSUMES TRANSIENT CARBON SUPPLY FROM LAKES; COUPLED MODEL WILL NOT CONSERVE CARBON
+               ! IN THIS MODE.
+            else ! replenishlakec
+               nem_col(c) = nem_col(c) - ch4_prod_tot(c)
+               ! Keep total C constant, just shift from CO2 to methane
+            end if
+
+            ! Adjustment to NEE flux to atm. for methane oxidation
+            nem_col(c) = nem_col(c) + ch4_oxid_tot(c)
+         end do
+
+         !$acc parallel loop independent gang vector collapse(2) default(present) 
+         do j=1,nlevsoi 
+            do fc = 1, num_lakec 
+               c = filter_lakec(fc) 
                if (.not. replenishlakec) then
                   !Adjust lake_soilc for production.
-                  lake_soilc(c,j) = lake_soilc(c,j) - 2._r8*ch4_prod_depth_sat(c,j)*dtime*catomw
+                  lake_soilc(c,j) = lake_soilc(c,j) - 2._r8*ch4_prod_depth_sat(c,j)*dtime_mod*catomw
                   ! Factor of 2 is for CO2 that comes off with CH4 because of stoichiometry
                end if
-
-               if (j == nlevsoi) then
-                  ! Adjustment to NEE flux to atm. for methane production
-                  if (.not. replenishlakec) then
-                     nem_col(c) = nem_col(c) + ch4_prod_tot(c)
-                     ! Here this is positive because it is actually the CO2 that comes off with the methane
-                     ! NOTE THIS MODE ASSUMES TRANSIENT CARBON SUPPLY FROM LAKES; COUPLED MODEL WILL NOT CONSERVE CARBON
-                     ! IN THIS MODE.
-                  else ! replenishlakec
-                     nem_col(c) = nem_col(c) - ch4_prod_tot(c)
-                     ! Keep total C constant, just shift from CO2 to methane
-                  end if
-
-                  ! Adjustment to NEE flux to atm. for methane oxidation
-                  nem_col(c) = nem_col(c) + ch4_oxid_tot(c)
-
-               end if
-
-
                !Set lake diagnostic output variables
                ch4_prod_depth_lake(c,j) = ch4_prod_depth_sat(c,j)
                conc_ch4_lake(c,j)       = conc_ch4_sat(c,j)
                conc_o2_lake(c,j)        = conc_o2_sat(c,j)
                ch4_oxid_depth_lake(c,j) = ch4_oxid_depth_sat(c,j)
-               if (j == 1) then
-                  ch4_surf_diff_lake(c) = ch4_surf_diff_sat(c)
-                  ch4_surf_ebul_lake(c) = ch4_surf_ebul_sat(c)
-               end if
+            end do 
+         end do 
 
-            end do
-         end do
       end if  ! ch4_surf_flux_tot, ch4_oxid_tot, and ch4_prod_tot should be initialized to 0 above if .not. allowlakeprod
 
       ! Finalize CH4 balance and check for errors
+      erridx = 0 
+      !$acc parallel loop independent gang worker default(present) private(sum1) copy(erridx)
+      do fc = 1, num_soilc
+         c = filter_soilc(fc)
+         sum1 = 0._r8
 
-      do j=1,nlevsoi
-         do fc = 1, num_soilc
-            c = filter_soilc(fc)
-
-            totcolch4(c) = totcolch4(c) + &
-                 (finundated(c)*conc_ch4_sat(c,j) + (1._r8-finundated(c))*conc_ch4_unsat(c,j))*dz(c,j)*catomw
+         !$acc loop vector reduction(+:sum1) 
+         do j=1,nlevsoi
+            sum1 = sum1 + (finundated(c)*conc_ch4_sat(c,j) + (1._r8-finundated(c))*conc_ch4_unsat(c,j))*dz(c,j)*catomw
             ! mol CH4 --> g C
-
-            if (j == nlevsoi .and. totcolch4_bef(c) /= spval) then ! not first timestep
-               ! Check balance
-               errch4 = totcolch4(c) - totcolch4_bef(c) - dtime*(ch4_prod_tot(c) - ch4_oxid_tot(c) &
-                    - ch4_surf_flux_tot(c)*1000._r8) ! kg C --> g C
-#ifndef _OPENACC 
-               if (abs(errch4) > 1.e-7_r8) then ! g C / m^2 / timestep
-                  write(iulog, *) 'CH4 Conservation Error in CH4Mod driver, nstep, c, errch4 (gC /m^2.timestep)',&
-                       nstep,c,errch4
-                  g = col_pp%gridcell(c)
-                  write(iulog,*) 'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-                  call endrun(msg=' ERROR: Methane conservation error'//errMsg(__FILE__, __LINE__))
-               end if
-#endif 
-            end if
-
          end do
-         if (allowlakeprod) then
-            do fc = 1, num_lakec
-               c = filter_lakec(fc)
+         totcolch4(c) = totcolch4(c) + sum1 
 
-               totcolch4(c) = totcolch4(c) + conc_ch4_sat(c,j)*dz(c,j)*catomw ! mol CH4 --> g C
-
-               if (j == nlevsoi .and. totcolch4_bef(c) /= spval) then ! not first timestep
-                  ! Check balance
-                  errch4 = totcolch4(c) - totcolch4_bef(c) - dtime*(ch4_prod_tot(c) - ch4_oxid_tot(c) &
-                       - ch4_surf_flux_tot(c)*1000._r8) ! kg C --> g C
-#ifndef _OPENACC
-                  if (abs(errch4) > 1.e-7_r8) then ! g C / m^2 / timestep
-                     write(iulog,*)'CH4 Conservation Error in CH4Mod driver for lake column, nstep, c, errch4 (gC/m^2.timestep)',&
-                           nstep,c,errch4
-                     g = col_pp%gridcell(c)
-                     write(iulog,*) 'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-                     call endrun(msg=' ERROR: Methane conservation error, allowlakeprod'//&
-                          errMsg(__FILE__, __LINE__))
-                  end if
-#endif 
-               end if
-
-            end do
+         if (totsoilcolch4_bef(fc) /= spval) then ! not first timestep
+            ! Check balance
+            errch4 = totcolch4(c) - totsoilcolch4_bef(fc) - dtime_mod*(ch4_prod_tot(c) - ch4_oxid_tot(c) &
+                 - ch4_surf_flux_tot(c)*1000._r8) ! kg C --> g C
+            
+            if (abs(errch4) > 1.e-7_r8) then ! g C / m^2 / timestep
+               erridx = c
+            end if
          end if
-      end do
+      end do 
+      if(erridx > 0) then 
+         c = erridx 
+         g = col_pp%gridcell(erridx)
+         write(iulog, *) 'CH4 Conservation Error in CH4Mod driver, nstep, c, errch4 (gC /m^2.timestep)',nstep,c
+         write(iulog,*) 'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
+         ! call endrun(msg=' ERROR: Methane conservation error'//errMsg(__FILE__, __LINE__))
+      end if 
+
+      if (allowlakeprod) then
+         erridx = 0
+         !$acc parallel loop independent gang worker default(present) private(sum1,errch4) copy(erridx)
+         do fc = 1, num_lakec
+            c = filter_lakec(fc)
+            sum1 = 0._r8
+
+            !$acc loop vector reduction(+:sum1) 
+            do j=1,nlevsoi
+               sum1 = sum1 + conc_ch4_sat(c,j)*dz(c,j)*catomw ! mol CH4 --> g C
+            end do 
+            totcolch4(c) = totcolch4(c) + sum1 
+
+            if (totlakecolch4_bef(fc) /= spval) then ! not first timestep
+               ! Check balance
+               errch4 = totcolch4(c) - totlakecolch4_bef(fc) - dtime_mod*(ch4_prod_tot(c) - ch4_oxid_tot(c) &
+                    - ch4_surf_flux_tot(c)*1000._r8) ! kg C --> g C
+               if (abs(errch4) > 1.e-7_r8) then ! g C / m^2 / timestep
+                  erridx = c 
+               end if
+            end if
+         end do
+         if(erridx > 0) then 
+            c = erridx 
+            g = col_pp%gridcell(c)
+            write(iulog,*)'CH4 Conservation Error in CH4Mod driver for lake column, nstep, c, errch4 (gC/m^2.timestep)',nstep,c
+            write(iulog,*) 'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
+            ! call endrun(msg=' ERROR: Methane conservation error, allowlakeprod'//errMsg(__FILE__, __LINE__))
+         end if 
+
+      end if
 
       ! Now average up to gridcell for fluxes
-      call c2g( bounds, &
-           ch4_oxid_tot(begc:endc), ch4co2f(begg:endg),        &
-           c2l_scale_type= 0, l2g_scale_type=0 )
+      call c2g_1d_parallel( bounds, ch4_oxid_tot(begc:endc), ch4co2f(begg:endg),&
+           c2l_scale_type=unity, l2g_scale_type=unity,para=.true.)
 
-      call c2g( bounds, &
-           ch4_prod_tot(begc:endc), ch4prodg(begg:endg),       &
-           c2l_scale_type= 0, l2g_scale_type=0 )
+      call c2g_1d_parallel( bounds, ch4_prod_tot(begc:endc), ch4prodg(begg:endg),&
+           c2l_scale_type=unity, l2g_scale_type=unity,para=.true.)
 
-      call c2g( bounds, &
-           nem_col(begc:endc), nem_grc(begg:endg),               &
-           c2l_scale_type= 0, l2g_scale_type=0 )
+      call c2g_1d_parallel( bounds, nem_col(begc:endc), nem_grc(begg:endg), &
+           c2l_scale_type=unity, l2g_scale_type=unity,para=.true.)
+
+    !$acc exit data delete(&
+    !$acc jwt(:), &
+    !$acc ch4_prod_tot(:), &
+    !$acc ch4_oxid_tot(:), &
+    !$acc nem_col(:), &
+    !$acc rootfraction(:,:), &
+    !$acc totsoilcolch4_bef(:), &
+    !$acc totlakecolch4_bef(:), &
+    !$acc dummyfilter(:),sum1,sum2,sum3)
+   !$acc exit data delete(redoxlags,redoxlags_vertical,rgasm, dtime_ch4, lake, sat)
 
     end associate
 
@@ -1924,8 +2128,8 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine ch4_prod (bounds, num_methc, filter_methc, num_methp, &
-       filter_methp, jwt, sat, lake, &
-       soilstate_vars, ch4_vars, dtime, elm_fates)
+       filter_methp, jwt, sat, lake, soilstate_vars, ch4_vars, dtime, &
+       conc_o2, ch4_prod_depth, o2_decomp_depth, co2_decomp_depth )
     !
     ! !DESCRIPTION:
     ! Production is done below the water table, based on CN heterotrophic respiration.
@@ -1934,7 +2138,6 @@ contains
     ! pH (optional), & redox lag factor.
     !
     ! !USES:
-    ! !$acc routine seq
     use CH4varcon          , only: usephfact, anoxicmicrosites, ch4rmcnlim
     use elm_varctl         , only: anoxia
     use elm_varpar         , only: nlevdecomp, nlevdecomp_full
@@ -1953,60 +2156,39 @@ contains
     type(soilstate_type)    , intent(inout) :: soilstate_vars
     type(ch4_type)          , intent(inout) :: ch4_vars
     real(r8), intent(in) :: dtime
-    type(hlm_fates_interface_type), intent(inout) :: elm_fates
-    
+    real(r8), intent(inout) :: conc_o2(:,:)           ! Input:  [real(r8) (:,:)]  O2 conc in each soil layer (mol/m3) (nlevsoi)
+    real(r8), intent(inout) :: ch4_prod_depth(:,:)    ! Output: [real(r8) (:,:)]  production of CH4 in each soil layer (nlevsoi) (mol/m3/s)
+    real(r8), intent(inout) :: o2_decomp_depth(:,:)   ! Output: [real(r8) (:,:)]  O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
+    real(r8), intent(inout) :: co2_decomp_depth(:,:)  ! Output: [real(r8) (:,:)]  CO2 production during decomposition in each soil layer (nlevsoi) (mol/m3/s)
     !
     ! !LOCAL VARIABLES:
-    integer  :: p,c,j,g,s        ! indices
-    integer  :: nc
-    integer  :: fc               ! column index
-    integer  :: fp               ! PATCH index
-    real(r8) :: base_decomp      ! base rate (mol/m2/s)
-    real(r8) :: q10lake          ! For now, take to be the same as q10ch4 * 1.5.
-    real(r8) :: q10lakebase      ! (K) base temperature for lake CH4 production
-    real(r8) :: partition_z
-    real(r8) :: mino2lim         ! minimum anaerobic decomposition rate as a fraction of potential aerobic rate
-    real(r8) :: q10ch4           ! additional Q10 for methane production ABOVE the soil decomposition temperature relationship
-    real(r8) :: q10ch4base       ! temperature at which the effective f_ch4 actually equals the constant f_ch4
-    real(r8) :: f_ch4            ! ratio of CH4 production to total C mineralization
-    real(r8) :: rootlitfrac      ! Fraction of soil organic matter associated with roots
-    real(r8) :: cnscalefactor    ! scale factor on CN decomposition for assigning methane flux
-    real(r8) :: lake_decomp_fact ! Base decomposition rate (1/s) at 25C
-
-    ! added by Lei Meng to account for pH influence of CH4 production
-    real(r8) :: pHmax
-    real(r8) :: pHmin
-    real(r8) :: pH_fact_ch4      ! pH factor in methane production
-
+    integer  :: p,c,j,g        ! indices
+    integer  :: fc             ! column index
+    integer  :: fp             ! PATCH index
+    real(r8) :: base_decomp    ! base rate (mol/m2/s)
+    real(r8) :: q10lake          
+    real(r8) :: partition_z      
+    real(r8) :: pH_fact_ch4    ! pH factor in methane production
     ! Factors for methanogen temperature dependence being greater than soil aerobes
-    real(r8)            :: f_ch4_adj                      ! Adjusted f_ch4
-    real(r8)            :: t_fact_ch4                     ! Temperature factor calculated using additional Q10
+    real(r8) :: f_ch4_adj      ! Adjusted f_ch4
+    real(r8) :: t_fact_ch4     ! Temperature factor calculated using additional Q10
     ! O2 limitation on decomposition and methanogenesis
-    real(r8)            :: seasonalfin                    ! finundated in excess of respiration-weighted annual average
-    real(r8)            :: oxinhib                        ! inhibition of methane production by oxygen (m^3/mol)
-
+    real(r8) :: seasonalfin    ! finundated in excess of respiration-weighted annual average
     ! For calculating column average (rootfrac(p,j)*rr(p,j))
-    real(r8) :: rr_vr(bounds%begc:bounds%endc, 1:nlevsoi) ! vertically resolved column-mean root respiration (g C/m^2/s)
-    real(r8), pointer :: ch4_prod_depth(:,:)              ! backwards compatibility
-    real(r8), pointer :: o2_decomp_depth(:,:)             ! backwards compatibility
-    real(r8), pointer :: co2_decomp_depth(:,:)            ! backwards compatibility
-    real(r8), pointer :: conc_o2(:,:)                     ! backwards compatibility
-
+    real(r8) :: rr_vr(1:num_methc, 1:nlevsoi) ! vertically resolved column-mean root respiration (g C/m^2/s)
+    real(r8) :: sum1 
     !-----------------------------------------------------------------------
-
-    ! Enforce expected array sizes
-
-    associate(                                                     &
-         wtcol          =>    veg_pp%wtcol                          , & ! Input:  [real(r8) (:)    ]  weight (relative to column)
-         dz             =>    col_pp%dz                             , & ! Input:  [real(r8) (:,:)  ]  layer thickness (m)  (-nlevsno+1:nlevsoi)
-         z              =>    col_pp%z                              , & ! Input:  [real(r8) (:,:)  ]  layer depth (m) (-nlevsno+1:nlevsoi)
-         zi             =>    col_pp%zi                             , & ! Input:  [real(r8) (:,:)  ]  interface level below a "z" level (m)
-
-         t_soisno       =>    col_es%t_soisno      , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi)
+    associate(                                        &
+         wtcol          =>    veg_pp%wtcol          , & ! Input:  [real(r8) (:)    ]  weight (relative to column)
+         dz             =>    col_pp%dz             , & ! Input:  [real(r8) (:,:)  ]  layer thickness (m)  (-nlevsno+1:nlevsoi)
+         z              =>    col_pp%z              , & ! Input:  [real(r8) (:,:)  ]  layer depth (m) (-nlevsno+1:nlevsoi)
+         zi             =>    col_pp%zi             , & ! Input:  [real(r8) (:,:)  ]  interface level below a "z" level (m)
+ 
+         t_soisno       =>    col_es%t_soisno       , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi)
 
          h2osoi_vol     =>    col_ws%h2osoi_vol     , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
 
-         rr             =>    veg_cf%rr           , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) root respiration (fine root MR + total root GR)
+         rr             =>    veg_cf%rr             , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) root respiration (fine root MR + total root GR)
          somhr          =>    col_cf%somhr          , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) soil organic matter heterotrophic respiration
          lithr          =>    col_cf%lithr          , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) litter heterotrophic respiration
          hr_vr          =>    col_cf%hr_vr          , & ! Input:  [real(r8) (:,:)  ]  total vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
@@ -2016,93 +2198,74 @@ contains
 
          pot_f_nit_vr   =>    col_nf%pot_f_nit_vr , & ! Input:  [real(r8) (:,:)  ]  (gN/m3/s) potential soil nitrification flux
 
-         watsat         =>    soilstate_vars%watsat_col          , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water at saturation (porosity)
-         rootfr         =>    soilstate_vars%rootfr_patch        , & ! Input:  [real(r8) (:,:)  ]  fraction of roots in each soil layer  (nlevsoi)
-         rootfr_col     =>    soilstate_vars%rootfr_col          , & ! Input:  [real(r8) (:,:)  ]  fraction of roots in each soil layer  (nlevsoi)
+         watsat         =>    soilstate_vars%watsat_col      , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water at saturation (porosity)
+         rootfr         =>    soilstate_vars%rootfr_patch    , & ! Input:  [real(r8) (:,:)  ]  fraction of roots in each soil layer  (nlevsoi)
+         rootfr_col     =>    soilstate_vars%rootfr_col      , & ! Input:  [real(r8) (:,:)  ]  fraction of roots in each soil layer  (nlevsoi)
 
-         finundated     =>    ch4_vars%finundated_col            , & ! Input:  [real(r8) (:)    ]  fractional inundated area in soil column
-         pH             =>    ch4_vars%pH_col                    , & ! Input:  [real(r8) (:)    ]  soil water pH
-         lake_soilc     =>    ch4_vars%lake_soilc_col            , & ! Input:  [real(r8) (:,:)  ]  total soil organic matter found in level (g C / m^3) (nlevsoi)
-         annavg_finrw   =>    ch4_vars%annavg_finrw_col          , & ! Input:  [real(r8) (:)    ]  respiration-weighted annual average of finundated
-         finundated_lag =>    ch4_vars%finundated_lag_col        , & ! Input:  [real(r8) (:)    ]  time-lagged fractional inundated area
-         layer_sat_lag  =>    ch4_vars%layer_sat_lag_col         , & ! Input:  [real(r8) (: ,:) ]  Lagged saturation status of soil layer in the unsaturated zone (1 = sat)
-         sif            =>    ch4_vars%sif_col                     & ! Output: [real(r8) (:)    ]  (unitless) ratio applied to sat. prod. to account for seasonal inundation
+         finundated     =>    ch4_vars%finundated_col        , & ! Input:  [real(r8) (:)    ]  fractional inundated area in soil column
+         pH             =>    ch4_vars%pH_col                , & ! Input:  [real(r8) (:)    ]  soil water pH
+         lake_soilc     =>    ch4_vars%lake_soilc_col        , & ! Input:  [real(r8) (:,:)  ]  total soil organic matter found in level (g C / m^3) (nlevsoi)
+         annavg_finrw   =>    ch4_vars%annavg_finrw_col      , & ! Input:  [real(r8) (:)    ]  respiration-weighted annual average of finundated
+         finundated_lag =>    ch4_vars%finundated_lag_col    , & ! Input:  [real(r8) (:)    ]  time-lagged fractional inundated area
+         layer_sat_lag  =>    ch4_vars%layer_sat_lag_col     , & ! Input:  [real(r8) (: ,:) ]  Lagged saturation status of soil layer in the unsaturated zone (1 = sat)
+         sif            =>    ch4_vars%sif_col               , & ! Output: [real(r8) (:)    ]  (unitless) ratio applied to sat. prod. to account for seasonal inundation
+         q10ch4           => CH4ParamsInst%q10ch4      , &  ! additional Q10 for methane production ABOVE the soil decomposition temperature relationship
+         q10ch4base       => CH4ParamsInst%q10ch4base  , &  ! temperature at which the effective f_ch4 actually equals the constant f_ch4
+         f_ch4            => CH4ParamsInst%f_ch4       , &  ! ratio of CH4 production to total C mineralization
+         rootlitfrac      => CH4ParamsInst%rootlitfrac , &  ! Fraction of soil organic matter associated with roots
+         cnscalefactor    => CH4ParamsInst%cnscalefactor, & ! scale factor on CN decomposition for assigning methane flux
+         lake_decomp_fact => CH4ParamsInst%lake_decomp_fact , & ! Base decomposition rate (1/s) at 25C
+         ! added by Lei Meng to account for pH influence of CH4 production
+         pHmax            => CH4ParamsInst%pHmax , &
+         pHmin            => CH4ParamsInst%pHmin , &
+         oxinhib          => CH4ParamsInst%oxinhib , &    ! inhibition of methane production by oxygen (m^3/mol)
+         q10lakebase      => CH4ParamsInst%q10lakebase ,& ! (K) base temperature for lake CH4 production
+         ! Shared constant with other modules
+         mino2lim => ParamsShareInst%mino2lim & ! minimum anaerobic decomposition rate as a fraction of potential aerobic rate
          )
 
-      if (sat == 0) then                                    ! unsaturated
-         conc_o2          => ch4_vars%conc_o2_unsat_col          ! Input:  [real(r8) (:,:)]  O2 conc in each soil layer (mol/m3) (nlevsoi)
-         ch4_prod_depth   => ch4_vars%ch4_prod_depth_unsat_col   ! Output: [real(r8) (:,:)]  production of CH4 in each soil layer (nlevsoi) (mol/m3/s)
-         o2_decomp_depth  => ch4_vars%o2_decomp_depth_unsat_col  ! Output: [real(r8) (:,:)]  O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
-         co2_decomp_depth => ch4_vars%co2_decomp_depth_unsat_col ! Output: [real(r8) (:,:)]  CO2 production during decomposition in each soil layer (nlevsoi) (mol/m3/s)
-      else                                                  ! saturated
-         conc_o2          => ch4_vars%conc_o2_sat_col            ! Input:  [real(r8) (:,:)]  O2 conc in each soil layer (mol/m3) (nlevsoi)
-         ch4_prod_depth   => ch4_vars%ch4_prod_depth_sat_col     ! Output: [real(r8) (:,:)]  production of CH4 in each soil layer (nlevsoi) (mol/m3/s)
-         o2_decomp_depth  => ch4_vars%o2_decomp_depth_sat_col    ! Output: [real(r8) (:,:)]  O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
-         co2_decomp_depth => ch4_vars%co2_decomp_depth_sat_col   ! Output: [real(r8) (:,:)]  CO2 production during decomposition in each soil layer (nlevsoi) (mol/m3/s)
-      endif
+      !$acc enter data create(&
+      !$acc rr_vr(:,:), &
+      !$acc base_decomp, &
+      !$acc f_ch4_adj)
 
-      q10ch4           = CH4ParamsInst%q10ch4
-      q10ch4base       = CH4ParamsInst%q10ch4base
-      f_ch4            = CH4ParamsInst%f_ch4
-      rootlitfrac      = CH4ParamsInst%rootlitfrac
-      cnscalefactor    = CH4ParamsInst%cnscalefactor
-      lake_decomp_fact = CH4ParamsInst%lake_decomp_fact
-      pHmax            = CH4ParamsInst%pHmax
-      pHmin            = CH4ParamsInst%pHmin
-      oxinhib          = CH4ParamsInst%oxinhib
-      q10lakebase      = CH4ParamsInst%q10lakebase
-
-      ! Shared constant with other modules
-      mino2lim = ParamsShareInst%mino2lim
-
-      q10lake = q10ch4 * 1.5_r8
+      q10lake = q10ch4 * 1.5_r8 ! For now, take to be the same as q10ch4 * 1.5.
+      !$acc enter data copyin(q10lake)
 
       ! PATCH loop to calculate vertically resolved column-averaged root respiration
       if (.not. lake) then
-         rr_vr(bounds%begc:bounds%endc,:) = spval
+         ! rr_vr(bounds%begc:bounds%endc,:) = spval
 
-         do fp = 1, num_methc
-            c = filter_methc(fp)
-            rr_vr(c,:) = 0.0_r8
-         end do
-
-         do fp = 1, num_methp
-            p = filter_methp(fp)
-            c = veg_pp%column(p)
-            if(.not.col_pp%is_fates(c)) then
-               if (wtcol(p) > 0._r8 .and. veg_pp%itype(p) /= noveg) then
-                  do j=1,nlevsoi
-                     rr_vr(c,j) = rr_vr(c,j) + rr(p)*rootfr(p,j)*wtcol(p)
-                  enddo
-               end if
-            end if
-         end do
-         
-         if(use_fates) then
-            nc = bounds%clump_index
-            do s = 1,elm_fates%fates(nc)%nsites 
-               c = elm_fates%f2hmap(nc)%fcolumn(s)
-               do j=1, elm_fates%fates(nc)%bc_in(s)%nlevsoil
-                  rr_vr(c,j) = elm_fates%fates(nc)%bc_out(s)%root_resp(j)
+         !$acc parallel loop independent collapse(2) gang worker default(present) private(sum1) 
+         do j=1,nlevsoi
+            do fc = 1, num_methc
+               c = filter_methc(fc)
+               sum1 = 0._r8 
+               !$acc loop vector reduction(+:sum1) 
+               do p = col_pp%pfti(c), col_pp%pftf(c) 
+                  if (wtcol(p) > 0._r8 .and. veg_pp%itype(p) /= noveg) then
+                     sum1 = sum1 + rr(p)*rootfr(p,j)*wtcol(p)
+                  end if
                end do
+               rr_vr(fc,j) = sum1  
             end do
-            
-         end if
-
+         end do
       end if
 
-      partition_z = 1._r8
-      base_decomp = 0.0_r8
+
 
       ! column loop to partition decomposition_rate into each soil layer
+      !$acc parallel loop independent gang vector default(present) collapse(2) 
       do j=1,nlevsoi
          do fc = 1, num_methc
             c = filter_methc (fc)
             g = col_pp%gridcell(c)
-
+            partition_z = 1._r8
+            base_decomp = 0.0_r8
+            
             if (.not. lake) then
 
-               if (use_cn.or. use_fates) then
+               if (use_cn) then
                   ! Use soil heterotrophic respiration (based on Wania)
                   base_decomp = (somhr(c)+lithr(c)) / catomw
                   ! Convert from gC to molC
@@ -2123,10 +2286,10 @@ contains
                      end if ! anoxia
                   end if
                else
-#ifndef _OPENACC 
+                  #ifndef _OPENACC 
                   call endrun(msg=' ERROR: No source for decomp rate in CH4Prod.'//&
                        ' CH4 model currently requires CN.'//errMsg(__FILE__, __LINE__))
-#endif 
+                  #endif 
                end if ! use_cn
 
                ! For sensitivity studies
@@ -2217,7 +2380,6 @@ contains
             ! electron acceptors would predict no more than 0.5 b/c some oxygen is present in organic matter.
             ! e.g. 2CH2O --> CH4 + CO2.
 
-
             ! Decomposition uses 1 mol O2 per mol CO2 produced (happens below WT also, to deplete O2 below WT)
             ! o2_decomp_depth is the demand in the absense of O2 supply limitation, in addition to autotrophic respiration.
             ! Competition will be done in ch4_oxid
@@ -2239,7 +2401,7 @@ contains
             ! Add root respiration
             if (.not. lake) then
                !o2_decomp_depth(c,j) = o2_decomp_depth(c,j) + col_rr(c)*rootfr(c,j)/catomw/dz(c,j) ! mol/m^3/s
-               o2_decomp_depth(c,j) = o2_decomp_depth(c,j) + rr_vr(c,j)/catomw/dz(c,j) ! mol/m^3/s
+               o2_decomp_depth(c,j) = o2_decomp_depth(c,j) + rr_vr(fc,j)/catomw/dz(c,j) ! mol/m^3/s
                ! g C/m2/s ! gC/mol O2 ! m
             end if
 
@@ -2265,6 +2427,11 @@ contains
          end do ! fc
       end do ! nlevsoi
 
+      !$acc exit data delete(&
+      !$acc rr_vr(:,:), &
+      !$acc base_decomp, &
+      !$acc f_ch4_adj,q10lake)
+
     end associate
 
   end subroutine ch4_prod
@@ -2272,7 +2439,9 @@ contains
   !-----------------------------------------------------------------------
   subroutine ch4_oxid (bounds, &
        num_methc, filter_methc, &
-       jwt, sat, lake, soilstate_vars, ch4_vars, dtime)
+       jwt, sat, lake, soilstate_vars, dtime,&
+       ch4_oxid_depth, o2_oxid_depth, co2_oxid_depth, &   
+       conc_ch4, conc_o2, o2_decomp_depth  )
     !
     ! !DESCRIPTION:
     ! Oxidation is based on double Michaelis-Mentin kinetics, and is adjusted for low soil moisture.
@@ -2281,7 +2450,6 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-    !  !$acc routine seq
     type(bounds_type)      , intent(in) :: bounds
     integer                , intent(in) :: num_methc           ! number of column soil points in column filter
     integer                , intent(in) :: filter_methc(:)     ! column filter for soil points
@@ -2289,13 +2457,18 @@ contains
     integer                , intent(in) :: sat                 ! 0 = unsaturated; 1 = saturated
     logical                , intent(in) :: lake                ! function called with lake filter
     type(soilstate_type)   , intent(inout) :: soilstate_vars
-    type(ch4_type)         , intent(in) :: ch4_vars
     real(r8), intent(in) :: dtime                         ! land model time step (sec)
+    real(r8) , intent(inout) :: ch4_oxid_depth(:,:) 
+    real(r8) , intent(inout) :: o2_oxid_depth (:,:) 
+    real(r8) , intent(inout) :: co2_oxid_depth(:,:) 
+    real(r8) , intent(inout) :: conc_ch4(:,:) 
+    real(r8) , intent(inout) :: conc_o2 (:,:) 
+    real(r8) , intent(inout) :: o2_decomp_depth(:,:)
     !
     ! !LOCAL VARIABLES:
     integer :: c,j                            ! indices
     integer :: fc                             ! column index
-    real(r8):: t0                             ! Base temperature for Q10
+    real(r8), parameter :: t0 = tfrz+12._r8 ! Base temperature for Q10  ! Walter, for Michigan site where the 45 M/h comes from
     real(r8):: porevol                        ! air-filled volume ratio to total soil volume
     real(r8):: h2osoi_vol_min                 ! h2osoi_vol restricted to be below watsat
     real(r8):: conc_ch4_rel                   ! concentration with respect to water volume (mol/m^3 water)
@@ -2315,12 +2488,6 @@ contains
     real(r8) :: k_m_unsat                     ! Michaelis-Menten oxidation rate constant for CH4 concentration
     real(r8) :: vmax_oxid_unsat               ! (= 45.e-6_r8 * 1000._r8 / 3600._r8 / 10._r8) [mol/m3-w/s]
     !
-    real(r8), pointer :: ch4_oxid_depth(:,:)
-    real(r8), pointer :: o2_oxid_depth(:,:)
-    real(r8), pointer :: co2_oxid_depth(:,:)
-    real(r8), pointer :: o2_decomp_depth(:,:)
-    real(r8), pointer :: conc_o2(:,:)
-    real(r8), pointer :: conc_ch4(:,:)
     !-----------------------------------------------------------------------
 
     ! Enforce expected array sizes
@@ -2331,37 +2498,20 @@ contains
          smp_l      => soilstate_vars%smp_l_col       , & ! Input:  [real(r8) (: ,:) ]  soil matrix potential [mm]
          watsat     => soilstate_vars%watsat_col      , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water at saturation (porosity)
 
-         t_soisno   => col_es%t_soisno    & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi)
+         t_soisno   => col_es%t_soisno   , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi)
+            ! Set oxidation parameters
+         vmax_ch4_oxid   => CH4ParamsInst%vmax_ch4_oxid , &
+         k_m             => CH4ParamsInst%k_m , &
+         q10_ch4oxid     => CH4ParamsInst%q10_ch4oxid , &
+         smp_crit        => CH4ParamsInst%smp_crit , &
+         k_m_o2          => CH4ParamsInst%k_m_o2   , &
+         k_m_unsat       => CH4ParamsInst%k_m_unsat, &
+         vmax_oxid_unsat => CH4ParamsInst%vmax_oxid_unsat &
          )
 
-      if (sat == 0) then                                   ! unsaturated
-         ch4_oxid_depth   => ch4_vars%ch4_oxid_depth_unsat_col  ! Output: [real(r8) (:,:)]  CH4 consumption rate via oxidation in each soil layer (mol/m3/s) (nlevsoi)
-         o2_oxid_depth    => ch4_vars%o2_oxid_depth_unsat_col   ! Output: [real(r8) (:,:)]  O2 consumption rate via oxidation in each soil layer (mol/m3/s) (nlevsoi)
-         co2_oxid_depth   => ch4_vars%co2_oxid_depth_unsat_col  ! Output: [real(r8) (:,:)]  CO2 production rate via oxidation in each soil layer (mol/m3/s) (nlevsoi)
-         conc_ch4         => ch4_vars%conc_ch4_unsat_col        ! Input:  [real(r8) (:,:)]  CH4 conc in each soil layer (mol/m3) (nlevsoi)
-         conc_o2          => ch4_vars%conc_o2_unsat_col         ! Input:  [real(r8) (:,:)]  O2 conc in each soil layer (mol/m3) (nlevsoi)
-         o2_decomp_depth  => ch4_vars%o2_decomp_depth_unsat_col ! Output: [real(r8) (:,:)]  O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
-      else                                                 ! saturated
-         ch4_oxid_depth   => ch4_vars%ch4_oxid_depth_sat_col    ! Output: [real(r8) (:,:)]  CH4 consumption rate via oxidation in each soil layer (mol/m3/s) (nlevsoi)
-         o2_oxid_depth    => ch4_vars%o2_oxid_depth_sat_col     ! Output: [real(r8) (:,:)]  O2 consumption rate via oxidation in each soil layer (mol/m3/s) (nlevsoi)
-         co2_oxid_depth   => ch4_vars%co2_oxid_depth_sat_col    ! Output: [real(r8) (:,:)]  CO2 production rate via oxidation in each soil layer (mol/m3/s) (nlevsoi)
-         conc_ch4         => ch4_vars%conc_ch4_sat_col          ! Input:  [real(r8) (:,:)]  CH4 conc in each soil layer (mol/m3) (nlevsoi)
-         conc_o2          => ch4_vars%conc_o2_sat_col           ! Input:  [real(r8) (:,:)]  O2 conc in each soil layer (mol/m3) (nlevsoi)
-         o2_decomp_depth  => ch4_vars%o2_decomp_depth_sat_col   ! Output: [real(r8) (:,:)]  O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
-      endif
-
-      ! Set oxidation parameters
-      vmax_ch4_oxid   = CH4ParamsInst%vmax_ch4_oxid
-      k_m             = CH4ParamsInst%k_m
-      q10_ch4oxid     = CH4ParamsInst%q10_ch4oxid
-      smp_crit        = CH4ParamsInst%smp_crit
-      k_m_o2          = CH4ParamsInst%k_m_o2
-      k_m_unsat       = CH4ParamsInst%k_m_unsat
-      vmax_oxid_unsat = CH4ParamsInst%vmax_oxid_unsat
-
-      t0 = tfrz + 12._r8 ! Walter, for Michigan site where the 45 M/h comes from
 
       ! Loop to determine oxidation in each layer
+      !$acc parallel loop independent gang vector default(present) collapse(2) 
       do j=1,nlevsoi
          do fc = 1, num_methc
             c = filter_methc(fc)
@@ -2398,8 +2548,8 @@ contains
                conc_o2_rel  = conc_o2(c,j) / watsat(c,j)
             endif
 
+            ![mol/m3-t/s]         [mol/m3-w/s]    [m3-w/m3-t]     [mol/m3-w]    [mol/m3-w]  [mol/m3-w]
             oxid_a              = vmax_eff     * h2osoi_vol_min* conc_ch4_rel / (k_m_eff + conc_ch4_rel) &
-                                ![mol/m3-t/s]         [mol/m3-w/s]    [m3-w/m3-t]     [mol/m3-w]    [mol/m3-w]  [mol/m3-w]
                  * conc_o2_rel / (k_m_o2 + conc_o2_rel) &
                  * q10_ch4oxid ** ((t_soisno(c,j) - t0) / 10._r8) * smp_fact
 
@@ -2420,7 +2570,9 @@ contains
        num_methc, filter_methc, &
        num_methp, filter_methp, &
        jwt, sat, lake, &
-       canopystate_vars, soilstate_vars, energyflux_vars, ch4_vars, dtime, elm_fates)
+       canopystate_vars, soilstate_vars, energyflux_vars, ch4_vars, dtime, &
+       ch4_aere_depth, ch4_tran_depth, o2_aere_depth , &
+       co2_aere_depth, conc_ch4, conc_o2, ch4_oxid_depth, ch4_prod_depth)
     !
     ! !DESCRIPTION:
     ! Arctic c3 grass (which is often present in fens) and all vegetation in inundated areas is assumed to have
@@ -2448,49 +2600,41 @@ contains
     type(energyflux_type)  , intent(inout) :: energyflux_vars
     type(ch4_type)         , intent(inout) :: ch4_vars
     real(r8)               , intent(in) :: dtime
-    type(hlm_fates_interface_type), intent(inout) :: elm_fates
-
-        !
+    real(r8), intent(inout) :: ch4_aere_depth(:,:)
+    real(r8), intent(inout) :: ch4_tran_depth(:,:)
+    real(r8), intent(inout) :: o2_aere_depth(:,:)
+    real(r8), intent(inout) :: co2_aere_depth(:,:)
+    real(r8), intent(inout) :: ch4_oxid_depth(:,:)
+    real(r8), intent(inout) :: ch4_prod_depth(:,:)
+    real(r8), intent(inout) :: conc_o2(:,:)
+    real(r8), intent(inout) :: conc_ch4(:,:)
+    !
     ! !LOCAL VARIABLES:
-    integer  :: nc
-    integer  :: p,c,g,j,s            ! indices
-    integer  :: fc,fp                ! soil filter column index
-    integer  :: pf                   ! fates patch index
-    integer  :: nlevsoil_f           ! number of root layers tracked by fates
-    real(r8) :: tranloss(1:nlevsoi)  ! loss due to transpiration (mol / m3 /s)
-    real(r8) :: aere(1:nlevsoi) 
-    real(r8) :: oxaere(1:nlevsoi)    ! (mol / m3 /s)
-    real(r8) :: rootfr_vr(1:nlevsoi) ! Root fraction over depth
-    real(r8) :: aeretran
-
-    logical :: is_vegetated ! is this a vegetated patch?
-    
+    integer  :: p,c,g,j                ! indices
+    integer  :: fc,fp                  ! soil filter column index
+    real(r8) :: f_oxid                 ! fraction of CH4 oxidized in oxic zone around roots
+    real(r8) :: diffus_aere            ! gas diffusivity through aerenchyma (m^2/s)
+    real(r8) :: m_tiller
+    real(r8) :: n_tiller
+    real(r8) :: poros_tiller
+    real(r8) :: rob                    ! root obliquity, e.g. csc of root angle relative to vertical
+                                       ! (ratio of root total length to depth)
+    real(r8) :: area_tiller            ! cross-sectional area of tillers (m^2/m^2)
+    real(r8) :: tranloss               ! loss due to transpiration (mol / m3 /s)
+    real(r8) :: aere, aeretran, oxaere ! (mol / m3 /s)
+    real(r8) :: k_h_cc, k_h_inv, oxdiffus, anpp, nppratio, h2osoi_vol_min, conc_ch4_wat
+    real(r8) :: aerecond               ! aerenchyma conductance (m/s)
     ! ch4 aerenchyma parameters
-    real(r8) :: aereoxid               ! fraction of methane flux entering aerenchyma rhizosphere 
+    real(r8) :: aereoxid               ! fraction of methane flux entering aerenchyma rhizosphere
     real(r8) :: scale_factor_aere      ! scale factor on the aerenchyma area for sensitivity tests
     real(r8) :: nongrassporosratio     ! Ratio of root porosity in non-grass to grass, used for aerenchyma transport
     real(r8) :: unsat_aere_ratio       ! Ratio to multiply upland vegetation aerenchyma porosity by compared to inundated systems (= 0.05_r8 / 0.3_r8)
     real(r8) :: porosmin               ! minimum aerenchyma porosity (unitless)(= 0.05_r8)
-    real(r8) :: wfrac                  ! fraction (by crown area) of plants that are woody
-    real(r8) :: poros_tiller 
 
-    ! These pointers help us swap between big-leaf and fates boundary conditions
-    real(r8), pointer :: annavg_agnpp_ptr
-    real(r8), pointer :: annavg_bgnpp_ptr
-    real(r8), pointer :: annsum_npp_ptr
-    real(r8), pointer :: frootc_ptr
-
-    ! These pointers help us swap between saturated and unsaturated boundary conditions
-    real(r8), pointer :: ch4_aere_depth(:,:) 
-    real(r8), pointer :: ch4_tran_depth(:,:) 
-    real(r8), pointer :: o2_aere_depth(:,:)  
-    real(r8), pointer :: ch4_oxid_depth(:,:) 
-    real(r8), pointer :: ch4_prod_depth(:,:) 
-    real(r8), pointer :: conc_o2(:,:)        
-    real(r8), pointer :: conc_ch4(:,:)
-
+    real(r8), parameter :: smallnumber = 1.e-12_r8
+    real(r8) :: sum1, sum2, sum3
+    
     !-----------------------------------------------------------------------
-
     ! Enforce expected array sizes
 
     associate(                                                     &
@@ -2520,289 +2664,187 @@ contains
          annavg_bgnpp  =>    veg_cf%annavg_bgnpp  , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) annual average belowground NPP
 
          grnd_ch4_cond =>    ch4_vars%grnd_ch4_cond_patch        , & ! Input:  [real(r8) (:)    ]  tracer conductance for boundary layer [m/s]
-         c_atm         =>    ch4_vars%c_atm_grc                    & ! Input:  [real(r8) (: ,:) ]  CH4, O2, CO2 atmospheric conc  (mol/m3)
+         c_atm         =>    ch4_vars%c_atm_grc                  , & ! Input:  [real(r8) (: ,:) ]  CH4, O2, CO2 atmospheric conc  (mol/m3)
+
+         ! Set aerenchyma parameters
+         aereoxid           => CH4ParamsInst%aereoxid  ,& 
+         scale_factor_aere  => CH4ParamsInst%scale_factor_aere ,&
+         nongrassporosratio => CH4ParamsInst%nongrassporosratio ,&
+         unsat_aere_ratio   => CH4ParamsInst%unsat_aere_ratio ,&
+         porosmin           => CH4ParamsInst%porosmin ,&
+         rob                => CH4ParamsInst%rob &
          )
 
-      if (sat == 0) then                                   ! unsaturated
-         ch4_aere_depth   =>  ch4_vars%ch4_aere_depth_unsat_col ! Output: [real(r8) (:,:)]  CH4 loss rate via aerenchyma in each soil layer (mol/m3/s) (nlevsoi)
-         ch4_tran_depth   =>  ch4_vars%ch4_tran_depth_unsat_col ! Output: [real(r8) (:,:)]  CH4 loss rate via transpiration in each soil layer (mol/m3/s) (nlevsoi)
-         o2_aere_depth    =>  ch4_vars%o2_aere_depth_unsat_col  ! Output: [real(r8) (:,:)]  O2 gain rate via aerenchyma in each soil layer (mol/m3/s) (nlevsoi)
-         conc_ch4         =>  ch4_vars%conc_ch4_unsat_col       ! Input:  [real(r8) (:,:)]  CH4 conc in each soil layer (mol/m3) (nlevsoi)
-         conc_o2          =>  ch4_vars%conc_o2_unsat_col        ! Input:  [real(r8) (:,:)]  O2 conc in each soil layer (mol/m3) (nlevsoi)
-         ch4_oxid_depth   =>  ch4_vars%ch4_oxid_depth_unsat_col ! Input:  [real(r8) (:,:)]  CH4 consumption rate via oxidation in each soil layer (mol/m3/s) (nlevsoi)
-         ch4_prod_depth   =>  ch4_vars%ch4_prod_depth_unsat_col ! Input:  [real(r8) (:,:)]  production of CH4 in each soil layer (nlevsoi) (mol/m3/s)
-      else                                                 ! saturated
-         ch4_aere_depth   =>  ch4_vars%ch4_aere_depth_sat_col   ! Output: [real(r8) (:,:)]  CH4 loss rate via aerenchyma in each soil layer (mol/m3/s) (nlevsoi)
-         ch4_tran_depth   =>  ch4_vars%ch4_tran_depth_sat_col   ! Output: [real(r8) (:,:)]  CH4 loss rate via transpiration in each soil layer (mol/m3/s) (nlevsoi)
-         o2_aere_depth    =>  ch4_vars%o2_aere_depth_sat_col    ! Output: [real(r8) (:,:)]  O2 gain rate via aerenchyma in each soil layer (mol/m3/s) (nlevsoi)
-         conc_ch4         =>  ch4_vars%conc_ch4_sat_col         ! Input:  [real(r8) (:,:)]  CH4 conc in each soil layer (mol/m3) (nlevsoi)
-         conc_o2          =>  ch4_vars%conc_o2_sat_col          ! Input:  [real(r8) (:,:)]  O2 conc in each soil layer (mol/m3) (nlevsoi)
-         ch4_oxid_depth   =>  ch4_vars%ch4_oxid_depth_sat_col   ! Input:  [real(r8) (:,:)]  CH4 consumption rate via oxidation in each soil layer (mol/m3/s) (nlevsoi)
-         ch4_prod_depth   =>  ch4_vars%ch4_prod_depth_sat_col   ! Input:  [real(r8) (:,:)]  production of CH4 in each soil layer (nlevsoi) (mol/m3/s)
-      endif
 
-      ! Initialize ch4_aere_depth
-      do j=1,nlevsoi
-         do fc = 1, num_methc
-            c = filter_methc (fc)
-            ch4_aere_depth(c,j) = 0._r8
-            ch4_tran_depth(c,j) = 0._r8
-            o2_aere_depth(c,j) = 0._r8
-         end do
-      end do
-
-      nc = bounds%clump_index
+    !$acc enter data create(&
+    !$acc ch4_aere_depth(:,:), &
+    !$acc ch4_tran_depth(:,:), &
+    !$acc o2_aere_depth(:,:), &
+    !$acc co2_aere_depth(:,:), &
+    !$acc ch4_oxid_depth(:,:), &
+    !$acc ch4_prod_depth(:,:), &
+    !$acc conc_o2(:,:), &
+    !$acc conc_ch4(:,:), &
+    !$acc poros_tiller, &
+    !$acc tranloss, &
+    !$acc aere, &
+    !$acc oxaere, &
+    !$acc anpp, &
+    !$acc aerecond, &
+    !$acc sum1, &
+    !$acc sum2, &
+    !$acc sum3 )
 
       ! point loop to partition aerenchyma flux into each soil layer
       if (.not. lake) then
+         !$acc parallel loop independent gang worker collapse(2) default(present) private(sum1,sum2,sum3,c,g)
+         do j=1,nlevsoi
+            do fc = 1, num_methc
+               c = filter_methc(fc) 
+               g = col_pp%gridcell(c)
+               sum1 = 0._r8 
+               sum2 = 0._r8 
+               sum3 = 0._r8 
+               !$acc loop vector reduction(+:sum1,sum2,sum3)
+               do p = col_pp%pfti(c), col_pp%pftf(c) 
+                  if(.not. veg_pp%active(p)) continue 
 
-         do fp = 1, num_methp
-            p = filter_methp (fp)
-            c = veg_pp%column(p)
-            g = col_pp%gridcell(c)
+                  ! This parameter is poorly constrained and should be done on a PFT-specific basis...
+                  diffus_aere = d_con_g(1,1)*1.e-4_r8  ! for CH4: m^2/s
+                  
+                  ! Calculate transpiration loss
+                  if (transpirationloss .and. veg_pp%itype(p) /= noveg) then !allow tloss above WT ! .and. j > jwt(c)) then
+                     ! Calculate water concentration
+                     h2osoi_vol_min = min(watsat(c,j), h2osoi_vol(c,j))
+                     k_h_inv = exp(-c_h_inv(1) * (1._r8 / t_soisno(c,j) - 1._r8 / kh_tbase) + log (kh_theta(1)))
+                     k_h_cc = t_soisno(c,j) / k_h_inv * rgasLatm
+                     conc_ch4_wat = conc_ch4(c,j) / ( (watsat(c,j)-h2osoi_vol_min)/k_h_cc + h2osoi_vol_min)
+                     tranloss = conc_ch4_wat *             rootr(p,j)*qflx_tran_veg(p) / dz(c,j) / 1000._r8
+                     ! mol/m3/s    mol/m3                                   mm / s         m           mm/m
+                     ! Use rootr here for effective per-layer transpiration, which may not be the same as rootfr
+                     tranloss = max(tranloss, 0._r8) ! in case transpiration is pathological
+                  else
+                     tranloss = 0._r8
+                  end if
 
-            if(.not.col_pp%is_fates(c) ) then
-               if(veg_pp%itype(p) /= noveg) then
-                  is_vegetated = .true.
-               else
-                  is_vegetated = .false.
-               end if
+                  ! Calculate aerenchyma diffusion
+                  if (j > jwt(c) .and. t_soisno(c,j) > tfrz .and. veg_pp%itype(p) /= noveg) then
+                     ! Attn EK: This calculation of aerenchyma properties is very uncertain. Let's check in once all
+                     ! the new components are in; if there is any tuning to be done to get a realistic global flux,
+                     ! this would probably be the place.  We will have to document clearly in the Tech Note
+                     ! any major changes from the Riley et al. 2011 version. (There are a few other minor ones.)
 
-               if (veg_pp%itype(p) == nc3_arctic_grass .or. crop(veg_pp%itype(p)) == 1 .or. &
-                    veg_pp%itype(p) == nc3_nonarctic_grass .or. veg_pp%itype(p) == nc4_grass) then
-                  poros_tiller = 0.3_r8  ! Colmer 2003
-               else
-                  poros_tiller = 0.3_r8 * CH4ParamsInst%nongrassporosratio
-               end if
+                     anpp = annsum_npp(p) ! g C / m^2/yr
+                     anpp = max(anpp, 0._r8) ! NPP can be negative b/c of consumption of storage pools
 
-               annsum_npp_ptr   => annsum_npp(p)
-               annavg_agnpp_ptr => annavg_agnpp(p)
-               annavg_bgnpp_ptr => annavg_bgnpp(p)
-               frootc_ptr       => frootc(p)
-               rootfr_vr(1:nlevsoi) = rootfr(p,1:nlevsoi)
+                     if (annavg_agnpp(p) /= spval .and. annavg_bgnpp(p) /= spval .and. &
+                           annavg_agnpp(p) > 0._r8 .and. annavg_bgnpp(p) > 0._r8) then
+                        nppratio = annavg_bgnpp(p) / (annavg_agnpp(p) + annavg_bgnpp(p))
+                     else
+                        nppratio = 0.5_r8
+                     end if
 
-            else
+                     ! Estimate area of tillers (see Wania thesis)
+                     ! m_tiller = anpp * r_leaf_root * lai ! (4.17 Wania)
+                     ! m_tiller = 600._r8 * 0.5_r8 * 2._r8  ! used to be 300
+                     ! Note: this calculation is based on Arctic graminoids, and should be refined for woody plants, if not
+                     ! done on a PFT-specific basis.
 
-               pf = p-col_pp%pfti(c)
-               s  = elm_fates%f2hmap(nc)%hsites(c)
+                     if (usefrootc) then
+                        m_tiller = frootc(p) ! This will yield much smaller aere area.
+                     else
+                        m_tiller = anpp * nppratio * elai(p)
+                     end if
 
-               wfrac = elm_fates%fates(nc)%bc_out(s)%woody_frac_aere_pa(pf)
-               poros_tiller = wfrac*0.3_r8 + (1._r8-wfrac)*0.3_r8*CH4ParamsInst%nongrassporosratio
-               if(veg_pp%is_bareground(p)) then
-                  is_vegetated = .false.
-               else
-                  is_vegetated = .true.
-               end if
+                     n_tiller = m_tiller / 0.22_r8
 
-               annsum_npp_ptr   => elm_fates%fates(nc)%bc_out(s)%annsum_npp_pa(pf)
-               annavg_agnpp_ptr => elm_fates%fates(nc)%bc_out(s)%annavg_agnpp_pa(pf)
-               annavg_bgnpp_ptr => elm_fates%fates(nc)%bc_out(s)%annavg_bgnpp_pa(pf)
-               frootc_ptr       => elm_fates%fates(nc)%bc_out(s)%frootc_pa(pf)
-               nlevsoil_f = elm_fates%fates(nc)%bc_in(s)%nlevsoil
-               rootfr_vr(1:nlevsoi) = 0._r8
-               rootfr_vr(1:nlevsoil_f) = elm_fates%fates(nc)%bc_out(s)%rootfr_pa(pf,1:nlevsoil_f)
+                     if (veg_pp%itype(p) == nc3_arctic_grass .or. crop(veg_pp%itype(p)) == 1 .or. &
+                          veg_pp%itype(p) == nc3_nonarctic_grass .or. veg_pp%itype(p) == nc4_grass) then
+                        poros_tiller = 0.3_r8  ! Colmer 2003
+                     else
+                        poros_tiller = 0.3_r8 * nongrassporosratio
+                     end if
 
-            end if
+                     if (sat == 0) then
+                        poros_tiller = poros_tiller * unsat_aere_ratio
+                     end if
 
-            call SiteOxAere(is_vegetated, watsat(c,1:nlevsoi), h2osoi_vol(c,1:nlevsoi), t_soisno(c,1:nlevsoi), & 
-                 conc_ch4(c,1:nlevsoi), rootr(p,1:nlevsoi), qflx_tran_veg(p), jwt(c), &
-                 annsum_npp_ptr, annavg_agnpp_ptr, annavg_bgnpp_ptr, &
-                 elai(p), frootc_ptr, poros_tiller, rootfr_vr(1:nlevsoi), &
-                 grnd_ch4_cond(p), conc_o2(c,1:nlevsoi), c_atm(g,1:2), &
-                 z(c,1:nlevsoi), dz(c,1:nlevsoi), sat, & 
-                 tranloss(1:nlevsoi), &    ! Out
-                 aere(1:nlevsoi), &         ! Out
-                 oxaere(1:nlevsoi))         ! Out
-               
-            do j=1,nlevsoi
-               ! Impose limitation based on available methane during timestep
-               ! By imposing the limitation here, don't allow aerenchyma access to methane from other Patches.
-               aeretran = min(aere(j)+tranloss(j), conc_ch4(c,j)/dtime + ch4_prod_depth(c,j))
-               ch4_aere_depth (c, j) = ch4_aere_depth(c,j) + aeretran*wtcol(p) !pft weight in col.
-               ch4_tran_depth (c, j) = ch4_tran_depth(c,j) + min(tranloss(j), aeretran)*wtcol(p)
-               o2_aere_depth  (c, j) = o2_aere_depth (c,j) + oxaere(j)*wtcol(p)
-            end do
+                     poros_tiller = max(poros_tiller, porosmin)
 
-         end do ! p filter
+                     area_tiller = scale_factor_aere * n_tiller * poros_tiller * rpi * 2.9e-3_r8**2._r8 ! (m2/m2)
 
+                     k_h_inv = exp(-c_h_inv(1) * (1._r8 / t_soisno(c,j) - 1._r8 / kh_tbase) + log (kh_theta(1))) ! (4.12) Wania (L atm/mol)
+                     k_h_cc = t_soisno(c,j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
+                     aerecond = area_tiller * rootfr(p,j) * diffus_aere / (z(c,j)*rob)
+                     ! Add in boundary layer resistance
+                     aerecond = 1._r8 / (1._r8/(aerecond+smallnumber) + 1._r8/(grnd_ch4_cond(p)+smallnumber))
+
+                     aere = aerecond * (conc_ch4(c,j)/watsat(c,j)/k_h_cc - c_atm(g,1)) / dz(c,j) ![mol/m3-total/s]
+                     !ZS: Added watsat & Henry's const.
+                     aere = max(aere, 0._r8) ! prevent backwards diffusion
+
+                     ! Do oxygen diffusion into layer
+                     k_h_inv = exp(-c_h_inv(2) * (1._r8 / t_soisno(c,j) - 1._r8 / kh_tbase) + log (kh_theta(2)))
+                     k_h_cc = t_soisno(c,j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
+                     oxdiffus = diffus_aere * d_con_g(2,1) / d_con_g(1,1) ! adjust for O2:CH4 molecular diffusion
+                     aerecond = area_tiller * rootfr(p,j) * oxdiffus / (z(c,j)*rob)
+                     aerecond = 1._r8 / (1._r8/(aerecond+smallnumber) + 1._r8/(grnd_ch4_cond(p)+smallnumber))
+                     oxaere = -aerecond *(conc_o2(c,j)/watsat(c,j)/k_h_cc - c_atm(g,2)) / dz(c,j) ![mol/m3-total/s]
+                     oxaere = max(oxaere, 0._r8)
+                     ! Diffusion in is positive; prevent backwards diffusion
+                     if ( .not. use_aereoxid_prog ) then ! fixed aere oxid proportion; will be done in ch4_tran
+                        oxaere = 0._r8
+                     end if
+                  else
+                     aere = 0._r8
+                     oxaere = 0._r8
+                  end if ! veg type, below water table, & above freezing
+
+                  ! Impose limitation based on available methane during timestep
+                  ! By imposing the limitation here, don't allow aerenchyma access to methane from other Patches.
+                  aeretran = min(aere+tranloss, conc_ch4(c,j)/dtime + ch4_prod_depth(c,j))
+                  sum1 = sum1 + aeretran*wtcol(p) !pft weight in col.
+                  sum2 = sum2 + min(tranloss, aeretran)*wtcol(p)
+                  sum3 = sum3 + oxaere*wtcol(p)
+               end do ! p loop
+               ch4_aere_depth (c, j) = sum1 
+               ch4_tran_depth (c, j) = sum2
+               o2_aere_depth  (c, j) = sum3 
+            end do ! c filter
+         end do ! over levels
       end if ! not lake
+
+
+    !$acc exit data delete(&
+    !$acc ch4_aere_depth(:,:), &
+    !$acc ch4_tran_depth(:,:), &
+    !$acc o2_aere_depth(:,:), &
+    !$acc co2_aere_depth(:,:), &
+    !$acc ch4_oxid_depth(:,:), &
+    !$acc ch4_prod_depth(:,:), &
+    !$acc conc_o2(:,:), &
+    !$acc conc_ch4(:,:), &
+    !$acc poros_tiller, &
+    !$acc tranloss, &
+    !$acc aere, &
+    !$acc oxaere, &
+    !$acc anpp, &
+    !$acc aerecond, &
+    !$acc sum1, &
+    !$acc sum2, &
+    !$acc sum3 )
 
     end associate
 
   end subroutine ch4_aere
-  
-  !--------------------------------------------------------------------------------------
-  
-  subroutine SiteOxAere(is_vegetated, & 
-                    watsat,           &  
-                    h2osoi_vol,       &
-                    t_soisno,         & 
-                    conc_ch4,         &
-                    rootr,            &
-                    qflx_tran_veg,    &
-                    jwt,              &
-                    annsum_npp,       &
-                    annavg_agnpp,     &
-                    annavg_bgnpp,     &
-                    elai,             &
-                    frootc,           &
-                    poros_tiller,     &
-                    rootfr,           &
-                    grnd_ch4_cond,    &
-                    conc_o2,          &
-                    c_atm,            &
-                    z,                &
-                    dz,               &
-                    sat,              &
-                    tranloss,         & ! Out
-                    aere,             & ! Out
-                    oxaere)             ! Out  
 
-
-    use elm_varcon       , only : rpi
-    use CH4varcon        , only : transpirationloss, usefrootc, use_aereoxid_prog
-    
-    ! Arguments (in)
-    
-    logical, intent(in)  :: is_vegetated
-    real(r8), intent(in) :: watsat(:)
-    real(r8), intent(in) :: h2osoi_vol(:)
-    real(r8), intent(in) :: t_soisno(:) 
-    real(r8), intent(in) :: conc_ch4(:)
-    real(r8), intent(in) :: rootr(:)
-    real(r8), intent(in) :: qflx_tran_veg
-    integer, intent(in)  :: jwt
-    real(r8), intent(in) :: annsum_npp
-    real(r8), intent(in) :: annavg_agnpp
-    real(r8), intent(in) :: annavg_bgnpp
-    real(r8), intent(in) :: elai
-    real(r8), intent(in) :: frootc
-    real(r8)             :: poros_tiller
-    real(r8), intent(in) :: rootfr(:)
-    real(r8), intent(in) :: grnd_ch4_cond
-    real(r8), intent(in) :: conc_o2(:)
-    real(r8), intent(in) :: c_atm(:)
-    real(r8), intent(in) :: z(:)
-    real(r8), intent(in) :: dz(:)
-    integer,  intent(in) :: sat
-
-    ! Arguments (out)
-    real(r8), intent(out) :: tranloss(:)
-    real(r8), intent(out) :: aere(:)
-    real(r8), intent(out) :: oxaere(:)            
-
-    integer  :: j,pf
-    real(r8) :: oxdiffus
-    real(r8) :: area_tiller ! cross-sectional area of tillers (m^2/m^2)
-    real(r8) :: diffus_aere ! gas diffusivity through aerenchyma (m^2/s)
-    real(r8) :: m_tiller 
-    real(r8) :: n_tiller 
-    real(r8) :: h2osoi_vol_min
-    real(r8) :: k_h_cc, k_h_inv
-    real(r8) :: anpp, nppratio
-    real(r8) :: conc_ch4_wat
-    real(r8) :: aerecond    ! aerenchyma conductance (m/s)
-    real(r8), parameter :: smallnumber = 1.e-12_r8
-    
-    diffus_aere = d_con_g(1,1)*1.e-4_r8  ! for CH4: m^2/s
-    ! This parameter is poorly constrained and should be done on a PFT-specific basis...
-
-
-    do j=1,nlevsoi
-
-       ! Calculate transpiration loss
-       if (transpirationloss .and. is_vegetated) then
-          ! Calculate water concentration
-          h2osoi_vol_min = min(watsat(j), h2osoi_vol(j))
-          k_h_inv = exp(-c_h_inv(1) * (1._r8 / t_soisno(j) - 1._r8 / kh_tbase) + log (kh_theta(1)))
-          k_h_cc = t_soisno(j) / k_h_inv * rgasLatm
-          conc_ch4_wat = conc_ch4(j) / ( (watsat(j)-h2osoi_vol_min)/k_h_cc + h2osoi_vol_min)
-
-          tranloss(j) = conc_ch4_wat * rootr(j)*qflx_tran_veg / dz(j) / 1000._r8
-          ! mol/m3/s    mol/m3                                   mm / s         m           mm/m
-          ! Use rootr here for effective per-layer transpiration, which may not be the same as rootfr
-          tranloss(j) = max(tranloss(j), 0._r8) ! in case transpiration is pathological
-       else
-          tranloss(j) = 0._r8
-       end if
-
-       ! Calculate aerenchyma diffusion
-       if (j > jwt .and. t_soisno(j) > tfrz .and. is_vegetated) then
-          ! Attn EK: This calculation of aerenchyma properties is very uncertain. Let's check in once all
-          ! the new components are in; if there is any tuning to be done to get a realistic global flux,
-          ! this would probably be the place.  We will have to document clearly in the Tech Note
-          ! any major changes from the Riley et al. 2011 version. (There are a few other minor ones.)
-
-          anpp = annsum_npp ! g C / m^2/yr
-          anpp = max(anpp, 0._r8) ! NPP can be negative b/c of consumption of storage pools
-
-          if (annavg_agnpp /= spval .and. annavg_bgnpp /= spval .and. &
-               annavg_agnpp > 0._r8 .and. annavg_bgnpp > 0._r8) then
-             nppratio = annavg_bgnpp / (annavg_agnpp + annavg_bgnpp)
-          else
-             nppratio = 0.5_r8
-          end if
-
-          ! Estimate area of tillers (see Wania thesis)
-          !m_tiller = anpp * r_leaf_root * lai ! (4.17 Wania)
-          !m_tiller = 600._r8 * 0.5_r8 * 2._r8  ! used to be 300
-          ! Note: this calculation is based on Arctic graminoids, and should be refined for woody plants, if not
-          ! done on a PFT-specific basis.
-
-          if (usefrootc) then
-             m_tiller = frootc ! This will yield much smaller aere area.
-          else
-             m_tiller = anpp * nppratio * elai
-          end if
-
-          n_tiller = m_tiller / 0.22_r8
-
-          if (sat == 0) then
-             poros_tiller = poros_tiller * CH4ParamsInst%unsat_aere_ratio
-          end if
-
-          poros_tiller = max(poros_tiller, CH4ParamsInst%porosmin)
-
-          area_tiller = CH4ParamsInst%scale_factor_aere * n_tiller * poros_tiller * rpi * 2.9e-3_r8**2._r8 ! (m2/m2)
-
-          k_h_inv = exp(-c_h_inv(1) * (1._r8 / t_soisno(j) - 1._r8 / kh_tbase) + log (kh_theta(1))) ! (4.12) Wania (L atm/mol)
-          k_h_cc = t_soisno(j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
-          aerecond = area_tiller * rootfr(j) * diffus_aere / (z(j)*CH4ParamsInst%rob)
-          ! Add in boundary layer resistance
-          aerecond = 1._r8 / (1._r8/(aerecond+smallnumber) + 1._r8/(grnd_ch4_cond+smallnumber))
-
-          aere(j) = aerecond * (conc_ch4(j)/watsat(j)/k_h_cc - c_atm(1)) / dz(j) ![mol/m3-total/s]
-          !ZS: Added watsat & Henry's const.
-          aere(j) = max(aere(j), 0._r8) ! prevent backwards diffusion
-
-          ! Do oxygen diffusion into layer
-          k_h_inv = exp(-c_h_inv(2) * (1._r8 / t_soisno(j) - 1._r8 / kh_tbase) + log (kh_theta(2)))
-          k_h_cc = t_soisno(j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
-          oxdiffus = diffus_aere * d_con_g(2,1) / d_con_g(1,1) ! adjust for O2:CH4 molecular diffusion
-          aerecond = area_tiller * rootfr(j) * oxdiffus / (z(j)*CH4ParamsInst%rob)
-          aerecond = 1._r8 / (1._r8/(aerecond+smallnumber) + 1._r8/(grnd_ch4_cond+smallnumber))
-          oxaere(j) = -aerecond *(conc_o2(j)/watsat(j)/k_h_cc - c_atm(2)) / dz(j) ![mol/m3-total/s]
-          oxaere(j) = max(oxaere(j), 0._r8)
-          ! Diffusion in is positive; prevent backwards diffusion
-          if ( .not. use_aereoxid_prog ) then ! fixed aere oxid proportion; will be done in ch4_tran
-             oxaere(j) = 0._r8
-          end if
-       else
-          aere(j) = 0._r8
-          oxaere(j) = 0._r8
-       end if ! veg type, below water table, & above freezing
-
-    end do
-
-    return
-  end subroutine SiteOxAere
-  
   !-----------------------------------------------------------------------
-
   subroutine ch4_ebul (bounds, &
        num_methc, filter_methc, &
        jwt, sat, lake, &
-       atm2lnd_vars, lakestate_vars, soilstate_vars, ch4_vars, dtime)
+       lakestate_vars, soilstate_vars, ch4_vars, dtime, &
+       ch4_ebul_depth, ch4_ebul_total, conc_ch4, &    
+       ch4_aere_depth, ch4_oxid_depth)
     !
     ! !DESCRIPTION:
     ! Bubbling is based on temperature & pressure dependent solubility (k_h_cc),
@@ -2811,22 +2853,24 @@ contains
     ! Bubbles are released to the water table surface in ch4_tran.
 
     ! !USES:
-    ! !$acc routine seq
     use LakeCon
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds
-    integer                , intent(in)    :: num_methc           ! number of column soil points in column filter
-    integer                , intent(in)    :: filter_methc(:)     ! column filter for soil points
-    integer                , intent(in)    :: jwt( bounds%begc: ) ! index of the soil layer right above the water table (-) [col]
-    integer                , intent(in)    :: sat                 ! 0 = unsaturated; 1 = saturated
-    logical                , intent(in)    :: lake             ! function called with lake filter
-    type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
-    type(lakestate_type)   , intent(in)    :: lakestate_vars
-    type(soilstate_type)   , intent(in)    :: soilstate_vars
-    type(ch4_type)         , intent(inout) :: ch4_vars
+    type(bounds_type)    , intent(in)    :: bounds
+    integer              , intent(in)    :: num_methc           ! number of column soil points in column filter
+    integer              , intent(in)    :: filter_methc(:)     ! column filter for soil points
+    integer              , intent(in)    :: jwt( bounds%begc: ) ! index of the soil layer right above the water table (-) [col]
+    integer              , intent(in)    :: sat                 ! 0 = unsaturated; 1 = saturated
+    logical              , intent(in)    :: lake                ! function called with lake filter
+    type(lakestate_type) , intent(in)    :: lakestate_vars
+    type(soilstate_type) , intent(in)    :: soilstate_vars
+    type(ch4_type)       , intent(inout) :: ch4_vars
     real(r8) ,intent(in)  :: dtime   ! land model time step (sec)
-
+    real(r8), intent(inout) :: ch4_ebul_depth(:,:) ! Output: [real(r8) (:,:)]  CH4 loss rate via ebullition in each soil layer (mol/m3/s) (nlevsoi)
+    real(r8), intent(inout) :: ch4_ebul_total(:)   ! Output: [real(r8) (:)]  Total column CH4 ebullition (mol/m2/s)
+    real(r8), intent(inout) :: conc_ch4(:,:)       ! Output: [real(r8) (:,:)]  CH4 conc in each soil layer (mol/m3) (nlevsoi)
+    real(r8), intent(in   ) :: ch4_aere_depth(:,:) ! Input:  [real(r8) (:,:)]  CH4 loss rate via aerenchyma in each soil layer (mol/m3/s) (nlevsoi)
+    real(r8), intent(in   ) :: ch4_oxid_depth(:,:) ! Input:  [real(r8) (:,:)]  CH4 consumption rate via oxidation in each soil layer (mol/m3/s) (nlevsoi)
     !
     ! !LOCAL VARIABLES:
     integer :: c,j,t    ! indices
@@ -2838,16 +2882,12 @@ contains
     real(r8) :: k_h     !
     real(r8) :: k_h_cc  !
     real(r8) :: pressure! sum atmospheric and hydrostatic pressure
-    real(r8) :: bubble_f! CH4 content in gas bubbles (Kellner et al. 2006)
+    real(r8),parameter :: bubble_f = 0.57_r8 ! CH4 content in gas bubbles (Kellner et al. 2006)
+
     real(r8) :: ebul_timescale
     real(r8) :: vgc_max   ! ratio of saturation pressure triggering ebullition
-    real(r8), pointer :: ch4_ebul_depth(:,:) ! backwards compatibility
-    real(r8), pointer :: ch4_ebul_total(:)   ! backwards compatibility
-    real(r8), pointer :: conc_ch4(:,:)       ! backwards compatibility
-    real(r8), pointer :: ch4_aere_depth(:,:) ! backwards compatibility
-    real(r8), pointer :: ch4_oxid_depth(:,:) ! backwards compatibility
+    
     !-----------------------------------------------------------------------
-
     ! Enforce expected array sizes
 
     associate(                                                      &
@@ -2861,31 +2901,25 @@ contains
          watsat       =>    soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
          h2osoi_vol   =>    col_ws%h2osoi_vol        , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
          h2osfc       =>    col_ws%h2osfc            , & ! Input:  [real(r8) (:)   ]  surface water (mm)
-         frac_h2osfc  =>    col_ws%frac_h2osfc         & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+         frac_h2osfc  =>    col_ws%frac_h2osfc       , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+         vgc_max => CH4ParamsInst%vgc_max &
          )
 
-      if (sat == 0) then                                   ! unsaturated
-         ch4_ebul_depth =>    ch4_vars%ch4_ebul_depth_unsat_col ! Output: [real(r8) (:,:)]  CH4 loss rate via ebullition in each soil layer (mol/m3/s) (nlevsoi)
-         ch4_ebul_total =>    ch4_vars%ch4_ebul_total_unsat_col ! Output: [real(r8) (:)]  Total column CH4 ebullition (mol/m2/s)
-         conc_ch4       =>    ch4_vars%conc_ch4_unsat_col       ! Output: [real(r8) (:,:)]  CH4 conc in each soil layer (mol/m3) (nlevsoi)
-         ch4_aere_depth =>    ch4_vars%ch4_aere_depth_unsat_col ! Input:  [real(r8) (:,:)]  CH4 loss rate via aerenchyma in each soil layer (mol/m3/s) (nlevsoi)
-         ch4_oxid_depth =>    ch4_vars%ch4_oxid_depth_unsat_col ! Input:  [real(r8) (:,:)]  CH4 consumption rate via oxidation in each soil layer (mol/m3/s) (nlevsoi)
-      else                                                 ! saturated
-         ch4_ebul_depth =>    ch4_vars%ch4_ebul_depth_sat_col   ! Output: [real(r8) (:,:)]  CH4 loss rate via ebullition in each soil layer (mol/m3/s) (nlevsoi)
-         ch4_ebul_total =>    ch4_vars%ch4_ebul_total_sat_col   ! Output: [real(r8) (:)]  Total column CH4 ebullition (mol/m2/s)
-         conc_ch4       =>    ch4_vars%conc_ch4_sat_col         ! Output: [real(r8) (:,:)]  CH4 conc in each soil layer (mol/m3) (nlevsoi)
-         ch4_aere_depth =>    ch4_vars%ch4_aere_depth_sat_col   ! Input:  [real(r8) (:,:)]  CH4 loss rate via aerenchyma in each soil layer (mol/m3/s) (nlevsoi)
-         ch4_oxid_depth =>    ch4_vars%ch4_oxid_depth_sat_col   ! Input:  [real(r8) (:,:)]  CH4 consumption rate via oxidation in each soil layer (mol/m3/s) (nlevsoi)
-      endif
+    !$acc enter data create(&
+    !$acc ch4_ebul_depth(:,:), &
+    !$acc ch4_ebul_total(:), &
+    !$acc conc_ch4(:,:), &
+    !$acc ch4_aere_depth(:,:), &
+    !$acc ch4_oxid_depth(:,:), &
+    !$acc pressure)
 
-      ! Get land model time step
-      vgc_max = CH4ParamsInst%vgc_max
-
-      bubble_f = 0.57_r8 ! CH4 content in gas bubbles (Kellner et al. 2006)
       vgc_min = vgc_max
       ebul_timescale = dtime ! Allow fast bubbling
+      !NOTE: Seems redundant/wasteful to have these local variables 
+      !$acc enter data copyin(vgc_min, ebul_timescale) 
 
       ! column loop to estimate ebullition CH4 flux from each soil layer
+      !$acc parallel loop independent gang vector collapse(2) default(present) 
       do j=1,nlevsoi
          do fc = 1, num_methc
             c = filter_methc (fc)
@@ -2928,6 +2962,15 @@ contains
          end do ! fc
       end do ! j
 
+
+    !$acc exit data delete(&
+    !$acc ch4_ebul_depth(:,:), &
+    !$acc ch4_ebul_total(:), &
+    !$acc conc_ch4(:,:), &
+    !$acc ch4_aere_depth(:,:), &
+    !$acc ch4_oxid_depth(:,:), &
+    !$acc pressure)
+
     end associate
 
   end subroutine ch4_ebul
@@ -2936,7 +2979,13 @@ contains
   subroutine ch4_tran (bounds, &
        num_methc, filter_methc, &
        jwt, dtime_ch4, sat, lake, &
-       soilstate_vars, energyflux_vars, ch4_vars, dtime)
+       soilstate_vars, energyflux_vars, ch4_vars, dtime ,&
+       o2_decomp_depth, o2stress, ch4_oxid_depth ,& 
+       ch4_prod_depth, ch4_aere_depth, ch4_surf_aere, &
+       ch4_ebul_depth,ch4_ebul_total,ch4_surf_ebul, &   
+       ch4_surf_diff, o2_oxid_depth, o2_aere_depth, & 
+       ch4stress, co2_decomp_depth, conc_ch4, conc_o2 &
+       )
     !
     ! !DESCRIPTION:
     ! Solves the reaction & diffusion equation for the timestep.  First "competition" between processes for
@@ -2948,8 +2997,7 @@ contains
     ! Then CH4 diffusive flux is calculated and consistency is checked.
 
     ! !USES:
-    ! !$acc routine seq
-    use TridiagonalMod     , only : Tridiagonal
+    use TridiagonalMod     , only : Tridiagonal_filter
     use CH4varcon          , only : ch4frzout, use_aereoxid_prog
     !
     ! !ARGUMENTS:
@@ -2964,52 +3012,67 @@ contains
     type(energyflux_type)  , intent(in)    :: energyflux_vars
     type(ch4_type)         , intent(inout) :: ch4_vars
     real(r8) ,intent(in)  :: dtime                               ! land model time step (sec)
-
+    real(r8), intent(inout) :: ch4_prod_depth   (:,:)
+    real(r8), intent(inout) :: ch4_oxid_depth   (:,:)
+    real(r8), intent(inout) :: ch4_aere_depth   (:,:)
+    real(r8), intent(inout) :: ch4_surf_aere    (:)
+    real(r8), intent(inout) :: ch4_ebul_depth   (:,:)
+    real(r8), intent(inout) :: ch4_ebul_total   (:)
+    real(r8), intent(inout) :: ch4_surf_ebul    (:)
+    real(r8), intent(inout) :: ch4_surf_diff    (:)
+    real(r8), intent(inout) :: o2_oxid_depth    (:,:)
+    real(r8), intent(inout) :: o2_decomp_depth  (:,:)
+    real(r8), intent(inout) :: o2_aere_depth    (:,:)
+    real(r8), intent(inout) :: o2stress         (:,:)
+    real(r8), intent(inout) :: ch4stress        (:,:)
+    real(r8), intent(inout) :: co2_decomp_depth (:,:)
+    real(r8), intent(inout) :: conc_o2          (:,:)
+    real(r8), intent(inout) :: conc_ch4         (:,:)
     !
     ! !LOCAL VARIABLES:
-    integer :: c,j,g,p,s,i,ll                                              ! indices
-    integer :: fc                                                          ! soil filter column index
-    integer :: fp                                                          ! soil filter pft index
-    integer  :: jtop(bounds%begc:bounds%endc)                              ! top level at each column
-    integer :: iter                                                        ! iteration counter when dtime_ch4 < dtime
-    real(r8) :: at (bounds%begc:bounds%endc,0:nlevsoi)                     ! "a" vector for tridiagonal matrix
-    real(r8) :: bt (bounds%begc:bounds%endc,0:nlevsoi)                     ! "b" vector for tridiagonal matrix
-    real(r8) :: ct (bounds%begc:bounds%endc,0:nlevsoi)                     ! "c" vector for tridiagonal matrix
-    real(r8) :: rt (bounds%begc:bounds%endc,0:nlevsoi)                     ! "r" vector for tridiagonal solution
-    real(r8) :: f_a                                                        ! air-filled fraction of available pore space
-    real(r8) :: diffus (bounds%begc:bounds%endc,0:nlevsoi)                 ! diffusivity (m2/s)
-    real(r8) :: k_h_inv                                                    ! 1/Henry's Law Constant in Latm/mol
-    real(r8) :: k_h_cc(bounds%begc:bounds%endc,0:nlevsoi,ngases)           ! ratio of mol/m3 in liquid to mol/m3 in gas
-    real(r8) :: dzj                                                        !
-    real(r8) :: dp1_zp1 (bounds%begc:bounds%endc,0:nlevsoi)                ! diffusivity/delta_z for next j
-    real(r8) :: dm1_zm1 (bounds%begc:bounds%endc,0:nlevsoi)                ! diffusivity/delta_z for previous j
-    real(r8) :: t_soisno_c                                                 ! soil temperature (C)  (-nlevsno+1:nlevsoi)
-    real(r8) :: eps                                                        ! either epsilon_a or epsilon_w, depending on where in soil, wrt WT
-    real(r8) :: deficit                                                    ! mol CH4 /m^2 that must be subtracted from diffusive flux to atm. to make up
+    integer :: c,j,g,p,s,i,ll                                  ! indices
+    integer :: fc                                              ! soil filter column index
+    integer :: fp                                              ! soil filter pft index
+    integer,parameter  :: jtop = 0                             ! top level at each column
+    integer :: iter                                            ! iteration counter when dtime_ch4 < dtime
+    real(r8) :: at (1:num_methc,0:nlevsoi)                     ! "a" vector for tridiagonal matrix
+    real(r8) :: bt (1:num_methc,0:nlevsoi)                     ! "b" vector for tridiagonal matrix
+    real(r8) :: ct (1:num_methc,0:nlevsoi)                     ! "c" vector for tridiagonal matrix
+    real(r8) :: rt (1:num_methc,0:nlevsoi)                     ! "r" vector for tridiagonal solution
+    real(r8) :: f_a                                            ! air-filled fraction of available pore space
+    real(r8) :: diffus (1:num_methc,0:nlevsoi)                 ! diffusivity (m2/s)
+    real(r8) :: k_h_inv                                        ! 1/Henry's Law Constant in Latm/mol
+    real(r8) :: k_h_cc(1:num_methc,0:nlevsoi,ngases)           ! ratio of mol/m3 in liquid to mol/m3 in gas
+    real(r8) :: dzj                                            !
+    real(r8) :: dp1_zp1 (1:num_methc,0:nlevsoi)                ! diffusivity/delta_z for next j
+    real(r8) :: dm1_zm1 (1:num_methc,0:nlevsoi)                ! diffusivity/delta_z for previous j
+    real(r8) :: t_soisno_c                                     ! soil temperature (C)  (-nlevsno+1:nlevsoi)
+    real(r8) :: eps                                            ! either epsilon_a or epsilon_w, depending on where in soil, wrt WT
+    real(r8) :: deficit                                        ! mol CH4 /m^2 that must be subtracted from diffusive flux to atm. to make up
     ! for keeping concentrations always above zero
-    real(r8) :: conc_ch4_bef(bounds%begc:bounds%endc,1:nlevsoi)            ! concentration at the beginning of the timestep
-    real(r8) :: errch4(bounds%begc:bounds%endc)                            ! Error (Mol CH4 /m^2) [+ = too much CH4]
-    real(r8) :: conc_ch4_rel(bounds%begc:bounds%endc,0:nlevsoi)            ! Concentration per volume of air or water
-    real(r8) :: conc_o2_rel(bounds%begc:bounds%endc,0:nlevsoi)             ! Concentration per volume of air or water
-    real(r8) :: conc_ch4_rel_old(bounds%begc:bounds%endc,0:nlevsoi)        ! Concentration during last Crank-Nich. loop
-    real(r8) :: h2osoi_vol_min(bounds%begc:bounds%endc,1:nlevsoi)          ! h2osoi_vol restricted to be <= watsat
+    real(r8) :: conc_ch4_bef(1:num_methc,1:nlevsoi)            ! concentration at the beginning of the timestep
+    real(r8) :: errch4(1:num_methc)                            ! Error (Mol CH4 /m^2) [+ = too much CH4]
+    real(r8) :: conc_ch4_rel(1:num_methc,0:nlevsoi)            ! Concentration per volume of air or water
+    real(r8) :: conc_o2_rel(1:num_methc,0:nlevsoi)             ! Concentration per volume of air or water
+    real(r8) :: conc_ch4_rel_old(1:num_methc,0:nlevsoi)        ! Concentration during last Crank-Nich. loop
+    real(r8) :: h2osoi_vol_min(1:num_methc,1:nlevsoi)          ! h2osoi_vol restricted to be <= watsat
     real(r8), parameter :: smallnumber = 1.e-12_r8
-    real(r8) :: snowdiff                                                   ! snow diffusivity (m^2/s)
-    real(r8) :: snowres(bounds%begc:bounds%endc)                           ! Cumulative Snow resistance (s/m). Also includes
-    real(r8) :: pondres                                                    ! Additional resistance from ponding, up to pondmx water on top of top soil layer (s/m)
-    real(r8) :: pondz                                                      ! Depth of ponding (m)
-    real(r8) :: ponddiff                                                   ! Pondwater diffusivity (m^2/s)
-    real(r8) :: spec_grnd_cond(bounds%begc:bounds%endc,1:ngases)           ! species grnd conductance (s/m)
+    real(r8) :: snowdiff                                       ! snow diffusivity (m^2/s)
+    real(r8) :: snowres                           ! Cumulative Snow resistance (s/m). Also includes
+    real(r8) :: pondres                                        ! Additional resistance from ponding, up to pondmx water on top of top soil layer (s/m)
+    real(r8) :: pondz                                          ! Depth of ponding (m)
+    real(r8) :: ponddiff                                       ! Pondwater diffusivity (m^2/s)
+    real(r8) :: spec_grnd_cond(1:num_methc,1:ngases)           ! species grnd conductance (s/m)
     real(r8) :: airfrac                                                    ! air fraction in snow
     real(r8) :: waterfrac                                                  ! water fraction in snow
     real(r8) :: icefrac                                                    ! ice fraction in snow
-    real(r8) :: epsilon_t (bounds%begc:bounds%endc,1:nlevsoi,1:ngases)     !
-    real(r8) :: epsilon_t_old (bounds%begc:bounds%endc,1:nlevsoi,1:ngases) ! epsilon_t from last time step !Currently deprecated
-    real(r8) :: source (bounds%begc:bounds%endc,1:nlevsoi,1:ngases)        ! source
-    real(r8) :: source_old (bounds%begc:bounds%endc,1:nlevsoi,1:ngases)    ! source from last time step !Currently deprecated
+    real(r8) :: epsilon_t (1:num_methc,1:nlevsoi,1:ngases)     !
+    real(r8) :: epsilon_t_old (1:num_methc,1:nlevsoi,1:ngases) ! epsilon_t from last time step !Currently deprecated
+    real(r8) :: source (1:num_methc,1:nlevsoi,1:ngases)        ! source
+    real(r8) :: source_old (1:num_methc,1:nlevsoi,1:ngases)    ! source from last time step !Currently deprecated
     real(r8) :: om_frac                                                    ! organic matter fraction
     real(r8) :: o2demand, ch4demand                                        ! mol/m^3/s
-    real(r8) :: liqfrac(bounds%begc:bounds%endc, 1:nlevsoi)
+    real(r8) :: liqfrac(1:num_methc, 1:nlevsoi)
     real(r8) :: capthick                                                   ! (mm) min thickness before assuming h2osfc is impermeable
     real(r8) :: satpow                                                     ! exponent on watsat for saturated soil solute diffusion
     real(r8) :: scale_factor_gasdiff                                       ! For sensitivity tests; convection would allow this to be > 1
@@ -3017,28 +3080,12 @@ contains
     real(r8) :: organic_max                                                ! organic matter content (kg/m3) where soil is assumed to act like peat
     real(r8) :: aereoxid                                                   ! fraction of methane flux entering aerenchyma rhizosphere
 
-    real(r8), pointer :: ch4_prod_depth   (:,:)
-    real(r8), pointer :: ch4_oxid_depth   (:,:)
-    real(r8), pointer :: ch4_aere_depth   (:,:)
-    real(r8), pointer :: ch4_surf_aere    (:)
-    real(r8), pointer :: ch4_ebul_depth   (:,:)
-    real(r8), pointer :: ch4_ebul_total   (:)
-    real(r8), pointer :: ch4_surf_ebul    (:)
-    real(r8), pointer :: ch4_surf_diff    (:)
-    real(r8), pointer :: o2_oxid_depth    (:,:)
-    real(r8), pointer :: o2_decomp_depth  (:,:)
-    real(r8), pointer :: o2_aere_depth    (:,:)
-    real(r8), pointer :: o2stress         (:,:)
-    real(r8), pointer :: ch4stress        (:,:)
-    real(r8), pointer :: co2_decomp_depth (:,:)
-    real(r8), pointer :: conc_o2          (:,:)
-    real(r8), pointer :: conc_ch4         (:,:)
-
     integer  :: nstep                       ! time step number
     character(len=32) :: subname='ch4_tran' ! subroutine name
+    real(r8) :: sum1 
+    integer  :: erridx 
     !-----------------------------------------------------------------------
-
-
+    
     associate(                                                 &
          z             =>    col_pp%z                           , & ! Input:  [real(r8) (:,:) ]  soil layer depth (m)
          dz            =>    col_pp%dz                          , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)  (-nlevsno+1:nlevsoi)
@@ -3062,61 +3109,48 @@ contains
          h2osfc        =>    col_ws%h2osfc      , & ! Input:  [real(r8) (:)   ]  surface water (mm)
 
          c_atm         =>    ch4_vars%c_atm_grc              , & ! Input:  [real(r8) (:,:) ]  CH4, O2, CO2 atmospheric conc  (mol/m3)
+         grnd_ch4_cond =>    ch4_vars%grnd_ch4_cond_col      ,  & ! Output: [real(r8) (:)   ]  tracer conductance for boundary layer [m/s]
 
-         grnd_ch4_cond =>    ch4_vars%grnd_ch4_cond_col        & ! Output: [real(r8) (:)   ]  tracer conductance for boundary layer [m/s]
+         ! Set transport parameters
+         satpow               => CH4ParamsInst%satpow , &
+         scale_factor_gasdiff => CH4ParamsInst%scale_factor_gasdiff,&
+         scale_factor_liqdiff => CH4ParamsInst%scale_factor_liqdiff,&
+         capthick             => CH4ParamsInst%capthick, &
+         aereoxid             => CH4ParamsInst%aereoxid, &
+
+         ! Set shared constant
+         organic_max => ParamsShareInst%organic_max &
          )
 
-      if (sat == 0) then                                    ! unsaturated
-         o2_decomp_depth  => ch4_vars%o2_decomp_depth_unsat_col  ! Output: [real(r8) (:,:) ]  O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
-         o2stress         => ch4_vars%o2stress_unsat_col         ! Output: [real(r8) (:,:) ]  Ratio of oxygen available to that demanded by roots, aerobes, & methanotrophs (nlevsoi)
-         ch4_oxid_depth   => ch4_vars%ch4_oxid_depth_unsat_col   ! Output: [real(r8) (:,:) ]  CH4 consumption rate via oxidation in each soil layer (mol/m3/s) (nlevsoi)
-         ch4_prod_depth   => ch4_vars%ch4_prod_depth_unsat_col   ! Output: [real(r8) (:,:) ]  CH4 production rate from methanotrophs (mol/m3/s) (nlevsoi)
-         ch4_aere_depth   => ch4_vars%ch4_aere_depth_unsat_col   ! Output: [real(r8) (:,:) ]  CH4 loss rate via aerenchyma in each soil layer (mol/m3/s) (nlevsoi)
-         ch4_surf_aere    => ch4_vars%ch4_surf_aere_unsat_col    ! Output: [real(r8) (:)   ]  Total column CH4 aerenchyma (mol/m2/s)
-         ch4_ebul_depth   => ch4_vars%ch4_ebul_depth_unsat_col   ! Output: [real(r8) (:,:) ]  CH4 loss rate via ebullition in each soil layer (mol/m3/s) (nlevsoi)
-         ch4_ebul_total   => ch4_vars%ch4_ebul_total_unsat_col   ! Output: [real(r8) (:)   ]  Total column CH4 ebullition (mol/m2/s)
-         ch4_surf_ebul    => ch4_vars%ch4_surf_ebul_unsat_col    ! Output: [real(r8) (:)   ]  CH4 ebullition to atmosphere (mol/m2/s)
-         ch4_surf_diff    => ch4_vars%ch4_surf_diff_unsat_col    ! Output: [real(r8) (:)   ]  CH4 surface flux (mol/m2/s)
-         o2_oxid_depth    => ch4_vars%o2_oxid_depth_unsat_col    ! Output: [real(r8) (:,:) ]  O2 loss rate via ebullition in each soil layer (mol/m3/s) (nlevsoi)
-         o2_aere_depth    => ch4_vars%o2_aere_depth_unsat_col    ! Output: [real(r8) (:,:) ]  O2 gain rate via aerenchyma in each soil layer (mol/m3/s) (nlevsoi)
-         ch4stress        => ch4_vars%ch4stress_unsat_col        ! Output: [real(r8) (:,:) ]  Ratio of methane available to the total per-timestep methane sinks (nlevsoi)
-         co2_decomp_depth => ch4_vars%co2_decomp_depth_unsat_col ! Output: [real(r8) (:,:) ]  CO2 production during decomposition in each soil layer (nlevsoi) (mol/m3/s)
-         conc_ch4         => ch4_vars%conc_ch4_unsat_col         ! Output: [real(r8) (:,:) ]  CH4 conc in each soil layer (mol/m3) (nlevsoi)
-         conc_o2          => ch4_vars%conc_o2_unsat_col          ! Output: [real(r8) (:,:) ]  O2 conc in each soil layer (mol/m3) (nlevsoi)
-      else                                                  ! saturated
-         o2_decomp_depth  => ch4_vars%o2_decomp_depth_sat_col    ! Output: [real(r8) (:,:) ]  O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
-         o2stress         => ch4_vars%o2stress_sat_col           ! Output: [real(r8) (:,:) ]  Ratio of oxygen available to that demanded by roots, aerobes, & methanotrophs (nlevsoi)
-         ch4_oxid_depth   => ch4_vars%ch4_oxid_depth_sat_col     ! Output: [real(r8) (:,:) ]  CH4 consumption rate via oxidation in each soil layer (mol/m3/s) (nlevsoi)
-         ch4_prod_depth   => ch4_vars%ch4_prod_depth_sat_col     ! Output: [real(r8) (:,:) ]  CH4 production rate from methanotrophs (mol/m3/s) (nlevsoi)
-         ch4_aere_depth   => ch4_vars%ch4_aere_depth_sat_col     ! Output: [real(r8) (:,:) ]  CH4 loss rate via aerenchyma in each soil layer (mol/m3/s) (nlevsoi)
-         ch4_surf_aere    => ch4_vars%ch4_surf_aere_sat_col      ! Output: [real(r8) (:)   ]  Total column CH4 aerenchyma (mol/m2/s)
-         ch4_ebul_depth   => ch4_vars%ch4_ebul_depth_sat_col     ! Output: [real(r8) (:,:) ]  CH4 loss rate via ebullition in each soil layer (mol/m3/s) (nlevsoi)
-         ch4_ebul_total   => ch4_vars%ch4_ebul_total_sat_col     ! Output: [real(r8) (:)   ]  Total column CH4 ebullition (mol/m2/s)
-         ch4_surf_ebul    => ch4_vars%ch4_surf_ebul_sat_col      ! Output: [real(r8) (:)   ]  CH4 ebullition to atmosphere (mol/m2/s)
-         ch4_surf_diff    => ch4_vars%ch4_surf_diff_sat_col      ! Output: [real(r8) (:)   ]  CH4 surface flux (mol/m2/s)
-         o2_oxid_depth    => ch4_vars%o2_oxid_depth_sat_col      ! Output: [real(r8) (:,:) ]  O2 loss rate via ebullition in each soil layer (mol/m3/s) (nlevsoi)
-         o2_aere_depth    => ch4_vars%o2_aere_depth_sat_col      ! Output: [real(r8) (:,:) ]  O2 gain rate via aerenchyma in each soil layer (mol/m3/s) (nlevsoi)
-         ch4stress        => ch4_vars%ch4stress_sat_col          ! Output: [real(r8) (:,:) ]  Ratio of methane available to the total per-timestep methane sinks (nlevsoi)
-         co2_decomp_depth => ch4_vars%co2_decomp_depth_sat_col   ! Output: [real(r8) (:,:) ]  CO2 production during decomposition in each soil layer (nlevsoi) (mol/m3/s)
-         conc_ch4         => ch4_vars%conc_ch4_sat_col           ! Output: [real(r8) (:,:) ]  CH4 conc in each soil layer (mol/m3) (nlevsoi)
-         conc_o2          => ch4_vars%conc_o2_sat_col            ! Output: [real(r8) (:,:) ]  O2 conc in each soil layer (mol/m3) (nlevsoi)
-      endif
-
-      ! Get land model time step
-
-      ! Set transport parameters
-      satpow               = CH4ParamsInst%satpow
-      scale_factor_gasdiff = CH4ParamsInst%scale_factor_gasdiff
-      scale_factor_liqdiff = CH4ParamsInst%scale_factor_liqdiff
-      capthick             = CH4ParamsInst%capthick
-      aereoxid             = CH4ParamsInst%aereoxid
-
-      ! Set shared constant
-      organic_max = ParamsShareInst%organic_max
-
+    !$acc enter data create(&
+    !$acc at(:,:), &
+    !$acc bt(:,:), &
+    !$acc ct(:,:), &
+    !$acc rt(:,:), &
+    !$acc diffus(:,:), &
+    !$acc k_h_cc(:,:,:), &
+    !$acc dp1_zp1(:,:), &
+    !$acc dm1_zm1(:,:), &
+    !$acc conc_ch4_bef(:,:), &
+    !$acc errch4(:), &
+    !$acc conc_ch4_rel(:,:), &
+    !$acc conc_o2_rel(:,:), &
+    !$acc conc_ch4_rel_old(:,:), &
+    !$acc h2osoi_vol_min(:,:), &
+    !$acc snowres, &
+    !$acc spec_grnd_cond(:,:), &
+    !$acc epsilon_t(:,:,:), &
+    !$acc epsilon_t_old(:,:,:), &
+    !$acc source(:,:,:), &
+    !$acc source_old(:,:,:), &
+    !$acc liqfrac(:,:), &
+    !$acc snowdiff, &
+    !$acc pondres)
+   
       ! Perform competition for oxygen and methane in each soil layer if demands over the course of the timestep
       ! exceed that available. Assign to each process in proportion to the quantity demanded in the absense of
       ! the limitation.
+      !$acc parallel loop independent gang vector default(present) collapse(2) 
       do j = 1,nlevsoi
          do fc = 1, num_methc
             c = filter_methc (fc)
@@ -3178,29 +3212,34 @@ contains
 
 
       ! Accumulate ebullition to place in first layer above water table, or directly to atmosphere
-      do j = 1,nlevsoi
-         do fc = 1, num_methc
-            c = filter_methc (fc)
-            if (j == 1) ch4_ebul_total(c) = 0._r8
-            ch4_ebul_total(c) = ch4_ebul_total(c) + ch4_ebul_depth(c,j) * dz(c,j)
+      !$acc parallel loop independent gang worker default(present) private(sum1) 
+      do fc = 1, num_methc
+         c = filter_methc (fc)
+         sum1 = 0._r8 
+         !$acc loop vector reduction(+:sum1) 
+         do j = 1,nlevsoi
+            sum1 = sum1 + ch4_ebul_depth(c,j) * dz(c,j)
          enddo
+         ch4_ebul_total(c) = sum1 
       enddo
 
 
       ! Set the Henry's Law coefficients
+      !$acc parallel loop independent gang vector default(present) collapse(2) 
       do j = 0,nlevsoi
          do fc = 1, num_methc
             c = filter_methc (fc)
 
+            !$acc loop seq
             do s=1,2
                if (j == 0) then
                   k_h_inv = exp(-c_h_inv(s) * (1._r8 / t_grnd(c) - 1._r8 / kh_tbase) + log (kh_theta(s)))
                   ! (4.12) Wania (L atm/mol)
-                  k_h_cc(c,j,s) = t_grnd(c) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
+                  k_h_cc(fc,j,s) = t_grnd(c) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
                else
                   k_h_inv = exp(-c_h_inv(s) * (1._r8 / t_soisno(c,j) - 1._r8 / kh_tbase) + log (kh_theta(s)))
                   ! (4.12) Wania (L atm/mol)
-                  k_h_cc(c,j,s) = t_soisno(c,j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
+                  k_h_cc(fc,j,s) = t_soisno(c,j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
                end if
             end do
          end do
@@ -3212,6 +3251,7 @@ contains
       ! sources, occasionally negative concentration will result. In this case it is brought to zero and the
       ! surface flux is adjusted to conserve. This results in some inaccuracy as compared to a shorter timestep
       ! or iterative solution.
+      !$acc parallel loop independent gang vector default(present) collapse(2) 
       do j = 1,nlevsoi
          do fc = 1, num_methc
             c = filter_methc (fc)
@@ -3222,19 +3262,19 @@ contains
                ch4_aere_depth(c,j) = ch4_aere_depth(c,j) - aereoxid * ch4_aere_depth(c,j)
             end if ! else oxygen is allowed to diffuse in via aerenchyma
 
-            source(c,j,1) = ch4_prod_depth(c,j) - ch4_oxid_depth(c,j) - &
+            source(fc,j,1) = ch4_prod_depth(c,j) - ch4_oxid_depth(c,j) - &
                  ch4_aere_depth(c,j) - ch4_ebul_depth(c,j) ! [mol/m3-total/s]
             ! aerenchyma added to surface flux below
             ! ebul added to soil depth just above WT
 #ifndef _OPENACC
-            if (source(c,j,1) + conc_ch4(c,j) / dtime < -1.e-12_r8) then
+            if (source(fc,j,1) + conc_ch4(c,j) / dtime < -1.e-12_r8) then
                write(iulog,*) 'Methane demands exceed methane available. Error in methane competition (mol/m^3/s), c,j:',&
                     source(c,j,1) + conc_ch4(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
                write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                call endrun(msg=' ERROR: Methane demands exceed methane available.'&
                     //errMsg(__FILE__, __LINE__))
-            else if (ch4stress(c,j) < 1._r8 .and. source(c,j,1) + conc_ch4(c,j) / dtime > 1.e-12_r8) then
+            else if (ch4stress(c,j) < 1._r8 .and. source(fc,j,1) + conc_ch4(c,j) / dtime > 1.e-12_r8) then
                write(iulog,*) 'Methane limited, yet some left over. Error in methane competition (mol/m^3/s), c,j:',&
                     source(c,j,1) + conc_ch4(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
@@ -3243,16 +3283,16 @@ contains
                     errMsg(__FILE__, __LINE__))
             end if
 #endif
-            source(c,j,2) = -o2_oxid_depth(c,j) - o2_decomp_depth(c,j) + o2_aere_depth(c,j) ! O2 [mol/m3/s]
+            source(fc,j,2) = -o2_oxid_depth(c,j) - o2_decomp_depth(c,j) + o2_aere_depth(c,j) ! O2 [mol/m3/s]
 #ifndef _OPENACC
-            if (source(c,j,2) + conc_o2(c,j) / dtime < -1.e-12_r8) then
+            if (source(fc,j,2) + conc_o2(c,j) / dtime < -1.e-12_r8) then
                write(iulog,*) 'Oxygen demands exceed oxygen available. Error in oxygen competition (mol/m^3/s), c,j:',&
                     source(c,j,2) + conc_o2(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
                write(iulog,*) 'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                call endrun(msg=' ERROR: Oxygen demands exceed oxygen available.'//&
                     errMsg(__FILE__, __LINE__) )
-            else if (o2stress(c,j) < 1._r8 .and. source(c,j,2) + conc_o2(c,j) / dtime > 1.e-12_r8) then
+            else if (o2stress(c,j) < 1._r8 .and. source(fc,j,2) + conc_o2(c,j) / dtime > 1.e-12_r8) then
                write(iulog,*)  'Oxygen limited, yet some left over. Error in oxygen competition (mol/m^3/s), c,j:',&
                     source(c,j,2) + conc_o2(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
@@ -3260,75 +3300,84 @@ contains
                call endrun(msg=' ERROR: Oxygen limited, yet some left over.'//errMsg(__FILE__, __LINE__))
             end if
 #endif 
-            conc_ch4_bef(c,j) = conc_ch4(c,j) !For Balance Check
+            conc_ch4_bef(fc,j) = conc_ch4(c,j) !For Balance Check
          enddo ! fc
       enddo ! j
 
       ! Accumulate aerenchyma to add directly to atmospheric flux
-      do j = 1,nlevsoi
-         do fc = 1, num_methc
-            c = filter_methc (fc)
-            if (j==1) ch4_surf_aere(c) = 0._r8
-            ch4_surf_aere(c) = ch4_surf_aere(c) + ch4_aere_depth(c,j) * dz(c,j)
+      !$acc parallel loop independent gang worker default(present) private(sum1) 
+      do fc = 1, num_methc
+         c = filter_methc (fc)
+         sum1 = 0._r8 
+         !$acc loop vector reduction(+:sum1)
+         do j = 1,nlevsoi
+            sum1 = sum1 + ch4_aere_depth(c,j) * dz(c,j)
          enddo
+         ch4_surf_aere(c) = sum1 
       enddo
 
       ! Add in ebullition to source at depth just above WT
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1, num_methc
          c = filter_methc(fc)
          if (jwt(c) /= 0) then
-            source(c,jwt(c),1) = source(c,jwt(c),1) + ch4_ebul_total(c)/dz(c,jwt(c))
+            source(fc,jwt(c),1) = source(fc,jwt(c),1) + ch4_ebul_total(c)/dz(c,jwt(c))
          endif
       enddo ! fc
 
       ! Calculate concentration relative to m^3 of air or water: needed for the diffusion
+      !$acc parallel loop independent gang vector default(present) collapse(2) 
       do j = 0,nlevsoi
          do fc = 1, num_methc
             c = filter_methc (fc)
             g = col_pp%gridcell(c)
 
             if (j == 0) then
-               conc_ch4_rel(c,j) = c_atm(g,1)
-               conc_o2_rel(c,j)  = c_atm(g,2)
+               conc_ch4_rel(fc,j) = c_atm(g,1)
+               conc_o2_rel(fc,j)  = c_atm(g,2)
             else
-               h2osoi_vol_min(c,j) = min(watsat(c,j), h2osoi_vol(c,j))
+               h2osoi_vol_min(fc,j) = min(watsat(c,j), h2osoi_vol(c,j))
                if (ch4frzout) then
-                  liqfrac(c,j) = max(0.05_r8, (h2osoi_liq(c,j)/denh2o+smallnumber)/ &
+                  liqfrac(fc,j) = max(0.05_r8, (h2osoi_liq(c,j)/denh2o+smallnumber)/ &
                        (h2osoi_liq(c,j)/denh2o+h2osoi_ice(c,j)/denice+smallnumber))
                else
-                  liqfrac(c,j) = 1._r8
+                  liqfrac(fc,j) = 1._r8
                end if
                if (j <= jwt(c)) then  ! Above the WT
+                  !$acc loop seq
                   do s=1,2
-                     epsilon_t(c,j,s) = watsat(c,j)- (1._r8-k_h_cc(c,j,s))*h2osoi_vol_min(c,j)*liqfrac(c,j)
+                     epsilon_t(fc,j,s) = watsat(c,j)- (1._r8-k_h_cc(fc,j,s))*h2osoi_vol_min(fc,j)*liqfrac(fc,j)
                   end do
                   ! Partition between the liquid and gas phases. The gas phase will drive the diffusion.
                else ! Below the WT
+                  !$acc loop seq
                   do s=1,2
-                     epsilon_t(c,j,s) = watsat(c,j)*liqfrac(c,j)
+                     epsilon_t(fc,j,s) = watsat(c,j)*liqfrac(fc,j)
                   end do
                end if
-               conc_ch4_rel(c,j) = conc_ch4(c,j)/epsilon_t(c,j,1)
-               conc_o2_rel(c,j)  = conc_o2(c,j) /epsilon_t(c,j,2)
+               conc_ch4_rel(fc,j) = conc_ch4(c,j)/epsilon_t(fc,j,1)
+               conc_o2_rel(fc,j)  = conc_o2(c,j) /epsilon_t(fc,j,2)
             end if
          end do
       end do
 
-
+      !$acc enter data create(s) 
       ! Loop over species
       do s = 1, 2 ! 1=CH4; 2=O2; 3=CO2
 
+         !$acc update device(s) 
 
          ! Adjust the grnd_ch4_cond to keep it positive, and add the snow resistance & pond resistance
-         do j = -nlevsno + 1,0
-            do fc = 1, num_methc
-               c = filter_methc (fc)
+         !$acc parallel loop independent gang worker default(present) private(snowres)
+         do fc = 1, num_methc
+            c = filter_methc (fc)
+            
+            if (grnd_ch4_cond(c) < smallnumber .and. s==1) grnd_ch4_cond(c) = smallnumber
+            ! Needed to prevent overflow when ground is frozen, e.g. for lakes
+            snowres = 0._r8
 
-               if (j == -nlevsno + 1) then
-                  if (grnd_ch4_cond(c) < smallnumber .and. s==1) grnd_ch4_cond(c) = smallnumber
-                  ! Needed to prevent overflow when ground is frozen, e.g. for lakes
-                  snowres(c) = 0._r8
-               end if
+            !$acc loop vector reduction(+:snowres)
+            do j = -nlevsno + 1,-1
 
                ! Add snow resistance
                if (j >= snl(c) + 1) then
@@ -3342,58 +3391,56 @@ contains
                      eps = airfrac ! Air-filled fraction of total snow volume
                      ! Use Millington-Quirk Expression, as hydraulic properties (bsw) not available
                      snowdiff = (d_con_g(s,1) + d_con_g(s,2)*t_soisno_c) * 1.e-4_r8 * &
-                          f_a**(10._r8/3._r8) / (airfrac+waterfrac)**2 &
-                          * scale_factor_gasdiff
+                          f_a**(10._r8/3._r8) / (airfrac+waterfrac)**2 * scale_factor_gasdiff
                   else !solute diffusion in water only
                      eps = waterfrac  ! Water-filled fraction of total soil volume
                      snowdiff = eps**satpow * (d_con_w(s,1) + d_con_w(s,2)*t_soisno_c + d_con_w(s,3)*t_soisno_c**2) * 1.e-9_r8 &
                           * scale_factor_liqdiff
                   end if
                   snowdiff = max(snowdiff, smallnumber)
-                  snowres(c) = snowres(c) + dz(c,j)/snowdiff
+                  snowres = snowres + dz(c,j)/snowdiff
                end if
+            end do 
 
-               if (j == 0) then ! final loop
-                  ! Add pond resistance
-                  pondres = 0._r8
+            ! Add pond resistance
+            pondres = 0._r8
 
-                  ! First old pond formulation up to pondmx
-                  if (.not. lake .and. snl(c) == 0 .and. h2osoi_vol(c,1) > watsat(c,1)) then
-                     t_soisno_c = t_soisno(c,1) - tfrz
-                     if (t_soisno(c,1) <= tfrz) then
-                        ponddiff = (d_con_w(s,1) + d_con_w(s,2)*t_soisno_c + d_con_w(s,3)*t_soisno_c**2) * 1.e-9_r8 &
-                             * (h2osoi_liq(c,1)/denh2o+smallnumber)/ &
-                             (h2osoi_liq(c,1)/denh2o+h2osoi_ice(c,1)/denice+smallnumber) &
-                             * scale_factor_liqdiff
-                     else ! Unfrozen
-                        ponddiff = (d_con_w(s,1) + d_con_w(s,2)*t_soisno_c + d_con_w(s,3)*t_soisno_c**2) * 1.e-9_r8 &
-                             * scale_factor_liqdiff
-                     end if
-                     pondz = dz(c,1) * (h2osoi_vol(c,1) - watsat(c,1))
-                     pondres = pondz / ponddiff
-                  end if
-
-                  ! Now add new h2osfc form
-                  if (.not. lake .and. sat == 1 .and. frac_h2osfc(c) > 0._r8 .and. t_h2osfc(c) >= tfrz) then
-                     t_soisno_c = t_h2osfc(c) - tfrz
-                     ponddiff = (d_con_w(s,1) + d_con_w(s,2)*t_soisno_c + d_con_w(s,3)*t_soisno_c**2) * 1.e-9_r8 &
-                          * scale_factor_liqdiff
-                     pondz = h2osfc(c) / 1000._r8 / frac_h2osfc(c) ! Assume all h2osfc corresponds to sat area
-                     ! mm      /  mm/m
-                     pondres = pondres + pondz / ponddiff
-                  else if (.not. lake .and. sat == 1 .and. frac_h2osfc(c) > 0._r8 .and. &
-                       h2osfc(c)/frac_h2osfc(c) > capthick) then ! Assuming short-circuit logic will avoid FPE here.
-                     ! assume surface ice is impermeable
-                     pondres = 1/smallnumber
-                  end if
-
-                  spec_grnd_cond(c,s) = 1._r8/(1._r8/grnd_ch4_cond(c) + snowres(c) + pondres)
+            ! First old pond formulation up to pondmx
+            if (.not. lake .and. snl(c) == 0 .and. h2osoi_vol(c,1) > watsat(c,1)) then
+               t_soisno_c = t_soisno(c,1) - tfrz
+               if (t_soisno(c,1) <= tfrz) then
+                  ponddiff = (d_con_w(s,1) + d_con_w(s,2)*t_soisno_c + d_con_w(s,3)*t_soisno_c**2) * 1.e-9_r8 &
+                       * (h2osoi_liq(c,1)/denh2o+smallnumber)/ &
+                       (h2osoi_liq(c,1)/denh2o+h2osoi_ice(c,1)/denice+smallnumber) &
+                       * scale_factor_liqdiff
+               else ! Unfrozen
+                  ponddiff = (d_con_w(s,1) + d_con_w(s,2)*t_soisno_c + d_con_w(s,3)*t_soisno_c**2) * 1.e-9_r8 &
+                       * scale_factor_liqdiff
                end if
+               pondz = dz(c,1) * (h2osoi_vol(c,1) - watsat(c,1))
+               pondres = pondz / ponddiff
+            end if
 
-            end do ! fc
-         end do ! j
+            ! Now add new h2osfc form
+            if (.not. lake .and. sat == 1 .and. frac_h2osfc(c) > 0._r8 .and. t_h2osfc(c) >= tfrz) then
+               t_soisno_c = t_h2osfc(c) - tfrz
+               ponddiff = (d_con_w(s,1) + d_con_w(s,2)*t_soisno_c + d_con_w(s,3)*t_soisno_c**2) * 1.e-9_r8 &
+                    * scale_factor_liqdiff
+               pondz = h2osfc(c) / 1000._r8 / frac_h2osfc(c) ! Assume all h2osfc corresponds to sat area
+               ! mm      /  mm/m
+               pondres = pondres + pondz / ponddiff
+            else if (.not. lake .and. sat == 1 .and. frac_h2osfc(c) > 0._r8 .and. &
+                 h2osfc(c)/frac_h2osfc(c) > capthick) then ! Assuming short-circuit logic will avoid FPE here.
+               ! assume surface ice is impermeable
+               pondres = 1/smallnumber
+            end if
+
+            spec_grnd_cond(fc,s) = 1._r8/(1._r8/grnd_ch4_cond(c) + snowres + pondres)
+
+         end do ! fc 
 
          ! Determine gas diffusion and fraction of open pore (f_a)
+         !$acc parallel loop independent gang vector default(present) collapse(2) 
          do j = 1,nlevsoi
             do fc = 1, num_methc
                c = filter_methc (fc)
@@ -3402,17 +3449,17 @@ contains
                t_soisno_c = t_soisno(c,j) - tfrz
 
                if (j <= jwt(c)) then  ! Above the WT
-                  f_a = 1._r8 - h2osoi_vol_min(c,j) / watsat(c,j)
+                  f_a = 1._r8 - h2osoi_vol_min(fc,j) / watsat(c,j)
                   ! Provisionally calculate diffusivity as linear combination of the Millington-Quirk
                   ! expression in Wania (for peat) & Moldrup (for mineral soil)
-                  eps =  watsat(c,j)-h2osoi_vol_min(c,j) ! Air-filled fraction of total soil volume
+                  eps =  watsat(c,j)-h2osoi_vol_min(fc,j) ! Air-filled fraction of total soil volume
                   if (organic_max > 0._r8) then
                      om_frac = min(cellorg(c,j)/organic_max, 1._r8)
                      ! Use first power, not square as in iniTimeConst
                   else
                      om_frac = 1._r8
                   end if
-                  diffus (c,j) = (d_con_g(s,1) + d_con_g(s,2)*t_soisno_c) * 1.e-4_r8 * &
+                  diffus(fc,j) = (d_con_g(s,1) + d_con_g(s,2)*t_soisno_c) * 1.e-4_r8 * &
                        (om_frac * f_a**(10._r8/3._r8) / watsat(c,j)**2._r8 + &
                        (1._r8-om_frac) * eps**2._r8 * f_a**(3._r8 / bsw(c,j)) ) &
                        * scale_factor_gasdiff
@@ -3420,166 +3467,163 @@ contains
                   ! Note the following is not currently corrected for the effect on diffusivity of excess ice in soil under
                   ! lakes (which is currently experimental only).
                   eps = watsat(c,j)  ! Water-filled fraction of total soil volume
-                  diffus (c,j) = eps**satpow * (d_con_w(s,1) + d_con_w(s,2)*t_soisno_c + d_con_w(s,3)*t_soisno_c**2) * 1.e-9_r8 &
+                  diffus(fc,j) = eps**satpow * (d_con_w(s,1) + d_con_w(s,2)*t_soisno_c + d_con_w(s,3)*t_soisno_c**2) * 1.e-9_r8 &
                        * scale_factor_liqdiff
                   if (t_soisno(c,j)<=tfrz) then
-                     diffus(c,j) = diffus(c,j)*(h2osoi_liq(c,j)/denh2o+smallnumber)/ &
+                     diffus(fc,j) = diffus(fc,j)*(h2osoi_liq(c,j)/denh2o+smallnumber)/ &
                           (h2osoi_liq(c,j)/denh2o+h2osoi_ice(c,j)/denice+smallnumber)
                   end if
                endif ! Above/below the WT
-               diffus(c,j) = max(diffus(c,j), smallnumber) ! Prevent overflow
+               diffus(fc,j) = max(diffus(fc,j), smallnumber) ! Prevent overflow
 
             enddo ! fp
          enddo ! j
 
+         !$acc parallel loop independent gang vector default(present) collapse(2) 
          do j = 1,nlevsoi
             do fc = 1, num_methc
                c = filter_methc (fc)
 
                ! Set up coefficients for tridiagonal solver.
                if (j == 1 .and. j /= jwt(c) .and. j /= jwt(c)+1) then
-                  dm1_zm1(c,j) = 1._r8/(1._r8/spec_grnd_cond(c,s)+dz(c,j)/(diffus(c,j)*2._r8))
+                  dm1_zm1(fc,j) = 1._r8/(1._r8/spec_grnd_cond(fc,s)+dz(c,j)/(diffus(fc,j)*2._r8))
                   ! replace Diffusivity / Delta_z by conductance (grnd_ch4_cond) for top layer
-                  dp1_zp1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j+1)/diffus(c,j+1))
+                  dp1_zp1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j+1)/diffus(fc,j+1))
                else if (j == 1 .and. j == jwt(c)) then
-                  dm1_zm1(c,j) = 1._r8/(1._r8/spec_grnd_cond(c,s)+dz(c,j)/(diffus(c,j)*2._r8))
+                  dm1_zm1(fc,j) = 1._r8/(1._r8/spec_grnd_cond(fc,s)+dz(c,j)/(diffus(fc,j)*2._r8))
                   ! layer resistance mult. by k_h_cc for dp1_zp1 term
-                  dp1_zp1(c,j) = 2._r8/(dz(c,j)*k_h_cc(c,j,s)/diffus(c,j)+dz(c,j+1)/diffus(c,j+1))
+                  dp1_zp1(fc,j) = 2._r8/(dz(c,j)*k_h_cc(fc,j,s)/diffus(fc,j)+dz(c,j+1)/diffus(fc,j+1))
                else if (j == 1) then ! water table at surface: multiply ground resistance by k_h_cc
-                  dm1_zm1(c,j) = 1._r8/(k_h_cc(c,j-1,s)/spec_grnd_cond(c,s)+dz(c,j)/(diffus(c,j)*2._r8))
+                  dm1_zm1(fc,j) = 1._r8/(k_h_cc(fc,j-1,s)/spec_grnd_cond(fc,s)+dz(c,j)/(diffus(fc,j)*2._r8))
                   ! air concentration will be mult. by k_h_cc below
-                  dp1_zp1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j+1)/diffus(c,j+1))
+                  dp1_zp1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j+1)/diffus(fc,j+1))
                else if (j <= nlevsoi-1 .and. j /= jwt(c) .and. j /= jwt(c)+1) then
-                  dm1_zm1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j-1)/diffus(c,j-1))
-                  dp1_zp1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j+1)/diffus(c,j+1))
+                  dm1_zm1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j-1)/diffus(fc,j-1))
+                  dp1_zp1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j+1)/diffus(fc,j+1))
                else if (j <= nlevsoi-1 .and. j == jwt(c)) then ! layer resistance mult. by k_h_cc for dp1_zp1 term
-                  dm1_zm1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j-1)/diffus(c,j-1))
-                  dp1_zp1(c,j) = 2._r8/(dz(c,j)*k_h_cc(c,j,s)/diffus(c,j)+dz(c,j+1)/diffus(c,j+1))
+                  dm1_zm1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j-1)/diffus(fc,j-1))
+                  dp1_zp1(fc,j) = 2._r8/(dz(c,j)*k_h_cc(fc,j,s)/diffus(fc,j)+dz(c,j+1)/diffus(fc,j+1))
                   ! Concentration in layer will be mult. by k_h_cc below
                else if (j <= nlevsoi-1) then ! j==jwt+1: layer above resistance mult. by k_h_cc for dm1_zm1 term
-                  dm1_zm1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j-1)*k_h_cc(c,j-1,s)/diffus(c,j-1))
+                  dm1_zm1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j-1)*k_h_cc(fc,j-1,s)/diffus(fc,j-1))
                   ! Concentration in layer above will be mult. by k_h_cc below
-                  dp1_zp1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j+1)/diffus(c,j+1))
+                  dp1_zp1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j+1)/diffus(fc,j+1))
                else if (j /= jwt(c)+1) then ! j ==nlevsoi
-                  dm1_zm1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j-1)/diffus(c,j-1))
+                  dm1_zm1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j-1)/diffus(fc,j-1))
                else                    ! jwt == nlevsoi-1: layer above resistance mult. by k_h_cc for dm1_zm1 term
-                  dm1_zm1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j-1)*k_h_cc(c,j-1,s)/diffus(c,j-1))
+                  dm1_zm1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j-1)*k_h_cc(fc,j-1,s)/diffus(fc,j-1))
                end if
             enddo ! fp; pft
          end do ! j; nlevsoi
 
          ! Perform a second loop for the tridiagonal coefficients since need dp1_zp1 and dm1_z1 at each depth
+         !$acc parallel loop independent gang vector default(present) collapse(2) 
          do j = 0,nlevsoi
             do fc = 1, num_methc
                c = filter_methc (fc)
                g = col_pp%gridcell(c)
-               conc_ch4_rel_old(c,j) = conc_ch4_rel(c,j)
+               conc_ch4_rel_old(fc,j) = conc_ch4_rel(fc,j)
 
                if (j > 0) dzj = dz(c,j)
                if (j == 0) then ! top layer (atmosphere) doesn't change regardless of where WT is
-                  at(c,j) = 0._r8
-                  bt(c,j) = 1._r8
-                  ct(c,j) = 0._r8
-                  rt(c,j) = c_atm(g,s) ! 0th level stays at constant atmospheric conc
+                  at(fc,j) = 0._r8
+                  bt(fc,j) = 1._r8
+                  ct(fc,j) = 0._r8
+                  rt(fc,j) = c_atm(g,s) ! 0th level stays at constant atmospheric conc
                elseif (j < nlevsoi .and. j == jwt(c)) then ! concentration inside needs to be mult. by k_h_cc for dp1_zp1 term
-                  at(c,j) = -0.5_r8 / dzj * dm1_zm1(c,j)
-                  bt(c,j) = epsilon_t(c,j,s) / dtime_ch4 + 0.5_r8 / dzj * (dp1_zp1(c,j)*k_h_cc(c,j,s) + dm1_zm1(c,j))
-                  ct(c,j) = -0.5_r8 / dzj * dp1_zp1(c,j)
+                  at(fc,j) = -0.5_r8 / dzj * dm1_zm1(fc,j)
+                  bt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 + 0.5_r8 / dzj * (dp1_zp1(fc,j)*k_h_cc(fc,j,s) + dm1_zm1(fc,j))
+                  ct(fc,j) = -0.5_r8 / dzj * dp1_zp1(fc,j)
                elseif (j < nlevsoi .and. j == jwt(c)+1) then
                   ! concentration above needs to be mult. by k_h_cc for dm1_zm1 term
-                  at(c,j) = -0.5_r8 / dzj * dm1_zm1(c,j) * k_h_cc(c,j-1,s)
-                  bt(c,j) = epsilon_t(c,j,s) / dtime_ch4 + 0.5_r8 / dzj * (dp1_zp1(c,j) + dm1_zm1(c,j))
-                  ct(c,j) = -0.5_r8 / dzj * dp1_zp1(c,j)
+                  at(fc,j) = -0.5_r8 / dzj * dm1_zm1(fc,j) * k_h_cc(fc,j-1,s)
+                  bt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 + 0.5_r8 / dzj * (dp1_zp1(fc,j) + dm1_zm1(fc,j))
+                  ct(fc,j) = -0.5_r8 / dzj * dp1_zp1(fc,j)
                elseif (j < nlevsoi) then
-                  at(c,j) = -0.5_r8 / dzj * dm1_zm1(c,j)
-                  bt(c,j) = epsilon_t(c,j,s) / dtime_ch4 + 0.5_r8 / dzj * (dp1_zp1(c,j) + dm1_zm1(c,j))
-                  ct(c,j) = -0.5_r8 / dzj * dp1_zp1(c,j)
+                  at(fc,j) = -0.5_r8 / dzj * dm1_zm1(fc,j)
+                  bt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 + 0.5_r8 / dzj * (dp1_zp1(fc,j) + dm1_zm1(fc,j))
+                  ct(fc,j) = -0.5_r8 / dzj * dp1_zp1(fc,j)
                else if (j == nlevsoi .and. j== jwt(c)+1) then
                   ! concentration above needs to be mult. by k_h_cc for dm1_zm1 term
-                  at(c,j) = -0.5_r8 / dzj * dm1_zm1(c,j) * k_h_cc(c,j-1,s)
-                  bt(c,j) = epsilon_t(c,j,s) / dtime_ch4 + 0.5_r8 / dzj * dm1_zm1(c,j)
-                  ct(c,j) = 0._r8
+                  at(fc,j) = -0.5_r8 / dzj * dm1_zm1(fc,j) * k_h_cc(fc,j-1,s)
+                  bt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 + 0.5_r8 / dzj * dm1_zm1(fc,j)
+                  ct(fc,j) = 0._r8
                else ! j==nlevsoi and jwt<nlevsoi-1 or jwt==nlevsoi: 0 flux at bottom
-                  at(c,j) = -0.5_r8 / dzj * dm1_zm1(c,j)
-                  bt(c,j) = epsilon_t(c,j,s) / dtime_ch4 + 0.5_r8 / dzj * dm1_zm1(c,j)
-                  ct(c,j) = 0._r8
+                  at(fc,j) = -0.5_r8 / dzj * dm1_zm1(fc,j)
+                  bt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 + 0.5_r8 / dzj * dm1_zm1(fc,j)
+                  ct(fc,j) = 0._r8
                endif
             enddo ! fp; pft
          enddo ! j; nlevsoi
 
-         do fc = 1, num_methc
-            c = filter_methc (fc)
-            jtop(c) = 0
-         end do
-
          if (s == 1) then  ! CH4
 
             ! Set rt, since it depends on conc
+            !$acc parallel loop independent gang vector default(present) collapse(2) 
             do j = 1,nlevsoi
                do fc = 1, num_methc
                   c = filter_methc (fc)
 
                   ! For correct balance, deprecate source_old.
                   ! The source terms are effectively constant over the timestep.
-                  source_old(c,j,s) = source(c,j,s)
+                  source_old(fc,j,s) = source(fc,j,s)
                   ! source_old could be removed later
-                  epsilon_t_old(c,j,s) = epsilon_t(c,j,s)
+                  epsilon_t_old(fc,j,s) = epsilon_t(fc,j,s)
                   ! epsilon_t acts like source also
                   dzj = dz(c,j)
                   if (j < nlevsoi .and. j == jwt(c)) then ! concentration inside needs to be mult. by k_h_cc for dp1_zp1 term
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_ch4_rel(c,j) +           &
-                          0.5_r8 / dzj * (dp1_zp1(c,j) * (conc_ch4_rel(c,j+1)-conc_ch4_rel(c,j)*k_h_cc(c,j,s)) - &
-                          dm1_zm1(c,j) * (conc_ch4_rel(c,j)  -conc_ch4_rel(c,j-1))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t_old(fc,j,s) / dtime_ch4 * conc_ch4_rel(fc,j) +           &
+                          0.5_r8 / dzj * (dp1_zp1(fc,j) * (conc_ch4_rel(fc,j+1)-conc_ch4_rel(fc,j)*k_h_cc(fc,j,s)) - &
+                          dm1_zm1(fc,j) * (conc_ch4_rel(fc,j)  -conc_ch4_rel(fc,j-1))) + &
+                          0.5_r8 * (source(fc,j,s) + source_old(fc,j,s))
                   elseif (j < nlevsoi .and. j == jwt(c)+1) then
                      ! concentration above needs to be mult. by k_h_cc for dm1_zm1 term
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_ch4_rel(c,j) +           &
-                          0.5_r8 / dzj * (dp1_zp1(c,j) * (conc_ch4_rel(c,j+1)-conc_ch4_rel(c,j)) - &
-                          dm1_zm1(c,j) * (conc_ch4_rel(c,j) -conc_ch4_rel(c,j-1)*k_h_cc(c,j-1,s))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t_old(fc,j,s) / dtime_ch4 * conc_ch4_rel(fc,j) +           &
+                          0.5_r8 / dzj * (dp1_zp1(fc,j) * (conc_ch4_rel(fc,j+1)-conc_ch4_rel(fc,j)) - &
+                          dm1_zm1(fc,j) * (conc_ch4_rel(fc,j) -conc_ch4_rel(fc,j-1)*k_h_cc(fc,j-1,s))) + &
+                          0.5_r8 * (source(fc,j,s) + source_old(fc,j,s))
                   elseif (j < nlevsoi) then
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_ch4_rel(c,j) +           &
-                          0.5_r8 / dzj * (dp1_zp1(c,j) * (conc_ch4_rel(c,j+1)-conc_ch4_rel(c,j)) - &
-                          dm1_zm1(c,j) * (conc_ch4_rel(c,j)  -conc_ch4_rel(c,j-1))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t_old(fc,j,s) / dtime_ch4 * conc_ch4_rel(fc,j) +           &
+                          0.5_r8 / dzj * (dp1_zp1(fc,j) * (conc_ch4_rel(fc,j+1)-conc_ch4_rel(fc,j)) - &
+                          dm1_zm1(fc,j) * (conc_ch4_rel(fc,j)  -conc_ch4_rel(fc,j-1))) + &
+                          0.5_r8 * (source(fc,j,s) + source_old(fc,j,s))
                   else if (j == nlevsoi .and. j== jwt(c)+1) then
                      ! concentration above needs to be mult. by k_h_cc for dm1_zm1 term
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_ch4_rel(c,j) +           &
-                          0.5_r8 / dzj * ( - dm1_zm1(c,j) * (conc_ch4_rel(c,j) -conc_ch4_rel(c,j-1)*k_h_cc(c,j-1,s))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t_old(fc,j,s) / dtime_ch4 * conc_ch4_rel(fc,j) +           &
+                          0.5_r8 / dzj * ( - dm1_zm1(fc,j) * (conc_ch4_rel(fc,j) -conc_ch4_rel(fc,j-1)*k_h_cc(fc,j-1,s))) + &
+                          0.5_r8 * (source(fc,j,s) + source_old(fc,j,s))
                   else  !j==nlevsoi
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_ch4_rel(c,j) +           &
-                          0.5_r8 / dzj * ( - dm1_zm1(c,j) * (conc_ch4_rel(c,j)  -conc_ch4_rel(c,j-1))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t_old(fc,j,s) / dtime_ch4 * conc_ch4_rel(fc,j) +           &
+                          0.5_r8 / dzj * ( - dm1_zm1(fc,j) * (conc_ch4_rel(fc,j)  -conc_ch4_rel(fc,j-1))) + &
+                          0.5_r8 * (source(fc,j,s) + source_old(fc,j,s))
                   endif
-                  epsilon_t_old(c,j,s) = epsilon_t(c,j,s)
-                  source_old(c,j,s) = source(c,j,s)
+                  epsilon_t_old(fc,j,s) = epsilon_t(fc,j,s)
+                  source_old(fc,j,s) = source(fc,j,s)
 
                enddo ! fc; column
             enddo ! j; nlevsoi
 
-            call Tridiagonal(bounds, 0, nlevsoi, &
-                 jtop(bounds%begc:bounds%endc), &
-                 num_methc, filter_methc, &
-                 at(bounds%begc:bounds%endc, :), &
-                 bt(bounds%begc:bounds%endc, :), &
-                 ct(bounds%begc:bounds%endc, :), &
-                 rt(bounds%begc:bounds%endc, :), &
-                 conc_ch4_rel(bounds%begc:bounds%endc, 0:nlevsoi))
+            call Tridiagonal_filter( 0, nlevsoi, jtop, num_methc, filter_methc, &
+                 at, &
+                 bt, &
+                 ct, &
+                 rt, &
+                 conc_ch4_rel)
 
             ! Calculate net ch4 flux to the atmosphere from the surface (+ to atm)
+            !$acc parallel loop independent gang vector default(present)
             do fc = 1, num_methc
                c = filter_methc (fc)
                g = col_pp%gridcell(c)
                if (jwt(c) /= 0) then ! WT not at the surface
-                  ch4_surf_diff(c) = dm1_zm1(c,1) * ( (conc_ch4_rel(c,1)+conc_ch4_rel_old(c,1))/2._r8 &
+                  ch4_surf_diff(c) = dm1_zm1(fc,1) * ( (conc_ch4_rel(fc,1)+conc_ch4_rel_old(fc,1))/2._r8 &
                        - c_atm(g,s)) ! [mol/m2/s]
                   ch4_surf_ebul(c) = 0._r8 ! all the ebullition has already come out in the soil column (added to source)
                   ! Try adding directly to atm. to prevent destabilization of diffusion
                   !ch4_surf_ebul(c) = ch4_ebul_total(c) ! [mol/m2/s]
                else ! WT at the surface; i.e., jwt(c)==0
-                  ch4_surf_diff(c) = dm1_zm1(c,1) * ( (conc_ch4_rel(c,1)+conc_ch4_rel_old(c,1))/2._r8 &
-                       - c_atm(g,s)*k_h_cc(c,0,s)) ! [mol/m2/s]
+                  ch4_surf_diff(c) = dm1_zm1(fc,1) * ( (conc_ch4_rel(fc,1)+conc_ch4_rel_old(fc,1))/2._r8 &
+                       - c_atm(g,s)*k_h_cc(fc,0,s)) ! [mol/m2/s]
                   ! atmospheric concentration gets mult. by k_h_cc as above
                   ch4_surf_ebul(c) = ch4_ebul_total(c) ! [mol/m2/s]
                endif
@@ -3587,13 +3631,14 @@ contains
 
             ! Ensure that concentrations stay above 0
             ! This should be done after the flux, so that the flux calculation is consistent.
+            !$acc parallel loop independent gang vector collapse(2) default(present)
             do j = 1,nlevsoi
                do fc = 1, num_methc
                   c = filter_methc (fc)
 
-                  if (conc_ch4_rel(c,j) < 0._r8) then
-                     deficit = - conc_ch4_rel(c,j)*epsilon_t(c,j,1)*dz(c,j)  ! Mol/m^2 added
-#ifndef _OPENACC 
+                  if (conc_ch4_rel(fc,j) < 0._r8) then
+                     deficit = - conc_ch4_rel(fc,j)*epsilon_t(fc,j,1)*dz(c,j)  ! Mol/m^2 added
+                     #ifndef _OPENACC 
                      if (deficit > 1.e-3_r8 * scale_factor_gasdiff) then
                         if (deficit > 1.e-2_r8) then
                            write(iulog,*)  'Note: sink > source in ch4_tran, sources are changing '// &
@@ -3604,10 +3649,10 @@ contains
                            write(iulog,*) 'If this occurs frequently, consider reducing land model (or  methane model) timestep, or reducing the max. sink per timestep in the methane model.'
                         end if
                      end if
-#endif 
-                     conc_ch4_rel(c,j) = 0._r8
+                     #endif 
+                     conc_ch4_rel(fc,j) = 0._r8
                      ! Subtract deficit
-                     ch4_surf_diff(c) = ch4_surf_diff(c) - deficit/dtime_ch4
+                     ch4_surf_diff(c) = ch4_surf_diff(c) - deficit/dtime_mod
                   end if
                enddo
             enddo
@@ -3616,112 +3661,147 @@ contains
          elseif (s == 2) then  ! O2
 
             ! Set rt, since it depends on conc
+            !$acc parallel loop independent collapse(2) gang vector default(present) 
             do j = 1,nlevsoi
                do fc = 1, num_methc
                   c = filter_methc (fc)
 
                   ! For correct balance, deprecate source_old.
-                  source_old(c,j,s) = source(c,j,s)
+                  source_old(fc,j,s) = source(fc,j,s)
                   ! source_old could be removed later
-                  epsilon_t_old(c,j,s) = epsilon_t(c,j,s)
+                  epsilon_t_old(fc,j,s) = epsilon_t(fc,j,s)
                   ! epsilon_t acts like source also
                   dzj     = dz(c,j)
                   if (j < nlevsoi .and. j == jwt(c)) then ! concentration inside needs to be mult. by k_h_cc for dp1_zp1 term
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_o2_rel(c,j) +           &
-                          0.5_r8 / dzj * (dp1_zp1(c,j) * (conc_o2_rel(c,j+1)-conc_o2_rel(c,j)*k_h_cc(c,j,s)) - &
-                          dm1_zm1(c,j) * (conc_o2_rel(c,j)  -conc_o2_rel(c,j-1))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t_old(fc,j,s) / dtime_ch4 * conc_o2_rel(fc,j) +           &
+                          0.5_r8 / dzj * (dp1_zp1(fc,j) * (conc_o2_rel(fc,j+1)-conc_o2_rel(fc,j)*k_h_cc(fc,j,s)) - &
+                          dm1_zm1(fc,j) * (conc_o2_rel(fc,j)  -conc_o2_rel(fc,j-1))) + &
+                          0.5_r8 * (source(fc,j,s) + source_old(fc,j,s))
                   elseif (j < nlevsoi .and. j == jwt(c)+1) then
                      ! concentration above needs to be mult. by k_h_cc for dm1_zm1 term
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_o2_rel(c,j) +           &
-                          0.5_r8 / dzj * (dp1_zp1(c,j) * (conc_o2_rel(c,j+1)-conc_o2_rel(c,j)) - &
-                          dm1_zm1(c,j) * (conc_o2_rel(c,j) -conc_o2_rel(c,j-1)*k_h_cc(c,j-1,s))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t_old(fc,j,s) / dtime_ch4 * conc_o2_rel(fc,j) +           &
+                          0.5_r8 / dzj * (dp1_zp1(fc,j) * (conc_o2_rel(fc,j+1)-conc_o2_rel(fc,j)) - &
+                          dm1_zm1(fc,j) * (conc_o2_rel(fc,j) -conc_o2_rel(fc,j-1)*k_h_cc(fc,j-1,s))) + &
+                          0.5_r8 * (source(fc,j,s) + source_old(fc,j,s))
                   elseif (j < nlevsoi) then
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_o2_rel(c,j) +           &
-                          0.5_r8 / dzj * (dp1_zp1(c,j) * (conc_o2_rel(c,j+1)-conc_o2_rel(c,j)) - &
-                          dm1_zm1(c,j) * (conc_o2_rel(c,j)  -conc_o2_rel(c,j-1))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t_old(fc,j,s) / dtime_ch4 * conc_o2_rel(fc,j) +           &
+                          0.5_r8 / dzj * (dp1_zp1(fc,j) * (conc_o2_rel(fc,j+1)-conc_o2_rel(fc,j)) - &
+                          dm1_zm1(fc,j) * (conc_o2_rel(fc,j)  -conc_o2_rel(fc,j-1))) + &
+                          0.5_r8 * (source(fc,j,s) + source_old(fc,j,s))
                   else if (j == nlevsoi .and. j== jwt(c)+1) then
                      ! concentration above needs to be mult. by k_h_cc for dm1_zm1 term
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_o2_rel(c,j) +           &
-                          0.5_r8 / dzj * ( - dm1_zm1(c,j) * (conc_o2_rel(c,j) -conc_o2_rel(c,j-1)*k_h_cc(c,j-1,s))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t_old(fc,j,s) / dtime_ch4 * conc_o2_rel(fc,j) +           &
+                          0.5_r8 / dzj * ( - dm1_zm1(fc,j) * (conc_o2_rel(fc,j) -conc_o2_rel(fc,j-1)*k_h_cc(fc,j-1,s))) + &
+                          0.5_r8 * (source(fc,j,s) + source_old(fc,j,s))
                   else  !j==nlevsoi
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_o2_rel(c,j) +           &
-                          0.5_r8 / dzj * ( - dm1_zm1(c,j) * (conc_o2_rel(c,j)  -conc_o2_rel(c,j-1))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t_old(fc,j,s) / dtime_ch4 * conc_o2_rel(fc,j) +           &
+                          0.5_r8 / dzj * ( - dm1_zm1(fc,j) * (conc_o2_rel(fc,j)  -conc_o2_rel(fc,j-1))) + &
+                          0.5_r8 * (source(fc,j,s) + source_old(fc,j,s))
                   endif
-                  epsilon_t_old(c,j,s) = epsilon_t(c,j,s)
-                  source_old(c,j,s) = source(c,j,s)
+                  epsilon_t_old(fc,j,s) = epsilon_t(fc,j,s)
+                  source_old(fc,j,s) = source(fc,j,s)
 
                enddo ! fc; column
             enddo ! j; nlevsoi
 
-            call Tridiagonal(bounds, 0, nlevsoi, jtop(bounds%begc:bounds%endc), &
+            call Tridiagonal_filter( 0, nlevsoi, jtop, &
                  num_methc, filter_methc, &
-                 at(bounds%begc:bounds%endc, :), &
-                 bt(bounds%begc:bounds%endc, :), &
-                 ct(bounds%begc:bounds%endc, :), &
-                 rt(bounds%begc:bounds%endc, :), &
-                 conc_o2_rel(bounds%begc:bounds%endc,0:nlevsoi))
+                 at, &
+                 bt, &
+                 ct, &
+                 rt, &
+                 conc_o2_rel)
 
             ! Ensure that concentrations stay above 0
+            !$acc parallel loop independent gang vector default(present) collapse(2) 
             do j = 1,nlevsoi
                do fc = 1, num_methc
                   c = filter_methc (fc)
                   g = col_pp%gridcell(c)
-                  conc_o2_rel(c,j) = max (conc_o2_rel(c,j), 1.e-12_r8)
+                  conc_o2_rel(fc,j) = max (conc_o2_rel(fc,j), 1.e-12_r8)
                   ! In case of pathologically large aerenchyma conductance. Should be OK in general but
                   ! this will maintain stability even if a PFT with very small weight somehow has an absurd NPP or LAI.
                   ! Also, oxygen above ambient will probably bubble.
-                  conc_o2_rel(c,j) = min (conc_o2_rel(c,j), c_atm(g,2)/epsilon_t(c,j,2))
+                  conc_o2_rel(fc,j) = min (conc_o2_rel(fc,j), c_atm(g,2)/epsilon_t(fc,j,2))
                enddo
             enddo
 
          endif  ! species
 
       enddo  ! species
+      !$acc exit data delete(s) 
 
       ! Update absolute concentrations per unit volume
+      !$acc parallel loop independent gang vector default(present) collapse(2) 
       do j = 1,nlevsoi ! No need to update the atm. level concentrations
          do fc = 1, num_methc
             c = filter_methc (fc)
-            conc_ch4(c,j) = conc_ch4_rel(c,j)*epsilon_t(c,j,1)
-            conc_o2(c,j)  = conc_o2_rel(c,j) *epsilon_t(c,j,2)
+            conc_ch4(c,j) = conc_ch4_rel(fc,j)*epsilon_t(fc,j,1)
+            conc_o2(c,j)  = conc_o2_rel(fc,j) *epsilon_t(fc,j,2)
          end do
       end do
 
       ! Do Balance Check and absorb small
       !    discrepancy into surface flux.
-      do j = 1,nlevsoi
-         do fc = 1, num_methc
-            c = filter_methc (fc)
-
-            if (j == 1) errch4(c) = 0._r8
-            errch4(c) = errch4(c) + (conc_ch4(c,j) - conc_ch4_bef(c,j))*dz(c,j)
-            errch4(c) = errch4(c) - ch4_prod_depth(c,j)*dz(c,j)*dtime
-            errch4(c) = errch4(c) + ch4_oxid_depth(c,j)*dz(c,j)*dtime
+      !$acc parallel loop independent gang worker default(present) private(sum1)
+      do fc = 1, num_methc
+         c = filter_methc (fc)
+         sum1 = 0._r8
+         !$acc loop vector reduction(+:sum1)
+         do j = 1,nlevsoi
+            sum1 = sum1 + (conc_ch4(c,j) - conc_ch4_bef(fc,j))*dz(c,j)
+            sum1 = sum1 - ch4_prod_depth(c,j)*dz(c,j)*dtime_mod
+            sum1 = sum1 + ch4_oxid_depth(c,j)*dz(c,j)*dtime_mod
          end do
+         errch4(fc) = sum1 
       end do
 
+      erridx = 0
+      !$acc parallel loop independent gang vector copy(erridx)
       do fc = 1, num_methc
          c = filter_methc (fc)
 
          ! For history make sure that grnd_ch4_cond includes snow, for methane diffusivity
-         grnd_ch4_cond(c) = spec_grnd_cond(c,1)
-         errch4(c) = errch4(c) + (ch4_surf_aere(c) + ch4_surf_ebul(c) + ch4_surf_diff(c))*dtime
+         grnd_ch4_cond(c) = spec_grnd_cond(fc,1)
+         errch4(fc) = errch4(fc) + (ch4_surf_aere(c) + ch4_surf_ebul(c) + ch4_surf_diff(c))*dtime
 
-         if (abs(errch4(c)) < 1.e-8_r8) then
-            ch4_surf_diff(c) = ch4_surf_diff(c) - errch4(c)/dtime
+         if (abs(errch4(fc)) < 1.e-8_r8) then
+            ch4_surf_diff(c) = ch4_surf_diff(c) - errch4(fc)/dtime
          else ! errch4 > 1e-8 mol / m^2 / timestep
-#ifndef _OPENACC
-            write(iulog,*) 'CH4 Conservation Error in CH4Mod during diffusion, nstep, c, errch4 (mol /m^2.timestep)'
-            g = col_pp%gridcell(c)
-            write(iulog,*) 'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
-#endif 
+            erridx = c
          end if
       end do
+
+      if(erridx > 0 ) then 
+         g = col_pp%gridcell(erridx)
+         write(iulog,*) 'CH4 Conservation Error in CH4Mod during diffusion', nstep, erridx, '(mol /m^2.timestep)'
+         write(iulog,*) 'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
+      end if 
+
+    !$acc exit data delete(&
+    !$acc at(:,:), &
+    !$acc bt(:,:), &
+    !$acc ct(:,:), &
+    !$acc rt(:,:), &
+    !$acc diffus(:,:), &
+    !$acc k_h_cc(:,:,:), &
+    !$acc dp1_zp1(:,:), &
+    !$acc dm1_zm1(:,:), &
+    !$acc conc_ch4_bef(:,:), &
+    !$acc errch4(:), &
+    !$acc conc_ch4_rel(:,:), &
+    !$acc conc_o2_rel(:,:), &
+    !$acc conc_ch4_rel_old(:,:), &
+    !$acc h2osoi_vol_min(:,:), &
+    !$acc snowres, &
+    !$acc spec_grnd_cond(:,:), &
+    !$acc epsilon_t(:,:,:), &
+    !$acc epsilon_t_old(:,:,:), &
+    !$acc source(:,:,:), &
+    !$acc source_old(:,:,:), &
+    !$acc liqfrac(:,:), &
+    !$acc snowdiff, &
+    !$acc pondres)
 
     end associate
 
@@ -3735,7 +3815,6 @@ contains
     ! Finds the first unsaturated layer going up. Also allows a perched water table over ice.
     !
     ! !ARGUMENTS:
-    ! !$acc routine seq
     type(bounds_type)      , intent(in)  :: bounds
     integer                , intent(in)  :: num_methc           ! number of column soil points in column filter
     integer                , intent(in)  :: filter_methc(:)     ! column filter for soil points
@@ -3760,6 +3839,7 @@ contains
       ! The layer index of the first unsaturated layer, i.e., the layer right above
       ! the water table.
       ! ZS: Loop is currently not vectorized.
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1, num_methc
          c = filter_methc(fc)
 
@@ -3767,6 +3847,7 @@ contains
          ! such layer.  This is potentially important for perched water tables in the Tundra.
 
          perch = nlevsoi
+         !$acc loop seq
          do j = nlevsoi, 1, -1
             if (t_soisno(c,j) < tfrz .and. h2osoi_vol(c,j) > f_sat * watsat(c,j)) then
                ! strictly less than freezing because it could be permeable otherwise
@@ -3775,6 +3856,7 @@ contains
          end do
          jwt(c) = perch
 
+         !$acc loop seq
          do j = perch, 2, -1
             if(h2osoi_vol(c,j) > f_sat * watsat(c,j) .and. h2osoi_vol(c,j-1) < f_sat * watsat(c,j-1)) then
                jwt(c) = j-1
@@ -3798,7 +3880,6 @@ contains
     ! !DESCRIPTION: Annual mean fields.
     !
     ! !USES:
-    !  !$acc routine seq
     use elm_varcon      , only: secspday
     !
     ! !ARGUMENTS:
@@ -3844,6 +3925,7 @@ contains
       newrun = .false.
 
       ! column loop
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1,num_methc
          c = filter_methc(fc)
 
@@ -3860,20 +3942,19 @@ contains
       end do
 
       ! patch loop
+      !$acc parallel loop independent gang vector default(present)
       do fp = 1,num_methp
          p = filter_methp(fp)
-         c = veg_pp%column(p)
-         if(.not.col_pp%is_fates(c)) then
-            if (newrun .or. tempavg_agnpp(p) == spval) then ! Extra check needed because for back-compatibility
-               tempavg_agnpp(p) = 0._r8
-               tempavg_bgnpp(p) = 0._r8
-            end if
+
+         if (newrun .or. tempavg_agnpp(p) == spval) then ! Extra check needed because for back-compatibility
+            tempavg_agnpp(p) = 0._r8
+            tempavg_bgnpp(p) = 0._r8
          end if
       end do
 
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1,num_methc
          c = filter_methc(fc)
-         
          if (annsum_counter(c) >= secsperyear) then
 
             ! update annual average somhr
@@ -3893,26 +3974,26 @@ contains
          end if
       end do
 
+      !$acc parallel loop independent gang vector default(present)
       do fp = 1,num_methp
          p = filter_methp(fp)
          c = veg_pp%column(p)
-         if(.not.col_pp%is_fates(c)) then
-            if (annsum_counter(c) >= secsperyear) then
-               
-               annavg_agnpp(p) = tempavg_agnpp(p)
-               tempavg_agnpp(p) = 0._r8
-               
-               annavg_bgnpp(p) = tempavg_bgnpp(p)
-               tempavg_bgnpp(p) = 0._r8
-               
-            else
-               tempavg_agnpp(p) = tempavg_agnpp(p) + dt/secsperyear * agnpp(p)
-               tempavg_bgnpp(p) = tempavg_bgnpp(p) + dt/secsperyear * bgnpp(p)
-            end if
+         if (annsum_counter(c) >= secsperyear) then
+
+            annavg_agnpp(p) = tempavg_agnpp(p)
+            tempavg_agnpp(p) = 0._r8
+
+            annavg_bgnpp(p) = tempavg_bgnpp(p)
+            tempavg_bgnpp(p) = 0._r8
+
+         else
+            tempavg_agnpp(p) = tempavg_agnpp(p) + dt/secsperyear * agnpp(p)
+            tempavg_bgnpp(p) = tempavg_bgnpp(p) + dt/secsperyear * bgnpp(p)
          end if
       end do
 
       ! column loop
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1,num_methc
          c = filter_methc(fc)
          if (annsum_counter(c) >= secsperyear) annsum_counter(c) = 0._r8

@@ -26,7 +26,6 @@ module LakeHydrologyMod
   use VegetationDataType   , only : veg_ef, veg_wf
   use atm2lndType          , only : atm2lnd_type
   use AerosolType          , only : aerosol_type
-  use EnergyFluxType       , only : energyflux_type
   use FrictionVelocityType , only : frictionvel_type
   use LakeStateType        , only : lakestate_type
   use SoilStateType        , only : soilstate_type
@@ -50,7 +49,7 @@ contains
        num_lakec, filter_lakec, num_lakep, filter_lakep, &
        num_shlakesnowc, filter_shlakesnowc, num_shlakenosnowc, filter_shlakenosnowc, &
        atm2lnd_vars, soilstate_vars,  &
-       energyflux_vars, aerosol_vars, lakestate_vars)
+       aerosol_vars, lakestate_vars)
     !
     ! !DESCRIPTION:
     ! WARNING: This subroutine assumes lake columns have one and only one pft.
@@ -71,7 +70,6 @@ contains
     !    Cleanup and do water balance.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon      , only : denh2o, denice, spval, hfus, tfrz, cpliq, cpice
     use elm_varpar      , only : nlevsno, nlevgrnd, nlevsoi
     use elm_varctl      , only : iulog, use_extrasnowlayers, use_lake_wat_storage
@@ -79,6 +77,7 @@ contains
     use SnowHydrologyMod, only : SnowCompaction, CombineSnowLayers, SnowWater, BuildSnowFilter
     use SnowHydrologyMod, only : DivideSnowLayers, DivideExtraSnowLayers, SnowCapping
     use LakeCon         , only : lsadz
+    use abortutils , only : endrun 
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -92,32 +91,26 @@ contains
     integer                , intent(out)   :: filter_shlakenosnowc(:) ! column filter for non-snow points
     type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
     type(soilstate_type)   , intent(in)    :: soilstate_vars
-    type(energyflux_type)  , intent(inout) :: energyflux_vars
     type(aerosol_type)     , intent(inout) :: aerosol_vars
     type(lakestate_type)   , intent(inout) :: lakestate_vars
-    real(r8)   :: dtime            ! land model time step (sec)
-
     !
     ! !LOCAL VARIABLES:
     integer  :: p,fp,g,t,l,c,j,fc,jtop                          ! indices
     integer  :: newnode                                         ! flag when new snow node is set, (1=yes, 0=no)
     real(r8) :: dz_snowf                                        ! layer thickness rate change due to precipitation [mm/s]
     real(r8) :: bifall                                          ! bulk density of newly fallen dry snow [kg/m3]
-    real(r8) :: fracsnow(bounds%begp:bounds%endp)               ! frac of precipitation that is snow
-    real(r8) :: fracrain(bounds%begp:bounds%endp)               ! frac of precipitation that is rain
-    real(r8) :: qflx_prec_grnd_snow(bounds%begp:bounds%endp)    ! snow precipitation incident on ground [mm/s]
-    real(r8) :: qflx_prec_grnd_rain(bounds%begp:bounds%endp)    ! rain precipitation incident on ground [mm/s]
     real(r8) :: qflx_evap_soi_lim                               ! temporary evap_soi limited by top snow layer content [mm/s]
     real(r8) :: qflx_snwcp                                      ! temporary snow cap flux
     real(r8) :: h2osno_temp                                     ! temporary h2osno [kg/m^2]
-    real(r8) :: sumsnowice(bounds%begc:bounds%endc)             ! sum of snow ice if snow layers found above unfrozen lake [kg/m&2]
-    logical  :: unfrozen(bounds%begc:bounds%endc)               ! true if top lake layer is unfrozen with snow layers above
+    real(r8) :: sumsnowice(1:num_lakec)             ! sum of snow ice if snow layers found above unfrozen lake [kg/m&2]
+    logical  :: unfrozen(1:num_lakec)               ! true if top lake layer is unfrozen with snow layers above
     real(r8) :: heatrem                                         ! used in case above [J/m^2]
-    real(r8) :: heatsum(bounds%begc:bounds%endc)                ! used in case above [J/m^2]
+    real(r8) :: heatsum(1:num_lakec)                ! used in case above [J/m^2]
     real(r8) :: snowmass                                        ! liquid+ice snow mass in a layer [kg/m2]
     real(r8) :: snowcap_scl_fct                                 ! temporary factor used to correct for snow capping
     real(r8), parameter :: snow_bd = 250._r8                    ! assumed snow bulk density (for lakes w/out resolved snow layers) [kg/m^3]
                                                                 ! Should only be used for frost below.
+    real(r8) :: sum1, sum2, sum3, sum4 
     !-----------------------------------------------------------------------
 
     associate(                                                            & 
@@ -219,22 +212,35 @@ contains
          begc => bounds%begc, &
          endc => bounds%endc  &
          )
-
-      ! Determine step size
-
-      dtime = dtime_mod
+    !$acc enter data create(&
+    !$acc sumsnowice(:), &
+    !$acc unfrozen(:), &
+    !$acc heatsum(:), &
+    !$acc sum1, &
+    !$acc sum2, &
+    !$acc sum3 )
+      
       ! Add soil water to water balance.
-      do j = 1, nlevgrnd
-         do fc = 1, num_lakec
-            c = filter_lakec(fc)
-            begwb(c) = begwb(c) + h2osoi_ice(c,j) + h2osoi_liq(c,j)
-            h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + h2osoi_liq(c,j)
-            h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + h2osoi_ice(c,j)
+      !$acc parallel loop independent gang worker default(present) private(sum1,sum2,sum3)
+      do fc = 1, num_lakec
+         c = filter_lakec(fc)
+         sum1 = 0._r8 
+         sum2 = 0._r8 
+         sum3 = 0._r8 
+         !$acc loop vector reduction(+:sum1,sum2,sum3)
+         do j = 1, nlevgrnd
+            sum1 = sum1 + h2osoi_ice(c,j) + h2osoi_liq(c,j)
+            sum2 = sum2 + h2osoi_liq(c,j)
+            sum3 = sum3 + h2osoi_ice(c,j)
          end do
+         begwb(c) = begwb(c) + sum1
+         h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + sum2
+         h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + sum3
       end do
 
       ! Add lake water storage to water balance.
       if (use_lake_wat_storage) then
+         !$acc parallel loop independent gang vector default(present)
          do fc = 1, num_lakec
             c = filter_lakec(fc)
             begwb(c) = begwb(c) + wslake(c)
@@ -244,33 +250,33 @@ contains
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Do precipitation onto ground, etc., from CanopyHydrology
-
+      !$acc parallel loop independent gang vector default(present) 
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = pcolumn(p)
          t = ptopounit(p)
 
-         qflx_prec_grnd_snow(p) = forc_snow(t)
-         qflx_prec_grnd_rain(p) = forc_rain(t)
-         qflx_prec_grnd(p) = qflx_prec_grnd_snow(p) + qflx_prec_grnd_rain(p)
+         ! qflx_prec_grnd_snow(p) = forc_snow(t)
+         ! qflx_prec_grnd_rain = forc_rain(t)
+         qflx_prec_grnd(p) = forc_snow(t) + forc_rain(t)
 
          qflx_dirct_rain(p) = 0._r8
          qflx_leafdrip(p) = 0._r8
          if (.not. use_extrasnowlayers) then
             if (do_capsnow(c)) then
-               qflx_snwcp_ice(p) = qflx_prec_grnd_snow(p)
-               qflx_snwcp_liq(p) = qflx_prec_grnd_rain(p)
+               qflx_snwcp_ice(p) = forc_snow(t)
+               qflx_snwcp_liq(p) = forc_rain(t)
                qflx_snow_grnd_patch(p) = 0._r8
                qflx_rain_grnd(p) = 0._r8
             else
                qflx_snwcp_ice(p) = 0._r8
                qflx_snwcp_liq(p) = 0._r8
-               qflx_snow_grnd_patch(p) = qflx_prec_grnd_snow(p)           ! ice onto ground (mm/s)
-               qflx_rain_grnd(p)     = qflx_prec_grnd_rain(p)           ! liquid water onto ground (mm/s)
+               qflx_snow_grnd_patch(p) = forc_snow(t)           ! ice onto ground (mm/s)
+               qflx_rain_grnd(p)     = forc_rain(t)           ! liquid water onto ground (mm/s)
             end if
          else
-            qflx_snow_grnd_patch(p) = qflx_prec_grnd_snow(p)           ! ice onto ground (mm/s)
-            qflx_rain_grnd(p)     = qflx_prec_grnd_rain(p)           ! liquid water onto ground (mm/s)
+            qflx_snow_grnd_patch(p) = forc_snow(t)           ! ice onto ground (mm/s)
+            qflx_rain_grnd(p)     = forc_rain(t)           ! liquid water onto ground (mm/s)
          end if
          ! Assuming one PFT; needed for below
          qflx_snow_grnd_col(c) = qflx_snow_grnd_patch(p)
@@ -279,7 +285,7 @@ contains
       end do ! (end pft loop)
 
       ! Determine snow height and snow water
-
+      !$acc parallel loop independent gang vector default(present) 
       do fc = 1, num_lakec
          c = filter_lakec(fc)
          t = col_pp%topounit(c)
@@ -299,8 +305,8 @@ contains
                bifall=50._r8
             end if
             dz_snowf = qflx_snow_grnd_col(c)/bifall
-            snow_depth(c) = snow_depth(c) + dz_snowf*dtime
-            h2osno(c) = h2osno(c) + qflx_snow_grnd_col(c)*dtime  ! snow water equivalent (mm)
+            snow_depth(c) = snow_depth(c) + dz_snowf*dtime_mod
+            h2osno(c) = h2osno(c) + qflx_snow_grnd_col(c)*dtime_mod  ! snow water equivalent (mm)
          end if
 
          ! When the snow accumulation exceeds 40 mm, initialize snow layer
@@ -321,25 +327,26 @@ contains
 
              ! intitialize SNICAR variables for fresh snow:
              !call aerosol_vars%Reset(column=c)
-             aerosol_vars%mss_bcpho_col(c,:)  = 0._r8
-             aerosol_vars%mss_bcphi_col(c,:)  = 0._r8
-             aerosol_vars%mss_bctot_col(c,:)  = 0._r8
              aerosol_vars%mss_bc_col_col(c)   = 0._r8
              aerosol_vars%mss_bc_top_col(c)   = 0._r8
-
-             aerosol_vars%mss_ocpho_col(c,:)  = 0._r8
-             aerosol_vars%mss_ocphi_col(c,:)  = 0._r8
-             aerosol_vars%mss_octot_col(c,:)  = 0._r8
              aerosol_vars%mss_oc_col_col(c)   = 0._r8
              aerosol_vars%mss_oc_top_col(c)   = 0._r8
-
-             aerosol_vars%mss_dst1_col(c,:)   = 0._r8
-             aerosol_vars%mss_dst2_col(c,:)   = 0._r8
-             aerosol_vars%mss_dst3_col(c,:)   = 0._r8
-             aerosol_vars%mss_dst4_col(c,:)   = 0._r8
-             aerosol_vars%mss_dsttot_col(c,:) = 0._r8
              aerosol_vars%mss_dst_col_col(c)  = 0._r8
              aerosol_vars%mss_dst_top_col(c)  = 0._r8
+             
+            !  do j = -nlevsno+1,0
+               aerosol_vars%mss_bcpho_col(c,:)  = 0._r8
+               aerosol_vars%mss_bcphi_col(c,:)  = 0._r8
+               aerosol_vars%mss_bctot_col(c,:)  = 0._r8
+               aerosol_vars%mss_ocpho_col(c,:)  = 0._r8
+               aerosol_vars%mss_ocphi_col(c,:)  = 0._r8
+               aerosol_vars%mss_octot_col(c,:)  = 0._r8
+               aerosol_vars%mss_dst1_col(c,:)   = 0._r8
+               aerosol_vars%mss_dst2_col(c,:)   = 0._r8
+               aerosol_vars%mss_dst3_col(c,:)   = 0._r8
+               aerosol_vars%mss_dst4_col(c,:)   = 0._r8
+               aerosol_vars%mss_dsttot_col(c,:) = 0._r8
+            !  end do 
              ! call waterstate_vars%Reset(column=c)
              col_ws%snw_rds(c,0) = snw_rds_min
 
@@ -350,14 +357,14 @@ contains
          ! later.
 
          if (snl(c) < 0 .and. newnode == 0) then
-            h2osoi_ice(c,snl(c)+1) = h2osoi_ice(c,snl(c)+1)+dtime*qflx_snow_grnd_col(c)
-            dz(c,snl(c)+1) = dz(c,snl(c)+1)+dz_snowf*dtime
+            h2osoi_ice(c,snl(c)+1) = h2osoi_ice(c,snl(c)+1)+dtime_mod*qflx_snow_grnd_col(c)
+            dz(c,snl(c)+1) = dz(c,snl(c)+1)+dz_snowf*dtime_mod
          end if
 
       end do
 
       ! Calculate sublimation and dew, adapted from HydrologyLake and Biogeophysics2.
-
+      !$acc parallel loop independent gang vector default(present) 
       do fp = 1,num_lakep
          p = filter_lakep(fp)
          c = pcolumn(p)
@@ -378,7 +385,7 @@ contains
                ! use the ratio of liquid to (liquid+ice) in the top layer to determine split
                ! Since we're not limiting evap over lakes, but still can't remove more from top
                ! snow layer than there is there, create temp. limited evap_soi.
-               qflx_evap_soi_lim = min(qflx_evap_soi(p), (h2osoi_liq(c,j)+h2osoi_ice(c,j))/dtime)
+               qflx_evap_soi_lim = min(qflx_evap_soi(p), (h2osoi_liq(c,j)+h2osoi_ice(c,j))/dtime_mod)
                if ((h2osoi_liq(c,j)+h2osoi_ice(c,j)) > 0._r8) then
                   qflx_evap_grnd(p) = max(qflx_evap_soi_lim*(h2osoi_liq(c,j)/(h2osoi_liq(c,j)+h2osoi_ice(c,j))), 0._r8)
                else
@@ -409,7 +416,7 @@ contains
             if (qflx_evap_soi(p) >= 0._r8) then
                ! Sublimation: do not allow for more sublimation than there is snow
                ! after melt.  Remaining surface evaporation used for infiltration.
-               qflx_sub_snow(p) = min(qflx_evap_soi(p), h2osno(c)/dtime)
+               qflx_sub_snow(p) = min(qflx_evap_soi(p), h2osno(c)/dtime_mod)
                qflx_evap_grnd(p) = qflx_evap_soi(p) - qflx_sub_snow(p)
             else
                if (t_grnd(c) < tfrz-0.1_r8) then
@@ -423,19 +430,10 @@ contains
 
             h2osno_temp = h2osno(c)
             if (do_capsnow(c) .and. .not. use_extrasnowlayers) then
-               h2osno(c) = h2osno(c) - qflx_sub_snow(p)*dtime
                qflx_snwcp_ice(p) = qflx_snwcp_ice(p) + qflx_dew_snow(p)
                qflx_snwcp_liq(p) = qflx_snwcp_liq(p) + qflx_dew_grnd(p)
-            else
-               h2osno(c) = h2osno(c) + (-qflx_sub_snow(p)+qflx_dew_snow(p))*dtime
             end if
-            if (h2osno_temp > 0._r8) then
-               snow_depth(c) = snow_depth(c) * h2osno(c) / h2osno_temp
-            else
-               snow_depth(c) = h2osno(c)/snow_bd !Assume a constant snow bulk density = 250.
-            end if
-
-            h2osno(c) = max(h2osno(c), 0._r8)
+            
          end if
 
          if (.not. use_extrasnowlayers) then
@@ -445,10 +443,40 @@ contains
 
       end do
 
+      !$acc parallel loop independent gang worker default(present) private(sum1,jtop,h2osno_temp)
+      do fc = 1, num_lakec
+         c = filter_lakec(fc)
+         jtop = snl(c)+1
+         
+         sum1 = 0._r8 
+         if(jtop > 0) then
+            h2osno_temp = h2osno(c)
+
+            !$acc loop vector reduction(+:sum1) 
+            do p = col_pp%pfti(c), col_pp%pftf(c)
+               if(veg_pp%active(p)) then
+                  if (do_capsnow(c) .and. .not. use_extrasnowlayers) then
+                     sum1 = sum1 - qflx_sub_snow(p)*dtime_mod
+                  else
+                     sum1 = sum1 + (-qflx_sub_snow(p)+qflx_dew_snow(p))*dtime_mod
+                  end if
+               end if
+            end do
+            h2osno(c) =  h2osno(c) + sum1 
+            if (h2osno_temp > 0._r8) then
+               snow_depth(c) = snow_depth(c) * h2osno(c) / h2osno_temp
+            else
+               snow_depth(c) = h2osno(c)/snow_bd !Assume a constant snow bulk density = 250.
+            end if
+            h2osno(c) = max(h2osno(c), 0._r8)
+         end if
+      end do 
+
       ! patch averages must be done here -- BEFORE SNOW CALCULATIONS AS THEY USE IT.
       ! for output to history tape and other uses
       ! (note that pft2col is called before LakeHydrology, so we can't use that routine
       ! to do these column -> pft averages)
+      !$acc parallel loop independent gang vector default(present) 
       do fp = 1,num_lakep
          p = filter_lakep(fp)
          c = pcolumn(p)
@@ -467,10 +495,11 @@ contains
       ! Determine initial snow/no-snow filters (will be modified possibly by
       ! routines CombineSnowLayers and DivideSnowLayers below)
 
-      call BuildSnowFilter(bounds, num_lakec, filter_lakec, &
+      call BuildSnowFilter( num_lakec, filter_lakec, &
            num_shlakesnowc, filter_shlakesnowc, num_shlakenosnowc, filter_shlakenosnowc)
 
       ! specify snow fraction
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1, num_lakec
          c = filter_lakec(fc)
          if (h2osno(c) > 0.0_r8) then
@@ -496,8 +525,9 @@ contains
       ! pore space opens up. Conversely, if excess ice is melting and the liquid water exceeds the
       ! saturation value, then remove water.
 
+      ! changed to nlevsoi on 8/11/10 to make consistent with non-lake bedrock
+      !$acc parallel loop independent gang vector collapse(2) default(present) 
       do j = 1,nlevsoi  !nlevgrnd
-         ! changed to nlevsoi on 8/11/10 to make consistent with non-lake bedrock
          do fc = 1, num_lakec
             c = filter_lakec(fc)
 
@@ -533,12 +563,12 @@ contains
 
       ! Natural compaction and metamorphosis.
 
-      call SnowCompaction(bounds, num_shlakesnowc, filter_shlakesnowc,top_as, dtime)
+      call SnowCompaction(bounds, num_shlakesnowc, filter_shlakesnowc,top_as, dtime_mod)
 
       ! Combine thin snow elements
 
       call CombineSnowLayers(bounds, num_shlakesnowc, filter_shlakesnowc, &
-           aerosol_vars, dtime)
+           aerosol_vars, dtime_mod)
 
       ! Divide thick snow elements
       if (.not. use_extrasnowlayers) then
@@ -554,6 +584,7 @@ contains
       ! excessive because the fluxes were calculated with a fixed ground temperature of freezing, but the
       ! phase change was unable to restore the temperature to freezing.
 
+      !$acc parallel loop independent gang vector default(present) 
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = pcolumn(p)
@@ -564,12 +595,12 @@ contains
             ! Remove layer
             ! Take extra heat of layer and release to sensible heat in order to maintain energy conservation.
             heatrem             = cpliq*h2osoi_liq(c,j)*(t_soisno(c,j) - tfrz)
-            eflx_sh_tot(p)      = eflx_sh_tot(p)    + heatrem/dtime
-            eflx_sh_grnd(p)     = eflx_sh_grnd(p)   + heatrem/dtime  ! Added this line 7/22/11 for consistency.
-            eflx_soil_grnd(p)   = eflx_soil_grnd(p) - heatrem/dtime
-            eflx_gnet(p)        = eflx_gnet(p)      - heatrem/dtime
+            eflx_sh_tot(p)      = eflx_sh_tot(p)    + heatrem/dtime_mod
+            eflx_sh_grnd(p)     = eflx_sh_grnd(p)   + heatrem/dtime_mod  ! Added this line 7/22/11 for consistency.
+            eflx_soil_grnd(p)   = eflx_soil_grnd(p) - heatrem/dtime_mod
+            eflx_gnet(p)        = eflx_gnet(p)      - heatrem/dtime_mod
 
-            eflx_grnd_lake(p)   = eflx_gnet(p) - heatrem/dtime
+            eflx_grnd_lake(p)   = eflx_gnet(p) - heatrem/dtime_mod
             qflx_sl_top_soil(c) = qflx_sl_top_soil(c) + h2osno(c)
             snl(c)              = 0
             h2osno(c)           = 0._r8
@@ -585,47 +616,50 @@ contains
       ! sufficient heat to melt the snow without freezing, then that will be done.
       ! Otherwise, the top layer will undergo freezing, but only if the top layer will
       ! not freeze completely.  Otherwise, let the snow layers persist and melt by diffusion.
-
+      !$acc parallel loop independent gang vector default(present) 
       do fc = 1, num_lakec
          c = filter_lakec(fc)
 
          if (t_lake(c,1) > tfrz .and. lake_icefrac(c,1) == 0._r8 .and. snl(c) < 0) then
-            unfrozen(c) = .true.
+            unfrozen(fc) = .true.
          else
-            unfrozen(c) = .false.
+            unfrozen(fc) = .false.
          end if
       end do
 
-      do j = -nlevsno+1,0
-         do fc = 1, num_lakec
-            c = filter_lakec(fc)
-
-            if (unfrozen(c)) then
-               if (j == -nlevsno+1) then
-                  sumsnowice(c) = 0._r8
-                  heatsum(c) = 0._r8
-               end if
-               if (j >= snl(c)+1) then
-                  sumsnowice(c) = sumsnowice(c) + h2osoi_ice(c,j)
-                  heatsum(c) = heatsum(c) + h2osoi_ice(c,j)*cpice*(tfrz - t_soisno(c,j)) &
-                       + h2osoi_liq(c,j)*cpliq*(tfrz - t_soisno(c,j))
-               end if
-            end if
-         end do
-      end do
-
+      !$acc parallel loop independent gang worker default(present) private(sum1,sum2)
       do fc = 1, num_lakec
          c = filter_lakec(fc)
 
-         if (unfrozen(c)) then
-            heatsum(c) = heatsum(c) + sumsnowice(c)*hfus
-            heatrem = (t_lake(c,1) - tfrz)*cpliq*denh2o*dz_lake(c,1) - heatsum(c)
+         if (unfrozen(fc)) then
+            sum1 = 0._r8 
+            sum2 = 0._r8
+            !$acc loop vector reduction(+:sum1,sum2)
+            do j = -nlevsno+1,0
+               if (j >= snl(c)+1) then
+                  sum1 = sum1 + h2osoi_ice(c,j)
+                  sum2 = sum2 + h2osoi_ice(c,j)*cpice*(tfrz - t_soisno(c,j)) &
+                       + h2osoi_liq(c,j)*cpliq*(tfrz - t_soisno(c,j))
+               end if
+            end do
+            sumsnowice(fc) = sum1
+            heatsum(fc) = sum2 
+         end if
+      end do
+
+      !$acc parallel loop independent gang vector default(present)
+      do fc = 1, num_lakec
+         c = filter_lakec(fc)
+
+         if (unfrozen(fc)) then
+            heatsum(fc) = heatsum(fc) + sumsnowice(fc)*hfus
+            heatrem = (t_lake(c,1) - tfrz)*cpliq*denh2o*dz_lake(c,1) - heatsum(fc)
 
             if (heatrem + denh2o*dz_lake(c,1)*hfus > 0._r8) then
                ! Remove snow and subtract the latent heat from the top layer.
-               qflx_snomelt(c) = qflx_snomelt(c) + h2osno(c)/dtime
+               qflx_snomelt(c) = qflx_snomelt(c) + h2osno(c)/dtime_mod
 
-               eflx_snomelt(c) = eflx_snomelt(c) + h2osno(c)*hfus/dtime
+               eflx_snomelt(c) = eflx_snomelt(c) + h2osno(c)*hfus/dtime_mod
 
                ! update snow melt for this case
                qflx_snow_melt(c)     = qflx_snow_melt(c)  + qflx_snomelt(c)
@@ -647,7 +681,7 @@ contains
       end do
 
       ! Set empty snow layers to zero
-
+      !$acc parallel loop independent gang vector collapse(2) default(present)
       do j = -nlevsno+1,0
          do fc = 1, num_shlakesnowc
             c = filter_shlakesnowc(fc)
@@ -664,61 +698,94 @@ contains
 
       ! Build new snow filter
 
-      call BuildSnowFilter(bounds, num_lakec, filter_lakec, &
+      call BuildSnowFilter(num_lakec, filter_lakec, &
            num_shlakesnowc, filter_shlakesnowc, num_shlakenosnowc, filter_shlakenosnowc)
-
-      ! Vertically average t_soisno and sum of h2osoi_liq and h2osoi_ice
-      ! over all snow layers for history output
-
+      
       do fc = 1, num_lakec
          c = filter_lakec(fc)
          snowice(c) = 0._r8
          snowliq(c) = 0._r8
       end do
 
-      do j = -nlevsno+1, 0
-         do fc = 1, num_shlakesnowc
-            c = filter_shlakesnowc(fc)
+      ! Vertically average t_soisno and sum of h2osoi_liq and h2osoi_ice
+      ! over all snow layers for history output
+      !$acc parallel loop independent gang worker default(present) private(sum1,sum2)
+      do fc = 1, num_shlakesnowc
+         c = filter_shlakesnowc(fc)
+         sum1 = 0._r8;
+         sum2 = 0._r8 
+         !$acc loop vector reduction(+:sum1,sum2)
+         do j = -nlevsno+1, 0
             if (j >= snl(c)+1) then
-               snowice(c) = snowice(c) + h2osoi_ice(c,j)
-               snowliq(c) = snowliq(c) + h2osoi_liq(c,j)
+               sum1 = sum1 + h2osoi_ice(c,j)
+               sum2 = sum2 + h2osoi_liq(c,j)
             end if
          end do
+         snowice(c) = sum1 
+         snowliq(c) = sum2 
       end do
 
       ! Determine ending water balance and volumetric soil water
-
+      !$acc parallel loop independent gang worker default(present) private(sum1)
       do fc = 1, num_lakec
          c = filter_lakec(fc)
-         endwb(c) = h2osno(c)
+         sum1 = h2osno(c)
+         !$acc loop vector reduction(+:sum1)
+         do j = 1, nlevgrnd
+            sum1 = sum1 + h2osoi_ice(c,j) + h2osoi_liq(c,j)
+         end do 
+         endwb(c) = sum1
       end do
 
+      !$acc parallel loop independent gang vector default(present) collapse(2) 
       do j = 1, nlevgrnd
          do fc = 1, num_lakec
             c = filter_lakec(fc)
-            endwb(c) = endwb(c) + h2osoi_ice(c,j) + h2osoi_liq(c,j)
             h2osoi_vol(c,j) = h2osoi_liq(c,j)/(dz(c,j)*denh2o) + h2osoi_ice(c,j)/(dz(c,j)*denice)
          end do
       end do
-
-      do fp = 1,num_lakep
-         p = filter_lakep(fp)
-         c = pcolumn(p)
-         t = ptopounit(p)
-         g = pgridcell(p)
-
+      
+      !NOTE: Need to resolve the race condition here.  
+      !      Is it important to go through lake patches sequentially
+      !      for water storage? 
+      !      Currently num_lakec = num_lakep all timesteps?
+      !$acc parallel loop independent gang vector default(present) 
+      do fc = 1,num_lakec 
+         c = filter_lakec(fc)
+         g = col_pp%gridcell(c) 
+         t = col_pp%topounit(c) 
+          
          qflx_drain_perched(c) = 0._r8
          qflx_h2osfc_surf(c)   = 0._r8
          qflx_rsub_sat(c)      = 0._r8
          qflx_infl(c)          = 0._r8
          qflx_surf(c)          = 0._r8
          qflx_drain(c)         = 0._r8
-         qflx_irrig(p)         = 0._r8
          qflx_irrig_col(c)     = 0._r8
 
-         ! Insure water balance using qflx_qrgwl
-         if (use_lake_wat_storage) then
+         qflx_floodc(c)    = qflx_floodg(g)
+         qflx_top_soil(c)  = forc_rain(t) + qflx_snomelt(c)
+
+      end do 
+
+      if(num_lakep .ne. num_lakec) then 
+         write(iulog,*) "num_lakep != num_lakec - may be race condition"
+         call endrun("LakeHydrology")
+      end if 
+
+      if(use_lake_wat_storage) then 
+         !$acc parallel loop independent gang vector default(present) 
+         do fp = 1, num_lakep 
+            p = filter_lakep(fp)
+            c = pcolumn(p) 
+            g = cgridcell(c) 
+            t = col_pp%topounit(c) 
+            
+            qflx_irrig(p)         = 0._r8
+            
+            ! Insure water balance using qflx_qrgwl
             qflx_qrgwl(c)     = 0._r8
+
             if (wslake(c) >= 5000._r8) then
                if (.not. use_extrasnowlayers) then
                   qflx_snwcp = qflx_snwcp_ice(p)
@@ -726,34 +793,51 @@ contains
                   qflx_snwcp = qflx_snwcp_ice_col(c)
                end if
                qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp + &
-               qflx_floodg(g) - (endwb(c) + wslake(c) -begwb(c))/dtime
+                              qflx_floodg(g) - (endwb(c) + wslake(c) -begwb(c))/dtime_mod
             end if
             wslake(c) = (forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - &
-                qflx_snwcp_ice(p) + qflx_floodg(g) - qflx_qrgwl(c)) * dtime - &
+                qflx_snwcp_ice(p) + qflx_floodg(g) - qflx_qrgwl(c)) * dtime_mod - &
                 (endwb(c) - begwb(c))
             endwb(c) = endwb(c) + wslake(c)
-         else
+
+         end do 
+      else
+         ! NOTE: qrgwl calculation is un-predictable due to precision
+         !$acc parallel loop independent gang  vector default(present) 
+         do fp = 1,num_lakep
+            p = filter_lakep(fp)
+            c = pcolumn(p)
+            t = ptopounit(p)
+            g = pgridcell(p)
+
+            qflx_irrig(p)         = 0._r8
+
+            ! Insure water balance using qflx_qrgwl
             if (.not. use_extrasnowlayers) then
                qflx_snwcp = qflx_snwcp_ice(p)
             else
                qflx_snwcp = qflx_snwcp_ice_col(c)
             end if
             qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp - &
-                (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
-         end if
+                (endwb(c)-begwb(c))/dtime_mod + qflx_floodg(g)
+            
+            !qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp - &
+            !    (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
+         
+            qflx_runoff(c) = qflx_drain(c) + qflx_qrgwl(c)
+         enddo
 
-         qflx_floodc(c)    = qflx_floodg(g)
-         qflx_runoff(c)    = qflx_drain(c) + qflx_qrgwl(c)
-         qflx_top_soil(c)  = qflx_prec_grnd_rain(p) + qflx_snomelt(c)
-      enddo
+      end if 
 
       ! top-layer diagnostics
+      !$acc parallel loop independent gang vector default(present) 
       do fc = 1, num_shlakesnowc
          c = filter_shlakesnowc(fc)
          h2osno_top(c)  = h2osoi_ice(c,snl(c)+1) + h2osoi_liq(c,snl(c)+1)
       end do
 
       ! Zero variables in columns without snow
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1, num_shlakenosnowc
          c = filter_shlakenosnowc(fc)
 
@@ -765,6 +849,13 @@ contains
          snw_rds_top(c)     = spval
          sno_liq_top(c)     = spval
       end do
+
+    !$acc exit data delete(&
+    !$acc sumsnowice(:), &
+    !$acc unfrozen(:), &
+    !$acc heatsum(:), &
+    !$acc sum1, &
+    !$acc sum2, sum3)
 
     end associate
 

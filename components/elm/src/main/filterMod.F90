@@ -116,6 +116,9 @@ module filterMod
       integer, pointer :: num_urbanc => null()   ! number of columns in urban filter
       integer, pointer :: urbanp(:)  => null()   ! urban filter (pfts)
       integer, pointer :: num_urbanp => null()   ! number of pfts in urban filter
+      integer, pointer :: nourbanp(:)  => null()    ! non-urban filter (pfts)
+      integer, pointer :: num_nourbanp => null()    ! number of pfts in non-urban filter
+ 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       integer, pointer :: nolakec(:)  => null() ! non-lake filter (columns)
@@ -125,6 +128,28 @@ module filterMod
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       integer, pointer :: lakep(:)  => null()   ! lake filter (pfts)
       integer, pointer :: num_lakep => null()   ! number of pfts in lake filter
+      integer, pointer :: nolakep(:)  => null() ! non-lake filter (pfts)
+      integer, pointer :: num_nolakep => null() ! number of pfts in non-lake filter
+ 
+
+      integer, pointer :: hydrologyc(:)  =>null() ! hydrology filter (columns)
+      integer, pointer :: num_hydrologyc =>null()          ! number of columns in hydrology filter
+
+      integer, pointer :: hydrononsoic(:)   => null() ! non-soil hydrology filter (columns)
+      integer, pointer :: num_hydrononsoic  => null() ! number of columns in non-soil hydrology filter
+
+      integer, pointer :: snowc(:)  => null()   ! snow filter (columns)
+      integer, pointer :: num_snowc => null()   ! number of columns in snow filter
+      integer, pointer :: nosnowc(:)  => null() ! non-snow filter (columns)
+      integer, pointer :: num_nosnowc => null() ! number of columns in non-snow filter
+
+      integer, pointer :: lakesnowc(:)  => null()   ! snow filter (columns)
+      integer, pointer :: num_lakesnowc => null()   ! number of columns in snow filter
+      integer, pointer :: lakenosnowc(:)  => null() ! non-snow filter (columns)
+      integer, pointer :: num_lakenosnowc => null() ! number of columns in non-snow filter
+      
+      integer, pointer :: do_smb_c(:) => null() ! glacier+bareland SMB calculations-on filter (cols)
+      integer, pointer :: num_do_smb_c                   ! number of columns in glacier+bareland SMB mec filter
 
    end type
    public :: procfilter
@@ -301,25 +326,54 @@ contains
      allocate(this_filter%num_nolu_barep); this_filter%num_nolu_barep   = 0
      allocate(this_filter%num_nolu_vegp ); this_filter%num_nolu_vegp    = 0
      allocate(this_filter%num_urbanp  );this_filter%num_urbanp   = 0
+     allocate(this_filter%num_nourbanp  );this_filter%num_nourbanp   = 0
+
      allocate(this_filter%num_urbanc  );this_filter%num_urbanc   = 0
      allocate(this_filter%num_urbanl  );this_filter%num_urbanl   = 0
      allocate(this_filter%num_nourbanl);this_filter%num_nourbanl = 0
      allocate(this_filter%num_lakep  ); this_filter%num_lakep = 0
      allocate(this_filter%num_lakec)  ; this_filter%num_lakec = 0
      allocate(this_filter%num_nolakec); this_filter%num_nolakec = 0
+     
+     allocate(this_filter%num_lakesnowc); this_filter%num_lakesnowc = 0
+     allocate(this_filter%num_lakenosnowc); this_filter%num_lakenosnowc = 0
 
+     allocate(this_filter%num_nolakep); this_filter%num_nolakep = 0
+
+     allocate(this_filter%num_hydrologyc)   
+     allocate(this_filter%num_hydrononsoic) 
+     allocate(this_filter%num_snowc)
+     allocate(this_filter%num_nosnowc)
+
+     allocate(this_filter%num_do_smb_c); this_filter%num_do_smb_c = 0 
+     
      allocate(this_filter%soilc     (bounds_proc%endc-bounds_proc%begc+1)); this_filter%soilc     (:)=0;
      allocate(this_filter%soilp     (bounds_proc%endp-bounds_proc%begp+1)); this_filter%soilp     (:)=0;
      allocate(this_filter%pcropp    (bounds_proc%endp-bounds_proc%begp+1)); this_filter%pcropp    (:)=0;
      allocate(this_filter%nolu_barep(bounds_proc%endp-bounds_proc%begp+1)); this_filter%nolu_barep(:)=0;
      allocate(this_filter%nolu_vegp (bounds_proc%endp-bounds_proc%begp+1)); this_filter%nolu_vegp (:)=0;
+     !
      allocate(this_filter%urbanp  (bounds_proc%endp-bounds_proc%begp+1));this_filter%urbanp  (:) = 0;
+     allocate(this_filter%nourbanp  (bounds_proc%endp-bounds_proc%begp+1));this_filter%nourbanp  (:) = 0;
+     !
      allocate(this_filter%urbanc  (bounds_proc%endc-bounds_proc%begc+1));this_filter%urbanc  (:) = 0;
      allocate(this_filter%urbanl  (bounds_proc%endl-bounds_proc%begl+1));this_filter%urbanl  (:) = 0;
      allocate(this_filter%nourbanl(bounds_proc%endl-bounds_proc%begl+1));this_filter%nourbanl(:) = 0;
      allocate(this_filter%lakep(bounds_proc%endp-bounds_proc%begp+1)); this_filter%lakep(:) = 0;
-     allocate(this_filter%lakec(bounds_proc%endc-bounds_proc%begc+1)) ; this_filter%lakec(:) = 0; 
+     allocate(this_filter%nolakep(bounds_proc%endp-bounds_proc%begp+1)); this_filter%nolakep(:) = 0;
+
+     allocate(this_filter%lakec(bounds_proc%endc-bounds_proc%begc+1)); this_filter%lakec(:) = 0; 
      allocate(this_filter%nolakec(bounds_proc%endc-bounds_proc%begc+1)) ; this_filter%nolakec(:) = 0; 
+     allocate(this_filter%hydrologyc(bounds_proc%endc-bounds_proc%begc+1))    ; this_filter%hydrologyc(:) = 0;
+     allocate(this_filter%hydrononsoic(bounds_proc%endc-bounds_proc%begc+1))  ; this_filter%hydrononsoic(:)= 0;
+
+     allocate(this_filter%do_smb_c(bounds_proc%endc-bounds_proc%begc+1)); this_filter%do_smb_c(:) = 0 
+     !Not populated in filterMod :
+     allocate(this_filter%snowc(bounds_proc%endc-bounds_proc%begc+1));  this_filter%snowc(:) = 0;
+     allocate(this_filter%nosnowc(bounds_proc%endc-bounds_proc%begc+1)); this_filter%nosnowc(:) = 0;
+
+     allocate(this_filter%lakesnowc(bounds_proc%endc-bounds_proc%begc+1)); this_filter%lakesnowc(:) = 0;
+     allocate(this_filter%lakenosnowc(bounds_proc%endc-bounds_proc%begc+1)); this_filter%lakenosnowc(:) = 0;
 
 
   end subroutine createProcessorFilter
@@ -643,7 +697,7 @@ contains
 
   end subroutine setFiltersOneGroup
 
-  subroutine setProcFilters(bounds, this_filter, include_inactive, icemask_grc)
+  subroutine setProcFilters(bounds, this_filter, include_inactive,icemask_grc)
     !
     ! !DESCRIPTION:
     ! Set CLM filters for one group of filters.
@@ -661,54 +715,70 @@ contains
     type(bounds_type) , intent(in)   :: bounds
     type(procfilter)  , intent(inout) :: this_filter           ! the group of filters to set
     logical           , intent(in)   :: include_inactive            ! whether inactive points should be included in the filters
-    real(r8)          , intent(in)   :: icemask_grc(bounds%begg: ) ! ice sheet grid coverage mask [gridcell]
+    real(r8) , intent(in) :: icemask_grc(:) 
     !
     ! LOCAL VARAIBLES:
     integer :: nc        ! clump index
-    integer :: c,l,p     ! column, landunit, pft indices
+    integer :: c,l,p, t  ! column, landunit, pft indices
     integer :: fl        ! lake filter index
-    integer :: fnl, fnlu,flp ! non-lake filter index
+    integer :: fnl, fnlu,flp,fnlp ! non-lake filter index
     integer :: fs,fsp,fpc    ! soil filter index
-    integer :: fu, fnu,fuc   ! urban indices
+    integer :: fu, fnu,fuc,fnup   ! urban indices
     integer :: g         ! gridcell index
-    integer :: fidx1, fidx2, fidx3, fidx4 
+    integer :: fsmb 
+    integer :: fidx1, fidx2, fidx3, fidx4, fidx5, fidx6 
     !------------------------------------------------------------------------
-    fidx1 = 0; fidx2 = 0; fidx3 = 0; fidx4 = 0;
+    fidx1 = 0; fidx2 = 0; fidx3 = 0; fidx4 = 0; fidx5 = 0; fidx6 =0;
     this_filter%num_soilc  = 0   
     this_filter%num_soilp  = 0   
     this_filter%num_pcropp = 0  
     this_filter%num_urbanp = 0
+    this_filter%num_nourbanp = 0
     this_filter%num_urbanc = 0
     this_filter%num_urbanl = 0 
     this_filter%nourbanl   = 0
     this_filter%num_lakep  = 0
-    this_filter%num_lakec  = 0 
-    this_filter%num_nolakec= 0 
+    this_filter%num_nolakep  = 0
 
-   !$acc enter data create(fidx1,fidx2,fidx3,fidx4)
-   fs = 0
+    this_filter%num_lakec  = 0 
+    this_filter%num_nolakec= 0
+    
+    this_filter%num_do_smb_c = 0 
+
+    !$acc enter data copyin(include_inactive) 
    fl  = 0
    fnl = 0
-   fuc = 0
    !$acc parallel loop independent gang vector default(present) &
-   !$acc      private(fidx1,fidx2,fidx3,fidx4) copy(fl,fnl,fs,fuc) &
-   !$acc   present(this_filter%lakec(:),this_filter%nolakec(:),this_filter%soilc(:),this_filter%urbanc(:))
+   !$acc      private(fidx1,fidx2,l) copy(fl,fnl) present(this_filter%lakec(:),this_filter%nolakec(:))
     do c = bounds%begc,bounds%endc
-       if (col_pp%active(c) .or. include_inactive) then
-          l =col_pp%landunit(c)
+       if( col_pp%active(c) .or. include_inactive ) then
+          l = col_pp%landunit(c)
           if (lun_pp%lakpoi(l)) then
             !$acc atomic capture 
             fl = fl + 1
             fidx1 = fl 
             !$acc end atomic 
-             this_filter%lakec(fidx1) = c
+            this_filter%lakec(fidx1) = c
           else
             !$acc atomic capture  
             fnl = fnl + 1
             fidx2 = fnl 
             !$acc end atomic 
-             this_filter%nolakec(fidx2) = c
+            this_filter%nolakec(fidx2) = c
           end if
+       end if 
+   end do 
+   this_filter%num_lakec = fl
+   this_filter%num_nolakec = fnl
+   
+   fs = 0
+   fuc = 0
+   !$acc parallel loop independent gang vector &
+   !$acc      private(fidx1,fidx2,fidx3,fidx4) copy(fs,fuc) &
+   !$acc   present(this_filter%lakec(:),this_filter%nolakec(:),this_filter%soilc(:),this_filter%urbanc(:)) default(present)
+    do c = bounds%begc,bounds%endc
+       if (col_pp%active(c) .or. include_inactive) then
+          l =col_pp%landunit(c)
          ! Create soil filter at column-level
           if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
             !$acc atomic capture  
@@ -727,20 +797,21 @@ contains
          end if
        end if
     end do
-    this_filter%num_lakec = fl
-    this_filter%num_nolakec = fnl
     this_filter%num_soilc = fs
     this_filter%num_urbanc = fuc
-
+    
     ! Create soil filter at pft-level
 
     fpc = 0;
     fsp = 0; 
     fu  = 0;
     flp = 0;
+    fnlp = 0; 
+    fnup = 0;
     !$acc parallel loop independent gang vector default(present) &
-    !$acc   private(fidx1,fidx2,fidx3,fidx4) copy(fsp,fpc,fu,flp) &
-    !$acc   present(this_filter%soilp(:),this_filter%pcropp(:),this_filter%urbanp(:),this_filter%lakep(:))
+    !$acc   private(fidx1,fidx2,fidx3,fidx4,fidx5,fidx6) copy(fsp,fpc,fu,flp,fnlp,fnup) &
+    !$acc   present(this_filter%soilp(:),this_filter%pcropp(:),this_filter%urbanp(:),this_filter%lakep(:), &
+    !$acc            this_filter%nolakep(:), this_filter%nourbanp(:))
     do p = bounds%begp,bounds%endp
       if (veg_pp%active(p) .or. include_inactive) then
           l =veg_pp%landunit(p)
@@ -764,6 +835,12 @@ contains
             fidx3 = fu 
             !$acc end atomic 
             this_filter%urbanp(fidx3) = p
+         else 
+            !$acc atomic capture 
+            fnup = fnup + 1
+            fidx6 = fnup 
+            !$acc end atomic 
+            this_filter%nourbanp(fidx6) = p
          end if
          if (lun_pp%lakpoi(l) ) then
             !$acc atomic capture 
@@ -771,17 +848,22 @@ contains
             fidx4 = flp 
             !$acc end atomic 
             this_filter%lakep(fidx4) = p
-          end if
+         else 
+            !$acc atomic capture
+            fnlp = fnlp + 1 
+            fidx5 = fnlp 
+            !$acc end atomic 
+            this_filter%nolakep(fidx5) = p 
+         end if
       end if
     end do
    this_filter%num_soilp  = fsp
    this_filter%num_pcropp = fpc
    this_filter%num_urbanp = fu 
+   this_filter%num_nourbanp = fnup 
+
    this_filter%num_lakep = flp
-
-    ! Create lake and non-lake filters at pft-level
-
-    
+   this_filter%num_nolakep = fnlp    
 
     ! Create landunit-level urban and non-urban filters
 
@@ -809,15 +891,66 @@ contains
     this_filter%num_urbanl = fu
     this_filter%num_nourbanl = fnu
 
-    !NOTE: shouldn't need to update these on the device 
-    !!!this_filter%num_soilc, this_filter%num_soilp, this_filter%num_pcropp, &  
-    !!!this_filter%num_urbanp ,this_filter%num_urbanc,&
-    !!!this_filter%num_urbanl ,this_filter%nourbanl  ,&
-    !!!this_filter%num_lakep  ,this_filter%num_lakec ,& 
-    !!!this_filter%num_nolakec 
+    ! Create column-level hydrology filter (soil and Urban pervious road cols)
 
-   !$acc exit data delete(fidx1,fidx2,fidx3,fidx4)
+    fu = 0
+    fnu = 0
+    !$acc parallel loop independent gang vector default(present) &
+    !$acc   private(fidx1,fidx2) copy(fu,fnu) present(this_filter%hydrologyc(:),this_filter%hydrononsoic(:))
+    do c = bounds%begc,bounds%endc
+          if (col_pp%active(c) .or. include_inactive) then
+             l =col_pp%landunit(c)
+             if (lun_pp%itype(l) == istsoil .or. col_pp%itype(c) == icol_road_perv .or. &
+                  lun_pp%itype(l) == istcrop) then
+                  !$acc atomic capture 
+                  fu = fu + 1
+                  fidx1 = fu 
+                  !$acc end atomic 
+                  this_filter%hydrologyc(fidx1) = c
+               if (col_pp%itype(c) == icol_road_perv) then
+                  !$acc atomic capture  
+                  fnu = fnu + 1
+                  fidx2 = fnu 
+                  !$acc end atomic 
+                   this_filter%hydrononsoic(fidx2) = c
+               end if
 
+             end if
+          end if
+    end do
+    this_filter%num_hydrologyc = fu
+    this_filter%num_hydrononsoic = fnu
+    print *, "include inactive:", include_inactive
+    print *, "icemask_grc:" 
+    !$acc parallel loop independent gang vector default(present) &
+    !$acc   private(fidx1) copy(fsmb) present(this_filter%do_smb_c(:))
+    do c = bounds%begc, bounds%endc
+       t =col_pp%topounit(c)
+       if (top_pp%active(t)) then
+          if (col_pp%active(c) .or. include_inactive) then
+             l = col_pp%landunit(c)
+             g = col_pp%gridcell(c)
+             if ( lun_pp%itype(l) == istice_mec .or. &
+                (lun_pp%itype(l) == istsoil .and. icemask_grc(g) > 0.)) then
+                print *, icemask_grc(g) 
+                !$acc atomic capture 
+                fsmb = fsmb + 1
+                fidx1 = fsmb
+                !$acc end atomic 
+                this_filter%do_smb_c(fidx1) = c
+             end if
+          end if
+       end if
+    end do
+    this_filter%num_do_smb_c = fsmb
+      
+    print *, "setProcFilters:lakec", this_filter%num_lakec
+    print *, "setProcFilters:nolakec", this_filter%num_nolakec
+    print *, "setProcFilters:soilc", this_filter%num_soilc
+    print *, "setProcFilters:urbanc", this_filter%num_urbanc
+    print *,"num_do_smb_c : ", this_filter%num_do_smb_c 
+
+   !$acc exit data delete(include_inactive) 
   end subroutine setProcFilters
 
   subroutine updateFracNoSnoFilters(bounds, this_filter,frac_veg_nosno)
@@ -838,7 +971,6 @@ contains
    integer :: p, fbp, fvp, l 
    integer :: fidx1, fidx2 
 
-   !$acc enter data create(fidx1, fidx2) 
    fbp = 0
    fvp = 0
 
@@ -867,8 +999,6 @@ contains
 
    this_filter%num_nolu_barep = fbp
    this_filter%num_nolu_vegp  = fvp
-   !$acc exit data delete(fidx1, fidx2) 
-
 
   end subroutine updateFracNoSnoFilters
 

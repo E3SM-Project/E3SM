@@ -36,7 +36,6 @@ contains
     ! they get too small.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varctl , only : iulog, use_c13, use_c14, use_fates
     use elm_varpar , only : nlevdecomp_full, crop_prog
     use pftvarcon  , only : nc3crop
@@ -50,16 +49,16 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j,k,l  ! indices
-    integer :: fp,fc    ! lake filter indices
+    integer :: fp,fc    ! filter indices
     real(r8):: pc,pn,pp    ! truncation terms for patch-level corrections
     real(r8):: cc,cn,cp    ! truncation terms for column-level corrections
     real(r8):: pc13     ! truncation terms for patch-level corrections
     real(r8):: cc13     ! truncation terms for column-level corrections
     real(r8):: pc14     ! truncation terms for patch-level corrections
     real(r8):: cc14     ! truncation terms for column-level corrections
-    real(r8):: ccrit    ! critical carbon state value for truncation
-    real(r8):: ncrit    ! critical nitrogen state value for truncation
-    real(r8):: pcrit    ! critical phosphorus state value for truncation
+    real(r8), parameter :: ccrit = 1.e-8_r8   ! critical carbon state value for truncation (gC/m2)
+    real(r8), parameter :: ncrit = 1.e-8_r8   ! critical nitrogen state value for truncation
+    real(r8), parameter :: pcrit = 1.e-8_r8   ! critical phosphorus state value for truncation
     real(r8):: cc_eca
     real(r8):: cn_eca
     real(r8):: cp_eca
@@ -71,17 +70,10 @@ contains
          initial_cn_ratio                 =>    decomp_cascade_con%initial_cn_ratio                 &
          )
 
-      ! set the critical carbon state value for truncation (gC/m2)
-      ccrit = 1.e-8_r8
-
-      ! set the critical nitrogen state value for truncation (gN/m2)
-      ncrit = 1.e-8_r8
-
-      ! set the critical phosphorus state value for truncation (gN/m2)
-      pcrit = 1.e-8_r8
-
       ! patch loop
       if (.not.use_fates) then
+         
+         !$acc parallel loop independent gang vector default(present) private(p,pc,pn,pp,pc13,pc14)
          do fp = 1,num_soilp
             p = filter_soilp(fp)
 
@@ -556,73 +548,75 @@ contains
             endif
 
          end do ! end of pft loop
+
       end if ! end of if(.not.use_fates)
 
       if (.not. is_active_betr_bgc) then
-
+         
          ! column loop
+         !TODO: split c13c14 into separate loops 
+         !$acc enter data create(cc, cn) 
+         !$acc parallel loop independent gang worker collapse(2) private(cc,cn,c)
          do fc = 1,num_soilc
-            c = filter_soilc(fc)
-
             do j = 1,nlevdecomp_full
+               c = filter_soilc(fc)
                ! initialize the column-level C and N truncation terms
                cc = 0._r8
-               if ( use_c13 ) cc13 = 0._r8
-               if ( use_c14 ) cc14 = 0._r8
                cn = 0._r8
+               !if ( use_c13 ) cc13 = 0._r8
+               !if ( use_c14 ) cc14 = 0._r8
 
                ! do tests on state variables for precision control
                ! for linked C-N state variables, perform precision test on
                ! the C component, but truncate both C and N components
 
-
                ! all decomposing pools C and N
+               !$acc loop vector reduction(+:cc,cn)
                do k = 1, ndecomp_pools
-
                   if (abs(col_cs%decomp_cpools_vr(c,j,k)) < ccrit) then
                      cc = cc + col_cs%decomp_cpools_vr(c,j,k)
-                     col_cs%decomp_cpools_vr(c,j,k) = 0._r8
                      cn = cn + col_ns%decomp_npools_vr(c,j,k)
+
+                     col_cs%decomp_cpools_vr(c,j,k) = 0._r8
                      col_ns%decomp_npools_vr(c,j,k) = 0._r8
-                     if ( use_c13 ) then
-                        cc13 = cc13 + c13_col_cs%decomp_cpools_vr(c,j,k)
-                        c13_col_cs%decomp_cpools_vr(c,j,k) = 0._r8
-                     endif
-                     if ( use_c14 ) then
-                        cc14 = cc14 + c14_col_cs%decomp_cpools_vr(c,j,k)
-                        c14_col_cs%decomp_cpools_vr(c,j,k) = 0._r8
-                     endif
+                     !if ( use_c13 ) then
+                     !   cc13 = cc13 + c13_col_cs%decomp_cpools_vr(c,j,k)
+                     !   c13_col_cs%decomp_cpools_vr(c,j,k) = 0._r8
+                     !endif
+                     !if ( use_c14 ) then
+                     !   cc14 = cc14 + c14_col_cs%decomp_cpools_vr(c,j,k)
+                     !   c14_col_cs%decomp_cpools_vr(c,j,k) = 0._r8
+                     !endif
                   end if
-
                end do
-
                ! not doing precision control on soil mineral N, since it will
                ! be getting the N truncation flux anyway.
-
                col_cs%ctrunc_vr(c,j) = col_cs%ctrunc_vr(c,j) + cc
                col_ns%ntrunc_vr(c,j) = col_ns%ntrunc_vr(c,j) + cn
-               if ( use_c13 ) then
-                  c13_col_cs%ctrunc_vr(c,j) = c13_col_cs%ctrunc_vr(c,j) + cc13
-               endif
-               if ( use_c14 ) then
-                  c14_col_cs%ctrunc_vr(c,j) = c14_col_cs%ctrunc_vr(c,j) + cc14
-               endif
+               !if ( use_c13 ) then
+               !   c13_col_cs%ctrunc_vr(c,j) = c13_col_cs%ctrunc_vr(c,j) + cc13
+               !endif
+               !if ( use_c14 ) then
+               !   c14_col_cs%ctrunc_vr(c,j) = c14_col_cs%ctrunc_vr(c,j) + cc14
+               !endif
             end do
 
          end do   ! end of column loop
+         !$acc exit data delete(cc,cn)
 
+         !
          ! remove small negative perturbations for stability purposes, if any should arise.
-         
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            do j = 1,nlevdecomp_full
+         !$acc parallel loop independent gang vector default(present)
+         do j = 1,nlevdecomp_full
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
                if (abs(col_ns%smin_no3_vr(c,j)) < ncrit/1e4_r8) then
                   if ( col_ns%smin_no3_vr(c,j)  < 0._r8 ) then
 #ifndef _OPENACC
                      write(iulog, *) '-10^-12 < smin_no3 < 0. resetting to zero.'
                      write(iulog, *) 'smin_no3_vr_col(c,j), c, j: ', col_ns%smin_no3_vr(c,j), c, j
-                     col_ns%smin_no3_vr(c,j) = 0._r8
 #endif
+                     col_ns%smin_no3_vr(c,j) = 0._r8
                   endif
                end if
                if (abs(col_ns%smin_nh4_vr(c,j)) < ncrit/1e4_r8) then
@@ -630,8 +624,8 @@ contains
 #ifndef _OPENACC
                      write(iulog, *) '-10^-12 < smin_nh4 < 0. resetting to zero.'
                      write(iulog, *) 'smin_nh4_vr_col(c,j), c, j: ', col_ns%smin_nh4_vr(c,j), c, j
-                     col_ns%smin_nh4_vr(c,j) = 0._r8
 #endif
+                     col_ns%smin_nh4_vr(c,j) = 0._r8
                   endif
                end if
             end do

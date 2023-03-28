@@ -227,7 +227,6 @@ contains
     !-------------------------------------------------------------------------
     ! Topounit
     !-------------------------------------------------------------------------
-    write(iulog,*) "DEBUG: topounit_varcon_init" 
     call topounit_varcon_init(begg, endg,fsurdat,ldomain)  ! Topounits
     !-------------------------------------------------------------------------
     
@@ -235,8 +234,6 @@ contains
     ! Initialize urban model input (initialize urbinp data structure)
     ! This needs to be called BEFORE the call to surfrd_get_data since
     ! that will call surfrd_get_special which in turn calls check_urban
-    write(iulog,*) "DEBUG: UrbanInput " 
-    call shr_sys_flush(iulog)
     call UrbanInput(begg, endg, mode='initialize')
 
     ! Allocate surface grid dynamic memory (just gridcell bounds dependent)
@@ -259,6 +256,9 @@ contains
     allocate (slp_tunit (begg:endg,1:max_topounits  ))
     allocate (asp_tunit (begg:endg,1:max_topounits  ))
     allocate (num_tunit_per_grd (begg:endg))
+    ! NOTE: Can't find where slp_tunit or asp_tunit are initialized ??
+    slp_tunit(:,:) = 0._r8
+    asp_tunit(:,:) = 0._r8 
 
     ! Read list of Patches and their corresponding parameter values
     ! Independent of model resolution, Needs to stay before surfrd_get_data
@@ -363,15 +363,10 @@ contains
     !endif
 
     ! Set filters
-    write(iulog,*) "DEBUG: Allocating filters !! " 
-    call shr_sys_flush(iulog)
-    
     call t_startf('init_filters')
     call allocFilters()
     call t_stopf('init_filters')
     
-    write(iulog,*) "DEBUG: reweight wrapup " 
-    call shr_sys_flush(iulog)
     nclumps = get_proc_clumps()
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
     do nc = 1, nclumps
@@ -388,9 +383,6 @@ contains
     ! Set CH4 Model Parameters from namelist.
     ! Need to do before initTimeConst so that it knows whether to
     ! look for several optional parameters on surfdata file.
-    write(iulog,*) "DEBUG: CH4conrd " 
-    call shr_sys_flush(iulog)
-
     if (use_lch4) then
        call CH4conrd()
     end if
@@ -398,15 +390,10 @@ contains
     ! Deallocate surface grid dynamic memory for variables that aren't needed elsewhere.
     ! Some things are kept until the end of initialize2; urban_valid is kept through the
     ! end of the run for error checking.
-    write(iulog,*) "DEBUG: Deallocating memory  " 
-    call shr_sys_flush(iulog)
-
     !deallocate (wt_lunit, wt_cft, wt_glc_mec)
     deallocate (wt_cft, wt_glc_mec)    !wt_lunit not deallocated because it is being used in CanopyHydrologyMod.F90
     deallocate (wt_tunit, elv_tunit, slp_tunit, asp_tunit,num_tunit_per_grd)
     call t_stopf('elm_init1')
-    write(iulog,*) "DEBUG: Last topo initialization  " 
-    call shr_sys_flush(iulog)
 
     ! initialize glc_topo
     ! TODO - does this belong here?
@@ -429,8 +416,6 @@ contains
           col_pp%glc_topo(c) = 0._r8
        end if
     end do
-    write(iulog,*) "DEBUG: end of initialization 1" 
-    call shr_sys_flush(iulog)
   end subroutine initialize1
 
 
@@ -490,6 +475,8 @@ contains
     use tracer_varcon         , only : is_active_betr_bgc
     use clm_time_manager      , only : is_restart
     use ALMbetrNLMod          , only : betr_namelist_buffer
+    
+    use subgridAveMod, only : initialize_scale_l2g_lookup, initialize_scale_c2l
     !
     ! !ARGUMENTS
     implicit none
@@ -713,7 +700,7 @@ contains
 
     call t_startf('init_dyn_subgrid')
     call init_subgrid_weights_mod(bounds_proc)
-    call dynSubgrid_init(bounds_proc, glc2lnd_vars, crop_vars)
+    call dynSubgrid_init(bounds_proc, glc2lnd_vars, crop_vars, patch_state_updater, column_state_updater)
     call t_stopf('init_dyn_subgrid')
 
     ! ------------------------------------------------------------------------
@@ -947,15 +934,15 @@ contains
     !------------------------------------------------------------
     ! Determine gridcell averaged properties to send to atm
     !------------------------------------------------------------
-    write(iulog,*) "DEBUG: lnd2atm_minimal  " 
-    call shr_sys_flush(iulog)
-
+    !$acc enter data copyin(col_pp, lun_pp)
+    call initialize_scale_l2g_lookup() 
+    call initialize_scale_c2l(bounds_proc) 
+    !$acc exit data delete(col_pp, lun_pp) 
     if (nsrest == nsrStartup) then
        call t_startf('init_map2gc')
        call lnd2atm_minimal(bounds_proc, surfalb_vars, energyflux_vars, lnd2atm_vars)
        call t_stopf('init_map2gc')
     end if
-
     !------------------------------------------------------------
     ! Initialize sno export state to send to glc
     !------------------------------------------------------------

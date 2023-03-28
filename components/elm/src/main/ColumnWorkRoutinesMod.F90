@@ -21,8 +21,11 @@ module ColumnWorkRoutinesMod
    use ch4varcon       , only : allowlakeprod
    use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr
    use soilorder_varcon, only : smax, ks_sorption
-
-
+   use elm_varctl      , only : use_fates
+   use elm_varcon      , only : secspday 
+   use ColumnDataType  , only : nfix_timeconst 
+   use shr_sys_mod ,only : shr_sys_flush 
+   use Tracer_varcon , only : is_active_betr_bgc 
    implicit none
    public
    public :: col_cf_setvalues_acc 
@@ -31,8 +34,10 @@ module ColumnWorkRoutinesMod
    public :: col_cs_summary_acc
    public :: col_ns_summary_acc
    public :: col_ps_summary_acc
-
-
+   public :: col_cf_summary_acc 
+   public :: col_nf_summary_acc
+   public :: col_pf_summary_acc
+   public :: col_cf_summary_for_ch4_acc
 
 contains
 
@@ -174,15 +179,6 @@ contains
         this%wood_harvestc(i)         = value_column
         this%hrv_xsmrpool_to_atm(i)   = value_column
      end do
-
-     ! do k = 1, ndecomp_pools
-     !    do j = 1, nlevdecomp_full
-     !       do fi = 1,num_column
-     !          i = filter_column(fi)
-     !          this%decomp_cpools_sourcesink(i,j,k) = value_column
-     !       end do
-     !    end do
-     ! end do
 
      !$acc parallel loop independent gang vector collapse(2) default(present) !async(7)
      do j = 1, nlevdecomp_full
@@ -400,14 +396,7 @@ contains
        end do
       end do
 
-     ! do k = 1, ndecomp_pools
-     !    do j = 1, nlevdecomp_full
-     !       do fi = 1,num_column
-     !          i = filter_column(fi)
-     !          this%decomp_npools_sourcesink(i,j,k) = value_column
-     !       end do
-     !    end do
-     ! end do
+   
      ! !$acc wait
 
   end subroutine col_nf_setvalues_acc
@@ -592,27 +581,15 @@ contains
         end do
      end do
 
-     ! do k = 1, ndecomp_pools
-     !    do j = 1, nlevdecomp_full
-     !       do fi = 1,num_column
-     !          i = filter_column(fi)
-     !          this%decomp_ppools_sourcesink(i,j,k) = value_column
-     !          this%biochem_pmin_ppools_vr(i,j,k) = value_column
-     !       end do
-     !    end do
-     ! end do
-     ! !$acc wait
-
   end subroutine col_pf_setvalues_acc
 
   !-----------------------------------------------------------------------
-  subroutine col_cs_summary_acc(this, bounds, num_soilc, filter_soilc)
+  subroutine col_cs_summary_acc(this, num_soilc, filter_soilc)
    !
    ! !DESCRIPTION:
    ! Column-level carbon state summary calculations
    ! !ARGUMENTS:
    type(column_carbon_state) :: this
-   type(bounds_type)      , intent(in)    :: bounds
    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
    !
@@ -652,16 +629,6 @@ contains
    end do
 
    if ( nlevdecomp > 1) then
-      ! vertically integrate each of the decomposing C pools to 1 meter
-      ! maxdepth = 1._r8
-      ! !$acc parallel loop independent collapse(2) gang vector default(present)
-      ! do l = 1, ndecomp_pools
-      !    do fc = 1,num_soilc
-      !       c = filter_soilc(fc)
-      !       this%decomp_cpools_1m(c,l) = 0._r8
-      !    end do
-      ! end do
-
       !$acc parallel loop independent gang worker collapse(2) default(present) private(sum1)
       do l = 1, ndecomp_pools
          do fc = 1,num_soilc
@@ -680,10 +647,6 @@ contains
       end do
 
       ! total litter carbon in the top meter (TOTLITC_1m)
-      ! do fc = 1,num_soilc
-      !    c = filter_soilc(fc)
-      !    this%totlitc_1m(c)         = 0._r8
-      ! end do
       !$acc parallel loop independent gang worker default(present) private(sum1,sum2)
       do fc = 1,num_soilc
          c = filter_soilc(fc)
@@ -705,30 +668,9 @@ contains
          this%totsomc_1m(c) = sum2 
       end do
 
-      ! ! total soil organic matter carbon in the top meter (TOTSOMC_1m)
-      ! do fc = 1,num_soilc
-      !    c = filter_soilc(fc)
-      !    this%totsomc_1m(c) = 0._r8
-      ! end do
-      ! do l = 1, ndecomp_pools
-      !    if ( decomp_cascade_con%is_soil(l) ) then
-      !       do fc = 1,num_soilc
-      !          c = filter_soilc(fc)
-      !          this%totsomc_1m(c) = &
-      !               this%totsomc_1m(c) + &
-      !               this%decomp_cpools_1m(c,l)
-      !       end do
-      !    end if
-      ! end do
-
-
    end if ! nlevdecomp>1
 
    ! total litter carbon (TOTLITC)
-   ! do fc = 1,num_soilc
-   !    c = filter_soilc(fc)
-   !    this%totlitc(c) = 0._r8
-   ! end do
    !$acc parallel loop independent gang worker default(present) private(sum1,sum2,sum3)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
@@ -756,42 +698,7 @@ contains
    end do
 
    ! ! total soil organic matter carbon (TOTSOMC)
-   ! do fc = 1,num_soilc
-   !    c = filter_soilc(fc)
-   !    this%totsomc(c) = 0._r8
-   ! end do
-   ! do l = 1, ndecomp_pools
-   !    if ( decomp_cascade_con%is_soil(l) ) then
-   !       do fc = 1,num_soilc
-   !          c = filter_soilc(fc)
-   !          this%totsomc(c) = &
-   !               this%totsomc(c) + &
-   !               this%decomp_cpools(c,l)
-   !       end do
-   !    end if
-   ! end do
-
-   ! ! coarse woody debris carbon
-   ! do fc = 1,num_soilc
-   !    c = filter_soilc(fc)
-   !    this%cwdc(c) = 0._r8
-   ! end do
-   ! do l = 1, ndecomp_pools
-   !    if ( decomp_cascade_con%is_cwd(l) ) then
-   !       do fc = 1,num_soilc
-   !          c = filter_soilc(fc)
-   !          this%cwdc(c) = &
-   !               this%cwdc(c) + &
-   !               this%decomp_cpools(c,l)
-   !       end do
-   !    end if
-   ! end do
-
    ! truncation carbon
-   ! do fc = 1,num_soilc
-   !    c = filter_soilc(fc)
-   !    this%ctrunc(c) = 0._r8
-   ! end do
    !$acc parallel loop independent gang worker default(present) private(sum1)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
@@ -843,10 +750,9 @@ contains
  end subroutine col_cs_summary_acc
 
  !-----------------------------------------------------------------------
- subroutine col_ns_summary_acc(this, bounds, num_soilc, filter_soilc)
+ subroutine col_ns_summary_acc(this, num_soilc, filter_soilc)
    ! !ARGUMENTS:
    type (column_nitrogen_state)  :: this
-   type(bounds_type) , intent(in) :: bounds
    integer           , intent(in) :: num_soilc       ! number of soil columns in filter
    integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
    !
@@ -862,15 +768,6 @@ contains
    nlev = nlevdecomp
    if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
    !$acc enter data create(sum1,sum2,sum3)
-   
-   ! do fc = 1,num_soilc
-   !    c = filter_soilc(fc)
-   !    this%smin_no3(c) = 0._r8
-   !    this%smin_nh4(c) = 0._r8
-   !    if(use_pflotran .and. pf_cmode) then
-   !       this%smin_nh4sorb(c) = 0._r8
-   !    end if
-   ! end do
 
    !$acc parallel loop gang worker independent default(present) private(sum1,sum2,sum3)
    do fc = 1,num_soilc
@@ -890,10 +787,7 @@ contains
    end do
 
    ! vertically integrate each of the decomposing N pools
-   ! do fc = 1,num_soilc
-   !    c = filter_soilc(fc)
-   !    this%decomp_npools(c,l) = 0._r8
-   ! end do
+
    !$acc parallel loop independent gang worker collapse(2) default(present) private(sum1)
    do l = 1, ndecomp_pools
       do fc = 1,num_soilc
@@ -909,14 +803,6 @@ contains
 
    ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
    if ( nlevdecomp > 1) then
-
-      ! do l = 1, ndecomp_pools
-      !    do fc = 1,num_soilc
-      !       c = filter_soilc(fc)
-      !       this%decomp_npools_1m(c,l) = 0._r8
-      !    end do
-      ! end do
-
       ! vertically integrate each of the decomposing n pools to 1 meter
       !$acc parallel loop independent gang worker collapse(2) default(present) private(sum1)
       do l = 1, ndecomp_pools
@@ -961,29 +847,9 @@ contains
 
       end do
 
-      ! ! total soil organic matter nitrogen to 1 meter (TOTSOMN_1m)
-      ! do fc = 1,num_soilc
-      !    c = filter_soilc(fc)
-      !    this%totsomn_1m(c) = 0._r8
-      ! end do
-      ! do l = 1, ndecomp_pools
-      !    if ( decomp_cascade_con%is_soil(l) ) then
-      !       do fc = 1,num_soilc
-      !          c = filter_soilc(fc)
-      !          this%totsomn_1m(c) = &
-      !               this%totsomn_1m(c) + &
-      !               this%decomp_npools_1m(c,l)
-      !       end do
-      !    end if
-      ! end do
-
    endif
 
    ! ! total litter nitrogen (TOTLITN)
-   ! do fc = 1,num_soilc
-   !    c = filter_soilc(fc)
-   !    this%totlitn(c)    = 0._r8
-   ! end do
    !$acc parallel loop independent gang worker default(present) private(sum1,sum2)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
@@ -1008,42 +874,6 @@ contains
    end do
 
    ! ! total soil organic matter nitrogen (TOTSOMN)
-   ! do fc = 1,num_soilc
-   !    c = filter_soilc(fc)
-   !    this%totsomn(c)    = 0._r8
-   ! end do
-   ! do l = 1, ndecomp_pools
-   !    if ( decomp_cascade_con%is_soil(l) ) then
-   !       do fc = 1,num_soilc
-   !          c = filter_soilc(fc)
-   !          this%totsomn(c) = &
-   !               this%totsomn(c) + &
-   !               this%decomp_npools(c,l)
-   !       end do
-   !    end if
-   ! end do
-
-   ! ! total cwdn
-   ! do fc = 1,num_soilc
-   !    c = filter_soilc(fc)
-   !    this%cwdn(c) = 0._r8
-   ! end do
-   ! do l = 1, ndecomp_pools
-   !    if ( decomp_cascade_con%is_cwd(l) ) then
-   !       do fc = 1,num_soilc
-   !          c = filter_soilc(fc)
-   !          this%cwdn(c) = &
-   !               this%cwdn(c) + &
-   !               this%decomp_npools(c,l)
-   !       end do
-   !    end if
-   ! end do
-
-   ! total sminn
-   ! do fc = 1,num_soilc
-   !    c = filter_soilc(fc)
-   !    this%sminn(c)      = 0._r8
-   ! end do
    !$acc parallel loop independent gang worker default(present) private(sum1,sum2)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
@@ -1059,18 +889,6 @@ contains
    end do
 
    ! ! total col_ntrunc
-   ! do fc = 1,num_soilc
-   !    c = filter_soilc(fc)
-   !    this%ntrunc(c) = 0._r8
-   ! end do
-   ! do j = 1, nlev
-   !    do fc = 1,num_soilc
-   !       c = filter_soilc(fc)
-   !       this%ntrunc(c) = &
-   !            this%ntrunc(c) + &
-   !            this%ntrunc_vr(c,j) * dzsoi_decomp(j)
-   !    end do
-   ! end do
 
    !$acc parallel loop independent gang vector default(present) 
    do fc = 1,num_soilc
@@ -1121,10 +939,9 @@ contains
  end subroutine col_ns_summary_acc
 
  !-----------------------------------------------------------------------
- subroutine col_ps_summary_acc(this, bounds, num_soilc, filter_soilc)
+ subroutine col_ps_summary_acc(this, num_soilc, filter_soilc)
    ! !ARGUMENTS:
    type(column_phosphorus_state) :: this
-   type(bounds_type) , intent(in)  :: bounds
    integer           , intent(in)  :: num_soilc       ! number of soil columns in filter
    integer           , intent(in)  :: filter_soilc(:) ! filter for soil columns
    !
@@ -1134,14 +951,7 @@ contains
    real(r8), parameter :: maxdepth=1.0_r8  ! depth to integrate soil variables
    real(r8) :: sum1, sum2, sum3, sum4, sum5 
    !-----------------------------------------------------------------------
-   !   do fc = 1,num_soilc
-   !      c = filter_soilc(fc)
-   !      this%solutionp(c) =0._r8
-   !      this%labilep(c)   =0._r8
-   !      this%secondp(c)   =0._r8
-   !      this%occlp(c)     =0._r8
-   !      this%primp(c)     =0._r8
-   !   end do
+
    !$acc enter data create( sum1, sum2, sum3, sum4, sum5)
   !$acc parallel loop independent gang vector default(present) private(sum1,sum2,sum3,sum4,sum5) 
   do fc = 1,num_soilc
@@ -1167,10 +977,6 @@ contains
   end do
 
   ! vertically integrate each of the decomposing P pools
-  !   do fc = 1,num_soilc
-  !      c = filter_soilc(fc)
-  !      this%decomp_ppools(c,l) = 0._r8
-  !   end do
 
   !$acc parallel loop independent collapse(2) gang worker default(present) private(sum1)
   do l = 1, ndecomp_pools
@@ -1187,12 +993,7 @@ contains
 
   ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
   if ( nlevdecomp > 1) then
-   !   do l = 1, ndecomp_pools
-   !      do fc = 1,num_soilc
-   !         c = filter_soilc(fc)
-   !         this%decomp_ppools_1m(c,l) = 0._r8
-   !      end do
-   !   end do
+
 
      ! vertically integrate each of the decomposing n pools to 1 meter
       !$acc parallel loop independent gang worker default(present) private(sum1)
@@ -1213,11 +1014,7 @@ contains
      end do
 
      ! total litter phosphorus to 1 meter (TOTLITN_1m)
-   !   do fc = 1,num_soilc
-   !      c = filter_soilc(fc)
-   !      this%totlitp_1m(c) = 0._r8
-   !   end do
-      
+
       !$acc parallel loop independent gang worker default(present) private(sum1,sum2)
       do fc = 1,num_soilc
          c = filter_soilc(fc)
@@ -1238,29 +1035,8 @@ contains
          this%totsomp_1m(c) = sum2 
       end do
 
-   !   ! total soil organic matter phosphorus to 1 meter (TOTSOMN_1m)
-   !   do fc = 1,num_soilc
-   !      c = filter_soilc(fc)
-   !      this%totsomp_1m(c) = 0._r8
-   !   end do
-   !   do l = 1, ndecomp_pools
-   !      if ( decomp_cascade_con%is_soil(l) ) then
-   !         do fc = 1,num_soilc
-   !            c = filter_soilc(fc)
-   !            this%totsomp_1m(c) = &
-   !                 this%totsomp_1m(c) + &
-   !                 this%decomp_ppools_1m(c,l)
-   !         end do
-   !      end if
-   !   end do
-
   endif
 
-  ! total litter phosphorus (TOTLITP)
-   !   do fc = 1,num_soilc
-   !      c = filter_soilc(fc)
-   !      this%totlitp(c)    = 0._r8
-   !   end do
   !$acc parallel loop independent gang worker default(present) private(sum1,sum2, sum3) 
   do fc = 1,num_soilc
       c = filter_soilc(fc)
@@ -1289,43 +1065,6 @@ contains
       this%cwdp(c)    = sum3 
   end do
 
-!   ! total soil organic matter phosphorus (TOTSOMP)
-!   do fc = 1,num_soilc
-!      c = filter_soilc(fc)
-!      this%totsomp(c)    = 0._r8
-!   end do
-!   do l = 1, ndecomp_pools
-!      if ( decomp_cascade_con%is_soil(l) ) then
-!         do fc = 1,num_soilc
-!            c = filter_soilc(fc)
-!            this%totsomp(c) = &
-!                 this%totsomp(c) + &
-!                 this%decomp_ppools(c,l)
-!         end do
-!      end if
-!   end do
-
-!   ! total cwdn
-!   do fc = 1,num_soilc
-!      c = filter_soilc(fc)
-!      this%cwdp(c) = 0._r8
-!   end do
-!   do l = 1, ndecomp_pools
-!      if ( decomp_cascade_con%is_cwd(l) ) then
-!         do fc = 1,num_soilc
-!            c = filter_soilc(fc)
-!            this%cwdp(c) = &
-!                 this%cwdp(c) + &
-!                 this%decomp_ppools(c,l)
-!         end do
-!      end if
-!   end do
-
-  ! total sminp
-!   do fc = 1,num_soilc
-!      c = filter_soilc(fc)
-!      this%sminp(c)      = 0._r8
-!   end do
   !$acc parallel loop independent collapse(2) gang vector default(present)
   do j = 1, nlevdecomp
      do fc = 1,num_soilc
@@ -1352,19 +1091,6 @@ contains
    end do
 
   ! total col_ptrunc
-!   do fc = 1,num_soilc
-!      c = filter_soilc(fc)
-!      this%ptrunc(c) = 0._r8
-!   end do
-
-!   do j = 1, nlevdecomp
-!      do fc = 1,num_soilc
-!         c = filter_soilc(fc)
-!         this%ptrunc(c) = &
-!              this%ptrunc(c) + &
-!              this%ptrunc_vr(c,j) * dzsoi_decomp(j)
-!      end do
-!   end do
 
    !$acc parallel loop independent gang vector default(present) 
   do fc = 1,num_soilc
@@ -1406,5 +1132,917 @@ contains
   !$acc exit data delete( sum1, sum2, sum3, sum4, sum5)
 
  end subroutine col_ps_summary_acc
+
+ !-----------------------------------------------------------------------
+ subroutine col_cf_summary_acc(this, num_soilc, filter_soilc, isotope)
+   !
+   ! !DESCRIPTION:
+   ! column-level carbon flux summary calculations
+   !
+   use timeinfoMod , only : dtime_mod
+   ! !ARGUMENTS:
+   type(column_carbon_flux), intent(inout):: this
+   integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+   integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+   character(len=4)       , intent(in)    :: isotope
+   !
+   ! !LOCAL VARIABLES:
+   real(r8) :: nfixlags, dtime ! temp variables for making lagged npp
+   integer  :: c,p,j,k,l       ! indices
+   integer  :: fc              ! lake filter indices
+   real(r8) :: maxdepth        ! depth to integrate soil variables
+   integer  :: nlev
+   real(r8) :: sum1, sum2, sum3, sum4 
+   !-----------------------------------------------------------------------
+   associate(&
+        is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
+        is_soil   =>    decomp_cascade_con%is_soil   , & ! Input:  [logical (:) ]  TRUE => pool is a soil pool
+        is_cwd    =>    decomp_cascade_con%is_cwd      & ! Input:  [logical (:) ]  TRUE => pool is a cwd pool
+        )
+
+        !$acc enter data create(sum1, sum2)
+
+   ! PET: retaining the following here during migration, but this is science code that should
+   ! really be in the NDynamics module. Flag for relocation during ELM v2 code cleanup.
+   if ( isotope == 'bulk') then
+      if (nfix_timeconst > 0._r8 .and. nfix_timeconst < 500._r8 ) then
+
+         ! this code is to calculate an exponentially-relaxed npp value for use in NDynamics code
+         nfixlags = nfix_timeconst * secspday
+
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            if ( this%lag_npp(c) /= spval ) then
+               this%lag_npp(c) = &
+                    this%lag_npp(c) * exp(-dtime_mod/nfixlags) + &
+                    this%npp(c) * (1._r8 - exp(-dtime_mod/nfixlags))
+            else
+               ! first timestep
+               this%lag_npp(c) = this%npp(c)
+            endif
+         end do
+      endif
+   endif
+   nlev = nlevdecomp
+   if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
+
+   if ( (.not. is_active_betr_bgc           ) .and. &
+        (.not. (use_pflotran .and. pf_cmode))) then
+
+      ! vertically integrate HR and decomposition cascade fluxes
+      !$acc parallel loop independent gang worker collapse(2) default(present) private(c,sum1)
+      do k = 1, ndecomp_cascade_transitions
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            sum1 = 0._r8
+            !$acc loop vector reduction(+:sum1)
+            do j = 1,nlev
+                   sum1 = sum1 + this%decomp_cascade_ctransfer_vr(c,j,k) * dzsoi_decomp(j)
+            end do
+            this%decomp_cascade_ctransfer(c,k) = this%decomp_cascade_ctransfer(c,k) + sum1 
+         end do
+      end do
+
+
+      ! total heterotrophic respiration (HR)
+      !$acc parallel loop independent gang vector default(present) private(c)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         this%hr(c) = &
+              this%lithr(c) + &
+              this%somhr(c)
+      end do
+
+
+   endif
+
+   !$acc parallel loop independent gang worker default(present) private(c, sum1)
+   do k = 1, ndecomp_cascade_transitions
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         sum1 = 0._r8
+         !$acc loop vector reduction(+:sum1)
+         do j = 1,nlevdecomp
+            ! vertically integrate HR and decomposition cascade fluxes
+             sum1 = sum1 + this%decomp_cascade_hr_vr(c,j,k) * dzsoi_decomp(j)
+
+         end do
+         !this%decomp_cascade_hr(c,k) is zeroed out above
+         this%decomp_cascade_hr(c,k) = sum1; 
+      end do
+   end do
+
+   !$acc parallel loop independent gang worker default(present) private(c,sum1,sum2)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum1 = 0._r8
+      sum2 = 0._r8
+      !$acc loop vector reduction(+:sum1)
+      do k = 1, ndecomp_cascade_transitions
+         ! litter heterotrophic respiration (LITHR)
+         if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) .or. is_cwd((decomp_cascade_con%cascade_donor_pool(k)))) then
+            sum1 = sum1 + this%decomp_cascade_hr(c,k)
+         end if
+         
+         ! soil organic matter heterotrophic respiration (SOMHR)
+         if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
+            sum2 = sum2  + this%decomp_cascade_hr(c,k)
+         end if
+      end do
+      this%lithr(c) = sum1; 
+      this%somhr(c) = sum2; 
+   end do
+
+   ! total heterotrophic respiration, vertically resolved (HR)
+   !$acc parallel loop independent gang worker default(present) private(c,sum1)
+   do j = 1,nlevdecomp
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         if (.not. (use_pflotran .and. pf_cmode)) then
+            ! pflotran has returned 'hr_vr(begc:endc,1:nlevdecomp)' to ALM before this subroutine is called in CNEcosystemDynNoLeaching2
+            sum1 = 0._r8 
+         else 
+            sum1 = this%hr_vr(c,j)
+         end if 
+         !$acc loop vector reduction(+:sum1)
+         do k = 1, ndecomp_cascade_transitions
+           sum1 = sum1 + this%decomp_cascade_hr_vr(c,j,k)
+         end do
+
+         this%hr_vr(c,j) = sum1 
+      end do
+   end do
+
+   !----------------------------------------------------------------
+   !$acc parallel loop independent gang vector default(present) 
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      ! total soil respiration, heterotrophic + root respiration (SR)
+      this%sr(c) = &
+           this%rr(c) + &
+           this%hr(c)
+
+      ! total ecosystem respiration, autotrophic + heterotrophic (ER)
+      this%er(c) = &
+           this%ar(c) + &
+           this%hr(c)
+
+      ! litter fire losses (LITFIRE)
+      this%litfire(c) = 0._r8
+
+      ! total product loss
+      this%product_closs(c) = &
+           this%prod10c_loss(c)  + &
+           this%prod100c_loss(c) + &
+           this%prod1c_loss(c)
+
+      ! soil organic matter fire losses (SOMFIRE)
+      this%somfire(c) = 0._r8
+
+      ! total ecosystem fire losses (TOTFIRE)
+      this%totfire(c) = &
+           this%litfire(c) + &
+           this%somfire(c) + &
+           this%vegfire(c)
+   end do
+
+   ! vertically integrate column-level carbon fire losses
+   !$acc parallel loop independent gang worker default(present) private(c, sum1)
+   do l = 1, ndecomp_pools
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         sum1 = 0._r8 
+         !$acc loop vector reduction(+:sum1)
+         do j = 1,nlev
+            sum1 = sum1 + this%m_decomp_cpools_to_fire_vr(c,j,l)*dzsoi_decomp(j)
+         end do
+         this%m_decomp_cpools_to_fire(c,l) = this%m_decomp_cpools_to_fire(c,l) + sum1
+      end do
+   end do
+
+   ! column-level carbon losses to fire, including pft losses
+   !$acc parallel loop independent gang worker default(present) private(c,sum2)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum2 = this%fire_closs_p2c(c)
+      !$acc loop vector reduction(+:sum2)
+      do l = 1, ndecomp_pools
+         sum2 = sum2 + this%m_decomp_cpools_to_fire(c,l)
+      end do
+      this%fire_closs(c) = sum2
+   end do
+
+   ! column-level carbon losses to fire, including pft losses
+   !$acc parallel loop independent gang vector default(present) 
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+
+      ! column-level carbon losses due to landcover change
+      this%dwt_closs(c) = &
+           this%dwt_conv_cflux(c)
+
+      ! net ecosystem production, excludes fire flux, landcover change, and loss from wood products, positive for sink (NEP)
+      this%nep(c) = &
+           this%gpp(c) - &
+           this%er(c)
+
+      ! net biome production of carbon, includes depletion from: fire flux, landcover change flux, and loss
+      ! from wood products pools, positive for sink (NBP)
+      this%nbp(c) =             &
+           this%nep(c)        - &
+           this%fire_closs(c) - &
+           this%dwt_closs(c)  - &
+           this%product_closs(c)
+
+      ! net ecosystem exchange of carbon, includes fire flux, landcover change flux, loss
+      ! from wood products pools, and hrv_xsmrpool flux, positive for source (NEE)
+      this%nee(c) =                &
+           -this%nep(c)           + &
+           this%fire_closs(c)    + &
+           this%dwt_closs(c)     + &
+           this%product_closs(c) + &
+           this%hrv_xsmrpool_to_atm(c)
+
+      ! land use flux and land uptake
+      this%landuseflux(c) = &
+           this%dwt_closs(c) + &
+           this%product_closs(c)
+
+      this%landuptake(c) = &
+           this%nee(c) - &
+           this%landuseflux(c)
+
+      ! (cWDC_HR) - coarse woody debris heterotrophic respiration
+      if  (.not. is_active_betr_bgc) this%cwdc_hr(c) = 0._r8
+
+   end do
+
+   if  (.not. is_active_betr_bgc) then
+
+      ! (cWDC_LOSS) - coarse woody debris C loss
+      !$acc parallel loop independent gang worker default(present) private(c,sum1)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         sum1 = 0._r8 
+         !$acc loop vector reduction(+:sum1)
+         do l = 1, ndecomp_pools
+            if ( is_cwd(l) ) then
+               sum1 = sum1 + this%m_decomp_cpools_to_fire(c,l)
+            end if
+         end do
+         this%cwdc_loss(c) = sum1 
+      end do
+
+      
+      !$acc parallel loop independent gang worker default(present) private(c,sum1)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         sum1 = 0._r8 
+         !$acc loop vector reduction(+:sum1)
+         do k = 1, ndecomp_cascade_transitions
+            if ( is_cwd(decomp_cascade_con%cascade_donor_pool(k)) ) then
+               sum1 = sum1 + this%decomp_cascade_ctransfer(c,k)
+            end if
+         end do
+         this%cwdc_loss(c) = this%cwdc_loss(c) + sum1
+      end do
+
+      if (.not.(use_pflotran .and. pf_cmode)) then
+         ! (LITTERC_LOSS) - litter C loss
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%litterc_loss(c) = this%lithr(c)
+         end do
+      end if !(.not.(use_pflotran .and. pf_cmode))
+
+      !$acc parallel loop independent gang worker default(present) private(c, sum1)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         if(.not.(use_pflotran .and. pf_cmode)) then 
+            sum1 = this%lithr(c) 
+         else 
+            sum1 = this%litterc_loss(c) 
+         end if 
+         !$acc loop vector reduction(+:sum1) 
+         do l = 1, ndecomp_pools
+            if ( is_litter(l) ) then
+                sum1 = sum1 + this%m_decomp_cpools_to_fire(c,l)
+            end if
+         end do
+         this%litterc_loss(c) = sum1 
+      end do
+
+      !$acc parallel loop independent gang worker default(present) private(sum1,c)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         sum1 = 0._r8 
+         !$acc loop vector reduction(+:sum1) 
+         do k = 1, ndecomp_cascade_transitions
+            if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
+               sum1 = sum1 + this%decomp_cascade_ctransfer(c,k)
+            end if
+          end do
+          this%litterc_loss(c) = this%litterc_loss(c) + sum1
+      end do
+
+   end if ! .not. is_active_betr_bgc
+
+   !$acc parallel loop independent gang worker default(present) private(c,sum1,sum2)
+   do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       sum1 = 0._r8
+       sum2 = 0._r8
+       !$acc loop vector reduction(+:sum1,sum2) 
+       do j = 1, nlev
+           sum1 = sum1 + &
+               this%phenology_c_to_litr_met_c(c,j)* dzsoi_decomp(j) + &
+               this%phenology_c_to_litr_cel_c(c,j)* dzsoi_decomp(j) + &
+               this%phenology_c_to_litr_lig_c(c,j)* dzsoi_decomp(j) + &
+               this%gap_mortality_c_to_litr_met_c(c,j)* dzsoi_decomp(j) + &
+               this%gap_mortality_c_to_litr_cel_c(c,j)* dzsoi_decomp(j) + &
+               this%gap_mortality_c_to_litr_lig_c(c,j)* dzsoi_decomp(j) + &
+               this%m_c_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
+               this%m_c_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
+               this%m_c_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
+           
+            sum2 = sum2 + &
+               this%gap_mortality_c_to_cwdc(c,j)* dzsoi_decomp(j) + &
+               this%fire_mortality_c_to_cwdc(c,j)* dzsoi_decomp(j)
+       end do
+       this%plant_to_litter_cflux(c) = sum1 
+       this%plant_to_cwd_cflux(c)  = sum2 
+   end do
+
+   !$acc exit data delete(sum1, sum2)
+
+   end associate
+
+ end subroutine col_cf_summary_acc
+
+ !-----------------------------------------------------------------------
+ subroutine col_nf_summary_acc(this, num_soilc, filter_soilc)
+   !
+   ! !DESCRIPTION:
+   ! Column-level nitrogen summary calculations
+   ! !ARGUMENTS:
+   type (column_nitrogen_flux)            :: this
+   integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+   integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+   !
+   ! !LOCAL VARIABLES:
+   integer  :: fc,c,j,k,l       ! indices
+   integer  :: nlev
+   real(r8) :: sum1, sum2, sum3,sum4,sum5,sum6,sum7,sum8 
+   !-----------------------------------------------------------------------
+
+   !$acc enter data create(sum1,sum2,sum3,sum4,sum5,sum6,sum7,sum8)
+   nlev = nlevdecomp
+   if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
+
+   ! do fc = 1,num_soilc
+      ! c = filter_soilc(fc)
+      ! this%denit(c) = 0._r8
+      ! this%supplement_to_sminn(c) = 0._r8
+      ! this%som_n_leached(c)       = 0._r8
+      ! this%somn_erode(c)          = 0._r8
+      ! this%somn_deposit(c)        = 0._r8
+      ! this%somn_yield(c)          = 0._r8
+   ! end do
+
+   if (  (.not. (use_pflotran .and. pf_cmode)) ) then
+      ! BeTR is off AND PFLOTRAN's pf_cmode is false
+      ! vertically integrate decomposing N cascade fluxes and
+      !soil mineral N fluxes associated with decomposition cascade
+      !$acc parallel loop independent gang worker default(present) private(sum1,sum2,c)
+      do k = 1, ndecomp_cascade_transitions
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            sum1 = 0._r8 
+            sum2 = 0._r8
+            !$acc loop vector reduction(+:sum1,sum2)
+            do j = 1,nlev
+               sum1 = sum1 + this%decomp_cascade_ntransfer_vr(c,j,k) * dzsoi_decomp(j)
+
+               sum2 = sum2 + this%decomp_cascade_sminn_flux_vr(c,j,k) * dzsoi_decomp(j)
+            end do
+            this%decomp_cascade_ntransfer(c,k) = this%decomp_cascade_ntransfer(c,k) + sum1
+            this%decomp_cascade_sminn_flux(c,k)= this%decomp_cascade_sminn_flux(c,k) + sum2
+         end do
+      end do
+
+      ! vertically integrate NO3 NH4 N2O fluxes and pools
+      !$acc parallel loop independent gang worker default(present) private(c,sum1,sum2,sum3,sum4,sum5,sum6,sum7,sum8)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         sum1=0._r8;sum2=0._r8
+         sum3=0._r8;sum4=0._r8;
+         sum5=0._r8;sum6=0._r8;
+         sum7=0._r8;sum8=0._r8;
+
+         !$acc loop vector reduction(+:sum1,sum2,sum3,sum4,sum5,sum6,sum7,sum8)
+         do j = 1, nlev
+
+            ! nitrification and denitrification fluxes
+            sum1 = sum1 + this%f_nit_vr(c,j) * dzsoi_decomp(j)
+            sum2 = sum2 + this%f_denit_vr(c,j) * dzsoi_decomp(j)
+            sum3 = sum3 + this%pot_f_nit_vr(c,j) * dzsoi_decomp(j)
+            sum4 = sum4 + this%pot_f_denit_vr(c,j) * dzsoi_decomp(j)
+            sum5 = sum5 + this%f_n2o_nit_vr(c,j) * dzsoi_decomp(j)
+            sum6 = sum6 + this%f_n2o_denit_vr(c,j) * dzsoi_decomp(j)
+            ! leaching/runoff flux
+            sum7 = sum7 + this%smin_no3_leached_vr(c,j) * dzsoi_decomp(j)
+            sum8 = sum8 +  this%smin_no3_runoff_vr(c,j) * dzsoi_decomp(j)
+         end do
+         this%f_nit(c) = this%f_nit(c) + sum1
+         this%f_denit(c) = this%f_denit(c) + sum2 
+         this%pot_f_nit(c) = this%pot_f_nit(c) + sum3
+         this%pot_f_denit(c) = this%pot_f_denit(c) + sum4
+         this%f_n2o_nit(c) = this%f_n2o_nit(c) + sum5
+         this%f_n2o_denit(c) = this%f_n2o_denit(c) + sum6 
+         this%smin_no3_leached(c) =this%smin_no3_leached(c) + sum7
+         this%smin_no3_runoff(c) = this%smin_no3_runoff(c) + sum8
+
+         this%denit(c) = this%f_denit(c)
+
+      end do
+
+   end if
+
+   ! vertically integrate column-level fire N losses
+   !$acc parallel loop gang worker collapse(2) default(present) private(c,sum1)
+   do k = 1, ndecomp_pools
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         sum1 = 0._r8
+         !$acc loop vector reduction(+:sum1)
+         do j = 1, nlev
+            sum1 = sum1 + this%m_decomp_npools_to_fire_vr(c,j,k) * dzsoi_decomp(j)
+         end do
+         this%m_decomp_npools_to_fire(c,k) = this%m_decomp_npools_to_fire(c,k) + sum1
+      end do
+   end do
+
+   ! total column-level fire N losses
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      this%fire_nloss(c) = this%fire_nloss_p2c(c)
+   end do
+   !$acc parallel loop gang worker default(present) private(c,sum1)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum1 = this%fire_nloss_p2c(c)
+      !$acc loop vector reduction(+:sum1)
+      do k = 1, ndecomp_pools
+         sum1 = sum1 + this%m_decomp_npools_to_fire(c,k)
+      enddo 
+      this%fire_nloss(c) = sum1 
+   end do
+
+   ! supplementary N supplement_to_sminn
+   !$acc parallel loop independent gang worker default(present) private(c,sum1,sum2,sum3,sum4)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum1 = 0._r8;sum2=0._r8;sum3=0._r8
+      sum4 = 0._r8;
+      !$acc loop vector reduction(+:sum1,sum2,sum3,sum4)
+      do j = 1, nlev
+         sum1 = sum1 + this%supplement_to_sminn_vr(c,j) * dzsoi_decomp(j)
+         sum2 = sum2 + (this%sminn_nh4_input_vr(c,j)+this%sminn_no3_input_vr(c,j))*dzsoi_decomp(j)
+         sum3 = sum3 + this%sminn_nh4_input_vr(c,j)*dzsoi_decomp(j)
+         sum4 = sum4 + this%sminn_no3_input_vr(c,j)*dzsoi_decomp(j)
+      end do
+      this%supplement_to_sminn(c) = sum1
+      this%sminn_input(c) = this%sminn_input(c) + sum2
+      this%sminn_nh4_input(c) = this%sminn_nh4_input(c) + sum3
+      this%sminn_no3_input(c) = this%sminn_no3_input(c) + sum4 
+   end do
+
+   !$acc parallel loop independent gang vector default(present) private(c)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      ! column-level N losses due to landcover change
+      this%dwt_nloss(c) = &
+           this%dwt_conv_nflux(c)
+      ! total wood product N loss
+      this%product_nloss(c) = &
+           this%prod10n_loss(c) + &
+           this%prod100n_loss(c)+ &
+           this%prod1n_loss(c)
+   end do
+
+   ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
+   
+   !$acc parallel loop gang worker default(present) private(c,sum1,sum2)
+   do l = 1, ndecomp_pools
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         sum1 = 0._r8;
+         sum2 = 0._r8
+         !$acc loop vector reduction(+:sum1,sum2)
+         do j = 1, nlev
+            sum1 = sum1 + this%decomp_npools_transport_tendency(c,j,l) * dzsoi_decomp(j)
+
+            sum2 = sum2 + (this%bgc_npool_ext_inputs_vr(c,j,l)-this%bgc_npool_ext_loss_vr(c,j,l))*dzsoi_decomp(j)
+         end do
+         this%decomp_npools_leached(c,l) =  sum1
+         this%bgc_npool_inputs(c,l) = this%bgc_npool_inputs(c,l) + sum2
+      end do
+   end do
+
+   !$acc parallel loop independent gang worker default(present) private(sum1,c)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum1 = 0._r8
+      !$acc loop vector reduction(+:sum1)
+      do l = 1, ndecomp_pools
+         sum1 = sum1 + this%decomp_npools_leached(c,l)
+      end do
+      this%som_n_leached(c) = sum1
+   end do 
+
+   ! FATES uses the plant_to_litter_nflux variable for mass accounting, so bypass here
+   if(.not.use_fates)then
+      !$acc parallel loop independent gang worker default(present) private(sum1,sum2,c)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         sum1 = 0._r8; sum2 = 0._r8;
+         this%plant_to_litter_nflux(c) = 0._r8
+         this%plant_to_cwd_nflux(c) = 0._r8
+         !$acc loop vector reduction(+:sum1,sum2)
+         do j = 1, nlev
+            sum1 = sum1  + &
+                 this%phenology_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
+                 this%phenology_n_to_litr_cel_n(c,j)* dzsoi_decomp(j) + &
+                 this%phenology_n_to_litr_lig_n(c,j)* dzsoi_decomp(j) + &
+                 this%gap_mortality_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
+                 this%gap_mortality_n_to_litr_cel_n(c,j)* dzsoi_decomp(j) + &
+                 this%gap_mortality_n_to_litr_lig_n(c,j)* dzsoi_decomp(j) + &
+                 this%m_n_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
+                 this%m_n_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
+                 this%m_n_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
+            sum1 = sum2 + &
+                 this%gap_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j) + &
+                 this%fire_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j)
+         end do
+         this%plant_to_litter_nflux(c) = sum1;
+         this%plant_to_cwd_nflux(c) = sum2
+      end do
+   end if
+
+   !$acc parallel loop independent gang worker default(present) private(c,sum1,sum2)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum1 = 0._r8
+      sum2 = 0._r8
+      !$acc loop vector reduction(+:sum1,sum2)
+      do j = 1, nlev
+         sum1 = sum1 + this%smin_no3_to_plant_vr(c,j) * dzsoi_decomp(j)
+         sum2 = sum2 + this%smin_nh4_to_plant_vr(c,j) * dzsoi_decomp(j)
+      enddo
+      this%smin_no3_to_plant(c) = sum1
+      this%smin_nh4_to_plant(c) = sum2 
+   enddo
+
+   !$acc exit data delete(sum1,sum2,sum3,sum4,sum5,sum6,sum7,sum8)
+
+
+ end subroutine col_nf_summary_acc
+
+  !-----------------------------------------------------------------------
+ subroutine col_pf_summary_acc(this, num_soilc, filter_soilc)
+   ! !ARGUMENTS:
+   type (column_phosphorus_flux) :: this
+   integer           , intent(in) :: num_soilc       ! number of soil columns in filter
+   integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
+   !
+   ! !LOCAL VARIABLES:
+   integer  :: c,j,k,l   ! indices
+   integer  :: fc       ! lake filter indices
+   real(r8) :: maxdepth    ! depth to integrate soil variables
+   real(r8) :: sum1, sum2, sum3,sum4,sum5,sum6,sum7,sum8 
+   !-----------------------------------------------------------------------
+
+   !$acc enter data create(sum1,sum2,sum3,sum4,sum5,sum6,sum7,sum8)
+
+   ! pflotran
+   if (.not.(use_pflotran .and. pf_cmode)) then
+   ! vertically integrate decomposing P cascade fluxes and soil mineral P fluxes associated with decomposition cascade
+   !$acc parallel loop independent gang worker collapse(2) default(present) private(c, sum1,sum2)
+   do k = 1, ndecomp_cascade_transitions
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         sum1 = 0._r8 
+         sum2 = 0._r8 
+
+         !$acc loop vector reduction(+:sum1,sum2)
+         do j = 1,nlevdecomp
+            sum1 = sum1 + this%decomp_cascade_ptransfer_vr(c,j,k) * dzsoi_decomp(j)
+            sum2 = sum2 + this%decomp_cascade_sminp_flux_vr(c,j,k) * dzsoi_decomp(j)
+         end do
+         this%decomp_cascade_ptransfer(c,k) = this%decomp_cascade_ptransfer(c,k) + sum1 
+         this%decomp_cascade_sminp_flux(c,k) = this%decomp_cascade_sminp_flux(c,k) + sum2 
+      end do
+   end do
+   end if !if (.not.(use_pflotran .and. pf_cmode))
+
+   ! vertically integrate inorganic P flux
+   !$acc parallel loop independent gang worker default(present) private(c,sum1) async(1)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum1 = 0._r8
+      !$acc loop vector reduction(+:sum1)
+      do j = 1, nlevdecomp
+          sum1 = sum1 + this%primp_to_labilep_vr(c,j) * dzsoi_decomp(j)
+      end do
+      this%primp_to_labilep(c) = this%primp_to_labilep(c) + sum1 
+   end do
+
+   !$acc parallel loop independent gang worker default(present) private(c,sum2) async(2)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum2 = 0._r8
+      !$acc loop vector reduction(+:sum2)
+      do j = 1, nlevdecomp
+         sum2 = sum2 + this%labilep_to_secondp_vr(c,j) * dzsoi_decomp(j)
+      end do
+      this%labilep_to_secondp(c) = this%labilep_to_secondp(c) + sum2 
+   end do
+
+   !$acc parallel loop independent gang worker default(present) private(c,sum3) async(3)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum3 = 0._r8
+      !$acc loop vector reduction(+:sum3)
+      do j = 1, nlevdecomp
+          sum3 = sum3 + this%secondp_to_labilep_vr(c,j) * dzsoi_decomp(j)
+      end do
+      this%secondp_to_labilep(c) = this%secondp_to_labilep(c) + sum3 
+   end do
+
+   !$acc parallel loop independent gang worker default(present) private(c,sum4) async(4)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum4 = 0._r8
+      !$acc loop vector reduction(+:sum4)
+      do j = 1, nlevdecomp
+          sum4 = sum4 + this%secondp_to_occlp_vr(c,j) * dzsoi_decomp(j)
+      end do
+      this%secondp_to_occlp(c) = this%secondp_to_occlp(c) + sum4 
+   end do
+
+   ! vertically integrate leaching flux
+  !$acc parallel loop independent gang worker default(present) private(c,sum5) async(5)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum5 = 0._r8
+      !$acc loop vector reduction(+:sum5)
+      do j = 1, nlevdecomp
+         sum5 = sum5 + this%sminp_leached_vr(c,j) * dzsoi_decomp(j)
+      end do
+      this%sminp_leached(c) = this%sminp_leached(c) + sum5 
+   end do
+   !$acc wait 
+
+   ! vertically integrate column-level fire P losses
+   !$acc parallel loop independent gang worker default(present) private(c,sum1)
+   do k = 1, ndecomp_pools
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         sum1 = 0._r8
+         !$acc loop vector reduction(+:sum1)
+         do j = 1, nlevdecomp
+            sum1 = sum1 + this%m_decomp_ppools_to_fire_vr(c,j,k) * dzsoi_decomp(j)
+         end do
+         this%m_decomp_ppools_to_fire(c,k) = this%m_decomp_ppools_to_fire(c,k) + sum1
+      end do
+   end do
+
+   ! total column-level fire P losses
+   !$acc parallel loop independent gang worker default(present) private(c,sum2)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      this%fire_ploss(c) = this%fire_ploss_p2c(c)
+      sum2 = 0._r8 
+      !$acc loop vector reduction(+:sum2) 
+      do k = 1, ndecomp_pools
+         sum2 = sum2 + this%m_decomp_ppools_to_fire(c,k)
+      end do
+      this%fire_ploss(c) = this%fire_ploss(c) + sum2 
+   end do
+
+   ! supplementary P supplement_to_sminp
+   !zero'd out 
+   !$acc parallel loop independent gang worker default(present) private(c,sum3)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum3 = 0._r8
+      !$acc loop vector reduction(+:sum3) 
+      do j = 1, nlevdecomp
+         sum3 = sum3 + this%supplement_to_sminp_vr(c,j) * dzsoi_decomp(j)
+      end do
+      this%supplement_to_sminp(c) = sum3 
+   end do
+
+   !$acc parallel loop independent gang vector default(present) private(c)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+
+      ! column-level P losses due to landcover change
+      this%dwt_ploss(c) = &
+           this%dwt_conv_pflux(c)
+
+      ! total wood product P loss
+      this%product_ploss(c) = &
+           this%prod10p_loss(c) + &
+           this%prod100p_loss(c) + &
+           this%prod1p_loss(c)
+   end do
+
+   ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
+
+   !$acc parallel loop independent gang worker default(present) private(c,sum1)
+   do l = 1, ndecomp_pools
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         sum1 = 0._r8
+         !$acc loop vector reduction(+:sum1)
+         do j = 1, nlevdecomp
+             sum1 = sum1 + this%decomp_ppools_transport_tendency(c,j,l) * dzsoi_decomp(j)
+         end do
+         this%decomp_ppools_leached(c,l) = sum1
+      end do
+   end do
+
+      !zero'd out 
+   !$acc parallel loop independent gang worker default(present) private(c,sum2)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum2 = 0._r8
+      !$acc loop vector reduction(+:sum2) 
+      do l = 1, ndecomp_pools
+          sum2 = sum2 + this%decomp_ppools_leached(c,l)
+      end do
+      this%som_p_leached(c) = sum2 
+   end do
+
+   !$acc parallel loop independent gang worker default(present) private(c,sum2)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum2 = 0._r8 
+      !$acc loop vector reduction(+:sum2)
+      do j = 1, nlevdecomp
+         sum2 = sum2 + this%biochem_pmin_vr(c,j)* dzsoi_decomp(j)
+      end do
+      this%biochem_pmin(c) = sum2 
+   end do
+
+   !$acc parallel loop independent gang worker default(present) private(c,sum3,sum4)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum3 = 0._r8 
+      sum4 = 0._r8 
+      !$acc loop vector reduction(+:sum3,sum4)
+      do j = 1, nlevdecomp
+          sum3 = sum3 + this%adsorb_to_labilep_vr(c,j)* dzsoi_decomp(j)
+          sum4 = sum4 + this%desorb_to_solutionp_vr(c,j)* dzsoi_decomp(j)
+      end do
+      this%adsorb_to_labilep(c) = sum3 
+      this%desorb_to_solutionp(c) = sum4 
+   end do
+
+   !$acc parallel loop independent gang worker default(present) private(c,sum3,sum4)
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      sum3 = 0._r8
+      sum4 = 0._r8
+      !$acc loop vector reduction(+:sum3,sum4)
+      do j = 1, nlevdecomp
+         sum3 = sum3 + this%actual_immob_p_vr(c,j) * dzsoi_decomp(j)
+         sum4 = sum4 + this%sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
+      end do
+      this%actual_immob_p(c) = sum3
+      this%smin_p_to_plant(c) = sum4  
+   end do
+
+   if(.not.use_fates)then
+      
+   !$acc parallel loop independent gang worker default(present) private(c,sum1,sum2)
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         sum1 = 0._r8
+         sum2 = 0._r8
+         !$acc loop vector reduction(+:sum1,sum2)
+         do j = 1, nlevdecomp
+            sum1 = sum1  + &
+                 this%phenology_p_to_litr_met_p(c,j)* dzsoi_decomp(j) + &
+                 this%phenology_p_to_litr_cel_p(c,j)* dzsoi_decomp(j) + &
+                 this%phenology_p_to_litr_lig_p(c,j)* dzsoi_decomp(j) + &
+                 this%gap_mortality_p_to_litr_met_p(c,j)* dzsoi_decomp(j) + &
+                 this%gap_mortality_p_to_litr_cel_p(c,j)* dzsoi_decomp(j) + &
+                 this%gap_mortality_p_to_litr_lig_p(c,j)* dzsoi_decomp(j) + &
+                 this%m_p_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
+                 this%m_p_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
+                 this%m_p_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
+            sum2 = sum2 + &
+                 this%gap_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j) + &
+                 this%fire_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j)
+         end do
+         this%plant_to_litter_pflux(c) = sum1 
+         this%plant_to_cwd_pflux(c)    = sum2 
+      end do
+   end if
+   !$acc exit data delete(sum1,sum2,sum3,sum4,sum5,sum6,sum7,sum8)
+
+ end subroutine col_pf_summary_acc
+
+!------------------------------------------------------------
+ subroutine col_cf_summary_for_ch4_acc( this, num_soilc, filter_soilc)
+   !
+   ! !DESCRIPTION:
+   ! summarize column-level fluxes for methane calculation
+   !
+   ! !USES:
+   ! !ARGUMENTS:
+   type(column_carbon_flux)     :: this
+   integer, intent(in) :: num_soilc
+   integer, intent(in) :: filter_soilc(:)
+   !
+   ! !LOCAL VARIABLES
+   integer :: fc, c
+   integer :: j,k,l       ! indices
+   real(r8) :: sum1,sum2,sum3
+   !------------------------------------------------------------
+   associate(&
+       is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
+       is_soil   =>    decomp_cascade_con%is_soil   , & ! Input:  [logical (:) ]  TRUE => pool is a soil pool
+       is_cwd    =>    decomp_cascade_con%is_cwd      &
+   )
+   !$acc enter data create(sum1,sum2,sum3)
+ 
+   if ( (.not. is_active_betr_bgc           ) .and. &
+       (.not. (use_pflotran .and. pf_cmode))) then
+     ! vertically integrate HR and decomposition cascade fluxes
+     !$acc parallel loop independent gang worker collapse(2) private(c,sum1) default(present)
+     do k = 1, ndecomp_cascade_transitions
+       do fc = 1,num_soilc
+           sum1 = 0.0_r8
+           c = filter_soilc(fc)
+           !$acc loop vector reduction(+:sum1)
+           do j = 1,nlevdecomp
+           sum1 = sum1 + &
+               this%decomp_cascade_hr_vr(c,j,k) * dzsoi_decomp(j)
+           end do
+          this%decomp_cascade_hr(c,k) = sum1
+       end do
+     end do
+ 
+     ! litter heterotrophic respiration (LITHR)
+     !$acc parallel loop independent gang worker private(c,sum1) default(present)
+     do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       sum1 = 0._r8
+       !$acc loop vector reduction(+:sum1)
+       do k = 1, ndecomp_cascade_transitions
+           if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) .or. &
+                 is_cwd((decomp_cascade_con%cascade_donor_pool(k)))) then
+               sum1= sum1 + this%decomp_cascade_hr(c,k)
+          end if
+         end do
+         this%lithr(c) = sum1
+     end do
+ 
+     ! soil organic matter heterotrophic respiration (SOMHR)
+     !$acc parallel loop independent gang worker private(c,sum1) default(present)
+     do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       sum1 = 0._r8
+       !$acc loop vector reduction(+:sum1)
+       do k = 1, ndecomp_cascade_transitions
+           if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
+              sum1 = sum1 + this%decomp_cascade_hr(c,k)
+           end if
+         end do
+         this%somhr(c) = sum1
+     end do
+ 
+     ! total heterotrophic respiration, vertically resolved (HR)
+     !$acc parallel loop independent gang worker collapse(2) private(c,sum1) default(present)
+     do j = 1,nlevdecomp
+      do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          sum1 = 0._r8
+          !$acc loop vector reduction(+:sum1)
+          do k = 1, ndecomp_cascade_transitions
+           sum1 = sum1 + this%decomp_cascade_hr_vr(c,j,k)
+          end do
+          this%hr_vr(c,j) = sum1
+      end do
+     end do
+ 
+   endif
+ 
+   end associate
+ 
+ end subroutine col_cf_summary_for_ch4_acc
 
 end module ColumnWorkRoutinesMod

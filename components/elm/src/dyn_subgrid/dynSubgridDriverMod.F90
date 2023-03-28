@@ -14,9 +14,8 @@ module dynSubgridDriverMod
   use dynSubgridControlMod, only : get_do_transient_pfts, get_do_transient_crops
   use dynSubgridControlMod, only : get_do_harvest
   use dynPriorWeightsMod  , only : prior_weights_type
-  use dynPatchStateUpdaterMod      , only : patch_state_updater_type
-  use dynColumnStateUpdaterMod     , only : column_state_updater_type, init_column_state_updater
-  use dynColumnStateUpdaterMod     , only : column_state_updater 
+  use dynPatchStateUpdaterMod      , only : patch_state_updater_type  !, initPatchStateUpdater, patch_state_updater 
+  use dynColumnStateUpdaterMod     , only : column_state_updater_type !, initColumnStateUpdater
   use UrbanParamsType     , only : urbanparams_type
   use CanopyStateType     , only : canopystate_type
   use CNStateType         , only : cnstate_type
@@ -46,21 +45,15 @@ module dynSubgridDriverMod
   public :: dynSubgrid_driver           ! top-level driver for transient land cover
   public :: dynSubgrid_wrapup_weight_changes ! reconcile various variables after subgrid weights change
   !
-  ! !PRIVATE TYPES:
   ! saved weights from before the subgrid weight updates
   type(prior_weights_type),public :: prior_weights
-
-  ! object used to update patch-level states after subgrid weight updates
-  type(patch_state_updater_type), public,target :: patch_state_updater
-
   !---------------------------------------------------------------------------
-
-  !$acc declare create(prior_weights, patch_state_updater)
+  !$acc declare create(prior_weights)
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine dynSubgrid_init(bounds, glc2lnd_vars, crop_vars)
+  subroutine dynSubgrid_init(bounds, glc2lnd_vars, crop_vars, patch_state_updater, column_state_updater)
     !
     ! !DESCRIPTION:
     ! Determine initial subgrid weights for prescribed transient Patches and/or
@@ -82,6 +75,9 @@ contains
     type(bounds_type) , intent(in)    :: bounds  ! processor-level bounds
     type(glc2lnd_type), intent(inout) :: glc2lnd_vars
     type(crop_type)   , intent(inout) :: crop_vars
+    type(patch_state_updater_type), intent(inout) :: patch_state_updater 
+    type(column_state_updater_type), intent(inout) :: column_state_updater 
+
     !
     ! !LOCAL VARIABLES:
     integer           :: nclumps      ! number of clumps on this processor
@@ -95,10 +91,12 @@ contains
     nclumps = get_proc_clumps()
 
     prior_weights        = prior_weights_type(bounds)
-    patch_state_updater  = patch_state_updater_type(bounds)
+    !patch_state_updater  = patch_state_updater_type(bounds)
     !column_state_updater = column_state_updater_type(bounds, nclumps)
-    write(*,*) "initializing column_state_updater" 
-    call init_column_state_updater(column_state_updater, bounds, nclumps)
+    write(*,*) "initializing patch/column_state_updater" 
+    call patch_state_updater%initPatchStateUpdater( bounds) 
+    call column_state_updater%initColumnStateUpdater(bounds, nclumps)
+
     ! Initialize stuff for prescribed transient Patches
     ! if (get_do_transient_pfts()) then
     !    call dynpft_init(bounds, dynpft_filename=get_flanduse_timeseries())
@@ -142,7 +140,8 @@ contains
        energyflux_vars, canopystate_vars, photosyns_vars, cnstate_vars, &
        veg_cs, c13_veg_cs, c14_veg_cs, &
        col_cs, c13_col_cs, c14_col_cs, col_cf, &
-       grc_cs, grc_cf, glc2lnd_vars, crop_vars)
+       grc_cs, grc_cf, glc2lnd_vars, crop_vars,&
+       patch_state_updater, column_state_updater)
     !
     ! !DESCRIPTION:
     ! Update subgrid weights for prescribed transient Patches and/or dynamic
@@ -195,7 +194,8 @@ contains
     type(glc2lnd_type)       , intent(inout) :: glc2lnd_vars
 
     type(crop_type)          , intent(inout) :: crop_vars
-
+    type(patch_state_updater_type), intent(inout) :: patch_state_updater 
+    type(column_state_updater_type), intent(inout) :: column_state_updater 
     !
     ! !LOCAL VARIABLES:
     integer           :: nclumps      ! number of clumps on this processor
@@ -219,8 +219,7 @@ contains
        call dyn_hwcontent_init(bounds_clump, &
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
             filter(nc)%num_lakec, filter(nc)%lakec, &
-            urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
-            energyflux_vars)
+            urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars )
 
        call set_prior_weights(prior_weights, bounds_clump)
        call set_old_patch_weights  (patch_state_updater,bounds_clump)
@@ -283,7 +282,7 @@ contains
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
             filter(nc)%num_lakec, filter(nc)%lakec, &
             urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
-            energyflux_vars, dt)
+            dt)
 
        if (use_cn) then
           call dyn_cnbal_patch(bounds_clump, &
@@ -342,9 +341,7 @@ contains
       icemask_grc => glc2lnd_vars%icemask_grc &
       )
     !SHR_ASSERT(bounds_clump%level == BOUNDS_LEVEL_CLUMP, subname // ': argument must be CLUMP-level bounds')
-
     call update_landunit_weights(bounds_clump)
-
     call compute_higher_order_weights(bounds_clump)
 
     ! Here: filters are re-made

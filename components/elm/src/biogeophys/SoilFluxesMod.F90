@@ -169,7 +169,7 @@ contains
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          j = col_pp%snl(c)+1
-
+         
          ! Calculate difference in soil temperature from last time step, for
          ! flux corrections
 

@@ -41,9 +41,12 @@ module GridcellType
      integer , pointer :: nlandunits   (:) => null() ! number of landunits for each gridcell
      integer , pointer :: coli         (:) => null() ! beginning column index for each gridcell
      integer , pointer :: colf         (:) => null() ! ending column index for each gridcell
+     integer , pointer :: cols (:,:) => null() 
      integer , pointer :: ncolumns     (:) => null() ! number of columns for each gridcell
+     
      integer , pointer :: pfti         (:) => null() ! beginning pft index for each gridcell
      integer , pointer :: pftf         (:) => null() ! ending pft index for each gridcell
+     integer , pointer :: pfts         (:,:) => null() 
      integer , pointer :: npfts        (:) => null() ! number of patches for each gridcell
 
      ! Physical properties

@@ -16,7 +16,6 @@ module NitrogenStateUpdate3Mod
   use VegetationDataType  , only : veg_ns, veg_nf
   ! bgc interface & pflotran:
   use elm_varctl          , only : use_pflotran, pf_cmode, use_fates
-  #define is_active_betr_bgc .false. 
   !
   implicit none
   save
@@ -38,7 +37,7 @@ contains
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability.
     !
-      !$acc routine seq
+    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -52,8 +51,8 @@ contains
     integer :: fp,fc      ! lake filter indices
     !-----------------------------------------------------------------------
       if (.not. is_active_betr_bgc) then
+         !$acc parallel loop independent gang vector collapse(2) default(present) 
          do j = 1, nlevdecomp
-            ! column loop
             do fc = 1,num_soilc
                c = filter_soilc(fc)
                
@@ -84,9 +83,10 @@ contains
          end do
 
          ! litter and CWD losses to fire
+         !$acc parallel loop independent gang worker collapse(2) default(present) 
          do l = 1, ndecomp_pools
             do j = 1, nlevdecomp
-               ! column loop
+               !$acc loop independent vector private(c)
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
                   col_ns%decomp_npools_vr(c,j,l) = col_ns%decomp_npools_vr(c,j,l) - col_nf%m_decomp_npools_to_fire_vr(c,j,l) * dt
@@ -98,21 +98,23 @@ contains
 
       ! SOM N losses due to erosion
       if ( ero_ccycle ) then
+         !$acc parallel loop independent gang worker collapse(2) default(present)
          do l = 1, ndecomp_pools
-            if ( decomp_cascade_con%is_soil(l) ) then
-               do j = 1, nlevdecomp
-                  do fc = 1, num_soilc
-                     c = filter_soilc(fc)
+            do j = 1, nlevdecomp
+               !$acc loop independent vector private(c)
+               do fc = 1, num_soilc
+                  c = filter_soilc(fc)
+                  if ( decomp_cascade_con%is_soil(l) ) then
                      col_ns%decomp_npools_vr(c,j,l) = col_ns%decomp_npools_vr(c,j,l) - col_nf%decomp_npools_yield_vr(c,j,l) * dt
-                  end do
+                  end if
                end do
-            end if
+            end do
          end do
       end if
 
       ! patch-level nitrogen fluxes
       if(.not.use_fates) then
-
+         !$acc parallel loop independent gang vector default(present)
          do fp = 1,num_soilp
             p = filter_soilp(fp)
 

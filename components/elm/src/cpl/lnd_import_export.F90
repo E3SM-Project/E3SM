@@ -66,6 +66,7 @@ contains
       esati(t) = 100._r8*(b0+t*(b1+t*(b2+t*(b3+t*(b4+t*(b5+t*b6))))))
       write(iulog,*) "Duplicating atm Data "
       call shr_sys_flush(iulog)
+      
       do g = bounds%begg+num_unique_sites, bounds%endg
          dup_g = mod(g-1,num_unique_sites)+1
          ! write(iulog,*) "G, Dup_g", g, dup_g
@@ -380,7 +381,6 @@ contains
        ! Determine flooding input, sign convention is positive downward and
        ! hierarchy is atm/glc/lnd/rof/ice/ocn.  so water sent from rof to land is negative,
        ! change the sign to indicate addition of water to system.
-       write(iulog,*) "LAT/LON",g, ldomain%latc(g), ldomain%lonc(g)
        atm2lnd_vars%forc_flood_grc(g)   = -x2l(index_x2l_Flrr_flood,i)
 
        atm2lnd_vars%volr_grc(g)   = x2l(index_x2l_Flrr_volr,i) * (ldomain%area(g) * 1.e6_r8)
@@ -622,6 +622,7 @@ contains
 
             if (i == 1 .and. v == 1)  then
               allocate(cpl_bypass_input%atm_input       (met_nvars,bounds%begg:bounds%endg,1,1:counti(1)))
+              print *, "met_nvars, bounds%endg, counti(1):",met_nvars,bounds%endg,counti(1) 
             end if
 
             ierr = nf90_get_var(met_ncids(v), varid, cpl_bypass_input%atm_input(v,g:g,1,1:counti(1)), starti(1:2), counti(1:2))

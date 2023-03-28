@@ -395,12 +395,8 @@ contains
       end if
 
      ! loop over patches to assess the total plant N demand and P demand
-     !$acc parallel loop independent gang vector default(present) private(p)
-     do fp = 1, num_soilp
-        p = filter_soilp(fp)
-         call TotalNPDemand(p, photosyns_vars, &
+      call TotalNPDemand(num_soilp, filter_soilp, photosyns_vars, &
                 canopystate_vars, crop_vars, cnstate_vars, dt)
-      end do
       ! now use the p2c routine to get the column-averaged plant_ndemand
       call p2c_1d_filter_parallel( num_soilc, filter_soilc, &
            plant_ndemand,  plant_ndemand_col)
@@ -431,25 +427,25 @@ contains
 
  end subroutine Allocation1_PlantNPDemand
 
- subroutine TotalNPDemand(p, photosyns_vars, &
+ subroutine TotalNPDemand(num_soilp,filter_soilp, photosyns_vars, &
             canopystate_vars, crop_vars, cnstate_vars, dt)
-    !$acc routine seq
     use pftvarcon   , only: npcropmin, declfact, bfact, aleaff, arootf, astemf, noveg
     use pftvarcon   , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean
     use elm_varpar  , only: nlevdecomp
     use elm_varcon  , only: nitrif_n2o_loss_frac, secspday
     !!
-    integer , value ,intent(in) :: p
+    integer  ,intent(in) :: num_soilp
+    integer , intent(in) :: filter_soilp(:)
     type(photosyns_type)  , intent(in) :: photosyns_vars
     type(canopystate_type), intent(in) :: canopystate_vars
     type(crop_type)       , intent(in) :: crop_vars
     type(cnstate_type)    , intent(inout) :: cnstate_vars
     real(r8) , intent(in) :: dt
     !! Local Variables
-    real(r8) f5               !grain allocation parameter
-    real(r8) cng              !C:N ratio for grain (= cnlw for now; slevis)
-    real(r8) fleaf            !fraction allocated to leaf
-    real(r8) t1               !temporary variable
+    real(r8):: f5               !grain allocation parameter
+    real(r8):: cng              !C:N ratio for grain (= cnlw for now; slevis)
+    real(r8):: fleaf            !fraction allocated to leaf
+    real(r8):: t1               !temporary variable
     real(r8):: mr                  !maintenance respiration (gC/m2/s)
     real(r8):: f1,f2,f3,f4,g1,g2   !allocation parameters
     real(r8):: cnl,cnfr,cnlw,cndw  !C:N ratios for leaf, fine root, and wood
@@ -459,7 +455,7 @@ contains
     !! Local P variables
     real(r8):: cpl,cpfr,cplw,cpdw,cpg  !C:N ratios for leaf, fine root, and wood
 
-    integer :: ivt
+    integer :: ivt, fp, p
     !-----------------------------------------------------------------------
     associate(                                                                                   &
          woody                        => veg_vp%woody               , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
@@ -574,7 +570,9 @@ contains
          benefit_pgpp_pleafc          => veg_ns%benefit_pgpp_pleafc     &
          )
 
-
+      !$acc parallel loop independent gang vector default(present) 
+      do fp = 1, num_soilp 
+         p = filter_soilp(fp) 
          ivt = veg_pp%itype(p)
         ! The input psn (psnsun and psnsha) are expressed per unit LAI
         ! in the sunlit and shaded canopy, respectively. These need to be
@@ -893,15 +891,16 @@ contains
            retransp_to_ppool(p) = plant_pdemand(p)
         end if
         plant_pdemand(p) = plant_pdemand(p) - retransp_to_ppool(p)
+      end do 
+
    end associate
 
  end subroutine TotalNPDemand
 
 !-------------------------------------------------------------------------------------------------
 
- subroutine Allocation2_ResolveNPLimit (num_soilc, filter_soilc, &
-                                        cnstate_vars , &
-                                        soilstate_vars, dt )
+ subroutine Allocation2_ResolveNPLimit (bounds,num_soilc, filter_soilc, &
+                                        cnstate_vars , soilstate_vars, dt )
    ! PHASE-2 of Allocation:  resolving N/P limitation
    ! !USES:
    use elm_varctl      , only : carbon_only          !
@@ -913,7 +912,7 @@ contains
    use elm_varcon      , only : zisoi
    !
    ! !ARGUMENTS:
-   !type(bounds_type)        , intent(in)    :: bounds
+   type(bounds_type)        , intent(in)    :: bounds
    integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
    integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
    type(cnstate_type)       , intent(inout) :: cnstate_vars
@@ -934,6 +933,7 @@ contains
 
    real(r8) :: sum,sum2,sum3,sum4,sum5,sum6
    real  :: startt, stopt
+   integer :: begc, endc 
    !-----------------------------------------------------------------------
    associate(        &
         ivt                          => veg_pp%itype                    , & ! Input:  [integer  (:) ]  pft vegetation type
@@ -1045,16 +1045,13 @@ contains
      !if (nu_com .eq. 'RD') then ! 'RD' : relative demand approach
       ! Starting resolving N/P limitation
       ! calculate nuptake & puptake profile
-
+      begc = bounds%begc 
+      endc = bounds%endc 
       !$acc enter data create(nuptake_prof(1:num_soilc,1:nlevdecomp),puptake_prof(1:num_soilc,1:nlevdecomp),&
       !$acc fpi_no3_vr(1:nlevdecomp),fpi_nh4_vr(1:nlevdecomp))
-      call cpu_time(startt)
 
       call calc_nuptake_prof(num_soilc, filter_soilc, cnstate_vars, nuptake_prof)
       call calc_puptake_prof(num_soilc, filter_soilc, cnstate_vars, puptake_prof)
-
-      call cpu_time(stopt)
-      print *, "Uptake Profile:",(stopt-startt)*1.0E+3,"ms"
 
    ! ------------------------------------------------------------------------------
    ! PART I.
@@ -1072,10 +1069,12 @@ contains
            col_plant_pdemand_vr(c,j) = plant_pdemand_col(c) * puptake_prof(fc,j)
         end do
       end do
-
-     !$acc parallel loop independent gang default(present)
+      
+   if (nu_com .eq. 'RD') then
+   ! Estimate actual allocation rates via Relative Demand
+   ! approach (RD)
+     !$acc parallel loop independent gang vector default(present)
      do j = 1, nlevdecomp
-        !$acc loop vector independent private(c)
         do fc=1,num_soilc !col_loop
            c = filter_soilc(fc)
            ! Starting resolving N limitation !!!
@@ -1085,10 +1084,6 @@ contains
            ! (2) nitrogen and phosphorus uptake is based on root kinetics
            ! (3) no second pass nutrient uptake for plants
            ! =============================================================
-
-           !if (nu_com .eq. 'RD') then
-            ! Estimate actual allocation rates via Relative Demand
-            ! approach (RD)
             call NAllocationRD(col_plant_ndemand_vr(c,j), & ! IN
                 potential_immob_vr(c,j),                 & ! IN
                 AllocParamsInst%compet_plant_nh4,        & ! IN
@@ -1110,14 +1105,13 @@ contains
                 smin_no3_to_plant_vr(c,j),               & ! OUT
                 f_nit_vr(c,j),                           & ! OUT
                 f_denit_vr(c,j))                           ! OUT
+               end do
+            end do
+      end if
 
-            !end if
-         end do
-     end do
-
-     !$acc parallel loop independent collapse(2) gang worker vector private(c,l) default(present)
-      do fc=1,num_soilc !col_loop
-        do j = 1, nlevdecomp
+     !$acc parallel loop independent collapse(2) gang vector default(present)
+      do j = 1, nlevdecomp
+         do fc=1,num_soilc !col_loop
            c = filter_soilc(fc)
            l = col_pp%landunit(c)
            ! n2o emissions: n2o from nitr is const fraction, n2o from denitr is calculated in nitrif_denitrif
@@ -1159,31 +1153,24 @@ contains
            ! sum up no3 and nh4 fluxes
            sminn_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j)
            actual_immob_vr(c,j) = actual_immob_no3_vr(c,j) + actual_immob_nh4_vr(c,j)
-        end do ! nlevdecomp
-     end do ! col loop
+         end do ! col loop
+      end do ! nlevdecomp
 
 
         ! Starting resolving P limitation !!!
         ! =============================================================
-        !if (nu_com .eq. 'RD') then
+        if (nu_com .eq. 'RD') then
            ! Relative Demand (RD)
-      !$acc parallel loop independent collapse(2) gang worker vector private(c) default(present)
-      do fc = 1, num_soilc
-         do j = 1, nlevdecomp
-            c = filter_soilc(fc)
-           call PAllocationRD(col_plant_pdemand_vr(c,j), & ! IN
-                potential_immob_p_vr(c,j),               & ! IN
-                solutionp_vr(c,j),                       & ! IN
+           call PAllocationRD(num_soilc,filter_soilc, &
+                col_plant_pdemand_vr(begc:endc,1:nlevdecomp), & ! IN
+                potential_immob_p_vr(begc:endc,1:nlevdecomp),               & ! IN
+                solutionp_vr(begc:endc,1:nlevdecomp),                       & ! IN
                 dt,                                      & ! IN
-                fpi_p_vr(c,j),                           & ! OUT
-                actual_immob_p_vr(c,j),                  & ! OUT
-                sminp_to_plant_vr(c,j),                  & ! OUT
-                supplement_to_sminp_vr(c,j))               ! OUT
-         end do ! nlevdecomp
-      end do ! col loop
-      call cpu_time(stopt)
-      print *, "NPAllocation RD: ",(stopt-startt)*1.E+3,"ms"
-        !end if ! end of P competition
+                fpi_p_vr(begc:endc,1:nlevdecomp),                           & ! OUT
+                actual_immob_p_vr(begc:endc,1:nlevdecomp),                  & ! OUT
+                sminp_to_plant_vr(begc:endc,1:nlevdecomp),                  & ! OUT
+                supplement_to_sminp_vr(begc:endc,1:nlevdecomp))               ! OUT
+        end if ! end of P competition
 
          !  resolving N limitation vs. P limitation for decomposition
          !  update (1) actual immobilization for N and P (2) sminn_to_plant and sminp_to_plant
@@ -1410,6 +1397,7 @@ contains
 
       !-------------------------------------------------------------------
       ! set time steps
+      !$acc enter data create(sum1,sum2) 
       !if (nu_com .eq. 'RD') then
       !$acc parallel loop  independent gang worker private(c,sum1,sum2) default(present)
       do fc=1,num_soilc
@@ -1432,12 +1420,7 @@ contains
       ! competing patches on the basis of relative demand, and allocate C and N to
       ! new growth and storage
 
-      !$acc parallel loop independent gang worker vector private(p,c) default(present)
-      do fp = 1, num_soilp
-         p = filter_soilp(fp)
-         c = veg_pp%column(p)
-         call DistributeN_RD(p,c,cnstate_vars,crop_vars)
-      end do
+      call DistributeN_RD(num_soilp,filter_soilp,cnstate_vars,crop_vars)
 
       !----------------------------------------------------------------
       ! now use the p2c routine to update column level soil mineral N and P uptake
@@ -1519,19 +1502,20 @@ contains
 
       !end if ! nu_com .eq. RD
       !----------------------------------------------------------------
+      !$acc exit data delete(sum1,sum2) 
     end associate
 
   end subroutine Allocation3_PlantCNPAlloc
 
-  subroutine DistributeN_RD(p,c,cnstate_vars,crop_vars)
+  subroutine DistributeN_RD(num_soilp,filter_soilp,cnstate_vars,crop_vars)
      ! Routine called in Allocation Phase 3
-     !$acc routine seq
      use pftvarcon   , only : npcropmin, grperc, grpnow
      use elm_varctl  , only : carbon_only , carbonnitrogen_only ,carbonphosphorus_only!
      use pftvarcon   , only : noveg
 
      !
-     integer, value ,intent(in) :: p, c
+     integer :: num_soilp 
+     integer :: filter_soilp(:)
      type(cnstate_type), intent(inout) :: cnstate_vars
      type(crop_type), intent(in) :: crop_vars
      real(r8):: f1,f2,f3,f4,f5,g1,g2   !allocation parameters
@@ -1539,12 +1523,12 @@ contains
      real(r8):: fcur                   !fraction of current psn displayed as growth
      real(r8):: gresp_storage          !temporary variable for growth resp to storage
      real(r8):: nlc                    !temporary variable for total new leaf carbon allocation
-     real(r8) cng                      !C:N ratio for grain (= cnlw for now; slevis)
+     real(r8):: cng                      !C:N ratio for grain (= cnlw for now; slevis)
 
      !! Local P variables
      real(r8):: rc, rc_p, r            !Factors for nitrogen pool
      real(r8):: cpl,cpfr,cplw,cpdw,cpg !C:N ratios for leaf, fine root, and wood
-     integer :: ivt
+     integer :: ivt,fp ,p,c 
 
      associate(&
         woody                        => veg_vp%woody                         , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
@@ -1637,9 +1621,11 @@ contains
         p_allometry                  => cnstate_vars%p_allometry_patch      & ! Output: [real(r8) (:)   ]  P allocation index (DIM)
         )
 
-       ivt = veg_pp%itype(p)
-
-       ! if ( nu_com .eq. 'RD') then
+      !$acc parallel loop independent gang vector default(present)
+      do fp = 1, num_soilp 
+         p= filter_soilp(fp) 
+         c= veg_pp%column(p)
+         ivt = veg_pp%itype(p)
             ! set some local allocation variables
             f1 = froot_leaf(ivt)
             f2 = croot_stem(ivt)
@@ -1730,8 +1716,7 @@ contains
             ! calculate the associated carbon allocation, and the excess
             ! carbon flux that must be accounted for through downregulation
 
-            if( .not.carbonphosphorus_only .and. .not.carbonnitrogen_only &
-                 .and. .not.carbon_only )then
+            if( .not.carbonphosphorus_only .and. .not.carbonnitrogen_only .and. .not.carbon_only )then
                 if( plant_nalloc(p) * (c_allometry(p)/n_allometry(p)) < &
                     plant_palloc(p) * (c_allometry(p)/p_allometry(p)) )then
 
@@ -1937,7 +1922,7 @@ contains
        ! (1) maintain plant PC stoichiometry at optimal ratio under CN mode
        ! (2) maintain plant NC stoichiometry at optimal ratio under CP mode
        ! (3) maintain plant PC/NC stoichiometry at optimal ratios under C mode
-
+      end do 
 
      end associate
   end subroutine DistributeN_RD
@@ -2099,74 +2084,76 @@ contains
 
   ! ======================================================================================
 
-  subroutine PAllocationRD(col_plant_pdemand_vr, &    ! IN
-       potential_immob_p_vr, &    ! IN (j)
-       solutionp_vr,         &    ! IN (j)
+  subroutine PAllocationRD( num_soilc, filter_soilc, &
+       col_plant_pdemand_vr, &    ! IN
+       potential_immob_p_vr, &    ! IN 
+       solutionp_vr,         &    ! IN 
        dt,                   &    ! IN
-       fpi_p_vr,             &    ! OUT (j)
-       actual_immob_p_vr,    &    ! OUT (j)
-       sminp_to_plant_vr,    &    ! OUT (j)
-       supplement_to_sminp_vr)    ! OUT (j)
+       fpi_p_vr,             &    ! OUT 
+       actual_immob_p_vr,    &    ! OUT 
+       sminp_to_plant_vr,    &    ! OUT 
+       supplement_to_sminp_vr)    ! OUT 
 
-    !$acc routine seq
     use elm_varctl       , only:  carbon_only, carbonnitrogen_only
     use elm_varpar, only : nlevdecomp
 
     ! Arguments
-    real(r8), intent(in) :: col_plant_pdemand_vr  ! demand on phos, all plant grouped [g/m3]
-    real(r8), intent(in) :: potential_immob_p_vr  ! potential P immobilization [g/m3/s]
-    real(r8), intent(in) :: solutionp_vr          ! soil mineral P   [g/m3]
+    integer , intent(in) :: num_soilc
+    integer , intent(in) :: filter_soilc(:)
+    real(r8), intent(in) :: col_plant_pdemand_vr(:,:) ! demand on phos, all plant grouped [g/m3]
+    real(r8), intent(in) :: potential_immob_p_vr(:,:)  ! potential P immobilization [g/m3/s]
+    real(r8), intent(in) :: solutionp_vr(:,:)          ! soil mineral P   [g/m3]
     real(r8), intent(in) :: dt      ! timestep in seconds
-    real(r8), intent(inout) :: fpi_p_vr             ! fraction of potential immobilization supplied by p
-    real(r8), intent(inout) :: actual_immob_p_vr    ! actual P immobilization [g/m3/s]
-    real(r8), intent(inout) :: sminp_to_plant_vr    ! P flux to plant competitors [g/m3/s]
-    real(r8), intent(inout) :: supplement_to_sminp_vr
+    real(r8), intent(inout) :: fpi_p_vr(:,:)             ! fraction of potential immobilization supplied by p
+    real(r8), intent(inout) :: actual_immob_p_vr(:,:)    ! actual P immobilization [g/m3/s]
+    real(r8), intent(inout) :: sminp_to_plant_vr(:,:)    ! P flux to plant competitors [g/m3/s]
+    real(r8), intent(inout) :: supplement_to_sminp_vr(:,:)
 
     ! Locals
     real(r8) :: sum_pdemand          ! Total phos demand over all competitors
+    integer :: j, fc ,c 
+   !$acc parallel loop independent collapse(2) gang vector default(present)
+    do j = 1, nlevdecomp
+      do fc = 1, num_soilc
+         c = filter_soilc(fc)
+          
+         sum_pdemand = col_plant_pdemand_vr(c,j) + potential_immob_p_vr(c,j)
 
-    !do j = 1, nlevdecomp
+        if (sum_pdemand*dt < solutionp_vr(c,j)) then
 
-       sum_pdemand = col_plant_pdemand_vr + potential_immob_p_vr
+            ! P availability is not limiting immobilization or plant
+            ! uptake, and both can proceed at their potential rates
+            fpi_p_vr(c,j) = 1.0_r8
+            actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j)
+            sminp_to_plant_vr(c,j) = col_plant_pdemand_vr(c,j)
 
-       if (sum_pdemand*dt < solutionp_vr) then
+         elseif(carbon_only .or. carbonnitrogen_only    ) then
 
-          ! P availability is not limiting immobilization or plant
-          ! uptake, and both can proceed at their potential rates
-          fpi_p_vr = 1.0_r8
-          actual_immob_p_vr = potential_immob_p_vr
-          sminp_to_plant_vr = col_plant_pdemand_vr
+            fpi_p_vr(c,j) = 1.0_r8
+            actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j)
+            sminp_to_plant_vr(c,j) =  col_plant_pdemand_vr(c,j)
+            supplement_to_sminp_vr(c,j) = sum_pdemand - (solutionp_vr(c,j)/dt)
 
-       elseif(carbon_only .or. carbonnitrogen_only    ) then
+         else
+            ! P availability can not satisfy the sum of immobilization and
+            ! plant growth demands, so these two demands compete for
+            ! available soil mineral solution P resource.
+            if (sum_pdemand > 0.0_r8 .and. solutionp_vr(c,j) >0._r8) then
+               actual_immob_p_vr(c,j) = (solutionp_vr(c,j)/dt)*(potential_immob_p_vr(c,j) / sum_pdemand)
+            else
+               actual_immob_p_vr(c,j) = 0.0_r8
+            end if
 
-          fpi_p_vr = 1.0_r8
-          actual_immob_p_vr = potential_immob_p_vr
-          sminp_to_plant_vr =  col_plant_pdemand_vr
-          supplement_to_sminp_vr = sum_pdemand - (solutionp_vr/dt)
+            if (potential_immob_p_vr(c,j) > 0.0_r8) then
+               fpi_p_vr(c,j) = actual_immob_p_vr(c,j) / potential_immob_p_vr(c,j)
+            else
+               fpi_p_vr(c,j) = 0.0_r8
+            end if
 
-       else
-          ! P availability can not satisfy the sum of immobilization and
-          ! plant growth demands, so these two demands compete for
-          ! available soil mineral solution P resource.
-
-          if (sum_pdemand > 0.0_r8 .and. solutionp_vr >0._r8) then
-             actual_immob_p_vr = (solutionp_vr/dt)*(potential_immob_p_vr / sum_pdemand)
-          else
-             actual_immob_p_vr = 0.0_r8
-          end if
-
-          if (potential_immob_p_vr > 0.0_r8) then
-             fpi_p_vr = actual_immob_p_vr / potential_immob_p_vr
-          else
-             fpi_p_vr = 0.0_r8
-          end if
-
-          sminp_to_plant_vr = max( 0._r8,(solutionp_vr/dt) - actual_immob_p_vr )
-       end if
-
-    !end do
-
-    return
+            sminp_to_plant_vr(c,j) = max( 0._r8,(solutionp_vr(c,j)/dt) - actual_immob_p_vr(c,j) )
+         end if
+      end do 
+   end do 
   end subroutine PAllocationRD
 
   !-------------------------------------------------------------------------------------------------

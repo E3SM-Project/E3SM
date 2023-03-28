@@ -32,14 +32,13 @@ module BareGroundFluxesMod
 contains
 
   !------------------------------------------------------------------------------
-  subroutine BareGroundFluxes(p, &
+  subroutine BareGroundFluxes( num_nolu_barep, filter_nolu_barep, &
        canopystate_vars, soilstate_vars, &
        frictionvel_vars, ch4_vars)
     !
     ! !DESCRIPTION:
     ! Compute sensible and latent fluxes and their derivatives with respect
     ! to ground temperature using ground temperatures from previous time step.
-    !$acc routine seq
     ! !USES:
     use shr_const_mod        , only : SHR_CONST_RGAS
     use elm_varpar           , only : nlevgrnd
@@ -51,9 +50,8 @@ contains
     use SurfaceResistanceMod , only : do_soilevap_beta
     !
     ! !ARGUMENTS:
-    integer, intent(in), value :: p
-    ! integer                , intent(in)    :: num_nolu_barep        ! number of pft non-lake, non-urban points in pft filter
-    ! integer                , intent(in)    :: filter_nolu_barep(:)   ! patch filter for non-lake, non-urban bare pfts
+    integer                , intent(in)    :: num_nolu_barep        ! number of pft non-lake, non-urban points in pft filter
+    integer                , intent(in)    :: filter_nolu_barep(:)   ! patch filter for non-lake, non-urban bare pfts
     type(canopystate_type) , intent(in)    :: canopystate_vars
     type(soilstate_type)   , intent(in)    :: soilstate_vars
     type(frictionvel_type) , intent(inout) :: frictionvel_vars
@@ -61,9 +59,8 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer, parameter  :: niters = 3            ! maximum number of iterations for surface temperature
-    integer  :: c,t,g,f,j,l                    ! indices
-    ! integer  :: fn                               ! number of values in local pft filter
-    ! integer  :: fp                               ! lake filter pft index
+    integer  :: p,c,t,g,j,l                      ! indices
+    integer  :: f                                ! filter pft index
     integer  :: iter                             ! iteration index
     real(r8) :: zldis  ! reference height "minus" zero displacement height [m]
     real(r8) :: displa ! displacement height [m]
@@ -112,7 +109,14 @@ contains
          forc_rho         =>    top_as%rhobot                         , & ! Input:  [real(r8) (:)   ]  density (kg/m**3)
          forc_q           =>    top_as%qbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)
 
-         forc_hgt_u_patch =>    frictionvel_vars%forc_hgt_u_patch     , & ! Input:
+         forc_hgt_u_patch => frictionvel_vars%forc_hgt_u_patch , & ! Input:
+         forc_hgt_t_patch => frictionvel_vars%forc_hgt_t_patch , & ! Input:  [real(r8) (:) ] observational height of temperature at pft level [m]
+         forc_hgt_q_patch => frictionvel_vars%forc_hgt_q_patch , & ! Input:  [real(r8) (:) ] observational height of specific humidity at pft level [m]
+         vds              => frictionvel_vars%vds_patch        , & ! Output: [real(r8) (:) ] dry deposition velocity term (m/s) (for SO4 NH4NO3)
+         u10              => frictionvel_vars%u10_patch        , & ! Output: [real(r8) (:) ] 10-m wind (m/s) (for dust model)
+         u10_elm          => frictionvel_vars%u10_elm_patch    , & ! Output: [real(r8) (:) ] 10-m wind (m/s)
+         va               => frictionvel_vars%va_patch         , & ! Output: [real(r8) (:) ] atmospheric wind speed plus convective velocity (m/s)
+         fv               => frictionvel_vars%fv_patch         ,  & ! Output: [real(r8) (:) ] friction velocity (m/s) (for dust model)
 
          frac_veg_nosno   =>    canopystate_vars%frac_veg_nosno_patch , & ! Input:  [logical  (:)   ]  true=> pft is bare ground (elai+esai = zero)
 
@@ -174,18 +178,18 @@ contains
       ! Filter patches where frac_veg_nosno IS ZERO
       !---------------------------------------------------
 
-      beta = 1._r8 ! previously set as a constant for all columns in CanopyTemperature()
 
       ! Compute sensible and latent fluxes and their derivatives with respect
       ! to ground temperature using ground temperatures from previous time step
-
-      !do f = 1, fn
-         ! p = filter_nolu_barep(f)
+      !$acc parallel loop independent gang vector default(present) 
+      do f = 1, num_nolu_barep
+         p = filter_nolu_barep(f)
          c = veg_pp%column(p)
          g = veg_pp%gridcell(p)
          t = veg_pp%topounit(p)
          l = veg_pp%landunit(p)
 
+         beta = 1._r8 ! previously set as a constant for all columns in CanopyTemperature()
          iter = 0
 
          ! Initialization variables
@@ -216,12 +220,13 @@ contains
          ! profiles of the surface boundary layer
          ITERATION : do while( iter < niters)
 
-           call FrictionVelocity(f,p, &
+           call FrictionVelocity( &
                 displa, z0mg_patch, z0hg_patch, z0qg_patch, &
                 obu, iter+1, ur, um, ustar, &
                 temp1, temp2, temp12m, temp22m, fm, &
-                frictionvel_vars)
-
+                forc_hgt_u_patch(p), forc_hgt_t_patch(p), forc_hgt_q_patch(p), &
+                vds(p), u10(p), u10_elm(p), va(p), fv(p))
+                
 
             tstar = temp1*dth
             qstar = temp2*dqh
@@ -315,7 +320,7 @@ contains
             t_ref2m_r(p) = t_ref2m(p)
          end if
 
-      !end do
+      end do
 
     end associate
 

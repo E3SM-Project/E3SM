@@ -156,7 +156,6 @@ contains
     ! All N fixation goes to the soil mineral N pool.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon       , only : secspday, spval
     !
     ! !ARGUMENTS:
@@ -169,7 +168,7 @@ contains
     integer  :: c,fc                  ! indices
     real(r8) :: t                     ! temporary
     real(r8) :: secspyr              ! seconds per yr
-    logical  :: do_et_bnf = .false.
+   !  logical  :: do_et_bnf = .false.
     !-----------------------------------------------------------------------
 
     associate(&
@@ -183,7 +182,7 @@ contains
          )
 
 
-      if (do_et_bnf .or. use_fates) then
+      if (use_fates) then
          secspyr = dayspyr * 86400._r8
          do fc = 1, num_soilc
             c =filter_soilc(fc)
@@ -222,146 +221,144 @@ contains
   end subroutine NitrogenFixation
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenLeaching(bounds, num_soilc, filter_soilc, dt )
-    !
-    ! !DESCRIPTION:
-    ! On the radiation time step, update the nitrogen leaching rate
-    ! as a function of soluble mineral N and total soil water outflow.
-    !
-    ! !USES:
-      !$acc routine seq
-    use elm_varpar       , only : nlevdecomp, nlevsoi, nlevgrnd
-    !
-    ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds
-    integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
-    integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    real(r8)                 , intent(in)    :: dt          ! radiation time step (seconds)
+  subroutine NitrogenLeaching(num_soilc, filter_soilc, dt )
+   !
+   ! !DESCRIPTION:
+   ! On the radiation time step, update the nitrogen leaching rate
+   ! as a function of soluble mineral N and total soil water outflow.
+   !
+   ! !USES:
+   use elm_varpar       , only : nlevdecomp, nlevsoi, nlevgrnd
+   !
+   ! !ARGUMENTS:
+   integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
+   integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
+   real(r8)                 , intent(in)    :: dt          ! radiation time step (seconds)
 
-    !
-    ! !LOCAL VARIABLES:
-    integer  :: j,c,fc                                 ! indices
-    integer  :: nlevbed				       ! number of layers to bedrock
-    real(r8) :: sf_no3                                 ! soluble fraction of NO3 (unitless)
-    real(r8) :: disn_conc                              ! dissolved mineral N concentration (gN/kg water)
-    real(r8) :: tot_water(bounds%begc:bounds%endc)     ! total column liquid water (kg water/m2)
-    real(r8) :: surface_water(bounds%begc:bounds%endc) ! liquid water to shallow surface depth (kg water/m2)
-    real(r8) :: drain_tot(bounds%begc:bounds%endc)     ! total drainage flux (mm H2O /s)
-    real(r8), parameter :: depth_runoff_Nloss = 0.05   ! (m) depth over which runoff mixes with soil water for N loss to runoff
-    !-----------------------------------------------------------------------
+   !
+   ! !LOCAL VARIABLES:
+   integer  :: j,c,fc                                 ! indices
+   integer  :: nlevbed				       ! number of layers to bedrock
+   real(r8) :: disn_conc                              ! dissolved mineral N concentration (gN/kg water)
+   real(r8) :: surface_water(num_soilc) ! liquid water to shallow surface depth (kg water/m2)
+   real(r8), parameter :: depth_runoff_Nloss = 0.05   ! (m) depth over which runoff mixes with soil water for N loss to runoff
+   real(r8) :: sum2
+   real(r8) :: tot_water(num_soilc)  
+   !-----------------------------------------------------------------------
 
-    associate(&
-    	 nlev2bed            => col_pp%nlevbed                            , & ! Input:  [integer (:)    ]  number of layers to bedrock
-         h2osoi_liq          => col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
-         qflx_drain          => col_wf%qflx_drain             , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
-         qflx_surf           => col_wf%qflx_surf              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)
-         smin_no3_vr         => col_ns%smin_no3_vr        , & ! Input:  [real(r8) (:,:) ]
-         smin_no3_leached_vr => col_nf%smin_no3_leached_vr , & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 leaching (gN/m3/s)
-         smin_no3_runoff_vr  => col_nf%smin_no3_runoff_vr    & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 loss with runoff (gN/m3/s)
-         )
+   associate(&
+       nlev2bed            => col_pp%nlevbed                            , & ! Input:  [integer (:)    ]  number of layers to bedrock
+        h2osoi_liq          => col_ws%h2osoi_liq            , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
+        qflx_drain          => col_wf%qflx_drain             , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
+        qflx_surf           => col_wf%qflx_surf              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)
+        smin_no3_vr         => col_ns%smin_no3_vr        , & ! Input:  [real(r8) (:,:) ]
+        sf_no3              =>  CNNDynamicsParamsInst%sf_no3  ,  &  ! Assume that 100% of the soil NO3 is in a soluble form
+        smin_no3_leached_vr => col_nf%smin_no3_leached_vr , & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 leaching (gN/m3/s)
+        smin_no3_runoff_vr  => col_nf%smin_no3_runoff_vr    & ! Output: [real(r8) (:,:) ]  rate of mineral NO3 loss with runoff (gN/m3/s)
+        )
 
-
-      ! Assume that 100% of the soil NO3 is in a soluble form
-      sf_no3 =  CNNDynamicsParamsInst%sf_no3
+     !$acc enter data create(sum2, surface_water(:num_soilc), tot_water(:num_soilc) )
+     
+     ! for runoff calculation; calculate total water to a given depth
+     !$acc parallel loop independent gang worker default(present) private(sum2,c,nlevbed) present(surface_water(:num_soilc))
+     do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        nlevbed = nlev2bed(c)
+        sum2 = 0._r8 
+        !$acc loop vector reduction(+:sum2)
+        do j = 1,nlevbed
+           if ( zisoi(j) <= depth_runoff_Nloss)  then
+              sum2 = sum2 + h2osoi_liq(c,j)
+           elseif ( zisoi(j-1) < depth_runoff_Nloss)  then
+              sum2 = sum2 + h2osoi_liq(c,j) * ((depth_runoff_Nloss - zisoi(j-1)) / col_pp%dz(c,j))
+           end if
+        end do
+        surface_water(fc) = sum2 
+     end do
 
       ! calculate the total soil water
-      tot_water(bounds%begc:bounds%endc) = 0._r8
+      !$acc parallel loop independent gang worker default(present) private(sum2,c,nlevbed) present(tot_water(:num_soilc)) 
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         nlevbed = nlev2bed(c)
+         nlevbed = col_pp%nlevbed(c)
+         sum2 = 0._r8 
+         !$acc loop vector reduction(+:sum2)
          do j = 1,nlevbed
-            tot_water(c) = tot_water(c) + h2osoi_liq(c,j)
+            sum2 = sum2 + col_ws%h2osoi_liq(c,j)
          end do
+         tot_water(fc) = sum2
       end do
 
-      ! for runoff calculation; calculate total water to a given depth
-      surface_water(bounds%begc:bounds%endc) = 0._r8
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         nlevbed = nlev2bed(c)
-         do j = 1,nlevbed
-            if ( zisoi(j) <= depth_runoff_Nloss)  then
-               surface_water(c) = surface_water(c) + h2osoi_liq(c,j)
-            elseif ( zisoi(j-1) < depth_runoff_Nloss)  then
-               surface_water(c) = surface_water(c) + h2osoi_liq(c,j) * ( (depth_runoff_Nloss - zisoi(j-1)) / col_pp%dz(c,j))
-            end if
-         end do
-      end do
 
-      ! Loop through columns
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         drain_tot(c) = qflx_drain(c)
-      end do
+     !$acc parallel loop independent gang vector collapse(2) default(present) present(tot_water(:num_soilc),surface_water(:num_soilc)) 
+     do j = 1,nlevdecomp
+        do fc = 1,num_soilc
+           c = filter_soilc(fc)
 
-      do j = 1,nlevdecomp
-         ! Loop through columns
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
+           if (.not. use_vertsoilc) then
+              ! calculate the dissolved mineral N concentration (gN/kg water)
+              ! assumes that 10% of mineral nitrogen is soluble
+              disn_conc = 0._r8
+              if (tot_water(fc) > 0._r8) then
+                 disn_conc = (sf_no3 * smin_no3_vr(c,j) )/tot_water(fc)
+              end if
 
-            if (.not. use_vertsoilc) then
-               ! calculate the dissolved mineral N concentration (gN/kg water)
-               ! assumes that 10% of mineral nitrogen is soluble
-               disn_conc = 0._r8
-               if (tot_water(c) > 0._r8) then
-                  disn_conc = (sf_no3 * smin_no3_vr(c,j) )/tot_water(c)
-               end if
-
-               ! calculate the N leaching flux as a function of the dissolved
-               ! concentration and the sub-surface drainage flux
-               smin_no3_leached_vr(c,j) = disn_conc * drain_tot(c)
-            else
-               ! calculate the dissolved mineral N concentration (gN/kg water)
-               ! assumes that 10% of mineral nitrogen is soluble
-               disn_conc = 0._r8
-               if (h2osoi_liq(c,j) > 0._r8) then
-                  disn_conc = (sf_no3 * smin_no3_vr(c,j) * col_pp%dz(c,j) )/(h2osoi_liq(c,j) )
-               end if
-               !
-               ! calculate the N leaching flux as a function of the dissolved
-               ! concentration and the sub-surface drainage flux
-               smin_no3_leached_vr(c,j) = disn_conc * drain_tot(c) * h2osoi_liq(c,j) / ( tot_water(c) * col_pp%dz(c,j) )
-               !
-               ! ensure that leaching rate isn't larger than soil N pool
-               smin_no3_leached_vr(c,j) = min(smin_no3_leached_vr(c,j), smin_no3_vr(c,j) / dt )
-               !
-               ! limit the leaching flux to a positive value
-               smin_no3_leached_vr(c,j) = max(smin_no3_leached_vr(c,j), 0._r8)
-               !
-               !
-               ! calculate the N loss from surface runoff, assuming a shallow mixing of surface waters into soil and removal based on runoff
-               if ( zisoi(j) <= depth_runoff_Nloss )  then
-                  smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
-                       h2osoi_liq(c,j) / ( surface_water(c) * col_pp%dz(c,j) )
-               elseif ( zisoi(j-1) < depth_runoff_Nloss )  then
-                  smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
-                       h2osoi_liq(c,j) * ((depth_runoff_Nloss - zisoi(j-1)) / &
-                       col_pp%dz(c,j)) / ( surface_water(c) * (depth_runoff_Nloss-zisoi(j-1) ))
-               else
-                  smin_no3_runoff_vr(c,j) = 0._r8
-               endif
-               !
-               ! ensure that runoff rate isn't larger than soil N pool
-               smin_no3_runoff_vr(c,j) = min(smin_no3_runoff_vr(c,j), smin_no3_vr(c,j) / dt - smin_no3_leached_vr(c,j))
-               !
-               ! limit the flux to a positive value
-               smin_no3_runoff_vr(c,j) = max(smin_no3_runoff_vr(c,j), 0._r8)
+              ! calculate the N leaching flux as a function of the dissolved
+              ! concentration and the sub-surface drainage flux
+              smin_no3_leached_vr(c,j) = disn_conc * qflx_drain(c)
+           else
+              ! calculate the dissolved mineral N concentration (gN/kg water)
+              ! assumes that 10% of mineral nitrogen is soluble
+              disn_conc = 0._r8
+              if (h2osoi_liq(c,j) > 0._r8) then
+                 disn_conc = (sf_no3 * smin_no3_vr(c,j) * col_pp%dz(c,j) )/(h2osoi_liq(c,j) )
+              end if
+              !
+              ! calculate the N leaching flux as a function of the dissolved
+              ! concentration and the sub-surface drainage flux
+              smin_no3_leached_vr(c,j) = disn_conc * qflx_drain(c) * h2osoi_liq(c,j) / ( tot_water(fc) * col_pp%dz(c,j) )
+              !
+              ! ensure that leaching rate isn't larger than soil N pool
+              smin_no3_leached_vr(c,j) = min(smin_no3_leached_vr(c,j), smin_no3_vr(c,j) / dt )
+              !
+              ! limit the leaching flux to a positive value
+              smin_no3_leached_vr(c,j) = max(smin_no3_leached_vr(c,j), 0._r8)
+              !
+              !
+              ! calculate the N loss from surface runoff, assuming a shallow mixing of surface waters into soil and removal based on runoff
+              if ( zisoi(j) <= depth_runoff_Nloss )  then
+                 smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
+                      h2osoi_liq(c,j) / ( surface_water(fc) * col_pp%dz(c,j) )
+              elseif ( zisoi(j-1) < depth_runoff_Nloss )  then
+                 smin_no3_runoff_vr(c,j) = disn_conc * qflx_surf(c) * &
+                      h2osoi_liq(c,j) * ((depth_runoff_Nloss - zisoi(j-1)) / &
+                      col_pp%dz(c,j)) / ( surface_water(fc) * (depth_runoff_Nloss-zisoi(j-1) ))
+              else
+                 smin_no3_runoff_vr(c,j) = 0._r8
+              endif
+              !
+              ! ensure that runoff rate isn't larger than soil N pool
+              smin_no3_runoff_vr(c,j) = min(smin_no3_runoff_vr(c,j), smin_no3_vr(c,j) / dt - smin_no3_leached_vr(c,j))
+              !
+              ! limit the flux to a positive value
+              smin_no3_runoff_vr(c,j) = max(smin_no3_runoff_vr(c,j), 0._r8)
 
 
-            endif
-            ! limit the flux based on current smin_no3 state
-            ! only let at most the assumed soluble fraction
-            ! of smin_no3 be leached on any given timestep
-            smin_no3_leached_vr(c,j) = min(smin_no3_leached_vr(c,j), (sf_no3 * smin_no3_vr(c,j))/dt)
+           endif
+           ! limit the flux based on current smin_no3 state
+           ! only let at most the assumed soluble fraction
+           ! of smin_no3 be leached on any given timestep
+           smin_no3_leached_vr(c,j) = min(smin_no3_leached_vr(c,j), (sf_no3 * smin_no3_vr(c,j))/dt)
 
-            ! limit the flux to a positive value
-            smin_no3_leached_vr(c,j) = max(smin_no3_leached_vr(c,j), 0._r8)
+           ! limit the flux to a positive value
+           smin_no3_leached_vr(c,j) = max(smin_no3_leached_vr(c,j), 0._r8)
 
-         end do
-      end do
+        end do
+     end do
+     !$acc exit data delete(sum2,surface_water(:num_soilc), tot_water(:num_soilc) )
 
-    end associate
-  end subroutine NitrogenLeaching
+   end associate
+ end subroutine NitrogenLeaching
 
   !-----------------------------------------------------------------------
   subroutine NitrogenFert( num_soilc, filter_soilc )
@@ -392,8 +389,7 @@ contains
   end subroutine NitrogenFert
 
   !-----------------------------------------------------------------------
-  subroutine CNSoyfix (bounds, &
-       num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine CNSoyfix ( num_soilc, filter_soilc, num_soilp, filter_soilp, &
        crop_vars, cnstate_vars)
     !
     ! !DESCRIPTION:
@@ -403,11 +399,9 @@ contains
     ! nitrogen in the soil root zone.
     !
     ! !USES:
-      !$acc routine seq
     use pftvarcon  , only : nsoybean
     !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -420,9 +414,9 @@ contains
     real(r8):: fxw,fxn,fxg,fxr             ! soil water factor, nitrogen factor, growth stage factor
     real(r8):: soy_ndemand                 ! difference between nitrogen supply and demand
     real(r8):: GDDfrac
-    real(r8):: sminnthreshold1, sminnthreshold2
-    real(r8):: GDDfracthreshold1, GDDfracthreshold2
-    real(r8):: GDDfracthreshold3, GDDfracthreshold4
+    real(r8), parameter :: sminnthreshold1= 30._r8, sminnthreshold2= 10._r8
+    real(r8),parameter:: GDDfracthreshold1= 0.15_r8, GDDfracthreshold2= 0.30_r8
+    real(r8),parameter:: GDDfracthreshold3= 0.55_r8, GDDfracthreshold4= 0.75_r8
     !-----------------------------------------------------------------------
 
     associate(                                                         &
@@ -441,13 +435,7 @@ contains
          soyfixn_to_sminn =>  col_nf%soyfixn_to_sminn   & ! Output: [real(r8) (:) ]
          )
 
-      sminnthreshold1 = 30._r8
-      sminnthreshold2 = 10._r8
-      GDDfracthreshold1 = 0.15_r8
-      GDDfracthreshold2 = 0.30_r8
-      GDDfracthreshold3 = 0.55_r8
-      GDDfracthreshold4 = 0.75_r8
-
+      !$acc parallel loop independent gang vector default(present) private(p,c)
       do fp = 1,num_soilp
          p = filter_soilp(fp)
          c = veg_pp%column(p)
@@ -520,9 +508,8 @@ contains
          end if
       end do
 
-      call p2c(bounds, num_soilc, filter_soilc, &
-           soyfixn(bounds%begp:bounds%endp), &
-           soyfixn_to_sminn(bounds%begc:bounds%endc))
+      call p2c_1d_filter_parallel(num_soilc, filter_soilc, &
+           soyfixn(:), soyfixn_to_sminn(:))
 
     end associate
 
@@ -538,7 +525,6 @@ contains
     ! N2 fixation is based on Fisher 2010 GBC doi:10.1029/2009GB003621; Wang 2007 GBC doi:10.1029/2006GB002797; and Grand 2012 ecosys model
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon       , only : secspday, spval
     use pftvarcon        , only : noveg
 
@@ -555,6 +541,7 @@ contains
     real(r8) :: f_nodule                   ! empirical, fraction of root that is nodulated
     real(r8) :: N2_aq                      ! aqueous N2 bulk concentration gN/m3 soil
     real(r8) :: nfix_tmp
+    real(r8) :: sum1, sum2 
     !-----------------------------------------------------------------------
 
     associate(&
@@ -574,10 +561,13 @@ contains
          t_scalar              => col_cf%t_scalar           &
          )
 
+      !$acc enter data create(sum1,sum2)
+      !$acc parallel loop independent gang worker default(present) private(sum1,sum2)
       do fc=1,num_soilc
           c = filter_soilc(fc)
-          nfix_to_sminn(c) = 0.0_r8
-          nfix_to_ecosysn(c) = 0._r8
+          sum1 = 0.0_r8
+          sum2 = 0._r8
+          !$acc loop vector reduction(+:sum1,sum2)
           do p = col_pp%pfti(c), col_pp%pftf(c)
               if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                   ! calculate c cost of n2 fixation: fisher 2010 gbc doi:10.1029/2009gb003621
@@ -596,16 +586,18 @@ contains
                   nfix_tmp = vmax_nfix(veg_pp%itype(p)) * frootc(p) * cn_scalar(p) *f_nodule * t_scalar(c,1) * &
                              N2_aq/ (N2_aq + km_nfix(veg_pp%itype(p)))
                   if (NFIX_PTASE_plant) then
-                     nfix_to_sminn(c) = nfix_to_sminn(c) + nfix_tmp  * veg_pp%wtcol(p) * (1._r8-veg_vp%alpha_nfix(veg_pp%itype(p)))
+                     sum1 = sum1 + nfix_tmp  * veg_pp%wtcol(p) * (1._r8-veg_vp%alpha_nfix(veg_pp%itype(p)))
                      nfix_to_plantn(p) = nfix_tmp * veg_vp%alpha_nfix(veg_pp%itype(p))
-                     nfix_to_ecosysn(c) = nfix_to_ecosysn(c) + nfix_tmp  * veg_pp%wtcol(p)
+                     sum2 = sum2 + nfix_tmp  * veg_pp%wtcol(p)
                   else
-                     nfix_to_sminn(c) = nfix_to_sminn(c) + nfix_tmp  * veg_pp%wtcol(p)
+                     sum1 = sum1 + nfix_tmp  * veg_pp%wtcol(p)
                      nfix_to_plantn(p) = 0.0_r8
-                     nfix_to_ecosysn(c) = nfix_to_ecosysn(c) + nfix_tmp  * veg_pp%wtcol(p)
+                     sum2 = sum2 + nfix_tmp  * veg_pp%wtcol(p)
                   end if
               end if
           end do
+          nfix_to_sminn(c) = sum1 
+          nfix_to_ecosysn(c) = sum2
       end do
 
     end associate

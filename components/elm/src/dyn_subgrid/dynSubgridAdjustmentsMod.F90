@@ -20,12 +20,14 @@ module dynSubgridAdjustmentsMod
   use elm_varcon             , only : dzsoi_decomp
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
   use dynPatchStateUpdaterMod, only : update_patch_state, update_patch_state_partition_flux_by_type
-  use dynColumnStateUpdaterMod,only : column_state_updater_type, update_column_state_no_special_handling
+  use dynColumnStateUpdaterMod , only : column_state_updater_type, update_column_state_no_special_handling
   use ColumnDataType         , only : column_carbon_state, column_nitrogen_state
   use ColumnDataType         , only : column_phosphorus_state
   use VegetationDataType     , only : vegetation_carbon_state, vegetation_nitrogen_state
   use VegetationDataType     , only : vegetation_phosphorus_state
   use SpeciesMod             , only : CN_SPECIES_N, CN_SPECIES_P
+  use decompMod, only :  get_clump_bounds_gpu
+  use elm_varctl , only : iulog 
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -69,7 +71,7 @@ contains
     ! dynamic landuse
     !
     ! !USES:
-    !$acc routine seq
+      !$acc routine seq
     use pftvarcon          , only : pconv, pprod10, pprod100
     use dynPriorWeightsMod , only : prior_weights_type
     use landunit_varcon    , only : istsoil, istcrop
@@ -104,37 +106,37 @@ contains
     real(r8) :: deadstemc_patch_temp
     !-----------------------------------------------------------------------
     associate(&
-      leafc          => veg_cs%leafc         (p), &
-      leafc_storage  => veg_cs%leafc_storage (p), &
-      leafc_xfer     => veg_cs%leafc_xfer    (p), &
-      frootc         => veg_cs%frootc        (p)   ,&
-      frootc_storage => veg_cs%frootc_storage(p)  ,&
-      frootc_xfer    => veg_cs%frootc_xfer   (p)  , &
-      livestemc      => veg_cs%livestemc     (p)        ,&
-      livestemc_storage => veg_cs%livestemc_storage(p)  ,&
-      livestemc_xfer    => veg_cs%livestemc_xfer   (p)  ,&
-      deadstemc         => veg_cs%deadstemc        (p)        ,&
-      deadstemc_storage => veg_cs%deadstemc_storage(p)  ,&
-      deadstemc_xfer    => veg_cs%deadstemc_xfer   (p) , &
-      livecrootc         => veg_cs%livecrootc      (p)    ,&
-      livecrootc_storage => veg_cs%livecrootc_storage (p) ,&
-      livecrootc_xfer    => veg_cs%livecrootc_xfer    (p) ,&
-      deadcrootc         => veg_cs%deadcrootc         (p) ,&
-      deadcrootc_storage => veg_cs%deadcrootc_storage (p) ,&
-      deadcrootc_xfer    => veg_cs%deadcrootc_xfer    (p), &
-      gresp_storage      => veg_cs%gresp_storage (p) ,&
-      gresp_xfer         => veg_cs%gresp_xfer    (p), &
-      cpool              => veg_cs%cpool         (p), &
-      xsmrpool           => veg_cs%xsmrpool      (p), &
-      ctrunc             => veg_cs%ctrunc        (p), &
-      dispvegc           => veg_cs%dispvegc      (p), &
-      storvegc           => veg_cs%storvegc      (p), &
-      totvegc            => veg_cs%totvegc       (p), &
-      totpftc            => veg_cs%totpftc       (p), &
-      grainc             => veg_cs%grainc(p)        , &
-      grainc_storage     => veg_cs%grainc_storage(p), &
-      grainc_xfer        => veg_cs%grainc_xfer(p)   , &
-      cropseedc_deficit  => veg_cs%cropseedc_deficit(p) &
+      leafc          => veg_cs%leafc        , &
+      leafc_storage  => veg_cs%leafc_storage, &
+      leafc_xfer     => veg_cs%leafc_xfer   , &
+      frootc         => veg_cs%frootc          ,&
+      frootc_storage => veg_cs%frootc_storage  ,&
+      frootc_xfer    => veg_cs%frootc_xfer    , &
+      livestemc      => veg_cs%livestemc            ,&
+      livestemc_storage => veg_cs%livestemc_storage  ,&
+      livestemc_xfer    => veg_cs%livestemc_xfer     ,&
+      deadstemc         => veg_cs%deadstemc                ,&
+      deadstemc_storage => veg_cs%deadstemc_storage  ,&
+      deadstemc_xfer    => veg_cs%deadstemc_xfer    , &
+      livecrootc         => veg_cs%livecrootc          ,&
+      livecrootc_storage => veg_cs%livecrootc_storage  ,&
+      livecrootc_xfer    => veg_cs%livecrootc_xfer     ,&
+      deadcrootc         => veg_cs%deadcrootc          ,&
+      deadcrootc_storage => veg_cs%deadcrootc_storage  ,&
+      deadcrootc_xfer    => veg_cs%deadcrootc_xfer    , &
+      gresp_storage      => veg_cs%gresp_storage ,&
+      gresp_xfer         => veg_cs%gresp_xfer   , &
+      cpool              => veg_cs%cpool        , &
+      xsmrpool           => veg_cs%xsmrpool     , &
+      ctrunc             => veg_cs%ctrunc       , &
+      dispvegc           => veg_cs%dispvegc     , &
+      storvegc           => veg_cs%storvegc     , &
+      totvegc            => veg_cs%totvegc      , &
+      totpftc            => veg_cs%totpftc      , &
+      grainc             => veg_cs%grainc       , &
+      grainc_storage     => veg_cs%grainc_storage, &
+      grainc_xfer        => veg_cs%grainc_xfer   , &
+      cropseedc_deficit  => veg_cs%cropseedc_deficit &
       )
 
     patch_grew   = (patch_state_updater%dwt(p) > 0._r8)
@@ -142,9 +144,9 @@ contains
 
     call ComputeSeedAmounts(p                  , &
          species                    = veg_cs%species     , &
-         leaf_patch                 = leafc           , &
-         leaf_storage_patch         = leafc_storage   , &
-         leaf_xfer_patch            = leafc_xfer      , &
+         leaf_patch                 = leafc(p)           , &
+         leaf_storage_patch         = leafc_storage(p)   , &
+         leaf_xfer_patch            = leafc_xfer(p)      , &
          ! Calculations only needed for patches that grew:
          compute_here_patch         = patch_grew      , &
          ! For patches that previously had zero area, ignore the current state for the
@@ -157,67 +159,67 @@ contains
 
     ! 1) LEAFC_PATCH
     call update_patch_state(patch_state_updater,          &
-         p,c                              , &
-         var               = leafc        , &
-         flux_out_grc_area = conv_cflux            , &
+         p,c                                 , &
+         var               = leafc(p)        , &
+         flux_out_grc_area = conv_cflux      , &
          seed              = seed_leafc_patch      , &
          seed_addition     = dwt_leafc_seed    )
 
     ! 2) LEAFC_STORAGE_PATCH
-    call update_patch_state(patch_state_updater,                 &
-         p, c                            , &
-         var               = leafc_storage       , &
-         flux_out_grc_area = conv_cflux                   , &
-         seed              = seed_leafc_storage_patch     , &
+    call update_patch_state(patch_state_updater ,&
+         p, c                            , & 
+         var               = leafc_storage(p)  , &
+         flux_out_grc_area = conv_cflux     , &
+         seed              = seed_leafc_storage_patch , &
          seed_addition     = dwt_leafc_seed            )
 
     ! 3) LEAF_XFER_PATCH
-    call update_patch_state(patch_state_updater,                 &
+    call update_patch_state(patch_state_updater, &
          p , c                           , &
-         var               = leafc_xfer          , &
-         flux_out_grc_area = conv_cflux                   , &
-         seed              = seed_leafc_xfer_patch        , &
+         var               = leafc_xfer(p) , &
+         flux_out_grc_area = conv_cflux, &
+         seed              = seed_leafc_xfer_patch , &
          seed_addition     = dwt_leafc_seed         )
 
     ! 4) FROOTC_PATCH
     call update_patch_state(patch_state_updater,                 &
          p ,c               , &
-         var               = frootc              , &
+         var               = frootc(p)              , &
          flux_out_col_area = dwt_frootc_to_litter )
 
     ! 5) FROOTC_STORAGE_PATCH
     call update_patch_state(patch_state_updater,  &
          p, c                    , &
-         var               = frootc_storage  , &
+         var               = frootc_storage(p) , &
          flux_out_grc_area = conv_cflux )
 
     ! 6) FROOTC_XFER_PATCH
     call update_patch_state(patch_state_updater,                 &
          p,c                       , &
-         var               = frootc_xfer   , &
+         var               = frootc_xfer(p)   , &
          flux_out_grc_area = conv_cflux )
 
     ! 7) LIVESTEMC_PATCH
     call update_patch_state(patch_state_updater,                 &
          p,c                             , &
-         var               = livestemc           , &
+         var               = livestemc(p)           , &
          flux_out_grc_area = conv_cflux )
 
     ! 8) LIVESTEMC_STORAGE_PATCH
-    call update_patch_state(patch_state_updater,                 &
+    call update_patch_state(patch_state_updater,  &
          p, c                   , &
-         var               = livestemc_storage   , &
+         var               = livestemc_storage(p)   , &
          flux_out_grc_area = conv_cflux )
 
     ! 9) LIVESTEMC_XFER_PATCH
     call update_patch_state(patch_state_updater,    &
          p,c                , &
-         var               = livestemc_xfer      , &
+         var               = livestemc_xfer(p)      , &
          flux_out_grc_area = conv_cflux )
 
     ! 10) PROD10_CFLUX
     wood_product_cflux       = 0._r8
-    deadstemc_patch_temp     = deadstemc
+    deadstemc_patch_temp     = deadstemc(p)
     call update_patch_state_partition_flux_by_type(&
          patch_state_updater    ,&
          p,c             ,&
@@ -230,7 +232,7 @@ contains
 
     ! 11) PROD100_CFLUX
     wood_product_cflux       = 0._r8
-    deadstemc_patch_temp     = deadstemc
+    deadstemc_patch_temp     = deadstemc(p)
     call update_patch_state_partition_flux_by_type(&
          patch_state_updater    ,&
          p,c                   , &
@@ -248,7 +250,7 @@ contains
          p,c                   , &
          flux1_out_dest             = 'g'   , &
          flux1_fraction_by_pft_type = pconv               , &
-         var                        = deadstemc  , &
+         var                        = deadstemc(p)  , &
          flux1_out                  = conv_cflux          , &
          flux2_out                  = wood_product_cflux  , &
          seed                       = seed_deadstemc_patch, &
@@ -257,116 +259,116 @@ contains
     ! 13) DEADSTEMC_STORAGE_PATCH
     call update_patch_state(patch_state_updater,                 &
          p,c                    , &
-         var               = deadstemc_storage   , &
+         var               = deadstemc_storage(p)   , &
          flux_out_grc_area = conv_cflux )
 
     ! 14) DEADSTEMC_XFER_PATCH
      call update_patch_state(patch_state_updater,                 &
          p,c                              , &
-         var               = deadstemc_xfer      , &
+         var               = deadstemc_xfer(p)      , &
          flux_out_grc_area = conv_cflux )
 
     ! 15) LIVECROOTC_PATCH
     call update_patch_state(patch_state_updater,                 &
          p,c          , &
-         var               = livecrootc          , &
+         var               = livecrootc(p)          , &
          flux_out_col_area = dwt_livecrootc_to_litter )
 
     ! 16) LIVECROOTC_STORAGE_PATCH
     call update_patch_state(patch_state_updater,                 &
          p,c      , &
-         var               = livecrootc_storage  , &
+         var               = livecrootc_storage(p)  , &
          flux_out_grc_area = conv_cflux )
 
     ! 17) LIVECROOTC_XFER_PATCH
     call update_patch_state(patch_state_updater,                 &
          p,c                                   , &
-         var               = livecrootc_xfer     , &
+         var               = livecrootc_xfer(p)     , &
          flux_out_grc_area = conv_cflux )
 
     ! 18) DEADCROOTC_PATCH
     call update_patch_state(patch_state_updater,                 &
          p,c                                     , &
-         var               = deadcrootc          , &
+         var               = deadcrootc(p)          , &
          flux_out_col_area = dwt_deadcrootc_to_litter )
 
     ! 19) DEADCROOTC_STORAGE_PATCH
     call update_patch_state(patch_state_updater,                 &
          p,c                              , &
-         var               = deadcrootc_storage  , &
+         var               = deadcrootc_storage(p)  , &
          flux_out_grc_area = conv_cflux )
 
     ! 20) DEADCROOT_XFER_PATCH
     call update_patch_state(patch_state_updater,                 &
          p,c                              , &
-         var               = deadcrootc_xfer     , &
+         var               = deadcrootc_xfer(p)     , &
          flux_out_grc_area = conv_cflux )
 
     ! 21) GRESP_STORAGE_PATCH
     call update_patch_state(patch_state_updater,                 &
          p,c                              , &
-         var               = gresp_storage       , &
+         var               = gresp_storage(p)       , &
          flux_out_grc_area = conv_cflux )
 
     ! 22) GRESP_XFER_STORAGE
     call update_patch_state(patch_state_updater,                 &
          p,c                             , &
-         var               = gresp_xfer          , &
+         var               = gresp_xfer(p)          , &
          flux_out_grc_area = conv_cflux )
 
     ! 23) CPOOL_PATCH
-    call update_patch_state(patch_state_updater,                 &
+    call update_patch_state(patch_state_updater ,&
          p,c                            , &
-         var               = cpool               , &
+         var               = cpool(p)   , &
          flux_out_grc_area = conv_cflux )
 
     ! 24) XSMRPOOL_PATCH
     call update_patch_state(patch_state_updater,                 &
-         p,c                              , &
-         var               = xsmrpool            , &
+         p,c                             , &
+         var               = xsmrpool(p) , &
          flux_out_grc_area = conv_cflux )
 
     ! 25) CTRUNC_PATCH
     call update_patch_state(patch_state_updater,                 &
          p,c                         , &
-         var               = ctrunc              , &
+         var               = ctrunc(p) , &
          flux_out_grc_area = conv_cflux )
 
     ! 26) DISPVEGC_PATCH
     call update_patch_state(patch_state_updater,                 &
          p,c                   , &
-         var               = dispvegc )
+         var               = dispvegc(p) )
 
     ! 27) STORVEGC_PATCH
     call update_patch_state(patch_state_updater,                 &
          p,c                     , &
-         var               = storvegc )
+         var               = storvegc(p) )
 
     ! 28) TOTVEGC_PATCH
     call update_patch_state(patch_state_updater,                 &
          p,c                               , &
-         var               = totvegc )
+         var               = totvegc(p) )
 
     ! 29) TOTPFTC_PATCH
     call update_patch_state(patch_state_updater,                 &
          p,c                     , &
-         var               = totpftc )
+         var               = totpftc(p) )
 
     if (use_crop) then
 
       call update_patch_state(patch_state_updater, &
            p,c               ,&
-           var = grainc               , &
+           var = grainc(p)               , &
            flux_out_col_area = crop_product_cflux)
 
       call update_patch_state(patch_state_updater, &
            p,c               ,&
-           var = grainc_storage        , &
+           var = grainc_storage(p)  , &
            flux_out_grc_area = conv_cflux)
 
       call update_patch_state(patch_state_updater, &
            p,c               ,&
-           var = grainc_xfer , &
+           var = grainc_xfer(p) , &
            flux_out_grc_area = conv_cflux)
        !============================================================!
 
@@ -374,7 +376,7 @@ contains
        ! of the atmosphere.
        call update_patch_state(patch_state_updater,                 &
             p,c               ,&
-            var = cropseedc_deficit  , &
+            var = cropseedc_deficit(p)  , &
             flux_out_grc_area = conv_cflux )
 
     end if
@@ -388,25 +390,29 @@ contains
   end subroutine dyn_veg_cs_Adjustments
 
   !-----------------------------------------------------------------------
-  subroutine dyn_col_cs_Adjustments(bounds, clump_index, column_state_updater, col_cs)
+  subroutine dyn_col_cs_Adjustments(proc_begc,proc_endc, nclumps, column_state_updater, col_cs)
     !
     ! !DESCRIPTION:
     ! Adjust column-level carbon state variables and compute associated fluxes
     ! when patch areas change due to dynamic landuse
     !
     ! !USES:
+    use decompMod, only :  get_clump_bounds_gpu
+    use elm_varctl, only : iulog 
+    use dynUpdateModAcc , only : update_column_state_no_special_handling_acc
     !
     ! !ARGUMENTS:
-    !$acc routine seq
-    type(bounds_type)               , intent(in)    :: bounds
-    integer                         , intent(in)    :: clump_index
+    integer                         , intent(in)   :: proc_begc, proc_endc, nclumps
     type(column_state_updater_type) , intent(in)    :: column_state_updater
     type(column_carbon_state)       , intent(inout) :: col_cs
     !
     ! !LOCAL VARIABLES:
-    integer         :: l, j
+    type(bounds_type)        :: bounds
+    integer         :: l, j,c, nc 
     integer         :: begc, endc
-    real(r8)        :: adjustment_one_level(bounds%begc:bounds%endc)
+    real(r8)        :: adjustment_one_level(proc_begc:proc_endc,1:nlevdecomp, 1:ndecomp_pools)
+    real(r8)        :: sum1 
+    real :: startt, stopt 
     !-----------------------------------------------------------------------
     associate(&
       decomp_cpools_vr    => col_cs%decomp_cpools_vr , &
@@ -415,69 +421,155 @@ contains
       prod10c   => col_cs%prod10c, &
       prod100c  => col_cs%prod100c &
       )
-    begc = bounds%begc
-    endc = bounds%endc
 
-    col_cs%dyn_cbal_adjustments(begc:endc) = 0._r8
+    call cpu_time(startt) 
+    !$acc enter data create(adjustment_one_level(:,:,:),sum1)
+    !$acc parallel loop independent gang vector default(present) 
+    do c = proc_begc, proc_endc
+     col_cs%dyn_cbal_adjustments(c) = 0._r8
+    end do 
+    call cpu_time(stopt)
+    !write(iulog,*) "col_cs_Adjustment::init ",(stopt-startt)*1.E+3,"ms"
 
+    call cpu_time(startt)
+    !$acc parallel loop gang independent default(present)
     do l = 1, ndecomp_pools
+      !$acc loop worker independent 
        do j = 1, nlevdecomp
-          call update_column_state_no_special_handling( column_state_updater , &
-               bounds      = bounds,                                         &
-               clump_index = clump_index,                                    &
-               var         = decomp_cpools_vr(begc:endc, j, l),     &
-               adjustment  = adjustment_one_level(begc:endc))
-
-          col_cs%dyn_cbal_adjustments(begc:endc) = &
-               col_cs%dyn_cbal_adjustments(begc:endc) + &
-               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
-
+          !$acc loop vector independent private(bounds, begc,endc)
+          do nc =1, nclumps
+            if (column_state_updater%any_changes(nc)) then
+               call get_clump_bounds_gpu(nc, bounds)
+               begc = bounds%begc; endc = bounds%endc 
+               call update_column_state_no_special_handling_acc( column_state_updater , &
+                    bounds      = bounds,                                         &
+                    clump_index = nc,                                    &
+                    var         = decomp_cpools_vr(begc:endc, j, l),     &
+                    adjustment  = adjustment_one_level(begc:endc,j,l))
+            end if 
+          end do 
        end do
     end do
+    call cpu_time(stopt) 
+    !write(iulog,*) "col_cs_Adjustment::3D loop ",(stopt-startt)*1.E+3,"ms"
 
-    do j = 1, nlevdecomp
-       call update_column_state_no_special_handling( column_state_updater , &
-            bounds      = bounds,                                         &
-            clump_index = clump_index,                                    &
-            var         = ctrunc_vr(begc:endc,j),     &
-            adjustment  = adjustment_one_level(begc:endc))
+    call cpu_time(startt) 
+     !$acc parallel loop independent gang worker collapse(2) default(present) private(sum1)
+     do l = 1, ndecomp_pools
+          do c = proc_begc, proc_endc
+               sum1 = 0._r8
+               !$acc loop vector reduction(+:sum1)
+               do j = 1, nlevdecomp 
+                    sum1 = sum1 + adjustment_one_level(c,j,l) * dzsoi_decomp(j)
+               end do
+               col_cs%dyn_cbal_adjustments(c) = col_cs%dyn_cbal_adjustments(c) + sum1
+          end do 
+     end do
+     call cpu_time(stopt)
+    !write(iulog,*) "col_cs_Adjustment::Reduction ",(stopt-startt)*1.E+3,"ms"
 
-       col_cs%dyn_cbal_adjustments(begc:endc) = &
-            col_cs%dyn_cbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+     call cpu_time(startt) 
+     !$acc parallel loop independent gang default(present) present(ctrunc_vr(:,:),adjustment_one_level(:,:,:)) 
+     do j = 1, nlevdecomp
+          !$acc loop vector independent private(begc,endc,bounds)
+          do nc =1, nclumps
+            if (column_state_updater%any_changes(nc)) then
+               call get_clump_bounds_gpu(nc, bounds)
+               begc = bounds%begc; endc = bounds%endc 
 
-    end do
+               call update_column_state_no_special_handling_acc( column_state_updater , &
+                    bounds      = bounds,                                         &
+                    clump_index = nc,                                    &
+                    var         = ctrunc_vr(begc:endc,j),     &
+                    adjustment  = adjustment_one_level(begc:endc,j, 1))
+            end if 
+          end do 
+    end do 
+    call cpu_time(stopt) 
+    !write(iulog,*) "col_cs_Adjustment::2D loop ",(stopt-startt)*1.E+3,"ms"
 
-    call update_column_state_no_special_handling( column_state_updater, &
-         bounds      = bounds,                                         &
-         clump_index = clump_index,                                    &
-         var         = prod1c(begc:endc),     &
-         adjustment  = adjustment_one_level(begc:endc))
+    call cpu_time(startt) 
+     !$acc parallel loop independent gang worker default(present) private(sum1)
+    do c = proc_begc, proc_endc
+          sum1 = 0._r8
+          !$acc loop vector reduction(+:sum1)
+          do j = 1, nlevdecomp 
+               sum1 = sum1 + adjustment_one_level(c,j,1) * dzsoi_decomp(j)
+          end do
+          col_cs%dyn_cbal_adjustments(c) = col_cs%dyn_cbal_adjustments(c) + sum1
+     end do 
+     call cpu_time(stopt)
+    !write(iulog,*) "col_cs_Adjustment::2D reduction ",(stopt-startt)*1.E+3,"ms"
 
-    col_cs%dyn_cbal_adjustments(begc:endc) = &
-         col_cs%dyn_cbal_adjustments(begc:endc) + &
-         adjustment_one_level(begc:endc)
+     call cpu_time(startt) 
+     !$acc parallel default(present)
+     !$acc loop gang vector independent private(begc,endc,bounds)
+     do nc =1, nclumps
+         if (column_state_updater%any_changes(nc)) then
+          call get_clump_bounds_gpu(nc, bounds)
+          begc = bounds%begc; endc = bounds%endc 
 
-    call update_column_state_no_special_handling( column_state_updater, &
-         bounds      = bounds,                                         &
-         clump_index = clump_index,                                    &
-         var         = prod10c(begc:endc),     &
-         adjustment  = adjustment_one_level(begc:endc))
+          call update_column_state_no_special_handling_acc(column_state_updater, &
+               bounds      = bounds,                                         &
+               clump_index = nc,                                    &
+               var         = prod1c(begc:endc),     &
+               adjustment  = adjustment_one_level(begc:endc,1,1))
+         
+          !$acc loop seq 
+          do c = begc, endc     
+               col_cs%dyn_cbal_adjustments(c) = &
+                    col_cs%dyn_cbal_adjustments(c) + &
+                    adjustment_one_level(c,1,1)
+          end do
+         end if  
+     end do 
 
-    col_cs%dyn_cbal_adjustments(begc:endc) = &
-         col_cs%dyn_cbal_adjustments(begc:endc) + &
-         adjustment_one_level(begc:endc)
+    !$acc loop gang vector independent private(begc,endc,bounds)
+     do nc =1, nclumps
+      if (column_state_updater%any_changes(nc)) then 
+         call get_clump_bounds_gpu(nc, bounds)
+          begc = bounds%begc; endc = bounds%endc 
 
-    call update_column_state_no_special_handling( column_state_updater, &
-         bounds      = bounds,                                         &
-         clump_index = clump_index,                                    &
-         var         = prod100c(begc:endc),     &
-         adjustment  = adjustment_one_level(begc:endc))
+          call update_column_state_no_special_handling_acc(column_state_updater, &
+               bounds      = bounds,                                         &
+               clump_index = nc,                                    &
+               var         = prod10c(begc:endc),     &
+               adjustment  = adjustment_one_level(begc:endc,1,1))
 
-    col_cs%dyn_cbal_adjustments(begc:endc) = &
-         col_cs%dyn_cbal_adjustments(begc:endc) + &
-         adjustment_one_level(begc:endc)
+          !$acc loop seq 
+          do c = begc, endc     
+               col_cs%dyn_cbal_adjustments(c) = &
+                    col_cs%dyn_cbal_adjustments(c) + &
+                    adjustment_one_level(c,1,1)
+          end do
+      end if 
+     end do 
 
+     !$acc loop gang vector independent private(begc,endc,bounds)
+     do nc =1, nclumps
+      if (column_state_updater%any_changes(nc)) then
+          call get_clump_bounds_gpu(nc, bounds)
+          begc = bounds%begc; endc = bounds%endc 
+
+          call update_column_state_no_special_handling_acc(column_state_updater, &
+               bounds      = bounds,                                         &
+               clump_index = nc,                                    &
+               var         = prod100c(begc:endc),     &
+               adjustment  = adjustment_one_level(begc:endc,1,1))
+
+          !$acc loop seq 
+          do c = begc, endc     
+               col_cs%dyn_cbal_adjustments(c) = &
+                    col_cs%dyn_cbal_adjustments(c) + &
+                    adjustment_one_level(c,1,1)
+          end do
+         end if 
+     end do
+     !$acc end parallel 
+     call cpu_time(stopt) 
+     
+     !$acc exit data delete(adjustment_one_level(:,:,:),sum1)
+     !write(iulog,*) "col_cs_Adjustment::Final parallel region ",(stopt-startt)*1.E+3,"ms"
     end associate
   end subroutine dyn_col_cs_Adjustments
 
@@ -504,7 +596,7 @@ contains
     ! dynamic landuse
     !
     ! !USES:
-    !$acc routine seq
+      !$acc routine seq
     use pftvarcon          , only : pconv, pprod10, pprod100
     use dynPriorWeightsMod , only : prior_weights_type
     use landunit_varcon    , only : istsoil, istcrop
@@ -539,35 +631,35 @@ contains
     real(r8)   :: deadstemn_patch_temp
     !-----------------------------------------------------------------------
     associate(&
-      leafn          => veg_ns%leafn         (p), &
-      leafn_storage  => veg_ns%leafn_storage (p), &
-      leafn_xfer     => veg_ns%leafn_xfer    (p), &
-      frootn         => veg_ns%frootn        (p), &
-      frootn_storage => veg_ns%frootn_storage(p), &
-      frootn_xfer    => veg_ns%frootn_xfer   (p), &
-      livestemn         => veg_ns%livestemn  (p), &
-      livestemn_storage => veg_ns%livestemn_storage (p) , &
-      livestemn_xfer    => veg_ns%livestemn_xfer    (p) , &
-      deadstemn         => veg_ns%deadstemn         (p) , &
-      deadstemn_storage => veg_ns%deadstemn_storage (p) , &
-      deadstemn_xfer    => veg_ns%deadstemn_xfer    (p) , &
-      livecrootn         => veg_ns%livecrootn       (p)   , &
-      livecrootn_storage => veg_ns%livecrootn_storage (p) , &
-      livecrootn_xfer    => veg_ns%livecrootn_xfer    (p) , &
-      deadcrootn         => veg_ns%deadcrootn         (p) , &
-      deadcrootn_storage => veg_ns%deadcrootn_storage (p) , &
-      deadcrootn_xfer    => veg_ns%deadcrootn_xfer    (p) , &
-      retransn           => veg_ns%retransn (p) , &
-      npool              => veg_ns%npool    (p) , &
-      ntrunc             => veg_ns%ntrunc   (p)   , &
-      dispvegn           => veg_ns%dispvegn (p) , &
-      storvegn           => veg_ns%storvegn (p) , &
-      totvegn            => veg_ns%totvegn  (p) , &
-      totpftn            => veg_ns%totpftn  (p) , &
-      grainn             => veg_ns%grainn(p)        , &
-      grainn_storage     => veg_ns%grainn_storage(p), &
-      grainn_xfer        => veg_ns%grainn_xfer(p)   , &
-      cropseedn_deficit  => veg_ns%cropseedn_deficit(p) &
+      leafn          => veg_ns%leafn         , &
+      leafn_storage  => veg_ns%leafn_storage , &
+      leafn_xfer     => veg_ns%leafn_xfer    , &
+      frootn         => veg_ns%frootn        , &
+      frootn_storage => veg_ns%frootn_storage, &
+      frootn_xfer    => veg_ns%frootn_xfer   , &
+      livestemn         => veg_ns%livestemn  , &
+      livestemn_storage => veg_ns%livestemn_storage  , &
+      livestemn_xfer    => veg_ns%livestemn_xfer     , &
+      deadstemn         => veg_ns%deadstemn          , &
+      deadstemn_storage => veg_ns%deadstemn_storage  , &
+      deadstemn_xfer    => veg_ns%deadstemn_xfer     , &
+      livecrootn         => veg_ns%livecrootn          , &
+      livecrootn_storage => veg_ns%livecrootn_storage  , &
+      livecrootn_xfer    => veg_ns%livecrootn_xfer     , &
+      deadcrootn         => veg_ns%deadcrootn          , &
+      deadcrootn_storage => veg_ns%deadcrootn_storage  , &
+      deadcrootn_xfer    => veg_ns%deadcrootn_xfer     , &
+      retransn           => veg_ns%retransn  , &
+      npool              => veg_ns%npool     , &
+      ntrunc             => veg_ns%ntrunc    , &
+      dispvegn           => veg_ns%dispvegn  , &
+      storvegn           => veg_ns%storvegn  , &
+      totvegn            => veg_ns%totvegn   , &
+      totpftn            => veg_ns%totpftn   , &
+      grainn             => veg_ns%grainn    , &
+      grainn_storage     => veg_ns%grainn_storage, &
+      grainn_xfer        => veg_ns%grainn_xfer   , &
+      cropseedn_deficit  => veg_ns%cropseedn_deficit &
       )
 
     patch_grew   = (patch_state_updater%dwt(p) > 0._r8)
@@ -575,9 +667,9 @@ contains
 
     call ComputeSeedAmounts(p           , &
          species                    = CN_SPECIES_N   , &
-         leaf_patch                 = leafn          , &
-         leaf_storage_patch         = leafn_storage  , &
-         leaf_xfer_patch            = leafn_xfer     , &
+         leaf_patch                 = leafn(p)          , &
+         leaf_storage_patch         = leafn_storage(p)  , &
+         leaf_xfer_patch            = leafn_xfer(p)     , &
          ! Calculations only needed for patches that grew:
          compute_here_patch         = patch_grew     , &
          ! For patches that previously had zero area, ignore the current state for the
@@ -593,7 +685,7 @@ contains
     ! 1) LEAFN_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                                , &
-         var               = leafn             , &
+         var               = leafn(p)       , &
          flux_out_grc_area = conv_nflux        , &
          seed              = seed_leafn_patch  , &
          seed_addition     = dwt_leafn_seed   )
@@ -601,7 +693,7 @@ contains
     ! 2) LEAFN_STORAGE_PATCH
     call update_patch_state(patch_state_updater,  &
          p,c                             , &
-         var               = leafn_storage      , &
+         var               = leafn_storage(p)   , &
          flux_out_grc_area = conv_nflux         , &
          seed              = seed_leafn_storage_patch    , &
          seed_addition     = dwt_leafn_seed             )
@@ -609,7 +701,7 @@ contains
     ! 3) LEAFN_XFER_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c     , &
-         var               = leafn_xfer     , &
+         var               = leafn_xfer(p)  , &
          flux_out_grc_area = conv_nflux              , &
          seed              = seed_leafn_xfer_patch   , &
          seed_addition     = dwt_leafn_seed          )
@@ -617,42 +709,42 @@ contains
     ! 4) FROOTN_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                    , &
-         var               = frootn          , &
+         var               = frootn(p)       , &
          flux_out_col_area = dwt_frootn_to_litter  )
 
     ! 5) FROOTN_STORAGE_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c           , &
-         var               = frootn_storage       , &
+         var               = frootn_storage(p)    , &
          flux_out_grc_area = conv_nflux    )
 
     ! 6) FROOTN_XFER_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                             , &
-         var               = frootn_xfer          , &
+         var               = frootn_xfer(p)       , &
          flux_out_grc_area = conv_nflux      )
 
     ! 7) LIVESTEMN_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                                       , &
-         var               = livestemn            , &
+         var               = livestemn(p)         , &
          flux_out_grc_area = conv_nflux  )
 
     ! 8) LIVESTEMN_STORAGE_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                                   , &
-         var               = livestemn_storage    , &
+         var               = livestemn_storage(p) , &
          flux_out_grc_area = conv_nflux  )
 
     ! 9) LIVESTEMN_XFER_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                               , &
-         var               = livestemn_xfer       , &
+         var               = livestemn_xfer(p)    , &
          flux_out_grc_area = conv_nflux  )
 
     ! 10) PROD10_NFLUX
     wood_product_nflux        = 0._r8
-    deadstemn_patch_temp      = deadstemn
+    deadstemn_patch_temp      = deadstemn(p)
     call update_patch_state_partition_flux_by_type(patch_state_updater , &
          p,c                  , &
          flux1_out_dest = 'c'                                , &
@@ -664,7 +756,7 @@ contains
 
     ! 11) PROD100_NFLUX
     wood_product_nflux        = 0._r8
-    deadstemn_patch_temp      = deadstemn
+    deadstemn_patch_temp      = deadstemn(p)
     call update_patch_state_partition_flux_by_type(patch_state_updater , &
          p,c              , &
          flux1_out_dest = 'c'                                , &
@@ -679,120 +771,120 @@ contains
     call update_patch_state_partition_flux_by_type(patch_state_updater , &
          p,c                         , &
          flux1_out_dest = 'g'                           , &
-         flux1_fraction_by_pft_type = pconv               , &
-         var                        = deadstemn           , &
-         flux1_out                  = conv_nflux                 , &
-         flux2_out                  = wood_product_nflux         , &
-         seed                       = seed_deadstemn_patch       , &
+         flux1_fraction_by_pft_type = pconv             , &
+         var                        = deadstemn(p)      , &
+         flux1_out                  = conv_nflux           , &
+         flux2_out                  = wood_product_nflux   , &
+         seed                       = seed_deadstemn_patch , &
          seed_addition              = dwt_deadstemn_seed     )
 
     ! 13) DEADSTEMN_STORAGE_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c               , &
-         var               = deadstemn_storage    , &
+         var               = deadstemn_storage(p)    , &
          flux_out_grc_area = conv_nflux  )
 
     ! 14) DEADSTEMN_XFER_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c  , &
-         var               = deadstemn_xfer       , &
+         var               = deadstemn_xfer(p)       , &
          flux_out_grc_area = conv_nflux  )
 
     ! 15) LIVECROOTN_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c              , &
-         var               = livecrootn           , &
+         var               = livecrootn(p)           , &
          flux_out_col_area = dwt_livecrootn_to_litter  )
 
     ! 16) LIVECROOTN_STORAGE_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c  , &
-         var               = livecrootn_storage   , &
+         var               = livecrootn_storage(p)   , &
          flux_out_grc_area = conv_nflux  )
 
     ! 17) LIVECROOTN_XFER_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c    , &
-         var               = livecrootn_xfer      , &
+         var               = livecrootn_xfer(p)      , &
          flux_out_grc_area = conv_nflux  )
 
     ! 18) DEADCROOTN_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c    , &
-         var               = deadcrootn           , &
+         var               = deadcrootn(p)           , &
          flux_out_col_area = dwt_deadcrootn_to_litter  )
 
     ! 19) DEADCROOTN_STORAGE_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c          , &
-         var               = deadcrootn_storage   , &
+         var               = deadcrootn_storage(p)   , &
          flux_out_grc_area = conv_nflux  )
 
     ! 20) DEADCROOT_XFER_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c   , &
-         var               = deadcrootn_xfer      , &
+         var               = deadcrootn_xfer(p)     , &
          flux_out_grc_area = conv_nflux  )
 
     ! 21) RETRANSN_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c     , &
-         var               = retransn             , &
+         var               = retransn (p)            , &
          flux_out_grc_area = conv_nflux  )
 
     ! 22) NTRUNC_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c    , &
-         var               = ntrunc               , &
+         var               = ntrunc(p)               , &
          flux_out_grc_area = conv_nflux  )
 
     ! 23) CPOOL_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c   , &
-         var               = npool                , &
+         var               = npool(p)                , &
          flux_out_grc_area = conv_nflux  )
 
     ! 24) DISPVEGN_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c              , &
-         var               = dispvegn  )
+         var               = dispvegn(p)  )
 
     ! 25) STORVEGN_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                         , &
-         var               = storvegn  )
+         var               = storvegn(p)  )
 
     ! 26) TOTVEGN_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c   , &
-         var               = totvegn  )
+         var               = totvegn(p)  )
 
     ! 27) TOTPFTN_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c, &
-         var    = totpftn  )
+         var    = totpftn(p)  )
 
     if (use_crop) then
       call update_patch_state(patch_state_updater, &
            p,c     , &
-           var = grainn     , &
+           var = grainn(p)     , &
            flux_out_col_area = crop_product_nflux)
 
       call update_patch_state(patch_state_updater, &
            p,c           , &
-           var = grainn_storage   , &
+           var = grainn_storage(p)   , &
            flux_out_grc_area = conv_nflux)
 
       call update_patch_state(patch_state_updater, &
            p,c      , &
-           var = grainn_xfer , &
+           var = grainn_xfer(p) , &
            flux_out_grc_area = conv_nflux)
 
        ! This is a negative pool. So any deficit that we haven't repaid gets sucked out
        ! of the atmosphere.
-       call update_patch_state(patch_state_updater,       &
+       call update_patch_state(patch_state_updater, &
             p,c, &
-            var = cropseedn_deficit   , &
+            var = cropseedn_deficit(p)   , &
             flux_out_grc_area = conv_nflux  )
     end if
 
@@ -806,28 +898,29 @@ contains
   end subroutine dyn_veg_ns_Adjustments
 
   !-----------------------------------------------------------------------
-  subroutine dyn_col_ns_Adjustments(bounds, clump_index, column_state_updater, col_ns)
+  subroutine dyn_col_ns_Adjustments(proc_begc,proc_endc, nclumps, column_state_updater, col_ns)
     !
     ! !DESCRIPTION:
     ! Adjust state variables and compute associated fluxes when patch areas change due to
     ! dynamic landuse
     !
     ! !USES:
-    !$acc routine seq
-    use dynPriorWeightsMod       , only : prior_weights_type
     use landunit_varcon          , only : istsoil, istcrop
+    use dynUpdateModAcc , only : update_column_state_no_special_handling_acc
     use dynColumnStateUpdaterMod , only : column_state_updater_type
-        !
+    !
     ! !ARGUMENTS:
-    type(bounds_type)               , intent(in)    :: bounds
-    integer                         , intent(in)    :: clump_index
+    integer                         , intent(in)  :: proc_begc, proc_endc, nclumps
     type(column_state_updater_type) , intent(in)    :: column_state_updater
     type(column_nitrogen_state)     , intent(inout) :: col_ns
     !
     ! !LOCAL VARIABLES:
-    integer                     :: l, j
-    integer                     :: begc, endc
-    real(r8)                    :: adjustment_one_level(bounds%begc:bounds%endc)
+    type(bounds_type) :: bounds
+    integer           :: l, j,c,nc
+    integer           :: begc, endc
+    real(r8)          :: adjustment_one_level(proc_begc:proc_endc,1:nlevdecomp, 1:ndecomp_pools)
+    real :: startt, stopt 
+    real(r8)        :: sum1 
     !-----------------------------------------------------------------------
     associate(&
       decomp_npools_vr    => col_ns%decomp_npools_vr , &
@@ -840,87 +933,181 @@ contains
       prod100n            => col_ns%prod100n     &
       )
 
-    begc = bounds%begc
-    endc = bounds%endc
-    col_ns%dyn_nbal_adjustments(begc:endc) = 0._r8
-    do l = 1, ndecomp_pools
-       do j = 1, nlevdecomp
-          call update_column_state_no_special_handling(column_state_updater, &
-               bounds      = bounds,                                         &
-               clump_index = clump_index,                                    &
-               var         = decomp_npools_vr(begc:endc, j, l),     &
-               adjustment  = adjustment_one_level(begc:endc))
+      call cpu_time(startt) 
+    !$acc enter data create(adjustment_one_level(:,:,:),sum1)
 
-          col_ns%dyn_nbal_adjustments(begc:endc) = &
-               col_ns%dyn_nbal_adjustments(begc:endc) + &
-               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+    !$acc parallel loop independent gang vector default(present) 
+    do c = proc_begc, proc_endc
+     col_ns%dyn_nbal_adjustments(c) = 0._r8
+    end do 
+    call cpu_time(stopt)
+    !write(iulog,*) "col_ps_Adjustment::init ",(stopt-startt)*1.E+3,"ms"
+
+    call cpu_time(startt)
+    !$acc parallel loop gang independent default(present) present(adjustment_one_level(:,:,:)) 
+    do l = 1, ndecomp_pools
+      !$acc loop worker independent 
+       do j = 1, nlevdecomp
+          !$acc loop vector independent private(bounds, begc,endc)
+          do nc =1, nclumps
+            if (column_state_updater%any_changes(nc)) then
+               call get_clump_bounds_gpu(nc, bounds)
+               begc = bounds%begc; endc = bounds%endc 
+               
+               call update_column_state_no_special_handling_acc( column_state_updater, &
+                  bounds      = bounds,                                         &
+                  clump_index = nc,                                    &
+                  var         = decomp_npools_vr(begc:endc, j, l),     &
+                  adjustment  = adjustment_one_level(begc:endc,j,l) )
+            end if 
+         end do 
 
        end do
     end do
 
+    call cpu_time(stopt) 
+    !write(iulog,*) "col_ps_Adjustment::3D loop ",(stopt-startt)*1.E+3,"ms"
+
+    call cpu_time(startt) 
+     !$acc parallel loop independent gang worker collapse(2) default(present) private(sum1)
+     do l = 1, ndecomp_pools
+          do c = proc_begc, proc_endc
+               sum1 = 0._r8
+               !$acc loop vector reduction(+:sum1)
+               do j = 1, nlevdecomp 
+                    sum1 = sum1 + adjustment_one_level(c,j,l) * dzsoi_decomp(j)
+               end do
+               col_ns%dyn_nbal_adjustments(c) = col_ns%dyn_nbal_adjustments(c) + sum1
+          end do 
+     end do
+     call cpu_time(stopt)
+    !write(iulog,*) "col_ns_Adjustment::Reduction ",(stopt-startt)*1.E+3,"ms"
+
+    call cpu_time(startt) 
+
+   !$acc parallel loop independent gang default(present) present(adjustment_one_level(:,:,:))
     do j = 1, nlevdecomp
-       call update_column_state_no_special_handling(column_state_updater, &
+      !$acc loop vector independent private(begc,endc,bounds)
+      do nc =1, nclumps
+        if (column_state_updater%any_changes(nc)) then
+           call get_clump_bounds_gpu(nc, bounds)
+           begc = bounds%begc; endc = bounds%endc       
+           
+           
+           call update_column_state_no_special_handling_acc(column_state_updater, &
             bounds      = bounds,                                         &
-            clump_index = clump_index,                                    &
+            clump_index = nc,                                    &
             var         = ntrunc_vr(begc:endc,j),     &
-            adjustment  = adjustment_one_level(begc:endc))
-
-       col_ns%dyn_nbal_adjustments(begc:endc) = &
-            col_ns%dyn_nbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+            adjustment  = adjustment_one_level(begc:endc,j,1))
 
 
-       call update_column_state_no_special_handling(column_state_updater, &
+       call update_column_state_no_special_handling_acc(column_state_updater, &
            bounds      = bounds                          , &
-           clump_index = clump_index                     , &
+           clump_index = nc                     , &
            var         = sminn_vr(begc:endc, j), &
-           adjustment  = adjustment_one_level(begc:endc))
+           adjustment  = adjustment_one_level(begc:endc,j,2))
 
-       col_ns%dyn_nbal_adjustments(begc:endc) = &
-           col_ns%dyn_nbal_adjustments(begc:endc) + &
-           adjustment_one_level(begc:endc) * dzsoi_decomp(j)
-
-       call update_column_state_no_special_handling(column_state_updater, &
+       call update_column_state_no_special_handling_acc(column_state_updater, &
             bounds      = bounds                          , &
-            clump_index = clump_index                     , &
+            clump_index = nc                     , &
             var         = smin_nh4_vr(begc:endc, j) , &
-            adjustment  = adjustment_one_level(begc:endc))
+            adjustment  = adjustment_one_level(begc:endc,j,3))
 
-       call update_column_state_no_special_handling(column_state_updater, &
+       call update_column_state_no_special_handling_acc(column_state_updater, &
             bounds      = bounds                          , &
-            clump_index = clump_index                     , &
+            clump_index = nc                     , &
             var         = smin_no3_vr(begc:endc, j) , &
-            adjustment  = adjustment_one_level(begc:endc))
+            adjustment  = adjustment_one_level(begc:endc,j,4))
+        end if 
+      end do 
     end do
-    call update_column_state_no_special_handling(column_state_updater, &
-         bounds      = bounds,                                         &
-         clump_index = clump_index,                                    &
-         var         = prod1n(begc:endc),     &
-         adjustment  = adjustment_one_level(begc:endc))
+    call cpu_time(stopt)
+    !write(iulog,*) "col_ns_Adjustment::2D loop ",(stopt-startt)*1.E+3,"ms"
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
-         adjustment_one_level(begc:endc)
+    call cpu_time(startt) 
+    !$acc parallel loop independent gang worker collapse(2) default(present) private(sum1)
+    do l = 1, 4
+         do c = proc_begc, proc_endc
+              sum1 = 0._r8
+              !$acc loop vector reduction(+:sum1)
+              do j = 1, nlevdecomp 
+                   sum1 = sum1 + adjustment_one_level(c,j,l) * dzsoi_decomp(j)
+              end do
+              col_ns%dyn_nbal_adjustments(c) = col_ns%dyn_nbal_adjustments(c) + sum1
+         end do 
+    end do
+    call cpu_time(stopt)
+   !write(iulog,*) "col_ns_Adjustment::2D vr Reduction ",(stopt-startt)*1.E+3,"ms"
 
-    call update_column_state_no_special_handling(column_state_updater, &
-         bounds      = bounds,                                         &
-         clump_index = clump_index,                                    &
-         var         = prod10n(begc:endc),     &
-         adjustment  = adjustment_one_level(begc:endc))
+   call cpu_time(startt) 
+     !$acc parallel default(present) present(adjustment_one_level(:,:,:))
+     !$acc loop gang vector independent private(begc,endc,bounds)
+     do nc =1, nclumps
+         if (column_state_updater%any_changes(nc)) then
+          call get_clump_bounds_gpu(nc, bounds)
+          begc = bounds%begc; endc = bounds%endc 
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
-         adjustment_one_level(begc:endc)
+          call update_column_state_no_special_handling_acc(column_state_updater, &
+               bounds      = bounds,                                         &
+               clump_index = nc,                                    &
+               var         = prod1n(begc:endc),     &
+               adjustment  = adjustment_one_level(begc:endc,1,1))
+         
+          !$acc loop seq 
+          do c = begc, endc     
+               col_ns%dyn_nbal_adjustments(c) = &
+                    col_ns%dyn_nbal_adjustments(c) + &
+                    adjustment_one_level(c,1,1)
+          end do
+         end if  
+     end do 
 
-    call update_column_state_no_special_handling(column_state_updater, &
-         bounds      = bounds,                                         &
-         clump_index = clump_index,                                    &
-         var         = prod100n(begc:endc),     &
-         adjustment  = adjustment_one_level(begc:endc))
+    !$acc loop gang vector independent private(begc,endc,bounds)
+     do nc =1, nclumps
+      if (column_state_updater%any_changes(nc)) then 
+         call get_clump_bounds_gpu(nc, bounds)
+          begc = bounds%begc; endc = bounds%endc 
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
-         adjustment_one_level(begc:endc)
+          call update_column_state_no_special_handling_acc(column_state_updater, &
+               bounds      = bounds,                                         &
+               clump_index = nc,                                    &
+               var         = prod10n(begc:endc),     &
+               adjustment  = adjustment_one_level(begc:endc,1,1))
+
+          !$acc loop seq 
+          do c = begc, endc     
+               col_ns%dyn_nbal_adjustments(c) = &
+                    col_ns%dyn_nbal_adjustments(c) + &
+                    adjustment_one_level(c,1,1)
+          end do
+      end if 
+     end do 
+
+     !$acc loop gang vector independent private(begc,endc,bounds)
+     do nc =1, nclumps
+      if (column_state_updater%any_changes(nc)) then
+          call get_clump_bounds_gpu(nc, bounds)
+          begc = bounds%begc; endc = bounds%endc 
+
+          call update_column_state_no_special_handling_acc(column_state_updater, &
+               bounds      = bounds,                                         &
+               clump_index = nc,                                    &
+               var         = prod100n(begc:endc),     &
+               adjustment  = adjustment_one_level(begc:endc,1,1))
+
+          !$acc loop seq 
+          do c = begc, endc     
+               col_ns%dyn_nbal_adjustments(c) = &
+                    col_ns%dyn_nbal_adjustments(c) + &
+                    adjustment_one_level(c,1,1)
+          end do
+      end if 
+     end do
+     !$acc end parallel 
+     call cpu_time(stopt) 
+     
+     !$acc exit data delete(adjustment_one_level(:,:,:), sum1)
+     !write(iulog,*) "col_ns_Adjustment::Final parallel region ",(stopt-startt)*1.E+3,"ms"
     !=======================================================!
     end associate
 
@@ -949,7 +1136,7 @@ contains
     ! dynamic landuse
     !
     ! !USES:
-    !$acc routine seq
+      !$acc routine seq
     use pftvarcon          , only : pconv, pprod10, pprod100
     use dynPriorWeightsMod , only : prior_weights_type
     use ComputeSeedMod   , only : ComputeSeedAmounts
@@ -985,44 +1172,44 @@ contains
     real(r8)  :: deadstemp_patch_temp
     !-----------------------------------------------------------------------
     associate(&
-      leafp          => veg_ps%leafp         (p), &
-      leafp_storage  => veg_ps%leafp_storage (p), &
-      leafp_xfer     => veg_ps%leafp_xfer    (p), &
-      frootp         => veg_ps%frootp        (p)        ,&
-      frootp_storage => veg_ps%frootp_storage(p)  ,&
-      frootp_xfer    => veg_ps%frootp_xfer   (p) , &
-      livestemp         => veg_ps%livestemp  (p)              ,&
-      livestemp_storage => veg_ps%livestemp_storage  (p) ,&
-      livestemp_xfer    => veg_ps%livestemp_xfer     (p), &
-      deadstemp         => veg_ps%deadstemp          (p)       ,&
-      deadstemp_storage => veg_ps%deadstemp_storage  (p) ,&
-      deadstemp_xfer    => veg_ps%deadstemp_xfer     (p), &
-      livecrootp         => veg_ps%livecrootp        (p)   ,&
-      livecrootp_storage => veg_ps%livecrootp_storage(p) ,&
-      livecrootp_xfer    => veg_ps%livecrootp_xfer   (p), &
-      deadcrootp         => veg_ps%deadcrootp        (p)       ,&
-      deadcrootp_storage => veg_ps%deadcrootp_storage(p) ,&
-      deadcrootp_xfer    => veg_ps%deadcrootp_xfer   (p), &
-      retransp           => veg_ps%retransp (p) ,&
-      ppool              => veg_ps%ppool    (p), &
-      ptrunc             => veg_ps%ptrunc   (p)   , &
-      dispvegp           => veg_ps%dispvegp (p) , &
-      storvegp           => veg_ps%storvegp (p) , &
-      totvegp            => veg_ps%totvegp  (p) , &
-      totpftp            => veg_ps%totpftp  (p) , &
-      grainp             => veg_ps%grainp(p)        , &
-      grainp_storage     => veg_ps%grainp_storage(p), &
-      grainp_xfer        => veg_ps%grainp_xfer(p)   , &
-      cropseedp_deficit  => veg_ps%cropseedp_deficit(p) &
+      leafp          => veg_ps%leafp         , &
+      leafp_storage  => veg_ps%leafp_storage , &
+      leafp_xfer     => veg_ps%leafp_xfer    , &
+      frootp         => veg_ps%frootp        , &
+      frootp_storage => veg_ps%frootp_storage, &
+      frootp_xfer    => veg_ps%frootp_xfer    , &
+      livestemp         => veg_ps%livestemp   , &
+      livestemp_storage => veg_ps%livestemp_storage  , &
+      livestemp_xfer    => veg_ps%livestemp_xfer     , &
+      deadstemp         => veg_ps%deadstemp          , &
+      deadstemp_storage => veg_ps%deadstemp_storage  , &
+      deadstemp_xfer    => veg_ps%deadstemp_xfer     , &
+      livecrootp         => veg_ps%livecrootp        , &
+      livecrootp_storage => veg_ps%livecrootp_storage, &
+      livecrootp_xfer    => veg_ps%livecrootp_xfer   , &
+      deadcrootp         => veg_ps%deadcrootp        , &
+      deadcrootp_storage => veg_ps%deadcrootp_storage ,&
+      deadcrootp_xfer    => veg_ps%deadcrootp_xfer   , &
+      retransp           => veg_ps%retransp  ,&
+      ppool              => veg_ps%ppool    , &
+      ptrunc             => veg_ps%ptrunc   , &
+      dispvegp           => veg_ps%dispvegp  , &
+      storvegp           => veg_ps%storvegp  , &
+      totvegp            => veg_ps%totvegp   , &
+      totpftp            => veg_ps%totpftp   , &
+      grainp             => veg_ps%grainp    , &
+      grainp_storage     => veg_ps%grainp_storage , &
+      grainp_xfer        => veg_ps%grainp_xfer    , &
+      cropseedp_deficit  => veg_ps%cropseedp_deficit &
       )
       patch_grew   = (patch_state_updater%dwt(p) > 0._r8)
       old_weight_was_zero = (patch_state_updater%pwtgcell_old(p) == 0._r8)
 
     call ComputeSeedAmounts(p           , &
          species                    = CN_SPECIES_P , &
-         leaf_patch                 = leafp               , &
-         leaf_storage_patch         = leafp_storage       , &
-         leaf_xfer_patch            = leafp_xfer          , &
+         leaf_patch                 = leafp(p)               , &
+         leaf_storage_patch         = leafp_storage(p)       , &
+         leaf_xfer_patch            = leafp_xfer(p)          , &
          ! Calculations only needed for patches that grew:
          compute_here_patch         = patch_grew                 , &
          ! For patches that previously had zero area, ignore the current state for the
@@ -1038,7 +1225,7 @@ contains
     ! 1) LEAFP_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                           , &
-         var               = leafp               , &
+         var               = leafp(p)            , &
          flux_out_grc_area = conv_pflux          , &
          seed              = seed_leafp_patch    , &
          seed_addition     = dwt_leafp_seed     )
@@ -1046,7 +1233,7 @@ contains
     ! 2) LEAFP_STORAGE_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                   , &
-         var               = leafp_storage               , &
+         var               = leafp_storage(p)            , &
          flux_out_grc_area = conv_pflux                  , &
          seed              = seed_leafp_storage_patch    , &
          seed_addition     = dwt_leafp_seed             )
@@ -1054,7 +1241,7 @@ contains
     ! 3) LEAFP_XFER_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                  , &
-         var               = leafp_xfer       , &
+         var               = leafp_xfer(p)       , &
          flux_out_grc_area = conv_pflux              , &
          seed              = seed_leafp_xfer_patch   , &
          seed_addition     = dwt_leafp_seed          )
@@ -1062,24 +1249,24 @@ contains
     ! 4) FROOTP_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                           , &
-         var               = frootp               , &
+         var               = frootp(p)               , &
          flux_out_col_area = dwt_frootp_to_litter  )
 
     ! 5) FROOTP_STORAGE_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                             , &
-         var               = frootp_storage       , &
+         var               = frootp_storage(p)       , &
          flux_out_grc_area = conv_pflux  )
 
     ! 6) FROOTP_XFER_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                         , &
-         var               = frootp_xfer          , &
+         var               = frootp_xfer (p)         , &
          flux_out_grc_area = conv_pflux  )
 
     ! 7) PROD10_PFLUX
     wood_product_pflux        = 0._r8
-    deadstemp_patch_temp      = deadstemp
+    deadstemp_patch_temp      = deadstemp(p)
     call update_patch_state_partition_flux_by_type(patch_state_updater, &
          p,c                            , &
          flux1_out_dest = 'c'                                , &
@@ -1091,7 +1278,7 @@ contains
 
     ! 8) PROD100_PFLUX
     wood_product_pflux        = 0._r8
-    deadstemp_patch_temp      = deadstemp
+    deadstemp_patch_temp      = deadstemp(p)
     call update_patch_state_partition_flux_by_type(patch_state_updater, &
          p,c                          , &
          flux1_out_dest = 'c'                                , &
@@ -1107,7 +1294,7 @@ contains
          p,c       , &
          flux1_out_dest = 'g'                                , &
          flux1_fraction_by_pft_type = pconv                   , &
-         var                        = deadstemp               , &
+         var                        = deadstemp(p)               , &
          flux1_out                  = conv_pflux                 , &
          flux2_out                  = wood_product_pflux         , &
          seed                       = seed_deadstemp_patch       , &
@@ -1116,128 +1303,128 @@ contains
     ! 10) DEADSTEMP_STORAGE_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                     , &
-         var               = deadstemp_storage    , &
+         var               = deadstemp_storage(p)    , &
          flux_out_grc_area = conv_pflux  )
 
     ! 11) DEADSTEMP_XFER_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c            , &
-         var               = deadstemp_xfer       , &
+         var               = deadstemp_xfer (p)      , &
          flux_out_grc_area = conv_pflux  )
 
     ! 12) LIVESTEMP_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c           , &
-         var               = livestemp            , &
+         var               = livestemp(p)            , &
          flux_out_grc_area = conv_pflux  )
 
     ! 13) LIVESTEMP_STORAGE_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                 , &
-         var               = livestemp_storage    , &
+         var               = livestemp_storage(p)    , &
          flux_out_grc_area = conv_pflux  )
 
     ! 14) LIVESTEMP_XFER_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c       , &
-         var               = livestemp_xfer       , &
+         var               = livestemp_xfer(p)      , &
          flux_out_grc_area = conv_pflux  )
 
     ! 15) LIVECROOTP_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                 , &
-         var               = livecrootp           , &
+         var               = livecrootp(p)           , &
          flux_out_col_area = dwt_livecrootp_to_litter  )
 
     ! 16) LIVECROOTP_STORAGE_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                          , &
-         var               = livecrootp_storage   , &
+         var               = livecrootp_storage(p)   , &
          flux_out_grc_area = conv_pflux  )
 
     ! 17) LIVECROOTP_XFER_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                      , &
-         var               = livecrootp_xfer      , &
+         var               = livecrootp_xfer(p)      , &
          flux_out_grc_area = conv_pflux  )
 
     ! 18) DEADCROOTP_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                             , &
-         var               = deadcrootp           , &
+         var               = deadcrootp(p)           , &
          flux_out_col_area = dwt_deadcrootp_to_litter  )
 
     ! 19) DEADCROOTP_STORAGE_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                       , &
-         var               = deadcrootp_storage   , &
+         var               = deadcrootp_storage(p)  , &
          flux_out_grc_area = conv_pflux  )
 
     ! 20) DEADCROOT_XFER_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                             , &
-         var               = deadcrootp_xfer      , &
+         var               = deadcrootp_xfer(p)     , &
          flux_out_grc_area = conv_pflux  )
 
     ! 21) RETRANSP_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                     , &
-         var               = retransp             , &
+         var               = retransp(p)             , &
          flux_out_grc_area = conv_pflux  )
 
     ! 22) PTRUNC_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                           , &
-         var               = ptrunc               , &
+         var               = ptrunc (p)              , &
          flux_out_grc_area = conv_pflux  )
 
     ! 23) PPOOL_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                         , &
-         var               = ppool                , &
+         var               = ppool(p)                , &
          flux_out_grc_area = conv_pflux  )
 
     ! 24) DISPVEGP_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                      , &
-         var               = dispvegp  )
+         var               = dispvegp(p)  )
 
     ! 25) STORVEGP_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                    , &
-         var               = storvegp  )
+         var               = storvegp(p)  )
 
     ! 26) TOTVEGP_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c             , &
-         var               = totvegp  )
+         var               = totvegp(p)  )
 
     ! 27) TOTPFTP_PATCH
     call update_patch_state(patch_state_updater,       &
          p,c                   , &
-         var               = totpftp  )
+         var               = totpftp(p)  )
 
     if (use_crop) then
       call update_patch_state(patch_state_updater, &
            p,c     , &
-           var = grainp     , &
+           var = grainp (p)    , &
            flux_out_col_area = crop_product_pflux)
 
       call update_patch_state(patch_state_updater, &
            p,c           , &
-           var = grainp_storage   , &
+           var = grainp_storage (p)  , &
            flux_out_grc_area = conv_pflux)
 
       call update_patch_state(patch_state_updater, &
            p,c      , &
-           var = grainp_xfer , &
+           var = grainp_xfer(p) , &
            flux_out_grc_area = conv_pflux)
 
        ! This is a negative pool. So any deficit that we haven't repaid gets sucked out
        ! of the atmosphere.
        call update_patch_state(patch_state_updater,       &
             p,c     , &
-            var = cropseedp_deficit   , &
+            var = cropseedp_deficit(p)   , &
             flux_out_grc_area = conv_pflux  )
     end if
 
@@ -1250,28 +1437,30 @@ contains
   end subroutine dyn_veg_ps_Adjustments
 
   !-----------------------------------------------------------------------
-  subroutine dyn_col_ps_Adjustments(bounds, clump_index, column_state_updater, col_ps)
+  subroutine dyn_col_ps_Adjustments(proc_begc,proc_endc, nclumps,column_state_updater, col_ps)
     !
     ! !DESCRIPTION:
     ! Adjust state variables and compute associated fluxes when patch areas change due to
     ! dynamic landuse
     !
     ! !USES:
-    !$acc routine seq
-    use dynPriorWeightsMod       , only : prior_weights_type
     use landunit_varcon          , only : istsoil, istcrop
     use dynColumnStateUpdaterMod , only : column_state_updater_type
+    use dynUpdateModAcc , only : update_column_state_no_special_handling_acc
+
     !
     ! !ARGUMENTS:
-    type(bounds_type)               , intent(in)    :: bounds
-    integer                         , intent(in)    :: clump_index
+    integer                         , intent(in)  :: proc_begc, proc_endc, nclumps
     type(column_state_updater_type) , intent(in)    :: column_state_updater
     type(column_phosphorus_state)   , intent(inout) :: col_ps
     !
     ! !LOCAL VARIABLES:
-    integer           :: l, j
+    type(bounds_type)        :: bounds
+    integer           :: l, j,c,nc
     integer           :: begc, endc
-    real(r8)          :: adjustment_one_level(bounds%begc:bounds%endc)
+    real(r8)          :: adjustment_one_level(proc_begc:proc_endc,1:nlevdecomp, 1:ndecomp_pools)
+    real :: startt, stopt 
+    real(r8)        :: sum1 
     !-----------------------------------------------------------------------
     associate(&
       decomp_ppools_vr    => col_ps%decomp_ppools_vr , &
@@ -1286,108 +1475,174 @@ contains
       prod100p            => col_ps%prod100p &
       )
 
-    begc = bounds%begc
-    endc = bounds%endc
+     !$acc enter data create( adjustment_one_level(:,:,:), sum1)
 
-    col_ps%dyn_pbal_adjustments(begc:endc) = 0._r8
+    !$acc parallel loop independent gang vector default(present) 
+    do c = proc_begc, proc_endc
+     col_ps%dyn_pbal_adjustments(c) = 0._r8
+    end do 
+    
+    !$acc parallel loop gang independent default(present)
     do l = 1, ndecomp_pools
+      !$acc loop worker independent 
        do j = 1, nlevdecomp
-
-          call update_column_state_no_special_handling( column_state_updater, &
-               bounds      = bounds,                                         &
-               clump_index = clump_index,                                    &
-               var         = decomp_ppools_vr(begc:endc, j, l),     &
-               adjustment  = adjustment_one_level(begc:endc) )
-
-          col_ps%dyn_pbal_adjustments(begc:endc) =      &
-               col_ps%dyn_pbal_adjustments(begc:endc) + &
-               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+          !$acc loop vector independent private(bounds, begc,endc)
+          do nc =1, nclumps
+            if (column_state_updater%any_changes(nc)) then
+               call get_clump_bounds_gpu(nc, bounds)
+               begc = bounds%begc; endc = bounds%endc 
+               
+               call update_column_state_no_special_handling_acc( column_state_updater, &
+                  bounds      = bounds,                                         &
+                  clump_index = nc,                                    &
+                  var         = decomp_ppools_vr(begc:endc, j, l),     &
+                  adjustment  = adjustment_one_level(begc:endc,j,l) )
+            end if 
+         end do 
 
        end do
     end do
 
+     !$acc parallel loop independent gang worker collapse(2) default(present) private(sum1)
+     do l = 1, ndecomp_pools
+          do c = proc_begc, proc_endc
+               sum1 = 0._r8
+               !$acc loop vector reduction(+:sum1)
+               do j = 1, nlevdecomp 
+                    sum1 = sum1 + adjustment_one_level(c,j,l) * dzsoi_decomp(j)
+               end do
+               col_ps%dyn_pbal_adjustments(c) = col_ps%dyn_pbal_adjustments(c) + sum1
+          end do 
+     end do
+
+    !$acc parallel loop independent gang default(present)
     do j = 1, nlevdecomp
-       call update_column_state_no_special_handling( column_state_updater, &
-            bounds      = bounds,                                         &
-            clump_index = clump_index,                                    &
-            var         = ptrunc_vr(begc:endc,j),                &
-            adjustment  = adjustment_one_level(begc:endc))
+      !$acc loop vector independent private(begc,endc,bounds)
+      do nc =1, nclumps
+        if (column_state_updater%any_changes(nc)) then
+           call get_clump_bounds_gpu(nc, bounds)
+           begc = bounds%begc; endc = bounds%endc
 
-       col_ps%dyn_pbal_adjustments(begc:endc) =      &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
-       call update_column_state_no_special_handling( column_state_updater, &
-            bounds      = bounds,                                         &
-            clump_index = clump_index,                                    &
-            var         = solutionp_vr(begc:endc,j),             &
-            adjustment  = adjustment_one_level(begc:endc))
+            call update_column_state_no_special_handling_acc( column_state_updater, &
+               bounds      = bounds,                                         &
+               clump_index = nc,                                    &
+               var         = ptrunc_vr(begc:endc,j),                &
+               adjustment  = adjustment_one_level(begc:endc,j,1))
 
-       col_ps%dyn_pbal_adjustments(begc:endc) =      &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+            call update_column_state_no_special_handling_acc( column_state_updater, &
+                 bounds      = bounds,                                         &
+                 clump_index = nc,                                    &
+                 var         = solutionp_vr(begc:endc,j),             &
+                 adjustment  = adjustment_one_level(begc:endc,j,2))
 
-       call update_column_state_no_special_handling( column_state_updater, &
-            bounds      = bounds,                                         &
-            clump_index = clump_index,                                    &
-            var         = labilep_vr(begc:endc,j),               &
-            adjustment  = adjustment_one_level(begc:endc))
+            call update_column_state_no_special_handling_acc( column_state_updater, &
+                 bounds      = bounds,                                         &
+                 clump_index = nc,                                    &
+                 var         = labilep_vr(begc:endc,j),               &
+                 adjustment  = adjustment_one_level(begc:endc,j,3))
 
-       col_ps%dyn_pbal_adjustments(begc:endc) =      &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
-       !!
-       call update_column_state_no_special_handling( column_state_updater, &
-            bounds      = bounds,                                         &
-            clump_index = clump_index,                                    &
-            var         = secondp_vr(begc:endc,j),               &
-            adjustment  = adjustment_one_level(begc:endc))
+            !!
+            call update_column_state_no_special_handling_acc( column_state_updater, &
+                 bounds      = bounds,                                         &
+                 clump_index = nc,                                    &
+                 var         = secondp_vr(begc:endc,j),               &
+                 adjustment  = adjustment_one_level(begc:endc,j,4))
 
-       col_ps%dyn_pbal_adjustments(begc:endc) =      &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
-            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
-       call update_column_state_no_special_handling( column_state_updater, &
-            bounds      = bounds,                                         &
-            clump_index = clump_index,                                    &
-            var         = occlp_vr(begc:endc,j),               &
-            adjustment  = adjustment_one_level(begc:endc))
+            call update_column_state_no_special_handling_acc( column_state_updater, &
+                 bounds      = bounds,                                         &
+                 clump_index = nc,                                    &
+                 var         = occlp_vr(begc:endc,j),               &
+                 adjustment  = adjustment_one_level(begc:endc,j,5))
 
-       call update_column_state_no_special_handling( column_state_updater, &
-            bounds      = bounds,                                         &
-            clump_index = clump_index,                                    &
-            var         = primp_vr(begc:endc,j),               &
-            adjustment  = adjustment_one_level(begc:endc))
-
+            call update_column_state_no_special_handling_acc( column_state_updater, &
+                 bounds      = bounds,                                         &
+                 clump_index = nc,                                    &
+                 var         = primp_vr(begc:endc,j),               &
+                 adjustment  = adjustment_one_level(begc:endc,j,5))
+        end if 
+      end do 
     end do
-    call update_column_state_no_special_handling( column_state_updater, &
-         bounds      = bounds,                                         &
-         clump_index = clump_index,                                    &
-         var         = prod1p(begc:endc),     &
-         adjustment  = adjustment_one_level(begc:endc))
 
-    col_ps%dyn_pbal_adjustments(begc:endc) = &
-         col_ps%dyn_pbal_adjustments(begc:endc) + &
-         adjustment_one_level(begc:endc)
+    !$acc parallel loop independent gang worker collapse(2) default(present) private(sum1)
+    do l = 1, 4
+         do c = proc_begc, proc_endc
+              sum1 = 0._r8
+              !$acc loop vector reduction(+:sum1)
+              do j = 1, nlevdecomp 
+                   sum1 = sum1 + adjustment_one_level(c,j,l) * dzsoi_decomp(j)
+              end do
+              col_ps%dyn_pbal_adjustments(c) = col_ps%dyn_pbal_adjustments(c) + sum1
+         end do 
+    end do
+     
+    !$acc parallel default(present)
+     !$acc loop gang vector independent private(begc,endc,bounds)
+     do nc =1, nclumps
+         if (column_state_updater%any_changes(nc)) then
+          call get_clump_bounds_gpu(nc, bounds)
+          begc = bounds%begc; endc = bounds%endc 
 
-    call update_column_state_no_special_handling( column_state_updater, &
-         bounds      = bounds,                                         &
-         clump_index = clump_index,                                    &
-         var         = prod10p(begc:endc),     &
-         adjustment  = adjustment_one_level(begc:endc))
+          call update_column_state_no_special_handling_acc(column_state_updater, &
+               bounds      = bounds,                                         &
+               clump_index = nc,                                    &
+               var         = prod1p(begc:endc),     &
+               adjustment  = adjustment_one_level(begc:endc,1,1))
+         
+          !$acc loop seq 
+          do c = begc, endc     
+               col_ps%dyn_pbal_adjustments(c) = &
+                    col_ps%dyn_pbal_adjustments(c) + &
+                    adjustment_one_level(c,1,1)
+          end do
+         end if  
+     end do 
 
-    col_ps%dyn_pbal_adjustments(begc:endc) = &
-         col_ps%dyn_pbal_adjustments(begc:endc) + &
-         adjustment_one_level(begc:endc)
+    !$acc loop gang vector independent private(begc,endc,bounds)
+     do nc =1, nclumps
+      if (column_state_updater%any_changes(nc)) then 
+         call get_clump_bounds_gpu(nc, bounds)
+          begc = bounds%begc; endc = bounds%endc 
 
-    call update_column_state_no_special_handling( column_state_updater, &
-         bounds      = bounds,                                         &
-         clump_index = clump_index,                                    &
-         var         = prod100p(begc:endc),     &
-         adjustment  = adjustment_one_level(begc:endc))
+          call update_column_state_no_special_handling_acc(column_state_updater, &
+               bounds      = bounds,                                         &
+               clump_index = nc,                                    &
+               var         = prod10p(begc:endc),     &
+               adjustment  = adjustment_one_level(begc:endc,1,1))
 
-    col_ps%dyn_pbal_adjustments(begc:endc) = &
-         col_ps%dyn_pbal_adjustments(begc:endc) + &
-         adjustment_one_level(begc:endc)
+          !$acc loop seq 
+          do c = begc, endc     
+               col_ps%dyn_pbal_adjustments(c) = &
+                    col_ps%dyn_pbal_adjustments(c) + &
+                    adjustment_one_level(c,1,1)
+          end do
+      end if 
+     end do 
+
+     !$acc loop gang vector independent private(begc,endc,bounds)
+     do nc =1, nclumps
+      if (column_state_updater%any_changes(nc)) then
+          call get_clump_bounds_gpu(nc, bounds)
+          begc = bounds%begc; endc = bounds%endc 
+
+          call update_column_state_no_special_handling_acc(column_state_updater, &
+               bounds      = bounds,                                         &
+               clump_index = nc,                                    &
+               var         = prod100p(begc:endc),     &
+               adjustment  = adjustment_one_level(begc:endc,1,1))
+
+          !$acc loop seq 
+          do c = begc, endc     
+               col_ps%dyn_pbal_adjustments(c) = &
+                    col_ps%dyn_pbal_adjustments(c) + &
+                    adjustment_one_level(c,1,1)
+          end do
+      end if 
+     end do
+     !$acc end parallel 
+     
+     !$acc exit data delete(adjustment_one_level(:,:,:),sum1)
+
 
     end associate
 

@@ -42,7 +42,7 @@ module MaintenanceRespMod
 contains
 
   !-----------------------------------------------------------------------
-   subroutine readMaintenanceRespParams ( ncid )
+   subroutine readMaintenanceRespParams (ncid )
      !
      ! !DESCRIPTION:
      ! Read parameters
@@ -93,7 +93,6 @@ contains
     integer :: c,p,j ! indices
     integer :: fp    ! soil filter patch index
     integer :: fc    ! soil filter column index
-    ! real(r8):: br_mr ! base rate (gC/gN/s)
     real(r8):: tc    ! temperature correction, 2m air temp (unitless)
     real(r8):: tcsoi ! temperature correction by soil layer (unitless)
     real(r8) :: sum1
@@ -137,13 +136,13 @@ contains
       ! Conversion by molecular weights of C and N gives 2.525e-6 gC/(gN s)
       ! set constants
       !br_mr = br_mr_Inst
-      !$acc enter data create(tc, tcsoi, sum1)
       ! Peter Thornton: 3/13/09
       ! Q10 was originally set to 2.0, an arbitrary choice, but reduced to 1.5 as part of the tuning
       ! to improve seasonal cycle of atmospheric CO2 concentration in global
       ! simulatoins
 
       ! patch loop for leaves and live wood
+      !$acc enter data create(sum1)
 
       !$acc parallel loop independent gang vector private(p,tc) default(present)
       do fp = 1, num_soilp
@@ -160,7 +159,9 @@ contains
          else !nosno
              leaf_mr(p) = 0._r8
          end if
-
+         if(p == 34) then 
+           print *, ivt(p), woody(ivt(p)), br_mr_Inst, tc, livecroot_mr(p)  
+        end if  
          if (woody(ivt(p)) == 1) then
             livestem_mr(p) = livestemn(p)*br_mr_Inst*tc
             livecroot_mr(p) = livecrootn(p)*br_mr_Inst*tc
@@ -203,7 +204,7 @@ contains
          end do
       end do
 
-      !$acc exit data delete(tc, tcsoi, sum1)
+      !$acc exit data delete(sum1)
 
     end associate
 

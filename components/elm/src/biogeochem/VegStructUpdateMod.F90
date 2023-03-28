@@ -5,7 +5,7 @@ module VegStructUpdateMod
   !
   ! !USES:
   use shr_kind_mod         , only: r8 => shr_kind_r8
-  !#py use shr_sys_mod          , only : shr_sys_flush
+  use shr_sys_mod          , only : shr_sys_flush
   use shr_const_mod        , only : SHR_CONST_PI
   use elm_varctl           , only : iulog
   use VegetationPropertiesType     , only : veg_vp
@@ -28,21 +28,21 @@ module VegStructUpdateMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine VegStructUpdate(num_soilp, filter_soilp, &
+  subroutine VegStructUpdate(num_soilp,filter_soilp, &
        frictionvel_vars, cnstate_vars, &
        canopystate_vars, crop_vars, dt)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, use C state variables and epc to diagnose
     ! vegetation structure (LAI, SAI, height)
-    !
+       
     ! !USES:
     use pftvarcon        , only : noveg, nc3crop, nc3irrig, nbrdlf_evr_shrub, nbrdlf_dcd_brl_shrub
     use pftvarcon        , only : ncorn, ncornirrig, npcropmin, ztopmx, laimx
     use pftvarcon        , only : nmiscanthus, nmiscanthusirrig, nswitchgrass, nswitchgrassirrig
     use elm_varctl       , only : spinup_state, spinup_mortality_factor
     !
-    ! !ARGUMENTS:
+   !  ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilp       ! number of column soil points in pft filter
     integer                , intent(in)    :: filter_soilp(:) ! patch filter for soil points
     type(frictionvel_type) , intent(in)    :: frictionvel_vars
@@ -57,7 +57,7 @@ contains
     ! 2/29/08, David Lawrence: revised snow burial fraction for short vegetation
     !
     ! !LOCAL VARIABLES:
-    integer  :: p,c,g      ! indices
+    integer  :: c,g,p      ! indices
     integer  :: fp         ! lake filter indices
     real(r8) :: taper      ! ratio of height:radius_breast_height (tree allometry)
     real(r8) :: stocking   ! #stems / ha (stocking density)
@@ -112,20 +112,17 @@ contains
          frac_veg_nosno_alb =>  canopystate_vars%frac_veg_nosno_alb_patch & ! Output: [integer  (:) ] frac of vegetation not covered by snow [-]
          )
 
-      !#py dt = real( get_rad_step_size(), r8 )
-
-      ! constant allometric parameters
-      taper = 200._r8
-      stocking = 1000._r8
-
-      ! convert from stems/ha -> stems/m^2
-      stocking = stocking / 10000._r8
-
       ! patch loop
       do fp = 1,num_soilp
          p = filter_soilp(fp)
          c = veg_pp%column(p)
          g = veg_pp%gridcell(p)
+         ! constant allometric parameters
+         taper = 200._r8
+         stocking = 1000._r8
+
+         ! convert from stems/ha -> stems/m^2
+         stocking = stocking / 10000._r8
 
          if (ivt(p) /= noveg) then
 
@@ -266,7 +263,7 @@ contains
             frac_veg_nosno_alb(p) = 0
          end if
 
-      end do
+       end do
 
     end associate
 

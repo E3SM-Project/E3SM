@@ -18,6 +18,7 @@ module dynInitColumnsMod
   use LandunitType      , only : lun_pp
   use ColumnType        , only : col_pp
   use ColumnDataType    , only : col_es, col_ws
+  use shr_sys_mod            , only : shr_sys_flush
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -59,10 +60,9 @@ contains
     integer :: c_template ! index of template column
 
     !-----------------------------------------------------------------------
-
-
     do c = bounds%begc, bounds%endc
        ! If this column is newly-active, then we need to initialize it using the routines in this module
+       !write(iulog,*) "activ, cactive prior", c , col_pp%active(c), cactive_prior(c)
        if (col_pp%active(c) .and. .not. cactive_prior(c)) then
           c_template = initial_template_col_dispatcher(bounds, c, cactive_prior(bounds%begc:bounds%endc))
           if (c_template /= ispval) then
@@ -145,14 +145,14 @@ contains
     !
     ! !LOCAL VARIABLES:
     !-----------------------------------------------------------------------
-#ifndef _OPENACC
+    #ifndef _OPENACC
     if (col_pp%wtgcell(c_new) > 0._r8) then
 
-       write(iulog,*) ' ERROR: Expectation is that the only vegetated columns that',c_new
+       write(iulog,*) ' ERROR: Expectation is that the only vegetated columns that',c_new, col_pp%wtgcell(c_new)
        write(iulog,*) ' can newly become active are ones with 0 weight on the grid cell'
        call endrun()
     end if
-#endif 
+    #endif 
 
     c_template = ispval
 

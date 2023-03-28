@@ -11,12 +11,10 @@ module lnd2atmMod
   use shr_megan_mod        , only : shr_megan_mechcomps_n
   use elm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
   use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
-  use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates, use_atm_downscaling_to_topunit
-  use tracer_varcon        , only : is_active_betr_bgc
-  !use seq_drydep_mod   , only : n_drydep, drydep_method, DD_XLND
+  use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates
   use seq_drydep_mod_elm   , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
-  use subgridAveMod        , only : p2g, c2g, p2t  
+  use subgridAveMod        , only : p2g, c2g
   use lnd2atmType          , only : lnd2atm_type
   use atm2lndType          , only : atm2lnd_type
   use CH4Mod               , only : ch4_type
@@ -28,13 +26,11 @@ module lnd2atmMod
   use SolarAbsorbedType    , only : solarabs_type
   use SurfaceAlbedoType    , only : surfalb_type
   use GridcellType         , only : grc_pp
-  use TopounitDataType     , only : top_es, top_af                 ! To calculate t_rad at topounit level needed in downscaling
   use GridcellDataType     , only : grc_ef, grc_ws, grc_wf
   use ColumnDataType       , only : col_ws, col_wf, col_cf, col_es
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
-  use SoilHydrologyType    , only : soilhydrology_type 
-  use spmdmod          , only: masterproc
-  use elm_varctl     , only : iulog
+  use SoilHydrologyType    , only : soilhydrology_type
+  use subgridAveMod , only : unity, urbanf, urbans, natveg, veg, ice, nonurb, lake 
   #define is_active_betr_bgc .false. 
   !
   ! !PUBLIC TYPES:
@@ -45,9 +41,6 @@ module lnd2atmMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: lnd2atm
   public :: lnd2atm_minimal
-
-  integer, parameter :: unity = 0, urbanf = 1, urbans = 2
-  integer, parameter :: natveg = 3, veg =4, ice=5, nonurb=6, lake=7
   !------------------------------------------------------------------------
 
 contains
@@ -73,7 +66,8 @@ contains
     type(lnd2atm_type)    , intent(inout) :: lnd2atm_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: g, t                                    ! index
+    integer :: g                                    ! index
+
     !------------------------------------------------------------------------
     associate( &
       h2osno => col_ws%h2osno  , &
@@ -120,23 +114,7 @@ contains
     do g = bounds%begg,bounds%endg
        lnd2atm_vars%t_rad_grc(g) = sqrt(sqrt(eflx_lwrad_out_grc(g)/sb))
     end do
-    
-    ! Calculate topounit level eflx_lwrad_out_topo for downscaling purpose
-#ifndef _OPENACC 
-    if (use_atm_downscaling_to_topunit) then
-       call p2t(bounds, &
-            eflx_lwrad_out (bounds%begp:bounds%endp), &
-            top_es%eflx_lwrad_out_topo      (bounds%begt:bounds%endt), &
-            p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2t_scale_type='unity')
-    
-       do t = bounds%begt,bounds%endt
-          top_es%t_rad(t) = sqrt(sqrt(top_es%eflx_lwrad_out_topo(t)/sb))   
-       end do
-    end if
-#endif
-    
     end associate
-
   end subroutine lnd2atm_minimal
 
   !------------------------------------------------------------------------
@@ -144,14 +122,14 @@ contains
        atm2lnd_vars, surfalb_vars, frictionvel_vars, &
        energyflux_vars, &
        solarabs_vars, drydepvel_vars, &
-       vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars)
+       dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars)
     !
     ! !DESCRIPTION:
     ! Compute lnd2atm_vars component of gridcell derived type
     !
     ! !USES:
-      !$acc routine seq
     use CH4varcon  , only : ch4offline
+    use shr_sys_mod, only : shr_sys_flush
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)     :: bounds
@@ -161,7 +139,7 @@ contains
     type(energyflux_type)  , intent(in)     :: energyflux_vars
     type(solarabs_type)    , intent(in)     :: solarabs_vars
     type(drydepvel_type)   , intent(in)     :: drydepvel_vars
-    type(vocemis_type)     , intent(in)     :: vocemis_vars
+   !  type(vocemis_type)     , intent(in)     :: vocemis_vars
     type(dust_type)        , intent(in)     :: dust_vars
     type(ch4_type)         , intent(in)     :: ch4_vars
     type(soilhydrology_type), intent(in)    :: soilhydrology_vars
@@ -231,9 +209,7 @@ contains
       zwt_col          =>   soilhydrology_vars%zwt_col , &
       zwt_grc          =>   lnd2atm_vars%zwt_grc,    &
       coszen_col       => surfalb_vars%coszen_col , &
-      coszen_str       => lnd2atm_vars%coszen_str, &
-      wslake_col       => col_ws%wslake_col, &
-      wslake_grc       => lnd2atm_vars%wslake_grc &
+      coszen_str       => lnd2atm_vars%coszen_str &
       )
     !----------------------------------------------------
     ! lnd -> atm
@@ -336,15 +312,15 @@ contains
             p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
     endif
 
-#ifndef _OPENACC
-    ! voc emission flux
-    if (use_voc .and. shr_megan_mechcomps_n>0) then
-       call p2g(bounds, shr_megan_mechcomps_n, &
-            vocemis_vars%vocflx_patch, &
-            lnd2atm_vars%flxvoc_grc  , &
-            p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
-    end if
-#endif 
+! #ifndef _OPENACC
+!     ! voc emission flux
+!     if (use_voc .and. shr_megan_mechcomps_n>0) then
+!        call p2g(bounds, shr_megan_mechcomps_n, &
+!             vocemis_vars%vocflx_patch, &
+!             lnd2atm_vars%flxvoc_grc  , &
+!             p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+!     end if
+! #endif 
 
     ! dust emission flux
     call p2g(bounds, ndst, &
@@ -418,11 +394,6 @@ contains
        qflx_rofice_grc(g) = qflx_rofice_grc(g) - grc_wf%qflx_ice_dynbal(g)
     enddo
 
-    call c2g( bounds, &
-         wslake_col(bounds%begc:bounds%endc), &
-         wslake_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
-
     ! calculate total water storage for history files
     ! first set tws to gridcell total endwb
     ! second add river storage as gridcell average depth (1.e-3 converts [m3/km2] to [mm])
@@ -473,7 +444,7 @@ contains
 
     function avg_tsoil_surf(Tsoil_) result(avgT_)
       !$acc routine seq
-    ! Function for estimating average soil temperature within the top few layers (which closely interacts with surface runoff)
+       ! Function for estimating average soil temperature within the top few layers (which closely interacts with surface runoff)
         implicit none
         real(r8), intent(in) :: Tsoil_(-nlevsno+1:nlevgrnd)       ! water table depth, soil temperature
         real(r8) :: avgT_             ! average soil temperature within the saturated layers
@@ -504,7 +475,7 @@ contains
 
     function avg_tsoil(zwt_, Tsoil_) result(avgT_)
       !$acc routine seq
-    ! Function for estimating average soil temperature within the saturated soil zone (which produces subsurface runoff)
+      ! Function for estimating average soil temperature within the saturated soil zone (which produces subsurface runoff)
         implicit none
         real(r8), intent(in) :: zwt_, Tsoil_(-nlevsno+1:nlevgrnd)       ! water table depth, soil temperature
         real(r8) :: avgT_             ! average soil temperature within the saturated layers

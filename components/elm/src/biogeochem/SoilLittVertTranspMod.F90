@@ -179,7 +179,6 @@ contains
     ! !USES:
     use elm_varpar       , only : nlevdecomp, ndecomp_pools, nlevdecomp_full
     use elm_varcon       , only : zsoi, dzsoi_decomp, zisoi
-    use TridiagonalMod   , only : Tridiagonal_SoilLittVertTransp
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
@@ -216,8 +215,6 @@ contains
 
 
     ! Set statement functions
-    ! aaa (pe) = max (0._r8, (1._r8 - 0.1_r8 * abs(pe))**5)  ! A function from Patankar, Table 5.2, pg 95
-
     associate(                                                      &
          is_cwd           => decomp_cascade_con%is_cwd            , & ! Input:  [logical (:)    ]  TRUE => pool is a cwd pool
          spinup_factor    => decomp_cascade_con%spinup_factor     , & ! Input:  [real(r8) (:)   ]  spinup accelerated decomposition factor, used to accelerate transport as well
@@ -247,7 +244,6 @@ contains
       if (use_vertsoilc) then
          !------ first get diffusivity / advection terms -------!
          ! use different mixing rates for bioturbation and cryoturbation, with fixed bioturbation and cryoturbation set to a maximum depth
-         call cpu_time(startt)
          !$acc parallel loop independent gang default(present)
          do j = 1,nlevdecomp+1
             !$acc loop vector independent private(c)
@@ -276,17 +272,12 @@ contains
                endif
             end do
          end do
-         call cpu_time(stopt)
-         print *, "Diff/Adv Terms : ",(stopt-startt)*1.E+3,"ms"
       endif
 
       !------ loop over litter/som types
-      call cpu_time(startt)
       !$acc enter data create(a_tri(1:num_soilc,0:nlevdecomp+1,1:ndecomp_pools),b_tri(1:num_soilc,0:nlevdecomp+1,1:ndecomp_pools),&
       !$acc                   c_tri(1:num_soilc,0:nlevdecomp+1,1:ndecomp_pools),r_tri(1:num_soilc,0:nlevdecomp+1,1:ndecomp_pools), &
       !$acc                   gam(0:nlevdecomp+1), conc_trcr(1:num_soilc,0:nlevdecomp+1,1:ndecomp_pools))
-      call cpu_time(stopt)
-      print *, "Create Variables time:",(stopt-startt)*1.E+3,"ms"
       do i_type = 1, ntype
 
          !$acc enter data copyin(i_type)
@@ -317,7 +308,6 @@ contains
                end if
             end do
 
-            call cpu_time(startt)
             !$acc parallel loop independent gang collapse(2) default(present) private(spinup_term)
             do s = 1, ndecomp_pools
                do j = 1,nlevdecomp
@@ -402,8 +392,6 @@ contains
                   end if
                enddo ! j; nlevdecomp
             end do ! s: ndecomp_pools
-            call cpu_time(stopt)
-            print *, "Compute Coefficients :",(stopt-startt)*1.E+3,"ms"
 
             ! subtract initial concentration and source terms for tendency calculation
             !$acc parallel loop independent collapse(2) gang default(present)
@@ -420,7 +408,6 @@ contains
             end do
 
             ! Solve for the concentration profile for this time step
-            call cpu_time(startt)
 
             !$acc parallel loop independent gang worker vector collapse(2) default(present) private(bet,gam)
             do s = 1, ndecomp_pools
@@ -450,19 +437,8 @@ contains
                   end if
                end do
             end do
-            call cpu_time(stopt)
-            print *, "TriDiagonal Solve Time: ",(stopt-startt)*1.E+3,"ms"
-
-                  ! call Tridiagonal_SoilLittVertTransp(0, nlevdecomp+1, &
-                  !      num_soilc, filter_soilc, &
-                  !      a_tri(1:num_soilc, :), &
-                  !      b_tri(1:num_soilc, :), &
-                  !      c_tri(1:num_soilc, :), &
-                  !      r_tri(1:num_soilc, :), &
-                  !      conc_trcr(1:num_soilc,0:nlevdecomp+1))
 
             ! add post-transport concentration to calculate tendency term
-            call cpu_time(startt)
             !$acc parallel loop independent gang collapse(2) default(present)
             do s = 1, ndecomp_pools
                do j = 1, nlevdecomp
@@ -476,8 +452,6 @@ contains
                   !
                end do
             end do
-            call cpu_time(stopt)
-            print *, "Tendency term:", (stopt-startt)*1.E+3,"ms"
 
             ! for CWD pools, just add
             !$acc parallel loop independent gang default(present)

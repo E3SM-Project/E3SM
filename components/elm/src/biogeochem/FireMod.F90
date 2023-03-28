@@ -303,8 +303,6 @@ contains
      ! Calculate fraction of crop (cropf_col) and non-crop and non-bare-soil
      ! vegetation (lfwt) in vegetated column
      !
-     call cpu_time(startt)
-
      !$acc parallel loop independent gang worker default(present) private(c,sum1,sum2)
       do fc = 1,num_soilc
          c = filter_soilc(fc)
@@ -486,8 +484,6 @@ contains
         fd_col(c)    = sum4
      end do
 
-     call cpu_time(stopt)
-     print *, "TIMING FireArea reductions:",(stopt-startt)*1.E+3,"ms"
      ! estimate annual decreased fractional coverage of BET+BDT
      ! land cover conversion in CLM4.5 is the same for each timestep except for the beginning
 
@@ -509,7 +505,6 @@ contains
      end if
      !
      ! calculate burned area fraction in cropland
-     call cpu_time(startt)
      if( mon_curr == 1 .and. day_curr == 1 .and. secs_curr == 0 )then
         !$acc parallel loop independent gang vector default(present) private(p)
         do fp = 1,num_soilp
@@ -682,8 +677,6 @@ contains
         end if
 
      end do  ! end of column loop
-     call cpu_time(stopt)
-     print *, "TIMING FireArea::remaining Fires :",(stopt-startt)*1.E+3,"ms"
      !$acc exit data delete(i_cwd, &
      !$acc       sum1,sum2,sum3,sum4,btran_col(:))
 
@@ -1007,7 +1000,6 @@ contains
      !
      ! patch loop
      !
-     call cpu_time(startt)
      !$acc parallel loop independent gang vector default(present) private(p,c,itype,f,cc_other_sc)
      do fp = 1,num_soilp
         p = filter_soilp(fp)
@@ -1271,13 +1263,10 @@ contains
              fm_other(itype)
 
      end do  ! end of patches loop
-     call cpu_time(stopt)
-     print *, "TIMING FireFluxes::Burned Area pft loop",(stopt-startt)*1.E+3,"ms"
      ! fire-induced transfer of carbon and nitrogen pools to litter and cwd
      ! add phosphorus transfer fluxes -X.YANG
      !NOTE:  restructuring store and FP ops. so likely non-BFB
-     call cpu_time(startt)
-     !$acc parallel loop independent gang worker collapse(2) default(present) private(c,sum1,sum2,sum3) async(1)
+     !$acc parallel loop independent gang worker collapse(2) default(present) private(c,sum1,sum2,sum3)
      do j = 1,nlevdecomp
         do fc = 1,num_soilc
            c = filter_soilc(fc)
@@ -1289,6 +1278,7 @@ contains
            !$acc     private(wt_col, lprof_pj, fr_prof_pj, cr_prof_pj, st_prof_pj)
            do p = col_pp%pfti(c), col_pp%pftf(c)
              wt_col = veg_pp%wtcol(p)
+             if(wt_col == 0._r8) cycle 
              lprof_pj   = leaf_prof(p,j)
              fr_prof_pj = froot_prof(p,j)
              cr_prof_pj = croot_prof(p,j)
@@ -1313,7 +1303,7 @@ contains
         end do
      end do
 
-     !$acc parallel loop independent gang worker collapse(2) default(present) private(c,sum1,sum2,sum3) async(2)
+     !$acc parallel loop independent gang worker collapse(2) default(present) private(c,sum1,sum2,sum3)
      do j = 1,nlevdecomp
         do fc = 1,num_soilc
            c = filter_soilc(fc)
@@ -1324,6 +1314,7 @@ contains
            !$acc loop vector reduction(+:sum1,sum2,sum3) private(wt_col,itype,lprof_pj,fr_prof_pj,cr_prof_pj,st_prof_pj)
            do p = col_pp%pfti(c), col_pp%pftf(c)
              wt_col     = veg_pp%wtcol(p)
+             if(wt_col == 0._r8) cycle 
              itype      = veg_pp%itype(p)
              lprof_pj   = leaf_prof(p,j)
              fr_prof_pj = froot_prof(p,j)
@@ -1364,7 +1355,7 @@ contains
         end do
      end do
 
-   !$acc parallel loop independent gang worker collapse(2) default(present) private(c,sum1,sum2,sum3) async(3)
+   !$acc parallel loop independent gang worker collapse(2) default(present) private(c,sum1,sum2,sum3)
    do j = 1,nlevdecomp
      do fc = 1,num_soilc
          c = filter_soilc(fc)
@@ -1375,6 +1366,7 @@ contains
          !$acc loop vector reduction(+:sum1,sum2,sum3) private(wt_col,itype,lprof_pj,fr_prof_pj,cr_prof_pj,st_prof_pj)
          do p = col_pp%pfti(c), col_pp%pftf(c)
           wt_col     = veg_pp%wtcol(p)
+          if(wt_col == 0._r8) cycle 
           itype      = veg_pp%itype(p)
           lprof_pj   = leaf_prof(p,j)
           fr_prof_pj = froot_prof(p,j)
@@ -1411,7 +1403,7 @@ contains
      end do
    end do
 
-   !$acc parallel loop independent gang worker collapse(2) default(present) private(c,sum1,sum2,sum3) async(4)
+   !$acc parallel loop independent gang worker collapse(2) default(present) private(c,sum1,sum2,sum3)
    do j = 1,nlevdecomp
      do fc = 1,num_soilc
          c = filter_soilc(fc)
@@ -1422,6 +1414,7 @@ contains
          !$acc loop vector reduction(+:sum1,sum2,sum3) private(wt_col,itype,lprof_pj,fr_prof_pj,cr_prof_pj,st_prof_pj)
          do p = col_pp%pfti(c), col_pp%pftf(c)
           wt_col     = veg_pp%wtcol(p)
+          if(wt_col == 0._r8) cycle 
           itype      = veg_pp%itype(p)
           lprof_pj   = leaf_prof(p,j)
           fr_prof_pj = froot_prof(p,j)
@@ -1458,14 +1451,9 @@ contains
      end do
    end do
 
-   !$acc wait
-   call cpu_time(stopt)
-   print *, "TIMING FireFluxes::AsyncReductions ",(stopt-startt)*1.E+3,"ms"
-   !
    ! vertically-resolved decomposing C/N fire loss
    ! column loop
    ! add phosphorus
-   call cpu_time(startt)
    !$acc parallel loop independent gang worker collapse(2) default(present)
    do l = 1, ndecomp_pools
      do j = 1, nlevdecomp
@@ -1505,9 +1493,6 @@ contains
 
         end do !end of nlevdecomp loop
      end do  ! decomp_pools loop
-
-     call cpu_time(stopt)
-     print *, "TIMING FireFluxes::tripleloop ",(stopt-startt)*1.E+3,"ms"
 
      ! carbon loss due to deforestation fires
      if (transient_landcover) then    !true when landuse data is used

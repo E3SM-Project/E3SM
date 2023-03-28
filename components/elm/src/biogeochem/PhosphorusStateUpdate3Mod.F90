@@ -15,6 +15,7 @@ module PhosphorusStateUpdate3Mod
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType         , only : cnstate_type
   use soilorder_varcon    , only : smax,ks_sorption
+  use tracer_varcon       , only : is_active_betr_bgc
   ! bgc interface & pflotran:
   use elm_varctl          , only : use_pflotran, pf_cmode
   use elm_varctl          , only : nu_com
@@ -22,7 +23,6 @@ module PhosphorusStateUpdate3Mod
   use VegetationPropertiesType      , only : veg_vp
   use ColumnDataType      , only : col_ps, col_pf
   use VegetationDataType  , only : veg_ps, veg_pf
-  #define is_active_betr_bgc .false. 
   !
   implicit none
   save
@@ -35,7 +35,7 @@ module PhosphorusStateUpdate3Mod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine PhosphorusStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
+  subroutine PhosphorusStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp, &
        cnstate_vars, dt )
     !
     ! !DESCRIPTION:
@@ -46,8 +46,6 @@ contains
     ! no science equatiops. This increases readability and maintainability.
     !
     ! !ARGUMENTS:
-      !$acc routine seq
-    type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc       ! number of soil columps in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columps
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -62,10 +60,10 @@ contains
 
    real(r8):: smax_c       ! parameter(gP/m2), maximum amount of sorbed P in equilibrium with solution P
    real(r8):: ks_sorption_c ! parameter(gP/m2), empirical constant for sorbed P in equilibrium with solution P
-   real(r8):: flux_mineralization(bounds%begc:bounds%endc,1:nlevdecomp)   !! local temperary variable
-   real(r8):: temp_solutionp(bounds%begc:bounds%endc,1:nlevdecomp)
+   real(r8):: flux_mineralization(1:num_soilc,1:nlevdecomp)   !! local temperary variable
+   real(r8):: temp_solutionp
    real(r8):: aa,bb,cc ! solve quadratic function
-
+   real(r8) :: sum1 
     !-----------------------------------------------------------------------
 
     associate(&
@@ -76,17 +74,12 @@ contains
          km_minsurf_p_vr   => veg_vp%km_minsurf_p_vr     &
          )
 
+      !$acc enter data create(flux_mineralization(1:num_soilc,1:nlevdecomp),sum1)
       ! set time steps
       !! immobilization/mineralization in litter-to-SOM and SOM-to-SOM fluxes
       !! - X.YANG
-      do j = 1, nlevdecomp
-         ! column loop
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            flux_mineralization(c,j) = 0._r8
-         enddo
-      enddo
       if(is_active_betr_bgc)then
+        !$acc parallel loop independent gang vector collapse(2) default(present)
         do j = 1, nlevdecomp
           do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -95,48 +88,44 @@ contains
           end do
         enddo
       else
-        do k = 1, ndecomp_cascade_transitions
-          if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
-            do j = 1, nlevdecomp
-               ! column loop
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                    flux_mineralization(c,j) = flux_mineralization(c,j) - &
-                                               col_pf%decomp_cascade_sminp_flux_vr(c,j,k)*dt
+         !$acc parallel loop independent gang worker collapse(2) default(present) private(c,sum1)
+         do j = 1, nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               sum1 = 0._r8
+               !$acc loop vector reduction(+:sum1)
+               do k = 1, ndecomp_cascade_transitions
+                  if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
+                     
+                    sum1 = sum1 - col_pf%decomp_cascade_sminp_flux_vr(c,j,k)*dt
+                 else
+                    sum1 = sum1 + col_pf%decomp_cascade_sminp_flux_vr(c,j,k)*dt
+                  endif
                end do
-             end do
-           else
-             do j = 1, nlevdecomp
-               ! column loop
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                    flux_mineralization(c,j) = flux_mineralization(c,j) + &
-                                               col_pf%decomp_cascade_sminp_flux_vr(c,j,k)*dt
-               end do
-             end do
-           endif
+               flux_mineralization(fc,j) = sum1 
+            end do
         end do
 
-
+        !$acc parallel loop independent gang vector collapse(2) default(present)
         do j = 1, nlevdecomp
-              ! column loop
            do fc = 1,num_soilc
              c = filter_soilc(fc)
-             flux_mineralization(c,j) = flux_mineralization(c,j) + &
-                                       col_pf%biochem_pmin_vr(c,j)*dt
+             flux_mineralization(fc,j) = flux_mineralization(fc,j) + col_pf%biochem_pmin_vr(c,j)*dt
            end do
         end do
 
       if (nu_com .eq. 'RD') then
+
+        !$acc parallel loop independent gang vector collapse(2) default(present)
         do j = 1, nlevdecomp
           do fc = 1,num_soilc
             c = filter_soilc(fc)
                ! assign read in parameter values
                smax_c = smax( isoilorder(c) )
                ks_sorption_c = ks_sorption( isoilorder(c) )
-               temp_solutionp(c,j) = col_ps%solutionp_vr(c,j)
+               temp_solutionp = col_ps%solutionp_vr(c,j)
 
-               col_ps%solutionp_vr(c,j)      = col_ps%solutionp_vr(c,j)  + ( flux_mineralization(c,j) &
+               col_ps%solutionp_vr(c,j)      = col_ps%solutionp_vr(c,j)  + ( flux_mineralization(fc,j) &
                     + col_pf%primp_to_labilep_vr(c,j)*dt &
                     + col_pf%secondp_to_labilep_vr(c,j)*dt &
                     + col_pf%supplement_to_sminp_vr(c,j)*dt - col_pf%sminp_to_plant_vr(c,j)*dt&
@@ -145,23 +134,23 @@ contains
 
 
                  col_ps%labilep_vr(c,j) = col_ps%labilep_vr(c,j) + ((smax_c*ks_sorption_c)&
-                    /(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
-                    ( flux_mineralization(c,j) + col_pf%primp_to_labilep_vr(c,j)*dt + col_pf%secondp_to_labilep_vr(c,j)*dt &
+                    /(ks_sorption_c+temp_solutionp)**2._r8 ) * &
+                    ( flux_mineralization(fc,j) + col_pf%primp_to_labilep_vr(c,j)*dt + col_pf%secondp_to_labilep_vr(c,j)*dt &
                     + col_pf%supplement_to_sminp_vr(c,j)*dt - col_pf%sminp_to_plant_vr(c,j)*dt &
                     - col_pf%labilep_to_secondp_vr(c,j)*dt - col_pf%sminp_leached_vr(c,j)*dt ) / &
-                    ( 1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 )
+                    ( 1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp)**2._r8 )
 
-               col_pf%desorb_to_solutionp_vr(c,j) = ( flux_mineralization(c,j)/dt + col_pf%primp_to_labilep_vr(c,j) &
+               col_pf%desorb_to_solutionp_vr(c,j) = ( flux_mineralization(fc,j)/dt + col_pf%primp_to_labilep_vr(c,j) &
                                 + col_pf%secondp_to_labilep_vr(c,j) &
                                 + col_pf%supplement_to_sminp_vr(c,j) - col_pf%sminp_to_plant_vr(c,j) &
                                 - col_pf%labilep_to_secondp_vr(c,j) - col_pf%sminp_leached_vr(c,j) ) / &
                                 (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+col_ps%solutionp_vr(c,j))**2._r8)
 
-               col_pf%adsorb_to_labilep_vr(c,j) = ((smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
-                             ( flux_mineralization(c,j)/dt + col_pf%primp_to_labilep_vr(c,j) + col_pf%secondp_to_labilep_vr(c,j) &
+               col_pf%adsorb_to_labilep_vr(c,j) = ((smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp)**2._r8 ) * &
+                             ( flux_mineralization(fc,j)/dt + col_pf%primp_to_labilep_vr(c,j) + col_pf%secondp_to_labilep_vr(c,j) &
                              + col_pf%supplement_to_sminp_vr(c,j) - col_pf%sminp_to_plant_vr(c,j) &
                              - col_pf%labilep_to_secondp_vr(c,j) - col_pf%sminp_leached_vr(c,j) ) / &
-                             ( 1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 )
+                             ( 1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp)**2._r8 )
              end do
            end do
         else ! ECA
@@ -173,22 +162,22 @@ contains
 
                 smax_c = vmax_minsurf_p_vr(isoilorder(c),j)
                 ks_sorption_c = km_minsurf_p_vr(isoilorder(c),j)
-                temp_solutionp(c,j) = ( col_ps%solutionp_vr(c,j) + col_ps%labilep_vr(c,j) + &
-                            (flux_mineralization(c,j) + col_pf%primp_to_labilep_vr(c,j)*dt + &
+                temp_solutionp = ( col_ps%solutionp_vr(c,j) + col_ps%labilep_vr(c,j) + &
+                            (flux_mineralization(fc,j) + col_pf%primp_to_labilep_vr(c,j)*dt + &
                             col_pf%secondp_to_labilep_vr(c,j)*dt + col_pf%supplement_to_sminp_vr(c,j)*dt - &
                             col_pf%sminp_to_plant_vr(c,j)*dt - col_pf%labilep_to_secondp_vr(c,j)*dt - &
                             col_pf%sminp_leached_vr(c,j)*dt ))
 
-                 if (temp_solutionp(c,j) < 0.0_r8) then
+                 if (temp_solutionp < 0.0_r8) then
                     col_pf%labilep_to_secondp_vr(c,j) = col_pf%labilep_to_secondp_vr(c,j)/ &
                             (col_pf%labilep_to_secondp_vr(c,j)+col_pf%sminp_leached_vr(c,j))* &
-                            (temp_solutionp(c,j) + col_pf%labilep_to_secondp_vr(c,j)*dt + &
+                            (temp_solutionp + col_pf%labilep_to_secondp_vr(c,j)*dt + &
                             col_pf%sminp_leached_vr(c,j)*dt) /dt
                     col_pf%sminp_leached_vr(c,j) = col_pf%sminp_leached_vr(c,j)/ &
                             (col_pf%labilep_to_secondp_vr(c,j)+col_pf%sminp_leached_vr(c,j))* &
-                            (temp_solutionp(c,j) + col_pf%labilep_to_secondp_vr(c,j)*dt + &
+                            (temp_solutionp + col_pf%labilep_to_secondp_vr(c,j)*dt + &
                             col_pf%sminp_leached_vr(c,j)*dt) /dt
-                       temp_solutionp(c,j) = 0.0_r8
+                       temp_solutionp = 0.0_r8
                        col_ps%solutionp_vr(c,j) = 0.0_r8
                        col_ps%labilep_vr(c,j) = 0.0_r8
                  else
@@ -196,31 +185,34 @@ contains
                        ! sorbp + solutionp = smax*solutionp/(ks+solutionp) + solutionp = total p pool after competition
                        ! solve quadratic function to get equilibrium solutionp and adsorbp pools
                        aa = 1;
-                       bb = smax_c + ks_sorption_c - temp_solutionp(c,j)
-                       cc = -1.0_r8 * ks_sorption_c *  temp_solutionp(c,j)
+                       bb = smax_c + ks_sorption_c - temp_solutionp
+                       cc = -1.0_r8 * ks_sorption_c *  temp_solutionp
                        col_ps%solutionp_vr(c,j)  = (-bb+(bb*bb-4.0_r8*aa*cc)**0.5_r8)/(2.0_r8*aa)
-                       col_ps%labilep_vr(c,j) = temp_solutionp(c,j) - col_ps%solutionp_vr(c,j)
+                       col_ps%labilep_vr(c,j) = temp_solutionp - col_ps%solutionp_vr(c,j)
                  end if
 
                  col_ps%solutionp_vr_cur(c,j) = col_ps%solutionp_vr(c,j)
                  col_ps%labilep_vr_cur(c,j) = col_ps%labilep_vr(c,j)
               enddo
            enddo
-         end if
+        end if
 
          if (nu_com .eq. 'RD') then
-          do j = 1, nlevdecomp
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                do l = 1, ndecomp_pools
+            !$acc parallel loop independent gang worker collapse(2) default(present) 
+            do l = 1, ndecomp_pools
+               do j = 1, nlevdecomp
+                  !$acc loop vector independent private(c)
+                  do fc = 1,num_soilc
+                     c = filter_soilc(fc)
 
-                   col_ps%decomp_ppools_vr(c,j,l) = col_ps%decomp_ppools_vr(c,j,l)- col_pf%biochem_pmin_ppools_vr(c,j,l)*dt
+                     col_ps%decomp_ppools_vr(c,j,l) = col_ps%decomp_ppools_vr(c,j,l)- col_pf%biochem_pmin_ppools_vr(c,j,l)*dt
 
-                end do
-             end do
-          end do
+                  end do
+               end do
+            end do
          end if
 
+         !$acc parallel loop independent gang vector collapse(2) default(present)
          do j = 1, nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
@@ -258,9 +250,9 @@ contains
                end do
             end do
          end if
-
+      
+      !$acc parallel loop independent gang vector collapse(2) default(present) private(c)
       do j = 1, nlevdecomp
-         ! column loop
          do fc = 1,num_soilc
             c = filter_soilc(fc)
 
@@ -276,9 +268,10 @@ contains
       end do
 
       ! litter and CWD losses to fire
+      !$acc parallel loop independent gang worker collapse(2) default(present)
       do l = 1, ndecomp_pools
          do j = 1, nlevdecomp
-            ! column loop
+            !$acc loop vector independent private(c)
             do fc = 1,num_soilc
                c = filter_soilc(fc)
                col_ps%decomp_ppools_vr(c,j,l) = col_ps%decomp_ppools_vr(c,j,l) - col_pf%m_decomp_ppools_to_fire_vr(c,j,l) * dt
@@ -311,6 +304,7 @@ contains
     ! patch-level phosphorus fluxes
 
     if(.not.use_fates) then
+      !$acc parallel loop independent gang vector default(present) private(p)
        do fp = 1,num_soilp
           p = filter_soilp(fp)
 

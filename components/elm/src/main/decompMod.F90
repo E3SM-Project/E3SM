@@ -263,17 +263,14 @@ contains
     implicit none
 
     integer :: nc
-    print *, "setting up clump/proc info for gpu"
     print *, "allocating ",nclumps,"for gpu"
 
     allocate(gpu_clumps(nclumps))
-    print *, shape(gpu_clumps)
     allocate(gpu_procinfo%cid(nclumps))
     allocate(gpu_procinfo%nclumps);
     gpu_procinfo%nclumps = procinfo%nclumps
 
     do nc = 1 , nclumps
-      print *, "allocating clump no",nc
       gpu_procinfo%cid(nc) = procinfo%cid(nc)
       allocate(gpu_clumps(nc)%owner          )
       allocate(gpu_clumps(nc)%ncells          )

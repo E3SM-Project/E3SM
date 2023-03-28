@@ -20,7 +20,6 @@ module HydrologyDrainageMod
   use ColumnDataType    , only : col_ws, col_wf
   use VegetationType    , only : veg_pp
 
-  use elm_instMod   , only : ep_betr
   use WaterStateType, only : waterstate_vars
   use WaterFluxType , only : waterflux_vars
 
@@ -46,9 +45,7 @@ contains
        soilhydrology_vars, soilstate_vars )
     ! !DESCRIPTION:
     ! Calculates soil/snow hydrology with drainage (subsurface runoff)
-    !
     ! !USES:
-      !$acc routine seq
     use landunit_varcon  , only : istice, istwet, istsoil, istice_mec, istcrop
     use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall, icol_shadewall
     use elm_varcon       , only : denh2o, denice, secspday
@@ -76,8 +73,8 @@ contains
 
     !
     ! !LOCAL VARIABLES:
-    real(r8) :: dtime
     integer  :: g,t,l,c,j,fc               ! indices
+    real(r8) :: sum1, sum2, sum3 
     !-----------------------------------------------------------------------
 
     associate(                                                                  &
@@ -123,26 +120,22 @@ contains
          qflx_glcice_frz        => col_wf%qflx_glcice_frz           & ! Output: [real(r8) (:)   ]  ice growth (positive definite) (mm H2O/s)
          )
 
-      ! Determine time step and step size
-
-      dtime = dtime_mod
-
+      !$acc enter data create(sum1,sum2,sum3)
+   #ifndef _OPENACC
       if (use_vichydro) then
          call ELMVICMap(bounds, num_hydrologyc, filter_hydrologyc, &
               soilhydrology_vars)
       endif
 
-#ifndef _OPENACC
       if (use_betr) then
         call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
         call ep_betr%PreDiagSoilColWaterFlux(num_hydrologyc, filter_hydrologyc)
       endif
-#endif
-
+   #endif
       if (.not. use_vsfm) then
          call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
               num_urbanc, filter_urbanc,&
-              soilhydrology_vars, soilstate_vars, dtime)
+              soilhydrology_vars, soilstate_vars, dtime_mod)
       endif
 
 #ifndef _OPENACC
@@ -154,6 +147,7 @@ contains
       endif
 #endif
 
+      !$acc parallel loop independent gang vector default(present) collapse(2) 
       do j = 1, nlevgrnd
          do fc = 1, num_nolakec
             c = filter_nolakec(fc)
@@ -165,6 +159,7 @@ contains
          end do
       end do
 
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1, num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
@@ -179,18 +174,23 @@ contains
          end if
       end do
 
-      do j = 1, nlevgrnd
-         do fc = 1, num_nolakec
-            c = filter_nolakec(fc)
+      !$acc parallel loop independent gang worker default(present) private(sum1,sum2,sum3)
+      do fc = 1, num_nolakec
+         c = filter_nolakec(fc)
+         sum1 = 0._r8; sum2 = 0._r8; sum3 = 0._r8;
+         !$acc loop vector reduction(+:sum1,sum2,sum3)
+         do j = 1, nlevgrnd
             if ((ctype(c) == icol_sunwall .or. ctype(c) == icol_shadewall &
-                 .or. ctype(c) == icol_roof) .and. j > nlevurb) then
-
+               .or. ctype(c) == icol_roof) .and. j > nlevurb ) then
             else
-               endwb(c) = endwb(c) + h2osoi_ice(c,j) + h2osoi_liq(c,j)
-               h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + h2osoi_liq(c,j)
-               h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + h2osoi_ice(c,j)
+              sum1 = sum1 + h2osoi_ice(c,j) + h2osoi_liq(c,j)
+              sum2 = sum2 + h2osoi_liq(c,j)
+              sum3 = sum3 + h2osoi_ice(c,j)
             end if
-         end do
+          end do
+          endwb(c) = endwb(c) + sum1
+          h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + sum2
+          h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + sum3
       end do
 
       ! ---------------------------------------------------------------------------------
@@ -199,6 +199,7 @@ contains
       ! Other orthogonal modules should not need to worry about this term,
       ! and it should be zero in all other cases and all other columns.
       ! ---------------------------------------------------------------------------------
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1, num_nolakec
          c = filter_nolakec(fc)
          endwb(c) = endwb(c) + total_plant_stored_h2o(c)
@@ -212,10 +213,12 @@ contains
       ! 2) If using glc_dyn_runoff_routing=T, zero qflx_snwcp_ice: qflx_snwcp_ice is the flux
       !    sent to ice runoff, but for glc_dyn_runoff_routing=T, we do NOT want this to be
       !    sent to ice runoff (instead it is sent to CISM).
-
+      !$acc parallel loop independent gang vector default(present) 
       do c = bounds%begc,bounds%endc
          qflx_glcice_frz(c) = 0._r8
       end do
+
+      !$acc parallel loop independent gang vector default(present) 
       do fc = 1,num_do_smb_c
          c = filter_do_smb_c(fc)
          l = col_pp%landunit(c)
@@ -231,10 +234,11 @@ contains
 
       ! Determine wetland and land ice hydrology (must be placed here
       ! since need snow updated from CombineSnowLayers)
+      !$acc parallel loop independent gang vector default(present)
       do c = bounds%begc,bounds%endc
          qflx_irr_demand(c) = 0._r8
       end do
-
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
@@ -250,7 +254,7 @@ contains
             qflx_surf(c)          = 0._r8
             qflx_infl(c)          = 0._r8
             qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) + qflx_floodg(g) - qflx_evap_tot(c) - qflx_snwcp_ice(c) - &
-                 (endwb(c)-begwb(c))/dtime
+                 (endwb(c)-begwb(c))/dtime_mod
 
             ! With glc_dyn_runoff_routing = false (the less realistic way, typically used
             ! when NOT coupling to CISM), excess snow immediately runs off, whereas melting

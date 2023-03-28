@@ -176,8 +176,6 @@ contains
 
     call ncd_pio_closefile(ncid)
 
-
-
     do i = 1,nsoilorder
 
        if ( trim(adjustl(soilordername(i))) /= trim(expected_soilnames(i)) )then

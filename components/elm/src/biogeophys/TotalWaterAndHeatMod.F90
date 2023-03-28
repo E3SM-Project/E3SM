@@ -5,13 +5,13 @@ module TotalWaterAndHeatMod
   ! Routines for computing total column water and heat contents
   !
   ! !USES:
-#include "shr_assert.h"
+!#py #include "shr_assert.h"
   use shr_kind_mod       , only : r8 => shr_kind_r8
-  use shr_log_mod        , only : errMsg => shr_log_errMsg
+  !#py !#py use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
   use elm_varcon         , only : cpice, cpliq, denh2o, tfrz, hfus, aquifer_water_baseline
   use elm_varpar         , only : nlevgrnd, nlevsoi, nlevurb, nlevlak
-  use subgridAveMod      , only : p2c
+  use subgridAveMod      , only : p2c_1d_parallel, unity
   use SoilHydrologyType  , only : soilhydrology_type
   use UrbanParamsType    , only : urbanparams_type
   use SoilStateType      , only : soilstate_type
@@ -95,7 +95,7 @@ contains
     integer                  , intent(in)    :: num_nolakec                ! number of column non-lake points in column filter
     integer                  , intent(in)    :: filter_nolakec(:)          ! column filter for non-lake points
     type(soilhydrology_type) , intent(in)    :: soilhydrology_inst
-    real(r8)                 , intent(inout) :: water_mass( bounds%begc: ) ! computed water mass (kg m-2)
+    real(r8)                 , intent(inout) :: water_mass(bounds%begc:) ! computed water mass (kg m-2)
     !
     ! !LOCAL VARIABLES:
     real(r8) :: liquid_mass(bounds%begc:bounds%endc)  ! kg m-2
@@ -104,7 +104,8 @@ contains
 
     character(len=*), parameter :: subname = 'ComputeWaterMassNonLake'
     !-----------------------------------------------------------------------
-
+   
+    !$acc enter data copyin(liquid_mass(:), ice_mass(:))
 
     call ComputeLiqIceMassNonLake( &
          bounds = bounds, &
@@ -113,11 +114,15 @@ contains
          soilhydrology_inst = soilhydrology_inst, &
          liquid_mass = liquid_mass(bounds%begc:bounds%endc), &
          ice_mass = ice_mass(bounds%begc:bounds%endc))
-
+    
+    !$acc parallel loop independent gang vector default(present)
     do fc = 1, num_nolakec
        c = filter_nolakec(fc)
        water_mass(c) = liquid_mass(c) + ice_mass(c)
     end do
+
+    !$acc enter data copyin(liquid_mass(:), ice_mass(:))
+
 
   end subroutine ComputeWaterMassNonLake
 
@@ -171,7 +176,6 @@ contains
     ! to ComputeHeatNonLake
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_nolakec                 ! number of column non-lake points in column filter
     integer                  , intent(in)    :: filter_nolakec(:)           ! column filter for non-lake points
@@ -182,11 +186,10 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: c, j, fc, l, p                  ! indices
     logical  :: has_h2o  ! whether this point potentially has water to add
-    real(r8) :: h2ocan_col(bounds%begc:bounds%endc)  ! canopy water (mm H2O)
-    real(r8) :: snocan_col(bounds%begc:bounds%endc)  ! canopy snow water (mm H2O)
     real(r8) :: liqcan                               ! canopy liquid water (mm H2O)
 
     character(len=*), parameter :: subname = 'ComputeLiqIceMassNonLake'
+    real(r8) :: sum1, sum2 
     !-----------------------------------------------------------------------
 
 
@@ -196,32 +199,21 @@ contains
          h2osfc       =>    col_ws%h2osfc     , & ! Input:  [real(r8) (:)   ]  surface water (mm)
          h2osno       =>    col_ws%h2osno     , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
          h2ocan_patch =>    veg_ws%h2ocan   , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O)
-!         snocan_patch =>    waterstate_inst%snocan_patch   , & ! Input:  [real(r8) (:)   ]  canopy snow water (mm H2O)
          h2osoi_ice   =>    col_ws%h2osoi_ice , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
          h2osoi_liq   =>    col_ws%h2osoi_liq , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
          total_plant_stored_h2o => col_ws%total_plant_stored_h2o, &
                                                                ! Input:  [real(r8) (:,:) ] plant internal stored water (mm H2O)
          wa           =>    soilhydrology_inst%wa_col        & ! Input:  [real(r8) (:)   ] water in the unconfined aquifer (mm)
          )
+    !$acc enter data create(&
+    !$acc sum1, &
+    !$acc sum2)
 
+
+    !$acc parallel loop independent gang worker default(present) private(c,sum1,sum2)
     do fc = 1, num_nolakec
        c = filter_nolakec(fc)
-       liquid_mass(c) = 0._r8
-       ice_mass(c) = 0._r8
-    end do
-
-    call p2c(bounds, num_nolakec, filter_nolakec, &
-         h2ocan_patch(bounds%begp:bounds%endp), &
-         h2ocan_col(bounds%begc:bounds%endc))
-
-    !call p2c(bounds, num_nolakec, filter_nolakec, &
-    !     snocan_patch(bounds%begp:bounds%endp), &
-    !     snocan_col(bounds%begc:bounds%endc))
-    snocan_col(:) = 0._r8
-
-    do fc = 1, num_nolakec
-       c = filter_nolakec(fc)
-
+       
        ! waterstate_inst%snocan_patch and waterstate_inst%liqcan_patch are only set if
        ! we're using snow-on-veg; otherwise they are 0. However, we can rely on
        ! h2ocan_patch being set in all cases, so we can always determine the liquid mass
@@ -233,67 +225,85 @@ contains
        ! non-changing, and is set to 0 for a trivial solution.
 
        if (snl(c) < 0) then
-          ! Loop over snow layers
+         sum1 = 0._r8 
+         sum2 = 0._r8 
+         
+         ! Loop over snow layers
+         !$acc loop vector reduction(+:sum1,sum2) 
           do j = snl(c)+1,0
-             liquid_mass(c) = liquid_mass(c) + h2osoi_liq(c,j)
-             ice_mass(c) = ice_mass(c) + h2osoi_ice(c,j)
+             sum1 = sum1 + h2osoi_liq(c,j)
+             sum2 = sum2 + h2osoi_ice(c,j)
           end do
+
+          liquid_mass(c) = sum1
+          ice_mass(c)    = sum2 
        else if (h2osno(c) /= 0._r8) then
           ! No explicit snow layers, but there may still be some ice in h2osno (there is
           ! no liquid water in this case)
-          ice_mass(c) = ice_mass(c) + h2osno(c)
+          ice_mass(c) = h2osno(c)
        end if
 
     end do
 
     ! Soil water content
-    do j = 1, nlevgrnd
-       do fc = 1, num_nolakec
-          c = filter_nolakec(fc)
-          if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall .or. &
-              col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_road_imperv) then
-             has_h2o = .false.
-          else
-             has_h2o = .true.
-          end if
-
-          if (has_h2o) then
-             liquid_mass(c) = liquid_mass(c) + h2osoi_liq(c,j)
-             ice_mass(c) = ice_mass(c) + h2osoi_ice(c,j)
-         end if
-       end do
+    !$acc parallel loop gang worker independent default(present) private(sum1,sum2)
+    do fc = 1, num_nolakec
+      c = filter_nolakec(fc)
+      if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall .or. &
+          col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_road_imperv) then
+         has_h2o = .false.
+      else
+         sum1 = 0._r8; sum2 = 0._r8 
+         !$acc loop vector reduction(+:sum1,sum2) 
+         do j = 1, nlevgrnd
+            !has_h2o = .true.
+            sum1 = sum1 + h2osoi_liq(c,j)
+            sum2 = sum2 + h2osoi_ice(c,j)
+         end do
+         liquid_mass(c) = liquid_mass(c) + sum1
+         ice_mass(c) = ice_mass(c) + sum2 
+      end if
     end do
 
+    !$acc parallel loop independent gang vector default(present) 
     do fc = 1, num_nolakec
        c = filter_nolakec(fc)
        l = col_pp%landunit(c)
        if ( (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop          )  &
-            .or. (lun_pp%itype(l) == istwet                                   )  &
-            .or. (lun_pp%itype(l) == istice                                   )  &
-            .or. (lun_pp%itype(l) == istice_mec                               )  &
-            .or. (lun_pp%urbpoi(l)          .and. col_pp%itype(c) == icol_road_perv  )) then
+            .or. (lun_pp%itype(l) == istwet     )  &
+            .or. (lun_pp%itype(l) == istice     )  &
+            .or. (lun_pp%itype(l) == istice_mec )  &
+            .or. (lun_pp%urbpoi(l)  .and. col_pp%itype(c) == icol_road_perv  )) then
+         
           liquid_mass(c) = liquid_mass(c) + wa(c)
        end if
-       l = col_pp%landunit(c)
+       ice_mass(c)    = ice_mass(c) !+ snocan_col(c)
+
+    end do 
+    
+    !$acc parallel loop gang worker independent default(present) private(sum1)
+    do fc = 1, num_nolakec
+      c = filter_nolakec(fc)
+      l = col_pp%landunit(c)
 
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then   ! note: soil specified at LU level
+         sum1 = 0._r8 
+         !$acc loop vector reduction(+:sum1)
           do p = col_pp%pfti(c),col_pp%pftf(c) ! loop over patches
              if (veg_pp%active(p)) then
-                liquid_mass(c) = liquid_mass(c) + h2ocan_patch(p) * veg_pp%wtcol(p)
-            end if
+               sum1 = sum1 + h2ocan_patch(p) * veg_pp%wtcol(p)
+             end if
           end do
+          liquid_mass(c) = liquid_mass(c) + sum1 
        end if
        !liqcan = h2ocan_col(c) - snocan_col(c)
        !liquid_mass(c) = liquid_mass(c) + liqcan + total_plant_stored_h2o(c)
-       ice_mass(c)    = ice_mass(c) + snocan_col(c)
-
-       if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_sunwall &
-            .or. col_pp%itype(c) == icol_shadewall .or. col_pp%itype(c) == icol_road_imperv) then
-          ! Nothing more to add in this case
-       else
-          !liquid_mass(c) = liquid_mass(c) +  h2osfc(c)
-       end if
+       
     end do
+    !$acc exit data delete(&
+    !$acc sum1, &
+    !$acc sum2)
+
   end associate
 
   end subroutine ComputeLiqIceMassNonLake
@@ -309,7 +319,6 @@ contains
     ! to ComputeHeatLake
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     type(bounds_type)     , intent(in)    :: bounds
     integer               , intent(in)    :: num_lakec                   ! number of column lake points in column filter
     integer               , intent(in)    :: filter_lakec(:)             ! column filter for lake points
@@ -319,7 +328,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: c, j, fc                  ! indices
-
+    real(r8) :: sum1, sum2 
     character(len=*), parameter :: subname = 'ComputeLiqIceMassLake'
     !-----------------------------------------------------------------------
 
@@ -331,47 +340,75 @@ contains
          h2osoi_ice   =>    col_ws%h2osoi_ice , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
          h2osoi_liq   =>    col_ws%h2osoi_liq   & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
          )
+    !$acc enter data create(&
+    !$acc sum1, &
+    !$acc sum2)
 
-    do fc = 1, num_lakec
-       c = filter_lakec(fc)
-       liquid_mass(c) = 0._r8
-       ice_mass(c) = 0._r8
-    end do
+
+   !  !$acc parallel loop independent gang vector default(present)
+   !  do fc = 1, num_lakec
+   !     c = filter_lakec(fc)
+   !     liquid_mass(c) = 0._r8
+   !     ice_mass(c) = 0._r8
+   !  end do
 
     ! Snow water content
+    !$acc parallel loop gang worker independent default(present) private(sum1,sum2)
     do fc = 1, num_lakec
        c = filter_lakec(fc)
        if (snl(c) < 0) then
+          sum1 = 0._r8; sum2 = 0._r8
+
           ! Loop over snow layers
+          !$acc loop vector reduction(+:sum1,sum2)
           do j = snl(c)+1,0
-             liquid_mass(c) = liquid_mass(c) + h2osoi_liq(c,j)
-             ice_mass(c) = ice_mass(c) + h2osoi_ice(c,j)
+             sum1 = sum1 + h2osoi_liq(c,j)
+             sum2 = sum2 + h2osoi_ice(c,j)
           end do
+          liquid_mass(c) =  sum1
+          ice_mass(c) = sum2 
+
        else if (h2osno(c) /= 0._r8) then
           ! No explicit snow layers, but there may still be some ice in h2osno (there is
           ! no liquid water in this case)
-          ice_mass(c) = ice_mass(c) + h2osno(c)
+          ice_mass(c) =  h2osno(c)
        end if
     end do
 
     ! Soil water content of the soil under the lake
-    do j = 1, nlevgrnd
-       do fc = 1, num_lakec
-          c = filter_lakec(fc)
-          liquid_mass(c) = liquid_mass(c) + h2osoi_liq(c,j)
-          ice_mass(c) = ice_mass(c) + h2osoi_ice(c,j)
+    !$acc parallel loop independent gang worker default(present) private(sum1, sum2)
+    do fc = 1, num_lakec
+      c = filter_lakec(fc)
+      
+      sum1 = 0._r8; sum2 = 0._r8 
+      !$acc loop vector reduction(+:sum1,sum2)
+      do j = 1, nlevgrnd
+          sum1 = sum1 + h2osoi_liq(c,j)
+          sum2 = sum2 + h2osoi_ice(c,j)
        end do
+       liquid_mass(c) = liquid_mass(c) + sum1
+       ice_mass(c)    = ice_mass(c) + sum2
     end do
 
+    !$acc parallel loop independent gang worker default(present) private(sum1,sum2)
     do fc = 1, num_lakec
        c = filter_lakec(fc)
+       sum1 = 0._r8; sum2 = 0._r8 
+
+       !$acc loop vector reduction(+:sum1,sum2)
        do j = 1,nlevlak
-          liquid_mass(c) = liquid_mass(c) + (1 - lakestate_vars%lake_icefrac_col(c,j)) * col_pp%dz_lake(c,j) * denh2o
-          ice_mass(c)    = ice_mass(c)    +      lakestate_vars%lake_icefrac_col(c,j)  * col_pp%dz_lake(c,j) * denh2o
+          sum1 = sum1 + (1 - lakestate_vars%lake_icefrac_col(c,j)) * col_pp%dz_lake(c,j) * denh2o
+          sum2 = sum2  +     lakestate_vars%lake_icefrac_col(c,j)  * col_pp%dz_lake(c,j) * denh2o
           ! lake layers do not change thickness when freezing, so denh2o should be used
           ! (thermal properties are appropriately adjusted; see LakeTemperatureMod)
        end do
+       liquid_mass(c) = liquid_mass(c) + sum1
+       ice_mass(c)    = ice_mass(c)   + sum2
     end do
+    !$acc exit data delete(&
+    !$acc sum1, &
+    !$acc sum2)
+
   end associate
 
   end subroutine ComputeLiqIceMassLake
@@ -393,7 +430,7 @@ contains
     ! generally be accompanied by similar changes to ComputeLiqIceMassNonLake
     !
     ! !ARGUMENTS:
-      !$acc routine seq
+      
     type(bounds_type)        , intent(in)  :: bounds
     integer                  , intent(in)  :: num_nolakec
     integer                  , intent(in)  :: filter_nolakec(:)
@@ -412,16 +449,15 @@ contains
     logical  :: has_h2o  ! whether this point potentially has water to add
 
     real(r8) :: h2ocan_col(bounds%begc:bounds%endc)  ! canopy water (mm H2O)
-    real(r8) :: snocan_col(bounds%begc:bounds%endc)  ! canopy snow water (mm H2O)
     real(r8) :: liqcan        ! canopy liquid water (mm H2O)
 
-    real(r8) :: heat_dry_mass(bounds%begc:bounds%endc) ! sum of heat content: dry mass [J/m^2]
-    real(r8) :: heat_ice(bounds%begc:bounds%endc)      ! sum of heat content: ice [J/m^2]
-    real(r8) :: latent_heat_liquid(bounds%begc:bounds%endc) ! sum of latent heat content of liquid water [J/m^2]
-
-    !character(len=*), parameter :: subname = 'ComputeHeatNonLake'
+    real(r8) :: heat_dry_mass(num_nolakec) ! sum of heat content: dry mass [J/m^2]
+    real(r8) :: heat_ice(num_nolakec)      ! sum of heat content: ice [J/m^2]
+    real(r8) :: latent_heat_liquid(num_nolakec) ! sum of latent heat content of liquid water [J/m^2]
+    
+    real(r8) :: sum_heat,sum_cv,sum_latent, sum_hice, sum_dry
+    
     !-----------------------------------------------------------------------
-
     associate( &
          snl          => col_pp%snl, & ! number of snow layers
          dz           => col_pp%dz, &  ! layer depth (m)
@@ -438,34 +474,31 @@ contains
          h2osno       => col_ws%h2osno, & ! snow water (mm H2O)
          h2osfc       => col_ws%h2osfc, & ! surface water (mm H2O)
          h2ocan_patch => veg_ws%h2ocan, & ! canopy water (mm H2O)
-!         snocan_patch => waterstate_inst%snocan_patch, & ! canopy snow water (mm H2O)
          total_plant_stored_h2o_col => col_ws%total_plant_stored_h2o, & ! Input: [real(r8) (:)   ]  water mass in plant tissues (kg m-2)
          wa           => soilhydrology_inst%wa_col & ! water in the unconfined aquifer (mm)
          )
+    !$acc enter data create(&
+    !$acc h2ocan_col(:), &
+    !$acc heat_dry_mass(:), &
+    !$acc heat_ice(:), &
+    !$acc latent_heat_liquid(:), &
+    !$acc sum_hice, &
+    !$acc sum_dry)
 
-    do fc = 1, num_nolakec
-       c = filter_nolakec(fc)
-
-       heat_liquid(c) = 0._r8
-       cv_liquid(c) = 0._r8
-       heat_dry_mass(c) = 0._r8
-       heat_ice(c) = 0._r8
-       latent_heat_liquid(c) = 0._r8
-    end do
-
-    call p2c(bounds, &
+    call p2c_1d_parallel(bounds, &
          parr = h2ocan_patch(bounds%begp:bounds%endp), &
          carr = h2ocan_col(bounds%begc:bounds%endc), &
-         p2c_scale_type = 0)
+         p2c_scale_type = unity, para=.true.)
 
-    !call p2c(bounds, &
-    !     parr = snocan_patch(bounds%begp:bounds%endp), &
-    !     carr = snocan_col(bounds%begc:bounds%endc), &
-    !     p2c_scale_type = 'unity')
-    snocan_col(bounds%begc:bounds%endc) = 0._r8
-
+    !$acc parallel loop independent gang vector default(present) 
     do fc = 1, num_nolakec
        c = filter_nolakec(fc)
+
+       heat_ice(fc) = 0._r8 
+       heat_liquid(c) = 0._r8
+       cv_liquid(c) = 0._r8
+       heat_dry_mass(fc) = 0._r8
+       latent_heat_liquid(fc) = 0._r8
 
        !--- canopy water ---
        !
@@ -493,35 +526,61 @@ contains
        ! we are not accounting for or conserving the flux of energy between the two
        ! pools.  The energy in the plant water should "bring with it" the internal
        ! energy of the soil-to-root water flux.
-
-       liqcan = (h2ocan_col(c) - snocan_col(c) + total_plant_stored_h2o_col(c))*0._r8
+      
+       ! NOTE: Why multiply by 0._r8?
+       liqcan = (h2ocan_col(fc) + total_plant_stored_h2o_col(c))*0._r8
        call AccumulateLiquidWaterHeat( &
             temp = heat_base_temp, &
             h2o = liqcan, &
             cv_liquid = cv_liquid(c), &
             heat_liquid = heat_liquid(c), &
-            latent_heat_liquid = latent_heat_liquid(c))
+            latent_heat_liquid = latent_heat_liquid(fc))
+         
+    end do 
 
+    !$acc parallel loop independent gang worker default(present) private(sum_heat,sum_cv,sum_latent,sum_hice)
+    do fc = 1, num_nolakec
+      c = filter_nolakec(fc)
        !--- snow ---
        if ( snl(c) < 0 ) then
           ! Loop over snow layers
+         sum_heat = 0._r8
+         sum_cv = 0._r8 
+         sum_latent = 0._r8
+         sum_hice = 0._r8
+
+         !$acc loop vector reduction(+:sum_heat,sum_cv,sum_latent,sum_hice)
           do j = snl(c)+1,0
              call AccumulateLiquidWaterHeat( &
                   temp = t_soisno(c,j), &
                   h2o = h2osoi_liq(c,j), &
-                  cv_liquid = cv_liquid(c), &
-                  heat_liquid = heat_liquid(c), &
-                  latent_heat_liquid = latent_heat_liquid(c))
-             heat_ice(c) = heat_ice(c) + &
+                  cv_liquid = sum_cv, &
+                  heat_liquid = sum_heat, &
+                  latent_heat_liquid = sum_latent)
+            
+             sum_hice = sum_hice + &
                   TempToHeat(t_soisno(c,j), (h2osoi_ice(c,j)*cpice))
           end do
-       else if (h2osno(c) /= 0._r8) then
+
+          cv_liquid(c) = cv_liquid(c) + sum_cv 
+          heat_liquid(c) = heat_liquid(c) + sum_heat 
+          latent_heat_liquid(fc) = latent_heat_liquid(fc) + sum_latent 
+          heat_ice(fc) = sum_hice
+
+      else if (h2osno(c) /= 0._r8) then
           ! No explicit snow layers, but there may still be some ice in h2osno (there is
           ! no liquid water in this case)
-          j = 1
-          heat_ice(c) = heat_ice(c) + &
-               TempToHeat(t_soisno(c,j), (h2osno(c)*cpice))
-       end if
+         !  j = 1
+          heat_ice(fc) = heat_ice(fc) + &
+               TempToHeat(t_soisno(c,1), (h2osno(c)*cpice))
+      end if
+
+    end do
+      
+    
+    !$acc parallel loop independent gang vector default(present) 
+   do fc = 1, num_nolakec
+       c = filter_nolakec(fc)
 
        if (col_pp%hydrologically_active(c)) then
           ! NOTE(wjs, 2017-03-23) Water in the unconfined aquifer currently doesn't have
@@ -539,7 +598,7 @@ contains
                h2o = (wa(c) - aquifer_water_baseline), &
                cv_liquid = cv_liquid(c), &
                heat_liquid = heat_liquid(c), &
-               latent_heat_liquid = latent_heat_liquid(c))
+               latent_heat_liquid = latent_heat_liquid(fc))
        end if
 
        if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_sunwall &
@@ -552,30 +611,37 @@ contains
                h2o = h2osfc(c), &
                cv_liquid = cv_liquid(c), &
                heat_liquid = heat_liquid(c), &
-               latent_heat_liquid = latent_heat_liquid(c))
+               latent_heat_liquid = latent_heat_liquid(fc))
        end if
 
     end do
 
 
     !--- below ground (soil & soil water) and related urban columns
-    do j = 1, nlevgrnd
-       do fc = 1, num_nolakec
-          c = filter_nolakec(fc)
-          l = col_pp%landunit(c)
-
+    !$acc parallel loop independent gang worker default(present) private(c,l,sum_heat,sum_cv,sum_latent,sum_hice,sum_dry) & 
+    !$acc  present(heat_dry_mass(:),cv_liquid(:), heat_liquid(:), latent_heat_liquid(:), heat_ice(:) ) 
+    do fc = 1, num_nolakec
+      c = filter_nolakec(fc)
+      l = col_pp%landunit(c)
+      sum_heat = 0._r8
+      sum_cv = 0._r8 
+      sum_latent = 0._r8
+      sum_hice = 0._r8
+      sum_dry = 0._r8
+      
+      !$acc loop vector reduction(+:sum_heat,sum_cv,sum_latent,sum_hice,sum_dry) private(has_h2o)
+      do j = 1, nlevgrnd
+          
           if (col_pp%itype(c)==icol_sunwall .or. col_pp%itype(c)==icol_shadewall) then
              has_h2o = .false.
              if (j <= nlevurb) then
-                heat_dry_mass(c) = heat_dry_mass(c) + &
-                     TempToHeat(t_soisno(c,j), (cv_wall(l,j) * dz(c,j)))
+                sum_dry = sum_dry + TempToHeat(t_soisno(c,j), (cv_wall(l,j) * dz(c,j)) )
              end if
 
           else if (col_pp%itype(c) == icol_roof) then
              if (j <= nlevurb) then
                 has_h2o = .true.
-                heat_dry_mass(c) = heat_dry_mass(c) + &
-                     TempToHeat(t_soisno(c,j), (cv_roof(l,j) * dz(c,j)))
+                sum_dry = sum_dry + TempToHeat(t_soisno(c,j), (cv_roof(l,j) * dz(c,j)))
              else
                 has_h2o = .false.
              end if
@@ -584,12 +650,13 @@ contains
              has_h2o = .true.
 
              if (col_pp%itype(c) == icol_road_imperv .and. j <= nlev_improad(l)) then
-                heat_dry_mass(c) = heat_dry_mass(c) + &
-                     TempToHeat(t_soisno(c,j),(cv_improad(l,j) * dz(c,j)))
+
+                sum_dry = sum_dry + TempToHeat(t_soisno(c,j),(cv_improad(l,j) * dz(c,j)))
+
              else if (lun_pp%itype(l) /= istwet .and. lun_pp%itype(l) /= istice .and. lun_pp%itype(l) /= istice_mec) then
                 ! Note that this also includes impervious roads below nlev_improad (where
                 ! we have soil)
-                heat_dry_mass(c) = heat_dry_mass(c) + &
+                sum_dry = sum_dry + &
                      TempToHeat( t_soisno(c,j), (csol(c,j)*(1-watsat(c,j))*dz(c,j)))
              end if
           end if
@@ -598,19 +665,35 @@ contains
              call AccumulateLiquidWaterHeat( &
                   temp = t_soisno(c,j), &
                   h2o = h2osoi_liq(c,j), &
-                  cv_liquid = cv_liquid(c), &
-                  heat_liquid = heat_liquid(c), &
-                  latent_heat_liquid = latent_heat_liquid(c))
-             heat_ice(c) = heat_ice(c) + &
+                  cv_liquid = sum_cv, &
+                  heat_liquid = sum_heat, &
+                  latent_heat_liquid = sum_latent)
+            
+            sum_hice = sum_hice +  &
                   TempToHeat(t_soisno(c,j), (h2osoi_ice(c,j)*cpice))
           end if
        end do
+
+       heat_dry_mass(fc) = sum_dry 
+       cv_liquid(c) = cv_liquid(c) + sum_cv 
+       heat_liquid(c) = heat_liquid(c) + sum_heat
+       latent_heat_liquid(fc) = latent_heat_liquid(fc) + sum_latent
+       heat_ice(fc) = heat_ice(fc) + sum_hice 
     end do
 
+    !$acc parallel loop independent gang vector default(present)
     do fc = 1, num_nolakec
        c = filter_nolakec(fc)
-       heat(c) = heat_dry_mass(c) + heat_ice(c) + heat_liquid(c) + latent_heat_liquid(c)
+       heat(c) = heat_dry_mass(fc) + heat_ice(fc) + heat_liquid(c) + latent_heat_liquid(fc)
     end do
+
+    !$acc exit data delete(&
+    !$acc h2ocan_col(:), &
+    !$acc heat_dry_mass(:), &
+    !$acc heat_ice(:), &
+    !$acc latent_heat_liquid(:), &
+    !$acc sum_hice, &
+    !$acc sum_dry)
 
     end associate
 
@@ -633,7 +716,7 @@ contains
     ! generally be accompanied by similar changes to ComputeLiqIceMassLake
     !
     ! !ARGUMENTS:
-      !$acc routine seq
+      
     type(bounds_type)        , intent(in)  :: bounds
     integer                  , intent(in)  :: num_lakec
     integer                  , intent(in)  :: filter_lakec(:)
@@ -647,17 +730,15 @@ contains
     integer :: fc
     integer :: c,j
 
-    real(r8) :: heat_dry_mass(bounds%begc:bounds%endc) ! sum of heat content: dry mass [J/m^2]
-    real(r8) :: heat_ice(bounds%begc:bounds%endc)      ! sum of heat content: ice [J/m^2]
-    real(r8) :: latent_heat_liquid(bounds%begc:bounds%endc) ! sum of latent heat content of liquid water [J/m^2]
+    real(r8) :: heat_dry_mass(1:num_lakec) ! sum of heat content: dry mass [J/m^2]
+    real(r8) :: heat_ice(1:num_lakec)      ! sum of heat content: ice [J/m^2]
+    real(r8) :: latent_heat_liquid(1:num_lakec) ! sum of latent heat content of liquid water [J/m^2]
+    
+    real(r8) :: sum_heat,sum_cv,sum_latent, sum_hice, sum_dry
 
     !character(len=*), parameter :: subname = 'ComputeHeatLake'
     !-----------------------------------------------------------------------
-
-    !SHR_ASSERT_ALL((ubound(heat) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    !SHR_ASSERT_ALL((ubound(heat_liquid) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    !SHR_ASSERT_ALL((ubound(cv_liquid) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-
+    
     associate( &
          snl          => col_pp%snl, & ! number of snow layers
          dz           => col_pp%dz, &  ! layer depth (m)
@@ -668,65 +749,110 @@ contains
          h2osoi_ice   => col_ws%h2osoi_ice, & ! frozen water (kg/m2)
          h2osno       => col_ws%h2osno & ! snow water (mm H2O)
          )
+    !$acc enter data create(&
+    !$acc heat_dry_mass(:), &
+    !$acc heat_ice(:), &
+    !$acc latent_heat_liquid(:), &
+    !$acc sum_hice, &
+    !$acc sum_dry)
 
+
+    !$acc parallel loop independent gang vector default(present)
     do fc = 1, num_lakec
        c = filter_lakec(fc)
 
        heat_liquid(c) = 0._r8
        cv_liquid(c) = 0._r8
-       heat_dry_mass(c) = 0._r8
-       heat_ice(c) = 0._r8
-       latent_heat_liquid(c) = 0._r8
+
+       heat_dry_mass(fc) = 0._r8
+       heat_ice(fc) = 0._r8
+       latent_heat_liquid(fc) = 0._r8
     end do
 
     ! Snow heat content
+    !$acc parallel loop independent gang worker default(present) private(sum_heat,sum_cv,sum_latent,sum_hice)
     do fc = 1, num_lakec
        c = filter_lakec(fc)
+       sum_heat = 0._r8
+       sum_cv = 0._r8 
+       sum_latent = 0._r8
+       sum_hice = 0._r8
        if ( snl(c) < 0 ) then
-          ! Loop over snow layers
+         ! Loop over snow layers
+         !$acc loop vector reduction(+:sum_heat,sum_cv,sum_latent, sum_hice)
           do j = snl(c)+1,0
              call AccumulateLiquidWaterHeat( &
                   temp = t_soisno(c,j), &
                   h2o = h2osoi_liq(c,j), &
-                  cv_liquid = cv_liquid(c), &
-                  heat_liquid = heat_liquid(c), &
-                  latent_heat_liquid = latent_heat_liquid(c))
-             heat_ice(c) = heat_ice(c) + &
+                  cv_liquid = sum_cv, &
+                  heat_liquid = sum_heat, &
+                  latent_heat_liquid = sum_latent)
+             
+             sum_hice = sum_hice + &
                   TempToHeat(t_soisno(c,j), (h2osoi_ice(c,j)*cpice))
           end do
-       else if (h2osno(c) /= 0._r8) then
-          ! TODO(wjs, 2017-03-16) (Copying this note from old code... I'm not positive
-          ! it's still true.) The heat capacity (not latent heat) of snow without snow
-          ! layers is currently ignored in LakeTemperature, so it should be ignored here.
-          ! Eventually we should consider this.
+          
+         !  else if (h2osno(c) /= 0._r8) then
+         !     ! TODO(wjs, 2017-03-16) (Copying this note from old code... I'm not positive
+         !     ! it's still true.) The heat capacity (not latent heat) of snow without snow
+         !     ! layers is currently ignored in LakeTemperature, so it should be ignored here.
+         !     ! Eventually we should consider this.
        end if
+       cv_liquid(c) = sum_cv 
+       heat_liquid(c) = sum_heat
+       latent_heat_liquid(fc) = sum_latent 
+       heat_ice(fc) = sum_hice 
     end do
 
     ! Soil water content of the soil under the lake
-    do j = 1,nlevgrnd
-       do fc = 1, num_lakec
-          c = filter_lakec(fc)
+    !$acc parallel loop independent gang worker default(present) private(sum_heat,sum_cv,sum_latent,sum_hice,sum_dry)
+    do fc = 1, num_lakec
+      c = filter_lakec(fc)
+      sum_heat = 0._r8
+      sum_cv = 0._r8 
+      sum_latent = 0._r8
+      sum_hice = 0._r8
+      sum_dry = 0._r8
 
-          heat_dry_mass(c) = heat_dry_mass(c) + &
-               TempToHeat( t_soisno(c,j), (csol(c,j)*(1-watsat(c,j))*dz(c,j)))
-          call AccumulateLiquidWaterHeat( &
+      !$acc loop vector reduction(+:sum_heat,sum_cv,sum_latent, sum_hice,sum_dry)
+      do j = 1,nlevgrnd
+
+         sum_dry = sum_dry + TempToHeat( t_soisno(c,j), (csol(c,j)*(1-watsat(c,j))*dz(c,j)))
+
+         call AccumulateLiquidWaterHeat( &
                temp = t_soisno(c,j), &
                h2o = h2osoi_liq(c,j), &
-               cv_liquid = cv_liquid(c), &
-               heat_liquid = heat_liquid(c), &
-               latent_heat_liquid = latent_heat_liquid(c))
-          heat_ice(c) = heat_ice(c) + &
+               cv_liquid = sum_cv, &
+               heat_liquid = sum_heat, &
+               latent_heat_liquid = sum_latent)
+
+         sum_hice = sum_hice  + &
                TempToHeat(t_soisno(c,j), (h2osoi_ice(c,j)*cpice))
        end do
+       heat_dry_mass(fc) = sum_dry 
+       
+       cv_liquid(c) = cv_liquid(c) + sum_cv 
+       heat_liquid(c) = heat_liquid(c) + sum_heat
+       latent_heat_liquid(fc) = latent_heat_liquid(fc) + sum_latent 
+       heat_ice(fc) = heat_ice(fc) + sum_hice
+
     end do
 
     ! TODO(wjs, 2017-03-11) Include heat content of water in lakes, once we include
     ! lake water as an explicit water state (https://github.com/NCAR/CLM/issues/2)
 
+    !$acc parallel loop independent gang vector default(present)
     do fc = 1, num_lakec
        c = filter_lakec(fc)
-       heat(c) = heat_dry_mass(c) + heat_ice(c) + heat_liquid(c) + latent_heat_liquid(c)
+       heat(c) = heat_dry_mass(fc) + heat_ice(fc) + heat_liquid(c) + latent_heat_liquid(fc)
     end do
+
+    !$acc exit data delete(&
+    !$acc heat_dry_mass(:), &
+    !$acc heat_ice(:), &
+    !$acc latent_heat_liquid(:), &
+    !$acc sum_hice, &
+    !$acc sum_dry)
 
     end associate
 
@@ -833,8 +959,8 @@ contains
     ! a given temperature, using a base temperature of heat_base_temp.
     !
     ! !USES:
-    !
-    ! !ARGUMENTS:
+    !$acc routine seq 
+    ! !ARGUMENTS: 
     real(r8) :: heat  ! function result
     real(r8), intent(in) :: temp  ! temperature [K]
     real(r8), intent(in) :: h2o   ! water mass [kg/m^2]
@@ -865,7 +991,8 @@ contains
     ! count for liquid water, for a single column
     !
     ! !ARGUMENTS:
-      !$acc routine seq
+      
+      !$acc routine seq 
     real(r8), intent(in) :: temp  ! temperature [K]
     real(r8), intent(in) :: h2o   ! water mass [kg/m^2]
 

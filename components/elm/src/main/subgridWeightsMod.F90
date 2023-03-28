@@ -280,7 +280,7 @@ contains
 
     character(len=*), parameter :: subname = 'set_active'
     !------------------------------------------------------------------------
-
+   
     do l = bounds%begl,bounds%endl
        t = lun_pp%topounit(l)
        lun_pp%active(l) = is_active_l(l)
@@ -690,16 +690,14 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: g,t,l,c,p, tu     ! loop counters
-    real(r8), allocatable :: sumwtcol(:), sumwtlunit(:), sumwtgcell(:), sumwttunit(:)
+    real(r8) :: sumwtcol(bounds%begc:bounds%endc)
+    real(r8) :: sumwtlunit(bounds%begl:bounds%endl)
+    real(r8) :: sumwtgcell(bounds%begg:bounds%endg)
+    real(r8) :: sumwttunit(bounds%begt:bounds%endt)
     logical :: error_found                ! true if we find an error
     logical :: topo_active_only           ! Check the weights of the active topounits
-    character(len=*), parameter :: subname = 'check_weights'
+    !character(len=*), parameter :: subname = 'check_weights'
     !------------------------------------------------------------------------------
-
-    allocate(sumwtcol(bounds%begc:bounds%endc))
-    allocate(sumwtlunit(bounds%begl:bounds%endl))
-    allocate(sumwttunit(bounds%begt:bounds%endt))
-    allocate(sumwtgcell(bounds%begg:bounds%endg))
 
     error_found = .false.
 
@@ -732,7 +730,7 @@ contains
        topo_active_only = top_pp%active(tu) 
        if (topo_active_only) then ! Check only for the valid topounits
           if (.not. weights_okay(sumwtcol(c), active_only, col_pp%active(c))) then
-             write(iulog,*) trim(subname),' ERROR: at c = ',c,'total PFT weight is ',sumwtcol(c), &
+             write(iulog,*) ' ERROR: at c = ',c,'total PFT weight is ',sumwtcol(c), &
                          'active_only = ', active_only
              error_found = .true.
           end if
@@ -744,7 +742,7 @@ contains
        topo_active_only = top_pp%active(tu) 
        if (topo_active_only) then 
           if (.not. weights_okay(sumwtlunit(l), active_only, lun_pp%active(l))) then
-             write(iulog,*) trim(subname),' ERROR: at l = ',l,'total PFT weight is ',sumwtlunit(l), &
+             write(iulog,*) ' ERROR: at l = ',l,'total PFT weight is ',sumwtlunit(l), &
                          'active_only = ', active_only
              error_found = .true.
           end if
@@ -755,7 +753,7 @@ contains
        topo_active_only = top_pp%active(t)
        if (topo_active_only) then 
           if (.not. weights_okay(sumwttunit(t), active_only, top_pp%active(t))) then
-             write(iulog,*) trim(subname),' ERROR: at t = ',t,'total PFT weight is ',sumwttunit(t), &
+             write(iulog,*) ' ERROR: at t = ',t,'total PFT weight is ',sumwttunit(t), &
                          'active_only = ', active_only
              error_found = .true.
           end if
@@ -764,7 +762,7 @@ contains
 
     do g = bounds%begg,bounds%endg
        if (.not. weights_okay(sumwtgcell(g), active_only, i_am_active=.true.)) then
-          write(iulog,*) trim(subname),' ERROR: at g = ',g,'total PFT weight is ',sumwtgcell(g), &
+          write(iulog,*) ' ERROR: at g = ',g,'total PFT weight is ',sumwtgcell(g), &
                          'active_only = ', active_only
           error_found = .true.
        end if
@@ -797,7 +795,7 @@ contains
        topo_active_only = top_pp%active(tu)
        if (topo_active_only) then ! Check only for the valid topounits
           if (.not. weights_okay(sumwtlunit(l), active_only, lun_pp%active(l))) then
-             write(iulog,*) trim(subname),' ERROR: at l = ',l,'total col weight is ',sumwtlunit(l), &
+             write(iulog,*) ' ERROR: at l = ',l,'total col weight is ',sumwtlunit(l), &
                          'active_only = ', active_only
              error_found = .true.
           end if
@@ -808,7 +806,7 @@ contains
        topo_active_only = top_pp%active(t)
        if (topo_active_only) then
           if (.not. weights_okay(sumwttunit(t), active_only, top_pp%active(t))) then
-             write(iulog,*) trim(subname),' ERROR: at t = ',t,'total col weight is ',sumwttunit(t), &
+             write(iulog,*) ' ERROR: at t = ',t,'total col weight is ',sumwttunit(t), &
                          'active_only = ', active_only
              error_found = .true.
           end if
@@ -817,7 +815,7 @@ contains
 
     do g = bounds%begg,bounds%endg
        if (.not. weights_okay(sumwtgcell(g), active_only, i_am_active=.true.)) then
-          write(iulog,*) trim(subname),' ERROR: at g = ',g,'total col weight is ',sumwtgcell(g), &
+          write(iulog,*) ' ERROR: at g = ',g,'total col weight is ',sumwtgcell(g), &
                          'active_only = ', active_only
           error_found = .true.
        end if
@@ -842,7 +840,7 @@ contains
     do t = bounds%begt,bounds%endt
        if (top_pp%active(t)) then
           if (.not. weights_okay(sumwttunit(t), active_only, top_pp%active(t))) then
-             write(iulog,*) trim(subname),' ERROR: at t= ',t,'total lunit weight is ',sumwttunit(t), &
+             write(iulog,*) ' ERROR: at t= ',t,'total lunit weight is ',sumwttunit(t), &
                          'active_only = ', active_only
              error_found = .true.
           end if
@@ -850,7 +848,7 @@ contains
     end do
     do g = bounds%begg,bounds%endg
        if (.not. weights_okay(sumwtgcell(g), active_only, i_am_active=.true.)) then
-          write(iulog,*) trim(subname),' ERROR: at g = ',g,'total lunit weight is ',sumwtgcell(g), &
+          write(iulog,*) ' ERROR: at g = ',g,'total lunit weight is ',sumwtgcell(g), &
                          'active_only = ', active_only
           error_found = .true.
        end if
@@ -874,7 +872,7 @@ contains
     !   end if
     !end do
     
-    deallocate(sumwtcol, sumwtlunit, sumwttunit, sumwtgcell)
+    !deallocate(sumwtcol, sumwtlunit, sumwttunit, sumwtgcell)
     ! Success
 
   end subroutine check_weights

@@ -147,7 +147,7 @@ module dynColumnStateUpdaterMod
   procedure, public  :: update_column_state_fill_special_using_natveg
   procedure, public  :: update_column_state_fill_using_fixed_values
   procedure, public  :: update_column_state_fill_special_using_fixed_value
-
+  procedure, public  :: initColumnStateUpdater
 
   end type column_state_updater_type
 
@@ -155,10 +155,8 @@ module dynColumnStateUpdaterMod
  !    module procedure constructor  ! initialize a column_state_updater_type object
  ! end interface column_state_updater_type
 
-  public :: init_column_state_updater
-  
   ! object used to update column-level states after subgrid weight updates
-  type(column_state_updater_type), public :: column_state_updater
+  !type(column_state_updater_type), public :: column_state_updater
   ! !PUBLIC VARIABLES:
   ! For update_column_state_fill_using_fixed_values, any landunit with
   ! FILLVAL_USE_EXISTING_VALUE will use the existing value in the state variable
@@ -173,43 +171,43 @@ contains
   ! Constructors
   ! ========================================================================
 
+  !!-----------------------------------------------------------------------
+  !function constructor(bounds, nclumps)
+  !  !
+  !  ! !DESCRIPTION:
+  !  ! Initialize a column_state_updater_type object
+  !  !
+  !  ! !USES:
+  !  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+  !  !
+  !  ! !ARGUMENTS:
+  !  type(column_state_updater_type) :: constructor  ! function result
+  !  type(bounds_type), intent(in)   :: bounds       ! processor bounds
+  !  integer          , intent(in)   :: nclumps      ! number of clumps per proc
+  !  !
+  !  ! !LOCAL VARIABLES:
+
+  !  character(len=*), parameter :: subname = 'constructor'
+  !  !-----------------------------------------------------------------------
+
+  !  SHR_ASSERT(bounds%level == BOUNDS_LEVEL_PROC, errMsg(sourcefile, __LINE__))
+
+  !  allocate(constructor%cwtgcell_old(bounds%begc:bounds%endc))
+  !  constructor%cwtgcell_old(:) = nan
+  !  allocate(constructor%cwtgcell_new(bounds%begc:bounds%endc))
+  !  constructor%cwtgcell_new(:) = nan
+  !  allocate(constructor%area_gained_col(bounds%begc:bounds%endc))
+  !  constructor%area_gained_col(:) = nan
+  !  allocate(constructor%natveg_template_col(bounds%begc:bounds%endc))
+  !  constructor%natveg_template_col(:) = TEMPLATE_NONE_FOUND
+
+  !  allocate(constructor%any_changes(nclumps))
+  !  constructor%any_changes(:) = .false.
+
+  !end function constructor
+
   !-----------------------------------------------------------------------
-  function constructor(bounds, nclumps)
-    !
-    ! !DESCRIPTION:
-    ! Initialize a column_state_updater_type object
-    !
-    ! !USES:
-    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    !
-    ! !ARGUMENTS:
-    type(column_state_updater_type) :: constructor  ! function result
-    type(bounds_type), intent(in)   :: bounds       ! processor bounds
-    integer          , intent(in)   :: nclumps      ! number of clumps per proc
-    !
-    ! !LOCAL VARIABLES:
-
-    character(len=*), parameter :: subname = 'constructor'
-    !-----------------------------------------------------------------------
-
-    SHR_ASSERT(bounds%level == BOUNDS_LEVEL_PROC, errMsg(sourcefile, __LINE__))
-
-    allocate(constructor%cwtgcell_old(bounds%begc:bounds%endc))
-    constructor%cwtgcell_old(:) = nan
-    allocate(constructor%cwtgcell_new(bounds%begc:bounds%endc))
-    constructor%cwtgcell_new(:) = nan
-    allocate(constructor%area_gained_col(bounds%begc:bounds%endc))
-    constructor%area_gained_col(:) = nan
-    allocate(constructor%natveg_template_col(bounds%begc:bounds%endc))
-    constructor%natveg_template_col(:) = TEMPLATE_NONE_FOUND
-
-    allocate(constructor%any_changes(nclumps))
-    constructor%any_changes(:) = .false.
-
-  end function constructor
-
-  !-----------------------------------------------------------------------
-  subroutine init_column_state_updater(this, bounds, nclumps)
+  subroutine initColumnStateUpdater(this, bounds, nclumps)
    !
    ! !DESCRIPTION:
    ! Initialize a column_state_updater_type object
@@ -218,7 +216,7 @@ contains
    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
    !
    ! !ARGUMENTS:
-   type(column_state_updater_type) :: this  ! function result
+   class(column_state_updater_type) :: this  ! function result
    type(bounds_type), intent(in)   :: bounds       ! processor bounds
    integer          , intent(in)   :: nclumps      ! number of clumps per proc
    !
@@ -240,7 +238,7 @@ contains
    allocate(this%any_changes(nclumps))
    this%any_changes(:) = .false.
 
-  end subroutine init_column_state_updater
+  end subroutine initColumnStateUpdater
 
   ! ========================================================================
   ! Public methods

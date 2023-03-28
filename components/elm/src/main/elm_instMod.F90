@@ -80,7 +80,10 @@ module elm_instMod
   ! instances declared in their own modules
   use UrbanParamsType            , only : urbanparams_vars
   use controlMod                 , only : nlfilename
+  use dynPatchStateUpdaterMod    , only : patch_state_updater_type 
+  use dynColumnStateUpdaterMod   , only : column_state_updater_type 
 
+  use dynUpdateModAcc            , only : patch_su_type_gpu 
 
   !
   implicit none
@@ -133,7 +136,9 @@ module elm_instMod
   type(PlantMicKinetics_type)                         :: PlantMicKinetics_vars
   
   type(cplbypass_atminput_type)                       :: cpl_bypass_input 
- 
+  type(patch_state_updater_type)                      :: patch_state_updater 
+  type(column_state_updater_type)                     :: column_state_updater 
+
   public :: elm_inst_biogeochem
   public :: elm_inst_biogeophys
   public :: alm_fates
@@ -160,6 +165,7 @@ module elm_instMod
   !$acc declare create(glc2lnd_vars)
   !$acc declare create(lnd2atm_vars)
   !$acc declare create(lnd2glc_vars)
+  !$acc declare create(column_state_updater) 
 
 contains
 

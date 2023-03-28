@@ -42,30 +42,37 @@ module CarbonStateUpdate1Mod
 contains
 
 !-------------------------------------------------------------------------
-subroutine CarbonStateDynGridUpdate(g, dt)
+subroutine CarbonStateDynGridUpdate(bounds, dt)
    !
    ! !DESCRIPTION: 
    ! Update gridcell carbon states based on fluxes form dyn_cnbal_patch 
-   !$acc routine seq 
    ! !ARGUMENTS 
-   integer , intent(in), value :: g 
+   type(bounds_type), intent(in) :: bounds  
    real(r8), intent(in) :: dt 
    ! 
-   grc_cs%seedc(g) = grc_cs%seedc(g) &
-      - grc_cf%dwt_seedc_to_leaf(g)     * dt &
-      - grc_cf%dwt_seedc_to_deadstem(g) * dt
+   integer :: begg, endg 
+   integer :: g
+      
+   begg = bounds%begg; endg = bounds%endg 
 
-   if (use_c13) then
-     c13_grc_cs%seedc(g) = c13_grc_cs%seedc(g) &
-         - c13_grc_cf%dwt_seedc_to_leaf(g)     * dt &
-         - c13_grc_cf%dwt_seedc_to_deadstem(g) * dt
-   end if
+   !$acc parallel loop independent gang vector default(present)  
+   do g =begg, endg  
+      grc_cs%seedc(g) = grc_cs%seedc(g) &
+         - grc_cf%dwt_seedc_to_leaf(g) * dt &
+         - grc_cf%dwt_seedc_to_deadstem(g) * dt
 
-   if (use_c14) then
-     c14_grc_cs%seedc(g) = c14_grc_cs%seedc(g) &
-        - c14_grc_cf%dwt_seedc_to_leaf(g)     * dt &
-        - c14_grc_cf%dwt_seedc_to_deadstem(g) * dt
-   end if
+      if (use_c13) then
+         c13_grc_cs%seedc(g) = c13_grc_cs%seedc(g) &
+            - c13_grc_cf%dwt_seedc_to_leaf(g)     * dt &
+            - c13_grc_cf%dwt_seedc_to_deadstem(g) * dt
+       end if
+
+       if (use_c14) then
+         c14_grc_cs%seedc(g) = c14_grc_cs%seedc(g) &
+            - c14_grc_cf%dwt_seedc_to_leaf(g)     * dt &
+            - c14_grc_cf%dwt_seedc_to_deadstem(g) * dt
+       end if
+    end do 
 end subroutine CarbonStateDynGridUpdate
 
 !-----------------------------------------------------------------------
@@ -145,26 +152,30 @@ end do
 end subroutine CarbonStateUpdateDynPatch
 
   !-----------------------------------------------------------------------
-  subroutine CarbonStateUpdate0(p, veg_cs, veg_cf, dt)
+  subroutine CarbonStateUpdate0(num_soilp, filter_soilp,veg_cs, veg_cf, dt)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update cpool carbon state
     !
 
     ! !ARGUMENTS:
-      !$acc routine seq
-    integer , value, intent(in)  :: p
+    integer, intent(in) :: num_soilp 
+    integer , intent(in) :: filter_soilp(:) 
     type(vegetation_carbon_state),intent(inout) :: veg_cs
     type(vegetation_carbon_flux) ,intent(inout) :: veg_cf
     real(r8),     intent(in)    :: dt
     !
+    integer :: p, fp 
     !-----------------------------------------------------------------------
 
     ! patch loop
-    ! gross photosynthesis fluxes
-    veg_cs%cpool(p) = veg_cs%cpool(p) + veg_cf%psnsun_to_cpool(p)*dt
-    veg_cs%cpool(p) = veg_cs%cpool(p) + veg_cf%psnshade_to_cpool(p)*dt
-
+    !$acc parallel loop independent gang vector default(present) 
+    do fp =1 ,num_soilp 
+      p = filter_soilp(fp)
+      ! gross photosynthesis fluxes
+      veg_cs%cpool(p) = veg_cs%cpool(p) + veg_cf%psnsun_to_cpool(p)*dt
+      veg_cs%cpool(p) = veg_cs%cpool(p) + veg_cf%psnshade_to_cpool(p)*dt
+    end do
   end subroutine CarbonStateUpdate0
 
   !-----------------------------------------------------------------------
@@ -219,7 +230,6 @@ end subroutine CarbonStateUpdateDynPatch
             end do
          end if
 
-         print *, "Carbonstate Print"
          ! litter and SOM HR fluxes
          !$acc parallel loop independent gang worker collapse(2) default(present)
          do j = 1,nlevdecomp
@@ -261,23 +271,20 @@ end subroutine CarbonStateUpdateDynPatch
 
   end subroutine CarbonStateUpdate_Phase1_COL
 
-  subroutine CarbonStateUpdate_Phase1_PFT(p,crop_vars, veg_cs, veg_cf,dt)
-      !$acc routine seq 
+  subroutine CarbonStateUpdate_Phase1_PFT(num_soilp,filter_soilp,crop_vars, veg_cs, veg_cf,dt)
      implicit none
 
-     ! integer                      , intent(in)    :: num_soilp       ! number of soil patches in filter
-     ! integer                      , intent(in)    :: filter_soilp(:) ! filter for soil patches
-     integer , intent(in), value :: p 
+     integer                      , intent(in)    :: num_soilp       ! number of soil patches in filter
+     integer                      , intent(in)    :: filter_soilp(:) ! filter for soil patches
      real(r8), intent(in) :: dt
      type(crop_type)              , intent(inout) :: crop_vars
      type(vegetation_carbon_state), intent(inout) :: veg_cs
      type(vegetation_carbon_flux) , intent(inout) :: veg_cf
-     real(r8), intent(in) :: dt        ! radiation time step (seconds)
 
      !
      ! !LOCAL VARIABLES:
-     integer  :: p,l ! indices
-     integer  :: fp      ! lake filter indices
+     integer  :: l ! indices
+     integer  :: fp,p      ! lake filter indices
      associate(  &
           ivt                   =>    veg_pp%itype                               , & ! Input:  [integer  (:)     ]  pft vegetation type
           woody                 =>    veg_vp%woody                               , & ! Input:  [real(r8) (:)     ]  binary flag for woody lifeform (1=woody, 0=not woody)
@@ -286,9 +293,9 @@ end subroutine CarbonStateUpdateDynPatch
       !
       !if (.not.use_fates) then
       ! patch loop
-          
-      ! do fp = 1,num_soilp
-         ! p = filter_soilp(fp)
+      !$acc parallel loop independent gang vector default(present)
+      do fp = 1,num_soilp
+         p = filter_soilp(fp)
 
          ! phenology: transfer growth fluxes
          veg_cs%leafc(p)           = veg_cs%leafc(p)       + veg_cf%leafc_xfer_to_leafc(p)*dt
@@ -476,7 +483,7 @@ end subroutine CarbonStateUpdateDynPatch
             veg_cs%grainc_xfer(p)        = veg_cs%grainc_xfer(p)       + veg_cf%grainc_storage_to_xfer(p)*dt
          end if
 
-         ! end do ! end of patch loop
+      end do ! end of patch loop
 
        end associate
 

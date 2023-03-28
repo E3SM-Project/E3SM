@@ -11,14 +11,8 @@ module GrowthRespMod
   use VegetationPropertiesType   , only : veg_vp
   use VegetationType        , only : veg_pp
   use VegetationDataType    , only : veg_cf
-
-  !
-
-  !#py !#py use shr_log_mod   , only : errMsg => shr_log_errMsg
-  use decompMod       , only : bounds_type
-  use ColumnDataType  , only : column_carbon_flux
+  use shr_log_mod   , only : errMsg => shr_log_errMsg
   use ColumnType      , only : col_pp
-
 
   implicit none
   save
@@ -30,7 +24,7 @@ module GrowthRespMod
 
 contains
 
-  subroutine GrowthResp(p)
+  subroutine GrowthResp(num_soilp, filter_soilp)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic carbon state
@@ -39,11 +33,11 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-      !$acc routine seq
-    integer , intent(in) :: p
+    integer , intent(in) :: num_soilp
+    integer, intent(in) :: filter_soilp(:)
     !
     ! !LOCAL VARIABLES:
-    integer :: ivt     ! Input:  [integer (:)]  pft vegetation type
+    integer :: ivt, fp,p    ! Input:  [integer (:)]  pft vegetation type
     !-----------------------------------------------------------------------
 
     associate(                                                                      &
@@ -96,8 +90,9 @@ contains
 
       ! Loop through patches
       ! start pft loop
-      !do fp = 1,num_soilp
-        !p = filter_soilp(fp)
+      !$acc parallel loop independent gang vector default(present)
+      do fp = 1,num_soilp
+        p = filter_soilp(fp)
         ivt = veg_pp%itype(p)
          if (ivt >= npcropmin) then ! skip 2 generic crops
 
@@ -153,7 +148,7 @@ contains
                  grperc(ivt) * (1._r8 - grpnow(ivt))
          end if
 
-      !end do
+      end do
 
     end associate
 

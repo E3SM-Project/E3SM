@@ -44,6 +44,7 @@ subroutine update_acc_variables()
   !--------- elm_varpar --------------------!
   !$acc update device( &
   !$acc       nlevsoi         &
+  !$acc       ,nlevsno        &
   !$acc       ,nlevsoifl       &
   !$acc       ,nlevurb         &
   !$acc       ,nlevlak         &

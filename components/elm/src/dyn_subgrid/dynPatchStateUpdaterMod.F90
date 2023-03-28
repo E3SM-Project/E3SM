@@ -32,7 +32,6 @@ module dynPatchStateUpdaterMod
   private
   !
   ! !PUBLIC TYPES:
-  public :: patch_state_updater_type
 
   ! Public routines
   public :: set_old_patch_weights     ! set weights before dyn subgrid updates
@@ -47,7 +46,7 @@ module dynPatchStateUpdaterMod
   ! based on pft type.
   public :: update_patch_state_partition_flux_by_type
 
-  type :: patch_state_updater_type
+  type, public :: patch_state_updater_type
 
      real(r8), pointer :: pwtgcell_old(:) => null() ! old patch weights on the gridcell
      real(r8), pointer :: pwtgcell_new(:) => null()! new patch weights on the gridcell
@@ -67,10 +66,9 @@ module dynPatchStateUpdaterMod
 
    contains
      ! Public routines
+     procedure, public :: initPatchStateUpdater
      procedure, public :: set_old_patch_weights     ! set weights before dyn subgrid updates
      procedure, public :: set_new_patch_weights     ! set weights after dyn subgrid updates
-
-
 
      ! returns a patch-level logical array that is true wherever the patch weight was zero
      ! prior to weight updates
@@ -86,10 +84,12 @@ module dynPatchStateUpdaterMod
 
   end type patch_state_updater_type
 
-  interface patch_state_updater_type
-     module procedure constructor
-  end interface patch_state_updater_type
-
+  ! interface patch_state_updater_type
+  !    module procedure constructor
+  ! end interface patch_state_updater_type
+  
+  ! object used to update patch-level states after subgrid weight updates
+  !type(patch_state_updater_type), public  :: patch_state_updater
   ! Update a patch-level state variable and compute associated fluxes based on changing
   ! patch areas
 
@@ -103,7 +103,47 @@ contains
   ! ========================================================================
 
   !-----------------------------------------------------------------------
-  function constructor(bounds) result(this)
+  !function constructor(bounds) result(this)
+  !  !
+  !  ! !DESCRIPTION:
+  !  ! Initialize a patch_state_updater_type object
+  !  !
+  !  ! !USES:
+  !  !
+  !  ! !ARGUMENTS:
+  !  type(patch_state_updater_type) :: this  ! function result
+  !  type(bounds_type), intent(in) :: bounds
+  !  !
+  !  ! !LOCAL VARIABLES:
+  !  integer :: begp, endp
+  !  integer :: begc, endc
+
+  !  character(len=*), parameter :: subname = 'constructor'
+  !  !-----------------------------------------------------------------------
+
+  !  SHR_ASSERT(bounds%level == BOUNDS_LEVEL_PROC, errMsg(sourcefile, __LINE__))
+
+  !  begp = bounds%begp
+  !  endp = bounds%endp
+  !  begc = bounds%begc
+  !  endc = bounds%endc
+
+  !  allocate(this%pwtgcell_old(begp:endp))
+  !  this%pwtgcell_old(:) = spval
+  !  allocate(this%pwtgcell_new(begp:endp))
+  !  this%pwtgcell_new(:) = spval
+  !  allocate(this%cwtgcell_old(begc:endc))
+  !  this%cwtgcell_old(:) = spval
+  !  allocate(this%dwt(begp:endp))
+  !  this%dwt(:) = spval
+  !  allocate(this%growing_old_fraction(begp:endp))
+  !  this%growing_old_fraction(:) = spval
+  !  allocate(this%growing_new_fraction(begp:endp))
+  !  this%growing_new_fraction(:) = spval
+
+  !end function constructor
+  subroutine initPatchStateUpdater(this, bounds)  
+      implicit none 
     !
     ! !DESCRIPTION:
     ! Initialize a patch_state_updater_type object
@@ -111,7 +151,7 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-    type(patch_state_updater_type) :: this  ! function result
+    class(patch_state_updater_type) :: this  ! function result
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
@@ -120,14 +160,13 @@ contains
 
     character(len=*), parameter :: subname = 'constructor'
     !-----------------------------------------------------------------------
-
     SHR_ASSERT(bounds%level == BOUNDS_LEVEL_PROC, errMsg(sourcefile, __LINE__))
 
     begp = bounds%begp
     endp = bounds%endp
     begc = bounds%begc
     endc = bounds%endc
-
+    print *, "PATCH_STATE_UPDATER:",begp,endp 
     allocate(this%pwtgcell_old(begp:endp))
     this%pwtgcell_old(:) = spval
     allocate(this%pwtgcell_new(begp:endp))
@@ -140,9 +179,9 @@ contains
     this%growing_old_fraction(:) = spval
     allocate(this%growing_new_fraction(begp:endp))
     this%growing_new_fraction(:) = spval
+ end subroutine initPatchStateUpdater 
 
-  end function constructor
-
+ 
   ! ========================================================================
   ! Public methods
   ! ========================================================================

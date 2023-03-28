@@ -1,6 +1,6 @@
 module dynConsBiogeophysMod
 
-#include "shr_assert.h"
+!#py #include "shr_assert.h"
 
   !---------------------------------------------------------------------------
   !
@@ -10,7 +10,7 @@ module dynConsBiogeophysMod
   !
   ! !USES:
   use shr_kind_mod      , only : r8 => shr_kind_r8
-  use shr_log_mod       , only : errMsg => shr_log_errMsg
+  !#py !#py use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
   use UrbanParamsType   , only : urbanparams_type
   use EnergyFluxType    , only : energyflux_type
@@ -22,7 +22,7 @@ module dynConsBiogeophysMod
   use TotalWaterAndHeatMod, only : AdjustDeltaHeatForDeltaLiq
   use TotalWaterAndHeatMod, only : heat_base_temp
   use elm_varcon        , only : tfrz, cpliq
-  use subgridAveMod     , only : p2c, c2g
+  use subgridAveMod     , only : p2c, c2g_1d_parallel, unity
   use dynSubgridControlMod, only : get_for_testing_zero_dynbal_fluxes
   use elm_varcon        , only : spval
   use GridcellDataType  , only : grc_es, grc_ef, grc_ws, grc_wf
@@ -48,8 +48,7 @@ contains
   subroutine dyn_hwcontent_init(bounds,                                      &
        num_nolakec, filter_nolakec,                                          &
        num_lakec, filter_lakec,                                              &
-       urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
-       energyflux_vars)
+       urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars )
     !
     ! !DESCRIPTION:
     ! Initialize variables used for dyn_hwcontent, and compute grid cell-level heat
@@ -58,7 +57,6 @@ contains
     ! Should be called BEFORE any subgrid weight updates this time step
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_nolakec
     integer                  , intent(in)    :: filter_nolakec(:)
@@ -68,7 +66,6 @@ contains
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
     type(lakestate_type)     , intent(in)    :: lakestate_vars
-    type(energyflux_type)    , intent(inout) :: energyflux_vars
     !
     ! !LOCAL VARIABLES:
     integer :: g   ! grid cell index
@@ -101,14 +98,13 @@ contains
        num_nolakec, filter_nolakec, &
        num_lakec, filter_lakec, &
        urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars &
-       , energyflux_vars, dtime)
+       , dtime)
     !
     ! Should be called AFTER all subgrid weight updates this time step
     !
     ! !USES:
     !
     ! !ARGUMENTS:
-    !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_nolakec
     integer                  , intent(in)    :: filter_nolakec(:)
@@ -118,16 +114,15 @@ contains
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
     type(lakestate_type)     , intent(in)    :: lakestate_vars
-    type(energyflux_type)    , intent(inout) :: energyflux_vars
     real(r8)                 , intent(in)    :: dtime ! land model time step (sec)
 
     !
     ! !LOCAL VARIABLES:
     integer  :: begg, endg
     integer  :: g     ! grid cell index
-    real(r8) :: delta_liq(bounds%begg:bounds%endg)  ! change in gridcell h2o liq content
-    real(r8) :: delta_ice(bounds%begg:bounds%endg)  ! change in gridcell h2o ice content
-    real(r8) :: delta_heat(bounds%begg:bounds%endg) ! change in gridcell heat content
+    real(r8) :: delta_liq ! change in gridcell h2o liq content
+    real(r8) :: delta_ice ! change in gridcell h2o ice content
+    real(r8) :: delta_heat! change in gridcell heat content
     !---------------------------------------------------------------------------
 
     associate( &
@@ -156,43 +151,24 @@ contains
          heat_grc = heat2(bounds%begg:bounds%endg), &
          liquid_water_temp_grc = liquid_water_temp2(bounds%begg:bounds%endg))
 
-    if (get_for_testing_zero_dynbal_fluxes()) then
-       do g = begg, endg
-          delta_liq(g) = 0._r8
-          delta_ice(g) = 0._r8
-          delta_heat(g) = 0._r8
-      end do
-    else
-       do g = begg, endg
-          delta_liq(g)  = liq2(g) - liq1(g)
-          delta_ice(g)  = ice2(g) - ice1(g)
-          delta_heat(g) = heat2(g) - heat1(g)
-          grc_wf%qflx_liq_dynbal (g) = delta_liq(g)/dtime
-          grc_wf%qflx_ice_dynbal (g) = delta_ice(g)/dtime
-          grc_ef%eflx_dynbal    (g) = delta_heat(g)/dtime
-       end do
-    end if
-    !call AdjustDeltaHeatForDeltaLiq( &
-    !     bounds, &
-    !     delta_liq = delta_liq(bounds%begg:bounds%endg), &
-    !     liquid_water_temp1 = temperature_vars%liquid_water_temp1_grc(bounds%begg:bounds%endg), &
-    !     liquid_water_temp2 = temperature_vars%liquid_water_temp2_grc(bounds%begg:bounds%endg), &
-    !     delta_heat = delta_heat(bounds%begg:bounds%endg))
+   !  if (get_for_testing_zero_dynbal_fluxes()) then
+   !     do g = begg, endg
+   !        delta_liq(g) = 0._r8
+   !        delta_ice(g) = 0._r8
+   !        delta_heat(g) = 0._r8
+   !    end do
+   !  else
+    !$acc parallel loop independent gang vector default(present)
+    do g = begg, endg
+       delta_liq  = liq2(g) - liq1(g)
+       delta_ice  = ice2(g) - ice1(g)
+       delta_heat = heat2(g) - heat1(g)
+       grc_wf%qflx_liq_dynbal (g) = delta_liq/dtime
+       grc_wf%qflx_ice_dynbal (g) = delta_ice/dtime
+       grc_ef%eflx_dynbal    (g) = delta_heat/dtime
+    end do
+   !  end if
 
-    !call grc_wf%qflx_liq_dynbal_dribbler%set_curr_delta(bounds, &
-    !     delta_liq(begg:endg))
-    !call grc_wf%qflx_liq_dynbal_dribbler%get_curr_flux(bounds, &
-    !     grc_wf%qflx_liq_dynbal(begg:endg))
-
-    !call grc_wf%qflx_ice_dynbal_dribbler%set_curr_delta(bounds, &
-    !     delta_ice(begg:endg))
-    !call grc_wf%qflx_ice_dynbal_dribbler%get_curr_flux(bounds, &
-    !     grc_wf%qflx_ice_dynbal(begg:endg))
-
-    !call energyflux_vars%eflx_dynbal_dribbler%set_curr_delta(bounds, &
-    !     delta_heat(begg:endg))
-    !call energyflux_vars%eflx_dynbal_dribbler%get_curr_flux(bounds, &
-    !     energyflux_vars%eflx_dynbal_grc(begg:endg))
     end associate
   end subroutine dyn_hwcontent_final
 
@@ -207,7 +183,6 @@ contains
     ! Compute gridcell total liquid and ice water contents
     !
     ! !ARGUMENTS:
-    !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_nolakec
     integer                  , intent(in)    :: filter_nolakec(:)
@@ -221,9 +196,12 @@ contains
     ! !LOCAL VARIABLES:
     real(r8) :: liquid_mass_col(bounds%begc:bounds%endc) ! kg m-2
     real(r8) :: ice_mass_col(bounds%begc:bounds%endc)    ! kg m-2
-
-
+    
     !-----------------------------------------------------------------------
+    !$acc enter data create(&
+    !$acc liquid_mass_col(:), &
+    !$acc ice_mass_col(:))
+
     call ComputeLiqIceMassNonLake(bounds, num_nolakec, filter_nolakec, &
          soilhydrology_vars,  &
          liquid_mass_col(bounds%begc:bounds%endc), &
@@ -234,17 +212,21 @@ contains
          liquid_mass_col(bounds%begc:bounds%endc), &
          ice_mass_col(bounds%begc:bounds%endc))
 
-    call c2g(bounds, &
+    call c2g_1d_parallel(bounds, &
          carr = liquid_mass_col(bounds%begc:bounds%endc), &
          garr = liquid_mass(bounds%begg:bounds%endg), &
-         c2l_scale_type = 0, &
-         l2g_scale_type = 0)
+         c2l_scale_type = unity, &
+         l2g_scale_type = unity, para=.true.)
 
-    call c2g(bounds, &
+    call c2g_1d_parallel(bounds, &
          carr = ice_mass_col(bounds%begc:bounds%endc), &
          garr = ice_mass(bounds%begg:bounds%endg), &
-         c2l_scale_type = 0, &
-         l2g_scale_type = 0)
+         c2l_scale_type = unity, &
+         l2g_scale_type = unity, para=.true.)
+
+    !$acc exit data delete(&
+    !$acc liquid_mass_col(:), &
+    !$acc ice_mass_col(:))
 
   end subroutine dyn_water_content
 
@@ -265,7 +247,6 @@ contains
     ! we include the latent heat of fusion.
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     type(bounds_type)        , intent(in)  :: bounds
     integer                  , intent(in)  :: num_nolakec
     integer                  , intent(in)  :: filter_nolakec(:)
@@ -290,9 +271,12 @@ contains
     real(r8) :: cv_liquid_grc(bounds%begg:bounds%endg) ! cv_liquid_col averaged to grid cell [J/(m^2 K)]
     !-------------------------------------------------------------------------------
 
-    ! Enforce expected array sizes
-    !!SHR_ASSERT_ALL((ubound(heat_grc) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
-    !!SHR_ASSERT_ALL((ubound(liquid_water_temp_grc) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
+    !$acc enter data create(&
+    !$acc heat_col(:), &
+    !$acc heat_liquid_col(:), &
+    !$acc cv_liquid_col(:), &
+    !$acc heat_liquid_grc(:), &
+    !$acc cv_liquid_grc(:))
 
     heat_col(bounds%begc:bounds%endc)        = spval
     heat_liquid_col(bounds%begc:bounds%endc) = spval
@@ -310,24 +294,25 @@ contains
          heat_liquid = heat_liquid_col(bounds%begc:bounds%endc), &
          cv_liquid = cv_liquid_col(bounds%begc:bounds%endc))
 
-    call c2g(bounds, &
+    call c2g_1d_parallel(bounds, &
          carr = heat_col(bounds%begc:bounds%endc), &
          garr = heat_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type = 0, &
-         l2g_scale_type = 0)
+         c2l_scale_type = unity, &
+         l2g_scale_type = unity, para=.true.)
 
-    call c2g(bounds, &
+    call c2g_1d_parallel(bounds, &
          carr = heat_liquid_col(bounds%begc:bounds%endc), &
          garr = heat_liquid_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type = 0, &
-         l2g_scale_type = 0)
+         c2l_scale_type = unity, &
+         l2g_scale_type = unity, para=.true.)
 
-    call c2g(bounds, &
+    call c2g_1d_parallel(bounds, &
          carr = cv_liquid_col(bounds%begc:bounds%endc), &
          garr = cv_liquid_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type = 0, &
-         l2g_scale_type = 0)
+         c2l_scale_type = unity, &
+         l2g_scale_type = unity, para=.true.)
 
+    !$acc parallel loop independent gang vector default(present)
     do g = bounds%begg, bounds%endg
        if (cv_liquid_grc(g) > 0._r8) then
           liquid_water_temp_grc(g) = &
@@ -337,6 +322,13 @@ contains
           liquid_water_temp_grc(g) = tfrz
        end if
     end do
+
+    !$acc exit data delete(&
+    !$acc heat_col(:), &
+    !$acc heat_liquid_col(:), &
+    !$acc cv_liquid_col(:), &
+    !$acc heat_liquid_grc(:), &
+    !$acc cv_liquid_grc(:))
 
   end subroutine dyn_heat_content
 

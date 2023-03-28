@@ -3,7 +3,7 @@ module dynUpdateModAcc
    use shr_kind_mod , only : r8 => shr_kind_r8
    use decompMod, only : bounds_type
    use dynColumnStateUpdaterMod, only : column_state_updater_type
-   use dynPatchStateUpdaterMod , only : patch_state_updater_type
+   use dynPatchStateUpdaterMod , only : patch_state_updater_type 
    use GridcellType    , only : grc_pp
    use LandunitType    , only : lun_pp
    use VegetationType       , only : veg_pp
@@ -15,7 +15,6 @@ module dynUpdateModAcc
    public
    public :: update_column_state_acc
    public :: update_column_state_no_special_handling_acc 
-   public :: update_column_state_with_optional_fractions_acc
    public :: old_weight_was_zeroAcc 
    public :: patch_grewAcc
    public :: update_patch_stateAcc 
@@ -26,10 +25,9 @@ module dynUpdateModAcc
    public :: set_old_column_weightsAcc
 
 contains
+
   !-----------------------------------------------------------------------
   subroutine update_column_state_acc(column_state_updater, bounds, &
-       vals_input, vals_input_valid, has_prognostic_state, &
-       fractional_area_old, fractional_area_new, &
        var, non_conserved_mass, adjustment)
     !
     ! !DESCRIPTION:
@@ -41,23 +39,6 @@ contains
     ! !ARGUMENTS:
     type(column_state_updater_type), intent(in) :: column_state_updater
     type(bounds_type), intent(in) :: bounds
-
-    ! value used as input for each column, if that column is shrinking (can differ from
-    ! var if we're doing special handling of that column)
-    real(r8), intent(in) :: vals_input( bounds%begc: )
-
-    ! whether each item in vals_input_valid is valid. An entry can be invalid if there is
-    ! was no way to derive an input for that column.
-    logical, intent(in) :: vals_input_valid( bounds%begc: )
-
-    ! whether each column simulates the given variable (which, among other things,
-    ! determines whether it can accept mass of this variable)
-    logical, intent(in) :: has_prognostic_state( bounds%begc: )
-
-    ! Fraction of each column over which the state variable applies, for both the old and
-    ! new subgrid weights
-    real(r8), intent(in) :: fractional_area_old( bounds%begc: )
-    real(r8), intent(in) :: fractional_area_new( bounds%begc: )
 
     ! column-level variable of interest, updated in-place
     real(r8), intent(inout) :: var( bounds%begc: )
@@ -74,9 +55,6 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: c, g
-
-    ! whether vals_input /= var in the columns where it should be equal
-    logical :: bad_vals_input(bounds%begc:bounds%endc)
 
     ! fractional area lost from this column
     real(r8) :: area_lost
@@ -101,16 +79,6 @@ contains
     ! value in a column before update
     real(r8) :: val_old
 
-    ! For the sake of conservation - including the calculation of non_conserved_mass - we
-    ! assume that vals_input == var wherever has_prognostic_state is .true. We ensure that
-    ! is the case here.
-    where(has_prognostic_state .and. vals_input_valid)
-       bad_vals_input = (vals_input /= var)
-    elsewhere
-       ! where has_prognostic_state is false, vals_input can be anything
-       bad_vals_input = .false.
-    end where
-
     ! ------------------------------------------------------------------------
     ! Begin main work
     ! ------------------------------------------------------------------------
@@ -122,19 +90,12 @@ contains
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
        if (column_state_updater%area_gained_col(c) < 0._r8) then
-          if (.not. vals_input_valid(c)) then
-             print *, ' ERROR: shrinking column without valid input value'
-          end if
+
           area_lost = -1._r8 * column_state_updater%area_gained_col(c)
           total_area_lost_grc(g) = total_area_lost_grc(g) + area_lost
-          area_weighted_loss = area_lost * vals_input(c) * fractional_area_old(c)
+          area_weighted_loss = area_lost * var(c) 
           total_loss_grc(g) = total_loss_grc(g) + area_weighted_loss
-          if (.not. has_prognostic_state(c)) then
-             ! If a column doesn't model this state variable, then its vals_input value is
-             ! really some fictitious quantity. So we track how much of this fictitious
-             ! quantity we added to the system.
-             non_conserved_mass(g) = non_conserved_mass(g) - area_weighted_loss
-          end if
+         
        end if
     end do
 
@@ -153,27 +114,18 @@ contains
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
        if (column_state_updater%area_gained_col(c) > 0._r8) then
-          mass_gained = column_state_updater%area_gained_col(c) * gain_per_unit_area_grc(g)
-          if (has_prognostic_state(c)) then
-             val_old = var(c)
+         mass_gained = column_state_updater%area_gained_col(c) * gain_per_unit_area_grc(g)
+         val_old = var(c)
+         !
+         ! Need to make sure fractional_area_new /= 0 to avoid divide-by-zero. Note
+         ! that fractional_area_new == 0 can only happen if both
+         ! fractional_area_old(c) == 0 and the fractional_areas of the shrinking
+         ! columns were all 0 - in which case the value of var is irrelevant for
+         ! conservation purposes.
+         var(c) = (column_state_updater%cwtgcell_old(c) *    var(c) + mass_gained) / &
+              (column_state_updater%cwtgcell_new(c))
 
-             ! Need to make sure fractional_area_new /= 0 to avoid divide-by-zero. Note
-             ! that fractional_area_new == 0 can only happen if both
-             ! fractional_area_old(c) == 0 and the fractional_areas of the shrinking
-             ! columns were all 0 - in which case the value of var is irrelevant for
-             ! conservation purposes.
-             if (fractional_area_new(c) /= 0._r8) then
-                var(c) = (column_state_updater%cwtgcell_old(c) * var(c) * fractional_area_old(c) + mass_gained) / &
-                     (column_state_updater%cwtgcell_new(c) * fractional_area_new(c))
-             end if
-
-             if (present(adjustment)) then
-                adjustment(c) = var(c) * fractional_area_new(c) - &
-                     val_old * fractional_area_old(c)
-             end if
-          else
-             non_conserved_mass(g) = non_conserved_mass(g) + mass_gained
-          end if
+         adjustment(c) = var(c) - val_old 
        end if
     end do
 
@@ -181,7 +133,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine update_column_state_no_special_handling_acc(column_state_updater, bounds, clump_index, &
-       var, fractional_area_old, fractional_area_new, adjustment)
+       var, adjustment)
     !
     ! !DESCRIPTION:
     ! Adjust the values of a column-level state variable due to changes in subgrid
@@ -207,155 +159,109 @@ contains
     ! columns, and fractional_area_new should have been computed based on a call to
     ! update_column_state_no_special_handling: code that works with these fractional areas
     ! is not able to do any special handling.
-    real(r8), optional, intent(in) :: fractional_area_old( bounds%begc: )
-    real(r8), optional, intent(in) :: fractional_area_new( bounds%begc: )
 
     ! Apparent state adjustment in each column
-    real(r8), optional, intent(out) :: adjustment( bounds%begc: )
+    real(r8),  intent(out) :: adjustment( bounds%begc: )
     !
     ! !LOCAL VARIABLES:
-    real(r8) :: vals_input(bounds%begc:bounds%endc)
-    logical  :: vals_input_valid(bounds%begc:bounds%endc)
-    logical  :: has_prognostic_state(bounds%begc:bounds%endc)
-    real(r8) :: non_conserved_mass(bounds%begg:bounds%endg)
+    real(r8) :: non_conserved_mass!(bounds%begg:bounds%endg)
     real(r8), parameter :: conservation_tolerance = 1.e-12_r8
-    integer  :: g
+    integer  :: c,g
+
+    ! fractional area lost from this column
+    real(r8) :: area_lost
+
+    ! area-weighted amount lost from a given column
+    real(r8) :: area_weighted_loss
+
+    ! area-weighted amount lost from decreasing weights, in each grid cell
+    ! ((mass-per-unit-area) * (fractional area lost))
+    real(r8) :: total_loss_grc!(bounds%begg:bounds%endg)
+
+    ! total area lost by columns decreasing in area (fractional area of grid cell)
+    ! Note that this should exactly equal the total area gained by columns increasing in area
+    real(r8) :: total_area_lost_grc!(bounds%begg:bounds%endg)
+
+    ! amount of state gain needed per unit area of area gained
+    real(r8) :: gain_per_unit_area_grc!(bounds%begg:bounds%endg)
+
+    ! mass gained by a given column ((mass-gained-per-unit-area) * (fractional area gained))
+    real(r8) :: mass_gained
+
+    ! value in a column before update
+    real(r8) :: val_old
 
     !character(len=*), parameter :: subname = 'update_column_state_no_special_handling'
     !-----------------------------------------------------------------------
 
-    ! Even if there's no work to be done, need to zero out adjustment, since it's
-    ! intent(out), and caller may expect it to return in a reasonable state.
-    if (present(adjustment)) then
-       adjustment(bounds%begc:bounds%endc) = 0._r8
-    end if
+   ! Even if there's no work to be done, need to zero out adjustment, since it's
+   ! intent(out), and caller may expect it to return in a reasonable state.
+     
+   ! adjustment(bounds%begc:bounds%endc) = 0._r8
 
-    if (column_state_updater%any_changes(clump_index)) then
 
-       vals_input(bounds%begc:bounds%endc) = var(bounds%begc:bounds%endc)
-       vals_input_valid(bounds%begc:bounds%endc) = .true.
-       has_prognostic_state(bounds%begc:bounds%endc) = .true.
-       non_conserved_mass(bounds%begg:bounds%endg) = 0._r8
+      ! non_conserved_mass(bounds%begg:bounds%endg) = 0._r8
 
-       ! explicit bounds not needed on any of these arguments - and specifying explicit
-       ! bounds defeats some later bounds checking (for fractional_area_old and
-       ! fractional_area_new)
-       call update_column_state_with_optional_fractions_acc( column_state_updater,&
-            bounds = bounds, &
-            vals_input = vals_input, &
-            vals_input_valid = vals_input_valid, &
-            has_prognostic_state = has_prognostic_state, &
-            var = var, &
-            non_conserved_mass = non_conserved_mass, &
-            fractional_area_old = fractional_area_old, &
-            fractional_area_new = fractional_area_new, &
-            adjustment = adjustment)
+      ! call update_column_state_acc(column_state_updater, bounds, &
+      !          var, non_conserved_mass, adjustment)
+      ! ------------------------------------------------------------------------
+      ! Begin main work
+      ! ------------------------------------------------------------------------
 
-       ! Since there is no special handling in this routine, the non_conserved_mass variable
-       ! should not have any accumulation. We allow for roundoff-level accumulation in case
-       ! non-conserved mass is determined in a way that is prone to roundoff-level errors.
-       !err_msg = subname//': ERROR: failure to conserve mass when using no special handling'
-       do g = bounds%begg, bounds%endg
-         non_conserved_mass(g) = abs(non_conserved_mass(g))
+      ! Determine the total mass loss for each grid cell, along with the gross area loss
+      ! (which should match the gross area gain)
+      total_loss_grc = 0._r8    !(bounds%begg:bounds%endg) = 0._r8
+      total_area_lost_grc = 0._r8 !(bounds%begg:bounds%endg) = 0._r8
+      do c = bounds%begc, bounds%endc
+         g = col_pp%gridcell(c)
+         if (column_state_updater%area_gained_col(c) < 0._r8) then
+  
+            area_lost = -1._r8 * column_state_updater%area_gained_col(c)
+            total_area_lost_grc = total_area_lost_grc + area_lost
+            area_weighted_loss = area_lost * var(c) 
+            total_loss_grc = total_loss_grc + area_weighted_loss
+           
+         end if
+      end do
+      ! Determine the mass loss per unit area for each grid cell. We essentially lump all of
+      ! the loss together in a "loss" pool in each grid cell, so that we can then
+      ! distribute that loss amongst the growing columns.
+      if (total_area_lost_grc > 0._r8) then
+         gain_per_unit_area_grc = total_loss_grc / total_area_lost_grc
+      else
+         gain_per_unit_area_grc = 0._r8
+      end if
+
+      ! Distribute gain to growing columns
+      do c = bounds%begc, bounds%endc
+         g = col_pp%gridcell(c)
+         adjustment(c) = 0._r8
+         if (column_state_updater%area_gained_col(c) > 0._r8) then
+            mass_gained = column_state_updater%area_gained_col(c) * gain_per_unit_area_grc
+            val_old = var(c)
+            !
+            ! Need to make sure fractional_area_new /= 0 to avoid divide-by-zero. Note
+            ! that fractional_area_new == 0 can only happen if both
+            ! fractional_area_old(c) == 0 and the fractional_areas of the shrinking
+            ! columns were all 0 - in which case the value of var is irrelevant for
+            ! conservation purposes.
+            var(c) = (column_state_updater%cwtgcell_old(c) * var(c) + mass_gained) / &
+               (column_state_updater%cwtgcell_new(c))
+
+            adjustment(c) = var(c) - val_old 
+         end if
        end do
-       if(sum(non_conserved_mass(bounds%begg:bounds%endg)) < conservation_tolerance) Then
-         print *,  'ERROR: failure to conserve mass when using no special handling'
-       end if
-    end if
+      ! Since there is no special handling in this routine, the non_conserved_mass variable
+      ! should not have any accumulation. We allow for roundoff-level accumulation in case
+      ! non-conserved mass is determined in a way that is prone to roundoff-level errors.
+      !err_msg = subname//': ERROR: failure to conserve mass when using no special handling'
+      non_conserved_mass = abs(non_conserved_mass)
+      if(non_conserved_mass > conservation_tolerance) print *, "Error Mass not conserved "
+      ! if(sum(non_conserved_mass(bounds%begg:bounds%endg)) < conservation_tolerance) Then
+      !   print *,  'ERROR: failure to conserve mass when using no special handling'
+      ! end if
 
   end subroutine update_column_state_no_special_handling_acc
-
-
-  !-----------------------------------------------------------------------
-  subroutine update_column_state_with_optional_fractions_acc(column_state_updater, bounds, &
-       vals_input, vals_input_valid, has_prognostic_state, &
-       var, non_conserved_mass, &
-       fractional_area_old, fractional_area_new, &
-       adjustment)
-    !
-    ! !DESCRIPTION:
-    ! Intermediate routine between the public routines and the real work routine
-    ! (update_column_state). This routine determines the fractional areas to use in the
-    ! call to update_column_state, and then does the call to update_column_state.
-    !$acc routine seq
-    ! !USES:
-    !
-    ! !ARGUMENTS:
-    type(column_state_updater_type), intent(in) :: column_state_updater
-    type(bounds_type), intent(in) :: bounds
-
-    ! value used as input for each column, if that column is shrinking (can differ from
-    ! var if we're doing special handling of that column)
-    real(r8), intent(in) :: vals_input( bounds%begc: )
-
-    ! whether each item in vals_input_valid is valid. An entry can be invalid if there is
-    ! was no way to derive an input for that column.
-    logical, intent(in) :: vals_input_valid( bounds%begc: )
-
-    ! whether each column simulates the given variable (which, among other things,
-    ! determines whether it can accept mass of this variable)
-    logical, intent(in) :: has_prognostic_state( bounds%begc: )
-
-    ! column-level variable of interest, updated in-place
-    real(r8), intent(inout) :: var( bounds%begc: )
-
-    ! mass lost (per unit of grid cell area) from each grid cell, if doing special
-    ! handling that leads mass to not be conserved; this can happen due to growing columns
-    ! where has_prognostic_state is false, or due to shrinking columns where
-    ! has_prognostic_state is false but vals_input /= 0. Positive denotes mass lost from
-    ! the grid cell, negative denotes mass gained by the grid cell.
-    real(r8), intent(inout) :: non_conserved_mass( bounds%begg: )
-
-    ! Fraction of each column over which the state variable applies. See module-level
-    ! documentation for details. You must provide both old & new fractional areas, or
-    ! neither: it is invalid to provide just one. Fractional areas should be valid for all
-    ! columns, and fractional_area_new should have been computed based on a call to
-    ! update_column_state_no_special_handling: code that works with these fractional areas
-    ! is not able to do any special handling.
-    real(r8), optional, intent(in) :: fractional_area_old( bounds%begc: )
-    real(r8), optional, intent(in) :: fractional_area_new( bounds%begc: )
-
-    ! Apparent state adjustment in each column
-    real(r8), optional, intent(inout) :: adjustment( bounds%begc: )
-    !
-    ! !LOCAL VARIABLES:
-    real(r8) :: my_fractional_area_old(bounds%begc:bounds%endc)
-    real(r8) :: my_fractional_area_new(bounds%begc:bounds%endc)
-
-    !-----------------------------------------------------------------------
-
-    if (present(fractional_area_old) .and. .not. present(fractional_area_new)) then
-       print *,' ERROR: If fractional_area_old is provided, then fractional_area_new must be provided, too'
-    end if
-
-    if (present(fractional_area_new) .and. .not. present(fractional_area_old)) then
-       print *,' ERROR: If fractional_area_new is provided, then fractional_area_old must be provided, too'
-    end if
-
-    if (present(fractional_area_old)) then
-       my_fractional_area_old(bounds%begc:bounds%endc) = fractional_area_old(bounds%begc:bounds%endc)
-    else
-       my_fractional_area_old(bounds%begc:bounds%endc) = 1._r8
-    end if
-
-    if (present(fractional_area_new)) then
-       my_fractional_area_new(bounds%begc:bounds%endc) = fractional_area_new(bounds%begc:bounds%endc)
-    else
-       my_fractional_area_new(bounds%begc:bounds%endc) = 1._r8
-    end if
-
-    call update_column_state_acc(column_state_updater,&
-         bounds = bounds, &
-         vals_input = vals_input(bounds%begc:bounds%endc), &
-         vals_input_valid     = vals_input_valid(bounds%begc:bounds%endc), &
-         has_prognostic_state = has_prognostic_state(bounds%begc:bounds%endc), &
-         fractional_area_old  = my_fractional_area_old(bounds%begc:bounds%endc), &
-         fractional_area_new  = my_fractional_area_new(bounds%begc:bounds%endc), &
-         var = var(bounds%begc:bounds%endc), &
-         non_conserved_mass = non_conserved_mass(bounds%begc:bounds%endc), &
-         adjustment = adjustment)
-
-  end subroutine update_column_state_with_optional_fractions_acc
 
   !-----------------------------------------------------------------------
   function old_weight_was_zeroAcc(patch_state_updater, bounds) result(old_weight_was_zero)
@@ -458,11 +364,11 @@ contains
 
     !-----------------------------------------------------------------------
 
-    if (present(seed_addition)) then
-       if (.not. present(seed)) then
-          print *, ' ERROR: seed_addition can only be provided if seed is provided'
-       end if
-    end if
+   !  if (present(seed_addition)) then
+   !     if (.not. present(seed)) then
+   !        print *, ' ERROR: seed_addition can only be provided if seed is provided'
+   !     end if
+   !  end if
 
       if (patch_state_updater%dwt(p) > 0._r8) then
           var  = var  * patch_state_updater%growing_old_fraction(p)
@@ -489,7 +395,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine update_patch_state_partition_flux_by_typeAcc(patch_state_updater, &
-       p,c,flux1_fraction_by_pft_type, &
+       p,c,flux1_out_dest, flux1_fraction_by_pft_type, &
        var, flux1_out, flux2_out, &
        seed, seed_addition)
     !
@@ -503,6 +409,7 @@ contains
     ! !ARGUMENTS:
     type(patch_state_updater_type), intent(in) :: patch_state_updater
     integer   , value, intent(in) :: p,c
+    character(len=1), intent(in) :: flux1_out_dest  ! flux1_out to column or grid (default)
     real(r8), intent(in) :: flux1_fraction_by_pft_type( 0: ) ! fraction of flux that goes into flux1_out, indexed by pft type
     real(r8), intent(inout) :: var!( bounds%begp: ) ! patch-level state variable
 
@@ -529,10 +436,16 @@ contains
     !-----------------------------------------------------------------------
 
 
-    total_flux_out = 0._r8
-    call update_patch_stateAcc(patch_state_updater,p,c, &
-       var, flux_out_grc_area = total_flux_out, &
-       seed = seed, seed_addition = seed_addition)
+    total_flux_out  = 0._r8
+    if (flux1_out_dest=='c') then
+       call update_patch_stateAcc(patch_state_updater, p, c, &
+          var, flux_out_col_area = total_flux_out, &
+          seed = seed, seed_addition = seed_addition)
+    else
+       call update_patch_stateAcc(patch_state_updater,p,c, &
+          var, flux_out_grc_area = total_flux_out, &
+          seed = seed, seed_addition = seed_addition)
+    end if
 
     my_flux1_fraction = flux1_fraction_by_pft_type(veg_pp%itype(p))
     flux1_out = flux1_out + total_flux_out * my_flux1_fraction
@@ -618,7 +531,7 @@ contains
    !
    ! !ARGUMENTS:
    !$acc routine seq
-   class(patch_state_updater_type), intent(inout) :: this
+   type(patch_state_updater_type), intent(inout) :: this
    type(bounds_type), intent(in) :: bounds
    !
    ! !LOCAL VARIABLES:
@@ -647,7 +560,7 @@ contains
    !$acc routine seq 
    use landunit_varcon, only : istsoil
 
-   class(column_state_updater_type) , intent(inout) :: this
+   type(column_state_updater_type) , intent(inout) :: this
    type(bounds_type)                , intent(in) :: bounds
    !
    ! !LOCAL VARIABLES:

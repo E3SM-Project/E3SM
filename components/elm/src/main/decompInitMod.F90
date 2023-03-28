@@ -463,6 +463,7 @@ contains
        ipfts       = allvecg(cid,plev)  ! number of all clump cid pfts (over all processors)
        icohorts    = allvecg(cid,hlev)  ! number of all clump cid cohorts (over all processors)
 
+
        !--- overall total ---
        numg = numg + icells         ! total number of gridcells
        numt = numt + itunits     ! total number of landunits
