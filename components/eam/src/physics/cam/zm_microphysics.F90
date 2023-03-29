@@ -2561,6 +2561,18 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  qmultrg(k)=qmultrg(k)*ratio
               end if
 
+              if (k-1==jt(i)+1) then
+                  dum = pra(k)+prc(k)-pracs(k)-mnuccr(k)-pracg(k)-pgracs(k)  &
+                               -piacr(k)-piacrs(k) -qmultrg(k)
+                  if (dum.lt.0._r8) then
+                    if (mnuccr(k).gt.0._r8) then
+                       mnuccr(k) = max(mnuccr(k)+dum/omsm, 0._r8)
+                    else
+                       pracg(k)  = max(pracg(k)+dum/omsm, 0._r8)
+                    end if
+                  end if
+              end if
+
               ! conservation of nr
               nre = mu(i,k)*nr(i,k) + nprc(k)*arcf(i,k)*dz(i,k)
               dum = arcf(i,k)*dz(i,k)*(npracs(k)+nnuccr(k) &
@@ -2875,6 +2887,12 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  else
                     dum = 1._r8
                  end if
+                 fhmrm(i,k-1) = -mu(i,k-1)*dum*qr(i,k-1)/dz(i,k)
+                 if (k-1==jt(i)+1 .and. (qrtend(i,k)*arcf(i,k)+fhmrm(i,k-1))<0._r8) then
+                    fhmrm(i,k-1) = -qrtend(i,k)*arcf(i,k)
+                    dum = -fhmrm(i,k-1)*dz(i,k)/mu(i,k-1)/qr(i,k-1)
+                 end if
+
                  if (.true.) then 
                     qg(i,k-1)=qg(i,k-1)+dum*qr(i,k-1)
                     ng(i,k-1)=ng(i,k-1)+dum*nr(i,k-1)
@@ -2884,7 +2902,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                     ns(i,k-1)=ns(i,k-1)+dum*nr(i,k-1)
                     ns(i,k-1) = max(ns(i,k-1),0._r8)
                  end if
-                 fhmrm(i,k-1) = -mu(i,k-1)*dum*qr(i,k-1)/dz(i,k)
                  qr(i,k-1)=(1._r8-dum)*qr(i,k-1)
                  nr(i,k-1)=(1._r8-dum)*nr(i,k-1)
                  nr(i,k-1) = max(nr(i,k-1),0._r8)

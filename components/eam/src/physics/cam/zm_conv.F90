@@ -1888,7 +1888,7 @@ subroutine zm_conv_evap(ncol,lchnk, &
     flxprec(:ncol,1) = 0._r8
     flxsnow(:ncol,1) = 0._r8
     evpvint(:ncol)   = 0._r8
-    omsm=0.99999999_r8
+    omsm=0.99999_r8
 
     do k = 1, pver
        do i = 1, ncol
@@ -4068,6 +4068,11 @@ subroutine cldprp(lchnk   , &
            end if
          end if
          rprd(i,k) = rprd(i,k)-evp(i,k)
+! protect against rounding error, small = 1.e-20_r8
+         if (zm_microp.and. sprd(i,k)>rprd(i,k).and.sprd(i,k)-rprd(i,k)<small) then
+            frz1(i,k) = frz1(i,k)-(sprd(i,k)-rprd(i,k))
+            sprd(i,k)= min(sprd(i,k),rprd(i,k))
+         end if
       end do
    end do
 
