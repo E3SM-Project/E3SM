@@ -53,6 +53,8 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Required>("qv",                   scalar3d_layout_mid,  Qunit, grid_name, "tracers", ps);
   add_field<Required>("T_mid",                scalar3d_layout_mid,  K,     grid_name, ps);
   add_field<Required>("horiz_winds",          vector3d_layout,      m/s,   grid_name);
+  add_field<Required>("u",                    scalar3d_layout_mid,  m/s,   grid_name); // TODO: These appear to not work yet
+  add_field<Required>("v",                    scalar3d_layout_mid,  m/s,   grid_name); // TODO: These appear to not work yet
   add_field<Required>("sfc_flux_dir_nir",     scalar2d_layout,      Wm2,   grid_name);
   add_field<Required>("sfc_flux_dir_vis",     scalar2d_layout,      Wm2,   grid_name);
   add_field<Required>("sfc_flux_dif_nir",     scalar2d_layout,      Wm2,   grid_name);
@@ -63,11 +65,22 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Required>("precip_ice_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
 
   create_helper_field("Sa_z",       scalar2d_layout, grid_name);
+  create_helper_field("Sa_u",       scalar2d_layout, grid_name); 
+  create_helper_field("Sa_v",       scalar2d_layout, grid_name); 
+  create_helper_field("Sa_tbot",    scalar2d_layout, grid_name); 
   create_helper_field("Sa_ptem",    scalar2d_layout, grid_name);
+  create_helper_field("Sa_pbot",    scalar2d_layout, grid_name); 
+  create_helper_field("Sa_shum",    scalar2d_layout, grid_name); 
   create_helper_field("Sa_dens",    scalar2d_layout, grid_name);
   create_helper_field("Sa_pslv",    scalar2d_layout, grid_name);
   create_helper_field("Faxa_rainl", scalar2d_layout, grid_name);
   create_helper_field("Faxa_snowl", scalar2d_layout, grid_name);
+  create_helper_field("Faxa_swndr", scalar2d_layout, grid_name);
+  create_helper_field("Faxa_swvdr", scalar2d_layout, grid_name);
+  create_helper_field("Faxa_swndf", scalar2d_layout, grid_name);
+  create_helper_field("Faxa_swvdf", scalar2d_layout, grid_name);
+  create_helper_field("Faxa_swnet", scalar2d_layout, grid_name);
+  create_helper_field("Faxa_lwdn",  scalar2d_layout, grid_name);
 }
 // =========================================================================================
 void SurfaceCouplingExporter::create_helper_field (const std::string& name,
@@ -158,16 +171,10 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
 
   for (int i=0; i<m_num_scream_exports; ++i) {
 
-    // There are 2 cases for the export:
-    //  1. The export comes directly from a field in the field manager.
-    //  2. The export comes from a computed value which will be stored in m_helper_fields
-    Field field;
     std::string fname = m_export_field_names[i];
-    if      (has_computed_field(fname, m_grid->name())) field = get_field_out(fname);
-    else if (has_required_field(fname, m_grid->name())) field = get_field_in(fname);
-    else if (has_helper_field(fname))                   field = m_helper_fields.at(fname);
-    else     EKAT_ERROR_MSG("Error! Attempting to export "+fname+
-                            " which is niether a requested field or a helper field.\n");
+    EKAT_REQUIRE_MSG(has_helper_field(fname),"Error! Attempting to export "+fname+
+                   " which is niether a requested field or a helper field.\n");
+    auto& field = m_helper_fields.at(fname);
 
     // Check that is valid
     EKAT_REQUIRE_MSG (field.is_allocated(), "Error! Export field view has not been allocated yet.\n");
@@ -214,18 +221,38 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
   const auto& pseudo_density       = get_field_in("pseudo_density").get_view<const Spack**>();
   const auto& qv                   = get_field_in("qv").get_view<const Spack**>();
   const auto& T_mid                = get_field_in("T_mid").get_view<const Spack**>();
+  const auto& horiz_winds          = get_field_in("horiz_winds").get_view<const Real***>();
+  const auto& u_wind               = get_field_in("u").get_view<const Real**>(); // TODO: Appear to be all-zero right now, need to check this
+  const auto& v_wind               = get_field_in("v").get_view<const Real**>(); // TODO: Appear to be all-zero right now, need to check this
   const auto& p_mid                = get_field_in("p_mid").get_view<const Spack**>();
   const auto& phis                 = get_field_in("phis").get_view<const Real*>();
+  const auto& sfc_flux_dir_nir     = get_field_in("sfc_flux_dir_nir").get_view<const Real*>();
+  const auto& sfc_flux_dir_vis     = get_field_in("sfc_flux_dir_vis").get_view<const Real*>();
+  const auto& sfc_flux_dif_nir     = get_field_in("sfc_flux_dif_nir").get_view<const Real*>();
+  const auto& sfc_flux_dif_vis     = get_field_in("sfc_flux_dif_vis").get_view<const Real*>();
+  const auto& sfc_flux_sw_net      = get_field_in("sfc_flux_sw_net" ).get_view<const Real*>();
+  const auto& sfc_flux_lw_dn       = get_field_in("sfc_flux_lw_dn"  ).get_view<const Real*>();
 
   const auto& precip_liq_surf_mass = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
   const auto& precip_ice_surf_mass = get_field_in("precip_ice_surf_mass").get_view<const Real*>();
 
   const auto Sa_z       = m_helper_fields.at("Sa_z").get_view<Real*>();
+  const auto Sa_u       = m_helper_fields.at("Sa_u").get_view<Real*>();
+  const auto Sa_v       = m_helper_fields.at("Sa_v").get_view<Real*>();
+  const auto Sa_tbot    = m_helper_fields.at("Sa_tbot").get_view<Real*>();
   const auto Sa_ptem    = m_helper_fields.at("Sa_ptem").get_view<Real*>();
+  const auto Sa_pbot    = m_helper_fields.at("Sa_pbot").get_view<Real*>();
+  const auto Sa_shum    = m_helper_fields.at("Sa_shum").get_view<Real*>();
   const auto Sa_dens    = m_helper_fields.at("Sa_dens").get_view<Real*>();
   const auto Sa_pslv    = m_helper_fields.at("Sa_pslv").get_view<Real*>();
   const auto Faxa_rainl = m_helper_fields.at("Faxa_rainl").get_view<Real*>();
   const auto Faxa_snowl = m_helper_fields.at("Faxa_snowl").get_view<Real*>();
+  const auto Faxa_swndr = m_helper_fields.at("Faxa_swndr").get_view<Real*>();
+  const auto Faxa_swvdr = m_helper_fields.at("Faxa_swvdr").get_view<Real*>();
+  const auto Faxa_swndf = m_helper_fields.at("Faxa_swndf").get_view<Real*>();
+  const auto Faxa_swvdf = m_helper_fields.at("Faxa_swvdf").get_view<Real*>();
+  const auto Faxa_swnet = m_helper_fields.at("Faxa_swnet").get_view<Real*>();
+  const auto Faxa_lwdn  = m_helper_fields.at("Faxa_lwdn" ).get_view<Real*>();
 
   const auto dz    = m_buffer.dz;
   const auto z_int = m_buffer.z_int;
@@ -248,6 +275,8 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
     const int i = team.league_rank();
 
     const auto qv_i             = ekat::subview(qv, i);
+    const auto u_wind_i         = ekat::subview(horiz_winds, i, 0);
+    const auto v_wind_i         = ekat::subview(horiz_winds, i, 1);
     const auto T_mid_i          = ekat::subview(T_mid, i);
     const auto p_mid_i          = ekat::subview(p_mid, i);
     const auto p_int_i          = ekat::subview(p_int, i);
@@ -268,6 +297,7 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
     PF::calculate_z_mid(team, num_levs, z_int_i, z_mid_i);
     team.team_barrier();
 
+    const auto s_qv_i = ekat::scalarize(qv_i);
     const auto s_dz_i = ekat::scalarize(dz_i);
     const auto s_z_mid_i = ekat::scalarize(z_mid_i);
     const auto s_pseudo_density_i = ekat::scalarize(pseudo_density_i);
@@ -277,7 +307,12 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
     // Calculate air temperature at bottom of cell closest to the ground for PSL
     const Real T_int_bot = PF::calculate_surface_air_T(s_T_mid_i(num_levs-1),s_z_mid_i(num_levs-1));
     Sa_z(i)    = s_z_mid_i(num_levs-1);
+    Sa_u(i)    = u_wind_i(num_levs-1);
+    Sa_v(i)    = v_wind_i(num_levs-1);
+    Sa_tbot(i) = s_T_mid_i(num_levs-1);
+    Sa_shum(i) = s_qv_i(num_levs-1);
     Sa_ptem(i) = PF::calculate_theta_from_T(s_T_mid_i(num_levs-1), s_p_mid_i(num_levs-1));
+    Sa_pbot(i) = s_p_mid_i(num_levs-1); 
     Sa_dens(i) = PF::calculate_density(s_pseudo_density_i(num_levs-1), s_dz_i(num_levs-1));
     Sa_pslv(i) = PF::calculate_psl(T_int_bot, p_int_i(num_levs), phis(i));
 
@@ -288,6 +323,12 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
       Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O);
       Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O);
     }
+    Faxa_swndr(i) = sfc_flux_dir_nir(i);
+    Faxa_swvdr(i) = sfc_flux_dir_vis(i);
+    Faxa_swndf(i) = sfc_flux_dif_nir(i);
+    Faxa_swvdf(i) = sfc_flux_dif_vis(i);
+    Faxa_swnet(i) = sfc_flux_sw_net(i);
+    Faxa_lwdn (i) = sfc_flux_lw_dn(i);
   });
 
   // Export to cpl data
