@@ -1059,22 +1059,22 @@ subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,lon,lat,fout)
   ! Create variable for output
   !
   print *,"Create variable for output"
-  status = nf_def_var (foutid,'PHIS', NF_DOUBLE, 1, nid, terrid)
+  status = nf_def_var (foutid,'PHIS', NF_DOUBLE, 1, (/nid/), terrid)
   if (status .ne. NF_NOERR) call handle_err(status)
   
-  status = nf_def_var (foutid,'LANDFRAC', NF_DOUBLE, 1, nid, landfracid)
+  status = nf_def_var (foutid,'LANDFRAC', NF_DOUBLE, 1, (/nid/), landfracid)
   if (status .ne. NF_NOERR) call handle_err(status)
   
-  status = nf_def_var (foutid,'SGH', NF_DOUBLE, 1, nid, sghid)
+  status = nf_def_var (foutid,'SGH', NF_DOUBLE, 1, (/nid/), sghid)
   if (status .ne. NF_NOERR) call handle_err(status)
   
-  status = nf_def_var (foutid,'SGH30', NF_DOUBLE, 1, nid, sgh30id)
+  status = nf_def_var (foutid,'SGH30', NF_DOUBLE, 1, (/nid/), sgh30id)
   if (status .ne. NF_NOERR) call handle_err(status)
 
-  status = nf_def_var (foutid,'lat', NF_DOUBLE, 1, nid, latvid)
+  status = nf_def_var (foutid,'lat', NF_DOUBLE, 1, (/nid/), latvid)
   if (status .ne. NF_NOERR) call handle_err(status)
   
-  status = nf_def_var (foutid,'lon', NF_DOUBLE, 1, nid, lonvid)
+  status = nf_def_var (foutid,'lon', NF_DOUBLE, 1, (/nid/), lonvid)
   if (status .ne. NF_NOERR) call handle_err(status)
   
   !
@@ -1366,10 +1366,10 @@ subroutine wrtncdf_rll(nlon,nlat,lpole,n,terr_in,landfrac_in,sgh_in,sgh30_in,lon
   status = nf_def_var (foutid,'SGH30', NF_DOUBLE, 2, sgh30dim, sgh30id)
   if (status .ne. NF_NOERR) call handle_err(status)
   
-  status = nf_def_var (foutid,'lat', NF_DOUBLE, 1, latid, latvid)
+  status = nf_def_var (foutid,'lat', NF_DOUBLE, 1, (/latid/), latvid)
   if (status .ne. NF_NOERR) call handle_err(status)
   
-  status = nf_def_var (foutid,'lon', NF_DOUBLE, 1, lonid, lonvid)
+  status = nf_def_var (foutid,'lon', NF_DOUBLE, 1, (/lonid/), lonvid)
   if (status .ne. NF_NOERR) call handle_err(status)
   
   !
