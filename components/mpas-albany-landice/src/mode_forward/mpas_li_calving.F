@@ -2083,7 +2083,7 @@ module li_calving
          ! Input stream with forcings must be called 'ismip6-gis', or this will throw an error.
          if ( trim(stream_cursor % name) == 'ismip6-gis' .and. (stream_cursor % valid) ) then
             streamFound = .true.
-            if (timestepNumber == 1) then
+            if (timestepNumber == 0) then
                ! On the first timestep of a cold start OR restart initialize all needed fields by forcing a read of
                ! the previous forcing data on the first timestep.  This could be potentially be an unnecessary read on the
                ! initial time of a restart run, but that is a small cost for simplifying logic and making the initial time of both
