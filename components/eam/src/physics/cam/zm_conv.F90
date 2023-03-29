@@ -100,7 +100,7 @@ module zm_conv
    real(r8) :: c0_ocn       ! set from namelist input zmconv_c0_ocn
    real(r8) :: dmpdz          = unset_r8  ! Parcel fractional mass entrainment rate (/m)
    real(r8) :: alfa_scalar  ! maximum downdraft mass flux fraction  
-   real(r8) ::  tiedke_add    = unset_r8
+   real(r8) :: tiedke_add    = unset_r8
    logical  :: zm_microp    = .false.   ! switch for convective microphysics                   
    logical  :: clos_dyn_adj = .false.   ! true if apply mass flux adjustment to CAPE closure   
    logical  :: tpert_fix    = .false.   ! true if apply tpert only to PBL-rooted convection    
