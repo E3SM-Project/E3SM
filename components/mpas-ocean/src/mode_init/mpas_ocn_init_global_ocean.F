@@ -819,8 +819,8 @@ contains
           end do
 
           ! Record depth of the bottom of the ocean, before any alterations for modeling purposes.
-          if (config_global_ocean_topography_source .eq. "latlon_file") then
-              if (config_global_ocean_topography_method .eq. "nearest_neighbor") then
+          if (config_global_ocean_topography_source == "latlon_file") then
+              if (config_global_ocean_topography_method == "nearest_neighbor") then
 
                  call ocn_init_interpolation_nearest_horiz(topoLon % array, topoLat % array, &
                                                            topoIC % array, nLonTopo, nLatTopo, &
@@ -834,7 +834,7 @@ contains
                                                               inXPeriod = 2.0_RKIND * pii)
                  end if
 
-              elseif (config_global_ocean_topography_method .eq. "bilinear_interpolation") then
+              elseif (config_global_ocean_topography_method == "bilinear_interpolation") then
                  call ocn_init_interpolation_bilinear_horiz(topoLon % array, topoLat % array, &
                                                             topoIC % array, nLonTopo, nLatTopo, &
                                                             lonCell, latCell, bottomDepthObserved, nCells, &
@@ -852,7 +852,7 @@ contains
                  iErr = 1
                  call mpas_dmpar_finalize(domain % dminfo)
               endif
-          else
+          else if (config_global_ocean_topography_source == "mpas_variable") then
               ! Get bottomDepthObserved from bed_elevation variable
               bottomDepthObserved = bed_elevation
           endif
@@ -2983,6 +2983,14 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
       call MPAS_io_inq_dim(inputFile, config_global_ocean_swData_nlon_dimname, nLonSW, iErr)
 
       call MPAS_io_close(inputFile, iErr)
+
+      if (config_global_ocean_topography_source /= 'latlon_file' .and. &
+          config_global_ocean_topography_source /= 'mpas_variable') then
+         call mpas_log_write( 'Unexpected value for config_global_ocean_topography_source: ' &
+             // trim(config_global_ocean_topography_source), MPAS_LOG_CRIT)
+         iErr = 1
+         return
+      end if
 
       if (config_global_ocean_topography_file == 'none' .and. &
           config_global_ocean_topography_source == 'latlon_file') then
