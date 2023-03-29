@@ -590,11 +590,16 @@ subroutine setiopupdate
        write(iulog,*)'******* do iop update'
    endif
 
-   ! make sure we're not going past end of iop data
+   ! make sure we're not going past end of iop data.  If we are on the last time
+   !   step then this is irrelevant, do not abort.
    if ( ncdate .gt. last_date .or. (ncdate .eq. last_date &
       .and. ncsec .gt. last_sec))  then
-      write(iulog,*)'ERROR - setiopupdate.c:Reached the end of the time varient dataset'
-      stop
+      if (.not. is_last_step() ) then
+         write(iulog,*)'ERROR - setiopupdate.c:Reached the end of the time varient dataset'
+         stop
+      else
+         doiopupdate = .false.
+      endif
    endif
 
 #if DEBUG > 1
