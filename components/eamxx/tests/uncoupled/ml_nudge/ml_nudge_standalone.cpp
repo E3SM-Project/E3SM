@@ -69,7 +69,7 @@ TEST_CASE("ml_nudge-stand-alone", "") {
   sys.attr("path").attr("insert")(1, CUSTOM_SYS_PATH);
   auto py_nudge  = pybind11::module::import("test_nudge");
   py::object ob1 = py_nudge.attr("modify_view")(
-      py::array_t<double, py::array::c_style | py::array::forcecast>(
+      py::array_t<Real, py::array::c_style | py::array::forcecast>(
           num_cols * num_levs, qv.data(), py::str{}),
       num_cols, num_levs);
   py::gil_scoped_release no_gil;
