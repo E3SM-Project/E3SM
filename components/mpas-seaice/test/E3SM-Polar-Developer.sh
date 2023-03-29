@@ -14,7 +14,7 @@ SYNOPSIS
 
                          [-f|--fetch]     (FORK) (BRANCH)
 
-                         [-t|--testsuite]    
+                         [-t|--tests]    
 
                          [-n|--newcase]
                          [-d|--duration]  (MONTHS)
@@ -46,8 +46,6 @@ OPTIONS
  [-s|--sandbox]   - One of three possible mandatory options giving the name of the 
                     code sandbox, which will be located under the directory:
                     ${CODE_BASE}
-                    The associated case will be located under the directory:
-                    ${CASE_BASE}
  
  [-f|--fetch]     - Clones to a sandbox code from an E3SM repository. You may specify 
                     arguments for the code FORK and BRANCH if different from defaults:
@@ -56,16 +54,23 @@ OPTIONS
                     exists, it will only be overwritten if explicitly requested when
                     the user is challenged with a Y/N prompt. 
 
- [-t|--testsuite] - Runs preset polar ERT, ERI, PEM, and PET tests on: ${joinedmachines%,}.
-                    This option is not available in Version 1.
+ [-t|--tests]     - Runs preset E3SM tests for the given sandbox from testsuite(s): 
+                    "${joinedtestsuites%,}"
+                    Checks for BFB agreement with E3SM-Project/E3SM master.
+                    This option waits for the tests to complate, then provides a 
+                    step-by-step PASS/FAIL/DIFF (non-BFB) summary. The test cases
+                    are located under ${CASE_BASE} 
+                    with nomenclature described below. 
 
  [-n|--newcase]   - Creates or overwrites a case for a given code sandbox. If the
                     sandbox needs to be overwritten, the user will be challenged 
-                    for confirmation prior to proceeding.
+                    for confirmation prior to proceeding. The case name has nomenclature
+                    as described below, located in:
+                    ${CASE_BASE}
 
  [-d|--duration]  - Change the maximum duration in months with annual restarts from
-                    a default run length of ${DURATION} months. A specification of more than
-                    12 months will round up the number of months to the nearest year; 
+                    a default run length of ${DURATION} months. A specification of more 
+                    than 12 months will round up the number of months to the nearest year; 
                     A duration of 11 months will run for that amount of simulated
                     time, but 13 months will run for 2 simulated years (24 months),
                     with resubmition after the first 12-month simulation. Using this 
@@ -99,7 +104,7 @@ OPTIONS
  [-q|--qsubmit]   - Submits case(s) to the queue.
 
  [-a|--analyze]   - Analyze the output of a given simulation, and compare it against
-                    equivalent simulations from other sandboxes. At present this o
+                    equivalent simulations from other sandboxes. At present this 
                     option provides a difference between integrations. Version 2 will 
                     provide graphical interpretation of energy, mass and state 
                     variables.
@@ -107,14 +112,14 @@ OPTIONS
  [-h|--help]      - Provides this help page.
 
 
-SANDBOX, CASES, AND COMBINATIONS
+SANDBOXES, CASES, COMBINATIONS, BRANCHES, and TEST areas.
 
  When a new sandbox is created, it is assigned a directory according to its name,
  situated at ${CODE_BASE}/<sandbox>. 
 
  When a new  case is created, it is assigned a name according to the configuration, 
- duration, energy and mass conservation, namelist combination, and sandbox
- <config><duration>.<kombotag>.emc.<sandbox>.<machine> under:
+ duration, energy and mass conservation, namelist combination, and sandbox branch
+ <config><duration>.<kombotag>.emc.<sandbox>.<sbranch>.<sremote>.<machine> under:
  ${CASE_BASE}
  If one or other of the -k and -e options are omitted, the <kombotag>.emc modifiers
  are respectively removed from the case name. Note that the -e and -k options must
@@ -123,6 +128,18 @@ SANDBOX, CASES, AND COMBINATIONS
  When multiple (n>1) combinations are specified with the -k option, seperate 
  case_script and run directories are sequentially numbered under the case directory 
  as case_scripts.k000 ... case_scripts.k<n> and as run.k000 ... run.k<n> directories. 
+
+ The <sbranch> descriptor creates a summary branch name from the full branch name.
+ E.g. The sbranch name from branch "eclare108213/seaice/icepack-integration" is
+ "icepack-integration", the last field seperated by back slashes. As a result, if you 
+ checkout a new branch in the sandbox, a new case will be created, allowing results 
+ to be compared between branches for a single sandbox.
+
+ The <sremote> descriptor creates a summary fork name from the full remote name.
+ E.g. The sremote name for git@github.com:eclare108213/E3SM is 'eclare108213'
+
+ If the -t option is used, the tests are located under the umbrella directory of
+ Test.<sandbox>.<sbranch>.<sremote>.<machine>.
 
 
 EXAMPLE-A WORKFLOW - Simple three-month baseline simulation
@@ -136,7 +153,8 @@ EXAMPLE-A WORKFLOW - Simple three-month baseline simulation
  This clones ${FORK} and sets up the sandbox 'baseline' ${BRANCH} 
  in ${CODE_BASE}, then creates the default ${DURATION}-Month ${CONFIG}-Case, submits it 
  to the queue, and indicates when the run is complete. The case directory 
- ${CONFIG}${DURATION}.baseline.${MACHINES[$MACH]} is located in ${CASE_BASE}.
+ ${CONFIG}${DURATION}.baseline.master.E3SM-Project.${MACHINES[$MACH]} is located in 
+ ${CASE_BASE}.
 
 
 EXAMPLE-B WORKFLOW - Create a comparable case for a branch with changes
@@ -154,20 +172,21 @@ EXAMPLE-B WORKFLOW - Create a comparable case for a branch with changes
 
  4) E3SM-Polar-Developer.sh -s change1 -c ${CONFIG} -d ${DURATION} -k set1_nlk_mpassi -q
 
- 5) E3SM-Polar-Developer.sh -s change1 -c ${CONFIG} -d ${DURATION} -k set1_nlk_mpassi -a ${CONFIG}${DURATION}.baseline.${MACHINES[$MACH]}
+ 5) E3SM-Polar-Developer.sh -s change1 -c ${CONFIG} -d ${DURATION} -k set1_nlk_mpassi \\
+                            -a ${CONFIG}${DURATION}.baseline.master.E3SM-Project.${MACHINES[$MACH]}
 
  This creates the sandbox 'change1' from the fork git@github.com:eclare108213/E3SM with
  branch eclare108213/seaice/icepack-integration. The second step lists all of the
  available configurations' compsets and resolutions, including the "D" configuration. 
  The third step generates a new case and builds for the two combinations in the file
- nset1_nlk_mpassi under the case D3.nset1.outputtest.anvil in 
+ nset1_nlk_mpassi in case D3.nset1.change1.icepack-integration.eclare108213.${MACHINES[$MACH]} in 
  ${CASE_BASE} with subdirectories *.k000 and *.k001 for 
  each of the respective namelist combinations. The fourth step queues the two cases, 
  and the final step compares these two simulations with the baseline case established
  in the EXAMPLE-A WORKFLOW above.
 
 
-EXAMPLE-C WORKFLOW
+EXAMPLE-C WORKFLOW - set up a cold-start fully-coupled production of SORRM 
 
  1) E3SM-Polar-Developer.sh -c
 
@@ -186,6 +205,54 @@ EXAMPLE-C WORKFLOW
  ocean.
 
 
+EXAMPLE-D WORKFLOW - check the sandbox passes designated E3SM test suites
+
+ 1) E3SM-Polar-Developer.sh -s baseline -t
+
+ From the sandbox created in EXAMPLE-A WORKFLOW, checks code integrity and for a BFB 
+ match aginst E3SM-Project/E3SM master for testsuite(s): "${joinedtestsuites%,}" 
+ The test case appears under Test.baseline.master.E3SM-Project.${MACHINES[$MACH]} 
+
+
+EXAMPLE-E WORKFLOW - Create a new branch in baseline and create a new case
+
+ 1) cd ${CODE_BASE}/code/baseline
+
+ 2) git checkout -b eclare108213/seaice/basechange
+
+ 3) ...make changes in eclare108213/seaice/basechange branch...
+
+ 4) E3SM-Polar-Developer.sh -s baseline -nb
+
+ Assuming the changes in the new branch 'eclare108213/seaice/basechange' in the 
+ baseline sandbox are not in some way erroneous, this will create and build a new
+ case called ${CONFIG}${DURATION}.baseline.master.basechange.${MACHINES[$MACH]}.
+
+
+EXAMPLE-F WORKFLOW - Switch remote and branch in the baseline sandbox for new case
+
+ 1) cd ${CODE_BASE}/code/baseline
+
+ 2) git remote add eclare git@github.com:eclare108213/E3SM
+
+ 3) git fetch eclare
+
+ 4) git checkout -b eclare108213/seaice/icepack-integration \\
+                    eclare/eclare108213/seaice/icepack-integration
+
+ 5) E3SM-Polar-Developer.sh -s baseline -nb
+
+ 6) E3SM-Polar-Developer.sh -s baseline -q
+
+ 7) E3SM-Polar-Developer.sh -s baseline -a D3.baseline.E3SM-Project.master.${MACHINES[$MACH]}
+ 
+ Assuming the code in the imported branch 'eclare108213/seaice/icepack-integration' 
+ works, this will create and build a new case from the fork eclare108213/E3SM called 
+ ${CONFIG}${DURATION}.baseline.eclare108213.icepack-integration.${MACHINES[$MACH]}.
+ It will then submit the job, and compare in (7) against the master baseline in
+ E3SM-Project.
+
+
 AUTHORS
 
  Andrew Roberts, Jon Wolfe, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Erin Thomas
@@ -197,12 +264,9 @@ VERSIONS
 
  Version 2 is being designed to include the following additional features:
  1) Extension to Perlmutter 
- 2) Addition of a dedicated E3SM polar test suite for the -t option
- 3) Epansion of namelist combinations to multiple models, rather than just sea ice
- 4) Addition of continue, hybrid, and branch simulations for production
- 5) Switch to upcoming V3 Meshes in place of V2 meshes
- 6) Graphical output of mass and energy evolution and sea ice thickness fields 
- 7) Easy comparison of output between machines
+ 2) Epansion of namelist combinations to multiple models, rather than just sea ice
+ 3) Addition of continue, hybrid, and branch simulations for production
+ 4) Switch to upcoming V3 Meshes in place of V2 meshes
 
 
 EOF
@@ -231,32 +295,50 @@ clone_code
 
 if [ -d ${CODE_ROOT} ]; then
 
- # Create namelist combinations
- namelist_kombo
+ if [ "${do_test_suite,,}" == "true" ]; then
 
- # Create case
- create_newcase
+  e3sm_testsuites
 
- if [ -d ${CASE_ROOT} ]; then
+  if [ -d ${CASE_ROOT} ]; then
 
-  # Build
-  case_build
+   printf "\n--- Test root: $(cd ${CASE_ROOT} && dirs +0)\n" 
 
-  if [ "${exit_script,,}" != "true" ]; then
+  else
 
-   # Submit
-   case_queue
-
-   # Generate analysis scripts
-   case_analyze
- 
+   printf "\n--- No test root created \n" 
+   
   fi
-
-  printf "\n--- Case root: $(cd ${CASE_ROOT} && dirs +0)\n" 
 
  else
 
-  printf "\n--- \x1B[31mNo case exists for this configuration\e[0m ---\n"
+  # Create namelist combinations
+  namelist_kombo
+
+  # Create case
+  create_newcase
+
+  if [ -d ${CASE_ROOT} ]; then
+
+   # Build
+   case_build
+
+   if [ "${exit_script,,}" != "true" ]; then
+
+    # Submit
+    case_queue
+
+    # Generate analysis scripts
+    case_analyze
+ 
+   fi
+
+   printf "\n--- Case root: $(cd ${CASE_BASE} && dirs +0)/\n    ${CASE_NAME}\n" 
+
+  else
+
+   printf "\n--- \x1B[31mNo case yet exists for this configuration\e[0m ---\n"
+
+  fi
 
  fi
 
@@ -265,17 +347,15 @@ if [ -d ${CODE_ROOT} ]; then
 
 else
 
- printf "\n--- \x1B[31mNo code cloned\e[0m ---\n"
+ printf "\n--- \x1B[31mNo code yet cloned\e[0m ---\n"
 
 fi
 
 # Provide directory stemming from home with tilde shorthand
-echo $'\n--- Provenance:' "$(cd ${SCRIPT_PROVENANCE_DIR} && dirs +0)"
+printf "\n--- Provenance root: $(cd `dirname ${SCRIPT_PROVENANCE_DIR}` && dirs +0)/\n"
+printf "    `basename ${SCRIPT_PROVENANCE_DIR}`\n"
 
-echo $'\n--- Script saved:' "${SCRIPT_PROVENANCE_NAME}"
-
-echo $'\n'
-
+printf "\n--- Script saved: ${SCRIPT_PROVENANCE_NAME}\n\n"
 
 }
 
@@ -296,7 +376,6 @@ get_configuration() {
     DEFAULT_CONFIG='D'
     DEFAULT_DURATION=3
 
-    FORK="${DEFAULT_FORK}"
     # --- Auto-detect the machine and set project ---
     local host_node=`uname -n | cut -f 1 -d . | rev | cut -c 2- | rev`
     MACHINES=("anvil" "chrysalis")
@@ -333,10 +412,15 @@ get_configuration() {
     SANDBOX=''
     CASE2_NAME=''
 
+    FORK="${DEFAULT_FORK}"
     BRANCH="${DEFAULT_BRANCH}"
+    HASH=''
 
     CONFIG="${DEFAULT_CONFIG}"
     DURATION="${DEFAULT_DURATION}"
+
+    TESTSUITES=("e3sm_ice_developer")
+    printf -v joinedtestsuites '%s,' "${TESTSUITES[@]}"
 
     # --- Parse options ---
     needs_arg() { if [ -z "$OPTARG" ]; then printf "\n--- ${OPT} needs an argument"; fi; }
@@ -394,7 +478,7 @@ get_configuration() {
 
     # Check and set flags and variables dependent on command line options
     if [ -z $SANDBOX ] && [ ! -z $CONFIG ]; then
-     printf "\n--- ERROR: Specify a sandbox (-s), list configurations (-c), or get help (-h)\n\n"
+     printf "\n--- ERROR: Specify a sandbox (-s), configure (-c), or get help (-h)\n\n"
      exit 
     elif [ ! -z $SANDBOX ] && \
          [ "${do_code_clone,,}" != "true" ] && \
@@ -409,6 +493,21 @@ get_configuration() {
     elif [ "${do_case_build,,}" == "true" ] && [ "${do_case_queue,,}" == "true" ]; then
      printf "\n--- ERROR: Need to build and queue in seperate steps.\n\n"
      exit
+    elif [ "${do_case_create,,}" == "true" ] && [ "${do_case_queue,,}" == "true" ]; then
+     printf "\n--- ERROR: Need to create new case and queue in seperate steps.\n\n"
+     exit
+    elif [ "${do_test_suite,,}" == "true" ] && [ "${do_case_kombo,,}" == "true" ]; then
+     printf "\n--- ERROR: Test suites only work on sandbox defaults (not -k combinations)\n\n"
+     exit
+    elif [ "${do_test_suite,,}" == "true" ] && [ "${do_case_create,,}" == "true" ]; then
+     printf "\n--- ERROR: Test suites create their own case (no -n required)\n\n"
+     exit
+    elif [ "${do_test_suite,,}" == "true" ] && [ "${do_case_build,,}" == "true" ]; then
+     printf "\n--- ERROR: Test suites build on their own (no -b required)\n\n"
+     exit
+    elif [ "${do_test_suite,,}" == "true" ] && [ "${do_case_analyze,,}" == "true" ]; then
+     printf "\n--- ERROR: Test suites already provide summary analysis (no -a required)\n\n"
+     exit
     fi
 
     re='^[0-9]+$'
@@ -417,13 +516,8 @@ get_configuration() {
     fi
 
     # Set compset, resolution, pe-layout, walltime and based on specific tests
-    if [ "${do_test_suite,,}" == "true" ]; then
-
-     echo $"--- UNDER CONSTRUCTION: E3SM Sea Ice Test Suite" 
-     exit  
-
-    # Setup run configurations if no over-riding test is specified
-    else
+    # This is only needed if no running an E3SM test suite
+    if [ "${do_test_suite,,}" != "true" ]; then
 
      readonly MODEL_START_TYPE="initial"  # set to 'initial' or 'continue' only
      readonly START_DATE="0001-01-01"
@@ -590,8 +684,8 @@ get_configuration() {
         else
          printf "\n    $key => \t${CONFIGDESCRIPTION[$key]}\n"
         fi
-        printf '\t%s' "        ${COMPSET[$key]}, " 
-        printf "\n            \t${RESOLUTION[$key]}, "
+        printf '\t%s\n' "        ${COMPSET[$key]}, " 
+        printf "            \t${RESOLUTION[$key]}, "
         printf "${PELAYOUT[$key]}, "; 
         printf "${MAXCOMBINATIONS[$key]}\n"; 
        fi
@@ -609,8 +703,8 @@ get_configuration() {
      # otherwise just provide configuration options
      else
       printf "\n--- \x1B[34m${CONFIGDESCRIPTION[$CONFIG]}\e[0m\n" 
-      printf '%s' "    ${COMPSET[$CONFIG]}, " 
-      printf "\n    ${RESOLUTION[$CONFIG]}, "
+      printf '%s\n' "    ${COMPSET[$CONFIG]}, " 
+      printf "    ${RESOLUTION[$CONFIG]}, "
       printf "${PELAYOUT[$CONFIG]} layout, "; 
       printf "${MAXCOMBINATIONS[$CONFIG]} combos\n"; 
 
@@ -628,31 +722,20 @@ get_configuration() {
      readonly RESUBMIT="$(((DURATION+12-1)/12-1))"
      readonly DO_SHORT_TERM_ARCHIVING=false
 
-    fi
 
-    # process namefile and prepare for the casename
-    if [ "${do_case_kombo,,}" == "true" ]; then
-     if [[ "${NAMEFILE}" =~ "_nlk_mpassi" ]]; then
-      readonly KOMBOTAG=`echo ${NAMEFILE} | cut -d _ -f 1`
-     else
-      printf "\n--- ERROR: Specify a <kombotag>_nlk_mpassi namelist file with -k\n\n"
+     # process namefile and prepare for the casename
+     if [ "${do_case_kombo,,}" == "true" ]; then
+      if [[ "${NAMEFILE}" =~ "_nlk_mpassi" ]]; then
+       readonly KOMBOTAG=`echo ${NAMEFILE} | cut -d _ -f 1`
+      else
+       printf "\n--- ERROR: Specify a <kombotag>_nlk_mpassi namelist file with -k\n\n"
+      fi
      fi
-    fi
 
-    # set case name
-    local CASE_MODIFIER="${CONFIG}${DURATION}${TEST}"
-    [ "${do_case_kombo,,}" == "true" ] && CASE_MODIFIER="${CASE_MODIFIER}.${KOMBOTAG}"
-    [ "${do_energy_mass,,}" == "true" ] && CASE_MODIFIER="${CASE_MODIFIER}.emc"
-    readonly CASE_NAME="${CASE_MODIFIER}.${SANDBOX}.${MACHINES[${MACH}]}"
+    fi # if [ "${do_test_suite,,}" != "true" ]
 
-    # case directories
+    # code directories
     readonly CODE_ROOT="${CODE_BASE}/${SANDBOX}"
-    readonly CASE_ROOT="${CASE_BASE}/${CASE_NAME}"
-    readonly CASE_BUILD_DIR=${CASE_ROOT}/build
-    readonly CASE_ARCHIVE_DIR=${CASE_ROOT}/archive
-    readonly CASE_SCRIPTS_DIR=${CASE_ROOT}/case_scripts
-    readonly CASE_RUN_DIR=${CASE_ROOT}/run
-
 
     # check that the cloned code has same fork as ${FORK} and uses ${BRANCH}
     # and post warning if not. This situation could arise if the code has
@@ -662,6 +745,7 @@ get_configuration() {
     # the correct code being used in the sandbox.
 
     if [ "${do_code_clone,,}" != "true" ] && [ -d ${CODE_ROOT} ] ; then 
+
      pushd ${CODE_ROOT} 
 
      # check origin url
@@ -680,26 +764,57 @@ get_configuration() {
       BRANCH=${checkbranch}
      fi
 
+     # get code branch hash for case naming
+     HASH=($(git rev-parse HEAD))
+
      popd
+
     fi
 
+    # obtain remote
+    SREMOTE=($(echo ${FORK} | cut -d / -f 1 | cut -d : -f 2))
+    [ ! -z ${SREMOTE} ] && SREMOTE=".${SREMOTE}"
+
+    # create short branch name for case name
+    SBRANCH=($(echo ${BRANCH} | rev | cut -d '/' -f 1 | rev))
+    [ ! -z ${SBRANCH} ] && SBRANCH=".${SBRANCH}"
+
+    # set case name and directories
+    if [ "${do_test_suite,,}" == "true" ]; then
+      local CMODIFIER="Test"
+    else
+      local CMODIFIER="${CONFIG}${DURATION}${TEST}"
+      [ "${do_case_kombo,,}" == "true" ] && CMODIFIER="${CMODIFIER}.${KOMBOTAG}"
+      [ "${do_energy_mass,,}" == "true" ] && CMODIFIER="${CMODIFIER}.emc"
+    fi
+    readonly CASE_NAME="${CMODIFIER}.${SANDBOX}${SBRANCH}${SREMOTE}.${MACHINES[${MACH}]}"
+    readonly CASE_ROOT="${CASE_BASE}/${CASE_NAME}"
+    readonly CASE_BUILD_DIR=${CASE_ROOT}/build
+    readonly CASE_ARCHIVE_DIR=${CASE_ROOT}/archive
+    readonly CASE_SCRIPTS_DIR=${CASE_ROOT}/case_scripts
+    readonly CASE_RUN_DIR=${CASE_ROOT}/run
+
     # analysis checks and assignments
-    if [ "${do_case_analyze,,}" == "true" ]  ; then
-     if [ ! -z ${CASE2_NAME} ] && [ "${CASE2_NAME}" != "${CASE_NAME}" ] ; then
-      readonly CASE2_ROOT="${CASE_BASE}/${CASE2_NAME}"
-      if [ ! -d ${CASE2_ROOT} ]; then
-       printf "\n--- ANALYSIS ERROR: ${CASE2_NAME} does not exist\n\n" 
+    if [ "${do_case_analyze,,}" == "true" ] ; then
+      if [ ! -z ${CASE2_NAME} ] && [ "${CASE2_NAME}" != "${CASE_NAME}" ] ; then
+       readonly CASE2_ROOT="${CASE_BASE}/${CASE2_NAME}"
+       if [ ! -d ${CASE2_ROOT} ]; then
+        if [ -d "${CODE_BASE}/${CASE2_NAME}" ]; then
+         printf "\n--- ERROR: '${CASE2_NAME}' is a sandbox, not a case\n\n"
+        else
+         printf "\n--- ERROR: Case '${CASE2_NAME}' not in ${CASE_BASE}\n\n" 
+        fi
+        exit 
+       fi
+      elif [ "${CASE2_NAME}" == "${CASE_NAME}" ] && (( combinations == 1 )); then
+       printf "\n--- ERROR: The comparison case and -s sandbox case are identical ---\n\n" 
        exit 
+      elif [ -z ${CASE2_NAME} ] && (( combinations == 1 )); then 
+       printf "\n--- ERROR: No comparison case given with -a. Use -h for help ---\n\n" 
+       exit 
+      else
+       readonly CASE2_ROOT=""
       fi
-     elif [ "${CASE2_NAME}" == "${CASE_NAME}" ] && (( combinations == 1 )); then
-      printf "\n--- ERROR: The comparison case and -s sandbox case are identical ---\n\n" 
-      exit 
-     elif [ -z ${CASE2_NAME} ] && (( combinations == 1 )); then 
-      printf "\n--- ERROR: No comparison case given with -a. Use -h for help ---\n\n" 
-      exit 
-     else
-      readonly CASE2_ROOT=""
-     fi
     fi
 
 }
@@ -711,7 +826,11 @@ copy_script() {
     local THIS_SCRIPT_DIR=`dirname $0`
     readonly SCRIPT_PROVENANCE_NAME=${THIS_SCRIPT_NAME}.`date +%Y%m%d-%H%M%S`
     local SCRIPT_PROVENANCE_BASE="${HOME}/${CASE_GROUP}/provenance"
-    readonly SCRIPT_PROVENANCE_DIR="${SCRIPT_PROVENANCE_BASE}/${SANDBOX}/${CASE_NAME}"
+    if [ -z ${CASE_NAME} ]; then
+     readonly SCRIPT_PROVENANCE_DIR="${SCRIPT_PROVENANCE_BASE}/${SANDBOX}"
+    else
+     readonly SCRIPT_PROVENANCE_DIR="${SCRIPT_PROVENANCE_BASE}/${SANDBOX}/${CASE_NAME}"
+    fi
 
     if [ ! -d ${SCRIPT_PROVENANCE_DIR} ]; then
      mkdir -p ${SCRIPT_PROVENANCE_DIR}
@@ -735,10 +854,25 @@ copy_script() {
 # Command:    ${THIS_SCRIPT_NAME} $*
 # Origin:     ${FORK}
 # Branch:     ${BRANCH}
+# Hash:       ${HASH}
 # Sandbox:    ${CODE_ROOT}
 # Case:	      ${CASE_NAME}
 # Casedir:    ${CASE_ROOT}
 #
+EOF
+
+ if [ "${do_test_suite,,}" == "true" ]; then
+
+    cat << EOF >> ${SCRIPT_PROVENANCE_DIR}/${SCRIPT_PROVENANCE_NAME}
+# Testsuites: ${joinedtestsuites%,}
+# Machine:    ${MACHINES[${MACH}]}
+#
+#######################################################################
+EOF
+
+ else
+
+    cat << EOF >> ${SCRIPT_PROVENANCE_DIR}/${SCRIPT_PROVENANCE_NAME}
 # Start Type: ${MODEL_START_TYPE}
 # Start Date: ${START_DATE}
 # Simulation: ${CONFIGDESCRIPTION[$CONFIG]}
@@ -754,6 +888,8 @@ copy_script() {
 #
 #######################################################################
 EOF
+
+ fi
 
     # add additional information if namelist combinations are included
     if [ "${do_case_kombo,,}" == "true" ] & [ -f "${NAMEFILE}" ]; then
@@ -795,7 +931,7 @@ clone_code() {
          case $yn in
           [Yy]* ) local stop_clone=false; break;;
           [Nn]* ) local stop_clone=true; break;;
-          * ) echo "Please answer yes or no.";;
+          * ) printf "    Please answer yes or no\n";;
          esac
         done
 
@@ -832,6 +968,48 @@ clone_code() {
 }
 
 #---------------------------------
+e3sm_testsuites() {
+
+    # Run standard e3sm_developer test suite on sandbox and compare with e3sm master
+
+    if [ "${do_test_suite,,}" != "true" ]; then
+        printf "\n--- Skipping E3SM test suite ---\n"
+        return
+    else
+        printf "\n--- Starting E3SM testing on current sandbox branch ---\n"
+    fi
+
+
+    # set E3SM test suites to be used, check they exist, then run them
+
+    for ((i=0;i<${#TESTSUITES[@]};i++)); do
+
+     if grep -q ${TESTSUITES[i]} ${CODE_ROOT}/cime_config/tests.py ; then
+
+      # run test script
+      printf "\n--- Working on ${TESTSUITES[i]} testsuite ---\n\n"
+      ${CODE_ROOT}/cime/scripts/create_test \
+         --compare --baseline-name master \
+         --output-root "${CASE_ROOT}" \
+         --srcroot "${CODE_ROOT}" \
+         --wait "${TESTSUITES[i]}"
+  
+      # run last available cs_status file
+      CS_STATUS_FILES=($(ls ${CASE_ROOT}/cs.status.*))
+      ${CS_STATUS_FILES[-1]}
+
+     else
+
+      printf "\n--- ERROR: '${TESTSUITES[i]}' testsuite not found in sandbox '${SANDBOX}'\n\n"
+      exit
+
+     fi 
+
+    done
+
+}
+
+#---------------------------------
 namelist_kombo() {
 
     # initialize 2D arrays of all the namelist options to be read in and
@@ -846,13 +1024,14 @@ namelist_kombo() {
         komboname[0]="k000"
         return
     elif [ -f "${CASE_ROOT}/${NAMEFILE}" ] ; then
-        printf "\n--- Reading namelist combinations from ${CASE_NAME}/${NAMEFILE}\n"
+        printf "\n--- Reading combinations from ${CASE_NAME}/${NAMEFILE}\n"
         NAMEFILE="${CASE_ROOT}/${NAMEFILE}"
     elif [ ! -f "${NAMEFILE}" ]; then
-        printf "\n--- ERROR: '${NAMEFILE}' not in $(cd `pwd` && dirs +0)\n\n"
+        printf "\n--- ERROR: '${NAMEFILE}' not here in $(cd `pwd` && dirs +0),"
+        printf "\n            nor in case ${CASE_NAME}\n\n"
         exit
     else
-        printf "\n--- Reading namelist combinations from ${NAMEFILE}\n"
+        printf "\n--- Reading combinations from ${NAMEFILE}\n"
     fi
 
 
@@ -954,7 +1133,7 @@ create_newcase() {
          case $yn in
           [Yy]* ) local stop_script=false; break;;
           [Nn]* ) local stop_script=true; break;;
-          * ) echo "Please answer yes or no.";;
+          * ) printf "    Please answer yes or no\n";;
          esac
         done
         if [ "${stop_script,,}" == "true" ]; then
@@ -968,6 +1147,7 @@ create_newcase() {
     echo $'\n--- Starting to create a new case ---'
     echo $'\n'
 
+    # set up case
     for ((i=0;i<${combinations};i++)); do
 
       ${CODE_ROOT}/cime/scripts/create_newcase \
@@ -992,10 +1172,21 @@ create_newcase() {
 
     done
 
+    # copy combinations file to case directory
     if [ "${do_case_kombo,,}" == "true" ]; then
      cp ${NAMEFILE} ${CASE_ROOT}
      chmod 644 ${CASE_ROOT}/${NAMEFILE}
     fi
+
+    # create branch information file
+    printf "Case:       ${CASE_NAME}\n" >| ${CASE_ROOT}/case_info
+    printf "Origin:     ${FORK}\n" >> ${CASE_ROOT}/case_info
+    printf "Branch:     ${BRANCH}\n" >> ${CASE_ROOT}/case_info
+    printf "Hash:       ${HASH}\n" >> ${CASE_ROOT}/case_info
+    printf "Sandbox:    ${CODE_ROOT}\n" >> ${CASE_ROOT}/case_info
+    printf '%s\n' "Compset:    ${COMPSET[$CONFIG]}" >> ${CASE_ROOT}/case_info
+    printf "Resolution: ${RESOLUTION[$CONFIG]}\n" >> ${CASE_ROOT}/case_info
+    printf "PE Layout:  ${PELAYOUT[$CONFIG]}" >> ${CASE_ROOT}/case_info
 
 }
 
@@ -1293,9 +1484,9 @@ case_analyze() {
     for ((i=0;i<${#casekombos[@]};i++)); do
      for ((j=i+1;j<${#casekombos[@]};j++)); do
 
-      textoutput="${kombonames[i]} - ${kombonames[j]}"
-      printf "\n    \x1B[34m${textoutput}\e[0m:\n\n" 
-      printf "\n    ${textoutput}:\n\n" >> "${pscript}"
+      textoutput="\n    ${kombonames[i]} - \n    ${kombonames[j]}"
+      printf "\x1B[34m${textoutput}\e[0m:\n\n" 
+      printf "${textoutput}:\n\n" >> "${pscript}"
 
       if [ -f ${casekombos[i]}/${casenames[i]}.${FILE_EXTE} ] && \
          [ -f ${casekombos[j]}/${casenames[j]}.${FILE_EXTE} ]; then
@@ -1303,37 +1494,53 @@ case_analyze() {
        # overall flag indicating if for all tested variables the test is BFB
        local bfbflag=true
 
-       for ((k=0;k<${#FIELDS[@]};k++)); do
+       # check mesh sizes agree for comparing cases
+       meshsizea=`ncdump -h ${casekombos[i]}/${casenames[i]}.${FILE_EXTE} | \
+                    grep "nCells =" | grep -Eo '[+-]?[0-9]+([.][0-9]+)?'`
+       meshsizeb=`ncdump -h ${casekombos[j]}/${casenames[j]}.${FILE_EXTE} | \
+                    grep "nCells =" | grep -Eo '[+-]?[0-9]+([.][0-9]+)?'`
 
-        ncdiff -O -v time${AVE_FREQ}_avg_${FIELDS[k]} \
+       # provide difference statistics for equivalent meshes
+       if [[ ${meshsizea} -eq ${meshsizeb} ]]; then
+
+        for ((k=0;k<${#FIELDS[@]};k++)); do
+
+         ncdiff -O -v time${AVE_FREQ}_avg_${FIELDS[k]} \
                      ${casekombos[i]}/${casenames[i]}.${FILE_EXTE} \
                      ${casekombos[j]}/${casenames[j]}.${FILE_EXTE} \
                      ${casekombos[i]}/${casenames[i]}.${casenames[j]}.diff.nc
 
-        ncwa -O -y min ${casekombos[i]}/${casenames[i]}.${casenames[j]}.diff.nc \
-                      ${casekombos[i]}/${casenames[i]}.${casenames[j]}.min.nc
+         ncwa -O -y min ${casekombos[i]}/${casenames[i]}.${casenames[j]}.diff.nc \
+                        ${casekombos[i]}/${casenames[i]}.${casenames[j]}.min.nc
 
-        ncwa -O -y max ${casekombos[i]}/${casenames[i]}.${casenames[j]}.diff.nc \
-                      ${casekombos[i]}/${casenames[i]}.${casenames[j]}.max.nc
+         ncwa -O -y max ${casekombos[i]}/${casenames[i]}.${casenames[j]}.diff.nc \
+                        ${casekombos[i]}/${casenames[i]}.${casenames[j]}.max.nc
 
-        MINDIFF[k]=`ncdump -v time${AVE_FREQ}_avg_${FIELDS[k]} \\
+         MINDIFF[k]=`ncdump -v time${AVE_FREQ}_avg_${FIELDS[k]} \\
                ${casekombos[i]}/${casenames[i]}.${casenames[j]}.min.nc | tail -2 | \\
                grep -Eo '[+-]?[0-9]+([.][0-9]+)?'`
 
-        MAXDIFF[k]=`ncdump -v time${AVE_FREQ}_avg_${FIELDS[k]} \\
+         MAXDIFF[k]=`ncdump -v time${AVE_FREQ}_avg_${FIELDS[k]} \\
                ${casekombos[i]}/${casenames[i]}.${casenames[j]}.max.nc | tail -2 | \\
                grep -Eo '[+-]?[0-9]+([.][0-9]+)?'`
 
-        if (( $(echo "${MINDIFF[k]} != 0" | bc -l) )) &&
-           (( $(echo "${MAXDIFF[k]} != 0" | bc -l) )) ; then
-         bfbflag=false
-         printf "    ${FIELDS[k]}: \t${MINDIFF[k]} \t${MAXDIFF[k]}\n" | tee -a "${pscript}"
-        else
-         printf "    ${FIELDS[k]}: \t\x1B[32mBFB\e[0m\n" 
-         printf "    ${FIELDS[k]}: \tBFB\n" >> "${pscript}"
-        fi
+         if (( $(echo "${MINDIFF[k]} != 0" | bc -l) )) &&
+            (( $(echo "${MAXDIFF[k]} != 0" | bc -l) )) ; then
+          bfbflag=false
+          printf "    ${FIELDS[k]}: \t${MINDIFF[k]} \t${MAXDIFF[k]}\n" | tee -a "${pscript}"
+         else
+          printf "    ${FIELDS[k]}: \t\x1B[32mBFB\e[0m\n" 
+          printf "    ${FIELDS[k]}: \tBFB\n" >> "${pscript}"
+         fi
 
-       done
+        done
+
+       else
+
+        printf "    \x1B[31mDifferent Mesh\e[0m\n" 
+        printf "    Different Mesh\n" >> "${pscript}"
+
+       fi
 
       else
   
