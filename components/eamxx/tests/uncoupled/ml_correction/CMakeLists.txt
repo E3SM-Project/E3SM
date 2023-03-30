@@ -11,11 +11,11 @@ endif()
 
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
 
-set(NEED_LIBS pybind11::pybind11 Python::Python ml_nudging scream_control scream_share)
-CreateUnitTest(ml_nudge_standalone "ml_nudge_standalone.cpp" "${NEED_LIBS}" LABELS "ml_nudge;physics;driver")
+set(NEED_LIBS pybind11::pybind11 Python::Python ml_correction scream_control scream_share)
+CreateUnitTest(ml_correction_standalone "ml_correction_standalone.cpp" "${NEED_LIBS}" LABELS "ml_correction;physics;driver")
 
-target_compile_definitions(ml_nudge_standalone PRIVATE -DCUSTOM_SYS_PATH="${CMAKE_CURRENT_SOURCE_DIR}")
-target_include_directories(ml_nudge_standalone SYSTEM PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_compile_definitions(ml_correction_standalone PRIVATE -DCUSTOM_SYS_PATH="${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(ml_correction_standalone SYSTEM PRIVATE ${PYTHON_INCLUDE_DIRS})
 message(STATUS "Python include dirs: ${PYTHON_INCLUDE_DIRS}")
 
 # Set AD configurable options

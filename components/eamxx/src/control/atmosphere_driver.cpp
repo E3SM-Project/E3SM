@@ -606,10 +606,13 @@ void AtmosphereDriver::initialize_output_managers () {
         if (it.first == "Physics GLL") continue;
         fms[it.first] = it.second;
       }
+      om.set_logger(m_atm_logger);
       om.setup(m_atm_comm,restart_pl,         fms,m_grids_manager,m_run_t0,m_case_t0,true);
     } else {
+      om.set_logger(m_atm_logger);
       om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_run_t0,m_case_t0,true);
     }
+    om.set_logger(m_atm_logger);
     om.setup_globals_map(m_atm_process_group->get_restart_extra_data());
   }
 
@@ -628,6 +631,7 @@ void AtmosphereDriver::initialize_output_managers () {
     // Add a new output manager
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
+    om.set_logger(m_atm_logger);
     om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,m_run_t0,m_case_t0,false);
   }
 
