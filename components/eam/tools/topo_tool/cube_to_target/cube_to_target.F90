@@ -137,7 +137,7 @@ program convterr
   !
   real(r8) :: vol_target, vol_target_un, area_target_total,vol_source,vol_tmp
   integer :: nlon,nlon_smooth,nlat,nlat_smooth
-  logical :: ltarget_latlon,lpole
+  logical :: ltarget_latlon,lpole=.false.
   real(r8), allocatable, dimension(:,:)   :: terr_smooth
   !
   ! for internal filtering
@@ -204,8 +204,11 @@ program convterr
     status = NF_INQ_DIMLEN(ncid, ntarget_id, nlon)
     status = NF_INQ_DIMID(ncid, 'nlat', ntarget_id)
     status = NF_INQ_DIMLEN(ncid, ntarget_id, nlat)
-    status = NF_INQ_DIMID(ncid, 'lpole', ntarget_id)
-    status = NF_INQ_DIMLEN(ncid, ntarget_id, lpole)
+    ! NOTE: this is broken! lpole is not a dimension name in SCRIP files, and NF_INQ_DIMLEN does not
+    ! know what to do with a logical type for the dimension len argument. This should be handled
+    ! differently.
+    !status = NF_INQ_DIMID(ncid, 'lpole', ntarget_id)
+    !status = NF_INQ_DIMLEN(ncid, ntarget_id, lpole)
     WRITE(*,*) "nlon=",nlon,"nlat=",nlat
     IF (lpole) THEN
       WRITE(*,*) "center of most Northern grid cell is lat=90; similarly for South pole"
@@ -283,6 +286,7 @@ program convterr
   allocate (weights_eul_index_all(jall,3),stat=alloc_error )
   allocate (weights_lgr_index_all(jall),stat=alloc_error )
   
+  print *, 'Compute weights for remapping (call overlap_weights)'
   CALL overlap_weights(weights_lgr_index_all,weights_eul_index_all,weights_all,&
        jall,ncube,ngauss,ntarget,ncorner,jmax_segments,target_corner_lon,target_corner_lat,nreconstruction)
   !
@@ -324,7 +328,7 @@ program convterr
   !
   allocate ( terr(n),stat=alloc_error )
   if( alloc_error /= 0 ) then
-    print*,'Program could not allocate space for landfrac'
+    print*,'Program could not allocate space for terr'
     stop
   end if
   
@@ -339,7 +343,7 @@ program convterr
   !
   allocate ( sgh30(n),stat=alloc_error )
   if( alloc_error /= 0 ) then
-    print*,'Program could not allocate space for landfrac'
+    print*,'Program could not allocate space for sgh30'
     stop
   end if
   
@@ -384,14 +388,13 @@ program convterr
   
   tmp = 0.0
   do count=1,jall
-    i    = weights_lgr_index_all(count)
+    i  = weights_lgr_index_all(count)
     wt = weights_all(count,1)
-    area_target        (i) = area_target(i) + wt
+    area_target(i) = area_target(i) + wt
   end do
   
   do count=1,jall
-    i    = weights_lgr_index_all(count)
-    
+    i   = weights_lgr_index_all(count)
     ix  = weights_eul_index_all(count,1)
     iy  = weights_eul_index_all(count,2)
     ip  = weights_eul_index_all(count,3)
