@@ -217,8 +217,8 @@ if (NOT SCREAM_SMALL_KERNELS)
 endif()
 
 ### The following test only runs on quartz or docker container
-if (NOT DEFINED RUN_ML_NUDGE_TEST)
-  set(RUN_ML_NUDGE_TEST FALSE)
+if (NOT DEFINED RUN_ML_CORRECTION_TEST)
+  set(RUN_ML_CORRECTION_TEST FALSE)
 endif()
 
 # Handle input root
