@@ -792,6 +792,7 @@ contains
     call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
     if ( trim(config_land_ice_flux_mode) == 'off' .or. &
          trim(config_land_ice_flux_mode) == 'pressure_only' .or. &
+         trim(config_land_ice_flux_mode) == 'data' .or. &
          trim(config_land_ice_flux_mode) == 'standalone' ) then
        call seq_infodata_PutData( infodata, ocn_prognostic=.true., ocnrof_prognostic=.true., &
                                             ocn_c2_glcshelf=.false.)

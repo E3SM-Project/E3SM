@@ -325,6 +325,7 @@
 <config_frazil_use_surface_pressure>.false.</config_frazil_use_surface_pressure>
 
 <!-- land_ice_fluxes -->
+<!-- These values of `config_land_ice_flux_mode` will be used when `ocn_ismf` is "none" -->
 <config_land_ice_flux_mode>'off'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="oQU240wLI">'pressure_only'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="oEC60to30v3wLI">'pressure_only'</config_land_ice_flux_mode>

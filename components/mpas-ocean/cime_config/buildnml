@@ -71,6 +71,7 @@ def buildnml(case, caseroot, compname):
     ic_date = ''
     ic_prefix = ''
     restoring_file = ''
+    data_ismf_file = ''
     analysis_mask_file = ''
     eco_forcing_file = ''
 
@@ -266,6 +267,8 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '230220'
             ic_prefix = 'mpaso.SOwISC12to60E2r4.rstFromG-anvil'
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_adusumilli2020.SOwISC12to60E2r4.230516.nc'
 
     elif ocn_grid == 'ECwISC30to60E2r1':
         decomp_date = '200915'
@@ -277,8 +280,8 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '230220'
             ic_prefix = 'mpaso.ECwISC30to60E2r1.rstFromG-anvil'
-
-
+        if ocn_ismf == 'data':
+            data_ismf_file = 'prescribed_ismf_adusumilli2020.ECwISC30to60E2r1.230329.nc'
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
@@ -312,6 +315,9 @@ def buildnml(case, caseroot, compname):
 
         if eco_forcing_file != '':
             input_list.write("eco_forcing = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, eco_forcing_file))
+
+        if data_ismf_file != '':
+            input_list.write("data_ismf = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, data_ismf_file))
 
     #--------------------------------------------------------------------
     # Invoke mpas build-namelist - output will go in $CASEBUILD/mpasoconf
@@ -1605,6 +1611,18 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="riverFluzDIC"/>')
                 lines.append('    <var name="riverFluzALK"/>')
                 lines.append('    <var name="riverFluzDOC"/>')
+                lines.append('</stream>')
+                lines.append('')
+
+            if data_ismf_file != '':
+                lines.append('<stream name="data_land_ice_fluxes"')
+                lines.append('        type="input"')
+                lines.append('        io_type="{}"'.format(ocn_pio_typename))
+                lines.append('        filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, data_ismf_file))
+                lines.append('        input_interval="initial_only"')
+                lines.append('        packages="dataLandIceFluxesPKG">')
+                lines.append('    <var name="dataLandIceFreshwaterFlux"/>')
+                lines.append('    <var name="dataLandIceHeatFlux"/>')
                 lines.append('</stream>')
                 lines.append('')
 
