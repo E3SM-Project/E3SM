@@ -680,7 +680,7 @@
     <OS>CNL</OS>
     <COMPILERS>gnu,crayclang,amdclang,gnugpu,crayclanggpu,amdclanggpu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <PROJECT>cli133</PROJECT>
+    <PROJECT>cli115</PROJECT>
     <SAVE_TIMING_DIR>/lustre/orion/cli115/proj-shared</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/lustre/orion/cli115/proj-shared/$ENV{USER}/e3sm_scratch</CIME_OUTPUT_ROOT>
@@ -720,18 +720,15 @@
       <modules compiler="crayclang.*">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-cray/8.3.3</command>
-        <!-- TODO: cce/15.0.0 is default, need to check -->
         <command name="switch">cce cce/15.0.0</command>
       </modules>
       <modules compiler="crayclanggpu">
         <command name="load">craype-accel-amd-gfx90a</command>
-        <!-- TODO: rocm/5.3.0 is the latest available, crusher has 5.4 -->
-        <command name="load">rocm/5.4.0</command>
+        <command name="load">rocm/5.4.3</command>
       </modules>
       <modules compiler="amdclang.*">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-amd/8.3.3</command>
-        <!-- TODO: amd/5.3.0 is the latest available, crusher has 5.4 -->
         <command name="switch">amd amd/5.4.0</command>
       </modules>
       <modules compiler="amdclanggpu">
@@ -745,21 +742,17 @@
       </modules>
       <modules compiler="gnugpu">
         <command name="load">craype-accel-amd-gfx90a</command>
-        <!-- TODO: rocm/5.3.0 is the latest available, crusher has 5.4 -->
-        <command name="load">rocm/5.4.0</command>
+        <command name="load">rocm/5.4.3</command>
       </modules>
       <modules>
         <command name="load">cray-python/3.9.13.1</command>
         <command name="load">subversion/1.14.1</command>
         <command name="load">git/2.36.1</command>
-        <command name="load">cmake/3.21.3</command>
+        <command name="load">cmake/3.23.2</command>
         <command name="load">craype-network-ofi</command>
-        <command name="load">libunwind/1.6.2</command>
-        <command name="load">openblas/0.3.17</command>
+        <!-- <command name="load">libunwind/1.6.2</command> -->
         <command name="load">zlib/1.2.11</command>
-        <!-- Crusher: cray-hdf5-parallel/1.12.1.1 not avail,default is below -->
         <command name="load">cray-hdf5-parallel/1.12.2.1</command>
-        <!-- loading default versions below as crusher versions are not available -->
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.1</command>
       </modules>
@@ -793,10 +786,6 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
-    <resource_limits>
-      <!-- Addresses Radiation issue: details to follow -->
-      <resource name="RLIMIT_STACK">-1</resource>
-    </resource_limits>
   </machine>
 
   <machine MACH="cori-haswell">
