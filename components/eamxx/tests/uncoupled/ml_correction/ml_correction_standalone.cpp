@@ -8,11 +8,11 @@
 #include "control/atmosphere_driver.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
-#include "physics/ml_nudge/atmosphere_ml_nudging.hpp"
+#include "physics/ml_correction/atmosphere_ml_correction.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 namespace scream {
-TEST_CASE("ml_nudge-stand-alone", "") {
+TEST_CASE("ml_correction-stand-alone", "") {
   using namespace scream;
   using namespace scream::control;
   namespace py      = pybind11;
@@ -35,8 +35,8 @@ TEST_CASE("ml_nudge-stand-alone", "") {
 
   auto &proc_factory = AtmosphereProcessFactory::instance();
   auto &gm_factory   = GridsManagerFactory::instance();
-  proc_factory.register_product("MLNudging",
-                                &create_atmosphere_process<MLNudging>);
+  proc_factory.register_product("MLCorrection",
+                                &create_atmosphere_process<MLCorrection>);
   gm_factory.register_product("Mesh Free", &create_mesh_free_grids_manager);
 
   AtmosphereDriver ad;
@@ -60,15 +60,15 @@ TEST_CASE("ml_nudge-stand-alone", "") {
     }
   }
   qv_field.sync_to_dev();
-  double reference = qv(1, 10);
+  Real reference = qv(1, 10);
   reference += 0.1;
-  double reference2 = qv(1, 30);
+  Real reference2 = qv(1, 30);
   reference2 += 0.1;
   pybind11::scoped_interpreter guard{};
   pybind11::module sys = pybind11::module::import("sys");
   sys.attr("path").attr("insert")(1, CUSTOM_SYS_PATH);
-  auto py_nudge  = pybind11::module::import("test_nudge");
-  py::object ob1 = py_nudge.attr("modify_view")(
+  auto py_correction = pybind11::module::import("test_correction");
+  py::object ob1     = py_correction.attr("modify_view")(
       py::array_t<Real, py::array::c_style | py::array::forcecast>(
           num_cols * num_levs, qv.data(), py::str{}),
       num_cols, num_levs);
@@ -77,4 +77,4 @@ TEST_CASE("ml_nudge-stand-alone", "") {
   REQUIRE(qv(1, 30) != reference2);  // This one should be unchanged
   ad.finalize();
 }
-}
+}  // namespace scream
