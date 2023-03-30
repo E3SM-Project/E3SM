@@ -298,7 +298,8 @@ call make_C0(eta,elem,par)
 
 end subroutine
 
-subroutine compute_div_C0_contra(zeta,elem,par,nt)
+!subroutine compute_div_C0_contra(zeta,elem,par,nt)
+subroutine compute_div_C0_contra(zeta,zeta_qf,elem,par,nt,nt_qdp) ! (zhang73)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute C0 divergence. That is, solve:  
 !     < PHI, zeta > = <PHI, div(elem%state%v >
@@ -310,10 +311,10 @@ subroutine compute_div_C0_contra(zeta,elem,par,nt)
 
 type (parallel_t)      , intent(in) :: par
 type (element_t)     , intent(in), target :: elem(:)
-integer :: nt
-real (kind=real_kind), dimension(np,np,nlev,nelemd) :: zeta
-real (kind=real_kind), dimension(np,np,2) :: ulatlon
-real (kind=real_kind), dimension(np,np) :: v1,v2
+integer :: nt,nt_qdp
+real (kind=real_kind), dimension(np,np,nlev,nelemd) :: zeta,zeta_qf
+real (kind=real_kind), dimension(np,np,2) :: ulatlon,uqlatlon
+real (kind=real_kind), dimension(np,np) :: v1,v2,Qdp
 
 ! local
 integer :: k,ie
@@ -325,14 +326,19 @@ do k=1,nlev
 do ie=1,nelemd
     v1 = elem(ie)%state%v(:,:,1,k,nt)
     v2 = elem(ie)%state%v(:,:,2,k,nt)
+    Qdp = elem(ie)%state%Qdp(:,:,k,1,nt_qdp)
     ulatlon(:,:,1) = elem(ie)%D(:,:,1,1)*v1 + elem(ie)%D(:,:,1,2)*v2
     ulatlon(:,:,2) = elem(ie)%D(:,:,2,1)*v1 + elem(ie)%D(:,:,2,2)*v2
+    uqlatlon(:,:,1) = elem(ie)%D(:,:,1,1)*v1*Qdp + elem(ie)%D(:,:,1,2)*v2*Qdp
+    uqlatlon(:,:,2) = elem(ie)%D(:,:,2,1)*v1*Qdp + elem(ie)%D(:,:,2,2)*v2*Qdp
    !    zeta(:,:,k,ie)=elem(ie)%state%zeta(:,:,k)
    zeta(:,:,k,ie)=divergence_sphere(ulatlon,deriv,elem(ie))
+   zeta_qf(:,:,k,ie)=divergence_sphere(uqlatlon,deriv,elem(ie))
 enddo
 enddo
 
 call make_C0(zeta,elem,par)
+call make_C0(zeta_qf,elem,par) !(zhang73)
 
 end subroutine
 
@@ -363,7 +369,8 @@ call compute_zeta_C0_hybrid(zeta,elem,hybrid,1,nelemd,nt)
 end subroutine
 
 
-subroutine compute_div_C0_par(zeta,elem,par,nt)
+!subroutine compute_div_C0_par(zeta,elem,par,nt)
+subroutine compute_div_C0_par(zeta,zeta_qf,elem,par,nt,nt_qdp) ! (zhang73)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute C0 divergence. That is, solve:  
 !     < PHI, zeta > = <PHI, div(elem%state%v >
@@ -375,8 +382,8 @@ subroutine compute_div_C0_par(zeta,elem,par,nt)
 
 type (parallel_t) :: par
 type (element_t)     , intent(in), target :: elem(:)
-real (kind=real_kind), dimension(np,np,nlev,nelemd) :: zeta
-integer :: nt
+real (kind=real_kind), dimension(np,np,nlev,nelemd) :: zeta,zeta_qf
+integer :: nt,nt_qdp
 
 ! local
 type (hybrid_t)              :: hybrid
@@ -386,7 +393,8 @@ type (derivative_t)          :: deriv
 ! single thread
 hybrid = hybrid_create(par,0,1)
 
-call compute_div_C0_hybrid(zeta,elem,hybrid,1,nelemd,nt)
+!call compute_div_C0_hybrid(zeta,elem,hybrid,1,nelemd,nt)
+call compute_div_C0_hybrid(zeta,zeta_qf,elem,hybrid,1,nelemd,nt,nt_qdp)
 
 end subroutine
 
@@ -428,7 +436,8 @@ call make_C0(zeta,elem,hybrid,nets,nete)
 end subroutine
 
 
-subroutine compute_div_C0_hybrid(zeta,elem,hybrid,nets,nete,nt)
+!subroutine compute_div_C0_hybrid(zeta,elem,hybrid,nets,nete,nt)
+subroutine compute_div_C0_hybrid(zeta,zeta_qf,elem,hybrid,nets,nete,nt,nt_qdp) ! (zhang73)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute C0 divergence. That is, solve:  
 !     < PHI, zeta > = <PHI, div(elem%state%v >
@@ -440,8 +449,9 @@ subroutine compute_div_C0_hybrid(zeta,elem,hybrid,nets,nete,nt)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-integer :: nt,nets,nete
-real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
+integer :: nt,nets,nete,nt_qdp
+real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta,zeta_qf
+real (kind=real_kind), dimension(np,np,2) :: uq
 
 ! local
 integer :: k,i,j,ie,ic
@@ -456,10 +466,14 @@ do ie=nets,nete
 do k=1,nlev
    !    zeta(:,:,k,ie)=elem(ie)%state%zeta(:,:,k)
    zeta(:,:,k,ie)=divergence_sphere(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie))
+   uq(:,:,1) = elem(ie)%state%v(:,:,1,k,nt)*elem(ie)%state%Qdp(:,:,k,1,nt_qdp) 
+   uq(:,:,2) = elem(ie)%state%v(:,:,2,k,nt)*elem(ie)%state%Qdp(:,:,k,1,nt_qdp)
+   zeta_qf(:,:,k,ie)=divergence_sphere(uq,deriv,elem(ie))
 enddo
 enddo
 
 call make_C0(zeta,elem,hybrid,nets,nete)
+call make_C0(zeta_qf,elem,hybrid,nets,nete) !(zhang73)
 
 end subroutine
 

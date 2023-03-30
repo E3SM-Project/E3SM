@@ -117,6 +117,7 @@ subroutine stepon_init(dyn_in, dyn_out )
   call register_vector_field('FU', 'FV')
   call addfld ('VOR', (/ 'lev' /), 'A', '1/s',  'Relative Vorticity (2D)',     gridname='GLL')
   call addfld ('DIV', (/ 'lev' /), 'A', '1/s',  'Divergence (2D)',             gridname='GLL')
+  call addfld ('DIV_Qflux', (/ 'lev' /), 'A', '1/s',  'Divergence of water flux (2D)', gridname='GLL') !(zhang73)
 
   call addfld ('ETADOT', (/ 'ilev' /), 'A', '1/s', 'Vertical (eta) velocity', gridname='physgrid')
 
@@ -238,6 +239,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    real(r8) :: rec2dt
    real(r8) :: dp(np,np,nlev),fq,fq0,qn0, ftmp(npsq,nlev,2)
    real(r8) :: tmp_dyn(np,np,nlev,nelemd)
+   real(r8) :: tmp_dyn_qf(np,np,nlev,nelemd) !(zhang73)
    real(r8) :: fmtmp(np,np,nlev)
    real(r8) :: p_m(np,np,nlev)    ! temporary midpoint pressure for DYN_OMEGA output
    real(r8) :: p_i(np,np,nlevp)   ! temporary interface pressure for DYN_OMEGA output
@@ -406,10 +408,18 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          call outfld('VOR',tmp_dyn(1,1,1,ie),npsq,ie)
       enddo
    endif
+   ! output DIV_Qflux: 1) +return: tmp_dyn_qf, 2) +input: tl_fQdp for <compute_div_C0> (zhang73)
    if (hist_fld_active('DIV')) then
-      call compute_div_C0(tmp_dyn,dyn_in%elem,par,tl_f)
+      !call compute_div_C0(tmp_dyn,dyn_in%elem,par,tl_f)
+      call compute_div_C0(tmp_dyn,tmp_dyn_qf,dyn_in%elem,par,tl_f,tl_fQdp)
       do ie=1,nelemd
          call outfld('DIV',tmp_dyn(1,1,1,ie),npsq,ie)
+      enddo
+   endif
+   if (hist_fld_active('DIV_Qflux')) then
+      call compute_div_C0(tmp_dyn,tmp_dyn_qf,dyn_in%elem,par,tl_f,tl_fQdp)
+      do ie=1,nelemd
+         call outfld('DIV_Qflux',tmp_dyn_qf(1,1,1,ie),npsq,ie)
       enddo
    endif
    if (hist_fld_active('FU') .or. hist_fld_active('FV') ) then
