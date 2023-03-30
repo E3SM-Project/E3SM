@@ -85,9 +85,9 @@ private:
       const int i = team.league_rank(); // column index
 
       // Compute vertical layer heights
-      const auto dz_i      = ekat::subview(dz_,    i);
-      const auto z_iface_i = ekat::subview(z_iface_, i);
-      const auto z_mid_i   = ekat::subview(z_mid_, i);
+      const auto& dz_i = ekat::subview(dz_,    i);
+      auto& z_iface_i = ekat::subview(z_iface_, i);
+      auto& z_mid_i   = ekat::subview(z_mid_, i);
       PF::calculate_z_int(team, nlev_, dz_i, z_surf_, z_iface_i);
       team.team_barrier();
       PF::calculate_z_mid(team, nlev_, z_iface_i, z_mid_i);
@@ -134,8 +134,8 @@ private:
     view_2d_const p_mid_;   // total pressure at grid midpoints [Pa]
     view_2d       qv_;      // water vapor mass mixing ratio, not const because it
                             // must be converted from wet to dry [kg vapor/kg dry air]
-    view_2d_const z_mid_;   // height at layer midpoints [m]
-    view_2d_const z_iface_; // height at layer interfaces [m]
+    view_2d z_mid_;         // height at layer midpoints [m]
+    view_2d z_iface_;       // height at layer interfaces [m]
     view_2d_const dz_;      // layer thickness [m]
     view_2d_const pdel_;    // hydrostatic "pressure thickness" at grid
                             // interfaces [Pa]
