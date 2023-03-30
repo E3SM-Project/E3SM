@@ -85,8 +85,8 @@
        <queue strict="true" nodemin="1" nodemax="91" walltimemax="02:00:00" default="true">batch</queue>
        <queue strict="true" nodemin="92" nodemax="183" walltimemax="06:00:00">batch</queue>
        <queue strict="true" nodemin="184" nodemax="1881" walltimemax="12:00:00">batch</queue>
-       <queue strict="true" nodemin="1882" nodemax="5644" walltimemax="24:00:00">batch</queue>
-       <queue strict="true" nodemin="5645" nodemax="9408" walltimemax="24:00:00">batch</queue>
+       <queue strict="true" nodemin="1882" nodemax="5644" walltimemax="12:00:00">batch</queue>
+       <queue strict="true" nodemin="5645" nodemax="9408" walltimemax="12:00:00">batch</queue>
      </queues>
    </batch_system>
 
