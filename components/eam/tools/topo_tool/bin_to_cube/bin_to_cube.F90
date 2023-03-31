@@ -2,8 +2,7 @@
 !  DATE CODED:   Nov 7, 2011
 !
 !  DESCRIPTION:  This program reads USGS 30-sec terrain dataset from NetCDF file and
-!                bins it to an approximately 3km cubed-sphere grid and outputs the
-!                data in netCDF format.
+!                bins it to a cubed-sphere grid and outputs the data in netCDF format.
 !
 !  Author: Peter Hjort Lauritzen (pel@ucar.edu) 
 !
@@ -19,9 +18,9 @@ program convterr
   !
   integer :: im, jm
   
-  integer,  parameter :: ncube = 3000 !dimension of cubed-sphere grid
-!  integer,  parameter :: ncube = 540 !dimension of cubed-sphere grid
-  !        integer,  parameter :: ncube = 361 ! for debugging
+  integer :: ncube = 3000 !dimension of cubed-sphere grid
+  !integer,  parameter :: ncube = 540 !dimension of cubed-sphere grid
+  !integer,  parameter :: ncube = 361 ! for debugging
   
   integer*2,  allocatable, dimension(:,:) :: terr     ! global 30-sec terrain data
   integer*1,  allocatable, dimension(:,:) :: landfrac ! global 30-sec land fraction
@@ -71,12 +70,20 @@ program convterr
   !
   real(r8) :: vol,dx_rad,vol_cube,area_latlon,darea_latlon       ! latitude array
   real(r8), allocatable, dimension(:,:) :: darea_cube
+  !
+  ! Input and output filenames
+  !
+  character(len=512) :: inputfile, outputfile
+
+  !
+  ! Parse command line arguments
+  !
+  call parse_arguments(inputfile, outputfile, ncube)
 
   !
   ! read in USGS data from netCDF file
   !
-  !        status = nf_open('topo-lowres.nc', 0, ncid) !for debugging
-  status = nf_open('usgs-rawdata.nc', 0, ncid)
+  status = nf_open(inputfile, 0, ncid)
   IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
   
   status = NF_INQ_DIMID(ncid, 'lat', dimlatid)
@@ -278,7 +285,7 @@ program convterr
   end do 
   vol_cube=vol_cube/(4.0*pi)
   deallocate(darea_cube)
-  WRITE(*,*) "mean height (globally) of topography about sea-level (3km cube data)",vol_cube,(vol_cube-vol)/vol
+  WRITE(*,*) "mean height (globally) of topography about sea-level (cube data)",vol_cube,(vol_cube-vol)/vol
   !*********************************************************
   !
   ! compute variance
@@ -306,7 +313,7 @@ program convterr
   !
   ! write data to NetCDF file
   !
-  CALL wrt_cube(ncube,terr_cube,landfrac_cube,sgh30_cube)
+  CALL wrt_cube(outputfile, ncube, terr_cube, landfrac_cube, sgh30_cube)
   DEALLOCATE(weight,terr,landfrac,idx,idy,idp,lat,lon)
   WRITE(*,*) "done writing cubed sphere data"
 end program convterr
@@ -431,7 +438,7 @@ END SUBROUTINE CubedSphereABPFromRLL
 !
 ! write netCDF file
 ! 
-subroutine wrt_cube(ncube,terr_cube,landfrac_cube,sgh30_cube)
+subroutine wrt_cube(grid_file_out, ncube, terr_cube, landfrac_cube, sgh30_cube)
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
 #     include         <netcdf.inc>
@@ -439,6 +446,7 @@ subroutine wrt_cube(ncube,terr_cube,landfrac_cube,sgh30_cube)
   !
   ! Dummy arguments
   !
+  character(len=*), intent(in) :: grid_file_out
   integer, intent(in) :: ncube
   real (r8), dimension(6*ncube*ncube), intent(in) :: terr_cube,landfrac_cube,sgh30_cube
   !
@@ -468,7 +476,6 @@ subroutine wrt_cube(ncube,terr_cube,landfrac_cube,sgh30_cube)
   integer, dimension(2) :: nc_dims2_id ! netCDF dim id array for 2-d arrays
   integer :: grid_dims
   
-  character(18), parameter :: grid_file_out = 'USGS-topo-cube.nc'
   character(90), parameter :: grid_name = 'equi-angular gnomonic cubed sphere grid'
   
   character (len=32) :: fout       ! NetCDF output file
@@ -560,7 +567,7 @@ subroutine wrt_cube(ncube,terr_cube,landfrac_cube,sgh30_cube)
   ncstat = nf_put_att_text (nc_grid_id, nc_var_id, 'units',12, 'm')
   call handle_err(ncstat)
   ncstat = nf_put_att_text (nc_grid_id, nc_var_id, 'long_name',58,&
-       'variance of elevation from 30s lat-lon to 3km cubed-sphere')
+       'variance of elevation from 30s lat-lon to cubed-sphere')
   
   WRITE(*,*) "end definition stage"
   ncstat = nf_enddef(nc_grid_id)
@@ -759,4 +766,93 @@ SUBROUTINE CubedSphereXYZFromABP(alpha, beta, ipanel, xx, yy, zz)
   ENDIF
 END SUBROUTINE CubedSphereXYZFromABP
 
+subroutine parse_arguments(inputfile, outputfile, ncube)
+  implicit none
+  character(len=*), intent(inout) :: inputfile
+  character(len=*), intent(inout) :: outputfile
+  integer, intent(inout) :: ncube
 
+  integer :: n, nargs
+  character(len=512) :: arg
+
+  ! Initialize
+  inputfile = ''
+  outputfile = ''
+  ncube = 3000
+
+  ! Get number of arguments and make sure at least some arguments were passed
+  nargs = iargc()
+  if (nargs == 0) then
+    print *, 'ERROR: no arguments were passed.'
+    call usage()
+    stop
+  end if
+
+  ! Parse command line arguments
+  n = 1
+  do while (n <= nargs)
+    call getarg(n, arg)
+    n = n + 1
+
+    select case (arg)
+    case ('--inputfile')
+      call getarg(n, arg)
+      inputfile = trim(arg)
+      n = n + 1
+    case ('--outputfile')
+      call getarg(n, arg)
+      outputfile = trim(arg)
+      n = n + 1
+    case ('--ncube')
+      call getarg(n, arg)
+      read(arg,*) ncube
+      n = n + 1
+    case default
+      call usage()
+      stop
+    end select
+  end do
+
+  ! Check arguments
+  if (trim(inputfile) == '') then
+    print *, 'ERROR: inputfile is required.'
+    stop
+  else if (trim(outputfile) == '') then
+    print *, 'ERROR: outputfile is required.'
+    stop
+  end if
+end subroutine
+
+
+subroutine usage()
+   implicit none
+   print *, '                                                                                             '
+   print *, 'usage: bin_to_cube <arguments>                                                               '
+   print *, '                                                                                             '
+   print *, 'REQUIRED ARGUMENTS:                                                                          '
+   print *, '  --inputfile <filename>    Full pathname to raw USGS data (usgs-rawdata.nc)                 '
+   print *, '  --outputfile <filename>   Filename to save output binned data on cube-sphere               '
+   print *, '                                                                                             '
+   print *, 'OPTIONAL ARGUMENTS:                                                                          '
+   print *, '  --ncube <integer>    	  Desired resolution (number of elements per cube side)            '
+   print *, '                            Default is 3000.                                                 '
+   print *, '                                                                                             '
+   print *, 'DESCRIPTION:                                                                                 '
+   print *, 'This code remaps raw USGSus remapping of topography variables on a cubed-                    '
+   print *, 'This program reads USGS 30-sec terrain dataset from NetCDF file and bins it to a             '
+   print *, 'specified cubed-sphere grid (default ~3 km resolution) and outputs the data in               '
+   print *, 'netCDF format.                                                                               '
+   print *, '                                                                                             '
+   print *, 'Input files needed:                                                                          '
+   print *, 'USGS raw data in netCDF format. This file is generated with gen_netCDF_from_USGS             '
+   print *, 'software, and may be found at:                                                               ' 
+   print *, '                                                                                             '
+   print *, '  https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/atm/cam/gtopo30data/usgs-rawdata.nc'
+   print *, '                                                                                             '
+   print *, 'REFERENCES:                                                                                  '
+   print *, '  Lauritzen, Nair and Ullrich, 2010, J. Comput. Phys.                                        '
+   print *, '                                                                                             '
+   print *, 'AUTHOR:                                                                                      '
+   print *, '  Peter Hjort Lauritzen (pel@ucar.edu), AMP/CGD/NESL/NCAR                                    '
+   print *, '                                                                                             '
+end subroutine usage
