@@ -48,6 +48,9 @@ module component_mod
   public :: component_init_cx
   public :: component_init_aream
   public :: component_init_areacor
+#ifdef HAVE_MOAB
+  public :: component_init_areacor_moab
+#endif
   public :: component_run                 ! mct and esmf versions
   public :: component_final               ! mct and esmf versions
   public :: component_exch
@@ -649,6 +652,144 @@ contains
 
   end subroutine component_init_areacor
 
+subroutine component_init_areacor_moab (comp, mbccid, mbcxid, ent_type, seq_flds_c2x_fluxes, seq_flds_c2x_fields)
+  !---------------------------------------------------------------
+   ! COMPONENT PES and CPL/COMPONENT (for exchange only)
+   !
+   ! Uses
+   use seq_domain_mct, only : seq_domain_areafactinit
+   use ISO_C_BINDING, only : C_NULL_CHAR
+   use shr_kind_mod      , only :  CXX => shr_kind_CXX
+   use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
+      iMOAB_SetDoubleTagStorage
+   !
+   ! Arguments
+   type(component_type) , intent(inout) :: comp(:)
+   integer              , intent(in)    :: mbccid  ! comp side
+   integer              , intent(in)    :: mbcxid  ! coupler side
+   ! point cloud or FV type, to use vertices or cells for setting/getting the area tags and corrections
+   integer              , intent(in)    :: ent_type ! 0 for vertex, 1 for cell
+   character(len=*)     , intent(in)    :: seq_flds_c2x_fluxes, seq_flds_c2x_fields
+   !
+   ! Local Variables
+   integer :: eci, num_inst
+   integer :: mpi_tag
+   character(*), parameter :: subname = '(component_init_areacor_moab)'
+   character(CXX)          :: tagname
+   integer                 :: tagtype, numco,  tagindex, lsize, i, j, arrsize, ierr, nfields
+   real (kind=r8) , allocatable :: areas (:,:), factors(:,:), vals(:,:) ! 2 tags values, area, aream, 
+   real (kind=r8)  :: rarea, raream, rmask, fact
+   integer     nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+   type(mct_list) :: temp_list  ! used to count number of fields
+   !---------------------------------------------------------------
+
+   if (comp(1)%iamin_cplcompid) then
+      tagname='aream'//C_NULL_CHAR
+      ! bring on the comp side the aream from maps 
+      ! (it is either computed by mapping routine or read from mapping files)
+      call component_exch_moab(comp(1), mbcxid, mbccid, 1, tagname)
+
+      ! For only component pes
+      if (comp(1)%iamin_compid) then
+         
+             ! Allocate and initialize area correction factors on component processes
+         ! get areas, first allocate memory
+         ierr  = iMOAB_GetMeshInfo ( mbccid, nvert, nvise, nbl, nsurf, nvisBC )
+         if (ierr .ne. 0) then
+           call shr_sys_abort(subname//' cannot get mesh info ')
+         endif
+         if (ent_type .eq. 0) then
+            lsize = nvert(1)
+         else
+            lsize = nvise(1) ! cell type
+         endif
+         allocate(areas (lsize, 3)) ! lsize is along grid; read mask too
+         allocate(factors (lsize, 2))
+         ! get areas
+         tagname='area:aream:mask'//C_NULL_CHAR
+         arrsize = 3 * lsize
+         ierr = iMOAB_GetDoubleTagStorage ( mbccid, tagname, arrsize , ent_type, areas(1,1) )
+         if (ierr .ne. 0) then
+           call shr_sys_abort(subname//' cannot get areas  ')
+         endif
+         ! now compute the factors
+         do i=1,lsize
+            rmask = areas(i,3)
+
+            rarea  = areas(i, 1)
+            raream = areas(i, 2)
+            if ( abs(rmask) >= 1.0e-06) then
+               if (rarea * raream /= 0.0_R8) then
+                  factors(i,1) = rarea/raream
+                  factors(i,2)= 1.0_R8/factors(i,1) 
+               else
+                  write(logunit,*) trim(subname),' ERROR area,aream= ', &
+                        rarea,raream,' in ',i,lsize
+                  call shr_sys_flush(logunit)
+                  call shr_sys_abort()
+               endif
+            endif
+         enddo
+         ! set factors as tags
+         ! define the tags mdl2drv and drv2mdl on component sides, and compute them based on area and aream
+         tagname = 'mdl2drv:drv2mdl'//C_NULL_CHAR
+         tagtype = 1
+         numco = 1
+         ierr = iMOAB_DefineTagStorage(mbccid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+           call shr_sys_abort(subname//' cannot define correction tags')
+         endif
+         arrsize = 2 * lsize
+         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize , ent_type, factors(1,1))
+         if (ierr .ne. 0) then
+           call shr_sys_abort(subname//' cannot set correction area factors  ')
+         endif
+
+          ! Area correct component initialization output fields
+          ! need to multiply fluxes (correct them) with mdl2drv (factors(i,1))
+          ! so get all fluxes (tags) multiply with factor(i,1), according to mask
+
+         call mct_list_init(temp_list, seq_flds_c2x_fluxes)
+         nfields=mct_list_nitem (temp_list)
+         call mct_list_clean(temp_list)
+            
+
+         allocate(vals(lsize, nfields))
+         tagname = trim(seq_flds_c2x_fluxes)//C_NULL_CHAR
+         arrsize = lsize * nfields
+         ierr = iMOAB_GetDoubleTagStorage( mbccid, tagname, arrsize , ent_type, vals(1,1))
+         if (ierr .ne. 0) then
+           call shr_sys_abort(subname//' cannot get flux values  ')
+         endif
+         ! multiply them with the factors(i,1)
+         do i=1,lsize
+            rmask = areas(i,3)
+            if ( abs(rmask) >= 1.0e-06) then
+               fact = factors(i,1) ! mdl2drv tag
+               do j=1,nfields
+                  vals(i,j) = fact*vals(i,j)
+               enddo
+            endif
+         enddo
+         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize , ent_type, vals(1,1))
+         if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' cannot set new flux values  ')
+         endif
+            
+         !    call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
+         ! send to coupler corrected values
+
+         ! call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag)
+         deallocate(factors)
+         deallocate(areas)
+         deallocate(vals)
+
+      endif
+       ! send data to coupler exchange ? everything, not only fluxes ? 
+      call component_exch_moab(comp(1), mbccid, mbcxid, 0, seq_flds_c2x_fields)
+   endif
+
+  end subroutine component_init_areacor_moab
   !===============================================================================
 
   subroutine component_run(Eclock, comp, comp_run, infodata,  &
