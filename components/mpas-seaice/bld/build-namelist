@@ -911,12 +911,8 @@ if ($surface_mode eq 'non-free') {
 } else {
         add_default($nl, 'config_ocean_surface_type', 'val'=>"free");
 }
+add_default($nl, 'config_salt_flux_coupling_type');
 add_default($nl, 'config_couple_biogeochemistry_fields');
-if ($iceberg_mode eq 'data') {
-        add_default($nl, 'config_use_data_icebergs', 'val'=>"true");
-} else {
-        add_default($nl, 'config_use_data_icebergs', 'val'=>"false");
-}
 
 ###############################
 # Namelist group: diagnostics #

@@ -2571,6 +2571,14 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_salt_flux_coupling_type" type="character"
+	category="ocean" group="ocean">
+Type of salt flux to ocean method
+
+Valid values: 'constant' or 'prognostic'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- diagnostics -->
 
