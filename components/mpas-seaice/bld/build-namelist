@@ -876,6 +876,12 @@ add_default($nl, 'config_congelation_ice_porosity');
 add_default($nl, 'config_itd_conversion_type');
 add_default($nl, 'config_category_bounds_type');
 
+#############################
+# Namelist group:  floesize #
+#############################
+add_default($nl, 'config_floeshape');
+add_default($nl, 'config_floediam');
+
 ###########################
 # Namelist group: ridging #
 ###########################
