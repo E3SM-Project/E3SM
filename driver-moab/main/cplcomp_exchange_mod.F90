@@ -992,7 +992,7 @@ contains
       !-----------------------------------------------------
       !
       use iMOAB, only: iMOAB_RegisterApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh, &
-      iMOAB_WriteMesh, iMOAB_DefineTagStorage, &
+      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, &
       iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph, iMOAB_LoadMesh
       ! use component_mod,      only: component_exch_moab
       !
@@ -1025,6 +1025,8 @@ contains
       integer                  :: typeA, typeB, ATM_PHYS_CID ! used to compute par graph between atm phys
                                                             ! and atm spectral on coupler
       character(CXX)             :: tagname
+      integer     nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+
 
    !-----------------------------------------------------
 
@@ -1115,6 +1117,13 @@ contains
          endif
          ATM_PHYS_CID = 200 + id_old ! 200 + 5 for atm, see line  969   ATM_PHYS = 200 + ATMID ! in
                                     ! components/cam/src/cpl/atm_comp_mct.F90
+         if (mphaid >= 0) then
+            ierr  = iMOAB_GetMeshInfo ( mphaid, nvert, nvise, nbl, nsurf, nvisBC )
+            comp%mbApCCid = mphaid ! phys atm 
+            comp%mbGridType = 0 ! point cloud
+            comp%mblsize = nvert(1) ! point cloud
+         endif
+
          ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
              typeA, typeB, ATM_PHYS_CID, id_join) ! ID_JOIN is now 6 
 
@@ -1196,6 +1205,12 @@ contains
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in sending ocean mesh to coupler '
                call shr_sys_abort(subname//' ERROR in sending ocean mesh to coupler ')
+            endif
+            if (mpoid >= 0) then
+               ierr  = iMOAB_GetMeshInfo ( mpoid, nvert, nvise, nbl, nsurf, nvisBC )
+               comp%mbApCCid = mpoid ! phys atm 
+               comp%mbGridType = 1 ! cells
+               comp%mblsize = nvise(1) ! cells
             endif
 
          endif
@@ -1347,6 +1362,13 @@ contains
             typeA = 3
          endif
          typeB = 3 ! full mesh on coupler pes, we just read it
+         if (mlnid >= 0) then
+            ierr  = iMOAB_GetMeshInfo ( mlnid, nvert, nvise, nbl, nsurf, nvisBC )
+            comp%mbApCCid = mlnid ! phys atm 
+            comp%mbGridType = typeA - 2 ! 0 or 1, pc or cells 
+            comp%mblsize = nvert(1) ! vertices
+            if (mb_land_mesh) comp%mblsize = nvise(1) ! cells
+         endif
          ierr = iMOAB_ComputeCommGraph( mlnid, mblxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
              typeA, typeB, id_old, id_join) 
          if (ierr .ne. 0) then
@@ -1378,62 +1400,68 @@ contains
             write(logunit,*) subname,' error in sending sea ice mesh to coupler '
             call shr_sys_abort(subname//' ERROR in sending sea ice mesh to coupler ')
          endif
+         if (MPSIID >= 0) then
+            ierr  = iMOAB_GetMeshInfo ( MPSIID, nvert, nvise, nbl, nsurf, nvisBC )
+            comp%mbApCCid = MPSIID ! phys atm 
+            comp%mbGridType = 1 ! 0 or 1, pc or cells 
+            comp%mblsize = nvise(1) ! vertices
+         endif
 
          endif
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_MPASSI"//C_NULL_CHAR
-         ! migrated mesh gets another app id, moab moab sea ice to coupler (mbix)
-         ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbixid)
-         ierr = iMOAB_ReceiveMesh(mbixid, mpicom_join, mpigrp_old, id_old)
-         tagtype = 1  ! dense, double
-         numco = 1 !  one value per cell / entity
-         tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-         if ( ierr == 1 ) then
-            call shr_sys_abort( subname//' ERROR: cannot define tags for ice on coupler' )
-         end if
-         tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-         if ( ierr == 1 ) then
-            call shr_sys_abort( subname//' ERROR: cannot define tags for ice on coupler' )
-         end if
+            appname = "COUPLE_MPASSI"//C_NULL_CHAR
+            ! migrated mesh gets another app id, moab moab sea ice to coupler (mbix)
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbixid)
+            ierr = iMOAB_ReceiveMesh(mbixid, mpicom_join, mpigrp_old, id_old)
+            tagtype = 1  ! dense, double
+            numco = 1 !  one value per cell / entity
+            tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+            if ( ierr == 1 ) then
+               call shr_sys_abort( subname//' ERROR: cannot define tags for ice on coupler' )
+            end if
+            tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+            if ( ierr == 1 ) then
+               call shr_sys_abort( subname//' ERROR: cannot define tags for ice on coupler' )
+            end if
 
-         !add the normalization tag
-         tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on ice on coupler '
-            call shr_sys_abort(subname//' ERROR in defining tags ')
-         endif
+            !add the normalization tag
+            tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on ice on coupler '
+               call shr_sys_abort(subname//' ERROR in defining tags ')
+            endif
 
-         tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
-         tagtype = 1 ! dense
-         numco = 1 ! 
-         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on ice cpl'
-            call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on ice cpl')
-         endif
+            tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+            tagtype = 1 ! dense
+            numco = 1 ! 
+            ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on ice cpl'
+               call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on ice cpl')
+            endif
 
-         tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
-         tagtype = 1 ! dense
-         numco = 1 ! 
-         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags for seq_flds_r2x_fields on ice cpl'
-            call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on ice cpl')
-         endif
+            tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
+            tagtype = 1 ! dense
+            numco = 1 ! 
+            ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags for seq_flds_r2x_fields on ice cpl'
+               call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on ice cpl')
+            endif
 
 #ifdef MOABDEBUG
-   !      debug test
-         outfile = 'recSeaIce.h5m'//C_NULL_CHAR
-         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-   !      write out the mesh file to disk
-         ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in writing sea ice mesh on coupler '
-            call shr_sys_abort(subname//' ERROR in writing sea ice mesh on coupler ')
-         endif
+      !      debug test
+            outfile = 'recSeaIce.h5m'//C_NULL_CHAR
+            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+      !      write out the mesh file to disk
+            ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in writing sea ice mesh on coupler '
+               call shr_sys_abort(subname//' ERROR in writing sea ice mesh on coupler ')
+            endif
 #endif
          endif
          if (MPSIID .ge. 0) then  ! we are on component sea ice pes
@@ -1497,6 +1525,12 @@ contains
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
 
+         endif
+         if (mrofid >= 0) then
+            ierr  = iMOAB_GetMeshInfo ( mrofid, nvert, nvise, nbl, nsurf, nvisBC )
+            comp%mbApCCid = mrofid ! 
+            comp%mbGridType = 0 ! 0 or 1, pc or cells 
+            comp%mblsize = nvert(1) ! vertices
          endif
          ! we are now on joint pes, compute comm graph between rof and coupler model 
          typeA = 2 ! point cloud on component PEs

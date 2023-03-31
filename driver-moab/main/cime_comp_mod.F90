@@ -2158,28 +2158,28 @@ contains
     call mpi_barrier(mpicom_GLOID,ierr)
     if (atm_present) call component_init_areacor(atm, areafact_samegrid, seq_flds_a2x_fluxes)
     ! send initial data to coupler
-    if (atm_present) call component_init_areacor_moab(atm, mphaid, mbaxid, 0, seq_flds_a2x_fluxes, seq_flds_a2x_fields)
+    if (atm_present) call component_init_areacor_moab(atm, mphaid, mbaxid, seq_flds_a2x_fluxes, seq_flds_a2x_fields)
     ! component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (lnd_present) call component_init_areacor(lnd, areafact_samegrid, seq_flds_l2x_fluxes)
     ! MOABTODO : lnd is vertex or cell ?
-    if (lnd_present) call component_init_areacor_moab(lnd, mlnid, mblxid, 0, seq_flds_l2x_fluxes, seq_flds_l2x_fields)
+    if (lnd_present) call component_init_areacor_moab(lnd, mlnid, mblxid, seq_flds_l2x_fluxes, seq_flds_l2x_fields)
     !component_exch_moab(lnd(1), mlnid, mblxid, 0, seq_flds_l2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (rof_present) call component_init_areacor(rof, areafact_samegrid, seq_flds_r2x_fluxes)
-    if (rof_present) call component_init_areacor_moab(rof, mrofid, mbrxid, 0, seq_flds_r2x_fluxes, seq_flds_r2x_fields)
+    if (rof_present) call component_init_areacor_moab(rof, mrofid, mbrxid, seq_flds_r2x_fluxes, seq_flds_r2x_fields)
     !component_exch_moab(rof(1), mrofid, mbrxid, 0, seq_flds_r2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (ocn_present) call component_init_areacor(ocn, areafact_samegrid, seq_flds_o2x_fluxes)
-    if (ocn_present) call component_init_areacor_moab(ocn, mpoid, mboxid, 1, seq_flds_o2x_fluxes, seq_flds_o2x_fields)
+    if (ocn_present) call component_init_areacor_moab(ocn, mpoid, mboxid, seq_flds_o2x_fluxes, seq_flds_o2x_fields)
     ! component_exch_moab(ocn(1), mpoid, mboxid, 0, seq_flds_o2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (ice_present) call component_init_areacor(ice, areafact_samegrid, seq_flds_i2x_fluxes)
-    if (ice_present) call component_init_areacor_moab(ice, mpsiid, mbixid,1, seq_flds_i2x_fluxes, seq_flds_i2x_fields)
+    if (ice_present) call component_init_areacor_moab(ice, mpsiid, mbixid, seq_flds_i2x_fluxes, seq_flds_i2x_fields)
     !component_exch_moab(ice(1), mpsiid, mbixid, 0, seq_flds_i2x_fields) 
 
     call mpi_barrier(mpicom_GLOID,ierr)
