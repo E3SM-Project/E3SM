@@ -383,6 +383,10 @@
 <config_itd_conversion_type>'linear remap'</config_itd_conversion_type>
 <config_category_bounds_type>'original'</config_category_bounds_type>
 
+<!-- floesize -->
+<config_floeshape>0.66</config_floeshape>
+<config_floediam>300.0</config_floediam>
+
 <!-- ridging -->
 <config_ice_strength_formulation>'Rothrock75'</config_ice_strength_formulation>
 <config_ridging_participation_function>'exponential'</config_ridging_participation_function>
