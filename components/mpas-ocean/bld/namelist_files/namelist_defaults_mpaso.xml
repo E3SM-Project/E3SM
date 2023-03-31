@@ -378,7 +378,11 @@
 <config_use_implicit_bottom_drag>.true.</config_use_implicit_bottom_drag>
 <config_implicit_bottom_drag_coeff>1.0e-3</config_implicit_bottom_drag_coeff>
 <config_use_implicit_top_drag>.false.</config_use_implicit_top_drag>
-<config_implicit_top_drag_coeff>1.0e-3</config_implicit_top_drag_coeff>
+<config_implicit_top_drag_coeff>2.5e-3</config_implicit_top_drag_coeff>
+<config_implicit_top_drag_coeff ocn_grid="oEC60to30v3wLI">4.48e-3</config_implicit_top_drag_coeff>
+<config_implicit_top_drag_coeff ocn_grid="ECwISC30to60E1r2">4.48e-3</config_implicit_top_drag_coeff>
+<config_implicit_top_drag_coeff ocn_grid="SOwISC12to60E2r4">4.48e-3</config_implicit_top_drag_coeff>
+<config_implicit_top_drag_coeff ocn_grid="ECwISC30to60E2r1">4.48e-3</config_implicit_top_drag_coeff>
 <config_use_implicit_bottom_roughness>.false.</config_use_implicit_bottom_roughness>
 <config_use_implicit_bottom_drag_variable>.false.</config_use_implicit_bottom_drag_variable>
 <config_use_implicit_bottom_drag_variable_mannings>.false.</config_use_implicit_bottom_drag_variable_mannings>
