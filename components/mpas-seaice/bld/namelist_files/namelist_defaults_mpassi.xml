@@ -391,7 +391,7 @@
 <config_ratio_ridging_work_to_PE>17.0</config_ratio_ridging_work_to_PE>
 
 <!-- atmosphere -->
-<config_atmos_boundary_method>'ccsm3'</config_atmos_boundary_method>
+<config_atmos_boundary_method>'similarity'</config_atmos_boundary_method>
 <config_calc_surface_stresses>true</config_calc_surface_stresses>
 <config_calc_surface_temperature>true</config_calc_surface_temperature>
 <config_use_form_drag>false</config_use_form_drag>

@@ -1735,9 +1735,9 @@
 	</nml_record>
 
 	<nml_record name="atmosphere" in_defaults="true">
-		<nml_option name="config_atmos_boundary_method" type="character" default_value="ccsm3" units="unitless"
+		<nml_option name="config_atmos_boundary_method" type="character" default_value="similarity" units="unitless"
 			description="Atmosphere boundary method."
-			possible_values="'ccsm3' or 'constant'"
+			possible_values="'similarity' or 'constant' or 'mixed'"
 			icepack_name="atmbndy"
 		/>
 		<nml_option name="config_calc_surface_stresses" type="logical" default_value="true" units="unitless"

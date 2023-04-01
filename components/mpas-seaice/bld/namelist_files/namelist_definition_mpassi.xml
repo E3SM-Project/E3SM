@@ -2460,7 +2460,7 @@ Default: Defined in namelist_defaults.xml
 	category="atmosphere" group="atmosphere">
 Atmosphere boundary method.
 
-Valid values: 'ccsm3' or 'constant'
+Valid values: 'similarity' or 'constant' or 'mixed'
 Default: Defined in namelist_defaults.xml
 </entry>
 
