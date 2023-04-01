@@ -1705,6 +1705,19 @@
 			icepack_name="kcatbound"
 		/>
 	</nml_record>
+	
+	<nml_record name="floesize" in_defaults="true">
+		<nml_option name="config_floeshape" type="real" default_value="0.66" units="unitless"
+			description="Floe shape constant for lateral melt."
+			possible_values="any real number between 0 and 1"
+			icepack_name="floeshape"
+		/>
+		<nml_option name="config_floediam" type="real" default_value="300.0" units="m"
+			description="Effective floe diameter for lateral melt in m."
+			possible_values="any real number."
+			icepack_name="floediam"
+		/>
+	</nml_record>
 
 	<nml_record name="ridging" in_defaults="true">
 		<nml_option name="config_ice_strength_formulation" type="character" default_value="Rothrock75" units="unitless"
