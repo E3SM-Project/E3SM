@@ -223,6 +223,21 @@ subroutine zmconv_readnl(nlfile)
          write(iulog,*)'**** ZM scheme uses unrestricted launch level along with default CAPE-based trigger:', trig_ull_only
       endif
 
+      if(MCSP) then
+         write(iulog,*)'**** ZM scheme uses multiscale coherent structure parameterization (MCSP):',MCSP
+      end if
+
+      if(zm_microp) then
+         write(iulog,*)'**** ZM scheme uses convective microphysics scheme:',zm_microp
+      end if
+
+      if(clos_dyn_adj) then
+         write(iulog,*)'**** ZM scheme uses cloud-base mass flux adjustment:',clos_dyn_adj
+      end if
+
+      if(tpert_fix) then
+         write(iulog,*)'**** ZM scheme uses tpert_fix:',tpert_fix
+      end if
    end if
 
 #ifdef SPMD
@@ -643,7 +658,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8) negadq
    logical doliq
 
-   integer dcapemx(pcols)  ! maxi saved from 1st call for CAPE calculation;  used in 2nd call when DCAPE-ULL active
+   integer dcapemx(pcols)  ! launching level index saved from 1st call for CAPE calculation;  used in 2nd call when DCAPE-ULL active
 
 !
 !--------------------------Data statements------------------------------
@@ -660,84 +675,9 @@ subroutine zm_convr(lchnk   ,ncol    , &
    mcon(:,:) = 0._r8
    rliq(:ncol)   = 0._r8
    rice(:ncol)   = 0._r8    
-
-   if (zm_microp) then
-     allocate( &
-        loc_microp_st%wu(pcols,pver), &
-        loc_microp_st%qliq(pcols,pver), &
-        loc_microp_st%qice(pcols,pver), &
-        loc_microp_st%qrain(pcols,pver), &
-        loc_microp_st%qsnow(pcols,pver), &
-        loc_microp_st%qgraupel(pcols,pver), &
-        loc_microp_st%qnl(pcols,pver), &
-        loc_microp_st%qni(pcols,pver), &
-        loc_microp_st%qnr(pcols,pver), &
-        loc_microp_st%qns(pcols,pver), &
-        loc_microp_st%qng(pcols,pver), & 
-        loc_microp_st%autolm(pcols,pver), &
-        loc_microp_st%accrlm(pcols,pver), &
-        loc_microp_st%bergnm(pcols,pver), &
-        loc_microp_st%fhtimm(pcols,pver), &
-        loc_microp_st%fhtctm(pcols,pver), &
-        loc_microp_st%fhmlm(pcols,pver), &
-        loc_microp_st%hmpim(pcols,pver), &
-        loc_microp_st%accslm(pcols,pver), &
-        loc_microp_st%dlfm(pcols,pver), &
-        loc_microp_st%autoln(pcols,pver), &
-        loc_microp_st%accrln(pcols,pver), &
-        loc_microp_st%bergnn(pcols,pver), &
-        loc_microp_st%fhtimn(pcols,pver), &
-        loc_microp_st%fhtctn(pcols,pver), &
-        loc_microp_st%fhmln(pcols,pver), &
-        loc_microp_st%accsln(pcols,pver), &
-        loc_microp_st%activn(pcols,pver), &
-        loc_microp_st%dlfn(pcols,pver), &
-        loc_microp_st%autoim(pcols,pver), &
-        loc_microp_st%accsim(pcols,pver), &
-        loc_microp_st%difm(pcols,pver), &
-        loc_microp_st%nuclin(pcols,pver), &
-        loc_microp_st%autoin(pcols,pver), &
-        loc_microp_st%accsin(pcols,pver), &
-        loc_microp_st%hmpin(pcols,pver), &
-        loc_microp_st%difn(pcols,pver), &
-        loc_microp_st%cmel(pcols,pver), &
-        loc_microp_st%cmei(pcols,pver), & 
-        loc_microp_st%trspcm(pcols,pver), &
-        loc_microp_st%trspcn(pcols,pver), &
-        loc_microp_st%trspim(pcols,pver), &
-        loc_microp_st%trspin(pcols,pver), &
-        loc_microp_st%accgrm(pcols,pver),   & 
-        loc_microp_st%accglm(pcols,pver),   & 
-        loc_microp_st%accgslm(pcols,pver),  & 
-        loc_microp_st%accgsrm(pcols,pver),  & 
-        loc_microp_st%accgirm(pcols,pver),  & 
-        loc_microp_st%accgrim(pcols,pver),  & 
-        loc_microp_st%accgrsm(pcols,pver),  & 
-        loc_microp_st%accgsln(pcols,pver),  & 
-        loc_microp_st%accgsrn(pcols,pver),  & 
-        loc_microp_st%accgirn(pcols,pver),  & 
-        loc_microp_st%accsrim(pcols,pver),  & 
-        loc_microp_st%acciglm(pcols,pver),  & 
-        loc_microp_st%accigrm(pcols,pver),  & 
-        loc_microp_st%accsirm(pcols,pver),  & 
-        loc_microp_st%accigln(pcols,pver),  & 
-        loc_microp_st%accigrn(pcols,pver),  & 
-        loc_microp_st%accsirn(pcols,pver),  & 
-        loc_microp_st%accgln(pcols,pver),   & 
-        loc_microp_st%accgrn(pcols,pver),   & 
-        loc_microp_st%accilm(pcols,pver),   & 
-        loc_microp_st%acciln(pcols,pver),   & 
-        loc_microp_st%fallrm(pcols, pver),  & 
-        loc_microp_st%fallsm(pcols, pver),  & 
-        loc_microp_st%fallgm(pcols, pver),  & 
-        loc_microp_st%fallrn(pcols, pver),  & 
-        loc_microp_st%fallsn(pcols, pver),  & 
-        loc_microp_st%fallgn(pcols, pver),  & 
-        loc_microp_st%fhmrm (pcols,pver) ) 
-   end if
-
-
-
+!
+! Allocate microphysics arrays 
+   if (zm_microp) call zm_microp_st_alloc(loc_microp_st)
 !
 ! initialize convective tendencies
 !
@@ -789,182 +729,9 @@ subroutine zm_convr(lchnk   ,ncol    , &
       end do
    end do
 
-   if (zm_microp) then
-     do k = 1,pver
-       do i = 1,ncol
-         ! microp_st  
-         microp_st%wu(i,k)     = 0._r8
+! Initialize microphysics arrays
+   if (zm_microp) call zm_microp_st_ini(microp_st,loc_microp_st,ncol)
 
-         microp_st%qliq(i,k)   = 0._r8
-         microp_st%qice(i,k)   = 0._r8
-         microp_st%qrain(i,k)  = 0._r8
-         microp_st%qsnow(i,k)  = 0._r8
-         microp_st%qgraupel(i,k) = 0._r8
-         microp_st%qnl(i,k)    = 0._r8
-         microp_st%qni(i,k)    = 0._r8
-         microp_st%qnr(i,k)    = 0._r8
-         microp_st%qns(i,k)    = 0._r8
-         microp_st%qng(i,k)    = 0._r8
-
-         microp_st%autolm(i,k) = 0._r8
-         microp_st%accrlm(i,k) = 0._r8
-         microp_st%bergnm(i,k) = 0._r8
-         microp_st%fhtimm(i,k) = 0._r8
-         microp_st%fhtctm(i,k) = 0._r8
-         microp_st%fhmlm (i,k) = 0._r8
-         microp_st%hmpim (i,k) = 0._r8
-         microp_st%accslm(i,k) = 0._r8
-         microp_st%dlfm  (i,k) = 0._r8
-
-         microp_st%autoln(i,k) = 0._r8
-         microp_st%accrln(i,k) = 0._r8
-         microp_st%bergnn(i,k) = 0._r8
-         microp_st%fhtimn(i,k) = 0._r8
-         microp_st%fhtctn(i,k) = 0._r8
-         microp_st%fhmln (i,k) = 0._r8
-         microp_st%accsln(i,k) = 0._r8
-         microp_st%activn(i,k) = 0._r8
-         microp_st%dlfn  (i,k) = 0._r8
-         microp_st%cmel  (i,k) = 0._r8
-
-         microp_st%autoim(i,k) = 0._r8
-         microp_st%accsim(i,k) = 0._r8
-         microp_st%difm  (i,k) = 0._r8
-         microp_st%cmei  (i,k) = 0._r8
-
-         microp_st%nuclin(i,k) = 0._r8
-         microp_st%autoin(i,k) = 0._r8
-         microp_st%accsin(i,k) = 0._r8
-         microp_st%hmpin (i,k) = 0._r8
-         microp_st%difn  (i,k) = 0._r8
-
-         microp_st%trspcm(i,k) = 0._r8
-         microp_st%trspcn(i,k) = 0._r8
-         microp_st%trspim(i,k) = 0._r8
-         microp_st%trspin(i,k) = 0._r8
-
-         microp_st%accgrm(i,k) = 0._r8
-         microp_st%accglm(i,k) = 0._r8
-         microp_st%accgslm(i,k)= 0._r8
-         microp_st%accgsrm(i,k)= 0._r8
-         microp_st%accgirm(i,k)= 0._r8
-         microp_st%accgrim(i,k)= 0._r8
-         microp_st%accgrsm(i,k)= 0._r8
-
-         microp_st%accgsln(i,k)= 0._r8
-         microp_st%accgsrn(i,k)= 0._r8
-         microp_st%accgirn(i,k)= 0._r8
-
-         microp_st%accsrim(i,k)= 0._r8
-         microp_st%acciglm(i,k)= 0._r8
-         microp_st%accigrm(i,k)= 0._r8
-         microp_st%accsirm(i,k)= 0._r8
-
-         microp_st%accigln(i,k)= 0._r8
-         microp_st%accigrn(i,k)= 0._r8
-         microp_st%accsirn(i,k)= 0._r8
-         microp_st%accgln(i,k) = 0._r8
-         microp_st%accgrn(i,k) = 0._r8
-
-         microp_st%accilm(i,k) = 0._r8
-         microp_st%acciln(i,k) = 0._r8  
-
-         microp_st%fallrm(i,k) = 0._r8
-         microp_st%fallsm(i,k) = 0._r8
-         microp_st%fallgm(i,k) = 0._r8
-         microp_st%fallrn(i,k) = 0._r8
-         microp_st%fallsn(i,k) = 0._r8
-         microp_st%fallgn(i,k) = 0._r8
-         microp_st%fhmrm (i,k) = 0._r8
-
-         ! loc_microp_st
-         loc_microp_st%wu(i,k)   = 0._r8
-
-         loc_microp_st%qliq(i,k) = 0._r8
-         loc_microp_st%qice(i,k) = 0._r8
-         loc_microp_st%qrain(i,k)= 0._r8
-         loc_microp_st%qsnow(i,k)= 0._r8
-         loc_microp_st%qgraupel(i,k) = 0._r8
-         loc_microp_st%qnl(i,k)  = 0._r8
-         loc_microp_st%qni(i,k)  = 0._r8
-         loc_microp_st%qnr(i,k)  = 0._r8
-         loc_microp_st%qns(i,k)  = 0._r8
-         loc_microp_st%qng(i,k)  = 0._r8
-
-         loc_microp_st%autolm(i,k) = 0._r8
-         loc_microp_st%accrlm(i,k) = 0._r8
-         loc_microp_st%bergnm(i,k) = 0._r8
-         loc_microp_st%fhtimm(i,k) = 0._r8
-         loc_microp_st%fhtctm(i,k) = 0._r8
-         loc_microp_st%fhmlm (i,k) = 0._r8
-         loc_microp_st%hmpim (i,k) = 0._r8
-         loc_microp_st%accslm(i,k) = 0._r8
-         loc_microp_st%dlfm  (i,k) = 0._r8
-
-         loc_microp_st%autoln(i,k) = 0._r8
-         loc_microp_st%accrln(i,k) = 0._r8
-         loc_microp_st%bergnn(i,k) = 0._r8
-         loc_microp_st%fhtimn(i,k) = 0._r8
-         loc_microp_st%fhtctn(i,k) = 0._r8
-         loc_microp_st%fhmln (i,k) = 0._r8
-         loc_microp_st%accsln(i,k) = 0._r8
-         loc_microp_st%activn(i,k) = 0._r8
-         loc_microp_st%dlfn  (i,k) = 0._r8
-         loc_microp_st%cmel  (i,k) = 0._r8
-
-         loc_microp_st%autoim(i,k) = 0._r8
-         loc_microp_st%accsim(i,k) = 0._r8
-         loc_microp_st%difm  (i,k) = 0._r8
-         loc_microp_st%cmei  (i,k) = 0._r8
-
-         loc_microp_st%nuclin(i,k) = 0._r8
-         loc_microp_st%autoin(i,k) = 0._r8
-         loc_microp_st%accsin(i,k) = 0._r8
-         loc_microp_st%hmpin (i,k) = 0._r8
-         loc_microp_st%difn  (i,k) = 0._r8
-
-         loc_microp_st%trspcm(i,k) = 0._r8
-         loc_microp_st%trspcn(i,k) = 0._r8
-         loc_microp_st%trspim(i,k) = 0._r8
-         loc_microp_st%trspin(i,k) = 0._r8
-
-         loc_microp_st%accgrm(i,k) = 0._r8
-         loc_microp_st%accglm(i,k) = 0._r8
-         loc_microp_st%accgslm(i,k)= 0._r8
-         loc_microp_st%accgsrm(i,k)= 0._r8
-         loc_microp_st%accgirm(i,k)= 0._r8
-         loc_microp_st%accgrim(i,k)= 0._r8
-         loc_microp_st%accgrsm(i,k)= 0._r8 
-
-         loc_microp_st%accgsln(i,k)= 0._r8
-         loc_microp_st%accgsrn(i,k)= 0._r8
-         loc_microp_st%accgirn(i,k)= 0._r8
-
-         loc_microp_st%accsrim(i,k)= 0._r8
-         loc_microp_st%acciglm(i,k)= 0._r8
-         loc_microp_st%accigrm(i,k)= 0._r8
-         loc_microp_st%accsirm(i,k)= 0._r8
-
-         loc_microp_st%accigln(i,k)= 0._r8
-         loc_microp_st%accigrn(i,k)= 0._r8
-         loc_microp_st%accsirn(i,k)= 0._r8
-         loc_microp_st%accgln(i,k) = 0._r8
-         loc_microp_st%accgrn(i,k) = 0._r8
-
-         loc_microp_st%accilm(i,k) = 0._r8
-         loc_microp_st%acciln(i,k) = 0._r8
-
-         loc_microp_st%fallrm(i,k) = 0._r8
-         loc_microp_st%fallsm(i,k) = 0._r8
-         loc_microp_st%fallgm(i,k) = 0._r8
-         loc_microp_st%fallrn(i,k) = 0._r8
-         loc_microp_st%fallsn(i,k) = 0._r8
-         loc_microp_st%fallgn(i,k) = 0._r8
-         loc_microp_st%fhmrm (i,k) = 0._r8
-
-      end do
-    end do
-   end if
    lambdadpcu  = (mucon + 1._r8)/dcon
    mudpcu      = mucon
    lambdadpcug = lambdadpcu
@@ -1554,99 +1321,18 @@ subroutine zm_convr(lchnk   ,ncol    , &
          lambdadpcu(ideep(i),k) = lambdadpcug(i,k)
          mudpcu(ideep(i),k)     = mudpcug(i,k)
          frz(ideep(i),k)  = frzg(i,k)*latice/cpres
-         if (zm_microp) then
-           qi  (ideep(i),k) = loc_microp_st%qice  (i,k)
-           microp_st%wu  (ideep(i),k) = loc_microp_st%wu  (i,k)
-           microp_st%qliq(ideep(i),k) = loc_microp_st%qliq (i,k)
-           microp_st%qice(ideep(i),k) = loc_microp_st%qice (i,k)
-           microp_st%qrain(ideep(i),k) = loc_microp_st%qrain (i,k)
-           microp_st%qsnow(ideep(i),k) = loc_microp_st%qsnow (i,k)
-           microp_st%qgraupel(ideep(i),k) = loc_microp_st%qgraupel (i,k)
-           microp_st%qnl(ideep(i),k)  = loc_microp_st%qnl(i,k)
-           microp_st%qni(ideep(i),k)  = loc_microp_st%qni(i,k)
-           microp_st%qnr(ideep(i),k)  = loc_microp_st%qnr(i,k)
-           microp_st%qns(ideep(i),k)  = loc_microp_st%qns(i,k)
-           microp_st%qng(ideep(i),k)  = loc_microp_st%qng(i,k)
-
-           microp_st%autolm(ideep(i),k) = loc_microp_st%autolm(i,k)
-           microp_st%accrlm(ideep(i),k) = loc_microp_st%accrlm(i,k)
-           microp_st%bergnm(ideep(i),k) = loc_microp_st%bergnm(i,k)
-           microp_st%fhtimm(ideep(i),k) = loc_microp_st%fhtimm(i,k)
-           microp_st%fhtctm(ideep(i),k) = loc_microp_st%fhtctm(i,k)
-           microp_st%fhmlm (ideep(i),k) = loc_microp_st%fhmlm (i,k)
-           microp_st%hmpim (ideep(i),k) = loc_microp_st%hmpim (i,k)
-           microp_st%accslm(ideep(i),k) = loc_microp_st%accslm(i,k)
-           microp_st%dlfm  (ideep(i),k) = loc_microp_st%dlfm  (i,k)
-
-           microp_st%autoln(ideep(i),k) = loc_microp_st%autoln(i,k)
-           microp_st%accrln(ideep(i),k) = loc_microp_st%accrln(i,k)
-           microp_st%bergnn(ideep(i),k) = loc_microp_st%bergnn(i,k)
-           microp_st%fhtimn(ideep(i),k) = loc_microp_st%fhtimn(i,k)
-           microp_st%fhtctn(ideep(i),k) = loc_microp_st%fhtctn(i,k)
-           microp_st%fhmln (ideep(i),k) = loc_microp_st%fhmln (i,k)
-           microp_st%accsln(ideep(i),k) = loc_microp_st%accsln(i,k)
-           microp_st%activn(ideep(i),k) = loc_microp_st%activn(i,k)
-           microp_st%dlfn  (ideep(i),k) = loc_microp_st%dlfn  (i,k)
-           microp_st%cmel  (ideep(i),k) = loc_microp_st%cmel  (i,k)
-
-           microp_st%autoim(ideep(i),k) = loc_microp_st%autoim(i,k)
-           microp_st%accsim(ideep(i),k) = loc_microp_st%accsim(i,k)
-           microp_st%difm  (ideep(i),k) = loc_microp_st%difm  (i,k)
-           microp_st%cmei  (ideep(i),k) = loc_microp_st%cmei  (i,k)
-
-           microp_st%nuclin(ideep(i),k) = loc_microp_st%nuclin(i,k)
-           microp_st%autoin(ideep(i),k) = loc_microp_st%autoin(i,k)
-           microp_st%accsin(ideep(i),k) = loc_microp_st%accsin(i,k)
-           microp_st%hmpin (ideep(i),k) = loc_microp_st%hmpin (i,k)
-           microp_st%difn  (ideep(i),k) = loc_microp_st%difn  (i,k)
-
-           microp_st%trspcm(ideep(i),k) = loc_microp_st%trspcm(i,k)
-           microp_st%trspcn(ideep(i),k) = loc_microp_st%trspcn(i,k)
-           microp_st%trspim(ideep(i),k) = loc_microp_st%trspim(i,k)
-           microp_st%trspin(ideep(i),k) = loc_microp_st%trspin(i,k)
-
-           microp_st%accgrm(ideep(i),k) = loc_microp_st%accgrm(i,k)
-           microp_st%accglm(ideep(i),k) = loc_microp_st%accglm(i,k)
-           microp_st%accgslm(ideep(i),k)= loc_microp_st%accgslm(i,k)
-           microp_st%accgsrm(ideep(i),k)= loc_microp_st%accgsrm(i,k)
-           microp_st%accgirm(ideep(i),k)= loc_microp_st%accgirm(i,k)
-           microp_st%accgrim(ideep(i),k)= loc_microp_st%accgrim(i,k)
-           microp_st%accgrsm(ideep(i),k)= loc_microp_st%accgrsm(i,k)
-
-           microp_st%accgsln(ideep(i),k)= loc_microp_st%accgsln(i,k)
-           microp_st%accgsrn(ideep(i),k)= loc_microp_st%accgsrn(i,k)
-           microp_st%accgirn(ideep(i),k)= loc_microp_st%accgirn(i,k)
-
-           microp_st%accsrim(ideep(i),k)= loc_microp_st%accsrim(i,k)
-           microp_st%acciglm(ideep(i),k)= loc_microp_st%acciglm(i,k)
-           microp_st%accigrm(ideep(i),k)= loc_microp_st%accigrm(i,k)
-           microp_st%accsirm(ideep(i),k)= loc_microp_st%accsirm(i,k)
-
-           microp_st%accigln(ideep(i),k)= loc_microp_st%accigln(i,k)
-           microp_st%accigrn(ideep(i),k)= loc_microp_st%accigrn(i,k)
-           microp_st%accsirn(ideep(i),k)= loc_microp_st%accsirn(i,k)
-           microp_st%accgln(ideep(i),k) = loc_microp_st%accgln(i,k)
-           microp_st%accgrn(ideep(i),k) = loc_microp_st%accgrn(i,k)
-
-           microp_st%accilm(ideep(i),k) = loc_microp_st%accilm(i,k)
-           microp_st%acciln(ideep(i),k) = loc_microp_st%acciln(i,k)
-
-           microp_st%fallrm(ideep(i),k) = loc_microp_st%fallrm(i,k)
-           microp_st%fallsm(ideep(i),k) = loc_microp_st%fallsm(i,k)
-           microp_st%fallgm(ideep(i),k) = loc_microp_st%fallgm(i,k)
-           microp_st%fallrn(ideep(i),k) = loc_microp_st%fallrn(i,k)
-           microp_st%fallsn(ideep(i),k) = loc_microp_st%fallsn(i,k)
-           microp_st%fallgn(ideep(i),k) = loc_microp_st%fallgn(i,k)
-           microp_st%fhmrm (ideep(i),k) = loc_microp_st%fhmrm (i,k)
-         end if
+         if (zm_microp) qi(ideep(i),k) = loc_microp_st%qice(i,k)
       end do
    end do
 
+! Gather back microphysics arrays.
+   if (zm_microp)  call zm_microp_st_gb(microp_st,loc_microp_st,ideep,lengath)
+   
    if (zm_microp) then
      do k = msg + 1,pver
        do i = 1,ncol
 
-         !Interpolate variable from interface to mid-layer and convert it from units of "kg/kg" to "g/m3"
+         !Interpolate variable from interface to mid-layer.
 
          if(k.lt.pver) then
             microp_st%qice (i,k) = 0.5_r8*(microp_st%qice(i,k)+microp_st%qice(i,k+1))
@@ -1662,7 +1348,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
             microp_st%wu(i,k)   = 0.5_r8*(microp_st%wu(i,k)+microp_st%wu(i,k+1))
          end if
 
-         if (t(i,k).gt. 273.15_r8 .and. t(i,k-1).le.273.15_r8) then
+         if (t(i,k).gt.tmelt .and. t(i,k-1).le.tmelt) then
              microp_st%qice (i,k-1) = microp_st%qice (i,k-1) + microp_st%qice (i,k)
              microp_st%qice (i,k) = 0._r8
              microp_st%qni (i,k-1) = microp_st%qni (i,k-1) + microp_st%qni (i,k)
@@ -1676,7 +1362,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
              microp_st%qng (i,k-1) = microp_st%qng (i,k-1) + microp_st%qng (i,k)
              microp_st%qng (i,k) = 0._r8
          end if
-
+         !Convert it from units of "kg/kg" to "g/m3"
          microp_st%qice (i,k) = microp_st%qice(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
          microp_st%qliq (i,k) = microp_st%qliq(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
          microp_st%qrain (i,k) = microp_st%qrain(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
@@ -1725,80 +1411,8 @@ subroutine zm_convr(lchnk   ,ncol    , &
    rliq(:ncol) = rliq(:ncol) /1000._r8
    rice(:ncol) = rice(:ncol) /1000._r8    
 
-   if (zm_microp) then
-     deallocate( &
-       loc_microp_st%wu,      &
-       loc_microp_st%qliq,    &
-       loc_microp_st%qice,    &
-       loc_microp_st%qrain,   &
-       loc_microp_st%qsnow,   &
-       loc_microp_st%qgraupel,&
-       loc_microp_st%qnl,     &
-       loc_microp_st%qni,     &
-       loc_microp_st%qnr,     &
-       loc_microp_st%qns,     &
-       loc_microp_st%qng,     &
-       loc_microp_st%autolm,  &
-       loc_microp_st%accrlm,  &
-       loc_microp_st%bergnm,  &
-       loc_microp_st%fhtimm,  &
-       loc_microp_st%fhtctm,  &
-       loc_microp_st%fhmlm ,  &
-       loc_microp_st%hmpim ,  &
-       loc_microp_st%accslm,  &
-       loc_microp_st%dlfm  ,  &
-       loc_microp_st%autoln,  &
-       loc_microp_st%accrln,  &
-       loc_microp_st%bergnn,  &
-       loc_microp_st%fhtimn,  &
-       loc_microp_st%fhtctn,  &
-       loc_microp_st%fhmln ,  &
-       loc_microp_st%accsln,  &
-       loc_microp_st%activn,  &
-       loc_microp_st%dlfn  ,  &
-       loc_microp_st%autoim,  &
-       loc_microp_st%accsim,  &
-       loc_microp_st%difm  ,  &
-       loc_microp_st%nuclin,  &
-       loc_microp_st%autoin,  &
-       loc_microp_st%accsin,  &
-       loc_microp_st%hmpin ,  &
-       loc_microp_st%difn  ,  &
-       loc_microp_st%cmel  ,  &
-       loc_microp_st%cmei  ,  &
-       loc_microp_st%trspcm,  &
-       loc_microp_st%trspcn,  &
-       loc_microp_st%trspim,  &
-       loc_microp_st%trspin,  &
-       loc_microp_st%accgrm,   &
-       loc_microp_st%accglm,   &
-       loc_microp_st%accgslm,  &
-       loc_microp_st%accgsrm,  &
-       loc_microp_st%accgirm,  &
-       loc_microp_st%accgrim,  &
-       loc_microp_st%accgrsm,  &
-       loc_microp_st%accgsln,  &
-       loc_microp_st%accgsrn,  &
-       loc_microp_st%accgirn,  &
-       loc_microp_st%accsrim,  &
-       loc_microp_st%acciglm,  &
-       loc_microp_st%accigrm,  &
-       loc_microp_st%accsirm,  &
-       loc_microp_st%accigln,  &
-       loc_microp_st%accigrn,  &
-       loc_microp_st%accsirn,  &
-       loc_microp_st%accgln,   &
-       loc_microp_st%accgrn,   &
-       loc_microp_st%accilm,   &
-       loc_microp_st%acciln,   &
-       loc_microp_st%fallrm,  &
-       loc_microp_st%fallsm,  &
-       loc_microp_st%fallgm,  &
-       loc_microp_st%fallrn,  &
-       loc_microp_st%fallsn,  &
-       loc_microp_st%fallgn,  &
-       loc_microp_st%fhmrm )
-   end if
+! Deallocate microphysics arrays.
+   if (zm_microp) call zm_microp_st_dealloc(loc_microp_st)
 
    return
 end subroutine zm_convr
@@ -1888,7 +1502,7 @@ subroutine zm_conv_evap(ncol,lchnk, &
     flxprec(:ncol,1) = 0._r8
     flxsnow(:ncol,1) = 0._r8
     evpvint(:ncol)   = 0._r8
-    omsm=0.99999_r8
+    omsm=0.99999_r8          ! to prevent problems due to round off error
 
     do k = 1, pver
        do i = 1, ncol
@@ -1903,7 +1517,7 @@ subroutine zm_conv_evap(ncol,lchnk, &
              snowmlt(i) = 0._r8
           end if
         else
-! make sure melting snow doesn't reduce temperature below threshold
+        ! make sure melting snow doesn't reduce temperature below threshold
           if (t(i,k) > tmelt) then
               dum = -latice/cpres*flxsnow(i,k)*gravit/pdel(i,k)*deltat
               if (t(i,k) + dum .le. tmelt) then
@@ -3268,6 +2882,11 @@ subroutine cldprp(lchnk   , &
    real(r8) totfrz(pcols)
    real(r8) frz1(pcols,pver)        ! rate of freezing
    real(r8) frz (pcols,pver)        ! rate of freezing
+
+   real(r8), parameter :: mu_min = 0.02_r8 ! minimum value of mu
+   real(r8), parameter :: t_homofrz = 233.15_r8 ! homogeneous freezing temperature
+   real(r8), parameter :: t_mphase  = 40._r8    ! mixed phase temperature = tmelt-t_homofrz = 273.15K - 233.15K
+
    integer  jto(pcols)              ! updraft plume old top
    integer  tmplel(pcols)
 
@@ -3724,7 +3343,7 @@ subroutine cldprp(lchnk   , &
    do k=klowest-2,khighest-1,-1
       do i=1,il2g
          if (doit(i) .and. k <= jb(i)-2 .and. k >= lel(i)-1) then
-            if (hu(i,k) <= hsthat(i,k) .and. hu(i,k+1) > hsthat(i,k+1) .and. mu(i,k) >= 0.02_r8) then
+            if (hu(i,k) <= hsthat(i,k) .and. hu(i,k+1) > hsthat(i,k+1) .and. mu(i,k) >= mu_min) then
                if (hu(i,k)-hsthat(i,k) < -2000._r8) then
                   jt(i) = k + 1
                   doit(i) = .false.
@@ -3732,7 +3351,7 @@ subroutine cldprp(lchnk   , &
                   jt(i) = k
                   doit(i) = .false.
                end if
-             else if ( (hu(i,k) > hu(i,jb(i)) .and. totfrz(i)<=0._r8) .or. mu(i,k) < 0.02_r8) then
+             else if ( (hu(i,k) > hu(i,jb(i)) .and. totfrz(i)<=0._r8) .or. mu(i,k) < mu_min) then
                jt(i) = k + 1
                doit(i) = .false.
             end if
@@ -3834,22 +3453,21 @@ subroutine cldprp(lchnk   , &
             tug(i,k) = su(i,k) - grav/cp*zf(i,k)
          end do
       end do
-
       do k = 1, pver-1
          do i = 1, il2g
 
-            if (tug(i,k+1) > 273.15_r8) then
-               ! If warmer than tmax then water phase
+            if (tug(i,k+1) > tmelt) then
+               ! If warmer than tmelt then water phase
                fice(i,k) = 0._r8
 
-            else if (tug(i,k+1) < 233.15_r8) then
-               ! If colder than tmin then ice phase
+            else if (tug(i,k+1) < t_homofrz) then
+               ! If colder than t_homofrz then ice phase
                fice(i,k) = 1._r8
 
             else
                ! Otherwise mixed phase, with ice fraction decreasing linearly
-               ! from tmin to tmax
-               fice(i,k) =(273.15_r8 - tug(i,k+1)) / 40._r8
+               ! from t_homofrz to tmelt
+               fice(i,k) =(tmelt - tug(i,k+1)) / t_mphase
             end if
          end do
       end do
@@ -5354,5 +4972,444 @@ elemental subroutine qsat_hPa(t, p, es, qm)
   es = es*0.01_r8
 
 end subroutine qsat_hPa
+
+subroutine zm_microp_st_alloc(loc_microp_st)
+
+  type(zm_microp_st)  :: loc_microp_st ! state and tendency of convective microphysics
+
+  allocate( &
+        loc_microp_st%wu(pcols,pver), &
+        loc_microp_st%qliq(pcols,pver), &
+        loc_microp_st%qice(pcols,pver), &
+        loc_microp_st%qrain(pcols,pver), &
+        loc_microp_st%qsnow(pcols,pver), &
+        loc_microp_st%qgraupel(pcols,pver), &
+        loc_microp_st%qnl(pcols,pver), &
+        loc_microp_st%qni(pcols,pver), &
+        loc_microp_st%qnr(pcols,pver), &
+        loc_microp_st%qns(pcols,pver), &
+        loc_microp_st%qng(pcols,pver), &
+        loc_microp_st%autolm(pcols,pver), &
+        loc_microp_st%accrlm(pcols,pver), &
+        loc_microp_st%bergnm(pcols,pver), &
+        loc_microp_st%fhtimm(pcols,pver), &
+        loc_microp_st%fhtctm(pcols,pver), &
+        loc_microp_st%fhmlm(pcols,pver), &
+        loc_microp_st%hmpim(pcols,pver), &
+        loc_microp_st%accslm(pcols,pver), &
+        loc_microp_st%dlfm(pcols,pver), &
+        loc_microp_st%autoln(pcols,pver), &
+        loc_microp_st%accrln(pcols,pver), &
+        loc_microp_st%bergnn(pcols,pver), &
+        loc_microp_st%fhtimn(pcols,pver), &
+        loc_microp_st%fhtctn(pcols,pver), &
+        loc_microp_st%fhmln(pcols,pver), &
+        loc_microp_st%accsln(pcols,pver), &
+        loc_microp_st%activn(pcols,pver), &
+        loc_microp_st%dlfn(pcols,pver), &
+        loc_microp_st%autoim(pcols,pver), &
+        loc_microp_st%accsim(pcols,pver), &
+        loc_microp_st%difm(pcols,pver), &
+        loc_microp_st%nuclin(pcols,pver), &
+        loc_microp_st%autoin(pcols,pver), &
+        loc_microp_st%accsin(pcols,pver), &
+        loc_microp_st%hmpin(pcols,pver), &
+        loc_microp_st%difn(pcols,pver), &
+        loc_microp_st%cmel(pcols,pver), &
+        loc_microp_st%cmei(pcols,pver), &
+        loc_microp_st%trspcm(pcols,pver), &
+        loc_microp_st%trspcn(pcols,pver), &
+        loc_microp_st%trspim(pcols,pver), &
+        loc_microp_st%trspin(pcols,pver), &
+        loc_microp_st%accgrm(pcols,pver),   &
+        loc_microp_st%accglm(pcols,pver),   &
+        loc_microp_st%accgslm(pcols,pver),  &
+        loc_microp_st%accgsrm(pcols,pver),  &
+        loc_microp_st%accgirm(pcols,pver),  &
+        loc_microp_st%accgrim(pcols,pver),  &
+        loc_microp_st%accgrsm(pcols,pver),  &
+        loc_microp_st%accgsln(pcols,pver),  &
+        loc_microp_st%accgsrn(pcols,pver),  &
+        loc_microp_st%accgirn(pcols,pver),  &
+        loc_microp_st%accsrim(pcols,pver),  &
+        loc_microp_st%acciglm(pcols,pver),  &
+        loc_microp_st%accigrm(pcols,pver),  &
+        loc_microp_st%accsirm(pcols,pver),  &
+        loc_microp_st%accigln(pcols,pver),  &
+        loc_microp_st%accigrn(pcols,pver),  &
+        loc_microp_st%accsirn(pcols,pver),  &
+        loc_microp_st%accgln(pcols,pver),   &
+        loc_microp_st%accgrn(pcols,pver),   &
+        loc_microp_st%accilm(pcols,pver),   &
+        loc_microp_st%acciln(pcols,pver),   &
+        loc_microp_st%fallrm(pcols, pver),  &
+        loc_microp_st%fallsm(pcols, pver),  &
+        loc_microp_st%fallgm(pcols, pver),  &
+        loc_microp_st%fallrn(pcols, pver),  &
+        loc_microp_st%fallsn(pcols, pver),  &
+        loc_microp_st%fallgn(pcols, pver),  &
+        loc_microp_st%fhmrm (pcols,pver) )
+
+end subroutine zm_microp_st_alloc
+
+subroutine zm_microp_st_dealloc(loc_microp_st)
+
+  type(zm_microp_st)  :: loc_microp_st ! state and tendency of convective microphysics
+
+  deallocate( &
+       loc_microp_st%wu,      &
+       loc_microp_st%qliq,    &
+       loc_microp_st%qice,    &
+       loc_microp_st%qrain,   &
+       loc_microp_st%qsnow,   &
+       loc_microp_st%qgraupel,&
+       loc_microp_st%qnl,     &
+       loc_microp_st%qni,     &
+       loc_microp_st%qnr,     &
+       loc_microp_st%qns,     &
+       loc_microp_st%qng,     &
+       loc_microp_st%autolm,  &
+       loc_microp_st%accrlm,  &
+       loc_microp_st%bergnm,  &
+       loc_microp_st%fhtimm,  &
+       loc_microp_st%fhtctm,  &
+       loc_microp_st%fhmlm ,  &
+       loc_microp_st%hmpim ,  &
+       loc_microp_st%accslm,  &
+       loc_microp_st%dlfm  ,  &
+       loc_microp_st%autoln,  &
+       loc_microp_st%accrln,  &
+       loc_microp_st%bergnn,  &
+       loc_microp_st%fhtimn,  &
+       loc_microp_st%fhtctn,  &
+       loc_microp_st%fhmln ,  &
+       loc_microp_st%accsln,  &
+       loc_microp_st%activn,  &
+       loc_microp_st%dlfn  ,  &
+       loc_microp_st%autoim,  &
+       loc_microp_st%accsim,  &
+       loc_microp_st%difm  ,  &
+       loc_microp_st%nuclin,  &
+       loc_microp_st%autoin,  &
+       loc_microp_st%accsin,  &
+       loc_microp_st%hmpin ,  &
+       loc_microp_st%difn  ,  &
+       loc_microp_st%cmel  ,  &
+       loc_microp_st%cmei  ,  &
+       loc_microp_st%trspcm,  &
+       loc_microp_st%trspcn,  &
+       loc_microp_st%trspim,  &
+       loc_microp_st%trspin,  &
+       loc_microp_st%accgrm,   &
+       loc_microp_st%accglm,   &
+       loc_microp_st%accgslm,  &
+       loc_microp_st%accgsrm,  &
+       loc_microp_st%accgirm,  &
+       loc_microp_st%accgrim,  &
+       loc_microp_st%accgrsm,  &
+       loc_microp_st%accgsln,  &
+       loc_microp_st%accgsrn,  &
+       loc_microp_st%accgirn,  &
+       loc_microp_st%accsrim,  &
+       loc_microp_st%acciglm,  &
+       loc_microp_st%accigrm,  &
+       loc_microp_st%accsirm,  &
+       loc_microp_st%accigln,  &
+       loc_microp_st%accigrn,  &
+       loc_microp_st%accsirn,  &
+       loc_microp_st%accgln,   &
+       loc_microp_st%accgrn,   &
+       loc_microp_st%accilm,   &
+       loc_microp_st%acciln,   &
+       loc_microp_st%fallrm,  &
+       loc_microp_st%fallsm,  &
+       loc_microp_st%fallgm,  &
+       loc_microp_st%fallrn,  &
+       loc_microp_st%fallsn,  &
+       loc_microp_st%fallgn,  &
+       loc_microp_st%fhmrm )
+
+end subroutine zm_microp_st_dealloc
+
+subroutine zm_microp_st_ini(microp_st,loc_microp_st,ncol)
+
+  type(zm_microp_st)  :: microp_st     ! state and tendency of convective microphysics
+  type(zm_microp_st)  :: loc_microp_st ! state and tendency of convective microphysics
+  integer, intent(in) :: ncol          ! number of atmospheric columns
+  integer i,k
+
+     do k = 1,pver
+       do i = 1,ncol
+         ! microp_st
+         microp_st%wu(i,k)     = 0._r8
+
+         microp_st%qliq(i,k)   = 0._r8
+         microp_st%qice(i,k)   = 0._r8
+         microp_st%qrain(i,k)  = 0._r8
+         microp_st%qsnow(i,k)  = 0._r8
+         microp_st%qgraupel(i,k) = 0._r8
+         microp_st%qnl(i,k)    = 0._r8
+         microp_st%qni(i,k)    = 0._r8
+         microp_st%qnr(i,k)    = 0._r8
+         microp_st%qns(i,k)    = 0._r8
+         microp_st%qng(i,k)    = 0._r8
+
+         microp_st%autolm(i,k) = 0._r8
+         microp_st%accrlm(i,k) = 0._r8
+         microp_st%bergnm(i,k) = 0._r8
+         microp_st%fhtimm(i,k) = 0._r8
+         microp_st%fhtctm(i,k) = 0._r8
+         microp_st%fhmlm (i,k) = 0._r8
+         microp_st%hmpim (i,k) = 0._r8
+         microp_st%accslm(i,k) = 0._r8
+         microp_st%dlfm  (i,k) = 0._r8
+
+         microp_st%autoln(i,k) = 0._r8
+         microp_st%accrln(i,k) = 0._r8
+         microp_st%bergnn(i,k) = 0._r8
+         microp_st%fhtimn(i,k) = 0._r8
+         microp_st%fhtctn(i,k) = 0._r8
+         microp_st%fhmln (i,k) = 0._r8
+         microp_st%accsln(i,k) = 0._r8
+         microp_st%activn(i,k) = 0._r8
+         microp_st%dlfn  (i,k) = 0._r8
+         microp_st%cmel  (i,k) = 0._r8
+
+         microp_st%autoim(i,k) = 0._r8
+         microp_st%accsim(i,k) = 0._r8
+         microp_st%difm  (i,k) = 0._r8
+         microp_st%cmei  (i,k) = 0._r8
+
+         microp_st%nuclin(i,k) = 0._r8
+         microp_st%autoin(i,k) = 0._r8
+         microp_st%accsin(i,k) = 0._r8
+         microp_st%hmpin (i,k) = 0._r8
+         microp_st%difn  (i,k) = 0._r8
+
+         microp_st%trspcm(i,k) = 0._r8
+         microp_st%trspcn(i,k) = 0._r8
+         microp_st%trspim(i,k) = 0._r8
+         microp_st%trspin(i,k) = 0._r8
+
+         microp_st%accgrm(i,k) = 0._r8
+         microp_st%accglm(i,k) = 0._r8
+         microp_st%accgslm(i,k)= 0._r8
+         microp_st%accgsrm(i,k)= 0._r8
+         microp_st%accgirm(i,k)= 0._r8
+         microp_st%accgrim(i,k)= 0._r8
+         microp_st%accgrsm(i,k)= 0._r8
+
+         microp_st%accgsln(i,k)= 0._r8
+         microp_st%accgsrn(i,k)= 0._r8
+         microp_st%accgirn(i,k)= 0._r8
+
+         microp_st%accsrim(i,k)= 0._r8
+         microp_st%acciglm(i,k)= 0._r8
+         microp_st%accigrm(i,k)= 0._r8
+         microp_st%accsirm(i,k)= 0._r8
+
+         microp_st%accigln(i,k)= 0._r8
+         microp_st%accigrn(i,k)= 0._r8
+         microp_st%accsirn(i,k)= 0._r8
+         microp_st%accgln(i,k) = 0._r8
+         microp_st%accgrn(i,k) = 0._r8 
+
+         microp_st%accilm(i,k) = 0._r8
+         microp_st%acciln(i,k) = 0._r8
+
+         microp_st%fallrm(i,k) = 0._r8
+         microp_st%fallsm(i,k) = 0._r8
+         microp_st%fallgm(i,k) = 0._r8
+         microp_st%fallrn(i,k) = 0._r8
+         microp_st%fallsn(i,k) = 0._r8
+         microp_st%fallgn(i,k) = 0._r8
+         microp_st%fhmrm (i,k) = 0._r8
+
+         ! loc_microp_st
+         loc_microp_st%wu(i,k)   = 0._r8
+
+         loc_microp_st%qliq(i,k) = 0._r8
+         loc_microp_st%qice(i,k) = 0._r8
+         loc_microp_st%qrain(i,k)= 0._r8
+         loc_microp_st%qsnow(i,k)= 0._r8
+         loc_microp_st%qgraupel(i,k) = 0._r8
+         loc_microp_st%qnl(i,k)  = 0._r8
+         loc_microp_st%qni(i,k)  = 0._r8
+         loc_microp_st%qnr(i,k)  = 0._r8
+         loc_microp_st%qns(i,k)  = 0._r8
+         loc_microp_st%qng(i,k)  = 0._r8
+
+         loc_microp_st%autolm(i,k) = 0._r8
+         loc_microp_st%accrlm(i,k) = 0._r8
+         loc_microp_st%bergnm(i,k) = 0._r8
+         loc_microp_st%fhtimm(i,k) = 0._r8
+         loc_microp_st%fhtctm(i,k) = 0._r8
+         loc_microp_st%fhmlm (i,k) = 0._r8
+         loc_microp_st%hmpim (i,k) = 0._r8
+         loc_microp_st%accslm(i,k) = 0._r8
+         loc_microp_st%dlfm  (i,k) = 0._r8
+
+         loc_microp_st%autoln(i,k) = 0._r8
+         loc_microp_st%accrln(i,k) = 0._r8
+         loc_microp_st%bergnn(i,k) = 0._r8
+         loc_microp_st%fhtimn(i,k) = 0._r8
+         loc_microp_st%fhtctn(i,k) = 0._r8
+         loc_microp_st%fhmln (i,k) = 0._r8
+         loc_microp_st%accsln(i,k) = 0._r8
+         loc_microp_st%activn(i,k) = 0._r8
+         loc_microp_st%dlfn  (i,k) = 0._r8
+         loc_microp_st%cmel  (i,k) = 0._r8
+
+         loc_microp_st%autoim(i,k) = 0._r8
+         loc_microp_st%accsim(i,k) = 0._r8
+         loc_microp_st%difm  (i,k) = 0._r8
+         loc_microp_st%cmei  (i,k) = 0._r8
+
+         loc_microp_st%nuclin(i,k) = 0._r8
+         loc_microp_st%autoin(i,k) = 0._r8
+         loc_microp_st%accsin(i,k) = 0._r8
+         loc_microp_st%hmpin (i,k) = 0._r8
+         loc_microp_st%difn  (i,k) = 0._r8
+
+         loc_microp_st%trspcm(i,k) = 0._r8
+         loc_microp_st%trspcn(i,k) = 0._r8
+         loc_microp_st%trspim(i,k) = 0._r8
+         loc_microp_st%trspin(i,k) = 0._r8
+
+         loc_microp_st%accgrm(i,k) = 0._r8
+         loc_microp_st%accglm(i,k) = 0._r8
+         loc_microp_st%accgslm(i,k)= 0._r8
+         loc_microp_st%accgsrm(i,k)= 0._r8
+         loc_microp_st%accgirm(i,k)= 0._r8
+         loc_microp_st%accgrim(i,k)= 0._r8
+         loc_microp_st%accgrsm(i,k)= 0._r8
+
+         loc_microp_st%accgsln(i,k)= 0._r8
+         loc_microp_st%accgsrn(i,k)= 0._r8
+         loc_microp_st%accgirn(i,k)= 0._r8
+
+         loc_microp_st%accsrim(i,k)= 0._r8
+         loc_microp_st%acciglm(i,k)= 0._r8
+         loc_microp_st%accigrm(i,k)= 0._r8
+         loc_microp_st%accsirm(i,k)= 0._r8
+
+         loc_microp_st%accigln(i,k)= 0._r8
+         loc_microp_st%accigrn(i,k)= 0._r8
+         loc_microp_st%accsirn(i,k)= 0._r8
+         loc_microp_st%accgln(i,k) = 0._r8
+         loc_microp_st%accgrn(i,k) = 0._r8
+
+         loc_microp_st%accilm(i,k) = 0._r8
+         loc_microp_st%acciln(i,k) = 0._r8
+
+         loc_microp_st%fallrm(i,k) = 0._r8
+         loc_microp_st%fallsm(i,k) = 0._r8
+         loc_microp_st%fallgm(i,k) = 0._r8
+         loc_microp_st%fallrn(i,k) = 0._r8
+         loc_microp_st%fallsn(i,k) = 0._r8
+         loc_microp_st%fallgn(i,k) = 0._r8
+         loc_microp_st%fhmrm (i,k) = 0._r8
+
+      end do
+    end do
+
+end subroutine zm_microp_st_ini
+
+subroutine zm_microp_st_gb(microp_st,loc_microp_st,ideep,lengath)
+
+  type(zm_microp_st)  :: microp_st     ! state and tendency of convective microphysics
+  type(zm_microp_st)  :: loc_microp_st ! state and tendency of convective microphysics
+  integer ideep(pcols)                 ! w holds position of gathered points vs longitude index.
+  integer lengath
+  integer i,k
+
+    do k = 1,pver
+       do i = 1,lengath
+           microp_st%wu  (ideep(i),k) = loc_microp_st%wu  (i,k)
+           microp_st%qliq(ideep(i),k) = loc_microp_st%qliq (i,k)
+           microp_st%qice(ideep(i),k) = loc_microp_st%qice (i,k)
+           microp_st%qrain(ideep(i),k) = loc_microp_st%qrain (i,k)
+           microp_st%qsnow(ideep(i),k) = loc_microp_st%qsnow (i,k)
+           microp_st%qgraupel(ideep(i),k) = loc_microp_st%qgraupel (i,k)
+           microp_st%qnl(ideep(i),k)  = loc_microp_st%qnl(i,k)
+           microp_st%qni(ideep(i),k)  = loc_microp_st%qni(i,k)
+           microp_st%qnr(ideep(i),k)  = loc_microp_st%qnr(i,k)
+           microp_st%qns(ideep(i),k)  = loc_microp_st%qns(i,k)
+           microp_st%qng(ideep(i),k)  = loc_microp_st%qng(i,k)
+
+           microp_st%autolm(ideep(i),k) = loc_microp_st%autolm(i,k)
+           microp_st%accrlm(ideep(i),k) = loc_microp_st%accrlm(i,k)
+           microp_st%bergnm(ideep(i),k) = loc_microp_st%bergnm(i,k)
+           microp_st%fhtimm(ideep(i),k) = loc_microp_st%fhtimm(i,k)
+           microp_st%fhtctm(ideep(i),k) = loc_microp_st%fhtctm(i,k)
+           microp_st%fhmlm (ideep(i),k) = loc_microp_st%fhmlm (i,k)
+           microp_st%hmpim (ideep(i),k) = loc_microp_st%hmpim (i,k)
+           microp_st%accslm(ideep(i),k) = loc_microp_st%accslm(i,k)
+           microp_st%dlfm  (ideep(i),k) = loc_microp_st%dlfm  (i,k)
+
+           microp_st%autoln(ideep(i),k) = loc_microp_st%autoln(i,k)
+           microp_st%accrln(ideep(i),k) = loc_microp_st%accrln(i,k)
+           microp_st%bergnn(ideep(i),k) = loc_microp_st%bergnn(i,k)
+           microp_st%fhtimn(ideep(i),k) = loc_microp_st%fhtimn(i,k)
+           microp_st%fhtctn(ideep(i),k) = loc_microp_st%fhtctn(i,k)
+           microp_st%fhmln (ideep(i),k) = loc_microp_st%fhmln (i,k)
+           microp_st%accsln(ideep(i),k) = loc_microp_st%accsln(i,k)
+           microp_st%activn(ideep(i),k) = loc_microp_st%activn(i,k)
+           microp_st%dlfn  (ideep(i),k) = loc_microp_st%dlfn  (i,k)
+           microp_st%cmel  (ideep(i),k) = loc_microp_st%cmel  (i,k)
+
+           microp_st%autoim(ideep(i),k) = loc_microp_st%autoim(i,k)
+           microp_st%accsim(ideep(i),k) = loc_microp_st%accsim(i,k)
+           microp_st%difm  (ideep(i),k) = loc_microp_st%difm  (i,k)
+           microp_st%cmei  (ideep(i),k) = loc_microp_st%cmei  (i,k)
+
+           microp_st%nuclin(ideep(i),k) = loc_microp_st%nuclin(i,k)
+           microp_st%autoin(ideep(i),k) = loc_microp_st%autoin(i,k)
+           microp_st%accsin(ideep(i),k) = loc_microp_st%accsin(i,k)
+           microp_st%hmpin (ideep(i),k) = loc_microp_st%hmpin (i,k)
+           microp_st%difn  (ideep(i),k) = loc_microp_st%difn  (i,k)
+
+           microp_st%trspcm(ideep(i),k) = loc_microp_st%trspcm(i,k)
+           microp_st%trspcn(ideep(i),k) = loc_microp_st%trspcn(i,k)
+           microp_st%trspim(ideep(i),k) = loc_microp_st%trspim(i,k)
+           microp_st%trspin(ideep(i),k) = loc_microp_st%trspin(i,k)
+
+           microp_st%accgrm(ideep(i),k) = loc_microp_st%accgrm(i,k)
+           microp_st%accglm(ideep(i),k) = loc_microp_st%accglm(i,k)
+           microp_st%accgslm(ideep(i),k)= loc_microp_st%accgslm(i,k)
+           microp_st%accgsrm(ideep(i),k)= loc_microp_st%accgsrm(i,k)
+           microp_st%accgirm(ideep(i),k)= loc_microp_st%accgirm(i,k)
+           microp_st%accgrim(ideep(i),k)= loc_microp_st%accgrim(i,k)
+           microp_st%accgrsm(ideep(i),k)= loc_microp_st%accgrsm(i,k)
+
+           microp_st%accgsln(ideep(i),k)= loc_microp_st%accgsln(i,k)
+           microp_st%accgsrn(ideep(i),k)= loc_microp_st%accgsrn(i,k)
+           microp_st%accgirn(ideep(i),k)= loc_microp_st%accgirn(i,k)
+
+           microp_st%accsrim(ideep(i),k)= loc_microp_st%accsrim(i,k)
+           microp_st%acciglm(ideep(i),k)= loc_microp_st%acciglm(i,k)
+           microp_st%accigrm(ideep(i),k)= loc_microp_st%accigrm(i,k)
+           microp_st%accsirm(ideep(i),k)= loc_microp_st%accsirm(i,k)
+
+           microp_st%accigln(ideep(i),k)= loc_microp_st%accigln(i,k)
+           microp_st%accigrn(ideep(i),k)= loc_microp_st%accigrn(i,k)
+           microp_st%accsirn(ideep(i),k)= loc_microp_st%accsirn(i,k)
+           microp_st%accgln(ideep(i),k) = loc_microp_st%accgln(i,k)
+           microp_st%accgrn(ideep(i),k) = loc_microp_st%accgrn(i,k)
+
+           microp_st%accilm(ideep(i),k) = loc_microp_st%accilm(i,k)
+           microp_st%acciln(ideep(i),k) = loc_microp_st%acciln(i,k)
+
+           microp_st%fallrm(ideep(i),k) = loc_microp_st%fallrm(i,k)
+           microp_st%fallsm(ideep(i),k) = loc_microp_st%fallsm(i,k)
+           microp_st%fallgm(ideep(i),k) = loc_microp_st%fallgm(i,k)
+           microp_st%fallrn(ideep(i),k) = loc_microp_st%fallrn(i,k)
+           microp_st%fallsn(ideep(i),k) = loc_microp_st%fallsn(i,k)
+           microp_st%fallgn(ideep(i),k) = loc_microp_st%fallgn(i,k)
+           microp_st%fhmrm (ideep(i),k) = loc_microp_st%fhmrm (i,k)
+       end do
+    end do
+end subroutine zm_microp_st_gb
+
 
 end module zm_conv

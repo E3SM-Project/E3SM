@@ -2683,9 +2683,9 @@ end subroutine clubb_init_cnst
            ptend_loc%q(i,k,ixcldliq) = dlfzm(i,k) + dlf2(i,k) * ( 1._r8 - dum1 )
            ptend_loc%q(i,k,ixcldice) = difzm(i,k) + dsfzm(i,k) +  dlf2(i,k) * dum1
            ptend_loc%q(i,k,ixnumliq) = dnlfzm(i,k) + 3._r8 * ( dlf2(i,k) * ( 1._r8 - dum1 ) )   &
-                                                   / (4._r8*3.14_r8*clubb_liq_sh**3*997._r8)      ! Shallow Convection
+                                                   / (4._r8*pi*clubb_liq_sh**3*997._r8)      ! Shallow Convection
            ptend_loc%q(i,k,ixnumice) = dnifzm(i,k) + dnsfzm(i,k) + 3._r8 * ( dlf2(i,k) * dum1 ) &
-                                                   / (4._r8*3.14_r8*clubb_ice_sh**3*500._r8)      ! Shallow Convection
+                                                   / (4._r8*pi*clubb_ice_sh**3*500._r8)      ! Shallow Convection
            ptend_loc%s(i,k)          = dlf2(i,k) * dum1 * latice
          else
 

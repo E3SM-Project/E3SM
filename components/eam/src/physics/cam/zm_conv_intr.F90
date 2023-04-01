@@ -14,7 +14,7 @@ module zm_conv_intr
 !            and aerosol object, and the output of microphysical properties and tendencies
 !---------------------------------------------------------------------------------
    use shr_kind_mod, only: r8=>shr_kind_r8
-   use physconst,    only: cpair                              
+   use physconst,    only: cpair
    use ppgrid,       only: pver, pcols, pverp, begchunk, endchunk
    use zm_conv,      only: zm_conv_evap, zm_convr, convtran, momtran, trigdcape_ull, trig_dcape_only
    use zm_conv,      only: zm_microp
@@ -708,7 +708,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    ! physics types
    type(physics_state) :: state1        ! locally modify for evaporation to use, not returned
-!   type(physics_ptend) :: ptend_loc     ! package tendencies
    type(physics_ptend),target :: ptend_loc     ! package tendencies
    ! physics buffer fields
    real(r8), pointer, dimension(:)   :: prec         ! total precipitation

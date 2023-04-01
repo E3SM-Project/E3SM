@@ -23,6 +23,7 @@ module macrop_driver
   use perf_mod,          only: t_startf, t_stopf
   use cam_logfile,       only: iulog
   use cam_abortutils,    only: endrun
+  use zm_conv,       only: zm_microp
 
   implicit none
   private
@@ -56,8 +57,6 @@ module macrop_driver
 
   character(len=16) :: shallow_scheme
   logical           :: use_shfrc                       ! Local copy of flag from convect_shallow_use_shfrc
-
-  logical           :: zmconv_microp = .false.         ! true if ZM microphysics enabled
 
   integer :: &
     ixcldliq,     &! cloud liquid amount index
@@ -336,7 +335,6 @@ end subroutine macrop_driver_readnl
     dnlfzm_idx = pbuf_get_index('DNLFZM', err)
     dnifzm_idx = pbuf_get_index('DNIFZM', err)
     dnsfzm_idx = pbuf_get_index('DNSFZM', err)
-    if (dnlfzm_idx > 0) zmconv_microp = .true.
 
     if (micro_do_icesupersat) then 
        naai_idx      = pbuf_get_index('NAAI')
@@ -679,7 +677,7 @@ end subroutine macrop_driver_readnl
      ! This is the key procesure generating upper-level cirrus clouds.
      ! The unit of dlf : [ kg/kg/s ]
 
-   if (zmconv_microp) then
+   if (zm_microp) then
       call pbuf_get_field(pbuf, dlfzm_idx, dlfzm)
       call pbuf_get_field(pbuf, difzm_idx, difzm)
       call pbuf_get_field(pbuf, dsfzm_idx, dsfzm)
@@ -716,7 +714,7 @@ end subroutine macrop_driver_readnl
      ! here.
 
      if (do_detrain) then
-       if (zmconv_microp) then
+       if (zm_microp) then
           ptend_loc%q(i,k,ixcldliq) = dlfzm(i,k) + dlf2(i,k) * ( 1._r8 - dum1 )
           ptend_loc%q(i,k,ixcldice) = difzm(i,k) + dsfzm(i,k) +  dlf2(i,k) * dum1
                                
@@ -740,7 +738,7 @@ end subroutine macrop_driver_readnl
                3._r8 * (                         dlf2(i,k)    *  dum1 ) / &
                (4._r8*3.14_r8*50.e-6_r8**3*500._r8)     ! Shallow Convection
           ptend_loc%s(i,k)          = dlf(i,k) * dum1 * latice
-       end if ! zmconv_microp
+       end if ! zm_microp
      else 
         ptend_loc%q(i,k,ixcldliq) = 0._r8
         ptend_loc%q(i,k,ixcldice) = 0._r8
@@ -777,7 +775,7 @@ end subroutine macrop_driver_readnl
           dpdlft  (i,k)             = 0._r8
           shdlft  (i,k)             = 0._r8
        else
-          if (zmconv_microp) then
+          if (zm_microp) then
              dpdlfliq(i,k) =  dlfzm(i,k)
              dpdlfice(i,k) =  difzm(i,k) + dsfzm(i,k)
              dpdlft  (i,k) = 0._r8
