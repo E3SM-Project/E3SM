@@ -134,7 +134,7 @@ contains
         frazilSurfacePressure, landIcePressure, landIceDraft, landIceFraction
 
       integer, dimension(:), pointer :: &
-        landIceMask
+        landIceFloatingMask
 
       call mpas_timer_start('diagnostic solve')
 
@@ -169,8 +169,12 @@ contains
       if (landIcePressureOn) then
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
          call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
-         call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+         call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
          call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+         if (landIceFloatingMask(1) == -1) then
+            call mpas_log_write('landIceFloatingMask contains the default value which likely indicates that this field is missing in the initial condition file (e.g. because it is meant for an older E3SM version).', &
+                                MPAS_LOG_CRIT)
+         endif
       end if
 
       nEdges = nEdgesAll
@@ -445,11 +449,11 @@ contains
       !
       !  compute fields needed to compute land-ice fluxes, either in the ocean model or in the coupler
       !
-      ! inputs: layerThickness, normalVelocity, landIceFraction, landIceMask
+      ! inputs: layerThickness, normalVelocity, landIceFraction, landIceFloatingMask
       ! outputs: 
       if (landIcePressureOn) then
          call ocn_compute_land_ice_flux_input_fields(layerThickness, normalVelocity, activeTracers, &
-                landIceFraction, landIceMask, timeLevel, indexTemperature, indexSalinity)
+                landIceFraction, landIceFloatingMask, timeLevel, indexTemperature, indexSalinity)
       end if
 
       if ( full_compute ) then
@@ -3229,7 +3233,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_compute_land_ice_flux_input_fields(layerThickness, normalVelocity, &
-      activeTracers, landIceFraction, landIceMask, &
+      activeTracers, landIceFraction, landIceFloatingMask, &
       timeLevel, indexTval, indexSval)!{{{
 
       !-----------------------------------------------------------------
@@ -3250,7 +3254,7 @@ contains
          activeTracers
 
       integer, dimension(:), intent(in) :: &
-         landIceMask
+         landIceFloatingMask
 
       !-----------------------------------------------------------------
       !
@@ -3288,7 +3292,7 @@ contains
                blSaltScratch(nCellsAll))
       !$acc enter data create(blTempScratch, blSaltScratch)
 
-      ! Compute top drag
+      ! Compute top drag everywhere there is grounded or floating land ice
 #ifdef MPAS_OPENACC
       !$acc enter data copyin(landIceFraction)
 
@@ -3449,15 +3453,15 @@ contains
 
       ! modify the spatially-varying attenuation coefficient where there is land ice
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(landIceMask)
+      !$acc enter data copyin(landIceFloatingMask)
 
-      !$acc parallel loop present(landIceMask, sfcFlxAttCoeff)
+      !$acc parallel loop present(landIceFloatingMask, sfcFlxAttCoeff)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
 #endif
       do iCell = 1, nCellsAll
-         if(landIceMask(iCell) == 1) then
+         if(landIceFloatingMask(iCell) == 1) then
             sfcFlxAttCoeff(iCell) = config_land_ice_flux_attenuation_coefficient
          end if
       end do
