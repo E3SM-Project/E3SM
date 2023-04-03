@@ -11,6 +11,7 @@ module lnd_import_export
   use TopounitDataType , only: top_as, top_af  ! atmospheric state and flux variables  
   use elm_cpl_indices
   use mct_mod
+  use seq_flds_mod    , only : rof_sed
   !
   implicit none
   !===============================================================================
@@ -1446,7 +1447,10 @@ contains
        endif
        l2x(index_l2x_Flrl_Tqsur,i)  = lnd2atm_vars%Tqsur_grc(g)
        l2x(index_l2x_Flrl_Tqsub,i)  = lnd2atm_vars%Tqsub_grc(g)
-       l2x(index_l2x_coszen_str,i) = lnd2atm_vars%coszen_str(g)
+       l2x(index_l2x_coszen_str,i)  = lnd2atm_vars%coszen_str(g)
+	   if (rof_sed) then
+           l2x(index_l2x_Flrl_rofmud,i) = lnd2atm_vars%qflx_rofmud_grc(g)
+	   end if
        l2x(index_l2x_Flrl_wslake,i) = lnd2atm_vars%wslake_grc(g)/dtime
 
        if (index_l2x_Flrl_inundinf /= 0) then
