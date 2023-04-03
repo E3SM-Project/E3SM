@@ -334,7 +334,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    call cldera_add_partitioned_field("zm",2,dims,dimnames,nparts,part_dim)
 
    ! Last arg is view=false, since AOD fields are *not* views of EAM persistent data.
-   call cldera_add_partitioned_field("aod_tot", 2,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("aod"    , 2,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod_so2", 2,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod_ash", 2,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod_sulf",2,dims,dimnames,nparts,part_dim,.false.)
@@ -441,7 +441,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
      call cldera_set_field_part_data("tw",ipart,field1d)
 
      ! Copied field (AOD)
-     call cldera_set_field_part_size("aod_tot", ipart,ncols)
+     call cldera_set_field_part_size("aod"    , ipart,ncols)
      call cldera_set_field_part_size("aod_so2", ipart,ncols)
      call cldera_set_field_part_size("aod_ash", ipart,ncols)
      call cldera_set_field_part_size("aod_sulf",ipart,ncols)

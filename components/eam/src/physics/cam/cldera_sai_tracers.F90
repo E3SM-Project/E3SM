@@ -598,8 +598,7 @@ contains
     call cldera_set_field_part_data("aod_so2" ,lchnk-begchunk+1,aod_so2)
     call cldera_set_field_part_data("aod_ash" ,lchnk-begchunk+1,aod_ash)
     call cldera_set_field_part_data("aod_sulf",lchnk-begchunk+1,aod_sulf)
-    ! the aod_tot variable was renamed to aod; this line should be updated
-    ! call cldera_set_field_part_data("aod_tot" ,lchnk-begchunk+1,aod_tot)
+    call cldera_set_field_part_data("aod"     ,lchnk-begchunk+1,aod)
 #endif
 
     ! =============== COMPUTE TENDENCIES ===============
