@@ -162,7 +162,6 @@ _TESTS = {
             )
         },
 
-<<<<<<< HEAD
     "e3sm_atm_dustemis" : {
         "time"  : "1:45:00",
         "tests"   : (
@@ -176,21 +175,6 @@ _TESTS = {
             )
         },
 
-=======
-    "e3sm_drv_dustemis" : {
-        "time"  : "1:45:00",
-        "tests"   : (
-            "ERP.ne4pg2_oQU480.F2010.e3sm-drv_dustemis",
-            "REP.ne4pg2_oQU480.F2010. e3sm-drv_dustemis ",
-            "SMS.ne30pg2_EC30to60E2r2.F2010. e3sm-drv_dustemis ",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010. e3sm-drv_dustemis ",
-            "PET_Ln5.ne4pg2_oQU480.F2010. e3sm-drv_dustemis ",
-            "PEM_Ln5.ne4pg2_oQU480.F2010. e3sm-drv_dustemis ",
-            "ERS_D.ne4pg2_oQU480.F2010.e3sm-drv_dustemis"
-            )
-        },
-	
->>>>>>> 30cc0d9aba205f4f860ba23d5d6c19d0cd6fd6a4
     "e3sm_developer" : {
         "inherit" : ("e3sm_land_developer", "e3sm_atm_developer"),
         "time"    : "0:45:00",
