@@ -401,11 +401,7 @@ contains
     use mpishorthand
 #if defined(CLDERA_PROFILING)
     use ppgrid,         only: begchunk
-    use iso_c_binding, only: c_loc
-    use cldera_interface_mod, only: cldera_add_partitioned_field, max_str_len, &
-                                    cldera_set_field_part_size, &
-                                    cldera_set_field_part_data, &
-                                    cldera_commit_all_fields
+    use cldera_interface_mod, only: cldera_set_field_part_data
 #endif
 
     ! Arguments
