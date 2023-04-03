@@ -93,10 +93,15 @@ struct Functions
   static Spack MurphyKoop_svp(const Spack& t, const bool ice, const Smask& range_mask, const char* caller=nullptr);
 
   // Calls a function to obtain the saturation vapor pressure, and then computes
-  // and returns the saturation mixing ratio, with respect to either liquid or ice,
+  // and returns the dry saturation mixing ratio, with respect to either liquid or ice,
   // depending on value of 'ice'
   KOKKOS_FUNCTION
-  static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, const Smask& range_mask, const SaturationFcn func_idx = MurphyKoop, const char* caller=nullptr);
+  static Spack qv_sat_dry(const Spack& t_atm, const Spack& p_atm, const bool ice, const Smask& range_mask, const SaturationFcn func_idx = MurphyKoop, const char* caller=nullptr);
+
+  // Calls qv_sat_dry and converts it to wet mixing ratio
+  KOKKOS_FUNCTION
+  static Spack qv_sat_wet(const Spack& t_atm, const Spack& p_atm, const bool ice, const Smask& range_mask, const Spack& dp_wet, const Spack& dp_dry, 
+                          const SaturationFcn func_idx = MurphyKoop, const char* caller=nullptr);
 
   //checks temperature for negatives and NaNs
   KOKKOS_FUNCTION

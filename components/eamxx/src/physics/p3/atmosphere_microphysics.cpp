@@ -283,8 +283,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   diag_inputs.ni_activated    = get_field_in("ni_activated").get_view<const Pack**>();
   diag_inputs.inv_qc_relvar   = get_field_in("inv_qc_relvar").get_view<const Pack**>();
 
-//OG why is this not using p3_preproc?
-//OG do we want dry or wet pressure here?
+  // P3 will use dry pressure for dry qv_sat
   diag_inputs.pres            = get_field_in("p_dry_mid").get_view<const Pack**>();
   diag_inputs.dpres           = p3_preproc.pseudo_density_dry; //give dry density as input
   diag_inputs.qv_prev         = p3_preproc.qv_prev;

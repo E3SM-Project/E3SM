@@ -35,6 +35,8 @@ void RelativeHumidityDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   add_field<Required>("T_mid",          scalar3d_layout_mid, K,  grid_name, ps);
   add_field<Required>("p_mid",          scalar3d_layout_mid, Pa, grid_name, ps);
   add_field<Required>("qv",          scalar3d_layout_mid, Q,  grid_name, "tracers", ps);
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name, ps);
+  add_field<Required>("pseudo_density_dry", scalar3d_layout_mid, Pa, grid_name, ps);
 
 
   // Construct and allocate the diagnostic field
@@ -50,7 +52,9 @@ void RelativeHumidityDiagnostic::compute_diagnostic_impl()
   const auto npacks  = ekat::npack<Pack>(m_num_levs);
   auto theta     = m_diagnostic_output.get_view<Pack**>();
   auto T_mid     = get_field_in("T_mid").get_view<const Pack**>();
-  auto p_mid     = get_field_in("p_mid").get_view<const Pack**>();
+  auto p_dry_mid = get_field_in("p_dry_mid").get_view<const Pack**>();
+  auto dp_wet    = get_field_in("pseudo_density").get_view<const Pack**>();
+  auto dp_dry    = get_field_in("pseudo_density_dry").get_view<const Pack**>();
   auto qv_mid    = get_field_in("qv").get_view<const Pack**>();
   const auto& RH = m_diagnostic_output.get_view<Pack**>();
 
@@ -64,7 +68,8 @@ void RelativeHumidityDiagnostic::compute_diagnostic_impl()
       const int jpack = idx % npacks;
       const auto range_pack = ekat::range<Pack>(jpack*Pack::n);
       const auto range_mask = range_pack < num_levs;
-      auto qv_sat_l = physics::qv_sat(T_mid(icol,jpack), p_mid(icol,jpack), false, range_mask, physics::MurphyKoop, "RelativeHumidityDiagnostic::compute_diagnostic_impl");
+      auto qv_sat_l = physics::qv_sat_wet(T_mid(icol,jpack),  p_dry_mid(icol,jpack), false, range_mask, dp_wet(icol,jpack), dp_dry(icol,jpack),
+                                           physics::MurphyKoop, "RelativeHumidityDiagnostic::compute_diagnostic_impl");
       RH(icol,jpack) = qv_mid(icol,jpack)/qv_sat_l;
 
   });
