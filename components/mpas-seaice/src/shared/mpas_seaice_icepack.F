@@ -5814,6 +5814,7 @@ contains
   subroutine seaice_init_icepack_constants()
 
     use seaice_constants, only: &
+         seaicePi, &
          seaiceGravity, &
          seaicePuny, &
          seaiceDensityIce, &
@@ -5823,13 +5824,22 @@ contains
          seaiceStefanBoltzmann, &
          seaiceIceSnowEmissivity, &
          seaiceFreshWaterFreezingPoint, &
+         seaiceSeaWaterSpecificHeat, &
+         seaiceFreshIceSpecificHeat, &
          seaiceAirSpecificHeat, &
+         seaiceWaterVaporSpecificHeat, &
+         seaiceLatentHeatVaporization, &
          seaiceLatentHeatSublimation, &
          seaiceLatentHeatMelting, &
+         seaiceIceSurfaceMeltingTemperature, &
+         seaiceSnowSurfaceMeltingTemperature, &
+         seaiceZvir, &
+         seaiceReferenceSalinity, &
          seaiceOceanAlbedo, &
          seaiceVonKarmanConstant, &
          seaiceIceSurfaceRoughness, &
          seaiceStabilityReferenceHeight, &
+         seaiceSnowPatchiness, &
          seaiceIceStrengthConstantHiblerP, &
          seaiceIceStrengthConstantHiblerC, &
          seaiceIceOceanDragCoefficient, &
@@ -5839,7 +5849,13 @@ contains
          iceThicknessMinimum, &
          snowThicknessMinimum
 
-    use ice_constants_colpkg, only: &
+!echmod: These constants will need to be defined in the MPAS-SI driver (or a shared E3SM constants file) 
+!echmod: eventually, rather than in the old column package. For now, use the column package's values.
+!echmod: If E3SM/MPAS-SI wants to use icepack's default values (not recommended), then they should be 
+!echmod: obtained using icepack_query_parameters instead of 'using' them.  In that case, initializing 
+!echmod: them with the icepack_init_parameters call is unnecessary.
+    use ice_constants_colpkg, only: &  ! for E3SM runs this is currently in src/column/constants/cesm/
+         pi, &
          gravit, &
          rhoi, &
          rhos, &
@@ -5848,9 +5864,17 @@ contains
          stefan_boltzmann, &
          emissivity, &
          Tffresh, &
+         cp_ice, &
          cp_air, &
+         cp_ocn, &
+         cp_wv, &
+         Lvap, &
          Lsub, &
          Lfresh, &
+         Timelt, &
+         Tsmelt, &
+         zvir, &
+         ice_ref_salinity, &
          Pstar, &
          Cstar, &
          dragio, &
@@ -5859,9 +5883,11 @@ contains
          vonkar, &
          iceruf, &
          zref, &
-         sk_l, &
-         R_gC2molC
+         snowpatch, &
+         sk_l!, &
+         !R_gC2molC
 
+    seaicePi                         = pi
     seaiceGravity                    = gravit
     seaicePuny                       = puny
     seaiceDensityIce                 = rhoi
@@ -5871,18 +5897,27 @@ contains
     seaiceStefanBoltzmann            = stefan_boltzmann
     seaiceIceSnowEmissivity          = emissivity
     seaiceFreshWaterFreezingPoint    = Tffresh
+    seaiceSeaWaterSpecificHeat       = cp_ocn
+    seaiceFreshIceSpecificHeat       = cp_ice
     seaiceAirSpecificHeat            = cp_air
+    seaiceWaterVaporSpecificHeat     = cp_wv
+    seaiceLatentHeatVaporization     = Lvap
     seaiceLatentHeatSublimation      = Lsub
     seaiceLatentHeatMelting          = Lfresh
+    seaiceIceSurfaceMeltingTemperature  = Timelt
+    seaiceSnowSurfaceMeltingTemperature = Tsmelt
+    seaiceZvir                       = zvir
+    seaiceReferenceSalinity          = ice_ref_salinity
     seaiceOceanAlbedo                = albocn
     seaiceVonKarmanConstant          = vonkar
     seaiceIceSurfaceRoughness        = iceruf
     seaiceStabilityReferenceHeight   = zref
+    seaiceSnowPatchiness             = snowpatch
     seaiceIceStrengthConstantHiblerP = Pstar
     seaiceIceStrengthConstantHiblerC = Cstar
     seaiceIceOceanDragCoefficient    = dragio
     skeletalLayerThickness           = sk_l
-    gramsCarbonPerMolCarbon          = R_gC2molC
+    !gramsCarbonPerMolCarbon          = R_gC2molC
 
     iceAreaMinimum       = seaicePuny
     iceThicknessMinimum  = seaicePuny
@@ -12153,7 +12188,43 @@ contains
   subroutine init_icepack_package_configs(domain)
 
     use icepack_intfc, only: &
-         icepack_init_parameters
+         icepack_init_parameters, &
+         icepack_configure, &
+         icepack_query_parameters ! debugging
+
+    use seaice_constants, only: &
+         pii, &                              ! pi                     !echmod: use SHR value instead?
+         seaicePuny, &                       ! a small number
+         seaiceSecondsPerDay, &              ! number of seconds in 1 day
+         seaiceDensityIce, &                 ! density of ice (kg/m^3)
+         seaiceDensitySnow, &                ! density of snow (kg/m^3)
+         seaiceDensitySeaWater, &            ! density of seawater (kg/m^3)
+         seaiceDensityFreshwater, &          ! density of freshwater (kg/m^3)
+         seaiceFreshIceSpecificHeat, &       ! specific heat of fresh ice (J/kg/K)
+         seaiceWaterVaporSpecificHeat, &     ! specific heat of water vapor (J/kg/K)
+         seaiceAirSpecificHeat, &            ! specific heat of air (J/kg/K)
+         seaiceSeaWaterSpecificHeat, &       ! specific heat of ocn (J/kg/K)
+         seaiceLatentHeatVaporization, &     ! latent heat, vaporization freshwater (J/kg)
+         seaiceZvir, &                       ! rh2o/rair - 1.0
+         seaiceLatentHeatSublimation, &      ! latent heat, sublimation freshwater (J/kg)
+         seaiceLatentHeatMelting, &          ! latent heat of melting of fresh ice (J/kg)
+         seaiceIceSurfaceMeltingTemperature, &  ! melting temp. ice top surface  (C)
+         seaiceSnowSurfaceMeltingTemperature, & ! melting temp. snow top surface  (C)
+         seaiceStefanBoltzmann, &            ! J m-2 K-4 s-1
+         seaiceIceSnowEmissivity, &          ! emissivity of snow and ice
+         seaiceStabilityReferenceHeight, &   ! stability reference height (m)
+         seaiceFreshWaterFreezingPoint, &    ! freezing temp of fresh ice (K)
+         seaiceIceOceanDragCoefficient, &    ! ice ocean drag coefficient
+         seaiceIceSurfaceRoughness, &        ! ice surface roughness (m)
+         seaiceVonKarmanConstant, &          ! Von Karman constant
+         seaiceOceanAlbedo, &                ! Ocean albedo
+         seaiceReferenceSalinity, &          ! ice reference salinity (ppt)
+         seaicePi, &                         ! pi
+         seaiceGravity, &                    ! gravitational acceleration (m/s^2)
+         seaiceSnowPatchiness, &             ! snow patchiness parameter
+         seaiceIceStrengthConstantHiblerP, & ! P* constant in Hibler strength formulation
+         seaiceIceStrengthConstantHiblerC, & ! C* constant in Hibler strength formulation
+         skeletalLayerThickness              ! skeletal layer thickness
 
     type(domain_type), intent(inout) :: &
          domain
@@ -12364,6 +12435,10 @@ contains
 
     character(len=strKIND), pointer :: tmp
     character(len=strKIND), pointer :: tmp_config_shortwave
+
+    ! debugging
+    integer :: itmp1, itmp2
+    real(kind=RKIND) :: rtmp1, rtmp2
 
     call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
     call MPAS_pool_get_config(domain % configs, "config_heat_conductivity_type", config_heat_conductivity_type)
@@ -12582,73 +12657,204 @@ contains
        deallocate (tmp)
     endif
 
+!echmod debugging
+    call mpas_log_write(' ')
+    call mpas_log_write(" ----- debugging parameters -----")
+    call mpas_log_write(" ----- compare values prior to icepack init -----")
+
+    rtmp1 = seaicePuny
+    call icepack_query_parameters(puny_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('puny differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = pii       ! defined in mpas_seaice_constants.F
+    call icepack_query_parameters(pi_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('pi differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaicePi  ! defined above using pi from ice_constants_colpkg.F90
+    call icepack_query_parameters(pi_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('pi differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceSecondsPerDay
+    call icepack_query_parameters(secday_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('secday differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceDensitySnow
+    call icepack_query_parameters(rhos_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('rhos differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceDensityIce
+    call icepack_query_parameters(rhoi_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('rhoi differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceDensitySeaWater
+    call icepack_query_parameters(rhow_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('rhow differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceAirSpecificHeat
+    call icepack_query_parameters(cp_air_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('cp_air differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceIceSnowEmissivity
+    call icepack_query_parameters(emissivity_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('emissivity differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceFreshIceSpecificHeat
+    call icepack_query_parameters(cp_ice_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('cp_ice differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceSeaWaterSpecificHeat
+    call icepack_query_parameters(cp_ocn_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('cp_ocn differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceIceOceanDragCoefficient
+    call icepack_query_parameters(dragio_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('dragio differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceIceSurfaceRoughness
+    call icepack_query_parameters(iceruf_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('iceruf differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceOceanAlbedo
+    call icepack_query_parameters(albocn_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('albocn differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceGravity
+    call icepack_query_parameters(gravit_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('gravit differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceDensityFreshwater
+    call icepack_query_parameters(rhofresh_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('rhofresh differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceZvir
+    call icepack_query_parameters(zvir_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('zvir differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceVonKarmanConstant
+    call icepack_query_parameters(vonkar_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('vonkar differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceWaterVaporSpecificHeat
+    call icepack_query_parameters(cp_wv_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('cp_wv differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceStefanBoltzmann
+    call icepack_query_parameters(stefan_boltzmann_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('stefan_boltzmann differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceReferenceSalinity
+    call icepack_query_parameters(ice_ref_salinity_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('ice_ref_salinity differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceFreshWaterFreezingPoint
+    call icepack_query_parameters(Tffresh_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Tffresh differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceLatentHeatSublimation
+    call icepack_query_parameters(Lsub_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Lsub differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceLatentHeatVaporization
+    call icepack_query_parameters(Lvap_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Lvap differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceIceSurfaceMeltingTemperature
+    call icepack_query_parameters(Timelt_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Timelt differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceSnowSurfaceMeltingTemperature
+    call icepack_query_parameters(Tsmelt_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Tsmelt differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceiceStrengthConstantHiblerP
+    call icepack_query_parameters(Pstar_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Pstar differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceiceStrengthConstantHiblerC
+    call icepack_query_parameters(Cstar_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Cstar differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceStabilityReferenceHeight
+    call icepack_query_parameters(zref_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('zref differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceSnowPatchiness
+    call icepack_query_parameters(snowpatch_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('snowpatch differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+!    rtmp1 = skeletalLayerThickness
+!    call icepack_query_parameters(sk_l_out=rtmp2)
+!    if (rtmp1 /= rtmp2) call mpas_log_write('sk_l differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    ! commented-out arguments take the default values from icepack_parameters.F90
     call icepack_init_parameters(&
-         !argcheck_in             = , &
-         !puny_in                 = , &
+         !argcheck_in             = , &               ! may not be needed in the driver
+         puny_in                 = seaicePuny, &
          !bignum_in               = , &
-         !pi_in                   = , &
-         !secday_in               = , &
-         !rhos_in                 = , &
-         !rhoi_in                 = , &
-         !rhow_in                 = , &
-         !cp_air_in               = , &
-         !emissivity_in           = , &
-         !cp_ice_in               = , &
-         !cp_ocn_in               = , &
+!         pi_in                   = pii, &            ! use SHR value instead
+         pi_in                   = seaicePi, &
+         secday_in               = seaiceSecondsPerDay, &
+         rhos_in                 = seaiceDensitySnow, &
+         rhoi_in                 = seaiceDensityIce, &
+         rhow_in                 = seaiceDensitySeaWater, &
+         cp_air_in               = seaiceAirSpecificHeat, & !
+         emissivity_in           = seaiceIceSnowEmissivity, & !
+         cp_ice_in               = seaiceFreshIceSpecificHeat, & !
+         cp_ocn_in               = seaiceSeaWaterSpecificHeat, &
          !hfrazilmin_in           = , &
          !floediam_in             = , &
-         !depressT_in             = , &
-         !dragio_in               = , &
-         !thickness_ocn_layer1_in = , &
-         !iceruf_ocn_in           = , &
-         !albocn_in               = , &
-         !gravit_in               = , &
+         !depressT_in             = , &             ! used for prescribed ice in CICE
+         dragio_in               = seaiceIceOceanDragCoefficient, & ! note calc_dragio not implemented
+         !thickness_ocn_layer1_in = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         !iceruf_ocn_in           = , &        ! under-ice roughness, not yet implemented
+         albocn_in               = seaiceOceanAlbedo, &
+         gravit_in               = seaiceGravity, &
          !viscosity_dyn_in        = , &
          !Tocnfrz_in              = , &
-         !rhofresh_in             = , &
-         !zvir_in                 = , &
-         !vonkar_in               = , &
-         !cp_wv_in                = , &
-         !stefan_boltzmann_in     = , &
-         !ice_ref_salinity_in     = , &
-         !Tffresh_in              = , &
-         !Lsub_in                 = , &
-         !Lvap_in                 = , &
-         !Timelt_in               = , &
-         !Tsmelt_in               = , &
-         !iceruf_in               = , &
+         rhofresh_in             = seaiceDensityFreshwater, &
+         zvir_in                 = seaiceZvir, &
+         vonkar_in               = seaiceVonKarmanConstant, &
+         cp_wv_in                = seaiceWaterVaporSpecificHeat, & !
+         stefan_boltzmann_in     = seaiceStefanBoltzmann, &
+         ice_ref_salinity_in     = seaiceReferenceSalinity, & !
+         Tffresh_in              = seaiceFreshWaterFreezingPoint, &
+         Lsub_in                 = seaiceLatentHeatSublimation, & !
+         Lvap_in                 = seaiceLatentHeatVaporization, & !
+         Timelt_in               = seaiceIceSurfaceMeltingTemperature, & !
+         Tsmelt_in               = seaiceSnowSurfaceMeltingTemperature, & !
+         iceruf_in               = seaiceIceSurfaceRoughness, & !
          Cf_in                   = config_ratio_ridging_work_to_PE, &
-         !Pstar_in                = , &
-         !Cstar_in                = , &
+         Pstar_in                = seaiceIceStrengthConstantHiblerP, &
+         Cstar_in                = seaiceIceStrengthConstantHiblerC, &
          !kappav_in               = , &
          !kice_in                 = , &
          !ksno_in                 = , &
-         !zref_in                 = , &
+         zref_in                 = seaiceStabilityReferenceHeight, &
          !hs_min_in               = , &
-         !snowpatch_in            = , &
-         !rhosi_in                = , &
-         !sk_l_in                 = , &
-         !saltmax_in              = , &
-         !phi_init_in             = , &
-         !min_salin_in            = , &
-         !salt_loss_in            = , &
-         !min_bgc_in              = , &
-         !dSin0_frazil_in         = , &
-         !hi_ssl_in               = , &
-         !hs_ssl_in               = , &
-         !awtvdr_in               = , &
-         !awtidr_in               = , &
-         !awtvdf_in               = , &
-         !awtidf_in               = , &
-         !qqqice_in               = , &
-         !TTTice_in               = , &
-         !qqqocn_in               = , &
-         !TTTocn_in               = , &
+         snowpatch_in            = seaiceSnowPatchiness, & ! ccsm3 radiation scheme
+         !rhosi_in                = , &        ! brine, zbgc, zsalinity
+         sk_l_in                 = skeletalLayerThickness, & !
+         !saltmax_in              = , &        ! brine
+         !phi_init_in             = , &        ! therm_itd
+         !min_salin_in            = , &        ! ktherm=1, brine, zsalinity
+         !salt_loss_in            = , &        ! brine, zsalinity
+         !min_bgc_in              = , &        ! shortwave
+         !dSin0_frazil_in         = , &        ! therm_itd
+         !hi_ssl_in               = , &        ! shortwave, aerosol
+         !hs_ssl_in               = , &        ! shortwave, aerosol, itd, therm_itd, bgc
+         !awtvdr_in               = , &        ! shortwave
+         !awtidr_in               = , &        ! shortwave
+         !awtvdf_in               = , &        ! shortwave
+         !awtidf_in               = , &        ! shortwave
+         !qqqice_in               = , &        ! atmo, therm_shared
+         !TTTice_in               = , &        ! atmo, therm_shared
+         !qqqocn_in               = , &        ! atmo
+         !TTTocn_in               = , &        ! atmo
          ktherm_in               = config_thermodynamics_type_int, &
          conduct_in              = config_heat_conductivity_type, &
          fbot_xfer_type_in       = config_ocean_heat_transfer_type, &
          calc_Tsfc_in            = config_calc_surface_temperature, &
-         !dts_b_in                = , &
+         !dts_b_in                = , &        ! brine, zsalinity
          update_ocn_f_in         = config_update_ocean_fluxes, &
          ustar_min_in            = config_min_friction_velocity, &
          a_rapid_mode_in         = config_rapid_mode_channel_radius, &
@@ -12680,17 +12886,18 @@ contains
          formdrag_in             = config_use_form_drag, &
          highfreq_in             = config_use_high_frequency_coupling, &
          natmiter_in             = config_boundary_layer_iteration_number, &
-         !atmiter_conv_in         = , &
-         !calc_dragio_in          = , &
+         !atmiter_conv_in         = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         !calc_dragio_in          = , &        ! not yet implemented in MPAS-SI (stealth feature)
          tfrz_option_in          = config_sea_freezing_temperature_type, &
          kitd_in                 = config_itd_conversion_type_int, &
          kcatbound_in            = config_category_bounds_type_int, &
          hs0_in                  = config_snow_to_ice_transition_depth, &
          frzpnd_in               = config_pond_refreezing_type, &
+         !saltflux_option_in      = config_salt_flux_coupling_type, &
          !floeshape_in            = , &
-         !wave_spec_in            = , &
-         !wave_spec_type_in       = , &
-         !nfreq_in                = , &
+         !wave_spec_in            = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         !wave_spec_type_in       = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         !nfreq_in                = , &        ! not yet implemented in MPAS-SI (stealth feature)
          dpscale_in              = config_pond_flushing_timescale, &
          rfracmin_in             = config_min_meltwater_retained_fraction, &
          rfracmax_in             = config_max_meltwater_retained_fraction, &
@@ -12711,7 +12918,7 @@ contains
          l_skS_in                = config_zsalinity_gravity_drainage_scale, &
          dEdd_algae_in           = config_use_shortwave_bioabsorption, &
          phi_snow_in             = config_snow_porosity_at_ice_surface, &
-         !T_max_in                = , &
+         !T_max_in                = , &         ! BGC
          !fsal_in                 = , &
          !fr_resp_in              = , &
          !algal_vel_in            = , &
@@ -12732,20 +12939,19 @@ contains
          !t_sk_conv_in            = , &
          !t_sk_ox_in              = , &
          !frazil_scav_in          = , &
-         !sw_redist_in            = , &
-         !sw_frac_in              = , &
-         !sw_dtemp_in             = , &
+         !sw_redist_in            = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         !sw_frac_in              = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         !sw_dtemp_in             = , &        ! not yet implemented in MPAS-SI (stealth feature)
          snwgrain_in             = config_use_snow_grain_radius &
-         !snwredist_in            = , &
-         !use_smliq_pnd_in        = , &
-         !rsnw_fall_in            = , &
-         !rsnw_tmax_in            = , &
-         !rhosnew_in              = , &
-         !rhosmin_in              = , &
-         !rhosmax_in              = , &
-         !windmin_in              = , &
-         !drhosdwind_in           = , &
-         !snwlvlfac_in            = , &
+         !snwredist_in            = config_snow_redistribution_scheme, &
+         !use_smliq_pnd_in        = config_use_snow_liquid_ponds, &
+         !rsnw_fall_in            = config_fallen_snow_radius, &
+         !rsnw_tmax_in            = config_max_dry_snow_radius, &
+         !rhosnew_in              = config_new_snow_density, &
+         !rhosmax_in              = config_max_snow_density, &
+         !windmin_in              = config_minimum_wind_compaction, &
+         !drhosdwind_in           = config_wind_compaction_factor), &
+         !snwlvlfac_in            = , &        ! namelist option needs to be added
          !isnw_T_in               = , &
          !isnw_Tgrd_in            = , &
          !isnw_rhos_in            = , &
@@ -12756,87 +12962,56 @@ contains
          !snowage_kappa_in        = , &
          !snowage_drdt0_in        = , &
          !snw_aging_table_in      = , &
-         !snw_ssp_table_in        = , &
-         !ssp_snwextdr_in         = , &
-         !ssp_snwextdf_in         = , &
-         !ssp_snwalbdr_in         = , &
-         !ssp_snwalbdf_in         = , &
-         !ssp_sasymmdr_in         = , &
-         !ssp_sasymmdf_in         = , &
-         !ssp_aasymmmd_in         = , &
-         !ssp_aerextmd_in         = , &
-         !ssp_aeralbmd_in         = , &
-         !ssp_abcenhmd_in         = , &
-         !ssp_aasymm_in           = , &
-         !ssp_aerext_in           = , &
-         !ssp_aeralb_in           =
          )
 
+    call icepack_configure ()     ! this recomputes Lfresh - make it optional for E3SM?
 
+    call mpas_log_write(" ----- compare values after icepack init -----")
 
-    !call icepack_init_parameters(&
-    !     ktherm                = config_thermodynamics_type_int, &
-    !     conduct               = config_heat_conductivity_type, &
-    !     fbot_xfer_type        = config_ocean_heat_transfer_type, &
-    !     calc_Tsfc             = config_calc_surface_temperature, &
-    !     ustar_min             = config_min_friction_velocity, &
-    !     a_rapid_mode          = config_rapid_mode_channel_radius, &
-    !     Rac_rapid_mode        = config_rapid_model_critical_Ra, &
-    !     aspect_rapid_mode     = config_rapid_mode_aspect_ratio, &
-    !     dSdt_slow_mode        = config_slow_mode_drainage_strength, &
-    !     phi_c_slow_mode       = config_slow_mode_critical_porosity, &
-    !     phi_i_mushy           = config_congelation_ice_porosity, &
-    !     shortwave             = config_shortwave_type, &
-    !     albedo_type           = config_albedo_type, &
-    !     albicev               = config_visible_ice_albedo, &
-    !     albicei               = config_infrared_ice_albedo, &
-    !     albsnowv              = config_visible_snow_albedo, &
-    !     albsnowi              = config_infrared_snow_albedo, &
-    !     ahmax                 = config_variable_albedo_thickness_limit, &
-    !     R_ice                 = config_ice_shortwave_tuning_parameter, &
-    !     R_pnd                 = config_pond_shortwave_tuning_parameter, &
-    !     R_snw                 = config_snow_shortwave_tuning_parameter, &
-    !     dT_mlt                = config_temp_change_snow_grain_radius_change, &
-    !     rsnw_mlt              = config_max_melting_snow_grain_radius, &
-    !     kalg                  = config_algae_absorption_coefficient, &
-    !     kstrength             = config_ice_strength_formulation_int, &
-    !     krdg_partic           = config_ridging_participation_function_int, &
-    !     krdg_redist           = config_ridging_redistribution_function_int, &
-    !     mu_rdg                = config_ridiging_efolding_scale, &
-    !     Cf                    = config_ratio_ridging_work_to_PE, &
-    !     atmbndy               = config_atmos_boundary_method, &
-    !     calc_strair           = config_calc_surface_stresses, &
-    !     formdrag              = config_use_form_drag, &
-    !     highfreq              = config_use_high_frequency_coupling, &
-    !     natmiter              = config_boundary_layer_iteration_number, &
-    !     oceanmixed_ice        = config_use_ocean_mixed_layer, &
-    !     tfrz_option           = config_sea_freezing_temperature_type, &!
-    !     kitd                  = config_itd_conversion_type_int, &
-    !     kcatbound             = config_category_bounds_type_int, &
-    !     hs0                   = config_snow_to_ice_transition_depth, &
-    !     frzpnd                = config_pond_refreezing_type, &
-    !     dpscale               = config_pond_flushing_timescale, &
-    !     rfracmin              = config_min_meltwater_retained_fraction, &
-    !     rfracmax              = config_max_meltwater_retained_fraction, &
-    !     pndaspect             = config_pond_depth_to_fraction_ratio, &
-    !     hs1                   = config_snow_on_pond_ice_tapering_parameter, &
-    !     hp1                   = config_critical_pond_ice_thickness, &
-    !     bgc_flux_type         = config_skeletal_bgc_flux_type, &
-    !     z_tracers             = config_use_vertical_tracers, &
-    !     scale_bgc             = config_scale_initial_vertical_bgc, &
-    !     solve_zbgc            = config_use_vertical_biochemistry, &
-    !     dEdd_algae            = config_use_shortwave_bioabsorption, &
-    !     modal_aero            = config_use_modal_aerosols, &!
-    !     skl_bgc               = config_use_skeletal_biochemistry, &
-    !     solve_zsal            = config_use_vertical_zsalinity, &
-    !     grid_o                = config_biogrid_bottom_molecular_sublayer, &
-    !     l_sk                  = config_bio_gravity_drainage_length_scale, &
-    !     grid_o_t              = config_biogrid_top_molecular_sublayer, &
-    !     initbio_frac          = config_new_ice_fraction_biotracer, &
-    !     frazil_scav           = config_fraction_biotracer_in_frazil, &
-    !     grid_oS               = config_zsalinity_molecular_sublayer, &!
-    !     l_skS                 = config_zsalinity_gravity_drainage_scale, &!
-    !     phi_snow              = config_snow_porosity_at_ice_surface, &!
+    ! Lfresh is derived in Icepack, not sent in from driver
+    rtmp1 = seaiceLatentHeatMelting
+    call icepack_query_parameters(Lfresh_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Lfresh differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    ! recheck values
+    rtmp1 = seaiceAirSpecificHeat
+    call icepack_query_parameters(cp_air_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('cp_air differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceIceSnowEmissivity
+    call icepack_query_parameters(emissivity_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('emissivity differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceFreshIceSpecificHeat
+    call icepack_query_parameters(cp_ice_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('cp_ice differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceSeaWaterSpecificHeat
+    call icepack_query_parameters(cp_ocn_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('cp_ocn differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceZvir
+    call icepack_query_parameters(zvir_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('zvir differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceLatentHeatSublimation
+    call icepack_query_parameters(Lsub_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('Lsub differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceSnowPatchiness
+    call icepack_query_parameters(snowpatch_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('snowpatch differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    call mpas_log_write(" ----- end debugging parameters -----")
+    call mpas_log_write(' ')
+!echmod debugging end
+
+! parameters that have not yet been fully implemented in the list above
+    !call icepack_init_parameters(& 
+    !     shortwave             = config_shortwave_type, &         ! not working correctly above
+    !     oceanmixed_ice        = config_use_ocean_mixed_layer, &  ! not used in Icepack/columnphysics (driver only)
+    !     grid_o_t              = config_biogrid_top_molecular_sublayer, &  ! not used in Icepack
+    !     frazil_scav           = config_fraction_biotracer_in_frazil, &    ! BGC 
     !     ratio_Si2N_diatoms    = config_ratio_Si_to_N_diatoms, &
     !     ratio_Si2N_sp         = config_ratio_Si_to_N_small_plankton, &
     !     ratio_Si2N_phaeo      = config_ratio_Si_to_N_phaeocystis, &
@@ -12952,14 +13127,6 @@ contains
     !     F_abs_chl_sp          = config_scales_absorption_small_plankton, &
     !     F_abs_chl_phaeo       = config_scales_absorption_phaeocystis, &
     !     ratio_C2N_proteins    = config_ratio_C_to_N_proteins, &
-    !     snwredist             = config_snow_redistribution_scheme, &
-    !     use_smliq_pnd         = config_use_snow_liquid_ponds, &
-    !     rsnw_fall             = config_fallen_snow_radius, &
-    !     rsnw_tmax             = config_max_dry_snow_radius, &
-    !     rhosnew               = config_new_snow_density, &
-    !     rhosmax               = config_max_snow_density, &
-    !     windmin               = config_minimum_wind_compaction, &
-    !     drhosdwind            = config_wind_compaction_factor)
 
     !-----------------------------------------------------------------------
     ! Parameters for thermodynamics
@@ -13110,7 +13277,7 @@ contains
     !-----------------------------------------------------------------------
 
     ! atmbndy:
-    ! atmo boundary method, 'default' ('ccsm3') or 'constant'
+    ! atmo boundary method, 'similarity' or 'constant' or 'mixed'
     !atmbndy = config_atmos_boundary_method
 
     ! calc_strair:
