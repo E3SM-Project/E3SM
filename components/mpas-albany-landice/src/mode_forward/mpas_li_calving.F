@@ -1770,6 +1770,11 @@ module li_calving
              endif
           enddo
 
+          ! halo update on vonMisesStress before extrap
+          call mpas_timer_start("halo updates")
+          call mpas_dmpar_field_halo_exch(domain, 'vonMisesStress')
+          call mpas_timer_stop("halo updates")
+
           ! the row of cells that are adjacent to invalid velocity will have garbage strain rates and vM stress
           ! so extrapolate into those cells from their valid neighbors
           do iCell = 1, nCellsArray(2)  ! this is owned cells plus first halo
