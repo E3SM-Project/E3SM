@@ -215,6 +215,9 @@ contains
 
   subroutine seaice_init_icepack_physics_package_parameters(domain)
 
+    use icepack_intfc, only: &
+         icepack_configure
+
     type(domain_type), intent(inout) :: domain
 
     logical, pointer :: &
@@ -222,6 +225,9 @@ contains
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
     if (config_use_column_package) then
+
+       ! configure icepack before any other part of it is called
+       call icepack_configure ()
 
        ! set non activated variable pointers to other memory
        call init_column_non_activated_pointers(domain)
@@ -381,9 +387,9 @@ contains
 
   subroutine init_column_thermodynamic_profiles(domain)
 
-    use ice_colpkg, only: &
-         colpkg_init_thermo, &
-         colpkg_liquidus_temperature
+    use ice_colpkg, only: &             !echmod - remove
+         colpkg_init_thermo, &          !echmod - remove
+         colpkg_liquidus_temperature    !echmod - remove
     use icepack_intfc, only: &
          icepack_init_thermo, &
          icepack_liquidus_temperature
@@ -419,9 +425,9 @@ contains
 
        allocate(initialSalinityProfileVertical(1:nIceLayers+1))
 
-       call colpkg_init_thermo(&
-            nIceLayers, &
-            initialSalinityProfileVertical)
+       call colpkg_init_thermo(&              !echmod - remove
+            nIceLayers, &                     !echmod - remove
+            initialSalinityProfileVertical)   !echmod - remove
        call icepack_init_thermo(&
             nIceLayers, &
             initialSalinityProfileVertical)
@@ -12492,30 +12498,6 @@ contains
          seaicePi, &                         ! pi
          seaiceGravity, &                    ! gravitational acceleration (m/s^2)
          seaiceSnowPatchiness, &             ! snow patchiness parameter
-         seaiceIceStrengthConstantHiblerP, & ! P* constant in Hibler strength formulation
-         seaiceIceStrengthConstantHiblerC, & ! C* constant in Hibler strength formulation
-         skeletalLayerThickness              ! skeletal layer thickness
-
-    use seaice_constants, only: &
-         pii, &                              ! pi
-         seaicePuny, &                       ! a small number
-         seaiceSecondsPerDay, &              ! number of seconds in 1 day
-         seaiceDensityIce, &                 ! density of ice (kg/m^3)
-         seaiceDensitySnow, &                ! density of snow (kg/m^3)
-         seaiceDensitySeaWater, &            ! density of seawater (kg/m^3)
-         seaiceDensityFreshwater, &          ! density of freshwater (kg/m^3)
-         seaiceAirSpecificHeat, &            ! specific heat of air (J/kg/K)
-         seaiceSeaWaterSpecificHeat, &       ! specific heat of ocn (J/kg/K)
-         seaiceLatentHeatSublimation, &      ! latent heat, sublimation freshwater (J/kg)
-         seaiceStefanBoltzmann, &            ! J m-2 K-4 s-1
-         seaiceIceSnowEmissivity, &          ! emissivity of snow and ice
-         seaiceStabilityReferenceHeight, &   ! stability reference height (m)
-         seaiceFreshWaterFreezingPoint, &    ! freezing temp of fresh ice (K)
-         seaiceIceOceanDragCoefficient, &    ! ice ocean drag coefficient
-         seaiceIceSurfaceRoughness, &        ! ice surface roughness (m)
-         seaiceVonKarmanConstant, &          ! Von Karman constant
-         seaiceOceanAlbedo, &                ! Ocean albedo
-         seaiceGravity, &                    ! gravitational acceleration (m/s^2)
          seaiceIceStrengthConstantHiblerP, & ! P* constant in Hibler strength formulation
          seaiceIceStrengthConstantHiblerC, & ! C* constant in Hibler strength formulation
          skeletalLayerThickness              ! skeletal layer thickness
