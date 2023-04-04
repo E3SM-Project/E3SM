@@ -1,5 +1,6 @@
 #include "atmosphere_surface_coupling_exporter.hpp"
 
+#include "ekat/ekat_parse_yaml_file.hpp"
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
 
@@ -135,10 +136,6 @@ void SurfaceCouplingExporter::setup_surface_coupling_data(const SCDataManager &s
   m_num_cpl_exports    = sc_data_manager.get_num_cpl_fields();
   m_num_scream_exports = sc_data_manager.get_num_scream_fields();
 
-  // Allocate enum export source view
-  m_export_source = view_1d<DefaultDevice,ExportType>("",m_num_scream_exports);
-  Kokkos::deep_copy(m_export_source,EAMXX);  // The default is that all export variables will be derived from the EAMxx state.
-
   EKAT_ASSERT_MSG(m_num_scream_exports <= m_num_cpl_exports,
                   "Error! More SCREAM exports than actual cpl exports.\n");
   EKAT_ASSERT_MSG(m_num_cols == sc_data_manager.get_field_size(), "Error! Surface Coupling exports need to have size ncols.");
@@ -172,10 +169,6 @@ void SurfaceCouplingExporter::setup_surface_coupling_data(const SCDataManager &s
 void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
 {
   bool any_initial_exports = false;
-
-  // Set the number of exports from eamxx or set to a constant
-  m_num_eamxx_exports = m_num_scream_exports;
-  m_num_const_exports = 0;
 
   for (int i=0; i<m_num_scream_exports; ++i) {
 
@@ -211,6 +204,36 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
   // Copy data to device for use in do_export()
   Kokkos::deep_copy(m_column_info_d, m_column_info_h);
 
+  // Set the number of exports from eamxx or set to a constant
+  m_export_source = view_1d<DefaultDevice,ExportType>("",m_num_scream_exports);
+  Kokkos::deep_copy(m_export_source,EAMXX);  // The default is that all export variables will be derived from the EAMxx state.
+  m_num_eamxx_exports = m_num_scream_exports;
+  auto prescribed_export_control = m_params.get<std::string>("prescribed_export_control_file","NONE");
+  if (prescribed_export_control != "NONE") {
+    // There is a separate file that controls how some export fields will be handled.
+    ekat::ParameterList export_params("Export Control");
+    parse_yaml_file(prescribed_export_control,export_params);
+    export_params.print(); //ASD
+    if (export_params.isSublist("set_export_to_constant")) {
+      m_export_constants = view_1d<DefaultDevice,Real>("",m_num_scream_exports);
+      // Some of the vars will be set to a constant value
+      auto constant_exp = export_params.sublist("set_export_to_constant");
+      for (int i=0; i<m_num_scream_exports; ++i) {
+        std::string fname = m_export_field_names[i];
+        if (constant_exp.isParameter(fname)) {
+          EKAT_REQUIRE_MSG(m_export_source(i)==EAMXX,"Error! surface_coupling_exporter - '" + fname + "' is being set in " + prescribed_export_control + " more than once.");
+          m_export_source(i) = CONSTANT;
+          m_num_const_exports += 1;
+          m_num_eamxx_exports -= 1;
+          m_export_constants(i) = constant_exp.get<Real>(fname);
+        }
+      }
+    }
+  } 
+  // Final sanity check
+  EKAT_REQUIRE_MSG(m_num_scream_exports = m_num_const_exports+m_num_eamxx_exports,"Error! surface_coupling_exporter - Something went wrong set the type of export for all variables.");
+  EKAT_REQUIRE_MSG(m_num_eamxx_exports>=0,"Error! surface_coupling_exporter - The number of exports derived from EAMxx < 0, something must have gone wrong in assigning the types of exports for all variables.");
+
   // Perform initial export (if any are marked for export during initialization)
   if (any_initial_exports) do_export(0, true);
 }
@@ -228,16 +251,27 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
   if (m_num_eamxx_exports>0) {
     do_export_from_eamxx(dt,called_during_initialization);
   }
+
+  // Finish up exporting vars
+  do_export_to_cpl(called_during_initialization);
 }
 // =========================================================================================
 void SurfaceCouplingExporter::do_export_constant(const double dt, const bool called_during_initialization)
 {
-  // Do Nothing right now.
+  // Cycle through those fields that will be set to a constant value:
+  for (int i=0; i<m_num_scream_exports; ++i) {
+    if (m_export_source(i)==CONSTANT) {
+      std::string fname = m_export_field_names[i];
+      const auto field_view = m_helper_fields.at(fname).get_view<Real*>();
+      Kokkos::deep_copy(field_view,m_export_constants(i));
+      printf("ASD - setting %s to %f\n",fname.c_str(),m_export_constants(i));
+    }
+  }
+  
 }
 // =========================================================================================
 void SurfaceCouplingExporter::do_export_from_eamxx(const double dt, const bool called_during_initialization)
 {
-  using policy_type = KT::RangePolicy;
   using PC = physics::Constants<Real>;
 
   const auto& p_int                = get_field_in("p_int").get_view<const Real**>();
@@ -281,16 +315,10 @@ void SurfaceCouplingExporter::do_export_from_eamxx(const double dt, const bool c
   const auto z_int = m_buffer.z_int;
   const auto z_mid = m_buffer.z_mid;
 
-  // Any field not exported by scream, or not exported
-  // during initialization, is set to 0.0
-  Kokkos::deep_copy(m_cpl_exports_view_d, 0.0);
 
   // Local copies, to deal with CUDA's handling of *this.
   const int  num_levs           = m_num_levs;
-  const auto col_info           = m_column_info_d;
-  const auto cpl_exports_view_d = m_cpl_exports_view_d;
   const int  num_cols           = m_num_cols;
-  const int  num_exports        = m_num_scream_exports;
 
   // Preprocess exports
   const auto setup_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(num_cols, num_levs);
@@ -353,7 +381,18 @@ void SurfaceCouplingExporter::do_export_from_eamxx(const double dt, const bool c
     Faxa_swnet(i) = sfc_flux_sw_net(i);
     Faxa_lwdn (i) = sfc_flux_lw_dn(i);
   });
-
+}
+// =========================================================================================
+void SurfaceCouplingExporter::do_export_to_cpl(const bool called_during_initialization)
+{
+  using policy_type = KT::RangePolicy;
+  // Any field not exported by scream, or not exported
+  // during initialization, is set to 0.0
+  Kokkos::deep_copy(m_cpl_exports_view_d, 0.0);
+  const auto cpl_exports_view_d = m_cpl_exports_view_d;
+  const int  num_exports        = m_num_scream_exports;
+  const int  num_cols           = m_num_cols;
+  const auto col_info           = m_column_info_d;
   // Export to cpl data
   auto export_policy   = policy_type (0,num_exports*num_cols);
   Kokkos::parallel_for(export_policy, KOKKOS_LAMBDA(const int& i) {

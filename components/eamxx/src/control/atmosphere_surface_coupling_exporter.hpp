@@ -80,6 +80,7 @@ public:
   void do_export(const double dt, const bool called_during_initialization=false);             // Main export routine
   void do_export_from_eamxx(const double dt, const bool called_during_initialization=false);  // Export vars are derived from eamxx state
   void do_export_constant(const double dt, const bool called_during_initialization=false);    // Export vars are set to a constant
+  void do_export_to_cpl(const bool called_during_initialization=false);                       // Finish export by copying data to cpl structures.
 
   // Take and store data from SCDataManager
   void setup_surface_coupling_data(const SCDataManager &sc_data_manager);
@@ -125,6 +126,7 @@ protected:
   Int                               m_num_scream_exports;
   view_1d<DefaultDevice,ExportType> m_export_source;
   view_1d<DefaultDevice,Real>       m_export_constants;
+  std::map<std::string,int>         m_export_indices;
   int                               m_num_eamxx_exports=0;
   int                               m_num_const_exports=0;
 

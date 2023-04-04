@@ -162,7 +162,9 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- Surface coupling (import and export) -->
     <sc_import inherit="atm_proc_base"/>
-    <sc_export inherit="atm_proc_base"/>
+    <sc_export inherit="atm_proc_base">
+      <prescribed_export_control_file type="string">NONE</prescribed_export_control_file>
+    </sc_export>
 
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
