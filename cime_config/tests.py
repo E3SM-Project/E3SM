@@ -197,7 +197,7 @@ _TESTS = {
 
 
     "e3sm_integration" : {
-        "inherit" : ("e3sm_developer", "e3sm_atm_integration", "e3sm_mmf_integration"),
+        "inherit" : ("e3sm_developer", "e3sm_atm_integration", "e3sm_mmf_integration", "e3sm_ocn_integration"),
         "time"    : "03:00:00",
         "tests"   : (
             "ERS.ne11_oQU240.WCYCL1850NS",
