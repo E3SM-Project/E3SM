@@ -189,6 +189,13 @@ _TESTS = {
             )
         },
 
+    "e3sm_ocn_integration" : {
+        "tests" : (
+            "SMS_D_Ld1.T62_oQU240wLI.GMPAS-IAF-ISMF.mpaso-impl_top_drag",
+            )
+        },
+
+
     "e3sm_integration" : {
         "inherit" : ("e3sm_developer", "e3sm_atm_integration", "e3sm_mmf_integration"),
         "time"    : "03:00:00",
