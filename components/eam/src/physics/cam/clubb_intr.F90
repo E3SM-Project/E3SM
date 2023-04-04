@@ -2906,6 +2906,7 @@ end subroutine clubb_init_cnst
    enddo
 
    ! diagnose surface friction and obukhov length (inputs to diagnose PBL depth)
+   kbfs = 0._r8
    do i=1,ncol
       rrho = invrs_gravit*(state1%pdel(i,pver)/dz_g(pver))
       call calc_ustar( state1%t(i,pver), state1%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
@@ -2916,8 +2917,6 @@ end subroutine clubb_init_cnst
 
    dummy2(:) = 0._r8
    dummy3(:) = 0._r8
-
-   where (kbfs .eq. -0.0_r8) kbfs = 0.0_r8
 
    !  Compute PBL depth according to Holtslag-Boville Scheme
    call pblintd(ncol, thv, state1%zm, state1%u, state1%v, &

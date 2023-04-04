@@ -76,15 +76,15 @@ contains
 
     begc = bounds%begc; endc= bounds%endc
 
-    allocate( this%sed_p_ero_col       (begc:endc))      ; this%sed_p_ero_col          (:) = nan
-    allocate( this%sed_q_ero_col       (begc:endc))      ; this%sed_q_ero_col          (:) = nan
-    allocate( this%sed_ero_col         (begc:endc))      ; this%sed_ero_col            (:) = nan
-    allocate( this%sed_crop_ero_col    (begc:endc))      ; this%sed_crop_ero_col       (:) = nan 
-    allocate( this%sed_yld_col         (begc:endc))      ; this%sed_yld_col            (:) = nan
+    allocate( this%sed_p_ero_col       (begc:endc))      ; this%sed_p_ero_col          (:) = spval 
+    allocate( this%sed_q_ero_col       (begc:endc))      ; this%sed_q_ero_col          (:) = spval 
+    allocate( this%sed_ero_col         (begc:endc))      ; this%sed_ero_col            (:) = spval 
+    allocate( this%sed_crop_ero_col    (begc:endc))      ; this%sed_crop_ero_col       (:) = spval  
+    allocate( this%sed_yld_col         (begc:endc))      ; this%sed_yld_col            (:) = spval 
 
-    allocate( this%pfactor_col         (begc:endc))      ; this%pfactor_col            (:) = nan
-    allocate( this%qfactor_col         (begc:endc))      ; this%qfactor_col            (:) = nan
-    allocate( this%tfactor_col         (begc:endc))      ; this%tfactor_col            (:) = nan
+    allocate( this%pfactor_col         (begc:endc))      ; this%pfactor_col            (:) = spval 
+    allocate( this%qfactor_col         (begc:endc))      ; this%qfactor_col            (:) = spval 
+    allocate( this%tfactor_col         (begc:endc))      ; this%tfactor_col            (:) = spval 
 
   end subroutine InitAllocate
 
