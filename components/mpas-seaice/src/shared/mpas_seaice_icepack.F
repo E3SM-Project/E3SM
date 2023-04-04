@@ -13242,7 +13242,7 @@ contains
          !snw_aging_table_in      = , &
          )
 
-!note that icepack_recomput_constants, called from icepck_init_parameters above, recomputes Lfresh
+!note that icepack_recompute_constants, called from icepck_init_parameters above, recomputes Lfresh
 ! - make Lfresh optional for E3SM?
 
     call mpas_log_write(" ----- compare values after icepack init -----")
