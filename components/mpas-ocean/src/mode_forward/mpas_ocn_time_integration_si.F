@@ -1215,7 +1215,7 @@ module ocn_time_integration_si
             call mpas_timer_start("si btr residual")
    
 #ifdef MPAS_OPENACC
-            !$acc parallel loop gang                                    &
+            !$acc parallel loop gang async                              &
             !$acc    present(nEdgesOnCell,edgesOnCell,cellsOnEdge,      &
             !$acc       sshSubcycleCur,bottomDepthEdge,dcEdge,          &
             !$acc       normalBarotropicVelocityCur,maxLevelEdgeTop,    &
@@ -1293,13 +1293,14 @@ module ocn_time_integration_si
             ! Preconditioning --------------------------------------------!
 
             call si_precond(SIvec_r0,SIvec_rh0)
+            !$acc wait
    
             call mpas_timer_start("si 1st halo")
 #ifdef USE_GPU_AWARE_MPI
             call si_halo_exch(domain,SIvec_rh0)
 #else
             call mpas_dmpar_field_halo_exch(domain, 'SIvec_rh0')
-            !$acc update device(SIvec_rh0)
+            !$acc update device(SIvec_rh0) async
 #endif
             call mpas_timer_stop("si 1st halo")
    
@@ -1313,13 +1314,14 @@ module ocn_time_integration_si
             ! Preconditioning --------------------------------------------!
 
                call si_precond(SIvec_w0,SIvec_wh0)
-      
+               !$acc wait
+
                call mpas_timer_start("si 1st halo")
 #ifdef USE_GPU_AWARE_MPI
                call si_halo_exch(domain,SIvec_wh0)
 #else
                call mpas_dmpar_field_halo_exch(domain, 'SIvec_wh0')
-               !$acc update device(SIvec_wh0)
+               !$acc update device(SIvec_wh0) async
 #endif
                call mpas_timer_stop("si 1st halo")
       
@@ -1339,9 +1341,9 @@ module ocn_time_integration_si
                                    SIvec_r00,SIvec_r0,SIvec_w0)
                call mpas_timer_stop("si 1st global reduction")
    
-               !$acc serial present(SIcst_r00r0,SIcst_r00w0,SIcst_rho0, &
-               !$acc           SIcst_alpha0,SIcst_beta0,SIcst_omega0,   &
-               !$acc           SIcst_alpha1,SIcst_beta1,                &
+               !$acc serial async present(SIcst_r00r0,SIcst_r00w0,    &
+               !$acc           SIcst_alpha0,SIcst_beta0,SIcst_omega0, &
+               !$acc           SIcst_alpha1,SIcst_beta1,SIcst_rho0,   &
                !$acc           SIcst_allreduce_global2)
                SIcst_r00r0  = SIcst_allreduce_global2(1)
                SIcst_r00w0  = SIcst_allreduce_global2(2)
@@ -1355,6 +1357,7 @@ module ocn_time_integration_si
                SIcst_r00r0  = 0.0_RKIND
                SIcst_r00w0  = 0.0_RKIND
                !$acc end serial
+               !$acc wait
 
             else if ( si_algorithm == 'scg' ) then !!!
            
@@ -1408,7 +1411,7 @@ module ocn_time_integration_si
             !$acc update host(sshSubcycleNew)
             call mpas_dmpar_field_halo_exch(domain, 'sshSubcycle', &
                                             timeLevel=2)
-            !$acc update device(sshSubcycleNew)
+            !$acc update device(sshSubcycleNew) async
             call mpas_timer_stop("si halo iter")
    
             call mpas_timer_stop("si btr iteration")
@@ -1421,7 +1424,7 @@ module ocn_time_integration_si
             call mpas_timer_start("si btr vel update")
 
 #ifdef MPAS_OPENACC
-            !$acc parallel loop gang &
+            !$acc parallel loop gang async &
             !$acc    present(sshNew,sshSubcycleNew)
 #else
             !$omp parallel
@@ -1435,7 +1438,7 @@ module ocn_time_integration_si
             !$omp end parallel
    
 #ifdef MPAS_OPENACC
-            !$acc parallel loop &
+            !$acc parallel loop async &
             !$acc    present(edgeMask,cellsOnEdge,sshNew,dcEdge,    &
             !$acc       normalBarotropicVelocityNew,sshSubcycleCur, &
             !$acc       normalBarotropicVelocitySubcycleNew,        &
@@ -1474,7 +1477,7 @@ module ocn_time_integration_si
 #endif
    
 #ifdef MPAS_OPENACC
-            !$acc parallel loop gang &
+            !$acc parallel loop gang async &
             !$acc    present(nEdgesOnEdge,edgesOnEdge,weightsOnEdge, &
             !$acc        normalBarotropicVelocitySubcycleNew,        &
             !$acc        normalBarotropicVelocityCur,fEdge,          &
@@ -1504,7 +1507,7 @@ module ocn_time_integration_si
 #endif
 
 #ifdef MPAS_OPENACC
-            !$acc parallel loop gang &
+            !$acc parallel loop gang async &
             !$acc    present(edgeMask,cellsOnEdge,dcEdge,         &
             !$acc       normalBarotropicVelocityNew,              &
             !$acc       normalBarotropicVelocitySubcycleNew,      &
@@ -1536,7 +1539,7 @@ module ocn_time_integration_si
    
 
 #ifdef MPAS_OPENACC
-            !$acc parallel loop gang &
+            !$acc parallel loop gang async &
             !$acc    present(nEdgesOnEdge,edgesOnEdge,weightsOnEdge, &
             !$acc        normalBarotropicVelocitySubcycleNew,        &
             !$acc        normalBarotropicVelocityCur,fEdge,          &
@@ -1566,9 +1569,10 @@ module ocn_time_integration_si
 #endif
    
             call mpas_timer_start("si halo btr coriolis")
+            !$acc wait
             !$acc update host(barotropicCoriolisTerm)
             call mpas_dmpar_field_halo_exch(domain, 'barotropicCoriolisTerm')
-            !$acc update device(barotropicCoriolisTerm)
+            !$acc update device(barotropicCoriolisTerm) async
             call mpas_timer_stop("si halo btr coriolis")
    
             call mpas_timer_stop ("si btr vel update")
@@ -1584,7 +1588,7 @@ module ocn_time_integration_si
             ! SpMV -------------------------------------------------------!
    
 #ifdef MPAS_OPENACC
-            !$acc parallel loop gang &
+            !$acc parallel loop gang async &
             !$acc    present(nEdgesOnCell,edgesOnCell,cellsOnEdge,        &
             !$acc       sshSubcycleCur,sshNew,bottomDepthEdge,dcEdge,     &
             !$acc       normalBarotropicVelocityCur,maxLevelEdgeTop,      &
@@ -1675,13 +1679,14 @@ module ocn_time_integration_si
             ! Preconditioning --------------------------------------------!
 
             call si_precond(SIvec_r0,SIvec_rh0)
+            !$acc wait
    
             call mpas_timer_start("si halo r0")
 #ifdef USE_GPU_AWARE_MPI
             call si_halo_exch(domain,SIvec_rh0)
 #else
             call mpas_dmpar_field_halo_exch(domain, 'SIvec_rh0')
-            !$acc update device(SIvec_rh0)
+            !$acc update device(SIvec_rh0) async
 #endif
             call mpas_timer_stop("si halo r0")
    
@@ -1694,13 +1699,14 @@ module ocn_time_integration_si
             ! Preconditioning --------------------------------------------!
 
                call si_precond(SIvec_w0,SIvec_wh0)
+               !$acc wait
       
                call mpas_timer_start("si halo r0")
 #ifdef USE_GPU_AWARE_MPI
                call si_halo_exch(domain,SIvec_wh0)
 #else
                call mpas_dmpar_field_halo_exch(domain, 'SIvec_wh0')
-               !$acc update device(SIvec_wh0)
+               !$acc update device(SIvec_wh0) async
 #endif
                call mpas_timer_stop("si halo r0")
       
@@ -1717,9 +1723,9 @@ module ocn_time_integration_si
                                    si_algorithm,2,domain,       &
                                    SIvec_r00,SIvec_r0,SIvec_w0)
    
-               !$acc serial present(SIcst_r00r0,SIcst_r00w0,SIcst_rho0, &
-               !$acc           SIcst_alpha0,SIcst_beta0,SIcst_omega0,   &
-               !$acc           SIcst_alpha1,SIcst_beta1,                &
+               !$acc serial async present(SIcst_r00r0,SIcst_r00w0,    &
+               !$acc           SIcst_alpha0,SIcst_beta0,SIcst_omega0, &
+               !$acc           SIcst_alpha1,SIcst_beta1,SIcst_rho0,   &
                !$acc           SIcst_allreduce_global2)
                SIcst_r00r0 = SIcst_allreduce_global2(1)
                SIcst_r00w0 = SIcst_allreduce_global2(2)
@@ -1859,7 +1865,7 @@ module ocn_time_integration_si
 #endif
    
 #ifdef MPAS_OPENACC
-            !$acc parallel loop gang &
+            !$acc parallel loop gang                                &
             !$acc    present(edgeMask,cellsOnEdge,dcEdge,           &
             !$acc       normalBarotropicVelocityNew,                &
             !$acc       normalBarotropicVelocitySubcycleNew,        &
@@ -4103,7 +4109,7 @@ module ocn_time_integration_si
       call magmaf_dsymv('U', nPrecVec, 1.0d0, dprec_ivmat, &
                              nPrecVec, dxvec, 1, 0.0d0,    &
                                        dyvec, 1, queue)
-
+    
       call magmaf_dgetvector( nPrecVec,dyvec, 1, &
                               SIvec_rh0(1:nPrecVec), 1, queue )
 #endif
@@ -4197,7 +4203,7 @@ module ocn_time_integration_si
       call mpas_timer_start("si matvec_mul")
 
 #ifdef MPAS_OPENACC
-      !$acc parallel loop gang                                &
+      !$acc parallel loop gang async                          &
       !$acc    present(SIvec_in,SIvec_out,ssh,                &
       !$acc       nEdgesOnCell,edgesOnCell,cellsOnEdge,       &
       !$acc       bottomDepthEdge, dcEdge,edgeSignOnCell,     &
@@ -4283,12 +4289,14 @@ module ocn_time_integration_si
          !    : Use BLAS for the symmetric
          !      matrix-vector multiplication
 
+!#######################################################################
 #if defined(USE_MAGMA)
 
          ! MAGMA
          !$acc host_data use_device(SIvec_in)
          dxvec = loc(SIvec_in(1:nPrecVec))
          !$acc end host_data
+
          call magmaf_dsymv('U', nPrecVec, 1.0_RKIND, dprec_ivmat, &
                                 nPrecVec, dxvec, 1, 0.0_RKIND,    &
                                           dyvec, 1, queue)
@@ -4299,10 +4307,13 @@ module ocn_time_integration_si
                                  SIvec_out(1:nPrecVec), 1, queue)
 #else                                 
          ! GPU -> GPU copy the out vector for halo exch
-         call magmaf_dcopyvector( nPrecVec,dyvec, 1, &
-                                  SIvec_out(1:nPrecVec), 1, queue)
+         !$acc host_data use_device(SIvec_out)
+         call magmaf_dgetvector( nPrecVec,dyvec, 1, &
+                                 SIvec_out(1:nPrecVec), 1, queue)
+         !$acc end host_data
 #endif                                 
 
+!#######################################################################
 #elif defined(USE_CUBLAS)
 
          ! CUBLAS
@@ -4316,6 +4327,7 @@ module ocn_time_integration_si
          !$acc update host(SIvec_out)
 #endif
 
+!#######################################################################
 #else
 
          ! LAPACK on CPU 
@@ -4677,7 +4689,7 @@ module ocn_time_integration_si
     
          else
  
-            !$acc parallel loop present(SIcst_q0q0,                      &
+            !$acc parallel loop async present(SIcst_q0q0,                      &
             !$acc       SIcst_r00s0,SIcst_r00z0,SIcst_q0y0 ,SIcst_y0y0,  &
             !$acc       SIcst_r00q0,SIcst_r00y0,SIcst_r00t0,SIcst_r00v0, &
             !$acc       SIvec_1,SIvec_2,SIvec_3,SIvec_4,SIvec_5,SIvec_6, &
@@ -4714,7 +4726,7 @@ module ocn_time_integration_si
                                          * SIvec_2(iCell)
             end do
     
-            !$acc serial present(localProd,SIcst_q0q0,               &
+            !$acc serial async present(localProd,SIcst_q0q0,               &
             !$acc    SIcst_r00s0,SIcst_r00z0,SIcst_q0y0 ,SIcst_y0y0, &
             !$acc    SIcst_r00q0,SIcst_r00y0,SIcst_r00t0,SIcst_r00v0)
             localProd(1) = SIcst_r00s0
@@ -4736,6 +4748,7 @@ module ocn_time_integration_si
             SIcst_r00v0 = 0.0_RKIND
             SIcst_q0q0  = 0.0_RKIND
             !$acc end serial
+            !$acc wait
 
             ! Global sum across CPUs
             if ( threadNum == 0 ) then
@@ -4744,14 +4757,12 @@ module ocn_time_integration_si
 #else
             !$acc update host(localProd)
 #endif
-!           call mpas_dmpar_sum_real_array(domain % dminfo, nfld,      &
-!                                          localProd,globalProd)
-            call MPI_Allreduce(localProd,globalProd,nfld,MPI_REAL8, &
-                    MPI_SUM,domain%dminfo%comm,ierr)
+            call mpas_dmpar_sum_real_array(domain % dminfo, nfld,      &
+                                           localProd,globalProd)
 #ifdef USE_GPU_AWARE_MPI
             !$acc end host_data
 #else
-            !$acc update device(globalProd)
+            !$acc update device(globalProd) async
 #endif
             endif ! thread
 
@@ -4967,7 +4978,7 @@ module ocn_time_integration_si
          iter = iter + 1
  
 #ifdef MPAS_OPENACC
-         !$acc parallel loop gang present(                          &
+         !$acc parallel loop gang async present(                    &
          !$acc       SIvec_ph1,SIvec_rh0,SIvec_ph0,                 &
          !$acc       SIvec_sh0,SIvec_s1,SIvec_w0,                   &
          !$acc       SIvec_s0,SIvec_z0,SIvec_sh1,SIvec_wh0,         &
@@ -5010,25 +5021,23 @@ module ocn_time_integration_si
 #endif
  
          ! Preconditioning -----------------------------------------!
- 
          call si_precond(SIvec_z1,SIvec_zh1)
+         !$acc wait
  
          call mpas_timer_start("si halo iter")
 #ifdef USE_GPU_AWARE_MPI
          call si_halo_exch(domain,SIvec_zh1)
 #else
          call mpas_dmpar_exch_halo_field(SIvec_zh1_field)
-         !$acc update device(SIvec_zh1)
+         !$acc update device(SIvec_zh1) async
 #endif
          call mpas_timer_stop("si halo iter")
  
  
          ! SpMV ----------------------------------------------------!
- 
          call si_matvec_mul(SIvec_zh1,bottomDepthEdge,SIvec_v0,ssh)
- 
+
          ! Reduction -----------------------------------------------!
- 
          call si_global_reduction(SIcst_allreduce_local9,          &
                              SIcst_allreduce_global9,              &
                              globalReprodSum9fld1,                 &
@@ -5037,11 +5046,11 @@ module ocn_time_integration_si
                              SIvec_r00,SIvec_q0,SIvec_y0,SIvec_s1, &
                              SIvec_z1,SIvec_t0,SIvec_v0)
  
-         !$acc serial present(SIcst_rho1,SIcst_r00q0,SIcst_omega0,  &
-         !$acc    SIcst_gamma1,SIcst_r00y0,SIcst_r00t0,             &
-         !$acc    SIcst_alpha0,SIcst_r00v0,SIcst_beta0,SIcst_rho0,  &
-         !$acc    SIcst_r00s0,SIcst_r00z0,SIcst_q0q0,resid,         &
-         !$acc    SIcst_q0y0,SIcst_y0y0,SIcst_alpha1,SIcst_beta1,   &
+         !$acc serial async present(SIcst_rho1,SIcst_r00q0,          &
+         !$acc    SIcst_gamma1,SIcst_r00y0,SIcst_r00t0,SIcst_omega0, &
+         !$acc    SIcst_alpha0,SIcst_r00v0,SIcst_beta0,SIcst_rho0,   &
+         !$acc    SIcst_r00s0,SIcst_r00z0,SIcst_q0q0,resid,          &
+         !$acc    SIcst_q0y0,SIcst_y0y0,SIcst_alpha1,SIcst_beta1,    &
          !$acc    SIcst_allreduce_global9)
          SIcst_r00s0 = SIcst_allreduce_global9(1)
          SIcst_r00z0 = SIcst_allreduce_global9(2)
@@ -5087,16 +5096,15 @@ module ocn_time_integration_si
          SIcst_r00v0 = 0.0_RKIND
          SIcst_q0q0  = 0.0_RKIND
          !$acc end serial
-         !$acc update host(resid)
+         !$acc update host(resid) async
 
 #ifdef MPAS_OPENACC
-         !$acc parallel loop &
-         !$acc    present(sshSolved,SIvec_qh0,SIvec_r1,SIvec_q0,   &
-         !$acc       SIvec_y0,SIvec_wh0,SIvec_t0,SIvec_v0,         &
-         !$acc       SIvec_r0,SIvec_r1,SIvec_s0,SIvec_s1,SIvec_z0, &
-         !$acc       SIvec_w0,SIvec_w1,SIvec_z1,                   &
-         !$acc       SIvec_rh0,SIvec_rh1,SIvec_sh0,SIvec_sh1,      &
-         !$acc       SIvec_ph0,SIvec_ph1,SIvec_zh0,SIvec_zh1,      &
+         !$acc parallel loop gang async present(sshSolved,    &
+         !$acc       SIvec_qh0,SIvec_q0,SIvec_y0,SIvec_wh0,   &
+         !$acc       SIvec_t0,SIvec_v0,SIvec_w0, SIvec_r0,    &
+         !$acc       SIvec_s0,SIvec_s1,SIvec_z0,SIvec_z1,     &
+         !$acc       SIvec_rh0,SIvec_sh0,SIvec_sh1,           &
+         !$acc       SIvec_ph0,SIvec_ph1,SIvec_zh0,SIvec_zh1, &
          !$acc       SIcst_alpha0,SIcst_omega0)
 #else
          !$omp parallel
@@ -5107,48 +5115,46 @@ module ocn_time_integration_si
                              + SIcst_alpha0 * SIvec_ph1(iCell) &
                              + SIcst_omega0 * SIvec_qh0(iCell)
 
-            SIvec_r1(iCell)  = SIvec_q0(iCell) - SIcst_omega0       &
+            SIvec_r0(iCell)  = SIvec_q0(iCell) - SIcst_omega0       &
                              * SIvec_y0(iCell)
 
-            SIvec_rh1(iCell) =  SIvec_qh0(iCell) - SIcst_omega0     &
+            SIvec_rh0(iCell) =  SIvec_qh0(iCell) - SIcst_omega0     &
                              * (SIvec_wh0(iCell) - SIcst_alpha0     &
                                                  * SIvec_zh1(iCell))
 
-            SIvec_w1(iCell)  =   SIvec_y0(iCell) - SIcst_omega0     &
+            SIvec_w0(iCell)  =   SIvec_y0(iCell) - SIcst_omega0     &
                              * ( SIvec_t0(iCell) - SIcst_alpha0     &
                                                  * SIvec_v0(iCell))
 
-            SIvec_r0(iCell) = SIvec_r1(iCell)
-            SIvec_s0(iCell) = SIvec_s1(iCell)
-            SIvec_z0(iCell) = SIvec_z1(iCell)
-            SIvec_w0(iCell) = SIvec_w1(iCell)
-
-            SIvec_rh0(iCell) = SIvec_rh1(iCell)
+            SIvec_s0(iCell)  = SIvec_s1(iCell)
+            SIvec_z0(iCell)  = SIvec_z1(iCell)
             SIvec_sh0(iCell) = SIvec_sh1(iCell)
             SIvec_ph0(iCell) = SIvec_ph1(iCell)
             SIvec_zh0(iCell) = SIvec_zh1(iCell)
          end do
+
 #ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
 #endif
+         !$acc wait
  
          ! Preconditioning -----------------------------------------!
-         call si_precond(SIvec_w1,SIvec_wh0) !wh1 -> wh0
+         call si_precond(SIvec_w0,SIvec_wh0) !wh1 -> wh0; w1->w0
  
          call mpas_timer_start("si halo iter")
 #ifdef USE_GPU_AWARE_MPI
          call si_halo_exch(domain,SIvec_wh0)
 #else
          call mpas_dmpar_exch_halo_field(SIvec_wh0_field)
-         !$acc update device(SIvec_wh0)
+         !$acc update device(SIvec_wh0) async
 #endif
          call mpas_timer_stop("si halo iter")
  
          ! SpMV ----------------------------------------------------!
-         call si_matvec_mul(SIvec_wh0,bottomDepthEdge,SIvec_t0,ssh) !wh1 -> wh0
-                                                                    ! t1 -> t0
-
+         call si_matvec_mul(SIvec_wh0,bottomDepthEdge,SIvec_t0,ssh) 
+                                             !wh1 -> wh0; t1 -> t0
+         !$acc wait
  
          if ( iter > int(mean_num_cells*5) ) then
             call mpas_log_write(&
@@ -5171,7 +5177,6 @@ module ocn_time_integration_si
 
    end subroutine si_solver_sbicg !}}}
 
-
 !***********************************************************************
 !
 !  routine si_halo_exch
@@ -5187,11 +5192,9 @@ module ocn_time_integration_si
 !   solver iterations.
 !
 !-----------------------------------------------------------------------
-
 #ifdef USE_GPU_AWARE_MPI
 
    subroutine si_halo_exch(domain,field_array) !{{{
-
 
       include 'mpif.h'
 
