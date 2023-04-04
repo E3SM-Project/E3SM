@@ -56,7 +56,7 @@ module micro_p3
        lookup_table_1a_dum1_c, &
        p3_qc_autocon_expon, p3_qc_accret_expon
 
-   use wv_sat_scream, only:qv_sat
+   use wv_sat_scream, only:qv_sat_dry
 
   ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -384,8 +384,8 @@ contains
        !can be made consistent with E3SM definition of latent heat
        rho(k)     = dpres(k)/dz(k)/g  ! pres(k)/(rd*t(k))
        inv_rho(k) = 1._rtype/rho(k)
-       qv_sat_l(k)     = qv_sat(t_atm(k),pres(k),0)
-       qv_sat_i(k)     = qv_sat(t_atm(k),pres(k),1)
+       qv_sat_l(k)     = qv_sat_dry(t_atm(k),pres(k),0)
+       qv_sat_i(k)     = qv_sat_dry(t_atm(k),pres(k),1)
 
        qv_supersat_i(k)    = qv(k)/qv_sat_i(k)-1._rtype
 
@@ -2233,7 +2233,7 @@ table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_
    real(rtype) :: qsat0
 
    if (qi_incld .ge.qsmall .and. t_atm.gt.T_zerodegc) then
-      qsat0 = qv_sat( T_zerodegc,pres,0 )
+      qsat0 = qv_sat_dry( T_zerodegc,pres,0 )
 
       qi2qr_melt_tend = ((table_val_qi2qr_melting+table_val_qi2qr_vent_melt*bfb_cbrt(sc)*bfb_sqrt(rhofaci*rho/mu))*((t_atm-   &
       T_zerodegc)*kap-rho*latent_heat_vapor*dv*(qsat0-qv))*2._rtype*pi/latent_heat_fusion)*ni_incld
@@ -2283,7 +2283,7 @@ qv,qc_incld,qi_incld,ni_incld,qr_incld,    &
    real(rtype) :: qsat0, dum, dum1
 
    if (qi_incld.ge.qsmall .and. qc_incld+qr_incld.ge.1.e-6_rtype .and. t_atm.lt.T_zerodegc) then
-      qsat0=qv_sat( T_zerodegc,pres,0 )
+      qsat0=qv_sat_dry( T_zerodegc,pres,0 )
 
       qwgrth = ((table_val_qi2qr_melting + table_val_qi2qr_vent_melt*bfb_cbrt(sc)*bfb_sqrt(rhofaci*rho/mu))*       &
       2._rtype*pi*(rho*latent_heat_vapor*dv*(qsat0-qv)-(t_atm-T_zerodegc)*           &
@@ -2908,7 +2908,7 @@ subroutine prevent_liq_supersaturation(pres,t_atm,qv,latent_heat_vapor,latent_he
           - qr2qv_evap_tend*latent_heat_vapor*inv_cp )*dt
 
      !qv we would have at end of step if we were saturated with respect to liquid
-     qsl = qv_sat(T_endstep,pres,0)
+     qsl = qv_sat_dry(T_endstep,pres,0)
 
      ! The balance we seek is:
      ! qv-qv_sinks*dt+qv_sources*frac*dt=qsl+dqsl_dT*(T correction due to conservation)
