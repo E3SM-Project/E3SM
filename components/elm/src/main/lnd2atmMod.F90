@@ -33,7 +33,6 @@ module lnd2atmMod
   use ColumnDataType       , only : col_ws, col_wf, col_cf, col_es
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
   use SoilHydrologyType    , only : soilhydrology_type 
-  use SedFluxType          , only : sedflux_type
   use spmdmod          , only: masterproc
   use elm_varctl     , only : iulog
   !
@@ -142,8 +141,7 @@ contains
        atm2lnd_vars, surfalb_vars, frictionvel_vars, &
        energyflux_vars, &
        solarabs_vars, drydepvel_vars, &
-       vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, &
-       sedflux_vars, lnd2atm_vars)
+       vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars)
     !
     ! !DESCRIPTION:
     ! Compute lnd2atm_vars component of gridcell derived type
@@ -164,7 +162,6 @@ contains
     type(dust_type)        , intent(in)     :: dust_vars
     type(ch4_type)         , intent(in)     :: ch4_vars
     type(soilhydrology_type), intent(in)    :: soilhydrology_vars
-    type(sedflux_type)     , intent(in)     :: sedflux_vars
     type(lnd2atm_type)     , intent(inout)  :: lnd2atm_vars
     !
     ! !LOCAL VARIABLES:
@@ -472,11 +469,6 @@ contains
 
     end do
 
-    call c2g( bounds, &
-         sedflux_vars%sed_yld_col(bounds%begc:bounds%endc), &
-         lnd2atm_vars%qflx_rofmud_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-    
     end associate
   end subroutine lnd2atm
 
