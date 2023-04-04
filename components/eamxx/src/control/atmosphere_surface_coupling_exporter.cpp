@@ -46,21 +46,21 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   constexpr int ps = Spack::n;
 
   // These fields are required for computation/exports
-  add_field<Required>("p_int",                scalar3d_layout_int,  Pa,    grid_name);
-  add_field<Required>("pseudo_density",       scalar3d_layout_mid,  Pa,    grid_name, ps);
-  add_field<Required>("phis",                 scalar2d_layout,      m2/s2, grid_name);
-  add_field<Required>("p_mid",                scalar3d_layout_mid,  Pa,    grid_name, ps);
-  add_field<Required>("qv",                   scalar3d_layout_mid,  Qunit, grid_name, "tracers", ps);
-  add_field<Required>("T_mid",                scalar3d_layout_mid,  K,     grid_name, ps);
-  add_field<Required>("horiz_winds",          vector3d_layout,      m/s,   grid_name);
-  add_field<Required>("u",                    scalar3d_layout_mid,  m/s,   grid_name); // TODO: These appear to not work yet
-  add_field<Required>("v",                    scalar3d_layout_mid,  m/s,   grid_name); // TODO: These appear to not work yet
-  add_field<Required>("sfc_flux_dir_nir",     scalar2d_layout,      Wm2,   grid_name);
-  add_field<Required>("sfc_flux_dir_vis",     scalar2d_layout,      Wm2,   grid_name);
-  add_field<Required>("sfc_flux_dif_nir",     scalar2d_layout,      Wm2,   grid_name);
-  add_field<Required>("sfc_flux_dif_vis",     scalar2d_layout,      Wm2,   grid_name);
-  add_field<Required>("sfc_flux_sw_net" ,     scalar2d_layout,      Wm2,   grid_name);
-  add_field<Required>("sfc_flux_lw_dn"  ,     scalar2d_layout,      Wm2,   grid_name);
+  add_field<Required>("p_int",                scalar3d_layout_int,  Pa,     grid_name);
+  add_field<Required>("pseudo_density",       scalar3d_layout_mid,  Pa,     grid_name, ps);
+  add_field<Required>("phis",                 scalar2d_layout,      m2/s2,  grid_name);
+  add_field<Required>("p_mid",                scalar3d_layout_mid,  Pa,     grid_name, ps);
+  add_field<Required>("qv",                   scalar3d_layout_mid,  Qunit,  grid_name, "tracers", ps);
+  add_field<Required>("T_mid",                scalar3d_layout_mid,  K,      grid_name, ps);
+  add_field<Required>("horiz_winds",          vector3d_layout,      m/s,    grid_name);
+//ASD  add_field<Required>("u",                    scalar3d_layout_mid,  m/s,    grid_name); // TODO: These appear to not work yet
+//ASD  add_field<Required>("v",                    scalar3d_layout_mid,  m/s,    grid_name); // TODO: These appear to not work yet
+  add_field<Required>("sfc_flux_dir_nir",     scalar2d_layout,      Wm2,    grid_name);
+  add_field<Required>("sfc_flux_dir_vis",     scalar2d_layout,      Wm2,    grid_name);
+  add_field<Required>("sfc_flux_dif_nir",     scalar2d_layout,      Wm2,    grid_name);
+  add_field<Required>("sfc_flux_dif_vis",     scalar2d_layout,      Wm2,    grid_name);
+  add_field<Required>("sfc_flux_sw_net" ,     scalar2d_layout,      Wm2,    grid_name);
+  add_field<Required>("sfc_flux_lw_dn"  ,     scalar2d_layout,      Wm2,    grid_name);
   add_field<Required>("precip_liq_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
   add_field<Required>("precip_ice_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
 
@@ -135,6 +135,10 @@ void SurfaceCouplingExporter::setup_surface_coupling_data(const SCDataManager &s
   m_num_cpl_exports    = sc_data_manager.get_num_cpl_fields();
   m_num_scream_exports = sc_data_manager.get_num_scream_fields();
 
+  // Allocate enum export source view
+  m_export_source = view_1d<DefaultDevice,ExportType>("",m_num_scream_exports);
+  Kokkos::deep_copy(m_export_source,EAMXX);  // The default is that all export variables will be derived from the EAMxx state.
+
   EKAT_ASSERT_MSG(m_num_scream_exports <= m_num_cpl_exports,
                   "Error! More SCREAM exports than actual cpl exports.\n");
   EKAT_ASSERT_MSG(m_num_cols == sc_data_manager.get_field_size(), "Error! Surface Coupling exports need to have size ncols.");
@@ -168,6 +172,10 @@ void SurfaceCouplingExporter::setup_surface_coupling_data(const SCDataManager &s
 void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
 {
   bool any_initial_exports = false;
+
+  // Set the number of exports from eamxx or set to a constant
+  m_num_eamxx_exports = m_num_scream_exports;
+  m_num_const_exports = 0;
 
   for (int i=0; i<m_num_scream_exports; ++i) {
 
@@ -214,6 +222,21 @@ void SurfaceCouplingExporter::run_impl (const double dt)
 // =========================================================================================
 void SurfaceCouplingExporter::do_export(const double dt, const bool called_during_initialization)
 {
+  if (m_num_const_exports>0) {
+    do_export_constant(dt,called_during_initialization);
+  }
+  if (m_num_eamxx_exports>0) {
+    do_export_from_eamxx(dt,called_during_initialization);
+  }
+}
+// =========================================================================================
+void SurfaceCouplingExporter::do_export_constant(const double dt, const bool called_during_initialization)
+{
+  // Do Nothing right now.
+}
+// =========================================================================================
+void SurfaceCouplingExporter::do_export_from_eamxx(const double dt, const bool called_during_initialization)
+{
   using policy_type = KT::RangePolicy;
   using PC = physics::Constants<Real>;
 
@@ -222,8 +245,8 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
   const auto& qv                   = get_field_in("qv").get_view<const Spack**>();
   const auto& T_mid                = get_field_in("T_mid").get_view<const Spack**>();
   const auto& horiz_winds          = get_field_in("horiz_winds").get_view<const Real***>();
-  const auto& u_wind               = get_field_in("u").get_view<const Real**>(); // TODO: Appear to be all-zero right now, need to check this
-  const auto& v_wind               = get_field_in("v").get_view<const Real**>(); // TODO: Appear to be all-zero right now, need to check this
+//ASD  const auto& u_wind               = get_field_in("u").get_view<const Real**>(); // TODO: Appear to be all-zero right now, need to check this
+//ASD  const auto& v_wind               = get_field_in("v").get_view<const Real**>(); // TODO: Appear to be all-zero right now, need to check this
   const auto& p_mid                = get_field_in("p_mid").get_view<const Spack**>();
   const auto& phis                 = get_field_in("phis").get_view<const Real*>();
   const auto& sfc_flux_dir_nir     = get_field_in("sfc_flux_dir_nir").get_view<const Real*>();
@@ -275,7 +298,7 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
     const int i = team.league_rank();
 
     const auto qv_i             = ekat::subview(qv, i);
-    const auto u_wind_i         = ekat::subview(horiz_winds, i, 0);
+    const auto u_wind_i         = ekat::subview(horiz_winds, i, 0); // TODO, when U and V work switch to using here.
     const auto v_wind_i         = ekat::subview(horiz_winds, i, 1);
     const auto T_mid_i          = ekat::subview(T_mid, i);
     const auto p_mid_i          = ekat::subview(p_mid, i);

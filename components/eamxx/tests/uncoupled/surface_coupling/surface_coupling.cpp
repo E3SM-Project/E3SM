@@ -85,10 +85,6 @@ void setup_import_and_export_data(
     }
   }
 
-  // Set vector components
-  export_vec_comps_view(1) = 0;
-  export_vec_comps_view(2) = 1;
-
   // Set boolean for exporting during intialization
   do_export_during_init_view(0) = true;
   do_export_during_init_view(1) = true;
@@ -418,23 +414,23 @@ TEST_CASE("surface-coupling", "") {
   Kokkos::deep_copy(export_data_view, -1.0);
   // Set names. For all non-scream exports, set to 0.
   char export_names[num_scream_exports][32];
-  std::strcpy(export_names[0],  "Sa_z");
-  std::strcpy(export_names[1],  "horiz_winds");
-  std::strcpy(export_names[2],  "horiz_winds");
-  std::strcpy(export_names[3],  "T_mid");
-  std::strcpy(export_names[4],  "Sa_ptem");
-  std::strcpy(export_names[5],  "p_mid");
-  std::strcpy(export_names[6],  "qv");
-  std::strcpy(export_names[7],  "Sa_dens");
-  std::strcpy(export_names[8],  "Sa_pslv");
-  std::strcpy(export_names[9],  "Faxa_rainl");
-  std::strcpy(export_names[10], "Faxa_snowl");
-  std::strcpy(export_names[11], "sfc_flux_dir_nir");
-  std::strcpy(export_names[12], "sfc_flux_dir_vis");
-  std::strcpy(export_names[13], "sfc_flux_dif_nir");
-  std::strcpy(export_names[14], "sfc_flux_dif_vis");
-  std::strcpy(export_names[15], "sfc_flux_sw_net");
-  std::strcpy(export_names[16], "sfc_flux_lw_dn");
+  std::strcpy(export_names[0],  "Sa_z"       );
+  std::strcpy(export_names[1],  "Sa_u"       );
+  std::strcpy(export_names[2],  "Sa_v"       );
+  std::strcpy(export_names[3],  "Sa_tbot"    );
+  std::strcpy(export_names[4],  "Sa_ptem"    );
+  std::strcpy(export_names[5],  "Sa_pbot"    );
+  std::strcpy(export_names[6],  "Sa_shum"    );
+  std::strcpy(export_names[7],  "Sa_dens"    );
+  std::strcpy(export_names[8],  "Sa_pslv"    );
+  std::strcpy(export_names[9],  "Faxa_rainl" );
+  std::strcpy(export_names[10], "Faxa_snowl" );
+  std::strcpy(export_names[11], "Faxa_swndr" );
+  std::strcpy(export_names[12], "Faxa_swvdr" );
+  std::strcpy(export_names[13], "Faxa_swndf" );
+  std::strcpy(export_names[14], "Faxa_swvdf" );
+  std::strcpy(export_names[15], "Faxa_swnet" );
+  std::strcpy(export_names[16], "Faxa_lwdn"  );
 
   // Setup the import/export data. This is meant to replicate the structures coming
   // from mct_coupling/scream_cpl_indices.F90
