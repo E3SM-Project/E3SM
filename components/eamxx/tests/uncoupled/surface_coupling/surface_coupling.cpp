@@ -175,7 +175,7 @@ void test_exports(const FieldManager& fm,
                   const KokkosTypes<HostDevice>::view_2d<Real> export_data_view,
                   const KokkosTypes<HostDevice>::view_1d<int>  export_cpl_indices_view,
                   const KokkosTypes<HostDevice>::view_1d<Real> export_constant_multiple_view,
-                  const std::string& export_control_filename,
+                  const ekat::ParameterList prescribed_constants,
                   const int dt,
                   const bool called_directly_after_init = false)
 {
@@ -276,11 +276,10 @@ void test_exports(const FieldManager& fm,
   const auto Faxa_snowl_h = Kokkos::create_mirror_view_and_copy(HostDevice(), Faxa_snowl);
 
   // Recall that two fields have been set to export to a constant value, so we load those constants from the parameter list here:
-  ekat::ParameterList exp_control_params("export control");
-  REQUIRE_NOTHROW ( parse_yaml_file(export_control_filename,exp_control_params) );
-  auto exp_const_params       = exp_control_params.sublist("set_export_to_constant");
-  const Real Faxa_swndf_const = exp_const_params.get<Real>("Faxa_swndf"); 
-  const Real Faxa_swndv_const = exp_const_params.get<Real>("Faxa_swvdf"); 
+  using vor_type = std::vector<Real>;
+  const auto prescribed_const_values = prescribed_constants.get<vor_type>("values");
+  const Real Faxa_swndf_const = prescribed_const_values[0]; 
+  const Real Faxa_swndv_const = prescribed_const_values[1]; 
 
 
   // Check cpl data to scream fields
@@ -339,21 +338,21 @@ TEST_CASE("surface-coupling", "") {
   const auto t0_str = ts.get<std::string>("run_t0");
   const auto t0     = util::str_to_time_stamp(t0_str);
 
-  // Set one export field to be randomly set to a constant
+  // Set two export fields to be randomly set to a constant
   // This requires us to add a sublist to the parsed AD params yaml list.
-  // We also write the random values out so they can be checked later.
+  using vos_type = std::vector<std::string>;
+  using vor_type = std::vector<Real>;
   std::uniform_real_distribution<Real> pdf_real_constant_data(0.0,1.0);
-  ekat::ParameterList exp_control_params("export control");
-  auto& exp_const_params = exp_control_params.sublist("set_export_to_constant");
   const Real Faxa_swndf_const = pdf_real_constant_data(engine);
-  const Real Faxa_swndv_const = pdf_real_constant_data(engine);
-  exp_const_params.set<Real>("Faxa_swndf",Faxa_swndf_const); 
-  exp_const_params.set<Real>("Faxa_swvdf",Faxa_swndv_const);
-  const std::string export_control_filename = "export_control_np"+std::to_string(atm_comm.size())+".yaml";
-  write_yaml_file(export_control_filename,exp_control_params);
+  const Real Faxa_swvdf_const = pdf_real_constant_data(engine);
+  const vos_type exp_const_fields = {"Faxa_swndf","Faxa_swvdf"};
+  const vor_type exp_const_values = {Faxa_swndf_const,Faxa_swvdf_const};
   auto& ap_params     = ad_params.sublist("atmosphere_processes");
   auto& sc_exp_params = ap_params.sublist("SurfaceCouplingExporter");
   sc_exp_params.set<std::string>("prescribed_export_control_file",export_control_filename);
+  auto& exp_const_params = sc_exp_params.sublist("prescribed_constants");
+  exp_const_params.set<vos_type>("fields",exp_const_fields);
+  exp_const_params.set<vor_type>("values",exp_const_values);
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
   auto& proc_factory = AtmosphereProcessFactory::instance();
@@ -487,7 +486,7 @@ TEST_CASE("surface-coupling", "") {
   test_imports(*fm, import_data_view, import_cpl_indices_view,
                import_constant_multiple_view, true);
   test_exports(*fm, export_data_view, export_cpl_indices_view,
-               export_constant_multiple_view, export_control_filename, dt, true);
+               export_constant_multiple_view,  exp_const_params, dt, true);
 
   // Run the AD
   ad.run(dt);
@@ -496,7 +495,7 @@ TEST_CASE("surface-coupling", "") {
   test_imports(*fm, import_data_view, import_cpl_indices_view,
                import_constant_multiple_view);
   test_exports(*fm, export_data_view, export_cpl_indices_view,
-               export_constant_multiple_view, export_control_filename, dt);
+               export_constant_multiple_view, exp_const_params, dt);
 
   // Finalize  the AD
   ad.finalize();

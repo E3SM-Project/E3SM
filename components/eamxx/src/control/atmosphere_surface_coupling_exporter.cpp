@@ -204,31 +204,36 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
   // Copy data to device for use in do_export()
   Kokkos::deep_copy(m_column_info_d, m_column_info_h);
 
-  // Set the number of exports from eamxx or set to a constant
+  // Set the number of exports from eamxx or set to a constant, default type = EAMXX
+  using vos_type = std::vector<std::string>;
+  using vor_type = std::vector<Real>;
   m_export_source = view_1d<DefaultDevice,ExportType>("",m_num_scream_exports);
   Kokkos::deep_copy(m_export_source,EAMXX);  // The default is that all export variables will be derived from the EAMxx state.
   m_num_eamxx_exports = m_num_scream_exports;
-  auto prescribed_export_control = m_params.get<std::string>("prescribed_export_control_file","NONE");
-  if (prescribed_export_control != "NONE") {
-    // There is a separate file that controls how some export fields will be handled.
-    ekat::ParameterList export_params("Export Control");
-    parse_yaml_file(prescribed_export_control,export_params);
-    if (export_params.isSublist("set_export_to_constant")) {
+ 
+  if (m_params.isSublist("prescribed_constants")) {
+    auto export_constant_params = m_params.sublist("prescribed_constants");
+    EKAT_REQUIRE_MSG(export_constant_params.isParameter("fields"),"Error! surface_coupling_exporter::init - prescribed_constants does not have 'fields' parameter.");
+    EKAT_REQUIRE_MSG(export_constant_params.isParameter("values"),"Error! surface_coupling_exporter::init - prescribed_constants does not have 'values' parameter.");
+    auto export_constant_fields = export_constant_params.get<vos_type>("fields");
+    auto export_constant_values = export_constant_params.get<vor_type>("values");
+    EKAT_REQUIRE_MSG(export_constant_fields.size()==export_constant_values.size(),"Error! surface_coupling_exporter::init - prescribed_constants 'fields' and 'values' are not the same size");
+    if (export_constant_fields.size()>0) {
+      // Determine which fields need constants
       m_export_constants = view_1d<DefaultDevice,Real>("",m_num_scream_exports);
-      // Some of the vars will be set to a constant value
-      auto constant_exp = export_params.sublist("set_export_to_constant");
-      for (int i=0; i<m_num_scream_exports; ++i) {
+      for (int i=0; i<m_num_scream_exports; ++i) {  // TODO: This loop would probably be simpler if we just checked which "i" corresponded to each name in the fields list.
         std::string fname = m_export_field_names[i];
-        if (constant_exp.isParameter(fname)) {
-          EKAT_REQUIRE_MSG(m_export_source(i)==EAMXX,"Error! surface_coupling_exporter - '" + fname + "' is being set in " + prescribed_export_control + " more than once.");
+        auto loc = std::find(export_constant_fields.begin(),export_constant_fields.end(),fname);
+        if (loc != export_constant_fields.end()) {
+          const auto pos = loc-export_constant_fields.begin();
           m_export_source(i) = CONSTANT;
           m_num_const_exports += 1;
           m_num_eamxx_exports -= 1;
-          m_export_constants(i) = constant_exp.get<Real>(fname);
+          m_export_constants(i) = export_constant_values[pos];
         }
       }
     }
-  } 
+  }
   // Final sanity check
   EKAT_REQUIRE_MSG(m_num_scream_exports = m_num_const_exports+m_num_eamxx_exports,"Error! surface_coupling_exporter - Something went wrong set the type of export for all variables.");
   EKAT_REQUIRE_MSG(m_num_eamxx_exports>=0,"Error! surface_coupling_exporter - The number of exports derived from EAMxx < 0, something must have gone wrong in assigning the types of exports for all variables.");
