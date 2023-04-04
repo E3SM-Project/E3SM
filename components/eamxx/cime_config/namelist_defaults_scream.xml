@@ -165,7 +165,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <sc_export inherit="atm_proc_base">
       <prescribed_constants>
         <fields type="array(string)">NONE</fields>
-        <values type="array(double)">NONE</values>
+        <values type="array(real)">0</values>
       </prescribed_constants>
     </sc_export>
 
