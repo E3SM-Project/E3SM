@@ -213,7 +213,6 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
     // There is a separate file that controls how some export fields will be handled.
     ekat::ParameterList export_params("Export Control");
     parse_yaml_file(prescribed_export_control,export_params);
-    export_params.print(); //ASD
     if (export_params.isSublist("set_export_to_constant")) {
       m_export_constants = view_1d<DefaultDevice,Real>("",m_num_scream_exports);
       // Some of the vars will be set to a constant value
@@ -264,12 +263,17 @@ void SurfaceCouplingExporter::do_export_constant(const double dt, const bool cal
       std::string fname = m_export_field_names[i];
       const auto field_view = m_helper_fields.at(fname).get_view<Real*>();
       Kokkos::deep_copy(field_view,m_export_constants(i));
-      printf("ASD - setting %s to %f\n",fname.c_str(),m_export_constants(i));
     }
   }
   
 }
 // =========================================================================================
+// This do_export handles all export variables that are derived from the EAMxx state.
+// Important! This setup assumes the numerical order of export_cpl_indices as listed in
+// /src/mct_coupling/scream_cpl_indices.F90
+//
+// If this order is changed or a new variable is added it is important to update the corresponding
+// index query in the below.
 void SurfaceCouplingExporter::do_export_from_eamxx(const double dt, const bool called_during_initialization)
 {
   using PC = physics::Constants<Real>;
@@ -357,29 +361,31 @@ void SurfaceCouplingExporter::do_export_from_eamxx(const double dt, const bool c
 
     // Calculate air temperature at bottom of cell closest to the ground for PSL
     const Real T_int_bot = PF::calculate_surface_air_T(s_T_mid_i(num_levs-1),s_z_mid_i(num_levs-1));
-    Sa_z(i)    = s_z_mid_i(num_levs-1);
-    Sa_u(i)    = u_wind_i(num_levs-1);
-    Sa_v(i)    = v_wind_i(num_levs-1);
-    Sa_tbot(i) = s_T_mid_i(num_levs-1);
-    Sa_shum(i) = s_qv_i(num_levs-1);
-    Sa_ptem(i) = PF::calculate_theta_from_T(s_T_mid_i(num_levs-1), s_p_mid_i(num_levs-1));
-    Sa_pbot(i) = s_p_mid_i(num_levs-1); 
-    Sa_dens(i) = PF::calculate_density(s_pseudo_density_i(num_levs-1), s_dz_i(num_levs-1));
-    Sa_pslv(i) = PF::calculate_psl(T_int_bot, p_int_i(num_levs), phis(i));
+
+    // Set the values in the helper fields which correspond to the exported variables
+    if (m_export_source(0)==EAMXX) { Sa_z(i)    = s_z_mid_i(num_levs-1); }
+    if (m_export_source(1)==EAMXX) { Sa_u(i)    = u_wind_i(num_levs-1); }
+    if (m_export_source(2)==EAMXX) { Sa_v(i)    = v_wind_i(num_levs-1); }
+    if (m_export_source(3)==EAMXX) { Sa_tbot(i) = s_T_mid_i(num_levs-1); }
+    if (m_export_source(4)==EAMXX) { Sa_ptem(i) = PF::calculate_theta_from_T(s_T_mid_i(num_levs-1), s_p_mid_i(num_levs-1)); }
+    if (m_export_source(5)==EAMXX) { Sa_pbot(i) = s_p_mid_i(num_levs-1);  }
+    if (m_export_source(6)==EAMXX) { Sa_shum(i) = s_qv_i(num_levs-1); }
+    if (m_export_source(7)==EAMXX) { Sa_dens(i) = PF::calculate_density(s_pseudo_density_i(num_levs-1), s_dz_i(num_levs-1)); }
+    if (m_export_source(8)==EAMXX) { Sa_pslv(i) = PF::calculate_psl(T_int_bot, p_int_i(num_levs), phis(i)); }
 
     if (not called_during_initialization) {
       // Precipitation has units of kg/m2, and Faxa_rainl/snowl
       // need units mm/s. Here, 1000 converts m->mm, dt has units s, and
       // rho_h2o has units kg/m3.
-      Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O);
-      Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O);
+      if (m_export_source(9)==EAMXX)  { Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
+      if (m_export_source(10)==EAMXX) { Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
     }
-    Faxa_swndr(i) = sfc_flux_dir_nir(i);
-    Faxa_swvdr(i) = sfc_flux_dir_vis(i);
-    Faxa_swndf(i) = sfc_flux_dif_nir(i);
-    Faxa_swvdf(i) = sfc_flux_dif_vis(i);
-    Faxa_swnet(i) = sfc_flux_sw_net(i);
-    Faxa_lwdn (i) = sfc_flux_lw_dn(i);
+    if (m_export_source(11)==EAMXX) { Faxa_swndr(i) = sfc_flux_dir_nir(i); }
+    if (m_export_source(12)==EAMXX) { Faxa_swvdr(i) = sfc_flux_dir_vis(i); }
+    if (m_export_source(13)==EAMXX) { Faxa_swndf(i) = sfc_flux_dif_nir(i); }
+    if (m_export_source(14)==EAMXX) { Faxa_swvdf(i) = sfc_flux_dif_vis(i); }
+    if (m_export_source(15)==EAMXX) { Faxa_swnet(i) = sfc_flux_sw_net(i); }
+    if (m_export_source(16)==EAMXX) { Faxa_lwdn (i) = sfc_flux_lw_dn(i); }
   });
 }
 // =========================================================================================

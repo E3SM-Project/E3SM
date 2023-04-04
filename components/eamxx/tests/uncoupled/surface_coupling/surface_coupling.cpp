@@ -175,6 +175,7 @@ void test_exports(const FieldManager& fm,
                   const KokkosTypes<HostDevice>::view_2d<Real> export_data_view,
                   const KokkosTypes<HostDevice>::view_1d<int>  export_cpl_indices_view,
                   const KokkosTypes<HostDevice>::view_1d<Real> export_constant_multiple_view,
+                  const std::string& export_control_filename,
                   const int dt,
                   const bool called_directly_after_init = false)
 {
@@ -274,6 +275,14 @@ void test_exports(const FieldManager& fm,
   const auto Faxa_rainl_h = Kokkos::create_mirror_view_and_copy(HostDevice(), Faxa_rainl);
   const auto Faxa_snowl_h = Kokkos::create_mirror_view_and_copy(HostDevice(), Faxa_snowl);
 
+  // Recall that two fields have been set to export to a constant value, so we load those constants from the parameter list here:
+  ekat::ParameterList exp_control_params("export control");
+  REQUIRE_NOTHROW ( parse_yaml_file(export_control_filename,exp_control_params) );
+  auto exp_const_params       = exp_control_params.sublist("set_export_to_constant");
+  const Real Faxa_swndf_const = exp_const_params.get<Real>("Faxa_swndf"); 
+  const Real Faxa_swndv_const = exp_const_params.get<Real>("Faxa_swvdf"); 
+
+
   // Check cpl data to scream fields
   for (int i=0; i<ncols; ++i) {
 
@@ -304,8 +313,8 @@ void test_exports(const FieldManager& fm,
       EKAT_REQUIRE(export_constant_multiple_view(10)*Faxa_snowl_h(i)       == export_data_view(i, export_cpl_indices_view(10)));
       EKAT_REQUIRE(export_constant_multiple_view(11)*sfc_flux_dir_nir_h(i) == export_data_view(i, export_cpl_indices_view(11)));
       EKAT_REQUIRE(export_constant_multiple_view(12)*sfc_flux_dir_vis_h(i) == export_data_view(i, export_cpl_indices_view(12)));
-      EKAT_REQUIRE(export_constant_multiple_view(13)*sfc_flux_dif_nir_h(i) == export_data_view(i, export_cpl_indices_view(13)));
-      EKAT_REQUIRE(export_constant_multiple_view(14)*sfc_flux_dif_vis_h(i) == export_data_view(i, export_cpl_indices_view(14)));
+      EKAT_REQUIRE(Faxa_swndf_const                                        == export_data_view(i, export_cpl_indices_view(13)));
+      EKAT_REQUIRE(Faxa_swndv_const                                        == export_data_view(i, export_cpl_indices_view(14)));
       EKAT_REQUIRE(export_constant_multiple_view(15)*sfc_flux_sw_net_h(i)  == export_data_view(i, export_cpl_indices_view(15)));
       EKAT_REQUIRE(export_constant_multiple_view(16)*sfc_flux_lw_dn_h(i)   == export_data_view(i, export_cpl_indices_view(16)));
     }
@@ -318,6 +327,7 @@ TEST_CASE("surface-coupling", "") {
 
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
+  auto engine = setup_random_test(&atm_comm);
 
   // Load ad parameter list
   std::string fname = "input.yaml";
@@ -328,6 +338,22 @@ TEST_CASE("surface-coupling", "") {
   auto& ts          = ad_params.sublist("time_stepping");
   const auto t0_str = ts.get<std::string>("run_t0");
   const auto t0     = util::str_to_time_stamp(t0_str);
+
+  // Set one export field to be randomly set to a constant
+  // This requires us to add a sublist to the parsed AD params yaml list.
+  // We also write the random values out so they can be checked later.
+  std::uniform_real_distribution<Real> pdf_real_constant_data(0.0,1.0);
+  ekat::ParameterList exp_control_params("export control");
+  auto& exp_const_params = exp_control_params.sublist("set_export_to_constant");
+  const Real Faxa_swndf_const = pdf_real_constant_data(engine);
+  const Real Faxa_swndv_const = pdf_real_constant_data(engine);
+  exp_const_params.set<Real>("Faxa_swndf",Faxa_swndf_const); 
+  exp_const_params.set<Real>("Faxa_swvdf",Faxa_swndv_const);
+  const std::string export_control_filename = "export_control_np"+std::to_string(atm_comm.size())+".yaml";
+  write_yaml_file(export_control_filename,exp_control_params);
+  auto& ap_params     = ad_params.sublist("atmosphere_processes");
+  auto& sc_exp_params = ap_params.sublist("SurfaceCouplingExporter");
+  sc_exp_params.set<std::string>("prescribed_export_control_file",export_control_filename);
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
   auto& proc_factory = AtmosphereProcessFactory::instance();
@@ -352,7 +378,6 @@ TEST_CASE("surface-coupling", "") {
   // Create test data for SurfaceCouplingDataManager
 
   // Create engine and pdfs for random test data
-  auto engine = setup_random_test(&atm_comm);
   std::uniform_int_distribution<int> pdf_int_additional_fields(0,10);
   std::uniform_int_distribution<int> pdf_int_dt(1,1800);
   std::uniform_real_distribution<Real> pdf_real_import_data(0.0,1.0);
@@ -462,7 +487,7 @@ TEST_CASE("surface-coupling", "") {
   test_imports(*fm, import_data_view, import_cpl_indices_view,
                import_constant_multiple_view, true);
   test_exports(*fm, export_data_view, export_cpl_indices_view,
-               export_constant_multiple_view, dt, true);
+               export_constant_multiple_view, export_control_filename, dt, true);
 
   // Run the AD
   ad.run(dt);
@@ -471,7 +496,7 @@ TEST_CASE("surface-coupling", "") {
   test_imports(*fm, import_data_view, import_cpl_indices_view,
                import_constant_multiple_view);
   test_exports(*fm, export_data_view, export_cpl_indices_view,
-               export_constant_multiple_view, dt);
+               export_constant_multiple_view, export_control_filename, dt);
 
   // Finalize  the AD
   ad.finalize();
