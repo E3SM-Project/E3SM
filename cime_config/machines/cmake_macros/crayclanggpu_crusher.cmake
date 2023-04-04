@@ -31,12 +31,12 @@ set(SCC "cc")
 set(SCXX "hipcc")
 set(SFC "ftn")
 
-# Switching to O3 for performance benchmarking
-# Will revisit any failing tests
+# Switch to O3 for better performance
+# Using O2 to ensure passing tests
 if (NOT DEBUG)
-  string(APPEND CFLAGS   " -O3")
-  string(APPEND CXXFLAGS " -O3")
-  string(APPEND FFLAGS   " -O3")
+  string(APPEND CFLAGS   " -O2")
+  string(APPEND CXXFLAGS " -O2")
+  string(APPEND FFLAGS   " -O2")
 endif()
 
 if (COMP_NAME STREQUAL elm)
@@ -54,10 +54,10 @@ set(PNETCDF_PATH "$ENV{PNETCDF_DIR}")
 string(APPEND CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
 string(APPEND CXX_LIBS " -lstdc++")
 
-string(APPEND CXXFLAGS " -I$ENV{MPICH_DIR}/include --amdgpu-target=gfx90a")
+string(APPEND CXXFLAGS " -I$ENV{MPICH_DIR}/include --offload-arch=gfx90a")
 string(APPEND SLIBS    " -L$ENV{MPICH_DIR}/lib -lmpi -L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa")
 
 string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_ZEN3=On -DKokkos_ARCH_VEGA90A=On")
 
 set(USE_HIP "TRUE")
-string(APPEND HIP_FLAGS "-O3 -I$ENV{MPICH_DIR}/include -munsafe-fp-atomics -D__HIP_ROCclr__ -D__HIP_ARCH_GFX90A__=1 --rocm-path=$ENV{ROCM_PATH} --offload-arch=gfx90a -x hip")
+string(APPEND HIP_FLAGS "${CXXFLAGS} -munsafe-fp-atomics -x hip")
