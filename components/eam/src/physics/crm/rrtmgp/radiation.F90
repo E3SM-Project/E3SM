@@ -1390,6 +1390,10 @@ contains
       cosp_lwband = get_band_index_lw(10.5_r8, 'micron')
       cosp_swband = get_band_index_sw(0.67_r8, 'micron')
 
+      ! Initialize packed variables to fix crashing historical runs?
+      dems_packed = 0._r8
+      dtau_packed = 0._r8
+
       ! Loop over "diagnostic calls"; these are additional configurations of
       ! gases used to calculate radiative effects for diagnostic purposes only,
       ! without affecting the climate. The only version that affects the
