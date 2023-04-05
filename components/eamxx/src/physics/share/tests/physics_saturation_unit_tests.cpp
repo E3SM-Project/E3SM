@@ -92,15 +92,15 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     const Spack sat_ice_fp  = physics::polysvp1(temps, true, Smask(true));
     const Spack sat_liq_fp  = physics::polysvp1(temps, false, Smask(true));
     //last argument "0" of qv_sat function below forces qv_sat to call "polysvp1"
-    const Spack mix_ice_fr = physics::qv_sat(temps, pres, true, Smask(true), physics::Polysvp1);
-    const Spack mix_liq_fr = physics::qv_sat(temps, pres, false,Smask(true), physics::Polysvp1);
+    const Spack mix_ice_fr = physics::qv_sat_dry(temps, pres, true, Smask(true), physics::Polysvp1);
+    const Spack mix_liq_fr = physics::qv_sat_dry(temps, pres, false,Smask(true), physics::Polysvp1);
 
     //Get values from MurphyKoop_svp and qv_sat (qv_sat calls MurphyKoop_svp here) to test against "expected" values
     const Spack sat_ice_mkp   = physics::MurphyKoop_svp(temps, true, Smask(true));
     const Spack sat_liq_mkp   = physics::MurphyKoop_svp(temps, false, Smask(true));
     //last argument "1" of qv_sat function below forces qv_sat to call "MurphyKoop_svp"
-    const Spack mix_ice_mkr  = physics::qv_sat(temps, pres, true,  Smask(true), physics::MurphyKoop);
-    const Spack mix_liq_mkr  = physics::qv_sat(temps, pres, false, Smask(true), physics::MurphyKoop);
+    const Spack mix_ice_mkr  = physics::qv_sat_dry(temps, pres, true,  Smask(true), physics::MurphyKoop);
+    const Spack mix_liq_mkr  = physics::qv_sat_dry(temps, pres, false, Smask(true), physics::MurphyKoop);
 
     //Set error tolerances
     //--------------------------------------
