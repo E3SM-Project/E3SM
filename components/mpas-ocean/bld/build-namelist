@@ -782,7 +782,7 @@ if ($OCN_ISMF eq 'coupled') {
 } elsif ($OCN_ISMF eq 'internal') {
 	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"standalone");
 } else {
-	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"pressure_only");
+	add_default($nl, 'config_land_ice_flux_mode');
 }
 add_default($nl, 'config_land_ice_flux_formulation');
 add_default($nl, 'config_land_ice_flux_useHollandJenkinsAdvDiff');
