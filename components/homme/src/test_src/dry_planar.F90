@@ -250,7 +250,6 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
   do k=1,nlev
     Tm(k) = bubble_T0 - zm(k)*g/cp
     pm(k) = p0*( Tm(k)/bubble_T0  )**(1.0/kappa)
-    dpm(k)=(pi(k+1)-pi(k))
   enddo
   ! this T, z, pressure, and q1 (set below) together do not obey 
   ! homme's EOS, meaning if one to compute phi from EOS, it won't match z
@@ -282,6 +281,10 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 #endif
 
   hvcoord%hyai = ai; hvcoord%hybi = bi
+
+  do k = 1,nlev
+    dpm(k) = pressure_thickness(pi(nlevp),k,hvcoord)
+  end do
 
   !set : hyam hybm 
   hvcoord%hyam = 0.5 *(ai(2:nlev+1) + ai(1:nlev))

@@ -605,9 +605,9 @@ module TopounitDataType
     integer, intent(in) :: begt   ! beginning topographic unit index
     integer, intent(in) :: endt   ! ending topographic unit index
 
-    allocate(this%t_rad   (begt:endt)) ; this%t_rad   (:) = nan
-    allocate(this%eflx_lwrad_out_topo   (begt:endt)) ; this%eflx_lwrad_out_topo   (:) = nan
-    allocate(this%t_grnd  (begt:endt)) ; this%t_grnd  (:) = nan    
+    allocate(this%t_rad   (begt:endt)) ; this%t_rad   (:) = spval
+    allocate(this%eflx_lwrad_out_topo   (begt:endt)) ; this%eflx_lwrad_out_topo   (:) = spval
+    allocate(this%t_grnd  (begt:endt)) ; this%t_grnd  (:) = spval
   end subroutine init_top_es
 
   !-----------------------------------------------------------------------

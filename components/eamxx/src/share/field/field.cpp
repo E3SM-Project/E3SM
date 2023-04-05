@@ -4,11 +4,9 @@
 namespace scream
 {
 
-// ================================= IMPLEMENTATION ================================== //
-
 Field::
 Field (const identifier_type& id)
- : m_header     (create_header(id))
+ : m_header (create_header(id))
 {
   // Nothing to do here
 }

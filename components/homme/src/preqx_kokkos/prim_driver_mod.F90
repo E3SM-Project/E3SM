@@ -8,7 +8,7 @@ module prim_driver_mod
   use element_mod,          only : element_t
   use prim_driver_base,     only : deriv1, smooth_topo_datasets
   use prim_cxx_driver_base, only : prim_init1, prim_finalize
-  use physical_constants, only : rearth
+  use physical_constants,   only : scale_factor, laplacian_rigid_factor
 
   implicit none
 
@@ -88,8 +88,8 @@ contains
                                    LOGICAL(moisture/="dry",c_bool),                               &
                                    LOGICAL(disable_diagnostics,c_bool),                           &
                                    LOGICAL(use_cpstar==1,c_bool),                                 &
-                                   transport_alg,                                                 &
-                                   dt_remap_factor, dt_tracer_factor, rearth)
+                                   transport_alg, dt_remap_factor, dt_tracer_factor,              &
+                                   scale_factor, laplacian_rigid_factor)
 
     ! Initialize time level structure in C++
     call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)

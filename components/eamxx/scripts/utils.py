@@ -2,8 +2,9 @@
 Utilities
 """
 
-import os, sys, re, signal, subprocess, site
+import os, sys, re, signal, subprocess, site, time
 from importlib import import_module
+from pathlib import Path
 
 ###############################################################################
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
@@ -103,6 +104,33 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None, dry_run=Fa
             errput = ""
 
         expect(False, "Command: '{}' failed with error '{}' from dir '{}'".format(cmd, errput, os.getcwd() if from_dir is None else from_dir), exc_type=exc_type)
+
+    return output
+
+###############################################################################
+def run_cmd_assert_result(test_obj, cmd, from_dir=None, expect_works=True, env=None, verbose=False):
+###############################################################################
+    """
+    Run a shell command from a unittest.
+    """
+    from_dir = Path() if from_dir is None else from_dir
+    stat, output, errput = run_cmd(cmd, from_dir=from_dir, env=env, verbose=verbose)
+    problem = None
+    if expect_works and stat != 0:
+        problem = "SHOULD HAVE WORKED"
+    elif not expect_works and stat == 0:
+        problem = "SHOULD NOT HAVE WORKED"
+
+    if problem is not None:
+        msg = \
+"""
+COMMAND: %s
+FROM_DIR: %s
+%s
+OUTPUT: %s
+ERRPUT: %s
+""" % (cmd, from_dir, problem, output, errput)
+        test_obj.assertTrue(False, msg=msg)
 
     return output
 
@@ -229,6 +257,20 @@ def format_time(time_format, input_format, input_time):
     return output_time
 
 ###############################################################################
+def get_timestamp(timestamp_format="%Y%m%d_%H%M%S", utc_time=False):
+###############################################################################
+    """
+    Get a string representing the current UTC time in format: YYYYMMDD_HHMMSS
+
+    The format can be changed if needed.
+    """
+    if utc_time:
+        time_tuple = time.gmtime()
+    else:
+        time_tuple = time.localtime()
+    return time.strftime(timestamp_format, time_tuple)
+
+###############################################################################
 class SharedArea(object):
 ###############################################################################
     """
@@ -297,14 +339,18 @@ def ensure_pip():
     function below, since it would cause circular dependencies. This one has to
     be done by hand.
     """
-    # Use ensurepip for installing pip
-    import ensurepip
-    ensurepip.bootstrap(user=True)
+    try:
+        import pip # pylint: disable=unused-import
 
-    # needed to "rehash" available libs
-    site.main() # pylint: disable=no-member
+    except ModuleNotFoundError:
+        # Use ensurepip for installing pip
+        import ensurepip
+        ensurepip.bootstrap(user=True)
 
-    _ = import_module("pip")
+        # needed to "rehash" available libs
+        site.main() # pylint: disable=no-member
+
+        import pip # pylint: disable=unused-import
 
 ###############################################################################
 def pip_install_lib(pip_libname):
@@ -368,3 +414,4 @@ def _ensure_pylib_impl(libname, min_version=None, pip_libname=None):
 def ensure_yaml():   _ensure_pylib_impl("yaml", pip_libname="pyyaml",min_version='5.1')
 def ensure_pylint(): _ensure_pylib_impl("pylint")
 def ensure_psutil(): _ensure_pylib_impl("psutil")
+def ensure_netcdf4(): _ensure_pylib_impl("netCDF4")

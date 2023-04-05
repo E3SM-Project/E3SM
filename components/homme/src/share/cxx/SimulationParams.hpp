@@ -55,10 +55,11 @@ struct SimulationParams
   int       hypervis_subcycle;
   int       hypervis_subcycle_tom;
   double    hypervis_scaling;
-  double    nu_ratio1, nu_ratio2; //control balance between div and vort components in vector laplace
+  double    nu_ratio1, nu_ratio2; // control balance between div and vort components in vector laplace
   int       nsplit = 0;
   int       nsplit_iteration;
-  double    rearth; //propagated then to Geometry and SphereOps
+  double    scale_factor; // radius of Earth in sphere case; propagated then to Geometry and SphereOps
+  double    laplacian_rigid_factor; // propagated to SphereOps
   bool      pgrad_correction;
 
   double    dp3d_thresh;
@@ -79,6 +80,8 @@ inline void SimulationParams::print (std::ostream& out) {
   out << "   theta_adv_form: " << etoi(theta_adv_form) << "\n";
   out << "   rsplit: " << rsplit << "\n";
   out << "   qsplit: " << qsplit << "\n";
+  out << "   dt_remap_factor: " << dt_remap_factor << "\n";
+  out << "   dt_tracer_factor: " << dt_tracer_factor << "\n";
   out << "   qsize: " << qsize << "\n";
   out << "   limiter_option: " << limiter_option << "\n";
   out << "   state_frequency: " << state_frequency << "\n";
@@ -101,7 +104,8 @@ inline void SimulationParams::print (std::ostream& out) {
   out << "   theta_hydrostatic_mode: " << (theta_hydrostatic_mode ? "yes" : "no") << "\n";
   out << "   prescribed_wind: " << (prescribed_wind ? "yes" : "no") << "\n";
   out << "   nsplit: " << nsplit << "\n";
-  out << "   rearth: " << rearth << "\n";
+  out << "   scale_factor: " << scale_factor << "\n";
+  out << "   laplacian_rigid_factor: " << laplacian_rigid_factor << "\n";
   out << "   dp3d_thresh: " << dp3d_thresh << "\n";
   out << "   vtheta_thresh: " << vtheta_thresh << "\n";
   out << "\n**********************************************************\n";

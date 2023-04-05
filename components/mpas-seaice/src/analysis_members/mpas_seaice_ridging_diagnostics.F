@@ -266,7 +266,8 @@ contains
       real(kind=RKIND), dimension(:,:,:), pointer :: &
            iceAreaCategory, &
            iceVolumeCategory, &
-           levelIceArea
+           levelIceArea, &
+           levelIceVolume
 
       integer, pointer :: &
            nCellsSolve, &
@@ -297,6 +298,7 @@ contains
          call MPAS_pool_get_array(tracersPool, "iceAreaCategory", iceAreaCategory, 1)
          call MPAS_pool_get_array(tracersPool, "iceVolumeCategory", iceVolumeCategory, 1)
          call MPAS_pool_get_array(tracersPool, "levelIceArea", levelIceArea, 1)
+         call MPAS_pool_get_array(tracersPool, "levelIceVolume", levelIceVolume, 1)
 
          do iCell = 1, nCellsSolve
 
@@ -317,10 +319,10 @@ contains
 
                levelIceVolumeAverage(iCell) = &
                     levelIceVolumeAverage(iCell) + iceVolumeCategory(1,iCategory,iCell) * &
-                    levelIceArea(1,iCategory,iCell)
+                    levelIceVolume(1,iCategory,iCell)
                ridgedIceVolumeAverage(iCell) = &
                     ridgedIceVolumeAverage(iCell) + iceVolumeCategory(1,iCategory,iCell) * &
-                    (1.0_RKIND - levelIceArea(1,iCategory,iCell))
+                    (1.0_RKIND - levelIceVolume(1,iCategory,iCell))
 
             enddo ! iCategory
          enddo ! iCell

@@ -443,6 +443,13 @@
 <config_AM_temperatures_compute_on_startup>true</config_AM_temperatures_compute_on_startup>
 <config_AM_temperatures_write_on_startup>true</config_AM_temperatures_write_on_startup>
 
+<!-- AM_thicknesses -->
+<config_AM_thicknesses_enable>false</config_AM_thicknesses_enable>
+<config_AM_thicknesses_compute_interval>'dt'</config_AM_thicknesses_compute_interval>
+<config_AM_thicknesses_output_stream>'none'</config_AM_thicknesses_output_stream>
+<config_AM_thicknesses_compute_on_startup>true</config_AM_thicknesses_compute_on_startup>
+<config_AM_thicknesses_write_on_startup>true</config_AM_thicknesses_write_on_startup>
+
 <!-- AM_regionalStatistics -->
 <config_AM_regionalStatistics_enable>true</config_AM_regionalStatistics_enable>
 <config_AM_regionalStatistics_enable prognostic_mode="prescribed">false</config_AM_regionalStatistics_enable>

@@ -111,6 +111,14 @@ Valid values: 'gregorian', 'noleap'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_output_reference_time" type="char*1024"
+	category="time_management" group="time_management">
+Reference time used in the units attribute of Time in output files.
+
+Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- io -->
 
@@ -1070,14 +1078,6 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_cvmix_kpp_use_active_wave" type="logical"
-	category="cvmix" group="cvmix">
-Flag for use of active WAVEWATCH III coupling to calculate the Langmuir number and enhancement factor
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_cvmix_kpp_langmuir_mixing_opt" type="char*1024"
 	category="cvmix" group="cvmix">
 Option of Langmuir enhanced mixing parameterization
@@ -1094,22 +1094,30 @@ Valid values: NONE, LWF16, LF17, RWHGK16
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_cvmix_kpp_use_active_wave" type="logical"
+	category="cvmix" group="cvmix">
+Flag for Langmuir enchancement factor using prognostic waves. Requires config_use_active_wave = .true.
 
-<!-- wave coupling -->
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- wave_coupling -->
 
 <entry id="config_use_active_wave" type="logical"
 	category="wave_coupling" group="wave_coupling">
-Flag for using prognostic waves
+Flag for using prognostic waves. Controls the allocation of wave arrays and computation of Stokes drift profiles.
 
-Valid values: 
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_n_stokes_drift_wavenumber_partitions" type="integer"
 	category="wave_coupling" group="wave_coupling">
-Number of wavenumbers used to reconstruct Stokes drift profile
+Number of wavenumber partitions to be used in reconstructing wave-induced Stokes drift profile
 
-Valid values: 3, 4, and 6
+Valid values: 3,4,6
 Default: Defined in namelist_defaults.xml
 </entry>
 

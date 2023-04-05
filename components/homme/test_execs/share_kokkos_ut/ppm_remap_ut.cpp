@@ -82,7 +82,7 @@ public:
                  nan_boundaries);
     Kokkos::parallel_for(
         Homme::get_default_team_policy<ExecSpace, TagGridTest>(ne), *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
 
     const int remap_alg = boundary_cond::fortran_remap_alg;
     HostViewManaged<Real[_ppm_consts::DPO_PHYSICAL_LEV]> f90_input(
@@ -158,7 +158,7 @@ public:
     }
     Kokkos::parallel_for(
         Homme::get_default_team_policy<ExecSpace, TagPPMTest>(ne), *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
 
     const int remap_alg = boundary_cond::fortran_remap_alg;
 
@@ -319,7 +319,7 @@ public:
 
     Kokkos::parallel_for(
         Homme::get_default_team_policy<ExecSpace, TagRemapTest>(ne), *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
 
     const int remap_alg = boundary_cond::fortran_remap_alg;
     const int np = NP;

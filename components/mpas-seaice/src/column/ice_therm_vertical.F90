@@ -1228,10 +1228,11 @@
             if (Ts > c0) then
                dhs = cp_ice*Ts*dzs(k) / Lfresh  ! melt
                smice_precs = c0
-               if (abs(dzs(k)) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
+               if (dzs(k) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
                smicetot(k) = max(c0,smicetot(k) - smice_precs) ! dhs << dzs
                smliqtot(k) = max(c0,smliqtot(k) + smice_precs)
                dzs (k) = dzs(k) - dhs
+               melts = melts + dhs
                zqsn(k) = -rhos*Lfresh
             endif
          enddo
@@ -1282,7 +1283,7 @@
          dzi(1) = dzi(1) + dhi
          evapn = evapn + dhi*rhoi
          ! enthalpy of melt water
-         emlt_atm = emlt_atm - qmlt(1) * dhi 
+         emlt_atm = emlt_atm - qmlt(1) * dhi
       endif
 
       !--------------------------------------------------------------
@@ -1349,15 +1350,15 @@
       do k = 1, nslyr
 
          !--------------------------------------------------------------
-         ! Remove internal snow melt 
+         ! Remove internal snow melt
          !--------------------------------------------------------------
-         
+
          if (ktherm == 2 .and. zqsn(k) > -rhos * Lfresh) then
 
             dhs = max(-dzs(k), &
-                -((zqsn(k) + rhos*Lfresh) / (rhos*Lfresh)) * dzs(k)) ! dhs < 0 
+                -((zqsn(k) + rhos*Lfresh) / (rhos*Lfresh)) * dzs(k)) ! dhs < 0
             smice_precs = c0
-            if (abs(dzs(k)) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
+            if (dzs(k) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
             smicetot(k) = max(c0,smicetot(k) + smice_precs) ! -dhs <= dzs
             smliqtot(k) = max(c0,smliqtot(k) - smice_precs)
             dzs (k) = dzs(k) + dhs
@@ -1701,6 +1702,11 @@
                                     zs1(:),   zs2(:),   &
                                     hslyr,    hsn,      &
                                     smliq(:))
+
+              do k = 1, nslyr
+                 smicetot(k) = smice(k) * hslyr
+                 smliqtot(k) = smliq(k) * hslyr
+              end do
         endif
 
       endif   ! nslyr > 1
@@ -1717,7 +1723,7 @@
                zqsn(k) = -rhos*Lfresh
                if (tr_snow) then
                  meltsliq = meltsliq + smicetot(k)  ! add to meltponds
-                 smice(k) = c0
+                 smice(k) = rhos
                  smliq(k) = c0
                endif
                hslyr = c0

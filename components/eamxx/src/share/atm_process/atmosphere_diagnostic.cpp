@@ -15,7 +15,7 @@ Field AtmosphereDiagnostic::get_diagnostic () const {
   EKAT_REQUIRE_MSG (m_diagnostic_output.is_allocated(),
       "Error! Getting a diagnostic field before it is allocated is suspicious at best.\n"
       "       We chose to throw an error, but if this is a legit use, please, contact developers.\n");
-  return m_diagnostic_output.get_const();
+  return m_diagnostic_output;
 }
 
 void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
