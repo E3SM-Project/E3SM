@@ -4,29 +4,29 @@
 <!-- Set default output options for CMIP6 simulations -->
 <cosp_lite>.true.</cosp_lite>
 
-<liqcf_fix>.false.</liqcf_fix>
-
 <!-- Solar constant from CMIP6 input4MIPS -->
-<solar_data_file>atm/cam/solar/Solar_1850-2299_input4MIPS_c20181106.nc</solar_data_file>
-<solar_data_type>SERIAL</solar_data_type>
+<solar_data_file>atm/cam/solar/Solar_1950control_input4MIPS_c20171208.nc</solar_data_file>
+<solar_data_ymd>19500101</solar_data_ymd>
+<solar_data_type>FIXED</solar_data_type>
 
-<!-- GHG values from CMIP6 input4MIPS -->
-<bndtvghg>atm/cam/ggas/GHG_CMIP-1-2-0_Annual_Global_0000-2014_c20180105.nc</bndtvghg>
-<scenario_ghg>RAMPED</scenario_ghg>
+<!-- 1950 GHG values from CMIP6 input4MIPS -->
+<!-- <co2vmr>312.821e-6</co2vmr> The CMIP6 concentration set by CCSM_CO2_PPMV in cime/src/drivers/mct/cime_config/config_component_acme.xml -->
+<ch4vmr>1163.821e-9</ch4vmr>
+<n2ovmr>289.739e-9</n2ovmr>
+<f11vmr>62.83147e-12</f11vmr>
+<f12vmr>6.382257e-12</f12vmr>
 
 <!-- Stratospheric aerosols from CMIP6 input4MIPS -->
-<prescribed_volcaero_datapath>atm/cam/volc</prescribed_volcaero_datapath>
-<prescribed_volcaero_file>CMIP_DOE-ACME_radiation_1850-2014_v3_c20171205.nc</prescribed_volcaero_file>
-<prescribed_volcaero_filetype>VOLC_CMIP6</prescribed_volcaero_filetype>
-<prescribed_volcaero_type>SERIAL</prescribed_volcaero_type>
-
-<!-- For comprehensive history -->
-<history_amwg>.true.</history_amwg>
-<history_aerosol>.true.</history_aerosol>
-<history_aero_optics>.true.</history_aero_optics>
+<prescribed_volcaero_datapath>atm/cam/volc                                             </prescribed_volcaero_datapath>
+<prescribed_volcaero_file    >CMIP_DOE-ACME_radiation_average_1850-2014_v3_c20171204.nc</prescribed_volcaero_file    >
+<prescribed_volcaero_filetype>VOLC_CMIP6                 </prescribed_volcaero_filetype>
+<prescribed_volcaero_type    >CYCLICAL                   </prescribed_volcaero_type    >
+<prescribed_volcaero_cycle_yr>1                                                        </prescribed_volcaero_cycle_yr>
 
 <!-- Prescribed oxidants for aerosol chemistry.   Ozone is from CMIP6 input4MIPS file -->
-<tracer_cnst_type    >INTERP_MISSING_MONTHS</tracer_cnst_type>
+<tracer_cnst_type    >CYCLICAL</tracer_cnst_type>
+<tracer_cnst_cycle_yr>1955</tracer_cnst_cycle_yr>
+<tracer_cnst_datapath>atm/cam/chem/trop_mozart_aero/oxid</tracer_cnst_datapath>
 <tracer_cnst_file    >oxid_1.9x2.5_L26_1850-2015_c20181106.nc</tracer_cnst_file>
 <tracer_cnst_filelist>''</tracer_cnst_filelist>
 
@@ -43,14 +43,15 @@
 
 <!-- Prescribed Ozone -->
 <prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
-<prescribed_ozone_file    >ozone_1.9x2.5_L26_1850-2015_rcp45_c101108.nc</prescribed_ozone_file>
+<prescribed_ozone_file    >ozone_1.9x2.5_L26_2000clim_c091112.nc</prescribed_ozone_file>
 <prescribed_ozone_name    >O3</prescribed_ozone_name>
-<prescribed_ozone_type    >INTERP_MISSING_MONTHS</prescribed_ozone_type>
+<prescribed_ozone_type    >CYCLICAL</prescribed_ozone_type>
+<prescribed_ozone_cycle_yr>2000</prescribed_ozone_cycle_yr>>
 
 <!-- Turn off ozone dry deposition, as Linoz O3v2 and ozone are not separated for now. Need to turn on ozone dry deposition when interactive tropospheric chemistry is implemented -->
 <drydep_list            >'H2O2', 'H2SO4', 'SO2'</drydep_list>
 
 <!-- sim_year used for CLM datasets and SSTs forcings -->
-<sim_year>1850-2000</sim_year>
+<sim_year>1955</sim_year>
 
 </namelist_defaults>
