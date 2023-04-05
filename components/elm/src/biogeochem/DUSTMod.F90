@@ -252,6 +252,7 @@ contains
     real(r8), parameter :: cst_slt = 2.61_r8           ! [frc] Saltation constant, only needed in original dust model, -YF
     real(r8), parameter :: flx_mss_fdg_fct = 5.0e-4_r8 ! [frc] Empir. mass flx tuning eflx_lh_vegt
     real(r8), parameter :: vai_mbl_thr = 0.3_r8        ! [m2 m-2] VAI threshold quenching dust mobilization
+    ! The following tuning constants are from Kok et al. (2014). They are optimized together. 
     real(r8), parameter :: Cd0 = 4.4e-5_r8             ! [dimless] proportionality constant 
                                                        ! in calculation of dust emission coefficient -YF
     real(r8), parameter :: Ca = 2.7_r8                 ! [dimless] proportionality constant in scaling of dust
