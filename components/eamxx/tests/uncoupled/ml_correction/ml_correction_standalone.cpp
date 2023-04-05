@@ -11,6 +11,7 @@
 #include "physics/ml_correction/atmosphere_ml_correction.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
+
 namespace scream {
 TEST_CASE("ml_correction-stand-alone", "") {
   using namespace scream;
@@ -18,18 +19,15 @@ TEST_CASE("ml_correction-stand-alone", "") {
   namespace py      = pybind11;
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
-  REQUIRE_NOTHROW(parse_yaml_file(fname, ad_params));
+  parse_yaml_file(fname, ad_params);
 
-  auto &ts              = ad_params.sublist("Time Stepping");
-  const auto dt         = ts.get<int>("Time Step");
-  const auto start_date = ts.get<std::vector<int>>("Start Date");
-  const auto start_time = ts.get<std::vector<int>>("Start Time");
-  const auto nsteps     = ts.get<int>("Number of Steps");
+  const auto& ts     = ad_params.sublist("time_stepping");
+  const auto  dt     = ts.get<int>("time_step");
+  const auto  nsteps = ts.get<int>("number_of_steps");
+  const auto  t0_str = ts.get<std::string>("run_t0");
+  const auto  t0     = util::str_to_time_stamp(t0_str);
 
   EKAT_ASSERT_MSG(dt > 0, "Error! Time step must be positive.\n");
-
-  util::TimeStamp t0(start_date, start_time);
-  EKAT_ASSERT_MSG(t0.is_valid(), "Error! Invalid start date.\n");
 
   ekat::Comm atm_comm(MPI_COMM_WORLD);
 

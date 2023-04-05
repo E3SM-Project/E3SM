@@ -361,8 +361,6 @@ be lost if SCREAM_HACK_XML is not enabled.
       <output_control>
         <Frequency>${REST_N}</Frequency>
         <frequency_units>${REST_OPTION}</frequency_units>
-        <avg_type_in_filename>false</avg_type_in_filename>
-        <frequency_in_filename>false</frequency_in_filename>
       </output_control>
     </model_restart>
   </Scorpio>

@@ -88,13 +88,11 @@ TEST_CASE("nudging") {
     //auto field_manager = get_test_fm(grid);
 
     using namespace ShortFieldTagsNames;
-    using FL = FieldLayout;
     using FR = FieldRequest;
 
     // Create a fm
     auto fm = std::make_shared<FieldManager>(grid2);
 
-    const int num_lcols = grid2->get_num_local_dofs();
     const int num_levs = grid2->get_num_vertical_levels();
 
     // Create some fields for this fm
@@ -178,7 +176,6 @@ TEST_CASE("nudging") {
     // Time loop
     for (Int ii=0;ii<max_steps;++ii) {
       time += dt;
-      Int time_in_sec = time.seconds_from(time0);
       // Update the fields
       for (const auto& fname : out_fields->m_fields_names) {
         auto f  = fm->get_field(fname);

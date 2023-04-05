@@ -11,6 +11,7 @@ CreateUnitTest(shoc_cld_p3_rrtmgp shoc_cld_p3_rrtmgp.cpp "${NEED_LIBS}" LABELS $
 # Set AD configurable options
 set (ATM_TIME_STEP 1800)
 SetVarDependingOnTestSize(NUM_STEPS 2 5 48)  # 1h 4h 24h
+set (RUN_T0 2021-10-12-45000)
 
 # Determine num subcycles needed to keep shoc dt<=300s
 set (SHOC_MAX_DT 300)
@@ -37,8 +38,8 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 
-    set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
-    set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
+    set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.${RUN_T0}.nc")
+    set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.${RUN_T0}.nc")
     set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}

@@ -70,6 +70,5 @@ Fields:
 output_control:
   Frequency: 1
   frequency_units: nsteps
-  Timestamp in Filename: false
   MPI Ranks in Filename: true
 ...

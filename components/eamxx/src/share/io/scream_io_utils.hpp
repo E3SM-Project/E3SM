@@ -116,15 +116,12 @@ struct IOFileSpecs {
   int num_snapshots_in_file = 0;
   int max_snapshots_in_file;
   bool file_is_full () const { return num_snapshots_in_file==max_snapshots_in_file; }
-  // Whether a time string or the number of mpiranks should be attached to the filename.
-  // Attaching the timestamp to each file ensures that in runs with multiple
-  // outputs, old output isn't accidentally overwritten, so it's on by default.
-  // Attaching the nranks, OTOH, is necessary only when running multiple mpi configs
-  // of the same test, so they run concurrently, writing on different files.
-  bool filename_with_time_string = true;
+  // Adding number of MPI ranks to the filenamea is useful in testing, since we can run
+  // multiple instances of the same test in parallel (with different number of ranks),
+  // without the risk of them overwriting each other output.
+  // For production runs, this is not desirable.
   bool filename_with_mpiranks    = false;
-  bool filename_with_avg_type    = true;
-  bool filename_with_frequency   = true;
+
   bool save_grid_data            = true;
 };
 

@@ -22,7 +22,6 @@ void MLCorrection::set_grids(
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Q = kg / kg;
   Q.set_string("kg/kg");
-  auto nondim = Units::nondimensional();
 
   m_grid                = grids_manager->get_grid("Physics");
   const auto &grid_name = m_grid->name();

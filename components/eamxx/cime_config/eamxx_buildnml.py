@@ -782,8 +782,6 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
             stop_opt = test_env.get_value("STOP_OPTION")
             content['output_control']['Frequency'] = stop_n
             content['output_control']['frequency_units'] = stop_opt
-            content['Checkpoint Control']['frequency_in_filename'] = 'false'
-            content['Checkpoint Control']['avg_type_in_filename'] = 'false'
             content['Averaging Type'] = 'AVERAGE'
             print ("WARNING: ERS/ERP tests hard code output to consist of a single AVERAGE output step at the end of the run.")
 

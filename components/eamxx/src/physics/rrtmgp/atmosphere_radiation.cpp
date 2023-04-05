@@ -119,11 +119,11 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
 
   // Set computed (output) fields
   add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid_name, ps);
-  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
+  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
   add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
+  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
   add_field<Computed>("SW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("SW_clrsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("SW_clrsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name, ps);
@@ -131,10 +131,10 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("LW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid_name, "RESTART", ps);
   // Cloud properties added as computed fields for diagnostic purposes
-  add_field<Computed>("cldlow"        , scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("cldmed"        , scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("cldhgh"        , scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("cldtot"        , scalar2d_layout, nondim, grid_name);
+  add_field<Computed>("cldlow"        , scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cldmed"        , scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cldhgh"        , scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cldtot"        , scalar2d_layout, nondim, grid_name, "RESTART");
 
   // Translation of variables from EAM
   // --------------------------------------------------------------

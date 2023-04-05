@@ -7,6 +7,8 @@ CreateUnitTestExec (shoc_p3 shoc_p3.cpp "shoc;p3;scream_control;diagnostics")
 GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
 GetInputFile(cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc)
 
+set (RUN_T0 2021-10-12-45000)
+
 # Run a test with subcycling
 set (NUM_SUBCYCLES 3)
 set (NUM_STEPS  1)
@@ -37,8 +39,8 @@ CreateUnitTestFromExec (shoc_p3_monolithic shoc_p3
 include (BuildCprnc)
 BuildCprnc()
 
-set (SRC_FILE "shoc_p3_monolithic.INSTANT.nsteps_x3.nc")
-set (TGT_FILE "shoc_p3_subcycled.INSTANT.nsteps_x1.nc")
+set (SRC_FILE "shoc_p3_monolithic.INSTANT.nsteps_x3.${RUN_T0}.nc")
+set (TGT_FILE "shoc_p3_subcycled.INSTANT.nsteps_x1.${RUN_T0}.nc")
 set (TEST_NAME check_subcycling)
 add_test (NAME ${TEST_NAME}
           COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}

@@ -118,7 +118,7 @@ void write (const int freq, const int seed, const int ps, const ekat::Comm& comm
 
   // Create output params
   ekat::ParameterList om_pl;
-  om_pl.set("MPI Ranks in Filename",false);
+  om_pl.set("MPI Ranks in Filename",true);
   om_pl.set("filename_prefix","io_packed_ps"+std::to_string(ps));
   om_pl.set("Field Names",fnames);
   om_pl.set("Averaging Type", std::string("INSTANT"));
