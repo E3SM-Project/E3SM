@@ -62,6 +62,10 @@ MACHINE_METADATA = {
                  ["mpicxx","mpifort","mpicc"],
                   "srun --time 02:00:00 --nodes=1 -p short --exclusive --account e3sm",
                   ""),
+    "chrysalis" : (["eval $(../../cime/CIME/Tools/get_case_env)", "export OMP_NUM_THREADS=1"],
+                  ["mpic++","mpif90","mpicc"],
+                  "srun --mpi=pmi2 -l -N 1 --kill-on-bad-exit --cpu_bind=cores",
+                  ""),
 
     "linux-generic" :        ([],["mpicxx","mpifort","mpicc"],"", ""),
     "linux-generic-debug" :  ([],["mpicxx","mpifort","mpicc"],"", ""),
