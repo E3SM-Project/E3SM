@@ -34,6 +34,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   # Set AD configurable options
   SetVarDependingOnTestSize(NUM_STEPS 2 5 48)
   set (ATM_TIME_STEP 1800)
+  set (RUN_T0 2021-10-12-45000)
 
   ## Copy (and configure) yaml files needed by tests
   configure_file (rrtmgp_standalone_output.yaml rrtmgp_standalone_output.yaml)
@@ -63,8 +64,8 @@ if (NOT SCREAM_BASELINES_ONLY)
   # Compare chunked vs non-chunked radiation
   include (BuildCprnc)
   BuildCprnc()
-  set (SRC_FILE "rrtmgp_standalone_output_chunked.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.nc")
-  set (TGT_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.nc")
+  set (SRC_FILE "rrtmgp_standalone_output_chunked.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.${RUN_T0}.nc")
+  set (TGT_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.${RUN_T0}.nc")
   set (TEST_NAME "rrtmgp_chunked_vs_monolithic_bfb")
   add_test (NAME ${TEST_NAME}
             COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
@@ -76,9 +77,11 @@ if (NOT SCREAM_BASELINES_ONLY)
   ## Only if running with 2+ ranks configurations
   # This test requires CPRNC
   if (TEST_RANK_END GREATER TEST_RANK_START)
-    foreach (MPI_RANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
-      set (SRC_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
-      set (TGT_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
+    math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
+    foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
+
+      set (SRC_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.${RUN_T0}.nc")
+      set (TGT_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.${RUN_T0}.nc")
       set (TEST_NAME "rrtmgp_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
       add_test (NAME ${TEST_NAME}
                 COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}

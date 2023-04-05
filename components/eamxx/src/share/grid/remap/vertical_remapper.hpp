@@ -4,6 +4,8 @@
 #include "share/field/field_tag.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
 
+#include "ekat/ekat_pack.hpp"
+
 namespace scream
 {
 

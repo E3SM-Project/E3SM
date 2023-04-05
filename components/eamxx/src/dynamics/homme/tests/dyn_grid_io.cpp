@@ -155,7 +155,7 @@ TEST_CASE("dyn_grid_io")
   io_params.set<int>("Max Snapshots Per File",1);
   io_params.set<std::string>("Averaging Type","Instant");
   io_params.set<std::vector<std::string>>("Grids",{"Dynamics"});
-  io_params.set<std::string>("Casename","dyn_grid_io_np" + std::to_string(comm.size()));
+  io_params.set<std::string>("filename_prefix","dyn_grid_io_np" + std::to_string(comm.size()));
   io_params.sublist("Fields").sublist("Dynamics").set<std::vector<std::string>>("Field Names",fnames);
   io_params.sublist("Fields").sublist("Dynamics").set<std::string>("IO Grid Name","Physics GLL");
 

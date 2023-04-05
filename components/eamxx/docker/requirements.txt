@@ -1,0 +1,5 @@
+numpy
+xarray
+zarr
+netCDF4
+cftime

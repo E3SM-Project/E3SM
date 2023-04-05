@@ -1,8 +1,7 @@
 %YAML 1.1
 ---
-Casename: p3_standalone_output
+filename_prefix: p3_standalone_output
 Averaging Type: Instant
-Max Snapshots Per File: 1
 Field Names:
   - T_mid
   - T_prev_micro_step
@@ -23,9 +22,10 @@ Field Names:
   - micro_liq_ice_exchange
   - micro_vap_liq_exchange
   - micro_vap_ice_exchange
+  - p3_T_mid_tend
+  - p3_qc_tend
 output_control:
-  Frequency: ${NUM_STEPS}
+  Frequency: 1
   frequency_units: nsteps
-  Timestamp in Filename: false
   MPI Ranks in Filename: true
 ...

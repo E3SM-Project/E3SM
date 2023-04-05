@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-Casename: shoc_p3_${POSTFIX}
+filename_prefix: shoc_p3_${POSTFIX}
 Averaging Type: Instant
 Max Snapshots Per File: 1
 Field Names:
@@ -30,12 +30,9 @@ Field Names:
   - nccn
   - ni_activated
   - nc_nuceat_tend
-  - eff_radius_qc
-  - eff_radius_qi
  
 output_control:
   Frequency: ${NUM_STEPS}
   frequency_units: nsteps
-  Timestamp in Filename: false
   MPI Ranks in Filename: false
 ...

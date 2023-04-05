@@ -1,0 +1,19 @@
+#! /bin/bash -xe
+
+# Our python scripts use pip to manage externals python
+# dependencies. To ensure that a machine has the necessary
+# dependencies, we have a set of ensure_$depname functions available
+# in utils.py. These functions will not reliably work unless the set
+# of existing python packages are relatively up-to-date. This script
+# will update all pip packages.
+#
+# Note: netcdf4 1.6.2 would not install cleanly on weaver so we had
+# to force a downgrade to 1.6.0.
+
+# Make sure pip itself is installed and at the latest version
+python3 -m pip install --upgrade pip --user
+
+# List outdated packages and update them
+for item in $(python -m pip list --outdated | grep -v Package | grep -v -- '-----' | grep -v netcdf | cut -f 1 -d ' '); do
+    python3 -m pip install --upgrade --user $item;
+done

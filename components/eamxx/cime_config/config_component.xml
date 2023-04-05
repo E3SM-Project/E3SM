@@ -44,9 +44,20 @@
     <group>build_component_scream</group>
     <file>env_run.xml</file>
     <desc>
-      A place to buffer atmchange items for test mods.
+      A place to buffer atmchange items so they can be replayed when the namelist_scream.xml is regenerated. This can also be used for testmods that want to change atmconfig items.
     </desc>
   </entry>
+
+  <entry id="SCREAM_HACK_XML">
+    <type>logical</type>
+    <default_value>FALSE</default_value>
+    <group>build_component_scream</group>
+    <file>env_run.xml</file>
+    <desc>
+      User intends to edit namelist_scream.xml by hand, do not regenerate it.
+    </desc>
+  </entry>
+
 
   <description>
     <desc compset="_SCREAM">scream default</desc>

@@ -296,6 +296,48 @@ std::int64_t operator- (const TimeStamp& ts1, const TimeStamp& ts2) {
   return diff;
 }
 
+TimeStamp operator- (const TimeStamp& ts, const int dt) {
+  if (dt<0) {
+    return ts + (-dt);
+  }
+
+  const int ndays = dt / constants::seconds_per_day;
+  const int nsecs = dt % constants::seconds_per_day;
+
+  auto rewind_one_day = [] (std::vector<int>& date) {
+    // Rewind a day
+    --date[2];
+    if (date[2]==0) {
+      // Whoops, rewind a month
+      --date[1];
+      if (date[1]==0) {
+        // Whoops, rewind a year
+        --date[0];
+        date[1]=12;
+      }
+      date[2] = days_in_month(date[0],date[1]);
+    }
+  };
+
+  auto date = ts.get_date();
+
+  for (int i=0; i<ndays; ++i) {
+    rewind_one_day (date);
+  }
+
+  int frac_of_day;
+  if (nsecs>ts.sec_of_day()) {
+    rewind_one_day (date);
+    frac_of_day = constants::seconds_per_day - (nsecs - ts.sec_of_day());
+  } else {
+    frac_of_day = ts.sec_of_day()-nsecs;
+  }
+
+  TimeStamp t (date,{0,0,0});
+  t += frac_of_day;
+  return t;
+}
+
 TimeStamp str_to_time_stamp (const std::string& s)
 {
   auto is_int = [](const std::string& s) -> bool {
@@ -320,7 +362,11 @@ TimeStamp str_to_time_stamp (const std::string& s)
     return util::TimeStamp();
   }
   std::vector<int> date{std::stoi(YY),std::stoi(MM),std::stoi(DD)};
-  std::vector<int> time{std::stoi(tod)/10000,(std::stoi(tod)/100)%100,(std::stoi(tod))%100};
+  auto sec_of_day = std::stoi(tod);
+  auto hh = (sec_of_day / 60) / 60;
+  auto mm = (sec_of_day / 60) % 60;
+  auto ss =  sec_of_day % 60;
+  std::vector<int> time{hh,mm,ss};
 
   try {
     return util::TimeStamp(date,time);
