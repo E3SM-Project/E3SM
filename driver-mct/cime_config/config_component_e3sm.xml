@@ -409,7 +409,7 @@
       <value compset="_DATM.*_DICE.*_POP2.*_DWAV">4</value>
       <!-- a shorter timestep is needed for stability in MMF  -->
       <!-- Use for all "low res" grids (i.e. ne4, ne30, ne45) -->
-      <value compset="_EAM%MMF">72</value>
+      <value compset="_EAM%.*MMF">72</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
