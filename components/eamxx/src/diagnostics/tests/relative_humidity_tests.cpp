@@ -68,6 +68,7 @@ void run(std::mt19937_64& engine)
   // Input (randomized) views
   view_1d temperature("temperature",num_mid_packs),
           pressure("pressure",num_mid_packs),
+          pseudo_density("pseudo_density",num_mid_packs),
           qv("qv",num_mid_packs);
 
   auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
@@ -78,7 +79,8 @@ void run(std::mt19937_64& engine)
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf_pres(0.0,PC::P0),
        pdf_temp(200.0,400.0),
-       pdf_qv(0.0,1e-2);
+       pdf_qv(0.0,1e-2),
+       pdf_pseudo_density(1.0,100.0);
 
   // A time stamp
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
@@ -112,23 +114,40 @@ void run(std::mt19937_64& engine)
   {
     // Construct random data to use for test
     // Get views of input data and set to random values
-    const auto& T_mid_f = input_fields["T_mid"];
-    const auto& T_mid_v = T_mid_f.get_view<Pack**>();
-    const auto& p_mid_f = input_fields["p_mid"];
-    const auto& p_mid_v = p_mid_f.get_view<Pack**>();
+    const auto& T_mid_f     = input_fields["T_mid"];
+    const auto& T_mid_v     = T_mid_f.get_view<Pack**>();
+
+    const auto& p_dry_mid_f = input_fields["p_dry_mid"];
+    const auto& p_dry_mid_v = p_dry_mid_f.get_view<Pack**>();
+
+    const auto& dpwet_f = input_fields["pseudo_density"];
+    const auto& dpwet_v = dpwet_f.get_view<Pack**>();
+
+    const auto& dpdry_f = input_fields["pseudo_density_dry"];
+    const auto& dpdry_v = dpdry_f.get_view<Pack**>();
+
     const auto& qv_f = input_fields["qv"];
     const auto& qv_v = qv_f.get_view<Pack**>();
 
     for (int icol=0;icol<ncols;icol++) {
-      const auto& T_sub = ekat::subview(T_mid_v,icol);
-      const auto& p_sub = ekat::subview(p_mid_v,icol);
+      const auto& T_sub = ekat::subview(T_mid_v,    icol);
+      const auto& p_sub = ekat::subview(p_dry_mid_v,icol);
+      const auto& dpwet_sub = ekat::subview(dpwet_v,icol);
+      const auto& dpdry_sub = ekat::subview(dpdry_v,icol);
       const auto& qv_sub = ekat::subview(qv_v,icol);
-      ekat::genRandArray(dview_as_real(temperature), engine, pdf_temp);
-      ekat::genRandArray(dview_as_real(pressure),    engine, pdf_pres);
-      ekat::genRandArray(dview_as_real(qv),    engine, pdf_qv);
+      ekat::genRandArray(dview_as_real(temperature),   engine, pdf_temp);
+      ekat::genRandArray(dview_as_real(pressure),      engine, pdf_pres);
+      ekat::genRandArray(dview_as_real(pseudo_density), engine, pdf_pseudo_density);
+      ekat::genRandArray(dview_as_real(qv),            engine, pdf_qv);
       Kokkos::deep_copy(T_sub,temperature);
       Kokkos::deep_copy(p_sub,pressure);
       Kokkos::deep_copy(qv_sub,qv);
+
+      //make dpdry
+      for(int jpack=0;jpack<num_mid_packs;jpack++) {
+        dpdry_sub(jpack) = dpwet_sub(jpack) - dpwet_sub(jpack)*qv_sub(jpack); };
+
+      Kokkos::deep_copy(dpwet_sub,pseudo_density);
     }
 
     // Run diagnostic and compare with manual calculation
@@ -145,9 +164,10 @@ void run(std::mt19937_64& engine)
       const int icol = team.league_rank();
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_mid_packs), [&] (const Int& jpack) {
 
-//if we use dry qsat, then it is not much to test, if we use wet qsat, we need to change this test
-      auto qv_sat_l = physics::qv_sat_dry(T_mid_v(icol,jpack), p_mid_v(icol,jpack), false, range_mask);
+        auto qv_sat_l = physics::qv_sat_dry(T_mid_v(icol,jpack), p_dry_mid_v(icol,jpack), false, range_mask);
+        qv_sat_l *= ( dpdry_v(icol,jpack) / dpwet_v(icol,jpack) );
         rh_v(icol,jpack) = qv_v(icol,jpack)/qv_sat_l;
+
       });
       team.team_barrier();
     });
