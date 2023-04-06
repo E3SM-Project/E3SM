@@ -1617,9 +1617,9 @@ Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_land_ice_flux_topDragCoeff" type="real"
+<entry id="config_land_ice_flux_explicit_topDragCoeff" type="real"
 	category="land_ice_fluxes" group="land_ice_fluxes">
-The top drag coefficient.
+The top drag coefficient if config_use_implicit_top_drag_coeff is false.
 
 Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
@@ -1738,6 +1738,22 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_implicit_bottom_drag_coeff" type="real"
 	category="bottom_drag" group="bottom_drag">
 Dimensionless bottom drag coefficient, $c_{drag}$.
+
+Valid values: any positive real, typically 1.0e-3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_implicit_top_drag" type="logical"
+	category="bottom_drag" group="bottom_drag">
+If true, implicit top drag is used on the momentum equation.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_implicit_top_drag_coeff" type="real"
+	category="bottom_drag" group="bottom_drag">
+Dimensionless top drag coefficient, $c_{drag}$.
 
 Valid values: any positive real, typically 1.0e-3
 Default: Defined in namelist_defaults.xml
