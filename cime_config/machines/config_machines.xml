@@ -630,7 +630,7 @@
       <modules compiler="crayclang.*">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-cray/8.3.3</command>
-        <command name="switch">cce cce/14.0.2</command>
+        <command name="switch">cce cce/15.0.0</command>
       </modules>
       <modules compiler="crayclanggpu">
         <command name="load">craype-accel-amd-gfx90a</command>
@@ -654,13 +654,14 @@
         <command name="load">rocm/5.4.0</command>
       </modules>
       <modules>
-        <command name="load">cray-python/3.9.12.1</command>
+        <command name="load">cray-python/3.9.13.1</command>
         <command name="load">subversion/1.14.1</command>
         <command name="load">git/2.36.1</command>
-        <command name="load">cmake/3.21.3</command>
-        <command name="load">cray-hdf5-parallel/1.12.1.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.8.1.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.1.7</command>
+        <command name="load">cmake/3.23.2</command>
+        <command name="load">zlib/1.2.11</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.1</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.1</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
