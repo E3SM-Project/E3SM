@@ -12953,7 +12953,7 @@ contains
          !sw_redist_in            = , &        ! not yet implemented in MPAS-SI (stealth feature)
          !sw_frac_in              = , &        ! not yet implemented in MPAS-SI (stealth feature)
          !sw_dtemp_in             = , &        ! not yet implemented in MPAS-SI (stealth feature)
-         snwgrain_in             = config_use_snow_grain_radius &
+         snwgrain_in             = config_use_snow_grain_radius, &
          !snwredist_in            = config_snow_redistribution_scheme, &
          !use_smliq_pnd_in        = config_use_snow_liquid_ponds, &
          !rsnw_fall_in            = config_fallen_snow_radius, &
@@ -12974,19 +12974,6 @@ contains
          !snowage_drdt0_in        = , &
          !snw_aging_table_in      = , &
          snw_ssp_table_in        = tmp_config_snw_ssp_table &
-         !ssp_snwextdr_in         = , &
-         !ssp_snwextdf_in         = , &
-         !ssp_snwalbdr_in         = , &
-         !ssp_snwalbdf_in         = , &
-         !ssp_sasymmdr_in         = , &
-         !ssp_sasymmdf_in         = , &
-         !ssp_aasymmmd_in         = , &
-         !ssp_aerextmd_in         = , &
-         !ssp_aeralbmd_in         = , &
-         !ssp_abcenhmd_in         = , &
-         !ssp_aasymm_in           = , &
-         !ssp_aerext_in           = , &
-         !ssp_aeralb_in           =
          )
     call seaice_icepack_write_warnings(seaice_icepack_aborted())
 
