@@ -61,6 +61,15 @@
 			description="edge based product of normal velocity and temperature"
 			 packages="gm"
 		/>
+		<var name="velocityZonalTimesSalinity" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
+			description="cell-wise product of component of horizontal velocity in the eastward direction and salinity"
+		/>
+		<var name="velocityMeridionalTimesSalinity" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
+			description="cell-wise product of component of horizontal velocity in the northward direction and salinity"
+		/>
+		<var name="normalVelocityTimesSalinity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
+			description="edge based product of normal velocity and salinity"
+		/>
 	</var_struct>
 	<streams>
 		<stream name="eddyProductVariablesOutput" type="output"
@@ -83,5 +92,8 @@
 			<var name="velocityMeridionalTimesTemperature_GM"/>
 			<var name="normalVelocityTimesTemperature"/>
 			<var name="normalVelocitySquared"/>
+			<var name="velocityZonalTimesSalinity"/>
+			<var name="velocityMeridionalTimesSalinity"/>
+			<var name="normalVelocityTimesSalinity"/>
 		</stream>
 	</streams>

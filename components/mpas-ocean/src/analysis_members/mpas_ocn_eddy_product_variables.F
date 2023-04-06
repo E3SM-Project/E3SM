@@ -10,8 +10,8 @@
 !  ocn_eddy_product_variables
 !
 !> \brief MPAS ocean analysis mode member: eddy_product_variables
-!> \author Mark Petersen
-!> \date   Oct 2016
+!> \author Mark Petersen; Alice Barthel
+!> \date   Oct 2016; Apr 2023
 !> \details
 !>  MPAS ocean analysis mode member: eddy_product_variables
 !> computes:
@@ -20,12 +20,14 @@
 !> v^2  velocityMeridionalSquared
 !> uT velocityZonalTimesTemperature
 !> vT  velocityMeridionalTimesTemperature
-!>
-!> In future, could additionally compute:
 !> uS velocityZonalTimesSalinity
 !> vS  velocityMeridionalTimesSalinity
+!>
+!> In future, could additionally compute:
 !> uw velocityZonalTimesVertVel
 !> vw  velocityMeridionalTimesVerVel
+!> normalGMBolusVelocityTimesSalinity
+!> normalMLEBolusVelocityTimesSalinity
 !>
 !> They you just stick these in the time-average AM.  We already time average u,v, and all tracers.
 !> Then compute <v'T'> etc as a post processing step, same as POP, as follows:
@@ -186,6 +188,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: ssh, SSHSquared
       real (kind=RKIND), dimension(:,:), pointer :: &
            velocityZonalSquared, velocityMeridionalSquared, velocityZonalTimesTemperature, velocityMeridionalTimesTemperature, &
+           velocityZonalTimesSalinity, velocityMeridionalTimesSalinity, normalVelocityTimesSalinity, &
            velocityZonalTimesTemperature_GM, velocityMeridionalTimesTemperature_GM, normalVelocity, normalVelocitySquared, &
            normalVelocityTimesTemperature, normalGMBolusVelocityTimesTemperature, normalGMBolusVelocitySquared
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
@@ -222,6 +225,10 @@ contains
             velocityMeridionalTimesTemperature)
          call mpas_pool_get_array(eddyProductVariablesAMPool,'normalVelocityTimesTemperature', normalVelocityTimesTemperature)
          call mpas_pool_get_array(eddyProductVariablesAMPool,'normalVelocitySquared', normalVelocitySquared)
+         call mpas_pool_get_array(eddyProductVariablesAMPool, 'velocityZonalTimesSalinity', velocityZonalTimesSalinity)
+         call mpas_pool_get_array(eddyProductVariablesAMPool, 'velocityMeridionalTimesSalinity', &
+            velocityMeridionalTimesSalinity)
+         call mpas_pool_get_array(eddyProductVariablesAMPool,'normalVelocityTimesSalinity', normalVelocityTimesSalinity)
 
          ! if GM is active, include the GM variables.
          ! I repeated the block of code here for better performance, rather than
@@ -243,6 +250,8 @@ contains
                   normalVelocityTimesTemperature(k,iEdge) = 0.5_RKIND*(activeTracers(index_temperature,k,cell1) + &
                                activeTracers(index_temperature,k,cell2)) * normalVelocity(k,iEdge)
                   normalVelocitySquared(k,iEdge) = normalVelocity(k,iEdge)**2
+                  normalVelocityTimesSalinity(k,iEdge) = 0.5_RKIND*(activeTracers(index_salinity,k,cell1) + &
+                               activeTracers(index_salinity,k,cell2)) * normalVelocity(k,iEdge)
                   normalGMBolusVelocityTimesTemperature(k,iEdge) = 0.5_RKIND*(activeTracers(index_temperature,k,cell1) + &
                                activeTracers(index_temperature,k,cell2)) * normalGMBolusVelocity(k,iEdge)
                   normalGMBolusVelocitySquared(k,iEdge) = normalGMBolusVelocity(k,iEdge)**2
@@ -262,6 +271,8 @@ contains
                   velocityMeridionalTimesTemperature(k,iCell) = velocityMeridional(k,iCell)*activeTracers(index_temperature,k,iCell)
                   velocityZonalTimesTemperature_GM(k,iCell) = GMBolusVelocityZonal(k,iCell)*activeTracers(index_temperature,k,iCell)
                   velocityMeridionalTimesTemperature_GM(k,iCell) = GMBolusVelocityMeridional(k,iCell)*activeTracers(index_temperature,k,iCell)
+                  velocityZonalTimesSalinity(k,iCell) = velocityZonal(k,iCell)*activeTracers(index_salinity,k,iCell)
+                  velocityMeridionalTimesSalinity(k,iCell) = velocityMeridional(k,iCell)*activeTracers(index_salinity,k,iCell)
                 end do
             end do
             !$omp end do
@@ -280,6 +291,8 @@ contains
                   normalVelocityTimesTemperature(k,iEdge) = 0.5_RKIND*(activeTracers(index_temperature,k,cell1) + &
                                activeTracers(index_temperature,k,cell2)) * normalVelocity(k,iEdge)
                   normalVelocitySquared(k,iEdge) = normalVelocity(k,iEdge)**2
+                  normalVelocityTimesSalinity(k,iEdge) = 0.5_RKIND*(activeTracers(index_salinity,k,cell1) + &
+                               activeTracers(index_salinity,k,cell2)) * normalVelocity(k,iEdge)
                end do
             end do
             !$omp end do
@@ -294,6 +307,8 @@ contains
                   velocityMeridionalSquared(k,iCell) = velocityMeridional(k,iCell)**2
                   velocityZonalTimesTemperature(k,iCell) = velocityZonal(k,iCell)*activeTracers(index_temperature,k,iCell)
                   velocityMeridionalTimesTemperature(k,iCell) = velocityMeridional(k,iCell)*activeTracers(index_temperature,k,iCell)
+                  velocityZonalTimesSalinity(k,iCell) = velocityZonal(k,iCell)*activeTracers(index_salinity,k,iCell)
+                  velocityMeridionalTimesSalinity(k,iCell) = velocityMeridional(k,iCell)*activeTracers(index_salinity,k,iCell)
                 end do
             end do
             !$omp end do
