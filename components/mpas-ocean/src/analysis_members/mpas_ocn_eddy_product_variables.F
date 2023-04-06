@@ -213,6 +213,7 @@ contains
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
          call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
+         call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
 
          call mpas_pool_get_array(statePool, 'ssh',ssh, 1)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
