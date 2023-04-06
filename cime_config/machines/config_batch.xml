@@ -577,7 +577,7 @@
      <directive>--qos=standard </directive>
     </directives>
     <queues>
-      <queue walltimemax="00:30:00" nodemax="560" default="true">standard</queue>
+      <queue walltimemax="24:00:00" nodemax="1792" default="true">standard</queue>
     </queues>
    </batch_system>
 

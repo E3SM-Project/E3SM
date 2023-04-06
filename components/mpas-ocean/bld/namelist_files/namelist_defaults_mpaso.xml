@@ -14,6 +14,7 @@
 <config_run_duration>'0010_00:00:00'</config_run_duration>
 <config_calendar_type CALENDAR="NO_LEAP">'noleap'</config_calendar_type>
 <config_calendar_type>'gregorian'</config_calendar_type>
+<config_output_reference_time>'0001-01-01_00:00:00'</config_output_reference_time>
 
 <!-- io -->
 <config_write_output_on_startup>.false.</config_write_output_on_startup>
@@ -257,12 +258,11 @@
 <config_cvmix_kpp_use_enhanced_diff>.true.</config_cvmix_kpp_use_enhanced_diff>
 <config_cvmix_kpp_nonlocal_with_implicit_mix>.false.</config_cvmix_kpp_nonlocal_with_implicit_mix>
 <config_cvmix_kpp_use_theory_wave>.false.</config_cvmix_kpp_use_theory_wave>
-<config_cvmix_kpp_use_active_wave>.false.</config_cvmix_kpp_use_active_wave>
 <config_cvmix_kpp_langmuir_mixing_opt>'NONE'</config_cvmix_kpp_langmuir_mixing_opt>
 <config_cvmix_kpp_langmuir_entrainment_opt>'NONE'</config_cvmix_kpp_langmuir_entrainment_opt>
+<config_cvmix_kpp_use_active_wave>.false.</config_cvmix_kpp_use_active_wave>
 
-
-<!-- wave coupling-->
+<!-- wave_coupling -->
 <config_use_active_wave>.false.</config_use_active_wave>
 <config_n_stokes_drift_wavenumber_partitions>6</config_n_stokes_drift_wavenumber_partitions>
 
@@ -333,12 +333,12 @@
 
 <!-- land_ice_fluxes -->
 <config_land_ice_flux_mode>'off'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="oQU240wLI">'standalone'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="oEC60to30v3wLI">'standalone'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="ECwISC30to60E1r2">'standalone'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="oRRS30to10v3wLI">'standalone'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="SOwISC12to60E2r4">'standalone'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="ECwISC30to60E2r1">'standalone'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="oQU240wLI">'pressure_only'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="oEC60to30v3wLI">'pressure_only'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="ECwISC30to60E1r2">'pressure_only'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="oRRS30to10v3wLI">'pressure_only'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="SOwISC12to60E2r4">'pressure_only'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="ECwISC30to60E2r1">'pressure_only'</config_land_ice_flux_mode>
 <config_land_ice_flux_formulation>'Jenkins'</config_land_ice_flux_formulation>
 <config_land_ice_flux_useHollandJenkinsAdvDiff>.false.</config_land_ice_flux_useHollandJenkinsAdvDiff>
 <config_land_ice_flux_attenuation_coefficient>10.0</config_land_ice_flux_attenuation_coefficient>

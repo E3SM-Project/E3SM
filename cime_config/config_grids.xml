@@ -2936,7 +2936,7 @@
     <domain name="oQU240wLI">
       <nx>7268</nx>
       <ny>1</ny>
-      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.oQU240wLI.160929.nc</file>
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.oQU240wLI_mask.160929.nc</file>
       <desc>oQU240wLI is an MPAS ocean mesh with quasi-uniform 240 km grid cells, nominally 2 degree resolution. Additionally, it has ocean under landice cavities.:</desc>
     </domain>
 
