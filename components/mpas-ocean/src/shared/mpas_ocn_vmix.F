@@ -1359,7 +1359,7 @@ contains
       if (config_enable_nonhydrostatic_mode) then
          call ocn_vertVel_vmix_tend_implicit(meshPool, dt, vertViscTopOfCell, layerThickness, &
                                                vertVelocityNonhydro, err)
-      endif 
+      endif
 
       !
       !  Implicit vertical solve for all tracers

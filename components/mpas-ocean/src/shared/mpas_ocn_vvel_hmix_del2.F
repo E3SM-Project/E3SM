@@ -133,7 +133,7 @@ contains
       nCells = nCellsOwned
       nEdges = nEdgesHalo( 1 )
 
-      allocate(eddyViscArr(nVertLevels+1, nEdges))
+      !allocate(eddyViscArr(nVertLevels+1, nEdges))
 
       !
       ! compute a boundary mask to enforce insulating boundary conditions in the horizontal
@@ -156,8 +156,9 @@ contains
               vvel_turb_flux = vertVelocityNonhydro(k, cell2) - vertVelocityNonhydro(k, cell1)
 
               ! div(h \kappa_2 \nabla \phi) at cell center
-              flux = 0.5_RKIND*(layerThicknessEdge(k, iEdge) + layerThicknessEdge(k-1,iEdge)) &
-                        * vvel_turb_flux * r_tmp
+              !flux = 0.5_RKIND*(layerThicknessEdge(k, iEdge) + layerThicknessEdge(k-1,iEdge)) &
+              !          * vvel_turb_flux * r_tmp
+              flux = vvel_turb_flux * r_tmp
 
               tend(k, iCell) = tend(k, iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
           end do
@@ -166,7 +167,7 @@ contains
       !$omp end do
       !$omp end parallel
 
-      deallocate(eddyViscArr)
+      !deallocate(eddyViscArr)
       call mpas_timer_stop("vertical velocity del2")
 
    !--------------------------------------------------------------------

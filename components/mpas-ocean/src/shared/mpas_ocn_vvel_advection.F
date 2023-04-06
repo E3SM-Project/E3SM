@@ -141,13 +141,13 @@ module ocn_vvel_advection
       vvelAdvOn = .not. config_disable_vvel_adv
 
       ! set all other options from submodule initialization routines
-      if (err.eq.0) then     
+      if (err.eq.0) then
          call ocn_vvel_horiz_advection_init(err)
-      end if 
+      end if
 
       if (err.eq.0) then
          call ocn_vvel_vert_advection_init (err)
-      end if 
+      end if
 
       ! if an error is returned from init routines, write an error
       ! message and return a non-zero error code

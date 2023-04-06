@@ -44,7 +44,7 @@ module ocn_vel_hadv_coriolis
    !--------------------------------------------------------------------
 
    public :: ocn_vel_hadv_coriolis_tend, &
-             ocn_vel_hadv_coriolis_nonhydro_tend, &
+             ocn_vel_coriolis_nonhydro_tend, &
              ocn_vel_hadv_coriolis_init
 
    !--------------------------------------------------------------------
@@ -263,7 +263,7 @@ contains
 
    end subroutine ocn_vel_hadv_coriolis_tend!}}}
 
-   subroutine ocn_vel_hadv_coriolis_nonhydro_tend(vertVelocityNonhydro, &
+   subroutine ocn_vel_coriolis_nonhydro_tend(vertVelocityNonhydro, &
                                                   tend, err)!{{{
 
       !-----------------------------------------------------------------
@@ -322,7 +322,7 @@ contains
          end do
       end do
 
-   end subroutine ocn_vel_hadv_coriolis_nonhydro_tend!}}}
+   end subroutine ocn_vel_coriolis_nonhydro_tend!}}}
 
 !***********************************************************************
 !

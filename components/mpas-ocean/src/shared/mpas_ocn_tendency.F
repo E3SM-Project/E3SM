@@ -340,8 +340,7 @@ subroutine ocn_tend_vvel(tendPool, statePool, forcingPool, meshPool, &
 
    call mpas_reconstruct(meshPool,  normalVelocity, &
                          velocityX, velocityY, velocityZ,   &
-                         velocityZonal, velocityMeridional)
-
+                         velocityZonal, velocityMeridional, .true.)
    !
    ! velocity tendency: nonlinear Coriolis term and grad of kinetic energy
    !
@@ -557,7 +556,7 @@ end subroutine ocn_tend_vvel!}}}
 
       ! Add nonhydrostatic Coriolis term if nonhydro model is on
       if (config_enable_nonhydrostatic_mode) then
-         call ocn_vel_hadv_coriolis_nonhydro_tend(vertVelocityNonhydro, &
+         call ocn_vel_coriolis_nonhydro_tend(vertVelocityNonhydro, &
                                                   tendVel, err)
       end if
 

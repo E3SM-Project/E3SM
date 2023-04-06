@@ -254,7 +254,7 @@ module ocn_compute_nonhydrostatic_pressure
      integer :: k, iCell, jCell, iEdge, jEdge, iCell3d, jCell3d
      integer :: nnzRowMax, vecSpot
      real(kind=RKIND) :: xEdge, thicknessUpper, thicknessLower
-     real(kind=RKIND), dimension(nVertLevels) :: div   
+     real(kind=RKIND), dimension(nVertLevels) :: div
 
 #ifdef USE_PETSC
      PetscScalar :: insertVal, rhsSum
@@ -284,7 +284,7 @@ module ocn_compute_nonhydrostatic_pressure
               if (boundaryEdge(k,iEdge) .ge. 1) cycle
 
               iCell3d = (indexToCellId(iCell) - 1) * nVertLevels + k - 1
-              jCell3d = (indexToCellId(jCell) - 1) * nVertLevels + k - 1   
+              jCell3d = (indexToCellId(jCell) - 1) * nVertLevels + k - 1
      
               insertVal = +1 * layerThicknessEdge(k,iEdge) * xEdge
               call MatSetValues(Amat, 1, iCell3d, 1, jCell3d, insertVal, ADD_VALUES, petsc_err)
@@ -318,7 +318,6 @@ module ocn_compute_nonhydrostatic_pressure
         insertVal = -1 * areaCell(iCell) / thicknessLower
         call MatSetValues(Amat, 1, iCell3d, 1, iCell3d, insertVal, ADD_VALUES, petsc_err)
 
-
         do k = 2, maxLevelCell(iCell) - 1
 
            thicknessUpper = 1.0E-15_RKIND + 0.5_RKIND * ( &
@@ -328,13 +327,13 @@ module ocn_compute_nonhydrostatic_pressure
 
            ! upper
            iCell3d = (indexToCellId(iCell) - 1) * nVertLevels + k - 1
-           jCell3d = (indexToCellId(iCell) - 1) * nVertLevels + (k-1) - 1   
+           jCell3d = (indexToCellId(iCell) - 1) * nVertLevels + (k-1) - 1
       
            insertVal = +1 * areaCell(iCell) / thicknessUpper
            call MatSetValues(Amat, 1, iCell3d, 1, jCell3d, insertVal, ADD_VALUES, petsc_err)
            insertVal = -1 * areaCell(iCell) / thicknessUpper
            call MatSetValues(Amat, 1, iCell3d, 1, iCell3d, insertVal, ADD_VALUES, petsc_err)
-       
+
            ! lower
            iCell3d = (indexToCellId(iCell) - 1) * nVertLevels + k - 1
            jCell3d = (indexToCellId(iCell) - 1) * nVertLevels + (k+1) - 1
@@ -342,7 +341,7 @@ module ocn_compute_nonhydrostatic_pressure
            insertVal = +1 * areaCell(iCell) / thicknessLower
            call MatSetValues(Amat, 1, iCell3d, 1, jCell3d, insertVal, ADD_VALUES, petsc_err)
            insertVal = -1 * areaCell(iCell) / thicknessLower
-           call MatSetValues(Amat, 1, iCell3d, 1, iCell3d, insertVal, ADD_VALUES, petsc_err)   
+           call MatSetValues(Amat, 1, iCell3d, 1, iCell3d, insertVal, ADD_VALUES, petsc_err)
 
         end do
 
