@@ -1766,11 +1766,11 @@ Default: Defined in namelist_defaults.xml
 	category="bottom_drag" group="bottom_drag">
 Type of implicit bottom drag used.
 
-Valid values: 'constant','rayleigh','loglaw','spatially-variable','mannings'
+Valid values: 'constant','constant_and_rayleigh','loglaw','spatially-variable','mannings'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_implicit_bottom_drag_coeff" type="real"
+<entry id="config_implicit_constant_bottom_drag_coeff" type="real"
 	category="bottom_drag" group="bottom_drag">
 Dimensionless bottom drag coefficient, $c_{drag}$.
 

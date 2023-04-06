@@ -380,7 +380,7 @@
 <!-- bottom_drag -->
 <config_bottom_drag_mode>'implicit'</config_bottom_drag_mode>
 <config_implicit_bottom_drag_type>'constant'</config_implicit_bottom_drag_type>
-<config_implicit_bottom_drag_coeff>1.0e-3</config_implicit_bottom_drag_coeff>
+<config_implicit_constant_bottom_drag_coeff>1.0e-3</config_implicit_constant_bottom_drag_coeff>
 <config_use_implicit_top_drag>.false.</config_use_implicit_top_drag>
 <config_implicit_top_drag_coeff>2.5e-3</config_implicit_top_drag_coeff>
 <config_implicit_top_drag_coeff ocn_grid="oEC60to30v3wLI">4.48e-3</config_implicit_top_drag_coeff>

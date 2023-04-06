@@ -1470,7 +1470,6 @@ contains
       tracerVmixOn = .true.
 
       if (trim(config_bottom_drag_mode) == 'implicit') then
-        implicitBottomDragCoef = config_implicit_bottom_drag_coeff
 
         select case (trim(config_implicit_bottom_drag_type))
 
@@ -1480,10 +1479,12 @@ contains
           endif
           dragType = dragTypeConst
           call mpas_log_write(' Implicit bottom drag type is: constant')
+          implicitBottomDragCoef = config_implicit_constant_bottom_drag_coeff
 
-        case ('rayleigh')
+        case ('constant_and_rayleigh')
           dragType = dragTypeRayleigh
           call mpas_log_write(' Implicit bottom drag type is: Rayleigh')
+          implicitBottomDragCoef = config_implicit_constant_bottom_drag_coeff
           rayleighDampingCoef = config_Rayleigh_damping_coeff
           if (config_Rayleigh_bottom_friction) then
               rayleighBottomDampingCoef = config_Rayleigh_bottom_damping_coeff
