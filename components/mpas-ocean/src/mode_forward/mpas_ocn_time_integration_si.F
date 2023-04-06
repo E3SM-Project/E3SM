@@ -1987,11 +1987,12 @@ module ocn_time_integration_si
          call mpas_timer_stop("si btr vel")
 
          !$acc exit data copyout(sshNew,normalBarotropicVelocityNew)  &
-         !$acc           delete (sshCur,bottomDepthEdge,              &
+         !$acc           delete (sshCur,                              &
          !$acc                   sshSubcycleCur,sshSubcycleNew,       &
          !$acc                   normalBarotropicVelocitySubcycleCur, &
          !$acc                   normalBarotropicVelocitySubcycleNew, &
-         !$acc                   normalBarotropicVelocityCur)
+         !$acc                   normalBarotropicVelocityCur,         &
+         !$acc                   bottomDepthEdge)
 
          !$acc update host(barotropicThicknessFlux,barotropicForcing)
 
@@ -4132,8 +4133,7 @@ module ocn_time_integration_si
       endif
 
 #ifdef USE_CUBLAS
-! Dummy preconditioning for device copy CUBLAS-related arrays before
-! time integration
+! Dummy preconditioning
       call si_precond(SIvec_r0,SIvec_rh0)
 #endif
 
@@ -5099,7 +5099,7 @@ module ocn_time_integration_si
          !$acc update host(resid) async
 
 #ifdef MPAS_OPENACC
-         !$acc parallel loop gang async present(sshSolved,    &
+         !$acc parallel loop gang present(sshSolved,          &
          !$acc       SIvec_qh0,SIvec_q0,SIvec_y0,SIvec_wh0,   &
          !$acc       SIvec_t0,SIvec_v0,SIvec_w0, SIvec_r0,    &
          !$acc       SIvec_s0,SIvec_s1,SIvec_z0,SIvec_z1,     &
@@ -5324,7 +5324,7 @@ module ocn_time_integration_si
       !$acc    SIcst_allreduce_local3,SIcst_allreduce_global3,       &
       !$acc    SIcst_allreduce_local9,SIcst_allreduce_global9,       &
       !$acc    SIcst_alpha0,SIcst_alpha1,SIcst_beta0,SIcst_beta1,    &
-      !$acc    SIcst_omega0,SIcst_gamma0,SIcst_gamma1,               &
+      !$acc    SIcst_omega0,SIcst_gamma0,SIcst_gamma1,resid,         &
       !$acc    SIcst_r0rh0,SIcst_w0rh0,SIcst_r0r0 ,SIcst_r00r0,      &
       !$acc    SIcst_r00s0,SIcst_r00z0,SIcst_q0y0 ,SIcst_y0y0 ,      &
       !$acc    SIcst_r00y0,SIcst_r00t0,SIcst_r00v0,SIcst_q0q0 ,      &
