@@ -250,17 +250,17 @@ void SurfaceCouplingExporter::run_impl (const double dt)
 void SurfaceCouplingExporter::do_export(const double dt, const bool called_during_initialization)
 {
   if (m_num_const_exports>0) {
-    do_export_constant(dt,called_during_initialization);
+    set_constant_exports(dt,called_during_initialization);
   }
   if (m_num_eamxx_exports>0) {
-    do_export_from_eamxx(dt,called_during_initialization);
+    compute_eamxx_exports(dt,called_during_initialization);
   }
 
   // Finish up exporting vars
   do_export_to_cpl(called_during_initialization);
 }
 // =========================================================================================
-void SurfaceCouplingExporter::do_export_constant(const double dt, const bool called_during_initialization)
+void SurfaceCouplingExporter::set_constant_exports(const double dt, const bool called_during_initialization)
 {
   // Cycle through those fields that will be set to a constant value:
   auto export_source_h = Kokkos::create_mirror_view(m_export_source);
@@ -275,13 +275,13 @@ void SurfaceCouplingExporter::do_export_constant(const double dt, const bool cal
   
 }
 // =========================================================================================
-// This do_export handles all export variables that are derived from the EAMxx state.
+// This compute_eamxx_exports routine  handles all export variables that are derived from the EAMxx state.
 // Important! This setup assumes the numerical order of export_cpl_indices as listed in
 // /src/mct_coupling/scream_cpl_indices.F90
 //
 // If this order is changed or a new variable is added it is important to update the corresponding
 // index query in the below.
-void SurfaceCouplingExporter::do_export_from_eamxx(const double dt, const bool called_during_initialization)
+void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool called_during_initialization)
 {
   using PC = physics::Constants<Real>;
 

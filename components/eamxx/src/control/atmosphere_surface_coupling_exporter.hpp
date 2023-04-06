@@ -78,8 +78,8 @@ public:
   // called_during_initialization=true to avoid exporting fields
   // which do not have valid entries.
   void do_export(const double dt, const bool called_during_initialization=false);             // Main export routine
-  void do_export_from_eamxx(const double dt, const bool called_during_initialization=false);  // Export vars are derived from eamxx state
-  void do_export_constant(const double dt, const bool called_during_initialization=false);    // Export vars are set to a constant
+  void compute_eamxx_exports(const double dt, const bool called_during_initialization=false); // Export vars are derived from eamxx state
+  void set_constant_exports(const double dt, const bool called_during_initialization=false);  // Export vars are set to a constant
   void do_export_to_cpl(const bool called_during_initialization=false);                       // Finish export by copying data to cpl structures.
 
   // Take and store data from SCDataManager
