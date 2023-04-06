@@ -203,7 +203,7 @@ contains
     ! On output flx_mss_vrt_dst(ndst) is the surface dust emission
     ! (kg/m**2/s) [ + = to atm]
     ! Original source: C. Zender's dust model
-    ! New emission scheme from Kok et al. (2014) implemented by Y. Feng in Feb, 2023
+    ! New emission scheme from Kok et al. (2014), doi:10.5194/acp-14-13023-2014, implemented by Y. Feng in Feb, 2023
     !
     ! !USES
       !$acc routine seq
