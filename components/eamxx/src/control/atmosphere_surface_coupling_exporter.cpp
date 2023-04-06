@@ -1,6 +1,5 @@
 #include "atmosphere_surface_coupling_exporter.hpp"
 
-#include "ekat/ekat_parse_yaml_file.hpp"
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
 
@@ -53,9 +52,8 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Required>("p_mid",                scalar3d_layout_mid,  Pa,     grid_name, ps);
   add_field<Required>("qv",                   scalar3d_layout_mid,  Qunit,  grid_name, "tracers", ps);
   add_field<Required>("T_mid",                scalar3d_layout_mid,  K,      grid_name, ps);
+  // TODO: Switch horiz_winds to using U and V, note right now there is an issue with when the subfields are created, so can't switch yet.
   add_field<Required>("horiz_winds",          vector3d_layout,      m/s,    grid_name);
-//ASD  add_field<Required>("u",                    scalar3d_layout_mid,  m/s,    grid_name); // TODO: These appear to not work yet
-//ASD  add_field<Required>("v",                    scalar3d_layout_mid,  m/s,    grid_name); // TODO: These appear to not work yet
   add_field<Required>("sfc_flux_dir_nir",     scalar2d_layout,      Wm2,    grid_name);
   add_field<Required>("sfc_flux_dir_vis",     scalar2d_layout,      Wm2,    grid_name);
   add_field<Required>("sfc_flux_dif_nir",     scalar2d_layout,      Wm2,    grid_name);
@@ -174,7 +172,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
 
     std::string fname = m_export_field_names[i];
     EKAT_REQUIRE_MSG(has_helper_field(fname),"Error! Attempting to export "+fname+
-                   " which is niether a requested field or a helper field.\n");
+                   " which has not been added as a helper field.\n");
     auto& field = m_helper_fields.at(fname);
 
     // Check that is valid
@@ -207,7 +205,8 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
   // Set the number of exports from eamxx or set to a constant, default type = EAMXX
   using vos_type = std::vector<std::string>;
   using vor_type = std::vector<Real>;
-  m_export_source = view_1d<DefaultDevice,ExportType>("",m_num_scream_exports);
+  m_export_source     = view_1d<DefaultDevice,ExportType>("",m_num_scream_exports);
+  auto export_source_h = Kokkos::create_mirror_view(m_export_source);
   Kokkos::deep_copy(m_export_source,EAMXX);  // The default is that all export variables will be derived from the EAMxx state.
   m_num_eamxx_exports = m_num_scream_exports;
  
@@ -220,13 +219,13 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
     EKAT_REQUIRE_MSG(export_constant_fields.size()==export_constant_values.size(),"Error! surface_coupling_exporter::init - prescribed_constants 'fields' and 'values' are not the same size");
     if (export_constant_fields.size()>0) {
       // Determine which fields need constants
-      m_export_constants = view_1d<DefaultDevice,Real>("",m_num_scream_exports);
+      m_export_constants = view_1d<HostDevice,Real>("",m_num_scream_exports);
       for (int i=0; i<m_num_scream_exports; ++i) {  // TODO: This loop would probably be simpler if we just checked which "i" corresponded to each name in the fields list.
         std::string fname = m_export_field_names[i];
         auto loc = std::find(export_constant_fields.begin(),export_constant_fields.end(),fname);
         if (loc != export_constant_fields.end()) {
           const auto pos = loc-export_constant_fields.begin();
-          m_export_source(i) = CONSTANT;
+          export_source_h(i) = CONSTANT;
           m_num_const_exports += 1;
           m_num_eamxx_exports -= 1;
           m_export_constants(i) = export_constant_values[pos];
@@ -234,6 +233,8 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
       }
     }
   }
+  // Copy host view back to device view
+  Kokkos::deep_copy(m_export_source,export_source_h);
   // Final sanity check
   EKAT_REQUIRE_MSG(m_num_scream_exports = m_num_const_exports+m_num_eamxx_exports,"Error! surface_coupling_exporter - Something went wrong set the type of export for all variables.");
   EKAT_REQUIRE_MSG(m_num_eamxx_exports>=0,"Error! surface_coupling_exporter - The number of exports derived from EAMxx < 0, something must have gone wrong in assigning the types of exports for all variables.");
@@ -263,8 +264,10 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
 void SurfaceCouplingExporter::do_export_constant(const double dt, const bool called_during_initialization)
 {
   // Cycle through those fields that will be set to a constant value:
+  auto export_source_h = Kokkos::create_mirror_view(m_export_source);
+  Kokkos::deep_copy(export_source_h,m_export_source);
   for (int i=0; i<m_num_scream_exports; ++i) {
-    if (m_export_source(i)==CONSTANT) {
+    if (export_source_h(i)==CONSTANT) {
       std::string fname = m_export_field_names[i];
       const auto field_view = m_helper_fields.at(fname).get_view<Real*>();
       Kokkos::deep_copy(field_view,m_export_constants(i));
@@ -287,9 +290,8 @@ void SurfaceCouplingExporter::do_export_from_eamxx(const double dt, const bool c
   const auto& pseudo_density       = get_field_in("pseudo_density").get_view<const Spack**>();
   const auto& qv                   = get_field_in("qv").get_view<const Spack**>();
   const auto& T_mid                = get_field_in("T_mid").get_view<const Spack**>();
+  // TODO: This will need to change if we ever switch from horiz_winds to U and V
   const auto& horiz_winds          = get_field_in("horiz_winds").get_view<const Real***>();
-//ASD  const auto& u_wind               = get_field_in("u").get_view<const Real**>(); // TODO: Appear to be all-zero right now, need to check this
-//ASD  const auto& v_wind               = get_field_in("v").get_view<const Real**>(); // TODO: Appear to be all-zero right now, need to check this
   const auto& p_mid                = get_field_in("p_mid").get_view<const Spack**>();
   const auto& phis                 = get_field_in("phis").get_view<const Real*>();
   const auto& sfc_flux_dir_nir     = get_field_in("sfc_flux_dir_nir").get_view<const Real*>();
