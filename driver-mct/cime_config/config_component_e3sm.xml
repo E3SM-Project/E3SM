@@ -486,6 +486,7 @@
       <value compset="_MPASO" grid="oi%oRRS15to5">96</value>
       <value compset="_MPASO" grid="oi%oARRM60to10">48</value>
       <value compset="_MPASO" grid="oi%oARRM60to6">48</value>
+      <value compset="EAM%.*MMF1.*_MPASO" grid="oi%oQU480">$ATM_NCPL</value>
 
     </values>
     <group>run_coupling</group>
