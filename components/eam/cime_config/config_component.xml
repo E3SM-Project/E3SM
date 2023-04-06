@@ -56,6 +56,7 @@
 
       <!-- Single column model (SCM) -->
       <value compset="_EAM%SCM_"       >&eam_phys_defaults; &eam_chem_defaults; -scam</value>
+      <value compset="_EAM%SCM-RCE_"   >&eam_phys_defaults; -chem none -scam -aquaplanet -rce -rad rrtmgp</value>
 
       <!-- idealized configurations -->
       <value compset="_EAM%AQP_"       >&eam_phys_defaults; &eam_chem_defaults; -aquaplanet</value>
@@ -73,6 +74,7 @@
       <value compset="_EAM%AQP-MMF.*"  >-aquaplanet</value>
       <value compset="_EAM%RCE-MMF.*"  >-aquaplanet -rce</value>
       <value compset="_EAM%SCM-MMF.*"  >-scam</value>
+      <value compset="_EAM%SCM-RCE-MMF.*">-aquaplanet -rce -scam</value>
 
       <!-- SCREAM configurations -->
       <value compset="_EAM%SCREAM-LR">-phys default -shoc_sgs -microphys p3 -chem spa -nlev 72 -rad rrtmgp -bc_dep_to_snow_updates -cppdefs '-DSCREAM'</value>
@@ -119,6 +121,8 @@
       <value compset="20TRS_EAM.*AR5sf"                 >20TRS_E3SMv1_superfast_ar5-emis</value>
       <value compset="ARM95_EAM"                        >scam_arm95</value>
       <value compset="ARM97_EAM"                        >scam_arm97</value>
+      <value compset="RCE_EAM%SCM"                      >scam_rce</value>
+      <value compset="RCE_EAM%SCM.*MMF"                 >scam_rce</value>
       <value compset="SCM_EAM"                          >scam_generic</value>
       <value compset="PIPD_EAM"                         >1850-PD_cam5</value>
       <value compset="_EAM%AQP_"                        >aquaplanet_EAMv1</value>
@@ -211,6 +215,7 @@
     <value compset="DOCN%AQP">$SRCROOT/components/eam/cime_config/usermods_dirs/aquap</value>
     <value compset="EAM%RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
     <value compset="EAM%SCM">$SRCROOT/components/eam/cime_config/usermods_dirs/scm</value>
+    <value compset="RCE_EAM%SCM">$SRCROOT/components/eam/cime_config/usermods_dirs/scm-rce</value>
     </values>
     <group>run_component_cam</group>
     <file>env_case.xml</file>
