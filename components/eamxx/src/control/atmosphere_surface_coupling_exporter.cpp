@@ -219,7 +219,6 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
     EKAT_REQUIRE_MSG(export_constant_fields.size()==export_constant_values.size(),"Error! surface_coupling_exporter::init - prescribed_constants 'fields' and 'values' are not the same size");
     if (export_constant_fields.size()>0) {
       // Determine which fields need constants
-      m_export_constants = view_1d<HostDevice,Real>("",m_num_scream_exports);
       for (int i=0; i<m_num_scream_exports; ++i) {  // TODO: This loop would probably be simpler if we just checked which "i" corresponded to each name in the fields list.
         std::string fname = m_export_field_names[i];
         auto loc = std::find(export_constant_fields.begin(),export_constant_fields.end(),fname);
@@ -228,7 +227,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
           export_source_h(i) = CONSTANT;
           m_num_const_exports += 1;
           m_num_eamxx_exports -= 1;
-          m_export_constants(i) = export_constant_values[pos];
+          m_export_constants.emplace(fname,export_constant_values[pos]);
         }
       }
     }
@@ -270,7 +269,7 @@ void SurfaceCouplingExporter::do_export_constant(const double dt, const bool cal
     if (export_source_h(i)==CONSTANT) {
       std::string fname = m_export_field_names[i];
       const auto field_view = m_helper_fields.at(fname).get_view<Real*>();
-      Kokkos::deep_copy(field_view,m_export_constants(i));
+      Kokkos::deep_copy(field_view,m_export_constants.at(fname));
     }
   }
   
@@ -326,6 +325,25 @@ void SurfaceCouplingExporter::do_export_from_eamxx(const double dt, const bool c
   const auto z_int = m_buffer.z_int;
   const auto z_mid = m_buffer.z_mid;
 
+  // Set the indexes for all of the exported variables
+  int idx_Sa_z       =  0;
+  int idx_Sa_u       =  1;
+  int idx_Sa_v       =  2;
+  int idx_Sa_tbot    =  3;
+  int idx_Sa_ptem    =  4;
+  int idx_Sa_pbot    =  5;
+  int idx_Sa_shum    =  6;
+  int idx_Sa_dens    =  7;
+  int idx_Sa_pslv    =  8;
+  int idx_Faxa_rainl =  9;
+  int idx_Faxa_snowl = 10;
+  int idx_Faxa_swndr = 11;
+  int idx_Faxa_swvdr = 12;
+  int idx_Faxa_swndf = 13;
+  int idx_Faxa_swvdf = 14;
+  int idx_Faxa_swnet = 15;
+  int idx_Faxa_lwdn  = 16;
+
 
   // Local copies, to deal with CUDA's handling of *this.
   const int  num_levs           = m_num_levs;
@@ -336,64 +354,101 @@ void SurfaceCouplingExporter::do_export_from_eamxx(const double dt, const bool c
   Kokkos::parallel_for(setup_policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) {
     const int i = team.league_rank();
 
+    // These views are needed by more than one export variable so we declare them here.
     const auto qv_i             = ekat::subview(qv, i);
-    const auto u_wind_i         = ekat::subview(horiz_winds, i, 0); // TODO, when U and V work switch to using here.
-    const auto v_wind_i         = ekat::subview(horiz_winds, i, 1);
     const auto T_mid_i          = ekat::subview(T_mid, i);
     const auto p_mid_i          = ekat::subview(p_mid, i);
-    const auto p_int_i          = ekat::subview(p_int, i);
     const auto pseudo_density_i = ekat::subview(pseudo_density, i);
     const auto dz_i             = ekat::subview(dz, i);
-    const auto z_int_i          = ekat::subview(z_int, i);
-    const auto z_mid_i          = ekat::subview(z_mid, i);
 
-    // Compute vertical layer thickness
-    PF::calculate_dz(team, pseudo_density_i, p_mid_i, T_mid_i, qv_i, dz_i);
-    team.team_barrier();
+    const auto s_p_mid_i = ekat::scalarize(p_mid_i);
+    const auto s_T_mid_i = ekat::scalarize(T_mid_i);
+    const auto z_int_i = ekat::subview(z_int, i);
+    const auto z_mid_i = ekat::subview(z_mid, i);
 
     // Compute vertical layer heights (relative to ground surface rather than from sea level).
     // Use z_int(nlevs) = z_surf = 0.0.
-    const Real z_surf = 0.0;
-    PF::calculate_z_int(team, num_levs, dz_i, z_surf, z_int_i);
-    team.team_barrier();
-    PF::calculate_z_mid(team, num_levs, z_int_i, z_mid_i);
-    team.team_barrier();
-
-    const auto s_qv_i = ekat::scalarize(qv_i);
-    const auto s_dz_i = ekat::scalarize(dz_i);
-    const auto s_z_mid_i = ekat::scalarize(z_mid_i);
-    const auto s_pseudo_density_i = ekat::scalarize(pseudo_density_i);
-    const auto s_p_mid_i = ekat::scalarize(p_mid_i);
-    const auto s_T_mid_i = ekat::scalarize(T_mid_i);
-
-    // Calculate air temperature at bottom of cell closest to the ground for PSL
-    const Real T_int_bot = PF::calculate_surface_air_T(s_T_mid_i(num_levs-1),s_z_mid_i(num_levs-1));
+    // Currently only needed for Sa_z, Sa_dens and Sa_pslv
+    const bool calculate_z_vars = m_export_source(idx_Sa_z)==EAMXX
+                               || m_export_source(idx_Sa_dens)==EAMXX
+                               || m_export_source(idx_Sa_pslv)==EAMXX; 
+    if (calculate_z_vars) {
+      PF::calculate_dz(team, pseudo_density_i, p_mid_i, T_mid_i, qv_i, dz_i);
+      team.team_barrier();
+      const Real z_surf = 0.0;
+      PF::calculate_z_int(team, num_levs, dz_i, z_surf, z_int_i);
+      team.team_barrier();
+      PF::calculate_z_mid(team, num_levs, z_int_i, z_mid_i);
+      team.team_barrier();
+    }
 
     // Set the values in the helper fields which correspond to the exported variables
-    if (m_export_source(0)==EAMXX) { Sa_z(i)    = s_z_mid_i(num_levs-1); }
-    if (m_export_source(1)==EAMXX) { Sa_u(i)    = u_wind_i(num_levs-1); }
-    if (m_export_source(2)==EAMXX) { Sa_v(i)    = v_wind_i(num_levs-1); }
-    if (m_export_source(3)==EAMXX) { Sa_tbot(i) = s_T_mid_i(num_levs-1); }
-    if (m_export_source(4)==EAMXX) { Sa_ptem(i) = PF::calculate_theta_from_T(s_T_mid_i(num_levs-1), s_p_mid_i(num_levs-1)); }
-    if (m_export_source(5)==EAMXX) { Sa_pbot(i) = s_p_mid_i(num_levs-1);  }
-    if (m_export_source(6)==EAMXX) { Sa_shum(i) = s_qv_i(num_levs-1); }
-    if (m_export_source(7)==EAMXX) { Sa_dens(i) = PF::calculate_density(s_pseudo_density_i(num_levs-1), s_dz_i(num_levs-1)); }
-    if (m_export_source(8)==EAMXX) { Sa_pslv(i) = PF::calculate_psl(T_int_bot, p_int_i(num_levs), phis(i)); }
+
+    if (m_export_source(idx_Sa_z)==EAMXX) { 
+      // Assugb to Sa_z
+      const auto s_z_mid_i = ekat::scalarize(z_mid_i);
+      Sa_z(i)    = s_z_mid_i(num_levs-1); 
+    }
+
+    if (m_export_source(idx_Sa_u)==EAMXX) {
+      const auto u_wind_i = ekat::subview(horiz_winds, i, 0); // TODO, when U and V work switch to using here instead of horiz_winds.
+      Sa_u(i)             = u_wind_i(num_levs-1);
+    }
+
+    if (m_export_source(idx_Sa_v)==EAMXX) {
+      const auto v_wind_i = ekat::subview(horiz_winds, i, 1);
+      Sa_v(i)             = v_wind_i(num_levs-1);
+    }
+
+    if (m_export_source(idx_Sa_tbot)==EAMXX) {  /// HERE
+      Sa_tbot(i) = s_T_mid_i(num_levs-1);
+    }
+
+    if (m_export_source(idx_Sa_ptem)==EAMXX) {
+      Sa_ptem(i) = PF::calculate_theta_from_T(s_T_mid_i(num_levs-1), s_p_mid_i(num_levs-1));
+    }
+
+    if (m_export_source(idx_Sa_pbot)==EAMXX) {
+      Sa_pbot(i) = s_p_mid_i(num_levs-1);
+    }
+
+    if (m_export_source(idx_Sa_shum)==EAMXX) { 
+      const auto s_qv_i = ekat::scalarize(qv_i);
+      Sa_shum(i) = s_qv_i(num_levs-1); 
+    }
+
+    if (m_export_source(idx_Sa_dens)==EAMXX) {
+      const auto s_dz_i = ekat::scalarize(dz_i);
+      const auto s_pseudo_density_i = ekat::scalarize(pseudo_density_i);
+      Sa_dens(i) = PF::calculate_density(s_pseudo_density_i(num_levs-1), s_dz_i(num_levs-1));
+    }
+
+    if (m_export_source(idx_Sa_pslv)==EAMXX) {
+      const auto p_int_i   = ekat::subview(p_int, i);
+      const auto s_z_mid_i = ekat::scalarize(z_mid_i);
+      // Calculate air temperature at bottom of cell closest to the ground for PSL
+      const Real T_int_bot = PF::calculate_surface_air_T(s_T_mid_i(num_levs-1),s_z_mid_i(num_levs-1));
+
+      Sa_pslv(i) = PF::calculate_psl(T_int_bot, p_int_i(num_levs), phis(i));
+    }
 
     if (not called_during_initialization) {
       // Precipitation has units of kg/m2, and Faxa_rainl/snowl
       // need units mm/s. Here, 1000 converts m->mm, dt has units s, and
       // rho_h2o has units kg/m3.
-      if (m_export_source(9)==EAMXX)  { Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
-      if (m_export_source(10)==EAMXX) { Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
+      if (m_export_source(idx_Faxa_rainl)==EAMXX) { Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
+      if (m_export_source(idx_Faxa_snowl)==EAMXX) { Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
     }
-    if (m_export_source(11)==EAMXX) { Faxa_swndr(i) = sfc_flux_dir_nir(i); }
-    if (m_export_source(12)==EAMXX) { Faxa_swvdr(i) = sfc_flux_dir_vis(i); }
-    if (m_export_source(13)==EAMXX) { Faxa_swndf(i) = sfc_flux_dif_nir(i); }
-    if (m_export_source(14)==EAMXX) { Faxa_swvdf(i) = sfc_flux_dif_vis(i); }
-    if (m_export_source(15)==EAMXX) { Faxa_swnet(i) = sfc_flux_sw_net(i); }
-    if (m_export_source(16)==EAMXX) { Faxa_lwdn (i) = sfc_flux_lw_dn(i); }
   });
+  // Variables that are already surface vars in the ATM can just be copied directly.
+  auto export_source_h = Kokkos::create_mirror_view(m_export_source);
+  Kokkos::deep_copy(export_source_h,m_export_source);
+  if (export_source_h(idx_Faxa_swndr)==EAMXX) { Kokkos::deep_copy(Faxa_swndr, sfc_flux_dir_nir); }
+  if (export_source_h(idx_Faxa_swvdr)==EAMXX) { Kokkos::deep_copy(Faxa_swvdr, sfc_flux_dir_vis); }
+  if (export_source_h(idx_Faxa_swndf)==EAMXX) { Kokkos::deep_copy(Faxa_swndf, sfc_flux_dif_nir); }
+  if (export_source_h(idx_Faxa_swvdf)==EAMXX) { Kokkos::deep_copy(Faxa_swvdf, sfc_flux_dif_vis); }
+  if (export_source_h(idx_Faxa_swnet)==EAMXX) { Kokkos::deep_copy(Faxa_swnet, sfc_flux_sw_net); }
+  if (export_source_h(idx_Faxa_lwdn )==EAMXX) { Kokkos::deep_copy(Faxa_lwdn,  sfc_flux_lw_dn); }
 }
 // =========================================================================================
 void SurfaceCouplingExporter::do_export_to_cpl(const bool called_during_initialization)
