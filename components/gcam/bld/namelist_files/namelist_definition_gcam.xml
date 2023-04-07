@@ -4,14 +4,6 @@
 
 <namelist_definition>
 
-<entry id="gcam_gridfile"
-	type="char*256"
-	category="gcam"
-	input_pathname="abs"
-	group="gcam_inparm"
-	valid_values="">
-Full pathname of input gcam grid file
-</entry>
 
 <entry id="case_name"
 	type="char*256"
@@ -21,6 +13,84 @@ Full pathname of input gcam grid file
 Gcam case name
 </entry>
 
+
+<entry id="num_pft"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+GCAM and LND number number of plant functional types
+Default: 17
+Used in GCAM to subgrid each cell by different land use type
+</entry>
+
+<entry id="num_harvest"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+LND number number of harvest types 
+Default: 5
+Used in GCAM to subgrid each cell by different land use type
+</entry>
+
+<entry id="num_lat"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Number of horizontal grid cells
+</entry>
+
+<entry id="num_lon"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Number of vertical grid cells
+</entry>
+
+<entry id="num_gcam_energy_regions"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Number of energy regions
+</entry>
+
+<entry id="num_gcam_land_regions"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Number of land regions
+</entry>
+
+<entry id="num_iac2elm_landtypes"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Number of land types
+</entry>
+
+<entry id="num_emiss_sectors"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Number of emission sectors
+</entry>
+
+<entry id="num_emiss_regions"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Number of emission regions
+</entry>
+
+
 <entry id="gcam_config"
 	type="char*256"
 	category="gcam"
@@ -28,6 +98,24 @@ Gcam case name
 	group="gcam_inparm"
 	valid_values="">
 Configuration file for gcam model
+</entry>
+
+<entry id="base_gcam_co2_file"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="gcam_inparm"
+        valid_values="">
+Baseline gcam co2 file
+</entry>
+
+<entry id="base_gcam_lu_wh_file"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="gcam_inparm"
+        valid_values="">
+Baseline gcam lu and wh file
 </entry>
 
 <entry id="base_co2_surface_file"
@@ -54,7 +142,7 @@ Initial co2 aircraft emissions file
 	input_pathname="abs"
 	group="gcam_inparm"
 	valid_values="">
-Initial npp values file
+Initial npp values file for scalars
 </entry>
 
 <entry id="base_hr_file"
@@ -63,7 +151,7 @@ Initial npp values file
 	input_pathname="abs"
 	group="gcam_inparm"
 	valid_values="">
-Initial hr values file
+Initial hr values file for scalars
 </entry>
 
 <entry id="base_pft_file"
@@ -71,7 +159,8 @@ Initial hr values file
         category="gcam"
         input_pathname="abs"
         group="gcam_inparm"
-        valid_values="">                                                                                                                                      Initial pft weights values file
+        valid_values="">
+Initial pft weights values file for scalars
 </entry>
 
 <entry id="gcam2elm_co2_mapping_file"
@@ -101,6 +190,16 @@ Mapping file for land use
 Mapping file for woodharvest
 </entry>
 
+
+<entry id="gcam_gridfile"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="gcam_inparm"
+        valid_values="">
+Full pathname of input gcam grid file
+</entry>
+
 <entry id="elm2gcam_mapping_file"
 	type="char*256"
 	category="gcam"
@@ -108,6 +207,15 @@ Mapping file for woodharvest
 	group="gcam_inparm"
 	valid_values="">
 Mapping file between land model and gcam types
+</entry>
+
+<entry id="gcam2glm_glumap"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="gcam_inparm"
+        valid_values="">
+Glm GLU mapping file
 </entry>
 
 <entry id="gcam2glm_baselu"
@@ -128,14 +236,6 @@ Glm base luc file
 Glm base biomass file
 </entry>
 
-<entry id="gcam2glm_glumap"
-	type="char*256"
-	category="gcam"
-	input_pathname="abs"
-	group="gcam_inparm"
-	valid_values="">
-Glm GLU mapping file
-</entry>
 
 <entry id="read_scalars"
 	type="logical"
@@ -144,11 +244,11 @@ Glm GLU mapping file
 If FALSE, scalars are calculated from npp/hr
 </entry>
 
-<entry id="read_elm_from_file"
-	type="logical"
-	category="gcam"
-	group="gcam_inparm">
-if FALSE, elm data are passed through coupler rather than file
+<entry id="write_scalars"
+        type="logical"  
+        category="gcam"
+        group="gcam_inparm">
+Write scalars to file
 </entry>
 
 <entry id="write_co2"
@@ -156,13 +256,6 @@ if FALSE, elm data are passed through coupler rather than file
 	category="gcam"
 	group="gcam_inparm">
 Write co2 emissions to file (in addition to coupler)
-</entry>
-
-<entry id="write_scalars"
-	type="logical"	
-	category="gcam"
-	group="gcam_inparm">
-Write scalars to file
 </entry>
 
 <entry id="elm_iac_carbon_scaling"
@@ -179,86 +272,18 @@ Changes in land productivity from elm are used in gcam
 Energy system co2 is passed from gcam to eam
 </entry>
 
-<entry id="num_lat"
-	type="integer"
-	category="gcam"
-	group="gcam_inparm"
-	valid_values="">
-Number of horizontal grid cells
+<entry id="gcam_spinup"
+        type="logical"
+        category="gcam"
+        group="gcam_inparm">
+GCAM is spunup to create baseline co2 and lu/wh files
 </entry>
 
-<entry id="num_lon"
-	type="integer"
-	category="gcam"
-	group="gcam_inparm"
-	valid_values="">
-Number of vertical grid cells
-</entry>
-
-<entry id="num_pft"
-	type="integer"
-	category="gcam"
-	group="gcam_inparm"
-	valid_values="">
-GCAM and LND number number of plant functional types
-Default: 17
-Used in GCAM to subgrid each cell by different land use type
-</entry>
-
-<entry id="num_gcam_energy_regions"
-	type="integer"
-	category="gcam"
-	group="gcam_inparm"
-	valid_values="">
-Number of energy regions
-</entry>
-
-<entry id="num_gcam_land_regions"
-	type="integer"
-	category="gcam"
-	group="gcam_inparm"
-	valid_values="">
-Number of land regions
-</entry>
-
-<entry id="num_iac2elm_landtypes"
-	type="integer"
-	category="gcam"
-	group="gcam_inparm"
-	valid_values="">
-Number of land types
-</entry>
-
-<entry id="num_emiss_sectors"
-	type="integer"
-	category="gcam"
-	group="gcam_inparm"
-	valid_values="">
-Number of emission sectors
-</entry>
-
-<entry id="num_emiss_regions"
-	type="integer"
-	category="gcam"
-	group="gcam_inparm"
-	valid_values="">
-Number of emission regions
-</entry>
-
-<entry id="base_co2emis_surface"
-	type="real*8"
-	category="gcam"
-	group="gcam_inparm"
-	valid_values="">
-Surface CO2 emissions in base year
-</entry>
-
-<entry id="base_co2emis_aircraft"
-	type="real*8"
-	category="gcam"
-	group="gcam_inparm"
-	valid_values="">
-Aircraft CO2 emissions in base year
+<entry id="run_gcam"
+        type="logical"
+        category="gcam"
+        group="gcam_inparm">
+Default is true; false enables historical iac runs
 </entry>
 
 </namelist_definition>
