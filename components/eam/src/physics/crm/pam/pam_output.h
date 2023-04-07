@@ -86,9 +86,9 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   // auto gcm_forcing_tend_vvel  = dm_device.get<real const,2>("gcm_forcing_tend_vvel" );
   //------------------------------------------------------------------------------------------------
   // convert variables to GCM vertical grid
-  real2d forcing_tend_out_temp ("cldfrac_gcm",gcm_nlev,nens);
-  real2d forcing_tend_out_rho_d("cldfrac_gcm",gcm_nlev,nens);
-  real2d forcing_tend_out_rho_v("cldfrac_gcm",gcm_nlev,nens);
+  real2d forcing_tend_out_temp ("forcing_tend_out_temp ",gcm_nlev,nens);
+  real2d forcing_tend_out_rho_d("forcing_tend_out_rho_d",gcm_nlev,nens);
+  real2d forcing_tend_out_rho_v("forcing_tend_out_rho_v",gcm_nlev,nens);
   parallel_for("Initialize aggregated precipitation", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
     int k_crm = gcm_nlev-1-k_gcm;
     if (k_crm<crm_nz) {
@@ -120,8 +120,8 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   qm_mean                 .deep_copy_to(output_qm_mean);
   bm_mean                 .deep_copy_to(output_bm_mean);
   forcing_tend_out_temp   .deep_copy_to(output_t_ls);
-  forcing_tend_out_rho_d  .deep_copy_to(output_rho_v_ls);
-  forcing_tend_out_rho_v  .deep_copy_to(output_rho_d_ls);
+  forcing_tend_out_rho_d  .deep_copy_to(output_rho_d_ls);
+  forcing_tend_out_rho_v  .deep_copy_to(output_rho_v_ls);
   //------------------------------------------------------------------------------------------------
 }
 
