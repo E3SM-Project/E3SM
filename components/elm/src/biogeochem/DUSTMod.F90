@@ -31,8 +31,8 @@ module DUSTMod
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_ws
   use VegetationType       , only : veg_pp
-  use shr_dust_mod         , only : dust_emis_scheme 
-  use spmd_utils, only : masterproc
+  use shr_dust_mod         , only : dust_emis_scheme
+  use spmdMod              , only : masterproc
   !
   ! !PUBLIC TYPES
   implicit none

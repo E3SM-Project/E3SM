@@ -95,7 +95,6 @@ module dust_model
     use constituents,  only: cnst_get_ind
     use dust_common,   only: dust_set_params
     use cam_logfile,   only: iulog
-    use spmd_utils,    only: masterproc
 
     integer :: n
 
@@ -123,7 +122,6 @@ module dust_model
     use soil_erod_mod, only : soil_erodibility
     use mo_constants,  only : dust_density
     use physconst,     only : pi
-    use spmd_utils,    only : masterproc
 
   ! args
     integer,  intent(in)    :: ncol, lchnk
