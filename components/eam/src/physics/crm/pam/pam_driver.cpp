@@ -13,6 +13,9 @@
 #include "pam_output.h"
 #include "sponge_layer.h"
 #include "surface_friction.h"
+#include "scream_cxx_interface_finalize.h"
+
+#define MMF_PAM_FORCE_ALL_WATER_SPECIES
 
 extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
@@ -66,11 +69,9 @@ extern "C" void pam_driver() {
   pam_state_copy_input_to_coupler(coupler);
 
   // now that initial state is set, more dycor initialization
-  #if defined(MMF_PAM_DYCOR_AWFL)
+  // #if defined(MMF_PAM_DYCOR_AWFL)
     coupler.update_hydrostasis();
-  #elif defined(MMF_PAM_DYCOR_SPAM)
-    dycore.pre_time_loop(coupler);
-  #endif
+  // #endif
 
   // Compute CRM forcing tendencies
   modules::compute_gcm_forcing_tendencies(coupler);
@@ -94,6 +95,34 @@ extern "C" void pam_driver() {
     auto gcolp = dm_host.get<int const,1>("gcolp").createDeviceCopy();
     modules::perturb_temperature( coupler , gcolp );
   }
+
+  #if defined(MMF_PAM_DYCOR_SPAM)
+    dycore.pre_time_loop(coupler);
+  #endif
+
+  //------------------------------------------------------------------------------------------------
+  //------------------------------------------------------------------------------------------------
+  // auto nx         = coupler.get_option<int>("crm_nx");
+  // auto nz         = coupler.get_option<int>("crm_nz");
+  // auto crm_rho_d  = dm_device.get<real,4>("density_dry");
+  // auto crm_temp   = dm_device.get<real,4>("temp");
+
+  // for (int k=0; k<nz; k++) {
+  //   std::cout<<"  WHDEBUG "
+  //   <<"  k:"<<k 
+  //   <<"  crm_rho_d:"<<crm_rho_d(k,0,0,0)
+  //   <<"  crm_temp:"<<crm_temp(k,0,0,0)
+  //   <<std::endl;
+  // }
+
+  // for (int i=0; i<nx; i++) {
+  //   std::cout<<"  WHDEBUG "
+  //   <<"  i:"<<i
+  //   <<"  k:0"
+  //   <<"  crm_rho_d:"<<crm_rho_d(0,0,i,0)
+  //   <<std::endl;
+  // }
+
   
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
@@ -104,7 +133,7 @@ extern "C" void pam_driver() {
     if (crm_dt == 0.) { crm_dt = dycore.compute_time_step(coupler); }
     if (etime_crm + crm_dt > gcm_dt) { crm_dt = gcm_dt - etime_crm; }
 
-    std::cout << "WHDEBUG - pam_driver - etime_crm: "<<etime_crm<< std::endl;
+    // std::cout << "WHDEBUG - pam_driver - etime_crm: "<<etime_crm<< std::endl;
 
     // run a PAM time step
     coupler.run_module( "apply_gcm_forcing_tendencies" , modules::apply_gcm_forcing_tendencies );
@@ -164,4 +193,12 @@ extern "C" void pam_driver() {
   rad   .finalize(coupler);
   pam_interface::finalize();
   //------------------------------------------------------------------------------------------------
+}
+
+
+extern "C" void pam_finalize() {
+  #if defined(P3_CXX) || defined(SHOC_CXX)
+  pam::deallocate_scream_cxx_globals();
+  pam::call_kokkos_finalize();
+  #endif
 }

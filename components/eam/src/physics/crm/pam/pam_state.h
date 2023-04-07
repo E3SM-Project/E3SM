@@ -70,7 +70,6 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   auto input_pdel = dm_host.get<real const,2>("input_pdel").createDeviceCopy();
   auto input_zint = dm_host.get<real const,2>("input_zint").createDeviceCopy();
   //------------------------------------------------------------------------------------------------
-  auto state_rho_dry = dm_host.get<real const,4>("state_rho_dry").createDeviceCopy();
   // Define GCM state for forcing - adjusted to avoid directly forcing cloud liquid and ice fields
   parallel_for( Bounds<2>(crm_nz,nens) , YAKL_LAMBDA (int k_crm, int iens) {
     int k_gcm = gcm_nlev-1-k_crm;
@@ -78,36 +77,27 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
     gcm_uvel (k_crm,iens) = input_ul(k_gcm,iens);
     gcm_vvel (k_crm,iens) = input_vl(k_gcm,iens);
 
-    // use total water for GCM forcing
-    real input_qt = input_ql(k_gcm,iens) + input_qccl(k_gcm,iens) + input_qiil(k_gcm,iens);
-
     // calculate dry density using same formula as in crm_physics_tend()
     real dz = input_zint(k_gcm,iens) - input_zint(k_gcm+1,iens);
     real dp = input_pint(k_gcm,iens) - input_pint(k_gcm+1,iens);
-    #ifdef MMF_PAM_DYCOR_AWFL
-      // when forcing dry density use total water for consistency with temperature forcing
-      gcm_rho_d(k_crm,iens) = -1 * dp * (1-input_ql(k_gcm,iens)) / ( dz * grav );
+    gcm_rho_d(k_crm,iens) = -1 * dp * (1-input_ql(k_gcm,iens)) / ( dz * grav );
+
+    #ifdef MMF_PAM_FORCE_ALL_WATER_SPECIES
+      // another alternate where we force cloud water/ice separately
+      gcm_rho_v(k_crm,iens) = input_ql  (k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
+      gcm_rho_l(k_crm,iens) = input_qccl(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
+      gcm_rho_i(k_crm,iens) = input_qiil(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
+      gcm_temp(k_crm,iens) = input_tl(k_gcm,iens);
+    #else
+      // force vapor with total water
+      real gcm_rho_v_tmp = input_ql(k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
+      real input_qt = input_ql(k_gcm,iens) + input_qccl(k_gcm,iens) + input_qiil(k_gcm,iens);
+      gcm_rho_v(k_crm,iens) = input_qt * ( gcm_rho_d(k_crm,iens) + gcm_rho_v_tmp );
+      gcm_rho_l(k_crm,iens) = 0;
+      gcm_rho_i(k_crm,iens) = 0;
+      real input_t_adj = input_tl(k_gcm,iens) - ( input_qccl(k_gcm,iens)*Lv + input_qiil(k_gcm,iens)*(Lv+Lf) ) / cp_d ;
+      gcm_temp(k_crm,iens) = input_t_adj;
     #endif
-    #ifdef MMF_PAM_DYCOR_SPAM
-      gcm_rho_d(k_crm,iens) = -1 * dp * (1-input_ql(k_gcm,iens)) / ( dz * grav );
-    #endif
-
-    // convert total water mixing ratio to water vapor density and adjust temperature
-    gcm_rho_v(k_crm,iens) = input_qt * gcm_rho_d(k_crm,iens) / ( 1 - input_qt );
-    gcm_rho_l(k_crm,iens) = 0;
-    gcm_rho_i(k_crm,iens) = 0;
-    real input_t_adj = input_tl(k_gcm,iens) - ( input_qccl(k_gcm,iens)*Lv + input_qiil(k_gcm,iens)*(Lv+Lf) ) / cp_d ;
-    gcm_temp(k_crm,iens) = input_t_adj;
-
-    // // Alternate version where we ignore liq/ice cloud in the large-scale forcing
-    // gcm_rho_v(k_crm,iens) = input_ql(k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
-    // gcm_temp(k_crm,iens) = input_tl(k_gcm,iens);
-
-    // // another alternate where we force cloud water/ice separately
-    // gcm_rho_v(k_crm,iens) = input_ql  (k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
-    // gcm_rho_l(k_crm,iens) = input_qccl(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
-    // gcm_rho_i(k_crm,iens) = input_qiil(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
-    // gcm_temp(k_crm,iens) = input_tl(k_gcm,iens);
   });
 
   //------------------------------------------------------------------------------------------------

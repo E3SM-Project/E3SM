@@ -493,7 +493,13 @@ end subroutine crm_physics_init
 !===================================================================================================
 
 subroutine crm_physics_final()
-#if defined(MMF_SAMXX) || defined(MMF_PAM)
+#if defined(MMF_PAM)
+   use gator_mod,       only: gator_finalize
+   use pam_driver_mod,  only: pam_finalize
+   call gator_finalize()
+   call pam_finalize()
+#endif
+#if defined(MMF_SAMXX)
    use gator_mod, only: gator_finalize
    call gator_finalize()
 #endif
@@ -1892,3 +1898,4 @@ end subroutine crm_surface_flux_bypass_tend
 !==================================================================================================
 
 end module crm_physics
+ 
