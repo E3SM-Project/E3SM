@@ -5,6 +5,7 @@ module dust_model
   use shr_kind_mod, only: r8 => shr_kind_r8, cl => shr_kind_cl
   use spmd_utils,   only: masterproc
   use cam_abortutils,   only: endrun
+  use shr_dust_mod,     only: dust_emis_scheme
 
   implicit none
   private
@@ -93,6 +94,7 @@ module dust_model
     use soil_erod_mod, only: soil_erod_init
     use constituents,  only: cnst_get_ind
     use dust_common,   only: dust_set_params
+    use cam_logfile,   only: iulog
 
     integer :: n
 
@@ -108,6 +110,8 @@ module dust_model
     call  soil_erod_init( dust_emis_fact, soil_erod_file )
 
     call dust_set_params( dust_nbin, dust_dmt_grd, dust_dmt_vwr, dust_stk_crc )
+
+    if (masterproc) write(iulog,*) "modal_aero, dust_init: dust_emis_scheme = ",dust_emis_scheme
 
   end subroutine dust_init
 
@@ -135,6 +139,8 @@ module dust_model
     col_loop: do i =1,ncol
 
        soil_erod(i) = soil_erodibility( i, lchnk )
+
+       if (dust_emis_scheme == 2) soil_erod(i) = 1._r8
 
        if( soil_erod(i) .lt. soil_erod_threshold ) soil_erod(i) = 0._r8
 
