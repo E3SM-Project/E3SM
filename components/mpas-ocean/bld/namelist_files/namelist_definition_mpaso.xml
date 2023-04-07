@@ -313,6 +313,22 @@ Valid values: any positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_vertMom_del2" type="logical"
+        category="hmix_del2" group="hmix_del2">
+If true, Laplacian horizontal mixing is used on the vertical momentum equation.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vertMom_del2" type="real"
+        category="hmix_del2" group="hmix_del2">
+Horizontal diffusion.
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- hmix_del4 -->
 
@@ -2390,6 +2406,30 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_disable_vel_vadv" type="logical"
 	category="debug" group="debug">
 Disables tendencies on the velocity field from vertical advection.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_disable_vvel_all_tend" type="logical"
+        category="debug" group="debug">
+Disables all tendencies on vertical momentum field.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_disable_vvel_coriolis" type="logical"
+        category="debug" group="debug">
+Disables tendencies on the vetical velocity field from the Coriolis force.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_disable_vvel_adv" type="logical"
+        category="debug" group="debug">
+Disables tendencies on the vertical velocity field from vertical and horizontal advection.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

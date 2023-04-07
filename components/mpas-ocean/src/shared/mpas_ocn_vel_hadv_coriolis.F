@@ -54,8 +54,9 @@ module ocn_vel_hadv_coriolis
    !--------------------------------------------------------------------
 
    logical :: &
-      hadvCoriolisDisabled ! on/off switch for hadv/Coriolis tend
-                           ! use disabled since default is on
+      hadvCoriolisDisabled, & ! on/off switch for hadv/Coriolis tend
+                              ! use disabled since default is on
+      coriolisNonhydroDisabled
 
    logical :: &
       usePlanetVorticity   ! multiplicative mask for including
@@ -307,6 +308,7 @@ contains
       !*** Otherwise, start timer
 
       err = 0
+      if (coriolisNonhydroDisabled) return
 
       do iEdge = 1, nEdgesOwned
          kmin = minLevelEdgeBot(iEdge)
@@ -354,11 +356,15 @@ contains
       err = 0
 
       hadvCoriolisDisabled = .false.
+      coriolisNonhydroDisabled = .false.
       usePlanetVorticity   = .false.
 
       !*** Reset module variables based in input configuration
 
-      if ( config_disable_vel_coriolis ) hadvCoriolisDisabled = .true.
+      if ( config_disable_vel_coriolis ) then
+         hadvCoriolisDisabled = .true.
+         coriolisNonhydroDisabled = .true.
+      end if
 
       select case (trim(config_time_integrator))
       case ('RK4','rk4')

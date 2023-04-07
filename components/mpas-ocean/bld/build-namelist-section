@@ -73,6 +73,8 @@ add_default($nl, 'config_use_mom_del2');
 add_default($nl, 'config_mom_del2');
 add_default($nl, 'config_use_tracer_del2');
 add_default($nl, 'config_tracer_del2');
+add_default($nl, 'config_use_vertMom_del2');
+add_default($nl, 'config_vertMom_del2');
 
 #############################
 # Namelist group: hmix_del4 #
@@ -463,6 +465,9 @@ add_default($nl, 'config_disable_vel_topographic_wave_drag');
 add_default($nl, 'config_disable_vel_explicit_bottom_drag');
 add_default($nl, 'config_disable_vel_vmix');
 add_default($nl, 'config_disable_vel_vadv');
+add_default($nl, 'config_disable_vvel_all_tend');
+add_default($nl, 'config_disable_vvel_coriolis');
+add_default($nl, 'config_disable_vvel_adv');
 add_default($nl, 'config_disable_tr_all_tend');
 add_default($nl, 'config_disable_tr_adv');
 add_default($nl, 'config_disable_tr_hmix');
