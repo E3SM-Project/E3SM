@@ -54,7 +54,7 @@ if ("${PAM_DYCORE}" STREQUAL "spam++")
   set(PAMC_MODEL  extrudedmodel)
   set(PAMC_HAMIL  man)  # man = anelastic / mce_rho = moist compressible
   set(PAMC_THERMO constkappavirpottemp)
-  set(PAMC_IO     serial)
+  set(PAMC_IO     none)
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
