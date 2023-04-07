@@ -1634,13 +1634,15 @@ end if ! l_tracer_aero
     nstep = get_nstep()
     call check_tracers_init(state, tracerint)
 
-
+#if 0
 !save TE before physstep
 call check_energy_chng(state, tend, "assign_te_before_physstep", nstep, ztodt, zero, zero, zero, zero)
 
 state%te_before_physstep(:ncol)=state%te_cur(:ncol)
 !save water mass here
 state%tw_before(:ncol) = state%tw_cur(:ncol)
+#endif
+
 !since QFLX is potentially modified below, save unmodified value is delta var temporarily
 !POTENTIALLY we also need to save SHF
 !introduce a new var as our old vars are all used in gmean
@@ -1671,7 +1673,7 @@ state%cflx_raw(:ncol) = cam_in%cflx(:ncol,1)
 
        ! Check if latent heat flux exceeds the total moisture content of the
        ! lowest model layer, thereby creating negative moisture.
-#if 0
+#if 1
        call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,               &
             state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &
             cam_in%lhf , cam_in%cflx )
@@ -1701,6 +1703,18 @@ do i=1,ncol
 enddo
 #endif
     end if 
+
+
+#if 1
+!save TE before physstep
+call check_energy_chng(state, tend, "assign_te_before_physstep", nstep, ztodt, zero, zero, zero, zero)
+
+state%te_before_physstep(:ncol)=state%te_cur(:ncol)
+!save water mass here
+state%tw_before(:ncol) = state%tw_cur(:ncol)
+#endif
+
+
 
     !just output
     call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
@@ -2859,7 +2873,7 @@ state%tw_after(:ncol) = state%tw_cur(:ncol)
 !NO mistake -- change in mass from qneg should be accounted separately!
 !state%deltaw_flux(:ncol) = state%cflx_raw(:ncol)
 
-state%deltaw_flux(:ncol) = state%cflx_raw(:ncol)
+state%deltaw_flux(:ncol) = cam_in%cflx(:ncol,1)
 
 state%deltaw_flux(:ncol) = state%deltaw_flux(:ncol) - &
 1000.0*(cam_out%precc(:ncol)+cam_out%precl(:ncol))
