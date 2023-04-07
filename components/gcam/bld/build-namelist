@@ -308,9 +308,14 @@ my $DIN_LOC_ROOT    = $xmlvars{'DIN_LOC_ROOT'};
 # namelist group: gcam_inparm       #
 ####################################
 
-add_default($nl, 'gcam_gridfile');
+# order these to match the default files
 
+# gcam case name
+add_default($nl, 'case_name');
+
+# grid and region size parameters
 add_default($nl, 'num_pft');
+add_default($nl, 'num_harvest');
 add_default($nl, 'num_lat');
 add_default($nl, 'num_lon');
 add_default($nl, 'num_gcam_energy_regions');
@@ -318,9 +323,11 @@ add_default($nl, 'num_gcam_land_regions');
 add_default($nl, 'num_iac2elm_landtypes');
 add_default($nl, 'num_emiss_sectors');
 add_default($nl, 'num_emiss_regions');
-add_default($nl, 'gcam_gridfile');
-add_default($nl, 'case_name');
+
+# gcam config and init files, relative to inputdata
 add_default($nl, 'gcam_config');
+add_default($nl, 'base_gcam_co2_file');
+add_default($nl, 'base_gcam_lu_wh_file');
 add_default($nl, 'base_co2_surface_file');
 add_default($nl, 'base_co2_aircraft_file');
 add_default($nl, 'base_npp_file');
@@ -329,16 +336,22 @@ add_default($nl, 'base_pft_file');
 add_default($nl, 'gcam2elm_co2_mapping_file');
 add_default($nl, 'gcam2elm_luc_mapping_file');
 add_default($nl, 'gcam2elm_woodharvest_mapping_file');
+
+# grid mapping and initialization, relative to inputdata
+add_default($nl, 'gcam_gridfile');
 add_default($nl, 'elm2gcam_mapping_file');
 add_default($nl, 'gcam2glm_glumap');
 add_default($nl, 'gcam2glm_baselu');
 add_default($nl, 'gcam2glm_basebiomass');
+
+# runtime options
 add_default($nl, 'read_scalars');
 add_default($nl, 'write_scalars');
-add_default($nl, 'read_elm_from_file');
 add_default($nl, 'write_co2');
 add_default($nl, 'elm_iac_carbon_scaling');
 add_default($nl, 'iac_elm_co2_emissions');
+add_default($nl, 'gcam_spinup');
+add_default($nl, 'run_gcam');
 
 #-----------------------------------------------------------------------------------------------
 # Validate that the entire resultant namelist is valid

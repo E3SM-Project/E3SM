@@ -92,12 +92,15 @@ contains
     integer                  :: lsize_z, lsize_l
     integer                  :: eli,erl
     logical                  :: samegrid_lz   ! samegrid land and iac
+    logical                  :: samegrid_az   ! samegrid atm and iac
     logical                  :: lnd_present   ! .true. => land is present
     logical                  :: iac_present   ! .true. => iac is present
+    logical                  :: atm_present   ! .true. => atm is present
     logical                  :: iamroot_CPLID ! .true. => CPLID masterproc
     logical                  :: esmf_map_flag ! .true. => use esmf for mapping
     character(CL)            :: lnd_gnam      ! lnd grid
     character(CL)            :: iac_gnam      ! iac grid
+    character(CL)            :: atm_gnam      ! atm grid
     type(mct_avect), pointer :: z2x_zx, x2z_zx, l2x_lx
     character(*), parameter  :: subname = '(prep_iac_init)'
     character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
@@ -105,13 +108,16 @@ contains
     call seq_infodata_getData(infodata, &
          lnd_present=lnd_present,       &
          iac_present=iac_present,       &
+         atm_present=atm_present,       &
          lnd_gnam=lnd_gnam,             &
          iac_gnam=iac_gnam,             &
+         atm_gnam=atm_gnam,             &
          esmf_map_flag=esmf_map_flag)
 
 
     if (iac_present) then
        allocate(mapper_Sl2z)
+       allocate(mapper_Sa2z)
 
        z2x_zx => component_get_c2x_cx(iac(1))
        lsize_z = mct_aVect_lsize(z2x_zx)
@@ -160,6 +166,27 @@ contains
                'seq_maps.rc','lnd2iac_smapname:','lnd2iac_smaptype:',samegrid_lz, &
                string='mapper_Sl2z initialization',esmf_map=esmf_map_flag)
        end if
+       call shr_sys_flush(logunit)
+    end if
+
+    ! currently lnd and atm must be present (maybe not on same grid)
+    !   if iac is present
+    ! the atm2iac mapper is used for the iac domain settings
+    ! there currently are no variables passed from atm2iac
+    if (iac_present .and. atm_present) then
+       samegrid_az = .true.
+       if (trim(atm_gnam) /= trim(iac_gnam)) samegrid_az = .false.
+
+       if (iamroot_CPLID) then
+          write(logunit,*) ' '
+          write(logunit,F00) 'Initializing mapper_Sa2z'
+       end if
+
+       write(logunit, *) 'TRS prep_iac_mod esmf_map_flag', esmf_map_flag
+
+       call seq_map_init_rcfile(mapper_Sa2z, atm(1), iac(1), &
+          'seq_maps.rc','atm2iac_smapname:','atm2iac_smaptype:',samegrid_az, &
+           string='mapper_Sa2z initialization',esmf_map=esmf_map_flag)
        call shr_sys_flush(logunit)
     end if
 

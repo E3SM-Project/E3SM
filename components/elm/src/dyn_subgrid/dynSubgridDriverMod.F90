@@ -425,13 +425,15 @@ contains
     ! We need to allocate if do_harvest = .false., befause then
     ! dynHarvest_ini() has not been called but we still need
     ! harvest_rates.  Should we switch on do_harvest == .false.?
-    allocate(harvest_rates(num_harvest_vars,bounds%begg:bounds%endg),stat=ier)
-    if (ier /= 0) then
-       call endrun(msg=' allocation error for harvest'//errMsg(__FILE__, &
+    if (.not. get_do_harvest()) then
+       allocate(harvest_rates(num_harvest_vars,bounds%begg:bounds%endg),stat=ier)
+       if (ier /= 0) then
+          call endrun(msg=' allocation error for harvest'//errMsg(__FILE__, &
                           __LINE__))
-    end if
+       end if
 
-    harvest_rates(:,:) = 0._r8
+       harvest_rates(:,:) = 0._r8
+    end if
 
     if ( maxpatch_pft /= numpft+1 ) then
        call endrun(msg=' maxpatch_pft does NOT equal numpft+1'// &

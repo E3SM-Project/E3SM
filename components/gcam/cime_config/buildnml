@@ -90,12 +90,19 @@ def buildnml(case, caseroot, compname):
 
         gcamicfile = ""
         gcam_startfile = ""
-        if run_type == "hybrid" or run_type == "branch":
-            gcam_startfile = "{}.gcam{}.r.{}-{}.nc".format(run_refcase, inst_string, run_refdate, run_reftod)
-            if not os.path.exists(os.path.join(rundir, gcam_startfile)):
-                gcam_startfile = "{}.gcam.r.{}-{}.nc".format(run_refcase, run_refdate, run_reftod)
 
-            gcamicfile = " {} = '{}'".format(startfiletype, gcam_startfile)
+#### iac/gcam restart isn't controlled by this type of file
+#### there are several pieces to restart and they are not working yet
+#### to get a proper starting date with hybrid we need to override this
+#### this is because the iac is notrestarted at 2015, it is run for the first time
+#### to do: check this later
+
+#        if run_type == "hybrid" or run_type == "branch":
+#            gcam_startfile = "{}.gcam{}.r.{}-{}.nc".format(run_refcase, inst_string, run_refdate, run_reftod)
+#            if not os.path.exists(os.path.join(rundir, gcam_startfile)):
+#                gcam_startfile = "{}.gcam.r.{}-{}.nc".format(run_refcase, run_refdate, run_reftod)
+
+#            gcamicfile = " {} = '{}'".format(startfiletype, gcam_startfile)
 
         infile_text = ""
         if gcamicfile: infile_text = "{} = '{}' \n".format(startfiletype, gcam_startfile)

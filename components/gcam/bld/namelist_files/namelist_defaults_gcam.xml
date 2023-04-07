@@ -20,6 +20,7 @@ for the iac data in the e3sm distribution
 
 <!-- Grid and region size parameters -->
 <num_pft>17</num_pft>
+<num_harvest>5</num_harvest>
 <num_lat>192</num_lat>
 <num_lon>288</num_lon>
 <num_gcam_energy_regions>32</num_gcam_energy_regions>
@@ -28,16 +29,18 @@ for the iac data in the e3sm distribution
 <num_emiss_sectors>2</num_emiss_sectors>
 <num_emiss_regions>1</num_emiss_regions>
 
-<!-- gcam config and init files, hardcoded paths on compy for now -->
-<gcam_config>/compyfs/d3x132/gcam-e3sm/exe/configuration_ref.xml</gcam_config>
-<base_co2_surface_file>/compyfs/d3x132/gcam-e3sm/cpl/data/gcam_CO2-em-anthro_0.9x1.25_201401-201412_c20200406.txt</base_co2_surface_file>
-<base_co2_aircraft_file>/compyfs/d3x132/gcam-e3sm/cpl/data/gcam_CO2-em-AIR-anthro_0.9x1.25_201401-201412_c20200427.txt</base_co2_aircraft_file>
-<base_npp_file>/compyfs/d3x132/gcam-e3sm/cpl/data/base_npp_mean_pft.txt</base_npp_file>
-<base_hr_file>/compyfs/d3x132/gcam-e3sm/cpl/data/base_hr_mean_pft.txt</base_hr_file>
-<base_pft_file>/compyfs/d3x132/gcam-e3sm/cpl/data/base_pft_wt.txt</base_pft_file>
-<gcam2elm_co2_mapping_file>/qfs/people/d3a230/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cpl/mappings/co2.xml</gcam2elm_co2_mapping_file>
-<gcam2elm_luc_mapping_file>/qfs/people/d3a230/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cpl/mappings/luc.xml</gcam2elm_luc_mapping_file>
-<gcam2elm_woodharvest_mapping_file>/qfs/people/d3a230/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cpl/mappings/woodharvest.xml</gcam2elm_woodharvest_mapping_file>
+<!-- gcam config and init files, relative to inputdata -->
+<gcam_config>iac/giac/gcam/gcam_6_0/configuration/configuration_ref.xml</gcam_config>
+<base_gcam_co2_file>iac/giac/gcam/gcam_6_0/data/co2_2015_gcam_out.csv</base_gcam_co2_file>
+<base_gcam_lu_wh_file>iac/giac/gcam/gcam_6_0/data/lu_wh_2015_gcam_out.csv</base_gcam_lu_wh_file>
+<base_co2_surface_file>iac/giac/gcam/gcam_6_0/data/gcam_CO2-em-anthro_0.9x1.25_201401-201412_c20200406.txt</base_co2_surface_file>
+<base_co2_aircraft_file>iac/giac/gcam/gcam_6_0/data/gcam_CO2-em-AIR-anthro_0.9x1.25_201401-201412_c20200427.txt</base_co2_aircraft_file>
+<base_npp_file>iac/giac/gcam/gcam_6_0/data/base_f09_maxEach_2014-2014_npp.csv</base_npp_file>
+<base_hr_file>iac/giac/gcam/gcam_6_0/data/base_f09_maxEach_2014-2014_hr.csv</base_hr_file>
+<base_pft_file>iac/giac/gcam/gcam_6_0/data/base_f09_maxEach_2014-2014_pft_wt.csv</base_pft_file>
+<gcam2elm_co2_mapping_file>iac/giac/gcam/gcam_6_0/mappings/co2.xml</gcam2elm_co2_mapping_file>
+<gcam2elm_luc_mapping_file>iac/giac/gcam/gcam_6_0/mappings/luc.xml</gcam2elm_luc_mapping_file>
+<gcam2elm_woodharvest_mapping_file>iac/giac/gcam/gcam_6_0/mappings/woodharvest.xml</gcam2elm_woodharvest_mapping_file>
 
 <!-- Grid and mapping and initialization files with relative paths off
      inputdata directory -->
@@ -50,8 +53,9 @@ for the iac data in the e3sm distribution
 <!-- Runtime options -->
 <read_scalars>.false.</read_scalars>
 <write_scalars>.true.</write_scalars>
-<read_elm_from_file>.false.</read_elm_from_file>
 <write_co2>.true.</write_co2>
-<elm_iac_carbon_scaling>.false.</elm_iac_carbon_scaling>
+<elm_iac_carbon_scaling>.true.</elm_iac_carbon_scaling>
 <iac_elm_co2_emissions>.true.</iac_elm_co2_emissions>
+<gcam_spinup>.false.</gcam_spinup>
+<run_gcam>.true.</run_gcam>
 </namelist_defaults>

@@ -36,6 +36,9 @@ print file "/qfs/people/crai556/xerces_intel_19.0.3/include \n";
 print file "/qfs/people/crai556/boost_intel_19.0.3 \n";
 print file "/qfs/people/crai556/xerces_intel_19.0.3 \n";
 
+# added eigen in the util directory
+print file "$SRCROOT/components/gcam/src/iac/gcam/util/eigen-3.4.0 \n"
+
 # Well, it seems that anything we put in tmp_filepath is both scanned for
 # source code files AND included in a -I$dir flag, so we just need to list all
 # the directories with source code plus the top level gcam/cvs/objects
