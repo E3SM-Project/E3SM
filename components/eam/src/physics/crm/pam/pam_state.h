@@ -2,6 +2,8 @@
 
 #include "pam_coupler.h"
 
+#define MMF_PAM_FORCE_ALL_WATER_SPECIES
+
 // wrapper for PAM's set_grid
 inline void pam_state_set_grid( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;

@@ -15,8 +15,6 @@
 #include "surface_friction.h"
 #include "scream_cxx_interface_finalize.h"
 
-#define MMF_PAM_FORCE_ALL_WATER_SPECIES
-
 extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
   using yakl::intrinsics::abs;
