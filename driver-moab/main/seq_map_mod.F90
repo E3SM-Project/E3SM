@@ -348,7 +348,7 @@ end subroutine moab_map_init_rcfile
     integer, dimension(:), allocatable  :: globalIds
     real(r8), dimension(:), allocatable  :: wghts
     real(kind=r8) , allocatable  :: targtags(:,:)
-    real(kind=r8)  :: factor 
+    real(kind=r8)  :: factor
 #endif
     !
     ! Local Variables
@@ -430,8 +430,8 @@ end subroutine moab_map_init_rcfile
 
 #ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
-            write(logunit,*) subname, 'iMOAB mapper ',trim(mapper%mbname), ' iMOAB_mapper  nfields', &
-                  nfields,  ' fldlist_moab=', trim(fldlist_moab)
+            write(logunit,*) subname, 'iMOAB mapper ', trim(mapper%mbname), ', nfields', &
+                  nfields,  ' and fields =', trim(fldlist_moab)
             call shr_sys_flush(logunit)
          endif
 #endif
@@ -584,10 +584,10 @@ end subroutine moab_map_init_rcfile
        if ( valid_moab_context ) then
          ! receive in the intx app, because it is redistributed according to coverage (trick)
          ! for true intx cases, tgt_mbid is set to be the same as intx_mbid
-         ! just read map is special 
+         ! just read map is special
          if (mapper%read_map)  then ! receive indeed in target app
             ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
-         else ! receive in the intx app, trick 
+         else ! receive in the intx app, trick
              ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
          endif
          if (ierr .ne. 0) then
@@ -607,13 +607,14 @@ end subroutine moab_map_init_rcfile
 
 #ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB projection mapper: between ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, trim(fldlist_moab)
+            write(logunit, *) subname,' iMOAB projection mapper: ', trim(mapper%weight_identifier), ' between ', &
+                              mapper%src_mbid, ' and ',  mapper%tgt_mbid
             call shr_sys_flush(logunit)
          endif
 #endif
          ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, mapper%weight_identifier, fldlist_moab, fldlist_moab)
          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in applying weights '
+            write(logunit,*) subname,' error in applying weights for ', trim(mapper%weight_identifier)
             call shr_sys_abort(subname//' ERROR in applying weights')
          endif
 
@@ -659,7 +660,7 @@ end subroutine moab_map_init_rcfile
                write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
                call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
             endif
-            
+
             deallocate(wghts, targtags)
          endif ! end normalization
 
