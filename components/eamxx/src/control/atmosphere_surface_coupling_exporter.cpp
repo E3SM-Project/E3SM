@@ -225,8 +225,8 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
         if (loc != export_constant_fields.end()) {
           const auto pos = loc-export_constant_fields.begin();
           export_source_h(i) = CONSTANT;
-          m_num_const_exports += 1;
-          m_num_eamxx_exports -= 1;
+          ++m_num_const_exports;
+          --m_num_eamxx_exports;
           m_export_constants.emplace(fname,export_constant_values[pos]);
         }
       }
@@ -400,7 +400,7 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
       Sa_v(i)             = v_wind_i(num_levs-1);
     }
 
-    if (m_export_source(idx_Sa_tbot)==EAMXX) {  /// HERE
+    if (m_export_source(idx_Sa_tbot)==EAMXX) {
       Sa_tbot(i) = s_T_mid_i(num_levs-1);
     }
 
