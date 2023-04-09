@@ -1,10 +1,10 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column
+!  seaice_icepack
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 12th January 2015
+!> \date 2022
 !> \details
 !>
 !
@@ -16,7 +16,7 @@ module seaice_icepack
   use mpas_pool_routines
   use mpas_timekeeping
   use mpas_timer
-  use mpas_log, only: mpas_log_write
+  use mpas_log, only: mpas_log_write, mpas_log_info
 
   use seaice_error
 
@@ -215,9 +215,6 @@ contains
 
   subroutine seaice_init_icepack_physics_package_parameters(domain)
 
-    use icepack_intfc, only: &
-         icepack_configure
-
     type(domain_type), intent(inout) :: domain
 
     logical, pointer :: &
@@ -225,9 +222,6 @@ contains
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
     if (config_use_column_package) then
-
-       ! configure icepack before any other part of it is called
-       call icepack_configure ()
 
        ! set non activated variable pointers to other memory
        call init_column_non_activated_pointers(domain)
@@ -431,6 +425,7 @@ contains
        call icepack_init_thermo(&
             nIceLayers, &
             initialSalinityProfileVertical)
+       call seaice_icepack_write_warnings(seaice_icepack_aborted())
 
        call MPAS_pool_get_subpool(block % structs, "initial", initial)
 
@@ -741,6 +736,7 @@ contains
          config_do_restart
 
     call icepack_init_radiation()
+    call seaice_icepack_write_warnings(seaice_icepack_aborted())
 
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
@@ -754,12 +750,14 @@ contains
        call colpkg_init_orbit(&
             abortFlag, &
             abortMessage)
-       call icepack_init_orbit()
        call column_write_warnings(abortFlag)
 
        if (abortFlag) then
           call mpas_log_write("colpkg_init_orbit: "//trim(abortMessage), messageType=MPAS_LOG_CRIT)
-      endif
+       endif
+
+       call icepack_init_orbit()
+       call seaice_icepack_write_warnings(seaice_icepack_aborted())
 
     endif
 
@@ -972,6 +970,8 @@ contains
 
        block => block % next
     end do
+
+    call seaice_icepack_write_warnings(seaice_icepack_aborted())
 
   end subroutine init_column_thermodynamic_tracers
 
@@ -1789,7 +1789,6 @@ contains
              northernHemisphereMask = .false.
           endif
 
-          call icepack_warnings_clear()
           call icepack_step_therm1(&
                dt=config_dt, &
                ncat=nCategories, &
@@ -2651,6 +2650,8 @@ contains
        block => block % next
     end do
 
+    call seaice_icepack_write_warnings(seaice_icepack_aborted())
+
   end subroutine column_prep_radiation
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -2913,8 +2914,7 @@ contains
   subroutine column_radiation(domain, clock, lInitialization)
 
     use icepack_intfc, only: &
-         icepack_step_radiation, &
-         icepack_warnings_clear
+         icepack_step_radiation
     use seaice_constants, only: &
          pii
 
@@ -3210,7 +3210,6 @@ contains
           call set_cice_tracer_array_category(block, ciceTracerObject, &
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          call icepack_warnings_clear()
           call icepack_step_radiation(&
                dt=config_dt, &
                swgrid=verticalShortwaveGrid(:), &
@@ -3283,6 +3282,8 @@ contains
 
        block => block % next
     end do
+
+    call seaice_icepack_write_warnings(seaice_icepack_aborted())
 
   end subroutine column_radiation
 
@@ -5775,6 +5776,8 @@ contains
        block => block % next
     enddo
 
+    call seaice_icepack_write_warnings(seaice_icepack_aborted())
+
     ! remove frazil from below ice shelves if were testing that
     call MPAS_pool_get_config(domain % configs, "config_use_test_ice_shelf", config_use_test_ice_shelf)
 
@@ -5851,6 +5854,8 @@ contains
          nSnowLayers, &
          iceEnthalpy, &
          snowEnthalpy)
+
+    call seaice_icepack_write_warnings(seaice_icepack_aborted())
 
   end subroutine seaice_icepack_init_trcr
 
@@ -6081,6 +6086,9 @@ contains
 
   subroutine seaice_init_icepack_constants()
 
+    use icepack_intfc, only: &
+         icepack_configure
+
     use seaice_constants, only: &
          seaicePi, &
          seaiceGravity, &
@@ -6154,6 +6162,9 @@ contains
          snowpatch, &
          sk_l!, &
          !R_gC2molC
+
+    call icepack_configure()
+    call seaice_icepack_write_warnings(seaice_icepack_aborted())
 
     seaicePi                         = pi
     seaiceGravity                    = gravit
@@ -10408,6 +10419,8 @@ contains
          tr_bgc_hum_in   = config_use_humics, &
          tr_bgc_PON_in   = config_use_nonreactive)
 
+    call seaice_icepack_write_warnings(seaice_icepack_aborted())
+
   end subroutine init_icepack_package_tracer_flags
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -10497,6 +10510,8 @@ contains
          !ntrcr_o_in   = , &
          nbtrcr_in    = tracerObject % nBioTracers, &
          nbtrcr_sw_in = tracerObject % nBioTracersShortwave)
+
+    call seaice_icepack_write_warnings(seaice_icepack_aborted())
 
   end subroutine init_icepack_package_tracer_sizes
 
@@ -10859,10 +10874,7 @@ contains
          bio_index_o_in   = tracerObject % index_LayerIndexToDataArray, &
          bio_index_in     = tracerObject % index_LayerIndexToBioIndex)
 
-    if (seaice_icepack_aborted()) then
-       call seaice_icepack_write_warnings(.true.)
-       call mpas_log_write("init_icepack_package_tracer_indices: icepack aborted", MPAS_LOG_CRIT)
-    endif
+    call seaice_icepack_write_warnings(seaice_icepack_aborted())
 
   end subroutine init_icepack_package_tracer_indices
 
@@ -12465,6 +12477,7 @@ contains
 
     use icepack_intfc, only: &
          icepack_init_parameters, &
+         icepack_write_parameters, &
          icepack_configure, &
          icepack_query_parameters ! debugging
 
@@ -12710,8 +12723,8 @@ contains
          config_itd_conversion_type_int, &
          config_category_bounds_type_int
 
-    character(len=strKIND), pointer :: tmp
-    character(len=strKIND), pointer :: tmp_config_shortwave
+    character(len=strKIND) :: tmp_config_shortwave
+    character(len=strKIND) :: tmp_config_snw_ssp_table
 
     ! debugging
     integer :: itmp1, itmp2
@@ -12927,12 +12940,12 @@ contains
     config_itd_conversion_type_int = config_cice_int("config_itd_conversion_type", config_itd_conversion_type)
     config_category_bounds_type_int = config_cice_int("config_category_bounds_type", config_category_bounds_type)
 
-    tmp_config_shortwave => config_shortwave_type
     if (config_use_snicar_ad .and. (trim(config_shortwave_type(1:4)) == "dEdd")) then
-       allocate (tmp)                    !echmod: is tmp necessary?
-       tmp = 'dEdd_snicar_ad'
-       tmp_config_shortwave => tmp
-       deallocate (tmp)
+       tmp_config_shortwave     = 'dEdd_snicar_ad'
+       tmp_config_snw_ssp_table = 'snicar'
+    else
+       tmp_config_shortwave     = config_shortwave_type
+       tmp_config_snw_ssp_table = 'test'
     endif
 
 !echmod debugging
@@ -13220,7 +13233,7 @@ contains
          !sw_redist_in            = , &        ! not yet implemented in MPAS-SI (stealth feature)
          !sw_frac_in              = , &        ! not yet implemented in MPAS-SI (stealth feature)
          !sw_dtemp_in             = , &        ! not yet implemented in MPAS-SI (stealth feature)
-         snwgrain_in             = config_use_snow_grain_radius &
+         snwgrain_in             = config_use_snow_grain_radius, &
          !snwredist_in            = config_snow_redistribution_scheme, &
          !use_smliq_pnd_in        = config_use_snow_liquid_ponds, &
          !rsnw_fall_in            = config_fallen_snow_radius, &
@@ -13240,10 +13253,19 @@ contains
          !snowage_kappa_in        = , &
          !snowage_drdt0_in        = , &
          !snw_aging_table_in      = , &
+         snw_ssp_table_in        = tmp_config_snw_ssp_table &
          )
+
+    call seaice_icepack_write_warnings(seaice_icepack_aborted())
 
 !note that icepack_recompute_constants, called from icepck_init_parameters above, recomputes Lfresh
 ! - make Lfresh optional for E3SM?
+
+! tcraig, this will write out icepack parameters to fort.101, need to uncomment 3 lines
+!    if (mpas_log_info % taskID == 0) then
+!      call icepack_write_parameters(101)
+!    endif
+!    call seaice_icepack_write_warnings(seaice_icepack_aborted())
 
     call mpas_log_write(" ----- compare values after icepack init -----")
 
@@ -18149,6 +18171,7 @@ contains
   subroutine seaice_icepack_write_warnings(logAsErrors)
 
     use icepack_intfc, only: &
+         icepack_warnings_clear, &
          icepack_warnings_getall
 
     character(len=strKINDWarnings), dimension(:), allocatable :: &
@@ -18166,11 +18189,14 @@ contains
        do iWarning = 1, size(warnings)
           call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_ERR)
        enddo ! iWarning
+       call mpas_log_write("icepack aborted", MPAS_LOG_CRIT)
     else
        do iWarning = 1, size(warnings)
           call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_WARN)
        enddo ! iWarning
     endif
+
+    call icepack_warnings_clear()
 
   end subroutine seaice_icepack_write_warnings
 
