@@ -173,7 +173,14 @@ _TESTS = {
             )
         },
 
+    "e3sm_ocnice_stealth_features" : {
+        "tests" : (
+            "SMS_D_Ld1.T62_oQU240wLI.GMPAS-IAF-ISMF.mpaso-impl_top_drag",
+            )
+        },
+
     "e3sm_ocnice_extra_coverage" : {
+        "inherit" : ("e3sm_ocnice_stealth_features"),
         "tests" : (
             "ERS_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-ISMF",
             "PEM_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-ISMF",

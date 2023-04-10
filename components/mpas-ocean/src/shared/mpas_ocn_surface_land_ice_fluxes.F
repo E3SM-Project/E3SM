@@ -188,6 +188,7 @@ contains
 
       err = 0
       if (.not.landIceFluxesOn) return
+      if (config_use_implicit_top_drag) return
 
       call mpas_timer_start("top_drag", .false.)
 
