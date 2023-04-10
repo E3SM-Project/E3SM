@@ -181,6 +181,19 @@ _TESTS = {
             )
         },
 
+    "e3sm_atm_dustemis" : {
+        "time"  : "1:45:00",
+        "tests"   : (
+            "ERP.ne4pg2_oQU480.F2010.eam-v3atm_dustemis",
+            "REP.ne4pg2_oQU480.F2010.eam-v3atm_dustemis",
+            "SMS.ne30pg2_EC30to60E2r2.F2010.eam-v3atm_dustemis",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-v3atm_dustemis",
+            "PET_Ln5.ne4pg2_oQU480.F2010.eam-v3atm_dustemis",
+            "PEM_Ln5.ne4pg2_oQU480.F2010.eam-v3atm_dustemis",
+            "ERS_D.ne4pg2_oQU480.F2010.eam-v3atm_dustemis"
+            )
+        },
+
     "e3sm_developer" : {
         "inherit" : ("e3sm_land_developer", "e3sm_atm_developer"),
         "time"    : "0:45:00",
