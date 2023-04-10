@@ -17,11 +17,10 @@ if (NOT DEBUG)
   string(APPEND CXXFLAGS " -O2")
 endif()
 if (NOT DEBUG)
-  string(APPEND FFLAGS " -O2")
+  string(APPEND FFLAGS " -g")
 endif()
 if (compile_threaded)
-  #set(KOKKOS_OPTIONS "--with-serial --with-openmp")
-  set(KOKKOS_OPTIONS "--with-serial") # work-around for nvidia as kokkos is not passing "-mp" for threaded build
+  string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_OPENMP=Off") # work-around for nvidia as kokkos is not passing "-mp" for threaded build
 endif()
 set(MPICC "cc")
 set(MPICXX "CC")

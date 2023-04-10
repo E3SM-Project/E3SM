@@ -26,7 +26,7 @@ module crm_rad_module
       real(crm_rknd), allocatable :: qi (:,:,:,:) ! rad cloud ice
       real(crm_rknd), allocatable :: cld(:,:,:,:) ! rad cloud fraction
 
-      ! Only relevant when using 2-moment microphysics
+      ! Only relevant when using 2-moment microphysics (ex. P3)
       real(crm_rknd), allocatable :: nc(:,:,:,:) ! rad cloud droplet number (#/kg)
       real(crm_rknd), allocatable :: ni(:,:,:,:) ! rad cloud ice crystal number (#/kg)
       real(crm_rknd), allocatable :: qs(:,:,:,:) ! rad cloud snow (kg/kg)
@@ -48,13 +48,21 @@ contains
       if (.not. allocated(rad%qc))          allocate(rad%qc         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
       if (.not. allocated(rad%qi))          allocate(rad%qi         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
       if (.not. allocated(rad%cld))         allocate(rad%cld        (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-      
+      if (.not. allocated(rad%nc))          allocate(rad%nc         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+      if (.not. allocated(rad%ni))          allocate(rad%ni         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+      if (.not. allocated(rad%qs))          allocate(rad%qs         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+      if (.not. allocated(rad%ns))          allocate(rad%ns         (ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+
       call prefetch(rad%qrad)
       call prefetch(rad%temperature)
       call prefetch(rad%qv)
       call prefetch(rad%qc)
       call prefetch(rad%qi)
       call prefetch(rad%cld)
+      call prefetch(rad%nc)
+      call prefetch(rad%ni)
+      call prefetch(rad%qs)
+      call prefetch(rad%ns)
 
       rad%qrad        = 0
       rad%temperature = 0
@@ -62,23 +70,10 @@ contains
       rad%qc          = 0
       rad%qi          = 0
       rad%cld         = 0
-
-      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
-         if (.not. allocated(rad%nc)) allocate(rad%nc(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-         if (.not. allocated(rad%ni)) allocate(rad%ni(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-         if (.not. allocated(rad%qs)) allocate(rad%qs(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-         if (.not. allocated(rad%ns)) allocate(rad%ns(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
-      
-         call prefetch(rad%nc)
-         call prefetch(rad%ni)
-         call prefetch(rad%qs)
-         call prefetch(rad%ns)
-      
-         rad%nc = 0
-         rad%ni = 0
-         rad%qs = 0
-         rad%ns = 0
-      end if
+      rad%nc          = 0
+      rad%ni          = 0
+      rad%qs          = 0
+      rad%ns          = 0
 
    end subroutine crm_rad_initialize
    !------------------------------------------------------------------------------------------------
@@ -92,13 +87,10 @@ contains
       if (allocated(rad%qc))          deallocate(rad%qc)
       if (allocated(rad%qi))          deallocate(rad%qi)
       if (allocated(rad%cld))         deallocate(rad%cld)
-
-      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
-         if (allocated(rad%nc))       deallocate(rad%nc)
-         if (allocated(rad%ni))       deallocate(rad%ni)
-         if (allocated(rad%qs))       deallocate(rad%qs)
-         if (allocated(rad%ns))       deallocate(rad%ns)
-      end if
+      if (allocated(rad%nc))       deallocate(rad%nc)
+      if (allocated(rad%ni))       deallocate(rad%ni)
+      if (allocated(rad%qs))       deallocate(rad%qs)
+      if (allocated(rad%ns))       deallocate(rad%ns)
 
    end subroutine crm_rad_finalize
    !------------------------------------------------------------------------------------------------

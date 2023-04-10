@@ -214,7 +214,7 @@ module convect_shallow
        'Moist shallow convection liquid water static energy flux'   )
   call addfld( 'CMFLQ'     ,  (/ 'ilev' /),  'A' , 'W/m2', &
        'Moist shallow convection total water flux'                  )
-  call addfld( 'CIN'     ,  horiz_only    ,  'A' , 'J/kg', &
+  call addfld( 'CIN_SH'    ,  horiz_only    ,  'A' , 'J/kg', &
        'Convective inhibition'                                      )
   call addfld( 'CBMF'     ,  horiz_only    ,  'A' , 'kg/m2/s', &
        'Cloud base mass flux'                                       )
@@ -578,7 +578,7 @@ end subroutine convect_shallow_init_cnst
 
    select case (shallow_scheme)
 
-   case('off', 'CLUBB_SGS') ! None
+   case('off', 'CLUBB_SGS', 'SHOC_SGS') ! None
 
       lq(:) = .TRUE.
       call physics_ptend_init( ptend_loc, state%psetcols, 'convect_shallow_off', ls=.true., lq=lq ) ! Initialize local ptend type

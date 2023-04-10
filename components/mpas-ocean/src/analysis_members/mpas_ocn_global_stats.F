@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -234,7 +234,7 @@ contains
 
       integer, parameter :: kMaxVariables = 1024 ! this must be a little more than double the number of variables to be reduced
       integer, dimension(:), pointer :: minLevelCell, minLevelEdgeBot, minLevelVertexTop, maxLevelCell, &
-          maxLevelEdgeTop, maxLevelVertexBot, landiceMask
+          maxLevelEdgeTop, maxLevelVertexBot, landIceFloatingMask
 
       type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
       type (MPAS_TimeInterval_type) :: timeStep
@@ -364,7 +364,7 @@ contains
          call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
          call mpas_pool_get_array(forcingPool, 'frazilLayerThicknessTendency', frazilLayerThicknessTendency)
          call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
-         call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+         call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
 
          call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
          call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', &
@@ -381,8 +381,8 @@ contains
          areaEdge = dcEdge(1:nEdgesSolve)*dvEdge(1:nEdgesSolve)
 
          allocate(landIceFloatingArea(1:nCellsSolve))
-         if ( associated(landIceMask) ) then
-            landIceFloatingArea = landIceMask(1:nCellsSolve)*areaCell(1:nCellsSolve)
+         if ( associated(landIceFloatingMask) ) then
+            landIceFloatingArea = landIceFloatingMask(1:nCellsSolve)*areaCell(1:nCellsSolve)
          else
             landIceFloatingArea = 0.
          end if

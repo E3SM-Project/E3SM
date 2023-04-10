@@ -758,7 +758,7 @@ sub setup_cmdl_fates_mode {
   if ( $nl_flags->{'crop'} eq "on" ) {
     if ( $nl_flags->{$var} eq "fates" ) {
        # FATES should not be used with crop
-       fatal_error("** Cannot turn ed mode on with crop.\n" );
+       fatal_error("** Cannot turn fates mode on with crop.\n" );
     }
   } elsif ($nl_flags->{"bgc_mode"} eq "fates" && $nl_flags->{"use_fates"} ne ".true.") {
     fatal_error("DEV_ERROR: internal logic error: bgc_mode = fates and use_fates = false.\n");
@@ -786,9 +786,9 @@ sub setup_cmdl_fates_mode {
       # no need to set defaults, covered in a different routine
       my @list  = (  "fates_spitfire_mode", "use_vertsoilc", "use_century_decomp",
                      "use_fates_planthydro", "use_fates_ed_st3", "use_fates_ed_prescribed_phys",
-		                 "use_fates_inventory_init", "use_fates_fixed_biogeog", "use_fates_nocomp","use_fates_sp",
-                     "fates_inventory_ctrl_filename","use_fates_logging",
-		                 "use_fates_parteh_mode","use_fates_cohort_age_tracking","use_snicar_ad");
+		     "use_fates_inventory_init", "use_fates_fixed_biogeog", "use_fates_nocomp","use_fates_sp",
+                     "fates_inventory_ctrl_filename","use_fates_logging", "use_fates_tree_damage",
+		     "use_fates_parteh_mode","use_fates_cohort_age_tracking","use_snicar_ad");
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
 	      $nl_flags->{$var} = $nl->get_value($var);
@@ -807,7 +807,11 @@ sub setup_cmdl_fates_mode {
 
     } else {
 
-	   # we only dis-allow ed_spitfire with non-ed runs
+	# we only dis-allow various fates settings with non-fates runs
+       $var = "use_fates_tree_damage";
+       if ( defined($nl->get_value($var)) ) {
+           fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
        $var = "fates_spitfire_mode";
        if ( defined($nl->get_value($var)) ) {
            fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
@@ -2236,7 +2240,9 @@ sub setup_logic_params_file {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'paramfile',
-              'use_fates'=>$nl_flags->{'use_fates'}, 'use_crop'=>$nl_flags->{'use_crop'},'nu_com'=>$nl_flags->{'nu_com'} );
+              'use_fates'=>$nl_flags->{'use_fates'}, 'use_crop'=>$nl_flags->{'use_crop'},
+              'nu_com'=>$nl_flags->{'nu_com'},'use_cn'=>$nl_flags->{'use_cn'});
+           
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsoilordercon',
               'use_fates'=>$nl_flags->{'use_fates'}, 'use_crop'=>$nl_flags->{'use_crop'},'nu_com'=>$nl_flags->{'nu_com'} );
 
@@ -2248,7 +2254,8 @@ sub setup_logic_create_crop_landunit {
   # Create crop land unit
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
-  add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'create_crop_landunit', 'use_crop'=>$nl_flags->{'use_crop'});
+  add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'create_crop_landunit', 
+     'use_crop'=>$nl_flags->{'use_crop'}, 'hgrid'=>$nl_flags->{'res'}, 'use_cn'=>$nl_flags->{'use_cn'});
 }
 
 #-------------------------------------------------------------------------------
@@ -2382,7 +2389,7 @@ sub setup_logic_surface_dataset {
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsurdat',
   'hgrid'=>$nl_flags->{'res'},
   'sim_year'=>$nl_flags->{'sim_year'}, 'irrig'=>$nl_flags->{'irrig'},
-  'use_crop'=>$nl_flags->{'use_crop'}, 'glc_nec'=>$nl_flags->{'glc_nec'});
+  'use_crop'=>$nl_flags->{'use_crop'}, 'glc_nec'=>$nl_flags->{'glc_nec'},'use_cn'=>$nl_flags->{'use_cn'});
 }
 
 #-------------------------------------------------------------------------------
@@ -2938,13 +2945,13 @@ sub setup_logic_popd_streams {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   {
-    if ( $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) {
+    if ( $nl_flags->{'bgc_mode'} =~/cn|bgc|fates/ ) {
       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'popdensmapalgo', 'hgrid'=>$nl_flags->{'res'} );
       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_popdens', 'phys'=>$nl_flags->{'phys'},
-                  'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'},
+                  'use_cn'=>$nl_flags->{'use_cn'}, 'use_fates'=>$nl_flags->{'use_fates'}, 'sim_year'=>$nl_flags->{'sim_year'},
                   'sim_year_range'=>$nl_flags->{'sim_year_range'});
       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_last_popdens', 'phys'=>$nl_flags->{'phys'},
-                  'use_cn'=>$nl_flags->{'use_cn'}, 'sim_year'=>$nl_flags->{'sim_year'},
+                  'use_cn'=>$nl_flags->{'use_cn'}, 'use_fates'=>$nl_flags->{'use_fates'}, 'sim_year'=>$nl_flags->{'sim_year'},
                   'sim_year_range'=>$nl_flags->{'sim_year_range'});
       # Set align year, if first and last years are different
       if ( $nl->get_value('stream_year_first_popdens') !=
@@ -2953,7 +2960,7 @@ sub setup_logic_popd_streams {
                     'sim_year_range'=>$nl_flags->{'sim_year_range'});
       }
       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_fldfilename_popdens', 'phys'=>$nl_flags->{'phys'},
-                  'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>"0.5x0.5" );
+                  'use_cn'=>$nl_flags->{'use_cn'}, 'use_fates'=>$nl_flags->{'use_fates'}, 'hgrid'=>"0.5x0.5" );
     } else {
       # If bgc is NOT CN/CNDV then make sure none of the popdens settings are set
       if ( defined($nl->get_value('stream_year_first_popdens')) ||
@@ -2975,14 +2982,14 @@ sub setup_logic_lightning_streams {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   {
-    if ( $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) {
+    if ( $nl_flags->{'bgc_mode'} =~/cn|bgc|fates/ ) {
       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'lightngmapalgo', 'use_cn'=>$nl_flags->{'use_cn'},
-                  'hgrid'=>$nl_flags->{'res'} );
+                  'use_fates'=>$nl_flags->{'use_fates'}, 'hgrid'=>$nl_flags->{'res'} );
       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_lightng', 'use_cn'=>$nl_flags->{'use_cn'},
-                  'sim_year'=>$nl_flags->{'sim_year'},
+                  'use_fates'=>$nl_flags->{'use_fates'}, 'sim_year'=>$nl_flags->{'sim_year'},
                   'sim_year_range'=>$nl_flags->{'sim_year_range'});
       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_last_lightng', 'use_cn'=>$nl_flags->{'use_cn'},
-                  'sim_year'=>$nl_flags->{'sim_year'},
+                  'use_fates'=>$nl_flags->{'use_fates'}, 'sim_year'=>$nl_flags->{'sim_year'},
                   'sim_year_range'=>$nl_flags->{'sim_year_range'});
       # Set align year, if first and last years are different
       if ( $nl->get_value('stream_year_first_lightng') !=
@@ -2991,7 +2998,7 @@ sub setup_logic_lightning_streams {
                     'sim_year_range'=>$nl_flags->{'sim_year_range'});
       }
       add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_fldfilename_lightng', 'use_cn'=>$nl_flags->{'use_cn'},
-                  'hgrid'=>"94x192" );
+                  'use_fates'=>$nl_flags->{'use_fates'}, 'hgrid'=>"94x192" );
     } else {
       # If bgc is NOT CN/CNDV then make sure none of the Lightng settings are set
       if ( defined($nl->get_value('stream_year_first_lightng')) ||
@@ -3012,6 +3019,11 @@ sub setup_logic_dry_deposition {
   my ($opts, $nl_flags, $definition, $defaults, $nl) = @_;
 
   if ($opts->{'drydep'} ) {
+      if ( &value_is_true( $nl_flags->{'use_fates'}) && not &value_is_true( $nl_flags->{'use_fates_sp'}) ) {
+	  fatal_error("DryDeposition can NOT be on when FATES is also on, unless FATES-SP mode is on.\n" .
+		      "   Use the '--no-drydep' option when '-bgc fates' is activated");
+	  
+      }
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'drydep_list');
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'drydep_method');
   } else {
@@ -3160,6 +3172,7 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_cohort_age_tracking','use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_sp',                 'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_nocomp',             'use_fates'=>$nl_flags->{'use_fates'});
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_tree_damage',        'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_paramfile', 'phys'=>$nl_flags->{'phys'});
 
   }

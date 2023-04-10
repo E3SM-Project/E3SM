@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -106,9 +106,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_setup_global_ocean(domain, iErr)!{{{
+    subroutine ocn_init_setup_global_ocean(domain, iErr)!{{{
 
-   !--------------------------------------------------------------------
+    !--------------------------------------------------------------------
 
       type (domain_type), intent(inout) :: domain
       type (mpas_pool_type), pointer :: meshPool, forcingPool, statePool, tracersPool, scratchPool
@@ -128,6 +128,7 @@ contains
 
       integer, dimension(:), pointer :: maxLevelCell
 
+      real (kind=RKIND), dimension(:, :), pointer :: normalVelocity
       real (kind=RKIND), dimension(:, :, :), pointer :: ecosysTracers, activeTracers, debugTracers, &
            DMSTracers, MacroMoleculesTracers
       integer, pointer :: nVertLevels, nCellsSolve, tracerIndex
@@ -150,6 +151,7 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
 
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -166,6 +168,7 @@ contains
       if ( .not. on_a_sphere ) call mpas_log_write('The global ocean configuration can ' &
            // 'only be applied to a spherical mesh. Exiting...', MPAS_LOG_CRIT)
 
+      normalVelocity(:,:) = 0.0_RKIND
       !***********************************************************************
       !
       !  Topography
@@ -174,14 +177,14 @@ contains
 
       call mpas_log_write( 'Reading depth levels.')
       call ocn_init_setup_global_ocean_read_depth_levels(domain, iErr)
-      
-      if (config_global_ocean_topography_source .eq. 'latlon_file') then
+
+      if (config_global_ocean_topography_source == 'latlon_file') then
         call mpas_log_write( 'Reading topography data from latitude-longitude file.')
         call ocn_init_setup_global_ocean_read_topo(domain, iErr)
       endif
       call mpas_log_write( 'Creating model topography data.')
       call ocn_init_setup_global_ocean_create_model_topo(domain, iErr)
-      if (config_global_ocean_topography_source .eq. 'latlon_file') then
+      if (config_global_ocean_topography_source == 'latlon_file') then
         call mpas_log_write( 'Cleaning up topography IC fields')
         call ocn_init_global_ocean_destroy_topo_fields()
       endif
@@ -193,8 +196,10 @@ contains
       !***********************************************************************
 
       if (config_global_ocean_depress_by_land_ice) then
-         call mpas_log_write( 'Reading land ice topography data.')
-         call ocn_init_setup_global_ocean_read_land_ice_topography(domain, iErr)
+         if (config_global_ocean_topography_source == "latlon_file") then
+            call mpas_log_write( 'Reading land ice topography data.')
+            call ocn_init_setup_global_ocean_read_land_ice_topography(domain, iErr)
+         end if
          call mpas_log_write( 'Interpolating land ice topography data.')
          call ocn_init_setup_global_ocean_interpolate_land_ice_topography(domain, iErr)
       end if
@@ -502,8 +507,10 @@ contains
             call mpas_dmpar_finalize(domain % dminfo)
          end if
 
-         call mpas_log_write( 'Cleaning up land ice topography IC fields')
-         call ocn_init_global_ocean_destroy_land_ice_topography_fields()
+         if (config_global_ocean_topography_source == "latlon_file") then
+            call mpas_log_write( 'Cleaning up land ice topography IC fields')
+            call ocn_init_global_ocean_destroy_land_ice_topography_fields()
+         end if
       end if
 
       call mpas_log_write( 'Copying restoring fields')
@@ -812,40 +819,40 @@ contains
           end do
 
           ! Record depth of the bottom of the ocean, before any alterations for modeling purposes.
-          if (config_global_ocean_topography_source .eq. "latlon_file") then 
-              if (config_global_ocean_topography_method .eq. "nearest_neighbor") then
-    
+          if (config_global_ocean_topography_source == "latlon_file") then
+              if (config_global_ocean_topography_method == "nearest_neighbor") then
+
                  call ocn_init_interpolation_nearest_horiz(topoLon % array, topoLat % array, &
                                                            topoIC % array, nLonTopo, nLatTopo, &
                                                            lonCell, latCell, bottomDepthObserved, nCells, &
                                                            inXPeriod = 2.0_RKIND * pii)
-    
+
                  if (config_global_ocean_topography_has_ocean_frac) then
                     call ocn_init_interpolation_nearest_horiz(topoLon % array, topoLat % array, &
                                                               oceanFracIC % array, nLonTopo, nLatTopo, &
                                                               lonCell, latCell, oceanFracObserved, nCells, &
                                                               inXPeriod = 2.0_RKIND * pii)
                  end if
-    
-              elseif (config_global_ocean_topography_method .eq. "bilinear_interpolation") then
+
+              elseif (config_global_ocean_topography_method == "bilinear_interpolation") then
                  call ocn_init_interpolation_bilinear_horiz(topoLon % array, topoLat % array, &
                                                             topoIC % array, nLonTopo, nLatTopo, &
                                                             lonCell, latCell, bottomDepthObserved, nCells, &
                                                             inXPeriod = 2.0_RKIND * pii)
-    
+
                  if (config_global_ocean_topography_has_ocean_frac) then
                     call ocn_init_interpolation_bilinear_horiz(topoLon % array, topoLat % array, &
                                                                oceanFracIC % array, nLonTopo, nLatTopo, &
                                                                lonCell, latCell, oceanFracObserved, nCells, &
                                                                inXPeriod = 2.0_RKIND * pii)
                  end if
-    
+
               else
                  call mpas_log_write( 'Invalid choice of config_global_ocean_topography_method.', MPAS_LOG_CRIT)
                  iErr = 1
                  call mpas_dmpar_finalize(domain % dminfo)
               endif
-          else 
+          else if (config_global_ocean_topography_source == "mpas_variable") then
               ! Get bottomDepthObserved from bed_elevation variable
               bottomDepthObserved = bed_elevation
           endif
@@ -1066,83 +1073,89 @@ contains
 
        real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
        real (kind=RKIND), dimension(:), pointer :: landIceThkObserved, landIceDraftObserved, &
-                                                   landIceFracObserved, landIceGroundedFracObserved
+                                                   landIceFracObserved, &
+                                                   landIceFloatingFracObserved, &
+                                                   landIceGroundedFracObserved
 
-       real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceFraction, ssh, &
+       real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceFraction, &
+                                                   landIceFloatingFraction, ssh, &
                                                    bottomDepth
 
        integer, pointer :: nCells
-       integer, dimension(:), pointer :: maxLevelCell, landIceMask
+       integer, dimension(:), pointer :: maxLevelCell, landIceMask, landIceFloatingMask
 
        integer :: iCell
 
        iErr = 0
 
-       block_ptr => domain % blocklist
-       do while(associated(block_ptr))
+       if (config_global_ocean_topography_source == "latlon_file") then
+          block_ptr => domain % blocklist
+          do while(associated(block_ptr))
 
-          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'landIceInit', landIceInitPool)
-          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+             call mpas_pool_get_subpool(block_ptr % structs, 'landIceInit', landIceInitPool)
+             call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
-          call mpas_pool_get_array(meshPool, 'latCell', latCell)
-          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
-          call mpas_pool_get_array(landIceInitPool, 'landIceDraftObserved', landIceDraftObserved)
-          call mpas_pool_get_array(landIceInitPool, 'landIceThkObserved', landIceThkObserved)
-          call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFracObserved)
-          call mpas_pool_get_array(landIceInitPool, 'landIceGroundedFracObserved', landIceGroundedFracObserved)
+             call mpas_pool_get_array(meshPool, 'latCell', latCell)
+             call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+             call mpas_pool_get_array(landIceInitPool, 'landIceDraftObserved', landIceDraftObserved)
+             call mpas_pool_get_array(landIceInitPool, 'landIceThkObserved', landIceThkObserved)
+             call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFracObserved)
+             call mpas_pool_get_array(landIceInitPool, 'landIceGroundedFracObserved', landIceGroundedFracObserved)
 
-          if (config_global_ocean_topography_method .eq. "nearest_neighbor") then
+             if (config_global_ocean_topography_method .eq. "nearest_neighbor") then
 
-             call ocn_init_interpolation_nearest_horiz(landIceThkLon % array, landIceThkLat % array, &
-                                                       landIceThkIC % array, nLonLandIceThk, nLatLandIceThk, &
-                                                       lonCell, latCell, landIceThkObserved, nCells, &
-                                                       inXPeriod = 2.0_RKIND * pii)
+                call ocn_init_interpolation_nearest_horiz(landIceThkLon % array, landIceThkLat % array, &
+                                                          landIceThkIC % array, nLonLandIceThk, nLatLandIceThk, &
+                                                          lonCell, latCell, landIceThkObserved, nCells, &
+                                                          inXPeriod = 2.0_RKIND * pii)
 
-             call ocn_init_interpolation_nearest_horiz(landIceThkLon % array, landIceThkLat % array, &
-                                                       landIceDraftIC % array, nLonLandIceThk, nLatLandIceThk, &
-                                                       lonCell, latCell, landIceDraftObserved, nCells, &
-                                                       inXPeriod = 2.0_RKIND * pii)
+                call ocn_init_interpolation_nearest_horiz(landIceThkLon % array, landIceThkLat % array, &
+                                                          landIceDraftIC % array, nLonLandIceThk, nLatLandIceThk, &
+                                                          lonCell, latCell, landIceDraftObserved, nCells, &
+                                                          inXPeriod = 2.0_RKIND * pii)
 
-             call ocn_init_interpolation_nearest_horiz(landIceThkLon % array, landIceThkLat % array, &
-                                                       landIceFracIC % array, nLonLandIceThk, nLatLandIceThk, &
-                                                       lonCell, latCell, landIceFracObserved, nCells, &
-                                                       inXPeriod = 2.0_RKIND * pii)
+                call ocn_init_interpolation_nearest_horiz(landIceThkLon % array, landIceThkLat % array, &
+                                                          landIceFracIC % array, nLonLandIceThk, nLatLandIceThk, &
+                                                          lonCell, latCell, landIceFracObserved, nCells, &
+                                                          inXPeriod = 2.0_RKIND * pii)
 
-             call ocn_init_interpolation_nearest_horiz(landIceThkLon % array, landIceThkLat % array, &
-                                                       groundedFracIC % array, nLonLandIceThk, nLatLandIceThk, &
-                                                       lonCell, latCell, landIceGroundedFracObserved, nCells, &
-                                                       inXPeriod = 2.0_RKIND * pii)
+                call ocn_init_interpolation_nearest_horiz(landIceThkLon % array, landIceThkLat % array, &
+                                                          groundedFracIC % array, nLonLandIceThk, nLatLandIceThk, &
+                                                          lonCell, latCell, landIceGroundedFracObserved, nCells, &
+                                                          inXPeriod = 2.0_RKIND * pii)
 
-          elseif (config_global_ocean_topography_method .eq. "bilinear_interpolation") then
-             call ocn_init_interpolation_bilinear_horiz(landIceThkLon % array, landIceThkLat % array, &
-                                                        landIceThkIC % array, nLonLandIceThk, nLatLandIceThk, &
-                                                        lonCell, latCell, landIceThkObserved, nCells, &
-                                                        inXPeriod = 2.0_RKIND * pii)
+             elseif (config_global_ocean_topography_method .eq. "bilinear_interpolation") then
 
-             call ocn_init_interpolation_bilinear_horiz(landIceThkLon % array, landIceThkLat % array, &
-                                                        landIceDraftIC % array, nLonLandIceThk, nLatLandIceThk, &
-                                                        lonCell, latCell, landIceDraftObserved, nCells, &
-                                                        inXPeriod = 2.0_RKIND * pii)
+                call ocn_init_interpolation_bilinear_horiz(landIceThkLon % array, landIceThkLat % array, &
+                                                           landIceThkIC % array, nLonLandIceThk, nLatLandIceThk, &
+                                                           lonCell, latCell, landIceThkObserved, nCells, &
+                                                           inXPeriod = 2.0_RKIND * pii)
 
-             call ocn_init_interpolation_bilinear_horiz(landIceThkLon % array, landIceThkLat % array, &
-                                                        landIceFracIC % array, nLonLandIceThk, nLatLandIceThk, &
-                                                        lonCell, latCell, landIceFracObserved, nCells, &
-                                                        inXPeriod = 2.0_RKIND * pii)
+                call ocn_init_interpolation_bilinear_horiz(landIceThkLon % array, landIceThkLat % array, &
+                                                           landIceDraftIC % array, nLonLandIceThk, nLatLandIceThk, &
+                                                           lonCell, latCell, landIceDraftObserved, nCells, &
+                                                           inXPeriod = 2.0_RKIND * pii)
 
-             call ocn_init_interpolation_bilinear_horiz(landIceThkLon % array, landIceThkLat % array, &
-                                                        groundedFracIC % array, nLonLandIceThk, nLatLandIceThk, &
-                                                        lonCell, latCell, landIceGroundedFracObserved, nCells, &
-                                                        inXPeriod = 2.0_RKIND * pii)
+                call ocn_init_interpolation_bilinear_horiz(landIceThkLon % array, landIceThkLat % array, &
+                                                           landIceFracIC % array, nLonLandIceThk, nLatLandIceThk, &
+                                                           lonCell, latCell, landIceFracObserved, nCells, &
+                                                           inXPeriod = 2.0_RKIND * pii)
 
-          else
-             call mpas_log_write( 'Invalid choice of config_global_ocean_topography_method.', MPAS_LOG_CRIT)
-             iErr = 1
-             call mpas_dmpar_finalize(domain % dminfo)
-          endif
+                call ocn_init_interpolation_bilinear_horiz(landIceThkLon % array, landIceThkLat % array, &
+                                                           groundedFracIC % array, nLonLandIceThk, nLatLandIceThk, &
+                                                           lonCell, latCell, landIceGroundedFracObserved, nCells, &
+                                                           inXPeriod = 2.0_RKIND * pii)
 
-          block_ptr => block_ptr % next
-       end do
+             else
+                call mpas_log_write( 'Invalid choice of config_global_ocean_topography_method.', MPAS_LOG_CRIT)
+                iErr = 1
+                call mpas_dmpar_finalize(domain % dminfo)
+             endif
+
+             block_ptr => block_ptr % next
+          end do
+       end if
 
 
        ! Iteratively smooth landIceDraftObserved, landIceThkObserved, landIceFracObserved,
@@ -1177,20 +1190,34 @@ contains
           call mpas_pool_get_array(landIceInitPool, 'landIceDraftObserved', landIceDraftObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceThkObserved', landIceThkObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFracObserved)
+          call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFloatingFracObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceGroundedFracObserved', landIceGroundedFracObserved)
           call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
           call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+          call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
           call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
           call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+          call mpas_pool_get_array(forcingPool, 'landIceFloatingFraction', landIceFloatingFraction)
 
+          if (landIceFloatingMask(1) == -1) then
+             call mpas_log_write('landIceFloatingMask contains the default value which likely ' // &
+               'indicates that this field is missing in the initial condition file (e.g. ' // &
+               'because it is meant for an older E3SM version).', MPAS_LOG_CRIT)
+          endif
           ssh(:) = 0.0_RKIND
           landIceFraction(:) = 0.0_RKIND
           modifyLandIcePressureMask(:) = 0
           landIcePressure(:) = 0.0_RKIND
           do iCell = 1, nCells
 
-             if(landIceMask(iCell) == 1) then
+             if (landIceMask(iCell) == 1) then
                 landIceFraction(iCell) = landIceFracObserved(iCell)
+             end if
+
+             ! this implicitly assumes that when a cell is considered floating, the
+             ! full landIceFracObserved is floating
+             if (landIceFloatingMask(iCell) == 1) then
+                landIceFloatingFraction(iCell) = landIceFloatingFracObserved(iCell)
              end if
 
              ! nothing to do here if the cell is land
@@ -1198,7 +1225,7 @@ contains
 
              ! we compute the SSH first and find out the land-ice pressure
              ssh(iCell) = min(0.0_RKIND, landIceDraftObserved(iCell))
-             if(ssh(iCell) < 0.0_RKIND) then
+             if (ssh(iCell) < 0.0_RKIND) then
                 modifyLandIcePressureMask(iCell) = 1
              end if
           end do
@@ -2047,7 +2074,6 @@ contains
                  inXPeriod = 2.0_RKIND * pii)
 
          elseif (config_global_ocean_tracer_method .eq. "bilinear_interpolation") then
-
             call ocn_init_interpolation_bilinear_horiz(tracerLon % array, tracerLat % array, &
                  tracerIC % array, nLonTracer, nLatTracer, &
                  lonCell, latCell, interpTracer, nCells, &
@@ -2800,6 +2826,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
       type (mpas_io_context_type), pointer :: iocontext_ptr
       type (MPAS_IO_Handle_type) :: inputFile
       character (len=StrKIND), pointer :: config_init_configuration, &
+                                          config_global_ocean_topography_source, &
                                           config_global_ocean_depth_file, &
                                           config_global_ocean_depth_dimname, &
                                           config_global_ocean_temperature_file, &
@@ -2839,6 +2866,8 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
 
       call mpas_pool_get_config(configPool, 'config_vert_levels', config_vert_levels)
 
+      call mpas_pool_get_config(configPool, 'config_global_ocean_topography_source', &
+                                config_global_ocean_topography_source)
       call mpas_pool_get_config(configPool, 'config_global_ocean_depth_file', &
                                 config_global_ocean_depth_file)
       call mpas_pool_get_config(configPool, 'config_global_ocean_depth_dimname', &
@@ -2972,23 +3001,34 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
 
       call MPAS_io_close(inputFile, iErr)
 
-      if (trim(config_global_ocean_topography_file) == 'none') then
+      if (config_global_ocean_topography_source /= 'latlon_file' .and. &
+          config_global_ocean_topography_source /= 'mpas_variable') then
+         call mpas_log_write( 'Unexpected value for config_global_ocean_topography_source: ' &
+             // trim(config_global_ocean_topography_source), MPAS_LOG_CRIT)
+         iErr = 1
+         return
+      end if
+
+      if (config_global_ocean_topography_file == 'none' .and. &
+          config_global_ocean_topography_source == 'latlon_file') then
          call mpas_log_write( 'Validation failed for global ocean. ' &
              // 'Invalid filename for config_global_ocean_topography_file', MPAS_LOG_CRIT)
          iErr = 1
          return
       end if
 
-      inputFile = MPAS_io_open(config_global_ocean_topography_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
-      if (iErr .ne. 0) then
-         call mpas_log_write( 'could not open file '// trim(config_global_ocean_topography_file), MPAS_LOG_CRIT)
-         return
+      if (config_global_ocean_topography_source == 'latlon_file') then
+         inputFile = MPAS_io_open(config_global_ocean_topography_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
+         if (iErr /= 0) then
+            call mpas_log_write( 'could not open file '// trim(config_global_ocean_topography_file), MPAS_LOG_CRIT)
+            return
+         end if
+
+         call MPAS_io_inq_dim(inputFile, config_global_ocean_topography_nlat_dimname, nLatTopo, iErr)
+         call MPAS_io_inq_dim(inputFile, config_global_ocean_topography_nlon_dimname, nLonTopo, iErr)
+
+         call MPAS_io_close(inputFile, iErr)
       end if
-
-      call MPAS_io_inq_dim(inputFile, config_global_ocean_topography_nlat_dimname, nLatTopo, iErr)
-      call MPAS_io_inq_dim(inputFile, config_global_ocean_topography_nlon_dimname, nLonTopo, iErr)
-
-      call MPAS_io_close(inputFile, iErr)
 
       inputFile = MPAS_io_open(config_global_ocean_windstress_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
       if (iErr .ne. 0) then
@@ -3036,23 +3076,26 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
       end if
 
       if (config_global_ocean_depress_by_land_ice) then
-         if (trim(config_global_ocean_land_ice_topo_file) == 'none') then
+         if (config_global_ocean_land_ice_topo_file == 'none' .and. &
+             config_global_ocean_topography_source == 'latlon_file') then
             call mpas_log_write( 'Validation failed for global ocean. '// &
                'Invalid filename for config_global_ocean_land_ice_topo_file', MPAS_LOG_CRIT)
             iErr = 1
             return
          end if
 
-         inputFile = MPAS_io_open(config_global_ocean_land_ice_topo_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
-         if (iErr .ne. 0) then
-            call mpas_log_write( 'could not open file '// trim(config_global_ocean_land_ice_topo_file), MPAS_LOG_CRIT)
-            return
+         if(config_global_ocean_topography_source == 'latlon_file') then
+            inputFile = MPAS_io_open(config_global_ocean_land_ice_topo_file, MPAS_IO_READ, MPAS_IO_NETCDF, iocontext_ptr, ierr=iErr)
+            if (iErr /= 0) then
+               call mpas_log_write( 'could not open file '// trim(config_global_ocean_land_ice_topo_file), MPAS_LOG_CRIT)
+               return
+            end if
+
+            call MPAS_io_inq_dim(inputFile, config_global_ocean_land_ice_topo_nlat_dimname, nLatLandIceThk, iErr)
+            call MPAS_io_inq_dim(inputFile, config_global_ocean_land_ice_topo_nlon_dimname, nLonLandIceThk, iErr)
+
+            call MPAS_io_close(inputFile, iErr)
          end if
-
-         call MPAS_io_inq_dim(inputFile, config_global_ocean_land_ice_topo_nlat_dimname, nLatLandIceThk, iErr)
-         call MPAS_io_inq_dim(inputFile, config_global_ocean_land_ice_topo_nlon_dimname, nLonLandIceThk, iErr)
-
-         call MPAS_io_close(inputFile, iErr)
       end if
 
    !--------------------------------------------------------------------

@@ -391,8 +391,10 @@ contains
                                    umax_local(1)," (",nint(umax_local(2)),")",usum_p
        write(iulog,109) "v     = ",vmin_local(1)," (",nint(vmin_local(2)),")",&
                                    vmax_local(1)," (",nint(vmax_local(2)),")",vsum_p
-       write(iulog,109) "w     = ",wmin_local(1)," (",nint(wmin_local(2)),")",&
-                                   wmax_local(1)," (",nint(wmax_local(2)),")",wsum_p
+       if(.not. theta_hydrostatic_mode) then
+         write(iulog,109) "w     = ",wmin_local(1)," (",nint(wmin_local(2)),")",&
+                                     wmax_local(1)," (",nint(wmax_local(2)),")",wsum_p
+       endif
 
        write(iulog,109) "vTh_dp= ",thetamin_local(1)," (",nint(thetamin_local(2)),")",&
                                    thetamax_local(1)," (",nint(thetamax_local(2)),")",thetasum_p
@@ -530,7 +532,7 @@ contains
     !
     !   All of these transport terms are at time-tstep = (time1+time2)/2
     !   Vertical transport terms
-#ifdef ENERGY_DIAGNOSTICS
+#if defined(ENERGY_DIAGNOSTICS) && !defined (HOMMEXX_ENABLE_GPU)
     do ie=nets,nete
        tmp(:,:,ie) = elem(ie)%accum%KEu_horiz1
     enddo
@@ -702,7 +704,7 @@ contains
        write(iulog,'(3a25)') "**DYNAMICS**        J/m^2","   W/m^2","W/m^2    "
        if (ftype==4) &
             write(iulog,*) "NOTE:ftype=4 so d/dt and diss diagnostics include effects of forcing"
-#ifdef ENERGY_DIAGNOSTICS
+#if defined(ENERGY_DIAGNOSTICS) && !defined (HOMMEXX_ENABLE_GPU)
        ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled
        if (theta_hydrostatic_mode) then
           write(iulog,'(a,2e22.14)')'KEu h-adv,sum=0:',KEH1,KEH2

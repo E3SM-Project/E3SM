@@ -18,7 +18,9 @@ module sl_advection
   use perf_mod, only           : t_startf, t_stopf, t_barrierf ! _EXTERNAL
   use parallel_mod, only       : abortmp, parallel_t
   use coordinate_systems_mod, only : cartesian3D_t
+#ifdef HOMME_ENABLE_COMPOSE
   use compose_mod
+#endif
 
   implicit none
 
@@ -165,7 +167,9 @@ contains
     ! For DCMIP16 supercell test case.
     use control_mod,            only : dcmip16_mu_q
     use prim_advection_base,    only : advance_physical_vis
+#ifdef HOMME_ENABLE_COMPOSE
     use compose_mod,            only : compose_h2d, compose_d2h
+#endif
     use iso_c_binding,          only : c_bool
 
     implicit none
@@ -193,9 +197,12 @@ contains
     ! Until I get the DSS onto GPU, always need to h<->d.
     !h2d = hybrid%par%nprocs > 1 .or. semi_lagrange_cdr_check .or. & (semi_lagrange_hv_q > 0 .and. nu_q > 0)
     h2d = .true.
+#ifdef HOMME_ENABLE_COMPOSE    
     d2h = compose_d2h .or. h2d
     h2d = compose_h2d .or. h2d
-
+#else
+    d2h = h2d
+#endif
     call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
 
     call calc_trajectory(elem, deriv, hvcoord, hybrid, dt, tl, &

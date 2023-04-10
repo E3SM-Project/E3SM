@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -743,18 +743,21 @@ contains
 
 !     Decomposition of matrix 
 
-      do 100 ir=1,mm
+      do ir=1,mm
          ire=ir+1
-         do 20 j=ire,mm
- 20         ha(ir,j)=ha(ir,j)/ha(ir,ir)
-         if (ire.gt.mm) goto 100
-         do 40 j=ire,mm
-           do 40 k=ire,mm
- 40           ha(k,j)=ha(k,j)-ha(k,ir)*ha(ir,j)
-         do 50 j=ire,mm
- 50        ha(j,ir)=0.0_RKIND
- 100  continue
-
+         do j=ire,mm
+            ha(ir,j)=ha(ir,j)/ha(ir,ir)
+         end do
+         if (ire.gt.mm) exit
+         do j=ire,mm
+           do k=ire,mm
+              ha(k,j)=ha(k,j)-ha(k,ir)*ha(ir,j)
+           end do
+         end do
+         do j=ire,mm
+           ha(j,ir)=0.0_RKIND
+         end do
+      end do
 
       end subroutine least_squares_decompose !}}}
 
@@ -788,26 +791,27 @@ contains
 
 !     solve for y by forward substitution for l*y=p
 
-      do 120 ir=1,mm
+      do ir=1,mm
          y(ir)=hap(ir)
-         do 110 jr=1,ir-1
- 110        y(ir)=y(ir)-ha(jr,ir)*y(jr)
- 120  continue
+         do jr=1,ir-1
+            y(ir)=y(ir)-ha(jr,ir)*y(jr)
+         end do
+      end do
 
 !     calculate c=d**(-1)*y
 
-      do 130 ir=1,mm
- 130     c(ir)=y(ir)/ha(ir,ir)
+      do ir=1,mm
+         c(ir)=y(ir)/ha(ir,ir)
+      end do
 
 !     solve for x by back-substituting for l(tr)*x=c
 
-      ir=mm
- 140  continue
-      hax(ir)=c(ir)
-      do 150 jr=ir+1,mm
- 150     hax(ir)=hax(ir)-ha(ir,jr)*hax(jr)
-      ir=ir-1
-      if(ir.ge.1) goto 140
+      do ir = mm,1,-1
+         hax(ir)=c(ir)
+         do jr=ir+1,mm
+            hax(ir)=hax(ir)-ha(ir,jr)*hax(jr)
+         end do
+      end do
 
       end subroutine least_squares_solve!}}}
 

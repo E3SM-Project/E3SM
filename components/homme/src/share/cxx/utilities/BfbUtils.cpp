@@ -55,3 +55,20 @@ void tridiag_diagdom_bfb_a1x1 (int n, void* dl, void* d, void* du, void* x, int 
 }
 
 } // extern C
+
+// Allows F90 to call c++ log() on device for BFB testing
+extern "C" {
+double cxx_log(double input)
+{
+#ifdef HOMMEXX_ENABLE_GPU
+  double result;
+  Kokkos::RangePolicy<Homme::ExecSpace> policy(0,1);
+  Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const int&, double& value) {
+    value = log(input);
+  }, result);
+  return result;
+#else
+  return log(input);
+#endif
+}
+} // extern C

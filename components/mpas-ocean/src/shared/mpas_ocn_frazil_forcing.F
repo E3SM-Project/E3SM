@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -255,8 +255,10 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, k, nCells
-      integer, pointer :: indexTemperature
-      integer, pointer :: indexSalinity
+      integer, pointer :: indexTemperaturePtr
+      integer, pointer :: indexSalinityPtr
+      integer :: indexTemperature
+      integer :: indexSalinity
       integer, pointer, dimension(:) :: nCellsArray
       integer, pointer, dimension(:) :: minLevelCell, maxLevelCell
 
@@ -268,8 +270,12 @@ contains
       if ( .not. frazilFormationOn ) return
 
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
-      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
-      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
+      call mpas_pool_get_dimension(tracersPool, 'index_temperature', &
+                                                 indexTemperaturePtr)
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', &
+                                                 indexSalinityPtr)
+      indexTemperature = indexTemperaturePtr
+      indexSalinity    = indexSalinityPtr
 
       call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -354,7 +360,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: frazilTemperatureTendency
       real (kind=RKIND), dimension(:,:), pointer :: frazilSalinityTendency
       real (kind=RKIND), dimension(:), pointer :: frazilSurfacePressure
-      integer, dimension(:), pointer :: landIceMask
+      integer, dimension(:), pointer :: landIceMask, landIceFloatingMask
 
       integer :: iCell, k, nCells
       integer, dimension(:), pointer :: nCellsArray
@@ -379,11 +385,13 @@ contains
       real (kind=RKIND), pointer, dimension(:,:,:) :: activeTracers
 
       integer, dimension(:), pointer :: minLevelCell, maxLevelCell
-      integer, pointer :: indexTemperature !< index in tracers array for temperature
-      integer, pointer :: indexSalinity !< index in tracers array for salinity
+      integer, pointer :: indexTemperaturePtr !< index in tracers array for temperature
+      integer, pointer :: indexSalinityPtr !< index in tracers array for salinity
+      integer :: indexTemperature !< index in tracers array for temperature
+      integer :: indexSalinity !< index in tracers array for salinity
       integer :: kBottomFrazil  ! k index where testing for frazil begins
 
-      logical :: underLandIce ! indicates if we are under land ice
+      logical :: underFloatingLandIce, underLandIce ! indicates if we are under land ice
 
       real (kind=RKIND) :: potential  ! scalar holding freezing/melt potential
       real (kind=RKIND) :: freezingEnergy  ! energy available for freezing, positive definite
@@ -400,8 +408,12 @@ contains
       ! get dimensions
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
-      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
+      call mpas_pool_get_dimension(tracersPool, 'index_temperature', &
+                                                 indexTemperaturePtr)
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', &
+                                                 indexSalinityPtr)
+      indexTemperature = indexTemperaturePtr
+      indexSalinity    = indexSalinityPtr
 
       ! get mesh information
       call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
@@ -423,6 +435,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'frazilLayerThicknessTendency', frazilLayerThicknessTendency)
       call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+      call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
 
       ! get time step in units of seconds
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=err)
@@ -439,7 +452,7 @@ contains
       ! loop over all columns
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(underLandIce, kBottomFrazil, columnTemperatureMin, k, sumNewFrazilIceThickness, &
+      !$omp private(underFloatingLandIce, underLandIce, kBottomFrazil, columnTemperatureMin, k, sumNewFrazilIceThickness, &
       !$omp         sumNewThicknessWeightedSaltContent, oceanFreezingTemperature, potential, &
       !$omp         freezingEnergy, meltingEnergy, frazilSalinity, newFrazilIceThickness, &
       !$omp         newThicknessWeightedSaltContent, meltedFrazilIceThickness, &
@@ -451,13 +464,23 @@ contains
            underLandIce = (landIceMask(iCell) == 1)
         end if
 
-        if (underLandIce .and. .not. config_frazil_under_land_ice) then
-          ! skip this cell because we're not doing frazil under land ice
+        underFloatingLandIce = .false.
+        if ( associated(landIceFloatingMask) ) then
+           underFloatingLandIce = (landIceFloatingMask(iCell) == 1)
+        end if
+
+        if (underFloatingLandIce .and. .not. config_frazil_under_land_ice) then
+          ! skip this cell because we're not doing frazil under floating land ice
           cycle
         end if
 
         if (.not. underLandIce .and. .not. config_frazil_in_open_ocean) then
           ! skip this cell because we're not doing frazil in the open ocean
+          cycle
+        end if
+
+        if (underLandIce .and. .not. underFloatingLandIce) then
+          ! skip this cell because we're not doing frazil under grounded land ice
           cycle
         end if
 

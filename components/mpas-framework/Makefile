@@ -167,29 +167,6 @@ pgi-summit:
 	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = -DpgiFortran -D_MPI -DUNDERSCORE" )
 
-pgi-nersc:
-	( $(MAKE) all \
-	"FC_PARALLEL = ftn" \
-	"CC_PARALLEL = cc" \
-	"CXX_PARALLEL = CC" \
-	"FC_SERIAL = ftn" \
-	"CC_SERIAL = cc" \
-	"CXX_SERIAL = CC" \
-	"FFLAGS_FPIEEE = -Kieee" \
-	"FFLAGS_PROMOTION = -r8" \
-	"FFLAGS_OPT = -O3 -byteswapio -Mfree" \
-	"CFLAGS_OPT = -O3" \
-	"CXXFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_OMP = -mp" \
-	"CFLAGS_OMP = -mp" \
-	"BUILD_TARGET = $(@)" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"USE_SHTNS = $(USE_SHTNS)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DCPRPGI" )
 ifort:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
@@ -397,31 +374,7 @@ g95:
 	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
-cray-nersc:
-	( $(MAKE) all \
-	"FC_PARALLEL = ftn" \
-	"CC_PARALLEL = cc" \
-	"CXX_PARALLEL = CC" \
-	"FC_SERIAL = ftn" \
-	"CC_SERIAL = cc" \
-	"CXX_SERIAL = CC" \
-	"FFLAGS_FPIEEE = " \
-	"FFLAGS_PROMOTION = -default64" \
-	"FFLAGS_OPT = -O3 -f free" \
-	"CFLAGS_OPT = -O3" \
-	"CXXFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_OMP = " \
-	"CFLAGS_OMP = " \
-	"BUILD_TARGET = $(@)" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"USE_SHTNS = $(USE_SHTNS)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
-
-gnu-nersc:
+gnu-cray:
 	GFORTRAN_GTE_10=$$(expr `ftn -dumpversion | cut -f1 -d.` \>= 10) ;\
 	if [ "$${GFORTRAN_GTE_10}" = "1" ]; then \
 	    EXTRA_FFLAGS="-fallow-argument-mismatch"; \
@@ -456,7 +409,7 @@ gnu-nersc:
 	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI $(FILE_OFFSET) $(ZOLTAN_DEFINE)" )
 
-intel-nersc:
+intel-cray:
 	( $(MAKE) all \
 	"FC_PARALLEL = ftn" \
 	"CC_PARALLEL = cc" \
@@ -481,6 +434,41 @@ intel-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
+
+cray-cray:
+	( $(MAKE) all \
+	"FC_PARALLEL = ftn" \
+	"CC_PARALLEL = cc" \
+	"CXX_PARALLEL = CC" \
+	"FC_SERIAL = ftn" \
+	"CC_SERIAL = cc" \
+	"CXX_SERIAL = CC" \
+	"FFLAGS_FPIEEE = -h flex_mp=rigorous" \
+	"FFLAGS_PROMOTION = -s real64" \
+	"FFLAGS_OPT = -g -O3 -h byteswapio -ef -f free -h noacc -em -M1077 -hipa0 -hzero" \
+	"CFLAGS_OPT = -O3 -h noacc" \
+	"CXXFLAGS_OPT = -O3 -h noacc" \
+	"LDFLAGS_OPT = -O3 -h noacc" \
+	"FFLAGS_ACC = -h acc -rm -ri" \
+	"CFLAGS_ACC = -h acc"  \
+	"FFLAGS_GPU = -DUSE_OMPOFFLOAD -homp -fopenmp" \
+	"LDFLAGS_GPU = -homp -fopenmp" \
+	"FFLAGS_DEBUG = -O0 -g -h byteswapio -ef -f free -Ktrap=divz,fp,inv,ovf" \
+	"CFLAGS_DEBUG = -O0 -g" \
+	"CXXFLAGS_DEBUG = -O0 -g" \
+	"LDFLAGS_DEBUG = -O0 -g -Ktrap=divz,fp,inv,ovf" \
+	"FFLAGS_OMP = -h omp" \
+	"CFLAGS_OMP = -h omp" \
+	"PICFLAG = -f pic" \
+	"BUILD_TARGET = $(@)" \
+	"CORE = $(CORE)" \
+	"DEBUG = $(DEBUG)" \
+	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
+	"OPENACC = $(OPENACC)" \
+	"OPENMP_OFFLOAD = $(OPENMP_OFFLOAD)" \
 	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
@@ -687,6 +675,8 @@ SCC=$(CC_SERIAL)
 PARALLEL_MESSAGE="Parallel version is on."
 
 ifeq "$(OPENMP)" "true"
+	CPPINCLUDES += $(OPENMP_INCLUDE)
+	FCINCLUDES += $(OPENMP_INCLUDE)
 	FFLAGS += $(FFLAGS_OMP)
 	CFLAGS += $(CFLAGS_OMP)
 	CXXFLAGS += $(CFLAGS_OMP)
@@ -900,15 +890,15 @@ endif
 openmp_test:
 ifeq "$(OPENMP)" "true"
 	@echo "Testing compiler for OpenMP support"
-	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(SCC) $(CFLAGS) -o conftest.out conftest.c || \
+	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(SCC) $(OPENMP_INCLUDE) $(CFLAGS) -o conftest.out conftest.c || \
 		(echo "$(SCC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(CC) $(CFLAGS) -o conftest.out conftest.c || \
+	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(CC) $(OPENMP_INCLUDE) $(CFLAGS) -o conftest.out conftest.c || \
 		(echo "$(CC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "#include <omp.h>" > conftest.cpp; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.cpp; $(CXX) $(CFLAGS) -o conftest.out conftest.cpp || \
+	@echo "#include <omp.h>" > conftest.cpp; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.cpp; $(CXX) $(OPENMP_INCLUDE) $(CXXFLAGS) -o conftest.out conftest.cpp || \
 		(echo "$(CXX) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(SFC) $(FFLAGS) -o conftest.out conftest.f90 || \
+	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(SFC) $(OPENMP_INCLUDE) $(FFLAGS) -o conftest.out conftest.f90 || \
 		(echo "$(SFC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(FC) $(FFLAGS) -o conftest.out conftest.f90 || \
+	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(FC) $(OPENMP_INCLUDE) $(FFLAGS) -o conftest.out conftest.f90 || \
 		(echo "$(FC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
 	@rm -fr conftest.*
 endif

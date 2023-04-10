@@ -5,3 +5,4 @@ if [ `./xmlquery --value MACH` == bebop ]; then ./xmlchange --id LND_PIO_TYPENAM
 # increase memory leak tolerance to 15% for FATES tests on cori-knl/cori-haswell/alvarez
 if [[ `./xmlquery --value MACH` =~ ^cori-(knl|haswell)$ ]]; then ./xmlchange TEST_MEMLEAK_TOLERANCE=0.15; fi
 if [[ `./xmlquery --value MACH` =~ ^alvarez$ ]]; then ./xmlchange TEST_MEMLEAK_TOLERANCE=0.15; fi
+if [[ `./xmlquery --value MACH` =~ ^crusher$ ]]; then ./xmlchange TEST_MEMLEAK_TOLERANCE=0.2; fi

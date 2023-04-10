@@ -89,11 +89,6 @@ struct DirkFunctorImpl {
   TeamUtils<ExecSpace> m_tu, m_tu_ig;
   int nslot;
 
-  KOKKOS_INLINE_FUNCTION
-  size_t shmem_size (const int team_size) const {
-    return KernelVariables::shmem_size(team_size);
-  }
-
   DirkFunctorImpl (const int nelem)
     : m_policy(1,1,1), m_ig_policy(1,1,1), m_tu(m_policy), m_tu_ig(m_ig_policy) // throwaway settings
   {
@@ -232,7 +227,7 @@ struct DirkFunctorImpl {
     const auto hybi = hvcoord.hybrid_bi;
     const auto tu   = m_tu;
 
-    const auto toplevel = KOKKOS_LAMBDA (const MT& team) {
+    const auto toplevel = KOKKOS_LAMBDA (const MT& team, int& nerr) {
       KernelVariables kv(team, tu);
       const auto ie = kv.ie;
       const int nlev = num_phys_lev;
@@ -283,7 +278,9 @@ struct DirkFunctorImpl {
           dphi(k,i) = phi_np1(k+1,i) - phi_np1(k,i);
         });
         kv.team_barrier();
-        pnh_and_exner_from_eos(kv, hvcoord, vtheta_dp, dp3d, dphi, pnh, wrk, dpnh_dp_i);
+        const bool ok = pnh_and_exner_from_eos(kv, hvcoord, vtheta_dp, dp3d,
+                                               dphi, pnh, wrk, dpnh_dp_i);
+        if ( ! ok) nerr = 1;
         kv.team_barrier();
         loop_ki(kv, nlev, nvec, [&] (const int k, const int i) {
           w_n0(k,i) += dt3*grav*(dpnh_dp_i(k,i) - 1);
@@ -345,7 +342,9 @@ struct DirkFunctorImpl {
       int it = 0;
       Real deltaerr;
       for (; it < maxiter; ++it) { // Newton iteration
-        pnh_and_exner_from_eos(kv, hvcoord, vtheta_dp, dp3d, dphi, pnh, wrk, dpnh_dp_i);
+        const bool ok = pnh_and_exner_from_eos(kv, hvcoord, vtheta_dp, dp3d,
+                                               dphi, pnh, wrk, dpnh_dp_i);
+        if ( ! ok) nerr = 1;
         kv.team_barrier();
         loop_ki(kv, nlev, nvec, [&] (const int k, const int i) {
           x(k,i) = -(w_np1(k,i) - (w_n0(k,i) + grav*dt2*(dpnh_dp_i(k,i) - 1))); // -residual
@@ -382,9 +381,10 @@ struct DirkFunctorImpl {
       } // Newton iteration
       kv.team_barrier();
 
-      if (it>=maxiter) {
-        printf ("[DIRK] WARNING! Newton reached max iteration count,"
-                " with deltaerr = %3.17f\n", deltaerr);
+      if (it >= maxiter) {
+        printf("[DIRK] WARNING! Newton reached max iteration count,"
+               " with deltaerr = %3.17f\n", deltaerr);
+        nerr = 1;
       }
 
       // Update phi_np1.
@@ -395,7 +395,14 @@ struct DirkFunctorImpl {
       transpose(kv, nlev+1, w_np1,   subview(e_w_i    ,ie,np1,a,a,a));
     };
 
-    Kokkos::parallel_for(m_policy, toplevel);
+    int nerr;
+    Kokkos::parallel_reduce(m_policy, toplevel, nerr);
+    if (nerr > 0) {
+      const int nt[] = {nm1, n0, np1};
+      const char* ntname[] = {"nm1", "n0", "np1"};
+      for (int i = 0; i < 3; ++i)
+        check_print_abort_on_bad_elems(std::string("DIRK Newton loop ") + ntname[i], nt[i]);
+    }
   }
 
   template <typename Fn>
@@ -548,7 +555,7 @@ struct DirkFunctorImpl {
 
   template <typename R, typename W, typename Wi>
   KOKKOS_INLINE_FUNCTION
-  static void pnh_and_exner_from_eos (
+  static bool pnh_and_exner_from_eos (
     const KernelVariables& kv, const HybridVCoord& hvcoord,
     // All arrays are in DIRK format.
     const R& vtheta_dp, const R& dp3d, const R& dphi,
@@ -558,12 +565,15 @@ struct DirkFunctorImpl {
   {
     using Kokkos::parallel_for;
 
-    const int n = npack;
+    const int n = npack, ns = packn;
     const auto pv = Kokkos::ThreadVectorRange(kv.team, n);
+    bool ok = true;
 
     // Compute pnh(1:nlev,:). pnh(nlevp,:) is not needed.
     const auto f1 = [&] (const int k) {
       const auto g = [&] (const int i) {
+        for (int s = 0; s < ns; ++s)
+          if (vtheta_dp(k,i)[s] < 0 || dphi(k,i)[s] > 0) ok = false;
         EquationOfState::compute_pnh_and_exner(
           vtheta_dp(k,i), dphi(k,i), pnh(k,i), exner(k,i));
       };
@@ -593,6 +603,8 @@ struct DirkFunctorImpl {
       parallel_for(pv, kr);
     };
     parallel_for(Kokkos::TeamThreadRange(kv.team, nlev-1), f3);
+
+    return ok;
   }
 
   // Suboptimal impl of the initial guess that uses the policy native to the

@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -791,6 +791,7 @@ contains
               dzVert2 = zMid(k-1,c2)-zMid(k,c2)
               dzEdgeK = zMid(k-1,c2)-zMid(k-1,c1)
             end if
+            if ( dzVert1+dzVert2 == 0.0_RKIND ) cycle
             dzEdgeKp1 = zMid(k,c2)-zMid(k,c1)
 
             rx1 = abs(dzEdgeK+dzEdgeKp1)/(dzVert1+dzVert2)

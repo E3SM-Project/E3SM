@@ -60,6 +60,8 @@ list(APPEND RAW_SOURCES
   core_seaice/shared/mpas_seaice_velocity_solver_pwl.F
   core_seaice/shared/mpas_seaice_velocity_solver_variational_shared.F
   core_seaice/shared/mpas_seaice_velocity_solver_constitutive_relation.F
+  core_seaice/shared/mpas_seaice_triangle_quadrature.F
+  core_seaice/shared/mpas_seaice_wachspress_basis.F
   core_seaice/shared/mpas_seaice_forcing.F
   core_seaice/shared/mpas_seaice_initialize.F
   core_seaice/shared/mpas_seaice_testing.F
@@ -80,6 +82,7 @@ list(APPEND RAW_SOURCES
   core_seaice/analysis_members/mpas_seaice_analysis_driver.F
   core_seaice/analysis_members/mpas_seaice_high_frequency_output.F
   core_seaice/analysis_members/mpas_seaice_temperatures.F
+  core_seaice/analysis_members/mpas_seaice_thicknesses.F
   core_seaice/analysis_members/mpas_seaice_regional_statistics.F
   core_seaice/analysis_members/mpas_seaice_ridging_diagnostics.F
   core_seaice/analysis_members/mpas_seaice_conservation_check.F

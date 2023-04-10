@@ -45,6 +45,7 @@ module rof_cpl_indices
   integer, public :: nflds_x2r = 0
 
   integer, public :: index_x2r_coszen_str  = 0   ! lnd->rof Cosine of Zenith
+  integer, public :: index_x2r_So_ssh = 0        ! ocn->rof ssh from ocean
 
   !TODO - nt_rtm and rtm_tracers need to be removed and set by access to the index array
   integer, parameter, public :: nt_rtm = 2    ! number of tracers
@@ -96,7 +97,7 @@ contains
     !
     ! !USES:
     use seq_flds_mod  , only: seq_flds_r2x_fields, seq_flds_x2r_fields, rof_heat, &
-                              rof2ocn_nutrients, lnd_rof_two_way
+                              rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way
     use mct_mod       , only: mct_aVect, mct_aVect_init, mct_avect_indexra, &
                               mct_aVect_clean, mct_avect_nRattr
     !
@@ -123,6 +124,9 @@ contains
     index_x2r_Flrl_demand = mct_avect_indexra(avtmp,'Flrl_demand')
     index_x2r_Flrl_Tqsur  = mct_avect_indexra(avtmp,'Flrl_Tqsur')
     index_x2r_Flrl_Tqsub  = mct_avect_indexra(avtmp,'Flrl_Tqsub')
+    if (ocn_rof_two_way) then
+      index_x2r_So_ssh      = mct_avect_indexra(avtmp,'So_ssh')
+    endif
     if (rof_heat) then
       index_x2r_Sa_tbot     = mct_avect_indexra(avtmp,'Sa_tbot')
       index_x2r_Sa_pbot     = mct_avect_indexra(avtmp,'Sa_pbot')

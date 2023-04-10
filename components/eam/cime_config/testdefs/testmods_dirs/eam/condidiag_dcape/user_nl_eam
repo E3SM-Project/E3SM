@@ -1,0 +1,20 @@
+ metric_name = 'ALL',
+
+ qoi_chkpt = 'RAD', 'PACEND','DYNEND','DEEPCU', 'STCLD',
+
+ qoi_name = 'CAPE','dCAPE'
+ qoi_nver =  1,     72,
+
+ l_output_state = .true.
+ l_output_incrm = .false.
+
+ hist_tape_with_all_output = 1,2
+
+ nhtfrq          =  -24,   -6 
+ mfilt           =   30,  120 
+ avgflag_pertape =   'A', 'I'
+
+ history_amwg        = .false.
+ history_aero_optics = .false.
+ history_aerosol     = .false.
+

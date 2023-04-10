@@ -20,11 +20,22 @@ namespace Homme
 
 // Some in-house names for Kokkos exec spaces, which are
 // always defined, possibly as alias of void
+
+#ifdef HOMMEXX_ENABLE_GPU
+
 #ifdef KOKKOS_ENABLE_CUDA
-using Hommexx_Cuda = Kokkos::Cuda;
-#else
-using Hommexx_Cuda = void;
+using HommexxGPU = Kokkos::Cuda;
 #endif
+
+#ifdef KOKKOS_ENABLE_HIP
+using HommexxGPU = Kokkos::Experimental::HIP;
+#endif
+
+#else
+using HommexxGPU = void;
+#endif
+
+
 
 #ifdef KOKKOS_ENABLE_OPENMP
 using Hommexx_OpenMP = Kokkos::OpenMP;
@@ -44,7 +55,7 @@ using Hommexx_Serial = Kokkos::Serial;
 using Hommexx_Serial = void;
 #endif
 
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef HOMMEXX_ENABLE_GPU
 # define HOMMEXX_STATIC
 #else
 # define HOMMEXX_STATIC static
@@ -52,8 +63,8 @@ using Hommexx_Serial = void;
 
 // Selecting the execution space. If no specific request, use Kokkos default
 // exec space
-#if defined(HOMMEXX_CUDA_SPACE)
-using ExecSpace = Hommexx_Cuda;
+#ifdef HOMMEXX_ENABLE_GPU
+using ExecSpace = HommexxGPU;
 #elif defined(HOMMEXX_OPENMP_SPACE)
 using ExecSpace = Hommexx_OpenMP;
 #elif defined(HOMMEXX_THREADS_SPACE)
@@ -73,7 +84,7 @@ template <typename ExeSpace>
 struct OnGpu { enum : bool { value = false }; };
 
 template <>
-struct OnGpu<Hommexx_Cuda> { enum : bool { value = true }; };
+struct OnGpu<HommexxGPU> { enum : bool { value = true }; };
 
 // Call this instead of Kokkos::initialize.
 void initialize_kokkos();
@@ -144,7 +155,7 @@ struct DefaultThreadsDistribution {
 // Specialization for a GPU, where threads can't be viewed as existing simply in
 // a pool.
 template <>
-struct DefaultThreadsDistribution<Hommexx_Cuda> {
+struct DefaultThreadsDistribution<HommexxGPU> {
   static std::pair<int, int>
   team_num_threads_vectors(const int num_parallel_iterations,
                            const ThreadPreferences tp = ThreadPreferences());
@@ -194,12 +205,12 @@ static int get_num_concurrent_teams(const int num_parallel_iterations) {
 
 // A templated typedef for MD range policy (used in RK stages)
 template<typename ExecutionSpace, int Rank>
-using MDRangePolicy = Kokkos::Experimental::MDRangePolicy
+using MDRangePolicy = Kokkos::MDRangePolicy
                           < ExecutionSpace,
-                            Kokkos::Experimental::Rank
+                            Kokkos::Rank
                               < Rank,
-                                Kokkos::Experimental::Iterate::Right,
-                                Kokkos::Experimental::Iterate::Right
+                                Kokkos::Iterate::Right,
+                                Kokkos::Iterate::Right
                               >,
                             Kokkos::IndexType<int>
                           >;
@@ -230,12 +241,12 @@ struct Memory {
 };
 
 template <>
-struct Memory<Hommexx_Cuda> {
-  enum : bool { on_gpu = OnGpu<Hommexx_Cuda>::value };
+struct Memory<HommexxGPU> {
+  enum : bool { on_gpu = OnGpu<HommexxGPU>::value };
 
   template <typename Scalar>
   KOKKOS_INLINE_FUNCTION static
-  Scalar* get_shmem (const Kokkos::TeamPolicy<Hommexx_Cuda>::member_type& team,
+  Scalar* get_shmem (const Kokkos::TeamPolicy<HommexxGPU>::member_type& team,
                      const size_t n = 0) {
     return static_cast<Scalar*>(team.team_shmem().get_shmem(n*sizeof(Scalar)));
   }
@@ -306,10 +317,10 @@ VECTOR_SIMD_LOOP
   }
 };
 
-#if defined KOKKOS_ENABLE_CUDA
+#ifdef HOMMEXX_ENABLE_GPU
 template <>
-struct Dispatch<Kokkos::Cuda> {
-  using ExeSpace = Kokkos::Cuda;
+struct Dispatch<HommexxGPU> {
+  using ExeSpace = HommexxGPU;
 
   template<typename LoopBdyType, class Lambda, typename ValueType>
   KOKKOS_FORCEINLINE_FUNCTION
@@ -351,7 +362,7 @@ struct Dispatch<Kokkos::Cuda> {
   template<class Lambda>
   static KOKKOS_FORCEINLINE_FUNCTION
   void parallel_for_NP2 (
-    const Kokkos::TeamPolicy<Kokkos::Cuda>::member_type& team,
+    const Kokkos::TeamPolicy<HommexxGPU>::member_type& team,
     const Lambda& lambda)
   {
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, NP*NP), lambda);
@@ -360,7 +371,7 @@ struct Dispatch<Kokkos::Cuda> {
   template<class Lambda, typename ValueType>
   static KOKKOS_FORCEINLINE_FUNCTION
   void parallel_reduce_NP2 (
-    const Kokkos::TeamPolicy<Kokkos::Cuda>::member_type& team,
+    const Kokkos::TeamPolicy<HommexxGPU>::member_type& team,
     const Lambda& lambda, ValueType& result)
   {
     parallel_reduce(team, Kokkos::ThreadVectorRange(team, NP*NP),

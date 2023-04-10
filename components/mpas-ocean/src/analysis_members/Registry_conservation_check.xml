@@ -198,6 +198,53 @@
 			 description="Salinity flux from frazil to Land Ice, given to coupler. Positive into the ocean."
 		/>
 	</var_struct>
+            <var_struct name="conservationCheckCarbonAM" time_levs="1" packages="conservationCheckAMPKG">
+                <var name="initialCarbon" type="real" dimensions="Time" units="kg"
+                     description="Total ocean carbon at start of conservation interval"
+                />
+                <var name="finalCarbon" type="real" dimensions="Time" units="kg"
+                     description="Total ocean carbon at end of conservation interval"
+                />
+                <var name="carbonChange" type="real" dimensions="Time" units="kg"
+                     description="Change in ocean carbon over conservation interval"
+                />
+                <var name="netCarbonFlux" type="real" dimensions="Time" units="kg"
+                     description="Net surface flux of ocean carbon over conservation interval"
+                />
+                <var name="absoluteCarbonError" type="real" dimensions="Time" units="kg"
+                     description="Absolute carbon conservation error over conservation interval"
+                />
+                <var name="relativeCarbonError" type="real" dimensions="Time" units="1"
+                     description="Relative carbon conservation error over conservation interval"
+                />
+                <var name="accumulatedAbsoluteCarbonError" type="real" default_value="0.0" dimensions="Time" units="kg"
+                     description="Accumulated absolute carbon conservation error over entire simulation"
+                />
+                <var name="accumulatedRelativeCarbonError" type="real" default_value="0.0" dimensions="Time" units="1"
+                     description="Accumulated relative carbon conservation error over entire simulation"
+                />
+                <var name="accumulatedCarbonSourceSink" type="real" dimensions="Time" units="kg"
+                     description="Volume integral of all carbon source-sink terms from MarBL"
+                />
+                <var name="accumulatedCarbonSedimentFlux" type="real" dimensions="Time" units="kg"
+                     description="Surface integral of all carbon sediment fluxes"
+                />
+                <var name="accumulatedCarbonSurfaceFlux" type="real" dimensions="Time" units="kg"
+                     description="Surface integral of all carbon ocean surface fluxes"
+                />
+                <var name="accumulatedCarbonTend" type="real" dimensions="Time" units="kg"
+                     description="Volume integral of all carbon-containing prognostic variable tendencies"
+                />
+                <var name="accumulatedCO2gasFlux" type="real" dimensions="Time" units="kg"
+                     description="Surface integral of air-sea CO2 gas flux"
+                />
+                <var name="accumulatedIceOceanOrganicCarbonFlux" type="real" dimensions="Time" units="kg"
+                     description="Surface integral of all organic ice-ocean carbon fluxes"
+                />
+                <var name="accumulatedIceOceanInorganicCarbonFlux" type="real" dimensions="Time" units="kg"
+                     description="Surface integral of all inorganic ice-ocean carbon fluxes"
+                />
+        </var_struct>
 	<streams>
 		<stream name="conservationCheckOutput" type="output"
 				mode="forward;analysis"
@@ -259,6 +306,14 @@
             <var name="accumulatedSeaIceSalinityFlux"/>
             <var name="accumulatedFrazilSalinityFlux"/>
             <var name="accumulatedLandIceFrazilSalinityFlux"/>
+            <var name="initialCarbon"/>
+            <var name="finalCarbon"/>
+            <var name="carbonChange"/>
+            <var name="netCarbonFlux"/>
+            <var name="absoluteCarbonError"/>
+            <var name="relativeCarbonError"/>
+            <var name="accumulatedAbsoluteCarbonError"/>
+            <var name="accumulatedRelativeCarbonError"/>
 		</stream>
 
 		<stream name="conservationCheckRestart"
@@ -308,5 +363,8 @@
             <var name="accumulatedSeaIceSalinityFlux"/>
             <var name="accumulatedFrazilSalinityFlux"/>
             <var name="accumulatedLandIceFrazilSalinityFlux"/>
+            <var name="initialCarbon"/>
+            <var name="accumulatedAbsoluteCarbonError"/>
+            <var name="accumulatedRelativeCarbonError"/>
 		</stream>
 	</streams>

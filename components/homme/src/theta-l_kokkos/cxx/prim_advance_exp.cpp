@@ -5,6 +5,7 @@
  *******************************************************************************/
 
 #include "CaarFunctor.hpp"
+#include "LimiterFunctor.hpp"
 #include "DirkFunctor.hpp"
 #include "Context.hpp"
 #include "Diagnostics.hpp"
@@ -67,14 +68,14 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
                       (v(ie,n0,0,igp,jgp,LAST_LEV)[LAST_MIDPOINT_VEC_IDX]*gradphis(ie,0,igp,jgp) +
                        v(ie,n0,1,igp,jgp,LAST_LEV)[LAST_MIDPOINT_VEC_IDX]*gradphis(ie,1,igp,jgp))/PhysicalConstants::g;
     });
+    Kokkos::fence();
   }
 
-#ifndef CAM
-  // if "prescribed wind" set dynamics explicitly and skip time-integration
-  if (params.prescribed_wind) {
-    Errors::runtime_abort("'prescribed wind' functionality not yet available in C++ build.\n",
-                           Errors::err_not_implemented);
-  }
+#if !defined(CAM) && !defined(SCREAM)
+  // If prescribed wind, the dynamics was set explicitly in
+  // prim_driver_mod::prim_run_subcycle; skip time-integration.
+  if (params.prescribed_wind)
+    return;
 #endif
 
   switch (params.time_step_type) {
@@ -105,7 +106,7 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
     diags.run_diagnostics(false,4);
   }
 
-//// case nu=0 but nu_top>0?  
+  //// case nu=0 but nu_top>0?  
   if (params.hypervis_order==2 && params.nu>0) {
     HyperviscosityFunctor& functor = context.get<HyperviscosityFunctor>();
     GPTLstart("tl-ae advance_hypervis_dp");
@@ -194,7 +195,7 @@ void ttype5_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w)
       });
     }
   }
-  ExecSpace::impl_static_fence();
+  Kokkos::fence();
 
   // Stage 5: u5 = (5u1-u0)/4 + 3dt/4 RHS(u4), t_rhs = t + dt/5 + dt/5 + dt/3 + 2dt/3
   functor.run(RKStageData(nm1, np1, np1, qn0, 3.0*dt/4.0, 3.0*eta_ave_w/4.0));
@@ -230,6 +231,7 @@ void ttype9_imex_timestep(const TimeLevel& tl,
   auto& hvcoord  = c.get<HybridVCoord>();
   auto& dirk     = c.get<DirkFunctor>();
   auto& caar     = c.get<CaarFunctor>();
+  auto& limiter  = c.get<LimiterFunctor>();
 
   const int nm1 = tl.nm1;
   const int n0  = tl.n0;
@@ -238,9 +240,15 @@ void ttype9_imex_timestep(const TimeLevel& tl,
 
   // Stage 1
   Real dt = dt_dyn/5.0;
+
+// subroutine compute_andor_apply_rhs(np1,nm1,n0,dt2,...
+//
 // if one wants to map F call compute_andor_apply_rhs(n1,n2,n3,qn0,...
 // to caar call below, then they need to use timelevels this way
 //         caar(n2,n3,n1,qn0,...
+//
+// Names of timelevels in RK:
+//         RKStageData (const int nm1_in, const int n0_in, const int np1_in, const int n0_qdp_in ...
   caar.run(RKStageData(n0, n0, nm1, qn0, dt, eta_ave_w/4.0, 1.0, 0.0, 1.0));
   dirk.run(nm1, 0.0, n0, 0.0, nm1, dt, elements, hvcoord);
 
@@ -298,9 +306,9 @@ void ttype9_imex_timestep(const TimeLevel& tl,
            w(ie,np1,igp,jgp,LAST_INT)  += (w(ie,nm1,igp,jgp,LAST_INT)-w(ie,n0,igp,jgp,LAST_INT))/4.0;
       });  
     }
-    //LIMITER TO ADD!
   }
-  ExecSpace::impl_static_fence();
+  Kokkos::fence();
+  limiter.run(np1);
 
   Real a1 = 5.0*dt_dyn/18.0;
   Real a2 = dt_dyn/36.0;

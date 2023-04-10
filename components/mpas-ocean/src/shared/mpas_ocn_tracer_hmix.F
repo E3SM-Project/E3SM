@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -81,7 +81,7 @@ contains
 
    subroutine ocn_tracer_hmix_tend(meshPool, layerThickEdgeMean, layerThickness, zMid, tracers, &
                                    RediKappa, slopeTriadUp, slopeTriadDown, dt, isActiveTracer,          &
-                                   RediKappaSfcTaper, RediKappaScaling, rediLimiterCount, tend, err)!{{{
+                                   RediKappaScaling, rediLimiterCount, tend, err)!{{{
 
 
       !-----------------------------------------------------------------
@@ -99,7 +99,7 @@ contains
          layerThickness,     &!< Input: thickness at centers
          zMid                 !< Input: Z coordinate at the center of a cell
       real (kind=RKIND), dimension(:,:), intent(in), optional :: &
-         RediKappaSfcTaper, RediKappaScaling        !< Input: vertical structure of GM/Redi limiter
+         RediKappaScaling        !< Input: vertical structure of GM/Redi limiter
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
         slopeTriadUp, slopeTriadDown, &
@@ -153,7 +153,7 @@ contains
       if (config_use_Redi) then
         call ocn_tracer_hmix_Redi_tend(meshPool, layerThickness, layerThickEdgeMean, zMid, tracers, &
                                      RediKappa, dt, isActiveTracer,        &
-                                     slopeTriadUp, slopeTriadDown, RediKappaSfcTaper, &
+                                     slopeTriadUp, slopeTriadDown, &
                                      RediKappaScaling, rediLimiterCount, tend, err1)
       endif
       err = ior(err1, err2)

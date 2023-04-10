@@ -67,6 +67,7 @@ logical           :: use_MMF              = .false.    ! true => use MMF / super
 logical           :: use_ECPP             = .false.    ! true => use explicit-cloud parameterized-pollutants
 logical           :: use_MMF_VT           = .false.    ! true => use MMF variance transport
 integer           :: MMF_VT_wn_max        = 0          ! if >0 then use filtered MMF variance transport
+logical           :: use_MMF_ESMT         = .false.    ! true => use MMF explicit scalar momentum transport (ESMT)
 logical           :: use_crm_accel        = .false.    ! true => use MMF CRM mean-state acceleration (MSA)
 real(r8)          :: crm_accel_factor     = 2.D0       ! CRM acceleration factor
 logical           :: crm_accel_uv         = .true.     ! true => apply MMF CRM MSA to momentum fields
@@ -78,6 +79,7 @@ logical           :: atm_dep_flux         = .true.     ! true => deposition flux
 logical           :: history_amwg         = .true.     ! output the variables used by the AMWG diag package
 logical           :: history_verbose      = .false.    ! produce verbose output by default
 logical           :: history_vdiag        = .false.    ! output the variables used by the AMWG variability diag package
+logical           :: get_presc_aero_data  = .false.    ! output MAM variables needed for prescribed run
 logical           :: history_aerosol      = .false.    ! output the MAM aerosol variables and tendencies
 logical           :: history_aero_optics  = .false.    ! output the aerosol
 logical           :: history_eddy         = .false.    ! output the eddy variables
@@ -106,6 +108,7 @@ integer           :: history_budget_histfile_num = 1   ! output history file num
 logical           :: history_waccm        = .true.     ! output variables of interest for WACCM runs
 logical           :: history_clubb        = .true.     ! output default CLUBB-related variables
 logical           :: do_clubb_sgs
+logical           :: do_shoc_sgs
 logical           :: do_aerocom_ind3      = .false.    ! true to write aerocom
 real(r8)          :: prc_coef1            = huge(1.0_r8)
 real(r8)          :: prc_exp              = huge(1.0_r8)
@@ -170,6 +173,11 @@ logical :: l_st_mac        = .true.
 logical :: l_st_mic        = .true.
 logical :: l_rad           = .true.
 
+! Numerical schemes for process coupling
+
+integer :: cflx_cpl_opt = 1  ! When to apply surface tracer fluxes (not including water vapor).
+                             ! The default for aerosols is to do this 
+                             ! after tphysac:clubb_surface and before aerosol dry removal.
 
 !======================================================================= 
 contains
@@ -192,12 +200,12 @@ subroutine phys_ctl_readnl(nlfile)
    namelist /phys_ctl_nl/ cam_physpkg, cam_chempkg, waccmx_opt, deep_scheme, shallow_scheme, &
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
       MMF_microphysics_scheme, MMF_orientation_angle, use_MMF, use_ECPP, &
-      use_MMF_VT, MMF_VT_wn_max, &
+      use_MMF_VT, MMF_VT_wn_max, use_MMF_ESMT, &
       use_crm_accel, crm_accel_factor, crm_accel_uv, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
-      history_aerosol, history_aero_optics, &
+      get_presc_aero_data,history_aerosol, history_aero_optics, &
       history_eddy, history_budget,  history_budget_histfile_num, history_waccm, &
-      conv_water_in_rad, history_clubb, do_clubb_sgs, do_tms, state_debug_checks, &
+      conv_water_in_rad, history_clubb, do_clubb_sgs, do_shoc_sgs, do_tms, state_debug_checks, &
       linearize_pbl_winds, export_gustiness, &
       use_mass_borrower, do_aerocom_ind3, &
       ieflx_opt, &
@@ -209,6 +217,7 @@ subroutine phys_ctl_readnl(nlfile)
       fix_g1_err_ndrop, ssalt_tuning, resus_fix, convproc_do_aer, &
       convproc_do_gas, convproc_method_activate, liqcf_fix, regen_fix, demott_ice_nuc, pergro_mods, pergro_test_active, &
       mam_amicphys_optaa, n_so4_monolayers_pcage,micro_mg_accre_enhan_fac, &
+      cflx_cpl_opt, &
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
       rrtmg_temp_fix, ideal_phys_option
@@ -226,6 +235,14 @@ subroutine phys_ctl_readnl(nlfile)
       end if
       close(unitn)
       call freeunit(unitn)
+
+      ! If generating output to drive a prescribed aerosol 
+      !   run then history_aerosol needs to also be set
+      !   to true, force it here
+      if (get_presc_aero_data) then
+        history_aerosol = .true.
+      endif
+
    end if
 
 #ifdef SPMD
@@ -247,6 +264,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(use_ECPP,                        1 , mpilog,  0, mpicom)
    call mpibcast(use_MMF_VT,                      1 , mpilog,  0, mpicom)
    call mpibcast(MMF_VT_wn_max,                   1 , mpiint,  0, mpicom)
+   call mpibcast(use_MMF_ESMT,                    1 , mpilog,  0, mpicom)
    call mpibcast(use_crm_accel,                   1 , mpilog,  0, mpicom)
    call mpibcast(crm_accel_factor,                1 , mpir8,   0, mpicom)
    call mpibcast(crm_accel_uv,                    1 , mpilog,  0, mpicom)
@@ -256,6 +274,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(history_verbose,                 1 , mpilog,  0, mpicom)
    call mpibcast(history_vdiag,                   1 , mpilog,  0, mpicom)
    call mpibcast(history_eddy,                    1 , mpilog,  0, mpicom)
+   call mpibcast(get_presc_aero_data,             1 , mpilog,  0, mpicom)
    call mpibcast(history_aerosol,                 1 , mpilog,  0, mpicom)
    call mpibcast(history_aero_optics,             1 , mpilog,  0, mpicom)
    call mpibcast(history_budget,                  1 , mpilog,  0, mpicom)
@@ -263,6 +282,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(history_waccm,                   1 , mpilog,  0, mpicom)
    call mpibcast(history_clubb,                   1 , mpilog,  0, mpicom)
    call mpibcast(do_clubb_sgs,                    1 , mpilog,  0, mpicom)
+   call mpibcast(do_shoc_sgs,                     1 , mpilog,  0, mpicom)
    call mpibcast(do_aerocom_ind3,                 1 , mpilog,  0, mpicom)
    call mpibcast(conv_water_in_rad,               1 , mpiint,  0, mpicom)
    call mpibcast(do_tms,                          1 , mpilog,  0, mpicom)
@@ -293,6 +313,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(demott_ice_nuc,                  1 , mpilog,  0, mpicom)
    call mpibcast(pergro_mods,                     1 , mpilog,  0, mpicom)
    call mpibcast(pergro_test_active,              1 , mpilog,  0, mpicom)
+   call mpibcast(cflx_cpl_opt,                    1 , mpiint,  0, mpicom)
    call mpibcast(l_tracer_aero,                   1 , mpilog,  0, mpicom)
    call mpibcast(l_vdiff,                         1 , mpilog,  0, mpicom)
    call mpibcast(l_rayleigh,                      1 , mpilog,  0, mpicom)
@@ -325,16 +346,17 @@ subroutine phys_ctl_readnl(nlfile)
       call endrun('waccm: illegal value of waccmx_opt')
    endif
    if (.not. (shallow_scheme .eq. 'Hack' .or. shallow_scheme .eq. 'UW' .or. &
-              shallow_scheme .eq. 'CLUBB_SGS' .or. shallow_scheme.eq.'off')) then
+              shallow_scheme .eq. 'CLUBB_SGS' .or. shallow_scheme .eq. 'SHOC_SGS' .or. shallow_scheme.eq.'off')) then
       write(iulog,*)'phys_setopts: illegal value of shallow_scheme:', shallow_scheme
       call endrun('phys_setopts: illegal value of shallow_scheme')
    endif
    if (.not. (eddy_scheme .eq. 'HB' .or. eddy_scheme .eq. 'HBR' .or. eddy_scheme .eq. 'diag_TKE' .or. &
-              eddy_scheme .eq. 'CLUBB_SGS' .or. eddy_scheme .eq. 'off') ) then
+              eddy_scheme .eq. 'SHOC_SGS' .or. eddy_scheme .eq. 'CLUBB_SGS' .or. eddy_scheme .eq. 'off') ) then
       write(iulog,*)'phys_setopts: illegal value of eddy_scheme:', eddy_scheme
       call endrun('phys_setopts: illegal value of eddy_scheme')
    endif
-   if (.not. (microp_scheme .eq. 'MG' .or. microp_scheme .eq. 'RK' .or. microp_scheme .eq. 'P3' .or. microp_scheme .eq. 'off') ) then
+   if (.not. (microp_scheme .eq. 'MG' .or. microp_scheme .eq. 'RK' .or. &
+              microp_scheme .eq. 'P3' .or. microp_scheme .eq. 'off') ) then
       write(iulog,*)'phys_setopts: illegal value of microp_scheme:', microp_scheme
       call endrun('phys_setopts: illegal value of microp_scheme')
    endif
@@ -356,11 +378,18 @@ subroutine phys_ctl_readnl(nlfile)
       call endrun('PBL and Microphysics schemes incompatible')
    endif
    
+
    ! Add a check to make sure CLUBB and MG / P3 are used together
    if ( do_clubb_sgs .and. ( microp_scheme .ne. 'MG' .and. microp_scheme .ne. 'P3' )) then
       write(iulog,*)'CLUBB is only compatible with MG or P3 microphysics.  Quiting'
       call endrun('CLUBB and microphysics schemes incompatible')
    endif
+   
+   ! Add a check to make sure SHOC and MG are used together
+   if ( do_shoc_sgs .and. ( microp_scheme .ne. 'MG' .and. microp_scheme .ne. 'P3')) then
+      write(iulog,*)'SHOC is only compatible with MG microphysics.  Quiting'
+      call endrun('SHOC and microphysics schemes incompatible')
+   endif   
 
    ! Check that eddy_scheme, macrop_scheme, shallow_scheme are all set to CLUBB_SGS if do_clubb_sgs is true
    if (do_clubb_sgs) then
@@ -369,12 +398,21 @@ subroutine phys_ctl_readnl(nlfile)
          call endrun('CLUBB and eddy, macrop or shallow schemes incompatible')
       endif
    endif
+   
+   ! Check that eddy_scheme, macrop_scheme, shallow_scheme are all set to SHOC_SGS if do_shoc_sgs is true
+   if (do_shoc_sgs) then
+      if (eddy_scheme .ne. 'SHOC_SGS' .or. macrop_scheme .ne. 'SHOC_SGS' .or. shallow_scheme .ne. 'SHOC_SGS') then
+         write(iulog,*)'eddy_scheme, macrop_scheme and shallow_scheme must all be SHOC_SGS.  Quiting'
+         call endrun('SHOC and eddy, macrop or shallow schemes incompatible')
+      endif
+   endif   
 
    ! Macro/micro co-substepping support.
    if (cld_macmic_num_steps > 1) then
-      if ((microp_scheme /= "MG" .and. microp_scheme /= "P3") .or. (macrop_scheme /= "park" .and. macrop_scheme /= "CLUBB_SGS")) then
+      if ((microp_scheme /= "MG" .and. microp_scheme /= "P3") .or. (macrop_scheme /= "park" .and. macrop_scheme /= "CLUBB_SGS" .and. &
+         macrop_scheme /= "SHOC_SGS")) then
          call endrun ("Setting cld_macmic_num_steps > 1 is only &
-              &supported with Park or CLUBB macrophysics and MG / P3 microphysics.")
+              &supported with Park or CLUBB or SHOC macrophysics and MG microphysics.")
       end if
    end if
 
@@ -393,6 +431,12 @@ subroutine phys_ctl_readnl(nlfile)
             call endrun('phys_setopts: illegal value of MMF_orientation_angle')
          end if
       end if
+   end if
+
+   ! Check settings for process coupling
+   if (masterproc) write(iulog,*) '**** phys_ctl_readnl: cflx_cpl_opt = ', cflx_cpl_opt
+   if (.not.( (cflx_cpl_opt==1).or.(cflx_cpl_opt==2) )) then
+      call endrun('phys_ctl_readnl: unsupported value of cflx_cpl_opt')
    end if
 
    ! prog_modal_aero determines whether prognostic modal aerosols are present in the run.
@@ -415,6 +459,15 @@ subroutine phys_ctl_readnl(nlfile)
                       .or. cam_chempkg_is('trop_strat_mam3') &
                       .or. cam_chempkg_is('trop_strat_mam7') &
                       .or. cam_chempkg_is('waccm_mozart_mam3'))
+
+   ! Checks when generating output needed to force a prescribed aerosol run		      
+   if (get_presc_aero_data) then
+     ! Make sure that a prognostic aerosol scheme is used
+     if (.not. prog_modal_aero) then
+       call endrun("Setting get_presc_aero_data requires a prognostic aerosol scheme.")
+     endif
+   endif
+    
 end subroutine phys_ctl_readnl
 
 !===============================================================================
@@ -456,14 +509,15 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         microp_scheme_out, &
                         radiation_scheme_out, use_subcol_microp_out, atm_dep_flux_out, &
                         history_amwg_out, history_verbose_out, history_vdiag_out, &
+                        get_presc_aero_data_out,&
                         history_aerosol_out, history_aero_optics_out, history_eddy_out, &
                         history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
                         history_clubb_out, ieflx_opt_out, conv_water_in_rad_out, cam_chempkg_out, &
                         prog_modal_aero_out, macrop_scheme_out, ideal_phys_option_out, &
                         use_MMF_out, use_ECPP_out, MMF_microphysics_scheme_out, &
-                        MMF_orientation_angle_out, use_MMF_VT_out, MMF_VT_wn_max_out, &
+                        MMF_orientation_angle_out, use_MMF_VT_out, MMF_VT_wn_max_out, use_MMF_ESMT_out, &
                         use_crm_accel_out, crm_accel_factor_out, crm_accel_uv_out, &
-                        do_clubb_sgs_out, do_tms_out, state_debug_checks_out, &
+                        do_clubb_sgs_out, do_shoc_sgs_out, do_tms_out, state_debug_checks_out, &
                         linearize_pbl_winds_out, export_gustiness_out, &
                         do_aerocom_ind3_out,  &
                         use_mass_borrower_out, & 
@@ -473,9 +527,11 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         fix_g1_err_ndrop_out, ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  &
                         convproc_do_gas_out, convproc_method_activate_out, mam_amicphys_optaa_out, n_so4_monolayers_pcage_out, &
                         micro_mg_accre_enhan_fac_out, liqcf_fix_out, regen_fix_out,demott_ice_nuc_out, pergro_mods_out, pergro_test_active_out &
+                       ,cflx_cpl_opt_out &
                        ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
                        ,l_bc_energy_fix_out, l_dry_adj_out, l_st_mac_out, l_st_mic_out, l_rad_out  &
-                       ,prc_coef1_out,prc_exp_out,prc_exp1_out, cld_sed_out,mg_prc_coeff_fix_out,rrtmg_temp_fix_out)
+                       ,prc_coef1_out,prc_exp_out,prc_exp1_out, cld_sed_out,mg_prc_coeff_fix_out,rrtmg_temp_fix_out &
+                       )
 
 !-----------------------------------------------------------------------
 ! Purpose: Return runtime settings
@@ -499,6 +555,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: use_ECPP_out
    logical,           intent(out), optional :: use_MMF_VT_out
    integer,           intent(out), optional :: MMF_VT_wn_max_out
+   logical,           intent(out), optional :: use_MMF_ESMT_out
    logical,           intent(out), optional :: use_crm_accel_out
    real(r8),          intent(out), optional :: crm_accel_factor_out
    logical,           intent(out), optional :: crm_accel_uv_out
@@ -508,6 +565,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: history_verbose_out
    logical,           intent(out), optional :: history_vdiag_out
    logical,           intent(out), optional :: history_eddy_out
+   logical,           intent(out), optional :: get_presc_aero_data_out
    logical,           intent(out), optional :: history_aerosol_out
    logical,           intent(out), optional :: history_aero_optics_out
    logical,           intent(out), optional :: history_budget_out
@@ -515,6 +573,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: history_waccm_out
    logical,           intent(out), optional :: history_clubb_out
    logical,           intent(out), optional :: do_clubb_sgs_out
+   logical,           intent(out), optional :: do_shoc_sgs_out
    logical,           intent(out), optional :: do_aerocom_ind3_out
    logical,           intent(out), optional :: micro_do_icesupersat_out
    integer,           intent(out), optional :: ieflx_opt_out
@@ -543,7 +602,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: pergro_mods_out     
    logical,           intent(out), optional :: pergro_test_active_out     
 
-
+   integer,           intent(out), optional :: cflx_cpl_opt_out
    logical,           intent(out), optional :: l_tracer_aero_out
    logical,           intent(out), optional :: l_vdiff_out
    logical,           intent(out), optional :: l_rayleigh_out
@@ -574,6 +633,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(use_ECPP_out            ) ) use_ECPP_out             = use_ECPP
    if ( present(use_MMF_VT_out          ) ) use_MMF_VT_out           = use_MMF_VT
    if ( present(MMF_VT_wn_max_out       ) ) MMF_VT_wn_max_out        = MMF_VT_wn_max
+   if ( present(use_MMF_ESMT_out        ) ) use_MMF_ESMT_out         = use_MMF_ESMT
    
    if ( present(use_crm_accel_out       ) ) use_crm_accel_out        = use_crm_accel
    if ( present(crm_accel_factor_out    ) ) crm_accel_factor_out     = crm_accel_factor
@@ -594,6 +654,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(history_waccm_out       ) ) history_waccm_out        = history_waccm
    if ( present(history_clubb_out       ) ) history_clubb_out        = history_clubb
    if ( present(do_clubb_sgs_out        ) ) do_clubb_sgs_out         = do_clubb_sgs
+   if ( present(do_shoc_sgs_out        ) ) do_shoc_sgs_out         = do_shoc_sgs
    if ( present(do_aerocom_ind3_out ) ) do_aerocom_ind3_out = do_aerocom_ind3
    if ( present(micro_do_icesupersat_out )) micro_do_icesupersat_out = micro_do_icesupersat
    if ( present(conv_water_in_rad_out   ) ) conv_water_in_rad_out    = conv_water_in_rad
@@ -601,6 +662,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(cam_chempkg_out         ) ) cam_chempkg_out          = cam_chempkg
    if ( present(prog_modal_aero_out     ) ) prog_modal_aero_out      = prog_modal_aero
    if ( present(do_tms_out              ) ) do_tms_out               = do_tms
+   if ( present(get_presc_aero_data_out ) ) get_presc_aero_data_out  = get_presc_aero_data
    if ( present(use_mass_borrower_out   ) ) use_mass_borrower_out    = use_mass_borrower
    if ( present(use_qqflx_fixer_out     ) ) use_qqflx_fixer_out      = use_qqflx_fixer
    if ( present(print_fixer_message_out ) ) print_fixer_message_out  = print_fixer_message
@@ -622,6 +684,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(pergro_mods_out         ) ) pergro_mods_out          = pergro_mods
    if ( present(pergro_test_active_out  ) ) pergro_test_active_out   = pergro_test_active
 
+   if ( present(cflx_cpl_opt_out        ) ) cflx_cpl_opt_out      = cflx_cpl_opt
    if ( present(l_tracer_aero_out       ) ) l_tracer_aero_out     = l_tracer_aero
    if ( present(l_vdiff_out             ) ) l_vdiff_out           = l_vdiff
    if ( present(l_rayleigh_out          ) ) l_rayleigh_out        = l_rayleigh

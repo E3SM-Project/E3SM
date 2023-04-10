@@ -120,6 +120,7 @@ macro(createTestExec execName execType macroNP macroNC
     TARGET_COMPILE_DEFINITIONS(${execName} PUBLIC HOMMEXX_BENCHMARK_NOFORCING)
   ENDIF()
 
+  target_link_libraries(${execName} csm_share)
 
   IF (CXXLIB_SUPPORTED_CACHE)
     MESSAGE(STATUS "   Linking Fortran with -cxxlib")
@@ -155,7 +156,7 @@ macro(createTestExec execName execType macroNP macroNC
   ENDIF ()
 
   IF (HOMME_USE_KOKKOS)
-    TARGET_LINK_LIBRARIES(${execName} kokkos)
+    link_to_kokkos(${execName})
   ENDIF ()
 
   # Move the module files out of the way so the parallel build
@@ -239,6 +240,11 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
     TARGET_COMPILE_DEFINITIONS(${libName} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
   ENDIF()
 
+  target_link_libraries(${execName} csm_share)
+  if (NOT HOMME_BUILD_SCORPIO)
+    # Needed for netcdf.mod usage in mesh_mod.F90.
+    target_link_libraries(${execName} piof)
+  endif()
 
   IF (CXXLIB_SUPPORTED_CACHE)
     MESSAGE(STATUS "   Linking Fortran with -cxxlib")
@@ -775,7 +781,6 @@ function (make_profiles_up_to profile profiles)
 endfunction ()
 
 MACRO(CREATE_CXX_VS_F90_TESTS_WITH_PROFILE TESTS_LIST testProfile)
-
   FOREACH (TEST ${${TESTS_LIST}})
     SET (TEST_FILE_F90 "${TEST}.cmake")
 
@@ -783,20 +788,21 @@ MACRO(CREATE_CXX_VS_F90_TESTS_WITH_PROFILE TESTS_LIST testProfile)
     set (PROFILE ${testProfile})
     INCLUDE (${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${TEST_FILE_F90})
 
+    set (TEST_NAME_SUFFIX)
     if ("${TEST}" MATCHES "theta-f")
-      SET (TEST_NAME_SUFFIX "ne${HOMME_TEST_NE}-nu${HOMME_TEST_NU}-ndays${HOMME_TEST_NDAYS}")
+      SET (TEST_NAME_SUFFIX "-ne${HOMME_TEST_NE}-nu${HOMME_TEST_NU}-ndays${HOMME_TEST_NDAYS}")
     elseif ("${TEST}" MATCHES "preqx-nlev")
-      SET (TEST_NAME_SUFFIX "ne${HOMME_TEST_NE}-ndays${HOMME_TEST_NDAYS}")
+      SET (TEST_NAME_SUFFIX "-ne${HOMME_TEST_NE}-ndays${HOMME_TEST_NDAYS}")
     endif ()
 
-    SET (F90_TEST_NAME "${TEST}-${TEST_NAME_SUFFIX}")
-    SET (CXX_TEST_NAME "${TEST}-kokkos-${TEST_NAME_SUFFIX}")
+    SET (F90_TEST_NAME "${TEST}${TEST_NAME_SUFFIX}")
+    SET (CXX_TEST_NAME "${TEST}-kokkos${TEST_NAME_SUFFIX}")
     SET (F90_DIR ${HOMME_BINARY_DIR}/tests/${F90_TEST_NAME})
     SET (CXX_DIR ${HOMME_BINARY_DIR}/tests/${CXX_TEST_NAME})
 
     # Compare netcdf output files bit-for-bit AND compare diagnostic lines
     # in the raw output files
-    SET (TEST_NAME "${TEST}-${TEST_NAME_SUFFIX}_cxx_vs_f90")
+    SET (TEST_NAME "${TEST}${TEST_NAME_SUFFIX}_cxx_vs_f90")
     MESSAGE ("-- Creating cxx-f90 comparison test ${TEST_NAME}")
 
     CONFIGURE_FILE (${HOMME_SOURCE_DIR}/cmake/CxxVsF90.cmake.in

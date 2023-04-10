@@ -93,6 +93,7 @@
 				type="output"
 				mode="forward;analysis"
 				io_type="pnetcdf"
+				useMissingValMask="true"
 				filename_template="analysis_members/mpaso.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"
 				filename_interval="00-01-00_00:00:00"
 				reference_time="01-01-01_00:00:00"
@@ -134,6 +135,8 @@
 			<var name="atmosphericPressure"/>
 			<var name="normalGMBolusVelocity"/>
 			<var name="vertGMBolusVelocityTop"/>
+			<var name="normalMLEvelocity"/>
+			<var name="vertMLEBolusVelocityTop"/>
 			<var name="GMBolusVelocityZonal"/>
 			<var name="GMBolusVelocityMeridional"/>
 			<var name="cGMphaseSpeed"/>

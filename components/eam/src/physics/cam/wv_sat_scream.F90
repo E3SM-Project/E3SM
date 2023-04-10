@@ -1,5 +1,5 @@
 ! Include bit-for-bit math macros.
-! #include "bfb_math.inc" [JS]: commented out this include file; coding it explicitly
+#include "bfb_math.inc"
 
 module wv_sat_scream
 

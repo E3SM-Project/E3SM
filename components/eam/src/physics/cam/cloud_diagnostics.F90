@@ -28,10 +28,10 @@ module cloud_diagnostics
    public :: cloud_diagnostics_register
 
 ! Local variables
-   integer :: dei_idx, mu_idx, lambda_idx, iciwp_idx, iclwp_idx, cld_idx  ! index into pbuf for cloud fields
+   integer :: dei_idx, mu_idx, lambda_idx, iciwp_idx, iclwp_idx, cld_idx, tot_cloud_frac_idx  ! index into pbuf for cloud fields
    integer :: ixcldice, ixcldliq, rei_idx, rel_idx
 
-   logical :: do_cld_diag, mg_clouds, p3_clouds, rk_clouds
+   logical :: do_cld_diag, p3_clouds, mg_clouds, rk_clouds, shoc_clouds
    integer :: conv_water_in_rad
    
    integer :: cicewp_idx = -1
@@ -53,12 +53,14 @@ contains
     use phys_control,  only: phys_getopts
     use physics_buffer,only: pbuf_add_field, dtype_r8, dtype_i4
 
-    character(len=16) :: rad_pkg, microp_pgk
+    character(len=16) :: rad_pkg, microp_pkg, macrop_pkg
 
-    call phys_getopts(radiation_scheme_out=rad_pkg,microp_scheme_out=microp_pgk)
-    rk_clouds = microp_pgk == 'RK'
-    mg_clouds = microp_pgk == 'MG'
-    p3_clouds = microp_pgk == 'P3'
+
+    call phys_getopts(radiation_scheme_out=rad_pkg,microp_scheme_out=microp_pkg, macrop_scheme_out=macrop_pkg)
+    rk_clouds = microp_pkg == 'RK'
+    mg_clouds = microp_pkg == 'MG'
+    p3_clouds = microp_pkg == 'P3'
+    shoc_clouds = macrop_pkg == 'SHOC'
 
     if (rk_clouds) then
        call pbuf_add_field('CLDEMIS','physpkg', dtype_r8,(/pcols,pver/), cldemis_idx)
@@ -69,6 +71,7 @@ contains
 
        call pbuf_add_field('PMXRGN', 'physpkg', dtype_r8,(/pcols,pverp/), pmxrgn_idx)
        call pbuf_add_field('NMXRGN', 'physpkg', dtype_i4,(/pcols /),      nmxrgn_idx)
+
     else if (mg_clouds .or. p3_clouds) then
        ! In cloud ice water path for radiation
        call pbuf_add_field('ICIWP',      'global', dtype_r8,(/pcols,pver/), iciwp_idx)
@@ -97,12 +100,14 @@ contains
     !-----------------------------------------------------------------------
 
     cld_idx    = pbuf_get_index('CLD')
+    if (shoc_clouds) tot_cloud_frac_idx = pbuf_get_index('TOT_CLOUD_FRAC')
 
     ! ----------------------------
     ! determine default variables
     ! ----------------------------
     call phys_getopts( history_amwg_out = history_amwg, &
                        history_verbose_out = history_verbose )
+
 
     if (mg_clouds .or. p3_clouds) then
 
@@ -161,7 +166,9 @@ contains
     call addfld ('TGCLDIWP',horiz_only,    'A',wpunits,'Total grid-box cloud ice water path'   , &
          sampling_seq=sampling_seq, standard_name='atmosphere_mass_content_of_cloud_ice')
     
+
     if(mg_clouds .or. p3_clouds) then
+
        call addfld ('lambda_cloud',(/ 'lev' /),'I','1/meter','lambda in cloud')
        call addfld ('mu_cloud',(/ 'lev' /),'I','1','mu in cloud')
        call addfld ('dei_cloud',(/ 'lev' /),'I','micrometers','ice radiative effective diameter in cloud')
@@ -172,6 +179,8 @@ contains
        call addfld ('rei_cloud',(/ 'lev' /),'I','1','effective radius of ice in cloud', sampling_seq=sampling_seq)
     endif
 
+    call addfld ('CLOUD',(/ 'lev' /), 'A','fraction','Cloud fraction' , sampling_seq=sampling_seq)
+
     call addfld ('SETLWP',(/ 'lev' /), 'A','gram/m2','Prescribed liquid water path'          , sampling_seq=sampling_seq)
     call addfld ('LWSH',horiz_only,    'A','m','Liquid water scale height'             , sampling_seq=sampling_seq)
     call addfld ('EFFCLD',(/ 'lev' /), 'A','fraction','Effective cloud fraction'              , sampling_seq=sampling_seq)
@@ -181,6 +190,7 @@ contains
 
 
     if (history_amwg) then
+       call add_default ('CLOUD   ', 1, ' ')
        call add_default ('TGCLDLWP', 1, ' ')
        call add_default ('TGCLDIWP', 1, ' ')
        call add_default ('TGCLDCWP', 1, ' ')
@@ -216,6 +226,7 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
 ! Local variables
 
     real(r8), pointer :: cld(:,:)       ! cloud fraction
+    real(r8), pointer :: tot_cloud_frac(:,:) ! cloud fraction with higher ice threshold
     real(r8), pointer :: iciwp(:,:)   ! in-cloud cloud ice water path
     real(r8), pointer :: iclwp(:,:)   ! in-cloud cloud liquid water path
     real(r8), pointer :: dei(:,:)       ! effective radiative diameter of ice
@@ -284,6 +295,7 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
 
     itim_old = pbuf_old_tim_idx()
     call pbuf_get_field(pbuf, cld_idx, cld, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+    call outfld('CLOUD',cld(:,:),pcols,lchnk)
 
     if(mg_clouds .or. p3_clouds)then
 
@@ -317,6 +329,9 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
        endif
 
     endif
+ 
+ 
+   if (shoc_clouds) call pbuf_get_field(pbuf, tot_cloud_frac_idx, tot_cloud_frac, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
     if (cicewp_idx>0) then
        call pbuf_get_field(pbuf, cicewp_idx, cicewp )
@@ -415,11 +430,18 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
        end do
     endif
 
-! Determine parameters for maximum/random overlap
-    call cldovrlap(lchnk, ncol, state%pint, cld, nmxrgn, pmxrgn)
+    if (shoc_clouds) then ! use tot_cloud_frac instead of cld 
+       ! Determine parameters for maximum/random overlap
+       call cldovrlap(lchnk, ncol, state%pint, tot_cloud_frac, nmxrgn, pmxrgn)
+       ! Cloud cover diagnostics
+       call cloud_cover_diags_out(lchnk, ncol, tot_cloud_frac, state%pmid, nmxrgn, pmxrgn)
+    else 
+       ! Determine parameters for maximum/random overlap
+       call cldovrlap(lchnk, ncol, state%pint, cld, nmxrgn, pmxrgn)
+       ! Cloud cover diagnostics
+       call cloud_cover_diags_out(lchnk, ncol, cld, state%pmid, nmxrgn, pmxrgn )
+    end if
 
-! Cloud cover diagnostics
-    call cloud_cover_diags_out(lchnk, ncol, cld, state%pmid, nmxrgn, pmxrgn )
     
     tgicewp(:ncol) = 0._r8
     tgliqwp(:ncol) = 0._r8

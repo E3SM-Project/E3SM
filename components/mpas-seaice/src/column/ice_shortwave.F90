@@ -3665,7 +3665,6 @@
 
       real (kind=dbl_kind), parameter :: &
          ! units for the following are 1.e-6 m (micro-meters)
-         rsnw_fresh    =  100._dbl_kind, & ! freshly-fallen snow grain radius 
          rsnw_nonmelt  =  500._dbl_kind, & ! nonmelt snow grain radius
          rsnw_sig      =  250._dbl_kind    ! assumed sigma for snow grain radius
 
@@ -3696,7 +3695,7 @@
         ! the sign is negative so that if R_snw is 1, then the
         ! snow grain radius is reduced and thus albedo increased.
         rsnw_nm = rsnw_nonmelt - R_snw*rsnw_sig
-        rsnw_nm = max(rsnw_nm, rsnw_fresh)
+        rsnw_nm = max(rsnw_nm, rsnw_fall)
         rsnw_nm = min(rsnw_nm, rsnw_mlt) 
       
         do ks = 1, nslyr
@@ -3704,7 +3703,7 @@
            rhosnw(ks) = rhos
            ! snow grain radius between rsnw_nonmelt and rsnw_mlt
            rsnw(ks) = rsnw_nm + (rsnw_mlt-rsnw_nm)*fT
-           rsnw(ks) = max(rsnw(ks), rsnw_fresh)
+           rsnw(ks) = max(rsnw(ks), rsnw_fall)
            rsnw(ks) = min(rsnw(ks), rsnw_mlt)
         enddo        ! ks
 
@@ -4777,12 +4776,12 @@
                   nr = ceiling(rsnw(ksnow)) - 30 + 1
                   delr = (rsnw(ksnow) - floor(rsnw(ksnow))) / &
                          (ceiling(rsnw(ksnow)) - floor(rsnw(ksnow)))
-                  ks = ext_cff_mss_ice_drc(ns,nr-1)*(delr) + &
-                       ext_cff_mss_ice_drc(ns,nr)*(c1-delr)
-                  ws = ss_alb_ice_drc(ns,nr-1)*(delr) + &
-                       ss_alb_ice_drc(ns,nr)*(c1-delr)
-                  gs = asm_prm_ice_drc(ns,nr-1)*(delr) + &
-                       asm_prm_ice_drc(ns,nr)*(c1-delr)
+                  ks = ext_cff_mss_ice_drc(ns,nr-1)*(c1-delr) + &
+                       ext_cff_mss_ice_drc(ns,nr)*delr
+                  ws = ss_alb_ice_drc(ns,nr-1)*(c1-delr) + &
+                       ss_alb_ice_drc(ns,nr)* delr
+                  gs = asm_prm_ice_drc(ns,nr-1)*(c1-delr) + &
+                       asm_prm_ice_drc(ns,nr)*delr
               endif
               ! ks = Qs*((rhosnw(ksnow)/rhoi)*3._dbl_kind / &
               !      (4._dbl_kind*rsnw(ksnow)*1.0e-6_dbl_kind))

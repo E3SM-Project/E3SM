@@ -68,21 +68,21 @@
       rhos_eff = c0
       rhos_cmp = c0
 
-      if (vsno > puny) then
-
       !-----------------------------------------------------------------
       ! Initialize effective snow density (compaction) for new snow
       !-----------------------------------------------------------------
 
-         do n = 1, ncat
-               do k = 1, nslyr
-                  if (rhos_cmpn(k,n) < rhosmin) rhos_cmpn(k,n) = rhosnew
-               enddo
-         enddo
+      do n = 1, ncat
+            do k = 1, nslyr
+               if (rhos_cmpn(k,n) < rhosmin) rhos_cmpn(k,n) = rhosnew
+            enddo
+      enddo
 
       !-----------------------------------------------------------------
       ! Compute average effective density of snow
       !-----------------------------------------------------------------
+
+      if (vsno > puny) then
 
          do n = 1, ncat
             if (vsnon(n) > c0) then
@@ -815,7 +815,7 @@
           zrhos(k) = smice(k) + smliq(k)
 
           ! best-fit table indecies:
-          T_idx    = nint(abs(zTsn(k)+ Tffresh - 223.0_dbl_kind) / 5.0_dbl_kind, kind=int_kind)
+          T_idx    = nint(abs(zTsn(k)+ Tffresh - 223.15_dbl_kind) / 5.0_dbl_kind, kind=int_kind)
           Tgrd_idx = nint(zdTdz(k) / 10.0_dbl_kind, kind=int_kind)
           !rhos_idx = nint(zrhos(k)-50.0_dbl_kind) / 50.0_dbl_kind, kind=int_kind)   ! variable density
           rhos_idx = nint((rhos-50.0_dbl_kind) / 50.0_dbl_kind, kind=int_kind)        ! fixed density
@@ -883,7 +883,7 @@
 !  Conversions between ice mass, liquid water mass in snow
 
       subroutine drain_snow (dt, nslyr, vsnon,  aicen, &
-                             smice, smliq, meltsliq)
+                             smice, smliq, meltsliq, use_smliq_pnd)
 
       integer (kind=int_kind), intent(in) :: &
          nslyr    ! number of snow layers
@@ -904,13 +904,17 @@
          intent(inout) :: &
          smliq    ! mass of liquid in snow (kg/m^2)
 
+      logical (kind=log_kind), intent(in) :: &
+         use_smliq_pnd   ! if true, use snow liquid tracer for ponds
+
       ! local temporary variables
 
       integer (kind=int_kind) ::  k
 
       real (kind=dbl_kind) :: &
         hslyr,  & ! snow layer thickness (m)
-        hsn       ! snow thickness (m)
+        hsn,    & ! snow thickness (m)
+        meltsliq_tmp  ! temperary snow liquid content
 
       real (kind=dbl_kind), dimension(nslyr) :: &
          dlin    , & ! liquid into the layer from above (kg/m^2)
@@ -920,12 +924,12 @@
          w_drain    ! flow between layers
 
       hsn = c0
+      meltsliq_tmp = c0
       if (aicen > c0) hsn = vsnon/aicen
       if (hsn > puny) then
         dlin(:) = c0
         dlout(:) = c0
         hslyr    = hsn / real(nslyr,kind=dbl_kind)
-        meltsliq = c0
         do k = 1,nslyr
             smliq(k)   = smliq(k)  + dlin(k) / hslyr   ! liquid in from above layer
             phi_ice(k) = min(c1, smice(k) / rhoi)
@@ -936,12 +940,15 @@
             if (k < nslyr) then
                 dlin(k+1) = dlout(k)
             else
-                meltsliq = dlout(nslyr)
+                meltsliq_tmp = dlout(nslyr)
             endif
         enddo
       else
-        meltsliq = meltsliq  ! computed in thickness_changes
+        meltsliq_tmp = meltsliq  ! computed in thickness_changes
       endif
+
+      meltsliq = meltsliq
+      if (use_smliq_pnd) meltsliq = meltsliq_tmp
 
       end subroutine drain_snow
 
