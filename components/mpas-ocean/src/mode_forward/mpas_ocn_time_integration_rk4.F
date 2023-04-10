@@ -669,7 +669,7 @@ module ocn_time_integration_rk4
          end if
 
          if (config_disable_tr_all_tend) then
-            num_tracers = size(activeTracersNew, dim=2)
+            num_tracers = size(activeTracersNew, dim=1)
             do iTracer = 1, num_tracers
                !$omp parallel
                !$omp do schedule(runtime)
