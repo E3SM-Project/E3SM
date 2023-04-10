@@ -14,6 +14,11 @@ set_target_properties(scream_io PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
 target_include_directories(scream_io PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/modules)
+
+if (DEFINED ENV{ADIOS2_DIR})
+  target_include_directories(scream_io PRIVATE $ENV{ADIOS2_DIR}/include)
+endif ()
+
 target_link_libraries(scream_io PUBLIC scream_share piof pioc)
 
 if (SCREAM_CIME_BUILD)
