@@ -562,7 +562,7 @@ contains
     call MPAS_stream_mgr_add_att(domain % streamManager, 'source', 'E3SM Sea Ice Model')
     call MPAS_stream_mgr_add_att(domain % streamManager, 'institution',trim(institution))
     call MPAS_stream_mgr_add_att(domain % streamManager, 'institution_id', 'E3SM-Project')
-    call MPAS_stream_mgr_add_att(domain % streamManager, 'contact', 'e3sm-data-support@listserv.llnl.gov')
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'contact', 'e3sm-data-support@llnl.gov')
     call MPAS_stream_mgr_add_att(domain % streamManager, 'username', trim(username))
     call MPAS_stream_mgr_add_att(domain % streamManager, 'hostname', trim(hostname))
 
