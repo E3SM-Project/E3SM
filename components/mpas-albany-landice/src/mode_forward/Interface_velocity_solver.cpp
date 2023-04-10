@@ -469,16 +469,14 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   //we define the vector of global triangles Ids and compute the stride between the largest and the smallest Id globally
   //This will be needed by the velocity solver to create the 3D FE mesh.
   indexToTriangleID.resize(nTriangles);
-  int maxTriangleID=std::numeric_limits<int>::min(), minTriangleID=std::numeric_limits<int>::max(), maxGlobalTriangleID, minGlobalTriangleID;
+  int maxTriangleID=std::numeric_limits<int>::min(), maxGlobalTriangleID;
   for (int index(0); index < nTriangles; index++) {
     indexToTriangleID[index] = fVertexToTriangleID[triangleToFVertex[index]];
     maxTriangleID = (indexToTriangleID[index] > maxTriangleID) ? indexToTriangleID[index] : maxTriangleID;
-    minTriangleID = (indexToTriangleID[index] < minTriangleID) ? indexToTriangleID[index] : minTriangleID;
   }
 
   MPI_Allreduce(&maxTriangleID, &maxGlobalTriangleID, 1, MPI_INT, MPI_MAX, comm);
-  MPI_Allreduce(&minTriangleID, &minGlobalTriangleID, 1, MPI_INT, MPI_MIN, comm);
-  globalTriangleStride = maxGlobalTriangleID - minGlobalTriangleID +1;
+  globalTriangleStride = maxGlobalTriangleID;
 
   // Second, we compute the FE edges belonging to the FE triangles owned by this processor.
   // We first compute boundary edges, and then all the other edges.
@@ -569,12 +567,11 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   indexToEdgeID.resize(nEdges);
   iceMarginEdgesLIds.clear();
   iceMarginEdgesLIds.reserve(numBoundaryEdges);
-  int maxEdgeID=std::numeric_limits<int>::min(), minEdgeID=std::numeric_limits<int>::max(), maxGlobalEdgeID, minGlobalEdgeID;
+  int maxEdgeID=std::numeric_limits<int>::min(), maxGlobalEdgeID;
   for (int index = 0; index < nEdges; index++) {
     int fEdge = edgeToFEdge[index];
     indexToEdgeID[index] = fEdgeToEdgeID[fEdge];
     maxEdgeID = (indexToEdgeID[index] > maxEdgeID) ? indexToEdgeID[index] : maxEdgeID;
-    minEdgeID = (indexToEdgeID[index] < minEdgeID) ? indexToEdgeID[index] : minEdgeID;
 
     if(index<numBoundaryEdges){
       int fCell0 = cellsOnEdge_F[2 * fEdge] - 1;
@@ -589,8 +586,7 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   }
 
   MPI_Allreduce(&maxEdgeID, &maxGlobalEdgeID, 1, MPI_INT, MPI_MAX, comm);
-  MPI_Allreduce(&minEdgeID, &minGlobalEdgeID, 1, MPI_INT, MPI_MIN, comm);
-  globalEdgeStride = maxGlobalEdgeID - minGlobalEdgeID + 1;
+  globalEdgeStride = maxGlobalEdgeID;
 
   // Third, we compute the FE vertices belonging to the FE triangles owned by this processor.
   // We need to make sure that an FE vertex is owned by a proc that owns a FE triangle that contain that vertex
@@ -648,18 +644,16 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   for (int fcell = 0; fcell < nCells_F; fcell++)
     fCellToVertexID[fcell] = indexToCellID_F[fcell];
 
-  int maxVertexID=std::numeric_limits<int>::min(), minVertexID=std::numeric_limits<int>::max(), maxGlobalVertexID, minGlobalVertexID;
+  int maxVertexID=std::numeric_limits<int>::min(), maxGlobalVertexID;
   indexToVertexID.resize(nVertices);
   for (int index = 0; index < nVertices; index++) {
     int fCell = vertexToFCell[index];
     indexToVertexID[index] = fCellToVertexID[fCell];
     maxVertexID = (indexToVertexID[index] > maxVertexID) ? indexToVertexID[index] : maxVertexID;
-    minVertexID = (indexToVertexID[index] < minVertexID) ? indexToVertexID[index] : minVertexID;
   }
 
   MPI_Allreduce(&maxVertexID, &maxGlobalVertexID, 1, MPI_INT, MPI_MAX, comm);
-  MPI_Allreduce(&minVertexID, &minGlobalVertexID, 1, MPI_INT, MPI_MIN, comm);
-  globalVertexStride = maxGlobalVertexID - minGlobalVertexID + 1;
+  globalVertexStride = maxGlobalVertexID;
 
 
   int vertexColumnShift = (Ordering == 1) ? 1 : globalVertexStride;
