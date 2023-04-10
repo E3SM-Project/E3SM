@@ -61,6 +61,10 @@ public:
   //       However, if the field has a 'parent' (see FamilyTracking), the parent's ts will not be updated.
   void update_time_stamp (const TimeStamp& ts);
 
+  // Set/get accumulation interval start
+  void set_accum_start_time (const TimeStamp& ts);
+  const TimeStamp& get_accum_start_time () const { return m_accum_start; }
+
 protected:
 
   // We keep the field name just to make debugging messages more helpful
@@ -68,6 +72,10 @@ protected:
 
   // Tracking the updates of the field
   TimeStamp         m_time_stamp;
+
+  // For accummulated vars, the time where the accummulation started
+  TimeStamp         m_accum_start;
+  ci_string         m_accum_type;
 
   // List of provider/customer processes. A provider is an atm process that computes/updates the field.
   // A customer is an atm process that uses the field just as an input.

@@ -170,6 +170,27 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   m_grids_mgr = grids_manager;
 }
 
+void AtmosphereProcessGroup::setup_tendencies_requests () {
+  auto is_tend = [](const std::string& name) -> bool
+  {
+    return name.size()>5 &&
+           name.substr(name.size()-5)=="_tend";
+  };
+
+  AtmosphereProcess::setup_tendencies_requests();
+  for (const auto& atm_proc : m_atm_processes) {
+    atm_proc->setup_tendencies_requests();
+
+    // Redo the add_field<Computed> for all XYZ_tend fields, since
+    // they were added *after* the call to set_grids.
+    for (const auto& req : atm_proc->get_computed_field_requests()) {
+      if (is_tend(req.fid.name())) {
+        add_field<Computed>(req);
+      }
+    }
+  }
+}
+
 void AtmosphereProcessGroup::
 gather_internal_fields  () {
   // For debug purposes
@@ -331,7 +352,7 @@ void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
   }
 }
 
-void AtmosphereProcessGroup::run_impl (const int dt) {
+void AtmosphereProcessGroup::run_impl (const double dt) {
   if (m_group_schedule_type==ScheduleType::Sequential) {
     run_sequential(dt);
   } else {
@@ -339,7 +360,7 @@ void AtmosphereProcessGroup::run_impl (const int dt) {
   }
 }
 
-void AtmosphereProcessGroup::run_sequential (const Real dt) {
+void AtmosphereProcessGroup::run_sequential (const double dt) {
   // Get the timestamp at the beginning of the step and advance it.
   auto ts = timestamp();
   ts += dt;
@@ -362,7 +383,7 @@ void AtmosphereProcessGroup::run_sequential (const Real dt) {
   }
 }
 
-void AtmosphereProcessGroup::run_parallel (const Real /* dt */) {
+void AtmosphereProcessGroup::run_parallel (const double /* dt */) {
   EKAT_REQUIRE_MSG (false,"Error! Parallel splitting not yet implemented.\n");
 }
 

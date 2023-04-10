@@ -29,7 +29,7 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Qunit = kg/kg;
   Qunit.set_string("kg/kg");
-  Units nondim(0,0,0,0,0,0,0);
+  auto nondim = Units::nondimensional();
   auto Wm2 = W / m / m;
   Wm2.set_string("W/m2)");
   const auto m2 = m*m;
@@ -132,7 +132,7 @@ void SurfaceCouplingImporter::initialize_impl (const RunType /* run_type */)
   if (any_initial_imports) do_import(true);
 }
 // =========================================================================================
-void SurfaceCouplingImporter::run_impl (const int /* dt */)
+void SurfaceCouplingImporter::run_impl (const double /* dt */)
 {
   do_import();
 }

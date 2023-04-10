@@ -18,7 +18,7 @@ void Functions<S,D>::check_length_scale_shoc_length(
   const auto minlen = scream::shoc::Constants<Real>::minlen;
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     // Ensure shoc_mix is in the interval [minval, sqrt(host_dx*host_dy)]
     shoc_mix(k) = ekat::min(std::sqrt(dx*dy),
                             ekat::max(minlen, shoc_mix(k)));

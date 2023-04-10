@@ -304,8 +304,8 @@ void test_exports(const FieldManager& fm,
       EKAT_REQUIRE(0 == export_data_view(i, export_cpl_indices_view(15)));
       EKAT_REQUIRE(0 == export_data_view(i, export_cpl_indices_view(16)));
     } else {
-      EKAT_REQUIRE(export_constant_multiple_view(9 )*Faxa_rainl_h(i)       == 0.0); // These are set to 0 in do_export() so the values can't be
-      EKAT_REQUIRE(export_constant_multiple_view(10)*Faxa_snowl_h(i)       == 0.0); // checked here. It will be tested in the V1 CIME tests.
+      EKAT_REQUIRE(export_constant_multiple_view(9 )*Faxa_rainl_h(i)       == export_data_view(i, export_cpl_indices_view(9 )));
+      EKAT_REQUIRE(export_constant_multiple_view(10)*Faxa_snowl_h(i)       == export_data_view(i, export_cpl_indices_view(10)));
       EKAT_REQUIRE(export_constant_multiple_view(11)*sfc_flux_dir_nir_h(i) == export_data_view(i, export_cpl_indices_view(11)));
       EKAT_REQUIRE(export_constant_multiple_view(12)*sfc_flux_dir_vis_h(i) == export_data_view(i, export_cpl_indices_view(12)));
       EKAT_REQUIRE(export_constant_multiple_view(13)*sfc_flux_dif_nir_h(i) == export_data_view(i, export_cpl_indices_view(13)));
@@ -326,15 +326,12 @@ TEST_CASE("surface-coupling", "") {
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
-  REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
+  parse_yaml_file(fname,ad_params);
 
   // Parameters
-  auto& ts              = ad_params.sublist("Time Stepping");
-  const auto start_date = ts.get<std::vector<int>>("Start Date");
-  const auto start_time = ts.get<std::vector<int>>("Start Time");
-
-  util::TimeStamp t0 (start_date, start_time);
-  EKAT_ASSERT_MSG (t0.is_valid(), "Error! Invalid start date.\n");
+  auto& ts          = ad_params.sublist("time_stepping");
+  const auto t0_str = ts.get<std::string>("run_t0");
+  const auto t0     = util::str_to_time_stamp(t0_str);
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
   auto& proc_factory = AtmosphereProcessFactory::instance();

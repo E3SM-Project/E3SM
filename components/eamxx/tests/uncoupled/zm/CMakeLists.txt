@@ -8,6 +8,7 @@ CreateUnitTest(zm_standalone "zm_standalone.cpp" "${NEED_LIBS}" LABELS "zm;physi
 # Set AD configurable options
 SetVarDependingOnTestSize(NUM_STEPS 2 24 48)
 set (ATM_TIME_STEP 1800)
+set (RUN_T0 2021-10-12-45000)
 
 # Configure yaml input file to run directory
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml

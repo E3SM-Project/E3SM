@@ -16,6 +16,7 @@ CreateUnitTest(homme_shoc_cld_p3_rrtmgp "homme_shoc_cld_p3_rrtmgp.cpp" "${NEED_L
 # Set AD configurable options
 set (ATM_TIME_STEP 1800)
 SetVarDependingOnTestSize(NUM_STEPS 2 4 48)  # 1h 2h 24h
+set (RUN_T0 2021-10-12-45000)
 
 # Determine num subcycles needed to keep shoc dt<=300s
 set (SHOC_MAX_DT 300)
@@ -61,7 +62,7 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 
 # Ensure test input files are present in the data dir
 GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
-GetInputFile(cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc)
+GetInputFile(cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc)
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if running with 2+ ranks configurations
@@ -71,9 +72,11 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   BuildCprnc()
 
   set (BASE_TEST_NAME "homme_shoc_cld_p3_rrtmgp")
-  foreach (MPI_RANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
-    set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
-    set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
+  math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
+  foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
+
+    set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.${RUN_T0}.nc")
+    set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.${RUN_T0}.nc")
     set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}

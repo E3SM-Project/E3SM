@@ -195,6 +195,8 @@
         <command name="unload">cray-parallel-netcdf</command>
         <command name="unload">PrgEnv-gnu</command>
         <command name="unload">PrgEnv-nvidia</command>
+        <command name="unload">PrgEnv-cray</command>
+        <command name="unload">PrgEnv-aocc</command>
         <command name="unload">cudatoolkit</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
@@ -210,7 +212,7 @@
 
       <modules compiler="nvidia">
         <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/22.5</command>
+        <command name="load">nvidia/22.7</command>
       </modules>
 
       <modules compiler="amdclang">
@@ -220,19 +222,20 @@
 
       <modules>
         <command name="load">craype-accel-host</command>
-        <command name="load">cray-libsci</command>
-        <command name="load">craype</command>
-        <command name="load">cray-mpich/8.1.22</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.1</command>
-        <command name="load">cmake/3.22.0</command>
+        <command name="load">cray-libsci/23.02.1.1</command>
+        <command name="load">craype/2.7.19</command>
+        <command name="load">cray-mpich/8.1.24</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.3</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.3</command>
+        <command name="load">cmake/3.24.3</command>
       </modules>
     </module_system>
 
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
 
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
@@ -244,6 +247,15 @@
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
       <env name="FI_CXI_RX_MATCH_MODE">software</env>
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="mpich">
+      <env name="ADIOS2_DIR">/global/cfs/cdirs/e3sm/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.15/gcc-11.2.0</env>
+    </environment_variables>
+    <environment_variables compiler="nvidia" mpilib="mpich">
+      <env name="ADIOS2_DIR">/global/cfs/cdirs/e3sm/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.15/nvidia-21.11</env>
+    </environment_variables>
+    <environment_variables compiler="amdclang" mpilib="mpich">
+      <env name="ADIOS2_DIR">/global/cfs/cdirs/e3sm/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.15/aocc-3.2.0</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -305,6 +317,8 @@
         <command name="unload">cray-parallel-netcdf</command>
         <command name="unload">PrgEnv-gnu</command>
         <command name="unload">PrgEnv-nvidia</command>
+        <command name="unload">PrgEnv-cray</command>
+        <command name="unload">PrgEnv-aocc</command>
         <command name="unload">cudatoolkit</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
@@ -320,7 +334,7 @@
 
       <modules compiler="nvidia.*">
         <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/22.5</command>
+        <command name="load">nvidia/22.7</command>
       </modules>
 
       <modules compiler="gnugpu">
@@ -342,13 +356,13 @@
       </modules>
 
       <modules>
-        <command name="load">cray-libsci</command>
-        <command name="load">craype</command>
-        <command name="load">cray-mpich/8.1.22</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.1</command>
-        <command name="load">cmake/3.22.0</command>
+        <command name="load">cray-libsci/23.02.1.1</command>
+        <command name="load">craype/2.7.19</command>
+        <command name="load">cray-mpich/8.1.24</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.3</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.3</command>
+        <command name="load">cmake/3.24.3</command>
       </modules>
     </module_system>
 
@@ -371,6 +385,12 @@
     </environment_variables>
     <environment_variables compiler="nvidiagpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
+    </environment_variables>
+    <environment_variables compiler="gnu.*" mpilib="mpich">
+      <env name="ADIOS2_DIR">/global/cfs/cdirs/e3sm/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.15/gcc-11.2.0</env>
+    </environment_variables>
+    <environment_variables compiler="nvidia.*" mpilib="mpich">
+      <env name="ADIOS2_DIR">/global/cfs/cdirs/e3sm/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.15/nvidia-21.11</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -428,6 +448,8 @@
         <command name="unload">cray-parallel-netcdf</command>
         <command name="unload">PrgEnv-gnu</command>
         <command name="unload">PrgEnv-nvidia</command>
+        <command name="unload">PrgEnv-cray</command>
+        <command name="unload">PrgEnv-aocc</command>
         <command name="unload">cudatoolkit</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
@@ -443,7 +465,7 @@
 
       <modules compiler="nvidia">
         <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/22.5</command>
+        <command name="load">nvidia/22.7</command>
       </modules>
 
       <modules compiler="amdclang">
@@ -453,13 +475,13 @@
 
       <modules>
         <command name="load">craype-accel-host</command>
-        <command name="load">cray-libsci</command>
-        <command name="load">craype</command>
-        <command name="load">cray-mpich/8.1.22</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.1</command>
-        <command name="load">cmake/3.22.0</command>
+        <command name="load">cray-libsci/23.02.1.1</command>
+        <command name="load">craype/2.7.19</command>
+        <command name="load">cray-mpich/8.1.24</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.3</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.3</command>
+        <command name="load">cmake/3.24.3</command>
       </modules>
     </module_system>
 
@@ -568,7 +590,7 @@
     <DESC>Crusher. NCCS moderate-security system that contains similar hardware and software as the upcoming Frontier system at ORNL. 192 AMD EPYC 7A53 64C nodes, 128 hwthreads, 512GB DDR4, 4 MI250X GPUs</DESC>
     <NODENAME_REGEX>.*crusher.*</NODENAME_REGEX>
     <OS>CNL</OS>
-    <COMPILERS>gnu,crayclang,amdclang</COMPILERS>
+    <COMPILERS>gnu,crayclang,amdclang,gnugpu,crayclanggpu,amdclanggpu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cli133_crusher</PROJECT>
     <CIME_OUTPUT_ROOT>/gpfs/alpine/cli133/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
@@ -583,14 +605,17 @@
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>56</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>56</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnugpu">8</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="crayclanggpu">8</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="amdclanggpu">8</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
         <arg name="num_tasks"> -l -K -n {{ total_tasks }} -N {{ num_nodes }} </arg>
-        <arg name="binding">--threads-per-core=1</arg>
         <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
-        <arg name="placement">-m *:block</arg>
+        <arg name="ntasks_per_gpu">$ENV{NTASKS_PER_GPU}</arg>
+        <arg name="gpu_bind">$ENV{GPU_BIND_ARGS}</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
@@ -602,19 +627,31 @@
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
-      <modules compiler="crayclang">
+      <modules compiler="crayclang.*">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-cray/8.3.3</command>
-        <command name="switch">cce cce/14.0.0</command>
+        <command name="switch">cce cce/14.0.2</command>
       </modules>
-      <modules compiler="amdclang">
+      <modules compiler="crayclanggpu">
+        <command name="load">craype-accel-amd-gfx90a</command>
+        <command name="load">rocm/5.4.0</command>
+      </modules>
+      <modules compiler="amdclang.*">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-amd/8.3.3</command>
         <command name="switch">amd amd/5.4.0</command>
       </modules>
-      <modules compiler="gnu">
+      <modules compiler="amdclanggpu">
+        <command name="load">craype-accel-amd-gfx90a</command>
+      </modules>
+      <modules compiler="gnu.*">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-gnu/8.3.3</command>
+        <command name="switch">gcc gcc/11.2.0</command>
+      </modules>
+      <modules compiler="gnugpu">
+        <command name="load">craype-accel-amd-gfx90a</command>
+        <command name="load">rocm/5.4.0</command>
       </modules>
       <modules>
         <command name="load">cray-python/3.9.12.1</command>
@@ -634,14 +671,35 @@
     <environment_variables>
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
+      <env name="NTASKS_PER_GPU"> </env>
+      <env name="GPU_BIND_ARGS"> </env>
     </environment_variables>
     <environment_variables compiler="amdclang">
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LIBSCI_DIR}/amd/4.0/x86_64/lib:$ENV{LD_LIBRARY_PATH}</env>
+    </environment_variables>
+    <environment_variables compiler=".*gpu.*">
+      <env name="NTASKS_PER_GPU">--ntasks-per-gpu=$SHELL{echo "`./xmlquery --value MAX_MPITASKS_PER_NODE`/8"|bc}</env>
+      <env name="GPU_BIND_ARGS">--gpu-bind=closest</env>
+      <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
+      <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
+    </environment_variables>
+    <environment_variables compiler=".*gpu.*" DEBUG="TRUE">
+      <env name="AMD_LOG_LEVEL">10</env>
+      <env name="CRAY_ACC_DEBUG">3</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+    <environment_variables compiler="gnu.*" mpilib="mpich">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/gcc-11.2.0</env>
+    </environment_variables>
+    <environment_variables compiler="crayclang.*" mpilib="mpich">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/crayclang-14.0.2</env>
+    </environment_variables>
+    <environment_variables compiler="amdclang.*" mpilib="mpich">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/amdclang-15.0.0</env>
     </environment_variables>
   </machine>
 
@@ -652,7 +710,7 @@
     <DESC>Crusher. NCCS moderate-security system that contains similar hardware and software as the upcoming Frontier system at ORNL. 192 AMD EPYC 7A53 64C nodes, 128 hwthreads, 512GB DDR4, 4 MI250X GPUs</DESC>
     <NODENAME_REGEX>.*crusher.*</NODENAME_REGEX>
     <OS>CNL</OS>
-    <COMPILERS>gnu,crayclang-scream,amdclang</COMPILERS>
+    <COMPILERS>crayclang-scream</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>CLI133_crusher</PROJECT>
     <CIME_OUTPUT_ROOT>/gpfs/alpine/cli133/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
@@ -742,6 +800,9 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
+    <environment_variables compiler="crayclang-scream" mpilib="mpich">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/crayclang-14.0.2</env>
+    </environment_variables>
   </machine>
 
 
@@ -803,9 +864,9 @@
         <command name="load">git/2.31.1</command>
         <command name="load">cmake/3.21.3</command>
         <command name="load">zlib/1.2.11</command>
-        <command name="load">cray-hdf5-parallel/1.12.1.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.8.1.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.1.7</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.1</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.1</command>
       </modules>
 
     </module_system>
@@ -826,6 +887,9 @@
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+    <environment_variables compiler="crayclang-scream" mpilib="mpich">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/crayclang-14.0.2</env>
     </environment_variables>
   </machine>
 
@@ -1053,6 +1117,12 @@
     <environment_variables compiler="intel">
       <env name="FORT_BUFFERED">yes</env>
     </environment_variables>
+    <environment_variables compiler="intel" mpilib="mpt">
+      <env name="ADIOS2_DIR">/global/cfs/cdirs/e3sm/3rdparty/haswell/adios2/2.7.0/cray-mpich-7.7.10/intel-19.0.3</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="mpt">
+      <env name="ADIOS2_DIR">/global/cfs/cdirs/e3sm/3rdparty/haswell/adios2/2.7.0/cray-mpich-7.7.10/gcc-8.3.0</env>
+    </environment_variables>
   </machine>
 
   <!-- KNL nodes of Cori -->
@@ -1210,6 +1280,21 @@
     <environment_variables compiler="intel">
       <env name="MPICH_MEMORY_REPORT">1</env>
     </environment_variables>
+    <environment_variables>
+      <env name="LIBFFI_ROOT">/global/common/sw/cray/sles15/x86_64/libffi/3.2.1/gcc/8.2.0/nprkfvh</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="mpt">
+      <env name="ADIOS2_DIR">/global/cfs/cdirs/e3sm/3rdparty/knl/adios2/2.8.0/cray-mpich-7.7.10/intel-19.0.3</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="mpt">
+      <env name="ADIOS2_DIR">/global/cfs/cdirs/e3sm/3rdparty/knl/adios2/2.8.0/cray-mpich-7.7.10/gcc-10.3.0</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="impi">
+      <env name="ADIOS2_DIR">/global/cfs/cdirs/e3sm/3rdparty/knl/adios2/2.8.0/impi-2020/intel-19.0.3</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="impi">
+      <env name="ADIOS2_DIR">/global/cfs/cdirs/e3sm/3rdparty/knl/adios2/2.8.0/impi-2020/gcc-10.3.0</env>
+    </environment_variables>
   </machine>
 
   <!-- Skylake nodes of Stampede2 at TACC -->
@@ -1356,6 +1441,36 @@
     <EXEROOT>$ENV{HOME}/projects/acme/scratch/$CASE/bld</EXEROOT>
     <!-- cmake -DCMAKE_Fortran_COMPILER=/opt/local/bin/mpif90-mpich-gcc48 -DHDF5_DIR=/opt/local -DNetcdf_INCLUDE_DIR=/opt/local/include .. -->
     <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
+  </machine>
+
+  <machine MACH="WSL2">
+    <DESC>Windows Subsystem for Linux v2, using Ubuntu distribution</DESC>
+    <NODENAME_REGEX>none</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm_scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/pt-e3sm-inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/pt-e3sm-inputdata</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/e3sm_scratch/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/e3sm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>4</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>thorntonpe at ornl dot gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none"/>
+    <RUNDIR>$ENV{HOME}/e3sm_scratch/$CASE/run</RUNDIR>
+    <EXEROOT>$ENV{HOME}/e3sm_scratch/$CASE/bld</EXEROOT>
   </machine>
 
   <machine MACH="singularity">
@@ -1767,6 +1882,12 @@
     <environment_variables>
       <env name="PERL5LIB">/soft/apps/packages/climate/perl5/lib/perl5</env>
     </environment_variables>
+    <environment_variables compiler="gnu" mpilib="mpich">
+      <env name="ADIOS2_DIR">/soft/apps/packages/climate/adios2/2.7.0/mpich-3.3.2/gcc-8.2.0</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="openmpi">
+      <env name="ADIOS2_DIR">/soft/apps/packages/climate/adios2/2.7.0/openmpi-2.1.5/gcc-8.2.0</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="anlgce-ub18">
@@ -1854,6 +1975,9 @@
     <environment_variables>
       <env name="PERL5LIB">/nfs/gce/projects/climate/software/perl5/lib/perl5</env>
     </environment_variables>
+    <environment_variables compiler="gnu" mpilib="mpich">
+      <env name="ADIOS2_DIR">/nfs/gce/projects/climate/software/adios2/2.8.3.patch/mpich-3.4.2/gcc-11.1.0</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="anlgce">
@@ -1940,6 +2064,9 @@
     </environment_variables>
     <environment_variables>
       <env name="PERL5LIB">/nfs/gce/projects/climate/software/perl5/lib/perl5</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="mpich">
+      <env name="ADIOS2_DIR">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/adios2/2.8.3.patch/mpich-4.0/gcc-11.1.0</env>
     </environment_variables>
   </machine>
 
@@ -2092,7 +2219,7 @@
 
   <machine MACH="anvil">
     <DESC>ANL/LCRC Linux Cluster</DESC>
-    <NODENAME_REGEX>b.*.lcrc.anl.gov</NODENAME_REGEX>
+    <NODENAME_REGEX>(b\d+|blues.*).lcrc.anl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>impi,openmpi,mvapich</MPILIBS>
@@ -2218,6 +2345,24 @@
     <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
+    <environment_variables compiler="intel" mpilib="impi">
+      <env name="ADIOS2_DIR">/lcrc/group/e3sm/3rdparty/anvil/adios2/2.8.3.patch/intel-mpi-2019.9.304/intel-20.0.4</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="impi">
+      <env name="ADIOS2_DIR">/lcrc/group/e3sm/3rdparty/anvil/adios2/2.8.3.patch/intel-mpi-2019.9.304/gcc-8.2.0</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="openmpi">
+      <env name="ADIOS2_DIR">/lcrc/group/e3sm/3rdparty/anvil/adios2/2.8.3.patch/openmpi-4.1.1/intel-20.0.4</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="openmpi">
+      <env name="ADIOS2_DIR">/lcrc/group/e3sm/3rdparty/anvil/adios2/2.8.3.patch/openmpi-4.1.1/gcc-8.2.0</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="mvapich">
+      <env name="ADIOS2_DIR">/lcrc/group/e3sm/3rdparty/anvil/adios2/2.8.3.patch/mvapich2-2.3.6/intel-20.0.4</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="mvapich">
+      <env name="ADIOS2_DIR">/lcrc/group/e3sm/3rdparty/anvil/adios2/2.8.3.patch/mvapich2-2.2/gcc-8.2.0</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="chrysalis">
@@ -2341,6 +2486,18 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="openmpi">
+      <env name="ADIOS2_DIR">/lcrc/group/e3sm/3rdparty/chrysalis/adios2/2.8.3.patch/openmpi-4.1.3/intel-20.0.4</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="openmpi">
+      <env name="ADIOS2_DIR">/lcrc/group/e3sm/3rdparty/chrysalis/adios2/2.8.3.patch/openmpi-4.1.3/gcc-9.2.0</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="impi">
+      <env name="ADIOS2_DIR">/lcrc/group/e3sm/3rdparty/chrysalis/adios2/2.8.3.patch/intel-mpi-2019.9.304/intel-20.0.4</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="impi">
+      <env name="ADIOS2_DIR">/lcrc/group/e3sm/3rdparty/chrysalis/adios2/2.8.3.patch/intel-mpi-2019.9.304/gcc-9.2.0</env>
     </environment_variables>
   </machine>
 
@@ -2584,6 +2741,9 @@
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
+    <environment_variables compiler="gnu">
+      <env name="HDF5_PATH">$SHELL{which h5dump | xargs dirname | xargs dirname}</env>
+    </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
@@ -2591,6 +2751,18 @@
     </environment_variables>
     <environment_variables mpilib="impi">
       <env name="I_MPI_FABRICS">shm:tmi</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="impi">
+      <env name="ADIOS2_DIR">/lcrc/group/e3sm/3rdparty/bebop/adios2/2.8.3.patch/intel-mpi-2018.4.274/intel-18.0.4</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="impi">
+      <env name="ADIOS2_DIR">/lcrc/group/e3sm/3rdparty/bebop/adios2/2.8.3.patch/intel-mpi-2018.4.274/gcc-8.2.0</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="mvapich">
+      <env name="ADIOS2_DIR">/lcrc/group/e3sm/3rdparty/bebop/adios2/2.8.3.patch/mvapich2-2.3.1/intel-18.0.4</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="mvapich">
+      <env name="ADIOS2_DIR">/lcrc/group/e3sm/3rdparty/bebop/adios2/2.8.3.patch/mvapich2-2.3/gcc-8.2.0</env>
     </environment_variables>
   </machine>
 
@@ -2796,6 +2968,12 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="!intel">
       <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e OMP_PROC_BIND=spread -e OMP_PLACES=threads</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="mpt">
+      <env name="ADIOS2_DIR">/projects/ClimateEnergy_4/3rdparty/adios2/2.7.0/cray-mpich-7.7.14/intel-19.1.0</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="mpt">
+      <env name="ADIOS2_DIR">/projects/ClimateEnergy_4/3rdparty/adios2/2.7.0/cray-mpich-7.7.14/gcc-9.3.0</env>
     </environment_variables>
   </machine>
 
@@ -3300,6 +3478,18 @@
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PLACES">cores</env>
     </environment_variables>
+    <environment_variables compiler="intel" mpilib="impi">
+      <env name="ADIOS2_DIR">/qfs/people/wuda020/3rdparty/adios2/2.8.3.patch/intelmpi-2019u4/intel-19.0.5</env>
+    </environment_variables>
+    <environment_variables compiler="pgi" mpilib="impi">
+      <env name="ADIOS2_DIR">/qfs/people/wuda020/3rdparty/adios2/2.8.3.patch/intelmpi-2019u3/pgi-19.10</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="mvapich2">
+      <env name="ADIOS2_DIR">/qfs/people/wuda020/3rdparty/adios2/2.8.3.patch/mvapich2-2.3.1/intel-19.0.4</env>
+    </environment_variables>
+    <environment_variables compiler="pgi" mpilib="mvapich2">
+      <env name="ADIOS2_DIR">/qfs/people/wuda020/3rdparty/adios2/2.8.3.patch/mvapich2-2.3.1/pgi-19.7</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="tahoma">
@@ -3665,14 +3855,14 @@
     <DESC>Chicoma CPU-only nodes at LANL IC. Each node has 2 AMD EPYC 7H12 64-Core (Milan) 512GB</DESC>
     <NODENAME_REGEX>ch-fe*</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnu,nvidia,aocc,amdclang</COMPILERS>
+    <COMPILERS>gnu,nvidia,intel,aocc,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/scratch/chicoma-cpu</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/usr/projects/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/usr/projects/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/usr/projects/climate/SHARED_CLIMATE/software/badger/cprnc</CCSM_CPRNC>
     <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -3715,13 +3905,18 @@
       </modules>
 
       <modules compiler="gnu">
-        <command name="load">PrgEnv-gnu/8.3.2</command>
-        <command name="load">gcc/11.2.0</command>
+        <command name="load">PrgEnv-gnu/8.3.3</command>
+        <command name="load">gcc/12.1.0</command>
       </modules>
 
       <modules compiler="nvidia">
-        <command name="load">PrgEnv-nvidia</command>
+        <command name="load">PrgEnv-nvidia/8.3.3</command>
         <command name="load">nvidia/22.3</command>
+      </modules>
+
+      <modules compiler="intel">
+        <command name="load">PrgEnv-intel/8.3.3</command>
+        <command name="load">intel-classic/2022.2.1</command>
       </modules>
 
       <modules compiler="aocc">
@@ -3738,10 +3933,11 @@
         <command name="load">craype-accel-host</command>
         <command name="load">cray-libsci</command>
         <command name="load">craype</command>
-        <command name="load">cray-mpich/8.1.14</command>
-        <command name="load">cray-hdf5-parallel/1.12.1.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.8.1.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.2.1</command>
+        <command name="load">cray-mpich/8.1.21</command>
+        <command name="load">libfabric/1.15.0.0</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.1</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.1</command>
         <command name="load">cmake/3.20.3</command>
       </modules>
     </module_system>
@@ -3751,17 +3947,16 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
 
     <environment_variables>
-      <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
-      <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
-      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="PERL5LIB">/usr/projects/climate/SHARED_CLIMATE/software/chicoma-cpu/perl5/lib/perl5</env>
+      <env name="PERL5LIB">/usr/projects/climate/SHARED_CLIMATE/software/chicoma-cpu/perl5-only-switch/lib/perl5</env>
       <env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
+      <env name="FI_CXI_RX_MATCH_MODE">software</env>
+      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -3895,10 +4090,10 @@
       <cmd_path lang="python">/usr/Modules/bin/modulecmd python</cmd_path>
       <modules>
         <command name="purge"/>
-	<command name="load">cmake/3.15.0</command>
+	     <command name="load">cmake/3.15.0</command>
         <command name="load">perl</command>
-	<command name="load">xml-libxml/2.0116</command>
-	<command name="load">python/3.6</command>
+	     <command name="load">xml-libxml/2.0116</command>
+	     <command name="load">python/3.6</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/2016.4.072</command>
@@ -3973,10 +4168,10 @@
       <cmd_path lang="perl">/usr/Modules/bin/modulecmd perl</cmd_path>
       <cmd_path lang="python">/usr/Modules/bin/modulecmd python</cmd_path>
       <modules>
-	<command name="purge"/>
+	     <command name="purge"/>
         <command name="load">cmake/3.15.0</command>
         <command name="load">perl</command>
-	<command name="load">xml-libxml/2.0116</command>
+	     <command name="load">xml-libxml/2.0116</command>
         <command name="load">python/3.6</command>
       </modules>
       <modules compiler="intel">
@@ -4251,6 +4446,15 @@
       <env name="PAMI_IBV_ADAPTER_AFFINITY">1</env>
       <env name="PAMI_IBV_DEVICE_NAME_1">mlx5_3:1,mlx5_0:1</env>
       <env name="PAMI_IBV_DEVICE_NAME">mlx5_0:1,mlx5_3:1</env>
+    </environment_variables>
+    <environment_variables compiler="ibm.*" mpilib="spectrum-mpi">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli115/world-shared/3rdparty/adios2/2.8.3.patch/spectrum-mpi-10.4.0.3/xl-16.1.1-10</env>
+    </environment_variables>
+    <environment_variables compiler="pgi.*" mpilib="spectrum-mpi">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli115/world-shared/3rdparty/adios2/2.8.3.patch/spectrum-mpi-10.4.0.3/nvhpc-21.11</env>
+    </environment_variables>
+    <environment_variables compiler="gnu.*" mpilib="spectrum-mpi">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli115/world-shared/3rdparty/adios2/2.8.3.patch/spectrum-mpi-10.4.0.3/gcc-9.1.0</env>
     </environment_variables>
   </machine>
 

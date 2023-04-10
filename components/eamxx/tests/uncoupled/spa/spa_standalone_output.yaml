@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-Casename: spa_standalone_output
+filename_prefix: spa_standalone_output
 Averaging Type: Instant
 Max Snapshots Per File: ${NUM_STEPS}
 Field Names:
@@ -12,6 +12,5 @@ Field Names:
 output_control:
   Frequency: 1
   frequency_units: nsteps
-  Timestamp in Filename: false
   MPI Ranks in Filename: true
 ...

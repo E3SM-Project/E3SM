@@ -24,7 +24,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
   // The name of the diagnostic
-  std::string name () const { return "PrecipIceMassFlux"; }
+  std::string name () const { return "PrecipIceSurfMassFlux"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -37,7 +37,7 @@ public:
 protected:
 
   Int m_num_cols;
-}; // class PrecipIceMassFluxDiagnostic
+}; // class PrecipIceSurfMassFluxDiagnostic
 
 } //namespace scream
 

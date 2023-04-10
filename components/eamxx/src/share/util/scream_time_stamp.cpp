@@ -144,7 +144,14 @@ void TimeStamp::set_num_steps (const int num_steps) {
   m_num_steps = num_steps;
 }
 
-TimeStamp& TimeStamp::operator+=(const int seconds) {
+TimeStamp& TimeStamp::operator+=(const double seconds) {
+  // Sanity checks
+  // Note: (x-int(x)) only works for x small enough that can be stored in an int,
+  //       but that should be the case here, for use cases in EAMxx.
+  EKAT_REQUIRE_MSG (seconds>0, "Error! Time must move forward.\n");
+  EKAT_REQUIRE_MSG ((seconds-round(seconds))<std::numeric_limits<double>::epsilon()*10,
+      "Error! Cannot update TimeStamp with non-integral number of seconds " << seconds << "\n");
+
   EKAT_REQUIRE_MSG(is_valid(),
       "Error! The time stamp contains uninitialized values.\n"
       "       To use this object, use operator= with a valid rhs first.\n");
@@ -156,7 +163,6 @@ TimeStamp& TimeStamp::operator+=(const int seconds) {
   auto& mm = m_date[1];
   auto& yy = m_date[0];
 
-  EKAT_REQUIRE_MSG (seconds>0, "Error! Time must move forward.\n");
   ++m_num_steps;
   sec += seconds;
 
@@ -290,6 +296,48 @@ std::int64_t operator- (const TimeStamp& ts1, const TimeStamp& ts2) {
   return diff;
 }
 
+TimeStamp operator- (const TimeStamp& ts, const int dt) {
+  if (dt<0) {
+    return ts + (-dt);
+  }
+
+  const int ndays = dt / constants::seconds_per_day;
+  const int nsecs = dt % constants::seconds_per_day;
+
+  auto rewind_one_day = [] (std::vector<int>& date) {
+    // Rewind a day
+    --date[2];
+    if (date[2]==0) {
+      // Whoops, rewind a month
+      --date[1];
+      if (date[1]==0) {
+        // Whoops, rewind a year
+        --date[0];
+        date[1]=12;
+      }
+      date[2] = days_in_month(date[0],date[1]);
+    }
+  };
+
+  auto date = ts.get_date();
+
+  for (int i=0; i<ndays; ++i) {
+    rewind_one_day (date);
+  }
+
+  int frac_of_day;
+  if (nsecs>ts.sec_of_day()) {
+    rewind_one_day (date);
+    frac_of_day = constants::seconds_per_day - (nsecs - ts.sec_of_day());
+  } else {
+    frac_of_day = ts.sec_of_day()-nsecs;
+  }
+
+  TimeStamp t (date,{0,0,0});
+  t += frac_of_day;
+  return t;
+}
+
 TimeStamp str_to_time_stamp (const std::string& s)
 {
   auto is_int = [](const std::string& s) -> bool {
@@ -314,7 +362,11 @@ TimeStamp str_to_time_stamp (const std::string& s)
     return util::TimeStamp();
   }
   std::vector<int> date{std::stoi(YY),std::stoi(MM),std::stoi(DD)};
-  std::vector<int> time{std::stoi(tod)/10000,(std::stoi(tod)/100)%100,(std::stoi(tod))%100};
+  auto sec_of_day = std::stoi(tod);
+  auto hh = (sec_of_day / 60) / 60;
+  auto mm = (sec_of_day / 60) % 60;
+  auto ss =  sec_of_day % 60;
+  std::vector<int> time{hh,mm,ss};
 
   try {
     return util::TimeStamp(date,time);

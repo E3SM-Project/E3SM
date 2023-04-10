@@ -3,17 +3,15 @@
 driver_options:
   atmosphere_dag_verbosity_level: 5
 
-Time Stepping:
-  Time Step: 300
-  Number of Steps: 1
-  Run Start Time: [12, 00, 00]      # Hours, Minutes, Seconds
-  Run Start Date: [2021, 10, 12]    # Year, Month, Day
-  Case Start Time: [12, 00, 00]      # Hours, Minutes, Seconds
-  Case Start Date: [2021, 10, 12]    # Year, Month, Day
+time_stepping:
+  time_step: 300
+  number_of_steps: 1
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  case_t0: ${CASE_T0}  # YYYY-MM-DD-XXXXX
 
 initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
-  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4_16x.c20160612.nc
+  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
   Restart Run: false
   surf_evap: 0.0
   surf_sens_flux: 0.0
@@ -57,7 +55,7 @@ grids_manager:
 # List all the yaml files with the output parameters
 Scorpio:
   model_restart:
-    Casename: model_restart
+    filename_prefix: model_restart
     output_control:
       Frequency:       1
       frequency_units: nsteps

@@ -196,8 +196,8 @@ void scream_init_atm (const int run_start_ymd,
 
     // Init all fields, atm processes, and output streams
     ad.initialize_fields ();
-    ad.initialize_output_managers ();
     ad.initialize_atm_procs ();
+    ad.initialize_output_managers ();
   });
 }
 

@@ -304,7 +304,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ice_table_vals.extent(0), ice_table_vals.extent(1)));
     Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
       //int i = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ice_table_vals.extent(1)), [&] (const int& j) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, ice_table_vals.extent(1)), [&] (const int& j) {
 
         for (size_t k = 0; k < ice_table_vals.extent(2); ++k) {
           for (size_t l = 0; l < ice_table_vals.extent(3); ++l) {

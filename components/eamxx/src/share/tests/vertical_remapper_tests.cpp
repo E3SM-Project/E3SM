@@ -128,11 +128,6 @@ TEST_CASE ("vertical_remap") {
   const int nlevs_src  = 2*SCREAM_PACK_SIZE + 2;  // Make sure we check what happens when the vertical extent is a little larger than the max PACK SIZE
   const int nlevs_tgt  = nlevs_src/2;
   const int nldofs_src = 10;
-  const int nldofs_tgt =  5;
-  const int ngdofs_src = nldofs_src*comm.size();
-  const int ngdofs_tgt = nldofs_tgt*comm.size();
-  const int nnz_local  = nldofs_src;
-  const int nnz        = nnz_local*comm.size();
 
   // -------------------------------------- //
   //           Create a map file            //
@@ -211,21 +206,19 @@ TEST_CASE ("vertical_remap") {
   // If we use a smaller packsize we throw an error in the property check step of the vertical interpolation scheme.
   // TODO: Fix that.
   auto src_s3d_m = create_field("s3d_m",src_grid,false,false,true, 1);
-  auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,std::min(SCREAM_PACK_SIZE,4));
-  auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,8));
-  auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,std::min(SCREAM_PACK_SIZE,16));
+  auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,SCREAM_PACK_SIZE);
+  auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, 1);
+  auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,SCREAM_PACK_SIZE);
 
   auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
   auto tgt_v2d   = create_field("v2d",  tgt_grid,true,true);
   auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,true, 1);
-  auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,true, std::min(SCREAM_PACK_SIZE,4));
-  auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,8));
-  auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,16));
+  auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,true, SCREAM_PACK_SIZE);
+  auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, 1);
+  auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,true, SCREAM_PACK_SIZE);
 
   std::vector<Field> src_f = {src_s2d,src_v2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i};
   std::vector<Field> tgt_f = {tgt_s2d,tgt_v2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i};
-
-  const int nfields = src_f.size();
 
   print (" -> creating fields ... done!\n",comm);
 
@@ -354,7 +347,6 @@ TEST_CASE ("vertical_remap") {
           const auto v_tgt = f.get_view<const Real**,Host>();
           const auto v_src = fsrc.get_view<const Real**,Host>();
           for (int i=0; i<ntgt_gids; ++i) {
-            const auto gid = tgt_gids(i);
             for (int j=0; j<vec_dim; ++j) {
               REQUIRE ( v_tgt(i,j) == v_src(i,j) );
           }}
@@ -363,7 +355,6 @@ TEST_CASE ("vertical_remap") {
         {
           const auto v_tgt = f.get_view<const Real**,Host>();
           for (int i=0; i<ntgt_gids; ++i) {
-            const auto gid = tgt_gids(i);
             for (int j=0; j<nlevs_tgt; ++j) {
               if (p_tgt[j]>p_v(i,nlevs_p-1) || p_tgt[j]<p_v(i,0)) {
                 REQUIRE ( v_tgt(i,j) == mask_val );
@@ -376,11 +367,8 @@ TEST_CASE ("vertical_remap") {
         {
           const auto v_tgt = f.get_view<const Real***,Host>();
           for (int i=0; i<ntgt_gids; ++i) {
-            const auto gid = tgt_gids(i);
             for (int j=0; j<vec_dim; ++j) {
               for (int k=0; k<nlevs_tgt; ++k) {
-                const auto term1 = gid*vec_dim*nlevs_tgt+j*nlevs_tgt+k;
-                const auto term2 = (gid+ngdofs_tgt)*vec_dim*nlevs_tgt+j*nlevs_tgt+k;
                 if (p_tgt[k]>p_v(i,nlevs_p-1) || p_tgt[k]<p_v(i,0)) {
                   REQUIRE ( v_tgt(i,j,k) == mask_val );
                 } else {

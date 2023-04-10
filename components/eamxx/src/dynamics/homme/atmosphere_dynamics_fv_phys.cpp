@@ -82,7 +82,7 @@ static void copy_prev (const int ncols, const int npacks,
   const auto policy = ESU::get_default_team_policy(ncols, npacks);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int& icol = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npacks),
                          [&] (const int ilev) {
       FT(icol,ilev) = T(icol,ilev);
       FM(icol,0,ilev) = uv(icol,0,ilev);
@@ -124,6 +124,21 @@ void HommeDynamics::fv_phys_dyn_to_fv_phys (const bool restart) {
     const auto T  = get_field_out("T_mid",pgn).get_view<const Pack**>();
     const auto uv = get_field_out("horiz_winds",pgn).get_view<const Pack***>();
     copy_prev(ncols, npacks, T, uv, FT, FM);
+
+    // In an initial run, the AD only reads IC for the Physics GLL fields,
+    // and this class has just taken care of remapping them to the FV grid.
+    // Therefore, the timestamp of the FV fields has *not* been set yet,
+    // which can cause serious issues downstream. For details, see
+    //   https://github.com/E3SM-Project/scream/issues/2250
+    // To avoid any problem, we simply set the timestamp of FV state fields here.
+    // NOTE: even if the init sequence *ever* changed, and the AD *did* read
+    // IC for FV fields, this step remains safe (we're setting the same t0)
+    for (auto n : {"T_mid","horiz_winds","ps","phis","omega","pseudo_density"}) {
+      auto f = get_field_out(n,pgn);
+      f.get_header().get_tracking().update_time_stamp(timestamp());
+    }
+    auto Q = get_group_out("tracers",pgn).m_bundle;
+    Q->get_header().get_tracking().update_time_stamp(timestamp());
   }
   update_pressure(m_phys_grid);
 }

@@ -2,10 +2,10 @@
 
 namespace scream {
 
-void P3Microphysics::run_impl (const int dt)
+void P3Microphysics::run_impl (const double dt)
 {
   // Set the dt for p3 postprocessing
-  p3_postproc.set_dt(dt);
+  p3_postproc.m_dt = dt;
 
   // Assign values to local arrays used by P3, these are now stored in p3_loc.
   Kokkos::parallel_for(

@@ -15,10 +15,10 @@ Field AtmosphereDiagnostic::get_diagnostic () const {
   EKAT_REQUIRE_MSG (m_diagnostic_output.is_allocated(),
       "Error! Getting a diagnostic field before it is allocated is suspicious at best.\n"
       "       We chose to throw an error, but if this is a legit use, please, contact developers.\n");
-  return m_diagnostic_output.get_const();
+  return m_diagnostic_output;
 }
 
-void AtmosphereDiagnostic::compute_diagnostic (const int dt) {
+void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
   // Some diagnostics need the timestep, store in case.
   m_dt = dt;
 
@@ -44,7 +44,7 @@ void AtmosphereDiagnostic::compute_diagnostic (const int dt) {
 }
 
 
-void AtmosphereDiagnostic::run_impl (const int dt) {
+void AtmosphereDiagnostic::run_impl (const double dt) {
   compute_diagnostic(dt);
 }
 void AtmosphereDiagnostic::set_computed_field (const Field& /* f */) {

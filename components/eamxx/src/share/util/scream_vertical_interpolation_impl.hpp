@@ -55,7 +55,7 @@ void apply_interpolation_impl_1d(
   vert_interp.lin_interp(team, x_src, x_tgt, input, output, icol);
   const auto x_src_s = ekat::scalarize(x_src);
   const auto x_tgt_s = ekat::scalarize(x_tgt);
-  const auto range = Kokkos::TeamThreadRange(team, x_tgt.extent(0));
+  const auto range = Kokkos::TeamVectorRange(team, x_tgt.extent(0));
   //Mask out values above (below) maximum (minimum) source grid
   Kokkos::parallel_for(range, [&] (const Int & k) {
     const auto above_max = x_tgt[k] > x_src_s[nlevs_src-1];
@@ -223,7 +223,7 @@ void perform_checks(
   const int                         nlevs_src,
   const int                         nlevs_tgt)
 {
-  auto rank = input.rank;
+  const int rank = input.rank;
   EKAT_REQUIRE_MSG (rank>1 &&rank<=3,"Error::scream_vertical_interpolation, passed view of rank (" + std::to_string(rank) +"), only support ranks 2 or 3\n");
 
   // The input data and x_src data should match in the appropriate size
@@ -231,7 +231,7 @@ void perform_checks(
 
 
   // The output and input data should match in rank
-  EKAT_REQUIRE(input.rank == output.rank);
+  EKAT_REQUIRE(static_cast<int>(output.rank)==rank);
   // The output data and the input data should match in all sizes except the last one
   for (int ii=0;ii<rank-1;ii++) {
     EKAT_REQUIRE(input.extent_int(ii)==output.extent_int(ii));

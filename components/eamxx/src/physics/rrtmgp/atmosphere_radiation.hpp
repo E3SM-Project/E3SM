@@ -33,7 +33,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
-  std::string name () const { return "Radiation"; }
+  std::string name () const { return "rrtmgp"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grid_manager);
@@ -42,7 +42,7 @@ public:
 public:
   // The three main interfaces for the subcomponent
   void initialize_impl (const RunType run_type);
-  void run_impl        (const int dt);
+  void run_impl        (const double dt);
   void finalize_impl   ();
 
   // Keep track of number of columns and levels

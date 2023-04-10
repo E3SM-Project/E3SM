@@ -29,18 +29,15 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
-  REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
+  parse_yaml_file(fname,ad_params);
+  ad_params.print();
 
   // Time stepping parameters
-  ad_params.print();
-  auto& ts = ad_params.sublist("Time Stepping");
-  const auto dt = ts.get<int>("Time Step");
-  const auto start_date = ts.get<std::vector<int>>("Start Date");
-  const auto start_time = ts.get<std::vector<int>>("Start Time");
-  const auto nsteps     = ts.get<int>("Number of Steps");
-
-  util::TimeStamp t0 (start_date, start_time);
-  EKAT_ASSERT_MSG (t0.is_valid(), "Error! Invalid start date.\n");
+  const auto& ts     = ad_params.sublist("time_stepping");
+  const auto  dt     = ts.get<int>("time_step");
+  const auto  nsteps = ts.get<int>("number_of_steps");
+  const auto  t0_str = ts.get<std::string>("run_t0");
+  const auto  t0     = util::str_to_time_stamp(t0_str);
 
   // Register all atm procs and the grids manager in the respective factories
   register_dynamics();

@@ -29,7 +29,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Q = kg/kg;
   Q.set_string("kg/kg");
-  Units nondim(0,0,0,0,0,0,0);
+  auto nondim = Units::nondimensional();
   auto micron = m / 1000000;
   auto m2 = m * m;
 
@@ -91,8 +91,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Updated> ("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name, ps);
 
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
-  add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,     kg/m2,  grid_name);
-  add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,     kg/m2,  grid_name);
+  add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,     kg/m2,  grid_name, "ACCUMULATED");
+  add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,     kg/m2,  grid_name, "ACCUMULATED");
   add_field<Computed>("eff_radius_qc",       scalar3d_layout_mid, micron, grid_name, ps);
   add_field<Computed>("eff_radius_qi",       scalar3d_layout_mid, micron, grid_name, ps);
 

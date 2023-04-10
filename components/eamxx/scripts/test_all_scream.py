@@ -690,8 +690,6 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
     def generate_ctest_config(self, cmake_config, extra_configs, test):
     ###############################################################################
         result = ""
-        if self._submit:
-            result += f"SCREAM_MACHINE={self._machine} "
 
         test_dir = self.get_test_dir(self._work_dir,test)
         num_test_res = self.create_ctest_resource_file(test,test_dir)
@@ -727,7 +725,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         if self._limit_test_regex:
             result += f"-DINCLUDE_REGEX={self._limit_test_regex} "
-        result += f'-S {self._root_dir}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{cmake_config}" '
+        result += f'-S {self._root_dir}/cmake/ctest_script.cmake -DCTEST_SITE={self._machine} -DCMAKE_COMMAND="{cmake_config}" '
 
         # Ctest can only competently manage test pinning across a single instance of ctest. For
         # multiple concurrent instances of ctest, we have to help it. It's OK to use the compile_res_count
@@ -890,7 +888,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         for t,s in tests_success.items():
             if not s:
-                last_test = self.get_last_ctest_file(t,"Tests")
+                last_test = self.get_last_ctest_file(t,"TestsFailed")
                 last_build  = self.get_last_ctest_file(t,"Build")
                 last_config = self.get_last_ctest_file(t,"Configure")
                 if last_test is not None:

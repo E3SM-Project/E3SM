@@ -13,7 +13,7 @@ FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
  , m_field_name(m_params.get<std::string>("Field Name"))
  , m_field_layout(m_params.get<FieldLayout>("Field Layout"))
  , m_field_units(m_params.get<ekat::units::Units>("Field Units"))
- , m_pressure_level(m_params.get<Real>("Field Target Pressure"))
+ , m_pressure_level(m_params.get<double>("Field Target Pressure"))
 {
   using namespace ShortFieldTagsNames;
   EKAT_REQUIRE_MSG (ekat::contains(std::vector<FieldTag>{LEV,ILEV},m_field_layout.tags().back()),
@@ -24,7 +24,7 @@ FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_p_tgt = view_1d<mPack>("",1);
   Kokkos::deep_copy(m_p_tgt, m_pressure_level);
 
-  m_mask_val = m_params.get<Real>("mask_value",Real(-99999));
+  m_mask_val = m_params.get<double>("mask_value",Real(std::numeric_limits<float>::max()/10.0));
 }
 
 // =========================================================================================
@@ -48,6 +48,34 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   FieldIdentifier fid (name(),diag_layout, m_field_units, gname);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
+
+  // Take care of mask tracking for this field, in case it is needed.  This has two steps:
+  //   1.  We need to actually track the masked columns, so we create a 2d (COL only) field.
+  //       NOTE: Here we assume that even a source field of rank 3+ will be masked the same
+  //       across all components so the mask is represented by a column-wise slice.
+  //   2.  We also need to create a helper field that is used w/ the vertical remapper to set
+  //       the mask.  This field is 3d (COLxLEV) to mimic the type of interpolation that is
+  //       being conducted on the source field.
+
+  // Add a field representing the mask as extra data to the diagnostic field.
+  auto nondim = Units::nondimensional();
+  std::string mask_name = name() + " mask";
+  FieldLayout mask_layout( {COL}, {m_num_cols});
+  FieldIdentifier mask_fid (mask_name,mask_layout, nondim, gname);
+  Field diag_mask(mask_fid);
+  diag_mask.allocate_view();
+  m_diagnostic_output.get_header().set_extra_data("mask_data",diag_mask);
+  m_diagnostic_output.get_header().set_extra_data("mask_value",m_mask_val);
+
+  // Allocate helper views
+  // Note that mPack is by design a pack of size 1, so we need to take into consideration the size of
+  // the source data which  will be equal to the product of the number of source packs and the simulation
+  // pack size.
+  FieldLayout mask_src_layout( {COL, LEV}, {m_num_cols, m_num_levs});
+  FieldIdentifier mask_src_fid ("mask_tmp",mask_src_layout, nondim, gname);
+  m_mask_field = Field(mask_src_fid);
+  m_mask_field.allocate_view();
+  
 }
 // =========================================================================================
 void FieldAtPressureLevel::compute_diagnostic_impl()
@@ -66,26 +94,35 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
   // The setup for interpolation varies depending on the rank of the input field:
   const int rank = f.rank();
 
+  m_mask_field.deep_copy(1.0);
+  auto mask_v_tmp = m_mask_field.get_view<mPack**>();
   if (rank==2) {
     const auto f_data_src = f.get_view<const mPack**>();
-    auto fdat = view_Nd<mPack,2>("",f_data_src.extent_int(0),f_data_src.extent_int(1));
-    Kokkos::deep_copy(fdat,f_data_src);
     //output field on new grid
-    auto d_data_tgt = m_diagnostic_output.get_view<Real*>();
-    auto ddat = view_Nd<mPack,2>("",d_data_tgt.extent_int(0),1);
-    view_Nd<mPack,2> data_tgt_tmp(reinterpret_cast<mPack*>(d_data_tgt.data()),d_data_tgt.extent_int(0),1);  // Note, vertical interp wants a 2D view, so we create a temporary one
+    auto d_data_tgt = m_diagnostic_output.get_view<mPack*>();
+    view_Nd<mPack,2> data_tgt_tmp(d_data_tgt.data(),d_data_tgt.extent_int(0),1);  // Note, vertical interp wants a 2D view, so we create a temporary one
+    perform_vertical_interpolation<Real,1,2>(pres,m_p_tgt,f_data_src,data_tgt_tmp,m_num_levs,1,m_mask_val);
 
-    perform_vertical_interpolation<Real,1,2>(pres,m_p_tgt,fdat,data_tgt_tmp,m_num_levs,1,m_mask_val);
+    // Track mask
+    auto extra_data = m_diagnostic_output.get_header().get_extra_data().at("mask_data");
+    auto d_mask     = ekat::any_cast<Field>(extra_data);
+    auto d_mask_tgt = d_mask.get_view<mPack*>();
+    view_Nd<mPack,2> mask_tgt_tmp(d_mask_tgt.data(),d_mask_tgt.extent_int(0),1);  
+    perform_vertical_interpolation<Real,1,2>(pres,m_p_tgt,mask_v_tmp,mask_tgt_tmp,m_num_levs,1,0);
   } else if (rank==3) {
     const auto f_data_src = f.get_view<const mPack***>();
-    auto fdat = view_Nd<mPack,3>("",f_data_src.extent_int(0),f_data_src.extent_int(1),f_data_src.extent_int(2));
-    Kokkos::deep_copy(fdat,f_data_src);
     //output field on new grid
-    auto d_data_tgt = m_diagnostic_output.get_view<Real**>();
-    auto ddat = view_Nd<mPack,3>("",d_data_tgt.extent_int(0),d_data_tgt.extent_int(1),1);
-    view_Nd<mPack,3> data_tgt_tmp(reinterpret_cast<mPack*>(d_data_tgt.data()),d_data_tgt.extent_int(0),d_data_tgt.extent_int(1),1);  // Note, vertical interp wants a 2D view, so we create a temporary one
+    auto d_data_tgt = m_diagnostic_output.get_view<mPack**>();
+    view_Nd<mPack,3> data_tgt_tmp(d_data_tgt.data(),d_data_tgt.extent_int(0),d_data_tgt.extent_int(1),1);  
 
-    perform_vertical_interpolation<Real,1,3>(pres,m_p_tgt,fdat,data_tgt_tmp,m_num_levs,1,m_mask_val);
+    perform_vertical_interpolation<Real,1,3>(pres,m_p_tgt,f_data_src,data_tgt_tmp,m_num_levs,1,m_mask_val);
+
+    // Track mask
+    auto extra_data = m_diagnostic_output.get_header().get_extra_data().at("mask_data");
+    auto d_mask     = ekat::any_cast<Field>(extra_data);
+    auto d_mask_tgt = d_mask.get_view<mPack*>();
+    view_Nd<mPack,2> mask_tgt_tmp(d_mask_tgt.data(),d_mask_tgt.extent_int(0),1);  
+    perform_vertical_interpolation<Real,1,2>(pres,m_p_tgt,mask_v_tmp,mask_tgt_tmp,m_num_levs,1,0);
   } else {
     EKAT_ERROR_MSG("Error! field at pressure level only supports fields ranks 2 and 3 \n");
   }

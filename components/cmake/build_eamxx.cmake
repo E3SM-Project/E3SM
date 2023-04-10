@@ -31,8 +31,13 @@ function(build_eamxx)
     string (REPLACE "-D" "" CPPDEFS "${CPPDEFS}")
     add_compile_definitions ("${CPPDEFS}")
 
-    # Include machine file here
-    include(${CMAKE_SOURCE_DIR}/eamxx/cmake/machine-files/${MACH}.cmake)
+    # Include machine file here. Prefer a compiler-specific file.
+    set(SCREAM_MACH_FILE_ROOT ${CMAKE_SOURCE_DIR}/eamxx/cmake/machine-files)
+    if (EXISTS ${SCREAM_MACH_FILE_ROOT}/${MACH}-${COMPILER}.cmake)
+      include(${SCREAM_MACH_FILE_ROOT}/${MACH}-${COMPILER}.cmake)
+    else()
+      include(${SCREAM_MACH_FILE_ROOT}/${MACH}.cmake)
+    endif()
     add_subdirectory("eamxx")
   endif()
 

@@ -57,7 +57,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
-  std::string name () const { return "Macrophysics"; }
+  std::string name () const { return "shoc"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -82,7 +82,7 @@ public:
 
       const int nlev_packs = ekat::npack<Spack>(nlev);
 
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const Int& k) {
       /*---------------------------------------------------------------------------------
        *Wet to dry mixing ratios:
        *-------------------------
@@ -152,7 +152,7 @@ public:
 
       const int nlevi_v = nlev/Spack::n;
       const int nlevi_p = nlev%Spack::n;
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const Int& k) {
         zt_grid(i,k) = z_mid(i,k) - z_int(i, nlevi_v)[nlevi_p];
         zi_grid(i,k) = z_int(i,k) - z_int(i, nlevi_v)[nlevi_p];
 
@@ -183,7 +183,7 @@ public:
       vpwp_sfc(i)   = surf_mom_flux(i,1)/rrho_i(i,nlevi_v)[nlevi_p];
 
       const int num_qtracer_packs = ekat::npack<Spack>(num_qtracers);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_qtracer_packs), [&] (const Int& q) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_qtracer_packs), [&] (const Int& q) {
         wtracer_sfc(i,q) = 0;
       });
     } // operator
@@ -313,7 +313,7 @@ public:
       //After these updates, all tracers (except TKE) in the qtarcers array will be converted
       //from dry mmr to wet mmr
       const int nlev_packs = ekat::npack<Spack>(nlev);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const Int& k) {
         // See comment in SHOCPreprocess::operator() about the necessity of *_copy views
         tke(i,k) = tke_copy(i,k);
         qc(i,k)  = qc_copy(i,k);
@@ -526,7 +526,7 @@ protected:
 
 protected:
 
-  void run_impl        (const int dt);
+  void run_impl        (const double dt);
   void finalize_impl   ();
 
   // SHOC updates the 'tracers' group.

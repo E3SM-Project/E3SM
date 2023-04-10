@@ -45,7 +45,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
-  std::string name () const { return "Simple Prescribed Aerosols (SPA)"; }
+  std::string name () const { return "spa"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -63,7 +63,7 @@ protected:
   // The three main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
   void initialize_spa_impl ();
-  void run_impl        (const int dt);
+  void run_impl        (const double dt);
   void finalize_impl   ();
 
   // Computes total number of bytes needed for local variables

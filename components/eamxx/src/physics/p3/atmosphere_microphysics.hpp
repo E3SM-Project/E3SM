@@ -48,7 +48,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
-  std::string name () const { return "Microphysics"; }
+  std::string name () const { return "p3"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -56,7 +56,7 @@ public:
   /*--------------------------------------------------------------------------------------------*/
   // Most individual processes have a pre-processing step that constructs needed variables from
   // the set of fields stored in the field manager.  A structure like this defines those operations,
-  // which can then be called during run_imple in the main .cpp code.
+  // which can then be called during run_impl in the main .cpp code.
   // NOTE: the use of the ekat command "set" to copy local values into the variables of interest.
   // This is an important step to avoid having those variables just share pointers to memory.
   // Structure to handle the local generation of data needed by p3_main in run_impl
@@ -259,7 +259,8 @@ public:
       }
     } // operator
     // Local variables
-    int m_ncol, m_npack, m_dt;
+    int m_ncol, m_npack;
+    double m_dt;
     view_2d       T_atm;
     view_2d_const pmid;
     view_2d       th_atm;
@@ -286,12 +287,6 @@ public:
     view_1d       ice_flux;
     view_1d       heat_flux;
 
-    // Assigning local values
-    void set_dt(const int dt)
-    {
-      // Allow dt to be set every run_impl, in case variable timestepping is ever used.
-      m_dt = dt;
-    }
     void set_variables(const int ncol, const int npack,
                     const view_2d& th_atm_, const view_2d_const& pmid_, const view_2d& T_atm_, const view_2d& T_prev_,
                     const view_2d& qv_, const view_2d& qc_, const view_2d& nc_, const view_2d& qr_, const view_2d& nr_,
@@ -377,7 +372,7 @@ protected:
 
   // The three main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
-  void run_impl        (const int dt);
+  void run_impl        (const double dt);
   void finalize_impl   ();
 
   // Computes total number of bytes needed for local variables
