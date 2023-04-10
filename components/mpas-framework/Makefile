@@ -707,7 +707,7 @@ ifeq "$(USE_MAGMA)" "true"
    LIBS += -L$(MAGMADIR)/lib -lmagma
    FCINCLUDES += -I${MAGMADIR}/include
    override CPPFLAGS += "-DUSE_MAGMA"
-   override FFLAGS_ACC += -Dmagma_devptr_t='integer(kind=8)' -Mcudalib=cublas
+   override FFLAGS_ACC += -Mcudalib=cublas
 endif
 
 ifeq "$(USE_CUBLAS)" "true"

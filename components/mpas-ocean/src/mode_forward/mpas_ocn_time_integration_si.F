@@ -62,7 +62,6 @@ module ocn_time_integration_si
 #endif
 
 #ifdef USE_CUBLAS
-   use openacc
    use cublas
 #endif
 #endif  
@@ -188,12 +187,9 @@ module ocn_time_integration_si
    real(kind=RKIND),allocatable,dimension(:) :: s1buffer,r1buffer
 #endif
 
-
 #ifdef USE_MAGMA
-   magma_devptr_t :: dprec_ivmat,queue,dxvec,dyvec
+   integer(kind=8) :: dprec_ivmat,queue,dxvec,dyvec
 #endif   
-
-!***********************************************************************
 
 !***********************************************************************
 
