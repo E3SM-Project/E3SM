@@ -154,7 +154,7 @@ contains
        iclwp_ifld    = pbuf_get_index('ICLWP')
        icswp_ifld    = pbuf_get_index('ICSWP')
        cldfsnow_ifld = pbuf_get_index('CLDFSNOW')
-     elseif (p3_microphys) then
+    elseif (p3_microphys) then
 
        dei_ifld      = pbuf_get_index('DEI')
        mu_ifld       = pbuf_get_index('MU')
@@ -294,7 +294,7 @@ contains
        call add_default (iclwp_fldn,     rad_data_histfile_num, ' ')
        call add_default (icswp_fldn,     rad_data_histfile_num, ' ')
        call add_default (cldfsnow_fldn,  rad_data_histfile_num, ' ')
-     elseif (p3_microphys) then
+    elseif (p3_microphys) then
        call add_default (dei_fldn,       rad_data_histfile_num, ' ')
        call add_default (mu_fldn,        rad_data_histfile_num, ' ')
        call add_default (lambdac_fldn,   rad_data_histfile_num, ' ')

@@ -55,9 +55,6 @@ subroutine microp_driver_readnl(nlfile)
       call micro_mg_cam_readnl(nlfile)
    case ('P3')
       call micro_p3_readnl(nlfile)
-   ! microp_driver doesn't handle these other options
-   case ('P3')
-      call micro_p3_readnl(nlfile)   
    case ('RK')
       continue
    case ('off')
@@ -79,9 +76,6 @@ subroutine microp_driver_register
       call micro_mg_cam_register()
    case ('P3')
       call micro_p3_register()
-   ! microp_driver doesn't handle these other options
-   case ('P3')
-      call micro_p3_register()   
    case ('RK')
       continue
    case ('off')
@@ -112,10 +106,7 @@ function microp_driver_implements_cnst(name)
    case ('MG')
       microp_driver_implements_cnst = micro_mg_cam_implements_cnst(name)
    case ('P3')
-      microp_driver_implements_cnst = micro_p3_implements_cnst(name)
-   ! microp_driver doesn't handle these other options
-   case ('P3')
-      microp_driver_implements_cnst = micro_p3_implements_cnst(name)   
+      microp_driver_implements_cnst = micro_p3_implements_cnst(name)  
    case ('RK')
       continue
    case ('off')
@@ -143,9 +134,6 @@ subroutine microp_driver_init_cnst(name, q, gcid)
       call micro_mg_cam_init_cnst(name, q, gcid)
    case ('P3')
       call micro_p3_init_cnst(name, q)
-   ! microp_driver doesn't handle these other options
-   case ('P3')
-      call micro_p3_init_cnst(name, q)   
    case ('RK')
       continue
    case ('off')
@@ -170,9 +158,6 @@ subroutine microp_driver_init(pbuf2d)
       call micro_mg_cam_init(pbuf2d)
    case ('P3')
       call micro_p3_init(pbuf2d)
-   ! microp_driver doesn't handle these other options
-   case ('P3')
-      call micro_p3_init(pbuf2d)   
    case ('RK')
       continue
    case ('off')
@@ -218,12 +203,7 @@ subroutine microp_driver_tend(state, ptend, dtime, pbuf)
    case ('P3')
       call t_startf('microp_p3_tend')
       call micro_p3_tend(state, ptend, dtime, pbuf)
-      call t_stopf('microp_p3_tend')
-   ! microp_driver doesn't handle these other options
-   case ('P3')
-      call t_startf('microp_p3_tend')
-      call micro_p3_tend(state, ptend, dtime, pbuf)
-      call t_stopf('microp_p3_tend')   
+      call t_stopf('microp_p3_tend') 
    case ('RK')
       continue
    case ('off')

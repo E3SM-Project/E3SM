@@ -26,32 +26,6 @@ module wv_sat_scream
 
 contains
 
-pure function bfb_log(val) result(res)
-  
-    implicit none
-    real(rtype), intent(in) :: val
-    real(rtype) :: res
-
-    res = log(val)
-  end function bfb_log 
-
-  pure function bfb_exp(val) result(res)
-   
-   implicit none
-   real(rtype), intent(in) :: val
-   real(rtype) :: res
-
-   res = exp(val)
-  end function bfb_exp
-
-  pure function bfb_tanh(val) result(res)
-   
-   implicit none
-   real(rtype), intent(in) :: val
-   real(rtype) :: res
-
-   res = dtanh(val)
-  end function bfb_tanh
   
   !===========================================================================================
   real(rtype) function qv_sat(t_atm,p_atm,i_wrt)
