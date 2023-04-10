@@ -120,7 +120,7 @@ _TESTS = {
             "ERP_Ln18.ne4_oQU240.F2010.eam-p3",
             "PET_Ln5.ne4_oQU240.F2010.eam-p3",
             "PEM_Ln5.ne4pg2_oQU480.F2010.eam-p3",
-            "SMS_Ln5.ne30pg2_r05_EC30to60E2r2.eam-p3",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.F2010.eam-p3",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-p3",
             "SMS_Ln5.ne4pg2_oQU480.F2010.eam-p3",
             "ERS.ne4_oQU240.F2010.eam-p3"
