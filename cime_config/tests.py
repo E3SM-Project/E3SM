@@ -109,21 +109,21 @@ _TESTS = {
         "tests"   : (
             "ERP_Ln18.ne4_oQU240.F2010.eam-cflx_cpl_2",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-cflx_cpl_2",
+            "ERS.ne4pg2_oQU480.F2010.eam-p3",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-p3",
             )
         },
 
         "e3sm_p3_developer" : {
-        "inherit" : ("eam_theta_pg2"),
         "tests"   : (
-            "ERP_Ln18.ne4_oQU240.F2010.eam-p3",
+            "ERP.ne4pg2_oQU480.F2010.eam-p3",
             "REP_Ln5.ne4pg2_oQU480.F2010.eam-p3",
-            "ERP_Ln18.ne4_oQU240.F2010.eam-p3",
-            "PET_Ln5.ne4_oQU240.F2010.eam-p3",
-            "PEM_Ln5.ne4pg2_oQU480.F2010.eam-p3",
+            "PET.ne4pg2_oQU480.F2010.eam-p3",
+            "PEM_Ln18.ne4pg2_oQU480.F2010.eam-p3",
             "SMS_Ln5.ne30pg2_EC30to60E2r2.F2010.eam-p3",
-            "SMS_D_Ln5.ne4_oQU240.F2010.eam-p3",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-p3",
             "SMS_Ln5.ne4pg2_oQU480.F2010.eam-p3",
-            "ERS.ne4_oQU240.F2010.eam-p3"
+            "ERS.ne4pg2_oQU480.F2010.eam-p3"
             )
         },
 
