@@ -1705,6 +1705,19 @@
 			icepack_name="kcatbound"
 		/>
 	</nml_record>
+	
+	<nml_record name="floesize" in_defaults="true">
+		<nml_option name="config_floeshape" type="real" default_value="0.66" units="unitless"
+			description="Floe shape constant for lateral melt."
+			possible_values="any real number between 0 and 1"
+			icepack_name="floeshape"
+		/>
+		<nml_option name="config_floediam" type="real" default_value="300.0" units="m"
+			description="Effective floe diameter for lateral melt in m."
+			possible_values="any real number."
+			icepack_name="floediam"
+		/>
+	</nml_record>
 
 	<nml_record name="ridging" in_defaults="true">
 		<nml_option name="config_ice_strength_formulation" type="character" default_value="Rothrock75" units="unitless"
@@ -1735,9 +1748,9 @@
 	</nml_record>
 
 	<nml_record name="atmosphere" in_defaults="true">
-		<nml_option name="config_atmos_boundary_method" type="character" default_value="ccsm3" units="unitless"
+		<nml_option name="config_atmos_boundary_method" type="character" default_value="similarity" units="unitless"
 			description="Atmosphere boundary method."
-			possible_values="'ccsm3' or 'constant'"
+			possible_values="'similarity' or 'constant' or 'mixed'"
 			icepack_name="atmbndy"
 		/>
 		<nml_option name="config_calc_surface_stresses" type="logical" default_value="true" units="unitless"
@@ -1803,6 +1816,10 @@
 		<nml_option name="config_use_data_icebergs" type="logical" default_value="false" units="unitless"
 			description="Use data iceberg meltwater forcing"
 			possible_values="true or false"
+		/>
+		<nml_option name="config_salt_flux_coupling_type" type="character" default_value="constant" units="unitless"
+			description="Type of salt flux to ocean method"
+			possible_values="'constant', or 'prognostic'"
 		/>
 	</nml_record>
 
@@ -3801,6 +3818,11 @@
 		     dimensions="nCells Time"
 		     units="C"
 		/>
+		<var name="bottomTemperature"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="C"
+		/>
 		<var name="freezingMeltingPotential"
 		     type="real"
 		     dimensions="nCells Time"
@@ -4323,6 +4345,11 @@
 		     dimensions="nCells Time"
 		     units="1"
 		/>
+		<var name="lateralHeatFlux"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="W m-2"
+		/>
 		<var name="surfaceIceMelt"
 		     type="real"
 		     dimensions="nCells Time"
@@ -4386,6 +4413,11 @@
 		<var name="snowThicknessChangeCategory"
 		     type="real"
 		     dimensions="nCategories nCells Time"
+		     units="m s-1"
+		/>
+		<var name="snowThicknessChangeCell"
+		     type="real"
+		     dimensions="nCells Time"
 		     units="m s-1"
 		/>
 		<var name="frazilFormation"
@@ -4452,6 +4484,16 @@
 		     dimensions="nCells Time"
 		     units="kg m-2 s-1"
 		/>
+		<var name="evaporativeWaterFluxSnow"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2 s-1"
+		/>
+		<var name="evaporativeWaterFluxIce"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2 s-1"
+		/>
 	</var_struct>
 
 	<!-- fluxes with the ocean -->
@@ -4499,6 +4541,16 @@
 		<var name="oceanHeatFluxIceBottom"
 		     type="real"
 		     dimensions="nCells Time"
+		     units="W m-2"
+		/>
+		<var name="bottomConductiveFlux"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="W m-2"
+		/>
+		<var name="bottomConductiveFluxCategory"
+		     type="real"
+		     dimensions="nCategories nCells Time"
 		     units="W m-2"
 		/>
 	</var_struct>
@@ -5431,6 +5483,11 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="day"
+		/>
+		<var name="snowIceInterfaceTemperature"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="C"
 		/>
 		<var name="iceAreaTendencyTransport"
 		     type="real"

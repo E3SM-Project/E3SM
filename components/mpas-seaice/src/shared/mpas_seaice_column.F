@@ -10014,8 +10014,9 @@ contains
 
     ! check config_atmos_boundary_method value
     if (.not. (trim(config_atmos_boundary_method) == "ccsm3" .or. &
-               trim(config_atmos_boundary_method) == "constant")) then
-       call config_error("config_atmos_boundary_method", config_atmos_boundary_method, "'ccsm3' or 'constant'")
+               trim(config_atmos_boundary_method) == "constant" .or. &
+               trim(config_atmos_boundary_method) == "similarity")) then  ! similarity = ccsm3 = default
+       call config_error("config_atmos_boundary_method", config_atmos_boundary_method, "'similarity' or 'constant' or 'cccsm3'")
     endif
 
     ! check config_itd_conversion_type value

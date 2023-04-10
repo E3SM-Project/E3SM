@@ -383,6 +383,10 @@
 <config_itd_conversion_type>'linear remap'</config_itd_conversion_type>
 <config_category_bounds_type>'original'</config_category_bounds_type>
 
+<!-- floesize -->
+<config_floeshape>0.66</config_floeshape>
+<config_floediam>300.0</config_floediam>
+
 <!-- ridging -->
 <config_ice_strength_formulation>'Rothrock75'</config_ice_strength_formulation>
 <config_ridging_participation_function>'exponential'</config_ridging_participation_function>
@@ -391,7 +395,7 @@
 <config_ratio_ridging_work_to_PE>17.0</config_ratio_ridging_work_to_PE>
 
 <!-- atmosphere -->
-<config_atmos_boundary_method>'ccsm3'</config_atmos_boundary_method>
+<config_atmos_boundary_method>'similarity'</config_atmos_boundary_method>
 <config_calc_surface_stresses>true</config_calc_surface_stresses>
 <config_calc_surface_temperature>true</config_calc_surface_temperature>
 <config_use_form_drag>false</config_use_form_drag>
@@ -411,6 +415,7 @@
 <config_ocean_surface_type>'free'</config_ocean_surface_type>
 <config_couple_biogeochemistry_fields>false</config_couple_biogeochemistry_fields>
 <config_use_data_icebergs>false</config_use_data_icebergs>
+<config_salt_flux_coupling_type>'constant'</config_salt_flux_coupling_type>
 
 <!-- diagnostics -->
 <config_check_state>false</config_check_state>

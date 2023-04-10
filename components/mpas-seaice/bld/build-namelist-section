@@ -399,6 +399,13 @@ add_default($nl, 'config_congelation_ice_porosity');
 add_default($nl, 'config_itd_conversion_type');
 add_default($nl, 'config_category_bounds_type');
 
+############################
+# Namelist group: floesize #
+############################
+
+add_default($nl, 'config_floeshape');
+add_default($nl, 'config_floediam');
+
 ###########################
 # Namelist group: ridging #
 ###########################
@@ -432,6 +439,7 @@ add_default($nl, 'config_sea_freezing_temperature_type');
 add_default($nl, 'config_ocean_surface_type');
 add_default($nl, 'config_couple_biogeochemistry_fields');
 add_default($nl, 'config_use_data_icebergs');
+add_default($nl, 'config_salt_fux_coupling_type');
 
 ###############################
 # Namelist group: diagnostics #

@@ -2410,6 +2410,23 @@ Valid values: 'single category', 'original', 'new', 'WMO', or 'asymptotic'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<!-- floesize -->
+
+<entry id="config_floeshape" type="real"
+	category="floesize" group="floesize">
+Floe shape constant for lateral melt.
+
+Valid values: any real value.
+Default: 0.66: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_floediam" type="real"
+	category="floesize" group="floesize">
+Effective floe diameter for lateral melt in m.
+
+Valid values: any real value
+Default: 300.0: Defined in namelist_defaults.xml
+</entry>
 
 <!-- ridging -->
 
@@ -2460,7 +2477,7 @@ Default: Defined in namelist_defaults.xml
 	category="atmosphere" group="atmosphere">
 Atmosphere boundary method.
 
-Valid values: 'ccsm3' or 'constant'
+Valid values: 'similarity' or 'constant' or 'mixed'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2568,6 +2585,14 @@ Default: Defined in namelist_defaults.xml
 Use data iceberg meltwater forcing
 
 Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_salt_flux_coupling_type" type="character"
+	category="ocean" group="ocean">
+Type of salt flux to ocean method
+
+Valid values: 'constant' or 'prognostic'
 Default: Defined in namelist_defaults.xml
 </entry>
 
