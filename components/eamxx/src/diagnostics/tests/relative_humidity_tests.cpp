@@ -77,7 +77,7 @@ void run(std::mt19937_64& engine)
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf_pres(0.0,PC::P0),
+  RPDF pdf_pres(10.0,PC::P0),
        pdf_temp(200.0,400.0),
        pdf_qv(0.0,1e-2),
        pdf_pseudo_density(1.0,100.0);
@@ -142,12 +142,11 @@ void run(std::mt19937_64& engine)
       Kokkos::deep_copy(T_sub,temperature);
       Kokkos::deep_copy(p_sub,pressure);
       Kokkos::deep_copy(qv_sub,qv);
+      Kokkos::deep_copy(dpwet_sub,pseudo_density);
 
       //make dpdry
       for(int jpack=0;jpack<num_mid_packs;jpack++) {
         dpdry_sub(jpack) = dpwet_sub(jpack) - dpwet_sub(jpack)*qv_sub(jpack); };
-
-      Kokkos::deep_copy(dpwet_sub,pseudo_density);
     }
 
     // Run diagnostic and compare with manual calculation
@@ -165,13 +164,15 @@ void run(std::mt19937_64& engine)
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_mid_packs), [&] (const Int& jpack) {
 
         auto qv_sat_l = physics::qv_sat_dry(T_mid_v(icol,jpack), p_dry_mid_v(icol,jpack), false, range_mask);
-        qv_sat_l *= ( dpdry_v(icol,jpack) / dpwet_v(icol,jpack) );
+        qv_sat_l *=  dpdry_v(icol,jpack) ;
+        qv_sat_l /=  dpwet_v(icol,jpack) ;
         rh_v(icol,jpack) = qv_v(icol,jpack)/qv_sat_l;
 
       });
       team.team_barrier();
     });
     Kokkos::fence();
+
     REQUIRE(views_are_equal(diag_out,rh_f));
   }
  
