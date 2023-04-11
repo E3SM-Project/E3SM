@@ -208,7 +208,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
   m_export_source     = view_1d<DefaultDevice,ExportType>("",m_num_scream_exports);
   auto export_source_h = Kokkos::create_mirror_view(m_export_source);
   Kokkos::deep_copy(m_export_source,FROM_MODEL);  // The default is that all export variables will be derived from the EAMxx state.
-  m_num_eamxx_exports = m_num_scream_exports;
+  m_num_from_model_exports = m_num_scream_exports;
  
   if (m_params.isSublist("prescribed_constants")) {
     auto export_constant_params = m_params.sublist("prescribed_constants");
@@ -226,7 +226,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
           const auto pos = loc-export_constant_fields.begin();
           export_source_h(i) = CONSTANT;
           ++m_num_const_exports;
-          --m_num_eamxx_exports;
+          --m_num_from_model_exports;
           m_export_constants.emplace(fname,export_constant_values[pos]);
         }
       }
@@ -235,8 +235,8 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
   // Copy host view back to device view
   Kokkos::deep_copy(m_export_source,export_source_h);
   // Final sanity check
-  EKAT_REQUIRE_MSG(m_num_scream_exports = m_num_const_exports+m_num_eamxx_exports,"Error! surface_coupling_exporter - Something went wrong set the type of export for all variables.");
-  EKAT_REQUIRE_MSG(m_num_eamxx_exports>=0,"Error! surface_coupling_exporter - The number of exports derived from EAMxx < 0, something must have gone wrong in assigning the types of exports for all variables.");
+  EKAT_REQUIRE_MSG(m_num_scream_exports = m_num_const_exports+m_num_from_model_exports,"Error! surface_coupling_exporter - Something went wrong set the type of export for all variables.");
+  EKAT_REQUIRE_MSG(m_num_from_model_exports>=0,"Error! surface_coupling_exporter - The number of exports derived from EAMxx < 0, something must have gone wrong in assigning the types of exports for all variables.");
 
   // Perform initial export (if any are marked for export during initialization)
   if (any_initial_exports) do_export(0, true);
@@ -252,7 +252,7 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
   if (m_num_const_exports>0) {
     set_constant_exports(dt,called_during_initialization);
   }
-  if (m_num_eamxx_exports>0) {
+  if (m_num_from_model_exports>0) {
     compute_eamxx_exports(dt,called_during_initialization);
   }
 

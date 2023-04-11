@@ -126,7 +126,7 @@ protected:
   Int                               m_num_scream_exports;
   view_1d<DefaultDevice,ExportType> m_export_source;
   std::map<std::string,Real>        m_export_constants;
-  int                               m_num_eamxx_exports=0;
+  int                               m_num_from_model_exports=0;
   int                               m_num_const_exports=0;
 
   // Views storing a 2d array with dims (num_cols,num_fields) for cpl export data.
