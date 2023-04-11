@@ -1024,8 +1024,8 @@
 					description="The density of land ice."
 					possible_values="Any positive real number"
 		/>
-		<nml_option name="config_land_ice_flux_topDragCoeff" type="real" default_value="2.5e-3"
-					description="The top drag coefficient."
+		<nml_option name="config_land_ice_flux_explicit_topDragCoeff" type="real" default_value="2.5e-3"
+					description="The top drag coefficient if config_use_implicit_top_drag_coeff is false."
 					possible_values="Any positive real number"
 		/>
 		<nml_option name="config_land_ice_flux_ISOMIP_gammaT" type="real" default_value="1e-4" units="m s^-1"
@@ -1087,6 +1087,14 @@
 		/>
 		<nml_option name="config_implicit_bottom_drag_coeff" type="real" default_value="1.0e-3"
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
+					possible_values="any positive real, typically 1.0e-3"
+		/>
+		<nml_option name="config_use_implicit_top_drag" type="logical" default_value=".false."
+					description="If true, implicit top drag is used on the momentum equation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_implicit_top_drag_coeff" type="real" default_value="1.0e-3"
+					description="Dimensionless top drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
 		<nml_option name="config_use_implicit_bottom_roughness" type="logical" default_value=".false."
@@ -1640,6 +1648,8 @@
 			<var name="landIcePressure"/>
 			<var name="landIceFraction"/>
 			<var name="landIceDraft"/>
+			<var name="landIceFloatingMask"/>
+			<var name="landIceFloatingFraction"/>
 		</stream>
 
 		<stream name="forcing_data_init"
@@ -1749,6 +1759,8 @@
 			<var name="landIcePressure"/>
 			<var name="landIceFraction"/>
 			<var name="landIceDraft"/>
+			<var name="landIceFloatingMask"/>
+			<var name="landIceFloatingFraction"/>
 		</stream>
 		<stream name="block_debug_output"
 				type="output"
@@ -1848,6 +1860,8 @@
 			<var name="landIceDraft"/>
 			<var name="landIceFraction"/>
 			<var name="landIceMask"/>
+			<var name="landIceFloatingMask"/>
+			<var name="landIceFloatingFraction"/>
 			<var name="seaIcePressure"/>
 			<var name="atmosphericPressure"/>
 			<var_array name="tracersSurfaceValue"/>
@@ -1990,6 +2004,7 @@
 				immutable="true">
 			<var name="landIcePressureForcing"/>
 			<var name="landIceFractionForcing"/>
+			<var name="landIceFloatingFractionForcing"/>
 			<var name="landIceDraftForcing"/>
 		</stream>
 
@@ -2106,6 +2121,8 @@
 			<var name="nAccumulatedCoupled"/>
 			<var name="landIceFraction"/>
 			<var name="landIceMask"/>
+			<var name="landIceFloatingMask"/>
+			<var name="landIceFloatingFraction"/>
 			<var_array name="landIceInterfaceTracers"/>
 			<var_array name="landIceBoundaryLayerTracers"/>
 			<var name="landIceFrictionVelocity"/>
@@ -2742,8 +2759,8 @@
 			 missing_value="FILLVAL" missing_value_mask="edgeMask"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="wettingVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
-			 description="Velocity to prevent drying of cell."
+		<var name="wettingVelocityFactor" type="real" dimensions="nVertLevels nEdges Time"
+			 description="Scaling factor for normalVelocity and its tendency to prevent drying of cell between 0 (no scaling) and 1 (normalVelocity and tendency set to 0)."
 			 packages="forwardMode"
 		/>
 		<var name="vertAleTransportTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^-1"
@@ -3612,6 +3629,14 @@
 			description="Mask indicating where land-ice is present (1) or absent (0)"
 			packages="landIcePressurePKG"
 		/>
+		<var name="landIceFloatingFraction" type="real" dimensions="nCells Time" units="1"
+			description="The fraction of each cell covered by an ice shelf"
+			packages="landIcePressurePKG"
+		/>
+		<var name="landIceFloatingMask" type="integer" dimensions="nCells Time" default_value="-1"
+			description="Mask indicating where an ice shelf is present (1) or absent (0)"
+			packages="landIcePressurePKG"
+		/>
 		<var name="landIcePressure" type="real" dimensions="nCells Time" units="Pa"
 			description="Pressure defined at the sea surface due to land ice."
 			packages="landIcePressurePKG"
@@ -3806,6 +3831,10 @@
 			packages="timeVaryingAtmosphericForcingPKG"
 		/>
 		<var name="landIceFractionForcing" type="real" dimensions="nCells Time" units="1"
+			description="The fraction of each cell covered by land ice"
+			packages="timeVaryingLandIceForcingPKG"
+		/>
+		<var name="landIceFloatingFractionForcing" type="real" dimensions="nCells Time" units="1"
 			description="The fraction of each cell covered by land ice"
 			packages="timeVaryingLandIceForcingPKG"
 		/>

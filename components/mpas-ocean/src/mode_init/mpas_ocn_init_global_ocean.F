@@ -1073,13 +1073,16 @@ contains
 
        real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
        real (kind=RKIND), dimension(:), pointer :: landIceThkObserved, landIceDraftObserved, &
-                                                   landIceFracObserved, landIceGroundedFracObserved
+                                                   landIceFracObserved, &
+                                                   landIceFloatingFracObserved, &
+                                                   landIceGroundedFracObserved
 
-       real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceFraction, ssh, &
+       real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceFraction, &
+                                                   landIceFloatingFraction, ssh, &
                                                    bottomDepth
 
        integer, pointer :: nCells
-       integer, dimension(:), pointer :: maxLevelCell, landIceMask
+       integer, dimension(:), pointer :: maxLevelCell, landIceMask, landIceFloatingMask
 
        integer :: iCell
 
@@ -1123,6 +1126,7 @@ contains
                                                           inXPeriod = 2.0_RKIND * pii)
 
              elseif (config_global_ocean_topography_method .eq. "bilinear_interpolation") then
+
                 call ocn_init_interpolation_bilinear_horiz(landIceThkLon % array, landIceThkLat % array, &
                                                            landIceThkIC % array, nLonLandIceThk, nLatLandIceThk, &
                                                            lonCell, latCell, landIceThkObserved, nCells, &
@@ -1186,20 +1190,34 @@ contains
           call mpas_pool_get_array(landIceInitPool, 'landIceDraftObserved', landIceDraftObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceThkObserved', landIceThkObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFracObserved)
+          call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFloatingFracObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceGroundedFracObserved', landIceGroundedFracObserved)
           call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
           call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+          call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
           call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
           call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+          call mpas_pool_get_array(forcingPool, 'landIceFloatingFraction', landIceFloatingFraction)
 
+          if (landIceFloatingMask(1) == -1) then
+             call mpas_log_write('landIceFloatingMask contains the default value which likely ' // &
+               'indicates that this field is missing in the initial condition file (e.g. ' // &
+               'because it is meant for an older E3SM version).', MPAS_LOG_CRIT)
+          endif
           ssh(:) = 0.0_RKIND
           landIceFraction(:) = 0.0_RKIND
           modifyLandIcePressureMask(:) = 0
           landIcePressure(:) = 0.0_RKIND
           do iCell = 1, nCells
 
-             if(landIceMask(iCell) == 1) then
+             if (landIceMask(iCell) == 1) then
                 landIceFraction(iCell) = landIceFracObserved(iCell)
+             end if
+
+             ! this implicitly assumes that when a cell is considered floating, the
+             ! full landIceFracObserved is floating
+             if (landIceFloatingMask(iCell) == 1) then
+                landIceFloatingFraction(iCell) = landIceFloatingFracObserved(iCell)
              end if
 
              ! nothing to do here if the cell is land
@@ -1207,7 +1225,7 @@ contains
 
              ! we compute the SSH first and find out the land-ice pressure
              ssh(iCell) = min(0.0_RKIND, landIceDraftObserved(iCell))
-             if(ssh(iCell) < 0.0_RKIND) then
+             if (ssh(iCell) < 0.0_RKIND) then
                 modifyLandIcePressureMask(iCell) = 1
              end if
           end do
@@ -2056,7 +2074,6 @@ contains
                  inXPeriod = 2.0_RKIND * pii)
 
          elseif (config_global_ocean_tracer_method .eq. "bilinear_interpolation") then
-
             call ocn_init_interpolation_bilinear_horiz(tracerLon % array, tracerLat % array, &
                  tracerIC % array, nLonTracer, nLatTracer, &
                  lonCell, latCell, interpTracer, nCells, &

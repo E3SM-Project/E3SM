@@ -34,6 +34,7 @@ module ocn_vmix
    use ocn_vmix_gotm
    use ocn_vmix_coefs_redi
    use ocn_diagnostics_variables
+   use ocn_surface_land_ice_fluxes
 
    implicit none
    private
@@ -64,7 +65,7 @@ module ocn_vmix
    !--------------------------------------------------------------------
 
    logical :: velVmixOn, tracerVmixOn
-   real (kind=RKIND) :: implicitBottomDragCoef
+   real (kind=RKIND) :: implicitBottomDragCoef, implicitTopDragCoef
    real (kind=RKIND) :: rayleighDampingCoef, rayleighBottomDampingCoef, &
                         rayleighDepthVariable
 
@@ -384,7 +385,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_vmix_tend_implicit(dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, & !{{{
-                                         layerThickEdgeMean, normalVelocity, err)
+                                         layerThickEdgeMean, landIceEdgeFraction, normalVelocity, err)
 
       !-----------------------------------------------------------------
       !
@@ -406,6 +407,9 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThickEdgeMean !< Input: mean thickness at edge
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         landIceEdgeFraction !< Input: land ice fraction
 
       !-----------------------------------------------------------------
       !
@@ -446,7 +450,7 @@ contains
 
       !$acc parallel loop present(maxLevelEdgeTop, minLevelEdgeBot, cellsOnEdge, &
       !$acc    layerThickEdgeMean, layerThickness, vertViscTopOfEdge, normalVelocity, &
-      !$acc    kineticEnergyCell) &
+      !$acc    landIceEdgeFraction, kineticEnergyCell) &
       !$acc    private(Nsurf, N, cell1, cell2, A, bTemp, C, m, rTemp, k)
 #else
       !$omp parallel
@@ -463,7 +467,7 @@ contains
          ! one active layer
          if (N .eq. Nsurf) then
             normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
-                / (1.0_RKIND + dt*implicitBottomDragCoef &
+                / (1.0_RKIND + dt*(implicitTopDragCoef * landIceEdgeFraction(iEdge) + implicitBottomDragCoef) &
                    * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) )
          else
 
@@ -471,7 +475,10 @@ contains
            C(Nsurf)     = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
                       / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &
                       / layerThickEdgeMean(Nsurf,iEdge)
-           bTemp(Nsurf) = 1.0_RKIND - C(Nsurf)
+           bTemp(Nsurf) = 1.0_RKIND - C(Nsurf) &
+              + dt * implicitTopDragCoef * landIceEdgeFraction(iEdge) &
+                * sqrt(kineticEnergyCell(Nsurf,cell1) + kineticEnergyCell(Nsurf,cell2)) / &
+                layerThickEdgeMean(Nsurf,iEdge)
            rTemp(Nsurf) = normalVelocity(Nsurf,iEdge)
 
            ! first pass: set the coefficients
@@ -1122,7 +1129,8 @@ contains
       type (mpas_pool_type), pointer :: tracersPool, tracersSurfaceFluxPool
 
       integer :: iCell, timeLevel, k, cell1, cell2, iEdge, iTracer, num_tracers, nCells, nEdges, N, Nsurf
-      real (kind=RKIND), dimension(:), pointer :: bottomDrag, ssh
+      real (kind=RKIND), dimension(:), pointer :: bottomDrag, ssh, landIceFraction
+      real (kind=RKIND), dimension(:), allocatable :: landIceEdgeFraction
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness
       real (kind=RKIND), dimension(:,:), pointer :: tracerGroupSurfaceFlux
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
@@ -1144,6 +1152,33 @@ contains
       end if
 
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
+
+      allocate(landIceEdgeFraction(nEdgesOwned))
+      landIceEdgeFraction(:) = 0.0_RKIND
+      if (landIcePressureOn) then
+         call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+#ifdef MPAS_OPENACC
+         !$acc enter data copyin(landIceFraction)
+
+         !$acc parallel loop present(landIceEdgeFraction) &
+         !$acc    private(cell1, cell2, k)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime) private(cell1, cell2, k)
+#endif
+         do iEdge = 1, nEdgesOwned
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            landIceEdgeFraction(iEdge) = 0.5_RKIND*(landIceFraction(cell1)+landIceFraction(cell2))
+         end do
+#ifdef MPAS_OPENACC
+         !$acc exit data copyout(landIceFraction)
+#else
+         !$omp end do
+         !$omp end parallel
+#endif
+      end if
+
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
@@ -1245,7 +1280,8 @@ contains
           vertViscTopOfEdge, layerThickness, layerThickEdgeMean, normalVelocity, err)
       else
         call ocn_vel_vmix_tend_implicit(dt, kineticEnergyCell, &
-          vertViscTopOfEdge, layerThickness, layerThickEdgeMean, normalVelocity, err)
+          vertViscTopOfEdge, layerThickness, layerThickEdgeMean, &
+          landIceEdgeFraction, normalVelocity, err)
       end if
 #ifdef MPAS_OPENACC
       !$acc exit data copyout(normalVelocity)
@@ -1408,9 +1444,19 @@ contains
       if(config_disable_tr_vmix.or.config_disable_tr_all_tend) tracerVmixOn = .false.
 
       implicitBottomDragCoef = 0.0_RKIND
+      implicitTopDragCoef = 0.0_RKIND
+
+      if (config_use_implicit_top_drag .and. &
+          .not. config_use_implicit_bottom_drag) then
+         call mpas_log_write('Implicit top drag can only be used with ' //&
+              & 'implicit bottom drag', MPAS_LOG_CRIT)
+      endif
 
       if (config_use_implicit_bottom_drag) then
           implicitBottomDragCoef = config_implicit_bottom_drag_coeff
+      endif
+      if (config_use_implicit_top_drag) then
+          implicitTopDragCoef = config_implicit_top_drag_coeff
       endif
 
       call ocn_vmix_cvmix_init(domain,err_tmp)

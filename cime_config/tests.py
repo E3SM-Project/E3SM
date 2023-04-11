@@ -173,11 +173,31 @@ _TESTS = {
             )
         },
 
+    "e3sm_ocnice_stealth_features" : {
+        "tests" : (
+            "SMS_D_Ld1.T62_oQU240wLI.GMPAS-IAF-ISMF.mpaso-impl_top_drag",
+            )
+        },
+
     "e3sm_ocnice_extra_coverage" : {
+        "inherit" : ("e3sm_ocnice_stealth_features"),
         "tests" : (
             "ERS_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-ISMF",
             "PEM_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-ISMF",
             "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
+            )
+        },
+
+    "e3sm_atm_dustemis" : {
+        "time"  : "1:45:00",
+        "tests"   : (
+            "ERP.ne4pg2_oQU480.F2010.eam-v3atm_dustemis",
+            "REP.ne4pg2_oQU480.F2010.eam-v3atm_dustemis",
+            "SMS.ne30pg2_EC30to60E2r2.F2010.eam-v3atm_dustemis",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-v3atm_dustemis",
+            "PET_Ln5.ne4pg2_oQU480.F2010.eam-v3atm_dustemis",
+            "PEM_Ln5.ne4pg2_oQU480.F2010.eam-v3atm_dustemis",
+            "ERS_D.ne4pg2_oQU480.F2010.eam-v3atm_dustemis"
             )
         },
 

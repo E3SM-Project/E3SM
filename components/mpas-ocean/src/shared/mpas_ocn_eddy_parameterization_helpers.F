@@ -197,7 +197,6 @@ module ocn_eddy_parameterization_helpers
      integer :: iEdge, nEdges, refIndex, cell1, cell2, nCells, k, iCell
      real(kind=RKIND) :: dDenThres, den_ref_lev
      real(kind=RKIND),dimension(:), allocatable :: depth
-     integer, dimension(:), pointer :: landIceMask
      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
      real (kind=RKIND), dimension(:), pointer :: landIceDraft, landIcePressure
      logical :: found_den_mld
@@ -209,7 +208,6 @@ module ocn_eddy_parameterization_helpers
      if ( config_eddyMLD_use_old ) then
        call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
        call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
-       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
 
        allocate(pressureAdjustedForLandIce(nVertLevels, size(pressure,2)))
 
@@ -281,11 +279,11 @@ module ocn_eddy_parameterization_helpers
         !$omp end do
         !$omp end parallel
 
-        if (associated(landIceMask) ) then
+        if (associated(landIceDraft) ) then
           !$omp parallel
           !$omp do schedule(runtime)
           do iCell = 1, nCells
-             dThreshMLD(iCell) = dThreshMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
+             dThreshMLD(iCell) = dThreshMLD(iCell) - abs(landIceDraft(iCell))
           end do
           !$omp end do
           !$omp end parallel
