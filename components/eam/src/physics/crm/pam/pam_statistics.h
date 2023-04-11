@@ -248,6 +248,7 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto nx         = coupler.get_option<int>("crm_nx");
   auto ny         = coupler.get_option<int>("crm_ny");
   real R_v        = coupler.get_option<real>("R_v");
+  auto crm_dt     = coupler.get_option<real>("crm_dt");
   //------------------------------------------------------------------------------------------------
   // get CRM variables to be aggregated
   auto precip_liq = dm_device.get<real,3>("precip_liq_surf_out");
@@ -270,9 +271,10 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
     stat_aggregation_cnt(iens) = stat_aggregation_cnt(iens) + 1;
   });
   real r_nx_ny  = 1._fp / (nx*ny);
+  // convert precip units from kg/m2 to m/s
   parallel_for("aggregate 0D statistics", SimpleBounds<3>(ny,nx,nens), YAKL_LAMBDA (int j, int i, int iens) {
-    atomicAdd( precip_liq_aggregated(iens), precip_liq(j,i,iens)*r_nx_ny );
-    atomicAdd( precip_ice_aggregated(iens), precip_ice(j,i,iens)*r_nx_ny );
+    atomicAdd( precip_liq_aggregated(iens), precip_liq(j,i,iens)*r_nx_ny /1000/crm_dt );
+    atomicAdd( precip_ice_aggregated(iens), precip_ice(j,i,iens)*r_nx_ny /1000/crm_dt );
   });
   parallel_for("aggregate 1D statistics", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     if ( rho_l(k,j,i,iens) + rho_i(k,j,i,iens ) > 0) {
