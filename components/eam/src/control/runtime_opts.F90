@@ -454,14 +454,15 @@ contains
          call scam_setopts( scmlat_in=scmlat,scmlon_in=scmlon, &
                             iopfile_in=iopfile,single_column_in=single_column,&
                             scm_iop_srf_prop_in=scm_iop_srf_prop,&
+			    iop_dosubsidence_in=iop_dosubsidence,&
                             iop_nudge_tq_in=iop_nudge_tq, &
                             iop_nudge_uv_in=iop_nudge_uv, &
                             iop_nudge_tq_low_in=iop_nudge_tq_low, &
                             iop_nudge_tq_high_in=iop_nudge_tq_high, &
                             iop_nudge_tscale_in=iop_nudge_tscale, &
+			    iop_perturb_high_in=iop_perturb_high, &
                             scm_observed_aero_in=scm_observed_aero, &
                             precip_off_in=precip_off, &
-                            iop_dosubsidence_in=iop_dosubsidence,&
                             scm_multcols_in=scm_multcols,&
                             dp_crm_in=dp_crm,&
                             scm_zero_non_iop_tracers_in=scm_zero_non_iop_tracers)

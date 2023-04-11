@@ -56,34 +56,15 @@ subroutine advance_iop_forcing(scm_dt, ps_in, &             ! In
   real(r8) pdelm1(plev)  ! pdel(k)   = pint  (k+1)-pint  (k)
   real(r8) t_lsf(plev)       ! storage for temperature large scale forcing
   real(r8) q_lsf(plev,pcnst) ! storage for moisture large scale forcing
-  real(r8) weight,fac
-  real(r8) wfldint(plevp)
-  real(r8) t_expan
+  real(r8) fac, t_expan
 
   integer i,k,m           ! longitude, level, constituent indices
   integer nlon
 
-  ! variables for relaxation addition
-
-  real(r8) rtau(plev)
-  real(r8) relaxt(plev)
-  real(r8) relaxq(plev)
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Perform weight averaged in pressure of the omega profile to get from
-  !   the midpoint grid to the interface grid
+  !! Get vertical level profiles
 
   nlon = 1 ! number of columns for plevs0 routine
   call plevs0(nlon, plon, plev, ps_in, pintm1, pmidm1, pdelm1)
-
-  wfldint(1) = 0.0_r8
-
-  do k=2,plev
-     weight = (pintm1(k) - pmidm1(k-1))/(pmidm1(k) - pmidm1(k-1))
-     wfldint(k) = (1.0_r8 - weight)*wfld(k-1) + weight*wfld(k)
-  end do
-
-  wfldint(plevp) = 0.0_r8
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  Advance T and Q due to large scale forcing
@@ -253,9 +234,9 @@ subroutine advance_iop_subsidence(scm_dt, ps_in, &                    ! In
       + wfldint(k)*(t_in(k) - t_in(k-1)))
 
     do m=1,pcnst
-      q_update(k,m) = q_update(k,m) &
-        - fac*(wfldint(k+1) * (q_update(k+1,m) - q_update(k,m)) &
-        + wfldint(k)*(q_update(k,m) - q_update(k-1,m)))
+      q_update(k,m) = q_in(k,m) &
+        - fac*(wfldint(k+1) * (q_in(k+1,m) - q_in(k,m)) &
+        + wfldint(k)*(q_in(k,m) - q_in(k-1,m)))
     enddo
   enddo
 
@@ -269,14 +250,13 @@ subroutine advance_iop_subsidence(scm_dt, ps_in, &                    ! In
     q_update(k,m) = q_in(k,m) - fac*(wfldint(k+1)*(q_in(k+1,m) - q_in(k,m)))
   enddo
 
-  ! Top and bottom levels next
-  k = 1
+  k = plev
   fac = scm_dt/(2.0_r8*pdelm1(plev))
-  u_update(k) = u_in(k) - fac*(wfldint(k)*(u_in(k) - u_in(k+1)))
-  v_update(k) = v_in(k) - fac*(wfldint(k)*(v_in(k) - v_in(k+1)))
-  t_update(k) = t_in(k) - fac*(wfldint(k)*(t_in(k) - t_in(k+1)))
+  u_update(k) = u_in(k) - fac*(wfldint(k)*(u_in(k) - u_in(k-1)))
+  v_update(k) = v_in(k) - fac*(wfldint(k)*(v_in(k) - v_in(k-1)))
+  t_update(k) = t_in(k) - fac*(wfldint(k)*(t_in(k) - t_in(k-1)))
   do m=1,pcnst
-    q_update(k,m) = q_in(k,m) - fac*(wfldint(k)*(q_in(k,m) - q_in(k+1,m)))
+    q_update(k,m) = q_in(k,m) - fac*(wfldint(k)*(q_in(k,m) - q_in(k-1,m)))
   enddo
 
   ! thermal expansion term due to LS vertical advection
