@@ -790,10 +790,9 @@ contains
     call t_stopf ('mpaso_mct_init')
 
     call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-    if ( trim(config_land_ice_flux_mode) .eq. 'pressure_only' ) then
-       call seq_infodata_PutData( infodata, ocn_prognostic=.true., ocnrof_prognostic=.true., &
-                                            ocn_c2_glcshelf=.false.)
-    else if ( trim(config_land_ice_flux_mode) .eq. 'standalone' ) then
+    if ( trim(config_land_ice_flux_mode) == 'off' .or. &
+         trim(config_land_ice_flux_mode) == 'pressure_only' .or. &
+         trim(config_land_ice_flux_mode) == 'standalone' ) then
        call seq_infodata_PutData( infodata, ocn_prognostic=.true., ocnrof_prognostic=.true., &
                                             ocn_c2_glcshelf=.false.)
     else if ( trim(config_land_ice_flux_mode) .eq. 'coupled' ) then
@@ -2784,7 +2783,8 @@ contains
 !JW       o2x_o % rAttr(index_o2x_So_htv, n) = landIceHeatTransferVelocity(i)
 !JW       o2x_o % rAttr(index_o2x_So_stv, n) = landIceSaltTransferVelocity(i)
  
-       if ( trim(config_land_ice_flux_mode) .ne. 'pressure_only' ) then
+       if ( trim(config_land_ice_flux_mode) .eq. 'standalone' .or. &
+            trim(config_land_ice_flux_mode) .eq. 'coupled'  ) then
           o2x_o % rAttr(index_o2x_So_blt, n) = landIceBoundaryLayerTracers(indexBLT,i)
           o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerTracers(indexBLS,i)
           o2x_o % rAttr(index_o2x_So_htv, n) = landIceTracerTransferVelocities(indexHeatTrans,i)

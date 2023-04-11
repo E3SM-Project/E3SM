@@ -123,7 +123,10 @@ contains
        blockPtr => domain % blocklist
        do while (associated(blockPtr))
 
+          call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
           call MPAS_pool_get_subpool(blockPtr % structs, "velocity_variational", velocityVariationalPool)
+
+          call MPAS_pool_get_dimension(meshPool, "nVertices", nVertices)
 
           call MPAS_pool_get_array(velocityVariationalPool, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
 

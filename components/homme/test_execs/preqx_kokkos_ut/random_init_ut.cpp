@@ -62,7 +62,7 @@ TEST_CASE("d_dinv_check", "Testing Elements::random_init") {
   std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
 
   ElementsGeometry geometry;
-  geometry.init(num_elems, false, /*alloc_gradphis = */ false, PhysicalConstants::rearth0);
+  geometry.init(num_elems,false,true,PhysicalConstants::rearth0);
   geometry.randomize(seed);
 
   HostViewManaged<Real * [2][2][NP][NP]> d("host d", num_elems);

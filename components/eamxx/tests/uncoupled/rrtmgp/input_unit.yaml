@@ -1,0 +1,60 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+atmosphere_processes:
+  atm_procs_list: (rrtmgp)
+  rrtmgp:
+    column_chunk_size: 123
+    active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+    orbital_year: 1990
+    # Set orbital parameters to constants for consistency with RRTMGP test problem
+    orbital_eccentricity: 0
+    orbital_obliquity: 0
+    orbital_mvelp: 0
+    Fixed Solar Zenith Angle: 0.86
+    do_aerosol_rad: false
+    nswgpts: 224
+    nlwgpts: 256
+    rrtmgp_coefficients_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-sw-g224-2018-12-04.nc
+    rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g256-2018-12-04.nc
+    rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
+    rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
+
+grids_manager:
+  Type: Mesh Free
+  number_of_global_columns: 128
+  number_of_vertical_levels: 42
+  geo_data_source: CREATE_EMPTY_DATA
+
+# Specifications for setting initial conditions
+initial_conditions:
+  p_mid: 0.0
+  p_int: 0.0
+  pseudo_density: 0.0
+  T_mid: 0.0
+  surf_lw_flux_up: 0.0
+  sfc_alb_dir_vis: 0.0
+  sfc_alb_dir_nir: 0.0
+  sfc_alb_dif_vis: 0.0
+  sfc_alb_dif_nir: 0.0
+  cos_zenith: 0.0
+  qc: 0.0
+  qi: 0.0
+  cldfrac_tot: 0.0
+  eff_radius_qc: 0.0
+  eff_radius_qi: 0.0
+  qv: 0.0
+  co2: 0.0
+  o3: 0.0
+  n2o: 0.0
+  co: 0.0
+  ch4: 0.0
+  o2: 0.0
+  n2: 0.0
+  aero_g_sw: 0.0
+  aero_ssa_sw: 0.0
+  aero_tau_sw: 0.0
+  aero_tau_lw: 0.0
+...

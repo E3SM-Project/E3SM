@@ -443,6 +443,10 @@ contains
          config_time_varying_land_ice_forcing_reference_time, config_time_varying_land_ice_forcing_interval)
 
     call mpas_forcing_init_field(domain % streamManager, forcingGroupHead, "ocn_land_ice_forcing", &
+         "landIceFloatingFraction", "land_ice_forcing", "timeVaryingForcing", "landIceFloatingFractionForcing", "linear", &
+         config_time_varying_land_ice_forcing_reference_time, config_time_varying_land_ice_forcing_interval)
+
+    call mpas_forcing_init_field(domain % streamManager, forcingGroupHead, "ocn_land_ice_forcing", &
          "landIceDraft", "land_ice_forcing", "timeVaryingForcing", "landIceDraftForcing", "linear", &
          config_time_varying_land_ice_forcing_reference_time, config_time_varying_land_ice_forcing_interval)
 
@@ -495,6 +499,8 @@ contains
     real(kind=RKIND), dimension(:), pointer :: &
          landIceFractionForcing, &
          landIceFraction, &
+         landIceFloatingFractionForcing, &
+         landIceFloatingFraction, &
          landIcePressureForcing, &
          landIcePressure, &
          landIceDraftForcing, &
@@ -525,15 +531,18 @@ contains
        call MPAS_pool_get_dimension(mesh, "nCells", nCells)
    
        call MPAS_pool_get_array(timeVaryingForcingPool, "landIceFractionForcing", landIceFractionForcing)
+       call MPAS_pool_get_array(timeVaryingForcingPool, "landIceFloatingFractionForcing", landIceFloatingFractionForcing)
        call MPAS_pool_get_array(timeVaryingForcingPool, "landIcePressureForcing", landIcePressureForcing)
        call MPAS_pool_get_array(timeVaryingForcingPool, "landIceDraftForcing", landIceDraftForcing)
        call MPAS_pool_get_array(forcingPool, "landIceFraction", landIceFraction)
+       call MPAS_pool_get_array(forcingPool, "landIceFloatingFraction", landIceFloatingFraction)
        call MPAS_pool_get_array(forcingPool, "landIcePressure", landIcePressure)
        call MPAS_pool_get_array(forcingPool, "landIceDraft", landIceDraft)
    
        do iCell = 1, nCells
    
           landIceFraction(iCell) = landIceFractionForcing(iCell)
+          landIceFloatingFraction(iCell) = landIceFloatingFractionForcing(iCell)
           landIcePressure(iCell) = landIcePressureForcing(iCell)
           landIceDraft(iCell) = landIceDraftForcing(iCell)
    

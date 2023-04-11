@@ -51,6 +51,12 @@ module restart_physics
 
     type(var_desc_t) :: cospcnt_desc, rad_randn_seedrst_desc
 
+    type(var_desc_t),allocatable :: cnd_metric_desc(:)
+    type(var_desc_t),allocatable :: cnd_flag_desc(:)
+    type(var_desc_t),allocatable :: cnd_fld_val_desc(:,:,:)
+    type(var_desc_t),allocatable :: cnd_fld_inc_desc(:,:,:)
+    type(var_desc_t),allocatable :: cnd_fld_old_desc(:,:)
+
   CONTAINS
     subroutine init_restart_physics ( File, pbuf2d)
       
@@ -68,6 +74,7 @@ module restart_physics
     use subcol_utils,        only: is_subcol_on
     use subcol,              only: subcol_init_restart
     use phys_control,        only: phys_getopts
+    use conditional_diag_restart, only: cnd_diag_init_restart
 
     type(file_desc_t), intent(inout) :: file
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
@@ -104,6 +111,12 @@ module restart_physics
 
     call pbuf_init_restart(File, pbuf2d)
 
+    ! CondiDiag
+    call cnd_diag_init_restart( dimids, hdimcnt, pver, pver_id, pverp_id,            &! in
+                                File, cnd_metric_desc,  cnd_flag_desc,               &! inout
+                                cnd_fld_val_desc, cnd_fld_old_desc, cnd_fld_inc_desc )! inout
+
+    !-----
     if ( .not. adiabatic .and. .not. ideal_phys )then
        
        call chem_init_restart(File)
@@ -173,7 +186,7 @@ module restart_physics
       
   end subroutine init_restart_physics
 
-  subroutine write_restart_physics (File, cam_in, cam_out, pbuf2d)
+  subroutine write_restart_physics (File, cam_in, cam_out, pbuf2d, phys_diag)
 
       !-----------------------------------------------------------------------
       use physics_buffer,      only: physics_buffer_desc, pbuf_write_restart
@@ -194,6 +207,8 @@ module restart_physics
       use pio,                 only: pio_write_darray
       use subcol_utils,        only: is_subcol_on
       use subcol,              only: subcol_write_restart
+      use conditional_diag,    only: cnd_diag_t
+      use conditional_diag_restart, only: cnd_diag_write_restart
       !
       ! Input arguments
       !
@@ -201,6 +216,7 @@ module restart_physics
       type(cam_in_t),    intent(in)    :: cam_in(begchunk:endchunk)
       type(cam_out_t),   intent(in)    :: cam_out(begchunk:endchunk)
       type(physics_buffer_desc), pointer        :: pbuf2d(:,:)
+      type(cnd_diag_t),          intent(in)     :: phys_diag(begchunk:endchunk)
       !
       ! Local workspace
       !
@@ -213,6 +229,8 @@ module restart_physics
       integer :: physgrid
       integer :: dims(3), gdims(3)
       integer :: nhdims
+      integer :: lchnk
+      integer :: chunk_ncols(begchunk:endchunk)
       !-----------------------------------------------------------------------
 
       ! Write grid vars
@@ -231,6 +249,21 @@ module restart_physics
 
       physgrid = cam_grid_id('physgrid')
       call cam_grid_dimensions(physgrid, gdims(1:2), nhdims)
+
+      !---------------------------------------
+      ! CondiDiag
+
+      do lchnk = begchunk,endchunk
+         chunk_ncols(lchnk) = cam_out(lchnk)%ncol
+      end do
+
+      call cnd_diag_write_restart( phys_diag, begchunk, endchunk,        &! in
+                                   physgrid, gdims(1:nhdims), nhdims,    &! in
+                                   pcols, chunk_ncols, fillvalue,        &! in
+                                   File, cnd_metric_desc, cnd_flag_desc, &!  inout
+                                   cnd_fld_val_desc, cnd_fld_inc_desc,   &!  inout
+                                   cnd_fld_old_desc                      )
+      !------
 
       if ( .not. adiabatic .and. .not. ideal_phys )then
 
@@ -420,7 +453,7 @@ module restart_physics
 
 !#######################################################################
 
-    subroutine read_restart_physics(File, cam_in, cam_out, pbuf2d)
+    subroutine read_restart_physics(File, cam_in, cam_out, pbuf2d, phys_diag)
 
      !-----------------------------------------------------------------------
      use physics_buffer,      only: physics_buffer_desc, pbuf_read_restart
@@ -438,6 +471,8 @@ module restart_physics
      use subcol_utils,        only: is_subcol_on
      use subcol,              only: subcol_read_restart
      use pio,                 only: pio_read_darray
+     use conditional_diag,    only: cnd_diag_t
+     use conditional_diag_restart, only: cnd_diag_read_restart
      !
      ! Arguments
      !
@@ -445,6 +480,7 @@ module restart_physics
      type(cam_in_t),            pointer :: cam_in(:)
      type(cam_out_t),           pointer :: cam_out(:)
      type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+     type(cnd_diag_t),          pointer :: phys_diag(:)
      !
      ! Local workspace
      !
@@ -475,6 +511,9 @@ module restart_physics
      call pbuf_read_restart(File, pbuf2d)
      call t_stopf("pbuf_read_restart")
 
+     !-------------------------------
+     ! grid and dimension sizes
+     !-------------------------------
      csize=endchunk-begchunk+1
      dims(1) = pcols
      dims(2) = csize
@@ -491,6 +530,17 @@ module restart_physics
      
      call cam_grid_get_decomp(physgrid, dims(1:2), gdims(1:nhdims), pio_double, &
           iodesc)
+
+     !-----------------------------------------------------------------------
+     ! CondiDiag
+     !-----------------------------------------------------------------------
+     call cnd_diag_read_restart( phys_diag, begchunk, endchunk,     &! in
+                                 physgrid, gdims(1:nhdims), nhdims, &! in
+                                 pcols, fillvalue, File             )! inout
+
+     !-----------------------------------------------------------------------
+     ! Miscellaneous fields
+     !-----------------------------------------------------------------------
      if ( .not. adiabatic .and. .not. ideal_phys )then
 
         ! data for chemistry
@@ -652,6 +702,22 @@ module restart_physics
         ! and if the values are used in the tphysbc physics before the 
         ! tphysac code has a chance to update the values that are 
         ! coming from boundary datasets.
+
+       ! +++ Update from 2022-09 +++
+       ! For some of the new process coupling options in EAM, some of the constituents'
+       ! cam_in%cflx are used not in tphysac but in the tphysbc call of the next time step. 
+       ! This means for an exact restart, we also need to write out cam_in%cflx(:,2:)
+       ! and then read them back in. Because the present subroutine is called before 
+       ! the atm_import subroutine in cpl/atm_import_export.F90, the following
+       ! initialize was moved from atm_import to here to avoid incorrectly zeroing out 
+       ! the values read from restart files
+       !
+       do c= begchunk, endchunk
+          cam_in(c)%cflx(:,2:) = 0._r8
+       end do
+       !
+       ! === Update from 2022-09 ===
+
         do m = 1, pcnst
 
            write(num,'(i4.4)') m

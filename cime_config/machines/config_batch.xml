@@ -106,10 +106,12 @@
       <arg flag="--cwd" name="CASEROOT"/>
       <arg flag="-A" name="CHARGE_ACCOUNT"/>
       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
-      <arg flag="-n" name=" $TOTALPES/$MAX_MPITASKS_PER_NODE"/>
       <arg flag="-q" name="JOB_QUEUE"/>
       <arg flag="--mode script"/>
     </submit_args>
+    <directives>
+      <directive> -n {{ num_nodes }} </directive>
+    </directives>
   </batch_system>
 
   <batch_system type="cobalt_theta" >
@@ -127,10 +129,12 @@
     <submit_args>
       <arg flag="-A" name="CHARGE_ACCOUNT"/>
       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
-      <arg flag="-n" name=" $TOTALPES/$MAX_MPITASKS_PER_NODE"/>
       <arg flag="-q" name="JOB_QUEUE"/>
       <arg flag="--mode script"/>
     </submit_args>
+    <directives>
+      <directive> -n {{ num_nodes }} </directive>
+    </directives>
   </batch_system>
 
 <!-- This is the new version on Summit, released as IBM 10.1.0.0 build 476197, Nov 21 2017.  -->
@@ -587,7 +591,7 @@
      <directive>--qos=standard </directive>
     </directives>
     <queues>
-      <queue walltimemax="00:30:00" nodemax="560" default="true">standard</queue>
+      <queue walltimemax="24:00:00" nodemax="1792" default="true">standard</queue>
     </queues>
    </batch_system>
 
@@ -662,9 +666,38 @@
      </queues>
    </batch_system>
 
+   <batch_system MACH="crusher-scream-cpu" type="slurm">
+     <queues>
+       <queue strict="true" nodemin="1" nodemax="8" walltimemax="08:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="9" nodemax="64" walltimemax="04:00:00">batch</queue>
+       <queue strict="true" nodemin="65" nodemax="160" walltimemax="02:00:00">batch</queue>
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="crusher-scream-gpu" type="slurm">
+     <batch_submit>/gpfs/alpine/cli133/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
+     <directives>
+       <directive> -S 0</directive>
+     </directives>
+     <queues>
+       <queue strict="true" nodemin="1" nodemax="8" walltimemax="01:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="9" nodemax="64" walltimemax="01:00:00">batch</queue>
+       <queue strict="true" nodemin="65" nodemax="160" walltimemax="01:00:00">batch</queue>
+     </queues>
+   </batch_system>
+
    <batch_system MACH="snl-white" type="lsf" >
      <queues>
        <queue walltimemax="02:00" default="true">rhel7G</queue>
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="weaver" type="lsf" >
+     <submit_args>
+       <arg flag="-n" name=" $TOTALPES"/>
+     </submit_args>
+     <queues>
+       <queue walltimemax="02:00" default="true">rhel7W</queue>
      </queues>
    </batch_system>
 

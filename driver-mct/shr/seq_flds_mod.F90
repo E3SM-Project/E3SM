@@ -129,6 +129,7 @@ module seq_flds_mod
   use shr_fire_emis_mod , only : shr_fire_emis_readnl, shr_fire_emis_mechcomps_n, shr_fire_emis_ztop_token
   use shr_carma_mod     , only : shr_carma_readnl
   use shr_ndep_mod      , only : shr_ndep_readnl
+  use shr_dust_mod      , only : shr_dust_readnl
   use shr_flds_mod      , only : seq_flds_dom_coord=>shr_flds_dom_coord, seq_flds_dom_other=>shr_flds_dom_other
 
   implicit none
@@ -3798,6 +3799,11 @@ contains
 
        call metadata_set(ndep_fields, longname, stdname, units)
     end if
+
+    !----------------------------------------------------------------------------
+    ! Dust-related info
+    !----------------------------------------------------------------------------
+    call shr_dust_readnl(nlfilename='drv_in', ID=ID)
 
     !----------------------------------------------------------------------------
     ! state + flux fields
