@@ -349,7 +349,6 @@ TEST_CASE("surface-coupling", "") {
   const vor_type exp_const_values = {Faxa_swndf_const,Faxa_swvdf_const};
   auto& ap_params     = ad_params.sublist("atmosphere_processes");
   auto& sc_exp_params = ap_params.sublist("SurfaceCouplingExporter");
-  sc_exp_params.set<std::string>("prescribed_export_control_file",export_control_filename);
   auto& exp_const_params = sc_exp_params.sublist("prescribed_constants");
   exp_const_params.set<vos_type>("fields",exp_const_fields);
   exp_const_params.set<vor_type>("values",exp_const_values);
