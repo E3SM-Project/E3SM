@@ -144,7 +144,7 @@ contains
 #ifndef MPAS_OPENACC
       !$omp parallel
 #endif
-      if (usePlanetVorticity) then
+      if (usePlanetVorticity.and.useRelVorticity) then
 #ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(tmpVorticity, normRelVortEdge, &
@@ -163,7 +163,7 @@ contains
 #ifndef MPAS_OPENACC
          !$omp end do
 #endif
-      else
+      elseif (useRelVorticity) then
 #ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(tmpVorticity, normRelVortEdge) &
@@ -175,6 +175,23 @@ contains
          do iEdge = 1, nEdgesAll
          do k=1,nVertLevels
             tmpVorticity(k,iEdge) = normRelVortEdge(k,iEdge)
+         end do
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+#endif
+      elseif (usePlanetVorticity) then
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(tmpVorticity, normPlanetVortEdge) &
+         !$acc    private(k)
+#else
+         !$omp do schedule(runtime) &
+         !$omp    private(k)
+#endif
+         do iEdge = 1, nEdgesAll
+         do k=1,nVertLevels
+            tmpVorticity(k,iEdge) = normPlanetVortEdge(k,iEdge)
          end do
          end do
 #ifndef MPAS_OPENACC
@@ -223,6 +240,7 @@ contains
       !$omp end do
 #endif
 
+      if (useGradKineticEnergy) then
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
@@ -245,6 +263,33 @@ contains
                         edgeMask(k,iEdge)* (qArr(k,iEdge) - &
                            (kineticEnergyCell(k,cell2) &
                           - kineticEnergyCell(k,cell1))*invLength)
+         end do
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+      else ! .not.useGradKineticEnergy
+#ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
+      !$acc            dcEdge, tend, qArr) &
+      !$acc    private(cell1, cell2, invLength, k, kmin, kmax)
+#else
+      !$omp do schedule(runtime) &
+      !$omp    private(cell1, cell2, invLength, k, kmin, kmax)
+#endif
+      do iEdge = 1, nEdgesOwned
+         kmin = minLevelEdgeBot(iEdge)
+         kmax = maxLevelEdgeTop(iEdge)
+
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+         invLength = 1.0_RKIND / dcEdge(iEdge)
+
+         do k = kmin, kmax
+            tend(k,iEdge) = tend(k,iEdge) + &
+                        edgeMask(k,iEdge)* qArr(k,iEdge)
          end do
       end do
 #ifndef MPAS_OPENACC
@@ -295,7 +340,16 @@ contains
 
       !*** Reset module variables based in input configuration
 
-      if ( config_disable_vel_coriolis ) hadvCoriolisDisabled = .true.
+      if ( config_disable_vel_hadv .and. config_disable_vel_coriolis ) hadvCoriolisDisabled = .true.
+      if ( config_disable_vel_hadv ) then
+          useRelVorticity = .false.
+          useGradKineticEnergy = .false.
+      else
+          useRelVorticity = .true.
+          useGradKineticEnergy = .true.
+      endif
+
+      if ( config_disable_vel_coriolis ) coriolisDisabled = .true.
 
       select case (trim(config_time_integrator))
       case ('RK4','rk4')
