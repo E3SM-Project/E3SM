@@ -202,12 +202,12 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
   // Copy data to device for use in do_export()
   Kokkos::deep_copy(m_column_info_d, m_column_info_h);
 
-  // Set the number of exports from eamxx or set to a constant, default type = EAMXX
+  // Set the number of exports from eamxx or set to a constant, default type = FROM_MODEL
   using vos_type = std::vector<std::string>;
   using vor_type = std::vector<Real>;
   m_export_source     = view_1d<DefaultDevice,ExportType>("",m_num_scream_exports);
   auto export_source_h = Kokkos::create_mirror_view(m_export_source);
-  Kokkos::deep_copy(m_export_source,EAMXX);  // The default is that all export variables will be derived from the EAMxx state.
+  Kokkos::deep_copy(m_export_source,FROM_MODEL);  // The default is that all export variables will be derived from the EAMxx state.
   m_num_eamxx_exports = m_num_scream_exports;
  
   if (m_params.isSublist("prescribed_constants")) {
@@ -369,9 +369,9 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
     // Compute vertical layer heights (relative to ground surface rather than from sea level).
     // Use z_int(nlevs) = z_surf = 0.0.
     // Currently only needed for Sa_z, Sa_dens and Sa_pslv
-    const bool calculate_z_vars = m_export_source(idx_Sa_z)==EAMXX
-                               || m_export_source(idx_Sa_dens)==EAMXX
-                               || m_export_source(idx_Sa_pslv)==EAMXX; 
+    const bool calculate_z_vars = m_export_source(idx_Sa_z)==FROM_MODEL
+                               || m_export_source(idx_Sa_dens)==FROM_MODEL
+                               || m_export_source(idx_Sa_pslv)==FROM_MODEL; 
     if (calculate_z_vars) {
       PF::calculate_dz(team, pseudo_density_i, p_mid_i, T_mid_i, qv_i, dz_i);
       team.team_barrier();
@@ -384,46 +384,46 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
 
     // Set the values in the helper fields which correspond to the exported variables
 
-    if (m_export_source(idx_Sa_z)==EAMXX) { 
+    if (m_export_source(idx_Sa_z)==FROM_MODEL) { 
       // Assugb to Sa_z
       const auto s_z_mid_i = ekat::scalarize(z_mid_i);
       Sa_z(i)    = s_z_mid_i(num_levs-1); 
     }
 
-    if (m_export_source(idx_Sa_u)==EAMXX) {
+    if (m_export_source(idx_Sa_u)==FROM_MODEL) {
       const auto u_wind_i = ekat::subview(horiz_winds, i, 0); // TODO, when U and V work switch to using here instead of horiz_winds.
       Sa_u(i)             = u_wind_i(num_levs-1);
     }
 
-    if (m_export_source(idx_Sa_v)==EAMXX) {
+    if (m_export_source(idx_Sa_v)==FROM_MODEL) {
       const auto v_wind_i = ekat::subview(horiz_winds, i, 1);
       Sa_v(i)             = v_wind_i(num_levs-1);
     }
 
-    if (m_export_source(idx_Sa_tbot)==EAMXX) {
+    if (m_export_source(idx_Sa_tbot)==FROM_MODEL) {
       Sa_tbot(i) = s_T_mid_i(num_levs-1);
     }
 
-    if (m_export_source(idx_Sa_ptem)==EAMXX) {
+    if (m_export_source(idx_Sa_ptem)==FROM_MODEL) {
       Sa_ptem(i) = PF::calculate_theta_from_T(s_T_mid_i(num_levs-1), s_p_mid_i(num_levs-1));
     }
 
-    if (m_export_source(idx_Sa_pbot)==EAMXX) {
+    if (m_export_source(idx_Sa_pbot)==FROM_MODEL) {
       Sa_pbot(i) = s_p_mid_i(num_levs-1);
     }
 
-    if (m_export_source(idx_Sa_shum)==EAMXX) { 
+    if (m_export_source(idx_Sa_shum)==FROM_MODEL) { 
       const auto s_qv_i = ekat::scalarize(qv_i);
       Sa_shum(i) = s_qv_i(num_levs-1); 
     }
 
-    if (m_export_source(idx_Sa_dens)==EAMXX) {
+    if (m_export_source(idx_Sa_dens)==FROM_MODEL) {
       const auto s_dz_i = ekat::scalarize(dz_i);
       const auto s_pseudo_density_i = ekat::scalarize(pseudo_density_i);
       Sa_dens(i) = PF::calculate_density(s_pseudo_density_i(num_levs-1), s_dz_i(num_levs-1));
     }
 
-    if (m_export_source(idx_Sa_pslv)==EAMXX) {
+    if (m_export_source(idx_Sa_pslv)==FROM_MODEL) {
       const auto p_int_i   = ekat::subview(p_int, i);
       const auto s_z_mid_i = ekat::scalarize(z_mid_i);
       // Calculate air temperature at bottom of cell closest to the ground for PSL
@@ -436,19 +436,19 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
       // Precipitation has units of kg/m2, and Faxa_rainl/snowl
       // need units mm/s. Here, 1000 converts m->mm, dt has units s, and
       // rho_h2o has units kg/m3.
-      if (m_export_source(idx_Faxa_rainl)==EAMXX) { Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
-      if (m_export_source(idx_Faxa_snowl)==EAMXX) { Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
+      if (m_export_source(idx_Faxa_rainl)==FROM_MODEL) { Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
+      if (m_export_source(idx_Faxa_snowl)==FROM_MODEL) { Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O); }
     }
   });
   // Variables that are already surface vars in the ATM can just be copied directly.
   auto export_source_h = Kokkos::create_mirror_view(m_export_source);
   Kokkos::deep_copy(export_source_h,m_export_source);
-  if (export_source_h(idx_Faxa_swndr)==EAMXX) { Kokkos::deep_copy(Faxa_swndr, sfc_flux_dir_nir); }
-  if (export_source_h(idx_Faxa_swvdr)==EAMXX) { Kokkos::deep_copy(Faxa_swvdr, sfc_flux_dir_vis); }
-  if (export_source_h(idx_Faxa_swndf)==EAMXX) { Kokkos::deep_copy(Faxa_swndf, sfc_flux_dif_nir); }
-  if (export_source_h(idx_Faxa_swvdf)==EAMXX) { Kokkos::deep_copy(Faxa_swvdf, sfc_flux_dif_vis); }
-  if (export_source_h(idx_Faxa_swnet)==EAMXX) { Kokkos::deep_copy(Faxa_swnet, sfc_flux_sw_net); }
-  if (export_source_h(idx_Faxa_lwdn )==EAMXX) { Kokkos::deep_copy(Faxa_lwdn,  sfc_flux_lw_dn); }
+  if (export_source_h(idx_Faxa_swndr)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swndr, sfc_flux_dir_nir); }
+  if (export_source_h(idx_Faxa_swvdr)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swvdr, sfc_flux_dir_vis); }
+  if (export_source_h(idx_Faxa_swndf)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swndf, sfc_flux_dif_nir); }
+  if (export_source_h(idx_Faxa_swvdf)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swvdf, sfc_flux_dif_vis); }
+  if (export_source_h(idx_Faxa_swnet)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swnet, sfc_flux_sw_net); }
+  if (export_source_h(idx_Faxa_lwdn )==FROM_MODEL) { Kokkos::deep_copy(Faxa_lwdn,  sfc_flux_lw_dn); }
 }
 // =========================================================================================
 void SurfaceCouplingExporter::do_export_to_cpl(const bool called_during_initialization)
