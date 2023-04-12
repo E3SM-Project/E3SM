@@ -1281,8 +1281,8 @@ contains
           end do
           start(1) = 1
           start(2) = nt
-          status = pio_put_var(ncid, varid, start=start, count=count, &
-               ival=tmpString)
+          status = pio_put_var(ncid, varid, start, count, &
+               tmpString)
           deallocate(tmpString)
        else
           status = pio_put_var(ncid, varid, data )

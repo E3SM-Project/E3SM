@@ -20,6 +20,7 @@ if ($CONTINUE_RUN eq 'TRUE') {
 } else {
 	add_default($nl, 'config_start_time', 'val'=>"'${RUN_STARTDATE}_${START_TOD}'");
 }
+add_default($nl, 'config_output_reference_time');
 
 ######################
 # Namelist group: io #
@@ -208,8 +209,8 @@ add_default($nl, 'config_cvmix_kpp_use_active_wave');
 # Namelist group: wave_coupling #
 #################################
 
-add_default($nl, 'config_n_stokes_drift_wavenumber_partitions');
 add_default($nl, 'config_use_active_wave');
+add_default($nl, 'config_n_stokes_drift_wavenumber_partitions');
 
 ########################
 # Namelist group: gotm #
@@ -309,7 +310,7 @@ add_default($nl, 'config_land_ice_flux_boundaryLayerThickness');
 add_default($nl, 'config_land_ice_flux_boundaryLayerNeighborWeight');
 add_default($nl, 'config_land_ice_flux_cp_ice');
 add_default($nl, 'config_land_ice_flux_rho_ice');
-add_default($nl, 'config_land_ice_flux_topDragCoeff');
+add_default($nl, 'config_land_ice_flux_explicit_topDragCoeff');
 add_default($nl, 'config_land_ice_flux_ISOMIP_gammaT');
 add_default($nl, 'config_land_ice_flux_rms_tidal_velocity');
 add_default($nl, 'config_land_ice_flux_jenkins_heat_transfer_coefficient');
@@ -334,6 +335,8 @@ add_default($nl, 'config_remap_limiter');
 
 add_default($nl, 'config_use_implicit_bottom_drag');
 add_default($nl, 'config_implicit_bottom_drag_coeff');
+add_default($nl, 'config_use_implicit_top_drag');
+add_default($nl, 'config_implicit_top_drag_coeff');
 add_default($nl, 'config_use_implicit_bottom_roughness');
 add_default($nl, 'config_use_implicit_bottom_drag_variable');
 add_default($nl, 'config_use_implicit_bottom_drag_variable_mannings');

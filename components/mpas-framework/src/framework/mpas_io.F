@@ -13,8 +13,7 @@ module mpas_io
    use mpas_log
 
    use pio
-   use piolib_mod
-   use pionfatt_mod
+   use pio_kinds
    use pio_types
 
 #ifdef SINGLE_PRECISION
@@ -252,7 +251,8 @@ module mpas_io
       if (ioformat /= MPAS_IO_NETCDF .and. &
           ioformat /= MPAS_IO_NETCDF4 .and. &
           ioformat /= MPAS_IO_PNETCDF .and. &
-          ioformat /= MPAS_IO_PNETCDF5) then
+          ioformat /= MPAS_IO_PNETCDF5 .and. &
+          ioformat /= MPAS_IO_ADIOS) then
          if (present(ierr)) ierr = MPAS_IO_ERR_INVALID_FORMAT
          return 
       end if
@@ -276,6 +276,9 @@ module mpas_io
          else if (ioformat == MPAS_IO_PNETCDF5) then
             pio_iotype = PIO_iotype_pnetcdf
             pio_mode = PIO_64BIT_DATA
+         else if (ioformat == MPAS_IO_ADIOS) then
+            pio_iotype = PIO_iotype_adios
+            pio_mode = 0
          else if (ioformat == MPAS_IO_NETCDF) then
             pio_iotype = PIO_iotype_netcdf
             pio_mode = PIO_64BIT_OFFSET

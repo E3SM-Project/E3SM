@@ -1,4 +1,6 @@
 #! /usr/bin/env bash
+{{ batchdirectives }}
+
 #
 # template.diags_generate used to create the $CASEROOT/$CASE.ocn_diagnostics
 #
@@ -6,9 +8,6 @@
 # for the specified machine
 # <ocn_diags_pes>##</ocn_diags_pes>
 #
-
-{{ batchdirectives }}
-
 mpirun={{ mpirun }}
 
 # xmlquery to get POSTPROCESS_VIRTUALENV, BATCHSUBMIT variable settings

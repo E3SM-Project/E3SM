@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
+
+<definitions_variables>
+
+  <entry id="COMP_ATM">
+    <type>char</type>
+    <valid_values>scream</valid_values>
+    <default_value>scream</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of atmospheric component</desc>
+  </entry>
+
+  <entry id="ATM_DYN_TARGET">
+    <type>char</type>
+    <valid_values>theta-l_kokkos</valid_values>
+    <default_value>theta-l_kokkos</default_value>
+    <group>build_component_scream</group>
+    <file>env_build.xml</file>
+    <desc>Homme dycore to use in scream</desc>
+  </entry>
+
+  <entry id="SCREAM_CMAKE_OPTIONS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <values match='last'>
+      <value compset="_SCREAM">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 72 SCREAM_NUM_TRACERS 10</value>
+      <value compset="_SCREAM" grid="ne256.*|ne512.*|ne1024.*">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 128 SCREAM_NUM_TRACERS 10</value>
+    </values>
+    <group>build_component_scream</group>
+    <file>env_build.xml</file>
+    <desc>
+      SCREAM configure options.
+    </desc>
+  </entry>
+
+  <entry id="SCREAM_ATMCHANGE_BUFFER">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>build_component_scream</group>
+    <file>env_run.xml</file>
+    <desc>
+      A place to buffer atmchange items for test mods.
+    </desc>
+  </entry>
+
+  <description>
+    <desc compset="_SCREAM">scream default</desc>
+  </description>
+
+  <help>
+    =========================================
+    SCREAM
+    =========================================
+  </help>
+
+</definitions_variables>

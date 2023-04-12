@@ -1807,7 +1807,11 @@ contains
        lInputPoolCreated = .false.
 
        nullify(forcingPoolInput)
-       call MPAS_pool_get_subpool(block % structs, trim(poolnameInput), forcingPoolInput)
+
+       if (MPAS_pool_exists(block % structs, trim(poolnameInput), forcingPoolInput)) then
+          call MPAS_pool_get_subpool(block % structs, trim(poolnameInput), forcingPoolInput)
+       endif
+
        if (.not. associated(forcingPoolInput)) then
           call MPAS_pool_create_pool(forcingPoolInput)
           lInputPoolCreated = .true.

@@ -162,6 +162,9 @@ pgi-summit:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_MAGMA = $(USE_MAGMA)" \
+	"USE_CUBLAS = $(USE_CUBLAS)" \
+	"USE_GPU_AWARE_MPI = $(USE_GPU_AWARE_MPI)" \
 	"OPENMP = $(OPENMP)" \
 	"OPENACC = $(OPENACC)" \
 	"USE_SHTNS = $(USE_SHTNS)" \
@@ -437,6 +440,41 @@ intel-cray:
 	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
+cray-cray:
+	( $(MAKE) all \
+	"FC_PARALLEL = ftn" \
+	"CC_PARALLEL = cc" \
+	"CXX_PARALLEL = CC" \
+	"FC_SERIAL = ftn" \
+	"CC_SERIAL = cc" \
+	"CXX_SERIAL = CC" \
+	"FFLAGS_FPIEEE = -h flex_mp=rigorous" \
+	"FFLAGS_PROMOTION = -s real64" \
+	"FFLAGS_OPT = -g -O3 -h byteswapio -ef -f free -h noacc -em -M1077 -hipa0 -hzero" \
+	"CFLAGS_OPT = -O3 -h noacc" \
+	"CXXFLAGS_OPT = -O3 -h noacc" \
+	"LDFLAGS_OPT = -O3 -h noacc" \
+	"FFLAGS_ACC = -h acc -rm -ri" \
+	"CFLAGS_ACC = -h acc"  \
+	"FFLAGS_GPU = -DUSE_OMPOFFLOAD -homp -fopenmp" \
+	"LDFLAGS_GPU = -homp -fopenmp" \
+	"FFLAGS_DEBUG = -O0 -g -h byteswapio -ef -f free -Ktrap=divz,fp,inv,ovf" \
+	"CFLAGS_DEBUG = -O0 -g" \
+	"CXXFLAGS_DEBUG = -O0 -g" \
+	"LDFLAGS_DEBUG = -O0 -g -Ktrap=divz,fp,inv,ovf" \
+	"FFLAGS_OMP = -h omp" \
+	"CFLAGS_OMP = -h omp" \
+	"PICFLAG = -f pic" \
+	"BUILD_TARGET = $(@)" \
+	"CORE = $(CORE)" \
+	"DEBUG = $(DEBUG)" \
+	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
+	"OPENACC = $(OPENACC)" \
+	"OPENMP_OFFLOAD = $(OPENMP_OFFLOAD)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
+
 llvm:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpifort" \
@@ -640,6 +678,8 @@ SCC=$(CC_SERIAL)
 PARALLEL_MESSAGE="Parallel version is on."
 
 ifeq "$(OPENMP)" "true"
+	CPPINCLUDES += $(OPENMP_INCLUDE)
+	FCINCLUDES += $(OPENMP_INCLUDE)
 	FFLAGS += $(FFLAGS_OMP)
 	CFLAGS += $(CFLAGS_OMP)
 	CXXFLAGS += $(CFLAGS_OMP)
@@ -662,6 +702,25 @@ ifeq "$(OPENMP_OFFLOAD)" "true"
 	override CPPFLAGS += "-DMPAS_OPENMP_OFFLOAD"
 	LDFLAGS += $(LDFLAGS_GPU)
 endif #OPENMP_OFFLOAD IF
+
+ifeq "$(USE_MAGMA)" "true"
+   LIBS += -L$(MAGMADIR)/lib -lmagma
+   FCINCLUDES += -I${MAGMADIR}/include
+   override CPPFLAGS += "-DUSE_MAGMA"
+   override FFLAGS_ACC += -Mcudalib=cublas
+endif
+
+ifeq "$(USE_CUBLAS)" "true"
+   override FFLAGS_ACC = -acc -Minfo=accel -gpu=cc70
+   FFLAGS += $(FFLAGS_CUBLAS)
+   CFLAGS += $(CFLAGS_CUBLAS)
+   override CPPFLAGS += "-DUSE_CUBLAS"
+   LDFLAGS += $(FFLAGS_CUBLAS)
+endif #USE_CUBLAS IF
+
+ifeq "$(USE_GPU_AWARE_MPI)" "true"
+   override CPPFLAGS += "-DUSE_GPU_AWARE_MPI"
+endif #USE_GPUAWARE
 
 ifeq "$(PRECISION)" "single"
 	CFLAGS += "-DSINGLE_PRECISION"
@@ -765,6 +824,18 @@ else
 	OPENACC_MESSAGE="MPAS was built without OpenACC accelerator support."
 endif
 
+ifeq "$(USE_MAGMA)" "true"
+   MAGMA_MESSAGE="MPAS was built with MAGMA library."
+endif
+
+ifeq "$(USE_CUBLAS)" "true"
+   CUBLAS_MESSAGE="MPAS was built with CUBLAS library."
+endif
+
+ifeq "$(USE_GPU_AWARE_MPI)" "true"
+   GPUAWARE_MESSAGE="GPU-aware MPI is enabled."
+endif
+
 ifeq "$(USE_SHTNS)" "true"
 	SHTNS_MESSAGE="MPAS was built with SHTNS library."
 else
@@ -853,15 +924,15 @@ endif
 openmp_test:
 ifeq "$(OPENMP)" "true"
 	@echo "Testing compiler for OpenMP support"
-	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(SCC) $(CFLAGS) -o conftest.out conftest.c || \
+	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(SCC) $(OPENMP_INCLUDE) $(CFLAGS) -o conftest.out conftest.c || \
 		(echo "$(SCC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(CC) $(CFLAGS) -o conftest.out conftest.c || \
+	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(CC) $(OPENMP_INCLUDE) $(CFLAGS) -o conftest.out conftest.c || \
 		(echo "$(CC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "#include <omp.h>" > conftest.cpp; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.cpp; $(CXX) $(CFLAGS) -o conftest.out conftest.cpp || \
+	@echo "#include <omp.h>" > conftest.cpp; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.cpp; $(CXX) $(OPENMP_INCLUDE) $(CXXFLAGS) -o conftest.out conftest.cpp || \
 		(echo "$(CXX) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(SFC) $(FFLAGS) -o conftest.out conftest.f90 || \
+	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(SFC) $(OPENMP_INCLUDE) $(FFLAGS) -o conftest.out conftest.f90 || \
 		(echo "$(SFC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(FC) $(FFLAGS) -o conftest.out conftest.f90 || \
+	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(FC) $(OPENMP_INCLUDE) $(FFLAGS) -o conftest.out conftest.f90 || \
 		(echo "$(FC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
 	@rm -fr conftest.*
 endif
@@ -1007,6 +1078,15 @@ endif
 	@echo $(TIMER_MESSAGE)
 	@echo $(PIO_MESSAGE)
 	@echo $(SHTNS_MESSAGE)
+ifeq "$(USE_MAGMA)" "true"
+   @echo $(MAGMA_MESSAGE)
+endif
+ifeq "$(USE_CUBLAS)" "true"
+   @echo $(CUBLAS_MESSAGE)
+endif
+ifeq "$(USE_GPUAWARE)" "true"
+   @echo $(GPUAWARE_MESSAGE)
+endif
 	@echo "*******************************************************************************"
 clean:
 	cd $(FWPATH); $(MAKE) clean RM="$(RM)" CORE="$(CORE)"

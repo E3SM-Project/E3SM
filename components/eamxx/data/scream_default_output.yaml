@@ -1,0 +1,70 @@
+%YAML 1.1
+---
+Casename: ${CASE}.scream.hi
+Averaging Type: Instant
+Max Snapshots Per File: 744 # One output every 31 days
+Fields:
+  Physics ${PHYSICS_GRID_TYPE}:
+    Field Names:
+      # HOMME
+      - ps
+      - pseudo_density
+      - omega
+      - p_int
+      - p_mid
+      # SHOC + HOMME
+      - horiz_winds
+      # SHOC
+      - cldfrac_liq
+      - eddy_diff_mom
+      - sgs_buoy_flux
+      - tke
+      - pbl_height
+      # CLD
+      - cldfrac_ice
+      - cldfrac_tot
+      # P3
+      - bm
+      - nc
+      - ni
+      - nr
+      - qi
+      - qm
+      - qr
+      - eff_radius_qc
+      - eff_radius_qi
+      - precip_ice_surf_mass
+      - precip_liq_surf_mass
+      # SHOC + P3
+      - qc
+      - qv
+      # SHOC + P3 + RRTMGP + HOMME
+      - T_mid
+      # RRTMGP
+      - sfc_alb_dir_vis
+      - LW_flux_dn
+      - LW_flux_up
+      - SW_flux_dn
+      - SW_flux_up
+      - sfc_flux_lw_dn
+      - sfc_flux_sw_net
+      - cldtot
+      - cldlow
+      - cldmed
+      - cldhgh
+      # Surface Fluxes
+      - surf_evap
+      - surf_sens_flux
+      # Diagnostics
+      - PotentialTemperature
+output_control:
+  Frequency: ${HIST_N}
+  frequency_units: ${HIST_OPTION}
+  MPI Ranks in Filename: false
+  Timestamp in Filename: true
+  avg_type_in_filename: false
+  frequency_in_filename: false
+Checkpoint Control:
+  Frequency: ${REST_N}
+  frequency_units: ${REST_OPTION}
+...

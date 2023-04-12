@@ -1,0 +1,158 @@
+<?xml version="1.0"?>
+<!-- "IOP: ARM 1997 (18 Jun 1997 - 17 Jul 1997)" -->
+
+<namelist_defaults>
+
+<!-- Initial condition and IOP forcing file -->
+<ncdata>atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L72_c160909.nc</ncdata>
+<iopfile>atm/cam/scam/iop/ARM97_iopfile_4scam.nc</iopfile>
+<soag_ext_file >atm/cam/chem/trop_mozart_aero/emis/aces4bgc_nvsoa_soag_elev_2000_c160427.nc</soag_ext_file>
+
+<!-- Case specific flags -->
+<scmlat>36.6</scmlat>
+<scmlon>262.5</scmlon>
+<start_ymd>19970619</start_ymd>
+<start_tod>84585</start_tod>
+<mfilt>1500</mfilt>
+<nhtfrq>10</nhtfrq>
+<scm_iop_srf_prop>.true.</scm_iop_srf_prop>
+<nhtfrq>1</nhtfrq>
+<single_column>.true.</single_column>
+<iop_nudge_uv>.true.</iop_nudge_uv>
+<iop_nudge_tq>.false.</iop_nudge_tq>
+<iop_dosubsidence>.false.</iop_dosubsidence>
+<iradsw>5</iradsw>
+<iradlw>5</iradlw>
+
+<pertlim>0.001</pertlim>
+<iop_perturb_high>900.0</iop_perturb_high>
+
+<!-- Turn off deep convection and make dy-core nonhydrostatic -->
+<deep_scheme>off</deep_scheme>
+<theta_hydrostatic_mode>.false.</theta_hydrostatic_mode>
+<use_gw_front>.false</use_gw_front>
+<use_gw_oro>.false.</use_gw_oro>
+<use_gw_convect>.false.</use_gw_convect>
+<convproc_do_aer>.false.</convproc_do_aer>
+
+<!-- Dy-core related settings for 3 km DP-SCREAM -->
+<transport_alg>0</transport_alg>
+<semi_lagrange_cdr_alg>20</semi_lagrange_cdr_alg>
+<hypervis_order>2</hypervis_order>
+<hypervis_subcycle>1</hypervis_subcycle>
+<hypervis_subcycle_tom>1</hypervis_subcycle_tom>
+<hypervis_subcycle_q>1</hypervis_subcycle_q>
+<nu>0.216784</nu>
+<nu_div>-1</nu_div>
+<nu_p>-1</nu_p>
+<nu_top>0</nu_top>
+<qsplit>-1</qsplit>
+<rsplit>-1</rsplit>
+<se_ftype>4</se_ftype>
+<se_limiter_option>9</se_limiter_option>
+<se_nsplit>30</se_nsplit>
+<se_partmethod>4</se_partmethod>
+<semi_lagrange_nearest_point_lev>100</semi_lagrange_nearest_point_lev>
+<theta_hydrostatic_mode>.false.</theta_hydrostatic_mode>
+<tstep_type>9</tstep_type>
+<theta_advect_form>1</theta_advect_form>
+<vert_remap_q_alg>10</vert_remap_q_alg>
+<vthreads>1</vthreads>
+<se_tstep>-1</se_tstep>
+<dt_remap_factor>1</dt_remap_factor>
+<dt_tracer_factor>1</dt_tracer_factor>
+<cld_macmic_num_steps>1</cld_macmic_num_steps>
+<hypervis_scaling>3.0</hypervis_scaling>
+
+<!-- sim_year used for CLM datasets -->
+<sim_year>2000</sim_year>
+
+<!-- grid setup for DP-SCREAM -->
+<!-- setup for small domain with dx=dy= 3 km -->
+<mesh_file>/dev/null</mesh_file>
+<se_ne_x>5</se_ne_x>
+<se_ne_y>5</se_ne_y>
+<se_lx>50000</se_lx>
+<se_ly>50000</se_ly>
+
+<!-- Use all or nothing ice cloud fraction scheme -->
+<cldfrc_iceopt> 7 </cldfrc_iceopt>
+
+<!-- Prescribed aerosol options -->
+<use_hetfrz_classnuc>.false.</use_hetfrz_classnuc>
+<aerodep_flx_type>'CYCLICAL'</aerodep_flx_type>
+<aerodep_flx_datapath>atm/cam/chem/trop_mam/aero</aerodep_flx_datapath>
+<aerodep_flx_file nlev="72">mam4_0.9x1.2_L72_2000clim_c170323.nc</aerodep_flx_file>
+<aerodep_flx_file nlev="128">mam4_0.9x1.2_L128_2000clim_c191106.nc</aerodep_flx_file>
+<aerodep_flx_cycle_yr>01</aerodep_flx_cycle_yr>
+<prescribed_aero_type>'CYCLICAL'</prescribed_aero_type>
+<prescribed_aero_datapath>atm/cam/chem/trop_mam/aero</prescribed_aero_datapath>
+<prescribed_aero_file nlev="72">mam4_0.9x1.2_L72_2000clim_c170323.nc</prescribed_aero_file>
+<prescribed_aero_file nlev="128">mam4_0.9x1.2_L128_2000clim_c191106.nc</prescribed_aero_file>
+<prescribed_aero_cycle_yr>01</prescribed_aero_cycle_yr>
+
+<!-- 2000 GHG values from AR5 (from ghg_hist_1765-2012_c130501.nc) -->
+<!-- <co2vmr>368.865e-6</co2vmr> Set by CCSM_CO2_PPMV in config_compset.xml -->
+<ch4vmr>1751.022e-9</ch4vmr>
+<n2ovmr>315.85e-9</n2ovmr>
+<f11vmr>676.0526e-12</f11vmr>
+<f12vmr>537.05e-12</f12vmr>
+
+<!-- Ice nucleation mods-->
+<use_preexisting_ice>.false.</use_preexisting_ice>
+<hist_hetfrz_classnuc>.false.</hist_hetfrz_classnuc>
+<microp_aero_wsub_scheme>1</microp_aero_wsub_scheme>
+
+<!-- For Polar mods-->
+<sscav_tuning>.true.</sscav_tuning>
+<convproc_do_aer>.true.</convproc_do_aer>
+<convproc_do_gas>.false.</convproc_do_gas>
+<convproc_method_activate>2</convproc_method_activate>
+<demott_ice_nuc>.true.</demott_ice_nuc>
+<liqcf_fix>.true.</liqcf_fix>
+<regen_fix>.true.</regen_fix>
+<resus_fix>.true.</resus_fix>
+<mam_amicphys_optaa>1</mam_amicphys_optaa>
+
+<fix_g1_err_ndrop>.true.</fix_g1_err_ndrop>
+<ssalt_tuning>.true.</ssalt_tuning>
+
+<!-- File for BC dep in snow feature -->
+<fsnowoptics>lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</fsnowoptics>
+
+<!-- Radiation bugfix -->
+<use_rad_dt_cosz>.true.</use_rad_dt_cosz>
+
+<!-- Tunable parameters for 72 layer model -->
+<ice_sed_ai>         500.0  </ice_sed_ai>
+<cldfrc_dp1>         0.045D0</cldfrc_dp1>
+<zmconv_c0_lnd>      0.007  </zmconv_c0_lnd>
+<zmconv_c0_ocn>      0.007  </zmconv_c0_ocn>
+<zmconv_dmpdz>      -0.7e-3</zmconv_dmpdz>
+<zmconv_ke>          1.5E-6 </zmconv_ke>
+<effgw_oro>          0.25    </effgw_oro>
+<seasalt_emis_scale> 0.85   </seasalt_emis_scale>
+<dust_emis_fact>     2.05D0 </dust_emis_fact>
+<cldfrc2m_rhmaxi>    1.05D0 </cldfrc2m_rhmaxi>
+<effgw_beres>        0.4    </effgw_beres>
+<do_tms>             .false.</do_tms>
+<so4_sz_thresh_icenuc>0.075e-6</so4_sz_thresh_icenuc>
+<n_so4_monolayers_pcage>8.0D0 </n_so4_monolayers_pcage>
+<zmconv_tiedke_add       >0.8D0</zmconv_tiedke_add>
+<zmconv_cape_cin         >1</zmconv_cape_cin>
+<zmconv_mx_bot_lyr_adj   >2</zmconv_mx_bot_lyr_adj>
+<taubgnd                 >2.5D-3 </taubgnd>
+<raytau0                 >5.0D0</raytau0>
+<prc_coef1               >30500.0D0</prc_coef1>
+<prc_exp                 >3.19D0</prc_exp>
+<prc_exp1                >-1.2D0</prc_exp1>
+<rrtmg_temp_fix          >.true.</rrtmg_temp_fix>
+<nucleate_ice_subgrid    >1.2D0</nucleate_ice_subgrid>
+<cld_sed                 >1.0D0</cld_sed>
+
+<!-- Solar constant from Lean (via Caspar Ammann): SOLAR_TSI_Lean_1610-2140_annual_c100301.nc -->
+<solar_data_file>atm/cam/solar/spectral_irradiance_Lean_1976-2007_ave_c20160517.nc</solar_data_file>
+<solar_data_ymd>20000101</solar_data_ymd>
+<solar_data_type>FIXED</solar_data_type>
+
+</namelist_defaults>
