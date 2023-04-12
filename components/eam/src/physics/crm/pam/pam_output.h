@@ -89,7 +89,7 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   real2d forcing_tend_out_temp ("forcing_tend_out_temp ",gcm_nlev,nens);
   real2d forcing_tend_out_rho_d("forcing_tend_out_rho_d",gcm_nlev,nens);
   real2d forcing_tend_out_rho_v("forcing_tend_out_rho_v",gcm_nlev,nens);
-  parallel_for("Initialize aggregated precipitation", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
+  parallel_for("Initialize output forcing tendencies", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
     int k_crm = gcm_nlev-1-k_gcm;
     if (k_crm<crm_nz) {
       forcing_tend_out_temp (k_gcm,iens) = gcm_forcing_tend_temp (k_crm,iens);
