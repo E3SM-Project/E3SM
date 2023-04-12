@@ -309,9 +309,11 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
    if (is_output_interactive_volc) then
      !prepare strat. aerosol sw optic properties for output: ext_sao_sw, ssa_sao, af_sao
      call get_strat_aer_optics_sw(state, pbuf, trop_level, tau, tau_w, tau_w_g, tau_w_f, ext_sao_sw, ssa_sao, af_sao)
-     call outfld('ext_sao_sw',ext_sao_sw(:,:,:), pcols, lchnk)
-     call outfld('ssa_sao',ssa_sao(:,:,:), pcols, lchnk)
-     call outfld('af_sao',af_sao(:,:,:), pcols, lchnk)
+     ! note: outputs work, but could cause restart issue because can't be read for current restart interface
+     ! there is an extra dimension (wavelength) here
+     !call outfld('ext_sao_sw',ext_sao_sw(:,:,:), pcols, lchnk)
+     !call outfld('ssa_sao',ssa_sao(:,:,:), pcols, lchnk)
+     !call outfld('af_sao',af_sao(:,:,:), pcols, lchnk)
 
    endif
    ! Contributions from bulk aerosols.

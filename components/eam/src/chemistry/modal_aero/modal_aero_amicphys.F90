@@ -6077,12 +6077,16 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
 !kzm ++
 #if (defined MODAL_AERO_5MODE)
       ncrsf = modeptr_coarsulf
-      write(iulog,*) 'kzm_ncrsf ', ncrsf
-      write(iulog,*) 'kzm MAM5 for aerosol microphysics'
+      if ( masterproc ) then
+         write(iulog,*) 'ncrsf ', ncrsf
+         write(iulog,*) 'MAM5 for aerosol microphysics'
+      endif
 #else
       ncrsf = big_neg_int
-      write(iulog,*) 'kzm_ncrsf ', ncrsf
-      write(iulog,*) 'kzm MAM5 is NOT for aerosol microphysics'
+      if ( masterproc ) then
+         write(iulog,*) 'ncrsf ', ncrsf
+         write(iulog,*) 'MAM5 is NOT for aerosol microphysics'
+      endif
 #endif
 #if (defined MODAL_AERO_7MODE_S)
       nslt1 = modeptr_sulfate1
