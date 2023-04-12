@@ -71,6 +71,7 @@ module li_core
       use li_constants
       use li_subglacial_hydro
       use li_bedtopo
+      use li_advection
 !!!      use mpas_tracer_advection
 !!!      use li_global_diagnostics
 
@@ -107,7 +108,7 @@ module li_core
       logical, pointer :: config_do_restart
       real (kind=RKIND), pointer :: deltat  ! variable in each block
       real (kind=RKIND) :: dtSeconds ! local variable
-      type (MPAS_Pool_type), pointer :: meshPool
+      type (MPAS_Pool_type), pointer :: meshPool, geometryPool, velocityPool
       type (MPAS_TimeInterval_type) :: timeStepInterval
       character (len=StrKIND), pointer :: xtime, simulationStartTime
       real (kind=RKIND), pointer :: daysSinceStart
@@ -275,6 +276,20 @@ module li_core
 
          call landice_init_block(block, domain % dminfo, err_tmp)
          err = ior(err, err_tmp)
+
+         block => block % next
+      end do
+
+      ! Update mask and geometry
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+         call li_update_geometry(geometryPool)
 
          block => block % next
       end do
