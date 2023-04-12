@@ -331,6 +331,7 @@ add_default($nl, 'config_implicit_top_drag_coeff');
 add_default($nl, 'config_explicit_bottom_drag_coeff');
 add_default($nl, 'config_use_topographic_wave_drag');
 add_default($nl, 'config_topographic_wave_drag_coeff');
+add_default($nl, 'config_thickness_drag_type');
 
 ####################################
 # Namelist group: Rayleigh_damping #
