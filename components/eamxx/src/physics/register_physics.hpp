@@ -13,6 +13,7 @@
 #include "physics/cld_fraction/atmosphere_cld_fraction.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "physics/spa/atmosphere_prescribed_aerosol.hpp"
+#include "physics/nudging/atmosphere_nudging.hpp"
 
 namespace scream {
 
@@ -24,6 +25,7 @@ inline void register_physics () {
   proc_factory.register_product("CldFraction",&create_atmosphere_process<CldFraction>);
   proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);
   proc_factory.register_product("SPA",&create_atmosphere_process<SPA>);
+  proc_factory.register_product("Nudging",&create_atmosphere_process<Nudging>);
 }
 
 } // namespace scream
