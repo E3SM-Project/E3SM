@@ -2778,7 +2778,7 @@
       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
       <modules compiler="intel">
-        <command name="load">python</command>
+        <command name="load">python/3.8.2</command>
         <command name="load">git</command>
         <command name="load">intel/19.0.4</command>
         <command name="load">mvapich2/2.3</command>

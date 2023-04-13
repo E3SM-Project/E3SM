@@ -34,7 +34,7 @@ MACHINE_METADATA = {
                  ["mpicxx","mpifort","mpicc"],
                   "bsub -Ip -qpdebug",
                   ""),
-    "ruby" : (["module --force purge", "module load StdEnv cmake/3.16.8 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1 pnetcdf/1.9.0 mvapich2/2.3 python/3.8.2"],
+    "ruby-intel" : (["module --force purge", "module load StdEnv cmake/3.16.8 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1 pnetcdf/1.9.0 mvapich2/2.3 python/3.8.2"],
                  ["mpicxx","mpifort","mpicc"],
                   "salloc --partition=pdebug",
                   ""),
