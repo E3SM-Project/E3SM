@@ -206,8 +206,8 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
   using vos_type = std::vector<std::string>;
   using vor_type = std::vector<Real>;
   m_export_source     = view_1d<DefaultDevice,ExportType>("",m_num_scream_exports);
-  auto export_source_h = Kokkos::create_mirror_view(m_export_source);
-  Kokkos::deep_copy(export_source_h,FROM_MODEL);  // The default is that all export variables will be derived from the EAMxx state.
+  m_export_source_h = Kokkos::create_mirror_view(m_export_source);
+  Kokkos::deep_copy(m_export_source_h,FROM_MODEL);  // The default is that all export variables will be derived from the EAMxx state.
   m_num_from_model_exports = m_num_scream_exports;
  
   if (m_params.isSublist("prescribed_constants")) {
@@ -224,7 +224,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
         auto loc = std::find(export_constant_fields.begin(),export_constant_fields.end(),fname);
         if (loc != export_constant_fields.end()) {
           const auto pos = loc-export_constant_fields.begin();
-          export_source_h(i) = CONSTANT;
+          m_export_source_h(i) = CONSTANT;
           ++m_num_const_exports;
           --m_num_from_model_exports;
           m_export_constants.emplace(fname,export_constant_values[pos]);
@@ -233,7 +233,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
     }
   }
   // Copy host view back to device view
-  Kokkos::deep_copy(m_export_source,export_source_h);
+  Kokkos::deep_copy(m_export_source,m_export_source_h);
   // Final sanity check
   EKAT_REQUIRE_MSG(m_num_scream_exports = m_num_const_exports+m_num_from_model_exports,"Error! surface_coupling_exporter - Something went wrong set the type of export for all variables.");
   EKAT_REQUIRE_MSG(m_num_from_model_exports>=0,"Error! surface_coupling_exporter - The number of exports derived from EAMxx < 0, something must have gone wrong in assigning the types of exports for all variables.");
@@ -263,10 +263,8 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
 void SurfaceCouplingExporter::set_constant_exports(const double dt, const bool called_during_initialization)
 {
   // Cycle through those fields that will be set to a constant value:
-  auto export_source_h = Kokkos::create_mirror_view(m_export_source);
-  Kokkos::deep_copy(export_source_h,m_export_source);
   for (int i=0; i<m_num_scream_exports; ++i) {
-    if (export_source_h(i)==CONSTANT) {
+    if (m_export_source_h(i)==CONSTANT) {
       std::string fname = m_export_field_names[i];
       const auto field_view = m_helper_fields.at(fname).get_view<Real*>();
       Kokkos::deep_copy(field_view,m_export_constants.at(fname));
@@ -442,14 +440,12 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
     }
   });
   // Variables that are already surface vars in the ATM can just be copied directly.
-  auto export_source_h = Kokkos::create_mirror_view(export_source);
-  Kokkos::deep_copy(export_source_h,export_source);
-  if (export_source_h(idx_Faxa_swndr)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swndr, sfc_flux_dir_nir); }
-  if (export_source_h(idx_Faxa_swvdr)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swvdr, sfc_flux_dir_vis); }
-  if (export_source_h(idx_Faxa_swndf)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swndf, sfc_flux_dif_nir); }
-  if (export_source_h(idx_Faxa_swvdf)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swvdf, sfc_flux_dif_vis); }
-  if (export_source_h(idx_Faxa_swnet)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swnet, sfc_flux_sw_net); }
-  if (export_source_h(idx_Faxa_lwdn )==FROM_MODEL) { Kokkos::deep_copy(Faxa_lwdn,  sfc_flux_lw_dn); }
+  if (m_export_source_h(idx_Faxa_swndr)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swndr, sfc_flux_dir_nir); }
+  if (m_export_source_h(idx_Faxa_swvdr)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swvdr, sfc_flux_dir_vis); }
+  if (m_export_source_h(idx_Faxa_swndf)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swndf, sfc_flux_dif_nir); }
+  if (m_export_source_h(idx_Faxa_swvdf)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swvdf, sfc_flux_dif_vis); }
+  if (m_export_source_h(idx_Faxa_swnet)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swnet, sfc_flux_sw_net); }
+  if (m_export_source_h(idx_Faxa_lwdn )==FROM_MODEL) { Kokkos::deep_copy(Faxa_lwdn,  sfc_flux_lw_dn); }
 }
 // =========================================================================================
 void SurfaceCouplingExporter::do_export_to_cpl(const bool called_during_initialization)
