@@ -3808,10 +3808,6 @@
 			 description="Multiplication factors to smooth ssh at coastlines for SAL caculation"
 			 packages="tidalPotentialForcingPKG"
 		/>
-		<var name="RediKappaData" type="real" dimensions="nCells" units="m^2 s^-1"
-			 description="Redi isopycnal mixing Kappa value. This is the data field specified at init."
-			 packages="gm"
-		/>
 	</var_struct>
 	<var_struct name="timeVaryingForcing" time_levs="1">
 		<var name="windSpeedU" type="real" dimensions="nCells Time" units="m s^-1"
