@@ -125,6 +125,7 @@ protected:
   // Number of exports from EAMxx and how they will be handled
   Int                               m_num_scream_exports;
   view_1d<DefaultDevice,ExportType> m_export_source;
+  view_1d<HostDevice,ExportType>    m_export_source_h;
   std::map<std::string,Real>        m_export_constants;
   int                               m_num_from_model_exports=0;
   int                               m_num_const_exports=0;
