@@ -216,7 +216,6 @@ module micro_p3_utils
        integer,intent(in) :: its,ite,kts,kte
        real(rtype),dimension(its:ite,kts:kte),intent(out) :: v,s,f
 
-!       integer i,k
 
        v(:,:) = latent_heat_vapor !latvap           ! latent heat of vaporization
        s(:,:) = latent_heat_sublim !latvap + latice  ! latent heat of sublimation

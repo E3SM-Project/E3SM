@@ -1146,6 +1146,8 @@
 <cldfrc_ice            >.false.</cldfrc_ice>
 <cldfrc_ice phys="default" >.true.</cldfrc_ice>
 
+<cldfrc_rhminl                                                        > 0.900D0
+</cldfrc_rhminl>
 
 <cldfrc_rhminl                   phys="default" microphys="p3"        > 0.950D0 </cldfrc_rhminl>
 <cldfrc_rhminl                   phys="default" microphys="mg2"       > 0.950D0 </cldfrc_rhminl>
