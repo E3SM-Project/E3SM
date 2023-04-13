@@ -165,10 +165,10 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
 
 void MAMMicrophysics::initialize_impl(const RunType run_type) {
   const auto& T_mid = get_field_in("T_mid").get_view<Real**>();
-  const auto& p_mid = get_field_in("p_mid").get_view<const Real**>();
+  const auto& p_mid = get_field_in("p_mid").get_view<Real**>();
   const auto& qv = get_field_in("qv").get_view<Real**>();
   const auto& pblh = get_field_in("pbl_height").get_view<Real*>();
-  const auto& p_del = get_field_in("pseudo_density").get_view<const Real**>();
+  const auto& p_del = get_field_in("pseudo_density").get_view<Real**>();
   const auto& cldfrac = get_field_in("cldfrac_tot").get_view<Real**>(); // FIXME: tot or liq?
 
   const auto& tracers = get_group_out("tracers");
@@ -270,15 +270,14 @@ void MAMMicrophysics::run_impl(const double dt) {
     const Int icol = team.league_rank(); // column index
 
     // extract column-specific atmosphere state data
-    haero::Atmosphere atm(nlev_,
-      ekat::subview(T_mid_, icol),
-      ekat::subview(p_mid_, icol),
-      ekat::subview(qv_, icol),
-      ekat::subview(height_, icol),
-      ekat::subview(pdel_, icol),
-      cloud_f,
-      uv,
-      pblh_(icol));
+    haero::Atmosphere atm(nlev_, pblh_(icol));
+    atm.temperature = ekat::subview(T_mid_, icol);
+    atm.pressure = ekat::subview(p_mid_, icol);
+    atm.vapor_mixing_ratio = ekat::subview(qv_, icol);
+    atm.height = ekat::subview(height_, icol);
+    atm.hydrostatic_dp = ekat::subview(pdel_, icol);
+    atm.cloud_fraction = cloud_f;
+    atm.updraft_vel_ice_nucleation = uv;
 
     // extract column-specific subviews into aerosol prognostics
     using AeroConfig = mam4::AeroConfig;

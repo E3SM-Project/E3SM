@@ -85,9 +85,9 @@ private:
       const int i = team.league_rank(); // column index
 
       // Compute vertical layer heights
-      const auto& dz_i = ekat::subview(dz_,    i);
-      auto& z_iface_i = ekat::subview(z_iface_, i);
-      auto& z_mid_i   = ekat::subview(z_mid_, i);
+      const auto dz_i = ekat::subview(dz_,    i);
+      auto z_iface_i = ekat::subview(z_iface_, i);
+      auto z_mid_i   = ekat::subview(z_mid_, i);
       PF::calculate_z_int(team, nlev_, dz_i, z_surf_, z_iface_i);
       team.team_barrier();
       PF::calculate_z_mid(team, nlev_, z_iface_i, z_mid_i);
@@ -130,18 +130,18 @@ private:
     view_1d_int convert_wet_dry_idx_d_;
 
     // local atmospheric state column variables
-    view_2d_const T_mid_;   // temperature at grid midpoints [K]
-    view_2d_const p_mid_;   // total pressure at grid midpoints [Pa]
-    view_2d       qv_;      // water vapor mass mixing ratio, not const because it
-                            // must be converted from wet to dry [kg vapor/kg dry air]
-    view_2d z_mid_;         // height at layer midpoints [m]
-    view_2d z_iface_;       // height at layer interfaces [m]
-    view_2d_const dz_;      // layer thickness [m]
-    view_2d_const pdel_;    // hydrostatic "pressure thickness" at grid
-                            // interfaces [Pa]
-    view_2d_const cloud_f_; // cloud fraction [-]
-    view_2d_const uv_;      // updraft velocity [m/s]
-    view_1d_const pblh_;    // planetary boundary layer height [m]
+    view_2d T_mid_;   // temperature at grid midpoints [K]
+    view_2d p_mid_;   // total pressure at grid midpoints [Pa]
+    view_2d qv_;      // water vapor mass mixing ratio, not const because it
+                      // must be converted from wet to dry [kg vapor/kg dry air]
+    view_2d z_mid_;   // height at layer midpoints [m]
+    view_2d z_iface_; // height at layer interfaces [m]
+    view_2d dz_;      // layer thickness [m]
+    view_2d pdel_;    // hydrostatic "pressure thickness" at grid
+                      // interfaces [Pa]
+    view_2d cloud_f_; // cloud fraction [-]
+    view_2d uv_;      // updraft velocity [m/s]
+    view_1d pblh_;    // planetary boundary layer height [m]
 
     // local aerosol-related gases
     view_2d q_soag_;  // secondary organic aerosol gas [kg gas/kg dry air]
@@ -154,17 +154,17 @@ private:
     // assigns local variables
     void set_variables(const int ncol, const int nlev, const Real z_surf,
                        const view_1d_int& convert_wet_dry_idx_d,
-                       const view_2d_const& T_mid,
-                       const view_2d_const& p_mid,
-                       const view_2d&       qv,
-                       const view_2d&       z_mid,
-                       const view_2d&       z_iface,
-                       const view_2d&       dz,
-                       const view_2d_const& pdel,
-                       const view_1d_const& pblh,
-                       const view_2d&       q_soag,
-                       const view_2d&       q_h2so4,
-                       const view_2d&       q_aitken_so4) {
+                       const view_2d&     T_mid,
+                       const view_2d&     p_mid,
+                       const view_2d&     qv,
+                       const view_2d&     z_mid,
+                       const view_2d&     z_iface,
+                       const view_2d&     dz,
+                       const view_2d&     pdel,
+                       const view_1d&     pblh,
+                       const view_2d&     q_soag,
+                       const view_2d&     q_h2so4,
+                       const view_2d&     q_aitken_so4) {
       ncol_ = ncol;
       nlev_ = nlev;
       z_surf_ = z_surf;
@@ -268,16 +268,16 @@ private:
   Postprocess postprocess_;
 
   // local atmospheric state column variables
-  view_2d_const T_mid_;   // temperature at grid midpoints [K]
-  view_2d_const p_mid_;   // total pressure at grid midpoints [Pa]
-  view_2d       qv_;      // water vapor mass mixing ratio, not const because it
-                          // must be converted from wet to dry [kg vapor/kg dry air]
-  view_2d_const height_;  // height at grid interfaces [m]
-  view_2d_const pdel_;    // hydrostatic "pressure thickness" at grid
+  view_2d T_mid_;   // temperature at grid midpoints [K]
+  view_2d p_mid_;   // total pressure at grid midpoints [Pa]
+  view_2d qv_;      // water vapor mass mixing ratio, not const because it
+                    // must be converted from wet to dry [kg vapor/kg dry air]
+  view_2d height_;  // height at grid interfaces [m]
+  view_2d pdel_;    // hydrostatic "pressure thickness" at grid
                           // interfaces [Pa]
-  view_2d_const cloud_f_; // cloud fraction [-]
-  view_2d_const uv_;      // updraft velocity [m/s]
-  view_1d_const pblh_;    // planetary boundary layer height [m]
+  view_2d cloud_f_; // cloud fraction [-]
+  view_2d uv_;      // updraft velocity [m/s]
+  view_1d pblh_;    // planetary boundary layer height [m]
 
   // local aerosol-related gases
   view_2d q_soag_;  // secondary organic aerosol gas [kg gas/kg dry air]
