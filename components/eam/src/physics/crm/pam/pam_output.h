@@ -51,7 +51,6 @@ inline void pam_output_compute_means( pam::PamCoupler &coupler ) {
   real r_nx_ny  = 1._fp / (crm_nx*crm_ny);  // precompute reciprocal to avoid costly divisions
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(crm_nz,crm_ny,crm_nx,nens), YAKL_LAMBDA (int k_crm, int j, int i, int iens) {
     int k_gcm = gcm_nlev-1-k_crm;
-    // yakl::atomicAdd ensures only one thread performs an update at a time to avoid data races and wrong answers
     atomicAdd( nc_mean        (k_gcm,iens), nc        (k_crm,j,i,iens) * r_nx_ny );
     atomicAdd( ni_mean        (k_gcm,iens), ni        (k_crm,j,i,iens) * r_nx_ny );
     atomicAdd( qr_mean        (k_gcm,iens), qr        (k_crm,j,i,iens) * r_nx_ny );
