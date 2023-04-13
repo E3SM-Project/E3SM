@@ -2,7 +2,7 @@
 
 #include "pam_coupler.h"
 
-#define MMF_PAM_FORCE_ALL_WATER_SPECIES
+// #define MMF_PAM_FORCE_ALL_WATER_SPECIES
 
 // wrapper for PAM's set_grid
 inline void pam_state_set_grid( pam::PamCoupler &coupler ) {
@@ -193,10 +193,11 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   // Copy the host CRM data to the coupler
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     // NOTE - convert specific mass mixing ratios to density
+    real rho_total = crm_rho_d(k,j,i,iens) + crm_rho_v(k,j,i,iens);
     crm_rho_v        (k,j,i,iens) = state_qv(k,j,i,iens) * crm_rho_d(k,j,i,iens) / ( 1 - state_qv(k,j,i,iens) ) ;
-    crm_rho_c        (k,j,i,iens) = state_qc(k,j,i,iens) * ( crm_rho_d(k,j,i,iens) + crm_rho_v(k,j,i,iens) ) ;
-    crm_rho_r        (k,j,i,iens) = state_qr(k,j,i,iens) * ( crm_rho_d(k,j,i,iens) + crm_rho_v(k,j,i,iens) ) ;
-    crm_rho_i        (k,j,i,iens) = state_qi(k,j,i,iens) * ( crm_rho_d(k,j,i,iens) + crm_rho_v(k,j,i,iens) ) ;
+    crm_rho_c        (k,j,i,iens) = state_qc(k,j,i,iens) * rho_total ;
+    crm_rho_r        (k,j,i,iens) = state_qr(k,j,i,iens) * rho_total ;
+    crm_rho_i        (k,j,i,iens) = state_qi(k,j,i,iens) * rho_total ;
     crm_uvel         (k,j,i,iens) = state_u_wind       (k,j,i,iens);
     crm_vvel         (k,j,i,iens) = state_v_wind       (k,j,i,iens);
     crm_wvel         (k,j,i,iens) = state_w_wind       (k,j,i,iens);
@@ -281,11 +282,11 @@ inline void pam_state_copy_to_host( pam::PamCoupler &coupler ) {
   real4d tmp_qi("tmp_qi",nz,ny,nx,nens);
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     // convert density to specific mixing ratio
-    real tmp_rho = crm_rho_d(k,j,i,iens)+crm_rho_v(k,j,i,iens);
-    tmp_qv(k,j,i,iens) = crm_rho_v(k,j,i,iens) / tmp_rho;
-    tmp_qc(k,j,i,iens) = crm_rho_c(k,j,i,iens) / tmp_rho;
-    tmp_qr(k,j,i,iens) = crm_rho_r(k,j,i,iens) / tmp_rho;
-    tmp_qi(k,j,i,iens) = crm_rho_i(k,j,i,iens) / tmp_rho;
+    real rho_total = crm_rho_d(k,j,i,iens) + crm_rho_v(k,j,i,iens);
+    tmp_qv(k,j,i,iens) = crm_rho_v(k,j,i,iens) / rho_total;
+    tmp_qc(k,j,i,iens) = crm_rho_c(k,j,i,iens) / rho_total;
+    tmp_qr(k,j,i,iens) = crm_rho_r(k,j,i,iens) / rho_total;
+    tmp_qi(k,j,i,iens) = crm_rho_i(k,j,i,iens) / rho_total;
   });
   //------------------------------------------------------------------------------------------------
   // Copy the CRM state to host arrays
