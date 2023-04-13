@@ -719,7 +719,6 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="snowVolumeCell"/>')
             lines.append('    <var name="uVelocityGeo"/>')
             lines.append('    <var name="vVelocityGeo"/>')
-            lines.append('    <var name="icePressure"/>')
             lines.append('</stream>')
             lines.append('')
             lines.append('<stream name="timeSeriesStatsDailyRestart"')

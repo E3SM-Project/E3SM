@@ -6,14 +6,14 @@ module LandunitDataType
   ! --------------------------------------------------------
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
-   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use elm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevurb
   use elm_varcon     , only : spval, ispval
   use elm_varctl     , only : use_vancouver, use_mexicocity
-   use histFileMod    , only : hist_addfld1d
-   use ncdio_pio      , only : file_desc_t, ncd_double
+  use histFileMod    , only : hist_addfld1d
+  use ncdio_pio      , only : file_desc_t, ncd_double
   use decompMod      , only : bounds_type
-   use restUtilMod
+  use restUtilMod
   use LandunitType   , only : lun_pp
   !
   ! !PUBLIC TYPES:
@@ -90,8 +90,8 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of lun_es
     !-----------------------------------------------------------------------
-    allocate(this%t_building            (begl:endl))                      ; this%t_building            (:)   = nan
-    allocate(this%taf                   (begl:endl))                      ; this%taf                   (:)   = nan
+    allocate(this%t_building            (begl:endl))                      ; this%t_building            (:)   = spval
+    allocate(this%taf                   (begl:endl))                      ; this%taf                   (:)   = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of lun_es
@@ -168,9 +168,9 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of lun_ef
     !-----------------------------------------------------------------------
-    allocate( this%eflx_heat_from_ac   (begl:endl))             ; this%eflx_heat_from_ac   (:)   = nan
-    allocate( this%eflx_traffic        (begl:endl))             ; this%eflx_traffic        (:)   = nan
-    allocate( this%eflx_wasteheat      (begl:endl))             ; this%eflx_wasteheat      (:)   = nan
+    allocate( this%eflx_heat_from_ac   (begl:endl))             ; this%eflx_heat_from_ac   (:)   = spval
+    allocate( this%eflx_traffic        (begl:endl))             ; this%eflx_traffic        (:)   = spval
+    allocate( this%eflx_wasteheat      (begl:endl))             ; this%eflx_wasteheat      (:)   = spval
 
     !-----------------------------------------------------------------------
     ! cold-start initial conditions for lun_ef
@@ -211,7 +211,7 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of lun_ws
     !-----------------------------------------------------------------------
-    allocate(this%qaf          (begl:endl))               ; this%qaf         (:)   = nan
+    allocate(this%qaf          (begl:endl))               ; this%qaf         (:)   = spval
 
     !-----------------------------------------------------------------------
     ! cold-start initial conditions for lun_ws

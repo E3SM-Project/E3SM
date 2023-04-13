@@ -92,7 +92,7 @@ module ocn_time_integration_rk4
       type (domain_type), intent(inout) :: domain !< Input/Output: domain information
       real (kind=RKIND), intent(in) :: dt !< Input: timestep
 
-      integer :: iCell, iEdge, k, i, err
+      integer :: iCell, iEdge, iTracer, k, i, err, num_tracers
       type (block_type), pointer :: block
 
       type (mpas_pool_type), pointer :: tendPool
@@ -121,7 +121,7 @@ module ocn_time_integration_rk4
         vertViscTopOfEdge, vertDiffTopOfCell
 
       ! Dimensions
-      integer, pointer :: nCells, nEdges, nVertLevels, num_tracers
+      integer, pointer :: nCells, nEdges, nVertLevels
 
       ! Config options
       logical, pointer :: config_prescribe_velocity, config_prescribe_thickness
@@ -192,7 +192,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:), pointer :: &
         frazilSurfacePressure, landIcePressure, landIceDraft
 
-      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracersNew
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracersCur, activeTracersNew
 
       ! Get config options
       call mpas_pool_get_config(domain % configs, 'config_mom_del4', config_mom_del4)
@@ -655,6 +655,7 @@ module ocn_time_integration_rk4
          call mpas_pool_get_array(forcingPool, 'tidalInputMask', tidalInputMask)
          call mpas_pool_get_array(forcingPool, 'tidalBCValue', tidalBCValue)
 
+         call mpas_pool_get_array(tracersPool, 'activeTracers',activeTracersCur, 1)
          call mpas_pool_get_array(tracersPool, 'activeTracers',activeTracersNew, 2)
 
          if (config_prescribe_velocity) then
@@ -665,6 +666,19 @@ module ocn_time_integration_rk4
             end do
             !$omp end do
             !$omp end parallel
+         end if
+
+         if (config_disable_tr_all_tend) then
+            num_tracers = size(activeTracersNew, dim=2)
+            do iTracer = 1, num_tracers
+               !$omp parallel
+               !$omp do schedule(runtime)
+               do iCell = 1, nCells
+                  activeTracersNew(iTracer, :, iCell) = activeTracersCur(iTracer, :, iCell)
+               end do
+               !$omp end do
+               !$omp end parallel
+            end do
          end if
 
          if (config_prescribe_thickness) then
@@ -1004,6 +1018,8 @@ module ocn_time_integration_rk4
       integer, pointer :: nEdges, nVertLevels
       err = 0
 
+      if (config_disable_tr_all_tend) return
+
       call mpas_pool_get_config(block % configs, 'config_filter_btr_mode', config_filter_btr_mode)
 
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -1228,7 +1244,7 @@ module ocn_time_integration_rk4
          do k = 1, nVertLevels
             normalVelocityProvis(k, iEdge) = edgeMask(k, iEdge)*(normalVelocityCur(k, iEdge) + rkSubstepWeight &
                                            * normalVelocityTend(k, iEdge))
-            normalVelocityProvis(k, iEdge) = normalVelocityProvis(k, iEdge) * (1.0_RKIND - wettingVelocity(k, iEdge))
+            normalVelocityProvis(k, iEdge) = normalVelocityProvis(k, iEdge) * (1.0_RKIND - wettingVelocityFactor(k, iEdge))
          end do
       end do
       !$omp end do
@@ -1471,12 +1487,12 @@ module ocn_time_integration_rk4
       
       ! the loop below is on all vertlevels but we used edgemask to set
       ! velocities to zero below topo (esp. edges between topo and ocean)
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
          do k = 1, nVertLevels
             normalVelocityNew(k, iEdge) = edgeMask(k,iEdge) &
                                       *(normalVelocityNew(k, iEdge) + rkWeight * normalVelocityTend(k, iEdge))
-            normalVelocityNew(k, iEdge) = normalVelocityNew(k, iEdge) * (1.0_RKIND - wettingVelocity(k, iEdge))
+            normalVelocityNew(k, iEdge) = normalVelocityNew(k, iEdge) * (1.0_RKIND - wettingVelocityFactor(k, iEdge))
          end do
       end do
       !$omp end do

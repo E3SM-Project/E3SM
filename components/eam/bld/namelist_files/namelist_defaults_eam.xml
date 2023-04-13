@@ -1392,10 +1392,6 @@
 <hypervis_order >     2 </hypervis_order>
 <hypervis_scaling> 3.0 </hypervis_scaling>
 
-<!-- special defaults for V2 NE30 -->
-<nu hgrid="ne30np4">  1.0e15 </nu>
-<hypervis_scaling hgrid="ne30np4" > 0 </hypervis_scaling>
-
 <!-- -1.0 indicates use the value for nu -->
 <nu_q> -1.0 </nu_q>
 <nu_p> -1.0 </nu_p>

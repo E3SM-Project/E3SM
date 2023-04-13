@@ -2956,6 +2956,7 @@ end subroutine clubb_init_cnst
    enddo
 
    ! diagnose surface friction and obukhov length (inputs to diagnose PBL depth)
+   kbfs = 0._r8
    do i=1,ncol
       rrho = invrs_gravit*(state1%pdel(i,pver)/dz_g(pver))
       call calc_ustar( state1%t(i,pver), state1%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
@@ -2966,8 +2967,6 @@ end subroutine clubb_init_cnst
 
    dummy2(:) = 0._r8
    dummy3(:) = 0._r8
-
-   where (kbfs .eq. -0.0_r8) kbfs = 0.0_r8
 
    !  Compute PBL depth according to Holtslag-Boville Scheme
    call pblintd(ncol, thv, state1%zm, state1%u, state1%v, &
@@ -3126,10 +3125,10 @@ end subroutine clubb_init_cnst
   !                                                                                 !
   ! =============================================================================== !
 
-    subroutine clubb_surface (state, ptend, ztodt, cam_in, ustar, obklen)
+    subroutine clubb_surface (state, cam_in, ustar, obklen)
 
 !-------------------------------------------------------------------------------
-! Description: Provide the obukov length and the surface friction velocity
+! Description: Provide the obukhov length and the surface friction velocity
 !              for the dry deposition code in routine tphysac.  Since University
 !              of Washington Moist Turbulence (UWMT) scheme is not called when
 !              CLUBB is turned on the obukov length and ustar are never initialized
@@ -3142,13 +3141,10 @@ end subroutine clubb_init_cnst
 !   None
 !-------------------------------------------------------------------------------
 
-    use physics_types,          only: physics_state, physics_ptend, &
-                                      physics_ptend_init, &
-                                      set_dry_to_wet, set_wet_to_dry
-    use physconst,              only: gravit, zvir, latvap
+    use physics_types,          only: physics_state
+    use physconst,              only: zvir
     use ppgrid,                 only: pver, pcols
-    use constituents,           only: pcnst, cnst_get_ind, cnst_type
-    use co2_cycle,              only: co2_cycle_set_cnst_type
+    use constituents,           only: cnst_get_ind
     use camsrfexch,             only: cam_in_t
 
     implicit none
@@ -3160,13 +3156,10 @@ end subroutine clubb_init_cnst
     type(physics_state), intent(inout)  :: state                ! Physics state variables
     type(cam_in_t),      intent(in)     :: cam_in
 
-    real(r8),            intent(in)     :: ztodt                ! 2 delta-t        [ s ]
-
     ! ---------------- !
     ! Output Auguments !
     ! ---------------- !
 
-    type(physics_ptend), intent(out)    :: ptend                ! Individual parameterization tendencies
     real(r8),            intent(out)    :: obklen(pcols)        ! Obukhov length [ m ]
     real(r8),            intent(out)    :: ustar(pcols)         ! Surface friction velocity [ m/s ]
 
@@ -3184,15 +3177,9 @@ end subroutine clubb_init_cnst
     real(r8) :: kinheat                                         ! kinematic surface heat flux
     real(r8) :: kinwat                                          ! kinematic surface vapor flux
     real(r8) :: kbfs                                            ! kinematic surface buoyancy flux
-    real(r8) :: tmp1(pcols)
-    real(r8) :: rztodt                                          ! 1./ztodt
-    integer  :: m
     integer  :: ixq,ixcldliq !PMA fix for thv
     real(r8) :: rrho                                            ! Inverse air density
 
-    logical  :: lq(pcnst)
-
-    character(len=3), dimension(pcnst) :: cnst_type_loc         ! local override option for constituents cnst_type
 
 #endif
     obklen(pcols) = 0.0_r8
@@ -3202,20 +3189,10 @@ end subroutine clubb_init_cnst
     ! ----------------------- !
     ! Main Computation Begins !
     ! ----------------------- !
-
-    ! Assume 'wet' mixing ratios in surface diffusion code.
-    ! don't convert co2 tracers to wet mixing ratios
-    cnst_type_loc(:) = cnst_type(:)
-    call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
-    call set_dry_to_wet(state, cnst_type_loc)
-
     call cnst_get_ind('Q',ixq)
     if (use_sgv) then
        call cnst_get_ind('CLDLIQ',ixcldliq)
     endif
-
-    lq(:) = .TRUE.
-    call physics_ptend_init(ptend, state%psetcols, 'clubb_srf', lq=lq)
 
     ncol = state%ncol
 
@@ -3237,28 +3214,6 @@ end subroutine clubb_init_cnst
        call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
                         kinheat, kinwat, kbfs, obklen(i) )
     enddo
-
-    rztodt                 = 1._r8/ztodt
-    ptend%q(:ncol,:pver,:) = state%q(:ncol,:pver,:)
-    tmp1(:ncol)            = ztodt * gravit * state%rpdel(:ncol,pver)
-
-    do m = 2, pcnst
-      ptend%q(:ncol,pver,m) = ptend%q(:ncol,pver,m) + tmp1(:ncol) * cam_in%cflx(:ncol,m)
-    enddo
-
-    ptend%q(:ncol,:pver,:) = (ptend%q(:ncol,:pver,:) - state%q(:ncol,:pver,:)) * rztodt
-
-    ! Convert tendencies of dry constituents to dry basis.
-    do m = 1,pcnst
-       if (cnst_type(m).eq.'dry') then
-          ptend%q(:ncol,:pver,m) = ptend%q(:ncol,:pver,m)*state%pdel(:ncol,:pver)/state%pdeldry(:ncol,:pver)
-       endif
-    end do
-    ! convert wet mmr back to dry before conservation check
-    ! avoid converting co2 tracers again
-    cnst_type_loc(:) = cnst_type(:)
-    call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
-    call set_wet_to_dry(state, cnst_type_loc)
 
     return
 

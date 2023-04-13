@@ -88,18 +88,18 @@ contains
     begp = bounds%begp; endp= bounds%endp
     begc = bounds%begc; endc = bounds%endc
 
-    allocate(this%etal_col           (begc:endc))           ; this%etal_col           (:)   = nan
-    allocate(this%lakefetch_col      (begc:endc))           ; this%lakefetch_col      (:)   = nan
-    allocate(this%lakeresist_col     (begc:endc))           ; this%lakeresist_col     (:)   = nan
+    allocate(this%etal_col           (begc:endc))           ; this%etal_col           (:)   = spval 
+    allocate(this%lakefetch_col      (begc:endc))           ; this%lakefetch_col      (:)   = spval 
+    allocate(this%lakeresist_col     (begc:endc))           ; this%lakeresist_col     (:)   = spval 
     allocate(this%savedtke1_col      (begc:endc))           ; this%savedtke1_col      (:)   = spval
-    allocate(this%lake_icefrac_col   (begc:endc,1:nlevlak)) ; this%lake_icefrac_col   (:,:) = nan
-    allocate(this%lake_icethick_col  (begc:endc))           ; this%lake_icethick_col  (:)   = nan
+    allocate(this%lake_icefrac_col   (begc:endc,1:nlevlak)) ; this%lake_icefrac_col   (:,:) = spval
+    allocate(this%lake_icethick_col  (begc:endc))           ; this%lake_icethick_col  (:)   = spval
     allocate(this%ust_lake_col       (begc:endc))           ; this%ust_lake_col       (:)   = spval
-    allocate(this%ram1_lake_patch    (begp:endp))           ; this%ram1_lake_patch    (:)   = nan
-    allocate(this%lake_raw_col       (begc:endc))           ; this%lake_raw_col       (:)   = nan
-    allocate(this%ks_col             (begc:endc))           ; this%ks_col             (:)   = nan
-    allocate(this%ws_col             (begc:endc))           ; this%ws_col             (:)   = nan
-    allocate(this%betaprime_col      (begc:endc))           ; this%betaprime_col      (:)   = nan
+    allocate(this%ram1_lake_patch    (begp:endp))           ; this%ram1_lake_patch    (:)   = spval
+    allocate(this%lake_raw_col       (begc:endc))           ; this%lake_raw_col       (:)   = spval
+    allocate(this%ks_col             (begc:endc))           ; this%ks_col             (:)   = spval
+    allocate(this%ws_col             (begc:endc))           ; this%ws_col             (:)   = spval
+    allocate(this%betaprime_col      (begc:endc))           ; this%betaprime_col      (:)   = spval
 
   end subroutine InitAllocate
 
