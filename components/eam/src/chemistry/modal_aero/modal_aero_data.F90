@@ -156,7 +156,7 @@
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 7, 3 /)
 #else
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 3, 3 /)
-
+#endif
 !kzm ++
 #elif ( defined MODAL_AERO_5MODE )
 #if (defined RAIN_EVAP_TO_COARSE_AERO)
