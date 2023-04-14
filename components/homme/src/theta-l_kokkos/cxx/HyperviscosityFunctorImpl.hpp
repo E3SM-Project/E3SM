@@ -81,9 +81,9 @@ public:
   struct TagSecondLaplaceConstHV {};
   struct TagSecondLaplaceTensorHV {};
   struct TagUpdateStates {};
-  struct TagUpdateStates2 {};
   struct TagApplyInvMass {};
   struct TagHyperPreExchange {};
+  struct TagNutopUpdateStates {};
   struct TagNutopLaplace {};
 
   HyperviscosityFunctorImpl (const SimulationParams&     params,
@@ -183,81 +183,12 @@ public:
                               Homme::subview(m_buffers.vtens,kv.ie));
   }//TagFirstLaplaceHV
 
-
-
   // Laplace for nu_top
   KOKKOS_INLINE_FUNCTION
-  void operator() (const TagNutopLaplace&, const TeamMember& team) const {
-    KernelVariables kv(team, m_tu);
+  void operator()(const TagNutopLaplace&, const TeamMember& team) const;
 
-    using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
-
-    // Laplacian of layer thickness
-    m_sphere_ops.laplace_simple(kv,
-                   Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1),
-                   Homme::subview(m_buffers.dptens,kv.ie));
-    // Laplacian of theta
-    m_sphere_ops.laplace_simple(kv,
-                   Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1),
-                   Homme::subview(m_buffers.ttens,kv.ie));
-
-    if (m_process_nh_vars) {
-      // Laplacian of vertical velocity (do not compute last interface)
-      m_sphere_ops.laplace_simple<NUM_LEV,NUM_LEV_P>(kv,
-                     Homme::subview(m_state.m_w_i,kv.ie,m_data.np1),
-                     Homme::subview(m_buffers.wtens,kv.ie));
-      // Laplacian of geopotential (do not compute last interface)
-      m_sphere_ops.laplace_simple<NUM_LEV,NUM_LEV_P>(kv,
-                     Homme::subview(m_state.m_phinh_i,kv.ie,m_data.np1),
-                     Homme::subview(m_buffers.phitens,kv.ie));
-    }
-
-    // Laplacian of velocity
-    m_sphere_ops.vlaplace_sphere_wk_contra(kv, m_data.nu_ratio1,
-                              Homme::subview(m_state.m_v,kv.ie,m_data.np1),
-                              Homme::subview(m_buffers.vtens,kv.ie));
-
-    kv.team_barrier();
-
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
-                         [&](const int idx) {
-      const int igp = idx / NP;
-      const int jgp = idx % NP;
-
-      auto utens   = Homme::subview(m_buffers.vtens,kv.ie,0,igp,jgp);
-      auto vtens   = Homme::subview(m_buffers.vtens,kv.ie,1,igp,jgp);
-      auto ttens   = Homme::subview(m_buffers.ttens,kv.ie,igp,jgp);
-      auto dptens  = Homme::subview(m_buffers.dptens,kv.ie,igp,jgp);
-     
-      //why not auto here?
-      MidColumn wtens, phitens;
-
-      if (m_process_nh_vars) {
-        wtens   = Homme::subview(m_buffers.wtens,kv.ie,igp,jgp);
-        phitens = Homme::subview(m_buffers.phitens,kv.ie,igp,jgp);
-      }
-
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                           [&](const int ilev) {
-
-        const auto xf = m_data.dt_hvs_tom  * m_nu_scale_top(ilev) * m_data.nu_top;
-        utens(ilev) *= xf;
-        vtens(ilev) *= xf;
-        ttens(ilev) *= xf;
-        dptens(ilev) *= xf;
-
-        if (m_process_nh_vars) {
-          wtens(ilev)   *= xf;
-          phitens(ilev) *= xf;
-        }
-
-      });//threadvectorrange
-
-    });//teamthreadrange
-
-  } //TagNutopLaplace
-
-
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const TagNutopUpdateStates&, const TeamMember& team) const;
 
   //second iter of laplace, const hv
   KOKKOS_INLINE_FUNCTION
@@ -380,65 +311,6 @@ public:
     });
   }  //tagupdatestates
 
-
-
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (const TagUpdateStates2&, const TeamMember& team) const {
-    KernelVariables kv(team, m_tu);
-
-    using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
-    using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
-
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
-                         [&](const int idx) {
-      const int igp = idx / NP;
-      const int jgp = idx % NP;
-
-      // Add Xtens quantities back to the states, except for vtheta
-      auto u = Homme::subview(m_state.m_v,kv.ie,m_data.np1,0,igp,jgp);
-      auto v = Homme::subview(m_state.m_v,kv.ie,m_data.np1,1,igp,jgp);
-      auto vtheta = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1,igp,jgp);
-      auto dp     = Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1,igp,jgp);
-
-      auto utens   = Homme::subview(m_buffers.vtens,kv.ie,0,igp,jgp);
-      auto vtens   = Homme::subview(m_buffers.vtens,kv.ie,1,igp,jgp);
-      auto ttens   = Homme::subview(m_buffers.ttens,kv.ie,igp,jgp);
-      auto dptens  = Homme::subview(m_buffers.dptens,kv.ie,igp,jgp);
-      const auto& rspheremp = m_geometry.m_rspheremp(kv.ie,igp,jgp);
-
-      MidColumn wtens, phitens;
-      IntColumn w, phi_i;
-
-      if (m_process_nh_vars) {
-        wtens   = Homme::subview(m_buffers.wtens,kv.ie,igp,jgp);
-        phitens = Homme::subview(m_buffers.phitens,kv.ie,igp,jgp);
-        w       = Homme::subview(m_state.m_w_i,kv.ie,m_data.np1,igp,jgp);
-        phi_i   = Homme::subview(m_state.m_phinh_i,kv.ie,m_data.np1,igp,jgp);
-      }
-
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                           [&](const int ilev) {
-        utens(ilev)   *= rspheremp;
-        vtens(ilev)   *= rspheremp;
-        ttens(ilev)   *= rspheremp;
-        dptens(ilev)  *= rspheremp;
-        u(ilev)      += utens(ilev);
-        v(ilev)      += vtens(ilev);
-        vtheta(ilev) += ttens(ilev);
-        dp(ilev)     += dptens(ilev);
-
-	if (m_process_nh_vars) {
-          wtens(ilev)   *= rspheremp;
-          phitens(ilev) *= rspheremp;
-          w(ilev)     += wtens(ilev);
-          phi_i(ilev) += phitens(ilev);
-        }
-      });//threadvectorrange
-    });//threadteamrange
-  }//tagUpdateStates2
-
-
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagHyperPreExchange, const TeamMember &team) const {
     using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
@@ -529,17 +401,18 @@ protected:
 
   // Policies
   Kokkos::TeamPolicy<ExecSpace,TagUpdateStates>     m_policy_update_states;
-  Kokkos::TeamPolicy<ExecSpace,TagUpdateStates2>    m_policy_update_states2;
   Kokkos::TeamPolicy<ExecSpace,TagFirstLaplaceHV>   m_policy_first_laplace;
   Kokkos::TeamPolicy<ExecSpace,TagHyperPreExchange> m_policy_pre_exchange;
 
-  Kokkos::TeamPolicy<ExecSpace,TagNutopLaplace>     m_policy_nutop_laplace;
+  Kokkos::TeamPolicy<ExecSpace,TagNutopLaplace>      m_policy_nutop_laplace;
+  Kokkos::TeamPolicy<ExecSpace,TagNutopUpdateStates> m_policy_nutop_update_states;
 
   TeamUtils<ExecSpace> m_tu; // If the policies only differ by tag, just need one tu
 
-  std::shared_ptr<BoundaryExchange> m_be;
+  std::shared_ptr<BoundaryExchange> m_be, m_be_tom;
 
   ExecViewManaged<Scalar[NUM_LEV]> m_nu_scale_top;
+  int m_nu_scale_top_ilev_pack_lim;
 }; //HVfunctorImpl
 
 } // namespace Homme

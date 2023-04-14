@@ -580,7 +580,6 @@ contains
     integer  :: c,fc,p,j,l,s
     integer  :: ci             ! clump index of the bounds
     integer  :: pft
-    integer  :: j_f            ! fates uptake index mapped from decomp index
     real(r8) :: lamda_up       ! nitrogen cost of phosphorus uptake
     real(r8) :: sop_profile(1:ndecomp_pools)
     real(r8) :: biochem_pmin_to_ecosysp_vr_col_pot(bounds%begc:bounds%endc,1:nlevdecomp)
@@ -638,7 +637,6 @@ contains
 
         if(use_fates) then
            do j = 1,nlevdecomp
-              j_f = alm_fates%fates(ci)%bc_pconst%j_uptake(j)
               do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
 
                  lamda_up = alm_fates%fates(ci)%bc_out(s)%cp_scalar(p)/ &
@@ -745,10 +743,9 @@ contains
                 end if
 
                 ! units:  [g/m2] = [g/m3/s] * [s] [m]
-                j_f = alm_fates%fates(ci)%bc_pconst%j_uptake(j)
                 do p = 1, alm_fates%fates(ci)%bc_out(s)%num_plant_comps
-                    alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,j_f) = &
-                          alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,j_f) + &
+                    alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,1) = &
+                          alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,1) + &
                           biochem_pmin_to_plant_vr_patch(p,j)*dt*dzsoi_decomp(j)
 
                     biochem_pmin_to_plant(c) =  biochem_pmin_to_plant(c) + &

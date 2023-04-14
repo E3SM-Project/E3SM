@@ -112,9 +112,24 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="gcp">
+    <mach name="gcp12">
       <pes compset="any" pesize="any">
-        <comment>mpas-ocean+gcp: default</comment>
+        <comment>mpas-ocean+gcp12: default 1 node</comment>
+        <ntasks>
+          <ntasks_atm>56</ntasks_atm>
+          <ntasks_lnd>56</ntasks_lnd>
+          <ntasks_rof>56</ntasks_rof>
+          <ntasks_ice>36</ntasks_ice>
+          <ntasks_ocn>36</ntasks_ocn>
+          <ntasks_glc>16</ntasks_glc>
+          <ntasks_wav>16</ntasks_wav>
+          <ntasks_cpl>56</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="gcp10">
+      <pes compset="any" pesize="any">
+        <comment>mpas-ocean+gcp10: default</comment>
         <ntasks>
           <ntasks_atm>30</ntasks_atm>
           <ntasks_lnd>30</ntasks_lnd>

@@ -1,0 +1,41 @@
+%YAML 1.1
+---
+Casename: shoc_p3_${POSTFIX}
+Averaging Type: Instant
+Max Snapshots Per File: 1
+Field Names:
+  - T_mid
+  - qv
+  - qc
+  - qr
+  - qi
+  - qm
+  - nc
+  - nr
+  - ni
+  - bm
+  - eff_radius_qc
+  - eff_radius_qi
+  - micro_liq_ice_exchange
+  - micro_vap_liq_exchange
+  - micro_vap_ice_exchange
+  - tke
+  - eddy_diff_mom
+  - sgs_buoy_flux
+  - inv_qc_relvar
+  - pbl_height
+  - surf_evap
+  - surf_mom_flux
+  - surf_sens_flux
+  - nccn
+  - ni_activated
+  - nc_nuceat_tend
+  - eff_radius_qc
+  - eff_radius_qi
+ 
+output_control:
+  Frequency: ${NUM_STEPS}
+  frequency_units: nsteps
+  Timestamp in Filename: false
+  MPI Ranks in Filename: false
+...

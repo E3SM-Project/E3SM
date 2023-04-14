@@ -32,6 +32,9 @@
 	path = cime
 	url = git@github.com:ESMCI/cime.git
 	branch = master
+[submodule "externals/ekat"]
+        path = externals/ekat
+        url = git@github.com:E3SM-Project/EKAT.git
 [submodule "externals/YAKL"]
 	path = externals/YAKL
 	url = git@github.com:mrnorman/YAKL.git

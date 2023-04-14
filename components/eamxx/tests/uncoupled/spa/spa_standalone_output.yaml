@@ -1,0 +1,17 @@
+%YAML 1.1
+---
+Casename: spa_standalone_output
+Averaging Type: Instant
+Max Snapshots Per File: ${NUM_STEPS}
+Field Names:
+  - aero_g_sw
+  - aero_ssa_sw
+  - aero_tau_lw
+  - aero_tau_sw
+  - nccn
+output_control:
+  Frequency: 1
+  frequency_units: nsteps
+  Timestamp in Filename: false
+  MPI Ranks in Filename: true
+...

@@ -18,6 +18,7 @@
   smooth = 0
   nu                = 1.585e13
   nu_s              = 1.585e13
+  nu_p              = 1                         ! unused; silence hommexx error
   se_ftype          = -1
   limiter_option    = 9
   hypervis_order    = 2                         ! 2 = hyperviscosity

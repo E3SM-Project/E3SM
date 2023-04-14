@@ -1,0 +1,5 @@
+This testdef is used to test a stealth feature in mpaso introduced by
+PR #5447. It simplies changes one mpaso namelist variable, 
+    config_use_implicit_top_drag
+from its default value of false to true. It will only have an impact 
+on meshes with ice shelf cavities.

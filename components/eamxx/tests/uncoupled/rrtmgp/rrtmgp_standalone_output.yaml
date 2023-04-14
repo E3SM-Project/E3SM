@@ -1,0 +1,26 @@
+%YAML 1.1
+---
+Casename: rrtmgp_standalone_output${SUFFIX}
+Averaging Type: Instant
+Max Snapshots Per File: 1
+Field Names:
+  - T_mid
+  - LW_flux_up
+  - LW_flux_dn
+  - SW_flux_up
+  - SW_flux_dn
+  - SW_flux_dn_dir
+  - sfc_alb_dir_nir
+  - sfc_alb_dir_vis
+  - sfc_alb_dif_nir
+  - sfc_alb_dif_vis
+  - sfc_flux_lw_dn
+  - sfc_flux_sw_net
+  - rad_heating_pdel
+ 
+output_control:
+  Frequency: ${NUM_STEPS}
+  frequency_units: nsteps
+  Timestamp in Filename: false
+  MPI Ranks in Filename: true
+...

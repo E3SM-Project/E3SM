@@ -1,0 +1,11 @@
+# Load all kokkos settings from Ekat's mach file
+set (EKAT_MACH_FILES_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../../externals/ekat/cmake/machine-files)
+include (${EKAT_MACH_FILES_PATH}/kokkos/nvidia-v100.cmake)
+include (${EKAT_MACH_FILES_PATH}/kokkos/cuda.cmake)
+set(NetCDF_Fortran_PATH /usr/gdata/climdat/libs/netcdf-fortran/install/lassen/fortran CACHE STRING "")
+set(BLAS_LIBRARIES /usr/gdata/climdat/libs/blas/libblas.a CACHE STRING "")
+set(LAPACK_LIBRARIES /usr/gdata/climdat/libs/lapack/liblapack.a CACHE STRING "")
+set(SCREAM_MPIRUN_EXE "jsrun -E LD_PRELOAD=/opt/ibm/spectrum_mpi/lib/pami_471/libpami.so" CACHE STRING "")
+set(SCREAM_MPI_NP_FLAG "--np" CACHE STRING "")
+set(SCREAM_MPI_EXTRA_ARGS "" CACHE STRING "")
+set(SCREAM_INPUT_ROOT "/usr/gdata/climdat/ccsm3data/inputdata/" CACHE STRING "")

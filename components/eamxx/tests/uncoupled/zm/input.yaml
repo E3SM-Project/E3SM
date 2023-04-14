@@ -1,0 +1,19 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+Time Stepping:
+  Time Step: ${ATM_TIME_STEP}
+  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+  Number of Steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: (zm)
+
+grids_manager:
+  Type: Mesh Free
+  number_of_global_columns:   32
+  number_of_vertical_levels: 128
+...

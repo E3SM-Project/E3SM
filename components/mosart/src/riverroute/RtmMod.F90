@@ -3328,7 +3328,7 @@ contains
     call getfil(frivinp, locfn, 0 )
     call ncd_pio_openfile (ncid, trim(locfn), 0)
     call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
-    ier = pio_inq_varid(ncid, name='SLOPE', vardesc=vardesc)
+    ier = pio_inq_varid(ncid, 'SLOPE', vardesc)
     if (ier /= PIO_noerr) then
        if (masterproc) write(iulog,*) subname//' variable SLOPE is not on dataset'
        readvar = .false.
@@ -3433,7 +3433,7 @@ contains
      enddo
 
      ! setup iodesc based on frac dids
-     ier = pio_inq_varid(ncid, name='frac', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'frac', vardesc)
      if (isgrid2d) then
         ndims = 2
      else
@@ -3453,14 +3453,14 @@ contains
      Tunit%euler_calc = .true.
 
      allocate(TUnit%frac(begr:endr))
-     ier = pio_inq_varid(ncid, name='frac', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'frac', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%frac, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read frac ',minval(Tunit%frac),maxval(Tunit%frac)
      call shr_sys_flush(iulog)
      
      if (wrmflag) then
        allocate(TUnit%domainfrac(begr:endr))
-       ier = pio_inq_varid(ncid, name='domainfrac', vardesc=vardesc)
+       ier = pio_inq_varid(ncid, 'domainfrac', vardesc)
        call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%domainfrac, ier)
        if (masterproc) write(iulog,FORMR) trim(subname),' read domainfrac ',minval(Tunit%domainfrac),maxval(Tunit%domainfrac)
        call shr_sys_flush(iulog)
@@ -3471,7 +3471,7 @@ contains
      ! tunit mask is 0=ocean, 1=land, 2=outlet for mosart calcs
 
      allocate(TUnit%mask(begr:endr))  
-     ier = pio_inq_varid(ncid, name='fdir', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'fdir', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_int, TUnit%mask, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read fdir mask ',minval(Tunit%mask),maxval(Tunit%mask)
      call shr_sys_flush(iulog)
@@ -3506,13 +3506,13 @@ contains
      enddo
 
      allocate(TUnit%ID0(begr:endr))  
-     ier = pio_inq_varid(ncid, name='ID', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'ID', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_int, TUnit%ID0, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read ID0 ',minval(Tunit%ID0),maxval(Tunit%ID0)
      call shr_sys_flush(iulog)
 
      allocate(TUnit%dnID(begr:endr))  
-     ier = pio_inq_varid(ncid, name='dnID', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'dnID', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_int, TUnit%dnID, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read dnID ',minval(Tunit%dnID),maxval(Tunit%dnID)
      call shr_sys_flush(iulog)
@@ -3534,7 +3534,7 @@ contains
      enddo
 
      allocate(TUnit%area(begr:endr))  
-     ier = pio_inq_varid(ncid, name='area', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'area', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%area, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read area ',minval(Tunit%area),maxval(Tunit%area)
      call shr_sys_flush(iulog)
@@ -3548,7 +3548,7 @@ contains
      enddo
 
      allocate(TUnit%areaTotal(begr:endr))  
-     ier = pio_inq_varid(ncid, name='areaTotal', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'areaTotal', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%areaTotal, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read areaTotal ',minval(Tunit%areaTotal),maxval(Tunit%areaTotal)
      call shr_sys_flush(iulog)
@@ -3557,13 +3557,13 @@ contains
      TUnit%rlenTotal = 0._r8
 
      allocate(TUnit%nh(begr:endr))  
-     ier = pio_inq_varid(ncid, name='nh', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'nh', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%nh, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read nh ',minval(Tunit%nh),maxval(Tunit%nh)
      call shr_sys_flush(iulog)
 
      allocate(TUnit%hslp(begr:endr))  
-     ier = pio_inq_varid(ncid, name='hslp', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'hslp', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%hslp, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read hslp ',minval(Tunit%hslp),maxval(Tunit%hslp)
      call shr_sys_flush(iulog)
@@ -3572,7 +3572,7 @@ contains
      TUnit%hslpsqrt = 0._r8
 
      allocate(TUnit%gxr(begr:endr))  
-     ier = pio_inq_varid(ncid, name='gxr', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'gxr', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%gxr, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read gxr ',minval(Tunit%gxr),maxval(Tunit%gxr)
      call shr_sys_flush(iulog)
@@ -3581,7 +3581,7 @@ contains
      TUnit%hlen = 0._r8
 
      allocate(TUnit%tslp(begr:endr))  
-     ier = pio_inq_varid(ncid, name='tslp', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'tslp', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%tslp, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read tslp ',minval(Tunit%tslp),maxval(Tunit%tslp)
      call shr_sys_flush(iulog)
@@ -3593,25 +3593,25 @@ contains
      TUnit%tlen = 0._r8
 
      allocate(TUnit%twidth(begr:endr))  
-     ier = pio_inq_varid(ncid, name='twid', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'twid', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%twidth, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read twidth ',minval(Tunit%twidth),maxval(Tunit%twidth)
      call shr_sys_flush(iulog)
 
      allocate(TUnit%nt(begr:endr))  
-     ier = pio_inq_varid(ncid, name='nt', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'nt', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%nt, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read nt ',minval(Tunit%nt),maxval(Tunit%nt)
      call shr_sys_flush(iulog)
 
      allocate(TUnit%rlen(begr:endr))  
-     ier = pio_inq_varid(ncid, name='rlen', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'rlen', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%rlen, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read rlen ',minval(Tunit%rlen),maxval(Tunit%rlen)
      call shr_sys_flush(iulog)
 
      allocate(TUnit%rslp(begr:endr))  
-     ier = pio_inq_varid(ncid, name='rslp', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'rslp', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%rslp, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read rslp ',minval(Tunit%rslp),maxval(Tunit%rslp)
      call shr_sys_flush(iulog)
@@ -3620,7 +3620,7 @@ contains
      TUnit%rslpsqrt = 0._r8
 
      allocate(TUnit%rwidth(begr:endr))  
-     ier = pio_inq_varid(ncid, name='rwid', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'rwid', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%rwidth, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read rwidth ',minval(Tunit%rwidth),maxval(Tunit%rwidth)
      call shr_sys_flush(iulog)
@@ -3639,13 +3639,13 @@ contains
      end if
 
      allocate(TUnit%rwidth0(begr:endr))  
-     ier = pio_inq_varid(ncid, name='rwid0', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'rwid0', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%rwidth0, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read rwidth0 ',minval(Tunit%rwidth0),maxval(Tunit%rwidth0)
      call shr_sys_flush(iulog)
 
      allocate(TUnit%rdepth(begr:endr))  
-     ier = pio_inq_varid(ncid, name='rdep', vardesc=vardesc)
+     ier = pio_inq_varid(ncid, 'rdep', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%rdepth, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read rdepth ',minval(Tunit%rdepth),maxval(Tunit%rdepth)
      call shr_sys_flush(iulog)
@@ -3653,13 +3653,13 @@ contains
      ! define outlets and relevant parameters where ocn rof two-way coupling is on
      if ( use_ocn_rof_two_way ) then
         allocate(TUnit%ocn_rof_coupling_ID(begr:endr))
-        ier = pio_inq_varid(ncid, name='ocn_rof_coupling_ID', vardesc=vardesc)
+        ier = pio_inq_varid(ncid, 'ocn_rof_coupling_ID', vardesc)
         call pio_read_darray(ncid, vardesc, iodesc_int, TUnit%ocn_rof_coupling_ID, ier)
         if (masterproc) write(iulog,FORMR) trim(subname),' read ocn_rof_coupling_ID',minval(Tunit%ocn_rof_coupling_ID),maxval(Tunit%ocn_rof_coupling_ID)
         call shr_sys_flush(iulog)
 
         allocate(TUnit%vdatum_conversion(begr:endr))
-        ier = pio_inq_varid(ncid, name='vdatum_conversion', vardesc=vardesc)
+        ier = pio_inq_varid(ncid, 'vdatum_conversion', vardesc)
         call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%vdatum_conversion, ier)
         if (masterproc) write(iulog,FORMR) trim(subname),' read vdatum_conversion',minval(Tunit%vdatum_conversion),maxval(Tunit%vdatum_conversion)
         call shr_sys_flush(iulog)
@@ -3672,7 +3672,7 @@ contains
         call calc_chnlMannCoe ( )
      else
         !!allocate(TUnit%nr(begr:endr))   !(Repetitive, removed on 6-1-17. --Inund.)
-        ier = pio_inq_varid(ncid, name='nr', vardesc=vardesc)
+        ier = pio_inq_varid(ncid, 'nr', vardesc)
         call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%nr, ier)
         if (masterproc) write(iulog,FORMR) trim(subname),' read nr ',minval(Tunit%nr),maxval(Tunit%nr)
         call shr_sys_flush(iulog)
@@ -4387,7 +4387,7 @@ contains
     call check_var(ncid, varname, vardesc, readvar)
 
     if (readvar) then
-      ier = pio_inq_varid(ncid, name=varname, vardesc=vardesc)
+      ier = pio_inq_varid(ncid, varname, vardesc)
       ier = pio_inq_varndims(ncid, vardesc, ndims)
       ier = pio_inq_vardimid(ncid, vardesc, dimids)
 
@@ -4437,7 +4437,7 @@ contains
         call check_var(ncid, 'ele'//str, vardesc, readvar)
 
         if (readvar) then
-          ier = pio_inq_varid(ncid, name='ele'//str, vardesc=vardesc)
+          ier = pio_inq_varid(ncid, 'ele'//str, vardesc)
         else
           call shr_sys_abort(trim(subname)//' ERROR missing elevation profile data')
         endif

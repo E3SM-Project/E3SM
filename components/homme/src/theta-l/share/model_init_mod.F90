@@ -18,7 +18,7 @@ module model_init_mod
   use hybvcoord_mod, 	  only: hvcoord_t
   use hybrid_mod,         only: hybrid_t
   use dimensions_mod,     only: np,nlev,nlevp
-  use element_ops,        only: set_theta_ref
+  use element_ops,        only: initialize_reference_states
   use element_state,      only: timelevels, nu_scale_top, nlev_tom
   use viscosity_mod,      only: make_c0_vector
   use kinds,              only: real_kind,iulog
@@ -28,9 +28,9 @@ module model_init_mod
   use physical_constants, only: g, TREF, Rgas, kappa
   use imex_mod,           only: test_imex_jacobian
   use eos,                only: phi_from_eos
- 
+
   implicit none
-  
+
 contains
 
   subroutine model_init2(elem,hybrid,deriv,hvcoord,tl,nets,nete )
@@ -49,12 +49,12 @@ contains
     real (kind=real_kind) :: ptop_over_press
 
 
-    ! other theta specific model initialization should go here    
+    ! other theta specific model initialization should go here
     do ie=nets,nete
        gradtemp(:,:,:,ie) = gradient_sphere( elem(ie)%state%phis(:,:), deriv, elem(ie)%Dinv)
     enddo
     call make_C0_vector(gradtemp,elem,hybrid,nets,nete)
-    
+
     do ie=nets,nete
       elem(ie)%derived%gradphis(:,:,:) = gradtemp(:,:,:,ie)
       ! compute w_i(nlevp)
@@ -72,32 +72,16 @@ contains
       enddo
 
       ! initialize reference states used by hyberviscosity
-      ps_ref(:,:) = hvcoord%ps0 * exp ( -elem(ie)%state%phis(:,:)/(Rgas*TREF)) 
-      do k=1,nlev
-         elem(ie)%derived%dp_ref(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-              (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
-      enddo
-      call set_theta_ref(hvcoord,elem(ie)%derived%dp_ref,elem(ie)%derived%theta_ref)
-      temp=elem(ie)%derived%theta_ref*elem(ie)%derived%dp_ref
-      call phi_from_eos(hvcoord,elem(ie)%state%phis,&
-           temp,elem(ie)%derived%dp_ref,elem(ie)%derived%phi_ref)
-      if (hv_ref_profiles==0) then
-         ! keep PHI profile, but dont use theta and dp:
-         elem(ie)%derived%theta_ref=0
-         elem(ie)%derived%dp_ref=0
-      endif
-      if (hv_ref_profiles==1) then
-         ! keep all profiles
-      endif
-      if (hv_ref_profiles==2) then
-         ! keep only dp_ref
-         elem(ie)%derived%theta_ref=0
-      endif
+      call initialize_reference_states(hvcoord, elem(ie)%state%phis, &
+                                       elem(ie)%derived%dp_ref,      &
+                                       elem(ie)%derived%theta_ref,   &
+                                       elem(ie)%derived%phi_ref)
 
       if (hv_theta_correction/=0) then
          ! compute weak laplace of p_ref
+         ps_ref(:,:) = hvcoord%ps0 * exp ( -elem(ie)%state%phis(:,:)/(Rgas*TREF))
          do k=1,nlev
-            ! compute lap(p) for z surface correction                                              
+            ! compute lap(p) for z surface correction
             temp(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps_ref(:,:)
             elem(ie)%derived%lap_p_wk(:,:,k)=laplace_sphere_wk(temp(:,:,k),deriv,elem(ie),&
                  var_coef=.false.)
@@ -105,7 +89,7 @@ contains
       endif
 
 
-    enddo 
+    enddo
 
 
     ! unit test for analytic jacobian and tri-diag solve used by IMEX methods
@@ -113,8 +97,8 @@ contains
          call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
 
     !$omp master
-    ! 
-    ! compute scaling of sponge layer damping 
+    !
+    ! compute scaling of sponge layer damping
     !
     nlev_tom=0
     if (hybrid%masterthread) write(iulog,*) "sponge layer nu_top viscosity scaling factor"
@@ -123,18 +107,18 @@ contains
           ! some test cases have ptop=200mb
           if (hvcoord%etai(1)==0) then
              ! pure sigma coordinates could have etai(1)=0
-             ptop_over_press = hvcoord%etam(1) / hvcoord%etam(k)  
+             ptop_over_press = hvcoord%etam(1) / hvcoord%etam(k)
           else
-             ptop_over_press = hvcoord%etai(1) / hvcoord%etam(k)  
+             ptop_over_press = hvcoord%etai(1) / hvcoord%etam(k)
           endif
           ! active for p<10*ptop (following cd_core.F90 in CAM-FV)
-          ! CAM 26L and 30L:  top 3 levels 
+          ! CAM 26L and 30L:  top 3 levels
           ! E3SM 72L:  top 6 levels
           !original cam formula
           !nu_scale_top(k) = 8*(1+tanh(log(ptop_over_press))) ! active for p<4*ptop
           nu_scale_top(k) = 16*ptop_over_press**2 / (ptop_over_press**2 + 1)
        else
-          ptop_over_press = (tom_sponge_start/1d3) / hvcoord%etam(k)  
+          ptop_over_press = (tom_sponge_start/1d3) / hvcoord%etam(k)
           nu_scale_top(k)=0.15d0 * ptop_over_press**2
        endif
 
@@ -155,6 +139,6 @@ contains
     !$omp end master
     !$omp barrier
 
-  end subroutine 
+  end subroutine
 
-end module 
+end module

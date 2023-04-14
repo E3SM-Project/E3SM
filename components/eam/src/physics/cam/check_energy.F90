@@ -73,6 +73,7 @@ module check_energy
 ! Private module data
 
   logical  :: print_energy_errors = .false.
+  character(len=16) :: microp_scheme 
 
   real(r8) :: teout_glob           ! global mean energy of output state
   real(r8) :: teinp_glob           ! global mean energy of input state
@@ -196,6 +197,7 @@ end subroutine check_energy_get_integrals
 !-----------------------------------------------------------------------
 
     call phys_getopts( history_budget_out = history_budget, &
+                       microp_scheme_out  = microp_scheme,   &
                        history_budget_histfile_num_out = history_budget_histfile_num)
 
 ! register history variables
@@ -1224,7 +1226,21 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
        end do
     end if
 
-    if (irain > 1 .and. isnow > 1) then
+    if (microp_scheme == 'P3') then
+       ! In the case where the micro-physics scheme is P3 there is no snow
+       ! constituent and isnow = -1.  So we still calculate the rest of the
+       ! consituents and ensure that ws = 0.0.  NOTE! This change will likely
+       ! lead to conflicts with upstream E3SM any time check_energy is
+       ! changed...  The most important thing is to avoid any SNOW calculations
+       ! when P3 is the microphysics scheme.
+       ws = 0.0_r8
+
+       if (irain > 1) then
+          do k = 1, pver
+             wr = wr + q(k,irain)*pdel(k)/gravit
+          end do
+       end if
+    else if (irain > 1 .and. isnow > 1) then
        do k = 1, pver
           wr = wr + q(k,irain)*pdel(k)/gravit
           ws = ws + q(k,isnow)*pdel(k)/gravit

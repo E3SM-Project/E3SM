@@ -1,0 +1,38 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+Time Stepping:
+  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+
+atmosphere_processes:
+  atm_procs_list: (SurfaceCouplingImporter,SurfaceCouplingExporter)
+  schedule_type: Sequential
+
+grids_manager:
+  Type: Mesh Free
+  number_of_global_columns:   218
+  number_of_vertical_levels:  72  # Will want to change to 128 when a valid unit test is available.
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4_16x.c20160612.nc
+  # Some fields needed for the exports (not in ic file)
+  precip_ice_surf_mass: 1.0
+  precip_liq_surf_mass: 2.0
+  sfc_flux_sw_net:      3.0
+  # These fields are needed for the export,
+  # but will be computed for the import
+  sfc_flux_dif_nir:     0.0
+  sfc_flux_dif_vis:     0.0
+  sfc_flux_dir_nir:     0.0
+  sfc_flux_dir_vis:     0.0
+  sfc_flux_lw_dn:       0.0
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["surface_coupling_output.yaml"]
+...

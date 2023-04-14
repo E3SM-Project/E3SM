@@ -139,22 +139,23 @@ module prim_cxx_driver_base
     use gridgraph_mod,  only : GridEdge_t
     use metagraph_mod,  only : MetaVertex_t
     use parallel_mod,   only : parallel_t
+    use dimensions_mod, only : max_corner_elem
     !
     ! Interfaces
     !
     interface
-      subroutine init_connectivity (num_local_elems) bind (c)
+      subroutine init_connectivity (num_local_elems, max_corner_elems) bind (c)
         use iso_c_binding, only : c_int
         !
         ! Inputs
         !
-        integer (kind=c_int), intent(in) :: num_local_elems
+        integer (kind=c_int), intent(in) :: num_local_elems, max_corner_elems
       end subroutine init_connectivity
 
       subroutine finalize_connectivity () bind(c)
       end subroutine finalize_connectivity
 
-      subroutine add_connection (first_lid,  first_gid,  first_pos,  first_pid, &
+      subroutine add_connection (first_lid,  first_gid,  first_pos,  first_pid,  &
                                  second_lid, second_gid, second_pos, second_pid) bind(c)
         use iso_c_binding, only : c_int
         !
@@ -182,7 +183,7 @@ module prim_cxx_driver_base
     call generate_global_to_local(MetaVertex,Global2Local,par)
 
     ! Initialize C++ connectivity structure
-    call init_connectivity(nelemd)
+    call init_connectivity(nelemd, max_corner_elem)
 
     ! Add all connections to the C++ structure
     num_edges = SIZE(GridEdge)

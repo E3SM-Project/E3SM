@@ -309,7 +309,7 @@ contains
        !---------------------------------------------------          
 
        call pio_seterrorhandling(ncidi, PIO_BCAST_ERROR)
-       status = pio_inq_varid(ncidi, name=varname, vardesc=vardesc)
+       status = pio_inq_varid(ncidi, varname, vardesc)
        call pio_seterrorhandling(ncidi, PIO_INTERNAL_ERROR)
        if (status /= PIO_noerr) then
           if (masterproc) then
@@ -438,7 +438,7 @@ contains
           end if
           ! Determine order of level and subgrid dimension in restart file
           status = pio_inq_varid (ncidi, trim(varname), vardesc)
-          status = pio_inquire_variable(ncidi, vardesc=vardesc, dimids=dimidsi)
+          status = pio_inquire_variable(ncidi, vardesc, dimids=dimidsi)
           status = pio_get_att(ncidi, vardesc, 'switchdim_flag', switchdim_flag)
           if (switchdim_flag > 0) then
              levdimi = dimidsi(1)  

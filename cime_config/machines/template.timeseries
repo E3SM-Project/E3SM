@@ -1,4 +1,6 @@
 #! /usr/bin/env bash
+{_batchdirectives_}
+
 #
 # template.tseries_generate used to create the $CASEROOT/$CASE.timeseries
 #
@@ -6,9 +8,6 @@
 # for the specified machine
 # <timeseries_pes>##</timeseries_pes>
 #
-
-{_batchdirectives_}
-
 mpirun={_mpirun_}
 
 # xmlquery to get POSTPROCESS_VIRTUALENV, BATCHSUBMIT variable settings

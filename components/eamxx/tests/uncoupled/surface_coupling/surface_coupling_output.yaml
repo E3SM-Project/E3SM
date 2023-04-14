@@ -1,0 +1,24 @@
+%YAML 1.1
+---
+Casename: surface_coupling_output
+Averaging Type: Instant
+Max Snapshots Per File: 1
+Field Names:
+  # IMPORTER
+  - sfc_alb_dir_vis
+  - sfc_alb_dir_nir
+  - sfc_alb_dif_vis
+  - sfc_alb_dif_nir
+  - surf_lw_flux_up
+  - surf_sens_flux
+  - surf_evap
+  - surf_mom_flux
+  # EXPORTER
+  - precip_liq_surf_mass
+  - precip_ice_surf_mass
+output_control:
+  Frequency: 1
+  frequency_units: nsteps
+  Timestamp in Filename: false
+  MPI Ranks in Filename: true
+...

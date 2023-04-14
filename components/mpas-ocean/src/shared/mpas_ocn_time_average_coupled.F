@@ -209,7 +209,9 @@ module ocn_time_average_coupled
         real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue
         real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
         integer :: iCell
-        integer, pointer :: index_temperature, index_SSHzonal, index_SSHmeridional, nAccumulatedCoupled, nCells
+        integer, pointer :: index_temperaturePtr, index_SSHzonalPtr, &
+                 index_SSHmeridionalPtr, nAccumulatedCoupled, nCells
+        integer :: index_temperature, index_SSHzonal, index_SSHmeridional
         real (kind=RKIND), dimension(:,:), pointer :: &
                                                       avgLandIceBoundaryLayerTracers, avgLandIceTracerTransferVelocities
         real (kind=RKIND), dimension(:), pointer :: effectiveDensityInLandIce, avgEffectiveDensityInLandIce, &
@@ -252,9 +254,18 @@ module ocn_time_average_coupled
         call mpas_pool_get_array(forcingPool, 'avgTotalFreshWaterTemperatureFlux', avgTotalFreshWaterTemperatureFlux)
 
         call mpas_pool_get_dimension(forcingPool, 'nCells', nCells)
-        call mpas_pool_get_dimension(forcingPool, 'index_avgTemperatureSurfaceValue', index_temperature)
-        call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientZonal', index_SSHzonal)
-        call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientMeridional', index_SSHmeridional)
+        call mpas_pool_get_dimension(forcingPool, &
+                                     'index_avgTemperatureSurfaceValue', &
+                                      index_temperaturePtr)
+        call mpas_pool_get_dimension(forcingPool, &
+                                     'index_avgSSHGradientZonal', &
+                                      index_SSHzonalPtr)
+        call mpas_pool_get_dimension(forcingPool, &
+                                     'index_avgSSHGradientMeridional', &
+                                      index_SSHmeridionalPtr)
+        index_temperature   = index_temperaturePtr
+        index_SSHzonal      = index_SSHzonalPtr
+        index_SSHmeridional = index_SSHmeridionalPtr
 
         call mpas_pool_get_array(forcingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
 

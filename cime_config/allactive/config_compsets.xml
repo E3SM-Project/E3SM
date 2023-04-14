@@ -14,7 +14,7 @@
     TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_ESP%phys][_BGC%phys]
     Where for the EAM specific compsets below the following is supported
     TIME = Time period (e.g. 2000, HIST, RCP8...)
-    ATM  = [EAM, SATM]
+    ATM  = [EAM, SATM, SCREAM]
     LND  = [ELM,  SLND]
     ICE  = [MPASSI, CICE, DICE, SICE]
     OCN  = [MPASO, DOCN, SOCN]
@@ -310,6 +310,12 @@
 <compset>
   <alias>BGCEXP_BDRD_CNPECACNT_20TRS</alias>
   <lname>20TRSOI_EAM%CMIP6_ELM%CNPECACNTBC_MPASSI_MPASO_MOSART_SGLC_SWAV_BGC%BDRD</lname>
+</compset>
+
+<!-- SCREAM DYAMOND compsets -->
+<compset>
+  <alias>A_SCREAM-HR-DYAMOND2</alias>
+  <lname>2010_EAM%SCREAM-HR-DYAMOND2_ELM45%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <!-- E3SM BG compsets -->
