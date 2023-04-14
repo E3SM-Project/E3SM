@@ -4324,7 +4324,7 @@ module ocn_time_integration_si
 #endif
 
 !#######################################################################
-#else
+#elif defined(USE_LAPACK)
 
          ! LAPACK on CPU 
          !    (also if no MAGMA & CUBLAS for GPU ; Data staging)
@@ -4332,7 +4332,6 @@ module ocn_time_integration_si
          call DSPMV('U', nPrecVec, 1.0_RKIND, prec_ivmat(:,1), &
                          SIvec_in(1:nPrecVec) , 1, 0.0_RKIND,  &
                          SIvec_out(1:nPrecVec), 1)
-
 #endif
 
       elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
