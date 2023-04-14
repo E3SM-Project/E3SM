@@ -1,15 +1,11 @@
-# Load all kokkos settings from Ekat's mach file
-set (EKAT_MACH_FILES_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../../externals/ekat/cmake/machine-files)
+include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
+common_setup()
 
 #serial is needed, but maybe it is always on?
 #include (${EKAT_MACH_FILES_PATH}/kokkos/serial.cmake)
 include (${EKAT_MACH_FILES_PATH}/kokkos/mi250.cmake)
 include (${EKAT_MACH_FILES_PATH}/kokkos/hip.cmake)
-
-set(SCREAM_MPIRUN_EXE "srun" CACHE STRING "")
-set(SCREAM_MACHINE "crusher-scream-gpu" CACHE STRING "")
-
-#set(CMAKE_BUILD_TYPE "debug" CACHE STRING "")
+include (${EKAT_MACH_FILES_PATH}/mpi/srun.cmake)
 
 SET(MPICH_DIR "/opt/cray/pe/mpich/8.1.16/ofi/crayclang/10.0" CACHE STRING "")
 
