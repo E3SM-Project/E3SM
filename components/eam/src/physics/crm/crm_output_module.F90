@@ -139,6 +139,8 @@ module crm_output_module
 
       real(crm_rknd), allocatable :: rho_d_ls     (:,:)  ! large-scale forcing of dry density   [kg/m3/s]
       real(crm_rknd), allocatable :: rho_v_ls     (:,:)  ! large-scale forcing of vapor density [kg/m3/s]
+      real(crm_rknd), allocatable :: rho_l_ls     (:,:)  ! large-scale forcing of vapor density [kg/m3/s]
+      real(crm_rknd), allocatable :: rho_i_ls     (:,:)  ! large-scale forcing of vapor density [kg/m3/s]
 
    end type crm_output_type
 
@@ -305,6 +307,8 @@ contains
 
       if (.not. allocated(output%rho_d_ls     )) allocate(output%rho_d_ls     (ncol,nlev))
       if (.not. allocated(output%rho_v_ls     )) allocate(output%rho_v_ls     (ncol,nlev))
+      if (.not. allocated(output%rho_l_ls     )) allocate(output%rho_l_ls     (ncol,nlev))
+      if (.not. allocated(output%rho_i_ls     )) allocate(output%rho_i_ls     (ncol,nlev))
 
       call prefetch(output%sltend  )
       call prefetch(output%qltend  )
@@ -377,6 +381,8 @@ contains
 
       call prefetch(output%rho_d_ls)
       call prefetch(output%rho_v_ls)
+      call prefetch(output%rho_l_ls)
+      call prefetch(output%rho_i_ls)
 
       ! Initialize 
       output%qcl = 0
@@ -499,6 +505,8 @@ contains
 
       output%rho_d_ls = 0
       output%rho_v_ls = 0
+      output%rho_l_ls = 0
+      output%rho_i_ls = 0
 
    end subroutine crm_output_initialize
    !------------------------------------------------------------------------------------------------
@@ -621,6 +629,8 @@ contains
 
       if (allocated(output%rho_d_ls)) deallocate(output%rho_d_ls)
       if (allocated(output%rho_v_ls)) deallocate(output%rho_v_ls)
+      if (allocated(output%rho_l_ls)) deallocate(output%rho_l_ls)
+      if (allocated(output%rho_i_ls)) deallocate(output%rho_i_ls)
 
    end subroutine crm_output_finalize
    !------------------------------------------------------------------------------------------------
