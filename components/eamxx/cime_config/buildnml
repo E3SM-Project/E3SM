@@ -1,0 +1,861 @@
+#!/usr/bin/env python3
+
+"""
+Namelist creator for E3SM's SCREAM component
+
+This script takes the namelist_defaults_scream.xml file from the repo
+and produces the processed $case/namelist_scream.xml. From the processed
+file, raw input files are produced which should not be modified by users.
+The user is allowed to modify $case/namelist_scream.xml either directly
+via text editor (discouraged) or via atmchange (preferred). The user
+can also use atmquery to query current configurations stored in the
+XML file.
+
+This script can be internally tested standalone via: buildnml --test
+
+It is also encouraged to run pylint on this file when it gets changed:
+python3 -m pylint --disable C --disable R buildnml
+Some import errors are expected and can be ignored
+"""
+
+import os, sys, re
+from collections import OrderedDict
+
+import xml.etree.ElementTree as ET
+
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
+sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
+
+# Add path to scream libs
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
+
+# Cime imports
+from standard_script_setup import *
+from CIME.case import Case
+from CIME.utils import expect, safe_copy, SharedArea, run_cmd_no_fail
+from CIME.buildnml import parse_input
+
+# SCREAM imports
+from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
+        resolve_all_inheritances, gen_atm_proc_group, check_all_values
+
+from utils import ensure_yaml
+ensure_yaml()
+import yaml
+
+logger = logging.getLogger(__name__)
+
+CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
+
+# These are special attributes used by buildnml and other scripts to
+# perform some checks. In particular:
+#  - type: allows to verify compatibility (e.g., can't assing 3.2 to an integer)
+#  - valid_values: allows to specify a set of valid values
+#  - locked: if set to true, the parameter cannot be modified (via atmchange)
+#  - constraints: allows to specify constraints on values. Valid constraints
+#    are lt, le, ne, gt, ge, and mod. Multiple constrained are separated by ';'.
+#    Examples:
+#      - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
+#      - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
+METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit")
+
+###############################################################################
+def do_cime_vars(entry, case, refine=False, extra=None):
+###############################################################################
+    """
+    For a parameter value, process any references to case values ("${CASEVAR}")
+
+    >>> from eamxx_buildnml_impl import MockCase
+    >>> case = MockCase({'foo':1, 'bar':2, 'baz_bar':'blah', 'baz2_bar2':4})
+    >>> do_cime_vars('${foo}', case)
+    '1'
+    >>> do_cime_vars('hi ${foo} there', case)
+    'hi 1 there'
+    >>> do_cime_vars('hi ${foo}${bar} there', case)
+    'hi 12 there'
+    >>> do_cime_vars('hi ${baz_bar} there', case)
+    'hi blah there'
+    >>> do_cime_vars('hi ${baz2_bar2} there', case)
+    'hi 4 there'
+    >>> do_cime_vars('hi ${invalid} there', case)
+    Traceback (most recent call last):
+      ...
+    CIME.utils.CIMEError: ERROR: Cannot resolve XML entry 'hi ${invalid} there', CIME has no value for 'invalid'
+    >>> d = { 'foo' : '${foo}',
+    ...      'subdict' : { 'bar' : 'foo', 'baz' : '${foo}' } }
+    >>> do_cime_vars(d, case)
+    {'foo': '1', 'subdict': {'bar': 'foo', 'baz': '1'}}
+    """
+    if type(entry) is dict:
+        changed_keys = []
+        for k,v in entry.items():
+            # Apply replacement to the key.
+            k1 = do_cime_vars(k,case,refine,extra)
+            if (k1 != k): changed_keys.append((k,k1))
+            # Apply replacement to the value.
+            entry[k] = do_cime_vars(v,case,refine,extra)
+        # Handle changed keys outside the original loop since keys can't change
+        # in an items loop.
+        for e in changed_keys:
+            entry[e[1]] = entry[e[0]]
+            del entry[e[0]]
+    elif type(entry) is str:
+        m = CIME_VAR_RE.search(entry)
+        while m:
+            cime_var = m.groups()[0]
+            if type(extra) is dict and cime_var in extra:
+                value = extra[cime_var]
+            else:
+                value = case.get_value(cime_var)
+            expect(value is not None,
+                   "Cannot resolve XML entry '{}', CIME has no value for '{}'".format(entry, cime_var))
+            entry = entry.replace("${{{}}}".format(cime_var), str(value))
+            m = CIME_VAR_RE.search(entry)
+
+        if refine:
+            entry = refine_type(entry)
+
+    return entry
+
+###############################################################################
+def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
+###############################################################################
+    """
+    Copied from: https://stackoverflow.com/a/21912744
+    Added ability to pass filename
+    """
+    class OrderedDumper(Dumper):
+        pass
+    def _dict_representer(dumper, data):
+        return dumper.represent_mapping(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+            data.items())
+    OrderedDumper.add_representer(OrderedDict, _dict_representer)
+
+    if isinstance(item, str) and item.endswith(".yaml"):
+        # Item is a filepath
+        with open(item, "w") as fd:
+            return yaml.dump(data, fd, OrderedDumper, **kwds)
+    else:
+        return yaml.dump(data, item, OrderedDumper, **kwds)
+
+###############################################################################
+def evaluate_selectors(element, case, ez_selectors):
+###############################################################################
+    """
+    Evaluate and remove selectors from the unprocessed XML nml file in the repo.
+
+    Elements with selectors are removed. If the selector evaulates to True, then
+    the corresponding element text becomes the new text value of the original
+    (no-selectors, AKA default) element.
+
+    The metadata attributes are kept, to allow checks during calls to atmchange
+
+    >>> from eamxx_buildnml_impl import MockCase
+    >>> case = MockCase({'ATM_GRID':'ne4ne4', 'SCREAM_CMAKE_OPTIONS':'FOO=ON SCREAM_NUM_VERTICAL_LEV 128 BAR=OFF'})
+    >>> xml_sel_good = '''
+    ... <selectors_xml>
+    ...   <selectors>
+    ...     <selector name="grid" case_env="ATM_GRID"/>
+    ...     <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
+    ...     <selector name="foo"  case_env="SCREAM_CMAKE_OPTIONS" regex=".*FOO=(ON|OFF).*"/>
+    ...     <selector name="bar"  case_env="SCREAM_CMAKE_OPTIONS" regex=".*BAR=(ON|OFF).*"/>
+    ...   </selectors>
+    ... </selectors_xml>
+    ... '''
+    >>> xml_good = '''
+    ... <namelist_defaults>
+    ...   <var1>zero</var1>
+    ...   <var1 grid="ne4ne4">one</var1>
+    ...   <var2>zero</var2>
+    ...   <var2 nlev="128">one</var2>
+    ...   <var3>foo_off</var3>
+    ...   <var3 foo="ON">foo_on</var3>
+    ...   <var4>bar_off</var4>
+    ...   <var4 bar="ON">bar_on</var4>
+    ... </namelist_defaults>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> good = ET.fromstring(xml_good)
+    >>> selectors_good = get_valid_selectors(ET.fromstring(xml_sel_good))
+    >>> ############## ALL GOOD #####################
+    >>> evaluate_selectors(good,case,selectors_good)
+    >>> get_child(good,'var1').text=="one"
+    True
+    >>> get_child(good,'var2').text=="one"
+    True
+    >>> get_child(good,'var3').text=="foo_on"
+    True
+    >>> get_child(good,'var4').text=="bar_off"
+    True
+    >>> ############## BAD SELECTOR DEFINITION #####################
+    >>> xml_sel_bad1 = '''
+    ... <selectors_xml>
+    ...   <selectors>
+    ...     <selector name="grid" case_env="BADENV"/>
+    ...   </selectors>
+    ... </selectors_xml>
+    ... '''
+    >>> selectors_bad1 = get_valid_selectors(ET.fromstring(xml_sel_bad1))
+    >>> good = ET.fromstring(xml_good)
+    >>> evaluate_selectors(good,case,selectors_bad1)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: Bad easy selector 'grid' definition. Relies on unknown case value 'BADENV'
+    >>> ############## BAD SELECTOR DEFINITION #####################
+    >>> xml_sel_bad2 = '''
+    ... <selectors_xml>
+    ...   <selectors>
+    ...     <selector name="grid" case_env="ATM_GRID" regex=".*"/>
+    ...   </selectors>
+    ... </selectors_xml>
+    ... '''
+    >>> selectors_bad2 = get_valid_selectors(ET.fromstring(xml_sel_bad2))
+    >>> good = ET.fromstring(xml_good)
+    >>> evaluate_selectors(good,case,selectors_bad2)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: Selector 'grid' has invalid custom regex '.*' which does not capture exactly 1 group
+    >>> ############## BAD SELECTOR NAME #####################
+    >>> xml_bad1 = '''
+    ... <namelist_defaults>
+    ...   <var1>zero</var1>
+    ...   <var1 my_grid="ne4ne4">one</var1>
+    ... </namelist_defaults>
+    ... '''
+    >>> bad1 = ET.fromstring(xml_bad1)
+    >>> evaluate_selectors(bad1,case,selectors_good)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: Bad selector 'my_grid' for child 'var1'. 'my_grid' is not a valid case value or easy selector
+    >>> ############## BAD DEFAULTS ORDERING #####################
+    >>> xml_bad2 = '''
+    ... <namelist_defaults>
+    ...   <var1 grid="ne4ne4">one</var1>
+    ...   <var1>zero</var1>
+    ... </namelist_defaults>
+    ... '''
+    >>> bad2 = ET.fromstring(xml_bad2)
+    >>> evaluate_selectors(bad2,case,selectors_good)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: child 'var1' element without selectors occurred after other parameter elements for this parameter
+    >>> ############## MULTIPLE MATCHES #####################
+    >>> xml_bad3 = '''
+    ... <namelist_defaults>
+    ...   <var1>zero</var1>
+    ...   <var1>one</var1>
+    ... </namelist_defaults>
+    ... '''
+    >>> bad3 = ET.fromstring(xml_bad3)
+    >>> evaluate_selectors(bad3,case,selectors_good)
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: child 'var1' element without selectors occurred after other parameter elements for this parameter
+    """
+
+    child_values = {} # elem_name -> evaluated XML element
+    children_to_remove = []
+    for child in element:
+        child_name = child.tag
+        child_val = child.text
+
+        # Note: in our system, an XML element is either a "node" (has children)
+        # or a "leaf" (has a value).
+        has_children = len(child) > 0
+        if has_children:
+            evaluate_selectors(child, case, ez_selectors)
+        else:
+            selectors = child.attrib
+            if selectors:
+                all_match = True
+                is_first = False
+                for k, v in selectors.items():
+                    # Metadata attributes are used only when it's time to generate the input files
+                    if k in METADATA_ATTRIBS:
+                        continue
+
+                    val_re = re.compile(v)
+
+                    if k in ez_selectors:
+                        ez_env, ez_regex = ez_selectors[k]
+                        case_val = case.get_value(ez_env)
+                        expect(case_val is not None,
+                              "Bad easy selector '{}' definition. Relies on unknown case value '{}'".format(k, ez_env))
+
+                        ez_regex_re = re.compile(ez_regex)
+                        m = ez_regex_re.match(case_val)
+                        if m:
+                            groups = m.groups()
+                            expect(len(groups) == 1,
+                                    "Selector '{}' has invalid custom regex '{}' which does not capture exactly 1 group".format(k, ez_regex))
+                            val = groups[0]
+                        else:
+                            # If the regex doesn't even match the case val, then we consider
+                            # string below should ensure the selector will never match.
+                            val = None
+
+                    else:
+                        val = case.get_value(k)
+                        expect(val is not None,
+                               "Bad selector '{0}' for child '{1}'. '{0}' is not a valid case value or easy selector".format(k, child_name))
+
+
+                    if val is None or val_re.match(val) is None:
+                        all_match = False
+                        break
+
+                if all_match:
+                    if child_name in child_values:
+                        orig_child = child_values[child_name]
+                        orig_child.text = do_cime_vars(child_val, case)
+
+                    else:
+                        is_first = True
+                        child_values[child_name] = child
+                        child.text = do_cime_vars(child_val, case)
+                        # Make a copy of selectors.keys(), since selectors=child.attrib,
+                        # and we might delete an entry, causing the error
+                        #    RuntimeError: dictionary changed size during iteration
+                        for k in list(selectors.keys()):
+                            if k not in METADATA_ATTRIBS:
+                                del child.attrib[k]
+
+                if not is_first:
+                    children_to_remove.append(child)
+
+            else:
+                expect(child_name not in child_values,
+                       "child '{}' element without selectors occurred after other parameter elements for this parameter".format(child_name))
+                child_values[child_name] = child
+                child.text = do_cime_vars(child_val, case)
+
+    for child_to_remove in children_to_remove:
+        element.remove(child_to_remove)
+
+###############################################################################
+def _create_raw_xml_file_impl(case, xml):
+###############################################################################
+    """
+    On input, xml contains the parsed content of namelist_defaults_scream.xml.
+    On output, it contains the input parameters for this case.
+
+    >>> from eamxx_buildnml_impl import MockCase
+    >>> ############## BASIC TEST #####################
+    >>> case = MockCase({'foo':1, 'bar':2, 'baz_bar':'blah', 'baz2_bar2':4})
+    >>> xml = '''
+    ... <namelist_defaults>
+    ...     <selectors/>
+    ...     <generated_files/>
+    ...     <atmosphere_processes_defaults>
+    ...         <atm_procs_list>(P1,P2)</atm_procs_list>
+    ...         <atm_proc_base>
+    ...             <prop1>zero</prop1>
+    ...         </atm_proc_base>
+    ...         <atm_proc_group inherit="atm_proc_base">
+    ...             <atm_procs_list>NONE</atm_procs_list>
+    ...             <prop2>one</prop2>
+    ...         </atm_proc_group>
+    ...         <P1 inherit="atm_proc_base">
+    ...             <prop1>two</prop1>
+    ...         </P1>
+    ...         <P2 inherit="atm_proc_base">
+    ...         </P2>
+    ...     </atmosphere_processes_defaults>
+    ... </namelist_defaults>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> defaults = ET.fromstring(xml)
+    >>> generated = _create_raw_xml_file_impl(case,defaults)
+    >>> d = convert_to_dict(get_child(generated,'atmosphere_processes'))
+    >>> import pprint
+    >>> pp = pprint.PrettyPrinter(indent=4)
+    >>> pp.pprint(d)
+    OrderedDict([   ('atm_procs_list', '(P1,P2)'),
+                    ('prop2', 'one'),
+                    ('prop1', 'zero'),
+                    ('P1', OrderedDict([('prop1', 'two')])),
+                    ('P2', OrderedDict([('prop1', 'zero')]))])
+    >>> ############## INHERIT+CHILD SELECTOR #####################
+    >>> case = MockCase({'ATM_GRID':'ne4ne4'})
+    >>> xml = '''
+    ... <namelist_defaults>
+    ...     <selectors>
+    ...       <selector name="grid" case_env="ATM_GRID"/>
+    ...     </selectors>
+    ...     <generated_files/>
+    ...     <atmosphere_processes_defaults>
+    ...         <atm_procs_list>(P1,P2)</atm_procs_list>
+    ...         <atm_proc_base>
+    ...             <prop1>zero</prop1>
+    ...         </atm_proc_base>
+    ...         <atm_proc_group inherit="atm_proc_base">
+    ...             <atm_procs_list>NONE</atm_procs_list>
+    ...             <prop2>one</prop2>
+    ...         </atm_proc_group>
+    ...         <P1 inherit="atm_proc_base">
+    ...             <prop1>two</prop1>
+    ...             <prop1 grid='ne4ne4'>two_selected</prop1>
+    ...         </P1>
+    ...         <P2 inherit="atm_proc_base">
+    ...         </P2>
+    ...     </atmosphere_processes_defaults>
+    ... </namelist_defaults>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> defaults = ET.fromstring(xml)
+    >>> generated = _create_raw_xml_file_impl(case,defaults)
+    >>> d = convert_to_dict(get_child(generated,'atmosphere_processes'))
+    >>> import pprint
+    >>> pp = pprint.PrettyPrinter(indent=4)
+    >>> pp.pprint(d)
+    OrderedDict([   ('atm_procs_list', '(P1,P2)'),
+                    ('prop2', 'one'),
+                    ('prop1', 'zero'),
+                    ('P1', OrderedDict([('prop1', 'two_selected')])),
+                    ('P2', OrderedDict([('prop1', 'zero')]))])
+    >>> ############## INHERIT+PARENT SELECTOR #####################
+    >>> case = MockCase({'ATM_GRID':'ne4ne4'})
+    >>> xml = '''
+    ... <namelist_defaults>
+    ...     <selectors>
+    ...       <selector name='grid' case_env='ATM_GRID'/>
+    ...     </selectors>
+    ...     <generated_files/>
+    ...     <atmosphere_processes_defaults>
+    ...       <atm_procs_list locked="true">(P1,P2)</atm_procs_list>
+    ...       <atm_proc_base>
+    ...         <Number__of__Subcycles constraints='gt 0'>1</Number__of__Subcycles>
+    ...         <Enable__Precondition__Checks type='logical'>true</Enable__Precondition__Checks>
+    ...         <Enable__Postcondition__Checks type='logical'>true</Enable__Postcondition__Checks>
+    ...       </atm_proc_base>
+    ...       <physics_proc_base inherit='atm_proc_base'>
+    ...         <Grid>Physics GLL</Grid>
+    ...         <Grid grid='ne4ne4'>Physics PG2</Grid>
+    ...       </physics_proc_base>
+    ...       <atm_proc_group inherit="atm_proc_base">
+    ...         <atm_procs_list>NONE</atm_procs_list>
+    ...         <prop2>one</prop2>
+    ...       </atm_proc_group>
+    ...       <P1 inherit='physics_proc_base'>
+    ...         <prop1>hi</prop1>
+    ...       </P1>
+    ...       <P2 inherit='atm_proc_base'>
+    ...         <prop1>there</prop1>
+    ...       </P2>
+    ...     </atmosphere_processes_defaults>
+    ... </namelist_defaults>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> defaults = ET.fromstring(xml)
+    >>> generated = _create_raw_xml_file_impl(case,defaults)
+    >>> d = convert_to_dict(get_child(generated,'atmosphere_processes'))
+    >>> import pprint
+    >>> pp = pprint.PrettyPrinter(indent=4)
+    >>> pp.pprint(d)
+    OrderedDict([   ('atm_procs_list', '(P1,P2)'),
+                    ('prop2', 'one'),
+                    ('number_of_subcycles', 1),
+                    ('enable_precondition_checks', True),
+                    ('enable_postcondition_checks', True),
+                    (   'P1',
+                        OrderedDict([   ('prop1', 'hi'),
+                                        ('Grid', 'Physics PG2'),
+                                        ('number_of_subcycles', 1),
+                                        ('enable_precondition_checks', True),
+                                        ('enable_postcondition_checks', True)])),
+                    (   'P2',
+                        OrderedDict([   ('prop1', 'there'),
+                                        ('number_of_subcycles', 1),
+                                        ('enable_precondition_checks', True),
+                                        ('enable_postcondition_checks', True)]))])
+
+    """
+
+    # 0. Remove internal sections, that are not to appear in the
+    #    processed xml file.
+    #    Note: get_valid_selectors also removes the section
+    get_child(xml,"generated_files",remove=True)
+    selectors = get_valid_selectors(xml)
+
+    # 1. Resolve all inheritances, and evaluate all selectors
+    evaluate_selectors(xml, case, selectors)
+    resolve_all_inheritances(xml)
+
+    # 2. Grab the atmosphere_processes macro list, with all the defaults
+    atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
+
+    # 3. Get atm procs list
+    atm_procs_list = get_child(atm_procs_defaults,"atm_procs_list",remove=True)
+
+    # 4. Form the nested list of atm procs needed, append to atmosphere_driver section
+    atm_procs = gen_atm_proc_group (atm_procs_list.text, atm_procs_defaults)
+    atm_procs.tag = "atmosphere_processes"
+    xml.append(atm_procs)
+
+    return xml
+
+###############################################################################
+def create_raw_xml_file(case, caseroot):
+###############################################################################
+    """
+    Create the raw $case/namelist_scream.xml file. This file is intended to be
+    modified by users via editor or the atmchange script if they want
+    to make tweaks to input files (yaml and/or nml).
+    """
+    src = os.path.join(case.get_value("SRCROOT"), "components/eamxx/cime_config/namelist_defaults_scream.xml")
+
+    raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
+    with open(src, "r") as fd:
+        defaults = ET.parse(fd)
+        raw_xml = _create_raw_xml_file_impl(case, defaults.getroot())
+
+    if os.path.exists(raw_xml_file):
+        print("{} already exists, will not overwrite. Remove to regenerate".format(raw_xml_file))
+    else:
+        # First time we write the raw intermediate file. Check its values
+        check_all_values(raw_xml)
+
+        with open(raw_xml_file, "w") as fd:
+            ET.ElementTree(raw_xml).write(fd, method='xml', encoding="unicode")
+
+    # Now that we have our namelist_scream.xml file, we can apply buffered
+    # atmchange requests.
+    atmchg_buffer = case.get_value("SCREAM_ATMCHANGE_BUFFER")
+    if atmchg_buffer:
+        run_cmd_no_fail("{}/atmchange {}".format(caseroot, atmchg_buffer))
+        case.set_value("SCREAM_ATMCHANGE_BUFFER", "")
+
+###############################################################################
+def convert_to_dict(element):
+###############################################################################
+    """
+    Convert an XML element to a dictonary where the tags are the keys
+    >>> xml = '''
+    ... <my_root>
+    ...   <my__int>1</my__int>
+    ...   <my__list>
+    ...     <my_ints>2,3</my_ints>
+    ...     <my_strings>two,three</my_strings>
+    ...   </my__list>
+    ... </my_root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> import pprint
+    >>> pp = pprint.PrettyPrinter(indent=4)
+    >>> root = ET.fromstring(xml)
+    >>> d = convert_to_dict(root)
+    >>> pp.pprint(d)
+    OrderedDict([   ('my int', 1),
+                    (   'my list',
+                        OrderedDict([   ('my_ints', [2, 3]),
+                                        ('my_strings', ['two', 'three'])]))])
+    """
+    result = OrderedDict()
+    for child in element:
+        child_name = child.tag.replace("__", " ")
+        child_val = child.text
+
+        has_children = len(child) > 0
+        if not has_children:
+            force_type = None if "type" not in child.attrib.keys() else child.attrib["type"]
+            result[child_name] = refine_type(child_val,force_type=force_type)
+        else:
+            result[child_name] = convert_to_dict(child)
+
+    return result
+
+###############################################################################
+def _dump_to_nml_impl(dict_contents):
+###############################################################################
+    """
+    Given a dictionary representing namelists, dumps content to a string
+    that can be directly written to file
+
+    >>> ############# NON-NESTED DICT ##############
+    >>> good1 = { 'bool': True, 'int': 1, 'real': 2.0, 'string': 's' }
+    >>> print(_dump_to_nml_impl(good1))
+    bool = .true.
+    int = 1
+    real = 2.0
+    string = 's'
+    <BLANKLINE>
+    >>> ############# NESTED DICT ##############
+    >>> good2 = {
+    ...     'group1': {
+    ...         'bool': True,
+    ...         'int': 1
+    ...     },
+    ...     'group2': {
+    ...         'real': 2.0,
+    ...         'string': 's'
+    ...     }
+    ... }
+    >>> print(_dump_to_nml_impl(good2))
+    &group1
+    bool = .true.
+    int = 1
+    /
+    &group2
+    real = 2.0
+    string = 's'
+    /
+    <BLANKLINE>
+    >>> ######### MIXED NESTED-NONNESTED DICT ##########
+    >>> good2 = {
+    ...     'group1': {
+    ...         'bool': True,
+    ...         'int': 1
+    ...     },
+    ...     'real': 2.0,
+    ...     'string': 's'
+    ... }
+    >>> print(_dump_to_nml_impl(good2))
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: Error! _dump_to_nml_impl cannot mix nested and non-nested dicts.
+    """
+
+    result = ""
+    nested = False
+    not_nested = False
+    for k, v in dict_contents.items():
+        if isinstance(v, dict):
+            result += "&{}\n".format(k)
+            result += _dump_to_nml_impl(v)
+            result += "/\n"
+            nested = True
+
+        elif isinstance(v, list):
+            result += "{}(:) = {}\n".format(k, ", ".join([str(item) for item in v]))
+            not_nested = True
+        elif isinstance(v, bool):
+            result += "{} = {}\n".format(k, ".true." if v else ".false.")
+            not_nested = True
+        elif isinstance(v, str):
+            result += "{} = '{}'\n".format(k, v)
+            not_nested = True
+        else:
+            result += "{} = {}\n".format(k, v)
+            not_nested = True
+
+    expect (not (nested and not_nested),
+            "Error! _dump_to_nml_impl cannot mix nested and non-nested dicts.")
+
+    return result
+
+###############################################################################
+def dump_to_nml(dict_contents, fd):
+###############################################################################
+    """
+    Convert a dictionary to namelist file
+    """
+    fd.write(
+"""!---------------------------------------------------------------
+! Do NOT modify this file. It is generated by scream/buildnml using
+! the data from $case/namelist_scream.xml. If you want to make some
+! local changes, you can edit this XML file or use atmchange.
+!---------------------------------------------------------------
+""")
+
+    fd.write(_dump_to_nml_impl(dict_contents))
+
+###############################################################################
+def create_input_files(caseroot, screamroot, rundir):
+###############################################################################
+    """
+    Based on $case/namelist_scream.xml, create the actual input files.
+    """
+    raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
+    with open(raw_xml_file, "r") as fd:
+        tree = ET.parse(fd)
+        raw_xml = tree.getroot()
+
+    def_xml_file = os.path.join(screamroot, "cime_config/namelist_defaults_scream.xml")
+    with open(def_xml_file, "r") as fd:
+        tree = ET.parse(fd)
+        generated_files = get_child(tree.getroot(),"generated_files")
+
+    result = {}
+    for file_ in generated_files:
+        expect("name" in file_.attrib, "file element missing required 'name' attribute")
+        expect("format" in file_.attrib, "file element missing required 'format' attribute")
+        filename    = os.path.join(rundir, file_.attrib["name"])
+        file_format = file_.attrib["format"]
+
+        xml_sections = get_child(file_,"sections").text.split(",")
+
+        dict_contents = {}
+        for section_name in xml_sections:
+            section = get_child(raw_xml,section_name)
+            dict_contents[section_name.replace("__"," ")] = convert_to_dict(section)
+
+        if file_format == "yaml":
+            with open(filename, "w") as fd:
+                fd.write(
+"""################################################################
+# Do NOT modify this file. It is generated by scream/buildnml using
+# the data from $case/namelist_scream.xml. If you want to make some
+# local changes, you can edit this XML file or use atmchange.
+################################################################
+""")
+                ordered_dump(dict_contents, fd)
+
+        elif file_format == "nml":
+            with open(filename, "w") as fd:
+                dump_to_nml(dict_contents, fd)
+
+        else:
+            expect(False, "Unknown input file format '{}'".format(file_format))
+
+        result[file_.attrib["name"]] = dict_contents
+
+    return result
+
+###############################################################################
+def get_file_parameters(caseroot):
+###############################################################################
+    """
+    Find all XML elements with file="true" attribute. Returns a list
+    of file paths.
+    """
+    raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
+    with open(raw_xml_file, "r") as fd:
+        tree    = ET.parse(fd)
+        raw_xml = tree.getroot()
+
+    result = []
+    for item in raw_xml.findall('.//*[@type="file"]'):
+        result.append(item.text.strip())
+
+    for item in raw_xml.findall('.//*[@type="array(file)"]'):
+        result.extend(refine_type(item.text, force_type="array(file)"))
+
+    # Remove duplicates. Not sure if an error would be warranted if dupes exist
+    return list(OrderedDict.fromkeys(result))
+
+###############################################################################
+def create_input_data_list_file(caseroot):
+###############################################################################
+    """
+    Create the scream.input_data_list file for this case. This will tell CIME
+    what to download.
+    """
+    files_to_download = get_file_parameters(caseroot)
+
+    input_data_list_file = "{}/Buildconf/scream.input_data_list".format(caseroot)
+    if os.path.exists(input_data_list_file):
+        os.remove(input_data_list_file)
+
+    with open(input_data_list_file, "w") as fd:
+        for idx, file_path in enumerate(files_to_download):
+            fd.write("scream_dl_input_{} = {}\n".format(idx, file_path))
+
+###############################################################################
+def do_cime_vars_on_yaml_output_files(case,caseroot):
+###############################################################################
+    rundir   = case.get_value("RUNDIR")
+    eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
+
+    with open(eamxx_xml_file, "r") as fd:
+        eamxx_xml = ET.parse(fd).getroot()
+
+    scorpio = get_child(eamxx_xml,'Scorpio')
+    out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
+    out_files = out_files_xml.text.split(",") if out_files_xml is not None else []
+
+    # We will also change the 'output_yaml_files' entry in scream_input.yaml,
+    # to point to the copied files in $rundir/data
+    output_yaml_files = []
+    scream_input_file = os.path.join(rundir,'data','scream_input.yaml')
+    scream_input = yaml.safe_load(open(scream_input_file,"r"))
+
+    # Determine the physics grid type for use in CIME-var substitution.
+    pgt = 'GLL'
+    atm_grid = case.get_value('ATM_GRID')
+    if '.pg' in atm_grid:
+        pgt = 'PG' + atm_grid[-1]
+
+    for fn in out_files:
+        # Get full name
+        src_yaml = os.path.expanduser(os.path.join(fn.strip()))
+        dst_yaml = os.path.expanduser(os.path.join(rundir,'data',os.path.basename(src_yaml)))
+
+        # When expanding CIME vars, we load yaml, expand vars, and dump yaml.
+        # In the process, comments are lost. So copy yaml to $rundir first,
+        # to leave original file untouched.
+        with SharedArea():
+            safe_copy(src_yaml,dst_yaml)
+
+        # Now load dst file, and process any CIME var present (if any)
+        content = yaml.safe_load(open(dst_yaml,"r"))
+        do_cime_vars(content,case,refine=True,
+                     extra={'PHYSICS_GRID_TYPE': pgt})
+        ordered_dump(content, open(dst_yaml, "w"))
+
+        output_yaml_files.append(dst_yaml)
+
+    # Now update the output yaml files entry, and dump the new content
+    # of the scream input to YAML file
+    print ("out list: {}".format(",".join(output_yaml_files)))
+    scream_input["Scorpio"]["output_yaml_files"] = refine_type(",".join(output_yaml_files),"array(string)")
+    with open(scream_input_file, "w") as fd:
+        fd.write(
+"""################################################################
+# Do NOT modify this file. It is generated by scream/buildnml using
+# the data from $case/namelist_scream.xml. If you want to make some
+# local changes, you can edit this XML file or use atmchange.
+################################################################
+""")
+        ordered_dump(scream_input, fd)
+
+
+###############################################################################
+def buildnml(case, caseroot, compname):
+###############################################################################
+    expect(compname == "scream", compname)
+
+    rundir     = case.get_value("RUNDIR")
+    screamroot = os.path.join(case.get_value("SRCROOT"), "components/eamxx")
+    rundata    = os.path.join(rundir, "data")
+
+    #
+    # Copy default output YAML file, and atmchange/query scripts to rundir
+    #
+    with SharedArea():
+        if not os.path.isdir(rundata):
+            os.mkdir(rundata)
+
+        # Create link to atmchange and atmquery scripts
+        for script in ['atmchange', 'atmquery']:
+            tgt_file = os.path.join(caseroot,script)
+            if not os.path.exists(tgt_file):
+                src_file = os.path.join(screamroot,'scripts',script)
+                os.symlink(src_file, tgt_file)
+
+    #
+    # Create the raw/processed XML input file and create input files
+    # from it.
+    #
+    create_raw_xml_file(case, caseroot)
+    create_input_files(caseroot, screamroot, rundir)
+
+    #
+    # Create input data list. This is the list of files that CIME needs
+    # to ensure are present on the machine (possibly downloading them)
+    #
+    create_input_data_list_file(caseroot)
+
+    # For all YAML files listed in the XML for model output, expand CIME vars (if any)
+    do_cime_vars_on_yaml_output_files(case,caseroot)
+
+###############################################################################
+def _main_func():
+###############################################################################
+    if "--test" in sys.argv:
+        from doctest import testmod
+        import eamxx_buildnml_impl
+        testmod()
+        testmod(m=eamxx_buildnml_impl)
+
+    else:
+        caseroot = parse_input(sys.argv)
+        with Case(caseroot) as case:
+            buildnml(case, caseroot, "scream")
+
+if __name__ == "__main__":
+    _main_func()

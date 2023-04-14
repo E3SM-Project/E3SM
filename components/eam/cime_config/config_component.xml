@@ -74,6 +74,13 @@
       <value compset="_EAM%RCE-MMF.*"  >-aquaplanet -rce</value>
       <value compset="_EAM%SCM-MMF.*"  >-scam</value>
 
+      <!-- SCREAM configurations -->
+      <value compset="_EAM%SCREAM-LR">-phys default -shoc_sgs -microphys p3 -chem spa -nlev 72 -rad rrtmgp -bc_dep_to_snow_updates -cppdefs '-DSCREAM'</value>
+      <value compset="_EAM%SCREAM-HR">-phys default -shoc_sgs -microphys p3 -chem spa -nlev 128 -rad rrtmgp -bc_dep_to_snow_updates -cppdefs '-DSCREAM'</value>
+      <value compset="_EAM%SCREAM.*-AQUA">-aquaplanet</value>
+
+      <!-- Doubly Periodic SCREAM -->
+      <value compset="ARM97_EAM%DPSCREAM">-phys default -scam -dpcrm_mode -nlev 72 -shoc_sgs -microphys p3 -rad rrtmgp -chem spa -cppdefs '-DSCREAM'</value>
     </values>
     <group>build_component_cam</group>
     <file>env_build.xml</file>
@@ -116,6 +123,13 @@
       <value compset="PIPD_EAM"                         >1850-PD_cam5</value>
       <value compset="_EAM%AQP_"                        >aquaplanet_EAMv1</value>
       <value compset="_EAM%RCE_"                        >RCEMIP_EAMv1</value>
+      <value compset="2010_EAM%SCREAM-LR"               >2010_scream_lr</value>
+      <value compset="2010_EAM%SCREAM-HR"               >2010_scream_hr</value>
+      <value compset="ARM97_EAM%DPSCREAM"                >dpscream_arm97</value>
+      <value compset="2010_EAM%SCREAM-LR-DYAMOND2"      >2010_scream_lr_dyamond2</value>
+      <value compset="2010_EAM%SCREAM-HR-DYAMOND2"      >2010_scream_hr_dyamond2</value>
+      <value compset="_EAM%SCREAM-LR-AQUA"              >aquaplanet_SCREAM-LR</value>
+      <value compset="_EAM%SCREAM-HR-AQUA"              >aquaplanet_SCREAM-HR</value>
       <!-- MMF / Super-Parameterization -->
       <value compset="2010(?:SOI)?_EAM%MMF1"            >2010_mmf_1mom</value>
       <value compset="2010(?:SOI)?_EAM%MMF2"            >2010_mmf_2mom</value>
@@ -176,6 +190,12 @@
     <desc compset="IDEAL"        >EAM ideal physics:</desc>
     <desc compset="AMIP">Atmospheric Model Intercomparison Project protocol: </desc>
     <desc compset="EAM.*_BGC%*">EAM prognostic CO2 cycle turned on.</desc>
+    <desc compset="_EAM%SCREAM-LR-DYAMOND1">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol. Initialized for DYAMOND1 (2016-08-01).</desc>
+    <desc compset="_EAM%SCREAM-HR-DYAMOND1">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection. Initialized for DYAMOND1 (2016-08-01).</desc>
+    <desc compset="_EAM%SCREAM-LR-DYAMOND2">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol. Initialized for DYAMOND2 (2020-01-20).</desc>
+    <desc compset="_EAM%SCREAM-HR-DYAMOND2">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection. Initialized for DYAMOND2 (2020-01-20).</desc>
+    <desc compset="_EAM%SCREAM-LR_">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol.</desc>
+    <desc compset="_EAM%SCREAM-HR_">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection.</desc>
     <!-- MMF / Super-Parameterization -->
     <desc compset="_EAM%MMF1">E3SM-MMF, RRTMGPXX, 1-mom micro, prescribed aerosol</desc>
     <desc compset="_EAM%MMF2">E3SM-MMF, RRTMGPXX, 2-mom micro, prescribed aerosol</desc>

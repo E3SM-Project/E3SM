@@ -1,0 +1,19 @@
+%YAML 1.1
+---
+nsteps:
+  Max Steps: 10
+  dt: 1
+nsecs:
+  Max Steps: 10
+  dt: 1
+nmins:
+  Max Steps: 20
+  dt: 30
+nhours:
+  Max Steps: 30
+  dt: 1200
+ndays:
+  Max Steps: 30
+  dt: 28800
+
+...

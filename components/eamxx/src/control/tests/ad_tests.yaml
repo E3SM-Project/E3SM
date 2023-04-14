@@ -1,0 +1,33 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+initial_conditions:
+  Filename: should_not_be_neeeded_and_code_will_throw_if_it_tries_to_open_this_nonexistent_file.nc
+  A: 1.0
+  V: [2.0, 3.0]
+  Z: "A"
+
+atmosphere_processes:
+  atm_procs_list: (dummy1, dummy2, dummy3)
+  schedule_type: Sequential
+
+  dummy1:
+    Type: Dummy
+    Sub Name: A to Group
+    Grid Name: Point Grid
+  dummy2:
+    Type: Dummy
+    Sub Name: Group to Group
+    Grid Name: Point Grid
+  dummy3:
+    Type: Dummy
+    Sub Name: Group to A
+    Grid Name: Point Grid
+
+grids_manager:
+  Type: Mesh Free
+  number_of_global_columns: 24
+  number_of_vertical_levels: 3
+...

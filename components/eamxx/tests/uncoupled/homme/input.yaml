@@ -1,0 +1,31 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+Time Stepping:
+  Time Step: ${ATM_TIME_STEP}
+  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+  Number of Steps: ${NUM_STEPS}
+
+initial_conditions:
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4_16x.c20160612.nc
+
+atmosphere_processes:
+  atm_procs_list: (Dynamics)
+  Dynamics:
+    Type: Homme
+    Moisture: moist
+
+grids_manager:
+  Type: Homme
+  physics_grid_type: GLL
+  dynamics_namelist_file_name: namelist.nl
+  vertical_coordinate_filename: IC_FILE
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["homme_standalone_output.yaml"]
+...

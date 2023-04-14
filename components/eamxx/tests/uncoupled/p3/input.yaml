@@ -1,0 +1,31 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+Time Stepping:
+  Time Step: ${ATM_TIME_STEP}
+  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+  Number of Steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: (p3)
+  p3:
+    do_prescribed_ccn: false
+
+grids_manager:
+  Type: Mesh Free
+  number_of_global_columns:   218
+  number_of_vertical_levels:  72  # Will want to change to 128 when a valid unit test is available.
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  precip_liq_surf_mass: 0.0
+  precip_ice_surf_mass: 0.0
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["p3_standalone_output.yaml"]
+...

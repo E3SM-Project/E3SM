@@ -113,6 +113,10 @@ module radiation
    ! TODO: How does this differ if value is .false.?
    logical :: use_rad_dt_cosz  = .false. 
 
+   ! Flag to indicate whether to read optics from spa netcdf file
+   ! NOTE: added for consistency with RRTMGP; this is non-functioning for RRTMG!
+   logical :: do_spa_optics = .false.
+
    ! Flag to indicate whether to do aerosol optical calculations. This
    ! zeroes out the aerosol optical properties if False
    logical :: do_aerosol_rad = .true.
@@ -227,6 +231,7 @@ contains
                               iradsw, iradlw, irad_always,     &
                               use_rad_dt_cosz, spectralflux,   &
                               do_aerosol_rad,                  &
+                              do_spa_optics,                   &
                               fixed_total_solar_irradiance,    &
                               rrtmgp_enable_temperature_warnings
 
@@ -256,9 +261,15 @@ contains
       call mpibcast(use_rad_dt_cosz, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(do_aerosol_rad, 1, mpi_logical, mstrid, mpicom, ierr)
+      call mpibcast(do_spa_optics, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(fixed_total_solar_irradiance, 1, mpi_real8, mstrid, mpicom, ierr)
       call mpibcast(rrtmgp_enable_temperature_warnings, 1, mpi_logical, mstrid, mpicom, ierr)
 #endif
+
+      ! Make sure nobody tries to use SPA optics with MMF
+      if (do_spa_optics) then
+         call endrun(trim(subroutine_name) // ':: SPA optics is not supported with MMF')
+      end if
 
       ! Convert iradsw, iradlw and irad_always from hours to timesteps if necessary
       if (present(dtime_in)) then

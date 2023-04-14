@@ -334,7 +334,7 @@ CONTAINS
   subroutine dyn_run( dyn_state, rc )
 
     ! !USES:
-    use scamMod,          only: single_column, use_3dfrc
+    use scamMod,          only: single_column, dp_crm, use_3dfrc
     use se_single_column_mod, only: apply_SC_forcing
     use parallel_mod,     only : par
     use prim_driver_mod,  only: prim_run_subcycle
@@ -352,6 +352,7 @@ CONTAINS
     integer ::  n
     integer :: nets, nete, ithr
     integer :: ie
+    logical :: single_column_in, do_prim_run
 
     ! !DESCRIPTION:
     !
@@ -370,18 +371,41 @@ CONTAINS
        nete=dom_mt(ithr)%end
        hybrid = hybrid_create(par,ithr,hthreads)
 
-       if (.not. use_3dfrc) then
+       do_prim_run = .true. ! Always do prim_run_subcycle
+                            ! Unless turned off by SCM for specific cases
+
+       single_column_in = single_column
+       
+       ! if doubly period CRM mode we want dycore to operate in non-SCM mode,
+       !   (typically the single_column flag is true in this case
+       !   because we need to take advantage of SCM infrastructure and forcing)
+       !   thus turn this switch to false for dycore input.  NOTE that
+       !   dycore in SCM mode means that only the large scale vertical 
+       !   advection is computed (i.e. no horizontal communication)
+       if (dp_crm) then
+         single_column_in = .false.
+       endif
+       
+       ! if true SCM mode (NOT DP-CRM mode) do not call
+       !   dynamical core if 3D forcing is prescribed
+       !   (since large scale vertical advection is accounted for
+       !   in that forcing)
+       if (single_column .and. .not. dp_crm) then
+         if (use_3dfrc) do_prim_run = .false.
+       endif
+       
+       if (do_prim_run) then
          do n=1,se_nsplit
            ! forward-in-time RK, with subcycling
            call t_startf('prim_run_subcycle')
            call prim_run_subcycle(dyn_state%elem,hybrid,nets,nete,&
-               tstep, single_column, TimeLevel, hvcoord, n)
+               tstep, single_column_in, TimeLevel, hvcoord, n)
            call t_stopf('prim_run_subcycle')
          end do
        endif
 
        if (single_column) then
-         call apply_SC_forcing(dyn_state%elem,hvcoord,TimeLevel,3,.false.,nets,nete)
+         call apply_SC_forcing(dyn_state%elem,hvcoord,hybrid,TimeLevel,3,.false.,nets,nete)
        endif
 
 #ifdef HORIZ_OPENMP

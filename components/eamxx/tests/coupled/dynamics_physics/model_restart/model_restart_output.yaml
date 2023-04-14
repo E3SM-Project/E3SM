@@ -1,0 +1,79 @@
+%YAML 1.1
+---
+Casename: model_output
+Averaging Type: Instant
+Max Snapshots Per File: 1
+Fields:
+  Physics GLL:
+    Field Names:
+      # HOMME
+      - horiz_winds
+      - ps
+      - pseudo_density
+      - omega
+      - p_int
+      - p_mid
+      - pseudo_density_dry
+      - p_dry_int
+      - p_dry_mid
+      # SHOC
+      - cldfrac_liq
+      - eddy_diff_mom
+      - horiz_winds
+      - sgs_buoy_flux
+      - tke
+      - inv_qc_relvar
+      - pbl_height
+      # CLD
+      - cldfrac_ice
+      - cldfrac_tot
+      # P3
+      - bm
+      - nc
+      - ni
+      - nr
+      - qi
+      - qm
+      - qr
+      - T_prev_micro_step
+      - qv_prev_micro_step
+      - eff_radius_qc
+      - eff_radius_qi
+      - micro_liq_ice_exchange
+      - micro_vap_ice_exchange
+      - micro_vap_liq_exchange
+      - precip_ice_surf_mass
+      - precip_liq_surf_mass
+      # SHOC + P3
+      - qc
+      - qv
+      # SHOC + P3 + RRTMGP + HOMME
+      - T_mid
+      # RRTMGP
+      - sfc_alb_dif_nir
+      - sfc_alb_dif_vis
+      - sfc_alb_dir_nir
+      - sfc_alb_dir_vis
+      - LW_flux_dn
+      - LW_flux_up
+      - SW_flux_dn
+      - SW_flux_dn_dir
+      - SW_flux_up
+      - rad_heating_pdel
+      - sfc_flux_lw_dn
+      - sfc_flux_sw_net
+  Dynamics:
+    Field Names:
+      - Qdp_dyn
+      - v_dyn
+      - vtheta_dp_dyn
+      - dp3d_dyn
+output_control:
+  MPI Ranks in Filename: true
+  Frequency: 2
+  frequency_units: nsteps
+Checkpoint Control:
+  MPI Ranks in Filename: true
+  Frequency: 1
+  frequency_units: nsteps
+...

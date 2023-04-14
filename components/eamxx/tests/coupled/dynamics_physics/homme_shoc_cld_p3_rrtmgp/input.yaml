@@ -1,0 +1,66 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+  mass_column_conservation_error_tolerance: 1e-3
+  energy_column_conservation_error_tolerance: 1e-4
+  column_conservation_checks_fail_handling_type: Warning
+
+Time Stepping:
+  Time Step: ${ATM_TIME_STEP}
+  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+  Number of Steps: ${NUM_STEPS}
+
+initial_conditions:
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4_16x.c20160612.nc
+  get_topo_from_file: true
+  surf_evap: 0.0
+  surf_sens_flux: 0.0
+  precip_liq_surf_mass: 0.0
+  precip_ice_surf_mass: 0.0
+  aero_g_sw: 0.0
+  aero_ssa_sw: 0.0
+  aero_tau_sw: 0.0
+  aero_tau_lw: 0.0
+
+atmosphere_processes:
+  atm_procs_list: (homme,physics)
+  schedule_type: Sequential
+  homme:
+    Moisture: moist
+  physics:
+    atm_procs_list: (mac_mic,rrtmgp)
+    schedule_type: Sequential
+    Type: Group
+    mac_mic:
+      atm_procs_list: (shoc,CldFraction,p3)
+      schedule_type: Sequential
+      Type: Group
+      number_of_subcycles: ${MAC_MIC_SUBCYCLES}
+      p3:
+        do_prescribed_ccn: false
+        enable_column_conservation_checks: true
+      shoc:
+        enable_column_conservation_checks: true
+    rrtmgp:
+      column_chunk_size: 123
+      active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+      do_aerosol_rad: false
+      rrtmgp_coefficients_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-sw-g112-210809.nc
+      rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g128-210809.nc
+      rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
+      rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
+      enable_column_conservation_checks: true
+
+grids_manager:
+  Type: Homme
+  physics_grid_type: GLL
+  dynamics_namelist_file_name: namelist.nl
+  vertical_coordinate_filename: IC_FILE
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["homme_shoc_cld_p3_rrtmgp_output.yaml"]
+...

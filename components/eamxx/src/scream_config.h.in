@@ -1,0 +1,54 @@
+#ifndef SCREAM_CONFIG_H
+#define SCREAM_CONFIG_H
+
+// If defined, Real is double; if not, Real is float.
+#cmakedefine SCREAM_DOUBLE_PRECISION
+
+// If defined, enable floating point exceptions.
+#cmakedefine SCREAM_FPE
+
+// The number of scalars in a scream::pack::Pack and Mask.
+#define SCREAM_PACK_SIZE ${SCREAM_PACK_SIZE}
+
+// The number of scalars in a scream::pack::SmallPack and SmallMask.
+#define SCREAM_SMALL_PACK_SIZE ${SCREAM_SMALL_PACK_SIZE}
+
+// The number of scalars in a possibly-no-pack. Use this packsize when a routine does better with pksize=1 on some architectures (SKX).
+#define SCREAM_POSSIBLY_NO_PACK_SIZE ${SCREAM_POSSIBLY_NO_PACK_SIZE}
+
+// How many levels to use for the vertical grid
+#define SCREAM_NUM_VERTICAL_LEV ${SCREAM_NUM_VERTICAL_LEV}
+
+// Whether this is a CUDA/HIP build
+#cmakedefine EAMXX_ENABLE_GPU
+
+// Whether SCREAM has Homme enabled as dynamics dycore
+#cmakedefine SCREAM_HAS_HOMME
+
+// Whether scream uses leap years or not
+#cmakedefine SCREAM_HAS_LEAP_YEAR
+
+// What level of testing we are doing. 0=autotesting, 1=nightly, 2=experimental
+#define SCREAM_TEST_LEVEL ${SCREAM_TEST_LEVEL}
+
+// Whether getrusage can be used to get memory usage
+#cmakedefine SCREAM_ENABLE_GETRUSAGE
+// Whether /proc/self/statm can be used to get memory usage
+#cmakedefine SCREAM_ENABLE_STATM
+
+#if defined(SCREAM_ENABLE_STATM) || defined(SCREAM_ENABLE_GETRUSAGE)
+#define SCREAM_HAS_MEMORY_USAGE
+#endif
+
+#cmakedefine01 SCREAM_MPI_ON_DEVICE
+
+// Data directory for the scream project
+#define SCREAM_DATA_DIR "${SCREAM_DATA_DIR}"
+
+// Whether or not to run RRTMGP debug checks
+#cmakedefine SCREAM_RRTMGP_DEBUG
+
+// Whether monolithic kernels are on
+#cmakedefine SCREAM_SMALL_KERNELS
+
+#endif

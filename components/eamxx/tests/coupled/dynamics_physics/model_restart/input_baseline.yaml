@@ -1,0 +1,60 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+Time Stepping:
+  Time Step: 300
+  Number of Steps: 2
+  Run Start Time: [12, 00, 00]      # Hours, Minutes, Seconds
+  Run Start Date: [2021, 10, 12]    # Year, Month, Day
+  Case Start Time: [12, 00, 00]      # Hours, Minutes, Seconds
+  Case Start Date: [2021, 10, 12]    # Year, Month, Day
+
+initial_conditions:
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4_16x.c20160612.nc
+  Restart Run: false
+  surf_evap: 0.0
+  surf_sens_flux: 0.0
+  precip_liq_surf_mass: 0.0
+  precip_ice_surf_mass: 0.0
+  aero_g_sw: 0.0
+  aero_ssa_sw: 0.0
+  aero_tau_sw: 0.0
+  aero_tau_lw: 0.0
+
+atmosphere_processes:
+  atm_procs_list: (homme,physics)
+  schedule_type: Sequential
+  homme:
+    Moisture: moist
+  physics:
+    atm_procs_list: (mac_aero_mic,rrtmgp)
+    Type: Group
+    schedule_type: Sequential
+    mac_aero_mic:
+      atm_procs_list: (shoc,CldFraction,p3)
+      Type: Group
+      schedule_type: Sequential
+      number_of_subcycles: ${MAC_MIC_SUBCYCLES}
+      p3:
+        do_prescribed_ccn: false
+    rrtmgp:
+      active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+      do_aerosol_rad: false
+      rrtmgp_coefficients_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-sw-g112-210809.nc
+      rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g128-210809.nc
+      rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
+      rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
+
+grids_manager:
+  Type: Homme
+  physics_grid_type: GLL
+  dynamics_namelist_file_name: namelist.nl
+  vertical_coordinate_filename: IC_FILE
+
+# List all the yaml files with the output parameters
+Scorpio:
+  output_yaml_files: ["model_output.yaml"]
+...
