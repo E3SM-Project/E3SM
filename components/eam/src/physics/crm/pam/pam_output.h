@@ -81,6 +81,8 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   auto gcm_forcing_tend_temp  = dm_device.get<real const,2>("gcm_forcing_tend_temp" );
   auto gcm_forcing_tend_rho_d = dm_device.get<real const,2>("gcm_forcing_tend_rho_d");
   auto gcm_forcing_tend_rho_v = dm_device.get<real const,2>("gcm_forcing_tend_rho_v");
+  auto gcm_forcing_tend_rho_l = dm_device.get<real const,2>("gcm_forcing_tend_rho_l");
+  auto gcm_forcing_tend_rho_i = dm_device.get<real const,2>("gcm_forcing_tend_rho_i");
   // auto gcm_forcing_tend_uvel  = dm_device.get<real const,2>("gcm_forcing_tend_uvel" );
   // auto gcm_forcing_tend_vvel  = dm_device.get<real const,2>("gcm_forcing_tend_vvel" );
   //------------------------------------------------------------------------------------------------
@@ -88,16 +90,22 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   real2d forcing_tend_out_temp ("forcing_tend_out_temp ",gcm_nlev,nens);
   real2d forcing_tend_out_rho_d("forcing_tend_out_rho_d",gcm_nlev,nens);
   real2d forcing_tend_out_rho_v("forcing_tend_out_rho_v",gcm_nlev,nens);
+  real2d forcing_tend_out_rho_l("forcing_tend_out_rho_l",gcm_nlev,nens);
+  real2d forcing_tend_out_rho_i("forcing_tend_out_rho_i",gcm_nlev,nens);
   parallel_for("Initialize output forcing tendencies", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
     int k_crm = gcm_nlev-1-k_gcm;
     if (k_crm<crm_nz) {
       forcing_tend_out_temp (k_gcm,iens) = gcm_forcing_tend_temp (k_crm,iens);
       forcing_tend_out_rho_d(k_gcm,iens) = gcm_forcing_tend_rho_d(k_crm,iens);
       forcing_tend_out_rho_v(k_gcm,iens) = gcm_forcing_tend_rho_v(k_crm,iens);
+      forcing_tend_out_rho_l(k_gcm,iens) = gcm_forcing_tend_rho_l(k_crm,iens);
+      forcing_tend_out_rho_i(k_gcm,iens) = gcm_forcing_tend_rho_i(k_crm,iens);
     } else {
       forcing_tend_out_temp (k_gcm,iens) = 0.;
       forcing_tend_out_rho_d(k_gcm,iens) = 0.;
       forcing_tend_out_rho_v(k_gcm,iens) = 0.;
+      forcing_tend_out_rho_l(k_gcm,iens) = 0.;
+      forcing_tend_out_rho_i(k_gcm,iens) = 0.;
     }
   });
   //------------------------------------------------------------------------------------------------
@@ -110,6 +118,8 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   auto output_t_ls      = dm_host.get<real,2>("output_t_ls");
   auto output_rho_v_ls  = dm_host.get<real,2>("output_rho_v_ls");
   auto output_rho_d_ls  = dm_host.get<real,2>("output_rho_d_ls");
+  auto output_rho_l_ls  = dm_host.get<real,2>("output_rho_l_ls");
+  auto output_rho_i_ls  = dm_host.get<real,2>("output_rho_i_ls");
   //------------------------------------------------------------------------------------------------
   // Copy the data to host
   nc_mean                 .deep_copy_to(output_nc_mean);
@@ -121,6 +131,8 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   forcing_tend_out_temp   .deep_copy_to(output_t_ls);
   forcing_tend_out_rho_d  .deep_copy_to(output_rho_d_ls);
   forcing_tend_out_rho_v  .deep_copy_to(output_rho_v_ls);
+  forcing_tend_out_rho_l  .deep_copy_to(output_rho_l_ls);
+  forcing_tend_out_rho_i  .deep_copy_to(output_rho_i_ls);
   //------------------------------------------------------------------------------------------------
 }
 

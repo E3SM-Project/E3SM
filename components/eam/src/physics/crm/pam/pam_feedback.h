@@ -51,7 +51,7 @@ inline void pam_feedback_compute_tendencies( pam::PamCoupler &coupler , real gcm
   real2d crm_hmean_vvel ("crm_hmean_vvel" ,crm_nz,nens);
   real2d crm_hmean_temp ("crm_hmean_temp" ,crm_nz,nens);
   real2d crm_hmean_qv   ("crm_hmean_qv"   ,crm_nz,nens);
-  real2d crm_hmean_ql   ("crm_hmean_ql"   ,crm_nz,nens);
+  real2d crm_hmean_qc   ("crm_hmean_qc"   ,crm_nz,nens);
   real2d crm_hmean_qi   ("crm_hmean_qi"   ,crm_nz,nens);
   //------------------------------------------------------------------------------------------------
   // We will be essentially reducing a summation to these variables, so initialize them to zero
@@ -60,7 +60,7 @@ inline void pam_feedback_compute_tendencies( pam::PamCoupler &coupler , real gcm
     crm_hmean_vvel (k_crm,iens) = 0;
     crm_hmean_temp (k_crm,iens) = 0;
     crm_hmean_qv   (k_crm,iens) = 0;
-    crm_hmean_ql   (k_crm,iens) = 0;
+    crm_hmean_qc   (k_crm,iens) = 0;
     crm_hmean_qi   (k_crm,iens) = 0;
   });
   //------------------------------------------------------------------------------------------------
@@ -73,7 +73,7 @@ inline void pam_feedback_compute_tendencies( pam::PamCoupler &coupler , real gcm
     atomicAdd( crm_hmean_vvel(k_crm,iens), vvel (k_crm,j,i,iens)          * r_nx_ny );
     atomicAdd( crm_hmean_temp(k_crm,iens), temp (k_crm,j,i,iens)          * r_nx_ny );
     atomicAdd( crm_hmean_qv  (k_crm,iens),(rho_v(k_crm,j,i,iens)/tmp_rho) * r_nx_ny );
-    atomicAdd( crm_hmean_ql  (k_crm,iens),(rho_l(k_crm,j,i,iens)/tmp_rho) * r_nx_ny );
+    atomicAdd( crm_hmean_qc  (k_crm,iens),(rho_l(k_crm,j,i,iens)/tmp_rho) * r_nx_ny );
     atomicAdd( crm_hmean_qi  (k_crm,iens),(rho_i(k_crm,j,i,iens)/tmp_rho) * r_nx_ny );
   });
   //------------------------------------------------------------------------------------------------
@@ -82,13 +82,13 @@ inline void pam_feedback_compute_tendencies( pam::PamCoupler &coupler , real gcm
   dm_device.register_and_allocate<real>("crm_feedback_tend_vvel", "feedback tendency of vvel", {gcm_nlev,nens},{"gcm_lev","nens"});
   dm_device.register_and_allocate<real>("crm_feedback_tend_dse" , "feedback tendency of dse",  {gcm_nlev,nens},{"gcm_lev","nens"});
   dm_device.register_and_allocate<real>("crm_feedback_tend_qv"  , "feedback tendency of qv",   {gcm_nlev,nens},{"gcm_lev","nens"});
-  dm_device.register_and_allocate<real>("crm_feedback_tend_ql"  , "feedback tendency of ql",   {gcm_nlev,nens},{"gcm_lev","nens"});
+  dm_device.register_and_allocate<real>("crm_feedback_tend_qc"  , "feedback tendency of qc",   {gcm_nlev,nens},{"gcm_lev","nens"});
   dm_device.register_and_allocate<real>("crm_feedback_tend_qi"  , "feedback tendency of qi",   {gcm_nlev,nens},{"gcm_lev","nens"});
   auto crm_feedback_tend_uvel = dm_device.get<real,2>("crm_feedback_tend_uvel");
   auto crm_feedback_tend_vvel = dm_device.get<real,2>("crm_feedback_tend_vvel");
   auto crm_feedback_tend_dse  = dm_device.get<real,2>("crm_feedback_tend_dse");
   auto crm_feedback_tend_qv   = dm_device.get<real,2>("crm_feedback_tend_qv");
-  auto crm_feedback_tend_ql   = dm_device.get<real,2>("crm_feedback_tend_ql");
+  auto crm_feedback_tend_qc   = dm_device.get<real,2>("crm_feedback_tend_qc");
   auto crm_feedback_tend_qi   = dm_device.get<real,2>("crm_feedback_tend_qi");
   //------------------------------------------------------------------------------------------------
   // Compute feedback tendencies
@@ -103,14 +103,14 @@ inline void pam_feedback_compute_tendencies( pam::PamCoupler &coupler , real gcm
       crm_feedback_tend_vvel(k_gcm,iens) = ( crm_hmean_vvel(k_crm,iens) - gcm_vl(k_gcm,iens) )*r_gcm_dt;
       crm_feedback_tend_dse (k_gcm,iens) = ( crm_hmean_temp(k_crm,iens) - gcm_tl(k_gcm,iens) )*r_gcm_dt * cp_d;
       crm_feedback_tend_qv  (k_gcm,iens) = ( crm_hmean_qv  (k_crm,iens) - gcm_qv(k_gcm,iens) )*r_gcm_dt;
-      crm_feedback_tend_ql  (k_gcm,iens) = ( crm_hmean_ql  (k_crm,iens) - gcm_qc(k_gcm,iens) )*r_gcm_dt;
+      crm_feedback_tend_qc  (k_gcm,iens) = ( crm_hmean_qc  (k_crm,iens) - gcm_qc(k_gcm,iens) )*r_gcm_dt;
       crm_feedback_tend_qi  (k_gcm,iens) = ( crm_hmean_qi  (k_crm,iens) - gcm_qi(k_gcm,iens) )*r_gcm_dt;
     } else {
       crm_feedback_tend_uvel(k_gcm,iens) = 0.;
       crm_feedback_tend_vvel(k_gcm,iens) = 0.;
       crm_feedback_tend_dse (k_gcm,iens) = 0.;
       crm_feedback_tend_qv  (k_gcm,iens) = 0.;
-      crm_feedback_tend_ql  (k_gcm,iens) = 0.;
+      crm_feedback_tend_qc  (k_gcm,iens) = 0.;
       crm_feedback_tend_qi  (k_gcm,iens) = 0.;
     }
   });
@@ -130,7 +130,7 @@ inline void pam_feedback_copy_to_host( pam::PamCoupler &coupler ) {
   auto crm_feedback_tend_vvel = dm_device.get<real,2>("crm_feedback_tend_vvel");
   auto crm_feedback_tend_dse  = dm_device.get<real,2>("crm_feedback_tend_dse");
   auto crm_feedback_tend_qv   = dm_device.get<real,2>("crm_feedback_tend_qv");
-  auto crm_feedback_tend_ql   = dm_device.get<real,2>("crm_feedback_tend_ql");
+  auto crm_feedback_tend_qc   = dm_device.get<real,2>("crm_feedback_tend_qc");
   auto crm_feedback_tend_qi   = dm_device.get<real,2>("crm_feedback_tend_qi");
   //------------------------------------------------------------------------------------------------
   auto output_ultend_host  = dm_host.get<real,2>("output_ultend");
@@ -145,7 +145,7 @@ inline void pam_feedback_copy_to_host( pam::PamCoupler &coupler ) {
   crm_feedback_tend_vvel.deep_copy_to(output_vltend_host);
   crm_feedback_tend_dse .deep_copy_to(output_sltend_host);
   crm_feedback_tend_qv  .deep_copy_to(output_qvltend_host);
-  crm_feedback_tend_ql  .deep_copy_to(output_qcltend_host);
+  crm_feedback_tend_qc  .deep_copy_to(output_qcltend_host);
   crm_feedback_tend_qi  .deep_copy_to(output_qiltend_host);
   //------------------------------------------------------------------------------------------------
 }

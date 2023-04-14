@@ -257,7 +257,9 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto nx         = coupler.get_option<int>("crm_nx");
   auto ny         = coupler.get_option<int>("crm_ny");
   real R_v        = coupler.get_option<real>("R_v");
+  real grav       = coupler.get_option<real>("grav");
   auto crm_dt     = coupler.get_option<real>("crm_dt");
+  auto gcm_nlev   = coupler.get_option<int>("gcm_nlev");
   auto zint       = dm_device.get<real const,2>("vertical_interface_height");
   //------------------------------------------------------------------------------------------------
   // get CRM variables to be aggregated
@@ -268,6 +270,7 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto rho_v      = dm_device.get<real,4>("water_vapor");
   auto rho_l      = dm_device.get<real,4>("cloud_water");
   auto rho_i      = dm_device.get<real,4>("ice"        );
+  auto input_pdel = dm_host.get<real const,2>("input_pdel").createDeviceCopy();
   //------------------------------------------------------------------------------------------------
   // get aggregation variables
   auto stat_aggregation_cnt  = dm_device.get<real,1>("stat_aggregation_cnt");
@@ -292,10 +295,10 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
     atomicAdd( precip_ice_aggregated(iens), precip_ice(j,i,iens) * r_nx_ny );
   });
   parallel_for("aggregate 1D statistics", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+    int k_gcm = gcm_nlev-1-k;
     real rho_total = rho_d(k,j,i,iens) + rho_v(k,j,i,iens);
-    atomicAdd( liqwp_aggregated(k,iens), (rho_l(k,j,i,iens)/rho_total) * r_nx_ny );
-    atomicAdd( icewp_aggregated(k,iens), (rho_i(k,j,i,iens)/rho_total) * r_nx_ny );
-    // if ( ( (rho_l(k,j,i,iens)+rho_i(k,j,i,iens))/rho_total ) > cld_threshold) {
+    atomicAdd( liqwp_aggregated(k,iens), (rho_l(k,j,i,iens)/rho_total) * r_nx_ny * input_pdel(k_gcm,iens)*1000.0/grav );
+    atomicAdd( icewp_aggregated(k,iens), (rho_i(k,j,i,iens)/rho_total) * r_nx_ny * input_pdel(k_gcm,iens)*1000.0/grav );
     real rho_sum = rho_l(k,j,i,iens)+rho_i(k,j,i,iens);
     real dz = (zint(k+1,iens) - zint(k,iens));
     if ( ( rho_sum*dz ) > cld_threshold) {

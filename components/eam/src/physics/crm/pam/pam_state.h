@@ -2,8 +2,6 @@
 
 #include "pam_coupler.h"
 
-// #define MMF_PAM_FORCE_ALL_WATER_SPECIES
-
 // wrapper for PAM's set_grid
 inline void pam_state_set_grid( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
@@ -69,7 +67,6 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   auto input_ql   = dm_host.get<real const,2>("input_ql"  ).createDeviceCopy();
   auto input_pmid = dm_host.get<real const,2>("input_pmid").createDeviceCopy();
   auto input_pint = dm_host.get<real const,2>("input_pint").createDeviceCopy();
-  auto input_pdel = dm_host.get<real const,2>("input_pdel").createDeviceCopy();
   auto input_zint = dm_host.get<real const,2>("input_zint").createDeviceCopy();
   //------------------------------------------------------------------------------------------------
   // Define GCM state for forcing - adjusted to avoid directly forcing cloud liquid and ice fields
@@ -165,7 +162,7 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   auto crm_shoc_tk       = dm_device.get<real,4>("tk");
   auto crm_shoc_tkh      = dm_device.get<real,4>("tkh");
   auto crm_shoc_wthv     = dm_device.get<real,4>("wthv_sec");
-  auto crm_shoc_relvar   = dm_device.get<real,4>("relvar");
+  auto crm_shoc_relvar   = dm_device.get<real,4>("inv_qc_relvar");
   auto crm_shoc_cldfrac  = dm_device.get<real,4>("cldfrac");
   //------------------------------------------------------------------------------------------------
   // wrap the host CRM state data in YAKL arrays
@@ -249,7 +246,7 @@ inline void pam_state_copy_to_host( pam::PamCoupler &coupler ) {
   auto crm_shoc_tk              = dm_device.get<real,4>("tk");
   auto crm_shoc_tkh             = dm_device.get<real,4>("tkh");
   auto crm_shoc_wthv            = dm_device.get<real,4>("wthv_sec");
-  auto crm_shoc_relvar          = dm_device.get<real,4>("relvar");
+  auto crm_shoc_relvar          = dm_device.get<real,4>("inv_qc_relvar");
   auto crm_shoc_cldfrac         = dm_device.get<real,4>("cldfrac");
   //------------------------------------------------------------------------------------------------
   // wrap the host CRM state data in YAKL arrays
