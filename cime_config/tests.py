@@ -13,6 +13,7 @@ _TESTS = {
     "e3sm_mosart_developer" : {
         "share" : True,
         "time"  : "0:45:00",
+        "inherit" : ("e3sm_mosart_sediment"),
         "tests" : (
             "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
             "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
@@ -25,6 +26,13 @@ _TESTS = {
         "time"  : "0:45:00",
         "tests" : (
             "ERS.ne30pg2_r05_EC30to60E2r2.GPMPAS-JRA.mosart-rof_ocn_2way",
+            )
+        },
+
+    "e3sm_mosart_sediment" : {
+        "time"  : "0:45:00",
+        "tests" : (
+            "ERS.MOS_USRDAT.RMOSNLDAS.mosart-sediment",
             )
         },
 
@@ -91,7 +99,8 @@ _TESTS = {
             "SMS_R_Ld5.ne4_ne4.FSCM-ARM97.eam-scm",
             "SMS_D_Ln5.ne4_oQU240.F2010",
             "SMS_Ln5.ne4pg2_oQU480.F2010",
-            "ERS_D.ne4_oQU240.F2010.eam-hommexx"
+            "ERS_D.ne4_oQU240.F2010.eam-hommexx",
+            "SMS_Ln9_P24x1.ne4_ne4.FDPSCREAM-ARM97",
             )
         },
 
@@ -172,11 +181,31 @@ _TESTS = {
             )
         },
 
+    "e3sm_ocnice_stealth_features" : {
+        "tests" : (
+            "SMS_D_Ld1.T62_oQU240wLI.GMPAS-IAF-ISMF.mpaso-impl_top_drag",
+            )
+        },
+
     "e3sm_ocnice_extra_coverage" : {
+        "inherit" : ("e3sm_ocnice_stealth_features"),
         "tests" : (
             "ERS_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-ISMF",
             "PEM_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-ISMF",
             "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
+            )
+        },
+
+    "e3sm_atm_dustemis" : {
+        "time"  : "1:45:00",
+        "tests"   : (
+            "ERP.ne4pg2_oQU480.F2010.eam-v3atm_dustemis",
+            "REP.ne4pg2_oQU480.F2010.eam-v3atm_dustemis",
+            "SMS.ne30pg2_EC30to60E2r2.F2010.eam-v3atm_dustemis",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-v3atm_dustemis",
+            "PET_Ln5.ne4pg2_oQU480.F2010.eam-v3atm_dustemis",
+            "PEM_Ln5.ne4pg2_oQU480.F2010.eam-v3atm_dustemis",
+            "ERS_D.ne4pg2_oQU480.F2010.eam-v3atm_dustemis"
             )
         },
 
@@ -228,6 +257,7 @@ _TESTS = {
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld3.T62_oQU120.CMPASO-IAF",
             "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850",
+            "SMS_Ln5.ne30pg2_ne30pg2.F2010-SCREAM-LR-DYAMOND2",
             )
         },
 
@@ -235,8 +265,6 @@ _TESTS = {
     "e3sm_extra_coverage" : {
         "inherit" : ("e3sm_atm_extra_coverage", "e3sm_ocnice_extra_coverage"),
         "tests"   : (
-            "SMS_D_Ln5.enax4v1_enax4v1.F2010-CICE",
-            "SMS_D_Ln5.twpx4v1_twpx4v1.F2010-CICE",
             "SMS_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA-WW3",
             )
         },
@@ -254,8 +282,6 @@ _TESTS = {
     "e3sm_rrm" : {
         "tests" : (
             "SMS_D_Ln5.conusx4v1_r05_oECv3.F2010",
-            "SMS_D_Ln5.enax4v1_enax4v1.F2010-CICE",
-            "SMS_D_Ln5.twpx4v1_twpx4v1.F2010-CICE",
             )
         },
 

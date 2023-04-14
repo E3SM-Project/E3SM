@@ -692,6 +692,15 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
+    <environment_variables compiler="gnu.*" mpilib="mpich">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/gcc-11.2.0</env>
+    </environment_variables>
+    <environment_variables compiler="crayclang.*" mpilib="mpich">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/crayclang-14.0.2</env>
+    </environment_variables>
+    <environment_variables compiler="amdclang.*" mpilib="mpich">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/amdclang-15.0.0</env>
+    </environment_variables>
   </machine>
 
 
@@ -791,6 +800,9 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
+    <environment_variables compiler="crayclang-scream" mpilib="mpich">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/crayclang-14.0.2</env>
+    </environment_variables>
   </machine>
 
 
@@ -875,6 +887,9 @@
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+    <environment_variables compiler="crayclang-scream" mpilib="mpich">
+      <env name="ADIOS2_DIR">/gpfs/alpine/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/crayclang-14.0.2</env>
     </environment_variables>
   </machine>
 
