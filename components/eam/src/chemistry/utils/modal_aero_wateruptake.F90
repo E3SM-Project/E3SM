@@ -96,11 +96,8 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
    integer :: m, nmodes, istat
    logical :: history_aerosol      ! Output the MAM aerosol variables and tendencies
    logical :: history_verbose      ! produce verbose history output
-<<<<<<< HEAD
    logical :: get_presc_aero_data  ! produce output to generate prescribed aero files
-=======
    logical :: modal_strat_sulfate_aod_treatment !for strat. H2SO4 wateruptake treatment flag
->>>>>>> 8efd2d2ee8 (switch btw MAM5 and cmip6_volc emission; strat AOD treatment flag)
 
    character(len=3) :: trnum       ! used to hold mode number (as characters)
    !----------------------------------------------------------------------------
@@ -142,14 +139,10 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
    ! determine default variables
    call phys_getopts(history_aerosol_out = history_aerosol, &
                      history_verbose_out = history_verbose, &
-<<<<<<< HEAD
                      get_presc_aero_data_out = get_presc_aero_data, &
-                     pergro_mods_out = pergro_mods)
-=======
                      pergro_mods_out = pergro_mods,         &
                      modal_strat_sulfate_aod_treatment_out &
                      = modal_strat_sulfate_aod_treatment)
->>>>>>> 8efd2d2ee8 (switch btw MAM5 and cmip6_volc emission; strat AOD treatment flag)
 
    do m = 1, nmodes
       write(trnum, '(i3.3)') m
