@@ -76,7 +76,7 @@ contains
 
     ! Define dimensions and variables
 
-    if (masterproc) then	
+    if (masterproc) then
        write(iulog,*)
        write(iulog,*)'restFile_open: writing RTM restart dataset '
        write(iulog,*)
