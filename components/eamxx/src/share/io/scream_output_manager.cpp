@@ -560,7 +560,7 @@ void set_file_header(const std::string& filename)
   set_str_attribute_c2f(filename.c_str(),"institution_id","");  // TODO
   set_str_attribute_c2f(filename.c_str(),"product","");  // TODO
   set_str_attribute_c2f(filename.c_str(),"component","ATM");
-  set_str_attribute_c2f(filename.c_str(),"conventions","CF-1.0");  // TODO: In the future we may be able to have this be set at runtime.  We hard-code for now, because post-processing needs something in this global attribute. 2023-04-12
+  set_str_attribute_c2f(filename.c_str(),"Conventions","CF-1.8");  // TODO: In the future we may be able to have this be set at runtime.  We hard-code for now, because post-processing needs something in this global attribute. 2023-04-12
 
 }
 /*===============================================================================================*/
