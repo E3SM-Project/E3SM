@@ -1212,7 +1212,6 @@ main_i_loop: &
          qqcwsub_tendaa
       type ( misc_vars_aa_type ), intent(inout) :: misc_vars_aa
 
-      integer,  intent(in)    ::  troplev_i   !kzm ++ tropopause level 
 ! local
       integer :: iaer, igas
       integer :: jsub
@@ -1584,7 +1583,6 @@ main_jsub_loop: &
 
       type ( misc_vars_aa_type ), intent(inout) :: misc_vars_aa_sub
 
-      integer,  intent(in)    :: troplev_i !kzm++  
 ! local
       integer, parameter :: ntot_poaspec = npoa
       integer, parameter :: ntot_soaspec = nsoa
@@ -2223,7 +2221,7 @@ do_cond_if_block10: &
               qgas_avg,          qgas_netprod_otrproc,                   &
               uptkrate_h2so4,    misc_vars_aa_sub                        )
       else
-#endif
+#endif              
          call mam_gasaerexch_1subarea(                                &
            nstep,             lchnk,                                  &
            i,                 k,                jsub,                 &

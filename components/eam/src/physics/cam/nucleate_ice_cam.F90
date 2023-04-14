@@ -84,6 +84,14 @@ integer :: idxbcphi = -1 ! index in aerosol list for Soot (BCPHIL)
 
 ! modal aerosols
 logical :: clim_modal_aero
+!kzm ++
+logical :: prog_modal_aero
+real(r8) :: sigmag_accum
+!logical :: lq(pcnst) = .false. ! set flags true for constituents with non-zero tendencies
+integer :: cnum_coarse_idx, ccoarse_dst_idx, ccoarse_so4_idx
+integer :: cnum_strat_coarse_idx, cstrat_coarse_so4_idx!kzm
+integer :: accum_so4_idx,accum_pom_idx,accum_soa_idx,accum_bc_idx,accum_dst_idx,accum_ncl_idx,accum_mom_idx
+!kzm --
 
 integer :: nmodes = -1
 integer :: mode_accum_idx  = -1  ! index of accumulation mode
@@ -99,6 +107,10 @@ integer :: coarse_so4_idx = -1  ! index of so4 in coarse mode
 ! for so4 only aitken mode so4 to get so4_num for nucleation
 ! if defined MAM7S add stratosphere aitken to troposphere aitken
 integer :: mode_strat_sulfate1_idx = -1
+integer :: mode_strat_coarse_idx = -1
+integer :: strat_coarse_so4_idx = -1
+real(r8) :: sigmag_coarse, sigmag_strat_coarse
+real(r8) :: sigmag_aitken
 ! kzm --
 #if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE || defined MODAL_AERO_7MODE_S)
 integer :: coarse_mom_idx = -1  ! index of mom in coarse mode
@@ -116,8 +128,6 @@ integer :: accum_dust_idx    = -1  ! index of dust in accum mode
 integer :: fine_dust_idx    = -1   ! index of dust in fine mode
 
 logical  :: separate_dust = .false.
-real(r8) :: sigmag_aitken
-real(r8) :: sigmag_coarse
 
 
 !===============================================================================
