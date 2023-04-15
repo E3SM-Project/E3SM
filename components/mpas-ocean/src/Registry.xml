@@ -202,6 +202,12 @@
 					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit'"
 		/>
 	</nml_record>
+	<nml_record name="lateral_walls" mode="forward">
+		<nml_option name="config_wall_slip_factor" type="real" default_value="0.0"
+					description="Lateral wall slip boundary condition: no-slip=1.0, free-slip=0.0, with partial-slip lying in-between. This factor multiplies relative vorticity computed at vertices positioned on lateral boundaries."
+					possible_values="0.0 - 1.0"
+		/>
+	</nml_record>
 	<nml_record name="hmix" mode="forward">
 		<nml_option name="config_hmix_scaleWithMesh" type="logical" default_value=".false."
 					description="If false, del2 and del4 coefficients are constant throughout the mesh (equivalent to setting $\rho_m=1$ throughout the mesh).  If true, these coefficients scale as mesh density to the -3/4 power."

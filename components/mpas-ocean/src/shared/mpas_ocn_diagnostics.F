@@ -607,7 +607,7 @@ contains
 
       integer :: iVertex, iEdge, i, k
 
-      real (kind=RKIND) :: invAreaTri1, r_tmp
+      real (kind=RKIND) :: invAreaTri1, r_tmp, wall_slip_factor
 
       err = 0
 
@@ -627,14 +627,19 @@ contains
       !$omp end do
 #endif
 
+      ! no-slip = 1.0
+      ! free-slip = 0.0
+      ! partial-slip in-between
+      wall_slip_factor = config_wall_slip_factor
+
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc          present(circulation, relativeVorticity, areaTriangle, edgesOnVertex, &
       !$acc                  maxLevelVertexBot, dcEdge, normalVelocity, edgeSignOnVertex, &
       !$acc                  minLevelVertexTop) &
-      !$acc          private(invAreaTri1, iVertex, iEdge, k, r_tmp)
+      !$acc          private(invAreaTri1, iVertex, iEdge, k, r_tmp, wall_slip_factor)
 #else
-      !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k, r_tmp)
+      !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k, r_tmp, wall_slip_factor)
 #endif
       do iVertex = 1, nVerticesAll
          invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
@@ -645,6 +650,12 @@ contains
               circulation(k, iVertex) = circulation(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp
               relativeVorticity(k, iVertex) = relativeVorticity(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp * invAreaTri1
             end do
+         end do
+         do k = minLevelVertexTop(iVertex), maxLevelVertexBot(iVertex)
+            if (boundaryVertex(k, iVertex)) then
+               circulation(k, iVertex) = wall_slip_factor * circulation(k, iVertex)
+               relativeVorticity(k, iVertex) = wall_slip_factor * relativeVorticity(k, iVertex)
+            end if
          end do
       end do
 #ifndef MPAS_OPENACC
