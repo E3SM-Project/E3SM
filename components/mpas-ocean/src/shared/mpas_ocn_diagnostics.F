@@ -605,7 +605,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iVertex, iEdge, i, k
+      integer :: iVertex, iEdge, iCell, i, k
 
       real (kind=RKIND) :: r_tmp, wall_slip_factor
       real (kind=RKIND), dimension(:), allocatable :: areaDual
@@ -640,7 +640,7 @@ contains
       !$acc          present(circulation, relativeVorticity, areaTriangle, edgesOnVertex, &
       !$acc                  maxLevelVertexBot, dcEdge, normalVelocity, edgeSignOnVertex, &
       !$acc                  minLevelVertexTop) &
-      !$acc          private(areaDual, iVertex, iEdge, k, r_tmp, wall_slip_factor)
+      !$acc          private(areaDual, i, iVertex, iEdge, iCell, k, r_tmp, wall_slip_factor)
 #else
       !$omp do schedule(runtime) private(areaDual, i, iEdge, iCell, k, r_tmp, wall_slip_factor)
 #endif
