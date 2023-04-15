@@ -652,9 +652,9 @@ contains
             end do
          end do
          do k = minLevelVertexTop(iVertex), maxLevelVertexBot(iVertex)
-            if (boundaryVertex(k, iVertex)) then
-               circulation(k, iVertex) = wall_slip_factor * circulation(k, iVertex)
-               relativeVorticity(k, iVertex) = wall_slip_factor * relativeVorticity(k, iVertex)
+            if (boundaryVertex(k, iVertex) .gt. 0.0_RKIND) then
+              circulation(k, iVertex) = wall_slip_factor * circulation(k, iVertex)
+              relativeVorticity(k, iVertex) = wall_slip_factor * relativeVorticity(k, iVertex)
             end if
          end do
       end do
