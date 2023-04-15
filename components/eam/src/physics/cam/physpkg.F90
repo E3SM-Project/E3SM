@@ -773,7 +773,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! the physics decomposition
     call diag_init()
 
-    call check_energy_init()
+    call check_energy_init(phys_state)
 
     call tracers_init()
 
@@ -1634,33 +1634,21 @@ end if ! l_tracer_aero
     nstep = get_nstep()
     call check_tracers_init(state, tracerint)
 
-#if 0
+!!!!!!! OG
+#if 1
 !save TE before physstep
 call check_energy_chng(state, tend, "assign_te_before_physstep", nstep, ztodt, zero, zero, zero, zero)
 
 state%te_before_physstep(:ncol)=state%te_cur(:ncol)
 !save water mass here
 state%tw_before(:ncol) = state%tw_cur(:ncol)
-#endif
 
 !since QFLX is potentially modified below, save unmodified value is delta var temporarily
 !POTENTIALLY we also need to save SHF
 !introduce a new var as our old vars are all used in gmean
-state%cflx_raw(:ncol) = cam_in%cflx(:ncol,1)
-
-
-!notes on below
-!before clubb we have call
-!    if(use_qqflx_fixer) then
-!       call qqflx_fixer('TPHYSBC ', lchnk, ncol, cld_macmic_ztodt, &
-!            state%q(1,1,1), state%rpdel(1,1), cam_in%shf, &
-!            cam_in%lhf , cam_in%cflx/cld_macmic_num_steps )
-!
-!which is not called, qqflx_fixer=false
-!current version of qqflx call does not have a fix for shf, only for mass (potentially)
-!
-!In contrast, qneg4 adjusts SHF
-
+state%cflx_raw(:ncol)  = cam_in%cflx(:ncol,1)
+state%shf_raw(:ncol) = cam_in%shf(:ncol)
+#endif
 
 !!== KZ_WCON
 
@@ -1668,60 +1656,24 @@ state%cflx_raw(:ncol) = cam_in%cflx(:ncol,1)
     call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
 
     if(.not.use_qqflx_fixer) then 
-!ACTIVE
-!print *, 'OG qneg4 is called'
-
        ! Check if latent heat flux exceeds the total moisture content of the
        ! lowest model layer, thereby creating negative moisture.
-#if 1
        call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,               &
             state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &
             cam_in%lhf , cam_in%cflx )
-#else
-do i=1,ncol
-  cc = cam_in%cflx(i,1)*ztodt*gravit
-  if (cc < 0.0_r8) then
-    cc=abs(cc)
-    mm=0.0_r8
-    do k=1,pver
-      mm = mm + state%q(i,k,1)*state%pdel(i,k)
-    enddo
-    cam_in%cflx(i,1) = 0.0_r8
-    if (mm < cc) then
-      state%q(i,1:pver,1) = 0.0_r8 !allow leak
-    else
-      do k=1,pver
-        qq = state%q(i,k,1)
-        pp = state%pdel(i,k)
-        adjust = cc *  qq*pp/mm
-        state%q(i,k,1) = (qq*pp - adjust)/pp
-      enddo
-    endif
-!print *, "OG cc, mm, new mm",cc,mm,sum(state%q(i,:,1)*state%pdel(i,:))
-!print *, 'OG before, after',mm-cc, sum(state%q(i,:,1)*state%pdel(i,:))
-  endif
-enddo
-#endif
     end if 
 
-
+!!!!OG
 #if 1
-!save TE before physstep
-call check_energy_chng(state, tend, "assign_te_before_physstep", nstep, ztodt, zero, zero, zero, zero)
-
-state%te_before_physstep(:ncol)=state%te_cur(:ncol)
-!save water mass here
-state%tw_before(:ncol) = state%tw_cur(:ncol)
+!old - new
+state%cflx_diff(:ncol) = state%cflx_raw(:ncol) - cam_in%cflx(:ncol,1)
+state%shf_diff(:ncol)  = state%shf_raw(:ncol)  - cam_in%shf(:ncol)
 #endif
-
-
 
     !just output
     call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
 
 !!== KZ_WCON
-
-state%cflx_new(:ncol) = cam_in%cflx(:ncol,1)
 
     call t_stopf('tphysac_init')
 
@@ -2841,10 +2793,6 @@ end if ! l_rad
     call tropopause_output(state)
     call t_stopf('tropopause')
 
-!save water after
-state%tw_after(:ncol) = state%tw_cur(:ncol)
-
-
     ! Save atmospheric fields to force surface models
     call t_startf('cam_export')
     call cam_export (state,cam_out,pbuf)
@@ -2857,7 +2805,7 @@ state%tw_after(:ncol) = state%tw_cur(:ncol)
 
     call check_tracers_fini(tracerint)
 
-
+!!!!!!!!!!OG
 !now fluxes: cflx(1) is kg/m2/sec
 !      cam_out%precc (i) = prec_dp(i)  + prec_sh(i)
 !      cam_out%precl (i) = prec_sed(i) + prec_pcw(i)
@@ -2867,25 +2815,17 @@ state%tw_after(:ncol) = state%tw_cur(:ncol)
 ! [1000.0  *( cam_out%precc(1:ncol)+cam_out%precl(1:ncol) - cam_out%precsc(1:ncol) - cam_out%precsl(1:ncol) ) )]
 
 
-!this is going to be after-before
 !cflx_raw contains unmodified by qneg4 or mass fixers value
-!this is the one to use with qneg?
-!NO mistake -- change in mass from qneg should be accounted separately!
-!state%deltaw_flux(:ncol) = state%cflx_raw(:ncol)
 
-state%deltaw_flux(:ncol) = cam_in%cflx(:ncol,1)
+!if including effects from qneg4
+state%deltaw_flux(:ncol) = state%cflx_raw(:ncol)
+!if excluding qneg4 from diagnostics
+!state%deltaw_flux(:ncol) = cam_in%cflx(:ncol,1)
 
 state%deltaw_flux(:ncol) = state%deltaw_flux(:ncol) - &
 1000.0*(cam_out%precc(:ncol)+cam_out%precl(:ncol))
-
 state%deltaw_flux(:ncol) = state%deltaw_flux(:ncol) * ztodt
-
-state%deltaw_step(:ncol) = state%tw_after(:ncol) - state%tw_before(:ncol)
-
-
-!!!!!!!!!!!! NOTE THAT momentum fluxes from surf stresses most likely are not energetically 
-!!!!!!!!!!!! conserving and there is no contribution for them in cam_in%shf, 
-!!!!!!!!!!!! so a small leak/sink of energy is expected
+state%deltaw_step(:ncol) = state%tw_cur(:ncol) - state%tw_before(:ncol)
 
     !!!! now after cam_export      cam_out%precc , cam_out%precl are ready -- liquid+ice
     !!!! and cam_out%precsc, cam_out%precsl -- only ice
@@ -2895,14 +2835,18 @@ state%deltaw_step(:ncol) = state%tw_after(:ncol) - state%tw_before(:ncol)
     !    for TE2-TE1 we will use te_cur - te_before_physstep
     !    for restom - ressurf we will use fluxes to/from atm following AMWG energy scripts
 
-    !my guess is that precc etc are fluxes, since CG script uses them like fluxes and
-    !they are called rates in cam exchange
-    state%delta_te(1:ncol)=state%te_cur(1:ncol)-state%te_before_physstep(:ncol)
-    state%rr(1:ncol) =                         &
-       ( fsnt(1:ncol) - flnt(1:ncol) )                    &
-     - ( fsns(1:ncol) - flns(1:ncol) - cam_in%shf(1:ncol) &
-     -        (latvap+latice)*cam_in%cflx(:ncol,1)        &
-     + 1000.0* latice        *( cam_out%precc(1:ncol)+cam_out%precl(1:ncol) - cam_out%precsc(1:ncol) - cam_out%precsl(1:ncol) ) )
+state%delta_te(1:ncol)=state%te_cur(1:ncol)-state%te_before_physstep(:ncol)
+
+!if including effects from qneg4
+state%rr(1:ncol) = state%shf_raw(1:ncol)
+!if excluding qneg4 from diagnostisc -- do it consistently with cflx_raw
+!state%rr(1:ncol) = cam_in%shf(1:ncol)
+
+state%rr(1:ncol) = state%rr(1:ncol)                    &
+  + ( fsnt(1:ncol) - flnt(1:ncol) )                    &
+  - ( fsns(1:ncol) - flns(1:ncol)                      &
+  -        (latvap+latice)*cam_in%cflx(:ncol,1)        &
+  + 1000.0* latice        *( cam_out%precc(1:ncol)+cam_out%precl(1:ncol) - cam_out%precsc(1:ncol) - cam_out%precsl(1:ncol) ) )
 
 
 end subroutine tphysbc

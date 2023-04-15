@@ -180,7 +180,7 @@ end subroutine check_energy_get_integrals
 
 !================================================================================================
 
-  subroutine check_energy_init()
+  subroutine check_energy_init(state)
 !
 ! Initialize the energy conservation module
 ! 
@@ -190,8 +190,11 @@ end subroutine check_energy_get_integrals
 
     implicit none
 
+    type(physics_state), intent(inout) :: state(begchunk:endchunk)
+
     logical          :: history_budget
     integer          :: history_budget_histfile_num ! output history file number for budget fields
+    integer          :: ncol,lchnk
 
 !-----------------------------------------------------------------------
 
@@ -238,6 +241,19 @@ end subroutine check_energy_get_integrals
        call add_default ('IEFLX', 1, ' ') 
     end if 
 
+    do lchnk = begchunk, endchunk
+       ncol = state(lchnk)%ncol
+       state(lchnk)%te_before_physstep(:ncol) = 0._r8
+       state(lchnk)%tw_before(:ncol)          = 0._r8
+       state(lchnk)%deltaw_flux(:ncol)        = 0._r8
+       state(lchnk)%deltaw_step(:ncol)        = 0._r8
+       state(lchnk)%delta_te(:ncol)           = 0._r8
+       state(lchnk)%rr(:ncol)                 = 0._r8
+       state(lchnk)%cflx_raw(:ncol)           = 0._r8
+       state(lchnk)%cflx_diff(:ncol)          = 0._r8
+       state(lchnk)%shf_raw(:ncol)            = 0._r8
+       state(lchnk)%shf_diff(:ncol)           = 0._r8
+    enddo
   end subroutine check_energy_init
 
 !===============================================================================
@@ -459,13 +475,13 @@ end subroutine check_energy_get_integrals
     integer :: ncol                      ! number of active columns
     integer :: lchnk                     ! chunk index
 
-    real(r8) :: te(pcols,begchunk:endchunk,11)   
+    real(r8) :: te(pcols,begchunk:endchunk,9)   
                                          ! total energy of input/output states (copy)
-    real(r8) :: te_glob(11)               ! global means of total energy
+    real(r8) :: te_glob(9)               ! global means of total energy
     real(r8), pointer :: teout(:)
 
-    real(r8) :: twbefore, twafter, dflux, dstep
-    real(r8) :: delta_te_glob, rr_glob, cflxdiff, cflxraw
+    real(r8) :: dflux, dstep
+    real(r8) :: delta_te_glob, rr_glob, cflxdiff, shfdiff
 !-----------------------------------------------------------------------
 
     ! Copy total energy out of input and output states
@@ -483,16 +499,17 @@ end subroutine check_energy_get_integrals
        ! surface pressure for heating rate
        te(:ncol,lchnk,3) = state(lchnk)%pint(:ncol,pver+1)
 
-       te(:ncol,lchnk,4) = state(lchnk)%tw_before(:ncol)
-       te(:ncol,lchnk,5) = state(lchnk)%tw_after(:ncol)
-       te(:ncol,lchnk,6) = state(lchnk)%deltaw_flux(:ncol)
-       te(:ncol,lchnk,7) = state(lchnk)%deltaw_step(:ncol)
+       !water changes
+       te(:ncol,lchnk,4) = state(lchnk)%deltaw_flux(:ncol)
+       te(:ncol,lchnk,5) = state(lchnk)%deltaw_step(:ncol)
 
        !energy change versus restom-ressurf
-       te(:ncol,lchnk,8) = state(lchnk)%delta_te(:ncol)
-       te(:ncol,lchnk,9) = state(lchnk)%rr(:ncol)
-       te(:ncol,lchnk,10) = state(lchnk)%cflx_new(:ncol) - state(lchnk)%cflx_raw(:ncol)
-       te(:ncol,lchnk,11) = state(lchnk)%cflx_raw(:ncol)
+       te(:ncol,lchnk,6) = state(lchnk)%delta_te(:ncol)
+       te(:ncol,lchnk,7) = state(lchnk)%rr(:ncol)
+
+       !qneg4 diagnostics values
+       te(:ncol,lchnk,8) = state(lchnk)%cflx_diff(:ncol)
+       te(:ncol,lchnk,9) = state(lchnk)%shf_diff(:ncol)
 
     end do
 
@@ -505,15 +522,13 @@ end subroutine check_energy_get_integrals
        teout_glob = te_glob(2)
        psurf_glob = te_glob(3)
 
-       twbefore = te_glob(4)
-       twafter = te_glob(5)
-       dflux = te_glob(6)
-       dstep = te_glob(7)
+       dflux = te_glob(4)
+       dstep = te_glob(5)
 
-       delta_te_glob = te_glob(8)
-       rr_glob       = te_glob(9)
-       cflxdiff      = te_glob(10)
-       cflxraw       = te_glob(11)
+       delta_te_glob = te_glob(6)
+       rr_glob       = te_glob(7)
+       cflxdiff      = te_glob(8)
+       shfdiff       = te_glob(9)
 
        ptopb_glob = state(begchunk)%pint(1,1)
 
@@ -522,17 +537,24 @@ end subroutine check_energy_get_integrals
        heat_glob  = -tedif_glob/dtime * gravit / (psurf_glob - ptopb_glob)
 
        if (masterproc) then
+          ! this diagnostics is current
+          ! integrated state%te_cur is J/m2
           write(iulog,'(1x,a9,1x,i8,4(1x,e25.17))') "nstep, te", nstep, teinp_glob, teout_glob, heat_glob, psurf_glob
 
-! tw is kg/m2
-!dflux, dstep are kg/m2
-          write(iulog,'(1x,a21,1x,i8,3(1x,e25.17))') "nstep, W tw b, a, a-b", nstep, twbefore, twafter, twbefore-twafter
-          write(iulog,'(1x,a21,1x,i8,3(1x,e25.17))') "nstep, W dflux, dstep", nstep, dflux, dstep, dflux-dstep
-          write(iulog,'(1x,a19,1x,i8,2(1x,e25.17))') "nstep, W cflx, diff", nstep, cflxraw, cflxdiff
+          ! integrated state%tw_cur is kg/m2
+          ! integrated dflux, dstep are kg/m2
+          ! integrated cflx is kg/m2/sec
+          ! this diagnostics is from the previous time step
+          write(iulog,'(1x,a25,1x,i8,2(1x,e25.17))') "n, W flux, dWater [kg/m2]", nstep-1, dflux, dstep
+          write(iulog,'(1x,a23,1x,i8,1(1x,e25.17))') "n, W difference [kg/m2]",   nstep-1, dflux - dstep
+          write(iulog,'(1x,a25,1x,i8,2(1x,e25.17))') "n, W cflx*dt loss [kg/m2]", nstep-1, cflxdiff*dstep
 
-!delta_te_glob is J/m2, rr_glob is W/m2
-          write(iulog,'(1x,a21,1x,i8,2(1x,e25.17))') "nstep, E d(te)/dt, rr", nstep, delta_te_glob/dtime, rr_glob
-          write(iulog,'(1x,a20,1x,i8,1(1x,e25.17))') "nstep, E d(te)/dt-rr", nstep, delta_te_glob/dtime-rr_glob
+          ! integrated delta_te_glob is J/m2, rr_glob is W/m2
+          ! integrated shf is W/m2
+          ! this diagnostics is from the previous time step
+          write(iulog,'(1x,a24,1x,i8,2(1x,e25.17))') "n, E d(TE)/dt, RR [W/m2]", nstep-1, delta_te_glob/dtime, rr_glob
+          write(iulog,'(1x,a22,1x,i8,1(1x,e25.17))') "n, E difference [W/m2]",   nstep-1, delta_te_glob/dtime-rr_glob
+          write(iulog,'(1x,a20,1x,i8,2(1x,e25.17))') "n, E shf loss [W/m2]",     nstep-1, shfdiff
 
        end if
     else
