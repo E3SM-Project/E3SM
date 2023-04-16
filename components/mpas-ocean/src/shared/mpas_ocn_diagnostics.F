@@ -607,8 +607,7 @@ contains
 
       integer :: iVertex, iEdge, iCell, i, k
 
-      real (kind=RKIND) :: r_tmp, wall_slip_factor
-      real (kind=RKIND), dimension(:), allocatable :: areaDual
+      real (kind=RKIND) :: r_tmp, wall_slip_factor, areaDual
 
       err = 0
 
@@ -632,43 +631,39 @@ contains
       ! free-slip = 0.0
       ! partial-slip in-between
       wall_slip_factor = config_wall_slip_factor
-      
-      allocate(areaDual(nVertLevels))
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc          present(circulation, relativeVorticity, areaTriangle, edgesOnVertex, &
+      !$acc          present(circulation, relativeVorticity, edgesOnVertex, &
       !$acc                  maxLevelVertexBot, dcEdge, normalVelocity, edgeSignOnVertex, &
-      !$acc                  minLevelVertexTop) &
+      !$acc                  minLevelVertexTop, kiteAreasOnVertex, cellMask) &
       !$acc          private(areaDual, i, iVertex, iEdge, iCell, k, r_tmp, wall_slip_factor)
 #else
-      !$omp do schedule(runtime) private(areaDual, i, iEdge, iCell, k, r_tmp, wall_slip_factor)
+      !$omp do schedule(runtime) &
+      !$omp          private(areaDual, i, iEdge, iCell, k, r_tmp, wall_slip_factor)
 #endif
       do iVertex = 1, nVerticesAll
-         areaDual(:) = 0.0_RKIND  ! only the unmasked kites
-         do i = 1, vertexDegree
-            iEdge = edgesOnVertex(i, iVertex)
-            iCell = cellsOnVertex(i, iVertex)
-            do k = minLevelVertexTop(iVertex), maxLevelVertexBot(iVertex)
-              r_tmp = edgeSignOnVertex(i, iVertex) * dcEdge(iEdge) * normalVelocity(k, iEdge)
-              circulation(k, iVertex) = circulation(k, iVertex) + r_tmp
-              areaDual(k) = areaDual(k) + cellMask(k, iCell) * kiteAreasOnVertex(i, iVertex)
-            end do
-         end do
          do k = minLevelVertexTop(iVertex), maxLevelVertexBot(iVertex)
-            relativeVorticity(k, iVertex) = circulation(k, iVertex) / areaDual(k)
+            areaDual = 0.0_RKIND
+            do i = 1, vertexDegree
+               iEdge = edgesOnVertex(i, iVertex)
+               iCell = cellsOnVertex(i, iVertex)
+               r_tmp = edgeSignOnVertex(i, iVertex) * &
+                       dcEdge(iEdge) * normalVelocity(k, iEdge)
+               circulation(k, iVertex) = circulation(k, iVertex) + r_tmp
+               areaDual = areaDual + &
+                          cellMask(k, iCell) * kiteAreasOnVertex(i, iVertex)
+            end do
             if (boundaryVertex(k, iVertex) .gt. 0.0_RKIND) then
-              circulation(k, iVertex) = wall_slip_factor * circulation(k, iVertex)
-              relativeVorticity(k, iVertex) = wall_slip_factor * relativeVorticity(k, iVertex)
+               circulation(k, iVertex) = wall_slip_factor * circulation(k, iVertex)
             end if
+            relativeVorticity(k, iVertex) = circulation(k, iVertex) / areaDual
          end do
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
 #endif
-
-      deallocate(areaDual)
 
    !--------------------------------------------------------------------
 
@@ -1026,12 +1021,11 @@ contains
          cell1, cell2                ! neighbor cell   addresses
 
       real(kind=RKIND) :: &
-         invAreaTri1,          &! 1/triangle area
          invAreaCell1,         &! 1/cell area
          invLength,            &! 1/length
          layerThicknessVertex, &! layer thickness at vertex
          apvm_scale_factor,    &! scale factor for APVM form
-         areaDual
+         areaDual               ! unmaksed dual-cell overlap
 
       ! Local arrays
       ! normalizedPlanetaryVorticityVertex: earth's rotational rate
@@ -1072,7 +1066,7 @@ contains
       !$acc            normalizedPlanetaryVorticityVertex, &
       !$acc            relativeVorticity, fVertex, layerThickness, &
       !$acc            kiteAreasOnVertex, cellsOnVertex, &
-      !$acc            maxLevelVertexBot) &
+      !$acc            minLevelVertexTop, maxLevelVertexBot) &
       !$acc    private(i, k, iCell, areaDual, layerThicknessVertex)
 #else
       !$omp parallel
