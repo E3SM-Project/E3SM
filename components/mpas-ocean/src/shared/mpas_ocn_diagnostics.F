@@ -567,7 +567,7 @@ contains
 !  routine ocn_relativeVorticity_circulation
 !
 !> \brief   Computes relative vorticity and circulation
-!> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \author  Mark Petersen, Doug Jacobsen, Todd Ringler, Darren Engwirda
 !> \date    November 2013
 !> \details
 !>  Computes relative vorticity and circulation
@@ -627,24 +627,25 @@ contains
       !$omp end do
 #endif
 
-      ! no-slip = 1.0
-      ! free-slip = 0.0
+      ! no-slip = 0.0
+      ! free-slip = 1.0
       ! partial-slip in-between
       wall_slip_factor = config_wall_slip_factor
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc          present(circulation, relativeVorticity, edgesOnVertex, &
-      !$acc                  maxLevelVertexBot, dcEdge, normalVelocity, edgeSignOnVertex, &
-      !$acc                  minLevelVertexTop, kiteAreasOnVertex, cellMask) &
-      !$acc          private(areaDual, i, iVertex, iEdge, iCell, k, r_tmp, wall_slip_factor)
+      !$acc                  maxLevelVertexBot, dcEdge, normalVelocity, &
+      !$acc                  edgeSignOnVertex, cellMask, &
+      !$acc                  minLevelVertexTop, kiteAreasOnVertex) &
+      !$acc          private(areaDual, i, iEdge, iCell, k, r_tmp, wall_slip_factor)
 #else
       !$omp do schedule(runtime) &
       !$omp          private(areaDual, i, iEdge, iCell, k, r_tmp, wall_slip_factor)
 #endif
       do iVertex = 1, nVerticesAll
          do k = minLevelVertexTop(iVertex), maxLevelVertexBot(iVertex)
-            areaDual = 0.0_RKIND
+            areaDual = 0.0_RKIND  ! only unmaksed kites
             do i = 1, vertexDegree
                iEdge = edgesOnVertex(i, iVertex)
                iCell = cellsOnVertex(i, iVertex)
@@ -654,9 +655,11 @@ contains
                areaDual = areaDual + &
                           cellMask(k, iCell) * kiteAreasOnVertex(i, iVertex)
             end do
-            if (boundaryVertex(k, iVertex) .gt. 0.0_RKIND) then
-               circulation(k, iVertex) = wall_slip_factor * circulation(k, iVertex)
-            end if
+            ! no-slip: curl(u) unchanged
+            ! free-slip: curl(u) = 0.0
+            ! partial-slip: curl(u) reduced
+            circulation(k, iVertex) = circulation(k, iVertex) * &
+               (1.0_RKIND - wall_slip_factor * boundaryVertex(k, iVertex))
             relativeVorticity(k, iVertex) = circulation(k, iVertex) / areaDual
          end do
       end do

@@ -203,9 +203,9 @@
 		/>
 	</nml_record>
 	<nml_record name="lateral_walls" mode="forward">
-		<nml_option name="config_wall_slip_factor" type="real" default_value="1.0"
-					description="Lateral wall slip boundary condition: no-slip=1.0, free-slip=0.0, with partial-slip lying in-between. This factor multiplies relative vorticity computed at vertices positioned on lateral boundaries."
-					possible_values="0.0 - 1.0"
+		<nml_option name="config_wall_slip_factor" type="real" default_value="0.0"
+					description="Lateral wall slip boundary condition: no-slip=0.0, free-slip=1.0, with partial-slip lying in-between. This factor multiplies relative vorticity computed at vertices positioned on lateral boundaries."
+					possible_values="Any real number between 0.0 and 1.0"
 		/>
 	</nml_record>
 	<nml_record name="hmix" mode="forward">
