@@ -234,6 +234,11 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     add_internal_field (m_helper_fields.at("w_int_dyn").subfield(1,tl.n0,true));
   }
 
+  // The output manager pulls from the atm process fields. Add
+  // helper fields for the case that a user request output.
+  add_internal_field (m_helper_fields.at("omega_dyn"));
+  add_internal_field (m_helper_fields.at("phis_dyn"));
+
   if (not fv_phys_active()) {
     // Dynamics backs out tendencies from the states, and passes those to Homme.
     // After Homme completes, we remap the updated state to the ref grid.  Thus,

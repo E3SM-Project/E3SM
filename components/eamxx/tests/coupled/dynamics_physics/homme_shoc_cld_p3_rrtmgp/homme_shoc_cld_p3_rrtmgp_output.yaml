@@ -62,7 +62,17 @@ Fields:
       - rad_heating_pdel
       - sfc_flux_lw_dn
       - sfc_flux_sw_net
- 
+
+  # GLL output for homme states.
+  # Identical to ps, pseudo_density,
+  # and omega for this test.
+  Dynamics:
+    Field Names:
+      - ps_dyn
+      - dp3d_dyn
+      - omega_dyn
+    IO Grid Name: Physics GLL
+
 output_control:
   Frequency: ${NUM_STEPS}
   frequency_units: nsteps
