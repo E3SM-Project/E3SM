@@ -515,7 +515,7 @@ end subroutine check_energy_get_integrals
 
     ! Compute global means of input and output energies and of
     ! surface pressure for heating rate (assume uniform ptop)
-    call gmean(te, te_glob, 11)
+    call gmean(te, te_glob, 9)
 
     if (begchunk .le. endchunk) then
        teinp_glob = te_glob(1)
