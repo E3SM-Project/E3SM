@@ -1043,10 +1043,6 @@
 					description="Slope limiter for the vertical remap advection scheme."
 					possible_values="'none','monotonic','weno'"
 		/>
-		<nml_option name="config_linearize_thick_hadv" type="logical" default_value=".false."
-					description="Change horizontal thickness advection from div(hu) to div(Hu) where h was the full velocity field, and H is the mean total depth."
-					possible_values=".true. or .false."
-		/>
 	</nml_record>
 	<nml_record name="bottom_drag" mode="forward">
 		<nml_option name="config_bottom_drag_mode" type="character" default_value="implicit"

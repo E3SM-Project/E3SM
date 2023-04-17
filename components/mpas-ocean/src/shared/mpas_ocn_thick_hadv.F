@@ -52,7 +52,7 @@ module ocn_thick_hadv
    !
    !--------------------------------------------------------------------
 
-   logical :: thickHadvOn, linearizeHadv
+   logical :: thickHadvOn
 
 !***********************************************************************
 
@@ -126,7 +126,6 @@ contains
 
       call mpas_timer_start("thick hadv")
 
-      if (.not.linearizeHadv) then
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc     present(tend, normalVelocity, dvEdge, &
@@ -151,32 +150,6 @@ contains
       !$omp end do
       !$omp end parallel
 #endif
-      else ! linearize the thickness advection, i.e. constant H*u rather than dynamic h*u
-#ifdef MPAS_OPENACC
-      !$acc parallel loop &
-      !$acc     present(tend, normalVelocity, dvEdge, &
-      !$acc             layerThickEdgeFlux, edgeSignOnCell, &
-      !$acc             minLevelEdgeBot, maxLevelEdgeBot) &
-      !$acc     private(i, k, invAreaCell, flux)
-#else
-      !$omp parallel
-      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, k, flux)
-#endif
-      do iCell = 1, nCellsOwned
-        invAreaCell = 1.0_RKIND / areaCell(iCell)
-        do i = 1, nEdgesOnCell(iCell)
-          iEdge = edgesOnCell(i, iCell)
-          do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-            flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge)
-            tend(k, iCell) = tend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
-          end do
-        end do
-      end do
-#ifndef MPAS_OPENACC
-      !$omp end do
-      !$omp end parallel
-#endif
-      endif
 
       call mpas_timer_stop("thick hadv")
 
@@ -212,7 +185,6 @@ contains
       thickHadvOn = .true.
 
       if(config_disable_thick_hadv) thickHadvOn = .false.
-      if(config_linearize_thick_hadv) linearizeHadv = .true.
 
       err = 0
 
