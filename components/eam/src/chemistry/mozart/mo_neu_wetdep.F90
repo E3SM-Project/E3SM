@@ -93,7 +93,15 @@ subroutine neu_wetdep_init
       case ( 'CLONO2','BRONO2','HCL','HOCL','HOBR','HBR', 'Pb', 'MACROOH', 'ISOPOOH', 'XOOH', 'H2SO4' )
          test_name = 'HNO3'
       case ( 'ALKOOH', 'MEKOOH', 'TOLOOH', 'TERPOOH' )
-         test_name = 'CH3OOH'        
+         test_name = 'CH3OOH'  
+      case ( 'SOAG0',  'SOAG15', 'SOAG24', 'SOAG31', 'SOAG32', &
+             'SOAG33', 'SOAG34', 'SOAG35') 
+! added by Manish Shrivastava on 01/22/2016 to do wet deposition of SOA gas species 
+         test_name = 'CH3OOH'
+! this is just a place holder. values are explicitly set below dheff, 
+! and species are read in from n_species_table in seq_drydep_mod.F90, 
+! where the values of all SOAG deposition constants like Henry's coefficients are set
+! These constants are shared by dry and wet deposition calculations of gases
 
     end select
 !
