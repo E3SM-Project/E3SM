@@ -594,6 +594,9 @@ void AtmosphereDriver::initialize_output_managers () {
   // OM of all the requested outputs.
 
   // Check for model restart output
+  ekat::ParameterList checkpoint_params;
+  checkpoint_params.set("frequency_units",std::string("never"));
+  checkpoint_params.set("Frequency",-1);
   if (io_params.isSublist("model_restart")) {
     auto restart_pl = io_params.sublist("model_restart");
     // Signal that this is not a normal output, but the model restart one
@@ -616,6 +619,10 @@ void AtmosphereDriver::initialize_output_managers () {
     for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
       om.add_global(it.first,it.second);
     }
+
+    // Store the "Output Control" pl of the model restart as the "Checkpoint Control" for all other output streams
+    checkpoint_params.set<std::string>("frequency_units",restart_pl.sublist("output_control").get<std::string>("frequency_units"));
+    checkpoint_params.set("Frequency",restart_pl.sublist("output_control").get<int>("Frequency"));
   }
 
   // Build one manager per output yaml file
@@ -625,6 +632,10 @@ void AtmosphereDriver::initialize_output_managers () {
   for (const auto& fname : output_yaml_files) {
     ekat::ParameterList params;
     ekat::parse_yaml_file(fname,params);
+    auto& checkpoint_pl = params.sublist("Checkpoint Control");
+    checkpoint_pl.set("frequency_units",checkpoint_params.get<std::string>("frequency_units"));
+    checkpoint_pl.set("Frequency",checkpoint_params.get<int>("Frequency"));
+
     // Check if the filename prefix for this file has already been set.  If not, use the simulation casename.
     if (not params.isParameter("filename_prefix")) {
       params.set<std::string>("filename_prefix",m_casename+".scream.h"+std::to_string(om_tally));

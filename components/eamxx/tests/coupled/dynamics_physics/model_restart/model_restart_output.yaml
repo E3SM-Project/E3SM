@@ -74,6 +74,4 @@ output_control:
   frequency_units: nsteps
 Checkpoint Control:
   MPI Ranks in Filename: true
-  Frequency: 1
-  frequency_units: nsteps
 ...
