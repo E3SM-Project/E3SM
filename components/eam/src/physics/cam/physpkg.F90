@@ -2848,6 +2848,7 @@ state%rr(1:ncol) = state%rr(1:ncol)                    &
   -        (latvap+latice)*cam_in%cflx(:ncol,1)        &
   + 1000.0* latice        *( cam_out%precc(1:ncol)+cam_out%precl(1:ncol) - cam_out%precsc(1:ncol) - cam_out%precsl(1:ncol) ) )
 
+
 end subroutine tphysbc
 
 subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
