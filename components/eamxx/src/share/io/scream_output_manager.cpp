@@ -386,9 +386,7 @@ compute_filename (const IOControl& control,
   filename += "." + control.frequency_units+ "_x" + std::to_string(control.frequency);
 
   // Optionally, add number of mpi ranks (useful mostly in unit tests, to run multiple MPI configs in parallel)
-  // NOTE: we do *not* allow this for checkpoints, since it would be risky if it gets somehow enabled
-  //       inside an ERP cime test.
-  if (not is_checkpoint_step && file_specs.filename_with_mpiranks) {
+  if (file_specs.filename_with_mpiranks) {
     filename += ".np" + std::to_string(m_io_comm.size());
   }
 
