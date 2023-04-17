@@ -1,6 +1,4 @@
 #!/bin/bash -e
-
-# Batch system directives
 {{ batchdirectives }}
 
 # template to create a case run shell script. This should only ever be called

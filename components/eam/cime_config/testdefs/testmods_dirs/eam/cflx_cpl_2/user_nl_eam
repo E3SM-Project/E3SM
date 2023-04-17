@@ -1,0 +1,5 @@
+cflx_cpl_opt = 2          ! parallel splitting of surface aero emissions and dry removal
+
+nhtfrq = -1               ! hourly output
+history_aerosol = .true.
+history_verbose = .true.

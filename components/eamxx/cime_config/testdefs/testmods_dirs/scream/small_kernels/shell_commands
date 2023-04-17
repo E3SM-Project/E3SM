@@ -1,0 +1,1 @@
+./xmlchange --append SCREAM_CMAKE_OPTIONS='SCREAM_SMALL_KERNELS On'

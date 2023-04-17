@@ -54,7 +54,8 @@ class compute_sphere_operator_test {
         scalar_output_host(
             Kokkos::create_mirror_view(scalar_output_d)),
         vector_output_host(
-            Kokkos::create_mirror_view(vector_output_d))
+            Kokkos::create_mirror_view(vector_output_d)),
+        sphere_ops(PhysicalConstants::rearth0, 1/PhysicalConstants::rearth0)
   {
     // constructor's body
     // init randonly
@@ -163,7 +164,7 @@ class compute_sphere_operator_test {
   ExecViewManaged<Real * [2][NP][NP]>::HostMirror
       vector_output_host;
 
-  SphereOperators     sphere_ops{PhysicalConstants::rearth0};
+  SphereOperators     sphere_ops;
 
   // tag for laplace_simple()
   struct TagSimpleLaplace {};

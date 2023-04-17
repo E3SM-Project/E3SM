@@ -379,7 +379,9 @@
       <value compset=".+" grid="a%0.23x0.31">96</value>
       <value compset=".+" grid="a%ne4np4">12</value>
       <value compset=".+" grid="a%ne4np4.pg2">24</value>
+      <value compset="_SCREAM.*" grid="a%ne4np4">24</value>
       <value compset=".+" grid="a%ne11np4">12</value>
+      <value compset="_SCREAM.*" grid="a%ne11np4">24</value>
       <value compset=".+" grid="a%ne45np4">72</value>
       <value compset=".+" grid="a%ne60np4">96</value>
       <value compset=".+" grid="a%ne120np4">96</value>

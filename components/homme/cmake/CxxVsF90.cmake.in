@@ -15,29 +15,69 @@ FOREACH (NC_FILE_NAME @NC_OUTPUT_FILES@)
 
   # If cprnc does not return 0, then the test failed
   IF (identical_pos EQUAL -1)
-    MESSAGE (FATAL_ERROR "Test did not succeed. Netcdf outputs '${NC_FILE_NAME}' differ.")
     MESSAGE ("${cprnc_stdout}")
+    MESSAGE (FATAL_ERROR "Test did not succeed. Netcdf outputs '${NC_FILE_NAME}' differ.")
   ENDIF()
 ENDFOREACH()
 
 MESSAGE ("CXX and F90 netcdf outputs match.\n")
 
-# Grep F90 and CXX raw output for all lines containing the string '/dt'.
-# As of today, these are all and only the lines where diagnostics are printed.
-# Then compare the output strings. If they are equal, then the two tests print
-# the same diagnostics
+#stdout part: -----------------------------------------------------------------------------
 
-EXECUTE_PROCESS (COMMAND grep ^diagnostics> @F90_DIR@/@F90_TEST_NAME@_1.out
-                 RESULT_VARIABLE ERROR_CODE
-                 OUTPUT_VARIABLE grep_f90_stdout
-                 ERROR_VARIABLE  grep_f90_stderr)
-EXECUTE_PROCESS (COMMAND grep ^diagnostics> @CXX_DIR@/@CXX_TEST_NAME@_1.out
-                 RESULT_VARIABLE ERROR_CODE
-                 OUTPUT_VARIABLE grep_cxx_stdout
-                 ERROR_VARIABLE  grep_cxx_stderr)
+STRING(FIND @CXX_TEST_NAME@ "preqx" preqxtest)
+#preqxtest = -1 meants the test is not preqx test
+#for preqx, comparisons are not run since cxx runs do not have push to F from cxx code,
+#so in preqx, cxx output is meaningless.
+IF(preqxtest EQUAL -1)
 
-IF (NOT "${grep_f90_stdout}" STREQUAL "${grep_cxx_stdout}")
-  MESSAGE (FATAL_ERROR "Test did not succeed. CXX and F90 diagnostics outputs differ:\nf90:\n${grep_f90_stdout}\ncxx:\n${grep_cxx_stdout}")
-ELSE ()
-  MESSAGE ("CXX and F90 diagnostics outputs match.\n")
-ENDIF()
+  SET(GREP_ARGS "  u     =")
+  FOREACH(s
+    #"  u     ="
+    "  v     ="
+    "  w     ="
+    "  T     ="
+    "  mu    ="
+    "  vTh_dp="
+    "  dz(m) ="
+    "  dp    ="
+    "    fu  ="
+    "    fv  ="
+    "    ft  ="
+    "    fq1 ="
+    "min dz/w"
+    " qv(  1)="
+    "    TBOT="
+    "      ps="
+    "      M ="
+    "  dry M ="
+    #"dKE/dt"
+    #"dIE/dt"
+    #"dPE/dt"
+    "dQ1/dt"
+    "Q  1,Q"
+    #"(E-E0)"
+    "(Q-Q0)"
+    "pmax_")
+
+    SET(GREP_ARGS "${GREP_ARGS}\\|${s}")
+  ENDFOREACH()
+
+  MESSAGE("grep_args are ${GREP_ARGS} -----------------------------------")
+
+  EXECUTE_PROCESS (COMMAND grep ${GREP_ARGS} @F90_DIR@/@F90_TEST_NAME@_1.out
+                   RESULT_VARIABLE ERROR_CODE
+                   OUTPUT_VARIABLE grep_f90_stdout
+                   ERROR_VARIABLE  grep_f90_stderr)
+  EXECUTE_PROCESS (COMMAND grep ${GREP_ARGS} @CXX_DIR@/@CXX_TEST_NAME@_1.out
+                   RESULT_VARIABLE ERROR_CODE
+                   OUTPUT_VARIABLE grep_cxx_stdout
+                   ERROR_VARIABLE  grep_cxx_stderr)
+
+  IF (NOT "${grep_f90_stdout}" STREQUAL "${grep_cxx_stdout}")
+    MESSAGE("Test did not succeed. CXX and F90 diagnostics outputs differ:\nf90:\n${grep_f90_stdout}\ncxx:\n${grep_cxx_stdout}")
+    MESSAGE (FATAL_ERROR "Test did not succeed. Stdout outputs differ.")
+  ELSE ()
+    MESSAGE ("CXX and F90 diagnostics outputs match.\n")
+  ENDIF()
+
+ENDIF() # not preqx test

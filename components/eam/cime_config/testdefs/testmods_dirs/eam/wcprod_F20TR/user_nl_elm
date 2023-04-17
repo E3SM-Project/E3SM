@@ -1,0 +1,6 @@
+ finidat = '${DIN_LOC_ROOT}/lnd/clm2/initdata_map/clmi.F20TR.ne30pg2_r05_oECv3.SMS.c20230213.nc'
+ hist_dov2xy = .true.,.true.
+ hist_fincl2 = 'H2OSNO', 'FSNO', 'QRUNOFF', 'QSNOMELT', 'FSNO_EFF', 'SNORDSL', 'SNOW', 'FSDS', 'FSR', 'FLDS', 'FIRE', 'FIRA'
+ hist_mfilt = 1,365
+ hist_nhtfrq = -24,-24
+ hist_avgflag_pertape = 'A','A'
