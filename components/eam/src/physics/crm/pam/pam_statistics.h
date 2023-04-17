@@ -286,7 +286,7 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
   parallel_for("update aggregation count", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     stat_aggregation_cnt(iens) = stat_aggregation_cnt(iens) + 1;
   });
-  real r_nx_ny  = 1._fp / (nx*ny);
+  real r_nx_ny  = 1._fp/(nx*ny);
   parallel_for("aggregate 1D statistics", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
   });
   parallel_for("aggregate 0D statistics", SimpleBounds<3>(ny,nx,nens), YAKL_LAMBDA (int j, int i, int iens) {

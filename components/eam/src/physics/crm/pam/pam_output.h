@@ -56,18 +56,18 @@ inline void pam_output_compute_means( pam::PamCoupler &coupler ) {
   });
   //------------------------------------------------------------------------------------------------
   // Compute horizontal means
-  real r_nx_ny  = 1._fp / (crm_nx*crm_ny);  // precompute reciprocal to avoid costly divisions
+  real r_nx_ny  = 1._fp/(crm_nx*crm_ny);  // precompute reciprocal to avoid costly divisions
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(crm_nz,crm_ny,crm_nx,nens), YAKL_LAMBDA (int k_crm, int j, int i, int iens) {
     int k_gcm = gcm_nlev-1-k_crm;
     real rho_total = crm_rho_d(k_crm,j,i,iens) + crm_rho_v(k_crm,j,i,iens);
-    atomicAdd( qc_mean(k_gcm,iens), crm_rho_c (k_crm,j,i,iens) / rho_total * r_nx_ny );
-    atomicAdd( qi_mean(k_gcm,iens), crm_rho_r (k_crm,j,i,iens) / rho_total * r_nx_ny );
-    atomicAdd( qr_mean(k_gcm,iens), crm_rho_i (k_crm,j,i,iens) / rho_total * r_nx_ny );
-    atomicAdd( nc_mean(k_gcm,iens), nc        (k_crm,j,i,iens)             * r_nx_ny );
-    atomicAdd( ni_mean(k_gcm,iens), ni        (k_crm,j,i,iens)             * r_nx_ny );
-    atomicAdd( nr_mean(k_gcm,iens), nr        (k_crm,j,i,iens)             * r_nx_ny );
-    atomicAdd( qm_mean(k_gcm,iens), qm        (k_crm,j,i,iens)             * r_nx_ny );
-    atomicAdd( bm_mean(k_gcm,iens), bm        (k_crm,j,i,iens)             * r_nx_ny );
+    atomicAdd( qc_mean(k_gcm,iens), (crm_rho_c(k_crm,j,i,iens) / rho_total) * r_nx_ny );
+    atomicAdd( qi_mean(k_gcm,iens), (crm_rho_i(k_crm,j,i,iens) / rho_total) * r_nx_ny );
+    atomicAdd( qr_mean(k_gcm,iens), (crm_rho_r(k_crm,j,i,iens) / rho_total) * r_nx_ny );
+    atomicAdd( nc_mean(k_gcm,iens),  nc       (k_crm,j,i,iens)              * r_nx_ny );
+    atomicAdd( ni_mean(k_gcm,iens),  ni       (k_crm,j,i,iens)              * r_nx_ny );
+    atomicAdd( nr_mean(k_gcm,iens),  nr       (k_crm,j,i,iens)              * r_nx_ny );
+    atomicAdd( qm_mean(k_gcm,iens),  qm       (k_crm,j,i,iens)              * r_nx_ny );
+    atomicAdd( bm_mean(k_gcm,iens),  bm       (k_crm,j,i,iens)              * r_nx_ny );
   });
   //------------------------------------------------------------------------------------------------
 }

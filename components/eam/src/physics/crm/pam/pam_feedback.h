@@ -35,7 +35,7 @@ inline void pam_feedback_compute_tendencies( pam::PamCoupler &coupler , real gcm
   auto vvel  = dm_device.get<real,4>("vvel"       );
   auto temp  = dm_device.get<real,4>("temp"       );
   auto rho_v = dm_device.get<real,4>("water_vapor");
-  auto rho_l = dm_device.get<real,4>("cloud_water");
+  auto rho_c = dm_device.get<real,4>("cloud_water");
   auto rho_i = dm_device.get<real,4>("ice"        );
   //------------------------------------------------------------------------------------------------
   // Get input GCM state
@@ -65,16 +65,16 @@ inline void pam_feedback_compute_tendencies( pam::PamCoupler &coupler , real gcm
   });
   //------------------------------------------------------------------------------------------------
   // Compute horizontal means
-  real r_nx_ny  = 1._fp / (crm_nx*crm_ny);  // precompute reciprocal to avoid costly divisions
+  real r_nx_ny  = 1._fp/(crm_nx*crm_ny);  // precompute reciprocal to avoid costly divisions
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(crm_nz,crm_ny,crm_nx,nens), YAKL_LAMBDA (int k_crm, int j, int i, int iens) {
     // yakl::atomicAdd ensures only one thread performs an update at a time to avoid data races and wrong answers
-    real tmp_rho = rho_d(k_crm,j,i,iens) + rho_v(k_crm,j,i,iens);
-    atomicAdd( crm_hmean_uvel(k_crm,iens), uvel (k_crm,j,i,iens)          * r_nx_ny );
-    atomicAdd( crm_hmean_vvel(k_crm,iens), vvel (k_crm,j,i,iens)          * r_nx_ny );
-    atomicAdd( crm_hmean_temp(k_crm,iens), temp (k_crm,j,i,iens)          * r_nx_ny );
-    atomicAdd( crm_hmean_qv  (k_crm,iens),(rho_v(k_crm,j,i,iens)/tmp_rho) * r_nx_ny );
-    atomicAdd( crm_hmean_qc  (k_crm,iens),(rho_l(k_crm,j,i,iens)/tmp_rho) * r_nx_ny );
-    atomicAdd( crm_hmean_qi  (k_crm,iens),(rho_i(k_crm,j,i,iens)/tmp_rho) * r_nx_ny );
+    real rho_total = rho_d(k_crm,j,i,iens) + rho_v(k_crm,j,i,iens);
+    atomicAdd( crm_hmean_uvel(k_crm,iens), uvel (k_crm,j,i,iens)            * r_nx_ny );
+    atomicAdd( crm_hmean_vvel(k_crm,iens), vvel (k_crm,j,i,iens)            * r_nx_ny );
+    atomicAdd( crm_hmean_temp(k_crm,iens), temp (k_crm,j,i,iens)            * r_nx_ny );
+    atomicAdd( crm_hmean_qv  (k_crm,iens),(rho_v(k_crm,j,i,iens)/rho_total) * r_nx_ny );
+    atomicAdd( crm_hmean_qc  (k_crm,iens),(rho_c(k_crm,j,i,iens)/rho_total) * r_nx_ny );
+    atomicAdd( crm_hmean_qi  (k_crm,iens),(rho_i(k_crm,j,i,iens)/rho_total) * r_nx_ny );
   });
   //------------------------------------------------------------------------------------------------
   // Create arrays to hold the feedback tendencies
