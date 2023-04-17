@@ -1149,8 +1149,8 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_thickness_flux_type" type="character" default_value="centered"
-					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThickEdgeFlux.  The standard MPAS-O approach is 'centered'."
-					possible_values="'upwind', 'centered'"
+					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThickEdgeFlux.  The standard MPAS-O approach is 'centered'. For 'constant', use constant thickness in time from restingThickness, for linear test problems"
+					possible_values="'upwind', 'centered', 'constant'"
 		/>
 		<nml_option name="config_drying_safety_height" type="real" default_value="1.0e-10" units="m"
 					description="Safety factor on minimum cell height to ensure the minimum height is not violated due to round-off."

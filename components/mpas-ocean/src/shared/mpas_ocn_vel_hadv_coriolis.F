@@ -56,8 +56,9 @@ module ocn_vel_hadv_coriolis
                            ! use disabled since default is on
 
    logical :: &
-      usePlanetVorticity   ! multiplicative mask for including
-                           ! planetary vorticity term
+      usePlanetVorticity,   &! mask for including planetary vorticity term
+      useRelVorticity,      &! mask for including relative vorticity term
+      useGradKineticEnergy   ! mask for including grad kinetic energy term
 
 !***********************************************************************
 
@@ -267,8 +268,8 @@ contains
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
-      !$omp end parallel
 #endif
+
       else ! .not.useGradKineticEnergy
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
@@ -294,7 +295,10 @@ contains
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
-      !$omp end parallel
+#endif
+      endif
+#ifndef MPAS_OPENACC
+         !$omp end parallel
 #endif
 
       !$acc exit data delete(tmpVorticity, qArr)
@@ -349,8 +353,6 @@ contains
           useGradKineticEnergy = .true.
       endif
 
-      if ( config_disable_vel_coriolis ) coriolisDisabled = .true.
-
       select case (trim(config_time_integrator))
       case ('RK4','rk4')
          ! For RK4, coriolis tendency term includes f: (eta+f)/h.
@@ -375,6 +377,11 @@ contains
          usePlanetVorticity = .false.
 
       end select
+
+      ! override usePlanetVorticity to false if coriolis term is disabled.
+      if ( config_disable_vel_coriolis ) then
+         usePlanetVorticity = .false.
+      endif
 
    !--------------------------------------------------------------------
 
