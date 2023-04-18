@@ -104,6 +104,15 @@ _TESTS = {
             )
         },
 
+    "e3sm_ice_developer" : {
+        "tests"   : (
+            "SMS_D_Ld1.TL319_EC30to60E2r2.DTESTM-JRA1p5",
+            "ERS_Ld5.T62_oQU240.DTESTM",
+            "PEM_Ln5.T62_oQU240wLI.DTESTM",
+            "PET_Ln5.T62_oQU240.DTESTM",
+            )
+        },
+
     "eam_condidiag" : {
         "tests"   : (
             "SMS_D_Ln5.ne4pg2_oQU480.F2010",
@@ -210,7 +219,7 @@ _TESTS = {
         },
 
     "e3sm_developer" : {
-        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer"),
+        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer", "e3sm_ice_developer"),
         "time"    : "0:45:00",
         "tests"   : (
             "ERS.f19_g16_rx1.A",
@@ -254,7 +263,6 @@ _TESTS = {
             "SMS_D_Ln5.conusx4v1_r05_oECv3.F2010",
             "SMS_Ld2.ne30pg2_r05_EC30to60E2r2.BGCEXP_CNTL_CNPECACNT_1850.elm-bgcexp",
             "SMS_Ld2.ne30pg2_r05_EC30to60E2r2.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
-            "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld3.T62_oQU120.CMPASO-IAF",
             "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850",
             "SMS_Ln5.ne30pg2_ne30pg2.F2010-SCREAM-LR-DYAMOND2",
