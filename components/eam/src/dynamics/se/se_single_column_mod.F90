@@ -227,9 +227,10 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
   real (kind=real_kind), dimension(np,np,nlev)  :: dp, exner, vtheta_dp, Rstar
   real (kind=real_kind), dimension(np,np,nlev) :: dpscm
   real (kind=real_kind) :: cp_star1, cp_star2, qval_t1, qval_t2, dt
-  real (kind=real_kind), dimension(nlev,pcnst) :: stateQ_in, q_update
+  real (kind=real_kind), dimension(nlev,pcnst) :: stateQ_in, q_update, stateQ_sub
   real (kind=real_kind), dimension(nlev) :: temp_tend, t_update, u_update, v_update
   real (kind=real_kind), dimension(nlev) :: t_in, u_in, v_in
+  real (kind=real_kind), dimension(nlev) :: t_sub, u_sub, v_sub
   real (kind=real_kind), dimension(nlev) :: relaxt, relaxq
   real (kind=real_kind), dimension(nlev) :: tdiff_dyn, qdiff_dyn
   real (kind=real_kind), dimension(npsq,nlev) :: tdiff_out, qdiff_out
@@ -290,10 +291,10 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
       do i=1,np_todo
 
         ! Set initial profiles for current column
-        stateQ_in(:,:) = elem(ie)%state%Q(i,j,:,:)
-        t_in(:) = temperature(i,j,:)
-	u_in(:) = elem(ie)%state%v(i,j,1,:,t1)
-	v_in(:) = elem(ie)%state%v(i,j,2,:,t1)
+        stateQ_in(:nlev,:pcnst) = elem(ie)%state%Q(i,j,:nlev,:pcnst)
+        t_in(:nlev) = temperature(i,j,:nlev)
+	u_in(:nlev) = elem(ie)%state%v(i,j,1,:nlev,t1)
+	v_in(:nlev) = elem(ie)%state%v(i,j,2,:nlev,t1)
 
         if (.not. use_3dfrc .or. dp_crm) then
           temp_tend(:) = 0.0_real_kind
@@ -316,7 +317,14 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
         if (dp_crm .and. iop_dosubsidence) then
           call advance_iop_subsidence(dt,elem(ie)%state%ps_v(i,j,t1),& ! In
           u_in,v_in,t_in,stateQ_in,&                                   ! In
-          u_in,v_in,t_in,stateQ_in)                                    ! Out
+          u_sub,v_sub,t_sub,stateQ_sub)                                ! Out
+
+          ! Transfer updated subsidence arrays into input arrays for next
+	  !   routine
+	  u_in(:nlev)=u_sub(:nlev)
+	  v_in(:nlev)=v_sub(:nlev)
+	  t_in(:nlev)=t_sub(:nlev)
+	  stateQ_in(:nlev,:pcnst)=stateQ_sub(:nlev,:pcnst)
 	endif
 
         ! Call the main subroutine to update t, q, u, and v according to
