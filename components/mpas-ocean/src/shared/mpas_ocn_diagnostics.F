@@ -605,9 +605,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iVertex, iEdge, iCell, i, k
+      integer :: iVertex, iEdge, i, k
 
-      real (kind=RKIND) :: r_tmp, wall_slip_factor, areaDual
+      real (kind=RKIND) :: invAreaTri1, r_tmp, wall_slip_factor
 
       err = 0
 
@@ -636,31 +636,27 @@ contains
       !$acc parallel loop &
       !$acc          present(circulation, relativeVorticity, edgesOnVertex, &
       !$acc                  maxLevelVertexBot, dcEdge, normalVelocity, &
-      !$acc                  edgeSignOnVertex, cellMask, &
-      !$acc                  minLevelVertexTop, kiteAreasOnVertex) &
-      !$acc          private(areaDual, i, iEdge, iCell, k, r_tmp, wall_slip_factor)
+      !$acc                  minLevelVertexTop, areaTriangle, edgeSignOnVertex) &
+      !$acc          private(invAreaTri1, i, iEdge, k, r_tmp, wall_slip_factor)
 #else
       !$omp do schedule(runtime) &
-      !$omp          private(areaDual, i, iEdge, iCell, k, r_tmp, wall_slip_factor)
+      !$omp          private(invAreaTri1, i, iEdge, k, r_tmp, wall_slip_factor)
 #endif
       do iVertex = 1, nVerticesAll
+         invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
          do k = minLevelVertexTop(iVertex), maxLevelVertexBot(iVertex)
-            areaDual = 0.0_RKIND  ! only unmaksed kites
             do i = 1, vertexDegree
                iEdge = edgesOnVertex(i, iVertex)
-               iCell = cellsOnVertex(i, iVertex)
                r_tmp = edgeSignOnVertex(i, iVertex) * &
                        dcEdge(iEdge) * normalVelocity(k, iEdge)
                circulation(k, iVertex) = circulation(k, iVertex) + r_tmp
-               areaDual = areaDual + &
-                          cellMask(k, iCell) * kiteAreasOnVertex(i, iVertex)
             end do
             ! no-slip: curl(u) unchanged
             ! free-slip: curl(u) = 0.0
             ! partial-slip: curl(u) reduced
             circulation(k, iVertex) = circulation(k, iVertex) * &
                (1.0_RKIND - wall_slip_factor * boundaryVertex(k, iVertex))
-            relativeVorticity(k, iVertex) = circulation(k, iVertex) / areaDual
+            relativeVorticity(k, iVertex) = circulation(k, iVertex) * invAreaTri1
          end do
       end do
 #ifndef MPAS_OPENACC
