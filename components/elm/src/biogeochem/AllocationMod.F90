@@ -967,7 +967,6 @@ contains
    integer :: ft        ! functional type index
    integer :: f         ! loop index for plant competitors
    integer :: ci, s     ! used for FATES BC (clump index, site index)
-   integer :: ft        ! FATES PFT index
 
    ! Fractional uptake profiles, that are proportional to root density
    real(r8):: nuptake_prof(bounds%begc:bounds%endc,1:nlevdecomp)
@@ -976,7 +975,6 @@ contains
    real(r8), allocatable,target :: plant_nh4demand_vr_fates(:,:) ! nh4 demand per competitor per soil layer
    real(r8), allocatable,target :: plant_no3demand_vr_fates(:,:) ! no3 demand per competitor per soil layer
    real(r8), allocatable,target :: plant_pdemand_vr_fates(:,:)   ! p demand per competitor per soil layer
-   real(r8) :: ndemand,pdemand
    integer  :: nc   ! clump index
    integer  :: pci, pcf                        ! (I)nitial and (F)inal plant competitor index
    real(r8), pointer :: veg_rootc_ptr(:,:)     ! points to either native ELM or FATES root carbon array
