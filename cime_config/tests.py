@@ -610,5 +610,55 @@ _TESTS = {
             "ERS.T62_oEC60to30v3_wQU225EC60to30.GMPAS-IAF-WW3",
             )
     },
+
+    # super-BFB
+    "e3sm_superbfb_ocn_opt" : { # opt + pureMPI
+        #"share"   : True,
+        "time"    : "00:15:00",
+        "tests"   : (
+            "ERS_Lh3.T62_oQU120.CMPASO-NYF.pemod-omp1",
+            "PEM_Lh3.T62_oQU120.CMPASO-NYF.pemod-omp1",
+            "ERS_Ld3.T62_EC30to60E2r2.CMPASO-NYF.pemod-omp1",
+            "PEM_Lh3.T62_EC30to60E2r2.CMPASO-NYF.pemod-omp1",
+        )
+    },
+
+    "e3sm_superbfb_ocn_dbg" : { # dbg + pureMPI
+        #"share"   : True,
+        "time"    : "00:30:00",
+        "tests"   : (
+            "ERS_Lh3_D.T62_oQU120.CMPASO-NYF.pemod-omp1",
+            "PEM_Lh3_D.T62_oQU120.CMPASO-NYF.pemod-omp1",
+            "ERS_Ld3_D.T62_EC30to60E2r2.CMPASO-NYF.pemod-omp1",
+            "PEM_Lh3_D.T62_EC30to60E2r2.CMPASO-NYF.pemod-omp1",
+        )
+    },
+
+    "e3sm_superbfb_ocn_opt_thrd" : { # opt + threads
+        #"share"   : True,
+        "time"    : "00:15:00",
+        "tests"   : (
+            "ERS_Lh3.T62_oQU120.CMPASO-NYF.pemod-omp2",
+            "PET_Lh3.T62_oQU120.CMPASO-NYF.pemod-ompfull",
+            "ERS_Ld3.T62_EC30to60E2r2.CMPASO-NYF.pemod-omp2",
+            "PET_Lh3.T62_EC30to60E2r2.CMPASO-NYF.pemod-ompfull",
+        )
+    },
+
+    "e3sm_superbfb_ocn_dbg_thrd" : { # dbg + threads
+        #"share"   : True,
+        "time"    : "00:30:00",
+        "tests"   : (
+            "ERS_Lh3_D.T62_oQU120.CMPASO-NYF.pemod-omp2",
+            "PET_Lh3_D.T62_oQU120.CMPASO-NYF.pemod-ompfull",
+            "ERS_Ld3_D.T62_EC30to60E2r2.CMPASO-NYF.pemod-omp2",
+            "PET_Lh3_D.T62_EC30to60E2r2.CMPASO-NYF.pemod-ompfull",
+        )
+    },
+
+    "e3sm_superbfb_ocn" : {
+        "inherit" : ("e3sm_superbfb_ocn_dbg", "e3sm_superbfb_ocn_opt",
+                     "e3sm_superbfb_ocn_dbg_thrd", "e3sm_superbfb_ocn_opt_thrd"),
+    },
 }
 
