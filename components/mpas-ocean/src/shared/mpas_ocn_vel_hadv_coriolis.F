@@ -164,7 +164,7 @@ contains
 #ifndef MPAS_OPENACC
          !$omp end do
 #endif
-      elseif (useRelVorticity) then
+      elseif (useRelVorticity.and.(.not.usePlanetVorticity)) then
 #ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(tmpVorticity, normRelVortEdge) &
@@ -181,7 +181,7 @@ contains
 #ifndef MPAS_OPENACC
          !$omp end do
 #endif
-      elseif (usePlanetVorticity) then
+      elseif (usePlanetVorticity.and.(.not.useRelVorticity)) then
 #ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(tmpVorticity, normPlanetVortEdge) &
@@ -344,7 +344,6 @@ contains
 
       !*** Reset module variables based in input configuration
 
-      if ( config_disable_vel_hadv .and. config_disable_vel_coriolis ) hadvCoriolisDisabled = .true.
       if ( config_disable_vel_hadv ) then
           useRelVorticity = .false.
           useGradKineticEnergy = .false.
@@ -381,6 +380,11 @@ contains
       ! override usePlanetVorticity to false if coriolis term is disabled.
       if ( config_disable_vel_coriolis ) then
          usePlanetVorticity = .false.
+      endif
+
+      ! If all three terms are off, then disable the whole subroutine upon entry
+      if ( (.not.useRelVorticity).and.(.not.useGradKineticEnergy).and.(.not.usePlanetVorticity) ) then
+          hadvCoriolisDisabled = .true.
       endif
 
    !--------------------------------------------------------------------
