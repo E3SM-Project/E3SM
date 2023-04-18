@@ -146,15 +146,6 @@ add_default($nl, 'config_eddyMLD_reference_depth');
 add_default($nl, 'config_eddyMLD_reference_pressure');
 add_default($nl, 'config_eddyMLD_use_old');
 
-####################################
-# Namelist group: Rayleigh_damping #
-####################################
-
-add_default($nl, 'config_Rayleigh_damping_coeff');
-add_default($nl, 'config_Rayleigh_damping_depth_variable');
-add_default($nl, 'config_Rayleigh_bottom_friction');
-add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
-
 #########################
 # Namelist group: cvmix #
 #########################
@@ -280,13 +271,6 @@ add_default($nl, 'config_use_tidal_potential_forcing_P1');
 add_default($nl, 'config_tidal_potential_ramp');
 add_default($nl, 'config_self_attraction_and_loading_beta');
 
-###################################
-# Namelist group: vegetation_drag #
-###################################
-
-add_default($nl, 'config_use_vegetation_drag');
-add_default($nl, 'config_vegetation_drag_coefficient');
-
 ##############################
 # Namelist group: frazil_ice #
 ##############################
@@ -347,6 +331,22 @@ add_default($nl, 'config_implicit_top_drag_coeff');
 add_default($nl, 'config_explicit_bottom_drag_coeff');
 add_default($nl, 'config_use_topographic_wave_drag');
 add_default($nl, 'config_topographic_wave_drag_coeff');
+
+####################################
+# Namelist group: Rayleigh_damping #
+####################################
+
+add_default($nl, 'config_Rayleigh_damping_coeff');
+add_default($nl, 'config_Rayleigh_damping_depth_variable');
+add_default($nl, 'config_Rayleigh_bottom_friction');
+add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
+
+###################################
+# Namelist group: vegetation_drag #
+###################################
+
+add_default($nl, 'config_use_vegetation_drag');
+add_default($nl, 'config_vegetation_drag_coefficient');
 
 ###################################
 # Namelist group: ocean_constants #

@@ -209,12 +209,6 @@
 <config_eddyMLD_reference_pressure>1.0e5</config_eddyMLD_reference_pressure>
 <config_eddyMLD_use_old>.true.</config_eddyMLD_use_old>
 
-<!-- Rayleigh_damping -->
-<config_Rayleigh_damping_coeff>0.0</config_Rayleigh_damping_coeff>
-<config_Rayleigh_damping_depth_variable>.false.</config_Rayleigh_damping_depth_variable>
-<config_Rayleigh_bottom_friction>.false.</config_Rayleigh_bottom_friction>
-<config_Rayleigh_bottom_damping_coeff>1.0e-4</config_Rayleigh_bottom_damping_coeff>
-
 <!-- cvmix -->
 <config_use_cvmix>.true.</config_use_cvmix>
 <config_cvmix_prandtl_number>1.0</config_cvmix_prandtl_number>
@@ -316,10 +310,6 @@
 <config_tidal_potential_ramp>10.0</config_tidal_potential_ramp>
 <config_self_attraction_and_loading_beta>0.09</config_self_attraction_and_loading_beta>
 
-<!-- vegetation_drag -->
-<config_use_vegetation_drag>.false.</config_use_vegetation_drag>
-<config_vegetation_drag_coefficient>1.09</config_vegetation_drag_coefficient>
-
 <!-- frazil_ice -->
 <config_use_frazil_ice_formation>.true.</config_use_frazil_ice_formation>
 <config_frazil_in_open_ocean>.true.</config_frazil_in_open_ocean>
@@ -390,6 +380,16 @@
 <config_explicit_bottom_drag_coeff>1.0e-3</config_explicit_bottom_drag_coeff>
 <config_use_topographic_wave_drag>.false.</config_use_topographic_wave_drag>
 <config_topographic_wave_drag_coeff>5.0e-4</config_topographic_wave_drag_coeff>
+
+<!-- Rayleigh_damping -->
+<config_Rayleigh_damping_coeff>0.0</config_Rayleigh_damping_coeff>
+<config_Rayleigh_damping_depth_variable>.false.</config_Rayleigh_damping_depth_variable>
+<config_Rayleigh_bottom_friction>.false.</config_Rayleigh_bottom_friction>
+<config_Rayleigh_bottom_damping_coeff>1.0e-4</config_Rayleigh_bottom_damping_coeff>
+
+<!-- vegetation_drag -->
+<config_use_vegetation_drag>.false.</config_use_vegetation_drag>
+<config_vegetation_drag_coefficient>1.09</config_vegetation_drag_coefficient>
 
 <!-- ocean_constants -->
 <config_density0>1026.0</config_density0>
