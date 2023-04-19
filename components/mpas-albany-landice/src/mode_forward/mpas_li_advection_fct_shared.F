@@ -51,7 +51,8 @@ module li_tracer_advection_fct_shared
    real (kind=RKIND), public, dimension(:,:), allocatable :: &
       advCoefs,       &! common advection coefficients
       advCoefs3rd,    &! common advection coeffs for high order
-      advMaskHighOrder ! mask for high order advection terms
+      advMaskHighOrder, & ! mask for high order advection terms
+      advMask2ndOrder
 
    !--------------------------------------------------------------------
    ! Public member functions 
@@ -132,6 +133,7 @@ module li_tracer_advection_fct_shared
                 advCoefs        (nAdvCellsMax,nEdges), &
                 advCoefs3rd     (nAdvCellsMax,nEdges), &
                 advMaskHighOrder(nVertLevels ,nEdges), &
+                advMask2ndOrder(nVertLevels ,nEdges), &
                 derivTwo      (nAdvCellsMax,2,nEdges))
       ! Compute derivTwo array
       call computeDerivTwo(derivTwo, err)
@@ -174,6 +176,15 @@ module li_tracer_advection_fct_shared
             advMaskHighOrder(:,iEdge) = 0.0_RKIND
          else
             advMaskHighOrder(:,iEdge) = 1.0_RKIND
+         end if
+
+         ! second order mask must have ice on both sides and one boundary cell
+         if ( (li_mask_is_dynamic_ice(cellMask(cell1)) .and.  li_mask_is_dynamic_ice(cellMask(cell2)) ) &
+              .and. (boundaryCell(cell1) == 1 .or. boundaryCell(cell2) == 1) ) then
+              !.and. (advMaskHighOrder(:,iEdge) == 0.0_RKIND) ) then  ! not sure about this
+             advMask2ndOrder(:,iEdge) = 1.0_RKIND
+         else
+             advMask2ndOrder(:,iEdge) = 0.0_RKIND
          end if
 
          ! do only if this edge flux is needed to update owned cells

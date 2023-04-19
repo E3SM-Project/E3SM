@@ -358,7 +358,7 @@ module li_tracer_advection_fct
            ! Remove low order flux from the high order flux
            ! Store left over high order flux in highOrderFlx array
            do k = 1, nVertLevels !minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-              tracerWeight = (1.0_RKIND - advMaskHighOrder(k,iEdge)) &
+              tracerWeight = advMask2ndOrder(k,iEdge) &
                            * (dvEdge(iEdge) * 0.5_RKIND)             &
                            * normalThicknessFlux(k, iEdge)
 

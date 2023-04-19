@@ -680,7 +680,8 @@ module li_advection
                      advCellsForEdge, &
                      advCoefs, &
                      advCoefs3rd, &
-                     advMaskHighOrder)
+                     advMaskHighOrder, &
+                     advMask2ndOrder)
       endif
 
       ! clean up
