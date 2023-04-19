@@ -55,7 +55,7 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   auto gcm_vvel  = dm_device.get<real,2>("gcm_vvel"       );
   auto gcm_temp  = dm_device.get<real,2>("gcm_temp"       );
   auto gcm_rho_v = dm_device.get<real,2>("gcm_water_vapor");
-  auto gcm_rho_l = dm_device.get<real,2>("gcm_cloud_water");
+  auto gcm_rho_c = dm_device.get<real,2>("gcm_cloud_water");
   auto gcm_rho_i = dm_device.get<real,2>("gcm_cloud_ice"  );
   //------------------------------------------------------------------------------------------------
   // wrap the host GCM state data in YAKL arrays
@@ -82,21 +82,24 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
     gcm_rho_d(k_crm,iens) = -1 * dp * (1-input_ql(k_gcm,iens)) / ( dz * grav );
 
     #ifdef MMF_PAM_FORCE_ALL_WATER_SPECIES
-      // another alternate where we force cloud water/ice separately
-      gcm_rho_v(k_crm,iens) = input_ql  (k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
-      gcm_rho_l(k_crm,iens) = input_qccl(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
+      // force vapor/liquid/ice species separately
+      gcm_rho_v(k_crm,iens) = input_ql(k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
+      gcm_rho_c(k_crm,iens) = input_qccl(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
       gcm_rho_i(k_crm,iens) = input_qiil(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
-      gcm_temp(k_crm,iens) = input_tl(k_gcm,iens);
+      gcm_temp(k_crm,iens)  = input_tl(k_gcm,iens);
     #else
-      // force vapor with total water
+      // use total water from GCM to force CRM water vapor
       real gcm_rho_v_tmp = input_ql(k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
-      real input_qt = input_ql(k_gcm,iens) + input_qccl(k_gcm,iens) + input_qiil(k_gcm,iens);
+      real input_qt      = input_ql(k_gcm,iens) + input_qccl(k_gcm,iens) + input_qiil(k_gcm,iens);
+      real liq_adj       = input_qccl(k_gcm,iens)* Lv     / cp_d;
+      real ice_adj       = input_qiil(k_gcm,iens)*(Lv+Lf) / cp_d;
+      real input_t_adj   = input_tl(k_gcm,iens) - liq_adj - ice_adj;
+      gcm_temp(k_crm,iens)  = input_t_adj;
       gcm_rho_v(k_crm,iens) = input_qt * ( gcm_rho_d(k_crm,iens) + gcm_rho_v_tmp );
-      gcm_rho_l(k_crm,iens) = 0;
+      gcm_rho_c(k_crm,iens) = 0;
       gcm_rho_i(k_crm,iens) = 0;
-      real input_t_adj = input_tl(k_gcm,iens) - ( input_qccl(k_gcm,iens)*Lv + input_qiil(k_gcm,iens)*(Lv+Lf) ) / cp_d ;
-      gcm_temp(k_crm,iens) = input_t_adj;
     #endif
+
   });
 
   //------------------------------------------------------------------------------------------------
@@ -186,12 +189,13 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   auto state_shoc_wthv     = dm_host.get<real const,4>("state_shoc_wthv").createDeviceCopy();
   auto state_shoc_relvar   = dm_host.get<real const,4>("state_shoc_relvar").createDeviceCopy();
   auto state_shoc_cldfrac  = dm_host.get<real const,4>("state_shoc_cldfrac").createDeviceCopy();
+  auto state_rho_dry       = dm_host.get<real const,4>("state_rho_dry").createDeviceCopy();
   //------------------------------------------------------------------------------------------------
   // Copy the host CRM data to the coupler
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-    // NOTE - convert specific mass mixing ratios to density
-    real rho_total = crm_rho_d(k,j,i,iens) + crm_rho_v(k,j,i,iens);
-    crm_rho_v        (k,j,i,iens) = state_qv(k,j,i,iens) * crm_rho_d(k,j,i,iens) / ( 1 - state_qv(k,j,i,iens) ) ;
+    // NOTE - convert specific mass mixing ratios to density using previous state dry density from pbuf
+    crm_rho_v        (k,j,i,iens) = state_qv(k,j,i,iens) * state_rho_dry(k,j,i,iens) / ( 1 - state_qv(k,j,i,iens) ) ;
+    real rho_total = state_rho_dry(k,j,i,iens) + crm_rho_v(k,j,i,iens); 
     crm_rho_c        (k,j,i,iens) = state_qc(k,j,i,iens) * rho_total ;
     crm_rho_r        (k,j,i,iens) = state_qr(k,j,i,iens) * rho_total ;
     crm_rho_i        (k,j,i,iens) = state_qi(k,j,i,iens) * rho_total ;
