@@ -53,6 +53,7 @@
       <value compset="_EAM%AR5sf"      >&eam_phys_defaults; -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero</value>
       <value compset="_ELM%[^_]*BC"    >-bc_dep_to_snow_updates</value>
       <value compset="_EAM.*_BGC%*"    >-co2_cycle</value>
+      <value compset="_EAM%CMIP6-P3_"  >&eam_chem_defaults; -nlev 72 -clubb_sgs -microphys p3</value>
 
       <!-- Single column model (SCM) -->
       <value compset="_EAM%SCM_"       >&eam_phys_defaults; &eam_chem_defaults; -scam</value>
