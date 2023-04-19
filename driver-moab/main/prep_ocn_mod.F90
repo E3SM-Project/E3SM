@@ -1481,6 +1481,8 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting x2o_om array ')
     endif    
+    ! zero out the output first (see line 1358)
+    x2o_om(:,:)=0.
     tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
     arrsize = naflds * lsize !        allocate (a2x_om (lsize, naflds))
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, a2x_om(1,1))
