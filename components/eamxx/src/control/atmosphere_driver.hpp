@@ -48,8 +48,10 @@ public:
   AtmosphereDriver (const ekat::Comm& atm_comm,
                     const ekat::ParameterList& params);
 
-  // The default dtor is fine.
-  ~AtmosphereDriver () = default;
+  // Must call finalize, so that, if AD is destroyed as part of uncaught
+  // exception stack unwinding, we will still perform some cleanup ops,
+  // among which, for instance, closing any open output file.
+  ~AtmosphereDriver ();
 
   // ---- Begin initialization methods ---- //
 
@@ -130,8 +132,9 @@ public:
   // Note: dt is assumed to be in seconds
   void run (const int dt);
 
-  // Clean up the driver (includes cleaning up the parameterizations and the fm's);
-  void finalize ( /* inputs */ );
+  // Clean up the driver (finalizes and cleans up all internals)
+  // NOTE: if already finalized, this is a no-op
+  void finalize ();
 
   field_mgr_ptr get_ref_grid_field_mgr () const;
   field_mgr_ptr get_field_mgr (const std::string& grid_name) const;

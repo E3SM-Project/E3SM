@@ -94,6 +94,11 @@ AtmosphereDriver(const ekat::Comm& atm_comm,
   set_params(params);
 }
 
+AtmosphereDriver::~AtmosphereDriver ()
+{
+  finalize();
+}
+
 void AtmosphereDriver::
 set_comm(const ekat::Comm& atm_comm)
 {
@@ -1322,6 +1327,10 @@ void AtmosphereDriver::run (const int dt) {
 void AtmosphereDriver::finalize ( /* inputs? */ ) {
   start_timer("EAMxx::finalize");
 
+  if (m_ad_status==0) {
+    return;
+  }
+
   m_atm_logger->info("[EAMxx] Finalize ...");
 
   // Finalize and destroy output streams, make sure files are closed
@@ -1368,6 +1377,8 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_atm_comm.all_reduce(&my_mem_usage,&max_mem_usage,1,MPI_MAX);
   m_atm_logger->debug("[EAMxx::finalize] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
+
+  m_ad_status = 0;
 
   stop_timer("EAMxx::finalize");
 }
