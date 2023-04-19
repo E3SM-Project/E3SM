@@ -78,7 +78,6 @@ module ocn_vmix
       dragTypeVariable    = 3, &! Spatially variable
       dragTypeMannings    = 4   ! Manning's coefficient
 
-   real (kind=RKIND) :: implicitBottomDragCoef
    real (kind=RKIND) :: rayleighDampingCoef, rayleighBottomDampingCoef, &
                         rayleighDepthVariable
 
@@ -1452,7 +1451,7 @@ contains
       implicitTopDragCoef = 0.0_RKIND
 
       if (config_use_implicit_top_drag .and. &
-          .not. config_use_implicit_bottom_drag) then
+          .not. trim(config_bottom_drag_mode) == 'implicit') then
          call mpas_log_write('Implicit top drag can only be used with ' //&
               & 'implicit bottom drag', MPAS_LOG_CRIT)
       endif
