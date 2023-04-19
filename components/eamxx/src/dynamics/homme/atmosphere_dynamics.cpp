@@ -778,9 +778,17 @@ void HommeDynamics::init_homme_views () {
   constexpr int QSZ  = HOMMEXX_QSIZE_D;
   constexpr int NVL  = HOMMEXX_NUM_LEV;
   constexpr int NVLI = HOMMEXX_NUM_LEV_P;
+  constexpr int N    = HOMMEXX_PACK_SIZE;
 
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const int qsize = tracers.num_tracers();
+
+  const auto ncols = m_phys_grid->get_num_local_dofs();
+  const auto nlevs = m_phys_grid->get_num_vertical_levels();
+  const auto npacks= ekat::PackInfo<N>::num_packs(nlevs);
+
+  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  const auto default_policy = ESU::get_default_team_policy(ncols,npacks);
 
   // Print homme's parameters, so user can see whether something wasn't set right.
   // TODO: make Homme::SimulationParams::print accept an ostream.
@@ -815,6 +823,15 @@ void HommeDynamics::init_homme_views () {
   msg << "   disable_diagnostics: " << (params.disable_diagnostics ? "yes" : "no") << "\n";
   msg << "   theta_hydrostatic_mode: " << (params.theta_hydrostatic_mode ? "yes" : "no") << "\n";
   msg << "   prescribed_wind: " << (params.prescribed_wind ? "yes" : "no") << "\n";
+
+  msg << "\n************** General run info **********************\n\n";
+  msg << "   ncols: " << ncols << "\n";
+  msg << "   nlevs: " << nlevs << "\n";
+  msg << "   npacks: " << npacks << "\n";
+  msg << "   league_size: " << default_policy.league_size() << "\n";
+  msg << "   team_size: " << default_policy.team_size() << "\n";
+  msg << "   concurrent teams: " << KT::ExeSpace().concurrency() / default_policy.team_size() << "\n";
+
   // TODO: Replace with scale_factor and laplacian_rigid_factor when available.
   //msg << "   rearth: " << params.rearth << "\n";
   msg << "\n**********************************************************\n" << "\n";
