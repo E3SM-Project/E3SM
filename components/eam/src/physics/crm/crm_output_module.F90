@@ -123,19 +123,25 @@ module crm_output_module
       real(crm_rknd), allocatable :: dqv_sgs      (:,:)  ! CRM water vapor tendency from SGS   [kg/kg/s]
       real(crm_rknd), allocatable :: dqc_sgs      (:,:)  ! CRM cloud water tendency from SGS   [kg/kg/s]
       real(crm_rknd), allocatable :: dqi_sgs      (:,:)  ! CRM cloud ice tendency from SGS     [kg/kg/s]
+      real(crm_rknd), allocatable :: dqr_sgs      (:,:)  ! CRM liquid rain tendency from SGS   [kg/kg/s]
+
       real(crm_rknd), allocatable :: dt_micro     (:,:)  ! CRM temperature tendency from micro [K/s]
       real(crm_rknd), allocatable :: dqv_micro    (:,:)  ! CRM water vapor tendency from micro [kg/kg/s]
       real(crm_rknd), allocatable :: dqc_micro    (:,:)  ! CRM cloud water tendency from micro [kg/kg/s]
       real(crm_rknd), allocatable :: dqi_micro    (:,:)  ! CRM cloud ice tendency from micro   [kg/kg/s]
+      real(crm_rknd), allocatable :: dqr_micro    (:,:)  ! CRM liquid rain tendency from micro  [kg/kg/s]
 
       real(crm_rknd), allocatable :: dt_dycor  (:,:)
       real(crm_rknd), allocatable :: dqv_dycor (:,:)
       real(crm_rknd), allocatable :: dqc_dycor (:,:)
       real(crm_rknd), allocatable :: dqi_dycor (:,:)
+      real(crm_rknd), allocatable :: dqr_dycor (:,:)
+
       real(crm_rknd), allocatable :: dt_sponge (:,:)
       real(crm_rknd), allocatable :: dqv_sponge(:,:)
       real(crm_rknd), allocatable :: dqc_sponge(:,:)
       real(crm_rknd), allocatable :: dqi_sponge(:,:)
+      real(crm_rknd), allocatable :: dqr_sponge(:,:)
 
       real(crm_rknd), allocatable :: rho_d_ls     (:,:)  ! large-scale forcing of dry density   [kg/m3/s]
       real(crm_rknd), allocatable :: rho_v_ls     (:,:)  ! large-scale forcing of vapor density [kg/m3/s]
@@ -291,19 +297,25 @@ contains
       if (.not. allocated(output%dqv_sgs      )) allocate(output%dqv_sgs      (ncol,nlev))
       if (.not. allocated(output%dqc_sgs      )) allocate(output%dqc_sgs      (ncol,nlev))
       if (.not. allocated(output%dqi_sgs      )) allocate(output%dqi_sgs      (ncol,nlev))
+      if (.not. allocated(output%dqr_sgs      )) allocate(output%dqr_sgs      (ncol,nlev))
+
       if (.not. allocated(output%dt_micro     )) allocate(output%dt_micro     (ncol,nlev))
       if (.not. allocated(output%dqv_micro    )) allocate(output%dqv_micro    (ncol,nlev))
       if (.not. allocated(output%dqc_micro    )) allocate(output%dqc_micro    (ncol,nlev))
       if (.not. allocated(output%dqi_micro    )) allocate(output%dqi_micro    (ncol,nlev))
+      if (.not. allocated(output%dqr_micro    )) allocate(output%dqr_micro    (ncol,nlev))
 
-      if (.not. allocated(output%dt_dycor  )) allocate(output%dt_dycor        (ncol,nlev))
-      if (.not. allocated(output%dqv_dycor )) allocate(output%dqv_dycor       (ncol,nlev))
-      if (.not. allocated(output%dqc_dycor )) allocate(output%dqc_dycor       (ncol,nlev))
-      if (.not. allocated(output%dqi_dycor )) allocate(output%dqi_dycor       (ncol,nlev))
-      if (.not. allocated(output%dt_sponge )) allocate(output%dt_sponge       (ncol,nlev))
-      if (.not. allocated(output%dqv_sponge)) allocate(output%dqv_sponge      (ncol,nlev))
-      if (.not. allocated(output%dqc_sponge)) allocate(output%dqc_sponge      (ncol,nlev))
-      if (.not. allocated(output%dqi_sponge)) allocate(output%dqi_sponge      (ncol,nlev))
+      if (.not. allocated(output%dt_dycor     )) allocate(output%dt_dycor     (ncol,nlev))
+      if (.not. allocated(output%dqv_dycor    )) allocate(output%dqv_dycor    (ncol,nlev))
+      if (.not. allocated(output%dqc_dycor    )) allocate(output%dqc_dycor    (ncol,nlev))
+      if (.not. allocated(output%dqi_dycor    )) allocate(output%dqi_dycor    (ncol,nlev))
+      if (.not. allocated(output%dqr_dycor    )) allocate(output%dqr_dycor    (ncol,nlev))
+
+      if (.not. allocated(output%dt_sponge    )) allocate(output%dt_sponge    (ncol,nlev))
+      if (.not. allocated(output%dqv_sponge   )) allocate(output%dqv_sponge   (ncol,nlev))
+      if (.not. allocated(output%dqc_sponge   )) allocate(output%dqc_sponge   (ncol,nlev))
+      if (.not. allocated(output%dqi_sponge   )) allocate(output%dqi_sponge   (ncol,nlev))
+      if (.not. allocated(output%dqr_sponge   )) allocate(output%dqr_sponge   (ncol,nlev))
 
       if (.not. allocated(output%rho_d_ls     )) allocate(output%rho_d_ls     (ncol,nlev))
       if (.not. allocated(output%rho_v_ls     )) allocate(output%rho_v_ls     (ncol,nlev))

@@ -47,9 +47,11 @@ inline void pam_output_compute_means( pam::PamCoupler &coupler ) {
   //------------------------------------------------------------------------------------------------
   // We will be essentially reducing a summation to these variables, so initialize them to zero
   parallel_for("Initialize horzontal means", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
+    qc_mean(k_gcm,iens) = 0;
+    qi_mean(k_gcm,iens) = 0;
+    qr_mean(k_gcm,iens) = 0;
     nc_mean(k_gcm,iens) = 0;
     ni_mean(k_gcm,iens) = 0;
-    qr_mean(k_gcm,iens) = 0;
     nr_mean(k_gcm,iens) = 0;
     qm_mean(k_gcm,iens) = 0;
     bm_mean(k_gcm,iens) = 0;
