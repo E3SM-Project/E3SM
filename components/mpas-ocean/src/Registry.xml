@@ -453,28 +453,6 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
-	<nml_record name="Rayleigh_damping" mode="forward">
-		<nml_option name="config_Rayleigh_friction" type="logical" default_value=".false."
-					description="If true, Rayleigh friction is included in the momentum equation at every depth level."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Rayleigh_damping_coeff" type="real" default_value="1.0e-4" units="s^-1"
-					description="Inverse-time coefficient for the Rayleigh damping term, $c_R$, applied at every depth level."
-					possible_values="Any positive real value."
-		/>
-		<nml_option name="config_Rayleigh_damping_depth_variable" type="logical" default_value=".false."
-					description="If true applies r h^-1 instead of just r."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Rayleigh_bottom_friction" type="logical" default_value=".false."
-					description="If true, Rayleigh friction is only applied to the bottom"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Rayleigh_bottom_damping_coeff" type="real" default_value="1.0e-4" units="s^-1"
-					description="Inverse-time coefficient for the Rayleigh damping term, $c_R$, only applied at the bottom."
-					possible_values="Any positive real value."
-		/>
-	</nml_record>
 	<nml_record name="cvmix" mode="forward">
 		<nml_option name="config_use_cvmix" type="logical" default_value=".true."
 					description="If true, use the Community Vertical MIXing routines to compute vertical diffusivity and viscosity"
@@ -927,20 +905,6 @@
 					possible_values="0.0 to turn off, 0.09 is typical value to use for scalar approximation"
 		/>
 	</nml_record>
-	<nml_record name="vegetation_drag" mode="init;forward">
-		<nml_option name="config_use_vegetation_drag" type="logical" default_value=".false."
-					description="Controls if vegetation_drag is used."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_use_vegetation_manning_equation" type="logical" default_value=".false."
-					description="Compute vegetation drag force using vegetation-induced Manning roughness coefficient."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_vegetation_drag_coefficient" type="real" default_value="1.09"
-					description="Vegetation drag coefficient"
-					possible_values="O(1)"
-		/>
-	</nml_record>
 	<nml_record name="frazil_ice" mode="forward">
 		<nml_option name="config_use_frazil_ice_formation" type="logical" default_value=".false."
 					description="Controls if fluxes related to frazil ice process are computed."
@@ -1081,11 +1045,15 @@
 		/>
 	</nml_record>
 	<nml_record name="bottom_drag" mode="forward">
-		<nml_option name="config_use_implicit_bottom_drag" type="logical" default_value=".true."
-					description="If true, implicit bottom drag is used on the momentum equation."
-					possible_values=".true. or .false."
+		<nml_option name="config_bottom_drag_mode" type="character" default_value="implicit"
+					description="Formulation of the bottom drag."
+					possible_values="'implicit','explicit'"
 		/>
-		<nml_option name="config_implicit_bottom_drag_coeff" type="real" default_value="1.0e-3"
+		<nml_option name="config_implicit_bottom_drag_type" type="character" default_value="constant"
+					description="Type of implicit bottom drag used."
+					possible_values="'constant','constant_and_rayleigh','loglaw','spatially-variable','mannings'"
+		/>
+		<nml_option name="config_implicit_constant_bottom_drag_coeff" type="real" default_value="1.0e-3"
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
@@ -1097,24 +1065,8 @@
 					description="Dimensionless top drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
-		<nml_option name="config_use_implicit_bottom_roughness" type="logical" default_value=".false."
-					description="If true, depends on bottom roughness z0"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_use_implicit_bottom_drag_variable" type="logical" default_value=".false."
-					description="If true, spatially-variable implicit bottom drag is used on the momentum equation."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_use_implicit_bottom_drag_variable_mannings" type="logical" default_value=".false."
-					description="If true, uses Mannings' n values for the computation of Cd=g*n^2*h^{-1/3}."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_use_explicit_bottom_drag" type="logical" default_value=".false."
-					description="If true, explicit bottom drag is used on the momentum equation."
-					possible_values=".true. or .false."
-		/>
 		<nml_option name="config_explicit_bottom_drag_coeff" type="real" default_value="1.0e-3"
-					description="Dimensionless bottom drag coefficient, $c_{drag}$."
+					description="Dimensionless explicit bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
 		<nml_option name="config_use_topographic_wave_drag" type="logical" default_value=".false."
@@ -1125,8 +1077,36 @@
 					description="Dimensionless topographic wave drag coefficient, $c_{topo}$."
 					possible_values="any positive real, typically 5.0e-4"
 		/>
-
 	</nml_record>
+	<nml_record name="Rayleigh_damping" mode="forward">
+		<nml_option name="config_Rayleigh_damping_coeff" type="real" default_value="1.0e-4" units="s^-1"
+					description="Inverse-time coefficient for the Rayleigh damping term, $c_R$, applied at every depth level."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_Rayleigh_damping_depth_variable" type="logical" default_value=".false."
+					description="If true applies r h^-1 instead of just r."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Rayleigh_bottom_friction" type="logical" default_value=".false."
+					description="If true, Rayleigh friction is only applied to the bottom"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Rayleigh_bottom_damping_coeff" type="real" default_value="1.0e-4" units="s^-1"
+					description="Inverse-time coefficient for the Rayleigh damping term, $c_R$, only applied at the bottom."
+					possible_values="Any positive real value."
+		/>
+	</nml_record>
+	<nml_record name="vegetation_drag" mode="init;forward">
+		<nml_option name="config_use_vegetation_drag" type="logical" default_value=".false."
+					description="Controls if vegetation_drag is used to compute Manning's roughness coefficient."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_vegetation_drag_coefficient" type="real" default_value="1.09"
+					description="Vegetation drag coefficient"
+					possible_values="O(1)"
+		/>
+	</nml_record>
+
 	<nml_record name="wetting_drying" mode="init;forward">
 		<nml_option name="config_use_wetting_drying" type="logical" default_value=".false."
 					description="If true, use wetting and drying algorithm to allow for dry cells to config_min_cell_height."

@@ -66,6 +66,18 @@ module ocn_vmix
 
    logical :: velVmixOn, tracerVmixOn
    real (kind=RKIND) :: implicitBottomDragCoef, implicitTopDragCoef
+
+   integer :: &
+      dragType   ! id for pressure gradient method selected
+
+   integer, parameter ::       &! ids for supported methods
+      dragTypeNone        = 0, &! None selected
+      dragTypeConst       = 0, &! Spatially constant
+      dragTypeRayleigh    = 1, &! Rayleigh
+      dragTypeLogLaw      = 2, &! log law-of-the-wall
+      dragTypeVariable    = 3, &! Spatially variable
+      dragTypeMannings    = 4   ! Manning's coefficient
+
    real (kind=RKIND) :: rayleighDampingCoef, rayleighBottomDampingCoef, &
                         rayleighDepthVariable
 
@@ -802,7 +814,7 @@ contains
 #endif
 
       ! Compute bottomDrag (Manning roughness) induced by vegetation
-      if (config_use_vegetation_drag .AND. config_use_vegetation_manning_equation) then
+      if (dragType == dragTypeMannings .AND. config_use_vegetation_drag) then
         do iCell = 1, nCellsOwned
           if (vegetationDensity(iCell) * vegetationHeight(iCell) * vegetationDiameter(iCell) .eq. 0.0_RKIND) then
             vegetationMask(iCell) = 0
@@ -851,7 +863,7 @@ contains
          cell2 = cellsOnEdge(2,iEdge)
 
          ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
-         if (config_use_implicit_bottom_roughness) then
+         if (dragType == dragTypeLogLaw) then
            ! NCOM's formula for bottom drag coefficient
            ! The original formula is cb(i,j) = max(cbmin, (vonk/log(0.5*depth(i,j)/z0))**2 ))
            ! where vonk=0.16, z0=0.001, bracketed between [0.0025, 0.1]
@@ -860,7 +872,7 @@ contains
            implicitCd = max(0.0025_RKIND, &
                         min(0.1_RKIND, &
                           0.16_RKIND/(log(250.0_RKIND*(bottomDepth(cell1)+bottomDepth(cell2))))**2 ))
-         elseif (config_use_vegetation_drag .AND. config_use_vegetation_manning_equation) then
+         elseif (dragType == dragTypeMannings .AND. config_use_vegetation_drag) then
            implicitCd = gravity*(0.5_RKIND*(vegetationManning(cell1) + vegetationManning(cell2)))**2 * &
             (0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2)))**(-1.0_RKIND/3.0_RKIND)
          else
@@ -1263,26 +1275,39 @@ contains
 #ifdef MPAS_OPENACC
       !$acc enter data copyin(layerThickness, normalVelocity)
 #endif
-      if (config_use_implicit_bottom_drag_variable) then
-        call ocn_vel_vmix_tend_implicit_spatially_variable(bottomDrag, dt, kineticEnergyCell, &
+      select case (dragType)
+
+      case (dragTypeConst)
+
+        call ocn_vel_vmix_tend_implicit(dt, kineticEnergyCell, &
+          vertViscTopOfEdge, layerThickness, layerThickEdgeMean, &
+          landIceEdgeFraction, normalVelocity, err)
+
+      case (dragTypeRayleigh)
+
+        call ocn_vel_vmix_tend_implicit_rayleigh(dt, kineticEnergyCell, &
           vertViscTopOfEdge, layerThickness, layerThickEdgeMean, normalVelocity, err)
-      else if (config_use_implicit_bottom_drag_variable_mannings.or. &
-               config_use_implicit_bottom_roughness) then
-        ! update bottomDrag via Cd=g*n^2*h^(-1/3)
+
+      case (dragTypeLogLaw)
+
         call ocn_vel_vmix_tend_implicit_spatially_variable_mannings(forcingPool, bottomDrag, &
           dt, kineticEnergyCell, &
           vertViscTopOfEdge, layerThickness, layerThickEdgeMean, normalVelocity, &
           ssh, err)
-      else if (config_Rayleigh_friction.or. &
-               config_Rayleigh_bottom_friction.or. &
-               config_Rayleigh_damping_depth_variable) then
-        call ocn_vel_vmix_tend_implicit_rayleigh(dt, kineticEnergyCell, &
+
+      case (dragTypeVariable)
+
+        call ocn_vel_vmix_tend_implicit_spatially_variable(bottomDrag, dt, kineticEnergyCell, &
           vertViscTopOfEdge, layerThickness, layerThickEdgeMean, normalVelocity, err)
-      else
-        call ocn_vel_vmix_tend_implicit(dt, kineticEnergyCell, &
-          vertViscTopOfEdge, layerThickness, layerThickEdgeMean, &
-          landIceEdgeFraction, normalVelocity, err)
-      end if
+
+      case (dragTypeMannings)
+
+        call ocn_vel_vmix_tend_implicit_spatially_variable_mannings(forcingPool, bottomDrag, &
+          dt, kineticEnergyCell, &
+          vertViscTopOfEdge, layerThickness, layerThickEdgeMean, normalVelocity, &
+          ssh, err)
+
+      end select
 #ifdef MPAS_OPENACC
       !$acc exit data copyout(normalVelocity)
 #endif
@@ -1420,44 +1445,87 @@ contains
 
       err = 0
 
-      rayleighDampingCoef = 0.0_RKIND
-
-      if (config_Rayleigh_friction) then
-          rayleighDampingCoef = config_Rayleigh_damping_coeff
-      endif
-
-      rayleighBottomDampingCoef = 0.0_RKIND
-
-      if (config_Rayleigh_bottom_friction) then
-          rayleighBottomDampingCoef = config_Rayleigh_bottom_damping_coeff
-      endif
-
-      rayleighDepthVariable = 0.0_RKIND
-      if (config_Rayleigh_damping_depth_variable) then
-        rayleighDepthVariable = 1.0_RKIND
-      end if
-
-      velVmixOn = .true.
-      tracerVmixOn = .true.
-
-      if(config_disable_vel_vmix.or.config_disable_vel_all_tend) velVmixOn = .false.
-      if(config_disable_tr_vmix.or.config_disable_tr_all_tend) tracerVmixOn = .false.
+      dragType = dragTypeNone
 
       implicitBottomDragCoef = 0.0_RKIND
       implicitTopDragCoef = 0.0_RKIND
 
       if (config_use_implicit_top_drag .and. &
-          .not. config_use_implicit_bottom_drag) then
+          .not. trim(config_bottom_drag_mode) == 'implicit') then
          call mpas_log_write('Implicit top drag can only be used with ' //&
               & 'implicit bottom drag', MPAS_LOG_CRIT)
       endif
+      if (config_use_implicit_top_drag .and. &
+          .not. trim(config_implicit_bottom_drag_type)=='constant') then
+         call mpas_log_write('Implicit top drag can only be used with ' //&
+              & 'constant implicit bottom drag type', MPAS_LOG_CRIT)
+      endif
 
-      if (config_use_implicit_bottom_drag) then
-          implicitBottomDragCoef = config_implicit_bottom_drag_coeff
+      rayleighDampingCoef = 0.0_RKIND
+      rayleighBottomDampingCoef = 0.0_RKIND
+      rayleighDepthVariable = 0.0_RKIND
+
+      velVmixOn = .true.
+      tracerVmixOn = .true.
+
+      if (trim(config_bottom_drag_mode) == 'implicit') then
+
+        select case (trim(config_implicit_bottom_drag_type))
+
+        case ('constant')
+          if (config_use_implicit_top_drag) then
+            implicitTopDragCoef = config_implicit_top_drag_coeff
+          endif
+          dragType = dragTypeConst
+          call mpas_log_write(' Implicit bottom drag type is: constant')
+          implicitBottomDragCoef = config_implicit_constant_bottom_drag_coeff
+
+        case ('constant_and_rayleigh')
+          dragType = dragTypeRayleigh
+          call mpas_log_write(' Implicit bottom drag type is: Rayleigh')
+          implicitBottomDragCoef = config_implicit_constant_bottom_drag_coeff
+          rayleighDampingCoef = config_Rayleigh_damping_coeff
+          if (config_Rayleigh_bottom_friction) then
+              rayleighBottomDampingCoef = config_Rayleigh_bottom_damping_coeff
+          endif
+          if (config_Rayleigh_damping_depth_variable) then
+            rayleighDepthVariable = 1.0_RKIND
+          end if
+
+        case ('loglaw')
+          dragType = dragTypeLogLaw
+          call mpas_log_write(' Implicit bottom drag type is: log law-of-the-wall')
+
+        case ('spatially-variable')
+          dragType = dragTypeVariable
+          call mpas_log_write(' Implicit bottom drag type is: spatially-variable')
+          if (.not. config_use_variable_drag) &
+            call mpas_log_write('bottomDrag may not be available for spatially-variable '// &
+              'implicit bottom drag because config_use_variable_drag is False', &
+              MPAS_LOG_WARN)
+        case ('mannings')
+          dragType = dragTypeMannings
+          call mpas_log_write(' Implicit bottom drag type is: Mannings')
+
+        case default
+          call mpas_log_write( &
+             ' Incorrect choice of config_implicit_bottom_drag_type.', &
+             MPAS_LOG_CRIT)
+          err = 1
+
+        end select
+      elseif (trim(config_bottom_drag_mode) == 'explicit') then
+        ! We still call the implicit vertical mixing routine but the drag coefficient is 0
+        dragType = dragTypeConst
+      else
+        call mpas_log_write( &
+           ' Incorrect choice of config_bottom_drag_mode.', &
+           MPAS_LOG_CRIT)
+        err = 1
       endif
-      if (config_use_implicit_top_drag) then
-          implicitTopDragCoef = config_implicit_top_drag_coeff
-      endif
+
+      if(config_disable_vel_vmix.or.config_disable_vel_all_tend) velVmixOn = .false.
+      if(config_disable_tr_vmix.or.config_disable_tr_all_tend) tracerVmixOn = .false.
 
       call ocn_vmix_cvmix_init(domain,err_tmp)
       err = ior(err, err_tmp)
