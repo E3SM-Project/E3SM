@@ -1,7 +1,8 @@
 module micro_p3_utils
 
   use physics_utils, only: rtype, rtype8, itype, btype
-
+  use physconst,     only: pi
+  
   implicit none
   private
   save
@@ -20,13 +21,58 @@ module micro_p3_utils
 
     real(rtype) :: latent_heat_vapor, latent_heat_sublim, latent_heat_fusion
 
-    real(rtype),public :: rho_1000mb,rho_600mb,ar,br,f1r,f2r,ecr,rho_h2o,kr,kc,aimm,bimm,rin,mi0,nccnst,  &
-       eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
-       inv_rho_h2o,inv_dropmass,cp,g,rd,rv,ep_2,inv_cp,   &
-       thrd,sxth,piov3,piov6,rho_rimeMin,     &
-       rho_rimeMax,inv_rho_rimeMax,max_total_ni,dbrk,nmltratio,clbfact_sub,  &
-       clbfact_dep
+    real(rtype),public :: rho_1000mb,rho_600mb,rho_h2o,  &
+       cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,    &
+       inv_rho_h2o,inv_dropmass,cp,g,rd,rv,ep_2,inv_cp
 
+    real(rtype), public, parameter :: thrd  = 1._rtype/3._rtype
+    real(rtype), public, parameter :: sxth  = 1._rtype/6._rtype
+    real(rtype), public, parameter :: piov3 = pi*thrd
+    real(rtype), public, parameter :: piov6 = pi*sxth
+
+    ! maximum total ice concentration (sum of all categories)
+    real(rtype), public, parameter :: max_total_ni = 500.e+3_rtype  ! (m)
+
+    ! droplet concentration (m-3)
+    real(rtype), public, parameter :: nccnst = 200.e+6_rtype
+
+    ! parameters for Seifert and Beheng (2001) autoconversion/accretion
+    real(rtype), public, parameter :: kc     = 9.44e+9_rtype
+    real(rtype), public, parameter :: kr     = 5.78e+3_rtype
+
+    real(rtype), public, parameter :: ar     = 841.99667_rtype 
+    real(rtype), public, parameter :: br     = 0.8_rtype
+    real(rtype), public, parameter :: f1r    = 0.78_rtype
+    real(rtype), public, parameter :: f2r    = 0.32_rtype
+    real(rtype), public, parameter :: ecr    = 1._rtype
+
+    ! limits for rime density [kg m-3]
+    real(rtype), public, parameter :: rho_rimeMin     =  50._rtype
+    real(rtype), public, parameter :: rho_rimeMax     = 900._rtype
+    real(rtype), public, parameter :: inv_rho_rimeMax =   1._rtype/rho_rimeMax
+
+    ! Barklie and Gokhale (1959)
+    real(rtype), public, parameter :: bimm   = 2._rtype
+    real(rtype), public, parameter :: aimm   = 0.65_rtype
+    real(rtype), public, parameter :: rin    = 0.1e-6_rtype
+    real(rtype), public, parameter :: mi0    = 4._rtype*piov3*900._rtype*1.e-18_rtype
+
+    real(rtype), public, parameter :: eci    = 0.5_rtype
+    real(rtype), public, parameter :: eri    = 1._rtype
+    real(rtype), public, parameter :: bcn    = 2._rtype
+
+    ! mean size for soft lambda_r limiter [microns]
+    real(rtype), public, parameter :: dbrk   = 600.e-6_rtype
+    ! ratio of rain number produced to ice number loss from melting
+    real(rtype), public, parameter :: nmltratio = 1.0_rtype
+    
+    ! calibration factors for ice deposition and sublimation
+    !   These are adjustable ad hoc factors used to increase or decrease deposition and/or
+    !   sublimation rates.  The representation of the ice capacitances are highly simplified
+    !   and the appropriate values in the diffusional growth equation are uncertain.
+    real(rtype), public, parameter :: clbfact_dep = 1._rtype
+    real(rtype), public, parameter :: clbfact_sub = 1._rtype
+    
     logical,public  :: do_Cooper_inP3   ! Use prescribed CCN       
 
     real(rtype),dimension(16), public :: dnu
@@ -103,21 +149,8 @@ module micro_p3_utils
     masterproc_e3sm = masterproc
 
     ! mathematical/optimization constants
-    thrd  = 1._rtype/3._rtype
-    sxth  = 1._rtype/6._rtype 
+     
     pi_e3sm = pi
-    piov3 = pi*thrd
-    piov6 = pi*sxth
-
-    ! maximum total ice concentration (sum of all categories)
-     max_total_ni = 500.e+3_rtype  !(m)
-
-    ! droplet concentration (m-3)
-    nccnst = 200.e+6_rtype
-
-    ! parameters for Seifert and Beheng (2001) autoconversion/accretion
-    kc     = 9.44e+9_rtype
-    kr     = 5.78e+3_rtype
 
     ! Temperature parameters
     T_zerodegc  = tmelt 
@@ -134,11 +167,6 @@ module micro_p3_utils
     ep_2   = mwh2o/mwdry  ! ratio of molecular mass of water to the molecular mass of dry air !0.622
     rho_1000mb = 100000._rtype/(rd*T_zerodegc) ! density of air at surface
     rho_600mb = 60000._rtype/(rd*253.15_rtype)
-    ar     = 841.99667_rtype 
-    br     = 0.8_rtype
-    f1r    = 0.78_rtype
-    f2r    = 0.32_rtype
-    ecr    = 1._rtype
     rho_h2o   = rhoh2o ! Density of liquid water (STP) !997.
     cpw    = cpliq  ! specific heat of fresh h2o (J/K/kg) !4218.
     inv_rho_h2o = 1._rtype/rho_h2o  !inverse of (max.) density of liquid water
@@ -148,28 +176,9 @@ module micro_p3_utils
     latent_heat_sublim = latvap + latice  ! latent heat of sublimation
     latent_heat_fusion  = latice           ! latent heat of fusion
 
-    ! limits for rime density [kg m-3]
-    rho_rimeMin     =  50._rtype
-    rho_rimeMax     = 900._rtype
-    inv_rho_rimeMax =   1._rtype/rho_rimeMax
-
     ! Bigg (1953)
     !bimm   = 100.
     !aimm   = 0.66
-    ! Barklie and Gokhale (1959)
-    bimm   = 2._rtype
-    aimm   = 0.65_rtype
-    rin    = 0.1e-6_rtype
-    mi0    = 4._rtype*piov3*900._rtype*1.e-18_rtype
-
-    eci    = 0.5_rtype
-    eri    = 1._rtype
-    bcn    = 2._rtype
-
-    ! mean size for soft lambda_r limiter [microns]
-    dbrk   = 600.e-6_rtype
-    ! ratio of rain number produced to ice number loss from melting
-    nmltratio = 1.0_rtype
 
     cons1 = piov6*rho_h2o
     cons2 = 4._rtype*piov3*rho_h2o
@@ -199,13 +208,7 @@ module micro_p3_utils
     dnu(15) = -0.966_rtype
     dnu(16) = -0.966_rtype
 
-    ! calibration factors for ice deposition and sublimation
-    !   These are adjustable ad hoc factors used to increase or decrease deposition and/or
-    !   sublimation rates.  The representation of the ice capacitances are highly simplified
-    !   and the appropriate values in the diffusional growth equation are uncertain.
-    clbfact_dep = 1._rtype
-    clbfact_sub = 1._rtype
-
+    
     return
     end subroutine micro_p3_utils_init
 !__________________________________________________________________________________________!
@@ -248,7 +251,6 @@ module micro_p3_utils
        if (qc.ge.qsmall) then
           qc_incld = qc*inv_cld_frac_l
           nc_incld = max(nc*inv_cld_frac_l,0._rtype)
-          !AaronDonahue, kai has something about if nccons then nc=ncnst/rho
        else
           qc_incld = 0._rtype
           nc_incld = 0._rtype
@@ -256,7 +258,6 @@ module micro_p3_utils
        if (qi.ge.qsmall) then
           qi_incld = qi*inv_cld_frac_i
           ni_incld = max(ni*inv_cld_frac_i,0._rtype)
-          !AaronDonahue, kai has something about if nicons then ni=ninst/rho
        else
           qi_incld = 0._rtype
           ni_incld = 0._rtype
@@ -271,23 +272,16 @@ module micro_p3_utils
        if (qr.ge.qsmall) then
           qr_incld = qr*inv_cld_frac_r
           nr_incld = max(nr*inv_cld_frac_r,0._rtype)
-          !AaronDonahue, kai has something about if nccons then nc=ncnst/rho
        else
           qr_incld = 0._rtype
           nr_incld = 0._rtype
        end if
        if (qc_incld.gt.incloud_limit .or.qi_incld.gt.incloud_limit &
             .or. qr_incld.gt.precip_limit .or.bm_incld.gt.incloud_limit) then
-          !write(errmsg,'(a3,i4,3(a5,1x,e16.8,1x))') 'k: ', k, ', qc:',qc_incld, &
-          !     ', qi:',qi_incld,', qr:',qr_incld
           qc_incld    = min(qc_incld,incloud_limit)
           qi_incld = min(qi_incld,incloud_limit)
           bm_incld = min(bm_incld,incloud_limit)
           qr_incld    = min(qr_incld,precip_limit)
-!          if (masterproc) write(iulog,*)  errmsg
-
-!          call handle_errmsg('Micro-P3 (Init)',subname='In-cloud mixing
-!          ratio too large',extra_msg=errmsg)
        end if
     end subroutine calculate_incloud_mixingratios
 !__________________________________________________________________________________________!
