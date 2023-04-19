@@ -12,4 +12,4 @@ if (NOT "${PROJECT_NAME}" STREQUAL "E3SM" OR compile_threaded)
 endif()
 
 # Use srun for standalone testing
-include(${EKAT_MACH_FILES_PATH}/srun.cmake)
+include(${EKAT_MACH_FILES_PATH}/mpi/srun.cmake)
