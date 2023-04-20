@@ -178,10 +178,8 @@ module li_tracer_advection_fct_shared
             advMaskHighOrder(:,iEdge) = 1.0_RKIND
          end if
 
-         ! second order mask must have ice on both sides and one boundary cell
-         if ( (li_mask_is_dynamic_ice(cellMask(cell1)) .and.  li_mask_is_dynamic_ice(cellMask(cell2)) ) &
-              .and. (boundaryCell(cell1) == 1 .or. boundaryCell(cell2) == 1) &
-              .and. all(advMaskHighOrder(:,iEdge) == 0.0_RKIND) ) then  ! not sure about this
+         ! second order mask must have ice on both sides
+         if ( li_mask_is_dynamic_ice(cellMask(cell1)) .and.  li_mask_is_dynamic_ice(cellMask(cell2)) ) then
              advMask2ndOrder(:,iEdge) = 1.0_RKIND
          else
              advMask2ndOrder(:,iEdge) = 0.0_RKIND
