@@ -617,7 +617,7 @@ void AtmosphereDriver::initialize_output_managers () {
     }
     om.set_logger(m_atm_logger);
     for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
-      om.add_global(it.first,it.second);
+      om.add_global(it.first,*it.second);
     }
 
     // Store the "Output Control" pl of the model restart as the "Checkpoint Control" for all other output streams
@@ -785,16 +785,18 @@ void AtmosphereDriver::restart_model ()
     const auto& name = it.first;
           auto& any  = it.second;
 
+
     auto data = scorpio::get_any_attribute(filename,name);
-    EKAT_REQUIRE_MSG (any.content().type()==data.content().type(),
+    EKAT_REQUIRE_MSG (any->content().type()==data.content().type(),
         "Error! Type mismatch for restart global attribute.\n"
         " - file name: " + filename + "\n"
         " - att  name: " + name + "\n"
-        " - expected type: " + any.content().type().name() + "\n"
+        " - expected type: " + any->content().type().name() + "\n"
         " - actual type: " + data.content().type().name() + "\n"
         "NOTE: the above names use type_info::name(), which returns an implementation defined string,\n"
         "      with no guarantees. In particular, the string can be identical for several types,\n"
         "      and/or change between invocations of the same program.\n");
+    *any = data;
   }
 
   m_atm_logger->info("  [EAMxx] restart_model ... done!");
