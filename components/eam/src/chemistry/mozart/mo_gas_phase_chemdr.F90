@@ -1498,18 +1498,20 @@ contains
        do m = 1,pcnst
           n = map2chm( m )
           if ( n > 0 ) then
-            if ( any( cflx(:ncol,m) /= 0._r8 ) ) then
+           do i=1,ncol
+            if ( cflx(i,m) /= 0._r8  ) then
               if ( .not. any( aer_species == n ) .and. adv_mass(n) /= 0._r8 ) then
                 do k = pver, pver-srf_emit_nlayer+1, -1 ! loop from bottom to top
                   ! kg/m2, tracer mass
-                  wrk(:ncol,k) = adv_mass(n)*vmr(:ncol,k,n)/mbar(:ncol,k) &
-                                    *pdeldry(:ncol,k)*rga
-                  tmp(:ncol) = wrk(:ncol,k) + cflx(:ncol,m)*delt/dble(srf_emit_nlayer)
-                  vmr(:ncol,k,n) = tmp(:ncol)*mbar(:ncol,k)/adv_mass(n)/pdeldry(:ncol,k)/rga
+                  wrk(i,k) = adv_mass(n)*vmr(i,k,n)/mbar(i,k) &
+                                    *pdeldry(i,k)*rga
+                  tmp(i) = wrk(i,k) + cflx(i,m)*delt/dble(srf_emit_nlayer)
+                  vmr(i,k,n) = tmp(i)*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
                 end do
-                cflx(:ncol,m) = 0._r8
+                cflx(i,m) = 0._r8
               endif
             endif
+           end do
           endif
        end do
     endif
