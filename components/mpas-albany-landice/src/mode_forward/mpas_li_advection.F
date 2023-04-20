@@ -482,6 +482,12 @@ module li_advection
              !layerThickness is last tracer.
              layerThickness(:,:) = advectedTracers(nTracers,:,:)
              !layerThickness(:,:) = layerThickness(:,:) + tend(nTracers,:,:) * dt
+             ! Reset tracers after thickness advection for tracer advection
+             advectedTracers(:,:,:) = advectedTracersOld(:,:,:)
+             call li_tracer_advection_fct_tend(&
+                  tend, advectedTracers, layerThicknessOld, &
+                  layerThicknessEdge * layerNormalVelocity, 0 * normalVelocity, dt,    &
+                  nTracers, computeBudgets=.false.)
          endif
 
          if (config_print_thickness_advection_info) then
