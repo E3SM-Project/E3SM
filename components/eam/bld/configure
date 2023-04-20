@@ -964,8 +964,8 @@ my $clubb_sgs = $cfg_ref->get('clubb_sgs');
 
 # consistency checks...
 
-# CLUBB_SGS only works with mg microphysics
-if ($clubb_sgs and $microphys_pkg !~ m/^mg/) {
+# CLUBB_SGS only works with MG or P3 microphysics
+if ($clubb_sgs and $microphys_pkg !~ m/^mg/ and $microphys_pkg !~ m/^p3/) {
     die <<"EOF";
 **    ERROR: microphysics package set to: $microphys_pkg
 **    CLUBB_SGS only works with MG microphysics.
@@ -1423,6 +1423,10 @@ else {
             $nadv += 8;
             if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
         }
+        elsif ($microphys_pkg =~/^p3/) {
+            $nadv += 8;
+            if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
+	}
 
         if ($clubb_do_adv) {
             $nadv += 9;

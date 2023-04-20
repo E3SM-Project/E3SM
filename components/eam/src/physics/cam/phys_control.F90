@@ -354,9 +354,10 @@ subroutine phys_ctl_readnl(nlfile)
       call endrun('PBL and Microphysics schemes incompatible')
    endif
    
-   ! Add a check to make sure CLUBB and MG are used together
-   if ( do_clubb_sgs .and. ( microp_scheme .ne. 'MG')) then
-      write(iulog,*)'CLUBB is only compatible with MG microphysics.  Quiting'
+
+   ! Add a check to make sure CLUBB and MG / P3 are used together
+   if ( do_clubb_sgs .and. ( microp_scheme .ne. 'MG' .and. microp_scheme .ne. 'P3' )) then
+      write(iulog,*)'CLUBB is only compatible with MG or P3 microphysics.  Quiting'
       call endrun('CLUBB and microphysics schemes incompatible')
    endif
 

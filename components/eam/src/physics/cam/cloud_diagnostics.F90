@@ -56,8 +56,11 @@ contains
     character(len=16) :: rad_pkg, microp_pgk
 
     call phys_getopts(radiation_scheme_out=rad_pkg,microp_scheme_out=microp_pgk)
-    rk_clouds = microp_pgk == 'RK'
-    mg_clouds = microp_pgk == 'MG'
+
+    call phys_getopts(radiation_scheme_out=rad_pkg,microp_scheme_out=microp_pkg, macrop_scheme_out=macrop_pkg)
+    rk_clouds = microp_pkg == 'RK'
+    mg_clouds = microp_pkg == 'MG'
+    p3_clouds = microp_pkg == 'P3'
 
     if (rk_clouds) then
        call pbuf_add_field('CLDEMIS','physpkg', dtype_r8,(/pcols,pver/), cldemis_idx)
@@ -68,7 +71,8 @@ contains
 
        call pbuf_add_field('PMXRGN', 'physpkg', dtype_r8,(/pcols,pverp/), pmxrgn_idx)
        call pbuf_add_field('NMXRGN', 'physpkg', dtype_i4,(/pcols /),      nmxrgn_idx)
-    else if (mg_clouds) then
+
+    else if (mg_clouds .or. p3_clouds) then
        ! In cloud ice water path for radiation
        call pbuf_add_field('ICIWP',      'global', dtype_r8,(/pcols,pver/), iciwp_idx)
        ! In cloud liquid water path for radiation
@@ -103,7 +107,8 @@ contains
     call phys_getopts( history_amwg_out = history_amwg, &
                        history_verbose_out = history_verbose )
 
-    if (mg_clouds) then
+
+    if (mg_clouds .or. p3_clouds) then
 
        call addfld ('ICWMR', (/ 'lev' /), 'A', 'kg/kg', 'Prognostic in-cloud water mixing ratio'                  )
        call addfld ('ICIMR', (/ 'lev' /), 'A', 'kg/kg', 'Prognostic in-cloud ice mixing ratio'                    )
@@ -160,7 +165,9 @@ contains
     call addfld ('TGCLDIWP',horiz_only,    'A',wpunits,'Total grid-box cloud ice water path'   , &
          sampling_seq=sampling_seq, standard_name='atmosphere_mass_content_of_cloud_ice')
     
-    if(mg_clouds) then
+
+    if(mg_clouds .or. p3_clouds) then
+
        call addfld ('lambda_cloud',(/ 'lev' /),'I','1/meter','lambda in cloud')
        call addfld ('mu_cloud',(/ 'lev' /),'I','1','mu in cloud')
        call addfld ('dei_cloud',(/ 'lev' /),'I','micrometers','ice radiative effective diameter in cloud')
