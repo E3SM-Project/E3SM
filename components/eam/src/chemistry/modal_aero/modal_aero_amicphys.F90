@@ -17,7 +17,7 @@
   use chem_mods,       only:  gas_pcnst
   use physconst,       only:  pi
   use ppgrid,          only:  pcols, pver
-  use modal_aero_data, only:  ntot_aspectype, ntot_amode, nsoag, npoa, nbc
+  use modal_aero_data, only:  ntot_aspectype, ntot_amode, nsoag, nsoa, npoa, nbc
 ! use ref_pres,        only:  top_lev => clim_modal_aero_top_lev  ! this is for gg02a
   use ref_pres,        only:  top_lev => trop_cloud_top_lev       ! this is for ee02c
 
@@ -3329,17 +3329,17 @@ do_newnuc_if_block50: &
 ! for the mam vbs soa mechanism
 !
 ! currently this does a modified version of the nvsoa mechanism
-!    of shrivastava et al. (2015) (doi 10.1002/2014jd022563)
+! of shrivastava et al. (2015) (doi 10.1002/2014jd022563)
 ! the main difference is that soa and condensible organic vapors from
-!    biomass-burning (and biofuel), biogenic, and fossil-fuel sources
-!    are all lumped together rather than treated separately
+! biomass-burning (and biofuel), biogenic, and fossil-fuel sources
+! are all lumped together rather than treated separately
 
       use shr_kind_mod,    only: r8 => shr_kind_r8
       use modal_aero_data, only: lptr2_soa_a_amode
       use cam_abortutils,  only: endrun
       use modal_aero_data, only: ntot_amode, nsoag, nsoa, npoa
-      use cam_logfile,     only:  iulog
-      use cam_history,   only: outfld
+      use cam_logfile,     only: iulog
+      use cam_history,     only: outfld
       use phys_debug_util, only: phys_debug_col
 
       implicit none      
@@ -3437,19 +3437,19 @@ do_newnuc_if_block50: &
       ntot_poaspec = npoa
 
 ! in the nvsoa treatment, the condensible organic vapors partition to the particle phase,
-!    and the resulting aerosol species are initially semi-volatile (svsoa)
+! and the resulting aerosol species are initially semi-volatile (svsoa)
 ! once in the particle phase, they quickly age (oligomerize) to non-volatile soa (nvsoa)
 !
 ! ntot_soaspec here is the number of condensible organic vapors and corresponding svsoa species
 !
 ! most of the calculations in this routine involve the dynamic partitioning (i.e., mass transfer),
-!    and the nvsoa soa does not participate (or affect) the partitioning
+! and the nvsoa soa does not participate (or affect) the partitioning
 ! after partitioning has been calculated for the time step (dtsubstep),
-!    all of the svsoa is immediately converted to nvsoa
+! all of the svsoa is immediately converted to nvsoa
 ! as a result, the final (i.e., end of time step) svsoa mixing ratios are always zero, 
-!    so the svsoa species do not need to be transported in the model,
-!    and are just "temporary variables" within this routine
-!
+! so the svsoa species do not need to be transported in the model,
+! and are just "temporary variables" within this routine
+
       ntot_soaspec = nsoag
 
       isoa_bgn = igas_soag
@@ -6224,7 +6224,6 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       integer :: n
 
 
-      if (nsoa == 1) then
 #if ( defined VBS_SOA )     
       if (nsoa == 1 .and. nsoag == 7) then
          jsoa = 1
@@ -6235,6 +6234,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
             lptr2_soa_g_amode(igas) = l1
          end do
 #else
+      if (nsoa == 1 .and. nsoag == 1) then
          jsoa = 1
          call cnst_get_ind( 'SOAG', l1, .false. )
          if (l1 < 1 .or. l1 > pcnst) &
