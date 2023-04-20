@@ -1046,16 +1046,16 @@ contains
     lchnk = pstate%lchnk
     ncol  = pstate%ncol
 
+    ! Initialize
+    e90_ndx = -1
+
     ! get index in the chemistry tracer list
     e90_ndx2 = get_spc_ndx( 'E90' ) !kzm
-    if ( e90_ndx2 > 0 ) then
-       ! get index in the physics constituent list     
-       call cnst_get_ind('E90', e90_ndx, abrtf=.true.)
-    end if
-    ! get index in the chemistry tracer list
-    !e90_ndx2 = get_spc_ndx( 'E90' )
 
     if ( e90_ndx2 > 0 ) then
+    ! get index in the physics constituent list
+      call cnst_get_ind('E90', e90_ndx, abrtf=.true.)
+
     ! convert from mol/mol to kg/kg
       mwe90 = adv_mass(e90_ndx2)
       thrd_mmr = E90_thrd_vmr*mwe90/mwdry
@@ -1143,6 +1143,7 @@ contains
     ! initialize
     tropLevB = NOTFOUND
     tropLevU = NOTFOUND
+    e90_ndx = -1
 
     ! default to tropospheric box
     tropFlag(:,:) = .true.
@@ -1154,15 +1155,11 @@ contains
 
     ! get index in the chemistry tracer list
     e90_ndx2 = get_spc_ndx( 'E90' ) !kzm
-    if ( e90_ndx2 > 0 ) then
-       ! get index in the physics constituent list     
-       call cnst_get_ind('E90', e90_ndx, abrtf=.true.)
-    end if   
-    
-    ! get index in the chemistry tracer list
-    !e90_ndx2 = get_spc_ndx( 'E90' )
 
     if ( e90_ndx2 > 0 ) then
+    ! get index in the physics constituent list
+      call cnst_get_ind('E90', e90_ndx, abrtf=.true.)
+
     ! convert from mol/mol to kg/kg
       mwe90 = adv_mass(e90_ndx2)
       thrd_mmr = E90_thrd_vmr*mwe90/mwdry
