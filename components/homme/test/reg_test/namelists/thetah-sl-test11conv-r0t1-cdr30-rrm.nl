@@ -36,6 +36,7 @@
   vert_remap_q_alg   = 10
   semi_lagrange_hv_q = 1
   nu_q = 0
+  internal_diagnostics_level = 2
 /
 &vert_nl
   vanalytic         = 1
