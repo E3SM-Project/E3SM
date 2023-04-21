@@ -372,7 +372,9 @@ module li_tracer_advection_fct
                                                   + tracerCur(k,cell2))
 
               highOrderFlx(k,iEdge) = highOrderFlx(k,iEdge) &
-                                    -  lowOrderFlx(k,iEdge)
+                                    -  lowOrderFlx(k,iEdge) * &
+                                    (advMaskHighOrder(k,iEdge) + advMask2ndOrder(k,iEdge) &
+                                     * (1.0_RKIND - advMaskHighOrder(k, iEdge)) )
            end do ! k loop
         end do ! iEdge loop
 #ifndef MPAS_OPENACC
