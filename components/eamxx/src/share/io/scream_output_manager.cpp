@@ -106,25 +106,25 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   // For normal output, setup the geometry data streams, which we used to write the
   // geo data in the output file when we create it.
   if (m_output_file_specs.save_grid_data) {
-    std::set<std::shared_ptr<const AbstractGrid>> grids;
-    for (auto& it : m_output_streams) {
-      grids.insert(it->get_io_grid());
+    std::map<std::string, std::shared_ptr<const AbstractGrid>> grids;
+    for (const auto& it : m_output_streams) {
+      grids[it->get_io_grid()->name()] = it->get_io_grid();
     }
 
     // If 2+ grids are present, we mandate suffix on all geo_data fields,
     // to avoid clashes of names.
     bool use_suffix = grids.size()>1;
-    for (auto grid : grids) {
+    for (const auto& grid : grids) {
       std::vector<Field> fields;
-      for (const auto& fn : grid->get_geometry_data_names()) {
-        const auto& f = grid->get_geometry_data(fn);
+      for (const auto& fn : grid.second->get_geometry_data_names()) {
+        const auto& f = grid.second->get_geometry_data(fn);
         if (use_suffix) {
-          fields.push_back(f.clone(f.name()+"_"+grid->m_short_name));
+          fields.push_back(f.clone(f.name()+"_"+grid.second->m_short_name));
         } else {
           fields.push_back(f.clone());
         }
       }
-      auto output = std::make_shared<output_type>(m_io_comm,fields,grid);
+      auto output = std::make_shared<output_type>(m_io_comm,fields,grid.second);
       m_geo_data_streams.push_back(output);
     }
   }
@@ -132,7 +132,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   if (m_params.isSublist("Checkpoint Control")) {
     // Output control
     // TODO: It would be great if there was an option where, if Checkpoint Control was not a sublist, we
-    //       could query the restart control information and just use that. 
+    //       could query the restart control information and just use that.
     auto& pl = m_params.sublist("Checkpoint Control");
     m_checkpoint_control.frequency_units           = pl.get<std::string>("frequency_units");
 
@@ -219,7 +219,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   using namespace scorpio;
 
   std::string timer_root = m_is_model_restart_output ? "EAMxx::IO::restart" : "EAMxx::IO::standard";
-  start_timer(timer_root); 
+  start_timer(timer_root);
   // Check if we need to open a new file
   ++m_output_control.nsamples_since_last_write;
   ++m_checkpoint_control.nsamples_since_last_write;
@@ -237,7 +237,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   const bool is_write_step           = is_output_step || is_checkpoint_step;
 
   // Create and setup output/checkpoint file(s), if necessary
-  start_timer(timer_root+"::get_new_file"); 
+  start_timer(timer_root+"::get_new_file");
   auto setup_output_file = [&](IOControl& control, IOFileSpecs& filespecs, bool add_to_rpointer, const std::string& file_type) {
     // Check if we need to open a new file
     if (not filespecs.is_open) {
@@ -258,8 +258,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
     if (m_atm_logger) {
       m_atm_logger->info("[EAMxx::output_manager] - Writing " + file_type + ":");
-      m_atm_logger->info("[EAMxx::output_manager]      CASE: " + m_casename); 
-      m_atm_logger->info("[EAMxx::output_manager]      FILE: " + filespecs.filename); 
+      m_atm_logger->info("[EAMxx::output_manager]      CASE: " + m_casename);
+      m_atm_logger->info("[EAMxx::output_manager]      FILE: " + filespecs.filename);
     }
   };
 
@@ -277,16 +277,16 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       pio_update_time(m_checkpoint_file_specs.filename,timestamp.days_from(m_case_t0));
     }
   }
-  stop_timer(timer_root+"::get_new_file"); 
+  stop_timer(timer_root+"::get_new_file");
 
   // Run the output streams
-  start_timer(timer_root+"::run_output_streams"); 
+  start_timer(timer_root+"::run_output_streams");
   const auto& fields_write_filename = is_output_step ? m_output_file_specs.filename : m_checkpoint_file_specs.filename;
   for (auto& it : m_output_streams) {
     // Note: filename only matters if is_output_step || is_full_checkpoint_step=true. In that case, it will definitely point to a valid file name.
     it->run(fields_write_filename,is_output_step || is_full_checkpoint_step,m_output_control.nsamples_since_last_write,is_t0_output);
   }
-  stop_timer(timer_root+"::run_output_streams"); 
+  stop_timer(timer_root+"::run_output_streams");
 
   if (is_write_step) {
     if (m_time_bnds.size()>0) {
@@ -336,7 +336,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       }
     };
 
-    start_timer(timer_root+"::update_snapshot_tally"); 
+    start_timer(timer_root+"::update_snapshot_tally");
     // Important! Process output file first, and hist restart (if any) second.
     // That's b/c write_global_data will update m_output_control.timestamp_of_last_write,
     // which is later be written as global data in the hist restart file
@@ -346,13 +346,13 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     if (is_checkpoint_step) {
       write_global_data(m_checkpoint_control,m_checkpoint_file_specs);
     }
-    stop_timer(timer_root+"::update_snapshot_tally"); 
+    stop_timer(timer_root+"::update_snapshot_tally");
     if (m_time_bnds.size()>0) {
       m_time_bnds[0] = m_time_bnds[1];
     }
   }
 
-  stop_timer(timer_root); 
+  stop_timer(timer_root);
 }
 /*===============================================================================================*/
 void OutputManager::finalize()
@@ -499,7 +499,7 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   if (m_avg_type!=OutputAvgType::Instant) {
     // First, ensure a 'dim2' dimension with len=2 is registered.
     register_dimension(filename,"dim2","dim2",2,false);
-    
+
     // Register time_bnds var, with its dofs
     register_variable(filename,"time_bnds","time_bnds",time_units,{"dim2","time"},"double","double","time-dim2");
     scorpio::offset_t time_bnds_dofs[2] = {0,1};
@@ -543,7 +543,7 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   set_attribute(filename,"averaging_frequency",m_output_control.frequency);
   set_attribute(filename,"max_snapshots_per_file",m_output_file_specs.max_snapshots_in_file);
   set_file_header(filename);
-  eam_pio_enddef (filename); 
+  eam_pio_enddef (filename);
 
   if (m_avg_type!=OutputAvgType::Instant) {
     // Unfortunately, attributes cannot be set in define mode (why?), so this could
@@ -610,7 +610,7 @@ push_to_logger()
   // List all FIELDS - TODO
 
 
-  
+
 }
 
 } // namespace scream
