@@ -164,7 +164,12 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     bool perform_history_restart = restart_pl.get("Perform Restart",true);
     auto hist_restart_casename = restart_pl.get("filename_prefix",m_casename);
 
-    if (perform_history_restart) {
+    if (m_is_model_restart_output) {
+      // For model restart output, the restart time (which is the start time of this run) is precisely
+      // when the last write happened, so we can quickly init the output control.
+      m_output_control.timestamp_of_last_write = m_run_t0;
+      m_output_control.nsamples_since_last_write = 0;
+    } else if (perform_history_restart) {
       using namespace scorpio;
       auto fn = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
 
