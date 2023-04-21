@@ -1653,7 +1653,7 @@ end function chem_is_active
     call gas_phase_chemdr(lchnk, ncol, imozart, state%q, &
                           state%phis, state%zm, state%zi, calday, &
                           state%t, state%pmid, state%pdel, state%pdeldry, state%pint, &
-                          cldw, tropLev, ncldwtr, state%u, state%v, &
+                          cldw, cldw_liq, tropLev, ncldwtr, state%u, state%v, &
                           chem_dt, state%ps, xactive_prates, &
                           do_cloudj_photolysis, do_cloudj_clouds, do_cloudj_aerosols, &
                           do_cloudj_lookup_diag, do_cloudj_aerosol_diag, do_cloudj_nocloud_diag, &
