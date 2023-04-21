@@ -123,6 +123,9 @@ struct IOFileSpecs {
   bool filename_with_mpiranks    = false;
 
   bool save_grid_data            = true;
+
+  // Whether this struct refers to a history restart file
+  bool hist_restart_file         = false;
 };
 
 std::string find_filename_in_rpointer (
