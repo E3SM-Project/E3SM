@@ -4196,6 +4196,12 @@ Switch for gas chemistry tracers 2D budget diagnostic output
 Default: .false.
 </entry>
 
+<entry id="history_gaschmbudget_num" type="integer"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15" >
+History tape number instantaneous gas chemistry budget output is written to.
+Default: 2
+</entry>
+
 <entry id="history_gaschmbudget_2D_levels" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Switch for gas chemistry tracers 2D budget diagnostic output within certain levels
@@ -4259,6 +4265,12 @@ Default: .false.
 <entry id="history_UCIgaschmbudget_2D_levels" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Switch for gas chemistry tracers 2D budget diagnostic output within certain levels
+Default: .false.
+</entry>
+
+<entry id="history_chemdyg_summary" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for gas chemistry tracers in the ChemDyg package
 Default: .false.
 </entry>
 
