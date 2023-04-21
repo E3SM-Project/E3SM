@@ -697,7 +697,7 @@ end subroutine linoz_readnl
     real(r8), intent(in)                           :: delta_t             ! timestep size (secs)
     real(r8), intent(in)                           :: rlats(ncol)         ! column latitudes (radians)
     integer,  intent(in)   , dimension(pcols)      :: ltrop               ! chunk index
-    real(r8), intent(in)   , dimension(ncol ,pver) :: pdeldry             !  dry pressure delta about midpoints (Pa)
+    real(r8), intent(in)   , dimension(pcols,pver) :: pdeldry             !  dry pressure delta about midpoints (Pa)
     logical, optional, intent(in)                  :: tropFlag(pcols,pver)! 3D tropospheric level flag
     !
     ! local
