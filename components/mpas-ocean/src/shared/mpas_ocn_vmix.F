@@ -1163,17 +1163,35 @@ contains
          timeLevel = 1
       end if
 
-      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
+      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', &
+                                               tracersSurfaceFluxPool)
 
       allocate(landIceEdgeFraction(nEdgesOwned))
-      landIceEdgeFraction(:) = 0.0_RKIND
+#ifdef MPAS_OPENACC
+      !$acc enter data create(landIceEdgeFraction)
+
+      !$acc parallel loop present(landIceEdgeFraction)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime)
+#endif
+      do iEdge = 1, nEdgesOwned
+         landIceEdgeFraction(iEdge) = 0.0_RKIND
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+
       if (landIcePressureOn) then
-         call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+         call mpas_pool_get_array(forcingPool, 'landIceFraction', &
+                                                landIceFraction)
 #ifdef MPAS_OPENACC
          !$acc enter data copyin(landIceFraction)
 
-         !$acc parallel loop present(landIceEdgeFraction) &
-         !$acc    private(cell1, cell2, k)
+         !$acc parallel loop &
+         !$acc    present(landIceEdgeFraction, landIceFraction) &
+         !$acc    private(cell1, cell2)
 #else
          !$omp parallel
          !$omp do schedule(runtime) private(cell1, cell2, k)
@@ -1184,7 +1202,7 @@ contains
             landIceEdgeFraction(iEdge) = 0.5_RKIND*(landIceFraction(cell1)+landIceFraction(cell2))
          end do
 #ifdef MPAS_OPENACC
-         !$acc exit data copyout(landIceFraction)
+         !$acc exit data delete(landIceFraction)
 #else
          !$omp end do
          !$omp end parallel
@@ -1407,8 +1425,9 @@ contains
       call mpas_timer_stop('vmix solve tracers')
 
 #ifdef MPAS_OPENACC
-      !$acc exit data delete(layerThickness)
+      !$acc exit data delete(layerThickness,landIceEdgeFraction)
 #endif
+      deallocate(landIceEdgeFraction)
 
       call mpas_timer_stop('vmix imp')
 
