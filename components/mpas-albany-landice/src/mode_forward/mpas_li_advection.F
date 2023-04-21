@@ -479,10 +479,13 @@ module li_advection
                   tend, advectedTracers, layerThicknessOld * 0.0_RKIND + 1.0_RKIND, &
                   layerNormalVelocity, 0 * normalVelocity, dt,    &
                   nTracers, computeBudgets=.false.)
-             !layerThickness is last tracer.
-             layerThickness(:,:) = advectedTracers(nTracers,:,:)
-             !layerThickness(:,:) = layerThickness(:,:) + tend(nTracers,:,:) * dt
+             ! layerThickness is last tracer. However, for some reason
+             ! this: layerThickness(:,:) = advectedTracers(nTracers,:,:) does not conserve mass!
+             ! This does conserve mass:
+             layerThickness(:,:) = layerThickness(:,:) + tend(nTracers,:,:) * dt
              ! Reset tracers after thickness advection for tracer advection
+             ! TODO: determine whether we need to treat other tracer tendencies
+             ! the same as layerThickness for conservation.
              advectedTracers(:,:,:) = advectedTracersOld(:,:,:)
              call li_tracer_advection_fct_tend(&
                   tend, advectedTracers, layerThicknessOld, &
