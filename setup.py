@@ -84,7 +84,7 @@ aerosol_budget_files = get_all_files_in_dir(
 )
 
 rgb_files = get_all_files_in_dir("e3sm_diags/plot/colormaps", "*.rgb")
-control_runs_files = get_all_files_in_dir("e3sm_diags/driver/control_runs", "*.csv")
+control_runs_files = get_all_files_in_dir("e3sm_diags/driver/control_runs", "*")
 
 INSTALL_PATH = "share/e3sm_diags/"
 

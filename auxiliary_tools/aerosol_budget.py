@@ -3,6 +3,8 @@ from e3sm_diags.driver import utils
 import cdms2
 import cdutil
 import numpy
+import os
+import json
 
 import csv
 
@@ -61,8 +63,9 @@ def generate_metrics_dic(data, aerosol, season):
 
 param = CoreParameter()
 param.test_name = 'v2.LR.historical_0101'
-#param.test_name = 'v2.LR.F2010'
+param.test_name = 'F2010.PD.NGD_v3atm.0096484.compy'
 param.test_data_path = '/Users/zhang40/Documents/ACME_simulations/'
+param.test_data_path = '/compyfs/mahf708/E3SMv3_dev/F2010.PD.NGD_v3atm.0096484.compy/post/atm/180x360_aave/clim/10yr'
 test_data = utils.dataset.Dataset(param, test=True)
 
 #rearth = 6.37122e6 #km
@@ -90,20 +93,30 @@ metrics_dict_ref = {}
 
 seasons = ["ANN"]
 
+ref_data_path = os.path.join(
+        e3sm_diags.INSTALL_PATH,
+        "control_runs",
+        "aerosol_global_metrics_benchmarks.json",
+    )
 
+with open(ref_data_path, 'r') as myfile:
+    ref_file=myfile.read()
+
+metrics_ref = json.loads(ref_file)
 
 for season in seasons:
     for aerosol in species:
         print(f'Aerosol species: {aerosol}')
         metrics_dict[aerosol] = generate_metrics_dic(test_data, aerosol, season)
-        metrics_dict_ref[aerosol] = {
-            "Surface Emission (Tg/yr)": f'{MISSING_VALUE:.3f}',
-            "Sink (Tg/yr)": f'{MISSING_VALUE:.3f}',
-            "Dry Deposition (Tg/yr)": f'{MISSING_VALUE:.3f}',
-            "Wet Deposition (Tg/yr)": f'{MISSING_VALUE:.3f}',
-            "Burden (Tg)": f'{MISSING_VALUE:.3f}',
-            "Lifetime (Days)": f'{MISSING_VALUE:.3f}',
-            }
+        metrics_dict_ref[aerosol] = metrics_ref[aerosol]
+        #metrics_dict_ref[aerosol] = {
+        #    "Surface Emission (Tg/yr)": f'{MISSING_VALUE:.3f}',
+        #    "Sink (Tg/yr)": f'{MISSING_VALUE:.3f}',
+        #    "Dry Deposition (Tg/yr)": f'{MISSING_VALUE:.3f}',
+        #    "Wet Deposition (Tg/yr)": f'{MISSING_VALUE:.3f}',
+        #    "Burden (Tg)": f'{MISSING_VALUE:.3f}',
+        #    "Lifetime (Days)": f'{MISSING_VALUE:.3f}',
+        #    }
     
         with open(f'aerosol_table_{season}.csv', "w") as table_csv:
             writer = csv.writer(

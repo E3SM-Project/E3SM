@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import csv
+import json
 import os
 from typing import TYPE_CHECKING  # , Optional
 
+import e3sm_diags
 from e3sm_diags.driver import utils
 
 if TYPE_CHECKING:
@@ -16,7 +18,7 @@ from e3sm_diags.logger import custom_logger
 
 logger = custom_logger(__name__)
 
-# This aerosol budget set is requested by the E3SM Aerosol Working Group. The script is integrated in e3sm_diags by Jill Zhang, with input from Kai Zhang, Taufiq Hassan, Xue Zheng, Ziming Ke and Susannah Burrows.
+# This aerosol budget set is requested by the E3SM Aerosol Working Group. The script is integrated in e3sm_diags by Jill Zhang, with input from Kai Zhang, Taufiq Hassan, Xue Zheng, Ziming Ke, Susannah Burrows, and Naser Mahfouz.
 
 
 def global_integral(var, area_m2):
@@ -63,13 +65,13 @@ def generate_metrics_dic(data, aerosol, season):
     else:
         elvemis = 0.0
     metrics_dict = {
-        "Surface Emission (Tg/yr)": f"{srfemis:.3f}",
-        "Elevated Emission (Tg/yr)": f"{elvemis:.3f}",
-        "Sink (Tg/yr)": f"{sink:.3f}",
-        "Dry Deposition (Tg/yr)": f"{drydep:.3f}",
-        "Wet Deposition (Tg/yr)": f"{wetdep:.3f}",
-        "Burden (Tg)": f"{burden_total:.3f}",
-        "Lifetime (Days)": f"{burden_total/sink*365:.3f}",
+        "Surface Emission (Tg/yr)": f"{srfemis:.2f}",
+        "Elevated Emission (Tg/yr)": f"{elvemis:.2f}",
+        "Sink (Tg/yr)": f"{sink:.2f}",
+        "Dry Deposition (Tg/yr)": f"{drydep:.2f}",
+        "Wet Deposition (Tg/yr)": f"{wetdep:.2f}",
+        "Burden (Tg)": f"{burden_total:.2f}",
+        "Lifetime (Days)": f"{burden_total/sink*365:.2f}",
     }
     return metrics_dict
 
@@ -110,7 +112,7 @@ def run_diag(parameter: CoreParameter) -> CoreParameter:
         parameter.test_name_yrs = utils.general.get_name_and_yrs(
             parameter, test_data, season
         )
-        parameter.ref_name_yrs = "OBS"
+        parameter.ref_name_yrs = "Aerosol Global Benchmarks (Present Day)"
 
         for aerosol in variables:
             logger.info("Variable: {}".format(aerosol))
@@ -129,16 +131,20 @@ def run_diag(parameter: CoreParameter) -> CoreParameter:
                 )
 
         elif run_type == "model_vs_obs":
+            parameter.ref_name = parameter.ref_name_yrs
+            ref_data_path = os.path.join(
+                e3sm_diags.INSTALL_PATH,
+                "control_runs",
+                "aerosol_global_metrics_benchmarks.json",
+            )
+
+            with open(ref_data_path, "r") as myfile:
+                ref_file = myfile.read()
+
+            metrics_ref = json.loads(ref_file)
+
             for aerosol in variables:
-                metrics_dict_ref[aerosol] = {
-                    "Surface Emission (Tg/yr)": f"{MISSING_VALUE:.3f}",
-                    "Elevated Emission (Tg/yr)": f"{MISSING_VALUE:.3f}",
-                    "Sink (Tg/yr)": f"{MISSING_VALUE:.3f}",
-                    "Dry Deposition (Tg/yr)": f"{MISSING_VALUE:.3f}",
-                    "Wet Deposition (Tg/yr)": f"{MISSING_VALUE:.3f}",
-                    "Burden (Tg)": f"{MISSING_VALUE:.3f}",
-                    "Lifetime (Days)": f"{MISSING_VALUE:.3f}",
-                }
+                metrics_dict_ref[aerosol] = metrics_ref[aerosol]
         else:
             raise ValueError("Invalid run_type={}".format(run_type))
 
@@ -161,8 +167,8 @@ def run_diag(parameter: CoreParameter) -> CoreParameter:
             writer.writerow(
                 [
                     " ",
-                    "test",
-                    "ref",
+                    "Test",
+                    "Ref",
                 ]
             )
             for key, values in metrics_dict_test.items():
