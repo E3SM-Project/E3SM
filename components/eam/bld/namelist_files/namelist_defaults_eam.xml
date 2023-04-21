@@ -1319,6 +1319,7 @@
 <gaschmbudget_2D_L4_e>         72       </gaschmbudget_2D_L4_e>
 <history_UCIgaschmbudget_2D>      .false.  </history_UCIgaschmbudget_2D>
 <history_UCIgaschmbudget_2D_levels>   .false.  </history_UCIgaschmbudget_2D_levels>
+<history_chemdyg_summary>      .false.  </history_chemdyg_summary>
 
 <!-- BSINGH - ndrop.F90 "repeated g1 equation" bug fix flag -->
 <fix_g1_err_ndrop>             .false.  </fix_g1_err_ndrop>
