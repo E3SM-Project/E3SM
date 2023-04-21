@@ -29,19 +29,19 @@
 
   <compset>
     <alias>CMPASO-JRA1p5</alias>
-    <lname>2000_DATM%JRA-1p5_SLND_DICE%SSMI_MPASO%DATMFORCED_DROF%JRA-1p5-AIS0ROF_SGLC_SWAV</lname>
+    <lname>2000_DATM%JRA-1p5_SLND_DICE%SSMI_MPASO%DATMFORCED_DROF%JRA-1p4-2018-AIS0LIQ_SGLC_SWAV</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
     <alias>CMPASO-JRA1p5-ISMF</alias>
-    <lname>2000_DATM%JRA-1p5_SLND_DICE%SSMI_MPASO%ISMFDATMFORCED_DROF%JRA-1p5-AIS0ROF_SGLC_SWAV</lname>
+    <lname>2000_DATM%JRA-1p5_SLND_DICE%SSMI_MPASO%ISMFDATMFORCED_DROF%JRA-1p4-2018-AIS0LIQ_SGLC_SWAV</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
     <alias>CMPASO-JRA1p5-ISMF-TMIX</alias>
-    <lname>2000_DATM%JRA-1p5_SLND_DICE%SSMI_MPASO%ISMFDATMFORCEDTMIX_DROF%JRA-1p5-AIS0ROF_SGLC_SWAV</lname>
+    <lname>2000_DATM%JRA-1p5_SLND_DICE%SSMI_MPASO%ISMFDATMFORCEDTMIX_DROF%JRA-1p4-2018-AIS0LIQ_SGLC_SWAV</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
