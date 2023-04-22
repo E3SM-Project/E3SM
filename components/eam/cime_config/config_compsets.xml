@@ -52,6 +52,11 @@
   </compset>
 
   <compset>
+    <alias>F20TR_chemUCI-Linozv3-mam5</alias>
+    <lname>20TR_EAM%CHEMUCI-LINOZV3-MAM5_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>F20TR-CICE</alias>
     <lname>20TR_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>

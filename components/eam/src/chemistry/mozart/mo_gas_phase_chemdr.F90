@@ -949,7 +949,7 @@ contains
 
     if ( has_linoz_data .and. .not. &
        (chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
-       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' )) then
+       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' .or. chem_name == 'linoz_mam5_resus_mom_soag' )) then
        ltrop_sol(:ncol) = troplev(:ncol)
     !kzm note: this is a strange setting
     elseif (chem_name == 'trop_strat_mam7_resus_mom_soag_s') then !kzm

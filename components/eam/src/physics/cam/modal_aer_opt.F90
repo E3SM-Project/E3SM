@@ -343,6 +343,7 @@ subroutine modal_aer_opt_init()
        cam_chempkg_is('linoz_mam4_resus_mom').or. &
        cam_chempkg_is('linoz_mam4_resus_mom_soag').or. &
        cam_chempkg_is('superfast_mam4_resus_mom_soag').or. &
+       cam_chempkg_is('superfast_mam5_resus_mom_soag').or. &
        cam_chempkg_is('linoz_mam5_resus_mom_soag') .or. &
        cam_chempkg_is('trop_strat_mam5_resus_mom_soag')) then
      call addfld ('AODDUST4',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 4 from dust', flag_xyfill=.true.)
@@ -352,6 +353,7 @@ subroutine modal_aer_opt_init()
      if(cam_chempkg_is('linoz_mam7_resus_mom_soag_s').or. &
        cam_chempkg_is('trop_strat_mam7_resus_mom_s').or. &
         cam_chempkg_is('linoz_mam5_resus_mom_soag') .or. &
+        cam_chempkg_is('superfast_mam5_resus_mom_soag') .or. &
         cam_chempkg_is('trop_strat_mam5_resus_mom_soag'))then
         call addfld ('AODDUST5',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 5 from dust', flag_xyfill=.true.)
         call addfld ('AODMODE5',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 5', flag_xyfill=.true.)
