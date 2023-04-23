@@ -115,8 +115,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oQU240':
-        decomp_date = '151209'
-        decomp_prefix = 'mpas-cice.graph.info.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '151209'
         grid_prefix = 'seaice.oQU240km'
         if ice_ic_mode == 'spunup':
@@ -124,8 +124,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oQU240wLI':
-        decomp_date = '160929'
-        decomp_prefix = 'mpas-cice.graph.info.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '160929'
         grid_prefix = 'cice.QU240wLI'
         if ice_ic_mode == 'spunup':
@@ -133,8 +133,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oQU480':
-        decomp_date = '180705'
-        decomp_prefix = 'mpas-seaice.graph.legacy.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '180705'
         grid_prefix = 'seaice.oQU480'
         if ice_ic_mode == 'spunup':
