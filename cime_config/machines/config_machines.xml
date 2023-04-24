@@ -713,11 +713,11 @@
     <COMPILERS>crayclang-scream</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>CLI133_crusher</PROJECT>
-    <CIME_OUTPUT_ROOT>/gpfs/alpine/cli133/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/lustre/orion/cli133/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/gpfs/alpine/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-       <CCSM_CPRNC>/gpfs/alpine/cli133/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+       <CCSM_CPRNC>/lustre/orion/cli133/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -801,7 +801,7 @@
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
     <environment_variables compiler="crayclang-scream" mpilib="mpich">
-      <env name="ADIOS2_DIR">/gpfs/alpine/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/crayclang-14.0.2</env>
+      <env name="ADIOS2_DIR">/lustre/orion/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/crayclang-14.0.2</env>
     </environment_variables>
   </machine>
 
@@ -816,11 +816,11 @@
     <COMPILERS>crayclang-scream</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>CLI133_crusher</PROJECT>
-    <CIME_OUTPUT_ROOT>/gpfs/alpine/cli133/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/lustre/orion/cli133/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/gpfs/alpine/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <CCSM_CPRNC>/gpfs/alpine/cli133/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/lustre/orion/cli133/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -889,7 +889,7 @@
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
     <environment_variables compiler="crayclang-scream" mpilib="mpich">
-      <env name="ADIOS2_DIR">/gpfs/alpine/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/crayclang-14.0.2</env>
+      <env name="ADIOS2_DIR">/lustre/orion/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/crayclang-14.0.2</env>
     </environment_variables>
   </machine>
 
