@@ -73,8 +73,8 @@ def buildnml(case, caseroot, compname):
     points_file = ''
 
     if ice_grid == 'oEC60to30v3':
-        decomp_date = '161222'
-        decomp_prefix = 'mpas-cice.graph.info.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '161222'
         grid_prefix = 'seaice.EC60to30v3'
         if ice_ic_mode == 'spunup':
@@ -106,8 +106,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oQU120':
-        decomp_date = '151209'
-        decomp_prefix = 'mpas-cice.graph.info.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '151209'
         grid_prefix = 'seaice.oQU120km'
         if ice_ic_mode == 'spunup':
@@ -161,8 +161,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oRRS18to6v3':
-        decomp_date = '180214'
-        decomp_prefix = 'mpas-seaice.v2.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '170111'
         grid_prefix = 'seaice.RRS18to6v3'
         if ice_ic_mode == 'spunup':
