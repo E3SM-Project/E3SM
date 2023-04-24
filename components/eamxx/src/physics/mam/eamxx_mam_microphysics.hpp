@@ -28,15 +28,16 @@ class MAMMicrophysics final : public scream::AtmosphereProcess {
   // views for single- and multi-column data
   using view_1d_int   = typename KT::template view_1d<int>;
   using view_1d       = typename KT::template view_1d<Real>;
-  using view_1d_const = typename KT::template view_1d<const Real>;
   using view_2d       = typename KT::template view_2d<Real>;
-  using view_2d_const = typename KT::template view_2d<const Real>;
 
   // unmanaged views (for buffer and workspace manager)
   using uview_1d = Unmanaged<typename KT::template view_1d<Real>>;
   using uview_2d = Unmanaged<typename KT::template view_2d<Real>>;
 
+  // a quantity stored in a single vertical column with a single index
   using ColumnView = mam4::ColumnView;
+
+  // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
 
 public:
@@ -109,12 +110,12 @@ private:
         // Units of all tracers become [kg/kg(dry-air)] for mass mixing ratios and
         // [#/kg(dry-air)] for number mixing ratios after the following
         // conversion. qv is converted to dry mmr in the next parallel for.
-        q_soag_(i,k)  = PF::calculate_drymmr_from_wetmmr(q_soag_(i,k), qv_(i,k));
         q_h2so4_(i,k) = PF::calculate_drymmr_from_wetmmr(q_h2so4_(i,k), qv_(i,k));
 
+        // convert aerosol mass mixing ratios from wet air to dry air
         q_aitken_so4_(i,k) = PF::calculate_drymmr_from_wetmmr(q_aitken_so4_(i,k), qv_(i,k));
 
-        // convert qv to dry mmr
+        // do the same for water vapor
         qv_(i,k) = PF::calculate_drymmr_from_wetmmr(qv_(i,k), qv_(i,k));
       });
       team.team_barrier();
@@ -144,7 +145,6 @@ private:
     view_1d pblh_;    // planetary boundary layer height [m]
 
     // local aerosol-related gases
-    view_2d q_soag_;  // secondary organic aerosol gas [kg gas/kg dry air]
     view_2d q_h2so4_; // H2SO3 gas [kg/kg dry air]
 
     // local aerosols (more to appear as we improve this atm process)
@@ -162,7 +162,6 @@ private:
                        const view_2d&     dz,
                        const view_2d&     pdel,
                        const view_1d&     pblh,
-                       const view_2d&     q_soag,
                        const view_2d&     q_h2so4,
                        const view_2d&     q_aitken_so4) {
       ncol_ = ncol;
@@ -177,7 +176,6 @@ private:
       dz_ = dz;
       pdel_ = pdel;
       pblh_ = pblh;
-      q_soag_ = q_soag;
       q_h2so4_ = q_h2so4;
       q_aitken_so4_ = q_aitken_so4;
     } // set_variables
@@ -196,11 +194,12 @@ private:
         // NOTE: calculate_wetmmr_from_drymmr takes 2 arguments:
         // 1. dry mmr
         // 2. "dry" water vapor mixing ratio
-        q_soag_(i,k)  = PF::calculate_wetmmr_from_drymmr(q_soag_(i,k), qv_(i,k));
         q_h2so4_(i,k) = PF::calculate_wetmmr_from_drymmr(q_h2so4_(i,k), qv_(i,k));
 
+        // convert aerosol mass mixing ratios from dry air back to wet air
         q_aitken_so4_(i,k) = PF::calculate_wetmmr_from_drymmr(q_aitken_so4_(i,k), qv_(i,k));
 
+        // do the same for water vapor
         qv_(i,k) = PF::calculate_wetmmr_from_drymmr(qv_(i,k), qv_(i,k));
       });
       team.team_barrier();
@@ -214,7 +213,6 @@ private:
     view_1d_int convert_wet_dry_idx_d_;
 
     // local aerosol-related gases
-    view_2d       q_soag_;  // secondary organic aerosol gas [kg gas/kg dry air]
     view_2d       q_h2so4_; // H2SO3 gas [kg/kg dry air]
 
     // local aerosols (more to appear as we improve this atm process)
@@ -225,14 +223,12 @@ private:
                        const int nlev,
                        const view_1d_int& convert_wet_dry_idx_d,
                        const view_2d& qv,
-                       const view_2d& q_soag,
                        const view_2d& q_h2so4,
                        const view_2d& q_aitken_so4) {
       ncol_ = ncol;
       nlev_ = nlev;
       convert_wet_dry_idx_d_ = convert_wet_dry_idx_d;
       qv_ = qv;
-      q_soag_ = q_soag;
       q_h2so4_ = q_h2so4;
       q_aitken_so4_ = q_aitken_so4;
     } // set_variables
@@ -240,17 +236,20 @@ private:
 
   // storage for local variables, initialized with ATMBufferManager
   struct Buffer {
-    // number of fields stored at column midpoints
-    static constexpr int num_2d_mid = 2;
+    // number of local fields stored at column midpoints
+    static constexpr int num_2d_mid = 5;
 
-    // number of fields stored at column interfaces
+    // local column midpoint fields
+    uview_2d z_mid;             // height at midpoints
+    uview_2d dz;                // layer thickness
+    uview_2d q_h2so4_tend;      // tendency for H2SO4 gas
+    uview_2d n_aitken_tend;     // tendency for aitken aerosol mode
+    uview_2d q_aitken_so4_tend; // tendency for aitken mode sulfate aerosol
+
+    // number of local fields stored at column interfaces
     static constexpr int num_2d_iface = 1;
 
-    // column midpoint fields
-    uview_2d z_mid; // height at midpoints
-    uview_2d dz;    // layer thickness
-
-    // column interface fields
+    // local column interface fields
     uview_2d z_iface; // height at interfaces
 
     // storage
@@ -280,7 +279,6 @@ private:
   view_1d pblh_;    // planetary boundary layer height [m]
 
   // local aerosol-related gases
-  view_2d q_soag_;  // secondary organic aerosol gas [kg gas/kg dry air]
   view_2d q_h2so4_; // H2SO3 gas [kg/kg dry air]
 
   // local aerosols (more to appear as we improve this atm process)
