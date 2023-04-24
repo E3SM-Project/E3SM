@@ -14,4 +14,4 @@ export JENKINS_START_TIME=$(date "+%s")
 umask 002
 
 set -o pipefail
-$SCRIPT_DIR/jenkins_generic_job --submit-to-cdash --update-success "$@" 2>&1 | tee JENKINS_${DATE_STAMP}
+$SCRIPT_DIR/../../cime/CIME/Tools/jenkins_generic_job --submit-to-cdash --update-success "$@" 2>&1 | tee JENKINS_${DATE_STAMP}
