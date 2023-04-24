@@ -1716,7 +1716,7 @@
       !-----------------------------------------------------------------
 
       if (ktherm == 2) then
-         if (hsn <= puny) then
+         if (hsn <= puny .or. hin <= c0) then
             do k = 1, nslyr
                fhocnn = fhocnn &
                       + zqsn(k)*hsn/(real(nslyr,kind=dbl_kind)*dt)
