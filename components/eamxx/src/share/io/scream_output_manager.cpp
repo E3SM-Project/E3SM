@@ -146,6 +146,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       m_checkpoint_file_specs.max_snapshots_in_file = 1;
       m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
       m_checkpoint_file_specs.save_grid_data = false;
+      m_checkpoint_file_specs.hist_restart_file = true;
     }
   }
 
@@ -164,7 +165,12 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     bool perform_history_restart = restart_pl.get("Perform Restart",true);
     auto hist_restart_casename = restart_pl.get("filename_prefix",m_casename);
 
-    if (perform_history_restart) {
+    if (m_is_model_restart_output) {
+      // For model restart output, the restart time (which is the start time of this run) is precisely
+      // when the last write happened, so we can quickly init the output control.
+      m_output_control.timestamp_of_last_write = m_run_t0;
+      m_output_control.nsamples_since_last_write = 0;
+    } else if (perform_history_restart) {
       using namespace scorpio;
       auto fn = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
 
@@ -298,9 +304,9 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       if (m_is_model_restart_output) {
         // Only write nsteps on model restart
         set_attribute(filespecs.filename,"nsteps",timestamp.get_num_steps());
-      } else if (is_checkpoint_step) {
+      } else if (filespecs.hist_restart_file) {
         // Update the date of last write and sample size
-        scorpio::write_timestamp (filespecs.filename,"last_write",control.timestamp_of_last_write);
+        scorpio::write_timestamp (filespecs.filename,"last_write",m_output_control.timestamp_of_last_write);
         scorpio::set_attribute (filespecs.filename,"num_snapshots_since_last_write",m_output_control.nsamples_since_last_write);
       }
 
@@ -331,6 +337,9 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     };
 
     start_timer(timer_root+"::update_snapshot_tally"); 
+    // Important! Process output file first, and hist restart (if any) second.
+    // That's b/c write_global_data will update m_output_control.timestamp_of_last_write,
+    // which is later be written as global data in the hist restart file
     if (is_output_step) {
       write_global_data(m_output_control,m_output_file_specs);
     }
