@@ -1564,10 +1564,7 @@ end function chem_is_active
              else
                 Diff(:ncol,1) = (ftem_layers(:ncol,1) - gas_ac_2D(:ncol))/dt
              end if
-             if (history_chemdyg_summary .and. trim(solsym(n)) == 'O3' ) then
-             call outfld(trim(solsym(n))//'_2DTDO', Diff(:ncol,1), pcols, lchnk )
-             end if
-             if (history_gaschmbudget_2D ) then
+             if (history_gaschmbudget_2D .or. (history_chemdyg_summary .and. trim(solsym(n)) == 'O3') then
              call outfld(trim(solsym(n))//'_2DTDO', Diff(:ncol,1), pcols, lchnk )
              end if
            end if
