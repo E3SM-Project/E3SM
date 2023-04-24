@@ -661,7 +661,7 @@
    </batch_system>
 
    <batch_system MACH="crusher-scream-gpu" type="slurm">
-     <batch_submit>/gpfs/alpine/cli133/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
+     <batch_submit>/lustre/orion/cli133/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
      <directives>
        <directive> -S 0</directive>
      </directives>
