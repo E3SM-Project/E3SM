@@ -81,7 +81,7 @@
 			description="Frequency of each constituent"
 		/>
 		<var name="sshInit" type="real" dimensions="nCells" units="m"
-			description="Copy of initial ssh distribution"
+			description="Copy of the initial ssh distribution. Used to compute analysis with respect to ssh anomalies, ensuring cells with initial ssh offsets are handled correctly"
 		/>
 		<var name="leastSquaresLHSMatrix" type="real" dimensions="maxTidalConstituentsX2 maxTidalConstituentsX2 Time" units="rad/s"
 			description="Frequency of each constituent"
@@ -157,6 +157,7 @@
 		                 output_interval="stream:restart:output_interval"
 		                 immutable="false"
 		                 mode="forward;analysis">
+		    <var name="sshInit"/>
 			<var name="leastSquaresLHSMatrix"/>
 			<var name="leastSquaresRHSVector"/>
 		</stream>

@@ -176,6 +176,8 @@ contains
         rho0gInv = 1.0_RKIND / rho_sw / gravity
 
         do iCell = 1,nCellsAll
+          ! an adjusted ssh that accounts for surface pressure,
+          ! with SAL computed wrt the full btr bottom pressure
           sshSmoothed(iCell) = coastalSmoothingFactor(iCell) * ( &
               ssh(iCell) + rho0gInv * surfacePressure(iCell) )
         enddo
