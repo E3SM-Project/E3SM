@@ -222,7 +222,7 @@ contains
    use cam_restart,      only: restart_defaultopts, restart_setopts, restart_printopts
    use co2_cycle,        only: co2_cycle_readnl
    use shr_string_mod,   only: shr_string_toUpper
-   use scamMod,          only: scam_setopts,scam_default_opts
+   use iop_data_mod,     only: iop_setopts,iop_default_opts
 
    ! Some modules read their own namelist input.
    use spmd_utils,          only: spmd_utils_readnl
@@ -329,7 +329,7 @@ contains
    ! conservation checks
    namelist /cam_inparm/ print_energy_errors
 
-   ! scam
+   ! IOP
     namelist /cam_inparm/ iopfile, scm_iop_srf_prop, iop_nudge_tq, iop_nudge_uv, &
                          iop_nudge_tq_low, iop_nudge_tq_high, iop_nudge_tscale, &
                          scm_observed_aero, precip_off, &
@@ -367,9 +367,9 @@ contains
    call check_energy_defaultopts( &
       print_energy_errors_out = print_energy_errors )
 
-   ! Set default options for single column model
+   ! Set default options for single column or doubly periodic CRM mode
    if (present(single_column_in)) then
-      call scam_default_opts(scmlat_out=scmlat,scmlon_out=scmlon, &
+      call iop_default_opts(scmlat_out=scmlat,scmlon_out=scmlon, &
         single_column_out=single_column, &
         scm_iop_srf_prop_out=scm_iop_srf_prop,&
         iop_nudge_tq_out=iop_nudge_tq, &
@@ -444,14 +444,14 @@ contains
    call check_energy_setopts( &
       print_energy_errors_in = print_energy_errors )
 
-   ! Set runtime options for single column mode 
+   ! Set runtime options for single column or doubly periodic CRM mode 
    if (present(single_column_in) .and. present(scmlon_in) .and. present(scmlat_in)) then 
       if (single_column_in) then
          single_column = single_column_in
          scmlon = scmlon_in
          scmlat = scmlat_in
          scm_multcols = scm_multcols_in
-         call scam_setopts( scmlat_in=scmlat,scmlon_in=scmlon, &
+         call iop_setopts( scmlat_in=scmlat,scmlon_in=scmlon, &
                             iopfile_in=iopfile,single_column_in=single_column,&
                             scm_iop_srf_prop_in=scm_iop_srf_prop,&
 			    iop_dosubsidence_in=iop_dosubsidence,&

@@ -9,7 +9,7 @@ use shr_kind_mod,    only: r8 => shr_kind_r8
 use ppgrid,          only: pcols, pver, pverp
 use cam_abortutils,      only: endrun
 use cam_history,     only: outfld
-use scamMod,         only: single_column
+use iop_data_mod,    only: single_column
 use cam_logfile,     only: iulog
 use parrrsw,         only: nbndsw, ngptsw
 use rrtmg_sw_init,   only: rrtmg_sw_ini

@@ -1,10 +1,19 @@
-module se_single_column_mod
+module se_iop_intr_mod
 !--------------------------------------------------------
 ! 
-! Module for the SE single column model
+! Module for the interface between the Spectral Element
+!  dynamical core and intensive observation period (IOP) data
+!  used for single column model (SCM) and doubly-periodic (DP)
+!  cloud resolving model (CRM).
+
+!---------------------------------------------------------
+! Author: Peter Bogenschutz (bogenschutz1@llnl.gov)
+! Formerly named se_single_column_mod.F90
+!
+!----------------------------------------------------------
 
 use element_mod, only: element_t
-use scamMod
+use iop_data_mod
 use constituents, only: cnst_get_ind, pcnst
 use dimensions_mod, only: nelemd, np
 use time_manager, only: get_nstep, dtime, is_first_step, &
@@ -21,16 +30,21 @@ use cam_history, only: outfld
 
 implicit none
 
-public scm_setinitial
-public scm_setfield
-public scm_broadcast
-public apply_SC_forcing
+public iop_setinitial
+public iop_setfield
+public iop_broadcast
+public apply_iop_forcing
 
 !=========================================================================
 contains
 !=========================================================================
 
-subroutine scm_setinitial(elem)
+subroutine iop_setinitial(elem)
+
+!---------------------------------------------------------
+! Purpose: Set initial values from IOP files (where available)
+!    when running SCM or DP-CRM.
+!----------------------------------------------------------
 
   use kinds, only : real_kind
   use constituents, only: qmin
@@ -128,11 +142,16 @@ subroutine scm_setinitial(elem)
     enddo
   endif
 
-end subroutine scm_setinitial
+end subroutine iop_setinitial
 
 
 !=========================================================================
-subroutine scm_broadcast()
+subroutine iop_broadcast()
+
+!---------------------------------------------------------
+! Purpose: When running DP-CRM, broadcast relevant logical 
+!   flags and data to all processors
+!----------------------------------------------------------
 
   use mpishorthand
   
@@ -173,9 +192,15 @@ subroutine scm_broadcast()
   
 #endif
 
-end subroutine scm_broadcast
+end subroutine iop_broadcast
 
-subroutine scm_setfield(elem,iop_update_phase1)
+!=========================================================================
+subroutine iop_setfield(elem,iop_update_phase1)
+
+!---------------------------------------------------------
+! Purpose: Update various fields based on available data
+!   provided by IOP file
+!----------------------------------------------------------
 
   implicit none
 
@@ -193,13 +218,18 @@ subroutine scm_setfield(elem,iop_update_phase1)
     end do
   end do
 
-end subroutine scm_setfield
+end subroutine iop_setfield
 
 !=========================================================================
 
-subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
-! 
-  use scamMod, only: single_column, use_3dfrc
+subroutine apply_iop_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
+
+!---------------------------------------------------------
+! Purpose: Main interface between SE dynamical core
+!  and the large-scale forcing data provided by IOP
+!----------------------------------------------------------
+
+  use iop_data_mod, only: single_column, use_3dfrc
   use kinds, only : real_kind
   use dimensions_mod, only : np, np, nlev, npsq
   use control_mod, only : use_cpstar, qsplit
@@ -409,16 +439,18 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
     call iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,dt)
   endif
 
-end subroutine apply_SC_forcing
+end subroutine apply_iop_forcing
 
 !=========================================================================
 
 subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,dt)
 
-  ! Subroutine intended to nudge a uniformly forced grid with heterogenous
-  !   surface (i.e. doubly-periodic SCREAM).
+!---------------------------------------------------------
+! Purpose: Nudge doubly-periodic CRM to observations provided
+!   in the IOP file for T, q, u, and v.
+!----------------------------------------------------------
 
-  use scamMod
+  use iop_data_mod
   use dimensions_mod, only : np, np, nlev, npsq, nelem
   use parallel_mod, only: global_shared_buf, global_shared_sum
   use global_norms_mod, only: wrap_repro_sum
@@ -429,9 +461,9 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,d
   use physical_constants, only : Cp, Rgas
 
   ! Input/Output variables
-  type (element_t)     , intent(inout), target :: elem(:)
-  type (hvcoord_t)                  :: hvcoord
-  type(hybrid_t),             intent(in) :: hybrid
+  type (element_t), intent(inout), target :: elem(:)
+  type (hvcoord_t), intent(in) :: hvcoord
+  type(hybrid_t), intent(in) :: hybrid
   integer, intent(in) :: nelemd_todo, np_todo, t1
   real (kind=real_kind), intent(in):: dt
 
@@ -552,6 +584,8 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,d
 
 end subroutine iop_domain_relaxation
 
+!=========================================================================
+
 #ifdef MODEL_THETA_L
 subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
                               nelemd_todo,np_todo)
@@ -560,7 +594,7 @@ subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
   ! (done so to be consistent with SHOC's definition of each for ease of
   ! comparison) for DP CRM runs.
 
-  use scamMod
+  use iop_data_mod
   use dimensions_mod, only : np, np, nlev, nlevp, npsq, nelem
   use parallel_mod, only: global_shared_buf, global_shared_sum
   use global_norms_mod, only: wrap_repro_sum
@@ -573,9 +607,9 @@ subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
   use physconst, only: latvap
 
   ! Input/Output variables
-  type (element_t)     , intent(inout), target :: elem(:)
-  type (hvcoord_t)                  :: hvcoord
-  type(hybrid_t),             intent(in) :: hybrid
+  type (element_t), intent(inout), target :: elem(:)
+  type (hvcoord_t), intent(in) :: hvcoord
+  type(hybrid_t), intent(in) :: hybrid
   integer, intent(in) :: nelemd_todo, np_todo, t1
 
   ! Local variables
@@ -700,4 +734,4 @@ subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
 end subroutine crm_resolved_turb
 #endif  // MODEL_THETA_L
 
-end module se_single_column_mod
+end module se_iop_intr_mod

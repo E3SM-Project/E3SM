@@ -27,7 +27,7 @@ module physpkg
   use constituents,            only: pcnst, cnst_name, cnst_get_ind, setup_moist_indices
   use camsrfexch,              only: cam_out_t, cam_in_t
   use phys_control,            only: phys_do_flux_avg, phys_getopts
-  use scamMod,                 only: single_column
+  use iop_data_mod,            only: single_column
   use cam_logfile,             only: iulog
   implicit none
   private

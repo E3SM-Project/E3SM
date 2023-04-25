@@ -7,7 +7,7 @@ module radlw
 !-----------------------------------------------------------------------
 use shr_kind_mod,      only: r8 => shr_kind_r8
 use ppgrid,            only: pcols, pver, pverp
-use scamMod,           only: single_column
+use iop_data_mod,      only: single_column
 use parrrtm,           only: nbndlw, ngptlw
 use rrtmg_lw_init,     only: rrtmg_lw_ini
 use rrtmg_lw_rad,      only: rrtmg_lw

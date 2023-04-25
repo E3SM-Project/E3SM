@@ -225,7 +225,7 @@ contains
 !-----------------------------------------------------------------------
     use shr_sys_mod,  only: shr_sys_flush
     use constituents, only: cnst_get_ind, cnst_mw
-    use scamMod,      only: single_column
+    use iop_data_mod, only: single_column
     use phys_control, only: phys_getopts
     use physconst,    only: physconst_update ! Routine which updates physconst variables (WACCM-X)
     use ppgrid,       only: begchunk, endchunk

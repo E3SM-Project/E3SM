@@ -103,7 +103,7 @@ module phys_grid
    use cam_abortutils,   only: endrun
    use perf_mod
    use cam_logfile,      only: iulog
-   use scamMod,          only: single_column, scmlat, scmlon, scm_multcols
+   use iop_data_mod,     only: single_column, scmlat, scmlon, scm_multcols
    use shr_const_mod,    only: SHR_CONST_PI
    use dycore,           only: dycore_is
    use units,            only: getunit, freeunit

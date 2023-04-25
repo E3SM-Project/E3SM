@@ -6,7 +6,7 @@ use constituents,   only: pcnst, cnst_get_ind
 use pspect
 use physconst,      only: rair,cpair
 use cam_logfile,    only: iulog
-use scamMod
+use iop_data_mod
 
 implicit none
 

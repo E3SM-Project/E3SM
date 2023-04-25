@@ -1,12 +1,14 @@
-module scamMod
+module iop_data_mod
 !----------------------------------------------------------------------- 
 !
-! Module for routines related to reading information for the
-! single column model (SCM)
+! Module for routines related to reading information from intensive
+!   observation period (IOP) files that are used for the single column
+!   model (SCM) and doubly periodic CRM applications.
 ! 
 ! Originally adapted from CAM in 2017.
 ! Modified and updated for E3SM by Peter Bogenschutz 2017-present
 ! Contact: bogenschutz1@llnl.gov
+! This file was formerly named scamMod.F90
 !-----------------------------------------------------------------------
 
   use shr_kind_mod, only: r8 => shr_kind_r8, i8 => shr_kind_i8
@@ -32,8 +34,8 @@ module scamMod
 
   ! PUBLIC INTERFACES:
 
-  public scam_default_opts        ! SCAM default run-time options 
-  public scam_setopts             ! SCAM run-time options 
+  public iop_default_opts        ! IOP default run-time options 
+  public iop_setopts             ! IOPrun-time options 
   public setiopupdate_init
   public setiopupdate
   public readiopdata         
@@ -179,7 +181,7 @@ module scamMod
   contains
 !=======================================================================
 
-subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
+subroutine iop_default_opts( scmlat_out,scmlon_out,iopfile_out, &
         single_column_out,scm_iop_srf_prop_out, iop_nudge_tq_out, iop_nudge_uv_out, &
         iop_nudge_tq_low_out, iop_nudge_tq_high_out, iop_nudge_tscale_out, &
         scm_observed_aero_out, iop_dosubsidence_out, &
@@ -221,9 +223,10 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(dp_crm_out))            dp_crm_out = .false.
    if ( present(scm_zero_non_iop_tracers_out) ) scm_zero_non_iop_tracers_out = .false.
 
-end subroutine scam_default_opts
+end subroutine iop_default_opts
 
-subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
+!=========================================================================
+subroutine iop_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          scm_iop_srf_prop_in, iop_nudge_tq_in, iop_nudge_uv_in, &
                          iop_nudge_tq_low_in, iop_nudge_tq_high_in, iop_nudge_tscale_in, &
                          scm_observed_aero_in, iop_dosubsidence_in, &
@@ -407,8 +410,9 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
 
   endif
 
-end subroutine scam_setopts
+end subroutine iop_setopts
 
+!=========================================================================
 subroutine setiopupdate_init
 
 !-----------------------------------------------------------------------
@@ -1469,4 +1473,4 @@ endif !scm_observed_aero
 end subroutine readiopdata
 
 
-end module scamMod
+end module iop_data_mod
