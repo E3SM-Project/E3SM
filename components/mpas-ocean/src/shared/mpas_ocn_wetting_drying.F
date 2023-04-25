@@ -235,7 +235,6 @@ contains
       type (mpas_pool_type), pointer :: tendPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: provisStatePool
-      real (kind=RKIND), dimension(:), pointer :: ssh
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessCur
       real (kind=RKIND), dimension(:, :), pointer :: layerThicknessProvis
       real (kind=RKIND), dimension(:, :), pointer :: normalVelocity
@@ -248,7 +247,6 @@ contains
      call mpas_pool_get_subpool(block % structs, 'state', statePool)
      call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
 
-     call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
      ! use thickness at n because constraint is h_n + dt*T_h > h_min
      call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
