@@ -71,6 +71,9 @@ public:
                    const std::shared_ptr<const grid_type>& grid,
                    const std::map<std::string,view_1d_host>& host_views_1d,
                    const std::map<std::string,FieldLayout>&  layouts);
+  AtmosphereInput (const std::string& filename,
+                   const std::shared_ptr<const grid_type>& grid,
+                   const std::map<std::string,Field>& fields);
 
   virtual ~AtmosphereInput () = default;
 

@@ -8,6 +8,7 @@
 
 namespace scream
 {
+
 AtmosphereInput::
 AtmosphereInput (const ekat::ParameterList& params,
                 const std::shared_ptr<const fm_type>& field_mgr)
@@ -22,6 +23,26 @@ AtmosphereInput (const ekat::ParameterList& params,
                  const std::map<std::string,FieldLayout>&  layouts)
 {
   init (params,grid,host_views_1d,layouts);
+}
+
+AtmosphereInput::
+AtmosphereInput (const std::string& filename,
+                 const std::shared_ptr<const grid_type>& grid,
+                 const std::map<std::string,Field>& fields)
+{
+  // Create param list and field manager on the fly
+  ekat::ParameterList params;
+  params.set("Filename",filename);
+  auto& names = params.get<std::vector<std::string>>("Field Names",{});
+
+  auto fm = std::make_shared<fm_type>(grid);
+  fm->registration_begins();
+  fm->registration_ends();
+  for (auto& it : fields) {
+    fm->add_field(it.second);
+    names.push_back(it.first);
+  }
+  init(params,fm);
 }
 
 void AtmosphereInput::
