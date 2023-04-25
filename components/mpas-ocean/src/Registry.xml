@@ -829,8 +829,8 @@
 					description="Controls if self-attraction and loading is applied to ssh"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_self_attraction_loading_smoothing_width" type="real" default_value="1.0" units="km"
-					description="Defines region over which ssh is smoothed to zero at coasts for SAL calculation."
+		<nml_option name="config_self_attraction_loading_depth_cutoff" type="real" default_value="10.0" units="m"
+					description="Defines depths over which ssh is smoothed to zero for SAL calculation."
 					possible_values="Any positive real number."
 		/>
 		<nml_option name="config_mpas_to_grid_weights_file" type="character" default_value="mpas_to_grid.nc"
@@ -1962,7 +1962,7 @@
             <var name="gotmEpsbTopOfCell"/>
             <var name="gotmDissTopOfCell"/>
             <var name="gotmLengthTopOfCell"/>
-            <var name="ssh_sal"/>
+            <var name="pgf_sal"/>
 		</stream>
 
 		<stream name="output"
@@ -3419,12 +3419,12 @@
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="ssh_sal" type="real" dimensions="nCells Time" units="m"
-			description="sea surface height perturbation from self-attraction and loading"
+		<var name="pgf_sal" type="real" dimensions="nCells Time" units="m"
+			description="Barotropic pressure perturbation due to self-attraction and loading"
 			packages="tidalPotentialForcingPKG"
 		/>
-		<var name="ssh_sal_grad" type="real" dimensions="nEdges Time" units=""
-			description="gradient of sea surface height perturbation from self-attraction and loading"
+		<var name="pgf_sal_grad" type="real" dimensions="nEdges Time" units=""
+			description="Gradient of barotropic pressure perturbation due to self-attraction and loading"
 			packages="tidalPotentialForcingPKG"
 		/>
 		<!-- FIELD split_explicit AB2 time stepping -->

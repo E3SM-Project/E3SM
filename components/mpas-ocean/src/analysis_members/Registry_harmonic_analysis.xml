@@ -80,6 +80,9 @@
 		<var name="analysisConstituentNodalPhase" type="real" dimensions="maxTidalConstituents Time" units="rad/s"
 			description="Frequency of each constituent"
 		/>
+		<var name="sshInit" type="real" dimensions="nCells" units="m"
+			description="Copy of initial ssh distribution"
+		/>
 		<var name="leastSquaresLHSMatrix" type="real" dimensions="maxTidalConstituentsX2 maxTidalConstituentsX2 Time" units="rad/s"
 			description="Frequency of each constituent"
 		/>

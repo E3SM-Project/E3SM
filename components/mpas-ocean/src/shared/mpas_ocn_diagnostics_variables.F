@@ -72,7 +72,7 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), dimension(:), pointer :: gradSSH
    real (kind=RKIND), dimension(:), pointer :: pressureAdjustedSSH
-   real (kind=RKIND), dimension(:), pointer :: ssh_sal
+   real (kind=RKIND), dimension(:), pointer :: pgf_sal
 
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue
@@ -375,8 +375,8 @@ contains
 
       if (config_use_tidal_potential_forcing) then
          call mpas_pool_get_array(diagnosticsPool, &
-                  'ssh_sal', &
-                   ssh_sal)
+                  'pgf_sal', &
+                   pgf_sal)
       end if
 
       if ( trim(config_ocean_run_mode) == 'init' .or. &
@@ -691,7 +691,7 @@ contains
          !$acc enter data create(topographic_wave_drag)
       end if
       if (config_use_self_attraction_loading) then
-         !$acc enter data copyin(ssh_sal)
+         !$acc enter data copyin(pgf_sal)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
          !$acc enter data create(                          &
@@ -938,7 +938,7 @@ contains
          !$acc exit data delete(topographic_wave_drag)
       end if
       if (config_use_self_attraction_loading) then
-         !$acc exit data delete(ssh_sal)
+         !$acc exit data delete(pgf_sal)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
          !$acc exit data delete(                           &
@@ -1275,7 +1275,7 @@ contains
          nullify(salinitySurfaceRestoringTendency)
       end if
       if ( config_use_self_attraction_loading ) then
-         nullify(ssh_sal)
+         nullify(pgf_sal)
       end if
       if ( trim(config_time_integrator) == 'split_implicit' ) then
          nullify(SIvec_r0,              &
