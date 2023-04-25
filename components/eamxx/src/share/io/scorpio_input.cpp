@@ -362,9 +362,15 @@ AtmosphereInput::get_vec_of_dims(const FieldLayout& layout)
 {
   // Given a set of dimensions in field tags, extract a vector of strings
   // for those dimensions to be used with IO
-  std::vector<std::string> dims_names(layout.rank());
+  using namespace ShortFieldTagsNames;
+  std::vector<std::string> dims_names;
+  dims_names.reserve(layout.rank());
   for (int i=0; i<layout.rank(); ++i) {
-    dims_names[i] = scorpio::get_nc_tag_name(layout.tag(i),layout.dim(i));
+    const FieldTag t = layout.tag(i);
+    dims_names.push_back(m_io_grid->get_dim_name(t));
+    if (t==CMP) {
+      dims_names.back() += std::to_string(layout.dim(i));
+    }
   }
 
   return dims_names;
