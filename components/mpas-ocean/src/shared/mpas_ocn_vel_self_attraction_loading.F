@@ -163,6 +163,7 @@ contains
         !-----------------------------------------------------------------
 
         integer :: iCell
+        real (kind=RKIND) :: rho0gInv
         
         call mpas_timer_start('SAL Calculation')
 
@@ -171,6 +172,8 @@ contains
             call mpas_timer_stop('SAL Calculation')
             return
         endif
+
+        rho0gInv = 1.0_RKIND / rho_sw / gravity
 
         do iCell = 1,nCellsAll
           sshSmoothed(iCell) = coastalSmoothingFactor(iCell) * ( &
