@@ -49,14 +49,14 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     //--------------------------------------
     sat_ice_fp  = physics::polysvp1(temps, true, Smask(true))[0];
     sat_liq_fp  = physics::polysvp1(temps, false, Smask(true))[0];
-    //last argument "0" of qv_sat function below forces qv_sat to call "polysvp1"
+
     mix_ice_fr = physics::qv_sat(temps, pres, true, Smask(true), physics::Polysvp1)[0];
     mix_liq_fr = physics::qv_sat(temps, pres, false,Smask(true), physics::Polysvp1)[0];
 
     //Get values from MurphyKoop_svp and qv_sat (qv_sat calls MurphyKoop_svp here) to test against "expected" values
     sat_ice_mkp   = physics::MurphyKoop_svp(temps, true, Smask(true))[0];
     sat_liq_mkp   = physics::MurphyKoop_svp(temps, false, Smask(true))[0];
-    //last argument "1" of qv_sat function below forces qv_sat to call "MurphyKoop_svp"
+
     mix_ice_mkr  = physics::qv_sat(temps, pres, true,  Smask(true), physics::MurphyKoop)[0];
     mix_liq_mkr  = physics::qv_sat(temps, pres, false, Smask(true), physics::MurphyKoop)[0];
   }
