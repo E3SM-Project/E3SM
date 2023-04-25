@@ -181,7 +181,7 @@ void HommeGridsManager::build_dynamics_grid () {
 
   initialize_vertical_coordinates(dyn_grid);
 
-  dyn_grid->m_short_name = "_dyn";
+  dyn_grid->m_short_name = "dyn";
   add_grid(dyn_grid);
 }
 

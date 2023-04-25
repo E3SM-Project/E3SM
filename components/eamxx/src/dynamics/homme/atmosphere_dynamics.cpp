@@ -792,7 +792,7 @@ void HommeDynamics::init_homme_views () {
   // Print homme's parameters, so user can see whether something wasn't set right.
   // TODO: make Homme::SimulationParams::print accept an ostream.
   std::stringstream msg;
-  msg << "\n************** CXX SimulationParams **********************\n\n";
+  msg << "\n************** HOMMEXX SimulationParams **********************\n\n";
   msg << "   time_step_type: " << Homme::etoi(params.time_step_type) << "\n";
   msg << "   moisture: " << (params.moisture==Homme::MoistDry::DRY ? "dry" : "moist") << "\n";
   msg << "   remap_alg: " << Homme::etoi(params.remap_alg) << "\n";
