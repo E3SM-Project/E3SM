@@ -287,8 +287,11 @@ be lost if SCREAM_HACK_XML is not enabled.
       <number_of_subcycles hgrid="ne0np4_conus_x4v1_lowcon">5</number_of_subcycles>
     </mac_aero_mic>
 
+    <cosp inherit="atm_proc_base">
+    </cosp>
+
     <physics inherit="atm_proc_group">
-      <atm_procs_list>(mac_aero_mic,rrtmgp)</atm_procs_list>
+      <atm_procs_list>(mac_aero_mic,rrtmgp,cosp)</atm_procs_list>
     </physics>
   </atmosphere_processes_defaults>
 

@@ -3,9 +3,11 @@
 # Sources for EAMxx interface to COSP
 set(COSP_SRCS
   eamxx_cosp.cpp
+  cosp_c2f.F90
 )
 set(COSP_HEADERS
   eamxx_cosp.hpp
+  cosp_functions.hpp
 )
 
 # Build external COSP library (this is all fortran code)
