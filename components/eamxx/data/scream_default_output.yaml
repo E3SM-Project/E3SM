@@ -54,11 +54,9 @@ Fields:
       - cldlow
       - cldmed
       - cldhgh
-      # Surface
+      # Surface Fluxes
       - surf_evap
       - surf_sens_flux
-      - ocnfrac
-      - landfrac
       # Diagnostics
       - PotentialTemperature
 output_control:
