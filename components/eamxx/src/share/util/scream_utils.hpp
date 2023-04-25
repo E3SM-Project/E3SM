@@ -292,9 +292,9 @@ std::list<T> contiguous_superset (const std::list<std::list<T>>& groups)
  * is the value from the reference run and "b" is from the new run.
  * This is used by the run_and_cmp tests.
  */
-template <typename Scalar>
+template <typename Scalar, typename Toltype>
 Int compare (const std::string& label, const Scalar* a,
-             const Scalar* b, const Int& n, const Scalar& tol) {
+             const Scalar* b, const Int& n, const Toltype& tol) {
 
   Int nerr1 = 0;
   Int nerr2 = 0;
