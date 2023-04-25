@@ -38,7 +38,7 @@ MACHINE_METADATA = {
                  ["mpicxx","mpifort","mpicc"],
                   "salloc --partition=pdebug",
                   ""),
-    "quartz-intel" : (["module --force purge", "module load StdEnv cmake/3.19.2 mkl/2022.1.0 intel-classic/2021.6.0-magic netcdf-c-parallel/4.9.0 netcdf-fortran-parallel/4.6.0 mvapich2/2.3.6 python"],
+    "quartz-intel" : (["module --force purge", "module load StdEnv cmake/3.19.2 mkl/2022.1.0 intel-classic/2021.6.0-magic netcdf-c-parallel/4.9.0 netcdf-fortran-parallel/4.6.0 mvapich2/2.3.6 python/3.9.12"],
                  ["mpicxx","mpifort","mpicc"],
                   "salloc --partition=pdebug",
                   ""),
