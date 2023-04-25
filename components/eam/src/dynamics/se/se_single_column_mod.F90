@@ -217,7 +217,7 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
   type (hvcoord_t)                  :: hvcoord
   type (TimeLevel_t), intent(in)       :: tl
   type(hybrid_t),             intent(in) :: hybrid
-  logical :: t_before_advance, do_column_scm
+  logical :: t_before_advance
   real(kind=real_kind), parameter :: rad2deg = 180.0_real_kind / SHR_CONST_PI
 
   integer :: ie, k, i, j, t, m, tlQdp
