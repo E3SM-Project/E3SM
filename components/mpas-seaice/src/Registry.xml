@@ -450,7 +450,7 @@
 		/>
 		<nml_option name="config_initial_condition_type" type="character" default_value="cice_default" units="unitless"
 			description="Initial condition type for sea ice state."
-			possible_values="'restart', 'uniform', 'circle', 'square', 'uniform_interior', or uniform_1D"
+			possible_values="'restart', 'uniform', 'circle', 'square', 'uniform_interior' or 'uniform_1D'"
 		/>
 		<nml_option name="config_initial_ice_area" type="real" default_value="1.0" units="unitless"
 			description="Sea ice concentration at initialization."
@@ -522,7 +522,7 @@
 	<nml_record name="forcing" in_defaults="true">
 		<nml_option name="config_atmospheric_forcing_type" type="character" default_value="CORE" units="unitless"
 			description="Atmospheric forcing type."
-			possible_values="'CORE'"
+			possible_values="'CORE' or 'ISPOL'"
 		/>
 		<nml_option name="config_forcing_start_time" type="character" default_value="2000-01-01_00:00:00" units="unitless"
 			description="Forcing time to use at the simulation start time"
@@ -542,7 +542,7 @@
 		/>
 		<nml_option name="config_forcing_sst_type" type="character" default_value="ncar" units="unitless"
 			description="Sea surface temperature ocean forcing type."
-			possible_values="'ncar'"
+			possible_values="'ncar' or 'ISPOL'"
 		/>
 		<nml_option name="config_forcing_bgc_type" type="character" default_value="ISPOL" units="unitless"
 			description="Ocean biogeochemistry forcing type."
@@ -980,7 +980,7 @@
 			icepack_name="fr_resp"
 		/>
 		<nml_option name="config_rapid_mobile_to_stationary_time" type="real" default_value="3600.0" units="seconds"
-			description="Rapid adsorption timescale  "
+			description="Rapid adsorption timescale"
 			possible_values="zero or positive real number"
 			icepack_name="tau_min"
 		/>
@@ -991,7 +991,7 @@
 		/>
 		<nml_option name="config_algal_maximum_velocity" type="real" default_value="0.0000001" units="m/s"
 			description="Maximum speed at which diatoms can move"
-			possible_values="zero or positive real number "
+			possible_values="zero or positive real number"
 			icepack_name="algal_vel"
 		/>
 		<nml_option name="config_ratio_Fe_to_dust" type="real" default_value="0.035" units="mg iron/g dust"
@@ -1275,7 +1275,7 @@
 			icepack_name="fr_mort2min"
 		/>
 		<nml_option name="config_fraction_iron_remineralized" type="real" default_value="1.0" units="unitless"
-			description="Fraction of remineralized iron "
+			description="Fraction of remineralized iron"
 			possible_values="zero or positive real less than or equal to 1"
 			icepack_name="fr_dFe"
 		/>
