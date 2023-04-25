@@ -103,7 +103,7 @@ module ocn_vel_self_attraction_loading
     real(kind=RKIND), dimension(:),   allocatable :: Snm, SnmRe, SnmIm
     real(kind=RKIND), dimension(:),   allocatable :: Snm_local, SnmRe_local, SnmIm_local
     real(kind=RKIND), dimension(:,:), allocatable :: Snm_local_reproSum, SnmRe_local_reproSum, SnmIm_local_reproSum
-    real(kind=RKIND), dimension(:),   allocatable :: sshSmoothed
+    real(kind=RKIND), dimension(:),   allocatable :: btrPressure
     real(kind=RKIND), dimension(:), pointer :: coastalSmoothingFactor
     integer, dimension(:,:), allocatable :: blockIdxForward
     integer, dimension(:,:), allocatable :: blockIdxInverse
@@ -176,9 +176,8 @@ contains
         rho0gInv = 1.0_RKIND / rho_sw / gravity
 
         do iCell = 1,nCellsAll
-          ! an adjusted ssh that accounts for surface pressure,
-          ! with SAL computed wrt the full btr bottom pressure
-          sshSmoothed(iCell) = coastalSmoothingFactor(iCell) * ( &
+          ! compute SAL wrt. the full barotropic bottom pressure
+          btrPressure(iCell) = coastalSmoothingFactor(iCell) * ( &
               ssh(iCell) + rho0gInv * surfacePressure(iCell) )
         enddo
 
@@ -262,7 +261,7 @@ contains
         endif
 
         ! Gather only the nCellsOwned from pgf (does not include Halos)
-        call MPI_GATHERV(sshSmoothed, nCellsOwned, MPI_DOUBLE, gatheredArray, nCellsPerProc, &
+        call MPI_GATHERV(btrPressure, nCellsOwned, MPI_DOUBLE, gatheredArray, nCellsPerProc, &
                         nCellsDisplacement, MPI_DOUBLE, 0, dminfo % comm, err_tmp)
         err = ior(err, err_tmp)
         call mpas_timer_stop('Serial SAL: Gather')
@@ -402,13 +401,13 @@ contains
                 ! Compute local integral contribution
                 if (config_parallel_self_attraction_loading_bfb) then
                   do iCell = endIdx, startIdx, -1
-                      SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
-                      SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
+                      SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + btrPressure(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
+                      SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + btrPressure(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
                   enddo
                 else
                   do iCell = endIdx, startIdx, -1
-                      SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
-                      SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
+                      SnmRe_local(l) = SnmRe_local(l) + btrPressure(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
+                      SnmIm_local(l) = SnmIm_local(l) + btrPressure(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
                   enddo
                 endif
 
@@ -424,13 +423,13 @@ contains
                     ! Compute local integral contribution
                     if (config_parallel_self_attraction_loading_bfb) then
                       do iCell = endIdx, startIdx, -1
-                          SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
-                          SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
+                          SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + btrPressure(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
+                          SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + btrPressure(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
                       enddo
                     else
                       do iCell = endIdx, startIdx, -1
-                          SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
-                          SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
+                          SnmRe_local(l) = SnmRe_local(l) + btrPressure(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
+                          SnmIm_local(l) = SnmIm_local(l) + btrPressure(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
                       enddo
                     endif
 
@@ -455,13 +454,13 @@ contains
                     ! Compute local integral contribution
                     if (config_parallel_self_attraction_loading_bfb) then
                       do iCell = endIdx, startIdx, -1
-                          SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
-                          SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
+                          SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + btrPressure(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
+                          SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + btrPressure(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
                       enddo
                     else
                       do iCell = endIdx, startIdx, -1
-                          SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
-                          SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
+                          SnmRe_local(l) = SnmRe_local(l) + btrPressure(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
+                          SnmIm_local(l) = SnmIm_local(l) + btrPressure(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
                       enddo
                     endif
 
@@ -681,7 +680,7 @@ contains
         call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
 
         ! Set up coastal smoothing
-        allocate(sshSmoothed(nCellsAll))
+        allocate(btrPressure(nCellsAll))
 
         ! Set-up smoothing mask for shallow regions where SAL should not
         ! be computed across e.g. wet-dry cells
