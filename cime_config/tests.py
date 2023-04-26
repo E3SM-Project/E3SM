@@ -106,7 +106,7 @@ _TESTS = {
 
     "e3sm_ice_developer" : {
         "tests"   : (
-            "SMS_D_Ld1.TL319_EC30to60E2r2.DTESTM-JRA1p5",
+            "SMS_D_Ld1.TL319_EC30to60E2r2.DTESTM-JRA1p5.mpassi-jra_1958",
             "ERS_Ld5.T62_oQU240.DTESTM",
             "PEM_Ln5.T62_oQU240wLI.DTESTM",
             "PET_Ln5.T62_oQU240.DTESTM",
