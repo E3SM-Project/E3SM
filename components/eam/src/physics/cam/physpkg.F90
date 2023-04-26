@@ -2117,6 +2117,7 @@ subroutine tphysbc (ztodt,               &
     real(r8),pointer :: snow_dp(:)                ! snow from ZM convection
     real(r8),pointer :: prec_sh(:)                ! total precipitation from Hack convection
     real(r8),pointer :: snow_sh(:)                ! snow from Hack convection
+    real(r8) :: totice_dp(pcols)                  ! total frozen precip from ZM convection
 
     ! stratiform precipitation variables
     real(r8),pointer :: prec_str(:)    ! sfc flux of precip from stratiform (m/s)
@@ -2482,9 +2483,8 @@ end if
 
     ! Check energy integrals, including "reserved liquid"
     flx_cnd(:ncol) = prec_dp(:ncol) + rliq(:ncol)
-    snow_dp(:ncol) = snow_dp(:ncol) + rice(:ncol)
-    call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, flx_cnd, snow_dp, zero)
-    snow_dp(:ncol) = snow_dp(:ncol) - rice(:ncol)    
+    totice_dp(:ncol) = snow_dp(:ncol) + rice(:ncol)
+    call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, flx_cnd, totice_dp, zero)
 
     call cnd_diag_checkpoint( diag, 'DEEPCU', state, pbuf, cam_in, cam_out )
 

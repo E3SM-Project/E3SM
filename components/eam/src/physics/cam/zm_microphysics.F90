@@ -2940,7 +2940,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  nc(i,k-1)=0._r8
               end if
 
-              if (qc(i,k-1).lt.0._r8) write(iulog,*) "negative qc(i,k-1)=",qc(i,k-1)
+              ! if (qc(i,k-1).lt.0._r8) write(iulog,*) "negative qc(i,k-1)=",qc(i,k-1)
               dlfm(i,k-1) = -du(i,k-1)*qcde(i,k)
               dlfn(i,k-1) = -du(i,k-1)*ncde(i,k)
 

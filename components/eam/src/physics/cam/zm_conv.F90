@@ -1573,6 +1573,7 @@ subroutine zm_conv_evap(ncol,lchnk, &
 !            evpsnow(i) = evpprec(i) * flxsntm(i) / flxprec(i,k)
 !            prevent roundoff problems
              work1 = min(max(0._r8,flxsntm(i)/flxprec(i,k)),1._r8)
+             if (.not.old_snow .and. prdsnow(i,k)>prdprec(i,k)) work1 = 1._r8
              evpsnow(i) = evpprec(i) * work1
           else
              evpsnow(i) = 0._r8
@@ -1634,6 +1635,25 @@ subroutine zm_conv_evap(ncol,lchnk, &
           tend_q(i,k) = evpprec(i)
        end do
     end do
+
+! protect against rounding error
+    if( .not.old_snow ) then
+      do i = 1, ncol
+        if(flxsnow(i,pverp).gt.flxprec(i,pverp)) then
+           dum = (flxsnow(i,pverp)-flxprec(i,pverp))*gravit
+           do k = pver, 1, -1
+             if (ntsnprd(i,k)>ntprprd(i,k).and. dum > 0._r8) then
+                ntsnprd(i,k) = ntsnprd(i,k) - dum/pdel(i,k)
+                tend_s_snwevmlt(i,k) = tend_s_snwevmlt(i,k) - dum/pdel(i,k)*latice
+                tend_s(i,k)  = tend_s(i,k) - dum/pdel(i,k)*latice
+                dum = 0._r8
+             end if
+           end do
+           flxsnow(i,pverp) = flxprec(i,pverp)
+        end if
+      end do
+    end if
+
 
 ! set output precipitation rates (m/s)
     prec(:ncol) = flxprec(:ncol,pver+1) / 1000._r8
@@ -2882,8 +2902,11 @@ subroutine cldprp(lchnk   , &
    real(r8) totfrz(pcols)
    real(r8) frz1(pcols,pver)        ! rate of freezing
    real(r8) frz (pcols,pver)        ! rate of freezing
+   real(r8) pflxs(pcols,pverp)      ! frozen precipitation flux thru layer
+   real(r8) dum, sdum 
 
-   real(r8), parameter :: mu_min = 0.02_r8 ! minimum value of mu
+   real(r8), parameter :: omsm=0.99999_r8       ! to prevent problems due to round off error
+   real(r8), parameter :: mu_min = 0.02_r8      ! minimum value of mu
    real(r8), parameter :: t_homofrz = 233.15_r8 ! homogeneous freezing temperature
    real(r8), parameter :: t_mphase  = 40._r8    ! mixed phase temperature = tmelt-t_homofrz = 273.15K - 233.15K
 
@@ -3681,27 +3704,40 @@ subroutine cldprp(lchnk   , &
          cmeg(i,k) = cu(i,k) - evp(i,k)
          if (zm_microp) then
            if (rprd(i,k)> 0._r8)  then
-              frz1(i,k) = frz1(i,k)- evp(i,k)*sprd(i,k)/rprd(i,k)
-              sprd(i,k) = sprd(i,k)- evp(i,k)*sprd(i,k)/rprd(i,k)
+              frz1(i,k) = frz1(i,k)- evp(i,k)*min(1._r8,sprd(i,k)/rprd(i,k))
+              sprd(i,k) = sprd(i,k)- evp(i,k)*min(1._r8,sprd(i,k)/rprd(i,k))
            end if
          end if
          rprd(i,k) = rprd(i,k)-evp(i,k)
-! protect against rounding error, small = 1.e-20_r8
-         if (zm_microp.and. sprd(i,k)>rprd(i,k).and.sprd(i,k)-rprd(i,k)<small) then
-            frz1(i,k) = frz1(i,k)-(sprd(i,k)-rprd(i,k))
-            sprd(i,k)= min(sprd(i,k),rprd(i,k))
-         end if
       end do
    end do
 
 ! compute the net precipitation flux across interfaces
    pflx(:il2g,1) = 0._r8
+   if (zm_microp)   pflxs(:,:) = 0._r8
    do k = 2,pverp
       do i = 1,il2g
          pflx(i,k) = pflx(i,k-1) + rprd(i,k-1)*dz(i,k-1)
+         if (zm_microp) pflxs(i,k) = pflxs(i,k-1) + sprd(i,k-1)*dz(i,k-1)
       end do
    end do
-!
+! protect against rounding error
+   if (zm_microp) then
+     do i = 1,il2g
+       if(pflxs(i,pverp).gt.pflx(i,pverp)) then
+         dum = (pflxs(i,pverp)-pflx(i,pverp))/omsm
+         do k = pver, msg+2, -1
+           if (sprd(i,k) > 0._r8 .and. dum > 0._r8) then
+             sdum = min(sprd(i,k),dum/dz(i,k))
+             sprd(i,k) = sprd(i,k)- sdum
+             frz1(i,k) = frz1(i,k)- sdum
+             dum = dum - sdum*dz(i,k)
+           end if
+         end do
+       end if
+     end do   
+   end if
+
    do k = msg + 1,pver
       do i = 1,il2g
          mc(i,k) = mu(i,k) + md(i,k)
