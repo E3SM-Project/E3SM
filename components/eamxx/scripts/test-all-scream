@@ -141,10 +141,9 @@ OR
     parser.add_argument("--test-level", action="store", choices=("at", "nightly", "experimental"), default="at",
                         help="Set the testing level.")
 
-    parser.add_argument("--mem-check", action="store_true",
-                        help="Run the tests you've selected with memory checking on. "
-                        "This will use valgrind for CPU, cuda-mem-check for GPU etc."
-                        "This will dramatically slow down tests and also disables baseline checking.")
+    parser.add_argument("--test-size", action="store", choices=("short", "medium", "long"),
+                        help="Set the testing level. Defaults to medium unless the test is cov or mem_check"
+                        "(short is default in those cases).")
 
     parser.add_argument("--force-baseline-regen", action="store_true",
                         help="Existing baseline will always be considered expired even if they do not appear to be.")
