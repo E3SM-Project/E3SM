@@ -1081,7 +1081,6 @@
 					description="The type of layerThickness averaging to use on the drag term. The standard MPAS-O approach is 'centered'."
 					possible_values="'harmonic-mean', 'centered'"
 		/>
-
 	</nml_record>
 	<nml_record name="Rayleigh_damping" mode="forward">
 		<nml_option name="config_Rayleigh_damping_coeff" type="real" default_value="1.0e-4" units="s^-1"
