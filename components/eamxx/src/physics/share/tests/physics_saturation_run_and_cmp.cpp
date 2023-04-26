@@ -165,7 +165,8 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     return nerr;
   }
 
- private:
+  // Everything below here is "private" but can't be declared so without breaking
+  // GPU
 
   // Full specification for a run
   struct ParamSet {
