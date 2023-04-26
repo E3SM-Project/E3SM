@@ -76,7 +76,7 @@ contains
   subroutine rate_diags_calc( rxt_rates, vmr, m, ncol, lchnk, pver, pdeldry, mbar )
 
     use mo_rxt_rates_conv, only: set_rates
-    use chem_mods,    only : gas_pcnst
+    use chem_mods,    only : gas_pcnst, rxntot
 
     real(r8), intent(inout) :: rxt_rates(:,:,:) ! 'molec/cm3/sec'
     real(r8), intent(in)    :: vmr(:,:,:)
@@ -87,7 +87,7 @@ contains
 
     integer :: i, k
 
-    real(r8)  :: rxt_rates_vmr(ncol,pver,gas_pcnst) ! 'vmr/sec'
+    real(r8)  :: rxt_rates_vmr(ncol,pver,max(1,rxntot)) ! 'vmr/sec'
     real(r8)  :: wrk(ncol,pver)
     real(r8)  :: wrk_sum(ncol)
     real(r8)  :: adv_mass_ch4
@@ -119,7 +119,7 @@ contains
 
     call set_rates( rxt_rates, vmr, ncol )
 
-    rxt_rates_vmr = rxt_rates    
+    rxt_rates_vmr = rxt_rates
 
     do i = 1, rxt_tag_cnt
        ! convert from vmr/sec to molecules/cm3/sec
