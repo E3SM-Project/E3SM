@@ -43,7 +43,7 @@ void HorizontalMap::set_remap_segments_from_file(const std::string& remap_filena
   start_timer("EAMxx::HorizontalMap::set_remap_segments_from_file");
   // Open remap file and determine the amount of data to be read
   scorpio::register_file(remap_filename,scorpio::Read);
-  const auto remap_size = scorpio::get_dimlen_c2f(remap_filename.c_str(),"n_s"); // Note, here we assume a standard format of col, row, S
+  const auto remap_size = scorpio::get_dimlen(remap_filename,"n_s"); // Note, here we assume a standard format of col, row, S
   // Step 1: Read in the "row" data from the file to figure out which mpi ranks care about which
   //         chunk of the remap data.  This step reduces the memory footprint of reading in the
   //         map data, which can be rather large.

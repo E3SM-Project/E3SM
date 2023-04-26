@@ -35,7 +35,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   //Now need to read in the file
   scorpio::register_file(datafile,scorpio::Read);
-  m_num_src_levs = scorpio::get_dimlen_c2f(datafile.c_str(),"lev");
+  m_num_src_levs = scorpio::get_dimlen(datafile,"lev");
   double time_value_1= scorpio::read_time_at_index_c2f(datafile.c_str(),1);
   double time_value_2= scorpio::read_time_at_index_c2f(datafile.c_str(),2);
     

@@ -52,7 +52,7 @@ contains
     call convert_c_string(filename_in,filename)
     call lookup_pio_atm_file(filename,atm_file,found)
     if (found) then
-      res = LOGICAL(atm_file%purpose .eq. purpose,kind=c_bool)
+      res = LOGICAL(purpose .eq. 0 .or. atm_file%purpose .eq. purpose,kind=c_bool)
     else
       res = .false.
     endif
@@ -228,48 +228,15 @@ contains
 
   end subroutine register_dimension_c2f
 !=====================================================================!
-  function get_dimlen_c2f(filename_in,dimname_in) result(val) bind(c)
-    use scream_scorpio_interface, only : get_dimlen
-    type(c_ptr), intent(in) :: filename_in
-    type(c_ptr), intent(in) :: dimname_in
-    integer(kind=c_int)     :: val
-
-    character(len=256) :: filename
-    character(len=256) :: dimname
-
-    call convert_c_string(filename_in,filename)
-    call convert_c_string(dimname_in,dimname)
-    val = get_dimlen(filename,dimname)
-
-  end function get_dimlen_c2f
-!=====================================================================!
-  function has_variable_c2f(filename_in,varname_in) result(has) bind(c)
-    use scream_scorpio_interface, only : has_variable
-    type(c_ptr), intent(in) :: filename_in
-    type(c_ptr), intent(in) :: varname_in
-    logical(kind=c_bool)     :: has
-
-    character(len=256) :: filename
-    character(len=256) :: varname
-
-    call convert_c_string(filename_in,filename)
-    call convert_c_string(varname_in,varname)
-    has = LOGICAL(has_variable(filename,varname),kind=c_bool)
-
-  end function has_variable_c2f
-!=====================================================================!
   function read_curr_time_c2f(filename_in) result(val) bind(c)
     use scream_scorpio_interface, only : read_time_at_index
-    use scream_scorpio_interface, only : get_dimlen
     type(c_ptr), intent(in)                :: filename_in
     real(kind=c_double)                    :: val
 
-    integer            :: time_index
     character(len=256) :: filename
 
     call convert_c_string(filename_in,filename)
-    time_index = get_dimlen(filename,trim("time"))
-    val        = read_time_at_index(filename,time_index)
+    val        = read_time_at_index(filename)
 
   end function read_curr_time_c2f
 !=====================================================================!
