@@ -98,7 +98,7 @@ void Cosp::run_impl (const double /* dt */)
   auto qm   = get_field_in("qm").get_view<const Real**>();
   auto cldfrac_tot_for_analysis = get_field_in("cldfrac_tot_for_analysis").get_view<const Real**>();
   //auto isccp_ctptau_hist = get_field_out("isccp_ctptau_hist").get_view<Real**>();
-  auto isccp_cldtot = get_field_out("isccp_cldtot").get_view<Real**>();
+  auto isccp_cldtot = get_field_out("isccp_cldtot").get_view<Real*>();
 
   // Call COSP wrapper routines
   CospFunc::main(m_num_cols, m_num_levs);
