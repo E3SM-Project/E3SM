@@ -40,6 +40,7 @@ protected:
 
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 
+  Int m_num_subcols = 50;
   Int m_num_levs;
   Int m_num_tau;
   Int m_num_ctp;

@@ -84,7 +84,7 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   //add_postcondition_check<Interval>(get_field_out("cldfrac_tot"),m_grid,0.0,1.0,false);
   //add_postcondition_check<Interval>(get_field_out("cldfrac_ice_for_analysis"),m_grid,0.0,1.0,false);
   //add_postcondition_check<Interval>(get_field_out("cldfrac_tot_for_analysis"),m_grid,0.0,1.0,false);
-  CospFunc::initialize(m_num_cols, m_num_levs);
+  CospFunc::initialize(m_num_cols, m_num_subcols, m_num_levs);
 }
 
 // =========================================================================================
@@ -101,7 +101,7 @@ void Cosp::run_impl (const double /* dt */)
   auto isccp_cldtot = get_field_out("isccp_cldtot").get_view<Real*>();
 
   // Call COSP wrapper routines
-  CospFunc::main(m_num_cols, m_num_levs);
+  CospFunc::main(m_num_cols, m_num_subcols, m_num_levs);
   //CospFunc::main(m_num_cols,m_num_levs,m_icecloud_threshold,m_icecloud_for_analysis_threshold,
    // qi,liq_cld_frac,ice_cld_frac,tot_cld_frac,ice_cld_frac_4out,tot_cld_frac_4out);
 }

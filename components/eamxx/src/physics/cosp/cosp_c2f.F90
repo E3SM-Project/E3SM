@@ -19,8 +19,7 @@ module cosp_c2f
                                  modis_histTauCenters,tau_binCenters,ntauV1p4,            &
                                  tau_binBoundsV1p4,tau_binEdgesV1p4, tau_binCentersV1p4,  &
                                  grLidar532_histBsct,atlid_histBsct,vgrid_zu,vgrid_zl,    &
-                                 Nlvgrid_local  => Nlvgrid,                               &
-                                 vgrid_z,cloudsat_preclvl
+                                 Nlvgrid, vgrid_z,cloudsat_preclvl
   use cosp_phys_constants, only: amw,amd,amO3,amCO2,amCH4,amN2O,amCO
   use mod_quickbeam_optics,only: size_distribution,hydro_class_init,quickbeam_optics,     &
                                  quickbeam_optics_init,gases
@@ -43,7 +42,7 @@ module cosp_c2f
   logical :: &
        lsingle     = .true.,  & ! True if using MMF_v3_single_moment CLOUDSAT microphysical scheme (default)
        ldouble     = .false., & ! True if using MMF_v3.5_two_moment CLOUDSAT microphysical scheme
-       lisccp      = .false. ,& ! Local on/off switch for simulators (used by initialization)
+       lisccp      = .true. , & ! Local on/off switch for simulators (used by initialization)
        lmodis      = .false., & !
        lmisr       = .false., & !
        lcalipso    = .false., & !
@@ -172,11 +171,16 @@ module cosp_c2f
   type(cosp_optical_inputs) :: cospIN
   type(cosp_column_inputs) :: cospstateIn
 
+  integer, parameter :: rttov_Nchannels = 1
+
 contains
 
-  subroutine cosp_c2f_init(ncol, nlay) bind(C, name='cosp_c3f_init')
-    integer(kind=c_int), intent(in) :: ncol, nlay
+  subroutine cosp_c2f_init(npoints, ncolumns, nlevels) bind(c, name='cosp_c3f_init')
+    integer(kind=c_int), intent(in) :: npoints, ncolumns, nlevels
     ! Initialize/allocate COSP input and output derived types
+    call construct_cospIN(npoints,ncolumns,nlevels,cospIN)
+    call construct_cospstatein(npoints,nlevels,rttov_nchannels,cospstatein)
+    call construct_cosp_outputs(npoints, ncolumns, nlevels, nlvgrid, rttov_nchannels, cospout)
   end subroutine cosp_c2f_init 
 
   subroutine cosp_c2f_run() bind(C, name='cosp_c2f_run')
