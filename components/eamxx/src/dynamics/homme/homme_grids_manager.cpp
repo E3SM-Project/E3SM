@@ -314,8 +314,7 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
     { "hybm", layout_mid }
   };
 
-  AtmosphereInput vcoord_reader(m_comm,vcoord_reader_pl);
-  vcoord_reader.init(dyn_grid,host_views,layouts);
+  AtmosphereInput vcoord_reader(vcoord_reader_pl,dyn_grid,host_views,layouts);
   vcoord_reader.read_variables();
   vcoord_reader.finalize();
 

@@ -430,7 +430,6 @@ void SPAFunctions<S,D>
   spa_data_in_params.set("Field Names",fnames);
   spa_data_in_params.set("Filename",spa_data_file_name);
   spa_data_in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
-  AtmosphereInput spa_data_input(comm,spa_data_in_params);
   
   // Construct the grid needed for input:
   auto grid = std::make_shared<PointGrid>("grid",num_local_cols,source_data_nlevs,comm);
@@ -496,7 +495,7 @@ void SPAFunctions<S,D>
   //
   
   // Now that we have all the variables defined we can use the scorpio_input class to grab the data.
-  spa_data_input.init(grid,host_views,layouts);
+  AtmosphereInput spa_data_input(spa_data_in_params,grid,host_views,layouts);
   spa_data_input.read_variables(time_index);
   spa_data_input.finalize();
   scorpio::eam_pio_closefile(spa_data_file_name);

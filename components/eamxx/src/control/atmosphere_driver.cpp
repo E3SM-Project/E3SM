@@ -1153,7 +1153,7 @@ read_fields_from_file (const std::vector<std::string>& field_names,
   ic_reader_params.set("Field Names",field_names);
   ic_reader_params.set("Filename",file_name);
 
-  AtmosphereInput ic_reader(ic_reader_params,field_mgr,m_grids_manager);
+  AtmosphereInput ic_reader(ic_reader_params,field_mgr);
   ic_reader.read_variables();
   ic_reader.finalize();
 
