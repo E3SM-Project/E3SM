@@ -61,6 +61,7 @@ module ocn_time_integration_rk4
    !--------------------------------------------------------------------
 
    public :: ocn_time_integrator_rk4
+   public :: ocn_time_integration_rk4_init
 
    contains
 
@@ -1701,6 +1702,51 @@ module ocn_time_integration_rk4
       call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, scratchPool, err, 2)
 
    end subroutine ocn_time_integrator_rk4_cleanup!}}}
+
+!***********************************************************************
+!
+!  routine ocn_time_integration_rk4_init
+!
+!> \brief   Initialize RK4 time stepping within ocean
+!> \author  Carolyn Begeman
+!> \date    April 2023
+!> \details
+!>  This routine checks config options for RK4 integrator
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_time_integration_rk4_init(domain)!{{{
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(in) :: &
+         domain      !< [inout] data structure containing most variables
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: meshPool
+      logical, pointer :: config_use_debugTracers
+      integer, pointer :: nVertLevels
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
+
+      call mpas_pool_get_config(domain % configs, 'config_use_debugTracers', config_use_debugTracers)
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+         if (config_use_debugTracers .and. nVertLevels == 1) then
+            call mpas_log_write('Debug tracers cannot be used in a ' &
+               // 'single layer case. Consider setting ' &
+               // 'config_use_debugTracers to .false.', MPAS_LOG_CRIT)
+         endif
+         block => block % next
+      end do
+
+   end subroutine ocn_time_integration_rk4_init
 
 end module ocn_time_integration_rk4
 
