@@ -165,8 +165,10 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     return nerr;
   }
 
-  // Everything below here is "private" but can't be declared so without breaking
-  // GPU
+#ifndef KOKKOS_ENABLE_CUDA
+  // Everything below is private but on CUDA they must be public
+ private:
+#endif
 
   // Full specification for a run
   struct ParamSet {
