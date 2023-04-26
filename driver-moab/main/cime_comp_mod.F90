@@ -4083,6 +4083,7 @@ contains
 
        if (atm_c2_rof) then
           call prep_rof_accum_atm(timer='CPL:atmpost_acca2r')
+          !call prep_rof_accum_atm_moab()
        endif
 
        call component_diag(infodata, atm, flow='c2x', comment= 'recv atm', &
@@ -4140,6 +4141,7 @@ contains
        ! finish accumulating ocean inputs
        ! reset the value of x2o_ox with the value in x2oacc_ox (module variable in prep_ocn_mod)
        call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg')
+       call prep_ocn_accum_avg_moab()
 
        call component_diag(infodata, ocn, flow='x2c', comment= 'send ocn', &
             info_debug=info_debug, timer_diag='CPL:ocnprep_diagav')
@@ -4197,6 +4199,7 @@ contains
             info_debug=info_debug, timer_diag='CPL:ocnpost_diagav')
 
        if (ocn_c2_rof) call prep_rof_accum_ocn(timer='CPL:ocnpost_acco2r')
+       !if (ocn_c2_rof) call prep_rof_accum_ocn_moab()
 
        call cime_run_ocnglc_coupling()
 
@@ -4346,6 +4349,7 @@ contains
 
           ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
           call prep_ocn_accum(timer='CPL:atmocnp_accum')
+          call prep_ocn_accum_moab()
 #endif
        end if
 
@@ -4493,6 +4497,7 @@ contains
 
        ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
        if (lnd_c2_rof) call prep_rof_accum_lnd(timer='CPL:lndpost_accl2r')
+       !if (lnd_c2_rof) call prep_rof_accum_lnd_moab()
        if (lnd_c2_glc .or. do_hist_l2x1yrg) call prep_glc_accum_lnd(timer='CPL:lndpost_accl2g' )
        if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
 
@@ -4639,6 +4644,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        call prep_rof_accum_avg(timer='CPL:rofprep_l2xavg')
+       !call prep_rof_accum_avg_moab()
 
        if (lnd_c2_rof) call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
 

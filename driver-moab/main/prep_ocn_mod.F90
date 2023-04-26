@@ -59,7 +59,9 @@ module prep_ocn_mod
   public :: prep_ocn_mrg_moab
 
   public :: prep_ocn_accum
+  public :: prep_ocn_accum_moab
   public :: prep_ocn_accum_avg
+  public :: prep_ocn_accum_avg_moab
 
   public :: prep_ocn_calc_a2x_ox
 
@@ -131,6 +133,11 @@ module prep_ocn_mod
   ! accumulation variables
   type(mct_aVect), pointer :: x2oacc_ox(:)  ! Ocn import, ocn grid, cpl pes
   integer        , target  :: x2oacc_ox_cnt ! x2oacc_ox: number of time samples accumulated
+
+  ! accumulation variables for moab data
+  real (kind=r8) , allocatable, private :: x2oacc_om (:,:)   ! Ocn import, ocn grid, cpl pes, moab array
+  integer        , target  :: x2oacc_om_cnt ! x2oacc_ox: number of time samples accumulated, in moab array
+  integer                  :: arrSize_x2o_om !   this will be a module variable, size moabLocal_size * nof
 
   ! other module variables
   integer       :: mpicom_CPLID   ! MPI cpl communicator
@@ -326,6 +333,8 @@ contains
           call mct_aVect_zero(x2oacc_ox(eoi))
        end do
        x2oacc_ox_cnt = 0
+
+       ! moab accumulation variable is allocated first time when we enter merge routine 
 
        samegrid_ao = .true.
        samegrid_ro = .true.
@@ -648,7 +657,7 @@ contains
             write(logunit,*) subname,' created moab tags for seq_flds_r2x_fields '
          endif
          
-! find out the number of local elements in moab mesh land instance on coupler
+! find out the number of local elements in moab mesh ocean instance on coupler
          ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC )
          if (ierr .ne. 0) then
             write(logunit,*) subname,' cant get size of ocn mesh'
@@ -824,6 +833,34 @@ contains
 
   end subroutine prep_ocn_accum
 
+  subroutine prep_ocn_accum_moab()
+    !---------------------------------------------------------------
+    ! Description
+    ! Accumulate ocn inputs
+    ! Form partial sum of tavg ocn inputs (virtual "send" to ocn)
+    ! NOTE: this is done AFTER the call to the merge in prep_ocn_mrg
+    !
+    ! Arguments
+    !
+    ! Local Variables
+
+    character(*)    , parameter :: subname = '(prep_ocn_accum_moab)'
+    !---------------------------------------------------------------
+
+
+       if (x2oacc_om_cnt == 0) then
+         x2oacc_om = x2o_om
+         ! call mct_avect_copy(x2o_ox, x2oacc_ox(eoi))
+       else
+         ! call mct_avect_accum(x2o_ox, x2oacc_ox(eoi))
+         x2oacc_om = x2oacc_om + x2o_om
+       endif
+
+    x2oacc_om_cnt = x2oacc_om_cnt + 1
+
+  end subroutine prep_ocn_accum_moab
+
+
   !================================================================================================
 
   subroutine prep_ocn_accum_avg(timer_accum)
@@ -855,6 +892,51 @@ contains
     call t_drvstopf (trim(timer_accum))
 
   end subroutine prep_ocn_accum_avg
+
+subroutine prep_ocn_accum_avg_moab()
+    !---------------------------------------------------------------
+    ! Description
+    ! Finish accumulation ocn inputs
+    !
+    ! Arguments
+    use iMOAB, only : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+    ! Local Variables
+    integer   :: ent_type, ierr
+    character(CXX)  :: tagname
+    character(*), parameter  :: subname = '(prep_ocn_accum_avg_moab)'
+#ifdef MOABDEBUG
+    character*32             :: outfile, wopts, lnum
+#endif
+    !---------------------------------------------------------------
+
+       ! temporary formation of average
+       if (x2oacc_om_cnt > 1) then
+          !call mct_avect_avg(x2oacc_ox(eoi), x2oacc_ox_cnt)
+          x2oacc_om = 1./x2oacc_om_cnt * x2oacc_om
+       end if
+
+       ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2o_om
+       x2o_om   = x2oacc_om
+       !call mct_avect_copy(x2oacc_ox(eoi), x2o_ox)
+       ! modify the tags
+       tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
+       ent_type = 1  ! cell type
+       ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrSize_x2o_om , ent_type, x2o_om(1,1))
+       if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in setting x2o_om array  ')
+      endif
+#ifdef MOABDEBUG
+      if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+         write(lnum,"(I0.2)")num_moab_exports
+         outfile = 'OcnCplAftAvg'//trim(lnum)//'.h5m'//C_NULL_CHAR
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR 
+         ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+      endif
+#endif
+
+    x2oacc_om_cnt = 0
+
+  end subroutine prep_ocn_accum_avg_moab
 
   !================================================================================================
 
@@ -1119,6 +1201,13 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        
        !ngflds = mct_aVect_nRattr(g2x_o)
        allocate(x2o_om (lsize, noflds))
+       ! allocate accumulation variable , parallel to x2o_om
+       allocate(x2oacc_om(lsize, noflds))
+       arrSize_x2o_om = lsize * noflds ! this willbe used to set/get x2o_om tags 
+       x2oacc_om_cnt = 0
+       x2oacc_om(:,:)=0.
+
+       ! moab accumulation variable 
        allocate(a2x_om (lsize, naflds))
        allocate(i2x_om (lsize, niflds))
        allocate(r2x_om (lsize, nrflds))
