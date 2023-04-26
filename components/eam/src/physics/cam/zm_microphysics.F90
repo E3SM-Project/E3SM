@@ -1744,30 +1744,34 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
 
 ! portion of riming left for snow
              psacws(k) = psacws(k) - pgsacw(k)
-            else
+           else
               pgsacw(k) = 0._r8
               nscng(k) = 0._r8 !
-            end if
+           end if
 
 ! cloud ice collecting droplets, assume that cloud ice mean diam > 100 micron
 ! before riming can occur
 ! assume that rime collected on cloud ice does not lead
 ! to hallet-mossop splintering
 
-         if (qiic(i,k).ge.1.e-8_r8 .and. qcic(i,k).ge.qsmall.and.1._r8/lami(k).ge.100.e-6_r8 ) then
+           if (qiic(i,k).ge.1.e-8_r8 .and. qcic(i,k).ge.qsmall) then
+              if (1._r8/lami(k).ge.100.e-6_r8 ) then
 
-! put in size dependent collection efficiency based on stokes law
-! from thompson et al. 2004, mwr
+                 ! put in size dependent collection efficiency based on stokes law
+                 ! from thompson et al. 2004, mwr
 
-           psacwi(k) = cons16*ain(i,k)*qcic(i,k)*rho(i,k)*               &
-                       n0i(k)/lami(k)**(bi+3._r8)
-           npsacwi(k) = cons16*ain(i,k)*ncic(i,k)*rho(i,k)*              &
-                       n0i(k)/lami(k)**(bi+3._r8)
-
-         else
-           psacwi(k) = 0._r8
-           npsacwi(k) = 0._r8 
-         end if
+                 psacwi(k) = cons16*ain(i,k)*qcic(i,k)*rho(i,k)*               &
+                             n0i(k)/lami(k)**(bi+3._r8)
+                 npsacwi(k) = cons16*ain(i,k)*ncic(i,k)*rho(i,k)*              &
+                             n0i(k)/lami(k)**(bi+3._r8)
+              else
+                 psacwi(k) = 0._r8
+                 npsacwi(k) = 0._r8
+              end if  
+           else
+              psacwi(k) = 0._r8
+              npsacwi(k) = 0._r8 
+           end if
 
 
               !............................................................................
