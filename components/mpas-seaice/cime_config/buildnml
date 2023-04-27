@@ -267,7 +267,7 @@ def buildnml(case, caseroot, compname):
     # Set the initial file
     #--------------------------------------------------------------------
 
-    input_file = "{}/ice/mpas-cice/{}/{}.{}.nc".format(din_loc_root, ice_mask, grid_prefix, grid_date)
+    input_file = "{}/ice/mpas-seaice/{}/{}.{}.nc".format(din_loc_root, ice_mask, grid_prefix, grid_date)
 
     #--------------------------------------------------------------------
     # Generate input data file with stream-specified files
@@ -275,12 +275,12 @@ def buildnml(case, caseroot, compname):
 
     with open(os.path.join(casebuild, "mpassi.input_data_list"), "w") as input_list:
         input_list.write("mesh = {}\n".format(input_file))
-        input_list.write("snow_data = {}/ice/mpas-cice/general/snicar_drdt_bst_fit_60_c04262019.nc\n".format(din_loc_root))
-        input_list.write("snicar_data = {}/ice/mpas-cice/general/snicar_optics_5bnd_snow_and_aerosols.nc\n".format(din_loc_root))
+        input_list.write("snow_data = {}/ice/mpas-seaice/general/snicar_drdt_bst_fit_60_c04262019.nc\n".format(din_loc_root))
+        input_list.write("snicar_data = {}/ice/mpas-seaice/general/snicar_optics_5bnd_snow_and_aerosols.nc\n".format(din_loc_root))
         if points_file != '':
-            input_list.write("points = {}/ice/mpas-cice/{}/{}\n".format(din_loc_root, ice_mask, points_file))
+            input_list.write("points = {}/ice/mpas-seaice/{}/{}\n".format(din_loc_root, ice_mask, points_file))
         if iceberg_mode == 'data':
-            input_list.write("data_iceberg = {}/ice/mpas-cice/{}/{}\n".format(din_loc_root, ice_mask, data_iceberg_file))
+            input_list.write("data_iceberg = {}/ice/mpas-seaice/{}/{}\n".format(din_loc_root, ice_mask, data_iceberg_file))
 
     #--------------------------------------------------------------------
     # Invoke mpas build-namelist - output will go in $CASEBUILD/mpassiconf
@@ -507,14 +507,14 @@ def buildnml(case, caseroot, compname):
             lines.append('<immutable_stream name="SnowAgingPropertiesInput"')
             lines.append('                  type="input"')
             lines.append('                  io_type="{}"'.format(ice_pio_typename))
-            lines.append('                  filename_template="{}/ice/mpas-cice/general/snicar_drdt_bst_fit_60_c04262019.nc"'.format(din_loc_root))
+            lines.append('                  filename_template="{}/ice/mpas-seaice/general/snicar_drdt_bst_fit_60_c04262019.nc"'.format(din_loc_root))
             lines.append('                  filename_interval="none"')
             lines.append('                  input_interval="initial_only" />')
             lines.append('')
             lines.append('<immutable_stream name="SnicarInput"')
             lines.append('                  type="input"')
             lines.append('                  io_type="{}"'.format(ice_pio_typename))
-            lines.append('                  filename_template="{}/ice/mpas-cice/general/snicar_optics_5bnd_snow_and_aerosols.nc"'.format(din_loc_root))
+            lines.append('                  filename_template="{}/ice/mpas-seaice/general/snicar_optics_5bnd_snow_and_aerosols.nc"'.format(din_loc_root))
             lines.append('                  filename_interval="none"')
             lines.append('                  input_interval="initial_only" />')
             lines.append('')
@@ -551,7 +551,7 @@ def buildnml(case, caseroot, compname):
             if iceberg_mode == 'data':
                 lines.append('<stream name="dataIcebergForcing"')
                 lines.append('                  type="input"')
-                lines.append('                  filename_template="{}/ice/mpas-cice/{}/{}"'.format(din_loc_root, ice_mask, data_iceberg_file))
+                lines.append('                  filename_template="{}/ice/mpas-seaice/{}/{}"'.format(din_loc_root, ice_mask, data_iceberg_file))
                 lines.append('                  filename_interval="none"')
                 lines.append('                  input_interval="none" >')
                 lines.append('')
@@ -719,7 +719,6 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="snowVolumeCell"/>')
             lines.append('    <var name="uVelocityGeo"/>')
             lines.append('    <var name="vVelocityGeo"/>')
-            lines.append('    <var name="icePressure"/>')
             lines.append('</stream>')
             lines.append('')
             lines.append('<stream name="timeSeriesStatsDailyRestart"')
@@ -851,7 +850,7 @@ def buildnml(case, caseroot, compname):
                 if points_file != '':
                     lines.append('<immutable_stream name="pointLocationsInput"')
                     lines.append('                  type="input"')
-                    lines.append('                  filename_template="{}/ice/mpas-cice/{}/{}"'.format(din_loc_root, ice_mask, points_file))
+                    lines.append('                  filename_template="{}/ice/mpas-seaice/{}/{}"'.format(din_loc_root, ice_mask, points_file))
                     lines.append('                  input_interval="initial_only"')
                     lines.append('                  runtime_format="single_file" />')
 
@@ -971,7 +970,7 @@ def buildnml(case, caseroot, compname):
             lines.append('        type="input"')
             lines.append('        io_type="{}"'.format(ice_pio_typename))
             lines.append('        input_interval="initial_only"')
-            lines.append('        filename_template="{}/ice/mpas-cice/{}/{}.{}.nc">'.format(din_loc_root, ice_mask, grid_prefix, grid_date))
+            lines.append('        filename_template="{}/ice/mpas-seaice/{}/{}.{}.nc">'.format(din_loc_root, ice_mask, grid_prefix, grid_date))
             lines.append('')
             lines.append('       <var name="landIceMask"/>')
             lines.append('</stream>')

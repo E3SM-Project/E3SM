@@ -48,6 +48,10 @@ module physpkg
                                     modal_aero_calcsize_reg
   use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
                                     modal_aero_wateruptake_reg
+  use chem_mods,    only : gas_pcnst
+  use mo_tracname,  only : solsym
+  use mo_chm_diags, only : aer_species
+  use mo_gas_phase_chemdr, only : gas_ac_name, gas_ac_name_2D
 
   implicit none
   private
@@ -72,6 +76,8 @@ module physpkg
   integer ::  snow_dp_idx        = 0
   integer ::  prec_sh_idx        = 0
   integer ::  snow_sh_idx        = 0
+  integer ::  rice2_idx          = 0
+  integer ::  gas_ac_idx         = 0
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
 
   save
@@ -100,6 +106,9 @@ module physpkg
   logical           :: pergro_test_active= .false.
   logical           :: pergro_mods = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
+  logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
+  logical :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
+  logical :: history_gaschmbudget_2D_levels ! output 2D gas chemistry tracer concentrations and tendencies within certain layers
 
   !======================================================================= 
 contains
@@ -161,6 +170,7 @@ subroutine phys_register
     use subcol,             only: subcol_register
     use subcol_utils,       only: is_subcol_on
     use output_aerocom_aie, only: output_aerocom_aie_register, do_aerocom_ind3
+    use mo_chm_diags,       only: chm_diags_inti_ac
 
     !---------------------------Local variables-----------------------------
     !
@@ -169,6 +179,7 @@ subroutine phys_register
     !-----------------------------------------------------------------------
 
     integer :: nmodes
+    character(len=16) :: spc_name
 
     call phys_getopts(shallow_scheme_out       = shallow_scheme, &
                       macrop_scheme_out        = macrop_scheme,   &
@@ -181,7 +192,11 @@ subroutine phys_register
                       state_debug_checks_out   = state_debug_checks, &
                       micro_do_icesupersat_out = micro_do_icesupersat, &
                       pergro_test_active_out   = pergro_test_active, &
-                      pergro_mods_out          = pergro_mods)
+                      pergro_mods_out          = pergro_mods, &
+                      history_gaschmbudget_out = history_gaschmbudget, &
+                   history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
+            history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels)
+
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
 
@@ -269,6 +284,26 @@ subroutine phys_register
 
        ! register chemical constituents including aerosols ...
        call chem_register(species_class)
+
+       ! NB: has to be after chem_register to use tracer names
+       ! Fields for gas chemistry tracers
+       if (history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
+         call chm_diags_inti_ac() ! to get aer_species
+         do m = 1,gas_pcnst
+            if (.not. any( aer_species == m )) then
+              spc_name = trim(solsym(m))
+              if (history_gaschmbudget .or. history_gaschmbudget_2D_levels) then
+                gas_ac_name(m) = 'ac_'//spc_name
+                call pbuf_add_field(gas_ac_name(m), 'global', dtype_r8, (/pcols,pver/), gas_ac_idx)
+              end if
+
+              if (history_gaschmbudget_2D) then
+                gas_ac_name_2D(m) = 'ac_2D_'//spc_name
+                call pbuf_add_field(gas_ac_name_2D(m), 'global', dtype_r8, (/pcols/), gas_ac_idx)
+              end if
+            end if
+         enddo
+       end if
 
        ! co2 constituents
        call co2_register()
@@ -1528,6 +1563,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use qbo,                only: qbo_relax
     use iondrag,            only: iondrag_calc, do_waccm_ions
     use clubb_intr,         only: clubb_surface
+    use cflx,               only: cflx_tend
     use perf_mod
     use flux_avg,           only: flux_avg_run
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
@@ -1609,6 +1645,12 @@ subroutine tphysac (ztodt,   cam_in,  &
     logical :: l_gw_drag
     logical :: l_ac_energy_chk
 
+    ! Numerical schemes for process coupling
+    integer :: cflx_cpl_opt  ! When to apply surface tracer fluxes  (not including water vapor).
+                             ! The default for aerosols is to do this 
+                             ! after tphysac:clubb_surface and before aerosol dry removal.
+                             ! For chemical gases, different versions of EAM 
+                             ! might use different process ordering.
     !
     !-----------------------------------------------------------------------
     !
@@ -1621,6 +1663,7 @@ subroutine tphysac (ztodt,   cam_in,  &
                        do_shoc_sgs_out        = do_shoc_sgs, &
                        state_debug_checks_out = state_debug_checks &
                       ,deep_scheme_out        = deep_scheme        &
+                      ,cflx_cpl_opt_out       = cflx_cpl_opt       &
                       ,l_tracer_aero_out      = l_tracer_aero      &
                       ,l_vdiff_out            = l_vdiff            &
                       ,l_rayleigh_out         = l_rayleigh         &
@@ -1753,10 +1796,22 @@ end if ! l_tracer_aero
     !   surface fluxes need to be updated here for constituents 
     if (do_clubb_sgs .or. do_shoc_sgs) then
 
-       call clubb_surface ( state, ptend, ztodt, cam_in, surfric, obklen)
-       
-       ! Update surface flux constituents 
-       call physics_update(state, ptend, ztodt, tend)
+       ! If CLUBB is called, do not call vertical diffusion, but still
+       ! calculate surface friction velocity (ustar) and Obukhov length
+       call clubb_surface ( state, cam_in, surfric, obklen)
+
+       ! Diagnose tracer mixing ratio tendencies from surface fluxes, 
+       ! then update the mixing ratios. (If cflx_cpl_opt==2, these are done in 
+       ! tphysbc after deep convection before the cloud mac-mic subcycles
+       ! so that the emission-induced updates of state can be closer to turbulent transport.)
+       ! Note that the two subroutine calls below do not touch water vapor. 
+       ! They also have no effects on tracers for which cam_in%cflx(:,m) 
+       ! is zero at this point.
+
+       if (cflx_cpl_opt==1) then
+          call cflx_tend( state, cam_in, ztodt, ptend)       
+          call physics_update(state, ptend, ztodt, tend)
+       end if
 
        call cnd_diag_checkpoint( diag, 'CFLXAPP', state, pbuf, cam_in, cam_out )
 
@@ -2028,7 +2083,7 @@ subroutine tphysbc (ztodt,               &
     use clubb_intr,      only: clubb_tend_cam
     use shoc_intr,       only: shoc_tend_e3sm
     use sslt_rebin,      only: sslt_rebin_adv
-    use tropopause,      only: tropopause_output
+    use tropopause,      only: tropopause_output, tropopause_e90_3d_output
     use output_aerocom_aie, only: do_aerocom_ind3, cloud_top_aerocom
     use cam_abortutils,      only: endrun
     use subcol,          only: subcol_gen, subcol_ptend_avg
@@ -2037,6 +2092,7 @@ subroutine tphysbc (ztodt,               &
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
     use debug_info,      only: get_debug_chunk, get_debug_macmiciter
     use lnd_infodata,    only: precip_downscaling_method
+    use cflx,            only: cflx_tend
 
     implicit none
 
@@ -2194,6 +2250,13 @@ subroutine tphysbc (ztodt,               &
     logical :: l_rad
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
+    ! Numerical schemes for process coupling
+    integer :: cflx_cpl_opt  ! When to apply surface tracer fluxes  (not including water vapor).
+                             ! The default for aerosols is to do this 
+                             ! after tphysac:clubb_surface and before aerosol dry removal.
+                             ! For chemical gases, different versions of EAM 
+                             ! might use different process ordering.
+
     !-----------------------------------------------------------------------
     call cnd_diag_checkpoint( diag, 'DYNEND', state, pbuf, cam_in, cam_out )
     !-----------------------------------------------------------------------
@@ -2203,6 +2266,7 @@ subroutine tphysbc (ztodt,               &
                        use_subcol_microp_out  = use_subcol_microp, &
                        deep_scheme_out        = deep_scheme,       &
                        state_debug_checks_out = state_debug_checks &
+                      ,cflx_cpl_opt_out       = cflx_cpl_opt       &
                       ,l_bc_energy_fix_out    = l_bc_energy_fix    &
                       ,l_dry_adj_out          = l_dry_adj          &
                       ,l_tracer_aero_out      = l_tracer_aero      &
@@ -2521,6 +2585,9 @@ if (l_tracer_aero) then
 end if
 
 
+    !========================================================================================
+    ! Stratiform cloud macro and microphysics, turbulence, aerosol activation-resuspension
+    !========================================================================================
     if( microp_scheme == 'RK' ) then
 
      if (l_st_mac.or.l_st_mic) then
@@ -2544,6 +2611,21 @@ end if
      end if !l_st_mac
 
     elseif( microp_scheme == 'MG' .or. microp_scheme == 'P3' ) then
+
+       !========================================================================================
+       ! Apply surface tracer fluxes to update tracer mixing ratios before turbulent tranport 
+       !========================================================================================
+       ! Diagnose tracer mixing ratio tendencies from surface fluxes, then update the mixing ratios.
+       ! Note that these subroutine calls do not touch water vapor. They also have no effects
+       ! on tracers for which cam_in%cflx(:,m) is zero at this point.
+
+      !if ( do_clubb_sgs .and. (cflx_cpl_opt==2) ) then
+       if ( cflx_cpl_opt==2 ) then
+          call cflx_tend( state, cam_in, ztodt, ptend)
+          call physics_update(state, ptend, ztodt, tend)
+       end if
+
+       !========================================================================================
        ! Start co-substepping of macrophysics and microphysics
        cld_macmic_ztodt = ztodt/cld_macmic_num_steps
 
@@ -2878,6 +2960,7 @@ end if ! l_rad
     ! Diagnose the location of the tropopause and its location to the history file(s).
     call t_startf('tropopause')
     call tropopause_output(state)
+    call tropopause_e90_3d_output(state)
     call t_stopf('tropopause')
 
     ! Save atmospheric fields to force surface models

@@ -72,6 +72,7 @@ module radiation_data
   integer          :: rad_data_histfile_num = 2
   character(len=1) :: rad_data_avgflag = 'A'
 
+
   ! MG or P3 microphys check
   logical, public :: mg_microphys
   logical, public :: p3_microphys
@@ -153,7 +154,8 @@ contains
        iclwp_ifld    = pbuf_get_index('ICLWP')
        icswp_ifld    = pbuf_get_index('ICSWP')
        cldfsnow_ifld = pbuf_get_index('CLDFSNOW')
-    elseif (p3_microphys) then !AaronDonahue P3 doesn't have snow
+    elseif (p3_microphys) then
+
        dei_ifld      = pbuf_get_index('DEI')
        mu_ifld       = pbuf_get_index('MU')
        lambdac_ifld  = pbuf_get_index('LAMBDAC')
@@ -239,7 +241,7 @@ contains
             'radiation input: In-cloud snow water path')
        call addfld (cldfsnow_fldn, (/ 'lev' /), rad_data_avgflag, 'fraction',&
             'radiation input: cloud liquid drops + snow')
-    elseif (p3_microphys) then !AaronDonahue P3 doesn't have snow
+    elseif (p3_microphys) then
        call addfld (dei_fldn,   (/ 'lev' /), rad_data_avgflag,    'micron',&
             'radiation input: effective ice partical diameter')
        call addfld (mu_fldn,        (/ 'lev' /), rad_data_avgflag,     ' ',&
@@ -292,7 +294,7 @@ contains
        call add_default (iclwp_fldn,     rad_data_histfile_num, ' ')
        call add_default (icswp_fldn,     rad_data_histfile_num, ' ')
        call add_default (cldfsnow_fldn,  rad_data_histfile_num, ' ')
-    elseif (p3_microphys) then !AaronDonahue P3 doesn't have snow
+    elseif (p3_microphys) then
        call add_default (dei_fldn,       rad_data_histfile_num, ' ')
        call add_default (mu_fldn,        rad_data_histfile_num, ' ')
        call add_default (lambdac_fldn,   rad_data_histfile_num, ' ')
@@ -457,7 +459,7 @@ contains
        call pbuf_get_field(pbuf,  cldfsnow_ifld, ptr, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
        call outfld(cldfsnow_fldn, ptr, pcols, lchnk   )
 
-    elseif (p3_microphys) then !AaronDonahue P3 doesn't have snow
+    elseif (p3_microphys) then
 
        call pbuf_get_field(pbuf,  dei_ifld, ptr     )
        call outfld(dei_fldn,      ptr, pcols, lchnk   )       

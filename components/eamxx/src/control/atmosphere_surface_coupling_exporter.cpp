@@ -59,10 +59,8 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Required>("sfc_flux_dif_vis",     scalar2d_layout,      Wm2,   grid_name);
   add_field<Required>("sfc_flux_sw_net" ,     scalar2d_layout,      Wm2,   grid_name);
   add_field<Required>("sfc_flux_lw_dn"  ,     scalar2d_layout,      Wm2,   grid_name);
-
-  // These fields are required for computations, and are set to zero after the export
-  add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
-  add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
+  add_field<Required>("precip_liq_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
+  add_field<Required>("precip_ice_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
 
   create_helper_field("Sa_z",       scalar2d_layout, grid_name);
   create_helper_field("Sa_ptem",    scalar2d_layout, grid_name);
@@ -219,8 +217,8 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
   const auto& p_mid                = get_field_in("p_mid").get_view<const Spack**>();
   const auto& phis                 = get_field_in("phis").get_view<const Real*>();
 
-  const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
-  const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
+  const auto& precip_liq_surf_mass = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
+  const auto& precip_ice_surf_mass = get_field_in("precip_ice_surf_mass").get_view<const Real*>();
 
   const auto Sa_z       = m_helper_fields.at("Sa_z").get_view<Real*>();
   const auto Sa_ptem    = m_helper_fields.at("Sa_ptem").get_view<Real*>();

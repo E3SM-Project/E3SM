@@ -492,7 +492,7 @@ contains
       type(mpas_pool_type), pointer :: diagnosticsPool
       type(mpas_pool_type), pointer :: forcingPool
 
-      real(kind=RKIND), dimension(:), pointer :: RediKappa, RediKappaData
+      real(kind=RKIND), dimension(:), pointer :: RediKappa
       real(kind=RKIND), dimension(:), pointer :: RediHorizontalTaper
       real(kind=RKIND), dimension(:), pointer :: dcEdge
       real(kind=RKIND) :: coef
@@ -519,7 +519,6 @@ contains
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
          call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
          call mpas_pool_get_array(diagnosticsPool, 'RediHorizontalTaper', RediHorizontalTaper)
-         call mpas_pool_get_array(forcingPool, 'RediKappaData', RediKappaData)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 

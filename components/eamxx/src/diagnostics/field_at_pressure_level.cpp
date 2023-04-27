@@ -13,7 +13,7 @@ FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
  , m_field_name(m_params.get<std::string>("Field Name"))
  , m_field_layout(m_params.get<FieldLayout>("Field Layout"))
  , m_field_units(m_params.get<ekat::units::Units>("Field Units"))
- , m_pressure_level(m_params.get<Real>("Field Target Pressure"))
+ , m_pressure_level(m_params.get<double>("Field Target Pressure"))
 {
   using namespace ShortFieldTagsNames;
   EKAT_REQUIRE_MSG (ekat::contains(std::vector<FieldTag>{LEV,ILEV},m_field_layout.tags().back()),
@@ -24,7 +24,7 @@ FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_p_tgt = view_1d<mPack>("",1);
   Kokkos::deep_copy(m_p_tgt, m_pressure_level);
 
-  m_mask_val = m_params.get<Real>("mask_value",Real(std::numeric_limits<float>::max()/10.0));
+  m_mask_val = m_params.get<double>("mask_value",Real(std::numeric_limits<float>::max()/10.0));
 }
 
 // =========================================================================================

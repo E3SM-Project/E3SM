@@ -119,6 +119,10 @@ public:
   // Return the parameter list
   const ekat::ParameterList& get_params () const { return m_params; }
 
+  // This method prepares the atm proc for computing the tendency of
+  // output fields, as prescribed via parameter list
+  virtual void setup_tendencies_requests ();
+
   // Note: if we are being subcycled from the outside, the host will set
   //       do_update=false, and we will not update the timestamp of the AP
   //       or that of the output fields.
@@ -150,6 +154,10 @@ public:
   void run_precondition_checks () const;
   void run_postcondition_checks () const;
   void run_column_conservation_check () const;
+
+
+  void init_step_tendencies ();
+  void compute_step_tendencies (const double dt);
 
   // These methods allow the AD to figure out what each process needs, with very fine
   // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
@@ -479,6 +487,10 @@ private:
   std::list<Field>        m_fields_out;
   std::list<Field>        m_internal_fields;
 
+  // Data structures necessary to compute tendencies of updated fields
+  str_map<std::string>    m_tend_to_field;
+  str_map<Field>          m_proc_tendencies;
+
   // These maps help to retrieve a field/group stored in the lists above. E.g.,
   //   auto ptr = m_field_in_pointers[field_name][grid_name];
   // then *ptr is a field in m_fields_in, with name $field_name, on grid $grid_name.
@@ -524,6 +536,9 @@ private:
 
   // Whether we need to update time stamps at the end of the run method
   bool m_update_time_stamps = true;
+
+  // Whether this atm proc should compute tendencies for any of its updated fields
+  bool m_compute_proc_tendencies = false;
 
   // Log level for when property checks perform a repair
   ekat::logger::LogLevel  m_repair_log_level;

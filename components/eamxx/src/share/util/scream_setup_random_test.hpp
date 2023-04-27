@@ -12,8 +12,7 @@ namespace scream {
 /*
  * Create and return (via copy)
  */
-template <typename Engine=std::mt19937_64>
-Engine setup_random_test(const ekat::Comm* comm=nullptr)
+inline int get_random_test_seed(const ekat::Comm* comm=nullptr)
 {
   const auto& test_name = Catch::getResultCapture().getCurrentTestName();
 
@@ -38,9 +37,21 @@ Engine setup_random_test(const ekat::Comm* comm=nullptr)
     // but it doesn't cost anything...
     seed += comm->rank()-comm->root_rank();
   }
-  Engine engine(seed);
-  return engine;
+  return seed;
 }
+
+template <typename Engine=std::mt19937_64>
+Engine setup_random_test(const ekat::Comm* comm=nullptr)
+{
+  return Engine (get_random_test_seed(comm));
+}
+
+template <typename Engine=std::mt19937_64>
+Engine setup_random_test(const int seed)
+{
+  return Engine (seed);
+}
+
 
 } // namespace scream
 
