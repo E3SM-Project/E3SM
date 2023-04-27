@@ -74,9 +74,7 @@ module scream_scorpio_interface
             grid_write_data_array,       & ! Write gridded data to a pio managed netCDF file
             grid_read_data_array,        & ! Read gridded data from a pio managed netCDF file
             eam_update_time,             & ! Update the timestamp (i.e. time variable) for a given pio netCDF file
-            get_dimlen,                  & ! Returns the length of a specific dimension in a file
-            read_time_at_index,          & ! Returns the time stamp for a specific time index
-            has_variable                   ! Checks if given file contains a certain variable
+            read_time_at_index             ! Returns the time stamp for a specific time index
 
   private :: errorHandle, get_coord
 
@@ -1282,21 +1280,22 @@ contains
   end subroutine get_pio_atm_file
 !=====================================================================!
   ! Retrieve the time value for a specific time_index
-  ! If the input arg time_index is <= 0 then it is assumed the user wants
-  ! the last time entry.
+  ! If the input arg time_index is not provided, then it is assumed the user wants
+  ! the last time entry. If time_index is present, it MUST be valid
   function read_time_at_index(filename,time_index) result(val)
     use pio,          only: PIO_get_var
     use pio_nf,       only: PIO_inq_varid
-    character(len=*), intent(in) :: filename
-    integer, intent(in)          :: time_index
-    real(c_double)               :: val
-    real(c_double)               :: val_buf(1)
+
+    character(len=*), intent(in)   :: filename
+    integer, intent(in), optional  :: time_index
+    real(c_double)                 :: val
+    real(c_double)                 :: val_buf(1)
     
     type(pio_atm_file_t), pointer :: pio_atm_file
     logical                       :: found
     integer                       :: dim_id, time_len, ierr
     type(var_desc_t)              :: varid ! netCDF variable ID
-    integer                       :: strt(1), cnt(1)
+    integer                       :: strt(1), cnt(1), timeidx
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     if (.not.found) call errorHandle("read_time_at_index ERROR: File "//trim(filename)//" not found",-999)
@@ -1306,66 +1305,24 @@ contains
     ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim("time"),dim_id)
     call errorHandle("read_time_at_index ERROR: dimension 'time' not found in file "//trim(filename)//".",ierr)
     ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,dim_id,time_len)
-    if (time_index .gt. time_len) then
-      call errorHandle("read_time_at_index ERROR: time_index arg larger than length of time dimension",-999)
-    end if
 
-    if (time_index .gt. 0) then
-      strt(1) = time_index
+    if (present(time_index)) then
+      timeidx = time_index
     else
-      strt(1) = int(pio_atm_file%numRecs)
+      timeidx = time_len
+    endif
+    if (timeidx .gt. time_len) then
+      call errorHandle("read_time_at_index ERROR: time_index arg larger than length of time dimension",-999)
+    elseif (timeidx .le. 0) then
+      call errorHandle("read_time_at_index ERROR: time_index arg must be positive",-999)
     end if
 
+    strt(1) = timeidx
     cnt(1)  = 1
     ierr = PIO_get_var(pio_atm_file%pioFileDesc,varid,strt,cnt,val_buf)
     call errorHandle('read_time_at_index: Error reading variable "time" in file '//trim(filename)//'.',ierr);
     val  = val_buf(1)
   end function read_time_at_index
-!=====================================================================!
-  ! Retrieve the dimension length for a file.
-  function get_dimlen(filename,dimname) result(val)
-    character(len=*), intent(in) :: filename
-    character(len=*), intent(in) :: dimname
-    integer                      :: val
-
-    type(pio_atm_file_t), pointer :: pio_atm_file
-    integer                       :: dim_id, ierr
-    logical                       :: found
-
-    call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
-    if (.not.found) call errorHandle("pio_inq_dimlen ERROR: File "//trim(filename)//" not found",-999)
-    ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim(dimname),dim_id)
-    call errorHandle("pio_inq_dimlen ERROR: dimension "//trim(dimname)//" not found in file "//trim(filename)//".",ierr)
-    ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,dim_id,val)
-
-  end function get_dimlen
-
-  function has_variable(filename,varname) result(has)
-    character(len=*), intent(in) :: filename
-    character(len=*), intent(in) :: varname
-
-    logical                       :: has, found
-    type(pio_atm_file_t), pointer :: pio_atm_file
-    integer                       :: nvars, ivar, ierr
-    character (len=256)           :: vname
-
-    call register_file(filename,file_purpose_in)
-    call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
-
-    ierr = PIO_inquire(pio_atm_file%pioFileDesc,nVariables=nvars)
-    call errorHandle("pio_inquire on file "//trim(filename)//" returned nonzero error code.",ierr)
-
-    has = .false.
-    do ivar=1,nvars
-      ierr = pio_inquire_variable(pio_atm_file%pioFileDesc, ivar, name=vname)
-      if (trim(vname) == trim(varname)) then
-        has = .true.
-        exit
-      endif
-    enddo
-
-    call eam_pio_closefile(filename)
-  end function has_variable
 !=====================================================================!
   ! Write output to file based on type (int or real)
   ! --Note-- that any dimensionality could be written if it is flattened to 1D

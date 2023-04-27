@@ -95,6 +95,69 @@ void set_decomp(const std::string& filename) {
   set_decomp_c2f(filename.c_str());
 }
 /* ----------------------------------------------------------------- */
+int get_dimlen(const std::string& filename, const std::string& dimname)
+{
+  int ncid, dimid, err;
+  PIO_Offset len;
+
+  bool was_open = is_file_open_c2f(filename.c_str(),-1);
+  if (not was_open) {
+    register_file(filename,Read);
+  }
+
+  ncid = get_file_ncid_c2f (filename.c_str());
+  err = PIOc_inq_dimid(ncid,dimname.c_str(),&dimid);
+  EKAT_REQUIRE_MSG (err!=PIO_EBADDIM,
+      "Error! Could not find dimension in the file.\n"
+      " - filename : " + filename + "\n"
+      " - dimname  : " + dimname + "\n"
+      " - pio error: " + std::to_string(err) + "\n");
+  EKAT_REQUIRE_MSG (err==PIO_NOERR,
+      "Error! Something went wrong while retrieving dimension id.\n"
+      " - filename : " + filename + "\n"
+      " - dimname  : " + dimname + "\n"
+      " - pio error: " + std::to_string(err) + "\n");
+
+  err = PIOc_inq_dimlen(ncid,dimid,&len);
+  EKAT_REQUIRE_MSG (err==PIO_NOERR,
+      "Error! Something went wrong while querying dimension length.\n"
+      " - filename : " + filename + "\n"
+      " - dimname  : " + dimname + "\n"
+      " - pio error: " + std::to_string(err) + "\n");
+
+  if (not was_open) {
+    eam_pio_closefile(filename);
+  }
+
+  return len;
+}
+/* ----------------------------------------------------------------- */
+bool has_variable (const std::string& filename, const std::string& varname)
+{
+  int ncid, varid, err;
+
+  bool was_open = is_file_open_c2f(filename.c_str(),-1);
+  if (not was_open) {
+    register_file(filename,Read);
+  }
+
+  ncid = get_file_ncid_c2f (filename.c_str());
+  err = PIOc_inq_varid(ncid,varname.c_str(),&varid);
+  if (err==PIO_ENOTVAR) {
+    return false;
+  }
+  EKAT_REQUIRE_MSG (err==PIO_NOERR,
+      "Error! Something went wrong while retrieving dimension id.\n"
+      " - filename : " + filename + "\n"
+      " - varname  : " + varname + "\n"
+      " - pio error: " + std::to_string(err) + "\n");
+  if (not was_open) {
+    eam_pio_closefile(filename);
+  }
+
+  return true;
+}
+/* ----------------------------------------------------------------- */
 void set_dof(const std::string& filename, const std::string& varname, const Int dof_len, const std::int64_t* x_dof) {
 
   set_dof_c2f(filename.c_str(),varname.c_str(),dof_len,x_dof);
