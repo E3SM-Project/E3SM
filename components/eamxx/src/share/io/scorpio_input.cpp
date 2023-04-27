@@ -28,7 +28,7 @@ AtmosphereInput (const ekat::ParameterList& params,
 AtmosphereInput::
 AtmosphereInput (const std::string& filename,
                  const std::shared_ptr<const grid_type>& grid,
-                 const std::map<std::string,Field>& fields)
+                 const std::vector<Field>& fields)
 {
   // Create param list and field manager on the fly
   ekat::ParameterList params;
@@ -38,9 +38,9 @@ AtmosphereInput (const std::string& filename,
   auto fm = std::make_shared<fm_type>(grid);
   fm->registration_begins();
   fm->registration_ends();
-  for (auto& it : fields) {
-    fm->add_field(it.second);
-    names.push_back(it.first);
+  for (auto& f : fields) {
+    fm->add_field(f);
+    names.push_back(f.name());
   }
   init(params,fm);
 }

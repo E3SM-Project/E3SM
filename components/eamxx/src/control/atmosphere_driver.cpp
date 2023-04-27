@@ -1117,18 +1117,23 @@ read_fields_from_file (const std::vector<std::string>& field_names_nc,
   //       since the topo file *always* uses ncol_d for GLL points data,
   //       while a non-PG2 run would have the tag name be "ncol".
   const auto& field_mgr = m_field_mgrs.at(grid->name());
-  std::map<std::string,Field> fields;
+  std::vector<Field> fields;
   for (size_t i=0; i<field_names_nc.size(); ++i) {
-    fields[field_names_nc[i]] = field_mgr->get_field(field_names_eamxx[i]);
+    const auto& eamxx_name = field_names_eamxx[i];
+    const auto& nc_name    = field_names_nc[i];
+    fields.push_back(field_mgr->get_field(eamxx_name).alias(nc_name));
   }
 
   AtmosphereInput ic_reader(file_name,grid,fields);
   ic_reader.read_variables();
   ic_reader.finalize();
 
-  for (auto& it : fields) {
-    auto f = it.second;
+  for (auto& f : fields) {
     // Set the initial time stamp
+    // NOTE: f is an alias of the field from field_mgr, so it shares all
+    //       pointers to the metadata (except for the FieldIdentifier),
+    //       so changing its timestamp will also change the timestamp
+    //       of the field in field_mgr
     f.get_header().get_tracking().update_time_stamp(t0);
   }
 }
@@ -1152,18 +1157,17 @@ read_fields_from_file (const std::vector<std::string>& field_names,
   //       since the topo file *always* uses ncol_d for GLL points data,
   //       while a non-PG2 run would have the tag name be "ncol".
   const auto& field_mgr = m_field_mgrs.at(grid->name());
-  std::map<std::string,Field> fields;
+  std::vector<Field> fields;
   for (const auto& fn : field_names) {
-    fields[fn] = field_mgr->get_field(fn);
+    fields.push_back(field_mgr->get_field(fn));
   }
 
   AtmosphereInput ic_reader(file_name,grid,fields);
   ic_reader.read_variables();
   ic_reader.finalize();
 
-  for (const auto& fname : field_names) {
+  for (auto& f : fields) {
     // Set the initial time stamp
-    auto f = field_mgr->get_field(fname);
     f.get_header().get_tracking().update_time_stamp(t0);
   }
 }
