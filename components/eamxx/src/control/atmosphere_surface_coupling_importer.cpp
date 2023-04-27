@@ -53,6 +53,8 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Computed>("qv_2m",            scalar2d_layout, Qunit,   grid_name);
   add_field<Computed>("wind_speed_10m",   scalar2d_layout, m/s,     grid_name);
   add_field<Computed>("snow_depth_land",  scalar2d_layout, m,       grid_name);
+  add_field<Computed>("ocnfrac",          scalar2d_layout, nondim,  grid_name);
+  add_field<Computed>("landfrac",         scalar2d_layout, nondim,  grid_name);
 }
 // =========================================================================================
   void SurfaceCouplingImporter::setup_surface_coupling_data(const SCDataManager &sc_data_manager)

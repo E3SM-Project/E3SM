@@ -4,6 +4,7 @@
 
 #include "share/scream_types.hpp"
 #include "share/scream_session.hpp"
+#include "share/util/scream_utils.hpp"
 
 #include "ekat/util/ekat_file_utils.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
@@ -15,62 +16,17 @@ namespace {
 using namespace scream;
 using namespace scream::shoc;
 
-  /* shoc_run_and_cmp can be run in 2 modes. First, generate_baseline
-   * runs the baseline (aka reference, probably git master) version of
-   * the code and saves its output as a raw binary file. Then run_and_cmp
-   * runs the new/experimental version of the code and compares it against
-   * the baseline data you've saved to file. Both baseline and cmp modes
-   * start from an initial condition in ../shoc_ic_cases.cpp. Each call to
-   * shoc_main loops through nadv=15 steps with dt=5 min. On top of this,
-   * shoc_main is called iteratively num_iters=10 steps, performing checks
-   * and potentiallywriting output each time. This means that shoc_run_and_cmp
-   * is really a single 150-step shoc run.
-   */
-
-
-/* Given a column of data for variable "label" from the reference run
- * (probably master) and from your new exploratory run, loop over all
- * heights and confirm whether or not the relative difference between
- * runs is within tolerance "tol". If not, print debug info. Here, "a"
- * is the value from the reference run and "b" is from the new run.
+/* shoc_run_and_cmp can be run in 2 modes. First, generate_baseline
+ * runs the baseline (aka reference, probably git master) version of
+ * the code and saves its output as a raw binary file. Then run_and_cmp
+ * runs the new/experimental version of the code and compares it against
+ * the baseline data you've saved to file. Both baseline and cmp modes
+ * start from an initial condition in ../shoc_ic_cases.cpp. Each call to
+ * shoc_main loops through nadv=15 steps with dt=5 min. On top of this,
+ * shoc_main is called iteratively num_iters=10 steps, performing checks
+ * and potentiallywriting output each time. This means that shoc_run_and_cmp
+ * is really a single 150-step shoc run.
  */
-template <typename Scalar>
-static Int compare (const std::string& label, const Scalar* a,
-                    const Scalar* b, const Int& n, const Real& tol) {
-
-  Int nerr1 = 0;
-  Int nerr2 = 0;
-  Real den = 0;
-  for (Int i = 0; i < n; ++i)
-    den = std::max(den, std::abs(a[i]));
-  Real worst = 0;
-  for (Int i = 0; i < n; ++i) {
-    if (std::isnan(a[i]) || std::isinf(a[i]) ||
-        std::isnan(b[i]) || std::isinf(b[i])) {
-      ++nerr1;
-      continue;
-    }
-
-    const auto num = std::abs(a[i] - b[i]);
-    if (num > tol*den) {
-      ++nerr2;
-      worst = std::max(worst, num);
-    }
-  }
-
-  if (nerr1) {
-    std::cout << label << " has " << nerr1 << " infs + nans.\n";
-
-  }
-
-  if (nerr2) {
-    std::cout << label << " > tol " << nerr2 << " times. Max rel diff= " << (worst/den)
-              << " normalized by ref impl val=" << den << ".\n";
-
-  }
-
-  return nerr1 + nerr2;
-}
 
  /* When called with the below 3 args, compare loops over all variables
   * and calls the above version of "compare" to check for and report
@@ -93,7 +49,7 @@ static Int compare (const std::string& label, const Scalar* a,
     // So we just skip the comparison.
     if (fr.name == "tkh") continue;
 
-    nerr += compare(fr.name, fr.data, fd.data, fr.size, tol);
+    nerr += scream::compare(fr.name, fr.data, fd.data, fr.size, tol);
   }
   return nerr;
 }

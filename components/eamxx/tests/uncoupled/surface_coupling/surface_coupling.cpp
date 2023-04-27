@@ -117,6 +117,8 @@ void test_imports(const FieldManager& fm,
   fm.get_field("surf_mom_flux"   ).sync_to_host();
   fm.get_field("surf_sens_flux"  ).sync_to_host();
   fm.get_field("surf_evap"       ).sync_to_host();
+  fm.get_field("ocnfrac"         ).sync_to_host();
+  fm.get_field("landfrac"        ).sync_to_host();
   const auto sfc_alb_dir_vis  = fm.get_field("sfc_alb_dir_vis" ).get_view<const Real*,  Host>();
   const auto sfc_alb_dir_nir  = fm.get_field("sfc_alb_dir_nir" ).get_view<const Real*,  Host>();
   const auto sfc_alb_dif_vis  = fm.get_field("sfc_alb_dif_vis" ).get_view<const Real*,  Host>();
@@ -130,6 +132,8 @@ void test_imports(const FieldManager& fm,
   const auto surf_mom_flux    = fm.get_field("surf_mom_flux"   ).get_view<const Real**, Host>();
   const auto surf_sens_flux   = fm.get_field("surf_sens_flux"  ).get_view<const Real*,  Host>();
   const auto surf_evap        = fm.get_field("surf_evap"       ).get_view<const Real*,  Host>();
+  const auto ocnfrac          = fm.get_field("ocnfrac"         ).get_view<const Real*,  Host>();
+  const auto landfrac         = fm.get_field("landfrac"        ).get_view<const Real*,  Host>();
 
   const int ncols = surf_evap.extent(0);
 
@@ -156,17 +160,21 @@ void test_imports(const FieldManager& fm,
       EKAT_REQUIRE(wind_speed_10m(i)   == 0.0);
       EKAT_REQUIRE(snow_depth_land(i)  == 0.0);
       EKAT_REQUIRE(surf_lw_flux_up(i)  == 0.0);
+      EKAT_REQUIRE(ocnfrac(i)          == 0.0);
+      EKAT_REQUIRE(landfrac(i)         == 0.0);
     } else {
-      EKAT_REQUIRE(sfc_alb_dir_vis(i)  == import_constant_multiple_view(0)*import_data_view(i, import_cpl_indices_view(0)));
-      EKAT_REQUIRE(sfc_alb_dir_nir(i)  == import_constant_multiple_view(1)*import_data_view(i, import_cpl_indices_view(1)));
-      EKAT_REQUIRE(sfc_alb_dif_vis(i)  == import_constant_multiple_view(2)*import_data_view(i, import_cpl_indices_view(2)));
-      EKAT_REQUIRE(sfc_alb_dif_nir(i)  == import_constant_multiple_view(3)*import_data_view(i, import_cpl_indices_view(3)));
-      EKAT_REQUIRE(surf_radiative_T(i) == import_constant_multiple_view(4)*import_data_view(i, import_cpl_indices_view(4)));
-      EKAT_REQUIRE(T_2m(i)             == import_constant_multiple_view(5)*import_data_view(i, import_cpl_indices_view(5)));
-      EKAT_REQUIRE(qv_2m(i)            == import_constant_multiple_view(6)*import_data_view(i, import_cpl_indices_view(6)));
-      EKAT_REQUIRE(wind_speed_10m(i)   == import_constant_multiple_view(7)*import_data_view(i, import_cpl_indices_view(7)));
-      EKAT_REQUIRE(snow_depth_land(i)  == import_constant_multiple_view(8)*import_data_view(i, import_cpl_indices_view(8)));
-      EKAT_REQUIRE(surf_lw_flux_up(i)  == import_constant_multiple_view(9)*import_data_view(i, import_cpl_indices_view(9)));
+      EKAT_REQUIRE(sfc_alb_dir_vis(i)  == import_constant_multiple_view(0 )*import_data_view(i, import_cpl_indices_view(0)));
+      EKAT_REQUIRE(sfc_alb_dir_nir(i)  == import_constant_multiple_view(1 )*import_data_view(i, import_cpl_indices_view(1)));
+      EKAT_REQUIRE(sfc_alb_dif_vis(i)  == import_constant_multiple_view(2 )*import_data_view(i, import_cpl_indices_view(2)));
+      EKAT_REQUIRE(sfc_alb_dif_nir(i)  == import_constant_multiple_view(3 )*import_data_view(i, import_cpl_indices_view(3)));
+      EKAT_REQUIRE(surf_radiative_T(i) == import_constant_multiple_view(4 )*import_data_view(i, import_cpl_indices_view(4)));
+      EKAT_REQUIRE(T_2m(i)             == import_constant_multiple_view(5 )*import_data_view(i, import_cpl_indices_view(5)));
+      EKAT_REQUIRE(qv_2m(i)            == import_constant_multiple_view(6 )*import_data_view(i, import_cpl_indices_view(6)));
+      EKAT_REQUIRE(wind_speed_10m(i)   == import_constant_multiple_view(7 )*import_data_view(i, import_cpl_indices_view(7)));
+      EKAT_REQUIRE(snow_depth_land(i)  == import_constant_multiple_view(8 )*import_data_view(i, import_cpl_indices_view(8)));
+      EKAT_REQUIRE(surf_lw_flux_up(i)  == import_constant_multiple_view(9 )*import_data_view(i, import_cpl_indices_view(9)));
+      EKAT_REQUIRE(ocnfrac(i)          == import_constant_multiple_view(14)*import_data_view(i, import_cpl_indices_view(14)));
+      EKAT_REQUIRE(landfrac(i)         == import_constant_multiple_view(15)*import_data_view(i, import_cpl_indices_view(15)));
     }
   }
 }
@@ -384,7 +392,7 @@ TEST_CASE("surface-coupling", "") {
   // Setup views to test import/export. For this test we consider a random number of non-imported/exported
   // cpl fields (in addition to the required scream imports/exports), then assign a random, non-repeating
   // cpl index for each field in [0, num_cpl_fields).
-  const int num_scream_imports = 14;
+  const int num_scream_imports = 16;
   const int num_scream_exports = 17;
   KokkosTypes<HostDevice>::view_1d<int> additional_import_exports("additional_import_exports", 2);
   ekat::genRandArray(additional_import_exports, engine, pdf_int_additional_fields);
@@ -421,6 +429,8 @@ TEST_CASE("surface-coupling", "") {
   std::strcpy(import_names[11], "surf_mom_flux");
   std::strcpy(import_names[12], "surf_sens_flux");
   std::strcpy(import_names[13], "surf_evap");
+  std::strcpy(import_names[14], "ocnfrac");
+  std::strcpy(import_names[15], "landfrac");
 
   // Export data is of size num_cpl_exports, the rest of the views are size num_scream_exports.
   KokkosTypes<HostDevice>::view_2d<Real> export_data_view             ("export_data",

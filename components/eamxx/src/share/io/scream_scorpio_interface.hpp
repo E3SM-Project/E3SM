@@ -1,11 +1,12 @@
 #ifndef SCREAM_SCORPIO_INTERFACE_HPP
 #define SCREAM_SCORPIO_INTERFACE_HPP
 
-#include "ekat/util/ekat_string_utils.hpp"
 #include "share/field/field_tag.hpp"
 #include "share/scream_types.hpp"
+#include "share/util/scream_time_stamp.hpp"
 
 #include "ekat/mpi/ekat_comm.hpp"
+#include "ekat/util/ekat_string_utils.hpp"
 
 #include <vector>
 
@@ -46,6 +47,8 @@ namespace scorpio {
   void get_variable(const std::string& filename,const std::string& shortname, const std::string& longname,
                     const std::vector<std::string>& var_dimensions,
                     const std::string& dtype, const std::string& pio_decomp_tag);
+  ekat::any get_any_attribute (const std::string& filename, const std::string& att_name);
+  void set_any_attribute (const std::string& filename, const std::string& att_name, const ekat::any& att);
   /* End the definition phase for a scorpio file.  Last thing called after all dimensions, variables, dof's and decomps have been set.  Called once per file.
    * Mandatory before writing or reading can happend on file. */
   void eam_pio_enddef(const std::string &filename);
@@ -63,15 +66,31 @@ namespace scorpio {
   void grid_write_data_array(const std::string &filename, const std::string &varname,
                              const T* hbuf, const int buf_size);
 
+  template<typename T>
+  T get_attribute (const std::string& filename, const std::string& att_name)
+  {
+    auto att = get_any_attribute(filename,att_name);
+    return ekat::any_cast<T>(att);
+  }
+
+  template<typename T>
+  void set_attribute (const std::string& filename, const std::string& att_name, const T& att)
+  {
+    ekat::any a(att);
+    set_any_attribute(filename,att_name,a);
+
+  }
+
+  // Shortcut to write/read to/from YYYYMMDD/HHMMSS attributes in the NC file
+  void write_timestamp (const std::string& filename, const std::string& ts_name, const util::TimeStamp& ts);
+  util::TimeStamp read_timestamp (const std::string& filename, const std::string& ts_name);
 
 extern "C" {
   /* Query whether the pio subsystem is inited or not */
   bool is_eam_pio_subsystem_inited();
   /* Checks if a file is already open, with the given mode */
+  int get_file_ncid_c2f(const char*&& filename);
   bool is_file_open_c2f(const char*&& filename, const int& mode);
-  int get_int_attribute_c2f (const char*&& filename, const char*&& attr_name);
-  void set_int_attribute_c2f (const char*&& filename, const char*&& attr_name, const int& value);
-  void set_str_attribute_c2f (const char*&& filename, const char*&& attr_name, const char*&& value);
   int get_dimlen_c2f(const char*&& filename, const char*&& dimname);
   bool has_variable_c2f (const char*&& filename, const char*&& varname);
   /* Query a netCDF file for the time variable */

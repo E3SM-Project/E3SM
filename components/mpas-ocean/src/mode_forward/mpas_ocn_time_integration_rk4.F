@@ -1244,7 +1244,7 @@ module ocn_time_integration_rk4
          do k = 1, nVertLevels
             normalVelocityProvis(k, iEdge) = edgeMask(k, iEdge)*(normalVelocityCur(k, iEdge) + rkSubstepWeight &
                                            * normalVelocityTend(k, iEdge))
-            normalVelocityProvis(k, iEdge) = normalVelocityProvis(k, iEdge) * (1.0_RKIND - wettingVelocity(k, iEdge))
+            normalVelocityProvis(k, iEdge) = normalVelocityProvis(k, iEdge) * (1.0_RKIND - wettingVelocityFactor(k, iEdge))
          end do
       end do
       !$omp end do
@@ -1487,12 +1487,12 @@ module ocn_time_integration_rk4
       
       ! the loop below is on all vertlevels but we used edgemask to set
       ! velocities to zero below topo (esp. edges between topo and ocean)
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
          do k = 1, nVertLevels
             normalVelocityNew(k, iEdge) = edgeMask(k,iEdge) &
                                       *(normalVelocityNew(k, iEdge) + rkWeight * normalVelocityTend(k, iEdge))
-            normalVelocityNew(k, iEdge) = normalVelocityNew(k, iEdge) * (1.0_RKIND - wettingVelocity(k, iEdge))
+            normalVelocityNew(k, iEdge) = normalVelocityNew(k, iEdge) * (1.0_RKIND - wettingVelocityFactor(k, iEdge))
          end do
       end do
       !$omp end do

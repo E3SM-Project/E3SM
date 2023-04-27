@@ -382,7 +382,7 @@ endif()
 # This is a meta-variable, which individual tests can use to set *different* degrees
 # of testing, in terms of resolutions. E.g., for SHORT use 3 timesteps, for MEDIUM use 10,
 # for LONG use 100. It is *completely* up to the test to decide what short, medium, and long mean.
-if (EKAT_ENABLE_COVERAGE OR EKAT_ENABLE_CUDA_MEMCHECK OR EKAT_ENABLE_VALGRIND)
+if (EKAT_ENABLE_COVERAGE OR EKAT_ENABLE_CUDA_MEMCHECK OR EKAT_ENABLE_VALGRIND OR EKAT_ENABLE_COMPUTE_SANITIZER)
   set (SCREAM_TEST_SIZE_DEFAULT SHORT)
   # also set thread_ing=$max_thread - 1, so we test at most 2 threading configurations
   if (SCREAM_TEST_MAX_THREADS GREATER 1)
@@ -455,8 +455,8 @@ print_var(SCREAM_TEST_MAX_RANKS)
 # whether to include scream_config.h.
 add_definitions(-DSCREAM_CONFIG_IS_CMAKE)
 
-if (EKAT_ENABLE_CUDA_MEMCHECK)
-  add_definitions(-DEKAT_ENABLE_CUDA_MEMCHECK)
+if (SCREAM_TEST_SIZE STREQUAL "SHORT")
+  add_definitions(-DSCREAM_SHORT_TESTS)
 endif()
 
 # Hooks for testing test-all-scream within test-scripts

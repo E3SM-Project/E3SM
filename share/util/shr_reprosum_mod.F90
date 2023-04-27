@@ -282,10 +282,10 @@ module shr_reprosum_mod
 ! models use the same base, e.g.  
 !  radix(1.0_r8) == radix(1_i8)
 ! for real*8 and integer*8. If not, then the alternative algorithm
-! mentioned above and described below is used instead. The integer
-! representation must also have enough digits for the potential growth
-! of the sum for each level, so could conceivably be too small for a
-! large number of summands. 
+! DDPDD mentioned above and described below is used instead. The
+! integer representation must also have enough digits for the
+! potential growth of the sum for each level, so could conceivably be
+! too small for a large number of summands. 
 !
 ! Upper bounds on the total number of summands and on all intermediate
 ! sums are calculated as
@@ -322,26 +322,38 @@ module shr_reprosum_mod
 ! conversion of the vector of integer representation to a floating
 ! point value may be subject to rounding errors. Before the
 ! conversion, the vector of integers is adjusted so that all elements
-! have the same sign, eliminating the possibility of catastrophic
-! cancellation. These are integer operations, so no accuracy is
-! lost. Next, each element of the vector of integers is converted to a
-! floating point value and added into the intermediate sum, in
-! smallest to largest order (in absolute value). Any rounding error is
-! in the least significant digit for each intermediate sum, and the
-! exponents for each summand are monotonically increasing, so the
-! rounding errors do not accumulate. Thus, the relative difference
-! between the 'exact' value and that calculated by this algorithm will
-! be approximately machine epsilon for 64-bit real values, and any
-! difference will be restricted to the 16th significant digit in a
-! decimal representation. This does mean that the values calculated
-! with the integer*8 internal representation could differ from those
-! calculated using the integer*4 internal representation, but the
-! differences will be in the least significant digits. Similarly, the
-! results may change (in the least significant digits) with a change
-! in system, compiler, or compiler flags. However, for a fixed
-! internal representation, processor architecture, compiler, and
-! compiler options, the result will (still) be reproducible with
-! respect to MPI task and OpenMP thread counts.
+! have the same sign, and so that the value, in absolute value, at a
+! given level is strictly less than what can be represented at the
+! next lower level (larger exponent) and strictly greater than what
+! can represented at the next higher level (smaller exponent). Since
+! all elements have the same sign, the sign is set to positive
+! temporarily and then restored when the conversion to floating point
+! is complete. These are all integer operations, so no accuracy is
+! lost. These adjustments eliminate the possibility of catastrophic
+! cancellation. Also, when converting the individual elements to
+! floating point values and summing them, the summation is now
+! equivalent to concatenating the digits in the mantissas for the
+! component summands. In consequence, in the final step when each
+! element of this modified vector of integers is converted to a
+! floating point value and added into the intermediate sum, any
+! rounding is limited to the least significant digit representable
+! in the final floating point sum.
+!
+! Any such rounding error will be sensitive to the particular floating
+! values generated from the integer vector, and so will be 
+! sensitive to the number of levels in the vector and the implicit
+! exponent associated with each level, which are themselves functions
+! of the numbers of MPI tasks and OpenMP threads and the number of
+! digits representable in an integer. To avoid this sensitivity,
+! (effectively) generate a new integer vector in which each component
+! integer has a fixed number of significant digits (e.g.,
+! digits(1.0_r8)) and generate the floating point values from these
+! before summing. (See comments in code for more details.) This
+! creates a sequence of floating point values to be summed that are
+! independent of, for example, the numbers of MPI tasks and OpenMP
+! threads or whether using integer*8 or integer*4 internal
+! representations in the integer vector, and thus ensure
+! reproducibility with respect to these options.
 !
 ! Description of optional parameters for integer vector algorithm:
 !-----------------------------------------------------------------
@@ -1135,7 +1147,7 @@ module shr_reprosum_mod
 !
 ! Local workspace
 !
-      integer, parameter  :: max_jlevel = &
+      integer, parameter  :: max_svlevel_factor = &
                                 1 + (digits(1_i8)/digits(1.0_r8))
 
       integer(i8) :: i8_arr_tlsum_level(-(extra_levels-1):max_level,nflds,omp_nthreads)
@@ -1149,9 +1161,10 @@ module shr_reprosum_mod
       integer(i8) :: i8_arr_gsum_level((max_level+extra_levels+2)*nflds)
                                    ! integer vector representing global
                                    !  sum
-      integer(i8) :: IX_8          ! integer representation of current
-                                   !  jlevels of X_8 ('part' of
-                                   !  i8_arr_gsum_level)
+      integer(i8) :: i8_gsum_level(-(extra_levels-1):max_level)
+                                   ! integer vector representing global
+                                   !  sum for one field
+      integer(i8) :: IX_8          ! integer representation of r8 value
       integer(i8) :: i8_sign       ! sign global sum
       integer(i8) :: i8_radix      ! radix for i8 variables (and r8
                                    !  variables by earlier if-test)
@@ -1164,7 +1177,7 @@ module shr_reprosum_mod
       integer :: isum_beg(omp_nthreads), isum_end(omp_nthreads)
                                    ! range of summand indices for each
                                    !  OpenMP thread
-      integer :: ifld, isum, ithread
+      integer :: ifld, isum, ithread, jlevel
                                    ! loop variables
       integer :: arr_exp           ! exponent of summand
       integer :: arr_shift         ! exponent used to generate integer
@@ -1178,13 +1191,28 @@ module shr_reprosum_mod
       integer :: min_level         ! index of minimum levels (including
                                    !  extra levels) for i8_arr_tlsum_level
       integer :: ioffset           ! offset(ifld)
-      integer :: jlevel            ! number of floating point 'pieces'
-                                   !  extracted from a given i8 integer
+      integer :: svlevel           ! number of summands in summand_vector
       integer :: ierr              ! MPI error return
-      integer :: LX(max_jlevel)    ! exponent of X_8 (see below)
+      integer :: LX                ! exponent of X_8 (see below)
       integer :: veclth            ! total length of i8_arr_lsum_level
-      integer :: sum_digits        ! lower bound on number of significant
-                                   !  in integer expansion of sum
+      integer :: i8_digit_count    ! number of digits in integer
+                                   !  expansion of sum
+      integer :: i8_begin_level    ! level starting from in
+                                   !  creating next 'exactly representable'
+                                   !  floating point value from modified
+                                   !  integer expansion of the sum
+      integer :: i8_trunc_level    ! level at which the number of digits in
+                                   !  the modified integer expansion of the
+                                   !  sum exceeds the number of representable
+                                   !  digits in the floating point sum
+      integer :: i8_trunc_loc      ! location of last digit at i8_trunc_level
+                                   !  in the modified integer expansion of the
+                                   !  sum that is representable in the floating
+                                   !  point sum
+      integer(i8) :: i8_trunc_level_rem
+                                   ! truncated digits at i8_trunc_level
+                                   !  in the modified integer expansion
+                                   !  of the sum
       integer :: curr_exp          ! exponent of partial sum during
                                    !  reconstruction from integer vector
       integer :: corr_exp          ! exponent of current summand in
@@ -1193,18 +1221,21 @@ module shr_reprosum_mod
       real(r8) :: arr_frac         ! fraction of summand
       real(r8) :: arr_remainder    ! part of summand remaining after
                                    !  current level of integer expansion
-      real(r8) :: X_8(max_jlevel)  ! r8 vector representation of current
+      real(r8) :: X_8              ! r8 representation of current
                                    !  i8_arr_gsum_level
-      real(r8) :: RX_8             ! r8 representation of difference
-                                   !  between current i8_arr_gsum_level
-                                   !  and current jlevels of X_8
-                                   !  (== IX_8). Also used in final
-                                   !  scaling step
+      real(r8) :: RX_8             ! r8 representation of (other)
+                                   !  integers used in calculation.
+      real(r8) :: summand_vector((max_level+extra_levels)*max_svlevel_factor)
+                                   ! vector of r8 values generated from
+                                   !  integer vector representation to be
+                                   !  summed to generate global sum
 
-      logical :: first             ! flag used to indicate that just
-                                   !  beginning reconstruction of sum
-                                   !  from integer vector
-
+      logical :: first_stepd_iteration
+                                   ! flag used to indicate whether first
+                                   !  time through process of converting
+                                   !  vector of integers into a floating
+                                   !  point value, as it requires
+                                   !  special logic
 !
 !------------------------------------------------------------------------
 ! Save radix of i8 variables in an i8 variable
@@ -1312,7 +1343,6 @@ module shr_reprosum_mod
             endif
 
           enddo
-
 ! Postprocess integer vector to eliminate possibility of overflow
 ! during subsequent sum over threads and tasks, as per earlier
 ! comment on logic behind definition of max_nsummands. If value at a
@@ -1425,27 +1455,79 @@ module shr_reprosum_mod
       call t_stopf("repro_sum_allr_i8")
 #endif
 
+      call t_startf('repro_sum_finalsum')
 ! Construct global sum from integer vector representation:
 !  1) arr_max_shift is the shift applied to fraction(arr_gmax) .
-!   When shifting back, need to 'add back in' true arr_gmax exponent. This was
-!   removed implicitly by working only with the fraction .
-!  2) Want to add levels into sum in reverse order (smallest to largest). However,
-!   even this can generate floating point rounding errors if signs of integers
-!   alternate. To avoid this, do some arithmetic with integer vectors so that all
-!   components have the same sign. This should keep relative difference between
-!   using different integer sizes (e.g. i8 and i4) to machine epsilon
-!  3) Assignment to X_8 will usually lose accuracy since maximum integer
-!   size is greater than the max number of 'digits' in r8 value (if xmax_nsummands
-!   correction not very large). Calculate remainder and add in first (since
-!   smaller). One correction is sufficient for r8 (53 digits) and i8 (63 digits).
-!   For r4 (24 digits) may need to correct twice. Code is written in a general
-!   fashion, to work no matter how many corrections are necessary (assuming
-!   max_jlevel parameter calculation is correct).
+!   When shifting back, need to 'add back in' the true arr_gmax exponent.
+!   This was removed implicitly by working only with the fraction.
+!  2) To avoid the possibility of catastrophic cancellation, and
+!   an unacceptable floating point rounding error, can do some arithmetic
+!   with the integer vector so that all components have the same sign.
+!  3) If convert each integer in the integer vector to a floating
+!   point value and then add these together, smallest to largest, to
+!   calculate the final sum, there may be roundoff error in the least
+!   significant digit. This error will be sensitive to the particular
+!   floating values generated from the integer vector, and so will be
+!   sensitive to the number of levels in the vector and the implicit
+!   exponent associated with each level. So this approach is not
+!   guaranteed to be reproducible with respect to a change in the
+!   number of MPI tasks and OpenMP threads (as this changes the
+!   definition of max_nsummands, and thus also arr_max_shift). It is
+!   also not guaranteed to be reproducible with respect to changing
+!   the integer size, e.g. from i8 to i4, as this also changes
+!   arr_max_shift. However, can eliminate this potential loss of
+!   reproducibility by taking the following steps. 
+!   a) Manipulate the integer vector so that
+!    i)  the component values do not 'overlap', that is, the value
+!        represented by a component is strictly less than the value
+!        represented by the least significant digit in the previous
+!        component, and 
+!    ii) all components are positive (saving the sign to be restored
+!        to the final result).
+!   b) Identify the digit in the resulting integer vector that is the
+!      last representable in the floating point representation, then
+!      truncate the vector at this point, i.e., all digits of lesser
+!      significance in the given component and all components
+!      representing digits of lesser significance (call this the
+!      remainder). 
+!   c) Convert each integer component in the modified integer vector
+!      to its corresponding floating point value and sum the
+!      sequence. (Order is unimportant, as explained below, but here
+!      add largest to smallest.) 
+!   d) Repeat (b) and (c) for the remainder (recursively, as
+!      necessary).
+!   e) Sum all floating point numbers generated by step (c), smallest
+!      to largest. 
+!   f) Restore the sign.
+!   With the manipulations in (a) and (b), the summation in (c) is
+!   equivalent to concatenating the digits in the mantissas for the
+!   component summands, so rounding is irrelevant (so far). Repeating
+!   this with the remainder(s) generates a sequence of 'exact'
+!   floating point numbers. Summing these can still generate a
+!   rounding error in the least significant digit in the largest
+!   floating point value (which is the last representable digit in the
+!   final result), but the floating point values being summed and
+!   order of summation are independent of the number of levels and
+!   implicit exponents, so reproducibility is ensured.
+!  
+!  Note that assignment of an i8 integer value to an r8 floating point
+!  variable in step (c) can lead to a loss of accuracy because the
+!  maximum number of digits in the i8 integer can be greater than the
+!  maximum number of digits representable in the r8 variable (if the
+!  xmax_nsummands correction is not very large). With the same sign
+!  and nonoverlapping properties of the integer components, these lost
+!  digits will also not be representable in the final sum. The process
+!  described above of truncating at this last representable digit, and
+!  then separately generating floating point value(s) for the
+!  remainder, takes care of this automatically. Similar reasoning
+!  applies to r4 floating point values with either i8 or i4 integer
+!  components.
 
       recompute = .false.
       do ifld=1,nflds
          arr_gsum(ifld) = 0.0_r8
          ioffset = offset(ifld)
+         svlevel = 0
 
 ! If validate is .true., test whether the summand upper bound
 ! was exceeded on any of the MPI tasks
@@ -1456,9 +1538,17 @@ module shr_reprosum_mod
          endif
 
          if (.not. recompute) then
+! Copy integer vector for current field from i8_arr_gsum_level, so that
+! can be modified without changing i8_arr_gsum_level. (Preserving
+! i8_arr_gsum_level unchanged is not necessary, but is convenient for debugging
+! and makes indexing clearer and less error prone.)
+            i8_gsum_level(:) = 0_i8
+            do ilevel=min_level,max_levels(ifld)
+               i8_gsum_level(ilevel) = i8_arr_gsum_level(ioffset+ilevel)
+            enddo
 
-! Preprocess integer vector:
-!  a) If value larger than or equal to (radix(1_i8)**arr_max_shift),
+! Preprocess integer vector (as described in 3(a) above):
+!  i) If value larger than or equal to (radix(1_i8)**arr_max_shift),
 !     add this 'overlap' to the value at the next smaller level
 !     in the vector, resulting in nonoverlapping ranges for each
 !     component.
@@ -1489,144 +1579,248 @@ module shr_reprosum_mod
 !     -(extra_levels-1), does not have to be less than
 !     (radix(1_i8)**arr_max_shift) for this 'nonoverlap' property to
 !     hold. 
-           do ilevel=max_levels(ifld),min_level+1,-1
-              if (abs(i8_arr_gsum_level(ioffset+ilevel)) >= &
-                     (i8_radix**arr_max_shift)) then
-
-                  IX_8 = i8_arr_gsum_level(ioffset+ilevel) &
+            do ilevel=max_levels(ifld),min_level+1,-1
+               if (abs(i8_gsum_level(ilevel)) >= &
+                      (i8_radix**arr_max_shift)) then
+                  
+                  IX_8 = i8_gsum_level(ilevel) &
                          / (i8_radix**arr_max_shift)
-                  i8_arr_gsum_level(ioffset+ilevel-1) = &
-                     i8_arr_gsum_level(ioffset+ilevel-1) + IX_8
-
+                  i8_gsum_level(ilevel-1) = &
+                     i8_gsum_level(ilevel-1) + IX_8
+                  
                   IX_8 = IX_8*(i8_radix**arr_max_shift)
-                  i8_arr_gsum_level(ioffset+ilevel)   = &
-                     i8_arr_gsum_level(ioffset+ilevel) - IX_8
-              endif
-           enddo
-!  b) Working consecutively from the first level with a nonzero value
-!     up to level max_levels(ifld), subtract +/- 1 from level with
-!     larger exponent (e.g., ilevel) and add  +/-
-!     (i8_radix**arr_max_shift) to level with smaller exponent
-!     (ilevel+1), when necessary, so that the value at ilevel+1
-!     has the same sign as the value at ilevel. Treat a zero value at
-!     ilevel+1 as always a different sign from the value at ilevel so
-!     that the process always makes this nonzero. (Otherwise, the
-!     wrong sign could be reintroduced by subtracting from a zero
-!     value at the next step.) When finished with the process values
-!     at all levels are either greater than or equal to zero or all
-!     are less than or equal to zero. Note that this can decrease (but
-!     not increase) the absolute value at level -(extra_levels-1) by
-!     1. All other levels are now less than or equal to
-!     (radix(1_i8)**arr_max_shift) in absolute value rather than
-!     strictly less than. 
-           ilevel = min_level
-           do while ((i8_arr_gsum_level(ioffset+ilevel) == 0_i8) &
-                     .and. (ilevel < max_levels(ifld)))
-             ilevel = ilevel + 1
-           enddo
-!
-           if (ilevel < max_levels(ifld)) then
-              if (i8_arr_gsum_level(ioffset+ilevel) > 0_i8) then
-                 i8_sign = 1_i8
-              else
-                 i8_sign = -1_i8
-              endif
-              do jlevel=ilevel,max_levels(ifld)-1
-                 if ((sign(1_i8,i8_arr_gsum_level(ioffset+jlevel)) &
-                      /= sign(1_i8,i8_arr_gsum_level(ioffset+jlevel+1))) &
-                     .or. (i8_arr_gsum_level(ioffset+jlevel+1) == 0_i8)) then
-                    i8_arr_gsum_level(ioffset+jlevel)   = &
-                       i8_arr_gsum_level(ioffset+jlevel) - i8_sign
-                    i8_arr_gsum_level(ioffset+jlevel+1) = &
-                       i8_arr_gsum_level(ioffset+jlevel+1) &
-                       + i8_sign*(i8_radix**arr_max_shift)
-                 endif
-              enddo
-            endif
-
-! Start with maximum shift, and work up to larger values
-            arr_shift = arr_gmax_exp(ifld) &
-                        - max_levels(ifld)*arr_max_shift
-            curr_exp = 0
-            first = .true.
-            do ilevel=max_levels(ifld),min_level,-1
-
-               if (i8_arr_gsum_level(ioffset+ilevel) /= 0_i8) then
-                  jlevel = 1
-
-! r8 representation of higher order bits in integer
-                  X_8(jlevel) = i8_arr_gsum_level(ioffset+ilevel)
-                  LX(jlevel)  = exponent(X_8(jlevel))
-
-! Calculate remainder
-                  IX_8 = int(X_8(jlevel),i8)
-                  RX_8 = (i8_arr_gsum_level(ioffset+ilevel) - IX_8)
-
-! Repeat using remainder
-                  do while (RX_8 /= 0.0_r8)
-                     jlevel = jlevel + 1
-                     X_8(jlevel) = RX_8
-                     LX(jlevel) = exponent(RX_8)
-                     IX_8 = IX_8 + int(RX_8,i8)
-                     RX_8 = (i8_arr_gsum_level(ioffset+ilevel) - IX_8)
-                  enddo
-
-! Add in contributions, smaller to larger, rescaling for each
-! addition to guarantee that exponent of working summand is always
-! larger than minexponent
-                  do while (jlevel > 0)
-                     if (first) then
-                        curr_exp = LX(jlevel) + arr_shift
-                        arr_gsum(ifld) = fraction(X_8(jlevel))
-                        first = .false.
-                     else
-                        corr_exp = curr_exp - (LX(jlevel) + arr_shift)
-                        arr_gsum(ifld) = fraction(X_8(jlevel)) &
-                                       + scale(arr_gsum(ifld),corr_exp)
-                        curr_exp = LX(jlevel) + arr_shift
-                     endif
-                     jlevel = jlevel - 1
-                  enddo
-
+                  i8_gsum_level(ilevel)   = &
+                     i8_gsum_level(ilevel) - IX_8
                endif
-
-               arr_shift = arr_shift + arr_max_shift
             enddo
 
-! Apply final exponent correction, scaling first if exponent is too small
-! to apply directly
-            corr_exp = curr_exp + exponent(arr_gsum(ifld))
-            if (corr_exp >= MINEXPONENT(1.0_r8)) then
-               arr_gsum(ifld) = set_exponent(arr_gsum(ifld),corr_exp)
+!  ii) Working consecutively from the first level with a nonzero value
+!      up to level max_levels(ifld), subtract +/- 1 from level with
+!      larger exponent (e.g., ilevel) and add  +/-
+!      (i8_radix**arr_max_shift) to level with smaller exponent
+!      (ilevel+1), when necessary, so that the value at ilevel+1
+!      has the same sign as the value at ilevel. Treat a zero value at
+!      ilevel+1 as always a different sign from the value at ilevel so
+!      that the process always makes this nonzero. (Otherwise, the
+!      wrong sign could be reintroduced by subtracting from a zero
+!      value at the next step.) When finished with the process values
+!      at all levels are either greater than or equal to zero or all
+!      are less than or equal to zero. Note that this can decrease
+!      (but not increase) the absolute value at level
+!      -(extra_levels-1) by 1. All other levels are now less than or
+!      equal to (radix(1_i8)**arr_max_shift) in absolute value rather
+!      than strictly less than. 
+            ilevel = min_level
+            do while ((i8_gsum_level(ilevel) == 0_i8) &
+                      .and. (ilevel < max_levels(ifld)))
+               ilevel = ilevel + 1
+            enddo
+!
+            if (i8_gsum_level(ilevel) < 0_i8) then
+               i8_sign = -1_i8
             else
-               RX_8 = set_exponent(arr_gsum(ifld), &
-                                   corr_exp-MINEXPONENT(1.0_r8))
-               arr_gsum(ifld) = scale(RX_8,MINEXPONENT(1.0_r8))
+               i8_sign = 1_i8
+            endif
+!            
+            if (ilevel < max_levels(ifld)) then
+               do jlevel=ilevel,max_levels(ifld)-1
+                  if ((sign(1_i8,i8_gsum_level(jlevel)) &
+                       /= sign(1_i8,i8_gsum_level(jlevel+1)))&
+                      .or. (i8_gsum_level(jlevel+1) == 0_i8)) then
+                     i8_gsum_level(jlevel)   = &
+                       i8_gsum_level(jlevel) - i8_sign
+                     i8_gsum_level(jlevel+1) = &
+                        i8_gsum_level(jlevel+1) &
+                        + i8_sign*(i8_radix**arr_max_shift)
+                  endif
+               enddo
             endif
 
-! If validate is .true. and some precision lost, test whether 'too much'
-! was lost, due to too loose an upper bound, too stringent a limit on number
-! of levels of expansion, cancellation, .... Calculated by comparing lower
-! bound on number of sigificant digits with number of digits in 1.0_r8 .
+!  iii) If 'same sign' is negative, then change to positive
+!       temporarily. 
+            if (i8_sign < 0_i8) then
+               do jlevel=ilevel,max_levels(ifld)
+                  i8_gsum_level(jlevel) = -i8_gsum_level(jlevel)
+               enddo
+            endif
+
+!  iv) Nonoverlap property can be lost after imposition of same sign
+!      over components. Reintroduce this property (retaining same sign
+!      property). Note that carryover is never more than '1' to the
+!      next smaller level, so, again, no intermediate or final sums
+!      will exceed the maximum value representable in i8, including
+!      level -(extra_levels-1) as long as digits(1_i8) >= 4. 
+            do ilevel=max_levels(ifld),min_level+1,-1
+               if (abs(i8_gsum_level(ilevel)) >= &
+                      (i8_radix**arr_max_shift)) then
+                  
+                  IX_8 = i8_gsum_level(ilevel)/ &
+                         (i8_radix**arr_max_shift)
+                  i8_gsum_level(ilevel-1) = &
+                     i8_gsum_level(ilevel-1) + IX_8
+                  
+                  IX_8 = IX_8*(i8_radix**arr_max_shift)
+                  i8_gsum_level(ilevel)   = &
+                     i8_gsum_level(ilevel) - IX_8
+               endif
+            enddo
+
+! Step 3(d): iterate over steps 3(b) and 3(c), truncating integer
+! vector to 'fit' into a floating point value, then repeating with
+! remainder
+            first_stepd_iteration = .true.
+            arr_shift = arr_gmax_exp(ifld) - (min_level)*arr_max_shift
+            i8_digit_count = 0
+            i8_begin_level = min_level
+            do while (i8_begin_level <= max_levels(ifld))
+   
+! Determine at which level the total number of integer digits equals
+! or exceeds the number of digits representable in the floating point
+! sum. Then determine which digit at this level is the last
+! representable in the floating point sum. Note that this location
+! (i8_trunc_loc) is zero-based, i.e. smallest digit is at location
+! 0. Note that the exponent is a count of the number of digits for the
+! first nonzero level. All subsequent levels contribute arr_max_shift
+! digits.
+               i8_trunc_loc = 0
+               i8_trunc_level = max_levels(ifld)
+               do ilevel=i8_begin_level,max_levels(ifld)
+                  if (first_stepd_iteration) then
+! Special logic for first time through. Subsequent iterations treat
+! leading zeroes as significant.                  
+                     if (i8_digit_count == 0) then
+                        if (i8_gsum_level(ilevel) /= 0_i8) then
+                           X_8 = i8_gsum_level(ilevel)
+                           LX  = exponent(X_8)
+! Note that even if i8_gsum_level(ilevel) is truncated when assigned
+! to X_8, the exponent LX will still capture the original number of
+! digits.
+                        else
+                           LX = 0
+                        endif
+                     else
+                        LX = arr_max_shift
+                     endif
+                  else
+! If i8_digit_count /= 0 during the first iteration
+! (ilevel == i8_begin_level), then there is a remainder left at the
+! previous i8_trunc_level and LX should be set to zero for this
+! iteration.
+                     if ((ilevel == i8_begin_level) .and. (i8_digit_count /= 0)) then
+                        LX = 0
+                     else
+                        LX = arr_max_shift
+                     endif
+                  endif
+                  if (i8_digit_count + LX >= digits(1.0_r8)) then
+                     i8_trunc_level = ilevel
+                     i8_trunc_loc = (i8_digit_count + LX) - digits(1.0_r8)
+                     exit
+                  else
+                     i8_digit_count = i8_digit_count + LX
+                  endif
+               enddo
+               first_stepd_iteration = .false.
+
+! Truncate at i8_trunc_loc as needed and determine what the remainder
+! is. 
+               if (i8_trunc_loc == 0) then
+! No truncation is necessary, and remainder is just the components
+! for the remaining levels
+                  i8_trunc_level_rem = 0
+               else
+! Shift right to identify the digits to be preserved and truncate
+! there
+                  IX_8 = i8_gsum_level(i8_trunc_level)/ &
+                         (i8_radix**i8_trunc_loc)
+! Shift left to put digits in the correct location (right fill with
+! zeroes)
+                  IX_8 = IX_8*(i8_radix**i8_trunc_loc)
+! Calculate local remainder
+                  i8_trunc_level_rem = (i8_gsum_level(i8_trunc_level) - IX_8)
+! Update level with the truncated value
+                  i8_gsum_level(i8_trunc_level) = IX_8
+               endif
+                  
+! Calculate floating point value corresponding to modified integer
+! vector. Note that, by construction, i8 integer value will fit into
+! r8 floating point value, so do not need to test for this.
+               svlevel = svlevel + 1
+               summand_vector(svlevel) = 0.0_r8
+               do ilevel=i8_begin_level,i8_trunc_level
+                  if (i8_gsum_level(ilevel) /= 0_i8) then
+
+! Convert integer to floating point representation
+                     X_8 = i8_gsum_level(ilevel)
+                     LX  = exponent(X_8)
+
+! Add to vector of floating point summands, scaling first if exponent
+! is too small to apply directly
+                     curr_exp = LX + arr_shift
+                     if (curr_exp >= MINEXPONENT(1.0_r8)) then
+                        summand_vector(svlevel) = &
+                           summand_vector(svlevel) + set_exponent(X_8,curr_exp)
+                     else
+                        RX_8 = set_exponent(X_8, &
+                                            curr_exp-MINEXPONENT(1.0_r8))
+                        summand_vector(svlevel) = &
+                           summand_vector(svlevel) + scale(RX_8,MINEXPONENT(1.0_r8))
+                     endif
+                     
+                  endif
+
+! Note that same arr_shift should be used for next 'step 3(d)'
+! iteration if i8_trunc_loc > 0.
+                  if ((ilevel < i8_trunc_level) .or. (i8_trunc_loc == 0)) then
+                     arr_shift = arr_shift - arr_max_shift
+                  endif
+
+               enddo
+
+               if (i8_trunc_loc == 0) then
+                  i8_digit_count = 0
+                  i8_begin_level = i8_trunc_level + 1
+               else
+                  i8_digit_count = i8_trunc_loc
+                  i8_begin_level = i8_trunc_level
+                  i8_gsum_level(i8_trunc_level) = i8_trunc_level_rem
+               endif
+            
+            enddo
+
+! Step 3(e): sum vector of floating point values, smallest to largest
+            arr_gsum(ifld) = 0.0_r8
+            do jlevel=svlevel,1,-1
+               arr_gsum(ifld) = arr_gsum(ifld) + summand_vector(jlevel)
+            enddo
+
+! Step 3(f): restore the sign
+            arr_gsum(ifld) = i8_sign*arr_gsum(ifld)
+
+! If validate is .true. and some precision lost, test whether 'too
+! much' was lost, due to too loose an upper bound, too stringent a
+! limit on number of levels of expansion, cancellation, ...
+! Calculated by comparing lower bound on number of significant digits
+! with number of digits in 1.0_r8 .
             if (validate) then
                if (i8_arr_gsum_level(ioffset-voffset+2) /= 0_i8) then
 
-! Find first nonzero level and use exponent for this level, then assume all
-! subsequent levels contribute arr_max_shift digits.
-                  sum_digits = 0
+! Find first nonzero level and use exponent for this level, then
+! assume all subsequent levels contribute arr_max_shift digits.
+                  i8_digit_count = 0
                   do ilevel=min_level,max_levels(ifld)
-                     if (sum_digits == 0) then
+                     if (i8_digit_count == 0) then
                         if (i8_arr_gsum_level(ioffset+ilevel) /= 0_i8) then
-                           X_8(1) = i8_arr_gsum_level(ioffset+ilevel)
-                           LX(1)  = exponent(X_8(1))
-                           sum_digits = LX(1)
+                           X_8 = i8_arr_gsum_level(ioffset+ilevel)
+                           LX  = exponent(X_8)
+                           i8_digit_count = LX
                         endif
                      else
-                        sum_digits = sum_digits + arr_max_shift
+                        i8_digit_count = i8_digit_count + arr_max_shift
                      endif
                   enddo
 
-                  if (sum_digits < digits(1.0_r8)) then
+                  if (i8_digit_count < digits(1.0_r8)) then
                      recompute = .true.
                   endif
                endif
@@ -1635,6 +1829,7 @@ module shr_reprosum_mod
          endif
 
       enddo
+      call t_stopf('repro_sum_finalsum')
 
    end subroutine shr_reprosum_int
 
@@ -1722,7 +1917,6 @@ module shr_reprosum_mod
          endif
          shr_reprosum_tolExceeded = .true.
        endif
-
 
    end function shr_reprosum_tolExceeded
 
@@ -1847,7 +2041,6 @@ module shr_reprosum_mod
 ! The result is t1 + t2, after normalization.
          ddb(i) = cmplx ( t1 + t2, t2 - ((t1 + t2) - t1), r8 )
       enddo
-
 
    end subroutine DDPDD
 !
