@@ -31,7 +31,7 @@
 [submodule "cime"]
 	path = cime
 	url = git@github.com:ESMCI/cime.git
-	branch = sarich/fix-moab-driver-checks
+	branch = master
 [submodule "externals/YAKL"]
 	path = externals/YAKL
 	url = git@github.com:mrnorman/YAKL.git
