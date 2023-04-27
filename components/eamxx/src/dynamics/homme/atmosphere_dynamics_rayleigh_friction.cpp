@@ -12,8 +12,8 @@ void HommeDynamics::rayleigh_friction_init()
 {
   // Rayleigh friction paramaters
   m_rayk0     = m_params.get<int>("rayleigh_friction_vertical_level", 2);
-  m_raykrange = m_params.get<Real>("rayleigh_friction_range", 0.0);
-  m_raytau0   = m_params.get<Real>("rayleigh_friction_decay_time", 5.0);
+  m_raykrange = m_params.get<double>("rayleigh_friction_range", 0.0);
+  m_raytau0   = m_params.get<double>("rayleigh_friction_decay_time", 5.0);
 
   // If m_raytau0==0, then no Rayleigh friction is applied. Return.
   if (m_raytau0 == 0) return;

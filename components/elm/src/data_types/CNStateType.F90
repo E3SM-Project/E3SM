@@ -2,7 +2,6 @@ module CNStateType
 
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
-  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use decompMod      , only : bounds_type
   use abortutils     , only : endrun
   use spmdMod        , only : masterproc
@@ -209,7 +208,6 @@ contains
     ! Initialize module data structure
     !
     ! !USES:
-    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     !
     ! !ARGUMENTS:
     class(cnstate_type) :: this
@@ -226,15 +224,15 @@ contains
     allocate(this%burndate_patch      (begp:endp))                   ; this%burndate_patch      (:)   = ispval
     allocate(this%lfpftd_patch        (begp:endp))                   ;
 
-    allocate(this%hdidx_patch         (begp:endp))                   ; this%hdidx_patch         (:)   = nan
-    allocate(this%cumvd_patch         (begp:endp))                   ; this%cumvd_patch         (:)   = nan
+    allocate(this%hdidx_patch         (begp:endp))                   ; this%hdidx_patch         (:)   = spval
+    allocate(this%cumvd_patch         (begp:endp))                   ; this%cumvd_patch         (:)   = spval
     allocate(this%gddmaturity_patch   (begp:endp))                   ; this%gddmaturity_patch   (:)   = spval
-    allocate(this%huileaf_patch       (begp:endp))                   ; this%huileaf_patch       (:)   = nan
+    allocate(this%huileaf_patch       (begp:endp))                   ; this%huileaf_patch       (:)   = spval
     allocate(this%huigrain_patch      (begp:endp))                   ; this%huigrain_patch      (:)   = 0.0_r8
-    allocate(this%aleafi_patch        (begp:endp))                   ; this%aleafi_patch        (:)   = nan
-    allocate(this%astemi_patch        (begp:endp))                   ; this%astemi_patch        (:)   = nan
-    allocate(this%aleaf_patch         (begp:endp))                   ; this%aleaf_patch         (:)   = nan
-    allocate(this%astem_patch         (begp:endp))                   ; this%astem_patch         (:)   = nan
+    allocate(this%aleafi_patch        (begp:endp))                   ; this%aleafi_patch        (:)   = spval
+    allocate(this%astemi_patch        (begp:endp))                   ; this%astemi_patch        (:)   = spval
+    allocate(this%aleaf_patch         (begp:endp))                   ; this%aleaf_patch         (:)   = spval
+    allocate(this%astem_patch         (begp:endp))                   ; this%astem_patch         (:)   = spval
     allocate(this%htmx_patch          (begp:endp))                   ; this%htmx_patch          (:)   = 0.0_r8
     allocate(this%peaklai_patch       (begp:endp))                   ; this%peaklai_patch       (:)   = 0
 
@@ -252,90 +250,90 @@ contains
     allocate(this%lgdp1_col           (begc:endc))                   ; 
     allocate(this%lpop_col            (begc:endc))                   ;  
 
-    allocate(this%fpi_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%fpi_vr_col          (:,:) = nan
-    allocate(this%fpi_col             (begc:endc))                   ; this%fpi_col             (:)   = nan
-    allocate(this%fpg_col             (begc:endc))                   ; this%fpg_col             (:)   = nan
+    allocate(this%fpi_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%fpi_vr_col          (:,:) = spval
+    allocate(this%fpi_col             (begc:endc))                   ; this%fpi_col             (:)   = spval
+    allocate(this%fpg_col             (begc:endc))                   ; this%fpg_col             (:)   = spval
     !!! add phosphours related variables
     allocate(this%isoilorder            (begc:endc))                   ; 
-    allocate(this%fpi_p_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%fpi_p_vr_col          (:,:) = nan
-    allocate(this%fpi_p_col             (begc:endc))                   ; this%fpi_p_col             (:)   = nan
-    allocate(this%fpg_p_col             (begc:endc))                   ; this%fpg_p_col             (:)   = nan
+    allocate(this%fpi_p_vr_col          (begc:endc,1:nlevdecomp_full)) ; this%fpi_p_vr_col          (:,:) = spval
+    allocate(this%fpi_p_col             (begc:endc))                   ; this%fpi_p_col             (:)   = spval
+    allocate(this%fpg_p_col             (begc:endc))                   ; this%fpg_p_col             (:)   = spval
     allocate(this%pdep_prof_col         (begc:endc,1:nlevdecomp_full)) ; this%pdep_prof_col       (:,:) = spval
 
     allocate(this%rf_decomp_cascade_col(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)); 
-    this%rf_decomp_cascade_col(:,:,:) = nan
+    this%rf_decomp_cascade_col(:,:,:) = spval
 
     allocate(this%pathfrac_decomp_cascade_col(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions));     
-    this%pathfrac_decomp_cascade_col(:,:,:) = nan
+    this%pathfrac_decomp_cascade_col(:,:,:) = spval
 
     allocate(this%nfixation_prof_col  (begc:endc,1:nlevdecomp_full)) ; this%nfixation_prof_col  (:,:) = spval
     allocate(this%ndep_prof_col       (begc:endc,1:nlevdecomp_full)) ; this%ndep_prof_col       (:,:) = spval
     allocate(this%som_adv_coef_col    (begc:endc,1:nlevdecomp_full)) ; this%som_adv_coef_col    (:,:) = spval
     allocate(this%som_diffus_coef_col (begc:endc,1:nlevdecomp_full)) ; this%som_diffus_coef_col (:,:) = spval
 
-    allocate(this%tempavg_t2m_patch   (begp:endp))                   ; this%tempavg_t2m_patch   (:)   = nan
-    allocate(this%annsum_counter_col  (begc:endc))                   ; this%annsum_counter_col  (:)   = nan
-    allocate(this%annavg_t2m_col      (begc:endc))                   ; this%annavg_t2m_col      (:)   = nan
+    allocate(this%tempavg_t2m_patch   (begp:endp))                   ; this%tempavg_t2m_patch   (:)   = spval
+    allocate(this%annsum_counter_col  (begc:endc))                   ; this%annsum_counter_col  (:)   = spval
+    allocate(this%annavg_t2m_col      (begc:endc))                   ; this%annavg_t2m_col      (:)   = spval
     allocate(this%scalaravg_col       (begc:endc,1:nlevdecomp_full)) ; this%scalaravg_col       (:,:) = spval
-    allocate(this%annavg_t2m_patch    (begp:endp))                   ; this%annavg_t2m_patch    (:)   = nan
+    allocate(this%annavg_t2m_patch    (begp:endp))                   ; this%annavg_t2m_patch    (:)   = spval
 
     allocate(this%nfire_col           (begc:endc))                   ; this%nfire_col           (:)   = spval
-    allocate(this%fsr_col             (begc:endc))                   ; this%fsr_col             (:)   = nan
-    allocate(this%fd_col              (begc:endc))                   ; this%fd_col              (:)   = nan
+    allocate(this%fsr_col             (begc:endc))                   ; this%fsr_col             (:)   = spval
+    allocate(this%fd_col              (begc:endc))                   ; this%fd_col              (:)   = spval
     allocate(this%lfc_col             (begc:endc))                   ; this%lfc_col             (:)   = spval
     allocate(this%lfc2_col            (begc:endc))                   ; this%lfc2_col            (:)   = 0._r8
     allocate(this%dtrotr_col          (begc:endc))                   ; this%dtrotr_col          (:)   = 0._r8
     allocate(this%trotr1_col          (begc:endc))                   ; this%trotr1_col          (:)   = 0._r8
     allocate(this%trotr2_col          (begc:endc))                   ; this%trotr2_col          (:)   = 0._r8
-    allocate(this%cropf_col           (begc:endc))                   ; this%cropf_col           (:)   = nan
-    allocate(this%baf_crop_col        (begc:endc))                   ; this%baf_crop_col        (:)   = nan
-    allocate(this%baf_peatf_col       (begc:endc))                   ; this%baf_peatf_col       (:)   = nan
-    allocate(this%fbac_col            (begc:endc))                   ; this%fbac_col            (:)   = nan
-    allocate(this%fbac1_col           (begc:endc))                   ; this%fbac1_col           (:)   = nan
-    allocate(this%wtlf_col            (begc:endc))                   ; this%wtlf_col            (:)   = nan
-    allocate(this%lfwt_col            (begc:endc))                   ; this%lfwt_col            (:)   = nan
-    allocate(this%farea_burned_col    (begc:endc))                   ; this%farea_burned_col    (:)   = nan
-    allocate(this%decomp_litpool_rcn_col (begc:endc, 1:nlevdecomp_full, 4)); this%decomp_litpool_rcn_col (:,:,:) = nan
-    allocate(this%frootc_nfix_scalar_col (begc:endc))                ; this%frootc_nfix_scalar_col(:) = nan
+    allocate(this%cropf_col           (begc:endc))                   ; this%cropf_col           (:)   = spval
+    allocate(this%baf_crop_col        (begc:endc))                   ; this%baf_crop_col        (:)   = spval
+    allocate(this%baf_peatf_col       (begc:endc))                   ; this%baf_peatf_col       (:)   = spval
+    allocate(this%fbac_col            (begc:endc))                   ; this%fbac_col            (:)   = spval
+    allocate(this%fbac1_col           (begc:endc))                   ; this%fbac1_col           (:)   = spval
+    allocate(this%wtlf_col            (begc:endc))                   ; this%wtlf_col            (:)   = spval
+    allocate(this%lfwt_col            (begc:endc))                   ; this%lfwt_col            (:)   = spval
+    allocate(this%farea_burned_col    (begc:endc))                   ; this%farea_burned_col    (:)   = spval
+    allocate(this%decomp_litpool_rcn_col (begc:endc, 1:nlevdecomp_full, 4)); this%decomp_litpool_rcn_col (:,:,:) = spval
+    allocate(this%frootc_nfix_scalar_col (begc:endc))                ; this%frootc_nfix_scalar_col(:) = spval
 
-    allocate(this%dormant_flag_patch          (begp:endp)) ;    this%dormant_flag_patch          (:) = nan
-    allocate(this%days_active_patch           (begp:endp)) ;    this%days_active_patch           (:) = nan
-    allocate(this%onset_flag_patch            (begp:endp)) ;    this%onset_flag_patch            (:) = nan
-    allocate(this%onset_counter_patch         (begp:endp)) ;    this%onset_counter_patch         (:) = nan
-    allocate(this%onset_gddflag_patch         (begp:endp)) ;    this%onset_gddflag_patch         (:) = nan
-    allocate(this%onset_fdd_patch             (begp:endp)) ;    this%onset_fdd_patch             (:) = nan
-    allocate(this%onset_gdd_patch             (begp:endp)) ;    this%onset_gdd_patch             (:) = nan
-    allocate(this%onset_swi_patch             (begp:endp)) ;    this%onset_swi_patch             (:) = nan
-    allocate(this%offset_flag_patch           (begp:endp)) ;    this%offset_flag_patch           (:) = nan
-    allocate(this%offset_counter_patch        (begp:endp)) ;    this%offset_counter_patch        (:) = nan
-    allocate(this%offset_fdd_patch            (begp:endp)) ;    this%offset_fdd_patch            (:) = nan
-    allocate(this%offset_swi_patch            (begp:endp)) ;    this%offset_swi_patch            (:) = nan
-    allocate(this%grain_flag_patch            (begp:endp)) ;    this%grain_flag_patch            (:) = nan
-    allocate(this%lgsf_patch                  (begp:endp)) ;    this%lgsf_patch                  (:) = nan
-    allocate(this%bglfr_patch                 (begp:endp)) ;    this%bglfr_patch                 (:) = nan
-    allocate(this%bglfr_leaf_patch            (begp:endp)) ;    this%bglfr_leaf_patch            (:) = nan
-    allocate(this%bglfr_froot_patch           (begp:endp)) ;    this%bglfr_froot_patch           (:) = nan
-    allocate(this%bgtr_patch                  (begp:endp)) ;    this%bgtr_patch                  (:) = nan
-    allocate(this%alloc_pnow_patch            (begp:endp)) ;    this%alloc_pnow_patch            (:) = nan
-    allocate(this%c_allometry_patch           (begp:endp)) ;    this%c_allometry_patch           (:) = nan
-    allocate(this%n_allometry_patch           (begp:endp)) ;    this%n_allometry_patch           (:) = nan
-    allocate(this%tempsum_potential_gpp_patch (begp:endp)) ;    this%tempsum_potential_gpp_patch (:) = nan
-    allocate(this%annsum_potential_gpp_patch  (begp:endp)) ;    this%annsum_potential_gpp_patch  (:) = nan
-    allocate(this%tempmax_retransn_patch      (begp:endp)) ;    this%tempmax_retransn_patch      (:) = nan
-    allocate(this%annmax_retransn_patch       (begp:endp)) ;    this%annmax_retransn_patch       (:) = nan
-    allocate(this%downreg_patch               (begp:endp)) ;    this%downreg_patch               (:) = nan
-    allocate(this%rc14_atm_patch              (begp:endp)) ;    this%rc14_atm_patch              (:) = nan    
+    allocate(this%dormant_flag_patch          (begp:endp)) ;    this%dormant_flag_patch          (:) = spval
+    allocate(this%days_active_patch           (begp:endp)) ;    this%days_active_patch           (:) = spval
+    allocate(this%onset_flag_patch            (begp:endp)) ;    this%onset_flag_patch            (:) = spval
+    allocate(this%onset_counter_patch         (begp:endp)) ;    this%onset_counter_patch         (:) = spval
+    allocate(this%onset_gddflag_patch         (begp:endp)) ;    this%onset_gddflag_patch         (:) = spval
+    allocate(this%onset_fdd_patch             (begp:endp)) ;    this%onset_fdd_patch             (:) = spval
+    allocate(this%onset_gdd_patch             (begp:endp)) ;    this%onset_gdd_patch             (:) = spval
+    allocate(this%onset_swi_patch             (begp:endp)) ;    this%onset_swi_patch             (:) = spval
+    allocate(this%offset_flag_patch           (begp:endp)) ;    this%offset_flag_patch           (:) = spval
+    allocate(this%offset_counter_patch        (begp:endp)) ;    this%offset_counter_patch        (:) = spval
+    allocate(this%offset_fdd_patch            (begp:endp)) ;    this%offset_fdd_patch            (:) = spval
+    allocate(this%offset_swi_patch            (begp:endp)) ;    this%offset_swi_patch            (:) = spval
+    allocate(this%grain_flag_patch            (begp:endp)) ;    this%grain_flag_patch            (:) = spval
+    allocate(this%lgsf_patch                  (begp:endp)) ;    this%lgsf_patch                  (:) = spval
+    allocate(this%bglfr_patch                 (begp:endp)) ;    this%bglfr_patch                 (:) = spval
+    allocate(this%bglfr_leaf_patch            (begp:endp)) ;    this%bglfr_leaf_patch            (:) = spval
+    allocate(this%bglfr_froot_patch           (begp:endp)) ;    this%bglfr_froot_patch           (:) = spval
+    allocate(this%bgtr_patch                  (begp:endp)) ;    this%bgtr_patch                  (:) = spval
+    allocate(this%alloc_pnow_patch            (begp:endp)) ;    this%alloc_pnow_patch            (:) = spval
+    allocate(this%c_allometry_patch           (begp:endp)) ;    this%c_allometry_patch           (:) = spval
+    allocate(this%n_allometry_patch           (begp:endp)) ;    this%n_allometry_patch           (:) = spval
+    allocate(this%tempsum_potential_gpp_patch (begp:endp)) ;    this%tempsum_potential_gpp_patch (:) = spval
+    allocate(this%annsum_potential_gpp_patch  (begp:endp)) ;    this%annsum_potential_gpp_patch  (:) = spval
+    allocate(this%tempmax_retransn_patch      (begp:endp)) ;    this%tempmax_retransn_patch      (:) = spval
+    allocate(this%annmax_retransn_patch       (begp:endp)) ;    this%annmax_retransn_patch       (:) = spval
+    allocate(this%downreg_patch               (begp:endp)) ;    this%downreg_patch               (:) = spval
+    allocate(this%rc14_atm_patch              (begp:endp)) ;    this%rc14_atm_patch              (:) = spval    
 
 
     !! add phosphorus -X.YANG
-    allocate(this%p_allometry_patch           (begp:endp)) ;    this%p_allometry_patch           (:) = nan
-    allocate(this%tempmax_retransp_patch      (begp:endp)) ;    this%tempmax_retransp_patch      (:) = nan
-    allocate(this%annmax_retransp_patch       (begp:endp)) ;    this%annmax_retransp_patch       (:) = nan
+    allocate(this%p_allometry_patch           (begp:endp)) ;    this%p_allometry_patch           (:) = spval
+    allocate(this%tempmax_retransp_patch      (begp:endp)) ;    this%tempmax_retransp_patch      (:) = spval
+    allocate(this%annmax_retransp_patch       (begp:endp)) ;    this%annmax_retransp_patch       (:) = spval
 
-    allocate(this%fpg_nh4_vr_col              (begc:endc,1:nlevdecomp_full)) ; this%fpg_nh4_vr_col(:,:) = nan 
-    allocate(this%fpg_no3_vr_col              (begc:endc,1:nlevdecomp_full)) ; this%fpg_no3_vr_col(:,:) = nan
-    allocate(this%fpg_vr_col                  (begc:endc,1:nlevdecomp_full)) ; this%fpg_vr_col    (:,:) = nan
-    allocate(this%fpg_p_vr_col                (begc:endc,1:nlevdecomp_full)) ; this%fpg_p_vr_col  (:,:) = nan
+    allocate(this%fpg_nh4_vr_col              (begc:endc,1:nlevdecomp_full)) ; this%fpg_nh4_vr_col(:,:) = spval 
+    allocate(this%fpg_no3_vr_col              (begc:endc,1:nlevdecomp_full)) ; this%fpg_no3_vr_col(:,:) = spval
+    allocate(this%fpg_vr_col                  (begc:endc,1:nlevdecomp_full)) ; this%fpg_vr_col    (:,:) = spval
+    allocate(this%fpg_p_vr_col                (begc:endc,1:nlevdecomp_full)) ; this%fpg_p_vr_col  (:,:) = spval
     allocate(this%cn_scalar                   (begp:endp))                   ; this%cn_scalar     (:) = 0.0
     allocate(this%cp_scalar                   (begp:endp))                   ; this%cp_scalar     (:) = 0.0
     allocate(this%np_scalar                   (begp:endp))                   ; this%np_scalar     (:) = 0.0
@@ -348,17 +346,17 @@ contains
     allocate(this%frac_loss_cwd_to_fire_col       (begc:endc))               ; this%frac_loss_cwd_to_fire_col(:) =0._r8
     allocate(fert_type                        (begc:endc))                   ; fert_type     (:) = 0
     allocate(fert_continue                    (begc:endc))                   ; fert_continue (:) =0
-    allocate(fert_dose                        (begc:endc,1:12))              ; fert_dose     (:,:) = nan
+    allocate(fert_dose                        (begc:endc,1:12))              ; fert_dose     (:,:) = spval
 
     ! soil phosphorus pools Qing Z. 2017
-    allocate(this%labp_col                    (begc:endc))                   ; this%labp_col(:) = nan
-    allocate(this%secp_col                    (begc:endc))                   ; this%secp_col(:) = nan
-    allocate(this%occp_col                    (begc:endc))                   ; this%occp_col(:) = nan
-    allocate(this%prip_col                    (begc:endc))                   ; this%prip_col(:) = nan
+    allocate(this%labp_col                    (begc:endc))                   ; this%labp_col(:) = spval
+    allocate(this%secp_col                    (begc:endc))                   ; this%secp_col(:) = spval
+    allocate(this%occp_col                    (begc:endc))                   ; this%occp_col(:) = spval
+    allocate(this%prip_col                    (begc:endc))                   ; this%prip_col(:) = spval
     
     allocate(fert_start                       (begc:endc))                   ; fert_start    (:) = 0
     allocate(fert_end                         (begc:endc))                   ; fert_end      (:) = 0
-    allocate(this%r_mort_cal_patch                (begp:endp))               ; this%r_mort_cal_patch   (:) = nan
+    allocate(this%r_mort_cal_patch                (begp:endp))               ; this%r_mort_cal_patch   (:) = spval
 
   end subroutine InitAllocate
 
@@ -369,7 +367,6 @@ contains
     ! Initialize module data structure
     !
     ! !USES:
-    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp, no_snow_normal
     !
     ! !ARGUMENTS:

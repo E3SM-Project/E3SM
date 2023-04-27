@@ -3,7 +3,9 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
+
 #include "ekat/ekat_parameter_list.hpp"
+#include "ekat/ekat_pack.hpp"
 
 #include <string>
 
@@ -31,7 +33,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
 
   // The name of the subcomponent
-  std::string name () const { return "Dynamics"; }
+  std::string name () const { return "homme"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);

@@ -436,11 +436,15 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr1850_c160503.nc</fsurdat>
 <fsurdat hgrid="ne0np4_conus_x4v1_lowcon" sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
 
-<fsurdat hgrid="ne0np4_enax4v1" sim_year="1850" use_crop=".false." >
+<fsurdat hgrid="ne0np4_enax4v1" sim_year="1850" use_crop=".false." irrig=".false.">
     lnd/clm2/surfdata/surfdata_enax4v1_mp24_simyr1850_c170518.nc</fsurdat>
-<fsurdat hgrid="ne0np4_enax4v1" sim_year="2000" use_crop=".false." >
+<fsurdat hgrid="ne0np4_enax4v1" sim_year="2000" use_crop=".false." irrig=".false.">
     lnd/clm2/surfdata/surfdata_enax4v1_mp24_simyr2000_c170518.nc</fsurdat>
-<fsurdat hgrid="ne0np4_twpx4v1" sim_year="2000" use_crop=".false.">
+<fsurdat hgrid="ne0np4_twpx4v1" sim_year="2000" use_crop=".false." irrig=".false.">
+lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
+<fsurdat hgrid="ne0np4_enax4v1" sim_year="2010" use_crop=".false." irrig=".false.">
+    lnd/clm2/surfdata/surfdata_enax4v1_mp24_simyr2000_c170518.nc</fsurdat>
+<fsurdat hgrid="ne0np4_twpx4v1" sim_year="2010" use_crop=".false." irrig=".false.">
 lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
 
 <!-- Regional Refinement Variable Resolution RRM 1850 and 2000-->
@@ -452,12 +456,6 @@ lnd/clm2/surfdata_map/surfdata_armx8v3_simyr2000_c140518.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr1850_c160503.nc</fsurdat>
 <fsurdat hgrid="ne0np4_conus_x4v1_lowcon"    sim_year="2000" irrig=".false." >
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
-<fsurdat hgrid="ne0np4_enax4v1" sim_year="1850" irrig=".false." >
-    lnd/clm2/surfdata/surfdata_enax4v1_mp24_simyr1850_c170518.nc</fsurdat>
-<fsurdat hgrid="ne0np4_enax4v1" sim_year="2000" irrig=".false." >
-    lnd/clm2/surfdata/surfdata_enax4v1_mp24_simyr2000_c170518.nc</fsurdat>
-<fsurdat hgrid="ne0np4_twpx4v1" sim_year="2000" irrig=".false.">
-lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
 
 <!-- Dynamic PFT surface datasets (relative to {csmdata}) -->
 
@@ -757,7 +755,11 @@ this mask will have smb calculated over the entire global land surface
 <stream_year_first_lightng use_cn=".true."   >0001</stream_year_first_lightng>
 <stream_year_last_lightng  use_cn=".true."   >0001</stream_year_last_lightng>
 
+<stream_year_first_lightng use_fates=".true."   >0001</stream_year_first_lightng>
+<stream_year_last_lightng  use_fates=".true."   >0001</stream_year_last_lightng>
+
 <stream_fldfilename_lightng hgrid="94x192"    use_cn=".true."   >atm/datm7/NASA_LIS/clmforc.Li_2012_climo1995-2011.T62.lnfm_Total_c140423.nc</stream_fldfilename_lightng>
+<stream_fldfilename_lightng hgrid="94x192"    use_fates=".true."   >atm/datm7/NASA_LIS/clmforc.Li_2012_climo1995-2011.T62.lnfm_Total_c140423.nc</stream_fldfilename_lightng>
 
 <lightngmapalgo use_cn=".true."                               >bilinear</lightngmapalgo>
 
@@ -769,6 +771,17 @@ this mask will have smb calculated over the entire global land surface
 <lightngmapalgo use_cn=".true."   hgrid="1x1_asphaltjungleNJ" >nn</lightngmapalgo>
 <lightngmapalgo use_cn=".true."   hgrid="1x1_tropicAtl"       >nn</lightngmapalgo>
 <lightngmapalgo use_cn=".true."   hgrid="5x5_amazon"          >nn</lightngmapalgo>
+
+<lightngmapalgo use_fates=".true."                               >bilinear</lightngmapalgo>
+
+<lightngmapalgo use_fates=".true."   hgrid="1x1_brazil"          >nn</lightngmapalgo>
+<lightngmapalgo use_fates=".true."   hgrid="1x1_mexicocityMEX"   >nn</lightngmapalgo>
+<lightngmapalgo use_fates=".true."   hgrid="1x1_vancouverCAN"    >nn</lightngmapalgo>
+<lightngmapalgo use_fates=".true."   hgrid="1x1_urbanc_alpha"    >nn</lightngmapalgo>
+<lightngmapalgo use_fates=".true."   hgrid="1x1_camdenNJ"        >nn</lightngmapalgo>
+<lightngmapalgo use_fates=".true."   hgrid="1x1_asphaltjungleNJ" >nn</lightngmapalgo>
+<lightngmapalgo use_fates=".true."   hgrid="1x1_tropicAtl"       >nn</lightngmapalgo>
+<lightngmapalgo use_fates=".true."   hgrid="5x5_amazon"          >nn</lightngmapalgo>
 
 <!-- Population density streams namelist defaults -->
 <stream_year_first_popdens use_cn=".true."   sim_year="2000" >2000</stream_year_first_popdens>
@@ -795,7 +808,32 @@ this mask will have smb calculated over the entire global land surface
 <stream_year_first_popdens use_cn=".true."   sim_year="constant" sim_year_range="2000-2100" >1850</stream_year_first_popdens>
 <stream_year_last_popdens  use_cn=".true."   sim_year="constant" sim_year_range="2000-2100" >2010</stream_year_last_popdens>
 
+<stream_year_first_popdens use_fates=".true."   sim_year="2000" >2000</stream_year_first_popdens>
+<stream_year_last_popdens  use_fates=".true."   sim_year="2000" >2000</stream_year_last_popdens>
+
+<stream_year_first_popdens use_fates=".true."   sim_year="1850" >1850</stream_year_first_popdens>
+<stream_year_last_popdens  use_fates=".true."   sim_year="1850" >1850</stream_year_last_popdens>
+
+<stream_year_first_popdens use_fates=".true."   sim_year="1000" >2000</stream_year_first_popdens>
+<stream_year_last_popdens  use_fates=".true."   sim_year="1000" >2000</stream_year_last_popdens>
+
+<stream_year_first_popdens use_fates=".true."   sim_year="constant" sim_year_range="1000-1002" >2000</stream_year_first_popdens>
+<stream_year_last_popdens  use_fates=".true."   sim_year="constant" sim_year_range="1000-1002" >2000</stream_year_last_popdens>
+
+<stream_year_first_popdens use_fates=".true."   sim_year="constant" sim_year_range="1000-1004" >2000</stream_year_first_popdens>
+<stream_year_last_popdens  use_fates=".true."   sim_year="constant" sim_year_range="1000-1004" >2000</stream_year_last_popdens>
+
+<stream_year_first_popdens use_fates=".true."   sim_year="constant" sim_year_range="1850-2000" >1850</stream_year_first_popdens>
+<stream_year_last_popdens  use_fates=".true."   sim_year="constant" sim_year_range="1850-2000" >2010</stream_year_last_popdens>
+
+<stream_year_first_popdens use_fates=".true."   sim_year="constant" sim_year_range="1850-2100" >1850</stream_year_first_popdens>
+<stream_year_last_popdens  use_fates=".true."   sim_year="constant" sim_year_range="1850-2100" >2010</stream_year_last_popdens>
+
+<stream_year_first_popdens use_fates=".true."   sim_year="constant" sim_year_range="2000-2100" >1850</stream_year_first_popdens>
+<stream_year_last_popdens  use_fates=".true."   sim_year="constant" sim_year_range="2000-2100" >2010</stream_year_last_popdens>
+
 <stream_fldfilename_popdens hgrid="0.5x0.5"   use_cn=".true."                   >lnd/clm2/firedata/elmforc.ssp5_hdm_0.5x0.5_simyr1850-2100_c190109.nc</stream_fldfilename_popdens>
+<stream_fldfilename_popdens hgrid="0.5x0.5"   use_fates=".true."                   >lnd/clm2/firedata/elmforc.ssp5_hdm_0.5x0.5_simyr1850-2100_c190109.nc</stream_fldfilename_popdens>
 
 <popdensmapalgo use_cn=".true."                               >bilinear</popdensmapalgo>
 
@@ -807,6 +845,17 @@ this mask will have smb calculated over the entire global land surface
 <popdensmapalgo use_cn=".true."   hgrid="1x1_asphaltjungleNJ" >nn</popdensmapalgo>
 <popdensmapalgo use_cn=".true."   hgrid="1x1_tropicAtl"       >nn</popdensmapalgo>
 <popdensmapalgo use_cn=".true."   hgrid="5x5_amazon"          >nn</popdensmapalgo>
+
+<popdensmapalgo use_fates=".true."                               >bilinear</popdensmapalgo>
+
+<popdensmapalgo use_fates=".true."   hgrid="1x1_brazil"          >nn</popdensmapalgo>
+<popdensmapalgo use_fates=".true."   hgrid="1x1_mexicocityMEX"   >nn</popdensmapalgo>
+<popdensmapalgo use_fates=".true."   hgrid="1x1_vancouverCAN"    >nn</popdensmapalgo>
+<popdensmapalgo use_fates=".true."   hgrid="1x1_urbanc_alpha"    >nn</popdensmapalgo>
+<popdensmapalgo use_fates=".true."   hgrid="1x1_camdenNJ"        >nn</popdensmapalgo>
+<popdensmapalgo use_fates=".true."   hgrid="1x1_asphaltjungleNJ" >nn</popdensmapalgo>
+<popdensmapalgo use_fates=".true."   hgrid="1x1_tropicAtl"       >nn</popdensmapalgo>
+<popdensmapalgo use_fates=".true."   hgrid="5x5_amazon"          >nn</popdensmapalgo>
 
 <!-- Create crop on a separate land-unit -->
 <create_crop_landunit use_crop=".true."                  >.true.</create_crop_landunit>

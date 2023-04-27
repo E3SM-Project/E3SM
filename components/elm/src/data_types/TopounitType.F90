@@ -7,7 +7,6 @@ module TopounitType
   ! --------------------------------------------------------
   ! 3 Aug 2015, PET
   use shr_kind_mod   , only : r8 => shr_kind_r8
-  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use landunit_varcon, only : max_lunit
   use elm_varcon     , only : ispval, spval
@@ -74,7 +73,7 @@ module TopounitType
 
     allocate(this%gridcell  (begt:endt)) ; this%gridcell  (:) = ispval
     allocate(this%topo_grc_ind  (begt:endt)) ; this%topo_grc_ind  (:) = ispval
-    allocate(this%wtgcell   (begt:endt)) ; this%wtgcell   (:) = nan
+    allocate(this%wtgcell   (begt:endt)) ; this%wtgcell   (:) = spval
     allocate(this%lndi      (begt:endt)) ; this%lndi      (:) = ispval
     allocate(this%lndf      (begt:endt)) ; this%lndf      (:) = ispval
     allocate(this%nlandunits(begt:endt)) ; this%nlandunits(:) = ispval
@@ -88,15 +87,15 @@ module TopounitType
     allocate(this%landunit_indices(1:max_lunit, begt:endt)); this%landunit_indices(:,:) = ispval
     allocate(this%active      (begt:endt))                     ; this%active      (:)   = .false.
 
-    allocate(this%area        (begt:endt)) ; this%area        (:) = nan 
-    allocate(this%lat         (begt:endt)) ; this%lat         (:) = nan
-    allocate(this%lon         (begt:endt)) ; this%lon         (:) = nan
-    allocate(this%elevation   (begt:endt)) ; this%elevation   (:) = nan
-    allocate(this%slope       (begt:endt)) ; this%slope       (:) = nan
+    allocate(this%area        (begt:endt)) ; this%area        (:) = spval 
+    allocate(this%lat         (begt:endt)) ; this%lat         (:) = spval
+    allocate(this%lon         (begt:endt)) ; this%lon         (:) = spval
+    allocate(this%elevation   (begt:endt)) ; this%elevation   (:) = spval
+    allocate(this%slope       (begt:endt)) ; this%slope       (:) = spval
     allocate(this%aspect      (begt:endt)) ; this%aspect      (:) = ispval
-    allocate(this%emissivity  (begt:endt)) ; this%emissivity  (:) = nan
-    allocate(this%surfalb_dir (begt:endt,1:numrad)) ; this%surfalb_dir(:,:) = nan
-    allocate(this%surfalb_dif (begt:endt,1:numrad)) ; this%surfalb_dif(:,:) = nan 
+    allocate(this%emissivity  (begt:endt)) ; this%emissivity  (:) = spval
+    allocate(this%surfalb_dir (begt:endt,1:numrad)) ; this%surfalb_dir(:,:) = spval
+    allocate(this%surfalb_dif (begt:endt,1:numrad)) ; this%surfalb_dif(:,:) = spval 
   end subroutine init_top_pp
 
   !-----------------------------------------------------------------------

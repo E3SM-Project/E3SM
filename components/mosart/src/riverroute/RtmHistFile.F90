@@ -1113,7 +1113,7 @@ contains
                      trim(locfnh(t)),' at nstep = ', get_nstep()
                 write(iulog,*)
              endif
-	     call ncd_pio_closefile(nfid(t))
+             call ncd_pio_closefile(nfid(t))
              if ((.not.nlend) .and. (tape(t)%ntimes/=tape(t)%mfilt)) then
                 call ncd_pio_openfile (nfid(t), trim(locfnh(t)), ncd_write)
              end if
@@ -1772,7 +1772,7 @@ contains
 
   subroutine strip_null(str)
     character(len=*), intent(inout) :: str
-    integer :: i	
+    integer :: i
     do i=1,len(str)
        if(ichar(str(i:i))==0) str(i:i)=' '
     end do

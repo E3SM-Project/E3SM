@@ -725,4 +725,75 @@ TEST_CASE("multiple_bundles") {
   }
 }
 
+TEST_CASE ("update") {
+  using namespace scream;
+  using namespace ekat::units;
+
+  using namespace ShortFieldTagsNames;
+  using RPDF = std::uniform_real_distribution<Real>;
+  using IPDF = std::uniform_int_distribution<int>;
+
+  // Setup random number generation
+  ekat::Comm comm(MPI_COMM_WORLD);
+  auto engine = setup_random_test ();
+  RPDF rpdf(0,1);
+  IPDF ipdf(0,100);
+
+  const int ncol = 2;
+  const int ncmp = 3;
+  const int nlev = 4;
+
+  // Create field (if available, use packs, to ensure we don't print garbage)
+  std::vector<FieldTag> tags = {COL, CMP, LEV};
+  std::vector<int>      dims = {ncol,ncmp,nlev};
+
+  FieldIdentifier fid_r ("fr", {tags,dims}, kg, "some_grid", DataType::RealType);
+  FieldIdentifier fid_i ("fi", {tags,dims}, kg, "some_grid", DataType::IntType);
+  Field f_real (fid_r);
+  Field f_int  (fid_i);
+  f_real.allocate_view();
+  f_int.allocate_view();
+  randomize (f_real,engine,rpdf);
+  randomize (f_int, engine,ipdf);
+
+  SECTION ("data_type_checks") {
+    Field f2 = f_int.clone();
+
+    // Coeffs have wrong data type (precision loss casting to field's data type)
+    REQUIRE_THROWS (f2.update (f_int,1.0,1.0));
+
+    // RHS has wrong data type
+    REQUIRE_THROWS (f2.update(f_real,1,0));
+  }
+
+  SECTION ("deep_copy") {
+    Field f2 (fid_r);
+    f2.allocate_view();
+
+    // Replace f2's content with f_real's content
+    f2.update(f_real,1,0);
+    REQUIRE (views_are_equal(f2,f_real));
+  }
+
+  SECTION ("update") {
+    Field f2 = f_real.clone();
+    Field f3 = f_real.clone();
+
+    // x+x == 2*x
+    f2.update(f_real,1,1);
+    f3.scale(2);
+    REQUIRE (views_are_equal(f2,f3));
+
+    // Adding 2*f_real to N*f3 should give 2*f_real (f3==0)
+    f3.deep_copy(0.0);
+    f3.update(f_real,2,10);
+    REQUIRE (views_are_equal(f3,f2));
+
+    // Same, but we discard current content of f3
+    f3.update(f_real,2,0);
+    REQUIRE (views_are_equal(f3,f2));
+  }
+}
+
+
 } // anonymous namespace

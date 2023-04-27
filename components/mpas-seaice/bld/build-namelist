@@ -13,7 +13,7 @@
 #
 # The simplest use of build-namelist is to execute it from the build directory where configure
 # was run.  By default it will use the config_cache.xml file that was written by configure to
-# determine the build time properties of the executable, and will write the files that contain 
+# determine the build time properties of the executable, and will write the files that contain
 # the output namelists in that same directory.
 #
 #
@@ -35,14 +35,14 @@ SYNOPSIS
      build-namelist [options]
 OPTIONS
      -infile "filepath"    Specify a file containing namelists to read values from.
-     -namelist "namelist"  Specify namelist settings directly on the commandline by supplying 
+     -namelist "namelist"  Specify namelist settings directly on the commandline by supplying
                            a string containing FORTRAN namelist syntax, e.g.,
                               -namelist "&mpas-seaice_nml dt=1800 /"
      -help [or -h]         Print usage to STDOUT.
      -test                 Enable checking that input datasets exist on local filesystem.
      -verbose              Turn on verbose echoing of informational messages.
      -caseroot             CASEROOT directory variable
-     -casebuild            CASEBUILD directory variable          
+     -casebuild            CASEBUILD directory variable
      -cimeroot             CIMEROOT directory variable
      -ice_grid             ICE_GRID variable
      -decomp_prefix        decomp_prefix variable
@@ -67,7 +67,7 @@ NOTE: The precedence for setting the values of namelist variables is (highest to
       1. namelist values set by specific command-line options, i.e. (none right now)
       2. values set on the command-line using the -namelist option,
       3. values read from the file specified by -infile,
-      4. values from the namelist defaults file - or values specifically set in build-namelist 
+      4. values from the namelist defaults file - or values specifically set in build-namelist
 EOF
 }
 
@@ -82,7 +82,7 @@ my $ProgDir = $1;                      # name of directory containing this scrip
                                        # the user's PATH
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
-if ($ProgDir) { 
+if ($ProgDir) {
     $cfgdir = absolute_path($ProgDir);
 } else {
     $cfgdir = $cwd;
@@ -173,7 +173,7 @@ my $NINST_ICE       = $opts{'ninst_ice'};
 my $NTASKS_ICE      = $opts{'ntasks_ice'};
 $cfgdir             = $opts{'cfg_dir'};
 
-my $CIMEROOT;     
+my $CIMEROOT;
 if ( defined $opts{'cimeroot'} ) {
     $CIMEROOT = $opts{'cimeroot'};
 }
@@ -246,7 +246,7 @@ EOF
 # The namelist definition file contains entries for all namelist variables that
 # can be output by build-namelist.  The version of the file that is associate with a
 # fixed MPASSI tag is $cfgdir/namelist_files/namelist_definition.xml.  To aid developers
-# who make use of the SourceMods/src.mpassi directory - we allow the definition file 
+# who make use of the SourceMods/src.mpassi directory - we allow the definition file
 # to come from that directory
 my $nl_definition_file;
 if (-f "${CASEROOT}/SourceMods/src.mpassi/namelist_definition_mpassi.xml") {
@@ -285,7 +285,7 @@ require Build::Namelist;
 require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
-# Create a configuration object from the MPASSI config_cache.xml file-  created by 
+# Create a configuration object from the MPASSI config_cache.xml file-  created by
 # mpassi.cpl7.template in $CASEBUILD/mpassiconf
 my $cfg = Build::Config->new('config_cache.xml');
 
@@ -439,13 +439,13 @@ if ($inst_string) {
     $output_r = "./${CASE}.mpassi${inst_string}.r";
     $output_h = "./${CASE}.mpassi${inst_string}.h";
     $output_d = "./${CASE}.mpassi${inst_string}.d";
-} 
+}
 
 # Environment variables set in mpassi.buildnml.csh that are not xml variables
-my $RESTART_INPUT_TS_FMT = "$ENV{'RESTART_INPUT_TS_FMT'}"; 
+my $RESTART_INPUT_TS_FMT = "$ENV{'RESTART_INPUT_TS_FMT'}";
 my $LID = $ENV{'LID'};
 
-my $ntasks = $NTASKS_ICE / $NINST_ICE; 
+my $ntasks = $NTASKS_ICE / $NINST_ICE;
 
 print "MPASSI build-namelist: ice_grid is $ICE_GRID \n";
 
@@ -487,7 +487,7 @@ add_default($nl, 'config_full_abort_write');
 # Namelist group: decomposition #
 #################################
 
-add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/ice/mpas-cice/${ICE_GRID}/${decomp_prefix}${date_stamp}.part.'");
+add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/ice/mpas-seaice/${ICE_GRID}/${decomp_prefix}${date_stamp}.part.'");
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
@@ -1379,7 +1379,7 @@ sub add_default {
     # The default values for input pathnames are relative.  If the namelist
     # variable is defined to be an absolute pathname, then prepend
     # the CCSM inputdata root directory.
-    # TODO: unless ignore_abs is passed as argument 
+    # TODO: unless ignore_abs is passed as argument
     if ($is_input_pathname eq 'abs') {
       unless ($opts{'noprepend'}){
         $val = set_abs_filepath($val, $DIN_LOC_ROOT);
@@ -1587,8 +1587,8 @@ sub expand_env_xml {
 	my $subst = $xmlvars{$1};
 	$value =~ s/\$${1}/$subst/g;
     }
-    return $value; 
-}	 
+    return $value;
+}
 
 #-------------------------------------------------------------------------------
 
@@ -1617,7 +1617,7 @@ sub print_nl_to_screen {
 sub valid_date {
 # return 1 if given date ($$month/$$day/$$year) exists in calendar $cal
 # otherwise subtract number of days in $$month from $$day, and increment
-# $$month by 1 (also incrementing $$year if going from Dec to Jan) and 
+# $$month by 1 (also incrementing $$year if going from Dec to Jan) and
 # then return 0.
 
   my $day = shift;

@@ -371,7 +371,7 @@ end subroutine linoz_readnl
 
 ! The  local maxval calculation causes NBFB when ncol varies due to threading or pe-layout change
 ! Tentatively uses a fixed value
-!      ch4max =     maxval(linoz_ch4_clim(1:ncol,pver)) 
+!      ch4max =     maxval(linoz_ch4_clim(1:ncol,pver))
        ch4max =     1.8e-6_r8
        pw= 2.0_r8 * ch4max + 3.65e-6_r8 
  
@@ -697,7 +697,7 @@ end subroutine linoz_readnl
     real(r8), intent(in)                           :: delta_t             ! timestep size (secs)
     real(r8), intent(in)                           :: rlats(ncol)         ! column latitudes (radians)
     integer,  intent(in)   , dimension(pcols)      :: ltrop               ! chunk index
-    real(r8), intent(in)   , dimension(ncol ,pver) :: pdeldry             !  dry pressure delta about midpoints (Pa)
+    real(r8), intent(in)   , dimension(pcols,pver) :: pdeldry             !  dry pressure delta about midpoints (Pa)
     logical, optional, intent(in)                  :: tropFlag(pcols,pver)! 3D tropospheric level flag
     !
     ! local

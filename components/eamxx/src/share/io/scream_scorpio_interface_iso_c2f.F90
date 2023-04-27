@@ -165,6 +165,23 @@ contains
     call set_int_attribute(file_name,attr_name,val)
   end subroutine set_int_attribute_c2f
 !=====================================================================!
+  subroutine set_str_attribute_c2f(file_name_c, attr_name_c, val_c) bind(c)
+    use scream_scorpio_interface, only : set_str_attribute
+    type(c_ptr), intent(in)         :: file_name_c
+    type(c_ptr), intent(in)         :: attr_name_c
+    type(c_ptr), intent(in)         :: val_c
+
+    character(len=256) :: file_name
+    character(len=256) :: attr_name
+    character(len=256) :: val
+
+    call convert_c_string(file_name_c,file_name)
+    call convert_c_string(attr_name_c,attr_name)
+    call convert_c_string(val_c,val)
+
+    call set_str_attribute(file_name,attr_name,val)
+  end subroutine set_str_attribute_c2f
+!=====================================================================!
   subroutine register_variable_c2f(filename_in, shortname_in, longname_in, &
                                    units_in, numdims, var_dimensions_in,   &
                                    dtype, nc_dtype, pio_decomp_tag_in) bind(c)

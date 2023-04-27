@@ -194,6 +194,11 @@ logical :: l_st_mac        = .true.
 logical :: l_st_mic        = .true.
 logical :: l_rad           = .true.
 
+! Numerical schemes for process coupling
+
+integer :: cflx_cpl_opt = 1  ! When to apply surface tracer fluxes (not including water vapor).
+                             ! The default for aerosols is to do this 
+                             ! after tphysac:clubb_surface and before aerosol dry removal.
 
 !======================================================================= 
 contains
@@ -239,6 +244,7 @@ subroutine phys_ctl_readnl(nlfile)
       fix_g1_err_ndrop, ssalt_tuning, resus_fix, convproc_do_aer, &
       convproc_do_gas, convproc_method_activate, liqcf_fix, regen_fix, demott_ice_nuc, pergro_mods, pergro_test_active, &
       mam_amicphys_optaa, n_so4_monolayers_pcage,micro_mg_accre_enhan_fac, &
+      cflx_cpl_opt, &
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
       rrtmg_temp_fix, ideal_phys_option
@@ -355,6 +361,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(demott_ice_nuc,                  1 , mpilog,  0, mpicom)
    call mpibcast(pergro_mods,                     1 , mpilog,  0, mpicom)
    call mpibcast(pergro_test_active,              1 , mpilog,  0, mpicom)
+   call mpibcast(cflx_cpl_opt,                    1 , mpiint,  0, mpicom)
    call mpibcast(l_tracer_aero,                   1 , mpilog,  0, mpicom)
    call mpibcast(l_vdiff,                         1 , mpilog,  0, mpicom)
    call mpibcast(l_rayleigh,                      1 , mpilog,  0, mpicom)
@@ -419,9 +426,10 @@ subroutine phys_ctl_readnl(nlfile)
       call endrun('PBL and Microphysics schemes incompatible')
    endif
    
-   ! Add a check to make sure CLUBB and MG are used together
-   if ( do_clubb_sgs .and. ( microp_scheme .ne. 'MG' .and. microp_scheme .ne. 'P3')) then
-      write(iulog,*)'CLUBB is only compatible with MG microphysics.  Quiting'
+
+   ! Add a check to make sure CLUBB and MG / P3 are used together
+   if ( do_clubb_sgs .and. ( microp_scheme .ne. 'MG' .and. microp_scheme .ne. 'P3' )) then
+      write(iulog,*)'CLUBB is only compatible with MG or P3 microphysics.  Quiting'
       call endrun('CLUBB and microphysics schemes incompatible')
    endif
    
@@ -471,6 +479,12 @@ subroutine phys_ctl_readnl(nlfile)
             call endrun('phys_setopts: illegal value of MMF_orientation_angle')
          end if
       end if
+   end if
+
+   ! Check settings for process coupling
+   if (masterproc) write(iulog,*) '**** phys_ctl_readnl: cflx_cpl_opt = ', cflx_cpl_opt
+   if (.not.( (cflx_cpl_opt==1).or.(cflx_cpl_opt==2) )) then
+      call endrun('phys_ctl_readnl: unsupported value of cflx_cpl_opt')
    end if
 
    ! prog_modal_aero determines whether prognostic modal aerosols are present in the run.
@@ -567,6 +581,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         fix_g1_err_ndrop_out, ssalt_tuning_out,resus_fix_out,convproc_do_aer_out,  &
                         convproc_do_gas_out, convproc_method_activate_out, mam_amicphys_optaa_out, n_so4_monolayers_pcage_out, &
                         micro_mg_accre_enhan_fac_out, liqcf_fix_out, regen_fix_out,demott_ice_nuc_out, pergro_mods_out, pergro_test_active_out &
+                       ,cflx_cpl_opt_out &
                        ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
                        ,l_bc_energy_fix_out, l_dry_adj_out, l_st_mac_out, l_st_mic_out, l_rad_out  &
                        ,prc_coef1_out,prc_exp_out,prc_exp1_out, cld_sed_out,mg_prc_coeff_fix_out,rrtmg_temp_fix_out &
@@ -662,7 +677,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: pergro_mods_out     
    logical,           intent(out), optional :: pergro_test_active_out     
 
-
+   integer,           intent(out), optional :: cflx_cpl_opt_out
    logical,           intent(out), optional :: l_tracer_aero_out
    logical,           intent(out), optional :: l_vdiff_out
    logical,           intent(out), optional :: l_rayleigh_out
@@ -765,6 +780,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(pergro_mods_out         ) ) pergro_mods_out          = pergro_mods
    if ( present(pergro_test_active_out  ) ) pergro_test_active_out   = pergro_test_active
 
+   if ( present(cflx_cpl_opt_out        ) ) cflx_cpl_opt_out      = cflx_cpl_opt
    if ( present(l_tracer_aero_out       ) ) l_tracer_aero_out     = l_tracer_aero
    if ( present(l_vdiff_out             ) ) l_vdiff_out           = l_vdiff
    if ( present(l_rayleigh_out          ) ) l_rayleigh_out        = l_rayleigh

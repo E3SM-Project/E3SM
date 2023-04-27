@@ -919,15 +919,33 @@
 <micro_nicons         microphys="mg2">  0.1D6       </micro_nicons>
 <micro_mincdnc        microphys="mg2">  -999.       </micro_mincdnc>
 
+
 <!-- P3 specific namelist variables -->
-<micro_p3_lookup_dir     microphys="p3"> atm/scream/tables </micro_p3_lookup_dir>
-<micro_p3_tableversion   microphys="p3"> 4.1.1  </micro_p3_tableversion>
-<micro_aerosolactivation microphys="p3"> .true.  </micro_aerosolactivation>
-<micro_subgrid_cloud     microphys="p3"> .true.  </micro_subgrid_cloud>
-<micro_tend_output       microphys="p3"> .true.  </micro_tend_output>
-<p3_qc_autoCon_Expon     microphys="p3"> 2.47   </p3_qc_autoCon_Expon>
-<p3_qc_accret_Expon      microphys="p3"> 1.15   </p3_qc_accret_Expon>
-<do_prescribed_CCN       microphys="p3"> .false. </do_prescribed_CCN>
+<micro_aerosolactivation            microphys="p3"> .true.  </micro_aerosolactivation>
+<micro_subgrid_cloud                microphys="p3"> .true.  </micro_subgrid_cloud>
+<do_prescribed_CCN                  microphys="p3"> .false. </do_prescribed_CCN>
+  
+<!-- P3 specific namelist variables (for v3 version of P3) -->
+<micro_p3_lookup_dir    clubb_sgs="1" microphys="p3"> atm/cam/physprops </micro_p3_lookup_dir>
+<micro_p3_tableversion  clubb_sgs="1" microphys="p3">  4.1.2 	</micro_p3_tableversion>
+<micro_tend_output      clubb_sgs="1" microphys="p3"> .false.  </micro_tend_output>
+<p3_autocon_coeff    	  clubb_sgs="1" microphys="p3">  30500.0D0   </p3_autocon_coeff>
+<p3_qc_autocon_expon    clubb_sgs="1" microphys="p3">  3.19D0   </p3_qc_autocon_expon>
+<p3_nc_autocon_expon    clubb_sgs="1" microphys="p3">  -1.40D0   </p3_nc_autocon_expon>
+<p3_accret_coeff        clubb_sgs="1" microphys="p3">  117.25D0   </p3_accret_coeff>
+<p3_qc_accret_expon     clubb_sgs="1" microphys="p3">  1.15D0   </p3_qc_accret_expon>
+<p3_wbf_coeff           clubb_sgs="1" microphys="p3"> 0.7D0     </p3_wbf_coeff>
+<p3_max_mean_rain_size  clubb_sgs="1" microphys="p3"> 0.005D0     </p3_max_mean_rain_size>
+<p3_embryonic_rain_size clubb_sgs="1" microphys="p3"> 0.000025D0  </p3_embryonic_rain_size>
+<do_Cooper_inP3         clubb_sgs="1" microphys="p3"> .false. </do_Cooper_inP3>
+
+<!-- P3 specific namelist variables (for SCREAM version of P3) -->
+<micro_p3_lookup_dir   shoc_sgs="1" microphys="p3"> atm/scream/tables </micro_p3_lookup_dir>
+<micro_p3_tableversion shoc_sgs="1" microphys="p3"> 4.1.1  </micro_p3_tableversion>
+<micro_tend_output     shoc_sgs="1" microphys="p3"> .true.  </micro_tend_output>
+<p3_qc_autoCon_Expon   shoc_sgs="1" microphys="p3"> 2.47   </p3_qc_autoCon_Expon>
+<p3_qc_accret_Expon    shoc_sgs="1" microphys="p3"> 1.15   </p3_qc_accret_Expon>
+
 
 <!-- special defaults for MMF, which now sets all other physics scheme options to "off" -->
 <micro_mincdnc        use_MMF="1">  -999.       </micro_mincdnc>
@@ -1055,7 +1073,6 @@
 
 <sol_facti_cloud_borne clubb_sgs="1" microphys="mg2"                  >1.0D0</sol_facti_cloud_borne>
 <sol_facti_cloud_borne clubb_sgs="1" clubb_do_deep="1" microphys="mg2">3.0D0</sol_facti_cloud_borne>
-<!-- AaronDonahue, Do we need this for p3 too? -->
 <sol_facti_cloud_borne clubb_sgs="1" microphys="p3"                  >1.0D0</sol_facti_cloud_borne>
 <sol_facti_cloud_borne clubb_sgs="1" clubb_do_deep="1" microphys="p3">3.0D0</sol_facti_cloud_borne>
 
@@ -1129,7 +1146,9 @@
 <cldfrc_ice            >.false.</cldfrc_ice>
 <cldfrc_ice phys="default" >.true.</cldfrc_ice>
 
-<cldfrc_rhminl                                                        > 0.900D0 </cldfrc_rhminl>
+<cldfrc_rhminl                                                        > 0.900D0
+</cldfrc_rhminl>
+
 <cldfrc_rhminl                   phys="default" microphys="p3"        > 0.950D0 </cldfrc_rhminl>
 <cldfrc_rhminl                   phys="default" microphys="mg2"       > 0.950D0 </cldfrc_rhminl>
 
@@ -1393,10 +1412,6 @@
 <nu>                   3.4e-8 </nu>
 <hypervis_order >     2 </hypervis_order>
 <hypervis_scaling> 3.0 </hypervis_scaling>
-
-<!-- special defaults for V2 NE30 -->
-<nu hgrid="ne30np4">  1.0e15 </nu>
-<hypervis_scaling hgrid="ne30np4" > 0 </hypervis_scaling>
 
 <!-- -1.0 indicates use the value for nu -->
 <nu_q> -1.0 </nu_q>
