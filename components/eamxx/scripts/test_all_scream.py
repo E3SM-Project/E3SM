@@ -655,7 +655,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
                     if num_ref_is_ahead_file > 0 or self._force_baseline_regen:
                         test.missing_baselines = True
                         reason = "forcing baseline regen" if self._force_baseline_regen \
-                                 else "f{self._baseline_ref} is ahead of the baseline commit by {num_ref_is_ahead_file}"
+                                 else f"{self._baseline_ref} is ahead of the baseline commit by {num_ref_is_ahead_file}"
                         print(f" -> Test {test} baselines are expired because {reason}")
                     else:
                         print(f" -> Test {test} baselines are valid and do not need to be regenerated")
