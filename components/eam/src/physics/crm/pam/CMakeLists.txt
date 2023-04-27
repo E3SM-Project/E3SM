@@ -30,7 +30,7 @@ if (NOT USE_AWFL EQUAL -1)
 endif()
 
 if (NOT USE_SPAM EQUAL -1) 
-  set(PAM_DYCORE  spam++)
+  set(PAM_DYCORE  spam)
 endif()
 
 set(PAM_MICRO   p3)
@@ -50,7 +50,7 @@ if (PAM_SCREAM_USE_CXX)
   target_compile_definitions(pam_driver PUBLIC "-DP3_CXX -DSHOC_CXX")
 endif()
 
-if ("${PAM_DYCORE}" STREQUAL "spam++")
+if ("${PAM_DYCORE}" STREQUAL "spam")
   set(PAMC_MODEL  extrudedmodel)
   set(PAMC_HAMIL  man)  # man = anelastic / mce_rho = moist compressible
   set(PAMC_THERMO constkappavirpottemp)
