@@ -476,10 +476,18 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   auto phys_tend_sponge_qi   = dm_device.get<real,2>("phys_tend_sponge_qi");
   auto phys_tend_sponge_qr   = dm_device.get<real,2>("phys_tend_sponge_qr");
   //------------------------------------------------------------------------------------------------
-  // calculate total precip
-  real1d precip_tot("precip_tot",nens);
+  // calculate output precip variables
+  // NOTE: the MMF doesn't need to distinguish between "convective" and "large-scale"
+  // so just put all precip into the convective category for now
+  real1d precip_tot_c("precip_liq_c",nens); // "convective" surface precipitation
+  real1d precip_ice_c("precip_ice_c",nens); // "convective" surface precipitation of ice (snow)
+  real1d precip_tot_l("precip_liq_l",nens); // "large-scale" surface precipitation
+  real1d precip_ice_l("precip_ice_l",nens); // "large-scale" surface precipitation of ice (snow)
   parallel_for("finalize aggregated variables", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
-    precip_tot(iens) = precip_liq(iens) + precip_ice(iens);
+    precip_tot_c(iens) = precip_liq(iens) + precip_ice(iens);
+    precip_ice_c(iens) = precip_ice(iens);
+    precip_tot_l(iens) = 0;
+    precip_ice_l(iens) = 0;
   });
   //------------------------------------------------------------------------------------------------
   // convert variables to GCM vertical grid
@@ -573,8 +581,10 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   });
   //------------------------------------------------------------------------------------------------
   // copy data to host
-  auto precip_tot_host            = dm_host.get<real,1>("output_precc");
-  auto precip_ice_host            = dm_host.get<real,1>("output_precsc");
+  auto precip_tot_c_host          = dm_host.get<real,1>("output_precc");
+  auto precip_ice_c_host          = dm_host.get<real,1>("output_precsc");
+  auto precip_tot_l_host          = dm_host.get<real,1>("output_precl");
+  auto precip_ice_l_host          = dm_host.get<real,1>("output_precsl");
   auto liqwp_host                 = dm_host.get<real,2>("output_gliqwp");
   auto icewp_host                 = dm_host.get<real,2>("output_gicewp");
   auto cldfrac_host               = dm_host.get<real,2>("output_cld");
@@ -604,8 +614,10 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   auto phys_tend_sponge_qi_host   = dm_host.get<real,2>("output_dqi_sponge");
   auto phys_tend_sponge_qr_host   = dm_host.get<real,2>("output_dqr_sponge");
 
-  precip_tot              .deep_copy_to(precip_tot_host);
-  precip_ice              .deep_copy_to(precip_ice_host);
+  precip_tot_c            .deep_copy_to(precip_tot_c_host);
+  precip_ice_c            .deep_copy_to(precip_ice_c_host);
+  precip_tot_l            .deep_copy_to(precip_tot_l_host);
+  precip_ice_l            .deep_copy_to(precip_ice_l_host);
   liqwp_gcm               .deep_copy_to(liqwp_host);
   icewp_gcm               .deep_copy_to(icewp_host);
   cldfrac_gcm             .deep_copy_to(cldfrac_host);
