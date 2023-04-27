@@ -388,9 +388,10 @@ AtmosphereInput::get_vec_of_dims(const FieldLayout& layout)
   dims_names.reserve(layout.rank());
   for (int i=0; i<layout.rank(); ++i) {
     const FieldTag t = layout.tag(i);
-    dims_names.push_back(m_io_grid->get_dim_name(t));
     if (t==CMP) {
-      dims_names.back() += std::to_string(layout.dim(i));
+      dims_names.push_back("dim" + std::to_string(layout.dim(i)));
+    } else {
+      dims_names.push_back(m_io_grid->get_dim_name(t));
     }
   }
 
