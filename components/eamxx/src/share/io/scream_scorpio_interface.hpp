@@ -33,6 +33,8 @@ namespace scorpio {
   /* Register a new file to be used for input/output with the scorpio module */
   void register_file(const std::string& filename, const FileMode mode);
   /* Sets the IO decompostion for all variables in a particular filename.  Required after all variables have been registered.  Called once per file. */
+  int get_dimlen(const std::string& filename, const std::string& dimname);
+  bool has_variable (const std::string& filename, const std::string& varname);
   void set_decomp(const std::string& filename);
   /* Sets the degrees-of-freedom for a particular variable in a particular file.  Called once for each variable, for each file. */
   void set_dof(const std::string &filename, const std::string &varname, const Int dof_len, const offset_t* x_dof);
@@ -90,9 +92,8 @@ extern "C" {
   bool is_eam_pio_subsystem_inited();
   /* Checks if a file is already open, with the given mode */
   int get_file_ncid_c2f(const char*&& filename);
+  // If mode<0, then simply checks if file is open, regardless of mode
   bool is_file_open_c2f(const char*&& filename, const int& mode);
-  int get_dimlen_c2f(const char*&& filename, const char*&& dimname);
-  bool has_variable_c2f (const char*&& filename, const char*&& varname);
   /* Query a netCDF file for the time variable */
   double read_time_at_index_c2f(const char*&& filename, const int& time_index);
   double read_curr_time_c2f(const char*&& filename);
