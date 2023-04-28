@@ -107,6 +107,7 @@
 <config_forcing_cycle_duration>'2-00-00_00:00:00'</config_forcing_cycle_duration>
 <config_forcing_precipitation_units>'mm_per_sec'</config_forcing_precipitation_units>
 <config_forcing_sst_type>'ncar'</config_forcing_sst_type>
+<config_forcing_bgc_type>'ISPOL'</config_forcing_bgc_type>
 <config_update_ocean_fluxes>true</config_update_ocean_fluxes>
 <config_include_pond_freshwater_feedback>false</config_include_pond_freshwater_feedback>
 

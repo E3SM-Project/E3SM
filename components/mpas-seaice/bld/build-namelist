@@ -567,6 +567,7 @@ add_default($nl, 'config_forcing_cycle_start');
 add_default($nl, 'config_forcing_cycle_duration');
 add_default($nl, 'config_forcing_precipitation_units');
 add_default($nl, 'config_forcing_sst_type');
+add_default($nl, 'config_forcing_bgc_type');
 add_default($nl, 'config_update_ocean_fluxes');
 add_default($nl, 'config_include_pond_freshwater_feedback');
 
