@@ -326,6 +326,10 @@
 					description="If true, the N2 limiting is applied to the horizontal diffusion term"
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_Redi_use_quasi_monotone_limiter" type="logical" default_value=".false."
+					description="If true, fluxes are disabled if tracer values would violate range of values in neighbouring cells over adjacent layers"
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_Redi_min_layers_diag_terms" type="integer" default_value="6"
 					description="Redi diagonal terms (2 and 3) are turned off from layer 1 through config_Redi_min_layers_diag_terms-1, and on from config_Redi_min_layers_diag_terms to nVertLevels. The Redi diagonal terms are not guaranteed to produce bounded tracer fields, and in practice produce growing temperatures in a few columns with fewer than 5 vertical cells. Redi is meant for isopycnal mixing in the deep ocean, so not applying Redi diagonal terms in very shallow regions is an acceptable solution."
 					possible_values="any integer between 0 (all layers on) and nVertLevels (all layers off)"

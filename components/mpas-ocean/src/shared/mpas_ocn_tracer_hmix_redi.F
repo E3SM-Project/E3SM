@@ -57,6 +57,7 @@ module ocn_tracer_hmix_Redi
    real(kind=RKIND), dimension(:), allocatable :: rediKappaCell
    real(kind=RKIND), dimension(:, :, :), allocatable :: redi_term2_edge, redi_term3_topOfCell
    real(kind=RKIND), dimension(:, :, :), allocatable :: redi_term1, redi_term2, redi_term3
+   real(kind=RKIND), dimension(:, :, :), allocatable :: minimumBnd, maximumBnd
 
 !***********************************************************************
 
@@ -127,9 +128,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, iEdge, cell1, cell2, iCellSelf
-      integer :: i, k, iTr, nTracers, nCells, nEdges, nCellsP1
-      logical :: use_Redi_diag_terms
+      integer :: iCell, jCell, iEdge, cell1, cell2, iCellSelf
+      integer :: i, k, kUp, kDn, iTr, nTracers, nCells, nEdges, nCellsP1
+      logical :: use_Redi_diag_terms, use_Redi_quasi_monotone
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
@@ -176,6 +177,8 @@ contains
       allocate (redi_term3(nTracers, nVertLevels, nCells))
       allocate (redi_term2_edge(nTracers, nVertLevels, nEdges))
       allocate (redi_term3_topOfCell(nTracers, nVertLevels + 1, nCells))
+      allocate (minimumBnd(nTracers, nVertLevels, nCells))
+      allocate (maximumBnd(nTracers, nVertLevels, nCells))
 
       ! RediKappa changes every time step if either:
       !   config_Redi_horizontal_taper == 'RossbyRadius'  
@@ -200,6 +203,8 @@ contains
       nCells = nCellsArray(2)
       nCellsP1 = nCellsArray(size(nCellsArray)) + 1
 
+      use_Redi_quasi_monotone = config_Redi_use_quasi_monotone_limiter
+
       ! Term 1: this is the "standard" horizontal del2 term, but with RediKappa coefficient.
       ! \kappa_2 \nabla \phi on edge
       !$omp parallel
@@ -213,6 +218,24 @@ contains
          else
             use_Redi_diag_terms = .false.
          endif
+
+         if (use_Redi_quasi_monotone) then
+            ! init. tracer bnds via layer neighbours in own column
+            minimumBnd(:, :, iCell) = 0.0_RKIND
+            maximumBnd(:, :, iCell) = 0.0_RKIND
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
+               kUp = max(minLevelCell(iCell), k - 1)
+               kDn = min(maxLevelCell(iCell), k + 1)
+               do iTr = 1, nTracers
+                  minimumBnd(iTr, k, iCell) = min(tracers(iTr, kUp, iCell), &
+                                                  tracers(iTr, k, iCell), &
+                                                  tracers(iTr, kDn, iCell))
+                  maximumBnd(iTr, k, iCell) = max(tracers(iTr, kUp, iCell), &
+                                                  tracers(iTr, k, iCell), &
+                                                  tracers(iTr, kDn, iCell))
+               end do
+            end do
+         end if
 
          redi_term1(:, :, iCell) = 0.0_RKIND
          redi_term2(:, :, iCell) = 0.0_RKIND
@@ -231,6 +254,26 @@ contains
             else  ! cell2 == iCell
                iCellSelf = 2
             endif
+
+            jCell = cellsOnCell(i, iCell)
+
+            if (use_Redi_quasi_monotone) then
+               ! expand tracer bnds via horizontal neighbours in adjacent layers
+               do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+                  kUp = max(minLevelEdgeBot(iEdge), k - 1)
+                  kDn = min(maxLevelEdgeTop(iEdge), k + 1)
+                  do iTr = 1, nTracers
+                     minimumBnd(iTr, k, iCell) = &
+                        min(minimumBnd(iTr, k, iCell), tracers(iTr, kUp, jCell), &
+                                                       tracers(iTr, k, jCell), &
+                                                       tracers(iTr, kDn, jCell))
+                     maximumBnd(iTr, k, iCell) = &
+                        max(maximumBnd(iTr, k, iCell), tracers(iTr, kUp, jCell), &
+                                                       tracers(iTr, k, jCell), &
+                                                       tracers(iTr, kDn, jCell))
+                  end do
+               end do
+            end if
 
             r_tmp = dvEdge(iEdge)/dcEdge(iEdge)
             coef = dvEdge(iEdge)
@@ -401,7 +444,9 @@ contains
                tempTracer = tracers(iTr, k, iCell) + dt*(redi_term1(iTr, k, iCell) + redi_term2(iTr, k, iCell) + &
                                                          redi_term3(iTr, k, iCell))/layerThickness(k, iCell)
 
-               if (tempTracer < minimumVal(iTr)) then
+               if (tempTracer < minimumVal(iTr) .or. &
+                  (use_Redi_quasi_monotone .and. tempTracer < minimumBnd(iTr, k, iCell)) .or. &
+                  (use_Redi_quasi_monotone .and. tempTracer > maximumBnd(iTr, k, iCell))) then
 
                   do i = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(i, iCell)
@@ -463,6 +508,8 @@ contains
       deallocate (redi_term3)
       deallocate (redi_term2_edge)
       deallocate (redi_term3_topOfCell)
+      deallocate (minimumBnd)
+      deallocate (maximumBnd)
 
       call mpas_timer_stop("tracer redi")
 
