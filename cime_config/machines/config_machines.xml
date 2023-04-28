@@ -857,6 +857,8 @@
         <!-- See SCREAM issue #2080. -->
         <command name="load">craype-accel-amd-gfx90a</command>
         <command name="load">rocm/5.1.0</command>
+        <!-- Work around tcmalloc crash. -->
+        <command name="load">cce/14.0.3</command>
       </modules>
       <modules>
         <command name="load">cray-python/3.9.4.2</command>
