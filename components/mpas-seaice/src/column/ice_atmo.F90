@@ -262,7 +262,7 @@
 
       ustar_prev = c2 * ustar
 
-      k = 0
+      k = 1
       do while (abs(ustar - ustar_prev)/ustar > 0 .and. k <= natmiter)
 
          ustar_prev = ustar
