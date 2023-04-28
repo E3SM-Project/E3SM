@@ -130,7 +130,7 @@ contains
 
       integer :: iCell, jCell, iEdge, cell1, cell2, iCellSelf
       integer :: i, k, kUp, kDn, iTr, nTracers, nCells, nEdges, nCellsP1
-      logical :: use_Redi_diag_terms, use_Redi_quasi_monotone
+      logical :: use_Redi_diag_terms, use_quasi_monotone
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
@@ -140,6 +140,7 @@ contains
       real(kind=RKIND) :: tempTracer, invAreaCell
       real(kind=RKIND) :: flux, flux_term2, flux_term3, dTracerDx, coef
       real(kind=RKIND) :: r_tmp, tracer_turb_flux, kappaRediEdgeVal
+      real(kind=RKIND) :: over, scal, limiter_safety_factor
       real(kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
       real(kind=RKIND), dimension(:), allocatable :: minimumVal
       real(kind=RKIND), dimension(:, :), allocatable :: fluxRediZTop
@@ -203,7 +204,8 @@ contains
       nCells = nCellsArray(2)
       nCellsP1 = nCellsArray(size(nCellsArray)) + 1
 
-      use_Redi_quasi_monotone = config_Redi_use_quasi_monotone_limiter
+      use_quasi_monotone = config_Redi_use_quasi_monotone_limiter
+      limiter_safety_factor = config_Redi_quasi_monotone_safety_factor
 
       ! Term 1: this is the "standard" horizontal del2 term, but with RediKappa coefficient.
       ! \kappa_2 \nabla \phi on edge
@@ -219,8 +221,7 @@ contains
             use_Redi_diag_terms = .false.
          endif
 
-         if (use_Redi_quasi_monotone) then
-            ! init. tracer bnds via layer neighbours in own column
+         if (use_quasi_monotone) then
             minimumBnd(:, :, iCell) = 0.0_RKIND
             maximumBnd(:, :, iCell) = 0.0_RKIND
             do k = minLevelCell(iCell), maxLevelCell(iCell)
@@ -257,8 +258,7 @@ contains
 
             jCell = cellsOnCell(i, iCell)
 
-            if (use_Redi_quasi_monotone) then
-               ! expand tracer bnds via horizontal neighbours in adjacent layers
+            if (use_quasi_monotone) then
                do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                   kUp = max(minLevelEdgeBot(iEdge), k - 1)
                   kDn = min(maxLevelEdgeTop(iEdge), k + 1)
@@ -445,20 +445,31 @@ contains
                                                          redi_term3(iTr, k, iCell))/layerThickness(k, iCell)
 
                if (tempTracer < minimumVal(iTr) .or. &
-                  (use_Redi_quasi_monotone .and. tempTracer < minimumBnd(iTr, k, iCell)) .or. &
-                  (use_Redi_quasi_monotone .and. tempTracer > maximumBnd(iTr, k, iCell))) then
+                  (use_quasi_monotone .and. tempTracer < minimumBnd(iTr, k, iCell)) .or. &
+                  (use_quasi_monotone .and. tempTracer > maximumBnd(iTr, k, iCell))) then
+
+                  ! scale cross-fluxes down relative to size of bnds violation
+                  over = max(tempTracer - maximumBnd(iTr, k, iCell), &
+                             minimumBnd(iTr, k, iCell) - tempTracer)
+                  
+                  scal = min(1.0_RKIND, max(0.0_RKIND, &
+                     limiter_safety_factor * ( &
+                     1.0_RKIND - over / abs(tempTracer - tracers(iTr, k, iCell)))))
 
                   do i = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(i, iCell)
-                     redi_term2_edge(iTr, k, iEdge) = 0.0_RKIND
+                     redi_term2_edge(iTr, k, iEdge) = &
+                        redi_term2_edge(iTr, k, iEdge) * scal
                   end do
 
-                  redi_term3_topOfCell(iTr, k, iCell) = 0.0_RKIND
-                  redi_term3_topOfCell(iTr, k + 1, iCell) = 0.0_RKIND
+                  redi_term3_topOfCell(iTr, k, iCell) = &
+                     redi_term3_topOfCell(iTr, k, iCell) * scal
+                  redi_term3_topOfCell(iTr, k + 1, iCell) = &
+                     redi_term3_topOfCell(iTr, k + 1, iCell) * scal
                   if (isActiveTracer) then
                      rediLimiterCount(k, iCell) = rediLimiterCount(k, iCell) + 1
-                  endif
-               endif
+                  end if
+               end if
             end do
          end do
       end do ! iCell
