@@ -5272,6 +5272,45 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="docker-scream">
+    <DESC>Docker</DESC>
+    <NODENAME_REGEX>docker</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <PROXY />
+    <COMPILERS>gnu,gnuX</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <PROJECT>CIME</PROJECT>
+    <SAVE_TIMING_DIR>/storage/timings</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>CIME</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/storage/cases</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/storage/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/storage/inputdata-clmforc</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/storage/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/storage/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/storage/tools/cprnc</CCSM_CPRNC>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>8</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>scream</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="openmpi">
+      <executable>mpiexec</executable>
+      <arguments>
+        <arg name="ntasks">-n {{ total_tasks }}</arg>
+        <arg name="oversubscribe">--oversubscribe</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none" />
+    <RUNDIR>$CASEROOT/run</RUNDIR>
+    <EXEROOT>$CASEROOT/bld</EXEROOT>
+    <environment_variables>
+      <env name="OMPI_ALLOW_RUN_AS_ROOT">1</env>
+      <env name="OMPI_ALLOW_RUN_AS_ROOT_CONFIRM">1</env>
+    </environment_variables>
+  </machine>
+
   <default_run_suffix>
     <default_run_exe>${EXEROOT}/e3sm.exe </default_run_exe>
     <default_run_misc_suffix> &gt;&gt; e3sm.log.$LID 2&gt;&amp;1 </default_run_misc_suffix>
