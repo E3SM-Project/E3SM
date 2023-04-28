@@ -1482,7 +1482,19 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
       call shr_sys_abort(subname//' error in getting x2o_om array ')
     endif    
     ! zero out the output first (see line 1358)
-    x2o_om(:,:)=0.
+    !x2o_om(:,:)=0.
+    ! no, we should zero out only some indices, that accumulate 
+    do ko = 1, noflds
+      if ( (aindx(ko) .gt. 0 ) .and. amerge(ko) ) then
+         x2o_om(:, ko) = 0.
+      endif
+      if ( (iindx(ko) .gt. 0 ) .and. imerge(ko) ) then
+         x2o_om(:, ko) = 0.
+      endif
+      if ( (xindx(ko) .gt. 0 ) .and. xmerge(ko) ) then
+         x2o_om(:, ko) = 0.
+      endif
+    enddo
     tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
     arrsize = naflds * lsize !        allocate (a2x_om (lsize, naflds))
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, a2x_om(1,1))
