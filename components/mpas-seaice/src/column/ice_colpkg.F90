@@ -3640,7 +3640,7 @@
                                      Uref)
 
       use ice_atmo, only: atmo_boundary_const, atmo_boundary_layer
-      use ice_constants_colpkg, only: c0
+      use ice_constants_colpkg, only: c0, c1
 
       character (len=3), intent(in) :: &
          sfctype      ! ice or ocean
@@ -3689,9 +3689,12 @@
          worku = uvel
       endif
       ! should this be for vvel,workv?
-      if (present(uvel)) then
-         worku = uvel
+      if (present(vvel)) then
+         workv = vvel
       endif
+
+      ! NJ keeps icepack/colpkg BFB when atmbndy = 'constant'
+      Cdn_atm_ratio_n = c1
 
                if (trim(atmbndy) == 'constant') then
                   call atmo_boundary_const (sfctype,  calc_strair, &
