@@ -184,7 +184,6 @@ inline void pam_state_update_reference_state( pam::PamCoupler &coupler, Dycore &
   });
   // set anelastic reference state from horizontal means
   parallel_for("Copy in CRM state dry density", SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k_crm, int iens) {
-    // ref_rho_d(k_crm,iens) = gcm_rho_d(k_crm,iens);
     ref_rho_d(k_crm,iens) = crm_hmean_rho_d(k_crm,iens);
     ref_rho_v(k_crm,iens) = crm_hmean_rho_v(k_crm,iens);
     ref_rho_c(k_crm,iens) = crm_hmean_rho_c(k_crm,iens);
