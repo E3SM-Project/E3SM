@@ -593,9 +593,9 @@
     <COMPILERS>gnu,crayclang,amdclang,gnugpu,crayclanggpu,amdclanggpu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cli115</PROJECT>
-    <SAVE_TIMING_DIR>/lustre/orion/cli115/proj-shared/frontier</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>/lustre/orion/cli115/world-shared/frontier</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/lustre/orion/cli115/proj-shared/$ENV{USER}/e3sm_scratch</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/lustre/orion/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/orion/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/orion/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
@@ -717,9 +717,9 @@
     <COMPILERS>gnu,crayclang,amdclang,gnugpu,crayclanggpu,amdclanggpu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cli115</PROJECT>
-    <SAVE_TIMING_DIR>/lustre/orion/cli115/proj-shared/crusher</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>/lustre/orion/cli115/world-shared/crusher</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/lustre/orion/cli115/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/lustre/orion/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/orion/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/orion/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
