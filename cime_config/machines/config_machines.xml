@@ -855,7 +855,7 @@
         <command name="reset"></command>
         <command name="load">PrgEnv-cray</command>
         <!-- See SCREAM issue #2080. -->
-        <!--command name="load">craype-accel-amd-gfx90a</command-->
+        <command name="load">craype-accel-amd-gfx90a</command>
         <command name="load">rocm/5.1.0</command>
       </modules>
       <modules>
@@ -879,7 +879,7 @@
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
       <env name="MPIR_CVAR_GPU_EAGER_DEVICE_MEM">0</env>
       <!-- See SCREAM issue #2080. -->
-      <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
+      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
       <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
     </environment_variables>
 
@@ -888,9 +888,9 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
-    <environment_variables compiler="crayclang-scream" mpilib="mpich">
+    <!--environment_variables compiler="crayclang-scream" mpilib="mpich">
       <env name="ADIOS2_DIR">/lustre/orion/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/crayclang-14.0.2</env>
-    </environment_variables>
+    </environment_variables-->
   </machine>
 
 
