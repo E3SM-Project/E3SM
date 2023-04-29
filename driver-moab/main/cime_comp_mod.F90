@@ -4083,7 +4083,7 @@ contains
 
        if (atm_c2_rof) then
           call prep_rof_accum_atm(timer='CPL:atmpost_acca2r')
-          call prep_rof_accum_atm_moab()
+          !call prep_rof_accum_atm_moab()
        endif
 
        call component_diag(infodata, atm, flow='c2x', comment= 'recv atm', &
@@ -4092,6 +4092,19 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_drvstopf  ('CPL:ATMPOST',cplrun=.true.)
     endif
+
+   !  ! send projected data from atm to ocean mesh, after projection in coupler
+   !  if (iamin_CPLALLOCNID .and. ocn_c2_atm) then
+   !     ! migrate that tag from coupler pes to ocean pes
+   !     call prep_ocn_migrate_moab(infodata)
+   !  endif
+
+   !  ! send projected data from atm to land mesh, after projection in coupler
+   !  if (iamin_CPLALLLNDID .and. atm_c2_lnd) then
+   !     ! migrate that tag from coupler pes to ocean pes
+   !     call prep_lnd_migrate_moab(infodata)
+   !  endif
+    
 
   end subroutine cime_run_atm_recv_post
 
@@ -4168,6 +4181,9 @@ contains
             mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
             timer_barrier='CPL:O2CT_BARRIER', timer_comp_exch='CPL:O2CT', &
             timer_map_exch='CPL:o2c_ocno2ocnx', timer_infodata_exch='CPL:o2c_infoexch')
+       ! send from ocn pes to coupler
+       ! call ocn_cpl_moab(ocn)
+       ! new way
        call component_exch_moab(ocn(1), mpoid, mboxid, 0, seq_flds_o2x_fields)
     endif
 
@@ -4483,7 +4499,7 @@ contains
        if (lnd_c2_rof) call prep_rof_accum_lnd(timer='CPL:lndpost_accl2r')
 #ifdef HAVE_MOAB
        if (lnd_c2_rof) call prep_rof_accum_lnd_moab()
-#endif 
+#endif
        if (lnd_c2_glc .or. do_hist_l2x1yrg) call prep_glc_accum_lnd(timer='CPL:lndpost_accl2g' )
        if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
 
