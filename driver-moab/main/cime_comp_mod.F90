@@ -4083,7 +4083,9 @@ contains
 
        if (atm_c2_rof) then
           call prep_rof_accum_atm(timer='CPL:atmpost_acca2r')
-          !call prep_rof_accum_atm_moab()
+#ifdef HAVE_MOAB
+          call prep_rof_accum_atm_moab()
+#endif
        endif
 
        call component_diag(infodata, atm, flow='c2x', comment= 'recv atm', &
@@ -4199,7 +4201,7 @@ contains
             info_debug=info_debug, timer_diag='CPL:ocnpost_diagav')
 
        if (ocn_c2_rof) call prep_rof_accum_ocn(timer='CPL:ocnpost_acco2r')
-       !if (ocn_c2_rof) call prep_rof_accum_ocn_moab()
+       if (ocn_c2_rof) call prep_rof_accum_ocn_moab()
 
        call cime_run_ocnglc_coupling()
 
@@ -4646,8 +4648,9 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        call prep_rof_accum_avg(timer='CPL:rofprep_l2xavg')
-       !call prep_rof_accum_avg_moab()
-
+#ifdef HAVE_MOAB
+       call prep_rof_accum_avg_moab()
+#endif
        if (lnd_c2_rof) call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
 
        if (atm_c2_rof) call prep_rof_calc_a2r_rx(timer='CPL:rofprep_atm2rof')

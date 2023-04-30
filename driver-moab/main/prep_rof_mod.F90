@@ -49,12 +49,14 @@ module prep_rof_mod
 
 #ifdef HAVE_MOAB
   public :: prep_rof_mrg_moab
+  public :: prep_rof_accum_lnd_moab  
+  public :: prep_rof_accum_atm_moab
+  public :: prep_rof_accum_ocn_moab
+  public :: prep_rof_accum_avg_moab
 #endif
 
   public :: prep_rof_accum_lnd
-  public :: prep_rof_accum_lnd_moab
   public :: prep_rof_accum_atm
-  public :: prep_rof_accum_atm_moab
   public :: prep_rof_accum_ocn
   public :: prep_rof_accum_avg
 
@@ -118,7 +120,7 @@ module prep_rof_mod
 
   character(CXX)       :: sharedFieldsOcnRof ! used in moab to define o2racc_om
   real (kind=r8) , allocatable, private ::  o2racc_om(:,:)   ! ocn export, ocn grid, cpl pes
-  real (kind=r8) , allocatable, private :: o2r_rm2(:,:)  ! basically o2x_om, but in another copy, on rof module
+  real (kind=r8) , allocatable, private :: o2r_om2(:,:)  ! basically o2x_om, but in another copy, on rof module, only shared with rof
   integer        , target  :: o2racc_om_cnt  ! o2racc_om: number of time samples accumulated
   integer :: nfields_sh_or ! number of fields in sharedFieldsOcnRof
   integer :: lsize_om ! size of ocn in moab, local
@@ -258,10 +260,6 @@ contains
        sharedFieldsLndRof=trim( mct_aVect_exportRList2c(l2racc_lx(1)) )
        nfields_sh_lr = mct_aVect_nRAttr(l2racc_lx(1))
        tagname = trim(sharedFieldsLndRof)//C_NULL_CHAR
-       if(iamroot_CPLID) then
-          write(logunit,*) subname,' sharedFieldsLndRof=', trim(sharedFieldsLndRof), ' number of fields=', nfields_sh_lr
-          write(logunit,*) subname,'    seq_flds_l2x_fluxes_to_rof=', trim(seq_flds_l2x_fluxes_to_rof)
-       endif
        ! find the size of land mesh locally
        ! find out the number of local elements in moab mesh lnd instance on coupler
        ierr  = iMOAB_GetMeshInfo ( mblxid, nvert, nvise, nbl, nsurf, nvisBC )
@@ -271,6 +269,12 @@ contains
        endif
        ! land is fully cell now
        lsize_lm = nvise(1)
+       if(iamroot_CPLID) then
+          write(logunit,*) subname,' number of fields=', nfields_sh_lr
+          write(logunit,*) subname,' sharedFieldsLndRof=', trim(sharedFieldsLndRof)      
+          write(logunit,*) subname,'  seq_flds_l2x_fluxes_to_rof=', trim(seq_flds_l2x_fluxes_to_rof)
+          write(logunit,*) subname,' lsize_lm=', lsize_lm
+       endif
        allocate(l2racc_lm(lsize_lm, nfields_sh_lr))
        allocate(l2x_lm2(lsize_lm, nfields_sh_lr)) ! this will be obtained from land instance
        l2racc_lm(:,:) = 0.
@@ -449,10 +453,6 @@ contains
        sharedFieldsAtmRof=trim( mct_aVect_exportRList2c(a2racc_ax(1)) )
        tagname = trim(sharedFieldsAtmRof)//C_NULL_CHAR
        nfields_sh_ar = mct_aVect_nRAttr(a2racc_ax(1))
-       if(iamroot_CPLID) then
-          write(logunit,*) subname,' sharedFieldsAtmRof=', trim(sharedFieldsAtmRof)
-          write(logunit,*) subname,' seq_flds_a2x_fields_to_rof=', trim(seq_flds_a2x_fields_to_rof)
-       endif
        ! find the size of atm mesh locally
        ! find out the number of local elements in moab mesh atm instance on coupler
        ierr  = iMOAB_GetMeshInfo ( mbaxid, nvert, nvise, nbl, nsurf, nvisBC )
@@ -462,8 +462,14 @@ contains
        endif
        ! land is fully cell now
        lsize_am = nvise(1)
-       allocate(a2racc_am(lsize_lm, nfields_sh_ar))
-       allocate(a2x_am2(lsize_lm, nfields_sh_ar)) ! this will be obtained from land instance
+       allocate(a2racc_am(lsize_am, nfields_sh_ar))
+       allocate(a2x_am2(lsize_am, nfields_sh_ar)) ! this will be obtained from atm instance
+       if(iamroot_CPLID) then
+          write(logunit,*) subname,' sharedFieldsAtmRof=', trim(sharedFieldsAtmRof)
+           write(logunit,*) subname,' number of fields shared=', nfields_sh_ar
+          write(logunit,*) subname,' seq_flds_a2x_fields_to_rof=', trim(seq_flds_a2x_fields_to_rof)
+          write(logunit,*) subname,' lsize_am=', lsize_am
+       endif
        a2racc_am(:,:) = 0.
        a2racc_am_cnt = 0
 
@@ -641,10 +647,7 @@ contains
        sharedFieldsOcnRof=trim( mct_aVect_exportRList2c(o2racc_ox(1)) )
        tagname = trim(sharedFieldsOcnRof)//C_NULL_CHAR
        nfields_sh_or = mct_aVect_nRAttr(o2racc_ox(1))
-      if(iamroot_CPLID) then
-         write(logunit,*) subname,' sharedFieldsOcnRof=', trim(sharedFieldsOcnRof)
-         write(logunit,*) subname,' seq_flds_o2x_fields_to_rof=', trim(seq_flds_o2x_fields_to_rof)
-      endif
+      
       ! find the size of ocn mesh locally
       ! find out the number of local elements in moab mesh ocn instance on coupler
       ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC )
@@ -655,7 +658,13 @@ contains
       ! ocn is fully cell now
       lsize_om = nvise(1)
       allocate(o2racc_om(lsize_om, nfields_sh_or))
-      allocate(o2r_rm2(lsize_om, nfields_sh_or)) ! this will be obtained from land instance
+      allocate(o2r_om2(lsize_om, nfields_sh_or)) ! this will be obtained from ocn instance
+      if(iamroot_CPLID) then
+         write(logunit,*) subname,' sharedFieldsOcnRof=', trim(sharedFieldsOcnRof)
+         write(logunit,*) subname,' number of field shared ocn rof=',nfields_sh_or
+         write(logunit,*) subname,' seq_flds_o2x_fields_to_rof=', trim(seq_flds_o2x_fields_to_rof)
+         write(logunit,*) subname,' lsize_om=', lsize_om
+      endif
       o2racc_om(:,:) = 0.
       o2racc_om_cnt = 0
 #endif
@@ -868,6 +877,59 @@ contains
 
   end subroutine prep_rof_accum_ocn
 
+subroutine prep_rof_accum_ocn_moab()
+
+    !---------------------------------------------------------------
+    ! Description
+    ! Accumulate ocean input to river component
+    !
+    !
+    ! Local Variables
+
+use iMOAB , only :  iMOAB_GetDoubleTagStorage
+   !---------------------------------------------------------------
+   ! Description
+   ! Accumulate atmosphere input to river component
+   !
+   !
+   ! Local Variables
+   character(CXX) ::tagname
+   integer :: arrsize, ent_type, ierr
+    character(*), parameter  :: subname = '(prep_rof_accum_ocn_moab)'
+   !---------------------------------------------------------------
+
+   tagname = trim(sharedFieldsOcnRof)//C_NULL_CHAR
+   arrsize = nfields_sh_or * lsize_om
+   ent_type = 1 ! cell type
+   ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, o2r_om2(1,1))
+   if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting shared fields from ocn instance ')
+   endif
+   ! big assumption is that o2r_om2 is the same size as o2racc_om
+   if (o2racc_om_cnt == 0) then
+      o2racc_om = o2r_om2
+   else
+      o2racc_om = o2racc_om + o2r_om2
+   endif
+   o2racc_om_cnt = o2racc_om_cnt + 1
+
+
+    !---------------------------------------------------------------
+
+
+   !  do eoi = 1,num_inst_ocn
+   !     o2x_ox => component_get_c2x_cx(ocn(eoi))
+   !     if (o2racc_ox_cnt == 0) then
+   !        call mct_avect_copy(o2x_ox, o2racc_ox(eoi))
+   !     else
+   !        call mct_avect_accum(o2x_ox, o2racc_ox(eoi))
+   !     endif
+   !  end do
+   !  o2racc_ox_cnt = o2racc_ox_cnt + 1
+
+
+  end subroutine prep_rof_accum_ocn_moab
+
   !================================================================================================
 
   subroutine prep_rof_accum_avg(timer)
@@ -912,6 +974,65 @@ contains
     call t_drvstopf (trim(timer))
 
   end subroutine prep_rof_accum_avg
+
+ !================================================================================================
+
+  subroutine prep_rof_accum_avg_moab()
+
+    !---------------------------------------------------------------
+    ! Description
+    ! Finalize accumulation of land, atm, ocn input to river component
+    use iMOAB, only : iMOAB_SetDoubleTagStorage
+    ! Arguments
+    !
+    ! Local Variables
+    character(CXX) ::tagname
+    integer :: arrsize, ent_type, ierr
+    character(*), parameter :: subname = '(prep_rof_accum_avg_moab)'
+    !---------------------------------------------------------------
+    if(l2racc_lm_cnt > 1) then
+       l2racc_lm = 1./l2racc_lm_cnt*l2racc_lm
+    endif
+    l2racc_lm_cnt = 0
+    ! set now the accumulated fields on land instance
+    tagname = trim(sharedFieldsLndRof)//C_NULL_CHAR
+    arrsize = nfields_sh_lr * lsize_lm
+    ent_type = 1 ! cell type
+    ierr = iMOAB_SetDoubleTagStorage ( mblxid, tagname, arrsize , ent_type, l2racc_lm(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on land instance ')
+    endif
+
+
+    if((a2racc_am_cnt > 1) .and. rof_heat) then
+       a2racc_am = 1./a2racc_am_cnt * a2racc_am
+    endif
+    a2racc_am_cnt = 0
+    ! set now the accumulated fields on atm instance
+    tagname = trim(sharedFieldsAtmRof)//C_NULL_CHAR
+    arrsize = nfields_sh_ar * lsize_am
+    ent_type = 1 ! cell type
+    ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, a2racc_am(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on atm instance ')
+    endif
+
+    if(o2racc_om_cnt > 1) then
+       o2racc_om = 1./o2racc_om_cnt *o2racc_om
+    endif
+    o2racc_om_cnt = 0
+    ! set now the accumulated fields on ocn instance
+    tagname = trim(sharedFieldsOcnRof)//C_NULL_CHAR
+    arrsize = nfields_sh_or * lsize_om
+    ent_type = 1 ! cell type
+    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, o2racc_om(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on ocn instance ')
+    endif
+
+
+  end subroutine prep_rof_accum_avg_moab
+
 
   !================================================================================================
 
