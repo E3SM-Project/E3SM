@@ -839,22 +839,30 @@ contains
     ! Accumulate ocn inputs
     ! Form partial sum of tavg ocn inputs (virtual "send" to ocn)
     ! NOTE: this is done AFTER the call to the merge in prep_ocn_mrg
-    !
+    use iMOAB, only : iMOAB_GetDoubleTagStorage
     ! Arguments
     !
     ! Local Variables
-
+    integer   :: ent_type, ierr
+    character(CXX)  :: tagname
     character(*)    , parameter :: subname = '(prep_ocn_accum_moab)'
     !---------------------------------------------------------------
 
+    ! this method is called after merge, so it is not really necessary, because 
+    ! x2o_om should be saved between these calls
+    tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
+    ent_type = 1  ! cell type
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrSize_x2o_om , ent_type, x2o_om(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting x2o_om array  ')
+    endif
+   
 
-       if (x2oacc_om_cnt == 0) then
-         x2oacc_om = x2o_om
-         ! call mct_avect_copy(x2o_ox, x2oacc_ox(eoi))
-       else
-         ! call mct_avect_accum(x2o_ox, x2oacc_ox(eoi))
-         x2oacc_om = x2oacc_om + x2o_om
-       endif
+    if (x2oacc_om_cnt == 0) then
+       x2oacc_om = x2o_om
+    else
+       x2oacc_om = x2oacc_om + x2o_om
+    endif
 
     x2oacc_om_cnt = x2oacc_om_cnt + 1
 
