@@ -148,12 +148,12 @@
     <DESC>Perlmutter CPU-only nodes at NERSC.  Phase2 only: Each node has 2 AMD EPYC 7713 64-Core (Milan) 512GB</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:perlmutter</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnu,nvidia,amdclang</COMPILERS>
+    <COMPILERS>gnu,intel,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>$ENV{PSCRATCH}/e3sm_scratch/pm-cpu</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>$ENV{PSCRATCH}/e3sm_scratch/pm-cpu/mfintele</CIME_OUTPUT_ROOT>
     <CIME_HTML_ROOT>/global/cfs/cdirs/e3sm/www/$ENV{USER}</CIME_HTML_ROOT>
     <CIME_URL_ROOT>http://portal.nersc.gov/project/e3sm/$ENV{USER}</CIME_URL_ROOT>
     <DIN_LOC_ROOT>/global/cfs/cdirs/e3sm/inputdata</DIN_LOC_ROOT>
@@ -194,9 +194,12 @@
         <command name="unload">cray-netcdf-hdf5parallel</command>
         <command name="unload">cray-parallel-netcdf</command>
         <command name="unload">PrgEnv-gnu</command>
+        <command name="unload">PrgEnv-intel</command>
         <command name="unload">PrgEnv-nvidia</command>
         <command name="unload">PrgEnv-cray</command>
         <command name="unload">PrgEnv-aocc</command>
+        <command name="unload">intel</command>
+        <command name="unload">intel-oneapi</command>
         <command name="unload">cudatoolkit</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
@@ -208,21 +211,28 @@
       <modules compiler="gnu">
         <command name="load">PrgEnv-gnu/8.3.3</command>
         <command name="load">gcc/11.2.0</command>
+        <command name="load">cray-libsci/23.02.1.1</command>
+      </modules>
+
+      <modules compiler="intel">
+        <command name="load">PrgEnv-intel/8.3.3</command>
+        <command name="load">intel-oneapi/2023.0.0</command>
       </modules>
 
       <modules compiler="nvidia">
         <command name="load">PrgEnv-nvidia</command>
         <command name="load">nvidia/22.7</command>
+        <command name="load">cray-libsci/23.02.1.1</command>
       </modules>
 
       <modules compiler="amdclang">
         <command name="load">PrgEnv-aocc</command>
         <command name="load">aocc/3.2.0</command>
+        <command name="load">cray-libsci/23.02.1.1</command>
       </modules>
 
       <modules>
         <command name="load">craype-accel-host</command>
-        <command name="load">cray-libsci/23.02.1.1</command>
         <command name="load">craype/2.7.19</command>
         <command name="load">cray-mpich/8.1.24</command>
         <command name="load">cray-hdf5-parallel/1.12.2.3</command>
