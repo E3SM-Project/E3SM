@@ -1232,15 +1232,16 @@ subroutine nucleate_ice_cam_calc( &
                         ! use 10 times aitken nucleated ice to adjust (Barahona and Nenes 2008)
                         !so4_num_ac = min(oso4_num*rho(i,k)*1.0e-6_r8*10.0_r8, so4_num_accum*0.1_r8) 
                         if (k < troplev(i)) then 
-                           so4_num_ac = max(0.0_r8, so4_num_accum*0.25_r8) 
+                           so4_num_ac = max(0.0_r8, so4_num_accum*0.140_r8) ! average 28/200 nucleation (Barahona and Nenes 2008,F10)
                         else
-                           so4_num_ac = max(0.0_r8, so4_num_accum*0.05_r8)
+                           so4_num_ac = max(0.0_r8, so4_num_accum*0.035_r8) ! average 7/200 nucleation
                         endif     
                         !write(iulog,*)'kzm_oso4_num', oso4_num, so4_num_accum, so4_num_ac, so4_num_st_cr
                         dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr + so4_num_st_cr + so4_num_ac )) &  !kzm change only include coarse
                                    ) * 1e6_r8 / rho(i,k) !kzm
                     else
                         dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr )) ) * 1e6_r8 / rho(i,k)
+                        dso4_num = 0._r8 ! onlyl turn on for MAM5
                     endif
                     if (2<1) then
                        if (mode_coarse_idx > 0._r8  .and. mode_strat_coarse_idx > 0._r8 ) then
@@ -1260,8 +1261,8 @@ subroutine nucleate_ice_cam_calc( &
                            !accumulation mode
                            !cld_num_accum(i,k) = max((cld_num_accum(i,k) + (so4_num_accum* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)
                            !num_accum(i,k) = max((num_coarse(i,k) - ( so4_num_accum* 1e6_r8 / rho(i,k)* icldm(i,k))), 0.0_r8) 
-                           cld_num_accum_tend2 = max(((so4_num_accum* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)!cld accumulation number
-                           num_accum_tend2 = -max(((so4_num_accum* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)!accum number
+                           cld_num_accum_tend2 = max(((so4_num_ac* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)!cld accumulation number
+                           num_accum_tend2 = -max(((so4_num_ac* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)!accum number
                            !coarse mode
                            !cld_num_coarse(i,k) = max((cld_num_coarse(i,k) + (so4_num_cr* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)
                            !num_coarse(i,k) = max((num_coarse(i,k) - (so4_num_cr* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)
