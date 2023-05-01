@@ -57,6 +57,7 @@ module ocn_tracer_hmix_Redi
    real(kind=RKIND), dimension(:), allocatable :: rediKappaCell
    real(kind=RKIND), dimension(:, :, :), allocatable :: redi_term2_edge, redi_term3_topOfCell
    real(kind=RKIND), dimension(:, :, :), allocatable :: redi_term1, redi_term2, redi_term3
+   real(kind=RKIND), dimension(:, :, :), allocatable :: redi_flux_scale
    real(kind=RKIND), dimension(:, :, :), allocatable :: minimumBnd, maximumBnd
 
 !***********************************************************************
@@ -140,7 +141,8 @@ contains
       real(kind=RKIND) :: tempTracer, invAreaCell
       real(kind=RKIND) :: flux, flux_term2, flux_term3, dTracerDx, coef
       real(kind=RKIND) :: r_tmp, tracer_turb_flux, kappaRediEdgeVal
-      real(kind=RKIND) :: over, scal, limiter_safety_factor
+      real(kind=RKIND) :: over, diff, scal, scalUp, scalDn
+      real(kind=RKIND) :: limiter_safety_factor
       real(kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
       real(kind=RKIND), dimension(:), allocatable :: minimumVal
       real(kind=RKIND), dimension(:, :), allocatable :: fluxRediZTop
@@ -180,6 +182,7 @@ contains
       allocate (redi_term3_topOfCell(nTracers, nVertLevels + 1, nCells))
       allocate (minimumBnd(nTracers, nVertLevels, nCells))
       allocate (maximumBnd(nTracers, nVertLevels, nCells))
+      allocate (redi_flux_scale(nTracers, nVertLevels, nCells))
 
       ! RediKappa changes every time step if either:
       !   config_Redi_horizontal_taper == 'RossbyRadius'  
@@ -213,7 +216,7 @@ contains
       !$omp do schedule(runtime) &
       !$omp private(fluxRediZTop, invAreaCell, i, iEdge, cell1, cell2, iCellSelf, r_tmp, coef, k, &
       !$omp         kappaRediEdgeVal, iTr, tracer_turb_flux, flux, flux_term2, flux_term3, &
-      !$omp         dTracerDx, use_Redi_diag_terms)
+      !$omp         dTracerDx, use_Redi_diag_terms, kUp, kDn)
       do iCell = 1, nCells
          if (maxLevelCell(iCell) .ge. config_Redi_min_layers_diag_terms) then
             use_Redi_diag_terms = .true.
@@ -221,9 +224,10 @@ contains
             use_Redi_diag_terms = .false.
          endif
 
+         minimumBnd(:, :, iCell) = 0.0_RKIND
+         maximumBnd(:, :, iCell) = 0.0_RKIND
          if (use_quasi_monotone) then
-            minimumBnd(:, :, iCell) = 0.0_RKIND
-            maximumBnd(:, :, iCell) = 0.0_RKIND
+            ! init. min/max bnds in column
             do k = minLevelCell(iCell), maxLevelCell(iCell)
                kUp = max(minLevelCell(iCell), k - 1)
                kDn = min(maxLevelCell(iCell), k + 1)
@@ -259,6 +263,7 @@ contains
             jCell = cellsOnCell(i, iCell)
 
             if (use_quasi_monotone) then
+               ! expand min/max bnds on edge neighbours
                do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                   kUp = max(minLevelEdgeBot(iEdge), k - 1)
                   kDn = min(maxLevelEdgeTop(iEdge), k + 1)
@@ -437,8 +442,10 @@ contains
       endif
 
       !$omp parallel
-      !$omp do schedule(runtime) private(k, iTr, tempTracer, iEdge)
+      !$omp do schedule(runtime) &
+      !$omp private(k, iTr, tempTracer, iEdge, over, scal, diff)
       do iCell = 1, nCells
+         redi_flux_scale(:, :, iCell) = 1.0_RKIND
          do k = minLevelCell(iCell), maxLevelCell(iCell)
             do iTr = 1, ntracers
                tempTracer = tracers(iTr, k, iCell) + dt*(redi_term1(iTr, k, iCell) + redi_term2(iTr, k, iCell) + &
@@ -452,20 +459,18 @@ contains
                   over = max(tempTracer - maximumBnd(iTr, k, iCell), &
                              minimumBnd(iTr, k, iCell) - tempTracer)
                   
+                  diff = abs(tempTracer - tracers(iTr, k, iCell))
+
                   scal = min(1.0_RKIND, max(0.0_RKIND, &
                      limiter_safety_factor * ( &
-                     1.0_RKIND - over / abs(tempTracer - tracers(iTr, k, iCell)))))
+                     1.0_RKIND - over / (diff + 1.0E-16_RKIND))))
 
-                  do i = 1, nEdgesOnCell(iCell)
-                     iEdge = edgesOnCell(i, iCell)
-                     redi_term2_edge(iTr, k, iEdge) = &
-                        redi_term2_edge(iTr, k, iEdge) * scal
-                  end do
+                  ! scale to zero if not using monotone limiter
+                  if (.not. use_quasi_monotone) scal = 0.0_RKIND
 
-                  redi_term3_topOfCell(iTr, k, iCell) = &
-                     redi_term3_topOfCell(iTr, k, iCell) * scal
-                  redi_term3_topOfCell(iTr, k + 1, iCell) = &
-                     redi_term3_topOfCell(iTr, k + 1, iCell) * scal
+                  ! cell flux scalings, to be interp. onto edge/levs next pass
+                  redi_flux_scale(iTr, k, iCell) = scal
+
                   if (isActiveTracer) then
                      rediLimiterCount(k, iCell) = rediLimiterCount(k, iCell) + 1
                   end if
@@ -478,7 +483,8 @@ contains
 
       !now go back and reapply all tendencies
       !$omp parallel
-      !$omp do schedule(runtime) private(invAreaCell, k, iTr, i, iEdge)
+      !$omp do schedule(runtime) &
+      !$omp private(invAreaCell, k, kUp, kDn, iTr, i, iEdge, jCell, scal, scalUp, scalDn)
       do iCell = 1, nCells
          invAreaCell = 1.0_RKIND/areaCell(iCell)
          do k = minLevelCell(iCell), maxLevelCell(iCell)
@@ -489,20 +495,44 @@ contains
 
          if (maxLevelCell(iCell) .ge. config_Redi_min_layers_diag_terms) then
             do k = minLevelCell(iCell), maxLevelCell(iCell)
+               kUp = max(minLevelCell(iCell), k - 1)
+               kDn = min(maxLevelCell(iCell), k + 1)
                do iTr = 1, ntracers
+                  ! harmonic-mean; not strictly monotone, but smooth
+                  scalUp = 2.0_RKIND * &
+                     redi_flux_scale(iTr, kUp, iCell) * &
+                     redi_flux_scale(iTr, k, iCell) / ( &
+                     redi_flux_scale(iTr, kUp, iCell) + &
+                     redi_flux_scale(iTr, k, iCell) + 1.0E-16_RKIND)
+
+                  scalDn = 2.0_RKIND * &
+                     redi_flux_scale(iTr, kDn, iCell) * &
+                     redi_flux_scale(iTr, k, iCell) / ( &
+                     redi_flux_scale(iTr, kDn, iCell) + &
+                     redi_flux_scale(iTr, k, iCell) + 1.0E-16_RKIND)
+
                   tend(iTr, k, iCell) = tend(iTr, k, iCell) + rediKappaCell(iCell)*2.0_RKIND* &
                                         (RediKappaScaling(k, iCell)* &
-                                         redi_term3_topOfCell(iTr, k, iCell) - &
-                                         RediKappaScaling(k + 1, iCell)*redi_term3_topOfCell(iTr, k + 1, iCell))
+                                         scalUp*redi_term3_topOfCell(iTr, k, iCell) - &
+                                         RediKappaScaling(k + 1, iCell)* &
+                                         scalDn*redi_term3_topOfCell(iTr, k + 1, iCell))
                end do
             end do
 
             do i = 1, nEdgesOnCell(iCell)
                if (cellsOnCell(i, iCell) .eq. nCellsP1) cycle
                iEdge = edgesOnCell(i, iCell)
+               jCell = cellsOnCell(i, iCell)
                do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                   do iTr = 1, ntracers
-                     tend(iTr, k, iCell) = tend(iTr, k, iCell) + edgeSignOnCell(i, iCell)*invAreaCell*redi_term2_edge(iTr, k, iEdge)
+                     scal = 2.0_RKIND * &
+                     redi_flux_scale(iTr, k, iCell) * &
+                     redi_flux_scale(iTr, k, jCell) / ( &
+                     redi_flux_scale(iTr, k, iCell) + &
+                     redi_flux_scale(iTr, k, jCell) + 1.0E-16_RKIND)
+
+                     tend(iTr, k, iCell) = tend(iTr, k, iCell) + &
+                        scal*edgeSignOnCell(i, iCell)*invAreaCell*redi_term2_edge(iTr, k, iEdge)
                   end do
                end do
             end do
@@ -521,6 +551,7 @@ contains
       deallocate (redi_term3_topOfCell)
       deallocate (minimumBnd)
       deallocate (maximumBnd)
+      deallocate (redi_flux_scale)
 
       call mpas_timer_stop("tracer redi")
 
