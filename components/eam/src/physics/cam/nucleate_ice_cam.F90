@@ -1222,7 +1222,7 @@ subroutine nucleate_ice_cam_calc( &
               !num_coarse_tend2,num_accum_tend2
 
               !if ((k < troplev(i)) .and. (nucleate_ice_strat > 0._r8)) then
-              if ( (nucleate_ice_strat > 0._r8) .and. (k < troplev(i))) then
+              if ( (nucleate_ice_strat > 0._r8) ) then
                  if (oso4_num > 0._r8) then
                     !oso4_num #/cm3     
                     !so4_num_ac = num_accum(i,k)*rho(i,k)*1.0e-6_r8
@@ -1231,7 +1231,11 @@ subroutine nucleate_ice_cam_calc( &
                         !so4_num_ac = num_accum(i,k)*rho(i,k)*1.0e-6_r8 ! over write weighted so4_num_ac
                         ! use 10 times aitken nucleated ice to adjust (Barahona and Nenes 2008)
                         !so4_num_ac = min(oso4_num*rho(i,k)*1.0e-6_r8*10.0_r8, so4_num_accum*0.1_r8) 
-                        so4_num_ac = max(0.0_r8, so4_num_accum*0.1_r8) 
+                        if (k < troplev(i)) then 
+                           so4_num_ac = max(0.0_r8, so4_num_accum*0.25_r8) 
+                        else
+                           so4_num_ac = max(0.0_r8, so4_num_accum*0.05_r8)
+                        endif     
                         !write(iulog,*)'kzm_oso4_num', oso4_num, so4_num_accum, so4_num_ac, so4_num_st_cr
                         dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr + so4_num_st_cr + so4_num_ac )) &  !kzm change only include coarse
                                    ) * 1e6_r8 / rho(i,k) !kzm
