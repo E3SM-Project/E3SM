@@ -55,7 +55,6 @@ VerticalRemapper (const grid_ptr_type& src_grid,
   // vertical levels.
   scorpio::register_file(map_file,scorpio::FileMode::Read);
   m_num_remap_levs = scorpio::get_dimlen(map_file,"nlevs");
-  scorpio::eam_pio_closefile(map_file);
 
   auto tgt_grid_gids = src_grid->get_unique_gids();
   const int ngids = tgt_grid_gids.size();
@@ -88,6 +87,8 @@ VerticalRemapper (const grid_ptr_type& src_grid,
 
   // Gather the pressure level data for vertical remapping
   set_pressure_levels(map_file);
+
+  scorpio::eam_pio_closefile(map_file);
 }
 
 FieldLayout VerticalRemapper::
@@ -145,7 +146,6 @@ create_tgt_layout (const FieldLayout& src_layout) const
 
 void VerticalRemapper::
 set_pressure_levels(const std::string& map_file) {
-  scorpio::register_file(map_file,scorpio::FileMode::Read);
 
   using namespace ShortFieldTagsNames;
   std::vector<FieldTag> tags = {LEV};
@@ -165,7 +165,6 @@ set_pressure_levels(const std::string& map_file) {
   scorpio::set_dof(map_file,"p_levs",m_num_remap_levs,dofs_offsets.data());
   scorpio::set_decomp(map_file);
   scorpio::grid_read_data_array(map_file,"p_levs",-1,remap_pres_scal.data(),remap_pres_scal.size());
-  scorpio::eam_pio_closefile(map_file);
 
   m_remap_pres.sync_to_dev();
 }
