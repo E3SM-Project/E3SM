@@ -82,10 +82,10 @@ extern "C" void pam_driver() {
   // initialize stat variables
   pam_statistics_init(coupler);
 
-  // // initilize surface "psuedo-friction" (psuedo => doesn't match "real" GCM friction)
-  // auto input_tau  = dm_host.get<real const,1>("input_tau00").createDeviceCopy();
-  // auto input_bflx = dm_host.get<real const,1>("input_bflxls").createDeviceCopy();
-  // modules::surface_friction_init(coupler, input_tau, input_bflx);
+  // initilize surface "psuedo-friction" (psuedo => doesn't match "real" GCM friction)
+  auto input_tau  = dm_host.get<real const,1>("input_tau00").createDeviceCopy();
+  auto input_bflx = dm_host.get<real const,1>("input_bflxls").createDeviceCopy();
+  modules::surface_friction_init(coupler, input_tau, input_bflx);
 
   // Perturb the CRM at the beginning of the run
   if (is_first_step) {
@@ -136,7 +136,7 @@ extern "C" void pam_driver() {
 
     if (enable_state_checks) { chk_state(coupler, "4"); }
 
-    // coupler.run_module( "compute_surface_friction"     , modules::compute_surface_friction );
+    coupler.run_module( "compute_surface_friction"     , modules::compute_surface_friction );
 
     pam_statistics_save_state(coupler);
     coupler.run_module( "sgs"                          , [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
