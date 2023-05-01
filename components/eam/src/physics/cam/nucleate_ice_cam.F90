@@ -697,7 +697,7 @@ subroutine nucleate_ice_cam_calc( &
    real(r8) :: odst_num
    real(r8) :: osoot_num
    real(r8) :: dso4_num
-   real(r8) :: so4_num_ac
+   real(r8) :: so4_num_ac ! adjusted accum nucleated number
    real(r8) :: so4_num_at!kzm so4 num in aitken																		
    real(r8) :: so4_num_cr,bc_num_accum
    real(r8) :: so4_num_st_cr,fso4_m3,fso4_m5
@@ -1119,7 +1119,7 @@ subroutine nucleate_ice_cam_calc( &
                ! write(iulog,*)'kzm_odst_num', odst_num
                ! write(iulog,*)'kzm_osoot_num', osoot_num
             !endif
-            if (prog_modal_aero .and. use_preexisting_ice .and. aero_nucleation_removal) then
+            if (prog_modal_aero .and. aero_nucleation_removal) then
             if ( aero_nucleation_removal) then
                if (separate_dust) then
                   call endrun('nucleate_ice_cam: use_preexisting_ice is not supported in separate_dust mode (MAM7)')
@@ -1165,6 +1165,7 @@ subroutine nucleate_ice_cam_calc( &
                   !ptend%q(i,k,ccoarse_dst_idx) = - odst_num / dst_num * icldm(i,k) * coarse_dust(i,k) / dtime!
                   !cld_coarse_dust(i,k) = cld_coarse_dust(i,k) + odst_num / dst_num *icldm(i,k) * coarse_dust(i,k)
                end if
+               if (1 > 2) then
                if (osoot_num > 0.0_r8 ) then
                   ! transfer number from interstial to cloudborne
                   !cld_num_accum(i,k) = max((cld_num_accum(i,k) + (osoot_num * icldm(i,k))/rho(i,k)/1e-6_r8), 0.0_r8)
@@ -1178,7 +1179,7 @@ subroutine nucleate_ice_cam_calc( &
                   mass_accum_bc_tend1 = -max((osoot_num/soot_num *icldm(i,k) *accum_bc(i,k)), 0.0_r8)
                   !write(iulog,*)'kzm_osoot_num', osoot_num     
                endif
-              
+               endif
             endif
             endif
 
@@ -1221,16 +1222,21 @@ subroutine nucleate_ice_cam_calc( &
               !num_coarse_tend2,num_accum_tend2
 
               !if ((k < troplev(i)) .and. (nucleate_ice_strat > 0._r8)) then
-              if ( (nucleate_ice_strat > 0._r8)) then
+              if ( (nucleate_ice_strat > 0._r8) .and. (k < troplev(i))) then
                  if (oso4_num > 0._r8) then
+                    !oso4_num #/cm3     
                     !so4_num_ac = num_accum(i,k)*rho(i,k)*1.0e-6_r8
                     if (mode_strat_coarse_idx > 0._r8) then
                         so4_num_st_cr = num_strcrs(i,k)*rho(i,k)*1.0e-6_r8 !kzm add in stratosphere coarse
-                        so4_num_ac = num_accum(i,k)*rho(i,k)*1.0e-6_r8 ! over write weighted so4_num_ac
-                        dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr + so4_num_st_cr + so4_num_accum)) &  !kzm change only include coarse
+                        !so4_num_ac = num_accum(i,k)*rho(i,k)*1.0e-6_r8 ! over write weighted so4_num_ac
+                        ! use 10 times aitken nucleated ice to adjust (Barahona and Nenes 2008)
+                        !so4_num_ac = min(oso4_num*rho(i,k)*1.0e-6_r8*10.0_r8, so4_num_accum*0.1_r8) 
+                        so4_num_ac = max(0.0_r8, so4_num_accum*0.1_r8) 
+                        !write(iulog,*)'kzm_oso4_num', oso4_num, so4_num_accum, so4_num_ac, so4_num_st_cr
+                        dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr + so4_num_st_cr + so4_num_ac )) &  !kzm change only include coarse
                                    ) * 1e6_r8 / rho(i,k) !kzm
                     else
-                        dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr + so4_num_accum)) ) * 1e6_r8 / rho(i,k)
+                        dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr )) ) * 1e6_r8 / rho(i,k)
                     endif
                     if (2<1) then
                        if (mode_coarse_idx > 0._r8  .and. mode_strat_coarse_idx > 0._r8 ) then
@@ -1309,6 +1315,7 @@ subroutine nucleate_ice_cam_calc( &
                  end if !if oso4_num > 0
                end if !if nucleate_ice_strat > 0
                if (aero_nucleation_removal) then
+                  if (1>2) then      
                   if (mode_coarse_idx > 0._r8) then 
                      !num_accum_tend2,cld_num_accum_tend2,num_coarse_tend2,cld_num_coarse_tend2
                      !cld_mass_accum_so4_tend2,mass_accum_so4_tend2,cld_mass_coarse_so4_tend2,mass_coarse_so4_tend2     
@@ -1333,6 +1340,7 @@ subroutine nucleate_ice_cam_calc( &
                      !remove so4 in coarse
                      cld_coarse_so4(i,k) = cld_coarse_so4(i,k) + cld_mass_coarse_so4_tend2
                      coarse_so4(i,k) = coarse_so4(i,k) + mass_coarse_so4_tend2                   
+                  endif
                   endif
                   if (mode_strat_coarse_idx > 0._r8 ) then
                      !cld_num_strat_coarse_tend2, num_strcrs_tend2,cld_mass_strat_coarse_so4_tend2,mass_strat_coarse_so4_tend2       

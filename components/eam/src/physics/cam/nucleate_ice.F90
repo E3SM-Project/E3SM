@@ -444,7 +444,7 @@ subroutine nucleati(  &
    oniimm = niimm*1.e+6_r8/rhoair
    onihf  = nihf*1.e+6_r8/rhoair
 !kzm++
-   oso4_num  = nihf
+   oso4_num  = nihf  ! #/cm3
    odst_num  = niimm
    osoot_num = 0._r8
 !kzm--
