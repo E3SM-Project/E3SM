@@ -156,7 +156,7 @@ set_pressure_levels(const std::string& map_file) {
   m_remap_pres.get_header().get_alloc_properties().request_allocation(mPack::n);
   m_remap_pres.allocate_view();
 
-  auto remap_pres_scal = m_remap_pres.get_view<Real*>();
+  auto remap_pres_scal = m_remap_pres.get_view<Real*,Host>();
 
   std::vector<scorpio::offset_t> dofs_offsets(m_num_remap_levs);
   std::iota(dofs_offsets.begin(),dofs_offsets.end(),0);
@@ -167,6 +167,7 @@ set_pressure_levels(const std::string& map_file) {
   scorpio::grid_read_data_array(map_file,"p_levs",-1,remap_pres_scal.data(),remap_pres_scal.size());
   scorpio::eam_pio_closefile(map_file);
 
+  m_remap_pres.sync_to_dev();
 }
 
 void VerticalRemapper::
