@@ -52,6 +52,7 @@ module ocn_forward_mode
    use ocn_vvel_coriolis
    use ocn_vvel_advection
    use ocn_vvel_hmix_del2
+   use ocn_vvel_hmix_del4
 
    use ocn_vel_pressure_grad
    use ocn_vel_vadv
@@ -316,6 +317,8 @@ module ocn_forward_mode
         call ocn_vvel_pgf_init(err_tmp)
         ierr = ior(ierr, err_tmp)
         call ocn_vvel_hmix_del2_init(err_tmp)
+        ierr = ior(ierr, err_tmp)
+        call ocn_vvel_hmix_del4_init(err_tmp)
         ierr = ior(ierr, err_tmp)
         call ocn_nonhydrostatic_solver_init(domain % dminfo % comm, err_tmp)
         ierr = ior(ierr, err_tmp)

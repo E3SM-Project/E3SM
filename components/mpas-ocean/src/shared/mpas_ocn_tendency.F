@@ -72,6 +72,7 @@ module ocn_tendency
    use ocn_vvel_coriolis
    use ocn_vvel_advection
    use ocn_vvel_hmix_del2
+   use ocn_vvel_hmix_del4
 
    use mpas_vector_reconstruction
 
@@ -364,6 +365,9 @@ subroutine ocn_tend_vvel(tendPool, statePool, forcingPool, meshPool, &
    ! vertical velocity
    !
    call ocn_vvel_hmix_del2_tend(layerThickEdgeFlux, vertVelocityNonhydro, &
+        tend_vertVelocityNonhydro, err)
+
+   call ocn_vvel_hmix_del4_tend(layerThickEdgeFlux, vertVelocityNonhydro, &
         tend_vertVelocityNonhydro, err)
 
 
