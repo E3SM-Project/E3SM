@@ -94,7 +94,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: topo_buoyancy_N1B
    real (kind=RKIND), dimension(:), pointer :: bathy_stddev
    real (kind=RKIND), dimension(:), pointer :: bed_slope_edges
-   real (kind=RKIND), dimension(:), pointer :: bottomDepthEdge
+   real (kind=RKIND), dimension(:), pointer :: bottomDepthEdgeTWD
    real (kind=RKIND), dimension(:), pointer :: lonGradEdge
    real (kind=RKIND), dimension(:), pointer :: latGradEdge
    real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers
@@ -270,7 +270,7 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'topo_buoyancy_N1B', topo_buoyancy_N1B)
          call mpas_pool_get_array(diagnosticsPool, 'bathy_stddev', bathy_stddev)
          call mpas_pool_get_array(diagnosticsPool, 'bed_slope_edges', bed_slope_edges)
-         call mpas_pool_get_array(diagnosticsPool, 'bottomDepthEdge', bottomDepthEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'bottomDepthEdgeTWD', bottomDepthEdgeTWD)
          call mpas_pool_get_array(diagnosticsPool, 'lonGradEdge', lonGradEdge)
          call mpas_pool_get_array(diagnosticsPool, 'latGradEdge', latGradEdge)
       end if
@@ -400,8 +400,8 @@ contains
                     'bed_slope_edges', &
                      bed_slope_edges)
          call mpas_pool_get_array(diagnosticsPool, &
-                    'bottomDepthEdge', &
-                     bottomDepthEdge)
+                    'bottomDepthEdgeTWD', &
+                     bottomDepthEdgeTWD)
          call mpas_pool_get_array(diagnosticsPool, &
                   'lonGradEdge', &
                    lonGradEdge)
@@ -745,7 +745,7 @@ contains
          !$acc enter data create(topo_buoyancy_N1B)
          !$acc enter data create(bathy_stddev)
          !$acc enter data create(bed_slope_edges)
-         !$acc enter data create(bottomDepthEdge)
+         !$acc enter data create(bottomDepthEdgeTWD)
          !$acc enter data create(lonGradEdge)
          !$acc enter data create(latGradEdge)
          !$acc enter data create(temp_twd)

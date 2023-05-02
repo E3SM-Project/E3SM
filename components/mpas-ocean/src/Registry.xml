@@ -2283,7 +2283,7 @@
 			<var name="topo_buoyancy_N1B"/>
 			<var name="bathy_stddev"/>
 			<var name="bed_slope_edges"/>
-			<var name="bottomDepthEdge"/>
+			<var name="bottomDepthEdgeTWD"/>
 			<var name="lonGradEdge"/>
 			<var name="latGradEdge"/>
 		</stream>
@@ -3276,7 +3276,7 @@
 			description="The integral gradient average per cell"
 			packages="topographicWaveDragPKG"
 		/>
-		<var name="bottomDepthEdge" type="real" dimensions="nEdges" units="unitless"
+		<var name="bottomDepthEdgeTWD" type="real" dimensions="nEdges" units="unitless"
 			description="bottom depth at the cell edges"
 			packages="topographicWaveDragPKG"
 		/>
