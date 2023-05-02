@@ -14,7 +14,12 @@
 #include "sponge_layer.h"
 #include "surface_friction.h"
 #include "scream_cxx_interface_finalize.h"
+
+#ifdef MMF_PAM_DEBUG_CHK
 #include "pam_debug.h"
+#else
+void chk_state( pam::PamCoupler &coupler, std::string id ) { /* Dummy routine for GPU cases */ }
+#endif
 
 real constexpr enable_state_checks = false;
 
@@ -108,7 +113,7 @@ extern "C" void pam_driver() {
     if (crm_dt == 0.) { crm_dt = dycore.compute_time_step(coupler); }
     if (etime_crm + crm_dt > gcm_dt) { crm_dt = gcm_dt - etime_crm; }
 
-    std::cout<<"  WHDEBUG - etime_crm:"<<etime_crm<<std::endl;
+    // std::cout<<"  WHDEBUG - etime_crm:"<<etime_crm<<std::endl;
 
     if (enable_state_checks) { chk_state(coupler, "1"); }
 

@@ -16,7 +16,7 @@ void nan_chk(pam::PamCoupler &coupler, std::string id, std::string var_name) {
   auto tvar = dm_device.get<real,4>(var_name);
   parallel_for("Horz mean of CRM dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     if ( isnan(tvar(k,j,i,iens)) ) {
-      printf("  WHDEBUG - NaN detected in driver - id:%s  k:%d  i:%d  e:%d  %s:%d \n",id.c_str(),k,i,iens,var_name.c_str(),tvar(k,j,i,iens));
+      printf("  WHDEBUG - pam_debug - NaN detected in driver - id:%s  k:%d  i:%d  e:%d  %s:%d \n",id.c_str(),k,i,iens,var_name.c_str(),tvar(k,j,i,iens));
     }
   });
 }
@@ -32,7 +32,7 @@ void neg_chk(pam::PamCoupler &coupler, std::string id, std::string var_name) {
   auto tvar = dm_device.get<real,4>(var_name);
   parallel_for("Horz mean of CRM dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     if ( tvar(k,j,i,iens)<0 ) {
-      printf("  WHDEBUG - negative value detected in driver - id:%s  k:%d  i:%d  e:%d  %s:%d \n",id.c_str(),k,i,iens,var_name.c_str(),tvar(k,j,i,iens));
+      printf("  WHDEBUG - pam_debug - negative value detected in driver - id:%s  k:%d  i:%d  e:%d  %s:%d \n",id.c_str(),k,i,iens,var_name.c_str(),tvar(k,j,i,iens));
     }
   });
 }
@@ -48,7 +48,7 @@ void max_chk(pam::PamCoupler &coupler, std::string id, std::string var_name, rea
   auto tvar = dm_device.get<real,4>(var_name);
   parallel_for("Horz mean of CRM dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     if ( tvar(k,j,i,iens)>max_val ) {
-      printf("  WHDEBUG - variable exceeds max threshold in driver - id:%s  k:%d  i:%d  e:%d  %s:%g \n",id.c_str(),k,i,iens,var_name.c_str(),tvar(k,j,i,iens));
+      printf("  WHDEBUG - pam_debug - variable exceeds max threshold in driver - id:%s  k:%d  i:%d  e:%d  %s:%g \n",id.c_str(),k,i,iens,var_name.c_str(),tvar(k,j,i,iens));
     }
   });
 }
@@ -64,7 +64,7 @@ void abs_chk(pam::PamCoupler &coupler, std::string id, std::string var_name, rea
   auto tvar = dm_device.get<real,4>(var_name);
   parallel_for("Horz mean of CRM dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     if ( abs(tvar(k,j,i,iens))>max_val ) {
-      printf("  WHDEBUG - variable abs exceeds max threshold in driver - id:%s  k:%d  i:%d  e:%d  %s:%g \n",id.c_str(),k,i,iens,var_name.c_str(),tvar(k,j,i,iens));
+      printf("  WHDEBUG - pam_debug - variable abs exceeds max threshold in driver - id:%s  k:%d  i:%d  e:%d  %s:%g \n",id.c_str(),k,i,iens,var_name.c_str(),tvar(k,j,i,iens));
     }
   });
 }
@@ -77,8 +77,8 @@ void chk_state( pam::PamCoupler &coupler, std::string id ) {
   nan_chk(coupler, id, "water_vapor");
   nan_chk(coupler, id, "cloud_water");
   nan_chk(coupler, id, "ice");
-  nan_chk(coupler, id, "uvel");
-  nan_chk(coupler, id, "wvel");
+  // nan_chk(coupler, id, "uvel");
+  // nan_chk(coupler, id, "wvel");
 
   neg_chk(coupler, id, "temp");
   neg_chk(coupler, id, "density_dry");
@@ -92,7 +92,7 @@ void chk_state( pam::PamCoupler &coupler, std::string id ) {
   max_chk(coupler, id, "cloud_water", 0.1);
   max_chk(coupler, id, "ice",         0.1);
 
-  abs_chk(coupler, id, "uvel",        100);
+  // abs_chk(coupler, id, "uvel",        100);
 
   fflush(stdout);
 }
