@@ -1035,12 +1035,12 @@ module ocn_time_integration_rk4
 
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
       if (associated(highFreqThicknessProvis)) then
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+         call ocn_vert_transport_velocity_top(verticalMeshPool, &
             layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
             sshCur, rkSubstepWeight, vertAleTransportTop, err, &
             highFreqThicknessProvis)
       else
-         call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
+         call ocn_vert_transport_velocity_top(verticalMeshPool, &
             layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
             sshCur, rkSubstepWeight, vertAleTransportTop, err)
       endif
