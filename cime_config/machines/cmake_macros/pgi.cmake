@@ -1,5 +1,5 @@
 string(APPEND CFLAGS " -time")
-string(APPEND CXXFLAGS " -time -std=c++14")
+string(APPEND CXXFLAGS " -time")
 string(APPEND FFLAGS " -i4 -time -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03")
 if (compile_threaded)
   string(APPEND CFLAGS " -mp")

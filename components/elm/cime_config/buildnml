@@ -41,6 +41,7 @@ def buildnml(case, caseroot, compname):
     glc_nec             = case.get_value("GLC_NEC")
     lnd_grid            = case.get_value("LND_GRID")
     lnd_ncpl            = case.get_value("LND_NCPL")
+    rof_ncpl            = case.get_value("ROF_NCPL")
     lnd_domain_path     = case.get_value("LND_DOMAIN_PATH")
     lnd_domain_file     = case.get_value("LND_DOMAIN_FILE")
     mask_grid           = case.get_value("MASK_GRID")
@@ -180,13 +181,16 @@ def buildnml(case, caseroot, compname):
         if elm_nml_use_case != "UNSET": usecase = "-use_case {}".format(elm_nml_use_case)
 
         start_ymd = run_startdate.replace("-", "")
-        ignore = "-ignore_ic_year" if ("-01-01" in run_startdate or "-09-01" in run_startdate) else "-ignore_ic_date"
+
+        # change to always ignore_ic_year to allow more flexibility in specifying IC for different start date of year
+        # ignore = "-ignore_ic_year" if ("-01-01" in run_startdate or "-09-01" in run_startdate) else "-ignore_ic_date"
+        ignore = "-ignore_ic_year"
 
         sysmod =  "{}/components/elm/bld/build-namelist -infile {}/Buildconf/elmconf/namelist ".format(srcroot, caseroot)
         sysmod += " -csmdata {} -inputdata {}/Buildconf/elm.input_data_list {}".format(din_loc_root, caseroot, ignore)
         sysmod += ' -namelist " &elm_inparm  start_ymd={} {} /"'.format(start_ymd, elm_namelist_opts)
         sysmod += " {} {} -res {} {} -clm_start_type {}".format(usecase, glc_opts, resolution, clmusr, start_type)
-        sysmod += " -envxml_dir {} -l_ncpl {} -lnd_frac {}/{}".format(caseroot, lnd_ncpl, lnd_domain_path, lnd_domain_file)
+        sysmod += " -envxml_dir {} -l_ncpl {} -r_ncpl {} -lnd_frac {}/{}".format(caseroot, lnd_ncpl, rof_ncpl, lnd_domain_path, lnd_domain_file)
         sysmod += " -glc_nec {} -co2_ppmv {} -co2_type {} ".format(glc_nec, ccsm_co2_ppmv, elm_co2_type)
         sysmod += " -ncpl_base_period {} ".format(ncpl_base_period)
         sysmod += " -config {}/config_cache.xml {}".format(elmconf_dir, elm_bldnml_opts)

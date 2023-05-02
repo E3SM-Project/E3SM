@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -189,7 +189,7 @@ contains
 
       if (config_use_idealAgeTracers_idealAge_forcing) then
          ! set mask = 0 for open ocean
-         ! set mask = 1 under ice shelves
+         ! set mask = 1 under land ice
          idealAgeMask = 0.0_RKIND
          if (associated(landIceMask)) then
             where (landIceMask /= 0) idealAgeMask(1,:) = 1.0_RKIND

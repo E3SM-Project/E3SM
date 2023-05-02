@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -192,7 +192,7 @@ contains
 
       !*** Reset values based on input model configuration
 
-      if (config_use_explicit_bottom_drag) then
+      if (trim(config_bottom_drag_mode) == 'explicit') then
          explicitBottomDragOff = .false.
          dragCoeff = config_explicit_bottom_drag_coeff
       endif

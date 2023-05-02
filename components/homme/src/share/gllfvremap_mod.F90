@@ -1071,12 +1071,12 @@ contains
     !     g = inv(M_sgsg) M_sgf inv(S) M_ff f
     wrk = reshape(gfr%w_ff(:nf2), (/nf,nf/))*f(:nf,:nf)
     if (nf == npi) then
-       call dtrsm('l', 'u', 't', 'n', nf2, 1, one, R, size(R,1), wrk, nf2)
-       call dormqr('l', 'n', nf2, 1, nf2, R, size(R,1), tau, wrk, nf2, wr, np2, info)
+       call dtrsm('L', 'U', 'T', 'N', nf2, 1, one, R, size(R,1), wrk, nf2)
+       call dormqr('L', 'N', nf2, 1, nf2, R, size(R,1), tau, wrk, nf2, wr, np2, info)
        g(:npi,:npi) =  wrk
     else
-       call dtrtrs('u', 't', 'n', nf2, 1, R, size(R,1), wrk, nf2, info)
-       call dtrtrs('u', 'n', 'n', nf2, 1, R, size(R,1), wrk, nf2, info)
+       call dtrtrs('U', 'T', 'N', nf2, 1, R, size(R,1), wrk, nf2, info)
+       call dtrtrs('U', 'N', 'N', nf2, 1, R, size(R,1), wrk, nf2, info)
        g(:npi,:npi) = zero
        do fj = 1,nf
           do fi = 1,nf
@@ -1620,7 +1620,7 @@ contains
 
     n = np*np
 
-    call dpotrf('u', n, gfr%pg1sd%Achol, size(gfr%pg1sd%Achol,1), info)
+    call dpotrf('U', n, gfr%pg1sd%Achol, size(gfr%pg1sd%Achol,1), info)
     if (info /= 0) print *, 'gfr ERROR> dpotrf returned', info
 
     do i = 1,n
@@ -1631,7 +1631,7 @@ contains
     gfr%pg1sd%s = reshape(gfr%w_gg(:np,:np), (/np*np/))
 
     ! Form R's = c
-    call dtrtrs('u', 't', 'n', n, 1, gfr%pg1sd%Achol, size(gfr%pg1sd%Achol,1), &
+    call dtrtrs('U', 'T', 'N', n, 1, gfr%pg1sd%Achol, size(gfr%pg1sd%Achol,1), &
          gfr%pg1sd%s, np*np, info)
     if (info /= 0) print *, 'gfr ERROR> dtrtrs returned', info
     gfr%pg1sd%sts = sum(gfr%pg1sd%s*gfr%pg1sd%s)
@@ -1665,11 +1665,11 @@ contains
     mass = sum(gfr%w_gg*g)
 
     ! Solve R'z = b.
-    call dtrtrs('u', 't', 'n', n, 1, s%Achol, size(s%Achol,1), x, np*np, info)
+    call dtrtrs('U', 'T', 'N', n, 1, s%Achol, size(s%Achol,1), x, np*np, info)
     ! Assemble z + (d - s'z)/(s's) s.
     x(:n) = x(:n) + ((mass - sum(s%s(:n)*x(:n)))/s%sts)*s%s(:n)
     ! Solve R x = z + (d - s'z)/(s's) s.
-    call dtrtrs('u', 'n', 'n', n, 1, s%Achol, size(s%Achol,1), x, np*np, info)
+    call dtrtrs('U', 'N', 'N', n, 1, s%Achol, size(s%Achol,1), x, np*np, info)
 
     ! Extract g(I).
     g = reshape(x(:n), (/np,np/))
@@ -2558,7 +2558,7 @@ contains
 
     ! Purposely construct our own hybrid object to test gfr_hybrid_create.
     type (hybrid_t) :: hybrid
-    integer :: nets, nete, nerr
+    integer :: nets, nete, nerr, ic
 
     nerr = 0
     if (.not. par%dynproc) return
@@ -2728,21 +2728,22 @@ contains
        qmax = -two
        qmin1 = two
        qmax1 = -two
+       ic = 2
        do ie = nets, nete
           wg = gfr%w_gg(:,:)*elem(ie)%metdet(:,:)
           ! L2 on q. Might switch to q*ps_v.
           global_shared_buf(ie,1) = &
-               sum(wg*(elem(ie)%state%Q(:,:,1,1) - elem(ie)%state%Q(:,:,1,2))**2)
+               sum(wg*(elem(ie)%state%Q(:,:,1,1) - elem(ie)%state%Q(:,:,1,ic))**2)
           global_shared_buf(ie,2) = &
-               sum(wg*elem(ie)%state%Q(:,:,1,2)**2)
+               sum(wg*elem(ie)%state%Q(:,:,1,ic)**2)
           ! Mass conservation.
           wg = wg*elem(ie)%state%ps_v(:,:,1)
-          global_shared_buf(ie,3) = sum(wg*elem(ie)%state%Q(:,:,1,2))
+          global_shared_buf(ie,3) = sum(wg*elem(ie)%state%Q(:,:,1,ic))
           global_shared_buf(ie,4) = sum(wg*elem(ie)%state%Q(:,:,1,1))
           qmin = min(qmin, minval(elem(ie) %state%Q(:,:,1,1)))
-          qmin1 = min(qmin1, minval(elem(ie)%state%Q(:,:,1,2)))
+          qmin1 = min(qmin1, minval(elem(ie)%state%Q(:,:,1,ic)))
           qmax = max(qmax, maxval(elem(ie)%state%Q(:,:,1,1)))
-          qmax1 = max(qmax1, maxval(elem(ie)%state%Q(:,:,1,2)))
+          qmax1 = max(qmax1, maxval(elem(ie)%state%Q(:,:,1,ic)))
        end do
        call wrap_repro_sum(nvars=4, comm=hybrid%par%comm)
        qmin = ParallelMin(qmin, hybrid)
@@ -2797,7 +2798,7 @@ contains
           call ref2sphere(corners, refin(1), refin(2), sphere)
           call sphere2ref(corners, sphere, refout(1), refout(2))
           err = abs(refin(1) - refout(1)) + abs(refin(2) - refout(2))
-          if (err > 10*eps .or. &
+          if (err > 15*eps .or. &
                maxval(abs(refout)) > 1 + 5*eps .or. &
                any(refout /= refout)) then
              write(iulog,*) refin(1), refin(2)

@@ -225,6 +225,7 @@ module elm_varctl
   logical, public            :: use_fates_logging = .false.             ! true => turn on logging module
   logical, public            :: use_fates_planthydro = .false.          ! true => turn on fates hydro
   logical, public            :: use_fates_cohort_age_tracking = .false. ! true => turn on cohort age tracking
+  logical, public            :: use_fates_tree_damage = .false.         ! true => turn on tree damage module
   logical, public            :: use_fates_ed_st3   = .false.            ! true => static stand structure
   logical, public            :: use_fates_ed_prescribed_phys = .false.  ! true => prescribed physiology
   logical, public            :: use_fates_inventory_init = .false.      ! true => initialize fates from inventory
@@ -298,8 +299,11 @@ module elm_varctl
   !----------------------------------------------------------
 
   logical,  public :: single_column = .false. ! true => single column mode
+  logical,  public :: scm_multcols  = .false. ! true => SCM domain mode
   real(r8), public :: scmlat        = rundef  ! single column lat
   real(r8), public :: scmlon        = rundef  ! single column lon
+  integer,  public :: scm_nx        = -1      ! doubly periodic points x direction
+  integer,  public :: scm_ny        = -1      ! doubly periodic points y direction
 
   !----------------------------------------------------------
   ! instance control
@@ -425,8 +429,8 @@ module elm_varctl
 
   ! Soil erosion
   !-----------------------------------------------------------------------
-  logical, public :: use_erosion    = .false.
-  logical, public :: ero_ccycle     = .false.
+  logical, public :: use_erosion    = .false.   ! switch for turning on the soil erosion model
+  logical, public :: ero_ccycle     = .false.   ! switch for turning on soil C, N and P loss by erosion (only valid when user_erosion = .true.)
 
   !$acc declare copyin(use_pheno_flux_limiter)
   !$acc declare copyin(use_erosion)
@@ -503,12 +507,28 @@ module elm_varctl
    integer, public :: budget_ann   = 1
    integer, public :: budget_ltann = 1
    integer, public :: budget_ltend = 0
+
+   !----------------------------------------------------------
+   ! land river two way coupling
+   !----------------------------------------------------------
+   logical, public :: use_lnd_rof_two_way = .false.
+   integer, public :: lnd_rof_coupling_nstep = 0
+   
+   
+   !----------------------------------------------------------
+   ! SNICAR-AD
+   !----------------------------------------------------------
+   character(len=256), public :: snow_shape = 'sphere'
+   character(len=256), public :: snicar_atm_type = 'default'
+   logical, public :: use_dust_snow_internal_mixing = .false.
+
+
 contains
 
   !---------------------------------------------------------------------------
   subroutine elm_varctl_set( caseid_in, ctitle_in, brnch_retain_casename_in,    &
-       single_column_in, scmlat_in, scmlon_in, nsrest_in, &
-       version_in, hostname_in, username_in)
+       single_column_in, scm_multcols_in, scmlat_in, scmlon_in, scm_nx_in, scm_ny_in, &
+       nsrest_in, version_in, hostname_in, username_in)
     !
     ! !DESCRIPTION:
     ! Set input control variables.
@@ -519,8 +539,11 @@ contains
     logical,            optional, intent(IN) :: brnch_retain_casename_in ! true => allow case name to remain the
                                                                          ! same for branch run
     logical,            optional, intent(IN) :: single_column_in         ! true => single column mode
+    logical,            optional, intent(IN) :: scm_multcols_in          ! SCM for multiple columns
     real(r8),           optional, intent(IN) :: scmlat_in                ! single column lat
     real(r8),           optional, intent(IN) :: scmlon_in                ! single column lon
+    integer,            optional, intent(IN) :: scm_nx_in                ! x direction points
+    integer,            optional, intent(IN) :: scm_ny_in                ! y direction points
     integer,            optional, intent(IN) :: nsrest_in                ! 0: initial run. 1: restart: 3: branch
     character(len=256), optional, intent(IN) :: version_in               ! model version
     character(len=256), optional, intent(IN) :: hostname_in              ! hostname running on
@@ -534,8 +557,11 @@ contains
     if ( present(caseid_in       ) ) caseid        = caseid_in
     if ( present(ctitle_in       ) ) ctitle        = ctitle_in
     if ( present(single_column_in) ) single_column = single_column_in
+    if ( present(scm_multcols_in ) ) scm_multcols  = scm_multcols_in
     if ( present(scmlat_in       ) ) scmlat        = scmlat_in
     if ( present(scmlon_in       ) ) scmlon        = scmlon_in
+    if ( present(scm_nx_in       ) ) scm_nx        = scm_nx_in
+    if ( present(scm_ny_in       ) ) scm_ny        = scm_ny_in
     if ( present(nsrest_in       ) ) nsrest        = nsrest_in
     if ( present(brnch_retain_casename_in) ) brnch_retain_casename = brnch_retain_casename_in
     if ( present(version_in      ) ) version       = version_in

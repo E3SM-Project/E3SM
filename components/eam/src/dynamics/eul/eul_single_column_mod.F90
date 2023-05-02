@@ -20,6 +20,8 @@ contains
 
 subroutine scm_setinitial
 
+  use constituents, only: pcnst, qmin
+
   implicit none
 
   integer i, j, k, thelev
@@ -51,6 +53,9 @@ subroutine scm_setinitial
     endif
 
     if (get_nstep() .eq. 0) then
+      do i = 1, pcnst
+         if (scm_zero_non_iop_tracers) q3(1,:,i,1,n3) = qmin(i)
+      end do
       do k=thelev,PLEV
         if (have_t) t3(1,k,1,n3)=tobs(k)
         if (have_q) q3(1,k,1,1,n3)=qobs(k)

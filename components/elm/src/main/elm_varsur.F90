@@ -47,6 +47,10 @@ module elm_varsur
   real(r8), pointer :: elv_tunit(:,:)  ! Topounit elevation 
   real(r8), pointer :: slp_tunit(:,:)  ! Topounit slope 
   integer, pointer :: asp_tunit(:,:)  ! Topounit aspect
+  
+  real(r8),pointer :: firrig(:,:) 
+  real(r8),pointer :: f_surf(:,:)  ! fraction of water withdraws from surfacewater
+  real(r8),pointer :: f_grd(:,:)   ! fraction of water withdraws from groundwater
   !-----------------------------------------------------------------------
 
 end module elm_varsur

@@ -1,21 +1,21 @@
 	<nml_record name="AM_highFrequencyOutput" mode="forward;analysis">
-		<nml_option name="config_AM_highFrequencyOutput_enable" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_highFrequencyOutput_enable" type="logical" default_value=".false."
 			description="If true, ocean analysis member highFrequencyOutput is called."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_highFrequencyOutput_compute_interval" type="character" default_value="output_interval" units="unitless"
+		<nml_option name="config_AM_highFrequencyOutput_compute_interval" type="character" default_value="output_interval"
 			description="Timestamp determining how often analysis member computation should be performed."
 			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
-		<nml_option name="config_AM_highFrequencyOutput_output_stream" type="character" default_value="highFrequencyOutput" units="unitless"
+		<nml_option name="config_AM_highFrequencyOutput_output_stream" type="character" default_value="highFrequencyOutput"
 			description="Name of the stream that the highFrequencyOutput analysis member should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>
-		<nml_option name="config_AM_highFrequencyOutput_compute_on_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_highFrequencyOutput_compute_on_startup" type="logical" default_value=".true."
 			description="Logical flag determining if an analysis member computation occurs on start-up."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_highFrequencyOutput_write_on_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_highFrequencyOutput_write_on_startup" type="logical" default_value=".true."
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values=".true. or .false."
 		/>
@@ -24,268 +24,268 @@
 		<package name="highFrequencyOutputAMPKG" description="This package includes variables required for the highFrequencyOutput analysis member."/>
 	</packages>
 	<var_struct name="highFrequencyOutputAM" time_levs="1" packages="highFrequencyOutputAMPKG">
-		<var name="kineticEnergyAtSurface" type="real" dimensions="nCells Time" units="m^2 s^{-2}"
+		<var name="kineticEnergyAtSurface" type="real" dimensions="nCells Time" units="m^2 s^-2"
 			description="kinetic energy at surface"
 		/>
-		<var name="vertGMvelocitySFC" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="vertGMvelocitySFC" type="real" dimensions="nCells Time" units="m s^-1"
 			description="vertical velocity due to GM parameterization"
 		/>
-		<var name="vertTransportVelocitySFC" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="vertTransportVelocitySFC" type="real" dimensions="nCells Time" units="m s^-1"
 			description="vertical velocity due to normal transport velocity divergence"
 		/>
-		<var name="vertVelSFC" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="vertVelSFC" type="real" dimensions="nCells Time" units="m s^-1"
 			description="vertical velocity due to normal velocity divergence"
 		/>
-		<var name="vertGMvelocityAt250m" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="vertGMvelocityAt250m" type="real" dimensions="nCells Time" units="m s^-1"
 			description="vertical velocity due to GM parameterization at approximately 250m"
 		/>
-		<var name="vertTransportVelocityAt250m" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="vertTransportVelocityAt250m" type="real" dimensions="nCells Time" units="m s^-1"
 			description="vertical velocity due to normal transport velocity divergence at approximately 250m"
 		/>
-		<var name="vertVelAt250m" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="vertVelAt250m" type="real" dimensions="nCells Time" units="m s^-1"
 			description="vertical velocity due to normal velocity divergence at approximately 250m"
 		/>
-		<var name="normalVelAtSFC" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="normalVelAtSFC" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="normal velocity at surface"
 		/>
-		<var name="normalVelAt250m" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="normalVelAt250m" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="normal velocity at approximately 250m"
 		/>
-		<var name="normalVelAtBottom" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="normalVelAtBottom" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="normal velocity at approximately Bottom"
 		/>
-		<var name="tangentialVelAtSFC" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="tangentialVelAtSFC" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="tangential velocity at surface"
 		/>
-		<var name="tangentialVelAt250m" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="tangentialVelAt250m" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="tangential velocity at approximately 250m"
 		/>
-		<var name="tangentialVelAtBottom" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="tangentialVelAtBottom" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="tangential velocity at approximately Bottom"
 		/>
-		<var name="zonalVelAtSFC" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="zonalVelAtSFC" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="zonal velocity at surface"
 		/>
-		<var name="zonalVelAt250m" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="zonalVelAt250m" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="zonal velocity at approximately 250m"
 		/>
-		<var name="zonalVelAtBottom" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="zonalVelAtBottom" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="zonal velocity at approximately Bottom"
 		/>
-		<var name="zonalAreaWeightedCellVelAtSFC" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="zonalAreaWeightedCellVelAtSFC" type="real" dimensions="nCells Time" units="m s^-1"
 			description="area-weighted cell zonal velocity at surface"
 		/>
-		<var name="zonalAreaWeightedCellVelAt250m" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="zonalAreaWeightedCellVelAt250m" type="real" dimensions="nCells Time" units="m s^-1"
 			description="area-weighted cell zonal velocity at approximately 250m"
 		/>
-		<var name="zonalAreaWeightedCellVelAtBottom" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="zonalAreaWeightedCellVelAtBottom" type="real" dimensions="nCells Time" units="m s^-1"
 			description="area-weighted cell zonal velocity at approximately Bottom"
 		/>
-		<var name="meridionalVelAtSFC" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="meridionalVelAtSFC" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="meridional velocity at surface"
 		/>
-		<var name="meridionalVelAt250m" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="meridionalVelAt250m" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="meridional velocity at approximately 250m"
 		/>
-		<var name="meridionalVelAtBottom" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="meridionalVelAtBottom" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="meridional velocity at approximately Bottom"
 		/>
-		<var name="meridionalAreaWeightedCellVelAtSFC" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="meridionalAreaWeightedCellVelAtSFC" type="real" dimensions="nCells Time" units="m s^-1"
 			description="area-weighted cell meridional velocity at surface"
 		/>
-		<var name="meridionalAreaWeightedCellVelAt250m" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="meridionalAreaWeightedCellVelAt250m" type="real" dimensions="nCells Time" units="m s^-1"
 			description="area-weighted cell meridional velocity at approximately 250m"
 		/>
-		<var name="meridionalAreaWeightedCellVelAtBottom" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="meridionalAreaWeightedCellVelAtBottom" type="real" dimensions="nCells Time" units="m s^-1"
 			description="area-weighted cell meridional velocity at approximately Bottom"
 		/>
-		<var name="normalBarotropicVel" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="normalBarotropicVel" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="normal barotropic velocity"
 		/>
-		<var name="tangentialBarotropicVel" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="tangentialBarotropicVel" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="tangential barotropic velocity"
 		/>
-		<var name="zonalBarotropicVel" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="zonalBarotropicVel" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="zonal barotropic velocity"
 		/>
-		<var name="meridionalBarotropicVel" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="meridionalBarotropicVel" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="meridional barotropic velocity"
 		/>
 
-		<var name="normalBaroclinicVelAtSFC" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="normalBaroclinicVelAtSFC" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="normal baroclinic velocity at surface"
 		/>
-		<var name="normalBaroclinicVelAt250m" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="normalBaroclinicVelAt250m" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="normal baroclinic velocity at 250m"
 		/>
-		<var name="normalBaroclinicVelAtBottom" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="normalBaroclinicVelAtBottom" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="normal baroclinic velocity at bottom"
 		/>
-		<var name="tangentialBaroclinicVelAtSFC" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="tangentialBaroclinicVelAtSFC" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="tangential baroclinic velocity at surface"
 		/>
-		<var name="tangentialBaroclinicVelAt250m" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="tangentialBaroclinicVelAt250m" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="tangential baroclinic velocity at 250m"
 		/>
-		<var name="tangentialBaroclinicVelAtBottom" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="tangentialBaroclinicVelAtBottom" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="tangential baroclinic velocity at bottom"
 		/>
-		<var name="zonalBaroclinicVelAtSFC" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="zonalBaroclinicVelAtSFC" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="zonal baroclinic velocity at surface"
 		/>
-		<var name="zonalBaroclinicVelAt250m" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="zonalBaroclinicVelAt250m" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="zonal baroclinic velocity at 250m"
 		/>
-		<var name="zonalBaroclinicVelAtBottom" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="zonalBaroclinicVelAtBottom" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="zonal baroclinic velocity at bottom"
 		/>
-		<var name="meridionalBaroclinicVelAtSFC" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="meridionalBaroclinicVelAtSFC" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="meridional baroclinic velocity at surface"
 		/>
-		<var name="meridionalBaroclinicVelAt250m" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="meridionalBaroclinicVelAt250m" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="meridional baroclinic velocity at 250m"
 		/>
-		<var name="meridionalBaroclinicVelAtBottom" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="meridionalBaroclinicVelAtBottom" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="meridional baroclinic velocity at bottom"
 		/>
 
-		<var name="normalGMBolusVelAtSFC" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="normalGMBolusVelAtSFC" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="normal Bolus velocity in Gent-McWilliams eddy parameterization at the surface"
 		/>
-		<var name="normalGMBolusVelAt250m" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="normalGMBolusVelAt250m" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="normal Bolus velocity in Gent-McWilliams eddy parameterization at 250m"
 		/>
-		<var name="normalGMBolusVelAtBottom" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="normalGMBolusVelAtBottom" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="normal Bolus velocity in Gent-McWilliams eddy parameterization at the bottom"
 		/>
-		<var name="tangentialGMBolusVelAtSFC" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="tangentialGMBolusVelAtSFC" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="tangential Bolus velocity in Gent-McWilliams eddy parameterization at the surface"
 		/>
-		<var name="tangentialGMBolusVelAt250m" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="tangentialGMBolusVelAt250m" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="tangential Bolus velocity in Gent-McWilliams eddy parameterization at 250m"
 		/>
-		<var name="tangentialGMBolusVelAtBottom" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="tangentialGMBolusVelAtBottom" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="tangential Bolus velocity in Gent-McWilliams eddy parameterization at the bottom"
 		/>
-		<var name="zonalGMBolusVelAtSFC" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="zonalGMBolusVelAtSFC" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="zonal Bolus velocity in Gent-McWilliams eddy parameterization at the surface"
 		/>
-		<var name="zonalGMBolusVelAt250m" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="zonalGMBolusVelAt250m" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="zonal Bolus velocity in Gent-McWilliams eddy parameterization at 250m"
 		/>
-		<var name="zonalGMBolusVelAtBottom" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="zonalGMBolusVelAtBottom" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="zonal Bolus velocity in Gent-McWilliams eddy parameterization at the bottom"
 		/>
-		<var name="meridionalGMBolusVelAtSFC" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="meridionalGMBolusVelAtSFC" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="meridional Bolus velocity in Gent-McWilliams eddy parameterization at the surface"
 		/>
-		<var name="meridionalGMBolusVelAt250m" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="meridionalGMBolusVelAt250m" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="meridional Bolus velocity in Gent-McWilliams eddy parameterization at 250m"
 		/>
-		<var name="meridionalGMBolusVelAtBottom" type="real" dimensions="nEdges Time" units="m s^{-1}"
+		<var name="meridionalGMBolusVelAtBottom" type="real" dimensions="nEdges Time" units="m s^-1"
 			 description="meridional Bolus velocity in Gent-McWilliams eddy parameterization at the bottom"
 		/>
 
-		<var name="BruntVaisalaFreqTopAtSFC" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="BruntVaisalaFreqTopAtSFC" type="real" dimensions="nCells Time" units="m s^-1"
 			description="Brunt Vaisala Frequency at surface"
 		/>
-		<var name="BruntVaisalaFreqTopAt250m" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="BruntVaisalaFreqTopAt250m" type="real" dimensions="nCells Time" units="m s^-1"
 			description="Brunt Vaisala Frequency at approximately 250m"
 		/>
-		<var name="BruntVaisalaFreqTopAtBottom" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="BruntVaisalaFreqTopAtBottom" type="real" dimensions="nCells Time" units="m s^-1"
 			description="Brunt Vaisala Frequency at approximately Bottom"
 		/>
-		<var name="kineticEnergyAt250m" type="real" dimensions="nCells Time" units="m^2 s^{-2}"
+		<var name="kineticEnergyAt250m" type="real" dimensions="nCells Time" units="m^2 s^-2"
 			description="kinetic energy at a depth of approximately 250 m"
 		/>
-		<var name="barotropicSpeed" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="barotropicSpeed" type="real" dimensions="nCells Time" units="m s^-1"
 			description="speed = sqrt(2*ke), where kinetic energy is computed from barotropic velocity = sum(h*u)/sum(h) over the full depth of an edge"
 		/>
-		<var name="columnIntegratedSpeed" type="real" dimensions="nCells Time" units="m^2 s^{-1}"
+		<var name="columnIntegratedSpeed" type="real" dimensions="nCells Time" units="m^2 s^-1"
 			description="speed = sum(h*sqrt(2*ke)), where ke is kineticEnergyCell and the sum is over the full column at cell centers."
 		/>
-		<var name="relativeVorticityAt250m" type="real" dimensions="nCells Time" units="s^{-1}"
+		<var name="relativeVorticityAt250m" type="real" dimensions="nCells Time" units="s^-1"
 			description="relative vorticity at cell centers at a depth of approximately 250 m"
 		/>
-		<var name="divergenceAt250m" type="real" dimensions="nCells Time" units="s^{-1}"
+		<var name="divergenceAt250m" type="real" dimensions="nCells Time" units="s^-1"
 			description="divergence at cell centers at a depth of approximately 250 m"
 		/>
-		<var name="divergenceTransportVelAt250m" type="real" dimensions="nCells Time" units="s^{-1}"
+		<var name="divergenceTransportVelAt250m" type="real" dimensions="nCells Time" units="s^-1"
 			description="divergence of transport velocity at cell centers at a depth of approximately 250 m"
 		/>
-		<var name="relativeVorticityVertexAt250m" type="real" dimensions="nVertices Time" units="s^{-1}"
+		<var name="relativeVorticityVertexAt250m" type="real" dimensions="nVertices Time" units="s^-1"
 			description="relative vorticity at cell vertices at a depth of approximately 250 m"
 		/>
 		<var_array name="activeTracersAtSurface" type="real" dimensions="nCells Time">
-				<var name="temperatureAtSurface" array_group="activeTracersAtSurface" units="^\circ C" name_in_code="temperatureAtSurface"
+				<var name="temperatureAtSurface" array_group="activeTracersAtSurface" units="C" name_in_code="temperatureAtSurface"
 						description="ocean temperature at top layer"
 				/>
-				<var name="salinityAtSurface" array_group="activeTracersAtSurface" units="PSU" name_in_code="salinityAtSurface"
+				<var name="salinityAtSurface" array_group="activeTracersAtSurface" units="1.e-3" name_in_code="salinityAtSurface"
 						description="salinity at top layer"
 				/>
 		</var_array>
 		<var_array name="activeTracersAt250m" type="real" dimensions="nCells Time">
-				<var name="temperatureAt250m" array_group="activeTracersAt250m" units="^\circ C" name_in_code="temperatureAt250m"
+				<var name="temperatureAt250m" array_group="activeTracersAt250m" units="C" name_in_code="temperatureAt250m"
 						description="ocean temperature at 250 m"
 				/>
-				<var name="salinityAt250m" array_group="activeTracersAt250m" units="PSU" name_in_code="salinityAt250m"
+				<var name="salinityAt250m" array_group="activeTracersAt250m" units="1.e-3" name_in_code="salinityAt250m"
 						description="salinity at 250 m"
 				/>
 		</var_array>
 		<var_array name="activeTracersAtBottom" type="real" dimensions="nCells Time">
-			<var name="temperatureAtBottom" array_group="activeTracersAtBottom" units="^\circ C" name_in_code="temperatureAtBottom"
+			<var name="temperatureAtBottom" array_group="activeTracersAtBottom" units="C" name_in_code="temperatureAtBottom"
 				description="ocean temperature at bottom"
 			/>
-			<var name="salinityAtBottom" array_group="activeTracersAtBottom" units="PSU" name_in_code="salinityAtBottom"
+			<var name="salinityAtBottom" array_group="activeTracersAtBottom" units="1.e-3" name_in_code="salinityAtBottom"
 				description="salinity at bottom"
 			/>
 		</var_array>
-			<var name="kineticEnergyAtBottom" type="real" dimensions="nCells Time" units="m^2 s^{-2}"
+			<var name="kineticEnergyAtBottom" type="real" dimensions="nCells Time" units="m^2 s^-2"
 					description="kinetic energy at cell centers at bottom"
 			/>
-			<var name="relativeVorticityAtBottom" type="real" dimensions="nCells Time" units="s^{-1}"
+			<var name="relativeVorticityAtBottom" type="real" dimensions="nCells Time" units="s^-1"
 					description="relative vorticity at cell centers at bottom"
 			/>
-			<var name="divergenceAtBottom" type="real" dimensions="nCells Time" units="s^{-1}"
+			<var name="divergenceAtBottom" type="real" dimensions="nCells Time" units="s^-1"
 					description="divergence at cell centers at bottom"
 		/>
 		<var_array name="activeTracersAvgTopto0100" type="real" dimensions="nCells Time">
-				<var name="temperatureAvgTopto0100" array_group="activeTracersAvgTopto0100" units="^\circ C" name_in_code="temperatureAvgTopto0100"
+				<var name="temperatureAvgTopto0100" array_group="activeTracersAvgTopto0100" units="C" name_in_code="temperatureAvgTopto0100"
 						description="ocean temperature averaged between surface and 100 m"
 				/>
-				<var name="salinityAvgTopto0100" array_group="activeTracersAvgTopto0100" units="PSU" name_in_code="salinityAvgTopto0100"
+				<var name="salinityAvgTopto0100" array_group="activeTracersAvgTopto0100" units="1.e-3" name_in_code="salinityAvgTopto0100"
 						description="salinity averaged between surface and 100 m"
 				/>
 		</var_array>
 		<var_array name="activeTracersAvg0100to0250" type="real" dimensions="nCells Time">
-				<var name="temperatureAvg0100to0250" array_group="activeTracersAvg0100to0250" units="^\circ C" name_in_code="temperatureAvg0100to0250"
+				<var name="temperatureAvg0100to0250" array_group="activeTracersAvg0100to0250" units="C" name_in_code="temperatureAvg0100to0250"
 						description="ocean temperature averaged between surface and 100 m"
 				/>
-				<var name="salinityAvg0100to0250" array_group="activeTracersAvg0100to0250" units="PSU" name_in_code="salinityAvg0100to0250"
+				<var name="salinityAvg0100to0250" array_group="activeTracersAvg0100to0250" units="1.e-3" name_in_code="salinityAvg0100to0250"
 						description="salinity averaged between surface and 100 m"
 				/>
 		</var_array>
 		<var_array name="activeTracersAvg0250to0700" type="real" dimensions="nCells Time">
-				<var name="temperatureAvg0250to0700" array_group="activeTracersAvg0250to0700" units="^\circ C" name_in_code="temperatureAvg0250to0700"
+				<var name="temperatureAvg0250to0700" array_group="activeTracersAvg0250to0700" units="C" name_in_code="temperatureAvg0250to0700"
 						description="ocean temperature averaged between surface and 100 m"
 				/>
-				<var name="salinityAvg0250to0700" array_group="activeTracersAvg0250to0700" units="PSU" name_in_code="salinityAvg0250to0700"
+				<var name="salinityAvg0250to0700" array_group="activeTracersAvg0250to0700" units="1.e-3" name_in_code="salinityAvg0250to0700"
 						description="salinity averaged between surface and 100 m"
 				/>
 		</var_array>
 		<var_array name="activeTracersAvg0700to2000" type="real" dimensions="nCells Time">
-				<var name="temperatureAvg0700to2000" array_group="activeTracersAvg0700to2000" units="^\circ C" name_in_code="temperatureAvg0700to2000"
+				<var name="temperatureAvg0700to2000" array_group="activeTracersAvg0700to2000" units="C" name_in_code="temperatureAvg0700to2000"
 						description="ocean temperature averaged between surface and 100 m"
 				/>
-				<var name="salinityAvg0700to2000" array_group="activeTracersAvg0700to2000" units="PSU" name_in_code="salinityAvg0700to2000"
+				<var name="salinityAvg0700to2000" array_group="activeTracersAvg0700to2000" units="1.e-3" name_in_code="salinityAvg0700to2000"
 						description="salinity averaged between surface and 100 m"
 				/>
 		</var_array>
 		<var_array name="activeTracersAvg2000toBottom" type="real" dimensions="nCells Time">
-				<var name="temperatureAvg2000toBottom" array_group="activeTracersAvg2000toBottom" units="^\circ C" name_in_code="temperatureAvg2000toBottom"
+				<var name="temperatureAvg2000toBottom" array_group="activeTracersAvg2000toBottom" units="C" name_in_code="temperatureAvg2000toBottom"
 						description="ocean temperature averaged between surface and 100 m"
 				/>
-				<var name="salinityAvg2000toBottom" array_group="activeTracersAvg2000toBottom" units="PSU" name_in_code="salinityAvg2000toBottom"
+				<var name="salinityAvg2000toBottom" array_group="activeTracersAvg2000toBottom" units="1.e-3" name_in_code="salinityAvg2000toBottom"
 						description="salinity averaged between surface and 100 m"
 				/>
 		</var_array>

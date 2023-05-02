@@ -13,6 +13,7 @@ module initGridCellsMod
   use spmdMod        , only : masterproc,iam
   use abortutils     , only : endrun
   use elm_varctl     , only : iulog
+  use elm_varctl     , only : use_fates, use_fates_sp
   use elm_varcon     , only : namep, namec, namel, nameg
   use decompMod      , only : bounds_type, ldecomp
   use GridcellType   , only : grc_pp
@@ -303,7 +304,7 @@ contains
     ! !USES
     use elm_varsur, only : wt_lunit, wt_nat_patch
     use subgridMod, only : subgrid_get_topounitinfo
-    use elm_varpar, only : numpft, maxpatch_pft, numcft, natpft_lb, natpft_ub
+    use elm_varpar, only : numpft, maxpatch_pft, numcft, natpft_lb, natpft_ub, natpft_size
     !
     ! !ARGUMENTS:    
     integer , intent(in)    :: ltype             ! landunit type
@@ -320,6 +321,7 @@ contains
     integer  :: npfts                            ! number of pfts in landunit
     integer  :: pitype                           ! patch itype
     real(r8) :: wtlunit2topounit                 ! landunit weight on topounit
+    real(r8) :: p_wt                             ! patch weight (0-1)
     !------------------------------------------------------------------------
 
     ! Set decomposition properties
@@ -331,14 +333,26 @@ contains
     call subgrid_get_topounitinfo(ti, gi,tgi=topo_ind, nveg=npfts)
     wtlunit2topounit = wt_lunit(gi,topo_ind, ltype)
 
+    ! For FATES: the total number of patches may not match what is in the surface
+    ! file, and therefor the weighting can't be used. The weightings in
+    ! wt_nat_patch may be meaningful (like with fixed biogeography), but they
+    ! they need a mapping table to connect to the allocated patches (in fates)
+    ! so the wt_nat_patch array is not applicable to these area weights
+    ! A subsequent call, via the clmfates interface will update these weights
+    ! by using said mapping table
+    
     if (npfts > 0) then
        call add_landunit(li=li, ti=ti, ltype=ltype, wttopounit=wtlunit2topounit)
        
        ! Assume one column on the landunit
        call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8)
-
        do m = natpft_lb,natpft_ub
-          call add_patch(pi=pi, ci=ci, ptype=m, wtcol=wt_nat_patch(gi,topo_ind,m))
+          if(use_fates .and. .not.use_fates_sp)then
+             p_wt = 1.0_r8/real(natpft_size,r8)
+          else
+             p_wt = wt_nat_patch(gi,topo_ind,m)
+          end if
+          call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt)
        end do
     end if
 

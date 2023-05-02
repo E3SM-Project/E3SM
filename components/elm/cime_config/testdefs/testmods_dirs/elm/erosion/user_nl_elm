@@ -1,0 +1,12 @@
+ fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_360x720cru_50pfts_simyr2000_c210422.nc'
+ flanduse_timeseries = ''
+ finidat = ''
+ paramfile = '$DIN_LOC_ROOT/lnd/clm2/paramdata/clm_params.ctc.erosion.c220120.nc'
+ use_crop = .true.
+ irrigate = .true.
+ use_erosion = .true.
+ ero_ccycle = .true.
+ hist_empty_htapes = .true.
+ hist_fincl1 = 'SED_YLD', 'SED_P_ERO', 'SED_Q_ERO', 'SED_ERO', 'SED_CROP_ERO',
+               'SOMC_YLD', 'SOMN_YLD', 'SOMP_YLD', 'LABILEP_YLD', 'SECONDP_YLD',
+               'OCCLP_YLD', 'PRIMP_YLD', 'TLAI', 'HTOP', 'HBOT'

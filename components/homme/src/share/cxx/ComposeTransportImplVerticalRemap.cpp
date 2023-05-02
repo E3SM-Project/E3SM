@@ -4,6 +4,9 @@
  * See the file 'COPYRIGHT' in the HOMMEXX/src/share/cxx directory
  *******************************************************************************/
 
+#include "Config.hpp"
+#ifdef HOMME_ENABLE_COMPOSE
+
 #include "ComposeTransportImpl.hpp"
 #include "Context.hpp"
 #include "VerticalRemapManager.hpp"
@@ -62,3 +65,5 @@ void ComposeTransportImpl::remap_q (const TimeLevel& tl) {
 }
 
 } // namespace Homme
+
+#endif // HOMME_ENABLE_COMPOSE

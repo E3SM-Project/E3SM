@@ -32,9 +32,13 @@ module prim_cxx_driver_base
     use time_mod,         only : TimeLevel_t, TimeLevel_init
     use prim_driver_base, only : prim_init1_geometry, prim_init1_elem_arrays, &
                                  prim_init1_cleanup, prim_init1_buffers,      &
-                                 prim_init1_compose,                          &
                                  MetaVertex, GridEdge, deriv1
+                         
+#ifdef HOMME_ENABLE_COMPOSE
+    use prim_driver_base, only : prim_init1_compose
     use compose_mod,      only : compose_control_kokkos_init_and_fin
+#endif
+
 #if !defined(CAM) && !defined(SCREAM)
     use prim_driver_base, only : prim_init1_no_cam
 #endif
@@ -65,7 +69,9 @@ module prim_cxx_driver_base
     ! Initialize kokkos before any environment changes from the Fortran
     call initialize_hommexx_session()
     ! Don't let any other components that use Kokkos control init/finalization.
+#ifdef HOMME_ENABLE_COMPOSE
     call compose_control_kokkos_init_and_fin(.false.)
+#endif    
 
 #if !defined(CAM) && !defined(SCREAM)
     call prim_init1_no_cam(par)
@@ -96,7 +102,9 @@ module prim_cxx_driver_base
     ! ==================================
     call prim_init1_elem_arrays(elem,par)
 
+#ifdef HOMME_ENABLE_COMPOSE
     call prim_init1_compose(par,elem)
+#endif
 
     ! ==================================
     ! Initialize the buffers for exchanges
@@ -131,22 +139,23 @@ module prim_cxx_driver_base
     use gridgraph_mod,  only : GridEdge_t
     use metagraph_mod,  only : MetaVertex_t
     use parallel_mod,   only : parallel_t
+    use dimensions_mod, only : max_corner_elem
     !
     ! Interfaces
     !
     interface
-      subroutine init_connectivity (num_local_elems) bind (c)
+      subroutine init_connectivity (num_local_elems, max_corner_elems) bind (c)
         use iso_c_binding, only : c_int
         !
         ! Inputs
         !
-        integer (kind=c_int), intent(in) :: num_local_elems
+        integer (kind=c_int), intent(in) :: num_local_elems, max_corner_elems
       end subroutine init_connectivity
 
       subroutine finalize_connectivity () bind(c)
       end subroutine finalize_connectivity
 
-      subroutine add_connection (first_lid,  first_gid,  first_pos,  first_pid, &
+      subroutine add_connection (first_lid,  first_gid,  first_pos,  first_pid,  &
                                  second_lid, second_gid, second_pos, second_pid) bind(c)
         use iso_c_binding, only : c_int
         !
@@ -174,7 +183,7 @@ module prim_cxx_driver_base
     call generate_global_to_local(MetaVertex,Global2Local,par)
 
     ! Initialize C++ connectivity structure
-    call init_connectivity(nelemd)
+    call init_connectivity(nelemd, max_corner_elem)
 
     ! Add all connections to the C++ structure
     num_edges = SIZE(GridEdge)

@@ -37,14 +37,32 @@
       <template>template.case.test</template>
       <prereq>$BUILD_COMPLETE and $TEST</prereq>
     </job>
+    <job name="case.post_run_io">
+      <template>template.post_run_io</template>
+      <dependency>case.run</dependency>
+      <prereq>case.get_value("PIO_TYPENAME_ATM") == 'adios' or \
+              case.get_value("PIO_TYPENAME_CPL") == 'adios' or \
+              case.get_value("PIO_TYPENAME_OCN") == 'adios' or \
+              case.get_value("PIO_TYPENAME_WAV") == 'adios' or \
+              case.get_value("PIO_TYPENAME_GLC") == 'adios' or \
+              case.get_value("PIO_TYPENAME_ICE") == 'adios' or \
+              case.get_value("PIO_TYPENAME_ROF") == 'adios' or \
+              case.get_value("PIO_TYPENAME_LND") == 'adios' or \
+              case.get_value("PIO_TYPENAME_ESP") == 'adios' or \
+              case.get_value("PIO_TYPENAME_IAC") == 'adios'</prereq>
+      <runtime_parameters>
+        <walltime>0:30:00</walltime>
+      </runtime_parameters>
+    </job>
     <job name="case.st_archive">
       <template>template.st_archive</template>
       <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
-      <dependency>case.run or case.test</dependency>
+      <dependency>(case.run and case.post_run_io) or case.test</dependency>
       <prereq>$DOUT_S</prereq>
       <runtime_parameters>
-	<task_count>1</task_count>
-	<walltime>0:20:00</walltime>
+        <task_count>1</task_count>
+        <tasks_per_node>1</tasks_per_node>
+        <walltime>0:20:00</walltime>
       </runtime_parameters>
     </job>
   </workflow_jobs>

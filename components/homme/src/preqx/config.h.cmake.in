@@ -66,3 +66,7 @@
 /* When doing BFB testing, we occasionally must use modified code. */
 /* Use this flag to protect such code. */
 #cmakedefine HOMMEXX_BFB_TESTING
+
+/* Identifies whether this is a cuda/hip build */
+#cmakedefine HOMMEXX_ENABLE_GPU
+

@@ -36,6 +36,10 @@ void init_geo_views_f90 (Real*& d_ptr,Real*& dinv_ptr,
                Real*& sphmp_ptr, Real*& rspmp_ptr,
                Real*& tVisc_ptr, Real*& sph2c_ptr,
                Real*& metdet_ptr, Real*& metinv_ptr);
+void initialize_reference_states_f90 (const Real*& phis,
+                                      const Real*& dp_ref,
+                                      const Real*& theta_ref,
+                                      const Real*& phi_ref);
 void biharmonic_wk_theta_f90 (const int& np1, const Real& hv_scaling, const bool& hydrostatic,
                               const Real*& dp, const Real*& vtheta_dp,
                               const Real*& w,  const Real*& phi, const Real*& v,
@@ -148,7 +152,7 @@ TEST_CASE("hvf", "biharmonic") {
   params.nu_div            = RPDF(1e-6,1e-3)(engine);
   params.hypervis_scaling  = RPDF(0.1,1.0)(engine);
   params.hypervis_subcycle = IPDF(1,3)(engine);
-  params.hypervis_subcycle_tom = 0; 
+  params.hypervis_subcycle_tom = 0;
   params.params_set = true;
 
   // Sync params across ranks
@@ -422,23 +426,30 @@ TEST_CASE("hvf", "biharmonic") {
 
   SECTION ("hypervis") {
     std::cout << "Hypervis test:\n";
+
+    HostViewManaged<Real*[NP][NP]> phis_f90("",num_elems);
+    HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> dp_ref_f90("",num_elems);
+    HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> theta_ref_f90("",num_elems);
+    HostViewManaged<Real*[NUM_INTERFACE_LEV][NP][NP]> phi_ref_f90("",num_elems);
+
+    sync_to_host(geo.m_phis, phis_f90);
+
+    const Real* phis_ptr      = phis_f90.data();
+    const Real* dp_ref_ptr    = dp_ref_f90.data();
+    const Real* theta_ref_ptr = theta_ref_f90.data();
+    const Real* phi_ref_ptr   = phi_ref_f90.data();
+
+    // Have F90 compute reference states and initialize
+    // in C++ RefStates. These are not dependent
+    // on choice for hydrostatic mode or hv_scaling,
+    // nor do the values change when state is randomized.
+    initialize_reference_states_f90(phis_ptr,
+                                    dp_ref_ptr,
+                                    theta_ref_ptr,
+                                    phi_ref_ptr);
+
     for (const bool hydrostatic : {true, false}) {
       std::cout << " -> " << (hydrostatic ? "hydrostatic" : "non-hydrostatic") << "\n";
-
-      // Compute ref states, given the choice for hydrostatic mode
-      state.m_ref_states.compute(hydrostatic,hvcoord,geo.m_phis);
-
-      HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> dp_ref_f90("",num_elems);
-      HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> theta_ref_f90("",num_elems);
-      HostViewManaged<Real*[NUM_INTERFACE_LEV][NP][NP]> phi_ref_f90("",num_elems);
-
-      sync_to_host(state.m_ref_states.dp_ref,dp_ref_f90);
-      sync_to_host(state.m_ref_states.theta_ref,theta_ref_f90);
-      sync_to_host(state.m_ref_states.phi_i_ref,phi_ref_f90);
-
-      const Real* dp_ref_ptr    = dp_ref_f90.data();
-      const Real* theta_ref_ptr = theta_ref_f90.data();
-      const Real* phi_ref_ptr   = phi_ref_f90.data();
 
       for (Real hv_scaling : {0.0, 1.2345}) {
         std::cout << "   -> hypervis scaling = " << hv_scaling << "\n";
@@ -464,7 +475,6 @@ TEST_CASE("hvf", "biharmonic") {
 
         // Generate random states
         state.randomize(seed);
-        state.m_ref_states.compute(hydrostatic,hvcoord,geo.m_phis);
 
         // The HV functor as a whole is more delicate than biharmonic_wk.
         // In particular, the EOS is used a couple of times. This means
@@ -472,8 +482,14 @@ TEST_CASE("hvf", "biharmonic") {
         // dp>0, vtheta>0, and d(phi)>0. This is very unlikely with random
         // inputs coming from state.randomize(seed), so we generate data
         // as "realistic" as possible, and perturb it.
+        // This computation mimics that of
+        // src/theta-l/share/element_ops.F90:initialize_reference_states().
         using PDF = std::uniform_real_distribution<Real>;
         ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> perturb("",num_elems);
+
+        static constexpr Real T1 =
+          PhysicalConstants::Tref_lapse_rate*PhysicalConstants::Tref*PhysicalConstants::cp/PhysicalConstants::g;
+        static constexpr Real T0 = PhysicalConstants::Tref-T1;
 
         constexpr Real noise_lvl = 0.05;
         genRandArray(perturb,engine,PDF(-noise_lvl,noise_lvl));
@@ -507,16 +523,19 @@ TEST_CASE("hvf", "biharmonic") {
             // Compute pressure
             elem_ops.compute_hydrostatic_p(kv,dp,buf_i,buf_m);
 
-            // Compute vtheta_dp = theta_ref*dp
-            elem_ops.compute_theta_ref(kv,buf_m,theta);
+            // Compute vtheta_dp = theta_ref*dp, where
+            // theta_ref = T0/exner + T1, exner = (p/p0)^k
+            // theta_ref mimics computation in src/theta-l/share/element_ops.F90:set_theta_ref()
             Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                                  [&](const int ilev){
+              theta(ilev) = pow(buf_m(ilev)/PhysicalConstants::p0,PhysicalConstants::kappa);
+              theta(ilev) = T0/theta(ilev) + T1;
               theta(ilev) *= dp(ilev);
             });
 
             // Compute phi
             eos.compute_phi_i(kv,geo.m_phis(kv.ie,igp,jgp),
-                                 theta,buf_m,phi);
+                              theta,buf_m,phi);
           });
         });
 

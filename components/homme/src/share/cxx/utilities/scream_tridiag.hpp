@@ -120,10 +120,11 @@ int get_team_nthr (const TeamMember& team) {
   return team.team_size();
 }
 
-#ifdef KOKKOS_ENABLE_CUDA
-KOKKOS_INLINE_FUNCTION
-int get_thread_id_within_team (const Kokkos::Impl::CudaTeamMember& team) {
-#ifdef __CUDA_ARCH__
+// Impl details for Nvidia and AMD GPUs.
+
+template <typename TeamMember> KOKKOS_FORCEINLINE_FUNCTION
+int get_thread_id_within_team_gpu (const TeamMember& team) {
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   // Can't use team.team_rank() here because vector direction also uses physical
   // threads but TeamMember types don't expose that information.
   return blockDim.x * threadIdx.y + threadIdx.x;
@@ -133,17 +134,33 @@ int get_thread_id_within_team (const Kokkos::Impl::CudaTeamMember& team) {
 #endif
 }
 
-KOKKOS_INLINE_FUNCTION
-int get_team_nthr (const Kokkos::Impl::CudaTeamMember& team) {
-#ifdef __CUDA_ARCH__
+template <typename TeamMember> KOKKOS_FORCEINLINE_FUNCTION
+int get_team_nthr_gpu (const TeamMember& team) {
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   return blockDim.x * blockDim.y;
 #else
   assert(0);
   return -1;
 #endif
 }
-#endif
 
+#ifdef KOKKOS_ENABLE_CUDA
+KOKKOS_FORCEINLINE_FUNCTION
+int get_thread_id_within_team (const Kokkos::Impl::CudaTeamMember& team)
+{ return get_thread_id_within_team_gpu(team); }
+KOKKOS_FORCEINLINE_FUNCTION
+int get_team_nthr (const Kokkos::Impl::CudaTeamMember& team)
+{ return get_team_nthr_gpu(team); }
+#endif // KOKKOS_ENABLE_CUDA
+
+#ifdef KOKKOS_ENABLE_HIP
+KOKKOS_FORCEINLINE_FUNCTION
+int get_thread_id_within_team (const Kokkos::Impl::HIPTeamMember& team)
+{ return get_thread_id_within_team_gpu(team); }
+KOKKOS_FORCEINLINE_FUNCTION
+int get_team_nthr (const Kokkos::Impl::HIPTeamMember& team)
+{ return get_team_nthr_gpu(team); }
+#endif // KOKKOS_ENABLE_HIP
 template <typename T> KOKKOS_INLINE_FUNCTION
 const T& min (const T& a, const T& b) { return a < b ? a : b; }
 

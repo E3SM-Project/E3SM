@@ -17,6 +17,7 @@ module GapMortalityMod
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cs, veg_cf, veg_ns, veg_nf
   use VegetationDataType  , only : veg_ps, veg_pf
+  use CropType            , only : crop_type
 
   use elm_varctl          , only : nu_com
   use timeinfoMod , only : dayspyr_mod
@@ -78,7 +79,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine GapMortality (num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       cnstate_vars )
+       cnstate_vars, crop_vars )
     !
     ! !DESCRIPTION:
     ! Gap-phase mortality routine for coupled carbon-nitrogen code (CN)
@@ -95,6 +96,7 @@ contains
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! patch filter for soil points
     type(cnstate_type)       , intent(inout) :: cnstate_vars
+    type(crop_type)          , intent(in)    :: crop_vars
     !
     ! !LOCAL VARIABLES:
     integer :: p             ! patch index
@@ -108,7 +110,8 @@ contains
 
     associate(                                                       &
          ivt                                 =>    veg_pp%itype    , & ! Input:  [integer  (:) ]  pft vegetation type
-         woody                               =>    veg_vp%woody      & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform
+         woody                               =>    veg_vp%woody    , & ! Input:  [real(r8) (:) ]  binary flag for woody lifeform
+         croplive                            =>    crop_vars%croplive_patch & ! Input:  [logical  (:)   ]  flag, true if planted, not harvested
          )
 
       dayspyr = dayspyr_mod
@@ -138,9 +141,11 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
-         veg_cf%m_leafc_to_litter(p)               = veg_cs%leafc(p)               * m
+         if(ivt(p) < npcropmin .or. (ivt(p) >= npcropmin .and. croplive(p))) then
+           veg_cf%m_leafc_to_litter(p)               = veg_cs%leafc(p)               * m
+           veg_cf%m_livestemc_to_litter(p)           = veg_cs%livestemc(p)           * m
+         end if
          veg_cf%m_frootc_to_litter(p)              = veg_cs%frootc(p)              * m
-         veg_cf%m_livestemc_to_litter(p)           = veg_cs%livestemc(p)           * m
          veg_cf%m_deadstemc_to_litter(p)           = veg_cs%deadstemc(p)           * m
          veg_cf%m_livecrootc_to_litter(p)          = veg_cs%livecrootc(p)          * m
          veg_cf%m_deadcrootc_to_litter(p)          = veg_cs%deadcrootc(p)          * m
@@ -173,9 +178,11 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
-         veg_nf%m_leafn_to_litter(p)               = veg_ns%leafn(p)               * m
+         if(ivt(p) < npcropmin .or. (ivt(p) >= npcropmin .and. croplive(p))) then
+           veg_nf%m_leafn_to_litter(p)               = veg_ns%leafn(p)               * m
+           veg_nf%m_livestemn_to_litter(p)           = veg_ns%livestemn(p)           * m
+         end if
          veg_nf%m_frootn_to_litter(p)              = veg_ns%frootn(p)              * m
-         veg_nf%m_livestemn_to_litter(p)           = veg_ns%livestemn(p)           * m
          veg_nf%m_deadstemn_to_litter(p)           = veg_ns%deadstemn(p)           * m
          veg_nf%m_livecrootn_to_litter(p)          = veg_ns%livecrootn(p)          * m
          veg_nf%m_deadcrootn_to_litter(p)          = veg_ns%deadcrootn(p)          * m
@@ -212,9 +219,11 @@ contains
          !------------------------------------------------------
 
          ! displayed pools
-         veg_pf%m_leafp_to_litter(p)               = veg_ps%leafp(p)               * m
+         if(ivt(p) < npcropmin .or. (ivt(p) >= npcropmin .and. croplive(p))) then
+           veg_pf%m_leafp_to_litter(p)               = veg_ps%leafp(p)               * m
+           veg_pf%m_livestemp_to_litter(p)           = veg_ps%livestemp(p)           * m
+         endif
          veg_pf%m_frootp_to_litter(p)              = veg_ps%frootp(p)              * m
-         veg_pf%m_livestemp_to_litter(p)           = veg_ps%livestemp(p)           * m
          veg_pf%m_deadstemp_to_litter(p)           = veg_ps%deadstemp(p)           * m
          veg_pf%m_livecrootp_to_litter(p)          = veg_ps%livecrootp(p)          * m
          veg_pf%m_deadcrootp_to_litter(p)          = veg_ps%deadcrootp(p)          * m

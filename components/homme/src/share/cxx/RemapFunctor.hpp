@@ -185,7 +185,7 @@ RemapStateAndThicknessProvider<true> {
     if (m_state_provider.num_states_preprocess()>0) {
       m_np1 = np1;
       Kokkos::parallel_for("Pre-process states",m_policy_pre,*this);
-      ExecSpace::impl_static_fence();
+      Kokkos::fence();
     }
   }
 
@@ -203,7 +203,7 @@ RemapStateAndThicknessProvider<true> {
     if (m_state_provider.num_states_postprocess()>0) {
       m_np1 = np1;
       Kokkos::parallel_for("Post-process states",m_policy_post,*this);
-      ExecSpace::impl_static_fence();
+      Kokkos::fence();
     }
   }
 
@@ -320,11 +320,25 @@ struct RemapFunctor : public Remapper {
 
   void input_valid_assert() {
     Kokkos::deep_copy(host_valid_input, valid_layer_thickness);
+    bool ok = true;
     for (int ie = 0; ie < m_state.num_elems(); ++ie) {
-      if (host_valid_input(ie) == false) {
-        Errors::runtime_abort("Negative (or nan) layer thickness detected, aborting!",
-                              Errors::err_negative_layer_thickness);
+      if ( ! host_valid_input(ie)) {
+        ok = false;
+        break;
       }
+    }
+    if ( ! ok) {
+      check_print_abort_on_bad_elems(
+        "Vertical remap: Negative (or nan) layer thickness detected, aborting!",
+        m_data.np1, Errors::err_negative_layer_thickness);
+      // If check_print_abort_on_bad_elems can't see the issue -- e.g., if the
+      // source grid is bad but the state itself is fine, or the routine has no
+      // implementation (as is true for preqx) -- it won't call
+      // runtime_abort. Thus, for safety, call runtime_abort here if we're still
+      // running.
+      Errors::runtime_abort(
+        "Negative (or nan) layer thickness detected, aborting!",
+        Errors::err_negative_layer_thickness);
     }
   }
 
@@ -524,11 +538,11 @@ struct RemapFunctor : public Remapper {
     Kokkos::parallel_for(get_default_team_policy<ExecSpace>(ne*nv), r);
   }
 
-  int requested_buffer_size () const {
+  int requested_buffer_size () const override {
     return m_fields_provider.requested_buffer_size();
   }
 
-  void init_buffers(const FunctorsBuffersManager& fbm) {
+  void init_buffers(const FunctorsBuffersManager& fbm) override {
     m_fields_provider.init_buffers(fbm);
   }
 
@@ -558,7 +572,7 @@ private:
     GPTLstart(functor_name.c_str());
     profiling_resume();
     Kokkos::parallel_for("vertical remap", policy, *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     profiling_pause();
     GPTLstop(functor_name.c_str());
   }

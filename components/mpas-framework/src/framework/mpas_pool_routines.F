@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !***********************************************************************
 !
@@ -5374,6 +5374,40 @@ module mpas_pool_routines
       end if
 
    end subroutine mpas_pool_get_subpool!}}}
+
+
+!-----------------------------------------------------------------------
+!  subroutine mpas_pool_exists
+!
+!> \brief MPAS Pool check subpool exists function
+!> \author Adrian K. Turner
+!> \date   03/03/2023
+!> \details
+!> This function returns whether a subpool named key exists within
+!> inPool.
+!
+!-----------------------------------------------------------------------
+   function mpas_pool_exists(inPool, key, subPool) result(exists)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      type (mpas_pool_type), pointer :: subPool
+
+      type (mpas_pool_data_type), pointer :: mem
+
+      logical :: exists
+
+      mem => pool_get_member(inPool, key, MPAS_POOL_SUBPOOL)
+
+      if (associated(mem)) then
+         exists = .true.
+      else
+         exists = .false.
+      end if
+
+   end function mpas_pool_exists!}}}
 
 
 !-----------------------------------------------------------------------

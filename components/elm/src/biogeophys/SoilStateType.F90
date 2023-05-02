@@ -89,7 +89,7 @@ module SoilStateType
      real(r8), pointer :: soil_conductance_patch(:,:) ! patch soil conductance [mm/s]
 
      ! soil erosion
-     real(r8), pointer :: tillage_col          (:)    ! col soil tillage fraction 
+     real(r8), pointer :: tillage_col          (:)    ! col soil conserved tillage fraction 
      real(r8), pointer :: litho_col            (:)    ! col soil lithology erodiblity index
 
    contains

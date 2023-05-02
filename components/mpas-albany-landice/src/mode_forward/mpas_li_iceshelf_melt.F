@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 
 
@@ -256,7 +256,7 @@ module li_iceshelf_melt
            nEdgesOnCell, &
            edgeMask
 
-      integer, dimension(:,:), pointer :: edgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell, cellsOnCell
 
       type (field1dInteger), pointer :: thermalCellMaskField
 
@@ -275,7 +275,7 @@ module li_iceshelf_melt
 
       real(kind=RKIND), pointer :: daysSinceStart
 
-      integer :: iCell, iEdge, err_tmp
+      integer :: iCell, jCell, iEdge, iNeighbor, err_tmp
 
       ! Local variables for some melt methods
 
@@ -509,23 +509,26 @@ module li_iceshelf_melt
             call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
             call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
             call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+            call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
             call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
             call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
             call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
 
             ! If config_front_mass_bal_grounded is not none, only apply ice shelf melt to active cells
-            ! and stranded non-dynamic cells.
+            ! and stranded non-dynamic cells. i.e., if a floating non-dynamic
+            ! cell has a grounded neighbor, do not apply ice shelf melt to it.
             do iCell = 1, nCellsSolve
                if ( li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell))) ) then
-                  do iEdge = 1, nEdgesOnCell(iCell)
-                     if ( li_mask_is_grounding_line(edgeMask(edgesOnCell(iEdge,iCell))) ) then
-
+                  do iNeighbor = 1, nEdgesOnCell(iCell)
+                     jCell = cellsOnCell(iNeighbor, iCell)
+                     if ( li_mask_is_grounded_ice(cellMask(jCell)) ) then
                          floatingBasalMassBal(iCell) = 0.0_RKIND
-
+                         exit ! No need to look over other neighbors
                       endif
                   enddo
                 endif
             enddo
+
             block => block % next
          enddo   ! associated(block)
       endif
@@ -1154,7 +1157,7 @@ module li_iceshelf_melt
       real (kind=RKIND), dimension(:), pointer :: areaCell
       real (kind=RKIND), dimension(:), allocatable :: mean_TF, IS_area
       integer, parameter :: maxNumBasins = 32
-      integer, dimension(:), pointer :: cellMask
+      integer, dimension(:), pointer :: cellMask, indexToCellID
       real(kind=RKIND), dimension(maxNumBasins*2) :: localSums, globalSums
       real (kind=RKIND), pointer :: gamma0
       real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
@@ -1177,6 +1180,7 @@ module li_iceshelf_melt
 
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nOceanLayers)
+         call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
 
          ! Get 3d thermal forcing (had to be read-in)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', TFocean)
@@ -1216,8 +1220,8 @@ module li_iceshelf_melt
                kinf = ksup + 1
                if ((zOcean(ksup)-zOcean(kinf)) == 0) then
                   call mpas_log_write("iceshelf_melt_ismip6: Invalid value for zOcean. " // &
-                       "ksup=$i kinf=$i zOcean(ksup)=$r zOcean(kinf)=$r iCell=$i lowerSurface=$r", MPAS_LOG_ERR, &
-                       intArgs=(/ksup, kinf, iCell/), &
+                       "ksup=$i kinf=$i zOcean(ksup)=$r zOcean(kinf)=$r indexToCellID=$i lowerSurface=$r", MPAS_LOG_ERR, &
+                       intArgs=(/ksup, kinf, indexToCellID(iCell)/), &
                        realArgs=(/zOcean(ksup), zOcean(kinf), lowerSurface(iCell) /) )
                   err = ior(err, 1)
                endif
@@ -1432,7 +1436,8 @@ module li_iceshelf_melt
          ! Distribute melt among neighbors
          call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, &
                                             faceMeltingThickness, faceMeltSpeedVertAvg, applyToGrounded, &
-                                            applyToFloating, applyToGroundingLine, domain, err)
+                                            applyToFloating, applyToGroundingLine, domain, err=err_tmp)
+         err = ior(err, err_tmp)
 
 
          block => block % next

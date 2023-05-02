@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -327,7 +327,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: latCell
       real (kind=RKIND), dimension(:), pointer ::  areaCell, binBoundaryMocStreamfunction
       real (kind=RKIND), dimension(:,:), pointer :: mocStreamvalLatAndDepth, mocStreamValLatAndDepthTotal
-      real (kind=RKIND), dimension(:,:), pointer :: mocStreamvalLatAndDepthGM
+      real (kind=RKIND), dimension(:,:), pointer :: mocStreamvalLatAndDepthGM, mocStreamvalLatAndDepthMLE
       real (kind=RKIND), dimension(:,:), pointer :: sumVertBinVelocity
 
       !!!! TRANSECT VARIABLES !!!!
@@ -352,7 +352,8 @@ contains
       integer :: currentRegion, i
       real (kind=RKIND), dimension(:,:,:), pointer :: mocStreamValLatAndDepthRegionLocal, &
                          mocStreamvalLatAndDepthRegion, mocStreamValLatAndDepthRegionTotal, &
-                         sumVertBinVelocityRegion, mocStreamvalLatAndDepthRegionGM
+                         sumVertBinVelocityRegion, mocStreamvalLatAndDepthRegionGM, &
+                         mocStreamvalLatAndDepthRegionMLE
       integer, dimension(:, :), pointer :: regionCellMasks, regionVertexMasks, regionsInGroup
       character (len=STRKIND), dimension(:), pointer :: regionNames, regionGroupNames
       integer, dimension(:), pointer ::  nRegionsInGroup
@@ -507,17 +508,22 @@ contains
                      * 0.5_RKIND*(layerThickness(k,c1) + layerThickness(k,c2))
                end do
             end do
-            do k = 2, nVertLevels
+            !Integrate transport from bottom to top, which switches the sign of sumTransport
+            !there is also an implicit moc(nVertLevels+1,iTransect) = 0
+            k = nVertLevels
+            mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
+               - sumTransport(k, iTransect)
+            do k = nVertLevels-1, 1, -1
                mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
-                  mocStreamValLatAndDepthRegionLocal(1, k - 1, iTransect) &
-                  + sumTransport(k - 1, iTransect)
+                  mocStreamValLatAndDepthRegionLocal(1, k + 1, iTransect) &
+                  - sumTransport(k, iTransect)
             end do
          end do
 
          !!!! END TRANSECT CALCULATION
 
          do iCell = 1,nCellsSolve
-            iBin = MAX(int((latCell(iCell) - binBoundaryMocStreamfunction(1)) / binWidth), 2)
+            iBin = MAX(int((latCell(iCell) - binBoundaryMocStreamfunction(1)) / binWidth) + 2, 2)
             do k = 1,maxLevelCell(iCell)
                do i = 1, regionsInAddGroup
                   currentRegion = regionsInGroup(i, regionGroupNumber)
@@ -578,7 +584,6 @@ contains
            call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
            call mpas_pool_get_array(transectPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
            call mpas_pool_get_array(transectPool,'transectEdgeMasks',transectEdgeMasks)
-           normalVelocity => normalGMBolusVelocity
            call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
            call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
            call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -602,28 +607,35 @@ contains
                     sumTransport(k,iTransect) = sumTransport(k,iTransect) + &
                        transectEdgeMaskSigns(currentTransect,iEdge) &
                        * transectEdgeMasks(currentTransect, iEdge) &
-                       * normalVelocity(k,iEdge)*dvEdge(iEdge) &
+                       * normalGMBolusVelocity(k,iEdge)*dvEdge(iEdge) &
                        * 0.5_RKIND*(layerThickness(k,c1) + layerThickness(k,c2))
                  end do
               end do
-              do k = 2, nVertLevels
+              !Integrate transport from bottom to top, which switches the sign of sumTransport
+              !there is also an implicit moc(nVertLevels+1,iTransect) = 0
+              k = nVertLevels
+              mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
+                 - sumTransport(k, iTransect)
+              do k = nVertLevels - 1, 1, -1
                  mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
-                    mocStreamValLatAndDepthRegionLocal(1, k - 1, iTransect) &
-                    + sumTransport(k - 1, iTransect)
+                    mocStreamValLatAndDepthRegionLocal(1, k + 1, iTransect) &
+                    - sumTransport(k, iTransect)
               end do
            end do
 
            !!!! END TRANSECT CALCULATION
 
            do iCell = 1,nCellsSolve
-              iBin = MAX(int((latCell(iCell) - binBoundaryMocStreamfunction(1)) / binWidth), 2)
+              iBin = MAX(int((latCell(iCell) - binBoundaryMocStreamfunction(1)) / binWidth) + 2, 2)
               do k = 1,maxLevelCell(iCell)
                  do i = 1, regionsInAddGroup
                     currentRegion = regionsInGroup(i, regionGroupNumber)
-                    sumVertBinVelocityRegion(iBin, k, i) = sumVertBinVelocityRegion(iBin, k, i) + (vertGMBolusVelocityTop(k, iCell) * &
+                    sumVertBinVelocityRegion(iBin, k, i) = sumVertBinVelocityRegion(iBin, k, i) + &
+                          (vertGMBolusVelocityTop(k, iCell) * &
                           areaCell(iCell) * regionCellMasks(currentRegion, iCell))
                  end do
-                 sumVertBinVelocity(iBin, k) = sumVertBinVelocity(iBin, k) + (vertGMBolusVelocityTop(k, iCell) * areaCell(iCell))
+                 sumVertBinVelocity(iBin, k) = sumVertBinVelocity(iBin, k) + &
+                          (vertGMBolusVelocityTop(k, iCell) * areaCell(iCell))
               end do
            end do
 
@@ -659,6 +671,117 @@ contains
        mocStreamvalLatAndDepth = mocStreamvalLatAndDepth + mocStreamvalLatAndDepthGM
 
      endif !config_use_GM
+
+     if(config_submesoscale_enable) THEN !compute submesoscale eddy bolus contribution to the streamfunction
+       block => domain % blocklist
+       do while (associated(block))
+           call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+           call mpas_pool_get_subpool(block % structs, 'mocStreamfunctionAM', mocStreamfunctionAMPool)
+
+           call mpas_pool_get_array(mocStreamfunctionAMPool, 'binBoundaryMocStreamfunction', binBoundaryMocStreamfunction)
+
+           binWidth = (binBoundaryMocStreamfunction(nMocStreamfunctionBinsUsed + 1) - binBoundaryMocStreamfunction(1)) &
+           / nMocStreamfunctionBinsUsed
+
+           call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+
+           call mpas_pool_get_array(meshPool, 'latCell', latCell)
+           call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+
+           call mpas_pool_get_array(regionPool, 'regionCellMasks', regionCellMasks)
+
+           !!!! TRANSECT DOMAINSPLIT VARIABLES
+           call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+           call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
+           call mpas_pool_get_array(transectPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
+           call mpas_pool_get_array(transectPool,'transectEdgeMasks',transectEdgeMasks)
+           call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+           call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+           call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
+
+           !!!! TRANSECT CALCULATION
+           sumTransport = 0.0_RKIND
+           mocStreamValLatAndDepthLocal = 0.0_RKIND
+           mocStreamValLatAndDepthTotal = 0.0_RKIND
+           sumVertBinVelocity = 0.0_RKIND
+           mocStreamValLatAndDepthRegionLocal = 0.0_RKIND
+           mocStreamValLatAndDepthRegionTotal = 0.0_RKIND
+           sumVertBinVelocityRegion = 0.0_RKIND
+
+           do iTransect = 1,transectsInAddGroup
+              currentTransect = transectsInGroup(iTransect, transectGroupNumber)
+              do iEdge = 1,nEdgesSolve
+                 c1 = cellsOnEdge(1,iEdge)
+                 c2 = cellsOnEdge(2,iEdge)
+                 do k = 1, maxLevelEdgeTop(iEdge)
+                    sumTransport(k,iTransect) = sumTransport(k,iTransect) + &
+                       transectEdgeMaskSigns(currentTransect,iEdge) &
+                       * transectEdgeMasks(currentTransect, iEdge) &
+                       * normalMLEvelocity(k,iEdge)*dvEdge(iEdge) &
+                       * 0.5_RKIND*(layerThickness(k,c1) + layerThickness(k,c2))
+                 end do
+              end do
+              !Integrate transport from bottom to top, which switches the sign of sumTransport
+              !there is also an implicit moc(nVertLevels+1,iTransect) = 0
+              k = nVertLevels
+              mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
+                 - sumTransport(k, iTransect)
+              do k = nVertLevels - 1, 1, -1
+                 mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
+                    mocStreamValLatAndDepthRegionLocal(1, k + 1, iTransect) &
+                    - sumTransport(k, iTransect)
+              end do
+           end do
+
+           !!!! END TRANSECT CALCULATION
+
+           do iCell = 1,nCellsSolve
+              iBin = MAX(int((latCell(iCell) - binBoundaryMocStreamfunction(1)) / binWidth) + 2, 2)
+              do k = 1,maxLevelCell(iCell)
+                 do i = 1, regionsInAddGroup
+                    currentRegion = regionsInGroup(i, regionGroupNumber)
+                    sumVertBinVelocityRegion(iBin, k, i) = sumVertBinVelocityRegion(iBin, k, i) + &
+                          (vertMLEBolusVelocityTop(k,iCell) * &
+                          areaCell(iCell) * regionCellMasks(currentRegion, iCell))
+                 end do
+                 sumVertBinVelocity(iBin, k) = sumVertBinVelocity(iBin, k) + &
+                          (vertMLEBolusVelocityTop(k,iCell) * areaCell(iCell))
+              end do
+           end do
+
+           do i = 1, regionsInAddGroup
+              do k = 1,nVertLevels
+                 do iBin = 2, nMocStreamfunctionBinsUsed + 1
+                    mocStreamValLatAndDepthLocal(iBin, k) = mocStreamValLatAndDepthLocal(iBin-1, k) &
+                       + sumVertBinVelocity(iBin, k)
+                    mocStreamValLatAndDepthRegionLocal(iBin, k, i) = mocStreamValLatAndDepthRegionLocal(iBin-1, k, i) &
+                       + sumVertBinVelocityRegion(iBin, k, i)
+                 end do
+              end do
+           end do
+
+           block => block % next
+       end do
+
+       call mpas_dmpar_sum_real_array(dminfo, nVertLevels * (nMocStreamfunctionBinsUsed + 1), mocStreamValLatAndDepthLocal, &
+           mocStreamvalLatAndDepthTotal)
+
+       call mpas_dmpar_sum_real_array(dminfo, nVertLevels * (nMocStreamfunctionBinsUsed + 1) * maxRegionsInGroup, &
+           mocStreamValLatAndDepthRegionLocal, mocStreamvalLatAndDepthRegionTotal)
+
+       call mpas_pool_get_subpool(domain % blocklist % structs, 'mocStreamfunctionAM', mocStreamfunctionAMPool)
+       call mpas_pool_get_array(mocStreamfunctionAMPool, 'mocStreamvalLatAndDepthMLE', mocStreamvalLatAndDepthMLE)
+       mocStreamvalLatAndDepthMLE = mocStreamvalLatAndDepthTotal * m3ps_to_Sv
+
+       call mpas_pool_get_array(mocStreamfunctionAMPool, 'mocStreamvalLatAndDepthRegionMLE', mocStreamvalLatAndDepthRegionMLE)
+       mocStreamvalLatAndDepthRegionMLE = mocStreamvalLatAndDepthRegionTotal * m3ps_to_Sv
+
+       !Add submesoscale eddy bolus contribution to resolved streamfunction to create total streamfunction
+       mocStreamvalLatAndDepthRegion = mocStreamvalLatAndDepthRegion + mocStreamvalLatAndDepthRegionMLE
+       mocStreamvalLatAndDepth = mocStreamvalLatAndDepth + mocStreamvalLatAndDepthMLE
+
+     endif !config_submesoscale_enable
 
      deallocate(mocStreamvalLatAndDepthTotal)
      deallocate(mocStreamvalLatAndDepthLocal)

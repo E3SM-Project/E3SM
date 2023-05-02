@@ -2,9 +2,10 @@
 #include "periodic.h"
 
 void periodic(int flag) {
-  YAKL_SCOPE( w     , ::w );
-  YAKL_SCOPE( sstxy , ::sstxy );
-  YAKL_SCOPE( ncrms , ::ncrms );
+  YAKL_SCOPE( w       , :: w );
+  YAKL_SCOPE( sstxy   , :: sstxy );
+  YAKL_SCOPE( ncrms   , :: ncrms );
+  YAKL_SCOPE( use_ESMT, :: use_ESMT );
 
   if (flag == 0) {
     bound_exchange(u,nzm,1,1,1,1, 1);
@@ -65,10 +66,10 @@ void periodic(int flag) {
         bound_exchange(micro_field,i,nzm,3,3,3,3, 4);
       }
     }
-#ifdef MMF_ESMT
-    bound_exchange(u_esmt, nzm, 3, 3, 3, 3, 4);
-    bound_exchange(v_esmt, nzm, 3, 3, 3, 3, 4);
-#endif
+    if (use_ESMT) {
+      bound_exchange(u_esmt, nzm, 3, 3, 3, 3, 4);
+      bound_exchange(v_esmt, nzm, 3, 3, 3, 3, 4);
+    }
   }
 
   if (flag == 3) {
@@ -84,10 +85,10 @@ void periodic(int flag) {
           bound_exchange(micro_field,i,nzm,1,1,1,1, 4);
       }
     }
-#ifdef MMF_ESMT
-    bound_exchange(u_esmt, nzm, 1, 1, 1, 1, 4);
-    bound_exchange(v_esmt, nzm, 1, 1, 1, 1, 4);
-#endif
+    if (use_ESMT) {
+      bound_exchange(u_esmt, nzm, 1, 1, 1, 1, 4);
+      bound_exchange(v_esmt, nzm, 1, 1, 1, 1, 4);
+    }
   }
 
   if (flag == 4) {

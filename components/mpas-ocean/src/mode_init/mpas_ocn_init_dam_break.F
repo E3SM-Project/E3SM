@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -190,6 +190,8 @@ contains
        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
        call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+       call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
+       call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
        call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
        call mpas_pool_get_array(meshPool, 'xCell', xCell)
        call mpas_pool_get_array(meshPool, 'yCell', yCell)
@@ -200,6 +202,7 @@ contains
        call mpas_pool_get_array(meshPool,'cullCell',cullCell)
 
        call mpas_pool_get_array(statePool,'layerThickness',layerThickness,1)
+       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
        call mpas_pool_get_array(statePool,'ssh',ssh,1)
        call mpas_pool_get_array(verticalMeshPool,'restingThickness',restingThickness)
        call mpas_pool_get_array(verticalMeshPool,'refZMid',refZMid)
@@ -252,6 +255,19 @@ contains
            restingThickness(k,iCell) = layerThickness(k,iCell)
          enddo
        enddo
+       ! Set salinity
+       if ( associated(activeTracers) ) then
+         do iCell = 1, nCellsSolve
+           activeTracers(index_salinity, :, iCell) = 30.0_RKIND
+         end do
+       end if
+
+       ! Set temperature
+       if ( associated(activeTracers) ) then
+         do iCell = 1, nCellsSolve
+           activeTracers(index_temperature, :, iCell) = 10.0_RKIND
+         end do
+       end if
 
        ! Determine global min and max values.
        call mpas_dmpar_min_real(domain % dminfo, yMin, yMinGlobal)

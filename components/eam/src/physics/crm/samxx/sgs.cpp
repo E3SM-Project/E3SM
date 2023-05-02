@@ -80,6 +80,7 @@ void sgs_mom() {
 
 
 void sgs_scalars() {
+  YAKL_SCOPE( use_ESMT, :: use_ESMT );
   real2d dummy("dummy", nz, ncrms);
 
   diffuse_scalar(sgs_field_diag,1,t,fluxbt,fluxtt,tdiff,twsb);
@@ -96,10 +97,10 @@ void sgs_scalars() {
     }
   }
 
-#if defined(MMF_ESMT)
-  diffuse_scalar(sgs_field_diag,1,u_esmt,fluxb_u_esmt,fluxt_u_esmt,u_esmt_diff,u_esmt_sgs);
-  diffuse_scalar(sgs_field_diag,1,v_esmt,fluxb_v_esmt,fluxt_v_esmt,v_esmt_diff,v_esmt_sgs);
-#endif
+  if (use_ESMT) {
+    diffuse_scalar(sgs_field_diag,1,u_esmt,fluxb_u_esmt,fluxt_u_esmt,u_esmt_diff,u_esmt_sgs);
+    diffuse_scalar(sgs_field_diag,1,v_esmt,fluxb_v_esmt,fluxt_v_esmt,v_esmt_diff,v_esmt_sgs);
+  }
 }
 
 

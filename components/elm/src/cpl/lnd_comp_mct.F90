@@ -45,7 +45,8 @@ contains
     use elm_initializeMod, only : initialize1, initialize2, initialize3
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
     use elm_instance     , only : elm_instance_init
-    use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland
+    use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland, &
+                                  scm_multcols, scm_nx, scm_ny
     use elm_varctl       , only : inst_index, inst_suffix, inst_name, precip_downscaling_method
     use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
@@ -62,9 +63,9 @@ contains
                                   seq_infodata_start_type_start, seq_infodata_start_type_cont,   &
                                   seq_infodata_start_type_brnch
     use seq_comm_mct     , only : seq_comm_suffix, seq_comm_inst, seq_comm_name
-    use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields
+    use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields, lnd_rof_two_way
     use spmdMod          , only : masterproc, npes, spmd_init
-    use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
+    use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch, use_lnd_rof_two_way
     use elm_cpl_indices  , only : elm_cpl_indices_set
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
@@ -77,7 +78,7 @@ contains
     character(len=*), optional, intent(in)    :: NLFilename       ! Namelist filename to read
     !
     ! !LOCAL VARIABLES:
-    integer                          :: LNDID	     ! Land identifyer
+    integer                          :: LNDID        ! Land identifyer
     integer                          :: mpicom_lnd   ! MPI communicator
     type(mct_gsMap),         pointer :: GSMap_lnd    ! Land model MCT GS map
     type(mct_gGrid),         pointer :: dom_l        ! Land model domain
@@ -214,6 +215,7 @@ contains
                                    calendar=calendar )
     call seq_infodata_GetData(infodata, case_name=caseid,    &
                               case_desc=ctitle, single_column=single_column,    &
+                              scm_multcols=scm_multcols,scm_nx=scm_nx,scm_ny=scm_ny,    &
                               scmlat=scmlat, scmlon=scmlon,                     &
                               brnch_retain_casename=brnch_retain_casename,      &
                               start_type=starttype, model_version=version,      &
@@ -231,12 +233,18 @@ contains
        call endrun( sub//' ERROR: unknown starttype' )
     end if
 
-    call elm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                     &
-                        brnch_retain_casename_in=brnch_retain_casename,         &
-                        single_column_in=single_column, scmlat_in=scmlat,       &
-                        scmlon_in=scmlon, nsrest_in=nsrest, version_in=version, &
+    ! If SCM domain mode, force single_column flag to be false for this
+    !  block of code, as special treatment is needed
+    if (scm_multcols) single_column = .false.
+    call elm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                      &
+                        brnch_retain_casename_in=brnch_retain_casename,          &
+                        scm_multcols_in=scm_multcols, scm_nx_in=scm_nx, scm_ny_in=scm_ny,&
+                        single_column_in=single_column, scmlat_in=scmlat,        &
+                        scmlon_in=scmlon, nsrest_in=nsrest, version_in=version,  &
                         hostname_in=hostname, username_in=username)
 
+    use_lnd_rof_two_way = lnd_rof_two_way
+    
     ! Read namelist, grid and surface data
 
     call initialize1( )

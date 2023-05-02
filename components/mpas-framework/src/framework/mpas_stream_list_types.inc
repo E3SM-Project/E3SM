@@ -14,6 +14,7 @@
         logical :: immutable = .false.
         logical :: active_stream = .true.
         logical :: blockWrite = .false.
+        logical :: useMissingValMask = .false.
         character(len=StrKIND) :: filename
         character(len=StrKIND) :: filename_template
         character(len=StrKIND) :: filename_interval

@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -34,6 +34,7 @@ module ocn_vmix
    use ocn_vmix_gotm
    use ocn_vmix_coefs_redi
    use ocn_diagnostics_variables
+   use ocn_surface_land_ice_fluxes
 
    implicit none
    private
@@ -65,7 +66,19 @@ module ocn_vmix
    !--------------------------------------------------------------------
 
    logical :: velVmixOn, tracerVmixOn
-   real (kind=RKIND) :: implicitBottomDragCoef
+   real (kind=RKIND) :: implicitBottomDragCoef, implicitTopDragCoef
+
+   integer :: &
+      dragType   ! id for pressure gradient method selected
+
+   integer, parameter ::       &! ids for supported methods
+      dragTypeNone        = 0, &! None selected
+      dragTypeConst       = 0, &! Spatially constant
+      dragTypeRayleigh    = 1, &! Rayleigh
+      dragTypeLogLaw      = 2, &! log law-of-the-wall
+      dragTypeVariable    = 3, &! Spatially variable
+      dragTypeMannings    = 4   ! Manning's coefficient
+
    real (kind=RKIND) :: rayleighDampingCoef, rayleighBottomDampingCoef, &
                         rayleighDepthVariable
 
@@ -296,53 +309,64 @@ contains
             edgeThicknessTotal = edgeThicknessTotal + layerThickEdgeMean(k,iEdge)
          enddo
 
-         ! tridiagonal matrix algorithm
-         C(Nsurf) = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
-                / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &
-                / layerThickEdgeMean(Nsurf,iEdge)
-         bTemp(Nsurf) = 1.0_RKIND - C(Nsurf) &
-            ! added Rayleigh terms
-            + dt*rayleighDampingCoef/((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal)
-         rTemp(Nsurf) = normalVelocity(Nsurf,iEdge)
+         ! one active layer
+         if (N .eq. Nsurf) then
+           normalVelocity(N,iEdge) = normalVelocity(N,iEdge) &
+               / (1.0_RKIND + dt*implicitBottomDragCoef &
+               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
+               ! added Rayleigh terms
+               + dt*(rayleighBottomDampingCoef + rayleighDampingCoef &
+               / ((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal)))
+         else
 
-         ! first pass: set the coefficients
-         do k = Nsurf+1, N-1
-            A        = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
-                   / (layerThickEdgeMean(k-1,iEdge) + layerThickEdgeMean(k,iEdge)) &
-                   / layerThickEdgeMean(k,iEdge)
-            m        = A/bTemp(k-1)
-            C(k)     = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
-                   / (layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k+1,iEdge)) &
-                   / layerThickEdgeMean(k,iEdge)
-            bTemp(k) = 1.0_RKIND - A - C(k) &
-                   ! added Rayleigh terms
-                   + dt*(rayleighDampingCoef/((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal)) &
-                   - m*C(k-1)
-            rTemp(k) = normalVelocity(k,iEdge) - m*rTemp(k-1)
-         enddo
+           ! tridiagonal matrix algorithm
+           C(Nsurf) = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
+                  / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &
+                  / layerThickEdgeMean(Nsurf,iEdge)
+           bTemp(Nsurf) = 1.0_RKIND - C(Nsurf) &
+              ! added Rayleigh terms
+              + dt*rayleighDampingCoef/((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal)
+           rTemp(Nsurf) = normalVelocity(Nsurf,iEdge)
 
-         A = -2.0_RKIND*dt*vertViscTopOfEdge(N,iEdge) &
-           / (layerThickEdgeMean(N-1,iEdge) + layerThickEdgeMean(N,iEdge)) &
-           / layerThickEdgeMean(N,iEdge)
-         m = A/bTemp(N-1)
+           ! first pass: set the coefficients
+           do k = Nsurf+1, N-1
+              A        = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
+                     / (layerThickEdgeMean(k-1,iEdge) + layerThickEdgeMean(k,iEdge)) &
+                     / layerThickEdgeMean(k,iEdge)
+              m        = A/bTemp(k-1)
+              C(k)     = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
+                     / (layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k+1,iEdge)) &
+                     / layerThickEdgeMean(k,iEdge)
+              bTemp(k) = 1.0_RKIND - A - C(k) &
+                     ! added Rayleigh terms
+                     + dt*(rayleighDampingCoef/((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal)) &
+                     - m*C(k-1)
+              rTemp(k) = normalVelocity(k,iEdge) - m*rTemp(k-1)
+           enddo
 
-         ! x(N) = rTemp(N) / bTemp(N)
-         ! Apply bottom drag boundary condition on the viscous term
-         ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
-         normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
-             / (1.0_RKIND - A + dt*implicitBottomDragCoef &
-             * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
-             ! added Rayleigh terms
-             + dt*(rayleighBottomDampingCoef + rayleighDampingCoef &
-             / ((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal)) &
-             - m*C(N-1))
-         ! second pass: back substitution
-         do k = N-1, Nsurf, -1
-            normalVelocity(k,iEdge) = (rTemp(k) - C(k)*normalVelocity(k+1,iEdge)) / bTemp(k)
-         enddo
-         normalVelocity(1:Nsurf-1,iEdge) = 0.0_RKIND
-         normalVelocity(N+1:nVertLevels,iEdge) = 0.0_RKIND
+           A = -2.0_RKIND*dt*vertViscTopOfEdge(N,iEdge) &
+             / (layerThickEdgeMean(N-1,iEdge) + layerThickEdgeMean(N,iEdge)) &
+             / layerThickEdgeMean(N,iEdge)
+           m = A/bTemp(N-1)
 
+           ! x(N) = rTemp(N) / bTemp(N)
+           ! Apply bottom drag boundary condition on the viscous term
+           ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
+           normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
+               / (1.0_RKIND - A + dt*implicitBottomDragCoef &
+               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
+               ! added Rayleigh terms
+               + dt*(rayleighBottomDampingCoef + rayleighDampingCoef &
+               / ((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal)) &
+               - m*C(N-1))
+           ! second pass: back substitution
+           do k = N-1, Nsurf, -1
+              normalVelocity(k,iEdge) = (rTemp(k) - C(k)*normalVelocity(k+1,iEdge)) / bTemp(k)
+           enddo
+           normalVelocity(1:Nsurf-1,iEdge) = 0.0_RKIND
+           normalVelocity(N+1:nVertLevels,iEdge) = 0.0_RKIND
+
+         end if ! N=Nsurf, i.e. single layer
         end if
       end do
 #ifndef MPAS_OPENACC
@@ -374,7 +398,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_vmix_tend_implicit(dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, & !{{{
-                                         layerThickEdgeMean, normalVelocity, err)
+                                         layerThickEdgeMean, landIceEdgeFraction, normalVelocity, err)
 
       !-----------------------------------------------------------------
       !
@@ -396,6 +420,9 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThickEdgeMean !< Input: mean thickness at edge
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         landIceEdgeFraction !< Input: land ice fraction
 
       !-----------------------------------------------------------------
       !
@@ -436,7 +463,7 @@ contains
 
       !$acc parallel loop present(maxLevelEdgeTop, minLevelEdgeBot, cellsOnEdge, &
       !$acc    layerThickEdgeMean, layerThickness, vertViscTopOfEdge, normalVelocity, &
-      !$acc    kineticEnergyCell) &
+      !$acc    landIceEdgeFraction, kineticEnergyCell) &
       !$acc    private(Nsurf, N, cell1, cell2, A, bTemp, C, m, rTemp, k)
 #else
       !$omp parallel
@@ -450,45 +477,56 @@ contains
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 
-         ! tridiagonal matrix algorithm
-         C(Nsurf)     = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
-                    / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &
-                    / layerThickEdgeMean(Nsurf,iEdge)
-         bTemp(Nsurf) = 1.0_RKIND - C(Nsurf)
-         rTemp(Nsurf) = normalVelocity(Nsurf,iEdge)
+         ! one active layer
+         if (N .eq. Nsurf) then
+            normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
+                / (1.0_RKIND + dt*(implicitTopDragCoef * landIceEdgeFraction(iEdge) + implicitBottomDragCoef) &
+                   * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) )
+         else
 
-         ! first pass: set the coefficients
-         do k = Nsurf+1, N-1
-            A        = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
-                   / (layerThickEdgeMean(k-1,iEdge) + layerThickEdgeMean(k,iEdge)) &
-                   / layerThickEdgeMean(k,iEdge)
-            m        = A/bTemp(k-1)
-            C(k)     = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
-                   / (layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k+1,iEdge)) &
-                   / layerThickEdgeMean(k,iEdge)
-            bTemp(k) = 1.0_RKIND - A - C(k) - m*C(k-1)
-            rTemp(k) = normalVelocity(k,iEdge) - m*rTemp(k-1)
-         enddo
+           ! tridiagonal matrix algorithm
+           C(Nsurf)     = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
+                      / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &
+                      / layerThickEdgeMean(Nsurf,iEdge)
+           bTemp(Nsurf) = 1.0_RKIND - C(Nsurf) &
+              + dt * implicitTopDragCoef * landIceEdgeFraction(iEdge) &
+                * sqrt(kineticEnergyCell(Nsurf,cell1) + kineticEnergyCell(Nsurf,cell2)) / &
+                layerThickEdgeMean(Nsurf,iEdge)
+           rTemp(Nsurf) = normalVelocity(Nsurf,iEdge)
 
-         A = -2.0_RKIND*dt*vertViscTopOfEdge(N,iEdge) &
-           / (layerThickEdgeMean(N-1,iEdge) + layerThickEdgeMean(N,iEdge)) &
-           / layerThickEdgeMean(N,iEdge)
-         m = A/bTemp(N-1)
+           ! first pass: set the coefficients
+           do k = Nsurf+1, N-1
+              A        = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
+                     / (layerThickEdgeMean(k-1,iEdge) + layerThickEdgeMean(k,iEdge)) &
+                     / layerThickEdgeMean(k,iEdge)
+              m        = A/bTemp(k-1)
+              C(k)     = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
+                     / (layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k+1,iEdge)) &
+                     / layerThickEdgeMean(k,iEdge)
+              bTemp(k) = 1.0_RKIND - A - C(k) - m*C(k-1)
+              rTemp(k) = normalVelocity(k,iEdge) - m*rTemp(k-1)
+           enddo
 
-         ! x(N) = rTemp(N) / bTemp(N)
-         ! Apply bottom drag boundary condition on the viscous term
-         ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
-         normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
-             / (1.0_RKIND - A + dt*implicitBottomDragCoef &
-             * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
-             - m*C(N-1))
-         ! second pass: back substitution
-         do k = N-1, Nsurf, -1
-            normalVelocity(k,iEdge) = (rTemp(k) - C(k)*normalVelocity(k+1,iEdge)) / bTemp(k)
-         enddo
-         normalVelocity(1:Nsurf-1,iEdge) = 0.0_RKIND
-         normalVelocity(N+1:nVertLevels,iEdge) = 0.0_RKIND
+           A = -2.0_RKIND*dt*vertViscTopOfEdge(N,iEdge) &
+             / (layerThickEdgeMean(N-1,iEdge) + layerThickEdgeMean(N,iEdge)) &
+             / layerThickEdgeMean(N,iEdge)
+           m = A/bTemp(N-1)
 
+           ! x(N) = rTemp(N) / bTemp(N)
+           ! Apply bottom drag boundary condition on the viscous term
+           ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
+           normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
+               / (1.0_RKIND - A + dt*implicitBottomDragCoef &
+               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
+               - m*C(N-1))
+           ! second pass: back substitution
+           do k = N-1, Nsurf, -1
+              normalVelocity(k,iEdge) = (rTemp(k) - C(k)*normalVelocity(k+1,iEdge)) / bTemp(k)
+           enddo
+           normalVelocity(1:Nsurf-1,iEdge) = 0.0_RKIND
+           normalVelocity(N+1:nVertLevels,iEdge) = 0.0_RKIND
+
+         end if ! N=Nsurf, i.e. single layer
         end if
       end do
 #ifndef MPAS_OPENACC
@@ -740,45 +778,52 @@ contains
          ! average cell-based implicit bottom drag to edges
          implicitCd = 0.5_RKIND*(bottomDrag(cell1) + bottomDrag(cell2))
 
-         ! tridiagonal matrix algorithm
-         C(Nsurf)     = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
-                    / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &
-                    / layerThickEdgeMean(Nsurf,iEdge)
-         bTemp(Nsurf) = 1.0_RKIND - C(Nsurf)
-         rTemp(Nsurf) = normalVelocity(Nsurf,iEdge)
+         ! one active layer
+         if (N .eq. Nsurf) then
+            normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
+                / (1.0_RKIND + dt*implicitCD &
+                   * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) )
+         else
 
-         ! first pass: set the coefficients
-         do k = Nsurf+1, N-1
-            A        = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
-                   / (layerThickEdgeMean(k-1,iEdge) + layerThickEdgeMean(k,iEdge)) &
-                   / layerThickEdgeMean(k,iEdge)
-            m        = A/bTemp(k-1)
-            C(k)     = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
-                   / (layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k+1,iEdge)) &
-                   / layerThickEdgeMean(k,iEdge)
-            bTemp(k) = 1.0_RKIND - A - C(k) - m*C(k-1)
-            rTemp(k) = normalVelocity(k,iEdge) - m*rTemp(k-1)
-         enddo
+           ! tridiagonal matrix algorithm
+           C(Nsurf)     = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
+                      / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &
+                      / layerThickEdgeMean(Nsurf,iEdge)
+           bTemp(Nsurf) = 1.0_RKIND - C(Nsurf)
+           rTemp(Nsurf) = normalVelocity(Nsurf,iEdge)
 
-         A = -2.0_RKIND*dt*vertViscTopOfEdge(N,iEdge) &
-           / (layerThickEdgeMean(N-1,iEdge) + layerThickEdgeMean(N,iEdge)) &
-           / layerThickEdgeMean(N,iEdge)
-         m = A/bTemp(N-1)
+           ! first pass: set the coefficients
+           do k = Nsurf+1, N-1
+              A        = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
+                     / (layerThickEdgeMean(k-1,iEdge) + layerThickEdgeMean(k,iEdge)) &
+                     / layerThickEdgeMean(k,iEdge)
+              m        = A/bTemp(k-1)
+              C(k)     = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
+                     / (layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k+1,iEdge)) &
+                     / layerThickEdgeMean(k,iEdge)
+              bTemp(k) = 1.0_RKIND - A - C(k) - m*C(k-1)
+              rTemp(k) = normalVelocity(k,iEdge) - m*rTemp(k-1)
+           enddo
 
-         ! x(N) = rTemp(N) / bTemp(N)
-         ! Apply bottom drag boundary condition on the viscous term
-         ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
-         normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
-             / (1.0_RKIND - A + dt*implicitCD &
-             * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
-             - m*C(N-1))
-         ! second pass: back substitution
-         do k = N-1, Nsurf, -1
-            normalVelocity(k,iEdge) = (rTemp(k) - C(k)*normalVelocity(k+1,iEdge)) / bTemp(k)
-         enddo
-         normalVelocity(1:Nsurf-1,iEdge) = 0.0_RKIND
-         normalVelocity(N+1:nVertLevels,iEdge) = 0.0_RKIND
+           A = -2.0_RKIND*dt*vertViscTopOfEdge(N,iEdge) &
+             / (layerThickEdgeMean(N-1,iEdge) + layerThickEdgeMean(N,iEdge)) &
+             / layerThickEdgeMean(N,iEdge)
+           m = A/bTemp(N-1)
 
+           ! x(N) = rTemp(N) / bTemp(N)
+           ! Apply bottom drag boundary condition on the viscous term
+           ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
+           normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
+               / (1.0_RKIND - A + dt*implicitCD &
+               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
+               - m*C(N-1))
+           ! second pass: back substitution
+           do k = N-1, Nsurf, -1
+              normalVelocity(k,iEdge) = (rTemp(k) - C(k)*normalVelocity(k+1,iEdge)) / bTemp(k)
+           enddo
+           normalVelocity(1:Nsurf-1,iEdge) = 0.0_RKIND
+           normalVelocity(N+1:nVertLevels,iEdge) = 0.0_RKIND
+         end if ! one active layer
         end if
       end do
 #ifndef MPAS_OPENACC
@@ -904,7 +949,7 @@ contains
 #endif
 
       ! Compute bottomDrag (Manning roughness) induced by vegetation
-      if (config_use_vegetation_drag .AND. config_use_vegetation_manning_equation) then
+      if (dragType == dragTypeMannings .AND. config_use_vegetation_drag) then
         do iCell = 1, nCellsOwned
           if (vegetationDensity(iCell) * vegetationHeight(iCell) * vegetationDiameter(iCell) .eq. 0.0_RKIND) then
             vegetationMask(iCell) = 0
@@ -953,7 +998,7 @@ contains
          cell2 = cellsOnEdge(2,iEdge)
 
          ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
-         if (config_use_implicit_bottom_roughness) then
+         if (dragType == dragTypeLogLaw) then
            ! NCOM's formula for bottom drag coefficient
            ! The original formula is cb(i,j) = max(cbmin, (vonk/log(0.5*depth(i,j)/z0))**2 ))
            ! where vonk=0.16, z0=0.001, bracketed between [0.0025, 0.1]
@@ -962,7 +1007,7 @@ contains
            implicitCd = max(0.0025_RKIND, &
                         min(0.1_RKIND, &
                           0.16_RKIND/(log(250.0_RKIND*(bottomDepth(cell1)+bottomDepth(cell2))))**2 ))
-         elseif (config_use_vegetation_drag .AND. config_use_vegetation_manning_equation) then
+         elseif (dragType == dragTypeMannings .AND. config_use_vegetation_drag) then
            implicitCd = gravity*(0.5_RKIND*(vegetationManning(cell1) + vegetationManning(cell2)))**2 * &
             (0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2)))**(-1.0_RKIND/3.0_RKIND)
          else
@@ -970,45 +1015,53 @@ contains
             (0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2)))**(-1.0_RKIND/3.0_RKIND)
          endif
 
-         ! tridiagonal matrix algorithm
-         C(Nsurf)     = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
-                    / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &
-                    / layerThickEdgeMean(Nsurf,iEdge)
-         bTemp(Nsurf) = 1.0_RKIND - C(Nsurf)
-         rTemp(Nsurf) = normalVelocity(Nsurf,iEdge)
+         ! one active layer
+         if (N .eq. Nsurf) then
+           normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
+                / (1.0_RKIND + dt*implicitCD &
+                   * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) )
+         else
 
-         ! first pass: set the coefficients
-         do k = Nsurf+1, N-1
-            A        = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
-                   / (layerThickEdgeMean(k-1,iEdge) + layerThickEdgeMean(k,iEdge)) &
-                   / layerThickEdgeMean(k,iEdge)
-            m        = A/bTemp(k-1)
-            C(k)     = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
-                   / (layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k+1,iEdge)) &
-                   / layerThickEdgeMean(k,iEdge)
-            bTemp(k) = 1.0_RKIND - A - C(k) - m*C(k-1)
-            rTemp(k) = normalVelocity(k,iEdge) - m*rTemp(k-1)
-         enddo
+           ! tridiagonal matrix algorithm
+           C(Nsurf)     = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
+                      / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &
+                      / layerThickEdgeMean(Nsurf,iEdge)
+           bTemp(Nsurf) = 1.0_RKIND - C(Nsurf)
+           rTemp(Nsurf) = normalVelocity(Nsurf,iEdge)
 
-         A = -2.0_RKIND*dt*vertViscTopOfEdge(N,iEdge) &
-           / (layerThickEdgeMean(N-1,iEdge) + layerThickEdgeMean(N,iEdge)) &
-           / layerThickEdgeMean(N,iEdge)
-         m = A/bTemp(N-1)
+           ! first pass: set the coefficients
+           do k = Nsurf+1, N-1
+              A        = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
+                     / (layerThickEdgeMean(k-1,iEdge) + layerThickEdgeMean(k,iEdge)) &
+                     / layerThickEdgeMean(k,iEdge)
+              m        = A/bTemp(k-1)
+              C(k)     = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
+                     / (layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k+1,iEdge)) &
+                     / layerThickEdgeMean(k,iEdge)
+              bTemp(k) = 1.0_RKIND - A - C(k) - m*C(k-1)
+              rTemp(k) = normalVelocity(k,iEdge) - m*rTemp(k-1)
+           enddo
 
-         ! x(N) = rTemp(N) / bTemp(N)
-         ! Apply bottom drag boundary condition on the viscous term
-         ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
-         normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
-             / (1.0_RKIND - A + dt*implicitCD &
-             * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
-             - m*C(N-1))
-         ! second pass: back substitution
-         do k = N-1, Nsurf, -1
-            normalVelocity(k,iEdge) = (rTemp(k) - C(k)*normalVelocity(k+1,iEdge)) / bTemp(k)
-         enddo
-         normalVelocity(1:Nsurf-1,iEdge) = 0.0_RKIND
-         normalVelocity(N+1:nVertLevels,iEdge) = 0.0_RKIND
+           A = -2.0_RKIND*dt*vertViscTopOfEdge(N,iEdge) &
+             / (layerThickEdgeMean(N-1,iEdge) + layerThickEdgeMean(N,iEdge)) &
+             / layerThickEdgeMean(N,iEdge)
+           m = A/bTemp(N-1)
 
+           ! x(N) = rTemp(N) / bTemp(N)
+           ! Apply bottom drag boundary condition on the viscous term
+           ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
+           normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
+               / (1.0_RKIND - A + dt*implicitCD &
+               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
+               - m*C(N-1))
+           ! second pass: back substitution
+           do k = N-1, Nsurf, -1
+              normalVelocity(k,iEdge) = (rTemp(k) - C(k)*normalVelocity(k+1,iEdge)) / bTemp(k)
+           enddo
+           normalVelocity(1:Nsurf-1,iEdge) = 0.0_RKIND
+           normalVelocity(N+1:nVertLevels,iEdge) = 0.0_RKIND
+
+         endif ! one active layer
         end if
       end do
 #ifndef MPAS_OPENACC
@@ -1223,7 +1276,8 @@ contains
       type (mpas_pool_type), pointer :: tracersPool, tracersSurfaceFluxPool
 
       integer :: iCell, timeLevel, k, cell1, cell2, iEdge, iTracer, num_tracers, nCells, nEdges, N, Nsurf
-      real (kind=RKIND), dimension(:), pointer :: bottomDrag, ssh
+      real (kind=RKIND), dimension(:), pointer :: bottomDrag, ssh, landIceFraction
+      real (kind=RKIND), dimension(:), allocatable :: landIceEdgeFraction
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness, vertVelocityNonhydro
       real (kind=RKIND), dimension(:,:), pointer :: tracerGroupSurfaceFlux
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
@@ -1245,6 +1299,33 @@ contains
       end if
 
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
+
+      allocate(landIceEdgeFraction(nEdgesOwned))
+      landIceEdgeFraction(:) = 0.0_RKIND
+      if (landIcePressureOn) then
+         call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+#ifdef MPAS_OPENACC
+         !$acc enter data copyin(landIceFraction)
+
+         !$acc parallel loop present(landIceEdgeFraction) &
+         !$acc    private(cell1, cell2, k)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime) private(cell1, cell2, k)
+#endif
+         do iEdge = 1, nEdgesOwned
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            landIceEdgeFraction(iEdge) = 0.5_RKIND*(landIceFraction(cell1)+landIceFraction(cell2))
+         end do
+#ifdef MPAS_OPENACC
+         !$acc exit data copyout(landIceFraction)
+#else
+         !$omp end do
+         !$omp end parallel
+#endif
+      end if
+
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(statePool, 'vertVelocityNonhydro', vertVelocityNonhydro, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
@@ -1330,25 +1411,39 @@ contains
 #ifdef MPAS_OPENACC
       !$acc enter data copyin(layerThickness, normalVelocity)
 #endif
-      if (config_use_implicit_bottom_drag_variable) then
-        call ocn_vel_vmix_tend_implicit_spatially_variable(bottomDrag, dt, kineticEnergyCell, &
+      select case (dragType)
+
+      case (dragTypeConst)
+
+        call ocn_vel_vmix_tend_implicit(dt, kineticEnergyCell, &
+          vertViscTopOfEdge, layerThickness, layerThickEdgeMean, &
+          landIceEdgeFraction, normalVelocity, err)
+
+      case (dragTypeRayleigh)
+
+        call ocn_vel_vmix_tend_implicit_rayleigh(dt, kineticEnergyCell, &
           vertViscTopOfEdge, layerThickness, layerThickEdgeMean, normalVelocity, err)
-      else if (config_use_implicit_bottom_drag_variable_mannings.or. &
-               config_use_implicit_bottom_roughness) then
-        ! update bottomDrag via Cd=g*n^2*h^(-1/3)
+
+      case (dragTypeLogLaw)
+
         call ocn_vel_vmix_tend_implicit_spatially_variable_mannings(forcingPool, bottomDrag, &
           dt, kineticEnergyCell, &
           vertViscTopOfEdge, layerThickness, layerThickEdgeMean, normalVelocity, &
           ssh, err)
-      else if (config_Rayleigh_friction.or. &
-               config_Rayleigh_bottom_friction.or. &
-               config_Rayleigh_damping_depth_variable) then
-        call ocn_vel_vmix_tend_implicit_rayleigh(dt, kineticEnergyCell, &
+
+      case (dragTypeVariable)
+
+        call ocn_vel_vmix_tend_implicit_spatially_variable(bottomDrag, dt, kineticEnergyCell, &
           vertViscTopOfEdge, layerThickness, layerThickEdgeMean, normalVelocity, err)
-      else
-        call ocn_vel_vmix_tend_implicit(dt, kineticEnergyCell, &
-          vertViscTopOfEdge, layerThickness, layerThickEdgeMean, normalVelocity, err)
-      end if
+
+      case (dragTypeMannings)
+
+        call ocn_vel_vmix_tend_implicit_spatially_variable_mannings(forcingPool, bottomDrag, &
+          dt, kineticEnergyCell, &
+          vertViscTopOfEdge, layerThickness, layerThickEdgeMean, normalVelocity, &
+          ssh, err)
+
+      end select
 #ifdef MPAS_OPENACC
       !$acc exit data copyout(normalVelocity)
 #endif
@@ -1408,12 +1503,15 @@ contains
                           tracerGroupSurfaceFlux)
                endif
 #ifdef MPAS_OPENACC
-            !$acc enter data copyin(tracerGroupSurfaceFlux)
+               !$acc enter data copyin(tracerGroupSurfaceFlux)
 #endif
 
                call ocn_tracer_vmix_tend_implicit(dt, vertDiffTopOfCell, layerThickness, tracersGroup, &
                         vertNonLocalFlux, tracerGroupSurfaceFlux,  &
                         config_cvmix_kpp_nonlocal_with_implicit_mix, err)
+#ifdef MPAS_OPENACC
+               !$acc exit data delete(tracerGroupSurfaceFlux)
+#endif
             end if
 
             ! difference tracers to compute influence of vertical mixing and divide by dt
@@ -1445,7 +1543,7 @@ contains
             endif
 
 #ifdef MPAS_OPENACC
-      !$acc exit data copyout(tracersGroup) delete(tracerGroupSurfaceFlux)
+      !$acc exit data copyout(tracersGroup)
 #endif
          end if
       end do
@@ -1490,34 +1588,87 @@ contains
 
       err = 0
 
+      dragType = dragTypeNone
+
+      implicitBottomDragCoef = 0.0_RKIND
+      implicitTopDragCoef = 0.0_RKIND
+
+      if (config_use_implicit_top_drag .and. &
+          .not. trim(config_bottom_drag_mode) == 'implicit') then
+         call mpas_log_write('Implicit top drag can only be used with ' //&
+              & 'implicit bottom drag', MPAS_LOG_CRIT)
+      endif
+      if (config_use_implicit_top_drag .and. &
+          .not. trim(config_implicit_bottom_drag_type)=='constant') then
+         call mpas_log_write('Implicit top drag can only be used with ' //&
+              & 'constant implicit bottom drag type', MPAS_LOG_CRIT)
+      endif
+
       rayleighDampingCoef = 0.0_RKIND
-
-      if (config_Rayleigh_friction) then
-          rayleighDampingCoef = config_Rayleigh_damping_coeff
-      endif
-
       rayleighBottomDampingCoef = 0.0_RKIND
-
-      if (config_Rayleigh_bottom_friction) then
-          rayleighBottomDampingCoef = config_Rayleigh_bottom_damping_coeff
-      endif
-
       rayleighDepthVariable = 0.0_RKIND
-      if (config_Rayleigh_damping_depth_variable) then
-        rayleighDepthVariable = 1.0_RKIND
-      end if
 
       velVmixOn = .true.
       tracerVmixOn = .true.
 
+      if (trim(config_bottom_drag_mode) == 'implicit') then
+
+        select case (trim(config_implicit_bottom_drag_type))
+
+        case ('constant')
+          if (config_use_implicit_top_drag) then
+            implicitTopDragCoef = config_implicit_top_drag_coeff
+          endif
+          dragType = dragTypeConst
+          call mpas_log_write(' Implicit bottom drag type is: constant')
+          implicitBottomDragCoef = config_implicit_constant_bottom_drag_coeff
+
+        case ('constant_and_rayleigh')
+          dragType = dragTypeRayleigh
+          call mpas_log_write(' Implicit bottom drag type is: Rayleigh')
+          implicitBottomDragCoef = config_implicit_constant_bottom_drag_coeff
+          rayleighDampingCoef = config_Rayleigh_damping_coeff
+          if (config_Rayleigh_bottom_friction) then
+              rayleighBottomDampingCoef = config_Rayleigh_bottom_damping_coeff
+          endif
+          if (config_Rayleigh_damping_depth_variable) then
+            rayleighDepthVariable = 1.0_RKIND
+          end if
+
+        case ('loglaw')
+          dragType = dragTypeLogLaw
+          call mpas_log_write(' Implicit bottom drag type is: log law-of-the-wall')
+
+        case ('spatially-variable')
+          dragType = dragTypeVariable
+          call mpas_log_write(' Implicit bottom drag type is: spatially-variable')
+          if (.not. config_use_variable_drag) &
+            call mpas_log_write('bottomDrag may not be available for spatially-variable '// &
+              'implicit bottom drag because config_use_variable_drag is False', &
+              MPAS_LOG_WARN)
+        case ('mannings')
+          dragType = dragTypeMannings
+          call mpas_log_write(' Implicit bottom drag type is: Mannings')
+
+        case default
+          call mpas_log_write( &
+             ' Incorrect choice of config_implicit_bottom_drag_type.', &
+             MPAS_LOG_CRIT)
+          err = 1
+
+        end select
+      elseif (trim(config_bottom_drag_mode) == 'explicit') then
+        ! We still call the implicit vertical mixing routine but the drag coefficient is 0
+        dragType = dragTypeConst
+      else
+        call mpas_log_write( &
+           ' Incorrect choice of config_bottom_drag_mode.', &
+           MPAS_LOG_CRIT)
+        err = 1
+      endif
+
       if(config_disable_vel_vmix.or.config_disable_vel_all_tend) velVmixOn = .false.
       if(config_disable_tr_vmix.or.config_disable_tr_all_tend) tracerVmixOn = .false.
-
-      implicitBottomDragCoef = 0.0_RKIND
-
-      if (config_use_implicit_bottom_drag) then
-          implicitBottomDragCoef = config_implicit_bottom_drag_coeff
-      endif
 
       call ocn_vmix_cvmix_init(domain,err_tmp)
       err = ior(err, err_tmp)

@@ -1,29 +1,29 @@
 	<dims>
-		<dim name="nLayerVolWeightedAvgFields" definition="36" units="unitless"
+		<dim name="nLayerVolWeightedAvgFields" definition="36"
 			 description="A number equal to or greater than the number of var arrays in the layerVolumeWeightedAverageAM var structure below."
 		/>
-		<dim name="nOceanRegionsTmp" definition="7" units="unitless"
+		<dim name="nOceanRegionsTmp" definition="7"
 			 description="The number of regions defined within the global ocean (will eventually be moved up and used uniformly across MPAS-O."
 		/>
 	</dims>
 	<nml_record name="AM_layerVolumeWeightedAverage" mode="forward;analysis">
-		<nml_option name="config_AM_layerVolumeWeightedAverage_enable" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_layerVolumeWeightedAverage_enable" type="logical" default_value=".false."
 			description="If true, ocean analysis member layer-volume weighted is called."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_layerVolumeWeightedAverage_compute_interval" type="character" default_value="output_interval" units="unitless"
+		<nml_option name="config_AM_layerVolumeWeightedAverage_compute_interval" type="character" default_value="output_interval"
 			description="Timestamp determining how often analysis member computation should be performed."
 			possible_values="'DDDD_HH:MM:SS'"
 		/>
-		<nml_option name="config_AM_layerVolumeWeightedAverage_compute_on_startup" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_layerVolumeWeightedAverage_compute_on_startup" type="logical" default_value=".false."
 			description="Logical flag determining if an analysis member computation occurs on start-up."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_layerVolumeWeightedAverage_write_on_startup" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_layerVolumeWeightedAverage_write_on_startup" type="logical" default_value=".false."
 			description="Logical flag determining if an analysis member output write occurs on start-up."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_layerVolumeWeightedAverage_output_stream" type="character" default_value="layerVolumeWeightedAverageOutput" units="unitless"
+		<nml_option name="config_AM_layerVolumeWeightedAverage_output_stream" type="character" default_value="layerVolumeWeightedAverageOutput"
 			description="Name of the string that should be tied to the layer volume weighted average analysis member"
 			possible_values="Any existing stream name or 'none'"
 		/>
@@ -33,7 +33,7 @@
 	</packages>
 	<var_struct name="layerVolumeWeightedAverageAM" time_levs="1" packages="layerVolumeWeightedAverageAMPKG">
 		<var_array name="minValueWithinOceanLayerRegion" type="real" dimensions="nVertLevels nOceanRegionsTmp Time">
-			<var name="minLayerMaskValue" array_group="layerMins" units="none"
+			<var name="minLayerMaskValue" array_group="layerMins"
 				 description="Minimum value of mask within region layer (should always be 1 for valid layers)"
 			/>
 			<var name="minLayerArea" array_group="layerMins" units="m^2"
@@ -42,78 +42,78 @@
 			<var name="minLayerThickness" array_group="layerMins" units="m"
 				 description="Minimum thickness within region layer"
 			/>
-			<var name="minLayerDensity" array_group="layerMins" units="kg m^{-3}"
+			<var name="minLayerDensity" array_group="layerMins" units="kg m^-3"
 				 description="Minimum in-situ density within region layer"
 			/>
-			<var name="minLayerPotentialDensity" array_group="layerMins" units="kg m^{-3}"
+			<var name="minLayerPotentialDensity" array_group="layerMins" units="kg m^-3"
 				 description="Minimum potential density within region layer"
 			/>
-			<var name="minLayerBruntVaisalaFreqTop" array_group="layerMins" units="s^{-2}"
+			<var name="minLayerBruntVaisalaFreqTop" array_group="layerMins" units="s^-2"
 				 description="Minimum Brunt Vaisala frequency within region layer"
 			/>
-			<var name="minLayerVelocityZonal" array_group="layerMins" units="m s^{-1}"
+			<var name="minLayerVelocityZonal" array_group="layerMins" units="m s^-1"
 				 description="Minimum zonal velocity within region layer"
 			/>
-			<var name="minLayerVelocityMeridional" array_group="layerMins" units="m s^{-1}"
+			<var name="minLayerVelocityMeridional" array_group="layerMins" units="m s^-1"
 				 description="Minimum meridional velocity within region layer"
 			/>
-			<var name="minLayerVertVelocityTop" array_group="layerMins" units="m s^{-1}"
+			<var name="minLayerVertVelocityTop" array_group="layerMins" units="m s^-1"
 				 description="Minimum vertical velocity within region layer"
 			/>
 			<var name="minLayerTemperature" array_group="layerMins" units="C"
 				 description="Minimum surface temperature within region layer"
 			/>
-			<var name="minLayerSalinity" array_group="layerMins" units="PSU"
+			<var name="minLayerSalinity" array_group="layerMins" units="1.e-3"
 				 description="Minimum surface salinity within region layer"
 			/>
-			<var name="minLayerKineticEnergyCell" array_group="layerMins" units="m^2 s^{-2}"
+			<var name="minLayerKineticEnergyCell" array_group="layerMins" units="m^2 s^-2"
 				 description="Minimum kinetic energy within region layer"
 			/>
-			<var name="minLayerRelativeVorticityCell" array_group="layerMins" units="s^{-1}"
+			<var name="minLayerRelativeVorticityCell" array_group="layerMins" units="s^-1"
 				 description="Minimum relative vorticity within region layer"
 			/>
-			<var name="minLayerDivergence" array_group="layerMins" units="s^{-1}"
+			<var name="minLayerDivergence" array_group="layerMins" units="s^-1"
 				 description="Minimum divergence within region layer"
 			/>
-			<var name="minLayerRelativeEnstrophyCell" array_group="layerMins" units="s^{-2}"
+			<var name="minLayerRelativeEnstrophyCell" array_group="layerMins" units="s^-2"
 				 description="Minimum relative enstrophy within region layer"
 			/>
-			<var name="minLayerTemperatureHorAdv" array_group="layerMins" units="C s^{-1}"
+			<var name="minLayerTemperatureHorAdv" array_group="layerMins" units="C s^-1"
 				description="Minimum horizontal temperature advection within region layer"
 			/>
-			<var name="minLayerSalinityHorAdv" array_group="layerMins" units="PSU s^{-1}"
+			<var name="minLayerSalinityHorAdv" array_group="layerMins" units="1.e-3 s^-1"
 				description="Minimum horizontal salinity advection within region layer"
 			/>
-			<var name="minLayerTemperatureVertAdv" array_group="layerMins" units="C s^{-1}"
+			<var name="minLayerTemperatureVertAdv" array_group="layerMins" units="C s^-1"
 				description="Minimum vertical temperature advection within region layer"
 			/>
-			<var name="minLayerSalinityVertAdv" array_group="layerMins" units="PSU s^{-1}"
+			<var name="minLayerSalinityVertAdv" array_group="layerMins" units="1.e-3 s^-1"
 				description="Minimum vertical salinity advection within region layer"
 			/>
-			<var name="minLayerTemperatureSfcFlux" array_group="layerMins" units="C s^{-1}"
+			<var name="minLayerTemperatureSfcFlux" array_group="layerMins" units="C s^-1"
 				description="Minimum temperature surface flux tend within region layer"
 			/>
-			<var name="minLayerSalinitySfcFlux" array_group="layerMins" units="PSU s^{-1}"
+			<var name="minLayerSalinitySfcFlux" array_group="layerMins" units="1.e-3 s^-1"
 				description="Minimum salinity surface flux tend within region layer"
 			/>
-			<var name="minLayerTemperatureSW" array_group="layerMins" units="C s^{-1}"
+			<var name="minLayerTemperatureSW" array_group="layerMins" units="C s^-1"
 				description="Minimum temperature short wave tend within region layer"
 			/>
-			<var name="minLayerTemperatureNL" array_group="layerMins" units="C s^{-1}"
+			<var name="minLayerTemperatureNL" array_group="layerMins" units="C s^-1"
 				description="Minimum temperature non local tend within region layer"
 			/>
-			<var name="minLayerSalinityNL" array_group="layerMins" units="PSU s^{-1}"
+			<var name="minLayerSalinityNL" array_group="layerMins" units="1.e-3 s^-1"
 				description="Minimum salinity kpp non local tend within region layer"
 			/>
-			<var name="minLayerTemperatureVertMix" array_group="layerMins" units="C s^{-1}"
+			<var name="minLayerTemperatureVertMix" array_group="layerMins" units="C s^-1"
 				description="Minimum temperature vertical mixing within region layer"
 			/>
-			<var name="minLayerSalinityVertMix" array_group="layerMins" units="PSU s^{-1}"
+			<var name="minLayerSalinityVertMix" array_group="layerMins" units="1.e-3 s^-1"
 				description="Minimum salinity vertical mixing within region layer"
 			/>
 		</var_array>
 		<var_array name="minValueWithinOceanVolumeRegion" type="real" dimensions="nOceanRegionsTmp Time">
-			<var name="minVolumeMaskValue" array_group="volumeMins" units="none"
+			<var name="minVolumeMaskValue" array_group="volumeMins"
 				 description="Minimum value of mask within region volume (should always be 1 for valid volumes)"
 			/>
 			<var name="minVolumeArea" array_group="volumeMins" units="m^2"
@@ -122,78 +122,78 @@
 			<var name="minVolumeThickness" array_group="volumeMins" units="m"
 				 description="Minimum thickness within region volume"
 			/>
-			<var name="minVolumeDensity" array_group="volumeMins" units="kg m^{-3}"
+			<var name="minVolumeDensity" array_group="volumeMins" units="kg m^-3"
 				 description="Minimum in-situ density within region volume"
 			/>
-			<var name="minVolumePotentialDensity" array_group="volumeMins" units="kg m^{-3}"
+			<var name="minVolumePotentialDensity" array_group="volumeMins" units="kg m^-3"
 				 description="Minimum potential density within region volume"
 			/>
-			<var name="minVolumeBruntVaisalaFreqTop" array_group="volumeMins" units="s^{-2}"
+			<var name="minVolumeBruntVaisalaFreqTop" array_group="volumeMins" units="s^-2"
 				 description="Minimum Brunt Vaisala frequency within region volume"
 			/>
-			<var name="minVolumeVelocityZonal" array_group="volumeMins" units="m s^{-1}"
+			<var name="minVolumeVelocityZonal" array_group="volumeMins" units="m s^-1"
 				 description="Minimum zonal velocity within region volume"
 			/>
-			<var name="minVolumeVelocityMeridional" array_group="volumeMins" units="m s^{-1}"
+			<var name="minVolumeVelocityMeridional" array_group="volumeMins" units="m s^-1"
 				 description="Minimum meridional velocity within region volume"
 			/>
-			<var name="minVolumeVertVelocityTop" array_group="volumeMins" units="m s^{-1}"
+			<var name="minVolumeVertVelocityTop" array_group="volumeMins" units="m s^-1"
 				 description="Minimum vertical velocity within region volume"
 			/>
 			<var name="minVolumeTemperature" array_group="volumeMins" units="C"
 				 description="Minimum surface temperature within region volume"
 			/>
-			<var name="minVolumeSalinity" array_group="volumeMins" units="PSU"
+			<var name="minVolumeSalinity" array_group="volumeMins" units="1.e-3"
 				 description="Minimum surface salinity within region volume"
 			/>
-			<var name="minVolumeKineticEnergyCell" array_group="volumeMins" units="m^2 s^{-2}"
+			<var name="minVolumeKineticEnergyCell" array_group="volumeMins" units="m^2 s^-2"
 				 description="Minimum kinetic energy within region volume"
 			/>
-			<var name="minVolumeRelativeVorticityCell" array_group="volumeMins" units="s^{-1}"
+			<var name="minVolumeRelativeVorticityCell" array_group="volumeMins" units="s^-1"
 				 description="Minimum relative vorticity within region volume"
 			/>
-			<var name="minVolumeDivergence" array_group="volumeMins" units="s^{-1}"
+			<var name="minVolumeDivergence" array_group="volumeMins" units="s^-1"
 				 description="Minimum divergence within region volume"
 			/>
-			<var name="minVolumeRelativeEnstrophyCell" array_group="volumeMins" units="s^{-2}"
+			<var name="minVolumeRelativeEnstrophyCell" array_group="volumeMins" units="s^-2"
 				 description="Minimum relative enstrophy within region volume"
 			/>
-			<var name="minVolumeTemperatureHorAdv" array_group="volumeMins" units="C s^{-1}"
+			<var name="minVolumeTemperatureHorAdv" array_group="volumeMins" units="C s^-1"
 				description="Minimum horizontal temperature advection within region volumeMins"
 			/>
-			<var name="minVolumeSalinityHorAdv" array_group="volumeMins" units="PSU s^{-1}"
+			<var name="minVolumeSalinityHorAdv" array_group="volumeMins" units="1.e-3 s^-1"
 				description="Minimum horizontal salinity advection within region volumeMins"
 			/>
-			<var name="minVolumeTemperatureVertAdv" array_group="volumeMins" units="C s^{-1}"
+			<var name="minVolumeTemperatureVertAdv" array_group="volumeMins" units="C s^-1"
 				description="Minimum vertical temperature advection within region volumeMins"
 			/>
-			<var name="minVolumeSalinityVertAdv" array_group="volumeMins" units="PSU s^{-1}"
+			<var name="minVolumeSalinityVertAdv" array_group="volumeMins" units="1.e-3 s^-1"
 				description="Minimum vertical salinity advection within region volumeMins"
 			/>
-			<var name="minVolumeTemperatureSfcFlux" array_group="volumeMins" units="C s^{-1}"
+			<var name="minVolumeTemperatureSfcFlux" array_group="volumeMins" units="C s^-1"
 				description="Minimum temperature surface flux tend within region volumeMins"
 			/>
-			<var name="minVolumeSalinitySfcFlux" array_group="volumeMins" units="PSU s^{-1}"
+			<var name="minVolumeSalinitySfcFlux" array_group="volumeMins" units="1.e-3 s^-1"
 				description="Minimum salinity surface flux tend within region volumeMins"
 			/>
-			<var name="minVolumeTemperatureSW" array_group="volumeMins" units="C s^{-1}"
+			<var name="minVolumeTemperatureSW" array_group="volumeMins" units="C s^-1"
 				ddescription="Minimum temperature short wave tend within region volumeMins"
 			/>
-			<var name="minVolumeTemperatureNL" array_group="volumeMins" units="C s^{-1}"
+			<var name="minVolumeTemperatureNL" array_group="volumeMins" units="C s^-1"
 				description="Minimum temperature kpp non local tend within region volumeMins"
 			/>
-			<var name="minVolumeSalinityNL" array_group="volumeMins" units="PSU s^{-1}"
+			<var name="minVolumeSalinityNL" array_group="volumeMins" units="1.e-3 s^-1"
 				description="Minimum salinity kpp non local tend within region volumeMins"
 			/>
-			<var name="minVolumeTemperatureVertMix" array_group="volumeMins" units="C s^{-1}"
+			<var name="minVolumeTemperatureVertMix" array_group="volumeMins" units="C s^-1"
 				description="Minimum temperature vertical mixing within region volumeMins"
 			/>
-			<var name="minVolumeSalinityVertMix" array_group="volumeMins" units="PSU s^{-1}"
+			<var name="minVolumeSalinityVertMix" array_group="volumeMins" units="1.e-3 s^-1"
 				description="Minimum salinity vertical mixing within region volumeMins"
 			/>
 		</var_array>
 		<var_array name="maxValueWithinOceanLayerRegion" type="real" dimensions="nVertLevels nOceanRegionsTmp Time">
-			<var name="maxLayerMaskValue" array_group="layerMaxs" units="none"
+			<var name="maxLayerMaskValue" array_group="layerMaxs"
 				 description="Maximum value of mask within region layer (should always be 1 for valid layers)"
 			/>
 			<var name="maxLayerArea" array_group="layerMaxs" units="m^2"
@@ -202,78 +202,78 @@
 			<var name="maxLayerThickness" array_group="layerMaxs" units="m"
 				 description="Maximum thickness within region layer"
 			/>
-			<var name="maxLayerDensity" array_group="layerMaxs" units="kg m^{-3}"
+			<var name="maxLayerDensity" array_group="layerMaxs" units="kg m^-3"
 				 description="Maximum in-situ density within region layer"
 			/>
-			<var name="maxLayerPotentialDensity" array_group="layerMaxs" units="kg m^{-3}"
+			<var name="maxLayerPotentialDensity" array_group="layerMaxs" units="kg m^-3"
 				 description="Maximum potential density within region layer"
 			/>
-			<var name="maxLayerBruntVaisalaFreqTop" array_group="layerMaxs" units="s^{-2}"
+			<var name="maxLayerBruntVaisalaFreqTop" array_group="layerMaxs" units="s^-2"
 				 description="Maximum Brunt Vaisala frequency within region layer"
 			/>
-			<var name="maxLayerVelocityZonal" array_group="layerMaxs" units="m s^{-1}"
+			<var name="maxLayerVelocityZonal" array_group="layerMaxs" units="m s^-1"
 				 description="Maximum zonal velocity within region layer"
 			/>
-			<var name="maxLayerVelocityMeridional" array_group="layerMaxs" units="m s^{-1}"
+			<var name="maxLayerVelocityMeridional" array_group="layerMaxs" units="m s^-1"
 				 description="Maximum meridional velocity within region layer"
 			/>
-			<var name="maxLayerVertVelocityTop" array_group="layerMaxs" units="m s^{-1}"
+			<var name="maxLayerVertVelocityTop" array_group="layerMaxs" units="m s^-1"
 				 description="Maximum vertical velocity within region layer"
 			/>
 			<var name="maxLayerTemperature" array_group="layerMaxs" units="C"
 				 description="Maximum surface temperature within region layer"
 			/>
-			<var name="maxLayerSalinity" array_group="layerMaxs" units="PSU"
+			<var name="maxLayerSalinity" array_group="layerMaxs" units="1.e-3"
 				 description="Maximum surface salinity within region layer"
 			/>
-			<var name="maxLayerKineticEnergyCell" array_group="layerMaxs" units="m^2 s^{-2}"
+			<var name="maxLayerKineticEnergyCell" array_group="layerMaxs" units="m^2 s^-2"
 				 description="Maximum kinetic energy within region layer"
 			/>
-			<var name="maxLayerRelativeVorticityCell" array_group="layerMaxs" units="s^{-1}"
+			<var name="maxLayerRelativeVorticityCell" array_group="layerMaxs" units="s^-1"
 				 description="Maximum relative vorticity within region layer"
 			/>
-			<var name="maxLayerDivergence" array_group="layerMaxs" units="s^{-1}"
+			<var name="maxLayerDivergence" array_group="layerMaxs" units="s^-1"
 				 description="Maximum divergence within region layer"
 			/>
-			<var name="maxLayerRelativeEnstrophyCell" array_group="layerMaxs" units="s^{-2}"
+			<var name="maxLayerRelativeEnstrophyCell" array_group="layerMaxs" units="s^-2"
 				 description="Maximum relative enstrophy within region layer"
 			/>
-			<var name="maxLayerTemperatureHorAdv" array_group="layerMaxs" units="C s^{-1}"
+			<var name="maxLayerTemperatureHorAdv" array_group="layerMaxs" units="C s^-1"
 				description="Maximum horizontal temperature advection within region layer"
 			/>
-			<var name="maxLayerSalinityHorAdv" array_group="layerMaxs" units="PSU s^{-1}"
+			<var name="maxLayerSalinityHorAdv" array_group="layerMaxs" units="1.e-3 s^-1"
 				description="Maximum horizontal salinity advection within region layer"
 			/>
-			<var name="maxLayerTemperatureVertAdv" array_group="layerMaxs" units="C s^{-1}"
+			<var name="maxLayerTemperatureVertAdv" array_group="layerMaxs" units="C s^-1"
 				description="Maximum vertical temperature advection within region layer"
 			/>
-			<var name="maxLayerSalinityVertAdv" array_group="layerMaxs" units="PSU s^{-1}"
+			<var name="maxLayerSalinityVertAdv" array_group="layerMaxs" units="1.e-3 s^-1"
 				description="Maximum vertical salinity advection within region layer"
 			/>
-			<var name="maxLayerTemperatureSfcFlux" array_group="layerMaxs" units="C s^{-1}"
+			<var name="maxLayerTemperatureSfcFlux" array_group="layerMaxs" units="C s^-1"
 				description="Maximum temperature surface flux tend within region layer"
 			/>
-			<var name="maxLayerSalinitySfcFlux" array_group="layerMaxs" units="PSU s^{-1}"
+			<var name="maxLayerSalinitySfcFlux" array_group="layerMaxs" units="1.e-3 s^-1"
 				description="Maximum salinity surface flux tend within region layer"
 			/>
-			<var name="maxLayerTemperatureSW" array_group="layerMaxs" units="C s^{-1}"
+			<var name="maxLayerTemperatureSW" array_group="layerMaxs" units="C s^-1"
 				description="Maximum temperature short wave tend within region layer"
 			/>
-			<var name="maxLayerTemperatureNL" array_group="layerMaxs" units="C s^{-1}"
+			<var name="maxLayerTemperatureNL" array_group="layerMaxs" units="C s^-1"
 				description="Maximum temperature non local tend within region layer"
 			/>
-			<var name="maxLayerSalinityNL" array_group="layerMaxs" units="PSU s^{-1}"
+			<var name="maxLayerSalinityNL" array_group="layerMaxs" units="1.e-3 s^-1"
 				description="Maximum salinity non local tend within region layer"
 			/>
-			<var name="maxLayerTemperatureVertMix" array_group="layerMaxs" units="C s^{-1}"
+			<var name="maxLayerTemperatureVertMix" array_group="layerMaxs" units="C s^-1"
 				description="Maximum temperature vertical mixing within region layer"
 			/>
-			<var name="maxLayerSalinityVertMix" array_group="layerMaxs" units="PSU s^{-1}"
+			<var name="maxLayerSalinityVertMix" array_group="layerMaxs" units="1.e-3 s^-1"
 				description="Maximum salinity vertical mixing within region layer"
 			/>
 		</var_array>
 		<var_array name="maxValueWithinOceanVolumeRegion" type="real" dimensions="nOceanRegionsTmp Time">
-			<var name="maxVolumeMaskValue" array_group="volumeMaxs" units="none"
+			<var name="maxVolumeMaskValue" array_group="volumeMaxs"
 				 description="Maximum value of mask within region volume (should always be 1 for valid volumes)"
 			/>
 			<var name="maxVolumeArea" array_group="volumeMaxs" units="m^2"
@@ -282,78 +282,78 @@
 			<var name="maxVolumeThickness" array_group="volumeMaxs" units="m"
 				 description="Maximum thickness within region volume"
 			/>
-			<var name="maxVolumeDensity" array_group="volumeMaxs" units="kg m^{-3}"
+			<var name="maxVolumeDensity" array_group="volumeMaxs" units="kg m^-3"
 				 description="Maximum in-situ density within region volume"
 			/>
-			<var name="maxVolumePotentialDensity" array_group="volumeMaxs" units="kg m^{-3}"
+			<var name="maxVolumePotentialDensity" array_group="volumeMaxs" units="kg m^-3"
 				 description="Maximum potential density within region volume"
 			/>
-			<var name="maxVolumeBruntVaisalaFreqTop" array_group="volumeMaxs" units="s^{-2}"
+			<var name="maxVolumeBruntVaisalaFreqTop" array_group="volumeMaxs" units="s^-2"
 				 description="Maximum Brunt Vaisala frequency within region volume"
 			/>
-			<var name="maxVolumeVelocityZonal" array_group="volumeMaxs" units="m s^{-1}"
+			<var name="maxVolumeVelocityZonal" array_group="volumeMaxs" units="m s^-1"
 				 description="Maximum zonal velocity within region volume"
 			/>
-			<var name="maxVolumeVelocityMeridional" array_group="volumeMaxs" units="m s^{-1}"
+			<var name="maxVolumeVelocityMeridional" array_group="volumeMaxs" units="m s^-1"
 				 description="Maximum meridional velocity within region volume"
 			/>
-			<var name="maxVolumeVertVelocityTop" array_group="volumeMaxs" units="m s^{-1}"
+			<var name="maxVolumeVertVelocityTop" array_group="volumeMaxs" units="m s^-1"
 				 description="Maximum vertical velocity within region volume"
 			/>
 			<var name="maxVolumeTemperature" array_group="volumeMaxs" units="C"
 				 description="Maximum surface temperature within region volume"
 			/>
-			<var name="maxVolumeSalinity" array_group="volumeMaxs" units="PSU"
+			<var name="maxVolumeSalinity" array_group="volumeMaxs" units="1.e-3"
 				 description="Maximum surface salinity within region volume"
 			/>
-			<var name="maxVolumeKineticEnergyCell" array_group="volumeMaxs" units="m^2 s^{-2}"
+			<var name="maxVolumeKineticEnergyCell" array_group="volumeMaxs" units="m^2 s^-2"
 				 description="Maximum kinetic energy within region volume"
 			/>
-			<var name="maxVolumeRelativeVorticityCell" array_group="volumeMaxs" units="s^{-1}"
+			<var name="maxVolumeRelativeVorticityCell" array_group="volumeMaxs" units="s^-1"
 				 description="Maximum relative vorticity within region volume"
 			/>
-			<var name="maxVolumeDivergence" array_group="volumeMaxs" units="s^{-1}"
+			<var name="maxVolumeDivergence" array_group="volumeMaxs" units="s^-1"
 				 description="Maximum divergence within region volume"
 			/>
-			<var name="maxVolumeRelativeEnstrophyCell" array_group="volumeMaxs" units="s^{-2}"
+			<var name="maxVolumeRelativeEnstrophyCell" array_group="volumeMaxs" units="s^-2"
 				 description="Maximum relative enstrophy within region volume"
 			/>
-			<var name="maxVolumeTemperatureHorAdv" array_group="volumeMaxs" units="C s^{-1}"
+			<var name="maxVolumeTemperatureHorAdv" array_group="volumeMaxs" units="C s^-1"
 				description="Maximum horizontal temperature advection within region volume"
 			/>
-			<var name="maxVolumeSalinityHorAdv" array_group="volumeMaxs" units="PSU s^{-1}"
+			<var name="maxVolumeSalinityHorAdv" array_group="volumeMaxs" units="1.e-3 s^-1"
 				description="Maximum horizontal salinity advection within region volume"
 			/>
-			<var name="maxVolumeTemperatureVertAdv" array_group="volumeMaxs" units="C s^{-1}"
+			<var name="maxVolumeTemperatureVertAdv" array_group="volumeMaxs" units="C s^-1"
 				description="Maximum vertical temperature advection within region volume"
 			/>
-			<var name="maxVolumeSalinityVertAdv" array_group="volumeMaxs" units="PSU s^{-1}"
+			<var name="maxVolumeSalinityVertAdv" array_group="volumeMaxs" units="1.e-3 s^-1"
 				description="Maximum vertical salinity advection within region volume"
 			/>
-			<var name="maxVolumeTemperatureSfcFlux" array_group="volumeMaxs" units="C s^{-1}"
+			<var name="maxVolumeTemperatureSfcFlux" array_group="volumeMaxs" units="C s^-1"
 				description="Maximum temperature surface flux tend within region volume"
 			/>
-			<var name="maxVolumeSalinitySfcFlux" array_group="volumeMaxs" units="PSU s^{-1}"
+			<var name="maxVolumeSalinitySfcFlux" array_group="volumeMaxs" units="1.e-3 s^-1"
 				description="Maximum salinity surface flux tend within region volume"
 			/>
-			<var name="maxVolumeTemperatureSW" array_group="volumeMaxs" units="C s^{-1}"
+			<var name="maxVolumeTemperatureSW" array_group="volumeMaxs" units="C s^-1"
 				description="Maximum temperature short wave tend within region volume"
 			/>
-			<var name="maxVolumeTemperatureNL" array_group="volumeMaxs" units="C s^{-1}"
+			<var name="maxVolumeTemperatureNL" array_group="volumeMaxs" units="C s^-1"
 				description="Maximum temperature non local tend within region volume"
 			/>
-			<var name="maxVolumeSalinityNL" array_group="volumeMaxs" units="PSU s^{-1}"
+			<var name="maxVolumeSalinityNL" array_group="volumeMaxs" units="1.e-3 s^-1"
 				description="Maximum salinity non local tend within region volume"
 			/>
-			<var name="maxVolumeTemperatureVertMix" array_group="volumeMaxs" units="C s^{-1}"
+			<var name="maxVolumeTemperatureVertMix" array_group="volumeMaxs" units="C s^-1"
 				description="Maximum temperature vertical mixing within region volume"
 			/>
-			<var name="maxVolumeSalinityVertMix" array_group="volumeMaxs" units="PSU s^{-1}"
+			<var name="maxVolumeSalinityVertMix" array_group="volumeMaxs" units="1.e-3 s^-1"
 				description="Maximum salinity vertical mixing within region volume"
 			/>
 		</var_array>
 		<var_array name="avgValueWithinOceanLayerRegion" type="real" dimensions="nVertLevels nOceanRegionsTmp Time">
-			<var name="sumLayerMaskValue" array_group="layerAvgs" units="none"
+			<var name="sumLayerMaskValue" array_group="layerAvgs"
 				 description="Sum value of mask within region volume (should always be greater than 0 for valid layer)"
 			/>
 			<var name="avgLayerArea" array_group="layerAvgs" units="m^2"
@@ -362,78 +362,78 @@
 			<var name="avgLayerThickness" array_group="layerAvgs" units="m"
 				 description="Average thickness within region layer"
 			/>
-			<var name="avgLayerDensity" array_group="layerAvgs" units="kg m^{-3}"
+			<var name="avgLayerDensity" array_group="layerAvgs" units="kg m^-3"
 				 description="Average in-situ density within region layer"
 			/>
-			<var name="avgLayerPotentialDensity" array_group="layerAvgs" units="kg m^{-3}"
+			<var name="avgLayerPotentialDensity" array_group="layerAvgs" units="kg m^-3"
 				 description="Average potential density within region layer"
 			/>
-			<var name="avgLayerBruntVaisalaFreqTop" array_group="layerAvgs" units="s^{-2}"
+			<var name="avgLayerBruntVaisalaFreqTop" array_group="layerAvgs" units="s^-2"
 				 description="Average Brunt Vaisala frequency within region layer"
 			/>
-			<var name="avgLayerVelocityZonal" array_group="layerAvgs" units="m s^{-1}"
+			<var name="avgLayerVelocityZonal" array_group="layerAvgs" units="m s^-1"
 				 description="Average zonal velocity within region layer"
 			/>
-			<var name="avgLayerVelocityMeridional" array_group="layerAvgs" units="m s^{-1}"
+			<var name="avgLayerVelocityMeridional" array_group="layerAvgs" units="m s^-1"
 				 description="Average meridional velocity within region layer"
 			/>
-			<var name="avgLayerVertVelocityTop" array_group="layerAvgs" units="m s^{-1}"
+			<var name="avgLayerVertVelocityTop" array_group="layerAvgs" units="m s^-1"
 				 description="Average vertical velocity within region layer"
 			/>
 			<var name="avgLayerTemperature" array_group="layerAvgs" units="C"
 				 description="Average surface temperature within region layer"
 			/>
-			<var name="avgLayerSalinity" array_group="layerAvgs" units="PSU"
+			<var name="avgLayerSalinity" array_group="layerAvgs" units="1.e-3"
 				 description="Average surface salinity within region layer"
 			/>
-			<var name="avgLayerKineticEnergyCell" array_group="layerAvgs" units="m^2 s^{-2}"
+			<var name="avgLayerKineticEnergyCell" array_group="layerAvgs" units="m^2 s^-2"
 				 description="Average kinetic energy within region layer"
 			/>
-			<var name="avgLayerRelativeVorticityCell" array_group="layerAvgs" units="s^{-1}"
+			<var name="avgLayerRelativeVorticityCell" array_group="layerAvgs" units="s^-1"
 				 description="Average relative vorticity within region layer"
 			/>
-			<var name="avgLayerDivergence" array_group="layerAvgs" units="s^{-1}"
+			<var name="avgLayerDivergence" array_group="layerAvgs" units="s^-1"
 				 description="Average divergence within region layer"
 			/>
-			<var name="avgLayerRelativeEnstrophyCell" array_group="layerAvgs" units="s^{-2}"
+			<var name="avgLayerRelativeEnstrophyCell" array_group="layerAvgs" units="s^-2"
 				 description="Average relative enstrophy within region layer"
 			/>
-			<var name="avgLayerTemperatureHorAdv" array_group="layerAvgs" units="C s^{-1}"
+			<var name="avgLayerTemperatureHorAdv" array_group="layerAvgs" units="C s^-1"
 				description="Average horizontal temperature advection within region layer"
 			/>
-			<var name="avgLayerSalinityHorAdv" array_group="layerAvgs" units="PSU s^{-1}"
+			<var name="avgLayerSalinityHorAdv" array_group="layerAvgs" units="1.e-3 s^-1"
 				description="Average horizontal salinity advection within region layer"
 			/>
-			<var name="avgLayerTemperatureVertAdv" array_group="layerAvgs" units="C s^{-1}"
+			<var name="avgLayerTemperatureVertAdv" array_group="layerAvgs" units="C s^-1"
 				description="Average vertical temperature advection within region layer"
 			/>
-			<var name="avgLayerSalinityVertAdv" array_group="layerAvgs" units="PSU s^{-1}"
+			<var name="avgLayerSalinityVertAdv" array_group="layerAvgs" units="1.e-3 s^-1"
 				description="Average vertical salinity advection within region layer"
 			/>
-			<var name="avgLayerTemperatureSfcFlux" array_group="layerAvgs" units="C s^{-1}"
+			<var name="avgLayerTemperatureSfcFlux" array_group="layerAvgs" units="C s^-1"
 				description="Average temperature surface flux tend within region layer"
 			/>
-			<var name="avgLayerSalinitySfcFlux" array_group="layerAvgs" units="PSU s^{-1}"
+			<var name="avgLayerSalinitySfcFlux" array_group="layerAvgs" units="1.e-3 s^-1"
 				description="Average salinity surface flux tend within region layer"
 			/>
-			<var name="avgLayerTemperatureSW" array_group="layerAvgs" units="C s^{-1}"
+			<var name="avgLayerTemperatureSW" array_group="layerAvgs" units="C s^-1"
 				description="Average temperature shortwave tend within region layer"
 			/>
-			<var name="avgLayerTemperatureNL" array_group="layerAvgs" units="C s^{-1}"
+			<var name="avgLayerTemperatureNL" array_group="layerAvgs" units="C s^-1"
 				description="Average temperature non local tend within region layer"
 			/>
-			<var name="avgLayerSalinityNL" array_group="layerAvgs" units="PSU s^{-1}"
+			<var name="avgLayerSalinityNL" array_group="layerAvgs" units="1.e-3 s^-1"
 				description="Average salinity non local tend within region layer"
 			/>
-			<var name="avgLayerTemperatureVertMix" array_group="layerAvgs" units="C s^{-1}"
+			<var name="avgLayerTemperatureVertMix" array_group="layerAvgs" units="C s^-1"
 				description="Average temperature vertical mixing within region layer"
 			/>
-			<var name="avgLayerSalinityVertMix" array_group="layerAvgs" units="PSU s^{-1}"
+			<var name="avgLayerSalinityVertMix" array_group="layerAvgs" units="1.e-3 s^-1"
 				description="Average salinity vertical mixing within region layer"
 			/>
 		</var_array>
 		<var_array name="avgValueWithinOceanVolumeRegion" type="real" dimensions="nOceanRegionsTmp Time">
-			<var name="sumVolumeMaskValue" array_group="volumeAvgs" units="none"
+			<var name="sumVolumeMaskValue" array_group="volumeAvgs"
 				 description="Sum value of mask within region volume (should always be greater than 0 for valid volumes)"
 			/>
 			<var name="avgVolumeArea" array_group="volumeAvgs" units="m^2"
@@ -442,73 +442,73 @@
 			<var name="avgVolumeThickness" array_group="volumeAvgs" units="m"
 				 description="Average thickness within region volume"
 			/>
-			<var name="avgVolumeDensity" array_group="volumeAvgs" units="kg m^{-3}"
+			<var name="avgVolumeDensity" array_group="volumeAvgs" units="kg m^-3"
 				 description="Average in-situ density within region volume"
 			/>
-			<var name="avgVolumePotentialDensity" array_group="volumeAvgs" units="kg m^{-3}"
+			<var name="avgVolumePotentialDensity" array_group="volumeAvgs" units="kg m^-3"
 				 description="Average potential density within region volume"
 			/>
-			<var name="avgVolumeBruntVaisalaFreqTop" array_group="volumeAvgs" units="s^{-2}"
+			<var name="avgVolumeBruntVaisalaFreqTop" array_group="volumeAvgs" units="s^-2"
 				 description="Average Brunt Vaisala frequency within region volume"
 			/>
-			<var name="avgVolumeVelocityZonal" array_group="volumeAvgs" units="m s^{-1}"
+			<var name="avgVolumeVelocityZonal" array_group="volumeAvgs" units="m s^-1"
 				 description="Average zonal velocity within region volume"
 			/>
-			<var name="avgVolumeVelocityMeridional" array_group="volumeAvgs" units="m s^{-1}"
+			<var name="avgVolumeVelocityMeridional" array_group="volumeAvgs" units="m s^-1"
 				 description="Average meridional velocity within region volume"
 			/>
-			<var name="avgVolumeVertVelocityTop" array_group="volumeAvgs" units="m s^{-1}"
+			<var name="avgVolumeVertVelocityTop" array_group="volumeAvgs" units="m s^-1"
 				 description="Average vertical velocity within region volume"
 			/>
 			<var name="avgVolumeTemperature" array_group="volumeAvgs" units="C"
 				 description="Average surface temperature within region volume"
 			/>
-			<var name="avgVolumeSalinity" array_group="volumeAvgs" units="PSU"
+			<var name="avgVolumeSalinity" array_group="volumeAvgs" units="1.e-3"
 				 description="Average surface salinity within region volume"
 			/>
-			<var name="avgVolumeKineticEnergyCell" array_group="volumeAvgs" units="m^2 s^{-2}"
+			<var name="avgVolumeKineticEnergyCell" array_group="volumeAvgs" units="m^2 s^-2"
 				 description="Average kinetic energy within region volume"
 			/>
-			<var name="avgVolumeRelativeVorticityCell" array_group="volumeAvgs" units="s^{-1}"
+			<var name="avgVolumeRelativeVorticityCell" array_group="volumeAvgs" units="s^-1"
 				 description="Average relative vorticity within region volume"
 			/>
-			<var name="avgVolumeDivergence" array_group="volumeAvgs" units="s^{-1}"
+			<var name="avgVolumeDivergence" array_group="volumeAvgs" units="s^-1"
 				 description="Average divergence within region volume"
 			/>
-			<var name="avgVolumeRelativeEnstrophyCell" array_group="volumeAvgs" units="s^{-2}"
+			<var name="avgVolumeRelativeEnstrophyCell" array_group="volumeAvgs" units="s^-2"
 				 description="Average relative enstrophy within region volume"
 			/>
-			<var name="avgVolumeTemperatureHorAdv" array_group="volumeAvgs" units="C s^{-1}"
+			<var name="avgVolumeTemperatureHorAdv" array_group="volumeAvgs" units="C s^-1"
 				description="Average horizontal temperature advection within region volume"
 			/>
-			<var name="avgVolumeSalinityHorAdv" array_group="volumeAvgs" units="PSU s^{-1}"
+			<var name="avgVolumeSalinityHorAdv" array_group="volumeAvgs" units="1.e-3 s^-1"
 				description="Average horizontal salinity advection within region volume"
 			/>
-			<var name="avgVolumeTemperatureVertAdv" array_group="volumeAvgs" units="C s^{-1}"
+			<var name="avgVolumeTemperatureVertAdv" array_group="volumeAvgs" units="C s^-1"
 				description="Average vertical temperature advection within region volume"
 			/>
-			<var name="avgVolumeSalinityVertAdv" array_group="volumeAvgs" units="PSU s^{-1}"
+			<var name="avgVolumeSalinityVertAdv" array_group="volumeAvgs" units="1.e-3 s^-1"
 				description="Average vertical salinity advection within region volume"
 			/>
-			<var name="avgVolumeTemperatureSfcFlux" array_group="volumeAvgs" units="C s^{-1}"
+			<var name="avgVolumeTemperatureSfcFlux" array_group="volumeAvgs" units="C s^-1"
 				description="Average temperature surface flux tend within region volume"
 			/>
-			<var name="avgVolumeSalinitySfcFlux" array_group="volumeAvgs" units="PSU s^{-1}"
+			<var name="avgVolumeSalinitySfcFlux" array_group="volumeAvgs" units="1.e-3 s^-1"
 				description="Average salinity surface flux tend within region volume"
 			/>
-			<var name="avgVolumeTemperatureSW" array_group="volumeAvgs" units="C s^{-1}"
+			<var name="avgVolumeTemperatureSW" array_group="volumeAvgs" units="C s^-1"
 				description="Average temperature shortwave tend within region volume"
 			/>
-			<var name="avgVolumeTemperatureNL" array_group="volumeAvgs" units="C s^{-1}"
+			<var name="avgVolumeTemperatureNL" array_group="volumeAvgs" units="C s^-1"
 				description="Average temperature non local tend within region volume"
 			/>
-			<var name="avgVolumeSalinitySfcNL" array_group="volumeAvgs" units="PSU s^{-1}"
+			<var name="avgVolumeSalinitySfcNL" array_group="volumeAvgs" units="1.e-3 s^-1"
 				description="Average salinity non local tend within region volume"
 			/>
-			<var name="avgVolumeTemperatureVertMix" array_group="volumeAvgs" units="C s^{-1}"
+			<var name="avgVolumeTemperatureVertMix" array_group="volumeAvgs" units="C s^-1"
 				description="Average temperature vertical mixing within region volume"
 			/>
-			<var name="avgVolumeSalinityVertMix" array_group="volumeAvgs" units="PSU s^{-1}"
+			<var name="avgVolumeSalinityVertMix" array_group="volumeAvgs" units="1.e-3 s^-1"
 				description="Average salinity vertical mixing within region volume"
 			/>
 		</var_array>
@@ -518,7 +518,6 @@
 			 persistence="scratch"
 			 type="real"
 			 dimensions="nCells Time"
-			 units="none"
 			 description="temporary array of 0 or 1 to mask data via multiplication"
 		/>
 		<var name="workArrayLayerVolume"

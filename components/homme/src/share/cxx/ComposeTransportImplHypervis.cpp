@@ -4,6 +4,9 @@
  * See the file 'COPYRIGHT' in the HOMMEXX/src/share/cxx directory
  *******************************************************************************/
 
+#include "Config.hpp"
+#ifdef HOMME_ENABLE_COMPOSE
+
 #include "ComposeTransportImpl.hpp"
 
 namespace Homme {
@@ -71,3 +74,5 @@ void ComposeTransportImpl::advance_hypervis_scalar (const Real dt_q) {
 }
 
 } // namespace Homme
+
+#endif // HOMME_ENABLE_COMPOSE

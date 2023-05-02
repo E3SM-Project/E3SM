@@ -21,6 +21,7 @@ use dycore,        only: dycore_is
 use phys_control,  only: phys_getopts
 use wv_saturation, only: qsat, qsat_water, svp_ice
 use time_manager,  only: is_first_step
+use physconst,     only: cpair, rair, gravit, latvap, epsilo
 
 use scamMod,       only: single_column, wfld
 use cam_abortutils,    only: endrun
@@ -192,6 +193,9 @@ subroutine diag_init()
    call addfld ('UAP',(/ 'lev' /), 'A','m/s','Zonal wind (after physics)'        )
    call addfld ('VAP',(/ 'lev' /), 'A','m/s','Meridional wind (after physics)'   )
    call addfld (apcnst(1) ,(/ 'lev' /), 'A','kg/kg',cnst_longname(1)//' (after physics)')
+   call addfld ('CAPE', horiz_only, 'A', 'J/kg', 'Convectively available potential energy')
+   call addfld ('CIN', horiz_only, 'A', 'J/kg', 'Convective inhibition')
+   
    if ( dycore_is('LR') .or. dycore_is('SE') ) then
       call addfld ('TFIX',horiz_only,    'A'     ,'K/s','T fixer (T equivalent of Energy correction)')
       call addfld ('PTTEND_RESID',(/ 'lev' /), 'A'     ,'K/s',&
@@ -851,6 +855,7 @@ subroutine diag_init()
   snow_sed_idx = pbuf_get_index('SNOW_SED')
   prec_pcw_idx = pbuf_get_index('PREC_PCW')
   snow_pcw_idx = pbuf_get_index('SNOW_PCW')
+  pblh_idx     = pbuf_get_index('pblh')
 
   if (linearize_pbl_winds) then
      wsresp_idx  = pbuf_get_index('wsresp')
@@ -1359,10 +1364,11 @@ end subroutine diag_conv_tend_ini
     if (moist_physics) then
 
        ! Relative humidity
+       call qsat(state%t(:ncol,:), state%pmid(:ncol,:), &
+            tem2(:ncol,:), ftem(:ncol,:))
+       ftem(:ncol,:) = state%q(:ncol,:,1)/ftem(:ncol,:)*100._r8
+
        if (hist_fld_active('RELHUM')) then
-          call qsat(state%t(:ncol,:), state%pmid(:ncol,:), &
-               tem2(:ncol,:), ftem(:ncol,:))
-          ftem(:ncol,:) = state%q(:ncol,:,1)/ftem(:ncol,:)*100._r8
           call outfld ('RELHUM  ',ftem    ,pcols   ,lchnk     )
        end if
 
@@ -1969,6 +1975,7 @@ subroutine diag_conv(state, ztodt, pbuf)
    real(r8), pointer :: snow_sed(:)                ! snow from ZM   convection
    real(r8), pointer :: prec_pcw(:)                ! total precipitation   from Hack convection
    real(r8), pointer :: snow_pcw(:)                ! snow from Hack   convection
+   real(r8), pointer :: pblh(:)                    ! PBLH depth
 
    real(r8), pointer :: wsresp(:)                  ! first order response of winds to stress
    real(r8), pointer :: tau_est(:)                 ! estimated equilibrium stress
@@ -1984,6 +1991,9 @@ subroutine diag_conv(state, ztodt, pbuf)
    real(r8):: snowc(pcols)                ! convective snow rate
    real(r8):: snowl(pcols)                ! stratiform snow rate
    real(r8):: prect(pcols)                ! total (conv+large scale) precip rate
+   real(r8):: cape(pcols)                 ! CAPE
+   real(r8):: cin(pcols)                  ! CIN
+   integer :: pblt(pcols)                 ! Indicee of PBL top
    real(r8) :: dcoef(4)                   ! for tidal component of T tend
 
    lchnk = state%lchnk
@@ -1999,6 +2009,7 @@ subroutine diag_conv(state, ztodt, pbuf)
    call pbuf_get_field(pbuf, snow_sed_idx, snow_sed)
    call pbuf_get_field(pbuf, prec_pcw_idx, prec_pcw)
    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw)
+   call pbuf_get_field(pbuf, pblh_idx, pblh)
    if (linearize_pbl_winds) then
       call pbuf_get_field(pbuf, wsresp_idx, wsresp)
       call pbuf_get_field(pbuf, tau_est_idx, tau_est)
@@ -2058,6 +2069,15 @@ subroutine diag_conv(state, ztodt, pbuf)
          call outfld(dcconnam(m), dqcond(m)%cnst(:,:,lchnk), pcols, lchnk)
       end if
    end do
+   
+   ! Add CAPE and CIN calculation here
+   ! Note that this routine needs the input pressures to be in units of hPa 
+   call diag_CAPEandCIN(ncol,state%q(:pcols,:pver,1),state%t,&
+          0.01_r8*state%pmid,0.01_r8*state%pint,state%zm,state%zi,pblh,&
+          state%phis,cape,cin)
+          
+   call outfld('CAPE', cape, pcols, lchnk )
+   call outfld('CIN', cin, pcols, lchnk )
 
 end subroutine diag_conv
 
@@ -2469,5 +2489,307 @@ end subroutine diag_phys_tend_writeout
    if ( cnst_cam_outfld(ixcldice) ) call outfld (bpcnst(ixcldice), state%q(1,1,ixcldice), pcols, lchnk)
 
    end subroutine diag_state_b4_phys_write
+
+!#######################################################################
+
+   subroutine diag_CAPEandCIN(ncol, &
+                     q, t, p, pf, zm, zi, pblh, phis, &
+                     cape, cin)
+
+   !-----------------------------------------------------------------------
+   !
+   ! Purpose:
+   ! Compute CAPE and CIN for diagnostic output only
+   !
+   ! Method:
+   ! Originated from the CAM3.5 subroutine "buoyan" that computed CAPE
+   !  in the ZM convection scheme, with modifications.  Also extended
+   !  to compute and output CIN
+   !
+   ! Author:
+   ! Original:          P. Rasch, April 1996
+   ! Modifications:     P. Bogenschutz, 2020
+   !
+   !-----------------------------------------------------------------------
+      implicit none
+   !-----------------------------------------------------------------------
+
+   !  INPUTS arguments
+      integer, intent(in) :: ncol             ! number of atmospheric columns
+
+      real(r8), intent(in) :: q(pcols,pver)   ! spec. humidity [kg/kg]
+      real(r8), intent(in) :: t(pcols,pver)   ! temperature [K]
+      real(r8), intent(in) :: p(pcols,pver)   ! pressure [hPa]
+      real(r8), intent(in) :: pf(pcols,pverp) ! pressure at interfaces [hPa]
+      real(r8), intent(in) :: zm(pcols,pver)  ! midpoint height [m]
+      real(r8), intent(in) :: zi(pcols,pverp) ! interface height [m]
+      real(r8), intent(in) :: pblh(pcols)     ! PBL height [m]
+      real(r8), intent(in) :: phis(pcols)     ! Surface geopotential [m]
+
+   !  OUTPUT arguments
+      real(r8), intent(out) :: cape(pcols)    ! convective aval. pot. energy [J/kg]
+      real(r8), intent(out) :: cin(pcols)     ! covective inhibition [J/kg]
+
+   !
+   !--------------------------Local Variables------------------------------
+   !
+
+      real(r8) tv(pcols,pver)       ! virtual temperature [K]
+      real(r8) tpv(pcols,pver)      ! virtual temperature of parcel [K]
+      real(r8) buoy(pcols,pver)     ! Buoyancy for CAPE calculations [K]
+      real(r8) neg_buoy(pcols,pver) ! "Negative" buoyancy for CIN calculations [K]
+
+      ! height with respect to sea level [m]
+      real(r8) :: z_sl(pcols,pver)
+
+      real(r8) :: tp(pcols,pver)   ! parcel temperature [K]
+      real(r8) :: qstp(pcols,pver) ! saturation mixing ratio of parcel [kg/kg]
+      real(r8) :: tl(pcols)        ! parcel temperature at lcl [K]
+
+      integer lcl(pcols)        ! level of lifting condensation level
+      integer lfc(pcols)        ! level of free convection
+      integer lel(pcols)        ! level of equilibrium level
+      integer lon(pcols)        ! level of onset of deep convection
+      integer mx(pcols)         ! level of max moist static energy
+      integer pblt(pcols)       ! integer of PBL height
+
+      ! Miscellanous 2d arrays needed for diagnostic
+      real(r8) :: a1(pcols), a2(pcols), estp(pcols), pl(pcols)
+      real(r8) :: plexp(pcols), hmax(pcols), hmn(pcols), y(pcols)
+      integer :: knt(pcols)
+
+      real(r8) :: e, tiedke_add, rgravit
+
+      ! Indicees
+      integer :: i, k, n
+
+   !
+   !-----------------------------------------------------------------------
+   !
+
+      ! Optional argument used in CAM/EAM to increase buoyancy
+      !  according to Tiedke.  For diagnostics purposes, set to zero.
+      tiedke_add = 0.0_r8
+
+      rgravit = 1._r8/gravit
+
+   !  Compute midpoint height above sea level, needed for MSE computation
+      do k = 1,pver
+         do i = 1, ncol
+            z_sl(i,k) = zm(i,k) + phis(i)*rgravit
+         end do
+      end do
+
+   !  Find indicee of PBL height, using mid point and interface heights
+   !    from surface.
+      do k = pver -1, 1, -1
+        do i = 1, ncol
+          if (abs(zm(i,k)-pblh(i)) < (zi(i,k)-zi(i,k+1))*0.5_r8) pblt(i) = k
+        end do
+      end do
+
+   !  Initialize variables
+      do i = 1,ncol
+         cin(i) = 0._r8
+         lon(i) = pver
+         knt(i) = 0
+         lel(i) = pver
+         mx(i) = lon(i)
+         cape(i) = 0._r8
+         hmax(i) = 0._r8
+      end do
+
+      tp(:ncol,:) = t(:ncol,:)
+      qstp(:ncol,:) = q(:ncol,:)
+
+   ! Initialize virtual temperature and buoyancy
+      tv(:ncol,:) = t(:ncol,:) *(1._r8+1.608_r8*q(:ncol,:))/ (1._r8+q(:ncol,:))
+      tpv(:ncol,:) = tv(:ncol,:)
+      buoy(:ncol,:) = 0._r8
+
+   ! set "launching" level(mx) to be at maximum moist static energy.
+   !   search for this level stops at planetary boundary layer top.
+      do k = pver,1,-1
+         do i = 1,ncol
+            hmn(i) = cpair*t(i,k) + gravit*z_sl(i,k) + latvap*q(i,k)
+            if (k >= pblt(i) .and. k <= lon(i) .and. hmn(i) > hmax(i)) then
+               hmax(i) = hmn(i)
+               mx(i) = k
+            end if
+         end do
+      end do
+
+   !  Following computation to compute the Temperature and pressure of the
+   !   LCL following Bolton 1980.
+      do i = 1,ncol
+         lcl(i) = mx(i)
+         e = p(i,mx(i))*q(i,mx(i))/ (epsilo+q(i,mx(i)))
+         tl(i) = 2840._r8/ (3.5_r8*log(t(i,mx(i)))-log(e)-4.805_r8) + 55._r8
+         if (tl(i) < t(i,mx(i))) then
+            plexp(i) = (1._r8/ (0.2854_r8* (1._r8-0.28_r8*q(i,mx(i)))))
+            pl(i) = p(i,mx(i))* (tl(i)/t(i,mx(i)))**plexp(i)
+         else
+            tl(i) = t(i,mx(i))
+            pl(i) = p(i,mx(i))
+         end if
+      end do
+
+   ! Find the index of the LCL
+      do k = pver,2,-1
+         do i = 1,ncol
+            if (k <= mx(i) .and. (p(i,k) > pl(i) .and. p(i,k-1) <= pl(i))) then
+               lcl(i) = k - 1
+            end if
+         end do
+      end do
+
+   ! initialize parcel properties in sub-cloud layer below lcl.
+      do k = pver,1,-1
+         do i=1,ncol
+             if (k > lcl(i)) then
+               tv(i,k) = t(i,k)* (1._r8+1.608_r8*q(i,k))/ (1._r8+q(i,k))
+               qstp(i,k) = q(i,mx(i))
+               tp(i,k) = t(i,mx(i))* (p(i,k)/p(i,mx(i)))**(0.2854_r8* (1._r8-0.28_r8*q(i,mx(i))))
+               tpv(i,k) = tp(i,k)*(1._r8+1.608_r8*q(i,mx(i)))/ (1._r8+q(i,mx(i)))
+               buoy(i,k) = tpv(i,k) - tv(i,k) + tiedke_add
+               neg_buoy(i,k) = tv(i,k) - tpv(i,k) + tiedke_add
+            end if
+         end do
+      end do
+
+   ! define parcel properties at lcl (i.e. level immediately above pl).
+      do k = pver,1,-1
+         do i=1,ncol
+            if (k == lcl(i)) then
+               tv(i,k) = t(i,k)* (1._r8+1.608_r8*q(i,k))/ (1._r8+q(i,k))
+               qstp(i,k) = q(i,mx(i))
+               tp(i,k) = tl(i)* (p(i,k)/pl(i))**(0.2854_r8* (1._r8-0.28_r8*qstp(i,k)))
+               call qsat_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
+               a1(i) = cpair / latvap + qstp(i,k) * (1._r8+ qstp(i,k) / epsilo) * latvap * epsilo / &
+                       (rair * tp(i,k) ** 2)
+               a2(i) = .5_r8* (qstp(i,k)* (1._r8+2._r8/epsilo*qstp(i,k))* &
+                       (1._r8+qstp(i,k)/epsilo)*epsilo**2*latvap*latvap/ &
+                       (rair**2*tp(i,k)**4)-qstp(i,k)* &
+                       (1._r8+qstp(i,k)/epsilo)*2._r8*epsilo*latvap/ &
+                       (rair*tp(i,k)**3))
+               a1(i) = 1._r8/a1(i)
+               a2(i) = -a2(i)*a1(i)**3
+               y(i) = q(i,mx(i)) - qstp(i,k)
+               tp(i,k) = tp(i,k) + a1(i)*y(i) + a2(i)*y(i)**2
+               call qsat_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
+               tpv(i,k) =  tp(i,k) * (1._r8+1.608_r8*qstp(i,k)) / (1._r8+q(i,mx(i)))
+               buoy(i,k) = tpv(i,k) - tv(i,k) + tiedke_add
+               neg_buoy(i,k) = tv(i,k) - tpv(i,k) + tiedke_add
+            end if
+         end do
+      end do
+
+   ! main buoyancy calculation.
+      do k = pver - 1,1,-1
+         do i=1,ncol
+            if (k < lcl(i)) then
+               tv(i,k) = t(i,k)* (1._r8+1.608_r8*q(i,k))/ (1._r8+q(i,k))
+               qstp(i,k) = qstp(i,k+1)
+               tp(i,k) = tp(i,k+1)* (p(i,k)/p(i,k+1))**(0.2854_r8* (1._r8-0.28_r8*qstp(i,k)))
+               call qsat_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
+               a1(i) = cpair/latvap + qstp(i,k)* (1._r8+qstp(i,k)/epsilo)*latvap*epsilo/ (rair*tp(i,k)**2)
+               a2(i) = .5_r8* (qstp(i,k)* (1._r8+2._r8/epsilo*qstp(i,k))* &
+                       (1._r8+qstp(i,k)/epsilo)*epsilo**2*latvap*latvap/ &
+                       (rair**2*tp(i,k)**4)-qstp(i,k)* &
+                       (1._r8+qstp(i,k)/epsilo)*2._r8*epsilo*latvap/ &
+                       (rair*tp(i,k)**3))
+               a1(i) = 1._r8/a1(i)
+               a2(i) = -a2(i)*a1(i)**3
+               y(i) = qstp(i,k+1) - qstp(i,k)
+               tp(i,k) = tp(i,k) + a1(i)*y(i) + a2(i)*y(i)**2
+               call qsat_hPa(tp(i,k), p(i,k), estp(i), qstp(i,k))
+               tpv(i,k) = tp(i,k) * (1._r8+1.608_r8*qstp(i,k))/(1._r8+q(i,mx(i)))
+               buoy(i,k) = tpv(i,k) - tv(i,k) + tiedke_add
+               neg_buoy(i,k) = tv(i,k) - tpv(i,k) + tiedke_add
+            end if
+         end do
+      end do
+
+   ! determine equilibrim level (EL)
+      do k = 2,pver
+         do i = 1,ncol
+            ! must reside above the LCL
+            if (k < lcl(i)) then
+               ! should be level where buoyancy becomes negative
+               if (buoy(i,k+1) > 0._r8 .and. buoy(i,k) <= 0._r8) then
+                  lel(i) = k
+               end if
+            end if
+         end do
+      end do
+
+   ! initialize the level of free convection (LFC) to be LCL
+      do i = 1, ncol
+        lfc(i) = lcl(i)
+      end do
+
+   ! determine the LFC
+      do k = 2, pver
+         do i = 1, ncol
+           ! must reside above LCL and below EL
+           if (k < lcl(i) .and. k > lel(i)) then
+              ! should be the level where buoyancy becomes positive
+              if (buoy(i,k+1) < 0._r8 .and. buoy(i,k) >= 0._r8) then
+                 lfc(i) = k
+              end if
+           end if
+         end do
+      end do
+
+   ! calculate convective available potential energy (CAPE), buoyancy
+   !  integrated from LFC to the EL
+      do k = 1,pver
+         do i = 1,ncol
+            if (k <= lfc(i) .and. k > lel(i)) then
+               cape(i) = cape(i) + rair*buoy(i,k)*log(pf(i,k+1)/pf(i,k))
+            end if
+         end do
+      end do
+
+   ! Compute CIN based on information of levels computed above, which
+   !  is the negative buoyancy integrated from surface to the LFC
+      do k = 1, pver
+        do i = 1, ncol
+           if (k > lfc(i)) then
+             cin(i) = cin(i) + rair*neg_buoy(i,k) * log(pf(i,k+1)/pf(i,k))
+           endif
+        end do
+      end do
+
+   ! put lower bound on cape and cin for diagnostic purposes.
+      do i = 1,ncol
+         cape(i) = max(cape(i), 0._r8)
+         cin(i) = max(cin(i), 0._r8)
+      end do
+   !
+      return
+   end subroutine diag_CAPEandCIN
+
+!#######################################################################
+
+   ! Wrapper for qsat_water that does translation between Pa and hPa
+   ! qsat_water uses Pa internally, so get it right, need to pass in Pa.
+   ! Afterward, set es back to hPa.
+   elemental subroutine qsat_hPa(t, p, es, qm)
+     use wv_saturation, only: qsat_water
+
+     ! Inputs
+     real(r8), intent(in) :: t    ! Temperature (K)
+     real(r8), intent(in) :: p    ! Pressure (hPa)
+     ! Outputs
+     real(r8), intent(out) :: es  ! Saturation vapor pressure (hPa)
+     real(r8), intent(out) :: qm  ! Saturation mass mixing ratio
+                                  ! (vapor mass over dry mass, kg/kg)
+
+     call qsat_water(t, p*100._r8, es, qm)
+
+     es = es*0.01_r8
+
+   end subroutine qsat_hPa
 
 end module cam_diagnostics

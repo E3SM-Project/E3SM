@@ -1,0 +1,2 @@
+./xmlchange DATM_CLMNCEP_YR_START=2004
+./xmlchange DATM_CLMNCEP_YR_END=2004

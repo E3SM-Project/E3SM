@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -267,8 +267,14 @@ module ocn_init_mode
       type (mpas_pool_type), pointer :: forcingPool
 
       type (MPAS_timeInterval_type) :: timeStep
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
 
       ierr = 0
+
+      ! Initialize normalVelocity to zero for cases that do not specify it.
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
+      normalVelocity(:,:) = 0.0_RKIND
 
       ! Eventually, dt should be domain specific
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=ierr)

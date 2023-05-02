@@ -310,10 +310,6 @@ contains
                write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
             end if
 
-            if (ero_ccycle) then
-               write(iulog,*)'erosion               = ',som_c_yield(c)*dt
-            end if
-         
             if (use_pflotran .and. pf_cmode) then
                write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
             end if

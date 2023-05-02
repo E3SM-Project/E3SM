@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -498,7 +498,7 @@ end subroutine ocn_tend_vvel!}}}
       !$acc               density, normRelVortEdge, montgomeryPotential, pressure, &
       !$acc               thermExpCoeff, salineContractCoeff, tangentialVelocity, &
       !$acc               layerThickEdgeFlux, kineticEnergyCell, sfcFlxAttCoeff, potentialDensity, &
-      !$acc               vertAleTransportTop, vertViscTopOfEdge, wettingVelocity, &
+      !$acc               vertAleTransportTop, vertViscTopOfEdge, wettingVelocityFactor, &
       !$acc               nhPressureCorrection)
       !$acc enter data &
       !$acc    copyin(tendVel, sfcStress, sfcStressMag, &
@@ -607,15 +607,14 @@ end subroutine ocn_tend_vvel!}}}
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop collapse(2) &
-      !$acc    present(tendVel, wettingVelocity)
+      !$acc    present(tendVel, wettingVelocityFactor)
 #else
       !$omp parallel
       !$omp do schedule(runtime) private(k)
 #endif
       do iEdge = 1, nEdgesAll
       do k=1,nVertLevels
-         tendVel(k,iEdge) = tendVel(k,iEdge)* &
-                            (1.0_RKIND - wettingVelocity(k,iEdge))
+         tendVel(k,iEdge) = tendVel(k,iEdge) * (1.0_RKIND - wettingVelocityFactor(k,iEdge))
       end do
       end do
 #ifndef MPAS_OPENACC
@@ -1291,8 +1290,8 @@ end subroutine ocn_tend_vvel!}}}
                                    layerThickness, zMid, tracerGroup, &
                                    RediKappa, slopeTriadUp, &
                                    slopeTriadDown, dt, isActiveTracer, &
-                                   RediKappaSfcTaper, RediKappaScaling,&
-                                   rediLimiterCount, tracerGroupTend, err)
+                                   RediKappaScaling, rediLimiterCount, &
+                                   tracerGroupTend, err)
 
          if (computeBudgets) then
             ! Finish budget calculation by subtracting before, after

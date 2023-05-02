@@ -231,8 +231,8 @@ template class cedr::BfbTreeAllReducer<Kokkos::Serial>;
 #ifdef KOKKOS_ENABLE_OPENMP
 template class cedr::BfbTreeAllReducer<Kokkos::OpenMP>;
 #endif
-#ifdef KOKKOS_ENABLE_CUDA
-template class cedr::BfbTreeAllReducer<Kokkos::Cuda>;
+#ifdef CEDR_ENABLE_GPU
+template class cedr::BfbTreeAllReducer<CedrGpuExeSpace>;
 #endif
 #ifdef KOKKOS_ENABLE_THREADS
 template class cedr::BfbTreeAllReducer<Kokkos::Threads>;

@@ -17,7 +17,7 @@
 namespace Homme {
 
 void ElementsGeometry::init(const int num_elems, const bool consthv, const bool alloc_gradphis,
-                            const Real rearth,
+                            const Real scale_factor, const Real laplacian_rigid_factor,
                             const bool alloc_sphere_coords) {
   // Sanity check
   assert (num_elems>0);
@@ -25,8 +25,9 @@ void ElementsGeometry::init(const int num_elems, const bool consthv, const bool 
   m_num_elems = num_elems;
   m_consthv   = consthv;
 
-  assert( rearth > 0);
-  m_rearth     = rearth;
+  assert(scale_factor > 0);
+  m_scale_factor = scale_factor;
+  m_laplacian_rigid_factor = laplacian_rigid_factor < 0 ? 1/scale_factor : laplacian_rigid_factor;
   
   // Coriolis force
   m_fcor = ExecViewManaged<Real * [NP][NP]>("FCOR", m_num_elems);

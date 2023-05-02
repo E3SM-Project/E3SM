@@ -1,38 +1,38 @@
 	<dims>
-		<dim name="nTemperatureBins" definition="32" units="unitless"
+		<dim name="nTemperatureBins" definition="32"
 			 description="The number of temperature bins to be used to span from minTemperature to maxTemperature"
 		/>
-		<dim name="nSalinityBins" definition="20" units="unitless"
+		<dim name="nSalinityBins" definition="20"
 			 description="The number of salinity bins to be used to span from minSalinity to maxSalinity"
 		/>
-		<dim name="nTemperatureBinsP1" definition="nTemperatureBins+1" units="unitless"
+		<dim name="nTemperatureBinsP1" definition="nTemperatureBins+1"
 			 description="The number of temperature bin edge values to be used to span from minTemperature to maxTemperature"
 		/>
-		<dim name="nSalinityBinsP1" definition="nSalinityBins+1" units="unitless"
+		<dim name="nSalinityBinsP1" definition="nSalinityBins+1"
 			 description="The number of salinity bins edge values to be used to span from minSalinity to maxSalinity"
 		/>
-		<dim name="nOceanRegionsTmpCensus" definition="7" units="unitless"
+		<dim name="nOceanRegionsTmpCensus" definition="7"
 			 description="The number of regions defined within the global ocean (will eventually be moved up and used uniformly across MPAS-O."
 		/>
 	</dims>
 	<nml_record name="AM_waterMassCensus" mode="forward;analysis">
-		<nml_option name="config_AM_waterMassCensus_enable" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_waterMassCensus_enable" type="logical" default_value=".false."
 			description="If true, ocean analysis member water mass census is called."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_waterMassCensus_compute_interval" type="character" default_value="output_interval" units="unitless"
+		<nml_option name="config_AM_waterMassCensus_compute_interval" type="character" default_value="output_interval"
 			description="Timestamp determining how often analysis member computation should be performed."
 			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
-		<nml_option name="config_AM_waterMassCensus_output_stream" type="character" default_value="waterMassCensusOutput" units="unitless"
+		<nml_option name="config_AM_waterMassCensus_output_stream" type="character" default_value="waterMassCensusOutput"
 			description="Name of the stream the water mass census analysis member should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>
-		<nml_option name="config_AM_waterMassCensus_compute_on_startup" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_waterMassCensus_compute_on_startup" type="logical" default_value=".false."
 			description="Logical flag determining if an analysis member computation occurs on start-up."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_waterMassCensus_write_on_startup" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_waterMassCensus_write_on_startup" type="logical" default_value=".false."
 			description="Logical flag determining if an analysis member output occurs on start-up."
 			possible_values=".true. or .false."
 		/>
@@ -44,19 +44,19 @@
 			description="maximum temperature used in water mass census"
 			possible_values="any real number greater than config_AM_waterMassCensus_minTemperature"
 		/>
-		<nml_option name="config_AM_waterMassCensus_minSalinity" type="real" default_value="32.0" units="PSU"
+		<nml_option name="config_AM_waterMassCensus_minSalinity" type="real" default_value="32.0" units="1.e-3"
 			description="minimum salinity used in water mass census"
 			possible_values="any real number smaller than config_AM_waterMassCensus_maxSalinity"
 		/>
-		<nml_option name="config_AM_waterMassCensus_maxSalinity" type="real" default_value="37.0" units="PSU"
+		<nml_option name="config_AM_waterMassCensus_maxSalinity" type="real" default_value="37.0" units="1.e-3"
 			description="maximum salinity used in water mass census"
 			possible_values="any real number greater than config_AM_waterMassCensus_minSalinity"
 		/>
-		<nml_option name="config_AM_waterMassCensus_compute_predefined_regions" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_waterMassCensus_compute_predefined_regions" type="logical" default_value=".true."
 			description="Computes predefined regions. (Does not require a region mask file.)"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_waterMassCensus_region_group" type="character" default_value="" units="unitless"
+		<nml_option name="config_AM_waterMassCensus_region_group" type="character" default_value=""
 			description="The name of the region group, for which the WMC should be computed in addition to the existing WMC."
 			possible_values="'all', '', or the name of a region group."
 		/>
@@ -86,13 +86,13 @@
 		<var name="potentialDensityOfTSDiagram"
 			 type="real"
 			 dimensions="nTemperatureBins nSalinityBins nOceanRegionsTmpCensus Time"
-			 units="kg m^{-3}"
+			 units="kg m^-3"
 			 description="volume-weighted potential density of each (T,S) bin"
 		/>
 		<var name="zPositionOfTSDiagram"
 			 type="real"
 			 dimensions="nTemperatureBins nSalinityBins nOceanRegionsTmpCensus Time"
-			 units="kg m^{-3}"
+			 units="kg m^-3"
 			 description="volume-weighted vertical position of each (T,S) bin"
 		/>
 		<var name="waterMassCensusTemperatureValuesRegion"
@@ -116,13 +116,13 @@
 		<var name="potentialDensityOfTSDiagramRegion"
 			 type="real"
 			 dimensions="nTemperatureBins nSalinityBins maxRegionsInGroup Time"
-			 units="kg m^{-3}"
+			 units="kg m^-3"
 			 description="volume-weighted potential density of each (T,S) bin"
 		/>
 		<var name="zPositionOfTSDiagramRegion"
 			 type="real"
 			 dimensions="nTemperatureBins nSalinityBins maxRegionsInGroup Time"
-			 units="kg m^{-3}"
+			 units="kg m^-3"
 			 description="volume-weighted vertical position of each (T,S) bin"
 		/>
 	</var_struct>

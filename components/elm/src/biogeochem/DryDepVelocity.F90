@@ -90,9 +90,17 @@ CONTAINS
   !------------------------------------------------------------------------
   subroutine Init(this, bounds)
 
+    use elm_varctl     , only : use_fates, use_fates_sp
+
     class(drydepvel_type) :: this
     type(bounds_type), intent(in) :: bounds
 
+    if ( (.not. use_fates_sp) .and. use_fates .and. &
+         (n_drydep > 0 .and. drydep_method == DD_XLND) )then
+       call endrun('ERROR: Dry-deposition currently does NOT work with FATES outside of FATES-SP mode'//&
+            errMsg(__FILE__, __LINE__))
+    end if
+    
     call this%InitAllocate(bounds)
 
   end subroutine Init
@@ -101,7 +109,7 @@ CONTAINS
   subroutine InitAllocate(this, bounds)
     !
     ! !USES:
-      use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use seq_drydep_mod , only : n_drydep, drydep_method, DD_XLND
     use elm_varcon , only : spval
     !
@@ -457,8 +465,19 @@ CONTAINS
                else
 
                   !Following Emmons et al (2020, JAMES), the stomatal resistances for shaded and sunlit
-                  !leaves should be added in parallel
-                  rs = 1.0_r8 / ( fsun(pi)/rssun(pi) + (1.0_r8 - fsun(pi))/rssha(pi) )
+                  !leaves should be added in parallel.  Also need to account for the conditions of
+                  !rssun=0.0 and/or rssha=0.0, for which only fsun=0 or fsun=1 is considered, respectively.
+
+                  if (rssun(pi) > 0._r8 .and. rssha(pi) > 0._r8) then
+                     rs = 1.0_r8 / ( fsun(pi)/rssun(pi) + (1.0_r8 - fsun(pi))/rssha(pi) )
+                  else if (rssun(pi) > 0._r8 .and. fsun(pi) == 1._r8) then
+                    rs = rssun(pi)
+                  else if (rssha(pi) > 0._r8 .and. fsun(pi) == 0._r8) then
+                    rs = rssha(pi)
+                  else
+                     rs = 1.e36_r8
+                  endif
+
                   if (rs==0._r8) then ! fvitt -- what to do when rs is zero ???
                      rsmx(ispec) = 1.e36_r8
                   else

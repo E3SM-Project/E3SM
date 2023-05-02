@@ -50,7 +50,7 @@ void pre_timeloop() {
   YAKL_SCOPE( crm_state_w_wind         , :: crm_state_w_wind );
   YAKL_SCOPE( crm_state_temperature    , :: crm_state_temperature ); 
   YAKL_SCOPE( micro_field              , :: micro_field );
-  YAKL_SCOPE( crm_state_qt             , :: crm_state_qt );
+  YAKL_SCOPE( crm_state_qv             , :: crm_state_qv );
   YAKL_SCOPE( crm_state_qp             , :: crm_state_qp );
   YAKL_SCOPE( crm_state_qn             , :: crm_state_qn );
   YAKL_SCOPE( qn                       , :: qn );
@@ -74,12 +74,10 @@ void pre_timeloop() {
   YAKL_SCOPE( sgs_field                , :: sgs_field );
   YAKL_SCOPE( uln                      , :: uln );
   YAKL_SCOPE( vln                      , :: vln );
-#ifdef MMF_ESMT
   YAKL_SCOPE( u_esmt                   , :: u_esmt );
   YAKL_SCOPE( v_esmt                   , :: v_esmt );
   YAKL_SCOPE( uln_esmt                 , :: uln_esmt );
   YAKL_SCOPE( vln_esmt                 , :: vln_esmt );
-#endif
   YAKL_SCOPE( ttend                    , :: ttend );
   YAKL_SCOPE( qtend                    , :: qtend );
   YAKL_SCOPE( crm_input_qccl           , :: crm_input_qccl );
@@ -103,10 +101,8 @@ void pre_timeloop() {
   YAKL_SCOPE( crm_output_precstend     , :: crm_output_precstend );
   YAKL_SCOPE( crm_input_ul             , :: crm_input_ul );
   YAKL_SCOPE( crm_input_vl             , :: crm_input_vl );
-#ifdef MMF_ESMT
   YAKL_SCOPE( crm_input_ul_esmt        , :: crm_input_ul_esmt );
   YAKL_SCOPE( crm_input_vl_esmt        , :: crm_input_vl_esmt );
-#endif
   YAKL_SCOPE( crm_output_cld           , :: crm_output_cld ); 
   YAKL_SCOPE( crm_output_cldtop        , :: crm_output_cldtop ); 
   YAKL_SCOPE( crm_output_gicewp        , :: crm_output_gicewp ); 
@@ -159,6 +155,7 @@ void pre_timeloop() {
   YAKL_SCOPE( q_vt                    , :: q_vt );
   YAKL_SCOPE( u_vt                    , :: u_vt );
   YAKL_SCOPE( use_VT                  , :: use_VT );
+  YAKL_SCOPE( use_ESMT                , :: use_ESMT );
 
   crm_accel_ceaseflag = false;
 
@@ -295,10 +292,10 @@ void pre_timeloop() {
     v(k,j+offy_v,i+offx_v,icrm) = crm_state_v_wind(k,j,i,icrm)*YES3D;
     w(k,j+offy_w,i+offx_w,icrm) = crm_state_w_wind(k,j,i,icrm);
     tabs(k,j,i,icrm) = crm_state_temperature(k,j,i,icrm);
-#if defined(MMF_ESMT)
-    u_esmt(k,j+offy_s,i+offx_s,icrm) = crm_input_ul_esmt(plev-k-1,icrm);
-    v_esmt(k,j+offy_s,i+offx_s,icrm) = crm_input_vl_esmt(plev-k-1,icrm);
-#endif /* MMF_ESMT */
+    if (use_ESMT) {
+      u_esmt(k,j+offy_s,i+offx_s,icrm) = crm_input_ul_esmt(plev-k-1,icrm);
+      v_esmt(k,j+offy_s,i+offx_s,icrm) = crm_input_vl_esmt(plev-k-1,icrm);
+    }
   });
 
   // limit the velocity at the very first step:
@@ -319,7 +316,7 @@ void pre_timeloop() {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    micro_field(0,k,j+offy_s,i+offx_s,icrm) = crm_state_qt(k,j,i,icrm);
+    micro_field(0,k,j+offy_s,i+offx_s,icrm) = crm_state_qv(k,j,i,icrm)+crm_state_qn(k,j,i,icrm);
     micro_field(1,k,j+offy_s,i+offx_s,icrm) = crm_state_qp(k,j,i,icrm);
     qn(k,j,i,icrm) = crm_state_qn(k,j,i,icrm);
   });

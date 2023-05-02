@@ -209,8 +209,6 @@ int  constexpr index_cloud_ice = 0;
 real constexpr rhor = 1000.; // Density of water, kg/m3
 real constexpr rhos = 100.;  // Density of snow, kg/m3
 real constexpr rhog = 400.;  // Density of graupel, kg/m3
-real constexpr tbgmin = 253.16;    // Minimum temperature for cloud water., K
-real constexpr tbgmax = 273.16;    // Maximum temperature for cloud ice, K
 real constexpr tprmin = 268.16;    // Minimum temperature for rain, K
 real constexpr tprmax = 283.16;    // Maximum temperature for snow+graupel, K
 real constexpr tgrmin = 223.16;    // Minimum temperature for snow, K
@@ -231,10 +229,37 @@ real constexpr nzeros = 3.e6;   // Intersept coeff. for snow
 real constexpr nzerog = 4.e6;   // Intersept coeff. for graupel
 real constexpr qp_threshold = 1.e-8; // minimal rain/snow water content
 
-real constexpr qcw0 = 1.e-3;
-real constexpr qci0 = 1.e-4;
 real constexpr alphaelq = 1.e-3;
 real constexpr betaelq = 1.e-3;
+
+//------------------------------------------------------------------------------
+// MMF climate tuning parameters
+//------------------------------------------------------------------------------
+#ifdef MMF_TMN
+real constexpr tbgmin = MMF_TMN;
+#else
+real constexpr tbgmin = 253.16; // Min temperature for cloud liq, K
+#endif
+
+#ifdef MMF_TMX
+real constexpr tbgmax = MMF_TMX;
+#else
+real constexpr tbgmax = 273.16; // Max temperature for cloud ice, K
+#endif
+
+#ifdef MMF_QCW
+real constexpr qcw0 = MMF_QCW;
+#else
+real constexpr qcw0 = 1.e-3;    // liq autoconversion threshold
+#endif
+
+#ifdef MMF_QCI
+real constexpr qci0 = MMF_QCI;
+#else
+real constexpr qci0 = 1.e-4;    // ice autoconversion threshold
+#endif
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 real constexpr crm_accel_coef = 1.0/( (real) nx * (real) ny );
 

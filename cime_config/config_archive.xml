@@ -25,6 +25,13 @@
     </test_file_names>
   </comp_archive_spec>
 
+  <comp_archive_spec compname="scream" compclass="atm">
+    <rest_file_extension>r\.(INSTANT|AVERAGE|MAX|MIN)\.n(step|sec|min|hour|day|month|year)s_x\d*</rest_file_extension>
+    <rest_file_extension>rhist\.(INSTANT|AVERAGE|MAX|MIN)\.n(step|sec|min|hour|day|month|year)s_x\d*</rest_file_extension>
+    <!-- The following matches "hi.AVGTYPE.FREQUNITS_xFREQ.TIMESTAMP.nc"-->
+    <hist_file_extension>hi\.(INSTANT|AVERAGE|MAX|MIN)\.n(step|sec|min|hour|day|month|year)s_x\d*\.\d{4}-\d{2}-\d{2}-\d{5}\.nc$</hist_file_extension>
+  </comp_archive_spec>
+
   <comp_archive_spec compname="elm" compclass="lnd">
     <rest_file_extension>r</rest_file_extension>
     <rest_file_extension>rh\d?</rest_file_extension>
@@ -139,6 +146,17 @@
     <test_file_names>
       <tfile disposition="move">casename.dart.e.pop_preassim_priorinf_mean.1976-01-01-00000.nc</tfile>
     </test_file_names>
+  </comp_archive_spec>
+
+  <comp_archive_spec compname="ww3" compclass="wav">
+    <rest_file_extension>restart.ww3</rest_file_extension>
+    <hist_file_extension>out_pnt.ww3</hist_file_extension>
+    <hist_file_extension>out_grd.ww3</hist_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer.wav$NINST_STRING</rpointer_file>
+      <rpointer_content>unset</rpointer_content>
+    </rpointer>
   </comp_archive_spec>
 
 </components>

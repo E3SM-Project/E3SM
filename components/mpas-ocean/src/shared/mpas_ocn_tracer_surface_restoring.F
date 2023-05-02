@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -30,6 +30,7 @@ module ocn_tracer_surface_restoring
    use ocn_config
    use ocn_framework_forcing
    use ocn_diagnostics_variables
+   use ocn_mesh
 
    implicit none
 
@@ -135,11 +136,11 @@ contains
 
       err = 0
 
-      iLevel = 1  ! base surface flux restoring on tracer fields in the top layer
-
       !$omp parallel
-      !$omp do schedule(runtime) private(iTracer)
+      !$omp do schedule(runtime) private(iTracer, iLevel)
       do iCell=1,nCells
+        iLevel = minLevelCell(iCell)  ! base surface flux restoring on tracer fields in the top layer
+
         do iTracer=1,nTracers
 
           ! For monthly salinity restoring, tracersSurfaceRestoringValue contains the zero-mean deltaS
@@ -236,7 +237,9 @@ contains
 
         real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
-        integer, pointer :: nCells, nCellsSolve, indexSalinity, indexSalinitySurfaceRestoringValue
+        integer, pointer :: nCells, nCellsSolve
+        integer, pointer :: indexSalinityPtr, indexSalinitySurfaceRestoringValuePtr
+        integer :: indexSalinity, indexSalinitySurfaceRestoringValue
         integer :: iCell, timeLevel
         integer, dimension(:), pointer :: landIceMask
 
@@ -316,9 +319,14 @@ contains
 
         call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
         call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
-        call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
-        call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinitySurfaceRestoringValue',  &
-                                                                         indexSalinitySurfaceRestoringValue)
+        call mpas_pool_get_dimension(tracersPool, 'index_salinity', &
+                                                   indexSalinityPtr)
+        call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, &
+                                'index_salinitySurfaceRestoringValue',  &
+                                 indexSalinitySurfaceRestoringValuePtr)
+        indexSalinity = indexSalinityPtr
+        indexSalinitySurfaceRestoringValue = &
+                                 indexSalinitySurfaceRestoringValuePtr
         call mpas_pool_get_subpool(block % structs, 'surfaceSalinityMonthlyForcing',  &
                                                                   surfaceSalinityMonthlyForcing)
         call mpas_pool_get_array(surfaceSalinityMonthlyForcing, 'surfaceSalinityMonthlyClimatologyValue',   &
@@ -439,8 +447,11 @@ contains
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields',tracersSurfaceRestoringFieldsPool)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', &
            activeTracersSurfaceRestoringValue)
-        call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinitySurfaceRestoringValue',  &
-                                                                         indexSalinitySurfaceRestoringValue)
+        call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, &
+                                'index_salinitySurfaceRestoringValue',  &
+                                 indexSalinitySurfaceRestoringValuePtr)
+        indexSalinitySurfaceRestoringValue = &
+                                 indexSalinitySurfaceRestoringValuePtr
 
         do iCell = 1, nCells
           deltaS = activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell)

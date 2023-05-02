@@ -3,11 +3,15 @@
 <namelist_defaults>
 
 <use_case_desc>Conditions to simulate 1850 land-use</use_case_desc>
+<use_case_desc bgc="cn"   >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2005</use_case_desc>
+<use_case_desc bgc="cndv" >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2005</use_case_desc>
+<use_case_desc use_cn=".true." >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2005</use_case_desc>
 
 <sim_year>1850</sim_year>
 
 <sim_year_range>constant</sim_year_range>
 
+<clm_demand >flanduse_timeseries</clm_demand>
 
 
 <stream_year_first_ndep phys="elm" use_cn=".true." ndepsrc="stream" >1850</stream_year_first_ndep>
@@ -23,6 +27,15 @@
 
 <!-- CMIP6 DECK compsets -->
       
-<fsurdat>lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_2015_c171018.nc </fsurdat>
-<flanduse_timeseries>lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850_c20171102.nc </flanduse_timeseries>
+<fsurdat hgrid="ne30np4">lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_2015_c171018.nc </fsurdat>
+<flanduse_timeseries hgrid="ne30np4">lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850_c20171102.nc </flanduse_timeseries>
+
+<!-- V2 land-atm BGC compsets -->
+<fsurdat hgrid="r05">lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc </fsurdat>
+<flanduse_timeseries hgrid="r05">lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_HIST_simyr1850-2015_c211019.nc </flanduse_timeseries>
+
+<stream_fldfilename_ndep>lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_c190103.nc </stream_fldfilename_ndep>
+<stream_fldfilename_pdep>lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc </stream_fldfilename_pdep>
+<stream_fldfilename_popdens>lnd/clm2/firedata/elmforc.ssp5_hdm_0.5x0.5_simyr1850-2100_c190109.nc </stream_fldfilename_popdens>
+
 </namelist_defaults>

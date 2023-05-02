@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -75,7 +75,7 @@ contains
 
    subroutine ocn_tracer_hmix_Redi_tend(meshPool, layerThickness, layerThickEdgeMean, zMid, tracers, &
                                         RediKappa, dt, isActiveTracer, slopeTriadUp, slopeTriadDown, &
-                                        RediKappaSfcTaper, RediKappaScaling, rediLimiterCount, tend, err)!{{{
+                                        RediKappaScaling, rediLimiterCount, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -91,7 +91,6 @@ contains
       real(kind=RKIND), dimension(:, :), intent(in) :: &
          layerThickEdgeMean, &!< Input: mean thickness at edge
          zMid, &!< Input: Z coordinate at the center of a cell
-         RediKappaSfcTaper, &!< Input: vertical structure of GM/Redi limiter
          RediKappaScaling, &
          layerThickness
 
@@ -236,16 +235,10 @@ contains
             r_tmp = dvEdge(iEdge)/dcEdge(iEdge)
             coef = dvEdge(iEdge)
 
-            k = minLevelEdgeBot(iEdge)
-            kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
-                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))* &
-                               0.25_RKIND*(RediKappaSfcTaper(k, cell1) + RediKappaSfcTaper(k, cell2) + &
-                                           RediKappaSfcTaper(k + 1, cell1) + RediKappaSfcTaper(k + 1, cell2))
             k = 1
+            if (minLevelEdgeBot(iEdge) .ne. 1) k = minLevelEdgeBot(iEdge)
             kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
-                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))* &
-                               0.25_RKIND*(RediKappaSfcTaper(k, cell1) + RediKappaSfcTaper(k, cell2) + &
-                                           RediKappaSfcTaper(k + 1, cell1) + RediKappaSfcTaper(k + 1, cell2))
+                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))
 
             do iTr = 1, nTracers
                tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
@@ -264,13 +257,13 @@ contains
                              /(zMid(k, cell2) - zMid(k + 1, cell2)))
                if (minLevelCell(cell1) < minLevelEdgeBot(iEdge)) then
                   flux_term2 = flux_term2 + coef*RediKappa(iEdge)* &
-                               layerThickEdgeMean(minLevelEdgeBot(iEdge), iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(minLevelEdgeBot(iEdge), 1, iEdge)* &
-                               (tracers(iTr, minLevelEdgeBot(iEdge) - 1, cell1) - tracers(iTr, minLevelEdgeBot(iEdge), cell1))/(zMid(minLevelEdgeBot(iEdge) - 1, cell1) - zMid(minLevelEdgeBot(iEdge), cell1))
+                               layerThickEdgeMean(k, iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(k, 1, iEdge)* &
+                               (tracers(iTr, k - 1, cell1) - tracers(iTr, k, cell1))/(zMid(k - 1, cell1) - zMid(k, cell1))
                endif
                if (minLevelCell(cell2) < minLevelEdgeBot(iEdge)) then
                   flux_term2 = flux_term2 + coef*RediKappa(iEdge)* &
-                               layerThickEdgeMean(minLevelEdgeBot(iEdge), iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(minLevelEdgeBot(iEdge), 2, iEdge)* &
-                               (tracers(iTr, minLevelEdgeBot(iEdge) - 1, cell2) - tracers(iTr, minLevelEdgeBot(iEdge), cell2))/(zMid(minLevelEdgeBot(iEdge) - 1, cell2) - zMid(minLevelEdgeBot(iEdge), cell2))
+                               layerThickEdgeMean(k, iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(k, 2, iEdge)* &
+                               (tracers(iTr, k - 1, cell2) - tracers(iTr, k, cell2))/(zMid(k - 1, cell2) - zMid(k, cell2))
                endif
 
                redi_term2(iTr, k, iCell) = redi_term2(iTr, k, iCell) - edgeSignOnCell(i, iCell)*flux_term2*invAreaCell
@@ -280,9 +273,7 @@ contains
             do k = minLevelEdgeBot(iEdge) + 1, maxLevelEdgeTop(iEdge) - 1
 
                kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
-                                              RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))*0.25_RKIND* &
-                                  (RediKappaSfcTaper(k, cell1) + RediKappaSfcTaper(k, cell2) + &
-                                   RediKappaSfcTaper(k + 1, cell1) + RediKappaSfcTaper(k + 1, cell2))
+                                              RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))
 
                do iTr = 1, nTracers
                   ! \kappa_2 \nabla \phi on edge
@@ -319,9 +310,7 @@ contains
 
             k = maxLevelEdgeTop(iEdge)
             kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
-                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))* &
-                               0.25_RKIND*(RediKappaSfcTaper(k, cell1) + RediKappaSfcTaper(k, cell2) + &
-                                           RediKappaSfcTaper(k + 1, cell1) + RediKappaSfcTaper(k + 1, cell2))
+                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))
 
             do iTr = 1, nTracers
                tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
@@ -376,8 +365,8 @@ contains
                   ! 2.0 in next line is because a dot product on a C-grid
                   ! requires a factor of 1/2 to average to the cell center.
                   flux_term3 = rediKappaCell(iCell)*2.0_RKIND* &
-                               (RediKappaSfcTaper(k, iCell)*RediKappaScaling(k, iCell)*fluxRediZTop(iTr, k)  &
-                               * invAreaCell - RediKappaSfcTaper(k + 1, iCell)*RediKappaScaling(k + 1, iCell) &
+                               (RediKappaScaling(k, iCell)*fluxRediZTop(iTr, k)  &
+                               * invAreaCell - RediKappaScaling(k + 1, iCell) &
                                *fluxRediZTop(iTr, k + 1) * invAreaCell)
 
                   redi_term3(iTr, k, iCell) = redi_term3(iTr, k, iCell) + flux_term3
@@ -446,9 +435,9 @@ contains
             do k = minLevelCell(iCell), maxLevelCell(iCell)
                do iTr = 1, ntracers
                   tend(iTr, k, iCell) = tend(iTr, k, iCell) + rediKappaCell(iCell)*2.0_RKIND* &
-                                        (RediKappaSfcTaper(k, iCell)*RediKappaScaling(k, iCell)* &
-                                         redi_term3_topOfCell(iTr, k, iCell) - RediKappaSfcTaper(k + 1, iCell) &
-                                         *RediKappaScaling(k + 1, iCell)*redi_term3_topOfCell(iTr, k + 1, iCell))
+                                        (RediKappaScaling(k, iCell)* &
+                                         redi_term3_topOfCell(iTr, k, iCell) - &
+                                         RediKappaScaling(k + 1, iCell)*redi_term3_topOfCell(iTr, k + 1, iCell))
                end do
             end do
 
@@ -503,7 +492,7 @@ contains
       type(mpas_pool_type), pointer :: diagnosticsPool
       type(mpas_pool_type), pointer :: forcingPool
 
-      real(kind=RKIND), dimension(:), pointer :: RediKappa, RediKappaData
+      real(kind=RKIND), dimension(:), pointer :: RediKappa
       real(kind=RKIND), dimension(:), pointer :: RediHorizontalTaper
       real(kind=RKIND), dimension(:), pointer :: dcEdge
       real(kind=RKIND) :: coef
@@ -530,7 +519,6 @@ contains
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
          call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
          call mpas_pool_get_array(diagnosticsPool, 'RediHorizontalTaper', RediHorizontalTaper)
-         call mpas_pool_get_array(forcingPool, 'RediKappaData', RediKappaData)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 

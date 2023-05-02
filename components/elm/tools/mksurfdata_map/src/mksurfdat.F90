@@ -148,6 +148,8 @@ program mksurfdat
     real(r8), allocatable  :: ero_c1(:)          ! ELM-Erosion c1 parameter (unitless)
     real(r8), allocatable  :: ero_c2(:)          ! ELM-Erosion c2 parameter (unitless)
     real(r8), allocatable  :: ero_c3(:)          ! ELM-Erosion c3 parameter (unitless) 
+    real(r8), allocatable  :: tillage(:)         ! conserved tillage fraction (fraction)
+    real(r8), allocatable  :: litho(:)           ! lithology erodiblity index (unitless)
 
 
     type(domain_type) :: ldomain
@@ -452,7 +454,9 @@ program mksurfdat
                slp10(ns_o,nlevslp)                , &
                ero_c1(ns_o)                       , &
                ero_c2(ns_o)                       , &
-               ero_c3(ns_o)                       )
+               ero_c3(ns_o)                       , &
+               tillage(ns_o)                      , &
+               litho(ns_o)                        )
 
     landfrac_pft(:)       = spval 
     pctlnd_pft(:)         = spval
@@ -495,6 +499,8 @@ program mksurfdat
     ero_c1(:)             = spval
     ero_c2(:)             = spval
     ero_c3(:)             = spval 
+    tillage(:)            = spval
+    litho(:)              = spval
 
     ! ----------------------------------------------------------------------
     ! Open diagnostic output log file
@@ -742,7 +748,8 @@ program mksurfdat
     call mkslp10(ldomain, mapfname=map_fslp10, datfname=mksrf_fslp10, ndiag=ndiag, slp10_o=slp10)
 
     call mkEROparams(ldomain, mapfname=map_fero, datfname=mksrf_fero, ndiag=ndiag, &
-         ero_c1_o=ero_c1, ero_c2_o=ero_c2, ero_c3_o=ero_c3)
+         ero_c1_o=ero_c1, ero_c2_o=ero_c2, ero_c3_o=ero_c3, tillage_o=tillage, &
+         litho_o=litho)
 
     do n = 1,ns_o
 
@@ -769,6 +776,8 @@ program mksurfdat
           ero_c1(n)        = 0._r8
           ero_c2(n)        = 0._r8
           ero_c3(n)        = 0._r8
+          tillage(n)       = 0._r8
+          litho(n)         = 0._r8
        else
           pftdata_mask(n) = 1
        end if
@@ -1063,6 +1072,12 @@ program mksurfdat
     call check_ret(nf_inq_varid(ncid, 'parEro_c3', varid), subname)
     call check_ret(nf_put_var_double(ncid, varid, ero_c3), subname)
 
+    call check_ret(nf_inq_varid(ncid, 'Tillage', varid), subname)
+    call check_ret(nf_put_var_double(ncid, varid, tillage), subname)
+
+    call check_ret(nf_inq_varid(ncid, 'Litho', varid), subname)
+    call check_ret(nf_put_var_double(ncid, varid, litho), subname)
+
     ! Deallocate arrays NOT needed for dynamic-pft section of code
 
     deallocate ( organic )
@@ -1080,7 +1095,8 @@ program mksurfdat
     deallocate ( lakedepth )
     deallocate ( f0, p3, zwt0 )
     deallocate ( apatiteP, labileP, occludedP, secondaryP )
-    deallocate ( grvl, slp10, ero_c1, ero_c2, ero_c3 )
+    deallocate ( grvl, slp10 )
+    deallocate ( ero_c1, ero_c2, ero_c3, tillage, litho )
 
     ! Synchronize the disk copy of a netCDF dataset with in-memory buffers
 

@@ -7,6 +7,9 @@
 #include "rrtmgp_const.h"
 #include "mo_fluxes_byband.h"
 
+using yakl::fortran::parallel_for;
+using yakl::fortran::SimpleBounds;
+
 // Prototypes
 extern "C" int get_nband_sw();
 extern "C" int get_nband_lw();
@@ -96,11 +99,11 @@ extern "C" int get_ngpt_lw() {
 }
 
 extern "C" double get_min_temperature() {
-    return min(k_dist_sw.temp_ref_min, k_dist_lw.temp_ref_min);
+    return std::min(k_dist_sw.temp_ref_min, k_dist_lw.temp_ref_min);
 }
 
 extern "C" double get_max_temperature() {
-    return max(k_dist_sw.temp_ref_max, k_dist_lw.temp_ref_max);
+    return std::max(k_dist_sw.temp_ref_max, k_dist_lw.temp_ref_max);
 }
 
 extern "C" void get_gpoint_bands_sw(int *gpoint_bands_p) {
@@ -129,6 +132,9 @@ extern "C" void rrtmgp_run_sw (
         double *clrsky_bnd_flux_up_p, double *clrsky_bnd_flux_dn_p, double *clrsky_bnd_flux_net_p, double *clrsky_bnd_flux_dn_dir_p,
         double tsi_scaling
         ) {
+
+    using yakl::fortran::parallel_for;
+    using yakl::fortran::Bounds;
 
     // Wrap pointers in YAKL arrays
     int nswbands = k_dist_sw.get_nband();
@@ -231,7 +237,7 @@ extern "C" void rrtmgp_run_sw (
     real2d tmp2d;
     tmp2d = real2d("tmp", ncol, nlay);
     for (int igas = 1; igas <= ngas; igas++) {
-        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+        parallel_for(SimpleBounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
             tmp2d(icol,ilay) = gas_vmr(igas,icol,ilay);
         });
         gas_concs.set_vmr(active_gases(igas), tmp2d);
@@ -246,7 +252,7 @@ extern "C" void rrtmgp_run_sw (
     k_dist_sw.gas_optics(ncol, nlay, top_at_1, pmid, pint, tmid, gas_concs, combined_optics, toa_flux);
 
     // Apply TOA flux scaling
-    parallel_for(Bounds<2>(nswgpts,ncol), YAKL_LAMBDA (int igpt, int icol) {
+    parallel_for(SimpleBounds<2>(nswgpts,ncol), YAKL_LAMBDA (int igpt, int icol) {
         toa_flux(icol, igpt) = tsi_scaling * toa_flux(icol, igpt);
     });
 
@@ -259,14 +265,14 @@ extern "C" void rrtmgp_run_sw (
     if (true) {
         aerosol_optics.alloc_2str(ncol, nlay, k_dist_sw);
         auto gpt_bnd = aerosol_optics.get_gpoint_bands();
-        parallel_for(Bounds<3>(nswgpts,nlay,ncol) , YAKL_LAMBDA (int igpt, int ilay, int icol) {
+        parallel_for(SimpleBounds<3>(nswgpts,nlay,ncol) , YAKL_LAMBDA (int igpt, int ilay, int icol) {
             aerosol_optics_tau(icol,ilay,igpt) = aer_tau_bnd(icol,ilay,gpt_bnd(igpt));
             aerosol_optics_ssa(icol,ilay,igpt) = aer_ssa_bnd(icol,ilay,gpt_bnd(igpt));
             aerosol_optics_g  (icol,ilay,igpt) = aer_asm_bnd(icol,ilay,gpt_bnd(igpt));
         });
     } else {
         aerosol_optics.alloc_2str(ncol, nlay, k_dist_sw.get_band_lims_wavenumber());
-        parallel_for(Bounds<3>(nswbands,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+        parallel_for(SimpleBounds<3>(nswbands,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
             aerosol_optics_tau(icol,ilay,ibnd) = aer_tau_bnd(icol,ilay,ibnd);
             aerosol_optics_ssa(icol,ilay,ibnd) = aer_ssa_bnd(icol,ilay,ibnd);
             aerosol_optics_g  (icol,ilay,ibnd) = aer_asm_bnd(icol,ilay,ibnd);
@@ -303,7 +309,7 @@ extern "C" void rrtmgp_run_sw (
     auto &cloud_optics_tau = cloud_optics.tau;
     auto &cloud_optics_ssa = cloud_optics.ssa;
     auto &cloud_optics_g   = cloud_optics.g  ;
-    parallel_for(Bounds<3>(nswgpts,nlay,ncol) , YAKL_LAMBDA (int igpt, int ilay, int icol) {
+    parallel_for(SimpleBounds<3>(nswgpts,nlay,ncol) , YAKL_LAMBDA (int igpt, int ilay, int icol) {
         cloud_optics_tau(icol,ilay,igpt) = cld_tau_gpt(icol,ilay,igpt);
         cloud_optics_ssa(icol,ilay,igpt) = cld_ssa_gpt(icol,ilay,igpt);
         cloud_optics_g  (icol,ilay,igpt) = cld_asm_gpt(icol,ilay,igpt);
@@ -379,6 +385,9 @@ extern "C" void rrtmgp_run_lw (
         double *clrsky_bnd_flux_up_p, double *clrsky_bnd_flux_dn_p, double *clrsky_bnd_flux_net_p
         ) {
 
+    using yakl::fortran::parallel_for;
+    using yakl::fortran::Bounds;
+
     // Wrap pointers in YAKL arrays
     int nlwbands = k_dist_lw.get_nband();
     int nlwgpts  = k_dist_lw.get_ngpt();
@@ -452,7 +461,7 @@ extern "C" void rrtmgp_run_lw (
     real2d tmp2d;
     tmp2d = real2d("tmp", ncol, nlay);
     for (int igas = 1; igas <= ngas; igas++) {
-        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+        parallel_for(SimpleBounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
             tmp2d(icol,ilay) = gas_vmr(igas,icol,ilay);
         });
         gas_concs.set_vmr(active_gases(igas), tmp2d);
@@ -467,16 +476,16 @@ extern "C" void rrtmgp_run_lw (
     //   after Abramowitz & Stegun 1972, page 921
     int constexpr max_gauss_pts = 4;
     realHost2d gauss_Ds_host ("gauss_Ds" ,max_gauss_pts,max_gauss_pts);
-    gauss_Ds_host(1,1) = 1.66_wp      ; gauss_Ds_host(2,1) =         0._wp; gauss_Ds_host(3,1) =         0._wp; gauss_Ds_host(4,1) =         0._wp;
-    gauss_Ds_host(1,2) = 1.18350343_wp; gauss_Ds_host(2,2) = 2.81649655_wp; gauss_Ds_host(3,2) =         0._wp; gauss_Ds_host(4,2) =         0._wp;
-    gauss_Ds_host(1,3) = 1.09719858_wp; gauss_Ds_host(2,3) = 1.69338507_wp; gauss_Ds_host(3,3) = 4.70941630_wp; gauss_Ds_host(4,3) =         0._wp;
-    gauss_Ds_host(1,4) = 1.06056257_wp; gauss_Ds_host(2,4) = 1.38282560_wp; gauss_Ds_host(3,4) = 2.40148179_wp; gauss_Ds_host(4,4) = 7.15513024_wp;
+    gauss_Ds_host(1,1) = 1.66      ; gauss_Ds_host(2,1) =         0.; gauss_Ds_host(3,1) =         0.; gauss_Ds_host(4,1) =         0.;
+    gauss_Ds_host(1,2) = 1.18350343; gauss_Ds_host(2,2) = 2.81649655; gauss_Ds_host(3,2) =         0.; gauss_Ds_host(4,2) =         0.;
+    gauss_Ds_host(1,3) = 1.09719858; gauss_Ds_host(2,3) = 1.69338507; gauss_Ds_host(3,3) = 4.70941630; gauss_Ds_host(4,3) =         0.;
+    gauss_Ds_host(1,4) = 1.06056257; gauss_Ds_host(2,4) = 1.38282560; gauss_Ds_host(3,4) = 2.40148179; gauss_Ds_host(4,4) = 7.15513024;
 
     realHost2d gauss_wts_host("gauss_wts",max_gauss_pts,max_gauss_pts);
-    gauss_wts_host(1,1) = 0.5_wp         ; gauss_wts_host(2,1) = 0._wp          ; gauss_wts_host(3,1) = 0._wp          ; gauss_wts_host(4,1) = 0._wp          ;
-    gauss_wts_host(1,2) = 0.3180413817_wp; gauss_wts_host(2,2) = 0.1819586183_wp; gauss_wts_host(3,2) = 0._wp          ; gauss_wts_host(4,2) = 0._wp          ;
-    gauss_wts_host(1,3) = 0.2009319137_wp; gauss_wts_host(2,3) = 0.2292411064_wp; gauss_wts_host(3,3) = 0.0698269799_wp; gauss_wts_host(4,3) = 0._wp          ;
-    gauss_wts_host(1,4) = 0.1355069134_wp; gauss_wts_host(2,4) = 0.2034645680_wp; gauss_wts_host(3,4) = 0.1298475476_wp; gauss_wts_host(4,4) = 0.0311809710_wp;
+    gauss_wts_host(1,1) = 0.5         ; gauss_wts_host(2,1) = 0.          ; gauss_wts_host(3,1) = 0.          ; gauss_wts_host(4,1) = 0.          ;
+    gauss_wts_host(1,2) = 0.3180413817; gauss_wts_host(2,2) = 0.1819586183; gauss_wts_host(3,2) = 0.          ; gauss_wts_host(4,2) = 0.          ;
+    gauss_wts_host(1,3) = 0.2009319137; gauss_wts_host(2,3) = 0.2292411064; gauss_wts_host(3,3) = 0.0698269799; gauss_wts_host(4,3) = 0.          ;
+    gauss_wts_host(1,4) = 0.1355069134; gauss_wts_host(2,4) = 0.2034645680; gauss_wts_host(3,4) = 0.1298475476; gauss_wts_host(4,4) = 0.0311809710;
 
     real2d gauss_Ds ("gauss_Ds" ,max_gauss_pts,max_gauss_pts);
     real2d gauss_wts("gauss_wts",max_gauss_pts,max_gauss_pts);
@@ -488,7 +497,7 @@ extern "C" void rrtmgp_run_lw (
     combined_optics.alloc_1scl(ncol, nlay, k_dist_lw);
     bool top_at_1 = pmid_host(1, 1) < pmid_host (1, 2);
     real1d t_sfc("t_sfc", ncol);
-    parallel_for(Bounds<1>(ncol), YAKL_LAMBDA (int icol) {
+    parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA (int icol) {
         t_sfc(icol) = tint(icol,nlay+1);
     });
     k_dist_lw.gas_optics(ncol, nlay, top_at_1, pmid, pint, tmid, t_sfc, gas_concs, combined_optics, lw_sources, real2d(), tint);
@@ -501,12 +510,12 @@ extern "C" void rrtmgp_run_lw (
     if (false) {
         aerosol_optics.alloc_1scl(ncol, nlay, k_dist_lw);
         auto gpt_bnd = aerosol_optics.get_gpoint_bands();
-        parallel_for(Bounds<3>(nlwgpts,nlay,ncol) , YAKL_LAMBDA (int igpt, int ilay, int icol) {
+        parallel_for(SimpleBounds<3>(nlwgpts,nlay,ncol) , YAKL_LAMBDA (int igpt, int ilay, int icol) {
             aerosol_optics_tau(icol,ilay,igpt) = aer_tau_bnd(icol,ilay,gpt_bnd(igpt));
         });
     } else {
         aerosol_optics.alloc_1scl(ncol, nlay, k_dist_lw.get_band_lims_wavenumber());
-        parallel_for(Bounds<3>(nlwbands,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+        parallel_for(SimpleBounds<3>(nlwbands,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
             aerosol_optics_tau(icol,ilay,ibnd) = aer_tau_bnd(icol,ilay,ibnd);
         });
     }
@@ -534,7 +543,7 @@ extern "C" void rrtmgp_run_lw (
     OpticalProps1scl cloud_optics;
     cloud_optics.alloc_1scl(ncol, nlay, k_dist_lw);
     auto &cloud_optics_tau = cloud_optics.tau;
-    parallel_for(Bounds<3>(nlwgpts,nlay,ncol) , YAKL_LAMBDA (int igpt, int ilay, int icol) {
+    parallel_for(SimpleBounds<3>(nlwgpts,nlay,ncol) , YAKL_LAMBDA (int igpt, int ilay, int icol) {
         cloud_optics_tau(icol,ilay,igpt) = cld_tau_gpt(icol,ilay,igpt);
     });
     cloud_optics.increment(combined_optics);

@@ -7,7 +7,6 @@ macro(sweqx_setup)
 SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/sweqx)
 SET(SRC_BASE          ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE         ${HOMME_SOURCE_DIR}/src/share)
-SET(SRC_UTILS         ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(UTILS_TIMING_DIR  ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 
 # Find F90 files in target directory
@@ -67,13 +66,6 @@ SET(SWEQX_SRCS
   ${SRC_SHARE}/time_mod.F90
   ${SRC_SHARE}/unit_tests_mod.F90
   ${SRC_SHARE}/viscosity_base.F90
-  ${SRC_UTILS}/shr_file_mod.F90
-  ${SRC_UTILS}/shr_kind_mod.F90
-  ${SRC_UTILS}/shr_mpi_mod.F90
-  ${SRC_UTILS}/shr_sys_mod.F90
-  ${SRC_UTILS}/shr_vmath_mod.F90
-  ${SRC_UTILS}/shr_const_mod.F90
-  ${SRC_UTILS}/shr_spfn_mod.F90
 )
 
 SET(EXEC_SOURCES ${SWEQX_SRCS} )

@@ -128,6 +128,7 @@ module elm_driver
   use elm_instMod            , only : chemstate_vars
   use elm_instMod            , only : alm_fates
   use elm_instMod            , only : PlantMicKinetics_vars
+  use elm_instMod            , only : sedflux_vars
   use tracer_varcon          , only : is_active_betr_bgc
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetr, CNFluxStateBetrSummary
   use UrbanParamsType        , only : urbanparams_vars
@@ -199,7 +200,9 @@ contains
     ! the calling tree is given in the description of this module.
     !
     ! !USES:
-    !
+     use elm_varctl           , only : fates_spitfire_mode
+     use FATESFireFactoryMod  , only : scalar_lightning
+     
     ! !ARGUMENTS:
     implicit none
     logical ,        intent(in) :: doalb       ! true if time for surface albedo calc
@@ -261,27 +264,38 @@ contains
     ! Specified phenology
     ! ============================================================================
 
-    if (.not.use_fates) then
-       if (use_cn) then
-          ! For dry-deposition need to call CLMSP so that mlaidiff is obtained
-          if ( n_drydep > 0 .and. drydep_method == DD_XLND ) then
-             call t_startf('interpMonthlyVeg')
-             call interpMonthlyVeg(bounds_proc, canopystate_vars)
-             call t_stopf('interpMonthlyVeg')
-          endif
+    if (use_cn) then
+       ! For dry-deposition need to call CLMSP so that mlaidiff is obtained
+       if ( n_drydep > 0 .and. drydep_method == DD_XLND ) then
+          call t_startf('interpMonthlyVeg')
+          call interpMonthlyVeg(bounds_proc, canopystate_vars)
+          call t_stopf('interpMonthlyVeg')
+       endif
 
-       else
-          ! Determine weights for time interpolation of monthly vegetation data.
-          ! This also determines whether it is time to read new monthly vegetation and
-          ! obtain updated leaf area index [mlai1,mlai2], stem area index [msai1,msai2],
-          ! vegetation top [mhvt1,mhvt2] and vegetation bottom [mhvb1,mhvb2]. The
-          ! weights obtained here are used in subroutine SatellitePhenology to obtain time
-          ! interpolated values.
-          if (doalb .or. ( n_drydep > 0 .and. drydep_method == DD_XLND ) .or. use_fates_sp) then
-             call t_startf('interpMonthlyVeg')
-             call interpMonthlyVeg(bounds_proc, canopystate_vars)
-             call t_stopf('interpMonthlyVeg')
-          end if
+    elseif(use_fates) then
+       if(use_fates_sp) then
+       
+          ! For FATES satellite phenology mode interpolate the weights for
+          ! time-interpolation of monthly vegetation data (as in SP mode below)
+          ! Also for FATES with dry-deposition as above need to call CLMSP so that mlaidiff is obtained
+          !if ( use_fates_sp .or. (n_drydep > 0 .and. drydep_method == DD_XLND ) ) then
+          ! Replace with this when we have dry-deposition working
+          ! For now don't allow for dry-deposition because of issues in #1044 EBK Jun/17/2022
+          call t_startf('interpMonthlyVeg')
+          call interpMonthlyVeg(bounds_proc, canopystate_vars)
+          call t_stopf('interpMonthlyVeg')
+       end if
+    else
+       ! Determine weights for time interpolation of monthly vegetation data.
+       ! This also determines whether it is time to read new monthly vegetation and
+       ! obtain updated leaf area index [mlai1,mlai2], stem area index [msai1,msai2],
+       ! vegetation top [mhvt1,mhvt2] and vegetation bottom [mhvb1,mhvb2]. The
+       ! weights obtained here are used in subroutine SatellitePhenology to obtain time
+       ! interpolated values.
+       if (doalb .or. ( n_drydep > 0 .and. drydep_method == DD_XLND )) then
+          call t_startf('interpMonthlyVeg')
+          call interpMonthlyVeg(bounds_proc, canopystate_vars)
+          call t_stopf('interpMonthlyVeg')
        end if
     end if
 
@@ -605,6 +619,12 @@ contains
        call t_startf('fireinterp')
        call FireInterp(bounds_proc)
        call t_stopf('fireinterp')
+    elseif (use_fates) then
+       ! fates_spitfire_mode is assigned an integer value in the namelist
+       ! see bld/namelist_files/namelist_definition.xml for details
+       if (fates_spitfire_mode > scalar_lightning) then
+          call alm_fates%InterpFileInputs(bounds_proc)
+       end if
     end if
 
     if (use_cn .or. use_fates) then
@@ -864,7 +884,7 @@ contains
             filter(nc)%num_urbanc, filter(nc)%urbanc,                        &
             filter(nc)%num_snowc, filter(nc)%snowc,                          &
             filter(nc)%num_nosnowc, filter(nc)%nosnowc,canopystate_vars,     &
-            atm2lnd_vars, soilstate_vars, energyflux_vars,  &
+            atm2lnd_vars, lnd2atm_vars, soilstate_vars, energyflux_vars,     &
             soilhydrology_vars, aerosol_vars )
 
        !  Calculate column-integrated aerosol masses, and
@@ -946,7 +966,7 @@ contains
        ! Update sediment fluxes from land unit
        ! ============================================================================
 
-       if (use_erosion) then
+       if (use_cn .and. use_erosion) then
           call t_startf('erosion')
           call SoilErosion(bounds_clump, filter(nc)%num_soilc, filter(nc)%soilc, &
                canopystate_vars, cnstate_vars, soilstate_vars, sedflux_vars)
@@ -1097,21 +1117,20 @@ contains
                     filter(nc)%num_soilp, filter(nc)%soilp, &
                     cnstate_vars)
              end if
-          else ! not use_cn
-
-             if (.not.use_fates_sp .and. doalb) then
+             
+             if (use_fates_sp) then
+               call SatellitePhenology(bounds_clump,               &
+               filter_inactive_and_active(nc)%num_soilp, filter_inactive_and_active(nc)%soilp,    &
+               waterstate_vars, canopystate_vars)
+             endif
+             
+          else ! not ( if-use_cn   or if-use_fates)
+             if (doalb) then
                 ! Prescribed biogeography - prescribed canopy structure, some prognostic carbon fluxes
                 call SatellitePhenology(bounds_clump,               &
                      filter(nc)%num_nolakep, filter(nc)%nolakep,    &
                      waterstate_vars, canopystate_vars)
              end if
-
-             if (use_fates_sp .and. doalb) then
-               call SatellitePhenology(bounds_clump,               &
-               filter_inactive_and_active(nc)%num_soilp, filter_inactive_and_active(nc)%soilp,    &
-               waterstate_vars, canopystate_vars)
-             endif
-
           end if  ! end of if-use_cn   or if-use_fates
        end if ! end of is_active_betr_bgc
 
@@ -1367,10 +1386,11 @@ contains
     endif
 
     call t_startf('lnd2atm')
-    call lnd2atm(bounds_proc,       &
-         atm2lnd_vars, surfalb_vars, frictionvel_vars,    &
-         energyflux_vars, solarabs_vars, drydepvel_vars,  &
-         vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars)
+    call lnd2atm(bounds_proc,                                   &
+         atm2lnd_vars, surfalb_vars, frictionvel_vars,          &
+         energyflux_vars, solarabs_vars, drydepvel_vars,        &
+         vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, &
+         sedflux_vars, lnd2atm_vars)
     call t_stopf('lnd2atm')
 
     ! ============================================================================
@@ -1425,6 +1445,10 @@ contains
        end if
 
        call cnstate_vars%UpdateAccVars(bounds_proc)
+       
+       if(use_fates) then
+          call alm_fates%UpdateAccVars(bounds_proc)
+       end if
 
        call t_stopf('accum')
 

@@ -164,7 +164,7 @@ contains
          combined_tau_ssa = cld_tau_ssa
          combined_tau_ssa_g = cld_tau_ssa_g
       end if
-      
+
       ! Copy to output arrays, converting to optical depth, single scattering
       ! albedo, and assymmetry parameter from the products that the CAM routines
       ! return. Make sure we do not try to divide by zero...
