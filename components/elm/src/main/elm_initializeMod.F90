@@ -652,7 +652,7 @@ contains
       call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, col_ws, betr_namelist_buffer, masterproc)
       is_active_betr_bgc = ep_betr%do_soibgc()
     else
-      allocate(ep_betr, source=create_betr_simulation_elm())
+      nullify(ep_betr)
     endif
 
     call SnowOptics_init( ) ! SNICAR optical parameters:
