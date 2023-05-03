@@ -77,7 +77,8 @@ contains
 
    subroutine ocn_vel_forcing_tend(normalVelocity, sfcFlxAttCoeff, &
                                    surfaceStress, kineticEnergyCell, &
-                                   layerThickEdgeMean, tend, err)!{{{
+                                   layerThickEdgeDrag, layerThickEdgeMean, &
+                                   tend, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -86,6 +87,7 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalVelocity,    &!< [in] Normal velocity at edges
          kineticEnergyCell, &!< [in] kinetic energy at cell
+         layerThickEdgeDrag,&!< [in] mean thickness at edge to use for drag
          layerThickEdgeMean  !< [in] mean thickness at edge
 
       real (kind=RKIND), dimension(:), intent(in) :: &
@@ -124,7 +126,7 @@ contains
       err = ior(err, err1)
 
       call ocn_vel_forcing_explicit_bottom_drag_tend(normalVelocity, &
-                   kineticEnergyCell, layerThickEdgeMean, tend, err1)
+                   kineticEnergyCell, layerThickEdgeDrag, tend, err1)
       err = ior(err, err1)
 
       call ocn_vel_forcing_topographic_wave_drag_tend(normalVelocity, &

@@ -1802,6 +1802,14 @@ Valid values: O(1)
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_thickness_drag_type" type="char*1024"
+	category="bottom_drag" group="bottom_drag">
+The type of layerThickness averaging to use on the drag term. The standard MPAS-O approach is 'centered'.
+
+Valid values: 'harmonic-mean', 'centered'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- ocean_constants -->
 

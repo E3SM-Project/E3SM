@@ -64,6 +64,12 @@ module ocn_vmix
    !
    !--------------------------------------------------------------------
 
+   integer :: &
+      thickEdgeDragChoice   ! choice of thickness drag type
+   integer, parameter :: &
+      thickEdgeDragCenter  = 1, &! use mean thickness of cell neighbors
+      thickEdgeDragHarMean = 2   ! use harmonic mean cell thickness at edge
+
    logical :: velVmixOn, tracerVmixOn
    real (kind=RKIND) :: implicitBottomDragCoef, implicitTopDragCoef
 
@@ -226,7 +232,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_vmix_tend_implicit_rayleigh(dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, & !{{{
-                                                  layerThickEdgeMean, normalVelocity, err)
+                                                  layerThickEdgeDrag, layerThickEdgeMean, normalVelocity, err)
 
       !-----------------------------------------------------------------
       !
@@ -247,7 +253,8 @@ contains
          layerThickness !< Input: thickness at cell center
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThickEdgeMean !< Input: mean thickness at edge
+         layerThickEdgeDrag, &!< Input: thickness at edge for drag
+         layerThickEdgeMean   !< Input: mean thickness at edge
 
       !-----------------------------------------------------------------
       !
@@ -305,14 +312,14 @@ contains
          cell2 = cellsOnEdge(2,iEdge)
          edgeThicknessTotal = 0.0_RKIND
          do k = Nsurf, N
-            edgeThicknessTotal = edgeThicknessTotal + layerThickEdgeMean(k,iEdge)
+            edgeThicknessTotal = edgeThicknessTotal + layerThickEdgeDrag(k,iEdge)
          enddo
 
          ! one active layer
          if (N .eq. Nsurf) then
            normalVelocity(N,iEdge) = normalVelocity(N,iEdge) &
                / (1.0_RKIND + dt*implicitBottomDragCoef &
-               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
+               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) &
                ! added Rayleigh terms
                + dt*(rayleighBottomDampingCoef + rayleighDampingCoef &
                / ((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal)))
@@ -353,7 +360,7 @@ contains
            ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
            normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
                / (1.0_RKIND - A + dt*implicitBottomDragCoef &
-               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
+               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) &
                ! added Rayleigh terms
                + dt*(rayleighBottomDampingCoef + rayleighDampingCoef &
                / ((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal)) &
@@ -397,7 +404,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_vmix_tend_implicit(dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, & !{{{
-                                         layerThickEdgeMean, landIceEdgeFraction, normalVelocity, err)
+                                         layerThickEdgeDrag, layerThickEdgeMean, &
+                                         landIceEdgeFraction, normalVelocity, err)
 
       !-----------------------------------------------------------------
       !
@@ -418,7 +426,8 @@ contains
          layerThickness !< Input: thickness at cell center
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThickEdgeMean !< Input: mean thickness at edge
+         layerThickEdgeDrag, &!< Input: mean thickness at edge
+         layerThickEdgeMean   !< Input: mean thickness at edge
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          landIceEdgeFraction !< Input: land ice fraction
@@ -461,8 +470,8 @@ contains
       !$acc enter data create(bTemp, C, rTemp)
 
       !$acc parallel loop present(maxLevelEdgeTop, minLevelEdgeBot, cellsOnEdge, &
-      !$acc    layerThickEdgeMean, layerThickness, vertViscTopOfEdge, normalVelocity, &
-      !$acc    landIceEdgeFraction, kineticEnergyCell) &
+      !$acc    layerThickEdgeDrag, layerThickEdgeMean, layerThickness, vertViscTopOfEdge, &
+      !$acc    normalVelocity, landIceEdgeFraction, kineticEnergyCell) &
       !$acc    private(Nsurf, N, cell1, cell2, A, bTemp, C, m, rTemp, k)
 #else
       !$omp parallel
@@ -480,7 +489,7 @@ contains
          if (N .eq. Nsurf) then
             normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
                 / (1.0_RKIND + dt*(implicitTopDragCoef * landIceEdgeFraction(iEdge) + implicitBottomDragCoef) &
-                   * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) )
+                   * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
          else
 
            ! tridiagonal matrix algorithm
@@ -516,7 +525,7 @@ contains
            ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
            normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
                / (1.0_RKIND - A + dt*implicitBottomDragCoef &
-               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
+               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) &
                - m*C(N-1))
            ! second pass: back substitution
            do k = N-1, Nsurf, -1
@@ -561,7 +570,7 @@ contains
 
    subroutine ocn_vel_vmix_tend_implicit_spatially_variable(bottomDrag, dt, kineticEnergyCell, & !{{{
                                          vertViscTopOfEdge, layerThickness, &
-                                         layerThickEdgeMean, normalVelocity, err)
+                                         layerThickEdgeDrag, layerThickEdgeMean, normalVelocity, err)
 
       !-----------------------------------------------------------------
       !
@@ -582,7 +591,8 @@ contains
          layerThickness !< Input: thickness at cell center
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThickEdgeMean !< Input: mean thickness at edge
+         layerThickEdgeDrag, &!< Input: thickness at edge for drag
+         layerThickEdgeMean   !< Input: mean thickness at edge
 
        real (kind=RKIND), dimension(:), intent(in) :: &
          bottomDrag !< Input: bottomDrag at cell centeres
@@ -647,7 +657,7 @@ contains
          if (N .eq. Nsurf) then
             normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
                 / (1.0_RKIND + dt*implicitCD &
-                   * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) )
+                   * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
          else
 
            ! tridiagonal matrix algorithm
@@ -680,7 +690,7 @@ contains
            ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
            normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
                / (1.0_RKIND - A + dt*implicitCD &
-               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
+               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) &
                - m*C(N-1))
            ! second pass: back substitution
            do k = N-1, Nsurf, -1
@@ -725,7 +735,7 @@ contains
 
    subroutine ocn_vel_vmix_tend_implicit_spatially_variable_mannings(forcingPool, bottomDrag, dt, & !{{{
                                          kineticEnergyCell, vertViscTopOfEdge, layerThickness, &
-                                         layerThickEdgeMean, normalVelocity, ssh, err)
+                                         layerThickEdgeDrag, layerThickEdgeMean, normalVelocity, ssh, err)
 
       !-----------------------------------------------------------------
       !
@@ -749,7 +759,8 @@ contains
          layerThickness !< Input: thickness at cell center
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThickEdgeMean !< Input: mean thickness at edge
+         layerThickEdgeDrag, &!< Input: thickness at edge for drag
+         layerThickEdgeMean   !< Input: mean thickness at edge
 
        real (kind=RKIND), dimension(:), intent(in) :: &
          bottomDrag !< Input: bottomDrag at cell centeres
@@ -780,7 +791,7 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iEdge, k, cell1, cell2, N, Nsurf
-      real (kind=RKIND) :: implicitCd
+      real (kind=RKIND) :: implicitCd, bottomDepthDrag, columnThicknessDrag
 
       real (kind=RKIND), dimension(:), allocatable :: bTemp, C, rTemp
       real (kind=RKIND) :: A, m
@@ -848,9 +859,10 @@ contains
       !$acc enter data create(vegetationManning)
 
       !$acc parallel loop present(maxLevelEdgeTop, minLevelEdgeBot, cellsOnEdge, &
-      !$acc    layerThickEdgeMean, layerThickness, vertViscTopOfEdge, normalVelocity, &
+      !$acc    layerThickEdgeDrag, layerThickEdgeMean, layerThickness, vertViscTopOfEdge, normalVelocity, &
       !$acc    kineticEnergyCell, bottomDrag, vegetationManning, ssh, bottomDepth) &
-      !$acc    private(Nsurf, N, cell1, cell2, implicitCd, A, bTemp, C, m, rTemp, k)
+      !$acc    private(Nsurf, N, cell1, cell2, implicitCd, A, bTemp, C, m, rTemp, k, &
+      !$acc    bottomDepthDrag, columnThicknessDrag)
 #else
       !$omp do schedule(runtime)
 #endif
@@ -863,6 +875,18 @@ contains
          cell2 = cellsOnEdge(2,iEdge)
 
          ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
+         if (thickEdgeDragChoice == thickEdgeDragHarMean) then
+           bottomDepthDrag = 2.0_RKIND * bottomDepth(cell1) * bottomDepth(cell2) / &
+                                 (bottomDepth(cell1) + bottomDepth(cell2))
+           columnThicknessDrag = 2.0_RKIND * (ssh(cell1) + bottomDepth(cell1)) * &
+                                             (ssh(cell2) + bottomDepth(cell2)) / &
+                                 (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
+         else
+           bottomDepthDrag = 0.5_RKIND * (bottomDepth(cell1) + bottomDepth(cell2))
+           columnThicknessDrag = 0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
+         endif
+
+         ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
          if (dragType == dragTypeLogLaw) then
            ! NCOM's formula for bottom drag coefficient
            ! The original formula is cb(i,j) = max(cbmin, (vonk/log(0.5*depth(i,j)/z0))**2 ))
@@ -871,20 +895,20 @@ contains
            ! averaging the two bottomDepth cells.
            implicitCd = max(0.0025_RKIND, &
                         min(0.1_RKIND, &
-                          0.16_RKIND/(log(250.0_RKIND*(bottomDepth(cell1)+bottomDepth(cell2))))**2 ))
+                            0.16_RKIND/(log(500.0_RKIND*bottomDepthDrag))**2 ))
          elseif (dragType == dragTypeMannings .AND. config_use_vegetation_drag) then
            implicitCd = gravity*(0.5_RKIND*(vegetationManning(cell1) + vegetationManning(cell2)))**2 * &
-            (0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2)))**(-1.0_RKIND/3.0_RKIND)
+                        columnThicknessDrag**(-1.0_RKIND/3.0_RKIND)
          else
            implicitCd = gravity*(0.5_RKIND*(bottomDrag(cell1) + bottomDrag(cell2)))**2 * &
-            (0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2)))**(-1.0_RKIND/3.0_RKIND)
+                        columnThicknessDrag**(-1.0_RKIND/3.0_RKIND)
          endif
 
          ! one active layer
          if (N .eq. Nsurf) then
            normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
                 / (1.0_RKIND + dt*implicitCD &
-                   * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) )
+                   * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
          else
 
            ! tridiagonal matrix algorithm
@@ -917,7 +941,7 @@ contains
            ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
            normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
                / (1.0_RKIND - A + dt*implicitCD &
-               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
+               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) &
                - m*C(N-1))
            ! second pass: back substitution
            do k = N-1, Nsurf, -1
@@ -1298,34 +1322,35 @@ contains
       case (dragTypeConst)
 
         call ocn_vel_vmix_tend_implicit(dt, kineticEnergyCell, &
-          vertViscTopOfEdge, layerThickness, layerThickEdgeMean, &
+          vertViscTopOfEdge, layerThickness, layerThickEdgeDrag, layerThickEdgeMean, &
           landIceEdgeFraction, normalVelocity, err)
 
       case (dragTypeRayleigh)
 
         call ocn_vel_vmix_tend_implicit_rayleigh(dt, kineticEnergyCell, &
-          vertViscTopOfEdge, layerThickness, layerThickEdgeMean, normalVelocity, err)
+          vertViscTopOfEdge, layerThickness, layerThickEdgeDrag, layerThickEdgeMean, &
+          normalVelocity, err)
 
       case (dragTypeLogLaw)
 
         call ocn_vel_vmix_tend_implicit_spatially_variable_mannings(forcingPool, bottomDrag, &
-          dt, kineticEnergyCell, &
-          vertViscTopOfEdge, layerThickness, layerThickEdgeMean, normalVelocity, &
-          ssh, err)
+          dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, layerThickEdgeDrag, &
+          layerThickEdgeMean, normalVelocity, ssh, err)
 
       case (dragTypeVariable)
 
         call ocn_vel_vmix_tend_implicit_spatially_variable(bottomDrag, dt, kineticEnergyCell, &
-          vertViscTopOfEdge, layerThickness, layerThickEdgeMean, normalVelocity, err)
+          vertViscTopOfEdge, layerThickness, layerThickEdgeDrag, layerThickEdgeMean, &
+          normalVelocity, err)
 
       case (dragTypeMannings)
 
         call ocn_vel_vmix_tend_implicit_spatially_variable_mannings(forcingPool, bottomDrag, &
-          dt, kineticEnergyCell, &
-          vertViscTopOfEdge, layerThickness, layerThickEdgeMean, normalVelocity, &
-          ssh, err)
+          dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, layerThickEdgeDrag, &
+          layerThickEdgeMean, normalVelocity, ssh, err)
 
       end select
+
 #ifdef MPAS_OPENACC
       !$acc exit data copyout(normalVelocity)
 #endif
@@ -1465,6 +1490,12 @@ contains
       err = 0
 
       dragType = dragTypeNone
+
+      if (trim(config_thickness_drag_type) == 'harmonic-mean') then
+         thickEdgeDragChoice = thickEdgeDragHarMean
+      else
+         thickEdgeDragChoice = thickEdgeDragCenter
+      endif
 
       implicitBottomDragCoef = 0.0_RKIND
       implicitTopDragCoef = 0.0_RKIND
