@@ -1496,6 +1496,11 @@ end function chem_is_active
 !-----------------------------------------------------------------------
 ! get tropopause level
 !-----------------------------------------------------------------------
+
+! initialize tropospheric level flags
+    tropFlag = .false.
+    tropFlagInt = 0._r8
+
     e90_ndx = get_spc_ndx('E90')
     if (e90_ndx <= 0) then
       call tropopause_find(state, tropLev, primary=TROP_ALG_HYBSTOB, backup=TROP_ALG_CLIMATE)
