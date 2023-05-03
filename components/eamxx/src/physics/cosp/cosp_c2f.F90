@@ -40,8 +40,8 @@ module cosp_c2f
 
   ! Local variables; control what runs and what does not
   logical :: &
-       lsingle     = .true.,  & ! True if using MMF_v3_single_moment CLOUDSAT microphysical scheme (default)
-       ldouble     = .false., & ! True if using MMF_v3.5_two_moment CLOUDSAT microphysical scheme
+       lsingle     = .false.,  & ! True if using MMF_v3_single_moment CLOUDSAT microphysical scheme (default)
+       ldouble     = .true., & ! True if using MMF_v3.5_two_moment CLOUDSAT microphysical scheme
        lisccp      = .true. , & ! Local on/off switch for simulators (used by initialization)
        lmodis      = .false., & !
        lmisr       = .false., & !
@@ -164,6 +164,35 @@ module cosp_c2f
          Lwr_occfreq         = .false., & ! CloudSat+MODIS joint diagnostics
          Lcfodd              = .false.    ! CloudSat+MODIS joint diagnostics
  
+  ! Input namelist fields (hard-code these)
+  integer, parameter :: rttov_Nchannels = 3
+  real(wp), dimension(rttov_Nchannels) :: rttov_surfem = (/0.0, 0.0, 0.0/)
+  integer ::                          & !
+       !Nlvgrid = 40,                  & ! Number of vertical levels for statistical outputs (USE_VGRID=.true.)
+       surface_radar = 0,             & ! surface=1/spaceborne=0
+       cloudsat_use_gas_abs = 1,      & ! Include gaseous absorption (1=yes/0=no)
+       cloudsat_do_ray = 0,           & ! Calculate output Rayleigh (1=yes/0=no)
+       lidar_ice_type = 0,            & ! Ice particle shape in lidar calculations (0=ice-spheres/1=ice-non-spherical)
+       overlap = 3,                   & ! Overlap type: 1=max, 2=rand, 3=max/rand
+       isccp_topheight = 1,           & ! ISCCP cloud top height
+       isccp_topheight_direction = 2, & ! ISCCP cloud top height direction
+       rttov_platform = 1,            & ! RTTOV: Satellite platform
+       rttov_satellite = 15,          & ! RTTOV: Satellite
+       rttov_instrument = 5,          & ! RTTOV: Instrument
+       rttov_channels(rttov_Nchannels) = (/1, 2, 3/)  ! RTTOV: Number of channels to be computed
+  real(wp) ::                         & !
+       cloudsat_radar_freq = 94.0,    & ! CloudSat radar frequency (GHz)
+       cloudsat_k2 = -1,              & ! |K|^2, -1=use frequency dependent default
+       rttov_ZenAng = 50.0,           & ! RTTOV: Satellite Zenith Angle
+       co2 = 5.241e-04,               & ! CO2 mixing ratio
+       ch4 = 9.139e-07,               & ! CH4 mixing ratio
+       n2o = 4.665e-07,               & ! n2o mixing ratio
+       co  = 2.098e-07                  ! co mixing ratio
+  logical ::                              & !
+       use_vgrid = .true.,                & ! Use fixed vertical grid for outputs?
+       csat_vgrid = .true.,               & ! CloudSat vertical grid?
+       use_precipitation_fluxes = .false.   ! True if precipitation fluxes are input to the algorithm
+
   ! These only need to be allocated once, so we let them persist as module data
   type(size_distribution) :: sd
   type(radar_cfg) :: rcfg_cloudsat
@@ -171,26 +200,123 @@ module cosp_c2f
   type(cosp_optical_inputs) :: cospIN
   type(cosp_column_inputs) :: cospstateIn
 
-  integer, parameter :: rttov_Nchannels = 1
+
+  ! Indices to address arrays of LS and CONV hydrometeors
+  integer,parameter :: &
+       I_LSCLIQ = 1, & ! Large-scale (stratiform) liquid
+       I_LSCICE = 2, & ! Large-scale (stratiform) ice
+       I_LSRAIN = 3, & ! Large-scale (stratiform) rain
+       I_LSSNOW = 4, & ! Large-scale (stratiform) snow
+       I_CVCLIQ = 5, & ! Convective liquid
+       I_CVCICE = 6, & ! Convective ice
+       I_CVRAIN = 7, & ! Convective rain
+       I_CVSNOW = 8, & ! Convective snow
+       I_LSGRPL = 9    ! Large-scale (stratiform) groupel
+
+  ! Stratiform and convective clouds in frac_out (scops output).
+  integer, parameter :: &
+       I_LSC = 1, & ! Large-scale clouds
+       I_CVC = 2    ! Convective clouds
+
+  ! Microphysical settings for the precipitation flux to mixing ratio conversion
+  real(wp),parameter,dimension(N_HYDRO) :: &
+                 ! LSL   LSI      LSR       LSS   CVL  CVI      CVR       CVS       LSG
+       N_ax    = (/-1., -1.,     8.e6,     3.e6, -1., -1.,     8.e6,     3.e6,     4.e6/),&
+       N_bx    = (/-1., -1.,      0.0,      0.0, -1., -1.,      0.0,      0.0,      0.0/),&
+       alpha_x = (/-1., -1.,      0.0,      0.0, -1., -1.,      0.0,      0.0,      0.0/),&
+       c_x     = (/-1., -1.,    842.0,     4.84, -1., -1.,    842.0,     4.84,     94.5/),&
+       d_x     = (/-1., -1.,      0.8,     0.25, -1., -1.,      0.8,     0.25,      0.5/),&
+       g_x     = (/-1., -1.,      0.5,      0.5, -1., -1.,      0.5,      0.5,      0.5/),&
+       a_x     = (/-1., -1.,    524.0,    52.36, -1., -1.,    524.0,    52.36,   209.44/),&
+       b_x     = (/-1., -1.,      3.0,      3.0, -1., -1.,      3.0,      3.0,      3.0/),&
+       gamma_1 = (/-1., -1., 17.83725, 8.284701, -1., -1., 17.83725, 8.284701, 11.63230/),&
+       gamma_2 = (/-1., -1.,      6.0,      6.0, -1., -1.,      6.0,      6.0,      6.0/),&
+       gamma_3 = (/-1., -1.,      2.0,      2.0, -1., -1.,      2.0,      2.0,      2.0/),&
+       gamma_4 = (/-1., -1.,      6.0,      6.0, -1., -1.,      6.0,      6.0,      6.0/)
+
+  character(len=64) :: cloudsat_micro_scheme = 'MMF_v3.5_two_moment'
 
 contains
 
-  subroutine cosp_c2f_init(npoints, ncolumns, nlevels) bind(c, name='cosp_c3f_init')
-    integer(kind=c_int), intent(in) :: npoints, ncolumns, nlevels
+  subroutine cosp_c2f_init(npoints, ncolumns, nlevels) bind(c, name='cosp_c2f_init')
+    integer(kind=c_int), value, intent(in) :: npoints, ncolumns, nlevels
     ! Initialize/allocate COSP input and output derived types
+    nlvgrid = 40
     call construct_cospIN(npoints,ncolumns,nlevels,cospIN)
-    call construct_cospstatein(npoints,nlevels,rttov_nchannels,cospstatein)
-    call construct_cosp_outputs(npoints, ncolumns, nlevels, nlvgrid, rttov_nchannels, cospout)
+    call construct_cospstatein(npoints,nlevels,rttov_nchannels,cospstateIN)
+    call construct_cosp_outputs(npoints, ncolumns, nlevels, nlvgrid, rttov_nchannels, cospOUT)
+
+    ! Initialize quickbeam_optics, also if two-moment radar microphysics scheme is wanted...
+    if (cloudsat_micro_scheme == 'MMF_v3.5_two_moment')  then
+       ldouble = .true.
+       lsingle = .false.
+    endif
+    call quickbeam_optics_init()
+
+    ! Initialize the distributional parameters for hydrometeors in radar simulator
+    call hydro_class_init(lsingle,ldouble,sd)
+
+    ! Initialize COSP simulator
+    call COSP_INIT(Lisccp, Lmodis, Lmisr, Lcloudsat, Lcalipso, LgrLidar532, Latlid,        &
+         Lparasol, Lrttov,                                                                 &
+         cloudsat_radar_freq, cloudsat_k2, cloudsat_use_gas_abs,                           &
+         cloudsat_do_ray, isccp_topheight, isccp_topheight_direction, surface_radar,       &
+         rcfg_cloudsat, use_vgrid, csat_vgrid, Nlvgrid, Nlevels, cloudsat_micro_scheme)
   end subroutine cosp_c2f_init 
 
-  subroutine cosp_c2f_run() bind(C, name='cosp_c2f_run')
+  subroutine cosp_c2f_run(npoints, ncolumns, nlevels, emsfc_lw, &
+       sunlit, skt, T_mid, p_mid, p_int, qv, &
+       cldfrac, reff_qc, reff_qi, dtau067, dtau105, isccp_cldtot &
+       ) bind(C, name='cosp_c2f_run')
+    integer(kind=c_int), value, intent(in) :: npoints, ncolumns, nlevels
+    real(kind=c_double), value, intent(in) :: emsfc_lw
+    real(kind=c_double), intent(in), dimension(npoints) :: sunlit, skt
+    real(kind=c_double), intent(in), dimension(npoints,nlevels) :: T_mid, p_mid, qv, cldfrac, reff_qc, reff_qi, dtau067, dtau105
+    real(kind=c_double), intent(in), dimension(npoints,nlevels+1) :: p_int
+    real(kind=c_double), intent(inout), dimension(npoints) :: isccp_cldtot
     ! Takes normal arrays as input and populates COSP derived types
     character(len=256),dimension(100) :: cosp_status
     integer :: start_idx
     integer :: end_idx
+    start_idx = 1
+    end_idx = npoints
     ! Translate arrays to derived types
-    ! Call cosp
-    !cosp_status = COSP_SIMULATOR(cospIN, cospstateIN, cospOUT, start_idx, end_idx, .false.)
+    cospIN%emsfc_lw         = emsfc_lw
+    cospIN%rcfg_cloudsat    = rcfg_cloudsat
+!   cospstateIN%hgt_matrix  = zlev(start_idx:end_idx,Nlevels:1:-1) ! km
+    cospstateIN%sunlit      = sunlit(start_idx:end_idx)            ! 0-1
+    cospstateIN%skt         = skt(start_idx:end_idx)               ! K
+!   cospstateIN%surfelev    = surfelev(start_idx:end_idx)          ! m
+!   cospstateIN%land        = landmask(start_idx:end_idx)          ! 0-1 (*note* model specific)
+    cospstateIN%qv          = qv(start_idx:end_idx,1:Nlevels)   ! kg/kg
+    cospstateIN%at          = T_mid(start_idx:end_idx,1:Nlevels) !Nlevels:1:-1)    ! K
+    cospstateIN%pfull       = p_mid(start_idx:end_idx,1:Nlevels) !Nlevels:1:-1)    ! Pa
+    ! Pressure at interface (nlevels+1). Set uppermost interface to 0.
+    !cospstateIN%phalf(:,2:Nlevels+1) = p_int(start_idx:end_idx,Nlevels:1:-1)   ! Pa
+    cospstateIN%phalf(:,1:Nlevels+1) = p_int(start_idx:end_idx,1:Nlevels+1)   ! Pa
+    !cospstateIN%phalf(:,1)           = 0._wp
+!   ! Height of bottom interfaces of model layers (nlevels).
+!   ! cospstateIN%hgt_matrix_half(:,1) contains the bottom of the top layer.
+!   ! cospstateIN%hgt_matrix_half(:,Nlevels) contains the bottom of the surface layer.
+!   cospstateIN%hgt_matrix_half(:,1:Nlevels) = zlev_half(start_idx:end_idx,Nlevels:1:-1) ! km
+
+!   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!   ! Generate subcolumns and compute optical inputs.
+!   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!   call subsample_and_optics(nPtsPerIt,nLevels,nColumns,N_HYDRO,overlap,                     &
+!        use_vgrid,use_precipitation_fluxes,lidar_ice_type,sd,                                &
+!        tca(start_idx:end_idx,Nlevels:1:-1),cca(start_idx:end_idx,Nlevels:1:-1),             &
+!        fl_lsrain(start_idx:end_idx,Nlevels:1:-1),fl_lssnow(start_idx:end_idx,Nlevels:1:-1), &
+!        fl_lsgrpl(start_idx:end_idx,Nlevels:1:-1),fl_ccrain(start_idx:end_idx,Nlevels:1:-1), &
+!        fl_ccsnow(start_idx:end_idx,Nlevels:1:-1),mr_lsliq(start_idx:end_idx,Nlevels:1:-1),  &
+!        mr_lsice(start_idx:end_idx,Nlevels:1:-1),mr_ccliq(start_idx:end_idx,Nlevels:1:-1),   &
+!        mr_ccice(start_idx:end_idx,Nlevels:1:-1),Reff(start_idx:end_idx,Nlevels:1:-1,:),     &
+!        dtau_c(start_idx:end_idx,nLevels:1:-1),dtau_s(start_idx:end_idx,nLevels:1:-1),       &
+!        dem_c(start_idx:end_idx,nLevels:1:-1),dem_s(start_idx:end_idx,nLevels:1:-1),         &
+!        cospstateIN,cospIN)
+
+     ! Call cosp
+     cosp_status = COSP_SIMULATOR(cospIN, cospstateIN, cospOUT, start_idx, end_idx, .false.)
     ! Translate derived types to output arrays
   end subroutine cosp_c2f_run
 
@@ -320,7 +446,7 @@ contains
     if (Lmeantbisccp)    allocate(x%isccp_meantb(Npoints))
     if (Lmeantbclrisccp) allocate(x%isccp_meantbclr(Npoints))
     if (Lalbisccp)       allocate(x%isccp_meanalbedocld(Npoints))
-    
+
     ! MISR simulator
     if (LclMISR) then 
        allocate(x%misr_fq(Npoints,numMISRTauBins,numMISRHgtBins))

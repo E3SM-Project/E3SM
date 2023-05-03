@@ -3,6 +3,8 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
+#include "ekat/ekat_pack_kokkos.hpp"
+#include "share/atm_process/ATMBufferManager.hpp"
 
 #include <string>
 
@@ -17,6 +19,19 @@ namespace scream
 
 class Cosp : public AtmosphereProcess
 {
+
+  template <typename S>
+  using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
+  using Spack = SmallPack<Real>;
+  using Pack  = ekat::Pack<Real,Spack::n>;
+  using KT = KokkosTypes<DefaultDevice>;
+
+  template <typename S>
+  using view_1d = typename KT::template view_1d<S>;
+
+  template <typename S>
+  using view_2d = typename KT::template view_2d<S>;
+
 public:
 
   // Constructors
@@ -30,6 +45,10 @@ public:
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+
+  // Scratch space for local variables
+  struct Buffer {
+  };
 
 protected:
 
