@@ -1145,7 +1145,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_thickness_flux_type" type="character" default_value="centered"
-					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThickEdgeFlux.  The standard MPAS-O approach is 'centered'. For 'constant', use constant thickness in time from restingThickness, for linear test problems"
+					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThickEdgeFlux.  The standard MPAS-O approach is 'centered'. For 'constant', uses constant thickness in time from restingThickness, for linear test problems. Note that these two flags are set together for linearized test cases: config_thickness_flux_type = 'constant' linearizes the thickness equation, and config_disable_vel_hadv = .true. linearizes the momentum equation if there is no assumed mean background velocity."
 					possible_values="'upwind', 'centered', 'constant'"
 		/>
 		<nml_option name="config_drying_safety_height" type="real" default_value="1.0e-10" units="m"
@@ -1431,7 +1431,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_disable_vel_hadv" type="logical" default_value=".false."
-					description="Disables tendencies on the velocity field from the horizontal momentum advection."
+					description="Disables tendencies on the velocity field from the horizontal momentum advection. Note that these two flags are set together for linearized test cases: config_thickness_flux_type = 'constant' linearizes the thickness equation, and config_disable_vel_hadv = .true. linearizes the momentum equation if there is no assumed mean background velocity."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_disable_vel_coriolis" type="logical" default_value=".false."

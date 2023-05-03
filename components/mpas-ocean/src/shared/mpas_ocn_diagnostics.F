@@ -4332,6 +4332,13 @@ contains
          thickEdgeFluxChoice = thickEdgeFluxCenter
       elseif (trim(config_thickness_flux_type) == 'constant') then
          thickEdgeFluxChoice = thickEdgeFluxConstant
+         if (.not.config_disable_vel_hadv) then
+            call mpas_log_write('config_thickness_flux_type set to ' //&
+                 & trim(config_thickness_flux_type) // ' but '//&
+                 & 'config_disable_vel_hadv is false. '//&
+                 & 'Set config_disable_vel_hadv to true for a linear test case. ', &
+                 MPAS_LOG_CRIT)
+         end if
       else
          if (config_use_wetting_drying .and. &
              (trim(config_thickness_flux_type) /= 'centered')) then

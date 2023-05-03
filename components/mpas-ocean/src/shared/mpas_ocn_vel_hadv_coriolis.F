@@ -118,7 +118,7 @@ contains
 
       real (kind=RKIND) :: &
          avgVorticity, &! vorticity averaged across edge
-         invLength,    &! temp variable for 1/dcedge
+         invLength,    &! temp variable for 1/dcEdge
          edgeWeight     ! weight for summing over edges
 
       real (kind=RKIND), dimension(:,:), allocatable :: &
@@ -243,62 +243,61 @@ contains
 
       if (useGradKineticEnergy) then
 #ifdef MPAS_OPENACC
-      !$acc parallel loop &
-      !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
-      !$acc            dcEdge, tend, qArr, kineticEnergyCell) &
-      !$acc    private(cell1, cell2, invLength, k, kmin, kmax)
+         !$acc parallel loop &
+         !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
+         !$acc            dcEdge, tend, qArr, kineticEnergyCell) &
+         !$acc    private(cell1, cell2, invLength, k, kmin, kmax)
 #else
-      !$omp do schedule(runtime) &
-      !$omp    private(cell1, cell2, invLength, k, kmin, kmax)
+         !$omp do schedule(runtime) &
+         !$omp    private(cell1, cell2, invLength, k, kmin, kmax)
 #endif
-      do iEdge = 1, nEdgesOwned
-         kmin = minLevelEdgeBot(iEdge)
-         kmax = maxLevelEdgeTop(iEdge)
+         do iEdge = 1, nEdgesOwned
+            kmin = minLevelEdgeBot(iEdge)
+            kmax = maxLevelEdgeTop(iEdge)
 
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         invLength = 1.0_RKIND / dcEdge(iEdge)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            invLength = 1.0_RKIND / dcEdge(iEdge)
 
-         do k = kmin, kmax
-            tend(k,iEdge) = tend(k,iEdge) + &
-                        edgeMask(k,iEdge)* (qArr(k,iEdge) - &
-                           (kineticEnergyCell(k,cell2) &
-                          - kineticEnergyCell(k,cell1))*invLength)
+            do k = kmin, kmax
+               tend(k,iEdge) = tend(k,iEdge) + &
+                           edgeMask(k,iEdge)* (qArr(k,iEdge) - &
+                              (kineticEnergyCell(k,cell2) &
+                             - kineticEnergyCell(k,cell1))*invLength)
+            end do
          end do
-      end do
 #ifndef MPAS_OPENACC
-      !$omp end do
+         !$omp end do
 #endif
 
       else ! .not.useGradKineticEnergy
 #ifdef MPAS_OPENACC
-      !$acc parallel loop &
-      !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
-      !$acc            dcEdge, tend, qArr) &
-      !$acc    private(cell1, cell2, invLength, k, kmin, kmax)
+         !$acc parallel loop &
+         !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
+         !$acc            dcEdge, tend, qArr) &
+         !$acc    private(cell1, cell2, k, kmin, kmax)
 #else
-      !$omp do schedule(runtime) &
-      !$omp    private(cell1, cell2, invLength, k, kmin, kmax)
+         !$omp do schedule(runtime) &
+         !$omp    private(cell1, cell2, k, kmin, kmax)
 #endif
-      do iEdge = 1, nEdgesOwned
-         kmin = minLevelEdgeBot(iEdge)
-         kmax = maxLevelEdgeTop(iEdge)
+         do iEdge = 1, nEdgesOwned
+            kmin = minLevelEdgeBot(iEdge)
+            kmax = maxLevelEdgeTop(iEdge)
 
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         invLength = 1.0_RKIND / dcEdge(iEdge)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
 
-         do k = kmin, kmax
-            tend(k,iEdge) = tend(k,iEdge) + &
-                        edgeMask(k,iEdge)* qArr(k,iEdge)
+            do k = kmin, kmax
+               tend(k,iEdge) = tend(k,iEdge) + &
+                           edgeMask(k,iEdge)* qArr(k,iEdge)
+            end do
          end do
-      end do
 #ifndef MPAS_OPENACC
-      !$omp end do
+         !$omp end do
 #endif
       endif
 #ifndef MPAS_OPENACC
-         !$omp end parallel
+      !$omp end parallel
 #endif
 
       !$acc exit data delete(tmpVorticity, qArr)
