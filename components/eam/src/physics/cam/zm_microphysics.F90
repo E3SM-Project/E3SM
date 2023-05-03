@@ -277,8 +277,8 @@ subroutine zm_mphyi
 
 !graupel(if dense precipitating ice is graupel)
 
-        ag = 19.3
-        bg = 0.37
+        ag = 19.3_r8
+        bg = 0.37_r8
 
 !if dense precipitating ice is hail (matsun and huggins 1980)
 !        ag = 114.5
@@ -357,7 +357,7 @@ subroutine zm_mphyi
         cons25=pi*pi/24._r8*rhow*ecr*gamma(br+6._r8)
          
         cons31=pi*pi*ecr*rhosn
-        cons32=pi/2.*ecr
+        cons32=pi/2._r8*ecr
         cons41=pi*pi*ecr*rhow  
 
         droplet_mass_25um = 4._r8/3._r8*pi*rhow*(25.e-6_r8)**3
@@ -971,11 +971,11 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
         ! add air density correction factor to the power of 
         ! 0.54 following Heymsfield and Bansemer 2006
 
-        arn(i,k)=ar*(rhosu/rho(i,k))**0.54
-        asn(i,k)=as*(rhosu/rho(i,k))**0.54
-        acn(i,k)=ac*(rhosu/rho(i,k))**0.54
-        ain(i,k)=ai*(rhosu/rho(i,k))**0.54
-        agn(i,k)=ag*(rhosu/rho(i,k))**0.54
+        arn(i,k)=ar*(rhosu/rho(i,k))**0.54_r8
+        asn(i,k)=as*(rhosu/rho(i,k))**0.54_r8
+        acn(i,k)=ac*(rhosu/rho(i,k))**0.54_r8
+        ain(i,k)=ai*(rhosu/rho(i,k))**0.54_r8
+        agn(i,k)=ag*(rhosu/rho(i,k))**0.54_r8
      end do
   end do
 
@@ -1024,7 +1024,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
               !    or Na(m-3)= 1.e6* 340.*(1.e9ug/kg)^0.58 * (massSO4[kg/m3])^0.58
 
               if (m .eq. aero%idxsul) then
-                 naer2(i,k,m)= 5.64259e13_r8 * maerosol(m)**0.58
+                 naer2(i,k,m)= 5.64259e13_r8 * maerosol(m)**0.58_r8
               else
                  naer2(i,k,m)=maerosol(m)*aero%num_to_mass_aer(m)
               end if
@@ -1570,11 +1570,11 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  ! adjust vars
                  if (lamr(k).lt.lammin) then
                     lamr(k) = lammin
-                    n0r(k) = lamr(k)**4*qric(i,k)/(pi*rhow)
+                    n0r(k) = lamr(k)**4._r8*qric(i,k)/(pi*rhow)
                     nric(i,k) = n0r(k)/lamr(k)
                  else if (lamr(k).gt.lammax) then
                     lamr(k) = lammax
-                    n0r(k) = lamr(k)**4*qric(i,k)/(pi*rhow)
+                    n0r(k) = lamr(k)**4._r8*qric(i,k)/(pi*rhow)
                     nric(i,k) = n0r(k)/lamr(k)
                  end if
 
@@ -1603,16 +1603,16 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  ! adjust vars
                  if (lams(k).lt.lammin) then
                     lams(k) = lammin
-                    n0s(k) = lams(k)**4*qniic(i,k)/(cs*gamma(1._r8+ds))
+                    n0s(k) = lams(k)**4._r8*qniic(i,k)/(cs*gamma(1._r8+ds))
                     nsic(i,k) = n0s(k)/lams(k)
                  else if (lams(k).gt.lammax) then
                     lams(k) = lammax
-                    n0s(k) = lams(k)**4*qniic(i,k)/(cs*gamma(1._r8+ds))
+                    n0s(k) = lams(k)**4._r8*qniic(i,k)/(cs*gamma(1._r8+ds))
                     nsic(i,k) = n0s(k)/lams(k)
                  end if
 
                  ! provisional snow number and mass weighted mean fallspeed (m/s)
-                 dum=(rhosu/rho(i,k))**0.54
+                 dum=(rhosu/rho(i,k))**0.54_r8
                  ums(k) = min(asn(i,k)*gamma(4._r8+bs)/(6._r8*lams(k)**bs),1.2_r8*dum)
                  uns(k) = min(asn(i,k)*gamma(1._r8+bs)/lams(k)**bs,1.2_r8*dum) 
               else
@@ -1625,7 +1625,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
               !graupel
 
               if (qgic(i,k).ge.qsmall) then
-                  lamg(k) = (gamma(1._r8+dg)*cg*ngic(i,k)/qgic(i,k))**(1./dg)
+                  lamg(k) = (gamma(1._r8+dg)*cg*ngic(i,k)/qgic(i,k))**(1._r8/dg)
                   n0g(k) = ngic(i,k)*lamg(k)
 
                   ! check for slope
@@ -1635,15 +1635,15 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
 
                   if (lamg(k).lt.lammin) then
                       lamg(k) = lammin
-                      n0g(k) = lamg(k)**4*qgic(i,k)/(gamma(1._r8+dg)*cg)
+                      n0g(k) = lamg(k)**4._r8*qgic(i,k)/(gamma(1._r8+dg)*cg)
                       ngic(i,k) = n0g(k)/lamg(k)
                   else if (lamg(k).gt.lammax) then
                       lamg(k) = lammax
-                      n0g(k) = lamg(k)**4*qgic(i,k)/(gamma(1._r8+dg)*cg)
+                      n0g(k) = lamg(k)**4._r8*qgic(i,k)/(gamma(1._r8+dg)*cg)
                       ngic(i,k) = n0g(k)/lamg(k)
                   end if
                   ! provisional snow number and mass weighted mean fallspeed (m/s)
-                  dum=(rhosu/rho(i,k))**0.54
+                  dum=(rhosu/rho(i,k))**0.54_r8
                   umg(k) = min(agn(i,k)*gamma(4._r8+bg)/(6._r8*lamg(k)**bg),20._r8*dum)
                   ung(k) = min(agn(i,k)*gamma(1._r8+bg)/lamg(k)**bg,20._r8*dum)
               else
@@ -1802,14 +1802,14 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                     0.08_r8*ums(k)*umr(k))**0.5_r8*rhow*rho(i,k)* &
                     n0r(k)*n0s(k)* &
                     (5._r8/(lamr(k)**6*lams(k))+ &
-                    2._r8/(lamr(k)**5*lams(k)**2)+ &
+                    2._r8/(lamr(k)**5*lams(k)**2._r8)+ &
                     0.5_r8/(lamr(k)**4*lams(k)**3)))
 
-                 npracs(k) = pi/2._r8*rho(i,k)*ecr*(1.7_r8*(unr(k)-uns(k))**2+ &
+                 npracs(k) = pi/2._r8*rho(i,k)*ecr*(1.7_r8*(unr(k)-uns(k))**2._r8+ &
                     0.3_r8*unr(k)*uns(k))**0.5_r8*n0r(k)*n0s(k)* &
-                    (1._r8/(lamr(k)**3*lams(k))+ &
-                    1._r8/(lamr(k)**2*lams(k)**2)+ &
-                    1._r8/(lamr(k)*lams(k)**3))
+                    (1._r8/(lamr(k)**3._r8*lams(k))+ &
+                    1._r8/(lamr(k)**2._r8*lams(k)**2._r8)+ &
+                    1._r8/(lamr(k)*lams(k)**3._r8))
 
 
               ! collection of snow by rain - needed for graupel conversion calculations
@@ -1818,10 +1818,10 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  if (qniic(i,k).ge.0.1e-3_r8.and.qric(i,k).ge.0.1e-3_r8) then
                    psacr(k) = cons31*(((1.2_r8*umr(k)-0.95_r8*ums(k))**2+              &
                              0.08_r8*ums(k)*umr(k))**0.5_r8*rho(i,k)*                   &
-                             n0r(k)*n0s(k)/lams(k)**3*                   &
-                             (5._r8/(lams(k)**3*lamr(k))+                    &
-                             2._r8/(lams(k)**2*lamr(k)**2)+                  &
-                             0.5_r8/(lams(k)*lamr(k)**3)))
+                             n0r(k)*n0s(k)/lams(k)**3._r8*                   &
+                             (5._r8/(lams(k)**3._r8*lamr(k))+                    &
+                             2._r8/(lams(k)**2._r8*lamr(k)**2._r8)+                  &
+                             0.5_r8/(lams(k)*lamr(k)**3._r8)))
                  else
                    psacr(k) = 0._r8
                  end if
@@ -1839,9 +1839,9 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
               ! hobbs (1984)
               if (pracs(k).gt.0._r8 .and. qniic(i,k).ge.0.1e-3_r8.and.qric(i,k).ge.0.1e-3_r8) then
               ! portion of collected rainwater converted to graupel (reisner et al. 1998)
-                  dum = cons18*(4._r8/lams(k))**3*(4._r8/lams(k))**3 &
-                        /(cons18*(4._r8/lams(k))**3*(4._r8/lams(k))**3+ &
-                        cons19*(4._r8/lamr(k))**3*(4._r8/lamr(k))**3)
+                  dum = cons18*(4._r8/lams(k))**3._r8*(4._r8/lams(k))**3._r8 &
+                        /(cons18*(4._r8/lams(k))**3._r8*(4._r8/lams(k))**3._r8+ &
+                        cons19*(4._r8/lamr(k))**3._r8*(4._r8/lamr(k))**3._r8)
                   dum=min(dum,1._r8)
                   dum=max(dum,0._r8)
                   pgracs(k) = (1._r8-dum)*pracs(k)
@@ -1863,18 +1863,18 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
 ! used by reisner et al 1998
          if (qric(i,k).ge.1.e-8.and.qgic(i,k).ge.1.e-8) then
 
-            pracg(k) = cons41*(((1.2_r8*umr(k)-0.95_r8*umg(k))**2+                   &
+            pracg(k) = cons41*(((1.2_r8*umr(k)-0.95_r8*umg(k))**2._r8+                   &
                   0.08_r8*umg(k)*umr(k))**0.5_r8*rho(i,k)*                      &
                   n0r(k)*n0g(k)/lamr(k)**3*                              &
-                  (5._r8/(lamr(k)**3*lamg(k))+                    &
-                  2._r8/(lamr(k)**2*lamg(k)**2)+                              &
-                                  0.5_r8/(lamr(k)*lamg(k)**3)))
+                  (5._r8/(lamr(k)**3._r8*lamg(k))+                    &
+                  2._r8/(lamr(k)**2._r8*lamg(k)**2._r8)+                              &
+                                  0.5_r8/(lamr(k)*lamg(k)**3._r8)))
 
-            npracg(k) = cons32*rho(i,k)*(1.7_r8*(unr(k)-ung(k))**2+            &
+            npracg(k) = cons32*rho(i,k)*(1.7_r8*(unr(k)-ung(k))**2._r8+            &
                 0.3_r8*unr(k)*ung(k))**0.5_r8*n0r(k)*n0g(k)*              &
-                (1._r8/(lamr(k)**3*lamg(k))+                      &
-                 1._r8/(lamr(k)**2*lamg(k)**2)+                   &
-                 1._r8/(lamr(k)*lamg(k)**3))
+                (1._r8/(lamr(k)**3._r8*lamg(k))+                      &
+                 1._r8/(lamr(k)**2*lamg(k)**2._r8)+                   &
+                 1._r8/(lamr(k)*lamg(k)**3._r8))
 
             else
               pracg(k) = 0._r8
@@ -1943,11 +1943,11 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
               if (t(i,k).lt.269.15_r8 .and. qric(i,k).ge.qsmall) then
 
                  mnuccr(k) = 20._r8*pi*pi*rhow*nric(i,k)*bimm* &
-                    (exp(aimm*(273.15_r8-t(i,k)))-1._r8)/lamr(k)**3 &
-                    /lamr(k)**3
+                    (exp(aimm*(273.15_r8-t(i,k)))-1._r8)/lamr(k)**3._r8 &
+                    /lamr(k)**3._r8
                  
                  nnuccr(k) = pi*nric(i,k)*bimm* &
-                    (exp(aimm*(273.15_r8-t(i,k)))-1._r8)/lamr(k)**3
+                    (exp(aimm*(273.15_r8-t(i,k)))-1._r8)/lamr(k)**3._r8
               else
                  mnuccr(k)=0._r8
                  nnuccr(k)=0._r8
@@ -2064,7 +2064,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                     zbe = th(i,k)*(1._r8+retv*qh(i,k))
                     zbuo(i,k) = (zbc-zbe)/zbe-qr(i,k)-qni(i,k)-qi(i,k)-qc(i,k)
                     zbuoc= (zbuo(i,k)+zbuo(i,k+1))*0.5_r8
-                    zdkbuo = dz(i,k+1)*grav*zbuoc*(1.0-0.25)/6.
+                    zdkbuo = dz(i,k+1)*grav*zbuoc*(1.0_r8-0.25_r8)/6._r8
                     zdken = du(i,k)*dz(i,k+1)/max(1.e-10_r8,mu(i,k+1))
                     zkine(i,k) = (zkine(i,k+1)*(1._r8-zdken)+zdkbuo)/      &
                        (1._r8+zdken)
@@ -2371,10 +2371,10 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                        mnuccc(k) = pi*pi/36._r8*rhow* &
                        cdist1(k)*gamma(7._r8+pgam(i,k))* &
                        bimm*(exp(aimm*(273.15_r8-t(i,k)))-1._r8)/ &
-                       lamc(i,k)**3/lamc(i,k)**3
+                       lamc(i,k)**3._r8/lamc(i,k)**3._r8
 
                        nnuccc(k) = pi/6._r8*cdist1(k)*gamma(pgam(i,k)+4._r8) &
-                           *bimm*(exp(aimm*(273.15_r8-t(i,k)))-1._r8)/lamc(i,k)**3
+                           *bimm*(exp(aimm*(273.15_r8-t(i,k)))-1._r8)/lamc(i,k)**3._r8
                     end if
                  end if
 
@@ -2432,7 +2432,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  end if
 
                  mnucct(k) = (dfaer1*nacon1+dfaer2*nacon2+dfaer3*nacon3+dfaer4*nacon4)*pi*pi/3._r8*rhow* &
-                    cdist1(k)*gamma(pgam(i,k)+5._r8)/lamc(i,k)**4
+                    cdist1(k)*gamma(pgam(i,k)+5._r8)/lamc(i,k)**4._r8
 
                  nnucct(k) = (dfaer1*nacon1+dfaer2*nacon2+dfaer3*nacon3+dfaer4*nacon4)*2._r8*pi*  &
                     cdist1(k)*gamma(pgam(i,k)+2._r8)/lamc(i,k)
@@ -3095,7 +3095,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  ! get pgam from fit to observations of martin et al. 1994
 
                  pgam(i,k-1)=0.0005714_r8*(nc(i,k-1)/1.e6_r8/rho(i,k-1))+0.2714_r8
-                 pgam(i,k-1)=1._r8/(pgam(i,k-1)**2)-1._r8
+                 pgam(i,k-1)=1._r8/(pgam(i,k-1)**2._r8)-1._r8
                  pgam(i,k-1)=max(pgam(i,k-1),2._r8)
                  pgam(i,k-1)=min(pgam(i,k-1),15._r8)
                  ! calculate lamc
@@ -3109,12 +3109,12 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
 
                  if (lamc(i,k-1).lt.lammin) then
                     lamc(i,k-1) = lammin
-                    nc(i,k-1) = 6._r8*lamc(i,k-1)**3*qc(i,k-1)* &
+                    nc(i,k-1) = 6._r8*lamc(i,k-1)**3._r8*qc(i,k-1)* &
                        gamma(pgam(i,k-1)+1._r8)/ &
                        (pi*rhow*gamma(pgam(i,k-1)+4._r8))
                  else if (lamc(i,k-1).gt.lammax) then
                     lamc(i,k-1) = lammax
-                    nc(i,k-1) = 6._r8*lamc(i,k-1)**3*qc(i,k-1)* &
+                    nc(i,k-1) = 6._r8*lamc(i,k-1)**3._r8*qc(i,k-1)* &
                        gamma(pgam(i,k-1)+1._r8)/ &
                        (pi*rhow*gamma(pgam(i,k-1)+4._r8))
                  end if
@@ -3257,7 +3257,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
               if (qg(i,k-1).ge.qsmall) then
   
                   if (ng(i,k-1).lt. 0._r8) write(iulog,*) "ng(i,k-1)=",ng(i,k-1)
-                  lamg(k-1) = (gamma(1._r8+dg)*cg*ng(i,k-1)/qg(i,k-1))**(1./dg)
+                  lamg(k-1) = (gamma(1._r8+dg)*cg*ng(i,k-1)/qg(i,k-1))**(1._r8/dg)
                   n0g(k-1) = ng(i,k-1)*lamg(k-1)
 
                   ! check for slope
@@ -3267,11 +3267,11 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
 
                   if (lamg(k-1).lt.lammin) then
                       lamg(k-1) = lammin
-                      n0g(k-1) = lamg(k-1)**4*qg(i,k-1)/(gamma(1._r8+dg)*cg)
+                      n0g(k-1) = lamg(k-1)**4._r8*qg(i,k-1)/(gamma(1._r8+dg)*cg)
                       ng(i,k-1) = n0g(k-1)/lamg(k-1)
                   else if (lamg(k-1).gt.lammax) then
                       lamg(k-1) = lammax
-                      n0g(k-1) = lamg(k-1)**4*qg(i,k-1)/(gamma(1._r8+dg)*cg)
+                      n0g(k-1) = lamg(k-1)**4._r8*qg(i,k-1)/(gamma(1._r8+dg)*cg)
                       ng(i,k-1) = n0g(k-1)/lamg(k-1)
                   end if
                   ! provisional graupel number and mass weighted mean fallspeed
