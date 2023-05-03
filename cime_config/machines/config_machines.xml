@@ -890,9 +890,9 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
-    <!--environment_variables compiler="crayclang-scream" mpilib="mpich">
+    <environment_variables compiler="crayclang-scream" mpilib="mpich">
       <env name="ADIOS2_DIR">/lustre/orion/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/crayclang-14.0.2</env>
-    </environment_variables-->
+    </environment_variables>
   </machine>
 
 
