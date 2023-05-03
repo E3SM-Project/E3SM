@@ -900,7 +900,7 @@
     <COMPILERS>crayclang-scream</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>CLI115</PROJECT>
-    <SAVE_TIMING_DIR>/gpfs/alpine/proj-shared/cli115</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>/lustre/orion/proj-shared/cli115</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/lustre/orion/cli115/proj-shared/$ENV{USER}/e3sm_scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/orion/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
