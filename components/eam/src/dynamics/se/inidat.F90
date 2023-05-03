@@ -440,8 +440,10 @@ contains
        call endrun('Problem reading ps field')
     end if
 
-    if (scm_multcols .and. tmp(1,1,1) < 10000._r8) then
-      call endrun('Problem reading ps field')
+    if (scm_multcols) then
+       if (tmp(1,1,1) < 10000._r8) then
+          call endrun('Problem reading ps field')
+       endif
     endif
 
     deallocate(tmpmask)
