@@ -65,10 +65,11 @@ void run(std::mt19937_64& engine)
   // Kokkos Policy
   auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_mid_packs);
 
-  // Input (randomized) views
+  // Input (randomized) views, device
   view_1d temperature("temperature",num_mid_packs),
           pressure("pressure",num_mid_packs),
           pseudo_density("pseudo_density",num_mid_packs),
+          pseudo_density_dry("pseudo_density_dry",num_mid_packs),
           qv("qv",num_mid_packs);
 
   auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
@@ -114,7 +115,10 @@ void run(std::mt19937_64& engine)
   {
     // Construct random data to use for test
     // Get views of input data and set to random values
+
+    // Field
     const auto& T_mid_f     = input_fields["T_mid"];
+    // its device view
     const auto& T_mid_v     = T_mid_f.get_view<Pack**>();
 
     const auto& p_dry_mid_f = input_fields["p_dry_mid"];
@@ -135,24 +139,23 @@ void run(std::mt19937_64& engine)
       const auto& dpwet_sub = ekat::subview(dpwet_v,icol);
       const auto& dpdry_sub = ekat::subview(dpdry_v,icol);
       const auto& qv_sub = ekat::subview(qv_v,icol);
+
+      // init device arrays as random except for dpdry
       ekat::genRandArray(dview_as_real(temperature),   engine, pdf_temp);
       ekat::genRandArray(dview_as_real(pressure),      engine, pdf_pres);
-      ekat::genRandArray(dview_as_real(pseudo_density), engine, pdf_pseudo_density);
+      ekat::genRandArray(dview_as_real(pseudo_density),engine, pdf_pseudo_density);
       ekat::genRandArray(dview_as_real(qv),            engine, pdf_qv);
+
       Kokkos::deep_copy(T_sub,temperature);
       Kokkos::deep_copy(p_sub,pressure);
       Kokkos::deep_copy(qv_sub,qv);
       Kokkos::deep_copy(dpwet_sub,pseudo_density);
 
-      //make dpdry
-      for(int jpack=0;jpack<num_mid_packs;jpack++) {
-        dpdry_sub(jpack) = dpwet_sub(jpack) - dpwet_sub(jpack)*qv_sub(jpack); };
     }
 
     // Run diagnostic and compare with manual calculation
     diag->compute_diagnostic();
-    const auto& diag_out = diag->get_diagnostic();
-    Field rh_f = diag_out.clone();
+    Field rh_f = T_mid_f.clone();
     rh_f.deep_copy<double,Host>(0.0);
     rh_f.sync_to_dev();
     const auto& rh_v = rh_f.get_view<Pack**>();
@@ -161,17 +164,29 @@ void run(std::mt19937_64& engine)
     Smask range_mask(true);
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_mid_packs), [&] (const Int& jpack) {
 
+      const auto& dpwet_sub = ekat::subview(dpwet_v,icol);
+      const auto& dpdry_sub = ekat::subview(dpdry_v,icol);
+      const auto& qv_sub = ekat::subview(qv_v,icol);
+
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_mid_packs), [&] (const Int& jpack) {
+        dpdry_sub(jpack) = dpwet_sub(jpack) - dpwet_sub(jpack)*qv_sub(jpack);
         auto qv_sat_l = physics::qv_sat_dry(T_mid_v(icol,jpack), p_dry_mid_v(icol,jpack), false, range_mask);
         qv_sat_l *=  dpdry_v(icol,jpack) ;
         qv_sat_l /=  dpwet_v(icol,jpack) ;
         rh_v(icol,jpack) = qv_v(icol,jpack)/qv_sat_l;
-
       });
       team.team_barrier();
     });
     Kokkos::fence();
+
+    // Run diagnostic and compare with manual calculation
+    diag->compute_diagnostic();
+    const auto& diag_out = diag->get_diagnostic();
+
+    //in case one needs to look at values 
+    //print_field_hyperslab(rh_f);
+    //print_field_hyperslab(diag_out);
 
     REQUIRE(views_are_equal(diag_out,rh_f));
   }
