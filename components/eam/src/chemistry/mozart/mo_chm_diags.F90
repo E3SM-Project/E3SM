@@ -114,6 +114,7 @@ contains
     integer :: UCIgaschmbudget_2D_L4_s
     integer :: UCIgaschmbudget_2D_L4_e
     integer :: bulkaero_species(20)
+    integer :: e90_ndx
 
     !-----------------------------------------------------------------------
 
@@ -843,12 +844,16 @@ contains
     call addfld( 'AREA', horiz_only,    'A', 'm2', 'area of grid box' )
 
     ! tropospheric air mass diagnostics based on 3D tropopause flag
-    call addfld( 'TROPMASS', horiz_only , 'A', 'kg', 'tropospheric air mass of grid column' )
-    call addfld( 'TROPMASSB', horiz_only , 'A', 'kg', 'tropospheric air mass of grid column (lowest tropopause)' )
-    call addfld( 'TROPMASST', horiz_only , 'A', 'kg', 'tropospheric air mass of grid column (highest tropopause)' )
-    call add_default( 'TROPMASS', 1, ' ' )
-    call add_default( 'TROPMASSB', 1, ' ' )
-    call add_default( 'TROPMASST', 1, ' ' )
+    e90_ndx=-1
+    e90_ndx = get_spc_ndx('E90')
+    if (e90_ndx > 0) then
+       call addfld( 'TROPMASS', horiz_only , 'A', 'kg', 'tropospheric air mass of grid column' )
+       call addfld( 'TROPMASSB', horiz_only , 'A', 'kg', 'tropospheric air mass of grid column (lowest tropopause)' )
+       call addfld( 'TROPMASST', horiz_only , 'A', 'kg', 'tropospheric air mass of grid column (highest tropopause)' )
+       call add_default( 'TROPMASS', 1, ' ' )
+       call add_default( 'TROPMASSB', 1, ' ' )
+       call add_default( 'TROPMASST', 1, ' ' )
+    endif
 
     if (history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels .or.&
         history_UCIgaschmbudget_2D .or. history_UCIgaschmbudget_2D_levels) then
@@ -982,6 +987,7 @@ contains
     !--------------------------------------------------------------------
     integer     :: i,j,k, m, n
     integer :: plat
+    integer :: e90_ndx
     real(r8)    :: wrk(ncol,pver)
     real(r8)    :: un2(ncol)
     
@@ -1057,8 +1063,12 @@ contains
     call outfld( 'MASS', mass(:ncol,:), ncol, lchnk )
     call outfld( 'DRYMASS', drymass(:ncol,:), ncol, lchnk )
 
+    ! use existence of E90 to supplement the logical switch based on presence of tropFlag or its values
+    e90_ndx=-1
+    e90_ndx = get_spc_ndx('E90')
+
     ! tropospheric air mass when 3D tropopause is available
-    if (present(tropFlag)) then
+    if (e90_ndx > 0 .and. present(tropFlag)) then
       ! 3D tropopause
       wrk1d(:) = 0._r8
       do i = 1,ncol
@@ -1110,7 +1120,12 @@ contains
 
       ! stratospheric column ozone
       wrk1d(:) = 0._r8
-      if (.not. present(tropFlag)) then
+      if (e90_ndx < 0 .or. .not. present(tropFlag)) then
+        ! use 2D tropopause if E90 not used or tropFlag not present. 
+        ! e90_ndx < 0 condition alone is sufficient, as 3D tropFlag is computed 
+        ! only when E90 is used. 
+        ! This change is to make the calculation valid when E90 is not in use
+
          do i = 1,ncol
             do k = 1,pver
                if (k > ltrop(i)) then
@@ -1132,7 +1147,7 @@ contains
 
       ! tropospheric column ozone
       wrk1d(:) = 0._r8
-      if (.not. present(tropFlag)) then
+      if (e90_ndx < 0 .or. .not. present(tropFlag)) then
          do i = 1,ncol
             do k = 1,pver
                if (k <= ltrop(i)) then
