@@ -603,9 +603,9 @@
     <COMPILERS>gnu,crayclang,amdclang,gnugpu,crayclanggpu,amdclanggpu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cli115</PROJECT>
-    <SAVE_TIMING_DIR>/lustre/orion/cli115/proj-shared/frontier</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>/lustre/orion/cli115/world-shared/frontier</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/lustre/orion/cli115/proj-shared/$ENV{USER}/e3sm_scratch</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/lustre/orion/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/orion/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/orion/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
@@ -649,7 +649,7 @@
       </modules>
       <modules compiler="crayclanggpu">
         <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/5.4.3</command>
+        <command name="load">rocm/5.4.0</command>
       </modules>
       <modules compiler="amdclang.*">
         <command name="reset"></command>
@@ -673,7 +673,7 @@
         <command name="load">cray-python/3.9.13.1</command>
         <command name="load">subversion/1.14.1</command>
         <command name="load">git/2.36.1</command>
-        <command name="load">cmake/3.23.2</command>
+        <command name="load">cmake/3.21.3</command>
         <command name="load">zlib/1.2.11</command>
         <command name="load">cray-hdf5-parallel/1.12.2.1</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
@@ -709,6 +709,15 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
+    <environment_variables compiler="gnu.*" mpilib="mpich">
+      <env name="ADIOS2_DIR">/lustre/orion/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/gcc-11.2.0</env>
+    </environment_variables>
+    <environment_variables compiler="crayclang.*" mpilib="mpich">
+      <env name="ADIOS2_DIR">/lustre/orion/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/crayclang-14.0.2</env>
+    </environment_variables>
+    <environment_variables compiler="amdclang.*" mpilib="mpich">
+      <env name="ADIOS2_DIR">/lustre/orion/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/amdclang-15.0.0</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="crusher">
@@ -718,9 +727,9 @@
     <COMPILERS>gnu,crayclang,amdclang,gnugpu,crayclanggpu,amdclanggpu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cli115</PROJECT>
-    <SAVE_TIMING_DIR>/lustre/orion/cli115/proj-shared/crusher</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>/lustre/orion/cli115/world-shared/crusher</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/lustre/orion/cli115/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/lustre/orion/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/orion/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/orion/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
@@ -764,7 +773,7 @@
       </modules>
       <modules compiler="crayclanggpu">
         <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/5.4.3</command>
+        <command name="load">rocm/5.4.0</command>
       </modules>
       <modules compiler="amdclang.*">
         <command name="reset"></command>
@@ -787,7 +796,7 @@
         <command name="load">cray-python/3.9.13.1</command>
         <command name="load">subversion/1.14.1</command>
         <command name="load">git/2.36.1</command>
-        <command name="load">cmake/3.23.2</command>
+        <command name="load">cmake/3.21.3</command>
         <command name="load">zlib/1.2.11</command>
         <command name="load">cray-hdf5-parallel/1.12.2.1</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
@@ -824,13 +833,13 @@
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
     <environment_variables compiler="gnu.*" mpilib="mpich">
-      <env name="ADIOS2_DIR">/gpfs/alpine/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/gcc-11.2.0</env>
+      <env name="ADIOS2_DIR">/lustre/orion/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/gcc-11.2.0</env>
     </environment_variables>
     <environment_variables compiler="crayclang.*" mpilib="mpich">
-      <env name="ADIOS2_DIR">/gpfs/alpine/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/crayclang-14.0.2</env>
+      <env name="ADIOS2_DIR">/lustre/orion/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/crayclang-14.0.2</env>
     </environment_variables>
     <environment_variables compiler="amdclang.*" mpilib="mpich">
-      <env name="ADIOS2_DIR">/gpfs/alpine/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/amdclang-15.0.0</env>
+      <env name="ADIOS2_DIR">/lustre/orion/cli133/world-shared/3rdparty/adios2/2.8.3.patch/cray-mpich-8.1.17/amdclang-15.0.0</env>
     </environment_variables>
   </machine>
 
