@@ -227,6 +227,20 @@ character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
    'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
    's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
    'm-organic' /)
+
+!kzm ++
+#elif ( defined MODAL_AERO_4MODE_BRC )
+integer, parameter :: num_mode_types = 8
+integer, parameter :: num_spec_types = 10
+character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
+   'accum         ', 'aitken        ', 'primary_carbon', 'fine_seasalt  ', &
+   'fine_dust     ', 'coarse        ', 'coarse_seasalt', 'coarse_dust   '  /)
+character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
+   'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
+   's-organic', 'b-organic', 'black-c  ', 'seasalt  ', 'dust     ', &  !kzmBRC
+   'm-organic' /)
+
+!kzm --
 #else
 integer, parameter :: num_mode_types = 8
 integer, parameter :: num_spec_types = 8
