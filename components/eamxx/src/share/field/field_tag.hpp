@@ -88,7 +88,7 @@ inline std::string e2str (const FieldTag ft) {
       name = "gp";
       break;
     case FieldTag::Component:
-      name = "cmp";
+      name = "dim";
       break;
     // Added for rrtmgp - see TODO item above
     case FieldTag::Gases:
