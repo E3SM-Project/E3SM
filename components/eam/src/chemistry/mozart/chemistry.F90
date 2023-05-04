@@ -419,7 +419,10 @@ end function chem_is
     use tracer_srcs,      only: tracer_srcs_defaultopts, tracer_srcs_setopts
     use aero_model,       only: aero_model_readnl
     use dust_model,       only: dust_readnl
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+!kzm ++
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM )
+    use seasalt_model,    only: ocean_data_readnl
+#elif (defined MODAL_AERO_4MODE_BRC)
     use seasalt_model,    only: ocean_data_readnl
 #endif
     use gas_wetdep_opts,  only: gas_wetdep_readnl

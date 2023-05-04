@@ -100,6 +100,13 @@
   integer, parameter :: max_gas = nsoa + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
+!kzm ++
+#elif ( defined MODAL_AERO_4MODE_BRC )
+  integer, parameter :: max_gas = nsoa + 1
+  ! the +4 in max_aer are dst, ncl, so4, mom
+  integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 1  ! add one for BRC 
+!kzm --
+
 #elif ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: max_gas = nsoa + 4
   ! the +8 in max_aer are dst, ncl(=na), so4, no3, cl, nh4, ca, co3 
@@ -117,8 +124,8 @@
   ! the +4+5 in max_aer are dst, ncl, so4, nh4 and 5 marine organics
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 5
 #endif
-
-#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
+!kzm
+#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || (defined MODAL_AERO_4MODE_BRC))
   integer, parameter :: ntot_amode_extd = ntot_amode
 #else
   integer, parameter :: ntot_amode_extd = ntot_amode + 1
@@ -162,7 +169,8 @@
   !    when npom > 1, iaer_pom is index of the first pom species
   integer :: iaer_bc, iaer_dst, iaer_ncl, iaer_nh4, iaer_pom, iaer_soa, iaer_so4, &
              iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc, iaer_mom, &
-             iaer_no3, iaer_cl, iaer_ca, iaer_co3
+             iaer_no3, iaer_cl, iaer_ca, iaer_co3, &
+             iaer_brc !kzm
   integer :: i_agepair_pca, i_agepair_macc, i_agepair_mait
   integer :: lmap_gas(max_gas)
   integer :: lmap_aer(max_aer,max_mode), lmapbb_aer(max_aer,max_mode), &
@@ -5298,7 +5306,18 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       name_aerpfx(naer) = 'mom'
       iaer_mom = naer
 #endif
+!kzm ++
+#if ( defined MODAL_AERO_4MODE_BRC )
+      naer = naer + 1   
+      name_aerpfx(naer) = 'mom'
+      iaer_mom = naer
+      !add BRC
+      naer = naer + 1
+      name_aerpfx(naer) = 'brc'
+      iaer_brc = naer
+#endif
 
+!kzm --
       if (ntot_amode==9) then
          naer = naer + 1
          name_aerpfx(naer) = 'mpoly'
