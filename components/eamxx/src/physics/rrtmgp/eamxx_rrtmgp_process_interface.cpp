@@ -137,6 +137,10 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("cldmed"        , scalar2d_layout, nondim, grid_name, "RESTART");
   add_field<Computed>("cldhgh"        , scalar2d_layout, nondim, grid_name, "RESTART");
   add_field<Computed>("cldtot"        , scalar2d_layout, nondim, grid_name, "RESTART");
+  // 0.67 micron and 10.5 micron optical depth (needed for COSP)
+  add_field<Computed>("dtau067"       , scalar3d_layout_mid, nondim, grid_name, "RESTART");
+  add_field<Computed>("dtau105"       , scalar3d_layout_mid, nondim, grid_name, "RESTART");
+  add_field<Computed>("sunlit"        , scalar2d_layout    , nondim, grid_name, "RESTART");
 
   // Translation of variables from EAM
   // --------------------------------------------------------------
@@ -301,6 +305,11 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.cld_tau_sw_gpt.totElems();
   m_buffer.cld_tau_lw_gpt = decltype(m_buffer.cld_tau_lw_gpt)("cld_tau_lw_gpt", mem, m_col_chunk_size, m_nlay, m_nlwgpts);
   mem += m_buffer.cld_tau_lw_gpt.totElems();
+  m_buffer.cld_tau_sw_bnd = decltype(m_buffer.cld_tau_sw_bnd)("cld_tau_sw_bnd", mem, m_col_chunk_size, m_nlay, m_nswbands);
+  mem += m_buffer.cld_tau_sw_bnd.totElems();
+  m_buffer.cld_tau_lw_bnd = decltype(m_buffer.cld_tau_lw_bnd)("cld_tau_lw_bnd", mem, m_col_chunk_size, m_nlay, m_nlwbands);
+  mem += m_buffer.cld_tau_lw_bnd.totElems();
+
   size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
 } // RRTMGPRadiation::init_buffers
@@ -432,6 +441,13 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_cldmed = get_field_out("cldmed").get_view<Real*>();
   auto d_cldhgh = get_field_out("cldhgh").get_view<Real*>();
   auto d_cldtot = get_field_out("cldtot").get_view<Real*>();
+  // Outputs for COSP
+  auto d_dtau067 = get_field_out("dtau067").get_view<Real**>();
+  auto d_dtau105 = get_field_out("dtau105").get_view<Real**>();
+  auto d_sunlit = get_field_out("sunlit").get_view<Real*>();
+
+  Kokkos::deep_copy(d_dtau067,0.0);
+  Kokkos::deep_copy(d_dtau105,0.0);
 
   constexpr auto stebol = PC::stebol;
   const auto nlay = m_nlay;
@@ -536,6 +552,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto aero_ssa_sw     = subview_3d(m_buffer.aero_ssa_sw);
       auto aero_g_sw       = subview_3d(m_buffer.aero_g_sw);
       auto aero_tau_lw     = subview_3d(m_buffer.aero_tau_lw);
+      auto cld_tau_sw_bnd  = subview_3d(m_buffer.cld_tau_sw_bnd);
+      auto cld_tau_lw_bnd  = subview_3d(m_buffer.cld_tau_lw_bnd);
       auto cld_tau_sw_gpt  = subview_3d(m_buffer.cld_tau_sw_gpt);
       auto cld_tau_lw_gpt  = subview_3d(m_buffer.cld_tau_lw_gpt);
 
@@ -793,6 +811,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         sfc_alb_dir, sfc_alb_dif, mu0,
         lwp, iwp, rel, rei, cldfrac_tot,
         aero_tau_sw, aero_ssa_sw, aero_g_sw, aero_tau_lw,
+        cld_tau_sw_bnd, cld_tau_lw_bnd,
         cld_tau_sw_gpt, cld_tau_lw_gpt,
         sw_flux_up       , sw_flux_dn       , sw_flux_dn_dir       , lw_flux_up       , lw_flux_dn,
         sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dn_dir, lw_clrsky_flux_up, lw_clrsky_flux_dn,
@@ -859,6 +878,11 @@ void RRTMGPRadiation::run_impl (const double dt) {
       rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts,     0,                            400e2, p_lay, cld_tau_lw_gpt, cldhgh);
       rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts,     0, std::numeric_limits<Real>::max(), p_lay, cld_tau_lw_gpt, cldtot);
 
+      // Get visible 0.67 micron band for COSP
+      auto idx_067 = rrtmgp::get_wavelength_index_sw(0.67e-6);
+      // Get IR 10.5 micron band for COSP
+      auto idx_105 = rrtmgp::get_wavelength_index_lw(10.5e-6);
+
       // Copy output data back to FieldManager
       const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -886,6 +910,16 @@ void RRTMGPRadiation::run_impl (const double dt) {
           d_lw_clrsky_flux_up(icol,k)     = lw_clrsky_flux_up(i+1,k+1);
           d_lw_clrsky_flux_dn(icol,k)     = lw_clrsky_flux_dn(i+1,k+1);
         });
+        // Extract optical properties for COSP
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
+          d_dtau067(icol,k) = cld_tau_sw_bnd(i+1,k+1,idx_067);
+          d_dtau105(icol,k) = cld_tau_lw_bnd(i+1,k+1,idx_105);
+        });
+        if (d_sw_clrsky_flux_dn(icol,0) > 0) {
+            d_sunlit(icol) = 1.0;
+        } else {
+            d_sunlit(icol) = 0.0;
+        }
       });
     } // loop over chunk
 
