@@ -305,7 +305,6 @@ contains
     mr_ccsnow(:npoints,:nlevels) = 0
     mr_lsgrpl(:npoints,:nlevels) = 0
     reff = 0  ! FIXME
-    
 
     start_idx = 1
     end_idx = npoints
@@ -323,33 +322,23 @@ contains
     ! Pressure at interface (nlevels+1). Set uppermost interface to 0.
     !cospstateIN%phalf(:,2:Nlevels+1) = p_int(start_idx:end_idx,Nlevels:1:-1)   ! Pa
     cospstateIN%phalf(:,1:Nlevels+1) = p_int(start_idx:end_idx,1:Nlevels+1)   ! Pa
-    !cospstateIN%phalf(:,1)           = 0._wp
 !   ! Height of bottom interfaces of model layers (nlevels).
 !   ! cospstateIN%hgt_matrix_half(:,1) contains the bottom of the top layer.
 !   ! cospstateIN%hgt_matrix_half(:,Nlevels) contains the bottom of the surface layer.
 !   cospstateIN%hgt_matrix_half(:,1:Nlevels) = zlev_half(start_idx:end_idx,Nlevels:1:-1) ! km
 
-!   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!   ! Generate subcolumns and compute optical inputs.
-!   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!   call subsample_and_optics(nPtsPerIt,nLevels,nColumns,N_HYDRO,overlap,                     &
-!        use_vgrid,use_precipitation_fluxes,lidar_ice_type,sd,                                &
-!        tca(start_idx:end_idx,Nlevels:1:-1),cca(start_idx:end_idx,Nlevels:1:-1),             &
-!        fl_lsrain(start_idx:end_idx,Nlevels:1:-1),fl_lssnow(start_idx:end_idx,Nlevels:1:-1), &
-!        fl_lsgrpl(start_idx:end_idx,Nlevels:1:-1),fl_ccrain(start_idx:end_idx,Nlevels:1:-1), &
-!        fl_ccsnow(start_idx:end_idx,Nlevels:1:-1),mr_lsliq(start_idx:end_idx,Nlevels:1:-1),  &
-!        mr_lsice(start_idx:end_idx,Nlevels:1:-1),mr_ccliq(start_idx:end_idx,Nlevels:1:-1),   &
-!        mr_ccice(start_idx:end_idx,Nlevels:1:-1),Reff(start_idx:end_idx,Nlevels:1:-1,:),     &
-!        dtau_c(start_idx:end_idx,nLevels:1:-1),dtau_s(start_idx:end_idx,nLevels:1:-1),       &
-!        dem_c(start_idx:end_idx,nLevels:1:-1),dem_s(start_idx:end_idx,nLevels:1:-1),         &
-!        cospstateIN,cospIN)
+    ! Generate subcolumns and compute optical inputs.
     call subsample_and_optics(nPoints, nLevels, nColumns, N_HYDRO, overlap, use_vgrid, &
        lidar_ice_type, sd, tca, cca, mr_lsrain, mr_lssnow,  &
        mr_lsgrpl, mr_ccrain, mr_ccsnow, mr_lsliq, mr_lsice, mr_ccliq, mr_ccice,       &
        reff, dtau_c, dtau_s, dem_c, dem_s, cospstateIN, cospIN)
+
     ! Call cosp
     cosp_status = cosp_simulator(cospIN, cospstateIN, cospOUT, start_idx, end_idx, .false.)
+
     ! Translate derived types to output arrays
+    isccp_cldtot(:npoints) = cospOUT%isccp_totalcldarea(:npoints)
+
   end subroutine cosp_c2f_run
 
   subroutine cosp_c2f_final() bind(C, name='cosp_c2f_final')

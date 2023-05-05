@@ -34,7 +34,6 @@ namespace scream {
         using Pack  = ekat::Pack<Real,Spack::n>;
 
         void initialize(int ncol, int nsubcol, int nlay) {
-            std::cout << "brhdebug: call cosp_c2f_init()" << std::endl;
             cosp_c2f_init(ncol, nsubcol, nlay);
         };
         void finalize() {
@@ -71,6 +70,8 @@ namespace scream {
             std::vector<view_2d<const Pack>> device_views = {p_int};
             ekat::device_to_host({p_int_h.data()}, Int(ncol), Int(nlay+1), device_views, true);
             }
+
+            // Subsample here?
 
             // Call COSP wrapper
             cosp_c2f_run(ncol, nsubcol, nlay, emsfc_lw, //sunlit_h.data()); //, 
