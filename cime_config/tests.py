@@ -724,5 +724,47 @@ _TESTS = {
         "inherit" : ("e3sm_superbfb_ocn_dbg", "e3sm_superbfb_ocn_opt",
                      "e3sm_superbfb_ocn_dbg_thrd", "e3sm_superbfb_ocn_opt_thrd"),
     },
+
+    # super-BFB LND
+    "e3sm_superbfb_lnd_opt" : { # opt + pureMPI
+        #"share"   : True,
+        "time"    : "00:15:00",
+        "tests"   : (
+            "ERS_Lh3.ne30pg2_ne30pg2.IELMTEST.pemod-omp1",
+            "PEM_Lh3.ne30pg2_ne30pg2.IELMTEST.pemod-omp1",
+        )
+    },
+
+    "e3sm_superbfb_lnd_dbg" : { # dbg + pureMPI
+        #"share"   : True,
+        "time"    : "00:30:00",
+        "tests"   : (
+            "ERS_Lh3_D.ne30pg2_ne30pg2.IELMTEST.pemod-omp1",
+            "PEM_Lh3_D.ne30pg2_ne30pg2.IELMTEST.pemod-omp1",
+        )
+    },
+
+    "e3sm_superbfb_lnd_opt_thrd" : { # opt + threads
+        #"share"   : True,
+        "time"    : "00:15:00",
+        "tests"   : (
+            "PET_Lh3.ne30pg2_ne30pg2.IELMTEST.pemod-ompfull",
+            "ERS_Lh3.ne30pg2_ne30pg2.IELMTEST.pemod-omp2",
+        )
+    },
+
+    "e3sm_superbfb_lnd_dbg_thrd" : { # dbg + threads
+        #"share"   : True,
+        "time"    : "00:30:00",
+        "tests"   : (
+            "PET_Lh3_D.ne30pg2_ne30pg2.IELMTEST.pemod-ompfull",
+            "ERS_Lh3_D.ne30pg2_ne30pg2.IELMTEST.pemod-omp2",
+        )
+    },
+
+    "e3sm_superbfb_lnd" : {
+        "inherit" : ("e3sm_superbfb_lnd_dbg", "e3sm_superbfb_lnd_opt",
+                     "e3sm_superbfb_lnd_dbg_thrd", "e3sm_superbfb_lnd_opt_thrd"),
+    },
 }
 
