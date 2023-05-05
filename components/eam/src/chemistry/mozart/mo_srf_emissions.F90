@@ -55,6 +55,7 @@ contains
     use cam_pio_utils,    only : cam_pio_openfile
     use pio,              only : pio_inquire, pio_nowrite, pio_closefile, pio_inq_varndims
     use pio,              only : pio_inq_varname, file_desc_t
+    use pio,              only : pio_inq_vardimid, pio_inq_dimid !(zhang73)
     use chem_surfvals,    only : flbc_list
 
     implicit none
@@ -81,7 +82,9 @@ contains
     integer ::    emis_indexes(gas_pcnst)
 
     integer :: vid, nvars, isec
+    integer :: dimids(8), did, dimid,ncol_dimid,lat_dimid,time_dimid !(zhang73)
     integer, allocatable :: vndims(:)
+    integer, allocatable :: finddim_time(:), finddim_lat_ncol(:) !(zhang73) 
     type(file_desc_t) :: ncid
     character(len=32)  :: varname
     character(len=256) :: locfn
@@ -153,21 +156,43 @@ contains
        ierr = pio_inquire (ncid, nvariables=nvars)
 
        allocate(vndims(nvars))
+       allocate(finddim_time(nvars))
+       allocate(finddim_lat_ncol(nvars))
+       finddim_time=0
+       finddim_lat_ncol=0
+       time_dimid=-9999
+       lat_dimid=-9999
+       ncol_dimid=-9999
+
+       !(zhang73) Qi: get file%is_ncol using their dimension -> pio_inq_dimid(ncid, 'ncol', dimid) 
+       !(zhang73) determine vaild sectors(fields) from dim name "ncol/lat" && "time" (finddim_lat_ncol, finddim_time)
+       ierr = pio_inq_dimid(ncid, 'time', dimid)
+       if(ierr==0) time_dimid = dimid
+       ierr = pio_inq_dimid(ncid, 'lat', dimid)
+       if(ierr==0) lat_dimid = dimid
+       ierr = pio_inq_dimid(ncid, 'ncol', dimid)
+       emissions(m)%file%is_ncol = (ierr==0)
+       if(ierr==0) ncol_dimid = dimid
+       if(masterproc) write(iulog,*) '(zhang73 srf_emis_inti) time_dimid, lat_dimid, ncol_dimid=',time_dimid, lat_dimid, ncol_dimid
 
        do vid = 1,nvars
 
           ierr = pio_inq_varndims (ncid, vid, vndims(vid))
 
-          if( vndims(vid) < 3 ) then
-             cycle
-          elseif( vndims(vid) > 3 ) then
-             ierr = pio_inq_varname (ncid, vid, varname)
-             write(iulog,*) 'srf_emis_inti: Skipping variable ', trim(varname),', ndims = ',vndims(vid), &
-                  ' , species=',trim(emissions(m)%species)
-             cycle
+          ierr = pio_inq_vardimid (ncid, vid, dimids(1:vndims(vid))) !(zhang73)
+          do did=1,vndims(vid)
+             if( dimids(did) == time_dimid ) finddim_time(vid)=1
+             if(  dimids(did) == lat_dimid ) finddim_lat_ncol(vid)=1
+             if( dimids(did) == ncol_dimid ) finddim_lat_ncol(vid)=1
+          enddo
+   
+          ierr = pio_inq_varname (ncid, vid, varname)
+          if( finddim_time(vid)==1 .and. finddim_lat_ncol(vid)==1)then !(zhang73)
+             !write(iulog,*) '(zhang73 srf_emis_inti) valid var: finddim_time(vid), finddim_lat_ncol(vid)=',trim(varname),finddim_time(vid), finddim_lat_ncol(vid)
+             emissions(m)%nsectors = emissions(m)%nsectors+1
+          else
+             !write(iulog,*) 'srf_emis_inti: Skipping variable ', trim(varname),', ndims = ',vndims(vid),' , species=',trim(emissions(m)%species)
           end if
-
-          emissions(m)%nsectors = emissions(m)%nsectors+1
 
        enddo
 
@@ -180,17 +205,21 @@ contains
        isec = 1
 
        do vid = 1,nvars
-          if( vndims(vid) == 3 ) then
+          !if( vndims(vid) == dim_thres ) then !(zhang73) check vndims from 3 -> 2 to activate bc_a4_ncol
+          if( finddim_time(vid)==1 .and. finddim_lat_ncol(vid)==1)then !(zhang73)
              ierr = pio_inq_varname(ncid, vid, emissions(m)%sectors(isec))
              isec = isec+1
           endif
 
        enddo
        deallocate(vndims)
+       deallocate(finddim_time)
+       deallocate(finddim_lat_ncol)
        call pio_closefile (ncid)
 
        allocate(emissions(m)%file%in_pbuf(size(emissions(m)%sectors)))
        emissions(m)%file%in_pbuf(:) = .false.
+       if(masterproc) write(iulog,*) '(zhang73 srf_emis_inti) nvars, emissions(m)%species, emissions(m)%nsectors = ',nvars, emissions(m)%species,emissions(m)%nsectors
        call trcdata_init( emissions(m)%sectors, &
                           emissions(m)%filename, filelist, datapath, &
                           emissions(m)%fields,  &
@@ -225,6 +254,7 @@ contains
     integer :: m
 
     do m = 1,n_emis_species
+       if(masterproc.and.emissions(m)%file%is_ncol) write(iulog,*) '(zhang73 set_srf_emissions_time) emissions(m)%species: ', emissions(m)%species 
        call advance_trcdata( emissions(m)%fields, emissions(m)%file, state, pbuf2d  )
     end do
 

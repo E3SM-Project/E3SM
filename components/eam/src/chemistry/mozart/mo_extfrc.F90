@@ -53,6 +53,7 @@ contains
     use cam_pio_utils, only : cam_pio_openfile
     use pio, only : pio_inq_dimid, pio_inquire, pio_inq_varndims, pio_closefile, &
          pio_inq_varname, pio_nowrite, file_desc_t
+    use pio,              only : pio_inq_vardimid !(zhang73)
     use mo_tracname,   only : solsym
     use mo_chem_utls,  only : get_extfrc_ndx, get_spc_ndx
     use chem_mods,     only : frc_from_dataset
@@ -82,6 +83,8 @@ contains
     character(len=256) :: spc_fnames(gas_pcnst)
 
     integer ::  vid, ndims, nvars, isec, ierr
+    integer :: dimids(8), did, dimid,ncol_dimid,lat_dimid,time_dimid !(zhang73)
+    integer, allocatable :: finddim_time(:), finddim_lat_ncol(:) !(zhang73) 
     type(file_desc_t) :: ncid
     character(len=32)  :: varname
 
@@ -215,20 +218,41 @@ contains
        call cam_pio_openfile ( ncid, trim(forcings(m)%filename), PIO_NOWRITE)
        ierr = pio_inquire (ncid, nVariables=nvars)
 
+       allocate(finddim_time(nvars))
+       allocate(finddim_lat_ncol(nvars))
+       finddim_time=0
+       finddim_lat_ncol=0
+       time_dimid=-9999
+       lat_dimid=-9999
+       ncol_dimid=-9999
+
+       ierr = pio_inq_dimid(ncid, 'time', dimid)
+       if(ierr==0) time_dimid = dimid
+       ierr = pio_inq_dimid(ncid, 'lat', dimid)
+       if(ierr==0) lat_dimid = dimid
+       ierr = pio_inq_dimid(ncid, 'ncol', dimid)
+       forcings(m)%file%is_ncol = (ierr==0)
+       if(ierr==0) ncol_dimid = dimid
+       if(masterproc) write(iulog,*) '(zhang73 extfrc_inti) time_dimid, lat_dimid, ncol_dimid=',time_dimid, lat_dimid, ncol_dimid
+
        do vid = 1,nvars
 
           ierr = pio_inq_varndims (ncid, vid, ndims)
 
-          if( ndims < 4 ) then
-             cycle
-          elseif( ndims > 4 ) then
-             ierr = pio_inq_varname (ncid, vid, varname)
-             write(iulog,*) 'extfrc_inti: Skipping variable ', trim(varname),', ndims = ',ndims, &
-                  ' , species=',trim(forcings(m)%species)
-             cycle
-          end if
+          ierr = pio_inq_vardimid (ncid, vid, dimids(1:ndims)) !(zhang73)
+          do did=1,ndims
+             if( dimids(did) == time_dimid ) finddim_time(vid)=1
+             if(  dimids(did) == lat_dimid ) finddim_lat_ncol(vid)=1
+             if( dimids(did) == ncol_dimid ) finddim_lat_ncol(vid)=1
+          enddo
 
-          forcings(m)%nsectors = forcings(m)%nsectors+1
+          ierr = pio_inq_varname (ncid, vid, varname)
+          if( finddim_time(vid)==1 .and. finddim_lat_ncol(vid)==1)then !(zhang73)
+             !write(iulog,*) '(zhang73 extfrc_inti) valid var: finddim_time(vid), finddim_lat_ncol(vid)=',trim(varname),finddim_time(vid), finddim_lat_ncol(vid)
+             forcings(m)%nsectors = forcings(m)%nsectors+1
+          else
+             !write(iulog,*) 'extfrc_inti: Skipping variable ', trim(varname),', ndims = ',ndims,' , species=',trim(forcings(m)%species)
+          end if
 
        enddo
 
@@ -242,12 +266,15 @@ contains
        do vid = 1,nvars
 
           ierr = pio_inq_varndims (ncid, vid, ndims)
-          if( ndims == 4 ) then
+!          if( ndims == dim_thres ) then !(zhang73) check ndims from 4 -> 3 to activate bc_a4_ncol
+          if( finddim_time(vid)==1 .and. finddim_lat_ncol(vid)==1)then !(zhang73)
              ierr = pio_inq_varname(ncid, vid, forcings(m)%sectors(isec))
              isec = isec+1
           endif
 
        enddo
+       deallocate(finddim_time)
+       deallocate(finddim_lat_ncol)
 
        call pio_closefile (ncid)
 

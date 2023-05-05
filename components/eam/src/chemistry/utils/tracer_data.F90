@@ -62,8 +62,8 @@ module tracer_data
      character(len=32) :: fldnam
      character(len=32) :: units
      type(var_desc_t) :: var_id
-     integer :: coords(4) ! LATDIM | LONDIM | LEVDIM | TIMDIM
-     integer :: order(4) ! LATDIM | LONDIM | LEVDIM | TIMDIM
+     integer :: coords(5) ! LATDIM | LONDIM | LEVDIM | TIMDIM | NCOLDIM (zhang73)
+     integer :: order(5) ! LATDIM | LONDIM | LEVDIM | TIMDIM | NCOLDIM
      logical :: srf_fld = .false.
      integer :: pbuf_ndx = -1
   endtype trfld
@@ -98,6 +98,7 @@ module tracer_data
      integer :: nlat
      integer :: nlev
      integer :: nilev
+     integer :: fncol !(zhang73)
      integer :: ps_coords(3) ! LATDIM | LONDIM | TIMDIM
      integer :: ps_order(3) ! LATDIM | LONDIM | TIMDIM
      real(r8), pointer, dimension(:) :: lons => null()
@@ -118,6 +119,7 @@ module tracer_data
      logical :: has_ps = .false.
      logical :: zonal_ave = .false.
      logical :: alt_data = .false.     
+     logical :: is_ncol !(zhang73)
      logical :: cyclical = .false.
      logical :: cyclical_list = .false.
      logical :: weight_by_lat = .false.
@@ -141,6 +143,11 @@ module tracer_data
   integer, parameter :: ZA_LATDIM = 1
   integer, parameter :: ZA_LEVDIM = 2
   integer, parameter :: ZA_TIMDIM = 3
+
+  integer, parameter :: NCOLDIM = 1 !(zhang73)
+  integer, parameter :: NCOL_LEVDIM = 2
+  integer, parameter :: NCOL_PS_TIMDIM = 2
+  integer, parameter :: NCOL_TIMDIM = 3
 
   integer, parameter :: nm=1    ! array index for previous (minus) data
   integer, parameter :: np=2    ! array index for next (plus) data
@@ -179,7 +186,7 @@ contains
 
     integer :: f, mxnflds, astat
     integer :: str_yr, str_mon, str_day
-    integer :: lon_dimid, lat_dimid, lev_dimid, tim_dimid, old_dimid
+    integer :: lon_dimid, lat_dimid, lev_dimid, tim_dimid, old_dimid, ncol_dimid
     integer :: dimids(4), did
     type(var_desc_t) :: varid
     integer :: idx
@@ -278,15 +285,25 @@ contains
        file%curr_data_times = file%curr_data_times - file%offset_time
     endif
 
+   !find_spectrc_ncol = INDEX(filename, 'bc_a4') !(zhang73)
+   if(masterproc.and.file%is_ncol) write(iulog,*) '(zhang73 trcdata_init) file%curr_data_times:',file%curr_data_times
+   if (masterproc) then
+      flds_loop1: do f = 1,mxnflds
+      write(iulog,*) '(zhang73 trcdata_init) file%is_ncol, flds(f)%fldnam: ',file%is_ncol,flds(f)%fldnam
+      enddo flds_loop1
+   endif
+ 
     call pio_seterrorhandling(File%curr_fileid, PIO_BCAST_ERROR)
     ierr = pio_inq_dimid( file%curr_fileid, 'lon', idx )
     call pio_seterrorhandling(File%curr_fileid, PIO_INTERNAL_ERROR)
 
-    file%zonal_ave = (ierr/=PIO_NOERR)
+    if( .not. file%is_ncol ) file%zonal_ave = (ierr/=PIO_NOERR)
 
     plon = get_dyn_grid_parm('plon')
     plat = get_dyn_grid_parm('plat')
+  
 
+  if( .not. file%is_ncol )then !(zhang73)
     if ( .not. file%zonal_ave ) then
 
        call get_dimension( file%curr_fileid, 'lon', file%nlon, dimid=old_dimid, data=file%lons )
@@ -296,11 +313,6 @@ contains
        lon_dimid = old_dimid
 
     endif
-
-    ierr = pio_inq_dimid( file%curr_fileid, 'time', old_dimid)
-
-    ! Hack to work with weird netCDF and old gcc or NAG bug.
-    tim_dimid = old_dimid
 
     call get_dimension( file%curr_fileid, 'lat', file%nlat, dimid=old_dimid, data=file%lats )
     file%lats =  file%lats * d2r
@@ -312,6 +324,16 @@ contains
        write(iulog,*) 'trcdata_init: file%ps allocation error = ',astat
        call endrun('trcdata_init: failed to allocate x array')
     end if
+    ncol_dimid = -9999 !(zhang73) HOLD to avoid JPL's ncol "initialized" to 6
+  else !file%is_ncol
+    call get_dimension( file%curr_fileid, 'ncol', file%fncol, dimid=old_dimid)
+    ncol_dimid = old_dimid
+  end if !.not. file%is_ncol
+
+    ierr = pio_inq_dimid( file%curr_fileid, 'time', old_dimid)
+
+    ! Hack to work with weird netCDF and old gcc or NAG bug.
+    tim_dimid = old_dimid
 
     call pio_seterrorhandling(File%curr_fileid, PIO_BCAST_ERROR)
     ierr = pio_inq_varid( file%curr_fileid, 'PS', file%ps_id )
@@ -489,6 +511,35 @@ contains
           end if
        endif
 
+     !if(masterproc) write(iulog,*) '(zhang73 trcdata_init) lon_dimid, lat_dimid, lev_dimid, tim_dimid, ncol_dimid: ',lon_dimid, lat_dimid, lev_dimid, tim_dimid, ncol_dimid
+     if ( file%is_ncol ) then !(zhang73)
+       if ( flds(f)%srf_fld ) then
+          ierr = pio_inq_vardimid (file%curr_fileid, flds(f)%var_id, dimids(1:2))
+          do did = 1,2
+             if      ( dimids(did) == ncol_dimid ) then
+                flds(f)%coords(NCOLDIM) = did
+                flds(f)%order(did) = NCOLDIM
+             else if ( dimids(did) == tim_dimid ) then
+                flds(f)%coords(NCOL_PS_TIMDIM) = did
+                flds(f)%order(did) = NCOL_PS_TIMDIM 
+             end if
+          enddo
+       else
+          ierr = pio_inq_vardimid (file%curr_fileid, flds(f)%var_id, dimids(1:3))
+          do did = 1,3
+             if      ( dimids(did) == ncol_dimid ) then
+                flds(f)%coords(NCOLDIM) = did
+                flds(f)%order(did) = NCOLDIM
+             else if ( dimids(did) == lev_dimid ) then
+                flds(f)%coords(NCOL_LEVDIM) = did
+                flds(f)%order(did) = NCOL_LEVDIM
+             else if ( dimids(did) == tim_dimid ) then
+                flds(f)%coords(NCOL_TIMDIM) = did 
+                flds(f)%order(did) = NCOL_TIMDIM
+             end if
+          enddo
+       endif
+     else !below for .not. file%is_ncol
        if ( file%zonal_ave ) then
           ierr = pio_inq_vardimid (file%curr_fileid, flds(f)%var_id, dimids(1:3))
           do did = 1,3
@@ -535,6 +586,7 @@ contains
              endif
           enddo
        endif
+     end if !file%is_ncol
 
        ierr = pio_get_att( file%curr_fileid, flds(f)%var_id, 'units', data_units)
        data_units = trim(data_units)
@@ -638,6 +690,7 @@ contains
     ! For stepTime need to advance if the times are equal
     ! Should not impact other runs?
        if ( file%curr_mod_time >= data_time ) then
+          if(masterproc) write(iulog,*)'(zhang73 advance_trcdata) file%curr_mod_time, file%datatimep, file%datatimem: ',file%curr_mod_time,file%datatimep,file%datatimem
           call t_startf('read_next_trcdata')
           call read_next_trcdata(state, flds, file )
           call t_stopf('read_next_trcdata')
@@ -1253,7 +1306,25 @@ contains
 
     do i=1,file%interp_recs
 
+       if(masterproc) write(iulog,*)'(zhang73 read_next_trcdata) file%is_ncol, file%zonal_ave, file%nlon, file%nlat, file%nlev, file%fncol: ',file%is_ncol,file%zonal_ave,file%nlon,file%nlat,file%nlev,file%fncol
        do f = 1,nflds
+        if(masterproc) write(iulog,*)'(zhang73 read_next_trcdata) flds(f)%srf_fld, flds(f)%fldnam: ',flds(f)%srf_fld, flds(f)%fldnam
+        if ( file%is_ncol ) then !(zhang73)
+           if ( flds(f)%srf_fld ) then
+             cnt3( flds(f)%coords(NCOLDIM)) = file%fncol
+             cnt3( flds(f)%coords(NCOL_PS_TIMDIM)) = 1
+             strt3(flds(f)%coords(NCOL_PS_TIMDIM)) = recnos(i)
+             call read_ncol1d_trc( fids(i), flds(f)%var_id, flds(f)%input(i)%data(:,1,:), strt3, cnt3, file, &
+                 (/ flds(f)%order(NCOLDIM) /) )
+          else
+             cnt3( flds(f)%coords(NCOLDIM)) = file%fncol
+             cnt3( flds(f)%coords(NCOL_LEVDIM)) = file%nlev
+             cnt3( flds(f)%coords(NCOL_TIMDIM)) = 1
+             strt3(flds(f)%coords(NCOL_TIMDIM)) = recnos(i)
+             call read_ncol2d_trc( fids(i), flds(f)%var_id, flds(f)%input(i)%data, strt3, cnt3, file, &
+                 (/ flds(f)%order(NCOLDIM),flds(f)%order(NCOL_LEVDIM) /) )
+          endif
+        else !below for .not. file%is_ncol 
           if ( file%zonal_ave ) then
              cnt3(flds(f)%coords(ZA_LATDIM)) = file%nlat
              if (flds(f)%srf_fld) then
@@ -1345,7 +1416,7 @@ contains
                 endif 
              endif !scm_observed_aero
           endif
-
+        endif !file%is_ncol
        enddo
 
        if ( file%has_ps ) then
@@ -1535,6 +1606,69 @@ contains
     end if
     if(dycore_is('LR')) call polar_average(loc_arr)
   end subroutine read_2d_trc
+!------------------------------------------------------------------------
+
+!--<read_ncol1d_trc>: enable direct reading ncol data to bypass the interpolation (zhang73)
+  subroutine read_ncol1d_trc( fid, vid, loc_arr, strt, cnt, file, order )
+    use phys_grid,    only : pcols, begchunk, endchunk, get_ncols_p, get_gcol_p
+    use mo_constants, only : pi
+    use dycore,       only: dycore_is		
+    use polar_avg,    only: polar_average
+
+    implicit none
+    type(file_desc_t), intent(in) :: fid
+    type(var_desc_t), intent(in) :: vid
+    integer, intent(in) :: strt(:), cnt(:), order(1)
+    real(r8),intent(out)  :: loc_arr(:,:)
+    type (trfile), intent(in) :: file
+
+    real(r8), allocatable, target :: wrkncol1d(:)
+    real(r8), pointer :: wrkncol1d_in(:)
+
+    integer :: c, i, j, ierr, ncols
+    integer :: gcol_p !(zhang73)
+
+     nullify(wrkncol1d_in)
+     allocate( wrkncol1d(cnt(1)), stat=ierr )
+     if( ierr /= 0 ) then
+        write(iulog,*) 'read_2d_trc: wrkncol1d allocation error = ',ierr
+        call endrun
+     end if
+
+     if(order(1)/=1 .or. cnt(1)/=file%fncol) then
+        allocate( wrkncol1d_in(file%fncol), stat=ierr )
+        if( ierr /= 0 ) then
+           write(iulog,*) 'read_ncol1d_trc: wrkncol1d_in allocation error = ',ierr
+           call endrun
+        end if
+     end if
+
+    ierr = pio_get_var( fid, vid, strt, cnt, wrkncol1d )
+    if(associated(wrkncol1d_in)) then
+       wrkncol1d_in = reshape( wrkncol1d(:),(/file%fncol/), order=order )
+       deallocate(wrkncol1d)
+    else
+       wrkncol1d_in => wrkncol1d
+    end if
+
+    j=1
+      do c=begchunk,endchunk
+        ncols = get_ncols_p(c)
+        do j=1,ncols
+          gcol_p = get_gcol_p(c,j)
+          loc_arr(j,c-begchunk+1) = wrkncol1d_in(gcol_p)
+          !if(loc_arr(j,c-begchunk+1).gt.9e7) write(iulog,*)' (zhang73 read_ncol1d_trc) loc_arr at gcol_p(',gcol_p,'),j,c,ncols:',loc_arr(j,c-begchunk+1),j,c,ncols
+        end do
+      end do
+
+    if(allocated(wrkncol1d)) then
+       deallocate(wrkncol1d)
+    else
+       deallocate(wrkncol1d_in)
+    end if
+    if(dycore_is('LR')) call polar_average(loc_arr)
+  end subroutine read_ncol1d_trc
+
 
 !------------------------------------------------------------------------
 
@@ -1707,6 +1841,71 @@ contains
     endif
     if(dycore_is('LR')) call polar_average(file%nlev, loc_arr)
   end subroutine read_3d_trc
+!------------------------------------------------------------------------
+
+!--<read_ncol2d_trc>: enable direct reading ncol data to bypass the interpolation (zhang73)
+  subroutine read_ncol2d_trc( fid, vid, loc_arr, strt, cnt, file, order )
+    use phys_grid,    only : pcols, begchunk, endchunk, get_ncols_p, get_gcol_p
+    use mo_constants, only : pi
+    use dycore,       only: dycore_is		
+    use polar_avg,    only: polar_average
+
+    implicit none
+    type(file_desc_t), intent(in) :: fid
+    type(var_desc_t), intent(in) :: vid
+    integer, intent(in) :: strt(:), cnt(:), order(2)
+    real(r8),intent(out)  :: loc_arr(:,:,:)
+    type (trfile), intent(in) :: file
+
+    real(r8), allocatable, target :: wrkncol2d(:,:)
+    real(r8), pointer :: wrkncol2d_in(:,:)
+
+    integer :: c, i, j, ierr, ncols, k
+    integer :: gcol_p !(zhang73)
+
+     nullify(wrkncol2d_in)
+     allocate( wrkncol2d(cnt(1),cnt(2)), stat=ierr )
+     if( ierr /= 0 ) then
+        write(iulog,*) 'read_2d_trc: wrkncol2d allocation error = ',ierr
+        call endrun
+     end if
+
+     if(order(1)/=1 .or. order(2)/=2 .or. cnt(1)/=file%fncol .or. cnt(2)/=file%nlev) then
+        allocate( wrkncol2d_in(file%fncol, file%nlev), stat=ierr )
+        if( ierr /= 0 ) then
+           write(iulog,*) 'read_ncol2d_trc: wrkncol2d_in allocation error = ',ierr
+           call endrun
+        end if
+     end if
+
+    ierr = pio_get_var( fid, vid, strt, cnt, wrkncol2d )
+    if(associated(wrkncol2d_in)) then
+       wrkncol2d_in = reshape( wrkncol2d(:,:),(/file%fncol,file%nlev/), order=order )
+       deallocate(wrkncol2d)
+    else
+       wrkncol2d_in => wrkncol2d
+    end if
+
+    j=1
+      do c=begchunk,endchunk
+        ncols = get_ncols_p(c)
+        do j=1,ncols
+          gcol_p = get_gcol_p(c,j)
+          loc_arr(j,1:file%nlev,c-begchunk+1) = wrkncol2d_in(gcol_p,1:file%nlev)
+          !if(gcol_p==14183) write(iulog,*)' (zhang73 read_ncol2d_trc) loc_arr at (gcol_p=14183(ne30pg2),14):',loc_arr(j,14,c-begchunk+1)
+          if(gcol_p==52880) write(iulog,*)' (zhang73 read_ncol2d_trc) loc_arr at (gcol_p=52880(ne30pg2),14):',loc_arr(j,14,c-begchunk+1)
+        end do
+      end do
+
+    if(allocated(wrkncol2d)) then
+       deallocate(wrkncol2d)
+    else
+       deallocate(wrkncol2d_in)
+    end if
+    if(dycore_is('LR')) call polar_average(file%nlev, loc_arr)
+  end subroutine read_ncol2d_trc
+
+
 
 !------------------------------------------------------------------------------
 
