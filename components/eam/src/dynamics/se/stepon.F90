@@ -117,7 +117,7 @@ subroutine stepon_init(dyn_in, dyn_out )
   call register_vector_field('FU', 'FV')
   call addfld ('VOR', (/ 'lev' /), 'A', '1/s',  'Relative Vorticity (2D)',     gridname='GLL')
   call addfld ('DIV', (/ 'lev' /), 'A', '1/s',  'Divergence (2D)',             gridname='GLL')
-  call addfld ('DIV_Qflux', (/ 'lev' /), 'A', '1/s',  'Divergence of water flux (2D)', gridname='GLL') !(zhang73)
+  call addfld ('DIV_Qflux', (/ 'lev' /), 'A', '1/s kg/m2',  'Divergence of Qdp (2D)', gridname='GLL') !(zhang73)
 
   call addfld ('ETADOT', (/ 'ilev' /), 'A', '1/s', 'Vertical (eta) velocity', gridname='physgrid')
 
