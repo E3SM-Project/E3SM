@@ -2924,21 +2924,40 @@ if ($chem eq 'trop_mam4_mom' || $chem eq 'trop_mam4_resus_mom') {
         add_default($nl, $file);
     }
 }
-if ($chem eq 'linoz_mam4_brc_resus_mom_soag') {
+if ($chem eq 'superfast_mam4_brc_resus_mom_soag') {
+    my %species;
+    # Surface emission datasets: 
     my %species;
 
-    # Surface emission datasets:
-    %species = ();
-    %species = ('DMS       -> ' => 'dms_emis_file',
-                    'SO2       -> ' => 'so2_emis_file',
-                    'bc_a4     -> ' => 'bc_a4_emis_file',
-                    'pom_a4    -> ' => 'pom_a4_emis_file',
-                    'so4_a1    -> ' => 'so4_a1_emis_file',
-                    'so4_a2    -> ' => 'so4_a2_emis_file',
-                    'num_a1    -> ' => 'mam7_num_a1_emis_file',
-                    'num_a2    -> ' => 'num_a2_emis_file',
-                    'num_a4    -> ' => 'mam7_num_a3_emis_file',
-        );
+    %species = (
+                'CH2O   -> ' => 'ch2o_emis_file',
+                'CO     -> ' => 'co_emis_file',
+                'DMS    -> ' => 'dms_emis_file',
+                'NO     -> ' => 'nox_emis_file',
+                'SO2    -> ' => 'so2_emis_file',
+                'bc_a4  -> ' => 'bc_a4_emis_file',
+                'pom_a4 -> ' => 'pom_a4_emis_file',
+                'so4_a1 -> ' => 'so4_a1_emis_file',
+                'so4_a2 -> ' => 'so4_a2_emis_file',
+                'num_a1 -> ' => 'mam7_num_a1_emis_file',
+                'num_a2 -> ' => 'num_a2_emis_file',
+                'num_a4 -> ' => 'mam7_num_a3_emis_file',
+                );
+    if (! $megan_emis ) {
+      %species = ( %species,
+                'ISOP   -> ' => 'isop_emis_file',  );
+    }
+    # tentatively add chemUCI-Linozv2|3 additional species here with superfast_mam4_resus_soag
+    # May later add a block to use a new chem package name in parallel with superfast_mam4_resus_soag
+    if ($opts{'use_case'} =~ /chemUCI-Linoz/) {
+        %species = ( %species,
+                'C2H4      -> ' => 'c2h4_emis_file',
+                'C2H6      -> ' => 'c2h6_emis_file',
+                'C3H8      -> ' => 'c3h8_emis_file',
+                'CH3CHO    -> ' => 'ch3cho_emis_file',
+                'CH3COCH3  -> ' => 'ch3coch3_emis_file',
+                'E90       -> ' => 'e90_emis_file', );
+    }
     my %verhash = ('ver'=>'mam');
     my $first = 1;
     my $pre = "";
@@ -2957,7 +2976,7 @@ if ($chem eq 'linoz_mam4_brc_resus_mom_soag') {
         add_default($nl, 'srf_emis_type',      'val'=>'CYCLICAL');
         add_default($nl, 'srf_emis_cycle_yr',  'val'=>2000);
     }
-    
+
     # Vertical emission datasets:
     %species = ();
     %species = ('SO2         -> ' => 'so2_ext_file',
@@ -2968,8 +2987,9 @@ if ($chem eq 'linoz_mam4_brc_resus_mom_soag') {
                 'bc_a4       -> ' => 'bc_a4_ext_file',
                 'num_a1      -> ' => 'mam7_num_a1_ext_file',
                 'num_a2      -> ' => 'num_a2_ext_file',
-                'num_a4      -> ' => 'mam7_num_a3_ext_file', );  
-   # tentatively add chemUCI-Linozv2|3 additional species here with superfast_mam4_resus_soag    
+                'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+
+   # tentatively add chemUCI-Linozv2|3 additional species here with superfast_mam4_resus_soag
    if ($opts{'use_case'} =~ /chemUCI-Linoz/) {
         %species = ( %species,
                 'NO2         -> ' => 'no2_ext_file' );
@@ -2991,10 +3011,9 @@ if ($chem eq 'linoz_mam4_brc_resus_mom_soag') {
     }
     # Species with fixed stratosphere values
     $val = "'NO','NO2','HNO3','CO'";
-    add_default($nl, 'fstrat_list', 'val'=>$val); 
-
+    add_default($nl, 'fstrat_list', 'val'=>$val);
     # Datasets
-    # #    my @files = ('airpl_emis_file', 'soil_erod_file', 'flbc_file', 'fstrat_file',
+    #  my @files = ('airpl_emis_file', 'soil_erod_file', 'flbc_file', 'fstrat_file',
     my @files = ('airpl_emis_file', 'soil_erod_file', 'fstrat_file',
                  'sulf_file', 'tuv_xsect_file', 'o2_xsect_file', 'xs_long_file', 'rsf_file',
                  'solar_parms_file', 'exo_coldens_file', 'sad_file',
@@ -3005,11 +3024,11 @@ if ($chem eq 'linoz_mam4_brc_resus_mom_soag') {
     unless (defined $nl->get_value('sad_type')) {
         add_default($nl, 'sad_type',  'val'=>'CYCLICAL');
         add_default($nl, 'sad_cycle_yr',  'val'=>'1990');
-    } 
-    #    unless (defined $nl->get_value('flbc_type')) {
-    #    #       add_default($nl, 'flbc_type',  'val'=>'CYCLICAL');
-    #    #       add_default($nl, 'flbc_cycle_yr',  'val'=>'2000');
-    #    #    }
+    }
+#    unless (defined $nl->get_value('flbc_type')) {
+#    #       add_default($nl, 'flbc_type',  'val'=>'CYCLICAL');
+#    #       add_default($nl, 'flbc_cycle_yr',  'val'=>'2000');
+#    #    }
     unless (defined $nl->get_value('linoz_data_type')) {
         add_default($nl, 'linoz_data_type',  'val'=>'CYCLICAL');
         add_default($nl, 'linoz_data_cycle_yr',  'val'=>'0');
@@ -3019,8 +3038,7 @@ if ($chem eq 'linoz_mam4_brc_resus_mom_soag') {
         add_default($nl, 'chlorine_loading_fixed_ymd',  'val'=>'20000101');
     }
     add_default($nl, 'xactive_prates', 'val'=>'.false.');
-
-     # Prescribed species
+    # Prescribed species
     my $val = "'CH4','NO3'";
     add_default($nl, 'tracer_cnst_specifier', 'val'=>$val);
     my @files = ( 'tracer_cnst_datapath','tracer_cnst_file', 'tracer_cnst_filelist');
@@ -3032,16 +3050,16 @@ if ($chem eq 'linoz_mam4_brc_resus_mom_soag') {
         add_default($nl, 'tracer_cnst_cycle_yr','ver'=>'fixed_ch4');
     }
 
-    my $val = "'prsd_ch4:CH4'";
-    add_default($nl, 'prescribed_ghg_specifier', 'val'=>$val);
-    my @files = ( 'prescribed_ghg_datapath','prescribed_ghg_file', 'prescribed_ghg_filelist');
-    foreach my $file (@files) {
-        add_default($nl, $file, 'ver'=>'fixed_ch4');
-    }
-    unless (defined $nl->get_value('prescribed_ghg_type')) {
-        add_default($nl, 'prescribed_ghg_type',    'ver'=>'fixed_ch4');
-        add_default($nl, 'prescribed_ghg_cycle_yr','ver'=>'fixed_ch4');
-    }
+    #my $val = "'prsd_ch4:CH4'";
+    #add_default($nl, 'prescribed_ghg_specifier', 'val'=>$val);
+    #my @files = ( 'prescribed_ghg_datapath','prescribed_ghg_file', 'prescribed_ghg_filelist');
+    #foreach my $file (@files) {
+    #    add_default($nl, $file, 'ver'=>'fixed_ch4');
+    #}
+    #unless (defined $nl->get_value('prescribed_ghg_type')) {
+    #    add_default($nl, 'prescribed_ghg_type',    'ver'=>'fixed_ch4');
+    #    add_default($nl, 'prescribed_ghg_cycle_yr','ver'=>'fixed_ch4');
+    #}
     # Marine organic matter specification
     my @files = ('mam_mom_specifier', 'mam_mom_filename',
                  'mam_mom_datapath', 'mam_mom_datatype',
@@ -3050,6 +3068,7 @@ if ($chem eq 'linoz_mam4_brc_resus_mom_soag') {
     foreach my $file (@files) {
         add_default($nl, $file);
     }
+
 }  
 
          
