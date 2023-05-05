@@ -8,6 +8,7 @@
 
 namespace scream
 {
+
 AtmosphereInput::
 AtmosphereInput (const ekat::ParameterList& params,
                 const std::shared_ptr<const fm_type>& field_mgr)
@@ -22,6 +23,26 @@ AtmosphereInput (const ekat::ParameterList& params,
                  const std::map<std::string,FieldLayout>&  layouts)
 {
   init (params,grid,host_views_1d,layouts);
+}
+
+AtmosphereInput::
+AtmosphereInput (const std::string& filename,
+                 const std::shared_ptr<const grid_type>& grid,
+                 const std::vector<Field>& fields)
+{
+  // Create param list and field manager on the fly
+  ekat::ParameterList params;
+  params.set("Filename",filename);
+  auto& names = params.get<std::vector<std::string>>("Field Names",{});
+
+  auto fm = std::make_shared<fm_type>(grid);
+  fm->registration_begins();
+  fm->registration_ends();
+  for (auto& f : fields) {
+    fm->add_field(f);
+    names.push_back(f.name());
+  }
+  init(params,fm);
 }
 
 void AtmosphereInput::
@@ -362,9 +383,16 @@ AtmosphereInput::get_vec_of_dims(const FieldLayout& layout)
 {
   // Given a set of dimensions in field tags, extract a vector of strings
   // for those dimensions to be used with IO
-  std::vector<std::string> dims_names(layout.rank());
+  using namespace ShortFieldTagsNames;
+  std::vector<std::string> dims_names;
+  dims_names.reserve(layout.rank());
   for (int i=0; i<layout.rank(); ++i) {
-    dims_names[i] = scorpio::get_nc_tag_name(layout.tag(i),layout.dim(i));
+    const FieldTag t = layout.tag(i);
+    if (t==CMP) {
+      dims_names.push_back("dim" + std::to_string(layout.dim(i)));
+    } else {
+      dims_names.push_back(m_io_grid->get_dim_name(t));
+    }
   }
 
   return dims_names;

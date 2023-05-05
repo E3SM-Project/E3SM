@@ -109,55 +109,6 @@ extern "C" {
 // field-dependent extent, such as vector dimensions. Those have to
 // be "unpacked", storing a separate variable for each slice.
 
-inline std::string get_nc_tag_name (const FieldTag& t, const int extent) {
-  using namespace ShortFieldTagsNames;
-
-  std::string name = "";
-  switch(t) {
-    case EL:
-      name = "elem";
-      break;
-    case LEV:
-      name = "lev";
-      break;
-    case ILEV:
-      name = "ilev";
-      break;
-    case TL:
-      name = "tl";
-      break;
-    case COL:
-      name = "ncol";
-      break;
-    case GP:
-      name = "gp";
-      break;
-    case CMP:
-      name = "dim" + std::to_string(extent);
-      break;
-    // Added for rrtmgp - TODO revisit this paradigm, see comment in field_tag.hpp
-    case NGAS:
-      name = "ngas";
-      break;
-    case SWBND:
-      name = "swband";
-      break;
-    case LWBND:
-      name = "lwband";
-      break;
-    case SWGPT:
-      name = "swgpt";
-      break;
-    case LWGPT:
-      name = "lwgpt";
-      break;
-    default:
-      EKAT_ERROR_MSG("Error! Field tag not supported in netcdf files.");
-  }
-
-  return name;
-}
-
 } // namespace scorpio
 } // namespace scream
 
