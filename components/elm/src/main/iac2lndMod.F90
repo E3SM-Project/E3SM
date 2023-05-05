@@ -221,6 +221,9 @@ contains
           end do
        end do
 
+! avd - don't do this to see if it speeds up; besides, it isn't useful in
+! parallel
+if (.false.) then
        ! avd - write these values to a file
        write(iulog,*) subname, 'Writing diagnostic iac2land file'
 
@@ -233,9 +236,6 @@ contains
        end do
        write(hfile,'(a)') './iac2lnd_update.nc'
 
-! avd - don't do this to see if it speeds up; besides, it isn't useful in
-! parallel
-if (.false.) then
        ierr = nf90_create(trim(hfile),nf90_clobber,ncid)
        ierr = nf90_def_dim(ncid,'ngcells',ngcells,pdimid(1))
        ierr = nf90_def_dim(ncid,'npfts',17,pdimid(2))

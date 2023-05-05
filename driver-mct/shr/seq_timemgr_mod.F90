@@ -1131,11 +1131,18 @@ contains
     ! Try to set Reftime to start of next month - hopefully start in January?
     ! call ESMF_TimeIntervalSet( TimeStep, s=31*24*3600, rc=rc )
     ! Okay, I *think* this is a one month interval in ESMF speak
-    call ESMF_TimeIntervalSet( TimeStep, mm=1, rc=rc )
+    !call ESMF_TimeIntervalSet( TimeStep, mm=1, rc=rc )
+    !OffsetTime = CurrTime + TimeStep
+    ! Now call the average at the 0tod of each year
+    call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_iac),&
+                               rc=rc)
     OffsetTime = CurrTime + TimeStep
+    call ESMF_TimeIntervalSet( TimeStep, s=-offset(seq_timemgr_nclock_drv),&
+                               rc=rc )
+    OffsetTime = OffsetTime + TimeStep
     call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
          EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_iacrun_avg),  &
-         option  = seq_timemgr_optMonthly,         &
+         option  = seq_timemgr_optYearly,         &
          RefTime = OffsetTime,                    &
          alarmname = trim(seq_timemgr_alarm_iacrun_avg))
 

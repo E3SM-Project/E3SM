@@ -245,11 +245,6 @@ contains
     call seq_infodata_GetData(infodata, iac_present=iac_present)
     call elm_varctl_set_iac_active_only(iac_present)
 
-! avd
-write(iulog,*) sub//'iac_present is ',iac_present, &
-                'iac_active is ', iac_active
-
-
     ! Read namelist, grid and surface data
 
     call initialize1( )
