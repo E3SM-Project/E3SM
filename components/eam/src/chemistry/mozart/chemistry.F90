@@ -831,7 +831,7 @@ end function chem_is
 
    call aero_model_readnl(nlfile)
    call dust_readnl(nlfile)     
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_BRC)
    call ocean_data_readnl(nlfile)
 #endif
 !

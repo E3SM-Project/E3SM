@@ -2924,7 +2924,7 @@ if ($chem eq 'trop_mam4_mom' || $chem eq 'trop_mam4_resus_mom') {
         add_default($nl, $file);
     }
 }
-if ($chem eq 'superfast_mam4_brc_resus_mom_soag') {
+if ($chem eq 'superfast_mam4_brc_resus_mom') {
     my %species;
     # Surface emission datasets: 
     my %species;
