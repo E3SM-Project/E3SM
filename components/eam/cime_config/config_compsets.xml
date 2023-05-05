@@ -33,7 +33,8 @@
 
   <compset>
     <alias>F20TR_chemUCI-Linozv3</alias>
-    <lname>20TR_EAM%CHEMUCI-LINOZV3_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname> <!--zhang73-->
+    <!--<lname>20TR_EAM%CHEMUCI-LINOZV3_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>-->
+    <lname>20TR_EAM%CHEMUCI-LINOZV3_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>

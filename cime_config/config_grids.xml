@@ -1047,7 +1047,8 @@
     <model_grid alias="CAx32v1pg2_CAx32v1pg2">
       <grid name="atm">ne0np4_CAx32v1.pg2</grid>
       <grid name="lnd">ne0np4_CAx32v1.pg2</grid>
-      <grid name="ocnice">oRRS18to6v3</grid> <!--zhang73-->
+      <!--<grid name="ocnice">oRRS18to6v3</grid> used for MPASSI-->
+      <grid name="ocnice">ne0np4_CAx32v1.pg2</grid> <!--(zhang73) for CICE-->
       <grid name="rof">r0125</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
@@ -3686,14 +3687,14 @@
       <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/antarcticax4v1np4/map_antarcticax4v1pg2_to_r0125_mono.20200925.nc</map>
     </gridmap>
     
-    <!--zhang73-->
+    <!--(zhang73) only used for MPASSI
     <gridmap atm_grid="ne0np4_CAx32v1.pg2" ocn_grid="oRRS18to6v3">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_oRRS18to6v3_mono.20220430.nc</map>
       <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_oRRS18to6v3_bilin.20220430.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_oRRS18to6v3_bilin.20220430.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_oRRS18to6v3_to_CAne32x32v1pg2_mono.20220430.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/CAx32v1pg2/map_oRRS18to6v3_to_CAne32x32v1pg2_mono.20220430.nc</map>
-    </gridmap>
+    </gridmap>-->
 
     <!--activate Mosart r0125 mapping files made by Peter (zhang73)-->
     <gridmap atm_grid="ne0np4_CAx32v1.pg2" rof_grid="r0125">
