@@ -125,8 +125,6 @@ contains
        allocate(this%sp_pftorder_index      (begp:endp)); this%sp_pftorder_index      (:) = nan
     end if
 
-    ! avd
-    write(iulog,*) 'in veg_pp_init iac_active is ', iac_active
     if (iac_active) then
        allocate(this%wtgcell_iac   (begp:endp)); this%wtgcell (:) = nan
     end if

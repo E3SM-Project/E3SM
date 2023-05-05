@@ -204,6 +204,9 @@ contains
     ! for end of month, then run the average, then finally compare with
     ! previous max for this year and store in yet another avect
     !
+    ! Actually just use the annual average because max months don't
+    !   correspond to each other
+    !
     ! Arguments
     character(len=*), intent(in) :: timer
     !
@@ -236,6 +239,9 @@ contains
     ! Finalize accumulation of land input to iac component, and build
     ! the max of monthly means
     !
+    ! Actually just use the annual average
+    !    the timer has been changed to do this average yearly
+    !
     ! Arguments
     character(len=*), intent(in) :: timer
     !
@@ -249,10 +255,10 @@ contains
           write(logunit,*) 'TRS eli = ', eli, num_inst_lnd
 
           call mct_avect_avg(l2zacc_lx(eli),l2zacc_lx_cnt)
-          call iac_avect_max(l2zacc_lx(eli), l2zmax_lx(eli))
+          !call iac_avect_max(l2zacc_lx(eli), l2zmax_lx(eli))
           
           call mct_avect_info(4,l2zacc_lx(eli),istr='TRS l2zacc')
-          call mct_avect_info(4,l2zmax_lx(eli),istr='TRS l2zmax')
+          !call mct_avect_info(4,l2zmax_lx(eli),istr='TRS l2zmax')
        end do
     endif
     l2zacc_lx_cnt = 0
@@ -432,7 +438,10 @@ contains
        !l2x_lx => component_get_c2x_cx(lnd(eli))
        !call seq_map_map(mapper_Sl2z, l2_lx, l2x_zx(eli), fldlist=seq_flds_l2x_states, norm=.true.)
        !Need to map the max vector l2zmax_lx, which is local
-       call seq_map_map(mapper_Sl2z, l2zmax_lx(eli), l2x_zx(ezi), fldlist=seq_flds_l2x_states, norm=.true.)
+       !call seq_map_map(mapper_Sl2z, l2zmax_lx(eli), l2x_zx(ezi), fldlist=seq_flds_l2x_states, norm=.true.)
+       !Actually just use the annual average
+       call seq_map_map(mapper_Sl2z, l2zacc_lx(eli), l2x_zx(ezi),&
+          fldlist=seq_flds_l2x_states, norm=.true.)
     enddo
 
     ! Now zero out max avects for the next year of lnd runs
