@@ -154,7 +154,6 @@ void run(std::mt19937_64& engine)
     }
 
     // Run diagnostic and compare with manual calculation
-    diag->compute_diagnostic();
     Field rh_f = T_mid_f.clone();
     rh_f.deep_copy<double,Host>(0.0);
     rh_f.sync_to_dev();
