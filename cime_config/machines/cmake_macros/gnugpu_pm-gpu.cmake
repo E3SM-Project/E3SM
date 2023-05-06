@@ -1,4 +1,5 @@
 string(APPEND CONFIG_ARGS " --host=cray")
+set(PIO_FILESYSTEM_HINTS "lustre")
 set(USE_CUDA "TRUE")
 string(APPEND CPPDEFS " -DGPU")
 if (COMP_NAME STREQUAL gptl)
