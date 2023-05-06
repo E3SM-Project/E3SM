@@ -712,6 +712,7 @@ my $prog_ghg1    = ($chem =~ "trop_mozart" or $chem =~ "trop_strat" or $chem =~ 
 my $prog_ghg2    = ($chem =~ "ghg" or $prog_species =~ "GHG");
 my $ghg_chem     = ($chem =~ "ghg");
 my $aero_chem    = ($chem =~ "aero" or $chem eq 'trop_mozart' or $chem eq 'trop_mozart_soa'  or $chem =~ 'trop_strat' or $chem eq 'trop_bam');
+my $vbs_soa      = $cfg->get('vbs');
 
 my $chem_rad_passive = ($nl->get_value('chem_rad_passive') =~ /$TRUE/io);
 my $ipcc_aircraft_emis = ($nl->get_value('ipcc_aircraft_emis') =~ /$TRUE/io);

@@ -1277,8 +1277,14 @@ contains
           n = map2chm( m )
           if ( n > 0 ) then
              if ( .not. any( aer_species == n ) ) then
-               if (trim(solsym(n))/='DMS' .and. trim(solsym(n))/='SO2' .and. &
-                   trim(solsym(n))/='H2SO4' .and. trim(solsym(n))/='SOAG') then
+               if (trim(solsym(n))/='DMS'    .and. trim(solsym(n))/='SO2' .and. &
+                   trim(solsym(n))/='H2SO4'  .and. trim(solsym(n))/='SOAG' .and. &
+                   trim(solsym(n))/='SOAG0'  .and. trim(solsym(n))/='SOAG15' .and. &
+                   trim(solsym(n))/='SOAG24' .and. trim(solsym(n))/='SOAG31' .and. &
+                   trim(solsym(n))/='SOAG32' .and. trim(solsym(n))/='SOAG33' .and. & 
+                   trim(solsym(n))/='SOAG34' .and. trim(solsym(n))/='SOAG35' .and. &
+                   trim(solsym(n))/='HNO3'   .and. trim(solsym(n))/='NH3' .and. &
+                   trim(solsym(n))/='HCL') then
                    !write(iulog,*) 'n=',n,'solsym=',trim(solsym(n))
                    vmr(:ncol,:,n) = vmr_old2(:ncol,:,n)
                endif
