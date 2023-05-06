@@ -24,12 +24,13 @@ string(APPEND LDFLAGS " -L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.16/gtl
 # For YAKL's -lroctx64 -lrocfft; the rocm module doesn't set this.
 string(APPEND LDFLAGS " -L$ENV{ROCM_PATH}/lib")
 
-#this resolves a crash in mct in docn init
-if (NOT DEBUG)
+# 'NOT DEBUG': this resolves a crash in mct in docn init
+# 'DEBUG' casee, too: resolves a build error in elm/src/main/elm_varctl.F90 due to several OpenACC syntax errors
+#if (NOT DEBUG)
   string(APPEND CFLAGS " -O2 -hnoacc -hfp0 -hipa0")
   string(APPEND FFLAGS " -O2 -hnoacc -hfp0 -hipa0")
-endif()
+#endif()
 
 string(APPEND CPPDEFS " -DCPRCRAY")
 
-set(SCREAM_MPI_ON_DEVICE OFF CACHE STRING "See SCREAM issue #2080.")
+#set(SCREAM_MPI_ON_DEVICE OFF CACHE STRING "See SCREAM issue #2080.")

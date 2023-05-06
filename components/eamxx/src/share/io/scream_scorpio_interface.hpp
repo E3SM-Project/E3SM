@@ -33,6 +33,8 @@ namespace scorpio {
   /* Register a new file to be used for input/output with the scorpio module */
   void register_file(const std::string& filename, const FileMode mode);
   /* Sets the IO decompostion for all variables in a particular filename.  Required after all variables have been registered.  Called once per file. */
+  int get_dimlen(const std::string& filename, const std::string& dimname);
+  bool has_variable (const std::string& filename, const std::string& varname);
   void set_decomp(const std::string& filename);
   /* Sets the degrees-of-freedom for a particular variable in a particular file.  Called once for each variable, for each file. */
   void set_dof(const std::string &filename, const std::string &varname, const Int dof_len, const offset_t* x_dof);
@@ -90,9 +92,8 @@ extern "C" {
   bool is_eam_pio_subsystem_inited();
   /* Checks if a file is already open, with the given mode */
   int get_file_ncid_c2f(const char*&& filename);
+  // If mode<0, then simply checks if file is open, regardless of mode
   bool is_file_open_c2f(const char*&& filename, const int& mode);
-  int get_dimlen_c2f(const char*&& filename, const char*&& dimname);
-  bool has_variable_c2f (const char*&& filename, const char*&& varname);
   /* Query a netCDF file for the time variable */
   double read_time_at_index_c2f(const char*&& filename, const int& time_index);
   double read_curr_time_c2f(const char*&& filename);
@@ -107,55 +108,6 @@ extern "C" {
 // sense for an nc file are omitted. Namely, all those that have a
 // field-dependent extent, such as vector dimensions. Those have to
 // be "unpacked", storing a separate variable for each slice.
-
-inline std::string get_nc_tag_name (const FieldTag& t, const int extent) {
-  using namespace ShortFieldTagsNames;
-
-  std::string name = "";
-  switch(t) {
-    case EL:
-      name = "elem";
-      break;
-    case LEV:
-      name = "lev";
-      break;
-    case ILEV:
-      name = "ilev";
-      break;
-    case TL:
-      name = "tl";
-      break;
-    case COL:
-      name = "ncol";
-      break;
-    case GP:
-      name = "gp";
-      break;
-    case CMP:
-      name = "dim" + std::to_string(extent);
-      break;
-    // Added for rrtmgp - TODO revisit this paradigm, see comment in field_tag.hpp
-    case NGAS:
-      name = "ngas";
-      break;
-    case SWBND:
-      name = "swband";
-      break;
-    case LWBND:
-      name = "lwband";
-      break;
-    case SWGPT:
-      name = "swgpt";
-      break;
-    case LWGPT:
-      name = "lwgpt";
-      break;
-    default:
-      EKAT_ERROR_MSG("Error! Field tag not supported in netcdf files.");
-  }
-
-  return name;
-}
 
 } // namespace scorpio
 } // namespace scream

@@ -855,8 +855,10 @@
         <command name="reset"></command>
         <command name="load">PrgEnv-cray</command>
         <!-- See SCREAM issue #2080. -->
-        <!--command name="load">craype-accel-amd-gfx90a</command-->
+        <command name="load">craype-accel-amd-gfx90a</command>
         <command name="load">rocm/5.1.0</command>
+        <!-- Work around tcmalloc crash. -->
+        <command name="load">cce/14.0.3</command>
       </modules>
       <modules>
         <command name="load">cray-python/3.9.4.2</command>
@@ -879,7 +881,7 @@
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
       <env name="MPIR_CVAR_GPU_EAGER_DEVICE_MEM">0</env>
       <!-- See SCREAM issue #2080. -->
-      <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
+      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
       <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
     </environment_variables>
 
@@ -5267,6 +5269,45 @@
     </environment_variables>
     <environment_variables compiler="intel18">
       <env name="FORT_BUFFERED">yes</env>
+    </environment_variables>
+  </machine>
+
+  <machine MACH="docker-scream">
+    <DESC>Docker</DESC>
+    <NODENAME_REGEX>docker</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <PROXY />
+    <COMPILERS>gnu,gnuX</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <PROJECT>CIME</PROJECT>
+    <SAVE_TIMING_DIR>/storage/timings</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>CIME</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/storage/cases</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/storage/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/storage/inputdata-clmforc</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/storage/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/storage/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/storage/tools/cprnc</CCSM_CPRNC>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>8</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>scream</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="openmpi">
+      <executable>mpiexec</executable>
+      <arguments>
+        <arg name="ntasks">-n {{ total_tasks }}</arg>
+        <arg name="oversubscribe">--oversubscribe</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none" />
+    <RUNDIR>$CASEROOT/run</RUNDIR>
+    <EXEROOT>$CASEROOT/bld</EXEROOT>
+    <environment_variables>
+      <env name="OMPI_ALLOW_RUN_AS_ROOT">1</env>
+      <env name="OMPI_ALLOW_RUN_AS_ROOT_CONFIRM">1</env>
     </environment_variables>
   </machine>
 

@@ -156,7 +156,7 @@ class COV(TestProperty):
 class VALG(TestProperty):
 ###############################################################################
 
-    def __init__(self, _):
+    def __init__(self, tas):
         TestProperty.__init__(
             self,
             "valgrind",
@@ -166,6 +166,11 @@ class VALG(TestProperty):
             on_by_default=False,
             default_test_len="short"
         )
+        if tas is not None:
+            # If a stored suppression file exists for this machine, use it
+            persistent_supp_file = tas.get_root_dir() / "scripts" / "jenkins" / "valgrind" / f"{tas.get_machine()}.supp"
+            if persistent_supp_file.exists():
+                self.cmake_args.append( ("EKAT_VALGRIND_SUPPRESSION_FILE", str(persistent_supp_file)) )
 
 ###############################################################################
 class CMC(TestProperty):
@@ -353,11 +358,6 @@ class TestAllScream(object):
         else:
             expect (not self._local, "Specifying a machine while passing '-l,--local' is ambiguous.")
 
-        # Make our test objects! Change mem to default mem-check test for current platform
-        if "mem" in tests:
-            tests[tests.index("mem")] = "cmc" if self.on_cuda() else "valg"
-        self._tests = test_factory(tests, self)
-
         # Compute root dir (where repo is) and work dir (where build/test will happen)
         if not self._root_dir:
             self._root_dir = Path(__file__).resolve().parent.parent
@@ -365,6 +365,11 @@ class TestAllScream(object):
             self._root_dir = Path(self._root_dir).resolve()
             expect(self._root_dir.is_dir() and self._root_dir.parts()[-2:] == ('scream', 'components'),
                    f"Bad root-dir '{self._root_dir}', should be: $scream_repo/components/eamxx")
+
+        # Make our test objects! Change mem to default mem-check test for current platform
+        if "mem" in tests:
+            tests[tests.index("mem")] = "cmc" if self.on_cuda() else "valg"
+        self._tests = test_factory(tests, self)
 
         if self._work_dir is not None:
             self._work_dir = Path(self._work_dir).absolute()
@@ -582,6 +587,16 @@ class TestAllScream(object):
     ###############################################################################
         return root/str(test)
 
+    ###############################################################################
+    def get_root_dir(self):
+    ###############################################################################
+        return self._root_dir
+
+    ###############################################################################
+    def get_machine(self):
+    ###############################################################################
+        return self._machine
+
     ###########################################################################
     def on_cuda(self):
     ###########################################################################
@@ -655,7 +670,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
                     if num_ref_is_ahead_file > 0 or self._force_baseline_regen:
                         test.missing_baselines = True
                         reason = "forcing baseline regen" if self._force_baseline_regen \
-                                 else "f{self._baseline_ref} is ahead of the baseline commit by {num_ref_is_ahead_file}"
+                                 else f"{self._baseline_ref} is ahead of the baseline commit by {num_ref_is_ahead_file}"
                         print(f" -> Test {test} baselines are expired because {reason}")
                     else:
                         print(f" -> Test {test} baselines are valid and do not need to be regenerated")

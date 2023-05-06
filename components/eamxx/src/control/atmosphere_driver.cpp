@@ -778,7 +778,7 @@ void AtmosphereDriver::restart_model ()
     for (const auto& fn : restart_group->m_fields_names) {
       fnames.push_back(fn);
     }
-    read_fields_from_file (fnames,it.first,filename,m_current_ts);
+    read_fields_from_file (fnames,it.second->get_grid(),filename,m_current_ts);
   }
 
   // Restart the num steps counter in the atm time stamp
@@ -997,7 +997,7 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_logger->info("    [EAMxx] IC filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
-      read_fields_from_file (ic_fields_names[grid_name],it.first,file_name,m_current_ts);
+      read_fields_from_file (ic_fields_names[grid_name],it.second->get_grid(),file_name,m_current_ts);
     }
   }
 
@@ -1063,9 +1063,19 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_logger->info("        filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
+      // Topography files always use "ncol_d" for the GLL grid value of ncol.
+      // To ensure we read in the correct value, we must change the name for that dimension
+      auto io_grid = it.second->get_grid();
+      if (grid_name=="Physics GLL") {
+        using namespace ShortFieldTagsNames;
+        auto grid = io_grid->clone(io_grid->name(),true);
+        grid->reset_field_tag_name(COL,"ncol_d");
+        io_grid = grid;
+      }
+
       read_fields_from_file (topography_file_fields_names[grid_name],
                              topography_eamxx_fields_names[grid_name],
-                             it.first,file_name,m_current_ts);
+                             io_grid,file_name,m_current_ts);
     }
     m_atm_logger->debug("    [EAMxx] Processing topography from file ... done!");
   } else {
@@ -1087,7 +1097,7 @@ void AtmosphereDriver::set_initial_conditions ()
 void AtmosphereDriver::
 read_fields_from_file (const std::vector<std::string>& field_names_nc,
                        const std::vector<std::string>& field_names_eamxx,
-                       const std::string& grid_name,
+                       const std::shared_ptr<const AbstractGrid>& grid,
                        const std::string& file_name,
                        const util::TimeStamp& t0)
 {
@@ -1098,43 +1108,39 @@ read_fields_from_file (const std::vector<std::string>& field_names_nc,
     return;
   }
 
-  ekat::ParameterList ic_reader_params;
-  ic_reader_params.set("Field Names",field_names_nc);
-  ic_reader_params.set("Filename",file_name);
-
-  using view_1d_host = AtmosphereInput::view_1d_host;
-
-  const auto& field_mgr = m_field_mgrs.at(grid_name);
-  std::map<std::string, view_1d_host> hosts_views;
-  std::map<std::string, FieldLayout> layouts;
-  for (int i=0; i<int(field_names_nc.size()); ++i) {
-    const auto fname_nc = field_names_nc[i];
-    const auto fname_eamxx = field_names_eamxx[i];
-
-    hosts_views[fname_nc] =
-      field_mgr->get_field(fname_eamxx).get_view<Real*, Host>();
-    layouts.emplace(fname_nc,
-      field_mgr->get_field(fname_eamxx).get_header().get_identifier().get_layout());
+  // NOTE: we cannot pass the field_mgr and m_grids_mgr, since the input
+  //       grid may not be in the grids_manager and may not be the grid
+  //       of the field mgr. This sounds weird, but there is a precise
+  //       use case: when grid is a shallow clone of the fm grid, where
+  //       we changed the name of some field tags (e.g., we set the name
+  //       of COL to ncol_d). This is used when reading the topography,
+  //       since the topo file *always* uses ncol_d for GLL points data,
+  //       while a non-PG2 run would have the tag name be "ncol".
+  const auto& field_mgr = m_field_mgrs.at(grid->name());
+  std::vector<Field> fields;
+  for (size_t i=0; i<field_names_nc.size(); ++i) {
+    const auto& eamxx_name = field_names_eamxx[i];
+    const auto& nc_name    = field_names_nc[i];
+    fields.push_back(field_mgr->get_field(eamxx_name).alias(nc_name));
   }
 
-  AtmosphereInput ic_reader(ic_reader_params,
-                            m_grids_manager->get_grid(grid_name),
-                            hosts_views, layouts);
+  AtmosphereInput ic_reader(file_name,grid,fields);
   ic_reader.read_variables();
   ic_reader.finalize();
 
-  for (const auto& fname : field_names_eamxx) {
-    auto f = field_mgr->get_field(fname);
-    // Sync fields to device
-    f.sync_to_dev();
+  for (auto& f : fields) {
     // Set the initial time stamp
+    // NOTE: f is an alias of the field from field_mgr, so it shares all
+    //       pointers to the metadata (except for the FieldIdentifier),
+    //       so changing its timestamp will also change the timestamp
+    //       of the field in field_mgr
     f.get_header().get_tracking().update_time_stamp(t0);
   }
 }
 
 void AtmosphereDriver::
 read_fields_from_file (const std::vector<std::string>& field_names,
-                       const std::string& grid_name,
+                       const std::shared_ptr<const AbstractGrid>& grid,
                        const std::string& file_name,
                        const util::TimeStamp& t0)
 {
@@ -1142,24 +1148,26 @@ read_fields_from_file (const std::vector<std::string>& field_names,
     return;
   }
 
-  // Loop over all grids, setup and run an AtmosphereInput object,
-  // loading all fields in the RESTART group on that grid from
-  // the nc file stored in the rpointer file
-  // for (const auto& it : m_field_mgrs) {
-  const auto& field_mgr = m_field_mgrs.at(grid_name);
+  // NOTE: we cannot pass the field_mgr and m_grids_mgr, since the input
+  //       grid may not be in the grids_manager and may not be the grid
+  //       of the field mgr. This sounds weird, but there is a precise
+  //       use case: when grid is a shallow clone of the fm grid, where
+  //       we changed the name of some field tags (e.g., we set the name
+  //       of COL to ncol_d). This is used when reading the topography,
+  //       since the topo file *always* uses ncol_d for GLL points data,
+  //       while a non-PG2 run would have the tag name be "ncol".
+  const auto& field_mgr = m_field_mgrs.at(grid->name());
+  std::vector<Field> fields;
+  for (const auto& fn : field_names) {
+    fields.push_back(field_mgr->get_field(fn));
+  }
 
-  // There are fields to read from the nc file. We must have a valid nc file then.
-  ekat::ParameterList ic_reader_params;
-  ic_reader_params.set("Field Names",field_names);
-  ic_reader_params.set("Filename",file_name);
-
-  AtmosphereInput ic_reader(ic_reader_params,field_mgr,m_grids_manager);
+  AtmosphereInput ic_reader(file_name,grid,fields);
   ic_reader.read_variables();
   ic_reader.finalize();
 
-  for (const auto& fname : field_names) {
+  for (auto& f : fields) {
     // Set the initial time stamp
-    auto f = field_mgr->get_field(fname);
     f.get_header().get_tracking().update_time_stamp(t0);
   }
 }
