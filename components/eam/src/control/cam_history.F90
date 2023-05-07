@@ -3848,7 +3848,7 @@ end subroutine print_active_fldlst
     &Mailing address: LLNL Climate Program, c/o David C. Bader, &
     &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'contact',  &
-                      'e3sm-data-support@listserv.llnl.gov')
+                      'e3sm-data-support@llnl.gov')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'initial_file', ncdata)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'topography_file', bnd_topo)
 
