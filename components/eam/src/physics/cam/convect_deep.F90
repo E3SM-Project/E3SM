@@ -163,6 +163,7 @@ subroutine convect_deep_init(pref_edge,pbuf2d)
 
   dp_frac_idx = pbuf_get_index('DP_FRAC')
   icwmrdp_idx = pbuf_get_index('ICWMRDP')
+  icimrdp_idx = pbuf_get_index('ICIMRDP')
 
   select case ( deep_scheme )
   case('off') !     ==> no deep convection
@@ -173,6 +174,7 @@ subroutine convect_deep_init(pref_edge,pbuf2d)
      call pbuf_set_field(pbuf2d, dp_flxsnw_idx, 0._r8)
      call pbuf_set_field(pbuf2d, dp_frac_idx, 0._r8)
      call pbuf_set_field(pbuf2d, icwmrdp_idx, 0._r8)
+     call pbuf_set_field(pbuf2d, icimrdp_idx, 0._r8)
      call pbuf_set_field(pbuf2d, rprddp_idx, 0._r8)
      call pbuf_set_field(pbuf2d, nevapr_dpcu_idx, 0._r8)
   case('CLUBB_SGS')
