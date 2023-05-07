@@ -92,6 +92,7 @@ subroutine accrecion_and_accumulation(qcdry,qrdry,dt)
 
 end subroutine accrecion_and_accumulation
 
+!!!!!!!!!!!!!!!!!! there should be only one phi, "wet", this sub is not valid
 !does not need moisture
 subroutine get_geo_from_drydp(Tempe, dpdry, pidry, zbottom, zi, zm, dz)
 
@@ -157,8 +158,13 @@ subroutine sedimentation_nh(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zi,pnh,massleft,e
       enddo
 
 if (k < nlev) then
-  positt = zm(k+1)
-  d_ind = k+1
+!stick to the level below
+!  positt = zm(k+1)
+!  d_ind = k+1
+
+!rain it down immediately
+positt = zi(nlevp)-100.0
+   
 else
   positt = zi(nlevp)-100.0 !to ensure cond below
 endif
@@ -210,8 +216,13 @@ endif
   !we could have recomputed pnh for each iteration for k cell and its destination, 
   !but this is simpler
   dphi = gravit*( zi(1:nlev) - zi(2:nlevp) )
-  rstar = rdry*dpdry + rvapor*dpdry*qvdry
-  pnh = rstar*tempe/dphi
+
+!!!!!!!!!!!!!!do i need to change this Rstar too???
+  !homme rstar
+  !rstar = rdry*dpdry*(1.0 + qcdry + qrdry) + rvapor*dpdry*qvdry
+  !correct Rstar
+  !rstar = rdry*dpdry + rvapor*dpdry*qvdry
+  !pnh = rstar*tempe/dphi
   
 end subroutine sedimentation_nh
 
@@ -499,7 +510,8 @@ end subroutine compute_mass
 
 subroutine rj_new(qv_c,T_c,dp_c,p_c,ptop,massout,wasiactive)
 
-  real(rl), dimension(nlev), intent(in)    :: p_c, dp_c
+  real(rl), dimension(nlev), intent(in)    :: p_c
+  real(rl), dimension(nlev), intent(inout) :: dp_c
   real(rl), dimension(nlev), intent(inout) :: qv_c,T_c
   real(rl),                  intent(inout) :: massout
   real(rl),                  intent(in)    :: ptop
@@ -570,6 +582,7 @@ print *, 'T_new - T_c', T_new - T_c(k)
        T_c(k)  = T_new
        qv_c(k) = qsat
        massout = massout + vapor_mass_change
+       dp_c(k) = dp_loc - vapor_mass_change
      endif
   enddo
   
@@ -659,7 +672,7 @@ subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,dpdry_c,p_c,ptop,zi_c,&
 !     call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_before)
 !     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_before)
      energy_start_timestep = energynh_before
-!     call accrecion_and_accumulation(qcdry_c, qrdry_c, dt)
+     call accrecion_and_accumulation(qcdry_c, qrdry_c, dt)
 !     call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_after)
 !     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_after)
      !print *, 'ACC-C stage HY: enbef - enafter', (energyhy_before - energyhy_after)/energyhy_after
@@ -670,7 +683,7 @@ subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,dpdry_c,p_c,ptop,zi_c,&
      !so far, it is only part that has fluxes out
 !     call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_before)
 !     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_before)
-!     call sedimentation_nh (qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zi_c,p_c, loc_mass_p,loc_energy_p,dt)
+     call sedimentation_nh (qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zi_c,p_c, loc_mass_p,loc_energy_p,dt)
 !     call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_after)
 !     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_after)
 !     if(loc_energy_p > 300.0)then
@@ -727,6 +740,9 @@ subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,dpdry_c,p_c,ptop,zi_c,&
 #endif
 
      call convert_to_wet(qvdry_c, qcdry_c, qrdry_c, dp_c, dpdry_c, qv_c, qc_c, qr_c)
+
+!!!! where is dp3d updated here?
+
 
   endif ! any water >0
 

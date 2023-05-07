@@ -673,14 +673,18 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
         !computes its own dry values
         if(bubble_rj_cpstar) then
 
-          !this one is expected to conserve only after PA
+          !returns new T, qv, new!!! dp, mass
           call rj_new(qv_c,T_c,dp_c,p_c,ptop,mass_prect,wasiactive)
 
         elseif(bubble_rj_cpdry) then
 
+          !BROKEN DO NOT USE does not recompute pressure, and below code 
+          !for state update will be wrong
           !this one conserves with const dp
+          !returns new T, new wet qv, prect mass (dp*delta_qv)
           call rj_old(qv_c,T_c,dp_c,p_c,ptop,mass_prect,wasiactive)
         endif
+
 
       ! Kessler precipitation
       elseif(bubble_prec_type == 0) then
@@ -693,12 +697,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
         !call energy_hy_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,energy_before)
         !call energy_nh_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,energy_before)
 
-        !this one conserves after PA
-if(elem(ie)%globalid == 6 .and. i==4 .and. j==4) then
-        call kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,dpdry_c,p_c,ptop,zi_c,mass_prect,energy_prect,dt,wasiactive,6)
-else
         call kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,dpdry_c,p_c,ptop,zi_c,mass_prect,energy_prect,dt,wasiactive)
-endif
         !in dry to wet conversion kessler used old dp to convert
         !call energy_hy_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,energy_after)
         !call energy_nh_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,energy_after)
@@ -720,6 +719,7 @@ endif
 
 
 #if 0
+      !update tendencies assuming cam_ routines are active
       !now update 3d fields here
       T(i,j,:)  = T_c(:)
       qv(i,j,:) = qv_c(:)
@@ -742,57 +742,25 @@ endif
 !this code is in kessler
 !rstar = rdry*dpdry(1.0+qcdry+qrdry) + rvapor*dpdry*qvdry
 !dphi = rstar*tempe/pnh
-#if 0
-!print what would be the new fields
-if(elem(ie)%globalid == 6 .and. i==4 .and. j==4) then
-ii=110; jj=110;
-print *, '******************************************************'
-print *, 'elem(ie)%derived%FQ(i,j,ii:jj,1)',elem(ie)%derived%FQ(i,j,ii:jj,1)
-print *, 'new vapor mass', dp_c(ii:jj)*qv_c(ii:jj)
-print *, 'new qc mass', dp_c(ii:jj)*qc_c(ii:jj)
-print *, 'new temperature',T_c(ii:jj)
-print *, 'dp3d old, dp3d returned', dp(i,j,ii:jj), dp_c(ii:jj)
-rstar = rdry * dpdry_c + rvapor * dp_c*qv_c
-print *, 'rstar homme pieces', rdry,  dp_c(ii:jj), (rvapor-rdry),dp_c(ii:jj)*qv_c(ii:jj)
-print *, 'rstar WL, rstar homme ', rstar(ii:jj), rdry * dp_c(ii:jj) + (rvapor-rdry) * dp_c(ii:jj)*qv_c(ii:jj)
-print *, 'new vapor mass', dp_c(ii:jj)*qv_c(ii:jj)
-!use homme rstar
-rstar = rdry * dp_c + (rvapor-rdry) * dp_c*qv_c
-!print *, 'NOW rstar is', 
-!using only temperature and new density
-print *, 'new density', dp_c(ii:jj)*(1+dt*( elem(ie)%derived%FQ(i,j,ii:jj,1)+elem(ie)%derived%FQ(i,j,ii:jj,2) ))
-print *, 'qr, qr tendency', qr(i,j,ii:jj),elem(ie)%derived%FQ(i,j,ii:jj,3)
-!now compute dphi again
-print *, 'pnh here', p_c(ii:jj)
-print *, 'dphi here ', rstar(ii:jj)*T_c(ii:jj)/p_c(ii:jj), rstar(ii:jj), T_c(ii:jj), p_c(ii:jj)
-
-print *, 'old phi',  zi(i,j,ii:jj)*gravit
-print *, 'new phi in wrapper',  gravit*zi_c(ii:jj)
-vthetaa = rstar/rdry * T_c * (p0/p_c)**kappa
-print *, 'old vtheta', elem(ie)%state%vtheta_dp(i,j,ii:jj,nt)
-print *, 'new theta in wrapper', vthetaa(ii:jj)
-print *, 'in wrapper FPHI', gravit*(zi_c(ii:jj) - zi(i,j,ii:jj))/dt
-print *, 'in wrapper FTHETA', (vthetaa(ii:jj) - elem(ie)%state%vtheta_dp(i,j,ii:jj,nt))/dt
-print *, 'FTHETA pieces', vthetaa(ii:jj) - elem(ie)%state%vtheta_dp(i,j,ii:jj,nt),dt
-print *, 'init phi, init vtheta',  zi(i,j,ii:jj)*gravit, elem(ie)%state%vtheta_dp(i,j,ii:jj,nt)
-print *, 'vthetaa = rstar/rdry * T_c * (p0/p_c)**kappa'
-print *,'its parts', rstar(ii:jj),rdry,T_c(ii:jj),p0, (p0/p_c(ii:jj))**kappa
-
-endif
-#endif
 
 #if 1
+      !update states assuming cam_ routines are off
       qind=1;  elem(ie)%state%Qdp(i,j,:,qind,ntQ) = dp_c*qv_c
+               elem(ie)%state%Q  (i,j,:,qind)     =      qv_c
       qind=2;  elem(ie)%state%Qdp(i,j,:,qind,ntQ) = dp_c*qc_c
+               elem(ie)%state%Q  (i,j,:,qind)     =      qc_c
       qind=3;  elem(ie)%state%Qdp(i,j,:,qind,ntQ) = dp_c*qr_c
+               elem(ie)%state%Q  (i,j,:,qind)     =      qr_c
+
+!adjust pressure here
       elem(ie)%state%dp3d(i,j,:,nt) = dp_c
       elem(ie)%state%phinh_i(i,j,:,nt) = gravit*zi_c
 
       !correct rstar
       rstar = rdry * dpdry_c + rvapor * dp_c*qv_c
-
       !incorrect rstar, homme version
       !rstar = rdry * dp_c + (rvapor-rdry) * dp_c*qv_c
+
       !rstar has dp factor in it
       elem(ie)%state%vtheta_dp(i,j,:,nt) = rstar/rdry * &
                     T_c * (p0/p_c)**kappa
