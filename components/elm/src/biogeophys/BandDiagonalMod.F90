@@ -219,8 +219,9 @@ contains
   end subroutine BandDiagonal
 
 
-
-
+!! reference impl
+!! from https://netlib.org/cgi-bin/netlibfiles.txt?format=txt&filename=/lapack/lapack_routine/dgbsv.f
+!! license https://netlib.org/lapack/LICENSE.txt
 
       SUBROUTINE DCOPY(N,DX,INCX,DY,INCY)
       INTEGER INCX,INCY,N
