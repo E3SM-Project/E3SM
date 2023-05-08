@@ -13,6 +13,7 @@ _TESTS = {
     "e3sm_mosart_developer" : {
         "share" : True,
         "time"  : "0:45:00",
+        "inherit" : ("e3sm_mosart_sediment"),
         "tests" : (
             "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
             "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
@@ -25,6 +26,13 @@ _TESTS = {
         "time"  : "0:45:00",
         "tests" : (
             "ERS.ne30pg2_r05_EC30to60E2r2.GPMPAS-JRA.mosart-rof_ocn_2way",
+            )
+        },
+
+    "e3sm_mosart_sediment" : {
+        "time"  : "0:45:00",
+        "tests" : (
+            "ERS.MOS_USRDAT.RMOSNLDAS.mosart-sediment",
             )
         },
 
@@ -96,6 +104,15 @@ _TESTS = {
             )
         },
 
+    "e3sm_ice_developer" : {
+        "tests"   : (
+            "SMS_D_Ld1.TL319_EC30to60E2r2.DTESTM-JRA1p5.mpassi-jra_1958",
+            "ERS_Ld5.T62_oQU240.DTESTM",
+            "PEM_Ln5.T62_oQU240wLI.DTESTM",
+            "PET_Ln5.T62_oQU240.DTESTM",
+            )
+        },
+
     "eam_condidiag" : {
         "tests"   : (
             "SMS_D_Ln5.ne4pg2_oQU480.F2010",
@@ -122,6 +139,21 @@ _TESTS = {
         "tests"   : (
             "ERP_Ln18.ne4_oQU240.F2010.eam-cflx_cpl_2",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-cflx_cpl_2",
+            "ERS.ne4pg2_oQU480.F2010.eam-p3",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-p3",
+            )
+        },
+
+        "e3sm_p3_developer" : {
+        "tests"   : (
+            "ERP.ne4pg2_oQU480.F2010.eam-p3",
+            "REP_Ln5.ne4pg2_oQU480.F2010.eam-p3",
+            "PET.ne4pg2_oQU480.F2010.eam-p3",
+            "PEM_Ln18.ne4pg2_oQU480.F2010.eam-p3",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.F2010.eam-p3",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-p3",
+            "SMS_Ln5.ne4pg2_oQU480.F2010.eam-p3",
+            "ERS.ne4pg2_oQU480.F2010.eam-p3"
             )
         },
 
@@ -189,6 +221,7 @@ _TESTS = {
     "e3sm_ocnice_stealth_features" : {
         "tests" : (
             "SMS_D_Ld1.T62_oQU240wLI.GMPAS-IAF-ISMF.mpaso-impl_top_drag",
+            "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-harmonic_mean_drag",
             )
         },
 
@@ -215,7 +248,7 @@ _TESTS = {
         },
 
     "e3sm_developer" : {
-        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer"),
+        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer", "e3sm_ice_developer"),
         "time"    : "0:45:00",
         "tests"   : (
             "ERS.f19_g16_rx1.A",
@@ -259,7 +292,6 @@ _TESTS = {
             "SMS_D_Ln5.conusx4v1_r05_oECv3.F2010",
             "SMS_Ld2.ne30pg2_r05_EC30to60E2r2.BGCEXP_CNTL_CNPECACNT_1850.elm-bgcexp",
             "SMS_Ld2.ne30pg2_r05_EC30to60E2r2.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
-            "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld3.T62_oQU120.CMPASO-IAF",
             "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850",
             "SMS_Ln5.ne30pg2_ne30pg2.F2010-SCREAM-LR-DYAMOND2",
@@ -342,6 +374,14 @@ _TESTS = {
             )
         },
 
+    #e3sm v3atm related tests for development
+    "e3sm_v3atm_integration" : {
+        "tests" : (
+            "ERP_Ld3.ne4pg2_oQU480.F2010-P3",
+            "ERS_Ld3.ne4pg2_oQU480.F20TR-P3",
+            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850-P3.allactive-wcprod",
+            )
+        },
 
     #atmopheric tests for ftypes with 2 builds only
     #ftype2 is a default and tested in other suites for preqx
@@ -524,7 +564,7 @@ _TESTS = {
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1",
             "SMS_D_Ln9.ne4_ne4.F2010-SCREAMv1-noAero",
             "ERP_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1",
-            "ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "ERS_D_Ln21.ne4pg2_ne4pg2.F2010-SCREAMv1.scream-rad_frequency_2",
             )
     },
 
@@ -534,7 +574,6 @@ _TESTS = {
             #  "SMS_D_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1", # Uncomment once IC file for ne30 is ready
             "ERS_Ln22.ne30_ne30.F2010-SCREAMv1",
             "PEM_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1",
-            "ERS_Ln22.ne30pg2_ne30pg2.F2010-SCREAMv1-X6T",
             "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-small_kernels",
             "ERP_Ln22.conusx4v1pg2_r05_oECv3.F2010-SCREAMv1-noAero",
             )

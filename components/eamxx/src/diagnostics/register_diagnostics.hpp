@@ -22,10 +22,10 @@
 #include "diagnostics/relative_humidity.hpp"
 #include "diagnostics/zonal_vapor_flux.hpp"
 #include "diagnostics/meridional_vapor_flux.hpp"
-#include "diagnostics/ice_cloud_mask.hpp"
 #include "diagnostics/field_at_pressure_level.hpp"
 #include "diagnostics/precip_liq_surf_mass_flux.hpp"
 #include "diagnostics/precip_ice_surf_mass_flux.hpp"
+#include "diagnostics/precip_total_surf_mass_flux.hpp"
 
 namespace scream {
 
@@ -52,9 +52,9 @@ inline void register_diagnostics () {
   diag_factory.register_product("RelativeHumidity",&create_atmosphere_diagnostic<RelativeHumidityDiagnostic>);
   diag_factory.register_product("ZonalVapFlux",&create_atmosphere_diagnostic<ZonalVapFluxDiagnostic>);
   diag_factory.register_product("MeridionalVapFlux",&create_atmosphere_diagnostic<MeridionalVapFluxDiagnostic>);
-  diag_factory.register_product("IceCloudMask",&create_atmosphere_diagnostic<IceCloudMaskDiagnostic>);
   diag_factory.register_product("PrecipLiqSurfMassFlux",&create_atmosphere_diagnostic<PrecipLiqSurfMassFluxDiagnostic>);
   diag_factory.register_product("PrecipIceSurfMassFlux",&create_atmosphere_diagnostic<PrecipIceSurfMassFluxDiagnostic>);
+  diag_factory.register_product("PrecipTotalSurfMassFlux",&create_atmosphere_diagnostic<PrecipTotalSurfMassFluxDiagnostic>);
 }
 
 } // namespace scream

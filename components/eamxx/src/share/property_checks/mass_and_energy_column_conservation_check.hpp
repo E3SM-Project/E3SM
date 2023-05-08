@@ -5,6 +5,8 @@
 #include "share/grid/abstract_grid.hpp"
 #include "share/field/field.hpp"
 
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+
 namespace scream {
 
 // This property check ensures that energy has been conserved.

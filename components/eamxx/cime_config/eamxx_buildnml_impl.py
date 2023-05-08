@@ -192,6 +192,7 @@ def refine_type(entry, force_type=None):
 ###############################################################################
     """
     Try to convert the text entry to the appropriate type based on its contents.
+
     >>> e = '(a,b)'
     >>> refine_type(e)==e
     True
@@ -221,27 +222,40 @@ def refine_type(entry, force_type=None):
     CIME.utils.CIMEError: ERROR: Error! Invalid type 'logical' for an array.
     >>> refine_type(e,'array(logical)')
     [True, False]
+    >>> refine_type('', 'array(string)')
+    []
+    >>> refine_type('', 'array(float)')
+    []
+    >>> refine_type(None, 'array(float)')
+    []
     """
     # We want to preserve strings representing lists
-    if (entry[0]=="(" and entry[-1]==")") or \
-       (entry[0]=="[" and entry[-1]=="]") :
-        expect (force_type is None or force_type == "string",
-                "Error! Invalid force type '{}' for a string representing a list"
-                .format(force_type))
-        return entry
 
-    if "," in entry:
-        expect (force_type is None or is_array_type(force_type),
-                "Error! Invalid type '{}' for an array.".format(force_type))
+    if entry:
 
-        elem_type = force_type if force_type is None else array_elem_type(force_type);
-        result = [refine_type(item.strip(), force_type=elem_type) for item in entry.split(",") if item.strip() != ""]
-        expected_type = type(result[0])
-        for item in result[1:]:
-            expect(isinstance(item, expected_type),
-                  "List '{}' has inconsistent types inside".format(entry))
+        if (entry[0]=="(" and entry[-1]==")") or \
+           (entry[0]=="[" and entry[-1]=="]") :
+            expect (force_type is None or force_type == "string",
+                    "Error! Invalid force type '{}' for a string representing a list"
+                    .format(force_type))
+            return entry
 
-        return result
+        if "," in entry:
+            expect (force_type is None or is_array_type(force_type),
+                    "Error! Invalid type '{}' for an array.".format(force_type))
+
+            elem_type = force_type if force_type is None else array_elem_type(force_type)
+            result = [refine_type(item.strip(), force_type=elem_type) for item in entry.split(",") if item.strip() != ""]
+            expected_type = type(result[0])
+            for item in result[1:]:
+                expect(isinstance(item, expected_type),
+                      "List '{}' has inconsistent types inside".format(entry))
+
+            return result
+
+    elif force_type is not None and is_array_type(force_type):
+
+        return []
 
     if force_type:
         try:
@@ -257,7 +271,7 @@ def refine_type(entry, force_type=None):
 
             elif elem_type == "integer":
                 tmp  = float(entry)
-                expect (float(int(tmp))==tmp, "Cannot interpret {} as int".format(entry))
+                expect (float(int(tmp))==tmp, "Cannot interpret {} as int".format(entry), exc_type=ValueError)
                 elem = int(tmp)
             elif elem_type == "real":
                 elem = float(entry)
@@ -271,8 +285,8 @@ def refine_type(entry, force_type=None):
             else:
                 return elem
 
-        except ValueError:
-            raise ValueError ("Could not use '{}' as type '{}'".format(entry, force_type))
+        except ValueError as e:
+            raise ValueError ("Could not use '{}' as type '{}'".format(entry, force_type)) from e
 
     if entry.upper() == "TRUE":
         return True
@@ -323,8 +337,7 @@ def derive_type(entry):
     elif isinstance(elem_value, str):
         elem_type = "string"
     else:
-        raise(UnrecognizedType, "Couldn't derive type of '{}'".format(entry))
-        return None
+        raise RuntimeError("Couldn't derive type of '{}'".format(entry))
 
     if isinstance(refined_value,list):
         return "array(" + elem_type + ")"
@@ -342,9 +355,9 @@ def check_value(elem, value):
     ... <a type="integer" valid_values="1,2">1</a>
     ... '''
     >>> root = ET.fromstring(xml)
-    >>> check_value(root,'1.0')
+    >>> check_value(root,'1.5')
     Traceback (most recent call last):
-    ValueError: Could not use '1.0' as type 'integer'
+    ValueError: Could not use '1.5' as type 'integer'
     >>> check_value(root,'3')
     Traceback (most recent call last):
     CIME.utils.CIMEError: ERROR: Invalid value '3' for element 'a'. Value not in the valid list ('[1, 2]')
@@ -418,33 +431,28 @@ def check_value(elem, value):
             if op=="ne":
                 rhs = refine_type(tokens[1],force_type=vtype)
                 expect (v!=rhs,
-                    "Value '{}' for entry '{}' violates constraint '{} != {}'"
-                    .format(v,elem.tag,v,rhs))
+                        f"Value '{v}' for entry '{elem.tag}' violates constraint '{v} != {rhs}'")
             elif op=="le":
                 rhs = refine_type(tokens[1],force_type=vtype)
                 expect (v<=rhs,
-                    "Value '{}' for entry '{}' violates constraint '{} <= {}'"
-                    .format(v,elem.tag,v,rhs))
+                        f"Value '{v}' for entry '{elem.tag}' violates constraint '{v} <= {rhs}'")
             elif op=="lt":
                 rhs = refine_type(tokens[1],force_type=vtype)
                 expect (v<rhs,
-                    "Value '{}' for entry '{}' violates constraint '{} < {}'"
-                    .format(v,elem.tag,v,rhs))
+                        f"Value '{v}' for entry '{elem.tag}' violates constraint '{v} < {rhs}'")
             elif op=="ge":
                 rhs = refine_type(tokens[1],force_type=vtype)
                 expect (v>=rhs,
-                    "Value '{}' for entry '{}' violates constraint '{} >= {}'"
-                    .format(v,elem.tag,v,rhs))
+                        f"Value '{v}' for entry '{elem.tag}' violates constraint '{v} >= {rhs}'")
             elif op=="gt":
                 rhs = refine_type(tokens[1],force_type=vtype)
                 expect (v>rhs,
-                    "Value '{}' for entry '{}' violates constraint '{} > {}'"
-                    .format(v,elem.tag,v,rhs))
+                        f"Value '{v}' for entry '{elem.tag}' violates constraint '{v} > {rhs}'")
             elif op=="mod":
                 expect (vtype=="integer",
-                    "Cannot evaluate constraint '{} mod {}' for entry '{}'\n"
-                    .format(lhs,tokens[1],elem.tag) +
-                    "Modulo constraint only makes sense for integer parameters.")
+                        "Cannot evaluate constraint '{} mod {}' for entry '{}'\n"
+                        .format(lhs,tokens[1],elem.tag) +
+                        "Modulo constraint only makes sense for integer parameters.")
 
                 # Use list comprehension to filter out None (for the cmp op not found)
                 rhs_tokens = [i for i in re.split("(eq)|(ne)",tokens[1]) if i]
@@ -459,9 +467,9 @@ def check_value(elem, value):
                 rhs = int(rhs_tokens[2])
 
                 if cmp=="eq":
-                    expect ( (v % mod)==rhs, "Value '{}' for entry '{}' violates constraint {}{}".format(v,elem.tag,v,c))
+                    expect ( (v % mod)==rhs, f"Value '{v}' for entry '{elem.tag}' violates constraint {v}{c}" )
                 else:
-                    expect ( (v % mod)!=rhs, "Value '{}' for entry '{}' violates constraint {}{}".format(v,elem.tag,v,c))
+                    expect ( (v % mod)!=rhs, f"Value '{v}' for entry '{elem.tag}' violates constraint {v}{c}" )
 
 
 ###############################################################################
@@ -595,9 +603,6 @@ def get_valid_selectors(xml_root):
     Traceback (most recent call last):
     CIME.utils.CIMEError: ERROR: Expected selector tag, not blah
     """
-
-    class BadSelectorTag (Exception):
-        pass
 
     # Get the right XML element, and iterate over its children
     selectors_elem = get_child(xml_root,"selectors",remove=True)

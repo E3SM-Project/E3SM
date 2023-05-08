@@ -436,11 +436,15 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr1850_c160503.nc</fsurdat>
 <fsurdat hgrid="ne0np4_conus_x4v1_lowcon" sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
 
-<fsurdat hgrid="ne0np4_enax4v1" sim_year="1850" use_crop=".false." >
+<fsurdat hgrid="ne0np4_enax4v1" sim_year="1850" use_crop=".false." irrig=".false.">
     lnd/clm2/surfdata/surfdata_enax4v1_mp24_simyr1850_c170518.nc</fsurdat>
-<fsurdat hgrid="ne0np4_enax4v1" sim_year="2000" use_crop=".false." >
+<fsurdat hgrid="ne0np4_enax4v1" sim_year="2000" use_crop=".false." irrig=".false.">
     lnd/clm2/surfdata/surfdata_enax4v1_mp24_simyr2000_c170518.nc</fsurdat>
-<fsurdat hgrid="ne0np4_twpx4v1" sim_year="2000" use_crop=".false.">
+<fsurdat hgrid="ne0np4_twpx4v1" sim_year="2000" use_crop=".false." irrig=".false.">
+lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
+<fsurdat hgrid="ne0np4_enax4v1" sim_year="2010" use_crop=".false." irrig=".false.">
+    lnd/clm2/surfdata/surfdata_enax4v1_mp24_simyr2000_c170518.nc</fsurdat>
+<fsurdat hgrid="ne0np4_twpx4v1" sim_year="2010" use_crop=".false." irrig=".false.">
 lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
 
 <!-- Regional Refinement Variable Resolution RRM 1850 and 2000-->
@@ -452,12 +456,6 @@ lnd/clm2/surfdata_map/surfdata_armx8v3_simyr2000_c140518.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr1850_c160503.nc</fsurdat>
 <fsurdat hgrid="ne0np4_conus_x4v1_lowcon"    sim_year="2000" irrig=".false." >
 lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
-<fsurdat hgrid="ne0np4_enax4v1" sim_year="1850" irrig=".false." >
-    lnd/clm2/surfdata/surfdata_enax4v1_mp24_simyr1850_c170518.nc</fsurdat>
-<fsurdat hgrid="ne0np4_enax4v1" sim_year="2000" irrig=".false." >
-    lnd/clm2/surfdata/surfdata_enax4v1_mp24_simyr2000_c170518.nc</fsurdat>
-<fsurdat hgrid="ne0np4_twpx4v1" sim_year="2000" irrig=".false.">
-lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
 
 <!-- Dynamic PFT surface datasets (relative to {csmdata}) -->
 

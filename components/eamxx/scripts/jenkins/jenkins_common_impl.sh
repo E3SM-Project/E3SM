@@ -83,7 +83,8 @@ if [ $skip_testing -eq 0 ]; then
       TAS_ARGS="${TAS_ARGS} --test-level nightly"
       # We never want to submit a fake run to the dashboard
       if [ -z "$SCREAM_FAKE_ONLY" ]; then
-          TAS_ARGS="${TAS_ARGS} --submit"
+          # Run EKAT tests for real nightly runs
+          TAS_ARGS="${TAS_ARGS} --submit -c EKAT_ENABLE_TESTS=ON"
       fi
   fi
 
@@ -142,6 +143,12 @@ if [ $skip_testing -eq 0 ]; then
         fails=$fails+1;
         scripts_fail=1
       fi
+
+      ./scripts/cime-nml-tests
+      if [[ $? != 0 ]]; then
+        fails=$fails+1;
+        scripts_fail=1
+      fi
     fi
 
     # We do NOT want to do any of the items below if we are running
@@ -165,7 +172,7 @@ if [ $skip_testing -eq 0 ]; then
       fi
 
       if [[ $test_v0 == 1 ]]; then
-        ../../cime/scripts/create_test e3sm_scream_v0 -c -b master
+        ../../cime/scripts/create_test e3sm_scream_v0 -c -b master --wait
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           v0_fail=1
@@ -174,7 +181,7 @@ if [ $skip_testing -eq 0 ]; then
 
       if [[ $test_v1 == 1 ]]; then
         # AT runs should be fast. => run only low resolution
-        ../../cime/scripts/create_test e3sm_scream_v1_lowres --compiler=gnu9 -c -b master
+        ../../cime/scripts/create_test e3sm_scream_v1_lowres --compiler=gnu9 -c -b master --wait
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           v1_fail=1
@@ -185,25 +192,31 @@ if [ $skip_testing -eq 0 ]; then
     fi
   fi
 
+  # Disable bash tracing to make the FAILS message stand out more
+  set +x
+
   if [[ $fails > 0 ]]; then
+    echo "######################################################"
+    echo "FAILS DETECTED:"
     if [[ $sa_fail == 1 ]]; then
-      echo "SCREAM STANDALONE TESTING FAILED!"
+      echo "  SCREAM STANDALONE TESTING FAILED!"
     fi
     if [[ $v1_fail == 1 ]]; then
-      echo "SCREAM V1 TESTING FAILED!"
+      echo "  SCREAM V1 TESTING FAILED!"
     fi
     if [[ $v0_fail == 1 ]]; then
-      echo "SCREAM V0 TESTING FAILED!"
+      echo "  SCREAM V0 TESTING FAILED!"
     fi
     if [[ $memcheck_fail == 1 ]]; then
-      echo "SCREAM MEM CHECK TESTING FAILED!"
+      echo "  SCREAM MEM CHECK TESTING FAILED!"
     fi
     if [[ $cov_fail == 1 ]]; then
-      echo "SCREAM COVERAGE BUILD FAILED!"
+      echo "  SCREAM COVERAGE BUILD FAILED!"
     fi
     if [[ $scripts_fail == 1 ]]; then
-      echo "SCREAM SCRIPTS TESTING FAILED!"
+      echo "  SCREAM SCRIPTS TESTING FAILED!"
     fi
+    echo "######################################################"
     exit 1
   fi
 

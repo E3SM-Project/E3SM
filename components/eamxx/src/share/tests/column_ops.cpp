@@ -11,18 +11,20 @@ TEST_CASE ("combine_ops") {
   using namespace scream;
   using pack_type = ekat::Pack<Real,SCREAM_PACK_SIZE>;
 
-  constexpr auto Replace     = CombineMode::Replace;
-  constexpr auto Scale       = CombineMode::Scale;
-  constexpr auto Update      = CombineMode::Update;
-  constexpr auto ScaleUpdate = CombineMode::ScaleUpdate;
-  constexpr auto ScaleAdd    = CombineMode::ScaleAdd;
-  constexpr auto Add         = CombineMode::Add;
-  constexpr auto Multiply    = CombineMode::Multiply;
-  constexpr auto Divide      = CombineMode::Divide;
+  constexpr auto Replace      = CombineMode::Replace;
+  constexpr auto Rescale      = CombineMode::Rescale;
+  constexpr auto ScaleReplace = CombineMode::ScaleReplace;
+  constexpr auto Update       = CombineMode::Update;
+  constexpr auto ScaleUpdate  = CombineMode::ScaleUpdate;
+  constexpr auto ScaleAdd     = CombineMode::ScaleAdd;
+  constexpr auto Add          = CombineMode::Add;
+  constexpr auto Multiply     = CombineMode::Multiply;
+  constexpr auto Divide       = CombineMode::Divide;
 
-  pack_type two (2.0);
-  pack_type four (4.0);
-  pack_type six (6.0);
+  const pack_type two (2.0);
+  const pack_type four (4.0);
+  const pack_type six (6.0);
+  const pack_type ten (10.0);
   pack_type x;
 
   x = two;
@@ -30,7 +32,11 @@ TEST_CASE ("combine_ops") {
   REQUIRE ( (x==two).all() );
 
   x = two;
-  combine<Scale>(two,x,3.0);
+  combine<Rescale>(two,x,0.0,5.0);
+  REQUIRE ( (x==ten).all() );
+
+  x = two;
+  combine<ScaleReplace>(two,x,3.0);
   REQUIRE ( (x==six).all() );
 
   x = two;

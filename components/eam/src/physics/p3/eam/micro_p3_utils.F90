@@ -1,7 +1,8 @@
 module micro_p3_utils
 
   use physics_utils, only: rtype, rtype8, itype, btype
-
+  use physconst,     only: pi
+  
   implicit none
   private
   save
@@ -20,13 +21,58 @@ module micro_p3_utils
 
     real(rtype) :: latent_heat_vapor, latent_heat_sublim, latent_heat_fusion
 
-    real(rtype),public :: rho_1000mb,rho_600mb,ar,br,f1r,f2r,ecr,rho_h2o,kr,kc,aimm,bimm,rin,mi0,nccnst,  &
-       eci,eri,bcn,cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,         &
-       inv_rho_h2o,inv_dropmass,cp,g,rd,rv,ep_2,inv_cp,   &
-       thrd,sxth,piov3,piov6,rho_rimeMin,     &
-       rho_rimeMax,inv_rho_rimeMax,max_total_ni,dbrk,nmltratio,clbfact_sub,  &
-       clbfact_dep
+    real(rtype),public :: rho_1000mb,rho_600mb,rho_h2o,  &
+       cpw,cons1,cons2,cons3,cons4,cons5,cons6,cons7,    &
+       inv_rho_h2o,inv_dropmass,cp,g,rd,rv,ep_2,inv_cp
 
+    real(rtype), public, parameter :: thrd  = 1._rtype/3._rtype
+    real(rtype), public, parameter :: sxth  = 1._rtype/6._rtype
+    real(rtype), public, parameter :: piov3 = pi*thrd
+    real(rtype), public, parameter :: piov6 = pi*sxth
+
+    ! maximum total ice concentration (sum of all categories)
+    real(rtype), public, parameter :: max_total_ni = 500.e+3_rtype  ! (m)
+
+    ! droplet concentration (m-3)
+    real(rtype), public, parameter :: nccnst = 200.e+6_rtype
+
+    ! parameters for Seifert and Beheng (2001) autoconversion/accretion
+    real(rtype), public, parameter :: kc     = 9.44e+9_rtype
+    real(rtype), public, parameter :: kr     = 5.78e+3_rtype
+
+    real(rtype), public, parameter :: ar     = 841.99667_rtype 
+    real(rtype), public, parameter :: br     = 0.8_rtype
+    real(rtype), public, parameter :: f1r    = 0.78_rtype
+    real(rtype), public, parameter :: f2r    = 0.32_rtype
+    real(rtype), public, parameter :: ecr    = 1._rtype
+
+    ! limits for rime density [kg m-3]
+    real(rtype), public, parameter :: rho_rimeMin     =  50._rtype
+    real(rtype), public, parameter :: rho_rimeMax     = 900._rtype
+    real(rtype), public, parameter :: inv_rho_rimeMax =   1._rtype/rho_rimeMax
+
+    ! Barklie and Gokhale (1959)
+    real(rtype), public, parameter :: bimm   = 2._rtype
+    real(rtype), public, parameter :: aimm   = 0.65_rtype
+    real(rtype), public, parameter :: rin    = 0.1e-6_rtype
+    real(rtype), public, parameter :: mi0    = 4._rtype*piov3*900._rtype*1.e-18_rtype
+
+    real(rtype), public, parameter :: eci    = 0.5_rtype
+    real(rtype), public, parameter :: eri    = 1._rtype
+    real(rtype), public, parameter :: bcn    = 2._rtype
+
+    ! mean size for soft lambda_r limiter [microns]
+    real(rtype), public, parameter :: dbrk   = 600.e-6_rtype
+    ! ratio of rain number produced to ice number loss from melting
+    real(rtype), public, parameter :: nmltratio = 1.0_rtype
+    
+    ! calibration factors for ice deposition and sublimation
+    !   These are adjustable ad hoc factors used to increase or decrease deposition and/or
+    !   sublimation rates.  The representation of the ice capacitances are highly simplified
+    !   and the appropriate values in the diffusional growth equation are uncertain.
+    real(rtype), public, parameter :: clbfact_dep = 1._rtype
+    real(rtype), public, parameter :: clbfact_sub = 1._rtype
+    
     logical,public  :: do_Cooper_inP3   ! Use prescribed CCN       
 
     real(rtype),dimension(16), public :: dnu
@@ -98,7 +144,71 @@ module micro_p3_utils
     integer, intent(in)     :: iulog
     logical(btype), intent(in)     :: masterproc
 
+    ! logfile info
+    iulog_e3sm      = iulog
+    masterproc_e3sm = masterproc
 
+    ! mathematical/optimization constants
+     
+    pi_e3sm = pi
+
+    ! Temperature parameters
+    T_zerodegc  = tmelt 
+    T_homogfrz = tmelt-40._rtype
+    T_icenuc   = tmelt-15._rtype
+    T_rainfrz  = tmelt-4._rtype
+
+    ! physical constants
+    cp     = cpair ! specific heat of dry air (J/K/kg) !1005.
+    inv_cp = 1._rtype/cp ! inverse of cp
+    g      = gravit ! Gravity (m/s^2) !9.816
+    rd     = rair ! Dry air gas constant     ~ J/K/kg
+    rv     = rh2o ! Water vapor gas constant ~ J/K/kg     !461.51
+    ep_2   = mwh2o/mwdry  ! ratio of molecular mass of water to the molecular mass of dry air !0.622
+    rho_1000mb = 100000._rtype/(rd*T_zerodegc) ! density of air at surface
+    rho_600mb = 60000._rtype/(rd*253.15_rtype)
+    rho_h2o   = rhoh2o ! Density of liquid water (STP) !997.
+    cpw    = cpliq  ! specific heat of fresh h2o (J/K/kg) !4218.
+    inv_rho_h2o = 1._rtype/rho_h2o  !inverse of (max.) density of liquid water
+    inv_dropmass = 1._rtype/dropmass  !inverse of dropmass
+
+    latent_heat_vapor = latvap           ! latent heat of vaporization
+    latent_heat_sublim = latvap + latice  ! latent heat of sublimation
+    latent_heat_fusion  = latice           ! latent heat of fusion
+
+    ! Bigg (1953)
+    !bimm   = 100.
+    !aimm   = 0.66
+
+    cons1 = piov6*rho_h2o
+    cons2 = 4._rtype*piov3*rho_h2o
+    cons3 = 1._rtype/(cons2)  ! moved embryonic_rain_size out of cons3 into cloud_water_autoconversion
+    cons4 = 1._rtype/(dbrk**3*pi*rho_h2o)
+    cons5 = piov6*bimm
+    cons6 = piov6**2*rho_h2o*bimm
+    cons7 = 4._rtype*piov3*rho_h2o*1.e-18_rtype
+
+    ! droplet spectral shape parameter for mass spectra, used for Seifert and Beheng (2001)
+    ! warm rain autoconversion/accretion option only (iparam = 1)
+!    allocate(dnu(16))
+    dnu(1)  =  0.000_rtype
+    dnu(2)  = -0.557_rtype
+    dnu(3)  = -0.430_rtype
+    dnu(4)  = -0.307_rtype
+    dnu(5)  = -0.186_rtype
+    dnu(6)  = -0.067_rtype
+    dnu(7)  = -0.050_rtype
+    dnu(8)  = -0.167_rtype
+    dnu(9)  = -0.282_rtype
+    dnu(10) = -0.397_rtype
+    dnu(11) = -0.512_rtype
+    dnu(12) = -0.626_rtype
+    dnu(13) = -0.739_rtype
+    dnu(14) = -0.853_rtype
+    dnu(15) = -0.966_rtype
+    dnu(16) = -0.966_rtype
+
+    
     return
     end subroutine micro_p3_utils_init
 !__________________________________________________________________________________________!
@@ -109,8 +219,20 @@ module micro_p3_utils
        integer,intent(in) :: its,ite,kts,kte
        real(rtype),dimension(its:ite,kts:kte),intent(out) :: v,s,f
 
-!       integer i,k
 
+       v(:,:) = latent_heat_vapor !latvap           ! latent heat of vaporization
+       s(:,:) = latent_heat_sublim !latvap + latice  ! latent heat of sublimation
+       f(:,:) = latent_heat_fusion  !latice           ! latent heat of fusion
+ 
+! Original P3 definition of latent heats:   
+!       do i = its,ite
+!          do k = kts,kte
+!          latent_heat_vapor(i,k)    = 3.1484e6-2370.*t(i,k)
+!          latent_heat_sublim(i,k)    = latent_heat_vapor(i,k)+0.3337e6
+!          latent_heat_fusion(i,k)     = latent_heat_sublim(i,k)-latent_heat_vapor(i,k)
+!          end do
+!       end do
+       return
     end subroutine get_latent_heat
 
 !__________________________________________________________________________________________!
@@ -126,6 +248,41 @@ module micro_p3_utils
        real(rtype),intent(out)  :: qc_incld, qr_incld, qi_incld, qm_incld
        real(rtype),intent(out)  :: nc_incld, nr_incld, ni_incld, bm_incld
 
+       if (qc.ge.qsmall) then
+          qc_incld = qc*inv_cld_frac_l
+          nc_incld = max(nc*inv_cld_frac_l,0._rtype)
+       else
+          qc_incld = 0._rtype
+          nc_incld = 0._rtype
+       end if 
+       if (qi.ge.qsmall) then
+          qi_incld = qi*inv_cld_frac_i
+          ni_incld = max(ni*inv_cld_frac_i,0._rtype)
+       else
+          qi_incld = 0._rtype
+          ni_incld = 0._rtype
+       end if 
+       if (qm.ge.qsmall.and.qi.ge.qsmall) then
+          qm_incld = qm*inv_cld_frac_i
+          bm_incld = max(bm*inv_cld_frac_l,0._rtype)
+       else
+          qm_incld = 0._rtype
+          bm_incld = 0._rtype
+       end if 
+       if (qr.ge.qsmall) then
+          qr_incld = qr*inv_cld_frac_r
+          nr_incld = max(nr*inv_cld_frac_r,0._rtype)
+       else
+          qr_incld = 0._rtype
+          nr_incld = 0._rtype
+       end if
+       if (qc_incld.gt.incloud_limit .or.qi_incld.gt.incloud_limit &
+            .or. qr_incld.gt.precip_limit .or.bm_incld.gt.incloud_limit) then
+          qc_incld    = min(qc_incld,incloud_limit)
+          qi_incld = min(qi_incld,incloud_limit)
+          bm_incld = min(bm_incld,incloud_limit)
+          qr_incld    = min(qr_incld,precip_limit)
+       end if
     end subroutine calculate_incloud_mixingratios
 !__________________________________________________________________________________________!
 !                                                                                          !
@@ -140,6 +297,7 @@ real(rtype) elemental function avg_diameter(q, n, rho_air, rho_sub)
   real(rtype), intent(in) :: rho_air   ! local density of the air
   real(rtype), intent(in) :: rho_sub   ! density of the particle substance
 
+  avg_diameter = (pi_e3sm * rho_sub * n/(q*rho_air))**(-1._rtype/3._rtype)
 
 end function avg_diameter
 

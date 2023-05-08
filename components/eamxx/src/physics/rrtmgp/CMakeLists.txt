@@ -164,6 +164,8 @@ set (RRTMGP_TABLES
   scream/init/rrtmgp-allsky.nc
   scream/init/rrtmgp-cloud-optics-coeffs-sw.nc
   scream/init/rrtmgp-cloud-optics-coeffs-lw.nc
+  scream/init/rrtmgp-data-sw-g224-2018-12-04.nc
+  scream/init/rrtmgp-data-lw-g256-2018-12-04.nc
 )
 
 foreach (file IN ITEMS ${RRTMGP_TABLES})
