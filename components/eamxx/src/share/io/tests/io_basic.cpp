@@ -212,7 +212,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
     + ".nc";
   reader_pl.set("Filename",filename);
   reader_pl.set("Field Names",fnames);
-  AtmosphereInput reader(reader_pl,fm,gm);
+  AtmosphereInput reader(reader_pl,fm);
 
   // We added 1.0 to the input fields for each timestep
   // Hence, at output step N, we should get

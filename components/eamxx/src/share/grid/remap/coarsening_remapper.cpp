@@ -904,7 +904,7 @@ get_my_triplets_gids (const std::string& map_file,
   scorpio::register_file(map_file,scorpio::FileMode::Read);
   // 1. Create a "helper" grid, with as many dofs as the number
   //    of triplets in the map file, and divided linearly across ranks
-  const int ngweights = scorpio::get_dimlen_c2f(map_file.c_str(),"n_s");
+  const int ngweights = scorpio::get_dimlen(map_file,"n_s");
   const auto io_grid_linear = create_point_grid ("helper",ngweights,1,m_comm);
   const int nlweights = io_grid_linear->get_num_local_dofs();
 

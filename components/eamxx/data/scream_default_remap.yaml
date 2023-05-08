@@ -62,7 +62,4 @@ Fields:
 output_control:
   Frequency: ${HIST_N}
   frequency_units: ${HIST_OPTION}
-Checkpoint Control:
-  Frequency: ${REST_N}
-  frequency_units: ${REST_OPTION}
 ...

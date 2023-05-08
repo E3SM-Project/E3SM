@@ -54,7 +54,7 @@ VerticalRemapper (const grid_ptr_type& src_grid,
   // as the source field, but will have a different number of 
   // vertical levels.
   scorpio::register_file(map_file,scorpio::FileMode::Read);
-  m_num_remap_levs = scorpio::get_dimlen_c2f(map_file.c_str(),"nlevs");
+  m_num_remap_levs = scorpio::get_dimlen(map_file,"nlevs");
   scorpio::eam_pio_closefile(map_file);
 
   auto tgt_grid_gids = src_grid->get_unique_gids();

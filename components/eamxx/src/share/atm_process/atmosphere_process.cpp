@@ -1028,7 +1028,7 @@ get_internal_field_impl(const std::string& field_name) const {
 void AtmosphereProcess
 ::remove_field (const std::string& field_name, const std::string& grid_name) {
   typedef std::list<Field>::iterator It;
-  const auto rmf = [&] (std::list<Field>& fields, str_map<str_map<Field*>>& ptrs) {
+  const auto rmf = [&] (std::list<Field>& fields, strmap_t<strmap_t<Field*>>& ptrs) {
     std::vector<It> rm_its;
     for (It it = fields.begin(); it != fields.end(); ++it) {
       const auto& fid = it->get_header().get_identifier();
@@ -1047,7 +1047,7 @@ void AtmosphereProcess
 void AtmosphereProcess
 ::remove_group (const std::string& group_name, const std::string& grid_name) {
   typedef std::list<FieldGroup>::iterator It;
-  const auto rmg = [&] (std::list<FieldGroup>& fields, str_map<str_map<FieldGroup*>>& ptrs) {
+  const auto rmg = [&] (std::list<FieldGroup>& fields, strmap_t<strmap_t<FieldGroup*>>& ptrs) {
     std::vector<It> rm_its;
     for (It it = fields.begin(); it != fields.end(); ++it) {
       if (it->m_info->m_group_name == group_name and it->grid_name() == grid_name) {
