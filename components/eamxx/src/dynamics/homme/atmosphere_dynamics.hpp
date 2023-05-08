@@ -149,6 +149,8 @@ protected:
   Real m_raykrange; // Range of rayleigh friction profile.
   Real m_raytau0;   // Approximate value of decay time at model top (days)
                     // if set to 0, no rayleigh friction is applied
+
+  int m_bfb_hash_nstep;
 };
 
 } // namespace scream

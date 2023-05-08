@@ -64,6 +64,10 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   // Set the log filename in the F90 interface
   const char* logname = m_atm_logger->get_logfile_name().c_str();
   set_homme_log_file_name_f90 (&logname);
+
+  m_bfb_hash_nstep = 0;
+  if (params.isParameter("BfbHash"))
+    m_bfb_hash_nstep = std::max(0, params.get<int>("BfbHash"));
 }
 
 HommeDynamics::~HommeDynamics ()
@@ -468,6 +472,9 @@ void HommeDynamics::run_impl (const double dt)
         "[HommeDynamics] Error! Input timestep departure from integer above tolerance.\n"
         "  - input dt : " << dt << "\n"
         "  - tolerance: " << std::numeric_limits<double>::epsilon()*10 << "\n");
+
+    if (m_bfb_hash_nstep > 0 && timestamp().get_num_steps() % m_bfb_hash_nstep == 0)
+      print_fast_global_state_hash("Hommexx");
 
     const int dt_int = static_cast<int>(std::round(dt));
 

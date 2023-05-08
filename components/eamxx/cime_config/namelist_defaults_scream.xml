@@ -173,6 +173,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     <homme inherit="atm_proc_base">
       <Grid>Dynamics</Grid>
       <Moisture>moist</Moisture>
+      <!-- Frequency in physics steps to output a global hash over the dycore's
+           in fields. <= 0 disables hashing. -->
+      <BfbHash>0</BfbHash>
     </homme>
 
     <!-- P3 microphysics -->
