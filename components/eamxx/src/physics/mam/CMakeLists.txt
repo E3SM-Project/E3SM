@@ -1,4 +1,4 @@
-add_library(mam eamxx_mam_microphysics.cpp)
+add_library(mam eamxx_mam.cpp)
 add_dependencies(mam mam4xx_proj)
 target_include_directories(mam PRIVATE
   ${PROJECT_BINARY_DIR}/externals/haero/include
