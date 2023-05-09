@@ -1,7 +1,8 @@
 #include "share/io/scorpio_input.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
+
+#include <ekat/util/ekat_string_utils.hpp>
 
 #include <memory>
 #include <numeric>
@@ -97,8 +98,8 @@ init (const ekat::ParameterList& params,
 
   EKAT_REQUIRE_MSG (host_views_1d.size()==layouts.size(),
       "Error! Input host views and layouts maps has different sizes.\n"
-      "       Input size: " + std::to_string(host_views_1d.size()) + "\n"
-      "       Expected size: " + std::to_string(m_fields_names.size()) + "\n");
+      "       host_views_1d size: " + std::to_string(host_views_1d.size()) + "\n"
+      "       layouts size: " + std::to_string(layouts.size()) + "\n");
 
   m_layouts = layouts;
   m_host_views_1d = host_views_1d;
@@ -110,9 +111,6 @@ init (const ekat::ParameterList& params,
     EKAT_REQUIRE_MSG (m_host_views_1d.count(it.first)==1,
         "Error! Input layouts and views maps do not store the same keys.\n");
   }
-
-  // Set the host views
-  set_views(host_views_1d,layouts);
 
   // Init scorpio internal structures
   init_scorpio_structures ();
@@ -308,29 +306,6 @@ void AtmosphereInput::read_variables (const int time_index)
     }
   }
 } 
-
-void AtmosphereInput::
-set_views (const std::map<std::string,view_1d_host>& host_views_1d,
-           const std::map<std::string,FieldLayout>&  layouts)
-{
-  EKAT_REQUIRE_MSG (host_views_1d.size()==layouts.size(),
-      "Error! Input host views and layouts maps has different sizes.\n"
-      "       Input size: " + std::to_string(host_views_1d.size()) + "\n"
-      "       Expected size: " + std::to_string(m_fields_names.size()) + "\n");
-
-  m_layouts = layouts;
-  m_host_views_1d = host_views_1d;
-
-  // Loop over one of the two maps, store key in m_fields_names,
-  // and check that the two maps have the same keys
-  for (const auto& it : m_layouts) {
-    m_fields_names.push_back(it.first);
-    EKAT_REQUIRE_MSG (m_host_views_1d.count(it.first)==1,
-        "Error! Input layouts and views maps do not store the same keys.\n");
-  }
-
-  m_inited_with_views = true;
-}
 
 /* ---------------------------------------------------------- */
 void AtmosphereInput::finalize() 

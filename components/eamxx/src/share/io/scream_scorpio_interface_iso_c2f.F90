@@ -268,6 +268,16 @@ contains
     call eam_pio_enddef(filename)
   end subroutine eam_pio_enddef_c2f
 !=====================================================================!
+  subroutine eam_pio_redef_c2f(filename_in) bind(c)
+    use scream_scorpio_interface, only : eam_pio_redef
+    type(c_ptr), intent(in) :: filename_in
+
+    character(len=256)      :: filename
+
+    call convert_c_string(filename_in,filename)
+    call eam_pio_redef(filename)
+  end subroutine eam_pio_redef_c2f
+!=====================================================================!
   subroutine convert_c_string(c_string_ptr,f_string)
     use iso_c_binding, only: c_f_pointer, C_NULL_CHAR
   ! Purpose: To convert a c_string pointer to the proper fortran string format.

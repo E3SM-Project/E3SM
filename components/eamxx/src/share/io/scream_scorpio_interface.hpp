@@ -55,6 +55,7 @@ namespace scorpio {
   /* End the definition phase for a scorpio file.  Last thing called after all dimensions, variables, dof's and decomps have been set.  Called once per file.
    * Mandatory before writing or reading can happend on file. */
   void eam_pio_enddef(const std::string &filename);
+  void eam_pio_redef(const std::string &filename);
   /* Called each timestep to update the timesnap for the last written output. */
   void pio_update_time(const std::string &filename, const double time);
 
@@ -95,6 +96,7 @@ extern "C" {
   // If mode<0, then simply checks if file is open, regardless of mode
   bool is_file_open_c2f(const char*&& filename, const int& mode);
   /* Query a netCDF file for the time variable */
+  bool is_enddef_c2f(const char*&& filename);
   double read_time_at_index_c2f(const char*&& filename, const int& time_index);
   double read_curr_time_c2f(const char*&& filename);
 } // extern "C"

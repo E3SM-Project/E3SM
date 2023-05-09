@@ -35,6 +35,7 @@ extern "C" {
                              const char*&& units, const int numdims, const char** var_dimensions,
                              const int dtype, const int nc_dtype, const char*&& pio_decomp_tag);
   void set_variable_metadata_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name, const char*&& meta_val);
+  void eam_pio_redef_c2f(const char*&& filename);
   void eam_pio_enddef_c2f(const char*&& filename);
   bool is_enddef_c2f(const char*&& filename);
 } // extern C
@@ -497,6 +498,10 @@ void set_any_attribute (const std::string& filename, const std::string& att_name
 /* ----------------------------------------------------------------- */
 void eam_pio_enddef(const std::string &filename) {
   eam_pio_enddef_c2f(filename.c_str());
+}
+/* ----------------------------------------------------------------- */
+void eam_pio_redef(const std::string &filename) {
+  eam_pio_redef_c2f(filename.c_str());
 }
 /* ----------------------------------------------------------------- */
 template<>

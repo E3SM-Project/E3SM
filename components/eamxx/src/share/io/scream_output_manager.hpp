@@ -118,7 +118,6 @@ protected:
 
   std::string compute_filename (const IOControl& control,
                                 const IOFileSpecs& file_specs,
-                                const bool is_checkpoint_step,
                                 const util::TimeStamp& timestamp) const;
 
   // Craft the restart parameter list
@@ -126,8 +125,7 @@ protected:
                    const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs);
 
   void setup_file (      IOFileSpecs& filespecs,
-                   const IOControl& control,
-                   const util::TimeStamp& timestamp);
+                   const IOControl& control);
 
   // Manage logging of info to atm.log
   void push_to_logger();
@@ -167,6 +165,9 @@ protected:
   // Whether this run is the restart of a previous run, in which case
   // we might have to load an output checkpoint file (depending on avg type)
   bool m_is_restarted_run;
+
+  // Whether a restarted run can resume filling previous run output file (if not full)
+  bool m_resume_output_file = false;
 
   // If the user specifies freq units "none" or "never", output is disabled
   bool m_output_disabled = false;

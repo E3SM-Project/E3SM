@@ -60,7 +60,8 @@ module scream_scorpio_interface
   public :: &
             lookup_pio_atm_file,         & ! Checks if a pio file is present
             eam_pio_closefile,           & ! Close a specfic pio file.
-            eam_pio_enddef,              & ! Register variables and dimensions with PIO files
+            eam_pio_enddef,              & ! Ends define mode phase, enters data mode phase
+            eam_pio_redef,               & ! Pause data mode phase, re-enter define mode phase
             eam_init_pio_subsystem,      & ! Gather pio specific data from the component coupler
             is_eam_pio_subsystem_inited, & ! Query whether the pio subsystem is inited already
             eam_pio_finalize,            & ! Run any final PIO commands
@@ -232,6 +233,35 @@ contains
     endif
 
   end subroutine eam_pio_enddef
+!=====================================================================!
+  ! Mandatory call to finish the variable and dimension definition phase
+  ! of a new PIO file.  Once this routine is called it is not possible
+  ! to add new dimensions or variables to the file.
+  subroutine eam_pio_redef(filename)
+    use pio_nf, only: pio_redef
+
+    character(len=*), intent(in) :: filename
+
+    type(pio_atm_file_t), pointer :: current_atm_file
+    integer                       :: ierr
+    logical                       :: found
+
+    call lookup_pio_atm_file(filename,current_atm_file,found)
+    if (.not.found) then
+      call errorHandle("PIO ERROR: error running redef on file "//trim(filename)//".\n PIO file not found or not open.",-999)
+    endif
+
+    ! It could happen that we are running a test, with an input file opening the
+    ! same file that an output stream just wrote. In this case, the def phase ended
+    ! during the output setup.
+    if (current_atm_file%is_enddef) then
+      ! Re-open define phase
+      ierr = PIO_redef(current_atm_file%pioFileDesc)
+      call errorHandle("PIO ERROR: issue arose with PIO_redef for file"//trim(current_atm_file%filename),ierr)
+      current_atm_file%is_enddef = .false.
+    endif
+
+  end subroutine eam_pio_redef
 !=====================================================================!
   ! Register a dimension with a specific pio output file.  Mandatory inputs
   ! include:
