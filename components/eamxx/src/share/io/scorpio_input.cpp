@@ -45,6 +45,17 @@ AtmosphereInput (const std::string& filename,
   init(params,fm);
 }
 
+AtmosphereInput::
+~AtmosphereInput ()
+{
+  // In practice, this should always be true, but since we have a do-nothing default ctor,
+  // it is possible to create an instance without ever using it. Since finalize would
+  // attempt to close the pio file, we need to call it only if init happened.
+  if (m_inited_with_views || m_inited_with_fields) {
+    finalize();
+  }
+}
+
 void AtmosphereInput::
 init (const ekat::ParameterList& params,
       const std::shared_ptr<const fm_type>& field_mgr)
