@@ -371,8 +371,15 @@ void AtmosphereInput::register_variables()
   const auto& fp_precision = "real";
   for (auto const& name : m_fields_names) {
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
-    auto vec_of_dims   = get_vec_of_dims(m_layouts.at(name));
-    auto io_decomp_tag = get_io_decomp(m_layouts.at(name));
+    const auto& layout = m_layouts.at(name);
+    auto vec_of_dims   = get_vec_of_dims(layout);
+    auto io_decomp_tag = get_io_decomp(layout);
+
+    for (size_t  i=0; i<vec_of_dims.size(); ++i) {
+      auto partitioned = m_io_grid->get_partitioned_dim_tag()==layout.tags()[i];
+      auto dimlen = partitioned ? m_io_grid->get_partitioned_dim_global_size() : layout.dims()[i];
+      scorpio::register_dimension(m_filename, vec_of_dims[i], vec_of_dims[i], dimlen, partitioned);
+    }
 
     // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO,
     // may need to delete this line when switching to full C++/C implementation.
@@ -383,8 +390,8 @@ void AtmosphereInput::register_variables()
     //  Currently the field_manager only stores Real variables so it is not an issue,
     //  but in the future if non-Real variables are added we will want to accomodate that.
     //TODO: Should be able to simply inquire from the netCDF the dimensions for each variable.
-    scorpio::get_variable(m_filename, name, name,
-                          vec_of_dims, fp_precision, io_decomp_tag);
+    scorpio::register_variable(m_filename, name, name,
+                               vec_of_dims, fp_precision, io_decomp_tag);
   }
 }
 

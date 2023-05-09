@@ -277,7 +277,7 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
   Kokkos::deep_copy(unique_dofs_from_file_h,unique_dofs_from_file);
   // Read source data at unique points
   scorpio::register_file(filename,scorpio::Read);
-  scorpio::get_variable(filename,"src_data","src_data",vec_of_data_dims,"real",data_decomp_tag_r);
+  scorpio::register_variable(filename,"src_data","src_data",vec_of_data_dims,"real",data_decomp_tag_r);
   var_dof.resize(unique_dofs_from_file.size());
   for (size_t ii=0; ii<var_dof.size(); ii++) {
     var_dof[ii] = unique_dofs_from_file_h(ii);

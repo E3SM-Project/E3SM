@@ -16,6 +16,7 @@ extern "C" {
 
 // Fortran routines to be called from C++
   void register_file_c2f(const char*&& filename, const int& mode);
+  int get_file_mode_c2f(const char*&& filename);
   void set_decomp_c2f(const char*&& filename);
   void set_dof_c2f(const char*&& filename,const char*&& varname,const Int dof_len,const std::int64_t *x_dof);
   void grid_read_data_array_c2f_int(const char*&& filename, const char*&& varname, const Int time_index, int *buf, const int buf_size);
@@ -34,9 +35,6 @@ extern "C" {
                              const char*&& units, const int numdims, const char** var_dimensions,
                              const int dtype, const int nc_dtype, const char*&& pio_decomp_tag);
   void set_variable_metadata_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name, const char*&& meta_val);
-  void get_variable_c2f(const char*&& filename,const char*&& shortname, const char*&& longname,
-                        const int numdims, const char** var_dimensions,
-                        const int dtype, const char*&& pio_decomp_tag);
   void eam_pio_enddef_c2f(const char*&& filename);
   bool is_enddef_c2f(const char*&& filename);
 } // extern C
@@ -61,6 +59,12 @@ int nctype (const std::string& type) {
   } else {
     EKAT_ERROR_MSG ("Error! Unrecognized/unsupported data type '" + type + "'.\n");
   }
+}
+std::string nctype2str (const int type) {
+  for (auto t : {"int", "float", "double"}) {
+    if (nctype(t)==type) return t;
+  }
+  return "UNKNOWN";
 }
 /* ----------------------------------------------------------------- */
 void eam_init_pio_subsystem(const ekat::Comm& comm) {
@@ -168,31 +172,201 @@ void pio_update_time(const std::string& filename, const double time) {
   pio_update_time_c2f(filename.c_str(),time);
 }
 /* ----------------------------------------------------------------- */
-void register_dimension(const std::string &filename, const std::string& shortname, const std::string& longname, const int length, const bool partitioned) {
+void register_dimension(const std::string &filename, const std::string& shortname, const std::string& longname, const int length, const bool partitioned)
+{
+  int mode = get_file_mode_c2f(filename.c_str());
+  std::string mode_str = mode==Read ? "Read" : (mode==Write ? "Write" : "Append");
+  if (mode!=Write) {
+    // Ensure the dimension already exists, and that it has the correct size (if not unlimited)
+    int ncid,dimid,unlimid,err;
+
+    ncid = get_file_ncid_c2f (filename.c_str());
+    err = PIOc_inq_dimid(ncid,shortname.c_str(),&dimid);
+    EKAT_REQUIRE_MSG (err==PIO_NOERR,
+        "Error! Could not retrieve dimension id from file open in " + mode_str + " mode.\n"
+        " - filename: " + filename + "\n"
+        " - dimension : " + shortname + "\n"
+        " - pio error: " + std::to_string(err) + "\n");
+
+    err = PIOc_inq_unlimdim(ncid,&unlimid);
+    EKAT_REQUIRE_MSG (err==PIO_NOERR,
+        "Error! Something went wrong querying for the unlimited dimension id.\n"
+        " - filename: " + filename + "\n"
+        " - pio error: " + std::to_string(err) + "\n");
+    if (length==0) {
+      EKAT_REQUIRE_MSG ( unlimid==dimid,
+          "Error! Input dimension is unlimited, but does not appear to be unlimited in the file (open in " + mode_str + " mode).\n"
+          " - filename: " + filename + "\n"
+          " - dimension : " + shortname + "\n"
+          " - pio error: " + std::to_string(err) + "\n");
+    } else {
+      EKAT_REQUIRE_MSG ( unlimid!=dimid,
+          "Error! Input dimension is not unlimited, but it appears to be unlimited in the file (open in " + mode_str + " mode).\n"
+          " - filename: " + filename + "\n"
+          " - dimension : " + shortname + "\n"
+          " - pio error: " + std::to_string(err) + "\n");
+
+      int len_from_file = get_dimlen(filename,shortname);
+      EKAT_REQUIRE_MSG (length==len_from_file,
+          "Error! Input dimension length does not match the one from the file  (open in " + mode_str + " mode).\n"
+          " - filename: " + filename + "\n"
+          " - dimension : " + shortname + "\n"
+          " - input dim length: " + std::to_string(length) + "\n"
+          " - file dim length : " + std::to_string(len_from_file) + "\n");
+    }
+  }
 
   register_dimension_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), length, partitioned);
 }
 /* ----------------------------------------------------------------- */
-void get_variable(const std::string &filename, const std::string& shortname, const std::string& longname,
-                  const std::vector<std::string>& var_dimensions,
-                  const std::string& dtype, const std::string& pio_decomp_tag) {
-
-  /* Convert the vector of strings that contains the variable dimensions to a char array */
-  const int numdims = var_dimensions.size();
-  std::vector<const char*> var_dimensions_c(numdims);
-  for (int ii = 0;ii<numdims;++ii)
-  {
-    var_dimensions_c[ii] = var_dimensions[ii].c_str();
+void register_variable(const std::string& filename, const std::string& shortname, const std::string& longname,
+                       const std::vector<std::string>& var_dimensions,
+                       const std::string& dtype, const std::string& pio_decomp_tag)
+{
+  // This overload does not require to specify an nc data type, so it *MUST* be used when the
+  // file access mode is either Read or Append. Either way, a) the var should be on file already,
+  // and b) so should be the dimensions
+  EKAT_REQUIRE_MSG (has_variable(filename,shortname),
+      "Error! This overload of register_variable *assumes* the variable is already in the file, but wasn't found.\n"
+      " - filename: " + filename + "\n"
+      " - varname : " + shortname + "\n");
+  for (const auto& dimname : var_dimensions) {
+    int len = get_dimlen (filename,dimname);
+    // WARNING! If the dimension was not yet registered, it will be registered as a NOT partitioned dim.
+    //          If this dim should be partitioned, then register it *before* the variable
+    register_dimension(filename,dimname,dimname,len,false);
   }
-  get_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(),
-                   numdims, var_dimensions_c.data(), nctype(dtype), pio_decomp_tag.c_str());
+  register_variable(filename,shortname,longname,"",var_dimensions,dtype,"",pio_decomp_tag);
 }
-/* ----------------------------------------------------------------- */
 void register_variable(const std::string &filename, const std::string& shortname, const std::string& longname,
-                       const std::string& units, const std::vector<std::string>& var_dimensions,
-                       const std::string& dtype, const std::string& nc_dtype, const std::string& pio_decomp_tag) {
+                       const std::string& units_in, const std::vector<std::string>& var_dimensions,
+                       const std::string& dtype, const std::string& nc_dtype_in, const std::string& pio_decomp_tag)
+{
+  // Local copies, since we can modify them in case of defaults
+  auto units = units_in;
+  auto nc_dtype = nc_dtype_in;
 
-  /* Convert the vector of strings that contains the variable dimensions to a char array */
+  int mode = get_file_mode_c2f(filename.c_str());
+  std::string mode_str = mode==Read ? "Read" : (mode==Write ? "Write" : "Append");
+
+  bool has_var = has_variable(filename,shortname);
+  if (mode==Write) {
+    EKAT_REQUIRE_MSG ( units!="" and nc_dtype!="",
+        "Error! Missing valid units and/or nc_dtype arguments for file open in Write mode.\n"
+          " - filename: " + filename + "\n");
+  } else {
+    EKAT_REQUIRE_MSG ( has_var,
+        "Error! Variable not found in file open in " + mode_str + " mode.\n"
+        " - filename: " + filename + "\n"
+        " - varname : " + shortname + "\n");
+  }
+
+
+  if (has_var) {
+    // The file already exists or the var was already registered.
+    // Make sure we're registering the var with the same specs
+    int ncid = get_file_ncid_c2f (filename.c_str());
+    int vid,ndims,err;
+    err = PIOc_inq_varid(ncid,shortname.c_str(),&vid);
+    EKAT_REQUIRE_MSG (err==PIO_NOERR,
+        "Error! Something went wrong retrieving variable id.\n"
+        " - filename: " + filename + "\n"
+        " - varname : " + shortname + "\n"
+        " - pio error: " + std::to_string(err) + "\n");
+    err = PIOc_inq_varndims(ncid,vid,&ndims);
+    EKAT_REQUIRE_MSG (err==PIO_NOERR,
+        "Error! Something went wrong inquiring the number of dimensions of a variable.\n"
+        " - filename: " + filename + "\n"
+        " - varname : " + shortname + "\n"
+        " - pio error: " + std::to_string(err) + "\n");
+    std::vector<int> dims(ndims);
+    err = PIOc_inq_vardimid(ncid,vid,dims.data());
+    EKAT_REQUIRE_MSG (err==PIO_NOERR,
+        "Error! Something went wrong inquiring the dimensions ids of a variable.\n"
+        " - filename: " + filename + "\n"
+        " - varname : " + shortname + "\n"
+        " - pio error: " + std::to_string(err) + "\n");
+    std::vector<std::string> dims_from_file(ndims);
+    for (int i=0; i<ndims; ++i) {
+      dims_from_file[i].resize(PIO_MAX_NAME);
+      err =  PIOc_inq_dimname(ncid,dims[i],&dims_from_file[i][0]);
+      // IMPORTANT: must remove trailing null chars, to get *correct* string size
+      dims_from_file[i] = ekat::trim(dims_from_file[i],'\0');
+      EKAT_REQUIRE_MSG (err==PIO_NOERR,
+          "Error! Something went wrong inquiring dimension name.\n"
+          " - filename: " + filename + "\n"
+          " - dimid   : " + std::to_string(dims[i]) + "\n"
+          " - pio error: " + std::to_string(err) + "\n");
+    }
+
+
+    if (mode==Read && (dims_from_file[0]=="time" && var_dimensions[0]!="time")) {
+      // For Read operations, we may not consider "time" as a field dimension, so if the
+      // input file has "time", simply disregard it in this check.
+      dims_from_file.erase(dims_from_file.begin());
+    }
+    std::reverse(dims_from_file.begin(),dims_from_file.end());
+    EKAT_REQUIRE_MSG(var_dimensions==dims_from_file,
+        "Error! Input variable dimensions do not match the ones from the file.\n"
+        " - filename  : " + filename + "\n"
+        " - input dims: (" + ekat::join(var_dimensions,",") + ")\n"
+        " - file dims : (" + ekat::join(dims_from_file,",") + ")\n");
+
+    // Check nc dtype only if user bothered specifying it (if mode=Read, probably the user doesn't care)
+    nc_type type;
+    err = PIOc_inq_vartype(ncid,vid,&type);
+    EKAT_REQUIRE_MSG (err==PIO_NOERR,
+        "Error! Something went wrong while inquiring variable data type.\n"
+        " - filename: " + filename + "\n"
+        " - varname : " + shortname + "\n"
+        " - pio error: " + std::to_string(err) + "\n");
+    EKAT_REQUIRE_MSG (nc_dtype=="" or type==nctype(nc_dtype),
+        "Error! Input NC data type does not match the one from the file.\n"
+        " - filename: " + filename + "\n"
+        " - varname : " + shortname + "\n"
+        " - input dtype : " + nc_dtype + "\n"
+        " - file dtype  : " + nctype2str(type) + "\n");
+    nc_dtype = nctype2str(type);
+
+    // Get var units (if set)
+    int natts;
+    err = PIOc_inq_varnatts(ncid,vid,&natts);
+    EKAT_REQUIRE_MSG (err==PIO_NOERR,
+        "Error! Something went wrong while inquiring a variable's number of attributes.\n"
+          " - filename: " + filename + "\n"
+          " - varname : " + shortname + "\n"
+          " - pio error: " + std::to_string(err) + "\n");
+    std::string units_from_file(PIO_MAX_NAME,'\0');
+    std::string att_name(PIO_MAX_NAME,'\0');
+    for (int i=0; i<natts; ++i) {
+      err = PIOc_inq_attname(ncid,vid,i,&att_name[0]);
+      EKAT_REQUIRE_MSG (err==PIO_NOERR,
+          "Error! Something went wrong while inquiring the name of a variable attribute.\n"
+            " - filename: " + filename + "\n"
+            " - varname : " + shortname + "\n"
+            " - pio error: " + std::to_string(err) + "\n");
+      if (att_name=="units") {
+        err = PIOc_get_att_text(ncid,vid,"units",&units_from_file[0]);
+        EKAT_REQUIRE_MSG (err==PIO_NOERR,
+            "Error! Something went wrong while retrieving a variable units.\n"
+              " - filename: " + filename + "\n"
+              " - varname : " + shortname + "\n"
+              " - pio error: " + std::to_string(err) + "\n");
+        EKAT_REQUIRE_MSG (units=="" or units==units_from_file,
+            "Error! Input variable units do not match the ones from the file.\n"
+            " - filename: " + filename + "\n"
+            " - varname : " + shortname + "\n"
+            " - input units: " + units + "\n"
+            " - file units : " + units_from_file + "\n");
+
+        // If mode=Read and user didn't bother with units, but units _are_ in the file, then
+        // make sure we call register_variable with correct units (to avoid later checks failures)
+        units = units_from_file;
+      }
+    }
+  }
+
+  // Convert the vector of strings that contains the variable dimensions to a char array
   const int numdims = var_dimensions.size();
   std::vector<const char*> var_dimensions_c(numdims);
   for (int ii = 0;ii<numdims;++ii)
