@@ -285,6 +285,51 @@ std::list<T> contiguous_superset (const std::list<std::list<T>>& groups)
   return out;
 }
 
+/* Given a column of data for variable "label" from the reference run
+ * (probably master) and from your new exploratory run, loop over all
+ * heights and confirm whether or not the relative difference between
+ * runs is within tolerance "tol". If not, print debug info. Here, "a"
+ * is the value from the reference run and "b" is from the new run.
+ * This is used by the run_and_cmp tests.
+ */
+template <typename Scalar, typename Toltype>
+Int compare (const std::string& label, const Scalar* a,
+             const Scalar* b, const Int& n, const Toltype& tol) {
+
+  Int nerr1 = 0;
+  Int nerr2 = 0;
+  Scalar den = 0;
+  for (Int i = 0; i < n; ++i)
+    den = std::max(den, std::abs(a[i]));
+  Scalar worst = 0;
+  for (Int i = 0; i < n; ++i) {
+    if (std::isnan(a[i]) || std::isinf(a[i]) ||
+        std::isnan(b[i]) || std::isinf(b[i])) {
+      ++nerr1;
+      continue;
+    }
+
+    const auto num = std::abs(a[i] - b[i]);
+    if (num > tol*den) {
+      ++nerr2;
+      worst = std::max(worst, num);
+    }
+  }
+
+  if (nerr1) {
+    std::cout << label << " has " << nerr1 << " infs + nans.\n";
+
+  }
+
+  if (nerr2) {
+    std::cout << label << " > tol " << nerr2 << " times. Max rel diff= " << (worst/den)
+             << " normalized by ref impl val=" << den << ".\n";
+
+  }
+
+  return nerr1 + nerr2;
+}
+
 } // namespace scream
 
 #endif // SCREAM_UTILS_HPP

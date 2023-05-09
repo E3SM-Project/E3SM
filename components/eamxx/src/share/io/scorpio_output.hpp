@@ -42,9 +42,6 @@
  *  output_control:
  *    Frequency:                  INT
  *    frequency_units:            STRING                (default: nsteps)
- *  Checkpoint Control:
- *    Frequency:                  INT                   (default: 0)
- *    frequency_units:            STRING                (default: ${Output->frequency_units})
  *  Restart:
  *    filename_prefix:            STRING                (default: ${filename_prefix})
  *    Perform Restart:            BOOL                  (default: true)

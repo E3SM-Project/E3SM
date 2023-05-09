@@ -96,24 +96,33 @@ if [ $skip_testing -eq 0 ]; then
       sa_fail=1
     fi
 
-    # Add a valgrind and coverage tests for mappy for nightlies
+    # Add memcheck and coverage tests for nightlies on specific machines
     if [[ $is_at_run == 0 ]]; then
       if [[ "$SCREAM_MACHINE" == "mappy" ]]; then
-        ./scripts/gather-all-data "./scripts/test-all-scream -t cov ${TAS_ARGS} -c SCREAM_TEST_SIZE=SHORT" -l -m $SCREAM_MACHINE
+        ./scripts/gather-all-data "./scripts/test-all-scream -t cov ${TAS_ARGS}" -l -m $SCREAM_MACHINE
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           cov_fail=1
         fi
       fi
 
-      # Add a memcheck test for mappy/weaver for nightlies
-      if [[ "$SCREAM_MACHINE" == "mappy" || "$SCREAM_MACHINE" == "weaver" ]]; then
-        ./scripts/gather-all-data "./scripts/test-all-scream -t dbg --mem-check ${TAS_ARGS} -c SCREAM_TEST_SIZE=SHORT" -l -m $SCREAM_MACHINE
+      # Add a memcheck test for mappy for nightlies
+      if [[ "$SCREAM_MACHINE" == "mappy" ]]; then
+        ./scripts/gather-all-data "./scripts/test-all-scream -t mem ${TAS_ARGS}" -l -m $SCREAM_MACHINE
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           memcheck_fail=1
         fi
       fi
+
+      if [[ "$SCREAM_MACHINE" == "weaver" ]]; then
+        ./scripts/gather-all-data "./scripts/test-all-scream -t cmc -t csr -t csi -t css ${TAS_ARGS}" -l -m $SCREAM_MACHINE
+        if [[ $? != 0 ]]; then
+          fails=$fails+1;
+          memcheck_fail=1
+        fi
+      fi
+
     fi
   else
     echo "SCREAM Stand-Alone tests were skipped, since the Github label 'AT: Skip Stand-Alone Testing' was found.\n"

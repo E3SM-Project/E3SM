@@ -67,7 +67,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   //       take this information directly from the spa data file.
   m_spa_data_file = m_params.get<std::string>("spa_data_file");
   scorpio::register_file(m_spa_data_file,scorpio::Read);
-  m_num_src_levs = scorpio::get_dimlen_c2f(m_spa_data_file.c_str(),"lev");
+  m_num_src_levs = scorpio::get_dimlen(m_spa_data_file,"lev");
   scorpio::eam_pio_closefile(m_spa_data_file);
   SPAHorizInterp.m_comm = m_comm;
 

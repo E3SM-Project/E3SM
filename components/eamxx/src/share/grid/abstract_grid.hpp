@@ -143,6 +143,11 @@ public:
   virtual bool check_valid_dofs()        const { return true; }
   virtual bool check_valid_lid_to_idx () const { return true; }
 
+  void reset_field_tag_name (const FieldTag t, const std::string& s) { m_special_tag_names[t] = s; }
+  std::string get_dim_name (const FieldTag t) const {
+    return m_special_tag_names.count(t)==1 ? m_special_tag_names.at(t) : e2str(t);
+  }
+
   // This member is used mostly by IO: if a field exists on multiple grids
   // with the same name, IO can use this as a suffix to diambiguate the fields in
   // the IO file, by appending each grid's suffix to the fields names.
@@ -164,6 +169,8 @@ private:
   std::string  m_name;
 
   std::vector<std::string> m_aliases;
+
+  std::map<FieldTag, std::string> m_special_tag_names;
 
   // Counters
   int m_num_local_dofs;

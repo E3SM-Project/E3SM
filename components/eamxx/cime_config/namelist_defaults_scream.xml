@@ -162,12 +162,20 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- Surface coupling (import and export) -->
     <sc_import inherit="atm_proc_base"/>
-    <sc_export inherit="atm_proc_base"/>
+    <sc_export inherit="atm_proc_base">
+      <prescribed_constants>
+        <fields type="array(string)">NONE</fields>
+        <values type="array(real)">0</values>
+      </prescribed_constants>
+    </sc_export>
 
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
       <Grid>Dynamics</Grid>
       <Moisture>moist</Moisture>
+      <!-- Frequency in physics steps to output a global hash over the dycore's
+           in fields. <= 0 disables hashing. -->
+      <BfbHash>0</BfbHash>
     </homme>
 
     <!-- P3 microphysics -->

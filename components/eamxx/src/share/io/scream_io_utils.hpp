@@ -48,14 +48,14 @@ inline OutputAvgType str2avg (const std::string& s) {
 
 // Mini struct to hold IO frequency info
 struct IOControl {
-  // A non-positive frequency can be used to signal IO disabled
+  // If units is not "none" or "never", freq *must* be set to a positive number
   int frequency = -1;
   int nsamples_since_last_write = 0;  // Needed when updating output data, such as with the OAT::Average flag
   util::TimeStamp timestamp_of_last_write;
   std::string frequency_units = "none";
 
   bool output_enabled () const {
-    return frequency>0 && frequency_units!="none" && frequency_units!="never";
+    return frequency_units!="none" && frequency_units!="never";
   }
 
   bool is_write_step (const util::TimeStamp& ts) {
@@ -63,7 +63,7 @@ struct IOControl {
     // The current allowable options are nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears
     // We query the frequency_units string value to determine which option it is.
     bool ret = false;
-    if (frequency > 0 && frequency_units != "never" && frequency_units != "none") {
+    if (frequency_units != "never" && frequency_units != "none") {
       auto ts_diff = (ts-timestamp_of_last_write);
       if (frequency_units == "nsteps") {
         // Just use the num_steps from timestamps
@@ -123,6 +123,9 @@ struct IOFileSpecs {
   bool filename_with_mpiranks    = false;
 
   bool save_grid_data            = true;
+
+  // Whether this struct refers to a history restart file
+  bool hist_restart_file         = false;
 };
 
 std::string find_filename_in_rpointer (
