@@ -1,10 +1,10 @@
 set(CLDFRAC_SRCS
-  atmosphere_cld_fraction.cpp
+  eamxx_cld_fraction.cpp
   cld_fraction.cpp 
 )
 
 set(CLDFRAC_HEADERS
-  atmosphere_cld_fraction.hpp
+  eamxx_cld_fraction.hpp
   cld_fraction_functions.hpp
   cld_fraction_main_impl.hpp
 )

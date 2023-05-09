@@ -8,12 +8,12 @@
 //       and we want to only register the ones built,
 //       without hardcoding all of them.
 
-#include "physics/p3/atmosphere_microphysics.hpp"
-#include "physics/shoc/atmosphere_macrophysics.hpp"
-#include "physics/cld_fraction/atmosphere_cld_fraction.hpp"
-#include "physics/rrtmgp/atmosphere_radiation.hpp"
-#include "physics/spa/atmosphere_prescribed_aerosol.hpp"
-#include "physics/nudging/atmosphere_nudging.hpp"
+#include "physics/p3/eamxx_p3.hpp"
+#include "physics/shoc/eamxx_shoc.hpp"
+#include "physics/cld_fraction/eamxx_cld_fraction.hpp"
+#include "physics/rrtmgp/eamxx_rrtmgp.hpp"
+#include "physics/spa/eamxx_spa.hpp"
+#include "physics/nudging/eamxx_nudging.hpp"
 
 namespace scream {
 

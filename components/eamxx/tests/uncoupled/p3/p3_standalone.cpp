@@ -3,7 +3,7 @@
 #include "control/atmosphere_driver.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
-#include "physics/p3/atmosphere_microphysics.hpp"
+#include "physics/p3/eamxx_p3.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
@@ -59,7 +59,7 @@ TEST_CASE("p3-stand-alone", "") {
   // TODO: get the field repo from the driver, and go get (one of)
   //       the output(s) of P3, to check its numerical value (if possible)
 
-  // Finalize 
+  // Finalize
   ad.finalize();
 
   // If we got here, we were able to run p3

@@ -4,7 +4,7 @@ set(SHOC_SRCS
   shoc_iso_c.f90
   shoc_iso_f.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/shoc.F90
-  atmosphere_macrophysics.cpp
+  eamxx_shoc.cpp
 )
 
 if (NOT SCREAM_LIB_ONLY)
@@ -16,7 +16,7 @@ endif()
 
 set(SHOC_HEADERS
   shoc.hpp
-  atmosphere_macrophysics.hpp
+  eamxx_shoc.hpp
   shoc_constants.hpp
 )
 

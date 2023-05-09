@@ -1,5 +1,5 @@
 #include "physics/zm/scream_zm_interface.hpp"
-#include "physics/zm/atmosphere_deep_convection.hpp"
+#include "physics/zm/eamxx_zm.hpp"
 
 #include "ekat/ekat_assert.hpp"
 

@@ -1,4 +1,4 @@
-#include "atmosphere_dynamics.hpp"
+#include "eamxx_homme.hpp"
 
 // Scream includes
 #include "share/util/scream_common_physics_functions.hpp"

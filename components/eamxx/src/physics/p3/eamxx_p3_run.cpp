@@ -1,4 +1,4 @@
-#include "physics/p3/atmosphere_microphysics.hpp"
+#include "physics/p3/eamxx_p3.hpp"
 
 namespace scream {
 

@@ -1,5 +1,5 @@
 #include "ekat/ekat_assert.hpp"
-#include "physics/shoc/atmosphere_macrophysics.hpp"
+#include "physics/shoc/eamxx_shoc.hpp"
 
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"

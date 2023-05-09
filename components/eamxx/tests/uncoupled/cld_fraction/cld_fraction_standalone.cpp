@@ -2,7 +2,7 @@
 
 #include "control/atmosphere_driver.hpp"
 
-#include "physics/cld_fraction/atmosphere_cld_fraction.hpp"
+#include "physics/cld_fraction/eamxx_cld_fraction.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
@@ -57,7 +57,7 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   // rather than use the netCDF input structure.
   const auto& grid = ad.get_grids_manager()->get_grid("Point Grid");
   const auto& field_mgr = *ad.get_field_mgr(grid->name());
-  
+
   int num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   int num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
@@ -110,13 +110,13 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   const auto& ice_cld_frac = ice_cld_frac_field.get_view<Real**,Host>();
   const auto& tot_cld_frac = tot_cld_frac_field.get_view<Real**,Host>();
 
-  const auto& ice_cld_frac_field_4out = field_mgr.get_field("cldfrac_ice_for_analysis"); 
-  const auto& tot_cld_frac_field_4out = field_mgr.get_field("cldfrac_tot_for_analysis"); 
+  const auto& ice_cld_frac_field_4out = field_mgr.get_field("cldfrac_ice_for_analysis");
+  const auto& tot_cld_frac_field_4out = field_mgr.get_field("cldfrac_tot_for_analysis");
   ice_cld_frac_field_4out.sync_to_host();
   tot_cld_frac_field_4out.sync_to_host();
   const auto& ice_cld_frac_4out = ice_cld_frac_field_4out.get_view<Real**,Host>();
   const auto& tot_cld_frac_4out = tot_cld_frac_field_4out.get_view<Real**,Host>();
-  
+
   for (int icol=0;icol<num_cols;++icol)
   {
     qi_amp = icol == num_cols-1 ? 0.0 : 1e-3;
@@ -134,13 +134,13 @@ TEST_CASE("cld_fraction-stand-alone", "") {
       y_cmp = cf_amp*(std::sin(xval+phase)+1.0)/2.0;
       REQUIRE(liq_cld_frac(icol,jlev)==y_cmp);
       // Test that the cloud fraction calculation appropriately calculated the ice cloud fraction
-      if (qi(icol,jlev)>ice_thresh) 
+      if (qi(icol,jlev)>ice_thresh)
       {
         REQUIRE(ice_cld_frac(icol,jlev)==1.0);
       } else {
         REQUIRE(ice_cld_frac(icol,jlev)==0.0);
       }
-      if (qi(icol,jlev)>ice_thresh_out) 
+      if (qi(icol,jlev)>ice_thresh_out)
       {
         REQUIRE(ice_cld_frac_4out(icol,jlev)==1.0);
       } else {
@@ -162,7 +162,7 @@ TEST_CASE("cld_fraction-stand-alone", "") {
     }
   }
 
-  // Finalize 
+  // Finalize
   ad.finalize();
 
 }

@@ -7,10 +7,10 @@
 #include "share/grid/mesh_free_grids_manager.hpp"
 
 // Physics headers
-#include "physics/p3/atmosphere_microphysics.hpp"
-#include "physics/shoc/atmosphere_macrophysics.hpp"
-#include "physics/cld_fraction/atmosphere_cld_fraction.hpp"
-#include "physics/rrtmgp/atmosphere_radiation.hpp"
+#include "physics/p3/eamxx_p3.hpp"
+#include "physics/shoc/eamxx_shoc.hpp"
+#include "physics/cld_fraction/eamxx_cld_fraction.hpp"
+#include "physics/rrtmgp/eamxx_rrtmgp.hpp"
 
 // EKAT headers
 #include "ekat/ekat_pack.hpp"

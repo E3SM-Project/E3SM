@@ -1,4 +1,4 @@
-#include "atmosphere_dynamics.hpp"
+#include "eamxx_homme.hpp"
 
 // HOMMEXX Includes
 #include "Context.hpp"

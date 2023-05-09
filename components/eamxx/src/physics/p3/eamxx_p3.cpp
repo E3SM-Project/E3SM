@@ -1,4 +1,4 @@
-#include "physics/p3/atmosphere_microphysics.hpp"
+#include "physics/p3/eamxx_p3.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
 // Needed for p3_init, the only F90 code still used.
@@ -45,8 +45,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   infrastructure.ite = m_num_cols-1;
   infrastructure.kts = 0;
   infrastructure.kte = m_num_levs-1;
-  infrastructure.predictNc = m_params.get<bool>("do_predict_nc",true); 
-  infrastructure.prescribedCCN = m_params.get<bool>("do_prescribed_ccn",true); 
+  infrastructure.predictNc = m_params.get<bool>("do_predict_nc",true);
+  infrastructure.prescribedCCN = m_params.get<bool>("do_prescribed_ccn",true);
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -63,7 +63,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
   constexpr int ps = Pack::n;
 
-  // These variables are needed by the interface, but not actually passed to p3_main. 
+  // These variables are needed by the interface, but not actually passed to p3_main.
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
 
 //should we use one pressure only, wet/full?

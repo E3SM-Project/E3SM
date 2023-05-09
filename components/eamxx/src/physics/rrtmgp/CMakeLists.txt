@@ -133,7 +133,7 @@ target_include_directories(scream_rrtmgp_yakl SYSTEM PUBLIC
 ##################################
 
 set(SCREAM_RRTMGP_SOURCES
-  atmosphere_radiation.cpp
+  eamxx_rrtmgp.cpp
   shr_orb_mod_c2f.F90
 )
 

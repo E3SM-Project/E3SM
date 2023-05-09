@@ -6,7 +6,7 @@
 // Other rrtmgp specific code needed specifically for this test
 #include "physics/rrtmgp/rrtmgp_test_utils.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-#include "physics/rrtmgp/atmosphere_radiation.hpp"
+#include "physics/rrtmgp/eamxx_rrtmgp.hpp"
 #include "mo_gas_concentrations.h"
 #include "mo_garand_atmos_io.h"
 #include "YAKL.h"

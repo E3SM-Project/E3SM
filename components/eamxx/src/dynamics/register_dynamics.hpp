@@ -4,7 +4,7 @@
 #include "share/atm_process/atmosphere_process.hpp"
 
 #ifdef SCREAM_HAS_HOMME
-#include "homme/atmosphere_dynamics.hpp"
+#include "homme/eamxx_homme.hpp"
 #include "homme/homme_grids_manager.hpp"
 #endif
 
