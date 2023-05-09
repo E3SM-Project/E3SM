@@ -113,6 +113,7 @@ else()
     list(APPEND SHOC_LIBS "shoc_sk")
   endif()
 endif()
+target_compile_definitions(shoc PUBLIC EAMXX_HAS_SHOC)
 
 foreach (SHOC_LIB IN LISTS SHOC_LIBS)
   set_target_properties(${SHOC_LIB} PROPERTIES

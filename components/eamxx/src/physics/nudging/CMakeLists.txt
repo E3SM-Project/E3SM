@@ -1,4 +1,5 @@
 add_library(nudging eamxx_nudging.cpp)
+target_compile_definitions(nudging PUBLIC EAMXX_HAS_NUDGING)
 target_include_directories(nudging PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../share)
 target_link_libraries(nudging physics_share scream_share)
 

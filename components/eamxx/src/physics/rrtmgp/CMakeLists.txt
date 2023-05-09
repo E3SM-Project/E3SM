@@ -71,6 +71,7 @@ set(EXTERNAL_SRC
   ${EAM_RRTMGP_DIR}/external/cpp/extensions/fluxes_byband/mo_fluxes_byband_kernels.cpp
 )
 add_library(rrtmgp ${EXTERNAL_SRC})
+target_compile_definitions(rrtmgp PUBLIC EAMXX_HAS_RRTMGP)
 EkatDisableAllWarning(rrtmgp)
 yakl_process_target(rrtmgp)
 

@@ -22,9 +22,6 @@
 // Whether this is a CUDA/HIP build
 #cmakedefine EAMXX_ENABLE_GPU
 
-// Whether SCREAM has Homme enabled as dynamics dycore
-#cmakedefine SCREAM_HAS_HOMME
-
 // Whether scream uses leap years or not
 #cmakedefine SCREAM_HAS_LEAP_YEAR
 

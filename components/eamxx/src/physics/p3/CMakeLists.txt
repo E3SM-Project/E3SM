@@ -62,6 +62,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
 endif()
 
 add_library(p3 ${P3_SRCS})
+target_compile_definitions(p3 PUBLIC EAMXX_HAS_P3)
 set_target_properties(p3 PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
