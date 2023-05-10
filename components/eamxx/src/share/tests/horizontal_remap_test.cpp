@@ -516,10 +516,7 @@ TEST_CASE("horizontal_remap_units", "") {
 std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& comm, const Int num_gcols, const Int num_levs)
 {
 /* Simple routine to construct and return a grids manager given number of columns and levels */
-  ekat::ParameterList gm_params;
-  gm_params.set("number_of_global_columns",num_gcols);
-  gm_params.set("number_of_vertical_levels",num_levs);
-  auto gm = create_mesh_free_grids_manager(comm,gm_params);
+  auto gm = create_mesh_free_grids_manager(comm,0,0,num_levs,num_gcols);
   gm->build_grids();
   return gm;
 } // end get_test_gm

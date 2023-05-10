@@ -28,6 +28,9 @@ atmosphere_processes:
 
 grids_manager:
   Type: Mesh Free
-  number_of_global_columns: 24
-  number_of_vertical_levels: 3
+  grids_names: ["Point Grid"]
+  Point Grid:
+    type: point_grid
+    number_of_global_columns: 24
+    number_of_vertical_levels: 3
 ...

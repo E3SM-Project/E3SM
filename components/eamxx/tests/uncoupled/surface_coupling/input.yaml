@@ -12,8 +12,12 @@ atmosphere_processes:
 
 grids_manager:
   Type: Mesh Free
-  number_of_global_columns:   218
-  number_of_vertical_levels:  72  # Will want to change to 128 when a valid unit test is available.
+  grids_names: [Physics GLL]
+  Physics GLL:
+    type: point_grid
+    aliases: [Physics]
+    number_of_global_columns:   218
+    number_of_vertical_levels:  72
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.

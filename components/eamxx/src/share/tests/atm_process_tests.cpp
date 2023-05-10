@@ -57,13 +57,7 @@ create_gm (const ekat::Comm& comm) {
   const int num_local_cols = 13;
   const int num_global_cols = num_local_cols*comm.size();
 
-  ekat::ParameterList gm_params;
-  gm_params.set<int>("number_of_global_columns", num_global_cols);
-  gm_params.set<int>("number_of_local_elements", num_local_elems);
-  gm_params.set<int>("number_of_vertical_levels", nlevs);
-  gm_params.set<int>("number_of_gauss_points", np);
-
-  auto gm = create_mesh_free_grids_manager(comm,gm_params);
+  auto gm = create_mesh_free_grids_manager(comm,num_local_elems,np,nlevs,num_global_cols);
   gm->build_grids();
 
   return gm;
