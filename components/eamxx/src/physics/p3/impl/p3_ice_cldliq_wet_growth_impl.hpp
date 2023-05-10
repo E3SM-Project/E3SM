@@ -42,7 +42,7 @@ void Functions<S,D>
   Spack dum1{0.};
 
   if (any_if.any()) {
-    qsat0 = physics::qv_sat( zerodeg,pres, false, context, physics::MurphyKoop, "p3::ice_cldliq_wet_growth" );
+    qsat0 = physics::qv_sat_dry( zerodeg,pres, false, context, physics::MurphyKoop, "p3::ice_cldliq_wet_growth" );
 
     qc_growth_rate.set(any_if,
                ((table_val_qi2qr_melting+table_val_qi2qr_vent_melt*cbrt(sc)*sqrt(rhofaci*rho/mu))*

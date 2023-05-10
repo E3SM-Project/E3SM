@@ -22,16 +22,16 @@ module wv_sat_scream
   implicit none
   private
 
-  public:: qv_sat, MurphyKoop_svp
+  public:: qv_sat_dry, qv_sat_wet, MurphyKoop_svp
 
 contains
 
   !===========================================================================================
-  real(rtype) function qv_sat(t_atm,p_atm,i_wrt)
+  real(rtype) function qv_sat_dry(t_atm,p_atm_dry,i_wrt)
 
     !------------------------------------------------------------------------------------
-    ! Calls polysvp1 to obtain the saturation vapor pressure, and then computes
-    ! and returns the saturation mixing ratio, with respect to either liquid or ice,
+    ! Calls MurphyKoop to obtain the saturation vapor pressure, and then computes
+    ! and returns the dry saturation mixing ratio, with respect to either liquid or ice,
     ! depending on value of 'i_wrt'
     !------------------------------------------------------------------------------------
 
@@ -39,23 +39,52 @@ contains
     implicit none
 
     !Calling parameters:
-    real(rtype), intent(in)    :: t_atm  !temperature [K]
-    real(rtype), intent(in)    :: p_atm  !pressure    [Pa]
+    real(rtype), intent(in)    :: t_atm      !temperature [K]
+    real(rtype), intent(in)    :: p_atm_dry  !pressure    [Pa]
     integer, intent(in) :: i_wrt  !index, 0 = w.r.t. liquid, 1 = w.r.t. ice
 
     !Local variables:
     real(rtype)            :: e_pres         !saturation vapor pressure [Pa]
 
-    !e_pres = polysvp1(t_atm,i_wrt)
-    e_pres = MurphyKoop_svp(t_atm,i_wrt)
-    qv_sat = ep_2*e_pres/max(1.e-3_rtype,(p_atm-e_pres))
+    !e_pres    = polysvp1(t_atm,i_wrt)
+    e_pres     = MurphyKoop_svp(t_atm,i_wrt)
+    qv_sat_dry = ep_2*e_pres/max(1.e-3_rtype,p_atm_dry)
 
     return
 
-  end function qv_sat
+  end function qv_sat_dry
+
   !===========================================================================================
 
-  !==========================================================================================!
+  real(rtype) function qv_sat_wet(t_atm,p_atm_dry,i_wrt,dp_wet,dp_dry)
+
+    !------------------------------------------------------------------------------------
+    ! Calls qv_sat_dry to obtain the dry saturation mixing ratio,
+    ! with respect to either liquid or ice, depending on value of 'i_wrt', 
+    ! and converts it to wet
+    !------------------------------------------------------------------------------------
+
+    implicit none
+
+    !Calling parameters:
+    real(rtype), intent(in)    :: t_atm      !temperature [K]
+    real(rtype), intent(in)    :: p_atm_dry  !pressure    [Pa]
+    real(rtype), intent(in)    :: dp_wet     !pseudodensity     [Pa]
+    real(rtype), intent(in)    :: dp_dry     !pseudodensity_dry [Pa]
+    integer, intent(in) :: i_wrt  !index, 0 = w.r.t. liquid, 1 = w.r.t. ice
+
+    !Local variables:
+    real(rtype)                :: qsatdry
+
+    qsatdry    = qv_sat_dry(t_atm,p_atm_dry,i_wrt)
+    qv_sat_wet = qsatdry * dp_dry / dp_wet
+
+    return
+
+  end function qv_sat_wet
+  !===========================================================================================
+
+
 
   real(rtype) function MurphyKoop_svp(t, i_type)
 
