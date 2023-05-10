@@ -719,9 +719,9 @@ end subroutine macrop_driver_readnl
           ptend_loc%q(i,k,ixcldice) = difzm(i,k) + dsfzm(i,k) +  dlf2(i,k) * dum1
                                
           ptend_loc%q(i,k,ixnumliq) = dnlfzm(i,k) + 3._r8 * ( dlf2(i,k) * ( 1._r8 - dum1 ) )   &
-                                                   / (4._r8*3.14_r8*10.e-6_r8**3*997._r8)      ! Shallow Convection
+                                                   / (4._r8*3.14_r8*10.e-6_r8**3._r8*997._r8)      ! Shallow Convection
           ptend_loc%q(i,k,ixnumice) = dnifzm(i,k) + dnsfzm(i,k)  + 3._r8 * ( dlf2(i,k) * dum1 )  &
-                                                   / (4._r8*3.14_r8*50.e-6_r8**3*500._r8)      ! Shallow Convection
+                                                   / (4._r8*3.14_r8*50.e-6_r8**3._r8*500._r8)      ! Shallow Convection
           ptend_loc%s(i,k)          = dlf2(i,k) * dum1 * latice
        else 
 
@@ -729,14 +729,14 @@ end subroutine macrop_driver_readnl
           ptend_loc%q(i,k,ixcldice) = dlf(i,k) * dum1
           ! dum2                      = dlf(i,k) * ( 1._r8 - dum1 )
           ptend_loc%q(i,k,ixnumliq) = 3._r8 * ( max(0._r8, ( dlf(i,k) - dlf2(i,k) )) * ( 1._r8 - dum1 ) ) / &
-               (4._r8*3.14_r8* 8.e-6_r8**3*997._r8) + & ! Deep    Convection
+               (4._r8*3.14_r8* 8.e-6_r8**3._r8*997._r8) + & ! Deep    Convection
                3._r8 * (                         dlf2(i,k)    * ( 1._r8 - dum1 ) ) / &
-               (4._r8*3.14_r8*10.e-6_r8**3*997._r8)     ! Shallow Convection 
+               (4._r8*3.14_r8*10.e-6_r8**3._r8*997._r8)     ! Shallow Convection 
           ! dum2                      = dlf(i,k) * dum1
           ptend_loc%q(i,k,ixnumice) = 3._r8 * ( max(0._r8, ( dlf(i,k) - dlf2(i,k) )) *  dum1 ) / &
-               (4._r8*3.14_r8*25.e-6_r8**3*500._r8) + & ! Deep    Convection
+               (4._r8*3.14_r8*25.e-6_r8**3._r8*500._r8) + & ! Deep    Convection
                3._r8 * (                         dlf2(i,k)    *  dum1 ) / &
-               (4._r8*3.14_r8*50.e-6_r8**3*500._r8)     ! Shallow Convection
+               (4._r8*3.14_r8*50.e-6_r8**3._r8*500._r8)     ! Shallow Convection
           ptend_loc%s(i,k)          = dlf(i,k) * dum1 * latice
        end if ! zm_microp
      else 
@@ -1214,7 +1214,7 @@ elemental subroutine ice_macro_tend(naai,t,p,qv,qi,ni,xxls,deltat,stend,qvtend,q
      ! if ice exists (more than 1 L-1) and there is condensation, do not add to number (= growth), else, add 10um ice
 
      if (ni.lt.1.e3_r8.and.(qi+qitend*deltat).gt.1e-18_r8) then
-        nitend = nitend + 3._r8 * qitend/(4._r8*3.14_r8* 10.e-6_r8**3*997._r8)
+        nitend = nitend + 3._r8 * qitend/(4._r8*3.14_r8* 10.e-6_r8**3._r8*997._r8)
      endif
 
   endif

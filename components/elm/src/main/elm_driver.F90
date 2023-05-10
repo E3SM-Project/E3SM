@@ -128,6 +128,7 @@ module elm_driver
   use elm_instMod            , only : chemstate_vars
   use elm_instMod            , only : alm_fates
   use elm_instMod            , only : PlantMicKinetics_vars
+  use elm_instMod            , only : sedflux_vars
   use tracer_varcon          , only : is_active_betr_bgc
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetr, CNFluxStateBetrSummary
   use UrbanParamsType        , only : urbanparams_vars
@@ -199,7 +200,9 @@ contains
     ! the calling tree is given in the description of this module.
     !
     ! !USES:
-    !
+     use elm_varctl           , only : fates_spitfire_mode
+     use FATESFireFactoryMod  , only : scalar_lightning
+     
     ! !ARGUMENTS:
     implicit none
     logical ,        intent(in) :: doalb       ! true if time for surface albedo calc
@@ -616,6 +619,12 @@ contains
        call t_startf('fireinterp')
        call FireInterp(bounds_proc)
        call t_stopf('fireinterp')
+    elseif (use_fates) then
+       ! fates_spitfire_mode is assigned an integer value in the namelist
+       ! see bld/namelist_files/namelist_definition.xml for details
+       if (fates_spitfire_mode > scalar_lightning) then
+          call alm_fates%InterpFileInputs(bounds_proc)
+       end if
     end if
 
     if (use_cn .or. use_fates) then
@@ -1377,10 +1386,11 @@ contains
     endif
 
     call t_startf('lnd2atm')
-    call lnd2atm(bounds_proc,       &
-         atm2lnd_vars, surfalb_vars, frictionvel_vars,    &
-         energyflux_vars, solarabs_vars, drydepvel_vars,  &
-         vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars)
+    call lnd2atm(bounds_proc,                                   &
+         atm2lnd_vars, surfalb_vars, frictionvel_vars,          &
+         energyflux_vars, solarabs_vars, drydepvel_vars,        &
+         vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, &
+         sedflux_vars, lnd2atm_vars)
     call t_stopf('lnd2atm')
 
     ! ============================================================================
@@ -1435,6 +1445,10 @@ contains
        end if
 
        call cnstate_vars%UpdateAccVars(bounds_proc)
+       
+       if(use_fates) then
+          call alm_fates%UpdateAccVars(bounds_proc)
+       end if
 
        call t_stopf('accum')
 

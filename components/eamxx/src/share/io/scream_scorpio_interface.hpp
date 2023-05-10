@@ -5,6 +5,8 @@
 #include "share/field/field_tag.hpp"
 #include "share/scream_types.hpp"
 
+#include "ekat/mpi/ekat_comm.hpp"
+
 #include <vector>
 
 /* C++/F90 bridge to F90 SCORPIO routines */
@@ -21,6 +23,7 @@ namespace scorpio {
     Write = 2
   };
   /* All scorpio usage requires that the pio_subsystem is initialized. Happens only once per simulation */
+  void eam_init_pio_subsystem(const ekat::Comm& comm);
   void eam_init_pio_subsystem(const int mpicom, const int atm_id = 0);
   /* Cleanup scorpio with pio_finalize */
   void eam_pio_finalize();
@@ -60,6 +63,7 @@ namespace scorpio {
   void grid_write_data_array(const std::string &filename, const std::string &varname,
                              const T* hbuf, const int buf_size);
 
+
 extern "C" {
   /* Query whether the pio subsystem is inited or not */
   bool is_eam_pio_subsystem_inited();
@@ -67,6 +71,7 @@ extern "C" {
   bool is_file_open_c2f(const char*&& filename, const int& mode);
   int get_int_attribute_c2f (const char*&& filename, const char*&& attr_name);
   void set_int_attribute_c2f (const char*&& filename, const char*&& attr_name, const int& value);
+  void set_str_attribute_c2f (const char*&& filename, const char*&& attr_name, const char*&& value);
   int get_dimlen_c2f(const char*&& filename, const char*&& dimname);
   bool has_variable_c2f (const char*&& filename, const char*&& varname);
   /* Query a netCDF file for the time variable */

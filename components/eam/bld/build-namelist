@@ -3026,6 +3026,17 @@ if ($chem eq 'superfast_mam4_resus_mom_soag') {
       %species = ( %species,
 		'ISOP   -> ' => 'isop_emis_file',  );
     }
+    # tentatively add chemUCI-Linozv2|3 additional species here with superfast_mam4_resus_soag
+    # May later add a block to use a new chem package name in parallel with superfast_mam4_resus_soag 
+    if ($opts{'use_case'} =~ /chemUCI-Linoz/) {
+        %species = ( %species,
+                'C2H4      -> ' => 'c2h4_emis_file',
+                'C2H6      -> ' => 'c2h6_emis_file',
+                'C3H8      -> ' => 'c3h8_emis_file',
+                'CH3CHO    -> ' => 'ch3cho_emis_file',
+                'CH3COCH3  -> ' => 'ch3coch3_emis_file',
+                'E90       -> ' => 'e90_emis_file', );
+    }
     my %verhash = ('ver'=>'mam');
     my $first = 1;
     my $pre = "";
@@ -3056,6 +3067,11 @@ if ($chem eq 'superfast_mam4_resus_mom_soag') {
 		'num_a1      -> ' => 'mam7_num_a1_ext_file',
 		'num_a2      -> ' => 'num_a2_ext_file',
 		'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+    # tentatively add chemUCI-Linozv2|3 additional species here with superfast_mam4_resus_soag
+    if ($opts{'use_case'} =~ /chemUCI-Linoz/) {
+        %species = ( %species,
+                'NO2         -> ' => 'no2_ext_file' );
+    }
     $first = 1; $pre = ""; $val = "";
     foreach my $id (sort keys %species) {
         my $rel_filepath = get_default_value($species{$id}, \%verhash );
@@ -3567,13 +3583,13 @@ add_default($nl, 'use_subcol_microp');
 add_default($nl, 'microp_scheme');
 add_default($nl, 'micro_do_icesupersat');
 add_default($nl, 'macrop_scheme');
+add_default($nl, 'nucleate_ice_subgrid');
+add_default($nl, 'so4_sz_thresh_icenuc');
+add_default($nl, 'cld_macmic_num_steps');
 if ($cfg->get('microphys') =~ /^mg/) {
     add_default($nl, 'micro_mg_version');
     add_default($nl, 'micro_mg_sub_version');
     add_default($nl, 'micro_mg_num_steps');
-    add_default($nl, 'nucleate_ice_subgrid');
-    add_default($nl, 'so4_sz_thresh_icenuc');
-    add_default($nl, 'cld_macmic_num_steps');
     add_default($nl, 'micro_mg_precip_frac_method');
     add_default($nl, 'micro_mg_berg_eff_factor');
     add_default($nl, 'micro_mg_dcs');
@@ -3654,17 +3670,7 @@ if ($shoc_sgs  =~ /$TRUE/io) {
    add_default($nl, 'shoc_Ckm_s_max');
 }
 
-# P3
-if ($cfg->get('microphys') =~ /^p3/) {
-   add_default($nl, 'micro_p3_lookup_dir');
-   add_default($nl, 'micro_p3_tableversion');
-   add_default($nl, 'micro_aerosolactivation');
-   add_default($nl, 'micro_subgrid_cloud');
-   add_default($nl, 'micro_tend_output');
-   add_default($nl, 'p3_qc_autoCon_Expon');
-   add_default($nl, 'p3_qc_accret_Expon');
-   add_default($nl, 'do_prescribed_CCN');
-}
+
 
 # CLUBB_SGS
 add_default($nl, 'do_clubb_sgs');
@@ -3729,6 +3735,39 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_ipdf_call_placement');
 
 }
+
+# P3
+if ($cfg->get('microphys') =~ /^p3/) {
+   if ($shoc_sgs  =~ /$TRUE/io) {
+      add_default($nl, 'micro_p3_lookup_dir');
+      add_default($nl, 'micro_p3_tableversion');
+      add_default($nl, 'micro_aerosolactivation');
+      add_default($nl, 'micro_subgrid_cloud');
+      add_default($nl, 'micro_tend_output');
+      add_default($nl, 'p3_qc_autoCon_Expon');
+      add_default($nl, 'p3_qc_accret_Expon');
+      add_default($nl, 'do_prescribed_CCN'); 
+   }
+   if ($clubb_sgs  =~ /$TRUE/io) {
+      add_default($nl, 'micro_p3_lookup_dir');
+      add_default($nl, 'micro_p3_tableversion');
+      add_default($nl, 'micro_aerosolactivation');
+      add_default($nl, 'micro_subgrid_cloud');
+      add_default($nl, 'micro_tend_output');
+      add_default($nl, 'p3_autocon_coeff');
+      add_default($nl, 'p3_qc_autocon_expon');
+      add_default($nl, 'p3_nc_autocon_expon');
+      add_default($nl, 'p3_accret_coeff');
+      add_default($nl, 'p3_qc_accret_expon');
+      add_default($nl, 'p3_wbf_coeff');
+      add_default($nl, 'p3_max_mean_rain_size');
+      add_default($nl, 'p3_embryonic_rain_size');
+      add_default($nl, 'do_prescribed_CCN');
+      add_default($nl, 'do_Cooper_inP3');  
+   }
+}
+
+
 
 #RRTMGP
 add_default($nl, 'do_spa_optics');
@@ -4734,7 +4773,8 @@ sub add_default {
     # variable is defined to be an absolute pathname, then prepend
     # the CCSM inputdata root directory.
     if ($is_input_pathname eq 'abs') {
-	$val = set_abs_filepath($val, $inputdata_rootdir);
+        # if-logic to add the path only when $val is not empty. allowing specifying a null file in use_case file
+	$val = set_abs_filepath($val, $inputdata_rootdir) if ($val =~ /[^\s]+/); 
     }
 
     # Some complex namelist variables set in use cases may have "$INPUTDATA_ROOT"

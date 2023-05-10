@@ -110,9 +110,9 @@ ST field_min(const Field& f, const ekat::Comm* comm = nullptr)
 // refer to a single column, in which case we'll print a whole column worth of data.
 inline void
 print_field_hyperslab (const Field& f,
-                       const std::vector<FieldTag>& tags,
-                       const std::vector<int>& indices,
-                       std::ostream& out)
+                       const std::vector<FieldTag>& tags = {},
+                       const std::vector<int>& indices = {},
+                       std::ostream& out = std::cout)
 {
   const auto dt = f.data_type();
   const auto rank = f.rank();
@@ -133,6 +133,9 @@ print_field_hyperslab (const Field& f,
     case DataType::DoubleType:
       impl::print_field_hyperslab<double>(f,tags,indices,out,rank,0);
       break;
+    default:
+      EKAT_ERROR_MSG ("[print_field_hyperslab] Error! Invalid/unsupported data type.\n"
+          " - field name: " + f.name() + "\n");
   }
 }
 

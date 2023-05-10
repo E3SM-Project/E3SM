@@ -169,8 +169,8 @@ subroutine hetero(T,ww,Ns,Nis,Nid)
     real(r8), intent(in)  :: T, ww, Ns
     real(r8), intent(out) :: Nis, Nid
 
-    real(r8) A11,A12,A21,A22,B11,B12,B21,B22
-    real(r8) A,B,C
+    real(r8) :: A11,A12,A21,A22,B11,B12,B21,B22
+    real(r8) :: A,B,C
 
 !---------------------------------------------------------------------
 ! parameters
@@ -203,14 +203,14 @@ subroutine hf(T,ww,RH,subgrid,Na,Ni)
       real(r8), intent(in)  :: T, ww, RH, subgrid, Na
       real(r8), intent(out) :: Ni
 
-      real(r8)    A1_fast,A21_fast,A22_fast,B1_fast,B21_fast,B22_fast
-      real(r8)    A2_fast,B2_fast
-      real(r8)    C1_fast,C2_fast,k1_fast,k2_fast
-      real(r8)    A1_slow,A2_slow,B1_slow,B2_slow,B3_slow
-      real(r8)    C1_slow,C2_slow,k1_slow,k2_slow
-      real(r8)    regm
-      real(r8)    A,B,C
-      real(r8)    RHw
+      real(r8) ::   A1_fast,A21_fast,A22_fast,B1_fast,B21_fast,B22_fast
+      real(r8) ::   A2_fast,B2_fast
+      real(r8) ::   C1_fast,C2_fast,k1_fast,k2_fast
+      real(r8) ::   A1_slow,A2_slow,B1_slow,B2_slow,B3_slow
+      real(r8) ::   C1_slow,C2_slow,k1_slow,k2_slow
+      real(r8) ::   regm
+      real(r8) ::   A,B,C
+      real(r8) ::   RHw
 
 !---------------------------------------------------------------------
 ! parameters

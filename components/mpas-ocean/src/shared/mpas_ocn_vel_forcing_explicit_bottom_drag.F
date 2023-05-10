@@ -192,7 +192,7 @@ contains
 
       !*** Reset values based on input model configuration
 
-      if (config_use_explicit_bottom_drag) then
+      if (trim(config_bottom_drag_mode) == 'explicit') then
          explicitBottomDragOff = .false.
          dragCoeff = config_explicit_bottom_drag_coeff
       endif

@@ -89,7 +89,7 @@ public:
   void setup_surface_coupling_processes() const;
 
   // Zero out precipitation flux
-  void set_precipitation_fields_to_zero();
+  void reset_accummulated_fields();
 
   // Create and add mass and energy conservation checks
   // and pass to m_atm_process_group.
