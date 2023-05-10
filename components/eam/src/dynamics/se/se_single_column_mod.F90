@@ -172,6 +172,7 @@ subroutine scm_broadcast()
   call mpibcast(divq,plev,mpir8,0,mpicom)
   call mpibcast(divt3d,plev,mpir8,0,mpicom)
   call mpibcast(divq3d,plev,mpir8,0,mpicom)
+  call mpibcast(scmlat,1,mpir8,0,mpicom)
   
 #endif
 
