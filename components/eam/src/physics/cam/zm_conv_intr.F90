@@ -689,7 +689,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
     type(zm_microp_st)        :: microp_st 
 
-!   integer :: i,k,m
    integer :: i,k,l,m
    integer :: ilon                      ! global longitude index of a column
    integer :: ilat                      ! global latitude index of a column
@@ -1092,11 +1091,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
            Qmq(i,k) = Qm(i,k)/2500000._r8/4._r8
 
 
-           !if( cos(pi*(top/bottom))>0 ) then 
-              Qmu(i,k) = alphau * (cos(pi*(top/bottom)))
-           !else 
-           !   Qmu(i,k) = alphau * (cos(pi*(top/bottom)))*.25_r8
-           !end if
+           Qmu(i,k) = alphau * (cos(pi*(top/bottom)))
 
            Qmv(i,k) = alphav * (cos(pi*(top/bottom)))
 
@@ -1242,7 +1237,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
          state1%t,state1%pmid,state1%pdel,state1%q(:pcols,:pver,1), &
          ptend_loc%s, tend_s_snwprd, tend_s_snwevmlt, ptend_loc%q(:pcols,:pver,1), &
          rprd, cld, ztodt, &
-!        prec, snow, ntprprd, ntsnprd , flxprec, flxsnow)
          prec, snow, ntprprd, ntsnprd , flxprec, flxsnow, sprd, old_snow)
     call t_stopf ('zm_conv_evap')
 

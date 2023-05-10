@@ -717,7 +717,10 @@ end subroutine macrop_driver_readnl
        if (zm_microp) then
           ptend_loc%q(i,k,ixcldliq) = dlfzm(i,k) + dlf2(i,k) * ( 1._r8 - dum1 )
           ptend_loc%q(i,k,ixcldice) = difzm(i,k) + dsfzm(i,k) +  dlf2(i,k) * dum1
-                               
+          ! The mass of a cloud droplet(ice particle) is calculated using mass=volume * density = [(4/3) * pi * r^3 ]* density.
+          ! The density of droplet and ice particle in shallow convection is assumed to be 997. kg/m3, and 500. kg/m3, respectively.
+          ! The radius of droplet and ice particle in shallow convection is assumed to be 10 microns (10.e-6 m), and 
+          ! 50. microns( 50.e-6 m), respectively.      
           ptend_loc%q(i,k,ixnumliq) = dnlfzm(i,k) + 3._r8 * ( dlf2(i,k) * ( 1._r8 - dum1 ) )   &
                                                    / (4._r8*3.14_r8*10.e-6_r8**3._r8*997._r8)      ! Shallow Convection
           ptend_loc%q(i,k,ixnumice) = dnifzm(i,k) + dnsfzm(i,k)  + 3._r8 * ( dlf2(i,k) * dum1 )  &

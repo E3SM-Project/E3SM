@@ -1717,7 +1717,7 @@ subroutine convtran(lchnk   , &
    integer, intent(in) :: nstep             ! Time step index
 
    real(r8), intent(in) :: dpdry(pcols,pver)       ! Delta pressure between interfaces
-   real(r8), intent(in) :: dt               ! 2 delta t (model time increment)
+   real(r8), intent(in) :: dt               ! model time increment
 
 ! input/output
 
