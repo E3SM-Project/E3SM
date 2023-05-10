@@ -280,8 +280,8 @@ module conv_water
             kabs  = kabsl * ( 1._r8 - wrk1 ) + kabsi * wrk1
             alpha = -1.66_r8*kabs*state%pdel(i,k)/gravit*1000.0_r8
            if (zm_microp) then
-             sh_iclmr = sh_icwmr(i,k)*(1-fice(i,k))
-             sh_icimr = sh_icwmr(i,k)*fice(i,k)
+             sh_iclmr = sh_icwmr(i,k)*(1-wrk1)
+             sh_icimr = sh_icwmr(i,k)*wrk1
              dp_iclmr = dp_icwmr(i,k)- dp_icimr(i,k)
         
              conv_ice(i,k) = ( sh0_frac * sh_icimr + dp0_frac*dp_icimr(i,k))/max(frac_limit,cu0_frac)
