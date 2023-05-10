@@ -279,6 +279,7 @@ contains
 #endif
    use radiation,           only: radiation_readnl
    use conditional_diag,    only: cnd_diag_readnl
+   use prescribed_macv2,    only: prescribed_macv2_readnl
 
 !---------------------------Arguments-----------------------------------
 
@@ -541,6 +542,8 @@ contains
 
    ! Read radiation namelist
    call radiation_readnl(nlfilename, dtime_in=dtime)
+
+   call prescribed_macv2_readnl(nlfilename)
 
    ! Print cam_inparm input variables to standard output
    if (masterproc) then
