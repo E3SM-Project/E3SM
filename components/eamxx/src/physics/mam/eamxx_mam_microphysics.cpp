@@ -1,4 +1,4 @@
-#include <physics/mam/eamxx_mam.hpp>
+#include <physics/mam/eamxx_mam_microphysics.hpp>
 #include <share/property_checks/field_lower_bound_check.hpp>
 #include <share/property_checks/field_within_interval_check.hpp>
 
