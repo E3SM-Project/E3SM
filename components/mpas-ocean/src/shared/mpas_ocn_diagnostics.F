@@ -719,35 +719,93 @@ contains
       ! Begin code
 
       ! Compute edge flux based on option set on init
+      select case (thickEdgeFluxChoice)
 
-      ! Use centered (mean) thickness as flux value
+      case (thickEdgeFluxCenter)
+         ! Use centered (mean) thickness as flux value
 
-      ! Compute mean layer thickness at edge
+         ! Compute mean layer thickness at edge
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(bottomDepthEdge, sshCell, wctEdge)
-      !$acc parallel loop &
-      !$acc    present(bottomDepthEdge, sshCell, wctEdge, cellsOnEdge) &
-      !$acc    private(iEdge, cell1, cell2)
+         !$acc enter data copyin(bottomDepthEdge, sshCell, wctEdge)
+         !$acc parallel loop &
+         !$acc    present(bottomDepthEdge, sshCell, wctEdge, cellsOnEdge) &
+         !$acc    private(iEdge, cell1, cell2)
 #else
-      !$omp parallel
-      !$omp do schedule(runtime) private (cell1, cell2)
+         !$omp parallel
+         !$omp do schedule(runtime) private (cell1, cell2)
 #endif
-      do iEdge = 1, nEdgesAll
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         wctEdge(iEdge) = 0.5_RKIND*(sshCell(cell1) + sshCell(cell2)) &
-                          + bottomDepthEdge(iEdge)
-      end do
+         do iEdge = 1, nEdgesAll
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            wctEdge(iEdge) = 0.5_RKIND*(sshCell(cell1) + sshCell(cell2)) &
+                             + bottomDepthEdge(iEdge)
+         end do
 #ifndef MPAS_OPENACC
-      !$omp end do
-      !$omp end parallel
+         !$omp end do
+         !$omp end parallel
 #endif
 
 #ifdef MPAS_OPENACC
-      !$acc exit data copyout(wctEdge) delete(bottomDepthEdge, sshCell)
+         !$acc exit data copyout(wctEdge) delete(bottomDepthEdge, sshCell)
 #endif
 
-   !--------------------------------------------------------------------
+      case (thickEdgeFluxUpwind)
+
+         allocate(wctCell(nCellsAll))
+#ifdef MPAS_OPENACC
+         !$acc enter data copyin(wctCell, sshCell, btrVelocity, wctEdge)
+         !$acc parallel loop &
+         !$acc    present(wctCell, sshCell, bottomDepth) &
+         !$acc    private(iCell)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime)
+#endif
+         do iCell = 1, nCellsAll
+            wctCell(iCell) = sshCell(iCell) + bottomDepth(iCell)
+         end do ! cell loop for ssh
+#ifndef MPAS_OPENACC
+         !$omp end do
+         !$omp end parallel
+#endif
+
+         ! Use upwind thickness as the edge flux value
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(btrVelocity, sshCell, cellsOnEdge, maxLevelEdgeTop, wctCell, wctEdge) &
+         !$acc    private(cell1, cell2, iEdge)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime) private(cell1, cell2)
+#endif
+         do iEdge = 1, nEdgesAll
+            if ( maxLevelEdgeTop(iEdge) == 0 ) cycle
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
+            if (btrVelocity(iEdge) > 0.0_RKIND) then
+               wctEdge(iEdge) = wctCell(cell1)
+            elseif (btrVelocity(iEdge) < 0.0_RKIND) then
+               wctEdge(iEdge) = wctCell(cell2)
+            else
+               wctEdge(iEdge) = max(wctCell(cell1), wctCell(cell2))
+            end if
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+         !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+         !$acc exit data copyout(wctEdge) delete(wctCell, sshCell, btrVelocity)
+#endif
+         deallocate(wctCell)
+
+      case default
+         ! Should have been caught on init
+         call mpas_log_write('Thickness flux option unknown', &
+                             MPAS_LOG_CRIT)
+
+      end select
 
    end subroutine ocn_diagnostic_solve_wctEdge!}}}
 
@@ -4446,17 +4504,14 @@ contains
                  & 'Set config_disable_vel_hadv to true for a linear test case. ', &
                  MPAS_LOG_CRIT)
          end if
+      elseif (trim(config_thickness_flux_type) == 'upwind') then
+         thickEdgeFluxChoice = thickEdgeFluxUpwind
+         call mpas_log_write('Thickness flux option set to ' //&
+              & trim(config_thickness_flux_type))
       else
-         if (config_use_wetting_drying .and. &
-             (trim(config_thickness_flux_type) /= 'centered')) then
-            if ( trim(config_thickness_flux_type) == 'upwind') then
-               thickEdgeFluxChoice = thickEdgeFluxUpwind
-            end if
-         else
-            call mpas_log_write('Thickness flux option of ' //&
-                 & trim(config_thickness_flux_type) // &
-                 & ' is not known', MPAS_LOG_CRIT)
-         end if
+         call mpas_log_write('Thickness flux option of ' //&
+              & trim(config_thickness_flux_type) // &
+              & 'is not known', MPAS_LOG_CRIT)
       end if
 
       ! Initialize coefficient choice for computing land ice drag

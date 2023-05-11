@@ -92,6 +92,11 @@ module ocn_time_integration_split
       nBtrSubcycles     ! number of barotropic subcycles
 
    integer :: ssh_sal_on
+   integer :: &
+      thickEdgeFluxChoice ! choice of thickness flux type
+   integer, parameter :: &
+      thickEdgeFluxCenter   = 1, &! use mean thickness of cell neighbors
+      thickEdgeFluxUpwind   = 2   ! use upwind cell thickness at edge
 
    real (kind=RKIND) :: &
       useVelocityCorrection,&! mask for velocity correction
@@ -1585,13 +1590,32 @@ module ocn_time_integration_split
                                              nVertLevels)
             call ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
 
-
             !$omp parallel
             !$omp do schedule(runtime) &
-            !$omp private(k, normalThicknessFluxSum, &
+            !$omp private(cell1, cell2, k, normalThicknessFluxSum, &
             !$omp         thicknessSum, normalVelocityCorrection)
             do iEdge = 1, nEdges
 
+               if (thickEdgeFluxChoice == thickEdgeFluxUpwind) then
+                  cell1 = cellsOnEdge(1,iEdge)
+                  cell2 = cellsOnEdge(2,iEdge)
+                  do k=1,nVertLevels
+                     ! initialize layerThickEdgeFlux to avoid divide by
+                     ! zero and NaN problems.
+                     layerThickEdgeFlux(k,iEdge) = -1.0e34_RKIND
+                  end do
+                  do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+                     if (uTemp(k,iEdge) > 0.0_RKIND) then
+                        layerThickEdgeFlux(k,iEdge) = layerThicknessCur(k,cell1)
+                     elseif (uTemp(k,iEdge) < 0.0_RKIND) then
+                        layerThickEdgeFlux(k,iEdge) = layerThicknessCur(k,cell2)
+                     else
+                        layerThickEdgeFlux(k,iEdge) = &
+                                            max(layerThicknessCur(k,cell1), &
+                                                layerThicknessCur(k,cell2))
+                     end if
+                  end do
+               endif
                ! thicknessSum is initialized outside the loop because
                ! on land boundaries maxLevelEdgeTop=0, but I want to
                ! initialize thicknessSum with a nonzero value to avoid
@@ -2813,6 +2837,11 @@ module ocn_time_integration_split
 
       end select
 
+      if (trim(config_thickness_flux_type) == 'upwind') then
+         thickEdgeFluxChoice = thickEdgeFluxUpwind
+      else
+         thickEdgeFluxChoice = thickEdgeFluxCenter
+      end if
       !*** set number of baroclinic iterations on each outer
       !*** time step iteration (number can be different on the
       !*** first and last time step iteration)
