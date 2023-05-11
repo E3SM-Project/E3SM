@@ -25,9 +25,9 @@ if 'DOCS_VERSION' in os.environ:
     release = version
 else:
     # The short X.Y.Z version.
-    version = '4.0.0'
+    version = 'develop'
     # The full version, including alpha/beta/rc tags.
-    release = '4.0.0-alpha.1'
+    release = 'develop'
 
 master_doc = "index"
 language = "en"
