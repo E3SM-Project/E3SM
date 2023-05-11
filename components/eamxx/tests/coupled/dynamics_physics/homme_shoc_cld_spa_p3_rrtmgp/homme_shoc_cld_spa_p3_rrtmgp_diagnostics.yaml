@@ -6,12 +6,12 @@ Max Snapshots Per File: 1
 Fields:
   Physics GLL:
     Field Names:
-      - T_mid@lev_2
-      - T_mid@tom
-      - T_mid@bot
-      - T_mid@500mb
-      - T_mid@500hPa
-      - T_mid@50000Pa
+      - T_mid_at_lev_2
+      - T_mid_at_modeltop
+      - T_mid_at_modelbot
+      - T_mid_at_500mb
+      - T_mid_at_500hPa
+      - T_mid_at_50000Pa
       - PotentialTemperature
       - AtmosphereDensity
       - Exner
@@ -31,8 +31,8 @@ Fields:
       - RelativeHumidity
       - ZonalVapFlux
       - MeridionalVapFlux
-      - PotentialTemperature@tom
-      - PotentialTemperature@500mb
+      - PotentialTemperature_at_modeltop
+      - PotentialTemperature_at_500mb
  
 output_control:
   Frequency: ${NUM_STEPS}
