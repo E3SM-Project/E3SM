@@ -52,6 +52,13 @@ public:
                 const int num_vertical_lev,
                 const ekat::Comm& comm);
 
+  AbstractGrid (const std::string& name,
+                const GridType type,
+                const int num_local_dofs,
+                const int num_global_dofs,
+                const int num_vertical_lev,
+                const ekat::Comm& comm);
+
   virtual ~AbstractGrid () = default;
 
   // Grid description utilities
