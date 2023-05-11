@@ -105,13 +105,13 @@ inline void pam_radiation_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto rad_nx = coupler.get_option<int>("rad_nx");
   //------------------------------------------------------------------------------------------------
   // Get current CRM state
-  auto temp    = dm.get<real,4>("temp"           );
-  auto rho_d   = dm.get<real,4>("density_dry"    );
-  auto rho_v   = dm.get<real,4>("water_vapor"    );
-  auto rho_l   = dm.get<real,4>("cloud_water"    );
-  auto rho_i   = dm.get<real,4>("ice"            );
-  auto num_l   = dm.get<real,4>("cloud_water_num");
-  auto num_i   = dm.get<real,4>("ice_num"        );
+  auto temp    = dm.get<real const,4>("temp"           );
+  auto rho_d   = dm.get<real const,4>("density_dry"    );
+  auto rho_v   = dm.get<real const,4>("water_vapor"    );
+  auto rho_l   = dm.get<real const,4>("cloud_water"    );
+  auto rho_i   = dm.get<real const,4>("ice"            );
+  auto num_l   = dm.get<real const,4>("cloud_water_num");
+  auto num_i   = dm.get<real const,4>("ice_num"        );
   //------------------------------------------------------------------------------------------------
   // Get aggregated rad variables
   auto rad_temperature     = dm.get<real,4>("rad_temperature");
