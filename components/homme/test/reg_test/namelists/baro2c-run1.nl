@@ -28,7 +28,6 @@ limiter_option = 8
 filter_freq   = 0
 /
 &vert_nl
-vform         = "ccm"
 vfile_mid     = "vcoord/camm-26.ascii"
 vfile_int     = "vcoord/cami-26.ascii"
 /

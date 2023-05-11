@@ -46,6 +46,11 @@ TYPE(co2_data_flux_type) :: data_flux_fuel
 public c_i                           ! global index for new constituents
 public co2_readFlux_ocn              ! read co2 flux from data file 
 public co2_readFlux_fuel             ! read co2 flux from data file 
+public co2_readFlux_aircraft         ! read co2 flux from data file
+public co2_print_diags_timestep      ! print out co2 conservation diagnostics every timestep
+public co2_print_diags_monthly       ! print out co2 conservation diagnostics monthly
+public co2_print_diags_total         ! print out a co2 conservation check for the full run
+public co2_conserv_error_tol_per_year! error tolerance for co2 conservation
 
 
 ! Namelist variables
@@ -53,6 +58,10 @@ logical :: co2_flag              = .false.       ! true => turn on co2 code, nam
 logical :: co2_readFlux_ocn      = .false.       ! true => read co2 flux from ocn,  namelist variable
 logical :: co2_readFlux_fuel     = .false.       ! true => read co2 flux from fuel, namelist variable
 logical :: co2_readFlux_aircraft = .false.       ! true => read aircraft co2 flux from date file, namelist variable
+logical :: co2_print_diags_timestep = .false.    ! true => print out co2 conservation diagnostics every timestep
+logical :: co2_print_diags_monthly  = .false.    ! true => print out co2 conservation diagnostics monthly
+logical :: co2_print_diags_total    = .false.    ! true => print out a co2 conservation check for the full run
+real(r8) :: co2_conserv_error_tol_per_year       ! error tolerance for co2 conservation
 
 character(len=cl) :: co2flux_ocn_file  = 'unset' ! co2 flux from ocn
 character(len=cl) :: co2flux_fuel_file = 'unset' ! co2 flux from fossil fuel                       
@@ -86,7 +95,8 @@ subroutine co2_cycle_readnl(nlfile)
 
    use namelist_utils,  only: find_group_name
    use units,           only: getunit, freeunit
-   use spmd_utils,      only: masterproc, mpicom,mstrid=>masterprocid, mpi_logical, mpi_character
+   use spmd_utils,      only: masterproc, mpicom, mstrid=>masterprocid, mpi_logical, & 
+                              mpi_character, mpi_real8
    use srf_field_check, only: active_Faoo_fco2_ocn
    use shr_log_mod ,    only: errMsg => shr_log_errMsg
    use cam_abortutils,  only: endrun
@@ -100,7 +110,9 @@ subroutine co2_cycle_readnl(nlfile)
    character(len=*), parameter :: subname = 'co2_cycle_readnl'
 
    namelist /co2_cycle_nl/ co2_flag, co2_readFlux_ocn, co2_readFlux_fuel, co2_readFlux_aircraft, &
-                           co2flux_ocn_file, co2flux_fuel_file
+                           co2flux_ocn_file, co2flux_fuel_file, & 
+                           co2_print_diags_timestep, co2_print_diags_monthly, co2_print_diags_total, &
+                           co2_conserv_error_tol_per_year
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -132,6 +144,14 @@ subroutine co2_cycle_readnl(nlfile)
    if (ierr /= 0) call endrun(subname//": FATAL: mpi_bcast: co2flux_ocn_file"//errmsg(__FILE__,__LINE__))
    call mpi_bcast(co2flux_fuel_file, len(co2flux_fuel_file),   mpi_character, mstrid, mpicom, ierr)
    if (ierr /= 0) call endrun(subname//": FATAL: mpi_bcast: co2flux_fuel_file"//errmsg(__FILE__,__LINE__))
+   call mpi_bcast(co2_print_diags_timestep,               1,   mpi_logical,   mstrid, mpicom, ierr)
+   if (ierr /= 0) call endrun(subname//": FATAL: mpi_bcast: co2_print_diags_timestep"//errmsg(__FILE__,__LINE__))
+   call mpi_bcast(co2_print_diags_monthly,                1,   mpi_logical,   mstrid, mpicom, ierr)
+   if (ierr /= 0) call endrun(subname//": FATAL: mpi_bcast: co2_print_diags_monthly"//errmsg(__FILE__,__LINE__))
+   call mpi_bcast(co2_print_diags_total,                  1,   mpi_logical,   mstrid, mpicom, ierr)
+   if (ierr /= 0) call endrun(subname//": FATAL: mpi_bcast: co2_print_diags_total"//errmsg(__FILE__,__LINE__))
+   call mpi_bcast(co2_conserv_error_tol_per_year,         1,   mpi_real8,     mstrid, mpicom, ierr)
+   if (ierr /= 0) call endrun(subname//": FATAL: mpi_bcast: co2_conserv_error_tol_per_year"//errmsg(__FILE__,__LINE__))
 #endif
 
 

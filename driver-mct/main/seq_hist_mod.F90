@@ -172,6 +172,7 @@ contains
     type(mct_gsMap), pointer :: gsmap
     type(mct_gGrid), pointer :: dom    ! comp domain on cpl pes
     character(CL) :: model_doi_url
+    logical       :: bfbflag      !to write out bfbflag value
 
     !-------------------------------------------------------------------------------
     !
@@ -214,7 +215,8 @@ contains
          ocn_nx=ocn_nx, ocn_ny=ocn_ny,        &
          single_column=single_column,         &
          case_name=case_name,                 &
-         model_doi_url=model_doi_url)
+         model_doi_url=model_doi_url,         &
+         bfbflag=bfbflag)
 
     !--- Get current date from clock needed to label the history pointer file ---
 
@@ -232,7 +234,7 @@ contains
     if (iamin_CPLID) then
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
-       call seq_io_wopen(hist_file,clobber=.true., model_doi_url=model_doi_url)
+       call seq_io_wopen(hist_file,clobber=.true., model_doi_url=model_doi_url, bfbflag=bfbflag)
 
        ! loop twice, first time write header, second time write data for perf
 

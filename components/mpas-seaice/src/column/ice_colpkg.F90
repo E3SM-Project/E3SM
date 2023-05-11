@@ -32,7 +32,8 @@
            colpkg_init_parameters, &
            colpkg_init_tracer_flags, &
            colpkg_init_tracer_indices, &
-           colpkg_init_tracer_numbers
+           colpkg_init_tracer_numbers, &
+           colpkg_init_active_processes
 
       ! time stepping
       public :: &
@@ -2284,16 +2285,15 @@
          endif   ! aicen_init
 
       !-----------------------------------------------------------------
-      ! Transport liquid water in snow between layers and 
+      ! Transport liquid water in snow between layers and
       ! compute the meltpond contribution
       !-----------------------------------------------------------------
 
-       if (use_smliq_pnd) then
-         call drain_snow (dt,            nslyr,        &
-                          vsnon   (n) ,  aicen    (n), &
-                          smice  (:,n),  smliq  (:,n), &
-                          meltsliqn(n))
-       endif
+      call drain_snow (dt,            nslyr,        &
+                       vsnon   (n) ,  aicen    (n), &
+                       smice  (:,n),  smliq  (:,n), &
+                       meltsliqn(n),  use_smliq_pnd)
+
 
       !-----------------------------------------------------------------
       ! Melt ponds
@@ -5384,6 +5384,49 @@
       end subroutine colpkg_init_tracer_numbers
 
 !=======================================================================
+! set active processes
+
+      subroutine colpkg_init_active_processes(&
+           latent_processes_active, &
+           lateral_melt_active, &
+           congel_basal_melt_active)
+
+        use ice_atmo, only: &
+             latentHeatActive
+
+        use ice_therm_vertical, only: &
+             lateralMeltActive, &
+             congelBasalMeltActive
+
+        use ice_constants_colpkg, only: &
+             c0, c1
+
+        logical (kind=log_kind), intent(in) :: &
+             latent_processes_active, &
+             lateral_melt_active, &
+             congel_basal_melt_active
+
+        if (latent_processes_active) then
+           latentHeatActive = c1
+        else
+           latentHeatActive = c0
+        endif
+
+        if (lateral_melt_active) then
+           lateralMeltActive = c1
+        else
+           lateralMeltActive = c0
+        endif
+
+        if (congel_basal_melt_active) then
+           congelBasalMeltActive = c1
+        else
+           congelBasalMeltActive = c0
+        endif
+
+      end subroutine colpkg_init_active_processes
+
+!=======================================================================
 
       subroutine colpkg_biogeochemistry(dt, &
                            ntrcr, nbtrcr,  &
@@ -5403,7 +5446,8 @@
                            aicen_init, vicen_init, aicen, vicen, vsnon, &
                            aice0, trcrn, vsnon_init, skl_bgc, &
                            max_algae, max_nbtrcr, &
-                           flux_bion, &
+                           flux_bion, bioPorosityIceCell, &
+                           bioSalinityIceCell, bioTemperatureIceCell, &
                            l_stop, stop_label)
 
       use ice_algae, only: zbio, sklbio
@@ -5455,6 +5499,11 @@
 
       real (kind=dbl_kind), dimension (:,:), intent(out) :: &
          flux_bion      ! per categeory ice to ocean biogeochemistry flux (mmol/m2/s)
+
+      real (kind=dbl_kind), dimension (:), intent(inout) :: &
+         bioPorosityIceCell, & ! category average porosity on the interface bio grid
+         bioSalinityIceCell, & ! (ppt) category average porosity on the interface bio grid
+         bioTemperatureIceCell ! (oC) category average porosity on the interface bio grid
 
       real (kind=dbl_kind), dimension (:,:), intent(inout) :: &
          Zoo            , & ! N losses accumulated in timestep (ie. zooplankton/bacteria)
@@ -5542,10 +5591,11 @@
          iphin       , & ! porosity
          ibrine_sal  , & ! brine salinity  (ppt)
          ibrine_rho  , & ! brine_density (kg/m^3)
+         iSin        , & ! Salinity on the interface grid (ppt)
          iTin            ! Temperature on the interface grid (oC)
 
       real (kind=dbl_kind) :: &
-         sloss            ! brine flux contribution from surface runoff (g/m^2)
+         sloss           ! brine flux contribution from surface runoff (g/m^2)
 
       real (kind=dbl_kind), dimension (ncat) :: &
          hbrnInitial, & ! inital brine height
@@ -5565,6 +5615,9 @@
       zspace(nblyr+1) = p5*zspace(nblyr+1)
 
       l_stop = .false.
+      bioPorosityIceCell(:) = c0
+      bioSalinityIceCell(:) = c0
+      bioTemperatureIceCell(:) = c0
 
       do n = 1, ncat
 
@@ -5639,7 +5692,7 @@
                                 first_ice(n),     bSin,        brine_sal,         &
                                 brine_rho,        iphin,       ibrine_rho,        &
                                 ibrine_sal,       sice_rho(n), sloss,             &
-                                salinz(1:nilyr),  l_stop,      stop_label)
+                                salinz(1:nilyr),  iSin(:),     l_stop,      stop_label)
 
                   if (l_stop) return
                else
@@ -5658,7 +5711,8 @@
                                    bphi_o,        phi_snow,      bSin(:),     &
                                    brine_sal(:),  brine_rho(:),  iphin(:),    &
                                    ibrine_rho(:), ibrine_sal(:), sice_rho(n), &
-                                   iDi(:,n),      l_stop,        stop_label)
+                                   iDi(:,n),      iSin(:),       l_stop,      &
+                                   stop_label)
 
                endif ! solve_zsal
 
@@ -5756,7 +5810,9 @@
                           PP_net,                ice_bio_net (:),        &
                           snow_bio_net(:),       grow_net,               &
                           totalChla,                                     &
-                          flux_bion(:,n),                                &
+                          flux_bion(:,n),        iSin,                   &
+                          bioPorosityIceCell(:), bioSalinityIceCell(:),  &
+                          bioTemperatureIceCell(:),                      &
                           l_stop,                stop_label)
 
                if (l_stop) return

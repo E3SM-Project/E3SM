@@ -63,8 +63,8 @@
 /* temporary flag to compare f90-cxx until we settle on either cxx or f90 implementation */
 #cmakedefine XX_NONBFB_COMING
 
-/* Identifies whether this is a cuda build */
-#cmakedefine CUDA_BUILD
+/* Identifies whether this is a cuda/hip build */
+#cmakedefine HOMMEXX_ENABLE_GPU
 
 /* When doing BFB testing, we occasionally must use modified code. */
 /* Use this flag to protect such code. */
@@ -72,3 +72,6 @@
 
 /* Detect whether this is a kokkos target */
 #cmakedefine01 KOKKOS_TARGET
+
+/* Detect whether COMPOSE passive tracer transport is enabled */
+#cmakedefine HOMME_ENABLE_COMPOSE

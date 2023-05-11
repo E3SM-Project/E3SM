@@ -240,7 +240,7 @@ static void initialize_kokkos () {
   if (Kokkos::is_initialized()) return;
   in_charge_of_kokkos = true;
   std::vector<char*> args;
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef HOMMEXX_ENABLE_GPU
   int nd;
   const auto ret = cudaGetDeviceCount(&nd);
   if (ret != cudaSuccess) {

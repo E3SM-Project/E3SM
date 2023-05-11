@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -111,8 +111,9 @@ module ocn_time_integration
       !-----------------------------------------------------------------
 
       type (MPAS_Time_type) :: &
-         xtime_timeType,              &! current time in time type
-         simulationStartTime_timeType  ! start time in time type
+         xtime_timeType,               &! current time in time type
+         simulationStartTime_timeType, &! start time in time type
+         referenceTime_timeType         ! reference time for Time coordinate
 
       ! End preamble
       !-------------
@@ -142,6 +143,17 @@ module ocn_time_integration
            dt=daysSinceStartOfSim)
 
       daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
+
+      call mpas_set_time(referenceTime_timeType, &
+                         dateTimeString=config_output_reference_time)
+      call mpas_get_timeInterval( &
+           xtime_timeType - referenceTime_timeType, &
+           dt=Time)
+
+      Time = Time*days_per_second
+      ! bounds on instantaneous time are just the time itself
+      Time_bnds(1) = Time
+      Time_bnds(2) = Time
 
    !--------------------------------------------------------------------
 
@@ -206,7 +218,7 @@ module ocn_time_integration
 
       case ('RK4')
          timeIntegratorChoice = timeIntRK4
-         ! No init routine needs to be run for RK4
+         call ocn_time_integration_rk4_init(domain)
 
       case default
 

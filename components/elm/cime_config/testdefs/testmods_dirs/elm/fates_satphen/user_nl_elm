@@ -7,7 +7,6 @@ fates_spitfire_mode = 0
 use_fates_fixed_biogeog = .true.
 use_fates_nocomp = .true.
 use_fates_sp = .true.
-hist_fincl1       = 'NPP','GPP','BTRAN','H2OSOI','TLAI','LITTER_IN_ELEM','LITTER_OUT_ELEM',
-   'FIRE_AREA','SCORCH_HEIGHT','FIRE_INTENSITY','FIRE_TFC_ROS','FIRE_FUEL_MEF',
-   'FIRE_FUEL_BULKD','FIRE_FUEL_SAV','FIRE_NESTEROV_INDEX','PFTbiomass',
-   'PFTleafbiomass','FIRE_ROS','WIND','AREA_TREES','AREA_PLANT','HR','AR','TSAI','HTOP'
+hist_fincl1       = 'FATES_AREA_PLANTS', 'FATES_AREA_TREES', 'FATES_VEGC_PF',
+'FATES_LEAFC_PF', 'FATES_LITTER_OUT', 'FATES_NPP', 'FATES_GPP', 'FATES_NEP',
+'HR', 'TSAI', 'HTOP'

@@ -64,6 +64,18 @@
      </queues>
    </batch_system>
 
+   <batch_system MACH="crusher" type="slurm">
+     <batch_submit>/gpfs/alpine/cli133/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
+     <directives>
+       <directive> --core-spec=$SHELL{tpn=`./xmlquery --value MAX_TASKS_PER_NODE`; if [[ $tpn > 56 ]]; then echo "64-$tpn"|bc; else echo 8; fi; }</directive>
+     </directives>
+     <queues>
+       <queue strict="true" nodemin="1" nodemax="8" walltimemax="08:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="9" nodemax="64" walltimemax="04:00:00">batch</queue>
+       <queue strict="true" nodemin="65" nodemax="160" walltimemax="02:00:00">batch</queue>
+     </queues>
+   </batch_system>
+
   <batch_system type="cobalt" >
     <batch_query>qstat</batch_query>
     <batch_submit>qsub</batch_submit>
@@ -80,10 +92,12 @@
       <arg flag="--cwd" name="CASEROOT"/>
       <arg flag="-A" name="CHARGE_ACCOUNT"/>
       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
-      <arg flag="-n" name=" $TOTALPES/$MAX_MPITASKS_PER_NODE"/>
       <arg flag="-q" name="JOB_QUEUE"/>
       <arg flag="--mode script"/>
     </submit_args>
+    <directives>
+      <directive> -n {{ num_nodes }} </directive>
+    </directives>
   </batch_system>
 
   <batch_system type="cobalt_theta" >
@@ -101,10 +115,12 @@
     <submit_args>
       <arg flag="-A" name="CHARGE_ACCOUNT"/>
       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
-      <arg flag="-n" name=" $TOTALPES/$MAX_MPITASKS_PER_NODE"/>
       <arg flag="-q" name="JOB_QUEUE"/>
       <arg flag="--mode script"/>
     </submit_args>
+    <directives>
+      <directive> -n {{ num_nodes }} </directive>
+    </directives>
   </batch_system>
 
 <!-- This is the new version on Summit, released as IBM 10.1.0.0 build 476197, Nov 21 2017.  -->
@@ -163,28 +179,18 @@
     </directives>
   </batch_system>
 
-  <batch_system type="moab" >
-    <batch_query>showq</batch_query>
-    <batch_submit>msub </batch_submit>
-    <batch_cancel>canceljob</batch_cancel>
-    <batch_directive>#MSUB</batch_directive>
-    <jobid_pattern>(\d+)$</jobid_pattern>
-    <depend_string>-W depend=afterok:jobid</depend_string>
-    <depend_allow_string>-W depend=afterany:jobid</depend_allow_string>
-    <depend_separator>:</depend_separator>
+  <batch_system type="moab">
+    <batch_query>pjstat</batch_query>
+    <batch_submit>pjsub</batch_submit>
+    <batch_cancel>pjdel</batch_cancel>
+    <batch_directive>#PJM</batch_directive>
+    <jobid_pattern>(\d\d\d\d\d+)</jobid_pattern>
     <walltime_format>%H:%M:%S</walltime_format>
-    <batch_mail_flag>-M</batch_mail_flag>
-    <batch_mail_type_flag>-m</batch_mail_type_flag>
-    <batch_mail_type>, bea, b, e, a</batch_mail_type>
-    <submit_args>
-      <arg flag="-l walltime=" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-A" name="$CHARGE_ACCOUNT"/>
-    </submit_args>
     <directives>
-      <directive> -N {{ job_id }}</directive>
-      <directive> -j oe </directive>
-      <directive default="n"> -r {{ rerunnable }} </directive>
-      <directive default="/bin/bash" > -S {{ shell }}</directive>
+      <directive> -L "node={{ num_nodes }}"</directive>
+      <directive> -L "elapse={{ job_wallclock_time }}"</directive>
+      <directive> --mpi "proc={{ total_tasks }}"</directive>
+      <directive> -s </directive>
     </directives>
   </batch_system>
 
@@ -211,7 +217,7 @@
       <directive>-t {{ job_wallclock_time }}</directive>
       <directive>-o {{ job_id }}.out</directive>
       <directive>-e {{ job_id }}.err</directive>
-      <directive> -A {{ project }} </directive>
+      <directive>-A {{ project }}</directive>
     </directives>
     <queues>
       <queue walltimemax="01:00:00" nodemax="270" default="true">pbatch</queue>
@@ -247,6 +253,35 @@
     </directives>
   </batch_system>
 
+
+  <batch_system type="miller_slurm" >
+    <batch_query per_job_arg="-j">squeue</batch_query>
+    <batch_submit>sbatch</batch_submit>
+    <batch_cancel>scancel</batch_cancel>
+    <batch_directive>#SBATCH</batch_directive>
+    <jobid_pattern>(\d+)</jobid_pattern>
+    <depend_string>--dependency=afterok:jobid</depend_string>
+    <depend_allow_string>--dependency=afterany:jobid</depend_allow_string>
+    <depend_separator>:</depend_separator>
+    <walltime_format>%H:%M:%S</walltime_format>
+    <batch_mail_flag>--mail-user</batch_mail_flag>
+    <batch_mail_type_flag>--mail-type</batch_mail_type_flag>
+    <batch_mail_type>none, all, begin, end, fail</batch_mail_type>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+      <arg flag="--cluster-constraint='green'"/>
+    </submit_args>
+    <directives>
+      <directive> --job-name={{ job_id }}</directive>
+      <directive> --nodes={{ num_nodes }}</directive>
+      <directive> --output={{ job_id }}.%j </directive>
+      <directive> --exclusive </directive>
+    </directives>
+  </batch_system>
+
+
   <batch_system type="slurm" >
     <batch_query per_job_arg="-j">squeue</batch_query>
     <batch_submit>sbatch</batch_submit>
@@ -273,9 +308,41 @@
     </directives>
   </batch_system>
 
+  <batch_system type="slurm_single_node" >
+    <batch_query per_job_arg="-j">squeue</batch_query>
+    <batch_submit>sbatch</batch_submit>
+    <batch_cancel>scancel</batch_cancel>
+    <batch_directive>#SBATCH</batch_directive>
+    <jobid_pattern>(\d+)$</jobid_pattern>
+    <depend_string>--dependency=afterok:jobid</depend_string>
+    <depend_allow_string>--dependency=afterany:jobid</depend_allow_string>
+    <depend_separator>:</depend_separator>
+    <walltime_format>%H:%M:%S</walltime_format>
+    <batch_mail_flag>--mail-user</batch_mail_flag>
+    <batch_mail_type_flag>--mail-type</batch_mail_type_flag>
+    <batch_mail_type>none</batch_mail_type>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
+    <directives>
+      <directive> --job-name={{ job_id }}</directive>
+      <directive> --nodes=1</directive>
+      <directive> --ntasks={{ total_tasks }}</directive>
+      <directive> --output={{ job_id }}.%j </directive>
+    </directives>
+  </batch_system>
+
     <batch_system MACH="blues" type="slurm">
       <queues>
         <queue walltimemax="01:00:00" nodemax="6" default="true" strict="true">biggpu</queue>
+      </queues>
+    </batch_system>
+
+    <batch_system MACH="mappy" type="slurm_single_node">
+      <queues>
+        <queue walltimemax="12:00:00" nodemax="1" default="true" strict="true">batch</queue>
       </queues>
     </batch_system>
 
@@ -334,26 +401,58 @@
     </queues>
   </batch_system>
 
-  <batch_system MACH="perlmutter" type="nersc_slurm">
+  <batch_system MACH="miller" type="miller_slurm">
+    <queues>
+      <queue walltimemax="06:00:00" nodemax="800" default="true">collaboration</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="pm-gpu" type="nersc_slurm">
     <directives>
       <directive> --constraint=gpu</directive>
     </directives>
-    <directives compiler="nvidiagpu">
-      <directive> --gpus-per-task=1</directive>
-      <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
-    </directives>
-    <directives compiler="nvidia">
-      <directive> -G 0</directive>
-    </directives>
     <directives compiler="gnugpu">
       <directive> --gpus-per-task=1</directive>
+    </directives>
+    <directives COMPSET="!.*MMF.*" compiler="gnugpu">
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives COMPSET=".*MMF.*" compiler="gnugpu">
       <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
+    </directives>
+    <directives compiler="nvidiagpu">
+      <directive> --gpus-per-task=1</directive>
+      <directive> --gpu-bind=none</directive>
     </directives>
     <directives compiler="gnu">
       <directive> -G 0</directive>
     </directives>
+    <directives compiler="nvidia">
+      <directive> -G 0</directive>
+    </directives>
     <queues>
       <queue walltimemax="00:45:00" nodemax="1500" default="true">regular</queue>
+      <queue walltimemax="00:15:00" nodemax="4" strict="true">debug</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="pm-cpu" type="nersc_slurm">
+    <directives>
+      <directive> --constraint=cpu</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="1500" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="4" strict="true">debug</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="alvarez" type="nersc_slurm">
+    <directives>
+      <directive> --constraint=cpu</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="256" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="4" strict="true">debug</queue>
     </queues>
   </batch_system>
 
@@ -382,10 +481,10 @@
     <batch_system MACH="jlse" type="cobalt_theta">
       <batch_submit>qsub</batch_submit>
       <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="12" default="true">skylake_8180</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="12">skylake_8180</queue>
         <queue walltimemax="01:00:00" jobmin="1" jobmax="16">iris</queue>
         <queue walltimemax="01:00:00" jobmin="1" jobmax="18">yarrow</queue>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="12">arcticus</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="12" default="true">arcticus</queue>
       </queues>
     </batch_system>
 
@@ -418,6 +517,13 @@
     </queues>
    </batch_system>
 
+   <batch_system MACH="tahoma" type="slurm">
+    <queues>
+      <queue walltimemax="02:00:00" strict="true" nodemin="1" nodemax="36" default="true">normal</queue>
+      <queue walltimemax="06:00:00" nodemin="1" nodemax="460">slurm</queue>
+    </queues>
+   </batch_system>
+
    <batch_system MACH="sooty" type="slurm" >
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
@@ -443,12 +549,6 @@
     </queues>
   </batch_system>
 
-  <batch_system MACH="mustang" type="moab" >
-    <directives>
-      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-    </directives>
-  </batch_system>
-
   <batch_system MACH="grizzly" type="slurm" >
 	<directives>
 		<directive>--nodes={{ num_nodes }}</directive>
@@ -470,6 +570,16 @@
 		<queue walltimemax="16:00:00" default="true">standard</queue>
 	</queues>
     </batch_system>
+
+   <batch_system MACH="chicoma-cpu" type="slurm">
+    <directives>
+     <directive>--partition=standard </directive>
+     <directive>--qos=standard </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="24:00:00" nodemax="1792" default="true">standard</queue>
+    </queues>
+   </batch_system>
 
     <batch_system MACH="mesabi" type="pbs">
       <queues>
@@ -518,11 +628,15 @@
        <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
      </directives>
      <queues>
-       <queue walltimemax="02:00" strict="true" default="true">batch</queue>
+       <queue walltimemax="02:00" nodemin="1" nodemax="4608" strict="true" default="true">batch</queue>
+       <queue walltimemax="02:00" nodemin="1" nodemax="54" strict="true" default="false">batch-hm</queue>
+       <queue walltimemax="02:00" nodemin="1" nodemax="91" strict="true" default="false">killable</queue>
+       <queue walltimemax="02:00" nodemin="1" nodemax="4608" strict="true" default="false">debug</queue>
      </queues>
    </batch_system>
 
    <batch_system MACH="ascent" type="lsf" >
+     <batch_submit>/gpfs/wolf/cli115/world-shared/e3sm/tools/bsub/throttle</batch_submit>
      <directives>
        <directive>-P {{ project }}</directive>
      </directives>
@@ -538,9 +652,38 @@
      </queues>
    </batch_system>
 
+   <batch_system MACH="crusher-scream-cpu" type="slurm">
+     <queues>
+       <queue strict="true" nodemin="1" nodemax="8" walltimemax="08:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="9" nodemax="64" walltimemax="04:00:00">batch</queue>
+       <queue strict="true" nodemin="65" nodemax="160" walltimemax="02:00:00">batch</queue>
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="crusher-scream-gpu" type="slurm">
+     <batch_submit>/gpfs/alpine/cli133/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
+     <directives>
+       <directive> -S 0</directive>
+     </directives>
+     <queues>
+       <queue strict="true" nodemin="1" nodemax="8" walltimemax="01:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="9" nodemax="64" walltimemax="01:00:00">batch</queue>
+       <queue strict="true" nodemin="65" nodemax="160" walltimemax="01:00:00">batch</queue>
+     </queues>
+   </batch_system>
+
    <batch_system MACH="snl-white" type="lsf" >
      <queues>
        <queue walltimemax="02:00" default="true">rhel7G</queue>
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="weaver" type="lsf" >
+     <submit_args>
+       <arg flag="-n" name=" $TOTALPES"/>
+     </submit_args>
+     <queues>
+       <queue walltimemax="02:00" default="true">rhel7W</queue>
      </queues>
    </batch_system>
 
@@ -572,14 +715,24 @@
     </queues>
    </batch_system>
 
-   <batch_system MACH="gcp" type="slurm" >
+   <batch_system MACH="gcp10" type="slurm" >
      <queues>
-       <queue walltimemax="01:00:00" default="true">compute-30</queue>
-       <queue walltimemax="01:00:00" default="true">computep</queue>	 <!--enable_placement-->
-       <queue walltimemax="02:00:00" default="true">compute</queue>
+       <queue walltimemax="01:30:00" default="true">compute-30</queue> <!--                 0.14214 -->
+       <queue walltimemax="01:30:00" default="true">computep</queue>   <!--enable_placement 0.28428 -->
+       <queue walltimemax="01:30:00" default="true">compute</queue>    <!--                 0.28428 -->
      </queues>
    </batch_system>
-   
+
+   <batch_system MACH="gcp12" type="slurm" >
+     <queues>
+       <queue walltimemax="01:30:00" default="true">c2dh112</queue>   <!-- c2d-highcpu-112     1.88984 -->
+       <queue walltimemax="01:30:00" default="true">c2d32</queue>     <!-- c2d-standard-32     0.30794 -->
+       <queue walltimemax="01:30:00" default="true">c2d56</queue>     <!-- c2d-standard-56     0.53889 -->
+       <queue walltimemax="01:30:00" default="true">c2o60</queue>     <!-- "old" c2-compute-60 0.28428 -->
+       <queue walltimemax="01:30:00" default="true">compute</queue>   <!-- c2d-standard-112    1.07776 -->
+     </queues>
+   </batch_system>
+
   <!-- modex is PBS -->
   <batch_system MACH="modex" type="pbs">
     <directives>
@@ -598,5 +751,80 @@
       <queue walltimemax="01:00:00" nodemin="1" nodemax="7">amdMI100</queue>
     </queues>
    </batch_system>
+
+   <batch_system MACH="fugaku" type="moab">
+     <queues>
+       <queue walltimemax="1:00:00" default="true" strict="true">default</queue>
+     </queues>
+   </batch_system>
+
+  <batch_system MACH="onyx" type="pbs" >
+    <directives queue="debug">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="standard">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="transfer">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select=1:ncpus=1</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:59:00" nodemax="155" strict="true">debug</queue>
+      <queue walltimemax="04:00:00" default="true">standard</queue>
+      <queue default="true" walltimemax="12:00:00" jobmin="1" jobmax="1">transfer</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="narwhal" type="pbs" >
+    <directives queue="debug">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="standard">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="transfer">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select=1:ncpus=1</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="64" strict="true">debug</queue>
+      <queue walltimemax="04:00:00" default="true">standard</queue>
+      <queue default="true" walltimemax="12:00:00" jobmin="1" jobmax="1">transfer</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="warhawk" type="pbs" >
+    <directives queue="debug">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="standard">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="transfer">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select=1:ncpus=1</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:59:00" nodemax="22" strict="true">debug</queue>
+      <queue walltimemax="04:00:00" default="true">standard</queue>
+      <queue default="true" walltimemax="12:00:00" jobmin="1" jobmax="1">transfer</queue>
+    </queues>
+  </batch_system>
 
 </config_batch>

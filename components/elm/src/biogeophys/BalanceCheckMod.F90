@@ -169,8 +169,7 @@ contains
      use column_varcon     , only : icol_road_perv, icol_road_imperv
      use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet
      use elm_varctl        , only : create_glacier_mec_landunit
-     use elm_initializeMod , only : surfalb_vars
-     use domainMod         , only : ldomain
+     use elm_initializeMod , only : surfalb_vars  
      use CanopyStateType   , only : canopystate_type
      use subgridAveMod
      !
@@ -192,6 +191,7 @@ contains
      integer  :: indexp,indexc,indexl,indext,indexg     ! index of first found in search loop
      real(r8) :: forc_rain_col(bounds%begc:bounds%endc) ! column level rain rate [mm/s]
      real(r8) :: forc_snow_col(bounds%begc:bounds%endc) ! column level snow rate [mm/s]
+     real(r8) :: sol_err_th                             ! solar radiation imbalance threshold
      !-----------------------------------------------------------------------
 
      associate(                                                                         &
@@ -248,6 +248,7 @@ contains
           snow_sources               =>    col_wf%snow_sources            , & ! Output: [real(r8) (:)   ]  snow sources (mm H2O /s)
           snow_sinks                 =>    col_wf%snow_sinks              , & ! Output: [real(r8) (:)   ]  snow sinks (mm H2O /s)
           qflx_lateral               =>    col_wf%qflx_lateral            , & ! Input:  [real(r8) (:)   ]  lateral flux of water to neighboring column (mm H2O /s)
+          qflx_h2orof_drain          =>    col_wf%qflx_h2orof_drain       , & ! Input:  [real(r8) (:)   ] drainange from floodplain inundation volume (mm H2O/s) 
 
           eflx_lwrad_out             =>    veg_ef%eflx_lwrad_out       , & ! Input:  [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)
           eflx_lwrad_net             =>    veg_ef%eflx_lwrad_net       , & ! Input:  [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm]
@@ -319,7 +320,7 @@ contains
                   - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_surf_irrig_col(c) + qflx_over_supply_col(c) &
                   - qflx_evap_tot(c) - qflx_surf(c)  - qflx_h2osfc_surf(c) &
                   - qflx_qrgwl(c) - qflx_drain(c) - qflx_drain_perched(c) - qflx_snwcp_ice(c) &
-                  - qflx_lateral(c)) * dtime
+                  - qflx_lateral(c) + qflx_h2orof_drain(c)) * dtime
              dwb(c) = (endwb(c)-begwb(c))/dtime
 
           else
@@ -383,13 +384,13 @@ contains
              write(iulog,*)'qflx_evap_tot              = ',qflx_evap_tot(indexc)
              write(iulog,*)'qflx_irrig                 = ',qflx_irrig(indexc)
              write(iulog,*)'qflx_supply                = ',atm2lnd_vars%supply_grc(g)
-             write(iulog,*)'f_grd                      = ',ldomain%f_grd(g)
              write(iulog,*)'qflx_surf                  = ',qflx_surf(indexc)
              write(iulog,*)'qflx_qrgwl                 = ',qflx_qrgwl(indexc)
              write(iulog,*)'qflx_drain                 = ',qflx_drain(indexc)
              write(iulog,*)'qflx_snwcp_ice             = ',qflx_snwcp_ice(indexc)
              write(iulog,*)'qflx_lateral               = ',qflx_lateral(indexc)
              write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
+             write(iulog,*)'qflx_h2orof_drain          = ',qflx_h2orof_drain(indexc)
              write(iulog,*)'elm model is stopping'
              call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
 
@@ -408,7 +409,6 @@ contains
              write(iulog,*)'qflx_surf_irrig_col        = ',qflx_surf_irrig_col(indexc)
              write(iulog,*)'qflx_over_supply_col       = ',qflx_over_supply_col(indexc)
              write(iulog,*)'qflx_supply                = ',atm2lnd_vars%supply_grc(g)
-             write(iulog,*)'f_grd                      = ',ldomain%f_grd(g)
              write(iulog,*)'qflx_surf                  = ',qflx_surf(indexc)
              write(iulog,*)'qflx_h2osfc_surf           = ',qflx_h2osfc_surf(indexc)
              write(iulog,*)'qflx_qrgwl                 = ',qflx_qrgwl(indexc)
@@ -420,6 +420,7 @@ contains
              write(iulog,*)'qflx_glcice_frz            = ',qflx_glcice_frz(indexc)
              write(iulog,*)'qflx_lateral               = ',qflx_lateral(indexc)
              write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
+             write(iulog,*)'qflx_h2orof_drain          = ',qflx_h2orof_drain(indexc)
              write(iulog,*)'elm model is stopping'
              call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if
@@ -616,7 +617,14 @@ contains
        found = .false.
        do p = bounds%begp, bounds%endp
           if (veg_pp%active(p)) then
-             if ( (errsol(p) /= spval) .and. (abs(errsol(p)) > 1.e-7_r8) ) then
+             ! solar radiation balance error is high when running FATES
+             ! adjust the threshold to 5.e-7
+             if (veg_pp%is_fates(p)) then
+                sol_err_th = 5.e-7_r8
+             else
+                sol_err_th = 1.e-7_r8
+             end if
+             if ( (errsol(p) /= spval) .and. (abs(errsol(p)) > sol_err_th) ) then
                 found = .true.
                 indexp = p
                 indext = veg_pp%topounit(indexp)

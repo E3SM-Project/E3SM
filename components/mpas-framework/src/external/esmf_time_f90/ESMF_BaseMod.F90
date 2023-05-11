@@ -70,9 +70,21 @@
 
 !------------------------------------------------------------------------------
 !
+      integer, parameter :: &
+                   ESMF_KIND_I1 = selected_int_kind(2), &
+                   ESMF_KIND_I2 = selected_int_kind(4), &
+                   ESMF_KIND_I4 = selected_int_kind(9), &
+                   ESMF_KIND_I8 = selected_int_kind(18), &
+                   ESMF_KIND_R4 = selected_real_kind(3,25), &
+                   ESMF_KIND_R8 = selected_real_kind(6,45), &
+                   ESMF_KIND_C8 = selected_real_kind(3,25), &
+                   ESMF_KIND_C16 = selected_real_kind(6,45)
+
+!------------------------------------------------------------------------------
+!
       type ESMF_Pointer
       private
-          integer*8 :: ptr
+          integer(kind=ESMF_KIND_I8) :: ptr
       end type
 
       type(ESMF_Pointer), parameter :: ESMF_NULL_POINTER = ESMF_Pointer(0), &
@@ -94,18 +106,6 @@
                                         ESMF_DATA_REAL = ESMF_DataType(2), &
                                         ESMF_DATA_LOGICAL = ESMF_DataType(3), &
                                         ESMF_DATA_CHARACTER = ESMF_DataType(4)
-
-!------------------------------------------------------------------------------
-
-      integer, parameter :: &
-                   ESMF_KIND_I1 = selected_int_kind(2), &
-                   ESMF_KIND_I2 = selected_int_kind(4), &
-                   ESMF_KIND_I4 = selected_int_kind(9), &
-                   ESMF_KIND_I8 = selected_int_kind(18), &
-                   ESMF_KIND_R4 = selected_real_kind(3,25), &
-                   ESMF_KIND_R8 = selected_real_kind(6,45), &
-                   ESMF_KIND_C8 = selected_real_kind(3,25), &
-                   ESMF_KIND_C16 = selected_real_kind(6,45)
 
 !------------------------------------------------------------------------------
 
@@ -160,7 +160,7 @@
 !
       type ESMF_BasePointer
       private
-          integer*8 :: base_ptr
+          integer(kind=ESMF_KIND_I8) :: base_ptr
       end type
 
       integer :: global_count = 0
@@ -950,7 +950,7 @@ end function
 !
 ! !ARGUMENTS:
       type(ESMF_Pointer) :: ptype
-      integer*8, intent(in) :: contents
+      integer(kind=ESMF_KIND_I8), intent(in) :: contents
       integer, intent(out), optional :: rc
 
 !
@@ -985,7 +985,7 @@ end function
 !
 !EOP
 ! !REQUIREMENTS:
-      integer*8, parameter :: nullp = 0
+      integer(kind=ESMF_KIND_I8), parameter :: nullp = 0
 
       ptype%ptr = nullp
       if (present(rc)) rc = ESMF_SUCCESS
@@ -999,7 +999,7 @@ end function
       function ESMF_GetPointer(ptype, rc)
 !
 ! !RETURN VALUE:
-      integer*8 :: ESMF_GetPointer
+      integer(kind=ESMF_KIND_I8) :: ESMF_GetPointer
 
 ! !ARGUMENTS:
       type(ESMF_Pointer), intent(in) :: ptype

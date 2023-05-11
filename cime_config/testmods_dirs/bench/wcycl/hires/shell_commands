@@ -1,2 +1,5 @@
 #!/bin/bash
 ./xmlchange --append CAM_CONFIG_OPTS='-cosp'
+
+# save benchmark timing info for provenance
+./xmlchange SAVE_TIMING=TRUE

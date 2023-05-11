@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -279,14 +279,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_bulk_forcing_thick(meshPool, forcingPool, surfaceThicknessFlux, surfaceThicknessFluxRunoff, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+   subroutine ocn_surface_bulk_forcing_thick(forcingPool, surfaceThicknessFlux, surfaceThicknessFluxRunoff, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -313,7 +306,6 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, nCells
-      integer, dimension(:), pointer :: nCellsArray
 
       real (kind=RKIND), dimension(:), pointer :: evaporationFlux, snowFlux
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux
@@ -325,8 +317,6 @@ contains
 
       call mpas_timer_start("bulk_thick", .false.)
 
-      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
-
       call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
       call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
       call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
@@ -335,18 +325,34 @@ contains
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
 
-      nCells = nCellsArray( 3 )
+      nCells = nCellsHalo( 2 )
 
       ! Build surface fluxes at cell centers
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(evaporationFlux, snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
+      !$acc     riverRunoffFlux, iceRunoffFlux, rainFlux)
+
+      !$acc parallel loop &
+      !$acc     present(surfaceThicknessFlux, surfaceThicknessFluxRunoff, evaporationFlux, snowFlux, &
+      !$acc     seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux, rainFlux)
+#else
       !$omp parallel
       !$omp do schedule(runtime)
+#endif
       do iCell = 1, nCells
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) &
                                     + seaIceFreshWaterFlux(iCell) + icebergFreshWaterFlux(iCell) + iceRunoffFlux(iCell) ) / rho_sw
         surfaceThicknessFluxRunoff(iCell) = riverRunoffFlux(iCell) / rho_sw
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(evaporationFlux, snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
+      !$acc     riverRunoffFlux, iceRunoffFlux, rainFlux)
+#endif
 
       call mpas_timer_stop("bulk_thick")
 
@@ -450,7 +456,8 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, nCells
-      integer, pointer :: index_temperature_flux, index_salinity_flux
+      integer, pointer :: index_temperature_fluxPtr, index_salinity_fluxPtr
+      integer :: index_temperature_flux, index_salinity_flux
       integer, dimension(:), pointer :: nCellsArray
 
       type(mpas_pool_type),pointer :: tracersSurfaceFluxPool
@@ -471,8 +478,14 @@ contains
 
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux',tracersSurfaceFluxPool)
 
-      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_temperatureSurfaceFlux', index_temperature_flux)
-      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_salinitySurfaceFlux', index_salinity_flux)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, &
+                                  'index_temperatureSurfaceFlux', &
+                                   index_temperature_fluxPtr)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, &
+                                  'index_salinitySurfaceFlux', &
+                                   index_salinity_fluxPtr)
+      index_temperature_flux = index_temperature_fluxPtr
+      index_salinity_flux    = index_salinity_fluxPtr
 
       call mpas_pool_get_array(forcingPool, 'latentHeatFlux', latentHeatFlux)
       call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
@@ -513,8 +526,8 @@ contains
 
         ! Negative seaIceSalinityFlux is an extraction of salt from the ocean
         ! So, we negate seaIceSalinityFlux when determining how much salt this flux needs.
-        requiredSalt = - seaIceSalinityFlux(iCell) * sflux_factor * dt / layerThickness(1, iCell)
-        allowedSalt = min( 4.0_RKIND, tracerGroup(index_salinity_flux, 1, iCell) )
+        requiredSalt = - seaIceSalinityFlux(iCell) * sflux_factor * dt / layerThickness(minLevelCell(iCell), iCell)
+        allowedSalt = min( 4.0_RKIND, tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell) )
 
         if ( allowedSalt < requiredSalt ) then
            tracersSurfaceFluxRemoved(index_salinity_flux, iCell) = tracersSurfaceFluxRemoved(index_salinity_flux, iCell)  &

@@ -1,6 +1,9 @@
 #!/bin/bash
 ./xmlchange --append CAM_CONFIG_OPTS='-cosp'
 
+# save benchmark timing info for provenance
+./xmlchange SAVE_TIMING=TRUE
+
 # on KNLs, run hyper-threaded with 64x2
 if [ `./xmlquery --value MACH` == theta ]||[ `./xmlquery --value MACH` == cori-knl ]; then
   ./xmlchange MAX_MPITASKS_PER_NODE=64

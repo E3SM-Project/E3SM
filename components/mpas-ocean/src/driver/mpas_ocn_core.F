@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -66,7 +66,7 @@ module ocn_core
 
       ierr = 0
 
-      call mpas_pool_get_config(domain % configs, 'config_ocean_run_mode', config_ocean_run_mode)
+      call mpas_pool_get_config_scalar(domain % configs, 'config_ocean_run_mode', config_ocean_run_mode)
 
       numThreads = mpas_threading_get_max_threads()
 

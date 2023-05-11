@@ -481,6 +481,7 @@ subroutine add_new_string(all_fields, inpool, outpool, field_name, target_ptr)
   call mpas_pool_get_field(inpool, ONE_STRING_MEMORY, srcString, 1)
   call mpas_duplicate_field(srcString, dstString)
   dstString % fieldName = field_name
+  dstString % outputFieldName = field_name
   call mpas_pool_add_field(outpool, dstString % fieldName, dstString)
   call mpas_pool_add_field(all_fields, dstString % fieldName, dstString)
   if (present(target_ptr)) then
@@ -515,6 +516,7 @@ subroutine add_new_integer(all_fields, inpool, outpool, field_name, target_ptr)
   call mpas_pool_get_field(inpool, ONE_INTEGER_MEMORY, srcInteger, 1)
   call mpas_duplicate_field(srcInteger, dstInteger)
   dstInteger % fieldName = field_name
+  dstInteger % outputFieldName = field_name
   call mpas_pool_add_field(outpool, dstInteger % fieldName, dstInteger)
   call mpas_pool_add_field(all_fields, dstInteger % fieldName, dstInteger)
   if (present(target_ptr)) then
@@ -549,6 +551,7 @@ subroutine add_new_real(all_fields, inpool, outpool, field_name, target_ptr)
   call mpas_pool_get_field(inpool, ONE_REAL_MEMORY, srcReal, 1)
   call mpas_duplicate_field(srcReal, dstReal)
   dstReal % fieldName = field_name
+  dstReal % outputFieldName = field_name
   call mpas_pool_add_field(outpool, dstReal % fieldName, dstReal)
   call mpas_pool_add_field(all_fields, dstReal % fieldName, dstReal)
   if (present(target_ptr)) then
@@ -1999,30 +2002,42 @@ subroutine copy_field_1r(inname, all_fields, amPool, outname)!{{{
 #include "time_series_inc/copy_field_1.inc"
   type (field1DReal), pointer :: src, dst
 #include "time_series_inc/copy_field_2.inc"
+  dst % missingValueMask1D => src % missingValueMask1D
 end subroutine copy_field_1r!}}}
 
 subroutine copy_field_2r(inname, all_fields, amPool, outname)!{{{
 #include "time_series_inc/copy_field_1.inc"
   type (field2DReal), pointer :: src, dst
 #include "time_series_inc/copy_field_2.inc"
+  dst % missingValueMask1D => src % missingValueMask1D
+  dst % missingValueMask2D => src % missingValueMask2D
 end subroutine copy_field_2r!}}}
 
 subroutine copy_field_3r(inname, all_fields, amPool, outname)!{{{
 #include "time_series_inc/copy_field_1.inc"
   type (field3DReal), pointer :: src, dst
 #include "time_series_inc/copy_field_2.inc"
+  dst % missingValueMask1D => src % missingValueMask1D
+  dst % missingValueMask2D => src % missingValueMask2D
+  dst % missingValueMask3D => src % missingValueMask3D
 end subroutine copy_field_3r!}}}
 
 subroutine copy_field_4r(inname, all_fields, amPool, outname)!{{{
 #include "time_series_inc/copy_field_1.inc"
   type (field4DReal), pointer :: src, dst
 #include "time_series_inc/copy_field_2.inc"
+  dst % missingValueMask1D => src % missingValueMask1D
+  dst % missingValueMask2D => src % missingValueMask2D
+  dst % missingValueMask3D => src % missingValueMask3D
 end subroutine copy_field_4r!}}}
 
 subroutine copy_field_5r(inname, all_fields, amPool, outname)!{{{
 #include "time_series_inc/copy_field_1.inc"
   type (field5DReal), pointer :: src, dst
 #include "time_series_inc/copy_field_2.inc"
+  dst % missingValueMask1D => src % missingValueMask1D
+  dst % missingValueMask2D => src % missingValueMask2D
+  dst % missingValueMask3D => src % missingValueMask3D
 end subroutine copy_field_5r!}}}
 
 

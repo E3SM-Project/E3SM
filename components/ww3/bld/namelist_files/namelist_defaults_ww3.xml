@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_defaults.xsl"?>
+
+<namelist_defaults>
+
+<!--
+Values to use by default for creation of WAVEWATCHIII model namelists.
+The element names are the same as the corresponding namelist
+variables.  Values that depend on the model configuration use
+attributes to express the dependency.  
+-->
+
+<stafile>"/lcrc/group/acme/data/inputdata/wav/ww3/stations.txt"</stafile>
+<!--
+<pnt_out_freq>3600</pnt_out_freq>
+<grd_out_freq>21600</grd_out_freq>
+-->
+<pnt_out_freq>0</pnt_out_freq>
+<grd_out_freq>0</grd_out_freq>
+<fldout>"WND HS FP DP USS"</fldout>
+<fldcou>"USS USP HS FP DP"</fldcou>
+
+
+</namelist_defaults>

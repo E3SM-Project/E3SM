@@ -16,20 +16,18 @@
 !---------------------------------------------------------------------------*/
 #include "scalar_momentum.h"
 
-#ifdef MMF_ESMT
-
 void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    /*!------------------------------------------------------------------
    ! Purpose: calculate pgf for scalar momentum transport
    ! Author: Walter Hannah - Lawrence Livermore National Lab
    ! adapted from SP-WRF code by Stefan Tulich
    !------------------------------------------------------------------*/
-   auto &ncrms = :: ncrms;
-   auto &z     = :: z;
-   auto &zi    = :: zi;
-   auto &w     = :: w;
-   auto &rho   = :: rho;
-   auto &dx    = ::dx;
+   YAKL_SCOPE( ncrms , :: ncrms );
+   YAKL_SCOPE( z     , :: z );
+   YAKL_SCOPE( zi    , :: zi );
+   YAKL_SCOPE( w     , :: w );
+   YAKL_SCOPE( rho   , :: rho );
+   YAKL_SCOPE( dx    , :: dx );
 
    real constexpr pi = 3.14159;
    
@@ -81,7 +79,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //  for (int j=0; j<ny; j++) {
    //    for (int i=0; i<nx; i++) {
    //      for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       // real tmp = scalar_wind(k,j,i,icrm) / real(nx);
       yakl::atomicAdd( scalar_wind_avg(k,j,icrm) , scalar_wind(k,j,i,icrm) / real(nx) );
       // note that w is on interface levels - need to interpolate to mid-levels
@@ -106,18 +104,11 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //-----------------------------------------
    // compute forward fft of w
    //-----------------------------------------
-   yakl::RealFFT1D<nx> fftx;
-   fftx.init(fftx.trig);
-
-   // for (int k=0; k<nzm; k++) {
-   //   for (int j=0; j<ny; j++) {
-   //     for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
-      SArray<real,1,nx+2> ftmp;
-      for (int i=0; i<nx ; i++) { ftmp(i) = w_i(k,j,i,icrm); }
-      fftx.forward(ftmp, fftx.trig, yakl::FFT_SCALE_ECMWF);
-      for (int i=0; i<nx2; i++) { w_hat(k,j,i,icrm) = ftmp(i); }
+   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      w_hat(k,j,i,icrm) = w_i(k,j,i,icrm);
    });
+
+   esmt_fftx.forward_real(w_hat, 2, nx);
 
    //-----------------------------------------
    //-----------------------------------------
@@ -187,7 +178,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //  for (int j=0; j<ny; j++) {
    //    for (int i=0; i<nx; i++) {
    //      for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+   parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (i>0) {
          b(k+1,j,i,icrm) = b(k+1,j,i,icrm) - a(k+1,j,i,icrm) / b(k,j,i,icrm) * c(k,j,i,icrm);
          pgf_hat(k+1,j,i,icrm) = pgf_hat(k+1,j,i,icrm) - a(k+1,j,i,icrm) / b(k,j,i,icrm) * pgf_hat(k,j,i,icrm);
@@ -229,14 +220,9 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //-----------------------------------------
    // invert fft of pgf_hat to get pgf
    //-----------------------------------------
-   // for (int k=0; k<nzm; k++) {
-   //   for (int j=0; j<ny; j++) {
-   //     for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int icrm) {
-      SArray<real,1,nx+2> ftmp;
-      for (int i=0; i<nx2; i++) { ftmp(i) = pgf_hat(k,j,i,icrm); }
-      fftx.inverse(ftmp, fftx.trig, yakl::FFT_SCALE_ECMWF);
-      for (int i=0; i<nx ; i++) { pgf(k,j,i,icrm) = ftmp(i); }
+   esmt_fftx.inverse_real(pgf_hat);
+   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      pgf(k,j,i,icrm) = pgf_hat(k,j,i,icrm);
    });
 
    //-----------------------------------------
@@ -261,10 +247,10 @@ void scalar_momentum_tend() {
    * Purpose: Calculate pressure gradient effects on scalar momentum
    * Author: Walter Hannah - Lawrence Livermore National Lab
    *------------------------------------------------------------------*/
-   auto &dtn       = :: dtn;
-   auto &ncrms     = :: ncrms;
-   auto &u_esmt    = :: u_esmt;
-   auto &v_esmt    = :: v_esmt;
+   YAKL_SCOPE( dtn       , :: dtn );
+   YAKL_SCOPE( ncrms     , :: ncrms );
+   YAKL_SCOPE( u_esmt    , :: u_esmt );
+   YAKL_SCOPE( v_esmt    , :: v_esmt );
    
    real4d u_esmt_pgf_3D("u_esmt_pgf_3D",nzm,ny,nx,ncrms);
    real4d v_esmt_pgf_3D("v_esmt_pgf_3d",nzm,ny,nx,ncrms); 
@@ -284,4 +270,3 @@ void scalar_momentum_tend() {
    });
 
 }
-#endif

@@ -7,7 +7,7 @@
             local_copy_only = .false.
          end if
 
-         
+
          src_cursor => src
          if (.not. local_copy_only) then
             nullify(dst_cursor)
@@ -42,12 +42,18 @@
                   allocate(dst_cursor % constituentNames(size(src_cursor % constituentNames, dim=1)))
                   dst_cursor % constituentNames(:) = src_cursor % constituentNames(:)
                end if
+               if ( associated( src_cursor % outputConstituentNames ) ) then
+                  allocate(dst_cursor % outputConstituentNames(size(src_cursor % outputConstituentNames, dim=1)))
+                  dst_cursor % outputConstituentNames(:) = src_cursor % outputConstituentNames(:)
+               end if
                dst_cursor % isPersistent = src_cursor % isPersistent
                dst_cursor % isActive = src_cursor % isActive
                dst_cursor % isDecomposed = src_cursor % isDecomposed
                dst_cursor % hasTimeDimension = src_cursor % hasTimeDimension
                dst_cursor % dimNames = src_cursor % dimNames
                dst_cursor % dimSizes = src_cursor % dimSizes
+               dst_cursor % maskName = src_cursor % maskName
+               dst_cursor % missingValue = src_cursor % missingValue
                dst_cursor % sendList => src_cursor % sendList
                dst_cursor % recvList => src_cursor % recvList
                dst_cursor % copyList => src_cursor % copyList

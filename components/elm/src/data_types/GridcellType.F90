@@ -9,10 +9,9 @@ module GridcellType
   !   1 => default
   !
   ! PET: 9 Feb 2015: Preparing to change the sub-grid hierarchy to include
-  ! 	 topographic units between gridcell and landunit.
+  !    topographic units between gridcell and landunit.
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
-  use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
   use landunit_varcon, only : max_lunit
   use elm_varcon     , only : ispval, spval
   use topounit_varcon, only : max_topounits
@@ -46,7 +45,13 @@ module GridcellType
      integer , pointer :: pftf         (:) => null() ! ending pft index for each gridcell
      integer , pointer :: npfts        (:) => null() ! number of patches for each gridcell
 
-     ! Physical properties
+     real(r8), pointer :: stdev_elev   (:) => null()     ! standard deviation of elevation within a gridcell
+     real(r8), pointer :: sky_view     (:) => null()     ! mean of (sky view factor / cos(slope))
+     real(r8), pointer :: terrain_config (:) => null()   ! mean of (terrain configuration factor / cos(slope))
+     real(r8), pointer :: sinsl_cosas  (:) => null()     ! sin(slope)*cos(aspect) / cos(slope)
+     real(r8), pointer :: sinsl_sinas  (:) => null()     ! sin(slope)*sin(aspect) / cos(slope)
+     
+     ! Daylength
      real(r8) , pointer :: max_dayl    (:) => null() ! maximum daylength for this grid cell (seconds)
      real(r8) , pointer :: dayl        (:) => null() ! daylength (seconds)
      real(r8) , pointer :: prev_dayl   (:) => null() ! daylength from previous timestep (seconds)
@@ -85,11 +90,11 @@ contains
 
     ! The following is set in InitGridCells
     allocate(this%gindex    (begg:endg)) ; this%gindex    (:) = ispval
-    allocate(this%area      (begg:endg)) ; this%area      (:) = nan
-    allocate(this%lat       (begg:endg)) ; this%lat       (:) = nan
-    allocate(this%lon       (begg:endg)) ; this%lon       (:) = nan
-    allocate(this%latdeg    (begg:endg)) ; this%latdeg    (:) = nan
-    allocate(this%londeg    (begg:endg)) ; this%londeg    (:) = nan
+    allocate(this%area      (begg:endg)) ; this%area      (:) = spval
+    allocate(this%lat       (begg:endg)) ; this%lat       (:) = spval
+    allocate(this%lon       (begg:endg)) ; this%lon       (:) = spval
+    allocate(this%latdeg    (begg:endg)) ; this%latdeg    (:) = spval
+    allocate(this%londeg    (begg:endg)) ; this%londeg    (:) = spval
 
     allocate(this%topi      (begg:endg)) ; this%topi      (:) = ispval
     allocate(this%topf      (begg:endg)) ; this%topf      (:) = ispval
@@ -104,17 +109,23 @@ contains
     allocate(this%pftf      (begg:endg)) ; this%pftf      (:) = ispval
     allocate(this%npfts     (begg:endg)) ; this%npfts     (:) = ispval
 
-    ! This is initiailized in module DayLength
-    allocate(this%max_dayl  (begg:endg)) ; this%max_dayl  (:) = nan
-    allocate(this%dayl      (begg:endg)) ; this%dayl      (:) = nan
-    allocate(this%prev_dayl (begg:endg)) ; this%prev_dayl (:) = nan
+    allocate(this%stdev_elev(begg:endg)) ; this%stdev_elev(:) = ispval        ! standard deviation of elevation within a gridcell
+    allocate(this%sky_view  (begg:endg)) ; this%sky_view  (:) = ispval        ! mean of (sky view factor / cos(slope))
+    allocate(this%terrain_config(begg:endg)) ; this%terrain_config(:) = ispval! mean of (terrain configuration factor / cos(slope))
+    allocate(this%sinsl_cosas(begg:endg)) ; this%sinsl_cosas(:) = ispval      ! sin(slope)*cos(aspect) / cos(slope)
+    allocate(this%sinsl_sinas(begg:endg)) ; this%sinsl_sinas(:) = ispval      ! sin(slope)*sin(aspect) / cos(slope)
     
-    allocate(this%elevation (begg:endg)) ; this%elevation (:) = nan
-    allocate(this%froudenum (begg:endg)) ; this%froudenum (:) = nan 
-    allocate(this%MaxElevation (begg:endg)) ; this%MaxElevation (:) = nan
+    ! This is initiailized in module DayLength
+    allocate(this%max_dayl  (begg:endg)) ; this%max_dayl  (:) = spval
+    allocate(this%dayl      (begg:endg)) ; this%dayl      (:) = spval
+    allocate(this%prev_dayl (begg:endg)) ; this%prev_dayl (:) = spval
+    
+    allocate(this%elevation (begg:endg)) ; this%elevation (:) = spval
+    allocate(this%froudenum (begg:endg)) ; this%froudenum (:) = spval 
+    allocate(this%MaxElevation (begg:endg)) ; this%MaxElevation (:) = spval
 
     allocate(this%landunit_indices(1:max_lunit, begg:endg)); this%landunit_indices(:,:) = ispval
-	
+   
    ! allocate(this%topounit_indices (begg:endg,1:max_topounits)) ; this%topounit_indices (:,:) = ispval
 
   end subroutine grc_pp_init
@@ -151,6 +162,12 @@ contains
     deallocate(this%froudenum        )
     deallocate(this%MaxElevation     )
     deallocate(this%landunit_indices )
+    deallocate(this%stdev_elev       ) 
+    deallocate(this%sky_view         ) 
+    deallocate(this%terrain_config   ) 
+    deallocate(this%sinsl_cosas      )
+    deallocate(this%sinsl_sinas      )
+    
   end subroutine grc_pp_clean
 
 end module GridcellType

@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+
+"""
+Change a runtime parameter for SCREAM/atm. Run from your case
+after case.setup.
+"""
+
+import argparse, sys, pathlib, os
+import xml.etree.ElementTree as ET
+
+# Add path to cime_config folder
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+
+from eamxx_buildnml_impl import check_value, is_array_type
+from atm_manip import get_xml_node, atm_config_chg_impl
+from utils import run_cmd_no_fail, expect
+
+###############################################################################
+def atm_config_chg(changes, no_buffer=False, reset=False):
+###############################################################################
+    expect(os.path.exists("namelist_scream.xml"),
+           "No pwd/namelist_scream.xml file is present. Please run from a case dir that has been set up")
+
+    if reset:
+        run_cmd_no_fail("./xmlchange SCREAM_ATMCHANGE_BUFFER=''")
+        print("All buffered atmchanges have been removed. A fresh namelist_scream.xml will be generated the next time buildnml (case.setup) is run.")
+        hack_xml = run_cmd_no_fail("./xmlquery SCREAM_HACK_XML --value")
+        if hack_xml == "TRUE":
+            print("SCREAM_HACK_XML is on. Removing namelist_scream.xml to force regen")
+            os.remove("namelist_scream.xml")
+
+        return True
+    else:
+        expect(changes, "Missing <param>=<val> args")
+
+    with open("namelist_scream.xml", "r") as fd:
+        tree = ET.parse(fd)
+        root = tree.getroot()
+
+    any_change = atm_config_chg_impl(root,changes)
+
+    if any_change:
+        tree.write("namelist_scream.xml")
+
+    if not no_buffer:
+        changes_str = " ".join(changes).replace(",",r"\,")
+        run_cmd_no_fail(f"./xmlchange --append SCREAM_ATMCHANGE_BUFFER='{changes_str}'")
+
+    return True
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <param>=<val> [<param>=<val>] ...
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Change param foo of group bar to 'hi'\033[0m
+    > {0} bar::foo=hi
+
+    \033[1;32m# Change param foo to 'hi' (only works if foo is unambiguous)\033[0m
+    > {0} foo=hi
+
+    \033[1;32m# Change params foo to 'hi' and append 'there' to bar (only works if both are unambiguous)\033[0m
+    > {0} foo=hi bar+=there
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument(
+        "--no-buffer",
+        default=False,
+        action="store_true",
+        help="Used by buildnml to replay buffered commands",
+    )
+
+    parser.add_argument(
+        "--reset",
+        default=False,
+        action="store_true",
+        help="Forget all previous atmchanges",
+    )
+
+    parser.add_argument("changes", nargs="*", help="Values to change")
+
+    return parser.parse_args(args[1:])
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if "--test" in sys.argv:
+        from doctest import testmod
+        import atm_manip
+        testmod()
+        testmod(m=atm_manip)
+    else:
+        success = atm_config_chg(**vars(parse_command_line(sys.argv, description)))
+        sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

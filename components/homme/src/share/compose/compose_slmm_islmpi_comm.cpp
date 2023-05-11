@@ -45,12 +45,17 @@ void setup_irecv (IslMpi<MT>& cm, const bool skip_if_empty) {
   {
     const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
     cm.recvreq.clear();
-    for (Int ri = 0; ri < nrmtrank; ++ri) {
+    for (Int ri = 0, nri = 0; ri < nrmtrank; ++ri) {
       if (skip_if_empty && cm.nx_in_rank_h(ri) == 0) continue;
-      auto&& recvbuf = cm.recvbuf.get_h(ri);
       // The count is just the number of slots available, which can be larger
       // than what is actually being received.
+      cm.recvreq_ri(nri++) = ri;
       cm.recvreq.inc();
+#ifdef COMPOSE_MPI_ON_HOST
+      auto&& recvbuf = cm.recvbuf_h(ri);
+#else
+      auto&& recvbuf = cm.recvbuf.get_h(ri);
+#endif
       mpi::irecv(*cm.p, recvbuf.data(), recvbuf.n(), cm.ranks(ri), 42,
                  &cm.recvreq.back());
     }
@@ -67,24 +72,19 @@ void isend (IslMpi<MT>& cm, const bool want_req, const bool skip_if_empty) {
     const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
     for (Int ri = 0; ri < nrmtrank; ++ri) {
       if (skip_if_empty && cm.sendcount_h(ri) == 0) continue;
-      mpi::isend(*cm.p, cm.sendbuf.get_h(ri).data(), cm.sendcount_h(ri),
+#ifdef COMPOSE_MPI_ON_HOST
+      auto&& sendbuf = cm.sendbuf_h(ri);
+      typedef typename IslMpi<MT>::template ArrayH<Real*> ArrayH;
+      typedef typename IslMpi<MT>::template ArrayD<Real*> ArrayD;
+      Kokkos::deep_copy(ArrayH(sendbuf.data(), cm.sendcount_h(ri)),
+                        ArrayD(cm.sendbuf.get_h(ri).data(), cm.sendcount_h(ri)));
+#else
+      auto&& sendbuf = cm.sendbuf.get_h(ri);
+#endif
+      mpi::isend(*cm.p, sendbuf.data(), cm.sendcount_h(ri),
                  cm.ranks(ri), 42, want_req ? &cm.sendreq(ri) : nullptr);
     }
   }
-}
-
-template <typename MT>
-void recv_and_wait_on_send (IslMpi<MT>& cm) {
-#ifdef COMPOSE_HORIZ_OPENMP
-# pragma omp master
-#endif
-  {
-    mpi::waitall(cm.sendreq.n(), cm.sendreq.data());
-    mpi::waitall(cm.recvreq.n(), cm.recvreq.data());
-  }
-#ifdef COMPOSE_HORIZ_OPENMP
-# pragma omp barrier
-#endif
 }
 
 template <typename MT>
@@ -104,12 +104,47 @@ void wait_on_send (IslMpi<MT>& cm, const bool skip_if_empty) {
 }
 
 template <typename MT>
+void wait_on_recv (IslMpi<MT>& cm) {
+#ifdef COMPOSE_MPI_ON_HOST
+  typedef typename IslMpi<MT>::template ArrayH<Real*> ArrayH;
+  typedef typename IslMpi<MT>::template ArrayD<Real*> ArrayD;
+  const int nreq = cm.recvreq.n();
+  for (Int i = 0; i < nreq; ++i) {
+    Int reqi;
+    MPI_Status stat;
+    mpi::waitany(nreq, cm.recvreq.data(), &reqi, &stat);
+    const Int ri = cm.recvreq_ri(reqi);
+    int count;
+    MPI_Get_count(&stat, mpi::get_type<Real>(), &count);
+    Kokkos::deep_copy(ArrayD(cm.recvbuf.get_h(ri).data(), count),
+                      ArrayH(cm.recvbuf_h(ri).data(), count));
+  }
+#else
+  mpi::waitall(cm.recvreq.n(), cm.recvreq.data());
+#endif
+}
+
+template <typename MT>
+void recv_and_wait_on_send (IslMpi<MT>& cm) {
+#ifdef COMPOSE_HORIZ_OPENMP
+# pragma omp master
+#endif
+  {
+    mpi::waitall(cm.sendreq.n(), cm.sendreq.data());
+    wait_on_recv(cm);
+  }
+#ifdef COMPOSE_HORIZ_OPENMP
+# pragma omp barrier
+#endif
+}
+
+template <typename MT>
 void recv (IslMpi<MT>& cm, const bool skip_if_empty) {
 #ifdef COMPOSE_HORIZ_OPENMP
 # pragma omp master
 #endif
   {
-    mpi::waitall(cm.recvreq.n(), cm.recvreq.data());
+    wait_on_recv(cm);
   }
 #ifdef COMPOSE_HORIZ_OPENMP
 # pragma omp barrier

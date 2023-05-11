@@ -2184,12 +2184,14 @@ contains
             end if
 
             ! If switched on, use pH factor for production based on spatial pH data defined in surface data.
-            if (.not. lake .and. usephfact .and. pH(c) >  pHmin .and.pH(c) <  pHmax) then
-               pH_fact_ch4 = 10._r8**(-0.2235_r8*pH(c)*pH(c) + 2.7727_r8*pH(c) - 8.6_r8)
-               ! fitted function using data from Dunfield et al. 1993
-               ! Strictly less than one, with optimum at 6.5
-               ! From Lei Meng
-               f_ch4_adj = f_ch4_adj * pH_fact_ch4
+            if ( (.not. lake) .and. usephfact) then
+               if( (pH(c) > pHmin) .and. (pH(c) <  pHmax)) then
+                  pH_fact_ch4 = 10._r8**(-0.2235_r8*pH(c)*pH(c) + 2.7727_r8*pH(c) - 8.6_r8)
+                  ! fitted function using data from Dunfield et al. 1993
+                  ! Strictly less than one, with optimum at 6.5
+                  ! From Lei Meng
+                  f_ch4_adj = f_ch4_adj * pH_fact_ch4
+               end if
             else
                ! if no data, then no pH effects
             end if
@@ -3372,10 +3374,10 @@ contains
                      pondz = h2osfc(c) / 1000._r8 / frac_h2osfc(c) ! Assume all h2osfc corresponds to sat area
                      ! mm      /  mm/m
                      pondres = pondres + pondz / ponddiff
-                  else if (.not. lake .and. sat == 1 .and. frac_h2osfc(c) > 0._r8 .and. &
-                       h2osfc(c)/frac_h2osfc(c) > capthick) then ! Assuming short-circuit logic will avoid FPE here.
-                     ! assume surface ice is impermeable
-                     pondres = 1/smallnumber
+                  else if (.not. lake .and. sat == 1 .and. frac_h2osfc(c) > 0._r8 ) then
+                     if( h2osfc(c)/frac_h2osfc(c) > capthick) then
+                        pondres = 1/smallnumber
+                     end if
                   end if
 
                   spec_grnd_cond(c,s) = 1._r8/(1._r8/grnd_ch4_cond(c) + snowres(c) + pondres)

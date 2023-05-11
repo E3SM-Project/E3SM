@@ -8,7 +8,7 @@ Module SoilHydrologyType
   use elm_varpar            , only : nlevgrnd, nlayer, nlayert, nlevsoi
   use elm_varpar            , only : more_vertlayers, nlevsoifl, toplev_equalspace
   use elm_varcon            , only : zsoi, dzsoi, zisoi, spval
-  use elm_varctl            , only : iulog
+  use elm_varctl            , only : iulog, use_lnd_rof_two_way
   use SharedParamsMod     , only : ParamsShareInst
   use LandunitType          , only : lun_pp                
   use ColumnType            , only : col_pp      
@@ -569,7 +569,12 @@ contains
          endif
 
          ! set decay factor
-         this%hkdepth_col(c) = 1._r8/2.5_r8
+         if (use_lnd_rof_two_way) then
+            g = col_pp%gridcell(c)
+            this%hkdepth_col(c) = 1._r8/fdrain(g)
+         else
+            this%hkdepth_col(c) = 1._r8/2.5_r8
+         endif
 
       end do
     end associate

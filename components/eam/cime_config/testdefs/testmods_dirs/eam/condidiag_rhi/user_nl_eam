@@ -1,0 +1,36 @@
+! RHI budget analyses
+!  - condition 1: only sample grid cells and time steps where RHI after the first mac-mic sub-cycle exceeds 125%.
+!  - condition 2: all grid columns and time steps
+
+ metric_name       = 'RHI',      'RHI',
+ metric_nver       =  72,         72
+ metric_cmpr_type  =  1,          1
+ metric_threshold  =  125,        -1
+ cnd_eval_chkpt    =  'CLDMAC01', 'CLDMAC01'
+ cnd_end_chkpt     =  'PBCDIAG',  'PBCDIAG'
+
+ qoi_chkpt   = 'PBCDIAG', 'RAD', 'PACEND','DYNEND','DEEPCU',
+               'CLDMAC01','CLDMIC01'
+               'CLDMAC02','CLDMIC02'
+               'CLDMAC03','CLDMIC03'
+               'CLDMAC04','CLDMIC04'
+               'CLDMAC05','CLDMIC05'
+               'CLDMAC06','CLDMIC06'
+
+ qoi_name = 'RHI', 'Q', 'QSATI'
+ qoi_nver =  72,    72,  72
+
+ l_output_state = .true.
+ l_output_incrm = .true.
+
+! Write out both averaged and instantaneous output for testing
+
+ hist_tape_with_all_output = 1, 2
+
+ nhtfrq = -24,  -6
+ mfilt  =  30, 120
+ avgflag_pertape = 'A','I'
+
+ history_amwg        = .false.
+ history_aero_optics = .false.
+ history_aerosol     = .false.

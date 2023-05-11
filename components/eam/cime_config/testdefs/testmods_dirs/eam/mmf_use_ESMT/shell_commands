@@ -1,1 +1,0 @@
-./xmlchange --append -id CAM_CONFIG_OPTS -val " -cppdefs ' -DMMF_ESMT -DMMF_USE_ESMT -DYAKL_SEPARATE_MEMORY_SPACE ' "

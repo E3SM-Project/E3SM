@@ -76,6 +76,7 @@
          snowpatch = 0.02_dbl_kind, & ! parameter for fractional snow area (m)
 
          ! biogeochemistry
+         R_gC2molC = 12.0107   , & ! molar mass of carbon
          sk_l = 0.03_dbl_kind      ! (m) skeletal layer thickness
 
       integer (kind=int_kind), parameter, public :: & 

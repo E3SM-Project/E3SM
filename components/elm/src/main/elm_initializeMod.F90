@@ -13,15 +13,16 @@ module elm_initializeMod
   use elm_varctl       , only : create_glacier_mec_landunit, iulog
   use elm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14
   use elm_varctl       , only : use_fates, use_betr, use_fates_sp
-  use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
+  use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec,firrig,f_surf,f_grd 
   use elm_varsur       , only : fert_cft
   use elm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
   use perf_mod         , only : t_startf, t_stopf
   !use readParamsMod    , only : readParameters
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
-
-  use BeTRSimulationALM, only : create_betr_simulation_alm
+  use ELMFatesInterfaceMod  , only : ELMFatesGlobals1,ELMFatesGlobals2
+  use CLMFatesParamInterfaceMod, only: FatesReadPFTs
+  use BeTRSimulationELM, only : create_betr_simulation_elm
   !
   !-----------------------------------------
   ! Definition of component types
@@ -37,6 +38,7 @@ module elm_initializeMod
 
   use elm_instMod
   use WaterBudgetMod         , only : WaterBudget_Reset
+  use CNPBudgetMod           , only : CNPBudget_Reset
   use elm_varctl             , only : do_budgets
   !
   implicit none
@@ -55,7 +57,10 @@ contains
     ! CLM initialization first phase
     !
     ! !USES:
-    use elm_varpar                , only: elm_varpar_init, natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec
+    use elm_varpar                , only: elm_varpar_init, natpft_lb, natpft_ub
+    use elm_varpar                , only: cft_lb, cft_ub, maxpatch_glcmec
+    use elm_varpar                , only: update_pft_array_bounds
+    use elm_varpar                , only: surfpft_lb, surfpft_ub
     use elm_varcon                , only: elm_varcon_init
     use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec
     use column_varcon             , only: col_itype_to_icemec_class
@@ -64,13 +69,12 @@ contains
     use soilorder_varcon          , only: soilorder_conrd
     use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
     use domainMod                 , only: domain_check, ldomain, domain_init
-    use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data
+    use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data,surfrd_get_topo_for_solar_rad
     use controlMod                , only: control_init, control_print, NLFilename
     use ncdio_pio                 , only: ncd_pio_init
     use initGridCellsMod          , only: initGridCells, initGhostGridCells
     use CH4varcon                 , only: CH4conrd
     use UrbanParamsType           , only: UrbanInput
-    use CLMFatesParamInterfaceMod , only: FatesReadPFTs
     use surfrdMod                 , only: surfrd_get_grid_conn, surfrd_topounit_data
     use elm_varctl                , only: lateral_connectivity, domain_decomp_type
     use decompInitMod             , only: decompInit_lnd_using_gp, decompInit_ghosts
@@ -80,8 +84,8 @@ contains
     use dynSubgridControlMod      , only: dynSubgridControl_init
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
-    use ELMFatesInterfaceMod      , only: ELMFatesGlobals
     use topounit_varcon           , only: max_topounits, has_topounit, topounit_varcon_init    
+    use elm_varctl                , only: use_top_solar_rad
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -126,6 +130,16 @@ contains
     call elm_varcon_init()
     call landunit_varcon_init()
     call ncd_pio_init()
+    if(use_fates) then
+       ! Allow FATES to dictate the number of patches per column.
+       ! We still use numcft as dictated by
+       ! the host model.
+       ! This call will override natpft_size (and its bounds
+       ! in the following call) for FATES runs
+       call ELMFatesGlobals1()
+       call update_pft_array_bounds()
+    end if    
+    
     call elm_petsc_init()
     call init_soil_temperature()
 
@@ -220,7 +234,17 @@ contains
           write(iulog,*) 'Attempting to read atm topo from ',trim(flndtopo)
           call shr_sys_flush(iulog)
        endif
-       call surfrd_get_topo(ldomain, flndtopo)
+
+       call surfrd_get_topo(ldomain, flndtopo)  
+    endif    
+    
+    if (fsurdat /= " " .and. use_top_solar_rad) then
+       if (masterproc) then
+          write(iulog,*) 'Attempting to read topo parameters for TOP solar radiation parameterization from ',trim(fsurdat)
+          call shr_sys_flush(iulog)
+       endif
+       call surfrd_get_topo_for_solar_rad(ldomain, fsurdat)  
+
     endif
     
     !-------------------------------------------------------------------------
@@ -240,7 +264,7 @@ contains
 
     allocate (wt_lunit     (begg:endg,1:max_topounits, max_lunit           )) 
     allocate (urban_valid  (begg:endg,1:max_topounits                      ))
-    allocate (wt_nat_patch (begg:endg,1:max_topounits, natpft_lb:natpft_ub ))
+    allocate (wt_nat_patch (begg:endg,1:max_topounits, surfpft_lb:surfpft_ub ))
     allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
     allocate (fert_cft     (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
     if (create_glacier_mec_landunit) then
@@ -256,6 +280,9 @@ contains
     allocate (slp_tunit (begg:endg,1:max_topounits  ))
     allocate (asp_tunit (begg:endg,1:max_topounits  ))
     allocate (num_tunit_per_grd (begg:endg))
+    allocate (firrig  (begg:endg,1:max_topounits  ))
+    allocate (f_surf  (begg:endg,1:max_topounits  ))
+    allocate (f_grd  (begg:endg,1:max_topounits  ))
 
     ! Read list of Patches and their corresponding parameter values
     ! Independent of model resolution, Needs to stay before surfrd_get_data
@@ -270,20 +297,21 @@ contains
     if (use_fates) then
        call FatesReadPFTs()
     end if
-
+    
     ! Read surface dataset and set up subgrid weight arrays
     call surfrd_get_data(begg, endg, ldomain, fsurdat)
 
-    ! ------------------------------------------------------------------------
-    ! Ask Fates to evaluate its own dimensioning needs.
-    !
-    ! (Note: fates_maxELementsPerSite is the critical variable used by CLM
-    ! to allocate space, determined in this routine)
-    ! ------------------------------------------------------------------------
+    if(use_fates) then
 
-    call ELMFatesGlobals()
+       ! Pass various control flags to FATES and setup
+       ! FATES allocations
+       ! --------------------------------------------------------------------
 
+       call ELMFatesGlobals2()
 
+    end if
+
+    
     ! ------------------------------------------------------------------------
     ! Determine decomposition of subgrid scale topounits, landunits, topounits, columns, patches
     ! ------------------------------------------------------------------------
@@ -429,7 +457,7 @@ contains
     use elm_varcon            , only : h2osno_max, bdsno, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
     use elm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
-    use elm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn, use_fates
+    use elm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn
     use elm_varorb            , only : eccen, mvelpp, lambm0, obliqr
     use clm_time_manager      , only : get_step_size, get_curr_calday
     use clm_time_manager      , only : get_curr_date, get_nstep, advance_timestep
@@ -467,10 +495,13 @@ contains
     use lnd2glcMod            , only : lnd2glc_type
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
     use elm_varctl                          , only : use_elm_interface, use_pflotran
+    use elm_varctl                          , only : fates_spitfire_mode
     use elm_interface_pflotranMod           , only : elm_pf_interface_init !, elm_pf_set_restart_stamp
     use tracer_varcon         , only : is_active_betr_bgc
     use clm_time_manager      , only : is_restart
-    use ALMbetrNLMod          , only : betr_namelist_buffer
+    use ELMbetrNLMod          , only : betr_namelist_buffer
+    use ELMFatesInterfaceMod  , only: ELMFatesTimesteps
+    use FATESFireFactoryMod   , only : scalar_lightning
     !
     ! !ARGUMENTS
     implicit none
@@ -511,7 +542,12 @@ contains
 
     call t_startf('elm_init2')
 
-    if (do_budgets) call WaterBudget_Reset('all')
+    if (do_budgets) then
+       call WaterBudget_Reset('all')
+       if (use_cn) then
+          call CNPBudget_Reset('all')
+       endif
+    endif
 
     ! ------------------------------------------------------------------------
     ! Determine processor bounds and clumps for this processor
@@ -538,7 +574,14 @@ contains
        call restFile_close( ncid=ncid )
        call timemgr_restart()
     end if
-
+    
+    ! ------------------------------------------------------------------------
+    ! Pass model timestep info to FATES
+    ! ------------------------------------------------------------------------
+    if(use_fates) then
+       call ELMFatesTimesteps()
+    end if
+    
     ! ------------------------------------------------------------------------
     ! Initialize daylength from the previous time step (needed so prev_dayl can be set correctly)
     ! ------------------------------------------------------------------------
@@ -603,13 +646,13 @@ contains
 
     if(use_betr)then
       !allocate memory for betr simulator
-      allocate(ep_betr, source=create_betr_simulation_alm())
+      allocate(ep_betr, source=create_betr_simulation_elm())
       !set internal filters for betr
       call ep_betr%BeTRSetFilter(maxpft_per_col=max_patch_per_col, boffline=.false.)
-      call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, waterstate_vars, betr_namelist_buffer, masterproc)
+      call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, col_ws, betr_namelist_buffer, masterproc)
       is_active_betr_bgc = ep_betr%do_soibgc()
     else
-      allocate(ep_betr, source=create_betr_simulation_alm())
+      allocate(ep_betr, source=create_betr_simulation_elm())
     endif
 
     call SnowOptics_init( ) ! SNICAR optical parameters:
@@ -665,6 +708,10 @@ contains
     end if
 
     call cnstate_vars%initAccBuffer(bounds_proc)
+    
+    if (use_fates) then
+      call alm_fates%InitAccBuffer(bounds_proc)
+   end if
 
     call print_accum_fields()
 
@@ -691,8 +738,15 @@ contains
        call SatellitePhenologyInit(bounds_proc)
     end if
 
-    if (use_fates_sp) then
-       call SatellitePhenologyInit(bounds_proc)
+    if (use_fates) then
+       if (use_fates_sp) then
+          call SatellitePhenologyInit(bounds_proc)
+       end if
+       ! fates_spitfire_mode is assigned an integer value in the namelist
+       ! see bld/namelist_files/namelist_definitio.xml for details
+       if(fates_spitfire_mode > scalar_lightning) then
+         call alm_fates%Init2(bounds_proc, NLFilename)
+       end if
     end if
 
     if (use_cn .and. n_drydep > 0 .and. drydep_method == DD_XLND) then
@@ -700,6 +754,7 @@ contains
        ! differences in LAI can be computed
        call SatellitePhenologyInit(bounds_proc)
     end if
+
 
     ! ------------------------------------------------------------------------
     ! On restart only - process the history namelist.
@@ -734,32 +789,30 @@ contains
              write(iulog,*)'Reading initial conditions from ',trim(finidat)
           end if
           call getfil( finidat, fnamer, 0 )
-          call restFile_read(bounds_proc, fnamer,                                             &
-               atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-               carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-               ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-               nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-               soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-               waterflux_vars, waterstate_vars, sedflux_vars,                                 &
-               phosphorusstate_vars,phosphorusflux_vars,                                      &
-               ep_betr,                                                                       &
-               alm_fates, glc2lnd_vars, crop_vars)
+          call restFile_read(bounds_proc, fnamer,                           &
+               atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,  &
+               ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, &
+               photosyns_vars, soilhydrology_vars,                          &
+               soilstate_vars, solarabs_vars, surfalb_vars,                 &
+               sedflux_vars, ep_betr, alm_fates, glc2lnd_vars, crop_vars)
+
+         call WaterBudget_Reset('all')
+         if (use_cn) then
+            call CNPBudget_Reset('all')
+         endif
+
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
        if (masterproc) then
           write(iulog,*)'Reading restart file ',trim(fnamer)
        end if
-       call restFile_read(bounds_proc, fnamer,                                             &
-            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-            nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars, sedflux_vars,                                 &
-            phosphorusstate_vars,phosphorusflux_vars,                                      &
-            ep_betr,                                                                       &
-            alm_fates, glc2lnd_vars, crop_vars)
+       call restFile_read(bounds_proc, fnamer,                           &
+            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,  &
+            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars ,&
+            photosyns_vars, soilhydrology_vars,                          &
+            soilstate_vars, solarabs_vars, surfalb_vars,                 &
+            sedflux_vars, ep_betr, alm_fates, glc2lnd_vars, crop_vars)
 
     end if
 
@@ -786,32 +839,24 @@ contains
          call ep_betr%set_active(bounds_proc, col_pp)
        endif
        ! Create new template file using cold start
-       call restFile_write(bounds_proc, finidat_interp_dest,                               &
-            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-            nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars, sedflux_vars,                                 &
-            phosphorusstate_vars,phosphorusflux_vars,                                      &
-            ep_betr,                                                                       &
-            alm_fates, crop_vars)
+       call restFile_write(bounds_proc, finidat_interp_dest,             &
+            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,  &
+            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, &
+            photosyns_vars, soilhydrology_vars,          &
+            soilstate_vars, solarabs_vars, surfalb_vars, &
+            sedflux_vars, ep_betr, alm_fates, crop_vars)
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
        call initInterp(filei=fnamer, fileo=finidat_interp_dest, bounds=bounds_proc)
 
        ! Read new interpolated conditions file back in
-       call restFile_read(bounds_proc, finidat_interp_dest,                                &
-            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-            nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars, sedflux_vars,                                 &
-            phosphorusstate_vars,phosphorusflux_vars,                                      &
-            ep_betr,                                                                       &
-            alm_fates, glc2lnd_vars, crop_vars)
+       call restFile_read(bounds_proc, finidat_interp_dest,              &
+            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,  &
+            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, &
+            photosyns_vars, soilhydrology_vars,            &
+            soilstate_vars, solarabs_vars, surfalb_vars,   &
+            sedflux_vars, ep_betr, alm_fates, glc2lnd_vars, crop_vars)
 
        ! Reset finidat to now be finidat_interp_dest
        ! (to be compatible with routines still using finidat)
@@ -836,7 +881,7 @@ contains
 
     if (use_cn .or. use_fates) then
        call t_startf('init_ndep')
-       call ndep_init(bounds_proc)
+       call ndep_init(bounds_proc, NLFilename)
        call ndep_interp(bounds_proc, atm2lnd_vars)
        call t_stopf('init_ndep')
     end if
@@ -880,6 +925,9 @@ contains
     call canopystate_vars%initAccVars(bounds_proc)
     if (crop_prog) then
        call crop_vars%initAccVars(bounds_proc)
+    end if
+    if (use_fates) then
+       call alm_fates%initAccVars(bounds_proc)
     end if
     call cnstate_vars%initAccVars(bounds_proc)
 
@@ -944,7 +992,7 @@ contains
     ! Initialise the FATES model state structure cold-start
     ! --------------------------------------------------------------
 
-    if ( use_fates .and. .not.is_restart() .and. finidat == ' ') then
+    if ( use_fates .and. .not.is_restart() .and. finidat == ' ' .and. nsrest /= nsrBranch) then
        ! If fates is using satellite phenology mode, make sure to call the SatellitePhenology
        ! procedure prior to init_coldstart which will eventually call leaf_area_profile
        if ( use_fates_sp ) then

@@ -1,0 +1,137 @@
+<?xml version="1.0"?>
+<namelist_defaults>
+
+<!-- Set Aquaplanet to True -->
+<aqua_planet>.true.</aqua_planet>
+
+<!-- Solar data (insolation of 1365) -->
+<solar_data_file      >atm/cam/solar/ape_solar_ave_tsi_1365.nc </solar_data_file>
+<solar_htng_spctrl_scl>.true. </solar_htng_spctrl_scl>
+<solar_data_type      >FIXED  </solar_data_type>
+
+<!-- 2010 GHG values from CMIP6 input4MIPS -->
+<!-- <co2vmr>312.821e-6</co2vmr> The CMIP6 concentration set by CCSM_CO2_PPMV in
+     cime/src/drivers/mct/cime_config/config_component_acme.xml -->
+<ch4vmr>1807.851e-9</ch4vmr>
+<n2ovmr>323.141e-9</n2ovmr>
+<f11vmr>768.7644e-12</f11vmr>
+<f12vmr>531.2820e-12</f12vmr>
+
+<!-- zonally symmetric prescribed ozone -->
+<prescribed_ozone_type    > CYCLICAL              </prescribed_ozone_type>
+<prescribed_ozone_datapath> atm/cam/ozone         </prescribed_ozone_datapath>
+<prescribed_ozone_file    > apeozone_cam3_5_54.nc </prescribed_ozone_file>
+<prescribed_ozone_name    > OZONE                 </prescribed_ozone_name>
+<prescribed_ozone_cycle_yr> 1990                  </prescribed_ozone_cycle_yr>
+
+<!-- Disable linoz since we want to use prescribed ozone -->
+<linoz_data_file            ></linoz_data_file>
+<linoz_data_path            ></linoz_data_path>
+
+<!-- Mostly non-aquaplanet-specific settings below here -->
+
+<!-- Ice nucleation mods-->
+<use_hetfrz_classnuc    >.false.</use_hetfrz_classnuc>
+<use_preexisting_ice    >.false.</use_preexisting_ice>
+<hist_hetfrz_classnuc   >.false.</hist_hetfrz_classnuc>
+
+<!-- For Polar mods-->
+<sscav_tuning            >.true.</sscav_tuning>
+<convproc_do_aer         >.true.</convproc_do_aer>
+<convproc_do_gas         >.false.</convproc_do_gas>
+<convproc_method_activate>2</convproc_method_activate>
+<demott_ice_nuc          >.true.</demott_ice_nuc>
+<liqcf_fix               >.true.</liqcf_fix>
+<regen_fix               >.true.</regen_fix>
+<resus_fix               >.true.</resus_fix>
+<mam_amicphys_optaa      >1</mam_amicphys_optaa>
+
+<fix_g1_err_ndrop>.true.</fix_g1_err_ndrop>
+<ssalt_tuning    >.true.</ssalt_tuning>
+
+<!-- For comprehensive history -->
+<history_amwg>.true.</history_amwg>
+<history_aerosol>.true.</history_aerosol>
+<history_aero_optics>.true.</history_aero_optics>
+
+<!-- File for BC dep in snow feature -->
+<fsnowoptics>lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</fsnowoptics>
+
+<!-- Radiation bugfix -->
+<use_rad_dt_cosz>.true.</use_rad_dt_cosz>
+
+<!-- Tunable parameters for 72 layer model -->
+<cldfrc_dp1>         0.045D0</cldfrc_dp1>
+<seasalt_emis_scale> 0.85   </seasalt_emis_scale>
+<dust_emis_fact      > 2.05D0    </dust_emis_fact>
+<cldfrc2m_rhmaxi>    1.05D0 </cldfrc2m_rhmaxi>
+<effgw_oro>          0.25    </effgw_oro>
+<effgw_beres>        0.4    </effgw_beres>
+<do_tms>             .false.</do_tms>
+<so4_sz_thresh_icenuc  > 0.05e-6   </so4_sz_thresh_icenuc>
+<n_so4_monolayers_pcage>8.0D0 </n_so4_monolayers_pcage>
+<taubgnd                 >2.5D-3 </taubgnd>
+<raytau0                 >5.0D0</raytau0>
+<prc_exp                 >3.19D0</prc_exp>
+<prc_exp1                >-1.2D0</prc_exp1>
+<nucleate_ice_subgrid    >1.2D0</nucleate_ice_subgrid>
+
+<!-- Parameters specific to deep convection (default off for HR compset) -->
+<deep_scheme             > 'ZM'   </deep_scheme>
+<zmconv_c0_lnd           > 0.007  </zmconv_c0_lnd>
+<zmconv_c0_ocn           > 0.007  </zmconv_c0_ocn>
+<zmconv_dmpdz            >-0.7e-3 </zmconv_dmpdz>
+<zmconv_ke               > 5E-6   </zmconv_ke>
+<zmconv_tiedke_add       > 0.8D0  </zmconv_tiedke_add>
+<zmconv_cape_cin         > 1      </zmconv_cape_cin>
+<zmconv_mx_bot_lyr_adj   > 2      </zmconv_mx_bot_lyr_adj>
+
+<!-- Macrophysics/microphysics coupling -->
+<cld_macmic_num_steps hgrid="ne4np4"   > 6 </cld_macmic_num_steps>
+<cld_macmic_num_steps hgrid="ne30np4"  > 6 </cld_macmic_num_steps>
+<cld_macmic_num_steps hgrid="ne120np4" > 3 </cld_macmic_num_steps>
+<cld_macmic_num_steps hgrid="ne256np4" > 3 </cld_macmic_num_steps>
+<cld_macmic_num_steps hgrid="ne512np4" > 1 </cld_macmic_num_steps>
+<cld_macmic_num_steps hgrid="ne1024np4"> 1 </cld_macmic_num_steps>
+
+<!-- SHOC timestep -->
+<shoc_timestep> 150.0D0 </shoc_timestep>
+
+<!-- Energy fixer options -->
+<ieflx_opt  > 0     </ieflx_opt>
+
+<!-- Stratospheric ozone (Linoz) updated using CMIP6 input4MIPS GHG concentrations -->
+<!-- COPIED FROM "CAM" USE CASE; TODO: IS THIS NECESSARY FOR SCREAM? -->
+<chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</chlorine_loading_file>
+<chlorine_loading_fixed_ymd >20100101</chlorine_loading_fixed_ymd>
+<chlorine_loading_type      >FIXED</chlorine_loading_type>
+
+<!-- Turn off ozone dry deposition, as Linoz O3v2 and ozone are not separated for now. Need to turn on ozone dry deposition when interactive tropospheric chemistry is implemented -->
+<drydep_list            >'H2O2', 'H2SO4', 'SO2'</drydep_list>
+
+<!-- sim_year used for CLM datasets and SST forcings -->
+<sim_year>2015</sim_year>
+
+<!-- Land datasets set in components/clm/bld/namelist_files/use_cases/1850_CMIP6_control.xml -->
+
+<!-- Prescribed aerosol options -->
+<use_hetfrz_classnuc>.false.</use_hetfrz_classnuc>
+<aerodep_flx_type>'CYCLICAL'</aerodep_flx_type>
+<aerodep_flx_datapath>atm/cam/chem/trop_mam/aero</aerodep_flx_datapath>
+<aerodep_flx_file nlev="72">mam4_0.9x1.2_L72_2000clim_c170323.nc</aerodep_flx_file>
+<aerodep_flx_file nlev="128">mam4_0.9x1.2_L128_2000clim_c191106.nc</aerodep_flx_file>
+<aerodep_flx_cycle_yr>01</aerodep_flx_cycle_yr>
+<prescribed_aero_type>'CYCLICAL'</prescribed_aero_type>
+<prescribed_aero_datapath>atm/cam/chem/trop_mam/aero</prescribed_aero_datapath>
+<prescribed_aero_file nlev="72">mam4_0.9x1.2_L72_2000clim_c170323.nc</prescribed_aero_file>
+<prescribed_aero_file nlev="128">mam4_0.9x1.2_L128_2000clim_c191106.nc</prescribed_aero_file>
+<prescribed_aero_cycle_yr>01</prescribed_aero_cycle_yr>
+
+<!-- Do radiation every five minutes for ne1024 -->
+<iradsw hgrid="ne1024np4"> 4 </iradsw>
+<iradlw hgrid="ne1024np4"> 4 </iradlw>
+
+<!-- Use the less sensitive advection scheme -->
+<semi_lagrange_cdr_alg>3</semi_lagrange_cdr_alg>
+
+</namelist_defaults>

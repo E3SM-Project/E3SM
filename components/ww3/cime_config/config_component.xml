@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+
+<definitions_variables>
+
+  <description>
+    <desc compset="_WW3" >Wave Watch III</desc>
+  </description>
+
+  <entry id="COMP_WAV">
+    <type>char</type>
+    <valid_values>ww3</valid_values>
+    <default_value>ww3</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of wave component</desc>
+  </entry>
+
+  <entry id="WAV_ONLY">
+    <type>char</type>
+    <valid_values>false,true</valid_values>
+    <default_value>false</default_value>
+    <values>
+       <value compset="_WW3">false</value>
+       <value compset="2000_DATM%.*_SLND_SICE_SOCN_SROF_SGLC_WW3_SIAC_SESP">true</value>
+    </values>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Option to determine wave only run</desc>
+  </entry>
+
+  <entry id="WAV_SPEC">
+    <type>char</type>
+    <valid_values>sp50x36,sp36x36,sp25x36</valid_values>
+    <default_value>sp36x36</default_value> 
+    <values>
+       <value compset="_WW3">sp36x36</value>
+       <value compset="_WW3%sp25x36">sp25x36</value>
+       <value compset="_WW3%sp36x36">sp36x36</value>
+       <value compset="_WW3%sp50x36">sp50x36</value>
+    </values>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Option to set WW3 Spectral Resolution.</desc>
+  </entry>
+    
+
+
+  <help>
+    =========================================
+    WW3 naming conventions
+    =========================================
+  </help>
+
+</definitions_variables>

@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -491,21 +491,21 @@ contains
       logical, intent(in) :: inLandIceCavity !< Input: flag indicating if the freezing temperature is computed
                                              !         in land ice cavities or in open ocean
 
-      real (kind=RKIND), pointer :: coeff_0, coeff_S, coeff_p, coeff_pS, az1_liq
+      real (kind=RKIND) :: coeff_0, coeff_S, coeff_p, coeff_pS, az1_liq
       real (kind=RKIND) :: coeff_mushy
 
       if(inLandIceCavity) then
-         coeff_0 => config_land_ice_cavity_freezing_temperature_coeff_0
-         coeff_S => config_land_ice_cavity_freezing_temperature_coeff_S
-         coeff_p => config_land_ice_cavity_freezing_temperature_coeff_p
-         coeff_pS => config_land_ice_cavity_freezing_temperature_coeff_pS
+         coeff_0 = config_land_ice_cavity_freezing_temperature_coeff_0
+         coeff_S = config_land_ice_cavity_freezing_temperature_coeff_S
+         coeff_p = config_land_ice_cavity_freezing_temperature_coeff_p
+         coeff_pS = config_land_ice_cavity_freezing_temperature_coeff_pS
          coeff_mushy = 0.0_RKIND
       else
-         coeff_0 => config_open_ocean_freezing_temperature_coeff_0
-         coeff_S => config_open_ocean_freezing_temperature_coeff_S
-         coeff_p => config_open_ocean_freezing_temperature_coeff_p
-         coeff_pS => config_open_ocean_freezing_temperature_coeff_pS
-         az1_liq => config_open_ocean_freezing_temperature_coeff_mushy_az1_liq
+         coeff_0 = config_open_ocean_freezing_temperature_coeff_0
+         coeff_S = config_open_ocean_freezing_temperature_coeff_S
+         coeff_p = config_open_ocean_freezing_temperature_coeff_p
+         coeff_pS = config_open_ocean_freezing_temperature_coeff_pS
+         az1_liq = config_open_ocean_freezing_temperature_coeff_mushy_az1_liq
          coeff_mushy = 1.0_RKIND / az1_liq
       end if
 
@@ -536,18 +536,18 @@ contains
       logical, intent(in) :: inLandIceCavity !< Input: flag indicating if the freezing temperature is computed
                                              !         in land ice cavities or in open ocean
 
-      real (kind=RKIND), pointer :: coeff_S, coeff_pS, az1_liq
+      real (kind=RKIND) :: coeff_S, coeff_pS, az1_liq
       real (kind=RKIND) :: coeff_mushy
 
 
       if(inLandIceCavity) then
-         coeff_S => config_land_ice_cavity_freezing_temperature_coeff_S
-         coeff_pS => config_land_ice_cavity_freezing_temperature_coeff_pS
+         coeff_S = config_land_ice_cavity_freezing_temperature_coeff_S
+         coeff_pS = config_land_ice_cavity_freezing_temperature_coeff_pS
          coeff_mushy = 0.0_RKIND
       else
-         coeff_S => config_open_ocean_freezing_temperature_coeff_S
-         coeff_pS => config_open_ocean_freezing_temperature_coeff_pS
-         az1_liq => config_open_ocean_freezing_temperature_coeff_mushy_az1_liq
+         coeff_S = config_open_ocean_freezing_temperature_coeff_S
+         coeff_pS = config_open_ocean_freezing_temperature_coeff_pS
+         az1_liq = config_open_ocean_freezing_temperature_coeff_mushy_az1_liq
          coeff_mushy = 1.0_RKIND / az1_liq
       end if
 

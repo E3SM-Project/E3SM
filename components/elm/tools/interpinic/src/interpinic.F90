@@ -43,6 +43,7 @@ module interpinic
   integer :: nlevgrnd        ! number of soil levels
   integer :: nlevgrnd_o      ! number of soil levels on output file
   integer :: nlevcan        ! number of canopy layers
+  integer :: nlevmon        ! number of months
 
   integer :: numpfts        ! input file number of pfts 
   integer :: numpftso       ! output file number of pfts 
@@ -121,6 +122,7 @@ contains
     integer :: dimidgrnd            ! netCDF dimension id ground
     integer :: dimidrad            ! netCDF dimension id numrad
     integer :: dimidcan            ! netCDF dimension id levcan
+    integer :: dimidmon            ! netCDF dimension id month
     integer :: dimidrtmlat         ! netCDF dimension id rtmlat
     integer :: dimidrtmlon         ! netCDF dimension id rtmlon
     integer :: varid               ! netCDF variable id
@@ -160,7 +162,6 @@ contains
     call check_ret (nf90_inq_dimid(ncido, "pft", dimid ))
     call check_ret (nf90_inquire_dimension(ncido, dimid, len=numpftso))
     write (6,*) 'input numpfts = ',numpfts,' output numpfts = ',numpftso
-
 
     call check_ret (nf90_inq_dimid(ncidi, "landunit", dimidldu ))
     call check_ret (nf90_inquire_dimension(ncidi, dimidldu, len=numldus))
@@ -208,6 +209,22 @@ contains
        write (6,*) 'levcan dimension does NOT exist on the input dataset'
        dimidcan = -9999
        nlevcan  = -9999
+    end if
+
+    ret = nf90_inq_dimid(ncidi, "month", dimidmon)
+    if (ret == NF90_NOERR) then
+       call check_ret (nf90_inquire_dimension(ncidi, dimidmon, len=nlevmon))
+       call check_ret (nf90_inq_dimid(ncido, "month", dimid ))
+       call check_ret (nf90_inquire_dimension(ncido, dimid, len=dimlen))
+       if (dimlen/=nlevmon) then
+          write (6,*) 'error: input and output nlevmon values disagree'
+          write (6,*) 'input nlevmon = ',nlevmon,' output nlevmon = ',dimlen
+          stop
+       end if
+    else
+       write (6,*) 'month dimension does NOT exist on the input dataset'
+       dimidmon = -9999
+       nlevmon  = -9999
     end if
 
     call check_ret (nf90_inq_dimid(ncidi, "levlak", dimidlak ))
@@ -526,6 +543,9 @@ contains
           else if ( dimids(1) == dimidsno1)then
              call interp_ml_real(varname, ncidi, ncido, &
                                  nlev=nlevsno1, nlev_o=nlevsno1, nvec=numcols, nveco=numcolso)
+          else if ( dimids(1) == dimidmon)then
+             call interp_ml_real(varname, ncidi, ncido, &
+                                 nlev=nlevmon, nlev_o=nlevmon, nvec=numcols, nveco=numcolso)
           else
              write (6,*) 'error: variable = ', varname
              write (6,*) 'error: variables first dimension is not recognized'; stop

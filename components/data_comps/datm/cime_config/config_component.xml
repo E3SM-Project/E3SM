@@ -10,7 +10,7 @@
        This file may have atm desc entries.
   -->
   <description modifier_mode="1">
-    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%MOSARTTEST][%NLDAS2][%CPLHIST][%1PT][%NYF][%IAF][%JRA][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304]"> Data driven ATM </desc>
+    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%MOSARTTEST][%NLDAS2][%CPLHIST][%1PT][%NYF][%IAF][%JRA][%JRA-1p5][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304][%CFSv2][%CFSR]"> Data driven ATM </desc>
     <desc option="QIA"> QIAN data set </desc>
     <desc option="WISOQIA">QIAN with water isotopes</desc>
     <desc option="CRU"> CRUNCEP data set </desc>
@@ -23,10 +23,13 @@
     <desc option="NYF">COREv2 normal year forcing</desc>
     <desc option="IAF">COREv2 interannual forcing</desc>
     <desc option="JRA">interannual JRA55 forcing</desc>
+    <desc option="JRA-1p5">interannual JRA55 forcing, v1.5, through 2020</desc>
     <desc option="JRA-1p4-2018">interannual JRA55 forcing, v1.4, through 2018</desc>
     <desc option="JRA-RYF8485"> JRA55 Repeat Year Forcing v1.3 1984-1985</desc>
     <desc option="JRA-RYF9091"> JRA55 Repeat Year Forcing v1.3 1990-1991</desc>
     <desc option="JRA-RYF0304"> JRA55 Repeat Year Forcing v1.3 2003-2004</desc>
+    <desc option="CFSv2">CFSv2 reanalysis forcing</desc>
+    <desc option="CFSR">CFSR reanalysis forcing</desc>
   </description>
 
   <entry id="COMP_ATM">
@@ -40,7 +43,7 @@
 
   <entry id="DATM_MODE">
     <type>char</type>
-    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,CLMMOSARTTEST,CLMNLDAS2,CPLHIST,CORE_IAF_JRA,CORE_IAF_JRA_1p4_2018,CORE_RYF8485_JRA,CORE_RYF9091_JRA,CORE_RYF0304_JRA</valid_values>
+    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,CLMMOSARTTEST,CLMNLDAS2,CPLHIST,CORE_IAF_JRA,IAF_JRA_1p5,CORE_IAF_JRA_1p4_2018,CORE_RYF8485_JRA,CORE_RYF9091_JRA,CORE_RYF0304_JRA,CFSv2,CFSR</valid_values>
     <default_value>CORE2_NYF</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -55,6 +58,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="%NYF">CORE2_NYF</value>
       <value compset="%IAF">CORE2_IAF</value>
       <value compset="%JRA">CORE_IAF_JRA</value>
+      <value compset="%JRA-1p5">IAF_JRA_1p5</value>
       <value compset="%JRA-1p4-2018">CORE_IAF_JRA_1p4_2018</value>
       <value compset="%JRA-RYF8485">CORE_RYF8485_JRA</value>
       <value compset="%JRA-RYF9091">CORE_RYF9091_JRA</value>
@@ -68,6 +72,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="%NLDAS2">CLMNLDAS2</value>
       <value compset="%1PT">CLM1PT</value>
       <value compset="%CPLHIST">CPLHIST</value>
+      <value compset="%CFSv2">CFSv2</value>
+      <value compset="%CFSR">CFSR</value>
     </values>
   </entry>
 
@@ -90,6 +96,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="^HIST_"   >trans_1850-2000</value>
       <value compset="^20TR_"   >trans_1850-2000</value>
       <value compset="_DATM%CPLHIST">cplhist</value>
+      <value compset="_DATM%CFSv2">none</value>
+      <value compset="_DATM%CFSR">none</value>
       <value compset="_DATM.*_DICE.*_DOCN.*_DROF">none</value>
     </values>
     <group>run_component_datm</group>
@@ -277,6 +285,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="2000.*_DATM%NLDAS2">1980</value>
       <value compset="2010.*_DATM%NLDAS2">2005</value>
       <value compset="2003.*_DATM%NLDAS2">2002</value>
+      <value compset="2000_DATM%JRA">1958</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -319,6 +328,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value   compset="2000.*_DATM%NLDAS2">2018</value>
       <value   compset="2010.*_DATM%NLDAS2">2014</value>
       <value   compset="2003.*_DATM%NLDAS2">2003</value>
+      <value   compset="2000_DATM%JRA">2016</value>
+      <value   compset="2000_DATM%JRA-1p5">2020</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>

@@ -1,0 +1,5 @@
+use_snicar_ad                 = .true.
+use_dust_snow_internal_mixing = .true.
+snow_shape                    = 'koch_snowflake'
+snicar_atm_type		      = 'mid-latitude_winter'
+fsnowoptics                   = '$DIN_LOC_ROOT/lnd/clm2/snicardata/snicar_optics_5bnd_mam_c211006.nc'

@@ -1,7 +1,7 @@
 #include "advect_scalar.h"
 
 void advect_scalar(real4d &f, real2d &fadv, real2d &flux) {
-  auto &ncrms = ::ncrms;
+  YAKL_SCOPE( ncrms  , ::ncrms);
 
   real4d f0("f0", nzm, dimy_s, dimx_s, ncrms);
 
@@ -39,7 +39,7 @@ void advect_scalar(real4d &f, real2d &fadv, real2d &flux) {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       real tmp = f(k,j+offy_s,i+offx_s,icrm)-f0(k,j+offy_s,i+offx_s,icrm);
       yakl::atomicAdd(fadv(k,icrm),tmp);
     });
@@ -49,7 +49,7 @@ void advect_scalar(real4d &f, real2d &fadv, real2d &flux) {
 }
 
 void advect_scalar(real5d &f, int ind_f, real2d &fadv, real2d &flux) {
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( ncrms          , :: ncrms);
 
   real4d f0("f0", nzm, dimy_s, dimx_s, ncrms);
 
@@ -87,7 +87,7 @@ void advect_scalar(real5d &f, int ind_f, real2d &fadv, real2d &flux) {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       real tmp = f(ind_f,k,j+offy_s,i+offx_s,icrm)-f0(k,j+offy_s,i+offx_s,icrm);
       yakl::atomicAdd(fadv(k,icrm),tmp);
     });
@@ -97,7 +97,7 @@ void advect_scalar(real5d &f, int ind_f, real2d &fadv, real2d &flux) {
 }
 
 void advect_scalar(real5d &f, int ind_f, real3d &fadv, int ind_fadv, real3d &flux, int ind_flux) {
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( ncrms          , :: ncrms);
 
   real4d f0("f0", nzm, dimy_s, dimx_s, ncrms);
 
@@ -134,7 +134,7 @@ void advect_scalar(real5d &f, int ind_f, real3d &fadv, int ind_fadv, real3d &flu
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       real tmp = f(ind_f,k,j+offy_s,i+offx_s,icrm)-f0(k,j+offy_s,i+offx_s,icrm);
       yakl::atomicAdd(fadv(ind_fadv,k,icrm),tmp);
     });

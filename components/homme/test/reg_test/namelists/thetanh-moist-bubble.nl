@@ -38,7 +38,7 @@
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
   hypervis_subcycle_tom = 1
   hypervis_subcycle_q = 1
-  se_ftype=2
+  se_ftype=0
   limiter_option    = 9
   planar_slice=.true.
   lx = 20000.0
@@ -60,7 +60,6 @@
   bubble_prec_type=0
 /
 &vert_nl
-  vform             = "ccm"                     ! vertical coordinate type "ccm"=hybrid pressure/terrain
   vanalytic         = 1                         ! set vcoords in initialization routine
   vtop              = 2.73919e-1                ! vertical coordinate at top of atm (z=10000m)
 /

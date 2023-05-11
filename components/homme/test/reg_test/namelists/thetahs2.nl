@@ -38,6 +38,8 @@ theta_hydrostatic_mode = false
 theta_advect_form = 1
 tstep_type        = 10
 moisture          = 'notdry'
+dp3d_thresh       = 1.0
+vtheta_thresh     = 400
 /
 &solver_nl
 precon_method = "identity"
@@ -55,7 +57,6 @@ wght_fm       = 0.10D0
 kcut_fm       = 2
 /
 &vert_nl
-vform     = "ccm"
 vfile_mid = './vcoord/${HOMME_TEST_VCOORD_MID_FILE}'
 vfile_int = './vcoord/${HOMME_TEST_VCOORD_INT_FILE}'
 /

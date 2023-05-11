@@ -24,6 +24,10 @@ public:
 
   ~GllFvRemap();
 
+  // Need this only if the object was created before the various other objects
+  // were initialized.
+  void setup();
+  
   void reset(const SimulationParams& params);
 
   int requested_buffer_size() const;
@@ -40,6 +44,9 @@ public:
                  const Real* fv_metdet, const Real* g2f_remapd, const Real* f2g_remapd,
                  const Real* D_f, const Real* Dinv_f);
 
+  // The following three routines provide dynamics-physics coupling for the
+  // atmosphere model.
+  //   Remap dynamics state to physics state.
   void run_dyn_to_fv_phys(const int time_idx,
                           // ps,phis(ie,col)
                           const Phys1T& ps, const Phys1T& phis,
@@ -48,10 +55,25 @@ public:
                           // uv(ie, col, 0 or 1, lev)
                           const Phys3T& uv, 
                           // q(ie,col,idx,lev)
-                          const Phys3T& q);
+                          const Phys3T& q,
+                          // Optionally return dp
+                          const Phys2T* dp = nullptr);
+  //   Remap physics state and tendencies to dynamics state and tendencies.
   void run_fv_phys_to_dyn(const int time_idx, const CPhys2T& T, const CPhys3T& uv,
                           const CPhys3T& q);
+  //   DSS the remapped dynamics tendencies and state. Call this after
+  //   run_fv_phys_to_dyn if the dynamics-physics coupler does not already
+  //   provide it.
   void run_fv_phys_to_dyn_dss();
+
+  // Remap nq tracers, with nq <= qsize. This is a convenience routine for use
+  // in, e.g., model initialization; it is not a core part of the API for the
+  // dynamics-physics coupler. time_idx is used to access dp-related data.
+  void remap_tracer_dyn_to_fv_phys(const int time_idx, const int nq,
+                                   // q_dyn,fv(ie,col,idx,lev), idx = 0:nq-1
+                                   //   dyn: col = 0:np^2-1
+                                   //    fv: col = 0:nf^2-1
+                                   const CPhys3T& q_dyn, const Phys3T& q_fv);
 
 private:
   std::unique_ptr<GllFvRemapImpl> m_impl;

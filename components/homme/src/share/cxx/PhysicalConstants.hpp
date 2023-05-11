@@ -27,6 +27,7 @@ namespace PhysicalConstants
 
   constexpr Real Tref          = 288;
 
+  constexpr Real Tref_lapse_rate = 0.0065;
 };
 
 } // namespace Homme

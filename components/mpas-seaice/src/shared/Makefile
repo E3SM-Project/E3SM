@@ -12,6 +12,8 @@ OBJS = 	mpas_seaice_time_integration.o \
 	mpas_seaice_velocity_solver_pwl.o \
 	mpas_seaice_velocity_solver_variational_shared.o \
 	mpas_seaice_velocity_solver_constitutive_relation.o \
+	mpas_seaice_wachspress_basis.o \
+	mpas_seaice_triangle_quadrature.o \
 	mpas_seaice_forcing.o \
 	mpas_seaice_initialize.o \
 	mpas_seaice_testing.o \
@@ -48,15 +50,19 @@ mpas_seaice_velocity_solver_constitutive_relation.o: mpas_seaice_constants.o mpa
 
 mpas_seaice_forcing.o: mpas_seaice_constants.o mpas_seaice_mesh.o
 
-mpas_seaice_velocity_solver_weak.o: mpas_seaice_constants.o mpas_seaice_testing.o mpas_seaice_velocity_solver_constitutive_relation.o
+mpas_seaice_wachspress_basis.o: mpas_seaice_mesh.o
+
+mpas_seaice_triangle_quadrature.o:
+
+mpas_seaice_velocity_solver_weak.o: mpas_seaice_constants.o mpas_seaice_testing.o mpas_seaice_velocity_solver_constitutive_relation.o mpas_seaice_mesh_pool.o
 
 mpas_seaice_velocity_solver_variational_shared.o: mpas_seaice_constants.o
 
-mpas_seaice_velocity_solver_wachspress.o: mpas_seaice_constants.o mpas_seaice_numerics.o mpas_seaice_mesh.o mpas_seaice_testing.o mpas_seaice_velocity_solver_variational_shared.o
+mpas_seaice_velocity_solver_wachspress.o: mpas_seaice_constants.o mpas_seaice_numerics.o mpas_seaice_mesh.o mpas_seaice_testing.o mpas_seaice_velocity_solver_variational_shared.o mpas_seaice_wachspress_basis.o mpas_seaice_triangle_quadrature.o
 
 mpas_seaice_velocity_solver_pwl.o: mpas_seaice_constants.o mpas_seaice_numerics.o mpas_seaice_mesh.o mpas_seaice_testing.o mpas_seaice_velocity_solver_variational_shared.o
 
-mpas_seaice_velocity_solver_variational.o: mpas_seaice_constants.o mpas_seaice_velocity_solver_constitutive_relation.o mpas_seaice_velocity_solver_wachspress.o mpas_seaice_velocity_solver_pwl.o mpas_seaice_mesh_pool.o
+mpas_seaice_velocity_solver_variational.o: mpas_seaice_constants.o mpas_seaice_velocity_solver_constitutive_relation.o mpas_seaice_velocity_solver_wachspress.o mpas_seaice_velocity_solver_pwl.o mpas_seaice_mesh_pool.o mpas_seaice_mesh.o
 
 mpas_seaice_velocity_solver.o: mpas_seaice_constants.o mpas_seaice_mesh.o mpas_seaice_testing.o mpas_seaice_velocity_solver_weak.o mpas_seaice_velocity_solver_constitutive_relation.o mpas_seaice_velocity_solver_variational.o mpas_seaice_diagnostics.o mpas_seaice_mesh_pool.o mpas_seaice_special_boundaries.o
 

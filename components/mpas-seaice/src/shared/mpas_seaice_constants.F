@@ -24,7 +24,9 @@ module seaice_constants
        emissivity, &
        Tffresh, &
        cp_air, &
+       cp_ocn, &
        Lsub, &
+       Lvap, &
        Lfresh, &
        Pstar, &
        Cstar, &
@@ -34,7 +36,9 @@ module seaice_constants
        vonkar, &
        iceruf, &
        zref, &
-       sk_l
+       ice_ref_salinity, &
+       sk_l, &
+       R_gC2molC
 
   private
   save
@@ -72,12 +76,15 @@ module seaice_constants
        seaiceIceSnowEmissivity        = emissivity, &       ! emissivity of snow and ice
        seaiceFreshWaterFreezingPoint  = Tffresh, &          ! freezing temp of fresh ice (K)
        seaiceAirSpecificHeat          = cp_air, &           ! specific heat of air (J/kg/K)
+       seaiceSeaWaterSpecificHeat     = cp_ocn, &           ! specific heat of ocn (J/kg/K)
        seaiceLatentHeatSublimation    = Lsub, &             ! latent heat, sublimation freshwater (J/kg)
+       seaiceLatentHeatVaporization   = Lvap, &             ! latent heat, vaporization freshwater (J/kg)
        seaiceLatentHeatMelting        = Lfresh, &           ! latent heat of melting of fresh ice (J/kg)
        seaiceOceanAlbedo              = albocn, &           ! Ocean albedo
        seaiceVonKarmanConstant        = vonkar, &           ! Von Karman constant
        seaiceIceSurfaceRoughness      = iceruf, &           ! ice surface roughness (m)
-       seaiceStabilityReferenceHeight = zref ! stability reference height (m)
+       seaiceStabilityReferenceHeight = zref, &             ! stability reference height (m)
+       seaiceReferenceSalinity        = ice_ref_salinity    ! ice reference salinity (ppt)
 
   ! dynamics constants
   real(kind=RKIND), parameter, public :: &
@@ -93,7 +100,24 @@ module seaice_constants
 
    ! biogeochemistry constants
    real(kind=RKIND), parameter, public :: &
-        skeletalLayerThickness = sk_l
+        skeletalLayerThickness = sk_l      , &
+        gramsCarbonPerMolCarbon = R_gC2molC    ! g carbon per mol carbon
 
+   ! ocean biogeochemistry ISPOL values
+   real(kind=RKIND), parameter, public :: &
+         oceanAmmoniumISPOL        = 1.0_RKIND, & ! mmol N m-3
+         oceanDMSISPOL             = 0.1_RKIND, & ! mmol S m-3
+         oceanDMSPISPOL            = 0.1_RKIND, & ! mmol S m-3
+         oceanDiatomsISPOL         = 1.0_RKIND, & ! mmol N m-3
+         oceanSmallAlgaeISPOL      = 0.0057_RKIND, & ! mmol N m-3
+         oceanPhaeocystisISPOL     = 0.0027_RKIND, & ! mmol N m-3
+         oceanPolysaccharidsISPOL  = 16.2_RKIND, & ! mmol C m-3
+         oceanLipidsISPOL          = 9.0_RKIND, & ! mmol C m-3
+         oceanProteinsCarbonISPOL  = 9.0_RKIND, & ! mmol C m-3
+         oceanDICISPOL             = 1.0_RKIND, & ! mmol C m-3
+         oceanProteinsISPOL        = 12.9_RKIND, & ! mmol N m-3
+         oceanDissolvedIronISPOL   = 0.4_RKIND, & ! mmol Fe m-3
+         oceanParticulateIronISPOL = 2.0_RKIND,& ! mmol Fe m-3
+         oceanHumicsISPOL          = 1.0_RKIND ! mmol C m-3
 
 end module seaice_constants

@@ -17,7 +17,7 @@
           An abbreviation of the fortran declaration for the variable.
       Valid declarations are:
 
-          char*n  
+          char*n
           integer
           logical
           real
@@ -31,7 +31,7 @@
      input_pathname
           Only include this attribute to indicate that the variable
           contains the pathname of an input dataset that resides in the
-          CESM inputdata directory tree.  
+          CESM inputdata directory tree.
 
       The recognized values are "abs" to indicate that an absolute
           pathname is required, or "rel:var_name" to indicate that the
@@ -159,6 +159,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_zero_sfcMassBalApplied_over_bare_land" type="logical"
+	category="advection" group="advection">
+Mask to zero out sfcMassBalApplied in regions where there is no ice at the timestep.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- solidearth -->
 
@@ -166,7 +174,31 @@ Default: Defined in namelist_defaults.xml
 	category="solidearth" group="solidearth">
 Selection of the method for bedrock uplift calculation.
 
-Valid values: 'none', 'data'
+Valid values: 'none', 'data', 'sealevelmodel'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_slm_coupling_interval" type="char*1024"
+	category="solidearth" group="solidearth">
+Time interval at which the sea-level model is called by MALI. The interval has to be an even multiple of the option 'config_adaptive_timestep_force_interval
+
+Valid values: Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_MALI_to_SLM_weights_file" type="char*1024"
+	category="solidearth" group="solidearth">
+File containing the interpolation weights for regridding from MPAS mesh to the Gaussian grid used by the Sea Level Model.
+
+Valid values: Any file name string
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SLM_to_MALI_weights_file" type="char*1024"
+	category="solidearth" group="solidearth">
+File containing the interpolation weights for regridding from the Gaussian grid used by the Sea Level Model to the MPAS mesh.
+
+Valid values: Any file name string
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -175,9 +207,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_calving" type="char*1024"
 	category="calving" group="calving">
-Selection of the method for calving ice (as defined below).
+Selection of the method for calving ice (as defined below). 'von_Mises_stress' and 'eigencalving' options can be used in combination with damage threshold calving (see descrption of config_damage_calving_method for details).
 
-Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'mask', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving'
+Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'mask', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving', 'ismip6_retreat'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -301,6 +333,22 @@ Valid values: Any positive real value
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_grounded_von_Mises_threshold_stress_source" type="char*1024"
+	category="calving" group="calving">
+Source of von MIses threshold stress value for calving from grounded ice.
+
+Valid values: 'data' (read from input file), 'scalar' (specified by config_grounded_von_Mises_threshold_stress)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_floating_von_Mises_threshold_stress_source" type="char*1024"
+	category="calving" group="calving">
+Source of von MIses threshold stress value for calving from floating ice.
+
+Valid values: 'data' (read from input file), 'scalar' (specified by config_floating_von_Mises_threshold_stress)
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_finalize_damage_after_advection" type="logical"
 	category="calving" group="calving">
 If true, then the 'li_finalize_damage_after_advection' subroutine is applied, doing the following: 1) set the value of damage at the grounding line based on the choice of 'config_damage_gl_setting', 2) reset the value of damage to its initial value (to avoid healing), based on choice of 'config_preserve_damage', 3) couple the updated damage value to the rheology if 'config_damage_rheology_coupling' is true.
@@ -367,9 +415,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_damage_calving_method" type="char*1024"
 	category="calving" group="calving">
-Selection of the method for damage calving. For 'threshold', ice with damage above the value specified by 'config_damage_calving_threshold' will be removed (currently, only if this ice is also AT a marine margin, but eventually this will be expanded to also include any ice at the threshold adjacent to cells at the marine margin). For 'calving_rate', a rate of calving is specified as proportional to the damage value above some threshold, with the constant of proportionality specified by 'config_damagecalvingParameter' and the threshold defined by config_damage_calving_threshold.
+Selection of the method for damage calving. For 'threshold', ice with damage above the value specified by 'config_damage_calving_threshold' will be removed if it is connected to the marine margin. The 'threshold' option can be combined with config_calving = 'von_Mises_stress' and config_calving = 'eigencalving'. For 'calving_rate', a rate of calving is specified as proportional to the damage value above some threshold, with the constant of proportionality specified by 'config_damagecalvingParameter' and the threshold defined by config_damage_calving_threshold. The 'calving_rate' option cannot currently be combined with other calving routines, and requires config_calving = 'damagecalving'.
 
-Valid values: 'calving_rate', 'threshold'
+Valid values: 'calving_rate', 'threshold', 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -378,6 +426,30 @@ Default: Defined in namelist_defaults.xml
 A scalar parameter that specifies a calving rate as proportional to the value of damage above some threshold value when using the 'calving_rate' method for the 'config_damage_calving_method' option (with the threshold damage value specified by 'config_damage_calving_threshold').
 
 Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ismip6_retreat_k" type="real"
+	category="calving" group="calving">
+Coefficient for ISMIP6 retreat parameterization from Slater et al. (2019)
+
+Valid values: any negative real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_calving_error_threshold" type="real"
+	category="calving" group="calving">
+Fraction of total volume intended to be ablated remaining before an error is triggered.
+
+Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_distribute_unablatedVolumeDynCell" type="logical"
+	category="calving" group="calving">
+If true, then distribute unablatedVolumeDynCell among dynamic neighbors when converting ablation velocity to ablation thickness. This should only be used as a clean-up measure, while limiting the timestep based on ablation velocity should be used as the primary method of getting accurate ablation thickness from ablation velocity.  If you choose to set config_adaptive_timestep_calvingCFL_fraction much larger than 1.0 (which is not recommended), setting this option to true usually results in more accurate calving behavior. 
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -771,15 +843,31 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_adaptive_timestep_CFL_fraction" type="real"
 	category="time_integration" group="time_integration">
-A multiplier on the minimum allowable time step calculated from the CFL condition. (Setting to 1.0 may be unstable, so smaller values are recommended.)
+A multiplier on the minimum allowable time step calculated from the advective CFL condition. (Setting to 1.0 may be unstable, so smaller values are recommended.)  Note that 'advective' is not in the name.  This is for backwards compatibility
 
 Valid values: Any positive real value less than 1.0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_adaptive_timestep_calvingCFL_fraction" type="real"
+	category="time_integration" group="time_integration">
+A multiplier on the minimum allowable time step calculated from the calving CFL condition. This should be conservative given the calving CFL calculation is lagged
+
+Valid values: Any positive real value.  Note that values greater than 1.0 are allowed and may be desired.  This is because the calving CFL is an approximate calculation.  A value between 0.75 and 1.0, possibly as large as 1.25, was found to maintain converged accuracy for many configurations explored, so it is recommended to use values in this range.  However, much larger values (up to 2 or 3) provide acceptable accuracy for some configurations (but it is not clear what conditions allow it).  If values much greater than 1.0 are used, it is recommended to set config_distribute_unablatedVolumeDynCell to true.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_adaptive_timestep_include_DCFL" type="logical"
 	category="time_integration" group="time_integration">
 Option of whether to include the diffusive CFL condition in the determination of the maximum allowable timestep. The diffusive CFL condition at any location is estimated based on the local ice flux and surface slope.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_adaptive_timestep_include_calving" type="logical"
+	category="time_integration" group="time_integration">
+Option of whether to include the calving CFL condition in the determination of the maximum allowable timestep. This only is applied if config_calving is set to a method that uses a calvingVelocity.  Note that this is an approximate CFL condition and is lagged a timestep.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -840,7 +928,7 @@ Default: Defined in namelist_defaults.xml
 	category="time_management" group="time_management">
 Selection of the type of calendar that should be used in the simulation.
 
-Valid values: 'gregorian', 'gregorian_noleap'
+Valid values: 'gregorian', 'noleap'
 Default: Defined in namelist_defaults.xml
 </entry>
 

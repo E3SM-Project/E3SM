@@ -48,6 +48,7 @@ module cloud_fraction
   real(r8) :: cldfrc_premit = unset_r8    ! top pressure bound for mid level cloud
   real(r8) :: cldfrc_premib  = unset_r8   ! bottom pressure bound for mid level cloud
   integer  :: cldfrc_iceopt               ! option for ice cloud closure
+  real(r8) :: cldfrc_minice = unset_r8    ! minimum grid box avg ice for having a 'cloud'
                                           ! 1=wang & sassen 2=schiller (iciwc)
                                           ! 3=wood & field, 4=Wilson (based on smith)
   real(r8) :: cldfrc_icecrit = unset_r8   ! Critical RH for ice clouds in Wilson & Ballard closure (smaller = more ice clouds)
@@ -60,6 +61,7 @@ module cloud_fraction
   real(r8) :: premit             ! set from namelist input cldfrc_premit
   real(r8) :: premib             ! set from namelist input cldfrc_premib
   integer  :: iceopt             ! set from namelist input cldfrc_iceopt
+  real(r8) :: minice             ! set from namelist input cldfrc_minice
   real(r8) :: icecrit            ! set from namelist input cldfrc_icecrit
 
   ! constants
@@ -93,7 +95,7 @@ subroutine cldfrc_readnl(nlfile)
                         cldfrc_rhminl_adj_land, cldfrc_rhminh, cldfrc_sh1,    &
                         cldfrc_sh2,             cldfrc_dp1,    cldfrc_dp2,    &
                         cldfrc_premit,          cldfrc_premib, cldfrc_iceopt, &
-                        cldfrc_icecrit
+                        cldfrc_icecrit,         cldfrc_minice
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -120,6 +122,7 @@ subroutine cldfrc_readnl(nlfile)
       premit = cldfrc_premit
       premib  = cldfrc_premib
       iceopt  = cldfrc_iceopt
+      minice  = cldfrc_minice
       icecrit = cldfrc_icecrit
 
    end if
@@ -138,6 +141,7 @@ subroutine cldfrc_readnl(nlfile)
    call mpibcast(premit,            1, mpir8,  0, mpicom)
    call mpibcast(premib,            1, mpir8,  0, mpicom)
    call mpibcast(iceopt,            1, mpiint, 0, mpicom)
+   call mpibcast(minice,            1, mpir8,  0, mpicom)
    call mpibcast(icecrit,           1, mpir8,  0, mpicom)
 #endif
 
@@ -161,7 +165,7 @@ end subroutine cldfrc_register
 !================================================================================================
 
 subroutine cldfrc_getparams(rhminl_out, rhminl_adj_land_out, rhminh_out,  premit_out, &
-                            premib_out, iceopt_out,          icecrit_out)
+                            premib_out, iceopt_out,          icecrit_out, minice_out)
 !-----------------------------------------------------------------------
 ! Purpose: Return cldfrc tuning parameters
 !-----------------------------------------------------------------------
@@ -173,6 +177,7 @@ subroutine cldfrc_getparams(rhminl_out, rhminl_adj_land_out, rhminh_out,  premit
    real(r8),          intent(out), optional :: premib_out
    integer,           intent(out), optional :: iceopt_out
    real(r8),          intent(out), optional :: icecrit_out
+   real(r8),          intent(out), optional :: minice_out
 
    if ( present(rhminl_out) )      rhminl_out = rhminl
    if ( present(rhminl_adj_land_out) ) rhminl_adj_land_out = rhminl_adj_land
@@ -181,6 +186,7 @@ subroutine cldfrc_getparams(rhminl_out, rhminl_adj_land_out, rhminh_out,  premit
    if ( present(premib_out) )      premib_out  = premib
    if ( present(iceopt_out) )      iceopt_out  = iceopt
    if ( present(icecrit_out) )     icecrit_out = icecrit
+   if ( present(minice_out) )      minice_out  = minice
 
 end subroutine cldfrc_getparams
 
@@ -234,7 +240,7 @@ subroutine cldfrc_init(dp1_out)
       if (shallow_scheme .ne. 'UW' ) then
          write(iulog,*)'tuning parameters cldfrc_init: rhminl',rhminl,'rhminl_adj_land',rhminl_adj_land, &
                        'rhminh',rhminh,'premit',premit,'premib',premib
-         write(iulog,*)'tuning parameters cldfrc_init: iceopt',iceopt,'icecrit',icecrit
+         write(iulog,*)'tuning parameters cldfrc_init: iceopt',iceopt,'icecrit',icecrit,'minice',minice
       endif
    endif
 

@@ -4,7 +4,7 @@ and the University Corporation for Atmospheric Research (UCAR).
 
 Unless noted otherwise source code is licensed under the BSD license.
 Additional copyright and license information can be found in the LICENSE file
-distributed with this code, or at http://mpas-dev.github.com/license.html
+distributed with this code, or at http://mpas-dev.github.io/license.html
 */
 
 // ===================================================
@@ -1712,15 +1712,23 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
 
     // apparent mass balance
     std::vector<double> appMbData(smbData.size()),
-                        appMbUncertaintyData(smbData.size());
- 
+                        appMbUncertaintyData(smbData.size()),
+                        muLogData(muFrictionData.size()),
+                        stiffnessLogData(stiffnessFactorData.size());
+
     for (int i=0; i<smbData.size(); ++i) {
       appMbData[i] = smbData[i]+bmbData[i]- observedDHDtData[i];
       //assuming fields are uncorrelated
       double variance = std::pow(smbUncertaintyData[i],2)+std::pow(bmbUncertaintyData[i],2)+std::pow(observedDHDtUncertaintyData[i],2);
       appMbUncertaintyData[i] =std::sqrt(variance);
     }
-   
+
+    //Min value for mu friction and stiffness factor to avoid NAN when taking the log
+    double minValue = 1e-8;    
+    for (int i=0; i<muFrictionData.size(); ++i)
+      muLogData[i] = std::log(std::max(muFrictionData[i],minValue));
+    for (int i=0; i<stiffnessFactorData.size(); ++i)
+      stiffnessLogData[i] = std::log(std::max(stiffnessFactorData[i],minValue));
 
     // Write out individual fields
     write_ascii_mesh_field_int(indexToCellIDData, "mpas_cellID");
@@ -1733,7 +1741,12 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     write_ascii_mesh_field(surfaceAirTemperatureData, "surface_air_temperature");
     write_ascii_mesh_field(basalHeatFluxData, "basal_heat_flux");
 
-    write_ascii_mesh_field(betaData, "basal_friction");
+    write_ascii_mesh_field(betaData, "beta");
+    write_ascii_mesh_field(muFrictionData, "mu");
+    write_ascii_mesh_field(muLogData, "mu_log");
+    
+    write_ascii_mesh_field(stiffnessFactorData, "stiffening_factor");
+    write_ascii_mesh_field(stiffnessLogData, "stiffening_factor_log");
 
     write_ascii_mesh_field(smbData, "surface_mass_balance");
     write_ascii_mesh_field(smbUncertaintyData, "surface_mass_balance_uncertainty");

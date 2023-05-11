@@ -28,7 +28,7 @@ add_default($nl, 'config_full_abort_write');
 # Namelist group: decomposition #
 #################################
 
-add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/ice/mpas-cice/${ICE_GRID}/mpas-cice.graph.info.${date_stamp}.part.'");
+add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/ice/mpas-seaice/${ICE_GRID}/mpas-seaice.graph.info.${date_stamp}.part.'");
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
@@ -109,6 +109,7 @@ add_default($nl, 'config_forcing_cycle_start');
 add_default($nl, 'config_forcing_cycle_duration');
 add_default($nl, 'config_forcing_precipitation_units');
 add_default($nl, 'config_forcing_sst_type');
+add_default($nl, 'config_forcing_bgc_type');
 add_default($nl, 'config_update_ocean_fluxes');
 add_default($nl, 'config_include_pond_freshwater_feedback');
 
@@ -118,6 +119,10 @@ add_default($nl, 'config_include_pond_freshwater_feedback');
 
 add_default($nl, 'config_use_test_ice_shelf');
 add_default($nl, 'config_testing_system_test');
+add_default($nl, 'config_use_congelation_basal_melt');
+add_default($nl, 'config_use_lateral_melt');
+add_default($nl, 'config_use_latent_processes');
+add_default($nl, 'config_limit_air_temperatures');
 
 ###################################
 # Namelist group: velocity_solver #
@@ -420,6 +425,7 @@ add_default($nl, 'config_boundary_layer_iteration_number');
 #########################
 
 add_default($nl, 'config_use_ocean_mixed_layer');
+add_default($nl, 'config_ocean_mixed_layer_type');
 add_default($nl, 'config_min_friction_velocity');
 add_default($nl, 'config_ocean_heat_transfer_type');
 add_default($nl, 'config_sea_freezing_temperature_type');
@@ -500,6 +506,16 @@ add_default($nl, 'config_AM_temperatures_output_stream');
 add_default($nl, 'config_AM_temperatures_compute_on_startup');
 add_default($nl, 'config_AM_temperatures_write_on_startup');
 
+##################################
+# Namelist group: AM_thicknesses #
+##################################
+
+add_default($nl, 'config_AM_thicknesses_enable');
+add_default($nl, 'config_AM_thicknesses_compute_interval');
+add_default($nl, 'config_AM_thicknesses_output_stream');
+add_default($nl, 'config_AM_thicknesses_compute_on_startup');
+add_default($nl, 'config_AM_thicknesses_write_on_startup');
+
 #########################################
 # Namelist group: AM_regionalStatistics #
 #########################################
@@ -532,6 +548,8 @@ add_default($nl, 'config_AM_conservationCheck_compute_on_startup');
 add_default($nl, 'config_AM_conservationCheck_write_on_startup');
 add_default($nl, 'config_AM_conservationCheck_write_to_logfile');
 add_default($nl, 'config_AM_conservationCheck_restart_stream');
+add_default($nl, 'config_AM_conservationCheck_carbon_failure_abort');
+add_default($nl, 'config_AM_conservationCheck_include_ocean');
 
 ##########################################
 # Namelist group: AM_geographicalVectors #

@@ -2,16 +2,16 @@
 #include "shear_prod2D.h"
 
 void shear_prod2D(real4d &def2) {
-  auto &dx             = :: dx;
-  auto &dz             = :: dz;
-  auto &adz            = :: adz;
-  auto &adzw           = :: adzw;
-  auto &u              = :: u;
-  auto &v              = :: v;
-  auto &w              = :: w;
-  auto &u0             = :: u0;
-  auto &v0             = :: v0;
-  auto &ncrms          = :: ncrms;
+  YAKL_SCOPE( dx             , :: dx );
+  YAKL_SCOPE( dz             , :: dz );
+  YAKL_SCOPE( adz            , :: adz );
+  YAKL_SCOPE( adzw           , :: adzw );
+  YAKL_SCOPE( u              , :: u );
+  YAKL_SCOPE( v              , :: v );
+  YAKL_SCOPE( w              , :: w );
+  YAKL_SCOPE( u0             , :: u0 );
+  YAKL_SCOPE( v0             , :: v0 );
+  YAKL_SCOPE( ncrms          , :: ncrms );
 
   // for (int k=0; k<nzm; k++) {
   //    for (int i=0; i<nx; i++) {

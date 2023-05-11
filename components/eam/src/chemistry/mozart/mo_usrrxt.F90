@@ -9,7 +9,7 @@ module mo_usrrxt
   implicit none
 
   private
-  public :: usrrxt, usrrxt_inti, usrrxt_hrates
+  public :: usrrxt, usrrxt_inti, usrrxt_hrates, comp_exp
 
   save
 
@@ -121,6 +121,9 @@ module mo_usrrxt
   integer :: usr_CO42_OH_ndx
 !lke--
 
+  ! chemUCI
+  integer :: ucih1_ndx, ucih2_ndx, ucih3_ndx
+
   logical :: has_aerosols
 
   real(r8), parameter :: t0     = 300._r8                ! K
@@ -162,6 +165,10 @@ contains
     usr_SO2_OH_ndx       = get_rxt_ndx( 'usr_SO2_OH' )
     usr_DMS_OH_ndx       = get_rxt_ndx( 'usr_DMS_OH' )
     usr_HO2_aer_ndx      = get_rxt_ndx( 'usr_HO2_aer' )
+    ! chemUCI
+    ucih1_ndx            = get_rxt_ndx( 'ucih1' )   ! N2O5 + ASAD (het chem)
+    ucih2_ndx            = get_rxt_ndx( 'ucih2' )   ! NO3 + ASAD
+    ucih3_ndx            = get_rxt_ndx( 'ucih3' )   ! HO2 + ASAD
  !
     tag_NO2_NO3_ndx      = get_rxt_ndx( 'tag_NO2_NO3' )
     tag_NO2_OH_ndx       = get_rxt_ndx( 'tag_NO2_OH' )
@@ -293,7 +300,8 @@ contains
        write(iulog,'(10i5)') usr_O_O2_ndx,usr_HO2_HO2_ndx,tag_NO2_NO3_ndx,usr_N2O5_M_ndx,tag_NO2_OH_ndx,usr_HNO3_OH_ndx &
                             ,tag_NO2_HO2_ndx,usr_HO2NO2_M_ndx,usr_N2O5_aer_ndx,usr_NO3_aer_ndx,usr_NO2_aer_ndx &
                             ,usr_CO_OH_b_ndx,tag_C2H4_OH_ndx,tag_C3H6_OH_ndx,tag_CH3CO3_NO2_ndx,usr_PAN_M_ndx,usr_CH3COCH3_OH_ndx &
-                            ,usr_MCO3_NO2_ndx,usr_MPAN_M_ndx,usr_XOOH_OH_ndx,usr_SO2_OH_ndx,usr_DMS_OH_ndx,usr_HO2_aer_ndx
+                            ,usr_MCO3_NO2_ndx,usr_MPAN_M_ndx,usr_XOOH_OH_ndx,usr_SO2_OH_ndx,usr_DMS_OH_ndx,usr_HO2_aer_ndx &
+                            ,ucih1_ndx,ucih2_ndx,ucih3_ndx
     end if
 
   end subroutine usrrxt_inti
@@ -434,7 +442,8 @@ contains
     dm_array(:,:,:) = 0._r8
     sad_total(:,:) = 0._r8
 
-    if( usr_NO2_aer_ndx > 0 .or. usr_NO3_aer_ndx > 0 .or. usr_N2O5_aer_ndx > 0 .or. usr_HO2_aer_ndx > 0 ) then
+    if( usr_NO2_aer_ndx > 0 .or. usr_NO3_aer_ndx > 0 .or. usr_N2O5_aer_ndx > 0 .or. usr_HO2_aer_ndx > 0 .or. &
+        ucih1_ndx > 0 .or. ucih2_ndx > 0 .or. ucih3_ndx > 0 ) then
 
        call aero_model_surfarea( &
             mmr, rm1, relhum, pmid, temp, strato_sad, &
@@ -711,7 +720,8 @@ contains
 !
 ! hydrolysis reactions on wetted aerosols
 !      
-       if( usr_NO2_aer_ndx > 0 .or. usr_NO3_aer_ndx > 0 .or. usr_N2O5_aer_ndx > 0 .or. usr_HO2_aer_ndx > 0 ) then
+       if( usr_NO2_aer_ndx > 0 .or. usr_NO3_aer_ndx > 0 .or. usr_N2O5_aer_ndx > 0 .or. usr_HO2_aer_ndx > 0 .or. &
+           ucih1_ndx > 0 .or. ucih2_ndx > 0 .or. ucih3_ndx > 0 ) then
 
           long_loop : do i = 1,ncol
 
@@ -739,6 +749,9 @@ contains
              if( usr_NO2XNO3_aer_ndx > 0 ) then
                 rxt(i,k,usr_NO2XNO3_aer_ndx) = hetrxtrate( sfc, dm_aer, dg, c_n2o5, gamma_n2o5 )
              end if
+             if( ucih1_ndx > 0 ) then
+                rxt(i,k,ucih1_ndx) = hetrxtrate( sfc, dm_aer, dg, c_n2o5, gamma_n2o5 )
+             end if
              !-------------------------------------------------------------------------
              ! 	... no3 -> hno3  (on sulfate, nh4no3, oc, soa)
              !-------------------------------------------------------------------------
@@ -747,6 +760,9 @@ contains
              end if
              if( usr_XNO3_aer_ndx > 0 ) then
                 rxt(i,k,usr_XNO3_aer_ndx) = hetrxtrate( sfc, dm_aer, dg, c_no3, gamma_no3 )
+             end if
+             if( ucih2_ndx > 0 ) then
+                rxt(i,k,ucih2_ndx) = hetrxtrate( sfc, dm_aer, dg, c_no3, gamma_no3 )
              end if
              !-------------------------------------------------------------------------
              ! 	... no2 -> 0.5 * (ho+no+hno3)  (on sulfate, nh4no3, oc2, soa)
@@ -763,6 +779,9 @@ contains
              !-------------------------------------------------------------------------
              if( usr_HO2_aer_ndx > 0 ) then
                 rxt(i,k,usr_HO2_aer_ndx) = hetrxtrate( sfc, dm_aer, dg, c_ho2, gamma_ho2 )
+             end if
+             if( ucih3_ndx > 0 ) then
+                rxt(i,k,ucih3_ndx) = hetrxtrate( sfc, dm_aer, dg, c_ho2, gamma_ho2 )
              end if
           end do long_loop
        end if

@@ -1,2 +1,0 @@
-Standard physics configuration with full snow tracers (snow grain radius, liquid content, ice content, and effective density) plus wind redistribution.
-Requires new input file snicar_drdt_bst_fit_60_c070416.nc

@@ -285,14 +285,14 @@ contains
 !-------------------------------------------------------------------------------------
     ! constants:
     elm_idata%bgc%ndecomp_pools          = ndecomp_pools
-    elm_idata%bgc%decomp_pool_name(:)    = decomp_pool_name(:)
-    elm_idata%bgc%floating_cn_ratio(:)   = floating_cn_ratio(:)
-    elm_idata%bgc%floating_cp_ratio(:)   = floating_cp_ratio(:)
+    elm_idata%bgc%decomp_pool_name(1:ndecomp_pools)    = decomp_pool_name(1:ndecomp_pools)
+    elm_idata%bgc%floating_cn_ratio(1:ndecomp_pools)   = floating_cn_ratio(1:ndecomp_pools)
+    elm_idata%bgc%floating_cp_ratio(1:ndecomp_pools)   = floating_cp_ratio(1:ndecomp_pools)
 
-    elm_idata%bgc%initial_cn_ratio(:)    = initial_cn_ratio(:)
-    elm_idata%bgc%initial_cp_ratio(:)    = initial_cp_ratio(:)
-    elm_idata%bgc%decomp_k_pools(:)      = decomp_k_pools(1:ndecomp_pools)
-    elm_idata%bgc%adfactor_kd_pools(:)   = adfactor_kd_pools(1:ndecomp_pools)
+    elm_idata%bgc%initial_cn_ratio(0:ndecomp_pools)    = initial_cn_ratio(0:ndecomp_pools)
+    elm_idata%bgc%initial_cp_ratio(0:ndecomp_pools)    = initial_cp_ratio(0:ndecomp_pools)
+    elm_idata%bgc%decomp_k_pools(1:ndecomp_pools)      = decomp_k_pools(1:ndecomp_pools)
+    elm_idata%bgc%adfactor_kd_pools(1:ndecomp_pools)   = adfactor_kd_pools(1:ndecomp_pools)
 
     do fc = 1, num_soilc
         c = filter_soilc(fc)

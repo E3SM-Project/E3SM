@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+
+"""
+Dump the SCREAM-approved environment setup commands for a machine.
+This can be used with a bash function or the source_to_load_scream_env.sh
+script to conveniently load the SCREAM-approved env into your current shell.
+"""
+
+from utils import check_minimum_python_version
+check_minimum_python_version(3, 4)
+
+from machines_specs import get_mach_env_setup_command
+
+import argparse, sys, pathlib
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <MACH>
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Get the scream env for mappy \033[0m
+    > {0} mappy
+
+    \033[1;32m# Get the scream env for mappy and load it into env for current shell \033[0m
+    > eval $({0} mappy)
+
+    \033[1;32m# Encapsulate this in a bash function for maximum convenience \033[0m
+    load_scream () {{ eval $({0} mappy); }}
+    > load_scream
+
+    \033[1;32m# A more-flexible bash function \033[0m
+    load_scream () {{ eval $({0} $1); }}
+    > load_scream mappy
+
+    \033[1;32m# Use the provided shell script to load env \033[0m
+    > SCREAM_MACHINE=mappy . scream/scripts/source_to_load_scream_env.sh
+
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("mach", help="The machine name for which you want the scream env")
+
+    return parser.parse_args(args[1:])
+
+###############################################################################
+def dump_scream_env(mach):
+###############################################################################
+    commands = get_mach_env_setup_command(mach)
+    print(" && ".join(commands))
+    print("\n".join(commands), file=sys.stderr)
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    dump_scream_env(**vars(parse_command_line(sys.argv, description)))
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

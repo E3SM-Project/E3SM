@@ -11,7 +11,6 @@ test_case         = 'swtc1'
 ne                = 10
 ndays             = 12
 statefreq         = 180
-tasknum           = 0
 restartfreq       = -1
 restartfile       = "./restart/R000000050"
 runtype           = 0

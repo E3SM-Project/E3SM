@@ -1,0 +1,14 @@
+#!/bin/bash
+
+ ./xmlchange --append CAM_CONFIG_OPTS='-cosp'
+ 
+ INPUTDATA_ROOT=`./xmlquery --value DIN_LOC_ROOT`
+ 
+ ./xmlchange RUN_TYPE="hybrid"
+ ./xmlchange GET_REFCASE="TRUE"
+ ./xmlchange RUN_REFCASE="v2.LR.historical_0101"
+ ./xmlchange RUN_REFDATE="2015-01-01"
+ ./xmlchange RUN_REFDIR=${INPUTDATA_ROOT}"/e3sm_init/V2.SSP370_SSP585.ne30pg2_EC30to60E2r2/v2.LR.historical_0101/2015-01-01-00000"
+
+ exit
+

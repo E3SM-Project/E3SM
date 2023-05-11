@@ -54,6 +54,8 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
   type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
   type(timelevel_t),  intent(in)            :: tl                       ! time level sctructure
   integer,            intent(in)            :: nets,nete                ! start, end element index
+
+  integer :: ie
  
 !which ones are with forcing????
 
@@ -155,6 +157,12 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
 
     endselect
 !  endif
+
+    if (midpoint_eta_dot_dpdn) then
+       do ie = nets,nete
+          elem(ie)%derived%eta_dot_dpdn = 0
+       end do
+    end if
 end subroutine
 
 !_______________________________________________________________________

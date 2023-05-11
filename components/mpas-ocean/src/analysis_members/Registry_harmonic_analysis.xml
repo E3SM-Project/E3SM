@@ -1,9 +1,9 @@
 	<nml_record name="AM_harmonicAnalysis" mode="forward;analysis">
-		<nml_option name="config_AM_harmonicAnalysis_enable" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_harmonicAnalysis_enable" type="logical" default_value=".false."
 			description="If true, ocean analysis member harmonicAnalysis is called."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_harmonicAnalysis_compute_interval" type="character" default_value="output_interval" units="unitless"
+		<nml_option name="config_AM_harmonicAnalysis_compute_interval" type="character" default_value="output_interval"
 			description="Timestamp determining how often harmonic analysis computation should be performed."
 			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
@@ -15,51 +15,51 @@
 			description="Length of harmonic analysis period. The analysis begins after config_AM_harmonicAnalysis_start_delay days and ends after config_AM_harmonicAnalysis_start_delay + config_AM_harmonicAnalysis_duration days relative to the start of the original simulation, not the restart date."
 			possible_values="any positive real number"
 		/>
-		<nml_option name="config_AM_harmonicAnalysis_output_stream" type="character" default_value="harmonicAnalysisOutput" units="unitless"
+		<nml_option name="config_AM_harmonicAnalysis_output_stream" type="character" default_value="harmonicAnalysisOutput"
 			description="Name of the stream that the harmonicAnalysis analysis member should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>
-		<nml_option name="config_AM_harmonicAnalysis_restart_stream" type="character" default_value="harmonicAnalysisRestart" units="unitless"
+		<nml_option name="config_AM_harmonicAnalysis_restart_stream" type="character" default_value="harmonicAnalysisRestart"
 			description="Name of the stream that the harmonicAnalysis analysis member restart informaion should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>
-		<nml_option name="config_AM_harmonicAnalysis_compute_on_startup" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_harmonicAnalysis_compute_on_startup" type="logical" default_value=".false."
 			description="Logical flag determining if an analysis member computation occurs on start-up."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_harmonicAnalysis_write_on_startup" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_harmonicAnalysis_write_on_startup" type="logical" default_value=".false."
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_harmonicAnalysis_use_M2" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_harmonicAnalysis_use_M2" type="logical" default_value=".true."
 			description="Controls if M2 constituent is used in harmonic analysis"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_harmonicAnalysis_use_S2" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_harmonicAnalysis_use_S2" type="logical" default_value=".true."
 			description="Controls if S2 constituent is used in harmonic analysis"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_harmonicAnalysis_use_N2" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_harmonicAnalysis_use_N2" type="logical" default_value=".true."
 			description="Controls if N2 constituent is used in harmonic analysis"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_harmonicAnalysis_use_K2" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_harmonicAnalysis_use_K2" type="logical" default_value=".true."
 			description="Controls if K2 constituent is used in harmonic analysis"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_harmonicAnalysis_use_K1" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_harmonicAnalysis_use_K1" type="logical" default_value=".true."
 			description="Controls if K1 constituent is used in harmonic analysis"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_harmonicAnalysis_use_O1" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_harmonicAnalysis_use_O1" type="logical" default_value=".true."
 			description="Controls if O1 constituent is used in harmonic analysis"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_harmonicAnalysis_use_Q1" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_harmonicAnalysis_use_Q1" type="logical" default_value=".true."
 			description="Controls if Q1 constituent is used in harmonic analysis"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_harmonicAnalysis_use_P1" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_harmonicAnalysis_use_P1" type="logical" default_value=".true."
 			description="Controls if P1 constituent is used in harmonic analysis"
 			possible_values=".true. or .false."
 		/>
@@ -68,7 +68,7 @@
 		<package name="harmonicAnalysisAMPKG" description="This package includes variables required for the harmonicAnalysis analysis member."/>
 	</packages>
 	<var_struct name="harmonicAnalysisAM" time_levs="1" packages="harmonicAnalysisAMPKG">
-		<var name="nAnalysisConstituents" type="integer" dimensions="Time" units="unitless"
+		<var name="nAnalysisConstituents" type="integer" dimensions="Time"
 			description="Number of tidal constituents used in analysis"
 		/>
 		<var name="analysisConstituentFrequency" type="real" dimensions="maxTidalConstituents Time" units="rad/s"

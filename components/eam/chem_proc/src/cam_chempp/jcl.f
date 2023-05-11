@@ -51,7 +51,6 @@
 !-------------------------------------------------------
 !	... Function declarations
 !-------------------------------------------------------
-      integer    :: STRLEN
       logical    :: ISNUM
 
 !-----------------------------------------------------
@@ -130,13 +129,13 @@
 
          buff = '#! /bin/csh'
       end if
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 !-------------------------------------------------------
 !	... Check for account override
 !-------------------------------------------------------
       if( jobctl(5) /= ' ' .and. machine /= 'CRAY3' ) then
-         buff = '#QSUB -A ' // jobctl(5)(:STRLEN(jobctl(5)))
-         write(3,100) buff(:STRLEN(buff))
+         buff = '#QSUB -A ' // jobctl(5)(:LEN_TRIM(jobctl(5)))
+         write(3,100) buff(:LEN_TRIM(buff))
       end if
 !-------------------------------------------------------
 !	... "Write" the que
@@ -159,7 +158,7 @@
          else
             buff = '#QSUB -q prem'
          end if
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
 
 !-------------------------------------------------------
 !	... "Write" the cpu limit
@@ -171,7 +170,7 @@
 	          write(buff(11:12),'(i2)') MIN( cpucnt,16 )
 	       end if
 	       buff(13:) = 'cpus'
-               write(3,100) buff(:STRLEN(buff))
+               write(3,100) buff(:LEN_TRIM(buff))
                buff = ' '
             end if
          end if
@@ -179,23 +178,23 @@
 !-------------------------------------------------------
 !	... "Write" the time limit
 !-------------------------------------------------------
-         call TIMCON( jobctl(2)(:STRLEN(jobctl(2))), &
+         call TIMCON( jobctl(2)(:LEN_TRIM(jobctl(2))), &
                       time, &
                       lout )
          write(buff,'(''#QSUB -lT '',i6)') INT(time)
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
 !-------------------------------------------------------
 !	... "Write" the memory limit
 !-------------------------------------------------------
-         buff = '#QSUB -lM ' // jobctl(4)(:STRLEN(jobctl(4))) // 'Mw'
-         write(3,100) buff(:STRLEN(buff))
+         buff = '#QSUB -lM ' // jobctl(4)(:LEN_TRIM(jobctl(4))) // 'Mw'
+         write(3,100) buff(:LEN_TRIM(buff))
 
          buff = 'set echo'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'set timestamp'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'date'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
       end if
 !-------------------------------------------------------
 !	... Change to working directory
@@ -208,75 +207,75 @@
 	 end if
       else if( machine == 'RS6000' ) then
          buff = 'set echo'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'set timestamp'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'date'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
 	 buff = 'if( ! -e /usr/tmp/stacy ) then'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
 	 buff = '   mkdir /usr/tmp/stacy'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
 	 buff = 'endif'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'cd /usr/tmp/stacy'
       end if
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 !-------------------------------------------------------
 !	... "Write" the namelist inputs
 !-------------------------------------------------------
       buff = 'if ( -e ctm.dat ) then'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = '   rm ctm.dat'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = 'endif'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = 'cat > ctm.dat << ''END1'''
-      write(3,100) buff(:STRLEN(buff))
-      buff = 'ctm off-line (ver 2.0 ) : case = ' // jobctl(6)(:STRLEN(jobctl(6)))
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
+      buff = 'ctm off-line (ver 2.0 ) : case = ' // jobctl(6)(:LEN_TRIM(jobctl(6)))
+      write(3,100) buff(:LEN_TRIM(buff))
 
 !-------------------------------------------------------
 !	... "Experiment" definition
 !-------------------------------------------------------
       buff = ' &EXPDEF'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       caps = jobctl(7)
       call UPCASE( caps )
       if( caps == 'TRUE' ) then
          buff = ' NSREST = 1,'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
       end if
       if( histout(5) /= ' ' ) then
-         buff = ' WPASS = ''' // histout(5)(:STRLEN(histout(5))) // ''','
-         write(3,100) buff(:STRLEN(buff))
+         buff = ' WPASS = ''' // histout(5)(:LEN_TRIM(histout(5))) // ''','
+         write(3,100) buff(:LEN_TRIM(buff))
       end if
       if( histout(1) /= ' ' ) then
-         call TIMCON( histout(1)(:STRLEN(histout(1))), &
+         call TIMCON( histout(1)(:LEN_TRIM(histout(1))), &
                       time, &
                       lout )
          write(buff,'('' IRT = '',i5,'','')') INT( time/8.64e4 + .01 )
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
       end if
-      buff = ' CASEID = ''' // jobctl(6)(:STRLEN(jobctl(6))) // ''','
-      write(3,100) buff(:STRLEN(buff))
+      buff = ' CASEID = ''' // jobctl(6)(:LEN_TRIM(jobctl(6))) // ''','
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = ' /'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 
 !-------------------------------------------------------
 !	... "Run" definition
 !-------------------------------------------------------
       buff = ' &NEWRUN'
-      write(3,100) buff(:STRLEN(buff))
-      call TIMCON( jobctl(1)(:STRLEN(jobctl(1))), &
+      write(3,100) buff(:LEN_TRIM(buff))
+      call TIMCON( jobctl(1)(:LEN_TRIM(jobctl(1))), &
                    dtime, &
                    lout )
       write(buff,'('' DTIME = '',i5,'','')') INT(dtime)
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 !-------------------------------------------------------
 !	... Simulation duration in time steps
 !-------------------------------------------------------
-      spos = STRLEN( jobctl(3) )
+      spos = LEN_TRIM( jobctl(3) )
       char = jobctl(3)(spos:spos)
       if( ISNUM( char ) ) then
          buff = ' NESTEP = ' // jobctl(3)(:spos) // ','
@@ -286,12 +285,12 @@
                       lout )
          write(buff,'('' NESTEP = '',i5,'','')') INT( (time + .01)/dtime )
       end if
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 !-------------------------------------------------------
 !	... History tape output frequency
 !-------------------------------------------------------
       if( histout(2) /= ' ' ) then
-         spos = STRLEN( histout(2) )
+         spos = LEN_TRIM( histout(2) )
          char = histout(2)(spos:spos)
          if( char >= '0' .and. char <= '9' ) then
 	    buff = ' NNUMWT = ' // histout(2)(:spos) // ','
@@ -304,12 +303,12 @@
       else
 	 buff = ' NNUMWT = 0,'
       end if
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 !-------------------------------------------------------
 !	... Simulation printout frequency
 !-------------------------------------------------------
       if( histout(6) /= ' ' ) then
-         spos = STRLEN( histout(6) )
+         spos = LEN_TRIM( histout(6) )
          char = histout(6)(spos:spos)
          if( char >= '0' .and. char <= '9' ) then
 	    buff = ' PRFREQ = ' // histout(6)(:spos) // ','
@@ -319,186 +318,186 @@
                          lout )
             write(buff,'('' PRFREQ = '',i5,'','')') INT( (time + .01)/dtime )
 	 end if
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
       end if
 !-------------------------------------------------------
 !	... Output history tape density
 !-------------------------------------------------------
       if( histout(4) /= ' ' ) then
-	 buff = ' NDENS = ' // histout(4)(:STRLEN(histout(4))) // ','
-         write(3,100) buff(:STRLEN(buff))
+	 buff = ' NDENS = ' // histout(4)(:LEN_TRIM(histout(4))) // ','
+         write(3,100) buff(:LEN_TRIM(buff))
       end if
       if( options(10) ) then
 	 buff = ' LFIXER = .TRUE.,'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
 	 buff = ' LIMFIX = .TRUE.,'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
       end if
       if( histout(3) /= ' ' ) then
-         buff = ' STFNUM = ' // histout(3)(:STRLEN(histout(3)))
-         write(3,100) buff(:STRLEN(buff))
+         buff = ' STFNUM = ' // histout(3)(:LEN_TRIM(histout(3)))
+         write(3,100) buff(:LEN_TRIM(buff))
       end if
       buff = ' /'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 
 !-------------------------------------------------------
 !	... "Input" definition
 !-------------------------------------------------------
       buff = ' &INPUT'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       call PARSE_FLPTH( histinp(1), fname, fpth )
-      spos = STRLEN(fpth)
+      spos = LEN_TRIM(fpth)
       if( fpth(spos:spos) == '/' ) then
 	 fpth(spos:spos) = ' '
       end if
-      buff = ' MSPATH = ''' // fpth(:STRLEN(fpth)) // ''','
-      write(3,100) buff(:STRLEN(buff))
-      buff = ' MSFN = ''' // fname(:STRLEN(fname)) // ''','
-      write(3,100) buff(:STRLEN(buff))
-      spos = STRLEN(histinp(3))
+      buff = ' MSPATH = ''' // fpth(:LEN_TRIM(fpth)) // ''','
+      write(3,100) buff(:LEN_TRIM(buff))
+      buff = ' MSFN = ''' // fname(:LEN_TRIM(fname)) // ''','
+      write(3,100) buff(:LEN_TRIM(buff))
+      spos = LEN_TRIM(histinp(3))
       if( spos /= 0 ) then
          buff = ' ICFLNM = ''' // histinp(3)(:spos) // ''','
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
       end if
-      call TIMCON_D( histinp(2)(:STRLEN(histinp(2))), &
+      call TIMCON_D( histinp(2)(:LEN_TRIM(histinp(2))), &
                      days, &
                      seconds)
       call MKDATE( days, date )
       buff = ' ICDATE = ' // date // ','
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       write(buff,'('' ICSEC = '',i5,'','')') INT( seconds )
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = ' /'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 
       buff = '''END1'''
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 
       buff = ' '
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 
 !-------------------------------------------------------
 !	... Write the sim.dat file
 !-------------------------------------------------------
       buff = 'if ( -e sim.dat ) then'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = '   rm sim.dat'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = 'endif'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = 'cat > sim.dat << ''END1'''
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       CLOSE(2)
       OPEN( unit   = 2, &
             file   = 'sim.dat', &
             status = 'old' )
       do
 	 read(2,100,end=200) buff
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
       end do
 
 200   continue
       buff = '''END1'''
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 
 !-------------------------------------------------------
 !	... Write the modules file
 !-------------------------------------------------------
       if( usemods ) then
          buff = 'if ( -e ctm.mods.f ) then'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = '   rm ctm.mods.f'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'endif'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'cat > ctm.mods.f << ''END1'''
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          CLOSE(2)
          OPEN( unit   = 2, &
                file   = 'ctm.mods.f', &
                status = 'old' )
          do
 	    read(2,100,end=211) buff
-            write(3,100) buff(:STRLEN(buff))
+            write(3,100) buff(:LEN_TRIM(buff))
          end do
 211      continue
          buff = '''END1'''
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
       end if
 
 !-------------------------------------------------------
 !	... Write the main file
 !-------------------------------------------------------
       buff = 'if ( -e ctm.main.f ) then'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = '   rm ctm.main.f'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = 'endif'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = 'cat > ctm.main.f << ''END1'''
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       CLOSE(2)
       OPEN( unit   = 2, &
             file   = 'ctm.main.f', &
             status = 'old' )
       do
 	 read(2,100,end=210) buff
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
       end do
 
 210   continue
       buff = '''END1'''
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 
       if( options(7) .or. sub_cnt /= 0 ) then
 !-------------------------------------------------------
 !	... Write the subroutine file
 !-------------------------------------------------------
          buff = 'if ( -e ctm.subs.f ) then'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = '   rm ctm.subs.f'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'endif'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'cat > ctm.subs.f << ''END1'''
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          CLOSE(2)
          OPEN( unit   = 2, &
                file   = 'ctm.subs.f', &
                status = 'old' )
          do
 	    read(2,100,end=220) buff
-            write(3,100) buff(:STRLEN(buff))
+            write(3,100) buff(:LEN_TRIM(buff))
          end do
 
 220      continue
          buff = '''END1'''
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
       end if
 
 !-------------------------------------------------------
 !	... Compile the sources
 !-------------------------------------------------------
       buff = ' '
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       if( options(2) ) then
 !-------------------------------------------------------
 !	... Compile for a Cray ( not T3D )
 !-------------------------------------------------------
          buff = 'ja'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
 	 if( machine /= 'CRAY3' ) then
 	    if( usemods ) then
                buff = 'f90 -c ctm.mods.f'
-               write(3,100) buff(:STRLEN(buff))
+               write(3,100) buff(:LEN_TRIM(buff))
                buff = 'if ( $status ) then'
-               write(3,100) buff(:STRLEN(buff))
+               write(3,100) buff(:LEN_TRIM(buff))
                buff = '   echo ctm.mods.f compile failed'
-               write(3,100) buff(:STRLEN(buff))
+               write(3,100) buff(:LEN_TRIM(buff))
                buff = '   goto errexit'
-               write(3,100) buff(:STRLEN(buff))
+               write(3,100) buff(:LEN_TRIM(buff))
                buff = 'endif'
-               write(3,100) buff(:STRLEN(buff))
+               write(3,100) buff(:LEN_TRIM(buff))
 	    end if
             buff = 'f90 -c ctm.main.f'
 	 else
@@ -508,39 +507,39 @@
                buff = '/u0/cs/bin/f77 -c ctm.main.f'
 	    end if
 	 end if
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
       else if( machine == 'RS6000' ) then
          buff = 's2d ctm.main.f > Main.f'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'if ( $status ) then'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = '   echo ctm.main.f s2d failed'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = '   goto errexit'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'endif'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 's2d ctm.subs.f > Subs.f'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'if ( $status ) then'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = '   echo ctm.subs.f s2d failed'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = '   goto errexit'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'endif'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'xlf -c -O3 Main.f'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
       end if
       buff = 'if ( $status ) then'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = '   echo ctm.main.f compile failed'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = '   goto errexit'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = 'endif'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       
       if( options(7) .or. sub_cnt /= 0 ) then
 	 if( options(2) ) then
@@ -552,22 +551,22 @@
 	 else if( machine == 'RS6000' ) then
             buff = 'xlf -c -O3 Subs.f'
 	 end if
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'if ( $status ) then'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = '   echo ctm.subs.f compile failed'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = '   goto errexit'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'endif'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
       end if
 
 !-------------------------------------------------------
 !	... Form the executable
 !-------------------------------------------------------
       buff = ' '
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       if( options(2) ) then
          if( options(7) ) then
 	    if( imp_cls_cnt /= 0 .and. machine /= 'CRAY3' ) then
@@ -579,13 +578,13 @@
 	    else
 	       buff = 'segldr -f indef ctm.main.o ctm.subs.o \\ '
 	    end if
-            write(3,100) buff(:STRLEN(buff))
+            write(3,100) buff(:LEN_TRIM(buff))
 	    if( f90 ) then
 	       buff = '       -L /usr/local/lib -lncaro,hpf,mss'
 	    else
 	       buff = '       -L /lib,/usr/lib,/usr/local/lib \\'
 	    end if
-            write(3,100) buff(:STRLEN(buff))
+            write(3,100) buff(:LEN_TRIM(buff))
 	    if( machine /= 'CRAY3' ) then
 	       if( .not. f90 ) then
 	          buff = '       -l ncaro,hpf,mss -M ,s'
@@ -603,15 +602,15 @@
 	    else
 	       buff = 'segldr -f indef ctm.main.o \\'
 	    end if
-            write(3,100) buff(:STRLEN(buff))
+            write(3,100) buff(:LEN_TRIM(buff))
 	    buff = '       -L /lib,/usr/lib,/usr/local/lib,/u0/stacy/ctm/lib \\'
-            write(3,100) buff(:STRLEN(buff))
+            write(3,100) buff(:LEN_TRIM(buff))
 	    buff = '       -l ncaro,hpf,mss,ctm -M ,s'
          else
 	    buff = 'segldr -f indef ctm.main.o ctm.subs.o \\ '
-            write(3,100) buff(:STRLEN(buff))
+            write(3,100) buff(:LEN_TRIM(buff))
 	    buff = '       -L /lib,/usr/lib,/usr/local/lib,/u2/stacy/ctm/lib \\'
-            write(3,100) buff(:STRLEN(buff))
+            write(3,100) buff(:LEN_TRIM(buff))
 	    buff = '       -l ncaro,hpf,mss,ctm -M ,s'
          end if
       else if( machine == 'RS6000' ) then
@@ -619,37 +618,37 @@
             buff = 'xlf Main.o Subs.o -L/usr/local/lib -lmss -lncaru -lessl'
 	 else
             buff = 'xlf Main.o Subs.o -L /usr/lpp/pvm/lib -lpvm -lf2c \\'
-            write(3,100) buff(:STRLEN(buff))
+            write(3,100) buff(:LEN_TRIM(buff))
             buff = '                  -L/usr/local/lib -lmss -lncaru -lessl \\'
-            write(3,100) buff(:STRLEN(buff))
+            write(3,100) buff(:LEN_TRIM(buff))
             buff = '                  -bI:/usr/lpp/pvm/lib/pvme.exp'
 	 end if
       end if
       if( .not. f90 ) then
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
       end if
       buff = 'if ( $status ) then'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = '   echo segldr failed'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = '   goto errexit'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = 'endif'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 
 !-------------------------------------------------------
 !	... Execution
 !-------------------------------------------------------
       buff = ' '
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = 'if ( -e ctm.out.$$ ) then'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = '   rm ctm.out.$$'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = 'endif'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = ' '
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       if( options(2)  ) then
 	 if( cpucnt > 1 ) then
 	    buff = 'setenv NCPUS '
@@ -658,92 +657,92 @@
 	    else
 	       write(buff(14:),'(i1)') MIN( cpucnt,2 )
 	    end if
-            write(3,100) buff(:STRLEN(buff))
+            write(3,100) buff(:LEN_TRIM(buff))
             buff = ' '
          end if
       end if
       buff = 'a.out < ctm.dat > ctm.out.$$'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 
 !-------------------------------------------------------
 !	... Disperse printouts; normal termination
 !-------------------------------------------------------
       buff = ' '
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = 'rcp ctm.out.$$  \\'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       if( hostname /= 'acd' ) then
-         buff = '    ' // hostname(:STRLEN(hostname)) // '.acd.ucar.edu:rje/ctm.out.$$'
+         buff = '    ' // hostname(:LEN_TRIM(hostname)) // '.acd.ucar.edu:rje/ctm.out.$$'
       else
          buff = '         acd.ucar.edu:rje/ctm.out.$$'
       end if
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       if( options(2) ) then
 	 if( machine /= 'CRAY3' ) then
             buff = 'ja -schflt > accnting.$$'
 	 else
             buff = 'ja -scflt > accnting.$$'
 	 end if
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'rcp  accnting.$$ \\'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          if( hostname /= 'acd' ) then
-            buff = '    ' // hostname(:STRLEN(hostname)) // '.acd.ucar.edu:rje/accnting.$$'
+            buff = '    ' // hostname(:LEN_TRIM(hostname)) // '.acd.ucar.edu:rje/accnting.$$'
          else
             buff = '              acd.ucar.edu:rje/accnting.$$'
          end if
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          if( hostname /= 'acd' .and. options(9) ) then
 	    buff = 'cd $home'
-            write(3,100) buff(:STRLEN(buff))
-	    buff = 'echo "rcp /usr/tmp/O' // jobname(:STRLEN(jobname)) // ' ' // hostname(:STRLEN(hostname))  &
-                   // '.acd.ucar.edu:rje/O' // jobname(:STRLEN(jobname)) // '" | at now + 2 minute'
-            write(3,100) buff(:STRLEN(buff))
+            write(3,100) buff(:LEN_TRIM(buff))
+	    buff = 'echo "rcp /usr/tmp/O' // jobname(:LEN_TRIM(jobname)) // ' ' // hostname(:LEN_TRIM(hostname))  &
+                   // '.acd.ucar.edu:rje/O' // jobname(:LEN_TRIM(jobname)) // '" | at now + 2 minute'
+            write(3,100) buff(:LEN_TRIM(buff))
          end if
       end if
       buff = 'exit( 0 )'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 
       buff = ' '
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
 !-------------------------------------------------------
 !	... Disperse printouts; error termination
 !-------------------------------------------------------
       buff = 'errexit:'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       buff = 'rcp ctm.out.$$ \\'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       if( hostname /= 'acd' ) then
-         buff = '    ' // hostname(:STRLEN(hostname)) // '.acd.ucar.edu:rje/ctm.out.$$'
+         buff = '    ' // hostname(:LEN_TRIM(hostname)) // '.acd.ucar.edu:rje/ctm.out.$$'
       else
          buff = '         acd.ucar.edu:rje/ctm.out.$$'
       end if
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       if( options(2) ) then
 	 if( machine /= 'CRAY3' ) then
             buff = 'ja -schflt > accnting.$$'
 	 else
             buff = 'ja -scflt > accnting.$$'
 	 end if
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          buff = 'rcp  accnting.$$ \\'
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          if( hostname /= 'acd' ) then
-         buff = '    ' // hostname(:STRLEN(hostname)) // '.acd.ucar.edu:rje/accnting.$$'
+         buff = '    ' // hostname(:LEN_TRIM(hostname)) // '.acd.ucar.edu:rje/accnting.$$'
          else
             buff = '              acd.ucar.edu:rje/accnting.$$'
          end if
-         write(3,100) buff(:STRLEN(buff))
+         write(3,100) buff(:LEN_TRIM(buff))
          if( hostname /= 'acd' .and. options(9) ) then
 	    buff = 'cd $home'
-            write(3,100) buff(:STRLEN(buff))
-	    buff = 'echo "rcp /usr/tmp/O' // jobname(:STRLEN(jobname)) // ' ' // hostname(:STRLEN(hostname))  &
-                   // '.acd.ucar.edu:rje/O' // jobname(:STRLEN(jobname)) // '" | at now + 2 minute'
-            write(3,100) buff(:STRLEN(buff))
+            write(3,100) buff(:LEN_TRIM(buff))
+	    buff = 'echo "rcp /usr/tmp/O' // jobname(:LEN_TRIM(jobname)) // ' ' // hostname(:LEN_TRIM(hostname))  &
+                   // '.acd.ucar.edu:rje/O' // jobname(:LEN_TRIM(jobname)) // '" | at now + 2 minute'
+            write(3,100) buff(:LEN_TRIM(buff))
          end if
       end if
       buff = 'exit( -1 )'
-      write(3,100) buff(:STRLEN(buff))
+      write(3,100) buff(:LEN_TRIM(buff))
       CLOSE(3)
 
 100   format(a)

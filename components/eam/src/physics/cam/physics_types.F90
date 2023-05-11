@@ -7,7 +7,7 @@ module physics_types
 
   use shr_kind_mod, only: r8 => shr_kind_r8
   use ppgrid,       only: pcols, pver, psubcols
-  use constituents, only: pcnst, qmin, cnst_name
+  use constituents, only: pcnst, qmin, cnst_name, icldliq, icldice
   use geopotential, only: geopotential_t
   use physconst,    only: zvir, gravit, cpair, rair, cpairv, rairv
   use dycore,       only: dycore_is
@@ -103,7 +103,23 @@ module physics_types
           te_ini,  &! vertically integrated total (kinetic + static) energy of initial state
           te_cur,  &! vertically integrated total (kinetic + static) energy of current state
           tw_ini,  &! vertically integrated total water of initial state
-          tw_cur    ! vertically integrated total water of new state
+          tw_cur,  &! vertically integrated total water of new state
+          tc_curr,    &! vertically integrated total carbon of current state
+          tc_init,    &! vertically integrated total carbon at start of run
+          tc_mnst,    &! vertically integrated total carbon at start of month
+          tc_prev,    &! vertically integrated total carbon of previous time step
+          c_flux_sfc, &! current surface fossil fuel carbon flux
+          c_flux_air, &! current aircraft fossil fuel carbon emissions
+          c_mflx_sfc, &! monthly accumulated surface carbon flux
+          c_mflx_air, &! monthly accumulated aircraft fossil fuel carbon emissions
+          c_mflx_sff, &! monthly accumulated surface fossil fuel carbon flux
+          c_mflx_lnd, &! monthly accumulated surface land carbon flux
+          c_mflx_ocn, &! monthly accmuluated surface ocean carbon flux
+          c_iflx_sfc, &! total time integrated surface carbon flux
+          c_iflx_air, &! total time integrated aircraft carbon emissions
+          c_iflx_sff, &! total time integrated surface fossil fuel carbon flux
+          c_iflx_lnd, &! total time integrated surface land carbon flux
+          c_iflx_ocn   ! total time integrated surface ocean carbon flux
      integer :: count ! count of values with significant energy or water imbalances
      integer, dimension(:),allocatable           :: &
           latmapback, &! map from column to unique lat for that column
@@ -226,7 +242,6 @@ contains
 !
 !---------------------------Local storage-------------------------------
     integer :: i,k,m                               ! column,level,constituent indices
-    integer :: ixcldice, ixcldliq                  ! indices for CLDICE and CLDLIQ
     integer :: ixnumice, ixnumliq
     integer :: ixnumsnow, ixnumrain
     integer :: ncol                                ! number of columns
@@ -236,8 +251,7 @@ contains
 
     real(r8) :: zvirv(state%psetcols,pver)  ! Local zvir array pointer
 
-    real(r8),allocatable :: cpairv_loc(:,:,:)
-    real(r8),allocatable :: rairv_loc(:,:,:)
+    real(r8) :: rairv_loc(state%psetcols,pver)
 
     ! PERGRO limits cldliq/ice for macro/microphysics:
     character(len=24), parameter :: pergro_cldlim_names(4) = &
@@ -279,28 +293,6 @@ contains
     end if
 
     call t_startf ('physics_update_main')
-    !-----------------------------------------------------------------------
-    ! cpairv_loc and rairv_loc need to be allocated to a size which matches state and ptend
-    ! If psetcols == pcols, the cpairv is the correct size and just copy
-    ! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
-    if (state%psetcols == pcols) then
-       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-       cpairv_loc(:,:,:) = cpairv(:,:,:)
-    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
-       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-       cpairv_loc(:,:,:) = cpair
-    else
-       call endrun('physics_update_main: cpairv is not allowed to vary when subcolumns are turned on')
-    end if
-    if (state%psetcols == pcols) then
-       allocate (rairv_loc(state%psetcols,pver,begchunk:endchunk))
-       rairv_loc(:,:,:) = rairv(:,:,:)
-    else if (state%psetcols > pcols .and. all(rairv(:,:,:) == rair)) then
-       allocate(rairv_loc(state%psetcols,pver,begchunk:endchunk))
-       rairv_loc(:,:,:) = rair
-    else
-       call endrun('physics_update_main: rairv_loc is not allowed to vary when subcolumns are turned on')
-    end if
 
     !-----------------------------------------------------------------------
     call phys_getopts(state_debug_checks_out=state_debug_checks)
@@ -325,8 +317,6 @@ contains
     end if
 
    ! Update constituents, all schemes use time split q: no tendency kept
-    call cnst_get_ind('CLDICE', ixcldice, abrtf=.false.)
-    call cnst_get_ind('CLDLIQ', ixcldliq, abrtf=.false.)
     ! Check for number concentration of cloud liquid and cloud ice (if not present
     ! the indices will be set to -1)
     call cnst_get_ind('NUMICE', ixnumice, abrtf=.false.)
@@ -365,65 +355,32 @@ contains
 
     end do
 
-    !------------------------------------------------------------------------
-    ! This is a temporary fix for the large H, H2 in WACCM-X
-    ! Well, it was supposed to be temporary, but it has been here
-    ! for a while now.
-    !------------------------------------------------------------------------
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
-       call cnst_get_ind('H', ixh)
-       do k = ptend%top_level, ptend%bot_level
-          state%q(:ncol,k,ixh) = min(state%q(:ncol,k,ixh), 0.01_r8)
-       end do
-
-       call cnst_get_ind('H2', ixh2)
-       do k = ptend%top_level, ptend%bot_level
-          state%q(:ncol,k,ixh2) = min(state%q(:ncol,k,ixh2), 6.e-5_r8)
-       end do
-    endif
-
     ! Special tests for cloud liquid and ice:
     ! Enforce a minimum non-zero value.
-    if (ixcldliq > 1) then
-       if(ptend%lq(ixcldliq)) then
+    if (icldliq > 1) then
+       if(ptend%lq(icldliq)) then
 #ifdef PERGRO
           if ( any(ptend%name == pergro_cldlim_names) ) &
-               call state_cnst_min_nz(1.e-12_r8, ixcldliq, ixnumliq)
+               call state_cnst_min_nz(1.e-12_r8, icldliq, ixnumliq)
 #endif
           if ( any(ptend%name == cldlim_names) ) &
-               call state_cnst_min_nz(1.e-36_r8, ixcldliq, ixnumliq)
+               call state_cnst_min_nz(1.e-36_r8, icldliq, ixnumliq)
        end if
     end if
 
-    if (ixcldice > 1) then
-       if(ptend%lq(ixcldice)) then
+    if (icldice > 1) then
+       if(ptend%lq(icldice)) then
 #ifdef PERGRO
           if ( any(ptend%name == pergro_cldlim_names) ) &
-               call state_cnst_min_nz(1.e-12_r8, ixcldice, ixnumice)
+               call state_cnst_min_nz(1.e-12_r8, icldice, ixnumice)
 #endif
           if ( any(ptend%name == cldlim_names) ) &
-               call state_cnst_min_nz(1.e-36_r8, ixcldice, ixnumice)
+               call state_cnst_min_nz(1.e-36_r8, icldice, ixnumice)
        end if
     end if
 
-    !------------------------------------------------------------------------
-    ! Get indices for molecular weights and call WACCM-X physconst_update
-    !------------------------------------------------------------------------
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
-      call cnst_get_ind('O', ixo)
-      call cnst_get_ind('O2', ixo2)
-      call cnst_get_ind('N', ixn)             
-
-      call physconst_update(state%q, state%t, &
-              cnst_mw(ixo), cnst_mw(ixo2), cnst_mw(ixh), cnst_mw(ixn), &
-              ixo, ixo2, ixh, pcnst, state%lchnk, ncol)
-    endif
-   
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
-      zvirv(:,:) = shr_const_rwv / rairv_loc(:,:,state%lchnk) - 1._r8
-    else
-      zvirv(:,:) = zvir    
-    endif
+    zvirv(:,:) = zvir    
+    rairv_loc(:,:) = rair
 
     !-------------------------------------------------------------------------------------------
     ! Update dry static energy(moved from above for WACCM-X so updating after cpairv_loc update)
@@ -431,24 +388,24 @@ contains
     if(ptend%ls) then
        do k = ptend%top_level, ptend%bot_level
           if (present(tend)) &
-               tend%dtdt(:ncol,k) = tend%dtdt(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk)
+               tend%dtdt(:ncol,k) = tend%dtdt(:ncol,k) + ptend%s(:ncol,k)/cpair
 ! we first assume that dS is really dEn, En=enthalpy=c_p*T, then 
 ! dT = dEn/c_p, so, state%t += ds/c_p.
-          state%t(:ncol,k) = state%t(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk) * dt
+          state%t(:ncol,k) = state%t(:ncol,k) + ptend%s(:ncol,k)/cpair * dt
        end do
     end if
 
-    ! Derive new zi,zm,s if heating or water tendency not 0.
     if (ptend%ls .or. ptend%lq(1)) then
       call geopotential_t(state%lnpint, state%lnpmid  ,&
                           state%pint  , state%pmid    ,&
                           state%pdel  , state%rpdel   ,&
                           state%t     , state%q(:,:,1),&
-                          rairv_loc(:,:,state%lchnk)  , gravit, zvirv,&
+                          rairv_loc(:,:)  , gravit, zvirv,&
                           state%zi    , state%zm      ,&
                           ncol)
+
        do k = ptend%top_level, ptend%bot_level
-          state%s(:ncol,k) = state%t(:ncol,k  )*cpairv_loc(:ncol,k,state%lchnk)&
+          state%s(:ncol,k) = state%t(:ncol,k  )*cpair &
                            + gravit*state%zm(:ncol,k) + state%phis(:ncol)
        end do
     end if
@@ -458,8 +415,6 @@ contains
     ! call shr_sys_flush(iulog)
 
     if (state_debug_checks) call physics_state_check(state, ptend%name)
-
-    deallocate(cpairv_loc, rairv_loc)
 
     ! Deallocate ptend
     call physics_ptend_dealloc(ptend)
@@ -567,6 +522,38 @@ contains
          varname="state%tw_ini",    msg=msg)
     call shr_assert_in_domain(state%tw_cur(:ncol),      is_nan=.false., &
          varname="state%tw_cur",    msg=msg)
+    call shr_assert_in_domain(state%tc_curr(:ncol),      is_nan=.false., &
+         varname="state%tc_curr",    msg=msg)
+    call shr_assert_in_domain(state%tc_init(:ncol),      is_nan=.false., &
+         varname="state%tc_init",    msg=msg)
+    call shr_assert_in_domain(state%tc_mnst(:ncol),      is_nan=.false., &
+         varname="state%tc_mnst",    msg=msg)
+    call shr_assert_in_domain(state%tc_prev(:ncol),      is_nan=.false., &
+         varname="state%tc_prev",    msg=msg)
+    call shr_assert_in_domain(state%c_flux_sfc(:ncol),      is_nan=.false., &
+         varname="state%c_flux_sfc",    msg=msg)
+    call shr_assert_in_domain(state%c_flux_air(:ncol),      is_nan=.false., &
+         varname="state%c_flux_air",    msg=msg)
+    call shr_assert_in_domain(state%c_mflx_sfc(:ncol),      is_nan=.false., &
+         varname="state%c_mflx_sfc",    msg=msg)
+    call shr_assert_in_domain(state%c_mflx_air(:ncol),      is_nan=.false., &
+         varname="state%c_mflx_air",    msg=msg)
+    call shr_assert_in_domain(state%c_mflx_sff(:ncol),      is_nan=.false., &
+         varname="state%c_mflx_sff",    msg=msg)
+    call shr_assert_in_domain(state%c_mflx_lnd(:ncol),      is_nan=.false., &
+         varname="state%c_mflx_lnd",    msg=msg)
+    call shr_assert_in_domain(state%c_mflx_ocn(:ncol),      is_nan=.false., &
+         varname="state%c_mflx_ocn",    msg=msg)
+    call shr_assert_in_domain(state%c_iflx_sfc(:ncol),      is_nan=.false., &
+         varname="state%c_iflx_sfc",    msg=msg)
+    call shr_assert_in_domain(state%c_iflx_air(:ncol),      is_nan=.false., &
+         varname="state%c_iflx_air",    msg=msg)
+    call shr_assert_in_domain(state%c_iflx_sff(:ncol),      is_nan=.false., &
+         varname="state%c_iflx_sff",    msg=msg)
+    call shr_assert_in_domain(state%c_iflx_lnd(:ncol),      is_nan=.false., &
+         varname="state%c_iflx_lnd",    msg=msg)
+    call shr_assert_in_domain(state%c_iflx_ocn(:ncol),      is_nan=.false., &
+         varname="state%c_iflx_ocn",    msg=msg)
 
     ! 2-D variables (at midpoints)
     call shr_assert_in_domain(state%t(:ncol,:),         is_nan=.false., &
@@ -641,6 +628,38 @@ contains
          varname="state%tw_ini",    msg=msg)
     call shr_assert_in_domain(state%tw_cur(:ncol),      lt=posinf_r8, gt=neginf_r8, &
          varname="state%tw_cur",    msg=msg)
+    call shr_assert_in_domain(state%tc_curr(:ncol),     lt=posinf_r8, gt=neginf_r8, &
+         varname="state%tc_curr",     msg=msg)
+    call shr_assert_in_domain(state%tc_init(:ncol),     lt=posinf_r8, gt=neginf_r8, &
+         varname="state%tc_init",     msg=msg)
+    call shr_assert_in_domain(state%tc_mnst(:ncol),     lt=posinf_r8, gt=neginf_r8, &
+         varname="state%tc_mnst",     msg=msg)
+    call shr_assert_in_domain(state%tc_prev(:ncol),     lt=posinf_r8, gt=neginf_r8, &
+         varname="state%tc_prev",     msg=msg)
+    call shr_assert_in_domain(state%c_flux_sfc(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_flux_sfc",  msg=msg)
+    call shr_assert_in_domain(state%c_flux_air(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_flux_air",  msg=msg)
+    call shr_assert_in_domain(state%c_mflx_sfc(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_mflx_sfc",  msg=msg)
+    call shr_assert_in_domain(state%c_mflx_air(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_mflx_air",  msg=msg)
+    call shr_assert_in_domain(state%c_mflx_sff(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_mflx_sff",  msg=msg)
+    call shr_assert_in_domain(state%c_mflx_lnd(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_mflx_lnd",  msg=msg)
+    call shr_assert_in_domain(state%c_mflx_ocn(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_mflx_ocn",  msg=msg)
+    call shr_assert_in_domain(state%c_iflx_sfc(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_iflx_sfc",  msg=msg)
+    call shr_assert_in_domain(state%c_iflx_air(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_iflx_air",  msg=msg)
+    call shr_assert_in_domain(state%c_iflx_sff(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_iflx_sff",  msg=msg)
+    call shr_assert_in_domain(state%c_iflx_lnd(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_iflx_lnd",  msg=msg)
+    call shr_assert_in_domain(state%c_iflx_ocn(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+         varname="state%c_iflx_ocn",  msg=msg)
 
     ! 2-D variables (at midpoints)
     call shr_assert_in_domain(state%t(:ncol,:),         lt=posinf_r8, gt=0._r8, &
@@ -1259,24 +1278,6 @@ end subroutine physics_ptend_copy
        state%rpdel (:ncol,k  ) = 1._r8/ state%pdel(:ncol,k  )
     end do
 
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
-      zvirv(:,:) = shr_const_rwv / rairv(:,:,state%lchnk) - 1._r8
-    else
-      zvirv(:,:) = zvir    
-    endif
-
-! compute new T,z from new s,q,dp
-    if (adjust_te) then
-!!! OG with fix to total energy (removed geopotential term)
-!!! this call needs to be replaced. This code in not active, so, fixes are not
-!!! implemented.
-!       call geopotential_dse(state%lnpint, state%lnpmid, state%pint,  &
-!            state%pmid  , state%pdel    , state%rpdel,  &
-!            state%s     , state%q(:,:,1), state%phis , rairv(:,:,state%lchnk), &
-!            gravit, cpairv(:,:,state%lchnk), zvirv, &
-!            state%t     , state%zi      , state%zm   , ncol)
-    end if
-
   end subroutine physics_dme_adjust
 !-----------------------------------------------------------------------
 
@@ -1319,6 +1320,22 @@ end subroutine physics_ptend_copy
        state_out%te_cur(i) = state_in%te_cur(i) 
        state_out%tw_ini(i) = state_in%tw_ini(i) 
        state_out%tw_cur(i) = state_in%tw_cur(i) 
+       state_out%tc_curr(i)    = state_in%tc_curr(i)
+       state_out%tc_init(i)    = state_in%tc_init(i)
+       state_out%tc_mnst(i)    = state_in%tc_mnst(i)
+       state_out%tc_prev(i)    = state_in%tc_prev(i)
+       state_out%c_flux_sfc(i) = state_in%c_flux_sfc(i)
+       state_out%c_flux_air(i) = state_in%c_flux_air(i)
+       state_out%c_mflx_sfc(i) = state_in%c_mflx_sfc(i)
+       state_out%c_mflx_air(i) = state_in%c_mflx_air(i)
+       state_out%c_mflx_sff(i) = state_in%c_mflx_sff(i)
+       state_out%c_mflx_lnd(i) = state_in%c_mflx_lnd(i)
+       state_out%c_mflx_ocn(i) = state_in%c_mflx_ocn(i)
+       state_out%c_iflx_sfc(i) = state_in%c_iflx_sfc(i)
+       state_out%c_iflx_air(i) = state_in%c_iflx_air(i)
+       state_out%c_iflx_sff(i) = state_in%c_iflx_sff(i)
+       state_out%c_iflx_lnd(i) = state_in%c_iflx_lnd(i)
+       state_out%c_iflx_ocn(i) = state_in%c_iflx_ocn(i)
     end do
 
     do k = 1, pver
@@ -1651,6 +1668,54 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   allocate(state%tw_cur(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tw_cur')
   
+  allocate(state%tc_curr(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tc_curr')
+
+  allocate(state%tc_init(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tc_init')
+
+  allocate(state%tc_mnst(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tc_mnst')
+
+  allocate(state%tc_prev(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tc_prev')
+
+  allocate(state%c_flux_sfc(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_flux_sfc')
+
+  allocate(state%c_flux_air(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_flux_air')
+
+  allocate(state%c_mflx_sfc(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_mflx_sfc')
+
+  allocate(state%c_mflx_air(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_mflx_air')
+
+  allocate(state%c_mflx_sff(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_mflx_sff')
+
+  allocate(state%c_mflx_lnd(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_mflx_lnd')
+
+  allocate(state%c_mflx_ocn(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_mflx_ocn')
+
+  allocate(state%c_iflx_sfc(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_iflx_sfc')
+
+  allocate(state%c_iflx_air(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_iflx_air')
+
+  allocate(state%c_iflx_sff(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_iflx_sff')
+
+  allocate(state%c_iflx_lnd(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_iflx_lnd')
+
+  allocate(state%c_iflx_ocn(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%c_iflx_ocn')
+  
   allocate(state%latmapback(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%latmapback')
   
@@ -1694,6 +1759,23 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   state%te_cur(:) = inf
   state%tw_ini(:) = inf
   state%tw_cur(:) = inf
+
+  state%tc_curr(:)    = inf
+  state%tc_init(:)    = inf
+  state%tc_mnst(:)    = inf
+  state%tc_prev(:)    = inf
+  state%c_flux_sfc(:) = inf
+  state%c_flux_air(:) = inf
+  state%c_mflx_sfc(:) = inf
+  state%c_mflx_air(:) = inf
+  state%c_mflx_sff(:) = inf
+  state%c_mflx_lnd(:) = inf
+  state%c_mflx_ocn(:) = inf
+  state%c_iflx_sfc(:) = inf
+  state%c_iflx_air(:) = inf
+  state%c_iflx_sff(:) = inf
+  state%c_iflx_lnd(:) = inf
+  state%c_iflx_ocn(:) = inf
 
 end subroutine physics_state_alloc
 
@@ -1801,6 +1883,54 @@ subroutine physics_state_dealloc(state)
   
   deallocate(state%tw_cur, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tw_cur')
+
+  deallocate(state%tc_curr, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tc_curr')
+
+  deallocate(state%tc_init, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tc_init')
+
+  deallocate(state%tc_mnst, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tc_mnst')
+
+  deallocate(state%tc_prev, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tc_prev')
+
+  deallocate(state%c_flux_sfc, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_flux_sfc')
+
+  deallocate(state%c_flux_air, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_flux_air')
+
+  deallocate(state%c_mflx_sfc, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_mflx_sfc')
+
+  deallocate(state%c_mflx_air, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_mflx_air')
+
+  deallocate(state%c_mflx_sff, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_mflx_sff')
+
+  deallocate(state%c_mflx_lnd, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_mflx_lnd')
+
+  deallocate(state%c_mflx_ocn, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_mflx_ocn')
+
+  deallocate(state%c_iflx_sfc, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_iflx_sfc')
+
+  deallocate(state%c_iflx_air, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_iflx_air')
+
+  deallocate(state%c_iflx_sff, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_iflx_sff')
+
+  deallocate(state%c_iflx_lnd, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_iflx_lnd')
+
+  deallocate(state%c_iflx_ocn, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%c_iflx_ocn')
   
   deallocate(state%latmapback, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%latmapback')

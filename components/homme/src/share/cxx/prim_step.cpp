@@ -19,7 +19,6 @@ namespace Homme
 void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnostics);
 void prim_advec_tracers_remap (const Real);
 void vertical_remap (const Real);
-void apply_test_forcing ();
 
 static void set_tracer_transport_derived_values (
   const SimulationParams& params, const Elements& elements, const TimeLevel& tl)
@@ -61,7 +60,7 @@ static void set_tracer_transport_derived_values (
       }
     });
   }
-  ExecSpace::impl_static_fence();
+  Kokkos::fence();
   GPTLstop("tl-s deep_copy+derived_dp");  
 }
 
@@ -123,23 +122,30 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
   Elements& elements = context.get<Elements>();
   TimeLevel& tl = context.get<TimeLevel>();
 
-  const auto dt_q = dt*params.dt_tracer_factor;
   const auto dt_remap = params.dt_remap_factor == 0 ? dt : dt*params.dt_remap_factor;
 
   tl.update_tracers_levels(params.dt_tracer_factor);
   
-  const bool forcing_0or2 = (params.ftype == ForcingAlg::FORCING_DEBUG ||
+  const bool forcing_0or2 = (params.ftype == ForcingAlg::FORCING_0 ||
                              params.ftype == ForcingAlg::FORCING_2);
   bool apply_forcing;
-#ifdef CAM
-  apply_forcing = params.ftype == ForcingAlg::FORCING_DEBUG;
+
+  const auto dt_q =        dt * params.dt_tracer_factor;
+  // In standalone HOMME, nsplit=1 always.
+  const auto dt_q_nsplit = dt * params.dt_tracer_factor * params.nsplit;
+  
+  // Decide on tracer forcing.
+#if defined(CAM) || defined(SCREAM)
+  // CAM + xx supports only ftype 0 and 2.
+  apply_forcing = (params.ftype == ForcingAlg::FORCING_0) ||
+                  (params.ftype == ForcingAlg::FORCING_2 && params.nsplit_iteration == 1);
 #else
   apply_forcing = forcing_0or2;
 #endif
 
   if (apply_forcing) {
-    // Apply tracer forcings over tracer time step.
-    apply_cam_forcing_tracers(dt_q);
+    if (params.ftype == ForcingAlg::FORCING_0) apply_cam_forcing_tracers(dt_q);
+    if (params.ftype == ForcingAlg::FORCING_2) apply_cam_forcing_tracers(dt_q_nsplit);
   }
 
   set_tracer_transport_derived_values(params, elements, tl);
@@ -189,9 +195,11 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
     context.get<Diagnostics>().run_diagnostics(false, 3);
 
   // Remap tracers.
+#ifdef HOMME_ENABLE_COMPOSE	  
   if (params.qsize > 0)
     Context::singleton().get<ComposeTransport>().remap_q(tl);
-  
+#endif
+
   GPTLstop("tl-s prim_step_flexible");
 #else
   Errors::runtime_abort("prim_step_flexible not supported in non-theta-l builds.");

@@ -18,7 +18,7 @@ module prim_advance_mod
   use control_mod,        only: dcmip16_mu, dcmip16_mu_s, hypervis_order, hypervis_subcycle,&
     integration, nu, nu_div, nu_p, nu_s, nu_top, prescribed_wind, qsplit, rsplit, test_case,&
     theta_hydrostatic_mode, tstep_type, theta_advect_form, hypervis_subcycle_tom, pgrad_correction,&
-    vtheta_thresh
+    vtheta_thresh, dp3d_thresh
   use derivative_mod,     only: derivative_t, divergence_sphere, gradient_sphere, laplace_sphere_wk,&
     laplace_z, vorticity_sphere, vlaplace_sphere_wk 
   use derivative_mod,     only: subcell_div_fluxes, subcell_dss_fluxes
@@ -40,7 +40,7 @@ module prim_advance_mod
   use reduction_mod,      only: parallelmax, reductionbuffer_ordered_1d_t
   use time_mod,           only: timelevel_qdp, timelevel_t
   use prim_state_mod,     only: prim_diag_scalars, prim_energy_halftimes
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
   use test_mod,           only: set_prescribed_wind
 #endif
   use viscosity_theta,    only: biharmonic_wk_theta
@@ -50,6 +50,10 @@ module prim_advance_mod
     use, intrinsic :: iso_c_binding
 #endif
  
+#ifdef HOMMEXX_BFB_TESTING
+  use bfb_mod,        only: cxx_log
+#endif
+
   implicit none
   private
   save
@@ -140,7 +144,7 @@ contains
             elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
     enddo
  
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     ! if "prescribed wind" set dynamics explicitly and skip time-integration
     if (prescribed_wind ==1 ) then
        call set_prescribed_wind(elem,deriv,hybrid,hvcoord,dt,tl,nets,nete,eta_ave_w)
@@ -1428,7 +1432,19 @@ contains
 
         if (pgrad_correction==1) then
            T0 = TREF-tref_lapse_rate*TREF*Cp/g     ! = 97  
+#ifdef HOMMEXX_BFB_TESTING
+           ! For BFB testing, calculate log(exner) using cxx_log()
+           ! and then call gradient sphere.
+           do j=1,np
+             do i=1,np
+               temp(i,j,k) = cxx_log(exner(i,j,k))
+             end do
+           end do
+
+           vtemp(:,:,:,k)=gradient_sphere(temp(:,:,k),deriv,elem(ie)%Dinv)
+#else
            vtemp(:,:,:,k)=gradient_sphere(log(exner(:,:,k)),deriv,elem(ie)%Dinv)
+#endif
            mgrad(:,:,1,k)=mgrad(:,:,1,k) + Cp*T0*(vtemp(:,:,1,k)-gradexner(:,:,1,k)/exner(:,:,k))
            mgrad(:,:,2,k)=mgrad(:,:,2,k) + Cp*T0*(vtemp(:,:,2,k)-gradexner(:,:,2,k)/exner(:,:,k))
         endif
@@ -1795,7 +1811,6 @@ contains
   ! local
   real (kind=real_kind) :: Qcol(nlev)
   real (kind=real_kind) :: mass,mass_new
-  real (kind=real_kind) :: dp3d_thresh=.125
   logical :: warn
   integer i,j,k
 
