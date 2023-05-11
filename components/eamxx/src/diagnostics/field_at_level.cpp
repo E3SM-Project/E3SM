@@ -8,61 +8,71 @@ namespace scream
 // =========================================================================================
 FieldAtLevel::FieldAtLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
-  , m_field_layout(m_params.get<FieldLayout>("Field Layout"))
-  , m_field_units(m_params.get<ekat::units::Units>("Field Units"))
 {
-  m_field_name  = m_params.get<std::string>("Field Name");
+  const auto& f = params.get<Field>("Field");
+  const auto& fid = f.get_header().get_identifier();
 
-  EKAT_REQUIRE_MSG (m_field_layout.rank()>1 && m_field_layout.rank()<=6,
-      "Error! Field rank not supported by FieldAtLevel.\n"
-      " - field name: " + m_field_name + "\n"
-      " - field layout: " + to_string(m_field_layout) + "\n");
+  // Sanity checks
   using namespace ShortFieldTagsNames;
-  EKAT_REQUIRE_MSG (ekat::contains(std::vector<FieldTag>{LEV,ILEV},m_field_layout.tags().back()),
+  const auto& layout = fid.get_layout();
+  EKAT_REQUIRE_MSG (layout.rank()>1 && layout.rank()<=6,
+      "Error! Field rank not supported by FieldAtLevel.\n"
+      " - field name: " + fid.name() + "\n"
+      " - field layout: " + to_string(layout) + "\n");
+  const auto tag = layout.tags().back();
+  EKAT_REQUIRE_MSG (tag==LEV || tag==ILEV,
       "Error! FieldAtLevel diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
-      " - field name  : " + m_field_name + "\n"
-      " - field layout: " + to_string(m_field_layout) + "\n");
-}
+      " - field name  : " + fid.name() + "\n"
+      " - field layout: " + to_string(layout) + "\n");
 
-// =========================================================================================
-void FieldAtLevel::set_grids(const std::shared_ptr<const GridsManager> /* grids_manager */)
-{
-  const auto& gname  = m_params.get<std::string>("Grid Name");
+  // Note: you may ask why we can't just store f and be done, rather than go through the
+  // add_field infrastructure. Unfortunately, there are some checks in the base classes
+  // that require the diagnostic to have 1+ required fields. So we have to do this.
+  // TODO: one day we may make atm diags *not* inherit from atm process...
+  add_field<Required>(fid);
 
-  add_field<Required>(m_field_name, m_field_layout, m_field_units, gname);
+  // We can also create the diagnostic already!
+  const auto& location = params.get<std::string>("Field Level Location");
+  const auto diag_field_name = f.name() + "_at_" + location;
 
-  // Calculate the actual level to slice field
-  const auto& lev_str = m_params.get<std::string>("Field Level");
-  if (lev_str=="tom") {
+  FieldIdentifier d_fid (diag_field_name,layout.strip_dim(tag),fid.get_units(),fid.get_grid_name());
+  m_diagnostic_output = Field(d_fid);
+  m_diagnostic_output.allocate_view();
+
+  // Figure out the level
+  if (ekat::starts_with(location,"lev")) {
+    const auto& lev = location.substr(3);
+    EKAT_REQUIRE_MSG (lev.find_first_not_of("0123456789")==std::string::npos,
+        "Error! Invalid level specification for FieldAtLevel diagnostic.\n"
+        "  - input value: '" + location + "'\n"
+        "  - expected: 'levN', with N an integer.\n");
+    m_field_level = std::stoi(lev);
+    EKAT_REQUIRE_MSG (m_field_level<layout.dims().back(),
+        "Error! Invalid level specification. Level index out of bounds.\n"
+        "  - input level: " + std::to_string(m_field_level) + "\n"
+        "  - number of levels: " + std::to_string(layout.dims().back()) + "\n");
+  } else if (location=="model_top") {
     m_field_level = 0;
-  } else if (lev_str=="bot") {
-    m_field_level = m_field_layout.dims().back()-1;
+  } else if (location=="model_bot") {
+    m_field_level = layout.dims().back()-1;
   } else {
-    auto is_int = [](const std::string& s) -> bool {
-      return s.find_first_not_of("0123456789")==std::string::npos;
-    };
-    EKAT_REQUIRE_MSG (is_int(lev_str),
-        "Error! Entry 'Field Level' must be 'tom', 'bot', or a string representation of an integer.\n");
-
-    m_field_level  = std::stoi(lev_str);
+    EKAT_ERROR_MSG (
+        "Error! Invalid level specification for FieldAtLevel diagnostic.\n"
+        "  - input value: '" + location + "'\n"
+        "  - expected: 'model_top','model_bot', or 'levN', with N an integer.\n");
   }
-  EKAT_REQUIRE_MSG (m_field_level>=0 && m_field_level<m_field_layout.dims().back(),
-      "Error! Invalid value for 'Field Level' in FieldAtLevel diagnostic.\n"
-      "  - field name  : " + m_field_name + "\n"
-      "  - field layout: " + to_string(m_field_layout) + "\n"
-      "  - field level : " + std::to_string(m_field_level) + "\n");
-
 }
+
 // =========================================================================================
 void FieldAtLevel::compute_diagnostic_impl()
 {
-  const auto& f = get_field_in(m_field_name);
-  const int dsize = m_field_layout.size () / m_field_layout.dims().back();
+  const auto& f = get_fields_in().front();
+  const auto& diag_layout = m_diagnostic_output.get_header().get_identifier().get_layout();
   using RangePolicy = Kokkos::RangePolicy<Field::device_t::execution_space>;
-  RangePolicy policy(0,dsize);
+  RangePolicy policy(0,diag_layout.size());
   auto level  = m_field_level;
-  switch (m_field_layout.rank()) {
-    case 2:
+  switch (diag_layout.rank()) {
+    case 1:
       {
         auto f_view = f.get_view<const Real**>();
         auto d_view = m_diagnostic_output.get_view<      Real*>();
@@ -71,11 +81,11 @@ void FieldAtLevel::compute_diagnostic_impl()
         });
       }
       break;
-    case 3:
+    case 2:
       {
         auto f_view = f.get_view<const Real***>();
         auto d_view = m_diagnostic_output.get_view<      Real**>();
-        const int dim1 = m_field_layout.dims()[1];
+        const int dim1 = diag_layout.dims()[1];
         Kokkos::parallel_for(m_diagnostic_output.name(),policy,KOKKOS_LAMBDA(const int idx) {
             const int i = idx / dim1;
             const int j = idx % dim1;
@@ -83,12 +93,12 @@ void FieldAtLevel::compute_diagnostic_impl()
         });
       }
       break;
-    case 4:
+    case 3:
       {
         auto f_view = f.get_view<const Real****>();
         auto d_view = m_diagnostic_output.get_view<      Real***>();
-        const int dim1 = m_field_layout.dims()[1];
-        const int dim2 = m_field_layout.dims()[2];
+        const int dim1 = diag_layout.dims()[1];
+        const int dim2 = diag_layout.dims()[2];
         Kokkos::parallel_for(m_diagnostic_output.name(),policy,KOKKOS_LAMBDA(const int idx) {
             const int i = (idx / dim2) / dim1;
             const int j = (idx / dim2) % dim1;
@@ -97,13 +107,13 @@ void FieldAtLevel::compute_diagnostic_impl()
         });
       }
       break;
-    case 5:
+    case 4:
       {
         auto f_view = f.get_view<const Real*****>();
         auto d_view = m_diagnostic_output.get_view<      Real****>();
-        const int dim1 = m_field_layout.dims()[1];
-        const int dim2 = m_field_layout.dims()[2];
-        const int dim3 = m_field_layout.dims()[3];
+        const int dim1 = diag_layout.dims()[1];
+        const int dim2 = diag_layout.dims()[2];
+        const int dim3 = diag_layout.dims()[3];
         Kokkos::parallel_for(m_diagnostic_output.name(),policy,KOKKOS_LAMBDA(const int idx) {
             const int i = ((idx / dim3) / dim2) / dim1;
             const int j = ((idx / dim3) / dim2) % dim1;
@@ -113,14 +123,14 @@ void FieldAtLevel::compute_diagnostic_impl()
         });
       }
       break;
-    case 6:
+    case 5:
       {
         auto f_view = f.get_view<const Real******>();
         auto d_view = m_diagnostic_output.get_view<      Real*****>();
-        const int dim1 = m_field_layout.dims()[1];
-        const int dim2 = m_field_layout.dims()[2];
-        const int dim3 = m_field_layout.dims()[3];
-        const int dim4 = m_field_layout.dims()[4];
+        const int dim1 = diag_layout.dims()[1];
+        const int dim2 = diag_layout.dims()[2];
+        const int dim3 = diag_layout.dims()[3];
+        const int dim4 = diag_layout.dims()[4];
         Kokkos::parallel_for(m_diagnostic_output.name(),policy,KOKKOS_LAMBDA(const int idx) {
             const int i = (((idx / dim4) / dim3) / dim2) / dim1;
             const int j = (((idx / dim4) / dim3) / dim2) % dim1;
@@ -133,20 +143,6 @@ void FieldAtLevel::compute_diagnostic_impl()
       break;
   }
   Kokkos::fence();
-}
-
-void FieldAtLevel::set_required_field_impl (const Field& f)
-{
-  const auto& f_fid = f.get_header().get_identifier();
-
-  // Now that we have the exact units of f, we can build the diagnostic field
-  FieldIdentifier d_fid (f_fid.name() + "@lev_" + std::to_string(m_field_level),
-                         m_field_layout.strip_dim(m_field_layout.rank()-1),
-                         f_fid.get_units(),
-                         f_fid.get_grid_name());
-
-  m_diagnostic_output = Field(d_fid);
-  m_diagnostic_output.allocate_view();
 }
 
 } //namespace scream
