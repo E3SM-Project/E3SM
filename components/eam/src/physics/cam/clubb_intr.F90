@@ -1097,7 +1097,7 @@ end subroutine clubb_init_cnst
 
 #ifdef CLUBB_SGS
    use hb_diff,                   only: pblintd
-   use scamMOD,                   only: single_column
+   use iop_data_mod,              only: single_column
    use phys_grid,                 only: get_gcol_p
    use cldfrc2m,                  only: aist_vector
    use cam_history,               only: outfld
