@@ -155,12 +155,12 @@ using yakl::c::parallel_for;
   auto ny         = coupler.get_option<int>("crm_ny");
   //------------------------------------------------------------------------------------------------
   // get CRM variables to be aggregated
-  auto temp       = dm_device.get<real,4>("temp"       );
-  auto rho_d      = dm_device.get<real,4>("density_dry");
-  auto rho_v      = dm_device.get<real,4>("water_vapor");
-  auto rho_l      = dm_device.get<real,4>("cloud_water");
-  auto rho_i      = dm_device.get<real,4>("ice"        );
-  auto rho_r      = dm_device.get<real,4>("rain"       );
+  auto temp       = dm_device.get<real const,4>("temp"       );
+  auto rho_d      = dm_device.get<real const,4>("density_dry");
+  auto rho_v      = dm_device.get<real const,4>("water_vapor");
+  auto rho_l      = dm_device.get<real const,4>("cloud_water");
+  auto rho_i      = dm_device.get<real const,4>("ice"        );
+  auto rho_r      = dm_device.get<real const,4>("rain"       );
   //------------------------------------------------------------------------------------------------
   // get temporary saved state variables
   auto phys_tend_save_temp    = dm_device.get<real,4>("phys_tend_save_temp");
@@ -194,12 +194,12 @@ inline void pam_statistics_aggregate_tendency( pam::PamCoupler &coupler, std::st
   auto crm_dt     = coupler.get_option<double>("crm_dt");
   //------------------------------------------------------------------------------------------------
   // get CRM variables to be aggregated
-  auto temp       = dm_device.get<real,4>("temp"       );
-  auto rho_d      = dm_device.get<real,4>("density_dry");
-  auto rho_v      = dm_device.get<real,4>("water_vapor");
-  auto rho_l      = dm_device.get<real,4>("cloud_water");
-  auto rho_i      = dm_device.get<real,4>("ice"        );
-  auto rho_r      = dm_device.get<real,4>("rain"       );
+  auto temp       = dm_device.get<real const,4>("temp"       );
+  auto rho_d      = dm_device.get<real const,4>("density_dry");
+  auto rho_v      = dm_device.get<real const,4>("water_vapor");
+  auto rho_l      = dm_device.get<real const,4>("cloud_water");
+  auto rho_i      = dm_device.get<real const,4>("ice"        );
+  auto rho_r      = dm_device.get<real const,4>("rain"       );
   //------------------------------------------------------------------------------------------------
   // get temporary saved state variables
   auto phys_tend_save_temp    = dm_device.get<real,4>("phys_tend_save_temp");
@@ -291,13 +291,13 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto zint       = dm_device.get<real const,2>("vertical_interface_height");
   //------------------------------------------------------------------------------------------------
   // get CRM variables to be aggregated
-  auto precip_liq = dm_device.get<real,3>("precip_liq_surf_out");
-  auto precip_ice = dm_device.get<real,3>("precip_ice_surf_out");
-  auto temp       = dm_device.get<real,4>("temp"       );
-  auto rho_d      = dm_device.get<real,4>("density_dry");
-  auto rho_v      = dm_device.get<real,4>("water_vapor");
-  auto rho_l      = dm_device.get<real,4>("cloud_water");
-  auto rho_i      = dm_device.get<real,4>("ice"        );
+  auto precip_liq = dm_device.get<real const,3>("precip_liq_surf_out");
+  auto precip_ice = dm_device.get<real const,3>("precip_ice_surf_out");
+  auto temp       = dm_device.get<real const,4>("temp"       );
+  auto rho_d      = dm_device.get<real const,4>("density_dry");
+  auto rho_v      = dm_device.get<real const,4>("water_vapor");
+  auto rho_l      = dm_device.get<real const,4>("cloud_water");
+  auto rho_i      = dm_device.get<real const,4>("ice"        );
   auto input_pdel = dm_host.get<real const,2>("input_pdel").createDeviceCopy();
   //------------------------------------------------------------------------------------------------
   // get aggregation variables
