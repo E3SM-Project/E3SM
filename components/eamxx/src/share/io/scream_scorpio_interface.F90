@@ -114,7 +114,7 @@ module scream_scorpio_interface
     integer          :: dtype                 ! data type used to pass data to read/write routines
     integer          :: nc_dtype              ! data type used in the netcdf files
     integer          :: numdims               ! Number of dimensions in out field
-    type(io_desc_t), pointer  :: iodesc       ! PIO decomp associated with this variable
+    type(io_desc_t), pointer  :: iodesc => NULL()     ! PIO decomp associated with this variable
     type(iodesc_list_t), pointer  :: iodesc_list ! PIO decomp list with metadata about PIO decomp
     integer(kind=pio_offset_kind), allocatable :: compdof(:)        ! Global locations in output array for this process
     integer, allocatable :: dimid(:)          ! array of PIO dimension id's for this variable
@@ -1008,18 +1008,23 @@ contains
 
     curr => current_atm_file%var_list_top
     do while (associated(curr))
+      ! Skip already deallocated vars, and vars for which decomp was already set
+      ! NOTE: fortran does not mandate/prohibit logical op short circuit, so do the
+      !       two following if statements separately
       if (associated(curr%var)) then
-        hist_var => curr%var
-        if (.not.associated(hist_var)) call errorHandle("PIO ERROR: unable to set decomp for file, var: "//trim(current_atm_file%filename)//", "//trim(hist_var%name)//". Set DOF.",999)
-        ! Assign decomp
-        if (hist_var%has_t_dim) then
-          loc_len = max(1,hist_var%numdims-1)
-          call get_decomp(hist_var%pio_decomp_tag,hist_var%dtype,hist_var%dimlen(:loc_len),hist_var%compdof,hist_var%iodesc_list)
-        else
-          call get_decomp(hist_var%pio_decomp_tag,hist_var%dtype,hist_var%dimlen,hist_var%compdof,hist_var%iodesc_list)
-        end if
-        hist_var%iodesc => hist_var%iodesc_list%iodesc
-        hist_var%iodesc_list%num_customers = hist_var%iodesc_list%num_customers + 1  ! Add this variable as a customer of this pio decomposition
+        if (.not. associated(curr%var%iodesc)) then
+          hist_var => curr%var
+          if (.not.associated(hist_var)) call errorHandle("PIO ERROR: unable to set decomp for file, var: "//trim(current_atm_file%filename)//", "//trim(hist_var%name)//". Set DOF.",999)
+          ! Assign decomp
+          if (hist_var%has_t_dim) then
+            loc_len = max(1,hist_var%numdims-1)
+            call get_decomp(hist_var%pio_decomp_tag,hist_var%dtype,hist_var%dimlen(:loc_len),hist_var%compdof,hist_var%iodesc_list)
+          else
+            call get_decomp(hist_var%pio_decomp_tag,hist_var%dtype,hist_var%dimlen,hist_var%compdof,hist_var%iodesc_list)
+          end if
+          hist_var%iodesc => hist_var%iodesc_list%iodesc
+          hist_var%iodesc_list%num_customers = hist_var%iodesc_list%num_customers + 1  ! Add this variable as a customer of this pio decomposition
+        endif
       end if
       curr => curr%next
     end do
@@ -1106,10 +1111,8 @@ contains
       if (is_write(purpose) .or. is_write(pio_file%purpose) ) then
         ! We only allow multiple customers of the file if they all use it in read mode.
         call errorHandle("PIO Error: file '"//trim(filename)//"' was already open for writing.",-999)
-      else
-        call eam_pio_openfile(pio_file,trim(pio_file%filename))
-        pio_file%num_customers = pio_file%num_customers + 1
       endif
+      pio_file%num_customers = pio_file%num_customers + 1
     else
       allocate(new_list_item)
       allocate(new_list_item%pio_file)
