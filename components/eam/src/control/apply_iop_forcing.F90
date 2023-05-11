@@ -180,7 +180,9 @@ subroutine advance_iop_subsidence(scm_dt, ps_in, &                    ! In
 !-----------------------------------------------------------------------
 !
 ! Purpose:
-! Option to nudge t and q to observations as specified by the IOP file
+! Option to compute effects of large scale subsidence on T, q, u, and v.
+! Code originated from CAM3.5/CAM5 Eulerian subsidence computation for SCM
+! in the old forecast.f90 routine.
 !-----------------------------------------------------------------------
 
   ! Input arguments
