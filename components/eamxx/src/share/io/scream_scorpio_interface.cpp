@@ -47,6 +47,8 @@ namespace scorpio {
 int nctype (const std::string& type) {
   if (type=="int") {
     return PIO_INT;
+  } else if (type=="int64") {
+    return PIO_INT64;
   } else if (type=="float" || type=="single") {
     return PIO_FLOAT;
   } else if (type=="double") {
@@ -62,7 +64,7 @@ int nctype (const std::string& type) {
   }
 }
 std::string nctype2str (const int type) {
-  for (auto t : {"int", "float", "double"}) {
+  for (auto t : {"int", "int64", "float", "double"}) {
     if (nctype(t)==type) return t;
   }
   return "UNKNOWN";
