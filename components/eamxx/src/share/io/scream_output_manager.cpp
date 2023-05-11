@@ -618,7 +618,7 @@ setup_file (      IOFileSpecs& filespecs,
 
   // Set degree of freedom for "time" and "time_bnds"
   scorpio::offset_t time_dof[1] = {0};
-  set_dof(filename,"time",0,time_dof);
+  set_dof(filename,"time",1,time_dof);
   if (m_avg_type!=OutputAvgType::Instant) {
     scorpio::offset_t time_bnds_dofs[2] = {0,1};
     set_dof(filename,"time_bnds",2,time_bnds_dofs);
