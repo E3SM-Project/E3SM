@@ -22,7 +22,7 @@ module eos
   use hybvcoord_mod,  only: hvcoord_t
   use kinds,          only: real_kind
   use parallel_mod,   only: abortmp
-  use physical_constants, only : p0, kappa, g, Rgas
+  use physical_constants, only : p0, kappa, g, Rgas, rearth
   use control_mod,    only: theta_hydrostatic_mode
 #ifdef HOMMEXX_BFB_TESTING
   use bfb_mod,        only: bfb_pow
@@ -68,17 +68,17 @@ implicit none
   enddo
   if (present(caller)) then
      call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,&
-          dpnh_dp_i,caller,pnh_i_out)
+          dpnh_dp_i,phi_i,caller,pnh_i_out)
   else
      call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,&
-          dpnh_dp_i,'not specified',pnh_i_out)
+          dpnh_dp_i,phi_i,'not specified',pnh_i_out)
   endif
   end subroutine pnh_and_exner_from_eos
 
 
 
 subroutine pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,&
-     dpnh_dp_i,caller,pnh_i_out)
+     dpnh_dp_i,phi_i,caller,pnh_i_out)
 implicit none
 !
 ! Use Equation of State to compute exner pressure, nh presure
@@ -94,13 +94,14 @@ implicit none
 ! NOTE: Exner pressure is defined in terms of p0=1000mb.  Be sure to use global constant p0,
 ! instead of hvcoord%ps0, which is set by CAM to ~1021mb
 !  
-  type (hvcoord_t),     intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
-  real (kind=real_kind), intent(in) :: vtheta_dp(np,np,nlev)   
-  real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)   
-  real (kind=real_kind), intent(in) :: dphi(np,np,nlev)
+  type (hvcoord_t),      intent(in)  :: hvcoord             ! hybrid vertical coordinate struct
+  real (kind=real_kind), intent(in)  :: vtheta_dp(np,np,nlev)   
+  real (kind=real_kind), intent(in)  :: dp3d(np,np,nlev)   
+  real (kind=real_kind), intent(in)  :: dphi(np,np,nlev)
   real (kind=real_kind), intent(out) :: pnh(np,np,nlev)        ! nh nonhyrdo pressure
   real (kind=real_kind), intent(out) :: dpnh_dp_i(np,np,nlevp) ! d(pnh) / d(pi)
   real (kind=real_kind), intent(out) :: exner(np,np,nlev)      ! exner nh pressure
+  real (kind=real_kind), intent(in)  :: phi_i(np,np,nlevp)
   character(len=*),      intent(in)  :: caller       ! name for error
   real (kind=real_kind), intent(out), optional :: pnh_i_out(np,np,nlevp)  ! pnh on interfaces
 
@@ -115,6 +116,17 @@ implicit none
   integer :: i,j,k,k2
   logical :: ierr
 
+  real (kind=real_kind) ::  rheighti(np,np,nlevp), rheightm(np,np,nlev), rhatm(np,np,nlev), r0
+  real (kind=real_kind) ::  rhati(np,np,nlevp), intrhatm(np,np,nlev), intrhati(np,np,nlevp)
+
+  r0=rearth
+
+  rheighti = phi_i/g + r0
+  rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlev))/2.0
+  rhati = rheighti/r0 ! r/r0
+  rhatm = rheightm/r0
+  invrhatm = 1.0/rhatm
+  invrhati = 1.0/rhati
 
   ! check for bad state that will crash exponential function below
   if (theta_hydrostatic_mode) then
@@ -174,6 +186,10 @@ implicit none
 !==============================================================
   do k=1,nlev
      p_over_exner(:,:,k) = Rgas*vtheta_dp(:,:,k)/(-dphi(:,:,k))
+
+     !da
+     p_over_exner(:,:,k) = p_over_exner(:,:,k)*invrhatm(:,:,k)*invrhatm(:,:,k)
+
 #ifndef HOMMEXX_BFB_TESTING
      pnh(:,:,k) = p0 * (p_over_exner(:,:,k)/p0)**(1/(1-kappa))
 #else
@@ -184,12 +200,17 @@ implicit none
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! boundary terms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+
+!do we want to convert mass coord to hy pressure?
+!there is a way, but let's leave it
    pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0  ! hydrostatic ptop    
    ! surface boundary condition pnh_i determined by w equation to enforce
    ! w b.c.  This is computed in the RHS calculation.  Here, we use
    ! an approximation (hydrostatic) so that dpnh/dpi = 1
    ! DO NOT CHANGE this approximation.  it is required by 
    ! compute_andor_apply_rhs()
+
+!this is interesting, again, leave it
    pnh_i(:,:,nlevp) = pnh(:,:,nlev) + dp3d(:,:,nlev)/2
 
 
@@ -206,8 +227,10 @@ implicit none
    do k=2,nlev
       dpnh_dp_i(:,:,k) = (pnh(:,:,k)-pnh(:,:,k-1))/dp3d_i(:,:,k)        
    end do
-   
 
+   !da
+   dpnh_dp_i(:,:,1:nlevp) = dpnh_dp_i(:,:,1:nlevp)*rhati(:,:,1:nlevp)*rhati(:,:,1:nlevp)
+   
    if (present(pnh_i_out)) then
       ! boundary values already computed. interpolate interior
       ! use linear interpolation in hydrostatic pressure coordinate
@@ -223,7 +246,11 @@ implicit none
   end subroutine 
 
 
-
+!this sub needs a different version for da
+!if dp is usually d(phydro), then for da dp3d is d(pmass)
+!and changes needed are
+!more than just using rhat
+!most likely we need a routine that would recover hydro p from dp3d
   !_____________________________________________________________________
   subroutine phi_from_eos(hvcoord,phis,vtheta_dp,dp,phi_i)
 !
