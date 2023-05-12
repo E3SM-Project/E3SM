@@ -1,4 +1,4 @@
-#include "eamxx_homme.hpp"
+#include "eamxx_homme_process_interface.hpp"
 
 // HOMMEXX Includes
 #include "Context.hpp"

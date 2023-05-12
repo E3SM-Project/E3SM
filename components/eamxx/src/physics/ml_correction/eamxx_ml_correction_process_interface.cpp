@@ -1,6 +1,6 @@
 #include <array>
 
-#include "eamxx_ml_correction.hpp"
+#include "eamxx_ml_correction_process_interface.hpp"
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
 

@@ -3,7 +3,7 @@ set(P3_SRCS
   p3_ic_cases.cpp
   p3_iso_c.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/p3/scream/micro_p3.F90
-  eamxx_p3.cpp
+  eamxx_p3_process_interface.cpp
   eamxx_p3_run.cpp
 )
 

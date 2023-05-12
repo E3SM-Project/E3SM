@@ -3,7 +3,7 @@
 #include "control/atmosphere_driver.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
-#include "physics/spa/eamxx_spa.hpp"
+#include "physics/spa/eamxx_spa_process_interface.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"

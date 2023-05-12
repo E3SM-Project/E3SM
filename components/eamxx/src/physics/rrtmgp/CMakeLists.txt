@@ -134,7 +134,7 @@ target_include_directories(scream_rrtmgp_yakl SYSTEM PUBLIC
 ##################################
 
 set(SCREAM_RRTMGP_SOURCES
-  eamxx_rrtmgp.cpp
+  eamxx_rrtmgp_process_interface.cpp
   shr_orb_mod_c2f.F90
 )
 

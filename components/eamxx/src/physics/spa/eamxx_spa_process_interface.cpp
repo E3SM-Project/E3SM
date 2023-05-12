@@ -1,4 +1,4 @@
-#include "eamxx_spa.hpp"
+#include "eamxx_spa_process_interface.hpp"
 
 #include "share/util/scream_time_stamp.hpp"
 #include "share/io/scream_scorpio_interface.hpp"

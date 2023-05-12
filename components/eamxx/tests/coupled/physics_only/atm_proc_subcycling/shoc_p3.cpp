@@ -7,8 +7,8 @@
 #include "share/grid/mesh_free_grids_manager.hpp"
 
 // Physics headers
-#include "physics/p3/eamxx_p3.hpp"
-#include "physics/shoc/eamxx_shoc.hpp"
+#include "physics/p3/eamxx_p3_process_interface.hpp"
+#include "physics/shoc/eamxx_shoc_process_interface.hpp"
 
 // EKAT headers
 #include "ekat/ekat_pack.hpp"

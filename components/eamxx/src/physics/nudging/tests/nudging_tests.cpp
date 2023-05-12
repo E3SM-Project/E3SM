@@ -1,5 +1,5 @@
 #include "catch2/catch.hpp"
-#include "physics/nudging/eamxx_nudging.hpp"
+#include "physics/nudging/eamxx_nudging_process_interface.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 
 #include "share/io/scream_output_manager.hpp"

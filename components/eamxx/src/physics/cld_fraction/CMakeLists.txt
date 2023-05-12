@@ -1,10 +1,10 @@
 set(CLDFRAC_SRCS
-  eamxx_cld_fraction.cpp
+  eamxx_cld_fraction_process_interface.cpp
   cld_fraction.cpp
 )
 
 set(CLDFRAC_HEADERS
-  eamxx_cld_fraction.hpp
+  eamxx_cld_fraction_process_interface.hpp
   cld_fraction_functions.hpp
   cld_fraction_main_impl.hpp
 )

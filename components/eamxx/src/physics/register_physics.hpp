@@ -7,22 +7,22 @@
 // have been built.
 
 #ifdef EAMXX_HAS_P3
-#include "physics/p3/eamxx_p3.hpp"
+#include "physics/p3/eamxx_p3_process_interface.hpp"
 #endif
 #ifdef EAMXX_HAS_SHOC
-#include "physics/shoc/eamxx_shoc.hpp"
+#include "physics/shoc/eamxx_shoc_process_interface.hpp"
 #endif
 #ifdef EAMXX_HAS_CLD_FRACTION
-#include "physics/cld_fraction/eamxx_cld_fraction.hpp"
+#include "physics/cld_fraction/eamxx_cld_fraction_process_interface.hpp"
 #endif
 #ifdef EAMXX_HAS_RRTMGP
-#include "physics/rrtmgp/eamxx_rrtmgp.hpp"
+#include "physics/rrtmgp/eamxx_rrtmgp_process_interface.hpp"
 #endif
 #ifdef EAMXX_HAS_SPA
-#include "physics/spa/eamxx_spa.hpp"
+#include "physics/spa/eamxx_spa_process_interface.hpp"
 #endif
 #ifdef EAMXX_HAS_NUDGING
-#include "physics/nudging/eamxx_nudging.hpp"
+#include "physics/nudging/eamxx_nudging_process_interface.hpp"
 #endif
 
 namespace scream {

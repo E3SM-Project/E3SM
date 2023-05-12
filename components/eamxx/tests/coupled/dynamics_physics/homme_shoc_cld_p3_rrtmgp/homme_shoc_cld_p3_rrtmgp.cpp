@@ -4,10 +4,10 @@
 #include "control/atmosphere_driver.hpp"
 
 // Physics includes
-#include "physics/p3/eamxx_p3.hpp"
-#include "physics/shoc/eamxx_shoc.hpp"
-#include "physics/cld_fraction/eamxx_cld_fraction.hpp"
-#include "physics/rrtmgp/eamxx_rrtmgp.hpp"
+#include "physics/p3/eamxx_p3_process_interface.hpp"
+#include "physics/shoc/eamxx_shoc_process_interface.hpp"
+#include "physics/cld_fraction/eamxx_cld_fraction_process_interface.hpp"
+#include "physics/rrtmgp/eamxx_rrtmgp_process_interface.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
 // Dynamics includes

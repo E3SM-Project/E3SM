@@ -1,4 +1,4 @@
-#include "physics/p3/eamxx_p3.hpp"
+#include "physics/p3/eamxx_p3_process_interface.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
 // Needed for p3_init, the only F90 code still used.

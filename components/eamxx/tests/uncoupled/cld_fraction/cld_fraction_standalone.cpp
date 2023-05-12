@@ -2,7 +2,7 @@
 
 #include "control/atmosphere_driver.hpp"
 
-#include "physics/cld_fraction/eamxx_cld_fraction.hpp"
+#include "physics/cld_fraction/eamxx_cld_fraction_process_interface.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"

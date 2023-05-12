@@ -1,4 +1,4 @@
-#include "physics/p3/eamxx_p3.hpp"
+#include "physics/p3/eamxx_p3_process_interface.hpp"
 
 namespace scream {
 
