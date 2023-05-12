@@ -216,7 +216,7 @@
 
       <modules compiler="intel">
         <command name="load">PrgEnv-intel/8.3.3</command>
-        <command name="load">intel-oneapi/2023.0.0</command>
+        <command name="load">intel/2023.0.0</command>
       </modules>
 
       <modules compiler="nvidia">
