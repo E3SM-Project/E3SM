@@ -259,7 +259,7 @@ contains
           w_np1(:,:,1:nlev) = (phi_np1(:,:,1:nlev) -  phi_n0(:,:,1:nlev) )/(dt2*g)
        endif
        call pnh_and_exner_from_eos2(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),elem(ie)%state%dp3d(:,:,:,np1),&
-            dphi,pnh,exner,dpnh_dp_i,'dirk1')
+            dphi,pnh,exner,dpnh_dp_i,phi_np1,'dirk1')
        Fn(:,:,1:nlev) = w_np1(:,:,1:nlev) - &
             (w_n0(:,:,1:nlev) + g*dt2 * (dpnh_dp_i(:,:,1:nlev)-1))
 
@@ -322,7 +322,7 @@ contains
           end do
 
           call pnh_and_exner_from_eos2(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),&
-               elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,exner,dpnh_dp_i,'dirk2')
+               elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,exner,dpnh_dp_i,phi_np1,'dirk2')
           Fn(:,:,1:nlev) = w_np1(:,:,1:nlev) - (w_n0(:,:,1:nlev) + g*dt2 * (dpnh_dp_i(:,:,1:nlev)-1))
 
           ! this is not used in this loop, so move out of loop
@@ -452,7 +452,7 @@ contains
            !dpnh_dp_i_epsie(:,:,:)=1.d0
            delta_mu=0
         else
-           call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi_temp,pnh,exner,dpnh_dp_i_epsie,'get_dirk_jacobian')
+           call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi_temp,pnh,exner,dpnh_dp_i_epsie,delta_mu,'get_dirk_jacobian')
            delta_mu(:,:,:)=(g*dt2)**2*(dpnh_dp_i(:,:,:)-dpnh_dp_i_epsie(:,:,:))/epsie
         end if
 

@@ -1101,7 +1101,7 @@ contains
   integer :: i,j,k,kptr,ie, nlyr_tot
 
   real (kind=real_kind) ::  rheighti(np,np,nlevp), rheightm(np,np,nlev), rhatm(np,np,nlev), r0
-  real (kind=real_kind) ::  rhati(np,np,nlevp), intrhatm(np,np,nlev), intrhati(np,np,nlevp)
+  real (kind=real_kind) ::  rhati(np,np,nlevp), invrhatm(np,np,nlev), invrhati(np,np,nlevp)
 
   call t_startf('compute_andor_apply_rhs')
 
@@ -1122,7 +1122,7 @@ contains
      !when we run with notrivial topo, also fix derived%gradphis
 
      rheighti = phi_i/g + r0
-     rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlev))/2.0
+     rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlevp))/2.0
      rhati = rheighti/r0 ! r/r0
      rhatm = rheightm/r0
      invrhatm = 1.0/rhatm
@@ -1556,7 +1556,7 @@ contains
                   -wvor(i,j,2,k) )*scale1
 
               !da
-              vtens1(i,j,k) = vtens1(i,j,k) - scale1*elem(ie)%state%w_i(i,j,k,n0)(  v1/rheightm(i,j,k) &
+              vtens1(i,j,k) = vtens1(i,j,k) - scale1*elem(ie)%state%w_i(i,j,k,n0)*(  v1/rheightm(i,j,k) &
                                                                                   + elem(ie)%fcorcosine(i,j) )
               vtens2(i,j,k) = vtens2(i,j,k) - scale1*elem(ie)%state%w_i(i,j,k,n0)*v2/rheightm(i,j,k)
 

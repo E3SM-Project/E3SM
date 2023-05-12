@@ -117,12 +117,12 @@ implicit none
   logical :: ierr
 
   real (kind=real_kind) ::  rheighti(np,np,nlevp), rheightm(np,np,nlev), rhatm(np,np,nlev), r0
-  real (kind=real_kind) ::  rhati(np,np,nlevp), intrhatm(np,np,nlev), intrhati(np,np,nlevp)
+  real (kind=real_kind) ::  rhati(np,np,nlevp), invrhatm(np,np,nlev), invrhati(np,np,nlevp)
 
   r0=rearth
 
   rheighti = phi_i/g + r0
-  rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlev))/2.0
+  rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlevp))/2.0
   rhati = rheighti/r0 ! r/r0
   rhatm = rheightm/r0
   invrhatm = 1.0/rhatm
