@@ -235,29 +235,16 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
         // End of checks. Close the file.
         scorpio::eam_pio_closefile(last_output_filename);
 
-        if (m_io_comm.am_i_root()) {
-          std::cout << "-- checking to resume fill of file " << last_output_filename << "\n";
-          std::cout << "     num snaps: " << num_snaps << "\n";
-          std::cout << "     max snaps: " << m_output_file_specs.max_snapshots_in_file << "\n";
-        }
-
         // If last output was full, we can no longer try to resume the file
         if (num_snaps<m_output_file_specs.max_snapshots_in_file) {
           m_output_file_specs.filename = last_output_filename;
           m_output_file_specs.is_open = true;
-          if (m_io_comm.am_i_root()) {
-            std::cout << "    -> OK to resume!\n";
-          }
 
           // The setup_file call will not register any new variable (the file is in Append mode,
           // so all dims/vars must already be in the file). However, it will register decompositions,
           // since those are a property of the run, not of the file.
           setup_file(m_output_file_specs,m_output_control);
         } else {
-          if (m_io_comm.am_i_root()) {
-            std::cout << "    -> NOT OK to resume!\n";
-          }
-
           // We can't continue with this file
           m_resume_output_file = false;
         }
@@ -580,8 +567,6 @@ set_params (const ekat::ParameterList& params,
 void OutputManager::
 setup_file (      IOFileSpecs& filespecs,
             const IOControl& control)
-            // const std::string& filename)
-            // const util::TimeStamp& timestamp)
 {
   using namespace scorpio;
 
