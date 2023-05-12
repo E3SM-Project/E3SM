@@ -82,7 +82,6 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   using Interval = FieldWithinIntervalCheck;
   //add_postcondition_check<Interval>(get_field_out("cldfrac_tot"),m_grid,0.0,1.0,false);
   //add_postcondition_check<Interval>(get_field_out("cldfrac_tot_for_analysis"),m_grid,0.0,1.0,false);
-  std::cout << "BRHDEBUG: call CospFunc::initialize()" << std::endl;
   CospFunc::initialize(m_num_cols, m_num_subcols, m_num_levs);
 }
 
@@ -96,8 +95,8 @@ void Cosp::run_impl (const double /* dt */)
   auto qi      = get_field_in("qi").get_view<const Pack**>();
   auto qr      = get_field_in("qr").get_view<const Pack**>();
   auto qm      = get_field_in("qm").get_view<const Pack**>();
-  auto sunlit  = get_field_in("sunlit").get_view<const Pack*>();  // Grab incoming shortwave and construct sunlit
-  auto skt     = get_field_in("surf_radiative_T").get_view<const Pack*>();
+  auto sunlit  = get_field_in("sunlit").get_view<const Real*>();
+  auto skt     = get_field_in("surf_radiative_T").get_view<const Real*>();
   auto T_mid   = get_field_in("T_mid").get_view<const Pack**>();
   auto p_mid   = get_field_in("p_mid").get_view<const Pack**>();
   auto p_int   = get_field_in("p_int").get_view<const Pack**>();
@@ -109,7 +108,7 @@ void Cosp::run_impl (const double /* dt */)
 
   auto cldfrac_tot_for_analysis = get_field_in("cldfrac_tot_for_analysis").get_view<const Pack**>();
   //auto isccp_ctptau_hist = get_field_out("isccp_ctptau_hist").get_view<Pack**>();
-  auto isccp_cldtot = get_field_out("isccp_cldtot").get_view<Pack*>();
+  auto isccp_cldtot = get_field_out("isccp_cldtot").get_view<Real*>();
 
   // Call COSP wrapper routines
   Real emsfc_lw = 0.99;
@@ -119,6 +118,7 @@ void Cosp::run_impl (const double /* dt */)
           cldfrac, reff_qc, reff_qi, dtau067, dtau105,
           isccp_cldtot
   );
+  // Min/max of isccp_cldtot
 }
 
 // =========================================================================================

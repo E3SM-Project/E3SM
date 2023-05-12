@@ -2,6 +2,7 @@
 #define SCREAM_COSP_FUNCTIONS_HPP
 #include "share/scream_types.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
+#include "share/util/scream_deep_copy.hpp"
 using scream::Real;
 extern "C" void cosp_c2f_init(int ncol, int nsubcol, int nlay);
 extern "C" void cosp_c2f_final();
@@ -40,13 +41,13 @@ namespace scream {
             cosp_c2f_final();
         };
         void main(
-                Int ncol, Int nsubcol, Int nlay, Real emsfc_lw, 
-                view_1d<const Pack>& sunlit , view_1d<const Pack>& skt, 
-                view_2d<const Pack>& T_mid  , view_2d<const Pack>& p_mid  , view_2d<const Pack>& p_int, 
+                Int ncol, Int nsubcol, Int nlay, Real emsfc_lw,
+                view_1d<const Real>& sunlit , view_1d<const Real>& skt,
+                view_2d<const Pack>& T_mid  , view_2d<const Pack>& p_mid  , view_2d<const Pack>& p_int,
                 view_2d<const Pack>& qv     , view_2d<const Pack>& cldfrac,
                 view_2d<const Pack>& reff_qc, view_2d<const Pack>& reff_qi,
                 view_2d<const Pack>& dtau067, view_2d<const Pack>& dtau105,
-                view_1d<Pack>& isccp_cldtot) {
+                view_1d<Real>& isccp_cldtot) {
 
             // Make host copies and permute data as needed
             lview_host_2d
@@ -54,27 +55,29 @@ namespace scream {
                   qv_h("qv_h", ncol, nlay), cldfrac_h("cldfrac_h", ncol, nlay),
                   reff_qc_h("reff_qc_h", ncol, nlay), reff_qi_h("reff_qi_h", ncol, nlay),
                   dtau067_h("dtau_067_h", ncol, nlay), dtau105_h("dtau105_h", ncol, nlay);
-            lview_host_1d sunlit_h("sunlit_h", ncol), skt_h("skt_h", ncol), isccp_cldtot_h("isccp_cldtot_h", ncol);
+            auto sunlit_h = Kokkos::create_mirror_view(sunlit);
+            auto skt_h = Kokkos::create_mirror_view(skt);
+            auto isccp_cldtot_h = create_mirror_view(isccp_cldtot);
 
             {
-            std::vector<view_1d<const Pack>> device_views = {sunlit, skt};
-            ekat::device_to_host({sunlit_h.data(), skt_h.data()}, ncol, device_views);
+                Kokkos::deep_copy(sunlit_h, sunlit);
+                Kokkos::deep_copy(skt_h, skt);
             }
 
             {
-            std::vector<view_2d<const Pack>> device_views = {T_mid, p_mid, qv, cldfrac, reff_qc, reff_qi, dtau067, dtau105};
-            ekat::device_to_host({T_mid_h.data(), p_mid_h.data(), qv_h.data(), cldfrac_h.data(), reff_qc_h.data(), reff_qi_h.data(), dtau067_h.data(), dtau105_h.data()}, ncol, nlay, device_views, true);
+                std::vector<view_2d<const Pack>> device_views = {T_mid, p_mid, qv, cldfrac, reff_qc, reff_qi, dtau067, dtau105};
+                ekat::device_to_host({T_mid_h.data(), p_mid_h.data(), qv_h.data(), cldfrac_h.data(), reff_qc_h.data(), reff_qi_h.data(), dtau067_h.data(), dtau105_h.data()}, ncol, nlay, device_views, true);
             }
 
             {
-            std::vector<view_2d<const Pack>> device_views = {p_int};
-            ekat::device_to_host({p_int_h.data()}, Int(ncol), Int(nlay+1), device_views, true);
+                std::vector<view_2d<const Pack>> device_views = {p_int};
+                ekat::device_to_host({p_int_h.data()}, Int(ncol), Int(nlay+1), device_views, true);
             }
 
             // Subsample here?
 
             // Call COSP wrapper
-            cosp_c2f_run(ncol, nsubcol, nlay, emsfc_lw, //sunlit_h.data()); //, 
+            cosp_c2f_run(ncol, nsubcol, nlay, emsfc_lw,
                     sunlit_h.data(), skt_h.data(), T_mid_h.data(), p_mid_h.data(), p_int_h.data(),
                     qv_h.data(),
                     cldfrac_h.data(), reff_qc_h.data(), reff_qi_h.data(), dtau067_h.data(), dtau105_h.data(),
@@ -82,11 +85,8 @@ namespace scream {
 
             // Copy outputs back to device
             {
-            std::vector<view_1d<Spack>> device_views = {isccp_cldtot};
-            ekat::host_to_device({isccp_cldtot_h.data()}, ncol, device_views);
+                Kokkos::deep_copy(isccp_cldtot, isccp_cldtot_h);
             }
-            /*
-            */
         }
     }
 }
