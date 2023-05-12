@@ -79,6 +79,11 @@ module crm_output_module
       real(crm_rknd), allocatable :: cld   (:,:)      ! cloud fraction
       real(crm_rknd), allocatable :: gicewp(:,:)      ! ice water path
       real(crm_rknd), allocatable :: gliqwp(:,:)      ! ice water path
+
+      real(crm_rknd), allocatable :: liq_ice_exchange(:,:) ! P3 liq-ice phase change tendency
+      real(crm_rknd), allocatable :: vap_liq_exchange(:,:) ! P3 vap-liq phase change tendency
+      real(crm_rknd), allocatable :: vap_ice_exchange(:,:) ! P3 vap-ice phase change tendency
+
       real(crm_rknd), allocatable :: mctot (:,:)      ! cloud mass flux
       real(crm_rknd), allocatable :: mcup  (:,:)      ! updraft cloud mass flux
       real(crm_rknd), allocatable :: mcdn  (:,:)      ! downdraft cloud mass flux
@@ -255,6 +260,11 @@ contains
       if (.not. allocated(output%cld   )) allocate(output%cld   (ncol,nlev))  ! cloud fraction
       if (.not. allocated(output%gicewp)) allocate(output%gicewp(ncol,nlev))  ! ice water path
       if (.not. allocated(output%gliqwp)) allocate(output%gliqwp(ncol,nlev))  ! ice water path
+
+      if (.not. allocated(output%liq_ice_exchange)) allocate(output%liq_ice_exchange(ncol,nlev)) ! P3 liq-ice phase change tendency
+      if (.not. allocated(output%vap_liq_exchange)) allocate(output%vap_liq_exchange(ncol,nlev)) ! P3 vap-liq phase change tendency
+      if (.not. allocated(output%vap_ice_exchange)) allocate(output%vap_ice_exchange(ncol,nlev)) ! P3 vap-ice phase change tendency
+      
       if (.not. allocated(output%mctot )) allocate(output%mctot (ncol,nlev))  ! cloud mass flux
       if (.not. allocated(output%mcup  )) allocate(output%mcup  (ncol,nlev))  ! updraft cloud mass flux
       if (.not. allocated(output%mcdn  )) allocate(output%mcdn  (ncol,nlev))  ! downdraft cloud mass flux
@@ -337,11 +347,17 @@ contains
       call prefetch(output%cld    )
       call prefetch(output%gicewp )
       call prefetch(output%gliqwp )
+      
+      call prefetch(output%liq_ice_exchange)
+      call prefetch(output%vap_liq_exchange)
+      call prefetch(output%vap_ice_exchange)
+
       call prefetch(output%mctot  )
       call prefetch(output%mcup   )
       call prefetch(output%mcdn   )
       call prefetch(output%mcuup  )
       call prefetch(output%mcudn  )
+
       call prefetch(output%mu_crm )
       call prefetch(output%md_crm )
       call prefetch(output%du_crm )
@@ -457,6 +473,11 @@ contains
       output%cld    = 0
       output%gicewp = 0
       output%gliqwp = 0
+
+      output%liq_ice_exchange = 0
+      output%vap_liq_exchange = 0
+      output%vap_ice_exchange = 0
+
       output%mctot  = 0
       output%mcup   = 0
       output%mcdn   = 0
@@ -583,6 +604,11 @@ contains
       if (allocated(output%cld)) deallocate(output%cld)
       if (allocated(output%gicewp)) deallocate(output%gicewp)
       if (allocated(output%gliqwp)) deallocate(output%gliqwp)
+
+      if (allocated(output%liq_ice_exchange)) deallocate(output%liq_ice_exchange)
+      if (allocated(output%vap_liq_exchange)) deallocate(output%vap_liq_exchange)
+      if (allocated(output%vap_ice_exchange)) deallocate(output%vap_ice_exchange)
+
       if (allocated(output%mctot)) deallocate(output%mctot)
       if (allocated(output%mcup)) deallocate(output%mcup)
       if (allocated(output%mcdn)) deallocate(output%mcdn)

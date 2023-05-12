@@ -142,6 +142,10 @@ subroutine crm_history_init(species_class)
       call addfld('CRM_NC  ',dims_crm_3D, 'A', '/kg',  'Cloud water dropet number from CRM' )
       call addfld('CRM_NI  ',dims_crm_3D, 'A', '/kg',  'Cloud ice crystal number from CRM' )
       call addfld('CRM_NR  ',dims_crm_3D, 'A', '/kg',  'Rain particle number from CRM' )
+
+      call addfld('MMF_LIQ_ICE',(/'lev'/),'A', '/kg',  'liq-ice phase change tendency from P3')
+      call addfld('MMF_VAP_LIQ',(/'lev'/),'A', '/kg',  'vap-liq phase change tendency from P3')
+      call addfld('MMF_VAP_ICE',(/'lev'/),'A', '/kg',  'vap-ice phase change tendency from P3')
    endif
 
    !----------------------------------------------------------------------------
@@ -546,6 +550,12 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    call outfld('MMF_DQC_SPONGE',crm_output%dqc_sponge(icol_beg:icol_end,:), ncol, lchnk )
    call outfld('MMF_DQI_SPONGE',crm_output%dqi_sponge(icol_beg:icol_end,:), ncol, lchnk )
    call outfld('MMF_DQR_SPONGE',crm_output%dqr_sponge(icol_beg:icol_end,:), ncol, lchnk )
+
+   if (MMF_microphysics_scheme .eq. 'p3') then
+      call outfld('MMF_LIQ_ICE',crm_output%liq_ice_exchange(icol_beg:icol_end,:), ncol, lchnk )
+      call outfld('MMF_VAP_LIQ',crm_output%vap_liq_exchange(icol_beg:icol_end,:), ncol, lchnk )
+      call outfld('MMF_VAP_ICE',crm_output%vap_ice_exchange(icol_beg:icol_end,:), ncol, lchnk )
+   endif
 
    ! NOTE: these should overwrite cloud outputs from non-MMF routines
    call outfld('CLOUD   ',crm_output%cld     (icol_beg:icol_end,:), ncol, lchnk )

@@ -23,14 +23,17 @@ inline void pam_statistics_init( pam::PamCoupler &coupler ) {
   auto nx         = coupler.get_option<int>("crm_nx");
   //------------------------------------------------------------------------------------------------
   // aggregated quantities
-  dm_device.register_and_allocate<real>("stat_aggregation_cnt", "number of aggregated samples",  {nens},{"nens"});
-  dm_device.register_and_allocate<real>("precip_liq_aggregated","aggregated sfc liq precip rate",{nens},{"nens"});
-  dm_device.register_and_allocate<real>("precip_ice_aggregated","aggregated sfc ice precip rate",{nens},{"nens"});
-  dm_device.register_and_allocate<real>("liqwp_aggregated",     "aggregated liquid water path",  {nz,nens},{"z","nens"});
-  dm_device.register_and_allocate<real>("icewp_aggregated",     "aggregated ice water path",     {nz,nens},{"z","nens"});
-  dm_device.register_and_allocate<real>("cldfrac_aggregated",   "aggregated cloud fraction",     {nz,nens},{"z","nens"});
-  dm_device.register_and_allocate<real>("clear_rh"       ,      "clear air rel humidity",        {nz,nens},{"z","nens"});
-  dm_device.register_and_allocate<real>("clear_rh_cnt"   ,      "clear air count",               {nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("stat_aggregation_cnt",       "number of aggregated samples",  {nens},{"nens"});
+  dm_device.register_and_allocate<real>("precip_liq_aggregated",      "aggregated sfc liq precip rate",{nens},{"nens"});
+  dm_device.register_and_allocate<real>("precip_ice_aggregated",      "aggregated sfc ice precip rate",{nens},{"nens"});
+  dm_device.register_and_allocate<real>("liqwp_aggregated",           "aggregated liquid water path",  {nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("icewp_aggregated",           "aggregated ice water path",     {nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("liq_ice_exchange_aggregated","aggregated liq_ice_exchange",   {nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("vap_liq_exchange_aggregated","aggregated vap_liq_exchange",   {nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("vap_ice_exchange_aggregated","aggregated vap_ice_exchange",   {nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("cldfrac_aggregated",         "aggregated cloud fraction",     {nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("clear_rh"       ,            "clear air rel humidity",        {nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("clear_rh_cnt"   ,            "clear air count",               {nz,nens},{"z","nens"});
   //------------------------------------------------------------------------------------------------
   // aggregated physics tendencies
   // temporary state variables
@@ -68,14 +71,18 @@ inline void pam_statistics_init( pam::PamCoupler &coupler ) {
   dm_device.register_and_allocate<real>("phys_tend_sponge_qi",  "aggregated qi tend from sponge",  {nz,nens},{"z","nens"});
   dm_device.register_and_allocate<real>("phys_tend_sponge_qr",  "aggregated qi tend from sponge",  {nz,nens},{"z","nens"});
   //------------------------------------------------------------------------------------------------
-  auto stat_aggregation_cnt  = dm_device.get<real,1>("stat_aggregation_cnt");
-  auto precip_liq_aggregated = dm_device.get<real,1>("precip_liq_aggregated");
-  auto precip_ice_aggregated = dm_device.get<real,1>("precip_ice_aggregated");
-  auto liqwp_aggregated      = dm_device.get<real,2>("liqwp_aggregated");
-  auto icewp_aggregated      = dm_device.get<real,2>("icewp_aggregated");
-  auto cldfrac_aggregated    = dm_device.get<real,2>("cldfrac_aggregated");
-  auto clear_rh              = dm_device.get<real,2>("clear_rh");
-  auto clear_rh_cnt          = dm_device.get<real,2>("clear_rh_cnt");
+  auto stat_aggregation_cnt        = dm_device.get<real,1>("stat_aggregation_cnt");
+  auto precip_liq_aggregated       = dm_device.get<real,1>("precip_liq_aggregated");
+  auto precip_ice_aggregated       = dm_device.get<real,1>("precip_ice_aggregated");
+  auto liqwp_aggregated            = dm_device.get<real,2>("liqwp_aggregated");
+  auto icewp_aggregated            = dm_device.get<real,2>("icewp_aggregated");
+  auto liq_ice_exchange_aggregated = dm_device.get<real,2>("liq_ice_exchange_aggregated");
+  auto vap_liq_exchange_aggregated = dm_device.get<real,2>("vap_liq_exchange_aggregated");
+  auto vap_ice_exchange_aggregated = dm_device.get<real,2>("vap_ice_exchange_aggregated");
+  auto cldfrac_aggregated          = dm_device.get<real,2>("cldfrac_aggregated");
+  auto clear_rh                    = dm_device.get<real,2>("clear_rh");
+  auto clear_rh_cnt                = dm_device.get<real,2>("clear_rh_cnt");
+
   auto phys_tend_sgs_cnt     = dm_device.get<real,1>("phys_tend_sgs_cnt");
   auto phys_tend_sgs_temp    = dm_device.get<real,2>("phys_tend_sgs_temp");
   auto phys_tend_sgs_qv      = dm_device.get<real,2>("phys_tend_sgs_qv");
@@ -111,11 +118,14 @@ inline void pam_statistics_init( pam::PamCoupler &coupler ) {
     precip_ice_aggregated(iens) = 0;
   });
   parallel_for("Initialize 1D aggregated quantities", SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
-    liqwp_aggregated    (k,iens) = 0;
-    icewp_aggregated    (k,iens) = 0;
-    cldfrac_aggregated  (k,iens) = 0;
-    clear_rh            (k,iens) = 0;
-    clear_rh_cnt        (k,iens) = 0;
+    liqwp_aggregated           (k,iens) = 0;
+    icewp_aggregated           (k,iens) = 0;
+    liq_ice_exchange_aggregated(k,iens) = 0;;
+    vap_liq_exchange_aggregated(k,iens) = 0;;
+    vap_ice_exchange_aggregated(k,iens) = 0;;
+    cldfrac_aggregated         (k,iens) = 0;
+    clear_rh                   (k,iens) = 0;
+    clear_rh_cnt               (k,iens) = 0;
 
     phys_tend_sgs_temp  (k,iens) = 0;
     phys_tend_sgs_qv    (k,iens) = 0;
@@ -291,32 +301,37 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto zint       = dm_device.get<real const,2>("vertical_interface_height");
   //------------------------------------------------------------------------------------------------
   // get CRM variables to be aggregated
-  auto precip_liq = dm_device.get<real const,3>("precip_liq_surf_out");
-  auto precip_ice = dm_device.get<real const,3>("precip_ice_surf_out");
-  auto temp       = dm_device.get<real const,4>("temp"       );
-  auto rho_d      = dm_device.get<real const,4>("density_dry");
-  auto rho_v      = dm_device.get<real const,4>("water_vapor");
-  auto rho_l      = dm_device.get<real const,4>("cloud_water");
-  auto rho_i      = dm_device.get<real const,4>("ice"        );
-  auto input_pdel = dm_host.get<real const,2>("input_pdel").createDeviceCopy();
+  auto precip_liq       = dm_device.get<real const,3>("precip_liq_surf_out");
+  auto precip_ice       = dm_device.get<real const,3>("precip_ice_surf_out");
+  auto temp             = dm_device.get<real const,4>("temp"       );
+  auto rho_d            = dm_device.get<real const,4>("density_dry");
+  auto rho_v            = dm_device.get<real const,4>("water_vapor");
+  auto rho_l            = dm_device.get<real const,4>("cloud_water");
+  auto rho_i            = dm_device.get<real const,4>("ice"        );
+  auto input_pdel       = dm_host.get<real const,2>("input_pdel").createDeviceCopy();
+  auto liq_ice_exchange = dm_device.get<real const,4>("liq_ice_exchange_out");
+  auto vap_liq_exchange = dm_device.get<real const,4>("vap_liq_exchange_out");
+  auto vap_ice_exchange = dm_device.get<real const,4>("vap_ice_exchange_out");
   //------------------------------------------------------------------------------------------------
   // get aggregation variables
-  auto stat_aggregation_cnt  = dm_device.get<real,1>("stat_aggregation_cnt");
-  auto precip_liq_aggregated = dm_device.get<real,1>("precip_liq_aggregated");
-  auto precip_ice_aggregated = dm_device.get<real,1>("precip_ice_aggregated");
-  auto liqwp_aggregated      = dm_device.get<real,2>("liqwp_aggregated");
-  auto icewp_aggregated      = dm_device.get<real,2>("icewp_aggregated");
-  auto cldfrac_aggregated    = dm_device.get<real,2>("cldfrac_aggregated");
-  auto clear_rh              = dm_device.get<real,2>("clear_rh");
-  auto clear_rh_cnt          = dm_device.get<real,2>("clear_rh_cnt");
+  auto stat_aggregation_cnt        = dm_device.get<real,1>("stat_aggregation_cnt");
+  auto precip_liq_aggregated       = dm_device.get<real,1>("precip_liq_aggregated");
+  auto precip_ice_aggregated       = dm_device.get<real,1>("precip_ice_aggregated");
+  auto liqwp_aggregated            = dm_device.get<real,2>("liqwp_aggregated");
+  auto icewp_aggregated            = dm_device.get<real,2>("icewp_aggregated");
+  auto liq_ice_exchange_aggregated = dm_device.get<real,2>("liq_ice_exchange_aggregated");
+  auto vap_liq_exchange_aggregated = dm_device.get<real,2>("vap_liq_exchange_aggregated");
+  auto vap_ice_exchange_aggregated = dm_device.get<real,2>("vap_ice_exchange_aggregated");
+  auto cldfrac_aggregated          = dm_device.get<real,2>("cldfrac_aggregated");
+  auto clear_rh                    = dm_device.get<real,2>("clear_rh");
+  auto clear_rh_cnt                = dm_device.get<real,2>("clear_rh_cnt");
+  
   //------------------------------------------------------------------------------------------------
   // perform aggregation
   parallel_for("update aggregation count", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     stat_aggregation_cnt(iens) = stat_aggregation_cnt(iens) + 1;
   });
   real r_nx_ny  = 1._fp/(nx*ny);
-  parallel_for("aggregate 1D statistics", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-  });
   parallel_for("aggregate 0D statistics", SimpleBounds<3>(ny,nx,nens), YAKL_LAMBDA (int j, int i, int iens) {
     // precip is already in m/s
     atomicAdd( precip_liq_aggregated(iens), precip_liq(j,i,iens) * r_nx_ny );
@@ -327,6 +342,9 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
     real rho_total = rho_d(k,j,i,iens) + rho_v(k,j,i,iens);
     atomicAdd( liqwp_aggregated(k,iens), (rho_l(k,j,i,iens)/rho_total) * r_nx_ny * input_pdel(k_gcm,iens)*1000.0/grav );
     atomicAdd( icewp_aggregated(k,iens), (rho_i(k,j,i,iens)/rho_total) * r_nx_ny * input_pdel(k_gcm,iens)*1000.0/grav );
+    atomicAdd( liq_ice_exchange_aggregated(k,iens), liq_ice_exchange(k,j,i,iens) * r_nx_ny );
+    atomicAdd( vap_liq_exchange_aggregated(k,iens), vap_liq_exchange(k,j,i,iens) * r_nx_ny );
+    atomicAdd( vap_ice_exchange_aggregated(k,iens), vap_ice_exchange(k,j,i,iens) * r_nx_ny );
     real rho_sum = rho_l(k,j,i,iens)+rho_i(k,j,i,iens);
     real dz = (zint(k+1,iens) - zint(k,iens));
     if ( ( rho_sum*dz ) > cld_threshold) {
@@ -359,6 +377,9 @@ inline void pam_statistics_compute_means( pam::PamCoupler &coupler ) {
   auto precip_ice            = dm_device.get<real,1>("precip_ice_aggregated");
   auto liqwp                 = dm_device.get<real,2>("liqwp_aggregated");
   auto icewp                 = dm_device.get<real,2>("icewp_aggregated");
+  auto liq_ice_exchange      = dm_device.get<real,2>("liq_ice_exchange_aggregated");
+  auto vap_liq_exchange      = dm_device.get<real,2>("vap_liq_exchange_aggregated");
+  auto vap_ice_exchange      = dm_device.get<real,2>("vap_ice_exchange_aggregated");
   auto cldfrac               = dm_device.get<real,2>("cldfrac_aggregated");
   auto clear_rh              = dm_device.get<real,2>("clear_rh");
   auto clear_rh_cnt          = dm_device.get<real,2>("clear_rh_cnt");
@@ -396,9 +417,12 @@ inline void pam_statistics_compute_means( pam::PamCoupler &coupler ) {
     precip_ice(iens) = precip_ice(iens) / aggregation_cnt(iens);
   });
   parallel_for("finalize 2D aggregated variables", SimpleBounds<2>(crm_nz,nens), YAKL_LAMBDA (int k, int iens) {
-    liqwp  (k,iens)  = liqwp  (k,iens) / aggregation_cnt(iens);
-    icewp  (k,iens)  = icewp  (k,iens) / aggregation_cnt(iens);
-    cldfrac(k,iens)  = cldfrac(k,iens) / aggregation_cnt(iens);
+    liqwp           (k,iens) = liqwp           (k,iens) / aggregation_cnt(iens);
+    icewp           (k,iens) = icewp           (k,iens) / aggregation_cnt(iens);
+    liq_ice_exchange(k,iens) = liq_ice_exchange(k,iens) / aggregation_cnt(iens);
+    vap_liq_exchange(k,iens) = vap_liq_exchange(k,iens) / aggregation_cnt(iens);
+    vap_ice_exchange(k,iens) = vap_ice_exchange(k,iens) / aggregation_cnt(iens);
+    cldfrac         (k,iens) = cldfrac         (k,iens) / aggregation_cnt(iens);
     if (clear_rh_cnt(k,iens)>0) {
       clear_rh(k,iens) = clear_rh(k,iens) / clear_rh_cnt(k,iens);
     }
@@ -445,6 +469,9 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   auto precip_ice            = dm_device.get<real,1>("precip_ice_aggregated");
   auto liqwp                 = dm_device.get<real,2>("liqwp_aggregated");
   auto icewp                 = dm_device.get<real,2>("icewp_aggregated");
+  auto liq_ice_exchange      = dm_device.get<real,2>("liq_ice_exchange_aggregated");
+  auto vap_liq_exchange      = dm_device.get<real,2>("vap_liq_exchange_aggregated");
+  auto vap_ice_exchange      = dm_device.get<real,2>("vap_ice_exchange_aggregated");
   auto cldfrac               = dm_device.get<real,2>("cldfrac_aggregated");
   auto clear_rh              = dm_device.get<real,2>("clear_rh");
 
@@ -491,9 +518,12 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   });
   //------------------------------------------------------------------------------------------------
   // convert variables to GCM vertical grid
-  real2d liqwp_gcm  ("liqwp_gcm",  gcm_nlev,nens);
-  real2d icewp_gcm  ("icewp_gcm",  gcm_nlev,nens);
-  real2d cldfrac_gcm("cldfrac_gcm",gcm_nlev,nens);
+  real2d liqwp_gcm           ("liqwp_gcm",            gcm_nlev,nens);
+  real2d icewp_gcm           ("icewp_gcm",            gcm_nlev,nens);
+  real2d liq_ice_exchange_gcm("liq_ice_exchange_gcm", gcm_nlev,nens);
+  real2d vap_liq_exchange_gcm("vap_liq_exchange_gcm", gcm_nlev,nens);
+  real2d vap_ice_exchange_gcm("vap_ice_exchange_gcm", gcm_nlev,nens);
+  real2d cldfrac_gcm         ("cldfrac_gcm",          gcm_nlev,nens);
 
   real2d phys_tend_sgs_temp_gcm  ("phys_tend_sgs_temp_gcm",  gcm_nlev,nens);
   real2d phys_tend_sgs_qv_gcm    ("phys_tend_sgs_qv_gcm",    gcm_nlev,nens);
@@ -522,9 +552,12 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   parallel_for("Initialize aggregated precipitation", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
     int k_crm = gcm_nlev-1-k_gcm;
     if (k_crm<crm_nz) {
-      liqwp_gcm  (k_gcm,iens) = liqwp  (k_crm,iens);
-      icewp_gcm  (k_gcm,iens) = icewp  (k_crm,iens);
-      cldfrac_gcm(k_gcm,iens) = cldfrac(k_crm,iens);
+      liqwp_gcm           (k_gcm,iens) = liqwp           (k_crm,iens);
+      icewp_gcm           (k_gcm,iens) = icewp           (k_crm,iens);
+      liq_ice_exchange_gcm(k_gcm,iens) = liq_ice_exchange(k_crm,iens);
+      vap_liq_exchange_gcm(k_gcm,iens) = vap_liq_exchange(k_crm,iens);
+      vap_ice_exchange_gcm(k_gcm,iens) = vap_ice_exchange(k_crm,iens);
+      cldfrac_gcm         (k_gcm,iens) = cldfrac         (k_crm,iens);
 
       phys_tend_sgs_temp_gcm  (k_gcm,iens) = phys_tend_sgs_temp  (k_crm,iens);
       phys_tend_sgs_qv_gcm    (k_gcm,iens) = phys_tend_sgs_qv    (k_crm,iens);
@@ -587,6 +620,9 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   auto precip_ice_l_host          = dm_host.get<real,1>("output_precsl");
   auto liqwp_host                 = dm_host.get<real,2>("output_gliqwp");
   auto icewp_host                 = dm_host.get<real,2>("output_gicewp");
+  auto liq_ice_exchange_host      = dm_host.get<real,2>("output_liq_ice_exchange");
+  auto vap_liq_exchange_host      = dm_host.get<real,2>("output_vap_liq_exchange");
+  auto vap_ice_exchange_host      = dm_host.get<real,2>("output_vap_ice_exchange");
   auto cldfrac_host               = dm_host.get<real,2>("output_cld");
   auto clear_rh_host              = dm_host.get<real,2>("output_clear_rh");
 
@@ -620,6 +656,9 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   precip_ice_l            .deep_copy_to(precip_ice_l_host);
   liqwp_gcm               .deep_copy_to(liqwp_host);
   icewp_gcm               .deep_copy_to(icewp_host);
+  liq_ice_exchange        .deep_copy_to(liq_ice_exchange_host);
+  vap_liq_exchange        .deep_copy_to(vap_liq_exchange_host);
+  vap_ice_exchange        .deep_copy_to(vap_ice_exchange_host);
   cldfrac_gcm             .deep_copy_to(cldfrac_host);
   clear_rh                .deep_copy_to(clear_rh_host);
 
