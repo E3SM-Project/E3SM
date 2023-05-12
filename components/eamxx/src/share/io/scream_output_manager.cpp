@@ -173,11 +173,11 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       m_output_control.nsamples_since_last_write = 0;
     } else if (perform_history_restart) {
       using namespace scorpio;
-      auto fn = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
+      auto rhist_file = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
 
       // From restart file, get the time of last write, as well as the current size of the avg sample
-      m_output_control.timestamp_of_last_write = read_timestamp(fn,"last_write");
-      m_output_control.nsamples_since_last_write = get_attribute<int>(fn,"num_snapshots_since_last_write");
+      m_output_control.timestamp_of_last_write = read_timestamp(rhist_file,"last_write");
+      m_output_control.nsamples_since_last_write = get_attribute<int>(rhist_file,"num_snapshots_since_last_write");
 
       if (m_avg_type!=OutputAvgType::Instant) {
         m_time_bnds.resize(2);
@@ -188,70 +188,79 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       const auto has_restart_data = m_avg_type!=OutputAvgType::Instant && m_output_control.frequency>1;
       if (has_restart_data && m_output_control.nsamples_since_last_write>0) {
         for (auto stream : m_output_streams) {
-          stream->restart(fn);
+          stream->restart(rhist_file);
         }
       }
 
-      // Whether we do have restart data or not, let's find the last output file that was
-      // created, to a) check if there's still room in it, and b) ensure we are not
-      // changing the control settings for output.
-      const auto& last_output_filename = get_attribute<std::string>(fn,"last_output_filename");
+      // We do NOT allow changing output specs across restart. If you do want to change
+      // any of these, you MUST start a new output stream (e.g., setting 'Perform Restart: false')
+      auto old_freq = scorpio::get_attribute<int>(rhist_file,"averaging_frequency");
+      EKAT_REQUIRE_MSG (old_freq == m_output_control.frequency,
+          "Error! Cannot change frequency when performing history restart.\n"
+          "  - old freq: " << old_freq << "\n"
+          "  - new freq: " << m_output_control.frequency << "\n");
+      auto old_freq_units = scorpio::get_attribute<std::string>(rhist_file,"averaging_frequency_units");
+      EKAT_REQUIRE_MSG (old_freq_units == m_output_control.frequency_units,
+          "Error! Cannot change frequency units when performing history restart.\n"
+          "  - old freq units: " << old_freq_units << "\n"
+          "  - new freq units: " << m_output_control.frequency_units << "\n");
+      auto old_avg_type = scorpio::get_attribute<std::string>(rhist_file,"averaging_type");
+      EKAT_REQUIRE_MSG (old_avg_type == e2str(m_avg_type),
+          "Error! Cannot change avg type when performing history restart.\n"
+          "  - old avg type: " << old_avg_type + "\n"
+          "  - new avg type: " << e2str(m_avg_type) << "\n");
+      auto old_max_snaps = scorpio::get_attribute<int>(rhist_file,"max_snapshots_per_file");
+      EKAT_REQUIRE_MSG (old_max_snaps == m_output_file_specs.max_snapshots_in_file,
+          "Error! Cannot change max snapshots per file when performing history restart.\n"
+          "  - old max snaps: " << old_max_snaps << "\n"
+          "  - new max snaps: " << m_output_file_specs.max_snapshots_in_file << "\n"
+          "If you *really* want to change the file capacity, you need to force using a new file, setting\n"
+          "  Restart:\n"
+          "    force_new_file: true\n");
+      std::string fp_precision = m_params.get<std::string>("Floating Point Precision");
+      auto old_fp_precision = scorpio::get_attribute<std::string>(rhist_file,"fp_precision");
+      EKAT_REQUIRE_MSG (old_fp_precision == fp_precision,
+          "Error! Cannot change floating point precision when performing history restart.\n"
+          "  - old fp precision: " << old_fp_precision << "\n"
+          "  - new fp precision: " << fp_precision << "\n");
 
-      m_resume_output_file = not restart_pl.get("force_new_file",false);
-      if (last_output_filename!="" and m_resume_output_file) {
-        // There was at least one snapshot written in the previous run, so there was a file.
-        // Check if we can resume filling it.
-
+      // Check if the prev run wrote any output file (it may have not, if the restart was written
+      // before the 1st output step). If there is a file, check if there's still room in it.
+      const auto& last_output_filename = get_attribute<std::string>(rhist_file,"last_output_filename");
+      m_resume_output_file = last_output_filename!="" and not restart_pl.get("force_new_file",false);
+      if (m_resume_output_file) {
         scorpio::register_file(last_output_filename,scorpio::Read);
         int num_snaps = scorpio::get_dimlen(last_output_filename,"time");
 
-        // Check consistency of output specs across restart
-        // NOTE: to avoid a full file being resumed if max snaps is changed across runs (which might
-        //       be unintended), we check that max_snapshots is not changed across runs.
-        auto old_freq = scorpio::get_attribute<int>(last_output_filename,"averaging_frequency");
-        auto old_freq_units = scorpio::get_attribute<std::string>(last_output_filename,"averaging_frequency_units");
-        auto old_avg_type = scorpio::get_attribute<std::string>(last_output_filename,"averaging_type");
-        EKAT_REQUIRE_MSG (old_freq == m_output_control.frequency,
-            "Error! Cannot change frequency when performing history restart.\n"
-            "  - old freq: " << old_freq << "\n"
-            "  - new freq: " << m_output_control.frequency << "\n");
-        EKAT_REQUIRE_MSG (old_freq_units == m_output_control.frequency_units,
-            "Error! Cannot change frequency units when performing history restart.\n"
-            "  - old freq units: " << old_freq_units << "\n"
-            "  - new freq units: " << m_output_control.frequency_units << "\n");
-        EKAT_REQUIRE_MSG (old_avg_type == e2str(m_avg_type),
-            "Error! Cannot change avg type when performing history restart.\n"
-            "  - old avg type: " << old_avg_type + "\n"
-            "  - new avg type: " << e2str(m_avg_type) << "\n");
+        // End of checks. Close the file.
+        scorpio::eam_pio_closefile(last_output_filename);
 
-        auto old_max_snaps = scorpio::get_attribute<int>(last_output_filename,"max_snapshots_per_file");
-        EKAT_REQUIRE_MSG (old_max_snaps == m_output_file_specs.max_snapshots_in_file,
-            "Error! Cannot change max snapshots per file when performing history restart.\n"
-            "  - old max snaps: " << old_max_snaps << "\n"
-            "  - new max snaps: " << m_output_file_specs.max_snapshots_in_file << "\n"
-            "If you *really* want to change the file capacity, you need to force using a new file, setting\n"
-            "  Restart:\n"
-            "    force_new_file: true\n");
+        if (m_io_comm.am_i_root()) {
+          std::cout << "-- checking to resume fill of file " << last_output_filename << "\n";
+          std::cout << "     num snaps: " << num_snaps << "\n";
+          std::cout << "     max snaps: " << m_output_file_specs.max_snapshots_in_file << "\n";
+        }
 
         // If last output was full, we can no longer try to resume the file
-        m_resume_output_file = num_snaps<m_output_file_specs.max_snapshots_in_file;
+        if (num_snaps<m_output_file_specs.max_snapshots_in_file) {
+          m_output_file_specs.filename = last_output_filename;
+          m_output_file_specs.is_open = true;
+          if (m_io_comm.am_i_root()) {
+            std::cout << "    -> OK to resume!\n";
+          }
 
-        std::string fp_precision = m_params.get<std::string>("Floating Point Precision");
-        auto old_fp_precision = scorpio::get_attribute<std::string>(last_output_filename,"fp_precision");
+          // The setup_file call will not register any new variable (the file is in Append mode,
+          // so all dims/vars must already be in the file). However, it will register decompositions,
+          // since those are a property of the run, not of the file.
+          setup_file(m_output_file_specs,m_output_control);
+        } else {
+          if (m_io_comm.am_i_root()) {
+            std::cout << "    -> NOT OK to resume!\n";
+          }
 
-        EKAT_REQUIRE_MSG (not m_resume_output_file || old_fp_precision == fp_precision,
-            "Error! Cannot change floating point precision when resuming fill of an existing history file.\n"
-            "  - old fp precision: " << old_fp_precision << "\n"
-            "  - new fp precision: " << fp_precision << "\n");
-
-        // We can also check the time of the last write
-        scorpio::eam_pio_closefile(last_output_filename);
-      }
-
-      // If we need to resume output file, let's open the file immediately, so the run method remains the same
-      if (m_resume_output_file) {
-        m_output_file_specs.filename = last_output_filename;
-        setup_file(m_output_file_specs,m_output_control);
+          // We can't continue with this file
+          m_resume_output_file = false;
+        }
       }
     }
   }
@@ -308,17 +317,17 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
   // Create and setup output/checkpoint file(s), if necessary
   start_timer(timer_root+"::get_new_file");
-  auto setup_output_file = [&](IOControl& control, IOFileSpecs& filespecs, bool add_to_rpointer, const std::string& file_type) {
+  auto setup_output_file = [&](IOControl& control, IOFileSpecs& filespecs,
+                               bool add_to_rpointer, const std::string& file_type) {
     // Check if we need to open a new file
     if (not filespecs.is_open) {
-      // Compute new file name
       // If this is normal output, with some sort of average, then the timestamp should be
       // the one of the last write, since that's when the current avg window started.
-      auto file_ts = control.frequency_units=="nsteps"
+      // For Instant output (includes model restart output) and history restart, use the current timestamp
+      auto file_ts = m_avg_type==OutputAvgType::Instant or filespecs.hist_restart_file
                    ? timestamp : control.timestamp_of_last_write;
 
       filespecs.filename = compute_filename (control,filespecs,file_ts);
-
       // Register all dims/vars, write geometry data (e.g. lat/lon/hyam/hybm)
       setup_file(filespecs,control);
     }
@@ -396,11 +405,21 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       if (m_is_model_restart_output) {
         // Only write nsteps on model restart
         set_attribute(filespecs.filename,"nsteps",timestamp.get_num_steps());
-      } else if (filespecs.hist_restart_file) {
-        // Update the date of last write and sample size
-        scorpio::write_timestamp (filespecs.filename,"last_write",m_output_control.timestamp_of_last_write);
-        scorpio::set_attribute (filespecs.filename,"last_output_filename",m_output_file_specs.filename);
-        scorpio::set_attribute (filespecs.filename,"num_snapshots_since_last_write",m_output_control.nsamples_since_last_write);
+      } else {
+        if (filespecs.hist_restart_file) {
+          // Update the date of last write and sample size
+          scorpio::write_timestamp (filespecs.filename,"last_write",m_output_control.timestamp_of_last_write);
+          scorpio::set_attribute (filespecs.filename,"last_output_filename",m_output_file_specs.filename);
+          scorpio::set_attribute (filespecs.filename,"num_snapshots_since_last_write",m_output_control.nsamples_since_last_write);
+        }
+        // Write these in both output and rhist file. The former, b/c we need these info when we postprocess
+        // output, and the latter b/c we want to make sure these params don't change across restarts
+        set_attribute(filespecs.filename,"averaging_type",e2str(m_avg_type));
+        set_attribute(filespecs.filename,"averaging_frequency_units",m_output_control.frequency_units);
+        set_attribute(filespecs.filename,"averaging_frequency",m_output_control.frequency);
+        set_attribute(filespecs.filename,"max_snapshots_per_file",m_output_file_specs.max_snapshots_in_file);
+        const auto& fp_precision = m_params.get<std::string>("Floating Point Precision");
+        set_attribute(filespecs.filename,"fp_precision",fp_precision);
       }
 
       // Write all stored globals
