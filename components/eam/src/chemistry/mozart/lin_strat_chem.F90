@@ -350,13 +350,13 @@ end subroutine linoz_readnl
        linoz_o3col_clim   => fields(o3col_clim_ndx)   %data(:,:,lchnk )
        linoz_o3lbs        => fields(o3lbs_ndx)        %data(:,:,lchnk )
 
-       dO3(:,:)     =   o3_vmr(:,:)  - linoz_o3_clim(:,:)
-       dN2O(:,:)    =  n2o_vmr(:,:)  - linoz_n2o_clim(:,:)
-       dNOY(:,:)    =  noy_vmr(:,:)  - linoz_noy_clim(:,:) 
-       dCH4(:,:)    =  ch4_vmr(:,:)  - linoz_ch4_clim(:,:)
-       dH2O(:,:)    =  h2o_vmr(:,:)  - linoz_h2o_clim(:,:) 
-       dTemp(:,:)   =  temp(:,:)     - linoz_t_clim(:,:)
-       dCOL(:,:)     =  o3col(:,:)*convert_to_du - linoz_o3col_clim(:,:)
+       dO3(:,:)     =   o3_vmr(:,:)  - linoz_o3_clim(:ncol,:)
+       dN2O(:,:)    =  n2o_vmr(:,:)  - linoz_n2o_clim(:ncol,:)
+       dNOY(:,:)    =  noy_vmr(:,:)  - linoz_noy_clim(:ncol,:) 
+       dCH4(:,:)    =  ch4_vmr(:,:)  - linoz_ch4_clim(:ncol,:)
+       dH2O(:,:)    =  h2o_vmr(:,:)  - linoz_h2o_clim(:ncol,:) 
+       dTemp(:,:)   =  temp(:ncol,:) - linoz_t_clim(:ncol,:)
+       dCOL(:,:)     =  o3col(:,:)*convert_to_du - linoz_o3col_clim(:ncol,:)
 
 ! potential water 2*ch4 +h2o !it might be better to get maxch4 3-4 years back in time but this will do for now 
 ! upated yearly o3,n2o,noy and ch4 value are stored at xx_clim in linoz file at the bottom padding layer
@@ -364,10 +364,10 @@ end subroutine linoz_readnl
 !
 !       write(iulog,*)'pver=',pver
 
-       xsfc(1,:)=   linoz_o3lbs(:,pver) !  ozone surface constant (varying in lat)
-       xsfc(2,:)=   linoz_n2o_clim(:,pver) !  n2o (constant throughout latitude)
-       xsfc(3,:)=   linoz_o3lbs(:,pver)*3.e-3_r8  !noylnz
-       xsfc(4,:)=   linoz_ch4_clim(:,pver) ! ch4 (constant throughout latitude)
+       xsfc(1,:)=   linoz_o3lbs(:ncol,pver) !  ozone surface constant (varying in lat)
+       xsfc(2,:)=   linoz_n2o_clim(:ncol,pver) !  n2o (constant throughout latitude)
+       xsfc(3,:)=   linoz_o3lbs(:ncol,pver)*3.e-3_r8  !noylnz
+       xsfc(4,:)=   linoz_ch4_clim(:ncol,pver) ! ch4 (constant throughout latitude)
 
 ! The  local maxval calculation causes NBFB when ncol varies due to threading or pe-layout change
 ! Tentatively uses a fixed value
@@ -386,13 +386,13 @@ end subroutine linoz_readnl
        linoz_dPmL_dO3col  => fields(no3_dPmL_dO3col_ndx)  %data(:,:,lchnk )
 
 !for steady-state sol. plug-in, no need for dPmL_dO3 term 
-       PL_O3 =  linoz_PmL_clim             &       
-            +  linoz_dPmL_dn2o    * dN2O  &
-            +  linoz_dPmL_dnoy    * dNOY  &
-            +  linoz_dPmL_dch4    * dCH4  &
-            +  linoz_dPmL_dh2o    * dH2O  &
-            +  linoz_dPmL_dT      * dTemp &
-            +  linoz_dPmL_dO3col  * dCOL
+       PL_O3 =  linoz_PmL_clim(:ncol,:)             &       
+            +  linoz_dPmL_dn2o(:ncol,:)    * dN2O  &
+            +  linoz_dPmL_dnoy(:ncol,:)    * dNOY  &
+            +  linoz_dPmL_dch4(:ncol,:)    * dCH4  &
+            +  linoz_dPmL_dh2o(:ncol,:)    * dH2O  &
+            +  linoz_dPmL_dT(:ncol,:)      * dTemp &
+            +  linoz_dPmL_dO3col(:ncol,:)  * dCOL
 ! 
 !pointer to pn2o
        linoz_PmL_clim     => fields(pn2o_PmL_clim_ndx)     %data(:,:,lchnk )
@@ -404,14 +404,14 @@ end subroutine linoz_readnl
        linoz_dPmL_dT      => fields(pn2o_dPmL_dT_ndx)      %data(:,:,lchnk )
        linoz_dPmL_dO3col  => fields(pn2o_dPmL_dO3col_ndx)  %data(:,:,lchnk )
 !Taylor-expansion of P (mr/sec)
-       P_n2o =  linoz_PmL_clim           &   
-            +  linoz_dPmL_dO3    * dO3      &
-            +  linoz_dPmL_dn2o   * dN2O     &
-            +  linoz_dPmL_dnoy   * dNOY     &
-            +  linoz_dPmL_dch4   * dCH4     &
-            +  linoz_dPmL_dh2o   * dH2O     &
-            +  linoz_dPmL_dT     * dTemp    &
-            +  linoz_dPmL_dO3col * dCOL
+       P_n2o =  linoz_PmL_clim(:ncol,:)           &   
+            +  linoz_dPmL_dO3(:ncol,:)    * dO3      &
+            +  linoz_dPmL_dn2o(:ncol,:)   * dN2O     &
+            +  linoz_dPmL_dnoy(:ncol,:)   * dNOY     &
+            +  linoz_dPmL_dch4(:ncol,:)   * dCH4     &
+            +  linoz_dPmL_dh2o(:ncol,:)   * dH2O     &
+            +  linoz_dPmL_dT(:ncol,:)     * dTemp    &
+            +  linoz_dPmL_dO3col(:ncol,:) * dCOL
 ! 
 !pointer to ln2o
        linoz_PmL_clim     => fields(ln2o_PmL_clim_ndx)     %data(:,:,lchnk ) !1/sec not vrm/sec already scaled by n2o vmr
@@ -423,14 +423,14 @@ end subroutine linoz_readnl
        linoz_dPmL_dT      => fields(ln2o_dPmL_dT_ndx)      %data(:,:,lchnk )
        linoz_dPmL_dO3col  => fields(ln2o_dPmL_dO3col_ndx)  %data(:,:,lchnk )
 ! Taylor expanding loss freq (1/sec) of N2O
-       Lfreq_n2o =  linoz_PmL_clim           &
-            +  linoz_dPmL_dO3    * dO3    &
-            +  linoz_dPmL_dn2o   * dN2O   &
-            +  linoz_dPmL_dnoy   * dNOY   &
-            +  linoz_dPmL_dch4   * dCH4   &
-            +  linoz_dPmL_dh2o   * dH2O   &
-            +  linoz_dPmL_dT     * dTemp  &
-            +  linoz_dPmL_dO3col * dCOL
+       Lfreq_n2o =  linoz_PmL_clim(:ncol,:)           &
+            +  linoz_dPmL_dO3(:ncol,:)    * dO3    &
+            +  linoz_dPmL_dn2o(:ncol,:)   * dN2O   &
+            +  linoz_dPmL_dnoy(:ncol,:)   * dNOY   &
+            +  linoz_dPmL_dch4(:ncol,:)   * dCH4   &
+            +  linoz_dPmL_dh2o(:ncol,:)   * dH2O   &
+            +  linoz_dPmL_dT(:ncol,:)     * dTemp  &
+            +  linoz_dPmL_dO3col(:ncol,:) * dCOL
 !
 !pointer to production of NOy
        linoz_PmL_clim     => fields(pnoy_PmL_clim_ndx)     %data(:,:,lchnk )
@@ -442,14 +442,14 @@ end subroutine linoz_readnl
        linoz_dPmL_dT      => fields(pnoy_dPmL_dT_ndx)      %data(:,:,lchnk )
        linoz_dPmL_dO3col  => fields(pnoy_dPmL_dO3col_ndx)  %data(:,:,lchnk )
 !Taylar expanding production of noy divided by fn2o (so unit 1/sec)      
-       Pfreq_noy =  linoz_PmL_clim            & 
-            +  linoz_dPmL_dO3   * dO3    &
-            +  linoz_dPmL_dn2o  * dN2O   &
-            +  linoz_dPmL_dnoy  * dNOY   &
-            +  linoz_dPmL_dch4  * dCH4   &
-            +  linoz_dPmL_dh2o  * dH2O   &
-            +  linoz_dPmL_dT    * dTemp  &
-            +  linoz_dPmL_dO3col* dCOL
+       Pfreq_noy =  linoz_PmL_clim(:ncol,:)            & 
+            +  linoz_dPmL_dO3(:ncol,:)   * dO3    &
+            +  linoz_dPmL_dn2o(:ncol,:)  * dN2O   &
+            +  linoz_dPmL_dnoy(:ncol,:)  * dNOY   &
+            +  linoz_dPmL_dch4(:ncol,:)  * dCH4   &
+            +  linoz_dPmL_dh2o(:ncol,:)  * dH2O   &
+            +  linoz_dPmL_dT(:ncol,:)    * dTemp  &
+            +  linoz_dPmL_dO3col(:ncol,:)* dCOL
 !
 !pointer to loss of NOY
        linoz_PmL_clim     => fields(lnoy_PmL_clim_ndx)     %data(:,:,lchnk )
@@ -461,14 +461,14 @@ end subroutine linoz_readnl
        linoz_dPmL_dT      => fields(lnoy_dPmL_dT_ndx)      %data(:,:,lchnk )
        linoz_dPmL_dO3col  => fields(lnoy_dPmL_dO3col_ndx)  %data(:,:,lchnk )
 !Taylar expanding loss of noy divided by fn2o (so unit 1/sec)      
-       Lfreq_noy =  linoz_PmL_clim    & 
-            +  linoz_dPmL_dO3   * dO3  &
-            +  linoz_dPmL_dn2o  * dN2O &
-            +  linoz_dPmL_dnoy  * dNOY &
-            +  linoz_dPmL_dch4  * dCH4 &
-            +  linoz_dPmL_dh2o  * dH2O &
-            +  linoz_dPmL_dT    * dTemp&
-            +  linoz_dPmL_dO3col* dCOL
+       Lfreq_noy =  linoz_PmL_clim(:ncol,:)    & 
+            +  linoz_dPmL_dO3(:ncol,:)   * dO3  &
+            +  linoz_dPmL_dn2o(:ncol,:)  * dN2O &
+            +  linoz_dPmL_dnoy(:ncol,:)  * dNOY &
+            +  linoz_dPmL_dch4(:ncol,:)  * dCH4 &
+            +  linoz_dPmL_dh2o(:ncol,:)  * dH2O &
+            +  linoz_dPmL_dT(:ncol,:)    * dTemp&
+            +  linoz_dPmL_dO3col(:ncol,:)* dCOL
 
 !pointer to loss of CH4
        linoz_PmL_clim     => fields(nch4_PmL_clim_ndx)     %data(:,:,lchnk )
@@ -480,14 +480,14 @@ end subroutine linoz_readnl
        linoz_dPmL_dT      => fields(nch4_dPmL_dT_ndx)      %data(:,:,lchnk )
        linoz_dPmL_dO3col  => fields(nch4_dPmL_dO3col_ndx)  %data(:,:,lchnk )
 ! Taylor expanding loss frequency of CH4
-       Lfreq_ch4 =  linoz_PmL_clim            & 
-            +  linoz_dPmL_dO3   * dO3    &
-            +  linoz_dPmL_dn2o  * dN2O   &
-            +  linoz_dPmL_dnoy  * dNOY   &
-            +  linoz_dPmL_dch4  * dCH4   &
-            +  linoz_dPmL_dh2o  * dH2O   &
-            +  linoz_dPmL_dT    * dTemp  &
-            +  linoz_dPmL_dO3col* dCOL
+       Lfreq_ch4 =  linoz_PmL_clim(:ncol,:)            & 
+            +  linoz_dPmL_dO3(:ncol,:)   * dO3    &
+            +  linoz_dPmL_dn2o(:ncol,:)  * dN2O   &
+            +  linoz_dPmL_dnoy(:ncol,:)  * dNOY   &
+            +  linoz_dPmL_dch4(:ncol,:)  * dCH4   &
+            +  linoz_dPmL_dh2o(:ncol,:)  * dH2O   &
+            +  linoz_dPmL_dT(:ncol,:)    * dTemp  &
+            +  linoz_dPmL_dO3col(:ncol,:)* dCOL
  
        linoz_cariolle_psc => fields(cariolle_pscs_ndx)%data(:,:,lchnk )
     
