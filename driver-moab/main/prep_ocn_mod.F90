@@ -1463,16 +1463,28 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           i1=a2x_SharedIndices%shared_real%aVindices1(i)
           o1=a2x_SharedIndices%shared_real%aVindices2(i)
           mrgstr(o1) = trim(mrgstr(o1))//' = a2x%'//trim(field_atm(i1))
+#ifdef MOABDEBUG
+          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
+#endif
        enddo
        do i=1,i2x_SharedIndices%shared_real%num_indices
           i1=i2x_SharedIndices%shared_real%aVindices1(i)
           o1=i2x_SharedIndices%shared_real%aVindices2(i)
           mrgstr(o1) = trim(mrgstr(o1))//' = i2x%'//trim(field_ice(i1))
+#ifdef MOABDEBUG
+          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
+#endif
        enddo
        do i=1,r2x_SharedIndices%shared_real%num_indices
           i1=r2x_SharedIndices%shared_real%aVindices1(i)
           o1=r2x_SharedIndices%shared_real%aVindices2(i)
           mrgstr(o1) = trim(mrgstr(o1))//' = r2x%'//trim(field_rof(i1))
+#ifdef MOABDEBUG
+          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
+#endif
        enddo
       !  do i=1,w2x_SharedIndices%shared_real%num_indices
       !     i1=w2x_SharedIndices%shared_real%aVindices1(i)
@@ -1486,6 +1498,10 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           ! will build tagname for moab set/get tag values
           shared_fields_xao_x2o = trim(shared_fields_xao_x2o)//trim(field_xao(i1))//':'
           size_of_shared_values = size_of_shared_values + lSize
+#ifdef MOABDEBUG
+          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
+#endif
        enddo
        ! first time, allocate data for values_holder
        allocate(shared_values (size_of_shared_values))

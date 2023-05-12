@@ -690,18 +690,30 @@ contains
           o1=o2x_SharedIndices%shared_real%aVindices2(i)
           field = mct_aVect_getRList2c(i1, o2x_i)
           mrgstr(o1) = trim(mrgstr(o1))//' = o2x%'//trim(field)
+#ifdef MOABDEBUG
+          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
+#endif
        enddo
        do i=1,a2x_SharedIndices%shared_real%num_indices
           i1=a2x_SharedIndices%shared_real%aVindices1(i)
           o1=a2x_SharedIndices%shared_real%aVindices2(i)
           field = mct_aVect_getRList2c(i1, a2x_i)
           mrgstr(o1) = trim(mrgstr(o1))//' = a2x%'//trim(field)
+#ifdef MOABDEBUG
+          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
+#endif
        enddo
        do i=1,g2x_SharedIndices%shared_real%num_indices
           i1=g2x_SharedIndices%shared_real%aVindices1(i)
           o1=g2x_SharedIndices%shared_real%aVindices2(i)
           field = mct_aVect_getRList2c(i1, g2x_i)
           mrgstr(o1) = trim(mrgstr(o1))//' = g2x%'//trim(field)
+#ifdef MOABDEBUG
+          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
+#endif
        enddo
 
        !--- document manual merges ---
@@ -892,12 +904,12 @@ contains
     call t_drvstopf  (trim(timer))
 
 #ifdef MOABDEBUG
-!   if (mbixid .ge. 0 ) then !  we are on coupler pes, for sure
-!      write(lnum,"(I0.2)")num_moab_exports
-!      outfile = 'IceCplAfto2i'//trim(lnum)//'.h5m'//C_NULL_CHAR
-!      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-!      ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
-!   endif
+   if (mbixid .ge. 0 ) then !  we are on coupler pes, for sure
+      write(lnum,"(I0.2)")num_moab_exports
+      outfile = 'IceCplAfto2i'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+      ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
+   endif
 #endif
 
   end subroutine prep_ice_calc_a2x_ix

@@ -840,6 +840,8 @@ contains
     type(mct_aVect_sharedindices),save :: i2x_sharedindices
     type(mct_aVect_sharedindices),save :: xao_sharedindices
     logical, pointer, save :: lmerge(:),imerge(:),xmerge(:),omerge(:)
+    ! special for moab
+    logical, pointer, save :: sharedIndex(:)
     integer, pointer, save :: lindx(:), iindx(:), oindx(:),xindx(:)
     integer, save          :: naflds, nlflds,niflds,noflds,nxflds
 
@@ -900,8 +902,8 @@ contains
        allocate(l2x_am (lsize, nlflds))
        !allocate(r2x_om (lsize, nrflds))
        allocate(xao_am (lsize, nxflds))
-
-       
+       ! 
+       allocate (sharedIndex(naflds))
 
        allocate(lindx(naflds), lmerge(naflds))
        allocate(iindx(naflds), imerge(naflds))
@@ -913,6 +915,8 @@ contains
        allocate(field_ocn(noflds), itemc_ocn(noflds))
        allocate(field_xao(nxflds), itemc_xao(nxflds))
        allocate(mrgstr(naflds))
+
+       sharedIndex(:) = .false.  ! shared indices will not be set to 0 after getting them
 
        lindx(:) = 0
        iindx(:) = 0
@@ -948,6 +952,23 @@ contains
        call mct_aVect_setSharedIndices(o2x_a, x2a_a, o2x_SharedIndices)
        call mct_aVect_setSharedIndices(i2x_a, x2a_a, i2x_SharedIndices)
        call mct_aVect_setSharedIndices(xao_a, x2a_a, xao_SharedIndices)
+
+       do i=1,l2x_SharedIndices%shared_real%num_indices
+          o1=l2x_SharedIndices%shared_real%aVindices2(i)
+          sharedIndex(o1) = .true.
+       enddo
+       do i=1,o2x_SharedIndices%shared_real%num_indices
+          o1=o2x_SharedIndices%shared_real%aVindices2(i)
+          sharedIndex(o1) = .true.
+       enddo
+       do i=1,i2x_SharedIndices%shared_real%num_indices
+          o1=i2x_SharedIndices%shared_real%aVindices2(i)
+          sharedIndex(o1) = .true.
+       enddo
+       do i=1,xao_SharedIndices%shared_real%num_indices
+          o1=xao_SharedIndices%shared_real%aVindices2(i)
+          sharedIndex(o1) = .true.
+       enddo
 
        ! Field naming rules
        ! Only atm states that are Sx_... will be merged
@@ -1061,14 +1082,20 @@ contains
 
     !call mct_avect_zero(x2a_a) ?
 
-    x2a_am = 0._r8
+    !x2a_am = 0._r8
     ent_type = 1 ! cells
     tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
     arrsize = naflds * lsize
-   !  ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am(1,1))
-   !  if (ierr .ne. 0) then
-   !       call shr_sys_abort(subname//' error in setting moab tags with 0 ')
-   !  endif
+    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am(1,1))
+    if (ierr .ne. 0) then
+        call shr_sys_abort(subname//' error in getting moab tags with 0 ')
+    endif
+    ! zero out only indices that are not shared
+    do ka = 1,naflds
+       if (.not. sharedIndex(ka)) then
+          x2a_am(:,ka) = 0
+       endif
+    enddo
     ! Update surface fractions
     !    fraclist_a = 'afrac:ifrac:ofrac:lfrac:lfrin'
     kif = 2 ! kif=mct_aVect_indexRA(fractions_a,"ifrac")
@@ -1139,21 +1166,37 @@ contains
           i1=l2x_SharedIndices%shared_real%aVindices1(i)
           o1=l2x_SharedIndices%shared_real%aVindices2(i)
           mrgstr(o1) = trim(mrgstr(o1))//' = l2x%'//trim(field_lnd(i1))
+#ifdef MOABDEBUG
+          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
+#endif
        enddo
        do i=1,o2x_SharedIndices%shared_real%num_indices
           i1=o2x_SharedIndices%shared_real%aVindices1(i)
           o1=o2x_SharedIndices%shared_real%aVindices2(i)
           mrgstr(o1) = trim(mrgstr(o1))//' = o2x%'//trim(field_ocn(i1))
+#ifdef MOABDEBUG
+          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
+#endif
        enddo
        do i=1,i2x_SharedIndices%shared_real%num_indices
           i1=i2x_SharedIndices%shared_real%aVindices1(i)
           o1=i2x_SharedIndices%shared_real%aVindices2(i)
           mrgstr(o1) = trim(mrgstr(o1))//' = i2x%'//trim(field_ice(i1))
+#ifdef MOABDEBUG
+          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
+#endif
        enddo
        do i=1,xao_SharedIndices%shared_real%num_indices
           i1=xao_SharedIndices%shared_real%aVindices1(i)
           o1=xao_SharedIndices%shared_real%aVindices2(i)
           mrgstr(o1) = trim(mrgstr(o1))//' = xao%'//trim(field_xao(i1))
+#ifdef MOABDEBUG
+          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
+#endif
        enddo
     endif
 
