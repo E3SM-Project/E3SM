@@ -100,7 +100,8 @@ contains
     use elm_varcon         , only : c14ratio
 
     !NEW
-    use domainMod          , only : ldomain
+    use elm_varsur         , only : firrig
+    use TopounitType       , only : top_pp
     use QSatMod            , only : QSat
     use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni, implicit_stress
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
@@ -259,6 +260,7 @@ contains
     integer  :: c                                    ! column index
     integer  :: l                                    ! landunit index
     integer  :: t                                    ! topounit index
+    integer  :: tpu_ind                                      ! index of topounit to grid
     integer  :: g                                    ! gridcell index
     integer  :: fp                                   ! lake filter pft index
     integer  :: fn_noveg                             ! number of values in bare ground pft filter
@@ -626,6 +628,8 @@ contains
          do f = 1, fn
             p = filterp(f)
             c = veg_pp%column(p)
+            t = veg_pp%topounit(p)
+            tpu_ind = top_pp%topo_grc_ind(t)  !Get topounit index on the grid
             g = veg_pp%gridcell(p)
             if (check_for_irrig(p) .and. .not. frozen_soil(p)) then
                ! if level L was frozen, then we don't look at any levels below L
@@ -641,7 +645,7 @@ contains
                   ! Translate vol_liq_so and eff_porosity into h2osoi_liq_so and h2osoi_liq_sat and calculate deficit
                   h2osoi_liq_so  = vol_liq_so * denh2o * col_pp%dz(c,j)
                   h2osoi_liq_sat = eff_porosity(c,j) * denh2o * col_pp%dz(c,j)
-                  deficit        = max((h2osoi_liq_so + ldomain%firrig(g)*(h2osoi_liq_sat - h2osoi_liq_so)) - h2osoi_liq(c,j), 0._r8)
+                  deficit        = max((h2osoi_liq_so + firrig(g,tpu_ind)*(h2osoi_liq_sat - h2osoi_liq_so)) - h2osoi_liq(c,j), 0._r8)
 
                   ! Add deficit to irrig_rate, converting units from mm to mm/sec
                   irrig_rate(p)  = irrig_rate(p) + deficit/(dtime*irrig_nsteps_per_day)

@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -143,7 +143,14 @@ module ocn_tracer_advection
 
       ! set some basic flags for options
       tracerAdvOff = config_disable_tr_adv
-      monotonicOn  = config_monotonic
+      if (config_flux_limiter == 'monotonic') then
+         monotonicOn = .true.
+      elseif (config_flux_limiter == 'none') then
+         monotonicOn = .false.
+      else
+         CALL mpas_log_write('Advection limiter not supported', &
+            MPAS_LOG_CRIT)
+      endif
 
       ! set all other options from submodule initialization routines
       call ocn_tracer_advection_shared_init(err1)

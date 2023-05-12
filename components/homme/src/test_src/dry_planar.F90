@@ -26,8 +26,12 @@ module dry_planar_tests
                                 p0	= 100000.d0, &! reference pressure (Pa)
                                 kappa   = Rd/cp
 
+!consts for kessler-defined qsat
   real(rl), parameter :: bubble_const1=3.8, bubble_const2=17.27, bubble_const3=273.0, bubble_const4=36.0
-
+!consts for RJ-defined qsat
+  real(rl), parameter :: bubble_t0_const=273.16, bubble_epsilo=Rgas/Rwater_vapor, bubble_e0=610.78
+!this one is used in dcmip as 2.5e6 instead of the one in cam, 2.501e6
+  real(rl), parameter :: bubble_latvap=2.5e6
 
   real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
   real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
@@ -191,7 +195,7 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 
   use control_mod, only: bubble_T0, bubble_dT, bubble_xycenter, bubble_zcenter, bubble_ztop, &
                          bubble_xyradius,bubble_zradius, bubble_cosine, &
-                         bubble_moist, bubble_moist_dq, bubble_prec_type
+                         bubble_moist, bubble_moist_drh, bubble_prec_type, bubble_rh_background
   use physical_constants, only: Lx, Ly, Sx, Sy
   use element_ops, only: set_elem_state
 
@@ -209,7 +213,8 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
   real(rl):: zero_mid_init(np,np,nlev),zero_int_init(np,np,nlevp), &
              dp_init(np,np,nlev),ps_init(np,np), &
              phis_init(np,np,nlevp),t_init(np,np,nlev),p_init(np,np,nlev), &
-             zi_init(np,np,nlevp), zm_init(np,np,nlev)
+             zi_init(np,np,nlevp), zm_init(np,np,nlev), &
+             rh
              
   if (qsize < 3 .and. bubble_moist) then
     call abortmp('planar moist bubble requires at least 3 tracers')
@@ -228,7 +233,8 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
      print *, 'bubble_zradius', bubble_zradius
      print *, 'bubble_cosine', bubble_cosine
      print *, 'bubble_moist', bubble_moist
-     print *, 'bubble_moist_dq', bubble_moist_dq
+     print *, 'bubble_moist_drh', bubble_moist_drh
+     print *, 'bubble_rh_background', bubble_rh_background
      print *, 'bubble_prec_type (0 is Kessler (default), 1 is RJ)', bubble_prec_type
   endif
 
@@ -244,7 +250,6 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
   do k=1,nlev
     Tm(k) = bubble_T0 - zm(k)*g/cp
     pm(k) = p0*( Tm(k)/bubble_T0  )**(1.0/kappa)
-    dpm(k)=(pi(k+1)-pi(k))
   enddo
   ! this T, z, pressure, and q1 (set below) together do not obey 
   ! homme's EOS, meaning if one to compute phi from EOS, it won't match z
@@ -277,6 +282,10 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
 
   hvcoord%hyai = ai; hvcoord%hybi = bi
 
+  do k = 1,nlev
+    dpm(k) = pressure_thickness(pi(nlevp),k,hvcoord)
+  end do
+
   !set : hyam hybm 
   hvcoord%hyam = 0.5 *(ai(2:nlev+1) + ai(1:nlev))
   hvcoord%hybm = 0.5 *(bi(2:nlev+1) + bi(1:nlev))
@@ -287,9 +296,24 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
   !for the background state
   if (bubble_moist) then
     !build specific humidity at saturation qs as in dcmip2016-kessler
+
+    if(bubble_prec_type == 0) then
+    !kessler
     do k=1,nlevp
        qi_s(k) = bubble_const1 / pi(k) * exp( bubble_const2 * (Ti(k) - bubble_const3) / ( Ti(k) - bubble_const4 ) )
     enddo
+    elseif(bubble_prec_type == 1) then
+    !RJ physics
+    do k=1,nlevp
+       !dcmip line
+       !qsat = epsilo * e0 / p(k) * exp(-(latvap/rh2o) * ((one/t(k))-(one/T0)))
+       qi_s(k) = bubble_epsilo * bubble_e0 / pi(k) * &
+                 exp(-(bubble_latvap/Rwater_vapor) * ((1.0/Ti(k))-(1.0/bubble_t0_const)))
+    enddo
+    else
+    call abortmp('planar moist bubble bubble_prec_type should be 0 or 1')
+    endif   
+
   else
      qi_s(1:nlevp) = 0.0
   endif
@@ -330,27 +354,22 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
                    (y-bubble_xycenter) * (y-bubble_xycenter) / bubble_xyradius / bubble_xyradius )
         endif
       
-        !set pot. temperature on interfaces
-        if ( rr < 1.0 ) then 
-
+        rh=bubble_rh_background
+        if ( rr < 1.0 ) then
           if (bubble_cosine) then
             offset = cos(rr*dd_pi / 2.0 )
             th0(k) = bubble_T0 + bubble_dT * offset
-            qi(k)  = qi_s(k)   + bubble_moist_dq * offset
+            rh = rh + bubble_moist_drh * offset
           else
             !0/1 nonsmooth function
             th0(k) = bubble_T0 + bubble_dT
-            qi(k)  = qi_s(k)   + bubble_moist_dq
+            rh = rh + bubble_moist_drh
           endif
-
         else
-
           !set to reference profile
           th0(k) = bubble_T0
-          qi(k) = qi_s(k)  
-
         endif
-
+        qi(k) = rh * qi_s(k)
       enddo ! k loop
 
       !set theta on midlevels and then T from theta, exner

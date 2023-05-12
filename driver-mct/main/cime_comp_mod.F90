@@ -145,6 +145,9 @@ module cime_comp_mod
   use seq_diag_mct, only : seq_diag_zero_mct , seq_diag_avect_mct, seq_diag_lnd_mct
   use seq_diag_mct, only : seq_diag_rof_mct  , seq_diag_ocn_mct  , seq_diag_atm_mct
   use seq_diag_mct, only : seq_diag_ice_mct  , seq_diag_accum_mct, seq_diag_print_mct
+  use seq_diagBGC_mct, only : seq_diagBGC_zero_mct , seq_diagBGC_avect_mct, seq_diagBGC_lnd_mct
+  use seq_diagBGC_mct, only : seq_diagBGC_rof_mct  , seq_diagBGC_ocn_mct  , seq_diagBGC_atm_mct
+  use seq_diagBGC_mct, only : seq_diagBGC_ice_mct  , seq_diagBGC_accum_mct
 
   ! list of fields transferred between components
   use seq_flds_mod, only : seq_flds_a2x_fluxes, seq_flds_x2a_fluxes
@@ -412,6 +415,7 @@ module cime_comp_mod
   logical  :: ocnrof_prognostic      ! .true.  => ocn comp expects runoff input
   logical  :: glc_prognostic         ! .true.  => glc comp expects input
   logical  :: rof_prognostic         ! .true.  => rof comp expects input
+  logical  :: rofocn_prognostic      ! .true.  => rof comp expects ssh input
   logical  :: wav_prognostic         ! .true.  => wav comp expects input
   logical  :: esp_prognostic         ! .true.  => esp comp expects input
   logical  :: iac_prognostic         ! .true.  => iac comp expects input
@@ -428,6 +432,7 @@ module cime_comp_mod
   logical  :: ocn_c2_ice             ! .true.  => ocn to ice coupling on
   logical  :: ocn_c2_glcshelf        ! .true.  => ocn to glc ice shelf coupling on
   logical  :: ocn_c2_wav             ! .true.  => ocn to wav coupling on
+  logical  :: ocn_c2_rof             ! .true.  => ocn to rof coupling on
   logical  :: ice_c2_atm             ! .true.  => ice to atm coupling on
   logical  :: ice_c2_ocn             ! .true.  => ice to ocn coupling on
   logical  :: ice_c2_wav             ! .true.  => ice to wav coupling on
@@ -504,6 +509,7 @@ module cime_comp_mod
 
   !--- history & budgets ---
   logical :: do_budgets              ! heat/water budgets on
+  logical :: do_bgc_budgets          ! BGC budgets on
   logical :: do_histinit             ! initial hist file
   logical :: do_histavg              ! histavg on or off
   logical :: do_hist_r2x             ! create aux files: r2x
@@ -1012,6 +1018,7 @@ contains
 
     real(r8), parameter :: epsilo = shr_const_mwwv/shr_const_mwdair
 
+    logical :: bfbflag !.true. if bfbflag is true
     integer(i8) :: beg_count          ! start time
     integer(i8) :: end_count          ! end time
     integer(i8) :: irtc_rate          ! factor to convert time to seconds
@@ -1126,6 +1133,7 @@ contains
          drv_threading=drv_threading               , &
          do_histinit=do_histinit                   , &
          do_budgets=do_budgets                     , &
+         do_bgc_budgets=do_bgc_budgets             , &
          budget_inst=budget_inst                   , &
          budget_daily=budget_daily                 , &
          budget_month=budget_month                 , &
@@ -1359,6 +1367,13 @@ contains
        call pio_closefile(pioid)
     endif
 
+    !Print BFBFLAG value in the log file
+    if (iamroot_CPLID) then
+       call seq_infodata_GetData(infodata, bfbflag=bfbflag)
+       write(logunit,'(2A,L4)') subname,'BFBFLAG is:',bfbflag       
+    endif
+
+    
     call t_stopf('CPL:cime_pre_init2')
 
     ! CPL:cime_pre_init2 timer elapsed time will be double counted
@@ -1607,6 +1622,7 @@ contains
          ocn_c2_glcshelf=ocn_c2_glcshelf,       &
          glc_prognostic=glc_prognostic,         &
          rof_prognostic=rof_prognostic,         &
+         rofocn_prognostic=rofocn_prognostic,   &
          wav_prognostic=wav_prognostic,         &
          iac_prognostic=iac_prognostic,         &
          esp_prognostic=esp_prognostic,         &
@@ -1664,6 +1680,7 @@ contains
     ocn_c2_atm = .false.
     ocn_c2_ice = .false.
     ocn_c2_wav = .false.
+    ocn_c2_rof = .false.
     ice_c2_atm = .false.
     ice_c2_ocn = .false.
     ice_c2_wav = .false.
@@ -1700,6 +1717,7 @@ contains
        if (atm_present   ) ocn_c2_atm = .true. ! needed for aoflux calc if aoflux=atm
        if (ice_prognostic) ocn_c2_ice = .true.
        if (wav_prognostic) ocn_c2_wav = .true.
+       if (rofocn_prognostic) ocn_c2_rof = .true.
 
     endif
     if (ice_present) then
@@ -1781,6 +1799,7 @@ contains
        write(logunit,F0L)'iceberg   prognostic  = ',iceberg_prognostic
        write(logunit,F0L)'glc model prognostic  = ',glc_prognostic
        write(logunit,F0L)'rof model prognostic  = ',rof_prognostic
+       write(logunit,F0L)'rof ocn   prognostic  = ',rofocn_prognostic
        write(logunit,F0L)'ocn rof   prognostic  = ',ocnrof_prognostic
        write(logunit,F0L)'wav model prognostic  = ',wav_prognostic
        write(logunit,F0L)'iac model prognostic  = ',iac_prognostic
@@ -1798,6 +1817,7 @@ contains
        write(logunit,F0L)'ocn_c2_ice            = ',ocn_c2_ice
        write(logunit,F0L)'ocn_c2_glcshelf       = ',ocn_c2_glcshelf
        write(logunit,F0L)'ocn_c2_wav            = ',ocn_c2_wav
+       write(logunit,F0L)'ocn_c2_rof            = ',ocn_c2_rof
        write(logunit,F0L)'ice_c2_atm            = ',ice_c2_atm
        write(logunit,F0L)'ice_c2_ocn            = ',ice_c2_ocn
        write(logunit,F0L)'ice_c2_wav            = ',ice_c2_wav
@@ -1892,6 +1912,12 @@ contains
           call shr_sys_flush(logunit)
        endif
     endif
+    if (rofocn_prognostic .and. .not.ocn_present) then
+       if (iamroot_CPLID) then
+          write(logunit,F00) 'WARNING: rofocn_prognostic is TRUE but ocn_present is FALSE'
+          call shr_sys_flush(logunit)
+       endif
+    endif
 
     !----------------------------------------------------------
     !| Samegrid checks
@@ -1941,7 +1967,7 @@ contains
 
        call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice )
 
-       call prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof)
+       call prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof, ocn_c2_rof)
 
        call prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glcshelf)
 
@@ -2321,6 +2347,7 @@ contains
     call t_adj_detailf(+2)
 
     call seq_diag_zero_mct(mode='all')
+    call seq_diagBGC_zero_mct(mode='all')
     if (read_restart .and. iamin_CPLID) then
 
        if (iamroot_CPLID) then
@@ -2495,7 +2522,8 @@ contains
          glc(ens1)%iamroot_compid .or. &
          rof(ens1)%iamroot_compid .or. &
          wav(ens1)%iamroot_compid .or. &
-         iac(ens1)%iamroot_compid) then
+         iac(ens1)%iamroot_compid .or. &
+         info_mprof == 2) then
 
        write(logunit,105) ' memory_write: model date = ',ymd,tod, &
             ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
@@ -3350,7 +3378,8 @@ contains
                glc(ens1)%iamroot_compid .or. &
                wav(ens1)%iamroot_compid .or. &
                rof(ens1)%iamroot_compid .or. &
-               iac(ens1)%iamroot_compid)) then
+               iac(ens1)%iamroot_compid .or. &
+               info_mprof == 2)) then
 
              write(logunit,105) ' memory_write: model date = ',ymd,tod, &
                   ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
@@ -3940,6 +3969,8 @@ contains
        call component_diag(infodata, ocn, flow='c2x', comment= 'recv ocn', &
             info_debug=info_debug, timer_diag='CPL:ocnpost_diagav')
 
+       if (ocn_c2_rof) call prep_rof_accum_ocn(timer='CPL:ocnpost_acco2r')
+
        call cime_run_ocnglc_coupling()
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -4368,6 +4399,8 @@ contains
        if (lnd_c2_rof) call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
 
        if (atm_c2_rof) call prep_rof_calc_a2r_rx(timer='CPL:rofprep_atm2rof')
+
+       if (ocn_c2_rof) call prep_rof_calc_o2r_rx(timer='CPL:rofprep_ocn2rof')
        call prep_rof_mrg(infodata, fractions_rx, timer_mrg='CPL:rofprep_mrgx2r', cime_model=cime_model)
 
        call component_diag(infodata, rof, flow='x2c', comment= 'send rof', &
@@ -4645,6 +4678,11 @@ contains
        if (ice_present) then
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
        endif
+       if (do_bgc_budgets) then
+          if (rof_present) then
+             call seq_diagBGC_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
+          endif
+       endif
        call t_drvstopf  ('CPL:BUDGET1',cplrun=lcplrun,budget=.true.)
     end if
   end subroutine cime_run_calc_budgets1
@@ -4679,19 +4717,40 @@ contains
        if (ice_present) then
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
        endif
+       if (do_bgc_budgets) then
+          if (atm_present) then
+             call seq_diagBGC_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
+          endif
+          if (ice_present) then
+             call seq_diagBGC_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true., do_x2i=.true.)
+          endif
+          if (lnd_present) then
+             call seq_diagBGC_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
+          endif
+          if (ocn_present) then
+             call seq_diagBGC_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
+                  do_o2x=.true., do_x2o=.true., do_xao=.true.)
+          endif
+       endif
        call t_drvstopf  ('CPL:BUDGET2',cplrun=lcplrun,budget=.true.)
 
        call t_drvstartf ('CPL:BUDGET3',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        call seq_diag_accum_mct()
+       if (do_bgc_budgets) then
+          call seq_diagBGC_accum_mct()
+       endif
        call t_drvstopf  ('CPL:BUDGET3',cplrun=lcplrun,budget=.true.)
 
        call t_drvstartf ('CPL:BUDGETF',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (.not. dead_comps) then
-          call seq_diag_print_mct(EClock_d,stop_alarm,budget_inst, &
+          call seq_diag_print_mct(EClock_d,stop_alarm,do_bgc_budgets, budget_inst, &
                budget_daily, budget_month, budget_ann, budget_ltann, &
                budget_ltend, infodata)
        endif
        call seq_diag_zero_mct(EClock=EClock_d)
+       if (do_bgc_budgets) then
+          call seq_diagBGC_zero_mct(EClock=EClock_d)
+       endif
 
        call t_drvstopf  ('CPL:BUDGETF',cplrun=lcplrun,budget=.true.)
     end if

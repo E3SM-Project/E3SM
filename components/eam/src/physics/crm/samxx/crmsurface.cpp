@@ -1,23 +1,23 @@
 #include "crmsurface.h"
 
 void crmsurface(real1d &bflx) {
-  auto uhl     = ::uhl;
-  auto vhl     = ::vhl;
-  auto dtn     = ::dtn;
-  auto utend   = ::utend;
-  auto vtend   = ::vtend;
-  auto taux0   = ::taux0;
-  auto tauy0   = ::tauy0;
-  auto u       = ::u;
-  auto v       = ::v;
-  auto rho     = ::rho;
-  auto z       = ::z;
-  auto z0      = ::z0;
-  auto fluxbu  = ::fluxbu;
-  auto fluxbv  = ::fluxbv;
-  auto ug      = ::ug;
-  auto vg      = ::vg;
-  auto ncrms   = ::ncrms;
+  YAKL_SCOPE( uhl      , ::uhl);
+  YAKL_SCOPE( vhl      , ::vhl);
+  YAKL_SCOPE( dtn      , ::dtn);
+  YAKL_SCOPE( utend    , ::utend);
+  YAKL_SCOPE( vtend    , ::vtend);
+  YAKL_SCOPE( taux0    , ::taux0);
+  YAKL_SCOPE( tauy0    , ::tauy0);
+  YAKL_SCOPE( u        , ::u);
+  YAKL_SCOPE( v        , ::v);
+  YAKL_SCOPE( rho      , ::rho);
+  YAKL_SCOPE( z        , ::z);
+  YAKL_SCOPE( z0       , ::z0);
+  YAKL_SCOPE( fluxbu   , ::fluxbu);
+  YAKL_SCOPE( fluxbv   , ::fluxbv);
+  YAKL_SCOPE( ug       , ::ug);
+  YAKL_SCOPE( vg       , ::vg);
+  YAKL_SCOPE( ncrms    , ::ncrms);
 
   //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
@@ -30,7 +30,7 @@ void crmsurface(real1d &bflx) {
   //  for (int j=0; j<ny; j++) {
   //   for (int i=0; i<nx; i++) {
   //     for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     real tmp2 = (0.5*(u(0,j+offy_u,i+1+offx_u,icrm)+u(0,j+offy_u,i+offx_u,icrm))+ug);
     real tmp3 = (0.5*(v(0,j+YES3D+offy_v,i+offx_v,icrm)+v(0,j+offy_v,i+offx_v,icrm))+vg);
     real u_h0 = max(1.0,sqrt(tmp2*tmp2+tmp3*tmp3));

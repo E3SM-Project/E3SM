@@ -317,6 +317,12 @@ contains
                   block, &
                   domain % configs)
 
+          else if (trim(config_initial_condition_type) == "uniform_1D") then
+
+             call init_ice_state_uniform_1D(&
+                  block, &
+                  domain % configs)
+
           else if (trim(config_initial_condition_type) == "special") then
 
              call init_ice_state_special(&
@@ -344,6 +350,12 @@ contains
           else if (trim(config_initial_condition_type) == "cice_default") then
 
              call init_ice_cice_default(&
+                  block, &
+                  domain % configs)
+
+          else if (trim(config_initial_condition_type) == "single_cell") then
+
+             call init_ice_single_cell(&
                   block, &
                   domain % configs)
 
@@ -557,6 +569,170 @@ contains
     enddo ! iCell
 
   end subroutine init_ice_state_uniform_ice!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_ice_state_uniform_1D
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date November, 2022
+!> \details
+!> Initializes sea ice in the first category only with constant
+!> values and latitude bounds defined in the namelist.
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_ice_state_uniform_1D(&
+       block, &
+       configs)!{{{
+
+    use seaice_constants, only: &
+         seaiceDegreesToRadians
+
+    use ice_colpkg, only: &
+         colpkg_init_trcr, &
+         colpkg_enthalpy_snow
+
+    type(block_type), intent(inout) :: &
+         block !< Input/Output:
+
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         configs !< Input:
+
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         tracers, &
+         tracers_aggregate, &
+         atmos_coupling, &
+         ocean_coupling, &
+         initial
+
+    integer, pointer :: &
+         nCellsSolve, &
+         nSnowLayers, &
+         nIceLayers, &
+         nCategories
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         latCell, &
+         airTemperature, &
+         seaSurfaceTemperature, &
+         seaFreezingTemperature
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         initialSalinityProfile, &
+         initialMeltingTemperatureProfile
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory, &
+         surfaceTemperature, &
+         snowEnthalpy, &
+         iceEnthalpy, &
+         iceSalinity
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaCell, &
+         surfaceTemperatureCell
+
+    real(kind=RKIND), pointer :: &
+         config_initial_ice_area, &
+         config_initial_ice_volume, &
+         config_initial_snow_volume, &
+         config_initial_latitude_north, &
+         config_initial_latitude_south
+
+    integer :: &
+         iCell, &
+         iSnowLayer, &
+         iIceLayer, &
+         iCategory
+
+    call MPAS_pool_get_config(configs, "config_initial_ice_area", config_initial_ice_area)
+    call MPAS_pool_get_config(configs, "config_initial_ice_volume", config_initial_ice_volume)
+    call MPAS_pool_get_config(configs, "config_initial_snow_volume", config_initial_snow_volume)
+    call MPAS_pool_get_config(configs, "config_initial_latitude_north", config_initial_latitude_north)
+    call MPAS_pool_get_config(configs, "config_initial_latitude_south", config_initial_latitude_south)
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+    call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
+    call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
+    call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmos_coupling)
+    call MPAS_pool_get_subpool(block % structs, "initial", initial)
+
+    call MPAS_pool_get_dimension(mesh, "nCells", nCellsSolve)
+    call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
+    call MPAS_pool_get_dimension(mesh, "nIceLayers", nIceLayers)
+    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
+
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
+
+    call MPAS_pool_get_array(atmos_coupling, "airTemperature", airTemperature)
+
+    call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
+    call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
+
+    call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(tracers_aggregate, "surfaceTemperatureCell", surfaceTemperatureCell)
+    call MPAS_pool_get_array(tracers, "snowEnthalpy", snowEnthalpy, 1)
+    call MPAS_pool_get_array(tracers, "iceEnthalpy", iceEnthalpy, 1)
+    call MPAS_pool_get_array(tracers, "iceSalinity", iceSalinity, 1)
+
+    call MPAS_pool_get_array(initial, "initialSalinityProfile", initialSalinityProfile)
+    call MPAS_pool_get_array(initial, "initialMeltingTemperatureProfile", initialMeltingTemperatureProfile)
+
+    do iCell = 1, nCellsSolve
+
+       iceAreaCategory(1,:,iCell)    = 0.0_RKIND
+       iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
+       snowVolumeCategory(1,:,iCell) = 0.0_RKIND
+       surfaceTemperature(1,:,iCell) = seaFreezingTemperature(iCell)
+       iceEnthalpy(:,:,iCell)        = 0.0_RKIND
+
+       do iSnowLayer = 1, nSnowLayers
+          snowEnthalpy(iSnowLayer,:,iCell) = colpkg_enthalpy_snow(0.0_RKIND)
+       end do
+
+       if (latCell(iCell) > config_initial_latitude_north * seaiceDegreesToRadians .or. &
+           latCell(iCell) < config_initial_latitude_south * seaiceDegreesToRadians) then
+
+          ! has ice
+          iceAreaCategory(1,1,iCell)    = config_initial_ice_area
+          iceVolumeCategory(1,1,iCell)  = config_initial_ice_volume
+          snowVolumeCategory(1,1,iCell) = config_initial_snow_volume
+          surfaceTemperature(1,1,iCell) = -1.0_RKIND
+
+          call colpkg_init_trcr(&
+               airTemperature(iCell), &
+               seaFreezingTemperature(iCell), &
+               initialSalinityProfile(:,iCell), &
+               initialMeltingTemperatureProfile(:,iCell), &
+               surfaceTemperature(1,1,iCell), &
+               nIceLayers, &
+               nSnowLayers, &
+               iceEnthalpy(:,1,iCell), &
+               snowEnthalpy(:,1,iCell))
+       endif
+
+       iceAreaCell(iCell) = sum(iceAreaCategory(1,:,iCell))
+       surfaceTemperatureCell(iCell) = -20.15_RKIND
+
+       do iCategory = 1, nCategories
+          do iIceLayer = 1, nIceLayers
+             iceSalinity(iIceLayer,iCategory,iCell) = initialSalinityProfile(iIceLayer,iCell)
+          enddo ! iIceLayer
+       enddo ! iCategory
+    enddo ! iCell
+
+  end subroutine init_ice_state_uniform_1D!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -878,6 +1054,144 @@ contains
     enddo ! iCategory
 
   end subroutine initial_category_areas_and_volumes
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_ice_single_cell
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 12th July 2022
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_ice_single_cell(&
+       block, &
+       configs)!{{{
+
+    use seaice_constants, only: &
+         seaiceDegreesToRadians
+
+    use ice_colpkg, only: &
+         colpkg_init_trcr, &
+         colpkg_enthalpy_snow
+
+    type(block_type), intent(inout) :: &
+         block !< Input/Output:
+
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         configs !< Input:
+
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         tracers, &
+         atmos_coupling, &
+         ocean_coupling, &
+         initial
+
+    integer, pointer :: &
+         nCellsSolve, &
+         nCategories, &
+         nIceLayers, &
+         nSnowLayers
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         airTemperature, &
+         seaFreezingTemperature
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         initialSalinityProfile, &
+         initialMeltingTemperatureProfile
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         surfaceTemperature, &
+         iceEnthalpy, &
+         snowEnthalpy, &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory, &
+         iceSalinity
+
+    real(kind=RKIND), pointer :: &
+         config_initial_ice_area, &
+         config_initial_ice_volume, &
+         config_initial_snow_volume
+
+    integer :: &
+         iCell, &
+         iCategory, &
+         iIceLayer, &
+         iSnowLayer
+
+    call MPAS_pool_get_config(configs, "config_initial_ice_area", config_initial_ice_area)
+    call MPAS_pool_get_config(configs, "config_initial_ice_volume", config_initial_ice_volume)
+    call MPAS_pool_get_config(configs, "config_initial_snow_volume", config_initial_snow_volume)
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+    call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
+    call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmos_coupling)
+    call MPAS_pool_get_subpool(block % structs, "initial", initial)
+
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+    call MPAS_pool_get_dimension(mesh, "nIceLayers", nIceLayers)
+    call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
+
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
+    call MPAS_pool_get_array(tracers, "iceEnthalpy", iceEnthalpy, 1)
+    call MPAS_pool_get_array(tracers, "snowEnthalpy", snowEnthalpy, 1)
+    call MPAS_pool_get_array(tracers, "iceSalinity", iceSalinity, 1)
+
+    call MPAS_pool_get_array(atmos_coupling, "airTemperature", airTemperature)
+
+    call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
+
+    call MPAS_pool_get_array(initial, "initialSalinityProfile", initialSalinityProfile)
+    call MPAS_pool_get_array(initial, "initialMeltingTemperatureProfile", initialMeltingTemperatureProfile)
+
+    do iCell = 1, nCellsSolve
+
+       ! has ice
+       do iCategory = 1, nCategories
+
+          iceAreaCategory(1,iCategory,iCell)    = config_initial_ice_area
+          iceVolumeCategory(1,iCategory,iCell)  = config_initial_ice_volume
+          snowVolumeCategory(1,iCategory,iCell) = config_initial_snow_volume
+
+          call colpkg_init_trcr(&
+               airTemperature(iCell), &
+               seaFreezingTemperature(iCell), &
+               initialSalinityProfile(:,iCell), &
+               initialMeltingTemperatureProfile(:,iCell), &
+               surfaceTemperature(1,iCategory,iCell), &
+               nIceLayers, &
+               nSnowLayers, &
+               iceEnthalpy(:,iCategory,iCell), &
+               snowEnthalpy(:,iCategory,iCell))
+
+       enddo ! iCategory
+
+    enddo ! iCell
+
+    ! get vertical salinity profiles
+    call MPAS_pool_get_subpool(block % structs, "initial", initial)
+    call MPAS_pool_get_array(initial, "initialSalinityProfile", initialSalinityProfile)
+
+    do iCell = 1, nCellsSolve
+       do iCategory = 1, nCategories
+          do iIceLayer = 1, nIceLayers
+             iceSalinity(iIceLayer,iCategory,iCell) = initialSalinityProfile(iIceLayer,iCell)
+          enddo ! iIceLayer
+       enddo ! iCategory
+    enddo ! iCell
+
+  end subroutine init_ice_single_cell
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

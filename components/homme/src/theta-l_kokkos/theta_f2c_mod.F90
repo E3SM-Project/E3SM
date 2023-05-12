@@ -14,19 +14,22 @@ interface
                                        dcmip16_mu, ftype, theta_adv_form, prescribed_wind, moisture, &
                                        disable_diagnostics, use_cpstar, transport_alg,               &
                                        theta_hydrostatic_mode, test_case_name, dt_remap_factor,      &
-                                       dt_tracer_factor) bind(c)
+                                       dt_tracer_factor, scale_factor, laplacian_rigid_factor,       &
+                                       nsplit, pgrad_correction, dp3d_thresh, vtheta_thresh) bind(c)
+
     use iso_c_binding, only: c_int, c_bool, c_double, c_ptr
     !
     ! Inputs
     !
-    integer(kind=c_int),  intent(in) :: remap_alg, limiter_option, rsplit, qsplit, time_step_type
+    integer(kind=c_int),  intent(in) :: remap_alg, limiter_option, rsplit, qsplit, time_step_type, nsplit
     integer(kind=c_int),  intent(in) :: dt_remap_factor, dt_tracer_factor, transport_alg
     integer(kind=c_int),  intent(in) :: state_frequency, qsize
-    real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, dcmip16_mu
+    real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, dcmip16_mu, &
+                                        scale_factor, laplacian_rigid_factor, dp3d_thresh, vtheta_thresh
     integer(kind=c_int),  intent(in) :: hypervis_order, hypervis_subcycle, hypervis_subcycle_tom
     integer(kind=c_int),  intent(in) :: ftype, theta_adv_form
     logical(kind=c_bool), intent(in) :: prescribed_wind, moisture, disable_diagnostics, use_cpstar
-    logical(kind=c_bool), intent(in) :: theta_hydrostatic_mode
+    logical(kind=c_bool), intent(in) :: theta_hydrostatic_mode, pgrad_correction
     type(c_ptr), intent(in) :: test_case_name
   end subroutine init_simulation_params_c
 
@@ -166,13 +169,14 @@ interface
   end subroutine push_forcing_to_c
 
   ! Run dycore for a full atm timesteps
-  subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,next_output_step) bind(c)
+  subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,next_output_step,nsplit_iter) bind(c)
     use iso_c_binding, only: c_int, c_double
     !
     ! Inputs
     !
-    integer(kind=c_int),  intent(in) :: nstep, nm1, n0, np1, next_output_step
-    real (kind=c_double), intent(in) :: tstep
+    integer(kind=c_int),  intent(inout) :: nstep, nm1, n0, np1
+    integer(kind=c_int),  intent(in)    :: next_output_step, nsplit_iter
+    real (kind=c_double), intent(in)    :: tstep
   end subroutine prim_run_subcycle_c
 
   ! Copy results from C++ views back to f90 arrays
@@ -187,6 +191,20 @@ interface
     type (c_ptr), intent(in) :: elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr
     type (c_ptr), intent(in) :: elem_state_Qdp_ptr, elem_state_Q_ptr, elem_derived_omega_p_ptr
   end subroutine cxx_push_results_to_f90
+
+  subroutine push_test_state_to_c( &
+       ! state
+       ps_v, dp3d, vtheta_dp, phinh_i, v, w_i, &
+       ! derived
+       eta_dot_dpdn, vn0) bind(c)
+    use iso_c_binding, only: c_ptr
+
+    type (c_ptr), intent(in) :: ps_v, dp3d, vtheta_dp, phinh_i, v, w_i, eta_dot_dpdn, vn0
+  end subroutine push_test_state_to_c
+
+  ! Sync diagnostics computed on device to host
+  subroutine sync_diagnostics_to_host_c() bind(c)
+  end subroutine sync_diagnostics_to_host_c
 end interface
 
 end module theta_f2c_mod

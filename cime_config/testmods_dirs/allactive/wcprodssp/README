@@ -1,0 +1,9 @@
+Modifications (in shell_commands) to enable a hybrid run for SSP compsets
+(e.g., SSp370 or SSP585), starting from 2015-01-01 of v2.LR.historical_0101
+
+Other modifications (same as for wcprod) should result in a case that has the 
+same namelist settings as the water cycle production sims
+
+Run these for at least 1 day to see all output.
+Also use the CMIP6 compsets.
+If running longer, change the nhtfrq for the first history file.

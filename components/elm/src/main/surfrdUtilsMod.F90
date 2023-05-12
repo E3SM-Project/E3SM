@@ -122,7 +122,7 @@ contains
     !        a crop landunit, and put them on the vegetated landunit.
     ! !USES:
     use elm_varsur      , only : wt_lunit, wt_nat_patch, fert_cft
-    use elm_varpar      , only : cft_size, natpft_size
+    use elm_varpar      , only : cft_size, surfpft_size
     use pftvarcon       , only : nc3crop
     use landunit_varcon , only : istsoil, istcrop
     use topounit_varcon , only : max_topounits
@@ -156,17 +156,20 @@ contains
 
   end subroutine convert_cft_to_pft
 
-!-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
+  
   subroutine convert_pft_to_cft( begg, endg )
    !
+   ! THIS ROUTINE IS CURRENTLY NOT USED, SAVING FOR A RAINY DAY (RGK 07-2022) 
+   ! 
    ! !DESCRIPTION:
    !        Moves the crops from the PFT landunit to their own landunit.
    !        The PCT of natural vegetation and crops are updated after creating
    !        the new crop landunit 
    ! !USES:
    use elm_varsur      , only : wt_lunit, wt_nat_patch, wt_cft
-   use elm_varpar      , only : cft_size, natpft_size
-   use elm_varpar      , only : cft_size, cft_lb, cft_ub, natpft_lb, natpft_ub
+   use elm_varpar      , only : cft_size, surfpft_size
+   use elm_varpar      , only : cft_size, cft_lb, cft_ub, surfpft_lb, surfpft_ub
    use pftvarcon       , only : nc3crop
    use landunit_varcon , only : istsoil, istcrop
    use topounit_varcon , only : max_topounits
@@ -210,17 +213,17 @@ contains
 
             ! Determine the PFT fraction
             wtpft_sum = 0.0_r8
-            do c = natpft_lb, natpft_ub
+            do c = surfpft_lb, surfpft_ub
                wtpft_sum = wtpft_sum + wt_nat_patch(g,t,c)
             enddo
 
             if (wtpft_sum > 0.0_r8) then ! PFTs are present
                ! Update the PFT fraction w.r.t. new PFT landunit
-               do c = natpft_lb, natpft_ub
+               do c = surfpft_lb, surfpft_ub
                   wt_nat_patch(g,t,c) = wt_nat_patch(g,t,c)/wtpft_sum * 100._r8
                enddo
             else
-               do c = natpft_lb, natpft_ub
+               do c = surfpft_lb, surfpft_ub
                   wt_nat_patch(g,t,c) = 0._r8
                enddo
             endif

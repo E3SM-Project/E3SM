@@ -15,7 +15,6 @@ runtype                      = 0
 tstep                        = 150
 qsplit                       = 4
 rk_stage_user                = 3
-psurf_vis                    = 0  
 integration                  = "explicit"
 smooth                       = 0
 nu                           = 1e16
@@ -46,7 +45,6 @@ kcut_fm       = 2
 /
 
 &vert_nl
-vform         = "ccm"
 vfile_mid     = "vcoord/camm-26.ascii"
 vfile_int     = "vcoord/cami-26.ascii"
 /

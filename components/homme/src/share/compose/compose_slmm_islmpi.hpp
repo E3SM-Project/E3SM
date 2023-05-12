@@ -268,6 +268,7 @@ struct ListOfLists {
     SLMM_KIF T* data () const { return d_; }
     SLMM_KIF T* begin () const { return d_; }
     SLMM_KIF T* end () const { return d_ + n_; }
+    SLMM_KIF Array<T> view () const { return Array<T>(d_, n_); }
 
   private:
     friend class ListOfLists<T, DT>;
@@ -526,7 +527,11 @@ struct IslMpi {
 
   // MPI comm data.
   FixedCapList<mpi::Request, HDT> sendreq, recvreq;
+  FixedCapList<Int, HDT> recvreq_ri;
   ListOfLists<Real, DDT> sendbuf, recvbuf;
+#ifdef COMPOSE_MPI_ON_HOST
+  typename ListOfLists<Real, DDT>::Mirror sendbuf_h, recvbuf_h;
+#endif
   FixedCapList<Int, DDT> sendcount, x_bulkdata_offset;
   ListOfLists<Real, HDT> sendbuf_meta_h, recvbuf_meta_h; // not mirrors
   FixedCapList<Int, DDT> rmt_xs, rmt_qs_extrema;

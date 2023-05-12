@@ -32,7 +32,6 @@
   dcmip16_pbl_type  = -1                         ! 0=reed-jablonowski pbl, -1 = none
 /
 &vert_nl
-  vform             = "ccm"
   vfile_mid         = "../vcoord/camm-30.ascii"
   vfile_int         = "../vcoord/cami-30.ascii"
 /

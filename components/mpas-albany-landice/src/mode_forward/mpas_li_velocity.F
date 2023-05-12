@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -980,7 +980,7 @@ contains
       ! calculate effective viscosity from strain rate and flow param.
       do iCell = 1, nCells
          eEff = sqrt(exx(iCell)**2 + eyy(iCell)**2 + exx(iCell)*eyy(iCell) + exy(iCell)**2) ! effective strain rate
-         if (eEff == 0.0_RKIND) then
+         if ( (eEff == 0.0_RKIND) .or. (meanFlowParamA(iCell) == 0.0_RKIND) ) then
             effectiveViscosity(iCell) = 0.0_RKIND
          else
             effectiveViscosity(iCell) = &

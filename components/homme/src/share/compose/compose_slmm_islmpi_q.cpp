@@ -594,13 +594,7 @@ void calc_rmt_q_pass2 (IslMpi<MT>& cm) {
 #endif // COMPOSE_PORT
 
 template <Int np, typename MT>
-void calc_rmt_q_pass1 (IslMpi<MT>& cm) {
-#if defined COMPOSE_PORT && ! defined COMPOSE_PACK_NOSCAN
-  if (ko::OnGpu<typename MT::DES>::value) {
-    calc_rmt_q_pass1_scan<np>(cm);
-    return;
-  }
-#endif
+void calc_rmt_q_pass1_noscan (IslMpi<MT>& cm) {
   const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
 #ifdef COMPOSE_PORT_SEPARATE_VIEWS
   for (Int ri = 0; ri < nrmtrank; ++ri)
@@ -665,6 +659,16 @@ void calc_rmt_q_pass1 (IslMpi<MT>& cm) {
   cm.nrmt_qs_extrema = qcnt;
   deep_copy(cm.rmt_xs, cm.rmt_xs_h);
   deep_copy(cm.rmt_qs_extrema, cm.rmt_qs_extrema_h);
+}
+
+template <Int np, typename MT>
+void calc_rmt_q_pass1 (IslMpi<MT>& cm) {
+#if defined COMPOSE_PORT && ! defined COMPOSE_PACK_NOSCAN
+  if (ko::OnGpu<typename MT::DES>::value)
+    calc_rmt_q_pass1_scan<np>(cm);
+  else
+#endif
+    calc_rmt_q_pass1_noscan<np>(cm);
 }
 
 template <Int np, typename MT>

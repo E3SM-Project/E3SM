@@ -32,11 +32,12 @@ vert_remap_q_alg  = 1
 hypervis_scaling  = 3.0
 hypervis_order    = 2
 hypervis_subcycle = 5
-hypervis_subcycle_tom  = 6
+hypervis_subcycle_tom  = 4
 theta_hydrostatic_mode = false
 theta_advect_form = 1
 tstep_type        = 10
 moisture          = 'notdry'
+pgrad_correction  = 1
 /
 &solver_nl
 precon_method = "identity"
@@ -54,7 +55,6 @@ wght_fm       = 0.10D0
 kcut_fm       = 2
 /
 &vert_nl
-vform     = "ccm"
 vfile_mid = './vcoord/${HOMME_TEST_VCOORD_MID_FILE}'
 vfile_int = './vcoord/${HOMME_TEST_VCOORD_INT_FILE}'
 /

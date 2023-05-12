@@ -6,7 +6,6 @@ macro(prim_setup)
 INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS})
 
-SET(UTILS_SHARE_DIR ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR         ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR   ${HOMME_SOURCE_DIR}/src/share)
 SET(PHYSICS_DIR     ${HOMME_SOURCE_DIR}/physics)
@@ -59,13 +58,6 @@ SET(PRIM_SRCS
   ${SRC_SHARE_DIR}/physics_mod.F90 
   ${SRC_SHARE_DIR}/hybvcoord_mod.F90 
   ${SRC_DIR}/interp_movie_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_kind_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_file_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_spfn_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_const_mod.F90 
   ${SRC_SHARE_DIR}/domain_mod.F90 
   ${SRC_DIR}/restart_io_mod.F90 
   ${SRC_SHARE_DIR}/cg_mod.F90 

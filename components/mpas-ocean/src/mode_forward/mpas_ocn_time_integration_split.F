@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -37,12 +37,16 @@ module ocn_time_integration_split
    use ocn_diagnostics_variables
    use ocn_diagnostics
    use ocn_gm
+   use ocn_submesoscale_eddies
 
    use ocn_equation_of_state
    use ocn_vmix
+   use ocn_vertical_advection
+   use ocn_vertical_remap
    use ocn_time_average_coupled
 
    use ocn_effective_density_in_land_ice
+   use ocn_surface_land_ice_fluxes
    use ocn_transport_tests
 
    implicit none
@@ -87,9 +91,12 @@ module ocn_time_integration_split
       numTSIterations, &! number of outer timestep iterations
       nBtrSubcycles     ! number of barotropic subcycles
 
+   integer :: ssh_sal_on
+
    real (kind=RKIND) :: &
       useVelocityCorrection,&! mask for velocity correction
-      splitFact          ! mask for terms in split or unsplit cases
+      splitFact, &! mask for terms in split or unsplit cases
+      self_attraction_and_loading_beta
 
 !***********************************************************************
 
@@ -184,11 +191,12 @@ module ocn_time_integration_split
          sshCell1,         &! sea sfc height in neighboring cells
          sshCell2
 
-      real (kind=RKIND), dimension(:), allocatable:: &
+      real (kind=RKIND), dimension(:,:), allocatable:: &
          uTemp
 
       real (kind=RKIND), dimension(:), allocatable :: &
-         btrvel_temp
+         btrvel_temp, &
+         bottomDepthEdge
 
       ! State Array Pointers
       real (kind=RKIND), dimension(:), pointer :: &
@@ -226,10 +234,12 @@ module ocn_time_integration_split
          benthosTracersCur,    &! old benthosTracer arrays
          benthosTracersNew      ! new benthosTracer arrays
 
-      integer, pointer :: &
+      integer :: &
          startIndex, endIndex, &! start, end index for tracer groups
          indexSalinity,        &! tracer index for salinity
          nBenthicVertLevels     ! number of benthic vertical levels
+
+      integer :: iTracer, numTracers, numActiveTracers
 
       type (mpas_pool_iterator_type) :: &
          groupItr               ! iterator for tracer groups
@@ -260,12 +270,25 @@ module ocn_time_integration_split
       ! Forcing pool
       real (kind=RKIND), dimension(:), pointer :: tidalPotentialEta
 
+      real (kind=RKIND), dimension(:), pointer :: &
+        seaIcePressure, atmosphericPressure
+
+      real (kind=RKIND), dimension(:), pointer :: &
+        frazilSurfacePressure, landIcePressure, landIceDraft
+
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracersNew
+
+      ! Remap variables
+      real (kind=RKIND), dimension(:,:), pointer :: &
+         layerThicknessLagNew
+
       ! These are public variables used from the diagnostics module
       ! indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
       ! indexSSHGradientZonal, indexSSHGradientMeridional
       ! barotropicForcing, barotropicThicknessFlux
-      ! layerThickEdge, normalTransportVelocity, normalGMBolusVelocity
-      ! vertAleTransportTop
+      ! layerThickEdgeFlux, layerThickEdgeMean,
+      ! normalTransportVelocity, normalGMBolusVelocity
+      ! vertAleTransportTop, normalMLEvelocity
       ! velocityX, velocityY, velocityZ
       ! velocityZonal, velocityMeridional
       ! gradSSH, gradSSHX, gradSSHY, gradSSHZ
@@ -278,6 +301,7 @@ module ocn_time_integration_split
       ! activeTracerNonLocalTendency
       ! activeTracerHorMixTendency
       ! activeTracerHorizontalAdvectionEdgeFlux
+      ! vertVelocityTop
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -350,8 +374,8 @@ module ocn_time_integration_split
       call mpas_pool_get_array(statePool, 'lowFreqDivergence', &
                                            lowFreqDivergenceNew, 2)
 
-      call mpas_pool_get_dimension(tracersPool, 'index_salinity', &
-                                                 indexSalinity)
+      call mpas_pool_get_dimension_scalar(tracersPool, 'index_salinity', &
+                                                        indexSalinity)
 
       !*** Retrieve tendency variables
 
@@ -368,13 +392,32 @@ module ocn_time_integration_split
       call mpas_pool_get_array(tendPool, 'highFreqThickness', &
                                           highFreqThicknessTend)
       call mpas_pool_get_array(tendPool, 'lowFreqDivergence', &
-                                          lowFreqDivergenceTend)
+
+      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 2)
+
+      allocate(bottomDepthEdge(nEdgesAll+1))
+
       if (config_transport_tests_flow_id > 0) then
         ! This is a transport test. Write advection velocity from prescribed
         ! flow field.
         call ocn_transport_test_velocity(meshPool, daysSinceStartOfSim, &
           0.5*dt, normalVelocityCur)
       endif
+
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(normalVelocityCur, normalBarotropicVelocityCur, &
+      !$acc   sshCur, layerThicknessCur)
+      !$acc enter data create(normalBaroClinicVelocityCur, normalVelocityNew, &
+      !$acc   normalBaroclinicVelocityNew, sshNew, layerThicknessNew)
+      if (associated(highFreqThicknessNew)) then
+         !$acc enter data copyin(highFreqThicknessCur)
+         !$acc enter data create(highFreqThicknessNew)
+      endif
+      if (associated(lowFreqDivergenceNew)) then
+         !$acc enter data copyin(lowFreqDivergenceCur)
+         !$acc enter data create(lowFreqDivergenceNew)
+      endif
+#endif
 
       ! Initialize * variables that are used to compute baroclinic
       ! tendencies below.
@@ -389,8 +432,19 @@ module ocn_time_integration_split
       ! variable subtracts out the barotropic component from the
       ! baroclinic.
 
+#ifdef MPAS_OPENACC
+      !$acc parallel present(normalVelocityCur, normalBarotropicVelocityCur, &
+      !$acc    sshCur, layerThicknessCur, normalBaroClinicVelocityCur, &
+      !$acc    normalVelocityNew, normalBaroclinicVelocityNew, sshNew, &
+      !$acc    layerThicknessNew, minLevelCell, maxLevelCell)
+#endif
+
+#ifdef MPAS_OPENACC
+      !$acc loop collapse(2)
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(k)
+#endif
       do iEdge = 1,nEdgesAll
       do k = 1,nVertLevels
 
@@ -404,17 +458,30 @@ module ocn_time_integration_split
          normalBaroclinicVelocityCur(k,iEdge)
       end do
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
+#endif
 
+#ifdef MPAS_OPENACC
+      !$acc loop gang
+#else
       !$omp do schedule(runtime) private(k)
+#endif
       do iCell = 1, nCellsAll
          sshNew(iCell) = sshCur(iCell)
-         do k = minLevelCell(iCell), maxLevelCell(iCell)
+#ifdef MPAS_OPENACC
+         !$acc loop vector
+#endif
+         do k = 1,nVertLevels
             layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell)
          end do
       end do
+#ifdef MPAS_OPENACC
+      !$acc end parallel
+#else
       !$omp end do
       !$omp end parallel
+#endif
 
       call mpas_pool_begin_iteration(tracersPool)
       do while ( mpas_pool_get_next_member(tracersPool, groupItr))
@@ -427,16 +494,33 @@ module ocn_time_integration_split
             if ( associated(tracersGroupCur) .and. &
                  associated(tracersGroupNew) ) then
 
+#ifdef MPAS_OPENACC
+               !$acc enter data create(tracersGroupNew)
+               !$acc enter data copyin(tracersGroupCur)
+               !$acc parallel loop gang present(minLevelCell, maxLevelCell, &
+               !$acc    tracersGroupNew, tracersGroupCur)
+#else
                !$omp parallel
                !$omp do schedule(runtime) private(k)
+#endif
                do iCell = 1, nCellsAll
                do k = minLevelCell(iCell), maxLevelCell(iCell)
-                  tracersGroupNew(:,k,iCell) = &
-                  tracersGroupCur(:,k,iCell)
+#ifdef MPAS_OPENACC
+               !$acc loop vector
+#endif
+                  do iTracer = 1,size(tracersGroupCur,1)
+                     tracersGroupNew(iTracer,k,iCell) = &
+                     tracersGroupCur(iTracer,k,iCell)
+                  end do
                end do
                end do
+#ifdef MPAS_OPENACC
+               !$acc exit data copyout(tracersGroupNew)
+               !$acc exit data delete(tracersGroupCur)
+#else
                !$omp end do
                !$omp end parallel
+#endif
             end if
          end if
       end do
@@ -463,31 +547,75 @@ module ocn_time_integration_split
       end if
 
       if (associated(highFreqThicknessNew)) then
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang &
+         !$acc    present(highFreqThicknessCur, highFreqThicknessNew)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
+#endif
          do iCell = 1, nCellsAll
+#ifdef MPAS_OPENACC
+         !$acc loop vector
+#endif
          do k = 1,nVertLevels
             highFreqThicknessNew(k,iCell) = &
             highFreqThicknessCur(k,iCell)
          end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
       end if
 
       if (associated(lowFreqDivergenceNew)) then
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang &
+         !$acc    present(lowFreqDivergenceCur, lowFreqDivergenceNew)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
+#endif
          do iCell = 1, nCellsAll
+#ifdef MPAS_OPENACC
+         !$acc loop vector
+#endif
          do k = 1,nVertLevels
             lowFreqDivergenceNew(k,iCell) = &
             lowFreqDivergenceCur(k,iCell)
          end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
       endif
       call mpas_timer_stop("se prep")
+
+      call mpas_pool_get_array(forcingPool, 'seaIcePressure', seaIcePressure)
+      call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
+      call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
+
+      if (landIcePressureOn) then 
+         call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+         call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
+      endif
+
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(normalVelocityCur, normalBarotropicVelocityCur, &
+      !$acc    sshCur, layerThicknessCur)
+      !$acc exit data copyout(normalBaroClinicVelocityCur, normalVelocityNew, &
+      !$acc    normalBaroclinicVelocityNew, sshNew, layerThicknessNew)
+      if (associated(highFreqThicknessNew)) then
+         !$acc exit data delete(highFreqThicknessCur)
+         !$acc exit data copyout(highFreqThicknessNew)
+      endif
+      if (associated(lowFreqDivergenceNew)) then
+         !$acc exit data delete(lowFreqDivergenceCur)
+         !$acc exit data copyout(lowFreqDivergenceNew)
+      endif
+#endif
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! BEGIN large outer timestep iteration loop
@@ -505,6 +633,18 @@ module ocn_time_integration_split
          call mpas_timer_start('se loop')
 
          stage1_tend_time = min(splitExplicitStep,2)
+
+         call mpas_pool_get_array(statePool, 'normalVelocity', &
+                           normalVelocityCur, stage1_tend_time)
+
+#ifdef MPAS_OPENACC
+         !$acc enter data copyin(layerThicknessCur, normalVelocityCur, sshCur)
+         !$acc update device(layerThickEdgeFlux)
+         if (config_use_freq_filtered_thickness .or. associated(highFreqThicknessNew) ) then
+            !$acc enter data create(highFreqThicknessNew)
+            !$acc enter data copyin(highFreqThicknessCur, highFreqThicknessTend)
+         endif
+#endif
 
          ! ---  update halos for diagnostic ocean boundary layer depth
          if (config_use_cvmix_kpp) then
@@ -545,9 +685,17 @@ module ocn_time_integration_split
 
             call mpas_timer_stop("se freq-filtered-thick halo update")
 
+#ifdef MPAS_OPENACC
+            !$acc parallel loop gang present(minLevelCell, maxLevelCell, &
+            !$acc    highFreqThicknessNew, highFreqThicknessCur, highFreqThicknessTend)
+#else
             !$omp parallel
             !$omp do schedule(runtime) private(k)
+#endif
             do iCell = 1, nCellsAll
+#ifdef MPAS_OPENACC
+            !$acc loop vector
+#endif
             do k = minLevelCell(iCell), maxLevelCell(iCell)
                ! this is h^{hf}_{n+1}
                highFreqThicknessNew(k,iCell) = &
@@ -555,8 +703,10 @@ module ocn_time_integration_split
                highFreqThicknessTend(k,iCell)
             end do
             end do
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
 
          endif ! freq filtered thickness
 
@@ -564,41 +714,33 @@ module ocn_time_integration_split
          call mpas_timer_start("se bcl vel")
          call mpas_timer_start('se bcl vel tend')
 
-         call mpas_pool_get_array(statePool, 'normalVelocity', &
-                           normalVelocityCur, stage1_tend_time)
-
          ! compute vertAleTransportTop.  Use u (rather than &
          ! normalTransportVelocity) for momentum advection.
          ! Use the most recent time level available.
 
-#ifdef MPAS_OPENACC
-         !$acc enter data copyin(layerThicknessCur, normalVelocityCur, sshCur)
-         !$acc update device(layerThickEdge)
-#endif
          if (associated(highFreqThicknessNew)) then
-#ifdef MPAS_OPENACC
-            !$acc enter data copyin(highFreqThicknessNew)
-#endif
-            call ocn_vert_transport_velocity_top(meshPool, &
+            call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalVelocityCur, sshCur, dt, &
+                 layerThickEdgeFlux, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err, highFreqThicknessNew)
-#ifdef MPAS_OPENACC
-            !$acc exit data delete(highFreqThicknessNew)
-#endif
          else
-            call ocn_vert_transport_velocity_top(meshPool, &
+            call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalVelocityCur, sshCur, dt, &
+                 layerThickEdgeFlux, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err)
          endif
+
 #ifdef MPAS_OPENACC
          !$acc exit data delete(layerThicknessCur, normalVelocityCur, sshCur)
          !$acc update host(vertAleTransportTop)
+         if (config_use_freq_filtered_thickness .or. associated(highFreqThicknessNew) ) then
+            !$acc exit data copyout(highFreqThicknessNew)
+            !$acc exit data delete(highFreqThicknessCur, highFreqThicknessTend)
+         endif
 #endif
 
-         call ocn_tend_vel(tendPool, statePool, forcingPool, &
-                           stage1_tend_time, dt)
+         call ocn_tend_vel(domain, tendPool, statePool, forcingPool, &
+                           stage1_tend_time, domain % dminfo, dt)
 
          call mpas_timer_stop('se bcl vel tend')
 
@@ -618,7 +760,7 @@ module ocn_time_integration_split
             ! Only need to loop over owned cells, since there is a halo
             ! exchange immediately after this computation.
 
-            allocate(uTemp(nVertLevels))
+            allocate(uTemp(nVertLevels,nEdgesOwned))
 
             !$omp parallel
             !$omp do schedule(runtime) &
@@ -628,7 +770,7 @@ module ocn_time_integration_split
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
                ! could put this after with uTemp(maxleveledgetop+1:nvertlevels)=0
-               uTemp = 0.0_RKIND
+               uTemp(:,iEdge) = 0.0_RKIND
                do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
 
                   ! normalBaroclinicVelocityNew =
@@ -637,7 +779,7 @@ module ocn_time_integration_split
                   !                    + T(u*,w*,p*) + g*grad(SSH*) )
                   ! Here uNew is a work variable containing
                   !  -fEdge(iEdge)*normalBaroclinicVelocityPerp(k,iEdge)
-                  uTemp(k) = normalBaroclinicVelocityCur(k,iEdge) &
+                  uTemp(k,iEdge) = normalBaroclinicVelocityCur(k,iEdge) &
                            + dt * (normalVelocityTend(k,iEdge) &
                            + normalVelocityNew(k,iEdge) &
                            + splitFact*gravity * &
@@ -649,15 +791,15 @@ module ocn_time_integration_split
                ! on land boundaries maxLevelEdgeTop=0, but we want to
                ! initialize thicknessSum with a nonzero value to avoid
                ! a NaN.
-               normalThicknessFluxSum = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)* &
-                                        uTemp(minLevelEdgeBot(iEdge))
-               thicknessSum = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)
+               normalThicknessFluxSum = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)* &
+                                        uTemp(minLevelEdgeBot(iEdge),iEdge)
+               thicknessSum = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)
 
                do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                   normalThicknessFluxSum = normalThicknessFluxSum + &
-                                 layerThickEdge(k,iEdge)*uTemp(k)
+                                 layerThickEdgeFlux(k,iEdge)*uTemp(k,iEdge)
                   thicknessSum = thicknessSum + &
-                                 layerThickEdge(k,iEdge)
+                                 layerThickEdgeFlux(k,iEdge)
                enddo
                barotropicForcing(iEdge) = splitFact* &
                               normalThicknessFluxSum/thicknessSum/dt
@@ -670,11 +812,28 @@ module ocn_time_integration_split
                   !        {\bf u}^{'}_{k,n} +{\bf u}'_{k,n+1}\right)
                   ! so that normalBaroclinicVelocityNew is at time n+1/2
                   normalBaroclinicVelocityNew(k,iEdge) = 0.5_RKIND*( &
-                  normalBaroclinicVelocityCur(k,iEdge) + uTemp(k) - &
+                  normalBaroclinicVelocityCur(k,iEdge) + uTemp(k,iEdge) - &
                          dt * barotropicForcing(iEdge))
 
                enddo
 
+            enddo ! iEdge
+            !$omp end do
+            !$omp end parallel
+
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(cell1, cell2, k, thicknessSum)
+            do iEdge = 1, nEdgesHalo(config_num_halos+1)
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               thicknessSum = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
+                  thicknessSum = thicknessSum + &
+                                 layerThickEdgeFlux(k,iEdge)
+               enddo
+               bottomDepthEdge(iEdge) = thicknessSum &
+                  - 0.5_RKIND*(sshNew(cell1) + sshNew(cell2))
             enddo ! iEdge
             !$omp end do
             !$omp end parallel
@@ -729,12 +888,28 @@ module ocn_time_integration_split
 
                   ! This is u used in advective terms for layerThickness and tracers
                   ! in tendency calls in stage 3.
-                  normalTransportVelocity(k,iEdge) = edgeMask(k,iEdge) &
-                                *(normalBaroclinicVelocityNew(k,iEdge) &
-                                      + normalGMBolusVelocity(k,iEdge))
+                  normalTransportVelocity(k,iEdge) = normalBaroclinicVelocityNew(k,iEdge)
+
 
                enddo ! vertical
             end do  ! iEdge
+            !$omp end do
+            !$omp end parallel
+
+            !add GM and MLE (submesoscale) velocities if requested
+            call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdgesAll, &
+                                             nVertLevels)
+            call ocn_MLE_add_to_transport_vel(normalTransportvelocity, nEdgesAll)
+
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(k)
+            do iEdge=1, nEdgesAll
+               do k = 1, nVertLevels
+                  normalTransportVelocity(k,iEdge) = edgeMask(k,iEdge)* &
+                                  normalTransportVelocity(k,iEdge)
+               end do
+            end do
             !$omp end do
             !$omp end parallel
 
@@ -854,13 +1029,18 @@ module ocn_time_integration_split
                                              'tidalPotentialEta', &
                                               tidalPotentialEta)
 
+                     !$omp parallel
+                     !$omp do schedule(runtime)
                      do iCell = 1, nCellsAll
                         sshSubcycleCurWithTides(iCell) = &
                                  sshSubcycleCur(iCell) - &
                               tidalPotentialEta(iCell) - &
-                              config_self_attraction_and_loading_beta* &
+                           ssh_sal_on * ssh_sal(iCell) - &
+                           (1 - ssh_sal_on) * self_attraction_and_loading_beta* &
                                  sshSubcycleCur(iCell)
                      end do
+                     !$omp end do
+                     !$omp end parallel
 
                      call mpas_pool_get_array(forcingPool, &
                                           'sshSubcycleCurWithTides', &
@@ -961,6 +1141,7 @@ module ocn_time_integration_split
                   sshTend(iCell) = 0.0_RKIND
                   do i = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(i, iCell)
+                     if (maxLevelEdgeTop(iEdge).eq.0) cycle
 
                      cell1 = cellsOnEdge(1, iEdge)
                      cell2 = cellsOnEdge(2, iEdge)
@@ -968,20 +1149,9 @@ module ocn_time_integration_split
                      sshEdge = 0.5_RKIND*(sshSubcycleCur(cell1) + &
                                           sshSubcycleCur(cell2))
 
-                     ! method 0: orig, works only without pbc:
-                     !thicknessSum = sshEdge + &
-                     ! refBottomDepthTopOfCell(maxLevelEdgeTop(iEdge)+1)
-
-                     ! method 1, matches method 0 without pbcs, works with pbcs.
-                     thicknessSum = sshEdge + min(bottomDepth(cell1), &
-                                                  bottomDepth(cell2))
-
-                     ! method 2: may be better than method 1.
-                     ! Take average  of full thickness at two
-                     ! neighboring cells.
-                     !thicknessSum = sshEdge + 0.5* &
-                     !      (bottomDepth(cell1) + bottomDepth(cell2))
-
+                     ! Compute barotropic thickness at the edge. Note this
+                     ! matches the sum of baroclinic thicknesses at this edge.
+                     thicknessSum = sshEdge + bottomDepthEdge(iEdge)
 
                      flux = ((1.0-config_btr_gam1_velWt1)* &
                             normalBarotropicVelocitySubcycleCur(iEdge) &
@@ -1021,16 +1191,14 @@ module ocn_time_integration_split
                   !$omp do schedule(runtime) &
                   !$omp private(cell1, cell2, sshEdge,thicknessSum,flux)
                   do iEdge = 1, nEdges
+                     if (maxLevelEdgeTop(iEdge).eq.0) cycle
                      cell1 = cellsOnEdge(1,iEdge)
                      cell2 = cellsOnEdge(2,iEdge)
 
                      sshEdge = 0.5_RKIND*(sshSubcycleCur(cell1) + &
                                           sshSubcycleCur(cell2))
 
-                     ! method 1, matches method 0 without pbcs,
-                     !    works with pbcs.
-                     thicknessSum = sshEdge + min(bottomDepth(cell1), &
-                                                  bottomDepth(cell2))
+                     thicknessSum = sshEdge + bottomDepthEdge(iEdge)
 
                      flux = ((1.0-config_btr_gam1_velWt1)* &
                             normalBarotropicVelocitySubcycleCur(iEdge) &
@@ -1089,19 +1257,25 @@ module ocn_time_integration_split
                                              'tidalPotentialEta',  &
                                               tidalPotentialEta)
 
+                     !$omp parallel
+                     !$omp do schedule(runtime)
                      do iCell = 1, nCellsAll
                         sshSubcycleCurWithTides(iCell) = &
                                  sshSubcycleCur(iCell) - &
                               tidalPotentialEta(iCell) - &
-                           config_self_attraction_and_loading_beta* &
+                           ssh_sal_on * ssh_sal(iCell) - &
+                           (1 - ssh_sal_on) * self_attraction_and_loading_beta* &
                                  sshSubcycleCur(iCell)
 
                         sshSubcycleNewWithTides(iCell) = &
                                  sshSubcycleNew(iCell) - &
                               tidalPotentialEta(iCell) - &
-                           config_self_attraction_and_loading_beta* &
+                           ssh_sal_on * ssh_sal(iCell) - &
+                           (1 - ssh_sal_on) * self_attraction_and_loading_beta* &
                                  sshSubcycleNew(iCell)
                      end do
+                     !$omp end do
+                     !$omp end parallel
 
                      call mpas_pool_get_array(forcingPool, &
                                     'sshSubcycleCurWithTides',  &
@@ -1236,6 +1410,7 @@ module ocn_time_integration_split
                      sshTend(iCell) = 0.0_RKIND
                      do i = 1, nEdgesOnCell(iCell)
                         iEdge = edgesOnCell(i, iCell)
+                        if (maxLevelEdgeTop(iEdge).eq.0) cycle
 
                         cell1 = cellsOnEdge(1,iEdge)
                         cell2 = cellsOnEdge(2,iEdge)
@@ -1253,21 +1428,7 @@ module ocn_time_integration_split
 
                         sshEdge = 0.5_RKIND*(sshCell1 + sshCell2)
 
-                        ! method 0: orig, works only without pbc:
-                        !thicknessSum = sshEdge + &
-                        !refBottomDepthTopOfCell(maxLevelEdgeTop(iEdge)+1)
-
-                        ! method 1, matches method 0 without pbcs,
-                        !    but works with pbcs.
-                        thicknessSum = sshEdge + &
-                                       min(bottomDepth(cell1), &
-                                           bottomDepth(cell2))
-
-                        ! method 2: may be better than method 1.
-                        ! take average of full thickness at two
-                        !    neighboring cells
-                        !thicknessSum = sshEdge + 0.5* &
-                        !   (bottomDepth(cell1) + bottomDepth (cell2))
+                        thicknessSum = sshEdge + bottomDepthEdge(iEdge)
 
                         flux = ((1.0-config_btr_gam3_velWt2)* &
                            normalBarotropicVelocitySubcycleCur(iEdge) &
@@ -1307,21 +1468,7 @@ module ocn_time_integration_split
                                       sshSubcycleNew(cell2)
                      sshEdge = 0.5_RKIND * (sshCell1 + sshCell2)
 
-                     ! method 0: orig, works only without pbc:
-                     !thicknessSum = sshEdge + &
-                     !refBottomDepthTopOfCell(maxLevelEdgeTop(iEdge)+1)
-
-                     ! method 1, matches method 0 without pbcs,
-                     !           but works with pbcs.
-                     thicknessSum = sshEdge + min(bottomDepth(cell1),&
-                                                  bottomDepth(cell2))
-
-                     ! method 2, better, I think.
-                     !           take average of full thickness at two
-                     !           neighboring cells
-                     !thicknessSum = sshEdge + 0.5* &
-                     !               (bottomDepth(cell1) + &
-                     !                bottomDepth(cell2) )
+                     thicknessSum = sshEdge + bottomDepthEdge(iEdge)
 
                      flux = ((1.0-config_btr_gam3_velWt2) * &
                          normalBarotropicVelocitySubcycleCur(iEdge) &
@@ -1431,36 +1578,63 @@ module ocn_time_integration_split
             ! {\bf u}_k^{avg} \right)
             ! \left/ \sum_{k=1}^{N^{edge}} h_{k,*}^{edge}   \right.
 
-            allocate(uTemp(nVertLevels))
             nEdges = nEdgesHalo(config_num_halos-1 )
+            allocate(uTemp(nVertLevels,nEdges))
+
+            !Compute uTemp
+            ! velocity for normalVelocityCorrection is
+            ! normalBarotropicVelocity +
+            ! normalBaroclinicVelocity + uBolus
+            !$omp parallel
+            !$omp do schedule(runtime)
+            do iEdge = 1, nEdges
+               uTemp(:,iEdge) = normalBarotropicVelocityNew(iEdge) &
+                            + normalBaroclinicVelocityNew(:,iEdge)
+            end do
+            !$omp end do
+            !$omp end parallel
+
+            call ocn_GM_add_to_transport_vel(uTemp, nEdges, &
+                                             nVertLevels)
+            call ocn_MLE_add_to_transport_vel(uTemp, nEdges)
 
             !$omp parallel
             !$omp do schedule(runtime) &
-            !$omp private(k, uTemp, normalThicknessFluxSum, &
+            !$omp private(k)
+            do iEdge = 1, nEdges
+               do k = 1, nVertLevels
+                  normalTransportVelocity(k,iEdge) =  &
+                             normalBarotropicVelocityNew(iEdge)   + &
+                             normalBaroclinicVelocityNew(k,iEdge)
+               end do
+            end do
+            !$omp end do
+            !$omp end parallel
+            call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdges, &
+                                             nVertLevels)
+            call ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
+
+
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(k, normalThicknessFluxSum, &
             !$omp         thicknessSum, normalVelocityCorrection)
             do iEdge = 1, nEdges
-
-               ! velocity for normalVelocityCorrectionection is
-               ! normalBarotropicVelocity +
-               ! normalBaroclinicVelocity + uBolus
-               uTemp(:) = normalBarotropicVelocityNew(iEdge) &
-                      + normalBaroclinicVelocityNew(:,iEdge) &
-                      +       normalGMBolusVelocity(:,iEdge)
 
                ! thicknessSum is initialized outside the loop because
                ! on land boundaries maxLevelEdgeTop=0, but I want to
                ! initialize thicknessSum with a nonzero value to avoid
                ! a NaN.
-               normalThicknessFluxSum = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)* &
-                                        uTemp(minLevelEdgeBot(iEdge))
-               thicknessSum  = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)
+               normalThicknessFluxSum = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)* &
+                                        uTemp(minLevelEdgeBot(iEdge),iEdge)
+               thicknessSum  = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)
 
                do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                   normalThicknessFluxSum = normalThicknessFluxSum + &
-                                           layerThickEdge(k,iEdge)*&
-                                           uTemp(k)
+                                           layerThickEdgeFlux(k,iEdge)*&
+                                           uTemp(k,iEdge)
                   thicknessSum = thicknessSum + &
-                                 layerThickEdge(k,iEdge)
+                                 layerThickEdgeFlux(k,iEdge)
                enddo
 
                normalVelocityCorrection = useVelocityCorrection* &
@@ -1472,18 +1646,13 @@ module ocn_time_integration_split
                   ! normalTransportVelocity = normalBarotropicVelocity
                   !                         + normalBaroclinicVelocity
                   !                         + normalGMBolusVelocity
+                  !                         + normalMLEvelocity 
                   !                         + normalVelocityCorrection
-                  ! This is u used in advective terms for layerThickness
+                  ! This is the velocity used in advective terms for layerThickness
                   ! and tracers in tendency calls in stage 3.
-                  !mrp note: in QC version, there is an if
-                  !    (config_use_GM) on adding normalGMBolusVelocity
-                  !    I think it is not needed because
-                  !    normalGMBolusVelocity=0 when GM not on.
-                  normalTransportVelocity(k,iEdge) = edgeMask(k,iEdge) &
-                           *(normalBarotropicVelocityNew(iEdge)   + &
-                             normalBaroclinicVelocityNew(k,iEdge) + &
-                             normalGMBolusVelocity(k,iEdge) + &
-                             normalVelocityCorrection )
+                  normalTransportVelocity(k,iEdge) = edgeMask(k,iEdge)*( &
+                             normalTransportVelocity(k,iEdge) + &
+                             normalVelocityCorrection)
                enddo
 
             end do ! iEdge
@@ -1518,28 +1687,28 @@ module ocn_time_integration_split
          ! compute vertAleTransportTop.  Use normalTransportVelocity
          ! for advection of layerThickness and tracers.
          ! Use time level 1 values of layerThickness and
-         ! layerThickEdge because layerThickness has not yet
+         ! layerThickEdgeFlux because layerThickness has not yet
          ! been computed for time level 2.
          call mpas_timer_start('thick vert trans vel top')
 #ifdef MPAS_OPENACC
          !$acc enter data copyin(layerThicknessCur, sshCur)
-         !$acc update device(layerThickEdge, normalTransportVelocity)
+         !$acc update device(layerThickEdgeFlux, normalTransportVelocity)
 #endif
          if (associated(highFreqThicknessNew)) then
 #ifdef MPAS_OPENACC
             !$acc enter data copyin(highFreqThicknessNew)
 #endif
-            call ocn_vert_transport_velocity_top(meshPool, &
+            call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalTransportVelocity, sshCur, &
+                 layerThickEdgeFlux, normalTransportVelocity, sshCur, &
                  dt, vertAleTransportTop, err, highFreqThicknessNew)
 #ifdef MPAS_OPENACC
             !$acc exit data delete(highFreqThicknessNew)
 #endif
          else
-            call ocn_vert_transport_velocity_top(meshPool, &
+            call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalTransportVelocity, sshCur, &
+                 layerThickEdgeFlux, normalTransportVelocity, sshCur, &
                  dt, vertAleTransportTop, err)
          endif
 #ifdef MPAS_OPENACC
@@ -1548,7 +1717,7 @@ module ocn_time_integration_split
 #endif
          call mpas_timer_stop('thick vert trans vel top')
 
-         call ocn_tend_thick(tendPool, forcingPool, meshPool)
+         call ocn_tend_thick(tendPool, forcingPool)
 
          call mpas_timer_stop('se thick tend')
 
@@ -1563,6 +1732,64 @@ module ocn_time_integration_split
          call ocn_tend_tracer(tendPool, statePool, forcingPool, &
                               meshPool, swForcingPool, diagnosticsPool, &
                               dt, activeTracersOnly, 2)
+
+         call mpas_pool_get_array(tracersPool, 'activeTracers', &
+                                                tracersGroupCur, 1)
+         call mpas_pool_get_array(tracersPool, 'activeTracers', &
+                                                tracersGroupNew, 2)
+         call mpas_pool_get_array(statePool,   'normalVelocity', &
+                                                normalVelocityCur, 1)
+         call mpas_pool_get_array(tracersTendPool,'activeTracersTend', &
+                                                   activeTracersTend)
+
+#ifdef MPAS_OPENACC
+         !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
+         !$acc enter data copyin(normalBarotropicVelocityNew, &
+         !$acc                   normalBaroclinicVelocityNew)
+         !$acc enter data copyin(activeTracersNew)
+         !$acc update device(layerThickEdgeFlux)
+         if (config_use_freq_filtered_thickness) then
+            !$acc enter data copyin(lowFreqDivergenceNew)
+            !$acc enter data copyin(lowFreqDivergenceCur)
+            !$acc enter data copyin(lowFreqDivergenceTend)
+         endif
+         if (splitExplicitStep < numTSIterations) then
+            !$acc update device (normalTransportVelocity)
+            !$acc enter data copyin(atmosphericPressure, seaIcePressure)
+            !$acc enter data copyin(sshNew)
+            !$acc update device(tracersSurfaceValue)
+            if ( associated(normalGMBolusVelocity) ) then
+               !$acc update device (normalGMBolusVelocity)
+            end if
+            if ( associated(normalMLEVelocity) ) then
+               !$acc update device (normalMLEvelocity)
+            end if
+            if ( associated(frazilSurfacePressure) ) then
+               !$acc enter data copyin(frazilSurfacePressure)
+            endif
+            if (landIcePressureOn) then
+               !$acc enter data copyin(landIcePressure)
+               !$acc enter data copyin(landIceDraft)
+            endif
+            if (config_use_freq_filtered_thickness) then
+               !$acc enter data copyin(highFreqThicknessNew)
+               !$acc enter data copyin(highFreqThicknessCur)
+            endif
+         elseif (splitExplicitStep == numTSIterations) then
+            !$acc enter data copyin(layerThicknessCur)
+            !$acc enter data copyin(layerThicknessTend)
+            !$acc enter data copyin(normalBaroclinicVelocityCur)
+            if (config_compute_active_tracer_budgets) then
+               !$acc update device(activeTracerHorizontalAdvectionEdgeFlux)
+               !$acc update device(activeTracerHorizontalAdvectionTendency)
+               !$acc update device(activeTracerVerticalAdvectionTendency)
+               !$acc update device(activeTracerHorMixTendency)
+               !$acc update device(activeTracerSurfaceFluxTendency)
+               !$acc update device(temperatureShortWaveTendency)
+               !$acc update device(activeTracerNonLocalTendency)
+            endif
+         endif
+#endif
 
          call mpas_timer_stop('se tracer tend')
 
@@ -1590,14 +1817,6 @@ module ocn_time_integration_split
          call mpas_timer_stop("se halo tracers")
 
          call mpas_timer_start('se loop fini')
-         call mpas_pool_get_array(tracersPool, 'activeTracers', &
-                                                tracersGroupCur, 1)
-         call mpas_pool_get_array(tracersPool, 'activeTracers', &
-                                                tracersGroupNew, 2)
-         call mpas_pool_get_array(statePool,   'normalVelocity', &
-                                                normalVelocityCur, 1)
-         call mpas_pool_get_array(tracersTendPool,'activeTracersTend', &
-                                                   activeTracersTend)
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !  If iterating, reset variables for next iteration
@@ -1606,16 +1825,23 @@ module ocn_time_integration_split
          if (splitExplicitStep < numTSIterations) then
 
             ! Get indices for dynamic tracers (Includes T&S).
-            call mpas_pool_get_dimension(tracersPool,'activeGRP_start',&
-                                                      startIndex)
-            call mpas_pool_get_dimension(tracersPool,'activeGRP_end', &
-                                                      endIndex)
+            call mpas_pool_get_dimension_scalar(tracersPool,'activeGRP_start',&
+                                                             startIndex)
+            call mpas_pool_get_dimension_scalar(tracersPool,'activeGRP_end', &
+                                                             endIndex)
 
             ! Only need T & S for earlier iterations,
             ! then all the tracers needed the last time through.
 
+!! Keeping this calc on the CPU for now
+#ifdef MPAS_OPENACC
+            !$acc update host(layerThicknessNew)
+            !$acc update host(activeTracersNew)
+            !$acc update host(tracersSurfaceValue)
+#else
             !$omp parallel
             !$omp do schedule(runtime) private(i, k, temp_h, temp)
+#endif
             do iCell = 1, nCellsAll
             do k = minLevelCell(iCell), maxLevelCell(iCell)
 
@@ -1639,13 +1865,29 @@ module ocn_time_integration_split
                end do ! tracer index
             end do ! vertical
             end do ! iCell
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+            !$acc update device(layerThicknessNew)
+            !$acc update device(activeTracersNew)
+#endif
 
             if (config_use_freq_filtered_thickness) then
 
+#ifdef MPAS_OPENACC
+               !$acc parallel loop present(minLevelCell, maxLevelCell) &
+               !$acc   present(highFreqThicknessNew) &
+               !$acc   present(highFreqThicknessCur) &
+               !$acc   present(lowFreqDivergenceNew) &
+               !$acc   present(lowFreqDivergenceCur) &
+               !$acc   present(lowFreqDivergenceTend)
+#else
                !$omp parallel
                !$omp do schedule(runtime) private(k, temp)
+#endif
                do iCell = 1, nCellsAll
                do k = minLevelCell(iCell), maxLevelCell(iCell)
 
@@ -1665,12 +1907,20 @@ module ocn_time_integration_split
                            (lowFreqDivergenceCur(k,iCell) + temp)
                end do
                end do
+#ifndef MPAS_OPENACC
                !$omp end do
                !$omp end parallel
+#endif
             end if
 
+#ifdef MPAS_OPENACC
+            !$acc parallel loop collapse(2) present(normalVelocityNew) &
+            !$acc   present(normalBaroclinicVelocityNew, edgeMask) &
+            !$acc   present(normalBarotropicVelocityNew)
+#else
             !$omp parallel
             !$omp do schedule(runtime) private(k)
+#endif
             do iEdge = 1, nEdgesAll
             do k = 1, nVertLevels
 
@@ -1683,11 +1933,13 @@ module ocn_time_integration_split
 
             enddo
             end do ! iEdge
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
 
             ! Efficiency note: We really only need this to compute
-            ! layerThickEdge, density, pressure, and SSH
+            ! layerThickEdgeFlux, density, pressure, and SSH
             ! in this diagnostics solve.
             call ocn_diagnostic_solve(dt, statePool, forcingPool, &
                                       meshPool, scratchPool, &
@@ -1700,9 +1952,33 @@ module ocn_time_integration_split
 
          elseif (splitExplicitStep == numTSIterations) then
 
+#ifdef MPAS_OPENACC
+            !$acc parallel present(minLevelCell, maxLevelCell) &
+            !$acc   present(layerThicknessTend) &
+            !$acc   present(layerThicknessCur) &
+            !$acc   present(minLevelEdgeBot, maxLevelEdgeTop) &
+            !$acc   present(layerThickEdgeFlux) &
+            !$acc   present(activeTracerHorizontalAdvectionEdgeFlux) &
+            !$acc   present(layerThicknessNew) &
+            !$acc   present(activeTracerHorizontalAdvectionTendency) &
+            !$acc   present(activeTracerVerticalAdvectionTendency) &
+            !$acc   present(activeTracerHorMixTendency) &
+            !$acc   present(activeTracerSurfaceFluxTendency) &
+            !$acc   present(temperatureShortWaveTendency) &
+            !$acc   present(activeTracerNonLocalTendency)
+#endif
+
+
+#ifdef MPAS_OPENACC
+            !$acc loop gang
+#else
             !$omp parallel
             !$omp do schedule(runtime) private(k)
+#endif
             do iCell = 1, nCellsAll
+#ifdef MPAS_OPENACC
+            !$acc loop vector
+#endif
             do k = minLevelCell(iCell), maxLevelCell(iCell)
                ! this is h_{n+1}
                layerThicknessNew(k,iCell) = &
@@ -1710,25 +1986,69 @@ module ocn_time_integration_split
                                   dt*layerThicknessTend(k,iCell)
             end do
             end do
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
 
             if (config_compute_active_tracer_budgets) then
 
+#ifdef MPAS_OPENACC
+               !$acc loop gang
+#else
                !$omp parallel
                !$omp do schedule(runtime) private(k)
+#endif
                do iEdge = 1, nEdgesAll
+#ifdef MPAS_OPENACC
+               !$acc loop seq
+#endif
                do k= minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-                  activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) = &
-                  activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) / &
-                       layerThickEdge(k,iEdge)
+#ifdef MPAS_OPENACC
+               !$acc loop vector
+#endif
+                  do iTracer = 1, size(activeTracerHorizontalAdvectionEdgeFlux,1)
+                     activeTracerHorizontalAdvectionEdgeFlux(iTracer,k,iEdge) = &
+                     activeTracerHorizontalAdvectionEdgeFlux(iTracer,k,iEdge) / &
+                          layerThickEdgeFlux(k,iEdge)
+                  enddo
                enddo
                enddo
+#ifndef MPAS_OPENACC
                !$omp end do
+#endif
 
+#ifdef MPAS_OPENACC
+               !$acc loop gang
+#else
                !$omp do schedule(runtime) private(k)
+#endif
                do iCell = 1, nCellsAll
                do k= minLevelCell(iCell), maxLevelCell(iCell)
+#ifdef MPAS_OPENACC
+               !$acc loop vector
+                  do iTracer = 1, size(activeTracerHorizontalAdvectionTendency,1)
+                     activeTracerHorizontalAdvectionTendency(iTracer,k,iCell) = &
+                     activeTracerHorizontalAdvectionTendency(iTracer,k,iCell) / &
+                               layerThicknessNew(k,iCell)
+
+                     activeTracerVerticalAdvectionTendency(iTracer,k,iCell) = &
+                     activeTracerVerticalAdvectionTendency(iTracer,k,iCell) / &
+                               layerThicknessNew(k,iCell)
+
+                     activeTracerHorMixTendency(iTracer,k,iCell) = &
+                     activeTracerHorMixTendency(iTracer,k,iCell) / &
+                                layerThicknessNew(k,iCell)
+
+                     activeTracerSurfaceFluxTendency(iTracer,k,iCell) = &
+                     activeTracerSurfaceFluxTendency(iTracer,k,iCell) / &
+                                layerThicknessNew(k,iCell)
+
+                     activeTracerNonLocalTendency(iTracer,k,iCell) = &
+                     activeTracerNonLocalTendency(iTracer,k,iCell) / &
+                                layerThicknessNew(k,iCell)
+                  end do
+#else
                   activeTracerHorizontalAdvectionTendency(:,k,iCell) = &
                   activeTracerHorizontalAdvectionTendency(:,k,iCell) / &
                             layerThicknessNew(k,iCell)
@@ -1745,18 +2065,33 @@ module ocn_time_integration_split
                   activeTracerSurfaceFluxTendency(:,k,iCell) / &
                              layerThicknessNew(k,iCell)
 
-                  temperatureShortWaveTendency(k,iCell) = &
-                  temperatureShortWaveTendency(k,iCell) / &
-                             layerThicknessNew(k,iCell)
-
                   activeTracerNonLocalTendency(:,k,iCell) = &
                   activeTracerNonLocalTendency(:,k,iCell) / &
                              layerThicknessNew(k,iCell)
+#endif
+
+                  temperatureShortWaveTendency(k,iCell) = &
+                  temperatureShortWaveTendency(k,iCell) / &
+                             layerThicknessNew(k,iCell)
                end do
                end do
+#ifndef MPAS_OPENACC
                !$omp end do
                !$omp end parallel
+#endif
             endif
+
+#ifdef MPAS_OPENACC
+            !$acc end parallel
+#endif
+
+! This tracer block is still computed on the CPU
+#ifdef MPAS_OPENACC
+            !$acc update host(layerThicknessNew)
+            !$acc update host(layerThicknessCur, layerThicknessTend)
+            !$acc update host(activeTracersNew)
+            !$acc update host(tracersSurfaceValue)
+#endif
 
             call mpas_pool_begin_iteration(tracersPool)
             do while (mpas_pool_get_next_member(tracersPool, &
@@ -1791,8 +2126,10 @@ module ocn_time_integration_split
                         layerThicknessNew(k,iCell)
                      end do
                      end do
+#ifndef MPAS_OPENACC
                      !$omp end do
                      !$omp end parallel
+#endif
 
                      ! limit salinity in separate loop
                      if (trim(groupItr%memberName) == &
@@ -1806,8 +2143,10 @@ module ocn_time_integration_split
                            tracersGroupNew(indexSalinity,k,iCell))
                         end do
                         end do
+#ifndef MPAS_OPENACC
                         !$omp end do
                         !$omp end parallel
+#endif
                      end if
 
                      ! Reset debugTracers to fixed value at the surface
@@ -1859,8 +2198,10 @@ module ocn_time_integration_split
                               end do
                            end if
                         end do ! cells
+#ifndef MPAS_OPENACC
                         !$omp end do
                         !$omp end parallel
+#endif
                      end if ! debug tracers
                   end if ! use tracer group
                end if ! tracer
@@ -1886,15 +2227,36 @@ module ocn_time_integration_split
                         benthosInterfaceLayerThickness(k)
                      end do
                    end do
+#ifndef MPAS_OPENACC
                    !$omp end do
                    !$omp end parallel
+#endif
                end if
             end if
 
+#ifdef MPAS_OPENACC
+            !$acc update device(layerThicknessNew)
+            !$acc update device(activeTracersNew)
+#endif
+
             if (config_use_freq_filtered_thickness) then
+#ifdef MPAS_OPENACC
+               !$acc parallel present(minLevelCell, maxLevelCell) &
+               !$acc   present(lowFreqDivergenceNew) &
+               !$acc   present(lowFreqDivergenceCur) &
+               !$acc   present(lowFreqDivergenceTend)
+#endif
+
+#ifdef MPAS_OPENACC
+               !$acc loop gang
+#else
                !$omp parallel
                !$omp do schedule(runtime) private(k)
+#endif
                do iCell = 1, nCellsAll
+#ifdef MPAS_OPENACC
+               !$acc loop vector
+#endif
                do k = minLevelCell(iCell), maxLevelCell(iCell)
 
                   ! h^{hf}_{n+1} was computed in Stage 1
@@ -1905,8 +2267,15 @@ module ocn_time_integration_split
                   lowFreqDivergenceTend(k,iCell)
                end do
                end do
+#ifndef MPAS_OPENACC
                !$omp end do
                !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+               !$acc end parallel
+#endif
+
             end if
 
             ! Recompute final u to go on to next step.
@@ -1925,9 +2294,24 @@ module ocn_time_integration_split
             ! so normalBaroclinicVelocity does not have to be
             ! recomputed here.
 
+#ifdef MPAS_OPENACC
+            !$acc parallel present(minLevelEdgeBot, maxLevelEdgeTop) &
+            !$acc   present(normalVelocityNew) &
+            !$acc   present(normalBarotropicVelocityNew) &
+            !$acc   present(normalBaroclinicVelocityNew) &
+            !$acc   present(normalBaroclinicVelocityCur)
+#endif
+
+#ifdef MPAS_OPENACC
+            !$acc loop gang
+#else
             !$omp parallel
             !$omp do schedule(runtime) private(k)
+#endif
             do iEdge = 1, nEdgesAll
+#ifdef MPAS_OPENACC
+            !$acc loop vector
+#endif
             do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                normalVelocityNew(k,iEdge) = &
                                normalBarotropicVelocityNew(iEdge) + &
@@ -1935,10 +2319,81 @@ module ocn_time_integration_split
                                normalBaroclinicVelocityCur(k,iEdge)
             end do
             end do ! iEdges
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+            !$acc end parallel
+#endif
 
          endif ! splitExplicitStep
+
+#ifdef MPAS_OPENACC
+         !$acc exit data copyout(layerThicknessNew)
+         !$acc exit data copyout(normalVelocityNew)
+         !$acc exit data delete(normalBarotropicVelocityNew, &
+         !$acc                  normalBaroclinicVelocityNew)
+         !$acc exit data copyout(activeTracersNew)
+         !$acc update host(layerThickEdgeFlux)
+         if (config_use_freq_filtered_thickness) then
+            !$acc exit data copyout(lowFreqDivergenceNew)
+            !$acc exit data delete(lowFreqDivergenceCur)
+            !$acc exit data delete(lowFreqDivergenceTend)
+         endif
+         if (splitExplicitStep < numTSIterations) then
+            if (config_use_gm) then
+               !$acc update host(vertGMBolusVelocityTop)
+            end if
+            if (config_submesoscale_enable) then
+               !$acc update host(vertMLEBolusVelocityTop)
+            end if
+            !$acc exit data delete (atmosphericPressure, seaIcePressure)
+            !$acc exit data copyout(sshNew)
+            !$acc update host(layerThickEdgeMean)
+            !$acc update host(relativeVorticity, circulation)
+            !$acc update host(vertTransportVelocityTop, &
+            !$acc             relativeVorticityCell, &
+            !$acc             divergence, &
+            !$acc             kineticEnergyCell, &
+            !$acc             tangentialVelocity, &
+            !$acc             vertVelocityTop)
+            !$acc update host(normRelVortEdge, normPlanetVortEdge, &
+            !$acc             normalizedRelativeVorticityCell)
+            !$acc update host (surfacePressure)
+            !$acc update host(zMid, zTop)
+            !$acc update host(tracersSurfaceValue)
+            !$acc update host(normalVelocitySurfaceLayer)
+            !$acc update host(density, potentialDensity, displacedDensity)
+            !$acc update host(thermExpCoeff,  &
+            !$acc&            salineContractCoeff)
+            !$acc update host(montgomeryPotential, pressure)
+            if (landIcePressureOn) then
+               !$acc exit data delete(landIcePressure)
+               !$acc exit data delete(landIceDraft)
+            endif
+            if (config_use_freq_filtered_thickness) then
+               !$acc exit data copyout(highFreqThicknessNew)
+               !$acc exit data delete(highFreqThicknessCur)
+            endif
+            if ( associated(frazilSurfacePressure) ) then
+               !$acc exit data delete(frazilSurfacePressure)
+            endif
+         elseif (splitExplicitStep == numTSIterations) then
+            !$acc exit data delete(layerThicknessCur, layerThicknessTend)
+            !$acc exit data delete(normalBaroclinicVelocityCur)
+            if (config_compute_active_tracer_budgets) then
+               !$acc update host(activeTracerHorizontalAdvectionEdgeFlux)
+               !$acc update host(activeTracerHorizontalAdvectionTendency)
+               !$acc update host(activeTracerVerticalAdvectionTendency)
+               !$acc update host(activeTracerHorMixTendency)
+               !$acc update host(activeTracerSurfaceFluxTendency)
+               !$acc update host(temperatureShortWaveTendency)
+               !$acc update host(activeTracerNonLocalTendency)
+            endif
+         endif
+#endif
 
          call mpas_timer_stop('se loop fini')
          call mpas_timer_stop('se loop')
@@ -1954,21 +2409,81 @@ module ocn_time_integration_split
       ! Call ocean diagnostic solve in preparation for vertical mixing.
       ! Note it is called again after vertical mixing, because u and
       ! tracers change. For Richardson vertical mixing, only density,
-      ! layerThickEdge, and kineticEnergyCell need to be computed.
+      ! layerThickEdgeFlux, and kineticEnergyCell need to be computed.
       ! For kpp, more variables may be needed.  Either way, this could
       ! be made more efficient by only computing what is needed for the
       ! implicit vmix routine that follows.
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
+      !$acc update device (normalTransportVelocity)
+      if (config_use_gm) then
+         !$acc update device (normalGMBolusVelocity)
+      end if
+      if (config_submesoscale_enable) then
+         !$acc update device (normalMLEVelocity)
+      end if
+      !$acc enter data copyin(atmosphericPressure, seaIcePressure)
+      !$acc enter data copyin(sshNew)
+      !$acc enter data copyin(activeTracersNew)
+      !$acc update device(tracersSurfaceValue)
+      if ( associated(frazilSurfacePressure) ) then
+         !$acc enter data copyin(frazilSurfacePressure)
+      endif
+      if (landIcePressureOn) then
+         !$acc enter data copyin(landIcePressure)
+         !$acc enter data copyin(landIceDraft)
+      endif
+#endif
       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, &
                                 scratchPool, tracersPool, 2)
 
       call mpas_dmpar_field_halo_exch(domain, 'surfaceFrictionVelocity')
 
-      ! Compute normalGMBolusVelocity; it will be added to the
-      ! baroclinic modes in Stage 2 above.
-      !if (config_use_GM.or.config_use_Redi) then
-      !   call ocn_gm_compute_Bolus_velocity(statePool, &
-      !             meshPool, scratchPool, timeLevelIn=2)
-      !end if
+#ifdef MPAS_OPENACC
+      !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
+      !$acc update host(relativeVorticity, circulation)
+      if (config_use_gm) then
+         !$acc update host (vertGMBolusVelocityTop)
+      end if
+      if (config_submesoscale_enable) then
+         !$acc update host (vertMLEBolusVelocityTop)
+      end if
+      !$acc update host(vertTransportVelocityTop, &
+      !$acc             relativeVorticityCell, &
+      !$acc             divergence, &
+      !$acc             kineticEnergyCell, &
+      !$acc             tangentialVelocity, &
+      !$acc             vertVelocityTop)
+      !$acc update host(normRelVortEdge, normPlanetVortEdge, &
+      !$acc             normalizedRelativeVorticityCell)
+      !$acc update host (surfacePressure)
+      !$acc update host(zMid, zTop)
+      !$acc exit data copyout(sshNew)
+      !$acc exit data delete(activeTracersNew)
+      !$acc update host(tracersSurfaceValue)
+      !$acc update host(normalVelocitySurfaceLayer)
+      !$acc exit data delete (atmosphericPressure, seaIcePressure)
+      !$acc update host(density, potentialDensity, displacedDensity)
+      !$acc update host(thermExpCoeff,  &
+      !$acc&            salineContractCoeff)
+      !$acc update host(montgomeryPotential, pressure)
+      !$acc update host(RiTopOfCell, &
+      !$acc             BruntVaisalaFreqTop)
+      !$acc update host(tracersSurfaceLayerValue, &
+      !$acc             indexSurfaceLayerDepth, &
+      !$acc             normalVelocitySurfaceLayer, &
+      !$acc             sfcFlxAttCoeff, &
+      !$acc             surfaceFluxAttenuationCoefficientRunoff)
+      if ( associated(frazilSurfacePressure) ) then
+         !$acc exit data delete(frazilSurfacePressure)
+      endif
+      if (landIcePressureOn) then
+         !$acc exit data delete(landIcePressure)
+         !$acc exit data delete(landIceDraft)
+      endif
+      !$acc exit data delete(layerThicknessNew, normalVelocityNew)
+#endif
+
       call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, &
                              scratchPool, err, 2)
 
@@ -2023,30 +2538,86 @@ module ocn_time_integration_split
 
       call mpas_timer_stop("se implicit vert mix")
 
+      if ( configVertAdvMethod == vertAdvRemap ) then
+
+         call mpas_timer_start("vertical remap")
+
+         call mpas_pool_get_array(statePool, 'layerThicknessLag', layerThicknessLagNew, 2)
+
+         ! Store the current, Lagrangian location for computation of the
+         ! Eulerian vertical velocity induced by remapping
+         layerThicknessLagNew = layerThicknessNew
+
+         ! Perform the remapping
+         call ocn_remap_vert_state(block, err)
+
+         call mpas_timer_stop("vertical remap")
+
+      end if
+
       call mpas_timer_start('se fini')
 
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
       if (config_prescribe_velocity) then
+         !$acc enter data copyin(normalVelocityCur)
+      endif
+      if (config_prescribe_thickness) then
+         !$acc enter data copyin(layerThicknessCur)
+      endif
+      !$acc update device (normalTransportVelocity)
+      if (config_use_gm) then
+         !$acc update device (normalGMBolusVelocity)
+      end if
+      if (config_submesoscale_enable) then
+         !$acc update device (normalMLEvelocity)
+      end if
+      !$acc enter data copyin(atmosphericPressure, seaIcePressure)
+      !$acc enter data copyin(sshNew)
+      !$acc enter data copyin(activeTracersNew)
+      !$acc update device(tracersSurfaceValue)
+      if ( associated(frazilSurfacePressure) ) then
+         !$acc enter data copyin(frazilSurfacePressure)
+      endif
+      if (landIcePressureOn) then
+         !$acc enter data copyin(landIcePressure)
+         !$acc enter data copyin(landIceDraft)
+      endif
+#endif
+      if (config_prescribe_velocity) then
+#ifdef MPAS_OPENACC
+         !$acc parallel loop collapse(2) present(normalVelocityNew, normalVelocityCur)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
+#endif
          do iEdge = 1, nEdgesAll
          do k=1,nVertLevels
             normalVelocityNew(k,iEdge) = normalVelocityCur(k,iEdge)
          end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
       end if
 
       if (config_prescribe_thickness) then
+#ifdef MPAS_OPENACC
+         !$acc parallel loop collapse(2) present(layerThicknessNew, layerThicknessCur)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
+#endif
          do iCell = 1, nCellsAll
          do k=1,nVertLevels
             layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell)
          end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
       end if
 
       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, &
@@ -2054,32 +2625,38 @@ module ocn_time_integration_split
 
       ! Update the effective desnity in land ice if we're coupling to
       ! land ice
-      call ocn_effective_density_in_land_ice_update(meshPool, &
-                                       forcingPool, statePool, err)
-
-      !! Compute normalGMBolusVelocity; it will be added to
-      !! normalVelocity in Stage 2 of the next cycle.
-      !if (config_use_GM.or.config_use_Redi) then
-      !   call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool,&
-      !                           meshPool, scratchPool, timeLevelIn=2)
-      !end if
+      call ocn_effective_density_in_land_ice_update(forcingPool, &
+                                                    statePool, err)
 
       call mpas_timer_start('se final mpas reconstruct', .false.)
 
-      call mpas_reconstruct(meshPool, normalVelocityNew,  &
-                            velocityX, velocityY, velocityZ,   &
-                            velocityZonal, velocityMeridional, &
-                            includeHalos = .true.)
+#ifdef MPAS_OPENACC
+      !$acc enter data create(velocityX, velocityY, velocityZ)
+      !$acc enter data create(velocityZonal, velocityMeridional)
+      !$acc enter data create(gradSSHX, gradSSHY, gradSSHZ)
+      !$acc enter data create(gradSSHZonal, gradSSHMeridional)
+      !$acc enter data create(surfaceVelocity, SSHGradient)
+#endif
 
-      call mpas_reconstruct(meshPool, gradSSH,               &
-                            gradSSHX, gradSSHY, gradSSHZ,    &
-                            gradSSHZonal, gradSSHMeridional, &
-                            includeHalos = .true.)
+      call mpas_reconstruct_gpu(meshPool, normalVelocityNew,       &
+                                velocityX, velocityY, velocityZ,   &
+                                velocityZonal, velocityMeridional, &
+                                includeHalos = .true.)
+
+      call mpas_reconstruct_gpu(meshPool, gradSSH,               &
+                                gradSSHX, gradSSHY, gradSSHZ,    &
+                                gradSSHZonal, gradSSHMeridional, &
+                                includeHalos = .true.)
 
       call mpas_timer_stop('se final mpas reconstruct')
 
+#ifdef MPAS_OPENACC
+      !$acc parallel loop present(surfaceVelocity, velocityZonal, velocityMeridional, &
+      !$acc   SSHGradient, gradSSHZonal, gradSSHMeridional)
+#else
       !$omp parallel
       !$omp do schedule(runtime)
+#endif
       do iCell = 1, nCellsAll
          surfaceVelocity(indexSurfaceVelocityZonal,iCell) = &
                                    velocityZonal(minLevelCell(iCell),iCell)
@@ -2090,13 +2667,71 @@ module ocn_time_integration_split
          SSHGradient(indexSSHGradientMeridional,iCell) = &
                                                gradSSHMeridional(iCell)
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+      !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
+      !$acc update host(relativeVorticity, circulation)
+      if (config_use_gm) then
+         !$acc update host(vertGMBolusVelocityTop)
+      end if
+      if (config_submesoscale_enable) then
+         !$acc update host(vertMLEBolusVelocityTop)
+      end if
+      !$acc update host(vertTransportVelocityTop, &
+      !$acc             relativeVorticityCell, &
+      !$acc             divergence, &
+      !$acc             kineticEnergyCell, &
+      !$acc             tangentialVelocity, &
+      !$acc             vertVelocityTop)
+      !$acc update host(normRelVortEdge, normPlanetVortEdge, &
+      !$acc             normalizedRelativeVorticityCell)
+      !$acc update host (surfacePressure)
+      !$acc update host(zMid, zTop)
+      !$acc exit data copyout(sshNew)
+      !$acc exit data delete(activeTracersNew)
+      !$acc update host(tracersSurfaceValue)
+      !$acc update host(normalVelocitySurfaceLayer)
+      !$acc exit data delete (atmosphericPressure, seaIcePressure)
+      if ( associated(frazilSurfacePressure) ) then
+         !$acc exit data delete(frazilSurfacePressure)
+      endif
+      if (landIcePressureOn) then
+         !$acc exit data delete(landIcePressure)
+         !$acc exit data delete(landIceDraft)
+      endif
+      !$acc exit data copyout(layerThicknessNew, normalVelocityNew)
+      !$acc update host(density, potentialDensity, displacedDensity)
+      !$acc update host(thermExpCoeff,  &
+      !$acc&            salineContractCoeff)
+      !$acc update host(montgomeryPotential, pressure)
+      !$acc update host(RiTopOfCell, &
+      !$acc             BruntVaisalaFreqTop)
+      !$acc update host(tracersSurfaceLayerValue, &
+      !$acc             indexSurfaceLayerDepth, &
+      !$acc             normalVelocitySurfaceLayer, &
+      !$acc             sfcFlxAttCoeff, &
+      !$acc             surfaceFluxAttenuationCoefficientRunoff)
+      if (config_prescribe_velocity) then
+         !$acc exit data delete(normalVelocityCur)
+      endif
+      if (config_prescribe_thickness) then
+         !$acc exit data delete(layerThicknessCur)
+      endif
+      !$acc exit data copyout(velocityX, velocityY, velocityZ)
+      !$acc exit data copyout(gradSSHX, gradSSHY, gradSSHZ)
+      !$acc exit data copyout(velocityZonal, velocityMeridional)
+      !$acc exit data copyout(gradSSHZonal, gradSSHMeridional)
+      !$acc exit data copyout(surfaceVelocity, SSHGradient)
+#endif
 
       call ocn_time_average_coupled_accumulate(statePool,forcingPool,2)
 
-      if (config_use_GM) then
-         call ocn_reconstruct_gm_vectors(meshPool)
+      if (config_use_GM .or. config_submesoscale_enable) then
+         call ocn_reconstruct_eddy_vectors(meshPool)
       end if
 
       if (trim(config_land_ice_flux_mode) == 'coupled') then
@@ -2107,6 +2742,7 @@ module ocn_time_integration_split
          call mpas_dmpar_exch_halo_field(effectiveDensityField)
          call mpas_timer_stop("se effective density halo")
       end if
+      deallocate(bottomDepthEdge)
 
       call mpas_timer_stop('se fini')
       call mpas_timer_stop("se timestep")
@@ -2373,6 +3009,14 @@ module ocn_time_integration_split
                                                      subcycleGroupName)
 
       !-----------------------------------------------------------------
+      if (config_use_self_attraction_loading) then
+         ! set ssh_sal_on to 1
+         ssh_sal_on = 1
+      else
+         ssh_sal_on = 0
+      endif
+
+      self_attraction_and_loading_beta = config_self_attraction_and_loading_beta
 
    end subroutine ocn_time_integration_split_init!}}}
 

@@ -1475,7 +1475,7 @@ contains
             g2x_g % rAttr(index_g2x_Figg_rofi,n)=0.0 !...and remove these placeholders
             g2x_g % rAttr(index_g2x_Fogg_rofl,n) = 0.0 !Attach to subglacial liquid flux once present
 
-            g2x_g % rAttr(index_g2x_Sg_topo, n) = upperSurface(i)
+            g2x_g % rAttr(index_g2x_Sg_topo, n) = max(0.0, upperSurface(i)) !updated to avoid warning for values below sea level
             g2x_g % rAttr(index_g2x_Sg_tbot, n) = temperature(nVertlevels,i) - SHR_CONST_TKTRIP
             ! layerThickness is not populated on init, so calculating like this instead:
             g2x_g % rAttr(index_g2x_Sg_dztbot, n) = layerThicknessFractions(nVertLevels) * thickness(i) / 2.0
@@ -1640,7 +1640,7 @@ contains
            &Mailing address: LLNL Climate Program, c/o David C. Bader, &
            &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
        call MPAS_stream_mgr_add_att(domain % streamManager, 'contact', &
-           'e3sm-data-support@listserv.llnl.gov')
+           'e3sm-data-support@llnl.gov')
 
 
       call MPAS_stream_mgr_add_att(stream_manager, 'on_a_sphere', domain % on_a_sphere)

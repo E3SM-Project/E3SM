@@ -32,6 +32,9 @@
 	path = cime
 	url = git@github.com:ESMCI/cime.git
 	branch = master
+[submodule "externals/ekat"]
+        path = externals/ekat
+        url = git@github.com:E3SM-Project/EKAT.git
 [submodule "externals/YAKL"]
 	path = externals/YAKL
 	url = git@github.com:mrnorman/YAKL.git
@@ -55,3 +58,25 @@
 [submodule "externals/mct"]
 	path = externals/mct
 	url = git@github.com:MCSclimate/MCT.git
+[submodule "components/mpas-albany-landice/src/SeaLevelModel"]
+	path = components/mpas-albany-landice/src/SeaLevelModel
+	url = git@github.com:MALI-Dev/1DSeaLevelModel_FWTW.git
+[submodule "components/mpas-ocean/src/SHTNS"]
+	path = components/mpas-ocean/src/SHTNS
+	url = https://bitbucket.org/nschaeff/shtns.git
+[submodule "components/mpas-ocean/src/FFTW"]
+	path = components/mpas-ocean/src/FFTW
+	url = https://github.com/knbarton/fftw-3.3.8.git
+[submodule "components/mpas-ocean/src/ppr"]
+	path = components/mpas-ocean/src/ppr
+	url = https://github.com/dengwirda/PPR.git
+[submodule "components/ww3/src/source/WW3"]
+	path = components/ww3/src/WW3
+	url = git@github.com:E3SM-Project/WW3.git
+	branch = e3sm
+[submodule "externals/haero"]
+	path = externals/haero
+	url = git@github.com:eagles-project/haero.git
+[submodule "externals/mam4xx"]
+	path = externals/mam4xx
+	url = git@github.com:eagles-project/mam4xx.git

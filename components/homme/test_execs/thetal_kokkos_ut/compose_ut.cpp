@@ -20,6 +20,7 @@
 #include "profiling.hpp"
 #include "ErrorDefs.hpp"
 #include "VerticalRemapManager.hpp"
+#include "PhysicalConstants.hpp"
 
 #include "utilities/TestUtils.hpp"
 #include "utilities/SyncUtils.hpp"
@@ -133,6 +134,8 @@ struct Session {
     p.dt_remap_factor = -1;
     p.params_set = true;
     p.theta_hydrostatic_mode = true;
+    p.scale_factor = is_sphere ? PhysicalConstants::rearth0 : 1;
+    p.laplacian_rigid_factor = is_sphere ? 1/p.scale_factor : 0;
 
     const auto hyai = cmvdc(h.hybrid_ai);
     const auto hybi = cmvdc(h.hybrid_bi);
@@ -393,14 +396,14 @@ TEST_CASE ("compose_transport_testing") {
       ct.test_2d(bfb, nmax, eval_c);
       if (s.get_comm().root()) {
         const Real f = bfb ? 0 : 1;
-        const auto n = s.nlev*s.qsize;
+        const int n = s.nlev*s.qsize;
         // When not a BFB build, still expect l2 error to be the same to a few digits.
-        for (size_t i = 0; i < n; ++i) REQUIRE(almost_equal(eval_f[i], eval_c[i], f*1e-3));
+        for (int i = 0; i < n; ++i) REQUIRE(almost_equal(eval_f[i], eval_c[i], f*1e-3));
         // Mass conservation error should be within a factor of 10 of each other.
-        for (size_t i = n; i < n + s.qsize; ++i) REQUIRE(almost_equal(eval_f[i], eval_c[i], f*10));
+        for (int i = n; i < n + s.qsize; ++i) REQUIRE(almost_equal(eval_f[i], eval_c[i], f*10));
         // And mass conservation itself should be small.
-        for (size_t i = n; i < n + s.qsize; ++i) REQUIRE(std::abs(eval_f[i]) <= 20*tol);
-        for (size_t i = n; i < n + s.qsize; ++i) REQUIRE(std::abs(eval_c[i]) <= 20*tol);
+        for (int i = n; i < n + s.qsize; ++i) REQUIRE(std::abs(eval_f[i]) <= 20*tol);
+        for (int i = n; i < n + s.qsize; ++i) REQUIRE(std::abs(eval_c[i]) <= 20*tol);
         //todo add an l2 ceiling for some select tracers as a function of ne
       }
     }

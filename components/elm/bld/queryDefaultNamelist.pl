@@ -75,7 +75,6 @@ OPTIONS
      -onlyfiles                           Only output filenames.
      -options "item=value,item2=value2"   Set options to query for when matching.
                                           (comma delimited, with equality to set value).
-     -phys "ELM-version" [or -p]          ELM version to use 
      -res  "resolution"                   Resolution to use for files. Use "-res list" to
                                           list all valid resolutions. Use "-res any" to
                                           use any valid resolution.
@@ -130,7 +129,6 @@ EOF
         "f|file=s"     => \$opts{'file'},
         "n|namelist=s" => \$opts{'namelist'},
         "v|var=s"      => \$opts{'var'},
-        "p|phys=s"     => \$opts{'model'},
         "r|res=s"      => \$opts{'hgrid'},
         "config=s"     => \$opts{'config'},
         "cesm"         => \$opts{'cesm'},
@@ -247,7 +245,7 @@ EOF
      $settings{'csmdata'}      = $inputopts{csmdata};
   } else {
      my @files = ( "$cfgdir/namelist_files/namelist_defaults.xml", 
-                   "$cfgdir/namelist_files/namelist_defaults_${model}_tools.xml", 
+                   "$cfgdir/namelist_files/namelist_defaults_tools.xml",
                    "$cfgdir/namelist_files/namelist_defaults_drv.xml",
                    "$cfgdir/namelist_files/namelist_defaults_drydep.xml",
                  );

@@ -26,7 +26,6 @@ void fill_normals (LocalMesh<ko::MachineTraits::HES>& m) {
 // continuous rather than periodic coordinate values.
 void make_continuous (const Plane& p, LocalMesh<ko::MachineTraits::HES>& m) {
   slmm_assert(m.tgt_elem >= 0 && m.tgt_elem <= nslices(m.e));
-  const auto tcell = slice(m.e, m.tgt_elem);
   // Geometric center of cell.
   const auto getctr = [&] (const Int ie, Real ctr[3]) {
     const auto cell = slice(m.e, ie);

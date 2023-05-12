@@ -135,14 +135,8 @@ void pack_dep_points_sendbuf_pass1_scan (IslMpi<MT>& cm) {
           *#x) *#lev *#lid *#rank
  */
 template <typename MT>
-void pack_dep_points_sendbuf_pass1 (IslMpi<MT>& cm) {
+void pack_dep_points_sendbuf_pass1_noscan (IslMpi<MT>& cm) {
 #ifdef COMPOSE_PORT
-# ifndef COMPOSE_PACK_NOSCAN
-  if (ko::OnGpu<typename MT::DES>::value) {
-    pack_dep_points_sendbuf_pass1_scan(cm);
-    return;
-  }
-# endif
   ko::fence();
   deep_copy(cm.nx_in_rank_h, cm.nx_in_rank);
   deep_copy(cm.nx_in_lid_h, cm.nx_in_lid);
@@ -213,6 +207,16 @@ void pack_dep_points_sendbuf_pass1 (IslMpi<MT>& cm) {
                     ko::View<Real*, typename MT::HES>(cm.sendbuf_meta_h(ri).data(), n));
   }
 #endif
+}
+
+template <typename MT>
+void pack_dep_points_sendbuf_pass1 (IslMpi<MT>& cm) {
+#if defined COMPOSE_PORT && ! defined COMPOSE_PACK_NOSCAN
+  if (ko::OnGpu<typename MT::DES>::value)
+    pack_dep_points_sendbuf_pass1_scan(cm);
+  else
+#endif
+    pack_dep_points_sendbuf_pass1_noscan(cm);
 }
 
 template <typename MT>

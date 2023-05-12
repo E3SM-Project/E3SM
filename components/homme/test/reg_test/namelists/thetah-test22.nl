@@ -17,7 +17,6 @@
   tstep             = 0.1                       ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 1                         ! 1 => default method
-  smooth            = 0.05                      ! timestep smooting
   nu                = 3.2e7                       ! reduced planet hyperviscosity hv/500^3
   nu_s              = 3.2e7
   nu_p              = 3.2e7
@@ -37,7 +36,6 @@
   tol               = 1.e-7
 /
 &vert_nl
-  vform             = "ccm"                     ! vertical coordinate type "ccm"=hybrid pressure/terrain
   vanalytic         = 1                         ! set vcoords in initialization routine
   vtop              = 3.2818e-2                 ! vertical coordinate at top of atm (z=30km)
 /

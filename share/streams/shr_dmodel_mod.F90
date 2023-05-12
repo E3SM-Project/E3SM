@@ -534,8 +534,8 @@ CONTAINS
 
             n=0
             do k=1,abs(nzg)
-              do j=1,nyg
-                do i=1,nxg
+              do j=1,nygo
+                do i=1,nxgo
                   n=n+1
                   gGridRoot%data%rAttr(nlat ,n) = lat(i_scm,j_scm)
                   gGridRoot%data%rAttr(nlon ,n) = lon(i_scm,j_scm)
@@ -672,7 +672,7 @@ CONTAINS
     rDateUB = real(mDateUB,R8) + real(mSecUB,R8)/spd
     call t_stopf(trim(lstr)//'_setup')
 
-    if (rDateM < rDateLB .or. rDateM > rDateUB) then
+    if (rDateM < rDateLB .or. rDateM >= rDateUB) then
        call t_startf(trim(lstr)//'_fbound')
        if (my_task == master_task) then
           !       call shr_stream_findBounds(stream,mDate,mSec,                 &

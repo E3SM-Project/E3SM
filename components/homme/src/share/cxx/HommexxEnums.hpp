@@ -9,6 +9,8 @@
 
 #include "Kokkos_Core.hpp"
 
+#include <cstdint>
+
 namespace Homme
 {
 
@@ -38,12 +40,11 @@ enum class ComparisonOp {
 
 // =================== Run parameters enums ====================== //
 
-enum class ForcingAlg {
-  FORCING_OFF,
-  FORCING_DEBUG,
-  FORCING_0, // Unsupported
-  FORCING_1, // Unsupported
-  FORCING_2, // TODO: Rename FORCING_1 and FORCING_2 to something more descriptive
+enum class ForcingAlg : int {
+  FORCING_OFF =-1,
+  FORCING_0   = 0, 
+  FORCING_1   = 1, // Unsupported
+  FORCING_2   = 2, // TODO: Rename FORCING_1 and FORCING_2 to something more descriptive
 };
 
 enum class MoistDry {
@@ -58,8 +59,6 @@ enum class AdvectionForm {
 
 enum class RemapAlg {
   PPM_MIRRORED = 1,
-  PPM_FIXED_PARABOLA = 2,
-  PPM_FIXED_MEANS = 3,
   PPM_LIMITED_EXTRAP = 10
 };
 
@@ -67,10 +66,6 @@ inline std::string remapAlg2str (const RemapAlg alg) {
   switch (alg) {
     case RemapAlg::PPM_MIRRORED:
       return "PPM Mirrored";
-    case RemapAlg::PPM_FIXED_MEANS:
-      return "PPM Fixed Means";
-    case RemapAlg::PPM_FIXED_PARABOLA:
-      return "PPM Fixed Parabola";
     case RemapAlg::PPM_LIMITED_EXTRAP:
       return "PPM Limited Extrapolation";
   }
@@ -78,7 +73,9 @@ inline std::string remapAlg2str (const RemapAlg alg) {
   return "UNKNOWN";
 }
 
+// Currently unused. Test case forcings are done in the F90 code.
 enum class TestCase {
+  UNUSED, // be clear that we don't use this information
   ASP_BAROCLINIC,
   ASP_GRAVITY_WAVE,
   ASP_MOUNTAIN,
@@ -106,25 +103,14 @@ enum class UpdateType {
 
 enum class TimeStepType {
   // Explicit
-  LF              =  0, // LeapFrog
-  RK2             =  1,
-  IMEX_KG254_EX   =  4, // Explicit table from IMEX_KG254
-  ULLRICH_RK35    =  5,
+  ttype5          =  5,
 
   // Implicit-Explicit
-  IMEX_KG243      =  6,
-  IMEX_KG254      =  7,
-  IMEX_KG355      =  9,
-  IMEX_KG255      = 10,
+  ttype7_imex     =  7,
+  ttype9_imex     =  9,
+  ttype10_imex    = 10
 
-  // Implicit
-  BE              = 11, // Backward Euler
-  BDF2            = 12
 };
-
-inline bool is_implicit (const TimeStepType& ts) {
-  return ts==TimeStepType::BE || ts==TimeStepType::BDF2;
-}
 
 // ======= How to combine output/input during calculations ========== //
 
@@ -165,7 +151,7 @@ enum class DSSOption {
 // =================== Mesh connectivity enums ====================== //
 
 // The kind of connection: edge, corner or missing (one of the corner connections on one of the 8 cube vertices)
-enum class ConnectionKind : int {
+enum class ConnectionKind : std::uint8_t {
   EDGE    = 0,
   CORNER  = 1,
   MISSING = 2,  // Used to detect missing connections
@@ -173,14 +159,14 @@ enum class ConnectionKind : int {
 };
 
 // The locality of connection: local, shared or missing
-enum class ConnectionSharing : int {
+enum class ConnectionSharing : std::uint8_t {
   LOCAL   = 0,
   SHARED  = 1,
   MISSING = 2,  // Used to detect missing connections
   ANY     = 3   // Used when the kind of connection is not needed
 };
 
-enum class ConnectionName : int {
+enum class ConnectionName : std::uint8_t {
   // Edges
   SOUTH = 0,
   NORTH = 1,
@@ -196,7 +182,7 @@ enum class ConnectionName : int {
 
 // Direction (useful only for an edge)
 constexpr int NUM_DIRECTIONS = 3;
-enum class Direction : int {
+enum class Direction : std::uint8_t {
   FORWARD  = 0,
   BACKWARD = 1,
   INVALID  = 2

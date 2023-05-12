@@ -566,7 +566,7 @@ void comm_lid_on_rank (IslMpi<MT>& cm, const Rank2Gids& rank2rmtgids,
     mpi::waitany(count, reqs.data(), &idx);
     const Int* rmtlids = recv.data() + recvptr[idx];
     const auto& gids = rank2rmtgids.at(recvrank[idx]);
-    slmm_assert(recvptr[idx+1] - recvptr[idx] == gids.size());
+    slmm_assert(recvptr[idx+1] - recvptr[idx] == static_cast<int>(gids.size()));
     Int i = 0;
     for (auto gid: gids)
       gid2rmt_owning_lid[gid] = rmtlids[i++];
@@ -629,6 +629,7 @@ void set_idx2_maps (IslMpi<MT>& cm, const Rank2Gids& rank2rmtgids,
   cm.x_bulkdata_offset_h = cm.x_bulkdata_offset.mirror();
   cm.sendreq.reset_capacity(i, true);
   cm.recvreq.reset_capacity(i, true);
+  cm.recvreq_ri.reset_capacity(i, true);
 
   const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
   std::vector<std::map<Int, Int> > lor2idx(nrmtrank);
@@ -737,6 +738,10 @@ void alloc_mpi_buffers (IslMpi<MT>& cm, Real* sendbuf, Real* recvbuf) {
   cm.bla_h = cm.bla.mirror();
   cm.sendbuf.init(nrmtrank, cm.sendsz.data(), sendbuf);
   cm.recvbuf.init(nrmtrank, cm.recvsz.data(), recvbuf);
+#ifdef COMPOSE_MPI_ON_HOST
+  cm.sendbuf_h = cm.sendbuf.mirror();
+  cm.recvbuf_h = cm.recvbuf.mirror();
+#endif
   cm.nlid_per_rank.clear();
   cm.sendsz.clear();
   cm.recvsz.clear();

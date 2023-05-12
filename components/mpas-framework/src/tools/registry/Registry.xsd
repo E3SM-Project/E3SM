@@ -133,6 +133,7 @@
 												<xs:attribute name="description"  type="xs:string" use="optional"/>
 												<!-- The packages attribute defines the packages the particular variable belongs to -->
 												<xs:attribute name="packages"  type="xs:string" use="optional"/>
+												<xs:attribute name="mask"  type="xs:string" use="optional"/>
 											</xs:complexType>
 										</xs:element>
 									</xs:sequence>
@@ -148,6 +149,7 @@
 									<xs:attribute name="default_value"  type="xs:string" use="optional"/>
 									<!-- The packages attribute defines the packages that control allocation of this variable -->
 									<xs:attribute name="packages"  type="xs:string" use="optional"/>
+									<xs:attribute name="mask"  type="xs:string" use="optional"/>
 								</xs:complexType>
 							</xs:element>
 							<!-- This var element defines a variable that does not live within a var_array group. -->
@@ -171,6 +173,7 @@
 									<xs:attribute name="persistence"  type="xs:string" use="optional"/>
 									<!-- The packages attribute defines the packages that control allocation of this variable -->
 									<xs:attribute name="packages"  type="xs:string" use="optional"/>
+									<xs:attribute name="mask"  type="xs:string" use="optional"/>
 								</xs:complexType>
 							</xs:element>
 						</xs:sequence>

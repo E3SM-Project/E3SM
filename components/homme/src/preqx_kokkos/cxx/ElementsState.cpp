@@ -170,4 +170,10 @@ void ElementsState::push_to_f90_pointers (F90Ptr& state_v, F90Ptr& state_t, F90P
   sync_to_host(m_v,    state_v_f90);
 }
 
+void check_print_abort_on_bad_elems (const std::string& label, const int time_level,
+                                     const int error_code) {
+  // Not implemented.
+  return;
+}
+
 } // namespace Homme

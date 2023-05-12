@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -297,7 +297,7 @@ module ocn_tracer_advection_vert
       err = 0 ! set error code to success
 
       ! set choice of vertical advection order
-      select case (config_vert_tracer_adv_order)
+      select case (config_vert_tracer_adv_flux_order)
       case (2)
          vertOrder = vertOrder2
          coef3rdOrder = 0.0_RKIND

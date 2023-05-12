@@ -290,7 +290,7 @@ module mpas_stream_manager
     !>  existing files (MPAS_STREAM_CLOBBER_NEVER).
     !>  The optional argument ioType specifies the I/O type to use for the
     !>  stream; possible values are defined by constants in the mpas_io module and
-    !>  include: MPAS_IO_NETCDF, MPAS_IO_NETCDF4, MPAS_IO_PNETCDF, and
+    !>  include: MPAS_IO_NETCDF, MPAS_IO_NETCDF4, MPAS_IO_PNETCDF, MPAS_IO_ADIOS and
     !>  MPAS_IO_PNETCDF5. If not specified, the io_type will default to
     !>  MPAS_IO_PNETCDF.
     !>  NOTE: This routine does not support regular expressions for StreamID
@@ -298,7 +298,8 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, &
                                              filenameInterval, referenceTime, recordInterval, &
-                                             realPrecision, clobberMode, ioType, ierr) !{{{
+                                             realPrecision, clobberMode, useMissingValMask, &
+                                             ioType, ierr) !{{{
 
         use mpas_io, only : MPAS_IO_PNETCDF
 
@@ -315,10 +316,12 @@ module mpas_stream_manager
         type (MPAS_TimeInterval_type), intent(in), optional :: recordInterval
         integer, intent(in), optional :: realPrecision
         integer, intent(in), optional :: clobberMode
+        logical , intent(in), optional :: useMissingValMask
         integer, intent(in), optional :: ioType
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: new_stream
+        type (MPAS_Time_type) :: mostRecentAccessTime
         integer :: err_local, threadNum
 
 
@@ -362,6 +365,11 @@ module mpas_stream_manager
            else
                new_stream % clobber_mode = MPAS_STREAM_CLOBBER_NEVER
            end if
+           if (present(useMissingValMask)) then
+               new_stream % useMissingValMask = useMissingValMask
+           else
+               new_stream % useMissingValMask = .false.
+           end if
            if (present(ioType)) then
                new_stream % io_type = ioType
            else
@@ -380,6 +388,11 @@ module mpas_stream_manager
            if (present(realPrecision)) then
                new_stream % precision = realPrecision
            end if
+           allocate(new_stream % mostRecentAccessTime)
+           call mpas_set_time(mostRecentAccessTime, dateTimeString = '9999-12-31_23:59:59')
+           new_stream % mostRecentAccessTime = mostRecentAccessTime
+           ! Not sure what the best value to init to is.  Need undefined value?
+
            call MPAS_stream_list_create(new_stream % alarmList_in, ierr=err_local)
            if (err_local /= MPAS_STREAM_LIST_NOERR) then
                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -1910,6 +1923,9 @@ module mpas_stream_manager
                !
                select case (propertyName)
 
+                   case (MPAS_STREAM_PROPERTY_MASK)
+                       stream_cursor % useMissingValMask = propertyValue
+
                    case (MPAS_STREAM_PROPERTY_ACTIVE)
                        stream_cursor % active_stream = propertyValue
 
@@ -2155,6 +2171,9 @@ module mpas_stream_manager
         ! Set property
         !
         select case (propertyName)
+
+            case (MPAS_STREAM_PROPERTY_MASK)
+                propertyValue = stream_cursor % useMissingValMask
 
             case (MPAS_STREAM_PROPERTY_ACTIVE)
                 propertyValue = stream_cursor % active_stream
@@ -2798,6 +2817,7 @@ module mpas_stream_manager
                       wroteStreams = .true.
                       stream_cursor % blockWrite = .false.
                       call write_stream(manager, stream_cursor, blockID, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, local_ierr)
+                      stream_cursor % mostRecentAccessTime = local_writeTime
                    end if
                end do
 
@@ -2818,6 +2838,7 @@ module mpas_stream_manager
 
                        stream_cursor % blockWrite = .false.
                        call write_stream(manager, stream_cursor, blockID, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, temp_ierr)
+                       stream_cursor % mostRecentAccessTime = local_writeTime
                        if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
                            local_ierr = temp_ierr
                        end if
@@ -2972,6 +2993,7 @@ module mpas_stream_manager
                       stream_cursor % blockWrite = .true.
                       call write_stream(manager, stream_cursor, writeBlock % blockID, local_timeLevel, local_mgLevel, &
                                         local_forceWrite, local_writeTime, local_ierr)
+                      stream_cursor % mostRecentAccessTime = local_writeTime
                       stream_cursor % blockWrite = .false.
                       if ( associated(stream_cursor % stream) ) then
                          stream_cursor % valid = .false.
@@ -2999,6 +3021,7 @@ module mpas_stream_manager
                        stream_cursor % blockWrite = .true.
                        call write_stream(manager, stream_cursor, writeBlock % blockID, local_timeLevel, local_mgLevel, &
                                          local_forceWrite, local_writeTime, temp_ierr)
+                       stream_cursor % mostRecentAccessTime = local_writeTime
                        stream_cursor % blockWrite = .false.
                        if ( associated(stream_cursor % stream) ) then
                           stream_cursor % valid = .false.
@@ -3068,6 +3091,7 @@ module mpas_stream_manager
         character (len=StrKIND) :: temp_filename, actualWhen
         character (len=StrKIND) :: err_string
         logical :: ringing_alarm, recordSeek, swapRecords
+        logical :: useMissingValMask
         logical :: clobberRecords, clobberFiles, truncateFiles
         integer :: maxRecords, tempRecord
         integer :: local_ierr, threadNum
@@ -3134,6 +3158,8 @@ module mpas_stream_manager
            else
                truncateFiles = .false.
            end if
+
+           useMissingValMask = stream % useMissingValMask
 
            !
            ! If the stream is not valid, assume that we have not yet written this
@@ -3353,7 +3379,8 @@ module mpas_stream_manager
            ! Write the stream
            ! 
            STREAM_DEBUG_WRITE(' -- Writing stream ' // trim(stream % name))
-           call MPAS_writeStream(stream % stream, stream % nRecords, ierr=local_ierr)
+           call MPAS_writeStream(stream % stream, stream % nRecords, &
+                                 useMissingValMask, ierr=local_ierr)
 
            !
            ! Regardless of the error code from MPAS_writeStream, we need to reset global indices in the stream back to local indices
@@ -3417,12 +3444,24 @@ module mpas_stream_manager
     !>  MPAS_STREAM_NEAREST, MPAS_STREAM_LATEST_BEFORE, 
     !>  MPAS_STREAM_LATEST_STRICTLY_BEFORE, MPAS_STREAM_EARLIEST_AFTER, or 
     !>  MPAS_STREAM_EARLIEST_STRICTLY_AFTER.
-    !>  The optional output argument "actualWhen" returns the actual time read 
-    !>  from a stream in case an exact match for the "when" time is not found, 
-    !>  and a nearby time is selected using the "whence" argument.
+    !>  The optional output argument "saveActualWhen" will save the actual time read
+    !>  from a stream in case an exact match for the "when" time is not found,
+    !>  and a nearby time is selected using the "whence" argument.  This value
+    !>  is stored in the streams "mostRecentAccessTime" attribute.
+    !>  An error will occur if saveActualWhen==.true. for a stream that does not
+    !>  include the xtime variable.  That is why saveActualWhen is an optional
+    !>  argument that defaults to .false.  Thus, it is the responsibility of the
+    !>  calling code to include saveActualWhen for calls to MPAS_stream_mgr_read
+    !>  that require saving of the actualWhen time.  Attempts to use i/o error
+    !>  codes to ignore streams without xtime were found to be unreliable due to
+    !>  pervasive occurrence of the generic MPAS_IO_ERR_PIO error.
+    !>  The optional output argument "readInputOutputStreams" provides the ability
+    !>  to include or exclude streams with the INPUT_OUTPUT direction.  There may
+    !>  be situations where it is desired to only read strictly direction INPUT
+    !>  streams.  The default value is .true. for backwards compatibility.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_read(manager, streamID, timeLevel, mgLevel, rightNow, when, whence, actualWhen, ierr) !{{{
+    subroutine MPAS_stream_mgr_read(manager, streamID, timeLevel, mgLevel, rightNow, when, whence, saveActualWhen, readInputOutputStreams, ierr) !{{{
 
         implicit none
 
@@ -3433,7 +3472,8 @@ module mpas_stream_manager
         logical, intent(in), optional :: rightNow
         character (len=*), intent(in), optional :: when
         integer, intent(in), optional :: whence
-        character (len=*), intent(out), optional :: actualWhen
+        logical, intent(in), optional :: saveActualWhen
+        logical, intent(in), optional :: readInputOutputStreams
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
@@ -3445,6 +3485,10 @@ module mpas_stream_manager
         integer :: local_ierr
         integer :: temp_ierr
         type (MPAS_Time_type) :: now_time 
+        character (len=StrKIND) :: actualWhen_local
+        logical :: local_saveActualWhen
+        logical :: local_readInputOutputStreams
+        type (MPAS_Time_type) :: actualWhen_time
         integer :: threadNum
         logical :: readStreams
 
@@ -3453,7 +3497,7 @@ module mpas_stream_manager
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_read()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
-        if (present(actualWhen)) write(actualWhen,'(a)') '0000-01-01_00:00:00'
+        write(actualWhen_local,'(a)') 'UNKNOWN'
 
         !
         ! Use optional arguments or set defaults
@@ -3489,6 +3533,17 @@ module mpas_stream_manager
             local_whence = MPAS_STREAM_EXACT_TIME
         end if
 
+        if (present(saveActualWhen)) then
+            local_saveActualWhen = saveActualWhen
+        else
+            local_saveActualWhen = .false.
+        end if
+
+        if (present(readInputOutputStreams)) then
+            local_readInputOutputStreams = readInputOutputStreams
+        else
+            local_readInputOutputStreams = .true.
+        end if
 
         if ( threadNum == 0 ) then
            !
@@ -3502,33 +3557,76 @@ module mpas_stream_manager
                    STREAM_DEBUG_WRITE('-- Handling read of stream '//trim(stream_cursor % name))
    
                    ! Verify that the stream is an input stream
-                   if (stream_cursor % direction == MPAS_STREAM_INPUT .or. stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
-                      readStreams = .true.
-                      call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, local_when, &
-                                       local_whence, actualWhen, local_ierr)
+                   if (local_readInputOutputStreams) then
+                      if (stream_cursor % direction == MPAS_STREAM_INPUT .or. stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
+                         readStreams = .true.
+                      endif
+                   else
+                      if (stream_cursor % direction == MPAS_STREAM_INPUT) then
+                         readStreams = .true.
+                      endif
+                   endif
+
+                   if (readStreams) then
+                      if (local_saveActualWhen) then
+                         call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, local_when, &
+                                       local_whence, actualWhen_local, local_ierr)
+                         if (trim(actualWhen_local) /= 'UNKNOWN') then
+                            ! Only set mostRecentAccessTime if the stream was successfully read
+                            call mpas_set_time(actualWhen_time, dateTimeString = actualWhen_local)
+                            stream_cursor % mostRecentAccessTime = actualWhen_time
+                         endif
+                      else
+                         call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, local_when, &
+                                       local_whence, ierr=local_ierr)
+                      endif
                    end if
                end do
 
                if ( .not. readStreams ) then
                    STREAM_ERROR_WRITE('No input stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_read().')
+                   if (.not. local_readInputOutputStreams) then
+                      STREAM_ERROR_WRITE('This may be because requested stream is direction INPUT/OUTPUT but only streams with')
+                      STREAM_ERROR_WRITE(' strictly INPUT direction were requested by this call.')
+                   endif
                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                    return 
                end if
-           else
+           else  ! try to read any stream of input direction
                nullify(stream_cursor)
                stream_cursor => manager % streams % head
                do while (associated(stream_cursor))
                    STREAM_DEBUG_WRITE('-- Handling read of stream '//trim(stream_cursor % name))
-   
+
+                   ! Determine if we should attempt this stream
+                   readStreams = .false.
+                   if (local_readInputOutputStreams) then
+                      if (stream_cursor % direction == MPAS_STREAM_INPUT .or. stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
+                         readStreams = .true.
+                      endif
+                   else
+                      if (stream_cursor % direction == MPAS_STREAM_INPUT) then
+                         readStreams = .true.
+                      endif
+                   endif
+
                    ! Verify that the stream is an input stream
-                   if (stream_cursor % direction == MPAS_STREAM_INPUT .or. &
-                       stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
-   
+                   if (readStreams) then
                        !
                        ! What should be the meaning of actualWhen if we read multiple streams in this call?
                        !
-                       call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, &
-                                        local_when, local_whence, actualWhen, temp_ierr)
+                       if (local_saveActualWhen) then
+                          call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, &
+                                        local_when, local_whence, actualWhen_local, temp_ierr)
+                          if (trim(actualWhen_local) /= 'UNKNOWN') then
+                             ! Only set mostRecentAccessTime if the stream was successfully read
+                             call mpas_set_time(actualWhen_time, dateTimeString = actualWhen_local)
+                             stream_cursor % mostRecentAccessTime = actualWhen_time
+                          endif
+                       else
+                          call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, &
+                                        local_when, local_whence, ierr=temp_ierr)
+                       endif
                        if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
                            local_ierr = MPAS_STREAM_MGR_ERROR
                        end if
@@ -5779,7 +5877,7 @@ end module mpas_stream_manager
 
 
 subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filename_c, filename_intv_c, ref_time_c, rec_intv_c, &
-                                      immutable_c, precision_c, clobber_c, iotype_c, ierr_c) bind(c) !{{{
+                                      immutable_c, precision_c, clobber_c, mask_c, iotype_c, ierr_c) bind(c) !{{{
 
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
@@ -5788,13 +5886,14 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
                                         MPAS_STREAM_PROPERTY_FILENAME_INTV, MPAS_STREAM_PROPERTY_REF_TIME, &
                                         MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_STREAM_PROPERTY_PRECISION, &
                                         MPAS_STREAM_PROPERTY_CLOBBER, MPAS_STREAM_CLOBBER_NEVER, MPAS_STREAM_CLOBBER_APPEND, &
-                                        MPAS_STREAM_CLOBBER_TRUNCATE, MPAS_STREAM_CLOBBER_OVERWRITE, MPAS_STREAM_PROPERTY_IOTYPE
+                                        MPAS_STREAM_CLOBBER_TRUNCATE, MPAS_STREAM_CLOBBER_OVERWRITE, &
+                                        MPAS_STREAM_PROPERTY_MASK, MPAS_STREAM_PROPERTY_IOTYPE
     use mpas_stream_manager, only : MPAS_stream_mgr_create_stream, MPAS_stream_mgr_set_property
     use mpas_kind_types, only : StrKIND
     use mpas_derived_types, only : MPAS_LOG_ERR
     use mpas_log
     use mpas_io, only : MPAS_IO_SINGLE_PRECISION, MPAS_IO_DOUBLE_PRECISION, MPAS_IO_NATIVE_PRECISION, &
-                        MPAS_IO_NETCDF, MPAS_IO_PNETCDF, MPAS_IO_NETCDF4, MPAS_IO_PNETCDF5
+                        MPAS_IO_NETCDF, MPAS_IO_PNETCDF, MPAS_IO_NETCDF4, MPAS_IO_PNETCDF5, MPAS_IO_ADIOS
 
     implicit none
 
@@ -5808,6 +5907,7 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     integer(kind=c_int) :: immutable_c
     integer(kind=c_int) :: precision_c
     integer(kind=c_int) :: clobber_c
+    integer(kind=c_int) :: mask_c
     integer(kind=c_int) :: iotype_c
     integer(kind=c_int) :: ierr_c
 
@@ -5815,6 +5915,7 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     character(len=StrKIND) :: streamID, filename, filename_interval, reference_time, record_interval
     integer :: direction, immutable, prec, ierr
     integer :: clobber_mode, iotype
+    logical :: useMissingValMask
 
     call c_f_pointer(manager_c, manager)
     call mpas_c_to_f_string(streamID_c, streamID)
@@ -5845,6 +5946,12 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
        clobber_mode = MPAS_STREAM_CLOBBER_NEVER
     end if
 
+    if (mask_c == 1) then
+       useMissingValMask = .true.
+    else
+       useMissingValMask = .false.
+    end if
+
     if (iotype_c == 0) then
        iotype = MPAS_IO_PNETCDF
     else if (iotype_c == 1) then
@@ -5853,6 +5960,8 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
        iotype = MPAS_IO_NETCDF
     else if (iotype_c == 3) then
        iotype = MPAS_IO_NETCDF4
+    else if (iotype_c == 4) then
+       iotype = MPAS_IO_ADIOS
     else
        iotype = MPAS_IO_PNETCDF
     end if
@@ -5880,10 +5989,12 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
         end if
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_PRECISION, prec, ierr=ierr)
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_CLOBBER, clobber_mode, ierr=ierr)
+        call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_MASK, useMissingValMask, ierr=ierr)
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_IOTYPE, iotype, ierr=ierr)
     else
         call MPAS_stream_mgr_create_stream(manager, streamID, direction, filename, realPrecision=prec, &
-                                           clobberMode=clobber_mode, ioType=iotype, ierr=ierr)
+                                           clobberMode=clobber_mode, useMissingValMask=useMissingValMask, &
+                                           ioType=iotype, ierr=ierr)
     end if
 
     if (reference_time /= 'initial_time') then

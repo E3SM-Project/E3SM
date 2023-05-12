@@ -119,12 +119,6 @@ sub chem_preprocess
 	if (! -e $proc_exe_path) {
 	    my $gmake = 'gmake';
 	    build_chem_preproc($gmake,$chem_preprocessor ,$chem_proc_bld,$chem_proc_exe,$fc_type);
-            # attempt to copy to public location
-	    copy( "$chem_proc_bld/$chem_proc_exe", $chem_preprocessor );
-	    if ( -e "$chem_preprocessor/$chem_proc_exe" ) {
-		chmod 0555, "$chem_preprocessor/$chem_proc_exe";
-		if ($print) { print "creating $chem_preprocessor/$chem_proc_exe \n"; }
-	    }
 	} else {
           my $log_file = "$chem_proc_bld/MAKE.out";
           open OUT,">> $log_file"  || die "Failed to open $log_file\n";

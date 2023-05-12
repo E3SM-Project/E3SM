@@ -6,7 +6,6 @@ mesh_file='none'
 &vert_nl
 ! for E3SM output, set this correctly:
 !vanalytic=0
-vform         = "ccm"
 vfile_mid     = "/global/u2/t/taylorm/codes/acme/components/homme/test/vcoord/scream-128m.ascii"
 vfile_int     = "/global/u2/t/taylorm/codes/acme/components/homme/test/vcoord/scream-128i.ascii"
 /

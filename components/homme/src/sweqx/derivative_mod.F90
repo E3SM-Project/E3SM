@@ -25,7 +25,6 @@ module derivative_mod
       curl_sphere_wk_testcov,     &
       vlaplace_sphere_wk,         &
       element_boundary_integral,  &
-      edge_flux_u_cg,             &
       limiter_optim_iter_full,    &
       limiter_clip_and_sum,    &
       laplace_sphere_wk,          &

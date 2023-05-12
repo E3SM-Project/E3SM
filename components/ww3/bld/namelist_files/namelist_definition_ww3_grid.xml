@@ -1,0 +1,291 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+
+<namelist_definition>
+
+<!-- ========================================================================================  -->
+<!-- WAVEWATCHIII  Namelist -->
+<!-- ========================================================================================  -->
+
+<!-- SPECTURM -->
+
+<entry id="spectrum%xfr" 
+       type="real" 
+       category="spectrum_nml"
+       group="spectrum_nml" 
+       valid_values="" >
+frequency increment
+</entry>
+
+<entry id="spectrum%freq1" 
+       type="real" 
+       category="spectrum_nml"
+       group="spectrum_nml" 
+       valid_values="" >
+first frequency (hz)
+</entry>
+
+<entry id="spectrum%nk" 
+       type="integer" 
+       category="spectrum_nml"
+       group="spectrum_nml" 
+       valid_values="" >
+number of frequencies (wavenumbers)
+</entry>
+
+<entry id="spectrum%nth" 
+       type="integer" 
+       category="spectrum_nml"
+       group="spectrum_nml" 
+       valid_values="" >
+number of direction bins
+</entry>
+
+<entry id="spectrum%thoff" 
+       type="real" 
+       category="spectrum_nml"
+       group="spectrum_nml" 
+       valid_values="" >
+relative offset of first direction [-0.5,0.5]
+</entry>
+
+<!-- RUN -->
+
+<entry id="run%fldry" 
+       type="logical" 
+       category="run_nml"
+       group="run_nml" 
+       valid_values=".true.,.false." >
+flag for dry run (i/o only, no calculation)
+</entry>
+
+<entry id="run%flcx" 
+       type="logical" 
+       category="run_nml"
+       group="run_nml" 
+       valid_values=".true.,.false." >
+flag for x-component of propagation
+</entry>
+
+<entry id="run%flcy" 
+       type="logical" 
+       category="run_nml"
+       group="run_nml" 
+       valid_values=".true.,.false." >
+flag for y-component of propagation
+</entry>
+
+<entry id="run%flcth" 
+       type="logical" 
+       category="run_nml"
+       group="run_nml" 
+       valid_values=".true.,.false." >
+flag for direction shift
+</entry>
+
+<entry id="run%flck" 
+       type="logical" 
+       category="run_nml"
+       group="run_nml" 
+       valid_values=".true.,.false." >
+flag for wavenumber shift
+</entry>
+
+<entry id="run%flsou" 
+       type="logical" 
+       category="run_nml"
+       group="run_nml" 
+       valid_values=".true.,.false." >
+flag for wavenumber shift
+</entry>
+
+<!-- TIMESTEPS -->
+
+<entry id="timesteps%dtmax" 
+       type="real" 
+       category="timesteps_nml"
+       group="timesteps_nml" 
+       valid_values="" >
+maximum global time step (s)
+</entry>
+
+<entry id="timesteps%dtxy" 
+       type="real" 
+       category="timesteps_nml"
+       group="timesteps_nml" 
+       valid_values="" >
+maximum cfl time step for x-y (s)
+</entry>
+
+<entry id="timesteps%dtkth" 
+       type="real" 
+       category="timesteps_nml"
+       group="timesteps_nml" 
+       valid_values="" >
+maximum cfl time step for k-th (s)
+</entry>
+
+<entry id="timesteps%dtmin" 
+       type="real" 
+       category="timesteps_nml"
+       group="timesteps_nml" 
+       valid_values="" >
+minimum source term time step (s)
+</entry>
+
+<!-- grid -->
+
+<entry id="grid%name" 
+       type="char*30" 
+       category="grid_nml"
+       group="grid_nml" 
+       valid_values="" >
+grid name (30 char)
+</entry>
+
+<entry id="grid%nml" 
+       type="char*30" 
+       category="grid_nml"
+       group="grid_nml" 
+       valid_values="" >
+namelists filename
+</entry>
+
+<entry id="grid%type" 
+       type="char*4" 
+       category="grid_nml"
+       group="grid_nml" 
+       valid_values="" >
+grid type
+</entry>
+
+<entry id="grid%coord" 
+       type="char*4" 
+       category="grid_nml"
+       group="grid_nml" 
+       valid_values="" >
+coordinate system
+</entry>
+
+<entry id="grid%clos" 
+       type="char*4" 
+       category="grid_nml"
+       group="grid_nml" 
+       valid_values="" >
+grid closure
+</entry>
+
+<entry id="grid%zlim" 
+       type="real" 
+       category="grid_nml"
+       group="grid_nml" 
+       valid_values="" >
+coastline limit depth (m)
+</entry>
+
+<entry id="grid%dmin" 
+       type="real" 
+       category="grid_nml"
+       group="grid_nml" 
+       valid_values="" >
+abs. minimum water depth (m)
+</entry>
+
+<!-- unst -->
+
+<entry id="unst%sf" 
+       type="real" 
+       category="unst_nml"
+       group="unst_nml" 
+       valid_values="" >
+mesh scale factor
+</entry>
+
+<entry id="unst%filename" 
+       type="char*128" 
+       category="unst_nml"
+       group="unst_nml" 
+       valid_values="" >
+mesh filename 
+</entry>
+
+<entry id="unst%idf" 
+       type="integer" 
+       category="unst_nml"
+       group="unst_nml" 
+       valid_values="" >
+mesh file unit number
+</entry>
+
+<entry id="unst%idla" 
+       type="integer" 
+       category="unst_nml"
+       group="unst_nml" 
+       valid_values="" >
+mesh file layout indicator 
+</entry>
+
+<entry id="unst%idfm" 
+       type="integer" 
+       category="unst_nml"
+       group="unst_nml" 
+       valid_values="" >
+mesh file format 
+</entry>
+
+<entry id="unst%format" 
+       type="char*30" 
+       category="unst_nml"
+       group="unst_nml" 
+       valid_values="" >
+mesh file formatted read format
+</entry>
+
+<!-- inbnd_count -->
+
+<entry id="inbnd_count%n_point" 
+       type="integer" 
+       category="inbnd_count_nml"
+       group="inbnd_count_nml" 
+       valid_values="" >
+number of input boundary segments
+</entry>
+
+<!-- inbnd_point -->
+
+<!--
+<entry id="inbnd_point" 
+       type="char*5(2)" 
+       category="inbnd_point_nml"
+       group="inbnd_point_nml" 
+       valid_values="" >
+x index included point
+</entry>
+-->
+
+<entry id="inbnd_point%x_index" 
+       type="integer(2)" 
+       category="inbnd_point_nml"
+       group="inbnd_point_nml" 
+       valid_values="" >
+x index included point
+</entry>
+
+<entry id="inbnd_point%y_index" 
+       type="integer(2)" 
+       category="inbnd_point_nml"
+       group="inbnd_point_nml" 
+       valid_values="" >
+y index included point
+</entry>
+
+<entry id="inbnd_point%connect" 
+       type="logical(2)" 
+       category="inbnd_point_nml"
+       group="inbnd_point_nml" 
+       valid_values="" >
+connect flag
+</entry>
+
+</namelist_definition>

@@ -298,8 +298,10 @@ module pftvarcon
   ! Hydrology
   real(r8)              :: rsub_top_globalmax
   ! Soil erosion ground cover
-  real(r8), allocatable :: gcpsi(:)            !bare ground LAI-decay parameter
-  real(r8), allocatable :: pftcc(:)            !plant cover reduction factor for transport capacity
+  real(r8), allocatable :: gcbc_p(:)           !effectiveness of surface cover in reducing rainfall-driven erosion
+  real(r8), allocatable :: gcbc_q(:)           !effectiveness of surface cover in reducing runoff-driven erosion
+  real(r8), allocatable :: gcbr_p(:)           !effectiveness of roots in reducing rainfall-driven erosion
+  real(r8), allocatable :: gcbr_q(:)           !effectiveness of roots in reducing runoff-driven erosion
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -591,8 +593,10 @@ contains
     allocate( nstor              (0:mxpft) )
     allocate( br_xr              (0:mxpft) )
     ! Ground cover for soil erosion
-    allocate( gcpsi              (0:mxpft) )
-    allocate( pftcc              (0:mxpft) )
+    allocate( gcbc_p             (0:mxpft) )
+    allocate( gcbc_q             (0:mxpft) )
+    allocate( gcbr_p             (0:mxpft) )
+    allocate( gcbr_q             (0:mxpft) )
 
     ! Set specific vegetation type values
 
@@ -850,7 +854,11 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_NIT'//errMsg(__FILE__, __LINE__))
         call ncd_io('KM_DEN',KM_DEN, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_DEN'//errMsg(__FILE__, __LINE__))
-
+        call ncd_io('pinit_beta1',pinit_beta1, 'read', ncid, readvar=readv)
+        if ( .not. readv ) pinit_beta1(:) = 0.5_r8
+        call ncd_io('pinit_beta2',pinit_beta2, 'read', ncid, readvar=readv)
+        if ( .not. readv ) pinit_beta2(:) = 0.1_r8
+        
         if(.not.use_fates) then
         
         call ncd_io('VMAX_PLANT_NH4',VMAX_PLANT_NH4, 'read', ncid, readvar=readv)  
@@ -897,10 +905,6 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in s_vc'//errMsg(__FILE__, __LINE__))
         call ncd_io('nsc_rtime',nsc_rtime, 'read', ncid, readvar=readv)
         if ( .not. readv ) nsc_rtime(:) = 1.0_r8
-        call ncd_io('pinit_beta1',pinit_beta1, 'read', ncid, readvar=readv)
-        if ( .not. readv ) pinit_beta1(:) = 0.5_r8
-        call ncd_io('pinit_beta2',pinit_beta2, 'read', ncid, readvar=readv)
-        if ( .not. readv ) pinit_beta2(:) = 0.1_r8
         ! new stoichiometry
         call ncd_io('leafcn_obs',leafcn_obs, 'read', ncid, readvar=readv, posNOTonfile=.true.)
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
@@ -999,10 +1003,14 @@ contains
     if (.not. readv) br_xr(:) = 0._r8
     call ncd_io('tc_stress', tc_stress, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
-    call ncd_io('gcpsi',gcpsi, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) gcpsi(:) = 0._r8
-    call ncd_io('pftcc',pftcc, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) pftcc(:) = 1._r8
+    call ncd_io('gcbc_p',gcbc_p, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) gcbc_p(:) = 0._r8
+    call ncd_io('gcbc_q',gcbc_q, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) gcbc_q(:) = 0._r8
+    call ncd_io('gcbr_p',gcbr_p, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) gcbr_p(:) = 0._r8
+    call ncd_io('gcbr_q',gcbr_q, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) gcbr_q(:) = 0._r8
        
     call ncd_io('mergetoelmpft', mergetoelmpft, 'read', ncid, readvar=readv)  
     if ( .not. readv ) then
@@ -1022,13 +1030,15 @@ contains
        ! (FATES-INTERF) Later, depending on how the team plans to structure the crop model
        ! or other modules that co-exist while FATES is on, we may want to preserve these pft definitions
        ! on non-fates columns.  For now, they are incompatible, and this check is warranted (rgk 04-2017)
-       if(.not. use_fates)then
+
+       ! avd - this should be independent of FATES because it fails for non-crop config otherwise
+
+          if(.not. use_crop .and. i > mxpft_nc) EXIT ! exit the do loop
           if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
              write(iulog,*)'pftconrd: pftname is NOT what is expected, name = ', &
                   trim(pftname(i)), ', expected name = ', trim(expected_pftnames(i))
              call endrun(msg='pftconrd: bad name for pft on paramfile dataset'//errMsg(__FILE__, __LINE__))
           end if
-       end if
 
        if ( trim(pftname(i)) == 'not_vegetated'                       ) noveg                = i
        if ( trim(pftname(i)) == 'needleleaf_evergreen_temperate_tree' ) ndllf_evr_tmp_tree   = i

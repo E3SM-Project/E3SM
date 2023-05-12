@@ -27,7 +27,6 @@ set vcoord = $HOMME/test/vcoord          # location of vertical coordinate files
 set qsize = 106             # number of tracers  (0 or 4)
 set u_perturb = 1         # size of perturbation (0 or 1)
 set rotate = 0            # rotation, in degrees.  0, 45 and 90
-set psurf = 0
 set npdg=0
 set nu_p = 0
 set nu_div = -1
@@ -94,7 +93,7 @@ mkdir $wdir/movies
 cd $input
 rm -f $wdir/explicit.nl
 sed s/NE/$ne/ explicit26.nl.sed |\
-sed s/TSTEP/"$tstep rsplit=$rsplit qsplit=$qsplit psurf_vis=$psurf  "/ |\
+sed s/TSTEP/"$tstep rsplit=$rsplit qsplit=$qsplit "/ |\
 sed s/SFREQ/$sfreq/ |\
 sed s/tracer_advection_formulation.\*/"tracer_advection_formulation=$tadv  tstep_type = $RK2  "/ |\
 sed s/NU1/$nu/ | sed s/NU2/$nu_q/                    |\

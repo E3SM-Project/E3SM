@@ -18,12 +18,13 @@
 <config_dt ice_grid="oRRS15to5">900.0</config_dt>
 <config_dt ice_grid="oARRM60to10">900.0</config_dt>
 <config_dt ice_grid="oARRM60to6">900.0</config_dt>
+<config_dt ice_grid="ARRM10to60E2r1">900.0</config_dt>
 <config_dt ice_grid="EC30to60E2r2">1800.0</config_dt>
 <config_dt ice_grid="WC14to60E2r3">1800.0</config_dt>
 <config_dt ice_grid="WCAtl12to45E2r4">1800.0</config_dt>
 <config_dt ice_grid="SOwISC12to60E2r4">1800.0</config_dt>
 <config_dt ice_grid="ECwISC30to60E2r1">1800.0</config_dt>
-<config_calendar_type>'gregorian_noleap'</config_calendar_type>
+<config_calendar_type>'noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
 <config_run_duration>'00-00-01_00:00:00'</config_run_duration>
@@ -72,6 +73,7 @@
 <config_initial_latitude_north ice_grid="ECwISC30to60E1r2">75.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="SOwISC12to60E2r4">85.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="ECwISC30to60E2r1">75.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="ARRM10to60E2r1">75.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oRRS30to10v3wLI">85.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oRRS18to6v3">85.0</config_initial_latitude_north>
 <config_initial_latitude_south>-60.0</config_initial_latitude_south>
@@ -79,6 +81,7 @@
 <config_initial_latitude_south ice_grid="ECwISC30to60E1r2">-75.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="SOwISC12to60E2r4">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="ECwISC30to60E2r1">-75.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="ARRM10to60E2r1">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oRRS30to10v3wLI">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oRRS18to6v3">-85.0</config_initial_latitude_south>
 <config_initial_velocity_type>'uniform'</config_initial_velocity_type>
@@ -104,12 +107,17 @@
 <config_forcing_cycle_duration>'2-00-00_00:00:00'</config_forcing_cycle_duration>
 <config_forcing_precipitation_units>'mm_per_sec'</config_forcing_precipitation_units>
 <config_forcing_sst_type>'ncar'</config_forcing_sst_type>
+<config_forcing_bgc_type>'ISPOL'</config_forcing_bgc_type>
 <config_update_ocean_fluxes>true</config_update_ocean_fluxes>
 <config_include_pond_freshwater_feedback>false</config_include_pond_freshwater_feedback>
 
 <!-- testing -->
 <config_use_test_ice_shelf>false</config_use_test_ice_shelf>
 <config_testing_system_test>false</config_testing_system_test>
+<config_use_congelation_basal_melt>true</config_use_congelation_basal_melt>
+<config_use_lateral_melt>true</config_use_lateral_melt>
+<config_use_latent_processes>true</config_use_latent_processes>
+<config_limit_air_temperatures>true</config_limit_air_temperatures>
 
 <!-- velocity_solver -->
 <config_dynamics_subcycle_number>1</config_dynamics_subcycle_number>
@@ -125,6 +133,7 @@
 <config_dynamics_subcycle_number ice_grid="oRRS15to5">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oARRM60to10">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oARRM60to6">2</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="ARRM10to60E2r1">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="EC30to60E2r2">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="WC14to60E2r3">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="WCAtl12to45E2r4">1</config_dynamics_subcycle_number>
@@ -188,6 +197,7 @@
 <config_use_nitrate>false</config_use_nitrate>
 <config_use_carbon>false</config_use_carbon>
 <config_use_chlorophyll>false</config_use_chlorophyll>
+<config_use_macromolecules>false</config_use_macromolecules>
 <config_use_ammonium>false</config_use_ammonium>
 <config_use_silicate>false</config_use_silicate>
 <config_use_DMS>false</config_use_DMS>
@@ -240,9 +250,9 @@
 <config_maximum_growth_rate_diatoms>1.44</config_maximum_growth_rate_diatoms>
 <config_maximum_growth_rate_small_plankton>0.41</config_maximum_growth_rate_small_plankton>
 <config_maximum_growth_rate_phaeocystis>0.63</config_maximum_growth_rate_phaeocystis>
-<config_temperature_growth_diatoms>0.06</config_temperature_growth_diatoms>
-<config_temperature_growth_small_plankton>0.06</config_temperature_growth_small_plankton>
-<config_temperature_growth_phaeocystis>0.06</config_temperature_growth_phaeocystis>
+<config_temperature_growth_diatoms>0.063</config_temperature_growth_diatoms>
+<config_temperature_growth_small_plankton>0.063</config_temperature_growth_small_plankton>
+<config_temperature_growth_phaeocystis>0.063</config_temperature_growth_phaeocystis>
 <config_grazed_fraction_diatoms>0.0</config_grazed_fraction_diatoms>
 <config_grazed_fraction_small_plankton>0.7</config_grazed_fraction_small_plankton>
 <config_grazed_fraction_phaeocystis>0.7</config_grazed_fraction_phaeocystis>
@@ -268,7 +278,7 @@
 <config_iron_saturation_small_plankton>0.2</config_iron_saturation_small_plankton>
 <config_iron_saturation_phaeocystis>0.1</config_iron_saturation_phaeocystis>
 <config_fraction_spilled_to_DON>0.6</config_fraction_spilled_to_DON>
-<config_degredation_of_DON>0.03</config_degredation_of_DON>
+<config_degredation_of_DON>0.2</config_degredation_of_DON>
 <config_fraction_DON_ammonium>1.0</config_fraction_DON_ammonium>
 <config_fraction_loss_to_saccharids>0.5</config_fraction_loss_to_saccharids>
 <config_fraction_loss_to_lipids>0.5</config_fraction_loss_to_lipids>
@@ -283,7 +293,7 @@
 <config_excreted_fraction>0.5</config_excreted_fraction>
 <config_fraction_mortality_to_ammonium>0.9</config_fraction_mortality_to_ammonium>
 <config_fraction_iron_remineralized>1.0</config_fraction_iron_remineralized>
-<config_nitrification_rate>0.0</config_nitrification_rate>
+<config_nitrification_rate>0.046</config_nitrification_rate>
 <config_desorption_loss_particulate_iron>3065.0</config_desorption_loss_particulate_iron>
 <config_maximum_loss_fraction>0.9</config_maximum_loss_fraction>
 <config_maximum_ratio_iron_to_saccharids>0.2</config_maximum_ratio_iron_to_saccharids>
@@ -394,6 +404,7 @@
 
 <!-- ocean -->
 <config_use_ocean_mixed_layer>false</config_use_ocean_mixed_layer>
+<config_ocean_mixed_layer_type>'cice'</config_ocean_mixed_layer_type>
 <config_min_friction_velocity>0.0005</config_min_friction_velocity>
 <config_ocean_heat_transfer_type>'constant'</config_ocean_heat_transfer_type>
 <config_sea_freezing_temperature_type>'mushy'</config_sea_freezing_temperature_type>
@@ -433,6 +444,13 @@
 <config_AM_temperatures_compute_on_startup>true</config_AM_temperatures_compute_on_startup>
 <config_AM_temperatures_write_on_startup>true</config_AM_temperatures_write_on_startup>
 
+<!-- AM_thicknesses -->
+<config_AM_thicknesses_enable>false</config_AM_thicknesses_enable>
+<config_AM_thicknesses_compute_interval>'dt'</config_AM_thicknesses_compute_interval>
+<config_AM_thicknesses_output_stream>'none'</config_AM_thicknesses_output_stream>
+<config_AM_thicknesses_compute_on_startup>true</config_AM_thicknesses_compute_on_startup>
+<config_AM_thicknesses_write_on_startup>true</config_AM_thicknesses_write_on_startup>
+
 <!-- AM_regionalStatistics -->
 <config_AM_regionalStatistics_enable>true</config_AM_regionalStatistics_enable>
 <config_AM_regionalStatistics_enable prognostic_mode="prescribed">false</config_AM_regionalStatistics_enable>
@@ -458,6 +476,8 @@
 <config_AM_conservationCheck_write_on_startup>false</config_AM_conservationCheck_write_on_startup>
 <config_AM_conservationCheck_write_to_logfile>true</config_AM_conservationCheck_write_to_logfile>
 <config_AM_conservationCheck_restart_stream>'conservationCheckRestart'</config_AM_conservationCheck_restart_stream>
+<config_AM_conservationCheck_carbon_failure_abort>true</config_AM_conservationCheck_carbon_failure_abort>
+<config_AM_conservationCheck_include_ocean>false</config_AM_conservationCheck_include_ocean>
 
 <!-- AM_geographicalVectors -->
 <config_AM_geographicalVectors_enable>true</config_AM_geographicalVectors_enable>

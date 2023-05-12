@@ -18,8 +18,17 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      ! outputFieldName and outputConstituentNames are alternative names for the field or its constituents for use in
+      ! output files.  These should only be given names different from fieldName or constituentNames for pure output
+      ! variables such as diagnostic output and never for variables present in initial conditions or restart files.
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(5) :: dimNames
       integer, dimension(5) :: dimSizes
+      character (len=StrKIND) :: maskName
+      type (field1DInteger), pointer :: missingValueMask1D => null()
+      type (field2DInteger), pointer :: missingValueMask2D => null()
+      type (field3DInteger), pointer :: missingValueMask3D => null()
       real (kind=RKIND) :: defaultValue
       real (kind=RKIND) :: missingValue
       logical :: isDecomposed
@@ -52,8 +61,14 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(4) :: dimNames
       integer, dimension(4) :: dimSizes
+      character (len=StrKIND) :: maskName
+      type (field1DInteger), pointer :: missingValueMask1D => null()
+      type (field2DInteger), pointer :: missingValueMask2D => null()
+      type (field3DInteger), pointer :: missingValueMask3D => null()
       real (kind=RKIND) :: defaultValue
       real (kind=RKIND) :: missingValue
       logical :: isDecomposed
@@ -86,9 +101,15 @@
 
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
+      character (len=StrKIND) :: maskName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(3) :: dimNames
       integer, dimension(3) :: dimSizes
+      type (field1DInteger), pointer :: missingValueMask1D => null()
+      type (field2DInteger), pointer :: missingValueMask2D => null()
+      type (field3DInteger), pointer :: missingValueMask3D => null()
       real (kind=RKIND) :: defaultValue
       real (kind=RKIND) :: missingValue
       logical :: isDecomposed
@@ -121,8 +142,13 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(2) :: dimNames
       integer, dimension(2) :: dimSizes
+      character (len=StrKIND) :: maskName
+      type (field1DInteger), pointer :: missingValueMask1D => null()
+      type (field2DInteger), pointer :: missingValueMask2D => null()
       real (kind=RKIND) :: defaultValue
       real (kind=RKIND) :: missingValue
       logical :: isDecomposed
@@ -155,8 +181,12 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(1) :: dimNames
       integer, dimension(1) :: dimSizes
+      character (len=StrKIND) :: maskName
+      type (field1DInteger), pointer :: missingValueMask1D => null()
       real (kind=RKIND) :: defaultValue
       real (kind=RKIND) :: missingValue
       logical :: isDecomposed
@@ -189,8 +219,11 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       real (kind=RKIND) :: defaultValue
       real (kind=RKIND) :: missingValue
+      character (len=StrKIND) :: maskName
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
@@ -220,10 +253,13 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(3) :: dimNames
       integer :: defaultValue
       integer :: missingValue
       integer, dimension(3) :: dimSizes
+      character (len=StrKIND) :: maskName
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
@@ -254,10 +290,13 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(2) :: dimNames
       integer :: defaultValue
       integer :: missingValue
       integer, dimension(2) :: dimSizes
+      character (len=StrKIND) :: maskName
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
@@ -288,10 +327,13 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(1) :: dimNames
       integer :: defaultValue
       integer :: missingValue
       integer, dimension(1) :: dimSizes
+      character (len=StrKIND) :: maskName
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
@@ -322,8 +364,11 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       integer :: defaultValue
       integer :: missingValue
+      character (len=StrKIND) :: maskName
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
@@ -353,10 +398,13 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(1) :: dimNames
       integer, dimension(1) :: dimSizes
       character (len=StrKIND) :: defaultValue
       character (len=StrKIND) :: missingValue
+      character (len=StrKIND) :: maskName
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
@@ -387,8 +435,11 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND) :: defaultValue
       character (len=StrKIND) :: missingValue
+      character (len=StrKIND) :: maskName
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
@@ -418,8 +469,11 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       logical :: defaultValue
       logical :: missingValue
+      character (len=StrKIND) :: maskName
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive

@@ -17,6 +17,10 @@
 # include <cuda.h>
 #endif
 
+#ifdef KOKKOS_ENABLE_HIP
+#include <hip/hip_runtime.h>
+#endif
+
 namespace Homme {
 
 // Since we're initializing from inside a Fortran code and don't have access to
@@ -41,6 +45,15 @@ void initialize_kokkos () {
     // It isn't a big deal if we can't get the device count.
     nd = 1;
   }
+#elif defined(KOKKOS_ENABLE_HIP)
+  int nd;
+  const auto ret = hipGetDeviceCount(&nd);
+  if (ret != hipSuccess) {
+    // It isn't a big deal if we can't get the device count.
+    nd = 1;
+  }
+#endif
+#ifdef HOMMEXX_ENABLE_GPU  
   std::stringstream ss;
   ss << "--kokkos-num-devices=" << nd;
   const auto key = ss.str();
@@ -49,6 +62,7 @@ void initialize_kokkos () {
   str.back() = 0;
   args.push_back(const_cast<char*>(str.data()));
 #endif
+
 
   const char* silence = "--kokkos-disable-warnings";
   args.push_back(const_cast<char*>(silence));
@@ -136,12 +150,14 @@ team_num_threads_vectors_for_gpu (
     const int num_threads = ( (tp.max_threads_usable > num_device_threads) ?
                               num_device_threads :
                               tp.max_threads_usable );
+
     return std::make_pair( num_threads,
                            prevpow2(num_device_threads / num_threads) );
   } else {
     const int num_vectors = prevpow2( (tp.max_vectors_usable > num_device_threads) ?
                                       num_device_threads :
                                       tp.max_vectors_usable );
+
     return std::make_pair( num_device_threads / num_vectors,
                            num_vectors );
   }
@@ -150,36 +166,38 @@ team_num_threads_vectors_for_gpu (
 } // namespace Parallel
 
 std::pair<int, int>
-DefaultThreadsDistribution<Hommexx_Cuda>::
+DefaultThreadsDistribution<HommexxGPU>::
 team_num_threads_vectors (const int num_parallel_iterations,
                           const ThreadPreferences tp) {
   // It appears we can't use Kokkos to tell us this. On current devices, using
   // fewer than 4 warps/thread block limits the thread occupancy to that
   // number/4. That seems to be in Cuda specs, but I don't know of a function
   // that provides this number. Use a configuration option that defaults to 4.
-  const int min_num_warps = HOMMEXX_CUDA_MIN_WARP_PER_TEAM;
+  int min_num_warps = HOMMEXX_CUDA_MIN_WARP_PER_TEAM;
+
+  int max_num_warps = HOMMEXX_CUDA_MAX_WARP_PER_TEAM;
+#ifdef KOKKOS_ENABLE_DEBUG
+  // In debug builds, team size must be smaller because of Kokkos-side data.
+  max_num_warps = std::min(max_num_warps, 8);
+#endif
+
 #ifdef KOKKOS_ENABLE_CUDA
   const int num_warps_device = Kokkos::Impl::cuda_internal_maximum_concurrent_block_count();
   const int num_threads_warp = Kokkos::Impl::CudaTraits::WarpSize;
-  // The number on P100 is 16, but for some reason
-  // Kokkos::Impl::cuda_internal_maximum_grid_count() returns 8. I may be
-  // misusing the function. I have an open issue with the Kokkos team to resolve
-  // this. For now:
-# ifdef KOKKOS_ENABLE_DEBUG
-  // Work around spurious "terminate called after throwing an instance
-  // of 'std::runtime_error'" message.
-  const int max_num_warps = 8;
-# else
-  const int max_num_warps = HOMMEXX_CUDA_MAX_WARP_PER_TEAM; //Kokkos::Impl::cuda_internal_maximum_grid_count();
-# endif
+#elif defined(KOKKOS_ENABLE_HIP)
+  // Use 64 wavefronts per CU and 120 CUs.
+  const int num_warps_device = 120*64; // no such thing Kokkos::Impl::hip_internal_maximum_warp_count();
+  const int num_threads_warp = Kokkos::Experimental::Impl::HIPTraits::WarpSize;
 #else
-  // I want thread-distribution rules to be unit-testable even when Cuda is
-  // off. Thus, make up a P100-like machine:
+  // I want thread-distribution rules to be unit-testable even when GPU spaces
+  // are off. Thus, make up a GPU-like machine:
   const int num_warps_device = 1792;
   const int num_threads_warp = 32;
-  const int max_num_warps = 16;
+  max_num_warps = 16;
 #endif
 
+  min_num_warps = std::min(min_num_warps, max_num_warps);
+  
   return Parallel::team_num_threads_vectors_for_gpu(
     num_warps_device, num_threads_warp,
     min_num_warps, max_num_warps,

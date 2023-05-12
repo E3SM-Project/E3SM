@@ -42,7 +42,7 @@ contains
     integer :: &
          nWarningsArray, & ! size of warnings array at start
          iWarning ! warning index
-
+    !$omp critical (ice_warnings_add_warning_critical)
     ! check if warnings array is not allocated
     if (.not. allocated(warnings)) then
 
@@ -90,7 +90,7 @@ contains
 
     ! add the new warning
     warnings(nWarnings) = trim(warning)
-
+    !$omp end critical (ice_warnings_add_warning_critical)
   end subroutine add_warning
 
 !=======================================================================

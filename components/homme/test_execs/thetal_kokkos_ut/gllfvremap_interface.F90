@@ -9,29 +9,28 @@ contains
 
   subroutine init_gllfvremap_f90(ne, hyai, hybi, hyam, hybm, ps0, dvv, mp, qsize_in, &
        is_sphere) bind(c)
+    use iso_c_binding, only: c_double
     use hybvcoord_mod, only: set_layer_locations
     use thetal_test_interface, only: init_f90
     use theta_f2c_mod, only: init_elements_c
     use edge_mod_base, only: initEdgeBuffer, edge_g, initEdgeSBuffer
     use prim_advection_base, only: edgeAdvQminmax
-    use geometry_interface_mod, only: GridVertex
     use bndry_mod, only: sort_neighbor_buffer_mapping
     use reduction_mod, only: initreductionbuffer, red_sum, red_min, red_max
     use parallel_mod, only: global_shared_buf, nrepro_vars
-    use control_mod, only: ftype, use_moisture, theta_hydrostatic_mode
+    use control_mod, only: use_moisture, theta_hydrostatic_mode
 
-    real (real_kind), intent(in) :: hyai(nlevp), hybi(nlevp), hyam(nlev), hybm(nlev)
+    real (c_double), intent(in) :: hyai(nlevp), hybi(nlevp), hyam(nlev), hybm(nlev)
     integer (c_int), value, intent(in) :: ne, qsize_in
-    real (real_kind), value, intent(in) :: ps0
-    real (real_kind), intent(out) :: dvv(np,np), mp(np,np)
+    real (c_double), value, intent(in) :: ps0
+    real (c_double), intent(out) :: dvv(np,np), mp(np,np)
     logical (c_bool), value, intent(in) :: is_sphere
 
-    integer :: ie, edgesz
+    integer :: edgesz
 
     if (.not. is_sphere) print *, "NOT IMPL'ED YET"
 
     qsize = qsize_in
-    ftype = 2
     use_moisture = .true.
     theta_hydrostatic_mode = .false.
 
@@ -56,49 +55,50 @@ contains
 
     integer (c_int), intent(out) :: nerr
 
-    integer :: ithr
     type (hybrid_t) :: hybrid
     type (domain1d_t) :: dom_mt(0:0)
 
     dom_mt(0)%start = 1
     dom_mt(0)%end = nelemd
     hybrid = hybrid_create(par, 0, 1)
-    
+
     nerr = gfr_test(hybrid, dom_mt, hvcoord, deriv, elem)
   end subroutine run_gfr_test
 
-  subroutine gfr_init_f90(nf, ftype_in, thm) bind(c)
+  subroutine gfr_init_f90(nf, thm) bind(c)
     use gllfvremap_mod, only: gfr_init
-    use control_mod, only: ftype, theta_hydrostatic_mode
+    use control_mod, only: theta_hydrostatic_mode
     
-    integer (c_int), value, intent(in) :: nf, ftype_in
+    integer (c_int), value, intent(in) :: nf
     logical (c_bool), value, intent(in) :: thm
 
-    ftype = ftype_in
     theta_hydrostatic_mode = thm
     call gfr_init(par, elem, nf, 2, .false.)
   end subroutine gfr_init_f90
   
-  subroutine gfr_finish_f90(nf) bind(c)
+  subroutine gfr_finish_f90() bind(c)
     use gllfvremap_mod, only: gfr_finish
-
-    integer (c_int), value, intent(in) :: nf
 
     call gfr_finish()
   end subroutine gfr_finish_f90
 
-  subroutine run_gfr_check_api(nerr) bind(c)
+  subroutine run_gfr_check_api(thm, nerr) bind(c)
     use thetal_test_interface, only: hvcoord
     use hybrid_mod, only: hybrid_t, hybrid_create
+    use control_mod, only: theta_hydrostatic_mode
     use gllfvremap_util_mod, only: gfr_check_api
 
+    logical (c_bool), value, intent(in) :: thm
     integer (c_int), intent(out) :: nerr
 
-    integer :: ithr
     type (hybrid_t) :: hybrid
-
-    hybrid = hybrid_create(par, 0, 1)    
+    logical :: thm_save
+    
+    hybrid = hybrid_create(par, 0, 1)
+    thm_save = theta_hydrostatic_mode
+    theta_hydrostatic_mode = thm
     nerr = gfr_check_api(hybrid, 1, nelemd, hvcoord, elem)
+    theta_hydrostatic_mode = thm_save
   end subroutine run_gfr_check_api
 
   subroutine limiter1_clip_and_sum_f90(n, spheremp, qmin, qmax, dp, q) bind(c)
@@ -108,7 +108,7 @@ contains
     real (c_double), intent(in) :: spheremp(n*n), dp(n*n)
     real (c_double), intent(inout) :: qmin, qmax, q(n*n)
 
-    call limiter1_clip_and_sum(n, spheremp, qmin, qmax, dp, q)
+    call limiter1_clip_and_sum(n*n, spheremp, qmin, qmax, dp, q)
   end subroutine limiter1_clip_and_sum_f90
 
   subroutine calc_dp_fv_f90(nf, ps, dp_fv) bind(c)
@@ -188,13 +188,12 @@ contains
          ps, phis, T, uv, omega_p, q)
   end subroutine gfr_dyn_to_fv_phys_f90
 
-  subroutine gfr_fv_phys_to_dyn_f90(nf, nt, dt, T, uv, q) bind(c)
+  subroutine gfr_fv_phys_to_dyn_f90(nf, nt, T, uv, q) bind(c)
     use thetal_test_interface, only: hvcoord
     use hybrid_mod, only: hybrid_t, hybrid_create
     use gllfvremap_mod, only: gfr_fv_phys_to_dyn, gfr_get_nphys, gfr_f2g_dss
 
     integer (c_int), value, intent(in) :: nf, nt
-    real (c_double), value, intent(in) :: dt
     real (c_double), intent(in) :: T(nf*nf,nlev,nelemd), uv(nf*nf,2,nlev,nelemd), &
          q(nf*nf,nlev,qsize,nelemd)
 
@@ -203,7 +202,7 @@ contains
     if (nf /= gfr_get_nphys()) print *, 'ERROR: nf vs gfr%nphys:', nf, gfr_get_nphys()
 
     hybrid = hybrid_create(par, 0, 1)
-    call gfr_fv_phys_to_dyn(hybrid, nt, dt, hvcoord, elem, 1, nelemd, T, uv, q)
+    call gfr_fv_phys_to_dyn(hybrid, nt, hvcoord, elem, 1, nelemd, T, uv, q)
     call gfr_f2g_dss(hybrid, elem, 1, nelemd)
   end subroutine gfr_fv_phys_to_dyn_f90
 

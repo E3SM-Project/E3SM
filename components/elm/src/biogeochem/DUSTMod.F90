@@ -31,6 +31,8 @@ module DUSTMod
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_ws
   use VegetationType       , only : veg_pp
+  use shr_dust_mod         , only : dust_emis_scheme
+  use spmdMod              , only : masterproc
   !
   ! !PUBLIC TYPES
   implicit none
@@ -92,6 +94,8 @@ contains
     call this%InitHistory  (bounds)
     call this%InitCold     (bounds)
     call this%InitDustVars (bounds)
+
+    if (masterproc) write(iulog,*) "elm, DUSTMod.F90, Init: dust_emis_scheme = ",dust_emis_scheme
 
   end subroutine Init
 
@@ -199,7 +203,8 @@ contains
     ! from the surface into the lowest atmospheric layer
     ! On output flx_mss_vrt_dst(ndst) is the surface dust emission
     ! (kg/m**2/s) [ + = to atm]
-    ! Source: C. Zender's dust model
+    ! Original source: C. Zender's dust model
+    ! New emission scheme from Kok et al. (2014), doi:10.5194/acp-14-13023-2014, implemented by Y. Feng in Feb, 2023
     !
     ! !USES
       !$acc routine seq
@@ -222,13 +227,17 @@ contains
     real(r8) :: wnd_frc_rat         ! [frc] Wind friction threshold over wind friction
     real(r8) :: wnd_frc_slt_dlt     ! [m s-1] Friction velocity increase from saltatn
     real(r8) :: wnd_rfr_dlt         ! [m s-1] Reference windspeed excess over threshld
-    real(r8) :: dst_slt_flx_rat_ttl
-    real(r8) :: flx_mss_hrz_slt_ttl
+    real(r8) :: dst_slt_flx_rat_ttl ! only needed in original dust emission model, -YF
+    real(r8) :: flx_mss_hrz_slt_ttl ! only needed in original dust emission model, -YF
     real(r8) :: flx_mss_vrt_dst_ttl(bounds%begp:bounds%endp)
     real(r8) :: frc_thr_wet_fct
     real(r8) :: frc_thr_rgh_fct
     real(r8) :: wnd_frc_thr_slt
     real(r8) :: wnd_rfr_thr_slt
+    real(r8) :: wnd_frc_thr_slt_std ! [m/s] The soil threshold friction speed at
+                                    ! standard air density (1.2250 kg/m3) -YF
+    real(r8) :: Cd        ! [dimless] The dust emission coefficient, which depends on 
+                          ! the soil's standardized threshold friction speed -YF
     real(r8) :: wnd_frc_slt
     real(r8) :: lnd_frc_mbl(bounds%begp:bounds%endp)
     real(r8) :: bd
@@ -241,9 +250,22 @@ contains
     !
     ! constants
     !
-    real(r8), parameter :: cst_slt = 2.61_r8           ! [frc] Saltation constant
+    real(r8), parameter :: cst_slt = 2.61_r8           ! [frc] Saltation constant, only needed in original dust model, -YF
     real(r8), parameter :: flx_mss_fdg_fct = 5.0e-4_r8 ! [frc] Empir. mass flx tuning eflx_lh_vegt
     real(r8), parameter :: vai_mbl_thr = 0.3_r8        ! [m2 m-2] VAI threshold quenching dust mobilization
+    ! The following tuning constants are from Kok et al. (2014). They are optimized together. 
+    real(r8), parameter :: Cd0 = 4.4e-5_r8             ! [dimless] proportionality constant 
+                                                       ! in calculation of dust emission coefficient -YF
+    real(r8), parameter :: Ca = 2.7_r8                 ! [dimless] proportionality constant in scaling of dust
+                                                       ! emission exponent -YF
+    real(r8), parameter :: Ce = 2.0_r8                 ! [dimless] proportionality constant scaling 
+                                                       ! exponential dependence of dust emission coefficient 
+                                                       ! on standardized soil threshold friction speed -YF
+    real(r8), parameter :: C_tune = 0.05_r8            ! [dimless] global tuning constant for vertical dust flux;
+                                                       ! set to produce ~same global dust flux in
+                                                       ! control sim (I_2000) as old parameterization -YF
+    real(r8), parameter :: wnd_frc_thr_slt_std_min = 0.16_r8 ! [m/s] minimum standardized soil threshold friction speed -YF
+    real(r8), parameter :: forc_rho_std = 1.2250_r8    ! [kg/m3] density of air at standard pressure (101325) and temperature (293 K) -YF
     !------------------------------------------------------------------------
 
     associate(                                                         &
@@ -399,10 +421,14 @@ contains
 
             wnd_frc_thr_slt = tmp1 / sqrt(forc_rho(t)) * frc_thr_wet_fct * frc_thr_rgh_fct
 
+            ! standardized soil threshold friction speed -YF
+
+            if (dust_emis_scheme == 2) wnd_frc_thr_slt_std = wnd_frc_thr_slt * sqrt(forc_rho(t) / forc_rho_std)
+
             ! reset these variables which will be updated in the following if-block
 
             wnd_frc_slt = fv(p)
-            flx_mss_hrz_slt_ttl = 0.0_r8
+            flx_mss_hrz_slt_ttl = 0.0_r8 !variable needed only in original dust model, -YF
             flx_mss_vrt_dst_ttl(p) = 0.0_r8
 
             ! the following line comes from subr. dst_mbl
@@ -424,25 +450,52 @@ contains
             ! purpose: compute vertically integrated streamwise mass flux of particles
 
             if (wnd_frc_slt > wnd_frc_thr_slt) then
-               wnd_frc_rat = wnd_frc_thr_slt / wnd_frc_slt
-               flx_mss_hrz_slt_ttl = cst_slt * forc_rho(t) * (wnd_frc_slt**3.0_r8) * &
+
+               !only needed in original dust model, -YF
+
+               if (dust_emis_scheme == 1) then 
+                  wnd_frc_rat = wnd_frc_thr_slt / wnd_frc_slt 
+                  flx_mss_hrz_slt_ttl = cst_slt * forc_rho(t) * (wnd_frc_slt**3.0_r8) * &
                     (1.0_r8 - wnd_frc_rat) * (1.0_r8 + wnd_frc_rat) * (1.0_r8 + wnd_frc_rat) / grav
 
-               ! the following loop originates from subr. dst_mbl
-               ! purpose: apply land sfc and veg limitations and global tuning factor
-               ! slevis: multiply flx_mss_hrz_slt_ttl by liqfrac to incude the effect
-               ! of frozen soil
+                  ! the following loop originates from subr. dst_mbl
+                  ! purpose: apply land sfc and veg limitations and global tuning factor
+                  ! slevis: multiply flx_mss_hrz_slt_ttl by liqfrac to incude the effect
+                  ! of frozen soil
 
-               flx_mss_hrz_slt_ttl = flx_mss_hrz_slt_ttl * lnd_frc_mbl(p) * mbl_bsn_fct(c) * &
-                    flx_mss_fdg_fct * liqfrac
+                  flx_mss_hrz_slt_ttl = flx_mss_hrz_slt_ttl * lnd_frc_mbl(p) * mbl_bsn_fct(c) * &
+                    flx_mss_fdg_fct * liqfrac     
+
+               end if
+
+               ! the following lines are added, -YF               
+
+               if (dust_emis_scheme == 2) then
+                  Cd = Cd0 * exp(-Ce * (wnd_frc_thr_slt_std -wnd_frc_thr_slt_std_min) / wnd_frc_thr_slt_std_min) 
+                                                                        ! the dust emission coefficient
+                  flx_mss_vrt_dst_ttl(p) = Cd * mss_frc_cly_vld(c) * forc_rho(t) * &
+                      ((wnd_frc_slt**2.0_r8 - wnd_frc_thr_slt**2.0_r8) / wnd_frc_thr_slt_std) * &
+                      (wnd_frc_slt / wnd_frc_thr_slt)**(Ca * (wnd_frc_thr_slt_std - wnd_frc_thr_slt_std_min) / &
+                      wnd_frc_thr_slt_std_min)  ! the vertical dust flux
+
+                  ! the following line is added to account for bare soil fraction,
+                  ! frozen soil fraction, and apply global tuning parameter -YF
+
+                  flx_mss_vrt_dst_ttl(p) = flx_mss_vrt_dst_ttl(p) * lnd_frc_mbl(p) * C_tune * liqfrac
+
+               end if
+
             end if
 
             ! the following comes from subr. flx_mss_vrt_dst_ttl_MaB95_get
             ! purpose: diagnose total vertical mass flux of dust from vertically
             !          integrated streamwise mass flux
+            !only needed in original dust model, -YF
 
-            dst_slt_flx_rat_ttl = 100.0_r8 * exp( log(10.0_r8) * (13.4_r8 * mss_frc_cly_vld(c) - 6.0_r8) )
-            flx_mss_vrt_dst_ttl(p) = flx_mss_hrz_slt_ttl * dst_slt_flx_rat_ttl
+            if (dust_emis_scheme == 1) then 
+               dst_slt_flx_rat_ttl = 100.0_r8 * exp( log(10.0_r8) * (13.4_r8 * mss_frc_cly_vld(c) - 6.0_r8) )
+               flx_mss_vrt_dst_ttl(p) = flx_mss_hrz_slt_ttl * dst_slt_flx_rat_ttl
+            end if
 
          end if   ! lnd_frc_mbl > 0.0
 

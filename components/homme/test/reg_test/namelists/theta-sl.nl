@@ -57,7 +57,6 @@ wght_fm       = 0.10D0
 kcut_fm       = 2
 /
 &vert_nl
-vform     = "ccm"
 vfile_mid = './vcoord/${HOMME_TEST_VCOORD_MID_FILE}'
 vfile_int = './vcoord/${HOMME_TEST_VCOORD_INT_FILE}'
 /

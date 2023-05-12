@@ -49,7 +49,7 @@
 
 	<var_struct name="state" time_levs="2">
 		<var_struct name="tracers" time_levs="2">
-			<var_array name="MacroMoleculesTracers" dimensions="nVertLevels nCells Time" type="real" packages="MacroMoleculesTracersPKG" >
+			<var_array name="MacroMoleculesTracers" dimensions="nVertLevels nCells Time" type="real" packages="MacroMoleculesTracersPKG" missing_value="FILLVAL" missing_value_mask="cellMask">
 				<!-- Add constituents of tracer group -->
 			<var name="PROT" array_group="MacroMoleculesGRP" units="mmol m^{-3}"
 				description="Proteins"
@@ -66,7 +66,7 @@
 
 	<var_struct name="tend" time_levs="1">
 		<var_struct name="tracersTend" time_levs="1">
-			<var_array name="MacroMoleculesTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="MacroMoleculesTracersPKG">
+			<var_array name="MacroMoleculesTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="MacroMoleculesTracersPKG" missing_value="FILLVAL" missing_value_mask="cellMask">
 				<!-- Add constituents of tracer group -->
 			<var name="PROTTend" array_group="MacroMoleculesGRP" units="mmol m^{-3} s^{-1}"
 				description="Proteins Tendency"
@@ -121,8 +121,8 @@
 			</var_array>
 		</var_struct>
 		<var_struct name="MacroMoleculesSeaIceCoupling" time_levs="1" packages="MacroMoleculesTracersPKG">
-			<var name="avgOceanSurfaceDOC" type="real" dimensions="TWO nCells Time" units="mmolC m^{-3}"
-				description="Ocean Surface Organics concentration: (1,2)=>(polysaccharides,lipids)"
+			<var name="avgOceanSurfaceDOC" type="real" dimensions="R3 nCells Time" units="mmolC m^{-3}"
+				description="Ocean Surface Organics concentration: (1,2,3)=>(polysaccharides,lipids,proteins)"
 			/>
 			<var name="avgOceanSurfaceDON" type="real" dimensions="nCells Time" units="mmolN m^{-3}"
 				description="Ocean Surface Organic Proteins concentration"

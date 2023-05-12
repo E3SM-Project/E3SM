@@ -6,6 +6,7 @@
 #include "KernelVariables.hpp"
 #include "SphereOperators.hpp"
 #include "Types.hpp"
+#include "PhysicalConstants.hpp"
 #include "utilities/TestUtils.hpp"
 #include "utilities/SubviewUtils.hpp"
 
@@ -53,7 +54,8 @@ class compute_sphere_operator_test {
         scalar_output_host(
             Kokkos::create_mirror_view(scalar_output_d)),
         vector_output_host(
-            Kokkos::create_mirror_view(vector_output_d))
+            Kokkos::create_mirror_view(vector_output_d)),
+        sphere_ops(PhysicalConstants::rearth0, 1/PhysicalConstants::rearth0)
   {
     // constructor's body
     // init randonly
@@ -242,7 +244,7 @@ class compute_sphere_operator_test {
     auto policy = Homme::get_default_team_policy<ExecSpace,TagSimpleLaplace>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     // TO FROM
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
@@ -251,7 +253,7 @@ class compute_sphere_operator_test {
     auto policy = Homme::get_default_team_policy<ExecSpace,TagGradientSphere>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     // TO FROM
     Kokkos::deep_copy(vector_output_host, vector_output_d);
   };
@@ -260,7 +262,7 @@ class compute_sphere_operator_test {
     auto policy = Homme::get_default_team_policy<ExecSpace,TagDivergenceSphereWk>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     // TO FROM
     // remember to copy correct output
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);

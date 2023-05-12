@@ -2,20 +2,20 @@
 #include "ice_fall.h"
 
 void ice_fall() {
-  auto &qcl           = :: qcl;
-  auto &qci           = :: qci;
-  auto &tabs          = :: tabs;
-  auto &qifall        = :: qifall;
-  auto &tlatqi        = :: tlatqi;
-  auto &dtn           = :: dtn;
-  auto &adz           = :: adz;
-  auto &dz            = :: dz;
-  auto &rho           = :: rho;
-  auto &micro_field   = :: micro_field;
-  auto &t             = :: t;
-  auto &ncrms         = :: ncrms;
-  auto &precsfc       = :: precsfc;
-  auto &precssfc      = :: precssfc;
+  YAKL_SCOPE( qcl           , :: qcl );
+  YAKL_SCOPE( qci           , :: qci );
+  YAKL_SCOPE( tabs          , :: tabs );
+  YAKL_SCOPE( qifall        , :: qifall );
+  YAKL_SCOPE( tlatqi        , :: tlatqi );
+  YAKL_SCOPE( dtn           , :: dtn );
+  YAKL_SCOPE( adz           , :: adz );
+  YAKL_SCOPE( dz            , :: dz );
+  YAKL_SCOPE( rho           , :: rho );
+  YAKL_SCOPE( micro_field   , :: micro_field );
+  YAKL_SCOPE( t             , :: t );
+  YAKL_SCOPE( ncrms         , :: ncrms );
+  YAKL_SCOPE( precsfc       , :: precsfc );
+  YAKL_SCOPE( precssfc      , :: precssfc );
 
   int1d  kmax("kmax",ncrms);
   int1d  kmin("kmin",ncrms);
@@ -30,7 +30,7 @@ void ice_fall() {
   // for (int j=0; j<ny; j++) {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     for(int k=0; k < nzm; k++) {
       if(qcl(k,j,i,icrm)+qci(k,j,i,icrm) > 0.0 && tabs(k,j,i,icrm) < 273.15) {
         yakl::atomicMin(kmin(icrm),k);
@@ -113,7 +113,7 @@ void ice_fall() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nz,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nz,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if ( k >= max(0,kmin(icrm)-2) && k <= kmax(icrm) ) {
       real coef = dtn/(dz(icrm)*adz(k,icrm)*rho(k,icrm));
       // The cloud ice increment is the difference of the fluxes.

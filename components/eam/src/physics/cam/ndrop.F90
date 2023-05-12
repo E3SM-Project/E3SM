@@ -517,6 +517,10 @@ subroutine dropmixnuc( &
       call physics_ptend_init(ptend, state%psetcols, 'ndrop')
    end if
 
+   !initialize variables to zero
+   ndropmix(:,:) = 0._r8
+   nsource(:,:) = 0._r8
+
    ! overall_main_i_loop
    do i = 1, ncol
 

@@ -34,7 +34,6 @@ wght_fm       = 0.10D0
 kcut_fm       = 2
 /
 &vert_nl
-vform         = "ccm"
 vfile_mid     = "../vcoord/sabm-20.fbin.littleendian"
 vfile_int     = "../vcoord/sabi-20.fbin.littleendian"
 /

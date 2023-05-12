@@ -472,7 +472,7 @@ CONTAINS
         call t_startf('fv_phys_to_dyn')
         ! Map FV physics state to dynamics grid
         dtime = get_step_size()
-        call gfr_fv_phys_to_dyn(par, dom_mt, TimeLevel%n0, dtime, hvcoord, elem, T_tmp, &
+        call gfr_fv_phys_to_dyn(par, dom_mt, TimeLevel%n0, hvcoord, elem, T_tmp, &
              uv_tmp, q_tmp)
         call t_stopf('fv_phys_to_dyn')
 

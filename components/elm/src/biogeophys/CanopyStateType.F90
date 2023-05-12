@@ -9,7 +9,7 @@ module CanopyStateType
   use landunit_varcon , only : istsoil, istcrop
   use elm_varcon      , only : spval,ispval
   use elm_varpar      , only : nlevcan, nvegwcs
-  use elm_varctl      , only : iulog, use_cn, use_fates, use_hydrstress
+  use elm_varctl      , only : iulog, use_cn, use_fates, use_hydrstress, use_fates_sp
   use LandunitType    , only : lun_pp
   use ColumnType      , only : col_pp
   use VegetationType       , only : veg_pp
@@ -39,6 +39,9 @@ module CanopyStateType
 
      real(r8) , pointer :: tlai_patch               (:)   ! patch canopy one-sided leaf area index, no burying by snow
      real(r8) , pointer :: tsai_patch               (:)   ! patch canopy one-sided stem area index, no burying by snow
+     real(r8) , pointer :: tlai_hist_patch          (:)   ! patch canopy one-sided leaf area index, for SP mode
+     real(r8) , pointer :: tsai_hist_patch          (:)   ! patch canopy one-sided stem area index, for SP mode
+     real(r8) , pointer :: htop_hist_patch          (:)   ! patch canopy height, for SP mode
      real(r8) , pointer :: elai_patch               (:)   ! patch canopy one-sided leaf area index with burying by snow
      real(r8) , pointer :: esai_patch               (:)   ! patch canopy one-sided stem area index with burying by snow
      real(r8) , pointer :: elai240_patch            (:)   ! patch canopy one-sided leaf area index with burying by snow average over 10days
@@ -115,23 +118,26 @@ contains
 
     allocate(this%frac_veg_nosno_patch     (begp:endp))           ; this%frac_veg_nosno_patch     (:)   = ispval
     allocate(this%frac_veg_nosno_alb_patch (begp:endp))           ; this%frac_veg_nosno_alb_patch (:)   = 0
-    allocate(this%tlai_patch               (begp:endp))           ; this%tlai_patch               (:)   = nan
-    allocate(this%tsai_patch               (begp:endp))           ; this%tsai_patch               (:)   = nan
-    allocate(this%elai_patch               (begp:endp))           ; this%elai_patch               (:)   = nan
-    allocate(this%elai240_patch            (begp:endp))           ; this%elai240_patch            (:)   = nan
-    allocate(this%esai_patch               (begp:endp))           ; this%esai_patch               (:)   = nan
-    allocate(this%laisun_patch             (begp:endp))           ; this%laisun_patch             (:)   = nan
-    allocate(this%laisha_patch             (begp:endp))           ; this%laisha_patch             (:)   = nan
-    allocate(this%laisun_z_patch           (begp:endp,1:nlevcan)) ; this%laisun_z_patch           (:,:) = nan
-    allocate(this%laisha_z_patch           (begp:endp,1:nlevcan)) ; this%laisha_z_patch           (:,:) = nan
-    allocate(this%mlaidiff_patch           (begp:endp))           ; this%mlaidiff_patch           (:)   = nan
-    allocate(this%annlai_patch          (12,begp:endp))           ; this%annlai_patch             (:,:) = nan
-    allocate(this%htop_patch               (begp:endp))           ; this%htop_patch               (:)   = nan
-    allocate(this%hbot_patch               (begp:endp))           ; this%hbot_patch               (:)   = nan
-    allocate(this%displa_patch             (begp:endp))           ; this%displa_patch             (:)   = nan
-    allocate(this%fsun_patch               (begp:endp))           ; this%fsun_patch               (:)   = nan
-    allocate(this%fsun24_patch             (begp:endp))           ; this%fsun24_patch             (:)   = nan
-    allocate(this%fsun240_patch            (begp:endp))           ; this%fsun240_patch            (:)   = nan
+    allocate(this%tlai_patch               (begp:endp))           ; this%tlai_patch               (:)   = spval
+    allocate(this%tsai_patch               (begp:endp))           ; this%tsai_patch               (:)   = spval
+    allocate(this%tlai_hist_patch          (begp:endp))           ; this%tlai_hist_patch          (:)   = spval
+    allocate(this%tsai_hist_patch          (begp:endp))           ; this%tsai_hist_patch          (:)   = spval
+    allocate(this%htop_hist_patch          (begp:endp))           ; this%htop_hist_patch          (:)   = spval
+    allocate(this%elai_patch               (begp:endp))           ; this%elai_patch               (:)   = spval
+    allocate(this%elai240_patch            (begp:endp))           ; this%elai240_patch            (:)   = spval
+    allocate(this%esai_patch               (begp:endp))           ; this%esai_patch               (:)   = spval
+    allocate(this%laisun_patch             (begp:endp))           ; this%laisun_patch             (:)   = spval
+    allocate(this%laisha_patch             (begp:endp))           ; this%laisha_patch             (:)   = spval
+    allocate(this%laisun_z_patch           (begp:endp,1:nlevcan)) ; this%laisun_z_patch           (:,:) = spval
+    allocate(this%laisha_z_patch           (begp:endp,1:nlevcan)) ; this%laisha_z_patch           (:,:) = spval
+    allocate(this%mlaidiff_patch           (begp:endp))           ; this%mlaidiff_patch           (:)   = spval
+    allocate(this%annlai_patch          (12,begp:endp))           ; this%annlai_patch             (:,:) = spval
+    allocate(this%htop_patch               (begp:endp))           ; this%htop_patch               (:)   = spval
+    allocate(this%hbot_patch               (begp:endp))           ; this%hbot_patch               (:)   = spval
+    allocate(this%displa_patch             (begp:endp))           ; this%displa_patch             (:)   = spval
+    allocate(this%fsun_patch               (begp:endp))           ; this%fsun_patch               (:)   = spval
+    allocate(this%fsun24_patch             (begp:endp))           ; this%fsun24_patch             (:)   = spval
+    allocate(this%fsun240_patch            (begp:endp))           ; this%fsun240_patch            (:)   = spval
 
     allocate(this%alt_col                  (begc:endc))           ; this%alt_col                  (:)   = spval;
     allocate(this%altmax_col               (begc:endc))           ; this%altmax_col               (:)   = spval
@@ -180,15 +186,27 @@ contains
          avgflag='A', long_name='exposed one-sided stem area index', &
          ptr_patch=this%esai_patch)
 
-    this%tlai_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TLAI', units='1', &
-         avgflag='A', long_name='total projected leaf area index', &
-         ptr_patch=this%tlai_patch)
+     if (use_fates_sp) then
+        this%tlai_hist_patch(begp:endp) = spval
+        call hist_addfld1d (fname='TLAI', units='m', &
+             avgflag='A', long_name='TLAI weights for SP mode', &
+             ptr_patch=this%tlai_hist_patch)
 
-    this%tsai_patch(begp:endp) = spval
-    call hist_addfld1d (fname='TSAI', units='1', &
-         avgflag='A', long_name='total projected stem area index', &
-         ptr_patch=this%tsai_patch)
+        this%tsai_hist_patch(begp:endp) = spval
+        call hist_addfld1d (fname='TSAI', units='m', &
+             avgflag='A', long_name='TSAI weights for SP mode', &
+             ptr_patch=this%tsai_hist_patch)
+     else
+        this%tlai_patch(begp:endp) = spval
+        call hist_addfld1d (fname='TLAI', units='1', &
+             avgflag='A', long_name='total projected leaf area index', &
+             ptr_patch=this%tlai_patch)
+
+        this%tsai_patch(begp:endp) = spval
+        call hist_addfld1d (fname='TSAI', units='1', &
+             avgflag='A', long_name='total projected stem area index', &
+             ptr_patch=this%tsai_patch)
+     end if
 
     if (use_cn .or. use_fates) then
        this%fsun_patch(begp:endp) = spval
@@ -215,10 +233,19 @@ contains
     end if
 
     if (use_cn .or. use_fates) then
-       this%htop_patch(begp:endp) = spval
-       call hist_addfld1d (fname='HTOP', units='m', &
-            avgflag='A', long_name='canopy top', &
-            ptr_patch=this%htop_patch)
+
+       if (use_fates_sp) then
+          this%htop_hist_patch(begp:endp) = spval
+          call hist_addfld1d (fname='HTOP', units='m', &
+               avgflag='A', long_name='HTOP weights for SP mode', &
+               ptr_patch=this%htop_hist_patch)
+       else
+          this%htop_patch(begp:endp) = spval
+          call hist_addfld1d (fname='HTOP', units='m', &
+               avgflag='A', long_name='canopy top', &
+               ptr_patch=this%htop_patch)
+       end if
+
     end if
 
     if (use_cn .or. use_fates) then
@@ -459,6 +486,10 @@ contains
           this%laisha_patch(p) = 0._r8
        end if
 
+       this%tlai_hist_patch(p)       = 0._r8
+       this%tsai_hist_patch(p)       = 0._r8
+       this%htop_hist_patch(p)       = 0._r8
+
        ! needs to be initialized to spval to avoid problems when averaging for the accum
        ! field
        this%fsun_patch(p) = spval
@@ -468,12 +499,12 @@ contains
        l = col_pp%landunit(c)
 
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
-          this%alt_col(c)               = 0._r8 !iniitialized to spval for all columns
-          this%altmax_col(c)            = 0._r8 !iniitialized to spval for all columns
-          this%altmax_lastyear_col(c)   = 0._r8 !iniitialized to spval for all columns
-          this%alt_indx_col(c)          = 0     !initiialized to huge  for all columns
-          this%altmax_indx_col(c)       = 0     !initiialized to huge  for all columns
-          this%altmax_lastyear_indx_col = 0     !initiialized to huge  for all columns
+          this%alt_col(c)                  = 0._r8
+          this%altmax_col(c)               = 0._r8
+          this%altmax_lastyear_col(c)      = 0._r8
+          this%alt_indx_col(c)             = 0
+          this%altmax_indx_col(c)          = 0
+          this%altmax_lastyear_indx_col(c) = 0
        end if
     end do
 

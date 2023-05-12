@@ -206,7 +206,7 @@ contains
     !
     ! Inputs
     !
-    use control_mod, only: hypervis_power, hypervis_scaling
+    use control_mod, only: hypervis_scaling
     real(kind=real_kind), intent(in) :: s(np,np)
     real(kind=real_kind), intent(in) :: dvv(np, np)
     real(kind=real_kind), intent(in) :: dinv(np, np, 2, 2)
@@ -224,7 +224,6 @@ contains
     scale_factor_inv = rrearth
     
 !redefining params from control_mod, not the usual homme practice, but...
-    hypervis_power = hvpower
     hypervis_scaling = hvscaling
     deriv%dvv = dvv
     elem%Dinv = Dinv
@@ -271,7 +270,7 @@ contains
   subroutine vlaplace_sphere_wk_cartesian_c_callable(v, dvv, dinv, spheremp, &
              tensorVisc, vec_sph2cart, hvpower, hvscaling, var_coef, laplace) bind(c)
     use derivative_mod_base, only : vlaplace_sphere_wk_cartesian
-    use control_mod,         only : hypervis_power, hypervis_scaling
+    use control_mod,         only : hypervis_scaling
 
     !
     ! Inputs
@@ -294,7 +293,6 @@ contains
     laplacian_rigid_factor = rrearth
     
 !redefining params from control_mod, not the usual homme practice, but...
-    hypervis_power = hvpower
     hypervis_scaling = hvscaling
     deriv%dvv = dvv
     elem%Dinv = Dinv

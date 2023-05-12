@@ -656,24 +656,6 @@
 
       end subroutine UPCASE
 
-      integer function STRLEN ( string )
-!-----------------------------------------------------------------------
-!  	... Returns the length of a string by finding
-!           the first non-blank character from the right side
-!           of the input string.
-!-----------------------------------------------------------------------
-
-      implicit none
-
-!-----------------------------------------------------------------------
-!	... Dummy args
-!-----------------------------------------------------------------------
-      character(len=*), intent(in) ::  string
-
-      STRLEN = LEN_TRIM( string )
-
-      end function STRLEN
-
       subroutine PARSE_FLPTH( fullpath, filename, filepath )
 
       implicit none

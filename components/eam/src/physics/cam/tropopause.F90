@@ -14,6 +14,10 @@
 !
 ! Author: Charles Bardeen
 ! Created: April, 2009
+!
+! Qi Tang 08/31/2021, add tropopause algorithms based upon 3D E90
+!
+! Qi Tang 08/07/2020, add tropopause algorithms based upon E90
 
 module tropopause
   !---------------------------------------------------------------
@@ -21,6 +25,7 @@ module tropopause
   !---------------------------------------------------------------
 
   use shr_kind_mod,  only : r8 => shr_kind_r8
+  use shr_const_mod, only : pi => shr_const_pi
   use ppgrid,        only : pcols, pver, begchunk, endchunk
   use cam_abortutils,    only : endrun
   use cam_logfile,   only : iulog
@@ -34,8 +39,12 @@ module tropopause
   private
   
   public  :: tropopause_readnl, tropopause_init, tropopause_find, tropopause_output
+  public  :: tropopause_findChemTrop
   public  :: TROP_ALG_NONE, TROP_ALG_ANALYTIC, TROP_ALG_CLIMATE
   public  :: TROP_ALG_STOBIE, TROP_ALG_HYBSTOB, TROP_ALG_TWMO, TROP_ALG_WMO
+  public  :: TROP_ALG_E90
+  public  :: NOTFOUND
+  public  :: tropopause_e90_3d, tropopause_e90_3d_output
 
   save
 
@@ -51,18 +60,23 @@ module tropopause
   integer, parameter    :: TROP_ALG_TWMO      = 5    ! WMO Definition, Reichler et al. [2003]
   integer, parameter    :: TROP_ALG_WMO       = 6    ! WMO Definition
   integer, parameter    :: TROP_ALG_HYBSTOB   = 7    ! Hybrid Stobie Algorithm
+  integer, parameter    :: TROP_ALG_E90       = 8    ! E90 Algorithm
   
-  integer, parameter    :: TROP_NALG          = 7    ! Number of Algorithms  
-  character,parameter   :: TROP_LETTER(TROP_NALG) = (/ ' ', 'A', 'C', 'S', 'T', 'W', 'H' /)
+  integer, parameter    :: TROP_NALG          = 8    ! Number of Algorithms  
+  character,parameter   :: TROP_LETTER(TROP_NALG) = (/ ' ', 'A', 'C', 'S', 'T', 'W', 'H', 'E' /)
                                                      ! unique identifier for output, don't use P
 
   ! These variables should probably be controlled by namelist entries.
-  logical ,parameter    :: output_all         = .False.              ! output tropopause info from all algorithms
   integer ,parameter    :: default_primary    = TROP_ALG_TWMO        ! default primary algorithm
   integer ,parameter    :: default_backup     = TROP_ALG_CLIMATE     ! default backup algorithm
 
   ! Namelist variables
   character(len=256)    :: tropopause_climo_file = 'trop_climo'      ! absolute filepath of climatology file
+  logical               :: tropopause_output_all                     ! tropopause output flag
+  real(r8)              :: tropopause_E90_thrd                       ! E90 tropopause threshold (mol/mol)
+
+  logical               :: output_all                                ! set from namelist input tropopause_output_all
+  real(r8)              :: E90_thrd_vmr                              ! set from namelist input tropopause_E90_thrd
 
   ! These variables are used to store the climatology data.
   real(r8)              :: days(12)                                  ! days in the climatology
@@ -97,8 +111,12 @@ contains
       integer :: unitn, ierr
       character(len=*), parameter :: subname = 'tropopause_readnl'
 
-      namelist /tropopause_nl/ tropopause_climo_file
+      namelist /tropopause_nl/ tropopause_climo_file, tropopause_output_all, tropopause_E90_thrd
       !-----------------------------------------------------------------------------
+
+      ! set default values, tropopause_climo_file is set by build-namelist.
+      tropopause_output_all = .False.
+      tropopause_E90_thrd   = 100.e-9_r8
 
       if (masterproc) then
          unitn = getunit()
@@ -112,11 +130,23 @@ contains
          end if
          close(unitn)
          call freeunit(unitn)
+
+        ! set local values
+        output_all   = tropopause_output_all
+        E90_thrd_vmr = tropopause_E90_thrd
+
+        ! check
+        write(iulog,*) subname // ', tropopause_climo_file:', tropopause_climo_file
+        write(iulog,*) subname // ', tropopause_output_all:', output_all
+        write(iulog,*) subname // ', tropopause_E90_thrd:', E90_thrd_vmr
+
       end if
 
 #ifdef SPMD
       ! Broadcast namelist variables
       call mpibcast(tropopause_climo_file, len(tropopause_climo_file), mpichar, 0, mpicom)
+      call mpibcast(output_all,               1,  mpilog, 0, mpicom)
+      call mpibcast(E90_thrd_vmr,             1,   mpir8, 0, mpicom)
 #endif
 
    end subroutine tropopause_readnl
@@ -132,9 +162,12 @@ contains
     use ppgrid,        only: pver
     use cam_pio_utils, only: 
     use cam_history,   only: addfld, horiz_only, add_default
+    use mo_chem_utls,  only : get_spc_ndx
 
 
     implicit none
+
+    integer :: e90_ndx
 
     ! define physical constants
     cnst_kap    = cappa
@@ -155,11 +188,21 @@ contains
     call addfld('TROPP_DZ',         (/ 'lev' /),   'A', 'm', 'Relalive Tropopause Height (primary)')
     call addfld('TROPP_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (primary)')
     call addfld('TROPP_FD', horiz_only,    'A', 'probability', 'Tropopause Found (primary)')
+
+    call addfld('TROPF_P',         horiz_only,  'A',  'Pa',         'Tropopause Pressure (cold point)',    flag_xyfill=.True.)
+    call addfld('TROPF_T',         horiz_only,  'A',  'K',          'Tropopause Temperature (cold point)', flag_xyfill=.True.)
+    call addfld('TROPF_Z',         horiz_only,  'A',  'm',          'Tropopause Height (cold point)',      flag_xyfill=.True.)
+    call addfld('TROPF_DZ',        (/ 'lev' /),  'A', 'm',          'Relative Tropopause Height (cold point)', flag_xyfill=.True.)
+    call addfld('TROPF_PD',        (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (cold point)')
+    call addfld('TROPF_FD',        horiz_only,  'A', 'probability', 'Tropopause Found (cold point)')
     
     call addfld( 'hstobie_trop', (/ 'lev' /), 'I',   'fraction of model time', 'Lowest level with stratospheric chemsitry' )
     call addfld( 'hstobie_linoz', (/ 'lev' /), 'I',  'fraction of model time', 'Lowest possible Linoz level' )
     call addfld( 'hstobie_tropop', (/ 'lev' /), 'I', 'fraction of model time', &
          'Troposphere boundary calculated in chemistry' )
+
+    e90_ndx=-1
+    e90_ndx = get_spc_ndx('E90')
 
     ! If requested, be prepared to output results from all of the methods.
     if (output_all) then
@@ -198,7 +241,28 @@ contains
       call addfld('TROPH_Z',           horiz_only,    'A',  'm', 'Tropopause Height (Hybrid Stobie)', flag_xyfill=.True.)
       call addfld('TROPH_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (Hybrid Stobie)')
       call addfld('TROPH_FD', horiz_only,    'A', 'probability', 'Tropopause Found (Hybrid Stobie)')
-     end if
+
+      if (e90_ndx > 0) then
+         call addfld('TROPE_P',          horiz_only,    'A',  'Pa', 'Tropopause Pressure (E90)', flag_xyfill=.True.)
+         call addfld('TROPE_T',           horiz_only,    'A',  'K', 'Tropopause Temperature (E90)', flag_xyfill=.True.)
+         call addfld('TROPE_Z',           horiz_only,    'A',  'm', 'Tropopause Height (E90)', flag_xyfill=.True.)
+         call addfld('TROPE_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (E90)')
+         call addfld('TROPE_FD', horiz_only,    'A', 'probability', 'Tropopause Found (E90)')
+      end if
+
+    end if
+
+    if (e90_ndx > 0) then
+       call addfld('TROPE3D_P',       horiz_only,    'A',  'Pa', 'Tropopause Pressure (E90 3D)', flag_xyfill=.True.)
+       call addfld('TROPE3D_T',        horiz_only,    'A',  'K', 'Tropopause Temperature (E90 3D)', flag_xyfill=.True.)
+       call addfld('TROPE3D_Z',        horiz_only,    'A',  'm', 'Tropopause Height (E90 3D)', flag_xyfill=.True.)
+       call addfld('TROPE3D_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (E90 3D)')
+       call addfld('TROPE3D_FD', horiz_only,    'A', 'probability', 'Tropopause Found (E90 3D)')
+       call addfld('TROPE3D_DZ',           (/ 'lev' /), 'A', 'm', 'Relative Tropopause Height (E90 3D)')
+
+       call add_default('TROPE3D_P', 1, ' ')
+       call add_default('TROPE3D_T', 1, ' ')
+    endif
 
     call add_default('TROP_P', 1, ' ')
     call add_default('TROP_T', 1, ' ')
@@ -216,7 +280,7 @@ contains
     !------------------------------------------------------------------
     use interpolate_data,  only : lininterp_init, lininterp, interp_type, lininterp_finish
     use dyn_grid,     only : get_dyn_grid_parm
-    use phys_grid,    only : get_ncols_p, get_rlat_all_p, get_rlon_all_p	
+    use phys_grid,    only : get_ncols_p, get_rlat_all_p, get_rlon_all_p
     use ioFileMod,    only : getfil
     use time_manager, only : get_calday
     use physconst,    only : pi
@@ -967,7 +1031,220 @@ contains
     return
   end subroutine tropopause_wmo
   
+  ! This routine implements the E90 defintion of the tropopause.
+  ! The search starts at the surface and stops the first time E90
+  ! less than the threshold.
+  !
+  ! NOTE: the tropLev gridbox itself is assumed to be a STRATOSPHERIC box.
+  subroutine tropopause_e90(pstate, tropLev, tropP, tropT, tropZ)
+
+    use constituents,   only : cnst_get_ind
+    use physconst,      only : mwdry
+    use chem_mods,      only : adv_mass
+    use mo_chem_utls,   only : get_spc_ndx
+
+    implicit none
+
+    type(physics_state), intent(in)    :: pstate 
+    integer,            intent(inout)  :: tropLev(pcols)            ! tropopause level index   
+    real(r8), optional, intent(inout)  :: tropP(pcols)              ! tropopause pressure (Pa)   
+    real(r8), optional, intent(inout)  :: tropT(pcols)              ! tropopause temperature (K)
+    real(r8), optional, intent(inout)  :: tropZ(pcols)              ! tropopause height (m)
+
+    ! Local Variables 
+    real(r8), parameter    :: ztrop_low   = 5000._r8        ! lowest tropopause level allowed (m)
+    real(r8), parameter    :: ztrop_high  = 20000._r8       ! highest tropopause level allowed (m)
+    real(r8)               :: thrd_mmr                      ! E90 tropopause threshold (kg/kg)
+    real(r8)               :: mwe90                         ! molecular weight of E90
+
+    integer                 :: ncol                         ! number of columns in the chunk
+    integer                 :: lchnk                        ! chunk identifier
+    real(r8)                :: tP                           ! tropopause pressure (Pa)
+    integer                 :: e90_ndx                      ! E90 index in physics state variable
+    integer                 :: e90_ndx2                     ! E90 index in chemistry
+    integer                 :: i, k, m, n
+
+    ! Information about the chunk.  
+    lchnk = pstate%lchnk
+    ncol  = pstate%ncol
+
+    ! Initialize
+    e90_ndx = -1
+
+    ! get index in the chemistry tracer list
+    e90_ndx2 = get_spc_ndx( 'E90' ) !kzm
+
+    if ( e90_ndx2 > 0 ) then
+    ! get index in the physics constituent list
+      call cnst_get_ind('E90', e90_ndx, abrtf=.true.)
+
+    ! convert from mol/mol to kg/kg
+      mwe90 = adv_mass(e90_ndx2)
+      thrd_mmr = E90_thrd_vmr*mwe90/mwdry
+    end if
+
+    if ( e90_ndx > 0 ) then
+
+      ! Iterate over all of the columns.
+      do i = 1, ncol
+       
+        ! Skip column in which the tropopause has already been found.
+        if (tropLev(i) == NOTFOUND) then
   
+           do k = pver-1, 2, -1
+              ! Search starts at the surface and stops the first time
+              ! E90 less than thrd.
+              ! Skip levels below the minimum and stop if nothing is found
+              ! before the maximum.
+              if (pstate%zm(i, k) < ztrop_low) then
+                cycle
+              else if (pstate%zm(i, k) > ztrop_high) then
+                exit
+              end if
+              
+              ! Compare the E90 concentration to the threshold
+              if (pstate%q(i,k,e90_ndx) < thrd_mmr) then
+                 tP = pstate%pmid(i,k)
+                 tropLev(i) = k
+
+                 ! Return the optional outputs
+                 if (present(tropP)) tropP(i) = tP
+                 
+                 if (present(tropT)) then
+                   tropT(i) = tropopause_interpolateT(pstate, i, tropLev(i), tP)
+                 end if
+    
+                 if (present(tropZ)) then
+                   tropZ(i) = tropopause_interpolateZ(pstate, i, tropLev(i), tP)
+                 end if
+  
+                 exit
+              end if
+           end do
+        end if
+      end do
+    end if
+
+    return
+  end subroutine tropopause_e90
+  
+  ! This routine implements the E90 defintion of the 3D tropopause.
+  !
+  ! NOTE: the tropLevB and tropLevU gridboxes themselves are assumed to be STRATOSPHERIC.
+  subroutine tropopause_e90_3d(pstate, tropLevB, tropLevU, tropFlag, tropFlagInt, tropP, tropT, tropZ)
+
+    use constituents,   only : cnst_get_ind
+    use physconst,      only : mwdry
+    use chem_mods,      only : adv_mass
+    use mo_chem_utls,   only : get_spc_ndx
+
+    implicit none
+
+    type(physics_state), intent(in)    :: pstate
+    integer,            intent(out)    :: tropLevB(pcols)           ! lowest tropopause level index
+    real(r8), optional, intent(out)    :: tropP(pcols)              ! lowest tropopause pressure (Pa)
+    real(r8), optional, intent(out)    :: tropT(pcols)              ! lowest tropopause temperature (K)
+    real(r8), optional, intent(out)    :: tropZ(pcols)              ! lowest tropopause height (m)
+
+    integer,            intent(out)    :: tropLevU(pcols)           ! highest tropopause level index
+    logical,            intent(out)    :: tropFlag(pcols,pver)      ! 3D tropospheric level flag
+                                                                    ! true: tropospheric box
+    real(r8), optional, intent(out)    :: tropFlagInt(pcols,pver)   ! 3D tropospheric level flag integer
+                                                                    ! 1: tropospheric box
+    ! Local Variables
+    real(r8)               :: thrd_mmr                      ! E90 tropopause threshold (kg/kg)
+    real(r8)               :: mwe90                         ! molecular weight of E90
+
+    integer                 :: ncol                         ! number of columns in the chunk
+    integer                 :: lchnk                        ! chunk identifier
+    real(r8)                :: tP                           ! tropopause pressure (Pa)
+    integer                 :: e90_ndx                      ! E90 index in physics state variable
+    integer                 :: e90_ndx2                     ! E90 index in chemistry
+    integer                 :: i, k, m, n
+
+    ! initialize
+    tropLevB = NOTFOUND
+    tropLevU = NOTFOUND
+    e90_ndx = -1
+
+    ! default to tropospheric box
+    tropFlag(:,:) = .true.
+    tropFlagInt(:,:) = 1._r8
+
+    ! Information about the chunk.
+    lchnk = pstate%lchnk
+    ncol  = pstate%ncol
+
+    ! get index in the chemistry tracer list
+    e90_ndx2 = get_spc_ndx( 'E90' ) !kzm
+    
+    if ( e90_ndx2 > 0 ) then
+    ! get index in the physics constituent list
+      call cnst_get_ind('E90', e90_ndx, abrtf=.true.)
+
+    ! convert from mol/mol to kg/kg
+      mwe90 = adv_mass(e90_ndx2)
+      thrd_mmr = E90_thrd_vmr*mwe90/mwdry
+    end if
+
+    if ( e90_ndx > 0 ) then
+
+      ! loop over all columns
+      do i = 1, ncol
+         !
+         ! set 3D tropospheric flag
+         !
+         ! loop over all levels
+         do k = pver, 1, -1
+            ! Search starts at the surface
+            if (pstate%q(i,k,e90_ndx) < thrd_mmr) then
+               tropFlag(i,k) = .false.
+               tropFlagInt(i,k) = 0._r8
+            end if
+         end do
+         !
+         ! find the lowest tropopause
+         !
+         do k = pver, 1, -1
+            ! Search starts at the surface and stops the first time
+            ! E90 less than thrd.
+            if (pstate%q(i,k,e90_ndx) < thrd_mmr) then
+               tP = pstate%pmid(i,k)
+               tropLevB(i) = k
+
+               ! Return the optional outputs
+               if (present(tropP)) tropP(i) = tP
+
+               if (present(tropT)) then
+                 tropT(i) = tropopause_interpolateT(pstate, i, tropLevB(i), tP)
+               end if
+
+               if (present(tropZ)) then
+                 tropZ(i) = tropopause_interpolateZ(pstate, i, tropLevB(i), tP)
+               end if
+
+               exit
+            end if
+         end do
+         !
+         ! find the highest tropopause
+         !
+         do k = 2, pver
+            ! Search starts at the top and stops the first time
+            ! E90 greater than thrd.
+            tropLevU(i) = tropLevB(i) !to avoid no value if below situation can't be satisfied. 
+            tropLevU(i) = max(2,tropLevU(i)) !added by kzm to avoid no value found at first step
+            if (pstate%q(i,k,e90_ndx) > thrd_mmr) then
+               tropLevU(i) = k - 1
+               exit
+            end if
+         end do
+      end do
+    end if
+
+    return
+  end subroutine tropopause_e90_3d
+
   ! Searches all the columns in the chunk and attempts to identify the tropopause.
   ! Two routines can be specifed, a primary routine which is tried first and a
   ! backup routine which will be tried only if the first routine fails. If the
@@ -1021,6 +1298,62 @@ contains
     return
   end subroutine tropopause_find
   
+  ! Searches all the columns in the chunk and attempts to identify the "chemical"
+  ! tropopause. This is the lapse rate tropopause, backed up by the climatology
+  ! if the lapse rate fails to find the tropopause at pressures higher than a certain
+  ! threshold. This pressure threshold depends on latitude. Between 50S and 50N, 
+  ! the climatology is used if the lapse rate tropopause is not found at P > 75 hPa. 
+  ! At high latitude (poleward of 50), the threshold is increased to 125 hPa to 
+  ! eliminate false events that are sometimes detected in the cold polar stratosphere.
+  !
+  ! NOTE: This routine was adapted from code in chemistry.F90 and mo_gasphase_chemdr.F90.
+  subroutine tropopause_findChemTrop(pstate, tropLev, primary, backup)
+
+    implicit none
+
+    type(physics_state), intent(in)     :: pstate 
+    integer, optional, intent(in)       :: primary                   ! primary detection algorithm
+    integer, optional, intent(in)       :: backup                    ! backup detection algorithm
+    integer,            intent(out)     :: tropLev(pcols)            ! tropopause level index   
+
+    ! Local Variable
+    real(r8), parameter :: rad2deg = 180._r8/pi                      ! radians to degrees conversion factor
+    real(r8)            :: dlats(pcols)
+    integer             :: i
+    integer             :: ncol
+    integer             :: backAlg
+
+    ! First use the lapse rate tropopause.
+    ncol = pstate%ncol
+    call tropopause_find(pstate, tropLev, primary=primary, backup=TROP_ALG_NONE)
+   
+    ! Now check high latitudes (poleward of 50) and set the level to the
+    ! climatology if the level was not found or is at P <= 125 hPa.
+    dlats(:ncol) = pstate%lat(:ncol) * rad2deg ! convert to degrees
+
+    if (present(backup)) then
+      backAlg = backup
+    else
+      backAlg = default_backup
+    end if
+    
+    do i = 1, ncol
+      if (abs(dlats(i)) > 50._r8) then
+        if (tropLev(i) .ne. NOTFOUND) then
+          if (pstate%pmid(i, tropLev(i)) <= 12500._r8) then
+            tropLev(i) = NOTFOUND
+          end if
+        end if
+      end if
+    end do
+        
+    ! Now use the backup algorithm
+    if ((backAlg /= TROP_ALG_NONE) .and. any(tropLev(:) == NOTFOUND)) then
+      call tropopause_findUsing(pstate, backAlg, tropLev)
+    end if
+    
+    return
+  end subroutine tropopause_findChemTrop
   
   ! Call the appropriate tropopause detection routine based upon the algorithm
   ! specifed.
@@ -1058,6 +1391,9 @@ contains
       case(TROP_ALG_WMO)
         call tropopause_wmo(pstate, tropLev, tropP, tropT, tropZ)
 
+      case(TROP_ALG_E90)
+        call tropopause_e90(pstate, tropLev, tropP, tropT, tropZ)
+
       case default
         write(iulog, *) 'tropopause: Invalid detection algorithm (',  algorithm, ') specified.'
         call endrun
@@ -1066,6 +1402,48 @@ contains
     return
   end subroutine tropopause_findUsing
 
+  ! This routine interpolates the pressures in the physics state to
+  ! find the pressure at the specified tropopause altitude.
+  function tropopause_interpolateP(pstate, icol, tropLev, tropZ)
+ 
+    implicit none
+
+    type(physics_state), intent(in)     :: pstate 
+    integer, intent(in)                 :: icol               ! column being processed
+    integer, intent(in)                 :: tropLev            ! tropopause level index   
+    real(r8), optional, intent(in)      :: tropZ              ! tropopause pressure (m)
+    real(r8)                            :: tropopause_interpolateP
+    
+    ! Local Variables
+    real(r8)   :: tropP              ! tropopause pressure (Pa)
+    real(r8)   :: dlogPdZ            ! dlog(p)/dZ
+    
+    ! Interpolate the temperature linearly against log(P)
+    
+    ! Is the tropopause at the midpoint?
+    if (tropZ == pstate%zm(icol, tropLev)) then
+      tropP = pstate%pmid(icol, tropLev)
+    
+    else if (tropZ > pstate%zm(icol, tropLev)) then
+    
+      ! It is above the midpoint? Make sure we aren't at the top.
+      if (tropLev > 1) then
+        dlogPdZ = (log(pstate%pmid(icol, tropLev)) - log(pstate%pmid(icol, tropLev - 1))) / &
+          (pstate%zm(icol, tropLev) - pstate%zm(icol, tropLev - 1)) 
+        tropP = pstate%pmid(icol, tropLev) + exp((tropZ - pstate%zm(icol, tropLev)) * dlogPdZ)
+      end if
+    else
+      
+      ! It is below the midpoint. Make sure we aren't at the bottom.
+      if (tropLev < pver) then
+        dlogPdZ =  (log(pstate%pmid(icol, tropLev + 1)) - log(pstate%pmid(icol, tropLev))) / &
+          (pstate%zm(icol, tropLev + 1) - pstate%zm(icol, tropLev))
+        tropP = pstate%pmid(icol, tropLev) + exp((tropZ - pstate%zm(icol, tropLev)) * dlogPdZ)
+      end if
+    end if
+    
+    tropopause_interpolateP = tropP
+  end function tropopause_interpolateP
 
   ! This routine interpolates the temperatures in the physics state to
   ! find the temperature at the specified tropopause pressure.
@@ -1223,7 +1601,6 @@ contains
     call outfld('TROPP_PD',  tropPdf(:ncol, :), ncol, lchnk)
     call outfld('TROPP_FD',  tropFound(:ncol),  ncol, lchnk)
     
-    
     ! If requested, do all of the algorithms.
     if (output_all) then
     
@@ -1252,4 +1629,63 @@ contains
     
     return
   end subroutine tropopause_output
+
+  ! Output the tropopause pressure and temperature to the history files for the
+  ! 3D E90 tropopause
+  subroutine tropopause_e90_3d_output(pstate)
+    use cam_history,  only : outfld
+    use mo_chem_utls, only : get_spc_ndx
+    
+    implicit none
+
+    type(physics_state), intent(in)     :: pstate
+  
+    ! Local Variables
+    integer       :: i
+    integer       :: ncol                     ! number of cloumns in the chunk
+    integer       :: lchnk                    ! chunk identifier
+    integer       :: tropLevB(pcols)          ! lowest tropopause level index   
+    integer       :: e90_ndx                  ! E90 index in the species list
+    real(r8)      :: tropP(pcols)             ! lowest tropopause pressure (Pa)  
+    real(r8)      :: tropT(pcols)             ! lowest tropopause temperature (K) 
+    real(r8)      :: tropZ(pcols)             ! lowest tropopause height (m) 
+    real(r8)      :: tropFound(pcols)         ! tropopause found  
+    real(r8)      :: tropDZ(pcols, pver)      ! relative tropopause height (m) 
+    real(r8)      :: tropPdf(pcols, pver)     ! tropopause probability distribution  
+    integer       :: tropLevU(pcols)          ! highest tropopause level index   
+    logical       :: tropFlag(pcols,pver)     ! 3D tropospheric level flag
+    real(r8)      :: tropFlagInt(pcols,pver)  ! 3D tropospheric level flag integer
+
+    ! Information about the chunk.  
+    lchnk = pstate%lchnk
+    ncol  = pstate%ncol
+
+    e90_ndx=-1
+    e90_ndx = get_spc_ndx('E90')
+
+    if (e90_ndx < 0) return
+
+    ! Find the tropopause
+    call tropopause_e90_3d(pstate, tropLevB, tropLevU, tropFlag, tropFlagInt, tropP=tropP, tropT=tropT, tropZ=tropZ)
+    
+    tropPdf(:,:) = 0._r8
+    tropFound(:) = 0._r8
+    tropDZ(:,:) = fillvalue 
+    do i = 1, ncol
+      if (tropLevB(i) /= NOTFOUND) then
+        tropPdf(i, tropLevB(i)) = 1._r8
+        tropFound(i) = 1._r8
+        tropDZ(i,:) = pstate%zm(i,:) - tropZ(i) 
+      end if
+    end do
+
+    call outfld('TROPE3D_P',   tropP(:ncol),      ncol, lchnk)
+    call outfld('TROPE3D_T',   tropT(:ncol),      ncol, lchnk)
+    call outfld('TROPE3D_Z',   tropZ(:ncol),      ncol, lchnk)
+    call outfld('TROPE3D_DZ',  tropDZ(:ncol, :), ncol, lchnk)
+    call outfld('TROPE3D_PD',  tropPdf(:ncol, :), ncol, lchnk)
+    call outfld('TROPE3D_FD',  tropFound(:ncol),  ncol, lchnk)
+    
+    return
+  end subroutine tropopause_e90_3d_output
 end module tropopause

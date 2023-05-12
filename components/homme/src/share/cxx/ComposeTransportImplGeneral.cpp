@@ -4,6 +4,9 @@
  * See the file 'COPYRIGHT' in the HOMMEXX/src/share/cxx directory
  *******************************************************************************/
 
+#include "Config.hpp"
+#ifdef HOMME_ENABLE_COMPOSE
+
 #include "ComposeTransportImpl.hpp"
 #include "compose_hommexx.hpp"
 
@@ -20,18 +23,18 @@ static int calc_nslot (const int nelemd) {
 }
 
 ComposeTransportImpl::ComposeTransportImpl ()
-  : m_tp_ne(1,1,1), m_tu_ne(m_tp_ne), // throwaway settings
-    m_tp_ne_qsize(1,1,1), m_tu_ne_qsize(m_tp_ne_qsize), // throwaway settings
-    m_tp_ne_hv_q(1,1,1), m_tu_ne_hv_q(m_tp_ne_hv_q) // throwaway settings
+  : m_tp_ne(1,1,1), m_tp_ne_qsize(1,1,1), m_tp_ne_hv_q(1,1,1), // throwaway settings
+    m_tu_ne(m_tp_ne), m_tu_ne_qsize(m_tp_ne_qsize), m_tu_ne_hv_q(m_tp_ne_hv_q)
 {
   setup();
 }
 
 ComposeTransportImpl::ComposeTransportImpl (const int num_elems)
-  : m_tp_ne(1,1,1), m_tu_ne(m_tp_ne), // throwaway settings
-    m_tp_ne_qsize(1,1,1), m_tu_ne_qsize(m_tp_ne_qsize), // throwaway settings
-    m_tp_ne_hv_q(1,1,1), m_tu_ne_hv_q(m_tp_ne_hv_q) // throwaway settings
-{}
+  : m_tp_ne(1,1,1), m_tp_ne_qsize(1,1,1), m_tp_ne_hv_q(1,1,1), // throwaway settings
+    m_tu_ne(m_tp_ne), m_tu_ne_qsize(m_tp_ne_qsize), m_tu_ne_hv_q(m_tp_ne_hv_q)
+{
+  nslot = calc_nslot(m_geometry.num_elems());
+}
 
 void ComposeTransportImpl::setup () {
   m_hvcoord = Context::singleton().get<HybridVCoord>();
@@ -250,3 +253,5 @@ void ComposeTransportImpl::run (const TimeLevel& tl, const Real dt) {
 }
 
 } // namespace Homme
+
+#endif // HOMME_ENABLE_COMPOSE

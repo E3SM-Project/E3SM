@@ -6,7 +6,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -126,7 +126,8 @@ module ocn_mesh
       meshScalingDel2, &! mesh scaling factor for use in del2 diffusion
       meshScalingDel4, &! mesh scaling factor for use in del4 diffusion
       meshDensity, &! density of mesh
-      angleEdge        ! angle the edge normal makes with local east
+      angleEdge, &! angle the edge normal makes with local east
+      distanceToCoast ! distance to nearest coast cell 
 
    real(kind=RKIND), public, dimension(:), allocatable :: &
       invAreaCell   ! inverse of area of each cell
@@ -452,6 +453,8 @@ contains
                                meshDensity)
       call mpas_pool_get_array(meshPool, 'angleEdge', &
                                angleEdge)
+      call mpas_pool_get_array(meshPool, 'distanceToCoast', &
+                               distanceToCoast)
 
       call mpas_pool_get_array(meshPool, 'weightsOnEdge', &
                                weightsOnEdge)
@@ -640,6 +643,7 @@ contains
          !$acc                   meshScalingDel4,          &
          !$acc                   meshDensity,              &
          !$acc                   angleEdge,                &
+         !$acc                   distanceToCoast,          &
          !$acc                   edgeMask,                 &
          !$acc                   cellMask,                 &
          !$acc                   vertexMask,               &
@@ -769,6 +773,7 @@ contains
       !$acc                  meshScalingDel4,   &
       !$acc                  meshDensity,       &
       !$acc                  angleEdge,         &
+      !$acc                  distanceToCoast,   &
       !$acc                  edgeMask,          &
       !$acc                  cellMask,          &
       !$acc                  vertexMask,        &
@@ -858,6 +863,7 @@ contains
                meshScalingDel4, &
                meshDensity, &
                angleEdge, &
+               distanceToCoast, &
                weightsOnEdge, &
                kiteAreasOnVertex, &
                edgeTangentVectors, &
@@ -1047,6 +1053,8 @@ contains
       !                                    meshDensity)
       !call mpas_pool_get_array(meshPool, 'angleEdge',         &
       !                                    angleEdge)
+      !call mpas_pool_get_array(meshPool, 'distanceToCoast',   &
+      !                                    distanceToCoast)
       !
       !call mpas_pool_get_array(meshPool, 'weightsOnEdge',             &
       !                                    weightsOnEdge)
@@ -1196,6 +1204,7 @@ contains
       !$acc               meshScalingDel4,          &
       !$acc               meshDensity,              &
       !$acc               angleEdge,                &
+      !$acc               distanceToCoast,          &
       !$acc               edgeMask,                 &
       !$acc               cellMask,                 &
       !$acc               vertexMask,               &

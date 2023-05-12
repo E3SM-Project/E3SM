@@ -18,7 +18,7 @@ module prim_advance_mod
   use control_mod,        only: dcmip16_mu, dcmip16_mu_s, hypervis_order, hypervis_subcycle,&
     integration, nu, nu_div, nu_p, nu_s, nu_top, prescribed_wind, qsplit, rsplit, test_case,&
     theta_hydrostatic_mode, tstep_type, theta_advect_form, hypervis_subcycle_tom, pgrad_correction,&
-    vtheta_thresh
+    vtheta_thresh, dp3d_thresh
   use derivative_mod,     only: derivative_t, divergence_sphere, gradient_sphere, laplace_sphere_wk,&
     laplace_z, vorticity_sphere, vlaplace_sphere_wk 
   use derivative_mod,     only: subcell_div_fluxes, subcell_dss_fluxes
@@ -40,7 +40,7 @@ module prim_advance_mod
   use reduction_mod,      only: parallelmax, reductionbuffer_ordered_1d_t
   use time_mod,           only: timelevel_qdp, timelevel_t
   use prim_state_mod,     only: prim_diag_scalars, prim_energy_halftimes
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
   use test_mod,           only: set_prescribed_wind
 #endif
   use viscosity_theta,    only: biharmonic_wk_theta
@@ -50,6 +50,10 @@ module prim_advance_mod
     use, intrinsic :: iso_c_binding
 #endif
  
+#ifdef HOMMEXX_BFB_TESTING
+  use bfb_mod,        only: cxx_log
+#endif
+
   implicit none
   private
   save
@@ -101,7 +105,7 @@ contains
     real (kind=real_kind) :: ahat3,ahat4,ahat5,ahat6,dhat1,dhat2,dhat3,dhat4
     real (kind=real_kind) ::  gamma,delta,ap,aphat,dhat5,offcenter
 
-    integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
+    integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k
     integer :: n,i,j,maxiter
 
 #ifdef ARKODE 
@@ -117,8 +121,6 @@ contains
     np1   = tl%np1
     nstep = tl%nstep
 
-    ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
-    call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel
 
 ! integration = "explicit"
 !
@@ -142,7 +144,7 @@ contains
             elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
     enddo
  
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     ! if "prescribed wind" set dynamics explicitly and skip time-integration
     if (prescribed_wind ==1 ) then
        call set_prescribed_wind(elem,deriv,hybrid,hvcoord,dt,tl,nets,nete,eta_ave_w)
@@ -158,23 +160,23 @@ contains
     if (tstep_type==1) then 
        ! RK2                                                                                                              
        ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))                                               
-       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&                                              
+       call compute_andor_apply_rhs(np1,n0,n0,dt/2,elem,hvcoord,hybrid,&                                              
             deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)                                                      
        ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))                                                     
-       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&                                               
+       call compute_andor_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&                                               
             deriv,nets,nete,.false.,eta_ave_w,1.d0,1.d0,1.d0)                                                             
 
 
     else if (tstep_type==4) then ! explicit table from IMEX-KG254  method                                                              
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt/4,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,n0,dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/6,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,np1,dt/6,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,3*dt/8,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,np1,3*dt/8,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/2,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,np1,dt/2,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w*1d0,1.d0,1.d0,1.d0)
 
 
@@ -182,16 +184,16 @@ contains
     else if (tstep_type==5) then
        ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
-       call compute_andor_apply_rhs(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
+       call compute_andor_apply_rhs(nm1,n0,n0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,1.d0,1.d0)
        ! u2 = u0 + dt/5 RHS(u1)
-       call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt/5,elem,hvcoord,hybrid,&
+       call compute_andor_apply_rhs(np1,n0,nm1,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
        ! u3 = u0 + dt/3 RHS(u2)
-       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/3,elem,hvcoord,hybrid,&
+       call compute_andor_apply_rhs(np1,n0,np1,dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
        ! u4 = u0 + 2dt/3 RHS(u3)
-       call compute_andor_apply_rhs(np1,n0,np1,qn0,2*dt/3,elem,hvcoord,hybrid,&
+       call compute_andor_apply_rhs(np1,n0,np1,2*dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
        ! compute (5*u1/4 - u0/4) in timelevel nm1:
        do ie=nets,nete
@@ -207,7 +209,7 @@ contains
                   - elem(ie)%state%phinh_i(:,:,1:nlev,n0) )/4
        enddo
        ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
-       call compute_andor_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
+       call compute_andor_apply_rhs(np1,nm1,np1,3*dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,3*eta_ave_w/4,1.d0,1.d0,1.d0)
        ! final method is the same as:
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
@@ -216,33 +218,33 @@ contains
       a1=0d0
       a2=1-a1
       dt2=dt/4
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt2,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,n0,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0,1.d0,0.d0,1.d0)
-      call compute_stage_value_dirk(nm1,0d0,n0,a1*dt2,np1,a2*dt2,qn0,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(nm1,0d0,n0,a1*dt2,np1,a2*dt2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
       dt2=dt/6
-      call compute_andor_apply_rhs(nm1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(nm1,n0,np1,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-      call compute_stage_value_dirk(nm1,0d0,n0,a1*dt2,nm1,a2*dt2,qn0,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(nm1,0d0,n0,a1*dt2,nm1,a2*dt2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
       dt2=3*dt/8
-      call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt2,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,nm1,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-      call compute_stage_value_dirk(nm1,0d0,n0,a1*dt2,np1,a2*dt2,qn0,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(nm1,0d0,n0,a1*dt2,np1,a2*dt2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
 
       dt2=dt/2
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,np1,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-      call compute_stage_value_dirk(nm1,0d0,n0,a1*dt2,np1,a2*dt2,qn0,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(nm1,0d0,n0,a1*dt2,np1,a2*dt2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w*1d0,1.d0,0d0,1.d0)
-      call compute_stage_value_dirk(nm1,0d0,n0,a1*dt,np1,a2*dt,qn0,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(nm1,0d0,n0,a1*dt,np1,a2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
       !  u0 saved in elem(n0)
       !  u2 saved in elem(nm1)
@@ -256,16 +258,16 @@ contains
       aphat = 0.5d0-offcenter
       dhat3 = 0.5d0+offcenter
 
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,n0,dt/2,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0) !   aphat/ap,1d0)               
 
-      call compute_stage_value_dirk(nm1,0d0,n0,aphat*dt/2,np1,dhat3*dt/2,qn0,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(nm1,0d0,n0,aphat*dt/2,np1,dhat3*dt/2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/2,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,np1,dt/2,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,0d0,1d0)
 
-      call compute_stage_value_dirk(nm1,0d0,n0,aphat*dt/2,np1,dhat3*dt/2,qn0,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(nm1,0d0,n0,aphat*dt/2,np1,dhat3*dt/2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
       ! introduce 1st order offcentering
@@ -273,41 +275,41 @@ contains
       aphat = 0.5d0-offcenter
       dhat3 = 0.5d0+offcenter
 
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&
            deriv,nets,nete,.false.,eta_ave_w,1d0,0d0,1d0)
-      call compute_stage_value_dirk(nm1,0d0,n0,aphat*dt,np1,dhat3*dt,qn0,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(nm1,0d0,n0,aphat*dt,np1,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
     else if (tstep_type==9) then 
        ! KGU5-3 (3rd order) with IMEX backward euler (2nd order)
        ! 
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
-       call compute_andor_apply_rhs(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
+       call compute_andor_apply_rhs(nm1,n0,n0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,0.d0,1.d0)
-       call compute_stage_value_dirk(nm1,0d0,n0,0d0,nm1,dt/5,qn0,elem,hvcoord,hybrid,&
+       call compute_stage_value_dirk(nm1,0d0,n0,0d0,nm1,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,maxiter,itertol)
 
        ! u2 = u0 + dt/5 RHS(u1)
-       call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt/5,elem,hvcoord,hybrid,&
+       call compute_andor_apply_rhs(np1,n0,nm1,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-       call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt/5,qn0,elem,hvcoord,hybrid,&
+       call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,maxiter,itertol)
 
        ! u3 = u0 + dt/3 RHS(u2)
-       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/3,elem,hvcoord,hybrid,&
+       call compute_andor_apply_rhs(np1,n0,np1,dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-       call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt/3,qn0,elem,hvcoord,hybrid,&
+       call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,maxiter,itertol)
 
        ! u4 = u0 + 2dt/3 RHS(u3)
-       call compute_andor_apply_rhs(np1,n0,np1,qn0,2*dt/3,elem,hvcoord,hybrid,&
+       call compute_andor_apply_rhs(np1,n0,np1,2*dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-       call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,2*dt/3,qn0,elem,hvcoord,hybrid,&
+       call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,2*dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,maxiter,itertol)
 
 
        ! u5 = u1 + dt 3/4 RHS(u4)
-       call compute_andor_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
+       call compute_andor_apply_rhs(np1,nm1,np1,3*dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,3*eta_ave_w/4,1.d0,0.d0,1.d0)
        ! u(np1) = [u1 + 3dt/4 RHS(u4)] +  1/4 (u1 - u0)    STABLE
        do ie=nets,nete
@@ -330,43 +332,43 @@ contains
        a1=5*dt/18
        a2=dt/36    ! 5/18 - 1/4 (due to the 1/4*u1 added above)
        a3=8*dt/18
-       call compute_stage_value_dirk(nm1,a2,n0,a1,np1,a3,qn0,elem,hvcoord,hybrid,&
+       call compute_stage_value_dirk(nm1,a2,n0,a1,np1,a3,elem,hvcoord,hybrid,&
             deriv,nets,nete,maxiter,itertol)
 
     else if (tstep_type==10) then ! KG5(2nd order CFL=4) + optimized
       dt2=dt/4
-      call compute_andor_apply_rhs(nm1,n0,n0,qn0,dt2,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(nm1,n0,n0,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0,1.d0,0.d0,1.d0)
-      call compute_stage_value_dirk(nm1,0d0,n0,0d0,nm1,dt2,qn0,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(nm1,0d0,n0,0d0,nm1,dt2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
       dt2=dt/6
-      call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt2,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,nm1,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-      call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt2,qn0,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
       dt2=3*dt/8
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,np1,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-      call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt2,qn0,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
 
       dt2=dt/2
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,np1,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-      call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt2,qn0,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w*1d0,1.d0,0d0,1.d0)
 
 
       a1=.24362d0   
       a2=.34184d0 
       a3=1-(a1+a2)
-      call compute_stage_value_dirk(nm1,a2*dt,n0,a1*dt,np1,a3*dt,qn0,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(nm1,a2*dt,n0,a1*dt,np1,a3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
       !  u0 saved in elem(n0)
       !  u1 saved in elem(nm1)
@@ -466,7 +468,7 @@ contains
 
       ! use ARKode solver to evolve solution
       ierr = evolve_solution(elem, nets, nete, deriv, hvcoord, hybrid, &
-                             dt, eta_ave_w, n0, np1, qn0, arkode_parameters, &
+                             dt, eta_ave_w, n0, np1,  arkode_parameters, &
                              arkode_table_set)
       if (ierr /= 0) then
         call abortmp('ARKode evolve failed')
@@ -1018,7 +1020,7 @@ contains
 
 !============================ stiff and or non-stiff ============================================
 
- subroutine compute_andor_apply_rhs(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
+ subroutine compute_andor_apply_rhs(np1,nm1,n0,dt2,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w,scale1,scale2,scale3)
   ! ===================================
   ! compute the RHS, accumulate into u(np1) and apply DSS
@@ -1030,11 +1032,9 @@ contains
   ! accomodated.  For example, setting nm1=np1=n0 this routine will
   ! take a forward euler step, overwriting the input with the output.
   !
-  !    qn0 = timelevel used to access Qdp() in order to compute virtual Temperature
-  !
   ! ===================================
 
-  integer,              intent(in) :: np1,nm1,n0,qn0,nets,nete
+  integer,              intent(in) :: np1,nm1,n0,nets,nete
   real*8,               intent(in) :: dt2
   logical,              intent(in) :: compute_diagnostics
   type (hvcoord_t),     intent(in) :: hvcoord
@@ -1147,7 +1147,8 @@ contains
         enddo
      endif
 #endif
-
+     ! this routine will set dpnh_dp_i(nlevp)=1 - a very good approximation, that will
+     ! then be corrected below, after the DSS.  
      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i,caller='CAAR')
 
      dp3d_i(:,:,1) = dp3d(:,:,1)
@@ -1431,7 +1432,19 @@ contains
 
         if (pgrad_correction==1) then
            T0 = TREF-tref_lapse_rate*TREF*Cp/g     ! = 97  
+#ifdef HOMMEXX_BFB_TESTING
+           ! For BFB testing, calculate log(exner) using cxx_log()
+           ! and then call gradient sphere.
+           do j=1,np
+             do i=1,np
+               temp(i,j,k) = cxx_log(exner(i,j,k))
+             end do
+           end do
+
+           vtemp(:,:,:,k)=gradient_sphere(temp(:,:,k),deriv,elem(ie)%Dinv)
+#else
            vtemp(:,:,:,k)=gradient_sphere(log(exner(:,:,k)),deriv,elem(ie)%Dinv)
+#endif
            mgrad(:,:,1,k)=mgrad(:,:,1,k) + Cp*T0*(vtemp(:,:,1,k)-gradexner(:,:,1,k)/exner(:,:,k))
            mgrad(:,:,2,k)=mgrad(:,:,2,k) + Cp*T0*(vtemp(:,:,2,k)-gradexner(:,:,2,k)/exner(:,:,k))
         endif
@@ -1755,6 +1768,7 @@ contains
         enddo
 
         ! check for layer spacing <= 1m
+        if (scale3 /= 0) then
         do k=1,nlev
         do j=1,np
         do i=1,np
@@ -1766,6 +1780,7 @@ contains
         enddo
         enddo
         enddo
+        endif
 #endif
      endif
      if (scale3 /= 0) then
@@ -1796,7 +1811,6 @@ contains
   ! local
   real (kind=real_kind) :: Qcol(nlev)
   real (kind=real_kind) :: mass,mass_new
-  real (kind=real_kind) :: dp3d_thresh=.125
   logical :: warn
   integer i,j,k
 

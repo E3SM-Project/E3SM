@@ -63,6 +63,8 @@
       <value drof_mode="IAF_JRA_1p4_2018_AIS0LIQ">rof.iaf_jra_1p4_2018_ais0liq</value>
       <value drof_mode="IAF_JRA_1p4_2018_AIS0ROF">rof.iaf_jra_1p4_2018_ais0rof</value>
       <value drof_mode="IAF_JRA_1p4_2018"     >rof.iaf_jra_1p4_2018</value>
+      <value drof_mode="IAF_JRA_1p5_AIS0ROF"  >rof.iaf_jra_1p5_ais0rof</value>
+      <value drof_mode="IAF_JRA_1p5"          >rof.iaf_jra_1p5</value>
       <value drof_mode="IAF_JRA"              >rof.iaf_jra</value>
       <value drof_mode="RYF8485_JRA"          >rof.ryf8485_jra</value>
       <value drof_mode="RYF9091_JRA"          >rof.ryf9091_jra</value>
@@ -85,6 +87,7 @@
       <value stream="rof.diatren_iaf_ais00_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
       <value stream="rof.diatren_iaf_ais45_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
       <value stream="rof.diatren_iaf_ais55_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
+      <value stream="rof.iaf_jra_1p5"          >$DIN_LOC_ROOT/lnd/dlnd7/JRA55</value>
       <value stream="rof.iaf_jra.*"            >$DIN_LOC_ROOT/lnd/dlnd7/JRA55</value>
       <value stream="rof.ryf*"                 >$DIN_LOC_ROOT/lnd/dlnd7/JRA55</value>
       <value stream="rof.cplhist"              >null</value>
@@ -177,6 +180,7 @@
       <value stream="rof.diatren_iaf_ais00_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
       <value stream="rof.diatren_iaf_ais45_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
       <value stream="rof.diatren_iaf_ais55_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
+      <value stream="rof.iaf_jra_1p5"          >$DIN_LOC_ROOT/ocn/jra55/v1.5_noleap</value>
       <value stream="rof.iaf_jra.*"            >$DIN_LOC_ROOT/lnd/dlnd7/JRA55</value>
       <value stream="rof.ryf*"                 >$DIN_LOC_ROOT/lnd/dlnd7/JRA55</value>
       <value stream="rof.cplhist"              >$DROF_CPLHIST_DIR</value>
@@ -197,321 +201,29 @@
       <value stream="rof.diatren_iaf_ais00_rx1">runoff.daitren.iaf-AISx00.20120419.nc</value>
       <value stream="rof.diatren_iaf_ais45_rx1">runoff.daitren.iaf-AISx45.20120419.nc</value>
       <value stream="rof.diatren_iaf_ais55_rx1">runoff.daitren.iaf-AISx55.20120419.nc</value>
-      <value stream="rof.ryf8485_jra">RAF_8485.JRA.v1.3.runoff.180404.nc</value>
-      <value stream="rof.ryf9091_jra">RAF_9091.JRA.v1.3.runoff.180404.nc</value>
-      <value stream="rof.ryf0304_jra">RAF_0304.JRA.v1.3.runoff.180404.nc</value>
+      <value stream="rof.ryf8485_jra"          >RAF_8485.JRA.v1.3.runoff.180404.nc</value>
+      <value stream="rof.ryf9091_jra"          >RAF_9091.JRA.v1.3.runoff.180404.nc</value>
+      <value stream="rof.ryf0304_jra"          >RAF_0304.JRA.v1.3.runoff.180404.nc</value>
+      <value stream="rof.iaf_jra_1p5_ais0rof">
+           JRA.v1.5.runoff.%y.no_rofi_no_rofl.210505.nc
+      </value>
+      <value stream="rof.iaf_jra_1p5">
+           JRA.v1.5.runoff.%y.210505.nc
+      </value>
       <value stream="rof.iaf_jra_1p4_2018_ais0ice">
-           JRA.v1.4.runoff.1958.no_rofi.190214.nc
-           JRA.v1.4.runoff.1959.no_rofi.190214.nc
-           JRA.v1.4.runoff.1960.no_rofi.190214.nc
-           JRA.v1.4.runoff.1961.no_rofi.190214.nc
-           JRA.v1.4.runoff.1962.no_rofi.190214.nc
-           JRA.v1.4.runoff.1963.no_rofi.190214.nc
-           JRA.v1.4.runoff.1964.no_rofi.190214.nc
-           JRA.v1.4.runoff.1965.no_rofi.190214.nc
-           JRA.v1.4.runoff.1966.no_rofi.190214.nc
-           JRA.v1.4.runoff.1967.no_rofi.190214.nc
-           JRA.v1.4.runoff.1968.no_rofi.190214.nc
-           JRA.v1.4.runoff.1969.no_rofi.190214.nc
-           JRA.v1.4.runoff.1970.no_rofi.190214.nc
-           JRA.v1.4.runoff.1971.no_rofi.190214.nc
-           JRA.v1.4.runoff.1972.no_rofi.190214.nc
-           JRA.v1.4.runoff.1973.no_rofi.190214.nc
-           JRA.v1.4.runoff.1974.no_rofi.190214.nc
-           JRA.v1.4.runoff.1975.no_rofi.190214.nc
-           JRA.v1.4.runoff.1976.no_rofi.190214.nc
-           JRA.v1.4.runoff.1977.no_rofi.190214.nc
-           JRA.v1.4.runoff.1978.no_rofi.190214.nc
-           JRA.v1.4.runoff.1979.no_rofi.190214.nc
-           JRA.v1.4.runoff.1980.no_rofi.190214.nc
-           JRA.v1.4.runoff.1981.no_rofi.190214.nc
-           JRA.v1.4.runoff.1982.no_rofi.190214.nc
-           JRA.v1.4.runoff.1983.no_rofi.190214.nc
-           JRA.v1.4.runoff.1984.no_rofi.190214.nc
-           JRA.v1.4.runoff.1985.no_rofi.190214.nc
-           JRA.v1.4.runoff.1986.no_rofi.190214.nc
-           JRA.v1.4.runoff.1987.no_rofi.190214.nc
-           JRA.v1.4.runoff.1988.no_rofi.190214.nc
-           JRA.v1.4.runoff.1989.no_rofi.190214.nc
-           JRA.v1.4.runoff.1990.no_rofi.190214.nc
-           JRA.v1.4.runoff.1991.no_rofi.190214.nc
-           JRA.v1.4.runoff.1992.no_rofi.190214.nc
-           JRA.v1.4.runoff.1993.no_rofi.190214.nc
-           JRA.v1.4.runoff.1994.no_rofi.190214.nc
-           JRA.v1.4.runoff.1995.no_rofi.190214.nc
-           JRA.v1.4.runoff.1996.no_rofi.190214.nc
-           JRA.v1.4.runoff.1997.no_rofi.190214.nc
-           JRA.v1.4.runoff.1998.no_rofi.190214.nc
-           JRA.v1.4.runoff.1999.no_rofi.190214.nc
-           JRA.v1.4.runoff.2000.no_rofi.190214.nc
-           JRA.v1.4.runoff.2001.no_rofi.190214.nc
-           JRA.v1.4.runoff.2002.no_rofi.190214.nc
-           JRA.v1.4.runoff.2003.no_rofi.190214.nc
-           JRA.v1.4.runoff.2004.no_rofi.190214.nc
-           JRA.v1.4.runoff.2005.no_rofi.190214.nc
-           JRA.v1.4.runoff.2006.no_rofi.190214.nc
-           JRA.v1.4.runoff.2007.no_rofi.190214.nc
-           JRA.v1.4.runoff.2008.no_rofi.190214.nc
-           JRA.v1.4.runoff.2009.no_rofi.190214.nc
-           JRA.v1.4.runoff.2010.no_rofi.190214.nc
-           JRA.v1.4.runoff.2011.no_rofi.190214.nc
-           JRA.v1.4.runoff.2012.no_rofi.190214.nc
-           JRA.v1.4.runoff.2013.no_rofi.190214.nc
-           JRA.v1.4.runoff.2014.no_rofi.190214.nc
-           JRA.v1.4.runoff.2015.no_rofi.190214.nc
-           JRA.v1.4.runoff.2016.no_rofi.190214.nc
-           JRA.v1.4.runoff.2017.no_rofi.190214.nc
-           JRA.v1.4.runoff.2018.no_rofi.190214.nc
+           JRA.v1.4.runoff.%y.no_rofi.190214.nc
       </value>
       <value stream="rof.iaf_jra_1p4_2018_ais0liq">
-           JRA.v1.4.runoff.1958.no_rofl.190214.nc
-           JRA.v1.4.runoff.1959.no_rofl.190214.nc
-           JRA.v1.4.runoff.1960.no_rofl.190214.nc
-           JRA.v1.4.runoff.1961.no_rofl.190214.nc
-           JRA.v1.4.runoff.1962.no_rofl.190214.nc
-           JRA.v1.4.runoff.1963.no_rofl.190214.nc
-           JRA.v1.4.runoff.1964.no_rofl.190214.nc
-           JRA.v1.4.runoff.1965.no_rofl.190214.nc
-           JRA.v1.4.runoff.1966.no_rofl.190214.nc
-           JRA.v1.4.runoff.1967.no_rofl.190214.nc
-           JRA.v1.4.runoff.1968.no_rofl.190214.nc
-           JRA.v1.4.runoff.1969.no_rofl.190214.nc
-           JRA.v1.4.runoff.1970.no_rofl.190214.nc
-           JRA.v1.4.runoff.1971.no_rofl.190214.nc
-           JRA.v1.4.runoff.1972.no_rofl.190214.nc
-           JRA.v1.4.runoff.1973.no_rofl.190214.nc
-           JRA.v1.4.runoff.1974.no_rofl.190214.nc
-           JRA.v1.4.runoff.1975.no_rofl.190214.nc
-           JRA.v1.4.runoff.1976.no_rofl.190214.nc
-           JRA.v1.4.runoff.1977.no_rofl.190214.nc
-           JRA.v1.4.runoff.1978.no_rofl.190214.nc
-           JRA.v1.4.runoff.1979.no_rofl.190214.nc
-           JRA.v1.4.runoff.1980.no_rofl.190214.nc
-           JRA.v1.4.runoff.1981.no_rofl.190214.nc
-           JRA.v1.4.runoff.1982.no_rofl.190214.nc
-           JRA.v1.4.runoff.1983.no_rofl.190214.nc
-           JRA.v1.4.runoff.1984.no_rofl.190214.nc
-           JRA.v1.4.runoff.1985.no_rofl.190214.nc
-           JRA.v1.4.runoff.1986.no_rofl.190214.nc
-           JRA.v1.4.runoff.1987.no_rofl.190214.nc
-           JRA.v1.4.runoff.1988.no_rofl.190214.nc
-           JRA.v1.4.runoff.1989.no_rofl.190214.nc
-           JRA.v1.4.runoff.1990.no_rofl.190214.nc
-           JRA.v1.4.runoff.1991.no_rofl.190214.nc
-           JRA.v1.4.runoff.1992.no_rofl.190214.nc
-           JRA.v1.4.runoff.1993.no_rofl.190214.nc
-           JRA.v1.4.runoff.1994.no_rofl.190214.nc
-           JRA.v1.4.runoff.1995.no_rofl.190214.nc
-           JRA.v1.4.runoff.1996.no_rofl.190214.nc
-           JRA.v1.4.runoff.1997.no_rofl.190214.nc
-           JRA.v1.4.runoff.1998.no_rofl.190214.nc
-           JRA.v1.4.runoff.1999.no_rofl.190214.nc
-           JRA.v1.4.runoff.2000.no_rofl.190214.nc
-           JRA.v1.4.runoff.2001.no_rofl.190214.nc
-           JRA.v1.4.runoff.2002.no_rofl.190214.nc
-           JRA.v1.4.runoff.2003.no_rofl.190214.nc
-           JRA.v1.4.runoff.2004.no_rofl.190214.nc
-           JRA.v1.4.runoff.2005.no_rofl.190214.nc
-           JRA.v1.4.runoff.2006.no_rofl.190214.nc
-           JRA.v1.4.runoff.2007.no_rofl.190214.nc
-           JRA.v1.4.runoff.2008.no_rofl.190214.nc
-           JRA.v1.4.runoff.2009.no_rofl.190214.nc
-           JRA.v1.4.runoff.2010.no_rofl.190214.nc
-           JRA.v1.4.runoff.2011.no_rofl.190214.nc
-           JRA.v1.4.runoff.2012.no_rofl.190214.nc
-           JRA.v1.4.runoff.2013.no_rofl.190214.nc
-           JRA.v1.4.runoff.2014.no_rofl.190214.nc
-           JRA.v1.4.runoff.2015.no_rofl.190214.nc
-           JRA.v1.4.runoff.2016.no_rofl.190214.nc
-           JRA.v1.4.runoff.2017.no_rofl.190214.nc
-           JRA.v1.4.runoff.2018.no_rofl.190214.nc
+           JRA.v1.4.runoff.%y.no_rofl.190214.nc
       </value>
       <value stream="rof.iaf_jra_1p4_2018_ais0rof">
-           JRA.v1.4.runoff.1958.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1959.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1960.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1961.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1962.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1963.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1964.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1965.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1966.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1967.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1968.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1969.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1970.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1971.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1972.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1973.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1974.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1975.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1976.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1977.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1978.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1979.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1980.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1981.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1982.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1983.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1984.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1985.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1986.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1987.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1988.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1989.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1990.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1991.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1992.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1993.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1994.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1995.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1996.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1997.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1998.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.1999.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2000.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2001.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2002.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2003.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2004.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2005.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2006.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2007.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2008.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2009.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2010.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2011.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2012.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2013.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2014.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2015.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2016.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2017.no_rofi_no_rofl.190214.nc
-           JRA.v1.4.runoff.2018.no_rofi_no_rofl.190214.nc
+           JRA.v1.4.runoff.%y.no_rofi_no_rofl.190214.nc
       </value>
       <value stream="rof.iaf_jra_1p4_2018">
-           JRA.v1.4.runoff.1958.190214.nc
-           JRA.v1.4.runoff.1959.190214.nc
-           JRA.v1.4.runoff.1960.190214.nc
-           JRA.v1.4.runoff.1961.190214.nc
-           JRA.v1.4.runoff.1962.190214.nc
-           JRA.v1.4.runoff.1963.190214.nc
-           JRA.v1.4.runoff.1964.190214.nc
-           JRA.v1.4.runoff.1965.190214.nc
-           JRA.v1.4.runoff.1966.190214.nc
-           JRA.v1.4.runoff.1967.190214.nc
-           JRA.v1.4.runoff.1968.190214.nc
-           JRA.v1.4.runoff.1969.190214.nc
-           JRA.v1.4.runoff.1970.190214.nc
-           JRA.v1.4.runoff.1971.190214.nc
-           JRA.v1.4.runoff.1972.190214.nc
-           JRA.v1.4.runoff.1973.190214.nc
-           JRA.v1.4.runoff.1974.190214.nc
-           JRA.v1.4.runoff.1975.190214.nc
-           JRA.v1.4.runoff.1976.190214.nc
-           JRA.v1.4.runoff.1977.190214.nc
-           JRA.v1.4.runoff.1978.190214.nc
-           JRA.v1.4.runoff.1979.190214.nc
-           JRA.v1.4.runoff.1980.190214.nc
-           JRA.v1.4.runoff.1981.190214.nc
-           JRA.v1.4.runoff.1982.190214.nc
-           JRA.v1.4.runoff.1983.190214.nc
-           JRA.v1.4.runoff.1984.190214.nc
-           JRA.v1.4.runoff.1985.190214.nc
-           JRA.v1.4.runoff.1986.190214.nc
-           JRA.v1.4.runoff.1987.190214.nc
-           JRA.v1.4.runoff.1988.190214.nc
-           JRA.v1.4.runoff.1989.190214.nc
-           JRA.v1.4.runoff.1990.190214.nc
-           JRA.v1.4.runoff.1991.190214.nc
-           JRA.v1.4.runoff.1992.190214.nc
-           JRA.v1.4.runoff.1993.190214.nc
-           JRA.v1.4.runoff.1994.190214.nc
-           JRA.v1.4.runoff.1995.190214.nc
-           JRA.v1.4.runoff.1996.190214.nc
-           JRA.v1.4.runoff.1997.190214.nc
-           JRA.v1.4.runoff.1998.190214.nc
-           JRA.v1.4.runoff.1999.190214.nc
-           JRA.v1.4.runoff.2000.190214.nc
-           JRA.v1.4.runoff.2001.190214.nc
-           JRA.v1.4.runoff.2002.190214.nc
-           JRA.v1.4.runoff.2003.190214.nc
-           JRA.v1.4.runoff.2004.190214.nc
-           JRA.v1.4.runoff.2005.190214.nc
-           JRA.v1.4.runoff.2006.190214.nc
-           JRA.v1.4.runoff.2007.190214.nc
-           JRA.v1.4.runoff.2008.190214.nc
-           JRA.v1.4.runoff.2009.190214.nc
-           JRA.v1.4.runoff.2010.190214.nc
-           JRA.v1.4.runoff.2011.190214.nc
-           JRA.v1.4.runoff.2012.190214.nc
-           JRA.v1.4.runoff.2013.190214.nc
-           JRA.v1.4.runoff.2014.190214.nc
-           JRA.v1.4.runoff.2015.190214.nc
-           JRA.v1.4.runoff.2016.190214.nc
-           JRA.v1.4.runoff.2017.190214.nc
-           JRA.v1.4.runoff.2018.190214.nc
+           JRA.v1.4.runoff.%y.190214.nc
       </value>
       <value stream="rof.iaf_jra">
-           JRA.v1.1.runoff.1958.170807.nc
-           JRA.v1.1.runoff.1959.170807.nc
-           JRA.v1.1.runoff.1960.170807.nc
-           JRA.v1.1.runoff.1961.170807.nc
-           JRA.v1.1.runoff.1962.170807.nc
-           JRA.v1.1.runoff.1963.170807.nc
-           JRA.v1.1.runoff.1964.170807.nc
-           JRA.v1.1.runoff.1965.170807.nc
-           JRA.v1.1.runoff.1966.170807.nc
-           JRA.v1.1.runoff.1967.170807.nc
-           JRA.v1.1.runoff.1968.170807.nc
-           JRA.v1.1.runoff.1969.170807.nc
-           JRA.v1.1.runoff.1970.170807.nc
-           JRA.v1.1.runoff.1971.170807.nc
-           JRA.v1.1.runoff.1972.170807.nc
-           JRA.v1.1.runoff.1973.170807.nc
-           JRA.v1.1.runoff.1974.170807.nc
-           JRA.v1.1.runoff.1975.170807.nc
-           JRA.v1.1.runoff.1976.170807.nc
-           JRA.v1.1.runoff.1977.170807.nc
-           JRA.v1.1.runoff.1978.170807.nc
-           JRA.v1.1.runoff.1979.170807.nc
-           JRA.v1.1.runoff.1980.170807.nc
-           JRA.v1.1.runoff.1981.170807.nc
-           JRA.v1.1.runoff.1982.170807.nc
-           JRA.v1.1.runoff.1983.170807.nc
-           JRA.v1.1.runoff.1984.170807.nc
-           JRA.v1.1.runoff.1985.170807.nc
-           JRA.v1.1.runoff.1986.170807.nc
-           JRA.v1.1.runoff.1987.170807.nc
-           JRA.v1.1.runoff.1988.170807.nc
-           JRA.v1.1.runoff.1989.170807.nc
-           JRA.v1.1.runoff.1990.170807.nc
-           JRA.v1.1.runoff.1991.170807.nc
-           JRA.v1.1.runoff.1992.170807.nc
-           JRA.v1.1.runoff.1993.170807.nc
-           JRA.v1.1.runoff.1994.170807.nc
-           JRA.v1.1.runoff.1995.170807.nc
-           JRA.v1.1.runoff.1996.170807.nc
-           JRA.v1.1.runoff.1997.170807.nc
-           JRA.v1.1.runoff.1998.170807.nc
-           JRA.v1.1.runoff.1999.170807.nc
-           JRA.v1.1.runoff.2000.170807.nc
-           JRA.v1.1.runoff.2001.170807.nc
-           JRA.v1.1.runoff.2002.170807.nc
-           JRA.v1.1.runoff.2003.170807.nc
-           JRA.v1.1.runoff.2004.170807.nc
-           JRA.v1.1.runoff.2005.170807.nc
-           JRA.v1.1.runoff.2006.170807.nc
-           JRA.v1.1.runoff.2007.170807.nc
-           JRA.v1.1.runoff.2008.170807.nc
-           JRA.v1.1.runoff.2009.170807.nc
-           JRA.v1.1.runoff.2010.170807.nc
-           JRA.v1.1.runoff.2011.170807.nc
-           JRA.v1.1.runoff.2012.170807.nc
-           JRA.v1.1.runoff.2013.170807.nc
-           JRA.v1.1.runoff.2014.170807.nc
-           JRA.v1.1.runoff.2015.170807.nc
-           JRA.v1.1.runoff.2016.170807.nc
+           JRA.v1.1.runoff.%y.170807.nc
       </value>
       <value stream="rof.cplhist">$DROF_CPLHIST_CASE.cpl.hr2x.%ym.nc</value>
     </values>
@@ -568,12 +280,12 @@
     <desc>Simulation year to align stream to.</desc>
     <values>
       <value>1</value>
-      <value stream="rof.diatren_ann_rx1">1</value>
-      <value stream="rof.diatren_iaf_rx1">1</value>
+      <value stream="rof.diatren_ann_rx1"      >1</value>
+      <value stream="rof.diatren_iaf_rx1"      >1</value>
       <value stream="rof.diatren_iaf_ais45_rx1">1</value>
-      <value stream="rof.iaf_jra.*">1</value>
-      <value stream="rof.ryf*">1</value>
-      <value stream="rof.cplhist">$DROF_CPLHIST_YR_ALIGN</value>
+      <value stream="rof.iaf_jra.*"            >$DROF_STRM_YR_ALIGN</value>
+      <value stream="rof.ryf*"                 >$DROF_STRM_YR_ALIGN</value>
+      <value stream="rof.cplhist"              >$DROF_CPLHIST_YR_ALIGN</value>
     </values>
   </entry>
 
@@ -591,7 +303,7 @@
       <value stream="rof.diatren_iaf_ais00_rx1">1948</value>
       <value stream="rof.diatren_iaf_ais45_rx1">1948</value>
       <value stream="rof.diatren_iaf_ais55_rx1">1948</value>
-      <value stream="rof.iaf_jra.*"            >1958</value>
+      <value stream="rof.iaf_jra.*"            >$DROF_STRM_YR_START</value>
       <value stream="rof.ryf8485_jra"          >1984</value>
       <value stream="rof.ryf9091_jra"          >1990</value>
       <value stream="rof.ryf0304_jra"          >2003</value>
@@ -605,23 +317,24 @@
     <group>streams_file</group>
     <desc>Last year of stream.</desc>
     <values>
-      <value stream="rof.diatren_ann_rx1"      >1</value>
-      <value stream="rof.diatren_ann_ais00_rx1">1</value>
-      <value stream="rof.diatren_ann_ais45_rx1">1</value>
-      <value stream="rof.diatren_ann_ais55_rx1">1</value>
-      <value stream="rof.diatren_iaf_rx1"      >2009</value>
-      <value stream="rof.diatren_iaf_ais00_rx1">2009</value>
-      <value stream="rof.diatren_iaf_ais45_rx1">2009</value>
-      <value stream="rof.diatren_iaf_ais55_rx1">2009</value>
-      <value stream="rof.iaf_jra_1p4_2018"     >2018</value>
-      <value stream="rof.iaf_jra_1p4_2018_ais0ice">2018</value>
-      <value stream="rof.iaf_jra_1p4_2018_ais0liq">2018</value>
-      <value stream="rof.iaf_jra_1p4_2018_ais0rof">2018</value>
-      <value stream="rof.iaf_jra"              >2016</value>
-      <value stream="rof.ryf8485_jra"          >1984</value>
-      <value stream="rof.ryf9091_jra"          >1990</value>
-      <value stream="rof.ryf0304_jra"          >2003</value>
-      <value stream="rof.cplhist"              >$DROF_CPLHIST_YR_END</value>
+      <value stream="rof.diatren_ann_rx1"         >1</value>
+      <value stream="rof.diatren_ann_ais00_rx1"   >1</value>
+      <value stream="rof.diatren_ann_ais45_rx1"   >1</value>
+      <value stream="rof.diatren_ann_ais55_rx1"   >1</value>
+      <value stream="rof.diatren_iaf_rx1"         >2009</value>
+      <value stream="rof.diatren_iaf_ais00_rx1"   >2009</value>
+      <value stream="rof.diatren_iaf_ais45_rx1"   >2009</value>
+      <value stream="rof.diatren_iaf_ais55_rx1"   >2009</value>
+      <value stream="rof.iaf_jra_1p5"             >$DROF_STRM_YR_END</value>
+      <value stream="rof.iaf_jra_1p4_2018"        >$DROF_STRM_YR_END</value>
+      <value stream="rof.iaf_jra_1p4_2018_ais0ice">$DROF_STRM_YR_END</value>
+      <value stream="rof.iaf_jra_1p4_2018_ais0liq">$DROF_STRM_YR_END</value>
+      <value stream="rof.iaf_jra_1p4_2018_ais0rof">$DROF_STRM_YR_END</value>
+      <value stream="rof.iaf_jra"                 >$DROF_STRM_YR_END</value>
+      <value stream="rof.ryf8485_jra"             >1984</value>
+      <value stream="rof.ryf9091_jra"             >1990</value>
+      <value stream="rof.ryf0304_jra"             >2003</value>
+      <value stream="rof.cplhist"                 >$DROF_CPLHIST_YR_END</value>
     </values>
   </entry>
 

@@ -51,36 +51,16 @@ module crm_output_module
       ! crm_physics_tend, from, for example, something like crm_output%uwind - crm_input%uwind.
       real(crm_rknd), allocatable :: qc_mean(:,:)  ! mean cloud water
       real(crm_rknd), allocatable :: qi_mean(:,:)  ! mean cloud ice
+      real(crm_rknd), allocatable :: qr_mean(:,:)  ! mean rain
       real(crm_rknd), allocatable :: qs_mean(:,:)  ! mean snow
       real(crm_rknd), allocatable :: qg_mean(:,:)  ! mean graupel
-      real(crm_rknd), allocatable :: qr_mean(:,:)  ! mean rain
 
       real(crm_rknd), allocatable :: nc_mean(:,:)  ! mean cloud water  (#/kg)
       real(crm_rknd), allocatable :: ni_mean(:,:)  ! mean cloud ice    (#/kg)
-      real(crm_rknd), allocatable :: ns_mean(:,:)  ! mean snow         (#/kg)
-      real(crm_rknd), allocatable :: ng_mean(:,:)  ! mean graupel      (#/kg)
       real(crm_rknd), allocatable :: nr_mean(:,:)  ! mean rain         (#/kg)
 
-      ! Time and domain averaged process rates
-      real(crm_rknd), allocatable :: aut_a (:,:)  ! cloud water autoconversion (1/s)
-      real(crm_rknd), allocatable :: acc_a (:,:)  ! cloud water accretion (1/s)
-      real(crm_rknd), allocatable :: evpc_a(:,:)  ! cloud water evaporation (1/s)
-      real(crm_rknd), allocatable :: evpr_a(:,:)  ! rain evaporation (1/s)
-      real(crm_rknd), allocatable :: mlt_a (:,:)  ! ice, snow, graupel melting (1/s)
-      real(crm_rknd), allocatable :: sub_a (:,:)  ! ice, snow, graupel sublimation (1/s)
-      real(crm_rknd), allocatable :: dep_a (:,:)  ! ice, snow, graupel deposition (1/s)
-      real(crm_rknd), allocatable :: con_a (:,:)  ! cloud water condensation(1/s)
-
-#if defined( MMF_MOMENTUM_FEEDBACK )
-      real(crm_rknd), allocatable :: ultend(:,:)            ! tendency of ul
-      real(crm_rknd), allocatable :: vltend(:,:)            ! tendency of vl
-#endif
-
-#if defined( MMF_ESMT )
-      real(crm_rknd), allocatable :: u_tend_esmt(:,:)       ! CRM scalar u-momentum tendency
-      real(crm_rknd), allocatable :: v_tend_esmt(:,:)       ! CRM scalar v-momentum tendency
-#endif
-
+      real(crm_rknd), allocatable :: ultend  (:,:)          ! CRM output tendency of zonal wind
+      real(crm_rknd), allocatable :: vltend  (:,:)          ! CRM output tendency of meridional wind
       real(crm_rknd), allocatable :: sltend  (:,:)          ! CRM output tendency of static energy
       real(crm_rknd), allocatable :: qltend  (:,:)          ! CRM output tendency of water vapor
       real(crm_rknd), allocatable :: qcltend (:,:)          ! CRM output tendency of cloud liquid water
@@ -88,8 +68,10 @@ module crm_output_module
 
       real(crm_rknd), allocatable :: t_vt_tend (:,:)       ! CRM output tendency for LSE variance transport
       real(crm_rknd), allocatable :: q_vt_tend (:,:)       ! CRM output tendency for QT  variance transport
+      real(crm_rknd), allocatable :: u_vt_tend (:,:)       ! CRM output tendency for U variance transport
       real(crm_rknd), allocatable :: t_vt_ls   (:,:)       ! large-scale LSE variance transport tendency from GCM
       real(crm_rknd), allocatable :: q_vt_ls   (:,:)       ! large-scale QT  variance transport tendency from GCM
+      real(crm_rknd), allocatable :: u_vt_ls   (:,:)       ! large-scale U variance transport tendency from GCM
 
       ! These are all time and spatial averages, on the GCM grid
       real(crm_rknd), allocatable :: cld   (:,:)      ! cloud fraction
@@ -182,9 +164,9 @@ contains
 
       if (.not. allocated(output%qc_mean)) allocate(output%qc_mean(ncol,nlev))
       if (.not. allocated(output%qi_mean)) allocate(output%qi_mean(ncol,nlev))
+      if (.not. allocated(output%qr_mean)) allocate(output%qr_mean(ncol,nlev))
       if (.not. allocated(output%qs_mean)) allocate(output%qs_mean(ncol,nlev))
       if (.not. allocated(output%qg_mean)) allocate(output%qg_mean(ncol,nlev))
-      if (.not. allocated(output%qr_mean)) allocate(output%qr_mean(ncol,nlev))
 
       call prefetch(output%qcl)
       call prefetch(output%qci)
@@ -213,37 +195,16 @@ contains
       call prefetch(output%cldtop)
       call prefetch(output%qc_mean)
       call prefetch(output%qi_mean)
+      call prefetch(output%qr_mean)
       call prefetch(output%qs_mean)
       call prefetch(output%qg_mean)
-      call prefetch(output%qr_mean)
 
-      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
-         if (.not. allocated(output%nc_mean)) allocate(output%nc_mean(ncol,nlev))
-         if (.not. allocated(output%ni_mean)) allocate(output%ni_mean(ncol,nlev))
-         if (.not. allocated(output%ns_mean)) allocate(output%ns_mean(ncol,nlev))
-         if (.not. allocated(output%ng_mean)) allocate(output%ng_mean(ncol,nlev))
-         if (.not. allocated(output%nr_mean)) allocate(output%nr_mean(ncol,nlev))
+      if (.not. allocated(output%nc_mean)) allocate(output%nc_mean(ncol,nlev))
+      if (.not. allocated(output%ni_mean)) allocate(output%ni_mean(ncol,nlev))
+      if (.not. allocated(output%nr_mean)) allocate(output%nr_mean(ncol,nlev))
 
-         if (.not. allocated(output%aut_a )) allocate(output%aut_a (ncol,nlev))
-         if (.not. allocated(output%acc_a )) allocate(output%acc_a (ncol,nlev))
-         if (.not. allocated(output%evpc_a)) allocate(output%evpc_a(ncol,nlev))
-         if (.not. allocated(output%evpr_a)) allocate(output%evpr_a(ncol,nlev))
-         if (.not. allocated(output%mlt_a )) allocate(output%mlt_a (ncol,nlev))
-         if (.not. allocated(output%sub_a )) allocate(output%sub_a (ncol,nlev))
-         if (.not. allocated(output%dep_a )) allocate(output%dep_a (ncol,nlev))
-         if (.not. allocated(output%con_a )) allocate(output%con_a (ncol,nlev))
-      end if
-
-#if defined( MMF_MOMENTUM_FEEDBACK )
-      if (.not. allocated(output%ultend )) allocate(output%ultend (ncol,nlev))
-      if (.not. allocated(output%vltend )) allocate(output%vltend (ncol,nlev))
-#endif
-
-#if defined( MMF_ESMT )
-      if (.not. allocated(output%u_tend_esmt )) allocate(output%u_tend_esmt (ncol,nlev))
-      if (.not. allocated(output%v_tend_esmt )) allocate(output%v_tend_esmt (ncol,nlev))
-#endif
-      
+      if (.not. allocated(output%ultend ))  allocate(output%ultend (ncol,nlev))
+      if (.not. allocated(output%vltend ))  allocate(output%vltend (ncol,nlev))      
       if (.not. allocated(output%sltend ))  allocate(output%sltend (ncol,nlev))
       if (.not. allocated(output%qltend ))  allocate(output%qltend (ncol,nlev))
       if (.not. allocated(output%qcltend))  allocate(output%qcltend(ncol,nlev))
@@ -251,8 +212,10 @@ contains
 
       if (.not. allocated(output%t_vt_tend))  allocate(output%t_vt_tend(ncol,nlev))
       if (.not. allocated(output%q_vt_tend))  allocate(output%q_vt_tend(ncol,nlev))
+      if (.not. allocated(output%u_vt_tend))  allocate(output%u_vt_tend(ncol,nlev))
       if (.not. allocated(output%t_vt_ls  ))  allocate(output%t_vt_ls  (ncol,nlev))
       if (.not. allocated(output%q_vt_ls  ))  allocate(output%q_vt_ls  (ncol,nlev))
+      if (.not. allocated(output%u_vt_ls  ))  allocate(output%u_vt_ls  (ncol,nlev))
 
       if (.not. allocated(output%cld   )) allocate(output%cld   (ncol,nlev))  ! cloud fraction
       if (.not. allocated(output%gicewp)) allocate(output%gicewp(ncol,nlev))  ! ice water path
@@ -302,8 +265,10 @@ contains
 
       call prefetch(output%t_vt_tend )
       call prefetch(output%q_vt_tend )
+      call prefetch(output%u_vt_tend )
       call prefetch(output%t_vt_ls   )
       call prefetch(output%q_vt_ls   )
+      call prefetch(output%u_vt_ls   )
 
       call prefetch(output%cld    )
       call prefetch(output%gicewp )
@@ -378,37 +343,16 @@ contains
 
       output%qc_mean = 0
       output%qi_mean = 0
+      output%qr_mean = 0
       output%qs_mean = 0
       output%qg_mean = 0
-      output%qr_mean = 0
 
-      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
-         output%nc_mean = 0
-         output%ni_mean = 0
-         output%ns_mean = 0
-         output%ng_mean = 0
-         output%nr_mean = 0
+      output%nc_mean = 0
+      output%ni_mean = 0
+      output%nr_mean = 0
 
-         output%aut_a = 0
-         output%acc_a = 0
-         output%evpc_a = 0
-         output%evpr_a = 0
-         output%mlt_a = 0
-         output%sub_a = 0
-         output%dep_a = 0
-         output%con_a = 0
-      end if
-
-#if defined( MMF_MOMENTUM_FEEDBACK )
-      output%ultend = 0
-      output%vltend = 0
-#endif
-
-#if defined( MMF_ESMT )
-      output%u_tend_esmt = 0
-      output%v_tend_esmt = 0
-#endif
-
+      output%ultend  = 0
+      output%vltend  = 0
       output%sltend  = 0
       output%qltend  = 0
       output%qcltend = 0
@@ -416,8 +360,10 @@ contains
 
       output%t_vt_tend = 0
       output%q_vt_tend = 0
+      output%u_vt_tend = 0
       output%t_vt_ls   = 0
       output%q_vt_ls   = 0
+      output%u_vt_ls   = 0
 
       output%cld    = 0
       output%gicewp = 0
@@ -498,47 +444,27 @@ contains
 
       if (allocated(output%qc_mean)) deallocate(output%qc_mean)
       if (allocated(output%qi_mean)) deallocate(output%qi_mean)
+      if (allocated(output%qr_mean)) deallocate(output%qr_mean)
       if (allocated(output%qs_mean)) deallocate(output%qs_mean)
       if (allocated(output%qg_mean)) deallocate(output%qg_mean)
-      if (allocated(output%qr_mean)) deallocate(output%qr_mean)
       
-      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
-         if (allocated(output%nc_mean)) deallocate(output%nc_mean)
-         if (allocated(output%ni_mean)) deallocate(output%ni_mean)
-         if (allocated(output%ns_mean)) deallocate(output%ns_mean)
-         if (allocated(output%ng_mean)) deallocate(output%ng_mean)
-         if (allocated(output%nr_mean)) deallocate(output%nr_mean)
+      if (allocated(output%nc_mean)) deallocate(output%nc_mean)
+      if (allocated(output%ni_mean)) deallocate(output%ni_mean)
+      if (allocated(output%nr_mean)) deallocate(output%nr_mean)
 
-         ! Time and domain-averaged process rates
-         if (allocated(output%aut_a)) deallocate(output%aut_a)
-         if (allocated(output%acc_a)) deallocate(output%acc_a)
-         if (allocated(output%evpc_a)) deallocate(output%evpc_a)
-         if (allocated(output%evpr_a)) deallocate(output%evpr_a)
-         if (allocated(output%mlt_a)) deallocate(output%mlt_a)
-         if (allocated(output%sub_a)) deallocate(output%sub_a)
-         if (allocated(output%dep_a)) deallocate(output%dep_a)
-         if (allocated(output%con_a)) deallocate(output%con_a)
-      end if
-
-#if defined( MMF_MOMENTUM_FEEDBACK )
-      if (allocated(output%ultend)) deallocate(output%ultend)
-      if (allocated(output%vltend)) deallocate(output%vltend)
-#endif
-
-#if defined( MMF_ESMT )
-      if (allocated(output%u_tend_esmt)) deallocate(output%u_tend_esmt)
-      if (allocated(output%v_tend_esmt)) deallocate(output%v_tend_esmt)
-#endif
-
-      if (allocated(output%sltend)) deallocate(output%sltend)
-      if (allocated(output%qltend)) deallocate(output%qltend)
+      if (allocated(output%ultend))  deallocate(output%ultend)
+      if (allocated(output%vltend))  deallocate(output%vltend)
+      if (allocated(output%sltend))  deallocate(output%sltend)
+      if (allocated(output%qltend))  deallocate(output%qltend)
       if (allocated(output%qcltend)) deallocate(output%qcltend)
       if (allocated(output%qiltend)) deallocate(output%qiltend)
 
       if (allocated(output%t_vt_tend)) deallocate(output%t_vt_tend)
       if (allocated(output%q_vt_tend)) deallocate(output%q_vt_tend)
+      if (allocated(output%u_vt_tend)) deallocate(output%u_vt_tend)
       if (allocated(output%t_vt_ls))   deallocate(output%t_vt_ls)
       if (allocated(output%q_vt_ls))   deallocate(output%q_vt_ls)
+      if (allocated(output%u_vt_ls))   deallocate(output%u_vt_ls)
 
       if (allocated(output%cld)) deallocate(output%cld)
       if (allocated(output%gicewp)) deallocate(output%gicewp)

@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+
+<compsets>
+
+  <help>
+  Compset format is explained in cime/config/e3sm/allactive/config_compsets.xml
+  or in the CIME documenation
+  </help>
+
+  <!-- Waves compsets -->
+
+  <compset>
+    <alias>VWW3-IAF</alias>
+    <lname>2000_DATM%IAF_SLND_SICE_SOCN_SROF_SGLC_WW3%sp36x36</lname>
+  </compset>
+
+  <compset>
+    <alias>VWW3-CFSv2</alias>
+    <lname>2000_DATM%CFSv2_SLND_SICE_SOCN_SROF_SGLC_WW3%sp36x36</lname>
+  </compset>
+
+  <compset>
+    <alias>VWW3-CFSR</alias>
+    <lname>2000_DATM%CFSR_SLND_SICE_SOCN_SROF_SGLC_WW3%sp36x36</lname>
+  </compset>
+
+  <compset>
+    <alias>DTESTM-JRA1p5-WW3</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_MPASSI_DOCN%SOM_DROF%JRA-1p5_SGLC_WW3%sp36x36_TEST</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-IAF-WW3</alias>
+    <lname>2000_DATM%IAF_SLND_MPASSI_MPASO%DATMFORCED_DROF%IAF_SGLC_WW3%sp36x36</lname>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-JRA1p5-WW3</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA-1p5_SGLC_WW3%sp36x36</lname>
+  </compset>
+
+  <compset>
+    <alias>WCYCLSSP585-WW3</alias>
+    <lname>SSP585SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_WW3%sp36x36</lname>
+  </compset>
+
+  <compset>
+    <alias>WCYCL1850-WW3</alias>
+    <lname>1850SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_WW3%sp36x36</lname>
+  </compset>
+
+</compsets>

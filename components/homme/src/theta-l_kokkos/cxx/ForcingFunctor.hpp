@@ -220,6 +220,7 @@ public:
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
+
         vtheta(ilev) += m_dt*fvtheta(ilev);
         phi(ilev) += m_dt*fphi(ilev);
 
@@ -243,6 +244,7 @@ public:
     m_np1 = np1;
     m_np1_qdp = np1_qdp;
     m_adjustment = adjustment;
+
     m_moist = (moisture==MoistDry::MOIST);
 
     Kokkos::parallel_for("temperature, NH perturb press, FQps",m_policy_tracers_pre,*this);
@@ -355,8 +357,8 @@ public:
               const int ivec = k % VECTOR_SIZE;
               accumulator += dp(ilev)[ivec]*(fq(ilev)[ivec]-q(ilev)[ivec]);
             },added_mass);
-          Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-              ps += added_mass;
+          Kokkos::single(Kokkos::PerThread(kv.team), [&]() {
+            ps += added_mass;
           });
           if (!m_adjust_ps) {
             Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
@@ -371,7 +373,9 @@ public:
             [&](const int &k, Real &accumulator) {
               accumulator += compute_fqdt(k,fq,qdp)/m_dt;
             },ps_forcing);
-          ps += ps_forcing*m_dt;
+          Kokkos::single(Kokkos::PerThread(kv.team), [&]() {
+            ps += ps_forcing*m_dt;
+          });
           if (!m_adjust_ps) {
             Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                                  [&](const int& ilev) {

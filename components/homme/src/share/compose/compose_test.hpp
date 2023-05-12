@@ -135,6 +135,7 @@ public:
     case CosineBells: return inputs[2];
     case SlottedCylinders: return inputs[3];
     case CorrelatedCosineBells: return inputs[4];
+    case nshapes: break;
     }
     throw std::runtime_error("Should not be here.");
   }

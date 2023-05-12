@@ -2848,7 +2848,6 @@ contains
    offset_counter           => cnstate_vars%offset_counter_patch, & ! Input: [real(r8) (:)] offset days counter
 
    presharv                 => veg_vp%presharv                  , & ! Input: [real(r8) (:)] proportion of residue harvested
-   fyield                   => veg_vp%fyield                    , & ! Input: [real(r8) (:)] fraction of grain actually harvested
    convfact                 => veg_vp%convfact                  , & ! Input: [real(r8) (:)] conversation factor from gC/m2 to bu/acre
 
    leafc                    => veg_cs%leafc                     , & ! Input: [real(r8) (:)] leaf C (gC/m2)
@@ -2873,7 +2872,8 @@ contains
    dmyield                  => crop_vars%dmyield_patch            & ! InOut: [real(r8) ):)] dry matter harvested crop (t/ha)
    )
 
-   cgrain = 0.50_r8
+   dt = dtime_mod
+   cgrain = 0.447_r8 ! Source: Zeri et al., 2013
    do fp = 1, num_ppercropp
       p = filter_ppercropp(fp)
       ! only calculate during the offset period
@@ -2883,8 +2883,10 @@ contains
          t1 = 1._r8 / dt
               ! calculate yield (crpyld = bu/acre and dmyield = t/ha)
               ! for perennial bioenergy grass yield comes from leaf and stem harvest
-              crpyld(p)  = presharv(ivt(p)) * (leafc(p) + cpool_to_leafc(p)*dt + livestemc(p) + cpool_to_livestemc(p)*dt) * fyield(ivt(p)) * convfact(ivt(p)) / (cgrain * 1000)
-              dmyield(p) = presharv(ivt(p)) * (leafc(p) + cpool_to_leafc(p)*dt + livestemc(p) + cpool_to_livestemc(p)*dt) * fyield(ivt(p)) * 0.01 / cgrain
+              crpyld(p)  = presharv(ivt(p)) * (leafc(p) + cpool_to_leafc(p)*dt + &
+                           livestemc(p) + cpool_to_livestemc(p)*dt) * convfact(ivt(p)) / (cgrain * 1000)
+              dmyield(p) = presharv(ivt(p)) * (leafc(p) + cpool_to_leafc(p)*dt + &
+                           livestemc(p) + cpool_to_livestemc(p)*dt) * 0.01 /cgrain
 
               !calculate harvested carbon and nitrogen; remaining goes into litterpool
               hrv_leafc_to_prod1c(p)  = presharv(ivt(p)) * ((t1 * leafc(p)) + cpool_to_leafc(p))

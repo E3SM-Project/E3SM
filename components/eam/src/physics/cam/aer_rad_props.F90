@@ -242,7 +242,7 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
 
       call pbuf_get_field(pbuf, idx_ext_sw, ext_cmip6_sw)
       call outfld('extinct_sw_inp',ext_cmip6_sw(:,:,idx_sw_diag), pcols, lchnk)
-      ext_cmip6_sw_inv_m = ext_cmip6_sw * km_inv_to_m_inv !convert from 1/km to 1/m
+      ext_cmip6_sw_inv_m(1:ncol,1:pver,1:nswbands) = ext_cmip6_sw(1:ncol,1:pver,1:nswbands) * km_inv_to_m_inv !convert from 1/km to 1/m
 
       !Find tropopause as extinction should be applied only above tropopause
       !trop_level has value for tropopause for each column
@@ -454,7 +454,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, dt, state, pbuf,  odap_aer,
       !Obtain read in values for ext from the volcanic input file
       call pbuf_get_field(pbuf, idx_ext_lw, ext_cmip6_lw)
       call outfld('extinct_lw_inp',ext_cmip6_lw(:,:,idx_lw_diag), pcols, lchnk)
-      ext_cmip6_lw_inv_m = ext_cmip6_lw * km_inv_to_m_inv  !convert from 1/km to 1/m
+      ext_cmip6_lw_inv_m(1:ncol,1:pver,1:nlwbands) = ext_cmip6_lw(1:ncol,1:pver,1:nlwbands) * km_inv_to_m_inv  !convert from 1/km to 1/m
       !Above the tropopause, the read in values from the file include both the stratospheric
       !and volcanic aerosols. Therefore, we need to zero out odap_aer above the tropopause
       !and populate it exclusively from the read in values.

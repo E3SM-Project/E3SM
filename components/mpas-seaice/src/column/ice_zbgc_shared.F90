@@ -29,11 +29,15 @@
          R_Fe2C     , & ! algal Fe to carbon (umol/mmol)
          R_Fe2N         ! algal Fe to N (umol/mmol)
 
-      real (kind=dbl_kind), dimension(max_don), public :: & 
+      real (kind=dbl_kind), dimension(max_don), public :: &
          R_Fe2DON       ! Fe to N of DON (nmol/umol)
 
-      real (kind=dbl_kind), dimension(max_doc), public :: &  
+      real (kind=dbl_kind), dimension(max_doc), public :: &
          R_Fe2DOC       ! Fe to C of DOC (nmol/umol)
+
+      ! polysaccharids, lipids, proteins+nucleic acids (Lonborg et al. 2020)
+      real (kind=dbl_kind), dimension(max_doc), parameter, public :: &
+         doc_pool_fractions = (/0.26_dbl_kind, 0.17_dbl_kind, 0.57_dbl_kind/)
 
       real (kind=dbl_kind), parameter, public :: &
          R_gC2molC  = 12.01_dbl_kind ! mg/mmol C

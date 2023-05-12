@@ -76,14 +76,14 @@ contains
 
     type(domain_type) :: domain
 
-    type(block_type), pointer :: block
+    type(block_type), pointer :: blockPtr
 
     character(len=strKIND), pointer :: &
          config_constitutive_relation_type
 
     type(MPAS_pool_type), pointer :: &
-         velocitySolver, &
-         mesh
+         velocitySolverPool, &
+         meshPool
 
     real(kind=RKIND), pointer :: &
          dynamicsTimeStep, &
@@ -115,50 +115,47 @@ contains
     endif
 
     ! general EVP
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolver)
-       call MPAS_pool_get_array(velocitySolver, "dynamicsTimeStep", dynamicsTimeStep)
-       call MPAS_pool_get_array(velocitySolver, "elasticTimeStep", elasticTimeStep)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_array(velocitySolverPool, "dynamicsTimeStep", dynamicsTimeStep)
+       call MPAS_pool_get_array(velocitySolverPool, "elasticTimeStep", elasticTimeStep)
 
        dampingTimescale = dampingTimescaleParameter * dynamicsTimeStep
 
        evpDampingCriterion = (1230.0_RKIND * dampingTimescale) / elasticTimeStep**2
 
-       block => block % next
+       blockPtr => blockPtr % next
     enddo
 
     ! find the minimum edge length in the grid
     dvEdgeMin = 1.0e30_RKIND
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
 
-       call MPAS_pool_get_dimension(mesh, "nEdgesSolve", nEdgesSolve)
+       call MPAS_pool_get_dimension(meshPool, "nEdgesSolve", nEdgesSolve)
 
-       call MPAS_pool_get_array(mesh, "dvEdge", dvEdge)
+       call MPAS_pool_get_array(meshPool, "dvEdge", dvEdge)
 
        dvEdgeMin = min(dvEdgeMin, minval(dvEdge(1:nEdgesSolve)))
 
-       block => block % next
+       blockPtr => blockPtr % next
     enddo
 
     call mpas_dmpar_min_real(domain % dminfo, dvEdgeMin, dvEdgeMinGlobal)
 
-    !!!! Testing!
-    !dvEdgeMinGlobal = 8558.2317072059941_RKIND
-
     ! Bouillon et al. 2013
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
        gamma = 0.25_RKIND * 1.0e11_RKIND * dynamicsTimeStep
        numericalInertiaCoefficient = (2.0_RKIND * dampingRatioDenominator * dampingRatio * gamma) / dvEdgeMinGlobal**2
 
-       block => block % next
+       blockPtr => blockPtr % next
     enddo
 
   end subroutine seaice_init_evp
@@ -186,7 +183,7 @@ contains
        replacementPressure, &
        areaCell, &
        dtElastic)
-#ifdef CPRINTEL
+#if defined CPRINTEL && defined MPAS_OPENMP
 !$omp declare simd(seaice_evp_constitutive_relation) uniform(dtElastic), notinbranch &
 !$omp& linear(ref(stress11,stress22,stress12,strain11,strain22,strain12,replacementPressure,icePressure,areaCell))
 #endif
@@ -269,7 +266,7 @@ contains
        icePressure, &
        replacementPressure, &
        areaCell)
-#ifdef CPRINTEL
+#if defined CPRINTEL && defined MPAS_OPENMP
 !$omp declare simd(seaice_evp_constitutive_relation_revised) uniform(icePressure,areaCell), notinbranch &
 !$omp& linear(ref(stress11,stress22,stress12,strain11,strain22,strain12,replacementPressure))
 #endif
@@ -348,7 +345,7 @@ contains
        strain11, &
        strain22, &
        strain12)
-#ifdef CPRINTEL
+#if defined CPRINTEL && defined MPAS_OPENMP
 !$omp declare simd(seaice_linear_constitutive_relation) notinbranch &
 !$omp& linear(ref(stress11,stress22,stress12,strain11,strain22,strain12))
 #endif

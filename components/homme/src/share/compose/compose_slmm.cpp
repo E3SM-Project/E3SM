@@ -240,7 +240,7 @@ static void initialize_kokkos () {
   if (Kokkos::is_initialized()) return;
   in_charge_of_kokkos = true;
   std::vector<char*> args;
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef HOMMEXX_ENABLE_GPU
   int nd;
   const auto ret = cudaGetDeviceCount(&nd);
   if (ret != cudaSuccess) {
@@ -316,15 +316,15 @@ void slmm_init_impl (
 
 void slmm_query_bufsz (homme::Int* sendsz, homme::Int* recvsz) {
   slmm_assert(homme::g_csl_mpi);
-  if (ko::OnGpu<ko::MachineTraits::DES>::value) {
+  if (ko::OnGpu<ko::MachineTraits::DES>::value)
     *sendsz = *recvsz = 0;
-    return;
+  else {
+    homme::Int s = 0, r = 0;
+    for (const auto e : homme::g_csl_mpi->sendsz) s += e;
+    for (const auto e : homme::g_csl_mpi->recvsz) r += e;
+    *sendsz = s;
+    *recvsz = r;
   }
-  homme::Int s = 0, r = 0;
-  for (const auto e : homme::g_csl_mpi->sendsz) s += e;
-  for (const auto e : homme::g_csl_mpi->recvsz) r += e;
-  *sendsz = s;
-  *recvsz = r;
 }
 
 void slmm_init_plane (homme::Real Sx, homme::Real Sy, homme::Real Lx, homme::Real Ly) {

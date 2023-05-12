@@ -519,12 +519,6 @@ contains
 
     SHR_ASSERT_ALL((ubound(watsat_col) == (/bounds%endc,nlevgrnd/)) , errMsg(__FILE__, __LINE__))
 
-
-    call restartvar(ncid=ncid, flag=flag, varname='TWS_MONTH_BEGIN', xtype=ncd_double,  &
-         dim1name='gridcell', &
-         long_name='surface watertotal water storage at the beginning of a month', units='mm', &
-          interpinic_flag='interp', readvar=readvar, data=this%tws_month_beg_grc)
-
     call restartvar(ncid=ncid, flag=flag, varname='ENDWB_COL', xtype=ncd_double, &
          dim1name='column', long_name='col-level water mass end of the time step', &
          units='mm', interpinic_flag='interp', readvar=readvar, data=this%endwb_col)

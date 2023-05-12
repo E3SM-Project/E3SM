@@ -111,7 +111,7 @@ typename
 std::enable_if<!std::is_reference<ScalarType>::value &&
                !std::is_reference<ExpType>::value, ScalarType>::type
 bfb_pow_impl (ScalarType val, ExpType e) {
-#ifdef CUDA_BUILD
+#ifdef HOMMEXX_ENABLE_GPU
   // Note: this function is tailored (or taylored...eheh)
   // for -1<e<1.5 and 0.001 < b < 1e6
   if (val<ScalarType(0)) {

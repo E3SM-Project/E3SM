@@ -619,6 +619,7 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
   use element_ops, only: get_field
   use gllfvremap_mod
   use perf_mod, only: t_startf, t_stopf
+  use control_mod, only: ftype
 
   ! to DSS precl
   use edge_mod, only: edgevpack_nlyr, edgevunpack_nlyr, edge_g
@@ -777,43 +778,53 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
      call gfr_g_make_nonnegative(elem(ie)%metdet, wrk3(:,:,:1))
      precl(:,:,ie) = wrk3(:,:,1)
 
+     ! T, uv tendencies
      pg_data%T(:,:,ie) = reshape((T_fv(:nf,:nf,:) - T0(:nf,:nf,:))/dt, (/ncol,nlev/))
      pg_data%uv(:,1,:,ie) = reshape((u_fv(:nf,:nf,:) - u0(:nf,:nf,:))/dt, (/ncol,nlev/))
      pg_data%uv(:,2,:,ie) = reshape((v_fv(:nf,:nf,:) - v0(:nf,:nf,:))/dt, (/ncol,nlev/))
-     ! ftype = 0, so q is Qdp tendency.
+     ! q state
      do i = 1,qsize
-        pg_data%q(:,:,i,ie) = reshape(dp_fv(:nf,:nf,:)*(Q_fv(:nf,:nf,:,i) - Q0_fv(:nf,:nf,:,i))/dt, &
-             (/ncol,nlev/))
+        pg_data%q(:,:,i,ie) = reshape(Q_fv(:nf,:nf,:,i), (/ncol,nlev/))
      end do
      
      ! Measure max w and max prect. w is not used in the physics, so
      ! just look at the GLL values.
-     max_w     = max( max_w    , maxval(w    ) )
+     max_w = max(max_w, maxval(w))
      ! ps isn't updated by the physics, so just look at the GLL values.
-     min_ps    = min( min_ps,    minval(elem(ie)%state%ps_v(:,:,nt)) )
+     min_ps = min(min_ps, minval(elem(ie)%state%ps_v(:,:,nt)))
   enddo
 
   call t_startf('gfr_fv_phys_to_dyn')
-  call gfr_fv_phys_to_dyn(hybrid, nt, dt, hvcoord, elem, nets, nete, &
+  call gfr_fv_phys_to_dyn(hybrid, nt, hvcoord, elem, nets, nete, &
        pg_data%T, pg_data%uv, pg_data%q)
   call t_stopf('gfr_fv_phys_to_dyn')
   ! dp_coupling doesn't do the DSS; stepon does. Thus, this DCMIP test
   ! also needs to do its own DSS.
   call gfr_f2g_dss(hybrid, elem, nets, nete)
-  call gfr_pg1_reconstruct(hybrid, nt, dt, hvcoord, elem, nets, nete)
+  call gfr_pg1_reconstruct(hybrid, nt, hvcoord, elem, nets, nete)
 
   call toy_init(rcd)
   do ie = nets,nete
-     do k = 1,nlev
-        dp(:,:,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-             (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,nt)
-     end do
      do i = 1,2
-        wrk4(:,:,:,i) = elem(ie)%state%Q(:,:,:,i+3) + dt*elem(ie)%derived%FQ(:,:,:,i+3)/dp
+        wrk4(:,:,:,i) = elem(ie)%state%Q(:,:,:,i+3)
      end do
      call toy_rcd(wrk4, rcd)
   end do
   call toy_print(hybrid, tl%nstep, rcd)
+
+  if (ftype == 0) then
+     ! Convert FQ from state to Qdp tendency.
+     do ie = nets,nete
+        do k = 1,nlev
+           dp(:,:,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+                       (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,nt)
+        end do
+        do i = 1,qsize
+           elem(ie)%derived%FQ(:,:,:,i) = &
+                dp*(elem(ie)%derived%FQ(:,:,:,i) - elem(ie)%state%Q(:,:,:,i))/dt
+        end do
+     end do
+  end if
 
   ! DSS precl
   do ie = nets,nete

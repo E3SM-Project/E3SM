@@ -11,8 +11,9 @@ interface
                                        qsize, state_frequency, nu, nu_p, nu_q, nu_s, nu_div, nu_top, &
                                        hypervis_order, hypervis_subcycle, hypervis_scaling,          &
                                        ftype, prescribed_wind, moisture,                             &
-                                       disable_diagnostics, use_cpstar, transport_alg, &
-                                       dt_remap_factor, dt_tracer_factor) bind(c)
+                                       disable_diagnostics, use_cpstar, transport_alg,               &
+                                       dt_remap_factor, dt_tracer_factor,                            &
+                                       scale_factor, laplacian_rigid_factor) bind(c)
     use iso_c_binding, only: c_int, c_bool, c_double, c_ptr
     !
     ! Inputs
@@ -20,6 +21,7 @@ interface
     integer(kind=c_int),  intent(in) :: remap_alg, limiter_option, rsplit, qsplit, time_step_type
     integer(kind=c_int),  intent(in) :: state_frequency, qsize, dt_remap_factor, dt_tracer_factor
     real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling
+    real(kind=c_double),  intent(in) :: scale_factor, laplacian_rigid_factor
     integer(kind=c_int),  intent(in) :: hypervis_order, hypervis_subcycle, ftype, transport_alg
     logical(kind=c_bool), intent(in) :: prescribed_wind, moisture, disable_diagnostics, use_cpstar
   end subroutine init_simulation_params_c
@@ -137,13 +139,14 @@ interface
   end subroutine push_forcing_to_c
 
   ! Run dycore for a full atm timesteps
-  subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,next_output_step) bind(c)
+  subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,next_output_step,nsplit_iteration) bind(c)
     use iso_c_binding, only: c_int, c_double
     !
     ! Inputs
     !
-    integer(kind=c_int),  intent(in) :: nstep, nm1, n0, np1, next_output_step
-    real (kind=c_double), intent(in) :: tstep
+    integer(kind=c_int),  intent(inout) :: nstep, nm1, n0, np1
+    integer(kind=c_int),  intent(in)    :: next_output_step, nsplit_iteration
+    real (kind=c_double), intent(in)    :: tstep
   end subroutine prim_run_subcycle_c
 
   ! Copy results from C++ views back to f90 arrays

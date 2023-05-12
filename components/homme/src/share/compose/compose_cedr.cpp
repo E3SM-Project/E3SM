@@ -358,7 +358,7 @@ struct ReproSumReducer :
         send = typename RealList::HostMirror("send", nlocal*count);
         recv = typename RealList::HostMirror("recv", count);
       }
-      cedr_assert(send.size() == nlocal*count);
+      cedr_assert(static_cast<int>(send.size()) == nlocal*count);
       ko::deep_copy(send, ConstRealList(sendbuf, nlocal*count));
       sendptr = send.data();
       rcvptr = recv.data();
@@ -431,8 +431,7 @@ CDR<MT>::CDR (Int cdr_alg_, Int ngblcell_, Int nlclcell_, Int nlev_, Int qsize_,
     cdr_over_super_levels(threed && Alg::is_caas(alg)),
     caas_in_suplev(alg == Alg::qlt_super_level_local_caas && nsublev > 1),
     hard_zero(hard_zero_),
-    p(p_), inited_tracers_(false),
-    run(cdr_alg_ != 42)
+    p(p_), run(cdr_alg_ != 42), inited_tracers_(false)
 {
   const Int n_id_in_suplev = caas_in_suplev ? 1 : nsublev;
   if (Alg::is_qlt(alg)) {
@@ -485,11 +484,10 @@ void CDR<MT>::init_tracers (const bool need_conservation) {
 
 template <typename MT>
 void CDR<MT>::get_buffers_sizes (size_t& s1, size_t &s2) {
-  if (ko::OnGpu<ko::MachineTraits::DES>::value) {
+  if (ko::OnGpu<ko::MachineTraits::DES>::value)
     s1 = s2 = 0;
-    return;
-  }
-  cdr->get_buffers_sizes(s1, s2);
+  else
+    cdr->get_buffers_sizes(s1, s2);
 }
 
 template <typename MT>

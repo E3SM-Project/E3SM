@@ -48,7 +48,15 @@ public:
 
   ElementsGeometry() : m_num_elems(0) {}
 
+  Real m_scale_factor, m_laplacian_rigid_factor;
+
   void init (const int num_elems, const bool consthv, const bool alloc_gradphis,
+             // Usually, scale_factor is rearth for sphere-Earth problems and 1
+             // for planar problems. Usually, laplacian_rigid_factor is 1/rearth
+             // for the sphere and 0 for the plane. If laplacian_rigid_factor is
+             // not passed as an argument, it defaults to 1/scale_factor.
+             const Real scale_factor, const Real laplacian_rigid_factor=-1,
+             // Allocate some arrays needed by SL transport.
              const bool alloc_sphere_coords=false);
 
   void randomize (const int seed);
@@ -69,7 +77,7 @@ public:
 
 private:
   bool m_consthv;
-  int m_num_elems;
+  int  m_num_elems;
 };
 
 } // Homme

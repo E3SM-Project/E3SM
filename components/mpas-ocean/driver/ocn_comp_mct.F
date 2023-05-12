@@ -61,6 +61,8 @@ module ocn_comp_mct
    use ocn_tracer_surface_restoring
    use ocn_gm
    use ocn_config
+   use ocn_submesoscale_eddies
+   use ocn_eddy_parameterization_helpers
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -393,8 +395,8 @@ contains
     ! Process namelist and streams files
     ! ----------
     ! Override the names of the stream and namelist files
-    domain_ptr % namelist_filename = 'mpaso_in'
-    domain_ptr % streams_filename = 'streams.ocean'
+    domain_ptr % namelist_filename = 'mpaso_in' // trim(inst_suffix)
+    domain_ptr % streams_filename = 'streams.ocean' // trim(inst_suffix)
 
     ! Setup namelist variables, and read the namelist
     ierr = domain_ptr % core % setup_namelist(domain_ptr % configs, domain_ptr % namelist_filename, domain_ptr % dminfo)
@@ -808,10 +810,9 @@ contains
     call t_stopf ('mpaso_mct_init')
 
     call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-    if ( trim(config_land_ice_flux_mode) .eq. 'pressure_only' ) then
-       call seq_infodata_PutData( infodata, ocn_prognostic=.true., ocnrof_prognostic=.true., &
-                                            ocn_c2_glcshelf=.false.)
-    else if ( trim(config_land_ice_flux_mode) .eq. 'standalone' ) then
+    if ( trim(config_land_ice_flux_mode) == 'off' .or. &
+         trim(config_land_ice_flux_mode) == 'pressure_only' .or. &
+         trim(config_land_ice_flux_mode) == 'standalone' ) then
        call seq_infodata_PutData( infodata, ocn_prognostic=.true., ocnrof_prognostic=.true., &
                                             ocn_c2_glcshelf=.false.)
     else if ( trim(config_land_ice_flux_mode) .eq. 'coupled' ) then
@@ -993,6 +994,16 @@ contains
 
             call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
 
+            call ocn_eddy_compute_mixed_layer_depth(statePool, forcingPool)
+            if (config_use_GM .or. config_submesoscale_enable) then
+                call ocn_eddy_compute_buoyancy_gradient()
+            end if
+
+            if (config_submesoscale_enable) then
+                call mpas_timer_start("submesoscale eddy velocity compute", .false.)
+                call ocn_submesoscale_compute_velocity()
+                call mpas_timer_stop("submesoscale eddy velocity compute")
+            end if
             ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
             if (config_use_Redi.or.config_use_GM) then
               call ocn_gm_compute_Bolus_velocity(statePool, meshPool, scratchPool, timeLevelIn=1)
@@ -1702,7 +1713,10 @@ contains
                                   landIceFreshwaterFluxField, &
                                   landIceHeatFluxField, &
                                   landIceFractionField, &
-                                  windSpeed10mField
+                                  windSpeed10mField, &
+                                 significantWaveHeightField, &
+                                  peakWaveFrequencyField, &
+                                  peakWaveDirectionField
                                   !landIcePressureField
 
    type (field2DReal), pointer :: iceFluxPhytoCField, &
@@ -1710,6 +1724,9 @@ contains
 
    type (field2DReal), pointer :: landIceInterfaceTracersField
 
+   type (field2DReal), pointer :: stokesDriftZonalWavenumberField, &
+                                  stokesDriftMeridionalWavenumberField
+ 
    real (kind=RKIND), dimension(:), pointer :: windStressZonal, windStressMeridional, &
                                                latentHeatFlux, sensibleHeatFlux, &
                                                longWaveHeatFluxUp, &
@@ -1748,13 +1765,18 @@ contains
                                                landIceHeatFlux, &
                                                landIceFraction, &
                                                areaCell, &
-                                               windSpeed10m
+                                               windSpeed10m, &
+                                               significantWaveHeight, &
+                                               peakWaveFrequency, &
+                                               peakWaveDirection
                                                !landIcePressure
 
    real (kind=RKIND), dimension(:), pointer :: latCell
 
    real (kind=RKIND), dimension(:,:), pointer :: iceFluxPhytoC, &
-                                                 iceFluxDOC
+                                                 iceFluxDOC, &
+                                                 stokesDriftZonalWavenumber, &
+                                                 stokesDriftMeridionalWavenumber
 
    real (kind=RKIND) :: removedRiverRunoffFluxThisProc, removedIceRunoffFluxThisProc
    real (kind=RKIND) :: removedRiverRunoffFluxReduced, removedIceRunoffFluxReduced
@@ -1827,6 +1849,11 @@ contains
       call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
       call mpas_pool_get_field(forcingPool, 'removedRiverRunoffFlux', removedRiverRunoffFluxField)
       call mpas_pool_get_field(forcingPool, 'removedIceRunoffFlux', removedIceRunoffFluxField)
+      call mpas_pool_get_field(forcingPool, 'stokesDriftZonalWavenumber', stokesDriftZonalWavenumberField)
+      call mpas_pool_get_field(forcingPool, 'stokesDriftMeridionalWavenumber', stokesDriftMeridionalWavenumberField)
+      call mpas_pool_get_field(forcingPool, 'significantWaveHeight', significantWaveHeightField)
+      call mpas_pool_get_field(forcingPool, 'peakWaveFrequency', peakWaveFrequencyField)
+      call mpas_pool_get_field(forcingPool, 'peakWaveDirection', peakWaveDirectionField)
 
       call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
       call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
@@ -1868,6 +1895,11 @@ contains
       landIceInterfaceTracers => landIceInterfaceTracersField % array
       landIceFraction => landIceFractionField % array
       windSpeed10m => windSpeed10mField % array
+      stokesDriftZonalWavenumber => stokesDriftZonalWavenumberField % array
+      stokesDriftMeridionalWavenumber => stokesDriftMeridionalWavenumberField % array
+      significantWaveHeight => significantWaveHeightField % array
+      peakWaveFrequency => peakWaveFrequencyField % array
+      peakWaveDirection => peakWaveDirectionField % array
       !landIcePressure => landIcePressureField % array
 
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
@@ -2051,6 +2083,32 @@ contains
            iceFraction(i) = x2o_o % rAttr(index_x2o_Si_ifrac, n)
         end if
 
+        if ( stokesDriftZonalWavenumberField % isActive ) then
+           stokesDriftZonalWavenumber(1,i) = x2o_o % rAttr(index_x2o_Sw_ustokes_wavenumber_1, n)
+           stokesDriftZonalWavenumber(2,i) = x2o_o % rAttr(index_x2o_Sw_ustokes_wavenumber_2, n)
+           stokesDriftZonalWavenumber(3,i) = x2o_o % rAttr(index_x2o_Sw_ustokes_wavenumber_3, n)
+           stokesDriftZonalWavenumber(4,i) = x2o_o % rAttr(index_x2o_Sw_ustokes_wavenumber_4, n)
+           stokesDriftZonalWavenumber(5,i) = x2o_o % rAttr(index_x2o_Sw_ustokes_wavenumber_5, n)
+           stokesDriftZonalWavenumber(6,i) = x2o_o % rAttr(index_x2o_Sw_ustokes_wavenumber_6, n)
+        end if
+        if ( stokesDriftMeridionalWavenumberField % isActive ) then
+           stokesDriftMeridionalWavenumber(1,i) = x2o_o % rAttr(index_x2o_Sw_vstokes_wavenumber_1, n)
+           stokesDriftMeridionalWavenumber(2,i) = x2o_o % rAttr(index_x2o_Sw_vstokes_wavenumber_2, n)
+           stokesDriftMeridionalWavenumber(3,i) = x2o_o % rAttr(index_x2o_Sw_vstokes_wavenumber_3, n)
+           stokesDriftMeridionalWavenumber(4,i) = x2o_o % rAttr(index_x2o_Sw_vstokes_wavenumber_4, n)
+           stokesDriftMeridionalWavenumber(5,i) = x2o_o % rAttr(index_x2o_Sw_vstokes_wavenumber_5, n)
+           stokesDriftMeridionalWavenumber(6,i) = x2o_o % rAttr(index_x2o_Sw_vstokes_wavenumber_6, n)
+        end if
+        if ( significantWaveHeightField % isActive ) then
+           significantWaveHeight(i) = x2o_o % rAttr(index_x2o_Sw_Hs, n)
+        end if
+        if ( peakWaveFrequencyField % isActive ) then
+           peakWaveFrequency(i) = x2o_o % rAttr(index_x2o_Sw_Fp, n)
+        end if
+        if ( peakWaveDirectionField % isActive ) then
+           peakWaveDirection(i) = x2o_o % rAttr(index_x2o_Sw_Dp, n)
+        end if
+
         if (config_cvmix_kpp_use_theory_wave) then
            if ( windSpeed10mField% isActive ) then
               windSpeed10m(i) = sqrt( x2o_o % rAttr(index_x2o_So_duu10n, n))
@@ -2171,6 +2229,7 @@ contains
               if ( iceFluxDOCField % isActive ) then
                  iceFluxDOC(1,i) = x2o_o % rAttr(index_x2o_Fioi_doc1, n)
                  iceFluxDOC(2,i) = x2o_o % rAttr(index_x2o_Fioi_doc2, n)
+                 iceFluxDOC(3,i) = x2o_o % rAttr(index_x2o_Fioi_doc3, n)
               endif
               if ( iceFluxDONField % isActive ) then
                  iceFluxDON(i) = x2o_o % rAttr(index_x2o_Fioi_don1, n)
@@ -2221,6 +2280,11 @@ contains
    call mpas_pool_get_field(forcingPool, 'atmosphericPressure', atmosphericPressureField)
    call mpas_pool_get_field(forcingPool, 'seaIcePressure', seaIcePressureField)
    call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
+   call mpas_pool_get_field(forcingPool, 'stokesDriftZonalWavenumber', stokesDriftZonalWavenumberField)
+   call mpas_pool_get_field(forcingPool, 'stokesDriftMeridionalWavenumber', stokesDriftMeridionalWavenumberField)
+   call mpas_pool_get_field(forcingPool, 'significantWaveHeight', significantWaveHeightField)
+   call mpas_pool_get_field(forcingPool, 'peakWaveFrequency', peakWaveFrequencyField)
+   call mpas_pool_get_field(forcingPool, 'peakWaveDirection', peakWaveDirectionField)
 
    call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
    call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
@@ -2341,6 +2405,21 @@ contains
    end if
    if ( iceFractionField % isActive ) then
       call mpas_dmpar_exch_halo_field(iceFractionField)
+   end if
+   if ( stokesDriftZonalWavenumberField % isActive ) then
+      call mpas_dmpar_exch_halo_field(stokesDriftZonalWavenumberField)
+   end if
+   if ( stokesDriftMeridionalWavenumberField % isActive ) then
+      call mpas_dmpar_exch_halo_field(stokesDriftMeridionalWavenumberField)
+   end if
+   if ( significantWaveHeightField % isActive ) then
+      call mpas_dmpar_exch_halo_field(significantWaveHeightField)
+   end if
+   if ( peakWaveFrequencyField % isActive ) then
+      call mpas_dmpar_exch_halo_field(peakWaveFrequencyField)
+   end if
+   if ( peakWaveDirectionField % isActive ) then
+      call mpas_dmpar_exch_halo_field(peakWaveDirectionField)
    end if
 
    if ( landIceFreshwaterFluxField % isActive ) then
@@ -2539,15 +2618,17 @@ contains
                                                avgOceanSurfaceDMS, &
                                                avgOceanSurfaceDMSP, &
                                                avgOceanSurfaceDOCr, &
+                                               avgOceanSurfaceDOCSemiLabile, &
                                                avgOceanSurfaceFeParticulate, &
-                                               avgOceanSurfaceFeDissolved
-
+                                               avgOceanSurfaceFeDissolved, &
+                                               ssh
+ 
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgOceanSurfacePhytoC, &
                                                  avgOceanSurfaceDOC, layerThickness
 
    real (kind=RKIND) :: surfaceFreezingTemp
-
+   
    logical, pointer :: frazilIceActive,          &
                        config_use_ecosysTracers, &
                        config_use_DMSTracers,    &
@@ -2591,6 +2672,7 @@ contains
      call mpas_pool_get_dimension(forcingPool, 'index_avgSurfaceVelocityZonal', index_avgZonalSurfaceVelocity)
      call mpas_pool_get_dimension(forcingPool, 'index_avgSurfaceVelocityMeridional', index_avgMeridionalSurfaceVelocity)
 
+     call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
@@ -2622,6 +2704,7 @@ contains
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceSiO3', avgOceanSurfaceSiO3)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNH4', avgOceanSurfaceNH4)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCr', avgOceanSurfaceDOCr)
+        call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCSemiLabile', avgOceanSurfaceDOCSemiLabile)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeParticulate', avgOceanSurfaceFeParticulate)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeDissolved', avgOceanSurfaceFeDissolved)
      endif
@@ -2649,10 +2732,15 @@ contains
        o2x_o % rAttr(index_o2x_So_u, n) = avgSurfaceVelocity(index_avgZonalSurfaceVelocity, i)
        o2x_o % rAttr(index_o2x_So_v, n) = avgSurfaceVelocity(index_avgMeridionalSurfaceVelocity, i)
 
+       o2x_o % rAttr(index_o2x_So_ssh, n)  = ssh(i)
        o2x_o % rAttr(index_o2x_So_dhdx, n) = filteredSSHGradientZonal(i)
        o2x_o % rAttr(index_o2x_So_dhdy, n) = filteredSSHGradientMeridional(i)
 
        o2x_o % rAttr(index_o2x_Faoo_h2otemp, n) = avgTotalFreshWaterTemperatureFlux(i) * rho_sw * cp_sw
+       
+       if (ocn_rof_two_way) then
+         o2x_o % rAttr(index_o2x_So_ssh, n)       = ssh(i)
+       end if
 
        if ( frazilIceActive ) then
           ! negative when frazil ice can be melted
@@ -2708,6 +2796,10 @@ contains
           o2x_o % rAttr(index_o2x_So_algae2, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(2,i))
           o2x_o % rAttr(index_o2x_So_algae3, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(3,i))
           o2x_o % rAttr(index_o2x_So_dic1,   n) = max(0.0_RKIND,avgOceanSurfaceDIC(i))
+          o2x_o % rAttr(index_o2x_So_doc1,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+          o2x_o % rAttr(index_o2x_So_doc2,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+          o2x_o % rAttr(index_o2x_So_doc3,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+          o2x_o % rAttr(index_o2x_So_don1,   n) = 0.0_RKIND
           o2x_o % rAttr(index_o2x_So_no3,    n) = max(0.0_RKIND,avgOceanSurfaceNO3(i))
           o2x_o % rAttr(index_o2x_So_sio3,   n) = max(0.0_RKIND,avgOceanSurfaceSiO3(i))
           o2x_o % rAttr(index_o2x_So_nh4,    n) = max(0.0_RKIND,avgOceanSurfaceNH4(i))
@@ -2722,7 +2814,8 @@ contains
        if (config_use_MacroMoleculesTracers .and. config_use_MacroMoleculesTracers_sea_ice_coupling) then
           o2x_o % rAttr(index_o2x_So_doc1, n) = max(0.0_RKIND,avgOceanSurfaceDOC(1,i))
           o2x_o % rAttr(index_o2x_So_doc2, n) = max(0.0_RKIND,avgOceanSurfaceDOC(2,i))
-          o2x_o % rAttr(index_o2x_So_don1, n) = max(0.0_RKIND,avgOceanSurfaceDON(i))
+          o2x_o % rAttr(index_o2x_So_doc3, n) = max(0.0_RKIND,avgOceanSurfaceDOC(3,i))
+          o2x_o % rAttr(index_o2x_So_don1, n) = 0.0_RKIND
        endif
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = CO2Flux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fdms_ocn, n) = DMSFlux(i)
@@ -2733,7 +2826,8 @@ contains
 !JW       o2x_o % rAttr(index_o2x_So_htv, n) = landIceHeatTransferVelocity(i)
 !JW       o2x_o % rAttr(index_o2x_So_stv, n) = landIceSaltTransferVelocity(i)
  
-       if ( trim(config_land_ice_flux_mode) .ne. 'pressure_only' ) then
+       if ( trim(config_land_ice_flux_mode) .eq. 'standalone' .or. &
+            trim(config_land_ice_flux_mode) .eq. 'coupled'  ) then
           o2x_o % rAttr(index_o2x_So_blt, n) = landIceBoundaryLayerTracers(indexBLT,i)
           o2x_o % rAttr(index_o2x_So_bls, n) = landIceBoundaryLayerTracers(indexBLS,i)
           o2x_o % rAttr(index_o2x_So_htv, n) = landIceTracerTransferVelocities(indexHeatTrans,i)
@@ -2886,7 +2980,7 @@ contains
           &Mailing address: LLNL Climate Program, c/o David C. Bader, &
           &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
       call MPAS_stream_mgr_add_att(domain % streamManager, 'contact', &
-          'e3sm-data-support@listserv.llnl.gov')
+          'e3sm-data-support@llnl.gov')
       
 
       call MPAS_stream_mgr_add_att(domain % streamManager, 'on_a_sphere', domain % on_a_sphere)

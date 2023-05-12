@@ -1,0 +1,153 @@
+#!/usr/bin/env python
+
+"""
+Namelist creator for E3SM's WW3 component
+"""
+
+import os, sys
+
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
+
+from standard_script_setup import *
+from CIME.case import Case
+from CIME.utils import expect, run_cmd_no_fail, safe_copy
+from CIME.buildnml import create_namelist_infile, parse_input
+
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def buildnml(case, caseroot, compname):
+###############################################################################
+    expect(compname == "ww3", compname)
+
+    os.chdir(caseroot)
+
+    casebuild            = case.get_value("CASEBUILD")
+    caseroot             = case.get_value("CASEROOT")
+    srcroot              = case.get_value("SRCROOT")
+    din_loc_root         = case.get_value("DIN_LOC_ROOT")
+    ninst_wav            = case.get_value("NINST_WAV")
+    get_refcase          = case.get_value("GET_REFCASE")
+    compset              = case.get_value("COMPSET")
+    wav_grid             = case.get_value("WAV_GRID")
+    wav_only             = case.get_value("WAV_ONLY")
+    wav_spec             = case.get_value("WAV_SPEC")
+    ww3_bldnml_opts      = case.get_value("WW3_BLDNML_OPTS")
+    ww3_namelist_opts    = case.get_value("WW3_NAMELIST_OPTS")
+    rundir               = case.get_value("RUNDIR")
+    run_type             = case.get_value("RUN_TYPE")
+    run_refcase          = case.get_value("RUN_REFCASE")
+    run_refdate          = case.get_value("RUN_REFDATE")
+    run_refdir           = case.get_value("RUN_REFDIR")
+    run_reftod           = case.get_value("RUN_REFTOD")
+    scriptsroot          = case.get_value("SCRIPTSROOT")
+
+    wavconf_dir = os.path.join(casebuild, "ww3conf")
+
+    if not os.path.isdir(wavconf_dir): os.mkdir(wavconf_dir)
+
+    #--------------------------------------------------------------------
+    # Verify wav grid is supported
+    #--------------------------------------------------------------------
+
+    wav_grid_supported = ("null",
+                          "wQU225EC60to30sp50x36",
+                          "wQU225EC30to60E2r2sp50x36",
+                          "wQU225EC30to60E2r2sp36x36",
+                          "wQU225EC30to60E2r2sp25x36")
+    expect((wav_grid+wav_spec) in wav_grid_supported, "Combination of WAV_GRID {} and WAV_SPEC {} is not supported in ww3. Choose from: '{}'".format(wav_grid,wav_spec,wav_grid_supported) )
+
+    #--------------------------------------------------------------------
+    # Generate input data file
+    #--------------------------------------------------------------------
+
+    with open(os.path.join(casebuild, "ww3.input_data_list"), "w") as input_list:
+
+        input_list.write("mesh = {}/wav/ww3/{}.msh\n".format(din_loc_root,wav_grid))
+        input_list.write("stations = {}/wav/ww3/stations.txt\n".format(din_loc_root))
+        input_list.write("uostfilelocal = {}/wav/ww3/obstructions_local.{}{}.in\n".format(din_loc_root,wav_grid,wav_spec))
+        input_list.write("uostfileshadow = {}/wav/ww3/obstructions_shadow.{}{}.in\n".format(din_loc_root,wav_grid,wav_spec))
+
+    #--------------------------------------------------------------------
+    # Invoke ww3 build-namelist - output will go in $CASEBUILD/ww3conf
+    #--------------------------------------------------------------------
+
+    inst_string = ""
+    for inst_counter in range(1, ninst_wav + 1):
+
+        # -----------------------------------------------------
+        # determine instance string
+        # -----------------------------------------------------
+
+        inst_string = ""
+        if ninst_wav > 1:
+            inst_string = "_{0:04d}".format(inst_counter)
+
+            # If multi-instance case does not have restart file, use single-case restart
+            # for each instance
+            if not os.path.exists(os.path.join(rundir, "rpointer.wav{}".format(inst_string))) and \
+                   os.path.exists(os.path.join(rundir, "rpointer.wav")):
+                safe_copy(os.path.join(rundir, "rpointer.wav"),
+                          os.path.join(rundir, "rpointer.wav{}".format(inst_string)))
+
+        # -----------------------------------------------------
+        # create ww3conf/cesm_namelist
+        # -----------------------------------------------------
+
+        create_namelist_infile(case,
+                               "{}/user_nl_ww3{}".format(caseroot, inst_string),
+                               "{}/cesm_namelist".format(wavconf_dir))
+
+        # -----------------------------------------------------
+        # call build-namelist
+        # -----------------------------------------------------
+
+        # Runtime namelist for WW3 component
+        sysmod  = os.path.join(srcroot, "components/ww3/bld/build-namelist")
+        sysmod += " -infile {}/cesm_namelist".format(wavconf_dir)
+        sysmod += " -caseroot {}".format(caseroot)
+        sysmod += " -scriptsroot {}".format(scriptsroot)
+        sysmod += " -nml_type {}".format('ww3')
+        sysmod += ' -inst_string "{}" '.format(inst_string)
+        sysmod += " -wav_only {}".format(wav_only)
+        run_cmd_no_fail(sysmod, from_dir=wavconf_dir)
+
+        # Namelist for ww3_grid preprocessing program
+        sysmod  = os.path.join(srcroot, "components/ww3/bld/build-namelist")
+        sysmod += " -caseroot {}".format(caseroot)
+        sysmod += " -scriptsroot {}".format(scriptsroot)
+        sysmod += " -nml_type {}".format('ww3_grid')
+        sysmod += ' -inst_string "{}" '.format(inst_string)
+        sysmod += " -wav_only {}".format(wav_only)
+        run_cmd_no_fail(sysmod, from_dir=wavconf_dir)
+
+        # Additional namelist for ww3_grid preprocessing program
+        sysmod  = os.path.join(srcroot, "components/ww3/bld/build-namelist")
+        sysmod += " -caseroot {}".format(caseroot)
+        sysmod += " -scriptsroot {}".format(scriptsroot)
+        sysmod += " -nml_type {}".format('ww3_grid_nml')
+        sysmod += ' -inst_string "{}" '.format(inst_string)
+        sysmod += " -wav_only {}".format(wav_only)
+        run_cmd_no_fail(sysmod, from_dir=wavconf_dir)
+
+        # -----------------------------------------------------
+        # move ww3_in to $RUNDIR
+        # -----------------------------------------------------
+        if os.path.exists(rundir):
+            safe_copy(os.path.join(wavconf_dir, "ww3_in"), os.path.join(rundir, "ww3_in{}".format(inst_string)))
+
+        if os.path.exists(rundir):
+            safe_copy(os.path.join(wavconf_dir, "ww3_grid.nml"), os.path.join(rundir, "ww3_grid.nml{}".format(inst_string)))
+
+        if os.path.exists(rundir):
+            safe_copy(os.path.join(wavconf_dir, "ww3_grid_namelists.nml"), os.path.join(rundir, "ww3_grid_namelists.nml{}".format(inst_string)))
+###############################################################################
+def _main_func():
+###############################################################################
+    caseroot = parse_input(sys.argv)
+    with Case(caseroot) as case:
+        buildnml(case, caseroot, "ww3")
+
+if __name__ == "__main__":
+    _main_func()

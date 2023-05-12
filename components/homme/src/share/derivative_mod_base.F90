@@ -10,7 +10,7 @@ module derivative_mod_base
   use quadrature_mod, only : quadrature_t, gauss, gausslobatto,legendre, jacobi
   use parallel_mod,   only : abortmp
   use element_mod,    only : element_t
-  use control_mod,    only : hypervis_scaling, hypervis_power
+  use control_mod,    only : hypervis_scaling
   use physical_constants, only : scale_factor_inv, laplacian_rigid_factor
 
 implicit none
@@ -84,7 +84,6 @@ private
 !  public  :: laplace_eta
   public  :: laplace_z
   public  :: element_boundary_integral
-  public  :: edge_flux_u_cg
   public  :: limiter_optim_iter_full
   public  :: limiter_clip_and_sum
 
@@ -911,102 +910,6 @@ contains
 
 
 
-  function edge_flux_u_cg( v,p,pedges, deriv, elem, u_is_contra) result(result)
-!
-!
-!   input:  v = velocity in contra or lat-lon coordinates (CONTINUIOUS)
-!           p      = scalar on this element
-!           pedges = scalar edge data from neighbor elements
-!
-!   ouput:  result(i,j) = contour integral of PHI_ij * pstar * v dot normal
-!           where PHI_ij = cardinal function at i,j GLL point 
-!           pstar = centered or other flux
-!
-    real(kind=real_kind), intent(in) :: v(np,np,2) 
-    real(kind=real_kind), intent(in) :: p(np,np) 
-    real(kind=real_kind), intent(in) :: pedges(0:np+1,0:np+1) 
-    type (derivative_t), intent(in) :: deriv
-    type (element_t), intent(in) :: elem
-    real(kind=real_kind) :: result(np,np)
-    logical :: u_is_contra
-
-    ! Local
-    real(kind=real_kind) :: ucontra(np,np,2)  ! in lat-lon coordinates
-    real(kind=real_kind) :: flux,pstar
-    integer i,j
-
-
-    result=0
-
-
-    if (u_is_contra) then
-       ucontra=v
-    else
-       ! latlon->contra
-       do j=1,np
-          do i=1,np
-             ucontra(i,j,1)=(elem%Dinv(i,j,1,1)*v(i,j,1) + elem%Dinv(i,j,1,2)*v(i,j,2))
-             ucontra(i,j,2)=(elem%Dinv(i,j,2,1)*v(i,j,1) + elem%Dinv(i,j,2,2)*v(i,j,2))
-          enddo
-       enddo
-    endif
-#if 0
-    ! centered
-    do i=1,np
-       j=1
-       pstar=(pedges(i,0) + p(i,j) ) /2
-       flux = -pstar*ucontra(i,j,2)*( deriv%Mvv_twt(i,i)*elem%metdet(i,j)*scale_factor_inv)
-       result(i,j)=result(i,j)+flux
-       
-       j=np
-       pstar=(pedges(i   ,np+1) + p(i,j) ) /2
-       flux = pstar*ucontra(i,j,2)* ( deriv%Mvv_twt(i,i)*elem%metdet(i,j)*scale_factor_inv)
-       result(i,j)=result(i,j)+flux
-    enddo
-    
-    do j=1,np
-       i=1
-       pstar=(pedges(0   ,j   ) + p(i,j) )/2
-       flux = -pstar*ucontra(i,j,1)* ( deriv%Mvv_twt(j,j)*elem%metdet(i,j)*scale_factor_inv)
-       result(i,j)=result(i,j)+flux
-       
-       i=np  
-       pstar=(pedges(np+1,j   ) + p(i,j) ) /2
-       flux = pstar*ucontra(i,j,1)* ( deriv%Mvv_twt(j,j)*elem%metdet(i,j)*scale_factor_inv)
-       result(i,j)=result(i,j)+flux
-    end do
-#else
-    ! upwind
-    do i=1,np
-       j=1
-       pstar=p(i,j)
-       if (ucontra(i,j,2)>0) pstar=pedges(i,0)
-       flux = -pstar*ucontra(i,j,2)*( deriv%Mvv_twt(i,i)*elem%metdet(i,j)*scale_factor_inv)
-       result(i,j)=result(i,j)+flux
-       
-       j=np
-       pstar=p(i,j)
-       if (ucontra(i,j,2)<0) pstar=pedges(i,np+1)
-       flux = pstar*ucontra(i,j,2)* ( deriv%Mvv_twt(i,i)*elem%metdet(i,j)*scale_factor_inv)
-       result(i,j)=result(i,j)+flux
-    enddo
-    
-    do j=1,np
-       i=1
-       pstar=p(i,j)
-       if (ucontra(i,j,1)>0) pstar=pedges(0,j)
-       flux = -pstar*ucontra(i,j,1)* ( deriv%Mvv_twt(j,j)*elem%metdet(i,j)*scale_factor_inv)
-       result(i,j)=result(i,j)+flux
-       
-       i=np  
-       pstar=p(i,j)
-       if (ucontra(i,j,1)<0) pstar=pedges(np+1,j)
-       flux = pstar*ucontra(i,j,1)* ( deriv%Mvv_twt(j,j)*elem%metdet(i,j)*scale_factor_inv)
-       result(i,j)=result(i,j)+flux
-    end do
-#endif    
-
-  end function edge_flux_u_cg
 
     
 !DIR$ ATTRIBUTES FORCEINLINE :: vorticity_sphere
@@ -1189,17 +1092,11 @@ contains
     grads=gradient_sphere(s,deriv,elem%Dinv)
  
     if (var_coef) then
-       if (hypervis_power/=0 ) then
-          ! scalar viscosity with variable coefficient
-          grads(:,:,1) = grads(:,:,1)*elem%variable_hyperviscosity(:,:)
-          grads(:,:,2) = grads(:,:,2)*elem%variable_hyperviscosity(:,:)
-       else if (hypervis_scaling /=0 ) then
+       if (hypervis_scaling /=0 ) then
           ! tensor hv, (3)
           oldgrads=grads
           do j=1,np
              do i=1,np
-!JMD                grads(i,j,1) = sum(oldgrads(i,j,:)*elem%tensorVisc(i,j,1,:))
-!JMD                grads(i,j,2) = sum(oldgrads(i,j,:)*elem%tensorVisc(i,j,2,:))
                 grads(i,j,1) = oldgrads(i,j,1)*elem%tensorVisc(i,j,1,1) + &
                                oldgrads(i,j,2)*elem%tensorVisc(i,j,1,2)
                 grads(i,j,2) = oldgrads(i,j,1)*elem%tensorVisc(i,j,2,1) + &
@@ -1325,12 +1222,6 @@ contains
 
     div=divergence_sphere(v,deriv,elem)
     vor=vorticity_sphere(v,deriv,elem)
-
-    if (var_coef .and. hypervis_power/=0 ) then
-          ! scalar viscosity with variable coefficient
-          div = div*elem%variable_hyperviscosity(:,:)
-          vor = vor*elem%variable_hyperviscosity(:,:)
-    endif
 
     if (present(nu_ratio)) div = nu_ratio*div
 

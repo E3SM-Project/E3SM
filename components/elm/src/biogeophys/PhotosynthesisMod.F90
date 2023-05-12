@@ -1278,7 +1278,7 @@ contains
     real(r8), intent(in) :: oair              ! Atmospheric O2 partial pressure (Pa)
     real(r8), intent(in) :: rh_can            ! inside canopy relative humidity
     integer,  intent(in) :: ip, iv, ic, it    ! pft, c3/c4, column, and topounit index
-    real(r8), intent(out) :: gs_mol           ! leaf stomatal conductance (umol H2O/m**2/s)
+    real(r8), intent(inout) :: gs_mol         ! leaf stomatal conductance (umol H2O/m**2/s)
     type(atm2lnd_type)  , intent(in)    :: atm2lnd_vars
     type(photosyns_type), intent(inout) :: photosyns_vars
     !
@@ -2927,8 +2927,8 @@ contains
     real(r8), intent(in)    :: lmr_z_sun, lmr_z_sha ! canopy layer: leaf maintenance respiration rate (umol CO2/m**2/s)
     real(r8), intent(in)    :: par_z_sun, par_z_sha ! par absorbed per unit lai for canopy layer (w/m**2)
     real(r8), intent(in)    :: rh_can               ! inside canopy relative humidity
-    real(r8), intent(out)   :: gs_mol_sun           ! sunlit leaf stomatal conductance (umol H2O/m**2/s)
-    real(r8), intent(out)   :: gs_mol_sha           ! shaded leaf stomatal conductance (umol H2O/m**2/s)
+    real(r8), intent(inout) :: gs_mol_sun           ! sunlit leaf stomatal conductance (umol H2O/m**2/s)
+    real(r8), intent(inout) :: gs_mol_sha           ! shaded leaf stomatal conductance (umol H2O/m**2/s)
     real(r8), intent(inout) :: bsun                 ! sunlit canopy transpiration wetness factor (0 to 1)
     real(r8), intent(inout) :: bsha                 ! shaded canopy transpiration wetness factor (0 to 1)
     real(r8), intent(in)    :: qsatl                ! leaf specific humidity [kg/kg]
@@ -3365,22 +3365,9 @@ contains
           ! cannot invert the matrix, solve for x algebraically assuming no flux
           exit
        end if
-       if (laisun(p)>tol_lai.and.laisha(p)>tol_lai)then
-          !dx = matmul(A,f)
-          !cu_error = cublasdgemv(h, 0,nvegwcs , nvegwcs, 1d0, A, nvegwcs, f, 1, 0d0, dx, 1)
-          call matvec_acc(1,nvegwcs,dx,A,f)
-       else
-          !reduces to 3x3 system
-          !in this case, dx is not always [sun,sha,xyl,root]
-          !sun and sha flip depending on which is lai==0
-          dx(sun)=0._r8
-          !dx(sha:root)=matmul(A(sha:root,sha:root),f(sha:root))
-          call matvec_acc(sha,root,dx,A,f )
-          !NOTE: root-sha +1 = 3 is hardcoded
-          !!cu_error = cublasdgemv(h, 0,root-sha +1 ,root-sha +1, 1d0, &
-          !!                      A(sha:root,sha:root), root-sha +1, f(sha:root), 1, 0d0, dx(sha:root), 1)
-
-       endif
+       !dx = matmul(A,f)
+       !cu_error = cublasdgemv(h, 0,nvegwcs , nvegwcs, 1d0, A, nvegwcs, f, 1, 0d0, dx, 1)
+       call matvec_acc(1,nvegwcs,dx,A,f)
 
 
        if ( maxval(abs(dx)) > 50000._r8) then
@@ -3388,28 +3375,13 @@ contains
        end if
 
 
-       if (laisun(p)>tol_lai.and.laisha(p)>tol_lai)then
-          x=x+dx
-       elseif (laisha(p)>tol_lai) then
-          x=x+dx
-          x(sun)=x(xyl) ! psi_sun = psi_xyl because laisun==0
-       else
-          x(xyl:root)=x(xyl:root)+dx(xyl:root)
-          x(sun)=x(sun)+dx(sha)  ! implementation ugly bit, chose to flip dx(sun) and dx(sha) for laisha==0 case
-          x(sha)=x(xyl) ! psi_sha = psi_xyl because laisha==0
-
-       endif
-
+       x=x+dx
 
        if ( sqrt(sum(dx*dx)) < toldx) then
           !step in vegwp small -> exit
           exit
        end if
 
-       ! this is a catch to force spac gradient to atmosphere
-       if ( x(xyl) > x(root) ) x(xyl) = x(root)
-       if ( x(sun) > x(xyl) )  x(sun) = x(xyl)
-       if ( x(sha) > x(xyl) )  x(sha) = x(xyl)
 
     end do
 
@@ -3577,72 +3549,51 @@ contains
          - tsai(p) * params_inst%kmax(veg_pp%itype(p),xyl) / htop(p) * dfr * (x(root)-x(xyl)-grav1)&
          - sum(k_soil_root(p,1:nlevsoi))
 
+    if (laisha(p)<=tol_lai) then
+      A(2,2) = -1._r8
+      A(2,3) = 1._r8
+    end if
+
+    if (laisun(p)<=tol_lai) then
+      A(1,1) = -1._r8
+      A(1,3) = 1._r8
+    end if
+
+
     invfactor=1._r8
     A=invfactor*A
 
     !matrix inversion
-    if (laisun(p)>tol_lai .and. laisha(p)>tol_lai) then
-       ! general case
 
-       determ=A(4,4)*A(2,2)*A(3,3)*A(1,1) - A(4,4)*A(2,2)*A(3,1)*A(1,3)&
+    determ=A(4,4)*A(2,2)*A(3,3)*A(1,1) - A(4,4)*A(2,2)*A(3,1)*A(1,3)&
             - A(4,4)*A(3,2)*A(2,3)*A(1,1) - A(4,3)*A(1,1)*A(2,2)*A(3,4)
-       if ( abs(determ) <= 1.e-50_r8 ) then
-          flag = .true.  !tells calling function that the matrix is not invertible
-          return
-       else
-          flag = .false.
-       end if
+    if ( abs(determ) <= 1.e-50_r8 ) then
+       flag = .true.  !tells calling function that the matrix is not invertible
+       return
+    else
+       flag = .false.
+    end if
 
-       leading = 1._r8/determ
+    leading = 1._r8/determ
 
        !algebraic inversion of the matrix
-       invA(1,1)=leading*A(4,4)*A(2,2)*A(3,3) - leading*A(4,4)*A(3,2)*A(2,3) - leading*A(4,3)*A(2,2)*A(3,4)
-       invA(2,1)=leading*A(2,3)*A(4,4)*A(3,1)
-       invA(3,1)=-leading*A(4,4)*A(2,2)*A(3,1)
-       invA(4,1)=leading*A(4,3)*A(2,2)*A(3,1)
-       invA(1,2)=leading*A(1,3)*A(4,4)*A(3,2)
-       invA(2,2)=leading*A(4,4)*A(3,3)*A(1,1)-leading*A(4,4)*A(3,1)*A(1,3)-leading*A(4,3)*A(1,1)*A(3,4)
-       invA(3,2)=-leading*A(1,1)*A(4,4)*A(3,2)
-       invA(4,2)=leading*A(4,3)*A(1,1)*A(3,2)
-       invA(1,3)=-leading*A(1,3)*A(2,2)*A(4,4)
-       invA(2,3)=-leading*A(2,3)*A(1,1)*A(4,4)
-       invA(3,3)=leading*A(2,2)*A(1,1)*A(4,4)
-       invA(4,3)=-leading*A(4,3)*A(1,1)*A(2,2)
-       invA(1,4)=leading*A(1,3)*A(3,4)*A(2,2)
-       invA(2,4)=leading*A(2,3)*A(3,4)*A(1,1)
-       invA(3,4)=-leading*A(3,4)*A(1,1)*A(2,2)
-       invA(4,4)=leading*A(2,2)*A(3,3)*A(1,1)-leading*A(2,2)*A(3,1)*A(1,3)-leading*A(3,2)*A(2,3)*A(1,1)
-       invA=invfactor*invA !undo inversion scaling
-    else
-       ! if laisun or laisha ==0 invert the corresponding 3x3 matrix
-       ! if both are zero, this routine is not called
-       if (laisha(p)<=tol_lai) then
-          ! shift nonzero matrix values so that both 3x3 cases can be inverted with the same code
-          A(2,2)=A(1,1)
-          A(3,2)=A(3,1)
-          A(2,3)=A(1,3)
-       endif
-       determ=A(2,2)*A(3,3)*A(4,4)-A(3,4)*A(2,2)*A(4,3)-A(2,3)*A(3,2)*A(4,4)
-       if ( abs(determ) <= 1.e-50_r8 ) then
-          flag = .true.  !tells calling function that the matrix is not invertible
-          return
-       else
-          flag = .false.
-       end if
-
-       !algebraic inversion of the 3x3 matrix stored in A(2:4,2:4)
-       invA(2,2)=A(3,3)*A(4,4)-A(3,4)*A(4,3)
-       invA(2,3)=-A(2,3)*A(4,4)
-       invA(2,4)=A(3,4)*A(2,3)
-       invA(3,2)=-A(3,2)*A(4,4)
-       invA(3,3)=A(2,2)*A(4,4)
-       invA(3,4)=-A(3,4)*A(2,2)
-       invA(4,2)=A(3,2)*A(4,3)
-       invA(4,3)=-A(2,2)*A(4,3)
-       invA(4,4)=A(2,2)*A(3,3)-A(2,3)*A(3,2)
-       invA=1._r8/determ*invA
-
-    endif
+    invA(1,1)=leading*A(4,4)*A(2,2)*A(3,3) - leading*A(4,4)*A(3,2)*A(2,3) - leading*A(4,3)*A(2,2)*A(3,4)
+    invA(2,1)=leading*A(2,3)*A(4,4)*A(3,1)
+    invA(3,1)=-leading*A(4,4)*A(2,2)*A(3,1)
+    invA(4,1)=leading*A(4,3)*A(2,2)*A(3,1)
+    invA(1,2)=leading*A(1,3)*A(4,4)*A(3,2)
+    invA(2,2)=leading*A(4,4)*A(3,3)*A(1,1)-leading*A(4,4)*A(3,1)*A(1,3)-leading*A(4,3)*A(1,1)*A(3,4)
+    invA(3,2)=-leading*A(1,1)*A(4,4)*A(3,2)
+    invA(4,2)=leading*A(4,3)*A(1,1)*A(3,2)
+    invA(1,3)=-leading*A(1,3)*A(2,2)*A(4,4)
+    invA(2,3)=-leading*A(2,3)*A(1,1)*A(4,4)
+    invA(3,3)=leading*A(2,2)*A(1,1)*A(4,4)
+    invA(4,3)=-leading*A(4,3)*A(1,1)*A(2,2)
+    invA(1,4)=leading*A(1,3)*A(3,4)*A(2,2)
+    invA(2,4)=leading*A(2,3)*A(3,4)*A(1,1)
+    invA(3,4)=-leading*A(3,4)*A(1,1)*A(2,2)
+    invA(4,4)=leading*A(2,2)*A(3,3)*A(1,1)-leading*A(2,2)*A(3,1)*A(1,3)-leading*A(3,2)*A(2,3)*A(1,1)
+    invA=invfactor*invA !undo inversion scaling
 
     end associate
 
@@ -3721,12 +3672,12 @@ contains
     !!TODO         tsai(p)*params_inst%kmax(veg_pp%itype(p),xyl) / htop(p) * fr * (x(root)-x(xyl)-grav1)
 
     if (laisha(p)<tol_lai) then
-       ! special case for laisha ~ 0
-       ! flip sunlit and shade fluxes to match special case handling in spacA
-       temp=f(sun)
-       f(sun)=f(sha)
-       f(sha)=temp
-    endif
+      f(sha) = x(sha) - x(xyl)
+    end if
+    if (laisun(p)<tol_lai) then
+      f(sun) = x(sun) - x(xyl)
+    end if
+
 
     end associate
 

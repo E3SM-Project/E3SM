@@ -21,262 +21,10 @@ module seaice_velocity_solver_variational_shared
   save
 
   public :: &
-       seaice_calc_local_coords, &
        seaice_calc_variational_metric_terms, &
-       seaice_wrapped_index
+       seaice_cell_vertices_at_vertex
 
 contains
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  seaice_calc_local_coords
-!
-!> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 22 October 2014
-!> \details
-!>
-!
-!-----------------------------------------------------------------------
-
-  subroutine seaice_calc_local_coords(&
-       xLocal, &
-       yLocal, &
-       nCells, &
-       nEdgesOnCell, &
-       verticesOnCell, &
-       xVertex, &
-       yVertex, &
-       zVertex, &
-       xCell, &
-       yCell, &
-       zCell, &
-       rotateCartesianGrid, &
-       onASphere)!{{{
-
-    real(kind=RKIND), dimension(:,:), intent(out) :: &
-         xLocal, & !< Output:
-         yLocal    !< Output:
-
-    integer, intent(in) :: &
-         nCells !< Input:
-
-    integer, dimension(:), intent(in) :: &
-         nEdgesOnCell !< Input:
-
-    integer, dimension(:,:), intent(in) :: &
-         verticesOnCell !< Input:
-
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         xVertex, & !< Input:
-         yVertex, & !< Input:
-         zVertex, & !< Input:
-         xCell, &   !< Input:
-         yCell, &   !< Input:
-         zCell      !< Input:
-
-    logical, intent(in) :: &
-         rotateCartesianGrid, & !< Input:
-         onASphere              !< Input:
-
-    if (onASphere) then
-       call calc_local_coords_spherical(&
-            xLocal, &
-            yLocal, &
-            nCells, &
-            nEdgesOnCell, &
-            verticesOnCell, &
-            xVertex, &
-            yVertex, &
-            zVertex, &
-            xCell, &
-            yCell, &
-            zCell, &
-            rotateCartesianGrid)
-    else
-       call calc_local_coords_planar(&
-            xLocal, &
-            yLocal, &
-            nCells, &
-            nEdgesOnCell, &
-            verticesOnCell, &
-            xVertex, &
-            yVertex, &
-            zVertex, &
-            xCell, &
-            yCell, &
-            zCell)
-    endif
-
-  end subroutine seaice_calc_local_coords!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  calc_local_coords_planar
-!
-!> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>
-!
-!-----------------------------------------------------------------------
-
-  subroutine calc_local_coords_planar(&
-       xLocal, &
-       yLocal, &
-       nCells, &
-       nEdgesOnCell, &
-       verticesOnCell, &
-       xVertex, &
-       yVertex, &
-       zVertex, &
-       xCell, &
-       yCell, &
-       zCell)!{{{
-
-    real(kind=RKIND), dimension(:,:), intent(out) :: &
-         xLocal, & !< Output:
-         yLocal    !< Output:
-
-    integer, intent(in) :: &
-         nCells !< Input:
-
-    integer, dimension(:), intent(in) :: &
-         nEdgesOnCell !< Input:
-
-    integer, dimension(:,:), intent(in) :: &
-         verticesOnCell !< Input:
-
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         xVertex, & !< Input:
-         yVertex, & !< Input:
-         zVertex, & !< Input:
-         xCell, &   !< Input:
-         yCell, &   !< Input:
-         zCell      !< Input:
-
-    integer :: &
-         iCell, &
-         iVertex, &
-         iVertexOnCell
-
-    do iCell = 1, nCells
-
-       do iVertexOnCell = 1, nEdgesOnCell(iCell)
-
-          iVertex = verticesOnCell(iVertexOnCell, iCell)
-
-          xLocal(iVertexOnCell,iCell) = xVertex(iVertex) - xCell(iCell)
-          yLocal(iVertexOnCell,iCell) = yVertex(iVertex) - yCell(iCell)
-
-       enddo ! iVertexOnCell
-
-    enddo ! iCell
-
-  end subroutine calc_local_coords_planar!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  calc_local_coords_spherical
-!
-!> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 22 October 2014
-!> \details
-!>
-!
-!-----------------------------------------------------------------------
-
-  subroutine calc_local_coords_spherical(&
-       xLocal, &
-       yLocal, &
-       nCells, &
-       nEdgesOnCell, &
-       verticesOnCell, &
-       xVertex, &
-       yVertex, &
-       zVertex, &
-       xCell, &
-       yCell, &
-       zCell, &
-       rotateCartesianGrid)!{{{
-
-    use seaice_mesh, only: &
-         seaice_project_3D_vector_onto_local_2D, &
-         seaice_grid_rotation_forward
-
-    real(kind=RKIND), dimension(:,:), intent(out) :: &
-         xLocal, & !< Output:
-         yLocal    !< Output:
-
-    integer, intent(in) :: &
-         nCells !< Input:
-
-    integer, dimension(:), intent(in) :: &
-         nEdgesOnCell !< Input:
-
-    integer, dimension(:,:), intent(in) :: &
-         verticesOnCell !< Input:
-
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         xVertex, & !< Input:
-         yVertex, & !< Input:
-         zVertex, & !< Input:
-         xCell, &   !< Input:
-         yCell, &   !< Input:
-         zCell      !< Input:
-
-    logical, intent(in) :: &
-         rotateCartesianGrid !< Input:
-
-    real(kind=RKIND), dimension(3) :: &
-         normalVector3D
-
-    real(kind=RKIND), dimension(2) :: &
-         normalVector2D
-
-    integer :: &
-         iCell, &
-         iVertex, &
-         iVertexOnCell
-
-    real(kind=RKIND) :: &
-         xCellRotated, &
-         yCellRotated, &
-         zCellRotated
-
-    do iCell = 1, nCells
-
-       call seaice_grid_rotation_forward(&
-            xCellRotated, yCellRotated, zCellRotated, &
-            xCell(iCell), yCell(iCell), zCell(iCell), &
-            rotateCartesianGrid)
-
-       do iVertexOnCell = 1, nEdgesOnCell(iCell)
-
-          iVertex = verticesOnCell(iVertexOnCell, iCell)
-
-          call seaice_grid_rotation_forward(&
-               normalVector3D(1), normalVector3D(2), normalVector3D(3), &
-               xVertex(iVertex),  yVertex(iVertex),  zVertex(iVertex), &
-               rotateCartesianGrid)
-
-          call seaice_project_3D_vector_onto_local_2D(&
-               normalVector2D, &
-               normalVector3D, &
-               xCellRotated, &
-               yCellRotated, &
-               zCellRotated)
-
-          xLocal(iVertexOnCell,iCell) = normalVector2D(1)
-          yLocal(iVertexOnCell,iCell) = normalVector2D(2)
-
-       enddo ! iVertexOnCell
-
-    enddo ! iCell
-
-  end subroutine calc_local_coords_spherical!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -290,36 +38,38 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_calc_variational_metric_terms(&
-       tanLatVertexRotatedOverRadius, &
-       nVertices, &
-       xVertex, &
-       yVertex, &
-       zVertex, &
-       sphereRadius, &
-       rotateCartesianGrid, &
-       includeMetricTerms)
+  subroutine seaice_calc_variational_metric_terms(domain)
 
     use seaice_mesh, only: &
          seaice_grid_rotation_forward
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         tanLatVertexRotatedOverRadius !< Output:
+    type (domain_type), intent(inout) :: &
+         domain !< Input/Output:
 
-    integer, intent(in) :: &
-         nVertices !< Input:
+    type(block_type), pointer :: &
+         blockPtr
+
+    type(MPAS_pool_type), pointer :: &
+         meshPool, &
+         velocityVariationalPool
 
     real(kind=RKIND), dimension(:), pointer :: &
-         xVertex, & !< Input:
-         yVertex, & !< Input:
-         zVertex    !< Input:
+         tanLatVertexRotatedOverRadius
+
+    integer, pointer :: &
+         nVertices
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, &
+         yVertex, &
+         zVertex
 
     real(kind=RKIND), pointer :: &
-         sphereRadius !< Input:
+         sphereRadius
 
-    logical, intent(in) :: &
-         rotateCartesianGrid, & !< Input:
-         includeMetricTerms     !< Input:
+    logical, pointer :: &
+         config_rotate_cartesian_grid, &
+         config_include_metric_terms
 
     integer :: &
          iVertex
@@ -330,28 +80,64 @@ contains
          zVertexRotated, &
          latVertexRotated
 
-    if (includeMetricTerms) then
+    call MPAS_pool_get_config(domain % configs, "config_include_metric_terms", config_include_metric_terms)
 
-       do iVertex = 1, nVertices
+    if (config_include_metric_terms) then
 
-          call seaice_grid_rotation_forward(&
-               xVertexRotated,   yVertexRotated,   zVertexRotated, &
-               xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
-               rotateCartesianGrid)
+       call MPAS_pool_get_config(domain % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
 
-          latVertexRotated = asin(zVertexRotated / sphereRadius)
+       blockPtr => domain % blocklist
+       do while (associated(blockPtr))
 
-          tanLatVertexRotatedOverRadius(iVertex) = tan(latVertexRotated) / sphereRadius
+          call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "velocity_variational", velocityVariationalPool)
 
-       enddo ! iVertex
+          call MPAS_pool_get_dimension(meshPool, "nVertices", nVertices)
+
+          call MPAS_pool_get_config(meshPool, "sphere_radius", sphereRadius)
+
+          call MPAS_pool_get_array(meshPool, "xVertex", xVertex)
+          call MPAS_pool_get_array(meshPool, "yVertex", yVertex)
+          call MPAS_pool_get_array(meshPool, "zVertex", zVertex)
+
+          call MPAS_pool_get_array(velocityVariationalPool, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
+
+          do iVertex = 1, nVertices
+
+             call seaice_grid_rotation_forward(&
+                  xVertexRotated,   yVertexRotated,   zVertexRotated, &
+                  xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
+                  config_rotate_cartesian_grid)
+
+             latVertexRotated = asin(zVertexRotated / sphereRadius)
+
+             tanLatVertexRotatedOverRadius(iVertex) = tan(latVertexRotated) / sphereRadius
+
+          enddo ! iVertex
+
+          blockPtr => blockPtr % next
+       enddo
 
     else
 
-       do iVertex = 1, nVertices
+       blockPtr => domain % blocklist
+       do while (associated(blockPtr))
 
-          tanLatVertexRotatedOverRadius(iVertex) = 0.0_RKIND
+          call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "velocity_variational", velocityVariationalPool)
 
-       enddo ! iVertex
+          call MPAS_pool_get_dimension(meshPool, "nVertices", nVertices)
+
+          call MPAS_pool_get_array(velocityVariationalPool, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
+
+          do iVertex = 1, nVertices
+
+             tanLatVertexRotatedOverRadius(iVertex) = 0.0_RKIND
+
+          enddo ! iVertex
+
+          blockPtr => blockPtr % next
+       enddo
 
     endif
 
@@ -359,7 +145,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_wrapped_index
+!  seaice_cell_vertices_at_vertex
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -369,20 +155,82 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  function seaice_wrapped_index(&
-       input, &
-       nelements) &
-       result(output)!{{{
+  subroutine seaice_cell_vertices_at_vertex(domain)!{{{
 
-    integer, intent(in) :: &
-         input, &  !< Input:
-         nelements !< Input:
+    type (domain_type), intent(inout) :: &
+         domain !< Input/Output:
 
-    integer :: output
+    type(block_type), pointer :: &
+         blockPtr
 
-    output = modulo(input - 1, nelements) + 1
+    type(MPAS_pool_type), pointer :: &
+         meshPool, &
+         velocityVariationalPool
 
-  end function seaice_wrapped_index!}}}
+    integer, dimension(:,:), pointer :: &
+         cellVerticesAtVertex
+
+    integer, pointer :: &
+         nVertices, &
+         vertexDegree
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnVertex, &
+         verticesOnCell
+
+    integer :: &
+         iVertex, &
+         iVertexDegree, &
+         iCell, &
+         iVertexOnCell, &
+         jVertex
+
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
+
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_variational", velocityVariationalPool)
+
+       call MPAS_pool_get_dimension(meshPool, "nVertices", nVertices)
+       call MPAS_pool_get_dimension(meshPool, "vertexDegree", vertexDegree)
+
+       call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
+       call MPAS_pool_get_array(meshPool, "verticesOnCell", verticesOnCell)
+       call MPAS_pool_get_array(meshPool, "cellsOnVertex", cellsOnVertex)
+
+       call MPAS_pool_get_array(velocityVariationalPool, "cellVerticesAtVertex", cellVerticesAtVertex)
+
+       do iVertex = 1, nVertices
+
+          do iVertexDegree = 1, vertexDegree
+
+             cellVerticesAtVertex(iVertexDegree,iVertex) = 0
+
+             iCell = cellsOnVertex(iVertexDegree, iVertex)
+
+             do iVertexOnCell = 1, nEdgesOnCell(iCell)
+
+                jVertex = verticesOnCell(iVertexOnCell,iCell)
+
+                if (iVertex == jVertex) then
+
+                   cellVerticesAtVertex(iVertexDegree,iVertex) = iVertexOnCell
+
+                endif
+
+             enddo ! iVertexOnCell
+
+          enddo ! iVertexDegree
+
+       enddo ! iVertex
+
+       blockPtr => blockPtr % next
+    enddo
+
+  end subroutine seaice_cell_vertices_at_vertex!}}}
 
 !-----------------------------------------------------------------------
 

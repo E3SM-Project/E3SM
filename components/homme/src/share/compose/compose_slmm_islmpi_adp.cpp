@@ -84,7 +84,6 @@ void analyze_dep_points (IslMpi<MT>& cm, const Int& nets, const Int& nete,
   const auto& plane = cm.advecter->get_plane();
 #ifdef COMPOSE_PORT
   const auto myrank = cm.p->rank();
-  const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
   const Int np2 = cm.np2, nlev = cm.nlev;
   const auto& own_dep_mask = cm.own_dep_mask;
   cm.bla.zero();

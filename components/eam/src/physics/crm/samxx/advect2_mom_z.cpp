@@ -2,21 +2,21 @@
 
 void advect2_mom_z() {
 
-  auto &uwle          = :: uwle;
-  auto &vwle          = :: vwle;
-  auto &dz            = :: dz;
-  auto &rhow          = :: rhow;
-  auto &rho           = :: rho;
-  auto &u             = :: u;
-  auto &v             = :: v;
-  auto &w             = :: w;
-  auto &na            = :: na;
-  auto &dudt          = :: dudt;
-  auto &dvdt          = :: dvdt;
-  auto &dwdt          = :: dwdt;
-  auto &adz           = :: adz;
-  auto &adzw          = :: adzw;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( uwle           , :: uwle);
+  YAKL_SCOPE( vwle           , :: vwle);
+  YAKL_SCOPE( dz             , :: dz);
+  YAKL_SCOPE( rhow           , :: rhow);
+  YAKL_SCOPE( rho            , :: rho);
+  YAKL_SCOPE( u              , :: u);
+  YAKL_SCOPE( v              , :: v);
+  YAKL_SCOPE( w              , :: w);
+  YAKL_SCOPE( na             , :: na);
+  YAKL_SCOPE( dudt           , :: dudt);
+  YAKL_SCOPE( dvdt           , :: dvdt);
+  YAKL_SCOPE( dwdt           , :: dwdt);
+  YAKL_SCOPE( adz            , :: adz);
+  YAKL_SCOPE( adzw           , :: adzw);
+  YAKL_SCOPE( ncrms          , :: ncrms);
 
   real4d fuz("fuz",nz ,ny,nx,ncrms);
   real4d fvz("fvz",nz ,ny,nx,ncrms);
@@ -48,7 +48,7 @@ void advect2_mom_z() {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       real dz25=1.0/(4.0*dz(icrm));
       int kb = k-1;
       real rhoi = dz25 * rhow(k+1,icrm);
@@ -66,7 +66,7 @@ void advect2_mom_z() {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       real dz25=1.0/(4.0*dz(icrm));
       int kb = k-1;
       real rhoi = dz25 * rhow(k+1,icrm);

@@ -1,2 +1,2 @@
-./xmlchange ELM_BLDNML_OPTS="-bgc sp -betr_mode on"
+./xmlchange ELM_BLDNML_OPTS="-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp century -methane -betr_mode on"
 

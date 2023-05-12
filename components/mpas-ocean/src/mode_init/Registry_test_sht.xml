@@ -1,0 +1,42 @@
+	<nml_record name="test_sht" mode="init" configuration="test_sht">
+		<nml_option name="config_test_sht_function_option" type="integer" default_value="1" units="unitless"
+			description="Function to apply forward and inverse transformations to"
+			possible_values="Any integer value"
+		/>
+		<nml_option name="config_test_sht_cosine_bell_lat_center" type="real" default_value="0.0" units="radians"
+			description="latitude center of cosine bell"
+			possible_values="Any real number between -pi/2 and pi/2"
+		/>
+		<nml_option name="config_test_sht_cosine_bell_lon_center" type="real" default_value="3.141592" units="radians"
+			description="longitude center of cosine bell"
+			possible_values="Any non-negative real number between 0 and 2pi"
+		/>
+		<nml_option name="config_test_sht_cosine_bell_psi0" type="real" default_value="1.0" units="unitless"
+			description="hill max of tracer"
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_test_sht_cosine_bell_radius" type="real" default_value="2123666.667" units="m"
+			description="radius of cosine bell"
+			possible_values="Any non-negative real number between 0 and 2pi"
+		/>
+		<nml_option name="config_test_sht_function3_cell_width_equator" type="real" default_value="30.0" units="km"
+			description="cell width at equator for config_test_sht_function_option = 3"
+			possible_values="Any non-negative real number"
+		/>
+		<nml_option name="config_test_sht_function3_cell_width_pole" type="real" default_value="120.0" units="km"
+			description="cell width at pole for config_test_sht_function_option = 3"
+			possible_values="Any non-negative real number"
+		/>
+		<nml_option name="config_test_sht_function3_lat_transition_start" type="real" default_value="1.0" units="deg"
+			description="transition start for config_test_sht_function_option = 3"
+			possible_values="Any non-negative real number"
+		/>
+		<nml_option name="config_test_sht_function3_lat_transition_width" type="real" default_value="10.0" units="deg"
+			description="transition width for config_test_sht_function_option = 3"
+			possible_values="Any non-negative real number"
+		/>
+		<nml_option name="config_test_sht_n_iterations" type="integer" default_value="10" units="m"
+			description="number of times to run forward/inverse transformation for timings"
+			possible_values="Any positive integer"
+		/>
+	</nml_record>

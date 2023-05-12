@@ -182,13 +182,13 @@ contains
     ! compute_stage_value_dirk doesn't actually use these.
     type (hybrid_t) :: hybrid
     type (derivative_t) :: deriv
-    integer :: qn0, itercount, nets, nete
+    integer :: itercount, nets, nete
     real (kind=real_kind) :: itererr
 
     nets = 1
     nete = size(elem)
     call compute_stage_value_dirk(nm1, alphadt_nm1, n0, alphadt_n0, np1, dt2, &
-         qn0, elem, hvcoord, hybrid, deriv, nets, nete, itercount, itererr, &
+         elem, hvcoord, hybrid, deriv, nets, nete, itercount, itererr, &
          verbosity_in=0)
   end subroutine compute_stage_value_dirk_f90
 

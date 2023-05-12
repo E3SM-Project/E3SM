@@ -45,24 +45,24 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_init_velocity_solver_weak(&
-       mesh, &
-       boundary, &
-       velocity_weak, &
-       rotateCartesianGrid)!{{{
+  subroutine seaice_init_velocity_solver_weak(domain)!{{{
 
     use seaice_mesh, only: &
          seaice_normal_vectors
 
-    type(MPAS_pool_type), pointer, intent(inout) :: &
-         mesh !< Input/Output:
+    type (domain_type), intent(inout) :: &
+         domain !< Input/Output:
+
+    type(block_type), pointer :: &
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
-         velocity_weak, & !< Input/Output:
-         boundary   !< Input/Output:
+         meshPool, &
+         velocityWeakPool, &
+         boundaryPool
 
-    logical, intent(in) :: &
-         rotateCartesianGrid !< Input:
+    logical, pointer :: &
+         config_rotate_cartesian_grid
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          normalVectorPolygon, &
@@ -75,21 +75,33 @@ contains
     integer, dimension(:), pointer :: &
          interiorVertex
 
-    call MPAS_pool_get_array(velocity_weak, "normalVectorPolygon", normalVectorPolygon)
-    call MPAS_pool_get_array(velocity_weak, "normalVectorTriangle", normalVectorTriangle)
-    call MPAS_pool_get_array(velocity_weak, "latCellRotated", latCellRotated)
-    call MPAS_pool_get_array(velocity_weak, "latVertexRotated", latVertexRotated)
-    call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-    call seaice_normal_vectors(&
-         mesh, &
-         normalVectorPolygon, &
-         normalVectorTriangle, &
-         interiorVertex, &
-         rotateCartesianGrid, &
-         .true., &
-         latCellRotated, &
-         latVertexRotated)
+       call MPAS_pool_get_config(domain % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
+
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_weak", velocityWeakPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "boundary", boundaryPool)
+
+       call MPAS_pool_get_array(velocityWeakPool, "normalVectorPolygon", normalVectorPolygon)
+       call MPAS_pool_get_array(velocityWeakPool, "normalVectorTriangle", normalVectorTriangle)
+       call MPAS_pool_get_array(velocityWeakPool, "latCellRotated", latCellRotated)
+       call MPAS_pool_get_array(velocityWeakPool, "latVertexRotated", latVertexRotated)
+       call MPAS_pool_get_array(boundaryPool, "interiorVertex", interiorVertex)
+
+       call seaice_normal_vectors(&
+            meshPool, &
+            normalVectorPolygon, &
+            normalVectorTriangle, &
+            interiorVertex, &
+            config_rotate_cartesian_grid, &
+            .true., &
+            latCellRotated, &
+            latVertexRotated)
+
+       blockPtr => blockPtr % next
+    enddo
 
   end subroutine seaice_init_velocity_solver_weak!}}}
 
@@ -109,35 +121,33 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_strain_tensor_weak(&
-       mesh, &
-       strain11, &
-       strain22, &
-       strain12, &
-       uVelocity, &
-       vVelocity, &
-       normalVectorPolygon, &
-       latCellRotated, &
-       solveStress)!{{{
+  subroutine seaice_strain_tensor_weak(domain)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input:
+    use seaice_mesh_pool, only: &
+         solveStress, &
+         uVelocity, &
+         vVelocity
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         strain11, & !< Output:
-         strain22, & !< Output:
-         strain12    !< Output:
+    type(domain_type), intent(inout) :: &
+         domain
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         uVelocity, &   !< Input:
-         vVelocity, &   !< Input:
-         latCellRotated !< Input:
+    type(block_type), pointer :: &
+         blockPtr
 
-    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         normalVectorPolygon !< Input:
+    type(MPAS_pool_type), pointer :: &
+         meshPool, &
+         velocityWeakPool
 
-    integer, dimension(:), intent(in) :: &
-         solveStress !< Input:
+    real(kind=RKIND), dimension(:), pointer :: &
+         strain11, &
+         strain22, &
+         strain12
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         latCellRotated
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         normalVectorPolygon
 
     integer :: &
          iCell, &
@@ -173,82 +183,97 @@ contains
          dvEdge, &
          areaCell
 
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
-    call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
-    call MPAS_pool_get_array(mesh, "verticesOnEdge", verticesOnEdge)
-    call MPAS_pool_get_array(mesh, "dvEdge", dvEdge)
-    call MPAS_pool_get_array(mesh, "areaCell", areaCell)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_weak", velocityWeakPool)
 
-    ! planar cases with zero sphere radius
-    sphereRadius = sphere_radius
-    if (sphereRadius == 0.0_RKIND) sphereRadius = 1.0_RKIND
+       call MPAS_pool_get_dimension(meshPool, "nCells", nCells)
+       call MPAS_pool_get_config(meshPool, "sphere_radius", sphere_radius)
 
-    do iCell = 1, nCells
+       call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
+       call MPAS_pool_get_array(meshPool, "verticesOnCell", verticesOnCell)
+       call MPAS_pool_get_array(meshPool, "edgesOnCell", edgesOnCell)
+       call MPAS_pool_get_array(meshPool, "verticesOnEdge", verticesOnEdge)
+       call MPAS_pool_get_array(meshPool, "dvEdge", dvEdge)
+       call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
 
-       strain11(iCell) = 0.0_RKIND
-       strain22(iCell) = 0.0_RKIND
-       strain12(iCell) = 0.0_RKIND
+       call MPAS_pool_get_array(velocityWeakPool, "normalVectorPolygon", normalVectorPolygon)
+       call MPAS_pool_get_array(velocityWeakPool, "latCellRotated", latCellRotated)
+       call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11)
+       call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22)
+       call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12)
 
-       if (solveStress(iCell) == 1) then
+       ! planar cases with zero sphere radius
+       sphereRadius = sphere_radius
+       if (sphereRadius == 0.0_RKIND) sphereRadius = 1.0_RKIND
 
-          uCellCentre = 0.0_RKIND
-          vCellCentre = 0.0_RKIND
+       do iCell = 1, nCells
 
-          do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+          strain11(iCell) = 0.0_RKIND
+          strain22(iCell) = 0.0_RKIND
+          strain12(iCell) = 0.0_RKIND
 
-             ! cell centre velocities
-             iVertex = verticesOnCell(iEdgeOnCell,iCell)
+          if (solveStress(iCell) == 1) then
 
-             uCellCentre = uCellCentre + uVelocity(iVertex)
-             vCellCentre = vCellCentre + vVelocity(iVertex)
+             uCellCentre = 0.0_RKIND
+             vCellCentre = 0.0_RKIND
 
-             ! interpolated edge velocity
-             iEdge = edgesOnCell(iEdgeOnCell,iCell)
+             do iEdgeOnCell = 1, nEdgesOnCell(iCell)
 
-             uVelocityEdge = 0.0_RKIND
-             vVelocityEdge = 0.0_RKIND
+                ! cell centre velocities
+                iVertex = verticesOnCell(iEdgeOnCell,iCell)
 
-             do iVertexOnEdge = 1, 2
+                uCellCentre = uCellCentre + uVelocity(iVertex)
+                vCellCentre = vCellCentre + vVelocity(iVertex)
 
-                iVertex = verticesOnEdge(iVertexOnEdge,iEdge)
+                ! interpolated edge velocity
+                iEdge = edgesOnCell(iEdgeOnCell,iCell)
 
-                uVelocityEdge = uVelocityEdge + uVelocity(iVertex)
-                vVelocityEdge = vVelocityEdge + vVelocity(iVertex)
+                uVelocityEdge = 0.0_RKIND
+                vVelocityEdge = 0.0_RKIND
 
-             enddo ! iVertexOnEdge
+                do iVertexOnEdge = 1, 2
 
-             uVelocityEdge = uVelocityEdge / 2.0_RKIND
-             vVelocityEdge = vVelocityEdge / 2.0_RKIND
+                   iVertex = verticesOnEdge(iVertexOnEdge,iEdge)
 
-             ! summation over edges
-             strain11(iCell) = strain11(iCell) + uVelocityEdge * normalVectorPolygon(1,iEdgeOnCell,iCell) * dvEdge(iEdge)
-             strain22(iCell) = strain22(iCell) + vVelocityEdge * normalVectorPolygon(2,iEdgeOnCell,iCell) * dvEdge(iEdge)
-             strain12(iCell) = strain12(iCell) + 0.5_RKIND * ( &
-                  uVelocityEdge * normalVectorPolygon(2,iEdgeOnCell,iCell) + &
-                  vVelocityEdge * normalVectorPolygon(1,iEdgeOnCell,iCell) ) * dvEdge(iEdge)
+                   uVelocityEdge = uVelocityEdge + uVelocity(iVertex)
+                   vVelocityEdge = vVelocityEdge + vVelocity(iVertex)
 
-          enddo ! iEdgeOnCell
+                enddo ! iVertexOnEdge
 
-          uCellCentre = uCellCentre / real(nEdgesOnCell(iCell), RKIND)
-          vCellCentre = vCellCentre / real(nEdgesOnCell(iCell), RKIND)
+                uVelocityEdge = uVelocityEdge / 2.0_RKIND
+                vVelocityEdge = vVelocityEdge / 2.0_RKIND
 
-          strain11(iCell) = strain11(iCell) / areaCell(iCell)
-          strain22(iCell) = strain22(iCell) / areaCell(iCell)
-          strain12(iCell) = strain12(iCell) / areaCell(iCell)
+                ! summation over edges
+                strain11(iCell) = strain11(iCell) + uVelocityEdge * normalVectorPolygon(1,iEdgeOnCell,iCell) * dvEdge(iEdge)
+                strain22(iCell) = strain22(iCell) + vVelocityEdge * normalVectorPolygon(2,iEdgeOnCell,iCell) * dvEdge(iEdge)
+                strain12(iCell) = strain12(iCell) + 0.5_RKIND * ( &
+                     uVelocityEdge * normalVectorPolygon(2,iEdgeOnCell,iCell) + &
+                     vVelocityEdge * normalVectorPolygon(1,iEdgeOnCell,iCell) ) * dvEdge(iEdge)
 
-          ! metric terms
-          strain11(iCell) = strain11(iCell) - (vCellCentre * tan(latCellRotated(iCell))) / sphereRadius
-          strain12(iCell) = strain12(iCell) + (uCellCentre * tan(latCellRotated(iCell)) * 0.5_RKIND) / sphereRadius
+             enddo ! iEdgeOnCell
 
-          !if (abs(strain11(iCell)) < 1e-10_RKIND) strain11(iCell) = 0.0_RKIND
+             uCellCentre = uCellCentre / real(nEdgesOnCell(iCell), RKIND)
+             vCellCentre = vCellCentre / real(nEdgesOnCell(iCell), RKIND)
 
-       endif ! solveStress
+             strain11(iCell) = strain11(iCell) / areaCell(iCell)
+             strain22(iCell) = strain22(iCell) / areaCell(iCell)
+             strain12(iCell) = strain12(iCell) / areaCell(iCell)
 
-    enddo ! iCell
+             ! metric terms
+             strain11(iCell) = strain11(iCell) - (vCellCentre * tan(latCellRotated(iCell))) / sphereRadius
+             strain12(iCell) = strain12(iCell) + (uCellCentre * tan(latCellRotated(iCell)) * 0.5_RKIND) / sphereRadius
+
+             !if (abs(strain11(iCell)) < 1e-10_RKIND) strain11(iCell) = 0.0_RKIND
+
+          endif ! solveStress
+
+       enddo ! iCell
+
+       blockPtr => blockPtr % next
+    end do
 
   end subroutine seaice_strain_tensor_weak!}}}
 
@@ -264,18 +289,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_stress_tensor_weak(&
-       mesh, &
-       stress11, &
-       stress22, &
-       stress12, &
-       strain11, &
-       strain22, &
-       strain12, &
-       icePressure, &
-       replacementPressure, &
-       solveStress, &
-       dtElastic)!{{{
+  subroutine seaice_stress_tensor_weak(domain)!{{{
+
+    use seaice_mesh_pool, only: &
+         icePressure, &
+         solveStress
 
     use seaice_velocity_solver_constitutive_relation, only: &
          constitutiveRelationType, &
@@ -286,26 +304,30 @@ contains
          seaice_evp_constitutive_relation_revised, &
          seaice_linear_constitutive_relation
 
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input:
+    type(domain_type), intent(inout) :: &
+         domain
 
-    real(kind=RKIND), dimension(:), intent(inout) :: &
-         stress11, &         !< Input/Output:
-         stress22, &         !< Input/Output:
-         stress12, &         !< Input/Output:
-         replacementPressure !< Input/Output:
+    type(block_type), pointer :: &
+         blockPtr
 
-    real(kind=RKIND), dimension(:), intent(inout) :: &
-         strain11, & !< Input/Output:
-         strain22, & !< Input/Output:
-         strain12, & !< Input/Output:
-         icePressure !< Input/Output:
+    type(MPAS_pool_type), pointer :: &
+         meshPool, &
+         velocitySolverPool, &
+         velocityWeakPool
 
-    integer, dimension(:), intent(in) :: &
-         solveStress !< Input:
+    real(kind=RKIND), dimension(:), pointer :: &
+         replacementPressure
 
-    real(kind=RKIND), intent(in) :: &
-         dtElastic !< Input:
+    real(kind=RKIND), dimension(:), pointer :: &
+         strain11, &
+         strain22, &
+         strain12, &
+         stress11, &
+         stress22, &
+         stress12
+
+    real(kind=RKIND), pointer :: &
+         elasticTimeStep
 
     integer :: &
          iCell
@@ -316,67 +338,169 @@ contains
     real(kind=RKIND), dimension(:), pointer :: &
          areaCell
 
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-    call MPAS_pool_get_array(mesh, "areaCell", areaCell)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_weak", velocityWeakPool)
 
-    if (constitutiveRelationType == EVP_CONSTITUTIVE_RELATION) then
+       call MPAS_pool_get_dimension(meshPool, "nCells", nCells)
 
-       do iCell = 1, nCells
+       call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
 
-          if (solveStress(iCell) == 1) then
+       call MPAS_pool_get_array(velocitySolverPool, "elasticTimeStep", elasticTimeStep)
 
-             call seaice_evp_constitutive_relation(&
-                  stress11(iCell), &
-                  stress22(iCell), &
-                  stress12(iCell), &
-                  strain11(iCell), &
-                  strain22(iCell), &
-                  strain12(iCell), &
-                  icePressure(iCell), &
-                  replacementPressure(iCell), &
-                  areaCell(iCell), &
-                  dtElastic)
+       call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11)
+       call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22)
+       call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12)
+       call MPAS_pool_get_array(velocityWeakPool, "stress11", stress11)
+       call MPAS_pool_get_array(velocityWeakPool, "stress22", stress22)
+       call MPAS_pool_get_array(velocityWeakPool, "stress12", stress12)
+       call MPAS_pool_get_array(velocityWeakPool, "replacementPressure", replacementPressure)
 
-          else
+       if (constitutiveRelationType == EVP_CONSTITUTIVE_RELATION) then
 
-             stress11(iCell) = 0.0_RKIND
-             stress22(iCell) = 0.0_RKIND
-             stress12(iCell) = 0.0_RKIND
+          do iCell = 1, nCells
 
-          endif ! solveStress
+             if (solveStress(iCell) == 1) then
 
-       end do ! iCell
+                call seaice_evp_constitutive_relation(&
+                     stress11(iCell), &
+                     stress22(iCell), &
+                     stress12(iCell), &
+                     strain11(iCell), &
+                     strain22(iCell), &
+                     strain12(iCell), &
+                     icePressure(iCell), &
+                     replacementPressure(iCell), &
+                     areaCell(iCell), &
+                     elasticTimeStep)
 
-    else if (constitutiveRelationType == REVISED_EVP_CONSTITUTIVE_RELATION) then
+             else
 
-       do iCell = 1, nCells
+                stress11(iCell) = 0.0_RKIND
+                stress22(iCell) = 0.0_RKIND
+                stress12(iCell) = 0.0_RKIND
 
-          if (solveStress(iCell) == 1) then
+             endif ! solveStress
 
-             call seaice_evp_constitutive_relation_revised(&
-                  stress11(iCell), &
-                  stress22(iCell), &
-                  stress12(iCell), &
-                  strain11(iCell), &
-                  strain22(iCell), &
-                  strain12(iCell), &
-                  icePressure(iCell), &
-                  replacementPressure(iCell), &
-                  areaCell(iCell))
+          end do ! iCell
 
-          else
+       else if (constitutiveRelationType == REVISED_EVP_CONSTITUTIVE_RELATION) then
 
-             stress11(iCell) = 0.0_RKIND
-             stress22(iCell) = 0.0_RKIND
-             stress12(iCell) = 0.0_RKIND
+          do iCell = 1, nCells
 
-          endif ! solveStress
+             if (solveStress(iCell) == 1) then
 
-       end do ! iCell
+                call seaice_evp_constitutive_relation_revised(&
+                     stress11(iCell), &
+                     stress22(iCell), &
+                     stress12(iCell), &
+                     strain11(iCell), &
+                     strain22(iCell), &
+                     strain12(iCell), &
+                     icePressure(iCell), &
+                     replacementPressure(iCell), &
+                     areaCell(iCell))
 
-    else if (constitutiveRelationType == LINEAR_CONSTITUTIVE_RELATION) then
+             else
+
+                stress11(iCell) = 0.0_RKIND
+                stress22(iCell) = 0.0_RKIND
+                stress12(iCell) = 0.0_RKIND
+
+             endif ! solveStress
+
+          end do ! iCell
+
+       else if (constitutiveRelationType == LINEAR_CONSTITUTIVE_RELATION) then
+
+          do iCell = 1, nCells
+
+             if (solveStress(iCell) == 1) then
+
+                call seaice_linear_constitutive_relation(&
+                     stress11(iCell), &
+                     stress22(iCell), &
+                     stress12(iCell), &
+                     strain11(iCell), &
+                     strain22(iCell), &
+                     strain12(iCell))
+
+             else
+
+                stress11(iCell) = 0.0_RKIND
+                stress22(iCell) = 0.0_RKIND
+                stress12(iCell) = 0.0_RKIND
+
+             endif ! solveStress
+
+          enddo ! iCell
+
+       endif ! constitutiveRelationType
+
+       blockPtr => blockPtr % next
+    end do
+
+  end subroutine seaice_stress_tensor_weak!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_stress_tensor_weak_linear
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_stress_tensor_weak_linear(domain)!{{{
+
+    use seaice_velocity_solver_constitutive_relation, only: &
+         seaice_linear_constitutive_relation
+
+    use seaice_mesh_pool, only: &
+         nCells, &
+         solveStress
+
+    type(domain_type), intent(inout) :: &
+         domain
+
+    type(block_type), pointer :: &
+         blockPtr
+
+    type(MPAS_pool_type), pointer :: &
+         meshPool, &
+         velocityWeakPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         stress11, & !< Output:
+         stress22, & !< Output:
+         stress12    !< Output:
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         strain11, & !< Input:
+         strain22, & !< Input:
+         strain12    !< Input:
+
+    integer :: &
+         iCell
+
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
+
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_weak", velocityWeakPool)
+
+       call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11)
+       call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22)
+       call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12)
+       call MPAS_pool_get_array(velocityWeakPool, "stress11", stress11)
+       call MPAS_pool_get_array(velocityWeakPool, "stress22", stress22)
+       call MPAS_pool_get_array(velocityWeakPool, "stress12", stress12)
 
        do iCell = 1, nCells
 
@@ -400,81 +524,8 @@ contains
 
        enddo ! iCell
 
-    endif ! constitutiveRelationType
-
-  end subroutine seaice_stress_tensor_weak!}}}
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  seaice_stress_tensor_weak_linear
-!
-!> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
-!> \details
-!>
-!
-!-----------------------------------------------------------------------
-
-  subroutine seaice_stress_tensor_weak_linear(&
-       mesh, &
-       stress11, &
-       stress22, &
-       stress12, &
-       strain11, &
-       strain22, &
-       strain12, &
-       solveStress)!{{{
-
-    use seaice_velocity_solver_constitutive_relation, only: &
-         seaice_linear_constitutive_relation
-
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input:
-
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         stress11, & !< Output:
-         stress22, & !< Output:
-         stress12    !< Output:
-
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         strain11, & !< Input:
-         strain22, & !< Input:
-         strain12    !< Input:
-
-    integer, dimension(:), intent(in) :: &
-         solveStress !< Input:
-
-    integer :: &
-         iCell
-
-    integer, pointer :: &
-         nCells
-
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-
-    do iCell = 1, nCells
-
-       if (solveStress(iCell) == 1) then
-
-          call seaice_linear_constitutive_relation(&
-               stress11(iCell), &
-               stress22(iCell), &
-               stress12(iCell), &
-               strain11(iCell), &
-               strain22(iCell), &
-               strain12(iCell))
-
-       else
-
-          stress11(iCell) = 0.0_RKIND
-          stress22(iCell) = 0.0_RKIND
-          stress12(iCell) = 0.0_RKIND
-
-       endif ! solveStress
-
-    enddo ! iCell
+       blockPtr => blockPtr % next
+    end do
 
   end subroutine seaice_stress_tensor_weak_linear!}}}
 
@@ -490,35 +541,34 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_stress_divergence_weak(&
-       mesh, &
-       stressDivergenceU, &
-       stressDivergenceV, &
-       stress11, &
-       stress22, &
-       stress12, &
-       normalVectorTriangle, &
-       latVertexRotated,  &
-       solveVelocity)!{{{
+  subroutine seaice_stress_divergence_weak(domain)!{{{
 
-    type(MPAS_pool_type), pointer, intent(in) :: &
-         mesh !< Input:
+    use seaice_mesh_pool, only: &
+         solveVelocity
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, & !< Output:
-         stressDivergenceV    !< Output:
+    type(domain_type), intent(inout) :: &
+         domain
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         stress11, &      !< Input:
-         stress22, &      !< Input:
-         stress12, &      !< Input:
-         latVertexRotated !< Input:
+    type(block_type), pointer :: &
+         blockPtr
 
-    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         normalVectorTriangle !< Input:
+    type(MPAS_pool_type), pointer :: &
+         meshPool, &
+         velocitySolverPool, &
+         velocityWeakPool
 
-    integer, dimension(:), intent(in) :: &
-         solveVelocity !< Input:
+    real(kind=RKIND), dimension(:), pointer :: &
+         stressDivergenceU, &
+         stressDivergenceV
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         stress11, &
+         stress22, &
+         stress12, &
+         latVertexRotated
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         normalVectorTriangle
 
     real(kind=RKIND) :: &
          stress11Edge, &
@@ -554,88 +604,106 @@ contains
          areaTriangle, &
          dcEdge
 
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nVertices", nVerticesSolve)
-    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
-    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
-    call MPAS_pool_get_array(mesh, "edgesOnVertex", edgesOnVertex)
-    call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
-    call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
-    call MPAS_pool_get_array(mesh, "dcEdge", dcEdge)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_weak", velocityWeakPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
 
-    ! planar cases with zero sphere radius
-    sphereRadius = sphere_radius
-    if (sphereRadius == 0.0_RKIND) sphereRadius = 1.0_RKIND
+       call MPAS_pool_get_dimension(meshPool, "nVertices", nVerticesSolve)
+       call MPAS_pool_get_dimension(meshPool, "vertexDegree", vertexDegree)
+       call MPAS_pool_get_config(meshPool, "sphere_radius", sphere_radius)
 
-    do iVertex = 1, nVerticesSolve
+       call MPAS_pool_get_array(meshPool, "cellsOnVertex", cellsOnVertex)
+       call MPAS_pool_get_array(meshPool, "edgesOnVertex", edgesOnVertex)
+       call MPAS_pool_get_array(meshPool, "cellsOnEdge", cellsOnEdge)
+       call MPAS_pool_get_array(meshPool, "areaTriangle", areaTriangle)
+       call MPAS_pool_get_array(meshPool, "dcEdge", dcEdge)
 
-       stressDivergenceU(iVertex) = 0.0_RKIND
-       stressDivergenceV(iVertex) = 0.0_RKIND
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
 
-       if (solveVelocity(iVertex) == 1) then
+       call MPAS_pool_get_array(velocityWeakPool, "normalVectorTriangle", normalVectorTriangle)
+       call MPAS_pool_get_array(velocityWeakPool, "latVertexRotated", latVertexRotated)
+       call MPAS_pool_get_array(velocityWeakPool, "stress11", stress11)
+       call MPAS_pool_get_array(velocityWeakPool, "stress22", stress22)
+       call MPAS_pool_get_array(velocityWeakPool, "stress12", stress12)
 
-          stress11Vertex = 0.0_RKIND
-          stress22Vertex = 0.0_RKIND
-          stress12Vertex = 0.0_RKIND
+       ! planar cases with zero sphere radius
+       sphereRadius = sphere_radius
+       if (sphereRadius == 0.0_RKIND) sphereRadius = 1.0_RKIND
 
-          do iVertexDegree = 1, vertexDegree
+       do iVertex = 1, nVerticesSolve
 
-             ! vertex stresses
-             iCell = cellsOnVertex(iVertexDegree,iVertex)
+          stressDivergenceU(iVertex) = 0.0_RKIND
+          stressDivergenceV(iVertex) = 0.0_RKIND
 
-             stress11Vertex = stress11Vertex + stress11(iCell)
-             stress22Vertex = stress22Vertex + stress22(iCell)
-             stress12Vertex = stress12Vertex + stress12(iCell)
+          if (solveVelocity(iVertex) == 1) then
 
-             ! interpolated edge velocity
-             iEdge = edgesOnVertex(iVertexDegree,iVertex)
+             stress11Vertex = 0.0_RKIND
+             stress22Vertex = 0.0_RKIND
+             stress12Vertex = 0.0_RKIND
 
-             stress11Edge = 0.0_RKIND
-             stress22Edge = 0.0_RKIND
-             stress12Edge = 0.0_RKIND
+             do iVertexDegree = 1, vertexDegree
 
-             do iCellOnEdge = 1, 2
+                ! vertex stresses
+                iCell = cellsOnVertex(iVertexDegree,iVertex)
 
-                iCell = cellsOnEdge(iCellOnEdge,iEdge)
+                stress11Vertex = stress11Vertex + stress11(iCell)
+                stress22Vertex = stress22Vertex + stress22(iCell)
+                stress12Vertex = stress12Vertex + stress12(iCell)
 
-                stress11Edge = stress11Edge + stress11(iCell)
-                stress22Edge = stress22Edge + stress22(iCell)
-                stress12Edge = stress12Edge + stress12(iCell)
+                ! interpolated edge velocity
+                iEdge = edgesOnVertex(iVertexDegree,iVertex)
 
-             enddo ! iCellOnEdge
+                stress11Edge = 0.0_RKIND
+                stress22Edge = 0.0_RKIND
+                stress12Edge = 0.0_RKIND
 
-             stress11Edge = stress11Edge / 2.0_RKIND
-             stress22Edge = stress22Edge / 2.0_RKIND
-             stress12Edge = stress12Edge / 2.0_RKIND
+                do iCellOnEdge = 1, 2
 
-             stressDivergenceU(iVertex) = stressDivergenceU(iVertex) + &
-                  (stress11Edge * normalVectorTriangle(1,iVertexDegree,iVertex) + &
-                   stress12Edge * normalVectorTriangle(2,iVertexDegree,iVertex)) * dcEdge(iEdge)
+                   iCell = cellsOnEdge(iCellOnEdge,iEdge)
 
+                   stress11Edge = stress11Edge + stress11(iCell)
+                   stress22Edge = stress22Edge + stress22(iCell)
+                   stress12Edge = stress12Edge + stress12(iCell)
+
+                enddo ! iCellOnEdge
+
+                stress11Edge = stress11Edge / 2.0_RKIND
+                stress22Edge = stress22Edge / 2.0_RKIND
+                stress12Edge = stress12Edge / 2.0_RKIND
+
+                stressDivergenceU(iVertex) = stressDivergenceU(iVertex) + &
+                     (stress11Edge * normalVectorTriangle(1,iVertexDegree,iVertex) + &
+                     stress12Edge * normalVectorTriangle(2,iVertexDegree,iVertex)) * dcEdge(iEdge)
+
+                stressDivergenceV(iVertex) = stressDivergenceV(iVertex) + &
+                     (stress22Edge * normalVectorTriangle(2,iVertexDegree,iVertex) + &
+                     stress12Edge * normalVectorTriangle(1,iVertexDegree,iVertex)) * dcEdge(iEdge)
+
+             enddo ! iVertexDegree
+
+             stress11Vertex = stress11Vertex / real(vertexDegree, RKIND)
+             stress22Vertex = stress22Vertex / real(vertexDegree, RKIND)
+             stress12Vertex = stress12Vertex / real(vertexDegree, RKIND)
+
+             stressDivergenceU(iVertex) = stressDivergenceU(iVertex) / areaTriangle(iVertex)
+             stressDivergenceV(iVertex) = stressDivergenceV(iVertex) / areaTriangle(iVertex)
+
+             ! metric terms
+             stressDivergenceU(iVertex) = stressDivergenceU(iVertex) - &
+                  (tan(latVertexRotated(iVertex)) * stress12Vertex) / sphereRadius
              stressDivergenceV(iVertex) = stressDivergenceV(iVertex) + &
-                  (stress22Edge * normalVectorTriangle(2,iVertexDegree,iVertex) + &
-                   stress12Edge * normalVectorTriangle(1,iVertexDegree,iVertex)) * dcEdge(iEdge)
+                  (tan(latVertexRotated(iVertex)) * stress11Vertex) / sphereRadius
 
-          enddo ! iVertexDegree
+          endif ! solveVelocity
 
-          stress11Vertex = stress11Vertex / real(vertexDegree, RKIND)
-          stress22Vertex = stress22Vertex / real(vertexDegree, RKIND)
-          stress12Vertex = stress12Vertex / real(vertexDegree, RKIND)
+       enddo ! iVertex
 
-          stressDivergenceU(iVertex) = stressDivergenceU(iVertex) / areaTriangle(iVertex)
-          stressDivergenceV(iVertex) = stressDivergenceV(iVertex) / areaTriangle(iVertex)
-
-          ! metric terms
-          stressDivergenceU(iVertex) = stressDivergenceU(iVertex) - &
-               (tan(latVertexRotated(iVertex)) * stress12Vertex * 2.0_RKIND) / sphereRadius
-          stressDivergenceV(iVertex) = stressDivergenceV(iVertex) + &
-               (tan(latVertexRotated(iVertex)) * (stress11Vertex - stress22Vertex)) / sphereRadius
-
-       endif ! solveVelocity
-
-    enddo ! iVertex
+       blockPtr => blockPtr % next
+    end do
 
   end subroutine seaice_stress_divergence_weak!}}}
 
@@ -651,25 +719,27 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_final_divergence_shear_weak(block)
+  subroutine seaice_final_divergence_shear_weak(domain)
 
     use seaice_velocity_solver_constitutive_relation, only: &
          eccentricitySquared
 
-    type(block_type), intent(inout) :: &
-         block
+    use seaice_mesh_pool, only: &
+         nCells, &
+         solveStress, &
+         nEdgesOnCell
+
+    type(domain_type), intent(inout) :: &
+         domain
+
+    type(block_type), pointer :: &
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          meshPool, &
          velocityWeakPool, &
          velocitySolverPool, &
          ridgingPool
-
-    integer, pointer :: &
-         nCellsSolve
-
-    integer, dimension(:), pointer :: &
-         nEdgesOnCell
 
     real(kind=RKIND), dimension(:), pointer :: &
          strain11, &
@@ -694,57 +764,77 @@ contains
     integer :: &
          iCell
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-    call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocityWeakPool)
-    call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-    call MPAS_pool_get_dimension(meshPool, "nCellsSolve", nCellsSolve)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_weak", velocityWeakPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
 
-    call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
+       call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11)
+       call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22)
+       call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12)
 
-    call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11)
-    call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22)
-    call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12)
+       call MPAS_pool_get_array(velocitySolverPool, "divergence", divergence)
+       call MPAS_pool_get_array(velocitySolverPool, "shear", shear)
 
-    call MPAS_pool_get_array(velocitySolverPool, "divergence", divergence)
-    call MPAS_pool_get_array(velocitySolverPool, "shear", shear)
+       allocate(Delta(nCells))
 
-    allocate(Delta(nCellsSolve))
+       do iCell = 1, nCells
 
-    do iCell = 1, nCellsSolve
+          if (solveStress(iCell) == 1) then
 
-       strainDivergence = strain11(iCell) + strain22(iCell)
-       strainTension    = strain11(iCell) - strain22(iCell)
-       strainShearing   = strain12(iCell) * 2.0_RKIND
+             strainDivergence = strain11(iCell) + strain22(iCell)
+             strainTension    = strain11(iCell) - strain22(iCell)
+             strainShearing   = strain12(iCell) * 2.0_RKIND
 
-       Delta = sqrt(strainDivergence**2 + (strainTension**2 + strainShearing**2) / eccentricitySquared)
+             Delta(iCell) = sqrt(strainDivergence**2 + (strainTension**2 + strainShearing**2) / eccentricitySquared)
 
-       divergence(iCell) = strainDivergence
-       shear(iCell)      = sqrt(strainTension**2 + strainShearing**2)
+             divergence(iCell) = strainDivergence
+             shear(iCell)      = sqrt(strainTension**2 + strainShearing**2)
 
-    enddo ! iCell
+          else
 
-    ! ridging parameters
-    call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
+             divergence(iCell)   = 0.0_RKIND
+             shear(iCell)        = 0.0_RKIND
 
-    if (config_use_column_package) then
-
-       call MPAS_pool_get_subpool(block % structs, "ridging", ridgingPool)
-
-       call MPAS_pool_get_array(ridgingPool, "ridgeConvergence", ridgeConvergence)
-       call MPAS_pool_get_array(ridgingPool, "ridgeShear", ridgeShear)
-
-       do iCell = 1, nCellsSolve
-
-          ridgeConvergence(iCell) = -min(divergence(iCell),0.0_RKIND)
-          ridgeShear(iCell)       = 0.5_RKIND * (Delta(iCell) - abs(divergence(iCell)))
+          endif
 
        enddo ! iCell
 
-    endif ! config_use_column_package
+       ! ridging parameters
+       call MPAS_pool_get_config(blockPtr % configs, "config_use_column_package", config_use_column_package)
 
-    ! cleanup
-    deallocate(Delta)
+       if (config_use_column_package) then
+
+          call MPAS_pool_get_subpool(blockPtr % structs, "ridging", ridgingPool)
+
+          call MPAS_pool_get_array(ridgingPool, "ridgeConvergence", ridgeConvergence)
+          call MPAS_pool_get_array(ridgingPool, "ridgeShear", ridgeShear)
+
+          do iCell = 1, nCells
+
+             if (solveStress(iCell) == 1) then
+
+                ridgeConvergence(iCell) = -min(divergence(iCell),0.0_RKIND)
+                ridgeShear(iCell)       = 0.5_RKIND * (Delta(iCell) - abs(divergence(iCell)))
+
+             else
+
+                ridgeConvergence(iCell) = 0.0_RKIND
+                ridgeShear(iCell)       = 0.0_RKIND
+
+             endif
+
+          enddo ! iCell
+
+       endif ! config_use_column_package
+
+       ! cleanup
+       deallocate(Delta)
+
+       blockPtr => blockPtr % next
+    enddo
 
   end subroutine seaice_final_divergence_shear_weak
 

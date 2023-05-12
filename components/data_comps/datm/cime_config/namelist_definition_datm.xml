@@ -42,6 +42,7 @@
     CORE2_NYF		= CORE2 normal year forcing (for forcing POP and CICE)
     CORE2_IAF		= CORE2 intra-annual year forcing (for forcing POP and CICE)
     CORE_IAF_JRA	= JRA55 intra-annual year forcing (for forcing POP and CICE)
+    IAF_JRA_1p5         = JRA55 intra-annual year forcing, v1.5, through 2020 (for forcing MPAS-Ocean and MPAS-Seaice)
     CORE_IAF_JRA_1p4_2018 = JRA55 intra-annual year forcing, v1.4, through 2018 (for forcing POP and CICE)
     CORE_RYF8485_JRA = JRA55 repeat year forcing, v1.3, 1984-1985 (for forcing POP and CICE)
     CORE_RYF9091_JRA = JRA55 repeat year forcing, v1.3, 1990-1991 (for forcing POP and CICE)
@@ -205,6 +206,7 @@
       <value datm_mode="CLMNLDAS2">CLMNLDAS2.Solar,CLMNLDAS2.Precip,CLMNLDAS2.TPQW</value>
       <value datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</value>
       <value datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</value>
+      <value datm_mode="IAF_JRA_1p5" >IAF_JRA_1p5.GCGCS.PREC,IAF_JRA_1p5.GISS.LWDN,IAF_JRA_1p5.GISS.SWDN,IAF_JRA_1p5.NCEP.Q_10,IAF_JRA_1p5.NCEP.SLP_,IAF_JRA_1p5.NCEP.T_10,IAF_JRA_1p5.NCEP.U_10,IAF_JRA_1p5.NCEP.V_10</value>
       <value datm_mode="CORE_IAF_JRA_1p4_2018" >CORE_IAF_JRA_1p4_2018.GCGCS.PREC,CORE_IAF_JRA_1p4_2018.GISS.LWDN,CORE_IAF_JRA_1p4_2018.GISS.SWDN,CORE_IAF_JRA_1p4_2018.NCEP.Q_10,CORE_IAF_JRA_1p4_2018.NCEP.SLP_,CORE_IAF_JRA_1p4_2018.NCEP.T_10,CORE_IAF_JRA_1p4_2018.NCEP.U_10,CORE_IAF_JRA_1p4_2018.NCEP.V_10</value>
       <value datm_mode="CORE_IAF_JRA" >CORE_IAF_JRA.GCGCS.PREC,CORE_IAF_JRA.GISS.LWDN,CORE_IAF_JRA.GISS.SWDN,CORE_IAF_JRA.NCEP.Q_10,CORE_IAF_JRA.NCEP.SLP_,CORE_IAF_JRA.NCEP.T_10,CORE_IAF_JRA.NCEP.U_10,CORE_IAF_JRA.NCEP.V_10</value>
       <value datm_mode="CORE_RYF8485_JRA" >CORE_RYF8485_JRA.GISS.LWDN,CORE_RYF8485_JRA.GISS.SWDN,CORE_RYF8485_JRA.GCGCS,CORE_RYF8485_JRA.NCEP</value>
@@ -212,6 +214,8 @@
       <value datm_mode="CORE_RYF0304_JRA" >CORE_RYF0304_JRA.GISS.LWDN,CORE_RYF0304_JRA.GISS.SWDN,CORE_RYF0304_JRA.GCGCS,CORE_RYF0304_JRA.NCEP</value>
       <value datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.PREC.SOFS.DAILY,CORE2_IAF.LWDN.SOFS.DAILY,CORE2_IAF.SWDN.SOFS.DAILY,CORE2_IAF.SWUP.SOFS.DAILY,CORE2_IAF.SHUM.SOFS.6HOUR,CORE2_IAF.TBOT.SOFS.6HOUR,CORE2_IAF.U.SOFS.6HOUR,CORE2_IAF.V.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor</value>
       <value datm_mode="CPLHIST">CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,CPLHISTForcing.State3hr,CPLHISTForcing.State1hr</value>
+      <value datm_mode="CFSv2">CFSv2.UV</value>
+      <value datm_mode="CFSR">CFSR.UV</value>
     </values>
   </entry>
 
@@ -258,6 +262,7 @@
       <value stream="CORE2_IAF.NCEP.U_10">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CORE2_IAF.NCEP.V_10">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CORE_IAF_JRA.*">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
+      <value stream="IAF_JRA_1p5.*">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
       <value stream="CORE_RYF*">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
       <value stream="co2tseries">$DIN_LOC_ROOT/atm/datm7/CO2 </value>
       <value stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</value>
@@ -273,6 +278,8 @@
       <value stream="presaero.SSP">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
       <value stream="topo.cplhist">null</value>
+      <value stream="CFSv2.UV">$DIN_LOC_ROOT/wav/cfsv2</value>
+      <value stream="CFSR.UV">$DIN_LOC_ROOT/wav/cfsr</value>
     </values>
   </entry>
 
@@ -322,6 +329,7 @@
       <value stream="CORE2_IAF.NCEP.V_10">domain.T62.050609.nc</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
       <value stream="CORE_IAF_JRA.*">domain.atm.TL319.151007.nc</value>
+      <value stream="IAF_JRA_1p5.*">domain.atm.TL319.151007.nc</value>
       <value stream="CORE_RYF*">domain.atm.TL319.151007.nc</value>
       <value stream="co2tseries.20tr" cime_model="e3sm">fco2_datm_1765-2007_c100614.nc</value>
       <value stream="co2tseries.20tr" cime_model="cesm">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
@@ -380,6 +388,8 @@
       <value stream="presaero.SSP5-8.5">aerodep_clm_SSP585_b.e21.BSSP585cmip6.f09_g17.CMIP6-SSP5-8.5.001_2014-2101_monthly_0.9x1.25_c190419.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
       <value stream="topo.cplhist">null</value>
+      <value stream="CFSv2.UV">domain.ocn.CFSv2_CFSv2.200616.nc</value>
+      <value stream="CFSR.UV">domain.ocn.CFSR_CFSR.210415.nc</value>
     </values>
   </entry>
 
@@ -476,6 +486,7 @@
       <value stream="CORE2_IAF.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
       <value stream="CORE2_IAF">$DIN_LOC_ROOT/ocn/iaf</value>
       <value stream="CORE_IAF_JRA.*">$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap</value>
+      <value stream="IAF_JRA_1p5.*">$DIN_LOC_ROOT/ocn/jra55/v1.5_noleap</value>
       <value stream="CORE_RYF*">$DIN_LOC_ROOT/ocn/jra55/v1.3_ryf</value>
       <value stream="co2tseries">$DIN_LOC_ROOT/atm/datm7/CO2</value>
       <value stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</value>
@@ -487,6 +498,8 @@
       <value stream="presaero">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</value>
       <value stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_DIR</value>
+      <value stream="CFSv2.UV">$DIN_LOC_ROOT/wav/cfsv2</value>
+      <value stream="CFSR.UV">$DIN_LOC_ROOT/wav/cfsr</value>
     </values>
   </entry>
 
@@ -1201,996 +1214,76 @@
       </value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
       <value  stream="CORE_IAF_JRA.GCGCS.PREC">
-        JRA.v1.3.prec.TL319.1958.171019.nc
-        JRA.v1.3.prec.TL319.1959.171019.nc
-        JRA.v1.3.prec.TL319.1960.171019.nc
-        JRA.v1.3.prec.TL319.1961.171019.nc
-        JRA.v1.3.prec.TL319.1962.171019.nc
-        JRA.v1.3.prec.TL319.1963.171019.nc
-        JRA.v1.3.prec.TL319.1964.171019.nc
-        JRA.v1.3.prec.TL319.1965.171019.nc
-        JRA.v1.3.prec.TL319.1966.171019.nc
-        JRA.v1.3.prec.TL319.1967.171019.nc
-        JRA.v1.3.prec.TL319.1968.171019.nc
-        JRA.v1.3.prec.TL319.1969.171019.nc
-        JRA.v1.3.prec.TL319.1970.171019.nc
-        JRA.v1.3.prec.TL319.1971.171019.nc
-        JRA.v1.3.prec.TL319.1972.171019.nc
-        JRA.v1.3.prec.TL319.1973.171019.nc
-        JRA.v1.3.prec.TL319.1974.171019.nc
-        JRA.v1.3.prec.TL319.1975.171019.nc
-        JRA.v1.3.prec.TL319.1976.171019.nc
-        JRA.v1.3.prec.TL319.1977.171019.nc
-        JRA.v1.3.prec.TL319.1978.171019.nc
-        JRA.v1.3.prec.TL319.1979.171019.nc
-        JRA.v1.3.prec.TL319.1980.171019.nc
-        JRA.v1.3.prec.TL319.1981.171019.nc
-        JRA.v1.3.prec.TL319.1982.171019.nc
-        JRA.v1.3.prec.TL319.1983.171019.nc
-        JRA.v1.3.prec.TL319.1984.171019.nc
-        JRA.v1.3.prec.TL319.1985.171019.nc
-        JRA.v1.3.prec.TL319.1986.171019.nc
-        JRA.v1.3.prec.TL319.1987.171019.nc
-        JRA.v1.3.prec.TL319.1988.171019.nc
-        JRA.v1.3.prec.TL319.1989.171019.nc
-        JRA.v1.3.prec.TL319.1990.171019.nc
-        JRA.v1.3.prec.TL319.1991.171019.nc
-        JRA.v1.3.prec.TL319.1992.171019.nc
-        JRA.v1.3.prec.TL319.1993.171019.nc
-        JRA.v1.3.prec.TL319.1994.171019.nc
-        JRA.v1.3.prec.TL319.1995.171019.nc
-        JRA.v1.3.prec.TL319.1996.171019.nc
-        JRA.v1.3.prec.TL319.1997.171019.nc
-        JRA.v1.3.prec.TL319.1998.171019.nc
-        JRA.v1.3.prec.TL319.1999.171019.nc
-        JRA.v1.3.prec.TL319.2000.171019.nc
-        JRA.v1.3.prec.TL319.2001.171019.nc
-        JRA.v1.3.prec.TL319.2002.171019.nc
-        JRA.v1.3.prec.TL319.2003.171019.nc
-        JRA.v1.3.prec.TL319.2004.171019.nc
-        JRA.v1.3.prec.TL319.2005.171019.nc
-        JRA.v1.3.prec.TL319.2006.171019.nc
-        JRA.v1.3.prec.TL319.2007.171019.nc
-        JRA.v1.3.prec.TL319.2008.171019.nc
-        JRA.v1.3.prec.TL319.2009.171019.nc
-        JRA.v1.3.prec.TL319.2010.171019.nc
-        JRA.v1.3.prec.TL319.2011.171019.nc
-        JRA.v1.3.prec.TL319.2012.171019.nc
-        JRA.v1.3.prec.TL319.2013.171019.nc
-        JRA.v1.3.prec.TL319.2014.171019.nc
-        JRA.v1.3.prec.TL319.2015.171019.nc
-        JRA.v1.3.prec.TL319.2016.171019.nc
+        JRA.v1.3.prec.TL319.%y.171019.nc
+      </value>
+      <value  stream="IAF_JRA_1p5.GCGCS.PREC">
+        JRA.v1.5.prec.TL319.%y.210504.nc
       </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.GCGCS.PREC">
-        JRA.v1.3.prec.TL319.1958.190528.nc
-        JRA.v1.3.prec.TL319.1959.190528.nc
-        JRA.v1.3.prec.TL319.1960.190528.nc
-        JRA.v1.3.prec.TL319.1961.190528.nc
-        JRA.v1.3.prec.TL319.1962.190528.nc
-        JRA.v1.3.prec.TL319.1963.190528.nc
-        JRA.v1.3.prec.TL319.1964.190528.nc
-        JRA.v1.3.prec.TL319.1965.190528.nc
-        JRA.v1.3.prec.TL319.1966.190528.nc
-        JRA.v1.3.prec.TL319.1967.190528.nc
-        JRA.v1.3.prec.TL319.1968.190528.nc
-        JRA.v1.3.prec.TL319.1969.190528.nc
-        JRA.v1.3.prec.TL319.1970.190528.nc
-        JRA.v1.3.prec.TL319.1971.190528.nc
-        JRA.v1.3.prec.TL319.1972.190528.nc
-        JRA.v1.3.prec.TL319.1973.190528.nc
-        JRA.v1.3.prec.TL319.1974.190528.nc
-        JRA.v1.3.prec.TL319.1975.190528.nc
-        JRA.v1.3.prec.TL319.1976.190528.nc
-        JRA.v1.3.prec.TL319.1977.190528.nc
-        JRA.v1.3.prec.TL319.1978.190528.nc
-        JRA.v1.3.prec.TL319.1979.190528.nc
-        JRA.v1.3.prec.TL319.1980.190528.nc
-        JRA.v1.3.prec.TL319.1981.190528.nc
-        JRA.v1.3.prec.TL319.1982.190528.nc
-        JRA.v1.3.prec.TL319.1983.190528.nc
-        JRA.v1.3.prec.TL319.1984.190528.nc
-        JRA.v1.3.prec.TL319.1985.190528.nc
-        JRA.v1.3.prec.TL319.1986.190528.nc
-        JRA.v1.3.prec.TL319.1987.190528.nc
-        JRA.v1.3.prec.TL319.1988.190528.nc
-        JRA.v1.3.prec.TL319.1989.190528.nc
-        JRA.v1.3.prec.TL319.1990.190528.nc
-        JRA.v1.3.prec.TL319.1991.190528.nc
-        JRA.v1.3.prec.TL319.1992.190528.nc
-        JRA.v1.3.prec.TL319.1993.190528.nc
-        JRA.v1.3.prec.TL319.1994.190528.nc
-        JRA.v1.3.prec.TL319.1995.190528.nc
-        JRA.v1.3.prec.TL319.1996.190528.nc
-        JRA.v1.3.prec.TL319.1997.190528.nc
-        JRA.v1.3.prec.TL319.1998.190528.nc
-        JRA.v1.3.prec.TL319.1999.190528.nc
-        JRA.v1.3.prec.TL319.2000.190528.nc
-        JRA.v1.3.prec.TL319.2001.190528.nc
-        JRA.v1.3.prec.TL319.2002.190528.nc
-        JRA.v1.3.prec.TL319.2003.190528.nc
-        JRA.v1.3.prec.TL319.2004.190528.nc
-        JRA.v1.3.prec.TL319.2005.190528.nc
-        JRA.v1.3.prec.TL319.2006.190528.nc
-        JRA.v1.3.prec.TL319.2007.190528.nc
-        JRA.v1.3.prec.TL319.2008.190528.nc
-        JRA.v1.3.prec.TL319.2009.190528.nc
-        JRA.v1.3.prec.TL319.2010.190528.nc
-        JRA.v1.3.prec.TL319.2011.190528.nc
-        JRA.v1.3.prec.TL319.2012.190528.nc
-        JRA.v1.3.prec.TL319.2013.190528.nc
-        JRA.v1.3.prec.TL319.2014.190528.nc
-        JRA.v1.3.prec.TL319.2015.190528.nc
-        JRA.v1.3.prec.TL319.2016.190528.nc
-        JRA.v1.3.prec.TL319.2017.190528.nc
-        JRA.v1.3.prec.TL319.2018.190528.nc
+        JRA.v1.3.prec.TL319.%y.190528.nc
       </value>
       <value  stream="CORE_IAF_JRA.GISS.LWDN">
-        JRA.v1.3.lwdn.TL319.1958.171019.nc
-        JRA.v1.3.lwdn.TL319.1959.171019.nc
-        JRA.v1.3.lwdn.TL319.1960.171019.nc
-        JRA.v1.3.lwdn.TL319.1961.171019.nc
-        JRA.v1.3.lwdn.TL319.1962.171019.nc
-        JRA.v1.3.lwdn.TL319.1963.171019.nc
-        JRA.v1.3.lwdn.TL319.1964.171019.nc
-        JRA.v1.3.lwdn.TL319.1965.171019.nc
-        JRA.v1.3.lwdn.TL319.1966.171019.nc
-        JRA.v1.3.lwdn.TL319.1967.171019.nc
-        JRA.v1.3.lwdn.TL319.1968.171019.nc
-        JRA.v1.3.lwdn.TL319.1969.171019.nc
-        JRA.v1.3.lwdn.TL319.1970.171019.nc
-        JRA.v1.3.lwdn.TL319.1971.171019.nc
-        JRA.v1.3.lwdn.TL319.1972.171019.nc
-        JRA.v1.3.lwdn.TL319.1973.171019.nc
-        JRA.v1.3.lwdn.TL319.1974.171019.nc
-        JRA.v1.3.lwdn.TL319.1975.171019.nc
-        JRA.v1.3.lwdn.TL319.1976.171019.nc
-        JRA.v1.3.lwdn.TL319.1977.171019.nc
-        JRA.v1.3.lwdn.TL319.1978.171019.nc
-        JRA.v1.3.lwdn.TL319.1979.171019.nc
-        JRA.v1.3.lwdn.TL319.1980.171019.nc
-        JRA.v1.3.lwdn.TL319.1981.171019.nc
-        JRA.v1.3.lwdn.TL319.1982.171019.nc
-        JRA.v1.3.lwdn.TL319.1983.171019.nc
-        JRA.v1.3.lwdn.TL319.1984.171019.nc
-        JRA.v1.3.lwdn.TL319.1985.171019.nc
-        JRA.v1.3.lwdn.TL319.1986.171019.nc
-        JRA.v1.3.lwdn.TL319.1987.171019.nc
-        JRA.v1.3.lwdn.TL319.1988.171019.nc
-        JRA.v1.3.lwdn.TL319.1989.171019.nc
-        JRA.v1.3.lwdn.TL319.1990.171019.nc
-        JRA.v1.3.lwdn.TL319.1991.171019.nc
-        JRA.v1.3.lwdn.TL319.1992.171019.nc
-        JRA.v1.3.lwdn.TL319.1993.171019.nc
-        JRA.v1.3.lwdn.TL319.1994.171019.nc
-        JRA.v1.3.lwdn.TL319.1995.171019.nc
-        JRA.v1.3.lwdn.TL319.1996.171019.nc
-        JRA.v1.3.lwdn.TL319.1997.171019.nc
-        JRA.v1.3.lwdn.TL319.1998.171019.nc
-        JRA.v1.3.lwdn.TL319.1999.171019.nc
-        JRA.v1.3.lwdn.TL319.2000.171019.nc
-        JRA.v1.3.lwdn.TL319.2001.171019.nc
-        JRA.v1.3.lwdn.TL319.2002.171019.nc
-        JRA.v1.3.lwdn.TL319.2003.171019.nc
-        JRA.v1.3.lwdn.TL319.2004.171019.nc
-        JRA.v1.3.lwdn.TL319.2005.171019.nc
-        JRA.v1.3.lwdn.TL319.2006.171019.nc
-        JRA.v1.3.lwdn.TL319.2007.171019.nc
-        JRA.v1.3.lwdn.TL319.2008.171019.nc
-        JRA.v1.3.lwdn.TL319.2009.171019.nc
-        JRA.v1.3.lwdn.TL319.2010.171019.nc
-        JRA.v1.3.lwdn.TL319.2011.171019.nc
-        JRA.v1.3.lwdn.TL319.2012.171019.nc
-        JRA.v1.3.lwdn.TL319.2013.171019.nc
-        JRA.v1.3.lwdn.TL319.2014.171019.nc
-        JRA.v1.3.lwdn.TL319.2015.171019.nc
-        JRA.v1.3.lwdn.TL319.2016.171019.nc
+        JRA.v1.3.lwdn.TL319.%y.171019.nc
+      </value>
+      <value  stream="IAF_JRA_1p5.GISS.LWDN">
+        JRA.v1.5.lwdn.TL319.%y.210504.nc
       </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.GISS.LWDN">
-        JRA.v1.3.lwdn.TL319.1958.190528.nc
-        JRA.v1.3.lwdn.TL319.1959.190528.nc
-        JRA.v1.3.lwdn.TL319.1960.190528.nc
-        JRA.v1.3.lwdn.TL319.1961.190528.nc
-        JRA.v1.3.lwdn.TL319.1962.190528.nc
-        JRA.v1.3.lwdn.TL319.1963.190528.nc
-        JRA.v1.3.lwdn.TL319.1964.190528.nc
-        JRA.v1.3.lwdn.TL319.1965.190528.nc
-        JRA.v1.3.lwdn.TL319.1966.190528.nc
-        JRA.v1.3.lwdn.TL319.1967.190528.nc
-        JRA.v1.3.lwdn.TL319.1968.190528.nc
-        JRA.v1.3.lwdn.TL319.1969.190528.nc
-        JRA.v1.3.lwdn.TL319.1970.190528.nc
-        JRA.v1.3.lwdn.TL319.1971.190528.nc
-        JRA.v1.3.lwdn.TL319.1972.190528.nc
-        JRA.v1.3.lwdn.TL319.1973.190528.nc
-        JRA.v1.3.lwdn.TL319.1974.190528.nc
-        JRA.v1.3.lwdn.TL319.1975.190528.nc
-        JRA.v1.3.lwdn.TL319.1976.190528.nc
-        JRA.v1.3.lwdn.TL319.1977.190528.nc
-        JRA.v1.3.lwdn.TL319.1978.190528.nc
-        JRA.v1.3.lwdn.TL319.1979.190528.nc
-        JRA.v1.3.lwdn.TL319.1980.190528.nc
-        JRA.v1.3.lwdn.TL319.1981.190528.nc
-        JRA.v1.3.lwdn.TL319.1982.190528.nc
-        JRA.v1.3.lwdn.TL319.1983.190528.nc
-        JRA.v1.3.lwdn.TL319.1984.190528.nc
-        JRA.v1.3.lwdn.TL319.1985.190528.nc
-        JRA.v1.3.lwdn.TL319.1986.190528.nc
-        JRA.v1.3.lwdn.TL319.1987.190528.nc
-        JRA.v1.3.lwdn.TL319.1988.190528.nc
-        JRA.v1.3.lwdn.TL319.1989.190528.nc
-        JRA.v1.3.lwdn.TL319.1990.190528.nc
-        JRA.v1.3.lwdn.TL319.1991.190528.nc
-        JRA.v1.3.lwdn.TL319.1992.190528.nc
-        JRA.v1.3.lwdn.TL319.1993.190528.nc
-        JRA.v1.3.lwdn.TL319.1994.190528.nc
-        JRA.v1.3.lwdn.TL319.1995.190528.nc
-        JRA.v1.3.lwdn.TL319.1996.190528.nc
-        JRA.v1.3.lwdn.TL319.1997.190528.nc
-        JRA.v1.3.lwdn.TL319.1998.190528.nc
-        JRA.v1.3.lwdn.TL319.1999.190528.nc
-        JRA.v1.3.lwdn.TL319.2000.190528.nc
-        JRA.v1.3.lwdn.TL319.2001.190528.nc
-        JRA.v1.3.lwdn.TL319.2002.190528.nc
-        JRA.v1.3.lwdn.TL319.2003.190528.nc
-        JRA.v1.3.lwdn.TL319.2004.190528.nc
-        JRA.v1.3.lwdn.TL319.2005.190528.nc
-        JRA.v1.3.lwdn.TL319.2006.190528.nc
-        JRA.v1.3.lwdn.TL319.2007.190528.nc
-        JRA.v1.3.lwdn.TL319.2008.190528.nc
-        JRA.v1.3.lwdn.TL319.2009.190528.nc
-        JRA.v1.3.lwdn.TL319.2010.190528.nc
-        JRA.v1.3.lwdn.TL319.2011.190528.nc
-        JRA.v1.3.lwdn.TL319.2012.190528.nc
-        JRA.v1.3.lwdn.TL319.2013.190528.nc
-        JRA.v1.3.lwdn.TL319.2014.190528.nc
-        JRA.v1.3.lwdn.TL319.2015.190528.nc
-        JRA.v1.3.lwdn.TL319.2016.190528.nc
-        JRA.v1.3.lwdn.TL319.2017.190528.nc
-        JRA.v1.3.lwdn.TL319.2018.190528.nc
+        JRA.v1.3.lwdn.TL319.%y.190528.nc
       </value>
       <value  stream="CORE_IAF_JRA.GISS.SWDN">
-        JRA.v1.3.swdn.TL319.1958.171019.nc
-        JRA.v1.3.swdn.TL319.1959.171019.nc
-        JRA.v1.3.swdn.TL319.1960.171019.nc
-        JRA.v1.3.swdn.TL319.1961.171019.nc
-        JRA.v1.3.swdn.TL319.1962.171019.nc
-        JRA.v1.3.swdn.TL319.1963.171019.nc
-        JRA.v1.3.swdn.TL319.1964.171019.nc
-        JRA.v1.3.swdn.TL319.1965.171019.nc
-        JRA.v1.3.swdn.TL319.1966.171019.nc
-        JRA.v1.3.swdn.TL319.1967.171019.nc
-        JRA.v1.3.swdn.TL319.1968.171019.nc
-        JRA.v1.3.swdn.TL319.1969.171019.nc
-        JRA.v1.3.swdn.TL319.1970.171019.nc
-        JRA.v1.3.swdn.TL319.1971.171019.nc
-        JRA.v1.3.swdn.TL319.1972.171019.nc
-        JRA.v1.3.swdn.TL319.1973.171019.nc
-        JRA.v1.3.swdn.TL319.1974.171019.nc
-        JRA.v1.3.swdn.TL319.1975.171019.nc
-        JRA.v1.3.swdn.TL319.1976.171019.nc
-        JRA.v1.3.swdn.TL319.1977.171019.nc
-        JRA.v1.3.swdn.TL319.1978.171019.nc
-        JRA.v1.3.swdn.TL319.1979.171019.nc
-        JRA.v1.3.swdn.TL319.1980.171019.nc
-        JRA.v1.3.swdn.TL319.1981.171019.nc
-        JRA.v1.3.swdn.TL319.1982.171019.nc
-        JRA.v1.3.swdn.TL319.1983.171019.nc
-        JRA.v1.3.swdn.TL319.1984.171019.nc
-        JRA.v1.3.swdn.TL319.1985.171019.nc
-        JRA.v1.3.swdn.TL319.1986.171019.nc
-        JRA.v1.3.swdn.TL319.1987.171019.nc
-        JRA.v1.3.swdn.TL319.1988.171019.nc
-        JRA.v1.3.swdn.TL319.1989.171019.nc
-        JRA.v1.3.swdn.TL319.1990.171019.nc
-        JRA.v1.3.swdn.TL319.1991.171019.nc
-        JRA.v1.3.swdn.TL319.1992.171019.nc
-        JRA.v1.3.swdn.TL319.1993.171019.nc
-        JRA.v1.3.swdn.TL319.1994.171019.nc
-        JRA.v1.3.swdn.TL319.1995.171019.nc
-        JRA.v1.3.swdn.TL319.1996.171019.nc
-        JRA.v1.3.swdn.TL319.1997.171019.nc
-        JRA.v1.3.swdn.TL319.1998.171019.nc
-        JRA.v1.3.swdn.TL319.1999.171019.nc
-        JRA.v1.3.swdn.TL319.2000.171019.nc
-        JRA.v1.3.swdn.TL319.2001.171019.nc
-        JRA.v1.3.swdn.TL319.2002.171019.nc
-        JRA.v1.3.swdn.TL319.2003.171019.nc
-        JRA.v1.3.swdn.TL319.2004.171019.nc
-        JRA.v1.3.swdn.TL319.2005.171019.nc
-        JRA.v1.3.swdn.TL319.2006.171019.nc
-        JRA.v1.3.swdn.TL319.2007.171019.nc
-        JRA.v1.3.swdn.TL319.2008.171019.nc
-        JRA.v1.3.swdn.TL319.2009.171019.nc
-        JRA.v1.3.swdn.TL319.2010.171019.nc
-        JRA.v1.3.swdn.TL319.2011.171019.nc
-        JRA.v1.3.swdn.TL319.2012.171019.nc
-        JRA.v1.3.swdn.TL319.2013.171019.nc
-        JRA.v1.3.swdn.TL319.2014.171019.nc
-        JRA.v1.3.swdn.TL319.2015.171019.nc
-        JRA.v1.3.swdn.TL319.2016.171019.nc
+        JRA.v1.3.swdn.TL319.%y.171019.nc
+      </value>
+      <value  stream="IAF_JRA_1p5.GISS.SWDN">
+        JRA.v1.5.swdn.TL319.%y.210504.nc
       </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.GISS.SWDN">
-        JRA.v1.3.swdn.TL319.1958.190528.nc
-        JRA.v1.3.swdn.TL319.1959.190528.nc
-        JRA.v1.3.swdn.TL319.1960.190528.nc
-        JRA.v1.3.swdn.TL319.1961.190528.nc
-        JRA.v1.3.swdn.TL319.1962.190528.nc
-        JRA.v1.3.swdn.TL319.1963.190528.nc
-        JRA.v1.3.swdn.TL319.1964.190528.nc
-        JRA.v1.3.swdn.TL319.1965.190528.nc
-        JRA.v1.3.swdn.TL319.1966.190528.nc
-        JRA.v1.3.swdn.TL319.1967.190528.nc
-        JRA.v1.3.swdn.TL319.1968.190528.nc
-        JRA.v1.3.swdn.TL319.1969.190528.nc
-        JRA.v1.3.swdn.TL319.1970.190528.nc
-        JRA.v1.3.swdn.TL319.1971.190528.nc
-        JRA.v1.3.swdn.TL319.1972.190528.nc
-        JRA.v1.3.swdn.TL319.1973.190528.nc
-        JRA.v1.3.swdn.TL319.1974.190528.nc
-        JRA.v1.3.swdn.TL319.1975.190528.nc
-        JRA.v1.3.swdn.TL319.1976.190528.nc
-        JRA.v1.3.swdn.TL319.1977.190528.nc
-        JRA.v1.3.swdn.TL319.1978.190528.nc
-        JRA.v1.3.swdn.TL319.1979.190528.nc
-        JRA.v1.3.swdn.TL319.1980.190528.nc
-        JRA.v1.3.swdn.TL319.1981.190528.nc
-        JRA.v1.3.swdn.TL319.1982.190528.nc
-        JRA.v1.3.swdn.TL319.1983.190528.nc
-        JRA.v1.3.swdn.TL319.1984.190528.nc
-        JRA.v1.3.swdn.TL319.1985.190528.nc
-        JRA.v1.3.swdn.TL319.1986.190528.nc
-        JRA.v1.3.swdn.TL319.1987.190528.nc
-        JRA.v1.3.swdn.TL319.1988.190528.nc
-        JRA.v1.3.swdn.TL319.1989.190528.nc
-        JRA.v1.3.swdn.TL319.1990.190528.nc
-        JRA.v1.3.swdn.TL319.1991.190528.nc
-        JRA.v1.3.swdn.TL319.1992.190528.nc
-        JRA.v1.3.swdn.TL319.1993.190528.nc
-        JRA.v1.3.swdn.TL319.1994.190528.nc
-        JRA.v1.3.swdn.TL319.1995.190528.nc
-        JRA.v1.3.swdn.TL319.1996.190528.nc
-        JRA.v1.3.swdn.TL319.1997.190528.nc
-        JRA.v1.3.swdn.TL319.1998.190528.nc
-        JRA.v1.3.swdn.TL319.1999.190528.nc
-        JRA.v1.3.swdn.TL319.2000.190528.nc
-        JRA.v1.3.swdn.TL319.2001.190528.nc
-        JRA.v1.3.swdn.TL319.2002.190528.nc
-        JRA.v1.3.swdn.TL319.2003.190528.nc
-        JRA.v1.3.swdn.TL319.2004.190528.nc
-        JRA.v1.3.swdn.TL319.2005.190528.nc
-        JRA.v1.3.swdn.TL319.2006.190528.nc
-        JRA.v1.3.swdn.TL319.2007.190528.nc
-        JRA.v1.3.swdn.TL319.2008.190528.nc
-        JRA.v1.3.swdn.TL319.2009.190528.nc
-        JRA.v1.3.swdn.TL319.2010.190528.nc
-        JRA.v1.3.swdn.TL319.2011.190528.nc
-        JRA.v1.3.swdn.TL319.2012.190528.nc
-        JRA.v1.3.swdn.TL319.2013.190528.nc
-        JRA.v1.3.swdn.TL319.2014.190528.nc
-        JRA.v1.3.swdn.TL319.2015.190528.nc
-        JRA.v1.3.swdn.TL319.2016.190528.nc
-        JRA.v1.3.swdn.TL319.2017.190528.nc
-        JRA.v1.3.swdn.TL319.2018.190528.nc
+        JRA.v1.3.swdn.TL319.%y.190528.nc
       </value>
       <value  stream="CORE_IAF_JRA.NCEP.Q_10">
-        JRA.v1.3.q_10.TL319.1958.171019.nc
-        JRA.v1.3.q_10.TL319.1959.171019.nc
-        JRA.v1.3.q_10.TL319.1960.171019.nc
-        JRA.v1.3.q_10.TL319.1961.171019.nc
-        JRA.v1.3.q_10.TL319.1962.171019.nc
-        JRA.v1.3.q_10.TL319.1963.171019.nc
-        JRA.v1.3.q_10.TL319.1964.171019.nc
-        JRA.v1.3.q_10.TL319.1965.171019.nc
-        JRA.v1.3.q_10.TL319.1966.171019.nc
-        JRA.v1.3.q_10.TL319.1967.171019.nc
-        JRA.v1.3.q_10.TL319.1968.171019.nc
-        JRA.v1.3.q_10.TL319.1969.171019.nc
-        JRA.v1.3.q_10.TL319.1970.171019.nc
-        JRA.v1.3.q_10.TL319.1971.171019.nc
-        JRA.v1.3.q_10.TL319.1972.171019.nc
-        JRA.v1.3.q_10.TL319.1973.171019.nc
-        JRA.v1.3.q_10.TL319.1974.171019.nc
-        JRA.v1.3.q_10.TL319.1975.171019.nc
-        JRA.v1.3.q_10.TL319.1976.171019.nc
-        JRA.v1.3.q_10.TL319.1977.171019.nc
-        JRA.v1.3.q_10.TL319.1978.171019.nc
-        JRA.v1.3.q_10.TL319.1979.171019.nc
-        JRA.v1.3.q_10.TL319.1980.171019.nc
-        JRA.v1.3.q_10.TL319.1981.171019.nc
-        JRA.v1.3.q_10.TL319.1982.171019.nc
-        JRA.v1.3.q_10.TL319.1983.171019.nc
-        JRA.v1.3.q_10.TL319.1984.171019.nc
-        JRA.v1.3.q_10.TL319.1985.171019.nc
-        JRA.v1.3.q_10.TL319.1986.171019.nc
-        JRA.v1.3.q_10.TL319.1987.171019.nc
-        JRA.v1.3.q_10.TL319.1988.171019.nc
-        JRA.v1.3.q_10.TL319.1989.171019.nc
-        JRA.v1.3.q_10.TL319.1990.171019.nc
-        JRA.v1.3.q_10.TL319.1991.171019.nc
-        JRA.v1.3.q_10.TL319.1992.171019.nc
-        JRA.v1.3.q_10.TL319.1993.171019.nc
-        JRA.v1.3.q_10.TL319.1994.171019.nc
-        JRA.v1.3.q_10.TL319.1995.171019.nc
-        JRA.v1.3.q_10.TL319.1996.171019.nc
-        JRA.v1.3.q_10.TL319.1997.171019.nc
-        JRA.v1.3.q_10.TL319.1998.171019.nc
-        JRA.v1.3.q_10.TL319.1999.171019.nc
-        JRA.v1.3.q_10.TL319.2000.171019.nc
-        JRA.v1.3.q_10.TL319.2001.171019.nc
-        JRA.v1.3.q_10.TL319.2002.171019.nc
-        JRA.v1.3.q_10.TL319.2003.171019.nc
-        JRA.v1.3.q_10.TL319.2004.171019.nc
-        JRA.v1.3.q_10.TL319.2005.171019.nc
-        JRA.v1.3.q_10.TL319.2006.171019.nc
-        JRA.v1.3.q_10.TL319.2007.171019.nc
-        JRA.v1.3.q_10.TL319.2008.171019.nc
-        JRA.v1.3.q_10.TL319.2009.171019.nc
-        JRA.v1.3.q_10.TL319.2010.171019.nc
-        JRA.v1.3.q_10.TL319.2011.171019.nc
-        JRA.v1.3.q_10.TL319.2012.171019.nc
-        JRA.v1.3.q_10.TL319.2013.171019.nc
-        JRA.v1.3.q_10.TL319.2014.171019.nc
-        JRA.v1.3.q_10.TL319.2015.171019.nc
-        JRA.v1.3.q_10.TL319.2016.171019.nc
+        JRA.v1.3.q_10.TL319.%y.171019.nc
+      </value>
+      <value  stream="IAF_JRA_1p5.NCEP.Q_10">
+        JRA.v1.5.q_10.TL319.%y.210504.nc
       </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.NCEP.Q_10">
-        JRA.v1.3.q_10.TL319.1958.190528.nc
-        JRA.v1.3.q_10.TL319.1959.190528.nc
-        JRA.v1.3.q_10.TL319.1960.190528.nc
-        JRA.v1.3.q_10.TL319.1961.190528.nc
-        JRA.v1.3.q_10.TL319.1962.190528.nc
-        JRA.v1.3.q_10.TL319.1963.190528.nc
-        JRA.v1.3.q_10.TL319.1964.190528.nc
-        JRA.v1.3.q_10.TL319.1965.190528.nc
-        JRA.v1.3.q_10.TL319.1966.190528.nc
-        JRA.v1.3.q_10.TL319.1967.190528.nc
-        JRA.v1.3.q_10.TL319.1968.190528.nc
-        JRA.v1.3.q_10.TL319.1969.190528.nc
-        JRA.v1.3.q_10.TL319.1970.190528.nc
-        JRA.v1.3.q_10.TL319.1971.190528.nc
-        JRA.v1.3.q_10.TL319.1972.190528.nc
-        JRA.v1.3.q_10.TL319.1973.190528.nc
-        JRA.v1.3.q_10.TL319.1974.190528.nc
-        JRA.v1.3.q_10.TL319.1975.190528.nc
-        JRA.v1.3.q_10.TL319.1976.190528.nc
-        JRA.v1.3.q_10.TL319.1977.190528.nc
-        JRA.v1.3.q_10.TL319.1978.190528.nc
-        JRA.v1.3.q_10.TL319.1979.190528.nc
-        JRA.v1.3.q_10.TL319.1980.190528.nc
-        JRA.v1.3.q_10.TL319.1981.190528.nc
-        JRA.v1.3.q_10.TL319.1982.190528.nc
-        JRA.v1.3.q_10.TL319.1983.190528.nc
-        JRA.v1.3.q_10.TL319.1984.190528.nc
-        JRA.v1.3.q_10.TL319.1985.190528.nc
-        JRA.v1.3.q_10.TL319.1986.190528.nc
-        JRA.v1.3.q_10.TL319.1987.190528.nc
-        JRA.v1.3.q_10.TL319.1988.190528.nc
-        JRA.v1.3.q_10.TL319.1989.190528.nc
-        JRA.v1.3.q_10.TL319.1990.190528.nc
-        JRA.v1.3.q_10.TL319.1991.190528.nc
-        JRA.v1.3.q_10.TL319.1992.190528.nc
-        JRA.v1.3.q_10.TL319.1993.190528.nc
-        JRA.v1.3.q_10.TL319.1994.190528.nc
-        JRA.v1.3.q_10.TL319.1995.190528.nc
-        JRA.v1.3.q_10.TL319.1996.190528.nc
-        JRA.v1.3.q_10.TL319.1997.190528.nc
-        JRA.v1.3.q_10.TL319.1998.190528.nc
-        JRA.v1.3.q_10.TL319.1999.190528.nc
-        JRA.v1.3.q_10.TL319.2000.190528.nc
-        JRA.v1.3.q_10.TL319.2001.190528.nc
-        JRA.v1.3.q_10.TL319.2002.190528.nc
-        JRA.v1.3.q_10.TL319.2003.190528.nc
-        JRA.v1.3.q_10.TL319.2004.190528.nc
-        JRA.v1.3.q_10.TL319.2005.190528.nc
-        JRA.v1.3.q_10.TL319.2006.190528.nc
-        JRA.v1.3.q_10.TL319.2007.190528.nc
-        JRA.v1.3.q_10.TL319.2008.190528.nc
-        JRA.v1.3.q_10.TL319.2009.190528.nc
-        JRA.v1.3.q_10.TL319.2010.190528.nc
-        JRA.v1.3.q_10.TL319.2011.190528.nc
-        JRA.v1.3.q_10.TL319.2012.190528.nc
-        JRA.v1.3.q_10.TL319.2013.190528.nc
-        JRA.v1.3.q_10.TL319.2014.190528.nc
-        JRA.v1.3.q_10.TL319.2015.190528.nc
-        JRA.v1.3.q_10.TL319.2016.190528.nc
-        JRA.v1.3.q_10.TL319.2017.190528.nc
-        JRA.v1.3.q_10.TL319.2018.190528.nc
-      </value> 
+        JRA.v1.3.q_10.TL319.%y.190528.nc
+      </value>
       <value  stream="CORE_IAF_JRA.NCEP.SLP_">
-        JRA.v1.3.slp.TL319.1958.171019.nc
-        JRA.v1.3.slp.TL319.1959.171019.nc
-        JRA.v1.3.slp.TL319.1960.171019.nc
-        JRA.v1.3.slp.TL319.1961.171019.nc
-        JRA.v1.3.slp.TL319.1962.171019.nc
-        JRA.v1.3.slp.TL319.1963.171019.nc
-        JRA.v1.3.slp.TL319.1964.171019.nc
-        JRA.v1.3.slp.TL319.1965.171019.nc
-        JRA.v1.3.slp.TL319.1966.171019.nc
-        JRA.v1.3.slp.TL319.1967.171019.nc
-        JRA.v1.3.slp.TL319.1968.171019.nc
-        JRA.v1.3.slp.TL319.1969.171019.nc
-        JRA.v1.3.slp.TL319.1970.171019.nc
-        JRA.v1.3.slp.TL319.1971.171019.nc
-        JRA.v1.3.slp.TL319.1972.171019.nc
-        JRA.v1.3.slp.TL319.1973.171019.nc
-        JRA.v1.3.slp.TL319.1974.171019.nc
-        JRA.v1.3.slp.TL319.1975.171019.nc
-        JRA.v1.3.slp.TL319.1976.171019.nc
-        JRA.v1.3.slp.TL319.1977.171019.nc
-        JRA.v1.3.slp.TL319.1978.171019.nc
-        JRA.v1.3.slp.TL319.1979.171019.nc
-        JRA.v1.3.slp.TL319.1980.171019.nc
-        JRA.v1.3.slp.TL319.1981.171019.nc
-        JRA.v1.3.slp.TL319.1982.171019.nc
-        JRA.v1.3.slp.TL319.1983.171019.nc
-        JRA.v1.3.slp.TL319.1984.171019.nc
-        JRA.v1.3.slp.TL319.1985.171019.nc
-        JRA.v1.3.slp.TL319.1986.171019.nc
-        JRA.v1.3.slp.TL319.1987.171019.nc
-        JRA.v1.3.slp.TL319.1988.171019.nc
-        JRA.v1.3.slp.TL319.1989.171019.nc
-        JRA.v1.3.slp.TL319.1990.171019.nc
-        JRA.v1.3.slp.TL319.1991.171019.nc
-        JRA.v1.3.slp.TL319.1992.171019.nc
-        JRA.v1.3.slp.TL319.1993.171019.nc
-        JRA.v1.3.slp.TL319.1994.171019.nc
-        JRA.v1.3.slp.TL319.1995.171019.nc
-        JRA.v1.3.slp.TL319.1996.171019.nc
-        JRA.v1.3.slp.TL319.1997.171019.nc
-        JRA.v1.3.slp.TL319.1998.171019.nc
-        JRA.v1.3.slp.TL319.1999.171019.nc
-        JRA.v1.3.slp.TL319.2000.171019.nc
-        JRA.v1.3.slp.TL319.2001.171019.nc
-        JRA.v1.3.slp.TL319.2002.171019.nc
-        JRA.v1.3.slp.TL319.2003.171019.nc
-        JRA.v1.3.slp.TL319.2004.171019.nc
-        JRA.v1.3.slp.TL319.2005.171019.nc
-        JRA.v1.3.slp.TL319.2006.171019.nc
-        JRA.v1.3.slp.TL319.2007.171019.nc
-        JRA.v1.3.slp.TL319.2008.171019.nc
-        JRA.v1.3.slp.TL319.2009.171019.nc
-        JRA.v1.3.slp.TL319.2010.171019.nc
-        JRA.v1.3.slp.TL319.2011.171019.nc
-        JRA.v1.3.slp.TL319.2012.171019.nc
-        JRA.v1.3.slp.TL319.2013.171019.nc
-        JRA.v1.3.slp.TL319.2014.171019.nc
-        JRA.v1.3.slp.TL319.2015.171019.nc
-        JRA.v1.3.slp.TL319.2016.171019.nc
-      </value> 
+        JRA.v1.3.slp.TL319.%y.171019.nc
+      </value>
+      <value  stream="IAF_JRA_1p5.NCEP.SLP_">
+        JRA.v1.5.slp.TL319.%y.210504.nc
+      </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.NCEP.SLP_">
-        JRA.v1.3.slp.TL319.1958.190528.nc
-        JRA.v1.3.slp.TL319.1959.190528.nc
-        JRA.v1.3.slp.TL319.1960.190528.nc
-        JRA.v1.3.slp.TL319.1961.190528.nc
-        JRA.v1.3.slp.TL319.1962.190528.nc
-        JRA.v1.3.slp.TL319.1963.190528.nc
-        JRA.v1.3.slp.TL319.1964.190528.nc
-        JRA.v1.3.slp.TL319.1965.190528.nc
-        JRA.v1.3.slp.TL319.1966.190528.nc
-        JRA.v1.3.slp.TL319.1967.190528.nc
-        JRA.v1.3.slp.TL319.1968.190528.nc
-        JRA.v1.3.slp.TL319.1969.190528.nc
-        JRA.v1.3.slp.TL319.1970.190528.nc
-        JRA.v1.3.slp.TL319.1971.190528.nc
-        JRA.v1.3.slp.TL319.1972.190528.nc
-        JRA.v1.3.slp.TL319.1973.190528.nc
-        JRA.v1.3.slp.TL319.1974.190528.nc
-        JRA.v1.3.slp.TL319.1975.190528.nc
-        JRA.v1.3.slp.TL319.1976.190528.nc
-        JRA.v1.3.slp.TL319.1977.190528.nc
-        JRA.v1.3.slp.TL319.1978.190528.nc
-        JRA.v1.3.slp.TL319.1979.190528.nc
-        JRA.v1.3.slp.TL319.1980.190528.nc
-        JRA.v1.3.slp.TL319.1981.190528.nc
-        JRA.v1.3.slp.TL319.1982.190528.nc
-        JRA.v1.3.slp.TL319.1983.190528.nc
-        JRA.v1.3.slp.TL319.1984.190528.nc
-        JRA.v1.3.slp.TL319.1985.190528.nc
-        JRA.v1.3.slp.TL319.1986.190528.nc
-        JRA.v1.3.slp.TL319.1987.190528.nc
-        JRA.v1.3.slp.TL319.1988.190528.nc
-        JRA.v1.3.slp.TL319.1989.190528.nc
-        JRA.v1.3.slp.TL319.1990.190528.nc
-        JRA.v1.3.slp.TL319.1991.190528.nc
-        JRA.v1.3.slp.TL319.1992.190528.nc
-        JRA.v1.3.slp.TL319.1993.190528.nc
-        JRA.v1.3.slp.TL319.1994.190528.nc
-        JRA.v1.3.slp.TL319.1995.190528.nc
-        JRA.v1.3.slp.TL319.1996.190528.nc
-        JRA.v1.3.slp.TL319.1997.190528.nc
-        JRA.v1.3.slp.TL319.1998.190528.nc
-        JRA.v1.3.slp.TL319.1999.190528.nc
-        JRA.v1.3.slp.TL319.2000.190528.nc
-        JRA.v1.3.slp.TL319.2001.190528.nc
-        JRA.v1.3.slp.TL319.2002.190528.nc
-        JRA.v1.3.slp.TL319.2003.190528.nc
-        JRA.v1.3.slp.TL319.2004.190528.nc
-        JRA.v1.3.slp.TL319.2005.190528.nc
-        JRA.v1.3.slp.TL319.2006.190528.nc
-        JRA.v1.3.slp.TL319.2007.190528.nc
-        JRA.v1.3.slp.TL319.2008.190528.nc
-        JRA.v1.3.slp.TL319.2009.190528.nc
-        JRA.v1.3.slp.TL319.2010.190528.nc
-        JRA.v1.3.slp.TL319.2011.190528.nc
-        JRA.v1.3.slp.TL319.2012.190528.nc
-        JRA.v1.3.slp.TL319.2013.190528.nc
-        JRA.v1.3.slp.TL319.2014.190528.nc
-        JRA.v1.3.slp.TL319.2015.190528.nc
-        JRA.v1.3.slp.TL319.2016.190528.nc
-        JRA.v1.3.slp.TL319.2017.190528.nc
-        JRA.v1.3.slp.TL319.2018.190528.nc
+        JRA.v1.3.slp.TL319.%y.190528.nc
       </value> 
       <value  stream="CORE_IAF_JRA.NCEP.T_10">
-        JRA.v1.3.t_10.TL319.1958.171019.nc
-        JRA.v1.3.t_10.TL319.1959.171019.nc
-        JRA.v1.3.t_10.TL319.1960.171019.nc
-        JRA.v1.3.t_10.TL319.1961.171019.nc
-        JRA.v1.3.t_10.TL319.1962.171019.nc
-        JRA.v1.3.t_10.TL319.1963.171019.nc
-        JRA.v1.3.t_10.TL319.1964.171019.nc
-        JRA.v1.3.t_10.TL319.1965.171019.nc
-        JRA.v1.3.t_10.TL319.1966.171019.nc
-        JRA.v1.3.t_10.TL319.1967.171019.nc
-        JRA.v1.3.t_10.TL319.1968.171019.nc
-        JRA.v1.3.t_10.TL319.1969.171019.nc
-        JRA.v1.3.t_10.TL319.1970.171019.nc
-        JRA.v1.3.t_10.TL319.1971.171019.nc
-        JRA.v1.3.t_10.TL319.1972.171019.nc
-        JRA.v1.3.t_10.TL319.1973.171019.nc
-        JRA.v1.3.t_10.TL319.1974.171019.nc
-        JRA.v1.3.t_10.TL319.1975.171019.nc
-        JRA.v1.3.t_10.TL319.1976.171019.nc
-        JRA.v1.3.t_10.TL319.1977.171019.nc
-        JRA.v1.3.t_10.TL319.1978.171019.nc
-        JRA.v1.3.t_10.TL319.1979.171019.nc
-        JRA.v1.3.t_10.TL319.1980.171019.nc
-        JRA.v1.3.t_10.TL319.1981.171019.nc
-        JRA.v1.3.t_10.TL319.1982.171019.nc
-        JRA.v1.3.t_10.TL319.1983.171019.nc
-        JRA.v1.3.t_10.TL319.1984.171019.nc
-        JRA.v1.3.t_10.TL319.1985.171019.nc
-        JRA.v1.3.t_10.TL319.1986.171019.nc
-        JRA.v1.3.t_10.TL319.1987.171019.nc
-        JRA.v1.3.t_10.TL319.1988.171019.nc
-        JRA.v1.3.t_10.TL319.1989.171019.nc
-        JRA.v1.3.t_10.TL319.1990.171019.nc
-        JRA.v1.3.t_10.TL319.1991.171019.nc
-        JRA.v1.3.t_10.TL319.1992.171019.nc
-        JRA.v1.3.t_10.TL319.1993.171019.nc
-        JRA.v1.3.t_10.TL319.1994.171019.nc
-        JRA.v1.3.t_10.TL319.1995.171019.nc
-        JRA.v1.3.t_10.TL319.1996.171019.nc
-        JRA.v1.3.t_10.TL319.1997.171019.nc
-        JRA.v1.3.t_10.TL319.1998.171019.nc
-        JRA.v1.3.t_10.TL319.1999.171019.nc
-        JRA.v1.3.t_10.TL319.2000.171019.nc
-        JRA.v1.3.t_10.TL319.2001.171019.nc
-        JRA.v1.3.t_10.TL319.2002.171019.nc
-        JRA.v1.3.t_10.TL319.2003.171019.nc
-        JRA.v1.3.t_10.TL319.2004.171019.nc
-        JRA.v1.3.t_10.TL319.2005.171019.nc
-        JRA.v1.3.t_10.TL319.2006.171019.nc
-        JRA.v1.3.t_10.TL319.2007.171019.nc
-        JRA.v1.3.t_10.TL319.2008.171019.nc
-        JRA.v1.3.t_10.TL319.2009.171019.nc
-        JRA.v1.3.t_10.TL319.2010.171019.nc
-        JRA.v1.3.t_10.TL319.2011.171019.nc
-        JRA.v1.3.t_10.TL319.2012.171019.nc
-        JRA.v1.3.t_10.TL319.2013.171019.nc
-        JRA.v1.3.t_10.TL319.2014.171019.nc
-        JRA.v1.3.t_10.TL319.2015.171019.nc
-        JRA.v1.3.t_10.TL319.2016.171019.nc
-      </value> 
+        JRA.v1.3.t_10.TL319.%y.171019.nc
+      </value>
+      <value  stream="IAF_JRA_1p5.NCEP.T_10">
+        JRA.v1.5.t_10.TL319.%y.210504.nc
+      </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.NCEP.T_10">
-        JRA.v1.3.t_10.TL319.1958.190528.nc
-        JRA.v1.3.t_10.TL319.1959.190528.nc
-        JRA.v1.3.t_10.TL319.1960.190528.nc
-        JRA.v1.3.t_10.TL319.1961.190528.nc
-        JRA.v1.3.t_10.TL319.1962.190528.nc
-        JRA.v1.3.t_10.TL319.1963.190528.nc
-        JRA.v1.3.t_10.TL319.1964.190528.nc
-        JRA.v1.3.t_10.TL319.1965.190528.nc
-        JRA.v1.3.t_10.TL319.1966.190528.nc
-        JRA.v1.3.t_10.TL319.1967.190528.nc
-        JRA.v1.3.t_10.TL319.1968.190528.nc
-        JRA.v1.3.t_10.TL319.1969.190528.nc
-        JRA.v1.3.t_10.TL319.1970.190528.nc
-        JRA.v1.3.t_10.TL319.1971.190528.nc
-        JRA.v1.3.t_10.TL319.1972.190528.nc
-        JRA.v1.3.t_10.TL319.1973.190528.nc
-        JRA.v1.3.t_10.TL319.1974.190528.nc
-        JRA.v1.3.t_10.TL319.1975.190528.nc
-        JRA.v1.3.t_10.TL319.1976.190528.nc
-        JRA.v1.3.t_10.TL319.1977.190528.nc
-        JRA.v1.3.t_10.TL319.1978.190528.nc
-        JRA.v1.3.t_10.TL319.1979.190528.nc
-        JRA.v1.3.t_10.TL319.1980.190528.nc
-        JRA.v1.3.t_10.TL319.1981.190528.nc
-        JRA.v1.3.t_10.TL319.1982.190528.nc
-        JRA.v1.3.t_10.TL319.1983.190528.nc
-        JRA.v1.3.t_10.TL319.1984.190528.nc
-        JRA.v1.3.t_10.TL319.1985.190528.nc
-        JRA.v1.3.t_10.TL319.1986.190528.nc
-        JRA.v1.3.t_10.TL319.1987.190528.nc
-        JRA.v1.3.t_10.TL319.1988.190528.nc
-        JRA.v1.3.t_10.TL319.1989.190528.nc
-        JRA.v1.3.t_10.TL319.1990.190528.nc
-        JRA.v1.3.t_10.TL319.1991.190528.nc
-        JRA.v1.3.t_10.TL319.1992.190528.nc
-        JRA.v1.3.t_10.TL319.1993.190528.nc
-        JRA.v1.3.t_10.TL319.1994.190528.nc
-        JRA.v1.3.t_10.TL319.1995.190528.nc
-        JRA.v1.3.t_10.TL319.1996.190528.nc
-        JRA.v1.3.t_10.TL319.1997.190528.nc
-        JRA.v1.3.t_10.TL319.1998.190528.nc
-        JRA.v1.3.t_10.TL319.1999.190528.nc
-        JRA.v1.3.t_10.TL319.2000.190528.nc
-        JRA.v1.3.t_10.TL319.2001.190528.nc
-        JRA.v1.3.t_10.TL319.2002.190528.nc
-        JRA.v1.3.t_10.TL319.2003.190528.nc
-        JRA.v1.3.t_10.TL319.2004.190528.nc
-        JRA.v1.3.t_10.TL319.2005.190528.nc
-        JRA.v1.3.t_10.TL319.2006.190528.nc
-        JRA.v1.3.t_10.TL319.2007.190528.nc
-        JRA.v1.3.t_10.TL319.2008.190528.nc
-        JRA.v1.3.t_10.TL319.2009.190528.nc
-        JRA.v1.3.t_10.TL319.2010.190528.nc
-        JRA.v1.3.t_10.TL319.2011.190528.nc
-        JRA.v1.3.t_10.TL319.2012.190528.nc
-        JRA.v1.3.t_10.TL319.2013.190528.nc
-        JRA.v1.3.t_10.TL319.2014.190528.nc
-        JRA.v1.3.t_10.TL319.2015.190528.nc
-        JRA.v1.3.t_10.TL319.2016.190528.nc
-        JRA.v1.3.t_10.TL319.2017.190528.nc
-        JRA.v1.3.t_10.TL319.2018.190528.nc
+        JRA.v1.3.t_10.TL319.%y.190528.nc
       </value> 
       <value  stream="CORE_IAF_JRA.NCEP.U_10">
-        JRA.v1.3.u_10.TL319.1958.171019.nc
-        JRA.v1.3.u_10.TL319.1959.171019.nc
-        JRA.v1.3.u_10.TL319.1960.171019.nc
-        JRA.v1.3.u_10.TL319.1961.171019.nc
-        JRA.v1.3.u_10.TL319.1962.171019.nc
-        JRA.v1.3.u_10.TL319.1963.171019.nc
-        JRA.v1.3.u_10.TL319.1964.171019.nc
-        JRA.v1.3.u_10.TL319.1965.171019.nc
-        JRA.v1.3.u_10.TL319.1966.171019.nc
-        JRA.v1.3.u_10.TL319.1967.171019.nc
-        JRA.v1.3.u_10.TL319.1968.171019.nc
-        JRA.v1.3.u_10.TL319.1969.171019.nc
-        JRA.v1.3.u_10.TL319.1970.171019.nc
-        JRA.v1.3.u_10.TL319.1971.171019.nc
-        JRA.v1.3.u_10.TL319.1972.171019.nc
-        JRA.v1.3.u_10.TL319.1973.171019.nc
-        JRA.v1.3.u_10.TL319.1974.171019.nc
-        JRA.v1.3.u_10.TL319.1975.171019.nc
-        JRA.v1.3.u_10.TL319.1976.171019.nc
-        JRA.v1.3.u_10.TL319.1977.171019.nc
-        JRA.v1.3.u_10.TL319.1978.171019.nc
-        JRA.v1.3.u_10.TL319.1979.171019.nc
-        JRA.v1.3.u_10.TL319.1980.171019.nc
-        JRA.v1.3.u_10.TL319.1981.171019.nc
-        JRA.v1.3.u_10.TL319.1982.171019.nc
-        JRA.v1.3.u_10.TL319.1983.171019.nc
-        JRA.v1.3.u_10.TL319.1984.171019.nc
-        JRA.v1.3.u_10.TL319.1985.171019.nc
-        JRA.v1.3.u_10.TL319.1986.171019.nc
-        JRA.v1.3.u_10.TL319.1987.171019.nc
-        JRA.v1.3.u_10.TL319.1988.171019.nc
-        JRA.v1.3.u_10.TL319.1989.171019.nc
-        JRA.v1.3.u_10.TL319.1990.171019.nc
-        JRA.v1.3.u_10.TL319.1991.171019.nc
-        JRA.v1.3.u_10.TL319.1992.171019.nc
-        JRA.v1.3.u_10.TL319.1993.171019.nc
-        JRA.v1.3.u_10.TL319.1994.171019.nc
-        JRA.v1.3.u_10.TL319.1995.171019.nc
-        JRA.v1.3.u_10.TL319.1996.171019.nc
-        JRA.v1.3.u_10.TL319.1997.171019.nc
-        JRA.v1.3.u_10.TL319.1998.171019.nc
-        JRA.v1.3.u_10.TL319.1999.171019.nc
-        JRA.v1.3.u_10.TL319.2000.171019.nc
-        JRA.v1.3.u_10.TL319.2001.171019.nc
-        JRA.v1.3.u_10.TL319.2002.171019.nc
-        JRA.v1.3.u_10.TL319.2003.171019.nc
-        JRA.v1.3.u_10.TL319.2004.171019.nc
-        JRA.v1.3.u_10.TL319.2005.171019.nc
-        JRA.v1.3.u_10.TL319.2006.171019.nc
-        JRA.v1.3.u_10.TL319.2007.171019.nc
-        JRA.v1.3.u_10.TL319.2008.171019.nc
-        JRA.v1.3.u_10.TL319.2009.171019.nc
-        JRA.v1.3.u_10.TL319.2010.171019.nc
-        JRA.v1.3.u_10.TL319.2011.171019.nc
-        JRA.v1.3.u_10.TL319.2012.171019.nc
-        JRA.v1.3.u_10.TL319.2013.171019.nc
-        JRA.v1.3.u_10.TL319.2014.171019.nc
-        JRA.v1.3.u_10.TL319.2015.171019.nc
-        JRA.v1.3.u_10.TL319.2016.171019.nc
-      </value> 
+        JRA.v1.3.u_10.TL319.%y.171019.nc
+      </value>
+      <value  stream="IAF_JRA_1p5.NCEP.U_10">
+        JRA.v1.5.u_10.TL319.%y.210504.nc
+      </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.NCEP.U_10">
-        JRA.v1.3.u_10.TL319.1958.190528.nc
-        JRA.v1.3.u_10.TL319.1959.190528.nc
-        JRA.v1.3.u_10.TL319.1960.190528.nc
-        JRA.v1.3.u_10.TL319.1961.190528.nc
-        JRA.v1.3.u_10.TL319.1962.190528.nc
-        JRA.v1.3.u_10.TL319.1963.190528.nc
-        JRA.v1.3.u_10.TL319.1964.190528.nc
-        JRA.v1.3.u_10.TL319.1965.190528.nc
-        JRA.v1.3.u_10.TL319.1966.190528.nc
-        JRA.v1.3.u_10.TL319.1967.190528.nc
-        JRA.v1.3.u_10.TL319.1968.190528.nc
-        JRA.v1.3.u_10.TL319.1969.190528.nc
-        JRA.v1.3.u_10.TL319.1970.190528.nc
-        JRA.v1.3.u_10.TL319.1971.190528.nc
-        JRA.v1.3.u_10.TL319.1972.190528.nc
-        JRA.v1.3.u_10.TL319.1973.190528.nc
-        JRA.v1.3.u_10.TL319.1974.190528.nc
-        JRA.v1.3.u_10.TL319.1975.190528.nc
-        JRA.v1.3.u_10.TL319.1976.190528.nc
-        JRA.v1.3.u_10.TL319.1977.190528.nc
-        JRA.v1.3.u_10.TL319.1978.190528.nc
-        JRA.v1.3.u_10.TL319.1979.190528.nc
-        JRA.v1.3.u_10.TL319.1980.190528.nc
-        JRA.v1.3.u_10.TL319.1981.190528.nc
-        JRA.v1.3.u_10.TL319.1982.190528.nc
-        JRA.v1.3.u_10.TL319.1983.190528.nc
-        JRA.v1.3.u_10.TL319.1984.190528.nc
-        JRA.v1.3.u_10.TL319.1985.190528.nc
-        JRA.v1.3.u_10.TL319.1986.190528.nc
-        JRA.v1.3.u_10.TL319.1987.190528.nc
-        JRA.v1.3.u_10.TL319.1988.190528.nc
-        JRA.v1.3.u_10.TL319.1989.190528.nc
-        JRA.v1.3.u_10.TL319.1990.190528.nc
-        JRA.v1.3.u_10.TL319.1991.190528.nc
-        JRA.v1.3.u_10.TL319.1992.190528.nc
-        JRA.v1.3.u_10.TL319.1993.190528.nc
-        JRA.v1.3.u_10.TL319.1994.190528.nc
-        JRA.v1.3.u_10.TL319.1995.190528.nc
-        JRA.v1.3.u_10.TL319.1996.190528.nc
-        JRA.v1.3.u_10.TL319.1997.190528.nc
-        JRA.v1.3.u_10.TL319.1998.190528.nc
-        JRA.v1.3.u_10.TL319.1999.190528.nc
-        JRA.v1.3.u_10.TL319.2000.190528.nc
-        JRA.v1.3.u_10.TL319.2001.190528.nc
-        JRA.v1.3.u_10.TL319.2002.190528.nc
-        JRA.v1.3.u_10.TL319.2003.190528.nc
-        JRA.v1.3.u_10.TL319.2004.190528.nc
-        JRA.v1.3.u_10.TL319.2005.190528.nc
-        JRA.v1.3.u_10.TL319.2006.190528.nc
-        JRA.v1.3.u_10.TL319.2007.190528.nc
-        JRA.v1.3.u_10.TL319.2008.190528.nc
-        JRA.v1.3.u_10.TL319.2009.190528.nc
-        JRA.v1.3.u_10.TL319.2010.190528.nc
-        JRA.v1.3.u_10.TL319.2011.190528.nc
-        JRA.v1.3.u_10.TL319.2012.190528.nc
-        JRA.v1.3.u_10.TL319.2013.190528.nc
-        JRA.v1.3.u_10.TL319.2014.190528.nc
-        JRA.v1.3.u_10.TL319.2015.190528.nc
-        JRA.v1.3.u_10.TL319.2016.190528.nc
-        JRA.v1.3.u_10.TL319.2017.190528.nc
-        JRA.v1.3.u_10.TL319.2018.190528.nc
+        JRA.v1.3.u_10.TL319.%y.190528.nc
       </value> 
       <value  stream="CORE_IAF_JRA.NCEP.V_10">
-        JRA.v1.3.v_10.TL319.1958.171019.nc
-        JRA.v1.3.v_10.TL319.1959.171019.nc
-        JRA.v1.3.v_10.TL319.1960.171019.nc
-        JRA.v1.3.v_10.TL319.1961.171019.nc
-        JRA.v1.3.v_10.TL319.1962.171019.nc
-        JRA.v1.3.v_10.TL319.1963.171019.nc
-        JRA.v1.3.v_10.TL319.1964.171019.nc
-        JRA.v1.3.v_10.TL319.1965.171019.nc
-        JRA.v1.3.v_10.TL319.1966.171019.nc
-        JRA.v1.3.v_10.TL319.1967.171019.nc
-        JRA.v1.3.v_10.TL319.1968.171019.nc
-        JRA.v1.3.v_10.TL319.1969.171019.nc
-        JRA.v1.3.v_10.TL319.1970.171019.nc
-        JRA.v1.3.v_10.TL319.1971.171019.nc
-        JRA.v1.3.v_10.TL319.1972.171019.nc
-        JRA.v1.3.v_10.TL319.1973.171019.nc
-        JRA.v1.3.v_10.TL319.1974.171019.nc
-        JRA.v1.3.v_10.TL319.1975.171019.nc
-        JRA.v1.3.v_10.TL319.1976.171019.nc
-        JRA.v1.3.v_10.TL319.1977.171019.nc
-        JRA.v1.3.v_10.TL319.1978.171019.nc
-        JRA.v1.3.v_10.TL319.1979.171019.nc
-        JRA.v1.3.v_10.TL319.1980.171019.nc
-        JRA.v1.3.v_10.TL319.1981.171019.nc
-        JRA.v1.3.v_10.TL319.1982.171019.nc
-        JRA.v1.3.v_10.TL319.1983.171019.nc
-        JRA.v1.3.v_10.TL319.1984.171019.nc
-        JRA.v1.3.v_10.TL319.1985.171019.nc
-        JRA.v1.3.v_10.TL319.1986.171019.nc
-        JRA.v1.3.v_10.TL319.1987.171019.nc
-        JRA.v1.3.v_10.TL319.1988.171019.nc
-        JRA.v1.3.v_10.TL319.1989.171019.nc
-        JRA.v1.3.v_10.TL319.1990.171019.nc
-        JRA.v1.3.v_10.TL319.1991.171019.nc
-        JRA.v1.3.v_10.TL319.1992.171019.nc
-        JRA.v1.3.v_10.TL319.1993.171019.nc
-        JRA.v1.3.v_10.TL319.1994.171019.nc
-        JRA.v1.3.v_10.TL319.1995.171019.nc
-        JRA.v1.3.v_10.TL319.1996.171019.nc
-        JRA.v1.3.v_10.TL319.1997.171019.nc
-        JRA.v1.3.v_10.TL319.1998.171019.nc
-        JRA.v1.3.v_10.TL319.1999.171019.nc
-        JRA.v1.3.v_10.TL319.2000.171019.nc
-        JRA.v1.3.v_10.TL319.2001.171019.nc
-        JRA.v1.3.v_10.TL319.2002.171019.nc
-        JRA.v1.3.v_10.TL319.2003.171019.nc
-        JRA.v1.3.v_10.TL319.2004.171019.nc
-        JRA.v1.3.v_10.TL319.2005.171019.nc
-        JRA.v1.3.v_10.TL319.2006.171019.nc
-        JRA.v1.3.v_10.TL319.2007.171019.nc
-        JRA.v1.3.v_10.TL319.2008.171019.nc
-        JRA.v1.3.v_10.TL319.2009.171019.nc
-        JRA.v1.3.v_10.TL319.2010.171019.nc
-        JRA.v1.3.v_10.TL319.2011.171019.nc
-        JRA.v1.3.v_10.TL319.2012.171019.nc
-        JRA.v1.3.v_10.TL319.2013.171019.nc
-        JRA.v1.3.v_10.TL319.2014.171019.nc
-        JRA.v1.3.v_10.TL319.2015.171019.nc
-        JRA.v1.3.v_10.TL319.2016.171019.nc
+        JRA.v1.3.v_10.TL319.%y.171019.nc
+      </value>
+      <value  stream="IAF_JRA_1p5.NCEP.V_10">
+        JRA.v1.5.v_10.TL319.%y.210504.nc
       </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.NCEP.V_10">
-        JRA.v1.3.v_10.TL319.1958.190528.nc
-        JRA.v1.3.v_10.TL319.1959.190528.nc
-        JRA.v1.3.v_10.TL319.1960.190528.nc
-        JRA.v1.3.v_10.TL319.1961.190528.nc
-        JRA.v1.3.v_10.TL319.1962.190528.nc
-        JRA.v1.3.v_10.TL319.1963.190528.nc
-        JRA.v1.3.v_10.TL319.1964.190528.nc
-        JRA.v1.3.v_10.TL319.1965.190528.nc
-        JRA.v1.3.v_10.TL319.1966.190528.nc
-        JRA.v1.3.v_10.TL319.1967.190528.nc
-        JRA.v1.3.v_10.TL319.1968.190528.nc
-        JRA.v1.3.v_10.TL319.1969.190528.nc
-        JRA.v1.3.v_10.TL319.1970.190528.nc
-        JRA.v1.3.v_10.TL319.1971.190528.nc
-        JRA.v1.3.v_10.TL319.1972.190528.nc
-        JRA.v1.3.v_10.TL319.1973.190528.nc
-        JRA.v1.3.v_10.TL319.1974.190528.nc
-        JRA.v1.3.v_10.TL319.1975.190528.nc
-        JRA.v1.3.v_10.TL319.1976.190528.nc
-        JRA.v1.3.v_10.TL319.1977.190528.nc
-        JRA.v1.3.v_10.TL319.1978.190528.nc
-        JRA.v1.3.v_10.TL319.1979.190528.nc
-        JRA.v1.3.v_10.TL319.1980.190528.nc
-        JRA.v1.3.v_10.TL319.1981.190528.nc
-        JRA.v1.3.v_10.TL319.1982.190528.nc
-        JRA.v1.3.v_10.TL319.1983.190528.nc
-        JRA.v1.3.v_10.TL319.1984.190528.nc
-        JRA.v1.3.v_10.TL319.1985.190528.nc
-        JRA.v1.3.v_10.TL319.1986.190528.nc
-        JRA.v1.3.v_10.TL319.1987.190528.nc
-        JRA.v1.3.v_10.TL319.1988.190528.nc
-        JRA.v1.3.v_10.TL319.1989.190528.nc
-        JRA.v1.3.v_10.TL319.1990.190528.nc
-        JRA.v1.3.v_10.TL319.1991.190528.nc
-        JRA.v1.3.v_10.TL319.1992.190528.nc
-        JRA.v1.3.v_10.TL319.1993.190528.nc
-        JRA.v1.3.v_10.TL319.1994.190528.nc
-        JRA.v1.3.v_10.TL319.1995.190528.nc
-        JRA.v1.3.v_10.TL319.1996.190528.nc
-        JRA.v1.3.v_10.TL319.1997.190528.nc
-        JRA.v1.3.v_10.TL319.1998.190528.nc
-        JRA.v1.3.v_10.TL319.1999.190528.nc
-        JRA.v1.3.v_10.TL319.2000.190528.nc
-        JRA.v1.3.v_10.TL319.2001.190528.nc
-        JRA.v1.3.v_10.TL319.2002.190528.nc
-        JRA.v1.3.v_10.TL319.2003.190528.nc
-        JRA.v1.3.v_10.TL319.2004.190528.nc
-        JRA.v1.3.v_10.TL319.2005.190528.nc
-        JRA.v1.3.v_10.TL319.2006.190528.nc
-        JRA.v1.3.v_10.TL319.2007.190528.nc
-        JRA.v1.3.v_10.TL319.2008.190528.nc
-        JRA.v1.3.v_10.TL319.2009.190528.nc
-        JRA.v1.3.v_10.TL319.2010.190528.nc
-        JRA.v1.3.v_10.TL319.2011.190528.nc
-        JRA.v1.3.v_10.TL319.2012.190528.nc
-        JRA.v1.3.v_10.TL319.2013.190528.nc
-        JRA.v1.3.v_10.TL319.2014.190528.nc
-        JRA.v1.3.v_10.TL319.2015.190528.nc
-        JRA.v1.3.v_10.TL319.2016.190528.nc
-        JRA.v1.3.v_10.TL319.2017.190528.nc
-        JRA.v1.3.v_10.TL319.2018.190528.nc
+        JRA.v1.3.v_10.TL319.%y.190528.nc
       </value> 
       <value stream="CORE_RYF8485_JRA.GISS.LWDN">RAF_8485.JRA.v1.3.radiation.lwdn.TL319.180404.nc</value>
       <value stream="CORE_RYF8485_JRA.GISS.SWDN">RAF_8485.JRA.v1.3.radiation.swdn.TL319.180404.nc</value>
@@ -2273,6 +1366,8 @@
       <value stream="presaero.SSP5-3.4">null</value>
       <value stream="presaero.SSP5-8.5">aerodep_clm_SSP585_b.e21.BSSP585cmip6.f09_g17.CMIP6-SSP5-8.5.001_2014-2101_monthly_0.9x1.25_c190419.nc</value>
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
+      <value stream="CFSv2.UV">sandy_wnd10m_ww3.nc</value>
+      <value stream="CFSR.UV">wnd10mx0.5.gdas.200506.ww3.nc</value>
     </values>
   </entry>
 
@@ -2553,6 +1648,30 @@
       <value  stream="CORE_IAF_JRA.*.NCEP.V_10">
         v_10  v
       </value>
+      <value  stream="IAF_JRA_1p5*.GCGCS.PREC">
+        prec  prec
+      </value>
+      <value  stream="IAF_JRA_1p5*.GISS.LWDN">
+        lwdn  lwdn
+      </value>
+      <value  stream="IAF_JRA_1p5*.GISS.SWDN">
+        swdn  swdn
+      </value>
+      <value  stream="IAF_JRA_1p5*.NCEP.Q_10">
+        q_10  shum
+      </value>
+      <value  stream="IAF_JRA_1p5*.NCEP.SLP_">
+        slp  pslv
+      </value>
+      <value  stream="IAF_JRA_1p5*.NCEP.T_10">
+        t_10  tbot
+      </value>
+      <value  stream="IAF_JRA_1p5*.NCEP.U_10">
+        u_10  u
+      </value>
+      <value  stream="IAF_JRA_1p5*.NCEP.V_10">
+        v_10  v
+      </value>
       <value stream="CORE_RYF.*.GISS.LWDN">
         lwdn  lwdn
       </value>
@@ -2649,6 +1768,16 @@
       <value stream="topo.observed">
         TOPO topo
       </value>
+      <value  stream="CFSv2.UV">
+        U_GRD_L103  u
+        V_GRD_L103  v
+        TBOT tbot
+      </value>
+      <value  stream="CFSR.UV">
+        U_GRD_L103  u
+        V_GRD_L103  v
+        TBOT tbot
+      </value>
     </values>
   </entry>
 
@@ -2670,6 +1799,7 @@
       <value stream="CORE2_IAF.CORE2.ArcFactor">1</value>
       <value stream="CORE2_IAF">1</value>
       <value stream="CORE_IAF_JRA.*">1</value>
+      <value stream="IAF_JRA_1p5.*">1</value>
       <value stream="CORE_RYF*">1</value>
       <value stream="co2tseries.20tr">1850</value>
       <!-- ncycles*(year_end-year_start+1)-(year_end-co2_year_start) -->
@@ -2691,6 +1821,8 @@
       <value stream="presaero.SSP">2015</value>
       <value stream="topo.observed">1</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_ALIGN</value>
+      <value stream="CFSv2.UV">1</value>
+      <value stream="CFSR.UV">1</value>
     </values>
   </entry>
 
@@ -2735,7 +1867,8 @@
       <value stream="CORE2_IAF.NCEP.U_10">1948</value>
       <value stream="CORE2_IAF.NCEP.V_10">1948</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">1948</value>
-      <value stream="CORE_IAF_JRA.*">1958</value>
+      <value stream="CORE_IAF_JRA.*">$DATM_CLMNCEP_YR_START</value>
+      <value stream="IAF_JRA_1p5.*">$DATM_CLMNCEP_YR_START</value>
       <value stream="CORE_RYF8485_JRA">1984</value>
       <value stream="CORE_RYF9091_JRA">1990</value>
       <value stream="CORE_RYF0304_JRA">2003</value>
@@ -2759,6 +1892,8 @@
       <value stream="presaero.cesm2_omip" datm_mode="CORE_IAF_JRA.*2018">1652</value> <!-- 1958-(6-1)*(2018-1958+1)-1 -->
       <value stream="topo.observed">1</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_START</value>
+      <value stream="CFSv2.UV">1</value>
+      <value stream="CFSR.UV">1</value>
     </values									>
   </entry>
 
@@ -2805,8 +1940,9 @@
       <value stream="CORE2_IAF.CORE2.ArcFactor">2009</value>
       <value stream="co2tseries.20tr" cime_model="e3sm">2007</value>
       <value stream="co2tseries.20tr" cime_model="cesm">2014</value>
-      <value stream="CORE_IAF_JRA.*2018">2018</value>
-      <value stream="CORE_IAF_JRA.*">2016</value>
+      <value stream="CORE_IAF_JRA.*2018">$DATM_CLMNCEP_YR_END</value>
+      <value stream="CORE_IAF_JRA.*">$DATM_CLMNCEP_YR_END</value>
+      <value stream="IAF_JRA_1p5.*">$DATM_CLMNCEP_YR_END</value>
       <value stream="CORE_RYF8485_JRA">1984</value>
       <value stream="CORE_RYF9091_JRA">1990</value>
       <value stream="CORE_RYF0304_JRA">2003</value>
@@ -2831,6 +1967,8 @@
       <value stream="presaero.cesm2_omip" datm_mode="CORE_IAF_JRA.*2018">2019</value> <!-- 2018+1 -->
       <value stream="topo.observed">1</value>
       <value stream="topo.cplhist">$DATM_CPLHIST_YR_END</value>
+      <value stream="CFSv2.UV">1</value>
+      <value stream="CFSR.UV">1</value>
     </values>
   </entry>
 
@@ -2842,6 +1980,7 @@
     <values>
       <value>0</value>
       <value stream="CORE_IAF_JRA.*.GISS.SWDN">-5400</value>
+      <value stream="IAF_JRA_1p5.*.GISS.SWDN">-5400</value>
       <value stream="CORE_RYF.*.GISS.SWDN">-5400</value>
       <value stream="CPLHISTForcing.Solar">2700</value>
       <value stream="CPLHISTForcing.nonSolarFlux">900</value>
@@ -2864,7 +2003,7 @@
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-    <valid_values>CLMNCEP,COPYALL,CORE2_NYF,CORE2_IAF,CORE_IAF_JRA,CORE_RYF_JRA,NULL</valid_values>
+    <valid_values>CLMNCEP,COPYALL,CORE2_NYF,CORE2_IAF,CORE_IAF_JRA,IAF_JRA_1p5,CORE_RYF_JRA,NULL</valid_values>
     <desc>
       general method that operates on the data.  this is generally
       implemented in the data models but is set in the strdata method for
@@ -2902,6 +2041,8 @@
       Clm Dyn doi 10.1007/s00382-008-0441-3.
       datamode = "CORE_IAF_JRA*"
       JRA55 intra-annual year forcing
+      datamode = "IAF_JRA_1p5*"
+      JRA55 intra-annual year forcing v1.5
       datamode = "CLMNCEP"
       In conjunction with NCEP climatological atmosphere data, provides the
       atmosphere forcing favored by the Land Model Working Group when
@@ -2916,8 +2057,11 @@
       <value datm_mode="CORE2_NYF">CORE2_NYF</value>
       <value datm_mode="CORE2_IAF">CORE2_IAF</value>
       <value datm_mode="CORE_IAF_JRA.*">CORE_IAF_JRA</value>
+      <value datm_mode="IAF_JRA_1p5">IAF_JRA_1p5</value>
       <value datm_mode="CORE_RYF*">CORE_RYF_JRA</value>
       <value datm_mode="CPLHIST">COPYALL</value>
+      <value datm_mode="CFSv2">COPYALL</value>
+      <value datm_mode="CFSR">COPYALL</value>
     </values>
   </entry>
 
@@ -3123,6 +2267,7 @@
       <value stream="topo.observed">lower</value>
       <value stream="CORE2_IAF.GISS.SWDN">coszen</value>
       <value stream="CORE_IAF_JRA.*.GISS.SWDN">coszen</value>
+      <value stream="IAF_JRA_1p5.*.GISS.SWDN">coszen</value>
       <value stream="CORE_RYF.*.GISS.SWDN">coszen</value>
     </values>
   </entry>
@@ -3216,7 +2361,10 @@
       <value datm_mode="CORE2_NYF">u:v</value>
       <value datm_mode="CORE2_IAF">u:v</value>
       <value datm_mode="CORE_IAF_JRA.*">u:v</value>
+      <value datm_mode="IAF_JRA_1p5.*">u:v</value>
       <value datm_mode="CORE_RYF*">u:v</value>
+      <value datm_mode="CFSv2">u:v</value>
+      <value datm_mode="CFSR">u:v</value>
     </values>
   </entry>
 

@@ -43,7 +43,7 @@
 ! Modified by Christopher J. Vogl (LLNL) 2020
 !=================================================================
 
-function farkifun(t, y, ydot, hvcoord, hybrid, deriv, qn0, imex, dt, eta_ave_w) &
+function farkifun(t, y, ydot, hvcoord, hybrid, deriv, imex, dt, eta_ave_w) &
   result(ierr)
   !-----------------------------------------------------------------
   ! Description: farkifun provides the implicit portion of the right
@@ -75,7 +75,6 @@ function farkifun(t, y, ydot, hvcoord, hybrid, deriv, qn0, imex, dt, eta_ave_w) 
   type(hvcoord_t),    intent(in)    :: hvcoord
   type(hybrid_t),     intent(in)    :: hybrid
   type(derivative_t), intent(in)    :: deriv
-  integer,            intent(in)    :: qn0
   integer,            intent(in)    :: imex
   real(real_kind),    intent(in)    :: dt
   real(real_kind),    intent(in)    :: eta_ave_w
@@ -106,7 +105,7 @@ function farkifun(t, y, ydot, hvcoord, hybrid, deriv, qn0, imex, dt, eta_ave_w) 
   bval = 1.d0
 
   ! The function call to compute_andor_apply_rhs is as follows:
-  !  compute_andor_apply_rhs(np1, nm1, n0, qn0, dt2, elem, hvcoord, hybrid, &
+  !  compute_andor_apply_rhs(np1, nm1, n0, dt2, elem, hvcoord, hybrid, &
   !     deriv, nets, nete, compute_diagnostics, eta_ave_w, scale1, scale2, scale3)
   !
   !  This call returns the following:
@@ -121,7 +120,7 @@ function farkifun(t, y, ydot, hvcoord, hybrid, deriv, qn0, imex, dt, eta_ave_w) 
   !  DSS is the averaging procedure for the active and inactive nodes
   !
 
-  call compute_andor_apply_rhs(ydot%tl_idx, ydot%tl_idx, y%tl_idx, qn0, &
+  call compute_andor_apply_rhs(ydot%tl_idx, ydot%tl_idx, y%tl_idx, &
         1.d0, y%elem, hvcoord, hybrid, deriv, y%nets, y%nete, &
         .false., bval*eta_ave_w, scale1, scale2, 0.d0)
 
@@ -135,7 +134,7 @@ end function farkifun
 
 !=================================================================
 
-function farkefun(t, y, ydot, hvcoord, hybrid, deriv, qn0, imex, dt, eta_ave_w) &
+function farkefun(t, y, ydot, hvcoord, hybrid, deriv, imex, dt, eta_ave_w) &
   result(ierr)
   !-----------------------------------------------------------------
   ! Description: farkefun provides the explicit portion of the right
@@ -167,7 +166,6 @@ function farkefun(t, y, ydot, hvcoord, hybrid, deriv, qn0, imex, dt, eta_ave_w) 
   type(hvcoord_t),    intent(in)    :: hvcoord
   type(hybrid_t),     intent(in)    :: hybrid
   type(derivative_t), intent(in)    :: deriv
-  integer,            intent(in)    :: qn0
   integer,            intent(in)    :: imex
   real(real_kind),    intent(in)    :: dt
   real(real_kind),    intent(in)    :: eta_ave_w
@@ -198,7 +196,7 @@ function farkefun(t, y, ydot, hvcoord, hybrid, deriv, qn0, imex, dt, eta_ave_w) 
   bval = 1.d0
 
   ! The function call to compute_andor_apply_rhs is as follows:
-  !  compute_andor_apply_rhs(np1, nm1, n0, qn0, dt2, elem, hvcoord, hybrid, &
+  !  compute_andor_apply_rhs(np1, nm1, n0, dt2, elem, hvcoord, hybrid, &
   !     deriv, nets, nete, compute_diagnostics, eta_ave_w, scale1, scale2, scale3)
   !
   !  This call returns the following:
@@ -213,7 +211,7 @@ function farkefun(t, y, ydot, hvcoord, hybrid, deriv, qn0, imex, dt, eta_ave_w) 
   !  DSS is the averaging procedure for the active and inactive nodes
   !
 
-  call compute_andor_apply_rhs(ydot%tl_idx, ydot%tl_idx, y%tl_idx, qn0, &
+  call compute_andor_apply_rhs(ydot%tl_idx, ydot%tl_idx, y%tl_idx, &
         1.d0, y%elem, hvcoord, hybrid, deriv, y%nets, y%nete, &
         .false., bval*eta_ave_w, scale1, scale2, 0.d0)
 
@@ -243,7 +241,7 @@ function FColumnSolSolve(b, t, y, gamma, x) result(ierr)
   !-----------------------------------------------------------------
 
   !======= Inclusions ===========
-  use arkode_mod,         only: get_hvcoord_ptr, get_qn0
+  use arkode_mod,         only: get_hvcoord_ptr
   use control_mod,        only: theta_hydrostatic_mode
   use eos,                only: pnh_and_exner_from_eos
   use imex_mod,           only: get_dirk_jacobian
@@ -282,11 +280,10 @@ function FColumnSolSolve(b, t, y, gamma, x) result(ierr)
   real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: b1(nlev,np,np)
-  integer :: qn0, i, j, k, ie, info(np,np), Ipiv(nlev,np,np)
+  integer :: i, j, k, ie, info(np,np), Ipiv(nlev,np,np)
 
   !======= Internals ============
   call get_hvcoord_ptr(hvcoord)
-  call get_qn0(qn0)
 
   ! set return value to success
   ierr = 0

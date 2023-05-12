@@ -1,28 +1,28 @@
 #include "precip_init.h"
 
 void precip_init() {
-  auto &rho           = :: rho;
-  auto &tabs0         = :: tabs0;
-  auto &pres          = :: pres;
-  auto &accrrc        = :: accrrc;
-  auto &accrsi        = :: accrsi;
-  auto &accrsc        = :: accrsc;
-  auto &coefice       = :: coefice;
-  auto &evaps1        = :: evaps1;
-  auto &evaps2        = :: evaps2;
-  auto &accrgi        = :: accrgi;
-  auto &accrgc        = :: accrgc;
-  auto &evapg1        = :: evapg1;
-  auto &evapg2        = :: evapg2;
-  auto &evapr1        = :: evapr1;
-  auto &evapr2        = :: evapr2;
-  auto &gams1         = :: gams1;
-  auto &gams2         = :: gams2;
-  auto &gamr1         = :: gamr1;
-  auto &gamr2         = :: gamr2;
-  auto &gamg1         = :: gamg1;
-  auto &gamg2         = :: gamg2;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( rho           , :: rho );
+  YAKL_SCOPE( tabs0         , :: tabs0 );
+  YAKL_SCOPE( pres          , :: pres );
+  YAKL_SCOPE( accrrc        , :: accrrc ); 
+  YAKL_SCOPE( accrsi        , :: accrsi );
+  YAKL_SCOPE( accrsc        , :: accrsc );
+  YAKL_SCOPE( coefice       , :: coefice );
+  YAKL_SCOPE( evaps1        , :: evaps1 );
+  YAKL_SCOPE( evaps2        , :: evaps2 );
+  YAKL_SCOPE( accrgi        , :: accrgi );
+  YAKL_SCOPE( accrgc        , :: accrgc );
+  YAKL_SCOPE( evapg1        , :: evapg1 );
+  YAKL_SCOPE( evapg2        , :: evapg2 );
+  YAKL_SCOPE( evapr1        , :: evapr1 );
+  YAKL_SCOPE( evapr2        , :: evapr2 );
+  YAKL_SCOPE( gams1         , :: gams1 );
+  YAKL_SCOPE( gams2         , :: gams2 );
+  YAKL_SCOPE( gamr1         , :: gamr1 );
+  YAKL_SCOPE( gamr2         , :: gamr2 );
+  YAKL_SCOPE( gamg1         , :: gamg1 );
+  YAKL_SCOPE( gamg2         , :: gamg2 );
+  YAKL_SCOPE( ncrms         , :: ncrms );
 
   gam3  = gammafff(3.0             );
   gamr1 = gammafff(3.0+b_rain      );

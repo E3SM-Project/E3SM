@@ -60,6 +60,21 @@ VECTOR_SIMD_LOOP
   return vp;
 }
 
+template <typename SpT, int l>
+KOKKOS_INLINE_FUNCTION
+Vector<VectorTag<SIMD<double, SpT>, l> >
+log (const Vector<VectorTag<SIMD<double,SpT>,l>>& v)
+{
+  using VectorType = Vector<VectorTag<SIMD<double,SpT>,l>>;
+  VectorType vp;
+VECTOR_SIMD_LOOP
+  for (int i = 0; i < VectorType::vector_length; ++i) {
+    vp[i] = std::log(v[i]);
+  }
+
+  return vp;
+}
+
 } // namespace KokkosKernels
 } // namespace Batched
 } // namespace Experimental

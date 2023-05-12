@@ -1,0 +1,12 @@
+use_cn            = .false. 
+finidat           = ''
+hist_mfilt        = 365
+hist_nhtfrq       = -24
+hist_empty_htapes = .true.
+fates_spitfire_mode = 0
+use_fates_fixed_biogeog = .true.
+use_fates_nocomp = .true.
+use_fates_sp = .true.
+hist_fincl1       = 'FATES_AREA_PLANTS', 'FATES_AREA_TREES', 'FATES_VEGC_PF',
+'FATES_LEAFC_PF', 'FATES_LITTER_OUT', 'FATES_NPP', 'FATES_GPP', 'FATES_NEP',
+'HR', 'TSAI', 'HTOP'

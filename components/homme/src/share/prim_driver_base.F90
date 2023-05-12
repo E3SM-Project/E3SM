@@ -26,12 +26,9 @@ module prim_driver_base
   use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
                               red_sum, red_sum_int, red_flops, initreductionbuffer, &
                               red_max_index, red_min_index
-#ifndef CAM
-#ifndef SCREAM
+#if !defined(CAM) && !defined(SCREAM)
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : readrestart
-#endif
-! For SCREAM, we might do unit tests, so enable setting of initial conditions
   use test_mod,         only: set_test_initial_conditions, compute_test_forcing
 #endif
 
@@ -41,7 +38,7 @@ module prim_driver_base
   public :: prim_init1, prim_init2 , prim_run_subcycle, prim_finalize
   public :: prim_init1_geometry, prim_init1_elem_arrays, prim_init1_buffers, prim_init1_cleanup
   public :: prim_init1_compose
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
   public :: prim_init1_no_cam
 #endif
 
@@ -96,7 +93,7 @@ contains
     !       as well as to inject code in between pieces that is needed to
     !       properly setup the C++ structures.
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     ! Initialize a few things that CAM would take care of (e.g., parsing namelist)
     call prim_init1_no_cam (par)
 #endif
@@ -142,7 +139,7 @@ contains
   end subroutine prim_init1
 
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
   subroutine prim_init1_no_cam(par)
     use mesh_mod,       only : MeshUseMeshFile, MeshCubeElemCount
     use cube_mod,       only : CubeElemCount
@@ -511,7 +508,7 @@ contains
 
     gp=gausslobatto(np)  ! GLL points
 
-        if(par%masterproc) write(6,*)"initializing elements..."
+        if(par%masterproc) write(iulog,*)"initializing elements..."
     
          if (MeshUseMeshFile) then
           if (geometry=="sphere") then
@@ -739,10 +736,11 @@ contains
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
 
     use control_mod,          only: runtype, test_case, &
-                                    debug_level, vfile_int, vform, vfile_mid, &
+                                    debug_level, vfile_int, vfile_mid, &
                                     topology, dt_remap_factor, dt_tracer_factor,&
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
-                                    hypervis_subcycle_q, hypervis_subcycle_tom
+                                    hypervis_subcycle_q, hypervis_subcycle_tom, &
+                                    transport_alg, prim_step_type
     use global_norms_mod,     only: test_global_integral, print_cfl
     use hybvcoord_mod,        only: hvcoord_t
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
@@ -987,17 +985,31 @@ contains
     ! may also adjust tensor coefficients based on CFL
     call print_cfl(elem,hybrid,nets,nete,dtnu)
 
+    ! Use the flexible time stepper if dt_remap_factor == 0 (vertically Eulerian
+    ! dynamics) or dt_remap < dt_tracer. This applies to SL transport only.
+    if( transport_alg > 1 .and. dt_remap_factor < dt_tracer_factor ) then
+       prim_step_type = 2
+    else
+       prim_step_type = 1
+    endif
+
     if (hybrid%masterthread) then
        ! CAM has set tstep based on dtime before calling prim_init2(),
        ! so only now does HOMME learn the timstep.  print them out:
-       write(iulog,'(a,2f9.2)') "dt_remap: (0=disabled)   ",tstep*dt_remap_factor
-       if (qsize>0) then
-          write(iulog,'(a,2f9.2)') "dt_tracer (SE), per RK stage: ", &
-               tstep*dt_tracer_factor,(tstep*dt_tracer_factor)/2
-       end if
-       write(iulog,'(a,2f9.2)')    "dt_dyn:                  ",tstep
-       write(iulog,'(a,2f9.2)')    "dt_dyn (viscosity):      ",dt_dyn_vis
-       write(iulog,'(a,2f9.2)')    "dt_tracer (viscosity):   ",dt_tracer_vis
+       write(iulog,'(a,2f9.2)')        "dt_remap: (0=disabled)   ",tstep*dt_remap_factor
+       if (transport_alg > 0) then
+          if (qsize>0) then
+              write(iulog,'(a,2f9.2)') "dt_tracer (SL):          ",tstep*dt_tracer_factor
+          endif
+       elseif(transport_alg == 0) then
+          if (qsize>0) then
+             write(iulog,'(a,2f9.2)')  "dt_tracer (EUL), per RK stage: ", &
+                 tstep*dt_tracer_factor,(tstep*dt_tracer_factor)/2
+          end if
+       endif
+       write(iulog,'(a,2f9.2)')        "dt_dyn:                  ",tstep
+       write(iulog,'(a,2f9.2)')        "dt_dyn (viscosity):      ",dt_dyn_vis
+       write(iulog,'(a,2f9.2)')        "dt_tracer (viscosity):   ",dt_tracer_vis
        if (hypervis_subcycle_tom==0) then                                                     
           ! applied with hyperviscosity                                                       
           write(iulog,'(a,2f9.2)') "dt_vis_TOM:  ",dt_dyn_vis                                 
@@ -1005,9 +1017,15 @@ contains
           write(iulog,'(a,2f9.2)') "dt_vis_TOM:  ",tstep/hypervis_subcycle_tom               
        endif                                                                 
 
+       if (prim_step_type == 2) then
+          write(iulog,*) "Running with prim_step_flexible"
+       elseif(prim_step_type == 1) then
+          write(iulog,*) "Running with old code for prim_run_subcycle, not _flexible"
+       endif
 
 #ifdef CAM
        write(iulog,'(a,2f9.2)') "CAM dtime (dt_phys):         ",tstep*nsplit*max(dt_remap_factor, dt_tracer_factor)
+       write(iulog,'(a,i5)')    "nsplit:                      ",nsplit
 #endif
     end if
 
@@ -1038,7 +1056,7 @@ contains
     !       tl%n0    time t + dt_q
 
     use control_mod,        only: statefreq, qsplit, rsplit, disable_diagnostics, &
-         dt_remap_factor, dt_tracer_factor, transport_alg
+         dt_remap_factor, dt_tracer_factor, transport_alg, prim_step_type
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_state_mod,     only: prim_printstate
@@ -1065,11 +1083,7 @@ contains
     real(kind=real_kind) :: dp_np1(np,np)
     integer :: ie,i,j,k,n,q,t,scm_dum
     integer :: n0_qdp,np1_qdp,r,nstep_end,nets_in,nete_in,step_factor
-    logical :: compute_diagnostics, independent_time_steps
-
-    ! Use the flexible time stepper if dt_remap_factor == 0 (vertically Eulerian
-    ! dynamics) or dt_remap < dt_tracer. This applies to SL transport only.
-    independent_time_steps = transport_alg > 1 .and. dt_remap_factor < dt_tracer_factor
+    logical :: compute_diagnostics
 
     ! compute timesteps for tracer transport and vertical remap
     dt_q = dt*dt_tracer_factor
@@ -1093,10 +1107,10 @@ contains
     ! compute scalar diagnostics if currently active
     if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,3,.true.,nets,nete)
 
-    if (.not. independent_time_steps) then
+    if (prim_step_type == 1) then
        call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
        ! compute HOMME test case forcing
        ! by calling it here, it mimics eam forcings computations in standalone
        ! homme.
@@ -1163,10 +1177,12 @@ contains
       endif
 
       call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets_in,nete_in)
-    else
+    elseif(prim_step_type == 2) then
       ! This time stepping routine permits the vertical remap time
       ! step to be shorter than the tracer transport time step.
       call prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, compute_diagnostics)
+    else
+      call abortmp('prim_step_type is not set')
     end if ! independent_time_steps
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1329,7 +1345,7 @@ contains
 
     call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     ! Compute test forcing over tracer time step.
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_q,nets,nete,tl)
 #endif
@@ -1593,11 +1609,17 @@ contains
   sum_fq = 0
 #endif
 
+  call t_startf("ApplyCAMForcing_tracers")
+
 #ifdef MODEL_THETA_L
   if (dt_remap_factor==0) then
      adjust_ps=.true.   ! stay on reference levels for Eulerian case
   else
+#ifdef SCREAM
+     adjust_ps=.false.  ! Lagrangian case can support adjusting dp3d or ps
+#else
      adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
+#endif
   endif
 #else
   adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
@@ -1755,6 +1777,8 @@ contains
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
    
 #endif
+
+  call t_stopf("ApplyCAMForcing_tracers")
 
   end subroutine applyCAMforcing_tracers
   

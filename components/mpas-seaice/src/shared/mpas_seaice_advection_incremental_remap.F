@@ -2394,7 +2394,7 @@ contains
     real(kind=RKIND), pointer :: &
          dynamicsTimeStep
 
-    logical, pointer :: &
+    logical :: &
          abortFlag ! abort flag
 
     ! assign pointers

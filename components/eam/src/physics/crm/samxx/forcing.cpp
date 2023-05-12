@@ -2,17 +2,17 @@
 #include "forcing.h"
 
 void forcing() {
-  auto &ncrms         = ::ncrms;
-  auto &t             = ::t;
-  auto &ttend         = ::ttend;
-  auto &dtn           = ::dtn;
-  auto &micro_field   = ::micro_field;
-  auto &qtend         = ::qtend;
-  auto &dudt          = ::dudt;
-  auto &dvdt          = ::dvdt;
-  auto &na            = ::na;
-  auto &utend         = ::utend;
-  auto &vtend         = ::vtend;
+  YAKL_SCOPE( ncrms         , ::ncrms );
+  YAKL_SCOPE( t             , ::t );
+  YAKL_SCOPE( ttend         , ::ttend );
+  YAKL_SCOPE( dtn           , ::dtn );
+  YAKL_SCOPE( micro_field   , ::micro_field );
+  YAKL_SCOPE( qtend         , ::qtend );
+  YAKL_SCOPE( dudt          , ::dudt );
+  YAKL_SCOPE( dvdt          , ::dvdt );
+  YAKL_SCOPE( na            , ::na );
+  YAKL_SCOPE( utend         , ::utend );
+  YAKL_SCOPE( vtend         , ::vtend );
 
   real2d qneg("qneg",nzm,ncrms);
   real2d qpoz("poz" ,nzm,ncrms);
@@ -29,7 +29,7 @@ void forcing() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     t(k, j+offy_s, i+offx_s, icrm) = t(k, j+offy_s, i+offx_s, icrm) + ttend(k,icrm) * dtn;
     micro_field(index_water_vapor, k, j+offy_s, i+offx_s, icrm) = 
           micro_field(index_water_vapor, k, j+offy_s, i+offx_s, icrm) + qtend(k,icrm) * dtn;

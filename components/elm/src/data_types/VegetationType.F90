@@ -34,7 +34,6 @@ module VegetationType
   ! --------------------------------------------------------
   !
   use shr_kind_mod   , only : r8 => shr_kind_r8
-  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use elm_varcon     , only : ispval, spval
 
   use elm_varctl     , only : use_fates
@@ -64,15 +63,16 @@ module VegetationType
      logical , pointer :: active        (:) => null() ! true=>do computations on this patch
 
      ! Fates relevant types
-     logical , pointer :: is_veg        (:) => null() ! This is an ACTIVE fates patch
-     logical , pointer :: is_bareground (:) => null() ! ?
-     real(r8), pointer :: wt_ed         (:) => null() ! TODO mv ? can this be removed
-     logical , pointer :: is_fates      (:) => null() ! true for patch vector space reserved
-                                                      ! for FATES.
-                                                      ! this is static and is true for all
-                                                      ! patches within fates jurisdiction
-                                                      ! including patches which are not currently
-                                                      ! associated with a FATES linked-list patch
+     logical , pointer :: is_veg            (:) => null() ! This is an ACTIVE fates patch
+     logical , pointer :: is_bareground     (:) => null() ! ?
+     real(r8), pointer :: wt_ed             (:) => null() ! TODO mv ? can this be removed
+     real(r8), pointer :: sp_pftorder_index (:) => null() ! index to map 'p' onto the order of FATES patches in SP mode.
+     logical , pointer :: is_fates          (:) => null() ! true for patch vector space reserved
+                                                          ! for FATES.
+                                                          ! this is static and is true for all
+                                                          ! patches within fates jurisdiction
+                                                          ! including patches which are not currently
+                                                          ! associated with a FATES linked-list patch
    contains
 
      procedure, public :: Init => veg_pp_init
@@ -103,13 +103,13 @@ contains
 
     ! The following is set in InitGridCells
     allocate(this%gridcell  (begp:endp)); this%gridcell    (:) = ispval
-    allocate(this%wtgcell   (begp:endp)); this%wtgcell     (:) = nan
+    allocate(this%wtgcell   (begp:endp)); this%wtgcell     (:) = spval
     allocate(this%topounit  (begp:endp)); this%topounit    (:) = ispval
-    allocate(this%wttopounit(begp:endp)); this%wttopounit  (:) = nan
+    allocate(this%wttopounit(begp:endp)); this%wttopounit  (:) = spval
     allocate(this%landunit  (begp:endp)); this%landunit    (:) = ispval
-    allocate(this%wtlunit   (begp:endp)); this%wtlunit     (:) = nan
+    allocate(this%wtlunit   (begp:endp)); this%wtlunit     (:) = spval
     allocate(this%column    (begp:endp)); this%column      (:) = ispval
-    allocate(this%wtcol     (begp:endp)); this%wtcol       (:) = nan
+    allocate(this%wtcol     (begp:endp)); this%wtcol       (:) = spval
     allocate(this%itype     (begp:endp)); this%itype       (:) = ispval
     allocate(this%mxy       (begp:endp)); this%mxy         (:) = ispval
     allocate(this%active    (begp:endp)); this%active      (:) = .false.
@@ -118,7 +118,8 @@ contains
     if (use_fates) then
        allocate(this%is_veg  (begp:endp)); this%is_veg  (:) = .false.
        allocate(this%is_bareground (begp:endp)); this%is_bareground (:) = .false.
-       allocate(this%wt_ed      (begp:endp)); this%wt_ed      (:) = nan
+       allocate(this%wt_ed      (begp:endp)); this%wt_ed      (:) = spval
+       allocate(this%sp_pftorder_index      (begp:endp)); this%sp_pftorder_index      (:) = spval
     end if
 
 	end subroutine veg_pp_init
@@ -147,6 +148,7 @@ contains
        deallocate(this%is_veg)
        deallocate(this%is_bareground)
        deallocate(this%wt_ed)
+       deallocate(this%sp_pftorder_index)
     end if
 
   end subroutine veg_pp_clean

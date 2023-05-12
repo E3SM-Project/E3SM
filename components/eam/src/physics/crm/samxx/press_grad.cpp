@@ -2,15 +2,15 @@
 #include "press_grad.h"
 
 void press_grad() {
-  auto &dz            = :: dz;
-  auto &adzw          = :: adzw;
-  auto &p             = :: p;
-  auto &na            = :: na;
-  auto &dudt          = :: dudt;
-  auto &dvdt          = :: dvdt;
-  auto &dwdt          = :: dwdt;
-  auto &rho           = :: rho;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( dz            , :: dz );
+  YAKL_SCOPE( adzw          , :: adzw );
+  YAKL_SCOPE( p             , :: p );
+  YAKL_SCOPE( na            , :: na );
+  YAKL_SCOPE( dudt          , :: dudt );
+  YAKL_SCOPE( dvdt          , :: dvdt );
+  YAKL_SCOPE( dwdt          , :: dwdt );
+  YAKL_SCOPE( rho           , :: rho );
+  YAKL_SCOPE( ncrms         , :: ncrms );
 
   real rdx=1.0/dx;
   real rdy=1.0/dy;
