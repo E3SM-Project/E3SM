@@ -431,7 +431,8 @@
       <directive> -G 0</directive>
     </directives>
     <queues>
-      <queue walltimemax="00:45:00" nodemax="1500" default="true">regular</queue>
+      <queue walltimemax="00:45:00" nodemax="1600" default="true">regular</queue>
+      <queue walltimemax="00:45:00" nodemax="1600" strict="true">preempt</queue>
       <queue walltimemax="00:15:00" nodemax="4" strict="true">debug</queue>
     </queues>
   </batch_system>
@@ -441,8 +442,9 @@
       <directive> --constraint=cpu</directive>
     </directives>
     <queues>
-      <queue walltimemax="00:30:00" nodemax="1500" default="true">regular</queue>
-      <queue walltimemax="00:30:00" nodemax="4" strict="true">debug</queue>
+      <queue walltimemax="00:30:00" nodemax="4096" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="4096" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
 
