@@ -36,12 +36,12 @@ set(SCC "cc")
 set(SCXX "hipcc")
 set(SFC "ftn")
 
-# Switch to O3 for better performance
-# Using O2 to ensure passing tests
+# Switching to O3 for performance benchmarking
+# Will revisit any failing tests
 if (NOT DEBUG)
-  string(APPEND CFLAGS   " -O2")
-  string(APPEND CXXFLAGS " -O2")
-  string(APPEND FFLAGS   " -O2")
+  string(APPEND CFLAGS   " -O3")
+  string(APPEND CXXFLAGS " -O3")
+  string(APPEND FFLAGS   " -O3")
 endif()
 
 if (COMP_NAME STREQUAL elm)
@@ -53,6 +53,8 @@ endif()
 # Disable ipa and zero initialization are for other NaN isues:
 # https://github.com/E3SM-Project/E3SM/pull/5208
 string(APPEND FFLAGS " -hipa0 -hzero -em -ef -hnoacc")
+# Solving a 15.0.0 build issue
+#string(APPEND FFLAGS " -hsystem_alloc")
 
 set(NETCDF_PATH "$ENV{NETCDF_DIR}")
 set(PNETCDF_PATH "$ENV{PNETCDF_DIR}")
@@ -61,9 +63,8 @@ string(APPEND CXX_LIBS " -lstdc++")
 
 string(APPEND CXXFLAGS " -I$ENV{MPICH_DIR}/include --offload-arch=gfx90a")
 string(APPEND SLIBS    " -L$ENV{MPICH_DIR}/lib -lmpi -L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa")
-if (NOT MPILIB STREQUAL mpi-serial)
-  string(APPEND SLIBS " -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core -ladios2_evpath -ladios2_ffs -ladios2_dill -ladios2_atl -ladios2_enet")
-endif()
+# string(APPEND SLIBS " -L$ENV{ROCM_PATH}/lib -lamdhip64 -L$ENV{OLCF_OPENBLAS_ROOT}/lib -lopenblas $ENV{OLCF_LIBUNWIND_ROOT}/lib/libunwind.a /sw/frontier/spack-envs/base/opt/cray-sles15-zen3/clang-14.0.0-rocm5.2.0/gperftools-2.10-6g5acp4pcilrl62tddbsbxlut67pp7qn/lib/libtcmalloc.a")
+string(APPEND SLIBS " -L$ENV{ROCM_PATH}/lib -lamdhip64")
 
 string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_ZEN3=On -DKokkos_ARCH_VEGA90A=On")
 

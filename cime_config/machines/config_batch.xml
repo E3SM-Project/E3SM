@@ -65,7 +65,7 @@
    </batch_system>
 
    <batch_system MACH="crusher" type="slurm">
-     <batch_submit>/gpfs/alpine/cli133/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
+     <batch_submit>/lustre/orion/cli115/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
      <directives>
        <directive> --core-spec=$SHELL{tpn=`./xmlquery --value MAX_TASKS_PER_NODE`; if [[ $tpn > 56 ]]; then echo "64-$tpn"|bc; else echo 8; fi; }</directive>
      </directives>
@@ -73,6 +73,20 @@
        <queue strict="true" nodemin="1" nodemax="8" walltimemax="08:00:00" default="true">batch</queue>
        <queue strict="true" nodemin="9" nodemax="64" walltimemax="04:00:00">batch</queue>
        <queue strict="true" nodemin="65" nodemax="160" walltimemax="02:00:00">batch</queue>
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="frontier" type="slurm">
+    <batch_submit>sbatch</batch_submit>
+     <directives>
+       <directive> --core-spec=$SHELL{tpn=`./xmlquery --value MAX_TASKS_PER_NODE`; if [[ $tpn > 56 ]]; then echo "64-$tpn"|bc; else echo 8; fi; }</directive>
+     </directives>
+     <queues>
+       <queue strict="true" nodemin="1" nodemax="91" walltimemax="02:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="92" nodemax="183" walltimemax="06:00:00">batch</queue>
+       <queue strict="true" nodemin="184" nodemax="1881" walltimemax="12:00:00">batch</queue>
+       <queue strict="true" nodemin="1882" nodemax="5644" walltimemax="12:00:00">batch</queue>
+       <queue strict="true" nodemin="5645" nodemax="9408" walltimemax="12:00:00">batch</queue>
      </queues>
    </batch_system>
 
