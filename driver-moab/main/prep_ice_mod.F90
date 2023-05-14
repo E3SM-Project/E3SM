@@ -93,8 +93,8 @@ contains
 
   subroutine prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice)
 
-    use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
-      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights
+    use iMOAB, only: iMOAB_RegisterApplication, &
+      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -201,9 +201,9 @@ contains
 
             type1 = 3
             type2 = 3 ! fv-fv graph
-   ! imoab compute comm graph ice-ocn, based on the same global id
-   ! it will be a simple migrate from ice mesh directly to ocean, using the comm graph computed here
-   ! TODO: find if CommGraph already exists.
+            ! iMOAB compute comm graph ice-ocn, based on the same global id
+            ! it will be a simple migrate from ice mesh directly to ocean, using the comm graph computed here
+            ! TODO: find if CommGraph already exists.
 
             ierr = iMOAB_ComputeCommGraph( mboxid, mbixid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
                type1, type2, ocn(1)%cplcompid, ice(1)%cplcompid)
@@ -212,7 +212,7 @@ contains
                   call shr_sys_abort(subname//' ERROR  in computing graph ocn -ice x ')
             endif
 
-               ! define tags according to the seq_flds_i2x_fields
+            ! define tags according to the seq_flds_i2x_fields
             tagtype = 1  ! dense, double
             numco = 1 !  one value per cell / entity
             tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
@@ -222,7 +222,7 @@ contains
             end if
             mapper_SFo2i%src_mbid = mboxid
             mapper_SFo2i%tgt_mbid = mbixid
-            ! no intersection, so willihave to do without it
+            ! no intersection, so will have to transform data without it
             mapper_SFo2i%src_context = ocn(1)%cplcompid
             mapper_SFo2i%intx_context = ice(1)%cplcompid
             mapper_SFo2i%mbname = 'mapper_SFo2i'
@@ -619,7 +619,7 @@ contains
 
  ! find out the number of local elements in moab mesh seaice instance on coupler
     ierr  = iMOAB_GetMeshInfo ( mbixid, nvert, nvise, nbl, nsurf, nvisBC );
-    if (ierr .ne. 0) then 
+    if (ierr .ne. 0) then
          write(logunit,*) subname,' error in getting info '
          call shr_sys_abort(subname//' error in getting info ')
     endif
@@ -765,7 +765,7 @@ contains
     tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
     arrsize = naflds * lsize !        allocate (a2x_om (lsize, naflds))
     ierr = iMOAB_GetDoubleTagStorage ( mbixid, tagname, arrsize , ent_type, a2x_im(1,1))
-    if (ierr .ne. 0) then 
+    if (ierr .ne. 0) then
       write(logunit, *) 'MOAB error ', ierr
       call shr_sys_abort(subname//' error in getting a2x_im array ')
     endif
@@ -774,7 +774,7 @@ contains
     tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
     arrsize = nrflds * lsize !        allocate (a2x_om (lsize, naflds))
     ierr = iMOAB_GetDoubleTagStorage ( mbixid, tagname, arrsize , ent_type, r2x_im(1,1))
-    if (ierr .ne. 0) then 
+    if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting r2x_im array ')
     endif
 
@@ -783,8 +783,8 @@ contains
 
 
     do n = 1,lsize
-       x2i_im(n,index_x2i_Faxa_rain) = a2x_im(n,index_a2x_Faxa_rainc) + a2x_im(n,index_a2x_Faxa_rainl) 
-       x2i_im(n,index_x2i_Faxa_snow) = a2x_im(n,index_a2x_Faxa_snowc) + a2x_im(n,index_a2x_Faxa_snowl) 
+       x2i_im(n,index_x2i_Faxa_rain) = a2x_im(n,index_a2x_Faxa_rainc) + a2x_im(n,index_a2x_Faxa_rainl)
+       x2i_im(n,index_x2i_Faxa_snow) = a2x_im(n,index_a2x_Faxa_snowc) + a2x_im(n,index_a2x_Faxa_snowl)
 
 ! no glacier yet
 !       x2i_im(n,index_x2i_Fixx_rofi) = g2x_im(n,index_g2x_Figg_rofi) + &

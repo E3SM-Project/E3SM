@@ -311,7 +311,7 @@ contains
                                                 trim(dofnameS), trim(dofnameT)
               endif
               ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxrl, wgtIdef, &
-                                                trim(dm1), orderS, trim(dm2), orderT, &
+                                                trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
                                                 fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                 noConserve, validate, &
                                                 trim(dofnameS), trim(dofnameT) )
@@ -476,7 +476,7 @@ contains
                                                   trim(dofnameS), trim(dofnameT)
               endif
               ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxal, wgtIdef, &
-                                                  trim(dm1), orderS, trim(dm2), orderT, &
+                                                  trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
                                                   fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                   noConserve, validate, &
                                                   trim(dofnameS), trim(dofnameT) )
