@@ -46,12 +46,21 @@ In the Developer's Guide, anchors should start with `omega-dev-`:
 Documentation for an OMEGA feature in the User's Guide should contain 
 information that is needed for users who set up and run OMEGA, including:
 
+- Background information on the feature (though not as much as in Developer's
+  Guide and not referencing code) that gives the user an understanding of 
+  the configurable parameters.
+- Config options related to the feature that users can modify in a YAML file.
 - Flags related to the feature that a user can (or must) set when building
-  OMEGA,
-- Config options that a user can modify related to the feature
+  OMEGA.
 
-Documentation for the feature in the Developer's Guide may contain:
+The Developer's Guide should also serve as a reference manual.  Among other
+things, the documentation in the Developer's Guide needs to provide an easy way
+for other developers or reviewers to verify the code against the intended 
+implementation. Therefore, documentation for a new feature in the Developer's 
+Guide should:
 
-- Relevant technical details about development specific to that feature
-- Details on unit tests that cover that feature
-- Details on polaris regression tests that cover that feature
+- Describe the actual mathematical terms (or a reference to them).
+- Describe the discretized form with variables close to what are used in the 
+  code. 
+- Provide details on unit tests that cover that feature, if applicable.
+- Describe any polaris regression tests that cover that feature, if applicable.
