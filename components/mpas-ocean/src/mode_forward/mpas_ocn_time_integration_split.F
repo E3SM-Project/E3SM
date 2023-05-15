@@ -234,10 +234,12 @@ module ocn_time_integration_split
          benthosTracersCur,    &! old benthosTracer arrays
          benthosTracersNew      ! new benthosTracer arrays
 
+      integer, pointer :: &
+         nBenthicVertLevels     ! number of benthic vertical levels
+
       integer :: &
          startIndex, endIndex, &! start, end index for tracer groups
-         indexSalinity,        &! tracer index for salinity
-         nBenthicVertLevels     ! number of benthic vertical levels
+         indexSalinity          ! tracer index for salinity
 
       integer :: iTracer, numTracers, numActiveTracers
 
@@ -391,7 +393,6 @@ module ocn_time_integration_split
                                           normalVelocityTend)
       call mpas_pool_get_array(tendPool, 'highFreqThickness', &
                                           highFreqThicknessTend)
-      call mpas_pool_get_array(tendPool, 'lowFreqDivergence', &
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 2)
 
