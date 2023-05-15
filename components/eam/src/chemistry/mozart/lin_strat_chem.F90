@@ -179,11 +179,12 @@ end subroutine linoz_readnl
     no2_ndx  =   get_spc_ndx('NO2')
     hno3_ndx =   get_spc_ndx('HNO3')
 
-   !if(masterproc)then
+   if(masterproc)then
    ! write(iulog,*)'in subroutine lin_strat_chem_inti'
    ! write(iulog,*)'O3LNZ=',o3lnz_ndx,'N2OLNZ=',n2olnz_ndx,'NOYLNZ=',noylnz_ndx,'H2OLNZ=',h2olnz_ndx
    ! write(iulog,*)'O3=',o3_ndx,'CH4=',ch4_ndx,'N2O=',n2o_ndx,'NO=',no_ndx,'NO2=',no2_ndx,'HNO3=',hno3_ndx
-   !end if
+     write(iulog,*)'inside lin_strat_solve for ndx o3, o3lnz, n2o, noylnz, ch4', o3_ndx, o3lnz_ndx, n2o_ndx, noylnz_ndx, ch4_ndx
+   end if
     
 !     
 !   initialize the linoz data
@@ -960,7 +961,16 @@ end subroutine linoz_readnl
        mw(1) =  adv_mass(o3lnz_ndx)
        sfc_const(1,:)= o3_sfc
        o3_lbl=4
+
+     elseif (o3_ndx > 0) then
+       ms=1
+       nx(1) =  o3_ndx
+       mw(1) =  adv_mass(o3_ndx)
+       sfc_const(1,:)= o3_sfc
+       o3_lbl=4
+       !write(iulog,*)'warning: linoz_v2 is on and surface o3 loss is active'
      else
+       write(iulog,*)'warning: linoz_v2 is on but no surface o3 loss'      
        return
      endif
     endif
