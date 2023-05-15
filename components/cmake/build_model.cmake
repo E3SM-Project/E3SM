@@ -74,12 +74,17 @@ function(build_model COMP_CLASS COMP_NAME)
         # CUDA_FLAGS is set through Macros.cmake
         # For instance: cime_config/machines/cmake_macros/gnugpu_summit.cmake
         set(YAKL_CUDA_FLAGS "${CPPDEFS} ${CUDA_FLAGS}")
-	elseif (USE_HIP)
-		set(YAKL_ARCH "HIP")
+      elseif (USE_HIP)
+	set(YAKL_ARCH "HIP")
         # HIP_FLAGS are set through Macros.cmake
         # For instance: cime_config/machines/cmake_macros/crayclanggpu_frontier.cmake
-		set(YAKL_HIP_FLAGS "${CPPDEFS} ${HIP_FLAGS}")
-    else()
+	set(YAKL_HIP_FLAGS "${CPPDEFS} ${HIP_FLAGS}")
+      elseif (USE_SYCL)
+        set(YAKL_ARCH "SYCL")
+        # SYCL_FLAGS is set through Macros.cmake
+	# For instance: cime_config/machines/cmake_macros/oneapi-ifxgpu_sunspot.cmake
+        set(YAKL_SYCL_FLAGS "${CPPDEFS} ${SYCL_FLAGS}")	
+      else()
         # For CPU C++ compilers duplicate flags are fine, the last ones win typically
         set(YAKL_CXX_FLAGS "${CPPDEFS} ${CXXFLAGS}")
         set(YAKL_ARCH "")
