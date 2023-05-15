@@ -28,6 +28,9 @@ userGuide/QuickStart
 :maxdepth: 2
 
 devGuide/QuickStart
+devGuide/CondaEnv
+devGuide/Docs
+devGuide/BuildDocs
 ```
 
 ```{toctree}
