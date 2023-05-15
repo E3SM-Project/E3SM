@@ -496,7 +496,7 @@ contains
     use elm_varcon       , only : denice, denh2o, pondmx, watmin, spval  
     use landunit_varcon  , only : istcrop, istdlak, istsoil  
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
-    use clm_time_manager , only : is_first_step
+    use elm_time_manager , only : is_first_step
     use elm_varctl       , only : bound_h2osoi, use_lake_wat_storage
     use ncdio_pio        , only : file_desc_t, ncd_io, ncd_double
     use restUtilMod

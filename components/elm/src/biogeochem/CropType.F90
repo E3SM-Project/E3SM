@@ -324,7 +324,7 @@ contains
     !
     ! !USES:
     use accumulMod       , only : extract_accum_field
-    use clm_time_manager , only : get_nstep
+    use elm_time_manager , only : get_nstep
     !
     ! !ARGUMENTS:
     class(crop_type),  intent(inout) :: this
@@ -576,7 +576,7 @@ contains
     ! !USES:
     use accumulMod       , only : update_accum_field, extract_accum_field, accumResetVal
     use shr_const_mod    , only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
-    use clm_time_manager , only : get_step_size, get_nstep
+    use elm_time_manager , only : get_step_size, get_nstep
     use pftvarcon        , only : nwcereal, nwcerealirrig, mxtmp, baset
     use TemperatureType  , only : temperature_type
     use VegetationType   , only : veg_pp                
@@ -665,7 +665,7 @@ contains
     ! This routine should be called every time step
     !
     ! !USES:
-    use clm_time_manager , only : get_curr_date, is_first_step
+    use elm_time_manager , only : get_curr_date, is_first_step
     !
     ! !ARGUMENTS:
     class(crop_type) :: this
@@ -711,7 +711,7 @@ contains
     ! messes up these bits of saved information.
     !
     ! !ARGUMENTS:
-    use clm_time_manager, only : get_driver_start_ymd, get_start_date
+    use elm_time_manager, only : get_driver_start_ymd, get_start_date
     use elm_varctl      , only : iulog
     use elm_varctl      , only : nsrest, nsrBranch, nsrStartup
     !

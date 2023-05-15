@@ -9,7 +9,7 @@ module subgridRestMod
   use abortutils         , only : endrun
   use decompMod          , only : bounds_type, BOUNDS_LEVEL_PROC, ldecomp
   use domainMod          , only : ldomain
-  use clm_time_manager   , only : get_curr_date
+  use elm_time_manager   , only : get_curr_date
   use elm_varcon         , only : nameg, namet, namel, namec, namep
   use elm_varpar         , only : nlevsno
   use pio                , only : file_desc_t

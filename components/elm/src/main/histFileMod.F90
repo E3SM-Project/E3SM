@@ -441,7 +441,7 @@ contains
     ! appropriate variables and calling appropriate routines
     !
     ! !USES:
-    use clm_time_manager, only: get_prev_time
+    use elm_time_manager, only: get_prev_time
     use elm_varcon      , only: secspday
     !
     ! !ARGUMENTS:
@@ -2343,8 +2343,8 @@ contains
     use elm_varcon      , only : zsoi, zlak, secspday
     use elm_varpar      , only : nlevsoi
     use domainMod       , only : ldomain, lon1d, lat1d
-    use clm_time_manager, only : get_nstep, get_curr_date, get_curr_time
-    use clm_time_manager, only : get_ref_date, get_calendar, NO_LEAP_C, GREGORIAN_C
+    use elm_time_manager, only : get_nstep, get_curr_date, get_curr_time
+    use elm_time_manager, only : get_ref_date, get_calendar, NO_LEAP_C, GREGORIAN_C
     use FatesInterfaceTypesMod, only : fates_hdim_levsclass
     use FatesInterfaceTypesMod, only : fates_hdim_pfmap_levscpf
     use FatesInterfaceTypesMod, only : fates_hdim_scmap_levscpf
@@ -3331,7 +3331,7 @@ contains
     !   date = yyyy/mm+1/01 with mscur = 0.
     !
     ! !USES:
-    use clm_time_manager, only : get_nstep, get_curr_date, get_curr_time, get_prev_date
+    use elm_time_manager, only : get_nstep, get_curr_date, get_curr_time, get_prev_date
     use elm_varcon      , only : secspday
     use perf_mod        , only : t_startf, t_stopf
     use elm_varpar      , only : nlevgrnd
@@ -3539,7 +3539,7 @@ contains
     use fileutils       , only : getfil
     use domainMod       , only : ldomain
     use elm_varpar      , only : nlevgrnd, nlevlak, numrad, nlevdecomp_full, nmonth
-    use clm_time_manager, only : is_restart
+    use elm_time_manager, only : is_restart
     use restUtilMod     , only : iflag_skip
     use pio
     !
@@ -4398,7 +4398,7 @@ contains
      !
      ! !USES:
      use elm_varctl, only : caseid, inst_suffix
-     use clm_time_manager, only : get_curr_date, get_prev_date
+     use elm_time_manager, only : get_curr_date, get_prev_date
      !
      ! !ARGUMENTS:
      integer, intent(in)  :: hist_freq   !history file frequency
@@ -5185,7 +5185,7 @@ contains
     ! history file is not full.
     !
     ! !USES:
-    use clm_time_manager, only : is_last_step
+    use elm_time_manager, only : is_last_step
     !
     ! !ARGUMENTS:
     integer, intent(in)  :: ntapes              !actual number of history tapes
