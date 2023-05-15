@@ -21,7 +21,7 @@ MACHINE_METADATA = {
                  ["mpicxx","mpifort","mpicc"],
                   "salloc -N 1 srun -n1 --preserve-env",
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/blake/"),
-    "weaver"   : (["source /etc/profile.d/modules.sh", "module purge", "module load git/2.10.1 python/3.7.3 cmake/3.23.1 cuda/11.2.2/gcc/8.3.1 openmpi/4.1.1/gcc/8.3.1/cuda/11.2.2 netcdf-c/4.8.1/gcc/8.3.1/openmpi/4.1.1 netcdf-cxx/4.2/gcc/8.3.1/openmpi/4.1.1 netcdf-fortran/4.5.4/gcc/8.3.1/openmpi/4.1.1 parallel-netcdf/1.12.2/gcc/8.3.1/openmpi/4.1.1",
+    "weaver"   : (["source /etc/profile.d/modules.sh", "module purge", "module load cmake/3.25.1 git/2.39.1 python/3.10.8 gcc/11.3.0 cuda/11.8.0 openmpi netcdf-c netcdf-fortran parallel-netcdf netlib-lapack",
                  ],
                  ["mpicxx","mpifort","mpicc"],
                   "bsub -I -q rhel8 -n 4",
