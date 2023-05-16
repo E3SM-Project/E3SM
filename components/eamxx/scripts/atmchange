@@ -17,7 +17,7 @@ from atm_manip import get_xml_node, atm_config_chg_impl
 from utils import run_cmd_no_fail, expect
 
 ###############################################################################
-def atm_config_chg(changes, no_buffer=False, reset=False, all=False):
+def atm_config_chg(changes, no_buffer=False, reset=False, all_matches=False):
 ###############################################################################
     expect(os.path.exists("namelist_scream.xml"),
            "No pwd/namelist_scream.xml file is present. Please run from a case dir that has been set up")
@@ -40,7 +40,7 @@ def atm_config_chg(changes, no_buffer=False, reset=False, all=False):
 
     any_change = False
     for change in changes:
-        node_found, this_changed = atm_config_chg_impl(root,change,all)
+        node_found, this_changed = atm_config_chg_impl(root, change, all_matches)
         expect (node_found,
                 f"Error! Change {change} did not yield any match in the XML file")
         any_change |= this_changed
@@ -50,6 +50,8 @@ def atm_config_chg(changes, no_buffer=False, reset=False, all=False):
 
     if not no_buffer:
         changes_str = " ".join(changes).replace(",",r"\,")
+        if all_matches:
+            changes_str += " --all"
         run_cmd_no_fail(f"./xmlchange --append SCREAM_ATMCHANGE_BUFFER='{changes_str}'")
 
     return True
@@ -77,20 +79,21 @@ OR
     )
 
     parser.add_argument(
-        "--no-buffer",
+        "-n", "--no-buffer",
         default=False,
         action="store_true",
         help="Used by buildnml to replay buffered commands",
     )
 
     parser.add_argument(
-        "--all",
+        "-a", "--all",
         default=False,
+        dest="all_matches",
         action="store_true",
         help="Apply change to all entries matching the name"
     )
     parser.add_argument(
-        "--reset",
+        "-r", "--reset",
         default=False,
         action="store_true",
         help="Forget all previous atmchanges",

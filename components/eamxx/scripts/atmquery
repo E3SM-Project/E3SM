@@ -37,19 +37,19 @@ OR
 {0} --help
 
 \033[1mEXAMPLES:\033[0m
-    \033[1;32m# List all settings as VAR=VALUE
+    \033[1;32m# List all settings as VAR=VALUE\033[0m
     > {0} --listall
 
-    \033[1;32m# print var1 and var2
+    \033[1;32m# print var1 and var2\033[0m
     > {0} var1 var2
 
-    \033[1;32m# print var1 and var2, with full details
+    \033[1;32m# print var1 and var2, with full details\033[0m
     > {0} var1 var2 --full
 
-    \033[1;32m# print var1 type and valid values
+    \033[1;32m# print var1 type and valid values\033[0m
     > {0} var1 --type --valid-values
 
-    \033[1;32m# print all variables whose name matches expr
+    \033[1;32m# print all variables whose name matches expr\033[0m
     > {0} --grep expr
 
 """.format(pathlib.Path(args[0]).name),
@@ -68,7 +68,7 @@ OR
         "--grep",
         default=False,
         action="store_true",
-        help="List all variables and their values.",
+        help="List all matching variables and their values.",
     )
 
     parser.add_argument(
@@ -100,6 +100,7 @@ OR
     group2.add_argument(
         "--type",
         default=False,
+        dest="dtype",
         action="store_true",
         help="Print the data type associated with each variable.",
     )
@@ -120,19 +121,9 @@ OR
         parser.error("Option --grep requires to pass a variable regex")
 
     if args.variables is not None and len(args.variables)==1:
-        variables = args.variables[0].split(",")
-    else:
-        variables = args.variables
+        args.variables = args.variables[0].split(",")
 
-    return (
-        variables,
-        args.listall,
-        args.full,
-        args.value,
-        args.type,
-        args.valid_values,
-        args.grep,
-    )
+    return args
 
 ###############################################################################
 def _main_func(description):
@@ -143,16 +134,7 @@ def _main_func(description):
         testmod()
         testmod(m=atm_manip)
     else:
-        (
-            variables,
-            listall,
-            value,
-            full,
-            dtype,
-            valid_values,
-            grep,
-        ) = parse_command_line(sys.argv, description)
-        success = atm_query(variables,listall,value,full,dtype,valid_values,grep)
+        success = atm_query(**vars(parse_command_line(sys.argv, description)))
         sys.exit(0 if success else 1)
 
 ###############################################################################

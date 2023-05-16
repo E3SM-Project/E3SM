@@ -222,7 +222,7 @@ def parse_change (change):
     return node_name,new_value,append_this
 
 ###############################################################################
-def atm_config_chg_impl(xml_root,change,all=False):
+def atm_config_chg_impl(xml_root,change, all_matches=False):
 ###############################################################################
     """
     >>> xml = '''
@@ -287,16 +287,16 @@ def atm_config_chg_impl(xml_root,change,all=False):
 
     any_change = False
     node_found = False
-    if all and len(xml_root)>0:
+    if all_matches and len(xml_root)>0:
         # We have to go through the whole tree, since we need to apply
         # the changes to all nodes matching the node name
         for elem in xml_root:
-            found_here, changed_here = atm_config_chg_impl(elem,change,all)
+            found_here, changed_here = atm_config_chg_impl(elem,change, all_matches)
             any_change |= changed_here
             node_found |= found_here
     else:
         node_name,new_value,append_this = parse_change(change)
-        if all:
+        if all_matches:
             node = xml_root if xml_root.tag==node_name else None
         else:
             node, __ = get_xml_node(xml_root,node_name)
@@ -305,7 +305,7 @@ def atm_config_chg_impl(xml_root,change,all=False):
         if node is not None:
             any_change = apply_change (node,new_value,append_this)
 
-    
+
     return node_found, any_change
 
 ###############################################################################
@@ -392,7 +392,6 @@ def print_var(xml_root,var,full,dtype,value,valid_values,print_style="invalid",i
         try:
             get_xml_node(xml_root,new_name)
             tokens.pop(0)
-            name = new_name
         except AmbiguousName:
             # new_name was either "" or an ambiguous name, and get_xml_node failed
             break
