@@ -75,6 +75,27 @@
   <lname>20TRSOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<!-- ************************************************ -->
+<!--               MMF coupled compsets               -->
+<!-- ************************************************ -->
+<compset>
+  <alias>WCYCL1950-MMF1</alias>
+  <lname>1950SOI_EAM%CMIP6-MMF1_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-MMF1</alias>
+  <lname>20TRSOI_EAM%CMIP6-MMF1_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<!-- separate compset for testing (NS = no spinup) -->
+<compset>
+  <alias>WCYCL20TRNS-MMF1</alias>
+  <lname>20TR_EAM%CMIP6-MMF1_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+<!-- ************************************************** -->
+<!-- ************************************************** -->
+
 <compset>
   <alias>WCYCL20TR_chemUCI-Linozv3</alias>
   <lname>20TRSOI_EAM%CHEMUCI-LINOZV3_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
