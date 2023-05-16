@@ -2,7 +2,7 @@
 Retrieve nodes from EAMxx XML config file.
 """
 
-import sys, os
+import sys, os, re
 
 # Used for doctests
 import xml.etree.ElementTree as ET # pylint: disable=unused-import
@@ -274,6 +274,45 @@ def atm_config_chg_impl(xml_root,changes):
     return any_change
 
 ###############################################################################
+def print_var_impl(node,parents,full,dtype,value,valid_values,print_style="invalid",indent=""):
+###############################################################################
+
+    expect (print_style in ["short","full"],
+            f"Invalid print_style '{print_style}' for print_var_impl. Use 'full' or 'short'.")
+
+    if print_style=="short":
+        # Just the inner most name
+        name = node.tag
+    else:
+        name = "::".join(e.tag for e in parents) + "::" + node.tag
+
+    if full:
+        expect ("type" in node.attrib.keys(),
+                "Error! Missing type information for {}".format(name))
+        print (f"{indent}{name}")
+        print (f"{indent}    value: {node.text}")
+        print (f"{indent}    type: {node.attrib['type']}")
+        if "valid_values" not in node.attrib.keys():
+            valid = []
+        else:
+            valid = node.attrib["valid_values"].split(",")
+        print (f"{indent}    valid values: {valid}")
+    elif dtype:
+        expect ("type" in node.attrib.keys(),
+                "Error! Missing type information for {}".format(name))
+        print (f"{indent}{name}: {node.attrib['type']}")
+    elif value:
+        print (f"{indent}{node.text}")
+    elif valid_values:
+        if "valid_values" not in node.attrib.keys():
+            valid = '<valid values not provided>'
+        else:
+            valid = node.attrib["valid_values"].split(",")
+        print (f"{indent}{name}: {valid}")
+    else:
+        print (f"{indent}{name}: {node.text}")
+
+###############################################################################
 def print_var(xml_root,var,full,dtype,value,valid_values,print_style="invalid",indent=""):
 ###############################################################################
     """
@@ -308,9 +347,6 @@ def print_var(xml_root,var,full,dtype,value,valid_values,print_style="invalid",i
     expect (print_style in ["short","full"],
             f"Invalid print_style '{print_style}' for print_var. Use 'full' or 'short'.")
 
-    # Get node, along with all its parents (which might be used for 'full' print style)
-    node, parents = get_xml_node(xml_root,var)
-
     # Get the shortest unique repr of the var name
     tokens = var.split("::")
     if tokens[0]=='':
@@ -326,37 +362,10 @@ def print_var(xml_root,var,full,dtype,value,valid_values,print_style="invalid",i
             # new_name was either "" or an ambiguous name, and get_xml_node failed
             break
 
-    if print_style=="short":
-        # Just the inner most name
-        name = tokens[-1]
-    else:
-        name = "::".join(e.tag for e in parents) + "::" + node.tag
+    # Get node, along with all its parents (which might be used for 'full' print style)
+    node, parents = get_xml_node(xml_root,var)
 
-    if full:
-        expect ("type" in node.attrib.keys(),
-                "Error! Missing type information for {}".format(name))
-        print (f"{indent}{name}")
-        print (f"{indent}    value: {node.text}")
-        print (f"{indent}    type: {node.attrib['type']}")
-        if "valid_values" not in node.attrib.keys():
-            valid = []
-        else:
-            valid = node.attrib["valid_values"].split(",")
-        print (f"{indent}    valid values: {valid}")
-    elif dtype:
-        expect ("type" in node.attrib.keys(),
-                "Error! Missing type information for {}".format(name))
-        print (f"{indent}{name}: {node.attrib['type']}")
-    elif value:
-        print (f"{indent}{node.text}")
-    elif valid_values:
-        if "valid_values" not in node.attrib.keys():
-            valid = '<valid values not provided>'
-        else:
-            valid = node.attrib["valid_values"].split(",")
-        print (f"{indent}{name}: {valid}")
-    else:
-        print (f"{indent}{name}: {node.text}")
+    print_var_impl(node,parents,full,dtype,value,valid_values,print_style,indent)
 
 ###############################################################################
 def print_all_vars(xml_root,xml_node,curr_namespace,full,dtype,value,valid_values,print_style,indent):
@@ -371,7 +380,7 @@ def print_all_vars(xml_root,xml_node,curr_namespace,full,dtype,value,valid_value
 
 ###############################################################################
 def atm_query_impl(xml_root,variables,listall=False,full=False,value=False, \
-              dtype=False, valid_values=False):
+              dtype=False, valid_values=False, grep=False):
 ###############################################################################
     """
     >>> xml = '''
@@ -395,10 +404,26 @@ def atm_query_impl(xml_root,variables,listall=False,full=False,value=False, \
             sub
                 prop1: <valid values not provided>
                 prop2: ['1', '2']
+    >>> success = atm_query_impl(tree,'prop1',False,False,False,False,False,True)
+            prop1: one
+            sub::prop1: two
     """
 
     if listall:
         print_all_vars(xml_root,xml_root,"::",full,dtype,value,valid_values,"short","    ")
+    elif grep:
+        for regex in variables:
+            var_re = re.compile(f'{regex}')
+            if var_re.search(xml_root.tag):
+                print_all_vars(xml_root,xml_root,"::",full,dtype,value,valid_values,"short","  ")
+            else:
+                for elem in xml_root:
+                    if len(elem)>0:
+                        atm_query_impl(elem,variables,listall,full,value,dtype,valid_values,grep)
+                    else:
+                        if var_re.search(elem.tag):
+                            node, parents = find_node(xml_root,elem.tag,recurse=False)
+                            print_var_impl(node,parents,full,dtype,value,valid_values,"full","    ")
     else:
         for var in variables:
             print_var(xml_root,var,full,dtype,value,valid_values,"full","    ")

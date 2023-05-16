@@ -17,7 +17,7 @@ from atm_manip import expect, get_xml_node, AmbiguousName, atm_query_impl
 
 ###############################################################################
 def atm_query(variables,listall=False,full=False,value=False, \
-              dtype=False, valid_values=False):
+              dtype=False, valid_values=False, grep=False):
 ###############################################################################
     expect(os.path.exists("namelist_scream.xml"),
            "No pwd/namelist_scream.xml file is present. Please rum from a case dir that has been setup")
@@ -26,13 +26,13 @@ def atm_query(variables,listall=False,full=False,value=False, \
         tree = ET.parse(fd)
         xml_root = tree.getroot()
 
-    return atm_query_impl(xml_root,variables,listall,full,value,dtype,valid_values)
+    return atm_query_impl(xml_root,variables,listall,full,value,dtype,valid_values,grep)
 
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n{0} [--listall] [--value] [--type] [--valid-values] [--full] [var1 [,var2 ...]
+        usage="""\n{0} [--grep] [--listall] [--value] [--type] [--valid-values] [--full] [var1 [,var2 ...]
 OR
 {0} --help
 
@@ -49,6 +49,9 @@ OR
     \033[1;32m# print var1 type and valid values
     > {0} var1 --type --valid-values
 
+    \033[1;32m# print all variables whose name matches expr
+    > {0} --grep expr
+
 """.format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -62,16 +65,23 @@ OR
     )
 
     parser.add_argument(
-        "--listall",
+        "--grep",
         default=False,
         action="store_true",
         help="List all variables and their values.",
     )
 
-    # The following options are mutually exclusive
-    group = parser.add_mutually_exclusive_group()
+    parser.add_argument(
+        "--listall",
+        action="store_true",
+        help="List all variables and their values.",
+    )
 
-    group.add_argument(
+    # The following options are mutually exclusive
+    group1 = parser.add_argument_group(title="Display options")
+    group2 = parser.add_mutually_exclusive_group()
+
+    group2.add_argument(
         "--full",
         default=False,
         action="store_true",
@@ -79,7 +89,7 @@ OR
         "valid values, description and file.",
     )
 
-    group.add_argument(
+    group2.add_argument(
         "--value",
         default=False,
         action="store_true",
@@ -87,14 +97,14 @@ OR
         "If more than one has been found print first value in list.",
     )
 
-    group.add_argument(
+    group2.add_argument(
         "--type",
         default=False,
         action="store_true",
         help="Print the data type associated with each variable.",
     )
 
-    group.add_argument(
+    group2.add_argument(
         "--valid-values",
         default=False,
         action="store_true",
@@ -103,7 +113,13 @@ OR
 
     args = parser.parse_args(args[1:])
 
-    if len(args.variables) == 1:
+    if args.grep and args.listall:
+        parser.error("Cannot specify --listall and --grep at the same time")
+
+    if args.grep and args.variables is None:
+        parser.error("Option --grep requires to pass a variable regex")
+
+    if args.variables is not None and len(args.variables)==1:
         variables = args.variables[0].split(",")
     else:
         variables = args.variables
@@ -115,6 +131,7 @@ OR
         args.value,
         args.type,
         args.valid_values,
+        args.grep,
     )
 
 ###############################################################################
@@ -133,8 +150,9 @@ def _main_func(description):
             full,
             dtype,
             valid_values,
+            grep,
         ) = parse_command_line(sys.argv, description)
-        success = atm_query(variables,listall,value,full,dtype,valid_values)
+        success = atm_query(variables,listall,value,full,dtype,valid_values,grep)
         sys.exit(0 if success else 1)
 
 ###############################################################################
