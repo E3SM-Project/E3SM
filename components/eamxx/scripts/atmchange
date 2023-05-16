@@ -17,7 +17,7 @@ from atm_manip import get_xml_node, atm_config_chg_impl
 from utils import run_cmd_no_fail, expect
 
 ###############################################################################
-def atm_config_chg(changes, no_buffer=False, reset=False):
+def atm_config_chg(changes, no_buffer=False, reset=False, all=False):
 ###############################################################################
     expect(os.path.exists("namelist_scream.xml"),
            "No pwd/namelist_scream.xml file is present. Please run from a case dir that has been set up")
@@ -38,7 +38,12 @@ def atm_config_chg(changes, no_buffer=False, reset=False):
         tree = ET.parse(fd)
         root = tree.getroot()
 
-    any_change = atm_config_chg_impl(root,changes)
+    any_change = False
+    for change in changes:
+        node_found, this_changed = atm_config_chg_impl(root,change,all)
+        expect (node_found,
+                f"Error! Change {change} did not yield any match in the XML file")
+        any_change |= this_changed
 
     if any_change:
         tree.write("namelist_scream.xml")
@@ -78,6 +83,12 @@ OR
         help="Used by buildnml to replay buffered commands",
     )
 
+    parser.add_argument(
+        "--all",
+        default=False,
+        action="store_true",
+        help="Apply change to all entries matching the name"
+    )
     parser.add_argument(
         "--reset",
         default=False,

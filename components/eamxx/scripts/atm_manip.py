@@ -139,7 +139,7 @@ def get_xml_node(xml_root,name):
 
     # Allow :: at the beginning (as in '::A::b'), but do not allow multiple :: operators
     expect('' not in selectors[1:],
-        "Invalid xml node name format. Expected A[::B[...], got' {}'\n".format(name) +
+        f"Invalid xml node name format. Expected A[::B[...], got' {name}'\n"
         "  Did you put two '::' in a row?")
 
     # Regardless of whether we have namespaces or not, the first selector must be unique through the whole XML tree
@@ -150,30 +150,81 @@ def get_xml_node(xml_root,name):
         parents = []
     else:
         expect (num_nodes_with_name(xml_root,s,recurse=True)>0,
-            "Error! XML entry {} not found in section {}".format(s,xml_root.tag))
+            f"Error! XML entry {s} not found in section {xml_root.tag}")
         expect (num_nodes_with_name(xml_root,s,recurse=True)==1,
-            "Error! Multiple XML entries with name {} found in section {}"
-            .format(s,xml_root.tag), AmbiguousName)
+            f"Error! Multiple XML entries with name {s} found in section {xml_root.tag}",
+            AmbiguousName)
 
         node, parents = find_node(xml_root,s,recurse=True)
 
     # If user specified selectors via namespace, recurse over them
     for s in selectors[1:]:
         expect (num_nodes_with_name(node,s,recurse=False)>0,
-            "Error! XML entry {} not found in section {}".format(s,node.tag))
+            f"Error! XML entry {s} not found in section {node.tag}")
         expect (num_nodes_with_name(node,s,recurse=False)==1,
-            "Error! Multiple XML entries with name {} found in section {}"
-            .format(s,node.tag))
+            f"Error! Multiple XML entries with name {s} found in section {node.tag}")
 
         node, parents = find_node(node,s,recurse=False)
 
     return node, parents
 
 ###############################################################################
-def atm_config_chg_impl(xml_root,changes):
+def apply_change (node, new_value, append_this):
+###############################################################################
+
+    any_change = False
+
+    if append_this:
+        expect ("type" in node.attrib.keys(),
+                f"Error! Missing type information for {node.tag}")
+        type_ = node.attrib["type"]
+        expect (is_array_type(type_) or type_=="string",
+                "Error! Can only append with array and string types.\n"
+                f"    - name: {node.tag}\n"
+                f"    - type: {type_}")
+        if is_array_type(type_):
+            node.text += ", " + new_value
+        else:
+            node.text += new_value
+
+        any_change = True
+
+    elif node.text != new_value:
+        check_value(node,new_value)
+        node.text = new_value
+        any_change = True
+
+    return any_change
+
+###############################################################################
+def parse_change (change):
 ###############################################################################
     """
+    >>> parse_change("a+=2")
+    ('a', '2', True)
+    >>> parse_change("a=hello")
+    ('a', 'hello', False)
+    """
+    tokens = change.split('+=')
+    if len(tokens)==2:
+        append_this = True
+    else:
+        append_this = False
+        tokens = change.split('=')
 
+    expect (len(tokens)==2,
+        f"Invalid change request '{change}'. Valid formats are:\n"
+        f"  - A[::B[...]=value\n"
+        f"  - A[::B[...]+=value  (implies append for this change)")
+    node_name = tokens[0]
+    new_value = tokens[1]
+
+    return node_name,new_value,append_this
+
+###############################################################################
+def atm_config_chg_impl(xml_root,change,all=False):
+###############################################################################
+    """
     >>> xml = '''
     ... <root>
     ...     <a type="array(int)">1,2,3</a>
@@ -191,87 +242,71 @@ def atm_config_chg_impl(xml_root,changes):
     >>> import xml.etree.ElementTree as ET
     >>> tree = ET.fromstring(xml)
     >>> ################ INVALID SYNTAX #######################
-    >>> atm_config_chg_impl(tree,['prop1->2'])
+    >>> atm_config_chg_impl(tree,'prop1->2')
     Traceback (most recent call last):
     SystemExit: ERROR: Invalid change request 'prop1->2'. Valid formats are:
       - A[::B[...]=value
       - A[::B[...]+=value  (implies append for this change)
     >>> ################ INVALID TYPE #######################
-    >>> atm_config_chg_impl(tree,['prop2=two'])
+    >>> atm_config_chg_impl(tree,'prop2=two')
     Traceback (most recent call last):
     ValueError: Could not use 'two' as type 'integer'
     >>> ################ INVALID VALUE #######################
-    >>> atm_config_chg_impl(tree,['prop2=3'])
+    >>> atm_config_chg_impl(tree,'prop2=3')
     Traceback (most recent call last):
     CIME.utils.CIMEError: ERROR: Invalid value '3' for element 'prop2'. Value not in the valid list ('[1, 2]')
     >>> ################ VALID USAGE #######################
-    >>> atm_config_chg_impl(tree,['::prop1=two'])
-    True
-    >>> atm_config_chg_impl(tree,['::prop1=two'])
-    False
-    >>> atm_config_chg_impl(tree,['sub::prop1=one'])
-    True
+    >>> atm_config_chg_impl(tree,'::prop1=two')
+    (True, True)
+    >>> atm_config_chg_impl(tree,'::prop1=two')
+    (True, False)
+    >>> atm_config_chg_impl(tree,'sub::prop1=one')
+    (True, True)
     >>> ################ TEST APPEND += #################
-    >>> atm_config_chg_impl(tree,['a+=4'])
-    True
+    >>> atm_config_chg_impl(tree,'a+=4')
+    (True, True)
     >>> get_xml_node(tree,'a')[0].text
     '1,2,3, 4'
     >>> ################ ERROR, append to non-array and non-string
-    >>> atm_config_chg_impl(tree,['c+=2'])
+    >>> atm_config_chg_impl(tree,'c+=2')
     Traceback (most recent call last):
     SystemExit: ERROR: Error! Can only append with array and string types.
         - name: c
         - type: int
     >>> ################ Append to string ##################
-    >>> atm_config_chg_impl(tree,['d+=two'])
-    True
+    >>> atm_config_chg_impl(tree,'d+=two')
+    (True, True)
     >>> get_xml_node(tree,'d')[0].text
     'onetwo'
     >>> ################ Append to array(string) ##################
-    >>> atm_config_chg_impl(tree,['e+=two'])
-    True
+    >>> atm_config_chg_impl(tree,'e+=two')
+    (True, True)
     >>> get_xml_node(tree,'e')[0].text
     'one, two'
     """
 
     any_change = False
-    for change in changes:
-
-        tokens = change.split('+=')
-        if len(tokens)==2:
-            append_this = True
+    node_found = False
+    if all and len(xml_root)>0:
+        # We have to go through the whole tree, since we need to apply
+        # the changes to all nodes matching the node name
+        for elem in xml_root:
+            found_here, changed_here = atm_config_chg_impl(elem,change,all)
+            any_change |= changed_here
+            node_found |= found_here
+    else:
+        node_name,new_value,append_this = parse_change(change)
+        if all:
+            node = xml_root if xml_root.tag==node_name else None
         else:
-            append_this = False
-            tokens = change.split('=')
+            node, __ = get_xml_node(xml_root,node_name)
 
-        expect (len(tokens)==2,
-            f"Invalid change request '{change}'. Valid formats are:\n"
-            f"  - A[::B[...]=value\n"
-            f"  - A[::B[...]+=value  (implies append for this change)")
-        node, __ = get_xml_node(xml_root,tokens[0])
-        new_value = tokens[1]
+        node_found = node is not None
+        if node is not None:
+            any_change = apply_change (node,new_value,append_this)
 
-        if append_this:
-            expect ("type" in node.attrib.keys(),
-                    "Error! Missing type information for {}".format(tokens[0]))
-            type_ = node.attrib["type"]
-            expect (is_array_type(type_) or type_=="string",
-                    "Error! Can only append with array and string types.\n"
-                    f"    - name: {tokens[0]}\n"
-                    f"    - type: {type_}")
-            if is_array_type(type_):
-                node.text += ", " + new_value
-            else:
-                node.text += new_value
-
-            any_change = True
-
-        elif node.text != new_value:
-            check_value(node,new_value)
-            node.text = new_value
-            any_change = True
-
-    return any_change
+    
+    return node_found, any_change
 
 ###############################################################################
 def print_var_impl(node,parents,full,dtype,value,valid_values,print_style="invalid",indent=""):
@@ -288,7 +323,7 @@ def print_var_impl(node,parents,full,dtype,value,valid_values,print_style="inval
 
     if full:
         expect ("type" in node.attrib.keys(),
-                "Error! Missing type information for {}".format(name))
+                f"Error! Missing type information for {name}")
         print (f"{indent}{name}")
         print (f"{indent}    value: {node.text}")
         print (f"{indent}    type: {node.attrib['type']}")
@@ -299,7 +334,7 @@ def print_var_impl(node,parents,full,dtype,value,valid_values,print_style="inval
         print (f"{indent}    valid values: {valid}")
     elif dtype:
         expect ("type" in node.attrib.keys(),
-                "Error! Missing type information for {}".format(name))
+                f"Error! Missing type information for {name}")
         print (f"{indent}{name}: {node.attrib['type']}")
     elif value:
         print (f"{indent}{node.text}")
@@ -404,9 +439,9 @@ def atm_query_impl(xml_root,variables,listall=False,full=False,value=False, \
             sub
                 prop1: <valid values not provided>
                 prop2: ['1', '2']
-    >>> success = atm_query_impl(tree,'prop1',False,False,False,False,False,True)
-            prop1: one
-            sub::prop1: two
+    >>> success = atm_query_impl(tree,['prop1'],False,False,False,False,False,True)
+        root::prop1: one
+        sub::prop1: two
     """
 
     if listall:
@@ -421,6 +456,7 @@ def atm_query_impl(xml_root,variables,listall=False,full=False,value=False, \
                     if len(elem)>0:
                         atm_query_impl(elem,variables,listall,full,value,dtype,valid_values,grep)
                     else:
+                        #  print (f"checking {elem.tag}")
                         if var_re.search(elem.tag):
                             node, parents = find_node(xml_root,elem.tag,recurse=False)
                             print_var_impl(node,parents,full,dtype,value,valid_values,"full","    ")
