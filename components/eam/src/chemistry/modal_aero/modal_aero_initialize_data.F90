@@ -47,6 +47,11 @@ contains
     character(len=*), parameter ::     xname_numptrcw(ntot_amode) = (/ 'num_c1  ', 'num_c2  ', 'num_c3  ', &
          'num_c4  ', 'num_c5  ', 'num_c6  ', 'num_c7  ', &
          'num_c8  ', 'num_c9  ' /)
+#elif ( defined MODAL_AERO_5MODE_AGEDCARBON )
+    character(len=*), parameter ::     xname_numptr(ntot_amode)   = (/ 'num_a1  ', 'num_a2  ', &
+         'num_a3  ', 'num_a4  ', 'num_a5  ' /)
+    character(len=*), parameter ::     xname_numptrcw(ntot_amode) = (/ 'num_c1  ', 'num_c2  ', &
+         'num_c3  ', 'num_c4  ', 'num_c5  ' /)
 #elif ( defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM )
     character(len=*), parameter ::     xname_numptr(ntot_amode)   = (/ 'num_a1  ', 'num_a2  ', &
          'num_a3  ', 'num_a4  ' /)
@@ -89,6 +94,13 @@ contains
        xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', 'ammonium  ', &
             'p-organic ', 's-organic ', 'black-c   ', 'seasalt   ', &
             'm-poly    ', 'm-prot    ', 'm-lip     ' /)
+#elif ( defined MODAL_AERO_5MODE_AGEDCARBON )  
+       xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
+            'soa_a1  ', 'dst_a1  ', 'ncl_a1  ', 'mom_a1  ' /)
+       xname_massptrcw(:nspec_amode(1),1) = (/ 'so4_c1  ', &
+            'soa_c1  ', 'dst_c1  ', 'ncl_c1  ', 'mom_c1  ' /)
+       xname_spectype(:nspec_amode(1),1)  = (/ 'sulfate   ', &
+            's-organic ', 'dust      ', 'seasalt   ', 'm-organic ' /)
 #elif ( defined MODAL_AERO_4MODE_MOM )
        xname_massptr(:nspec_amode(1),1)   = (/ 'so4_a1  ', &
             'pom_a1  ', 'soa_a1  ', 'bc_a1   ', &
@@ -129,7 +141,7 @@ contains
        xname_spectype(:nspec_amode(2),2)  = (/ 'sulfate   ', 'ammonium  ', &
             's-organic ', 'seasalt   ', &
             'm-poly    ', 'm-prot    ', 'm-lip     ' /)
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
        xname_massptr(:nspec_amode(2),2)   = (/ 'so4_a2  ', &
             'soa_a2  ', 'ncl_a2  ', 'mom_a2  ' /)
        xname_massptrcw(:nspec_amode(2),2) = (/ 'so4_c2  ', &
@@ -170,7 +182,7 @@ contains
           xname_massptrcw(:nspec_amode(3),3) = (/ 'dst_c3  ', 'ncl_c3  ', 'so4_c3  ' /)
           xname_spectype(:nspec_amode(3),3)  = (/ 'dust      ', 'seasalt   ', 'sulfate   ' /)
 #endif
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
        ! mode 3 (coarse dust & seasalt) species
 #if (defined RAIN_EVAP_TO_COARSE_AERO)
           xname_massptr(:nspec_amode(3),3)   = &
@@ -186,7 +198,7 @@ contains
 #endif
 #endif
 
-#if ( defined MODAL_AERO_4MODE_MOM )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON )
        ! mode 4 (primary carbon) species
        xname_massptr(:nspec_amode(4),4)   = (/ 'pom_a4  ', 'bc_a4   ', 'mom_a4  ' /)
        xname_massptrcw(:nspec_amode(4),4) = (/ 'pom_c4  ', 'bc_c4   ', 'mom_c4  ' /)
@@ -196,6 +208,16 @@ contains
        xname_massptr(:nspec_amode(4),4)   = (/ 'pom_a4  ', 'bc_a4   ' /)
        xname_massptrcw(:nspec_amode(4),4) = (/ 'pom_c4  ', 'bc_c4   ' /)
        xname_spectype(:nspec_amode(4),4)  = (/ 'p-organic ', 'black-c   ' /)
+#endif
+
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+       ! mode 5 aged carbon species
+       xname_massptr(:nspec_amode(5),5)   = (/ 'so4_a5  ', 'bc_a5   ','pom_a5  ', &
+                                               'soa_a5  ', 'mom_a5  ' /)
+       xname_massptrcw(:nspec_amode(5),5) = (/ 'so4_c5  ', 'bc_c5   ','pom_c5  ', &
+                                               'soa_c5  ', 'mom_c5  ' /)
+       xname_spectype(:nspec_amode(5),5)  = (/ 'sulfate   ', 'black-c   ','p-organic ', &
+                                               's-organic ', 'm-organic ' /)
 #endif
 
 
@@ -584,6 +606,10 @@ loop:    do i = icldphy+1, pcnst
              qneg3_worst_thresh_amode(l) = 1.0e3_r8
           else if (m == modeptr_pcarbon) then
              qneg3_worst_thresh_amode(l) = 1.0e3_r8
+! ++MW
+          else if (m == modeptr_acarbon) then
+             qneg3_worst_thresh_amode(l) = 1.0e3_r8
+! --MW
           else if (m == modeptr_ufine) then
              qneg3_worst_thresh_amode(l) = 1.0e3_r8
 
@@ -698,6 +724,9 @@ loop:    do i = icldphy+1, pcnst
        modeptr_ufine = init_val
        modeptr_coarse = init_val
        modeptr_pcarbon = init_val
+! ++MW
+       modeptr_acarbon = init_val
+! --MW
        modeptr_maccum = init_val
        modeptr_maitken = init_val
        modeptr_fineseas = init_val
@@ -715,6 +744,10 @@ loop:    do i = icldphy+1, pcnst
              modeptr_coarse = m
           else if (modename_amode(m) .eq. 'primary_carbon') then
              modeptr_pcarbon = m
+! ++MW
+          else if (modename_amode(m) .eq. 'aged_carbon') then
+             modeptr_acarbon = m
+! --MW
           else if (modename_amode(m) .eq. 'accum_marine') then
              modeptr_maccum = m
           else if (modename_amode(m) .eq. 'aitken_marine') then
@@ -901,6 +934,9 @@ loop:    do i = icldphy+1, pcnst
        write(iulog,*) 'modeptr_ufine    =', modeptr_ufine
        write(iulog,*) 'modeptr_coarse   =', modeptr_coarse
        write(iulog,*) 'modeptr_pcarbon  =', modeptr_pcarbon
+! ++MW
+       write(iulog,*) 'modeptr_acarbon  =', modeptr_acarbon
+! --MW
        write(iulog,*) 'modeptr_fineseas =', modeptr_fineseas
        write(iulog,*) 'modeptr_finedust =', modeptr_finedust
        write(iulog,*) 'modeptr_coarseas =', modeptr_coarseas
