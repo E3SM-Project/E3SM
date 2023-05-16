@@ -25,7 +25,8 @@ module NitrogenDynamicsMod
   use VegetationPropertiesType  , only : veg_vp
   use elm_varctl          , only : NFIX_PTASE_plant
   use elm_varctl          , only : use_fates
-
+  use ELMFatesInterfaceMod  , only : hlm_fates_interface_type
+  
   !
   implicit none
   save
@@ -147,7 +148,7 @@ contains
   end subroutine NitrogenDeposition
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenFixation(num_soilc, filter_soilc, dayspyr)
+  subroutine NitrogenFixation(bounds, num_soilc, filter_soilc, dayspyr)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update the nitrogen fixation rate
@@ -157,40 +158,63 @@ contains
     ! !USES:
       !$acc routine seq
     use elm_varcon       , only : secspday, spval
+    use elm_instMod      , only : alm_fates
     !
     ! !ARGUMENTS:
+    type(bounds_type)       , intent(in)    :: bounds
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
     real(r8), intent(in) :: dayspyr               ! days per year
-
+    !type(hlm_fates_interface_type), intent(in) :: elm_fates
+    
     !
     ! !LOCAL VARIABLES:
     integer  :: c,fc                  ! indices
+    integer  :: ic                    ! clump index
+    integer  :: s                     ! site index (fates only)
     real(r8) :: t                     ! temporary
-    real(r8) :: secspyr              ! seconds per yr
+    real(r8) :: secspyr               ! seconds per yr
     logical  :: do_et_bnf = .false.
+
+    ! Test mutliplier of fixation rate, leave as 1 to use base rates
+    real(r8),parameter  :: test_mult = 1.0_r8  
+
     !-----------------------------------------------------------------------
 
     associate(&
          cannsum_npp    => col_cf%annsum_npp      , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)
          col_lag_npp    => col_cf%lag_npp         , & ! Input: [real(r8) (:)]  (gC/m2/s) lagged net primary production
-
          qflx_tran_veg  => col_wf%qflx_tran_veg    , & ! col vegetation transpiration (mm H2O/s) (+ = to atm)
-
          qflx_evap_veg  => col_wf%qflx_evap_veg    , & ! col vegetation evaporation (mm H2O/s) (+ = to atm)
          nfix_to_sminn  => col_nf%nfix_to_sminn   & ! Output: [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
          )
 
 
-      if (do_et_bnf .or. use_fates) then
+      if (do_et_bnf) then
+      
          secspyr = dayspyr * 86400._r8
+
          do fc = 1, num_soilc
             c =filter_soilc(fc)
             !use the cleveland equation
-            t = 0.00102_r8*(qflx_evap_veg(c)+qflx_tran_veg(c))+0.0524_r8/secspyr
+            t = test_mult*(0.00102_r8*(qflx_evap_veg(c)+qflx_tran_veg(c))+0.0524_r8/secspyr)
             nfix_to_sminn(c) = max(0._r8, t)
          enddo
       else
+         if(use_fates)then
+            ic = bounds%clump_index
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               s = alm_fates%f2hmap(ic)%hsites(c)
+               if ( alm_fates%fates(ic)%bc_out(s)%ema_npp > 0._r8) then
+                  ! ema_npp is units: [gC/m^2/year] 
+                  t = test_mult*(1.8_r8 * (1._r8 - exp(-0.003_r8 * alm_fates%fates(ic)%bc_out(s)%ema_npp )))/(secspday * dayspyr)
+                  nfix_to_sminn(c) = max(0._r8,t)
+               else
+                  nfix_to_sminn(c) = 0._r8
+               endif
+            end do
+         else
          if ( nfix_timeconst > 0._r8 .and. nfix_timeconst < 500._r8 ) then
             ! use exponential relaxation with time constant nfix_timeconst for NPP - NFIX relation
             ! Loop through columns
@@ -199,7 +223,7 @@ contains
 
                if (col_lag_npp(c) /= spval) then
                   ! need to put npp in units of gC/m^2/year here first
-                  t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr)
+                  t = test_mult*(1.8_r8 * (1._r8 - exp(-0.003_r8 * col_lag_npp(c)*(secspday * dayspyr))))/(secspday * dayspyr)
                   nfix_to_sminn(c) = max(0._r8,t)
                else
                   nfix_to_sminn(c) = 0._r8
@@ -210,10 +234,11 @@ contains
             do fc = 1,num_soilc
                c = filter_soilc(fc)
 
-               t = (1.8_r8 * (1._r8 - exp(-0.003_r8 * cannsum_npp(c))))/(secspday * dayspyr)
+               t = test_mult*(1.8_r8 * (1._r8 - exp(-0.003_r8 * cannsum_npp(c))))/(secspday * dayspyr)
                nfix_to_sminn(c) = max(0._r8,t)
             end do
          endif
+         end if
       endif
 
     end associate
