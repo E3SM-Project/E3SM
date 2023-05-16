@@ -167,6 +167,15 @@ module ocn_time_integration_lts
     real (kind=RKIND) :: &
        weightTendSum1st, weightTendSum2nd, weightTendSum3rd ! coefficients for the interface correction
 
+    if (.not. config_disable_tr_all_tend) then
+
+       call mpas_log_write("ERROR: tracers are not currently implemented for local time-stepping")
+       call mpas_log_write("config_disable_tr_all_tend should be true in the namelist file")
+       call abort
+
+    end if
+
+
     call mpas_timer_start("lts time-step prep")
 
     M = config_dt_scaling_LTS
