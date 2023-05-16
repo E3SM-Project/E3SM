@@ -1,0 +1,9 @@
+# Can't change atm_proc_base::internal_diagnostics_level, so change each one
+# individually.
+str=""
+for p in sc_import sc_export homme p3 shoc cldFraction spa rrtmgp mac_aero_mic physics; do
+    str+=" ${p}::internal_diagnostics_level=1"
+done
+./xmlchange --append SCREAM_ATMCHANGE_BUFFER="$str"
+
+./xmlchange POSTRUN_SCRIPT="$CIMEROOT/../components/eamxx/tests/postrun/check_hashes_ers.py"

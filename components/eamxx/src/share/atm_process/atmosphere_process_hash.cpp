@@ -134,30 +134,37 @@ void hash (const Field::view_dev_t<const Real*****>& v,
   hash(accum, accum_out);
 }
 
-void hash (const std::list<FieldGroup>& fgs, HashType& accum_out) {
-  
+void hash (const Field& f, HashType& accum) {
+  const auto& hd = f.get_header();
+  const auto& id = hd.get_identifier();
+  if (id.data_type() != DataType::DoubleType) return;
+  const auto& lo = id.get_layout();
+  const auto rank = lo.rank();
+  switch (rank) {
+  case 1: hash(f.get_view<const Real*    >(), lo, accum); break;
+  case 2: hash(f.get_view<const Real**   >(), lo, accum); break;
+  case 3: hash(f.get_view<const Real***  >(), lo, accum); break;
+  case 4: hash(f.get_view<const Real**** >(), lo, accum); break;
+  case 5: hash(f.get_view<const Real*****>(), lo, accum); break;
+  default: break;
+  }  
 }
 
 void hash (const std::list<Field>& fs, HashType& accum) {
-  for (const auto& f : fs) {
-    const auto& hd = f.get_header();
-    const auto& id = hd.get_identifier();
-    if (id.data_type() != DataType::DoubleType) continue;
-    const auto& lo = id.get_layout();
-    const auto rank = lo.rank();
-    switch (rank) {
-    case 1: hash(f.get_view<const Real*    >(), lo, accum); break;
-    case 2: hash(f.get_view<const Real**   >(), lo, accum); break;
-    case 3: hash(f.get_view<const Real***  >(), lo, accum); break;
-    case 4: hash(f.get_view<const Real**** >(), lo, accum); break;
-    case 5: hash(f.get_view<const Real*****>(), lo, accum); break;
-    default: continue;
-    }
-  }
+  for (const auto& f : fs)
+    hash(f, accum);
+}
+
+void hash (const std::list<FieldGroup>& fgs, HashType& accum) {
+  for (const auto& g : fgs)
+    for (const auto& e : g.m_fields)
+      hash(*e.second, accum);
 }
 } // namespace anon
 
-void AtmosphereProcess::print_global_state_hash (const std::string& label) const {
+void AtmosphereProcess
+::print_global_state_hash (const std::string& label, const bool in, const bool out,
+                           const bool internal) const {
   static constexpr int nslot = 3;
   HashType laccum[nslot] = {0};
   hash(m_fields_in, laccum[0]);
@@ -167,11 +174,13 @@ void AtmosphereProcess::print_global_state_hash (const std::string& label) const
   hash(m_internal_fields, laccum[2]);
   HashType gaccum[nslot];
   all_reduce_HashType(m_comm.mpi_comm(), laccum, gaccum, nslot);
+  const bool show[] = {in, out, internal};
   if (m_comm.am_i_root())
     for (int i = 0; i < nslot; ++i)
-      fprintf(stderr, "exxhash> %4d-%9.5f %1d %16lx (%s)\n",
-              timestamp().get_year(), timestamp().frac_of_year_in_days(),
-              i, gaccum[i], label.c_str());
+      if (show[i])
+        fprintf(stderr, "exxhash> %4d-%9.5f %1d %16lx (%s)\n",
+                timestamp().get_year(), timestamp().frac_of_year_in_days(),
+                i, gaccum[i], label.c_str());
 }
 
 void AtmosphereProcess::print_fast_global_state_hash (const std::string& label) const {

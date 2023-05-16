@@ -150,6 +150,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       <enable_precondition_checks type="logical">true</enable_precondition_checks>
       <enable_postcondition_checks type="logical">true</enable_postcondition_checks>
       <repair_log_level type="string" valid_values="trace,debug,info,warn">trace</repair_log_level>
+      <!-- Run internal checks on code correctness.
+           <= 0: off; >= 1: global hashes over state -->
+      <internal_diagnostics_level type="integer">0</internal_diagnostics_level>
       <compute_tendencies type="array(string)">NONE</compute_tendencies>
     </atm_proc_base>
 
@@ -174,8 +177,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <Grid>Dynamics</Grid>
       <Moisture>moist</Moisture>
       <!-- Frequency in physics steps to output a global hash over the dycore's
-           in fields. <= 0 disables hashing. -->
-      <BfbHash>0</BfbHash>
+           in-fields. <= 0 disables hashing. -->
+      <BfbHash type="integer">0</BfbHash>
     </homme>
 
     <!-- P3 microphysics -->

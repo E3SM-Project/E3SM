@@ -433,7 +433,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     // dynamics helper fields Computed and output on the dynamics grid. Worse
     // for I/O but better for device memory.
     const auto& rgn = m_cgll_grid->name();
-    for (const auto& f : {"horiz_winds", "T_mid", "ps", "phis"})
+    for (const auto& f : {"horiz_winds", "T_mid", "ps", "phis", "pseudo_density"})
       remove_field(f, rgn);
     remove_group("tracers", rgn);
     fv_phys_rrtmgp_active_gases_remap();
