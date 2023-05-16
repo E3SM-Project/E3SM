@@ -78,6 +78,7 @@ contains
     use surfrdMod                 , only: surfrd_get_grid_conn, surfrd_topounit_data
     use elm_varctl                , only: lateral_connectivity, domain_decomp_type
     use decompInitMod             , only: decompInit_lnd_using_gp, decompInit_ghosts
+    use decompInitMod             , only: decompInit_lnd_simple
     use domainLateralMod          , only: ldomain_lateral, domainlateral_init
     use SoilTemperatureMod        , only: init_soil_temperature
     use ExternalModelInterfaceMod , only: EMI_Determine_Active_EMs
@@ -191,7 +192,10 @@ contains
        deallocate(amask)
     case ("graph_partitioning")
        call decompInit_lnd_using_gp(ni, nj, cellsOnCell, nCells_loc, maxEdges, amask)
-    case default
+    case ("simple")
+      call decompInit_lnd_simple(ni, nj, amask)
+      deallocate(amask)
+   case default
        call endrun(msg='ERROR elm_initializeMod: '//&
             'Unsupported domain_decomp_type = ' // trim(domain_decomp_type))
     end select
