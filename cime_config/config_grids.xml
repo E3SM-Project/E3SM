@@ -379,6 +379,16 @@
       <mask>WCAtl12to45E2r4</mask>
     </model_grid>
 
+    <model_grid alias="T62_GoM5to30E2r1" compset="(DATM|XATM|SATM)">
+      <grid name="atm">T62</grid>
+      <grid name="lnd">T62</grid>
+      <grid name="ocnice">GoM5to30E2r1</grid>
+      <grid name="rof">rx1</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>GoM5to30E2r1</mask>
+    </model_grid>
+
     <model_grid alias="T62_SOwISC12to60E2r4" compset="(DATM|XATM|SATM)">
       <grid name="atm">T62</grid>
       <grid name="lnd">T62</grid>
@@ -2293,6 +2303,7 @@
       <file grid="atm|lnd" mask="WCAtl12to45E2r4">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_WCAtl12to45E2r4.210318.nc</file>
       <file grid="atm|lnd" mask="SOwISC12to60E2r4">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_SOwISC12to60E2r4.210119.nc</file>
       <file grid="atm|lnd" mask="ECwISC30to60E2r1">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_ECwISC30to60E2r1.201007.nc</file>
+      <file grid="atm|lnd" mask="GoM5to30E2r1">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_GoM5to30E2r1.221024.nc</file>
       <desc>T62 is Gaussian grid:</desc>
     </domain>
 
@@ -2687,6 +2698,13 @@
       <ny>1</ny>
       <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.WCAtl12to45E2r4.210318.nc</file>
       <desc>WCAtl12to45E2r4 is an MPAS ice/ocean grid with enhanced resolution of 45km over most of the equatorial Atlantic basin, 12km in the Northern Atlantic subpolar gyre, 12km in the Arctic Ocean, with coarsest resolution of 45km in the Pacific mid-latitudes. For the Southern Atlantic and Southern Ocean, resolution is 12km at high latitudes. High resolution transitions smoothly to the background resolution of the standard low resolution 60to30km grid:</desc>
+    </domain>
+
+    <domain name="GoM5to30E2r1">
+      <nx>712849</nx>
+      <ny>1</ny>
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.GoM5to30E2r1.221024.nc</file>
+      <desc>GoM5to30E2r1 is an experimental MPAS ice/ocean grid:</desc>
     </domain>
 
     <domain name="SOwISC12to60E2r4">
@@ -3874,6 +3892,14 @@
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/WCAtl12to45E2r4/map_WCAtl12to45E2r4_to_T62_aave.210318.nc</map>
     </gridmap>
 
+    <gridmap atm_grid="T62" ocn_grid="GoM5to30E2r1">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/T62/map_T62_to_GoM5to30E2r1_aave.221024.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/T62/map_T62_to_GoM5to30E2r1_bilin.221024.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/T62/map_T62_to_GoM5to30E2r1_patch.221024.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/GoM5to30E2r1/map_GoM5to30E2r1_to_T62_aave.221024.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/GoM5to30E2r1/map_GoM5to30E2r1_to_T62_aave.221024.nc</map>
+    </gridmap>
+
     <gridmap atm_grid="T62" ocn_grid="SOwISC12to60E2r4">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/T62/map_T62_to_SOwISC12to60E2r4_aave.210119.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/T62/map_T62_to_SOwISC12to60E2r4-nomask_bilin.210119.nc</map>
@@ -4421,6 +4447,11 @@
     <gridmap ocn_grid="WCAtl12to45E2r4" rof_grid="rx1">
       <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_rx1_to_WCAtl12to45E2r4_smoothed.r150e300.210318.nc</map>
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_rx1_to_WCAtl12to45E2r4_smoothed.r150e300.210318.nc</map>
+    </gridmap>
+
+    <gridmap ocn_grid="GoM5to30E2r1" rof_grid="rx1">
+      <map name="ROF2OCN_ICE_RMAPNAME">cpl/cpl6/map_rx1_to_GoM5to30E2r1_smoothed.r50e100.221017.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_rx1_to_GoM5to30E2r1_smoothed.r50e100.221017.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="SOwISC12to60E2r4" rof_grid="rx1">
