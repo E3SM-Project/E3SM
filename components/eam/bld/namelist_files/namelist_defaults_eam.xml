@@ -1228,6 +1228,17 @@
 <zmconv_mx_bot_lyr_adj                                                >0       </zmconv_mx_bot_lyr_adj>
 <zmconv_dmpdz                                                         >-1.0E-3 </zmconv_dmpdz>
 <zmconv_tp_fac                                                        >0.D0 </zmconv_tp_fac>
+<zmconv_microp                                                        >.false. </zmconv_microp>
+<zmconv_clos_dyn_adj                                                  >.false. </zmconv_clos_dyn_adj>
+<zmconv_tpert_fix                                                     >.false. </zmconv_tpert_fix>
+<zmconv_auto_fac                                                      >7.0D0 </zmconv_auto_fac>
+<zmconv_accr_fac                                                      >1.5D0 </zmconv_accr_fac>
+<zmconv_micro_dcs                                                     >150.E-6</zmconv_micro_dcs>
+<!-- MCSP -->
+<zmconv_MCSP_heat_coeff                                               >0.0D0</zmconv_MCSP_heat_coeff>
+<zmconv_MCSP_moisture_coeff                                           >0.0D0</zmconv_MCSP_moisture_coeff>
+<zmconv_MCSP_uwind_coeff                                              >0.0D0</zmconv_MCSP_uwind_coeff>
+<zmconv_MCSP_vwind_coeff                                              >0.0D0</zmconv_MCSP_vwind_coeff>
 
 <!-- Cloud sedimentation -->
 

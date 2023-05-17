@@ -121,6 +121,19 @@ _TESTS = {
             "ERP_Ln18.ne4_oQU240.F2010.eam-condidiag_rhi",
             )
         },
+    
+    "e3sm_zm_developer" : {
+        "tests"   : (
+            "ERP.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "REP_Ln5.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "PET.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "PEM_Ln18.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.F2010.eam-zm_enhancements",
+            "SMS_D_Ln5.ne4_oQU240.F2010.eam-zm_enhancements",
+            "SMS_Ln5.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "ERS.ne4pg2_oQU480.F2010.eam-zm_enhancements"
+            )
+        },
 
     "e3sm_atm_stealth" : {
         "tests"   : (
