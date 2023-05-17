@@ -23,11 +23,17 @@ public:
 //  TimeInterpolation(const grid_ptr_type& grid, const TimeStamp& ts, const vos_type& list_of_files);
 
   // Running the interpolation
+  void initialize_timestamps(const TimeStamp& ts_in);
+  void initialize_data_from_field(const Field& field_in);
   void update_data_from_field(const Field& field_in);
+  void update_timestamp(const TimeStamp& ts_in);
   std::map<std::string,Field> perform_time_interpolation(const TimeStamp& time_in);
 
   // Build interpolator
   void add_field(const Field& field_in);
+
+  // Informational
+  void print();
 
 protected:
 

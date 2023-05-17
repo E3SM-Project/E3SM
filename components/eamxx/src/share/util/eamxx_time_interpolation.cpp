@@ -95,7 +95,50 @@ void TimeInterpolation::shift_data()
     const auto name = ff->first;
     shift_data(name);
   }
+}
+/*-----------------------------------------------------------------------------------------------*/
+/* Function which will initialize the TimeStamps.
+ * Input:
+ *   ts_in - A timestamp to set both time0 and time1 to. 
+ *
+ * At initialization we assume that only the first timestep of data has been set.  Subsequent
+ * timesteps of data are added using update_data and then a call to update_timestamp will 
+ * shift time0 to time1 and update time1.
+ */
+void TimeInterpolation::initialize_timestamps(const TimeStamp& ts_in)
+{
+  m_time0 = ts_in;
+  m_time1 = ts_in;
+}
+/*-----------------------------------------------------------------------------------------------*/
+/* Function which will initialize field data given an input field.
+ * Input:
+ *   field_in - A field with a name matching one of the fields in the interpolator.  Data will be
+ *              shifted and copied.
+ */
+void TimeInterpolation::initialize_data_from_field(const Field& field_in)
+{
+  const auto name = field_in.name();
+  auto field0 = m_fm_time0->get_field(name);
+  auto field1 = m_fm_time1->get_field(name);
+  field0.deep_copy(field_in);
+  field1.deep_copy(field_in);
+  auto ts = field_in.get_header().get_tracking().get_time_stamp();
+  m_time0 = ts;
+  m_time1 = ts;
+}
+/*-----------------------------------------------------------------------------------------------*/
+/* Function which will update the timestamps by shifting time1 to time0 and setting time1.
+ * Input:
+ *   ts_in - A timestamp for the most recent timestamp of the interpolation data.
+ *
+ * It is assumed that any updated time is meant to replace time1 and that the time1
+ * should be shifted to time0
+ */
+void TimeInterpolation::update_timestamp(const TimeStamp& ts_in)
+{
   m_time0 = m_time1;
+  m_time1 = ts_in;
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* Function which will update field data given an input field.  Useful for time interpolation
@@ -113,6 +156,20 @@ void TimeInterpolation::update_data_from_field(const Field& field_in)
   shift_data(name);
   auto field1 = m_fm_time1->get_field(name);
   field1.deep_copy(field_in);
+}
+/*-----------------------------------------------------------------------------------------------*/
+void TimeInterpolation::print()
+{
+  printf("Settings for time interpolator...\n");
+  printf("Time 0 = %s\n",m_time0.to_string().c_str());
+  printf("Time 1 = %s\n",m_time1.to_string().c_str());
+  printf("List of Fields in interpolator:\n");
+  for (auto ff = m_fm_time0->begin(); ff != m_fm_time0->end(); ff++)
+  {
+    const auto name    = ff->first;
+    printf("     -   %16s\n",name.c_str());
+  }
+
 }
 /*-----------------------------------------------------------------------------------------------*/
 
