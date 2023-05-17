@@ -1652,7 +1652,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: channelVelocity
       real (kind=RKIND), dimension(:), pointer :: gradMagPhiEdge
       real (kind=RKIND), dimension(:), pointer :: waterFlux
-      real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeNormal
+      real (kind=RKIND), dimension(:), pointer :: hydropotentialSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: waterPressureSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: channelOpeningRate
       real (kind=RKIND), dimension(:), pointer :: channelClosingRate
@@ -1698,7 +1698,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'channelDischarge', channelDischarge)
       call mpas_pool_get_array(hydroPool, 'channelVelocity', channelVelocity)
       call mpas_pool_get_array(hydroPool, 'gradMagPhiEdge', gradMagPhiEdge)
-      call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
+      call mpas_pool_get_array(hydroPool, 'hydropotentialSlopeNormal', hydropotentialSlopeNormal)
       call mpas_pool_get_array(hydroPool, 'waterPressureSlopeNormal', waterPressureSlopeNormal)
       call mpas_pool_get_array(hydroPool, 'waterFlux', waterFlux)
       call mpas_pool_get_array(hydroPool, 'channelOpeningRate', channelOpeningRate)
@@ -1720,7 +1720,7 @@ module li_subglacial_hydro
          channelDischarge(:) = 0.0_RKIND
       elsewhere
          channelDischarge = -1.0_RKIND * Kc * channelArea**alpha_c * gradMagPhiEdge**(beta_c - 2.0_RKIND) * &
-            hydropotentialBaseSlopeNormal
+            hydropotentialSlopeNormal
       end where
 
       where (waterFluxMask == 2)
@@ -1752,8 +1752,8 @@ module li_subglacial_hydro
             Kc * channelArea**(alpha_c - 1.0_RKIND) * gradMagPhiEdge**(beta_c - 2.0_RKIND))
       end where
 
-      channelMelt = (abs(channelDischarge * hydropotentialBaseSlopeNormal) &  ! channel dissipation
-                  +  abs(waterFlux * hydropotentialBaseSlopeNormal * config_SGH_incipient_channel_width) & !some sheet dissipation
+      channelMelt = (abs(channelDischarge * hydropotentialSlopeNormal) &  ! channel dissipation
+                  +  abs(waterFlux * hydropotentialSlopeNormal * config_SGH_incipient_channel_width) & !some sheet dissipation
                   ) / latent_heat_ice
       channelPressureFreeze = -1.0_RKIND * iceMeltingPointPressureDependence * cp_freshwater * rho_water * &
          (channelDischarge + waterFlux * config_SGH_incipient_channel_width) &
