@@ -259,6 +259,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterThicknessTendency
       real (kind=RKIND), dimension(:), pointer :: divergenceChannel
       real (kind=RKIND), dimension(:), pointer :: channelAreaChangeCell
+      real (kind=RKIND), dimension(:), pointer :: channelMeltInputCell
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: areaCell
       real (kind=RKIND), dimension(:), pointer :: waterVelocity
@@ -534,6 +535,7 @@ module li_subglacial_hydro
          call mpas_timer_start("halo updates")
          call mpas_dmpar_field_halo_exch(domain, 'divergenceChannel')
          call mpas_dmpar_field_halo_exch(domain, 'channelAreaChangeCell')
+         call mpas_dmpar_field_halo_exch(domain, 'channelMeltInputCell')
          call mpas_dmpar_field_halo_exch(domain, 'channelArea')
          call mpas_timer_stop("halo updates")
       endif
@@ -570,12 +572,16 @@ module li_subglacial_hydro
          call mpas_pool_get_array(hydroPool, 'divergence', divergence)
          call mpas_pool_get_array(hydroPool, 'divergenceChannel', divergenceChannel)
          call mpas_pool_get_array(hydroPool, 'channelAreaChangeCell', channelAreaChangeCell)
+         call mpas_pool_get_array(hydroPool, 'channelMeltInputCell', channelMeltInputCell)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
          waterThicknessOld = waterThickness
-         waterThickness = waterThicknessOld + deltatSGH * ( (basalMeltInput + externalWaterInput) / rho_water - divergence  &
+         waterThickness = waterThicknessOld + deltatSGH * ( &
+             (basalMeltInput + externalWaterInput) / rho_water &
+             + channelMeltInputCell &
+             - divergence  &
              - divergenceChannel - channelAreaChangeCell  &
-             - (Wtill - WtillOld) / deltatSGH)
+             - (Wtill - WtillOld) / deltatSGH )
          waterThickness = waterThickness * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations
          waterThickness = max(0.0_RKIND, waterThickness)
          divergence = divergence * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations for more convenient viz
@@ -1777,6 +1783,7 @@ module li_subglacial_hydro
       end where
       channelChangeRate = channelOpeningRate - channelClosingRate
 
+
    !--------------------------------------------------------------------
    end subroutine update_channel
 
@@ -1816,9 +1823,11 @@ module li_subglacial_hydro
       type (mpas_pool_type), pointer :: meshPool
       real (kind=RKIND), dimension(:), pointer :: channelArea
       real (kind=RKIND), dimension(:), pointer :: channelDischarge
+      real (kind=RKIND), dimension(:), pointer :: channelMelt, channelPressureFreeze
       real (kind=RKIND), dimension(:), pointer :: channelChangeRate
       real (kind=RKIND), dimension(:), pointer :: divergenceChannel
       real (kind=RKIND), dimension(:), pointer :: channelAreaChangeCell
+      real (kind=RKIND), dimension(:), pointer :: channelMeltInputCell
       real (kind=RKIND), pointer :: deltatSGH
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell
@@ -1834,9 +1843,12 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
       call mpas_pool_get_array(hydroPool, 'channelArea', channelArea)
       call mpas_pool_get_array(hydroPool, 'channelDischarge', channelDischarge)
+      call mpas_pool_get_array(hydroPool, 'channelMelt', channelMelt)
+      call mpas_pool_get_array(hydroPool, 'channelPressureFreeze', channelPressureFreeze)
       call mpas_pool_get_array(hydroPool, 'channelChangeRate', channelChangeRate)
       call mpas_pool_get_array(hydroPool, 'divergenceChannel', divergenceChannel)
       call mpas_pool_get_array(hydroPool, 'channelAreaChangeCell', channelAreaChangeCell)
+      call mpas_pool_get_array(hydroPool, 'channelMeltInputCell', channelMeltInputCell)
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
@@ -1848,6 +1860,7 @@ module li_subglacial_hydro
       ! Calculate flux divergence on cells and channel area change on cells
       divergenceChannel(:) = 0.0_RKIND  ! zero div before accumulating
       channelAreaChangeCell(:) = 0.0_RKIND  ! zero before accumulating
+      channelMeltInputCell(:) = 0.0_RKIND  ! zero before accumulating
       ! loop over locally owned cells
       do iCell = 1, nCellsSolve
          ! TODO: could limit to grounded cells only
@@ -1858,10 +1871,12 @@ module li_subglacial_hydro
             divergenceChannel(iCell) = divergenceChannel(iCell) - channelDischarge(iEdge) * edgeSignOnCell(iEdgeOnCell, iCell)
             channelAreaChangeCell(iCell) = channelChangeRate(iEdge) * dcEdge(iEdge) * 0.5_RKIND
                ! < only half of channel is in this cell
+            channelMeltInputCell(iCell) = 0.5_RKIND * (channelMelt(iEdge) - channelPressureFreeze(iEdge)) * dcEdge(iEdge) / rho_water
          end do ! edges
       end do ! cells
       divergenceChannel(1:nCellsSolve) = divergenceChannel(1:nCellsSolve) / areaCell(1:nCellsSolve)
       channelAreaChangeCell(1:nCellsSolve) = channelAreaChangeCell(1:nCellsSolve) / areaCell(1:nCellsSolve)
+      channelMeltInputCell(1:nCellsSolve) = channelMeltInputCell(1:nCellsSolve) / areaCell(1:nCellsSolve)
 
       ! Now update channel area
       channelArea = channelChangeRate * deltatSGH + channelArea

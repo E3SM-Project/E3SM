@@ -251,6 +251,8 @@
                      description="divergence due to channel flow in subglacial hydrology system" />
                 <var name="channelAreaChangeCell" type="real" dimensions="nCells Time" units="m s^{-1}"
                      description="change in channel area within each cell, averaged over cell area" />
+                <var name="channelMeltInputCell" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="rate of channel melt production within each cell, averaged over cell area" />
                 <var name="channelDiffusivity" type="real" dimensions="nEdges Time" units="m^{2} s^{-1}"
                      description="diffusivity in channel in subglacial hydrology system" />
 
