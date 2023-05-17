@@ -40,7 +40,7 @@ def atm_config_chg(changes, no_buffer=False, reset=False, all_matches=False):
 
     any_change = False
     for change in changes:
-        node_found, this_changed = atm_config_chg_impl(None, root, change, all_matches)
+        node_found, this_changed = atm_config_chg_impl(root, change, all_matches)
         expect (node_found,
                 f"Error! Change {change} did not yield any match in the XML file")
         any_change |= this_changed

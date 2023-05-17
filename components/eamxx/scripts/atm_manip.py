@@ -76,9 +76,6 @@ def find_node (root,name,recurse=True):
     None
     """
 
-    if root.tag==name:
-        return root, []
-
     for elem in root:
         if elem.tag==name:
             return elem, [root]
@@ -90,7 +87,7 @@ def find_node (root,name,recurse=True):
     return None, []
 
 ###############################################################################
-def get_xml_node(xml_root,name,allow_not_found=False):
+def get_xml_node(xml_root,name):
 ###############################################################################
     """
     >>> xml = '''
@@ -152,24 +149,19 @@ def get_xml_node(xml_root,name,allow_not_found=False):
         node = xml_root
         parents = []
     else:
-        expect (allow_not_found or num_nodes_with_name(xml_root,s,recurse=True)>0,
+        expect (num_nodes_with_name(xml_root,s,recurse=True)>0,
             f"Error! XML entry {s} not found in section {xml_root.tag}")
-        expect (allow_not_found or num_nodes_with_name(xml_root,s,recurse=True)==1,
+        expect (num_nodes_with_name(xml_root,s,recurse=True)==1,
             f"Error! Multiple XML entries with name {s} found in section {xml_root.tag}",
             AmbiguousName)
 
         node, parents = find_node(xml_root,s,recurse=True)
 
-    if node is None:
-        expect (allow_not_found,
-                f"Error! XML entry {s} not found in section {xml_root.tag}")
-        return None, []
-
     # If user specified selectors via namespace, recurse over them
     for s in selectors[1:]:
-        expect (allow_not_found or num_nodes_with_name(node,s,recurse=False)>0,
+        expect (num_nodes_with_name(node,s,recurse=False)>0,
             f"Error! XML entry {s} not found in section {node.tag}")
-        expect (allow_not_found or num_nodes_with_name(node,s,recurse=False)==1,
+        expect (num_nodes_with_name(node,s,recurse=False)==1,
             f"Error! Multiple XML entries with name {s} found in section {node.tag}")
 
         node, parents = find_node(node,s,recurse=False)
@@ -230,7 +222,7 @@ def parse_change (change):
     return node_name,new_value,append_this
 
 ###############################################################################
-def atm_config_chg_impl(xml_parent, xml_node, change, all_matches=False):
+def atm_config_chg_impl(xml_root,change, all_matches=False):
 ###############################################################################
     """
     >>> xml = '''
@@ -250,61 +242,64 @@ def atm_config_chg_impl(xml_parent, xml_node, change, all_matches=False):
     >>> import xml.etree.ElementTree as ET
     >>> tree = ET.fromstring(xml)
     >>> ################ INVALID SYNTAX #######################
-    >>> atm_config_chg_impl(None,tree,'prop1->2')
+    >>> atm_config_chg_impl(tree,'prop1->2')
     Traceback (most recent call last):
     SystemExit: ERROR: Invalid change request 'prop1->2'. Valid formats are:
       - A[::B[...]=value
       - A[::B[...]+=value  (implies append for this change)
     >>> ################ INVALID TYPE #######################
-    >>> atm_config_chg_impl(None,tree,'prop2=two')
+    >>> atm_config_chg_impl(tree,'prop2=two')
     Traceback (most recent call last):
     ValueError: Could not use 'two' as type 'integer'
     >>> ################ INVALID VALUE #######################
-    >>> atm_config_chg_impl(None,tree,'prop2=3')
+    >>> atm_config_chg_impl(tree,'prop2=3')
     Traceback (most recent call last):
     CIME.utils.CIMEError: ERROR: Invalid value '3' for element 'prop2'. Value not in the valid list ('[1, 2]')
     >>> ################ VALID USAGE #######################
-    >>> atm_config_chg_impl(None,tree,'::prop1=two')
+    >>> atm_config_chg_impl(tree,'::prop1=two')
     (True, True)
-    >>> atm_config_chg_impl(None,tree,'::prop1=two')
+    >>> atm_config_chg_impl(tree,'::prop1=two')
     (True, False)
-    >>> atm_config_chg_impl(None,tree,'sub::prop1=one')
+    >>> atm_config_chg_impl(tree,'sub::prop1=one')
     (True, True)
     >>> ################ TEST APPEND += #################
-    >>> atm_config_chg_impl(None,tree,'a+=4')
+    >>> atm_config_chg_impl(tree,'a+=4')
     (True, True)
-    >>> get_xml_node(None,tree,'a')[0].text
+    >>> get_xml_node(tree,'a')[0].text
     '1,2,3, 4'
     >>> ################ ERROR, append to non-array and non-string
-    >>> atm_config_chg_impl(None,tree,'c+=2')
+    >>> atm_config_chg_impl(tree,'c+=2')
     Traceback (most recent call last):
     SystemExit: ERROR: Error! Can only append with array and string types.
         - name: c
         - type: int
     >>> ################ Append to string ##################
-    >>> atm_config_chg_impl(None,tree,'d+=two')
+    >>> atm_config_chg_impl(tree,'d+=two')
     (True, True)
-    >>> get_xml_node(None,tree,'d')[0].text
+    >>> get_xml_node(tree,'d')[0].text
     'onetwo'
     >>> ################ Append to array(string) ##################
-    >>> atm_config_chg_impl(None,tree,'e+=two')
+    >>> atm_config_chg_impl(tree,'e+=two')
     (True, True)
-    >>> get_xml_node(None,tree,'e')[0].text
+    >>> get_xml_node(tree,'e')[0].text
     'one, two'
     """
 
     any_change = False
     node_found = False
-    if all_matches and len(xml_node)>0:
+    if all_matches and len(xml_root)>0:
         # We have to go through the whole tree, since we need to apply
         # the changes to all nodes matching the node name
-        for elem in xml_node:
-            found_here, changed_here = atm_config_chg_impl(xml_node,elem,change, all_matches)
+        for elem in xml_root:
+            found_here, changed_here = atm_config_chg_impl(elem,change, all_matches)
             any_change |= changed_here
             node_found |= found_here
     else:
         node_name,new_value,append_this = parse_change(change)
-        node, __ = get_xml_node(xml_parent,node_name,allow_not_found=all_matches)
+        if all_matches:
+            node = xml_root if xml_root.tag==node_name else None
+        else:
+            node, __ = get_xml_node(xml_root,node_name)
 
         node_found = node is not None
         if node is not None:
