@@ -3169,6 +3169,8 @@
     <COMPILERS>oneapi-ifx,oneapi-ifxgpu,oneapi-ifort,gnu</COMPILERS>
     <MPILIBS>mpich,impi,openmpi</MPILIBS>
     <CHARGE_ACCOUNT>CSC249ADSE15_CNDA</CHARGE_ACCOUNT>
+    <SAVE_TIMING_DIR>/gila/CSC249ADSE15_CNDA/performance_archive</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>    
     <CIME_OUTPUT_ROOT>/lus/gila/projects/CSC249ADSE15_CNDA/$USER/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lus/gila/projects/CSC249ADSE15_CNDA/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lus/gila/projects/CSC249ADSE15_CNDA/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -3190,10 +3192,10 @@
     <mpirun mpilib="default">
        <executable>mpiexec</executable>
        <arguments>
-          <arg name="total_num_tasks">-n {{ total_tasks }} --label</arg>
-          <arg name="ranks_per_nodes">-ppn {{ tasks_per_node }}</arg>
-          <arg name="ranks_bind">--cpu-bind depth -envall</arg>
-          <arg name="gpu_maps">/soft/tools/mpi_wrapper_utils/gpu_tile_compact.sh</arg>
+          <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
+          <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
+          <arg name="ranks_bind">--cpu-bind core -envall</arg>
+	  <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
        </arguments>
     </mpirun>
     <mpirun mpilib="openmpi">
@@ -3254,11 +3256,13 @@
         <env name="romio_cb_write">disable</env>
         <env name="SYCL_CACHE_PERSISTENT">1</env>
         <env name="GATOR_INITIAL_MB">4000MB</env>
-        <env name="GATOR_DISABLE">0</env>
+	<env name="GATOR_DISABLE">0</env>
+        <env name="GPU_TILE_COMPACT">/soft/tools/mpi_wrapper_utils/gpu_tile_compact.sh</env>	
     </environment_variables>
     <environment_variables compiler="oneapi-ifx">
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
-        <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
+	<env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
+        <env name="GPU_TILE_COMPACT"> </env>	
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="!gnu">
         <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
