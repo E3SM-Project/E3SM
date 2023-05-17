@@ -505,6 +505,9 @@ def create_raw_xml_file(case, caseroot):
         # atmchange requests.
         atmchg_buffer = case.get_value("SCREAM_ATMCHANGE_BUFFER")
         if atmchg_buffer:
+            if "--all" in atmchg_buffer:
+                atmchg_buffer = atmchg_buffer.replace("--all", "") + " --all"
+
             run_cmd_no_fail("{}/atmchange {} --no-buffer".format(caseroot, atmchg_buffer))
 
 ###############################################################################

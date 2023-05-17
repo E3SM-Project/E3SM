@@ -13,11 +13,11 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 from eamxx_buildnml_impl import check_value, is_array_type
-from atm_manip import get_xml_node, atm_config_chg_impl
+from atm_manip import atm_config_chg_impl
 from utils import run_cmd_no_fail, expect
 
 ###############################################################################
-def atm_config_chg(changes, no_buffer=False, reset=False):
+def atm_config_chg(changes, no_buffer=False, reset=False, all_matches=False):
 ###############################################################################
     expect(os.path.exists("namelist_scream.xml"),
            "No pwd/namelist_scream.xml file is present. Please run from a case dir that has been set up")
@@ -38,13 +38,19 @@ def atm_config_chg(changes, no_buffer=False, reset=False):
         tree = ET.parse(fd)
         root = tree.getroot()
 
-    any_change = atm_config_chg_impl(root,changes)
+    any_change = False
+    for change in changes:
+        this_changed = atm_config_chg_impl(root, change, all_matches)
+        any_change |= this_changed
 
     if any_change:
         tree.write("namelist_scream.xml")
 
     if not no_buffer:
         changes_str = " ".join(changes).replace(",",r"\,")
+        if all_matches:
+            changes_str += " --all"
+
         run_cmd_no_fail(f"./xmlchange --append SCREAM_ATMCHANGE_BUFFER='{changes_str}'")
 
     return True
@@ -72,14 +78,21 @@ OR
     )
 
     parser.add_argument(
-        "--no-buffer",
+        "-n", "--no-buffer",
         default=False,
         action="store_true",
         help="Used by buildnml to replay buffered commands",
     )
 
     parser.add_argument(
-        "--reset",
+        "-a", "--all",
+        default=False,
+        dest="all_matches",
+        action="store_true",
+        help="Apply change to all entries matching the name"
+    )
+    parser.add_argument(
+        "-r", "--reset",
         default=False,
         action="store_true",
         help="Forget all previous atmchanges",
