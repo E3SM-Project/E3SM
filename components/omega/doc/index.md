@@ -44,6 +44,7 @@ design/Halo
 design/Logging
 design/MachEnv
 design/TimeMgr
+design/Reductions
 
 design/OmegaDesignTemplate
 ```
