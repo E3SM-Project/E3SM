@@ -18,6 +18,14 @@ TimeInterpolation::TimeInterpolation(
   m_fm_time1->registration_ends();
 }
 /*-----------------------------------------------------------------------------------------------*/
+TimeInterpolation::TimeInterpolation(
+  const grid_ptr_type& grid, 
+  const vos_type& list_of_files
+) : TimeInterpolation(grid)
+{
+  initialize_data_from_file(list_of_files);
+}
+/*-----------------------------------------------------------------------------------------------*/
 /* A function to perform time interpolation using data from all the fields stored in the local
  * field managers.
  * Conducts a simple linear interpolation between two points using
@@ -34,6 +42,11 @@ std::map<std::string,Field> TimeInterpolation::perform_time_interpolation(const 
   // Declare the output map
   std::map<std::string,Field> interpolated_fields;
 
+  // If data is handled by files we need to check that the timestamps are still relevant
+  if (m_data_from_file) {
+    check_and_update_data(time_in);
+  }
+
   // Gather weights for interpolation.  Note, timestamp differences are integers and we need a
   // real defined weight.
   const Real w_num = m_time1 - time_in;
@@ -41,9 +54,8 @@ std::map<std::string,Field> TimeInterpolation::perform_time_interpolation(const 
   const Real weight = w_num/w_den;
 
   // Cycle through all stored fields and conduct the time interpolation
-  for (auto ff = m_fm_time0->begin(); ff != m_fm_time0->end(); ff++)
+  for (auto name : m_field_names)
   {
-    const auto name    = ff->first;
     const auto& field0 = m_fm_time0->get_field(name);
     const auto& field1 = m_fm_time1->get_field(name);
     Field field_out    = field0.clone();
@@ -73,6 +85,7 @@ void TimeInterpolation::add_field(const Field& field_in)
   auto field1 = field_in.clone();
   m_fm_time0->add_field(field0);
   m_fm_time1->add_field(field1);
+  m_field_names.push_back(name);
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* Function to shift the data of a single field from time1 to time0
@@ -90,9 +103,8 @@ void TimeInterpolation::shift_data(const std::string& name)
  */
 void TimeInterpolation::shift_data()
 {
-  for (auto ff = m_fm_time0->begin(); ff != m_fm_time0->end(); ff++)
+  for (auto name : m_field_names)
   {
-    const auto name = ff->first;
     shift_data(name);
   }
 }
@@ -126,6 +138,29 @@ void TimeInterpolation::initialize_data_from_field(const Field& field_in)
   auto ts = field_in.get_header().get_tracking().get_time_stamp();
   m_time0 = ts;
   m_time1 = ts;
+}
+/*-----------------------------------------------------------------------------------------------*/
+/* Function which will initialize the full set of fields given a list of files pointing to where
+ * the data can be found.
+ * Input:
+ *   list_of_files: A vector of strings representing all the files where interpolation data can be
+ *                  gathered.
+ */
+void TimeInterpolation::initialize_data_from_file(const vos_type& list_of_files)
+{
+  set_file_data_triplets(list_of_files);
+  // Initialize the AtmosphereInput object that will be used to gather data
+  ekat::ParameterList input_params;
+  input_params.set("Field Names",m_field_names);
+  input_params.set("Filename",m_triplet_iterator->filename);
+  m_file_data_atm_input = AtmosphereInput(input_params,m_fm_time1);
+  // Read first snap of data and shift to time0
+  read_data();
+  shift_data();
+  // Advance the iterator and read the next set of data for time1
+  ++m_triplet_iterator;
+  read_data();
+  update_timestamp(m_triplet_iterator->timestamp);
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* Function which will update the timestamps by shifting time1 to time0 and setting time1.
@@ -164,12 +199,140 @@ void TimeInterpolation::print()
   printf("Time 0 = %s\n",m_time0.to_string().c_str());
   printf("Time 1 = %s\n",m_time1.to_string().c_str());
   printf("List of Fields in interpolator:\n");
-  for (auto ff = m_fm_time0->begin(); ff != m_fm_time0->end(); ff++)
+  for (auto name : m_field_names)
   {
-    const auto name    = ff->first;
     printf("     -   %16s\n",name.c_str());
   }
 
+}
+/*-----------------------------------------------------------------------------------------------*/
+/* Function to organize the data available from data files by time.  This is necessary to quickly
+ * grab the appropriate data each time interpolation is requested.
+ * Input:
+ *   list_of_files - Is a vector of strings representing all files that can be used for data.
+ *
+ * We use the m_time0 as the reference time when sorting the data snaps.
+ */
+void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
+  EKAT_REQUIRE_MSG(list_of_files.size()>0,"ERROR! TimeInterpolation::set_file_data_triplets - the list of files is empty. Please check.");
+  // The first step is to grab all relevant metadata for the DataFromFileTriplet objects.
+  // We will store the times in a map and take advantage of maps natural sorting to organize the triplets
+  // in chronological order.  This ensures that if the list of files does not represent the chronological
+  // order to the data we will still have sorted data.
+  vos_type               filenames_tmp;
+  std::vector<TimeStamp> timestamps_tmp;
+  std::vector<int>       time_idx_tmp;
+  std::map<int,int>      map_of_times_to_vector_idx;
+  int running_idx = 0;
+  for (int ii=0; ii<list_of_files.size(); ii++) {
+    const auto filename = list_of_files[ii];
+    // Reference TimeStamp
+    const int date_start = scorpio::get_attribute<int>(filename,"start_date"); // Start date is in YYYYMMDD format
+    const int time_start = scorpio::get_attribute<int>(filename,"start_time"); // Start time is in hhmmss format
+    // Need to parse the start time and date into a timestamp
+    const int YY = date_start/10000;
+    const int MM = (date_start - YY*10000)/100;
+    const int DD = (date_start - YY*10000 - MM*100);
+    const int hh = time_start/10000;
+    const int mm = (time_start - hh*10000)/100;
+    const int ss = (time_start - hh*10000 - mm*100);
+    TimeStamp ts_file_start(YY,MM,DD,hh,mm,ss);
+    // Gather information about time in this file
+    scorpio::register_file(filename,scorpio::Read);
+    const int ntime = scorpio::get_dimlen(filename,"time");
+    for (int tt=0; tt<ntime; tt++) {
+      auto time_snap = scorpio::read_time_at_index_c2f(filename.c_str(),tt+1);
+      TimeStamp ts_snap = ts_file_start;
+      if (time_snap>0) {
+        ts_snap += (time_snap*86400); // note, time is assumed to be in days.
+      }
+      auto time = ts_snap.seconds_from(m_time0);
+      map_of_times_to_vector_idx.emplace(time,running_idx);
+      filenames_tmp.push_back(filename);
+      timestamps_tmp.push_back(ts_snap);
+      time_idx_tmp.push_back(tt);
+      ++running_idx;
+    }
+  }
+  // Now that we have gathered all of the timesnaps we can arrange them in order as DataFromFileTriplet objects.
+  // Taking advantage of maps automatically self-sorting by the first arg.
+  for (auto a : map_of_times_to_vector_idx) {
+    auto idx = a.second;
+    DataFromFileTriplet my_trip;
+    my_trip.filename  = filenames_tmp[idx];
+    my_trip.timestamp = timestamps_tmp[idx];
+    my_trip.time_idx  = time_idx_tmp[idx];
+    m_file_data_triplets.push_back(my_trip);
+  }
+  // Finally set the iterator to point to the first triplet.
+  m_triplet_iterator = m_file_data_triplets.begin();
+}	
+/*-----------------------------------------------------------------------------------------------*/
+/* Function to read a new set of data from file using the current iterator pointing to the current
+ * DataFromFileTriplet.
+ */
+void TimeInterpolation::read_data()
+{
+  if (m_triplet_iterator->filename != m_file_data_atm_input.get_filename()) {
+    // Then we need to close this input stream and open a new one
+    m_file_data_atm_input.finalize();
+    ekat::ParameterList input_params;
+    input_params.set("Field Names",m_field_names);
+    input_params.set("Filename",m_triplet_iterator->filename);
+    m_file_data_atm_input = AtmosphereInput(input_params,m_fm_time1);
+  }
+  m_file_data_atm_input.read_variables(m_triplet_iterator->time_idx);
+  m_time1 = m_triplet_iterator->timestamp;
+}
+/*-----------------------------------------------------------------------------------------------*/
+/* Function to check the current set of interpolation data against a timestamp and, if needed,
+ * update the set of interpolation data to ensure the passed timestamp is within the bounds of
+ * the interpolation data.
+ * Input:
+ *   ts_in - A timestamp that we intend to interpolate onto.
+ */
+void TimeInterpolation::check_and_update_data(const TimeStamp& ts_in)
+{
+  // First check if the passed timestamp is within the bounds of time0 and time1.
+  bool current_data_okay = (ts_in.seconds_from(m_time0) >= 0) and (m_time1.seconds_from(ts_in) >= 0);
+  if (!current_data_okay) {
+    // The timestamp is out of bounds, need to load new data.
+    // First cycle through the DataFromFileTriplet's to find a timestamp that is greater than this one.
+    bool found = false;
+    int step_cnt = 0; // Track how many triplets we passed to find one that worked. 
+    while (m_triplet_iterator != m_file_data_triplets.end() and step_cnt < m_file_data_triplets.size()) {
+      ++m_triplet_iterator;
+      ++step_cnt;
+      auto ts_tmp = m_triplet_iterator->timestamp;
+      if (ts_tmp.seconds_from(ts_in) >= 0) {
+        // This timestamp is greater than the input timestamp, we can use it
+	found = true;
+	break;
+      }
+    }
+    EKAT_REQUIRE_MSG(found,"ERROR!! TimeInterpolation::check_and_update_data - timestamp " << ts_in.to_string() << "is outside the bounds of the set of data files." << "\n"
+		   <<  "     TimeStamp time0: " << m_time0.to_string() << "\n"
+		   <<  "     TimeStamp time1: " << m_time1.to_string() << "\n");
+    // Now we need to make sure we didn't jump more than one triplet, if we did then the data at time0 is
+    // incorrect.
+    if (step_cnt>1) {
+      // Then we need to populate data for time1 as the previous triplet before shifting data to time0
+      --m_triplet_iterator;
+      read_data();
+      ++m_triplet_iterator;
+    }
+    // We shift the time1 data to time0 and read the new data.
+    shift_data();
+    update_timestamp(m_triplet_iterator->timestamp);
+    read_data();
+    // Sanity Check
+    bool current_data_check = (ts_in.seconds_from(m_time0) >= 0) and (m_time1.seconds_from(ts_in) >= 0);
+    EKAT_REQUIRE_MSG(current_data_check,"ERROR!! TimeInterpolation::check_and_update_data - Something went wrong in updating data:\n"
+		   <<  "      TimeStamp    IN: " << ts_in.to_string() << "\n"
+		   <<  "      TimeStamp time0: " << m_time0.to_string() << "\n"
+		   <<  "      TimeStamp time1: " << m_time1.to_string() << "\n");
+
+  }
 }
 /*-----------------------------------------------------------------------------------------------*/
 
