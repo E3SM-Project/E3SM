@@ -34,6 +34,7 @@ module ocn_time_integration_lts
    use ocn_tendency
    use ocn_diagnostics
    use ocn_mesh
+   use ocn_vmix
    use ocn_config
    use ocn_diagnostics_variables
    use ocn_equation_of_state
@@ -166,6 +167,9 @@ module ocn_time_integration_lts
        weightOld, weightNew, weightTend ! coefficents for the time advancing
     real (kind=RKIND) :: &
        weightTendSum1st, weightTendSum2nd, weightTendSum3rd ! coefficients for the interface correction
+
+    integer err 
+    err = 0
 
     if (.not. config_disable_tr_all_tend) then
 
@@ -1017,6 +1021,15 @@ module ocn_time_integration_lts
     call mpas_dmpar_field_halo_exch(domain, 'normalVelocity', timeLevel=2)
     call mpas_dmpar_field_halo_exch(domain, 'layerThickness', timeLevel=2)
     call mpas_timer_stop("lts prognostic halo update")
+
+    call mpas_timer_start("lts implicit vmix")
+    if (.not. config_disable_vel_vmix) then
+       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 2)
+       call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, scratchPool, err, 2)
+       call mpas_dmpar_field_halo_exch(domain, 'normalVelocity', timeLevel=2)
+       call mpas_dmpar_field_halo_exch(domain, 'layerThickness', timeLevel=2)
+    end if   
+    call mpas_timer_stop("lts implicit vmix")
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! END LTS SCHEME
