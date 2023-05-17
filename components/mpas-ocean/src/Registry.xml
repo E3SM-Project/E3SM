@@ -56,10 +56,10 @@
 		<dim name="nVertLevelsP1" definition="nVertLevels+1"
 			 description="The number of interfaces in the vertical direction."
 		/>
-                <dim name="nBenthicVertLevels" definition="29" units="unitless"
+                <dim name="nBenthicVertLevels" definition="29"
                          description="The number of levels in the benthos vertical direction."
                 />
-                <dim name="nBenthicVertLevelsP1" definition="nBenthicVertLevels+1" units="unitless"
+                <dim name="nBenthicVertLevelsP1" definition="nBenthicVertLevels+1"
                          description="The number of interfaces in the benthos vertical direction."
                 />
 		<dim name="nPoints" definition="1"
