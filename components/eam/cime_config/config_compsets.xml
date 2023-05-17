@@ -81,6 +81,27 @@
     <lname>2010_EAM%CMIP6-P3_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
+
+  <compset>
+    <alias>FSSP370</alias>
+    <lname>SSP370_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FSSP370_chemUCI-Linozv2</alias>
+    <lname>SSP370_EAM%CHEMUCI-LINOZV2_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FSSP585</alias>
+    <lname>SSP585_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FSSP585_chemUCI-Linozv2</alias>
+    <lname>SSP585_EAM%CHEMUCI-LINOZV2_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
   <!-- *********************************** -->
   <!-- Single column model -->
   <!-- *********************************** -->
