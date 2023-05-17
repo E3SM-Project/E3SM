@@ -1,5 +1,5 @@
-# OMEGA Requirements and Design:
-## *MyClassOrModuleName*
+(omega-design-my-class)=
+# Template: MyClassOrModuleName
 
 ## 1 Overview
 
@@ -19,13 +19,27 @@ Avoid getting into design or implementation details
 
 ### 2.3 Desired: zzz
 
-Clear statement of desired feature and reason for including (eg design needs to take this into account for future capability).
+Clear statement of desired feature and reason for including (e.g. design needs 
+to take this into account for future capability).
 
 ## 3 Algorithmic Formulation
 
 Describe any algorithms or point to references that are important for implementation
 
+You can include math in Latex format like his:
+
+$$
+(a + b)^2  &=  (a + b)(a + b) \\
+           &=  a^2 + 2ab + b^2
+$$
+
 ## 4 Design
+
+You can include code blocks like this:
+
+```c++
+int var = value;
+```
 
 ### 4.1 Data types and parameters
 
@@ -39,9 +53,8 @@ Describe any public data types and/or the class definition
 
 ### 4.2 Methods
 
-List and describe all public methods and their interfaces (actual code for interface that would be in header file). Describe typical use cases.
-
-
+List and describe all public methods and their interfaces (actual code for 
+interface that would be in header file). Describe typical use cases.
 
 ## 5 Verification and Testing
 
@@ -56,5 +69,3 @@ List which requirements it tests:
 Describe test including conditions for pass/fail
 List which requirements it tests: 
   - tests requirement zzz
-
-

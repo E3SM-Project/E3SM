@@ -11,13 +11,16 @@ on:
 
 env:
   CANCEL_OTHERS: true
-  PATHS_IGNORE: '["**/README.md", "**/docs/**"]'
+  PATHS_IGNORE: '["**/README.md", "**/doc/**"]'
 
 jobs:
-  pre-commit-hooks:
-    name: lint with pre-commit - python ${{ matrix.python-version }}
+  build:
+    name: lint with pre-commit and build docs
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash -l {0}
     strategy:
       matrix:
         python-version: ["3.10",]
@@ -53,7 +56,7 @@ jobs:
           miniforge-version: latest
           use-mamba: true
           mamba-version: "*"
-          channels: conda-forge,e3sm/label/compass,defaults
+          channels: conda-forge,defaults
           channel-priority: strict
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
@@ -61,8 +64,10 @@ jobs:
       - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
         name: Install dependencies
         run: |
+          mamba create -n omega_dev --file components/omega/dev-conda.txt \
+              python=${{ matrix.python-version }}
+          conda activate omega_dev
           mamba list
-          mamba install -y --file components/omega/dev-conda.txt
 
       - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
         id: file_changes
@@ -78,3 +83,10 @@ jobs:
         uses: pre-commit/action@v3.0.0
         with:
           extra_args: --files ${{ steps.file_changes.outputs.files}}
+
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Build Sphinx Docs
+        run: |
+          conda activate omega_dev
+          cd components/omega/doc
+          make html

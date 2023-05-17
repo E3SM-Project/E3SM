@@ -1,0 +1,88 @@
+name: CI/CD Release Workflow
+
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  publish-docs:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Cache Conda
+        uses: actions/cache@v3
+        env:
+          # Increase this value to reset cache if conda-dev-spec.template has not changed in the workflow
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-${{ matrix.python-version }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('components/omega/dev-conda.txt') }}
+
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Set up Conda Environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: "omega_ci"
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          use-mamba: true
+          mamba-version: "*"
+          channels: conda-forge,defaults
+          channel-priority: strict
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Install dependencies
+        run: |
+          mamba create -n omega_dev --file components/omega/dev-conda.txt \
+              python=${{ matrix.python-version }}
+          conda activate omega_dev
+          mamba list
+
+      - name: Build Sphinx Docs
+        run: |
+          conda activate omega_dev
+          cd components/omega/doc
+          make html
+      - name: Copy Docs and Commit
+        run: |
+          conda activate omega_dev
+          cd components/omega/doc
+          # gh-pages branch must already exist
+          git clone https://github.com/E3SM-Project/Omega.git --branch gh-pages --single-branch gh-pages
+          # Make sure we're in the gh-pages directory.
+          cd gh-pages
+          # Create `.nojekyll` (if it doesn't already exist) for proper GH Pages configuration.
+          touch .nojekyll
+          # Add `index.html` to point to the `main` branch automatically.
+          printf '<meta http-equiv="refresh" content="0; url=./develop/index.html" />' > index.html
+          # Replace `develop` docs with latest changes
+          rm -rf develop
+          mkdir develop
+          cp -r ../_build/html/* develop/
+          # Configure git using GitHub Actions credentials.
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          # The second command will fail if no changes were present, so we ignore it
+          git add .
+          git commit -m "Update documentation" -a || true
+
+      - name: Push Changes
+        uses: ad-m/github-push-action@master
+        with:
+          branch: gh-pages
+          directory: components/omega/doc/gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          force: true
