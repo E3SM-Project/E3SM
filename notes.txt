@@ -1,0 +1,35 @@
+This branch adds pm-cpu to maint-1.0, but there are still some changes
+required to get tests running.
+
+
+There are build errors with some cases using Intel that can be resolved using a more
+recent xml_stream_parser.c.  The one here in this directory is from a recent version
+of E3SM main.
+
+cp xml_stream_parser.c components/mpas-source/src/framework/xml_stream_parser.c
+
+The build error without this change might be:
+xml_stream_parser.c:1732:6: error: call to undeclared function 'stream_mgr_add_field_c'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+                                        stream_mgr_add_field_c(manager, streamID, (const char *)fieldname, packages_local, &err);
+                                        ^
+
+
+With higher version of GNU (which is all that is avail on PM), need this change for some GNU builds:
+
+Some cases may hit runtime error. A change to compiler flag for one file is current solution in E3SM main.
+However, the version of CIME (CMake logic) is too old to handle per-source compielr flag changes for MPAS.
+One work-around is to remove this optimization flag for _all_ MPAS sources.
+The following change turns off the optimization for all MPAS source files.
+
+cp Makefile.in.ACME components/mpas-source/src/Makefile.in.ACME
+
+-----------------------
+Additionally, for GNU, here are two places that were failing with runtime segfault in DEBUG (for some tests)
+due to the compiler looking-ahead and trying to parse an experession B that should only be evaluated if A is true.
+I think these changes are safe:
+
+cp RtmMod.F90 components/mosart/src/riverroute/RtmMod.F90
+cp micro_mg2_0.F90 components/cam/src/physics/cam/micro_mg2_0.F90
+
+We can decide how important fixes like these are. I don't see a fix in current master
+at these locations, but it's possible the code flow doesn't happen same way in maint-1.0
