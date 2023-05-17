@@ -8,6 +8,8 @@
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 
+#include "share/io/scorpio_input.hpp"
+
 namespace scream{
 namespace util {
 
@@ -20,11 +22,12 @@ public:
   // Constructors
   TimeInterpolation() = default;
   TimeInterpolation(const grid_ptr_type& grid);
-//  TimeInterpolation(const grid_ptr_type& grid, const TimeStamp& ts, const vos_type& list_of_files);
+  TimeInterpolation(const grid_ptr_type& grid, const vos_type& list_of_files);
 
   // Running the interpolation
   void initialize_timestamps(const TimeStamp& ts_in);
   void initialize_data_from_field(const Field& field_in);
+  void initialize_data_from_file(const vos_type& list_of_files);
   void update_data_from_field(const Field& field_in);
   void update_timestamp(const TimeStamp& ts_in);
   std::map<std::string,Field> perform_time_interpolation(const TimeStamp& time_in);
@@ -37,17 +40,44 @@ public:
 
 protected:
 
+  // Internal structure to store data source triplets (when using data from file)
+  // For each timesnap of data we have access to this triplet stores the
+  //  - filename
+  //  - timestamp
+  //  - time index in the file.
+  // Note, in many cases we will have files with multiple snaps of data and we
+  // need a good way to organize this information.
+  struct DataFromFileTriplet {
+  public:
+    std::string filename;
+    TimeStamp   timestamp;
+    int         time_idx;
+  };
+
   // Helper functions to shift data
   void shift_data();
   void shift_data(const std::string& name);
 
+  // For the case where forcing data comes from files
+  void set_file_data_triplets(const vos_type& list_of_files);
+  void read_data();
+  void check_and_update_data(const TimeStamp& ts_in);
+
   // Local field managers used to store two time snaps of data for interpolation
-  fm_type m_fm_time0;
-  fm_type m_fm_time1;
+  fm_type  m_fm_time0;
+  fm_type  m_fm_time1;
+  vos_type m_field_names;
 
   // Store the timestamps associated with the two time snaps
   TimeStamp m_time0;
   TimeStamp m_time1;
+
+  // Variables related to the case where we use data from file
+  bool                                       m_data_from_file = false;
+  std::vector<DataFromFileTriplet>           m_file_data_triplets;
+  std::vector<DataFromFileTriplet>::iterator m_triplet_iterator;
+  AtmosphereInput                            m_file_data_atm_input;
+
 
 }; // class TimeInterpolation
 

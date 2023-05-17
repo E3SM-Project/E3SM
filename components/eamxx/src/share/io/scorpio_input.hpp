@@ -103,6 +103,9 @@ public:
   // Cleans up the class
   void finalize();
 
+  // Getters
+  std::string get_filename() { return m_filename; } // Simple getter to query the filename for this stream.
+
 protected:
 
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
