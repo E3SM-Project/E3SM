@@ -1,10 +1,5 @@
-<!--- OMEGA Machine Environment Requirements and Design ----------------------->
-
-# OMEGA Requirements and Design:
-
-
-# *MachineEnv*
-
+(omega-design-machine-env)=
+# MachineEnv
 
 ## 1 Overview
 
@@ -100,20 +95,22 @@ There will be a simple class MachEnv. We use a class here rather than
 a struct so that we can make members private to prevent overwriting 
 these variables.
 
-    class MachEnv {
+```c++
+class MachEnv {
 
-       private:
-          int mComm;      ///< MPI communicator for this environment
-          int mMyRank;    ///< rank ID for local MPI rank
-          int mNumRanks;  ///< total number of MPI ranks
-          int mMasterRank;///< rank ID for master rank
-          bool mIsMaster; ///< true if the local rank is the master
+   private:
+      int mComm;      ///< MPI communicator for this environment
+      int mMyRank;    ///< rank ID for local MPI rank
+      int mNumRanks;  ///< total number of MPI ranks
+      int mMasterRank;///< rank ID for master rank
+      bool mIsMaster; ///< true if the local rank is the master
 
-       public:
+   public:
 
-          // Methods
-          [define methods here - see below]
-    }
+      // Methods
+      [define methods here - see below]
+}
+```
 
 #### 4.1.3 Default environment
 
@@ -131,12 +128,14 @@ these two must be called as early as possible in OMEGA initialization
 (typically the first call). Both forms will return an integer
 error code and will define the default environment `OMEGA::defaultEnv`.
 
-    // Initialization - standalone
-    int MachEnvInit();
+```c++
+// Initialization - standalone
+int MachEnvInit();
 
-    // Initialization - coupled
-    int MachEnvInit(int inCommunicator, ///< [in] parent MPI communicator 
-                    );
+// Initialization - coupled
+int MachEnvInit(int inCommunicator, ///< [in] parent MPI communicator 
+                );
+```
 
 #### 4.2.2 Constructors
 
@@ -144,37 +143,41 @@ We provide several constructors for creating instances of the environment.
 These will be used primarily by the above initialization routine, though
 can also be used to create additional environments per requirement 2.7.
 
-    // Generic constructor that uses `MPI_COMM_WORLD`
-    MachEnv();
+```c++
+// Generic constructor that uses `MPI_COMM_WORLD`
+MachEnv();
 
-    // Constructor that uses an assigned communicator (eg from coupler)
-    MachEnv(const int inCommunicator ///< [in] parent MPI communicator
-            );
+// Constructor that uses an assigned communicator (eg from coupler)
+MachEnv(const int inCommunicator ///< [in] parent MPI communicator
+        );
 
-    // Create a new environment from a contiguous subset of an
-    // existing environment
-    MachEnv(const int inCommunicator,///< [in] parent MPI communicator
-            const int newSize        ///< [in] use first newSize ranks
-            );
+// Create a new environment from a contiguous subset of an
+// existing environment
+MachEnv(const int inCommunicator,///< [in] parent MPI communicator
+        const int newSize        ///< [in] use first newSize ranks
+        );
 
-    // Create a new environment from a strided subset of an
-    // existing environment
-    MachEnv(const int inCommunicator,///< [in] parent MPI communicator
-            const int newSize,       ///< [in] num ranks in new env
-            const int begin,         ///< [in] starting parent rank
-            const int stride         ///< [in] stride for ranks to incl
-            );
+// Create a new environment from a strided subset of an
+// existing environment
+MachEnv(const int inCommunicator,///< [in] parent MPI communicator
+        const int newSize,       ///< [in] num ranks in new env
+        const int begin,         ///< [in] starting parent rank
+        const int stride         ///< [in] stride for ranks to incl
+        );
 
-    // Create a new environment from a custome subset of an
-    // existing environment, supplying list of parent ranks to include
-    MachEnv(const int inCommunicator ///< [in] parent MPI communicator
-            const int newSize,       ///< [in] num ranks in new env
-            const int ranks[]        ///< [in] vector of parent ranks to incl
-            );
+// Create a new environment from a custome subset of an
+// existing environment, supplying list of parent ranks to include
+MachEnv(const int inCommunicator ///< [in] parent MPI communicator
+        const int newSize,       ///< [in] num ranks in new env
+        const int ranks[]        ///< [in] vector of parent ranks to incl
+        );
+```
 
 In standalone mode, the simple constructor would be used:
 
-    MachEnv omegaEnv(); // Initialize MPI and machine environment
+```c++
+MachEnv omegaEnv(); // Initialize MPI and machine environment
+```
 
 and would define `MPI_COMM_WORLD` as the communicator as well
 as initialize various other environments as needed.  In coupled mode,
@@ -193,22 +196,28 @@ a vector of specific ranks of the parent to include in the new environment.
 We provide specific retrieval functions for each class member to mimic
 using this environment as a struct:
 
-    int Comm() const;      ///< returns MPI communicator for this environment
-    int MyRank() const;    ///< returns local MPI rank
-    int NumRanks() const;  ///< total number of MPI ranks 
+```c++
+int Comm() const;      ///< returns MPI communicator for this environment
+int MyRank() const;    ///< returns local MPI rank
+int NumRanks() const;  ///< total number of MPI ranks 
+```
 
 In typical use, these would look like:
 
-    myRank = OMEGA::defaultEnv.MyRank(); // retrieve local rank id
-    if (OMEGA::defaultEnv.IsMaster()){
-       // do stuff on master rank
-    }
+```c++
+myRank = OMEGA::defaultEnv.MyRank(); // retrieve local rank id
+if (OMEGA::defaultEnv.IsMaster()){
+   // do stuff on master rank
+}
+```
 
 #### 4.2.3 Change master task
 
 While most of the members should not be modified (read only using the get above), we will need a single set function to satisfy requirement 2.6.
 
-    int SetMaster(const int newMasterRank);
+```c++
+int SetMaster(const int newMasterRank);
+```
 
 Note that this should occur as soon as possible after the environment is
 created. Resetting the master after other activities have already assumed
@@ -261,5 +270,3 @@ and build the test with `-D OMEGA_VECTOR_SIZE=16`. Verify the
 internal variable is also 16 to test that the preprocessor properly
 propagates the value internally.
   * tests requirement 2.5
-
-

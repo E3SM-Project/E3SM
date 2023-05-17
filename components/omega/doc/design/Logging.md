@@ -1,8 +1,5 @@
-<!--- Omega OMEGA logging system Requirements and Design ------------------------------------>
-
-# OMEGA Requirements and Design:
-
-## *OMEGA logging system*
+(omega-design-logging)=
+# Logging
 
 ## 1 Overview
 

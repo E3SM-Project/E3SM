@@ -1,7 +1,5 @@
-<!--- OMEGA Broadcast Requirements and Design --------------------------------->
-
-# OMEGA Requirements and Design:
-## *Broadcast*
+(omega-design-broadcast)=
+# Broadcast
 
 ## 1 Overview
 
@@ -52,7 +50,9 @@ function with simplified arguments.
 For non-blocking broadcasts, we will alias the MPI_request type
 to a Broadcast ID:
 
-    using BroadcastID = MPI_Request;
+```c++
+using BroadcastID = MPI_Request;
+```
 
 ### 4.2 Methods
 
@@ -66,14 +66,18 @@ interfaces cleaner.
 The first form is the simplest for a broadcast within the default 
 environment and from the master task:
 
-    int Broadcast([data type] value);
+```c++
+int Broadcast([data type] value);
+```
 
 where `[data type]` is one of the supported types (I4, I8 R4, R8, Real,
 boolean, std::string). In actual use, this would look like:
 
-    ierr = Broadcast(myIntVar);
-    ierr = Broadcast(myRealVar);
-    [etc for all data types]
+```c++
+ierr = Broadcast(myIntVar);
+ierr = Broadcast(myRealVar);
+[etc for all data types]
+```
 
 On the master task, the value would be broadcast and remain unchanged.
 The remaining tasks would receive the broadcast and store the value.
@@ -83,26 +87,32 @@ The remaining tasks would receive the broadcast and store the value.
 This is similar to the above, but adds the additional argument
 for the source rank to broadcast from.
 
-    int Broadcast([data type] value,  ///< [in] value to be broadcast
-                  const int srcRank   ///< [in] rank to broadcast from
-                  );      // 
+```c++
+int Broadcast([data type] value,  ///< [in] value to be broadcast
+              const int srcRank   ///< [in] rank to broadcast from
+              );      // 
+```
 
 #### 4.2.3 Broadcast from master rank within a different environment
 
 As in 4.2.1, but adds the machine environment as an argument:
 
-    int Broadcast([data type] value,    ///< [in] value to be broadcast
-                  const MachEnv subEnv, ///< [in] defined OMEGA environment
-                  );
+```c++
+int Broadcast([data type] value,    ///< [in] value to be broadcast
+              const MachEnv subEnv, ///< [in] defined OMEGA environment
+              );
+```
 
 #### 4.2.4 Broadcast from another rank within a different environment
 
 As in 4.2.2, but adds the machine environment as an argument:
 
-    int Broadcast([data type] value,     ///< [in] value to be broadcast
-                  const MachEnv subEnv,  ///< [in] defined OMEGA environment
-                  const int srcRank      ///< [in] rank to broadcast from
-                  );
+```c++
+int Broadcast([data type] value,     ///< [in] value to be broadcast
+              const MachEnv subEnv,  ///< [in] defined OMEGA environment
+              const int srcRank      ///< [in] rank to broadcast from
+              );
+```
 
 #### 4.2.5 Broadcast of vector variables
 
@@ -117,9 +127,11 @@ be named IBroadcast. In addition, an IBroadcastWait will be
 included to wait for the request to complete. A non-blocking
 sequence would look like:
 
-    BroadcastID myReqID = IBroadcast(myVar);
-    [ perform other tasks/computation ]
-    int err = IBroadcastWait(myReqID);
+```c++
+BroadcastID myReqID = IBroadcast(myVar);
+[ perform other tasks/computation ]
+int err = IBroadcastWait(myReqID);
+```
 
 ## 5 Verification and Testing
 
@@ -155,5 +167,3 @@ verification on the non-blocking results.
 Create a new MachEnv with a subset of ranks and repeat the above tests
 with the extra environment argument. Check also that ranks not in
 the environment are not corrupted/overwritten with the broadcast value.
-
-

@@ -1,7 +1,5 @@
-<!--- OMEGA time manager requirements and design ----------------------------->
-
-# OMEGA Requirements and Design:
-## *TimeManager*
+(omega-design-time-manager)=
+# TimeManager
 
 ## 1 Overview
 
@@ -86,7 +84,8 @@ a beautiful Monday by most accounts) with conversion to
 various calendars following the algorithms in:
 
 Fliegel, H. F., and Van Flandern, T. C., 1968, A Machine Algorithm
-for Processing Calendar Dates, Communications of the Association ofComputing Machines, 11, 657.
+for Processing Calendar Dates, Communications of the Association of
+Computing Machines, 11, 657.
 
 Hatcher, D.A., 1984. Simple Formulae for Julian Day Numbers and
 Calendar Dates, Quart. J. of R. Astr. Soc., 25, 53-55.
@@ -102,12 +101,12 @@ ESMF C++ version for the SciDAC CANGA project and will be used
 here.
 
 The time manager will consist of a number of classes/modules:
-- TimeFrac: a base fraction representation
-- TimeInstant: representation of a point in time
-- TimeInterval: a time step or difference between time instants
-- Calendar: support for various calendars
-- Alarm: alarms that trigger at time instants or periodic intervals
-- Clock: a clock that keeps track of model time as it marches forward
+- `TimeFrac`: a base fraction representation
+- `TimeInstant`: representation of a point in time
+- `TimeInterval`: a time step or difference between time instants
+- `Calendar`: support for various calendars
+- `Alarm`: alarms that trigger at time instants or periodic intervals
+- `Clock`: a clock that keeps track of model time as it marches forward
 
 ### 4.1 Data types and parameters
 
@@ -117,43 +116,46 @@ A number of parameters are defined among the above classes. For
 all classes, it will be useful to define times and intervals with
 a number and units, so we define an enum class for time units:
 
-    enum class TimeUnits{
-                     None = 0, ///< value for undefined units
-                     Seconds,  ///< time units in seconds (typical)
-                     Minutes,  ///< time units in minutes
-                     Hours,    ///< time units in hours
-                     Days,     ///< time units in days
-                     Months,   ///< time units in months
-                     Years,    ///< time units in years
-                     };
-
+```c++
+enum class TimeUnits{
+                 None = 0, ///< value for undefined units
+                 Seconds,  ///< time units in seconds (typical)
+                 Minutes,  ///< time units in minutes
+                 Hours,    ///< time units in hours
+                 Days,     ///< time units in days
+                 Months,   ///< time units in months
+                 Years,    ///< time units in years
+                 };
+```
 
 For calendars, there will be an enum for supported calendars as
 well as a string name for each.
 
-    #define NUM_SUPPORTED_CALENDARS=9
+```c++
+#define NUM_SUPPORTED_CALENDARS=9
 
-    enum CalendarKind {
-       CalendarGregorian=1,   ///< usual Gregorian calendar
-       CalendarNoLeap,        ///< Gregorian, but without leap yrs
-       CalendarJulian,        ///< Julian
-       CalendarJulianDay,     ///< Julian day
-       CalendarModJulianDay,  ///< modified Julian day
-       Calendar360Day,        ///< 12 months, 30 days each
-       CalendarCustom,        ///< user defined
-       CalendarNoCalendar,    ///< track elapsed time only
-       CalendarUnknown};      ///< uninitialized or invalid
+enum CalendarKind {
+   CalendarGregorian=1,   ///< usual Gregorian calendar
+   CalendarNoLeap,        ///< Gregorian, but without leap yrs
+   CalendarJulian,        ///< Julian
+   CalendarJulianDay,     ///< Julian day
+   CalendarModJulianDay,  ///< modified Julian day
+   Calendar360Day,        ///< 12 months, 30 days each
+   CalendarCustom,        ///< user defined
+   CalendarNoCalendar,    ///< track elapsed time only
+   CalendarUnknown};      ///< uninitialized or invalid
 
-    const std::string CalendarKindName[CALENDAR_KIND_COUNT] = {
-         "Gregorian", 
-         "No Leap",
-         "Julian",
-         "Julian Day", 
-         "Modified Julian Day",
-         "360 Day", 
-         "Custom", 
-         "No Calendar",
-         "Invalid" };
+const std::string CalendarKindName[CALENDAR_KIND_COUNT] = {
+     "Gregorian", 
+     "No Leap",
+     "Julian",
+     "Julian Day", 
+     "Modified Julian Day",
+     "360 Day", 
+     "Custom", 
+     "No Calendar",
+     "Invalid" };
+```
 
 #### 4.1.2 Class/structs/data types
 
@@ -164,63 +166,69 @@ There are six classes that will make up the time interval.
 There will be a TimeFrac class for the base fractional time
 representation:
 
-    class TimeFrac {
+```c++
+class TimeFrac {
 
-       // private variables
-       private:
-          long long whole;  ///< whole seconds
-          long long numer;  ///< fractional second (n/d) numerator
-          long long denom;  ///< fractional second (n/d) denominator
+   // private variables
+   private:
+      long long whole;  ///< whole seconds
+      long long numer;  ///< fractional second (n/d) numerator
+      long long denom;  ///< fractional second (n/d) denominator
 
-       public:
-          [methods described below]
-    };
+   public:
+      [methods described below]
+};
+```
 
 ##### 4.1.2.2 Calendar class
 
 The calendar class holds useful information for the calendar to be
 used:
 
-    #define MONTHS_PER_YEAR=12
+```c++
+#define MONTHS_PER_YEAR=12
 
-    class Calendar {
+class Calendar {
 
-      // private variables
-      private:
+  // private variables
+  private:
 
-         int id;                   ///< unique id for quick checks
-         static int numCalendars;  ///< number of calendars created
-         std::string name;         ///< name of calendar
-         CalendarKind calKind;     ///< enum for calendar kind
-         std::string calKindName;  ///< name of calendar kind
+     int id;                   ///< unique id for quick checks
+     static int numCalendars;  ///< number of calendars created
+     std::string name;         ///< name of calendar
+     CalendarKind calKind;     ///< enum for calendar kind
+     std::string calKindName;  ///< name of calendar kind
 
-         // variables defining calendar characteristics for time
-         int daysPerMonth[MONTHS_PER_YEAR]; ///< days in each month
-         int monthsPerYear;             ///< num months in year
-         int secondsPerDay;             ///< seconds per day
-         int secondsPerYear;            ///< seconds per normal year
-         int daysPerYear;               ///< days per normal year
+     // variables defining calendar characteristics for time
+     int daysPerMonth[MONTHS_PER_YEAR]; ///< days in each month
+     int monthsPerYear;             ///< num months in year
+     int secondsPerDay;             ///< seconds per day
+     int secondsPerYear;            ///< seconds per normal year
+     int daysPerYear;               ///< days per normal year
 
-         // public methods
-         public:
-            [methods described below]
-    };
+     // public methods
+     public:
+        [methods described below]
+};
+```
 
 ##### 4.1.2.3 TimeInstant class
 
 The time instant class represents a point in time within a
 given calendar:
 
-    class TimeInstant {
+```c++
+class TimeInstant {
 
-       // private variables
-       private:
-          TimeFrac elapsedTime; ///< Fractional seconds since reference time
-          Calendar *calPtr;  ///< Pointer to calendar in which time is based
+   // private variables
+   private:
+      TimeFrac elapsedTime; ///< Fractional seconds since reference time
+      Calendar *calPtr;  ///< Pointer to calendar in which time is based
 
-       public:
-          [methods described below]
-    };
+   public:
+      [methods described below]
+};
+```
 
 
 ##### 4.1.2.4 TimeInterval class
@@ -232,18 +240,20 @@ time interval in calendar units (eg number of days, months or
 years). The latter is useful for periodic events that occur
 once per year, month or ndays.
 
-    class TimeInterval {
+```c++
+class TimeInterval {
 
-       // private variables
-       private:
-          TimeFrac interval; ///< Non-calendar interval in fractional seconds
-          bool isCalendar;       ///< True if calendar interval
-          long long calInterval; ///< Calendar interval length
-          TimeUnits units;       ///< Calendar interval units
+   // private variables
+   private:
+      TimeFrac interval; ///< Non-calendar interval in fractional seconds
+      bool isCalendar;       ///< True if calendar interval
+      long long calInterval; ///< Calendar interval length
+      TimeUnits units;       ///< Calendar interval units
 
-       public:
-          [methods described below]
-    };
+   public:
+      [methods described below]
+};
+```
 
 
 ##### 4.1.2.5 Alarm class
@@ -252,23 +262,25 @@ The alarm class allows a user to set either one-time or periodic
 alarms to trigger events, like forcing updates, I/O, etc. that
 occur at specific times.
 
-    class Alarm {
+```c++
+class Alarm {
 
-       // private variables
-       private:
-          std::string name; ///< name for the alarm
+   // private variables
+   private:
+      std::string name; ///< name for the alarm
 
-          bool ringing;   ///< alarm is currently ringing
-          bool periodic;  ///< alarm rings periodically on interval
-          bool stopped;   ///< alarm has been stopped and not reset
+      bool ringing;   ///< alarm is currently ringing
+      bool periodic;  ///< alarm rings periodically on interval
+      bool stopped;   ///< alarm has been stopped and not reset
 
-          TimeInstant  ringTime;     ///< time at/after which alarm rings
-          TimeInterval ringInterval; ///< interval at which this alarm rings
-          TimeInstant  ringTimePrev; ///< previous alarm time for interval alarms
+      TimeInstant  ringTime;     ///< time at/after which alarm rings
+      TimeInterval ringInterval; ///< interval at which this alarm rings
+      TimeInstant  ringTimePrev; ///< previous alarm time for interval alarms
 
-       public:
-          [methods described below]
-    };
+   public:
+      [methods described below]
+};
+```
 
 ##### 4.1.2.6 Clock class
 
@@ -276,24 +288,26 @@ The clock class is meant to track and manage the time for a model
 advancing in time. Alarms can be attached to the clock so that
 the ringing status can be updated as the clock marches forward.
 
-    class Clock {
+```c++
+class Clock {
 
-       // private variables
-       private:
+   // private variables
+   private:
 
-          TimeInstant  startTime; ///< initial time for this clock
-          TimeInstant  currTime;  ///< current time
-          TimeInstant  prevTime;  ///< time at previous timestep
-          TimeInstant  nextTime;  ///< time at next timestep
-          TimeInterval timeStep;  ///< interval at which this clock advances
+      TimeInstant  startTime; ///< initial time for this clock
+      TimeInstant  currTime;  ///< current time
+      TimeInstant  prevTime;  ///< time at previous timestep
+      TimeInstant  nextTime;  ///< time at next timestep
+      TimeInterval timeStep;  ///< interval at which this clock advances
 
-          int numAlarms; ///< current number of attached alarms
+      int numAlarms; ///< current number of attached alarms
 
-          std::vector<Alarm *> alarms; ///< pointers to alarms associated with this clock
+      std::vector<Alarm *> alarms; ///< pointers to alarms associated with this clock
 
-       public:
-          [methods described below]
-    };
+   public:
+      [methods described below]
+};
+```
 
 ### 4.2 Methods
 
@@ -309,147 +323,149 @@ of operators to perform arithmetic on fractional integers
 and a number of accessor functions to convert units into
 a fractional time.
 
-    // Accessor methods
-    
-    /// Single call to set all native base time components
-    /// \return error code
-    int set(const long long whole, ///< [in] whole seconds
-            const long long numer, ///< [in] fractional second numerator
-            const long long denom  ///< [in] fractional second denominator
-            );
-    /// Set base time by converting from integer hours, minutes, seconds
-    /// \return error code
-    int setHMS(const int hours,   ///< [in] integer hours
-               const int minutes, ///< [in] integer minutes
-               const int seconds  ///< [in] integer seconds
+```c++
+// Accessor methods
 
-    /// Set base time by converting from a real number of seconds
-    /// \return error code
-    int setSeconds(const double seconds ///< [in] Time in real seconds
-                  );
-    /// Set base time by converting from a real number of hours
-    /// \return error code
-    int setHours(const double hours ///< [in] Time in real hours
-                );
-    /// Set base time by converting from a real number of minutes
-    /// \return error code
-    int setMinutes(const double minutes ///< [in] Time in real minutes
-                  );
-
-    /// Set whole seconds separately
-    /// \return error code
-    int setWhole(
-           const long long whole ///< [in] Whole number of seconds
-           );
-    /// Set numerator of fractional seconds separately
-    /// \return error code
-    int setNumer(
-           const long long numer ///< [in] Numerator of fractional seconds
-           );
-    /// Set denominator of fractional seconds separately
-    /// \return error code
-    int setDenom(
-           const long long denom ///< [in] Denominator of fractional seconds
-           );
-
-    /// Single call to retrieve native base time components
-    /// \return error code
-    int get(long long &whole, ///< [out] whole seconds
-            long long &numer, ///< [out] fractional second numerator
-            long long &denom  ///< [out] fractional second denominator
-            ) const;
-    /// Get base time converted to integer hours, minutes, seconds
-    /// \return error code
-    int getHMS(int &hours,   ///< [out] integer hours
-               int &minutes, ///< [out] integer minutes
-               int &seconds  ///< [out] integer seconds
-               ) const;
-    /// Get base time and convert to a real number of seconds
-    /// \return Time in real seconds
-    double getSeconds(void) const;
-    /// Get base time and convert to a real number of hours
-    /// \return Time in real hours
-    double getHours(void) const;
-    /// Get base time and convert to a real number of minutes
-    /// \return Time in real minutes
-    double getMinutes(void) const;
-    /// Retrieve the whole seconds component of base time
-    /// \return Whole number of seconds
-    long long getWhole(void) const;
-    /// Retrieve the numerator component of fractional base time
-    /// \return Numerator of fractional seconds
-    long long getNumer(void) const;
-    /// Retrieve the denominator component of fractional base time
-    /// \return Denominator of fractional seconds
-    long long getDenom(void) const;
-
-    // constructors/destructors
-    /// Default base time constructor
-    TimeFrac(void);
-    /// Copy constructor for base time
-    TimeFrac(const TimeFrac& ///< [in] existing base time to be copied
-            );
-    /// Construct base time by component
-    TimeFrac(
-        const long long whole, ///< [in] whole seconds
+/// Single call to set all native base time components
+/// \return error code
+int set(const long long whole, ///< [in] whole seconds
         const long long numer, ///< [in] fractional second numerator
         const long long denom  ///< [in] fractional second denominator
         );
-    /// Construct base time by converting from a real number of seconds
-    TimeFrac(const double seconds ///< [in] Time in real seconds
+/// Set base time by converting from integer hours, minutes, seconds
+/// \return error code
+int setHMS(const int hours,   ///< [in] integer hours
+           const int minutes, ///< [in] integer minutes
+           const int seconds  ///< [in] integer seconds
+
+/// Set base time by converting from a real number of seconds
+/// \return error code
+int setSeconds(const double seconds ///< [in] Time in real seconds
+              );
+/// Set base time by converting from a real number of hours
+/// \return error code
+int setHours(const double hours ///< [in] Time in real hours
             );
-    /// Destructor for base time
-    ~TimeFrac(void);
+/// Set base time by converting from a real number of minutes
+/// \return error code
+int setMinutes(const double minutes ///< [in] Time in real minutes
+              );
 
-    // operators
-    /// Equivalence comparison operator for TimeFrac
-    bool operator==(const TimeFrac &) const;
-    /// Non-equivalence comparison operator for TimeFrac
-    bool operator!=(const TimeFrac &) const;
-    /// Less than comparison operator for TimeFrac
-    bool operator< (const TimeFrac &) const;
-    /// Greater than comparison operator for TimeFrac
-    bool operator> (const TimeFrac &) const;
-    /// Less than or equal comparison operator for TimeFrac
-    bool operator<=(const TimeFrac &) const;
-    /// Greater than or equal comparison operator for TimeFrac
-    bool operator>=(const TimeFrac &) const;
-    /// Addition operator for TimeFrac
-    TimeFrac  operator+ (const TimeFrac &) const;
-    /// Subtraction operator for TimeFrac
-    TimeFrac  operator- (const TimeFrac &) const;
-    /// Increment operator for TimeFrac
-    TimeFrac& operator+=(const TimeFrac &);
-    /// Decrement operator for TimeFrac
-    TimeFrac& operator-=(const TimeFrac &);
-    /// Multiplication by integer scalar
-    TimeFrac  operator* (const int multiplier) const;
-    /// Multiplication in place by integer scalar
-    TimeFrac& operator*=(const int multiplier);
-    /// Multiplication by real scalar
-    TimeFrac  operator* (const double multiplier) const;
-    /// Multiplication in place by real scalar
-    TimeFrac& operator*=(const double multiplier);
-    /// Divide TimeFrac by integer scalar
-    TimeFrac  operator/ (const int divisor) const;
-    /// Divide TimeFrac in place by integer scalar
-    TimeFrac& operator/=(const int divisor);
-    /// Divide two TimeFracs and return a real result
-    double   operator/ (const TimeFrac &) const;
-    /// Modulus method for TimeFrac
-    TimeFrac  operator% (const TimeFrac &) const;
-    /// Modulus method in place
-    TimeFrac& operator%=(const TimeFrac &);
-    /// Assignment operator for TimeFrac
-    TimeFrac& operator=(const TimeFrac &);
+/// Set whole seconds separately
+/// \return error code
+int setWhole(
+       const long long whole ///< [in] Whole number of seconds
+       );
+/// Set numerator of fractional seconds separately
+/// \return error code
+int setNumer(
+       const long long numer ///< [in] Numerator of fractional seconds
+       );
+/// Set denominator of fractional seconds separately
+/// \return error code
+int setDenom(
+       const long long denom ///< [in] Denominator of fractional seconds
+       );
 
-    // Other utility methods
-    /// Convert a time fraction to new denominator
-    /// \return error code
-    int convert(const long long denom ///< [in] new denominator
-               );
-    /// Reduce a time fraction to simplest form
-    int simplify(void);
+/// Single call to retrieve native base time components
+/// \return error code
+int get(long long &whole, ///< [out] whole seconds
+        long long &numer, ///< [out] fractional second numerator
+        long long &denom  ///< [out] fractional second denominator
+        ) const;
+/// Get base time converted to integer hours, minutes, seconds
+/// \return error code
+int getHMS(int &hours,   ///< [out] integer hours
+           int &minutes, ///< [out] integer minutes
+           int &seconds  ///< [out] integer seconds
+           ) const;
+/// Get base time and convert to a real number of seconds
+/// \return Time in real seconds
+double getSeconds(void) const;
+/// Get base time and convert to a real number of hours
+/// \return Time in real hours
+double getHours(void) const;
+/// Get base time and convert to a real number of minutes
+/// \return Time in real minutes
+double getMinutes(void) const;
+/// Retrieve the whole seconds component of base time
+/// \return Whole number of seconds
+long long getWhole(void) const;
+/// Retrieve the numerator component of fractional base time
+/// \return Numerator of fractional seconds
+long long getNumer(void) const;
+/// Retrieve the denominator component of fractional base time
+/// \return Denominator of fractional seconds
+long long getDenom(void) const;
+
+// constructors/destructors
+/// Default base time constructor
+TimeFrac(void);
+/// Copy constructor for base time
+TimeFrac(const TimeFrac& ///< [in] existing base time to be copied
+        );
+/// Construct base time by component
+TimeFrac(
+    const long long whole, ///< [in] whole seconds
+    const long long numer, ///< [in] fractional second numerator
+    const long long denom  ///< [in] fractional second denominator
+    );
+/// Construct base time by converting from a real number of seconds
+TimeFrac(const double seconds ///< [in] Time in real seconds
+        );
+/// Destructor for base time
+~TimeFrac(void);
+
+// operators
+/// Equivalence comparison operator for TimeFrac
+bool operator==(const TimeFrac &) const;
+/// Non-equivalence comparison operator for TimeFrac
+bool operator!=(const TimeFrac &) const;
+/// Less than comparison operator for TimeFrac
+bool operator< (const TimeFrac &) const;
+/// Greater than comparison operator for TimeFrac
+bool operator> (const TimeFrac &) const;
+/// Less than or equal comparison operator for TimeFrac
+bool operator<=(const TimeFrac &) const;
+/// Greater than or equal comparison operator for TimeFrac
+bool operator>=(const TimeFrac &) const;
+/// Addition operator for TimeFrac
+TimeFrac  operator+ (const TimeFrac &) const;
+/// Subtraction operator for TimeFrac
+TimeFrac  operator- (const TimeFrac &) const;
+/// Increment operator for TimeFrac
+TimeFrac& operator+=(const TimeFrac &);
+/// Decrement operator for TimeFrac
+TimeFrac& operator-=(const TimeFrac &);
+/// Multiplication by integer scalar
+TimeFrac  operator* (const int multiplier) const;
+/// Multiplication in place by integer scalar
+TimeFrac& operator*=(const int multiplier);
+/// Multiplication by real scalar
+TimeFrac  operator* (const double multiplier) const;
+/// Multiplication in place by real scalar
+TimeFrac& operator*=(const double multiplier);
+/// Divide TimeFrac by integer scalar
+TimeFrac  operator/ (const int divisor) const;
+/// Divide TimeFrac in place by integer scalar
+TimeFrac& operator/=(const int divisor);
+/// Divide two TimeFracs and return a real result
+double   operator/ (const TimeFrac &) const;
+/// Modulus method for TimeFrac
+TimeFrac  operator% (const TimeFrac &) const;
+/// Modulus method in place
+TimeFrac& operator%=(const TimeFrac &);
+/// Assignment operator for TimeFrac
+TimeFrac& operator=(const TimeFrac &);
+
+// Other utility methods
+/// Convert a time fraction to new denominator
+/// \return error code
+int convert(const long long denom ///< [in] new denominator
+           );
+/// Reduce a time fraction to simplest form
+int simplify(void);
+```
 
 
 #### 4.2.2 Calendar class
@@ -463,105 +479,106 @@ is needed for the later TimeInstant equivalence. Utility functions
 to convert between elapsed time and calendar dates and incrementing
 calendar time are supplied for use by other time manager routines.
 
-    // accessor functions
-    // this is (mostly) an immutable class so use constructors 
-    // and provide only one set accessor for renaming
+```c++
+// accessor functions
+// this is (mostly) an immutable class so use constructors 
+// and provide only one set accessor for renaming
 
-    // the only set function is for renaming
-    /// Renames a Calendar to the input string
-    /// \return Error code
-    int rename(const std::string inName ///< [in] name to use for calendar
-               );
+// the only set function is for renaming
+/// Renames a Calendar to the input string
+/// \return Error code
+int rename(const std::string inName ///< [in] name to use for calendar
+           );
 
-    /// Retrieve any/all calendar properties
-    /// \return Error code
-    int get(int           *outId,   ///< [out] id assigned to calendar
-            std::string   *outName, ///< [out] Name of calendar
-            CalendarKind  *outKind, ///< [out] Kind of calendar
-            int           *outDaysPerMonth,  ///< [out] Days per month
-            int           *outMonthsPerYear, ///< [out] Months per year
-            int           *outSecondsPerDay, ///< [out] Seconds per day
-            int           *outSecondsPerYear,///< [out] Seconds per year
-            int           *outDaysPerYear    ///< [out] Days per year (DPY)
-            ) const;
-
-    // Might also add specific retrievals for individual
-    // components, eg seconds per day/year?
-
-    /// Default constructor
-    Calendar(void);
-    /// Copy constructor
-    Calendar(const Calendar &calendar);
-    /// Constructor based on kind of calendar
-    Calendar(std::string inName,       ///< [in] name of calendar
-             CalendarKind calKind      ///< [in] choice of calendar kind
-             );
-    /// Constructs custom calendar based in inputs
-    Calendar(const std::string inName, ///< [in] name of calendar
-             int *inDaysPerMonth,      ///< [in] array of days per month
-             int inSecondsPerDay,      ///< [in] seconds per day
-             int inSecondsPerYear,     ///< [in] seconds per year
-             int inDaysPerYear         ///< [in] days per year (dpy)
-             );
-    /// Calendar destructor
-    ~Calendar(void);
-
-    /// Calendar equivalence operator
-    bool operator==(const Calendar &calendar) const;
-    /// Calendar non-equivalence operator
-    bool operator!=(const Calendar &calendar) const;
-
-    /// Checks whether input year is a leap year
-    /// \return true if year is a leap year, false otherwise
-    bool isLeapYear(long long year, ///< [in]  year to check
-                    int &rc         ///< [out] return code to flag errors
-                    ) const;
-
-    /// Computes the total elapsed time in seconds (in TimeFrac form)
-    /// since the calendar reference time, given a calendar date, time.
-    /// \return Elapsed time in TimeFrac form
-    TimeFrac getElapsedTime(
-        const long long year,   ///< [in] calendar year
-        const long long month,  ///< [in] calendar month
-        const long long day,    ///< [in] calendar day
-        const long long hour,   ///< [in] time of day-hour
-        const long long minute, ///< [in] time of day-min
-        const long long whole,  ///< [in] time of day-whole seconds
-        const long long numer,  ///< [in] time of day-frac secs (numerator)
-        const long long denom   ///< [in] time of day-frac secs (denom)
+/// Retrieve any/all calendar properties
+/// \return Error code
+int get(int           *outId,   ///< [out] id assigned to calendar
+        std::string   *outName, ///< [out] Name of calendar
+        CalendarKind  *outKind, ///< [out] Kind of calendar
+        int           *outDaysPerMonth,  ///< [out] Days per month
+        int           *outMonthsPerYear, ///< [out] Months per year
+        int           *outSecondsPerDay, ///< [out] Seconds per day
+        int           *outSecondsPerYear,///< [out] Seconds per year
+        int           *outDaysPerYear    ///< [out] Days per year (DPY)
         ) const;
 
-    /// Determines the calendar date and time of day, given an
-    /// elapsed time since the calendar reference time.
-    /// \return error code
-    int getDateTime(
-        const TimeFrac elapsedTime, ///< [in] time in secs from ref time
-        long long &year,   ///< [out] calendar year
-        long long &month,  ///< [out] calendar month
-        long long &day,    ///< [out] calendar day
-        long long &hour,   ///< [out] time of day-hours
-        long long &minute, ///< [out] time of day-minutes
-        long long &whole,  ///< [out] time of day-whole seconds
-        long long &numer,  ///< [out] time of day-frac secs (numerator)
-        long long &denom   ///< [out] time of day-frac secs (denom)
-        ) const;
+// Might also add specific retrievals for individual
+// components, eg seconds per day/year?
 
-    /// Increments (or decrements) a calendar date by a specified
-    /// interval, supplied by an integer interval in given time units.
-    /// Only calendar based intervals (years, months or days) are
-    /// supported. This is primarily meant to be called by other time
-    /// manager routines (eg to add/subtract time instants) for those
-    /// time intervals that are dependent on date and sensitive to
-    /// calendar features like leap years and varying days of the month.
-    /// \return error code
-    int incrementDate(
-        const long long interval, ///< [in] time interval to advance date
-        const TimeUnits units,    ///< [in] time units for interval
-        long long &year,   ///< [in,out] calendar year of time to be changed
-        long long &month,  ///< [in,out] calendar month of ...
-        long long &day     ///< [in,out] calendar day
-        ) const;
+/// Default constructor
+Calendar(void);
+/// Copy constructor
+Calendar(const Calendar &calendar);
+/// Constructor based on kind of calendar
+Calendar(std::string inName,       ///< [in] name of calendar
+         CalendarKind calKind      ///< [in] choice of calendar kind
+         );
+/// Constructs custom calendar based in inputs
+Calendar(const std::string inName, ///< [in] name of calendar
+         int *inDaysPerMonth,      ///< [in] array of days per month
+         int inSecondsPerDay,      ///< [in] seconds per day
+         int inSecondsPerYear,     ///< [in] seconds per year
+         int inDaysPerYear         ///< [in] days per year (dpy)
+         );
+/// Calendar destructor
+~Calendar(void);
 
+/// Calendar equivalence operator
+bool operator==(const Calendar &calendar) const;
+/// Calendar non-equivalence operator
+bool operator!=(const Calendar &calendar) const;
+
+/// Checks whether input year is a leap year
+/// \return true if year is a leap year, false otherwise
+bool isLeapYear(long long year, ///< [in]  year to check
+                int &rc         ///< [out] return code to flag errors
+                ) const;
+
+/// Computes the total elapsed time in seconds (in TimeFrac form)
+/// since the calendar reference time, given a calendar date, time.
+/// \return Elapsed time in TimeFrac form
+TimeFrac getElapsedTime(
+    const long long year,   ///< [in] calendar year
+    const long long month,  ///< [in] calendar month
+    const long long day,    ///< [in] calendar day
+    const long long hour,   ///< [in] time of day-hour
+    const long long minute, ///< [in] time of day-min
+    const long long whole,  ///< [in] time of day-whole seconds
+    const long long numer,  ///< [in] time of day-frac secs (numerator)
+    const long long denom   ///< [in] time of day-frac secs (denom)
+    ) const;
+
+/// Determines the calendar date and time of day, given an
+/// elapsed time since the calendar reference time.
+/// \return error code
+int getDateTime(
+    const TimeFrac elapsedTime, ///< [in] time in secs from ref time
+    long long &year,   ///< [out] calendar year
+    long long &month,  ///< [out] calendar month
+    long long &day,    ///< [out] calendar day
+    long long &hour,   ///< [out] time of day-hours
+    long long &minute, ///< [out] time of day-minutes
+    long long &whole,  ///< [out] time of day-whole seconds
+    long long &numer,  ///< [out] time of day-frac secs (numerator)
+    long long &denom   ///< [out] time of day-frac secs (denom)
+    ) const;
+
+/// Increments (or decrements) a calendar date by a specified
+/// interval, supplied by an integer interval in given time units.
+/// Only calendar based intervals (years, months or days) are
+/// supported. This is primarily meant to be called by other time
+/// manager routines (eg to add/subtract time instants) for those
+/// time intervals that are dependent on date and sensitive to
+/// calendar features like leap years and varying days of the month.
+/// \return error code
+int incrementDate(
+    const long long interval, ///< [in] time interval to advance date
+    const TimeUnits units,    ///< [in] time units for interval
+    long long &year,   ///< [in,out] calendar year of time to be changed
+    long long &month,  ///< [in,out] calendar month of ...
+    long long &day     ///< [in,out] calendar day
+    ) const;
+```
 
 #### 4.2.3 TimeInstant class
 
@@ -573,47 +590,15 @@ time instants and time intervals (see following interval class).
 Finally, a method for creating a time string for a time
 instant is supplied.
 
-    // constructors/destructors
-    /// Default constructor creates empty time instant
-    TimeInstant(void);
+```c++
+// constructors/destructors
+/// Default constructor creates empty time instant
+TimeInstant(void);
 
-    /// Construct time instant from date, time, calendar
-    /// Where seconds is supplied as real number.
-    TimeInstant(Calendar       *Cal,    ///< [in] Calendar to use
-                const long long year,   ///< [in] year
-                const long long month,  ///< [in] month
-                const long long day,    ///< [in] day
-                const long long hour,   ///< [in] hour
-                const long long minute, ///< [in] minute
-                const double    rSecond ///< [in] second (real)
-                );
-
-    /// Construct time instant from date, time, calendar
-    /// Where seconds is supplied in integer fractional seconds.
-    TimeInstant(      Calendar *Cal,    ///< [in] Calendar to use
-                const long long year,   ///< [in] year
-                const long long month,  ///< [in] month
-                const long long day,    ///< [in] day
-                const long long hour,   ///< [in] hour
-                const long long minute, ///< [in] minute
-                const long long whole,  ///< [in] second (whole integer)
-                const long long numer,  ///< [in] second (fraction numerator)
-                const long long denom   ///< [in] second (fraction denominator)
-                );
-
-    /// Destructor for time interval
-    ~TimeInstant(void);
-
-    // Accessor methods
-    /// Set time instant calendar
-    /// \return error code
-    int set(Calendar *Cal   ///< [in] Calendar to use for this time
-            );
-
-    /// Set time instant from date and time, where seconds is supplied
-    /// as a real number.
-    /// \return error code
-    int set(const long long year,   ///< [in] year
+/// Construct time instant from date, time, calendar
+/// Where seconds is supplied as real number.
+TimeInstant(Calendar       *Cal,    ///< [in] Calendar to use
+            const long long year,   ///< [in] year
             const long long month,  ///< [in] month
             const long long day,    ///< [in] day
             const long long hour,   ///< [in] hour
@@ -621,10 +606,10 @@ instant is supplied.
             const double    rSecond ///< [in] second (real)
             );
 
-    /// Set time instant from date and time, where seconds is supplied
-    /// in integer fractional seconds.
-    /// \return error code
-    int set(const long long year,   ///< [in] year
+/// Construct time instant from date, time, calendar
+/// Where seconds is supplied in integer fractional seconds.
+TimeInstant(      Calendar *Cal,    ///< [in] Calendar to use
+            const long long year,   ///< [in] year
             const long long month,  ///< [in] month
             const long long day,    ///< [in] day
             const long long hour,   ///< [in] hour
@@ -634,72 +619,104 @@ instant is supplied.
             const long long denom   ///< [in] second (fraction denominator)
             );
 
-    /// Retrieve calendar from time instant
-    /// \return error code
-    int get(Calendar *&cal ///< [out] Calendar ptr in which instant defined
-            ) const;
+/// Destructor for time interval
+~TimeInstant(void);
 
-    /// Retrieve time in date, time form with real seconds.
-    /// \return error code
-    int get(long long &year,   ///< [out] year   of this time instant
-            long long &month,  ///< [out] month  of this time instant
-            long long &day,    ///< [out] day    of this time instant
-            long long &hour,   ///< [out] hour   of this time instant
-            long long &minute, ///< [out] minute of this time instant
-            double    &second  ///< [out] second of this time instant
-            ) const;
+// Accessor methods
+/// Set time instant calendar
+/// \return error code
+int set(Calendar *Cal   ///< [in] Calendar to use for this time
+        );
 
-    /// Retrieve time in date, time form with fractional integer seconds.
-    /// \return error code
-    int get(long long &year,   ///< [out] year   of this time instant
-            long long &month,  ///< [out] month  of this time instant
-            long long &day,    ///< [out] day    of this time instant
-            long long &hour,   ///< [out] hour   of this time instant
-            long long &minute, ///< [out] minute of this time instant
-            long long &whole,  ///< [out] whole seconds of this time
-            long long &numer,  ///< [out] frac second numerator
-            long long &denom   ///< [out] frac second denominator
-            ) const;
+/// Set time instant from date and time, where seconds is supplied
+/// as a real number.
+/// \return error code
+int set(const long long year,   ///< [in] year
+        const long long month,  ///< [in] month
+        const long long day,    ///< [in] day
+        const long long hour,   ///< [in] hour
+        const long long minute, ///< [in] minute
+        const double    rSecond ///< [in] second (real)
+        );
 
-    // Operators on time instants
-    /// Equivalence comparison for TimeInstant
-    bool operator==(const TimeInstant &) const;
-    /// Non-equivalence comparison operator for TimeInstant
-    bool operator!=(const TimeInstant &) const;
-    /// Less than comparison operator for TimeInstant
-    bool operator< (const TimeInstant &) const;
-    /// Greater than comparison operator for TimeInstant
-    bool operator> (const TimeInstant &) const;
-    /// Less than or equal comparison operator for TimeInstant
-    bool operator<=(const TimeInstant &) const;
-    /// Greater than or equal comparison operator for TimeInstant
-    bool operator>=(const TimeInstant &) const;
-    /// Increment time by adding a time interval
-    TimeInstant  operator+ (const TimeInterval &) const;
-    /// Decrement time by subtracting a time interval
-    TimeInstant  operator- (const TimeInterval &) const;
-    /// Create a time interval by subtracting two time instants
-    TimeInterval operator- (const TimeInstant &) const;
-    /// Increment time in place by adding time interval
-    /// Increment time in place by adding time interval
-    TimeInstant& operator+=(const TimeInterval &);
-    /// Decrement time in place by subtracting time interval
-    TimeInstant& operator-=(const TimeInterval &);
+/// Set time instant from date and time, where seconds is supplied
+/// in integer fractional seconds.
+/// \return error code
+int set(const long long year,   ///< [in] year
+        const long long month,  ///< [in] month
+        const long long day,    ///< [in] day
+        const long long hour,   ///< [in] hour
+        const long long minute, ///< [in] minute
+        const long long whole,  ///< [in] second (whole integer)
+        const long long numer,  ///< [in] second (fraction numerator)
+        const long long denom   ///< [in] second (fraction denominator)
+        );
 
-    // Other utility methods
-    /// Get time as a string in the format
-    /// 'YYYYYY-MM-DD{separator}HH:MM:SS.SSSSSS' where the number
-    /// of digits in year, number of digits after the decimal in
-    /// seconds and the character to use as separator are all input
-    /// by the user.
-    /// \return time string
-    std::string getString(
-        const int yearWidth,   ///< [in] number of digits in year
-        const int secondWidth, ///< [in] num digits after decimal in seconds
-        std::string separator  ///< [in] string(char) to separate date/time
+/// Retrieve calendar from time instant
+/// \return error code
+int get(Calendar *&cal ///< [out] Calendar ptr in which instant defined
         ) const;
 
+/// Retrieve time in date, time form with real seconds.
+/// \return error code
+int get(long long &year,   ///< [out] year   of this time instant
+        long long &month,  ///< [out] month  of this time instant
+        long long &day,    ///< [out] day    of this time instant
+        long long &hour,   ///< [out] hour   of this time instant
+        long long &minute, ///< [out] minute of this time instant
+        double    &second  ///< [out] second of this time instant
+        ) const;
 
+/// Retrieve time in date, time form with fractional integer seconds.
+/// \return error code
+int get(long long &year,   ///< [out] year   of this time instant
+        long long &month,  ///< [out] month  of this time instant
+        long long &day,    ///< [out] day    of this time instant
+        long long &hour,   ///< [out] hour   of this time instant
+        long long &minute, ///< [out] minute of this time instant
+        long long &whole,  ///< [out] whole seconds of this time
+        long long &numer,  ///< [out] frac second numerator
+        long long &denom   ///< [out] frac second denominator
+        ) const;
+
+// Operators on time instants
+/// Equivalence comparison for TimeInstant
+bool operator==(const TimeInstant &) const;
+/// Non-equivalence comparison operator for TimeInstant
+bool operator!=(const TimeInstant &) const;
+/// Less than comparison operator for TimeInstant
+bool operator< (const TimeInstant &) const;
+/// Greater than comparison operator for TimeInstant
+bool operator> (const TimeInstant &) const;
+/// Less than or equal comparison operator for TimeInstant
+bool operator<=(const TimeInstant &) const;
+/// Greater than or equal comparison operator for TimeInstant
+bool operator>=(const TimeInstant &) const;
+/// Increment time by adding a time interval
+TimeInstant  operator+ (const TimeInterval &) const;
+/// Decrement time by subtracting a time interval
+TimeInstant  operator- (const TimeInterval &) const;
+/// Create a time interval by subtracting two time instants
+TimeInterval operator- (const TimeInstant &) const;
+/// Increment time in place by adding time interval
+/// Increment time in place by adding time interval
+TimeInstant& operator+=(const TimeInterval &);
+/// Decrement time in place by subtracting time interval
+TimeInstant& operator-=(const TimeInterval &);
+
+// Other utility methods
+/// Get time as a string in the format
+/// 'YYYYYY-MM-DD{separator}HH:MM:SS.SSSSSS' where the number
+/// of digits in year, number of digits after the decimal in
+/// seconds and the character to use as separator are all input
+/// by the user.
+/// \return time string
+std::string getString(
+    const int yearWidth,   ///< [in] number of digits in year
+    const int secondWidth, ///< [in] num digits after decimal in seconds
+    std::string separator  ///< [in] string(char) to separate date/time
+    ) const;
+```
 
 #### 4.2.4 TimeInterval class
 
@@ -713,141 +730,143 @@ class is treated as a friend class so that time instants can
 be incremented by a time interval and time intervals can be created
 by subtracting two time instants.
 
-    // constructors/destructors
-    /// Default time interval constructor
-    TimeInterval(void);
-            
-    /// Construct time interval from base time fractional integer seconds
-    TimeInterval(const long long whole, ///< Whole integer seconds
-                 const long long numer, ///< Fractional seconds numerator
-                 const long long denom  ///< Fractional seconds denominator
-                 );
-    
-    /// Construct time interval from an integer length and units
-    TimeInterval(const int       length, ///< length of time interval
-                 const TimeUnits units   ///< unit of time for interval
-                 );
+```c++
+// constructors/destructors
+/// Default time interval constructor
+TimeInterval(void);
+        
+/// Construct time interval from base time fractional integer seconds
+TimeInterval(const long long whole, ///< Whole integer seconds
+             const long long numer, ///< Fractional seconds numerator
+             const long long denom  ///< Fractional seconds denominator
+             );
 
-    /// Construct time interval from a long long integer length and units
-    TimeInterval(const long long length, ///< length of time interval
-                 const TimeUnits units   ///< unit of time for interval
-                 );
+/// Construct time interval from an integer length and units
+TimeInterval(const int       length, ///< length of time interval
+             const TimeUnits units   ///< unit of time for interval
+             );
 
-    /// Construct time interval from an real length and units
-    TimeInterval(const double length,    ///< length of time interval
-                 const TimeUnits units   ///< unit of time for interval
-                 );
+/// Construct time interval from a long long integer length and units
+TimeInterval(const long long length, ///< length of time interval
+             const TimeUnits units   ///< unit of time for interval
+             );
 
-    /// Destructor for time interval
-    ~TimeInterval(void);
+/// Construct time interval from an real length and units
+TimeInterval(const double length,    ///< length of time interval
+             const TimeUnits units   ///< unit of time for interval
+             );
 
-    // Accessor methods
-    /// Set a non-calendar interval in native fractional integer seconds
-    /// \return error code
-    int set(const long long whole, ///< Whole integer seconds
-            const long long numer, ///< Fractional seconds numerator
-            const long long denom  ///< Fractional seconds denominator
-            );
+/// Destructor for time interval
+~TimeInterval(void);
 
-    /// Set a time interval from integer length and units
-    /// \return error code
-    int set(const int       length, ///< length of time interval
-            const TimeUnits units   ///< unit of time for interval
-            );
+// Accessor methods
+/// Set a non-calendar interval in native fractional integer seconds
+/// \return error code
+int set(const long long whole, ///< Whole integer seconds
+        const long long numer, ///< Fractional seconds numerator
+        const long long denom  ///< Fractional seconds denominator
+        );
 
-    /// Set a time interval from long long integer length and units
-    /// \return error code
-    int set(const long long length, ///< length of time interval
-            const TimeUnits units   ///< unit of time for interval
-            );
+/// Set a time interval from integer length and units
+/// \return error code
+int set(const int       length, ///< length of time interval
+        const TimeUnits units   ///< unit of time for interval
+        );
 
-    /// Set a time interval from an real length and units
-    /// Real length is only supported for non-calendar intervals since
-    /// a non-integral length has ambiguous meaning when months, years
-    /// have variable length.
-    /// \return error code
-    int set(const double length,    ///< length of time interval
-            const TimeUnits units   ///< unit of time for interval
-            );
+/// Set a time interval from long long integer length and units
+/// \return error code
+int set(const long long length, ///< length of time interval
+        const TimeUnits units   ///< unit of time for interval
+        );
 
-    /// Retrieve non-calendar interval in native fractional integer form
-    /// \return error code
-    int get(long long &whole, ///< [out] whole seconds
-            long long &numer, ///< [out] fractional second numerator
-            long long &denom  ///< [out] fractional second denominator
-            ) const;
+/// Set a time interval from an real length and units
+/// Real length is only supported for non-calendar intervals since
+/// a non-integral length has ambiguous meaning when months, years
+/// have variable length.
+/// \return error code
+int set(const double length,    ///< length of time interval
+        const TimeUnits units   ///< unit of time for interval
+        );
 
-    /// Retrieve a time interval in integer length in specified units.
-    /// To avoid roundoff issues during conversions, integer retrieval
-    /// is only permitted in the same units in which the interval was
-    /// defined.
-    /// \return error code
-    int get(long long &length, ///< [out] requested integer length of interval
-            const TimeUnits units ///< [in] unit of time for interval
-            ) const;
+/// Retrieve non-calendar interval in native fractional integer form
+/// \return error code
+int get(long long &whole, ///< [out] whole seconds
+        long long &numer, ///< [out] fractional second numerator
+        long long &denom  ///< [out] fractional second denominator
+        ) const;
 
-    /// Retrieve a time interval in real length and specified units.
-    /// For calendar intervals, the units must match the units in which
-    /// the interval was defined. For non-calendar intervals, only conversions
-    /// between hours, minutes and seconds are allowed.
-    /// \return error code
-    int get(double &length, ///< [out] Requested time interval length
-            const TimeUnits units ///< [in] unit of time for interval
-           ) const;
+/// Retrieve a time interval in integer length in specified units.
+/// To avoid roundoff issues during conversions, integer retrieval
+/// is only permitted in the same units in which the interval was
+/// defined.
+/// \return error code
+int get(long long &length, ///< [out] requested integer length of interval
+        const TimeUnits units ///< [in] unit of time for interval
+        ) const;
 
-    /// Equivalence comparison operator for TimeInterval
-    bool operator==(const TimeInterval &) const;
-    /// Non-equivalence comparison operator for TimeInterval
-    bool operator!=(const TimeInterval &) const;
-    /// Less than comparison operator for TimeInterval
-    bool operator< (const TimeInterval &) const;
-    /// Greater than comparison operator for TimeInterval
-    bool operator> (const TimeInterval &) const;
-    /// Less than or equal comparison operator for TimeInterval
-    bool operator<=(const TimeInterval &) const;
-    /// Greater than or equal comparison operator for TimeInterval
-    bool operator>=(const TimeInterval &) const;
-    /// Addition operator for TimeInterval
-    TimeInterval  operator+ (const TimeInterval &) const;
-    /// Subtraction operator for TimeInterval
-    TimeInterval  operator- (const TimeInterval &) const;
-    /// Increment operator for TimeInterval
-    TimeInterval& operator+=(const TimeInterval &);
-    /// Decrement operator for TimeInterval
-    TimeInterval& operator-=(const TimeInterval &);
-    /// Multiplication by integer scalar
-    TimeInterval  operator* (const int multiplier) const;
-    /// Multiplication by real scalar
-    /// This is primarily meant for non-calendar intervals, but
-    /// for calendar intervals, it will multiply the year, month or
-    /// day interval and convert to the nearest integer.
-    TimeInterval  operator* (const double multiplier) const;
-    /// Multiplication in place by integer scalar
-    TimeInterval& operator*=(const int multiplier);
-    /// Multiplication in place by real scalar
-    /// This is primarily meant for non-calendar intervals, but
-    /// for calendar intervals, it will multiply the year, month or
-    /// day interval and convert to the nearest integer.
-    TimeInterval& operator*=(const double multiplier);
-    /// Divide interval by integer scalar
-    TimeInterval  operator/ (const int divisor) const;
-    /// Divide interval in place by integer scalar
-    TimeInterval& operator/=(const int divisor);
+/// Retrieve a time interval in real length and specified units.
+/// For calendar intervals, the units must match the units in which
+/// the interval was defined. For non-calendar intervals, only conversions
+/// between hours, minutes and seconds are allowed.
+/// \return error code
+int get(double &length, ///< [out] Requested time interval length
+        const TimeUnits units ///< [in] unit of time for interval
+       ) const;
 
-    /// Absolute value
-    static TimeInterval absValue(const TimeInterval &);
-    /// Negative absolute value
-    static TimeInterval negAbsValue(const TimeInterval &);
+/// Equivalence comparison operator for TimeInterval
+bool operator==(const TimeInterval &) const;
+/// Non-equivalence comparison operator for TimeInterval
+bool operator!=(const TimeInterval &) const;
+/// Less than comparison operator for TimeInterval
+bool operator< (const TimeInterval &) const;
+/// Greater than comparison operator for TimeInterval
+bool operator> (const TimeInterval &) const;
+/// Less than or equal comparison operator for TimeInterval
+bool operator<=(const TimeInterval &) const;
+/// Greater than or equal comparison operator for TimeInterval
+bool operator>=(const TimeInterval &) const;
+/// Addition operator for TimeInterval
+TimeInterval  operator+ (const TimeInterval &) const;
+/// Subtraction operator for TimeInterval
+TimeInterval  operator- (const TimeInterval &) const;
+/// Increment operator for TimeInterval
+TimeInterval& operator+=(const TimeInterval &);
+/// Decrement operator for TimeInterval
+TimeInterval& operator-=(const TimeInterval &);
+/// Multiplication by integer scalar
+TimeInterval  operator* (const int multiplier) const;
+/// Multiplication by real scalar
+/// This is primarily meant for non-calendar intervals, but
+/// for calendar intervals, it will multiply the year, month or
+/// day interval and convert to the nearest integer.
+TimeInterval  operator* (const double multiplier) const;
+/// Multiplication in place by integer scalar
+TimeInterval& operator*=(const int multiplier);
+/// Multiplication in place by real scalar
+/// This is primarily meant for non-calendar intervals, but
+/// for calendar intervals, it will multiply the year, month or
+/// day interval and convert to the nearest integer.
+TimeInterval& operator*=(const double multiplier);
+/// Divide interval by integer scalar
+TimeInterval  operator/ (const int divisor) const;
+/// Divide interval in place by integer scalar
+TimeInterval& operator/=(const int divisor);
 
-    // Other utility methods
-    /// Check whether a time interval is positive
-    bool isPositive(void);
+/// Absolute value
+static TimeInterval absValue(const TimeInterval &);
+/// Negative absolute value
+static TimeInterval negAbsValue(const TimeInterval &);
 
-    /// Give the Time Instant access to Time Interval so
-    /// that incrementing/decrementing time is easier.
-    friend class TimeInstant;
+// Other utility methods
+/// Check whether a time interval is positive
+bool isPositive(void);
 
-    }
+/// Give the Time Instant access to Time Interval so
+/// that incrementing/decrementing time is easier.
+friend class TimeInstant;
+
+}
+```
 
 #### 4.2.5 Alarm Class
 
@@ -855,49 +874,50 @@ The alarm class allows the creation of both one-time and
 periodic alarms. There are also methods for querying the
 state of an alarm and for resetting.
 
-    // constructors/destructors
-    /// Constructs a one-time alarm using the input ring time.
-    Alarm(const std::string inName,   ///< [in] Name of alarm
-          const TimeInstant alarmTime ///< [in] Time at/after which alarm rings
+```c++
+// constructors/destructors
+/// Constructs a one-time alarm using the input ring time.
+Alarm(const std::string inName,   ///< [in] Name of alarm
+      const TimeInstant alarmTime ///< [in] Time at/after which alarm rings
+     );
+
+/// Constructs a periodic/interval alarm based on an input periodic
+/// time interval and a start time for the interval period.
+Alarm(const std::string  inName,        ///< [in] Name of alarm
+      const TimeInterval alarmInterval, ///< [in] interval at which alarm rings
+      const TimeInstant  intervalStart  ///< [in] start time of first interval
+     );
+
+/// Destructor for alarm
+~Alarm(void);
+
+/// Check whether an alarm is ringing
+/// \return true if alarm is ringing, false otherwise
+bool isRinging(void);
+
+/// Checks whether the alarm should ring based on the current
+/// (or supplied) time instant (returns error code)
+int updateStatus(const TimeInstant currentTime ///< [in] current time
+                );
+
+/// Stops a ringing alarm and sets next a new ring time. If the alarm
+/// is a periodic/interval alarm, the next ring time is set to be the
+/// next interval boundary after the input time.  If the alarm is a
+/// single instance, the input time is used as the next alarm time.
+/// (returns error code)
+int reset(const TimeInstant inTime ///< [in] new basis for alarm time
          );
 
-    /// Constructs a periodic/interval alarm based on an input periodic
-    /// time interval and a start time for the interval period.
-    Alarm(const std::string  inName,        ///< [in] Name of alarm
-          const TimeInterval alarmInterval, ///< [in] interval at which alarm rings
-          const TimeInstant  intervalStart  ///< [in] start time of first interval
-         );
+/// Stops a ringing alarm (returns error code).
+int stop(void);
 
-    /// Destructor for alarm
-    ~Alarm(void);
+/// Rename an alarm (returns error code)
+int rename(const std::string newName ///< [in] new name for alarm
+          );
 
-    /// Check whether an alarm is ringing
-    /// \return true if alarm is ringing, false otherwise
-    bool isRinging(void);
-
-    /// Checks whether the alarm should ring based on the current
-    /// (or supplied) time instant (returns error code)
-    int updateStatus(const TimeInstant currentTime ///< [in] current time
-                    );
-
-    /// Stops a ringing alarm and sets next a new ring time. If the alarm
-    /// is a periodic/interval alarm, the next ring time is set to be the
-    /// next interval boundary after the input time.  If the alarm is a
-    /// single instance, the input time is used as the next alarm time.
-    /// (returns error code)
-    int reset(const TimeInstant inTime ///< [in] new basis for alarm time
-             );
-
-    /// Stops a ringing alarm (returns error code).
-    int stop(void);
-
-    /// Rename an alarm (returns error code)
-    int rename(const std::string newName ///< [in] new name for alarm
-              );
-
-    /// Get alarm name
-    std::string getName(void) const;
-
+/// Get alarm name
+std::string getName(void) const;
+```
 
 #### 4.2.6 Clock Class
 
@@ -908,49 +928,51 @@ of alarms can be attached to a clock. Finally, there is
 a method to advance the clock one time and update the state
 of all attached alarms.
 
-    // constructors/destructors
-    /// Construct a clock from start time and time step
-    Clock(const TimeInstant  startTime, ///< [in] Start time for clock
-          const TimeInterval timeStep   ///< [in] Time step to advance clock
-         );
+```c++
+// constructors/destructors
+/// Construct a clock from start time and time step
+Clock(const TimeInstant  startTime, ///< [in] Start time for clock
+      const TimeInterval timeStep   ///< [in] Time step to advance clock
+     );
 
-    /// Destructor for clocks
-    ~Clock(void);
+/// Destructor for clocks
+~Clock(void);
 
-    // Accessor Methods
-    /// Set the current time (returns error code)
-    int setCurrentTime(
-        const TimeInstant currTime ///< [in] new value for current time
-        );
+// Accessor Methods
+/// Set the current time (returns error code)
+int setCurrentTime(
+    const TimeInstant currTime ///< [in] new value for current time
+    );
 
-    /// Changes the time step for this clock (returns error code)
-    int changeTimeStep(
-        const TimeInterval newTimeStep ///< [in] new value for time step
-        );
+/// Changes the time step for this clock (returns error code)
+int changeTimeStep(
+    const TimeInterval newTimeStep ///< [in] new value for time step
+    );
 
-    /// Retrieves current time of this clock
-    TimeInstant getCurrentTime(void) const;
+/// Retrieves current time of this clock
+TimeInstant getCurrentTime(void) const;
 
-    /// Retrieves time at the previous time step
-    TimeInstant getPreviousTime(void) const;
+/// Retrieves time at the previous time step
+TimeInstant getPreviousTime(void) const;
 
-    /// Retrieves time at the next time step
-    TimeInstant getNextTime(void) const;
+/// Retrieves time at the next time step
+TimeInstant getNextTime(void) const;
 
-    /// Retrieves start time for this clock
-    TimeInstant getStartTime(void) const;
+/// Retrieves start time for this clock
+TimeInstant getStartTime(void) const;
 
-    /// Retrieves time step for clock
-    TimeInterval getTimeStep(void) const;
+/// Retrieves time step for clock
+TimeInterval getTimeStep(void) const;
 
-    /// Attaches an alarm to this clock. The clock simply stores a
-    /// pointer to this alarm. (returns error code)
-    int attachAlarm(Alarm* inAlarm ///< [in] pointer to alarm to attach
-                   );
+/// Attaches an alarm to this clock. The clock simply stores a
+/// pointer to this alarm. (returns error code)
+int attachAlarm(Alarm* inAlarm ///< [in] pointer to alarm to attach
+               );
 
-    /// Advance a clock one timestep and update status of any attached
-    /// alarms. (returns error code)
-    int advance(void);
+/// Advance a clock one timestep and update status of any attached
+/// alarms. (returns error code)
+int advance(void);
+```
 
 
 ## 5 Verification and Testing
@@ -1029,7 +1051,3 @@ another clock with large time steps (years) that extend over a
 potential paleoclimate interval to test large number
 representations are supported correctly.
   - tests requirement 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
-
-
-
-

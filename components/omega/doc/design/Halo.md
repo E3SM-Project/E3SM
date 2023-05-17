@@ -1,8 +1,5 @@
-<!-- Halo Requirements and Design --------------------------------------------->
-
-# OMEGA Requirements and Design:
-
-## *Halo*
+(omega-design-halo)=
+# Halo
 
 ## 1 Overview
 
@@ -47,8 +44,8 @@ communication.
 ### 2.6 Requirement: Non-blocking communication
 
 To efficiently handle exchanges between each rank and all of its neighbors, we 
-will use the non-blocking MPI routines ```MPI_Isend``` and ```MPI_Irecv```. The 
-```MPI_Test``` routine will be used to determine when each communication is 
+will use the non-blocking MPI routines `MPI_Isend` and `MPI_Irecv`. The 
+`MPI_Test` routine will be used to determine when each communication is 
 completed. Boolean variables will be needed to track when messages have been 
 received and when buffers have been unpacked.
 
@@ -111,17 +108,21 @@ necessary for performing halo exchanges.
 An enum defining mesh element types would be helpful to control which exchange 
 lists to use for a particular field array:
 
-    enum meshElement{onCell, onEdge, onVertex};
+```c++
+enum meshElement{onCell, onEdge, onVertex};
+```
 
 An MPI datatype ```MPI_RealKind``` will be defined based on whether the default 
 real data type is single or double precision via the SINGLE_PRECISION compile 
 time switch:
 
-    #ifdef SINGLE_PRECISION
-    MPI_Datatype MPI_RealKind = MPI_FLOAT;
-    #else
-    MPI_Datatype MPI_RealKind = MPI_DOUBLE;
-    #endif
+```c++
+#ifdef SINGLE_PRECISION
+MPI_Datatype MPI_RealKind = MPI_FLOAT;
+#else
+MPI_Datatype MPI_RealKind = MPI_DOUBLE;
+#endif
+```
 
 Halo exchanges will depend on the ```haloWidth``` parameter defined in the 
 decomp configuration group.
@@ -132,46 +133,50 @@ The ExchList class will hold both send and receive lists. Lists are separated by
 halo layer to allow for the possibility of exchanging individual layers. Buffer 
 offsets are needed to pack/unpack all the halo layers into/from the same buffer.
 
-    class ExchList {
+```c++
+class ExchList {
 
-       private:
+   private:
 
-          I4 nList[haloWidth];        ///< number of mesh elements in each
-                                      ///<   layer of list
-          I4 nTot;                    ///< number of elements summed over layers
-          I4 offsets[haloWidth];      ///< offsets for each halo layer
+      I4 nList[haloWidth];        ///< number of mesh elements in each
+                                  ///<   layer of list
+      I4 nTot;                    ///< number of elements summed over layers
+      I4 offsets[haloWidth];      ///< offsets for each halo layer
 
-          std::vector<I4> indices[haloWidth];   ///< list of local indices
+      std::vector<I4> indices[haloWidth];   ///< list of local indices
 
-       friend class Neighbor;
-       friend class Halo;
-    };
+   friend class Neighbor;
+   friend class Halo;
+};
+```
 
 The Neighbor class contains all the information and buffer memory needed for 
 carrying out each type of halo exchange with one neighboring rank. It contains 
 the ID of the neighboring MPI rank, an object of the ExchList class for sends 
 and receives for each mesh index space, a send and a receive buffer, MPI request 
-handles that are returned by ```MPI_Irecv``` and ```MPI_Isend``` which are 
+handles that are returned by `MPI_Irecv` and `MPI_Isend` which are 
 needed to test for completion of an individual message transfer, and boolean 
 switches to control the progress of a Halo exchange. To avoid the need for 
 separate integer and floating-point buffers, during the packing process integer 
 values can be recast as reals in a bit-preserving manner using 
-```reinterpret_cast``` and then recast as integers on the receiving end.
+`reinterpret_cast` and then recast as integers on the receiving end.
 
-    class Neighbor {
+```c++
+class Neighbor {
 
-       private:
+   private:
 
-          I4 rankID;                           ///< ID of neighboring MPI rank
-          ExchList sendLists[3], recvLists[3]; ///< 0 = onCell, 1 = onEdge, 
-                                               ///< 2 = onVertex
-          std::vector<Real> sendBuffer, recvBuffer;
-          MPI_Request rReq, sReq;              ///< MPI request handles
-          bool received = false;
-          bool unpacked = false;
+      I4 rankID;                           ///< ID of neighboring MPI rank
+      ExchList sendLists[3], recvLists[3]; ///< 0 = onCell, 1 = onEdge, 
+                                           ///< 2 = onVertex
+      std::vector<Real> sendBuffer, recvBuffer;
+      MPI_Request rReq, sReq;              ///< MPI request handles
+      bool received = false;
+      bool unpacked = false;
 
-       friend class Halo;
-    };
+   friend class Halo;
+};
+```
 
 The Halo class collects all Neighbor objects needed by an MPI rank to perform 
 a full halo exchange with each of its neighbors. The total number of neighbors, 
@@ -180,22 +185,23 @@ for the current array being transferred is also stored here. This class will be
 the user interface for halo exchanges, it is a friend class to the subordinate 
 classes so that it has access to all private data.
 
-    class Halo {
+```c++
+class Halo {
 
-       private:
+   private:
 
-          I4 nNghbr;                           ///< number of neighboring ranks
-          I4 myRank                            ///< local MPI rank ID
-          MPI_Comm myComm;                     ///< MPI communicator handle
-          meshElement elemType;                ///< index space of current array
-          std::vector<Neighbor> neighbors;
+      I4 nNghbr;                           ///< number of neighboring ranks
+      I4 myRank                            ///< local MPI rank ID
+      MPI_Comm myComm;                     ///< MPI communicator handle
+      meshElement elemType;                ///< index space of current array
+      std::vector<Neighbor> neighbors;
 
-       public:
+   public:
 
-          // methods
+      // methods
 
-    };
-
+};
+```
 
 ### 4.2 Methods
 
@@ -205,7 +211,9 @@ The constructor for the Halo class will be the interface for declaring an
 instance of the Halo class and instances of all associated member classes, 
 and requires info from the Decomp and MachEnv objects.
 
-    Halo(Decomp inDecomp, MachEnv inEnv);
+```c++
+Halo(Decomp inDecomp, MachEnv inEnv);
+```
 
 The constructors for Neighbor and ExchList will be called from within the Halo 
 constructor and will create instances of these classes based on info from the 
@@ -214,14 +222,16 @@ Decomp object.
 #### 4.2.2 Array halo exchange
 
 The primary use for the Halo class will be a member function called 
-```exchangeFullArrayHalo``` which will exchange halo elements for the input 
+`exchangeFullArrayHalo` which will exchange halo elements for the input 
 array with each of its neighbors across all layers of the halo. The index space 
 the array is located in (cells, edges, or vertices) needs to be fetched from the 
 metadata associated with the array stored in the Halo object to determine which 
 exchange lists to use. It will return an integer error code to catch errors 
 (likewise for each subprocess below).
 
-    int exchangeFullArrayHalo(ArrayLocDDTT &array, meshElement elemType);
+```c++
+int exchangeFullArrayHalo(ArrayLocDDTT &array, meshElement elemType);
+```
 
 This will be an interface for different exchange funcitons for each type of 
 ArrayLocDDTT (where Loc is the array location, i.e. device or host, DD is the 
@@ -235,34 +245,42 @@ to host. The ordering of steps for completing a halo exchange is:
 
 #### 4.2.3 Start receive/send
 
-A ```startReceives``` function will loop over all member Neighbor objects and 
-call ```MPI_Irecv``` for each neighbor. It takes no arguments because all the 
+A `startReceives` function will loop over all member Neighbor objects and 
+call `MPI_Irecv` for each neighbor. It takes no arguments because all the 
 info needed is already contained in the Halo object and its member objects.
 
-    int StartReceives();
+```c++
+int StartReceives();
+```
 
-Likewise, ```startSends``` will loop over all Neighbor objects and call 
-```MPI_Isend``` to send the buffers to each neighbor.
+Likewise, `startSends` will loop over all Neighbor objects and call 
+`MPI_Isend` to send the buffers to each neighbor.
 
-    int StartSends();
+```c++
+int StartSends();
+```
 
 #### 4.2.4 Buffer pack/unpack
 
 For each type of ArrayDDTT, there will be a buffer pack function aliased to a 
-```packBuffer``` interface:
+`packBuffer` interface:
 
-    int packBuffer(ArrayDDTT array, int iNeighbor);
+```c++
+int packBuffer(ArrayDDTT array, int iNeighbor);
+```
 
 where halo elements of the potentially multidimensional array ArrayDDTT are 
 packed into the 1D send buffer for a particular Neighbor in the member 
-```std::vector``` neighbors using the associated ExchList based on the 
-meshElement the array is defined on. The ```exchangeFullArrayHalo``` will loop 
-over the member neighbors and call ```packBuffer``` for each Neighbor.
+`std::vector` neighbors using the associated ExchList based on the 
+meshElement the array is defined on. The `exchangeFullArrayHalo` will loop 
+over the member neighbors and call `packBuffer` for each Neighbor.
 
 Similarly, buffer unpack functions for each ArrayDDTT type will be aliased to 
-an ```unpackBuffer``` interface:
+an `unpackBuffer` interface:
 
-    int unpackBuffer(ArrayDDTT &array, int iNeighbor);
+```c++
+int unpackBuffer(ArrayDDTT &array, int iNeighbor);
+```
 
 ## 5 Verification and Testing
 
@@ -277,4 +295,3 @@ exchange, all the elements in an array (owned+halo elements) would be checked
 to ensure they have the expected value to verify a successful test. A similar
 test utilizing a mesh decomposition with HaloWidth other than the default value 
 would satisfy requirement 2.3 as well.
-

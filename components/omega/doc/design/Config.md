@@ -1,8 +1,5 @@
-<!--- Omega Config Requirements and Design ------------------------------------>
-
-# OMEGA Requirements and Design:
-
-# *Config*
+(omega-design-config)=
+# Config
 
 ## 1 Overview
 
@@ -92,7 +89,7 @@ If extra or unexpected values are encountered, they will be ignored.
 ### 2.13 Desired: Automated generation of default input and error checking
 
 While the source code defines the configuration variables, it would
-desirable to have a means to extract from the source code what the 
+be desirable to have a means to extract from the source code what the 
 code is expecting into a default input config file. This would also
 enable some external error checking for missing or extra entries.
 
@@ -142,7 +139,9 @@ There are no global parameters or shared constants.
 
 We define a Config type, which is actually an alias of YAML::node:
 
-    using Config = YAML::node;
+```c++
+using Config = YAML::node;
+```
 
 from the yaml-cpp library. A YAML node is more fully and accurately 
 defined in the YAML specification, but for the purposes of this 
@@ -157,50 +156,51 @@ but will be a similar hierarchy under the full omega config node.
 
 An example YAML input file might then look like:
 
-    omega:
-       timeManagement:
-          doRestart: false
-          restartTimestampName: restartTimestamp
-          startTime: 0001-01-01_00:00:00
-          stopTime: none
-          runDuration: 0010_00:00:00
-          calendarType: noleap
+```yaml
+omega:
+   timeManagement:
+      doRestart: false
+      restartTimestampName: restartTimestamp
+      startTime: 0001-01-01_00:00:00
+      stopTime: none
+      runDuration: 0010_00:00:00
+      calendarType: noleap
 
-       [Other config options in a similar way]
+   [Other config options in a similar way]
 
-       hmix:
-          hmixScaleWithMesh: false
-          maxMeshDensity: -1.0
-          hmixUseRefWidth: false
-          hmixRefWidth: 30.0e3
+   hmix:
+      hmixScaleWithMesh: false
+      maxMeshDensity: -1.0
+      hmixUseRefWidth: false
+      hmixRefWidth: 30.0e3
 
-       [more config options]
+   [more config options]
 
-       streams:
+   streams:
 
-          mesh:
-             type: input
-             filenameTemplate: mesh.nc
-             inputInterval: initial_only
+      mesh:
+         type: input
+         filenameTemplate: mesh.nc
+         inputInterval: initial_only
 
-          output:
-             type: output
-             filenameTemplate: output/output.$Y-$M-$D_$h.$m.$s.nc
-             filenameInterval: 01-00-00_00:00:00
-             referenceTime: 0001-01-01_00:00:00
-             clobberMode: truncate
-             precision: single
-             outputInterval: 0001_00:00:00
-             contents:
-             - tracers
-             - layerThickness
-             - ssh
-             - kineticEnergyCell
-             - relativeVorticityCell
-             - [other fields]
+      output:
+         type: output
+         filenameTemplate: output/output.$Y-$M-$D_$h.$m.$s.nc
+         filenameInterval: 01-00-00_00:00:00
+         referenceTime: 0001-01-01_00:00:00
+         clobberMode: truncate
+         precision: single
+         outputInterval: 0001_00:00:00
+         contents:
+         - tracers
+         - layerThickness
+         - ssh
+         - kineticEnergyCell
+         - relativeVorticityCell
+         - [other fields]
 
-          [other streams in similar form]
-
+      [other streams in similar form]
+```
 
 ### 4.2 Methods
 
@@ -213,7 +213,9 @@ to be associated with Config.
 The most common use case should be creating a Config by reading a
 YAML configuration file using: 
 
-    Config omegaConfig = ConfigRead(“omega.yml”);
+```c++
+Config omegaConfig = ConfigRead("omega.yml");
+```
 
 where the argument is the name for the YAML input file. In OMEGA,
 we will retain this master configuration throughout the initialization
@@ -228,11 +230,13 @@ associated with the local module/group. In the sample above, if we need
 to retrieve a variable from the hmix group, we first retrieve the hmix
 config and then the variable using:
 
-    Config hmixConfig = ConfigGet(omegaConfig,"hmix",iErr);
-    Real refWidth{0.0};
-    bool useRefWidth{false};
-    refWidth    = ConfigGet(hmixConfig, "hmixRefWidth",    iErr);
-    useRefWidth = ConfigGet(hmixConfig, "hmixUseRefWidth", iErr);
+```c++
+Config hmixConfig = ConfigGet(omegaConfig,"hmix",iErr);
+Real refWidth{0.0};
+bool useRefWidth{false};
+refWidth    = ConfigGet(hmixConfig, "hmixRefWidth",    iErr);
+useRefWidth = ConfigGet(hmixConfig, "hmixUseRefWidth", iErr);
+```
 
 where there is a retrieval function for all supported Omega data types:
 bool, I4, I8, R4, R8, Real, std::string. These retrievals are just
@@ -246,7 +250,9 @@ Another interface will allow the setting of a default value if the
 variable is missing from the input config.  This interface simply
 adds the default value as an additional argument, for example:
 
-    refWidth = ConfigGet(hmixConfig, "hmixRefWidth", defaultVal, iErr);
+```c++
+refWidth = ConfigGet(hmixConfig, "hmixRefWidth", defaultVal, iErr);
+```
 
 In this case, if the variable does not exist, it will not only
 use the default value but print a warning that the default is
@@ -260,9 +266,11 @@ file read interface above, the capability modify a value is also
 required. The syntax is essentially the inverse of the get/retrieval 
 above. Similar to that case, the sub-group will need to be retrieved first.
 
-    Config hmixConfig = ConfigGet(omegaConfig, "hmix", iErr);
-    ConfigSet(hmixConfig, "hmixRefWidth", 10.0e3, iErr);
-    ConfigSet(hmixConfig, "hmixUseRefWidth", true, iErr);
+```c++
+Config hmixConfig = ConfigGet(omegaConfig, "hmix", iErr);
+ConfigSet(hmixConfig, "hmixRefWidth", 10.0e3, iErr);
+ConfigSet(hmixConfig, "hmixUseRefWidth", true, iErr);
+```
 
 There will be overloaded interfaces for each supported type. For 
 literals (as in the example above), they will be cast to an appropriate
@@ -276,16 +284,18 @@ It may be necessary to build up a configuration that does not yet
 exist or add new entries to an existing group. We provide an Add
 interface to distinguish this case from the Set case above.
 
-    // For an existing subgroup:
-    Config hmixConfig = ConfigGet(omegaConfig, "hmix", iErr);
-    ConfigAdd(hmixConfig, "hmixRefWidth", 10.0e3, iErr);
-    ConfigAdd(hmixConfig, "hmixUseRefWidth", true, iErr);
+```c++
+// For an existing subgroup:
+Config hmixConfig = ConfigGet(omegaConfig, "hmix", iErr);
+ConfigAdd(hmixConfig, "hmixRefWidth", 10.0e3, iErr);
+ConfigAdd(hmixConfig, "hmixUseRefWidth", true, iErr);
 
-    // To add a new subgroup:
-    Config hmixConfig; // empty Config constructor
-    ConfigAdd(hmixConfig, "hmixRefWidth", 10.0e3, iErr); // build subgroup
-    ConfigAdd(hmixConfig, "hmixUseRefWidth", true, iErr);
-    ConfigAdd(omegaConfig, hmixConfig); // add new subgroup to parent
+// To add a new subgroup:
+Config hmixConfig; // empty Config constructor
+ConfigAdd(hmixConfig, "hmixRefWidth", 10.0e3, iErr); // build subgroup
+ConfigAdd(hmixConfig, "hmixUseRefWidth", true, iErr);
+ConfigAdd(omegaConfig, hmixConfig); // add new subgroup to parent
+```
 
 There will be overloaded interfaces for each supported type. For 
 literals (as in the example above), they will be cast to an appropriate
@@ -301,28 +311,36 @@ satisfy requirement 2.11, we will add a function to test the
 existence of an entry, given a config or sub-config.
 Using the hmix example again:
 
-    if (ConfigExists(hmixConfig,"hmixRefWidth") {
-       // variable exists, do stuff
-    }
+```c++
+if (ConfigExists(hmixConfig,"hmixRefWidth") {
+   // variable exists, do stuff
+}
+```
 
 Note that this can also be used to test the existence of a complete
 sub-group as well:
 
-    bool hmixExists = ConfigExists(omegaConfig, "hmix");
+```c++
+bool hmixExists = ConfigExists(omegaConfig, "hmix");
+```
 
 #### 4.2.5 File write
 
 While we may decide to save provenance a different way, a write interface
 is supplied to write a configuration to an output YAML file:
 
-    err = ConfigWrite(myConfig, “outputFileName”);
+```c++
+err = ConfigWrite(myConfig, "outputFileName");
+```
 
 #### 4.2.6 Constructor/destructor
 
 A default constructor for an empty Config and destructor will be provided:
 
-    Config myConfig;
-    delete myConfig;
+```c++
+Config myConfig;
+delete myConfig;
+```
 
 The destructor may be important to free up space since the Config is
 likely to only be used during the init phase in the current plan.
@@ -334,23 +352,25 @@ and avoid missing or extra entries, we propose inserting a block within
 each source code header (where other interfaces will be documented).
 This block would follow Doxygen-like format and look something like:
 
-    /// \ConfigInput
-    /// #
-    /// # Group description (eg. hmix: the horizontal mix configuration)
-    /// #
-    /// groupName:
-    ///    #
-    ///    # Parameter description (eg horizontal mixing coeff)
-    ///    #    more description (units, acceptable values or range)
-    ///    #
-    ///    varName1: defaultValue1
-    ///    #
-    ///    # Parameter description
-    ///    #
-    ///    varName2: defaultValue2
-    ///    [ continue for remaining vars in this block]
-    ///
-    /// \EndConfigInput (might not be necessary?)
+```c++
+/// \ConfigInput
+/// #
+/// # Group description (eg. hmix: the horizontal mix configuration)
+/// #
+/// groupName:
+///    #
+///    # Parameter description (eg horizontal mixing coeff)
+///    #    more description (units, acceptable values or range)
+///    #
+///    varName1: defaultValue1
+///    #
+///    # Parameter description
+///    #
+///    varName2: defaultValue2
+///    [ continue for remaining vars in this block]
+///
+/// \EndConfigInput (might not be necessary?)
+```
 
 The block between the ConfigInput lines could be extracted verbatim
 and written (with proper indenting) into a fully documented yaml 
@@ -406,4 +426,3 @@ read in the new file. Add an extra variable to the new file.
 Verify that the newly read Config matches the original, ignoring
 the extra variable.
    - tests 2.3, 2.12
-

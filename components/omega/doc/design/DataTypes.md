@@ -1,9 +1,5 @@
-<!--- DataTypes Requirements and Design --------------------------------------->
-
-# OMEGA Requirements and Design:
-
-# *DataTypes*
-
+(omega-design-data-types)=
+# DataTypes
 
 ## 1 Overview
 
@@ -74,35 +70,35 @@ file DataTypes.h We will use the "using" syntax rather than
 the older typedef. For YAKL arrays, we require both device arrays (default)
 and host array types and will use C-ordering.
 
+```c++
+// Standard integer and floating point types
+using I4 = std::int32_t;
+using I8 = std::int64_t;
+using R4 = float;
+using R8 = double;
+#ifdef SINGLE_PRECISION
+using Real = float;
+#else
+using Real = double;
+#endif
 
-    // Standard integer and floating point types
-    using I4 = std::int32_t;
-    using I8 = std::int64_t;
-    using R4 = float;
-    using R8 = double;
-    #ifdef SINGLE_PRECISION
-    using Real = float;
-    #else
-    using Real = double;
-    #endif
-
-    // Aliases for YAKL arrays - by default on device and in
-    // C-ordering.
-    using Array1DI4   = YAKL::Array<I4,1,memDevice,styleC>
-    using Array1DI8   = YAKL::Array<I8,1,memDevice,styleC>
-    using Array1DR4   = YAKL::Array<R4,1,memDevice,styleC>
-    using Array1DR8   = YAKL::Array<R8,1,memDevice,styleC>
-    using Array1DReal = YAKL::Array<Real,1,memDevice,styleC>
-    using Array2DI4   = YAKL::Array<I4,2,memDevice,styleC>
-    using Array2DI8   = YAKL::Array<I8,2,memDevice,styleC>
-    using Array2DR4   = YAKL::Array<R4,2,memDevice,styleC>
-    using Array2DR8   = YAKL::Array<R8,2,memDevice,styleC>
-    using Array2DReal = YAKL::Array<Real,2,memDevice,styleC>
-    // continue this pattern for higher-dimensional arrays
-    // Also need similar aliases for arrays on the host
-    using ArrayHost1DI4   = YAKL::Array<I4,1,memHost,styleC>
-    // replicated as above for each type, dimension
-
+// Aliases for YAKL arrays - by default on device and in
+// C-ordering.
+using Array1DI4   = YAKL::Array<I4,1,memDevice,styleC>
+using Array1DI8   = YAKL::Array<I8,1,memDevice,styleC>
+using Array1DR4   = YAKL::Array<R4,1,memDevice,styleC>
+using Array1DR8   = YAKL::Array<R8,1,memDevice,styleC>
+using Array1DReal = YAKL::Array<Real,1,memDevice,styleC>
+using Array2DI4   = YAKL::Array<I4,2,memDevice,styleC>
+using Array2DI8   = YAKL::Array<I8,2,memDevice,styleC>
+using Array2DR4   = YAKL::Array<R4,2,memDevice,styleC>
+using Array2DR8   = YAKL::Array<R8,2,memDevice,styleC>
+using Array2DReal = YAKL::Array<Real,2,memDevice,styleC>
+// continue this pattern for higher-dimensional arrays
+// Also need similar aliases for arrays on the host
+using ArrayHost1DI4   = YAKL::Array<I4,1,memHost,styleC>
+// replicated as above for each type, dimension
+```
 
 ### 4.2 Methods
 
