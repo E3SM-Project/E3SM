@@ -230,6 +230,8 @@ _TESTS = {
         "tests" : (
             "ERS_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-PISMF",
             "PEM_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-PISMF",
+            "ERS_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-DISMF",
+            "PEM_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-DISMF",
             "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
             )
         },
