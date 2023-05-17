@@ -13,7 +13,8 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 from eamxx_buildnml_impl import check_value
-from atm_manip import expect, get_xml_node, AmbiguousName, atm_query_impl
+from atm_manip import atm_query_impl
+from utils import expect
 
 ###############################################################################
 def atm_query(variables,listall=False,full=False,value=False, \

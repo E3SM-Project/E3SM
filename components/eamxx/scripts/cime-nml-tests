@@ -247,6 +247,16 @@ class TestBuildnml(unittest.TestCase):
 
         self._chg_atmconfig([("enable_precondition_checks", "false")], case, all_matches=True)
 
+    ###########################################################################
+    def test_atmchanges_on_all_matches_plus_spec(self):
+    ###########################################################################
+        """
+        Test that atmchange works for all matches and picking one specialization
+        """
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+
+        self._chg_atmconfig([("enable_precondition_checks", "false"), ("p3::enable_precondition_checks", "false")], case, all_matches=True)
+
 ###############################################################################
 def parse_command_line(args, desc):
 ###############################################################################
