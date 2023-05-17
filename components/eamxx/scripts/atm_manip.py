@@ -152,7 +152,7 @@ def atm_config_chg_impl(xml_root, change, all_matches=False):
     >>> ################ AMBIGUOUS CHANGE #######################
     >>> atm_config_chg_impl(tree,'prop1=three')
     Traceback (most recent call last):
-    SystemExit: ERROR: prop1 is ambiguous, matches:
+    SystemExit: ERROR: prop1 is ambiguous (use --all to change all matches), matches:
       root::prop1
       root::sub::prop1
     <BLANKLINE>
@@ -201,7 +201,7 @@ def atm_config_chg_impl(xml_root, change, all_matches=False):
             name = "::".join(e.tag for e in parents) + "::" + node.tag
             error_str += "  " + name + "\n"
 
-        expect(False, f"{node_name} is ambiguous, matches:\n{error_str}")
+        expect(False, f"{node_name} is ambiguous (use --all to change all matches), matches:\n{error_str}")
 
     any_change = False
     for node in matches:
@@ -371,6 +371,7 @@ def atm_query_impl(xml_root,variables,listall=False,full=False,value=False,
 
     elif grep:
         for regex in variables:
+            expect("::" not in regex, "query --grep does not support including parent info")
             var_re = re.compile(f'{regex}')
             if var_re.search(xml_root.tag):
                 print_all_vars(xml_root,xml_root,parent_map,"::",full,dtype,value,valid_values,"short","  ")
