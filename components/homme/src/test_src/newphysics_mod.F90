@@ -6,7 +6,7 @@ module newphysics
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
 
 use control_mod,          only: theta_hydrostatic_mode,&
-                   case_planar_bubble, bubble_prec_type, bubble_rj_cpdry, bubble_rj_cpstar
+                   case_planar_bubble, bubble_prec_type, bubble_rj_cpstar_hy, bubble_rj_cpstar_nh
 use dimensions_mod,       only: np, nlev, nlevp , qsize, qsize_d, nelemd
 use element_mod,          only: element_t
 use element_state,        only: nt=>timelevels
@@ -508,24 +508,27 @@ end subroutine compute_mass
 
 
 
-subroutine rj_new(qv_c,T_c,dp_c,p_c,ptop,massout,wasiactive)
+subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,wasiactive)
 
-  real(rl), dimension(nlev), intent(in)    :: p_c
+  real(rl), dimension(nlev), intent(inout) :: p_c
   real(rl), dimension(nlev), intent(inout) :: dp_c
   real(rl), dimension(nlev), intent(inout) :: qv_c,T_c
+  real(rl), dimension(nlevp),intent(inout) :: zi_c
   real(rl),                  intent(inout) :: massout
   real(rl),                  intent(in)    :: ptop
   logical,                   intent(inout) :: wasiactive
 
   real(rl) :: qsat, dp_loc, qv_loc, dpdry_loc, qvdry_loc, qsatdry, dq_loc, vapor_mass_change
   real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, rstar_old, rstar_new, hold, T_new
-  real(rl) :: cpstarTerm_new
-  real(rl), dimension(nlev) :: pi
+  real(rl) :: cpstarTerm_new, rstardp
+  real(rl), dimension(nlev) :: pi, dphi
   integer  :: k
 
   massout = 0.0
 
   call construct_hydro_pressure(dp_c,ptop,pi)
+
+  dphi(1:nlev) = gravit*( zi_c(1:nlev) - zi_c(2:nlevp) )
 
   do k=1, nlev
     !call qsat_rj2(p_c(k), T_c(k), qsat)
@@ -534,6 +537,9 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,ptop,massout,wasiactive)
     if (qv_c(k) > qsat) then
 !print *, 'HEY RAIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 !stop
+
+       !condensation stage
+
        wasiactive = .true. 
        !compute dry values
        dp_loc = dp_c(k)
@@ -555,55 +561,163 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,ptop,massout,wasiactive)
        rstar_new = rdry * 1.0 + rvapor * qsatdry
 
 !use extra term in dh=0 rule in case of NH or not
-!#define HYY
-#undef HYY
-#ifndef HYY
+       if(bubble_rj_cpstar_nh) then
        ! L and Rstar are in terms of q, so, enthalpy too
-       hold = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + &
-           (pi_loc/p_loc - 1) * rstar_old * T_loc + L_old
-#else
-       hold = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + &
-                                                    L_old
-#endif
+         hold = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + &
+             (pi_loc/p_loc - 1) * rstar_old * T_loc + L_old
+       elseif (bubble_rj_cpstar_hy) then
+         hold = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + &
+                                                      L_old
+       endif
+
        cpstarTerm_new = cpdry*1.0 + cpv*qsatdry + cl*dq_loc
        !hnew = T_new * (   cpstarTerm_new + ( (pi_loc - vapor_mass_change)/(p_loc - vapor_mass_change) - 1)*rstar_new   ) + &
        !       L_new
        !     = hold
-#ifndef HYY
-       T_new = (hold - L_new)/ &
-       (   cpstarTerm_new + ( pi_loc/p_loc - 1)*rstar_new   )
-#else
-       T_new = (hold - L_new)/ &
-       (   cpstarTerm_new   )
-#endif
+
+       if(bubble_rj_cpstar_nh) then
+         T_new = (hold - L_new)/ &
+         (   cpstarTerm_new + ( pi_loc/p_loc - 1)*rstar_new   )
+       elseif(bubble_rj_cpstar_hy) then
+         T_new = (hold - L_new)/ &
+         (   cpstarTerm_new   )
+       endif
+
 print *, 'T_new - T_c', T_new - T_c(k)
 
-       !this does not need conversion wet-dry
        T_c(k)  = T_new
-       qv_c(k) = qsat
+       !one can compute qv and ql here, but they change with sedimentation below
+       !only temperature won't change
+
+       !sedimentation stage
        massout = massout + vapor_mass_change
        dp_c(k) = dp_loc - vapor_mass_change
+       p_c(k)  = p_loc  - vapor_mass_change
+       qv_c(k) = qsatdry*dpdry_loc/dp_c(k)
+       rstardp = dp_c(k) * (rdry * (1.0 - qv_c(k)) + rvapor * qv_c(k))
+
+print *, 'old dphi ', dphi(k)
+
+       dphi(k) = rstardp * T_c(k) / p_c(k)
+
+print *, 'new dphi ', dphi(k)
+
      endif
+  enddo
+
+  !recompute zi
+  do k=nlev, 1, -1
+     zi_c(k) = zi_c(k+1) + dphi(k)/gravit
   enddo
   
 end subroutine rj_new
 
 
 
-!in NH case, uses NH pressure
-subroutine rj_old(qv_c,T_c,dp_c,p_c,ptop,massout,wasiactive)
 
-  real(rl), dimension(nlev), intent(in)    :: p_c, dp_c
+subroutine rj_new_volume(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,wasiactive)
+
+  real(rl), dimension(nlev), intent(inout) :: p_c
+  real(rl), dimension(nlev), intent(inout) :: dp_c
   real(rl), dimension(nlev), intent(inout) :: qv_c,T_c
+  real(rl), dimension(nlevp),intent(in)    :: zi_c
+  real(rl),                  intent(inout) :: massout
+  real(rl),                  intent(in)    :: ptop
+  logical,                   intent(inout) :: wasiactive
+
+  real(rl) :: qsat, dp_loc, qv_loc, dpdry_loc, qvdry_loc, qsatdry, dq_loc, vapor_mass_change
+  real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, rstar_old, rstar_new, Iold, T_new
+  real(rl) :: cvstarTerm_new, rstardp
+  real(rl), dimension(nlev) :: pi
+  integer  :: k
+
+  massout = 0.0
+
+  call construct_hydro_pressure(dp_c,ptop,pi)
+
+  do k=1, nlev
+    !call qsat_rj2(p_c(k), T_c(k), qsat)
+    call qsat_rj2(pi(k), T_c(k), qsat)
+
+    if (qv_c(k) > qsat) then
+!print *, 'HEY RAIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+!stop
+       !condensation stage
+
+       wasiactive = .true.
+       !compute dry values
+       dp_loc = dp_c(k)
+       qv_loc = qv_c(k)
+       dpdry_loc = dp_loc * (1.0 - qv_loc)
+       qvdry_loc = qv_loc * dp_loc / dpdry_loc
+       qsatdry = qsat * dp_loc / dpdry_loc     ! qv_new
+       dq_loc = qvdry_loc - qsatdry            ! > 0 , is qliq_dry_new
+       vapor_mass_change = dpdry_loc*dq_loc
+       T_loc = T_c(k)
+       p_loc = p_c(k)
+       pi_loc = pi(k)
+
+       !new Q will be qsatdry
+       L_old = (latvap + latice) * qvdry_loc
+       L_new = (latvap + latice) * qsatdry   + latice * dq_loc
+
+       rstar_old = rdry * 1.0 + rvapor * qvdry_loc
+       rstar_new = rdry * 1.0 + rvapor * qsatdry
+
+       Iold = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + L_old
+
+       cvstarTerm_new = cvdry*1.0 + cvv*qsatdry + cl*dq_loc
+       T_new = ( Iold - L_new )/(   cvstarTerm_new   )
+
+print *, 'T_new - T_c', T_new - T_c(k)
+
+       T_c(k)  = T_new
+
+       !sedimentation stage
+
+       !dpdry_loc won't change, zi_c won't change
+       !dp will change by mass
+       massout = massout + vapor_mass_change
+       dp_c(k) = dp_loc - vapor_mass_change
+       qv_c(k) = qsatdry*dpdry_loc/dp_c(k)
+
+       rstardp = dp_c(k)* (rdry * (1.0 - qv_c(k)) + rvapor * qv_c(k))
+       p_c(k)  = rstardp * T_c(k) / (zi_c(k+1) - zi_c(k) )
+
+     endif
+  enddo
+
+end subroutine rj_new_volume
+
+
+
+
+
+!in NH case, uses NH pressure
+subroutine rj_old(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,wasiactive)
+
+  real(rl), dimension(nlev), intent(inout) :: p_c 
+  real(rl), dimension(nlev), intent(inout) :: dp_c
+  real(rl), dimension(nlev), intent(inout) :: qv_c,T_c
+  real(rl), dimension(nlevp),intent(inout) :: zi_c
   real(rl),                  intent(in)    :: ptop
   real(rl),                  intent(inout) :: massout
   logical,                   intent(inout) :: wasiactive
 
-  real(rl) :: qsat, dq_loc
+  real(rl) :: qsat, dq_loc, rstardp, oldQ1mass, vapor_mass_lost
   integer :: k
   real(rl), dimension(nlev) :: pi
+  real(rl), dimension(nlev) :: dphi
+
+  ! this code is wrt wet mmrs!
+  ! this code is not like old RJ implementation in part because sedimentation will not be done
+  ! with const pressure assumption
 
   massout = 0.0
+  
+  !should be negative
+  dphi(1:nlev) = gravit*(zi_c(1:nlev) - zi_c(2:nlevp))
+
   call construct_hydro_pressure(dp_c,ptop,pi)
 
   do k=1, nlev
@@ -613,13 +727,40 @@ subroutine rj_old(qv_c,T_c,dp_c,p_c,ptop,massout,wasiactive)
     if (qv_c(k) > qsat) then
        wasiactive = .true.
 !original RJ
+
+       ! condensation stage, const dp, const pnh
        dq_loc = (qv_c(k) - qsat) &
          / (1.0 + (latvap/cpdry) * bubble_epsilo * latvap * qsat / (rdry*T_c(k)*T_c(k)))
        T_c(k)  = T_c(k)  + latvap / cpdry * dq_loc
        qv_c(k) = qv_c(k) - dq_loc
-       massout = massout + dq_loc * dp_c(k)
+       vapor_mass_lost = dq_loc * dp_c(k)
+       !dummy ql_c = dq_loc
+
+       ! sedimentation
+       ! we recompute dp here after the fact to avoid calling _cam functions
+       ! we also recomopute everything else (in this case, after dp, pnh and dphi change)
+       !dummy ql_c = 0
+       !mass_lost is dq_loc * dp_c(k)
+       !new dp is dp -= mass_lost
+     
+       oldQ1mass = dp_c(k) * qv_c(k)
+       massout = massout + vapor_mass_lost
+       dp_c(k) = dp_c(k) - vapor_mass_lost
+       p_c(k)  = p_c(k)  - vapor_mass_lost
+       qv_c(k) = oldQ1mass / dp_c(k)
+
+       !dphi = - dp * Rstar * T / pnh
+       rstardp = dp_c(k) * (rdry * (1.0 - qv_c(k)) + rvapor * qv_c(k))
+       dphi(k) = rstardp * T_c(k) / p_c(k)
+
      endif
   enddo
+
+  !recompute zi
+  do k=nlev, 1, -1
+     zi_c(k) = zi_c(k+1) + dphi(k)/gravit
+  enddo
+
 
 end subroutine rj_old
 

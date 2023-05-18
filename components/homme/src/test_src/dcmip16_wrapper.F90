@@ -8,7 +8,8 @@ module dcmip16_wrapper
 
 use dcmip12_wrapper,      only: pressure_thickness, set_tracers, get_evenly_spaced_z, set_hybrid_coefficients
 use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type, use_moisture, theta_hydrostatic_mode,&
-     sub_case, case_planar_bubble, bubble_prec_type, bubble_rj_cpdry, bubble_rj_cpstar
+     sub_case, case_planar_bubble, bubble_prec_type, &
+     bubble_rj_cpdry, bubble_rj_cpstar_hy, bubble_rj_cpstar_nh, bubble_rj_cVstar
 use baroclinic_wave,      only: baroclinic_wave_test
 use supercell,            only: supercell_init, supercell_test, supercell_z
 use tropical_cyclone,     only: tropical_cyclone_test
@@ -652,9 +653,6 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     ! apply forcing to columns
     do j=1,np; do i=1,np
 
-      ! RJ needs only qv_c, T_c, dp_c, ptop
-      ! Kessler needs all
-
       !column values
       qv_c = qv(i,j,:); qc_c = qc(i,j,:); qr_c = qr(i,j,:); 
       p_c  = p(i,j,:); dp_c = dp(i,j,:); T_c = T(i,j,:); zi_c = zi(i,j,:);
@@ -671,52 +669,29 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       if(bubble_prec_type == 1) then
 
         !computes its own dry values
-        if(bubble_rj_cpstar) then
+        if(bubble_rj_cpstar_hy .or. bubble_rj_cpstar_nh) then
 
           !returns new T, qv, new!!! dp, mass
-          call rj_new(qv_c,T_c,dp_c,p_c,ptop,mass_prect,wasiactive)
+          call rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,wasiactive)
+
+        elseif(bubble_rj_cVstar) then
+
+          !returns new T, qv, new!!! dp, mass
+          call rj_new_volume(qv_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,wasiactive)
+
 
         elseif(bubble_rj_cpdry) then
 
-          !BROKEN DO NOT USE does not recompute pressure, and below code 
-          !for state update will be wrong
           !this one conserves with const dp
-          !returns new T, new wet qv, prect mass (dp*delta_qv)
-          call rj_old(qv_c,T_c,dp_c,p_c,ptop,mass_prect,wasiactive)
+          !returns new T, new wet qv, prect mass (dp*delta_qv), new dp_c
+          call rj_old(qv_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,wasiactive)
         endif
 
-
-      ! Kessler precipitation
       elseif(bubble_prec_type == 0) then
-
-        if(theta_hydrostatic_mode) then
-          print *, 'A, in kessler planar bubble! switch to NH';  stop
-        endif
-
-        mass_before = sum(dp_c)+ptop
-        !call energy_hy_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,energy_before)
-        !call energy_nh_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,energy_before)
-
-        call kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,dpdry_c,p_c,ptop,zi_c,mass_prect,energy_prect,dt,wasiactive)
-        !in dry to wet conversion kessler used old dp to convert
-        !call energy_hy_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,energy_after)
-        !call energy_nh_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,energy_after)
-        mass_after = sum( dp_c )+ptop
-
-        !discrepancy = (energy_before - energy_after - energy_prect)
-        !if( (discrepancy/energy_prect > 0.5) .and. (energy_prect>300.0) )then
-        if( (energy_prect>300.0) )then
-        !print *, 'Total: en - en(up to flux)', (energy_before - energy_after - energy_prect)/energy_before
-        !print *, '          Total: en - en', (energy_before - energy_after - energy_prect)
-        !print *, 'energy flux, total energy after', energy_prect, energy_after
-        !print *, '------- Discrepancy, discrepancy/energy_prect ', discrepancy, discrepancy/energy_prect
-        !print *, 'Total: mass - mass(up to flux)', (mass_before - mass_after - mass_prect)/mass_before
-        endif
-
+        print *, 'kessler planar bubble not done';  stop
       endif ! RJ or Kessler choice
 
       precl(i,j,ie) = mass_prect / (dt * rhow) / g
-
 
 #if 0
       !update tendencies assuming cam_ routines are active
@@ -739,9 +714,16 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 #endif
 
 
-!this code is in kessler
+!!!!! CHANGE RSTAR def here
+
+!current issue is that homme routine with WL computes
 !rstar = rdry*dpdry(1.0+qcdry+qrdry) + rvapor*dpdry*qvdry
 !dphi = rstar*tempe/pnh
+
+
+!regarding all p=const approaches -- when rain happens, before or after we adjust T tendencies?
+!rihgt now p=intent(in) only, so p does not see dp change? 
+
 
 #if 1
       !update states assuming cam_ routines are off

@@ -394,7 +394,7 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
      elem(ie)%state%Q(:,:,:,ii:qsize) = 0.0
 
      !sets hydro phi from (perturbed) theta and pressure, checks for hydrostatic balance after that, saves a state
-     !call tests_finalize(elem(ie),hvcoord)
+     call tests_finalize(elem(ie),hvcoord)
   enddo
 
 end subroutine bubble_init

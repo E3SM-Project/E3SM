@@ -267,7 +267,9 @@ module control_mod
   logical,               protected :: case_planar_bubble = .FALSE.
 
   logical,               public :: bubble_rj_cpdry = .TRUE.
-  logical,               public :: bubble_rj_cpstar = .FALSE.
+  logical,               public :: bubble_rj_cpstar_hy = .FALSE.
+  logical,               public :: bubble_rj_cpstar_nh = .FALSE.
+  logical,               public :: bubble_rj_cVstar = .FALSE.
 
   public :: set_planar_defaults
 
@@ -707,23 +709,11 @@ use physical_constants, only: Lx, Ly, Sx, Sy
     if (test_case == "planar_rising_bubble" ) then
        case_planar_bubble = .TRUE.
        !check which thermo we are running
-#if 0
-       if( ( .not. bubble_cpdry .and. .not. bubble_cpstar .and. .not. bubble_cl) .or. &
-           ( bubble_cpdry .and. bubble_cpstar) .or. &
-           ( bubble_cpdry .and. bubble_cl) .or. &
-           ( bubble_cpstar .and. bubble_cl) ) then 
-         print *, 'bubble_cpdry', bubble_cpdry
-         print *, 'bubble_cpstar', bubble_cpstar
-         print *, 'bubble_cl', bubble_cl
-         print *, 'one should be true, two should be false'
-       endif
-#else
-       if ((bubble_rj_cpdry .and. bubble_rj_cpstar) .or. &
-           ( .not.bubble_rj_cpdry .and. .not.bubble_rj_cpstar)) then
+         print *, 'ONLY ONE SHOULD BE TRUE'
          print *, 'bubble_rj_cpdry', bubble_rj_cpdry
-         print *, 'bubble_rj_cpstar', bubble_rj_cpstar
-       endif
-#endif
+         print *, 'bubble_rj_cpstar_hy', bubble_rj_cpstar_hy
+         print *, 'bubble_rj_cpstar_nh', bubble_rj_cpstar_nh
+         print *, 'bubble_rj_cVstar', bubble_rj_cVstar
     end if
 
 end subroutine set_planar_defaults

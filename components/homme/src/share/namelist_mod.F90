@@ -121,7 +121,9 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     bubble_prec_type, &
     case_planar_bubble, &
     bubble_rj_cpdry, &
-    bubble_rj_cpstar
+    bubble_rj_cpstar_hy, &
+    bubble_rj_cpstar_nh, &
+    bubble_rj_cVstar
 #endif
 
 
@@ -354,7 +356,9 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       bubble_rh_background, &
       bubble_prec_type, &
       bubble_rj_cpdry, &
-      bubble_rj_cpstar
+      bubble_rj_cpstar_hy, &
+      bubble_rj_cpstar_nh, &
+      bubble_rj_cVstar
     namelist /vert_nl/        &
       vfile_mid,          &
       vfile_int,          &
@@ -835,7 +839,9 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(case_planar_bubble,1,MPIlogical_t,par%root,par%comm,ierr)
 
     call MPI_bcast(bubble_rj_cpdry,1,MPIlogical_t,par%root,par%comm,ierr)
-    call MPI_bcast(bubble_rj_cpstar,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_rj_cpstar_hy,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_rj_cpstar_nh,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_rj_cVstar,1,MPIlogical_t,par%root,par%comm,ierr)
 #endif
 
     call MPI_bcast(theta_hydrostatic_mode ,1,MPIlogical_t,par%root,par%comm,ierr)
