@@ -84,7 +84,7 @@
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/ 115.0_r8, 115.0_r8,  62.0_r8, &
        12.0_r8,  250.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
        250092.0_r8 /)
-#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/ 115.0_r8, 115.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
        250092.0_r8 /)
