@@ -27,7 +27,7 @@ public:
   // Running the interpolation
   void initialize_timestamps(const TimeStamp& ts_in);
   void initialize_data_from_field(const Field& field_in);
-  void initialize_data_from_file(const vos_type& list_of_files);
+  void initialize_data_from_files();
   void update_data_from_field(const Field& field_in);
   void update_timestamp(const TimeStamp& ts_in);
   std::map<std::string,Field> perform_time_interpolation(const TimeStamp& time_in);
@@ -73,7 +73,6 @@ protected:
   TimeStamp m_time1;
 
   // Variables related to the case where we use data from file
-  bool                                       m_data_from_file = false;
   std::vector<DataFromFileTriplet>           m_file_data_triplets;
   std::vector<DataFromFileTriplet>::iterator m_triplet_iterator;
   AtmosphereInput                            m_file_data_atm_input;
