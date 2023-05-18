@@ -39,7 +39,7 @@ void update_field_data(const Real slope, const Real dt, Field& field);
 bool views_are_approx_equal(const Field& f0, const Field& f1, const Real tol);
 
 // Helper randomizer
-auto my_pdf = [&](std::mt19937_64& engine) -> Real {
+Real my_pdf(std::mt19937_64& engine) {
   std::uniform_int_distribution<int> pdf (1,100);
   Real v = pdf(engine);
   return v;
@@ -121,14 +121,13 @@ TEST_CASE ("eamxx_time_interpolation_simple") {
   for (int tt = 1; tt<=10; tt++) {
     t1 += dt;
     printf("                        ... t = %s\n",t1.to_string().c_str());
-    auto interp_fields = time_interpolator.perform_time_interpolation(t1);
+    time_interpolator.perform_time_interpolation(t1);
     for (auto ff_pair = fields_man_test->begin(); ff_pair != fields_man_test->end(); ff_pair++)
     {
       const auto name = ff_pair->first;
-      auto fcmp = interp_fields.at(name);
       auto ff = ff_pair->second;
       update_field_data(slope, dt, *ff);
-      REQUIRE(views_are_approx_equal(*ff,interp_fields.at(name),tol));
+      REQUIRE(views_are_approx_equal(*ff,time_interpolator.get_field(name),tol));
     }
   }
   printf("                        ... DONE\n");
@@ -152,6 +151,7 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
   const auto& grid = grids_man->get_grid("Point Grid");
   // Now create a fields manager to store initial data for testing.
   auto fields_man_t0 = get_fm(grid, t0, seed);
+  auto fields_man_deep = get_fm(grid, t0, seed);  // A field manager for checking deep copies.
   std::vector<std::string> fnames;
   for (auto it : *fields_man_t0) {
     fnames.push_back(it.second->name());
@@ -162,11 +162,15 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
   // Construct a time interpolation object using the list of files with the data
   printf(  "Constructing a time interpolation object ...\n");
   util::TimeInterpolation time_interpolator(grid,list_of_files);
+  util::TimeInterpolation time_interpolator_deep(grid,list_of_files);
   for (auto name : fnames) {
-    auto ff = fields_man_t0->get_field(name);
+    auto ff      = fields_man_t0->get_field(name);
+    auto ff_deep = fields_man_deep->get_field(name);
     time_interpolator.add_field(ff);
+    time_interpolator_deep.add_field(ff_deep,true);
   }
   time_interpolator.initialize_data_from_files();
+  time_interpolator_deep.initialize_data_from_files();
   printf(  "Constructing a time interpolation object ... DONE\n");
 
   // Now check that the interpolator is working as expected.  Should be able to
@@ -190,13 +194,23 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
       for (auto name : fnames) {
         auto field = fields_man_t0->get_field(name);
         update_field_data(slope,dt,field);
+	// We set the deep copy fields to wrong values to stress test that everything still works.
+	auto field_deep = fields_man_deep->get_field(name);
+	field_deep.deep_copy(-9999.0);
       }
     }
-    auto interp_fields = time_interpolator.perform_time_interpolation(ts);
+    time_interpolator.perform_time_interpolation(ts);
+    time_interpolator_deep.perform_time_interpolation(ts);
     // Now compare the interp_fields to the fields in the field manager which should be updated.
     for (auto name : fnames) {
       auto field = fields_man_t0->get_field(name);
-      REQUIRE(views_are_equal(field,interp_fields.at(name)));
+      auto field_deep = fields_man_deep->get_field(name);
+      // Check that the shallow copies match the expected values
+      REQUIRE(views_are_approx_equal(field,time_interpolator.get_field(name),tol));
+      // Check that the deep fields which were not updated directly are the same as the ones stored in the time interpolator.
+      REQUIRE(views_are_equal(field_deep,time_interpolator_deep.get_field(name)));
+      // Check that the deep and shallow fields match showing that both approaches got the correct answer.
+      REQUIRE(views_are_equal(field,field_deep));
     }
 
   }
@@ -226,7 +240,6 @@ bool views_are_approx_equal(const Field& f0, const Field& f1, const Real tol)
   auto d_max = field_max<Real>(ft);
   if (std::abs(d_min) > tol or std::abs(d_max) > tol) {
     printf("The two copies of (%16s) are NOT approx equal within a tolerance of %e.\n     The min and max errors are %e and %e respectively.\n",f0.name().c_str(),tol,d_min,d_max);
-    printf("ASD - %f vs. %f\n",field_max<Real>(f0),field_max<Real>(f1));
     return false;
   } else {
     return true;

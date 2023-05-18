@@ -30,14 +30,14 @@ TimeInterpolation::TimeInterpolation(
  * field managers.
  * Conducts a simple linear interpolation between two points using
  *        y* = w*y0 + (1-w)*y1
- * where w = (t1-dt)/(t1-t0)
+ * where w = (t1-t*)/(t1-t0)
  * Input:
  *   time_in - A timestamp to interpolate onto.
  * Output
  *   A map of (field name) and (Field) pairs such that each field is the interpolated values and
  *   the map makes it possible to quickly query individual outputs.
  */
-std::map<std::string,Field> TimeInterpolation::perform_time_interpolation(const TimeStamp& time_in)
+void TimeInterpolation::perform_time_interpolation(const TimeStamp& time_in)
 {
   // Declare the output map
   std::map<std::string,Field> interpolated_fields;
@@ -56,15 +56,12 @@ std::map<std::string,Field> TimeInterpolation::perform_time_interpolation(const 
   // Cycle through all stored fields and conduct the time interpolation
   for (auto name : m_field_names)
   {
-    const auto& field0 = m_fm_time0->get_field(name);
-    const auto& field1 = m_fm_time1->get_field(name);
-    Field field_out    = field0.clone();
+    const auto& field0   = m_fm_time0->get_field(name);
+    const auto& field1   = m_fm_time1->get_field(name);
+          auto field_out = m_interp_fields.at(name);
+    field_out.deep_copy(field0);
     field_out.update(field1,1.0-weight,weight);
-    interpolated_fields.emplace(name,field_out);
   }
-
-  // Return map of interpolated fields
-  return interpolated_fields;
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* Function which registers a field in the local field managers.
@@ -73,7 +70,7 @@ std::map<std::string,Field> TimeInterpolation::perform_time_interpolation(const 
  * Output:
  *   None
  */
-void TimeInterpolation::add_field(const Field& field_in)
+void TimeInterpolation::add_field(Field& field_in, const bool deep)
 {
   // First check that we haven't already added a field with the same name.
   const auto name = field_in.name();
@@ -85,18 +82,15 @@ void TimeInterpolation::add_field(const Field& field_in)
   auto field1 = field_in.clone();
   m_fm_time0->add_field(field0);
   m_fm_time1->add_field(field1);
+  if (deep) {
+    // Then we want to store the actual field_in and override it when interpolating
+    m_interp_fields.emplace(name,field_in);
+  } else {
+    // We want to store a copy of the field but not ovveride
+    auto field_out = field_in.clone();
+    m_interp_fields.emplace(name,field_out);
+  }
   m_field_names.push_back(name);
-}
-/*-----------------------------------------------------------------------------------------------*/
-/* Function to shift the data of a single field from time1 to time0
- * Input:
- *   name - The name of the field to be shifted.
- */
-void TimeInterpolation::shift_data(const std::string& name)
-{
-        auto  field0 = m_fm_time0->get_field(name);
-  const auto& field1 = m_fm_time1->get_field(name);
-  field0.deep_copy(field1);
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* Function to shift all data from time1 to time0, update timestamp for time0
@@ -105,7 +99,9 @@ void TimeInterpolation::shift_data()
 {
   for (auto name : m_field_names)
   {
-    shift_data(name);
+    auto field0 = m_fm_time0->get_field(name);
+    auto field1 = m_fm_time1->get_field(name);
+    field0.deep_copy(field1);
   }
 }
 /*-----------------------------------------------------------------------------------------------*/
@@ -187,8 +183,9 @@ void TimeInterpolation::update_timestamp(const TimeStamp& ts_in)
 void TimeInterpolation::update_data_from_field(const Field& field_in)
 {
   const auto name = field_in.name();
-  shift_data(name);
+  auto field0 = m_fm_time0->get_field(name);
   auto field1 = m_fm_time1->get_field(name);
+  field0.deep_copy(field1);
   field1.deep_copy(field_in);
 }
 /*-----------------------------------------------------------------------------------------------*/
