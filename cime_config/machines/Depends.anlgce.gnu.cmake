@@ -1,4 +1,4 @@
-# For this file, fixes non-BFB behavior of stealth feature on pm-cpu with -O2
+# For this file, see internal compiler error on anlgce with -O2
 set(NOOPT
   eam/src/physics/cam/zm_conv.F90)
 
