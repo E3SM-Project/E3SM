@@ -23,7 +23,7 @@ TimeInterpolation::TimeInterpolation(
   const vos_type& list_of_files
 ) : TimeInterpolation(grid)
 {
-  initialize_data_from_file(list_of_files);
+  set_file_data_triplets(list_of_files);
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* A function to perform time interpolation using data from all the fields stored in the local
@@ -43,7 +43,7 @@ std::map<std::string,Field> TimeInterpolation::perform_time_interpolation(const 
   std::map<std::string,Field> interpolated_fields;
 
   // If data is handled by files we need to check that the timestamps are still relevant
-  if (m_data_from_file) {
+  if (m_file_data_triplets.size()>0) {
     check_and_update_data(time_in);
   }
 
@@ -146,9 +146,8 @@ void TimeInterpolation::initialize_data_from_field(const Field& field_in)
  *   list_of_files: A vector of strings representing all the files where interpolation data can be
  *                  gathered.
  */
-void TimeInterpolation::initialize_data_from_file(const vos_type& list_of_files)
+void TimeInterpolation::initialize_data_from_files()
 {
-  set_file_data_triplets(list_of_files);
   // Initialize the AtmosphereInput object that will be used to gather data
   ekat::ParameterList input_params;
   input_params.set("Field Names",m_field_names);
@@ -157,10 +156,10 @@ void TimeInterpolation::initialize_data_from_file(const vos_type& list_of_files)
   // Read first snap of data and shift to time0
   read_data();
   shift_data();
+  update_timestamp(m_triplet_iterator->timestamp);
   // Advance the iterator and read the next set of data for time1
   ++m_triplet_iterator;
   read_data();
-  update_timestamp(m_triplet_iterator->timestamp);
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* Function which will update the timestamps by shifting time1 to time0 and setting time1.
@@ -211,10 +210,11 @@ void TimeInterpolation::print()
  * Input:
  *   list_of_files - Is a vector of strings representing all files that can be used for data.
  *
- * We use the m_time0 as the reference time when sorting the data snaps.
+ * We create a reference timestamp to use when sorting the data snaps.
  */
 void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
   EKAT_REQUIRE_MSG(list_of_files.size()>0,"ERROR! TimeInterpolation::set_file_data_triplets - the list of files is empty. Please check.");
+  TimeStamp ts_ref;
   // The first step is to grab all relevant metadata for the DataFromFileTriplet objects.
   // We will store the times in a map and take advantage of maps natural sorting to organize the triplets
   // in chronological order.  This ensures that if the list of files does not represent the chronological
@@ -237,6 +237,9 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
     const int mm = (time_start - hh*10000)/100;
     const int ss = (time_start - hh*10000 - mm*100);
     TimeStamp ts_file_start(YY,MM,DD,hh,mm,ss);
+    if (ii==0) {
+      ts_ref = ts_file_start;
+    }
     // Gather information about time in this file
     scorpio::register_file(filename,scorpio::Read);
     const int ntime = scorpio::get_dimlen(filename,"time");
@@ -246,7 +249,7 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
       if (time_snap>0) {
         ts_snap += (time_snap*86400); // note, time is assumed to be in days.
       }
-      auto time = ts_snap.seconds_from(m_time0);
+      auto time = ts_snap.seconds_from(ts_ref);
       map_of_times_to_vector_idx.emplace(time,running_idx);
       filenames_tmp.push_back(filename);
       timestamps_tmp.push_back(ts_snap);
