@@ -24,7 +24,7 @@ MACHINE_METADATA = {
     "weaver"   : (["source /etc/profile.d/modules.sh", "module purge", "module load cmake/3.25.1 git/2.39.1 python/3.10.8 gcc/11.3.0 cuda/11.8.0 openmpi netcdf-c netcdf-fortran parallel-netcdf netlib-lapack",
                  ],
                  ["mpicxx","mpifort","mpicc"],
-                  "bsub -I -q rhel8 -n 4",
+                  "bsub -I -q rhel8 -n 4 -gpu num=4",
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
     "mappy"   : (["module purge", "module load sems-archive-env acme-env sems-archive-gcc/9.2.0 sems-archive-cmake/3.19.1 sems-archive-git/2.10.1 acme-openmpi/4.0.7 acme-netcdf/4.7.4/acme"],
                  ["mpicxx","mpifort","mpicc"],
