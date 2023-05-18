@@ -243,7 +243,8 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
         ++ m_num_from_file_exports;
         -- m_num_from_model_exports;
         const auto f_helper = m_helper_fields.at(fname);
-        m_time_interp.add_field(f_helper);
+	// We want to add the field as a deep copy so that the helper_fields are automatically updated.
+        m_time_interp.add_field(f_helper, true);
         m_export_from_file_field_names.push_back(fname);
       }
       m_time_interp.initialize_data_from_files();
@@ -332,23 +333,8 @@ void SurfaceCouplingExporter::set_from_file_exports(const int dt)
   if (dt > 0) {
     ts += dt;
   }
-  auto interp_fields_map = m_time_interp.perform_time_interpolation(ts);
+  m_time_interp.perform_time_interpolation(ts);
 
-  // Cycle through those fields that will be set by file.
-  int num_set = 0;
-  for (int i=0; i<m_num_scream_exports; ++i) {
-    std::string fname = m_export_field_names[i];
-    bool is_from_file = m_export_source_h(i)==FROM_FILE;
-    if (m_export_source_h(i)==FROM_FILE) {
-      const auto field_view = m_helper_fields.at(fname).get_view<Real*>();
-      const auto& ff_in = interp_fields_map.at(fname);
-      const auto ff_v  = ff_in.get_view<const Real*>();
-      Kokkos::deep_copy(field_view,ff_v);
-      num_set++;
-    }
-  }
-  // Gotta catch em all
-  EKAT_REQUIRE_MSG(num_set==m_num_from_file_exports,"ERROR! SurfaceCouplingExporter::set_from_file_exports() - Number of fields set from a file (" + std::to_string(num_set) + ") doesn't match the number recorded at initialization (" + std::to_string(m_num_from_file_exports) + ").  Something went wrong.");
 }
 // =========================================================================================
 // This compute_eamxx_exports routine  handles all export variables that are derived from the EAMxx state.
