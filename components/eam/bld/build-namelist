@@ -2008,30 +2008,6 @@ if ($chem =~ /trop_mozart/ or $chem =~ /trop_strat/ ) {
                    'num_a2   -> ' => 'num_a2_emis_file',
 		   );
         %verhash = ('ver'=>'mam');
-  # wmx ++
-   } elsif ($chem =~ /mam4_resus_mom/ || $chem =~ /mam7_resus_mom_s/ || $chem =~ /mam5/) {
-        %species = (%species,
-                   'bc_a4     -> ' => 'bc_a4_emis_file',
-                   'pom_a4    -> ' => 'pom_a4_emis_file',
-                   'so4_a1    -> ' => 'so4_a1_emis_file',
-                   'so4_a2    -> ' => 'so4_a2_emis_file',
-                   'num_a1    -> ' => 'mam7_num_a1_emis_file',
-                   'num_a2    -> ' => 'num_a2_emis_file',
-                   'num_a4    -> ' => 'mam7_num_a3_emis_file',
-                   );
-        %verhash = ('ver'=>'mam');
-   # wmx --
-    } elsif ($chem =~ /mam4/ ) {
-        %species = (%species,
-                   'bc_a4     -> ' => 'bc_a4_emis_file',
-                   'pom_a4    -> ' => 'pom_a4_emis_file',
-                   'so4_a1    -> ' => 'so4_a1_emis_file',
-                   'so4_a2    -> ' => 'so4_a2_emis_file',
-                   'num_a1    -> ' => 'mam7_num_a1_emis_file',
-                   'num_a2    -> ' => 'num_a2_emis_file',
-                   'num_a4    -> ' => 'mam7_num_a3_emis_file',
-                   );
-        %verhash = ('ver'=>'mam');
     } elsif ($chem =~ /mam7/) {
         %species = (%species,
                    'SOAG     -> ' => 'soag_emis_file',
@@ -2095,18 +2071,6 @@ if ($chem =~ /trop_mozart/ or $chem =~ /trop_strat/ ) {
                    'bc_a1  -> ' => 'bc_a1_ext_file', 
                    'num_a1 -> ' => 'num_a1_ext_file', 
                    'num_a2 -> ' => 'num_a2_ext_file', );
-      $cyc_yr = '2000';
-    } elsif ($chem =~ /mam4/ || $chem =~ /mam7_resus_mom_s/ || $chem =~ /mam5/) {
-      %species = ( 'NO2    -> ' => 'no2_aircraft_emis_file',
-                   'SO2    -> ' => 'so2_ext_file',
-                   'SOAG   -> ' => 'soag_ext_file',
-                   'so4_a1 -> ' => 'so4_a1_ext_file',
-                   'so4_a2 -> ' => 'so4_a2_ext_file',
-                   'pom_a4 -> ' => 'pom_a4_ext_file',
-                   'bc_a4  -> ' => 'bc_a4_ext_file',
-                   'num_a1 -> ' => 'mam7_num_a1_ext_file',
-                   'num_a2 -> ' => 'num_a2_ext_file',
-                   'num_a4 -> ' => 'mam7_num_a3_ext_file', );
       $cyc_yr = '2000';
     } elsif ($chem =~ /mam7/) {
       %species = ( 'NO2    -> ' => 'no2_aircraft_emis_file',
