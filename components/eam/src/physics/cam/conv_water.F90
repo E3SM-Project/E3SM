@@ -80,18 +80,22 @@ module conv_water
 
    
    use physics_buffer, only : pbuf_get_index
-   use cam_history,    only :  addfld
+   use cam_history,    only : addfld
+   use phys_control,   only : phys_getopts
 
    use constituents,  only: cnst_get_ind
 
    implicit none
+   logical :: use_MMF
 
+   call phys_getopts(use_MMF_out = use_MMF)
    call cnst_get_ind('CLDICE', ixcldice)
    call cnst_get_ind('CLDLIQ', ixcldliq)
  
    icwmrsh_idx  = pbuf_get_index('ICWMRSH')
    icwmrdp_idx  = pbuf_get_index('ICWMRDP')
-   icimrdp_idx  = pbuf_get_index('ICIMRDP')    
+   icimrdp_idx  = -1
+   if (.not. use_MMF) icimrdp_idx  = pbuf_get_index('ICIMRDP')
    fice_idx     = pbuf_get_index('FICE')
    sh_frac_idx  = pbuf_get_index('SH_FRAC')
    dp_frac_idx  = pbuf_get_index('DP_FRAC')
@@ -204,7 +208,7 @@ module conv_water
 
    call pbuf_get_field(pbuf, icwmrsh_idx, sh_icwmr )
    call pbuf_get_field(pbuf, icwmrdp_idx, dp_icwmr )
-   call pbuf_get_field(pbuf, icimrdp_idx, dp_icimr )         
+   if (icimrdp_idx .gt. 0) call pbuf_get_field(pbuf, icimrdp_idx, dp_icimr )
    call pbuf_get_field(pbuf, fice_idx,    fice )
 
 
