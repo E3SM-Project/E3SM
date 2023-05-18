@@ -963,11 +963,15 @@ module li_subglacial_hydro
          waterFluxAdvec(iEdge) = waterVelocity(iEdge) * waterThicknessEdgeUpwind(iEdge)
 
          ! diffusive flux
-         ! Note: At the GL, the water thickness for one cell will be 0, meaning a large gradient.  However, the
-         ! diffusivity uses a one sided water thickness.  It's unclear what really happens to lakes at the GL/margin.
-         waterFluxDiffu(iEdge) = -1.0_RKIND * diffusivity(iEdge) * (waterThickness(cell2) - waterThickness(cell1)) &
+         ! Note: Water thickness at the GL is undefined.  I don't think we want to assume it's 0, and
+         ! we also don't want to assume it's the ocean water column height, because that would imply
+         ! a diffusive flux inward, which is undesirable. So disabling diffusion at the GL.
+         if (hydroMarineMarginMask(iEdge) == 1) then
+            waterFluxDiffu(iEdge) = 0.0_RKIND
+         else
+            waterFluxDiffu(iEdge) = -1.0_RKIND * diffusivity(iEdge) * (waterThickness(cell2) - waterThickness(cell1)) &
                / dcEdge(iEdge)
-         !endif
+         endif
       end do
       where (waterFluxMask == 2)
          waterFluxAdvec = 0.0_RKIND
