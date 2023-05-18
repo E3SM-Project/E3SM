@@ -351,35 +351,32 @@ contains
     ! land grid cells by number of clumps. This assumes each pe has the same number of clumps
     ! set by clump_pproc.
     !
-    ! !USES:
-    use elm_varctl, only : nsegspc
-    !
     ! !ARGUMENTS:
     implicit none
     integer , intent(in) :: amask(:)
     integer , intent(in) :: lni,lnj   ! domain global size
     !
     ! !LOCAL VARIABLES:
-    integer :: lns                    ! global domain size
-    integer :: ln,lj                  ! indices
-    integer :: ag,an,ai,aj            ! indices
-    integer :: numg                   ! number of land gridcells
-    logical :: seglen1                ! is segment length one
-    real(r8):: seglen                 ! average segment length
-    real(r8):: rcid                   ! real value of cid
-    integer :: cid,pid                ! indices
-    integer :: n,m,ng                 ! indices
-    integer :: ier                    ! error code
-    integer :: beg,end,lsize,gsize    ! used for gsmap init
-    integer, pointer :: gindex(:)     ! global index for gsmap init
-    integer, pointer :: clumpcnt(:)   ! clump index counter
-    integer, allocatable :: proc_ncell(:) ! number of cells assigned to a process
-    integer, allocatable :: proc_begg(:)  ! beginning cell index assigned to a process
-    integer :: numg_per_clumps
-    integer :: numg_per_clumps_mod
-    integer :: numg_for_cur_clump
-    integer :: max_numg_for_cur_clump
-    integer :: cur_cid
+    integer              :: lns                    ! global domain size
+    integer              :: ln,lj                  ! indices
+    integer              :: ag,an,ai,aj            ! indices
+    integer              :: numg                   ! number of land gridcells
+    logical              :: seglen1                ! is segment length one
+    real(r8)             :: seglen                 ! average segment length
+    real(r8)             :: rcid                   ! real value of cid
+    integer              :: cid,pid                ! indices
+    integer              :: n,m,ng                 ! indices
+    integer              :: ier                    ! error code
+    integer              :: beg,end,lsize,gsize    ! used for gsmap init
+    integer, pointer     :: gindex(:)              ! global index for gsmap init
+    integer, pointer     :: clumpcnt(:)            ! clump index counter
+    integer, allocatable :: proc_ncell(:)          ! number of cells assigned to a process
+    integer, allocatable :: proc_begg(:)           ! beginning cell index assigned to a process
+    integer              :: numg_per_clumps        ! number of land grids per clump ( = numg/nclump)
+    integer              :: numg_per_clumps_mod    ! modulo of numg/nclump
+    integer              :: cur_cid                ! current clump id
+    integer              :: numg_for_cur_clump     ! a local counter for the number of land grid for the current clump
+    integer              :: max_numg_for_cur_clump ! maximum number of land grids for the current clump
     !------------------------------------------------------------------------------
 
     lns = lni * lnj
@@ -491,19 +488,6 @@ contains
 
     numg_per_clumps = int(dble(numg)/dble(nclumps))
     numg_per_clumps_mod = numg - int(dble(numg)/dble(nclumps)) * nclumps
-    if (float(numg)/float(nclumps) < float(nsegspc)) then
-       seglen1 = .true.
-       seglen = 1.0_r8
-    else
-       seglen1 = .false.
-       seglen = dble(numg)/(dble(nsegspc)*dble(nclumps))
-    endif
-
-    if (masterproc) then
-       write(iulog,*) ' decomp precompute numg,nclumps,seglen1,avg_seglen,nsegspc=', &
-            numg,nclumps,seglen1,&
-            sngl(seglen),sngl(dble(numg)/(seglen*dble(nclumps)))
-    end if
 
     ! Assign gridcells to clumps (and thus pes) ---
 
@@ -518,26 +502,29 @@ contains
     cur_cid = 1
     numg_for_cur_clump = 0
     max_numg_for_cur_clump = numg_per_clumps + numg_per_clumps_mod
+
     do ln = 1,lns
        if (amask(ln) == 1) then
           ng = ng  + 1
 
-          !--- give to clumps in order based on nsegspc
-          if (seglen1) then
-             cid = mod(ng-1,nclumps) + 1
-          else
-             rcid = (dble(ng-1)/dble(numg))*dble(nsegspc)*dble(nclumps)
-             cid = mod(int(rcid),nclumps) + 1
-          endif
-
+          ! increment the number of land grid cells for the current clump
           numg_for_cur_clump = numg_for_cur_clump + 1
+
+          ! check if the number of land grid cells has exceeded the max number of
+          ! grid cells for the current clump
           if (numg_for_cur_clump > max_numg_for_cur_clump) then
-             cur_cid = cur_cid + 1
-             if (cur_cid <= numg_per_clumps_mod) then
+
+            ! increment the clump id
+            cur_cid = cur_cid + 1
+
+            ! determine the max number of grid cell for the new clump
+            if (cur_cid <= numg_per_clumps_mod) then
                 max_numg_for_cur_clump = numg_per_clumps + 1
              else
                 max_numg_for_cur_clump = numg_per_clumps
              end if
+
+             ! reset the number of land grid cells for the current clump
              numg_for_cur_clump = 0
           end if
           cid = cur_cid
