@@ -3194,7 +3194,8 @@
        <arguments>
           <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
           <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
-          <arg name="ranks_bind">--cpu-bind core -envall</arg>
+	  <arg name="ranks_bind">--cpu-bind depth -envall</arg>
+	  <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS}</arg>
 	  <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
        </arguments>
     </mpirun>
@@ -3219,10 +3220,11 @@
           <command name="use">/soft/restricted/CNDA/updates/modulefiles</command>
         </modules>
         <modules compiler="!gnu">
-          <command name="load">oneapi/eng-compiler/2022.12.30.002</command>
+	  <command name="load">oneapi/eng-compiler/2022.12.30.003</command>
+          <command name="load">mpich/52.2/icc-all-pmix-gpu</command>
           <!--command name="load">oneapi/eng-compiler/2022.10.15.006</command-->
           <!--command name="load">mpich/50.2/icc-all-pmix-gpu</command-->
-          <command name="load">intel_compute_runtime/release/22.43.24595.30</command>
+          <!--command name="load">intel_compute_runtime/release/22.43.24595.30</command-->
         </modules>
         <modules compiler="gnu">
            <command name="unload">spack cmake</command>

@@ -214,8 +214,9 @@
     </submit_args>
     <directives>
       <directive> -N {{ job_id }}</directive>
+      <directive> -l select={{ num_nodes }} </directive>	    
       <directive default="n"> -r {{ rerunnable }} </directive>
-      <directive> -j oe </directive>
+      <directive> -j oe </directive>      
       <directive> -V </directive>
     </directives>
   </batch_system>
@@ -535,7 +536,7 @@
       <batch_submit>qsub</batch_submit>     
       <queues>
         <queue walltimemax="00:02:00" jobmin="1" jobmax="128" default="true">workq</queue>
-	<queue walltimemax="00:30:00" jobmin="1" jobmax="128">diags</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="128">diag</queue>
       </queues>
     </batch_system>
     
