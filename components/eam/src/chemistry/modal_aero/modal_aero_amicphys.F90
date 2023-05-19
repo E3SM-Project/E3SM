@@ -100,6 +100,10 @@
   integer, parameter :: max_gas = nsoa + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
+#elif ( defined MODAL_AERO_5MODE_AGEDCARBON )
+  integer, parameter :: max_gas = nsoa + 1
+  ! the +4 in max_aer are dst, ncl, so4, mom
+  integer, parameter :: max_aer = nsoa + npoa + nbc + 4
 #elif ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: max_gas = nsoa + 4
   ! the +8 in max_aer are dst, ncl(=na), so4, no3, cl, nh4, ca, co3 
@@ -171,7 +175,9 @@
   integer :: lmapcc_all(gas_pcnst)
   integer, parameter :: lmapcc_val_gas = 1, lmapcc_val_aer = 2, lmapcc_val_num = 3
   integer :: ngas, naer
-  integer :: nacc, nait, npca, nufi, nmacc, nmait
+! ++MW
+  integer :: nacc, nait, npca, naca, nufi, nmacc, nmait
+! --MW
 
   integer :: n_agepair, n_coagpair
   integer :: modefrm_agepair(max_agepair), modetoo_agepair(max_agepair)
@@ -5497,6 +5503,9 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       nacc = modeptr_accum
       nait = modeptr_aitken
       npca = modeptr_pcarbon
+! ++MW
+      naca = modeptr_acarbon
+! --MW
       nufi = modeptr_ufine
 #if ( defined MODAL_AERO_9MODE )
       nmacc = modeptr_maccum
@@ -5514,6 +5523,16 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       modetoo_agepair(:) = big_neg_int
       mode_aging_optaa(:) = 0
       i_agepair_pca = big_neg_int ; i_agepair_macc = big_neg_int ; i_agepair_mait = big_neg_int ;
+
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+      if (npca > 0 .and. naca > 0) then
+         ipair = ipair + 1
+         modefrm_agepair(ipair) = npca
+         modetoo_agepair(ipair) = naca
+         i_agepair_pca = ipair
+         mode_aging_optaa(npca) = 1
+      end if
+#else
       if (npca > 0 .and. nacc > 0) then
          ipair = ipair + 1
          modefrm_agepair(ipair) = npca
@@ -5521,6 +5540,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
          i_agepair_pca = ipair
          mode_aging_optaa(npca) = 1
       end if
+#endif
       if (nmacc > 0 .and. nacc > 0) then
          ipair = ipair + 1
          modefrm_agepair(ipair) = nmacc
@@ -5571,6 +5591,28 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       do ip = 1, 11
          na = big_neg_int ; nb = big_neg_int
          nc = big_pos_int
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+         if (ip == 1) then
+            na = nait ; nb = nacc
+         else if (ip == 2) then
+            na = npca ; nb = naca
+         else if (ip == 3) then
+            na = nait ; nb = nmacc
+            nc = nacc
+         else if (ip == 4) then
+            na = nmait ; nb = nacc
+         else if (ip == 5) then
+            na = nmait ; nb = npca
+         else if (ip == 6) then
+            na = nmait ; nb = nait
+         else if (ip == 7) then
+            na = nmait ; nb = nmacc
+         else if (ip == 8) then
+            na = nmacc ; nb = nacc
+         else if (ip == 9) then
+            na = nmacc ; nb = npca
+         end if
+#else
          if (ip == 1) then
             na = nait ; nb = nacc
          else if (ip == 2) then
@@ -5594,6 +5636,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
          else if (ip == 10) then
             na = nmacc ; nb = npca
          end if
+#endif
          if (nc == big_pos_int) nc = nb
 
          if (na < 1 .or. nb < 1 .or. nc < 1) cycle
