@@ -889,6 +889,16 @@ module li_subglacial_hydro
          endif ! GL edge or grounded margin
       end do
 
+      ! zero gradients at boundaries of the mesh
+      do iEdge = 1, nEdges
+         cell1 = cellsOnEdge(1, iEdge)
+         cell2 = cellsOnEdge(2, iEdge)
+         if ((cell1 == nCells+1) .or. (cell2 == nCells+1)) then
+            hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
+            hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
+            waterPressureSlopeNormal(iEdge) = 0.0_RKIND
+         endif
+      end do
 
       ! Calculate tangent slope of hydropotentialBase - three possible methods to consider
 
