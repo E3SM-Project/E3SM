@@ -56,7 +56,7 @@ module cosp_c2f
   ! Hard-code logicals for now; these need to be consistent with EAMxx outputs anyways
   logical :: &
          Lpctisccp           = .false., & ! ISCCP mean cloud top pressure
-         Lclisccp            = .false., & ! ISCCP cloud area fraction
+         Lclisccp            = .true. , & ! ISCCP cloud area fraction
          Lboxptopisccp       = .false., & ! ISCCP CTP in each column
          Lboxtauisccp        = .false., & ! ISCCP optical epth in each column
          Ltauisccp           = .false., & ! ISCCP mean optical depth
@@ -263,16 +263,17 @@ contains
          rcfg_cloudsat, use_vgrid, csat_vgrid, Nlvgrid, Nlevels, cloudsat_micro_scheme)
   end subroutine cosp_c2f_init 
 
-  subroutine cosp_c2f_run(npoints, ncolumns, nlevels, emsfc_lw, &
-       sunlit, skt, T_mid, p_mid, p_int, qv, &
-       cldfrac, reff_qc, reff_qi, dtau067, dtau105, isccp_cldtot &
+  subroutine cosp_c2f_run(npoints, ncolumns, nlevels, ntau, nctp, &
+       emsfc_lw, sunlit, skt, T_mid, p_mid, p_int, qv, &
+       cldfrac, reff_qc, reff_qi, dtau067, dtau105, isccp_cldtot, isccp_ctptau &
        ) bind(C, name='cosp_c2f_run')
-    integer(kind=c_int), value, intent(in) :: npoints, ncolumns, nlevels
+    integer(kind=c_int), value, intent(in) :: npoints, ncolumns, nlevels, ntau, nctp
     real(kind=c_double), value, intent(in) :: emsfc_lw
     real(kind=c_double), intent(in), dimension(npoints) :: sunlit, skt
     real(kind=c_double), intent(in), dimension(npoints,nlevels) :: T_mid, p_mid, qv, cldfrac, reff_qc, reff_qi, dtau067, dtau105
     real(kind=c_double), intent(in), dimension(npoints,nlevels+1) :: p_int
     real(kind=c_double), intent(inout), dimension(npoints) :: isccp_cldtot
+    real(kind=c_double), intent(inout), dimension(npoints,ntau,nctp) :: isccp_ctptau
     ! Takes normal arrays as input and populates COSP derived types
     character(len=256),dimension(100) :: cosp_status
     integer :: nptsperit
@@ -338,6 +339,7 @@ contains
 
     ! Translate derived types to output arrays
     isccp_cldtot(:npoints) = cospOUT%isccp_totalcldarea(:npoints)
+    isccp_ctptau(:npoints,:,:) = cospOUT%isccp_fq(:npoints,:,:)
 
   end subroutine cosp_c2f_run
 
