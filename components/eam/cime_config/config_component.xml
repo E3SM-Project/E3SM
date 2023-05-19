@@ -135,13 +135,14 @@
       <value compset="_EAM%SCREAM-LR-AQUA"              >aquaplanet_SCREAM-LR</value>
       <value compset="_EAM%SCREAM-HR-AQUA"              >aquaplanet_SCREAM-HR</value>
       <!-- MMF / Super-Parameterization -->
-      <value compset="2010(?:SOI)?_EAM%MMF1"            >2010_mmf_1mom</value>
-      <value compset="2010(?:SOI)?_EAM%MMF2"            >2010_mmf_2mom</value>
+      <value compset="20TR(?:SOI)?_EAM%.*MMF1"          >20TR_MMF-1mom_CMIP6</value>
+      <value compset="1950(?:SOI)?_EAM%.*MMF1"          >1950_MMF-1mom_CMIP6</value>
+      <value compset="2010(?:SOI)?_EAM%.*MMF1"          >2010_mmf_1mom</value>
+      <value compset="2010(?:SOI)?_EAM%.*MMF2"          >2010_mmf_2mom</value>
       <value compset="_EAM%AQP.*MMF"                    >aquaplanet_MMF-1mom</value>
       <value compset="_EAM%RCE.*MMF"                    >RCEMIP_EAMv1</value>
       <value compset="ARM97_EAM%SCM.*MMF"               >scam_arm97_MMF-1mom</value>
       <value compset="RICO_EAM%SCM.*MMF"                >scam_rico_MMF-1mom</value>
-      <value compset="20TR_EAM%CMIP6.*MMF"              >20TR_MMF-1mom_CMIP6</value>
     </values>
 
     <group>run_component_cam</group>
