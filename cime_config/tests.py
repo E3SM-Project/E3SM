@@ -79,7 +79,61 @@ _TESTS = {
             "SMS_R_Ld5.ne4_ne4.FSCM5A97.eam-scm",
             "SMS_D_Ln5.ne4_oQU240.F2010",
             "SMS_Ln5.ne4pg2_oQU480.F2010",
-            "ERS.ne4_oQU240.F2010.eam-hommexx"
+            "ERS_D.ne4_oQU240.F2010.eam-hommexx",
+            "SMS_Ln9_P24x1.ne4_ne4.FDPSCREAM-ARM97",
+            )
+        },
+
+    "e3sm_ice_developer" : {
+        "tests"   : (
+            "SMS_D_Ld1.TL319_EC30to60E2r2.DTESTM-JRA1p5.mpassi-jra_1958",
+            "ERS_Ld5.T62_oQU240.DTESTM",
+            "PEM_Ln5.T62_oQU240wLI.DTESTM",
+            "PET_Ln5.T62_oQU240.DTESTM",
+            )
+        },
+
+    "eam_condidiag" : {
+        "tests"   : (
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-condidiag_dcape",
+            "ERP_Ln18.ne4_oQU240.F2010.eam-condidiag_dcape",
+            "ERP_Ln18.ne4_oQU240.F2010.eam-condidiag_rhi",
+            )
+        },
+    
+    "e3sm_zm_developer" : {
+        "tests"   : (
+            "ERP.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "REP_Ln5.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "PET.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "PEM_Ln18.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.F2010.eam-zm_enhancements",
+            "SMS_D_Ln5.ne4_oQU240.F2010.eam-zm_enhancements",
+            "SMS_Ln5.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "ERS.ne4pg2_oQU480.F2010.eam-zm_enhancements"
+            )
+        },
+
+    "e3sm_atm_stealth" : {
+        "tests"   : (
+            "ERP_Ln18.ne4_oQU240.F2010.eam-cflx_cpl_2",
+            "SMS_D_Ln5.ne4_oQU240.F2010.eam-cflx_cpl_2",
+            "ERS.ne4pg2_oQU480.F2010.eam-p3",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-p3",
+            )
+        },
+
+        "e3sm_p3_developer" : {
+        "tests"   : (
+            "ERP.ne4pg2_oQU480.F2010.eam-p3",
+            "REP_Ln5.ne4pg2_oQU480.F2010.eam-p3",
+            "PET.ne4pg2_oQU480.F2010.eam-p3",
+            "PEM_Ln18.ne4pg2_oQU480.F2010.eam-p3",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.F2010.eam-p3",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-p3",
+            "SMS_Ln5.ne4pg2_oQU480.F2010.eam-p3",
+            "ERS.ne4pg2_oQU480.F2010.eam-p3"
             )
         },
 
