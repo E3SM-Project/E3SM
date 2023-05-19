@@ -744,6 +744,7 @@ module li_subglacial_hydro
       integer, dimension(:), pointer :: edgeMask
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:,:), pointer :: verticesOnEdge
+      integer, dimension(:,:), pointer :: cellsOnVertex
       integer, dimension(:,:), pointer :: baryCellsOnVertex
       real (kind=RKIND), dimension(:,:), pointer :: baryWeightsOnVertex
       real (kind=RKIND), pointer :: alpha, beta
@@ -758,6 +759,7 @@ module li_subglacial_hydro
       integer, pointer :: nCells
       integer, pointer :: nVertices
       integer :: iEdge, cell1, cell2
+      integer :: i, j, iVertex, iCell
       real (kind=RKIND) :: velSign
       integer :: numGroundedCells
       integer :: err_tmp
@@ -917,11 +919,14 @@ module li_subglacial_hydro
       end select
 
       ! Now perform tangent slope calculation based on method chosen
+      ! For the two vertex based methods, edges with vertices on the boundary of the mesh will have invalid values
+      ! For the normal slope method, any edges on cells that are at the edge of the mesh will have
+      ! contaminated values.
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
       select case (trim(config_SGH_tangent_slope_calculation))
       case ('from_vertex_barycentric', 'from_vertex_barycentric_kiteareas')
-         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-         call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
          do iEdge = 1, nEdges
             ! Only calculate slope for edges that have ice on at least one side.
             if ( li_mask_is_ice(edgeMask(iEdge)) ) then
@@ -930,10 +935,26 @@ module li_subglacial_hydro
             else
                hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
             endif
+            ! check for edges where a vertex is on the edge of the mesh and zero the tangent slope there
+            do i = 1, 2
+               iVertex = verticesOnEdge(i, iEdge)
+               do j = 1, 3
+                  iCell = cellsOnVertex(j, iVertex)
+                  if (iCell == nCells + 1) then
+                     hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
+                  endif
+               enddo
+            enddo
          end do  ! edges
       case ('from_normal_slope')
          call mpas_tangential_vector_1d(hydropotentialBaseSlopeNormal, meshPool, &
                   includeHalo=.false., tangentialVector=hydropotentialBaseSlopeTangent)
+         ! ensure that edges that don't have ice on at least one side have tangent slope set to zero
+         do iEdge = 1, nEdges
+            if ( .not. li_mask_is_ice(edgeMask(iEdge)) ) then
+               hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
+            endif
+         end do  ! edges
       case default
          call mpas_log_write('Invalid value for config_SGH_tangent_slope_calculation.', MPAS_LOG_ERR)
          err = 1
