@@ -679,7 +679,6 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
           !returns new T, qv, new!!! dp, mass
           call rj_new_volume(qv_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,wasiactive)
 
-
         elseif(bubble_rj_cpdry) then
 
           !this one conserves with const dp
@@ -692,6 +691,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       endif ! RJ or Kessler choice
 
       precl(i,j,ie) = mass_prect / (dt * rhow) / g
+
 
 #if 0
       !update tendencies assuming cam_ routines are active
@@ -744,9 +744,10 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       !rstar = rdry * dp_c + (rvapor-rdry) * dp_c*qv_c
 
       !rstar has dp factor in it
+
       elem(ie)%state%vtheta_dp(i,j,:,nt) = rstar/rdry * &
                     T_c * (p0/p_c)**kappa
-     
+ 
 #endif
 
     enddo; enddo; !j,i loop

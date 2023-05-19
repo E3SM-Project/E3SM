@@ -535,8 +535,6 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,wasiactive)
     call qsat_rj2(pi(k), T_c(k), qsat)
 
     if (qv_c(k) > qsat) then
-!print *, 'HEY RAIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-!stop
 
        !condensation stage
 
@@ -583,7 +581,7 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,wasiactive)
          (   cpstarTerm_new   )
        endif
 
-print *, 'T_new - T_c', T_new - T_c(k)
+!print *, 'T_new - T_c', T_new - T_c(k)
 
        T_c(k)  = T_new
        !one can compute qv and ql here, but they change with sedimentation below
@@ -596,11 +594,7 @@ print *, 'T_new - T_c', T_new - T_c(k)
        qv_c(k) = qsatdry*dpdry_loc/dp_c(k)
        rstardp = dp_c(k) * (rdry * (1.0 - qv_c(k)) + rvapor * qv_c(k))
 
-print *, 'old dphi ', dphi(k)
-
        dphi(k) = rstardp * T_c(k) / p_c(k)
-
-print *, 'new dphi ', dphi(k)
 
      endif
   enddo
@@ -626,7 +620,7 @@ subroutine rj_new_volume(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,wasiactive)
   logical,                   intent(inout) :: wasiactive
 
   real(rl) :: qsat, dp_loc, qv_loc, dpdry_loc, qvdry_loc, qsatdry, dq_loc, vapor_mass_change
-  real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, rstar_old, rstar_new, Iold, T_new
+  real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, Iold, T_new
   real(rl) :: cvstarTerm_new, rstardp
   real(rl), dimension(nlev) :: pi
   integer  :: k
@@ -640,8 +634,6 @@ subroutine rj_new_volume(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,wasiactive)
     call qsat_rj2(pi(k), T_c(k), qsat)
 
     if (qv_c(k) > qsat) then
-!print *, 'HEY RAIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-!stop
        !condensation stage
 
        wasiactive = .true.
@@ -661,15 +653,10 @@ subroutine rj_new_volume(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,wasiactive)
        L_old = (latvap + latice) * qvdry_loc
        L_new = (latvap + latice) * qsatdry   + latice * dq_loc
 
-       rstar_old = rdry * 1.0 + rvapor * qvdry_loc
-       rstar_new = rdry * 1.0 + rvapor * qsatdry
-
-       Iold = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + L_old
+       Iold = T_loc*( cvdry*1.0 + cvv*qvdry_loc ) + L_old
 
        cvstarTerm_new = cvdry*1.0 + cvv*qsatdry + cl*dq_loc
        T_new = ( Iold - L_new )/(   cvstarTerm_new   )
-
-print *, 'T_new - T_c', T_new - T_c(k)
 
        T_c(k)  = T_new
 
@@ -682,7 +669,7 @@ print *, 'T_new - T_c', T_new - T_c(k)
        qv_c(k) = qsatdry*dpdry_loc/dp_c(k)
 
        rstardp = dp_c(k)* (rdry * (1.0 - qv_c(k)) + rvapor * qv_c(k))
-       p_c(k)  = rstardp * T_c(k) / (zi_c(k+1) - zi_c(k) )
+       p_c(k)  = - rstardp * T_c(k) / (zi_c(k+1) - zi_c(k) ) / gravit
 
      endif
   enddo
