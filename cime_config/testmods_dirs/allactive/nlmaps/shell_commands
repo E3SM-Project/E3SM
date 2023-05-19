@@ -19,4 +19,4 @@ o2a=cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_ne30pg2_trfvnp2.230516.nc
 ./xmlchange OCN2ATM_FMAPNAME_NONLINEAR=$o2a
 ./xmlchange OCN2ATM_SMAPNAME_NONLINEAR=$o2a
 
-./xmlchange POSTRUN_SCRIPT="${CIMEROOT}/../components/eam/cime_config/testdefs/testmods_dirs/eam/nlmaps/nlmaps_check.py"
+./xmlchange POSTRUN_SCRIPT="${CIMEROOT}/../cime_config/testmods_dirs/allactive/nlmaps/nlmaps_check.py"
