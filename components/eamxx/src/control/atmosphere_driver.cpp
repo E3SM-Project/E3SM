@@ -346,32 +346,20 @@ void AtmosphereDriver::setup_column_conservation_checks ()
 
   // Get fields needed to run the mass and energy conservation checks. Require that
   // all fields exist.
-  const auto pseudo_density_ptr = phys_field_mgr->get_field_ptr("pseudo_density");
-  const auto ps_ptr             = phys_field_mgr->get_field_ptr("ps");
-  const auto phis_ptr           = phys_field_mgr->get_field_ptr("phis");
-  const auto horiz_winds_ptr    = phys_field_mgr->get_field_ptr("horiz_winds");
-  const auto T_mid_ptr          = phys_field_mgr->get_field_ptr("T_mid");
-  const auto qv_ptr             = phys_field_mgr->get_field_ptr("qv");
-  const auto qc_ptr             = phys_field_mgr->get_field_ptr("qc");
-  const auto qr_ptr             = phys_field_mgr->get_field_ptr("qr");
-  const auto qi_ptr             = phys_field_mgr->get_field_ptr("qi");
-  const auto vapor_flux_ptr     = phys_field_mgr->get_field_ptr("vapor_flux");
-  const auto water_flux_ptr     = phys_field_mgr->get_field_ptr("water_flux");
-  const auto ice_flux_ptr       = phys_field_mgr->get_field_ptr("ice_flux");
-  const auto heat_flux_ptr      = phys_field_mgr->get_field_ptr("heat_flux");
-  EKAT_REQUIRE_MSG(pseudo_density_ptr != nullptr &&
-                   ps_ptr             != nullptr &&
-                   phis_ptr           != nullptr &&
-                   horiz_winds_ptr    != nullptr &&
-                   T_mid_ptr          != nullptr &&
-                   qv_ptr             != nullptr &&
-                   qc_ptr             != nullptr &&
-                   qr_ptr             != nullptr &&
-                   qi_ptr             != nullptr &&
-                   vapor_flux_ptr     != nullptr &&
-                   water_flux_ptr     != nullptr &&
-                   ice_flux_ptr       != nullptr &&
-                   heat_flux_ptr      != nullptr,
+  EKAT_REQUIRE_MSG (
+    phys_field_mgr->has_field("pseudo_density") and
+    phys_field_mgr->has_field("ps") and
+    phys_field_mgr->has_field("phis") and
+    phys_field_mgr->has_field("horiz_winds") and
+    phys_field_mgr->has_field("T_mid") and
+    phys_field_mgr->has_field("qv") and
+    phys_field_mgr->has_field("qc") and
+    phys_field_mgr->has_field("qr") and
+    phys_field_mgr->has_field("qi") and
+    phys_field_mgr->has_field("vapor_flux") and
+    phys_field_mgr->has_field("water_flux") and
+    phys_field_mgr->has_field("ice_flux") and
+    phys_field_mgr->has_field("heat_flux"),
                    "Error! enable_column_conservation_checks=true for some atm process, "
                    "but not all fields needed for this check exist in the FieldManager.\n");
 
@@ -381,14 +369,28 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   const Real energy_error_tol = driver_options_pl.get<double>("energy_column_conservation_error_tolerance", 1e-14);
 
   // Create energy checker
+  const auto pseudo_density = phys_field_mgr->get_field("pseudo_density");
+  const auto ps             = phys_field_mgr->get_field("ps");
+  const auto phis           = phys_field_mgr->get_field("phis");
+  const auto horiz_winds    = phys_field_mgr->get_field("horiz_winds");
+  const auto T_mid          = phys_field_mgr->get_field("T_mid");
+  const auto qv             = phys_field_mgr->get_field("qv");
+  const auto qc             = phys_field_mgr->get_field("qc");
+  const auto qr             = phys_field_mgr->get_field("qr");
+  const auto qi             = phys_field_mgr->get_field("qi");
+  const auto vapor_flux     = phys_field_mgr->get_field("vapor_flux");
+  const auto water_flux     = phys_field_mgr->get_field("water_flux");
+  const auto ice_flux       = phys_field_mgr->get_field("ice_flux");
+  const auto heat_flux      = phys_field_mgr->get_field("heat_flux");
+
   auto conservation_check =
     std::make_shared<MassAndEnergyColumnConservationCheck>(phys_grid,
                                                            mass_error_tol, energy_error_tol,
-                                                           pseudo_density_ptr, ps_ptr, phis_ptr,
-                                                           horiz_winds_ptr, T_mid_ptr, qv_ptr,
-                                                           qc_ptr, qr_ptr, qi_ptr,
-                                                           vapor_flux_ptr, water_flux_ptr,
-                                                           ice_flux_ptr, heat_flux_ptr);
+                                                           pseudo_density, ps, phis,
+                                                           horiz_winds, T_mid, qv,
+                                                           qc, qr, qi,
+                                                           vapor_flux, water_flux,
+                                                           ice_flux, heat_flux);
 
   //Get fail handling type from driver_option parameters.
   const std::string fail_handling_type_str =

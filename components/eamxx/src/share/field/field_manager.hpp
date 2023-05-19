@@ -105,6 +105,10 @@ public:
 
 protected:
 
+  // These are allowed even if registration is ongoing
+  std::shared_ptr<Field> get_field_ptr(const std::string& name) const;
+  std::shared_ptr<Field> get_field_ptr(const identifier_type& id) const;
+
   void pre_process_group_requests ();
 
   // The state of the repository
