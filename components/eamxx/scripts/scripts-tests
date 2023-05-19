@@ -173,7 +173,7 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
 
         def test_pylint(self):
             ensure_pylint()
-            run_cmd_assert_result(self, "python3 -m pylint --disable C --disable R {}".format(self._source_file), from_dir=TEST_DIR)
+            run_cmd_assert_result(self, "python3 -m pylint --disable C --disable R {}".format(self._source_file), from_dir=TEST_DIR, verbose=True)
 
         def test_gen_baseline(self):
             if self._generate:

@@ -83,24 +83,6 @@ public:
       const int nlev_packs = ekat::npack<Spack>(nlev);
 
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const Int& k) {
-      /*---------------------------------------------------------------------------------
-       *Wet to dry mixing ratios:
-       *-------------------------
-       *Since tracers from the host model (or AD) are  wet mixing ratios and SHOC expects
-       *these tracers in dry mixing ratios, we convert the wet mixing ratios to dry mixing
-       *ratios for all the tracers *except* for qv [which is done after all the other tracers]
-       *and TKE [which is always defined in units of J/(kg of total air) and therefore
-       *should be considered to be "wet" when stored in the FM and also "wet" when used in
-       *SHOC].
-       *----------------------------------------------------------------------------------
-       */
-          //NOTE:Function calculate_drymmr_from_wetmmr takes 2 arguments: ( wet mmr and "wet"
-          //water vapor mixing ratio)
-          //Units of all tracers (except TKE and qv) will become [kg/kg(dry-air)] for mass and
-          //[#/kg(dry-air)] for number after the following conversion. qv will be converted
-          //to dry mmr in the next parallel for
-          for (Int iq = 0; iq < num_qtracers-2; ++iq)
-            qtracers(i,convert_wet_dry_idx_d(iq),k) = PF::calculate_drymmr_from_wetmmr(qtracers(i,convert_wet_dry_idx_d(iq),k), qv(i,k));
 
         const auto range = ekat::range<IntSmallPack>(k*Spack::n);
         const Smask in_nlev_range = (range < nlev);
@@ -111,9 +93,6 @@ public:
         EKAT_KERNEL_ASSERT((nonzero || !in_nlev_range).all());
         inv_exner(i,k).set(nonzero, 1/exner);
 
-        //At this point, convert qv to dry mmr, the units will become kg/kg(dry air)
-        qv(i,k) = PF::calculate_drymmr_from_wetmmr(qv(i,k), qv(i,k));
-
         tke(i,k) = ekat::max(sp(0.004), tke(i,k));
 
         // Tracers are updated as a group. The tracers tke and qc act as separate inputs to shoc_main()
@@ -123,8 +102,7 @@ public:
         // to tracer group in postprocessing.
         // TODO: remove *_copy views once SHOC can request a subset of tracers.
         tke_copy(i,k) = tke(i,k);
-        qc_copy(i,k)  = qc(i,k); //at this point, qc should be dry mmr [kg/kg(dry air)]
-
+        qc_copy(i,k)  = qc(i,k); 
 
         qw(i,k) = qv(i,k) + qc(i,k);
 
@@ -191,7 +169,6 @@ public:
     // Local variables
     int ncol, nlev, num_qtracers;
     Real z_surf;
-    view_1d_int          convert_wet_dry_idx_d;
     view_1d_const        area;
     view_1d_const        lat;
     view_2d_const        T_mid;
@@ -232,7 +209,6 @@ public:
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
-                       const view_1d_int& convert_wet_dry_idx_d_,
                        const Real z_surf_,
                        const view_1d_const& area_, const view_1d_const& lat_,
                        const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_2d_const& p_int_, const view_2d_const& pseudo_density_,
@@ -252,7 +228,6 @@ public:
       ncol = ncol_;
       nlev = nlev_;
       num_qtracers = num_qtracers_;
-      convert_wet_dry_idx_d = convert_wet_dry_idx_d_;
       z_surf = z_surf_;
       // IN
       area = area_;
@@ -309,9 +284,6 @@ public:
       const Real inv_qc_relvar_max = 10;
       const Real inv_qc_relvar_min = 0.001;
 
-      //In the following loop, tke, qc and qv are updated. All these variables are slices of "qtracers" array
-      //After these updates, all tracers (except TKE) in the qtarcers array will be converted
-      //from dry mmr to wet mmr
       const int nlev_packs = ekat::npack<Spack>(nlev);
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const Int& k) {
         // See comment in SHOCPreprocess::operator() about the necessity of *_copy views
@@ -322,10 +294,11 @@ public:
 
         cldfrac_liq(i,k) = ekat::min(cldfrac_liq(i,k), 1);
 
+        //P3 uses inv_qc_relvar, P3 is using dry mmrs, but 
+        //wet<->dry conversion is a constant factor that cancels out in mean(qc)^2/mean(qc'*qc').
         inv_qc_relvar(i,k) = 1;
         const auto condition = (qc(i,k) != 0 && qc2(i,k) != 0);
         if (condition.any()) {
-          //inv_qc_relvar is used in P3 and is computed here using qc and qc2, which are in dry mmr
           inv_qc_relvar(i,k).set(condition,
                                  ekat::min(inv_qc_relvar_max,
                                            ekat::max(inv_qc_relvar_min,
@@ -338,25 +311,6 @@ public:
         const Real  phis_i(phis(i));
         T_mid(i,k) = PF::calculate_temperature_from_dse(dse_ik,z_mid_ik,phis_i);
 
-
-      /*--------------------------------------------------------------------------------
-       *DRY-TO-WET MMRs:
-       *-----------------
-       *Since the host model (or AD) expects wet mixing ratios, we need to convert dry
-       *mixing ratios from SHOC to wet mixing ratios except for qv[which will be converted
-       *in the following "parallel for" after all the other tracers] and TKE [which is
-       already in wet mmr].
-       *---------------------------------------------------------------------------------
-       */
-
-          //NOTE:Function calculate_wetmmr_from_drymmr takes 2 arguments: ( dry mmr and "dry"
-          //water vapor mixing ratio)
-          //Units of all tracers (except TKE and qv) will become [kg/kg(wet-air)] for mass and
-          //[#/kg(wet-air)] for number after the following conversion. qv will be converted
-          //to wet mmr in the next parallel for
-          for (Int iq = 0; iq < num_qtracers-2; ++iq)
-            qtracers(i,convert_wet_dry_idx_d(iq),k) = PF::calculate_wetmmr_from_drymmr(qtracers(i,convert_wet_dry_idx_d(iq),k), qv(i,k));
-          qv(i,k) = PF::calculate_wetmmr_from_drymmr(qv(i,k), qv(i,k));
       });
 
       // If necessary, set appropriate boundary fluxes for energy and mass conservation checks.
@@ -371,7 +325,6 @@ public:
 
     // Local variables
     int ncol, nlev, num_qtracers;
-    view_1d_int convert_wet_dry_idx_d;
     view_2d_const rrho;
     view_2d qv, qc, tke;
     view_2d_const tke_copy, qc_copy, qw;
@@ -392,7 +345,6 @@ public:
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
-                       const view_1d_int& convert_wet_dry_idx_d_,
                        const view_2d_const& rrho_,
                        const view_2d& qv_, const view_2d_const& qw_, const view_2d& qc_, const view_2d_const& qc_copy_,
                        const view_2d& tke_, const view_2d_const& tke_copy_, const view_3d& qtracers_, const view_2d_const& qc2_,
@@ -402,7 +354,6 @@ public:
       ncol = ncol_;
       nlev = nlev_;
       num_qtracers = num_qtracers_;
-      convert_wet_dry_idx_d = convert_wet_dry_idx_d_;
       rrho = rrho_;
       qv = qv_;
       qw = qw_;
