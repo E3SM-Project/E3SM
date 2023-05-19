@@ -147,6 +147,24 @@ Field FieldManager::get_field (const std::string& name) const {
   return *ptr;
 }
 
+Field& FieldManager::get_field (const identifier_type& id) {
+  EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
+      "Error! Cannot get fields from the repo while registration has not yet completed.\n");
+  auto ptr = get_field_ptr(id);
+  EKAT_REQUIRE_MSG(ptr!=nullptr,
+      "Error! Field identifier '" + id.get_id_string() + "' not found.\n");
+  return *ptr;
+}
+
+Field& FieldManager::get_field (const std::string& name) {
+
+  EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
+      "Error! Cannot get fields from the repo while registration has not yet completed.\n");
+  auto ptr = get_field_ptr(name);
+  EKAT_REQUIRE_MSG(ptr!=nullptr, "Error! Field " + name + " not found.\n");
+  return *ptr;
+}
+
 FieldGroup FieldManager::
 get_field_group (const std::string& group_name) const
 {

@@ -87,10 +87,8 @@ public:
 
   Field get_field (const std::string& name) const;
   Field get_field (const identifier_type& id) const;
-
-  // Unlike the previous two, these are allowed even if registration is ongoing
-  std::shared_ptr<Field> get_field_ptr(const std::string& name) const;
-  std::shared_ptr<Field> get_field_ptr(const identifier_type& id) const;
+  Field& get_field (const std::string& name);
+  Field& get_field (const identifier_type& id);
 
   FieldGroup get_field_group (const std::string& name) const;
 
