@@ -154,53 +154,9 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: scratchPool
-      integer :: iCell, iLevel, i, iVertex, err_tmp
-      integer, pointer :: nVertices
-      character (len=StrKIND), pointer :: config_sia_tangent_slope_calculation
-      integer, dimension(:,:), pointer :: baryCellsOnVertex
-      real (kind=RKIND), dimension(:,:), pointer :: baryWeightsOnVertex
-      real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
-      type (field1dInteger), pointer :: vertexIndicesField
 
       ! No block init needed.
       err = 0
-      err_tmp = 0
-
-      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-      call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-      call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
-      call mpas_pool_get_array(meshPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
-      call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
-      call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
-      call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
-      call mpas_pool_get_config(liConfigs, 'config_sia_tangent_slope_calculation', config_sia_tangent_slope_calculation)
-      call mpas_pool_get_field(scratchPool, 'vertexIndices', vertexIndicesField)
-      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
-
-      ! The SIA solver may need to setup these weights for calculating upperSurfaceVertex
-      if (trim(config_sia_tangent_slope_calculation) == 'from_vertex_barycentric') then
-         call mpas_allocate_scratch_field(vertexIndicesField, .true.)
-         do iVertex = 1, nVertices
-            vertexIndicesField % array(iVertex) = iVertex
-         enddo
-         call mpas_calculate_barycentric_weights_for_points(meshPool, &
-                xVertex(1:nVertices), yVertex(1:nVertices), zVertex(1:nVertices), &
-                vertexIndicesField % array(1:nVertices), &
-                baryCellsOnVertex(:, 1:nVertices), baryWeightsOnVertex(:, 1:nVertices), err_tmp)
-         ! TODO: Until framework can handle periodic meshs gracefully, this will return an error
-         ! for periodic meshes.  This error means that the velocity solver will be very wrong across
-         ! the periodicity, but it will be fine everywhere else.  For now, just print a warning but
-         ! don't make this a fatal error.
-         !err = ior(err, err_tmp)
-         if (err_tmp > 0) then
-            call mpas_log_write("The 'from_vertex_barycentric' option for 'config_sia_tangent_slope_calculation' " &
-                 // "does NOT work across the periodicity in periodic meshes.  However, it does work within the interior " &
-                 // "of the mesh.", MPAS_LOG_WARN)
-         endif
-         call mpas_deallocate_scratch_field(vertexIndicesField, .true.)
-      endif
 
       ! === error check
       if (err > 0) then
