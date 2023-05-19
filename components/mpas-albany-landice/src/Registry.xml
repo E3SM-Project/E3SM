@@ -1125,10 +1125,10 @@ is the value of that variable from the *previous* time level!
                 />
 		<!-- Variables only needed by SIA solver -->
 		<var name="baryCellsOnVertex" type="integer" dimensions="R3 nVertices" units="unitless"
-			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!" packages="SIAvelocity"
+			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!" packages="SIAvelocity;hydro"
 		/>
 		<var name="baryWeightsOnVertex" type="real" dimensions="R3 nVertices" units="unitless"
-			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex." packages="SIAvelocity"
+			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex." packages="SIAvelocity;hydro"
 		/>
 		<!-- Variables only needed by HO solver -->
 		<var name="wachspressWeightVertex" type="real" dimensions="maxEdges nCells" units="unitless"
