@@ -260,14 +260,28 @@ subroutine macv2_rad_props_init()
         !for now, do not indicate sampling sequence of field (see cam_history.F90) as done
         !for the other variables from the radiative transfer scheme
 
+        call addfld('AER_TAU',     (/ 'lev' /), 'A', '-', 'aerosol extinction optical depth')
+        call addfld('AER_TAU_W',   (/ 'lev' /), 'A', '-', 'aerosol single scattering albedo * tau')
+        call addfld('AER_TAU_W_G', (/ 'lev' /), 'A', '-', 'aerosol assymetry parameter * w * tau')
+        call addfld('AER_TAU_W_F', (/ 'lev' /), 'A', '-', 'aerosol forward scattered fraction: tau*w*g*g')
+        call addfld('NAT_TAU',     (/ 'lev' /), 'A', '-', 'nat aerosol extinction optical depth')
+        call addfld('NAT_TAU_W',   (/ 'lev' /), 'A', '-', 'nat aerosol single scattering albedo * tau')
+        call addfld('NAT_TAU_W_G', (/ 'lev' /), 'A', '-', 'nat aerosol assymetry parameter * w * tau')
+        call addfld('NAT_TAU_W_F', (/ 'lev' /), 'A', '-', 'nat aerosol forward scattered fraction: tau*w*g*g')
+        call addfld('MAC_TAU',     (/ 'lev' /), 'A', '-', 'mac aerosol extinction optical depth')
+        call addfld('MAC_TAU_W',   (/ 'lev' /), 'A', '-', 'mac aerosol single scattering albedo * tau')
+        call addfld('MAC_TAU_W_G', (/ 'lev' /), 'A', '-', 'mac aerosol assymetry parameter * w * tau')
+        call addfld('MAC_TAU_W_F', (/ 'lev' /), 'A', '-', 'mac aerosol forward scattered fraction: tau*w*g*g')
+        
+        call addfld('MACv2_ssa',    horiz_only, 'A', '-', 'MACv2 SSA')
+
         do isw = 1, nswbands
 
              call addfld('MACv2_aod_loc_2d'//swbandnum(isw),  horiz_only,   'A', '-', & 
                   'MACv2 anthropogenic aerosol optical depth with its vertical coordinate')
              call addfld('MACv2_aod_2d'//swbandnum(isw),  horiz_only,   'A', '-', &
                   'MACv2 anthropogenic aerosol optical depth after interpolation')
-             call addfld('MACv2_ssa', horiz_only, 'A', '-', 'MACv2 SSA')
-
+             
              call addfld('MACv2_aod'//swbandnum(isw), (/ 'lev' /),  'A', '-',  & 
                   'anthropogenic aerosol optical depth, MACv2')
              call addfld('MACv2_ssa'//swbandnum(isw), (/ 'lev' /),  'A', '-',  &
@@ -486,14 +500,18 @@ subroutine sp_aop_profile (ncol           ,lambda    ,    &
          real(r8) :: tzneg(ncol)  !< save tz if any grid column have negative height ASL (save the lowest level)
          integer  :: tznegind(ncol)  !< to save the indices for negative tz columns
 
+         real(r8), parameter :: lambda_cutoff = 3000._r8 ! MACv2 not set to operate for
+                                                         ! wavelengths longer than 3000 nm
+
 
     !
-    ! ---------- 
+    ! ----------
+         
     nstep = get_nstep()   !get model time step number
     
     if (localdebug) then
-        write(MACv2_errunit,*) 'sp_aop_profile (KSA): sp_aop_profile started, iam: ', iam
-        write(MACv2_errunit,*) 'sp_aop_profile (KSA): nstep: ', nstep
+        write(MACv2_errunit,*) 'sp_aop_profile: sp_aop_profile started, iam: ', iam
+        write(MACv2_errunit,*) 'sp_aop_profile: nstep: ', nstep
     end if
 
 
@@ -511,6 +529,13 @@ subroutine sp_aop_profile (ncol           ,lambda    ,    &
     aod_prof(1:ncol,:) = 0._r8
     ssa_prof(1:ncol,:) = 0._r8
     asy_prof(1:ncol,:) = 0._r8
+
+    if (lambda > lambda_cutoff) then
+       if (localdebug) then
+          write(MACv2_errunit,*) 'lambda exceeds cutoff in sp_aop_profile, lambda: ', lambda
+       end if
+       return
+    end if
 
     aod_int_loc(1:ncol) = 0._r8
     aod_int(1:ncol) = 0._r8
