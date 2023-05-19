@@ -711,7 +711,7 @@ void FieldManager::clean_up() {
 
 void FieldManager::add_field (const Field& f) {
   // This method has a few restrictions on the input field.
-  EKAT_REQUIRE_MSG (m_repo_state==RepoState::Closed,
+  EKAT_REQUIRE_MSG (m_repo_state==RepoState::Closed or m_repo_state==RepoState::Clean,
       "Error! The method 'add_field' can only be called on a closed repo.\n");
   EKAT_REQUIRE_MSG (f.is_allocated(),
       "Error! The method 'add_field' requires the input field to be already allocated.\n");
@@ -732,6 +732,8 @@ void FieldManager::add_field (const Field& f) {
 
   // All good, add the field to the repo
   m_fields[f.get_header().get_identifier().name()] = std::make_shared<Field>(f);
+
+  m_repo_state = RepoState::Closed;
 }
 
 std::shared_ptr<Field>
