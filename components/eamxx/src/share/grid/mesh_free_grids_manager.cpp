@@ -140,13 +140,13 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
     hybm.sync_to_dev();
   } else if (geo_data_source=="IC_FILE"){
     const auto& filename = m_params.get<std::string>("ic_filename");
-    if (scorpio::has_variable_c2f(filename.c_str(),"lat") &&
-        scorpio::has_variable_c2f(filename.c_str(),"lon")) {
+    if (scorpio::has_variable(filename,"lat") &&
+        scorpio::has_variable(filename,"lon")) {
       load_lat_lon(grid,filename);
     }
 
-    if (scorpio::has_variable_c2f(filename.c_str(),"hyam") &&
-        scorpio::has_variable_c2f(filename.c_str(),"hybm")) {
+    if (scorpio::has_variable(filename,"hyam") &&
+        scorpio::has_variable(filename,"hybm")) {
       load_vertical_coordinates(grid,filename);
     }
   }
@@ -178,8 +178,7 @@ load_lat_lon (const nonconstgrid_ptr_type& grid, const std::string& filename) co
   lat_lon_reader_pl.set("Filename",filename);
   lat_lon_reader_pl.set<std::vector<std::string>>("Field Names",{"lat","lon"});
 
-  AtmosphereInput lat_lon_reader(m_comm, lat_lon_reader_pl);
-  lat_lon_reader.init(grid, host_views, layouts);
+  AtmosphereInput lat_lon_reader(lat_lon_reader_pl, grid, host_views, layouts);
   lat_lon_reader.read_variables();
   lat_lon_reader.finalize();
 
@@ -229,8 +228,7 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   vcoord_reader_pl.set("Filename",filename);
   vcoord_reader_pl.set<std::vector<std::string>>("Field Names",{"hyam","hybm"});
 
-  AtmosphereInput vcoord_reader(m_comm,vcoord_reader_pl);
-  vcoord_reader.init(grid, host_views, layouts);
+  AtmosphereInput vcoord_reader(vcoord_reader_pl,grid, host_views, layouts);
   vcoord_reader.read_variables();
   vcoord_reader.finalize();
 

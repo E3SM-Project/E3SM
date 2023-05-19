@@ -62,8 +62,7 @@ class OutputManager
 public:
   using fm_type = FieldManager;
   using gm_type = GridsManager;
-  using str_any_pair_t = std::pair<std::string,ekat::any>;
-  using globals_map_t = std::map<std::string,str_any_pair_t>;
+  using globals_map_t = std::map<std::string,ekat::any>;
 
   // Constructor(s) & Destructor
   OutputManager () = default;
@@ -107,11 +106,10 @@ public:
     setup (io_comm,params,field_mgrs,grids_mgr,run_t0,run_t0,is_model_restart_output);
   }
 
-  void setup_globals_map (const globals_map_t& globals);
-  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger)
-    {
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
       m_atm_logger = atm_logger;
-    }
+  }
+  void add_global (const std::string& name, const ekat::any& global);
   void run (const util::TimeStamp& current_ts);
   void finalize();
 
@@ -169,6 +167,9 @@ protected:
   // Whether this run is the restart of a previous run, in which case
   // we might have to load an output checkpoint file (depending on avg type)
   bool m_is_restarted_run;
+
+  // If the user specifies freq units "none" or "never", output is disabled
+  bool m_output_disabled = false;
 
   // The initial time stamp of the simulation and run. For initial runs, they coincide,
   // but for restarted runs, run_t0>case_t0, with the former being the time at which the

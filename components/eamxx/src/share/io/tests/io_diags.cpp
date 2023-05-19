@@ -239,7 +239,7 @@ void read (const int seed, const ekat::Comm& comm)
     + ".nc";
   reader_pl.set("Filename",filename);
   reader_pl.set("Field Names",fnames);
-  AtmosphereInput reader(reader_pl,fm,gm);
+  AtmosphereInput reader(reader_pl,fm);
 
   reader.read_variables();
 
