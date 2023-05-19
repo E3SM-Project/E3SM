@@ -21,11 +21,11 @@ TEST_CASE("ml_correction-stand-alone", "") {
   ekat::ParameterList ad_params("Atmosphere Driver");
   parse_yaml_file(fname, ad_params);
 
-  const auto &ts    = ad_params.sublist("time_stepping");
-  const auto dt     = ts.get<int>("time_step");
-  const auto nsteps = ts.get<int>("number_of_steps");
-  const auto t0_str = ts.get<std::string>("run_t0");
-  const auto t0     = util::str_to_time_stamp(t0_str);
+  const auto& ts     = ad_params.sublist("time_stepping");
+  const auto  dt     = ts.get<int>("time_step");
+  const auto  nsteps = ts.get<int>("number_of_steps");
+  const auto  t0_str = ts.get<std::string>("run_t0");
+  const auto  t0     = util::str_to_time_stamp(t0_str);
 
   EKAT_ASSERT_MSG(dt > 0, "Error! Time step must be positive.\n");
 
