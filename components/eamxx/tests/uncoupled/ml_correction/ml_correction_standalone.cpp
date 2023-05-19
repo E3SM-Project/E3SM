@@ -21,11 +21,11 @@ TEST_CASE("ml_correction-stand-alone", "") {
   ekat::ParameterList ad_params("Atmosphere Driver");
   parse_yaml_file(fname, ad_params);
 
-  const auto& ts     = ad_params.sublist("time_stepping");
-  const auto  dt     = ts.get<int>("time_step");
-  const auto  nsteps = ts.get<int>("number_of_steps");
-  const auto  t0_str = ts.get<std::string>("run_t0");
-  const auto  t0     = util::str_to_time_stamp(t0_str);
+  const auto &ts    = ad_params.sublist("time_stepping");
+  const auto dt     = ts.get<int>("time_step");
+  const auto nsteps = ts.get<int>("number_of_steps");
+  const auto t0_str = ts.get<std::string>("run_t0");
+  const auto t0     = util::str_to_time_stamp(t0_str);
 
   EKAT_ASSERT_MSG(dt > 0, "Error! Time step must be positive.\n");
 
@@ -62,6 +62,7 @@ TEST_CASE("ml_correction-stand-alone", "") {
   reference += 0.1;
   Real reference2 = qv(1, 30);
   reference2 += 0.1;
+  ekat::disable_all_fpes();  // required for importing numpy
   pybind11::scoped_interpreter guard{};
   pybind11::module sys = pybind11::module::import("sys");
   sys.attr("path").attr("insert")(1, CUSTOM_SYS_PATH);
