@@ -712,6 +712,7 @@ my $prog_ghg1    = ($chem =~ "trop_mozart" or $chem =~ "trop_strat" or $chem =~ 
 my $prog_ghg2    = ($chem =~ "ghg" or $prog_species =~ "GHG");
 my $ghg_chem     = ($chem =~ "ghg");
 my $aero_chem    = ($chem =~ "aero" or $chem eq 'trop_mozart' or $chem eq 'trop_mozart_soa'  or $chem =~ 'trop_strat' or $chem eq 'trop_bam');
+my $vbs_soa      = $cfg->get('vbs');
 
 my $chem_rad_passive = ($nl->get_value('chem_rad_passive') =~ /$TRUE/io);
 my $ipcc_aircraft_emis = ($nl->get_value('ipcc_aircraft_emis') =~ /$TRUE/io);
@@ -3878,7 +3879,17 @@ add_default($nl, 'zmconv_dmpdz');
 add_default($nl, 'zmconv_tp_fac');
 add_default($nl, 'zmconv_alfa');
 add_default($nl, 'zmconv_trigdcape_ull');
-
+add_default($nl, 'zmconv_microp');
+add_default($nl, 'zmconv_clos_dyn_adj');
+add_default($nl, 'zmconv_tpert_fix');
+add_default($nl, 'zmconv_auto_fac');
+add_default($nl, 'zmconv_accr_fac');
+add_default($nl, 'zmconv_micro_dcs');
+add_default($nl, 'zmconv_MCSP_heat_coeff');
+add_default($nl, 'zmconv_MCSP_moisture_coeff');
+add_default($nl, 'zmconv_MCSP_uwind_coeff');
+add_default($nl, 'zmconv_MCSP_vwind_coeff');
+#
 # moist convection rainwater coefficients
 # These no more needed for EAM, including uwshcu_rpen. No need to reset for 'cam5'
 #add_default($nl, 'hkconv_cmftau');

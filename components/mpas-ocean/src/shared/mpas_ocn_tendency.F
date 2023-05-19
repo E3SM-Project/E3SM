@@ -600,6 +600,7 @@ end subroutine ocn_tend_vvel!}}}
       ! Add forcing and bottom drag
       call ocn_vel_forcing_tend(normalVelocity, sfcFlxAttCoeff, &
                                 sfcStress, kineticEnergyCell, &
+                                layerThickEdgeDrag, &
                                 layerThickEdgeMean, tendVel, err)
 
       ! vertical mixing treated implicitly in a later routine

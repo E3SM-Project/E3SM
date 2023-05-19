@@ -114,6 +114,7 @@ public:
   // It is created with a pristine header (no providers/customers)
   Field clone () const;
   Field clone (const std::string& name) const;
+  Field alias (const std::string& name) const;
 
   // Allows to get the underlying view, reshaped for a different data type.
   // The class will check that the requested data type is compatible with the

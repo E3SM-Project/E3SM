@@ -1093,6 +1093,10 @@
 					description="Dimensionless topographic wave drag coefficient, $c_{topo}$."
 					possible_values="any positive real, typically 5.0e-4"
 		/>
+		<nml_option name="config_thickness_drag_type" type="character" default_value="centered"
+					description="The type of layerThickness averaging to use on the drag term. The standard MPAS-O approach is 'centered'."
+					possible_values="'harmonic-mean', 'centered'"
+		/>
 	</nml_record>
 	<nml_record name="Rayleigh_damping" mode="forward">
 		<nml_option name="config_Rayleigh_damping_coeff" type="real" default_value="1.0e-4" units="s^-1"
@@ -1133,14 +1137,26 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_drying_min_cell_height" type="real" default_value="1.0e-3" units="m"
-					description="Minimum allowable cell height under drying.  Cell to be kept wet to at least this thickness."
+					description="Minimum allowable cell height under drying.  Cell to be kept wet to at least this thickness. When ramp is applied this is the min edge height"
 					possible_values="any positive real, typically 1.0e-3"
 		/>
 		<nml_option name="config_zero_drying_velocity" type="logical" default_value=".false."
 					description="If true, just zero out velocity that is contributing to drying for cell that is drying.  This option can be used to estimate acceptable minimum thicknesses for a run."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_verify_not_dry" type="logical" default_value=".false."
+		<nml_option name="config_zero_drying_velocity_ramp" type="logical" default_value=".false."
+					description="If true, ramp velocities and tendencies to zero rather than applying a simple on/off switch."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_zero_drying_velocity_ramp_hmin" type="real" default_value="1e-3"
+					description="Minimum layer thickness at which velocities and tendencies are ramped toward zero. Recommended value equal to config_drying_min_cell_height."
+					possible_values="Any positive real"
+		/>
+		<nml_option name="config_zero_drying_velocity_ramp_hmax" type="real" default_value="2e-3"
+					description="Maximum layer thickness at which velocities and tendencies are ramped toward zero. Recommended values between 2x and 10x config_drying_min_cell_height."
+					possible_values="Any positive real"
+		/>
+		<nml_option name="config_verify_not_dry" type="logical" default_value=".false." units="unitless"
 					description="If true, verify that cells are at least config_min_cell_height thick."
 					possible_values=".true. or .false."
 		/>
@@ -2847,6 +2863,11 @@
 		/>
 		<var name="tangentialVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="horizontal velocity, tangential to an edge"
+			 missing_value="FILLVAL" missing_value_mask="edgeMask"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="layerThicknessEdgeDrag" type="real" dimensions="nVertLevels nEdges Time" units="m"
+			 description="layer thickness to be used for drag terms"
 			 missing_value="FILLVAL" missing_value_mask="edgeMask"
 			 packages="forwardMode;analysisMode"
 		/>

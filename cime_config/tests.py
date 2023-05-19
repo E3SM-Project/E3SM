@@ -106,7 +106,7 @@ _TESTS = {
 
     "e3sm_ice_developer" : {
         "tests"   : (
-            "SMS_D_Ld1.TL319_EC30to60E2r2.DTESTM-JRA1p5",
+            "SMS_D_Ld1.TL319_EC30to60E2r2.DTESTM-JRA1p5.mpassi-jra_1958",
             "ERS_Ld5.T62_oQU240.DTESTM",
             "PEM_Ln5.T62_oQU240wLI.DTESTM",
             "PET_Ln5.T62_oQU240.DTESTM",
@@ -119,6 +119,19 @@ _TESTS = {
             "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-condidiag_dcape",
             "ERP_Ln18.ne4_oQU240.F2010.eam-condidiag_dcape",
             "ERP_Ln18.ne4_oQU240.F2010.eam-condidiag_rhi",
+            )
+        },
+    
+    "e3sm_zm_developer" : {
+        "tests"   : (
+            "ERP.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "REP_Ln5.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "PET.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "PEM_Ln18.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.F2010.eam-zm_enhancements",
+            "SMS_D_Ln5.ne4_oQU240.F2010.eam-zm_enhancements",
+            "SMS_Ln5.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "ERS.ne4pg2_oQU480.F2010.eam-zm_enhancements"
             )
         },
 
@@ -208,6 +221,7 @@ _TESTS = {
     "e3sm_ocnice_stealth_features" : {
         "tests" : (
             "SMS_D_Ld1.T62_oQU240wLI.GMPAS-IAF-ISMF.mpaso-impl_top_drag",
+            "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-harmonic_mean_drag",
             )
         },
 
@@ -561,7 +575,7 @@ _TESTS = {
             "ERS_Ln22.ne30_ne30.F2010-SCREAMv1",
             "PEM_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1",
             "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-small_kernels",
-            "ERP_Ln22.conusx4v1pg2_r05_oECv3.F2010-SCREAMv1-noAero",
+            "ERP_Ln22.conusx4v1pg2_r05_oECv3.F2010-SCREAMv1-noAero.scream-bfbhash",
             )
     },
 

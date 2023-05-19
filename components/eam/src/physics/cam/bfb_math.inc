@@ -17,7 +17,7 @@
 #define bfb_quad(val)   (bfb_square(bfb_square(val)))
 
 ! This conditional must match CPP logic for SCREAM_BFB_TESTING in scream_types.hpp
-#if !defined(SCREAM_CONFIG_IS_CMAKE) || defined (NDEBUG) || defined (EKAT_ENABLE_CUDA_MEMCHECK)
+#if !defined(SCREAM_CONFIG_IS_CMAKE) || defined (NDEBUG) || defined (SCREAM_SHORT_TESTS)
 #  define bfb_pow(base, exp) (base)**(exp)
 #  define bfb_cbrt(base) (base)**(1.0D0/3.0D0)
 #  define bfb_gamma(val) gamma(val)

@@ -13,7 +13,7 @@ endif()
 string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY")
 string(APPEND FC_AUTO_R8 " -s real64")
 # -em (default) generates MODULENAME.mod files
-string(APPEND FFLAGS " -f free -N 255 -h byteswapio -em")
+string(APPEND FFLAGS " -f free -h byteswapio -em")
 if (NOT compile_threaded)
 	# -M1077 flag used to suppress message about OpenMP directives
 	# that are ignored for non-threaded builds. (-h omp inactive)

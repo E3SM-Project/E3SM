@@ -162,9 +162,12 @@ contains
     use ppgrid,        only: pver
     use cam_pio_utils, only: 
     use cam_history,   only: addfld, horiz_only, add_default
+    use mo_chem_utls,  only : get_spc_ndx
 
 
     implicit none
+
+    integer :: e90_ndx
 
     ! define physical constants
     cnst_kap    = cappa
@@ -197,6 +200,9 @@ contains
     call addfld( 'hstobie_linoz', (/ 'lev' /), 'I',  'fraction of model time', 'Lowest possible Linoz level' )
     call addfld( 'hstobie_tropop', (/ 'lev' /), 'I', 'fraction of model time', &
          'Troposphere boundary calculated in chemistry' )
+
+    e90_ndx=-1
+    e90_ndx = get_spc_ndx('E90')
 
     ! If requested, be prepared to output results from all of the methods.
     if (output_all) then
@@ -236,24 +242,30 @@ contains
       call addfld('TROPH_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (Hybrid Stobie)')
       call addfld('TROPH_FD', horiz_only,    'A', 'probability', 'Tropopause Found (Hybrid Stobie)')
 
-      call addfld('TROPE_P',          horiz_only,    'A',  'Pa', 'Tropopause Pressure (E90)', flag_xyfill=.True.)
-      call addfld('TROPE_T',           horiz_only,    'A',  'K', 'Tropopause Temperature (E90)', flag_xyfill=.True.)
-      call addfld('TROPE_Z',           horiz_only,    'A',  'm', 'Tropopause Height (E90)', flag_xyfill=.True.)
-      call addfld('TROPE_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (E90)')
-      call addfld('TROPE_FD', horiz_only,    'A', 'probability', 'Tropopause Found (E90)')
-     end if
+      if (e90_ndx > 0) then
+         call addfld('TROPE_P',          horiz_only,    'A',  'Pa', 'Tropopause Pressure (E90)', flag_xyfill=.True.)
+         call addfld('TROPE_T',           horiz_only,    'A',  'K', 'Tropopause Temperature (E90)', flag_xyfill=.True.)
+         call addfld('TROPE_Z',           horiz_only,    'A',  'm', 'Tropopause Height (E90)', flag_xyfill=.True.)
+         call addfld('TROPE_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (E90)')
+         call addfld('TROPE_FD', horiz_only,    'A', 'probability', 'Tropopause Found (E90)')
+      end if
 
-    call addfld('TROPE3D_P',       horiz_only,    'A',  'Pa', 'Tropopause Pressure (E90 3D)', flag_xyfill=.True.)
-    call addfld('TROPE3D_T',        horiz_only,    'A',  'K', 'Tropopause Temperature (E90 3D)', flag_xyfill=.True.)
-    call addfld('TROPE3D_Z',        horiz_only,    'A',  'm', 'Tropopause Height (E90 3D)', flag_xyfill=.True.)
-    call addfld('TROPE3D_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (E90 3D)')
-    call addfld('TROPE3D_FD', horiz_only,    'A', 'probability', 'Tropopause Found (E90 3D)')
-    call addfld('TROPE3D_DZ',           (/ 'lev' /), 'A', 'm', 'Relative Tropopause Height (E90 3D)')
+    end if
+
+    if (e90_ndx > 0) then
+       call addfld('TROPE3D_P',       horiz_only,    'A',  'Pa', 'Tropopause Pressure (E90 3D)', flag_xyfill=.True.)
+       call addfld('TROPE3D_T',        horiz_only,    'A',  'K', 'Tropopause Temperature (E90 3D)', flag_xyfill=.True.)
+       call addfld('TROPE3D_Z',        horiz_only,    'A',  'm', 'Tropopause Height (E90 3D)', flag_xyfill=.True.)
+       call addfld('TROPE3D_PD', (/ 'lev' /), 'A', 'probability', 'Tropopause Distribution (E90 3D)')
+       call addfld('TROPE3D_FD', horiz_only,    'A', 'probability', 'Tropopause Found (E90 3D)')
+       call addfld('TROPE3D_DZ',           (/ 'lev' /), 'A', 'm', 'Relative Tropopause Height (E90 3D)')
+
+       call add_default('TROPE3D_P', 1, ' ')
+       call add_default('TROPE3D_T', 1, ' ')
+    endif
 
     call add_default('TROP_P', 1, ' ')
     call add_default('TROP_T', 1, ' ')
-    call add_default('TROPE3D_P', 1, ' ')
-    call add_default('TROPE3D_T', 1, ' ')
     call add_default('hstobie_linoz', 1, ' ')
 
     call tropopause_read_file()
@@ -268,7 +280,7 @@ contains
     !------------------------------------------------------------------
     use interpolate_data,  only : lininterp_init, lininterp, interp_type, lininterp_finish
     use dyn_grid,     only : get_dyn_grid_parm
-    use phys_grid,    only : get_ncols_p, get_rlat_all_p, get_rlon_all_p	
+    use phys_grid,    only : get_ncols_p, get_rlat_all_p, get_rlon_all_p
     use ioFileMod,    only : getfil
     use time_manager, only : get_calday
     use physconst,    only : pi
@@ -1622,6 +1634,7 @@ contains
   ! 3D E90 tropopause
   subroutine tropopause_e90_3d_output(pstate)
     use cam_history,  only : outfld
+    use mo_chem_utls, only : get_spc_ndx
     
     implicit none
 
@@ -1632,6 +1645,7 @@ contains
     integer       :: ncol                     ! number of cloumns in the chunk
     integer       :: lchnk                    ! chunk identifier
     integer       :: tropLevB(pcols)          ! lowest tropopause level index   
+    integer       :: e90_ndx                  ! E90 index in the species list
     real(r8)      :: tropP(pcols)             ! lowest tropopause pressure (Pa)  
     real(r8)      :: tropT(pcols)             ! lowest tropopause temperature (K) 
     real(r8)      :: tropZ(pcols)             ! lowest tropopause height (m) 
@@ -1645,6 +1659,11 @@ contains
     ! Information about the chunk.  
     lchnk = pstate%lchnk
     ncol  = pstate%ncol
+
+    e90_ndx=-1
+    e90_ndx = get_spc_ndx('E90')
+
+    if (e90_ndx < 0) return
 
     ! Find the tropopause
     call tropopause_e90_3d(pstate, tropLevB, tropLevU, tropFlag, tropFlagInt, tropP=tropP, tropT=tropT, tropZ=tropZ)

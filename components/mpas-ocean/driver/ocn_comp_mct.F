@@ -2937,7 +2937,7 @@ contains
           &Mailing address: LLNL Climate Program, c/o David C. Bader, &
           &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
       call MPAS_stream_mgr_add_att(domain % streamManager, 'contact', &
-          'e3sm-data-support@listserv.llnl.gov')
+          'e3sm-data-support@llnl.gov')
       
 
       call MPAS_stream_mgr_add_att(domain % streamManager, 'on_a_sphere', domain % on_a_sphere)
