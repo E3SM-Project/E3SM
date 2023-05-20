@@ -3,38 +3,56 @@
 # This script is to generate climatology and time-series based on ERA5 variables not included in obs4mip archive. pr and et are duplicated for cross-validation.
 path='/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/ERA5/'
 
-original_data_path=$path'original_ext/'
+## Set up for one extension
+#ext='ext_1'
+## variables include:
+## si10: 10 metre wind speed
+## d2m: 2 metre dewpoint temperature
+## sp: Surface pressure
+#
+#declare -a var=("sp" "d2m" "si10")
+#filename='adaptor.mars.internal-1683916975.6853056-27160-9-445faae7-c61c-4ee6-8cb2-32d1c02b0839.nc'
 
-time_series_output_path=$path'time_series_ext/'
-climo_output_path=$path'climatology_ext/'
-tmp=$path'tmp_ext/'
+
+ext='ext'
+# variables include:
+# t2m: 2 meter temp"
+# cp: Convective precipitation
+# e: Evaporation
+# lsp: Large-scale precipitation
+# ro: Runoff
+# tp: Total precipitation
+# vimd: Vertically integrated moisture divergence
+declare -a var=("t2m" "cp" "e" "lsp" "ro" "tp" "vimd")
+filename='adaptor.mars.internal-1649447170.9796565-18358-9-69c2693a-cb8f-49a8-8f09-36e7e03c7239.nc'
+original_data_path=$path'original_'${ext}'/'
+time_series_output_path=$path'time_series_'${ext}'_d2f/'
+climo_output_path=$path'climatology_'${ext}'_d2f/'
+tmp=$path'tmp_'${ext}'_d2f/'
 
 mkdir $time_series_output_path
 mkdir $climo_output_path
 mkdir $tmp
 
-
 start_yr=1979
 end_yr=2019
 
-# reduce expver dimension (only needed for recent data), reference: https://confluence.ecmwf.int/display/CUSF/ERA5+CDS+requests+which+return+a+mixture+of+ERA5+and+ERA5T+data 
-#cdo --reduce_dim -copy ${original_data_path}adaptor.mars.internal-1649447170.9796565-18358-9-69c2693a-cb8f-49a8-8f09-36e7e03c7239.nc ${tmp}reduce_expver.nc
+## reduce expver dimension (only needed for recent data), reference: https://confluence.ecmwf.int/display/CUSF/ERA5+CDS+requests+which+return+a+mixture+of+ERA5+and+ERA5T+data 
+#cdo --reduce_dim -copy ${original_data_path}${filename} ${tmp}reduce_expver.nc
 
-##switch latitude to N-to-S
-#ncpdq -a time,-lat,lon ${original_data_path}adaptor.mars.internal-1649447170.9796565-18358-9-69c2693a-cb8f-49a8-8f09-36e7e03c7239.nc ${tmp}N-to-S.nc
-##uncompress variable
-#ncpdq -U ${tmp}N-to-S.nc ${tmp}N-to-S_uncompress.nc
-##ncpdq -M dbl_flt
-#
-#cdo splityear ${tmp}N-to-S_uncompress.nc ${tmp}ERA5_ext
+#switch latitude to N-to-S
+ncpdq -a time,-lat,lon ${original_data_path}${filename} ${tmp}N-to-S.nc
+#unpack variable then convert from double to float
+ncpdq -O --unpack ${tmp}N-to-S.nc ${tmp}N-to-S_unpack.nc
+ncpdq -O --map=dbl_flt ${tmp}N-to-S_unpack.nc ${tmp}N-to-S_unpack_d2f.nc
+#fix attribute
+ncatted --attribute=missing_value,,d,, --attribute=_FillValue,,d,, ${tmp}N-to-S_unpack_d2f.nc
+
+cdo splityear ${tmp}N-to-S_unpack_d2f.nc ${tmp}ERA5_ext
 
 for yr in $(eval echo "{$start_yr..$end_yr}"); do
     yyyy=`printf "%04d" $yr`
     echo $yyyy
-#    ncks --mk_rec_dmn time ${original_path}${yyyy}.nc ${tmp}time_rec_dim_${yyyy}.nc
-    #ncrename -v F_evap,evspsbl -v F_prec,pr -v F_roff,mrro -v Q_lat,hfls -v Q_sen,hfss -v Q_lwdn,rlds -v Q_lwup,rlus -v Q_swnet,rss -v taux,tauu -v tauy,tauv ${original_path}${yyyy}.nc
-    #somehow Q_lwup can not get renamed, neglect for now.
-    #ncrename -v F_evap,evspsbl -v F_prec,pr -v F_roff,mrro -v Q_lat,hfls -v Q_sen,hfss -v Q_lwdn,rlds -v Q_swnet,rss -v taux,tauu -v tauy,tauv ${tmp}time_rec_dim_${yyyy}.nc
 
     for mth in {1..12}; do
         mm=`printf "%02d" $mth`
@@ -49,21 +67,20 @@ mv *climo.nc $climo_output_path
 
 ncrcat ${tmp}ERA5_ext_*nc ${time_series_output_path}ERA5_ext_${start_yr}01_${end_yr}12.nc
 
+# time series of variables are splitted into one variable each file, ex:
+# declare -a var=("sp" "d2m" "si10")
+for i in "${var[@]}"
+do 
+    ncks -v ${i} ${time_series_output_path}ERA5_ext_${start_yr}01_${end_yr}12.nc ${time_series_output_path}${i}_${start_yr}01_${end_yr}12.nc
+done
+mv ${time_series_output_path}ERA5_ext_${start_yr}01_${end_yr}12.nc ${tmp}
+
+# climatology are appended
+declare -a sn=("ANN" "DJF" "MAM" "JJA" "SON" "01" "02" "03" "04" "05" "06" "07" "08" "09" "10" "11" "12")
+for j in "${sn[@]}"
+do
+    ncks -A /p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/ERA5/climatology_ext_1_d2f/ERA5_ext_${j}_*nc /p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/ERA5/climatology_ext_d2f/ERA5_ext_${j}_*nc
+done
 
 
-#drc_out=$tmp
-#
-#for file0 in ${original_data_path}adaptor*nc
-#do
-#    echo $file0 | cut -d'-' -f9
-#
-#    #switch latitude to N-to-S
-#    ncpdq -a time,-lat,lon $file0 ${tmp}ua_N-to-S_$filename
-#    #uncompress variable
-#    ncpdq -U --d2f ${tmp}ua_N-to-S_$filename ${tmp}ua_$filename
-#    #regrid from 0.25 deg to 1deg, convert double to single precison
-#    ncremap --d2f -d $dst_fl ${tmp}ua_$filename ${tmp}ua_180_360_$filename
-#    ncks --mk_rec_dmn time ${tmp}ua_180_360_$filename ${tmp}ua_180_360_rec_dmn_$filename
-#done
-#ncrcat ${tmp}ua_180_360_rec_dmn*nc ${time_series_output_path}ua_${start_yr}01_${end_yr}12.nc
-#ncrename -v u,ua ${time_series_output_path}ua_${start_yr}01_${end_yr}12.nc
+exit

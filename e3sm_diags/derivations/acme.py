@@ -133,6 +133,32 @@ def qflxconvert_units(var):
     return var
 
 
+def qsat(temp, surfp):
+    # Function to calculate saturation specific humidity based on air temperature and surface pressure, following: https://confluence.ecmwf.int/pages/viewpage.action?pageId=171411214
+    # Input: temperature (temp) with units K and surface pressure (surfp) with units Pa:
+
+    qsat = copy.deepcopy(temp)
+    Rdry = 287.0597
+    Rvap = 461.5250
+    # Constants for Teten’s formula: for saturation over water, a1 = 611.21 Pa, a3 = 17.502 and a4 = 32.19 K, at T0  = 273.16 K.
+    a1 = 611.21
+    a3 = 17.502
+    a4 = 32.19
+    T0 = 273.16
+
+    # Calculation of saturation water vapour pressure (sat_wvp) from Teten's formula
+    sat_wvp = a1 * np.exp(a3 * (temp - T0) / (temp - a4))
+
+    # Calculation of saturation specific humidity at 2m qsat  (equal to huss) with units g/kg
+    qsat = (Rdry / Rvap) * sat_wvp / (surfp - ((1 - Rdry / Rvap) * sat_wvp)) * 1000.0
+    # Reset axes, which were dropped during calculation
+    qsat.setAxisList(temp.getAxisList())
+    qsat.units = "g/kg"
+    qsat.id = "QREFHT"
+    qsat.long_name = "Specific Humidity"
+    return qsat
+
+
 def w_convert_q(var):
     if var.units == "mol/mol":
         var = (
@@ -1411,8 +1437,20 @@ derived_variables = {
     # (Temperature of the surface (land/water) itself, not the air)
     "TS": OrderedDict([(("ts",), rename)]),
     "PS": OrderedDict([(("ps",), rename)]),
-    "U10": OrderedDict([(("sfcWind",), rename)]),
-    "QREFHT": OrderedDict([(("huss",), rename)]),
+    "U10": OrderedDict([(("sfcWind",), rename), (("si10",), rename)]),
+    "QREFHT": OrderedDict(
+        [
+            (("QREFHT",), lambda q: convert_units(rename(q), target_units="g/kg")),
+            (("huss",), lambda q: convert_units(rename(q), target_units="g/kg")),
+            (
+                (
+                    "d2m",
+                    "sp",
+                ),
+                lambda d2m, sp: qsat(d2m, sp),
+            ),
+        ]
+    ),
     "PRECC": OrderedDict([(("prc",), rename)]),
     "TAUX": OrderedDict([(("tauu",), lambda tauu: -tauu)]),
     "TAUY": OrderedDict([(("tauv",), lambda tauv: -tauv)]),
