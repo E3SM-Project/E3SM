@@ -19,10 +19,13 @@ module iac2lndMod
   use VegetationType , only : veg_pp
   use dynHarvestMod  , only : harvest_rates, do_cn_harvest
 
-  ! !PUBLIC TPES:
+  ! !PUBLIC TYPES:
   implicit none
   private
   save
+
+  ! !PUBLIC MEMBER FUNCTIONS
+  public :: iac_rpointer_write
 
   ! iac -> land structure
   ! Dimensioned by (ngrid,numpft)
@@ -262,5 +265,59 @@ end if
 
     endif
   end subroutine update_iac2lnd
+
+
+  !---------------------------------------------------------------------
+  subroutine iac_rpointer_write(rdate)
+  !
+  ! !DESCRIPTION:
+  !
+  ! Write the gcam2glm and glm rpointer files so that they point to the correct
+  !    year restart files that correspond with the other E3SM restart files
+  !
+  ! !USES:
+  use shr_file_mod, only: shr_file_getunit, shr_file_freeunit
+  !
+  ! !ARGUMENTS:
+  implicit none
+  character(len=*),intent(in) :: rdate       ! restart file time stamp for name
+  !
+  ! !LOCAL VARIABLES:
+  integer       :: year         ! 4 digit year extracted from the front of rdate
+  character(256) :: filename
+  integer       :: iun
+  character(len=*),parameter :: gcam2glm_restfile = 'gcam2glm_restart.'
+  character(len=*),parameter :: gcam2glm_rpointer = 'rpointer.gcam2glm'
+  character(len=*),parameter :: glm_restfile = 'output.glm.restart.state.'
+  character(len=*),parameter :: glm_rpointer = 'rpointer.glm'
+
+  !-----------------------------------------------------------------------
+ 
+  ! set the names here cuz the iac mods are not available
+  ! use the year from rdate
+ 
+  ! write the gcam2glm rpointer file  
+
+  write(filename,'(a)') trim(gcam2glm_restfile)//'r.'//rdate(1:4)//'.nc'
+
+  iun = shr_file_getunit()
+  open(iun,file=trim(gcam2glm_rpointer),form='formatted')
+  write(iun,'(a)') trim(filename)
+  close(iun)
+  call shr_file_freeunit(iun)
+
+ ! write the glm rpointer file  
+
+  write(filename,'(a)') trim(glm_restfile)//rdate(1:4)//'.nc'
+
+  iun = shr_file_getunit()
+  open(iun,file=trim(glm_rpointer),form='formatted')
+  write(iun,'(a)') trim(filename)
+  close(iun)
+  call shr_file_freeunit(iun)
+
+  end subroutine iac_rpointer_write
+
+
 end module iac2lndMod
 
