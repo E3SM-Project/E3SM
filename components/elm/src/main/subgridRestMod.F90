@@ -456,6 +456,8 @@ contains
     !
     ! !USES:
     !
+    use topounit_varcon, only : max_topounits
+    !
     ! !ARGUMENTS:
     type(bounds_type), intent(in)    :: bounds ! bounds
     type(file_desc_t), intent(inout) :: ncid   ! netCDF dataset id
@@ -476,6 +478,16 @@ contains
          dim1name='landunit',                                                      &
          long_name='landunit weight relative to corresponding gridcell',           &
          interpinic_flag='skip', readvar=readvar, data=lun_pp%wtgcell)
+
+    ! this ensures land consistency with restart, rather than whatever fsurdat
+    !    was used
+    ! this is because weights are based on lun_pp%wttopounit now, and not on
+    !    lun_pp%wtgcell, but this hasn't been updated here
+    ! see issue 4942 for details on the proper fix, as this is only for one
+    !    topounit per grid cell 
+    if (max_topounits == 1) then
+     lun_pp%wttopounit = lun_pp%wtgcell
+    end if
 
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_wtxy', xtype=ncd_double,  &
          dim1name='column',                                                         &

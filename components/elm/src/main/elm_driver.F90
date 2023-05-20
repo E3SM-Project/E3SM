@@ -86,7 +86,7 @@ module elm_driver
   use lnd2atmMod             , only : lnd2atm
   use lnd2glcMod             , only : lnd2glc_type
   use lnd2iacMod             , only : lnd2iac_type
-  use iac2lndMod             , only : iac2lnd_type
+  use iac2lndMod             , only : iac2lnd_type, iac_rpointer_write
   !
   use seq_drydep_mod         , only : n_drydep, drydep_method, DD_XLND
   use DryDepVelocity         , only : depvel_compute
@@ -1507,6 +1507,12 @@ contains
                waterflux_vars, waterstate_vars, sedflux_vars,                                 &
                phosphorusstate_vars,phosphorusflux_vars,                                      &
                ep_betr, alm_fates, crop_vars, rdate=rdate )
+
+         ! need to write rpointer files for two iac restart files
+         ! because the iac does not run in a step when the restart alarm is on
+         if(iac_active) then
+            call iac_rpointer_write(rdate)
+         end if 
 
          !----------------------------------------------
          ! pflotran (off now)
