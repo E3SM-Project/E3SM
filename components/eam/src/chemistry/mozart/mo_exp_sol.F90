@@ -42,7 +42,8 @@ contains
     use shr_kind_mod,  only : r8 => shr_kind_r8
     use cam_history,   only : outfld
     use mo_tracname,   only : solsym
-
+    use cam_logfile,      only : iulog
+    use spmd_utils,       only : iam, masterproc
     implicit none
     !-----------------------------------------------------------------------
     !     	... Dummy arguments
@@ -106,13 +107,28 @@ contains
                 ! loss/base_sol is the loss frequency (dx/x).
                 ! base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) is what left after decay
                 ! and delt*(prod(i,k,m)+ind_prd(i,k,m)) is the production.
+                if (base_sol(i,k,l) .le. 0.0_r8)write(iulog,*) "limiter,tracer,i,l,m,base_sol(i,k,l), -delt*loss(i,k,m)=",trim(solsym(l)),i,l,m,base_sol(i,k,l),-delt*loss(i,k,m)
                 base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
              end do
+          end do
+       elseif (trim(solsym(l)) == 'DMS' .or. trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
+          do i = 1,ncol
+              do k = ltrop(i)+1,pver
+                 chem_loss(i,k,l) = - 1.0_r8*loss(i,k,m)
+                 chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m) 
+                 base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+                 !base_sol(i,k,l) = min(1.0E-30_r8, base_sol(i,k,l)) 
+                 !chem_loss(i,k,l) = (base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) - base_sol(i,k,l))/delt
+                 !base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
+              end do
           end do
        else
           do i = 1,ncol
              do k = ltrop(i)+1,pver
                 chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                if (base_sol(i,k,l) .le. 0.0_r8) then 
+                write(iulog,*)"limiter,tracer,i,k,l,m,base_sol(i,k,l), -delt*loss(i,k,m)=",trim(solsym(l)),i,k,l,m,base_sol(i,k,l),-delt*loss(i,k,m) 
+                end if
                 chem_loss(i,k,l) = (base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) - base_sol(i,k,l))/delt
                 base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
              end do
@@ -131,14 +147,27 @@ contains
     call exp_prod_loss( prod, loss, base_sol_reset, diags_reaction_rates, het_rates )
     do m = 1,clscnt1
        l = clsmap(m,1)
+       if (trim(solsym(l)) == 'DMS' .or. trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
+           do i = 1,ncol
+               do k = ltrop(i)+1,pver
+                 
+                  !base_sol_reset(i,k,l) = base_sol_reset(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+                  !base_sol_reset(i,k,l) = min(1.0E-36_r8, base_sol_reset(i,k,l))
+                  chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                  chemmp_loss(i,k,l) = -loss(i,k,m)
+               end do
+           end do
+       else
         do i = 1,ncol
            do k = ltrop(i)+1,pver
               chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
               chemmp_loss(i,k,l) = (base_sol_reset(i,k,l)*exp(-delt*loss(i,k,m)/base_sol_reset(i,k,l)) - base_sol_reset(i,k,l))/delt
            end do
         end do
+       endif
     end do
 
   end subroutine exp_sol
+
 
 end module mo_exp_sol
