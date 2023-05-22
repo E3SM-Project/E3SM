@@ -470,12 +470,12 @@ void AtmosphereDriver::create_fields()
         // Loop over all fields in group src_name on grid src_grid.
         for (const auto& fname : rel_info->m_fields_names) {
           // Get field on src_grid
-          auto f = rel_fm->get_field_ptr(fname);
+          auto f = rel_fm->get_field(fname);
 
           // Build a FieldRequest for the same field on greq's grid,
           // and add it to the group of this request
           if (fvphyshack) {
-            const auto& sfid = f->get_header().get_identifier();
+            const auto& sfid = f.get_header().get_identifier();
             auto dims = sfid.get_layout().dims();
             dims[0] = fm->get_grid()->get_num_local_dofs();
             FieldLayout fl(sfid.get_layout().tags(), dims);
@@ -483,7 +483,7 @@ void AtmosphereDriver::create_fields()
             FieldRequest freq(fid,req.name,req.pack_size);
             fm->register_field(freq);
           } else {
-            const auto fid = r->create_tgt_fid(f->get_header().get_identifier());
+            const auto fid = r->create_tgt_fid(f.get_header().get_identifier());
             FieldRequest freq(fid,req.name,req.pack_size);
             fm->register_field(freq);
           }
