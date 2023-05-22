@@ -11,6 +11,7 @@
 #include "physics/ml_correction/atmosphere_ml_correction.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/scream_session.hpp"
 
 namespace scream {
 TEST_CASE("ml_correction-stand-alone", "") {
@@ -72,6 +73,8 @@ TEST_CASE("ml_correction-stand-alone", "") {
           num_cols * num_levs, qv.data(), py::str{}),
       num_cols, num_levs);
   py::gil_scoped_release no_gil;
+  int fpe_mask = ekat::get_enabled_fpes();
+  ekat::enable_fpes(get_default_fpes());
   REQUIRE(qv(1, 10) == reference);   // This is the one that is modified
   REQUIRE(qv(1, 30) != reference2);  // This one should be unchanged
   ad.finalize();
