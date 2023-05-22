@@ -203,7 +203,7 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
     time_interpolator_deep.perform_time_interpolation(ts);
     // Now compare the interp_fields to the fields in the field manager which should be updated.
     for (auto name : fnames) {
-      auto field = fields_man_t0->get_field(name);
+      auto field      = fields_man_t0->get_field(name);
       auto field_deep = fields_man_deep->get_field(name);
       // Check that the shallow copies match the expected values
       REQUIRE(views_are_approx_equal(field,time_interpolator.get_field(name),tol));
