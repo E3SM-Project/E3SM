@@ -94,14 +94,6 @@ module micro_p3
   ! lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
   real(rtype), protected, dimension(300,10) :: vn_table_vals,vm_table_vals,revap_table_vals
 
-!<shanyp 20221218
-! set lookup tables as threadprivate variables to see if this change can address the threading issue.
-!  !$OMP THREADPRIVATE(ice_table_vals,collect_table_vals,mu_r_table_vals,vn_table_vals,vm_table_vals,revap_table_vals)
-! !$OMP THREADPRIVATE(ice_table_vals) 
- !,vn_table_vals,vm_table_vals)
-!shanyp 20221218>
-
-
   type realptr
      real(rtype), dimension(:), pointer :: p
   end type realptr
@@ -1103,7 +1095,7 @@ end function bfb_expm1
    integer, intent(in) :: kts, kte, kbot, ktop, kdir
 
    real(rtype), intent(in) :: p3_max_mean_rain_size
-   real(rtype), intent(in) :: mincdnc ! Shanyp add imposing Nc
+   real(rtype), intent(in) :: mincdnc 
    real(rtype), intent(in), dimension(kts:kte) :: exner, cld_frac_l, cld_frac_r, cld_frac_i
 
    real(rtype), intent(inout), dimension(kts:kte) :: rho, inv_rho, rhofaci, &
@@ -1141,7 +1133,7 @@ end function bfb_expm1
          nc_incld = nc(k)/cld_frac_l(k)
          call get_cloud_dsd2(qc_incld,nc_incld,mu_c(k),rho(k),nu(k),dnu,lamc(k),  &
               tmp1,tmp2)
-       if (mincdnc.gt.0._rtype) nc_incld = max(nc_incld,mincdnc/rho(k)) ! Shanyp Make sure all nc_incld no less than mincdnc
+       if (mincdnc.gt.0._rtype) nc_incld = max(nc_incld,mincdnc/rho(k)) 
          diag_eff_radius_qc(k) = 0.5_rtype*(mu_c(k)+3._rtype)/lamc(k)
          nc(k) = nc_incld*cld_frac_l(k) !limiters in dsd2 may change nc_incld. Enforcing consistency here.
       else
@@ -1639,7 +1631,7 @@ end function bfb_expm1
            nc(i,knc) = max(nc(i,knc),mincdnc*cld_frac_l(i,knc)/rho(i,knc))
            nc_incld(i,knc) = max(nc_incld(i,knc),mincdnc/rho(i,knc))
           end if
-         end do ! Shanyp: After microphysics updated, make sure all the nc_incld no less than min_ndnc
+         end do 
 
        !...................................................
        ! final checks to ensure consistency of mass/number

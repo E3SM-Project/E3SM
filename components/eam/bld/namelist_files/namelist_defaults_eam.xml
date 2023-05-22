@@ -918,7 +918,7 @@
 <micro_nccons         microphys="mg2">  100.D6      </micro_nccons>
 <micro_nicons         microphys="mg2">  0.1D6       </micro_nicons>
 <micro_mincdnc        microphys="mg2">  -999.       </micro_mincdnc>
-<p3_mincdnc           microphys="p3">  -999.        </p3_mincdnc>  <!-- shanyp -->
+<p3_mincdnc           microphys="p3">  -999.        </p3_mincdnc> 
 
 <!-- P3 specific namelist variables -->
 <micro_aerosolactivation            microphys="p3"> .true.  </micro_aerosolactivation>
@@ -949,7 +949,7 @@
 
 <!-- special defaults for MMF, which now sets all other physics scheme options to "off" -->
 <micro_mincdnc        use_MMF="1">  -999.       </micro_mincdnc>
-<p3_mincdnc           use_MMF="1">  -999.       </p3_mincdnc>  <!-- shanyp -->
+<p3_mincdnc           use_MMF="1">  -999.       </p3_mincdnc> 
 
 <rrtmg_temp_fix                      > .false.      </rrtmg_temp_fix>
 
@@ -1848,7 +1848,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <dust_emis_fact phys="default"> 1.50D0     </dust_emis_fact>
 <linoz_psc_T               > 197.5      </linoz_psc_T>
 <micro_mincdnc phys="default" microphys="mg2"> 10.D6      </micro_mincdnc>
-<p3_mincdnc phys="default" microphys="p3"> 10.D6      </p3_mincdnc>  <!-- shanyp -->
+<p3_mincdnc phys="default" microphys="p3"> 10.D6      </p3_mincdnc>
 <clubb_C1 phys="default"> 2.4        </clubb_C1>
 <clubb_C11 phys="default"> 0.70       </clubb_C11>
 <clubb_C11b phys="default"> 0.20       </clubb_C11b>
