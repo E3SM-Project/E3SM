@@ -2870,7 +2870,8 @@
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
       <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.6-intel-classic-2021.6.0/</env>
-      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.6-intel-classic-2021.6.0/</env>    </environment_variables>
+      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.6-intel-classic-2021.6.0/</env>    
+      </environment_variables>
   </machine>
 
   <machine MACH="quartz">
