@@ -36,6 +36,14 @@
 ! 3) Need to include extra in/out values which correspond with microphysics PBUF           !
 ! variables and outputs expected in E3SM.                                                  !
 !__________________________________________________________________________________________!
+! Improvements from Yunpeng Shan, Jiwen Fan, Kai Zhang, and Jacob Shpund                   !
+! 1) Impose low Nc limit.                                                                  !
+! 2) Fix the Non-BFB issue in the calc_rime_density subroutine.                            !
+! 3) Fix the bug in nc_conservation subroutine.                                            !
+! 4) Output the in-cloud properties (qi, ni, qc, nc) after microphysics.                   !
+! 5) Make exponential parameters in accretion/autoconversion equation consistent with      !
+!    heterogeneity factor.                                                                 !
+!__________________________________________________________________________________________!
 
 ! Include bit-for-bit math macros.
 ! #include "bfb_math.inc"
@@ -1086,7 +1094,7 @@ end function bfb_expm1
       rho, inv_rho, rhofaci, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim,            &
       mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange,                                                                        &
       ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi, rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc,  & 
-      diag_ze_rain,diag_ze_ice)
+      diag_ze_rain,diag_ze_ice,mincdnc)
 
    implicit none
 
@@ -1095,7 +1103,7 @@ end function bfb_expm1
    integer, intent(in) :: kts, kte, kbot, ktop, kdir
 
    real(rtype), intent(in) :: p3_max_mean_rain_size
-
+   real(rtype), intent(in) :: mincdnc ! Shanyp add imposing Nc
    real(rtype), intent(in), dimension(kts:kte) :: exner, cld_frac_l, cld_frac_r, cld_frac_i
 
    real(rtype), intent(inout), dimension(kts:kte) :: rho, inv_rho, rhofaci, &
@@ -1133,7 +1141,7 @@ end function bfb_expm1
          nc_incld = nc(k)/cld_frac_l(k)
          call get_cloud_dsd2(qc_incld,nc_incld,mu_c(k),rho(k),nu(k),dnu,lamc(k),  &
               tmp1,tmp2)
-
+       if (mincdnc.gt.0._rtype) nc_incld = max(nc_incld,mincdnc/rho(k)) ! Shanyp Make sure all nc_incld no less than mincdnc
          diag_eff_radius_qc(k) = 0.5_rtype*(mu_c(k)+3._rtype)/lamc(k)
          nc(k) = nc_incld*cld_frac_l(k) !limiters in dsd2 may change nc_incld. Enforcing consistency here.
       else
@@ -1256,7 +1264,7 @@ end function bfb_expm1
   SUBROUTINE p3_main(qc,nc,qr,nr,th_atm,qv,dt,qi,qm,ni,bm,                                                                                                               &
        pres,dz,nc_nuceat_tend,nccn_prescribed,ni_activated,frzimm,frzcnt,frzdep,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_eff_radius_qc,     &
        diag_eff_radius_qi,rho_qi,do_predict_nc, do_prescribed_CCN,p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon,           &
-       p3_wbf_coeff,p3_max_mean_rain_size,p3_embryonic_rain_size,                                                                                                        &
+       p3_wbf_coeff,p3_mincdnc,p3_max_mean_rain_size,p3_embryonic_rain_size,                                                                                             &
        dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,rflx,sflx,cflx,cld_frac_r,cld_frac_l,cld_frac_i,               &
        p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange,                                                                                                          &
        vap_ice_exchange,qv_prev,t_prev,col_location,diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice                                                                     &
@@ -1344,6 +1352,7 @@ end function bfb_expm1
     real(rtype), intent(in)                                     :: p3_nc_autocon_expon      ! autconversion nc exponent
     real(rtype), intent(in)                                     :: p3_qc_accret_expon       ! accretion qc and qr exponent
     real(rtype), intent(in)                                     :: p3_wbf_coeff             ! WBF coefficient
+    real(rtype), intent(in)                                     :: p3_mincdnc               ! Lower bound of Nc
     real(rtype), intent(in)                                     :: p3_max_mean_rain_size    ! max mean rain size allowed
     real(rtype), intent(in)                                     :: p3_embryonic_rain_size   ! embryonic rain size from autoconversion
 
@@ -1408,6 +1417,8 @@ end function bfb_expm1
     logical(btype), parameter :: debug_ABORT  = .false.  !.true. will result in forced abort in s/r 'check_values'
 
     real(rtype),dimension(its:ite,kts:kte) :: qc_old, nc_old, qr_old, nr_old, qi_old, ni_old, qv_old, th_atm_old
+    integer :: knc
+    real(rtype) :: mincdnc
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
     integer :: clock_count1, clock_count_rate, clock_count_max, clock_count2, clock_count_diff
@@ -1488,7 +1499,7 @@ end function bfb_expm1
     ni_old = ni   ! Ice  # microphysics tendency, initialize
     qv_old = qv         ! Vapor  microphysics tendency, initialize
     th_atm_old = th_atm         ! Pot. Temp. microphysics tendency, initialize
-
+    mincdnc = p3_mincdnc
 #ifdef SCREAM_CONFIG_IS_CMAKE
     call system_clock(clock_count1, clock_count_rate, clock_count_max)
 #endif
@@ -1623,6 +1634,13 @@ end function bfb_expm1
        call ice_complete_melting(kts,kte,ktop,kbot,kdir,qi(i,:),ni(i,:),qm(i,:),latent_heat_fusion(i,:),exner(i,:),th_atm(i,:), & 
             qr(i,:),nr(i,:),qc(i,:),nc(i,:))
 
+         do knc=kbot,ktop,kdir
+          if ((mincdnc.gt.0._rtype).and.(qc(i,knc).ge.qsmall)) then
+           nc(i,knc) = max(nc(i,knc),mincdnc*cld_frac_l(i,knc)/rho(i,knc))
+           nc_incld(i,knc) = max(nc_incld(i,knc),mincdnc/rho(i,knc))
+          end if
+         end do ! Shanyp: After microphysics updated, make sure all the nc_incld no less than min_ndnc
+
        !...................................................
        ! final checks to ensure consistency of mass/number
        ! and compute diagnostic fields for output
@@ -1632,7 +1650,7 @@ end function bfb_expm1
             qm(i,:), bm(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:),                                                &
             mu_c(i,:), nu(i,:), lamc(i,:), mu_r(i,:), lamr(i,:), vap_liq_exchange(i,:),                                       &
             ze_rain(i,:), ze_ice(i,:), diag_vm_qi(i,:), diag_eff_radius_qi(i,:), diag_diam_qi(i,:), rho_qi(i,:), diag_equiv_reflectivity(i,:), diag_eff_radius_qc(i,:), &
-            diag_ze_rain(i,:),diag_ze_ice(i,:))
+            diag_ze_rain(i,:),diag_ze_ice(i,:),mincdnc)
 
        !   if (debug_ON) call check_values(qv,Ti,it,debug_ABORT,800,col_location)
 
