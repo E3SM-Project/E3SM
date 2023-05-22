@@ -3151,8 +3151,8 @@
 
     <gridmap atm_grid="ne30np4.pg2" ocn_grid="EC30to60E2r2">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_EC30to60E2r2_mono.201005.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_EC30to60E2r2_bilin.201005.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_EC30to60E2r2_bilin.201005.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_EC30to60E2r2_bilin.tr.230522.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_EC30to60E2r2_bilin.tr.230522.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_ne30pg2_mono.201005.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_ne30pg2_mono.201005.nc</map>
     </gridmap>
