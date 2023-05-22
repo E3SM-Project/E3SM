@@ -124,16 +124,12 @@ set_params(const ekat::ParameterList& atm_params)
 
   m_ad_status |= s_params_set;
 
-#ifdef SCREAM_CIME_BUILD
   const auto pg_type = "PG2";
   fvphyshack = m_atm_params.sublist("grids_manager").get<std::string>("physics_grid_type") == pg_type;
   if (fvphyshack) {
     // See the [rrtmgp active gases] note in dynamics/homme/atmosphere_dynamics_fv_phys.cpp.
     fv_phys_rrtmgp_active_gases_init(m_atm_params);
   }
-#else
-  fvphyshack = false;
-#endif
 }
 
 void AtmosphereDriver::
@@ -670,10 +666,8 @@ initialize_fields ()
   start_timer("EAMxx::init");
   start_timer("EAMxx::initialize_fields");
 
-#ifdef SCREAM_CIME_BUILD
   // See the [rrtmgp active gases] note in dynamics/homme/atmosphere_dynamics_fv_phys.cpp.
   if (fvphyshack) fv_phys_rrtmgp_active_gases_set_restart(m_case_t0 < m_run_t0);
-#endif
 
   // See if we need to print a DAG. We do this first, cause if any input
   // field is missing from the initial condition file, an error will be thrown.
