@@ -27,7 +27,7 @@ namespace scream {
  *  quantities (which will be defined at midpoints).
  *  The kernels are meant to be launched from within a parallel region, with
  *  team policy. More precisely, they are meant to be called from the outer most
- *  parallel region. In other words, you should *not* be inside a TeamThreadRange
+ *  parallel region. In other words, you should *not* be inside a TeamVectorRange
  *  parallel loop when calling these kernels, since these kernels will attempt
  *  to create such loops. Furthermore, these kernels *assume* that the team policy
  *  vector length (on CUDA) is 1. We have no way of checking this (the vector length
@@ -741,27 +741,27 @@ protected:
   // |        Kokkos::parallel_X wrappers         |
   // +--------------------------------------------+
 
-  // Runs the input lambda with a TeamThreadRange parallel for over [0,count) range
+  // Runs the input lambda with a TeamVectorRange parallel for over [0,count) range
   template<typename Lambda>
   KOKKOS_INLINE_FUNCTION
   static void team_parallel_for (const TeamMember& team,
                                  const int count,
                                  const Lambda& f)
   {
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,count),f);
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,count),f);
   }
 
-  // Runs the input lambda with a TeamThreadRange parallel for over [start,end) range
+  // Runs the input lambda with a TeamVectorRange parallel for over [start,end) range
   template<typename Lambda>
   KOKKOS_INLINE_FUNCTION
   static void team_parallel_for (const TeamMember& team,
                                  const int start, const int end,
                                  const Lambda& f)
   {
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,start,end),f);
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,start,end),f);
   }
 
-  // Runs the input lambda with a TeamThreadRange parallel scan over [0,count) range
+  // Runs the input lambda with a TeamVectorRange parallel scan over [0,count) range
   template<typename Lambda>
   KOKKOS_INLINE_FUNCTION
   static void team_parallel_scan (const TeamMember& team,
@@ -771,7 +771,7 @@ protected:
     team_parallel_scan(team,0,count,f);
   }
 
-  // Runs the input lambda with a TeamThreadRange parallel scan over [start,end) range
+  // Runs the input lambda with a TeamVectorRange parallel scan over [start,end) range
   template<typename Lambda>
   KOKKOS_INLINE_FUNCTION
   static void team_parallel_scan (const TeamMember& team,

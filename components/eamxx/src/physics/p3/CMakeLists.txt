@@ -2,7 +2,7 @@ set(P3_SRCS
   p3_f90.cpp
   p3_ic_cases.cpp
   p3_iso_c.f90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/micro_p3.F90
+  ${SCREAM_BASE_DIR}/../eam/src/physics/p3/scream/micro_p3.F90
   atmosphere_microphysics.cpp
   atmosphere_microphysics_run.cpp
 )
@@ -70,6 +70,7 @@ target_include_directories(p3 PUBLIC
   ${CMAKE_CURRENT_BINARY_DIR}/modules
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/impl
+  ${SCREAM_BASE_DIR}/../eam/src/physics/cam
 )
 target_link_libraries(p3 physics_share scream_share)
 

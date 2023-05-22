@@ -47,7 +47,7 @@ void Functions<S,D>
   precip_ice_surf = 0;
 
   Kokkos::parallel_for(
-    Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+    Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
 
     diag_equiv_reflectivity(k)           = -99;
     ze_ice(k)            = 1.e-22;
@@ -312,7 +312,7 @@ Int Functions<S,D>
 
 #ifndef NDEBUG
     Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+      Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
         tmparr1(k) = oth(k) * exner(k);
     });
 

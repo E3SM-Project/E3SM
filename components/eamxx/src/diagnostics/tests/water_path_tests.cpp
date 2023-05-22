@@ -220,7 +220,7 @@ void run(std::mt19937_64& engine)
         Real qv_mass_max=0.0;
         auto qv_s = ekat::scalarize(ekat::subview(qv_v, icol));
         Kokkos::parallel_reduce(
-          Kokkos::TeamThreadRange(team,num_levs), [&] (Int idx, Real& lmax) {
+          Kokkos::TeamVectorRange(team,num_levs), [&] (Int idx, Real& lmax) {
             if (qv_s(idx)*dp_s(idx)/gravit > lmax) {
               lmax = qv_s(idx)*dp_s(idx)/gravit;
             }
@@ -230,7 +230,7 @@ void run(std::mt19937_64& engine)
         Real qc_mass_max=0.0;
         auto qc_s = ekat::scalarize(ekat::subview(qc_v, icol));
         Kokkos::parallel_reduce(
-          Kokkos::TeamThreadRange(team,num_levs), [&] (Int idx, Real& lmax) {
+          Kokkos::TeamVectorRange(team,num_levs), [&] (Int idx, Real& lmax) {
             if (qc_s(idx)*dp_s(idx)/gravit > lmax) {
               lmax = qc_s(idx)*dp_s(idx)/gravit;
             }
@@ -240,7 +240,7 @@ void run(std::mt19937_64& engine)
         Real qi_mass_max=0.0;
         auto qi_s = ekat::scalarize(ekat::subview(qi_v, icol));
         Kokkos::parallel_reduce(
-          Kokkos::TeamThreadRange(team,num_levs), [&] (Int idx, Real& lmax) {
+          Kokkos::TeamVectorRange(team,num_levs), [&] (Int idx, Real& lmax) {
             if (qi_s(idx)*dp_s(idx)/gravit > lmax) {
               lmax = qi_s(idx)*dp_s(idx)/gravit;
             }
@@ -250,7 +250,7 @@ void run(std::mt19937_64& engine)
         Real qm_mass_max=0.0;
         auto qm_s = ekat::scalarize(ekat::subview(qm_v, icol));
         Kokkos::parallel_reduce(
-          Kokkos::TeamThreadRange(team,num_levs), [&] (Int idx, Real& lmax) {
+          Kokkos::TeamVectorRange(team,num_levs), [&] (Int idx, Real& lmax) {
             if (qm_s(idx)*dp_s(idx)/gravit > lmax) {
               lmax = qm_s(idx)*dp_s(idx)/gravit;
             }
@@ -261,7 +261,7 @@ void run(std::mt19937_64& engine)
         Real qr_mass_max=0.0;
         auto qr_s = ekat::scalarize(ekat::subview(qr_v, icol));
         Kokkos::parallel_reduce(
-          Kokkos::TeamThreadRange(team,num_levs), [&] (Int idx, Real& lmax) {
+          Kokkos::TeamVectorRange(team,num_levs), [&] (Int idx, Real& lmax) {
             if (qr_s(idx)*dp_s(idx)/gravit > lmax) {
               lmax = qr_s(idx)*dp_s(idx)/gravit;
             }

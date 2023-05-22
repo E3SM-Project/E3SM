@@ -197,7 +197,7 @@ void SPAFunctions<S,D>
     auto var_end = get_var_column (data_end.data,icol,ivar);
     auto var_out = get_var_column (data_out.data,icol,ivar);
 
-    Kokkos::parallel_for (Kokkos::TeamThreadRange(team,num_vert_packs),
+    Kokkos::parallel_for (Kokkos::TeamVectorRange(team,num_vert_packs),
                           [&] (const int& k) {
       var_out(k) = linear_interp(var_beg(k),var_end(k),delta_t_fraction);
     });
@@ -226,7 +226,7 @@ compute_source_pressure_levels(
   Kokkos::parallel_for("spa_compute_p_src_loop", policy,
     KOKKOS_LAMBDA (const MemberType& team) {
     const int icol = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_vert_packs),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_vert_packs),
                          [&](const int k) {
       p_src(icol,k) = ps_src(icol) * hybm(k)  + P0 * hyam(k);
     });
@@ -303,15 +303,15 @@ perform_vertical_interpolation(
 template <typename S, typename D>
 void SPAFunctions<S,D>
 ::set_remap_weights_one_to_one(
-    gid_type                 min_dof,
-    const view_1d<gid_type>& dofs_gids,
-          SPAHorizInterp&    spa_horiz_interp
+    gid_type                       min_dof,
+    const view_1d<const gid_type>& dofs_gids,
+          SPAHorizInterp&          spa_horiz_interp
   )
 {
   // There may be cases where the SPA data is defined on the same grid as the simulation
   // and thus no remapping is required.  This simple routine establishes a 1-1 horizontal
   // mapping
-  int num_local_cols = dofs_gids.size();
+  const int num_local_cols = dofs_gids.size();
   auto& spa_horiz_map = spa_horiz_interp.horiz_map;
   spa_horiz_map = HorizontalMap(spa_horiz_interp.m_comm,"SPA 1-1 Remap",dofs_gids,min_dof);
   view_1d<gid_type> src_dofs("",1);
@@ -337,10 +337,10 @@ void SPAFunctions<S,D>
 template <typename S, typename D>
 void SPAFunctions<S,D>
 ::get_remap_weights_from_file(
-    const std::string&       remap_file_name,
-    const gid_type           min_dof,
-    const view_1d<gid_type>& dofs_gids,
-          SPAHorizInterp&    spa_horiz_interp
+    const std::string&             remap_file_name,
+    const gid_type                 min_dof,
+    const view_1d<const gid_type>& dofs_gids,
+          SPAHorizInterp&          spa_horiz_interp
   )
 {
   start_timer("EAMxx::SPA::get_remap_weights_from_file");
@@ -414,8 +414,7 @@ void SPAFunctions<S,D>
   auto unique_src_dofs = spa_horiz_map.get_unique_source_dofs();
   const int num_local_cols = spa_horiz_map.get_num_unique_dofs();
   scorpio::register_file(spa_data_file_name,scorpio::Read);
-  const int source_data_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
-  scorpio::eam_pio_closefile(spa_data_file_name);
+  const int source_data_nlevs = scorpio::get_dimlen(spa_data_file_name,"lev");
 
   // Construct local arrays to read data into
   // Note, all of the views being created here are meant to hold the source resolution
@@ -431,16 +430,18 @@ void SPAFunctions<S,D>
   spa_data_in_params.set("Field Names",fnames);
   spa_data_in_params.set("Filename",spa_data_file_name);
   spa_data_in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
-  AtmosphereInput spa_data_input(comm,spa_data_in_params);
   
   // Construct the grid needed for input:
   auto grid = std::make_shared<PointGrid>("grid",num_local_cols,source_data_nlevs,comm);
-  grid->set_dofs(unique_src_dofs);
+  Kokkos::deep_copy(grid->get_dofs_gids().template get_view<gid_type*>(),unique_src_dofs);
+  grid->get_dofs_gids().sync_to_host();
 
   // Check that padding matches source size:
   EKAT_REQUIRE(source_data_nlevs+2 == spa_data.data.nlevs);
-  EKAT_REQUIRE_MSG(nswbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"swband"),"ERROR update_spa_data_from_file: Number of SW bands in simulation doesn't match the SPA data file");
-  EKAT_REQUIRE_MSG(nlwbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lwband"),"ERROR update_spa_data_from_file: Number of LW bands in simulation doesn't match the SPA data file");
+  EKAT_REQUIRE_MSG(nswbands==scorpio::get_dimlen(spa_data_file_name,"swband"),
+      "ERROR update_spa_data_from_file: Number of SW bands in simulation doesn't match the SPA data file");
+  EKAT_REQUIRE_MSG(nlwbands==scorpio::get_dimlen(spa_data_file_name,"lwband"),
+      "ERROR update_spa_data_from_file: Number of LW bands in simulation doesn't match the SPA data file");
 
   // Constuct views to read source data in from file
   typename view_1d<Real>::HostMirror hyam_v_h("hyam",source_data_nlevs);
@@ -494,9 +495,10 @@ void SPAFunctions<S,D>
   //
   
   // Now that we have all the variables defined we can use the scorpio_input class to grab the data.
-  spa_data_input.init(grid,host_views,layouts);
+  AtmosphereInput spa_data_input(spa_data_in_params,grid,host_views,layouts);
   spa_data_input.read_variables(time_index);
   spa_data_input.finalize();
+  scorpio::eam_pio_closefile(spa_data_file_name);
   stop_timer("EAMxx::SPA::update_spa_data_from_file::read_data");
   start_timer("EAMxx::SPA::update_spa_data_from_file::apply_remap");
   // Copy data from host back to the device views.

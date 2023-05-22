@@ -22,7 +22,7 @@ public:
   {
     // Nothing to do
   }
-  view_1d<gid_t>::HostMirror
+  std::vector<gid_t>
   test_triplet_gids (const std::string& map_file) const {
     return CoarseningRemapper::get_my_triplets_gids (map_file,m_src_grid);
   }
@@ -72,7 +72,7 @@ public:
 };
 
 template<typename ViewT>
-bool contains (const ViewT& v, const typename ViewT::traits::value_type& entry) {
+bool view_contains (const ViewT& v, const typename ViewT::traits::value_type& entry) {
   const auto vh = cmvc (v);
   const auto beg = vh.data();
   const auto end = vh.data() + vh.size();
@@ -94,21 +94,19 @@ void print (const std::string& msg, const ekat::Comm& comm) {
 std::shared_ptr<AbstractGrid>
 build_src_grid(const ekat::Comm& comm, const int nldofs_src) 
 {
-
-  AbstractGrid::dofs_list_type src_dofs("",nldofs_src);
-  auto src_dofs_h = cmvc(src_dofs);
-  std::iota(src_dofs_h.data(),src_dofs_h.data()+nldofs_src,nldofs_src*comm.rank());
-  Kokkos::deep_copy(src_dofs,src_dofs_h);
-
   auto src_grid = std::make_shared<PointGrid>("src",nldofs_src,20,comm);
-  src_grid->set_dofs(src_dofs);
+
+  auto src_dofs = src_grid->get_dofs_gids();
+  auto src_dofs_h = src_dofs.get_view<gid_t*,Host>();
+  std::iota(src_dofs_h.data(),src_dofs_h.data()+nldofs_src,nldofs_src*comm.rank());
+  src_dofs.sync_to_dev();
 
   return src_grid;
 }
 
 // Helper function to create fields
 Field
-create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>& grid, const bool twod, const bool vec, const bool mid = false, const int ps = 1)
+create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>& grid, const bool twod, const bool vec, const bool mid = false, const int ps = 1, const bool add_mask = false)
 {
   constexpr int vec_dim = 3;
   constexpr auto CMP = FieldTag::Component;
@@ -122,6 +120,16 @@ create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>&
   Field f(fid);
   f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();
+
+  if (add_mask) {
+    // Add a mask to the field
+    FieldIdentifier fid_mask(name+"_mask",fl,units,grid->name());
+    Field f_mask(fid_mask);
+    f_mask.get_header().get_alloc_properties().request_allocation(ps);
+    f_mask.allocate_view();
+    f.get_header().set_extra_data("mask_data",f_mask);
+  }
+
   return f;
 }
 
@@ -133,9 +141,9 @@ void create_remap_file(const std::string& filename, std::vector<std::int64_t>& d
 
   scorpio::register_file(filename, scorpio::FileMode::Write);
 
-  scorpio::register_dimension(filename,"n_a", "n_a", na);
-  scorpio::register_dimension(filename,"n_b", "n_b", nb);
-  scorpio::register_dimension(filename,"n_s", "n_s", ns);
+  scorpio::register_dimension(filename,"n_a", "n_a", na, true);
+  scorpio::register_dimension(filename,"n_b", "n_b", nb, true);
+  scorpio::register_dimension(filename,"n_s", "n_s", ns, true);
 
   scorpio::register_variable(filename,"col","col","none",{"n_s"},"real","int","int-nnz");
   scorpio::register_variable(filename,"row","row","none",{"n_s"},"real","int","int-nnz");
@@ -226,7 +234,7 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
   // Here we will simplify and just remap a simple 2D horizontal field.
   auto tgt_grid = remap->get_tgt_grid();
 
-  auto src_s2d   = create_field("s2d",  src_grid,true,false);
+  auto src_s2d   = create_field("s2d",  src_grid,true,false,false,1,true);
   auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
 
   std::vector<Field> src_f = {src_s2d};
@@ -250,7 +258,7 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
   // Generate data in a deterministic way, so that when we check results,
   // we know a priori what the input data that generated the tgt field's
   // values was, even if that data was off rank.
-  auto src_gids    = remap->get_src_grid()->get_dofs_gids_host();
+  auto src_gids = remap->get_src_grid()->get_dofs_gids().get_view<const gid_t*,Host>();
   for (const auto& f : src_f) {
     const auto& l = f.get_header().get_identifier().get_layout();
     switch (get_layout_type(l.tags())) {
@@ -272,7 +280,7 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
   // -------------------------------------- //
   //          Check remapped fields         //
   // -------------------------------------- //
-  const auto tgt_gids = tgt_grid->get_dofs_gids_host();
+  const auto tgt_gids = tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
   for (int irun=0; irun<5; ++irun) {
     print (" -> run remap ...\n",comm);
     remap->remap(true);
@@ -314,6 +322,7 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
 }
 
 TEST_CASE ("coarsening_remap") {
+  using gid_t = AbstractGrid::gid_type;
 
   // -------------------------------------- //
   //           Init MPI and PIO             //
@@ -388,16 +397,16 @@ TEST_CASE ("coarsening_remap") {
   auto src_s2d   = create_field("s2d",  src_grid,true,false);
   auto src_v2d   = create_field("v2d",  src_grid,true,true);
   auto src_s3d_m = create_field("s3d_m",src_grid,false,false,true, 1);
-  auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,std::min(SCREAM_PACK_SIZE,4));
-  auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,8));
-  auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,std::min(SCREAM_PACK_SIZE,16));
+  auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,SCREAM_PACK_SIZE);
+  auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, 1);
+  auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,SCREAM_PACK_SIZE);
 
   auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
   auto tgt_v2d   = create_field("v2d",  tgt_grid,true,true);
   auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,true, 1);
-  auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,false,std::min(SCREAM_PACK_SIZE,4));
-  auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,8));
-  auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,false,std::min(SCREAM_PACK_SIZE,16));
+  auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,false,SCREAM_PACK_SIZE);
+  auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, 1);
+  auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,false,SCREAM_PACK_SIZE);
 
   std::vector<Field> src_f = {src_s2d,src_v2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i};
   std::vector<Field> tgt_f = {tgt_s2d,tgt_v2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i};
@@ -440,7 +449,7 @@ TEST_CASE ("coarsening_remap") {
   REQUIRE (tgt_grid->get_num_global_dofs()==ngdofs_tgt);
 
   // Check which triplets are read from map file
-  auto src_dofs_h = src_grid->get_dofs_gids_host();
+  auto src_dofs_h = src_grid->get_dofs_gids().get_view<const gid_t*,Host>();
   auto my_triplets = remap->test_triplet_gids (filename);
   const int num_triplets = my_triplets.size();
   REQUIRE (num_triplets==nnz_local);
@@ -448,7 +457,7 @@ TEST_CASE ("coarsening_remap") {
     const auto src_gid = src_dofs_h(i);
     const auto tgt_gid = src_gid % ngdofs_tgt;
 
-    REQUIRE (contains(my_triplets, 2*tgt_gid + src_gid/ngdofs_tgt));
+    REQUIRE (ekat::contains(my_triplets, 2*tgt_gid + src_gid/ngdofs_tgt));
   }
 
   // Check overlapped tgt grid
@@ -459,13 +468,13 @@ TEST_CASE ("coarsening_remap") {
   const int num_loc_ov_tgt_gids = ov_tgt_grid->get_num_local_dofs();
   const int expected_num_loc_ov_tgt_gids = ngdofs_tgt>=nldofs_src ? nldofs_src : ngdofs_tgt;
   REQUIRE (num_loc_ov_tgt_gids==expected_num_loc_ov_tgt_gids);
-  auto ov_gids = ov_tgt_grid->get_dofs_gids_host();
+  const auto ov_gids = ov_tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
   for (int i=0; i<num_loc_ov_tgt_gids; ++i) {
     if (comm.size()==1) {
       REQUIRE(ov_gids[i]==i);
     } else {
       const auto src_gid = src_dofs_h[i];
-      REQUIRE (contains(ov_gids, src_gid % ngdofs_tgt));
+      REQUIRE (view_contains(ov_gids, src_gid % ngdofs_tgt));
     }
   }
 
@@ -473,8 +482,8 @@ TEST_CASE ("coarsening_remap") {
   auto row_offsets_h = cmvc(remap->get_row_offsets());
   auto col_lids_h    = cmvc(remap->get_col_lids());
   auto weights_h = cmvc(remap->get_weights());
-  auto ov_tgt_gids = ov_tgt_grid->get_dofs_gids_host();
-  auto src_gids    = remap->get_src_grid()->get_dofs_gids_host();
+  auto ov_tgt_gids = ov_tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
+  auto src_gids    = remap->get_src_grid()->get_dofs_gids().get_view<const gid_t*,Host>();
 
   REQUIRE (col_lids_h.extent_int(0)==nldofs_src);
   REQUIRE (row_offsets_h.extent_int(0)==(num_loc_ov_tgt_gids+1));
@@ -502,7 +511,7 @@ TEST_CASE ("coarsening_remap") {
 
   // Check internal MPI structures
   const int num_loc_tgt_gids = tgt_grid->get_num_local_dofs();
-  const auto tgt_gids = tgt_grid->get_dofs_gids_host();
+  const auto tgt_gids = tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
   const auto recv_lids_beg = remap->get_recv_lids_beg();
   const auto recv_lids_end = remap->get_recv_lids_end();
   const auto recv_lids_pidpos = remap->get_recv_lids_pidpos();

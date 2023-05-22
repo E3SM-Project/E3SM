@@ -72,7 +72,7 @@ bind_field (const field_type& src, const field_type& tgt) {
   EKAT_REQUIRE_MSG(tgt.is_allocated(), "Error! Target field is not yet allocated.\n");
 
   EKAT_REQUIRE_MSG(!m_fields_are_bound[ifield],
-                     "Error! Field already bound.\n");
+                     "Error! Field " + src_fid.get_id_string() + " already bound.\n");
 
   do_bind_field(ifield,src,tgt);
 

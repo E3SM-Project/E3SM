@@ -110,8 +110,15 @@ TEST_CASE("field_at_pressure_level_p2")
       auto diag_f = diag->get_diagnostic();
       diag_f.sync_to_host();
       auto test2_diag_v = diag_f.get_view<const Real*, Host>();
+      // Check the mask field inside the diag_f
+      auto mask_tmp = diag_f.get_header().get_extra_data().at("mask_data");
+      auto mask_f   = ekat::any_cast<Field>(mask_tmp);
+      mask_f.sync_to_host();
+      auto test2_mask_v = mask_f.get_view<const Real*, Host>();
+      //
       for (int icol=0;icol<ncols;icol++) {
         REQUIRE(approx(test2_diag_v(icol),get_test_data(plevel)));
+        REQUIRE(approx(test2_mask_v(icol),Real(1.0)));
       }
     }
   } 
@@ -125,8 +132,17 @@ TEST_CASE("field_at_pressure_level_p2")
       auto diag_f = diag->get_diagnostic();
       diag_f.sync_to_host();
       auto test2_diag_v = diag_f.get_view<const Real*, Host>();
+      // Check the mask field inside the diag_f
+      auto mask_tmp = diag_f.get_header().get_extra_data().at("mask_data");
+      auto mask_f   = ekat::any_cast<Field>(mask_tmp);
+      mask_f.sync_to_host();
+      auto test2_mask_v = mask_f.get_view<const Real*, Host>();
+      auto mask_val_tmp = diag_f.get_header().get_extra_data().at("mask_value");
+      Real mask_val = ekat::any_cast<Real>(mask_val_tmp);
+      //
       for (int icol=0;icol<ncols;icol++) {
-        REQUIRE(approx(test2_diag_v(icol),Real(-99999)));
+        REQUIRE(approx(test2_diag_v(icol),Real(mask_val)));
+        REQUIRE(approx(test2_mask_v(icol),Real(0.0)));
       }
     }
   } 
@@ -230,7 +246,7 @@ get_test_diag(const ekat::Comm& comm, std::shared_ptr<const FieldManager> fm, st
     params.set("Field Units",fid.get_units());
     params.set("Field Layout",fid.get_layout());
     params.set("Grid Name",fid.get_grid_name());
-    params.set<Real>("Field Target Pressure",plevel);
+    params.set<double>("Field Target Pressure",plevel);
     auto diag = std::make_shared<FieldAtPressureLevel>(comm,params);
     diag->set_grids(gm);
     diag->set_required_field(field);

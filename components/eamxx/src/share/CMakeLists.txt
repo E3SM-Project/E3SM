@@ -4,6 +4,7 @@ set(SHARE_SRC
   scream_config.cpp
   scream_session.cpp
   atm_process/atmosphere_process.cpp
+  atm_process/atmosphere_process_hash.cpp
   atm_process/atmosphere_process_group.cpp
   atm_process/atmosphere_process_dag.cpp
   atm_process/atmosphere_diagnostic.cpp
@@ -21,6 +22,7 @@ set(SHARE_SRC
   grid/point_grid.cpp
   grid/remap/abstract_remapper.cpp
   grid/remap/coarsening_remapper.cpp
+  grid/remap/vertical_remapper.cpp
   grid/remap/horizontal_remap_utility.cpp
   property_checks/property_check.cpp
   property_checks/field_nan_check.cpp
@@ -87,7 +89,7 @@ if (NOT SCREAM_LIB_ONLY)
     grid/mesh_free_grids_manager.cpp
     util/scream_test_session.cpp
   )
-  target_link_libraries(scream_test_support PUBLIC scream_share)
+  target_link_libraries(scream_test_support PUBLIC scream_share scream_io)
 
   add_subdirectory(tests)
 endif()

@@ -54,7 +54,7 @@ contains
     !
     ! Inputs
     !
-    real(kind=c_double), intent(out) :: lat (:), lon(:)
+    real(kind=c_double), intent(out) :: lat (:,:,:), lon(:,:,:)
     integer(kind=c_int), intent(out) :: cg_gids (:), dg_gids(:), elgpgp(:,:)
     !
     ! Local(s)
@@ -85,8 +85,8 @@ contains
           idof = (ie-1)*16+(jp-1)*4+ip
           cg_gids(idof) = INT(el_cg_gids(ip,jp,ie),kind=c_int)
           dg_gids(idof) = INT(el_dg_gids(ip,jp,ie),kind=c_int)
-          lat(idof)  = elem(ie)%spherep(ip,jp)%lat * 180.0_c_double/pi
-          lon(idof)  = elem(ie)%spherep(ip,jp)%lon * 180.0_c_double/pi
+          lat(ip,jp,ie)  = elem(ie)%spherep(ip,jp)%lat * 180.0_c_double/pi
+          lon(ip,jp,ie)  = elem(ie)%spherep(ip,jp)%lon * 180.0_c_double/pi
           elgpgp(1,idof) = ie-1
           elgpgp(2,idof) = jp-1
           elgpgp(3,idof) = ip-1

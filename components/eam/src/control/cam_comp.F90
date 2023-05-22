@@ -16,7 +16,8 @@ module cam_comp
    use physics_types,     only: physics_state, physics_tend
    use cam_control_mod,   only: nsrest, print_step_cost, obliqr, lambm0, mvelpp, eccen
    use dyn_comp,          only: dyn_import_t, dyn_export_t
-   use ppgrid,            only: begchunk, endchunk
+   use ppgrid,            only: begchunk, endchunk, pcols
+   use conditional_diag,  only: cnd_diag_t
    use perf_mod
    use cam_logfile,       only: iulog
    use physics_buffer,            only: physics_buffer_desc
@@ -56,6 +57,7 @@ module cam_comp
   type(physics_state), pointer :: phys_state(:) => null()
   type(physics_tend ), pointer :: phys_tend(:) => null()
   type(physics_buffer_desc), pointer :: pbuf2d(:,:) => null()
+  type(cnd_diag_t),          pointer :: phys_diag(:) => null()
 
   real(r8) :: wcstart, wcend     ! wallclock timestamp at start, end of timestep
   real(r8) :: usrstart, usrend   ! user timestamp at start, end of timestep
@@ -97,6 +99,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    use scamMod,          only: single_column
    use cam_pio_utils,    only: init_pio_subsystem
    use cam_instance,     only: inst_suffix
+   use conditional_diag, only: cnd_diag_info, cnd_diag_alloc
 
 #if ( defined SPMD )   
    real(r8) :: mpi_wtime  ! External
@@ -163,10 +166,14 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
       call atm2hub_alloc(cam_out)
       call hub2atm_alloc(cam_in)
 
+      ! Allocate memory for CondiDiag
+      ! (When rest /= 0, the subroutine is called from inside cam_read_restart)
+      call cnd_diag_alloc(phys_diag, begchunk, endchunk, pcols, cnd_diag_info)
+
    else
 
       call t_startf('cam_read_restart')
-      call cam_read_restart ( cam_in, cam_out, dyn_in, dyn_out, pbuf2d, stop_ymd, stop_tod, NLFileName=filein )
+      call cam_read_restart ( cam_in, cam_out, dyn_in, dyn_out, pbuf2d, phys_diag, stop_ymd, stop_tod, NLFileName=filein )
       call t_stopf('cam_read_restart')
 
      ! Commented out the hub2atm_alloc call as it overwrite cam_in, which is undesirable. The fields in cam_in are necessary for getting BFB restarts
@@ -255,7 +262,11 @@ subroutine cam_run1(cam_in, cam_out)
    !
    call t_barrierf ('sync_phys_run1', mpicom)
    call t_startf ('phys_run1')
+#if defined(MMF_SAMXX)
    call phys_run1(phys_state, dtime, phys_tend, pbuf2d,  cam_in, cam_out)
+#else
+   call phys_run1(phys_state, dtime, phys_tend, pbuf2d,  cam_in, cam_out, phys_diag)
+#endif
    call t_stopf  ('phys_run1')
 
 end subroutine cam_run1
@@ -290,7 +301,11 @@ subroutine cam_run2( cam_out, cam_in )
    !
    call t_barrierf ('sync_phys_run2', mpicom)
    call t_startf ('phys_run2')
-   call phys_run2(phys_state, dtime, phys_tend, pbuf2d,  cam_out, cam_in )
+#if defined(MMF_SAMXX)
+   call phys_run2(phys_state, dtime, phys_tend, pbuf2d,  cam_out, cam_in)
+#else
+   call phys_run2(phys_state, dtime, phys_tend, pbuf2d,  cam_out, cam_in, phys_diag)
+#endif
    call t_stopf  ('phys_run2')
 
    !
@@ -399,10 +414,10 @@ subroutine cam_run4( cam_out, cam_in, rstwr, nlend, &
    if (rstwr) then
       call t_startf ('cam_write_restart')
       if (present(yr_spec).and.present(mon_spec).and.present(day_spec).and.present(sec_spec)) then
-         call cam_write_restart( cam_in, cam_out, dyn_out, pbuf2d, &
+         call cam_write_restart( cam_in, cam_out, dyn_out, pbuf2d, phys_diag, &
               yr_spec=yr_spec, mon_spec=mon_spec, day_spec=day_spec, sec_spec= sec_spec )
       else
-         call cam_write_restart( cam_in, cam_out, dyn_out, pbuf2d )
+         call cam_write_restart( cam_in, cam_out, dyn_out, pbuf2d, phys_diag )
       end if
       call t_stopf  ('cam_write_restart')
    end if
@@ -469,7 +484,11 @@ subroutine cam_final( cam_out, cam_in )
 #endif
 
    call t_startf ('phys_final')
-   call phys_final( phys_state, phys_tend , pbuf2d)
+#if defined(MMF_SAMXX)
+   call phys_final( phys_state, phys_tend , pbuf2d )
+#else
+   call phys_final( phys_state, phys_tend , pbuf2d, phys_diag )
+#endif
    call t_stopf ('phys_final')
 
    call t_startf ('stepon_final')

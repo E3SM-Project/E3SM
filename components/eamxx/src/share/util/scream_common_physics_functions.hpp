@@ -29,7 +29,7 @@ struct PhysicsFunctions
   //   grid_dx = mpdeglat * area
   // where,
   //   mpdeglat is the distance between two points on an ellipsoid
-  //   area     is the area of the column cell in radians. 
+  //   area     is the area of the column cell in radians.
   //   lat      is the latitude of the grid column in radians.
   // NOTE - Here we assume that the column area is a SQUARE so dx=dy.  We will need a different
   //        routine for a rectangular (or other shape) area.
@@ -181,6 +181,37 @@ struct PhysicsFunctions
   static ScalarT calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv_dry);
 
   //-----------------------------------------------------------------------------------------------//
+  // Computes drymmr (mass of a constituent divided by mass of dry air)
+  // for any wetmmr constituent (mass of a constituent divided by mass of wet air;
+  // commonly known as mixing ratio) using dry and wet pseudodensities
+  //   drymmr = wetmmr * pdel / pdeldry
+  // where
+  //   wetmmr             is the wet mass mixing ratio of a species
+  //   pseudo_density     is wet pseudodensity (pdel)
+  //   pseudo_density_dry is dry pseudodensity (pdeldry)
+  //-----------------------------------------------------------------------------------------------//
+
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_drymmr_from_wetmmr_dp_based(const ScalarT& wetmmr, 
+                                                       const ScalarT& pseudo_density, const ScalarT& pseudo_density_dry);
+
+  //-----------------------------------------------------------------------------------------------//
+  // Computes wetmmr (mass of a constituent divided by mass of wet air)
+  // for any drymmr constituent (mass of a constituent divided by mass of dry air;
+  // commonly known as mixing ratio) using dry and wet pseudodensities
+  //   wetmmr = drymmr * pdeldry / pdelwet
+  // where
+  //   drymmr             is the dry mass mixing ratio of a species
+  //   pseudo_density     is wet pseudodensity (pdel)
+  //   pseudo_density_dry is dry pseudodensity (pdeldry)
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_wetmmr_from_drymmr_dp_based(const ScalarT& drymmr,
+                                                       const ScalarT& pseudo_density, const ScalarT& pseudo_density_dry);
+
+  //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer thickness using the equation of state:
   //   dz = - (-pseudo_density)*Rd*T_virtual / (p_mid*g)
   // where
@@ -245,6 +276,20 @@ struct PhysicsFunctions
   static Real calculate_surface_air_T(const Real& T_mid_bot, const Real& z_mid_bot);
 
   //-----------------------------------------------------------------------------------------------//
+  // Compute the lapse rate and effective ground temperature for use in calculating psl. This function should only
+  // be used by calculate_psl.
+  // INPUTS:
+  // T_ground is the air temperature at the bottom of the cell closest to the surface (aka T_int[nlev+1]; K)
+  // phi_ground is the geopotential at surface (aka surf_geopotential; m2/s2)
+  // OUTPUTS:
+  // lapse (K/m) is the lapse rate
+  // T_ground_tmp is the effective ground temperature (K)
+  //-----------------------------------------------------------------------------------------------//
+  KOKKOS_INLINE_FUNCTION
+  static void lapse_T_for_psl(const Real& T_ground, const Real& phi_ground,
+                              Real& lapse, Real& T_ground_tmp );
+
+  //-----------------------------------------------------------------------------------------------//
   // Calculate sea level pressure assuming dry air between ground and sea level and using a lapse
   // rate of 6.5K/km except in very warm conditions. See docs/tech_doc/physics/psl/psl_doc.tex for details
   // INPUTS:
@@ -255,23 +300,8 @@ struct PhysicsFunctions
   // psl is the sea level pressure (Pa)
   //-----------------------------------------------------------------------------------------------//
   KOKKOS_INLINE_FUNCTION
-  static void lapse_T_for_psl(const Real& T_ground, const Real& phi_ground,
-				 Real& lapse, Real& T_ground_tmp );
-
-  //-----------------------------------------------------------------------------------------------//
-  // Compute the lapse rate and effective ground temperature for use in calculating psl. This function should only
-  // be used by calculate_psl.
-  // INPUTS:
-  // T_ground is the air temperature at the bottom of the cell closest to the surface (aka T_int[nlev+1]; K)
-  // p_ground is the pressure at the bottom of the cell closest to the surface (Pa)
-  // phi_ground is the geopotential at surface (aka surf_geopotential; m2/s2)
-  // OUTPUTS:
-  // lapse (K/m) is the lapse rate
-  // T_ground_tmp is the effective ground temperature (K)
-  //-----------------------------------------------------------------------------------------------//
-  KOKKOS_INLINE_FUNCTION
   static Real calculate_psl(const Real& T_ground, const Real& p_ground, const Real& phi_ground);
-  
+
   //-----------------------------------------------------------------------------------------------//
   // Apply rayleigh friction. Given the decay rate profile, we compute the tendencies in u
   // and v components of the horizontal wind using an Euler backward scheme, and then apply
@@ -289,7 +319,7 @@ struct PhysicsFunctions
   KOKKOS_INLINE_FUNCTION
   static void apply_rayleigh_friction(const Real dt, const ScalarT& otau,
                                       ScalarT& u_wind, ScalarT& v_wind, ScalarT& T_mid);
-  
+
   // ---------------------------------------------------------------- //
   //                     Whole column Functions                       //
   // ---------------------------------------------------------------- //
@@ -301,9 +331,8 @@ struct PhysicsFunctions
   // region; more precisely, they should be called from within the    //
   // outermost parallel_for, which should have been dispatched with a //
   // TeamPolicy. In other words, these routines will dispatch a       //
-  // parallel_for using a TeamThreadRange policy. No third layer of   //
-  // parallelism will be used (no ThreadVectorRange for loop), so the //
-  // team policy on GPU should be built with vector_length=1.         //
+  // parallel_for using a TeamVectorRange policy with no third layer  //
+  // of parallelism (no ThreadVectorRange for loop).                  //
   // The routines are templated on the type of their inputs, so that  //
   // these can be 1d views as well as other routines (e.g. lambdas).  //
   // The only requirement is that the provider supports op()(int k),  //
@@ -394,6 +423,22 @@ struct PhysicsFunctions
   static void calculate_drymmr_from_wetmmr (const MemberType& team,
                              const InputProviderX& wetmmr,
                              const InputProviderQ& qv_wet,
+                             const view_1d<ScalarT>& drymmr);
+
+  template<typename ScalarT, typename InputProviderX, typename InputProviderPD>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_wetmmr_from_drymmr_dp_based (const MemberType& team,
+                             const InputProviderX& drymmr,
+                             const InputProviderPD& pseudo_density,
+                             const InputProviderPD& pseudo_density_dry,
+                             const view_1d<ScalarT>& wetmmr);
+
+  template<typename ScalarT, typename InputProviderX, typename InputProviderPD>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_drymmr_from_wetmmr_dp_based (const MemberType& team,
+                             const InputProviderX& wetmmr,
+                             const InputProviderPD& pseudo_density,
+                             const InputProviderPD& pseudo_density_dry,
                              const view_1d<ScalarT>& drymmr);
 
   template<typename ScalarT,

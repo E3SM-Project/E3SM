@@ -29,7 +29,7 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Qunit = kg/kg;
   Qunit.set_string("kg/kg");
-  Units nondim(0,0,0,0,0,0,0);
+  auto nondim = Units::nondimensional();
   auto Wm2 = W / m / m;
   Wm2.set_string("W/m2)");
   const auto m2 = m*m;
@@ -53,6 +53,8 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Computed>("qv_2m",            scalar2d_layout, Qunit,   grid_name);
   add_field<Computed>("wind_speed_10m",   scalar2d_layout, m/s,     grid_name);
   add_field<Computed>("snow_depth_land",  scalar2d_layout, m,       grid_name);
+  add_field<Computed>("ocnfrac",          scalar2d_layout, nondim,  grid_name);
+  add_field<Computed>("landfrac",         scalar2d_layout, nondim,  grid_name);
 }
 // =========================================================================================
   void SurfaceCouplingImporter::setup_surface_coupling_data(const SCDataManager &sc_data_manager)
@@ -132,7 +134,7 @@ void SurfaceCouplingImporter::initialize_impl (const RunType /* run_type */)
   if (any_initial_imports) do_import(true);
 }
 // =========================================================================================
-void SurfaceCouplingImporter::run_impl (const int /* dt */)
+void SurfaceCouplingImporter::run_impl (const double /* dt */)
 {
   do_import();
 }

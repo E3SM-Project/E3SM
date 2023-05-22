@@ -74,7 +74,7 @@ protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void run_impl (const int /* dt */) {
+  void run_impl (const double /* dt */) {
     const int ncols = m_grid->get_num_local_dofs();
     const int nlevs = m_grid->get_num_vertical_levels();
     auto policy = KokkosTypes<exec_space>::RangePolicy(0,ncols*nlevs);

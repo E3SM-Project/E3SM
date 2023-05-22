@@ -78,6 +78,8 @@ public:
   // Get the extra data
   const extra_data_type& get_extra_data () const { return m_extra_data; }
 
+  std::shared_ptr<FieldHeader> alias (const std::string& name) const;
+
 protected:
 
   // Friend this function, so it can set up a subfield header

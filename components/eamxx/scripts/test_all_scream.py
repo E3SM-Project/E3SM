@@ -25,7 +25,16 @@ from pathlib import Path
 class TestProperty(object):
 ###############################################################################
 
-    def __init__(self, longname, description, cmake_args, uses_baselines=True, on_by_default=True):
+    """
+    Parent class of predefined test types for SCREAM standalone. test-all-scream
+    offers a number of customization points, but you may need to just use
+    cmake if you need maximal customization. You can run test-all-scream --dry-run
+    to get the corresponding cmake command which can then be used as a starting
+    point for making your own cmake command.
+    """
+
+    def __init__(self, longname, description, cmake_args,
+                 uses_baselines=True, on_by_default=True, default_test_len=None):
         # What the user uses to select tests via test-all-scream CLI.
         # Should also match the class name when converted to caps
         self.shortname      = type(self).__name__.lower()
@@ -46,6 +55,9 @@ class TestProperty(object):
         # Should this test be run if the user did not specify tests at all?
         self.on_by_default  = on_by_default
 
+        # Should this test have a default test size
+        self.default_test_len = default_test_len
+
         #
         # Properties not set by constructor (Set by the main TestAllScream object)
         #
@@ -64,7 +76,6 @@ class TestProperty(object):
         if not self.uses_baselines:
             self.cmake_args += [("SCREAM_ENABLE_BASELINE_TESTS", "False")]
 
-    # Tests will generally be referred to via their longname
     def disable_baselines(self):
         if self.uses_baselines:
             self.uses_baselines = False
@@ -80,7 +91,7 @@ class DBG(TestProperty):
 
     CMAKE_ARGS = [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_DEFAULT_BFB", "True")]
 
-    def __init__(self):
+    def __init__(self, _):
         TestProperty.__init__(
             self,
             "full_debug",
@@ -92,7 +103,7 @@ class DBG(TestProperty):
 class SP(TestProperty):
 ###############################################################################
 
-    def __init__(self):
+    def __init__(self, _):
         TestProperty.__init__(
             self,
             "full_sp_debug",
@@ -104,20 +115,21 @@ class SP(TestProperty):
 class FPE(TestProperty):
 ###############################################################################
 
-    def __init__(self):
+    def __init__(self, tas):
         TestProperty.__init__(
             self,
             "debug_nopack_fpe",
             "debug pksize=1 floating point exceptions on",
             DBG.CMAKE_ARGS + [("SCREAM_PACK_SIZE", "1"), ("SCREAM_FPE","True")],
-            uses_baselines=False
+            uses_baselines=False,
+            on_by_default=(tas is not None and not tas.on_cuda())
         )
 
 ###############################################################################
 class OPT(TestProperty):
 ###############################################################################
 
-    def __init__(self):
+    def __init__(self, _):
         TestProperty.__init__(
             self,
             "release",
@@ -129,34 +141,131 @@ class OPT(TestProperty):
 class COV(TestProperty):
 ###############################################################################
 
-    def __init__(self):
+    def __init__(self, _):
         TestProperty.__init__(
             self,
             "coverage",
             "debug coverage",
             [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_ENABLE_COVERAGE", "True")],
             uses_baselines=False,
-            on_by_default=False
+            on_by_default=False,
+            default_test_len="short"
         )
 
 ###############################################################################
-def test_factory(user_req_tests, machine, mem_check):
+class VALG(TestProperty):
+###############################################################################
+
+    def __init__(self, tas):
+        TestProperty.__init__(
+            self,
+            "valgrind",
+            "debug with valgrind",
+            [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_ENABLE_VALGRIND", "True")],
+            uses_baselines=False,
+            on_by_default=False,
+            default_test_len="short"
+        )
+        if tas is not None:
+            # If a stored suppression file exists for this machine, use it
+            persistent_supp_file = tas.get_root_dir() / "scripts" / "jenkins" / "valgrind" / f"{tas.get_machine()}.supp"
+            if persistent_supp_file.exists():
+                self.cmake_args.append( ("EKAT_VALGRIND_SUPPRESSION_FILE", str(persistent_supp_file)) )
+
+###############################################################################
+class CMC(TestProperty):
+###############################################################################
+
+    def __init__(self, _):
+        TestProperty.__init__(
+            self,
+            "cuda_mem_check",
+            "debug with cuda memcheck",
+            [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_ENABLE_CUDA_MEMCHECK", "True")],
+            uses_baselines=False,
+            on_by_default=False,
+            default_test_len="short"
+        )
+
+###############################################################################
+class CSM(TestProperty):
+###############################################################################
+
+    def __init__(self, _):
+        TestProperty.__init__(
+            self,
+            "compute_santizer_memcheck",
+            "debug with compute sanitizer memcheck",
+            [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_ENABLE_COMPUTE_SANITIZER", "True")],
+            uses_baselines=False,
+            on_by_default=False,
+            default_test_len="short"
+        )
+
+###############################################################################
+class CSR(TestProperty):
+###############################################################################
+
+    def __init__(self, _):
+        TestProperty.__init__(
+            self,
+            "compute_santizer_racecheck",
+            "debug with compute sanitizer racecheck",
+            [("CMAKE_BUILD_TYPE", "Debug"),
+             ("EKAT_ENABLE_COMPUTE_SANITIZER", "True"),
+             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "'--tool racecheck'")],
+            uses_baselines=False,
+            on_by_default=False,
+            default_test_len="short"
+        )
+
+###############################################################################
+class CSI(TestProperty):
+###############################################################################
+
+    def __init__(self, _):
+        TestProperty.__init__(
+            self,
+            "compute_santizer_initcheck",
+            "debug with compute sanitizer initcheck",
+            [("CMAKE_BUILD_TYPE", "Debug"),
+             ("EKAT_ENABLE_COMPUTE_SANITIZER", "True"),
+             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "'--tool initcheck'")],
+            uses_baselines=False,
+            on_by_default=False,
+            default_test_len="short"
+        )
+
+###############################################################################
+class CSS(TestProperty):
+###############################################################################
+
+    def __init__(self, _):
+        TestProperty.__init__(
+            self,
+            "compute_santizer_synccheck",
+            "debug with compute sanitizer synccheck",
+            [("CMAKE_BUILD_TYPE", "Debug"),
+             ("EKAT_ENABLE_COMPUTE_SANITIZER", "True"),
+             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "'--tool synccheck'")],
+            uses_baselines=False,
+            on_by_default=False,
+            default_test_len="short"
+        )
+
+###############################################################################
+def test_factory(user_req_tests, tas):
 ###############################################################################
     testclasses = TestProperty.__subclasses__()
     if not user_req_tests:
-        result = [testclass() for testclass in testclasses
-            if (testclass().on_by_default and not (is_cuda_machine(machine) and testclass().shortname == "fpe"))]
+        result = [testclass(tas) for testclass in testclasses
+                  if testclass(tas).on_by_default]
     else:
-        valid_names = [testclass().shortname for testclass in testclasses]
+        valid_names = [testclass(tas).shortname for testclass in testclasses]
         for user_req_test in user_req_tests:
             expect(user_req_test in valid_names, f"'{user_req_test}' is not a known test")
 
-        result = [testclass() for testclass in testclasses if testclass().shortname in user_req_tests]
-
-    # Mangle test full name if mem_check is on
-    if mem_check:
-        for test in result:
-            test.longname += "_cuda_mem_check" if is_cuda_machine(machine) else "_valgrind"
+        result = [testclass(tas) for testclass in testclasses if testclass(tas).shortname in user_req_tests]
 
     return result
 
@@ -172,7 +281,7 @@ class TestAllScream(object):
         Returns a dict mapping short test names to full names
         """
         testclasses = TestProperty.__subclasses__()
-        return OrderedDict([(testc().shortname, testc().description) for testc in testclasses])
+        return OrderedDict([(testc(None).shortname, testc(None).description) for testc in testclasses])
 
     ###########################################################################
     def __init__(self, cxx_compiler=None, f90_compiler=None, c_compiler=None,
@@ -182,8 +291,8 @@ class TestAllScream(object):
                  integration_test=False, local=False, root_dir=None, work_dir=None,
                  quick_rerun=False,quick_rerun_failed=False,dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0, update_expired_baselines=False,
-                 extra_verbose=False, limit_test_regex=None, test_level="at",
-                 mem_check=False, force_baseline_regen=False):
+                 extra_verbose=False, limit_test_regex=None, test_level="at", test_size=None,
+                 force_baseline_regen=False):
     ###########################################################################
 
         # When using scripts-tests, we can't pass "-l" to test-all-scream,
@@ -219,7 +328,7 @@ class TestAllScream(object):
         self._extra_verbose           = extra_verbose
         self._limit_test_regex        = limit_test_regex
         self._test_level              = test_level
-        self._mem_check               = mem_check
+        self._test_size               = test_size
         self._force_baseline_regen    = force_baseline_regen
 
         # Not all builds are ment to perform comparisons against pre-built baselines
@@ -249,9 +358,6 @@ class TestAllScream(object):
         else:
             expect (not self._local, "Specifying a machine while passing '-l,--local' is ambiguous.")
 
-        # Make our test objects!
-        self._tests = test_factory(tests, self._machine, self._mem_check)
-
         # Compute root dir (where repo is) and work dir (where build/test will happen)
         if not self._root_dir:
             self._root_dir = Path(__file__).resolve().parent.parent
@@ -259,6 +365,11 @@ class TestAllScream(object):
             self._root_dir = Path(self._root_dir).resolve()
             expect(self._root_dir.is_dir() and self._root_dir.parts()[-2:] == ('scream', 'components'),
                    f"Bad root-dir '{self._root_dir}', should be: $scream_repo/components/eamxx")
+
+        # Make our test objects! Change mem to default mem-check test for current platform
+        if "mem" in tests:
+            tests[tests.index("mem")] = "cmc" if self.on_cuda() else "valg"
+        self._tests = test_factory(tests, self)
 
         if self._work_dir is not None:
             self._work_dir = Path(self._work_dir).absolute()
@@ -319,7 +430,7 @@ class TestAllScream(object):
 
             # Avoid splitting physical cores across test types
             make_jobs_per_test  = ((make_max_jobs  // len(self._tests)) // log_per_phys) * log_per_phys
-            if is_cuda_machine(self._machine):
+            if self.on_cuda():
                 ctest_jobs_per_test = ctest_max_jobs // len(self._tests)
             else:
                 ctest_jobs_per_test = ((ctest_max_jobs // len(self._tests)) // log_per_phys) * log_per_phys
@@ -413,13 +524,9 @@ class TestAllScream(object):
 
         # Do not do baseline operations if mem checking is on
         print (f"Checking baselines directory: {self._baseline_dir}")
-        if self._mem_check:
-            for test in self._tests:
-                test.disable_baselines()
-        else:
-            self.baselines_are_present()
-            if self._update_expired_baselines:
-                self.baselines_are_expired()
+        self.baselines_are_present()
+        if self._update_expired_baselines:
+            self.baselines_are_expired()
 
         ############################################
         #    Deduce compilers if needed/possible   #
@@ -479,6 +586,21 @@ class TestAllScream(object):
     def get_test_dir(self, root, test):
     ###############################################################################
         return root/str(test)
+
+    ###############################################################################
+    def get_root_dir(self):
+    ###############################################################################
+        return self._root_dir
+
+    ###############################################################################
+    def get_machine(self):
+    ###############################################################################
+        return self._machine
+
+    ###########################################################################
+    def on_cuda(self):
+    ###########################################################################
+        return is_cuda_machine(self._machine)
 
     ###############################################################################
     def get_preexisting_baseline(self, test):
@@ -548,7 +670,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
                     if num_ref_is_ahead_file > 0 or self._force_baseline_regen:
                         test.missing_baselines = True
                         reason = "forcing baseline regen" if self._force_baseline_regen \
-                                 else "f{self._baseline_ref} is ahead of the baseline commit by {num_ref_is_ahead_file}"
+                                 else f"{self._baseline_ref} is ahead of the baseline commit by {num_ref_is_ahead_file}"
                         print(f" -> Test {test} baselines are expired because {reason}")
                     else:
                         print(f" -> Test {test} baselines are valid and do not need to be regenerated")
@@ -562,7 +684,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             return self._root_dir/"cmake"/"machine-files"/f"{self._machine}.cmake"
 
     ###############################################################################
-    def generate_cmake_config(self, extra_configs, for_ctest=False):
+    def generate_cmake_config(self, test, for_ctest=False):
     ###############################################################################
 
         # Ctest only needs config options, and doesn't need the leading 'cmake '
@@ -579,7 +701,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             result += f" -DNetCDF_C_PATH={c_path}"
 
         # Test-specific cmake options
-        for key, value in extra_configs:
+        for key, value in test.cmake_args:
             result += f" -D{key}={value}"
 
         # The output coming from all tests at the same time will be a mixed-up mess
@@ -595,11 +717,12 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         elif self._test_level == "experimental":
             result += " -DSCREAM_TEST_LEVEL=EXPERIMENTAL"
 
-        # Add configs for mem checking
-        if self._mem_check:
-            # valgrind/cmc slow down things a lot, we need to run tests in short mode
-            result += " -DSCREAM_TEST_SIZE=SHORT"
-            result += f" -DEKAT_ENABLE_{'CUDA_MEMCHECK' if is_cuda_machine(self._machine) else 'VALGRIND'}=True"
+        # Define test size. Default is to let it be undefined and CMake will pick
+        # unless test has a special default test length
+        if self._test_size:
+            result += f" -DSCREAM_TEST_SIZE={self._test_size.upper()}"
+        elif test.default_test_len:
+            result += f" -DSCREAM_TEST_SIZE={test.default_test_len.upper()}"
 
         # User-requested config options
         custom_opts_keys = []
@@ -629,7 +752,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
     ###############################################################################
         res_name = "compile_res_count" if for_compile else "testing_res_count"
 
-        if not for_compile and is_cuda_machine(self._machine):
+        if not for_compile and self.on_cuda():
             # For GPUs, the cpu affinity is irrelevant. Just assume all GPUS are open
             affinity_cp = list(range(self._ctest_max_jobs))
         else:
@@ -690,8 +813,6 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
     def generate_ctest_config(self, cmake_config, extra_configs, test):
     ###############################################################################
         result = ""
-        if self._submit:
-            result += f"SCREAM_MACHINE={self._machine} "
 
         test_dir = self.get_test_dir(self._work_dir,test)
         num_test_res = self.create_ctest_resource_file(test,test_dir)
@@ -717,17 +838,11 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         result += f"-DBUILD_WORK_DIR={work_dir} "
 
         build_name_mod = str(test)
-        if self._mem_check:
-            if self._submit:
-                # Need backwards compatible build name for db submission
-                expect(len(self._tests) == 1, "Expected only one mem-check test being submitted")
-                build_name_mod = "cuda_mem_check" if is_cuda_machine(self._machine) else "valgrind"
-
         result += f"-DBUILD_NAME_MOD={build_name_mod} "
 
         if self._limit_test_regex:
             result += f"-DINCLUDE_REGEX={self._limit_test_regex} "
-        result += f'-S {self._root_dir}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{cmake_config}" '
+        result += f'-S {self._root_dir}/cmake/ctest_script.cmake -DCTEST_SITE={self._machine} -DCMAKE_COMMAND="{cmake_config}" '
 
         # Ctest can only competently manage test pinning across a single instance of ctest. For
         # multiple concurrent instances of ctest, we have to help it. It's OK to use the compile_res_count
@@ -746,7 +861,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         test_dir = self.get_test_dir(self._baseline_dir, test)
 
-        cmake_config = self.generate_cmake_config(test.cmake_args)
+        cmake_config = self.generate_cmake_config(test)
         cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
         cmake_config += f" -DSCREAM_TEST_DATA_DIR={test_dir}/data"
 
@@ -837,7 +952,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         print("===============================================================================")
 
         test_dir = self.get_test_dir(self._work_dir,test)
-        cmake_config = self.generate_cmake_config(test.cmake_args, for_ctest=True)
+        cmake_config = self.generate_cmake_config(test, for_ctest=True)
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
 
         if self._config_only:
@@ -890,7 +1005,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         for t,s in tests_success.items():
             if not s:
-                last_test = self.get_last_ctest_file(t,"Tests")
+                last_test = self.get_last_ctest_file(t,"TestsFailed")
                 last_build  = self.get_last_ctest_file(t,"Build")
                 last_config = self.get_last_ctest_file(t,"Configure")
                 if last_test is not None:

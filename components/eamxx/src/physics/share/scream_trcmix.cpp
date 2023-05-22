@@ -59,7 +59,7 @@ void trcmix(
     const auto val = name == "o2" ? C::o2mmr : rmwco2 * co2vmr;
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const Int i = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&] (const Int& k) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs), [&] (const Int& k) {
         q(i, k) = val;
       });
     });
@@ -76,7 +76,7 @@ void trcmix(
 
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const Int i = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&] (const Int& k) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs), [&] (const Int& k) {
         // set stratospheric scale height factor for gases. Need to convert
         // clat to radians
         const auto clat_r = clat(i) * C::Pi/180.0;

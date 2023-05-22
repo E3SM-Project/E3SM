@@ -27,7 +27,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Qunit = kg/kg;
   Qunit.set_string("kg/kg");
-  Units nondim(0,0,0,0,0,0,0);
+  auto nondim = Units::nondimensional();
 
   m_grid = grids_manager->get_grid("Physics");
   const auto& grid_name = m_grid->name();
@@ -35,8 +35,8 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
-  m_cell_area = m_grid->get_geometry_data("area"); // area of each cell
-  m_cell_lat  = m_grid->get_geometry_data("lat"); // area of each cell
+  m_cell_area = m_grid->get_geometry_data("area").get_view<const Real*>(); // area of each cell
+  m_cell_lat  = m_grid->get_geometry_data("lat").get_view<const Real*>(); // area of each cell
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -282,32 +282,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
     Kokkos::deep_copy(tke_copy,0.0004);
     Kokkos::deep_copy(cldfrac_liq,0.0);
   }
-  // Find index of qv (water vapor, kg/kg(wet-air) and tke (J/kg(wet-air)) in the qtracer 3d view
-  // These indices are later used for converting tracers from wet mmr to dry mmr and vice-versa
-  auto qv_index  = tracer_info->m_subview_idx.at("qv");
-  auto tke_index = tracer_info->m_subview_idx.at("tke");
 
-  //Device view to store indices of tracers which will participate in wet<->dry conversion; we are excluding
-  //"tke" [as it is not "water based" tracer] and "qv"[as "qv" (before conversion) is needed for
-  //computing conversion for all other tracers] from qtracers view
-
-  view_1d_int convert_wet_dry_idx_d("convert_wet_dry_idx_d",m_num_tracers-2);  //2 tracers, qv and tke, are excluded
-
-  //mirror view on host
-  auto convert_wet_dry_idx_h = Kokkos::create_mirror_view(convert_wet_dry_idx_d);
-  //loop over all tracers to store of all tracer indices except for tke and qv
-  for (int it=0,iq=0; it<m_num_tracers; ++it) {
-    if (it!=qv_index && it!= tke_index) { //skip if "it" is a tke or qv index
-      convert_wet_dry_idx_h(iq) = it;
-      ++iq;
-    }
-  }
-
-  // copy to device
-  Kokkos::deep_copy(convert_wet_dry_idx_d,convert_wet_dry_idx_h);
-
-
-  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,convert_wet_dry_idx_d,z_surf,m_cell_area,m_cell_lat,
+  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,z_surf,m_cell_area,m_cell_lat,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_evap,
                                 surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,cell_length,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
@@ -385,7 +361,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   temporaries.tkh = m_buffer.tkh;
 #endif
 
-  shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,convert_wet_dry_idx_d,
+  shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,
                                  rrho,qv,qw,qc,qc_copy,tke,tke_copy,qtracers,shoc_ql2,
                                  cldfrac_liq,inv_qc_relvar,
                                  T_mid, dse, z_mid, phis);
@@ -425,8 +401,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   // maximum number of levels in pbl from surface
   const auto pref_mid = m_buffer.pref_mid;
   const auto s_pref_mid = ekat::scalarize(pref_mid);
-  const auto hyam = m_grid->get_geometry_data("hyam");
-  const auto hybm = m_grid->get_geometry_data("hybm");
+  const auto hyam = m_grid->get_geometry_data("hyam").get_view<const Real*>();
+  const auto hybm = m_grid->get_geometry_data("hybm").get_view<const Real*>();
   const auto ps0 = C::P0;
   const auto psref = ps0;
   Kokkos::parallel_for(Kokkos::RangePolicy<>(0, m_num_levs), KOKKOS_LAMBDA (const int lev) {
@@ -440,7 +416,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
 }
 
 // =========================================================================================
-void SHOCMacrophysics::run_impl (const int dt)
+void SHOCMacrophysics::run_impl (const double dt)
 {
   EKAT_REQUIRE_MSG (dt<=300,
       "Error! SHOC is intended to run with a timestep no longer than 5 minutes.\n"
@@ -461,7 +437,7 @@ void SHOCMacrophysics::run_impl (const int dt)
   // number of SHOC timesteps (nadv) to be 1.
   // TODO: input parameter?
   hdtime = dt;
-  m_nadv = std::max(hdtime/dt,1);
+  m_nadv = std::max(static_cast<int>(round(hdtime/dt)),1);
 
   // Reset internal WSM variables.
   workspace_mgr.reset_internals();

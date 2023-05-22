@@ -186,7 +186,8 @@ struct Session {
     p.transport_alg = 0;
     p.moisture = MoistDry::MOIST;
     p.theta_hydrostatic_mode = false;
-    p.rearth = PhysicalConstants::rearth0;
+    p.scale_factor = is_sphere ? PhysicalConstants::rearth0 : 1;
+    p.laplacian_rigid_factor = is_sphere ? 1/p.scale_factor : 0;
     p.params_set = true;
 
     const auto hyai = cmvdc(h.hybrid_ai);

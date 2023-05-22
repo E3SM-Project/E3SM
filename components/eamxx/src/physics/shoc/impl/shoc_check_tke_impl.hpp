@@ -18,7 +18,7 @@ void Functions<S,D>
   static constexpr auto mintke   = SC::mintke; // units:m2/s2
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
 
       //take max(mintke,tke(k))
       tke(k).set(tke(k) < mintke, mintke);

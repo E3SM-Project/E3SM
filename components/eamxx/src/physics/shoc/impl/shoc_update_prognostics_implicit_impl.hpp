@@ -140,7 +140,7 @@ void Functions<S,D>::update_prognostics_implicit(
       tke_s(nlev-1)    += cmnfac*wtke_sfc;
     });
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_qtracers), [&] (const Int& q) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_qtracers), [&] (const Int& q) {
       qtracers_s(q, nlev-1) += cmnfac*wtracer_sfc_s(q);
     });
   }

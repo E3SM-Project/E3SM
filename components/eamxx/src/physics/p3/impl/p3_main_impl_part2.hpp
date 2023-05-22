@@ -109,7 +109,7 @@ void Functions<S,D>
   team.team_barrier();
 
   Kokkos::parallel_for(
-    Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+    Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
 
     //compute mask to identify padded values in packs, which shouldn't be used in calculations
     const auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);

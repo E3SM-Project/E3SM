@@ -33,7 +33,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
-  std::string name () const { return "Radiation"; }
+  std::string name () const { return "rrtmgp"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grid_manager);
@@ -42,7 +42,7 @@ public:
 public:
   // The three main interfaces for the subcomponent
   void initialize_impl (const RunType run_type);
-  void run_impl        (const int dt);
+  void run_impl        (const double dt);
   void finalize_impl   ();
 
   // Keep track of number of columns and levels
@@ -51,8 +51,8 @@ public:
   int m_col_chunk_size;
   std::vector<int> m_col_chunk_beg;
   int m_nlay;
-  view_1d_real m_lat;
-  view_1d_real m_lon;
+  Field m_lat;
+  Field m_lon;
 
   // Whether we use aerosol forcing in radiation
   bool m_do_aerosol_rad;

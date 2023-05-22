@@ -643,7 +643,7 @@ subroutine diag_init()
    call addfld ('TREFHTMX',horiz_only,    'X','K','Maximum reference height temperature over output period')
    call addfld ('QREFHT',horiz_only,    'A','kg/kg','Reference height humidity', &
     standard_name = 'specific_humidity')
-   call addfld ('WINDSPD_10M',horiz_only,    'A','m/s','10m wind speed', &
+   call addfld ('U10',horiz_only,    'A','m/s','10m wind speed', &
      standard_name='wind_speed')
    call addfld ('RHREFHT',horiz_only,    'A','1','Reference height relative humidity')
 
@@ -684,7 +684,7 @@ subroutine diag_init()
        call add_default ('LANDFRAC', 1, ' ')
        call add_default ('OCNFRAC ', 1, ' ')
        call add_default ('QREFHT  ', 1, ' ')
-       call add_default ('WINDSPD_10M', 1, ' ')
+       call add_default ('U10     ', 1, ' ')
        call add_default ('ICEFRAC ', 1, ' ')
        call add_default ('TS      ', 1, ' ')
        call add_default ('TSMN    ', 1, ' ')
@@ -2130,7 +2130,7 @@ subroutine diag_surf (cam_in, cam_out, ps, trefmxav, trefmnav )
     call outfld('TREFHTMX', cam_in%tref,      pcols, lchnk)
     call outfld('TREFHTMN', cam_in%tref,      pcols, lchnk)
     call outfld('QREFHT',   cam_in%qref,      pcols, lchnk)
-    call outfld('WINDSPD_10M',      cam_in%u10,       pcols, lchnk)
+    call outfld('U10',      cam_in%u10,       pcols, lchnk)
 ! 
 ! Calculate and output reference height RH (RHREFHT)
 

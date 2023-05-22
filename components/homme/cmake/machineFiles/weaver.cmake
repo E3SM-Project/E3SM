@@ -1,15 +1,13 @@
 ## config that worked for this file:
-## export PATH=/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/weaver/bin:$PATH
 #
 #  1) binutils/2.30.0                                       8) curl/7.46.0
-#  2) gcc/7.2.0                                             9) openblas/0.2.20/gcc/7.2.0
-#  3) cuda/10.1.105                                        10) hdf5/1.10.5/openmpi/4.0.1/gcc/7.2.0/cuda/10.1.105
-#  4) numa/2.0.11                                          11) pnetcdf/1.9.0/openmpi/4.0.1/gcc/7.2.0/cuda/10.1.105
-#  5) openmpi/4.0.1/gcc/7.2.0/cuda/10.1.105                12) netcdf/4.6.1/openmpi/4.0.1/gcc/7.2.0/cuda/10.1.105
-#  6) openssl/1.0.2k                                       13) cmake/3.19.3
-#  7) zlib/1.2.8
-
-
+#  2) gcc/8.3.1                                             9) openblas/0.3.18/gcc/8.3.1
+#  3) cuda/11.2.2/gcc/8.3.1                                10) hdf5/1.10.7/gcc/8.3.1/openmpi/4.1.1
+#  4) numa/2.0.11                                          11) netcdf-c/4.8.1/gcc/8.3.1/openmpi/4.1.1
+#  5) openmpi/4.1.1/gcc/8.3.1/cuda/11.2.2                  12) netcdf-cxx/4.2/gcc/8.3.1/openmpi/4.1.1
+#  6) openssl/1.0.2k                                       14) netcdf-fortran/4.5.4/gcc/8.3.1/openmpi/4.1.1
+#  7) zlib/1.2.8                                           15) parallel-netcdf/1.12.2/gcc/8.3.1/openmpi/4.1.1
+#                                                          16) cmake/3.23.1
 
 EXECUTE_PROCESS(COMMAND nf-config --prefix
   RESULT_VARIABLE NFCONFIG_RESULT
@@ -55,7 +53,7 @@ set(HAVE_EXTRAE TRUE CACHE BOOL "")
 set(ENABLE_COLUMN_OPENMP OFF CACHE BOOL "")
 set(ENABLE_HORIZ_OPENMP OFF CACHE BOOL "")
 set(HOMMEXX_EXEC_SPACE "CUDA" CACHE STRING "")
-
+set(HOMMEXX_CUDA_MAX_WARP_PER_TEAM 8 CACHE STRING "")
 
 SET(BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
 SET(BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")

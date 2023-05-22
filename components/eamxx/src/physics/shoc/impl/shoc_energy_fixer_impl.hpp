@@ -78,7 +78,7 @@ void Functions<S,D>::shoc_energy_fixer(
                 "SHOC: violated assumption in parallel reduce.");
   Int shoctop = 0;
   const auto nlevm2_packs = ekat::npack<Spack>(nlev-2);
-  Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nlevm2_packs),
+  Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, nlevm2_packs),
                           [&] (Int k, Int& local_shoctop) {
     // Find the minimum index corresponding to mintke!=tke(indx).
     // Here we set all indices s.t. tke==mintke to nlev-2 since
@@ -98,7 +98,7 @@ void Functions<S,D>::shoc_energy_fixer(
   // Update host_dse
   const int shoctop_pack = shoctop/Spack::n;
   const auto nlev_packs = ekat::npack<Spack>(nlev);
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, shoctop_pack, nlev_packs), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, shoctop_pack, nlev_packs), [&] (const Int& k) {
     auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
 
     host_dse(k).set(range_pack >= shoctop && range_pack < nlev, host_dse(k)-se_dis*ggr);

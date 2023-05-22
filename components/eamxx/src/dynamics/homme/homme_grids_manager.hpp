@@ -39,6 +39,9 @@ protected:
 
   void build_pg_codes ();
 
+  // Read vertical coordinates and set them in hommexx's structures
+  void initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid);
+
   ekat::Comm            m_comm;
 
   ekat::ParameterList   m_params;

@@ -4,11 +4,9 @@
 namespace scream
 {
 
-// ================================= IMPLEMENTATION ================================== //
-
 Field::
 Field (const identifier_type& id)
- : m_header     (create_header(id))
+ : m_header (create_header(id))
 {
   // Nothing to do here
 }
@@ -22,9 +20,25 @@ Field::get_const() const {
 
 Field
 Field::clone() const {
+  return clone(name());
+}
 
+Field
+Field::alias (const std::string& name) const {
+  Field f;
+  f.m_header = get_header().alias(name);
+  f.m_data = m_data;
+  f.m_is_read_only = m_is_read_only;
+  return f;
+}
+
+Field
+Field::clone(const std::string& name) const {
   // Create new field
-  Field f(get_header().get_identifier());
+  const auto& my_fid = get_header().get_identifier();
+  FieldIdentifier fid(name,my_fid.get_layout(),my_fid.get_units(),
+                      my_fid.get_grid_name(),my_fid.data_type());
+  Field f(fid);
 
   // Ensure alloc props match
   const auto&  ap = get_header().get_alloc_properties();
@@ -39,7 +53,8 @@ Field::clone() const {
   f.get_header().get_tracking().update_time_stamp(ts);
 
   // Deep copy
-  f.deep_copy(*this);
+  f.deep_copy<Device>(*this);
+  f.deep_copy<Host>(*this);
 
   return f;
 }

@@ -1330,6 +1330,120 @@ error tolerance for CO2 conservation
 Default: 5.e-13
 </entry>
 
+<!-- CondiDiag-->
+
+<entry id="metric_name" type="char*8(10)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+List of fields to use as metrics in conditional sampling.
+Default: none
+</entry>
+
+<entry id="metric_nver" type="integer(10)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Numbers of vertical levels of the metrics used in conditional sampling
+Different metrics can have different vertical dimension sizes.
+Default: none
+</entry>
+
+<entry id="metric_cmpr_type" type="integer(10)"  category="history"
+       group="conditional_diag_nl" valid_values="-2,-1,0,1,2" >
+Types of comparison to be used in conditional sampling:
+-2 means .le.,
+-1 means .lt.,
+ 0 means .eq. within tolerance,
+ 1 means .gt.,
+ 2 means .ge..
+Different metrics can have different comparison types.
+Default: none
+</entry>
+
+<entry id="metric_threshold" type="real(10)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Thresholds to be used in conditional sampling.
+Different metrics can have different thresholds.
+Default: none
+</entry>
+
+<entry id="metric_tolerance" type="real(10)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Tolerances for the "equal to" comparison type if the type is
+specified using metric_cmpr_type. The values are ignored
+if other comparison types are specified.
+Default: none
+</entry>
+
+<entry id="cnd_eval_chkpt" type="char*10(10)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+A list. Each element specifies the checkpoint at which the
+corresponding conditional sampling criterion
+will be evaluated. The number of checkpoints specified here
+should match the number of non-empty elements in metric_name;
+Default: none
+</entry>
+
+<entry id="cnd_end_chkpt" type="char*10(10)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+A list. Each element specifies the checkpoint that marks the end
+of validity of the corresponding sampling condition.
+At this checkpoint, the masking of QoIs will be done
+and the masked values will be sent to history buffer.
+Default: none
+</entry>
+
+<entry id="qoi_name" type="char*8(20)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+List of fields (Quantities of Interest, QoIs) to be
+monitored or conditionally sampled.
+Default: none
+</entry>
+
+<entry id="qoi_nver" type="integer(20)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Dimension sizes of the QoIs.
+Default: none
+</entry>
+
+<entry id="qoi_x_dp" type="integer(20)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Whether a QoI should be multiplied by dp for output;
+if so, wet or dry.
+Default: none
+</entry>
+
+
+<entry id="qoi_chkpt" type="char*10(250)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Checkpoints at which QoIs will be monitored or conditionally sampled.
+Default: none
+</entry>
+
+<entry id="chkpt_x_dp" type="integer(250)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Whether QoIs at a checkpoint should be multiplied by dp
+for output if applicable; if so, wet or dry.
+Default: none
+</entry>
+
+<entry id="l_output_state" type="logical"  category="history"
+       group="conditional_diag_nl" valid_values=".true.,.false." >
+Whether the state of the above-specified fields will be written
+to history file(s).
+Default: none
+</entry>
+
+<entry id="l_output_incrm" type="logical"  category="history"
+       group="conditional_diag_nl" valid_values=".true.,.false." >
+Whether the increments of the above-specified fields will be written
+to history file(s).
+Default: none
+</entry>
+
+<entry id="hist_tape_with_all_output" type="integer(10)"  category="history"
+       group="conditional_diag_nl" valid_values="" >
+Indices of history tapes that will each contain a whole suite of CondiDiag output.
+Default: none
+</entry>
+
 <!-- History and Initial Conditions Output -->
 
 <entry id="avgflag_pertape" type="char*1(15)"  category="history"
@@ -2827,6 +2941,12 @@ Default: TRUE
        group="phys_ctl_nl" valid_values="" >
 Do radiative transfer and heating/cooling calculation.
 Default: TRUE
+</entry>
+
+<entry id="cflx_cpl_opt" type="integer" category="process_coupling"
+       group="phys_ctl_nl" valid_values="" >
+Numerical scheme for coupling surface tracer fluxes with the rest of model.
+Default: 1 
 </entry>
 
 <!-- Physics sub-column switches -->

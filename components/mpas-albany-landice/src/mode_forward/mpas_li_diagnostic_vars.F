@@ -235,8 +235,8 @@ contains
       real (kind=RKIND) :: slopeCellMagnitude
       real (kind=RKIND) :: dCell
       integer :: iCell, iEdge, iLevel
-      real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND
-      !<- This is ~300 million years in seconds, but it is small enough not too overflow
+      real (kind=RKIND), parameter :: bigNumber = 1.0e11_RKIND
+      !<- This is 5000 years in seconds.  Small enough to avoid timekeeping overflow
       real (kind=RKIND), parameter :: smallNumber = 1.0e-36_RKIND
       logical :: divideSingularityFound
 

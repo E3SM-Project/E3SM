@@ -75,7 +75,7 @@ contains
   end subroutine init_params_f90
 
   function get_homme_int_param_f90 (param_name_c) result(param_value) bind(c)
-    use dimensions_mod,    only: qsize, nlev, np, ne
+    use dimensions_mod,    only: qsize, nlev, np, ne, nelem
     use control_mod,       only: ftype
     use homme_context_mod, only: elem
     !
@@ -98,7 +98,7 @@ contains
       case("ne")
         param_value = ne
       case("nelem")
-        param_value = ne*ne*6
+        param_value = nelem
       case("qsize")
         param_value = qsize
       case("num momentum forcings")

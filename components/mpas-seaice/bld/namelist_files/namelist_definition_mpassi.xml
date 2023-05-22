@@ -2768,6 +2768,49 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- AM_thicknesses -->
+
+<entry id="config_AM_thicknesses_enable" type="logical"
+	category="AM_thicknesses" group="AM_thicknesses">
+If true, ocean analysis member thicknesses is called.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_thicknesses_compute_interval" type="char*1024"
+	category="AM_thicknesses" group="AM_thicknesses">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_thicknesses_output_stream" type="char*1024"
+	category="AM_thicknesses" group="AM_thicknesses">
+Name of the stream that the thicknesses analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_thicknesses_compute_on_startup" type="logical"
+	category="AM_thicknesses" group="AM_thicknesses">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_thicknesses_write_on_startup" type="logical"
+	category="AM_thicknesses" group="AM_thicknesses">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- AM_regionalStatistics -->
 
 <entry id="config_AM_regionalStatistics_enable" type="logical"

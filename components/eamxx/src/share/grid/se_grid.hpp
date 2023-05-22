@@ -35,16 +35,17 @@ public:
     return m_num_global_elem;
   }
 
-  // Set/retrieve the CG grid dofs
-  void set_cg_dofs (const dofs_list_type& cg_dofs);
-  const dofs_list_type& get_cg_dofs_gids () const;
+  // Retrieve list of the CG grid dofs. Const version returns a read-only field
+  Field get_cg_dofs_gids ();
+  Field get_cg_dofs_gids () const;
 
   std::shared_ptr<AbstractGrid> clone (const std::string& clone_name,
                                        const bool shallow) const override;
 
+  bool check_valid_dofs()        const override;
+  bool check_valid_lid_to_idx () const override;
+
 protected:
-  bool valid_dofs_list (const dofs_list_type& dofs_gids)      const override;
-  bool valid_lid_to_idx_map (const lid_to_idx_map_type& lid_to_idx) const override;
 
   // SE dims
   int       m_num_local_elem;
@@ -52,8 +53,7 @@ protected:
   int       m_num_gp;
 
   // The dofs gids for a CG version of this grid
-  dofs_list_type m_cg_dofs_gids;
-  bool m_cg_dofs_set = false;
+  Field m_cg_dofs_gids;
 };
 
 } // namespace scream

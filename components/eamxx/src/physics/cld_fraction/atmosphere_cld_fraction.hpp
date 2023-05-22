@@ -32,7 +32,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
-  std::string name () const { return "CldFraction"; }
+  std::string name () const { return "cld_fraction"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -41,12 +41,16 @@ protected:
 
   // The three main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
-  void run_impl        (const int dt);
+  void run_impl        (const double dt);
   void finalize_impl   ();
 
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 
   Int m_num_levs;
+
+  // Parameters for cloud fraction cutoff
+  Real m_icecloud_threshold;
+  Real m_icecloud_for_analysis_threshold;
 
   std::shared_ptr<const AbstractGrid> m_grid;
 }; // class CldFraction

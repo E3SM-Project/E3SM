@@ -58,6 +58,9 @@
 [submodule "externals/mct"]
 	path = externals/mct
 	url = git@github.com:MCSclimate/MCT.git
+[submodule "components/mpas-albany-landice/src/SeaLevelModel"]
+	path = components/mpas-albany-landice/src/SeaLevelModel
+	url = git@github.com:MALI-Dev/1DSeaLevelModel_FWTW.git
 [submodule "components/mpas-ocean/src/SHTNS"]
 	path = components/mpas-ocean/src/SHTNS
 	url = https://bitbucket.org/nschaeff/shtns.git
@@ -71,3 +74,9 @@
 	path = components/ww3/src/WW3
 	url = git@github.com:E3SM-Project/WW3.git
 	branch = e3sm
+[submodule "externals/haero"]
+	path = externals/haero
+	url = git@github.com:eagles-project/haero.git
+[submodule "externals/mam4xx"]
+	path = externals/mam4xx
+	url = git@github.com:eagles-project/mam4xx.git

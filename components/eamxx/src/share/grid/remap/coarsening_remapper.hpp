@@ -2,8 +2,9 @@
 #define SCREAM_COARSENING_REMAPPER_HPP
 
 #include "share/grid/remap/abstract_remapper.hpp"
-
 #include "scream_config.h"
+
+#include "ekat/ekat_pack.hpp"
 
 #include <mpi.h>
 
@@ -47,7 +48,8 @@ class CoarseningRemapper : public AbstractRemapper
 public:
 
   CoarseningRemapper (const grid_ptr_type& src_grid,
-                      const std::string& map_file);
+                      const std::string& map_file,
+                      const bool track_mask = false);
 
   ~CoarseningRemapper ();
 
@@ -117,14 +119,14 @@ protected:
   void setup_mpi_data_structures ();
 
   int gid2lid (const gid_t gid, const grid_ptr_type& grid) const {
-    const auto gids = grid->get_dofs_gids_host();
+    const auto gids = grid->get_dofs_gids().get_view<const gid_t*,Host>();
     const auto beg = gids.data();
     const auto end = gids.data()+grid->get_num_local_dofs();
     const auto it = std::find(beg,end,gid);
     return it==end ? -1 : std::distance(beg,it);
   }
 
-  view_1d<gid_t>::HostMirror
+  std::vector<gid_t>
   get_my_triplets_gids (const std::string& map_file,
                         const grid_ptr_type& src_grid) const;
 
@@ -133,15 +135,24 @@ protected:
   std::map<int,std::vector<int>>
   recv_gids_from_pids (const std::map<int,std::vector<int>>& pid2gids_send) const;
 
+  // This class uses itself to remap src grid geo data to the tgt grid. But in order
+  // to not pollute the remapper for later use, we must be able to clean it up after
+  // remapping all the geo data.
+  void clean_up ();
+
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
   template<int N>
-  void local_mat_vec (const Field& f_src, const Field& f_tgt) const;
+  void local_mat_vec (const Field& f_src, const Field& f_tgt, const Field* mask = nullptr) const;
+  template<int N>
+  void rescale_masked_fields (const Field& f_tgt, const Field& f_mask) const;
   void pack_and_send ();
   void recv_and_unpack ();
 
 protected:
+  // If a field
+
   ekat::Comm            m_comm;
 
   static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
@@ -162,6 +173,10 @@ protected:
   std::vector<Field>    m_src_fields;
   std::vector<Field>    m_ov_tgt_fields;
   std::vector<Field>    m_tgt_fields;
+
+  // Mask fields, if needed
+  bool                  m_track_mask;
+  std::map<int,int>     m_field_idx_to_mask_idx;
 
   // ----- Sparse matrix CRS representation ---- //
   view_1d<int>    m_row_offsets;

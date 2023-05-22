@@ -32,7 +32,7 @@ Int Functions<S,D>
   } else {
     if (kdir == -1) {
       Kokkos::parallel_reduce(
-        Kokkos::TeamThreadRange(team, kbot - ktop + 1), [&] (Int k_, int& lmax) {
+        Kokkos::TeamVectorRange(team, kbot - ktop + 1), [&] (Int k_, int& lmax) {
           const Int k = ktop + k_;
           if (v(k) >= small && k > lmax)
             lmax = k;
@@ -40,7 +40,7 @@ Int Functions<S,D>
       log_present = k_xbot >= ktop;
     } else {
       Kokkos::parallel_reduce(
-        Kokkos::TeamThreadRange(team, ktop - kbot + 1), [&] (Int k_, int& lmin) {
+        Kokkos::TeamVectorRange(team, ktop - kbot + 1), [&] (Int k_, int& lmin) {
           const Int k = kbot + k_;
           if (v(k) >= small && k < lmin)
             lmin = k;
@@ -72,7 +72,7 @@ Int Functions<S,D>
   } else {
     if (kdir == -1) {
       Kokkos::parallel_reduce(
-        Kokkos::TeamThreadRange(team, kbot - ktop + 1), [&] (Int k_, int& lmin) {
+        Kokkos::TeamVectorRange(team, kbot - ktop + 1), [&] (Int k_, int& lmin) {
           const Int k = ktop + k_;
           if (v(k) >= small && k < lmin)
             lmin = k;
@@ -80,7 +80,7 @@ Int Functions<S,D>
       log_present = k_xtop <= kbot;
     } else {
       Kokkos::parallel_reduce(
-        Kokkos::TeamThreadRange(team, ktop - kbot + 1), [&] (Int k_, int& lmax) {
+        Kokkos::TeamVectorRange(team, ktop - kbot + 1), [&] (Int k_, int& lmax) {
           const Int k = kbot + k_;
           if (v(k) >= small && k > lmax)
             lmax = k;

@@ -287,6 +287,7 @@ foreach my $attr (keys %xmlvars) {
 
 my $DIN_LOC_ROOT    = $xmlvars{'DIN_LOC_ROOT'};
 my $WAV_GRID        = $xmlvars{'WAV_GRID'};
+my $WAV_SPEC        = $xmlvars{'WAV_SPEC'};
 
 (-d $DIN_LOC_ROOT)  or  mkdir $DIN_LOC_ROOT;
 if ($print>=2) { 
@@ -314,17 +315,29 @@ if ($NML_TYPE eq "ww3") {
 }
 if ($NML_TYPE eq "ww3_grid") {
 
-    if (${WAV_GRID} eq "wQU225EC60to30sp32x36") {
-       add_default($nl, 'spectrum%xfr', 'val'=>1.10);
-       add_default($nl, 'spectrum%freq1', 'val'=>0.05);
-       add_default($nl, 'spectrum%nk', 'val'=>32);
+    if (${WAV_GRID} eq "wQU225EC60to30") { #only highest WW3 spectral resolution for E3SM V1 grid
+       add_default($nl, 'spectrum%xfr', 'val'=>1.07);
+       add_default($nl, 'spectrum%freq1', 'val'=>0.035);
+       add_default($nl, 'spectrum%nk', 'val'=>50);
        add_default($nl, 'spectrum%nth', 'val'=>36);
     }
-    else {
-       add_default($nl, 'spectrum%xfr');
-       add_default($nl, 'spectrum%freq1');
-       add_default($nl, 'spectrum%nk');
-       add_default($nl, 'spectrum%nth');
+    elsif (${WAV_SPEC} eq "sp25x36") {
+       add_default($nl, 'spectrum%xfr', 'val'=>1.147);
+       add_default($nl, 'spectrum%freq1', 'val'=>0.035);
+       add_default($nl, 'spectrum%nk', 'val'=>25);
+       add_default($nl, 'spectrum%nth', 'val'=>36);
+    }
+    elsif (${WAV_SPEC} eq "sp50x36") {
+       add_default($nl, 'spectrum%xfr', 'val'=>1.07);
+       add_default($nl, 'spectrum%freq1', 'val'=>0.035);
+       add_default($nl, 'spectrum%nk', 'val'=>50);
+       add_default($nl, 'spectrum%nth', 'val'=>36);
+    }
+    elsif (${WAV_SPEC} eq "sp36x36") { #default : wQU225EC30to60E2r2sp36x36 
+       add_default($nl, 'spectrum%xfr','val'=>1.10);
+       add_default($nl, 'spectrum%freq1','val'=>0.035);
+       add_default($nl, 'spectrum%nk','val'=>36);
+       add_default($nl, 'spectrum%nth','val'=>36);
     }
 
     add_default($nl, 'spectrum%thoff');
@@ -385,8 +398,8 @@ if ($NML_TYPE eq "ww3_grid_nml") {
     add_default($nl, 'icedisp');
     add_default($nl, 'rwndc');
 
-    add_default($nl, 'uostfilelocal', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/obstructions_local.${WAV_GRID}.in'");
-    add_default($nl, 'uostfileshadow', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/obstructions_shadow.${WAV_GRID}.in'");
+    add_default($nl, 'uostfilelocal', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/obstructions_local.${WAV_GRID}${WAV_SPEC}.in'");
+    add_default($nl, 'uostfileshadow', 'val'=>"'${DIN_LOC_ROOT}/wav/ww3/obstructions_shadow.${WAV_GRID}${WAV_SPEC}.in'");
     
 }
 

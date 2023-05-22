@@ -20,6 +20,24 @@ contains
     call eam_pio_finalize()
   end subroutine eam_pio_finalize_c2f
 !=====================================================================!
+  function get_file_ncid_c2f(filename_in) result(ncid) bind(c)
+    use scream_scorpio_interface, only : lookup_pio_atm_file, pio_atm_file_t
+    type(c_ptr), intent(in)         :: filename_in
+
+    type(pio_atm_file_t), pointer :: atm_file
+    character(len=256)      :: filename
+    integer(kind=c_int) :: ncid
+    logical :: found
+
+    call convert_c_string(filename_in,filename)
+    call lookup_pio_atm_file(filename,atm_file,found)
+    if (found) then
+      ncid = int(atm_file%pioFileDesc%fh,kind=c_int)
+    else
+      ncid = -1
+    endif
+  end function get_file_ncid_c2f
+!=====================================================================!
   function is_file_open_c2f(filename_in,purpose) result(res) bind(c)
     use scream_scorpio_interface, only : lookup_pio_atm_file, pio_atm_file_t
 
@@ -34,7 +52,7 @@ contains
     call convert_c_string(filename_in,filename)
     call lookup_pio_atm_file(filename,atm_file,found)
     if (found) then
-      res = LOGICAL(atm_file%purpose .eq. purpose,kind=c_bool)
+      res = LOGICAL(purpose .eq. 0 .or. atm_file%purpose .eq. purpose,kind=c_bool)
     else
       res = .false.
     endif
@@ -135,36 +153,6 @@ contains
 
   end subroutine get_variable_c2f
 !=====================================================================!
-  function get_int_attribute_c2f(file_name_c, attr_name_c) result(val) bind(c)
-    use scream_scorpio_interface, only : get_int_attribute
-    type(c_ptr), intent(in) :: file_name_c
-    type(c_ptr), intent(in) :: attr_name_c
-    integer(kind=c_int)     :: val
-
-    character(len=256) :: file_name
-    character(len=256) :: attr_name
-
-    call convert_c_string(file_name_c,file_name)
-    call convert_c_string(attr_name_c,attr_name)
-
-    val = get_int_attribute(file_name,attr_name)
-  end function get_int_attribute_c2f
-!=====================================================================!
-  subroutine set_int_attribute_c2f(file_name_c, attr_name_c, val) bind(c)
-    use scream_scorpio_interface, only : set_int_attribute
-    type(c_ptr), intent(in)         :: file_name_c
-    type(c_ptr), intent(in)         :: attr_name_c
-    integer(kind=c_int), intent(in) :: val
-
-    character(len=256) :: file_name
-    character(len=256) :: attr_name
-
-    call convert_c_string(file_name_c,file_name)
-    call convert_c_string(attr_name_c,attr_name)
-
-    call set_int_attribute(file_name,attr_name,val)
-  end subroutine set_int_attribute_c2f
-!=====================================================================!
   subroutine register_variable_c2f(filename_in, shortname_in, longname_in, &
                                    units_in, numdims, var_dimensions_in,   &
                                    dtype, nc_dtype, pio_decomp_tag_in) bind(c)
@@ -220,12 +208,14 @@ contains
 
   end subroutine set_variable_metadata_c2f
 !=====================================================================!
-  subroutine register_dimension_c2f(filename_in, shortname_in, longname_in, length) bind(c)
+  subroutine register_dimension_c2f(filename_in, shortname_in, longname_in, length, partitioned) bind(c)
     use scream_scorpio_interface, only : register_dimension
-    type(c_ptr), intent(in)                :: filename_in
-    type(c_ptr), intent(in)                :: shortname_in
-    type(c_ptr), intent(in)                :: longname_in
-    integer(kind=c_int), value, intent(in) :: length
+
+    type(c_ptr), intent(in)                 :: filename_in
+    type(c_ptr), intent(in)                 :: shortname_in
+    type(c_ptr), intent(in)                 :: longname_in
+    integer(kind=c_int), value, intent(in)  :: length
+    logical(kind=c_bool), value, intent(in) :: partitioned
 
     character(len=256) :: filename
     character(len=256) :: shortname
@@ -234,24 +224,50 @@ contains
     call convert_c_string(filename_in,filename)
     call convert_c_string(shortname_in,shortname)
     call convert_c_string(longname_in,longname)
-    call register_dimension(filename,shortname,longname,length)
+    call register_dimension(filename,shortname,longname,length,LOGICAL(partitioned))
 
   end subroutine register_dimension_c2f
 !=====================================================================!
-  function get_dimlen_c2f(filename_in,dimname_in) result(val) bind(c)
-    use scream_scorpio_interface, only : get_dimlen
-    type(c_ptr), intent(in) :: filename_in
-    type(c_ptr), intent(in) :: dimname_in
-    integer(kind=c_int)     :: val
+  function read_curr_time_c2f(filename_in) result(val) bind(c)
+    use scream_scorpio_interface, only : read_time_at_index
+    type(c_ptr), intent(in)                :: filename_in
+    real(kind=c_double)                    :: val
 
     character(len=256) :: filename
-    character(len=256) :: dimname
 
     call convert_c_string(filename_in,filename)
-    call convert_c_string(dimname_in,dimname)
-    val = get_dimlen(filename,dimname)
+    val        = read_time_at_index(filename)
 
-  end function get_dimlen_c2f
+  end function read_curr_time_c2f
+!=====================================================================!
+  function read_time_at_index_c2f(filename_in,time_index) result(val) bind(c)
+    use scream_scorpio_interface, only : read_time_at_index
+    type(c_ptr), intent(in)                :: filename_in
+    integer(kind=c_int), intent(in)        :: time_index ! zero-based
+    real(kind=c_double)                    :: val
+
+    character(len=256) :: filename
+
+    call convert_c_string(filename_in,filename)
+    val = read_time_at_index(filename,time_index)
+
+  end function read_time_at_index_c2f
+!=====================================================================!
+  function is_enddef_c2f(filename_in) bind(c) result(enddef)
+    use scream_scorpio_interface, only : lookup_pio_atm_file, pio_atm_file_t
+    type(c_ptr), intent(in) :: filename_in
+
+    type(pio_atm_file_t), pointer :: atm_file
+    character(len=256)    :: filename
+    logical (kind=c_bool) :: enddef
+    logical :: found
+
+    call convert_c_string(filename_in,filename)
+    call lookup_pio_atm_file(filename,atm_file,found)
+    if (found) then
+      enddef = LOGICAL(atm_file%is_enddef, kind=c_bool)
+    endif
+  end function is_enddef_c2f
 !=====================================================================!
   subroutine eam_pio_enddef_c2f(filename_in) bind(c)
     use scream_scorpio_interface, only : eam_pio_enddef

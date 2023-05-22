@@ -90,7 +90,7 @@ void Functions<S,D>
       Int kmax_scalar = ( kdir == 1 ? k_qxtop : k_qxbot);
 
       Kokkos::parallel_for(
-       Kokkos::TeamThreadRange(team, V_qr.extent(0)), [&] (Int k) {
+       Kokkos::TeamVectorRange(team, V_qr.extent(0)), [&] (Int k) {
         V_qr(k) = 0;
         V_nr(k) = 0;
       });
@@ -101,7 +101,7 @@ void Functions<S,D>
 
       // compute Vq, Vn (get values from lookup table)
       Kokkos::parallel_reduce(
-       Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
+       Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
 
         const int pk = kmin + pk_;
         const auto range_pack = ekat::range<IntSmallPack>(pk*Spack::n);
@@ -130,7 +130,7 @@ void Functions<S,D>
       //Update _incld values with end-of-step cell-ave values
       //No prob w/ div by cld_frac_r because set to min of 1e-4 in interface.
       Kokkos::parallel_for(
-        Kokkos::TeamThreadRange(team, qr.extent(0)), [&] (int pk) {
+        Kokkos::TeamVectorRange(team, qr.extent(0)), [&] (int pk) {
 	  qr_incld(pk)=qr(pk)/cld_frac_r(pk);
 	  nr_incld(pk)=nr(pk)/cld_frac_r(pk);
 	});
@@ -140,7 +140,7 @@ void Functions<S,D>
       kmax_scalar = ( kdir == 1 ? k_qxtop+1 : k_qxbot+1);
       ekat::impl::set_min_max(kmin_scalar, kmax_scalar, kmin, kmax, Spack::n);
       Kokkos::parallel_for(
-       Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_) {
+       Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_) {
         const int pk = kmin + pk_;
         const auto range_pack = ekat::range<IntSmallPack>(pk*Spack::n);
         const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
@@ -159,7 +159,7 @@ void Functions<S,D>
 
   const Int nk_pack = ekat::npack<Spack>(nk);
   Kokkos::parallel_for(
-   Kokkos::TeamThreadRange(team, nk_pack), [&] (int pk) {
+   Kokkos::TeamVectorRange(team, nk_pack), [&] (int pk) {
     qr_tend(pk) = (qr(pk) - qr_tend(pk)) * inv_dt; // Rain sedimentation tendency, measure
     nr_tend(pk) = (nr(pk) - nr_tend(pk)) * inv_dt; // Rain # sedimentation tendency, measure
   });

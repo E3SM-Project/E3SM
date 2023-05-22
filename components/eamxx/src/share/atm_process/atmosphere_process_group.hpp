@@ -45,6 +45,9 @@ public:
   // Grab the proper grid from the grids manager
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
+  // Setup the tendencies requests for this group, as well as for all procs in the group
+  void setup_tendencies_requests ();
+
   // --- Methods specific to AtmosphereProcessGroup --- //
   int get_num_processes () const { return m_atm_processes.size(); }
 
@@ -101,11 +104,11 @@ protected:
   // The initialization, run, and finalization methods
   void initialize_impl(const RunType run_type);
   void initialize_impl ();
-  void run_impl        (const int dt);
+  void run_impl        (const double dt);
   void finalize_impl   (/* what inputs? */);
 
-  void run_sequential (const Real dt);
-  void run_parallel   (const Real dt);
+  void run_sequential (const double dt);
+  void run_parallel   (const double dt);
 
   // The methods to set the fields/groups in the right processes of the group
   void set_required_field_impl (const Field& f);

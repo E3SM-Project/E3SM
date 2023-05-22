@@ -16,7 +16,7 @@ void ExnerDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  Units nondim(0,0,0,0,0,0,0);
+  auto nondim = Units::nondimensional();
 
   auto grid  = grids_manager->get_grid("Physics");
   const auto& grid_name = grid->name();

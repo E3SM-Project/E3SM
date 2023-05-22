@@ -15,6 +15,7 @@
 #include "share/util/scream_time_stamp.hpp"
 #include "share/scream_types.hpp"
 
+#include "ekat/ekat_pack.hpp"
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/io/ekat_yaml.hpp"
 #include "ekat/ekat_parameter_list.hpp"

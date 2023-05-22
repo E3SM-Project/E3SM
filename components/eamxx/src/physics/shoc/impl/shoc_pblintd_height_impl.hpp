@@ -57,7 +57,7 @@ void Functions<S,D>::pblintd_height(
 
   // Compute rino values and find max index k s.t. rino(k) >= ricr
   Int max_indx = Kokkos::reduction_identity<Int>::max();
-  Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, lower_pack_indx, upper_pack_indx+1),
+  Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, lower_pack_indx, upper_pack_indx+1),
                           [&] (const Int& k, Int& local_max) {
     auto indices_pack = ekat::range<IntSmallPack>(k*Spack::n);
     const auto in_range = (indices_pack < nlev-1 && indices_pack >= nlev-npbl);

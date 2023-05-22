@@ -36,7 +36,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
-  m_dofs_gids = m_grid->get_dofs_gids();
+  m_dofs_gids = m_grid->get_dofs_gids().get_view<const gid_type*>();
   m_min_global_dof    = m_grid->get_global_min_dof_gid();
 
   // Define the different field layouts that will be used for this process
@@ -67,7 +67,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   //       take this information directly from the spa data file.
   m_spa_data_file = m_params.get<std::string>("spa_data_file");
   scorpio::register_file(m_spa_data_file,scorpio::Read);
-  m_num_src_levs = scorpio::get_dimlen_c2f(m_spa_data_file.c_str(),"lev");
+  m_num_src_levs = scorpio::get_dimlen(m_spa_data_file,"lev");
   scorpio::eam_pio_closefile(m_spa_data_file);
   SPAHorizInterp.m_comm = m_comm;
 
@@ -201,7 +201,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
 }
 
 // =========================================================================================
-void SPA::run_impl (const int dt)
+void SPA::run_impl (const double dt)
 {
   /* Gather time and state information for interpolation */
   auto ts = timestamp()+dt;

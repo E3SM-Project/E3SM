@@ -48,8 +48,10 @@ public:
   AtmosphereDriver (const ekat::Comm& atm_comm,
                     const ekat::ParameterList& params);
 
-  // The default dtor is fine.
-  ~AtmosphereDriver () = default;
+  // Must call finalize, so that, if AD is destroyed as part of uncaught
+  // exception stack unwinding, we will still perform some cleanup ops,
+  // among which, for instance, closing any open output file.
+  ~AtmosphereDriver ();
 
   // ---- Begin initialization methods ---- //
 
@@ -61,6 +63,9 @@ public:
 
   // Set AD params
   void set_params (const ekat::ParameterList& params);
+
+  // Init time stamps
+  void init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0);
 
   // Set AD params
   void init_scorpio (const int atm_id = 0);
@@ -86,14 +91,14 @@ public:
   void setup_surface_coupling_processes() const;
 
   // Zero out precipitation flux
-  void set_precipitation_fields_to_zero();
+  void reset_accummulated_fields();
 
   // Create and add mass and energy conservation checks
   // and pass to m_atm_process_group.
   void setup_column_conservation_checks ();
 
   // Load initial conditions for atm inputs
-  void initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0);
+  void initialize_fields ();
 
   // Initialie I/O structures for output
   void initialize_output_managers ();
@@ -127,8 +132,9 @@ public:
   // Note: dt is assumed to be in seconds
   void run (const int dt);
 
-  // Clean up the driver (includes cleaning up the parameterizations and the fm's);
-  void finalize ( /* inputs */ );
+  // Clean up the driver (finalizes and cleans up all internals)
+  // NOTE: if already finalized, this is a no-op
+  void finalize ();
 
   field_mgr_ptr get_ref_grid_field_mgr () const;
   field_mgr_ptr get_field_mgr (const std::string& grid_name) const;
@@ -161,13 +167,13 @@ protected:
   // different naming conventions for phis.
   void read_fields_from_file (const std::vector<std::string>& field_names_nc,
                               const std::vector<std::string>& field_names_eamxx,
-                              const std::string& grid_name,
+                              const std::shared_ptr<const AbstractGrid>& grid,
                               const std::string& file_name,
                               const util::TimeStamp& t0);
   // Read fields from a file when the names of the fields in
   // EAMxx match with the .nc file.
   void read_fields_from_file (const std::vector<std::string>& field_names,
-                              const std::string& grid_name,
+                              const std::shared_ptr<const AbstractGrid>& grid,
                               const std::string& file_name,
                               const util::TimeStamp& t0);
   void register_groups ();
@@ -202,16 +208,17 @@ protected:
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
 
   // Some status flags, used to make sure we call the init functions in the right order
-  static constexpr int s_comm_set       =   1;
-  static constexpr int s_params_set     =   2;
-  static constexpr int s_scorpio_inited =   4;
-  static constexpr int s_procs_created  =   8;
-  static constexpr int s_grids_created  =  16;
-  static constexpr int s_fields_created =  32;
-  static constexpr int s_sc_set         =  64;
-  static constexpr int s_output_inited  = 128;
-  static constexpr int s_fields_inited  = 256;
-  static constexpr int s_procs_inited   = 512;
+  static constexpr int s_comm_set       =    1;
+  static constexpr int s_params_set     =    2;
+  static constexpr int s_scorpio_inited =    4;
+  static constexpr int s_procs_created  =    8;
+  static constexpr int s_grids_created  =   16;
+  static constexpr int s_fields_created =   32;
+  static constexpr int s_sc_set         =   64;
+  static constexpr int s_output_inited  =  128;
+  static constexpr int s_fields_inited  =  256;
+  static constexpr int s_procs_inited   =  512;
+  static constexpr int s_ts_inited      = 1024;
 
   // Lazy version to ensure s_atm_inited & flag is true for every flag,
   // even if someone adds new flags later on

@@ -10,10 +10,12 @@
 #include "Types.hpp"
 #include "Elements.hpp"
 #include "ColumnOps.hpp"
+#include "Context.hpp"
 #include "EquationOfState.hpp"
 #include "FunctorsBuffersManager.hpp"
 #include "HybridVCoord.hpp"
 #include "KernelVariables.hpp"
+#include "LimiterFunctor.hpp"
 #include "ReferenceElement.hpp"
 #include "RKStageData.hpp"
 #include "SimulationParams.hpp"
@@ -99,11 +101,10 @@ struct CaarFunctorImpl {
   Buffers               m_buffers;
   deriv_type            m_deriv;
 
-  SphereOperators             m_sphere_ops;
+  SphereOperators       m_sphere_ops;
 
   struct TagPreExchange {};
   struct TagPostExchange {};
-  struct TagDp3dLimiter {};
 
   // Policies
 #ifndef NDEBUG
@@ -115,7 +116,6 @@ struct CaarFunctorImpl {
 #endif
 
   TeamPolicyType<TagPreExchange>   m_policy_pre;
-  TeamPolicyType<TagDp3dLimiter>   m_policy_dp3d_lim;
 
   Kokkos::RangePolicy<ExecSpace, TagPostExchange> m_policy_post;
 
@@ -139,7 +139,6 @@ struct CaarFunctorImpl {
       , m_sphere_ops(sphere_ops)
       , m_policy_pre (Homme::get_default_team_policy<ExecSpace,TagPreExchange>(m_num_elems))
       , m_policy_post (0,m_num_elems*NP*NP)
-      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
       , m_tu(m_policy_pre)
   {
     // Initialize equation of state
@@ -157,10 +156,8 @@ struct CaarFunctorImpl {
       , m_pgrad_correction(params.pgrad_correction)
       , m_policy_pre (Homme::get_default_team_policy<ExecSpace,TagPreExchange>(m_num_elems))
       , m_policy_post (0,num_elems*NP*NP)
-      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
       , m_tu(m_policy_pre)
   {}
-
 
   void setup (const Elements &elements, const Tracers &/*tracers*/,
               const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
@@ -338,6 +335,9 @@ struct CaarFunctorImpl {
 
   void run (const RKStageData& data)
   {
+
+    auto& limiter  = Context::singleton().get<LimiterFunctor>();
+
     set_rk_stage_data(data);
 
     profiling_resume();
@@ -362,10 +362,7 @@ struct CaarFunctorImpl {
       GPTLstop("caar compute");
     }
 
-    GPTLstart("caar dp3d");
-    Kokkos::parallel_for("caar loop dp3d limiter", m_policy_dp3d_lim, *this);
-    Kokkos::fence();
-    GPTLstop("caar dp3d");
+    limiter.run(data.np1);
 
     profiling_pause();
   }
@@ -489,98 +486,6 @@ struct CaarFunctorImpl {
       }
     }
 #endif
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator()(const TagDp3dLimiter&, const TeamMember &team) const {
-    KernelVariables kv(team, m_tu);
-
-    // TODO: make this less hard-coded maybe?
-    constexpr Real dp3d_thresh = 0.125;
-    constexpr Real vtheta_thresh = 100; // Kelvin
-
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
-                         [&](const int idx) {
-      const int igp = idx / NP;
-      const int jgp = idx % NP;
-
-      const auto& spheremp = m_geometry.m_spheremp(kv.ie,igp,jgp);
-
-      // Check if the minimum dp3d in this column is blow a certain threshold
-      auto dp = Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1,igp,jgp);
-      auto& dp0 = m_hvcoord.dp0;
-      auto diff = Homme::subview(m_buffers.vort,kv.team_idx,igp,jgp);
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                           [&](const int ilev) {
-        diff(ilev) = (dp(ilev) - dp3d_thresh*dp0(ilev))*spheremp;
-      });
-
-      Real min_diff = Kokkos::reduction_identity<Real>::min();
-      auto diff_as_real = Homme::viewAsReal(diff);
-      Kokkos::Min<Real,ExecSpace> reducer(min_diff);
-      Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
-                              [&](const int k,Real& result) {
-        result = result<=diff_as_real(k) ? result : diff_as_real(k);
-      }, reducer);
-
-      auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1,igp,jgp);
-      if (min_diff<0) {
-        // Compute vtheta = vtheta_dp/dp
-        Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                             [&](const int ilev) {
-          vtheta_dp(ilev) /= dp(ilev);
-        });
-
-        // Gotta apply vertical mixing, to prevent levels from getting too thin.
-        Real mass = 0.0;
-        ColumnOps::column_reduction<NUM_PHYSICAL_LEV>(kv.team,diff,mass);
-
-        if (mass<0) {
-          Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                               [&](const int ilev) {
-            diff(ilev) *= -1.0;
-          });
-        }
-
-        // This loop must be done over physical levels, unless we implement
-        // masks, like it has been done in the E3SM/scream project
-        Real mass_new = 0.0;
-        Dispatch<>::parallel_reduce(kv.team,
-                                    Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
-                                    [&](const int k, Real& accum) {
-          auto& val = diff_as_real(k);
-          val = (val<0 ? 0.0 : val);
-          accum += val;
-        }, mass_new);
-
-        Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                             [&](const int ilev) {
-          if (mass_new>0) {
-            diff(ilev) *= fabs(mass)/mass_new;
-          }
-          if (mass<0) {
-            diff(ilev) *= -1.0;
-          }
-
-          dp(ilev) = diff(ilev)/spheremp + dp3d_thresh*dp0(ilev);
-          vtheta_dp(ilev) *= dp(ilev);
-        });
-      }
-
-#if 1
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                           [&](const int ilev) {
-        // Check if vtheta is too low
-        // Note: another place where scream's masks could help
-        for (int ivec=0; ivec<VECTOR_SIZE; ++ivec) {
-          if ( (vtheta_dp(ilev)[ivec] - vtheta_thresh*dp(ilev)[ivec]) < 0) {
-             vtheta_dp(ilev)[ivec]=vtheta_thresh*dp(ilev)[ivec];
-          }
-        }
-      });
-#endif
-    });
-    kv.team_barrier();
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -1436,10 +1341,6 @@ struct CaarFunctorImpl {
     });
   }
 
-  KOKKOS_INLINE_FUNCTION
-  size_t shmem_size(const int team_size) const {
-    return KernelVariables::shmem_size(team_size);
-  }
 };
 
 } // Namespace Homme

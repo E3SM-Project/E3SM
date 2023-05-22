@@ -1502,6 +1502,8 @@
       <value>$EPS_AGRID</value>
       <value atm_grid="ne0np4_northamericax4v1">3.e-10</value>
       <value atm_grid="ne1024np4.pg2" lnd_grid="ne1024np4.pg2">1.e-10</value>
+      <value atm_grid="ne120np4.pg2" lnd_grid="ne120np4.pg2">1.e-10</value>
+      <value atm_grid="ne256np4.pg2" lnd_grid="ne256np4.pg2">1.e-10</value>
     </values>
   </entry>
 
@@ -5106,6 +5108,23 @@
       <value>0.5D0</value>
       <value aqua_planet_sst_type="sst_aquap_constant">1.0D0</value>
     </values>
+  </entry>
+
+  <!-- ========================================================================================  -->
+  <!-- Dust-related setups                                                                       -->
+  <!-- ========================================================================================  -->
+
+  <entry id="dust_emis_scheme">
+    <type>integer</type>
+    <category>shr_dust</category>
+    <group>shr_dust_nl</group>
+    <desc>
+      Dust emission scheme.
+      1 = Zender et al. (2003) as in E3SMv1 and v2.
+    </desc>
+	  <values>
+		  <value>1</value>
+	  </values>
   </entry>
 
 </entry_id>

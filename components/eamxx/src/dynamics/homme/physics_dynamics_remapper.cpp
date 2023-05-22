@@ -53,7 +53,7 @@ PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
   m_phys_grid = phys_grid;
 
   m_num_phys_cols = phys_grid->get_num_local_dofs();
-  m_lid2elgp      = m_dyn_grid->get_lid_to_idx_map();
+  m_lid2elgp      = m_dyn_grid->get_lid_to_idx_map().get_view<const int**>();
 
   // For each phys dofs, we find a corresponding dof in the dyn grid.
   // Notice that such dyn dof may not be unique (if phys dof is on an edge
@@ -340,7 +340,7 @@ set_dyn_to_zero(const MT& team) const
       auto v = m_dyn_repo.views[i].v3d;
       int dim1 = v.extent(1);
       int dim2 = v.extent(2);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, v.size()), [&](const int& k) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, v.size()), [&](const int& k) {
         int k0   = (k / dim2) / dim1;
         int k1   = (k / dim2) % dim1;
         int k2   =  k % dim2;
@@ -355,7 +355,7 @@ set_dyn_to_zero(const MT& team) const
       int dim1 = v.extent(1);
       int dim2 = v.extent(2);
       int dim3 = v.extent(3);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, v.size()), [&](const int& k) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, v.size()), [&](const int& k) {
         int k0   = ((k / dim3) / dim2) / dim1;
         int k1   = ((k / dim3) / dim2) % dim1;
         int k2   =  (k / dim3) % dim2;
@@ -371,7 +371,7 @@ set_dyn_to_zero(const MT& team) const
       int dim2 = v.extent(2);
       int dim3 = v.extent(3);
       int dim4 = v.extent(4);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, v.size()), [&](const int& k) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, v.size()), [&](const int& k) {
         int k0   = (((k / dim4) / dim3) / dim2) / dim1;
         int k1   = (((k / dim4) / dim3) / dim2) % dim1;
         int k2   =  ((k / dim4) / dim3) % dim2;
@@ -562,7 +562,7 @@ local_remap_fwd_2d (const MT& team) const
       auto phys = m_phys_repo.cviews[i].v1d;
       auto dyn  = m_dyn_repo.views[i].v3d;
 
-      const auto tr = Kokkos::TeamThreadRange(team, m_num_phys_cols);
+      const auto tr = Kokkos::TeamVectorRange(team, m_num_phys_cols);
       const auto f = [&] (const int icol) {
         const auto& elgp = Kokkos::subview(m_lid2elgp,m_p2d(icol),Kokkos::ALL());
         dyn(elgp[0],elgp[1],elgp[2]) = phys(icol);
@@ -576,7 +576,7 @@ local_remap_fwd_2d (const MT& team) const
       auto dyn  = m_dyn_repo.views[i].v4d;
 
       const int vec_dim = phys.extent(1);
-      const auto tr = Kokkos::TeamThreadRange(team, m_num_phys_cols*vec_dim);
+      const auto tr = Kokkos::TeamVectorRange(team, m_num_phys_cols*vec_dim);
       const auto f = [&] (const int idx) {
         const int icol = idx / vec_dim;
         const int idim = idx % vec_dim;
@@ -609,7 +609,7 @@ local_remap_fwd_3d (const MT& team) const
       auto phys = pack_view<const ScalarT>(m_phys_repo.cviews[i].v2d);
       auto dyn  = pack_view<      ScalarT>(m_dyn_repo.views[i].v4d);
 
-      const auto tr = Kokkos::TeamThreadRange(team, m_num_phys_cols*num_packs);
+      const auto tr = Kokkos::TeamVectorRange(team, m_num_phys_cols*num_packs);
       const auto f = [&] (const int idx) {
         const int icol = idx / num_packs;
         const int ilev = idx % num_packs;
@@ -626,7 +626,7 @@ local_remap_fwd_3d (const MT& team) const
       auto dyn  = pack_view<      ScalarT>(m_dyn_repo.views[i].v5d);
       const int vec_dim = phys.extent(1);
 
-      const auto tr = Kokkos::TeamThreadRange(team, m_num_phys_cols*vec_dim*num_packs);
+      const auto tr = Kokkos::TeamVectorRange(team, m_num_phys_cols*vec_dim*num_packs);
       const auto f = [&] (const int idx) {
         const int icol = (idx / num_packs) / vec_dim;
         const int idim = (idx / num_packs) % vec_dim;
@@ -668,7 +668,7 @@ local_remap_bwd_2d (const MT& team) const
       auto dyn  = m_dyn_repo.cviews[i].v4d;
       const int vec_dim = phys.extent(1);
 
-      const auto tr = Kokkos::TeamThreadRange(team, vec_dim);
+      const auto tr = Kokkos::TeamVectorRange(team, vec_dim);
       const auto f = [&] (const int idim) {
         phys(icol,idim) = dyn(elgp[0],idim,elgp[1],elgp[2]);
       };
@@ -700,7 +700,7 @@ local_remap_bwd_3d (const MT& team) const
       auto phys = pack_view<      ScalarT>(m_phys_repo.views[i].v2d);
       auto dyn  = pack_view<const ScalarT>(m_dyn_repo.cviews[i].v4d);
 
-      const auto tr = Kokkos::TeamThreadRange(team, num_packs);
+      const auto tr = Kokkos::TeamVectorRange(team, num_packs);
       const auto f = [&] (const int ilev) {
         phys(icol,ilev) = dyn(elgp[0],elgp[1],elgp[2],ilev);
       };
@@ -713,7 +713,7 @@ local_remap_bwd_3d (const MT& team) const
       auto dyn  = pack_view<const ScalarT>(m_dyn_repo.cviews[i].v5d);
       const int vec_dim = phys.extent(1);
 
-      const auto tr = Kokkos::TeamThreadRange(team, vec_dim*num_packs);
+      const auto tr = Kokkos::TeamVectorRange(team, vec_dim*num_packs);
       const auto f = [&] (const int idx) {
         const int idim = idx / num_packs;
         const int ilev = idx % num_packs;
@@ -734,8 +734,10 @@ create_p2d_map () {
 
   auto se_dyn = std::dynamic_pointer_cast<const SEGrid>(m_dyn_grid);
   EKAT_REQUIRE_MSG(se_dyn, "Error! Something went wrong casting dyn grid to a SEGrid.\n");
-  auto dyn_gids  = se_dyn->get_cg_dofs_gids();
-  auto phys_gids = m_phys_grid->get_dofs_gids();
+
+  using gid_t = AbstractGrid::gid_type;
+  auto dyn_gids  = se_dyn->get_cg_dofs_gids().get_view<const gid_t*>();
+  auto phys_gids = m_phys_grid->get_dofs_gids().get_view<const gid_t*>();
 
   auto policy = KokkosTypes<DefaultDevice>::RangePolicy(0,num_phys_dofs);
   m_p2d = decltype(m_p2d) ("",num_phys_dofs);

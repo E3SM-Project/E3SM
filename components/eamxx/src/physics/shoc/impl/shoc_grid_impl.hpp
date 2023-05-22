@@ -37,7 +37,7 @@ void Functions<S,D>::shoc_grid(
   const auto s_dz_zi   = ekat::scalarize(dz_zi);
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
 
     // Compute shifts
     Spack zi_grid_k, zi_grid_kp1, zt_grid_k, zt_grid_km1;

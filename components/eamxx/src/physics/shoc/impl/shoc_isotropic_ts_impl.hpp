@@ -36,7 +36,7 @@ void Functions<S,D>
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
 
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
 
       // define the time scale
       const Spack tscale = 2*tke(k)/a_diss(k);

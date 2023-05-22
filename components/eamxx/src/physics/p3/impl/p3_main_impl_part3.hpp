@@ -63,7 +63,7 @@ void Functions<S,D>
   constexpr Scalar nsmall       = C::NSMALL;
 
   Kokkos::parallel_for(
-    Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+    Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
 
     Spack
       ignore1  (0),

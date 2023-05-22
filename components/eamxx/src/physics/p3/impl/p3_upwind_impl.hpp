@@ -39,7 +39,7 @@ void Functions<S,D>
 
   // calculate fluxes
   Kokkos::parallel_for(
-    Kokkos::TeamThreadRange(team, kmax - kmin), [&] (Int k_) {
+    Kokkos::TeamVectorRange(team, kmax - kmin), [&] (Int k_) {
       const Int k = kmin + k_;
       for (int f = 0; f < nfield; ++f)
         (*flux[f])(k) = (*V[f])(k) * (*r[f])(k) * rho(k);
@@ -76,7 +76,7 @@ void Functions<S,D>
     ++kmin;
 
   Kokkos::parallel_for(
-    Kokkos::TeamThreadRange(team, kmax - kmin), [&] (Int k_) {
+    Kokkos::TeamVectorRange(team, kmax - kmin), [&] (Int k_) {
       const Int k = kmin + k_;
       for (int f = 0; f < nfield; ++f) {
         // compute flux divergence

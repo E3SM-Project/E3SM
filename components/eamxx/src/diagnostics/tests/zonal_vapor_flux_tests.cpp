@@ -144,7 +144,7 @@ void run(std::mt19937_64& engine)
     constexpr Real gravit = PC::gravit;
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
-         Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, num_levs), [&] (const Int& idx, Real& lsum) {
+         Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, num_levs), [&] (const Int& idx, Real& lsum) {
       const int jpack = idx / Pack::n;
       const int klev  = idx % Pack::n;
       lsum += horiz_winds_v(icol,0,jpack)[klev] * qv_v(icol,jpack)[klev] * pseudo_density_v(icol,jpack)[klev]/gravit;

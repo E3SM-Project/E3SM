@@ -47,6 +47,7 @@ protected:
   std::string         m_pres_name;
 
   view_1d<mPack>      m_p_tgt;
+  Field               m_mask_field;
   Real                m_pressure_level;
   int                 m_num_levs;
   int                 m_num_cols;

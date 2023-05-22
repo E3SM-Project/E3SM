@@ -66,7 +66,7 @@ void VerticalLayerInterfaceDiagnostic::compute_diagnostic_impl()
                        KOKKOS_LAMBDA(const MemberType& team) {
     const int icol = team.league_rank();
     const auto& dz_s = ekat::subview(dz, icol);
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks), [&] (const Int& jpack) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npacks), [&] (const Int& jpack) {
       dz_s(jpack) = PF::calculate_dz(pseudo_density_mid(icol,jpack), p_mid(icol,jpack), T_mid(icol,jpack), qv_mid(icol,jpack));
     });
     team.team_barrier();

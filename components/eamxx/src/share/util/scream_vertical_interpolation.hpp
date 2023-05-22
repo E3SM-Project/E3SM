@@ -117,6 +117,7 @@ void apply_interpolation_impl_1d(
   const view_1d<      Pack<T,P>>& output,
   const view_1d<      Mask<P>>&   mask,
   const int nlevs_src,
+  const int nlevs_tgt,
   const int icol,
   const T msk_val,
   const MemberType& team,
@@ -136,7 +137,8 @@ void perform_checks(
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                      int  num_levs,
+  const                      int  num_levs_src,
+  const                      int  num_levs_tgt,
   const                        T  mask_val,
   const                 LIV<T,P>& vert_interp,
   const view_2d<const Pack<T,P>>& x_src,
@@ -147,7 +149,8 @@ void apply_interpolation(
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                      int  num_levs,
+  const                      int  num_levs_src,
+  const                      int  num_levs_tgt,
   const                        T  mask_val,
   const                 LIV<T,P>& vert_interp,
   const view_2d<const Pack<T,P>>& x_src,
@@ -170,7 +173,8 @@ void perform_checks(
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                      int  num_levs,
+  const                      int  num_levs_src,
+  const                      int  num_levs_tgt,
   const                        T  mask_val,
   const                 LIV<T,P>& vert_interp,
   const view_2d<const Pack<T,P>>& x_src,
@@ -181,7 +185,8 @@ void apply_interpolation(
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                      int  num_levs,
+  const                      int  num_levs_src,
+  const                      int  num_levs_tgt,
   const                        T  mask_val,
   const                 LIV<T,P>& vert_interp,
   const view_2d<const Pack<T,P>>& x_src,

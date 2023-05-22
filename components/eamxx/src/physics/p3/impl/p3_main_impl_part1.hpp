@@ -95,15 +95,15 @@ void Functions<S,D>
   // can be made consistent with E3SM definition of latent heat
   //
   Kokkos::parallel_for(
-    Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+    Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
 
     const auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
     const auto range_mask = range_pack < nk;
 
     rho(k)          = dpres(k)/dz(k) / g;
     inv_rho(k)      = 1 / rho(k);
-    qv_sat_l(k)     = physics::qv_sat(T_atm(k), pres(k), false, range_mask, physics::MurphyKoop, "p3::p3_main_part1 (liquid)");
-    qv_sat_i(k)     = physics::qv_sat(T_atm(k), pres(k), true,  range_mask, physics::MurphyKoop, "p3::p3_main_part1 (ice)");
+    qv_sat_l(k)     = physics::qv_sat_dry(T_atm(k), pres(k), false, range_mask, physics::MurphyKoop, "p3::p3_main_part1 (liquid)");
+    qv_sat_i(k)     = physics::qv_sat_dry(T_atm(k), pres(k), true,  range_mask, physics::MurphyKoop, "p3::p3_main_part1 (ice)");
 
     qv_supersat_i(k) = qv(k) / qv_sat_i(k) - 1;
 

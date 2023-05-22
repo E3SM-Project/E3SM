@@ -42,7 +42,7 @@ void Functions<S,D>
   // Set lower condition: w3(i,nlevi) = 0
   s_w3(nlevi-1) = 0;
 
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     // Constants
     const auto c_diag_3rd_mom = scream::shoc::Constants<Scalar>::c_diag_3rd_mom;
     const Scalar a0 = (sp(0.52)*(1/(c_diag_3rd_mom*c_diag_3rd_mom)))/(c_diag_3rd_mom-2);

@@ -71,7 +71,7 @@ void Functions<S,D>
       const Int kmax_scalar = ( kdir == 1 ? k_qxtop : k_qxbot);
 
       Kokkos::parallel_for(
-        Kokkos::TeamThreadRange(team, V_qc.extent(0)), [&] (Int k) {
+        Kokkos::TeamVectorRange(team, V_qc.extent(0)), [&] (Int k) {
           V_qc(k) = 0;
           if (do_predict_nc) {
             V_nc(k) = 0;
@@ -83,7 +83,7 @@ void Functions<S,D>
       ekat::impl::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Spack::n);
 
       Kokkos::parallel_reduce(
-        Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
+        Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
           const int pk = kmin + pk_;
           const auto range_pack = ekat::range<IntSmallPack>(pk*Spack::n);
           const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
@@ -122,7 +122,7 @@ void Functions<S,D>
       //Update _incld values with end-of-step cell-ave values
       //No prob w/ div by cld_frac_l because set to min of 1e-4 in interface.
       Kokkos::parallel_for(
-        Kokkos::TeamThreadRange(team, qc.extent(0)), [&] (int pk) {
+        Kokkos::TeamVectorRange(team, qc.extent(0)), [&] (int pk) {
 	  qc_incld(pk)=qc(pk)/cld_frac_l(pk);
 	  nc_incld(pk)=nc(pk)/cld_frac_l(pk);
 	});
@@ -137,7 +137,7 @@ void Functions<S,D>
 
   const Int nk_pack = ekat::npack<Spack>(nk);
   Kokkos::parallel_for(
-    Kokkos::TeamThreadRange(team, nk_pack), [&] (int pk) {
+    Kokkos::TeamVectorRange(team, nk_pack), [&] (int pk) {
       qc_tend(pk) = (qc(pk) - qc_tend(pk)) * inv_dt; // Liq. sedimentation tendency, measure
       nc_tend(pk) = (nc(pk) - nc_tend(pk)) * inv_dt; // Liq. # sedimentation tendency, measure
   });

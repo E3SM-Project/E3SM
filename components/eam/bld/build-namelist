@@ -3655,14 +3655,16 @@ if ($shoc_sgs  =~ /$TRUE/io) {
 }
 
 # P3
-add_default($nl, 'micro_p3_lookup_dir');
-add_default($nl, 'micro_p3_tableversion');
-add_default($nl, 'micro_aerosolactivation');
-add_default($nl, 'micro_subgrid_cloud');
-add_default($nl, 'micro_tend_output');
-add_default($nl, 'p3_qc_autoCon_Expon');
-add_default($nl, 'p3_qc_accret_Expon');
-add_default($nl, 'do_prescribed_CCN');
+if ($cfg->get('microphys') =~ /^p3/) {
+   add_default($nl, 'micro_p3_lookup_dir');
+   add_default($nl, 'micro_p3_tableversion');
+   add_default($nl, 'micro_aerosolactivation');
+   add_default($nl, 'micro_subgrid_cloud');
+   add_default($nl, 'micro_tend_output');
+   add_default($nl, 'p3_qc_autoCon_Expon');
+   add_default($nl, 'p3_qc_accret_Expon');
+   add_default($nl, 'do_prescribed_CCN');
+}
 
 # CLUBB_SGS
 add_default($nl, 'do_clubb_sgs');

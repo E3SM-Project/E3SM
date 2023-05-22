@@ -17,7 +17,7 @@ void Functions<S,D>
 {
   const Int nlevi_pack = ekat::npack<Spack>(nlevi);
 
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevi_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevi_pack), [&] (const Int& k) {
     const auto w3clip = scream::shoc::Constants<Scalar>::w3clip;
     Spack tsign(1);
 

@@ -29,9 +29,8 @@
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
-#include "share/util//scream_column_ops.hpp"
+#include "share/util/scream_column_ops.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
 
 // Ekat includes
@@ -53,9 +52,8 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   // This class needs Homme's context, so register as a user
   HommeContextUser::singleton().add_user();
 
-  ekat::any homme_nsteps;
-  homme_nsteps.reset<int>(-1);
-  m_restart_extra_data["homme_nsteps"] = std::make_pair(std::string("int"),homme_nsteps);
+  auto homme_nsteps = std::make_shared<ekat::any>(-1);
+  m_restart_extra_data["homme_nsteps"] = homme_nsteps;
 
   if (!is_parallel_inited_f90()) {
     // While we're here, we can init homme's parallel session
@@ -66,6 +64,10 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   // Set the log filename in the F90 interface
   const char* logname = m_atm_logger->get_logfile_name().c_str();
   set_homme_log_file_name_f90 (&logname);
+
+  m_bfb_hash_nstep = 0;
+  if (params.isParameter("BfbHash"))
+    m_bfb_hash_nstep = std::max(0, params.get<int>("BfbHash"));
 }
 
 HommeDynamics::~HommeDynamics ()
@@ -91,10 +93,6 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     // Set moisture in homme base on input file:
     const auto& moisture = m_params.get<std::string>("Moisture");
     set_homme_param("moisture",ekat::upper_case(moisture)!="DRY");
-
-    // Read vertical coordinates, before initing the data structures,
-    // so that Homme::HybridVCoords will be valid when stored in all the functors.
-    init_homme_vcoord ();
 
     prim_init_data_structures_f90 ();
   }
@@ -258,11 +256,12 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
   auto& params  = c.get<SimulationParams>();
 
   const auto num_elems = c.get<Elements>().num_elems();
+  const auto num_tracers = c.get<Tracers>().num_tracers();
 
   auto& caar = c.create_if_not_there<CaarFunctor>(num_elems,params);
   auto& hvf  = c.create_if_not_there<HyperviscosityFunctor>(num_elems, params);
   auto& ff   = c.create_if_not_there<ForcingFunctor>(num_elems, num_elems, params.qsize);
-  auto& diag = c.create_if_not_there<Diagnostics> (num_elems,params.theta_hydrostatic_mode);
+  auto& diag = c.create_if_not_there<Diagnostics> (num_elems, num_tracers, params.theta_hydrostatic_mode);
   auto& vrm  = c.create_if_not_there<VerticalRemapManager>(num_elems);
 
   const bool need_dirk = (params.time_step_type==TimeStepType::ttype7_imex ||
@@ -457,7 +456,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   rayleigh_friction_init();
 }
 
-void HommeDynamics::run_impl (const int dt)
+void HommeDynamics::run_impl (const double dt)
 {
   try {
 
@@ -466,8 +465,20 @@ void HommeDynamics::run_impl (const int dt)
 
     // NOTE: we did not have atm_dt when we inited homme, so we set nsplit=1.
     //       Now we can compute the actual nsplit, and need to update its value
-    //       in Hommexx's data structures
-    const int nsplit = get_homme_nsplit_f90(dt);
+    //       in Hommexx's data structures.
+    //       Also, nsplit calculation requires an integer atm timestep, so we
+    //       check to ensure that's the case
+    EKAT_REQUIRE_MSG (std::abs(dt-std::round(dt))<std::numeric_limits<double>::epsilon()*10,
+        "[HommeDynamics] Error! Input timestep departure from integer above tolerance.\n"
+        "  - input dt : " << dt << "\n"
+        "  - tolerance: " << std::numeric_limits<double>::epsilon()*10 << "\n");
+
+    if (m_bfb_hash_nstep > 0 && timestamp().get_num_steps() % m_bfb_hash_nstep == 0)
+      print_fast_global_state_hash("Hommexx");
+
+    const int dt_int = static_cast<int>(std::round(dt));
+
+    const int nsplit = get_homme_nsplit_f90(dt_int);
     const auto& c = Homme::Context::singleton();
     auto& params = c.get<Homme::SimulationParams>();
     params.nsplit = nsplit;
@@ -482,7 +493,7 @@ void HommeDynamics::run_impl (const int dt)
 
     // Update nstep in the restart extra data, so it can be written to restart if needed.
     const auto& tl = c.get<Homme::TimeLevel>();
-    auto& nstep = ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"].second);
+    auto& nstep = ekat::any_cast<int>(*m_restart_extra_data["homme_nsteps"]);
     nstep = tl.nstep;
 
     // Post process Homme's output, to produce what the rest of Atm expects
@@ -519,13 +530,12 @@ void HommeDynamics::set_computed_group_impl (const FieldGroup& group)
   }
 }
 
-void HommeDynamics::homme_pre_process (const int dt) {
+void HommeDynamics::homme_pre_process (const double dt) {
   // T and uv tendencies are backed out on the ref grid.
   // Homme takes care of turning the FT tendency into a tendency for VTheta_dp.
-  using KT = KokkosTypes<DefaultDevice>;
 
   constexpr int N = sizeof(Homme::Scalar) / sizeof(Real);
-  using Pack = ekat::Pack<Real,N>;
+  using Pack = RPack<N>;
 
   using namespace Homme;
   const auto& c = Context::singleton();
@@ -623,7 +633,7 @@ void HommeDynamics::homme_pre_process (const int dt) {
   }
 }
 
-void HommeDynamics::homme_post_process (const int dt) {
+void HommeDynamics::homme_post_process (const double dt) {
   const auto& pgn = m_phys_grid->name();
   const auto& c = Homme::Context::singleton();
   const auto& params = c.get<Homme::SimulationParams>();
@@ -643,23 +653,19 @@ void HommeDynamics::homme_post_process (const int dt) {
 
   if (fv_phys_active()) {
     fv_phys_post_process();
-  } else {
-    // Remap outputs to ref grid
-    m_d2p_remapper->remap(true);
-  }
-
-  constexpr int N = HOMMEXX_PACK_SIZE;
-  using KT = KokkosTypes<DefaultDevice>;
-  using Pack = ekat::Pack<Real,N>;
-  using ColOps = ColumnOps<DefaultDevice,Real>;
-  using PF = PhysicsFunctions<DefaultDevice>;
-
-  if (fv_phys_active()) {
     // Apply Rayleigh friction to update temperature and horiz_winds
     rayleigh_friction_apply(dt);
 
     return;
   }
+
+  // Remap outputs to ref grid
+  m_d2p_remapper->remap(true);
+
+  constexpr int N = HOMMEXX_PACK_SIZE;
+  using Pack = RPack<N>;
+  using ColOps = ColumnOps<DefaultDevice,Real>;
+  using PF = PhysicsFunctions<DefaultDevice>;
 
   // Convert VTheta_dp->T, store T,uv, and possibly w in FT, FM,
   // compute p_int on ref grid.
@@ -709,7 +715,7 @@ void HommeDynamics::homme_post_process (const int dt) {
     auto p_dry_mid = ekat::subview(p_dry_mid_view,icol);
     auto p_dry_int = ekat::subview(p_dry_int_view,icol);
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks), [&](const int& jpack) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,npacks), [&](const int& jpack) {
       dp_dry(jpack) = dp(jpack) * (1.0 - qv(jpack));
     });
     ColOps::column_scan<true>(team,nlevs,dp_dry,p_dry_int,ps0);
@@ -721,7 +727,7 @@ void HommeDynamics::homme_post_process (const int dt) {
     auto T      = ekat::subview(T_view,icol);
     auto T_prev = ekat::subview(T_prev_view,icol);
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,npacks),
                          [&](const int ilev) {
       // VTheta_dp->VTheta->Theta->T
       auto& T_val = T(ilev);
@@ -778,14 +784,22 @@ void HommeDynamics::init_homme_views () {
   constexpr int QSZ  = HOMMEXX_QSIZE_D;
   constexpr int NVL  = HOMMEXX_NUM_LEV;
   constexpr int NVLI = HOMMEXX_NUM_LEV_P;
+  constexpr int N    = HOMMEXX_PACK_SIZE;
 
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const int qsize = tracers.num_tracers();
 
+  const auto ncols = m_phys_grid->get_num_local_dofs();
+  const auto nlevs = m_phys_grid->get_num_vertical_levels();
+  const auto npacks= ekat::PackInfo<N>::num_packs(nlevs);
+
+  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  const auto default_policy = ESU::get_default_team_policy(ncols,npacks);
+
   // Print homme's parameters, so user can see whether something wasn't set right.
   // TODO: make Homme::SimulationParams::print accept an ostream.
   std::stringstream msg;
-  msg << "\n************** CXX SimulationParams **********************\n\n";
+  msg << "\n************** HOMMEXX SimulationParams **********************\n\n";
   msg << "   time_step_type: " << Homme::etoi(params.time_step_type) << "\n";
   msg << "   moisture: " << (params.moisture==Homme::MoistDry::DRY ? "dry" : "moist") << "\n";
   msg << "   remap_alg: " << Homme::etoi(params.remap_alg) << "\n";
@@ -815,7 +829,17 @@ void HommeDynamics::init_homme_views () {
   msg << "   disable_diagnostics: " << (params.disable_diagnostics ? "yes" : "no") << "\n";
   msg << "   theta_hydrostatic_mode: " << (params.theta_hydrostatic_mode ? "yes" : "no") << "\n";
   msg << "   prescribed_wind: " << (params.prescribed_wind ? "yes" : "no") << "\n";
-  msg << "   rearth: " << params.rearth << "\n";
+
+  msg << "\n************** General run info **********************\n\n";
+  msg << "   ncols: " << ncols << "\n";
+  msg << "   nlevs: " << nlevs << "\n";
+  msg << "   npacks: " << npacks << "\n";
+  msg << "   league_size: " << default_policy.league_size() << "\n";
+  msg << "   team_size: " << default_policy.team_size() << "\n";
+  msg << "   concurrent teams: " << KT::ExeSpace().concurrency() / default_policy.team_size() << "\n";
+
+  // TODO: Replace with scale_factor and laplacian_rigid_factor when available.
+  //msg << "   rearth: " << params.rearth << "\n";
   msg << "\n**********************************************************\n" << "\n";
   this->log(LogLevel::info,msg.str());
 
@@ -895,8 +919,7 @@ void HommeDynamics::restart_homme_state () {
   }
 
   constexpr int N = HOMMEXX_PACK_SIZE;
-  using Pack = ekat::Pack<Real,N>;
-  using KT = KokkosTypes<DefaultDevice>;
+  using Pack = RPack<N>;
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
   using PF = PhysicsFunctions<DefaultDevice>;
 
@@ -913,9 +936,9 @@ void HommeDynamics::restart_homme_state () {
         auto& tl = c.get<Homme::TimeLevel>();
 
   // For BFB restarts, set nstep counter in Homme's TimeLevel to match the restarted value.
-  const auto& nstep = ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"].second);
-  tl.nstep = nstep;
-  set_homme_param("num_steps",nstep);
+  const auto& nstep = ekat::any_ptr_cast<int>(*m_restart_extra_data["homme_nsteps"]);
+  tl.nstep = *nstep;
+  set_homme_param("num_steps",*nstep);
 
   constexpr int NGP = HOMMEXX_NP;
   const int nlevs = m_phys_grid->get_num_vertical_levels();
@@ -1007,7 +1030,7 @@ void HommeDynamics::restart_homme_state () {
     auto p_mid = ekat::subview(p_mid_view,icol);
     auto qv    = ekat::subview(qv_view,icol);
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,npacks),
                          [&](const int& ilev) {
       // T_prev as of now contains vtheta_dp. Convert to temperature
       auto& T_prev = T_prev_view(icol,ilev);
@@ -1024,8 +1047,7 @@ void HommeDynamics::restart_homme_state () {
 
 void HommeDynamics::initialize_homme_state () {
   // Some types
-  using KT = KokkosTypes<DefaultDevice>;
-  using Pack = ekat::Pack<Real,HOMMEXX_PACK_SIZE>;
+  using Pack = RPack<HOMMEXX_PACK_SIZE>;
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
@@ -1060,7 +1082,7 @@ void HommeDynamics::initialize_homme_state () {
   const auto policy_dp = ESU::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy_dp, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int icol = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs),
                         [&](const int ilev) {
        dp_ref(icol,ilev) = (hyai(ilev+1)-hyai(ilev))*ps0
                          + (hybi(ilev+1)-hybi(ilev))*ps_ref(icol);
@@ -1096,7 +1118,7 @@ void HommeDynamics::initialize_homme_state () {
   const int n0  = tl.n0;
   const int n0_qdp  = tl.n0_qdp;
 
-  ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"].second) = tl.nstep;
+  ekat::any_cast<int>(*m_restart_extra_data["homme_nsteps"]) = tl.nstep;
 
   const auto phis_dyn_view = m_helper_fields.at("phis_dyn").get_view<const Real***>();
   const auto phi_int_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();
@@ -1126,7 +1148,7 @@ void HommeDynamics::initialize_homme_state () {
     auto T      = ekat::subview(vth_view,ie,n0,igp,jgp);
     auto vTh_dp = ekat::subview(vth_view,ie,n0,igp,jgp);
     auto qv     = ekat::subview(Q_view,ie,0,igp,jgp);
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks_mid),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,npacks_mid),
                          [&](const int ilev) {
       const auto th = PF::calculate_theta_from_T(T(ilev),p_mid(ilev));
       vTh_dp(ilev) = PF::calculate_virtual_temperature(th,qv(ilev))*dp(ilev);
@@ -1233,59 +1255,13 @@ copy_dyn_states_to_all_timelevels () {
   qdp.subfield(1,np1_qdp).deep_copy(qdp.subfield(1,n0_qdp));
 }
 
-void HommeDynamics::init_homme_vcoord () {
-  using view_1d_host = AtmosphereInput::view_1d_host;
-  using vos_t = std::vector<std::string>;
-  using namespace ShortFieldTagsNames;
-
-  const int nlev_int = HOMMEXX_NUM_INTERFACE_LEV;
-  const int nlev_mid = HOMMEXX_NUM_PHYSICAL_LEV;
-
-  // Read vcoords into host views
-  ekat::ParameterList vcoord_reader_pl;
-  vcoord_reader_pl.set("Filename",m_params.get<std::string>("vertical_coordinate_filename"));
-  vcoord_reader_pl.set<vos_t>("Field Names",{"hyai","hybi","hyam","hybm"});
-  std::map<std::string,view_1d_host> host_views = {
-    { "hyai", view_1d_host("hyai",nlev_int) },
-    { "hybi", view_1d_host("hybi",nlev_int) },
-    { "hyam", view_1d_host("hyam",nlev_mid) },
-    { "hybm", view_1d_host("hybm",nlev_mid) }
-  };
-  std::map<std::string,FieldLayout> layouts = {
-    { "hyai", FieldLayout({ILEV},{nlev_int}) },
-    { "hybi", FieldLayout({ILEV},{nlev_int}) },
-    { "hyam", FieldLayout({LEV}, {nlev_mid}) },
-    { "hybm", FieldLayout({LEV}, {nlev_mid}) }
-  };
-
-  AtmosphereInput vcoord_reader(m_comm,vcoord_reader_pl);
-  vcoord_reader.init(m_dyn_grid,host_views,layouts);
-  vcoord_reader.read_variables();
-  vcoord_reader.finalize();
-
-  // Pass host views data to hvcoord init function
-  const auto ps0 = Homme::PhysicalConstants::p0;
-
-  // Set vcoords in f90
-  prim_set_hvcoords_f90 (ps0,
-                         host_views["hyai"].data(),
-                         host_views["hybi"].data(),
-                         host_views["hyam"].data(),
-                         host_views["hybm"].data());
-
-  // Store hybrid coords in phys grid
-  Kokkos::deep_copy(m_phys_grid->get_geometry_data("hyam"), host_views["hyam"]);
-  Kokkos::deep_copy(m_phys_grid->get_geometry_data("hybm"), host_views["hybm"]);
-}
-
 // =========================================================================================
 // Note: Any update to this routine will also need to be made within the homme_post_process
 //       routine, which is responsible for updating the pressure every timestep.  There is a
 //       TODO item to consolidate how we update the pressure during initialization and run, but
 //       for now we have two locations where we do this.
 void HommeDynamics::update_pressure(const std::shared_ptr<const AbstractGrid>& grid) {
-  using KT = KokkosTypes<DefaultDevice>;
-  using Pack = ekat::Pack<Real,HOMMEXX_PACK_SIZE>;
+  using Pack = RPack<HOMMEXX_PACK_SIZE>;
   using ColOps = ColumnOps<DefaultDevice,Real>;
 
   const auto ncols = grid->get_num_local_dofs();
@@ -1320,7 +1296,7 @@ void HommeDynamics::update_pressure(const std::shared_ptr<const AbstractGrid>& g
     auto p_dry_mid = ekat::subview(p_dry_mid_view,icol);
     auto p_dry_int = ekat::subview(p_dry_int_view,icol);
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks), [&](const int& jpack) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,npacks), [&](const int& jpack) {
       dp_dry(jpack) = dp(jpack) * (1.0 - qv(jpack));
     });
 

@@ -31,4 +31,10 @@ void FieldTracking::update_time_stamp (const TimeStamp& ts) {
   }
 }
 
+void FieldTracking::set_accum_start_time (const TimeStamp& t_start) {
+  EKAT_REQUIRE_MSG (not m_time_stamp.is_valid() || m_time_stamp<=t_start,
+      "Error! Accumulation start time is older than current timestamp of the field.\n");
+  m_accum_start = t_start;
+}
+
 } // namespace scream

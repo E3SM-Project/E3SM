@@ -1,0 +1,4 @@
+ rtmhist_fincl2 = 'RIVER_DISCHARGE_OVER_LAND_LIQ'
+ rtmhist_mfilt = 1,365
+ rtmhist_ndens = 2
+ rtmhist_nhtfrq = 0,-24

@@ -3,7 +3,9 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
+
 #include "ekat/ekat_parameter_list.hpp"
+#include "ekat/ekat_pack.hpp"
 
 #include <string>
 
@@ -21,11 +23,6 @@ namespace scream
  */
 class HommeDynamics : public AtmosphereProcess
 {
-  using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-  using KT = KokkosTypes<DefaultDevice>;
-  template<typename ScalarT>
-  using view_1d = typename KT::template view_1d<ScalarT>;
-
 public:
 
   // Constructor(s) and Destructor
@@ -36,7 +33,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
 
   // The name of the subcomponent
-  std::string name () const { return "Dynamics"; }
+  std::string name () const { return "homme"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -45,8 +42,8 @@ public:
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
 #endif
-  void homme_pre_process (const int dt);
-  void homme_post_process (const int dt);
+  void homme_pre_process (const double dt);
+  void homme_post_process (const double dt);
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
@@ -59,9 +56,6 @@ protected:
   void initialize_homme_state ();
   // Restart homme
   void restart_homme_state ();
-
-  // Read vertical coordinates and set them in hommexx's structures
-  void init_homme_vcoord ();
 
   // Updates p_mid
   void update_pressure (const std::shared_ptr<const AbstractGrid>& grid);
@@ -103,7 +97,7 @@ public:
   void remap_fv_phys_to_dyn() const;
   
 protected:
-  void run_impl        (const int dt);
+  void run_impl        (const double dt);
   void finalize_impl   ();
 
   // We need to store the size of the tracers group as soon as it is available.
@@ -140,14 +134,23 @@ protected:
   std::shared_ptr<const AbstractGrid> m_phys_grid; // Column parameterizations grid
   std::shared_ptr<const AbstractGrid> m_cgll_grid; // Unique CGLL
 
+  template<int N>
+  using RPack = ekat::Pack<Real,N>;
+
+  using KT = KokkosTypes<DefaultDevice>;
+  template<typename ScalarT>
+  using view_1d = typename KT::template view_1d<ScalarT>;
+
   // Rayleigh friction decay rate profile
-  view_1d<Pack> m_otau;
+  view_1d<RPack<SCREAM_PACK_SIZE>> m_otau;
 
   // Rayleigh friction paramaters
   int m_rayk0;      // Vertical level at which rayleigh friction term is centered.
   Real m_raykrange; // Range of rayleigh friction profile.
   Real m_raytau0;   // Approximate value of decay time at model top (days)
                     // if set to 0, no rayleigh friction is applied
+
+  int m_bfb_hash_nstep;
 };
 
 } // namespace scream

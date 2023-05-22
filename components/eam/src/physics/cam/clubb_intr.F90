@@ -1061,8 +1061,8 @@ end subroutine clubb_init_cnst
   ! =============================================================================== !
 
    subroutine clubb_tend_cam( &
-                              state,   ptend_all,   pbuf,     hdtime, &
-                              cmfmc,   cam_in,   sgh30, &
+                              state,   ptend_all,   pbuf,  diag,   hdtime, &
+                              cmfmc,   cam_in,   cam_out,  sgh30,          &
                               macmic_it, cld_macmic_num_steps,dlf, det_s, det_ice, alst_o)
 
 !-------------------------------------------------------------------------------
@@ -1088,12 +1088,15 @@ end subroutine clubb_init_cnst
    use ppgrid,         only: pver, pverp, pcols
    use constituents,   only: cnst_get_ind, cnst_type
    use co2_cycle,      only: co2_cycle_set_cnst_type
-   use camsrfexch,     only: cam_in_t
+   use camsrfexch,     only: cam_in_t, cam_out_t
    use ref_pres,       only: top_lev => trop_cloud_top_lev
    use time_manager,   only: is_first_step, is_first_restart_step, get_nstep
    use cam_abortutils, only: endrun
    use wv_saturation,  only: qsat
    use micro_mg_cam,   only: micro_mg_version
+
+   use conditional_diag,      only: cnd_diag_t
+   use conditional_diag_main, only: cnd_diag_checkpoint
 
 #ifdef CLUBB_SGS
    use hb_diff,                   only: pblintd
@@ -1147,12 +1150,14 @@ end subroutine clubb_init_cnst
    real(r8),            intent(in)    :: sgh30(pcols)             ! std deviation of orography              [m]
    integer,             intent(in)    :: cld_macmic_num_steps     ! number of mac-mic iterations
    integer,             intent(in)    :: macmic_it                ! number of mac-mic iterations
+   type(cam_out_t),     intent(in)    :: cam_out
 
    ! ---------------------- !
    ! Input-Output Auguments !
    ! ---------------------- !
 
    type(physics_buffer_desc), pointer :: pbuf(:)
+   type(cnd_diag_t),    intent(inout) :: diag                     !  conditionally sampled fields
 
    ! ---------------------- !
    ! Output Auguments !
@@ -1459,6 +1464,8 @@ end subroutine clubb_init_cnst
 
    integer :: ixorg
 
+   character(len=2) :: char_macmic_it
+
    intrinsic :: selected_real_kind, max
 
 !PMA adds gustiness and tpert
@@ -1492,6 +1499,11 @@ end subroutine clubb_init_cnst
 #endif
    det_s(:)   = 0.0_r8
    det_ice(:) = 0.0_r8
+
+   if (macmic_it > 99) then
+      call endrun('clubb_tend_cam: macmic_it > 99. Revise checkpoint name for cnd_diag_checkpoint.')
+   end if
+
 #ifdef CLUBB_SGS
 
    !-----------------------------------------------------------------------------------------------!
@@ -1501,6 +1513,8 @@ end subroutine clubb_init_cnst
    !-----------------------------------------------------------------------------------------------!
    !-----------------------------------------------------------------------------------------------!
    !-----------------------------------------------------------------------------------------------!
+
+   write(char_macmic_it,'(i2.2)') macmic_it
 
    call t_startf('clubb_tend_cam_init')
    invrs_hdtime = 1._r8 / hdtime
@@ -1725,6 +1739,8 @@ end subroutine clubb_init_cnst
      call outfld( 'NITENDICE', initend, pcols, lchnk )
 
    endif
+
+   call cnd_diag_checkpoint(diag, 'ICEMAC'//char_macmic_it, state1, pbuf, cam_in, cam_out)
 
    !  Determine CLUBB time step and make it sub-step friendly
    !  For now we want CLUBB time step to be 5 min since that is
@@ -2584,6 +2600,8 @@ end subroutine clubb_init_cnst
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
    call physics_update(state1,ptend_loc,hdtime)
 
+   call cnd_diag_checkpoint(diag, 'CLUBB'//char_macmic_it, state1, pbuf, cam_in, cam_out)
+
    ! ------------------------------------------------------------ !
    ! ------------------------------------------------------------ !
    ! ------------------------------------------------------------ !
@@ -2653,6 +2671,7 @@ end subroutine clubb_init_cnst
 
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
    call physics_update(state1,ptend_loc,hdtime)
+   call cnd_diag_checkpoint(diag, 'CUDET'//char_macmic_it, state1, pbuf, cam_in, cam_out)
 
    ! ptend_all now has all accumulated tendencies.  Convert the tendencies for the
    ! dry constituents to dry air basis.
@@ -2887,6 +2906,7 @@ end subroutine clubb_init_cnst
    enddo
 
    ! diagnose surface friction and obukhov length (inputs to diagnose PBL depth)
+   kbfs = 0._r8
    do i=1,ncol
       rrho = invrs_gravit*(state1%pdel(i,pver)/dz_g(pver))
       call calc_ustar( state1%t(i,pver), state1%pmid(i,pver), cam_in%wsx(i), cam_in%wsy(i), &
@@ -2897,8 +2917,6 @@ end subroutine clubb_init_cnst
 
    dummy2(:) = 0._r8
    dummy3(:) = 0._r8
-
-   where (kbfs .eq. -0.0_r8) kbfs = 0.0_r8
 
    !  Compute PBL depth according to Holtslag-Boville Scheme
    call pblintd(ncol, thv, state1%zm, state1%u, state1%v, &
@@ -3047,6 +3065,8 @@ end subroutine clubb_init_cnst
 
    endif
 
+   call cnd_diag_checkpoint(diag, 'MACDIAG'//char_macmic_it, state1, pbuf, cam_in, cam_out)
+
    return
 #endif
   end subroutine clubb_tend_cam
@@ -3055,10 +3075,10 @@ end subroutine clubb_init_cnst
   !                                                                                 !
   ! =============================================================================== !
 
-    subroutine clubb_surface (state, ptend, ztodt, cam_in, ustar, obklen)
+    subroutine clubb_surface (state, cam_in, ustar, obklen)
 
 !-------------------------------------------------------------------------------
-! Description: Provide the obukov length and the surface friction velocity
+! Description: Provide the obukhov length and the surface friction velocity
 !              for the dry deposition code in routine tphysac.  Since University
 !              of Washington Moist Turbulence (UWMT) scheme is not called when
 !              CLUBB is turned on the obukov length and ustar are never initialized
@@ -3071,13 +3091,10 @@ end subroutine clubb_init_cnst
 !   None
 !-------------------------------------------------------------------------------
 
-    use physics_types,          only: physics_state, physics_ptend, &
-                                      physics_ptend_init, &
-                                      set_dry_to_wet, set_wet_to_dry
-    use physconst,              only: gravit, zvir, latvap
+    use physics_types,          only: physics_state
+    use physconst,              only: zvir
     use ppgrid,                 only: pver, pcols
-    use constituents,           only: pcnst, cnst_get_ind, cnst_type
-    use co2_cycle,              only: co2_cycle_set_cnst_type
+    use constituents,           only: cnst_get_ind
     use camsrfexch,             only: cam_in_t
 
     implicit none
@@ -3089,13 +3106,10 @@ end subroutine clubb_init_cnst
     type(physics_state), intent(inout)  :: state                ! Physics state variables
     type(cam_in_t),      intent(in)     :: cam_in
 
-    real(r8),            intent(in)     :: ztodt                ! 2 delta-t        [ s ]
-
     ! ---------------- !
     ! Output Auguments !
     ! ---------------- !
 
-    type(physics_ptend), intent(out)    :: ptend                ! Individual parameterization tendencies
     real(r8),            intent(out)    :: obklen(pcols)        ! Obukhov length [ m ]
     real(r8),            intent(out)    :: ustar(pcols)         ! Surface friction velocity [ m/s ]
 
@@ -3113,15 +3127,9 @@ end subroutine clubb_init_cnst
     real(r8) :: kinheat                                         ! kinematic surface heat flux
     real(r8) :: kinwat                                          ! kinematic surface vapor flux
     real(r8) :: kbfs                                            ! kinematic surface buoyancy flux
-    real(r8) :: tmp1(pcols)
-    real(r8) :: rztodt                                          ! 1./ztodt
-    integer  :: m
     integer  :: ixq,ixcldliq !PMA fix for thv
     real(r8) :: rrho                                            ! Inverse air density
 
-    logical  :: lq(pcnst)
-
-    character(len=3), dimension(pcnst) :: cnst_type_loc         ! local override option for constituents cnst_type
 
 #endif
     obklen(pcols) = 0.0_r8
@@ -3131,20 +3139,10 @@ end subroutine clubb_init_cnst
     ! ----------------------- !
     ! Main Computation Begins !
     ! ----------------------- !
-
-    ! Assume 'wet' mixing ratios in surface diffusion code.
-    ! don't convert co2 tracers to wet mixing ratios
-    cnst_type_loc(:) = cnst_type(:)
-    call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
-    call set_dry_to_wet(state, cnst_type_loc)
-
     call cnst_get_ind('Q',ixq)
     if (use_sgv) then
        call cnst_get_ind('CLDLIQ',ixcldliq)
     endif
-
-    lq(:) = .TRUE.
-    call physics_ptend_init(ptend, state%psetcols, 'clubb_srf', lq=lq)
 
     ncol = state%ncol
 
@@ -3166,28 +3164,6 @@ end subroutine clubb_init_cnst
        call calc_obklen( th(i), thv(i), cam_in%cflx(i,1), cam_in%shf(i), rrho, ustar(i), &
                         kinheat, kinwat, kbfs, obklen(i) )
     enddo
-
-    rztodt                 = 1._r8/ztodt
-    ptend%q(:ncol,:pver,:) = state%q(:ncol,:pver,:)
-    tmp1(:ncol)            = ztodt * gravit * state%rpdel(:ncol,pver)
-
-    do m = 2, pcnst
-      ptend%q(:ncol,pver,m) = ptend%q(:ncol,pver,m) + tmp1(:ncol) * cam_in%cflx(:ncol,m)
-    enddo
-
-    ptend%q(:ncol,:pver,:) = (ptend%q(:ncol,:pver,:) - state%q(:ncol,:pver,:)) * rztodt
-
-    ! Convert tendencies of dry constituents to dry basis.
-    do m = 1,pcnst
-       if (cnst_type(m).eq.'dry') then
-          ptend%q(:ncol,:pver,m) = ptend%q(:ncol,:pver,m)*state%pdel(:ncol,:pver)/state%pdeldry(:ncol,:pver)
-       endif
-    end do
-    ! convert wet mmr back to dry before conservation check
-    ! avoid converting co2 tracers again
-    cnst_type_loc(:) = cnst_type(:)
-    call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
-    call set_wet_to_dry(state, cnst_type_loc)
 
     return
 

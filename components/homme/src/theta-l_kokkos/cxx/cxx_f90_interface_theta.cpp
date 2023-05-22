@@ -17,6 +17,7 @@
 #include "HommexxEnums.hpp"
 #include "HybridVCoord.hpp"
 #include "HyperviscosityFunctor.hpp"
+#include "LimiterFunctor.hpp"
 #include "ReferenceElement.hpp"
 #include "SimulationParams.hpp"
 #include "SphereOperators.hpp"
@@ -40,27 +41,32 @@ extern "C"
 void init_simulation_params_c (const int& remap_alg, const int& limiter_option, const int& rsplit, const int& qsplit,
                                const int& time_step_type, const int& qsize, const int& state_frequency,
                                const Real& nu, const Real& nu_p, const Real& nu_q, const Real& nu_s, const Real& nu_div, const Real& nu_top,
-                               const int& hypervis_order, const int& hypervis_subcycle, const int& hypervis_subcycle_tom, 
+                               const int& hypervis_order, const int& hypervis_subcycle, const int& hypervis_subcycle_tom,
                                const double& hypervis_scaling, const double& dcmip16_mu,
                                const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
                                const bool& use_cpstar, const int& transport_alg, const bool& theta_hydrostatic_mode, const char** test_case,
                                const int& dt_remap_factor, const int& dt_tracer_factor,
-                               const double& rearth, const int& nsplit, const bool& pgrad_correction)
+                               const double& scale_factor, const double& laplacian_rigid_factor, const int& nsplit, const bool& pgrad_correction,
+                               const double& dp3d_thresh, const double& vtheta_thresh)
 {
   // Check that the simulation options are supported. This helps us in the future, since we
   // are currently 'assuming' some option have/not have certain values. As we support for more
   // options in the C++ build, we will remove some checks
   Errors::check_option("init_simulation_params_c","vert_remap_q_alg",remap_alg,{1,3,10});
-  Errors::check_option("init_simulation_params_c","prescribed_wind",prescribed_wind,{false});
   Errors::check_option("init_simulation_params_c","hypervis_order",hypervis_order,{2});
   Errors::check_option("init_simulation_params_c","transport_alg",transport_alg,{0,12});
   Errors::check_option("init_simulation_params_c","time_step_type",time_step_type,{1,4,5,6,7,9,10});
   Errors::check_option("init_simulation_params_c","qsize",qsize,0,Errors::ComparisonOp::GE);
   Errors::check_option("init_simulation_params_c","qsize",qsize,QSIZE_D,Errors::ComparisonOp::LE);
-  Errors::check_option("init_simulation_params_c","limiter_option",limiter_option,{8,9});
+  if (qsize > 0) {
+    // limiter_option is irrelevant if qsize = 0.
+    Errors::check_option("init_simulation_params_c","limiter_option",limiter_option,{8,9});
+  }
   Errors::check_option("init_simulation_params_c","ftype",ftype, {-1, 0, 2});
   Errors::check_option("init_simulation_params_c","nu_p",nu_p,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","nu",nu,0.0,Errors::ComparisonOp::GT);
+  Errors::check_option("init_simulation_params_c","dp3d_thresh",dp3d_thresh,0.0,Errors::ComparisonOp::GT);
+  Errors::check_option("init_simulation_params_c","vtheta_thresh",vtheta_thresh,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","nu_div",nu_div,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","theta_advection_form",theta_adv_form,{0,1});
 #ifndef SCREAM
@@ -112,8 +118,11 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.theta_hydrostatic_mode        = theta_hydrostatic_mode;
   params.dcmip16_mu                    = dcmip16_mu;
   params.nsplit                        = nsplit;
-  params.rearth                        = rearth;
+  params.scale_factor                  = scale_factor;
+  params.laplacian_rigid_factor        = laplacian_rigid_factor;
   params.pgrad_correction              = pgrad_correction;
+  params.dp3d_thresh                   = dp3d_thresh;
+  params.vtheta_thresh                 = vtheta_thresh;
 
   if (time_step_type==5) {
     //5 stage, 3rd order, explicit
@@ -130,8 +139,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
     //5 stage, based on the 2nd order explicit KGU table
     //2nd order implicit table
     params.time_step_type = TimeStepType::ttype10_imex;
-  } else {
-    Errors::runtime_abort("Invalid time_step_time" 
+  } else if ( ! params.prescribed_wind) {
+    Errors::runtime_abort("Invalid time_step_type"
                           + std::to_string(time_step_type), Errors::err_not_implemented);
   }
 
@@ -141,11 +150,11 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
     if (params.hypervis_scaling != 0.0) {
       params.nu_ratio1 = ratio * ratio;
       params.nu_ratio2 = 1.0;
-    }else{
+    } else {
       params.nu_ratio1 = ratio;
       params.nu_ratio2 = ratio;
     }
-  }else{
+  } else {
     params.nu_ratio1 = 1.0;
     params.nu_ratio2 = 1.0;
   }
@@ -159,10 +168,9 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   }
 
   // TODO Parse a fortran string and set this properly. For now, our code does
-  // not depend on this except to throw an error in apply_test_forcing.
+  // not depend on this value.
   std::string test_name(*test_case);
-  //TEMP
-  params.test_case = TestCase::JW_BAROCLINIC;
+  params.test_case = TestCase::UNUSED;
 
   // Now this structure can be used safely
   params.params_set = true;
@@ -271,7 +279,7 @@ void init_elements_c (const int& num_elems)
 
   const bool consthv = (params.hypervis_scaling==0.0);
   e.init (num_elems, consthv, /* alloc_gradphis = */ true,
-          params.rearth,
+          params.scale_factor, params.laplacian_rigid_factor,
           /* alloc_sphere_coords = */ params.transport_alg > 0);
 
   // Init also the tracers structure
@@ -338,6 +346,7 @@ void init_functors_c (const bool& allocate_buffer)
 
   // First, sphere operators, then the others
   auto& sph_op = c.create<SphereOperators>(elems.m_geometry,ref_FE);
+  auto& limiter = c.create_if_not_there<LimiterFunctor>(elems,hvcoord,params);
 
   // Some functors might have been previously created, so
   // use the create_if_not_there() function.
@@ -346,12 +355,15 @@ void init_functors_c (const bool& allocate_buffer)
 #ifdef HOMME_ENABLE_COMPOSE
   else                           c.create_if_not_there<ComposeTransport>();
 #endif
-  auto& hvf  = c.create_if_not_there<HyperviscosityFunctor>();
-  auto& ff   = c.create_if_not_there<ForcingFunctor>();
-  auto& diag = c.create_if_not_there<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
-  auto& vrm  = c.create_if_not_there<VerticalRemapManager>(elems.num_elems());
+  auto& hvf     = c.create_if_not_there<HyperviscosityFunctor>();
+  auto& ff      = c.create_if_not_there<ForcingFunctor>();
+  auto& diag    = c.create_if_not_there<Diagnostics> (elems.num_elems(),tracers.num_tracers(),
+                                                      params.theta_hydrostatic_mode);
+  auto& vrm     = c.create_if_not_there<VerticalRemapManager>(elems.num_elems());
 
-  auto& fbm  = c.create_if_not_there<FunctorsBuffersManager>();
+  auto& fbm     = c.create_if_not_there<FunctorsBuffersManager>();
+
+//OG why are if-statement here -- above calls define which constructor is called
 
   // If any Functor was constructed only partially, setup() must be called.
   // This does not apply to Diagnostics or DirkFunctor since they only
@@ -363,10 +375,10 @@ void init_functors_c (const bool& allocate_buffer)
     auto& esf = c.get<EulerStepFunctor>();
     if (esf.setup_needed()) esf.setup();
   } else {
-#ifdef HOMME_ENABLE_COMPOSE	  
+#ifdef HOMME_ENABLE_COMPOSE
     auto& ct = c.get<ComposeTransport>();
     if (ct.setup_needed()) ct.setup();
-#endif    
+#endif
   }
   if (hvf.setup_needed()) {
     hvf.setup(geometry, state, derived);
@@ -378,7 +390,7 @@ void init_functors_c (const bool& allocate_buffer)
     vrm.setup();
   }
 
-  const bool need_dirk = (params.time_step_type==TimeStepType::ttype7_imex ||   
+  const bool need_dirk = (params.time_step_type==TimeStepType::ttype7_imex ||
                           params.time_step_type==TimeStepType::ttype9_imex ||
                           params.time_step_type==TimeStepType::ttype10_imex  );
 
@@ -395,13 +407,14 @@ void init_functors_c (const bool& allocate_buffer)
     if (params.transport_alg == 0)
       fbm.request_size(c.get<EulerStepFunctor>().requested_buffer_size());
 #ifdef HOMME_ENABLE_COMPOSE
-    else	    
+    else
       fbm.request_size(c.get<ComposeTransport>().requested_buffer_size());
 #endif
     fbm.request_size(hvf.requested_buffer_size());
     fbm.request_size(diag.requested_buffer_size());
     fbm.request_size(ff.requested_buffer_size());
     fbm.request_size(vrm.requested_buffer_size());
+    fbm.request_size(limiter.requested_buffer_size());
     if (need_dirk) {
       const auto& dirk = Context::singleton().get<DirkFunctor>();
       fbm.request_size(dirk.requested_buffer_size());
@@ -422,6 +435,7 @@ void init_functors_c (const bool& allocate_buffer)
   diag.init_buffers(fbm);
   ff.init_buffers(fbm);
   vrm.init_buffers(fbm);
+  limiter.init_buffers(fbm);
   if (need_dirk) {
     auto& dirk = Context::singleton().get<DirkFunctor>();
     dirk.init_buffers(fbm);
@@ -514,7 +528,7 @@ void init_elements_states_c (CF90Ptr& elem_state_v_ptr,       CF90Ptr& elem_stat
   });
 }
 
-void init_reference_states_c (CF90Ptr& elem_theta_ref_ptr, 
+void init_reference_states_c (CF90Ptr& elem_theta_ref_ptr,
                               CF90Ptr& elem_dp_ref_ptr,
                               CF90Ptr& elem_phi_ref_ptr)
 {
@@ -542,8 +556,9 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
   Diagnostics&      diags    = Context::singleton().get<Diagnostics> ();
 
   auto& hvcoord = Context::singleton().get<HybridVCoord>();
-  
-  diags.init(state, geometry, hvcoord,
+  const auto& tracers = Context::singleton().get<Tracers>();
+
+  diags.init(state, geometry, hvcoord, tracers,
              elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr,
              elem_accum_iener_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr);
 }
@@ -571,11 +586,11 @@ void init_boundary_exchanges_c ()
     esf.reset(params);
     esf.init_boundary_exchanges();
   } else {
-#ifdef HOMME_ENABLE_COMPOSE	  
+#ifdef HOMME_ENABLE_COMPOSE
     auto& ct = c.get<ComposeTransport>();
     ct.reset(params);
     ct.init_boundary_exchanges();
-#endif    
+#endif
   }
 
   // RK stages BE's
@@ -591,6 +606,27 @@ void init_boundary_exchanges_c ()
     gfr.reset(params);
     gfr.init_boundary_exchanges();
   }
+}
+
+void push_test_state_to_c (
+  CF90Ptr& ps_v_ptr, CF90Ptr& dp3d_ptr, CF90Ptr& vtheta_dp_ptr, CF90Ptr& phinh_i_ptr,
+  CF90Ptr& v_ptr, CF90Ptr& w_i_ptr, CF90Ptr& eta_dot_dpdn_ptr, CF90Ptr& vn0_ptr)
+{
+  const auto& c = Context::singleton();
+  auto& state = c.get<ElementsState>();
+  state.pull_from_f90_pointers(v_ptr, w_i_ptr, vtheta_dp_ptr, phinh_i_ptr, dp3d_ptr, ps_v_ptr);
+  auto& derived = c.get<ElementsDerivedState>();
+  HostViewUnmanaged<const Real*[NUM_INTERFACE_LEV][NP][NP]>
+    eta_dot_dpdn_h(eta_dot_dpdn_ptr, derived.num_elems());
+  HostViewUnmanaged<const Real*[NUM_PHYSICAL_LEV][2][NP][NP]>
+    vn0_h(vn0_ptr, derived.num_elems());
+  sync_to_device(eta_dot_dpdn_h, derived.m_eta_dot_dpdn);
+  sync_to_device(vn0_h, derived.m_vn0);
+}
+
+void sync_diagnostics_to_host_c ()
+{
+  Context::singleton().get<Diagnostics>().sync_diagnostics_to_host();
 }
 
 } // extern "C"

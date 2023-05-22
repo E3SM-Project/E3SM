@@ -13,17 +13,14 @@ PointGrid (const std::string& grid_name,
            const ekat::Comm&  comm)
  : AbstractGrid(grid_name,GridType::Point,num_my_cols,num_vertical_levels,comm)
 {
+  create_dof_fields (get_2d_scalar_layout().rank());
+
   // The lid->idx map is the identity map.
-  lid_to_idx_map_type lid_to_idx("lid to idx",get_num_local_dofs(),1);
-  auto h_lid_to_idx = Kokkos::create_mirror_view(lid_to_idx);
+  auto lid2idx = get_lid_to_idx_map();
+  auto h_lid_to_idx = lid2idx.get_view<int**,Host>();
   std::iota(h_lid_to_idx.data(),h_lid_to_idx.data()+get_num_local_dofs(),0);
-  Kokkos::deep_copy(lid_to_idx,h_lid_to_idx);
-
-  // Note: we use the base class set method, rather than directly using m_lid_to_idx,
-  //       so that we can perform sanity checks on inputs consistency.
-  set_lid_to_idx_map(lid_to_idx);
+  lid2idx.sync_to_dev();
 }
-
 
 FieldLayout
 PointGrid::get_2d_scalar_layout () const
@@ -68,7 +65,7 @@ PointGrid::clone (const std::string& clone_name,
                   const bool shallow) const
 {
   auto grid = std::make_shared<PointGrid> (clone_name,get_num_local_dofs(),get_num_vertical_levels(),get_comm());
-  grid->copy_views(*this,shallow);
+  grid->copy_data(*this,shallow);
   return grid;
 }
 
@@ -94,44 +91,10 @@ create_point_grid (const std::string& grid_name,
   auto grid = std::make_shared<PointGrid>(grid_name,num_my_cols,num_vertical_lev,comm);
   grid->setSelfPointer(grid);
 
-  PointGrid::dofs_list_type dofs_gids ("phys dofs",num_my_cols);
-  auto h_dofs_gids = Kokkos::create_mirror_view(dofs_gids);
+  auto dofs_gids = grid->get_dofs_gids();
+  auto h_dofs_gids = dofs_gids.get_view<AbstractGrid::gid_type*,Host>();
   std::iota(h_dofs_gids.data(),h_dofs_gids.data()+num_my_cols,dof_offset);
-  Kokkos::deep_copy(dofs_gids,h_dofs_gids);
-
-  grid->set_dofs(dofs_gids);
-
-  using device_type       = DefaultDevice;
-  using kokkos_types      = KokkosTypes<device_type>;
-  using geo_view_type     = kokkos_types::view_1d<Real>;
-  using C                 = scream::physics::Constants<Real>;
-
-  // Store cell area, longitude, latitude and reference/surface pressure fractions
-  // in geometry data. For  longitude, latitude and pressure fractions, set values
-  // to NaN since they are not necessarily required from all application using PointGrid
-  geo_view_type area("area", num_my_cols);
-  geo_view_type lon ("lon",  num_my_cols);
-  geo_view_type lat ("lat",  num_my_cols);
-  geo_view_type hyam("hyam", num_vertical_lev);
-  geo_view_type hybm("hybm", num_vertical_lev);
-
-  // Estimate cell area for a uniform grid by taking the surface area
-  // of the earth divided by the number of columns.  Note we do this in
-  // units of radians-squared.
-  const Real pi        = C::Pi;
-  const Real cell_area = 4.0*pi/num_my_cols;
-
-  Kokkos::deep_copy(area, cell_area);
-  Kokkos::deep_copy(lon,  std::nan(""));
-  Kokkos::deep_copy(lat,  std::nan(""));
-  Kokkos::deep_copy(hyam, std::nan(""));
-  Kokkos::deep_copy(hybm, std::nan(""));
-
-  grid->set_geometry_data("area", area);
-  grid->set_geometry_data("lon",  lon);
-  grid->set_geometry_data("lat",  lat);
-  grid->set_geometry_data("hyam", hyam);
-  grid->set_geometry_data("hybm", hybm);
+  dofs_gids.sync_to_dev();
 
   return grid;
 }

@@ -45,5 +45,11 @@ endif # PHG IF
 override CPPFLAGS += $(EXTERNAL_DYCORE_FLAG)
 # ===================================
 
+# Optional Sea Level model
+ifeq "$(SLM)" "true"
+    override CPPFLAGS += -DUSE_SEALEVELMODEL
+endif
+
+# ===================================
 report_builds:
 	@echo "CORE=landice"

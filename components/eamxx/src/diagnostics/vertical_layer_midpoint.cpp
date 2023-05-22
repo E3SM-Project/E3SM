@@ -70,7 +70,7 @@ void VerticalLayerMidpointDiagnostic::compute_diagnostic_impl()
     const auto& z_mid_s = ekat::subview(z_mid, icol);
     const auto& dz_s    = z_mid_s; // Use the memory in z_mid for dz, since we don't set z_mid until after dz is no longer needed.
     const auto& z_int_s = ekat::subview(z_int, icol);
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks), [&] (const Int& jpack) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npacks), [&] (const Int& jpack) {
       dz_s(jpack) = PF::calculate_dz(pseudo_density_mid(icol,jpack), p_mid(icol,jpack), T_mid(icol,jpack), qv_mid(icol,jpack));
     });
     team.team_barrier();

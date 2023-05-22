@@ -505,6 +505,16 @@ add_default($nl, 'config_AM_temperatures_output_stream');
 add_default($nl, 'config_AM_temperatures_compute_on_startup');
 add_default($nl, 'config_AM_temperatures_write_on_startup');
 
+##################################
+# Namelist group: AM_thicknesses #
+##################################
+
+add_default($nl, 'config_AM_thicknesses_enable');
+add_default($nl, 'config_AM_thicknesses_compute_interval');
+add_default($nl, 'config_AM_thicknesses_output_stream');
+add_default($nl, 'config_AM_thicknesses_compute_on_startup');
+add_default($nl, 'config_AM_thicknesses_write_on_startup');
+
 #########################################
 # Namelist group: AM_regionalStatistics #
 #########################################

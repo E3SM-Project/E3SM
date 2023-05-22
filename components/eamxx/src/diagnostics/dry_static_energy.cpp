@@ -79,7 +79,7 @@ void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
     const auto& dz_s    = ekat::subview(tmp_mid,icol);
     const auto& z_int_s = ekat::subview(tmp_int,icol);
     const auto& z_mid_s = dz_s; // Reuse the memory for z_mid, but set a new variable for code readability.
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks), [&] (const Int& jpack) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npacks), [&] (const Int& jpack) {
       dz_s(jpack) = PF::calculate_dz(pseudo_density_mid(icol,jpack), p_mid(icol,jpack), T_mid(icol,jpack), qv_mid(icol,jpack));
     });
     team.team_barrier();
@@ -88,7 +88,7 @@ void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
     PF::calculate_z_mid(team,num_levs,z_int_s,z_mid_s);
     team.team_barrier();
     const auto& dse_s = ekat::subview(dse,icol);
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks), [&] (const Int& jpack) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npacks), [&] (const Int& jpack) {
       dse_s(jpack) = PF::calculate_dse(T_mid(icol,jpack),z_mid_s(jpack),phis(icol));
     });
     team.team_barrier();

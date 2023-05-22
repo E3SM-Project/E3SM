@@ -28,7 +28,7 @@ void Functions<S,D>::linear_interp(
   const Int km2_pack = ekat::npack<Spack>(km2);
 
   if (km1 == km2+1) {
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, km2_pack), [&] (const Int& k2) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, km2_pack), [&] (const Int& k2) {
       Spack x1, x1s, y1, y1s; // s->-1 shift
       auto indx_pack = ekat::range<IntSmallPack>(k2*Spack::n + 1);
 
@@ -48,7 +48,7 @@ void Functions<S,D>::linear_interp(
     // a Kokkos::single block so that all conditionals can be removed from the ||4.
     // Keep thread0 unoccupied so it can process the Kokkos::single while other threads
     // are doing the ||4.
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, km2_pack), [&] (const Int& k2) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, km2_pack), [&] (const Int& k2) {
       Spack x1, x1s, y1, y1s; // s->-1 shift
       auto indx_pack = ekat::range<IntSmallPack>(k2*Spack::n);
       indx_pack.set(indx_pack < 1, 1); // special shift for 0 boundary case
@@ -64,7 +64,7 @@ void Functions<S,D>::linear_interp(
   }
   team.team_barrier();
 
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, km2_pack), [&] (const Int& k2) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, km2_pack), [&] (const Int& k2) {
     y2(k2).set(y2(k2) < minthresh, minthresh);
   });
 }

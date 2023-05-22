@@ -85,7 +85,7 @@ void Functions<S,D>::shoc_assumed_pdf(
   // The following is morally a const var, but there are issues with
   // gnu and std=c++14. The macro ConstExceptGnu is defined in ekat_kokkos_types.hpp.
   ConstExceptGnu Int nlev_pack = ekat::npack<Spack>(nlev);
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     // Initialize cloud variables to zero
     shoc_cldfrac(k) = 0;
     if (k==0) { shoc_ql(k)[0] = 0; }

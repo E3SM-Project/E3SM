@@ -41,7 +41,7 @@ void Functions<S,D>
   static constexpr Scalar Cee = Ce1 + Ce2;
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
 
     // Compute buoyant production term
     const Spack a_prod_bu = (ggr/basetemp)*wthv_sec(k);

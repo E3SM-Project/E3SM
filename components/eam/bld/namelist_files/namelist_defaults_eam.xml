@@ -920,14 +920,14 @@
 <micro_mincdnc        microphys="mg2">  -999.       </micro_mincdnc>
 
 <!-- P3 specific namelist variables -->
-<micro_p3_lookup_dir	    > atm/scream/tables </micro_p3_lookup_dir>
-<micro_p3_tableversion		      > 4.1.1  </micro_p3_tableversion>
-<micro_aerosolactivation              > .true.  </micro_aerosolactivation>
-<micro_subgrid_cloud     	      > .true.  </micro_subgrid_cloud>
-<micro_tend_output       	      > .true.  </micro_tend_output>
-<p3_qc_autoCon_Expon    		      >  2.47   </p3_qc_autoCon_Expon>
-<p3_qc_accret_Expon    		      >  1.15   </p3_qc_accret_Expon>
-<do_prescribed_CCN                    > .false. </do_prescribed_CCN>
+<micro_p3_lookup_dir     microphys="p3"> atm/scream/tables </micro_p3_lookup_dir>
+<micro_p3_tableversion   microphys="p3"> 4.1.1  </micro_p3_tableversion>
+<micro_aerosolactivation microphys="p3"> .true.  </micro_aerosolactivation>
+<micro_subgrid_cloud     microphys="p3"> .true.  </micro_subgrid_cloud>
+<micro_tend_output       microphys="p3"> .true.  </micro_tend_output>
+<p3_qc_autoCon_Expon     microphys="p3"> 2.47   </p3_qc_autoCon_Expon>
+<p3_qc_accret_Expon      microphys="p3"> 1.15   </p3_qc_accret_Expon>
+<do_prescribed_CCN       microphys="p3"> .false. </do_prescribed_CCN>
 
 <!-- special defaults for MMF, which now sets all other physics scheme options to "off" -->
 <micro_mincdnc        use_MMF="1">  -999.       </micro_mincdnc>

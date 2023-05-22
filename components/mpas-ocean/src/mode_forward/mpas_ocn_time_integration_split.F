@@ -173,8 +173,6 @@ module ocn_time_integration_split
          edgeHaloComputeCounter, &! halo counters to reduce
          cellHaloComputeCounter   ! halo updates during cycling
 
-      integer, dimension(:), pointer :: nEdgesArray
-
       real (kind=RKIND) :: &
          normalThicknessFluxSum, &! sum of thickness flux in column
          thicknessSum,     &! sum of thicknesses in column
@@ -384,8 +382,6 @@ module ocn_time_integration_split
                                           lowFreqDivergenceTend)
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 2)
-
-      call mpas_pool_get_dimension(meshPool,'nEdgesArray', nEdgesArray)
 
       allocate(bottomDepthEdge(nEdgesAll+1))
 
@@ -775,8 +771,6 @@ module ocn_time_integration_split
                enddo
                barotropicForcing(iEdge) = splitFact* &
                               normalThicknessFluxSum/thicknessSum/dt
-               bottomDepthEdge(iEdge) = thicknessSum &
-                  - 0.5_RKIND*(sshNew(cell1) + sshNew(cell2))
 
                do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                   ! These two steps are together here:
@@ -798,7 +792,7 @@ module ocn_time_integration_split
             !$omp parallel
             !$omp do schedule(runtime) &
             !$omp private(cell1, cell2, k, thicknessSum)
-            do iEdge = nEdgesOwned+1, nEdgesArray(4)
+            do iEdge = 1, nEdgesHalo(config_num_halos+1)
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
                thicknessSum = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)

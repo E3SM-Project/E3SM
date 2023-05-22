@@ -147,6 +147,7 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${TARGET_DIR}/cxx/ElementsState.cpp
     ${TARGET_DIR}/cxx/HyperviscosityFunctorImpl.cpp
     ${TARGET_DIR}/cxx/DirkFunctor.cpp
+    ${TARGET_DIR}/cxx/LimiterFunctor.hpp
     ${TARGET_DIR}/cxx/cxx_f90_interface_theta.cpp
     ${TARGET_DIR}/cxx/prim_advance_exp.cpp
     ${SRC_SHARE_DIR}/cxx/CaarFunctor.cpp

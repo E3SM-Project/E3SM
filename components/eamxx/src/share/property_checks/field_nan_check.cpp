@@ -132,28 +132,22 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
     using namespace ShortFieldTagsNames;
 
     int col_lid;
-    AbstractGrid::dofs_list_h_type gids;
-    AbstractGrid::geo_view_h_type lat, lon;
-    bool has_latlon;
-    bool has_col_info = m_grid and layout.tag(0)==COL;
 
-    if (has_col_info) {
+    if (m_grid) {
       // We are storing grid info, and the field is over columns. Get col id and coords.
       col_lid = indices[0];
-      gids = m_grid->get_dofs_gids_host();
-      has_latlon = m_grid->has_geometry_data("lat") && m_grid->has_geometry_data("lon");
-      if (has_latlon) {
-        lat = m_grid->get_geometry_data_host("lat");
-        lon = m_grid->get_geometry_data_host("lon");
-      }
+      auto gids = m_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
 
       res_and_msg.msg += "  - entry (" + std::to_string(gids(col_lid));;
       for (size_t i=1; i<indices.size(); ++i) {
         res_and_msg.msg += "," + std::to_string(indices[i]);
       }
       res_and_msg.msg += ")\n";
+      const bool has_latlon = m_grid->has_geometry_data("lat") && m_grid->has_geometry_data("lon");
       if (has_latlon) {
-        res_and_msg.msg += "  - lat/lon: (" + std::to_string(lat(col_lid)) + ", " + std::to_string(lon(col_lid)) + ")\n";
+        auto lat = m_grid->get_geometry_data("lat").get_internal_view_data<const Real,Host>();
+        auto lon = m_grid->get_geometry_data("lon").get_internal_view_data<const Real,Host>();
+        res_and_msg.msg += "  - lat/lon: (" + std::to_string(lat[col_lid]) + ", " + std::to_string(lon[col_lid]) + ")\n";
       }
     }
   } else {

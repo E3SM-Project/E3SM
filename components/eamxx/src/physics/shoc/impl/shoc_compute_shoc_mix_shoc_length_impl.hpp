@@ -26,7 +26,7 @@ void Functions<S,D>
   // Eddy turnover timescale
   const Scalar tscale = 400;
 
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     const Spack tkes = ekat::sqrt(tke(k));
     const Spack brunt2 = ekat::max(0, brunt(k));
 

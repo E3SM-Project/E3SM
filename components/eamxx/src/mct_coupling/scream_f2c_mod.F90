@@ -13,12 +13,16 @@ interface
   ! It does *NOT* initialize the fields and the atm processes, nor it initializes
   ! any structure related to the component coupler. Other subroutines
   ! will have to be called *after* this one, to achieve that.
-  subroutine scream_create_atm_instance (f_comm,atm_id,yaml_fname,atm_log_fname) bind(c)
+  subroutine scream_create_atm_instance (f_comm,atm_id,yaml_fname,atm_log_fname, &
+                                         run_start_ymd,run_start_tod, &
+                                         case_start_ymd,case_start_tod) bind(c)
     use iso_c_binding, only: c_int, c_char
     !
     ! Input(s)
     !
     integer (kind=c_int), value, intent(in) :: f_comm, atm_id
+    integer (kind=c_int),  value, intent(in) :: run_start_tod, run_start_ymd
+    integer (kind=c_int),  value, intent(in) :: case_start_tod, case_start_ymd
     character(kind=c_char), target, intent(in) :: yaml_fname(*), atm_log_fname(*)
   end subroutine scream_create_atm_instance
 
@@ -70,13 +74,7 @@ interface
   ! During this call, all fields are initialized (i.e., initial conditions are
   ! loaded), as well as the atm procs (which might use some initial conditions
   ! to further initialize internal structures), and the output manager.
-  subroutine scream_init_atm (run_start_ymd,run_start_tod,case_start_ymd,case_start_tod) bind(c)
-    use iso_c_binding, only: c_int
-    !
-    ! Input(s)
-    !
-    integer (kind=c_int),  value, intent(in) :: run_start_tod, run_start_ymd
-    integer (kind=c_int),  value, intent(in) :: case_start_tod, case_start_ymd
+  subroutine scream_init_atm () bind(c)
   end subroutine scream_init_atm
 
   ! This subroutine will run the whole atm model for one atm timestep

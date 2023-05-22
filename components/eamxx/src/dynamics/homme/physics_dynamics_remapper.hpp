@@ -80,7 +80,7 @@ protected:
   grid_ptr_type     m_phys_grid;
 
   int m_num_phys_cols;
-  typename grid_type::lid_to_idx_map_type    m_lid2elgp;
+  typename Field::view_dev_t<const int**>  m_lid2elgp;
 
   std::shared_ptr<Homme::BoundaryExchange>  m_be;
 

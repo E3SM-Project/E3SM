@@ -16,14 +16,14 @@ ScalarT PhysicsFunctions<DeviceT>::calculate_dx_from_area(const ScalarT& area, c
   static constexpr auto coeff_1 = C::earth_ellipsoid1;
   static constexpr auto coeff_2 = C::earth_ellipsoid2;
   static constexpr auto coeff_3 = C::earth_ellipsoid3;
-  static constexpr auto pi      = C::Pi; 
+  static constexpr auto pi      = C::Pi;
 
   // Compute latitude in radians
   auto lat_in_rad = lat*(pi/180.0);
 
   // Now find meters per degree latitude
   // Below equation finds distance between two points on an ellipsoid, derived from expansion
-  // taking into account ellipsoid using World Geodetic System (WGS84) reference 
+  // taking into account ellipsoid using World Geodetic System (WGS84) reference
   auto m_per_degree_lat = coeff_1 - coeff_2 * std::cos(2.0*lat_in_rad) + coeff_3 * std::cos(4.0*lat_in_rad);
   // Note, for the formula we need to convert area from radians to degrees.
   return m_per_degree_lat * std::sqrt(area)*(180.0/pi);
@@ -50,7 +50,7 @@ void PhysicsFunctions<DeviceT>::calculate_density(const MemberType& team,
                                                   const InputProviderZ& dz,
                                                   const view_1d<ScalarT>& density)
 {
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,density.extent(0)),
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,density.extent(0)),
                        [&] (const int k) {
     density(k) = calculate_density(pseudo_density(k),dz(k));
   });
@@ -77,7 +77,7 @@ void PhysicsFunctions<DeviceT>::exner_function(const MemberType& team,
                                                const InputProviderP& pressure,
                                                const view_1d<ScalarT>& exner)
 {
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,exner.extent(0)),
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,exner.extent(0)),
                        [&] (const int k) {
     exner(k) = exner_function(pressure(k));
   });
@@ -99,7 +99,7 @@ void PhysicsFunctions<DeviceT>::calculate_theta_from_T(const MemberType& team,
                                                        const InputProviderP& pressure,
                                                        const view_1d<ScalarT>& theta)
 {
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,theta.extent(0)),
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,theta.extent(0)),
                        [&] (const int k) {
     theta(k) = calculate_theta_from_T(temperature(k),pressure(k));
   });
@@ -121,7 +121,7 @@ void PhysicsFunctions<DeviceT>::calculate_T_from_theta(const MemberType& team,
                                                        const InputProviderP& pressure,
                                                        const view_1d<ScalarT>& temperature)
 {
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,temperature.extent(0)),
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,temperature.extent(0)),
                        [&] (const int k) {
     temperature(k) = calculate_T_from_theta(theta(k),pressure(k));
   });
@@ -151,7 +151,7 @@ calculate_temperature_from_virtual_temperature(const MemberType& team,
                                                const InputProviderQ& qv,
                                                const view_1d<ScalarT>& temperature)
 {
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,temperature.extent(0)),
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,temperature.extent(0)),
                        [&] (const int k) {
     temperature(k) = calculate_temperature_from_virtual_temperature(T_virtual(k),qv(k));
   });
@@ -180,7 +180,7 @@ calculate_virtual_temperature(const MemberType& team,
                               const InputProviderQ& qv,
                               const view_1d<ScalarT>& T_virtual)
 {
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,T_virtual.extent(0)),
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,T_virtual.extent(0)),
                        [&] (const int k) {
     T_virtual(k) = calculate_virtual_temperature(temperature(k),qv(k));
   });
@@ -209,7 +209,7 @@ void PhysicsFunctions<DeviceT>::calculate_dse(const MemberType& team,
                                               const Real surf_geopotential,
                                               const view_1d<ScalarT>& dse)
 {
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dse.extent(0)),
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dse.extent(0)),
                        [&] (const int k) {
     dse(k) = calculate_dse(temperature(k),z(k),surf_geopotential);
   });
@@ -240,7 +240,7 @@ calculate_temperature_from_dse(const MemberType& team,
                                const Real surf_geopotential,
                                const view_1d<ScalarT>& temperature)
 {
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dse.extent(0)),
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dse.extent(0)),
                        [&] (const int k) {
     temperature(k) = calculate_temperature_from_dse(dse(k),z(k),surf_geopotential);
   });
@@ -263,9 +263,34 @@ void PhysicsFunctions<DeviceT>::calculate_wetmmr_from_drymmr(const MemberType& t
                                                              const InputProviderQ& qv_dry,
                                                              const view_1d<ScalarT>& wetmmr)
 {
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,wetmmr.extent(0)),
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,wetmmr.extent(0)),
                        [&] (const int k) {
                          wetmmr(k) = calculate_wetmmr_from_drymmr(drymmr(k),qv_dry(k));
+                       });
+}
+
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::
+calculate_wetmmr_from_drymmr_dp_based(const ScalarT& drymmr,
+                                      const ScalarT& pseudo_density, const ScalarT& pseudo_density_dry)
+{
+  return drymmr*pseudo_density_dry/pseudo_density;
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderX, typename InputProviderPD>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_wetmmr_from_drymmr_dp_based(const MemberType& team,
+                                                             const InputProviderX& drymmr,
+                                                             const InputProviderPD& pseudo_density,
+                                                             const InputProviderPD& pseudo_density_dry,
+                                                             const view_1d<ScalarT>& wetmmr)
+{
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,wetmmr.extent(0)),
+                       [&] (const int k) {
+                         wetmmr(k) = calculate_wetmmr_from_drymmr_dp_based(drymmr(k),pseudo_density(k),pseudo_density_dry(k));
                        });
 }
 
@@ -286,9 +311,34 @@ void PhysicsFunctions<DeviceT>::calculate_drymmr_from_wetmmr(const MemberType& t
                                                              const InputProviderQ& qv_wet,
                                                              const view_1d<ScalarT>& drymmr)
 {
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,drymmr.extent(0)),
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,drymmr.extent(0)),
                        [&] (const int k) {
                          drymmr(k) = calculate_drymmr_from_wetmmr(wetmmr(k),qv_wet(k));
+                       });
+}
+
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::
+calculate_drymmr_from_wetmmr_dp_based(const ScalarT& wetmmr,
+                             const ScalarT& pseudo_density, const ScalarT& pseudo_density_dry)
+{
+  return wetmmr*pseudo_density/pseudo_density_dry;
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderX, typename InputProviderPD>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_drymmr_from_wetmmr_dp_based(const MemberType& team,
+                                                             const InputProviderX& wetmmr,
+                                                             const InputProviderPD& pseudo_density,
+                                                             const InputProviderPD& pseudo_density_dry,
+                                                             const view_1d<ScalarT>& drymmr)
+{
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,drymmr.extent(0)),
+                       [&] (const int k) {
+                         drymmr(k) = calculate_drymmr_from_wetmmr_dp_based(wetmmr(k),pseudo_density(k),pseudo_density_dry(k));
                        });
 }
 
@@ -320,7 +370,7 @@ void PhysicsFunctions<DeviceT>::calculate_dz(const MemberType& team,
                                              const InputProviderQ& qv,
                                              const view_1d<ScalarT, MT>& dz)
 {
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dz.extent(0)),
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dz.extent(0)),
                        [&] (const int k) {
     dz(k) = calculate_dz(pseudo_density(k),p_mid(k),T_mid(k),qv(k));
   });
@@ -374,7 +424,7 @@ void PhysicsFunctions<DeviceT>::calculate_vmr_from_mmr(const MemberType& team,
                                                        const InputProviderX& mmr,
                                                        const view_1d<ScalarT>& vmr)
 {
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,vmr.extent(0)),
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,vmr.extent(0)),
                        [&] (const int k) {
     vmr(k) = calculate_vmr_from_mmr(gas_mol_weight,qv(k),mmr(k));
   });
@@ -389,7 +439,7 @@ ScalarT PhysicsFunctions<DeviceT>::calculate_mmr_from_vmr(const Real& gas_mol_we
   constexpr Real air_mol_weight   = C::MWdry;
   const Real mol_weight_ratio = gas_mol_weight/air_mol_weight;
 
-  return mol_weight_ratio * vmr * (1.0 - qv); 
+  return mol_weight_ratio * vmr * (1.0 - qv);
 
 }
 
@@ -402,7 +452,7 @@ void PhysicsFunctions<DeviceT>::calculate_mmr_from_vmr(const MemberType& team,
                                                        const InputProviderX& vmr,
                                                        const view_1d<ScalarT>& mmr)
 {
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team,mmr.extent(0)),
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,mmr.extent(0)),
                        [&] (const int k) {
     mmr(k) = calculate_mmr_from_vmr(gas_mol_weight,qv(k),vmr(k));
   });
@@ -414,7 +464,7 @@ Real PhysicsFunctions<DeviceT>::calculate_surface_air_T(const Real& T_mid_bot, c
 {
   /*Compute temperature at the bottom of the gridcell closest to the ground. The implementation here
     is really clunky and is meant to provide calculate_psl with the values used by CESM... Think
-    twice before using it for anything else. Inputs are T at midpoint of layer closest to the surface (K) and 
+    twice before using it for anything else. Inputs are T at midpoint of layer closest to the surface (K) and
     the geometric height at that point (m). Note that z_mid_bot is distance from the surface rather than from
     sea level!
   */
@@ -423,7 +473,7 @@ Real PhysicsFunctions<DeviceT>::calculate_surface_air_T(const Real& T_mid_bot, c
   //Ditching this version for fear that weird lowest layer T relationships could yield strange surface values.
   //const Real T_weighting = ( p_int_i(num_levs) - p_mid_i(last_entry))/(p_mid_i(last_entry - 1) - p_mid_i(last_entry) );
   //return T_mid_i(last_entry - 1)*T_weighting + T_mid_i(last_entry)*(1-T_weighting);
-  
+
   //Assume 6.5 K/km lapse rate between cell's midpoint and its bottom edge
   return T_mid_bot + sp(0.0065)*z_mid_bot;
 }
@@ -433,9 +483,9 @@ KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::lapse_T_for_psl(const Real& T_ground, const Real& phi_ground,
 					        Real& lapse, Real& T_ground_tmp )
 {
-  /* 
+  /*
     Choose lapse rate and effective ground temperature to use for sea-level pressure calculation.
-    This function should only be used by calculate_psl and is separated from that function solely 
+    This function should only be used by calculate_psl and is separated from that function solely
     to improve specificity of unit testing.
  */
 
@@ -467,10 +517,10 @@ template<typename DeviceT>
 KOKKOS_INLINE_FUNCTION
 Real PhysicsFunctions<DeviceT>::calculate_psl(const Real& T_ground, const Real& p_ground, const Real& phi_ground)
 {
-  /* 
-     Compute sea level pressure (psl) assuming atmosphere below the land surface is dry and has a lapse 
+  /*
+     Compute sea level pressure (psl) assuming atmosphere below the land surface is dry and has a lapse
      rate of 6.5K/km unless conditions are very warm. See components/eamxx/docs/tech_doc/physics/psl/
-     for a description. Note that all input/out variables are only defined at the surface rather than 
+     for a description. Note that all input/out variables are only defined at the surface rather than
      being 3d variables so no need to template on InputProvider.
  */
 
@@ -479,7 +529,7 @@ Real PhysicsFunctions<DeviceT>::calculate_psl(const Real& T_ground, const Real& 
   constexpr Real gravit = C::gravit;
   constexpr Real Rair = C::Rair;
   Real psl;
-  
+
   // if phi_ground is very close to sea level already, set psl to existing p_ground
   if (std::abs(phi_ground/gravit) < 1e-4){
     psl = p_ground;
@@ -492,7 +542,7 @@ Real PhysicsFunctions<DeviceT>::calculate_psl(const Real& T_ground, const Real& 
     Real beta=phi_ground/(Rair*T_ground_tmp);
     psl = p_ground*std::exp(beta*( 1 - alpha*beta/2 + std::pow(alpha*beta,2)/3 ) );
   }
-  
+
   return psl;
 }
 
@@ -529,7 +579,7 @@ void PhysicsFunctions<DeviceT>::apply_rayleigh_friction (const MemberType& team,
                                                          const view_1d<ScalarT, MT>& v_wind,
                                                          const view_1d<ScalarT, MT>& T_mid)
 {
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, T_mid.extent(0)),
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, T_mid.extent(0)),
                        [&] (const int k) {
     apply_rayleigh_friction(dt, otau(k), u_wind(k), v_wind(k), T_mid(k));
   });

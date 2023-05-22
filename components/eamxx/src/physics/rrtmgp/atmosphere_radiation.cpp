@@ -119,22 +119,22 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
 
   // Set computed (output) fields
   add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid_name, ps);
-  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
+  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
   add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
+  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid_name, "RESTART", ps);
   add_field<Computed>("SW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("SW_clrsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("SW_clrsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("LW_clrsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("LW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid_name, ps);
+  add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid_name, "RESTART", ps);
   // Cloud properties added as computed fields for diagnostic purposes
-  add_field<Computed>("cldlow"        , scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("cldmed"        , scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("cldhgh"        , scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("cldtot"        , scalar2d_layout, nondim, grid_name);
+  add_field<Computed>("cldlow"        , scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cldmed"        , scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cldhgh"        , scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cldtot"        , scalar2d_layout, nondim, grid_name, "RESTART");
 
   // Translation of variables from EAM
   // --------------------------------------------------------------
@@ -147,12 +147,13 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // netsw      sfc_flux_sw_net    net (down - up) SW flux at surface
   // flwds      sfc_flux_lw_dn     downwelling LW flux at surface
   // --------------------------------------------------------------
-  add_field<Computed>("sfc_flux_dir_nir", scalar2d_layout, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_dir_vis", scalar2d_layout, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_dif_nir", scalar2d_layout, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_dif_vis", scalar2d_layout, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_sw_net" , scalar2d_layout, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid_name);
+  // These need to be added to restarts in the case of super-stepping
+  add_field<Computed>("sfc_flux_dir_nir", scalar2d_layout, Wm2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_dir_vis", scalar2d_layout, Wm2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_dif_nir", scalar2d_layout, Wm2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_dif_vis", scalar2d_layout, Wm2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_sw_net" , scalar2d_layout, Wm2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid_name, "RESTART");
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
@@ -315,16 +316,16 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   m_orbital_mvelp = m_params.get<Int>("orbital_mvelp"       ,-9999);
 
   // Determine whether or not we are using a fixed solar zenith angle (positive value)
-  m_fixed_solar_zenith_angle = m_params.get<Real>("Fixed Solar Zenith Angle", -9999);
+  m_fixed_solar_zenith_angle = m_params.get<double>("Fixed Solar Zenith Angle", -9999);
 
   // Get prescribed surface values of greenhouse gases
-  m_co2vmr     = m_params.get<Real>("co2vmr", 388.717e-6);
-  m_n2ovmr     = m_params.get<Real>("n2ovmr", 323.141e-9);
-  m_ch4vmr     = m_params.get<Real>("ch4vmr", 1807.851e-9);
-  m_f11vmr     = m_params.get<Real>("f11vmr", 768.7644e-12);
-  m_f12vmr     = m_params.get<Real>("f12vmr", 531.2820e-12);
-  m_n2vmr      = m_params.get<Real>("n2vmr", 0.7906);
-  m_covmr      = m_params.get<Real>("covmr", 1.0e-7);
+  m_co2vmr     = m_params.get<double>("co2vmr", 388.717e-6);
+  m_n2ovmr     = m_params.get<double>("n2ovmr", 323.141e-9);
+  m_ch4vmr     = m_params.get<double>("ch4vmr", 1807.851e-9);
+  m_f11vmr     = m_params.get<double>("f11vmr", 768.7644e-12);
+  m_f12vmr     = m_params.get<double>("f12vmr", 531.2820e-12);
+  m_n2vmr      = m_params.get<double>("n2vmr", 0.7906);
+  m_covmr      = m_params.get<double>("covmr", 1.0e-7);
 
   // Whether or not to do MCICA subcolumn sampling
   m_do_subcol_sampling = m_params.get<bool>("do_subcol_sampling",true);
@@ -355,7 +356,7 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   m_gas_concs.init(gas_names_yakl_offset,m_col_chunk_size,m_nlay);
   rrtmgp::rrtmgp_initialize(
           m_gas_concs,
-          coefficients_file_sw, coefficients_file_lw, 
+          coefficients_file_sw, coefficients_file_lw,
           cloud_optics_file_sw, cloud_optics_file_lw,
           m_atm_logger
   );
@@ -366,16 +367,14 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
 
 // =========================================================================================
 
-void RRTMGPRadiation::run_impl (const int dt) {
+void RRTMGPRadiation::run_impl (const double dt) {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
   using PC = scream::physics::Constants<Real>;
   using CO = scream::ColumnOps<DefaultDevice,Real>;
 
   // get a host copy of lat/lon
-  auto h_lat  = Kokkos::create_mirror_view(m_lat);
-  auto h_lon  = Kokkos::create_mirror_view(m_lon);
-  Kokkos::deep_copy(h_lat,m_lat);
-  Kokkos::deep_copy(h_lon,m_lon);
+  auto h_lat  = m_lat.get_view<const Real*,Host>();
+  auto h_lon  = m_lon.get_view<const Real*,Host>();
 
   // Get data from the FieldManager
   auto d_pmid = get_field_in("p_mid").get_view<const Real**>();
@@ -609,7 +608,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
           sfc_alb_dif_vis(i+1) = d_sfc_alb_dif_vis(icol);
           sfc_alb_dif_nir(i+1) = d_sfc_alb_dif_nir(icol);
 
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
             p_lay(i+1,k+1)       = d_pmid(icol,k);
             t_lay(i+1,k+1)       = d_tmid(icol,k);
             p_del(i+1,k+1)       = d_pdel(icol,k);
@@ -625,14 +624,14 @@ void RRTMGPRadiation::run_impl (const int dt) {
           t_lev(i+1,nlay+1) = d_tint(i,nlay);
 
           // Note that RRTMGP expects ordering (col,lay,bnd) but the FM keeps things in (col,bnd,lay) order
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nswbands*nlay), [&] (const int&idx) {
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands*nlay), [&] (const int&idx) {
               auto b = idx / nlay;
               auto k = idx % nlay;
               aero_tau_sw(i+1,k+1,b+1) = d_aero_tau_sw(icol,b,k);
               aero_ssa_sw(i+1,k+1,b+1) = d_aero_ssa_sw(icol,b,k);
               aero_g_sw  (i+1,k+1,b+1) = d_aero_g_sw  (icol,b,k);
           });
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlwbands*nlay), [&] (const int&idx) {
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands*nlay), [&] (const int&idx) {
               auto b = idx / nlay;
               auto k = idx % nlay;
               aero_tau_lw(i+1,k+1,b+1) = d_aero_tau_lw(icol,b,k);
@@ -662,7 +661,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
             const int i = team.league_rank();
             const int icol = i + beg;
-            Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
               d_vmr(icol,k) = PF::calculate_vmr_from_mmr(gas_mol_weights[igas],d_qv(icol,k),d_qv(icol,k));
             });
           });
@@ -671,14 +670,14 @@ void RRTMGPRadiation::run_impl (const int dt) {
           // We read o3 in as a vmr already
         } else if (name == "n2") {
           // n2 prescribed as a constant value
-          Kokkos::deep_copy(d_vmr, m_params.get<Real>("n2vmr", 0.7906));
+          Kokkos::deep_copy(d_vmr, m_params.get<double>("n2vmr", 0.7906));
         } else if (name == "co") {
           // co prescribed as a constant value
-          Kokkos::deep_copy(d_vmr, m_params.get<Real>("covmr", 1.0e-7));
+          Kokkos::deep_copy(d_vmr, m_params.get<double>("covmr", 1.0e-7));
         } else {
           // This gives (dry) mass mixing ratios
           scream::physics::trcmix(
-            name, m_lat, d_pmid, d_vmr,
+            name, m_lat.get_view<const Real*>(), d_pmid, d_vmr,
             m_co2vmr, m_n2ovmr, m_ch4vmr, m_f11vmr, m_f12vmr
           );
           // Back out volume mixing ratios
@@ -686,7 +685,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
           const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
             const int i = team.league_rank();
-            Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
               d_vmr(i,k) = air_mol_weight / gas_mol_weights[igas] * d_vmr(i,k);
             });
           });
@@ -697,7 +696,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
           const int icol = i + beg;
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
             tmp2d(i+1,k+1) = d_vmr(icol,k); // Note that for YAKL arrays i and k start with index 1
           });
         });
@@ -725,7 +724,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
           const int icol = i + beg;
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
             if (d_cldfrac_tot(icol,k) > 0) {
               cldfrac_tot(i+1,k+1) = 1;
             } else {
@@ -738,7 +737,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
           const int icol = i + beg;
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
             cldfrac_tot(i+1,k+1) = d_cldfrac_tot(icol,k);
           });
         });
@@ -752,7 +751,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
       const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
         const int i = team.league_rank();
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
           // Note that for YAKL arrays i and k start with index 1
           lwp(i+1,k+1) *= 1e3;
           iwp(i+1,k+1) *= 1e3;
@@ -777,12 +776,12 @@ void RRTMGPRadiation::run_impl (const int dt) {
         p_lay, t_lay, p_lev, t_lev,
         m_gas_concs,
         sfc_alb_dir, sfc_alb_dif, mu0,
-        lwp, iwp, rel, rei, cldfrac_tot, 
+        lwp, iwp, rel, rei, cldfrac_tot,
         aero_tau_sw, aero_ssa_sw, aero_g_sw, aero_tau_lw,
         cld_tau_sw_gpt, cld_tau_lw_gpt,
-        sw_flux_up       , sw_flux_dn       , sw_flux_dn_dir       , lw_flux_up       , lw_flux_dn, 
-        sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dn_dir, lw_clrsky_flux_up, lw_clrsky_flux_dn, 
-        sw_bnd_flux_up   , sw_bnd_flux_dn   , sw_bnd_flux_dir      , lw_bnd_flux_up   , lw_bnd_flux_dn, 
+        sw_flux_up       , sw_flux_dn       , sw_flux_dn_dir       , lw_flux_up       , lw_flux_dn,
+        sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dn_dir, lw_clrsky_flux_up, lw_clrsky_flux_dn,
+        sw_bnd_flux_up   , sw_bnd_flux_dn   , sw_bnd_flux_dir      , lw_bnd_flux_up   , lw_bnd_flux_dn,
         eccf, m_atm_logger
       );
 
@@ -800,7 +799,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int idx = team.league_rank();
           const int icol = idx+beg;
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& ilay) {
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& ilay) {
             // Combine SW and LW heating into a net heating tendency; use d_rad_heating_pdel temporarily
             // Note that for YAKL arrays i and k start with index 1
             d_rad_heating_pdel(icol,ilay) = sw_heating(idx+1,ilay+1) + lw_heating(idx+1,ilay+1);
@@ -824,8 +823,8 @@ void RRTMGPRadiation::run_impl (const int dt) {
       // Compute surface fluxes
       rrtmgp::compute_broadband_surface_fluxes(
           ncol, kbot, nswbands,
-          sw_bnd_flux_dir, sw_bnd_flux_dif, 
-          sfc_flux_dir_vis, sfc_flux_dir_nir, 
+          sw_bnd_flux_dir, sw_bnd_flux_dif,
+          sfc_flux_dir_vis, sfc_flux_dir_nir,
           sfc_flux_dif_vis, sfc_flux_dif_nir
       );
 
@@ -860,7 +859,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
         d_cldmed(icol) = cldmed(i+1);
         d_cldhgh(icol) = cldhgh(i+1);
         d_cldtot(icol) = cldtot(i+1);
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay+1), [&] (const int& k) {
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay+1), [&] (const int& k) {
           d_sw_flux_up(icol,k)            = sw_flux_up(i+1,k+1);
           d_sw_flux_dn(icol,k)            = sw_flux_dn(i+1,k+1);
           d_sw_flux_dn_dir(icol,k)        = sw_flux_dn_dir(i+1,k+1);
@@ -874,7 +873,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
         });
       });
     } // loop over chunk
- 
+
     // Restore the refCounted array.
     m_gas_concs.concs = gas_concs;
 
@@ -889,7 +888,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nlays);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int i = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlays), [&] (const int& k) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlays), [&] (const int& k) {
       if (update_rad) {
         d_tmid(i,k) = d_tmid(i,k) + d_rad_heating_pdel(i,k) * dt;
         d_rad_heating_pdel(i,k) = d_pdel(i,k) * d_rad_heating_pdel(i,k);
