@@ -106,10 +106,12 @@ public:
   // Getters
   std::string get_filename() { return m_filename; } // Simple getter to query the filename for this stream.
 
+  // Expose the ability to set field manager for cases like time_interpolation where we swap fields
+  // between field managers to avoid deep_copy.
+  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr);
 protected:
 
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr);
   void set_views (const std::map<std::string,view_1d_host>& host_views_1d,
                   const std::map<std::string,FieldLayout>&  layouts);
   void init_scorpio_structures ();

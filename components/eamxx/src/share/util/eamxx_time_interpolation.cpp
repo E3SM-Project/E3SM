@@ -99,10 +99,11 @@ void TimeInterpolation::shift_data()
 {
   for (auto name : m_field_names)
   {
-    auto field0 = m_fm_time0->get_field(name);
-    auto field1 = m_fm_time1->get_field(name);
-    field0.deep_copy(field1);
+    auto& field0 = m_fm_time0->get_field(name);
+    auto& field1 = m_fm_time1->get_field(name);
+    std::swap(field0,field1);
   }
+  m_file_data_atm_input.set_field_manager(m_fm_time1);
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* Function which will initialize the TimeStamps.
@@ -183,10 +184,14 @@ void TimeInterpolation::update_timestamp(const TimeStamp& ts_in)
 void TimeInterpolation::update_data_from_field(const Field& field_in)
 {
   const auto name = field_in.name();
-  auto field0 = m_fm_time0->get_field(name);
-  auto field1 = m_fm_time1->get_field(name);
-  field0.deep_copy(field1);
-  field1.deep_copy(field_in);
+  auto& field0 = m_fm_time0->get_field(name);
+  auto& field1 = m_fm_time1->get_field(name);
+  std::swap(field0,field1);
+  // Now that we have swapped field0 and field 1 we need to grab field 1 from the field manager again.
+  // Alternatively we could just update `field0` which is now inside m_fm_time1, but choosing this
+  // approach for code readability.
+  auto& field1_new = m_fm_time1->get_field(name);
+  field1_new.deep_copy(field_in);
 }
 /*-----------------------------------------------------------------------------------------------*/
 void TimeInterpolation::print()
