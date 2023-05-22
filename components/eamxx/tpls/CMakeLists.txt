@@ -22,6 +22,24 @@ if (SCREAM_ENABLE_MAM)
   # We use CMake's ExternalProject capability to build and install Haero.
   include(ExternalProject)
 
+  if (SCREAM_CIME_BUILD)
+    # PROJECT_SOURCE_DIR is SCREAM_ROOT/components
+    set(EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/../externals")
+  else()
+    # PROJECT_SOURCE_DIR is SCREAM_ROOT/components/eamxx
+    set(EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/../../externals")
+  endif()
+
+  # Normalize CMAKE_BUILD_TYPE.
+  string(TOLOWER "${CMAKE_BUILD_TYPE}" lc_build_type)
+  if (${lc_build_type} STREQUAL "debug")
+    set(mam_build_type "Debug")
+  elseif(${lc_build_type} STREQUAL "release")
+    set(mam_build_type "Release")
+  else()
+    set(mam_build_type "Debug") # when in doubt...
+  endif()
+
   # Build and install the Haero aerosol package interface.
   if (SCREAM_DOUBLE_PRECISION)
     set(HAERO_PRECISION "double")
@@ -31,16 +49,16 @@ if (SCREAM_ENABLE_MAM)
   set(HAERO_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/externals/haero")
   set(HAERO_CMAKE_OPTS
     -DCMAKE_INSTALL_PREFIX=${HAERO_INSTALL_PREFIX}
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_BUILD_TYPE=${mam_build_type}
     -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
     -DHAERO_ENABLE_GPU=${Kokkos_ENABLE_CUDA}
     -DHAERO_ENABLE_MPI=ON
     -DHAERO_PRECISION=${HAERO_PRECISION}
-    -DEKAT_SOURCE_DIR=${PROJECT_SOURCE_DIR}/../../externals/ekat
+    -DEKAT_SOURCE_DIR=${EXTERNALS_DIR}/ekat
     -DEKAT_BINARY_DIR=${PROJECT_BINARY_DIR}/externals/ekat)
   ExternalProject_Add(haero_proj
                       PREFIX ${PROJECT_BINARY_DIR}/externals/haero
-                      SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../externals/haero
+                      SOURCE_DIR ${EXTERNALS_DIR}/haero
                       BINARY_DIR ${PROJECT_BINARY_DIR}/externals/haero
                       CMAKE_ARGS ${HAERO_CMAKE_OPTS}
                       DEPENDS ekat ekat_test_session ekat_test_main
@@ -54,12 +72,12 @@ if (SCREAM_ENABLE_MAM)
   set(MAM4XX_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/externals/mam4xx")
   set(MAM4XX_CMAKE_OPTS
     -DCMAKE_INSTALL_PREFIX=${MAM4XX_INSTALL_PREFIX}
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_BUILD_TYPE=${mam_build_type}
     -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
     -DMAM4XX_HAERO_DIR=${HAERO_INSTALL_PREFIX})
   ExternalProject_Add(mam4xx_proj
                       PREFIX ${PROJECT_BINARY_DIR}/externals/mam4xx
-                      SOURCE_DIR ../../../../externals/mam4xx
+                      SOURCE_DIR ${EXTERNALS_DIR}/mam4xx
                       BINARY_DIR ${PROJECT_BINARY_DIR}/externals/mam4xx
                       CMAKE_ARGS ${MAM4XX_CMAKE_OPTS}
                       DEPENDS haero_proj
