@@ -302,7 +302,18 @@
     </queues>
    </batch_system>
 
-  <batch_system MACH="edison" type="nersc_slurm" >
+   <batch_system MACH="pm-cpu" type="nersc_slurm">
+     <directives>
+       <directive> --constraint=cpu</directive>
+     </directives>
+     <queues>
+       <queue walltimemax="00:30:00" nodemin="1" nodemax="8" strict="true">debug</queue>
+       <queue walltimemax="00:35:00" nodemin="1" nodemax="4096" strict="true">preempt</queue>
+       <queue walltimemax="01:00:00" nodemin="1" nodemax="4096" default="true">regular</queue>
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="edison" type="nersc_slurm" >
     <queues>
       <queue walltimemax="00:30:00" nodemin="1" nodemax="512" strict="true">debug</queue>
       <queue walltimemax="01:30:00" nodemin="1" nodemax="5519" default="true">regular</queue>

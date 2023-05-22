@@ -286,9 +286,9 @@ for mct, etc.
 <compiler COMPILER="intel">
   <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
-  <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
   <FREEFLAGS> -free </FREEFLAGS>
   <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
   <!-- WJS (8-11-14): For some reason, yellowstone-intel has starting giving lots of
@@ -301,10 +301,10 @@ for mct, etc.
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_CFLAGS>
   <ADD_CFLAGS DEBUG="TRUE"> -O0 -g </ADD_CFLAGS>
-  <FFLAGS>  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </FFLAGS>
-  <CFLAGS> -O2 -fp-model precise -std=gnu99 </CFLAGS>
+  <FFLAGS>  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model=source </FFLAGS>
+  <CFLAGS> -O2 -fp-model=precise -std=gnu99 </CFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
-  <ADD_FFLAGS_NOOPT compile_threaded="true"> -openmp </ADD_FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
@@ -313,7 +313,7 @@ for mct, etc.
   <MPICC> mpicc  </MPICC>
   <MPICXX> mpicxx </MPICXX>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
+  <!--CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS-->
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
 </compiler>
@@ -592,6 +592,55 @@ for mct, etc.
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
   <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY  </GPTL_CPPDEFS>
   <CMAKE_OPTS> -DCMAKE_SYSTEM_NAME=Catamount</CMAKE_OPTS>
+</compiler>
+
+<compiler COMPILER="gnu" MACH="pm-cpu">
+  <ADD_FFLAGS> -fallow-argument-mismatch </ADD_FFLAGS>
+  <!-- one potential work-around for the mpas solver issue in maint-1.0 is to build all sources with folowing flag -->
+  <!--ADD_FFLAGS> -fno-tree-pta </ADD_FFLAGS-->
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <ADD_SLIBS> -L${CRAY_HDF5_PARALLEL_PREFIX}/lib -lhdf5_hl -lhdf5 -L${CRAY_NETCDF_HDF5PARALLEL_PREFIX}/lib -L${CRAY_PARALLEL_NETCDF_PREFIX}/lib -lpnetcdf -lnetcdf -lnetcdff </ADD_SLIBS>
+  <ADD_SLIBS> -lblas -llapack -lstdc++ </ADD_SLIBS>
+  <MPI_LIB_NAME> mpich </MPI_LIB_NAME>
+  <MPI_PATH> $(MPICH_DIR)</MPI_PATH>
+  <NETCDF_PATH>$(NETCDF_DIR)</NETCDF_PATH>
+  <PNETCDF_PATH>${CRAY_PARALLEL_NETCDF_PREFIX}</PNETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
+  <SFC> gfortran </SFC>
+  <SCC> gcc </SCC>
+  <SCXX> g++ </SCXX>
+  <MPIFC> ftn </MPIFC>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
+</compiler>
+
+<compiler COMPILER="intel" MACH="pm-cpu">
+  <ADD_FFLAGS> -fp-model consistent -fimf-use-svml -DHAVE_ERF_INTRINSICS</ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align -fpe0</ADD_FFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <ADD_SLIBS> -L${CRAY_HDF5_PARALLEL_PREFIX}/lib -lhdf5_hl -lhdf5 -L${CRAY_NETCDF_HDF5PARALLEL_PREFIX}/lib -L${CRAY_PARALLEL_NETCDF_PREFIX}/lib -lpnetcdf -lnetcdf -lnetcdff</ADD_SLIBS>
+  <ADD_SLIBS> -qmkl </ADD_SLIBS>
+  <ADD_SLIBS> -lstdc++ </ADD_SLIBS>
+  <NETCDF_PATH>$(NETCDF_DIR)</NETCDF_PATH>
+  <PNETCDF_PATH>${CRAY_PARALLEL_NETCDF_PREFIX}</PNETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
+  <SFC> ifort </SFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <MPIFC> ftn </MPIFC>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
 </compiler>
 
 <compiler COMPILER="intel" MACH="edison">
