@@ -716,12 +716,21 @@ subroutine rj_old(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,wasiactive)
 !original RJ
 
        ! condensation stage, const dp, const pnh
+
+#if 0
+!old version with 1st order qsat substitution
        dq_loc = (qv_c(k) - qsat) &
          / (1.0 + (latvap/cpdry) * bubble_epsilo * latvap * qsat / (rdry*T_c(k)*T_c(k)))
+#else
+!version that matches the rest of routines, no 1st order approx
+       dq_loc  = qv_c(k) - qsat
+#endif
        T_c(k)  = T_c(k)  + latvap / cpdry * dq_loc
        qv_c(k) = qv_c(k) - dq_loc
        vapor_mass_lost = dq_loc * dp_c(k)
+
        !dummy ql_c = dq_loc
+
 
        ! sedimentation
        ! we recompute dp here after the fact to avoid calling _cam functions
