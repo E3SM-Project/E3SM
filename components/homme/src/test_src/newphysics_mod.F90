@@ -508,29 +508,46 @@ end subroutine compute_mass
 
 
 
-subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,wasiactive)
+subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
+                                        en1, en2, en3, wasiactive)
 
   real(rl), dimension(nlev), intent(inout) :: p_c
   real(rl), dimension(nlev), intent(inout) :: dp_c
   real(rl), dimension(nlev), intent(inout) :: qv_c,T_c
   real(rl), dimension(nlevp),intent(inout) :: zi_c
-  real(rl),                  intent(inout) :: massout
+  real(rl),                  intent(inout) :: massout, energyout, en1, en2, en3
   real(rl),                  intent(in)    :: ptop
   logical,                   intent(inout) :: wasiactive
 
   real(rl) :: qsat, dp_loc, qv_loc, dpdry_loc, qvdry_loc, qsatdry, dq_loc, vapor_mass_change
   real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, rstar_old, rstar_new, hold, T_new
-  real(rl) :: cpstarTerm_new, rstardp
-  real(rl), dimension(nlev) :: pi, dphi
+  real(rl) :: cpstarTerm_new, rstardp, oldQ1mass, olddphi, factor
+  real(rl), dimension(nlev)  :: pi, dphi, zero, rain, d_pnh
+  real(rl), dimension(nlevp) :: p_int
   integer  :: k
 
   massout = 0.0
+  energyout = 0.0
+  zero = 0.0
+  rain = 0.0
 
   call construct_hydro_pressure(dp_c,ptop,pi)
 
-  dphi(1:nlev) = gravit*( zi_c(1:nlev) - zi_c(2:nlevp) )
+  !dphi(1:nlev) = gravit*( zi_c(1:nlev) - zi_c(2:nlevp) )
 
-  do k=1, nlev
+  !compute en1, energy before condensation
+  call energycp_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c,zero,zero,T_c,ptop,zi_c(nlevp),p_c,en1)
+
+  !compute interfaces nh pressure
+  p_int(2:nlev-1) = (p_c(1:nlev-2) + p_c(2:nlev-1))/2.0
+  p_int(1) = p_c(1) - dp_c(1)/2
+  p_int(nlevp) = p_c(nlev) + dp_c(nlev)/2
+
+  !compute d(pnh) at midlevels
+  d_pnh(1:nlev) = p_int(2:nlevp) - p_int(1:nlevp-1)
+
+  !since one option uses geo, go from bottom to up
+  do k=nlev, 1, -1
     !call qsat_rj2(p_c(k), T_c(k), qsat)
     call qsat_rj2(pi(k), T_c(k), qsat)
 
@@ -558,52 +575,78 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,wasiactive)
        rstar_old = rdry * 1.0 + rvapor * qvdry_loc
        rstar_new = rdry * 1.0 + rvapor * qsatdry
 
+       cpstarTerm_new = cpdry*1.0 + cpv*qsatdry + cl*dq_loc
+
 !use extra term in dh=0 rule in case of NH or not
        if(bubble_rj_cpstar_nh) then
-       ! L and Rstar are in terms of q, so, enthalpy too
-         hold = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + &
-             (pi_loc/p_loc - 1) * rstar_old * T_loc + L_old
+
+! old version
+!       ! L and Rstar are in terms of q, so, enthalpy too
+!         hold = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + &
+!             (pi_loc/p_loc - 1) * rstar_old * T_loc + L_old
+!         T_new = (hold - L_new)/ &
+!         (   cpstarTerm_new + ( pi_loc/p_loc - 1)*rstar_new   )
+
+!new version
+         factor = (1-d_pnh(k)/dp_loc)*0.5*dp_loc/p_loc
+
+         hold = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + factor * rstar_old * T_loc + L_old
+
+         T_new = (hold - L_new)/( cpstarTerm_new + factor*rstar_new )
+
        elseif (bubble_rj_cpstar_hy) then
-         hold = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + &
-                                                      L_old
-       endif
-
-       cpstarTerm_new = cpdry*1.0 + cpv*qsatdry + cl*dq_loc
-       !hnew = T_new * (   cpstarTerm_new + ( (pi_loc - vapor_mass_change)/(p_loc - vapor_mass_change) - 1)*rstar_new   ) + &
-       !       L_new
-       !     = hold
-
-       if(bubble_rj_cpstar_nh) then
-         T_new = (hold - L_new)/ &
-         (   cpstarTerm_new + ( pi_loc/p_loc - 1)*rstar_new   )
-       elseif(bubble_rj_cpstar_hy) then
-         T_new = (hold - L_new)/ &
-         (   cpstarTerm_new   )
+         hold  = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + L_old
+         T_new = (hold - L_new)/(   cpstarTerm_new   )
        endif
 
 !print *, 'T_new - T_c', T_new - T_c(k)
 
        T_c(k)  = T_new
+       rain(k) = vapor_mass_change
+       massout = massout + vapor_mass_change
+
+       !now shift all levels above
+       olddphi = gravit*(zi_c(k) - zi_c(k+1))
+       dphi(k) = rstardp * T_c(k) / p_c(k)
+       zi_c(1:k) = zi_c(1:k) + (dphi(k) - olddphi)/gravit
+        
        !one can compute qv and ql here, but they change with sedimentation below
        !only temperature won't change
-
-       !sedimentation stage
-       massout = massout + vapor_mass_change
-       dp_c(k) = dp_loc - vapor_mass_change
-       p_c(k)  = p_loc  - vapor_mass_change
-       qv_c(k) = qsatdry*dpdry_loc/dp_c(k)
-       rstardp = dp_c(k) * (rdry * (1.0 - qv_c(k)) + rvapor * qv_c(k))
-
-       dphi(k) = rstardp * T_c(k) / p_c(k)
-
-     endif
+    endif
   enddo
 
-  !recompute zi
+  !qv_c hasnt changed yet
+  !compute en2, energy before sedimentation
+  call energycp_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c-rain, rain, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
+
+  do k=1, nlev
+
+     !sedimentation stage
+     oldQ1mass = dp_c(k)*qv_c(k)
+     vapor_mass_change = rain(k)
+     dp_c(k) = dp_c(k) - vapor_mass_change
+     p_c(k)  = p_c(k) - vapor_mass_change
+     qv_c(k) = (oldQ1mass - vapor_mass_change)/dp_c(k)
+     rstardp = dp_c(k) * (rdry * (1.0 - qv_c(k)) + rvapor * qv_c(k))
+
+     dphi(k) = rstardp * T_c(k) / p_c(k)
+      
+     energyout = energyout + (cl*T_c(k) + latice)*vapor_mass_change
+
+  enddo
+
+  !recompute zi after sedimentation
   do k=nlev, 1, -1
      zi_c(k) = zi_c(k+1) + dphi(k)/gravit
   enddo
-  
+
+  call energycp_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c, zero, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
+ 
+!print *, 'dp_c', dp_c
+!print *, 'zero', zero
+!print *, 'T_c', T_c
+!print *, 'en3 in rj', en3
+ 
 end subroutine rj_new
 
 
@@ -917,20 +960,18 @@ end subroutine energy_hy_via_mass
 
 
 
-subroutine energy_nh_via_mass(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zi_c,p_c,energy)
+subroutine energycp_nh_via_mass(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zbottom,p_c,energy)
 
   real(rl), dimension(nlev), intent(in) :: dpdry_c, dpv_c, dpc_c, dpr_c, p_c
-  real(rl), dimension(nlevp),intent(in) :: zi_c
   real(rl), dimension(nlev), intent(in) :: T_c
-  real(rl),                  intent(in) :: ptop
+  real(rl),                  intent(in) :: ptop, zbottom
   real(rl),                  intent(inout) :: energy
 
-  real(rl) :: zbottom, pis, cpterm, Lterm, nhterm, rstar
+  real(rl) :: pis, cpterm, Lterm, nhterm, rstar
   integer  :: k
   real(rl), dimension(nlev) :: ppi
   real(rl), dimension(nlev) :: pnh, dpi
 
-  zbottom = zi_c(nlevp)
   dpi = dpdry_c + dpv_c + dpc_c + dpr_c
   pis = ptop + sum(dpi)
 
@@ -952,7 +993,43 @@ subroutine energy_nh_via_mass(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zi_c,p_c,energy
     energy = energy + T_c(k)*cpterm + Lterm + nhterm
   enddo
 
-end subroutine energy_nh_via_mass
+end subroutine energycp_nh_via_mass
+
+
+subroutine energycV_nh_via_mass(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zi_c,p_c,energy)
+
+  real(rl), dimension(nlev), intent(in) :: dpdry_c, dpv_c, dpc_c, dpr_c, p_c
+  real(rl), dimension(nlevp),intent(in) :: zi_c
+  real(rl), dimension(nlev), intent(in) :: T_c
+  real(rl),                  intent(in) :: ptop
+  real(rl),                  intent(inout) :: energy
+
+  real(rl) :: ztop, cvterm, Lterm
+  integer  :: k
+  real(rl), dimension(nlev) :: zm, dpi
+
+  ztop = zi_c(1)
+  dpi = dpdry_c + dpv_c + dpc_c + dpr_c
+  zm(1:nlev) = (zi_c(1:nlev) + zi_c(2:nlevp))/2.0
+
+  energy = ztop * ptop * gravit
+
+  do k=1,nlev
+    cvterm = cvdry*dpdry_c(k) + cvv * dpv_c(k) + cl * (dpc_c(k) + dpr_c(k))
+
+    Lterm  = (latvap+latice) * dpv_c(k) + latice * (dpc_c(k) + dpr_c(k))
+
+    energy = energy + T_c(k)*cvterm + zm(k)*gravit*dpi(k) + Lterm
+  enddo
+
+end subroutine energycV_nh_via_mass
+
+
+
+
+
+
+
 
 
 
