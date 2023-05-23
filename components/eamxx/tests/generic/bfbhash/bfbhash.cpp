@@ -42,6 +42,15 @@ TEST_CASE("bfbhash")
     REQUIRE(a != 0);
   }
 
+  { // The hasher is sensitive to diffs that double accum is not.
+    double a = M_PI, b = 1e-20, c = a + b;
+    HashType x = 0, y = 0;
+    hash(a, x);
+    hash(a, y); hash(b, y);
+    REQUIRE(a == c); // double add doesn't see b
+    REQUIRE(x != y); // but the hasher does
+  }
+
   testeq<float>();
   testeq<double>();
 
