@@ -998,6 +998,7 @@ module li_subglacial_hydro
          ! we also don't want to assume it's the ocean water column height, because that would imply
          ! a diffusive flux inward, which is undesirable. So disabling diffusion at the GL.
          if (hydroMarineMarginMask(iEdge) == 1) then
+            diffusivity(iEdge) = 0.0_RKIND
             waterFluxDiffu(iEdge) = 0.0_RKIND
          else
             waterFluxDiffu(iEdge) = -1.0_RKIND * diffusivity(iEdge) * (waterThickness(cell2) - waterThickness(cell1)) &
@@ -1139,31 +1140,43 @@ module li_subglacial_hydro
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
          call mpas_pool_get_array(meshPool, 'indexToEdgeID', indexToEdgeID)
 
-         ! Calculate advective CFL-limited time step
-         dtSGHadvecBlock = 0.5_RKIND * minval(dcEdge(1:nEdgesSolve) / (abs(waterVelocity(1:nEdgesSolve)) &
-            + 1.0e-12_RKIND))  ! regularize
+         dtSGHadvecBlock = bigNumber
+         dtSGHdiffuBlock = bigNumber
+         dtSGHpressureBlock = bigNumber
+         dtSGHadvecChanBlock = bigNumber
+         dtSGHdiffuChanBlock = bigNumber
+
+         do iEdge = 1, nEdgesSolve
+            ! Calculate advective CFL-limited time step
+            if (abs(waterVelocity(iEdge)) > 0.0) then
+               dtSGHadvecBlock = min(dtSGHadvecBlock, 0.5_RKIND * dcEdge(iEdge) / abs(waterVelocity(iEdge)))
+            endif
+
+            if (diffusivity(iEdge) > 0.0) then
+               ! Calculate diffusive CFL-limited time step
+               dtSGHdiffuBlock = min(dtSGHdiffuBlock, 0.25_RKIND * dcEdge(iEdge)**2 / diffusivity(iEdge))
+               ! Calculate pressure limited time step
+               dtSGHpressureBlock = min(dtSGHpressureBlock, 1.0_RKIND * porosity * dcEdge(iEdge)**2 &
+                      / (2.0_RKIND * diffusivity(iEdge)))
+            endif
+
+            if (config_SGH_chnl_active) then
+               if (abs(channelVelocity(iEdge)) > 0.0) then
+                  ! Calculate channel advection limited time step
+                  dtSGHadvecChanBlock = min(dtSGHadvecChanBlock, 0.5_RKIND * dcEdge(iEdge) / (abs(channelVelocity(iEdge))))
+               endif
+               ! Calculate channel diffusion limited time step
+               if (channelDiffusivity(iEdge) > 0.0) then
+                  dtSGHdiffuChanBlock = min(dtSGHdiffuChanBlock, 0.25_RKIND * dcEdge(iEdge)**2 / channelDiffusivity(iEdge))
+               endif
+            endif
+         enddo
+
          dtSGHadvecProc = min(dtSGHadvecProc, dtSGHadvecBlock)
-
-         ! Calculate diffusive CFL-limited time step
-         dtSGHdiffuBlock = 0.25_RKIND * minval(dcEdge(1:nEdgesSolve)**2 / (diffusivity(1:nEdgesSolve) + 1.0e-12_RKIND))
          dtSGHdiffuProc = min(dtSGHdiffuProc, dtSGHdiffuBlock)
-
-         ! Calculate pressure limited time step
-         dtSGHpressureBlock = 1.0_RKIND * minval(porosity * dcEdge(1:nEdgesSolve)**2 &
-                   / (2.0_RKIND * diffusivity(1:nEdgesSolve) + 1.0e-12_RKIND))
          dtSGHpressureProc = min(dtSGHpressureProc, dtSGHpressureBlock)
-
-         if (config_SGH_chnl_active) then
-            ! Calculate channel advection limited time step
-            dtSGHadvecChanBlock = 0.5_RKIND * minval(dcEdge(1:nEdgesSolve) / (abs(channelVelocity(1:nEdgesSolve)) &
-               + 1.0e-12_RKIND))
-            ! regularize
-            dtSGHadvecChanProc = min(dtSGHadvecChanProc, dtSGHadvecChanBlock)
-            ! Calculate channel diffusion limited time step
-            dtSGHdiffuChanBlock = 0.25_RKIND * minval(dcEdge(1:nEdgesSolve)**2 / (channelDiffusivity(1:nEdgesSolve) + &
-               1.0e-12_RKIND))
-            dtSGHdiffuChanProc = min(dtSGHdiffuChanProc, dtSGHdiffuChanBlock)
-         endif
+         dtSGHadvecChanProc = min(dtSGHadvecChanProc, dtSGHadvecChanBlock)
+         dtSGHdiffuChanProc = min(dtSGHdiffuChanProc, dtSGHdiffuChanBlock)
 
          ! Master deltat is needed below, so grab it in this block loop
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
