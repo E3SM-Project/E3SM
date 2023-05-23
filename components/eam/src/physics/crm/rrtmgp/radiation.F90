@@ -23,10 +23,9 @@ module radiation
       get_band_index_sw, get_band_index_lw, test_get_band_index, &
       get_sw_spectral_midpoints, get_lw_spectral_midpoints, &
       get_sw_spectral_boundaries, &
-      rrtmg_to_rrtmgp_swbands!Brm, wavenum_sw_lower, wavenum_sw_upper
+      rrtmg_to_rrtmgp_swbands
    use cam_history_support, only: add_hist_coord
    use physconst, only: cpair, cappa, gravit
-!Brm   use prescribed_macv2, only: do_macv2sp
 
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
@@ -1106,9 +1105,7 @@ contains
 
       ! For running CFMIP Observation Simulator Package (COSP)
       use cospsimulator_intr, only: docosp, cospsimulator_intr_run, cosp_nradsteps
-!Brm      use prescribed_macv2,   only: sp_aop_profile, swbandnum
-!Brm      use time_manager,       only: get_curr_date
-
+      
       ! ---------------------------------------------------------------------------
       ! Arguments
       ! ---------------------------------------------------------------------------
