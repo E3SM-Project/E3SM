@@ -33,7 +33,7 @@ public:
   void perform_time_interpolation(const TimeStamp& time_in);
 
   // Build interpolator
-  void add_field(Field& field_in, const bool deep=false);
+  void add_field(const Field& field_in, const bool store_shallow_copy=false);
 
   // Getters
   Field get_field(const std::string& name) {
