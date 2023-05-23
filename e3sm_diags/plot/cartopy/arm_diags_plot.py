@@ -3,6 +3,7 @@ import os
 
 import matplotlib
 import numpy as np
+from matplotlib.gridspec import GridSpec
 
 from e3sm_diags.driver.utils.diurnal_cycle import fastAllGridFT
 from e3sm_diags.driver.utils.general import get_output_dir
@@ -13,6 +14,108 @@ matplotlib.use("agg")
 import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
 
 logger = custom_logger(__name__)
+
+
+def subplot_aerosol_ccn(a_num, ccn_num, parameter, region, variable, test=True):
+    # Bulk aerosol vs. ccn
+    if region == "sgpc1":
+        ccn_num_pedge = np.arange(0, 6200, 100)
+        a_num_pedge = np.arange(0, 6200, 100)
+        pvmax = 6000
+    elif region == "enac1":
+        ccn_num_pedge = np.arange(0, 1020, 20)
+        a_num_pedge = np.arange(0, 1020, 20)
+        pvmax = 1000
+    else:
+        msg = "Aerosol activation at Site: {} is not supported yet".format(region)
+        raise RuntimeError(msg)
+
+    a_num = np.array(a_num)
+    ccn_num = np.array(ccn_num)
+
+    ratio_all = ccn_num / a_num
+    ratio_mean = np.nanmean(ratio_all)
+    ratio_std = np.nanstd(ratio_all)
+
+    output_str = "test"
+    if test is False:
+        output_str = "ref"
+
+    if parameter.ref_name == "armdiags" and test is False:
+        data_name = "OBS"
+    else:
+        data_name = "Test Model"
+
+    fig = plt.figure(figsize=(12, 10))
+
+    fsize = 30
+    xysize = 30
+    gspec = GridSpec(ncols=1, nrows=1, figure=fig)
+    ax1 = fig.add_subplot(gspec[0])
+    ax1.set_title(
+        f"{region.upper()} Bulk Aerosol Activation ({data_name})", fontsize=fsize
+    )
+    h2d02, xeg02, yeg02, im02 = plt.hist2d(
+        a_num, ccn_num, bins=[a_num_pedge, ccn_num_pedge], cmap="turbo", density=True
+    )
+    ax1.plot([0, pvmax], [0, pvmax], "r", lw=3)
+    ax1.text(
+        0.02,
+        0.9,
+        "Ratio = " + "%.2f" % ratio_mean + r"$\pm$" + "%.2f" % ratio_std,
+        color="r",
+        ha="left",
+        va="center",
+        transform=ax1.transAxes,
+        fontsize=xysize,
+    )
+    ax1.set_xlabel("Aerosol Num. Conc. (# $cm^{-3}$)", fontsize=xysize)
+    ax1.set_ylabel(
+        f"CCN Num. Conc. @0.{variable[-1]}%SS (# $cm^{-3}$)", fontsize=xysize
+    )
+    ax1.tick_params(
+        labelsize=xysize, length=10, width=2, direction="out", which="major"
+    )
+    ax1.tick_params(length=7, width=3, direction="out", which="minor")
+    cb1 = plt.colorbar()
+    cb1.ax.tick_params(labelsize=13)
+    cb1.set_label("Probability Density", fontsize=15)
+    for axis in ["top", "bottom", "left", "right"]:
+        ax1.spines[axis].set_linewidth(2)
+    plt.subplots_adjust(left=0.16, right=1.01, bottom=0.11, top=0.94, hspace=0.15)
+    #    plt.savefig(output_path+'/figures/'+region+'/'+'aerosol_activation_bulk_a_ccn02_obs_'+sites[0]+'.png')
+    # save figure
+    # mp.savefig(output_path +'/figures/conv_diagnostics_'+test+'_'+sites[0]+'.png', transparent=True, bbox_inches='tight')
+    # Save the figure.
+    output_file_name = f"{parameter.output_file}-{output_str}"
+    for f in parameter.output_format:
+        f = f.lower().split(".")[-1]
+        fnm = os.path.join(
+            get_output_dir(parameter.current_set, parameter), output_file_name + "." + f
+        )
+        plt.savefig(fnm, transparent=True, bbox_inches="tight")
+        # Get the filename that the user has passed in and display that.
+        fnm = os.path.join(
+            get_output_dir(parameter.current_set, parameter),
+            output_file_name + "." + f,
+        )
+        logger.info(f"Plot saved in: {fnm}")
+    plt.close()
+
+
+def plot_aerosol_activation(
+    test_a_num, test_ccn_num, ref_a_num, ref_ccn_num, parameter, region, variable
+):
+    # Program for generate aerosol-to-ccn activate metric
+    # Original code: Xiaojian Zheng, Cheng Tao
+    # Modifications: Jill Zhang
+    #
+    # For related publications and research information see
+    # https://github.com/ARM-DOE/arm-gcm-diagnostics/blob/master/docs/ARM_DIAGS_v3_TechReport.pdf #
+
+    subplot_aerosol_ccn(test_a_num, test_ccn_num, parameter, region, variable)
+    subplot_aerosol_ccn(ref_a_num, ref_ccn_num, parameter, region, variable, test=False)
+    return
 
 
 def plot_convection_onset_statistics(

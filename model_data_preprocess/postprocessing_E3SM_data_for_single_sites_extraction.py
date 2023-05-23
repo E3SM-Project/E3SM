@@ -42,16 +42,16 @@ elif res == "ne120":
 SiteInfo = Tuple[int, int, float, float, str]
 if pg2:
     SITE_DICT: Dict[str, SiteInfo] = {
-        "sgp": (14089, 225317, 262.5, 36.6, "97.5W 36.6N Oklahoma ARM"),
-        "nsa": (20450, 327558, 204.6, 71.3, "156.6W 71.3N Barrow ARM"),
+        "sgpc1": (14089, 225317, 262.5, 36.6, "97.5W 36.6N Oklahoma ARM"),
+        "nsac1": (20450, 327558, 204.6, 71.3, "156.6W 71.3N Barrow ARM"),
         "twpc1": (8896, 142147, 147.4, -2.0, "147.4E 2.S Manus ARM"),
         "twpc2": (8923, 143689, 166.9, -0.5, "166.9E 0.5S Nauru ARM"),
         "twpc3": (4795, 76297, 130.9, -12.4, "130.9E 12.4S Darwin ARM"),
     }
 else:
     SITE_DICT: Dict[str, SiteInfo] = {
-        "sgp": (32068, 507365, 262.5, 36.6, "97.5W 36.6N Oklahoma ARM"),
-        "nsa": (46132, 737479, 204.6, 71.3, "156.6W 71.3N Barrow ARM"),
+        "sgpc1": (32068, 507365, 262.5, 36.6, "97.5W 36.6N Oklahoma ARM"),
+        "nsac1": (46132, 737479, 204.6, 71.3, "156.6W 71.3N Barrow ARM"),
         "twpc1": (20370, 321269, 147.4, -2.0, "147.4E 2.S Manus ARM"),
         "twpc2": (20435, 324740, 166.9, -0.5, "166.9E 0.5S Nauru ARM"),
         "twpc3": (11057, 172748, 130.9, -12.4, "130.9E 12.4S Darwin ARM"),
@@ -121,6 +121,14 @@ variables = [
     "AODVIS",
     "AODABS",
     "PS",
+    "num_a1",  # Accumu mode aerosol concentration (1/kg) at lowest level
+    "num_a2",  # Aitken mode aerosol concentration (1/kg) at lowest level
+    "num_a3",  # Coarse mode aerosol concentration (1/kg) at lowest level
+    "so4_a1",  # Accumu mode SO4 mass conc. (kg/kg) at lowest level
+    "so4_a2",  # Aitken mode SO4 mass conc. (kg/kg) at lowest level
+    "CCN3",  # CCN 0.1%SS concentration (1/CC) at lowest level
+    "CCN4",  # CCN 0.2%SS concentration (1/CC) at lowest level
+    "CCN5",  # CCN 0.5%SS concentration (1/CC) at lowest level
 ]
 
 for site, SiteInfo in SITE_DICT.items():

@@ -5,11 +5,12 @@ from cdp.cdp_viewer import OutputViewer
 from .utils import add_header, h1_to_h3
 
 region_name = {
-    "sgp": "Southern Great Plains",
-    "nsa": "North Slope Alaska",
+    "sgpc1": "Southern Great Plains",
+    "nsac1": "North Slope Alaska",
     "twpc1": "Manus",
     "twpc2": "Nauru",
     "twpc3": "Darwin",
+    "enac1": "Eastern North Atlantic",
 }
 
 
@@ -63,7 +64,7 @@ def create_viewer(root_dir, parameters):
                 viewer.add_row("PRECT at SGP")
                 viewer.add_col("Diurnal cycle of precipitation")
                 for season in ["DJF", "MAM", "JJA", "SON"]:
-                    output_file = "{}-PRECT-{}-sgp-diurnal-cycle.{}".format(
+                    output_file = "{}-PRECT-{}-sgpc1-diurnal-cycle.{}".format(
                         param.ref_name, season, ext
                     )
                     image_relative_path = os.path.join(relative_path, output_file)
@@ -102,6 +103,49 @@ def create_viewer(root_dir, parameters):
                 image_relative_path = os.path.join(relative_path, output_file2)
                 viewer.add_col(image_relative_path, is_file=True, title="Reference")
 
+        if diags_set == "aerosol_activation":
+            viewer.add_group("Bulk aerosol activation")
+            for param in valid_parameters:
+                ext = param.output_format[0]
+                viewer.add_row(
+                    "{} at {} ({})".format(
+                        param.variables[0],
+                        region_name[param.regions[0]],
+                        param.regions[0],
+                    )
+                )
+
+                region = param.regions[0]
+                variable = param.variables[0]
+                viewer.add_col(
+                    f"Aerosol vs CCN Num. Conc. @0.{variable[-1]}%Super Saturation"
+                )
+                output_file1 = "{}-aerosol-activation-{}-{}-{}.{}".format(
+                    param.ref_name, region, variable, "test", ext
+                )
+                output_file2 = "{}-aerosol-activation-{}-{}-{}.{}".format(
+                    param.ref_name, region, variable, "ref", ext
+                )
+                image_relative_path = os.path.join(relative_path, output_file1)
+                viewer.add_col(image_relative_path, is_file=True, title="Test")
+                image_relative_path = os.path.join(relative_path, output_file2)
+                viewer.add_col(image_relative_path, is_file=True, title="Reference")
+        if diags_set == "annual_cycle_aerosol":
+            viewer.add_group("Aerosol Annual Cycle")
+            for param in valid_parameters:
+                ext = param.output_format[0]
+                viewer.add_row(
+                    "{} at {} ({})".format(
+                        param.variables[0],
+                        region_name[param.regions[0]],
+                        param.regions[0],
+                    )
+                )
+                viewer.add_col("Annual cycles of " + param.var_name)
+                image_relative_path = os.path.join(
+                    relative_path, "{}.{}".format(param.output_file, ext)
+                )
+                viewer.add_col(image_relative_path, is_file=True, title="Plot")
     url = viewer.generate_page()
     add_header(root_dir, os.path.join(root_dir, url), parameters)
     h1_to_h3(os.path.join(root_dir, url))
