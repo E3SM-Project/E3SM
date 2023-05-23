@@ -239,17 +239,32 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
     const int mm = (time_start - hh*10000)/100;
     const int ss = (time_start - hh*10000 - mm*100);
     TimeStamp ts_file_start(YY,MM,DD,hh,mm,ss);
+    // Gather the units of time
+    auto time_units_tmp = scorpio::get_any_attribute(filename,"time","units");
+    auto& time_units = ekat::any_cast<std::string>(time_units_tmp);
+    int time_mult;
+    if (time_units.find("seconds") != std::string::npos) {
+      time_mult = 1;
+    } else if (time_units.find("minutes") != std::string::npos) {
+      time_mult = 60;
+    } else if (time_units.find("hours") != std::string::npos) {
+      time_mult = 3600;
+    } else if (time_units.find("days") != std::string::npos) {
+      time_mult = 86400;
+    } else {
+      EKAT_ERROR_MSG("Error!! TimeInterpolation::set_file_triplets - unsupported units of time = (" << time_units << ") in source data file " << filename << ", supported units are: seconds, minutes, hours and days");
+    }
+    // Gather information about time in this file
     if (ii==0) {
       ts_ref = ts_file_start;
     }
-    // Gather information about time in this file
     scorpio::register_file(filename,scorpio::Read);
     const int ntime = scorpio::get_dimlen(filename,"time");
     for (int tt=0; tt<ntime; tt++) {
       auto time_snap = scorpio::read_time_at_index_c2f(filename.c_str(),tt+1);
       TimeStamp ts_snap = ts_file_start;
       if (time_snap>0) {
-        ts_snap += (time_snap*86400); // note, time is assumed to be in days.
+        ts_snap += (time_snap*time_mult);
       }
       auto time = ts_snap.seconds_from(ts_ref);
       map_of_times_to_vector_idx.emplace(time,running_idx);
