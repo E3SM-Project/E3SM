@@ -1,9 +1,9 @@
 set(MLCORRECTION_SRCS
-  atmosphere_ml_correction.cpp
+  eamxx_ml_correction_process_interface.cpp
 )
 
 set(MLCORRECTION_HEADERS
-  atmosphere_ml_correction.hpp
+  eamxx_ml_correction_process_interface.hpp
 )
 
 add_library(ml_correction ${MLCORRECTION_SRCS})

@@ -1,6 +1,5 @@
 if ("${SCREAM_DYNAMICS_DYCORE}" STREQUAL "HOMME")
   add_subdirectory(homme)
-  set (SCREAM_HAS_HOMME TRUE CACHE INTERNAL "Signal that Homme is compiled")
 elseif("${SCREAM_DYNAMICS_DYCORE}" STREQUAL "NONE")
   message ("SCREAM_DYNAMICS_DYCORE set to 'NONE'. Scream won't enable any test/code that needs dynamics.\n")
 else()
