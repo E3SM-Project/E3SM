@@ -301,7 +301,7 @@ void TimeInterpolation::check_and_update_data(const TimeStamp& ts_in)
   // First check if the passed timestamp is within the bounds of time0 and time1.
   EKAT_REQUIRE_MSG(ts_in.seconds_from(m_time0) >= 0, "ERROR!!! TimeInterpolation::check_and_update_data - "
 		  << "Current timestamp of " << ts_in.to_string() << " is lower than the TimeInterpolation bounds of " << m_time0.to_string());
-  if (m_time1.seconds_from(ts_in) >= 0) {
+  if (m_time1.seconds_from(ts_in) < 0) {
     // The timestamp is out of bounds, need to load new data.
     // First cycle through the DataFromFileTriplet's to find a timestamp that is greater than this one.
     bool found = false;
