@@ -48,4 +48,8 @@
 // Whether monolithic kernels are on
 #cmakedefine SCREAM_SMALL_KERNELS
 
+// Whether SCREAM dynamical core has been set to Homme.
+// Useful for guarding homme specific code in the driver.
+#cmakedefine SCREAM_HAS_HOMME_DYCORE
+
 #endif

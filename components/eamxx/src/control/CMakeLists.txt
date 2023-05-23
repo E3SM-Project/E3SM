@@ -1,3 +1,5 @@
+# TODO: Potentially remove when driver accounts for pg2 grids. Search the code
+#       for "fvphyshack" to find places in the driver which will also be updated.
 set (dynLibName)
 if ("${SCREAM_DYNAMICS_DYCORE}" STREQUAL "HOMME")
   # Need these two to be linked, due to homme deps
