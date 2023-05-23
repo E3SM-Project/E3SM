@@ -983,11 +983,11 @@ create_diagnostic (const std::string& diag_field_name) {
 
     const auto& f = get_field(fname,"sim");
     params.set("Field",f);
-    params.set("Field Location", tokens[1]);
+    params.set("Field Level Location", tokens[1]);
     params.set<double>("mask_value",m_fill_value);
     // FieldAtLevel         follows convention variable_at_levN (where N is some integer)
     // FieldAtPressureLevel follows convention variable_at_999XYZ (where 999 is some integer, XYZ string units)
-    diag_name = tokens[1].find_first_of("0123456789.")==0 ? "FieldAtLevel" : "FieldAtPressureLevel";
+    diag_name = tokens[1].find_first_of("0123456789.")==0 ? "FieldAtPressureLevel" : "FieldAtLevel";
   } else {
     diag_name = diag_field_name;
   }
