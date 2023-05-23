@@ -61,6 +61,8 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   // Info for mass and energy conservation checks
   m_column_conservation_check_data.has_check =
       m_params.get<bool>("enable_column_conservation_checks", false);
+
+  m_internal_diagnostics_level = m_params.get<int>("internal_diagnostics_level", 0);
 }
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
@@ -97,8 +99,16 @@ void AtmosphereProcess::run (const double dt) {
       compute_column_conservation_checks_data(dt_sub);
     }
 
+    if (m_internal_diagnostics_level > 0)
+      print_global_state_hash(name() + "-pre-sc-" + std::to_string(m_subcycle_iter),
+                              true, false, false);
+
     // Run derived class implementation
     run_impl(dt_sub);
+
+    if (m_internal_diagnostics_level > 0)
+      print_global_state_hash(name() + "-pst-sc-" + std::to_string(m_subcycle_iter),
+                              true, true, true);
 
     if (has_column_conservation_check()) {
       // Run the column local mass and energy conservation checks

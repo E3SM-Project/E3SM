@@ -1,5 +1,5 @@
 #include "catch2/catch.hpp"
-#include "physics/nudging/atmosphere_nudging.hpp"
+#include "physics/nudging/eamxx_nudging_process_interface.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 
 #include "share/io/scream_output_manager.hpp"
@@ -53,7 +53,7 @@ TEST_CASE("nudging") {
   //It then runs then nudging module with the netcdf file as input to nudge
   //And then checks that the output fields of the nudging module match
   //what should be in the netcdf file
-  
+
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
   using FL = FieldLayout;
@@ -65,13 +65,13 @@ TEST_CASE("nudging") {
   Int num_levs = 34;
 
   // Initialize the pio_subsystem for this test:
-  // MPI communicator group used for I/O.  
+  // MPI communicator group used for I/O.
   // In our simple test we use MPI_COMM_WORLD, however a subset could be used.
-  MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  
+  MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());
   // Gather the initial PIO subsystem data creater by component coupler
-  scorpio::eam_init_pio_subsystem(fcomm);   
-  
-  // First set up a field manager and grids manager to interact 
+  scorpio::eam_init_pio_subsystem(fcomm);
+
+  // First set up a field manager and grids manager to interact
   // with the output functions
   auto gm2 = create_gm(io_comm,3,num_levs);
   auto grid2 = gm2->get_grid("Point Grid");
@@ -81,7 +81,7 @@ TEST_CASE("nudging") {
   io_control.timestamp_of_last_write = t0;
   io_control.nsamples_since_last_write = 0;
   io_control.frequency_units         = "nsteps";
-  std::vector<std::string> output_stamps; 
+  std::vector<std::string> output_stamps;
 
   const Int dt        = 250;
   const Int max_steps = 12;
@@ -141,7 +141,7 @@ TEST_CASE("nudging") {
 
     auto f5      = fm->get_field(fid5);
     auto f5_host = f5.get_view<Real**,Host>();
-    
+
     for (int ii=0;ii<num_lcols;++ii) {
       for (int jj=0;jj<num_levs;++jj) {
 	f1_host(ii,jj) = 2*jj+1;
@@ -223,7 +223,7 @@ TEST_CASE("nudging") {
 
   // Create a grids manager
   const int ncols = 3;
-  const int nlevs = 35;  
+  const int nlevs = 35;
   auto gm = create_gm(io_comm,ncols,nlevs);
   auto grid = gm->get_grid("Physics");
 
@@ -265,10 +265,10 @@ TEST_CASE("nudging") {
   Field v_o = output_fields["v"];
 
   //fill data
-  //Don't fill T,qv,u,v because they will be nudged anyways  
+  //Don't fill T,qv,u,v because they will be nudged anyways
   auto p_mid_v_h   = p_mid.get_view<Real**, Host>();
   for (int icol=0; icol<ncols; icol++){
-    for (int ilev=0; ilev<nlevs; ilev++){ 
+    for (int ilev=0; ilev<nlevs; ilev++){
       p_mid_v_h(icol,ilev) = 2*ilev;
     }
   }
@@ -295,7 +295,7 @@ TEST_CASE("nudging") {
     v_o.sync_to_host();
 
     for (int icol=0; icol<ncols; icol++){
-      for (int ilev=0; ilev<nlevs; ilev++){ 
+      for (int ilev=0; ilev<nlevs; ilev++){
         const int time_index = time_s*100./250.;
 
 	//First deal with cases where destination pressure levels are outside
@@ -331,7 +331,7 @@ TEST_CASE("nudging") {
           REQUIRE(abs(v_h_o(icol,ilev) - val_tim_avg)<0.001);
 	  continue;
 	}
-	
+
         double val_before = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index-1);
         double val_after = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index);
         double w_aft = time_s*100.-time_index*250.;
@@ -355,6 +355,6 @@ TEST_CASE("nudging") {
 }
 
 nudging_mid->finalize();
-  
+
 }
 

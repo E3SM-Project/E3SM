@@ -257,7 +257,8 @@ public:
   bool has_column_conservation_check () { return m_column_conservation_check_data.has_check; }
 
   // For internal diagnostics and debugging.
-  void print_global_state_hash(const std::string& label) const;
+  void print_global_state_hash(const std::string& label, const bool in = true,
+                               const bool out = true, const bool internal = true) const;
   // For BFB tracking in production simulations.
   void print_fast_global_state_hash(const std::string& label) const;
   
@@ -269,6 +270,8 @@ protected:
   int get_num_subcycles () const { return m_num_subcycles; }
   int get_subcycle_iter () const { return m_subcycle_iter; }
   bool do_update_time_stamp () const { return m_update_time_stamps; }
+
+  int get_internal_diagnostics_level () const { return m_internal_diagnostics_level; }
 
   // Derived classes can used these method, so that if we change how fields/groups
   // requirement are stored (e.g., change the std container), they don't need to change
@@ -546,6 +549,9 @@ private:
 
   // Log level for when property checks perform a repair
   ekat::logger::LogLevel  m_repair_log_level;
+
+  // Controls global hashing output for debugging non-BFBness.
+  int m_internal_diagnostics_level;
 };
 
 // ================= IMPLEMENTATION ================== //

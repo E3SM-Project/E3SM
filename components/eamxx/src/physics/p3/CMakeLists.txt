@@ -3,8 +3,8 @@ set(P3_SRCS
   p3_ic_cases.cpp
   p3_iso_c.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/p3/scream/micro_p3.F90
-  atmosphere_microphysics.cpp
-  atmosphere_microphysics_run.cpp
+  eamxx_p3_process_interface.cpp
+  eamxx_p3_run.cpp
 )
 
 if (NOT SCREAM_LIB_ONLY)
@@ -62,6 +62,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
 endif()
 
 add_library(p3 ${P3_SRCS})
+target_compile_definitions(p3 PUBLIC EAMXX_HAS_P3)
 set_target_properties(p3 PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
