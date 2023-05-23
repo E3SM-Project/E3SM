@@ -31,6 +31,7 @@ set(SHARE_SRC
   util/scream_time_stamp.cpp
   util/scream_timing.cpp
   util/scream_utils.cpp
+  util/scream_bfbhash.cpp
 )
 
 add_library(scream_share ${SHARE_SRC})
