@@ -41,7 +41,7 @@ FieldAtLevel::FieldAtLevel (const ekat::Comm& comm, const ekat::ParameterList& p
 
   // Figure out the level
   if (ekat::starts_with(location,"lev")) {
-    const auto& lev = location.substr(3);
+    const auto& lev = location.substr(4);
     EKAT_REQUIRE_MSG (lev.find_first_not_of("0123456789")==std::string::npos,
         "Error! Invalid level specification for FieldAtLevel diagnostic.\n"
         "  - input value: '" + location + "'\n"

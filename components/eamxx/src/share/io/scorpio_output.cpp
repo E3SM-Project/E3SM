@@ -964,7 +964,12 @@ create_diagnostic (const std::string& diag_field_name) {
   ekat::ParameterList params;
   std::string diag_name;
 
-  // If the diagnostic is $field_at_lev$N/$field_bot/$field_top/$field_at_$NhPa
+  // If the diagnostic is one of
+  //  - ${field_name}_at_lev_${N}     <- interface fields still use "_lev_"
+  //  - ${field_name}_at_model_bot
+  //  - ${field_name}_at_model_top
+  //  - ${field_name}_at_${M}X
+  // where M/N are numbers (N integer), X=Pa, hPa, or mb
   // then we need to set some params
   auto tokens = ekat::split(diag_field_name,"_at_");
   EKAT_REQUIRE_MSG (tokens.size()==1 || tokens.size()==2,
