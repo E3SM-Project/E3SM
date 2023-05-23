@@ -1533,6 +1533,28 @@
 					possible_values="Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition."
 		/>
 	</nml_record>
+	<nml_record name="manufactured_solution">
+		<nml_option name="config_use_manufactured_solution" type="logical" default_value=".false."
+					description="This flag includes additional thickness and velocity tendencies nesseary for testing with a manufactured solution."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_manufactured_solution_wavelength_x" type="real" default_value="2000000.0" units="m"
+					description="Wavelenth of manufactured solution in the x direction"
+					possible_values="Any positive real number"
+		/>
+		<nml_option name="config_manufactured_solution_wavelength_y" type="real" default_value="2000000.0" units="m"
+					description="Wavelenth of manufactured solution in the y direction"
+					possible_values="Any positive real number"
+		/>
+		<nml_option name="config_manufactured_solution_omega" type="real" default_value="0" units="s^-1"
+					description="Angular frequency of manufactured solution"
+					possible_values="Any positive real number"
+		/>
+		<nml_option name="config_manufactured_solution_amplitude" type="real" default_value="1" units="m"
+					description="Amplitude of the manufactured solution"
+					possible_values="Any positive real number"
+		/>
+	</nml_record>
 	<packages>
 		<package name="timeVaryingAtmosphericForcingPKG" description="This package includes variables required for time varying atmospheric forcing"/>
 		<package name="timeVaryingLandIceForcingPKG" description="This package includes variavles required for time varying land-ice forcing"/>
