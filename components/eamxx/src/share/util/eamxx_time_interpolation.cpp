@@ -70,7 +70,7 @@ void TimeInterpolation::perform_time_interpolation(const TimeStamp& time_in)
  * Output:
  *   None
  */
-void TimeInterpolation::add_field(Field& field_in, const bool deep)
+void TimeInterpolation::add_field(const Field& field_in, const bool store_shallow_copy)
 {
   // First check that we haven't already added a field with the same name.
   const auto name = field_in.name();
@@ -82,7 +82,7 @@ void TimeInterpolation::add_field(Field& field_in, const bool deep)
   auto field1 = field_in.clone();
   m_fm_time0->add_field(field0);
   m_fm_time1->add_field(field1);
-  if (deep) {
+  if (store_shallow_copy) {
     // Then we want to store the actual field_in and override it when interpolating
     m_interp_fields.emplace(name,field_in);
   } else {
@@ -299,8 +299,9 @@ void TimeInterpolation::read_data()
 void TimeInterpolation::check_and_update_data(const TimeStamp& ts_in)
 {
   // First check if the passed timestamp is within the bounds of time0 and time1.
-  bool current_data_okay = (ts_in.seconds_from(m_time0) >= 0) and (m_time1.seconds_from(ts_in) >= 0);
-  if (!current_data_okay) {
+  EKAT_REQUIRE_MSG(ts_in.seconds_from(m_time0) >= 0, "ERROR!!! TimeInterpolation::check_and_update_data - "
+		  << "Current timestamp of " << ts_in.to_string() << " is lower than the TimeInterpolation bounds of " << m_time0.to_string());
+  if (m_time1.seconds_from(ts_in) >= 0) {
     // The timestamp is out of bounds, need to load new data.
     // First cycle through the DataFromFileTriplet's to find a timestamp that is greater than this one.
     bool found = false;

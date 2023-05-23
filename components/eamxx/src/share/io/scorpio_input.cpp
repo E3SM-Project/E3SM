@@ -116,6 +116,21 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
   EKAT_REQUIRE_MSG (field_mgr, "Error! Invalid field manager pointer.\n");
   EKAT_REQUIRE_MSG (field_mgr->get_grid(), "Error! Field manager stores an invalid grid pointer.\n");
 
+  // If resetting a field manager we want to check that the layouts of all fields are the same.
+  if (m_field_mgr) {
+    for (auto felem = m_field_mgr->begin(); felem != m_field_mgr->end(); felem++) {
+      auto name = felem->first;
+      auto field_curr = m_field_mgr->get_field(name);
+      auto field_new  = field_mgr->get_field(name);
+      // Check Layouts
+      auto lay_curr   = field_curr.get_header().get_identifier().get_layout();
+      auto lay_new    = field_new.get_header().get_identifier().get_layout();
+      EKAT_REQUIRE_MSG(lay_curr==lay_new,"ERROR!! AtmosphereInput::set_field_manager - setting new field manager which has different layout for field " << name <<"\n"
+		      << "    Old Layout: " << to_string(lay_curr) << "\n"
+		      << "    New Layout: " << to_string(lay_new) << "\n");
+    }
+  }
+
   m_field_mgr = field_mgr;
 
   // Store grid and fm
