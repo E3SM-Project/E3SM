@@ -1472,6 +1472,15 @@ end function chem_is_active
                       gaschmbudget_2D_L4_s_out = gaschmbudget_2D_L4_s, &
                       gaschmbudget_2D_L4_e_out = gaschmbudget_2D_L4_e )
 
+    if (history_chemdyg_summary) then
+        if (history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then    
+            history_chemdyg_summary = .false.  
+            history_gaschmbudget_2D = .true.  
+            history_gaschmbudget_2D_levels = .true.  
+            if (masterproc) write(iulog,*) 'Chemistry: history_chemdyg_summary is in conflict with other flags. Turn history_chemdyg_summary off.'
+        end if
+    end if
+
     chem_dt = chem_freq*dt
 
     lchnk = state%lchnk
