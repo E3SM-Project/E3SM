@@ -69,6 +69,7 @@
       <value mach="bebop" mpilib="impi" compset=".*CAM5.+MPAS.*">netcdf</value>
       <value mach="fugaku" compiler="gnu">netcdf</value>
       <value mach="quartz">netcdf</value>
+      <value mach="ruby">netcdf</value>
     </values>
   </entry>
 

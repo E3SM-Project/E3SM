@@ -1,4 +1,4 @@
-#include "atmosphere_dynamics.hpp"
+#include "eamxx_homme_process_interface.hpp"
 
 // HOMMEXX Includes
 #include "Context.hpp"
@@ -234,6 +234,11 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     add_internal_field (m_helper_fields.at("w_int_dyn").subfield(1,tl.n0,true));
   }
 
+  // The output manager pulls from the atm process fields. Add
+  // helper fields for the case that a user request output.
+  add_internal_field (m_helper_fields.at("omega_dyn"));
+  add_internal_field (m_helper_fields.at("phis_dyn"));
+
   if (not fv_phys_active()) {
     // Dynamics backs out tendencies from the states, and passes those to Homme.
     // After Homme completes, we remap the updated state to the ref grid.  Thus,
@@ -433,7 +438,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     // dynamics helper fields Computed and output on the dynamics grid. Worse
     // for I/O but better for device memory.
     const auto& rgn = m_cgll_grid->name();
-    for (const auto& f : {"horiz_winds", "T_mid", "ps", "phis"})
+    for (const auto& f : {"horiz_winds", "T_mid", "ps", "phis", "pseudo_density"})
       remove_field(f, rgn);
     remove_group("tracers", rgn);
     fv_phys_rrtmgp_active_gases_remap();
@@ -1208,6 +1213,13 @@ void HommeDynamics::initialize_homme_state () {
     // Initialize p_mid/p_int
     update_pressure (m_phys_grid);
   }
+
+  // If "Instant" averaging type is used for output,
+  // an initial output is performed before AD processes
+  // are run. If omega_dyn output is requested, it will
+  // not have valid computed values for this initial
+  // output. Set to zero avoid potential FPE.
+  get_internal_field("omega_dyn").deep_copy(0);
 
   // Copy IC states on all timelevel slices
   copy_dyn_states_to_all_timelevels ();

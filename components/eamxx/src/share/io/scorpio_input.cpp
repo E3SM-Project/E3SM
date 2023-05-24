@@ -36,8 +36,6 @@ AtmosphereInput (const std::string& filename,
   auto& names = params.get<std::vector<std::string>>("Field Names",{});
 
   auto fm = std::make_shared<fm_type>(grid);
-  fm->registration_begins();
-  fm->registration_ends();
   for (auto& f : fields) {
     fm->add_field(f);
     names.push_back(f.name());

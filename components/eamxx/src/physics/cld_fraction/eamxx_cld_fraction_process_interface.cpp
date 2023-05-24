@@ -1,4 +1,4 @@
-#include "atmosphere_cld_fraction.hpp"
+#include "eamxx_cld_fraction_process_interface.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
 #include "ekat/ekat_assert.hpp"
@@ -35,7 +35,7 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 
   // Define the different field layouts that will be used for this process
 
-  // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces 
+  // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
 
   // Set of fields used strictly as input
@@ -46,19 +46,19 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   // Set of fields used strictly as output
   add_field<Computed>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name,ps);
   add_field<Computed>("cldfrac_ice", scalar3d_layout_mid, nondim, grid_name,ps);
-  // Note, we track two versions of the cloud fraction.  The versions below have "_for_analysis"   
+  // Note, we track two versions of the cloud fraction.  The versions below have "_for_analysis"
   // attached to the name because they're meant for use with fields that are exclusively
   // related to writing output.  This is an important distinction here because the internal ice
-  // cloud fraction needs to be 100% whenever any ice at all is present in the cell (in order 
-  // for the model's ice processes to act on that cell). Folks evaluating cloud, on the other hand, 
-  // expect cloud fraction to represent cloud visible to the human eye (which corresponds to 
-  // ~1e-5 kg/kg). 
+  // cloud fraction needs to be 100% whenever any ice at all is present in the cell (in order
+  // for the model's ice processes to act on that cell). Folks evaluating cloud, on the other hand,
+  // expect cloud fraction to represent cloud visible to the human eye (which corresponds to
+  // ~1e-5 kg/kg).
   add_field<Computed>("cldfrac_tot_for_analysis", scalar3d_layout_mid, nondim, grid_name,ps);
   add_field<Computed>("cldfrac_ice_for_analysis", scalar3d_layout_mid, nondim, grid_name,ps);
 
   // Set of fields used as input and output
   // - There are no fields used as both input and output.
-  
+
   // Gather parameters for ice cloud thresholds from parameter list:
   m_icecloud_threshold = m_params.get<double>("ice_cloud_threshold",1e-12);  // Default = 1e-12
   m_icecloud_for_analysis_threshold = m_params.get<double>("ice_cloud_for_analysis_threshold",1e-5); // Default = 1e-5
@@ -79,7 +79,7 @@ void CldFraction::initialize_impl (const RunType /* run_type */)
 void CldFraction::run_impl (const double /* dt */)
 {
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
-  // and the ice mass mixing ratio. 
+  // and the ice mass mixing ratio.
   auto qi   = get_field_in("qi").get_view<const Pack**>();
   auto liq_cld_frac = get_field_in("cldfrac_liq").get_view<const Pack**>();
   auto ice_cld_frac = get_field_out("cldfrac_ice").get_view<Pack**>();
