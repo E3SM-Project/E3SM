@@ -61,8 +61,7 @@ _TESTS = {
             "ERS_D.f19_g16.I1850GSWCNPRDCTCBC.elm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
             "ERS_D.f09_f09.IELM.elm-solar_rad",
             "ERS_D.f09_f09.IELM.elm-koch_snowflake",
-            "SMS_Ld20_D.f45_f45.IELMFATES.elm-fates_rd",
-            "SMS_Ld30_D.f45_f45.IELMFATES.elm-fates_satphen"
+            "SMS_Ld20_D.f45_f45.IELMFATES.elm-fates_rd"
             )
         },
 
@@ -77,6 +76,7 @@ _TESTS = {
             "SMS_Ld1.hcru_hcru.I1850CRUELMCN",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-force_netcdf_pio",
             "SMS_Ld20.f45_f45.IELMFATES.elm-fates_eca",
+            "SMS_Ld30.f45_f45.IELMFATES.elm-fates_satphen",
             "ERS.f19_g16.I1850ELM.elm-betr",
             "ERS.f19_g16.I1850ELM.elm-vst",
             "ERS.f09_g16.I1850ELMCN.elm-bgcinterface",
