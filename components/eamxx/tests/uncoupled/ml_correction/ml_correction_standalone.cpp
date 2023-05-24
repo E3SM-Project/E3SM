@@ -8,7 +8,7 @@
 #include "control/atmosphere_driver.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
-#include "physics/ml_correction/atmosphere_ml_correction.hpp"
+#include "physics/ml_correction/eamxx_ml_correction_process_interface.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 
