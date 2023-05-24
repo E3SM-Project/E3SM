@@ -83,6 +83,10 @@
       <value compset="_EAM%MMF[12XO]"         >-crm_nx 64 -crm_nx_rad 16 -crm_ny 1 -crm_ny_rad 1 </value>
       <value compset="_EAM%MMF*-AQUA"         >-aquaplanet </value>
       <value compset="_EAM%MMF*-RCE"          >-aquaplanet -rce </value>
+      <value compset="_EAM%CHEMUCI-LINOZV3-MAM5"  >-clubb_sgs -microphys mg2 -chem superfast_mam5_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -usr_mech_infile $SRCROOT/components/eam/chem_proc/inputs/pp_chemUCI_linozv3_mam5_resus_mom_soag_tag_cnst_no3_oh.in</value>
+      <value compset="_ELM%[^_]*BC"    >-bc_dep_to_snow_updates</value>
+      <value compset="_EAM.*_BGC%*"    >-co2_cycle</value>
+      <value compset="_EAM%CMIP6-P3_"  >&eam_chem_defaults; -nlev 72 -clubb_sgs -microphys p3</value>
 
       <!--  -->
       <value compset="GEOS_EAM"       >-offline_dyn</value>
