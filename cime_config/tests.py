@@ -728,37 +728,37 @@ _TESTS = {
     # super-BFB
     "e3sm_superbfb_ice_opt" : { # opt + pureMPI
         #"share"   : True,
-        "time"    : "00:15:00",
+        "time"    : "00:30:00",
         "tests"   : (
-            "ERS_Lh3.T62_oEC60to30v3.DTESTM.pemod-omp1",
-            "PEM_Lh3.T62_oEC60to30v3.DTESTM.pemod-omp1",
+            "ERS_Lh3.T62_EC30to60E2r2.DTESTM.pemod-omp1",
+            "PEM_Lh3.T62_EC30to60E2r2.DTESTM.pemod-omp1",
         )
     },
 
     "e3sm_superbfb_ice_dbg" : { # dbg + pureMPI
         #"share"   : True,
-        "time"    : "00:30:00",
+        "time"    : "01:00:00",
         "tests"   : (
-            "ERS_Lh3_D.T62_oEC60to30v3.DTESTM.pemod-omp1",
-            "PEM_Lh3_D.T62_oEC60to30v3.DTESTM.pemod-omp1",
+            "ERS_Lh3_D.T62_EC30to60E2r2.DTESTM.pemod-omp1",
+            "PEM_Lh3_D.T62_EC30to60E2r2.DTESTM.pemod-omp1",
         )
     },
 
     "e3sm_superbfb_ice_opt_thrd" : { # opt + threads
         #"share"   : True,
-        "time"    : "00:15:00",
+        "time"    : "00:30:00",
         "tests"   : (
-            "ERS_Lh3.T62_oEC60to30v3.DTESTM.pemod-omp2",
-            "PET_Lh3.T62_oEC60to30v3.DTESTM.pemod-ompfull",
+            "ERS_Lh3.T62_EC30to60E2r2.DTESTM.pemod-ompfull",
+            "PET_Lh3.T62_EC30to60E2r2.DTESTM.pemod-omp2",
         )
     },
 
     "e3sm_superbfb_ice_dbg_thrd" : { # dbg + threads
         #"share"   : True,
-        "time"    : "00:30:00",
+        "time"    : "01:00:00",
         "tests"   : (
-            "ERS_Lh3_D.T62_oEC60to30v3.DTESTM.pemod-omp2",
-            "PET_Lh3_D.T62_oEC60to30v3.DTESTM.pemod-ompfull",
+            "ERS_Lh3_D.T62_EC30to60E2r2.DTESTM.pemod-ompfull",
+            "PET_Lh3_D.T62_EC30to60E2r2.DTESTM.pemod-omp2",
         )
     },
 
