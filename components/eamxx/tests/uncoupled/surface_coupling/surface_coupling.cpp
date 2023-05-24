@@ -16,6 +16,8 @@
 
 namespace scream {
 
+constexpr Real test_tol = std::numeric_limits<Real>::epsilon()*1e1;
+
 void setup_import_and_export_data(
   // Imports
   const int num_cpl_imports, const int num_scream_imports,
@@ -292,6 +294,7 @@ void test_exports(const FieldManager& fm,
 
   // Check cpl data to scream fields
   for (int i=0; i<ncols; ++i) {
+    const Real Faxa_lwdn_file = i+1 + dt; 
 
     // The following are exported both during initialization and run phase
     EKAT_REQUIRE(export_constant_multiple_view(0)*Sa_z_h(i)                  == export_data_view(i, export_cpl_indices_view(0)));
@@ -323,7 +326,7 @@ void test_exports(const FieldManager& fm,
       EKAT_REQUIRE(Faxa_swndf_const                                        == export_data_view(i, export_cpl_indices_view(13)));
       EKAT_REQUIRE(Faxa_swndv_const                                        == export_data_view(i, export_cpl_indices_view(14)));
       EKAT_REQUIRE(export_constant_multiple_view(15)*sfc_flux_sw_net_h(i)  == export_data_view(i, export_cpl_indices_view(15)));
-      EKAT_REQUIRE(export_constant_multiple_view(16)*sfc_flux_lw_dn_h(i)   == export_data_view(i, export_cpl_indices_view(16)));
+      EKAT_REQUIRE(std::abs(Faxa_lwdn_file - export_data_view(i, export_cpl_indices_view(16))<test_tol));
     }
   }
 }
@@ -351,15 +354,23 @@ TEST_CASE("surface-coupling", "") {
   using vos_type = std::vector<std::string>;
   using vor_type = std::vector<Real>;
   std::uniform_real_distribution<Real> pdf_real_constant_data(0.0,1.0);
+
+  auto& ap_params     = ad_params.sublist("atmosphere_processes");
+  auto& sc_exp_params = ap_params.sublist("SurfaceCouplingExporter");
+  // Set up forcing to a constant value
   const Real Faxa_swndf_const = pdf_real_constant_data(engine);
   const Real Faxa_swvdf_const = pdf_real_constant_data(engine);
   const vos_type exp_const_fields = {"Faxa_swndf","Faxa_swvdf"};
   const vor_type exp_const_values = {Faxa_swndf_const,Faxa_swvdf_const};
-  auto& ap_params     = ad_params.sublist("atmosphere_processes");
-  auto& sc_exp_params = ap_params.sublist("SurfaceCouplingExporter");
   auto& exp_const_params = sc_exp_params.sublist("prescribed_constants");
   exp_const_params.set<vos_type>("fields",exp_const_fields);
   exp_const_params.set<vor_type>("values",exp_const_values);
+  // Set up forcing to data interpolated from file
+  const vos_type exp_file_fields = {"Faxa_lwdn"};
+  const vos_type exp_file_files = {"surface_coupling_forcing.nc"};
+  auto& exp_file_params = sc_exp_params.sublist("prescribed_from_file");
+  exp_file_params.set<vos_type>("fields",exp_file_fields);
+  exp_file_params.set<vos_type>("files",exp_file_files);
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
   auto& proc_factory = AtmosphereProcessFactory::instance();

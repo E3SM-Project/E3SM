@@ -125,7 +125,7 @@ protected:
   Int m_num_cpl_exports;
 
   // Number of exports from EAMxx and how they will be handled
-  Int                               m_num_scream_exports;
+  int                               m_num_scream_exports;
   view_1d<DefaultDevice,ExportType> m_export_source;
   view_1d<HostDevice,ExportType>    m_export_source_h;
   std::map<std::string,Real>        m_export_constants;

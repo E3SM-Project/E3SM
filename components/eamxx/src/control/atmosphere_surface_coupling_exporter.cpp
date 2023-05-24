@@ -240,9 +240,9 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
 	auto idx = v_loc - m_export_field_names_vector.begin();
 	EKAT_REQUIRE_MSG(m_export_source_h(idx)==FROM_MODEL,"Error! surface_coupling_exporter::init - attempting to set field " << fname << " export type, which has already been set. Please check namelist options");
 	m_export_source_h(idx) = FROM_FILE;
-        ++ m_num_from_file_exports;
-        -- m_num_from_model_exports;
-        const auto f_helper = m_helper_fields.at(fname);
+        ++m_num_from_file_exports;
+        --m_num_from_model_exports;
+        auto& f_helper = m_helper_fields.at(fname);
 	// We want to add the field as a deep copy so that the helper_fields are automatically updated.
         m_time_interp.add_field(f_helper, true);
         m_export_from_file_field_names.push_back(fname);
@@ -279,7 +279,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
   // Copy host view back to device view
   Kokkos::deep_copy(m_export_source,m_export_source_h);
   // Final sanity check
-  EKAT_REQUIRE_MSG(m_num_scream_exports = m_num_const_exports+m_num_from_model_exports,"Error! surface_coupling_exporter - Something went wrong set the type of export for all variables.");
+  EKAT_REQUIRE_MSG(m_num_scream_exports = m_num_from_file_exports+m_num_const_exports+m_num_from_model_exports,"Error! surface_coupling_exporter - Something went wrong set the type of export for all variables.");
   EKAT_REQUIRE_MSG(m_num_from_model_exports>=0,"Error! surface_coupling_exporter - The number of exports derived from EAMxx < 0, something must have gone wrong in assigning the types of exports for all variables.");
 
   // Perform initial export (if any are marked for export during initialization)

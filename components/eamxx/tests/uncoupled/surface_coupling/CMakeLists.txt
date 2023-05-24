@@ -18,3 +18,5 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/surface_coupling_output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/surface_coupling_output.yaml)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/surface_coupling_forcing.nc
+               ${CMAKE_CURRENT_BINARY_DIR}/surface_coupling_forcing.nc COPYONLY)
