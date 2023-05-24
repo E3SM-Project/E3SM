@@ -272,6 +272,14 @@ subroutine phys_ctl_readnl(nlfile)
       endif
 
    end if
+   if (history_chemdyg_summary) then
+        if (history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
+            history_chemdyg_summary = .false.
+            history_gaschmbudget_2D = .true.
+            history_gaschmbudget_2D_levels = .true.
+            if (masterproc) write(iulog,*) 'phys_ctl_readnl: history_chemdyg_summary is in conflict with history_gaschmbudget_2D and history_gaschmbudget_2D_levels. Turn history_chemdyg_summary off.'
+        end if
+   end if
 
 #ifdef SPMD
    ! Broadcast namelist variables

@@ -514,15 +514,6 @@ contains
 
     call t_startf('chemdr_init')
 
-    if (history_chemdyg_summary) then
-        if (history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then    
-            history_chemdyg_summary = .false.  
-            history_gaschmbudget_2D = .true.  
-            history_gaschmbudget_2D_levels = .true.  
-            if (masterproc) write(iulog,*) 'Chm_diags_inti: history_chemdyg_summary is in conflict with other flags. Turn history_chemdyg_summary off.'
-        end if
-    end if
-
     ! initialize to NaN to hopefully catch user defined rxts that go unset
     reaction_rates(:,:,:) = nan
 

@@ -147,15 +147,6 @@ contains
                        UCIgaschmbudget_2D_L4_s_out = UCIgaschmbudget_2D_L4_s, &
                        UCIgaschmbudget_2D_L4_e_out = UCIgaschmbudget_2D_L4_e )
 
-    if (history_chemdyg_summary) then
-        if (history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then    
-            history_chemdyg_summary = .false.  
-            history_gaschmbudget_2D = .true.  
-            history_gaschmbudget_2D_levels = .true.  
-            if (masterproc) write(iulog,*) 'Chm_diags_inti: history_chemdyg_summary is in conflict with other flags. Turn history_chemdyg_summary off.'
-        end if
-    end if
-
     if (masterproc) then
        if (history_gaschmbudget) then
           write(iulog,*) 'chm_diags_inti: history_gaschmbudget = ', history_gaschmbudget
