@@ -1,4 +1,4 @@
-#include "atmosphere_nudging.hpp"
+#include "eamxx_nudging_process_interface.hpp"
 
 namespace scream
 {

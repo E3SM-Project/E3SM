@@ -126,9 +126,9 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     set (SCREAM_DYNAMICS_SRC_DIR ${SCREAM_SRC_DIR}/dynamics/homme)
 
     set (SCREAM_DYNAMICS_SOURCES
-      ${SCREAM_DYNAMICS_SRC_DIR}/atmosphere_dynamics.cpp
-      ${SCREAM_DYNAMICS_SRC_DIR}/atmosphere_dynamics_fv_phys.cpp
-      ${SCREAM_DYNAMICS_SRC_DIR}/atmosphere_dynamics_rayleigh_friction.cpp
+      ${SCREAM_DYNAMICS_SRC_DIR}/eamxx_homme_process_interface.cpp
+      ${SCREAM_DYNAMICS_SRC_DIR}/eamxx_homme_fv_phys.cpp
+      ${SCREAM_DYNAMICS_SRC_DIR}/eamxx_homme_rayleigh_friction.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/physics_dynamics_remapper.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/homme_grids_manager.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/interface/homme_context_mod.F90
@@ -142,6 +142,7 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     # Create library
     set (dynLibName scream_${hommeLibName})
     add_library(${dynLibName} ${SCREAM_DYNAMICS_SOURCES})
+    target_compile_definitions(${dynLibName} PUBLIC EAMXX_HAS_HOMME)
     target_link_libraries(${dynLibName} scream_share scream_io ${hommeLibName})
     get_target_property(modulesDir ${hommeLibName} Fortran_MODULE_DIRECTORY)
     set_target_properties(${dynLibName} PROPERTIES Fortran_MODULE_DIRECTORY ${modulesDir})

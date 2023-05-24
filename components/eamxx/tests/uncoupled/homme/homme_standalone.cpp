@@ -4,7 +4,7 @@
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 #include "dynamics/register_dynamics.hpp"
-#include "dynamics/homme/atmosphere_dynamics.hpp"
+#include "dynamics/homme/eamxx_homme_process_interface.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
 

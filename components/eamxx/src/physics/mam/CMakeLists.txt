@@ -1,4 +1,5 @@
-add_library(mam eamxx_mam_microphysics.cpp)
+add_library(mam eamxx_mam_microphysics_process_interface.cpp)
+target_compile_definitions(mam PUBLIC EAMXX_HAS_MAM)
 add_dependencies(mam mam4xx_proj)
 target_include_directories(mam PRIVATE
   ${PROJECT_BINARY_DIR}/externals/haero/include

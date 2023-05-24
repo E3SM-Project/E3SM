@@ -4,7 +4,7 @@ set(SHOC_SRCS
   shoc_iso_c.f90
   shoc_iso_f.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/shoc.F90
-  atmosphere_macrophysics.cpp
+  eamxx_shoc_process_interface.cpp
 )
 
 if (NOT SCREAM_LIB_ONLY)
@@ -16,7 +16,7 @@ endif()
 
 set(SHOC_HEADERS
   shoc.hpp
-  atmosphere_macrophysics.hpp
+  eamxx_shoc_process_interface.hpp
   shoc_constants.hpp
 )
 
@@ -113,6 +113,7 @@ else()
     list(APPEND SHOC_LIBS "shoc_sk")
   endif()
 endif()
+target_compile_definitions(shoc PUBLIC EAMXX_HAS_SHOC)
 
 foreach (SHOC_LIB IN LISTS SHOC_LIBS)
   set_target_properties(${SHOC_LIB} PROPERTIES

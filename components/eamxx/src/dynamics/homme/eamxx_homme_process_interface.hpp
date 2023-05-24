@@ -81,7 +81,7 @@ protected:
   void fv_phys_dyn_to_fv_phys(const bool restart = false);
   void fv_phys_pre_process();
   void fv_phys_post_process();
-  // See [rrtmgp active gases] in atmosphere_dynamics_fv_phys.cpp.
+  // See [rrtmgp active gases] in eamxx_homme_fv_phys.cpp.
   void fv_phys_rrtmgp_active_gases_init(const std::shared_ptr<const GridsManager>& gm);
   void fv_phys_rrtmgp_active_gases_remap();
 
