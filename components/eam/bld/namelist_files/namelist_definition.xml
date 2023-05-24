@@ -2502,6 +2502,12 @@ Minimum droplet number conc (#/m3) imposed when micro_mincdnc > 0.
 Default: -999.
 </entry>
 
+<entry id="p3_mincdnc" type="real" category="microphys"
+       group="micro_nl" valid_values="" >
+Minimum droplet number conc (#/m3) imposed when p3_mincdnc > 0.
+Default: -999.
+</entry>
+
 <entry id="micro_mg_version" type="integer" category="microphys"
        group="micro_mg_nl" valid_values="" >
 Version number for MG microphysics

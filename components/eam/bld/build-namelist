@@ -3765,6 +3765,7 @@ if ($cfg->get('microphys') =~ /^p3/) {
       add_default($nl, 'p3_embryonic_rain_size');
       add_default($nl, 'do_prescribed_CCN');
       add_default($nl, 'do_Cooper_inP3');  
+      add_default($nl, 'p3_mincdnc'); 
    }
 }
 
