@@ -5,10 +5,10 @@ if [ `./xmlquery --value MACH` == chrysalis ]; then
   ./xmlchange MAX_MPITASKS_PER_NODE=64
 fi
 
-# Run on 4 full nodes at half-max MPI per node and 2 threads
+# Run on 8 full nodes at half-max MPI per node and 2 threads
 ppn=`./xmlquery --value MAX_MPITASKS_PER_NODE`
 ./xmlchange MAX_MPITASKS_PER_NODE=$(($ppn / 2 ))
-./xmlchange NTASKS=$(($ppn * 2))
+./xmlchange NTASKS=$(($ppn * 4))
 ./xmlchange NTHRDS=2
 ./xmlchange ROOTPE=0
 
