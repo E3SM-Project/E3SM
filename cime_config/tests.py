@@ -683,7 +683,7 @@ _TESTS = {
             )
     },
 
-    # super-BFB
+    # super-BFB OCN
     "e3sm_superbfb_ocn_opt" : { # opt + pureMPI
         #"share"   : True,
         "time"    : "00:30:00",
@@ -725,7 +725,7 @@ _TESTS = {
                      "e3sm_superbfb_ocn_dbg_thrd", "e3sm_superbfb_ocn_opt_thrd"),
     },
 
-    # super-BFB
+    # super-BFB ICE
     "e3sm_superbfb_ice_opt" : { # opt + pureMPI
         #"share"   : True,
         "time"    : "00:30:00",
@@ -765,6 +765,10 @@ _TESTS = {
     "e3sm_superbfb_ice" : {
         "inherit" : ("e3sm_superbfb_ice_dbg", "e3sm_superbfb_ice_opt",
                      "e3sm_superbfb_ice_dbg_thrd", "e3sm_superbfb_ice_opt_thrd"),
+    },
+
+    "e3sm_superbfb" : {
+        "inherit" : ("e3sm_superbfb_ocn", "e3sm_superbfb_ice"),
     },
 }
 
