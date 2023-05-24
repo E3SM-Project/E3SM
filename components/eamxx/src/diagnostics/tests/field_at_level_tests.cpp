@@ -87,7 +87,7 @@ TEST_CASE("field_at_level")
       lev_str = lev_loc;
     } else {
       lev = ipdf(engine);
-      lev_str = "lev" + std::to_string(lev);
+      lev_str = "lev_" + std::to_string(lev);
     }
     printf (" -> testing extraction at level: %s\n",lev_str.c_str());
 
