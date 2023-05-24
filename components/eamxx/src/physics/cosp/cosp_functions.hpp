@@ -25,11 +25,11 @@ namespace scream {
         using lview_host_2d = typename ekat::KokkosTypes<HostDevice>::template lview<Real** >;
         using lview_host_3d = typename ekat::KokkosTypes<HostDevice>::template lview<Real***>;
         template <typename S>
-        using view_1d = typename KT::template view_1d<S>;
+        using view_1d = typename ekat::KokkosTypes<HostDevice>::template view_1d<S>;
         template <typename S>
-        using view_2d = typename KT::template view_2d<S>;
+        using view_2d = typename ekat::KokkosTypes<HostDevice>::template view_2d<S>;
         template <typename S>
-        using view_3d = typename KT::template view_3d<S>;
+        using view_3d = typename ekat::KokkosTypes<HostDevice>::template view_3d<S>;
 
         void initialize(int ncol, int nsubcol, int nlay) {
             cosp_c2f_init(ncol, nsubcol, nlay);

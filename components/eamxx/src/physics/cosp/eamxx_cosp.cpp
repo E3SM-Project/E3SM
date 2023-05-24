@@ -112,6 +112,7 @@ void Cosp::run_impl (const double /* dt */)
   auto isccp_cldtot = get_field_out("isccp_cldtot").get_view<Real*, Host>();
   auto isccp_ctptau = get_field_out("isccp_ctptau").get_view<Real***, Host>();
 
+
   // Call COSP wrapper routines
   Real emsfc_lw = 0.99;
   CospFunc::main(
@@ -128,7 +129,7 @@ void Cosp::run_impl (const double /* dt */)
 void Cosp::finalize_impl()
 {
   // Finalize COSP wrappers
-    CospFunc::finalize();
+  CospFunc::finalize();
 }
 // =========================================================================================
 

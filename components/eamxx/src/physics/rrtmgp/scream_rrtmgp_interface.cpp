@@ -894,19 +894,17 @@ namespace scream {
             // in units of meters, we need a conversion factor of 10^2
             int nbnds = kdist.get_nband();
             yakl::ScalarLiveOut<int> band_index(-1);
-            if (wavelength_bounds(1,1) < wavelength_bounds(2,1)) {
-                yakl::fortran::parallel_for(SimpleBounds<1>(nbnds), YAKL_LAMBDA(int ibnd) {
+            yakl::fortran::parallel_for(SimpleBounds<1>(nbnds), YAKL_LAMBDA(int ibnd) {
+                if (wavelength_bounds(1,ibnd) < wavelength_bounds(2,ibnd)) {
                     if (wavelength_bounds(1,ibnd) <= wavelength * 1e2 && wavelength * 1e2 <= wavelength_bounds(2,ibnd)) {
                         band_index = ibnd;
                     }
-                });
-            } else {
-                yakl::fortran::parallel_for(SimpleBounds<1>(nbnds), YAKL_LAMBDA(int ibnd) {
+                } else {
                     if (wavelength_bounds(1,ibnd) >= wavelength * 1e2 && wavelength * 1e2 >= wavelength_bounds(2,ibnd)) {
                         band_index = ibnd;
                     }
-                });
-            }
+                }
+            });
             return band_index.hostRead();
         }
 
