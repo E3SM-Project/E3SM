@@ -8,12 +8,15 @@ list(APPEND INCLUDES "core_ocean/gotm/include")
 # check if lapack is linked
 find_package(LAPACK)
 find_package(BLAS)
+find_package(PETSC)
 if(LAPACK_FOUND AND BLAS_FOUND)
   list(APPEND CPPDEFS "-DUSE_LAPACK")
   list(APPEND SLIBS "${LAPACK_LIBRARIES} ${BLAS_LIBRARIES}")
 endif()
-list(APPEND CPPDEFS "-DUSE_PETSC")
-list(APPEND INCLUDES "/lcrc/soft/climate/compass/anvil/spack/spack_for_mache_1.4.1/var/spack/environments/compass_1_1_0_intel_impi_netlib_lapack_petsc/.spack-env/view/include")
+if(PETSC_FOUND)
+  list(APPEND CPPDEFS "-DUSE_PETSC")
+  list(APPEND INCLUDES "${PETSC_PATH}/include")
+endif()
 
 # driver (files live in E3SM)
 list(APPEND RAW_SOURCES

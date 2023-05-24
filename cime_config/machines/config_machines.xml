@@ -4067,6 +4067,10 @@
       <env name="FI_CXI_RX_MATCH_MODE">software</env>
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
     </environment_variables>
+    <environment_variables compiler="gnu" mpilib="mpich">
+      <env name="PETSC_PATH">/usr/projects/climate/SHARED_CLIMATE/software/chicoma-cpu/petsc/gcc-12.1.0/cray-mpich-8.1.21</env>
+      <env name="LD_LIBRARY_PATH">/usr/projects/climate/SHARED_CLIMATE/software/chicoma-cpu/petsc/gcc-12.1.0/cray-mpich-8.1.21/lib:$ENV{LD_LIBRARY_PATH}</env>
+    </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
     </resource_limits>
