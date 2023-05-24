@@ -84,6 +84,14 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_output_file_specs.filename_with_mpiranks    = out_control_pl.get("MPI Ranks in Filename",false);
   m_output_file_specs.save_grid_data            = out_control_pl.get("save_grid_data",!m_is_model_restart_output);
 
+  // Here, store if PG2 fields will be present in output streams.
+  // Will be useful if multiple grids are defined (see below).
+  bool pg2_grid_in_io_streams = false;
+  const auto& fields_pl = m_params.sublist("Fields");
+  for (auto it=fields_pl.sublists_names_cbegin(); it!=fields_pl.sublists_names_cend(); ++it) {
+    if (*it == "Physics PG2") pg2_grid_in_io_streams = true;
+  }
+
   // For each grid, create a separate output stream.
   if (field_mgrs.size()==1) {
     auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgrs.begin()->second,grids_mgr);
@@ -92,6 +100,27 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     const auto& fields_pl = m_params.sublist("Fields");
     for (auto it=fields_pl.sublists_names_cbegin(); it!=fields_pl.sublists_names_cend(); ++it) {
       const auto& gname = *it;
+
+      // If this is a GLL grid (or IO Grid is GLL) and PG2 fields
+      // were found above, we must reset the grid COL tag name to
+      // be "ncol_d" to avoid conflicting lengths with ncol on
+      // the PG2 grid.
+      if (pg2_grid_in_io_streams) {
+        const auto& grid_pl = fields_pl.sublist(gname);
+        bool reset_ncol_naming = false;
+        if (gname == "Physics GLL") reset_ncol_naming = true;
+        if (grid_pl.isParameter("IO Grid Name")) {
+          if (grid_pl.get<std::string>("IO Grid Name") == "Physics GLL") {
+            reset_ncol_naming = true;
+          }
+        }
+        if (reset_ncol_naming) {
+          grids_mgr->
+            get_grid_nonconst(grid_pl.get<std::string>("IO Grid Name"))->
+              reset_field_tag_name(ShortFieldTagsNames::COL,"ncol_d");
+	      }
+      }
+
       EKAT_REQUIRE_MSG (grids_mgr->has_grid(gname),
           "Error! Output requested on grid '" + gname + "', but the grids manager does not store such grid.\n");
 
@@ -124,7 +153,14 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
           fields.push_back(f.clone());
         }
       }
-      auto output = std::make_shared<output_type>(m_io_comm,fields,grid.second);
+
+      // See comment above for ncol naming with 2+ grids
+      auto grid_nonconst = grid.second->clone(grid.first,true);
+      if (grid.first == "Physics GLL" && pg2_grid_in_io_streams) {
+        grid_nonconst->reset_field_tag_name(ShortFieldTagsNames::COL,"ncol_d");
+      }
+
+      auto output = std::make_shared<output_type>(m_io_comm,fields,grid_nonconst);
       m_geo_data_streams.push_back(output);
     }
   }
