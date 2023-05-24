@@ -85,10 +85,11 @@ public:
   bool has_field (const identifier_type& id) const;
   bool has_group (const std::string& name) const { return m_field_groups.find(name)!=m_field_groups.end(); }
 
+  const FieldIdentifier& get_field_id (const std::string& name) const;
   Field get_field (const std::string& name) const;
-  Field get_field (const identifier_type& id) const;
+  Field get_field (const identifier_type& id) const { return get_field(id.name()); }
   Field& get_field (const std::string& name);
-  Field& get_field (const identifier_type& id);
+  Field& get_field (const identifier_type& id) { return get_field(id.name()); }
 
   FieldGroup get_field_group (const std::string& name) const;
 
