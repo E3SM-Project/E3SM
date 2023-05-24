@@ -68,7 +68,35 @@ Fields:
       - rad_heating_pdel
       - sfc_flux_lw_dn
       - sfc_flux_sw_net
- 
+      # Diagnostics
+      - T_mid@lev_2
+      - T_mid@tom
+      - T_mid@bot
+      - T_mid@500mb
+      - T_mid@500hPa
+      - T_mid@50000Pa
+      - PotentialTemperature
+      - AtmosphereDensity
+      - Exner
+      - VirtualTemperature
+      - VerticalLayerInterface
+      - VerticalLayerThickness
+      - VerticalLayerMidpoint
+      - DryStaticEnergy
+      - SeaLevelPressure
+      - LiqWaterPath
+      - IceWaterPath
+      - VapWaterPath
+      - RainWaterPath
+      - RimeWaterPath
+      - ShortwaveCloudForcing
+      - LongwaveCloudForcing
+      - RelativeHumidity
+      - ZonalVapFlux
+      - MeridionalVapFlux
+      - PotentialTemperature@tom
+      - PotentialTemperature@500mb
+
 output_control:
   Frequency: ${NUM_STEPS}
   frequency_units: nsteps
