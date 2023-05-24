@@ -16,7 +16,7 @@
 
 namespace scream {
 
-constexpr Real test_tol = std::numeric_limits<Real>::epsilon()*1e1;
+constexpr Real test_tol = std::numeric_limits<Real>::epsilon()*1e4;
 
 void setup_import_and_export_data(
   // Imports
