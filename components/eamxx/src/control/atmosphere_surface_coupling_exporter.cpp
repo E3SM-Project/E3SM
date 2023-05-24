@@ -259,7 +259,8 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
     auto export_constant_fields = export_constant_params.get<vos_type>("fields");
     auto export_constant_values = export_constant_params.get<vor_type>("values");
     EKAT_REQUIRE_MSG(export_constant_fields.size()==export_constant_values.size(),"Error! surface_coupling_exporter::init - prescribed_constants 'fields' and 'values' are not the same size");
-    if (export_constant_fields.size()>0) {
+    bool are_fields_present = (std::find(export_constant_fields.begin(),export_constant_fields.end(),"NONE") == export_constant_fields.end()) and (export_constant_fields.size() > 0);
+    if (are_fields_present) {
       // Determine which fields need constants
       for (int ii=0; ii<export_constant_fields.size(); ii++) {
         auto fname = export_constant_fields[ii];
