@@ -60,8 +60,6 @@ AtmosphereOutput (const ekat::Comm& comm,
 
   // Create a FieldManager with the input fields
   auto fm = std::make_shared<FieldManager> (grid);
-  fm->registration_begins();
-  fm->registration_ends();
   for (auto f : fields) {
     fm->add_field(f);
   }
