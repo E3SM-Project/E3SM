@@ -51,7 +51,8 @@ void TimeInterpolation::perform_time_interpolation(const TimeStamp& time_in)
   // real defined weight.
   const Real w_num = m_time1 - time_in;
   const Real w_den = m_time1 - m_time0;
-  const Real weight = w_num/w_den;
+  const Real weight0 = w_num/w_den;
+  const Real weight1 = 1.0-weight0;
 
   // Cycle through all stored fields and conduct the time interpolation
   for (auto name : m_field_names)
@@ -60,7 +61,7 @@ void TimeInterpolation::perform_time_interpolation(const TimeStamp& time_in)
     const auto& field1   = m_fm_time1->get_field(name);
           auto field_out = m_interp_fields.at(name);
     field_out.deep_copy(field0);
-    field_out.update(field1,1.0-weight,weight);
+    field_out.update(field1,weight1,weight0);
   }
 }
 /*-----------------------------------------------------------------------------------------------*/
