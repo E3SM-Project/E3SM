@@ -322,7 +322,7 @@ void TimeInterpolation::check_and_update_data(const TimeStamp& ts_in)
     // First cycle through the DataFromFileTriplet's to find a timestamp that is greater than this one.
     bool found = false;
     int step_cnt = 0; // Track how many triplets we passed to find one that worked. 
-    while (m_triplet_iterator != m_file_data_triplets.end() and step_cnt < m_file_data_triplets.size()) {
+    while (m_triplet_iterator != m_file_data_triplets.end()) {
       ++m_triplet_iterator;
       ++step_cnt;
       auto ts_tmp = m_triplet_iterator->timestamp;
