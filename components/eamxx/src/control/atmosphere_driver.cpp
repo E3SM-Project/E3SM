@@ -22,7 +22,7 @@
 // find blocks that eventually should be removed in favor of a design that
 // accounts for pg2. Some blocks may turn out to be unnecessary, and I simply
 // didn't realize I could do without the workaround.
-#include "control/fvphyshack.hpp"
+#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 
 #include <fstream>
 
@@ -126,16 +126,10 @@ set_params(const ekat::ParameterList& atm_params)
 
   const auto pg_type = "PG2";
   fvphyshack = m_atm_params.sublist("grids_manager").get<std::string>("physics_grid_type") == pg_type;
-#ifndef SCREAM_HAS_HOMME_DYCORE
-  EKAT_ASSERT_MSG(!fvphyshack, "Error! SCREAM_DYNAMICS_DYCORE must be set to \"HOMME\" to run with PG2 physics.\n");
-#endif
-
-#ifdef SCREAM_HAS_HOMME_DYCORE
   if (fvphyshack) {
-    // See the [rrtmgp active gases] note in dynamics/homme/atmosphere_dynamics_fv_phys.cpp.
+    // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
     fv_phys_rrtmgp_active_gases_init(m_atm_params);
   }
-#endif
 }
 
 void AtmosphereDriver::
@@ -672,10 +666,8 @@ initialize_fields ()
   start_timer("EAMxx::init");
   start_timer("EAMxx::initialize_fields");
 
-#ifdef SCREAM_HAS_HOMME_DYCORE
-  // See the [rrtmgp active gases] note in dynamics/homme/atmosphere_dynamics_fv_phys.cpp.
+  // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
   if (fvphyshack) fv_phys_rrtmgp_active_gases_set_restart(m_case_t0 < m_run_t0);
-#endif
 
   // See if we need to print a DAG. We do this first, cause if any input
   // field is missing from the initial condition file, an error will be thrown.

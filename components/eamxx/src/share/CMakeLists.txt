@@ -28,6 +28,7 @@ set(SHARE_SRC
   property_checks/field_nan_check.cpp
   property_checks/field_within_interval_check.cpp
   property_checks/mass_and_energy_column_conservation_check.cpp
+  util/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
   util/scream_time_stamp.cpp
   util/scream_timing.cpp
   util/scream_utils.cpp
