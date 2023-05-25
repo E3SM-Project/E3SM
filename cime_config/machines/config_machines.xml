@@ -951,6 +951,7 @@
         <command name="load">subversion/1.14.1</command>
         <command name="load">git/2.36.1</command>
         <command name="load">cmake/3.21.3</command>
+        <command name="load">cray-mpich/8.1.25</command>
         <command name="load">cray-hdf5-parallel/1.12.2.1</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
 	<command name="load">cray-parallel-netcdf/1.12.3.1</command>
