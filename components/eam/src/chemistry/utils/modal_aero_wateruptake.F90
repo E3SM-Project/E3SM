@@ -38,8 +38,6 @@ integer :: dgnum_idx      = 0
 integer :: dgnumwet_idx   = 0
 integer :: wetdens_ap_idx = 0
 integer :: qaerwat_idx    = 0
-   !integer :: sulfeq_idx     = 0 !kzm++
-   !integer :: so4dryvol_idx  = 0 !kzm++
 logical :: pergro_mods         = .false.
 
 real(r8), allocatable :: maer(:,:,:)      ! aerosol wet mass MR (including water) (kg/kg-air)
@@ -57,7 +55,7 @@ real(r8), allocatable :: rhcrystal(:)
 real(r8), allocatable :: rhdeliques(:)
 real(r8), allocatable :: specdens_1(:)
 
-logical :: modal_strat_sulfate_aod  !kzm
+logical :: modal_strat_sulfate_aod  
 !$OMP THREADPRIVATE(maer, hygro, naer, dryvol, drymass, dryrad, wetrad, wetvol, wtrvol, rhcrystal, rhdeliques, specdens_1)
 
 
@@ -189,12 +187,10 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
                                      qaerwat_m, wetdens_m, clear_rh_in)
 
   use shr_log_mod ,   only: errmsg => shr_log_errmsg
-  !kzm ++
    use time_manager,  only: is_first_step
    use tropopause,    only: tropopause_find, TROP_ALG_HYBSTOB, TROP_ALG_CLIMATE
    use cam_history,   only: outfld, fieldname_len
    use ieee_arithmetic, only: ieee_is_nan
- !kzm --
    !----------------------------------------------------------------------------
    !
    ! CAM specific driver for modal aerosol water uptake code.
@@ -216,11 +212,10 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    real(r8), optional, allocatable, target, intent(inout)   :: wetdens_m(:,:,:)
    ! optional input relative humidty (overrides clearsky RH estimate below)
    real(r8), optional,          intent(in)    :: clear_rh_in(pcols,pver)
-   !kzm ++
    !if (modal_strat_sulfate_aod) then
    character(len=fieldname_len+3) :: fieldname
-   integer :: tropLev(pcols) !kzm ++
-   real(r8), allocatable :: sulden(:,:,:) ! sulfate aerosol mass density (g/cm3)!kzm ++
+   integer :: tropLev(pcols) !
+   real(r8), allocatable :: sulden(:,:,:) ! sulfate aerosol mass density (g/cm3)!
    real(r8), allocatable :: wtpct(:,:,:)  ! sulfate aerosol composition, weight % H2SO4
    character(len=32) :: spectype
    real(r8) :: so4specdens,dmean,qh2so4_equilib, wtpct_mode, sulden_mode
@@ -228,7 +223,6 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    real(r8), allocatable ::so4dryvol(:,:,:) ! single-particle-mean so4 dry volume (m3) 
    real(r8), allocatable ::sulfeq(:,:,:) ! H2SO4 equilibrium mixing ratios over particles (mol/mol) 
    !endif
-   !kzm --
 
    !----------------------------------------------------------------------------
    ! local variables
@@ -303,13 +297,11 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
    ! loop over all aerosol modes
    call rad_cnst_get_info(list_idx, nmodes=nmodes)
-   !kzm ++
    allocate(sulden(pcols,pver,nmodes)) 
    allocate(wtpct(pcols,pver,nmodes)) 
    allocate(so4dryvol(pcols,pver,nmodes))
    allocate(sulfeq(pcols,pver,nmodes))
 
-   !kzm --
    !initialize to an invalid value
    naer(:,:,:)    = huge(1.0_r8)
    dryvol(:,:,:)  = huge(1.0_r8)
@@ -352,16 +344,14 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    !----------------------------------------------------------------------------
    ! retreive aerosol properties
    ! retreive aerosol properties
-   !kzm ++
 
    if (modal_strat_sulfate_aod) then
       if (is_first_step()) then
          dgncur_awet(:,:,:) = dgncur_a(:,:,:)
-         write(iulog,*)'kzm_strat_sulfate_aod_treatment_activiated'
+         write(iulog,*)'strat_sulfate_aod_treatment_activiated'
       end if
      
       ! get tropopause level
-     ! write(iulog,*)'kzm_modal_aero_wateruptake_dr_4'
       call tropopause_find(state, tropLev, primary=TROP_ALG_HYBSTOB, backup=TROP_ALG_CLIMATE)
       h2ommr => state%q(:,:,1)
       t      => state%t
@@ -371,11 +361,10 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
       wtpct(:,:,:)     = 75._r8
       sulden(:,:,:)    = 1.923_r8
    endif
-   !kzm --
    do m = 1, nmodes
 
       dryvolmr(:,:) = 0._r8
-      so4dryvolmr(:,:) = 0._r8! kzm+
+      so4dryvolmr(:,:) = 0._r8! 
       ! get mode properties
       call rad_cnst_get_mode_props(list_idx, m, sigmag=sigmag,  &
          rhcrystal=rhcrystal(m), rhdeliques=rhdeliques(m))
@@ -388,17 +377,16 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
          ! get species interstitial mixing ratio ('a')
          call rad_cnst_get_aer_mmr(list_idx, m, l, 'a', state, pbuf, raer)
          call rad_cnst_get_aer_props(list_idx, m, l, density_aer=specdens, hygro_aer=spechygro)
-         if (modal_strat_sulfate_aod) then !kzm ++
+         if (modal_strat_sulfate_aod) then !
             call rad_cnst_get_aer_props(list_idx, m, l, density_aer=specdens, &
-                                     spectype=spectype) !kzm ++
-         endif !kzm --                   
+                                     spectype=spectype) !
+         endif !                   
          if (l == 1) then
             ! save off these values to be used as defaults
             specdens_1(m)  = specdens
             spechygro_1    = spechygro
          end if
-
-         !kzm ++
+         
          if (trim(spectype).eq.'sulfate') then
                  so4specdens=specdens
          endif
@@ -408,13 +396,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
             alnsg = log(sigmag)
             do k = top_lev, pver
                do i = 1, ncol
-                  !dmean = dgncur_awet(i,k,m)*exp(1.5_r8*alnsg**2)
-                  !if ( ieee_is_nan(dgncur_awet(i,k,m)) ) then
                   dmean = dgncur_a(i,k,m)*exp(1.5_r8*alnsg**2)
-                  !endif    
-                  !kzm: h2ommr has NaN values in restart run when using
-                  !MAM5-FC,at the first step
-                  !if ( ieee_is_nan(h2ommr(i,k)) ) h2ommr(i,k) = 0.0_r8 
                   call calc_h2so4_equilib_mixrat( t(i,k), pmid(i,k), h2ommr(i,k), dmean, &
                                                qh2so4_equilib, wtpct_mode, sulden_mode )
                   sulfeq(i,k,m)  = qh2so4_equilib
@@ -433,21 +415,18 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
             !fieldname = ' '
             !write(fieldname,fmt='(a,i1)') 'sulden_a',m
             !call outfld(fieldname,sulden(1:ncol,1:pver,m), ncol, lchnk )
-         end if
-         !kzm --
+        end if
 
-         do k = top_lev, pver
-            do i = 1, ncol
+        do k = top_lev, pver
+           do i = 1, ncol
                duma          = raer(i,k)
                maer(i,k,m)   = maer(i,k,m) + duma
                dumb          = duma/specdens
                dryvolmr(i,k) = dryvolmr(i,k) + dumb
                hygro(i,k,m)  = hygro(i,k,m) + dumb*spechygro
-               !kzm ++
                if (modal_strat_sulfate_aod .and. (trim(spectype).eq.'sulfate')) then
                        so4dryvolmr(i,k) = so4dryvolmr(i,k) + dumb
                end if
-               !kzm --
 
             end do ! i = 1, ncol
          end do ! k = top_lev, pver
@@ -555,14 +534,13 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
    !----------------------------------------------------------------------------
    ! compute aerosol wet radius and aerosol water
-   !kzm ++
    if (modal_strat_sulfate_aod ) then
       call modal_aero_wateruptake_strat_sub( &
            ncol, nmodes, rhcrystal, rhdeliques, dryrad, &
            hygro, rh, dryvol, wetrad, wetvol, &
            wtrvol,                            &
-           so4dryvol, so4specdens, tropLev, &          !kzm++
-           sulden, wtpct)                              !kzm++
+           so4dryvol, so4specdens, tropLev, &          
+           sulden, wtpct)                            
 
    else
       call modal_aero_wateruptake_sub( &
@@ -570,11 +548,6 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
            hygro, rh, dryvol, wetrad, wetvol,           &
            wtrvol)
    end if
-   !call modal_aero_wateruptake_sub( &
-   !   ncol, nmodes, rhcrystal, rhdeliques, dryrad, &
-   !   hygro, rh, dryvol, wetrad, wetvol,           &
-   !   wtrvol)
-   !kzm --
 
    do m = 1, nmodes
 
@@ -970,16 +943,13 @@ end subroutine modal_aero_wateruptake_sub
       end subroutine makoh_quartic
 
 !----------------------------------------------------------------------
-!----------------------------------------------------------------------
-!kzm ++
 
 subroutine modal_aero_wateruptake_strat_sub( &
            ncol, nmodes, rhcrystal, rhdeliques, dryrad, &
            hygro, rh, dryvol, wetrad, wetvol, &
            wtrvol,                            &
-           so4dryvol, so4specdens, tropLev, &          !kzm++
-           sulden, wtpct)                              !kzm++
-!kzm --
+           so4dryvol, so4specdens, tropLev, &          
+           sulden, wtpct)                              
 
 !-----------------------------------------------------------------------
 !
@@ -988,6 +958,8 @@ subroutine modal_aero_wateruptake_strat_sub( &
 ! Method:  Kohler theory
 !
 ! Author:  S. Ghan
+!
+! In 2022 adapted modifications from CESM2
 !
 !-----------------------------------------------------------------------
 
@@ -1006,13 +978,13 @@ subroutine modal_aero_wateruptake_strat_sub( &
    real(r8), intent(out) :: wetvol(:,:,:)        ! single-particle-mean wet volume (m3)
    real(r8), intent(out) :: wtrvol(:,:,:)        ! single-particle-mean water volume in wet aerosol (m3)
 
-!kzm ++
+
    integer, intent(in)  :: troplev(:)
    real(r8), intent(in) :: so4dryvol(:,:,:)      ! dry volume of sulfate in single aerosol (m3)
    real(r8), intent(in) :: so4specdens           ! mass density sulfate in single aerosol (kg/m3)
    real(r8), intent(in) :: wtpct(:,:,:)          ! sulfate aerosol composition, weight % H2SO4
    real(r8), intent(in) :: sulden(:,:,:)         ! sulfate aerosol mass density (g/cm3)
-!kzm --
+
 
    ! local variables
 
@@ -1030,7 +1002,6 @@ subroutine modal_aero_wateruptake_strat_sub( &
       do k = top_lev, pver
          do i = 1, ncol
 
-         !kzm ++
          if ( (k<troplev(i)) .and.  (modal_strat_sulfate_aod) .and. (m .eq. 5)) then
                wetvol(i,k,m) = dryvol(i,k,m)-so4dryvol(i,k,m)
                wetvol(i,k,m) = wetvol(i,k,m)+so4dryvol(i,k,m)*so4specdens/sulden(i,k,m)/wtpct(i,k,m)/10._r8
@@ -1039,15 +1010,8 @@ subroutine modal_aero_wateruptake_strat_sub( &
                wetrad(i,k,m) = max(wetrad(i,k,m), dryrad(i,k,m))
                wtrvol(i,k,m) = wetvol(i,k,m) - dryvol(i,k,m)
                wtrvol(i,k,m) = max(wtrvol(i,k,m), 0.0_r8)
-               !kzm ++
-               !if (so4dryvol(i,k,m) > 1.0e-30_r8 ) then
-
-               !    write(iulog,*)'kzm_wetvol2 ',wetvol(i,k,m)  
-               !end if 
-               !kzm --  
          else
 
-         !kzm --
             ! compute wet radius for each mode
             call modal_aero_kohler(dryrad(i:i,k,m), hygro(i:i,k,m), rh(i:i,k), wetrad(i:i,k,m), 1)
 
@@ -1156,15 +1120,12 @@ end subroutine modal_aero_wateruptake_strat_sub
       ! Saturation vapor pressure of sulfuric acid
             ! Limit extrapolation at extreme temperatures
       t=min(max(temp,140._r8),450._r8)
-     ! write(iulog,*)'kzm_calc_h2so4_equilib_mixrat_1'
       !!  Calculate the weight % H2SO4 composition of sulfate
-     !kzm ++
       if ( ieee_is_nan(qh2o) )then
-         write(iulog,*) 'kzm_qh2o_nan1 ', qh2o
+      !   write(iulog,*) 'qh2o_nan1 ', qh2o
       endif
 
       call calc_h2so4_wtpct(t, pres, qh2o, wtpct_flat)
-      ! write(iulog,*)'kzm_calc_h2so4_equilib_mixrat_2 ', qh2o
       !!  Calculate surface tension (erg/cm2) of sulfate of
       !!  different compositions as a linear function of temperature.
       i = 2 ! minimum wt% is 29.517
@@ -1176,7 +1137,6 @@ end subroutine modal_aero_wateruptake_strat_sub
       ! calculate derivative needed later for kelvin factor for h2o
       dsigma_dwt = (sig2-sig1) / (stwtp(i)-stwtp(i-1))
       surf_tens = sig1 + dsigma_dwt*(wtpct_flat-stwtp(i))
-     !  write(iulog,*)'kzm_calc_h2so4_equilib_mixrat_3'
       !!  Calculate density (g/cm3) of sulfate of
       !!  different compositions as a linear function of temperature.
       i = 6 ! minimum wt% is 29.517
@@ -1188,39 +1148,18 @@ end subroutine modal_aero_wateruptake_strat_sub
       ! Calculate derivative needed later for Kelvin factor for H2O
       drho_dwt = (den2-den1) / (dnwtp(i)-dnwtp(i-1))
       sulfate_density = den1 + drho_dwt * (wtpct_flat-dnwtp(i-1))
-      ! write(iulog,*)'kzm_calc_h2so4_equilib_mixrat_4'
       r=dmean*100._r8/2._r8 ! calcuate mode radius (cm) from diameter (m)
 
       ! Adjust for Kelvin effect for water
       rkelvinH2O_b = 1 + wtpct_flat * drho_dwt / &
          sulfate_density - 3._r8 * wtpct_flat * dsigma_dwt / (2._r8*surf_tens)
-      !write(iulog,*)'kzm_rkelvinH2O_b', rkelvinH2O_b
-      !write(iulog,*)'kzm_wtmol_h2so4', wtmol_h2so4
-      !write(iulog,*)'kzm_surf_tens', surf_tens
-      !write(iulog,*)'kzm_sulfate_density', sulfate_density
-      !write(iulog,*)'kzm_RGAS', RGAS
-      !write(iulog,*)'kzm_t', t
-      !write(iulog,*)'kzm_r', r
    
       rkelvinH2O_a = 2._r8 * wtmol_h2so4 * surf_tens / &
            (sulfate_density * RGAS * t * r)
-      !write(iulog,*)'kzm_rkelvinH2O_a', rkelvinH2O_a
       rkelvinH2O = exp (rkelvinH2O_a*rkelvinH2O_b)
-      !write(iulog,*)'kzm_rkelvinH2O', rkelvinH2O
       qh2o_kelvin = qh2o/rkelvinH2O
-      ! write(iulog,*)'kzm_calc_h2so4_equilib_mixrat_5'
-      !kzm ++
-      if ( ieee_is_nan(qh2o_kelvin) )then
-         write(iulog,*) 'kzm_qh2o_nan2 ',   &
-              qh2o,qh2o_kelvin,rkelvinH2O_a,rkelvinH2O_b
-         write(iulog,*) 'kzm_rkelvinH2O_a ', &
-              wtmol_h2so4, surf_tens, sulfate_density, &
-              RGAS, t, r, dmean
- 
-      endif
 
       call calc_h2so4_wtpct(t, pres, qh2o_kelvin, wtpct)
-       ! write(iulog,*)'kzm_calc_h2so4_equilib_mixrat_6'
       wtpct=max(wtpct,wtpct_flat)
 
       ! Parameterized fit to Giauque's (1959) enthalpies v. wt %:
@@ -1247,7 +1186,6 @@ end subroutine modal_aero_wateruptake_strat_sub
       den2=dnc0(i)+dnc1(i)*t
       frac=(dnwtp(i)-wtpct)/(dnwtp(i)-dnwtp(i-1))
       sulden=den1*frac+den2*(1.0_r8-frac)
-      ! write(iulog,*)'kzm_calc_h2so4_equilib_mixrat_7'
       ! Ayers' (1980) fit to sulfuric acid equilibrium vapor pressure:
       ! (Remember this is the log)
       ! SULFEQ=-10156/Temp+16.259-En/(8.3143*Temp)
@@ -1273,7 +1211,6 @@ end subroutine modal_aero_wateruptake_strat_sub
 
       ! Convert Pa ==> mol/mol
       sulfequil = sulfequil / pres
-      ! write(iulog,*)'kzm_calc_h2so4_equilib_mixrat_8'
       ! Calculate Kelvin curvature factor for H2SO4 interactively with temperature:
       ! (g/mol)*(erg/cm2)/(K * g/cm3 * erg/mol/K) = cm
             akelvin = 2._r8 * wtmol_h2so4 * surf_tens_mode / (t * sulden * RGAS)
@@ -1283,8 +1220,6 @@ end subroutine modal_aero_wateruptake_strat_sub
       expon = min(100._r8, expon)
       akas = exp( expon )
       qh2so4_equilib = sulfequil * akas ! reduce H2SO4 equilibrium mixing ratio by Kelvin curvature factor
-       !write(iulog,*)'kzm_calc_h2so4_equilib_mixrat_9'
-       !write(iulog,*)'kzm_qh2so4_equilib',qh2so4_equilib
       return
       end subroutine calc_h2so4_equilib_mixrat
        subroutine calc_h2so4_wtpct( temp, pres, qh2o, wtpct )

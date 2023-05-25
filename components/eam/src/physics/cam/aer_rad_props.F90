@@ -83,18 +83,17 @@ subroutine aer_rad_props_init()
    ! longwave: ext_sao_lw (pcols,pver,nlwbands)
    ! ext_sao_sw, ssa_sao, af_sao (pcols,pver,nswbands)
    if (is_output_interactive_volc) then
-   call add_hist_coord('nlwbands',    nlwbands,    'NLWBANDS')  !kzm
-   call add_hist_coord('nswbands',    nswbands,    'NSWBANDS')  !kzm 
-   call addfld ('ext_sao_lw',(/ 'lev', 'nlwbands' /),    'A','1/m',&
-        'Aerosol LW radiation properties comparable to prescribed input ext_earth', flag_xyfill=.true.) !kzm
-   call addfld ('ext_sao_sw',(/ 'lev', 'nswbands' /),    'A','1/m',&
-        'Aerosol SW radiation properties comparable to prescribed input ext_sun', flag_xyfill=.true.) !kzm
-   call addfld ('ssa_sao',(/ 'lev', 'nswbands' /),    'A','1/m',&
-        'Aerosol SW radiation properties comparable to prescribed input omega_sun', flag_xyfill=.true.) !kzm
-   call addfld ('af_sao',(/ 'lev', 'nswbands' /),    'A','1/m',&
-        'Aerosol SW radiation properties comparable to prescribed input g_sun', flag_xyfill=.true.) !kzm
+   call add_hist_coord('nlwbands',    nlwbands,    'NLWBANDS')  
+   call add_hist_coord('nswbands',    nswbands,    'NSWBANDS')   
+   call addfld ('ext_sao_lw',(/ 'lev     ', 'nlwbands' /),    'A','1/m',&
+        'Aerosol LW radiation properties comparable to prescribed input ext_earth', flag_xyfill=.true.) 
+   call addfld ('ext_sao_sw',(/ 'lev     ', 'nswbands' /),    'A','1/m',&
+        'Aerosol SW radiation properties comparable to prescribed input ext_sun', flag_xyfill=.true.) 
+   call addfld ('ssa_sao',(/ 'lev     ', 'nswbands' /),    'A','1/m',&
+        'Aerosol SW radiation properties comparable to prescribed input omega_sun', flag_xyfill=.true.) 
+   call addfld ('af_sao',(/ 'lev     ', 'nswbands' /),    'A','1/m',&
+        'Aerosol SW radiation properties comparable to prescribed input g_sun', flag_xyfill=.true.) 
    endif
-   !is_output_interactive_volc = .true. !kzm
    ! Contributions to AEROD_v from individual aerosols (climate species).
 
    ! number of bulk aerosols in climate list
@@ -267,7 +266,6 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
    endif
 
    if (is_cmip6_volc) then
-     ! write(iulog,*)'kzm_prescribed_aero_opt_on'
       !get extinction so as to supply to modal_aero_sw routine for computing EXTINCT variable
       !converting it from 1/km to 1/m
 

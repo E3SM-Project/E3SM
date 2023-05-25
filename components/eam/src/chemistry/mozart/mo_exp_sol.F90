@@ -28,7 +28,7 @@ contains
   end subroutine exp_sol_inti
 
 
-  subroutine exp_sol( base_sol, reaction_rates, het_rates, extfrc, delt, xhnm, ncol, lchnk, ltrop, diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss, invariants )
+  subroutine exp_sol( base_sol, reaction_rates, het_rates, extfrc, delt, xhnm, ncol, lchnk, ltrop, diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss )
     !-----------------------------------------------------------------------
     !      	... Exp_sol advances the volumetric mixing ratio
     !           forward one time step via the fully explicit
@@ -56,7 +56,6 @@ contains
     real(r8), intent(in)    ::  reaction_rates(ncol,pver,rxntot)    ! rxt rates (1/cm^3/s)
     real(r8), intent(in)    ::  extfrc(ncol,pver,extcnt)            ! "external insitu forcing" (1/cm^3/s)
     real(r8), intent(in)    ::  xhnm(ncol,pver)
-    real(r8), intent(in)     :: invariants(ncol,pver,nfs) 
     integer,  intent(in)    ::  ltrop(pcols)                        ! chemistry troposphere boundary (index)
     real(r8), intent(inout) ::  base_sol(ncol,pver,gas_pcnst)       ! working mixing ratios (vmr)
     real(r8), intent(in)    ::  diags_reaction_rates(ncol,pver,rxntot)    ! rxt rates (1/cm^3/s)
@@ -76,7 +75,6 @@ contains
 
     real(r8), dimension(ncol,pver) :: wrk
     real(r8), dimension(ncol,pver,gas_pcnst) :: base_sol_reset
-    integer :: inv_ndx_cnst_no3, inv_ndx_m, inv_ndx_cnst_oh 
 
     chem_prod(:,:,:) = 0._r8
     chem_loss(:,:,:) = 0._r8
@@ -86,13 +84,6 @@ contains
     !        ... Put "independent" production in the forcing
     !-----------------------------------------------------------------------      
     base_sol_reset = base_sol
-<<<<<<< HEAD
-=======
-    !inv_ndx_cnst_no3       = get_inv_ndx( 'cnst_NO3' )
-    !inv_ndx_m       = get_inv_ndx( 'M' )
-    !inv_ndx_cnst_oh       = get_inv_ndx( 'cnst_OH' )
-
->>>>>>> 0e66a18415 (correct uci rxt 6,7,8 and explicit solver NAN fix for SO2 and H2SO4)
     call indprd( 1, ind_prd, clscnt1, base_sol, extfrc, &
          reaction_rates, ncol )
 

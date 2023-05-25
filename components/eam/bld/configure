@@ -122,8 +122,7 @@ OPTIONS
 			  trop_mam7 | trop_mam9 | super_fast_llnl | super_fast_llnl_mam3 |
                           linoz_mam3 | linoz_mam4_resus | linoz_mam4_resus_soag |
 			  linoz_mam4_resus_mom | linoz_mam4_resus_mom_soag |
-                          trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | superfast_mam4_resus_mom_soag |
-			  none ].  Default: trop_mam3.
+                          trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | superfast_mam4_resus_mom_soag | superfast_mam5_resus_mom_soag | none ].  Default: trop_mam3.
      -clubb_sgs         Turns on CLUBB_SGS
      -clubb_opts <list> Comma separated list of CLUBB options to turn on/off.  By default they are all off.  Current
                         options are: clubb_do_adv(Advect CLUBB moments), clubb_do_deep(CLUBB does the deep convection),
@@ -1372,12 +1371,8 @@ if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
 } elsif ($chem_pkg =~ '_mam4_mom' || $chem_pkg =~ '_mam4_resus_mom' ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
-# kzm ++  set the modal configure
-} elsif ($chem_pkg =~ '_mam7_resus_mom_s' ) {
-    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE_S ';
 } elsif ($chem_pkg =~ '_mam5_resus_mom' ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_5MODE ';
-# kzm --
 } elsif ($chem_pkg =~ '_mam4' ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
 } elsif ($chem_pkg =~ '_mam7') {
@@ -1389,11 +1384,9 @@ if ($chem_pkg =~ '_mam3') {
 if ($bc_dep_to_snow_updates == 1) {
     $chem_cppdefs = "$chem_cppdefs  -DMODAL_AER"
 }
-#kzm ++
 if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_mam4' || $chem_pkg eq 'trop_mam4_resus' || $chem_pkg eq 'trop_mam4_resus_soag' || $chem_pkg eq 'trop_mam4_resus_mom' || $chem_pkg =~ 'linoz_mam7_resus_mom' ||  $chem_pkg =~ 'trop_strat_mam7_resus_mom'||  $chem_pkg =~ '_mam5')) {
     $chem_cppdefs = "$chem_cppdefs  -DRAIN_EVAP_TO_COARSE_AERO "
 }
-#kzm --
 #-----------------------------------------------------------------------------------------------
 # Number of advected constituents
 my $nadv;

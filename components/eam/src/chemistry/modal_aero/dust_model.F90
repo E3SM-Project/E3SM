@@ -28,17 +28,10 @@ module dust_model
 !  real(r8),         parameter :: dust_emis_sclfctr(dust_nbin) = (/ 0.032_r8,0.968_r8 /)
 ! Kok11: fractions of bin (0.1-1) and bin (1-10) in size 0.1-10
   real(r8),         parameter :: dust_emis_sclfctr(dust_nbin) = (/ 0.011_r8,0.989_r8 /)
-!kzm++
-#elif (defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE )
+#elif ( defined MODAL_AERO_5MODE )
   character(len=6), parameter :: dust_names(dust_nbin+dust_nnum) = (/ 'dst_a1', 'dst_a3', 'num_a1', 'num_a3' /)
   real(r8),         parameter :: dust_dmt_grd(dust_nbin+1) = (/ 0.1e-6_r8, 1.0e-6_r8, 10.0e-6_r8/)
   real(r8),         parameter :: dust_emis_sclfctr(dust_nbin) = (/ 0.011_r8,0.989_r8 /)
-!kzm--
-
-
-
-
-
 #elif ( defined MODAL_AERO_7MODE || defined MODAL_AERO_9MODE )
   character(len=6), parameter :: dust_names(dust_nbin+dust_nnum) = (/ 'dst_a5', 'dst_a7', 'num_a5', 'num_a7' /)
   real(r8),         parameter :: dust_dmt_grd(dust_nbin+1) = (/ 0.1e-6_r8, 2.0e-6_r8, 10.0e-6_r8/)

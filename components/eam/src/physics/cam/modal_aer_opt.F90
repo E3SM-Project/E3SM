@@ -35,7 +35,7 @@ use cam_abortutils,        only: endrun
 use modal_aero_wateruptake, only: modal_aero_wateruptake_dr
 use modal_aero_calcsize,    only: modal_aero_calcsize_diag,modal_aero_calcsize_sub
 use shr_log_mod ,           only: errmsg => shr_log_errmsg
-use tropopause,           only : tropopause_find !kzm
+use tropopause,           only : tropopause_find 
 
 implicit none
 private
@@ -343,16 +343,12 @@ subroutine modal_aer_opt_init()
        cam_chempkg_is('linoz_mam4_resus_mom').or. &
        cam_chempkg_is('linoz_mam4_resus_mom_soag').or. &
        cam_chempkg_is('superfast_mam4_resus_mom_soag').or. &
-       cam_chempkg_is('linoz_mam5_resus_mom_soag') .or. &
-       cam_chempkg_is('trop_strat_mam5_resus_mom_soag')) then
+       cam_chempkg_is('superfast_mam5_resus_mom_soag')) then 
      call addfld ('AODDUST4',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 4 from dust', flag_xyfill=.true.)
      call addfld ('AODMODE4',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 4', flag_xyfill=.true.)
      call addfld ('BURDEN4',horiz_only,    'A','kg/m2','Aerosol burden mode 4', flag_xyfill=.true.)
-!kzm++
-     if(cam_chempkg_is('linoz_mam7_resus_mom_soag_s').or. &
-       cam_chempkg_is('trop_strat_mam7_resus_mom_s').or. &
-        cam_chempkg_is('linoz_mam5_resus_mom_soag') .or. &
-        cam_chempkg_is('trop_strat_mam5_resus_mom_soag'))then
+
+   if (cam_chempkg_is('superfast_mam5_resus_mom_soag')) then &
         call addfld ('AODDUST5',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 5 from dust', flag_xyfill=.true.)
         call addfld ('AODMODE5',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 5', flag_xyfill=.true.)
         call addfld ('BURDEN5',horiz_only,    'A','kg/m2','Aerosol burden mode 5', flag_xyfill=.true.)
@@ -362,25 +358,6 @@ subroutine modal_aer_opt_init()
            call add_default ('BURDEN5' , 1, ' ')
         end if
      end if
-
-      if(cam_chempkg_is('linoz_mam7_resus_mom_soag_s').or. &
-       cam_chempkg_is('trop_strat_mam7_resus_mom_s'))then
-        call addfld ('AODDUST6',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 6 from dust', flag_xyfill=.true.)
-        call addfld ('AODMODE6',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 6', flag_xyfill=.true.)
-        call addfld ('BURDEN6',horiz_only,    'A','kg/m2','Aerosol burden mode 6', flag_xyfill=.true.)
-        call addfld ('AODDUST7',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 7 from dust', flag_xyfill=.true.)
-        call addfld ('AODMODE7',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 7', flag_xyfill=.true.)
-        call addfld ('BURDEN7',horiz_only,    'A','kg/m2','Aerosol burden mode 7', flag_xyfill=.true.)
-        if (history_aero_optics) then
-           call add_default ('AODDUST6', 1, ' ')
-           call add_default ('AODMODE6', 1, ' ')
-           call add_default ('BURDEN6' , 1, ' ')
-           call add_default ('AODDUST7', 1, ' ')
-           call add_default ('AODMODE7', 1, ' ')
-           call add_default ('BURDEN7' , 1, ' ')
-        end if
-     end if
-!kzm--
 
      if (history_aero_optics) then
         call add_default ('AODDUST4', 1, ' ')
@@ -615,7 +592,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    ! stratosphere output
    !ihuge = huge(ihuge)
    !trop_level(:) = ihuge
-   !call tropopause_find(state, trop_level)!kzm
+   !call tropopause_find(state, trop_level)!
    !Quit if tropopause is not found
    !if (any(trop_level(1:ncol) == -1)) then
    !   do icol = 1, ncol
@@ -1182,7 +1159,6 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
          enddo
       enddo
    endif
-   !kzm --
 
    ! Output visible band diagnostics for quantities summed over the modes
    ! These fields are put out for diagnostic lists as well as the climate list.

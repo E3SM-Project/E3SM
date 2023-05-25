@@ -126,7 +126,21 @@
 <tracer_cnst_file    >oxid_1.9x2.5_L26_1850-2015_c20181106.nc</tracer_cnst_file>
 <tracer_cnst_filelist>''</tracer_cnst_filelist>
 
-<!-- <tracer_cnst_filelist>this_field_is_not_used</tracer_cnst_filelist> -->
+<!-- prescribed methane  -->
+<prescribed_ghg_file      >ch4_oxid_1.9x2.5_L26_1990-1999clim.c090804.nc</prescribed_ghg_file>
+<prescribed_ghg_datapath  >atm/cam/chem/methane</prescribed_ghg_datapath>
+<prescribed_ghg_type      >CYCLICAL</prescribed_ghg_type>
+<prescribed_ghg_cycle_yr  >1995</prescribed_ghg_cycle_yr>
+<prescribed_ghg_filelist  >''</prescribed_ghg_filelist>
+<prescribed_ghg_specifier>'prsd_ch4:CH4'</prescribed_ghg_specifier>
+
+<!-- rad_climate -->
+<rad_climate>
+  'A:H2OLNZ:H2O', 'N:O2:O2', 'N:CO2:CO2',
+  'A:O3:O3', 'N:N2OLNZ:N2O', 'N:CH4LNZ:CH4',
+  'N:CFC11:CFC11', 'N:CFC12:CFC12', 'M:mam5_mode1:$INPUTDATA_ROOT/atm/cam/physprops/mam4_mode1_rrtmg_aeronetdust_c141106.nc',
+  'M:mam5_mode2:$INPUTDATA_ROOT/atm/cam/physprops/mam4_mode2_rrtmg_c130628.nc', 'M:mam5_mode3:$INPUTDATA_ROOT/atm/cam/physprops/mam4_mode3_rrtmg_aeronetdust_c141106.nc', 'M:mam5_mode4:$INPUTDATA_ROOT/atm/cam/physprops/mam4_mode4_rrtmg_c130628.nc', 'M:mam5_mode5:$INPUTDATA_ROOT/atm/cam/physprops/mam5_mode5_rrtmg_sig1.2_dgnl.40_c03072023.nc'
+</rad_climate>
 
 <!-- Marine organic aerosol namelist settings -->
 <mam_mom_mixing_state>3</mam_mom_mixing_state>

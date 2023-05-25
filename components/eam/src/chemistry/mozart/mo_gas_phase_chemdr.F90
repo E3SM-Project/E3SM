@@ -33,8 +33,8 @@ module mo_gas_phase_chemdr
   integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
   integer :: ndx_h2so4
   integer :: inv_ndx_cnst_o3, inv_ndx_m
-  integer :: inv_ndx_cnst_oh, inv_ndx_cnst_no3, inv_ndx_cnst_ch4 !kzm ++
-  integer :: so2_ndx,dms_ndx !kzm to include stratosphere SO2
+  integer :: inv_ndx_cnst_oh, inv_ndx_cnst_no3, inv_ndx_cnst_ch4 
+  integer :: so2_ndx,dms_ndx ! include stratosphere SO2
 ! for ozone budget 
   integer :: jo2_b_ndx, lch3o2_no_ndx, lno_ho2_ndx, lc2h5o2_no_ndx, lch3co3_no_ndx, lroho2_no_ndx, lisopo2_no_ndx, lmvko2_no_ndx
   integer :: jo1dU_ndx, jno2_ndx, jno3_a_ndx, jn2o5_b_ndx, po3_oh_ndx
@@ -80,8 +80,8 @@ contains
     call phys_getopts( history_aerosol_out = history_aerosol, &
          convproc_do_aer_out = convproc_do_aer ) 
 
-    so2_ndx = get_spc_ndx('SO2')!kzm
-    dms_ndx = get_spc_ndx('DMS')!kzm
+    so2_ndx = get_spc_ndx('SO2')
+    dms_ndx = get_spc_ndx('DMS')
    
     ndx_h2so4 = get_spc_ndx('H2SO4')
     uci1_ndx= get_rxt_ndx('uci1')
@@ -233,19 +233,12 @@ contains
    
      inv_ndx_cnst_o3 = get_inv_ndx( 'cnst_O3' ) ! prescribed O3 oxidant field
      inv_ndx_m       = get_inv_ndx( 'M' )        ! airmass.  Elsewhere this variable is known as m_ndx
-     !kzm++  test
      inv_ndx_cnst_no3       = get_inv_ndx( 'cnst_NO3' )
      inv_ndx_cnst_oh       = get_inv_ndx( 'cnst_OH' )
      inv_ndx_cnst_ch4      = get_inv_ndx( 'CH4' )
-     write(iulog,*), 'kzm_inv_ndx_no3 ', inv_ndx_cnst_no3
-     write(iulog,*), 'kzm_inv_ndx_oh', inv_ndx_cnst_oh
-     write(iulog,*), 'kzm_inv_ndx_ch4', inv_ndx_cnst_ch4
-     write(iulog,*), 'kzm_oh_ndx', oh_ndx
-     write(iulog,*), 'kzm_no3_ndx', no3_ndx
      if ((inv_ndx_cnst_oh .gt. 0.0_r8) .and. (inv_ndx_cnst_no3 .gt. 0.0_r8)) then
-        write(iulog,*) 'kzm_prescribed_NO3_OH '
+        !write(iulog,*) 'prescribed_NO3_OH '
      endif
-     !kzm--
      
      if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
          .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag') then
@@ -339,7 +332,7 @@ contains
 ! for aqueous chemistry and aerosol growth
 !
     use aero_model,        only : aero_model_gasaerexch
-    use aero_model,        only : aero_model_strat_surfarea!kzm
+    use aero_model,        only : aero_model_strat_surfarea
     implicit none
 
     !-----------------------------------------------------------------------
@@ -656,7 +649,7 @@ contains
           endif
        end do
     end do
-    !kzm add the prognostic strato_sad
+    ! the prognostic strato_sad
 #if (defined MODAL_AERO_5MODE)    
   call aero_model_strat_surfarea( ncol, mmr, pmid, tfld, troplev, pbuf, strato_sad)
 #endif
@@ -950,12 +943,7 @@ contains
        (chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
        .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' )) then
        ltrop_sol(:ncol) = troplev(:ncol)
-    !kzm note: this is a strange setting
-    elseif (chem_name == 'trop_strat_mam7_resus_mom_soag_s') then !kzm
-       ltrop_sol(:ncol) = 0 ! apply solver to all levels
-    elseif (chem_name == 'trop_strat_mam5_resus_mom_soag') then !kzm
-       ltrop_sol(:ncol) = 0 ! apply solver to all levels
-    !kzm --
+    !note: this is for chemUCI only apply solver to troposphere
     else
        ltrop_sol(:ncol) = 0 ! apply solver to all levels
     endif
@@ -1074,7 +1062,6 @@ contains
     ! reset vmr to pre-imp_sol values for stratospheric boxes
     if (uci1_ndx > 0) then
        diags_reaction_rates(:,:,:) = reaction_rates(:,:,:)
-       !vmr_old2(:,:,so2_ndx) = vmr(:,:,so2_ndx) !kzm ++
        do i = 1,ncol
           do k = 1,pver
              if ( .not. tropFlag(i,k) ) then
@@ -1199,25 +1186,23 @@ contains
     if (uci1_ndx > 0) then
        vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
     endif
-!kzm ++
 #if (defined MODAL_AERO_5MODE)
     ! attribute constant OH and NO3 above troppopause
     ! will be set by after exp_sol
     do i = 1,ncol
         do k = 1,ltrop_sol(i) !above tropppause
              if (k < ltrop_sol(i)) then !skip troppaupause
-                !write(iulog,*) 'kzm_prescribed_OH_NO3'     
+                !write(iulog,*) 'prescribed_OH_NO3'     
                 vmr(i,k,oh_ndx) = invariants(i,k,inv_ndx_cnst_oh)/invariants(i,k,inv_ndx_m)
                 vmr(i,k,no3_ndx) = invariants(i,k,inv_ndx_cnst_no3)/invariants(i,k,inv_ndx_m)
              endif
         end do
    end do     
 #endif   
-!kzm --
 
     call t_startf('exp_sol')
     call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol, &
-                  diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss, invariants)
+                  diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss)
     call t_stopf('exp_sol')
 
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels .or.&
@@ -1267,16 +1252,12 @@ contains
     if (uci1_ndx > 0) then
        ! exclude E90 from resetting
        vmr_old2(:,:,e90_ndx) = vmr(:,:,e90_ndx)
-#if (defined MODAL_AERO_5MODE)
-       ! kzm ++ 
 #if (defined MODAL_AERO_5MODE)       
        ! exclude SO2
        vmr_old2(:,:,so2_ndx) = vmr(:,:,so2_ndx) 
        vmr_old2(:,:,ndx_h2so4) = vmr(:,:,ndx_h2so4) 
        vmr_old2(:,:,dms_ndx) = vmr(:,:,dms_ndx) 
 #endif       
-       ! kzm --
-#endif 
        do i = 1,ncol
           do k = 1,pver
              if ( .not. tropFlag(i,k) ) then
@@ -1349,7 +1330,7 @@ contains
                                 zm,  qh2o, cwat, cldfr, ncldwtr, &
                                 invariants(:,:,indexm), invariants, del_h2so4_gasprod,  &
                                 vmr0, vmr, pbuf, &
-                                troplev ) !kzm ++
+                                troplev ) 
     call t_stopf('aero_model_gasaerexch')
 !
 ! Remove the impact of aerosol processes on gas chemistry tracers ...
@@ -1847,8 +1828,6 @@ contains
 
   end subroutine gas_phase_chemdr
 !-----------------------------------------------
-!-----------------------------------------------
-   !-------------------------------------------------------------------------
   subroutine comp_exp( x, y, n )
 
     implicit none

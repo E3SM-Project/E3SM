@@ -32,8 +32,8 @@ module seasalt_model
 
 #if  ( defined MODAL_AERO_9MODE )
   integer, parameter :: nslt = 4
-#elif ( defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE )
-  integer, parameter :: nslt = 3  !kzm  
+#elif ( defined MODAL_AERO_5MODE )
+  integer, parameter :: nslt = 3  
 #else
   integer, parameter :: nslt = max(3,ntot_amode-3)
 #endif
@@ -54,8 +54,7 @@ module seasalt_model
        (/ 'ncl_a1', 'ncl_a2', 'ncl_a3', &
           'num_a1', 'num_a2', 'num_a3'/)
   integer, parameter :: om_num_ind = 0
-!kzm++  
-#elif( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
+#elif( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
   integer, parameter :: nslt_om = 3
   integer, parameter :: nnum_om = 1
   integer, parameter :: om_num_modes = 3
@@ -143,8 +142,7 @@ module seasalt_model
    integer             :: fmoa = 1
 
 ! TODO SMB: Implement better mechanism for setting this switch.
-!kzm++
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
    logical :: has_mam_mom = .true.
 #else
    logical :: has_mam_mom = .false.
@@ -182,8 +180,7 @@ module seasalt_model
          (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, coarse
     real(r8), parameter :: sst_sz_range_hi (nslt+nslt_om) = &
          (/ 1.0e-6_r8,   0.08e-6_r8, 10.0e-6_r8 /)  ! accu, aitken, coarse
-!kzm++ 
-#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
     real(r8), parameter :: sst_sz_range_lo (nslt+nslt_om) = &
          (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8, &  ! accu, aitken, coarse
             0.08e-6_r8,  0.02e-6_r8,  0.08e-6_r8 /) ! accu, aitken, POM accu
@@ -602,8 +599,7 @@ end subroutine ocean_data_readnl
        enddo section_loop_sslt_mass
 
 enddo tracer_loop
-!kzm++
-#if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
+#if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
 
 add_om_species: if ( has_mam_mom ) then
 ! Calculate emission of MOM mass.
@@ -635,7 +631,7 @@ add_om_species: if ( has_mam_mom ) then
     else
        call endrun("Error: Unknown mixing_state value in seasalt_model.F90")
     end if
-#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
     if ((mixing_state == 1) .or. (mixing_state == 0)) then
        emit_this_mode = (/ .false., .true., .true. /)
     else if ((mixing_state == 2) .or. (mixing_state == 3)) then
@@ -687,9 +683,8 @@ add_om_species: if ( has_mam_mom ) then
 
     om_mode_loop: do m_om=1,nslt_om
 #if ( defined MODAL_AERO_9MODE )
-       mm = seasalt_indices(nslt+(n-1)*om_num_modes+m_om)
-!kzm++       
-#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
+       mm = seasalt_indices(nslt+(n-1)*om_num_modes+m_om)     
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
        mm = seasalt_indices(nslt+m_om)
 #endif
 
@@ -1223,8 +1218,7 @@ subroutine init_ocean_data()
        om_mode_loop: do m_om=1,nslt_om
 #if ( defined MODAL_AERO_9MODE )
           m = nslt+(n-1)*om_num_modes+m_om
-!kzm++          
-#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
           m = nslt+m_om
 #endif
           call addfld('cflx_'//trim(seasalt_names(m))//'_debug', horiz_only, 'A', ' ', 'accumulation organic mass emissions' ) 

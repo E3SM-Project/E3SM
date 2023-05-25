@@ -256,7 +256,6 @@ end subroutine prescribed_volcaero_readnl
     else
        call endrun('prescribed_volcaero_init: Invalid volcanic file type')
     endif
-    write(iulog,*)'kzm_volcano_is_cmip6_volc ', is_cmip6_volc 
   end subroutine prescribed_volcaero_init
 
 !-------------------------------------------------------------------

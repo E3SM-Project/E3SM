@@ -8,7 +8,7 @@ use physconst,        only: pi, gravit
 
 use ppgrid,           only: pcols, pver
 use physics_types,    only: physics_state, physics_ptend
-use physics_buffer,   only: physics_buffer_desc, pbuf_get_field, pbuf_get_index
+use physics_buffer,   only: physics_buffer_desc, pbuf_get_field
 
 use phys_control,     only: phys_getopts
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_get_aer_props, &
@@ -44,15 +44,11 @@ save
 
 public :: modal_aero_calcsize_init, modal_aero_calcsize_sub, modal_aero_calcsize_diag
 public :: modal_aero_calcsize_reg
-!kzm ++
-!public :: modal_strat_sulfate_aod
-!kzm --
 !Mimic enumerators for aerosol types
 integer, parameter:: inter_aero   = 1 !interstitial aerosols
 integer, parameter:: cld_brn_aero = 2 !cloud borne species
 
 integer :: dgnum_idx = -1 !pbuf id for dgnum
-!integer :: so4dryvol_idx = -1 !pbuf id for so4dryvol !kzm++
 
 integer, parameter :: maxpair_csizxf = N_DIAG
 #ifdef MODAL_AERO
@@ -132,12 +128,6 @@ subroutine modal_aero_calcsize_reg()
 
   !register dgnum field
   call pbuf_add_field('DGNUM', 'global',  dtype_r8, (/pcols, pver, nmodes/), dgnum_idx)
-  !kzm ++
-   !if (modal_strat_sulfate_aod) then
-      !write(iulog,*)'kzm_wateruptake_reg_1'
-   !   call pbuf_add_field('SO4DRYVOL', 'global',  dtype_r8, (/pcols, pver, nmodes/), so4dryvol_idx)
-      ! write(iulog,*)'kzm_wateruptake_reg_2'
-   !end if
 end subroutine modal_aero_calcsize_reg
 
 !===============================================================================
@@ -191,7 +181,6 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    if (is_first_step()) then ! bsingh- Do we need this conditional in a init routine?
       ! initialize fields in physics buffer
       call pbuf_set_field(pbuf2d, dgnum_idx, 0.0_r8)
-      !call pbuf_set_field(pbuf2d, so4dryvol_idx, 0.0_r8) !kzm
    endif
 
    !initialize
@@ -844,11 +833,6 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
 
    endif!if(update_mmr)
 #endif
-   !kzm++
-   !if (modal_strat_sulfate_aod) then
-   !   call modal_aero_calcdry(state, pbuf)  !kzm
-   !endif
-   !kzm --
 return
 end subroutine modal_aero_calcsize_sub
 
@@ -2228,14 +2212,7 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
 
    end do ! nmodes
 
-  !kzm ++
-  ! if (modal_strat_sulfate_aod) then
-  !    call modal_aero_calcdry(state, pbuf, list_idx_in)!kzm: to calculate so4dryvol
-  ! end if
-!kzm -- 
 end subroutine modal_aero_calcsize_diag
 
-!----------------------------------------------------------------------
-!----------------------------------------------------------------------
 
 end module modal_aero_calcsize

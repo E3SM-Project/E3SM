@@ -84,14 +84,12 @@ integer :: idxbcphi = -1 ! index in aerosol list for Soot (BCPHIL)
 
 ! modal aerosols
 logical :: clim_modal_aero
-!kzm ++
 logical :: prog_modal_aero
 real(r8) :: sigmag_accum
 !logical :: lq(pcnst) = .false. ! set flags true for constituents with non-zero tendencies
 integer :: cnum_coarse_idx, ccoarse_dst_idx, ccoarse_so4_idx
-integer :: cnum_strat_coarse_idx, cstrat_coarse_so4_idx!kzm
+integer :: cnum_strat_coarse_idx, cstrat_coarse_so4_idx
 integer :: accum_so4_idx,accum_pom_idx,accum_soa_idx,accum_bc_idx,accum_dst_idx,accum_ncl_idx,accum_mom_idx
-!kzm --
 
 integer :: nmodes = -1
 integer :: mode_accum_idx  = -1  ! index of accumulation mode
@@ -103,7 +101,6 @@ integer :: coarse_dust_idx = -1  ! index of dust in coarse mode
 integer :: coarse_nacl_idx = -1  ! index of nacl in coarse mode
 
 integer :: coarse_so4_idx = -1  ! index of so4 in coarse mode
-! kzm ++
 ! for so4 only aitken mode so4 to get so4_num for nucleation
 ! if defined MAM7S add stratosphere aitken to troposphere aitken
 integer :: mode_strat_sulfate1_idx = -1
@@ -111,7 +108,6 @@ integer :: mode_strat_coarse_idx = -1
 integer :: strat_coarse_so4_idx = -1
 real(r8) :: sigmag_coarse, sigmag_strat_coarse
 real(r8) :: sigmag_aitken
-! kzm --
 #if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE || defined MODAL_AERO_7MODE_S)
 integer :: coarse_mom_idx = -1  ! index of mom in coarse mode
 #endif
@@ -270,10 +266,8 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
             mode_coarse_dst_idx = m
          case ('coarse_seasalt')
             mode_coarse_slt_idx = m
-         !kzm ++
          case ('strat_sulfate1')
             mode_strat_sulfate1_idx = m
-         !kzm --   
          end select
       end do
 
@@ -362,7 +356,6 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
             coarse_dust_idx, coarse_nacl_idx
          call endrun(routine//': ERROR required mode-species type not found')
       end if
-!kzm ++
       if (mode_strat_coarse_idx>0) then
          call rad_cnst_get_info(0, mode_strat_coarse_idx, nspec=nspec)
          do n = 1, nspec
@@ -374,7 +367,6 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
          end do
       endif
       !for accumulation mode
-!      write(iulog,*)'kzm_mode_accum_idx', mode_accum_idx
       if (mode_accum_idx>0) then
          call rad_cnst_get_info(0, mode_accum_idx, nspec=nspec)
          do n = 1, nspec
@@ -398,8 +390,6 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
             end select
          end do
       endif
-      !write(iulog,*)'kzm_nuc_ini_point1'
-!kzm --       
 
       if (mode_coarse_idx > 0) then
          call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
@@ -421,7 +411,7 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
          end if
       end if
 
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE || defined MODAL_AERO_7MODE_S)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
       call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
       do n = 1, nspec
          call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
@@ -550,15 +540,9 @@ subroutine nucleate_ice_cam_calc( &
 
    real(r8), pointer :: coarse_so4(:,:) ! mass m.r. of coarse so4
 
-!kzm ++
-#if (defined MODAL_AERO_7MODE_S)
-   real(r8), pointer :: num_strat_sulfate1(:,:) ! number m.r. of aitken mode
-#endif
-
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE || defined MODAL_AERO_7MODE_S)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
    real(r8), pointer :: coarse_mom(:,:) ! mass m.r. of coarse mom
 #endif
-!kzm--
 #if (defined RAIN_EVAP_TO_COARSE_AERO) 
    real(r8), pointer :: coarse_bc(:,:) ! mass m.r. of coarse bc
    real(r8), pointer :: coarse_pom(:,:) ! mass m.r. of coarse pom
@@ -643,11 +627,6 @@ subroutine nucleate_ice_cam_calc( &
       call rad_cnst_get_mode_num(0, mode_accum_idx,  'a', state, pbuf, num_accum)
       call rad_cnst_get_mode_num(0, mode_aitken_idx, 'a', state, pbuf, num_aitken)
       call rad_cnst_get_mode_num(0, mode_coarse_dst_idx, 'a', state, pbuf, num_coarse)
-!kzm ++
-#if ( defined MODAL_AERO_7MODE_S )
-     call rad_cnst_get_mode_num(0, mode_strat_sulfate1_idx,  'a', state, pbuf, num_strat_sulfate1)
-#endif
-!kzm --
       ! mode specie mass m.r.
       call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_dust_idx, 'a', state, pbuf, coarse_dust)
       call rad_cnst_get_aer_mmr(0, mode_coarse_slt_idx, coarse_nacl_idx, 'a', state, pbuf, coarse_nacl)
@@ -659,8 +638,7 @@ subroutine nucleate_ice_cam_calc( &
       if (use_nie_nucleate .or. use_dem_nucleate) then
          call rad_cnst_get_aer_mmr(0, mode_fine_dst_idx, fine_dust_idx, 'a', state, pbuf, fine_dust)
       end if
-!kzm ++
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE || defined MODAL_AERO_7MODE_S)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE )
       call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_mom_idx, 'a', state, pbuf, coarse_mom)
 #endif
 
@@ -782,7 +760,7 @@ subroutine nucleate_ice_cam_calc( &
                   so4mc  = coarse_so4(i,k)*rho(i,k)
                endif
 
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE || defined MODAL_AERO_7MODE_S)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
                mommc  = coarse_mom(i,k)*rho(i,k)
 #endif
 
@@ -802,12 +780,8 @@ subroutine nucleate_ice_cam_calc( &
                      !           are combined in the "coarse" mode type
 #if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
                      wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
-!kzm ++
 #elif (defined MODAL_AERO_5MODE && defined RAIN_EVAP_TO_COARSE_AERO )
                      wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
-#elif (defined MODAL_AERO_7MODE_S && defined RAIN_EVAP_TO_COARSE_AERO )
-                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
-!kzm --
 #elif (defined MODAL_AERO_4MODE_MOM)
                      wght = dmc/(ssmc + dmc + so4mc + mommc)
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 
@@ -839,21 +813,9 @@ subroutine nucleate_ice_cam_calc( &
                      so4_num  = num_aitken(i,k)*rho(i,k)*1.0e-6_r8 &
                         * (0.5_r8 - 0.5_r8*erf(log(so4_sz_thresh_icenuc/dgnum(i,k,mode_aitken_idx))/  &
                         (2._r8**0.5_r8*log(sigmag_aitken))))
-                ! kzm ++
-#if ( defined MODAL_AERO_7MODE_S )
-                     so4_num = so4_num + num_strat_sulfate1(i,k)*rho(i,k)*1.0e-6_r8 &
-                        * (0.5_r8 - 0.5_r8*erf(log(so4_sz_thresh_icenuc/dgnum(i,k,mode_aitken_idx))/  &
-                        (2._r8**0.5_r8*log(sigmag_aitken))))
-#endif
-                ! kzm --                
                   else
                      ! all so4 from aitken
                      so4_num  = num_aitken(i,k)*rho(i,k)*1.0e-6_r8
-                 ! kzm ++
-#if ( defined MODAL_AERO_7MODE_S )
-                     so4_num = so4_num + num_strat_sulfate1(i,k)*rho(i,k)*1.0e-6_r8
-#endif
-                ! kzm --                     
                   end if
                else 
                   so4_num = 0.0_r8 

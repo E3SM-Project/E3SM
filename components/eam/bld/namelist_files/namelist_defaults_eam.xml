@@ -963,6 +963,7 @@
 
 <!-- strat. H2SO4 wateruptake flag option by LLNL -->
 <modal_strat_sulfate_aod_treatment>.false.</modal_strat_sulfate_aod_treatment>
+<is_output_interactive_volc>.false.</is_output_interactive_volc>
 
 <!-- ice nucleation option by PNNL -->
 <demott_ice_nuc>.false.</demott_ice_nuc>
@@ -1649,6 +1650,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 
 
 <modal_strat_sulfate_aod_treatment phys="default">.false.</modal_strat_sulfate_aod_treatment>
+<is_output_interactive_volc phys="default">.false.</is_output_interactive_volc>
 
 <!-- For Polar mods-->
 <sscav_tuning phys="default">.true.</sscav_tuning>

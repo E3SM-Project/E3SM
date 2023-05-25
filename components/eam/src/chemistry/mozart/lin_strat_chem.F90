@@ -183,7 +183,7 @@ end subroutine linoz_readnl
    ! write(iulog,*)'in subroutine lin_strat_chem_inti'
    ! write(iulog,*)'O3LNZ=',o3lnz_ndx,'N2OLNZ=',n2olnz_ndx,'NOYLNZ=',noylnz_ndx,'H2OLNZ=',h2olnz_ndx
    ! write(iulog,*)'O3=',o3_ndx,'CH4=',ch4_ndx,'N2O=',n2o_ndx,'NO=',no_ndx,'NO2=',no2_ndx,'HNO3=',hno3_ndx
-     write(iulog,*)'inside lin_strat_solve for ndx o3, o3lnz, n2o, noylnz, ch4', o3_ndx, o3lnz_ndx, n2o_ndx, noylnz_ndx, ch4_ndx
+   !  write(iulog,*)'inside lin_strat_solve for ndx o3, o3lnz, n2o, noylnz, ch4', o3_ndx, o3lnz_ndx, n2o_ndx, noylnz_ndx, ch4_ndx
    end if
     
 !     
