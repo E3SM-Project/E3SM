@@ -25,7 +25,7 @@
     integer, parameter :: ntot_amode = 3
 #endif
 
-#if ((( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || (defined MODAL_AERO_5MODE_MOM) )) && ( defined RAIN_EVAP_TO_COARSE_AERO ))
+#if (( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || (defined MODAL_AERO_5MODE_MOM) ) && ( defined RAIN_EVAP_TO_COARSE_AERO )
     logical, parameter :: rain_evap_to_coarse_aero = .true.
 #else
     logical, parameter :: rain_evap_to_coarse_aero = .false.
@@ -259,9 +259,9 @@
           modeptr_pcarbon,                                              &   !
           modeptr_finedust,  modeptr_fineseas,                          &   !
           modeptr_coardust,  modeptr_coarseas,                          &
-          modeptr_coarsulf,                                      & !mode5
+          modeptr_coarsulf                                      
 
-      integer &
+      integer               &
           lptr2_soa_a_amode(ntot_amode,nsoa), &
           lptr2_soa_g_amode(nsoag)
 

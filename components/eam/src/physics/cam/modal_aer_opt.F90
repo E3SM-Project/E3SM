@@ -347,8 +347,15 @@ subroutine modal_aer_opt_init()
      call addfld ('AODDUST4',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 4 from dust', flag_xyfill=.true.)
      call addfld ('AODMODE4',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 4', flag_xyfill=.true.)
      call addfld ('BURDEN4',horiz_only,    'A','kg/m2','Aerosol burden mode 4', flag_xyfill=.true.)
+   
+     if (history_aero_optics) then
+        call add_default ('AODDUST4', 1, ' ')
+        call add_default ('AODMODE4', 1, ' ')
+        call add_default ('BURDEN4' , 1, ' ')
+     end if 
+  end if
 
-   if (cam_chempkg_is('superfast_mam5_resus_mom_soag')) then &
+   if(cam_chempkg_is('superfast_mam5_resus_mom_soag')) then 
         call addfld ('AODDUST5',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 5 from dust', flag_xyfill=.true.)
         call addfld ('AODMODE5',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 5', flag_xyfill=.true.)
         call addfld ('BURDEN5',horiz_only,    'A','kg/m2','Aerosol burden mode 5', flag_xyfill=.true.)
@@ -357,14 +364,8 @@ subroutine modal_aer_opt_init()
            call add_default ('AODMODE5', 1, ' ')
            call add_default ('BURDEN5' , 1, ' ')
         end if
-     end if
+   end if
 
-     if (history_aero_optics) then
-        call add_default ('AODDUST4', 1, ' ')
-        call add_default ('AODMODE4', 1, ' ')
-        call add_default ('BURDEN4' , 1, ' ')
-     end if
-  end if
    if (cam_chempkg_is('trop_mam7').or.cam_chempkg_is('trop_mam9').or.cam_chempkg_is('trop_strat_mam7')) then
       call addfld ('AODDUST5',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 5 from dust', flag_xyfill=.true.)
       call addfld ('AODDUST6',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 6 from dust', flag_xyfill=.true.)
