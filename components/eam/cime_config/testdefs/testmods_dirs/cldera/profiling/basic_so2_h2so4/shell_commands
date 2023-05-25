@@ -1,2 +1,0 @@
-RUNDIR=$(./xmlquery --value RUNDIR)
-cp ${CLDERA_PATH}/share/profile_so2_h2so4.yaml ${RUNDIR}/cldera_profiling_config.yaml
