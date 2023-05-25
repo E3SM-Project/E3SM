@@ -2256,7 +2256,8 @@ subroutine tphysbc (ztodt,               &
                              ! after tphysac:clubb_surface and before aerosol dry removal.
                              ! For chemical gases, different versions of EAM 
                              ! might use different process ordering.
-
+    real(r8) :: wuc(pcols,pver)
+    wuc(:,:) = 0.0_r8 
     !-----------------------------------------------------------------------
     call cnd_diag_checkpoint( diag, 'DYNEND', state, pbuf, cam_in, cam_out )
     !-----------------------------------------------------------------------
@@ -2524,7 +2525,7 @@ end if
          rliq,       rice, &
          ztodt,   &
          state,   ptend, cam_in%landfrac, pbuf, mu, eu, du, md, ed, dp,   &
-         dsubcld, jt, maxg, ideep, lengath) 
+         dsubcld, jt, maxg, ideep, lengath, wuc) 
     call t_stopf('convect_deep_tend')
 
     call physics_update(state, ptend, ztodt, tend)
@@ -2873,7 +2874,7 @@ end if
          call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
                 sh_e_ed_ratio, mu, md, du, eu, ed, dp, dsubcld,    &
                 jt, maxg, ideep, lengath, species_class,           &
-                cam_out, pbuf, ptend )                               ! outputs
+                cam_out, pbuf, ptend, wuc=wuc )                      ! outputs
          call physics_update(state, ptend, ztodt, tend)
 
          ! deep convective aerosol transport
