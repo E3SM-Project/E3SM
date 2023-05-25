@@ -371,7 +371,6 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
          call rad_cnst_get_info(0, mode_accum_idx, nspec=nspec)
          do n = 1, nspec
             call rad_cnst_get_info(0, mode_accum_idx, n, spec_type=str32)
-            write(iulog,*) trim(str32)
             select case (trim(str32))
             case ('sulfate')
                accum_so4_idx = n    ! find sulfate
