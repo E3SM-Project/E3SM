@@ -1739,7 +1739,7 @@ module ocn_time_integration_rk4
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
          if (config_use_debugTracers .and. nVertLevels == 1) then
-            call mpas_log_write('Debug tracers cannot be used in a ' &
+            call mpas_log_write('Debug tracers may cause failures in a ' &
                // 'single layer case. Consider setting ' &
                // 'config_use_debugTracers to .false.', MPAS_LOG_WARN)
          endif
