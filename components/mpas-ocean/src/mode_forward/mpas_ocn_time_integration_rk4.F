@@ -1741,7 +1741,7 @@ module ocn_time_integration_rk4
          if (config_use_debugTracers .and. nVertLevels == 1) then
             call mpas_log_write('Debug tracers cannot be used in a ' &
                // 'single layer case. Consider setting ' &
-               // 'config_use_debugTracers to .false.', MPAS_LOG_CRIT)
+               // 'config_use_debugTracers to .false.', MPAS_LOG_WARN)
          endif
          block => block % next
       end do
