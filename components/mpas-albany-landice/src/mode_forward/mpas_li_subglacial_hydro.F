@@ -833,12 +833,29 @@ module li_subglacial_hydro
          waterPressureSlopeNormal(iEdge) = (waterPressure(cell2) - waterPressure(cell1)) / dcEdge(iEdge)
       end do
 
+      ! At boundaries of hydro domain, disallow inflow.  Allow outflow if hydropotential gradient requires it.
+      do iEdge = 1, nEdges
+         if ( (li_mask_is_margin(edgeMask(iEdge)) .and. li_mask_is_grounded_ice(edgeMask(iEdge))) .or. &
+             (hydroMarineMarginMask(iEdge)==1)) then
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
+            if (li_mask_is_grounded_ice(cellMask(cell1))) then ! cell2 is the cell outside the hydro domain
+               hydropotentialBaseSlopeNormal(iEdge) = min(0.0_RKIND, hydropotentialBaseSlopeNormal(iEdge))
+               hydropotentialSlopeNormal(iEdge) = min(0.0_RKIND, hydropotentialSlopeNormal(iEdge))
+            else ! cell1 is the cell outside the hydro domain
+               hydropotentialBaseSlopeNormal(iEdge) = max(0.0_RKIND, hydropotentialBaseSlopeNormal(iEdge))
+               hydropotentialSlopeNormal(iEdge) = max(0.0_RKIND, hydropotentialSlopeNormal(iEdge))
+            endif ! which cell is icefree
+         endif ! if edge of grounded ice
+      end do
+
       ! At terrestrial margin, ignore the downslope bed topography gradient.  Including it can lead to unrealistically large
       ! hydropotential gradients and unstable channel growth.
       ! We also want to do this at marine margins because otherwise the offshore topography can create a barrier to flow,
       ! but that is unrealistic.
-      ! So for all boundaries of the hydro system, the hydropotential at the margin should be determined by the geometry
-      ! at the edge of the cell in a 1-sided sense
+      ! So for all boundaries of the hydro system where outflow is occuring,
+      ! the hydropotential at the margin should be determined by the geometry
+      ! at the edge of the cell in a 1-sided sense.
       do iEdge = 1, nEdges
          if ( (li_mask_is_margin(edgeMask(iEdge)) .and. li_mask_is_grounded_ice(edgeMask(iEdge))) .or. &
              (hydroMarineMarginMask(iEdge)==1)) then
@@ -860,35 +877,6 @@ module li_subglacial_hydro
                     max(rhoo * gravity * (config_sea_level - bedTopography(cell2)), 0.0_RKIND) ) ) / dcEdge(iEdge)
             endif ! which cell is icefree
          endif ! if edge of grounded ice
-      end do
-
-      ! Disallow flow from ocean to glacier, or land to glacier,
-      ! which can occur under some circumstances
-      ! For ocean this is invalid because ocean water has a different density!
-      ! For land this would only happen if there is a supply of water, which is not currently handled.
-      ! Do this by simply zeroing the hydropotential gradient in those cases.
-      ! (Do this step only after the other hydropotential special cases are treated above.)
-      do iEdge = 1, nEdges
-         ! Find edges along GL or margin to check for 'backwards' flow
-         if ((hydroMarineMarginMask(iEdge)==1) .or. &
-             li_mask_is_margin(edgeMask(iEdge)) ) then
-            ! Now check if flow is backwards
-            cell1 = cellsOnEdge(1, iEdge)
-            cell2 = cellsOnEdge(2, iEdge)
-            if (hydropotentialBaseSlopeNormal(iEdge) > 0.0_RKIND) then
-               ! flow is from cell2 to cell1
-               if (.not. li_mask_is_grounded_ice(cellMask(cell2))) then
-                  hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
-                  hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
-               endif
-            elseif (hydropotentialBaseSlopeNormal(iEdge) < 0.0_RKIND) then
-               ! flow is from cell1 to cell2
-               if (.not. li_mask_is_grounded_ice(cellMask(cell1))) then
-                  hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
-                  hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
-               endif
-            endif
-         endif ! GL edge or grounded margin
       end do
 
       ! zero gradients at boundaries of the mesh
