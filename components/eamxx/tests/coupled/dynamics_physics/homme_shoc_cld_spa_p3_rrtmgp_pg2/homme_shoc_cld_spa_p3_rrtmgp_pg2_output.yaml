@@ -69,12 +69,12 @@ Fields:
       - sfc_flux_lw_dn
       - sfc_flux_sw_net
       # Diagnostics
-      - T_mid@lev_2
-      - T_mid@tom
-      - T_mid@bot
-      - T_mid@500mb
-      - T_mid@500hPa
-      - T_mid@50000Pa
+      - T_mid_at_lev_2
+      - T_mid_at_model_top
+      - T_mid_at_model_bot
+      - T_mid_at_500mb
+      - T_mid_at_500hPa
+      - T_mid_at_50000Pa
       - PotentialTemperature
       - AtmosphereDensity
       - Exner
@@ -94,8 +94,8 @@ Fields:
       - RelativeHumidity
       - ZonalVapFlux
       - MeridionalVapFlux
-      - PotentialTemperature@tom
-      - PotentialTemperature@500mb
+      - PotentialTemperature_at_model_top
+      - PotentialTemperature_at_500mb
   # GLL output for homme states. These
   # represent all current possible homme
   # states available.
