@@ -227,7 +227,7 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
 
 #endif
 !kzm ++
-#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) || (defined MODAL_AERO_7MODE_S) || (defined MODAL_AERO_5MODE))
+#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) || (defined MODAL_AERO_5MODE))
 !kzm --
       ! MAM4
 
@@ -442,7 +442,7 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
 
 #endif
 !kzm ++
-#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) || (defined MODAL_AERO_7MODE_S) || (defined MODAL_AERO_5MODE))
+#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) || (defined MODAL_AERO_5MODE))
 !kzm --
       ! MAM4
 
