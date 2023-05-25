@@ -136,6 +136,9 @@ contains
        
     end do
 !----------- for UCIchem diagnostics ------------
+    ! Note: base_sol_rest and diags_reaction_rates are passed to indprd and exp_prod_loss
+    !       so the reset tendency for tropopause folds (i.e., stratospheric boxes below the tropopause)
+    !       and the explicit solver tendency are included in chemmp_prod and chemmp_loss below.
     call indprd( 1, ind_prd, clscnt1, base_sol_reset, extfrc, &
          diags_reaction_rates, ncol )
     call exp_prod_loss( prod, loss, base_sol_reset, diags_reaction_rates, het_rates )
