@@ -21,7 +21,7 @@ se_tstep                = ${HOMME_TEST_TIME_STEP}
 statefreq               = 9999
 theta_advect_form       = ${HOMME_THETA_FORM}
 theta_hydrostatic_mode  = ${HOMME_THETA_HY_MODE}
-transport_alg           = ${HOMME_TRANSPORT_ALG}
+transport_alg           = ${HOMME_TEST_TRANSPORT_ALG}
 tstep_type              = ${HOMME_TTYPE}
 vert_remap_q_alg        = 1
 /

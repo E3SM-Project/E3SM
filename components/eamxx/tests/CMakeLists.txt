@@ -4,11 +4,6 @@ include (ScreamUtils)
 set(EAMxx_tests_IC_FILE_72lev "screami_unit_tests_ne4np4L72_20220822.nc")
 set(EAMxx_tests_IC_FILE_128lev "screami_unit_tests_ne2np4L128_20220822.nc")
 
-# Some default namelist vars
-set(HOMME_TEST_CUBED_SPHERE_MAP 0)
-set(HOMME_TEST_HVS_Q 1)
-set(HOMME_TRANSPORT_ALG 0)
-
 add_subdirectory(generic)
 
 if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
