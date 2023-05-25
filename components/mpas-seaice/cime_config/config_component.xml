@@ -46,7 +46,7 @@
         <default_value>no_ice_bgc</default_value>
         <values>
            <value compset="MPASSI_">no_ice_bgc</value>
-           <value compset="_MPASSI%.*BGC">ice_bgc</value>
+           <value compset="_MPASSI%[^_]*BGC">ice_bgc</value>
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>
@@ -72,7 +72,7 @@
         <default_value>false</default_value>
         <values>
            <value compset="MPASSI_">false</value>
-           <value compset="_MPASSI%.*COL">true</value>
+           <value compset="_MPASSI%[^_]*COL">true</value>
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>
