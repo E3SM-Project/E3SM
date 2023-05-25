@@ -220,7 +220,6 @@ contains
       kx = 2.0_RKIND*pii / config_manufactured_solution_wavelength_x
       ky = 2.0_RKIND*pii / config_manufactured_solution_wavelength_y
 
-      omega = config_manufactured_solution_omega
       eta0 = config_manufactured_solution_amplitude
 
       block => domain % blocklist
@@ -230,8 +229,11 @@ contains
          call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
 
          H0 = restingThickness(1,1)
+
          block => block % next
       enddo
+
+      omega = sqrt(H0*gravity * (kx**2+ky**2))
 
       err = 0
 
