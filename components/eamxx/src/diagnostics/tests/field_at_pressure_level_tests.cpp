@@ -225,11 +225,8 @@ get_test_diag(const ekat::Comm& comm, std::shared_ptr<const FieldManager> fm, st
     auto field = fm->get_field(fname);
     auto fid = field.get_header().get_identifier();
     ekat::ParameterList params;
-    params.set("Field Name",fname);
-    params.set("Field Units",fid.get_units());
-    params.set("Field Layout",fid.get_layout());
-    params.set("Grid Name",fid.get_grid_name());
-    params.set<double>("Field Target Pressure",plevel);
+    params.set("Field",field);
+    params.set("Field Level Location",std::to_string(plevel) + "Pa");
     auto diag = std::make_shared<FieldAtPressureLevel>(comm,params);
     diag->set_grids(gm);
     diag->set_required_field(field);

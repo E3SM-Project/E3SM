@@ -61,8 +61,6 @@ AtmosphereOutput (const ekat::Comm& comm,
 
   // Create a FieldManager with the input fields
   auto fm = std::make_shared<FieldManager> (grid);
-  fm->registration_begins();
-  fm->registration_ends();
   for (auto f : fields) {
     fm->add_field(f);
   }
@@ -145,7 +143,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   }
   sort_and_check(m_fields_names);
 
-  // Check if remapping and if so create the appropriate remapper 
+  // Check if remapping and if so create the appropriate remapper
   // Note: We currently support three remappers
   //   - vertical remapping from file
   //   - horizontal remapping from file
@@ -165,7 +163,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   set_diagnostics();
 
   // Setup remappers - if needed
-  if (use_vertical_remap_from_file) {  
+  if (use_vertical_remap_from_file) {
     // We build a remapper, to remap fields from the fm grid to the io grid
     auto vert_remap_file   = params.get<std::string>("vertical_remap_file");
     auto f_lev = get_field("p_mid","sim");
@@ -182,7 +180,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       const auto src = get_field(fname,"sim");
       const auto tgt_fid = m_vert_remapper->create_tgt_fid(src.get_header().get_identifier());
       const auto packsize = src.get_header().get_alloc_properties().get_largest_pack_size();
-      io_fm->register_field(FieldRequest(tgt_fid,packsize)); 
+      io_fm->register_field(FieldRequest(tgt_fid,packsize));
     }
     io_fm->registration_ends();
 
@@ -255,7 +253,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
     // Reset the IO field manager
     set_field_manager(io_fm,"io");
-  } 
+  }
 
   // Setup I/O structures
   init ();
@@ -571,7 +569,7 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 
 void AtmosphereOutput::register_dimensions(const std::string& name)
 {
-/* 
+/*
  * Checks that the dimensions associated with a specific variable will be registered with IO file.
  * INPUT:
  *   field_manager: is a pointer to the field_manager for this simulation.
@@ -597,16 +595,18 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
     auto is_partitioned = m_io_grid->get_partitioned_dim_tag()==tags[i];
     if (tag_loc == m_dims.end()) {
       int tag_len = 0;
-      if(tags[i] == m_io_grid->get_partitioned_dim_tag()) {
+      if(is_partitioned) {
         // This is the dimension that is partitioned across ranks.
         tag_len = m_io_grid->get_partitioned_dim_global_size();
       } else {
         tag_len = layout.dim(i);
       }
       m_dims[tag_name] = std::make_pair(tag_len,is_partitioned);
-    } else {  
+    } else {
       EKAT_REQUIRE_MSG(m_dims.at(tag_name).first==dims[i] or is_partitioned,
-        "Error! Dimension " + tag_name + " on field " + name + " has conflicting lengths");
+        "Error! Dimension " + tag_name + " on field " + name + " has conflicting lengths. "
+        "If same name applies to different dims (e.g. PhysicsGLL and PhysicsPG2 define "
+        "\"ncol\" at different lengths), reset tag name for one of the grids.\n");
     }
   }
 } // register_dimensions
@@ -829,9 +829,9 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
   } else {
     // This field is *not* defined over columns, so it is not partitioned.
     std::iota(var_dof.begin(),var_dof.end(),0);
-  } 
+  }
 
-  return var_dof; 
+  return var_dof;
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
@@ -848,7 +848,7 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
     m_dofs.emplace(std::make_pair(name,var_dof.size()));
   }
 
-  /* TODO: 
+  /* TODO:
    * Gather DOF info directly from grid manager
   */
 } // set_degrees_of_freedom
@@ -957,78 +957,51 @@ void AtmosphereOutput::
 create_diagnostic (const std::string& diag_field_name) {
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
 
+  // Add empty entry for this map, so .at(..) always works
+  m_diag_depends_on_diags[diag_field_name].resize(0);
+
   // Construct a diagnostic by this name
   ekat::ParameterList params;
   std::string diag_name;
 
-  // If the diagnostic is $field@lev$N/$field_bot/$field_top,
+  // If the diagnostic is one of
+  //  - ${field_name}_at_lev_${N}     <- interface fields still use "_lev_"
+  //  - ${field_name}_at_model_bot
+  //  - ${field_name}_at_model_top
+  //  - ${field_name}_at_${M}X
+  // where M/N are numbers (N integer), X=Pa, hPa, or mb
   // then we need to set some params
-  auto tokens = ekat::split(diag_field_name,'@');
-  auto last = tokens.back();
+  auto tokens = ekat::split(diag_field_name,"_at_");
+  EKAT_REQUIRE_MSG (tokens.size()==1 || tokens.size()==2,
+      "Error! Unexpected diagnostic name: " + diag_field_name + "\n");
 
-  // FieldAtLevel          follows convention variable@lev_N (where N is some integer)
-  // FieldAtPressureLevel follows convention variable@999mb (where 999 is some integer)
-  auto lev_and_idx = ekat::split(last,'_');
-  auto pos = lev_and_idx[0].find_first_not_of("0123456789");
-  auto lev_str = lev_and_idx[0].substr(pos);
-  
-  if (last=="tom" || last=="bot" || lev_str=="lev") {
-    // Diagnostic is a horizontal slice at a specific level
-    diag_name = "FieldAtLevel";
-    tokens.pop_back();
-    auto fname = ekat::join(tokens,"_");
-    // If the field is itself a diagnostic, make sure it's built
-    if (diag_factory.has_product(fname) and
-        m_diagnostics.count(fname)==0) {
-      create_diagnostic(fname);
+  if (tokens.size()==2) {
+    // If the field is itself a diagnostic, ensure that diag
+    // is already created before we handle this one
+    const auto& fname = tokens.front();
+    if (diag_factory.has_product(fname)) {
+      if (m_diagnostics.count(fname)==0) {
+        create_diagnostic(fname);
+      }
       m_diag_depends_on_diags[diag_field_name].push_back(fname);
-    } else {
-      m_diag_depends_on_diags[diag_field_name].resize(0);
     }
-    auto fid = get_field(fname,"sim").get_header().get_identifier();
-    params.set("Field Name", fname);
-    params.set("Grid Name",fid.get_grid_name());
-    params.set("Field Layout",fid.get_layout());
-    params.set("Field Units",fid.get_units());
 
-    // If last is bot or top, will simply use that
-    params.set("Field Level", lev_and_idx.back());
-  } else if (lev_str=="mb" || lev_str=="hPa" || lev_str=="Pa") {
-    // Diagnostic is a horizontal slice at a specific pressure level
-    diag_name = "FieldAtPressureLevel";
-    auto pres_str = lev_and_idx[0].substr(0,pos);
-    auto pres_units = lev_and_idx[0].substr(pos);
-    auto pres_level = std::stoi(pres_str);
-    // Convert pressure level to Pa, the units of pressure in the simulation
-    if (pres_units=="mb" || pres_units=="hPa") {
-      pres_level *= 100;
-    }
-    tokens.pop_back();
-    auto fname = ekat::join(tokens,"_");
-    // If the field is itself a diagnostic, make sure it's built
-    if (diag_factory.has_product(fname) and
-        m_diagnostics.count(fname)==0) {
-      create_diagnostic(fname);
-      m_diag_depends_on_diags[diag_field_name].push_back(fname);
-    } else {
-      m_diag_depends_on_diags[diag_field_name].resize(0);
-    }
-    auto fid = get_field(fname,"sim").get_header().get_identifier();
-    params.set("Field Name", fname);
-    params.set("Grid Name",fid.get_grid_name());
-    params.set("Field Layout",fid.get_layout());
-    params.set("Field Units",fid.get_units());
-    params.set<double>("Field Target Pressure", pres_level);
+    const auto& f = get_field(fname,"sim");
+    params.set("Field",f);
+    params.set("Field Level Location", tokens[1]);
     params.set<double>("mask_value",m_fill_value);
+    // FieldAtLevel         follows convention variable_at_levN (where N is some integer)
+    // FieldAtPressureLevel follows convention variable_at_999XYZ (where 999 is some integer, XYZ string units)
+    diag_name = tokens[1].find_first_of("0123456789.")==0 ? "FieldAtPressureLevel" : "FieldAtLevel";
   } else {
     diag_name = diag_field_name;
-    m_diag_depends_on_diags[diag_field_name].resize(0);
   }
 
   // Create the diagnostic
   auto diag = diag_factory.create(diag_name,m_comm,params);
   diag->set_grids(m_grids_manager);
   m_diagnostics.emplace(diag_field_name,diag);
+
   // When using remappers with certain diagnostics the get_field command can be called with both the diagnostic
   // name as saved inside the diagnostic and with the name as it is given in the output control file.  If it is
   // the case that these names don't match we add their pairings to the alternate name map.

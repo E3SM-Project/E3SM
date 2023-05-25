@@ -136,8 +136,6 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   const int nlevs  = grid->get_num_vertical_levels();
 
   auto fm = std::make_shared<FieldManager>(grid);
-  fm->registration_begins();
-  fm->registration_ends();
   
   const auto units = ekat::units::Units::nondimensional();
   FL fl ({COL,LEV}, {nlcols,nlevs});

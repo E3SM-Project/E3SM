@@ -129,16 +129,23 @@ bool FieldManager::has_field (const identifier_type& id) const
   return has_field(id.name()) && m_fields.at(id.name())->get_header().get_identifier()==id;
 }
 
-Field FieldManager::get_field (const identifier_type& id) const {
-  EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
-      "Error! Cannot get fields from the repo while registration has not yet completed.\n");
-  auto ptr = get_field_ptr(id);
+const FieldIdentifier& FieldManager::get_field_id (const std::string& name) const {
+  auto ptr = get_field_ptr(name);
   EKAT_REQUIRE_MSG(ptr!=nullptr,
-      "Error! Field identifier '" + id.get_id_string() + "' not found.\n");
-  return *ptr;
+      "Error! Field '" + name + "' not found.\n");
+  return ptr->get_header().get_identifier();
 }
 
 Field FieldManager::get_field (const std::string& name) const {
+
+  EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
+      "Error! Cannot get fields from the repo while registration has not yet completed.\n");
+  auto ptr = get_field_ptr(name);
+  EKAT_REQUIRE_MSG(ptr!=nullptr, "Error! Field " + name + " not found.\n");
+  return *ptr;
+}
+
+Field& FieldManager::get_field (const std::string& name) {
 
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
       "Error! Cannot get fields from the repo while registration has not yet completed.\n");
@@ -711,7 +718,7 @@ void FieldManager::clean_up() {
 
 void FieldManager::add_field (const Field& f) {
   // This method has a few restrictions on the input field.
-  EKAT_REQUIRE_MSG (m_repo_state==RepoState::Closed,
+  EKAT_REQUIRE_MSG (m_repo_state==RepoState::Closed or m_repo_state==RepoState::Clean,
       "Error! The method 'add_field' can only be called on a closed repo.\n");
   EKAT_REQUIRE_MSG (f.is_allocated(),
       "Error! The method 'add_field' requires the input field to be already allocated.\n");
@@ -732,6 +739,8 @@ void FieldManager::add_field (const Field& f) {
 
   // All good, add the field to the repo
   m_fields[f.get_header().get_identifier().name()] = std::make_shared<Field>(f);
+
+  m_repo_state = RepoState::Closed;
 }
 
 std::shared_ptr<Field>

@@ -62,7 +62,21 @@ Fields:
       - rad_heating_pdel
       - sfc_flux_lw_dn
       - sfc_flux_sw_net
- 
+  # GLL output for homme states. These
+  # represent all current possible homme
+  # states available.
+  Dynamics:
+    Field Names:
+      - v_dyn
+      - vtheta_dp_dyn
+      - dp3d_dyn
+      - phi_int_dyn
+      - ps_dyn
+      - phis_dyn
+      - omega_dyn
+      - Qdp_dyn
+    IO Grid Name: Physics GLL
+
 output_control:
   Frequency: ${NUM_STEPS}
   frequency_units: nsteps

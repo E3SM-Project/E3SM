@@ -67,40 +67,31 @@ TEST_CASE("field_at_level")
   auto f_mid_1 = f_mid.get_component(1);
 
   ekat::ParameterList params_mid, params_int;
-  params_mid.set("Field Name",f_mid_1.name());
-  params_mid.set("Field Units",fid_mid.get_units());
-  params_mid.set("Field Layout",fid_mid.get_layout().strip_dim(CMP));
-  params_mid.set("Grid Name",fid_mid.get_grid_name());
-  params_int.set("Field Name",f_int.name());
-  params_int.set("Field Units",fid_int.get_units());
-  params_int.set("Field Layout",fid_int.get_layout());
-  params_int.set("Grid Name",fid_int.get_grid_name());
+  params_mid.set("Field",f_mid_1);
+  params_int.set("Field",f_int);
 
   using IPDF = std::uniform_int_distribution<int>;
   IPDF ipdf (1,nlevs-2);
-  for (const std::string& lev_loc : {"tom", "bot", "rand"}) {
+  for (const std::string& lev_loc : {"model_top", "model_bot", "rand"}) {
     int lev;
     std::string lev_str;
     if (lev_loc=="bot") {
       lev = nlevs-1;
-      lev_str = "bot";
-    } else if (lev_loc=="tom") {
+      lev_str = lev_loc;
+    } else if (lev_loc=="model_top") {
       lev = 0;
-      lev_str = "tom";
+      lev_str = lev_loc;
     } else {
       lev = ipdf(engine);
-      lev_str = std::to_string(lev);
+      lev_str = "lev_" + std::to_string(lev);
     }
     printf (" -> testing extraction at level: %s\n",lev_str.c_str());
 
     // Create and setup diagnostics
-    params_mid.set<std::string>("Field Level",lev_str);
-    params_int.set<std::string>("Field Level",lev_str);
+    params_mid.set<std::string>("Field Level Location",lev_str);
+    params_int.set<std::string>("Field Level Location",lev_str);
     auto diag_mid = std::make_shared<FieldAtLevel>(comm,params_mid);
     auto diag_int = std::make_shared<FieldAtLevel>(comm,params_int);
-
-    diag_mid->set_grids(gm);
-    diag_int->set_grids(gm);
 
     diag_mid->set_required_field(f_mid_1);
     diag_int->set_required_field(f_int);
