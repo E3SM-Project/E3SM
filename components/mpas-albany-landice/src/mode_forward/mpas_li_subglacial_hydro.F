@@ -720,6 +720,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBase
       real (kind=RKIND), dimension(:), pointer :: hydropotential
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseVertex
+      real (kind=RKIND), dimension(:), pointer :: hydropotentialVertex
       real (kind=RKIND), dimension(:), pointer :: waterPressure
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdge
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdgeUpwind
@@ -728,6 +729,8 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: hydropotentialSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: waterPressureSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeTangent
+      real (kind=RKIND), dimension(:), pointer :: hydropotentialSlopeTangent
+      real (kind=RKIND), dimension(:), pointer :: gradMagPhiBaseEdge
       real (kind=RKIND), dimension(:), pointer :: gradMagPhiEdge
       real (kind=RKIND), dimension(:), pointer :: effectiveConducEdge
       real (kind=RKIND), dimension(:), pointer :: diffusivity
@@ -802,6 +805,8 @@ module li_subglacial_hydro
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeTangent', hydropotentialBaseSlopeTangent)
+      call mpas_pool_get_array(hydroPool, 'hydropotentialSlopeTangent', hydropotentialSlopeTangent)
+      call mpas_pool_get_array(hydroPool, 'gradMagPhiBaseEdge', gradMagPhiBaseEdge)
       call mpas_pool_get_array(hydroPool, 'gradMagPhiEdge', gradMagPhiEdge)
       call mpas_pool_get_array(hydroPool, 'effectiveConducEdge', effectiveConducEdge)
       call mpas_pool_get_array(hydroPool, 'diffusivity', diffusivity)
@@ -890,10 +895,13 @@ module li_subglacial_hydro
          endif
       end do
 
-      ! Calculate tangent slope of hydropotentialBase - three possible methods to consider
+      ! Calculate tangent slope of hydropotential and hydropotentialBase - three possible methods to consider
 
       ! Calculate hydropotentialBaseVertex if needed
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseVertex', hydropotentialBaseVertex)
+         ! < this array could be protected by logic if desired
+      ! caluculate hydropotentialVertex if needed
+      call mpas_pool_get_array(hydroPool, 'hydropotentialVertex', hydropotentialVertex)
          ! < this array could be protected by logic if desired
       select case (trim(config_SGH_tangent_slope_calculation))
       case ('from_vertex_barycentric')
@@ -902,8 +910,11 @@ module li_subglacial_hydro
          call mpas_cells_to_points_using_baryweights(meshPool, baryCellsOnVertex(:, 1:nVertices), &
               baryWeightsOnVertex(:, 1:nVertices), hydropotentialBase, hydropotentialBaseVertex(1:nVertices), err_tmp)
               err = ior(err, err_tmp)
+         call mpas_cells_to_points_using_baryweights(meshPool, baryCellsOnVertex(:, 1:nVertices), &
+              baryWeightsOnVertex(:, 1:nVertices), hydropotential, hydropotentialVertex(1:nVertices), err_tmp)
       case ('from_vertex_barycentric_kiteareas')
          call li_cells_to_vertices_1dfield_using_kiteAreas(meshPool, hydropotentialBase, hydropotentialBaseVertex)
+         call li_cells_to_vertices_1dfield_using_kiteAreas(meshPool, hydropotential, hydropotentialVertex)
       end select
 
       ! Now perform tangent slope calculation based on method chosen
@@ -920,8 +931,11 @@ module li_subglacial_hydro
             if ( li_mask_is_ice(edgeMask(iEdge)) ) then
                hydropotentialBaseSlopeTangent(iEdge) = ( hydropotentialBaseVertex(verticesOnEdge(1,iEdge)) -  &
                      hydropotentialBaseVertex(verticesOnEdge(2,iEdge)) ) / dvEdge(iEdge)
+               hydropotentialSlopeTangent(iEdge) = ( hydropotentialVertex(verticesOnEdge(1,iEdge)) -  &
+                     hydropotentialVertex(verticesOnEdge(2,iEdge)) ) / dvEdge(iEdge)
             else
                hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
+               hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
             endif
             ! check for edges where a vertex is on the edge of the mesh and zero the tangent slope there
             do i = 1, 2
@@ -930,17 +944,23 @@ module li_subglacial_hydro
                   iCell = cellsOnVertex(j, iVertex)
                   if (iCell == nCells + 1) then
                      hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
+                     hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
                   endif
                enddo
             enddo
          end do  ! edges
       case ('from_normal_slope')
+         ! Do first with hydropotentialBase
          call mpas_tangential_vector_1d(hydropotentialBaseSlopeNormal, meshPool, &
-                  includeHalo=.false., tangentialVector=hydropotentialBaseSlopeTangent)
+         includeHalo=.false., tangentialVector=hydropotentialBaseSlopeTangent)
+         ! Repeat for full hydropotential
+         call mpas_tangential_vector_1d(hydropotentialSlopeNormal, meshPool, &
+         includeHalo=.false., tangentialVector=hydropotentialSlopeTangent)
          ! ensure that edges that don't have ice on at least one side have tangent slope set to zero
          do iEdge = 1, nEdges
             if ( .not. li_mask_is_ice(edgeMask(iEdge)) ) then
                hydropotentialBaseSlopeTangent(iEdge) = 0.0_RKIND
+               hydropotentialSlopeTangent(iEdge) = 0.0_RKIND
             endif
          end do  ! edges
       case default
@@ -949,8 +969,12 @@ module li_subglacial_hydro
       end select
 
       ! calculate magnitude of gradient of Phi
-      gradMagPhiEdge = sqrt(hydropotentialBaseSlopeNormal**2 + hydropotentialBaseSlopeTangent**2)
-
+      gradMagPhiEdge = sqrt(hydropotentialSlopeNormal**2 + hydropotentialSlopeTangent**2)
+      
+      ! calculate magnitude of gradient of hydropotentialBase
+      gradMagPhiBaseEdge = sqrt(hydropotentialBaseSlopeNormal**2 +&
+      hydropotentialBaseSlopeTangent**2)
+      
       ! calculate effective conductivity on edges
       if (conduc_coeff_drowned > 0.0_RKIND) then
          ! Use a thickness weighted conductivity coeff. when water thickness exceeds bump height
@@ -959,12 +983,12 @@ module li_subglacial_hydro
                              conduc_coeff_drowned * max(waterThicknessEdge(iEdge) - bedRoughMax, 0.0_RKIND)) / &
                              (waterThicknessEdge(iEdge) + 1.0e-16_RKIND)  ! Regularization only applies where value doesn't matter
             effectiveConducEdge(iEdge) = conduc_coeff_wtd * waterThicknessEdge(iEdge)**(alpha-1.0_RKIND) * &
-               (gradMagPhiEdge(iEdge)+1.0e-30_RKIND)**(beta - 2.0_RKIND)   ! small value used for regularization
+               (gradMagPhiBaseEdge(iEdge)+1.0e-30_RKIND)**(beta - 2.0_RKIND)   ! small value used for regularization
          end do
       else
          ! Just use a single conductivity coeff.
          effectiveConducEdge(:) = conduc_coeff * waterThicknessEdge(:)**(alpha-1.0_RKIND) *&
-            (gradMagPhiEdge(:)+1.0e-30_RKIND)**(beta - 2.0_RKIND)   ! small value used for regularization
+            (gradMagPhiBaseEdge(:)+1.0e-30_RKIND)**(beta - 2.0_RKIND)   ! small value used for regularization
       endif
 
       ! calculate diffusivity on edges

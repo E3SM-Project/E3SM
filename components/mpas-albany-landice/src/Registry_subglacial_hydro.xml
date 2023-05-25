@@ -196,14 +196,20 @@
                      description="hydropotential in subglacial hydrology system without water thickness contribution" />
                 <var name="hydropotentialBaseVertex" type="real" dimensions="nVertices Time" units="Pa"
                      description="hydropotential without water thickness contribution on vertices.  Only used for some choices of config_SGH_tangent_slope_calculation." />
+                <var name="hydropotentialVertex" type="real" dimensions="nVertices Time" units="Pa"
+                     description="hydropotential on vertices.  Only used for some choices of config_SGH_tangent_slope_calculation." />
                 <var name="hydropotentialBaseSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="normal component of gradient of hydropotentialBase" />
                 <var name="hydropotentialSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="normal component of gradient of hydropotential" />
                 <var name="hydropotentialBaseSlopeTangent" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="tangent component of gradient of hydropotentialBase" />
-             <var name="gradMagPhiEdge" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
+                <var name="hydropotentialSlopeTangent" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
+                     description="tangent component of gradient of hydropotential" />
+                <var name="gradMagPhiBaseEdge" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="magnitude of the gradient of hydropotentialBase, on Edges" />
+                <var name="gradMagPhiEdge" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
+                     description="magnitude of the gradient of hydropotential, on Edges" />
                 <var name="waterPressureSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="normal component of gradient of waterPressure in subglacial hydrology system" />
                 <var name="divergence" type="real" dimensions="nCells Time" units="m s^{-1}"
