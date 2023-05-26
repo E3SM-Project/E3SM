@@ -61,8 +61,10 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
   const auto grid = gm->get_grid("Physics");
+  const int nlcols = grid->get_num_local_dofs();
+  const auto dofs_gids = grid->get_dofs_gids().get_view<const int*,Host>();
   std::vector<std::string> fnames = {"Faxa_lwdn"};
-  FieldLayout layout({COL},{ncols});
+  FieldLayout layout({COL},{nlcols});
   auto fm = std::make_shared<FieldManager>(grid);
   fm->registration_begins();
   fm->registration_ends();
@@ -73,8 +75,9 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
     f.allocate_view();
     // Initialize data
     auto f_view_h = f.get_view<Real*,Host>();
-    for (int ii=0; ii<ncols; ii++) {
-      f_view_h(ii) = test_func(ii,0);
+    for (int ii=0; ii<nlcols; ii++) {
+      int icol = dofs_gids(ii);
+      f_view_h(ii) = test_func(icol,0);
     }
     f.sync_to_dev();
     // Update timestamp
@@ -103,10 +106,11 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   const int dt = 3600;
   for (auto name : fnames) {
     auto field = fm->get_field(name);
-    // Note we only care about surface values so we only need to generate data over ncols.
+    // Note we only care about surface values so we only need to generate data over nlcols.
     auto f_view_h = field.get_view<Real*,Host>();
-    for (int ii=0; ii<ncols; ii++) {
-      f_view_h(ii) = test_func(ii,dt);
+    for (int ii=0; ii<nlcols; ii++) {
+      int icol = dofs_gids(ii);
+      f_view_h(ii) = test_func(icol,dt);
     }
     field.sync_to_dev();
   }
