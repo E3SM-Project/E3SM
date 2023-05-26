@@ -50,6 +50,7 @@ namespace scorpio {
                     const std::vector<std::string>& var_dimensions,
                     const std::string& dtype, const std::string& pio_decomp_tag);
   ekat::any get_any_attribute (const std::string& filename, const std::string& att_name);
+  ekat::any get_any_attribute (const std::string& filename, const std::string& var_name, const std::string& att_name);
   void set_any_attribute (const std::string& filename, const std::string& att_name, const ekat::any& att);
   /* End the definition phase for a scorpio file.  Last thing called after all dimensions, variables, dof's and decomps have been set.  Called once per file.
    * Mandatory before writing or reading can happend on file. */

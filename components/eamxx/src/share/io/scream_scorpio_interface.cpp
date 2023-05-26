@@ -209,14 +209,30 @@ void set_variable_metadata (const std::string& filename, const std::string& varn
 }
 /* ----------------------------------------------------------------- */
 ekat::any get_any_attribute (const std::string& filename, const std::string& att_name) {
+  auto out = get_any_attribute(filename,"GLOBAL",att_name);
+  return out;
+}
+/* ----------------------------------------------------------------- */
+ekat::any get_any_attribute (const std::string& filename, const std::string& var_name, const std::string& att_name) {
   register_file(filename,Read);
   auto ncid = get_file_ncid_c2f (filename.c_str());
   EKAT_REQUIRE_MSG (ncid>=0,
       "[get_any_attribute] Error! Could not retrieve file ncid.\n"
         " - filename : " + filename + "\n");
 
-  int varid = PIO_GLOBAL;
+  int varid;
   int err;
+  if (var_name=="GLOBAL") {
+    varid = PIO_GLOBAL;
+  } else {
+    err = PIOc_inq_varid(ncid, var_name.c_str(), &varid);
+    EKAT_REQUIRE_MSG (err==PIO_NOERR,
+        "[get_any_attribute] Error! Something went wrong while inquiring variable id.\n"
+          " - filename : " + filename + "\n"
+          " - variable : " + var_name + "\n"
+          " - attribute: " + att_name + "\n"
+          " - pio error: " << err << "\n");
+  }
 
   nc_type type;
   PIO_Offset len;
@@ -224,12 +240,14 @@ ekat::any get_any_attribute (const std::string& filename, const std::string& att
   EKAT_REQUIRE_MSG (err==PIO_NOERR,
       "[get_any_attribute] Error! Something went wrong while inquiring global attribute.\n"
         " - filename : " + filename + "\n"
+        " - variable : " + var_name + "\n"
         " - attribute: " + att_name + "\n"
         " - pio error: " << err << "\n");
 
   EKAT_REQUIRE_MSG (len==1 || type==PIO_CHAR,
       "[get_any_attribute] Error! Only single value attributes allowed.\n"
         " - filename : " + filename + "\n"
+        " - variable : " + var_name + "\n"
         " - attribute: " + att_name + "\n"
         " - nc type  : " << type << "\n"
         " - att len  : " << len << "\n");
@@ -254,12 +272,14 @@ ekat::any get_any_attribute (const std::string& filename, const std::string& att
   } else {
     EKAT_ERROR_MSG ("[get_any_attribute] Error! Unsupported/unrecognized nc type.\n"
         " - filename : " + filename + "\n"
+        " - variable : " + var_name + "\n"
         " - attribute: " + att_name + "\n"
         " - nc type  : " << type << "\n");
   }
   EKAT_REQUIRE_MSG (err==PIO_NOERR,
       "[get_any_attribute] Error! Something went wrong while inquiring global attribute.\n"
         " - filename : " + filename + "\n"
+        " - variable : " + var_name + "\n"
         " - attribute: " + att_name + "\n"
         " - pio error: " << err << "\n");
 
