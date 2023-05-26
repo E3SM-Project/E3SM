@@ -51,7 +51,8 @@ void TimeInterpolation::perform_time_interpolation(const TimeStamp& time_in)
   // real defined weight.
   const Real w_num = m_time1 - time_in;
   const Real w_den = m_time1 - m_time0;
-  const Real weight = w_num/w_den;
+  const Real weight0 = w_num/w_den;
+  const Real weight1 = 1.0-weight0;
 
   // Cycle through all stored fields and conduct the time interpolation
   for (auto name : m_field_names)
@@ -60,7 +61,7 @@ void TimeInterpolation::perform_time_interpolation(const TimeStamp& time_in)
     const auto& field1   = m_fm_time1->get_field(name);
           auto field_out = m_interp_fields.at(name);
     field_out.deep_copy(field0);
-    field_out.update(field1,1.0-weight,weight);
+    field_out.update(field1,weight1,weight0);
   }
 }
 /*-----------------------------------------------------------------------------------------------*/
@@ -321,7 +322,7 @@ void TimeInterpolation::check_and_update_data(const TimeStamp& ts_in)
     // First cycle through the DataFromFileTriplet's to find a timestamp that is greater than this one.
     bool found = false;
     int step_cnt = 0; // Track how many triplets we passed to find one that worked. 
-    while (m_triplet_iterator != m_file_data_triplets.end() and step_cnt < m_file_data_triplets.size()) {
+    while (m_triplet_iterator != m_file_data_triplets.end()) {
       ++m_triplet_iterator;
       ++step_cnt;
       auto ts_tmp = m_triplet_iterator->timestamp;
