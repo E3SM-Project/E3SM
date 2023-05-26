@@ -1212,7 +1212,7 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       dmc = aer(ii,kk,dst_coarse)
       ssmc = aer(ii,kk,ncl_coarse)
      
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
       mommc = aer(ii,kk,mom_coarse)
 #endif
 
