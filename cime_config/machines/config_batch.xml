@@ -533,7 +533,8 @@
     </batch_system>
 
     <batch_system MACH="sunspot" type="pbspro">
-      <batch_submit>qsub</batch_submit>     
+      <!--batch_submit>qsub</batch_submit-->    
+      <batch_submit>/lus/gila/projects/CSC249ADSE15_CNDA/tools/qsub/throttle</batch_submit> 	    
       <queues>
         <queue walltimemax="00:02:00" jobmin="1" jobmax="128" default="true">workq</queue>
 	<queue walltimemax="00:30:00" jobmin="1" jobmax="128">diag</queue>
