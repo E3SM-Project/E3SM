@@ -1673,14 +1673,14 @@ contains
        if (lphase .eq. 2) then
         fldcw => qqcw_get_field(pbuf, mm,lchnk)
         fldcw(:,:) = fldcw(:,:) + dcondt_resusp3d(mm+pcnst,:,:) !*dt
-!The dcondt_resusp3d is detrained aerosol AMOUNT (i.e., both mass
-!and number for four modals).
-!For dcondt_resusp3d(idx,:,:), idx=16,...,40 -> interstial aerosols
-!                              idx=56,...,80 -> cloud-borne aerosols
-! Currently, we assume that no aerosol resuspension occurrs during convective
-! cloud water detrainment. So, 100% of cloud-borne aerosols will be added to
-! stratiform cloud-borne aerosols and detrained interstial aerosol amount is
-! zero.
+        ! The dcondt_resusp3d is detrained aerosol AMOUNT (i.e., both mass
+        ! and number for four modes).
+        ! For dcondt_resusp3d(idx,:,:), idx=16,...,40 -> interstial aerosols
+        !                               idx=56,...,80 -> cloud-borne aerosols
+        ! Currently, we assume that no aerosol resuspension occurrs during convective
+        ! cloud water detrainment. So, 100% of cloud-borne aerosols will be added to
+        ! stratiform cloud-borne aerosols and detrained interstial aerosol amount is
+        ! zero.
        end if
       end do ! loop over number + chem constituents + water <shanyp the loop is
              ! changed: no aerosol water is considered.
