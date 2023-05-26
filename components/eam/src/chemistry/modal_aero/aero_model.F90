@@ -2445,13 +2445,13 @@ do_lphase2_conditional: &
 
   !=============================================================================
   !=============================================================================
-  subroutine aero_model_gasaerexch( loffset, ncol, lchnk, delt, &
-                                    latndx, lonndx, reaction_rates, &
-                                    tfld, pmid, pdel, mbar, relhum, &
-                                    zm,  qh2o, cwat, cldfr, cldnum, &
+  subroutine aero_model_gasaerexch( loffset, ncol, lchnk, delt,              &
+                                    latndx, lonndx, reaction_rates,          &
+                                    tfld, pmid, pdel, mbar, relhum,          &
+                                    zm,  qh2o, cwat, cldfr, cldnum,          &
                                     airdens, invariants, del_h2so4_gasprod,  &
-                                    vmr0, vmr, pbuf, &
-                                    troplev ) 
+                                    vmr0, vmr, pbuf,                         &
+                                    troplev                                   ) 
 
     use time_manager,          only : get_nstep
     use modal_aero_amicphys,   only : modal_aero_amicphys_intr
@@ -2684,7 +2684,7 @@ do_lphase2_conditional: &
             dvmrdt,             dvmrcwdt,            &
             dgnum,              dgnumwet,            &
             wetdens,                                 &
-            troplev            )  
+            troplev                                  )  
 !      subroutine modal_aero_amicphys_intr(          &
 !           mdo_gasaerexch,     mdo_rename,          &
 !           mdo_newnuc,         mdo_coag,            &

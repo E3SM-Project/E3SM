@@ -108,7 +108,7 @@ integer :: mode_strat_coarse_idx = -1
 integer :: strat_coarse_so4_idx = -1
 real(r8) :: sigmag_coarse, sigmag_strat_coarse
 real(r8) :: sigmag_aitken
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE || defined MODAL_AERO_7MODE_S)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
 integer :: coarse_mom_idx = -1  ! index of mom in coarse mode
 #endif
 
