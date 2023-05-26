@@ -4345,6 +4345,11 @@
 		     dimensions="nCells Time"
 		     units="1"
 		/>
+		<var name="lateralIceMeltRate"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="m s-1"
+		/>
 		<var name="lateralHeatFlux"
 		     type="real"
 		     dimensions="nCells Time"

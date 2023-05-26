@@ -6256,8 +6256,12 @@ contains
          seaiceIceSnowEmissivity, &
          seaiceFreshWaterFreezingPoint, &
          seaiceAirSpecificHeat, &
+         seaiceWaterVaporSpecificHeat, &
+         seaiceSeaWaterSpecificHeat, &
+         seaiceLatentHeatVaporization, &
          seaiceLatentHeatSublimation, &
          seaiceLatentHeatMelting, &
+         seaiceReferenceSalinity, &
          seaiceOceanAlbedo, &
          seaiceVonKarmanConstant, &
          seaiceIceSurfaceRoughness, &
@@ -6281,8 +6285,12 @@ contains
          emissivity, &
          Tffresh, &
          cp_air, &
+         cp_wv, &
+         cp_ocn, &
+         Lvap, &
          Lsub, &
          Lfresh, &
+         ice_ref_salinity, &
          Pstar, &
          Cstar, &
          dragio, &
@@ -6304,8 +6312,12 @@ contains
     seaiceIceSnowEmissivity          = emissivity
     seaiceFreshWaterFreezingPoint    = Tffresh
     seaiceAirSpecificHeat            = cp_air
+    seaiceWaterVaporSpecificHeat     = cp_wv
+    seaiceSeaWaterSpecificHeat       = cp_ocn
+    seaiceLatentHeatVaporization     = Lvap
     seaiceLatentHeatSublimation      = Lsub
     seaiceLatentHeatMelting          = Lfresh
+    seaiceReferenceSalinity          = ice_ref_salinity
     seaiceOceanAlbedo                = albocn
     seaiceVonKarmanConstant          = vonkar
     seaiceIceSurfaceRoughness        = iceruf

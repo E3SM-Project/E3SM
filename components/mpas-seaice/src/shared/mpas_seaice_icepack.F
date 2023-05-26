@@ -1415,6 +1415,7 @@ contains
          oceanStressCellV, &
          freezingMeltingPotential, &
          lateralIceMeltFraction, &
+         lateralIceMeltRate, &
          lateralHeatFlux, &
          snowfallRate, &
          rainfallRate, &
@@ -1660,6 +1661,7 @@ contains
        call MPAS_pool_get_array(drag, "dragFloeSeparation", dragFloeSeparation)
 
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltFraction", lateralIceMeltFraction)
+       call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltRate", lateralIceMeltRate)
        call MPAS_pool_get_array(melt_growth_rates, "lateralHeatFlux", lateralHeatFlux)
        call MPAS_pool_get_array(melt_growth_rates, "surfaceIceMelt", surfaceIceMelt)
        call MPAS_pool_get_array(melt_growth_rates, "surfaceIceMeltCategory", surfaceIceMeltCategory)
@@ -1861,6 +1863,7 @@ contains
                Tsnice=snowIceInterfaceTemperature(iCell), &
                frzmlt=freezingMeltingPotential(iCell), &
                rside=lateralIceMeltFraction(iCell), &
+               wlat=lateralIceMeltRate(iCell), &
                fside=lateralHeatFlux(iCell), &
                fsnow=snowfallRate(iCell), &
                frain=rainfallRate(iCell), &
@@ -2025,6 +2028,7 @@ contains
              call mpas_log_write("oceanHeatFluxIceBottom: $r", messageType=MPAS_LOG_ERR, realArgs=(/oceanHeatFluxIceBottom(iCell)/))
              call mpas_log_write("freezingMeltingPotential: $r", messageType=MPAS_LOG_ERR, realArgs=(/freezingMeltingPotential(iCell)/))
              call mpas_log_write("lateralIceMeltFraction: $r", messageType=MPAS_LOG_ERR, realArgs=(/lateralIceMeltFraction(iCell)/))
+             call mpas_log_write("lateralIceMeltRate: $r", messageType=MPAS_LOG_ERR, realArgs=(/lateralIceMeltRate(iCell)/))
              call mpas_log_write("snowfallRate: $r", messageType=MPAS_LOG_ERR, realArgs=(/snowfallRate(iCell)/))
              call mpas_log_write("rainfallRate: $r", messageType=MPAS_LOG_ERR, realArgs=(/rainfallRate(iCell)/))
              call mpas_log_write("pondFreshWaterFlux: $r", messageType=MPAS_LOG_ERR, realArgs=(/pondFreshWaterFlux(iCell)/))
@@ -2189,6 +2193,7 @@ contains
          seaFreezingTemperature, &
          seaSurfaceSalinity, &
          lateralIceMeltFraction, &
+         lateralIceMeltRate, &
          lateralIceMelt, &
          freezingMeltingPotential, &
          frazilFormation, &
@@ -2323,6 +2328,7 @@ contains
        call MPAS_pool_get_array(ocean_fluxes, "oceanHeatFlux", oceanHeatFlux)
 
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltFraction", lateralIceMeltFraction)
+       call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltRate", lateralIceMeltRate)
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMelt", lateralIceMelt)
        call MPAS_pool_get_array(melt_growth_rates, "frazilFormation", frazilFormation)
        call MPAS_pool_get_array(melt_growth_rates, "frazilGrowthDiagnostic", frazilGrowthDiagnostic)
@@ -2422,6 +2428,7 @@ contains
                seaSurfaceSalinity(iCell), &
                initialSalinityProfile(:,iCell), &
                lateralIceMeltFraction(iCell), &
+!in icepack, not colpkg               lateralIceMeltRate(iCell), &
                lateralIceMelt(iCell), &
                freezingMeltingPotential(iCell), &
                frazilFormation(iCell), &
