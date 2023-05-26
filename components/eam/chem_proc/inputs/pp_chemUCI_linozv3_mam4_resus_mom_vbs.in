@@ -89,7 +89,7 @@ SPECIES
  End Solution
 
  Fixed
-   M, N2, O2, H2O, H2, CH4, cnst_O3, cnst_NO3, cnst_OH
+   M, N2, O2, H2O, H2, CH4, prsd_O3, prsd_NO3, prsd_OH
  End Fixed
 
  Col-int
@@ -264,21 +264,21 @@ CHEMISTRY
 
 
 * VBS SOAG reactions
-[vsoag0_oh]   SOAG0 + cnst_OH -> 1.15*SOAG15                                  ; 2e-11
-[vsoag15_oh]  SOAG15 + cnst_OH -> 1.15*SOAG24                                 ; 2e-11
-[vsoag24_oh]  SOAG24 + cnst_OH -> 0.46*SOAG33 + 0.5*SOAG35                   ; 2e-11
+[vsoag0_oh]   SOAG0 + prsd_OH -> 1.15*SOAG15                                  ; 2e-11
+[vsoag15_oh]  SOAG15 + prsd_OH -> 1.15*SOAG24                                 ; 2e-11
+[vsoag24_oh]  SOAG24 + prsd_OH -> 0.46*SOAG33 + 0.5*SOAG35                   ; 2e-11
 
-[visop_oh]    ISOP_VBS + cnst_OH -> 0.00272*SOAG32 + 0.00981*SOAG33 + 0.00218*SOAG34     ; 2.54e-11, 410
-[vc10h16_oh]  C10H16 + cnst_OH -> 0.14986*SOAG32 + 0.05450*SOAG33 + 0.09264*SOAG34          ; 1.2e-11, 444
-[visop_o3]    ISOP_VBS + cnst_O3 -> 0.00327*SOAG33                                       ; 1.05e-14, -2000
-[vc10h16_o3]  C10H16 + cnst_O3 -> 0.04360*SOAG31 + 0.01035*SOAG32 + 0.09809*SOAG33 + 0.01635*SOAG34  ; 1.e-15, -732
-[visop_no3]   ISOP_VBS + cnst_NO3 -> 0.00027*SOAG32 + 0.04060*SOAG33 + 0.06458*SOAG34     ; 3.03e-12,-446
-[vc10h16_no3] C10H16 + cnst_NO3 -> 0.17493*SOAG33 + 0.59019*SOAG34                   ; 1.2e-12, 490
+[visop_oh]    ISOP_VBS + prsd_OH -> 0.00272*SOAG32 + 0.00981*SOAG33 + 0.00218*SOAG34     ; 2.54e-11, 410
+[vc10h16_oh]  C10H16 + prsd_OH -> 0.14986*SOAG32 + 0.05450*SOAG33 + 0.09264*SOAG34          ; 1.2e-11, 444
+[visop_o3]    ISOP_VBS + prsd_O3 -> 0.00327*SOAG33                                       ; 1.05e-14, -2000
+[vc10h16_o3]  C10H16 + prsd_O3 -> 0.04360*SOAG31 + 0.01035*SOAG32 + 0.09809*SOAG33 + 0.01635*SOAG34  ; 1.e-15, -732
+[visop_no3]   ISOP_VBS + prsd_NO3 -> 0.00027*SOAG32 + 0.04060*SOAG33 + 0.06458*SOAG34     ; 3.03e-12,-446
+[vc10h16_no3] C10H16 + prsd_NO3 -> 0.17493*SOAG33 + 0.59019*SOAG34                   ; 1.2e-12, 490
 
-[vsoag35_oh]  SOAG35 + cnst_OH -> 0.46*SOAG34  + 0.5*SOAG35     ; 2e-11
-[vsoag34_oh]  SOAG34 + cnst_OH -> 0.46*SOAG33  + 0.5*SOAG35     ; 2e-11
-[vsoag33_oh]  SOAG33 + cnst_OH -> 0.46*SOAG32  + 0.5*SOAG35     ; 2e-11
-[vsoag32_oh]  SOAG32 + cnst_OH -> 0.46*SOAG31  + 0.5*SOAG35     ; 2e-11
+[vsoag35_oh]  SOAG35 + prsd_OH -> 0.46*SOAG34  + 0.5*SOAG35     ; 2e-11
+[vsoag34_oh]  SOAG34 + prsd_OH -> 0.46*SOAG33  + 0.5*SOAG35     ; 2e-11
+[vsoag33_oh]  SOAG33 + prsd_OH -> 0.46*SOAG32  + 0.5*SOAG35     ; 2e-11
+[vsoag32_oh]  SOAG32 + prsd_OH -> 0.46*SOAG31  + 0.5*SOAG35     ; 2e-11
  End Reactions
 
  Ext Forcing
