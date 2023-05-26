@@ -9,7 +9,7 @@ namespace scream
 {
 
 /*
- * This diagnostic will produce the potential temperature.
+ * This diagnostic will produce the vertical layer height at interface.
  */
 
 class VerticalLayerInterfaceDiagnostic : public AtmosphereDiagnostic
@@ -29,7 +29,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
   // The name of the diagnostic
-  std::string name () const { return "VerticalLayerInterface"; }
+  std::string name () const;
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -47,6 +47,9 @@ protected:
 
   // Temporary view to set dz in compute diagnostic
   view_2d m_dz;
+
+  // Store whether layer should be calculated from sea level (or from ground)
+  bool m_from_sea_level;
 
 }; // class VerticalLayerInterfaceDiagnostic
 

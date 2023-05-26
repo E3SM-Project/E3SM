@@ -8,9 +8,16 @@ VerticalLayerMidpointDiagnostic::
 VerticalLayerMidpointDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
 {
-  // Nothing to do here
+  m_from_sea_level = params.get<bool>("from_sea_level");
 }
-
+// ========================================================================================
+std::string VerticalLayerMidpointDiagnostic::
+name () const {
+  std::string diag_name;
+  if (m_from_sea_level) diag_name = "z_mid";
+  else                  diag_name = "geopotential_mid";
+  return diag_name;
+}
 // =========================================================================================
 void VerticalLayerMidpointDiagnostic::
 set_grids(const std::shared_ptr<const GridsManager> grids_manager)
@@ -20,20 +27,24 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   auto Q = kg/kg;
   Q.set_string("kg/kg");
+  auto m2 = m*m;
+  auto s2 = s*s;
 
   auto grid  = grids_manager->get_grid("Physics");
   const auto& grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
+  FieldLayout scalar2d_layout     { {COL    }, {m_num_cols           } };
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
   constexpr int ps = Pack::n;
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid",          scalar3d_layout_mid, K,  grid_name, ps);
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name, ps);
-  add_field<Required>("p_mid",          scalar3d_layout_mid, Pa, grid_name, ps);
-  add_field<Required>("qv",             scalar3d_layout_mid, Q,  grid_name, "tracers", ps);
+  add_field<Required>("phis",           scalar2d_layout,     m2/s2, grid_name);
+  add_field<Required>("T_mid",          scalar3d_layout_mid, K,     grid_name,            ps);
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,    grid_name,            ps);
+  add_field<Required>("p_mid",          scalar3d_layout_mid, Pa,    grid_name,            ps);
+  add_field<Required>("qv",             scalar3d_layout_mid, Q,     grid_name, "tracers", ps);
 
   // Construct and allocate the diagnostic field
   FieldIdentifier fid (name(), scalar3d_layout_mid, m, grid_name);
@@ -49,18 +60,16 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 // =========================================================================================
 void VerticalLayerMidpointDiagnostic::compute_diagnostic_impl()
 {
-
   const auto npacks     = ekat::npack<Pack>(m_num_levs);
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, npacks);
   const auto& z_mid              = m_diagnostic_output.get_view<Pack**>();
+  const auto& phis               = get_field_in("phis").get_view<const Real*>();
   const auto& T_mid              = get_field_in("T_mid").get_view<const Pack**>();
   const auto& p_mid              = get_field_in("p_mid").get_view<const Pack**>();
   const auto& qv_mid             = get_field_in("qv").get_view<const Pack**>();
   const auto& pseudo_density_mid = get_field_in("pseudo_density").get_view<const Pack**>();
 
-  // Set surface geopotential for this diagnostic
-  const Real surf_geopotential = 0.0;
-
+  const bool from_sea_level = m_from_sea_level;
   const int num_levs = m_num_levs;
   auto z_int = m_z_int;
   Kokkos::parallel_for("VerticalLayerMidpointDiagnostic",
@@ -74,6 +83,10 @@ void VerticalLayerMidpointDiagnostic::compute_diagnostic_impl()
       dz_s(jpack) = PF::calculate_dz(pseudo_density_mid(icol,jpack), p_mid(icol,jpack), T_mid(icol,jpack), qv_mid(icol,jpack));
     });
     team.team_barrier();
+
+    // Set surface geopotential for this diagnostic
+    const Real surf_geopotential = from_sea_level ? 0.0 : phis(icol);
+
     PF::calculate_z_int(team,num_levs,dz_s,surf_geopotential,z_int_s);
     PF::calculate_z_mid(team,num_levs,z_int_s,z_mid_s);
   });

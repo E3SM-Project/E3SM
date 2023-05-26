@@ -37,9 +37,11 @@ inline void register_diagnostics () {
   diag_factory.register_product("AtmosphereDensity",&create_atmosphere_diagnostic<AtmDensityDiagnostic>);
   diag_factory.register_product("Exner",&create_atmosphere_diagnostic<ExnerDiagnostic>);
   diag_factory.register_product("VirtualTemperature",&create_atmosphere_diagnostic<VirtualTemperatureDiagnostic>);
-  diag_factory.register_product("VerticalLayerInterface",&create_atmosphere_diagnostic<VerticalLayerInterfaceDiagnostic>);
+  diag_factory.register_product("z_int",&create_atmosphere_diagnostic<VerticalLayerInterfaceDiagnostic>);
+  diag_factory.register_product("geopotential_int",&create_atmosphere_diagnostic<VerticalLayerInterfaceDiagnostic>);
   diag_factory.register_product("VerticalLayerThickness",&create_atmosphere_diagnostic<VerticalLayerThicknessDiagnostic>);
-  diag_factory.register_product("VerticalLayerMidpoint",&create_atmosphere_diagnostic<VerticalLayerMidpointDiagnostic>);
+  diag_factory.register_product("z_mid",&create_atmosphere_diagnostic<VerticalLayerMidpointDiagnostic>);
+  diag_factory.register_product("geopotential_mid",&create_atmosphere_diagnostic<VerticalLayerMidpointDiagnostic>);
   diag_factory.register_product("DryStaticEnergy",&create_atmosphere_diagnostic<DryStaticEnergyDiagnostic>);
   diag_factory.register_product("SeaLevelPressure",&create_atmosphere_diagnostic<SeaLevelPressureDiagnostic>);
   diag_factory.register_product("LiqWaterPath",&create_atmosphere_diagnostic<LiqWaterPathDiagnostic>);

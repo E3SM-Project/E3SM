@@ -40,7 +40,7 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
 //-----------------------------------------------------------------------------------------------//
 template<typename DeviceT>
-void run(std::mt19937_64& engine)
+void run(std::mt19937_64& engine, const bool from_sea_level)
 {
   using PF         = scream::PhysicsFunctions<DeviceT>;
   using PC         = scream::physics::Constants<Real>;
@@ -80,18 +80,20 @@ void run(std::mt19937_64& engine)
   RPDF pdf_qv(1e-6,1e-3),
        pdf_pseudodens(1.0,100.0),
        pdf_pres(0.0,PC::P0),
-       pdf_temp(200.0,400.0);
+       pdf_temp(200.0,400.0),
+       pdf_phis(0.0,10000.0);
 
   // A time stamp
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
   // Construct the Diagnostic
   ekat::ParameterList params;
+  params.set<bool>("from_sea_level",from_sea_level);
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  auto diag = diag_factory.create("VerticalLayerInterface",comm,params);
+  const std::string diag_name = from_sea_level ? "z_int" : "geopotential_int";
+  auto diag = diag_factory.create(diag_name,comm,params);
   diag->set_grids(gm);
-
 
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;
@@ -114,6 +116,8 @@ void run(std::mt19937_64& engine)
   {
     // Construct random data to use for test
     // Get views of input data and set to random values
+    const auto& phis_f        = input_fields["phis"];
+    const auto& phis_v        = phis_f.get_view<Real*>();
     const auto& T_mid_f       = input_fields["T_mid"];
     const auto& T_mid_v       = T_mid_f.get_view<Pack**>();
     const auto& pseudo_dens_f = input_fields["pseudo_density"];
@@ -135,6 +139,9 @@ void run(std::mt19937_64& engine)
       Kokkos::deep_copy(pseudo_sub,pseudodensity);
       Kokkos::deep_copy(p_sub,pressure);
       Kokkos::deep_copy(qv_sub,watervapor);
+    
+      if (from_sea_level) Kokkos::deep_copy(phis_v, 0.0);
+      else                ekat::genRandArray(phis_v, engine, pdf_phis);
     }
 
     // Run diagnostic and compare with manual calculation
@@ -152,7 +159,7 @@ void run(std::mt19937_64& engine)
       });
       team.team_barrier();
       const auto& zint_s = ekat::subview(zint_v,icol);
-      PF::calculate_z_int(team,num_levs,dz_v,0.0,zint_s);
+      PF::calculate_z_int(team,num_levs,dz_v,phis_v(icol),zint_s);
     });
     Kokkos::fence();
     REQUIRE(views_are_equal(diag_out,zint_f));
@@ -176,7 +183,7 @@ TEST_CASE("vertical_layer_interface_test", "vertical_layer_interface_test]"){
 
   printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_PACK_SIZE);
   for (int irun=0; irun<num_runs; ++irun) {
-    run<Device>(engine);
+    run<Device>(engine, irun%2==0); // alternate from_sea_level=true/false
   }
   printf("ok!\n");
 

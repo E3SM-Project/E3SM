@@ -997,6 +997,14 @@ create_diagnostic (const std::string& diag_field_name) {
     diag_name = diag_field_name;
   }
 
+  // These fields are special case of VerticalLayer{Interface/Midpoint} diagnostic. 
+  if (diag_name == "z_int" or diag_name == "z_mid") {
+    params.set<bool>("from_sea_level", true);
+  } else if (diag_name == "geopotential_int" or 
+             diag_name == "geopotential_mid") {
+    params.set<bool>("from_sea_level", false);
+  }
+
   // Create the diagnostic
   auto diag = diag_factory.create(diag_name,m_comm,params);
   diag->set_grids(m_grids_manager);

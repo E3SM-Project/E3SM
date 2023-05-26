@@ -9,7 +9,7 @@ namespace scream
 {
 
 /*
- * This diagnostic will produce the potential temperature.
+ * This diagnostic will produce the vertical layer height at midpoint.
  */
 
 class VerticalLayerMidpointDiagnostic : public AtmosphereDiagnostic
@@ -27,8 +27,8 @@ public:
   // Set type to diagnostic
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
-  // The name of the diagnostic
-  std::string name () const { return "VerticalLayerMidpoint"; }
+  // The name of the diagnostic.
+  std::string name () const;
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -46,6 +46,9 @@ protected:
 
   // Temporary view to set dz in compute diagnostic
   view_2d m_z_int;
+
+  // Store whether layer should be calculated from sea level (or from ground)
+  bool m_from_sea_level;
 
 }; // class VerticalLayerMidpointDiagnostic
 
