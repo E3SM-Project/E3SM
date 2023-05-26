@@ -268,6 +268,10 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
         ts_snap += (time_snap*time_mult);
       }
       auto time = ts_snap.seconds_from(ts_ref);
+      // Sanity check that we don't have multiples of the same timesnap
+      EKAT_REQUIRE_MSG(map_of_times_to_vector_idx.count(time)==0,"Error! TimeInterpolation::set_file_data_triplets - The same time step has been encountered more than once in the data files, please check\n"  
+		      << "    TimeStamp: " << ts_snap.to_string() << "\n"  
+		      << "     Filename: " << filename << "\n");
       map_of_times_to_vector_idx.emplace(time,running_idx);
       filenames_tmp.push_back(filename);
       timestamps_tmp.push_back(ts_snap);

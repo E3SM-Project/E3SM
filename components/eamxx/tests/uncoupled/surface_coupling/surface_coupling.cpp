@@ -5,6 +5,7 @@
 #include "control/atmosphere_surface_coupling_exporter.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/field/field_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/scream_types.hpp"
 #include "share/util/scream_setup_random_test.hpp"
@@ -17,6 +18,106 @@
 namespace scream {
 
 constexpr Real test_tol = std::numeric_limits<Real>::epsilon()*1e4;
+
+// Test function for prescribed values
+Real test_func(const int col, const int t) {
+  return (Real)(col + 1 + t);
+}
+
+// Wrapper for output manager that also extracts the list of files
+class OutputManager4Test : public scream::OutputManager
+{
+public:
+  OutputManager4Test()
+    : OutputManager()
+  {
+    // Do Nothing
+  }
+
+  void runme(const util::TimeStamp& ts) {
+    run(ts);
+    update_file_list();
+  }
+
+  std::vector<std::string> get_list_of_files() { return m_list_of_files; }
+private:
+  void update_file_list() {
+    if (std::find(m_list_of_files.begin(),m_list_of_files.end(), m_output_file_specs.filename) == m_list_of_files.end()) {
+      m_list_of_files.push_back(m_output_file_specs.filename);
+    }
+  }
+  std::vector<std::string> m_list_of_files;
+};
+
+std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, const util::TimeStamp& t0, const int ncols )
+{ 
+  // Create a grids manager on the fly
+  ekat::ParameterList gm_params;
+  gm_params.set("number_of_global_columns",ncols);
+  gm_params.set("number_of_vertical_levels",1); // We don't care about levels for a surface only file
+  auto gm = create_mesh_free_grids_manager(comm,gm_params);
+  gm->build_grids();
+  // Create a fields manager on the fly with the appropriate fields and grid.
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+  const auto grid = gm->get_grid("Physics");
+  std::vector<std::string> fnames = {"Faxa_lwdn"};
+  FieldLayout layout({COL},{ncols});
+  auto fm = std::make_shared<FieldManager>(grid);
+  fm->registration_begins();
+  fm->registration_ends();
+  auto nondim = Units::nondimensional();
+  for (auto name : fnames) {
+    FieldIdentifier fid(name,layout,nondim,grid->name());
+    Field f(fid);
+    f.allocate_view();
+    // Initialize data
+    auto f_view_h = f.get_view<Real*,Host>();
+    for (int ii=0; ii<ncols; ii++) {
+      f_view_h(ii) = test_func(ii,0);
+    }
+    f.sync_to_dev();
+    // Update timestamp
+    f.get_header().get_tracking().update_time_stamp(t0);
+    fm->add_field(f);
+  }
+
+  // Create output manager to handle the data
+  scorpio::eam_init_pio_subsystem(comm);
+  ekat::ParameterList om_pl;
+  om_pl.set("MPI Ranks in Filename",true);
+  om_pl.set("filename_prefix",std::string("surface_coupling_forcing"));
+  om_pl.set("Field Names",fnames);
+  om_pl.set("Averaging Type", std::string("INSTANT"));
+  om_pl.set("Max Snapshots Per File",2);
+  auto& ctrl_pl = om_pl.sublist("output_control");
+  ctrl_pl.set("frequency_units",std::string("nsteps"));
+  ctrl_pl.set("Frequency",1);
+  ctrl_pl.set("MPI Ranks in Filename",true);
+  ctrl_pl.set("save_grid_data",false);
+  OutputManager4Test om;
+  om.setup(comm,om_pl,fm,gm,t0,false);
+  // Create output data:
+  // T=3600, well above the max timestep for the test.
+  auto tw = t0;
+  const int dt = 3600;
+  for (auto name : fnames) {
+    auto field = fm->get_field(name);
+    // Note we only care about surface values so we only need to generate data over ncols.
+    auto f_view_h = field.get_view<Real*,Host>();
+    for (int ii=0; ii<ncols; ii++) {
+      f_view_h(ii) = test_func(ii,dt);
+    }
+    field.sync_to_dev();
+  }
+  tw+=dt;
+  om.runme(tw);
+
+  // Done, finalize
+  om.finalize();
+  scorpio::eam_pio_finalize();
+  return om.get_list_of_files();
+}
 
 void setup_import_and_export_data(
   // Imports
@@ -294,7 +395,7 @@ void test_exports(const FieldManager& fm,
 
   // Check cpl data to scream fields
   for (int i=0; i<ncols; ++i) {
-    const Real Faxa_lwdn_file = i+1 + dt; 
+    const Real Faxa_lwdn_file = test_func(i,dt); 
 
     // The following are exported both during initialization and run phase
     EKAT_REQUIRE(export_constant_multiple_view(0)*Sa_z_h(i)                  == export_data_view(i, export_cpl_indices_view(0)));
@@ -348,6 +449,8 @@ TEST_CASE("surface-coupling", "") {
   auto& ts          = ad_params.sublist("time_stepping");
   const auto t0_str = ts.get<std::string>("run_t0");
   const auto t0     = util::str_to_time_stamp(t0_str);
+  const auto gmp    = ad_params.sublist("grids_manager");
+  const auto ncol_in = gmp.get<int>("number_of_global_columns");
 
   // Set two export fields to be randomly set to a constant
   // This requires us to add a sublist to the parsed AD params yaml list.
@@ -366,8 +469,8 @@ TEST_CASE("surface-coupling", "") {
   exp_const_params.set<vos_type>("fields",exp_const_fields);
   exp_const_params.set<vor_type>("values",exp_const_values);
   // Set up forcing to data interpolated from file
+  const auto exp_file_files = create_from_file_test_data(atm_comm, t0, ncol_in);
   const vos_type exp_file_fields = {"Faxa_lwdn"};
-  const vos_type exp_file_files = {"surface_coupling_forcing.nc"};
   auto& exp_file_params = sc_exp_params.sublist("prescribed_from_file");
   exp_file_params.set<vos_type>("fields",exp_file_fields);
   exp_file_params.set<vos_type>("files",exp_file_files);
@@ -390,9 +493,7 @@ TEST_CASE("surface-coupling", "") {
   ad.create_grids ();
   ad.create_fields ();
 
-  const int ncols = ad.get_grids_manager()->get_grid("Physics")->get_num_local_dofs();
-
-  // Create test data for SurfaceCouplingDataManager
+  const int   ncols = ad.get_grids_manager()->get_grid("Physics")->get_num_local_dofs();
 
   // Create engine and pdfs for random test data
   std::uniform_int_distribution<int> pdf_int_additional_fields(0,10);
