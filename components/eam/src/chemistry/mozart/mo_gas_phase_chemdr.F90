@@ -1044,6 +1044,9 @@ contains
           do k = 1,pver
              if ( .not. tropFlag(i,k) ) then
                 vmr(i,k,:) = vmr_old2(i,k,:)
+                ! Zero out the reaction rates (only for diagnostic purpose) in the stratosphere
+                ! Only need to do this one time and diags_reaction_rates will be used below
+                ! in the exp_sol to diagnose the chemistry prod/loss rates.
                 diags_reaction_rates(i,k,:) = 0._r8
              endif
           enddo
