@@ -571,6 +571,36 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
 #endif
 
 
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+
+#if ( defined RAIN_EVAP_TO_COARSE_AERO )
+      ! MAM5 AGEDCARBON
+
+      ! in SNICAR+MAM, bcphodry represents BC mixed external to hydrometeors
+      cam_out%bcphodry(i) = aerdepdryis(i,idx_bc3)+aerdepdryis(i,idx_bc4)+aerdepdryis(i,idx_bc5)+ &
+                            aerdepdrycw(i,idx_bc3)+aerdepdrycw(i,idx_bc4)+aerdepdrycw(i,idx_bc5)
+
+      ! ocphodry represents OC mixed external to hydrometeors
+      cam_out%ocphodry(i) = aerdepdryis(i,idx_pom3)+aerdepdryis(i,idx_pom4)+aerdepdryis(i,idx_pom5)+&
+                            aerdepdryis(i,idx_soa1)+aerdepdryis(i,idx_soa2)+aerdepdryis(i,idx_soa3)+aerdepdryis(i,idx_soa5)+&
+                            aerdepdrycw(i,idx_pom3)+aerdepdrycw(i,idx_pom4)+aerdepdrycw(i,idx_pom5)+&
+                            aerdepdrycw(i,idx_soa1)+aerdepdrycw(i,idx_soa2)+aerdepdrycw(i,idx_soa3)+aerdepdrycw(i,idx_soa5)
+#endif
+
+      cam_out%dstdry1(i) = (0.625_r8*(aerdepdryis(i,idx_dst1)+aerdepdrycw(i,idx_dst1))+ &
+                            0.015_r8*(aerdepdryis(i,idx_dst3)+aerdepdrycw(i,idx_dst3)))
+
+      cam_out%dstdry2(i) = (0.345_r8*(aerdepdryis(i,idx_dst1)+aerdepdrycw(i,idx_dst1))+ &
+                            0.252_r8*(aerdepdryis(i,idx_dst3)+aerdepdrycw(i,idx_dst3)))
+
+      cam_out%dstdry3(i) = (0.029_r8*(aerdepdryis(i,idx_dst1)+aerdepdrycw(i,idx_dst1))+ &
+                            0.444_r8*(aerdepdryis(i,idx_dst3)+aerdepdrycw(i,idx_dst3)))
+
+      cam_out%dstdry4(i) = (0.001_r8*(aerdepdryis(i,idx_dst1)+aerdepdrycw(i,idx_dst1))+ &
+                            0.289_r8*(aerdepdryis(i,idx_dst3)+aerdepdrycw(i,idx_dst3)))
+#endif
+
+
 #if( (defined MODAL_AERO_7MODE) || (defined MODAL_AERO_9MODE) )
       ! MAM7
 
