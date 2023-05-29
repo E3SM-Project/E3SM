@@ -37,12 +37,21 @@ integer :: idx_bc1  = -1
 integer :: idx_pom1 = -1
 integer :: idx_soa1 = -1
 integer :: idx_soa2 = -1
+! ++MW
+integer :: idx_soa3 = -1
+! --MW
 integer :: idx_dst1 = -1
 integer :: idx_dst3 = -1
 integer :: idx_ncl3 = -1
 integer :: idx_so43 = -1
 integer :: idx_bc4  = -1
 integer :: idx_pom4 = -1
+! ++MW
+integer :: idx_bc5  = -1
+integer :: idx_pom5 = -1
+integer :: idx_soa5 = -1
+! --MW
+
 
 !mgf++ MAM7
 integer :: idx_bc3  = -1
@@ -59,8 +68,11 @@ logical :: initialized = .false.
 contains
 !==============================================================================
 
-subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_ndx, &
-                            dst3_ndx,ncl3_ndx,so43_ndx,num3_ndx,bc4_ndx,pom4_ndx)
+! ++MW
+subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,soa3_ndx,dst1_ndx, &
+                            dst3_ndx,ncl3_ndx,so43_ndx,num3_ndx,bc4_ndx,pom4_ndx,&
+                            bc5_ndx,pom5_ndx,soa5_ndx)
+! --MW
 
 ! set aerosol indices for re-mapping surface deposition fluxes:
 ! *_a1 = accumulation mode
@@ -70,14 +82,36 @@ subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_nd
    ! can be initialized with user specified indices
    ! if called from aerodep_flx module (for prescribed modal aerosol fluxes) then these indices are specified
 
-   integer, optional, intent(in) :: bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_ndx,dst3_ndx,ncl3_ndx,so43_ndx,num3_ndx
+! ++MW
+   integer, optional, intent(in) :: bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,soa3_ndx,dst1_ndx,dst3_ndx,ncl3_ndx,so43_ndx,num3_ndx
+! --MW
    integer, optional, intent(in) :: bc4_ndx,pom4_ndx
+! ++MW
+   integer, optional, intent(in) :: bc5_ndx,pom5_ndx,soa5_ndx
+! --MW
 
    ! if already initialized abort the run
    if (initialized) then
      call endrun('modal_aero_deposition_init is already initialized')
    endif
 
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+   if (present(bc5_ndx)) then
+      idx_bc5  = bc5_ndx
+   else
+      call cnst_get_ind('bc_a5',  idx_bc5)
+   endif
+   if (present(pom5_ndx)) then
+      idx_pom5 = pom5_ndx
+   else
+      call cnst_get_ind('pom_a5', idx_pom5)
+   endif
+   if (present(soa5_ndx)) then
+      idx_soa5 = soa5_ndx
+   else
+      call cnst_get_ind('soa_a5', idx_soa5)
+   endif
+#else
    if (present(bc1_ndx)) then
       idx_bc1  = bc1_ndx
    else
@@ -93,6 +127,7 @@ subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_nd
    else
       call cnst_get_ind('soa_a1', idx_soa1)
    endif
+#endif
    if (present(soa2_ndx)) then
       idx_soa2 = soa2_ndx
    else
@@ -154,6 +189,9 @@ subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_nd
       ! assign additional indices for resuspended BC and POM to coarse mode:
       call cnst_get_ind('bc_a3',  idx_bc3)
       call cnst_get_ind('pom_a3', idx_pom3)
+! ++MW
+      call cnst_get_ind('soa_a3', idx_soa3)
+! --MW
 #endif
 
    initialized = .true.
@@ -271,6 +309,53 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
       cam_out%dstwet4(i) = -(0.001_r8*(aerdepwetis(i,idx_dst1)+aerdepwetcw(i,idx_dst1))+ &
                              0.289_r8*(aerdepwetis(i,idx_dst3)+aerdepwetcw(i,idx_dst3)))
 
+#endif
+
+
+#if ( defined MODAL_AERO_5MODE_AGEDCARBON )
+
+#if ( defined RAIN_EVAP_TO_COARSE_AERO )
+      ! MAM5 AGEDCARBON
+
+      ! in SNICAR+MAM, bcphiwet represents BC mixed internally within
+      ! hydrometeors
+      cam_out%bcphiwet(i) = -(aerdepwetcw(i,idx_bc3)+aerdepwetcw(i,idx_bc4)+ &
+                              aerdepwetcw(i,idx_bc5))
+
+      ! bcphidry represents BC mixed externally to hydrometeors
+      cam_out%bcphidry(i) = -(aerdepwetis(i,idx_bc3)+aerdepwetis(i,idx_bc4)+ &
+                              aerdepwetis(i,idx_bc5))
+
+      ! ocphiwet represents OC mixed internally within hydrometeors
+      cam_out%ocphiwet(i) = -(aerdepwetcw(i,idx_pom3)+aerdepwetcw(i,idx_pom4)+ &
+                              aerdepwetcw(i,idx_pom5)+aerdepwetcw(i,idx_soa1)+ &
+                              aerdepwetcw(i,idx_soa2)+aerdepwetcw(i,idx_soa3)+ &
+                              aerdepwetcw(i,idx_soa5))
+
+      ! ocphidry represents OC mixed externally to hydrometeors
+      cam_out%ocphidry(i) = -(aerdepwetis(i,idx_pom3)+aerdepwetis(i,idx_pom4)+ &
+                              aerdepwetis(i,idx_pom5)+aerdepwetis(i,idx_soa1)+ &
+                              aerdepwetis(i,idx_soa2)+aerdepwetis(i,idx_soa3)+ &
+                              aerdepwetis(i,idx_soa5))
+#endif
+
+      ! Four dust bins in SNICAR represent dust with dry diameters of
+      ! 0.1-1.0um, 1.0-2.5um, 2.5-5.0um, 5.0-10um, respectively.  Dust
+      ! mass is partitioned into these bins based on global-mean size
+      ! distributions of MAM7 fine dust and coarse dust shown in Table
+      ! 1 of Liu et al (2012, doi:10.5194/gmd-5-709-2012).  In MAM3,
+      ! accumulation-mode dust is assumed to resemble fine dust
+      cam_out%dstwet1(i) = -(0.625_r8*(aerdepwetis(i,idx_dst1)+aerdepwetcw(i,idx_dst1))+ &
+                             0.015_r8*(aerdepwetis(i,idx_dst3)+aerdepwetcw(i,idx_dst3)))
+
+      cam_out%dstwet2(i) = -(0.345_r8*(aerdepwetis(i,idx_dst1)+aerdepwetcw(i,idx_dst1))+ &
+                             0.252_r8*(aerdepwetis(i,idx_dst3)+aerdepwetcw(i,idx_dst3)))
+
+      cam_out%dstwet3(i) = -(0.029_r8*(aerdepwetis(i,idx_dst1)+aerdepwetcw(i,idx_dst1))+ &
+                             0.444_r8*(aerdepwetis(i,idx_dst3)+aerdepwetcw(i,idx_dst3)))
+
+      cam_out%dstwet4(i) = -(0.001_r8*(aerdepwetis(i,idx_dst1)+aerdepwetcw(i,idx_dst1))+ &
+                             0.289_r8*(aerdepwetis(i,idx_dst3)+aerdepwetcw(i,idx_dst3)))
 #endif
 
 #if( (defined MODAL_AERO_7MODE) || (defined MODAL_AERO_9MODE) )
