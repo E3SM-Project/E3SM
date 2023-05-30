@@ -56,7 +56,7 @@ module ocn_manufactured_solution
    !--------------------------------------------------------------------
 
    real (kind=RKIND) :: kx, ky
-   real (kind=RKIND) :: omega
+   real (kind=RKIND) :: ang_freq
    real (kind=RKIND) :: eta0
    real (kind=RKIND) :: H0
 
@@ -111,10 +111,10 @@ contains
          kmin = minLevelCell(iCell)
          kmax = maxLevelCell(iCell)
 
-         phase = kx*xCell(iCell) + ky*yCell(iCell) - omega*time
+         phase = kx*xCell(iCell) + ky*yCell(iCell) - ang_freq*time
          do k = kmin, kmax
             tend(k,iCell) = tend(k,iCell) + eta0*(-H0*(kx + ky)*sin(phase) &
-                                                  - omega*cos(phase) &
+                                                  - ang_freq*cos(phase) &
                                                   + eta0*(kx + ky)*cos(2.0_RKIND*phase))
          enddo
 
@@ -172,15 +172,15 @@ contains
          kmin = minLevelEdgeBot(iEdge)
          kmax = maxLevelEdgeTop(iEdge)
 
-         phase = kx*xEdge(iEdge) + ky*yEdge(iEdge) - omega*time
+         phase = kx*xEdge(iEdge) + ky*yEdge(iEdge) - ang_freq*time
 
          do k = kmin, kmax
 
             u = eta0*((-fEdge(iEdge) + gravity*kx)*cos(phase) &
-                       + omega*sin(phase) &
+                       + ang_freq*sin(phase) &
                        - 0.5_RKIND*eta0*(kx + ky)*sin(2.0_RKIND*(phase)))
             v = eta0*((fEdge(iEdge) + gravity*ky)*cos(phase) &
-                      + omega*sin(phase) &
+                      + ang_freq*sin(phase) &
                       - 0.5_RKIND*eta0*(kx + ky)*sin(2.0_RKIND*(phase))) 
 
             tend(k,iEdge) = tend(k,iEdge) + u*cos(angleEdge(iEdge)) + v*sin(angleEdge(iEdge))
@@ -233,7 +233,7 @@ contains
          block => block % next
       enddo
 
-      omega = sqrt(H0*gravity * (kx**2+ky**2))
+      ang_freq = sqrt(H0*gravity * (kx**2+ky**2))
 
       err = 0
 
