@@ -101,13 +101,19 @@ extern "C" void pam_driver() {
   auto input_bflx = dm_host.get<real const,1>("input_bflxls").createDeviceCopy();
   modules::surface_friction_init(coupler, input_tau, input_bflx);
 
-  // Perturb the CRM at the beginning of the run
   if (is_first_step) {
+    // Perturb the CRM at the beginning of the run
     auto gcolp = dm_host.get<int const,1>("gcolp").createDeviceCopy();
     modules::perturb_temperature( coupler , gcolp );
 
-    auto am_i_root = coupler.get_option<bool>("am_i_root");
-    scream::p3::p3_init(/*write_tables=*/false, am_i_root);
+    #if defined(P3_CXX)
+      auto am_i_root = coupler.get_option<bool>("am_i_root");
+      scream::p3::p3_init(/*write_tables=*/false, am_i_root);
+
+      // Load P3 lookup table data to avoid re-loading it every CRM call
+      // pam::allocate_scream_cxx_globals();
+      pam::p3_init_lookup_tables();
+    #endif
   }
 
   #if defined(MMF_PAM_DYCOR_SPAM)
@@ -155,7 +161,8 @@ extern "C" void pam_driver() {
     if (enable_check_state) { pam_debug_check_state(coupler, 3, nstep); }
     if (enable_print_state) { pam_debug_print_state(coupler, 3); }
 
-    coupler.run_module( "compute_surface_friction"     , modules::compute_surface_friction );
+    // disable psuedo friction for now because apparently there's a units problem that makes SHOC throw NaNs
+    // coupler.run_module( "compute_surface_friction"     , modules::compute_surface_friction );
 
     pam_statistics_save_state(coupler);
     coupler.run_module( "sgs"                          , [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
