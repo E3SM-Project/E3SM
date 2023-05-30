@@ -1465,6 +1465,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_set_option('crm_accel_factor', crm_accel_factor )
 
       call pam_set_option('is_first_step', (nstep<=1) )
+      call pam_set_option('am_i_root', masterproc )
 
       call pam_register_dimension('gcm_lev',pver)
 
