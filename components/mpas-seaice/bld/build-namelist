@@ -60,6 +60,8 @@ OPTIONS
                            Options are: none, data, prognostic
      -prognostic_mode      variable for prognostic mode
                            Options are: full, prescribed
+     -column_mode          variable for column-only mode
+                           Options are: true, false
      -ntasks_ice           NTASKS_ICE for this case
      -ninst_ice            NINST_ICE for this case
 
@@ -108,6 +110,7 @@ my %opts = ( help            => 0,
              surface_mode    => undef,
              iceberg_mode    => undef,
              prognostic_mode => undef,
+             column_mode => undef,
              cfg_dir         => $cfgdir,
              ntasks_ice      => 0,
              ninst_ice       => 0,
@@ -130,6 +133,7 @@ GetOptions(
     "surface_mode=s"    => \$opts{'surface_mode'},
     "iceberg_mode=s"    => \$opts{'iceberg_mode'},
     "prognostic_mode=s" => \$opts{'prognostic_mode'},
+    "column_mode=s"     => \$opts{'column_mode'},
     "cfg_dir=s"         => \$opts{'cfg_dir'},
     "preview"           => \$opts{'preview'},
     "ntasks_ice=i"      => \$opts{'ntasks_ice'},
@@ -169,6 +173,7 @@ my $ice_bgc         = $opts{'ice_bgc'};
 my $surface_mode    = $opts{'surface_mode'};
 my $iceberg_mode    = $opts{'iceberg_mode'};
 my $prognostic_mode = $opts{'prognostic_mode'};
+my $column_mode     = $opts{'column_mode'};
 my $NINST_ICE       = $opts{'ninst_ice'};
 my $NTASKS_ICE      = $opts{'ntasks_ice'};
 $cfgdir             = $opts{'cfg_dir'};
@@ -191,6 +196,7 @@ print $fh  <<"EOF";
 <config_definition>
 <entry id="ice_grid" value="$ICE_GRID">
 <entry id="prognostic_mode" value="$prognostic_mode">
+<entry id="column_mode" value="$column_mode">
 <entry id="decomp_prefix" value="$decomp_prefix">
 <entry id="date_stamp" value="$date_stamp">
 </config_definition>

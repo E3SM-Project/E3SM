@@ -930,7 +930,7 @@
 <micro_nccons         microphys="mg2">  100.D6      </micro_nccons>
 <micro_nicons         microphys="mg2">  0.1D6       </micro_nicons>
 <micro_mincdnc        microphys="mg2">  -999.       </micro_mincdnc>
-
+<p3_mincdnc           microphys="p3">  -999.        </p3_mincdnc> 
 
 <!-- P3 specific namelist variables -->
 <micro_aerosolactivation            microphys="p3"> .true.  </micro_aerosolactivation>
@@ -961,6 +961,7 @@
 
 <!-- special defaults for MMF, which now sets all other physics scheme options to "off" -->
 <micro_mincdnc        use_MMF="1">  -999.       </micro_mincdnc>
+<p3_mincdnc           use_MMF="1">  -999.       </p3_mincdnc> 
 
 <rrtmg_temp_fix                      > .false.      </rrtmg_temp_fix>
 
@@ -1244,6 +1245,17 @@
 <zmconv_mx_bot_lyr_adj                                                >0       </zmconv_mx_bot_lyr_adj>
 <zmconv_dmpdz                                                         >-1.0E-3 </zmconv_dmpdz>
 <zmconv_tp_fac                                                        >0.D0 </zmconv_tp_fac>
+<zmconv_microp                                                        >.false. </zmconv_microp>
+<zmconv_clos_dyn_adj                                                  >.false. </zmconv_clos_dyn_adj>
+<zmconv_tpert_fix                                                     >.false. </zmconv_tpert_fix>
+<zmconv_auto_fac                                                      >7.0D0 </zmconv_auto_fac>
+<zmconv_accr_fac                                                      >1.5D0 </zmconv_accr_fac>
+<zmconv_micro_dcs                                                     >150.E-6</zmconv_micro_dcs>
+<!-- MCSP -->
+<zmconv_MCSP_heat_coeff                                               >0.0D0</zmconv_MCSP_heat_coeff>
+<zmconv_MCSP_moisture_coeff                                           >0.0D0</zmconv_MCSP_moisture_coeff>
+<zmconv_MCSP_uwind_coeff                                              >0.0D0</zmconv_MCSP_uwind_coeff>
+<zmconv_MCSP_vwind_coeff                                              >0.0D0</zmconv_MCSP_vwind_coeff>
 
 <!-- Cloud sedimentation -->
 
@@ -1856,6 +1868,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <dust_emis_fact phys="default"> 1.50D0     </dust_emis_fact>
 <linoz_psc_T               > 197.5      </linoz_psc_T>
 <micro_mincdnc phys="default" microphys="mg2"> 10.D6      </micro_mincdnc>
+<p3_mincdnc phys="default" microphys="p3"> 10.D6      </p3_mincdnc>
 <clubb_C1 phys="default"> 2.4        </clubb_C1>
 <clubb_C11 phys="default"> 0.70       </clubb_C11>
 <clubb_C11b phys="default"> 0.20       </clubb_C11b>

@@ -577,7 +577,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
  *   field_manager: is a pointer to the field_manager for this simulation.
  *   name: is a string name of the variable who is to be added to the list of variables in this IO stream.
  */
-  using namespace scorpio;
+  using namespace ShortFieldTagsNames;
 
   // Store the field layout
   const auto& fid = get_field(name,"io").get_header().get_identifier();
@@ -589,7 +589,10 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
     // check tag against m_dims map.  If not in there, then add it.
     const auto& tags = layout.tags();
     const auto& dims = layout.dims();
-    const auto tag_name = get_nc_tag_name(tags[i],dims[i]);
+    auto tag_name = m_io_grid->get_dim_name(tags[i]);
+    if (tags[i]==CMP) {
+      tag_name += std::to_string(dims[i]);
+    }
     auto tag_loc = m_dims.find(tag_name);
     auto is_partitioned = m_io_grid->get_partitioned_dim_tag()==tags[i];
     if (tag_loc == m_dims.end()) {
@@ -600,7 +603,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
       } else {
         tag_len = layout.dim(i);
       }
-      m_dims[get_nc_tag_name(tags[i],dims[i])] = std::make_pair(tag_len,is_partitioned);
+      m_dims[tag_name] = std::make_pair(tag_len,is_partitioned);
     } else {  
       EKAT_REQUIRE_MSG(m_dims.at(tag_name).first==dims[i] or is_partitioned,
         "Error! Dimension " + tag_name + " on field " + name + " has conflicting lengths");
@@ -678,6 +681,7 @@ register_variables(const std::string& filename,
                    const std::string& fp_precision)
 {
   using namespace scorpio;
+  using namespace ShortFieldTagsNames;
 
   // Cycle through all fields and register.
   for (auto const& name : m_fields_names) {
@@ -695,7 +699,10 @@ register_variables(const std::string& filename,
     const auto& layout = fid.get_layout();
     std::string units = to_string(fid.get_units());
     for (int i=0; i<fid.get_layout().rank(); ++i) {
-      const auto tag_name = get_nc_tag_name(layout.tag(i), layout.dim(i));
+      auto tag_name = m_io_grid->get_dim_name(layout.tag(i));
+      if (layout.tag(i)==CMP) {
+        tag_name += std::to_string(layout.dim(i));
+      }
       // Concatenate the dimension string to the io-decomp string
       io_decomp_tag += "-" + tag_name;
       // If tag==CMP, we already attached the length to the tag name
