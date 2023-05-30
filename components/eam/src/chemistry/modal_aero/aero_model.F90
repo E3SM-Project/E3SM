@@ -2007,7 +2007,6 @@ lphase_jnmw_conditional: &
                       sflx(i)=sflx(i)+dqdt_tmp(i,k)*state%pdel(i,k)/gravit
                    enddo
                 enddo
-!                if ( .not. convproc_do_aer ) call outfld( trim(cnst_name(mm))//'SFWET', sflx, pcols, lchnk)
                 aerdepwetis(:ncol,mm) = aerdepwetis(:ncol,mm) + sflx(:ncol)
                 if ( convproc_do_aer ) call outfld(trim(cnst_name(mm))//'SFWET', aerdepwetis(:,mm), pcols, lchnk)
                 sflx(:)=0._r8

@@ -2243,10 +2243,7 @@ k_loop_main_bb: &
             cdt(k) = 0.0_r8
             if ((icwmr(icol,k) > clw_cut) .and. (rprd(icol,k) > 0.0)) then 
 !              if (iconvtype == 1) then
-!              tmpf = 0.5_r8*cldfrac_i(k)
-!              fa_u(k) = dt_u(k)*(mu_p_eudp(k)/dp_i(k)) =>
-!              dt_u(k) = tmpf*dp(i,k)/mu_p_eudp(k)
-               tmpf = fa_u(k) !0.5_r8*cldfrac_i(k)
+                  tmpf = fa_u(k) !0.5_r8*cldfrac_i(k)
                   cdt(k) = (tmpf*dp(i,k)/mu_p_eudp(k)) * rprd(icol,k) / &
                         (tmpf*icwmr(icol,k) + dt*rprd(icol,k))
 !              else if (k < pver) then
@@ -3895,11 +3892,6 @@ end subroutine ma_convproc_tend
 !           end if
 
 ! cam5 approach
-!            dcondt(la,k) = qdotac
-!            dcondt(lc,k) = 0.0
-!
-!            dcondt_resusp(la,k) = (dcondt(la,k) - qdota)
-!            dcondt_resusp(lc,k) = (dcondt(lc,k) - qdotc)
             if(qdotc.gt.0._r8) then
              dcondt(la,k) = qdota
              dcondt(lc,k) = qdotc
