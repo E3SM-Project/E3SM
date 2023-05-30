@@ -84,7 +84,6 @@ contains
     !        ... Put "independent" production in the forcing
     !-----------------------------------------------------------------------      
     base_sol_reset = base_sol
-
     call indprd( 1, ind_prd, clscnt1, base_sol, extfrc, &
          reaction_rates, ncol )
 
@@ -97,11 +96,10 @@ contains
     !    	... Solve for the mixing ratio at t(n+1)
     !-----------------------------------------------------------------------      
 
-
     do m = 1,clscnt1
        l = clsmap(m,1)
        ! apply E90 loss in all levels, including stratosphere
-       if (trim(solsym(l)) == 'E90' ) then
+       if (trim(solsym(l)) == 'E90') then
           do i = 1,ncol
              do k = 1,pver
                 ! change the old equation
@@ -113,65 +111,27 @@ contains
                 base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
              end do
           end do
+       ! SO2 and H2SO4 can be dead zeros due to aerosol processes
+       ! use a different equation for them to avoid debug built issues
 #if (defined MODAL_AERO_5MODE)       
-       elseif ( trim(solsym(l)) == 'SO2') then 
+       elseif (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
          do i = 1,ncol
              do k = 1,pver
+                chem_loss(i,k,l) = -loss(i,k,m)
                 chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
-                chem_loss(i,k,l) = - 1.0_r8*loss(i,k,m)
                 base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
-               !base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
              end do
          end do
-       elseif ( trim(solsym(l)) == 'H2SO4') then 
-         do i = 1,ncol
-             do k = 1,pver
-                chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
-                chem_loss(i,k,l) = - 1.0_r8*loss(i,k,m)
-                base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
-                !base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
-             end do
-         end do
-      elseif ( trim(solsym(l)) == 'DMS') then 
-         do i = 1,ncol
-             do k = 1,pver
-                chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
-                chem_loss(i,k,l) = - 1.0_r8*loss(i,k,m)
-                base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
-                !base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
-             end do
-         end do 
 #else
-     elseif ( trim(solsym(l)) == 'SO2') then 
-         do i = 1,ncol
-             do k = ltrop(i)+1,pver
-                chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
-                chem_loss(i,k,l) = - 1.0_r8*loss(i,k,m)
-                base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
-               !base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
-             end do
-         end do
-       elseif ( trim(solsym(l)) == 'H2SO4') then 
-         do i = 1,ncol
-             do k = ltrop(i)+1,pver
-                chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
-                chem_loss(i,k,l) = - 1.0_r8*loss(i,k,m)
-                base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
-                !base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
-             end do
-         end do
-      elseif ( trim(solsym(l)) == 'DMS') then 
-         do i = 1,ncol
-             do k = ltrop(i)+1,pver
-                chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
-                chem_loss(i,k,l) = - 1.0_r8*loss(i,k,m)
-                base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
-                !base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
-             end do
-         end do      
-
+       elseif (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
+          do i = 1,ncol
+              do k = ltrop(i)+1,pver
+                 chem_loss(i,k,l) = -loss(i,k,m)
+                 chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m) 
+                 base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+              end do
+          end do
 #endif         
-       
        else
           do i = 1,ncol
              do k = ltrop(i)+1,pver
@@ -189,35 +149,33 @@ contains
        
     end do
 !----------- for UCIchem diagnostics ------------
+    ! Note: base_sol_rest and diags_reaction_rates are passed to indprd and exp_prod_loss
+    !       so the reset tendency for tropopause folds (i.e., stratospheric boxes below the tropopause)
+    !       and the explicit solver tendency are included in chemmp_prod and chemmp_loss below.
     call indprd( 1, ind_prd, clscnt1, base_sol_reset, extfrc, &
          diags_reaction_rates, ncol )
     call exp_prod_loss( prod, loss, base_sol_reset, diags_reaction_rates, het_rates )
     do m = 1,clscnt1
        l = clsmap(m,1)
 #if (defined MODAL_AERO_5MODE)
-       if (trim(solsym(l)) == 'DMS' .or. trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
+       if (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
            do i = 1,ncol
-               do k = 1,pver
-
-                  !base_sol_reset(i,k,l) = base_sol_reset(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
-                  !base_sol_reset(i,k,l) = min(1.0E-36_r8, base_sol_reset(i,k,l))
-                  chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
-                  chemmp_loss(i,k,l) = -loss(i,k,m)
-               end do
+              do k = 1,pver
+                 chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                 chemmp_loss(i,k,l) = -loss(i,k,m)
+              end do
            end do
 #else
-      if (trim(solsym(l)) == 'DMS' .or. trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
+      if (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
            do i = 1,ncol
-               do k = ltrop(i)+1,pver
+              do k = ltrop(i)+1,pver
 
-                  !base_sol_reset(i,k,l) = base_sol_reset(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
-                  !base_sol_reset(i,k,l) = min(1.0E-36_r8, base_sol_reset(i,k,l))
-                  chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
-                  chemmp_loss(i,k,l) = -loss(i,k,m)
+                 chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                 chemmp_loss(i,k,l) = -loss(i,k,m)
                end do
            end do  
 #endif
-       else
+      else
         do i = 1,ncol
            do k = ltrop(i)+1,pver
               chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
