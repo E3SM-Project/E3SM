@@ -521,8 +521,8 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 
   real(rl) :: qsat, dp_loc, qv_loc, dpdry_loc, qvdry_loc, qsatdry, dq_loc, vapor_mass_change
   real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, rstar_old, rstar_new, hold, T_new
-  real(rl) :: cpstarTerm_new, rstardp, oldQ1mass, olddphi, factor
-  real(rl), dimension(nlev)  :: pi, dphi, zero, rain, d_pnh
+  real(rl) :: cpstarTerm_new, rstardp, oldQ1mass, olddphi, pi_top_int, enb, ena
+  real(rl), dimension(nlev)  :: pi, dphi, zero, rain, d_pnh, rain2
   real(rl), dimension(nlevp) :: p_int
   integer  :: k
 
@@ -534,8 +534,7 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   call construct_hydro_pressure(dp_c,ptop,pi)
 
   !compute en1, energy before condensation
-  call energycp_nh_via_mass_nhupdate(dp_c*(1-qv_c), dp_c*qv_c,zero,zero,T_c,ptop,zi_c,p_c,en1)
-  !call energycp_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c,zero,zero,T_c,ptop,zi_c(nlevp),p_c,en1)
+  call energycp_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c,zero,zero,T_c,ptop,zi_c(nlevp),p_c,en1)
   !call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c,zero,zero,T_c,ptop,zi_c,p_c,en1)
 
   !compute interfaces nh pressure
@@ -581,21 +580,11 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 !use extra term in dh=0 rule in case of NH or not
        if(bubble_rj_cpstar_nh) then
 
-! old version
-!       ! L and Rstar are in terms of q, so, enthalpy too
-!         hold = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + &
-!             (pi_loc/p_loc - 1) * rstar_old * T_loc + L_old
-!         T_new = (hold - L_new)/ &
-!         (   cpstarTerm_new + ( pi_loc/p_loc - 1)*rstar_new   )
-
-!new version
-         factor = (1-d_pnh(k)/dp_loc)*0.5*dp_loc/p_loc
-
-print *, 'factor', k, factor
-
-         hold = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + factor * rstar_old * T_loc + L_old
-
-         T_new = (hold - L_new)/( cpstarTerm_new + factor*rstar_new )
+       ! L and Rstar are in terms of q, so, enthalpy too
+         hold = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + &
+             (pi_loc/p_loc - 1) * rstar_old * T_loc + L_old
+         T_new = (hold - L_new)/ &
+         (   cpstarTerm_new + ( pi_loc/p_loc - 1)*rstar_new   )
 
        elseif (bubble_rj_cpstar_hy) then
          hold  = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + L_old
@@ -603,9 +592,6 @@ print *, 'factor', k, factor
        endif
 
 !print *, 'T_new - T_c', T_new - T_c(k)
-
-print *, 'compare hnew, hold'
-print *, hold - (T_new*cpstarTerm_new + factor*rstar_new * T_new + L_new)
 
        T_c(k)  = T_new
        rain(k) = vapor_mass_change
@@ -615,13 +601,8 @@ print *, hold - (T_new*cpstarTerm_new + factor*rstar_new * T_new + L_new)
        olddphi = gravit*(zi_c(k) - zi_c(k+1))
        dphi(k) = rstar_new * dpdry_loc * T_c(k) / p_c(k)
 
-!print *,'olddphi', olddphi, dphi(k)
-!print *,'z_above', zi_c(1:k) 
-
        zi_c(1:k) = zi_c(1:k) + (dphi(k) - olddphi)/gravit
         
-!print *, 'z_above2', zi_c(1:k)
-
        !one can compute qv and ql here, but they change with sedimentation below
        !only temperature won't change
     endif
@@ -629,15 +610,15 @@ print *, hold - (T_new*cpstarTerm_new + factor*rstar_new * T_new + L_new)
 
   !qv_c hasnt changed yet
   !compute en2, energy before sedimentation
-  call energycp_nh_via_mass_nhupdate(dp_c*(1-qv_c), dp_c*qv_c-rain, rain, zero,T_c,ptop,zi_c,p_c,en2)
-  !call energycp_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c-rain, rain, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
+  call energycp_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c-rain, rain, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
   !call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c-rain, rain, zero,T_c,ptop,zi_c,p_c,en2)
 
-if(wasiactive)then
-print *, 'en1-en2', en1-en2, (en1-en2)/en1
-stop
-endif
+!if(wasiactive)then
+!print *, 'en1-en2', en1-en2, (en1-en2)/en1
+!stop
+!endif
 
+#if 0
   do k=1, nlev
 
      !sedimentation stage
@@ -650,21 +631,65 @@ endif
 
      dphi(k) = rstardp * T_c(k) / p_c(k)
       
-     energyout = energyout + (cl*T_c(k) + latice)*vapor_mass_change
+     !phi_surf does not change and is most likely 0
+     energyout = energyout + (cl*T_c(k) + latice + gravit*zi_c(nlevp))*vapor_mass_change
+     !this term is not linear in dp and so it is not exact and we use approximation
+     energyout = energyout + rstardp*T_c(k)/dp_c(k)*vapor_mass_change*(pi(k)/p_c(k)-1)
 
   enddo
-
   !recompute zi after sedimentation
   do k=nlev, 1, -1
      zi_c(k) = zi_c(k+1) + dphi(k)/gravit
   enddo
+#endif
+
+  !i can just reuse rain variable
+  rain2 = rain
+
+  do k=nlev, 1, -1
+
+     !compute current level of energy
+     !we can save on perf by reusing 1 of these calls in next k iteration
+
+     !rain2 contains what'd not been rained out yet
+     call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c-rain2, rain2, zero,T_c,ptop,zi_c,p_c,enb)
+
+     !sedimentation stage
+     oldQ1mass = dp_c(k)*qv_c(k)
+     vapor_mass_change = rain(k)
+     dp_c(k) = dp_c(k) - vapor_mass_change
+     p_c(k)  = p_c(k) - vapor_mass_change
+     qv_c(k) = (oldQ1mass - vapor_mass_change)/dp_c(k)
+     rstardp = dp_c(k) * (rdry * (1.0 - qv_c(k)) + rvapor * qv_c(k))
+
+     olddphi = (zi_c(k) - zi_c(k+1))*gravit
+     dphi(k) = rstardp * T_c(k) / p_c(k)
+
+     pi_top_int = ptop
+     if(k>1)  pi_top_int = pi_top_int + sum(dp_c(1:k-1))
+
+     !energyout = energyout + (cl*T_c(k) + latice)*vapor_mass_change
+     !energyout = energyout + pi_top_int*(olddphi - dphi(k))
+     !energyout = energyout + gravit*(zi_c(k) + zi_c(k+1))/2.0*vapor_mass_change
+
+     zi_c(1:k) = zi_c(1:k) - (olddphi - dphi(k))/gravit
+
+     rain2(k) = 0.0
+     !rain2 contains what'd not been rained out yet
+     call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c-rain2, rain2, zero,T_c,ptop,zi_c,p_c,ena)
+     
+     energyout = energyout + (enb - ena)
+
+  enddo
+  !recompute zi after sedimentation
+  !do k=nlev, 1, -1
+  !   zi_c(k) = zi_c(k+1) + dphi(k)/gravit
+  !enddo
+
 
   call energycp_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c, zero, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
+  !call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c, zero, zero,T_c,ptop,zi_c,p_c,en3)
  
-!print *, 'dp_c', dp_c
-!print *, 'zero', zero
-!print *, 'T_c', T_c
-!print *, 'en3 in rj', en3
  
 end subroutine rj_new
 

@@ -676,19 +676,6 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
                           energy_before,en2,energy_after,wasiactive)
 
 if(wasiactive)then
-!print *, 'en1,en2,en3 enout', energy_before, en2, energy_after,energy_prect
-print *, 'en1-en2', energy_before-en2, ( energy_before-en2)/en2
-!print *, 'en1 - (en3+enout)', energy_before-(energy_after+energy_prect), (energy_before-(energy_after+energy_prect))/en2
-!print *, "    "
-endif
-
-        elseif(bubble_rj_cVstar) then
-
-          !returns new T, qv, new!!! dp, mass
-          call rj_new_volume(qv_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
-               energy_before,en2,energy_after,wasiactive)
-
-if(wasiactive)then
 print *, 'en1,en2', energy_before, en2
 print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
 print *, 'en3, enout', energy_after,energy_prect
@@ -697,20 +684,30 @@ print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (energy_before
 print *, "    "
 endif
 
+        elseif(bubble_rj_cVstar) then
 
+          !returns new T, qv, new!!! dp, mass
+          call rj_new_volume(qv_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
+               energy_before,en2,energy_after,wasiactive)
+
+!this seems to work
+!this is a little sus
+! en1-en2, rel -3.814697265625000E-006 -1.637702685535182E-016
+! en1-en2, rel  3.814697265625000E-006  1.637671777291065E-016
+!if(wasiactive)then
+!print *, 'en1,en2', energy_before, en2
+!print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
+!print *, 'en3, enout', energy_after,energy_prect
+!print *, 'en2, (en3+enout)', en2,(energy_after+energy_prect)
+!print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (energy_before-(energy_after+energy_prect))/en2
+!print *, "    "
+!endif
 
         elseif(bubble_rj_cpdry) then
 
           !this one conserves with const dp
           !returns new T, new wet qv, prect mass (dp*delta_qv), new dp_c
           call rj_old(qv_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,wasiactive)
-
-!if(wasiactive)then
-!print *, 'en1,en2,en3 enout', energy_before, en2, energy_after,energy_prect
-!print *, 'en1-en2', energy_before-en2, ( energy_before-en2)/en2
-!print *, 'en1 - (en3+enout)', energy_before-(energy_after+energy_prect), (energy_before-(energy_after+energy_prect))/en2
-!print *, "    "
-!endif
 
         endif
 
