@@ -169,7 +169,7 @@ contains
     do m = 1,clscnt1
        l = clsmap(m,1)
 #if (defined MODAL_AERO_5MODE)
-       if (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
+       if (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2' .or. trim(solsym(l)) == 'DMS') then
            do i = 1,ncol
               do k = 1,pver
                  chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
@@ -187,7 +187,6 @@ contains
       if (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
            do i = 1,ncol
               do k = ltrop(i)+1,pver
-
                  chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
                  chemmp_loss(i,k,l) = -loss(i,k,m)
                end do
