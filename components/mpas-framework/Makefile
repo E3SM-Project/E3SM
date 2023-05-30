@@ -516,10 +516,10 @@ ifeq "$(USE_PIO2)" "true"
 endif
 
 #
-# If user has indicated ADIOS isn't supported, define NO_ADIOS pre-processor macro
+# If user has indicated ADIOS isn't supported, define HAVE_ADIOS pre-processor macro
 #
-ifeq "$(ADIOS)" "false"
-	override CPPFLAGS += -DNO_ADIOS
+ifneq "$(HAVE_ADIOS)" "false"
+	override CPPFLAGS += -DHAVE_ADIOS
 endif
 
 #
@@ -1166,7 +1166,7 @@ errmsg:
 	@echo "    SHAREDLIB=true - generate position-independent code suitable for use in a shared library. Default is false."
 	@echo "    USE_LAPACK=true - builds and links with LAPACK / BLAS libraries.  Default is to not use LAPACK."
 	@echo "    USE_SHTNS=true - builds and links with SHTNS/FFTW.  Default is false."
-	@echo "    ADIOS=false   - PIO2 library does not include ADIOS support.  Default is true."
+	@echo "    HAVE_ADIOS=false   - PIO2 library does not include ADIOS support.  Default is true."
 	@echo ""
 	@echo "Ensure that NETCDF, PNETCDF, PIO, LAPACK (if USE_LAPACK=true), and PAPI (if USE_PAPI=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."
