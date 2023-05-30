@@ -15,10 +15,14 @@
 #include "surface_friction.h"
 #include "scream_cxx_interface_finalize.h"
 
+// Needed for p3_init
+#include "p3_functions.hpp"
+#include "p3_f90.hpp"
+
 
 #include "pam_debug.h"
 real constexpr enable_check_state = false;
-real constexpr enable_print_state = true;
+real constexpr enable_print_state = false;
 
 
 extern "C" void pam_driver() {
@@ -39,12 +43,12 @@ extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
   // set various coupler options
   coupler.set_option<real>("gcm_physics_dt",gcm_dt);
-  coupler.set_option<std::string>("p3_lookup_data_path","./p3_data");
-  coupler.set_option<int>("sponge_num_layers",crm_nz*0.25);
   coupler.set_option<real>("sponge_time_scale",60*6);
+  coupler.set_option<int>("sponge_num_layers",crm_nz*0.25);
   //------------------------------------------------------------------------------------------------
   // Allocate the coupler state and retrieve host/device data managers
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
+
   // set up the grid - this needs to happen before initializing coupler objects
   pam_state_set_grid(coupler);
   //------------------------------------------------------------------------------------------------
@@ -62,7 +66,7 @@ extern "C" void pam_driver() {
   Radiation    rad;
   micro .init(coupler);
   sgs   .init(coupler);
-  dycore.init(coupler);
+  dycore.init(coupler,is_first_step);
   rad   .init(coupler);
   //------------------------------------------------------------------------------------------------
   // update coupler GCM state with input GCM state
@@ -74,7 +78,7 @@ extern "C" void pam_driver() {
   // update horizontal mean of CRM dry density to match GCM (also disables dry density forcing)
   // pam_state_update_dry_density(coupler);
 
-  if (enable_check_state) { pam_debug_check_state(coupler, 0); }
+  if (enable_check_state) { pam_debug_check_state(coupler, 0, 0); }
   if (enable_print_state) { pam_debug_print_state(coupler, 0); }
 
   // now that initial state is set, more dycor initialization
@@ -101,6 +105,9 @@ extern "C" void pam_driver() {
   if (is_first_step) {
     auto gcolp = dm_host.get<int const,1>("gcolp").createDeviceCopy();
     modules::perturb_temperature( coupler , gcolp );
+
+    auto am_i_root = coupler.get_option<bool>("am_i_root");
+    scream::p3::p3_init(/*write_tables=*/false, am_i_root);
   }
 
   #if defined(MMF_PAM_DYCOR_SPAM)
@@ -115,72 +122,60 @@ extern "C" void pam_driver() {
 
   // Run the CRM
   real etime_crm = 0;
+  int nstep = 0;
   while (etime_crm < gcm_dt) {
     if (crm_dt == 0.) { crm_dt = dycore.compute_time_step(coupler); }
     if (etime_crm + crm_dt > gcm_dt) { crm_dt = gcm_dt - etime_crm; }
 
-    if (enable_check_state) { pam_debug_check_state(coupler, 1); }
+    if (enable_check_state) { pam_debug_check_state(coupler, 1, nstep); }
     if (enable_print_state) { pam_debug_print_state(coupler, 1); }
 
     // run a PAM time step
     coupler.run_module( "apply_gcm_forcing_tendencies" , modules::apply_gcm_forcing_tendencies );
     coupler.run_module( "radiation"                    , [&] (pam::PamCoupler &coupler) {rad   .timeStep(coupler);} );
 
-    if (enable_check_state) { pam_debug_check_state(coupler, 2); }
+    if (enable_check_state) { pam_debug_check_state(coupler, 2, nstep); }
     if (enable_print_state) { pam_debug_print_state(coupler, 2); }
 
-    // #if defined(MMF_PAM_DYCOR_SPAM)
-    //   // The anelastic option in PAM-C assumes that the total density never changes.
-    //   // However, this is not valid for MMF, so update the anelastic reference state each time step.
-    //   pam_state_set_reference_state(coupler, dycore);
-    //   pam_state_update_pressure_solver(coupler, dycore);
-    // #endif
+    // anelastic dycor messes up the dry density ddue to how the GCM forcing changes total density
+    // so we need to save it here and recall after the dycor
+    pam_state_save_dry_density(coupler);
 
-    #ifndef MMF_PAM_DISABLE_DYCOR
+    pam_statistics_save_state(coupler);
+    coupler.run_module( "dycore"                       , [&] (pam::PamCoupler &coupler) {dycore.timeStep(coupler);} );
+    pam_statistics_aggregate_tendency(coupler,"dycor");
 
-      // anelastic dycor messes up the dry density because of how the GCM forcing changes total density
-      // so we need to save it here and recall after the dycor
-      pam_state_save_dry_density(coupler);
+    // recall the dry density to the values before the dycor
+    pam_state_recall_dry_density(coupler);
 
-      pam_statistics_save_state(coupler);
-      coupler.run_module( "dycore"                       , [&] (pam::PamCoupler &coupler) {dycore.timeStep(coupler);} );
-      pam_statistics_aggregate_tendency(coupler,"dycor");
+    pam_statistics_save_state(coupler);
+    coupler.run_module( "sponge_layer"                 , modules::sponge_layer );
+    pam_statistics_aggregate_tendency(coupler,"sponge");
 
-      // recall the dry density to the values before the dycor
-      pam_state_recall_dry_density(coupler);
+    if (enable_check_state) { pam_debug_check_state(coupler, 3, nstep); }
+    if (enable_print_state) { pam_debug_print_state(coupler, 3); }
 
-      if (enable_check_state) { pam_debug_check_state(coupler, 3); }
-      if (enable_print_state) { pam_debug_print_state(coupler, 3); }
-
-      pam_statistics_save_state(coupler);
-      coupler.run_module( "sponge_layer"                 , modules::sponge_layer );
-      pam_statistics_aggregate_tendency(coupler,"sponge");
-
-      if (enable_check_state) { pam_debug_check_state(coupler, 4); }
-      if (enable_print_state) { pam_debug_print_state(coupler, 4); }
-
-      coupler.run_module( "compute_surface_friction"     , modules::compute_surface_friction );
-
-    #endif
+    coupler.run_module( "compute_surface_friction"     , modules::compute_surface_friction );
 
     pam_statistics_save_state(coupler);
     coupler.run_module( "sgs"                          , [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
     pam_statistics_aggregate_tendency(coupler,"sgs");
 
-    if (enable_check_state) { pam_debug_check_state(coupler, 5); }
-    if (enable_print_state) { pam_debug_print_state(coupler, 5); }
+    if (enable_check_state) { pam_debug_check_state(coupler, 4, nstep); }
+    if (enable_print_state) { pam_debug_print_state(coupler, 4); }
 
     pam_statistics_save_state(coupler);
     coupler.run_module( "micro"                        , [&] (pam::PamCoupler &coupler) {micro .timeStep(coupler);} );
     pam_statistics_aggregate_tendency(coupler,"micro");
 
-    if (enable_check_state) { pam_debug_check_state(coupler, 6); }
-    if (enable_print_state) { pam_debug_print_state(coupler, 6); }
+    if (enable_check_state) { pam_debug_check_state(coupler, 5, nstep); }
+    if (enable_print_state) { pam_debug_print_state(coupler, 5); }
 
     pam_radiation_timestep_aggregation(coupler);
     pam_statistics_timestep_aggregation(coupler);
 
     etime_crm += crm_dt;
+    nstep += 1;
   }
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
