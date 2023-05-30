@@ -1,0 +1,14 @@
+%YAML 1.1
+---
+filename_prefix: mam4_nucleation_standalone_output
+Averaging Type: Instant
+Field Names:
+  - T_mid
+  - T_prev_micro_step
+  - qv
+  - qc
+output_control:
+  Frequency: 1
+  frequency_units: nsteps
+  MPI Ranks in Filename: true
+...
