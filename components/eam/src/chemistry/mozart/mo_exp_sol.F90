@@ -127,7 +127,7 @@ contains
        elseif (trim(solsym(l)) == 'DMS') then
          ! DMS doesn't have dead zero value issue
          do i = 1,ncol
-             do k = ltrop(i)+1,pver
+             do k = 1,pver
                 chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
                 chem_loss(i,k,l) = (base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) - base_sol(i,k,l))/delt
                 base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
@@ -178,7 +178,7 @@ contains
            end do
        elseif (trim(solsym(l)) == 'DMS') then
            do i = 1,ncol
-              do k = ltrop(i)+1,pver
+              do k = 1,pver
                  chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
                  chemmp_loss(i,k,l) = (base_sol_reset(i,k,l)*exp(-delt*loss(i,k,m)/base_sol_reset(i,k,l)) - base_sol_reset(i,k,l))/delt
               end do
