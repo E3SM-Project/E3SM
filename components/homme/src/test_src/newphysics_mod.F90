@@ -546,8 +546,7 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   d_pnh(1:nlev) = p_int(1:nlev) - p_int(2:nlevp)
 
   !since one option uses geo, go from bottom to up
-  do k=18,18
-  !do k=nlev, 1, -1
+  do k=nlev, 1, -1
     !call qsat_rj2(p_c(k), T_c(k), qsat)
     call qsat_rj2(pi(k), T_c(k), qsat)
 
