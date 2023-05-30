@@ -656,9 +656,9 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   precip_ice_l            .deep_copy_to(precip_ice_l_host);
   liqwp_gcm               .deep_copy_to(liqwp_host);
   icewp_gcm               .deep_copy_to(icewp_host);
-  liq_ice_exchange        .deep_copy_to(liq_ice_exchange_host);
-  vap_liq_exchange        .deep_copy_to(vap_liq_exchange_host);
-  vap_ice_exchange        .deep_copy_to(vap_ice_exchange_host);
+  liq_ice_exchange_gcm    .deep_copy_to(liq_ice_exchange_host);
+  vap_liq_exchange_gcm    .deep_copy_to(vap_liq_exchange_host);
+  vap_ice_exchange_gcm    .deep_copy_to(vap_ice_exchange_host);
   cldfrac_gcm             .deep_copy_to(cldfrac_host);
   clear_rh                .deep_copy_to(clear_rh_host);
 
