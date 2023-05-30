@@ -518,7 +518,12 @@ endif
 #
 # If user has indicated ADIOS isn't supported, define HAVE_ADIOS pre-processor macro
 #
-ifneq "$(HAVE_ADIOS)" "false"
+# Default is that we have ADIOS if a user hasn't said anything
+ifeq "$(HAVE_ADIOS)" ""
+	override CPPFLAGS += -DHAVE_ADIOS
+endif
+
+ifeq "$(HAVE_ADIOS)" "true"
 	override CPPFLAGS += -DHAVE_ADIOS
 endif
 
