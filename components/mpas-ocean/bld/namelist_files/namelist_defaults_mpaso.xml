@@ -366,6 +366,7 @@
 <config_coef_3rd_order>0.25</config_coef_3rd_order>
 <config_flux_limiter>'monotonic'</config_flux_limiter>
 <config_remap_limiter>'monotonic'</config_remap_limiter>
+<config_thickness_flux_type>'centered'</config_thickness_flux_type>
 
 <!-- bottom_drag -->
 <config_bottom_drag_mode>'implicit'</config_bottom_drag_mode>
@@ -501,6 +502,7 @@
 <config_disable_thick_vadv>.false.</config_disable_thick_vadv>
 <config_disable_thick_sflux>.false.</config_disable_thick_sflux>
 <config_disable_vel_all_tend>.false.</config_disable_vel_all_tend>
+<config_disable_vel_hadv>.false.</config_disable_vel_hadv>
 <config_disable_vel_coriolis>.false.</config_disable_vel_coriolis>
 <config_disable_vel_pgrad>.false.</config_disable_vel_pgrad>
 <config_disable_vel_hmix>.false.</config_disable_vel_hmix>

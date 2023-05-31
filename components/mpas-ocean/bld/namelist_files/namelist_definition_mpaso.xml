@@ -1681,6 +1681,14 @@ Valid values: 'none','monotonic','weno'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_thickness_flux_type" type="char*1024"
+	category="advection" group="advection">
+If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThickEdgeFlux.  The standard MPAS-O approach is 'centered'. For 'constant', uses constant thickness in time from restingThickness, for linear test problems. Note that these two flags are set together for linearized test cases: config_thickness_flux_type = 'constant' linearizes the thickness equation, and config_disable_vel_hadv = .true. linearizes the momentum equation if there is no assumed mean background velocity.
+
+Valid values: 'upwind', 'centered', 'constant'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- bottom_drag -->
 
@@ -2355,9 +2363,17 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_disable_vel_hadv" type="logical"
+	category="debug" group="debug">
+Disables tendencies on the velocity field from the horizontal momentum advection. Note that these two flags are set together for linearized test cases: config_thickness_flux_type = 'constant' linearizes the thickness equation, and config_disable_vel_hadv = .true. linearizes the momentum equation if there is no assumed mean background velocity.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_disable_vel_coriolis" type="logical"
 	category="debug" group="debug">
-Disables tendencies on the velocity field from the Coriolis force and momentum advection.
+Disables tendencies on the velocity field from the Coriolis force.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
