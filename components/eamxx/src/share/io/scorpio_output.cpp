@@ -997,12 +997,12 @@ create_diagnostic (const std::string& diag_field_name) {
     diag_name = diag_field_name;
   }
 
-  // These fields are special case of VerticalLayer{Interface/Midpoint} diagnostic. 
-  if (diag_name == "z_int" or diag_name == "z_mid") {
-    params.set<bool>("from_sea_level", true);
-  } else if (diag_name == "geopotential_int" or 
-             diag_name == "geopotential_mid") {
-    params.set<bool>("from_sea_level", false);
+  // These fields are special case of VerticalLayer diagnostic.
+  // The diagnostics requires the names be given as param value.
+  if (diag_name == "z_int" or diag_name == "geopotential_int" or
+      diag_name == "z_mid" or diag_name == "geopotential_mid" or
+      diag_name == "dz") {
+    params.set<std::string>("diag_name", diag_name);
   }
 
   // Create the diagnostic

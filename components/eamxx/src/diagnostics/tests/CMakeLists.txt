@@ -18,12 +18,8 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(virtual_temperature "virtual_temperature_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test atmosphere density
   CreateUnitTest(atmosphere_density "atm_density_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test vertical layer thickness (dz)
-  CreateUnitTest(vertical_layer_thickness "vertical_layer_thickness_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test vertical layer interface (z_int)
-  CreateUnitTest(vertical_layer_interface "vertical_layer_interface_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test vertical layer interface (z_mid)
-  CreateUnitTest(vertical_layer_midpoint "vertical_layer_midpoint_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test vertical layer (dz, z_int, z_mid)
+  CreateUnitTest(vertical_layer "vertical_layer_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test dry static energy
   CreateUnitTest(dry_static_energy "dry_static_energy_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test sea level pressure

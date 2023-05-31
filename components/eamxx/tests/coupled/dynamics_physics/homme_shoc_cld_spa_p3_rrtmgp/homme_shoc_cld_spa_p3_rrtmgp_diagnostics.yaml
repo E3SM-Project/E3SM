@@ -20,7 +20,7 @@ Fields:
       - geopotential_int_at_lev_2
       - z_mid_at_500mb
       - geopotential_mid
-      - VerticalLayerThickness
+      - dz
       - DryStaticEnergy
       - SeaLevelPressure
       - LiqWaterPath
@@ -35,7 +35,7 @@ Fields:
       - MeridionalVapFlux
       - PotentialTemperature_at_model_top
       - PotentialTemperature_at_500mb
- 
+
 output_control:
   Frequency: ${NUM_STEPS}
   frequency_units: nsteps

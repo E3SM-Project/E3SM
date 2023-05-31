@@ -12,7 +12,7 @@ namespace scream
  * This diagnostic will produce the vertical layer height at midpoint.
  */
 
-class VerticalLayerMidpointDiagnostic : public AtmosphereDiagnostic
+class VerticalLayerDiagnostic : public AtmosphereDiagnostic
 {
 public:
   using Pack          = ekat::Pack<Real,SCREAM_PACK_SIZE>;
@@ -22,13 +22,13 @@ public:
   using view_2d       = typename KT::template view_2d<Pack>;
 
   // Constructors
-  VerticalLayerMidpointDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  VerticalLayerDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // Set type to diagnostic
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
   // The name of the diagnostic.
-  std::string name () const;
+  std::string name () const { return m_diag_name; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -44,13 +44,22 @@ protected:
   Int m_num_cols;
   Int m_num_levs;
 
-  // Temporary view to set dz in compute diagnostic
+  // Temporary view to set z_int and z_mid in compute diagnostic
   view_2d m_z_int;
+  view_2d m_z_mid;
 
-  // Store whether layer should be calculated from sea level (or from ground)
+  // Store the diagnostic name. This will dictate which
+  // field in the computation is output (dz, z_int, or z_mid).
+  std::string m_diag_name;
+
+  // If z_int or z_mid is computed, determine whether the BC
+  // is from sea level or not (from topography data).
   bool m_from_sea_level;
 
-}; // class VerticalLayerMidpointDiagnostic
+  // Store if the diagnostic output field exists on interface values
+  bool m_is_interface_layout;
+
+}; // class VerticalLayerDiagnostic
 
 } //namespace scream
 
