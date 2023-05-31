@@ -46,7 +46,7 @@ contains
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
     use elm_instance     , only : elm_instance_init
     use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland
-    use elm_varctl       , only : inst_index, inst_suffix, inst_name, precip_downscaling_method
+    use elm_varctl       , only : inst_index, inst_suffix, inst_name
     use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
     use decompMod        , only : get_proc_bounds
@@ -301,7 +301,7 @@ contains
     ! Fill in infodata settings
 
     call seq_infodata_PutData(infodata, lnd_prognostic=.true.)
-    call seq_infodata_PutData(infodata, lnd_nx=ldomain%ni, lnd_ny=ldomain%nj, precip_downscaling_method = precip_downscaling_method)
+    call seq_infodata_PutData(infodata, lnd_nx=ldomain%ni, lnd_ny=ldomain%nj)
 
     ! Get infodata info
 
@@ -452,7 +452,7 @@ contains
     ! Map to elm (only when state and/or fluxes need to be updated)
 
     call t_startf ('lc_lnd_import')
-    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars)
+    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars)
     call t_stopf ('lc_lnd_import')
 
     ! Use infodata to set orbital values if updated mid-run

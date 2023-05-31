@@ -230,7 +230,6 @@ contains
     use ppgrid    , only: begchunk, endchunk       
     use cam_cpl_indices
     use phys_control, only: phys_getopts
-    use lnd_infodata, only: precip_downscaling_method
     !
     ! Arguments
     !
@@ -272,11 +271,6 @@ contains
           a2x(index_a2x_Sa_pbot   ,ig) = cam_out(c)%pbot(i)   
           a2x(index_a2x_Sa_shum   ,ig) = cam_out(c)%qbot(i,1) 
 	  a2x(index_a2x_Sa_dens   ,ig) = cam_out(c)%rho(i)
-
-          if (trim(adjustl(precip_downscaling_method)) == "FNM") then
-             !if the land model's precip downscaling method is FNM, export uovern to the coupler
-             a2x(index_a2x_Sa_uovern ,ig) = cam_out(c)%uovern(i)
-          end if
           a2x(index_a2x_Faxa_swnet,ig) = cam_out(c)%netsw(i)      
           a2x(index_a2x_Faxa_lwdn ,ig) = cam_out(c)%flwds(i)  
           a2x(index_a2x_Faxa_rainc,ig) = (cam_out(c)%precc(i)-cam_out(c)%precsc(i))*1000._r8

@@ -19,11 +19,10 @@ module decompMod
 
   ! Define possible bounds subgrid levels
   integer, parameter, public :: BOUNDS_SUBGRID_GRIDCELL = 1
-  integer, parameter, public :: BOUNDS_SUBGRID_TOPOUNIT = 2
-  integer, parameter, public :: BOUNDS_SUBGRID_LANDUNIT = 3
-  integer, parameter, public :: BOUNDS_SUBGRID_COLUMN   = 4
-  integer, parameter, public :: BOUNDS_SUBGRID_PATCH    = 5
-  integer, parameter, public :: BOUNDS_SUBGRID_COHORT   = 6
+  integer, parameter, public :: BOUNDS_SUBGRID_LANDUNIT = 2
+  integer, parameter, public :: BOUNDS_SUBGRID_COLUMN   = 3
+  integer, parameter, public :: BOUNDS_SUBGRID_PATCH    = 4
+  integer, parameter, public :: BOUNDS_SUBGRID_COHORT   = 5
 
   !
   ! Define possible bounds levels
@@ -103,7 +102,7 @@ module decompMod
 
      ! The following variables correspond to "Local" quantities on a proc
      integer         :: ncells                           ! number of gridcells in proc
-     integer         :: ntunits                          ! number of topographic units in proc
+     integer         :: ntopounits                       ! number of topographic units in proc
      integer         :: nlunits                          ! number of landunits in proc
      integer         :: ncols                            ! number of columns in proc
      integer         :: npfts                            ! number of pfts in proc
@@ -117,7 +116,7 @@ module decompMod
 
      ! The following variables correspond to "Ghost/Halo" quantites on a proc
      integer         :: ncells_ghost                     ! number of gridcells in proc
-     integer         :: ntunits_ghost                    ! number of topounits in proc
+     integer         :: ntopounits_ghost                 ! number of topounits in proc
      integer         :: nlunits_ghost                    ! number of landunits in proc
      integer         :: ncols_ghost                      ! number of columns in proc
      integer         :: npfts_ghost                      ! number of pfts in proc
@@ -131,7 +130,7 @@ module decompMod
 
      ! The following variables correspond to "ALL" (=Local + Ghost) quantites on a proc
      integer         :: ncells_all                       ! number of gridcells in proc
-     integer         :: ntunits_all                   ! number of topounits in proc
+     integer         :: ntopounits_all                   ! number of topounits in proc
      integer         :: nlunits_all                      ! number of landunits in proc
      integer         :: ncols_all                        ! number of columns in proc
      integer         :: npfts_all                        ! number of pfts in proc
@@ -151,7 +150,7 @@ module decompMod
   type clump_type
      integer :: owner            ! process id owning clump
      integer :: ncells           ! number of gridcells in clump
-     integer :: ntunits          ! number of topographic units in clump
+     integer :: ntopounits       ! number of topographic units in clump
      integer :: nlunits          ! number of landunits in clump
      integer :: ncols            ! number of columns in clump
      integer :: npfts            ! number of pfts in clump
@@ -213,8 +212,6 @@ contains
     select case (subgrid_level)
     case (BOUNDS_SUBGRID_GRIDCELL)
        beg_index = bounds%begg
-    case (BOUNDS_SUBGRID_TOPOUNIT)
-       beg_index = bounds%begt
     case (BOUNDS_SUBGRID_LANDUNIT)
        beg_index = bounds%begl
     case (BOUNDS_SUBGRID_COLUMN)
@@ -256,8 +253,6 @@ contains
     select case (subgrid_level)
     case (BOUNDS_SUBGRID_GRIDCELL)
        end_index = bounds%endg
-    case (BOUNDS_SUBGRID_TOPOUNIT)
-       end_index = bounds%endt
     case (BOUNDS_SUBGRID_LANDUNIT)
        end_index = bounds%endl
     case (BOUNDS_SUBGRID_COLUMN)
@@ -347,13 +342,12 @@ contains
    end subroutine get_clump_bounds_new
 
    !------------------------------------------------------------------------------
-   subroutine get_clump_bounds_old (n, begg, endg, begt,endt, begl, endl, begc, endc, begp, endp, &
+   subroutine get_clump_bounds_old (n, begg, endg, begl, endl, begc, endc, begp, endp, &
         begCohort, endCohort)
      integer, intent(in)  :: n           ! proc clump index
      integer, intent(out) :: begp, endp  ! clump beg and end pft indices
      integer, intent(out) :: begc, endc  ! clump beg and end column indices
      integer, intent(out) :: begl, endl  ! clump beg and end landunit indices
-     integer, intent(out) :: begt, endt  ! clump beg and end topounit indices
      integer, intent(out) :: begg, endg  ! clump beg and end gridcell indices
      integer, intent(out) :: begCohort, endCohort  ! cohort beg and end gridcell indices
      integer :: cid                                                ! clump id
@@ -366,9 +360,7 @@ contains
      endc = clumps(cid)%endc
      begl = clumps(cid)%begl
      endl = clumps(cid)%endl
-     begt = clumps(cid)%begt
-     endt = clumps(cid)%endt
-	 begg = clumps(cid)%begg
+     begg = clumps(cid)%begg
      endg = clumps(cid)%endg
 
      begCohort = clumps(cid)%begCohort
@@ -473,7 +465,7 @@ contains
    end subroutine get_proc_bounds_old
 
    !------------------------------------------------------------------------------
-   subroutine get_proc_total(pid, ncells, ntunits, nlunits, ncols, npfts, nCohorts)
+   subroutine get_proc_total(pid, ncells, ntopounits, nlunits, ncols, npfts, nCohorts)
      !
      ! !DESCRIPTION:
      ! Count up gridcells, topographic units, landunits, columns, and pfts on process.
@@ -481,7 +473,7 @@ contains
      ! !ARGUMENTS:
      integer, intent(in)  :: pid     ! proc id
      integer, intent(out) :: ncells  ! total number of gridcells on the processor
-     integer, intent(out) :: ntunits  ! total number of topographic units on the processor
+     integer, intent(out) :: ntopounits  ! total number of topographic units on the processor
      integer, intent(out) :: nlunits ! total number of landunits on the processor
      integer, intent(out) :: ncols   ! total number of columns on the processor
      integer, intent(out) :: npfts   ! total number of pfts on the processor
@@ -495,12 +487,12 @@ contains
      npfts   = 0
      ncols   = 0
      nlunits = 0
-     ntunits = 0
+     ntopounits = 0
      ncells  = 0
      do cid = 1,nclumps
         if (clumps(cid)%owner == pid) then
            ncells  = ncells  + clumps(cid)%ncells
-           ntunits = ntunits + clumps(cid)%ntunits
+           ntopounits = ntopounits + clumps(cid)%ntopounits
            nlunits = nlunits + clumps(cid)%nlunits
            ncols   = ncols   + clumps(cid)%ncols
            npfts   = npfts   + clumps(cid)%npfts
@@ -613,7 +605,7 @@ contains
   end subroutine get_elmlevel_gsmap
 
    !------------------------------------------------------------------------------
-   subroutine get_proc_total_ghosts(ncells_ghost,ntunits_ghost, nlunits_ghost, &
+   subroutine get_proc_total_ghosts(ncells_ghost, nlunits_ghost, &
       ncols_ghost, npfts_ghost, nCohorts_ghost)
      !
      ! !DESCRIPTION:
@@ -621,7 +613,6 @@ contains
      !
      ! !ARGUMENTS:
      integer, intent(out) :: ncells_ghost   ! number of ghost gridcells on the processor
-     integer, intent(out) :: ntunits_ghost   ! number of ghost topounits on the processor
      integer, intent(out) :: nlunits_ghost  ! number of ghost landunits on the processor
      integer, intent(out) :: ncols_ghost    ! number of ghost columns on the processor
      integer, intent(out) :: npfts_ghost    ! number of ghost pfts on the processor
@@ -632,7 +623,6 @@ contains
      !------------------------------------------------------------------------------
 
      ncells_ghost   = procinfo%ncells_ghost
-     ntunits_ghost  = procinfo%ntunits_ghost
      nlunits_ghost  = procinfo%nlunits_ghost
      ncols_ghost    = procinfo%ncols_ghost
      npfts_ghost    = procinfo%npfts_ghost

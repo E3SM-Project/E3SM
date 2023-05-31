@@ -11,9 +11,7 @@ module SoilStateType
   use ncdio_pio       , only : ncd_pio_openfile, ncd_inqfdims, ncd_pio_closefile, ncd_inqdid, ncd_inqdlen
   use elm_varpar      , only : more_vertlayers, numpft, numrad
   use elm_varpar      , only : nlevsoi, nlevgrnd, nlevlak, nlevsoifl, nlayer, nlayert, nlevurb, nlevsno
-  use landunit_varcon , only : istice, istdlak, istwet, istsoil, istcrop, istice_mec
-  use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv 
-  use elm_varcon      , only : zsoi, dzsoi, zisoi, spval, namet, grlnd
+  use elm_varcon      , only : zsoi, dzsoi, zisoi, spval
   use elm_varcon      , only : secspday, pc, mu, denh2o, denice, grlnd
   use landunit_varcon , only : istice, istdlak, istwet, istsoil, istcrop, istice_mec
   use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
@@ -22,11 +20,9 @@ module SoilStateType
   use elm_varctl      , only : use_var_soil_thick
   use elm_varctl      , only : iulog, fsurdat, hist_wrtch4diag
   use CH4varcon       , only : allowlakeprod
-  use LandunitType    , only : lun_pp                
-  use ColumnType      , only : col_pp                
-  use VegetationType  , only : veg_pp      
-  use topounit_varcon , only : max_topounits
-  use GridcellType    , only : grc_pp   
+  use LandunitType    , only : lun_pp
+  use ColumnType      , only : col_pp
+  use VegetationType  , only : veg_pp
   !
   implicit none
   save
@@ -329,7 +325,7 @@ contains
     type(bounds_type), intent(in) :: bounds
     !
                                                         ! !LOCAL VARIABLES:
-    integer            :: p, lev, c, l, g, j,t,ti,topi            ! indices
+    integer            :: p, lev, c, l, g, j            ! indices
     real(r8)           :: om_frac                       ! organic matter fraction
     real(r8)           :: om_tkm         = 0.25_r8      ! thermal conductivity of organic soil (Farouki, 1986) [W/m/K]
     real(r8)           :: om_watsat_lake = 0.9_r8       ! porosity of organic soil
@@ -359,14 +355,14 @@ contains
     integer            :: dimid                         ! dimension id
     logical            :: readvar
     type(file_desc_t)  :: ncid                          ! netcdf id
-    real(r8) ,pointer  :: zsoifl (:)                    ! Output: [real(r8) (:)]  original soil midpoint 
-    real(r8) ,pointer  :: zisoifl (:)                   ! Output: [real(r8) (:)]  original soil interface depth 
-    real(r8) ,pointer  :: dzsoifl (:)                   ! Output: [real(r8) (:)]  original soil thickness 
-    real(r8) ,pointer  :: gti (:,:)                       ! read in - fmax 
-    real(r8) ,pointer  :: sand3d (:,:,:)                  ! read in - soil texture: percent sand (needs to be a pointer for use in ncdio)
-    real(r8) ,pointer  :: clay3d (:,:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
-    real(r8) ,pointer  :: grvl3d (:,:,:)                  ! read in - soil texture: percent gravel (needs to be a pointer for use in ncdio)
-    real(r8) ,pointer  :: organic3d (:,:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer  :: zsoifl (:)                    ! Output: [real(r8) (:)]  original soil midpoint
+    real(r8) ,pointer  :: zisoifl (:)                   ! Output: [real(r8) (:)]  original soil interface depth
+    real(r8) ,pointer  :: dzsoifl (:)                   ! Output: [real(r8) (:)]  original soil thickness
+    real(r8) ,pointer  :: gti (:)                       ! read in - fmax
+    real(r8) ,pointer  :: sand3d (:,:)                  ! read in - soil texture: percent sand (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer  :: clay3d (:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer  :: grvl3d (:,:)                  ! read in - soil texture: percent gravel (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer  :: organic3d (:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
     character(len=256) :: locfn                         ! local filename
     integer            :: nlevbed                       ! # of layers above bedrock
     integer            :: ipedof
@@ -417,9 +413,10 @@ contains
     ! dynamic memory allocation
     ! --------------------------------------------------------------------
 
-    allocate(sand3d(begg:endg,max_topounits,nlevsoifl))
-    allocate(clay3d(begg:endg,max_topounits,nlevsoifl))
-    allocate(grvl3d(begg:endg,max_topounits,nlevsoifl))
+    allocate(sand3d(begg:endg,nlevsoifl))
+    allocate(clay3d(begg:endg,nlevsoifl))
+    allocate(grvl3d(begg:endg,nlevsoifl))
+
     ! --------------------------------------------------------------------
     ! Read surface dataset
     ! --------------------------------------------------------------------
@@ -445,7 +442,7 @@ contains
 
     organic_max = ParamsShareInst%organic_max
 
-    allocate(organic3d(bounds%begg:bounds%endg,max_topounits, nlevsoifl))
+    allocate(organic3d(bounds%begg:bounds%endg,nlevsoifl))
     call organicrd(organic3d)
 
     ! Read in sand, clay, gravel data
@@ -466,45 +463,38 @@ contains
           call endrun(msg=' ERROR: PCT_GRVL NOT on surfdata file'//errMsg(__FILE__, __LINE__))
        end if
     else
-       grvl3d(:,:,:) = 0._r8
+       grvl3d(:,:) = 0._r8
     end if
 
     do p = bounds%begp,bounds%endp
        g = veg_pp%gridcell(p)
-       t = veg_pp%topounit(p)
-       topi = grc_pp%topi(g)
-       ti = t - topi + 1
-       if ( sand3d(g,ti,1)+clay3d(g,ti,1) == 0.0_r8 )then
-          if ( any( sand3d(g,ti,:)+clay3d(g,ti,:) /= 0.0_r8 ) )then
+       if ( sand3d(g,1)+clay3d(g,1) == 0.0_r8 )then
+          if ( any( sand3d(g,:)+clay3d(g,:) /= 0.0_r8 ) )then
              call endrun(msg='found depth points that do NOT sum to zero when surface does'//&
                   errMsg(__FILE__, __LINE__))
           end if
-          sand3d(g,ti,:) = 1.0_r8
-          clay3d(g,ti,:) = 1.0_r8
+          sand3d(g,:) = 1.0_r8
+          clay3d(g,:) = 1.0_r8
        end if
-       if ( any( sand3d(g,ti,:)+clay3d(g,ti,:) == 0.0_r8 ) )then
-          call endrun(msg='after setting, found points sum to zero'//errMsg(__FILE__, __LINE__)) 
+       if ( any( sand3d(g,:)+clay3d(g,:) == 0.0_r8 ) )then
+          call endrun(msg='after setting, found points sum to zero'//errMsg(__FILE__, __LINE__))
        end if
 
-       this%sandfrac_patch(p) = sand3d(g,ti,1)/100.0_r8
-       this%clayfrac_patch(p) = clay3d(g,ti,1)/100.0_r8
-       this%grvlfrac_patch(p) = grvl3d(g,ti,1)/100.0_r8
+       this%sandfrac_patch(p) = sand3d(g,1)/100.0_r8
+       this%clayfrac_patch(p) = clay3d(g,1)/100.0_r8
+       this%grvlfrac_patch(p) = grvl3d(g,1)/100.0_r8
     end do
 
     ! Read fmax
 
-    allocate(gti(bounds%begg:bounds%endg,1:max_topounits))
+    allocate(gti(bounds%begg:bounds%endg))
     call ncd_io(ncid=ncid, varname='FMAX', flag='read', data=gti, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: FMAX NOT on surfdata file'//errMsg(__FILE__, __LINE__))
     end if
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
-       t = col_pp%topounit(c)
-       topi = grc_pp%topi(g)
-       ti = t - topi + 1
-       
-       this%wtfact_col(c) = gti(g,ti)
+       this%wtfact_col(c) = gti(g)
     end do
     deallocate(gti)
 
@@ -548,9 +538,6 @@ contains
        g = col_pp%gridcell(c)
        l = col_pp%landunit(c)
        nlevbed = col_pp%nlevbed(c)
-       t = col_pp%topounit(c)
-       topi = grc_pp%topi(g)
-       ti = t - topi + 1
 
        if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
 
@@ -621,35 +608,35 @@ contains
              if ( more_vertlayers )then ! duplicate clay and sand values from last soil layer
 
                 if (lev .eq. 1) then
-                   clay = clay3d(g,ti,1)
-                   sand = sand3d(g,ti,1)
-                   gravel = grvl3d(g,ti,1)
-                   om_frac = organic3d(g,ti,1)/organic_max 
+                   clay = clay3d(g,1)
+                   sand = sand3d(g,1)
+                   gravel = grvl3d(g,1)
+                   om_frac = organic3d(g,1)/organic_max
                 else if (lev <= nlevsoi) then
                    do j = 1,nlevsoifl-1
                       if (zisoi(lev) >= zisoifl(j) .AND. zisoi(lev) < zisoifl(j+1)) then
-                         clay = clay3d(g,ti,j+1)
-                         sand = sand3d(g,ti,j+1)
-                         gravel = grvl3d(g,ti,j+1)
-                         om_frac = organic3d(g,ti,j+1)/organic_max    
+                         clay = clay3d(g,j+1)
+                         sand = sand3d(g,j+1)
+                         gravel = grvl3d(g,j+1)
+                         om_frac = organic3d(g,j+1)/organic_max
                       endif
                    end do
                 else
-                   clay = clay3d(g,ti,nlevsoifl)
-                   sand = sand3d(g,ti,nlevsoifl)
-                   gravel = grvl3d(g,ti,nlevsoifl)
+                   clay = clay3d(g,nlevsoifl)
+                   sand = sand3d(g,nlevsoifl)
+                   gravel = grvl3d(g,nlevsoifl)
                    om_frac = 0._r8
                 endif
              else
                 if (lev <= nlevsoi) then ! duplicate clay and sand values from 10th soil layer
-                   clay = clay3d(g,ti,lev)
-                   sand = sand3d(g,ti,lev)
-                   gravel = grvl3d(g,ti,lev)
-                   om_frac = (organic3d(g,ti,lev)/organic_max)**2._r8
+                   clay = clay3d(g,lev)
+                   sand = sand3d(g,lev)
+                   gravel = grvl3d(g,lev)
+                   om_frac = (organic3d(g,lev)/organic_max)**2._r8
                 else
-                   clay = clay3d(g,ti,nlevsoi)
-                   sand = sand3d(g,ti,nlevsoi)
-                   gravel = grvl3d(g,ti,nlevsoi)
+                   clay = clay3d(g,nlevsoi)
+                   sand = sand3d(g,nlevsoi)
+                   gravel = grvl3d(g,nlevsoi)
                    om_frac = 0._r8
                 endif
              end if
@@ -848,12 +835,9 @@ contains
 
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
-       t = col_pp%topounit(c)
-       topi = grc_pp%topi(g)
-       ti = t - topi + 1
 
-       this%gwc_thr_col(c) = 0.17_r8 + 0.14_r8 * clay3d(g,ti,1) * 0.01_r8
-       this%mss_frc_cly_vld_col(c) = min(clay3d(g,ti,1) * 0.01_r8, 0.20_r8)
+       this%gwc_thr_col(c) = 0.17_r8 + 0.14_r8 * clay3d(g,1) * 0.01_r8
+       this%mss_frc_cly_vld_col(c) = min(clay3d(g,1) * 0.01_r8, 0.20_r8)
     end do
 
     ! --------------------------------------------------------------------

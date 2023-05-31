@@ -166,7 +166,6 @@ contains
 
     ! Determine landunit_indices: indices into landunit-level arrays for each topounit.
     ! Note that landunits not present in a given topounit are set to ispval.
-    curt = 0
     top_pp%landunit_indices(:,bounds%begt:bounds%endt) = ispval
     do l = bounds%begl,bounds%endl
        ltype = lun_pp%itype(l)
@@ -196,14 +195,13 @@ contains
     ! !USES
     use elm_varcon, only : ispval
     use landunit_varcon, only : max_lunit
-    use topounit_varcon, only : max_topounits
     !
     ! !ARGUMENTS
     implicit none
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: g,t,l,c,p, tt     ! loop counters
+    integer :: g,t,l,c,p     ! loop counters
     integer :: l_prev        ! l value of previous point
     integer :: ltype         ! landunit type
     logical :: error         ! error flag
@@ -227,26 +225,19 @@ contains
 
     !--- check index ranges ---
     error = .false.
-    do t = begt, endt
+    do g = begg, endg
        do ltype = 1, max_lunit
-          l = top_pp%landunit_indices(ltype, t)
+          l = grc_pp%landunit_indices(ltype, g)
           if (l /= ispval) then
              if (l < begl .or. l > endl) error = .true.
           end if
        end do
     end do
     if (error) then
-       write(iulog,*) '   elm_ptrs_check: t index ranges - ERROR'
+       write(iulog,*) '   elm_ptrs_check: g index ranges - ERROR'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
-    if (masterproc) write(iulog,*) '   elm_ptrs_check: t index ranges - OK'
-    error = .false.
-    if (minval(top_pp%gridcell(begt:endt)) < begg .or. maxval(top_pp%gridcell(begt:endt)) > endg) error=.true.
-    if (error) then
-       write(iulog,*) '   elm_ptrs_check: t index ranges - ERROR'
-       call endrun(msg=errMsg(__FILE__, __LINE__))
-    endif
-    if (masterproc) write(iulog,*) '   elm_ptrs_check: t index ranges - OK'
+    if (masterproc) write(iulog,*) '   elm_ptrs_check: g index ranges - OK'
 
     error = .false.
     if (minval(lun_pp%gridcell(begl:endl)) < begg .or. maxval(lun_pp%gridcell(begl:endl)) > endg) error=.true.
@@ -343,14 +334,12 @@ contains
     !--- check that the tree is internally consistent ---
     error = .false.
     do g = begg, endg
-       do t = grc_pp%topi(g), grc_pp%topf(g)
-          do ltype = 1, max_lunit
-             l = top_pp%landunit_indices(ltype, t)
+       do ltype = 1, max_lunit
+          l = grc_pp%landunit_indices(ltype, g)
 
           ! skip l == ispval, which implies that this landunit type doesn't exist on this grid cell
           if (l /= ispval) then
              if (lun_pp%itype(l) /= ltype) error = .true.
-             if (lun_pp%topounit(l) /= t) error = .true.
              if (lun_pp%gridcell(l) /= g) error = .true.
              if (error) then
                 write(iulog,*) '   elm_ptrs_check: tree consistent - ERROR'
@@ -358,7 +347,6 @@ contains
              endif
              do c = lun_pp%coli(l),lun_pp%colf(l)
                 if (col_pp%gridcell(c) /= g) error = .true.
-                if (col_pp%topounit(c) /= t) error = .true.
                 if (col_pp%landunit(c) /= l) error = .true.
                 if (error) then
                    write(iulog,*) '   elm_ptrs_check: tree consistent - ERROR'
@@ -366,7 +354,6 @@ contains
                 endif
                 do p = col_pp%pfti(c),col_pp%pftf(c)
                    if (veg_pp%gridcell(p) /= g) error = .true.
-                   if (veg_pp%topounit(p) /= t) error = .true.
                    if (veg_pp%landunit(p) /= l) error = .true.
                    if (veg_pp%column(p)   /= c) error = .true.
                    if (error) then
@@ -377,7 +364,6 @@ contains
              enddo  ! c
           end if  ! l /= ispval
        enddo  ! ltype
-       enddo  ! t
     enddo  ! g
     if (masterproc) write(iulog,*) '   elm_ptrs_check: tree consistent - OK'
     if (masterproc) write(iulog,*) ' '
@@ -387,7 +373,7 @@ contains
   end subroutine elm_ptrs_check
 
   !-----------------------------------------------------------------------
-  subroutine add_topounit(ti, gi, wtgcell,elv, slp, asp,topo_ind,is_tpu_active)
+  subroutine add_topounit(ti, gi, wtgcell)
     !
     ! !DESCRIPTION:
     ! Add an entry in the topounit-level arrays. ti gives the index of the last topounit
@@ -395,14 +381,9 @@ contains
     ! accordingly.
     !
     ! !ARGUMENTS:
-    integer  , intent(inout) :: ti           ! input value is index of last topounit added; output value is index of this newly-added topounit
-    integer  , intent(in)    :: gi           ! gridcell index on which this topounit should be placed 
-    real(r8) , intent(in)    :: wtgcell      ! weight of the topounit relative to the gridcell
-    real(r8) , intent(in)    :: elv          ! topounit elevation
-    real(r8) , intent(in)    :: slp          ! topounit slope
-    integer , intent(in)    :: asp           ! topounit aspect
-    integer , intent(in)    :: topo_ind      ! topounit index in the grid
-    logical , intent(in)    :: is_tpu_active
+    integer  , intent(inout) :: ti      ! input value is index of last topounit added; output value is index of this newly-added topounit
+    integer  , intent(in)    :: gi      ! gridcell index on which this topounit should be placed 
+    real(r8) , intent(in)    :: wtgcell ! weight of the topounit relative to the gridcell
     !
     ! !LOCAL VARIABLES:
     character(len=*), parameter :: subname = 'add_topounit'
@@ -412,11 +393,6 @@ contains
 
     top_pp%gridcell(ti) = gi
     top_pp%wtgcell(ti) = wtgcell
-    top_pp%elevation(ti) = elv
-    top_pp%slope(ti) = slp
-    top_pp%aspect(ti) = asp
-    top_pp%topo_grc_ind(ti) = topo_ind    
-    top_pp%active(ti) = is_tpu_active
     
   end subroutine add_topounit
 

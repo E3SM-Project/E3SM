@@ -5,7 +5,7 @@ module elm_varctl
   ! Module containing run control variables
   !
   ! !USES:
-  use shr_kind_mod, only: r8 => shr_kind_r8, SHR_KIND_CL, SHR_KIND_CS
+  use shr_kind_mod, only: r8 => shr_kind_r8, SHR_KIND_CL
   use shr_sys_mod , only: shr_sys_abort ! cannot use endrun here due to circular dependency
 
   !
@@ -355,8 +355,6 @@ module elm_varctl
   logical, public :: use_mexicocity      = .false.
   logical, public :: use_noio            = .false.
   logical, public :: use_var_soil_thick  = .false.
-  logical, public :: use_atm_downscaling_to_topunit  = .false.
-  character(len = SHR_KIND_CS), public :: precip_downscaling_method  = 'ERMM' ! Precip downscaling method values can be ERMM or FNM
   logical, public :: use_lake_wat_storage = .false.
 
   !----------------------------------------------------------
