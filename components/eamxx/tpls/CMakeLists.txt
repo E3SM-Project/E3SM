@@ -55,7 +55,8 @@ if (SCREAM_ENABLE_MAM)
     -DHAERO_ENABLE_MPI=ON
     -DHAERO_PRECISION=${HAERO_PRECISION}
     -DEKAT_SOURCE_DIR=${EXTERNALS_DIR}/ekat
-    -DEKAT_BINARY_DIR=${PROJECT_BINARY_DIR}/externals/ekat)
+    -DEKAT_BINARY_DIR=${PROJECT_BINARY_DIR}/externals/ekat
+    -DBUILD_SHARED_LIBS=OFF)
   ExternalProject_Add(haero_proj
                       PREFIX ${PROJECT_BINARY_DIR}/externals/haero
                       SOURCE_DIR ${EXTERNALS_DIR}/haero
@@ -67,6 +68,8 @@ if (SCREAM_ENABLE_MAM)
                       LOG_BUILD TRUE
                       INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
+  add_library(haero STATIC IMPORTED GLOBAL)
+  set_target_properties(haero PROPERTIES IMPORTED_LOCATION ${HAERO_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libhaero.a)
 
   # Build and install MAM4xx.
   set(MAM4XX_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/externals/mam4xx")
@@ -74,7 +77,9 @@ if (SCREAM_ENABLE_MAM)
     -DCMAKE_INSTALL_PREFIX=${MAM4XX_INSTALL_PREFIX}
     -DCMAKE_BUILD_TYPE=${mam_build_type}
     -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
-    -DMAM4XX_HAERO_DIR=${HAERO_INSTALL_PREFIX})
+    -DMAM4XX_HAERO_DIR=${HAERO_INSTALL_PREFIX}
+    -DBUILD_SHARED_LIBS=OFF
+    )
   ExternalProject_Add(mam4xx_proj
                       PREFIX ${PROJECT_BINARY_DIR}/externals/mam4xx
                       SOURCE_DIR ${EXTERNALS_DIR}/mam4xx
@@ -86,7 +91,8 @@ if (SCREAM_ENABLE_MAM)
                       LOG_BUILD TRUE
                       INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
-
+  add_library(mam4xx STATIC IMPORTED GLOBAL)
+  set_target_properties(mam4xx PROPERTIES IMPORTED_LOCATION ${MAM4XX_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libmam4xx.a)
   # Bring in MAM4xx-related targets by including the generated mam4xx.cmake
   #  list(APPEND CMAKE_MODULE_PATH ${MAM4XX_INSTALL_PREFIX}/share)
   #  include(mam4xx)
