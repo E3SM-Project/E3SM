@@ -352,7 +352,7 @@ subroutine modal_aer_opt_init()
         call add_default ('AODDUST4', 1, ' ')
         call add_default ('AODMODE4', 1, ' ')
         call add_default ('BURDEN4' , 1, ' ')
-     end if 
+     end if
   end if
 
    if(cam_chempkg_is('superfast_mam5_resus_mom_soag')) then 
@@ -620,7 +620,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    extinct(1:ncol,:)     = 0.0_r8
    absorb(1:ncol,:)      = 0.0_r8
    aodvis(1:ncol)        = 0.0_r8
-   saodvis(1:ncol)        = 0.0_r8
+   saodvis(1:ncol)       = 0.0_r8
    aodall(1:ncol)        = 0.0_r8
    aodabs(1:ncol)        = 0.0_r8
    burdendust(:ncol)     = 0.0_r8
@@ -1167,7 +1167,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       extinct(idxnite(i),:) = fillvalue
       absorb(idxnite(i),:)  = fillvalue
       aodvis(idxnite(i))    = fillvalue
-      saodvis(idxnite(i))    = fillvalue
+      saodvis(idxnite(i))   = fillvalue
       aodabs(idxnite(i))    = fillvalue
    end do
 

@@ -1266,7 +1266,7 @@ if ($aer_model eq 'mam' ) {
             );
     }
     } elsif($aero_modes eq '5mode') {
-      # For 7 sulfate modes
+     # For 5 sulfate modes
 
     # MAM rad_climate settings.  The externally mixed quantities in the modal aerosol
     # model are the modes.
@@ -2934,13 +2934,13 @@ if ($chem eq 'trop_mam4_mom' || $chem eq 'trop_mam4_resus_mom') {
     }
 }
 
-if ($chem eq 'linoz_mam4_resus_mom' || $chem eq 'linoz_mam4_resus_mom_soag' ) {
+if ($chem eq 'linoz_mam4_resus_mom' || $chem eq 'linoz_mam4_resus_mom_soag') {
 
     my %species;
 
     # Surface emission datasets:
     %species = ();
-    if ($chem eq 'linoz_mam4_resus_mom_soag' ) {
+    if ($chem eq 'linoz_mam4_resus_mom_soag') {
 	%species = ('DMS       -> ' => 'dms_emis_file',
 		    'SO2       -> ' => 'so2_emis_file',
 		    'bc_a4     -> ' => 'bc_a4_emis_file',
@@ -2985,7 +2985,7 @@ if ($chem eq 'linoz_mam4_resus_mom' || $chem eq 'linoz_mam4_resus_mom_soag' ) {
 
     # Vertical emission datasets:
     %species = ();
-    if ($chem eq 'linoz_mam4_resus_mom_soag' ) {
+    if ($chem eq 'linoz_mam4_resus_mom_soag') {
 	%species = ('SO2         -> ' => 'so2_ext_file',
 		    'SOAG        -> ' => 'soag_ext_file',
 		    'so4_a1      -> ' => 'so4_a1_ext_file',
