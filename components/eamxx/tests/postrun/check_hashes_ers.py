@@ -28,8 +28,8 @@ def get_hash_lines(fn):
     rlns = rlns.stdout.decode().split('\n')
     lns = []
     if len(rlns) == 0: return lns
-    pos = rlns[0].find('exxhash')
     for rln in rlns:
+        pos = rln.find('exxhash')
         lns.append(rln[pos:])
     return lns
 
