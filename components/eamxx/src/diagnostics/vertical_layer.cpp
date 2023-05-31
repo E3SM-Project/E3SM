@@ -111,14 +111,6 @@ void VerticalLayerDiagnostic::compute_diagnostic_impl()
       }
     }
   });
-
-  // Copy data to the diagnostic output. For dz, z_mid, and geopotential_mid,
-  // z_mid contains the correct values. For z_int and geopotential_int, z_int.
-  if (m_is_interface_layout) Kokkos::deep_copy(diag_view, z_int);
-  else                       Kokkos::deep_copy(diag_view, z_mid);
-
-  const auto ts = get_field_in("qv").get_header().get_tracking().get_time_stamp();
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream
