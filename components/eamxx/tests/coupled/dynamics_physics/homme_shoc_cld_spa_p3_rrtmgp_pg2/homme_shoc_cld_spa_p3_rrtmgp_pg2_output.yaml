@@ -1,10 +1,10 @@
 %YAML 1.1
 ---
-filename_prefix: homme_shoc_cld_spa_p3_rrtmgp_output
+filename_prefix: homme_shoc_cld_spa_p3_rrtmgp_pg2_output
 Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:
-  Physics GLL:
+  Physics PG2:
     Field Names:
       # HOMME
       - ps
@@ -96,6 +96,20 @@ Fields:
       - MeridionalVapFlux
       - PotentialTemperature_at_model_top
       - PotentialTemperature_at_500mb
+  # GLL output for homme states. These
+  # represent all current possible homme
+  # states available.
+  Dynamics:
+    Field Names:
+      - v_dyn
+      - vtheta_dp_dyn
+      - dp3d_dyn
+      - phi_int_dyn
+      - ps_dyn
+      - phis_dyn
+      - omega_dyn
+      - Qdp_dyn
+    IO Grid Name: Physics GLL
 
 output_control:
   Frequency: ${NUM_STEPS}

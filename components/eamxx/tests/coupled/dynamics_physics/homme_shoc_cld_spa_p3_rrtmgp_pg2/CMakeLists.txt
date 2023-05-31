@@ -7,10 +7,10 @@ CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 # Create the test
 set (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
 set (NEED_LIBS cld_fraction nudging shoc spa p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share diagnostics)
-CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp "homme_shoc_cld_spa_p3_rrtmgp.cpp" "${NEED_LIBS}"
+CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_pg2 "homme_shoc_cld_spa_p3_rrtmgp_pg2.cpp" "${NEED_LIBS}"
   LABELS ${TEST_LABELS}
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  PROPERTIES FIXTURES_SETUP homme_shoc_cld_spa_p3_rrtmgp_generate_output_nc_files
+  PROPERTIES FIXTURES_SETUP homme_shoc_cld_spa_p3_rrtmgp_pg2_generate_output_nc_files
 )
 
 # Set AD configurable options
@@ -25,27 +25,27 @@ math (EXPR MAC_MIC_SUBCYCLES "(${ATM_TIME_STEP} + ${SHOC_MAX_DT} - 1) / ${SHOC_M
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_spa_p3_rrtmgp_output.yaml
-               ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_spa_p3_rrtmgp_output.yaml)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_spa_p3_rrtmgp_pg2_output.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_spa_p3_rrtmgp_pg2_output.yaml)
 
 # Set homme's test options, so that we can configure the namelist correctly
 # Discretization/algorithm settings
 set (HOMME_TEST_NE 2)
 set (HOMME_TEST_LIM 9)
 set (HOMME_TEST_REMAP_FACTOR 3)
-set (HOMME_TEST_TRACERS_FACTOR 1)
+set (HOMME_TEST_TRACERS_FACTOR 6)
 set (HOMME_TEST_TIME_STEP 300)
 set (HOMME_THETA_FORM 1)
 set (HOMME_TTYPE 5)
-set (HOMME_SE_FTYPE 0)
-set (HOMME_TEST_TRANSPORT_ALG 0)
-set (HOMME_TEST_CUBED_SPHERE_MAP 0)
+set (HOMME_SE_FTYPE 2)
+set (HOMME_TEST_TRANSPORT_ALG 12)
+set (HOMME_TEST_CUBED_SPHERE_MAP 2)
 
 # Hyperviscosity settings
 set (HOMME_TEST_HVSCALING 0)
 set (HOMME_TEST_HVS 1)
 set (HOMME_TEST_HVS_TOM 0)
-set (HOMME_TEST_HVS_Q 1)
+set (HOMME_TEST_HVS_Q 6)
 
 set (HOMME_TEST_NU 7e15)
 set (HOMME_TEST_NUDIV 1e15)
@@ -65,10 +65,9 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
-  scream/init/spa_init_ne2np4.nc
   scream/maps/map_ne4np4_to_ne2np4_mono.nc
   scream/init/spa_file_unified_and_complete_ne4_20220428.nc
-  scream/init/${EAMxx_tests_IC_FILE_72lev}
+  scream/init/screami_ne4np4L72_20220823.nc
   cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
@@ -83,7 +82,7 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
 
-  set (BASE_TEST_NAME "homme_shoc_cld_spa_p3_rrtmgp")
+  set (BASE_TEST_NAME "homme_shoc_cld_spa_p3_rrtmgp_pg2")
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 
@@ -95,6 +94,6 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
               RESOURCE_LOCK ${BASE_TEST_NAME}
-              FIXTURES_REQUIRED homme_shoc_cld_spa_p3_rrtmgp_generate_output_nc_files)
+              FIXTURES_REQUIRED homme_shoc_cld_spa_p3_rrtmgp_pg2_generate_output_nc_files)
   endforeach()
 endif()
