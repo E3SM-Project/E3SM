@@ -105,6 +105,11 @@ void run(std::mt19937_64& engine, std::string diag_type, const bool from_sea_lev
   auto diag = diag_factory.create(diag_name,comm,params);
   diag->set_grids(gm);
 
+  // Helpful bools
+  const bool only_compute_dz = (diag_type == "thickness");
+  const bool is_interface_layout = (diag_type == "interface");
+  const bool generate_phis_data = (not only_compute_dz and not from_sea_level);
+
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;
   for (const auto& req : diag->get_required_field_requests()) {
@@ -126,8 +131,6 @@ void run(std::mt19937_64& engine, std::string diag_type, const bool from_sea_lev
   {
     // Construct random data to use for test
     // Get views of input data and set to random values
-    const auto& phis_f        = input_fields["phis"];
-    const auto& phis_v        = phis_f.get_view<Real*>();
     const auto& T_mid_f       = input_fields["T_mid"];
     const auto& T_mid_v       = T_mid_f.get_view<Pack**>();
     const auto& pseudo_dens_f = input_fields["pseudo_density"];
@@ -136,6 +139,13 @@ void run(std::mt19937_64& engine, std::string diag_type, const bool from_sea_lev
     const auto& p_mid_v       = p_mid_f.get_view<Pack**>();
     const auto& qv_mid_f      = input_fields["qv"];
     const auto& qv_mid_v      = qv_mid_f.get_view<Pack**>();
+    Field phis_f;
+    rview_1d phis_v;
+    if (generate_phis_data) {
+      phis_f = input_fields["phis"];
+      phis_v = phis_f.get_view<Real*>();
+    }
+
     for (int icol=0;icol<ncols;icol++) {
       const auto& T_sub      = ekat::subview(T_mid_v,icol);
       const auto& pseudo_sub = ekat::subview(pseudo_dens_v,icol);
@@ -149,9 +159,9 @@ void run(std::mt19937_64& engine, std::string diag_type, const bool from_sea_lev
       Kokkos::deep_copy(pseudo_sub,pseudodensity);
       Kokkos::deep_copy(p_sub,pressure);
       Kokkos::deep_copy(qv_sub,watervapor);
-
-      if (from_sea_level) Kokkos::deep_copy(phis_v, 0.0);
-      else                ekat::genRandArray(phis_v, engine, pdf_phis);
+    }
+    if (generate_phis_data) {
+      ekat::genRandArray(phis_v, engine, pdf_phis);
     }
 
     // Run diagnostic and compare with manual calculation
@@ -162,6 +172,7 @@ void run(std::mt19937_64& engine, std::string diag_type, const bool from_sea_lev
     const auto& dz_v   = view_2d("",ncols, num_mid_packs);
     const auto& zmid_v = view_2d("",ncols, num_mid_packs);
     const auto& zint_v = view_2d("",ncols, num_mid_packs_p1);
+
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
 
@@ -171,11 +182,12 @@ void run(std::mt19937_64& engine, std::string diag_type, const bool from_sea_lev
       });
       team.team_barrier();
 
-      if (diag_type != "thickness") {
+      if (not only_compute_dz) {
         const auto& zint_s = ekat::subview(zint_v,icol);
-        PF::calculate_z_int(team,num_levs,dz_s,phis_v(icol),zint_s);
+        const Real surf_geopotential = from_sea_level ? 0.0 : phis_v(icol);
+        PF::calculate_z_int(team,num_levs,dz_s,surf_geopotential,zint_s);
 
-        if (diag_type == "midpoint") {
+        if (not is_interface_layout) {
           const auto& zmid_s = ekat::subview(zmid_v,icol);
           PF::calculate_z_mid(team,num_levs,zint_s,zmid_s);
         }

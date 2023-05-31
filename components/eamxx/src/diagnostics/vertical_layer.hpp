@@ -26,6 +26,7 @@ public:
   using PF            = scream::PhysicsFunctions<DefaultDevice>;
   using KT            = KokkosTypes<DefaultDevice>;
   using MemberType    = typename KT::MemberType;
+  using view_1d_const = typename KT::template view_1d<const Real>;
   using view_2d       = typename KT::template view_2d<Pack>;
 
   // Constructors
@@ -51,20 +52,23 @@ protected:
   Int m_num_cols;
   Int m_num_levs;
 
-  // Temporary view to set z_int and z_mid in compute diagnostic
-  view_2d m_z_int;
-  view_2d m_z_mid;
+  // Temporary view to set dz, z_mid, and z_int
+  view_2d m_tmp_interface_view;
+  view_2d m_tmp_midpoint_view;
 
-  // Store the diagnostic name. This will dictate which
+  // The diagnostic name. This will dictate which
   // field in the computation is output (dz, z_int, or z_mid).
   std::string m_diag_name;
+
+  // Store if we only need to compute dz to save computation/memory requirements.
+  bool m_only_compute_dz;
+
+  // Store if the diagnostic output field exists on interface values
+  bool m_is_interface_layout;
 
   // If z_int or z_mid is computed, determine whether the BC
   // is from sea level or not (from topography data).
   bool m_from_sea_level;
-
-  // Store if the diagnostic output field exists on interface values
-  bool m_is_interface_layout;
 
 }; // class VerticalLayerDiagnostic
 
