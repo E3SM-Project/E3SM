@@ -15,8 +15,8 @@ module modal_aero_convproc
 !
 !---------------------------------------------------------------------------------------------------------------------------------
 ! Improvements from Yunpeng Shan, Jiwen Fan, and Kai Zhang                                                                       !
-! 1) Use vertical velocity from ZMmp to calculate the (previously prescribed) in-cloud supersaturation, Lagrangian timestep, and !
-! pdraft fraction.                                                                                                               !
+! 1) Use vertical velocity from ZMmp to calculate the in-cloud supersaturation (previously prescribed), Lagrangian timestep, and !
+! updraft fraction.                                                                                                              !
 ! 2) Consider the cloud-borne aerosol detrainment. This makes cloud-borne aerosol evolution consistent with the convective cloud !
 ! condensate.                                                                                                                    !
 ! 3) Reorder the deep convection wet removal and stratiform wet removal.                                                         !
@@ -24,7 +24,6 @@ module modal_aero_convproc
 ! climate model and impacts on simulated aerosol vertical profiles, J. Geophys. Res.-Atmos, 126, e2020JD034173.                  !
 ! https://doi.org/10.1029/2020JD034173.                                                                                          !
 !________________________________________________________________________________________________________________________________!
-
    use shr_kind_mod, only: r8=>shr_kind_r8
    use physconst,    only: gravit                              
    use ppgrid,       only: pver, pcols, pverp, begchunk, endchunk
@@ -2243,7 +2242,7 @@ k_loop_main_bb: &
             cdt(k) = 0.0_r8
             if ((icwmr(icol,k) > clw_cut) .and. (rprd(icol,k) > 0.0)) then 
 !              if (iconvtype == 1) then
-                  tmpf = fa_u(k) !0.5_r8*cldfrac_i(k)
+               tmpf = fa_u(k) !0.5_r8*cldfrac_i(k)
                   cdt(k) = (tmpf*dp(i,k)/mu_p_eudp(k)) * rprd(icol,k) / &
                         (tmpf*icwmr(icol,k) + dt*rprd(icol,k))
 !              else if (k < pver) then

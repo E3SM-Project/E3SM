@@ -68,7 +68,7 @@ module aero_model
   integer :: icwmrsh_idx        = 0
   integer :: sh_frac_idx        = 0
   integer :: dp_frac_idx        = 0
-
+  integer :: wuc_idx            = 0
   integer :: imozart             = -1 
   logical :: history_aero_prevap_resusp = .false. ! controls output of prevap resusp tendencies to history
 
@@ -378,7 +378,7 @@ contains
     icwmrsh_idx      = pbuf_get_index('ICWMRSH')
     sh_frac_idx      = pbuf_get_index('SH_FRAC')
     dp_frac_idx      = pbuf_get_index('DP_FRAC')
-
+    wuc_idx          = pbuf_get_index('WUC')
 
     nwetdep = 0
     ndrydep = 0
@@ -1382,7 +1382,7 @@ contains
        cam_out,                                                                 & !Intent-inout
        pbuf,                                                                    & !Pointer
        ptend,                                                                   & !Intent-out
-       clear_rh, wuc                                                            ) !optional 
+       clear_rh                                                            ) !optional 
 
     use modal_aero_deposition, only: set_srf_wetdep
     use wetdep,                only: wetdepa_v2, wetdep_inputs_set, &
@@ -1427,7 +1427,6 @@ contains
     real(r8), optional,  intent(in)    :: clear_rh(pcols,pver) ! optional clear air relative humidity 
                                                                ! that gets passed to modal_aero_wateruptake_dr
 
-   real(r8),intent(in),optional :: wuc(pcols,pver)
    real(r8) :: dcondt_resusp3d(2*pcnst,pcols, pver)
 
     ! local vars
@@ -1504,6 +1503,7 @@ contains
     real(r8), pointer :: rate1ord_cw2pr_st(:,:)
 
     real(r8), pointer :: fracis(:,:,:)   ! fraction of transported species that are insoluble
+    real(r8), pointer :: wuc(:,:)
 
     integer, parameter:: nsrflx_mzaer2cnvpr = 2  !RCE 2012/01/12 bgn
     real(r8)          :: aerdepwetis(pcols,pcnst) ! aerosol wet deposition (interstitial) 
@@ -1642,6 +1642,7 @@ contains
        call pbuf_get_field(pbuf, icwmrsh_idx,     icwmrsh )
        call pbuf_get_field(pbuf, sh_frac_idx,     sh_frac )
        call pbuf_get_field(pbuf, dp_frac_idx,     dp_frac )
+       call pbuf_get_field(pbuf, wuc_idx,          wuc )
 
        call t_startf('ma_convproc')
        call ma_convproc_intr( state, ptend, pbuf, dt,                   &
@@ -1673,14 +1674,14 @@ contains
        if (lphase .eq. 2) then
         fldcw => qqcw_get_field(pbuf, mm,lchnk)
         fldcw(:,:) = fldcw(:,:) + dcondt_resusp3d(mm+pcnst,:,:) !*dt
-        ! The dcondt_resusp3d is detrained aerosol AMOUNT (i.e., both mass
-        ! and number for four modes).
-        ! For dcondt_resusp3d(idx,:,:), idx=16,...,40 -> interstial aerosols
-        !                               idx=56,...,80 -> cloud-borne aerosols
-        ! Currently, we assume that no aerosol resuspension occurrs during convective
-        ! cloud water detrainment. So, 100% of cloud-borne aerosols will be added to
-        ! stratiform cloud-borne aerosols and detrained interstial aerosol amount is
-        ! zero.
+!The dcondt_resusp3d is detrained aerosol AMOUNT (i.e., both mass
+!and number for four modes).
+!For dcondt_resusp3d(idx,:,:), idx=16,...,40 -> interstial aerosols
+!                              idx=56,...,80 -> cloud-borne aerosols
+! Currently, we assume that no aerosol resuspension occurrs during convective
+! cloud water detrainment. So, 100% of cloud-borne aerosols will be added to
+! stratiform cloud-borne aerosols and detrained interstial aerosol amount is
+! zero.
        end if
       end do ! loop over number + chem constituents + water <shanyp the loop is
              ! changed: no aerosol water is considered.
