@@ -645,6 +645,9 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   !i can just reuse rain variable
   rain2 = rain
 
+
+!in HY update, what to do about energyout and how/when to recompute p and phi?
+
   do k=nlev, 1, -1
 
      !compute current level of energy
