@@ -9,7 +9,14 @@ namespace scream
 {
 
 /*
- * This diagnostic will produce the vertical layer height at midpoint.
+ * This diagnostic will produce data related to the vertical layer based on
+ * the parameter "diag_name" (required). The following can be produced:
+ *   - diag_name = "dz":                       Vertical layer thickness for each column and level
+ *   - diag_name = "z_int":                    Vertical layer height at each column and interface level.
+ *                                             Values are computed from sea level (i.e., surf_geopotential=0).
+ *   - diag_name = "geopotential_int":         Same as z_int, but computed from topography data
+ *                                             (i.e., surf_geopotential=phis).
+ *   - diag_name = "z_mid"/"geopotential_mid": Same as z_int/geopotential_int but at midpoint levels.
  */
 
 class VerticalLayerDiagnostic : public AtmosphereDiagnostic
