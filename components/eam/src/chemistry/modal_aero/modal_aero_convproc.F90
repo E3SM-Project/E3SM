@@ -2243,7 +2243,7 @@ k_loop_main_bb: &
             if ((icwmr(icol,k) > clw_cut) .and. (rprd(icol,k) > 0.0)) then 
 !              if (iconvtype == 1) then
                tmpf = fa_u(k) !0.5_r8*cldfrac_i(k)
-                  cdt(k) = (tmpf*dp(i,k)/mu_p_eudp(k)) * rprd(icol,k) / &
+               cdt(k) = (tmpf*dp(i,k)/mu_p_eudp(k)) * rprd(icol,k) / &
                         (tmpf*icwmr(icol,k) + dt*rprd(icol,k))
 !              else if (k < pver) then
 !                 if (eudp(k+1) > 0) cdt(k) =   &
@@ -2455,8 +2455,8 @@ k_loop_main_cc: &
       call ma_resuspend_convproc( dcondt, dcondt_resusp,   &
                                   const, dp_i, ktop, kbot_prevap, pcnst_extd ) ! REASTER 08/05/2015
 
-     dcondt_resusp3d(pcnst+1:pcnst_extd,icol,:) = dcondt_resusp3d(pcnst+1:pcnst_extd,icol,:) &
-                                                + dcondt(pcnst+1:pcnst_extd,:)*dtsub
+      dcondt_resusp3d(pcnst+1:pcnst_extd,icol,:) = dcondt_resusp3d(pcnst+1:pcnst_extd,icol,:) &
+                                                 + dcondt(pcnst+1:pcnst_extd,:)*dtsub
 !     dcondt_resusp(pcnst+1:pcnst_extd,:) = 0._r8
 
       if ( idiag_in(icol)>0 ) then
