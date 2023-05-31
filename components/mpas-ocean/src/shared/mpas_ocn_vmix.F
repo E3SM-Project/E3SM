@@ -640,7 +640,7 @@ contains
       allocate(C(nVertLevels+1),velTemp(nVertLevels+1))
 
       !$omp parallel
-      !$omp do schedule(runtime) private(viscAv, N, A, B, C, velTemp, k) 
+      !$omp do schedule(runtime) private(N, Nsurf, C, bTemp, rTemp, k, thickAv, viscAv, A, m, velTemp)
       do iCell = 1, nCells
          Nsurf = minLevelCell(iCell)
          N = maxLevelCell(iCell)+1
