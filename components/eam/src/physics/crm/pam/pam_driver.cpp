@@ -111,7 +111,6 @@ extern "C" void pam_driver() {
       scream::p3::p3_init(/*write_tables=*/false, am_i_root);
 
       // Load P3 lookup table data to avoid re-loading it every CRM call
-      // pam::allocate_scream_cxx_globals();
       pam::p3_init_lookup_tables();
     #endif
   }
