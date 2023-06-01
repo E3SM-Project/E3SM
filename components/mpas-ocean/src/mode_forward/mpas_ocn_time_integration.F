@@ -32,6 +32,7 @@ module ocn_time_integration
    use ocn_diagnostics_variables
    use ocn_time_integration_rk4
    use ocn_time_integration_split
+   use ocn_time_integration_split_ab2
    use ocn_time_integration_si
 
    implicit none
@@ -67,7 +68,8 @@ module ocn_time_integration
        timeIntSplitExplicit   = 1, &! split-explicit
        timeIntUnsplitExplicit = 2, &! unsplit-explicit
        timeIntSemiImplicit    = 3, &! Semi-implicit
-       timeIntRK4             = 4   ! 4th-order Runge-Kutta
+       timeIntRK4             = 4, &! 4th-order Runge-Kutta
+       timeIntSplitExplicitAB2= 5   ! Adams-Bashfort 2nd order
 
 !***********************************************************************
 
@@ -129,6 +131,8 @@ module ocn_time_integration
          call ocn_time_integrator_si(domain, dt)
       case (timeIntRK4)
          call ocn_time_integrator_rk4(domain, dt)
+      case (timeIntSplitExplicitAB2)
+         call ocn_time_integrator_split_ab2(domain, dt)
       end select
 
       ! compute time since start of simulation, in days
@@ -219,6 +223,10 @@ module ocn_time_integration
       case ('RK4')
          timeIntegratorChoice = timeIntRK4
          call ocn_time_integration_rk4_init(domain)
+
+      case ('split_explicit_ab2')
+         timeIntegratorChoice = timeIntSplitExplicitAB2
+         call ocn_time_integration_split_ab2_init(domain)
 
       case default
 

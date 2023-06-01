@@ -199,7 +199,7 @@
 		/>
 		<nml_option name="config_time_integrator" type="character" default_value="split_explicit"
 					description="Time integration method."
-					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit'"
+					possible_values="'split_explicit', 'split_explicit_ab2', 'RK4', 'unsplit_explicit', 'split_implicit'"
 		/>
 	</nml_record>
 	<nml_record name="hmix" mode="forward">
