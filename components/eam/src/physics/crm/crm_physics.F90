@@ -340,12 +340,12 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    use phys_control,          only: phys_getopts, use_gw_convect
    use phys_grid,             only: get_ncols_p
    use crm_history,           only: crm_history_init
-   use cam_history,    only: addfld
-   use constituents,   only: apcnst, bpcnst, cnst_name, cnst_longname, cnst_get_ind
+   use cam_history,           only: addfld
+   use constituents,          only: apcnst, bpcnst, cnst_name, cnst_longname, cnst_get_ind
+   use constituents,          only: pcnst, cnst_get_ind
 #ifdef ECPP
    use module_ecpp_ppdriver2, only: papampollu_init
 #endif
-   use constituents,          only: pcnst, cnst_get_ind
    !----------------------------------------------------------------------------
    ! interface variables
    ! NOTE - species_class is an input so it needs to be outside of ifdef MODAL_AERO for 1-mom micro
