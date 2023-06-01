@@ -21,18 +21,14 @@ constexpr Real test_tol = std::numeric_limits<Real>::epsilon()*1e4;
 
 // Test function for prescribed values
 Real test_func(const int col, const int t) {
-  return (Real)(col + 1 + t);
+  return (col + 1 + t);
 }
 
 // Wrapper for output manager that also extracts the list of files
 class OutputManager4Test : public scream::OutputManager
 {
 public:
-  OutputManager4Test()
-    : OutputManager()
-  {
-    // Do Nothing
-  }
+  OutputManager4Test() = default;
 
   void runme(const util::TimeStamp& ts) {
     run(ts);
