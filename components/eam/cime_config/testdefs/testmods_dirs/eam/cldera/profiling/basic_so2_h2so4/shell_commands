@@ -1,3 +1,4 @@
+./xmlchange --append CAM_CONFIG_OPTS="-cldera_profiling -cldera_sai_trcs"
 RUNDIR=$(./xmlquery --value RUNDIR)
 mkdir ${RUNDIR}
 CLDERA_PATH=$(python -c "
