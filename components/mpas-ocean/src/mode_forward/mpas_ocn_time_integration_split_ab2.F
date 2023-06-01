@@ -2019,6 +2019,167 @@ module ocn_time_integration_split_ab2
             !$omp end parallel
 #endif
 
+            if ( nowTimeStamp /= initialTimeStamp ) then
+
+#ifdef MPAS_OPENACC
+               !$acc parallel loop present(normalVelocity, layerThickness, &
+               !$acc    minLevelEdgeBot, maxLevelEdgeTop, &
+               !$acc    layerThicknessEdge, cellsOnEdge)
+#else
+               !$omp parallel
+               !$omp do schedule(runtime) private(cell1, cell2, k)
+#endif
+               do iEdge = 1, nEdgesAll
+                 ! initialize layerThicknessEdge to avoid divide by zero and NaN problems.
+                 layerThickEdgeFlux(:, iEdge) = -1.0e34_RKIND
+                 cell1 = cellsOnEdge(1,iEdge)
+                 cell2 = cellsOnEdge(2,iEdge)
+                 do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+                   ! central differenced
+                   layerThickEdgeFlux(k,iEdge) = &
+                      0.25_RKIND * (layerThicknessNew(k,cell1) + layerThicknessNew(k,cell2)) &
+                    + 0.25_RKIND * (layerThicknessCur(k,cell1) + layerThicknessCur(k,cell2))
+                 end do
+               end do
+#ifndef MPAS_OPENACC
+               !$omp end do
+               !$omp end parallel
+#endif
+               nEdges = nEdgesHalo(config_num_halos-1 )
+               allocate(uTemp(nVertLevels,nEdges))
+   
+               ! velocity for normalVelocityCorrectionection is
+               ! normalBarotropicVelocity +
+               ! normalBaroclinicVelocity + uBolus
+               !$omp parallel
+               !$omp do schedule(runtime)
+               do iEdge = 1, nEdges
+                  uTemp(:,iEdge) = normalBarotropicVelocityNew(iEdge) &
+                               + normalBaroclinicVelocityNew(:,iEdge)
+               end do
+               !$omp end do
+               !$omp end parallel
+   
+               call ocn_GM_add_to_transport_vel(uTemp, nEdges, &
+                                                nVertLevels)
+               call ocn_MLE_add_to_transport_vel(uTemp, nEdges)
+   
+               !$omp parallel
+               !$omp do schedule(runtime) &
+               !$omp private(k)
+               do iEdge = 1, nEdges
+                  do k = 1, nVertLevels
+                     normalTransportVelocity(k,iEdge) =  &
+                                normalBarotropicVelocityNew(iEdge)   + &
+                                normalBaroclinicVelocityNew(k,iEdge)
+                  end do
+               end do
+               !$omp end do
+               !$omp end parallel
+
+               call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdges, &
+                                                nVertLevels)
+               call ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
+   
+               !$omp parallel
+               !$omp do schedule(runtime) &
+               !$omp private(k, uTemp, normalThicknessFluxSum, &
+               !$omp         thicknessSum, normalVelocityCorrection)
+               do iEdge = 1, nEdges
+      
+                  ! thicknessSum is initialized outside the loop because
+                  ! on land boundaries maxLevelEdgeTop=0, but I want to
+                  ! initialize thicknessSum with a nonzero value to avoid
+                  ! a NaN.
+                  normalThicknessFluxSum = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)* &
+                                           uTemp(minLevelEdgeBot(iEdge),iEdge)
+                  thicknessSum  = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)
+      
+                  do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
+                     normalThicknessFluxSum = normalThicknessFluxSum + &
+                                              layerThickEdgeFlux(k,iEdge)*&
+                                              uTemp(k,iEdge)
+                     thicknessSum = thicknessSum + &
+                                    layerThickEdgeFlux(k,iEdge)
+                  enddo
+      
+                     normalVelocityCorrection = useVelocityCorrection* &
+                                   ((barotropicThicknessFlux(iEdge) - &
+                                     normalThicknessFluxSum)/thicknessSum)
+      
+                  do k = 1, nVertLevels
+                     normalTransportVelocity(k,iEdge) = edgeMask(k,iEdge)*( &
+                                normalTransportVelocity(k,iEdge) + &
+                                normalVelocityCorrection)
+                  enddo
+      
+               end do ! iEdge
+               !$omp end do
+               !$omp end parallel
+      
+               deallocate(uTemp)
+
+#ifdef MPAS_OPENACC
+               !$acc parallel loop gang vector &
+               !$acc          present(maxLevelCell, zMid, layerThickness, zTop, bottomDepth, ssh, &
+               !$acc                  minLevelCell) &
+               !$acc          private(k)
+#else
+               !$omp parallel
+               !$omp do schedule(runtime) private(k)
+#endif
+               do iCell = 1, nCellsAll
+
+                  ! Compute zMid, the z-coordinate of the middle of the layer.
+                  ! Compute zTop, the z-coordinate of the top of the layer.
+                  ! Note the negative sign, since bottomDepth is positive
+                  ! and z-coordinates are negative below the surface.
+                  k = maxLevelCell(iCell)
+                  zMid(k:nVertLevels,iCell) = -bottomDepth(iCell) + &
+                     0.5_RKIND*(0.5*(layerThicknessNew(k,iCell)+layerThicknessCur(k,iCell)))
+                  zTop(k:nVertLevels,iCell) = -bottomDepth(iCell) + &
+                     (0.5*(layerThicknessNew(k,iCell)+layerThicknessCur(k,iCell)))
+
+                  do k = maxLevelCell(iCell)-1, minLevelCell(iCell), -1
+                     zMid(k,iCell) = zMid(k+1,iCell)  &
+                       + 0.25_RKIND*(  layerThicknessNew(k+1,iCell) &
+                                    +  layerThicknessNew(k  ,iCell)) &
+                       + 0.25_RKIND*(  layerThicknessCur(k+1,iCell) &
+                                    +  layerThicknessCur(k  ,iCell))
+
+                     zTop(k,iCell) = zTop(k+1,iCell)  &
+                       + (0.5*(layerThicknessNew(k  ,iCell)+layerThicknessCur(k  ,iCell)))
+                  end do
+
+               end do
+               !$omp end do
+               !$omp end parallel
+
+               call ocn_vert_transport_velocity_top( &
+                    verticalMeshPool, layerThicknessCur, &
+                    layerThickEdgeFlux, normalTransportVelocity,sshCur, dt, &
+                    vertAleTransportTop, err)
+
+               call ocn_tend_thick(tendPool, forcingPool)
+
+               call mpas_timer_start("se halo thickness")
+               call mpas_dmpar_field_halo_exch(domain, 'tendLayerThickness')
+               call mpas_timer_stop("se halo thickness")
+
+               !$omp parallel
+               !$omp do schedule(runtime) private(k)
+               do iCell = 1, nCellsAll
+               do k = minLevelCell(iCell), maxLevelCell(iCell)
+                  ! this is h_{n+1}
+                  layerThicknessNew(k,iCell) = &
+                                        layerThicknessCur(k,iCell) + &
+                                     dt*layerThicknessTend(k,iCell)
+               end do
+               end do
+               !$omp end do
+               !$omp end parallel
+            endif ! nowTimeStamp
+
             if (config_compute_active_tracer_budgets) then
 
 #ifdef MPAS_OPENACC
