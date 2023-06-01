@@ -91,6 +91,7 @@
 
 <!-- use_sections -->
 <config_use_dynamics>true</config_use_dynamics>
+<config_use_dynamics column_mode="true">false</config_use_dynamics>
 <config_use_dynamics prognostic_mode="prescribed">false</config_use_dynamics>
 <config_use_velocity_solver>true</config_use_velocity_solver>
 <config_use_advection>true</config_use_advection>

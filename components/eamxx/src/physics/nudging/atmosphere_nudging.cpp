@@ -35,7 +35,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   //Now need to read in the file
   scorpio::register_file(datafile,scorpio::Read);
-  m_num_src_levs = scorpio::get_dimlen_c2f(datafile.c_str(),"lev");
+  m_num_src_levs = scorpio::get_dimlen(datafile,"lev");
   double time_value_1= scorpio::read_time_at_index_c2f(datafile.c_str(),1);
   double time_value_2= scorpio::read_time_at_index_c2f(datafile.c_str(),2);
     
@@ -91,8 +91,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   // We need to skip grid checks because multiple ranks 
   // may want the same column of source data.
   data_in_params.set("Skip_Grid_Checks",true);  
-  data_input = std::make_shared<AtmosphereInput>(m_comm,data_in_params);
-  data_input->init(grid_l,host_views,layouts);
+  data_input.init(data_in_params,grid_l,host_views,layouts);
 
   T_mid_ext = fields_ext["T_mid"];
   p_mid_ext = fields_ext["p_mid"];
@@ -102,8 +101,8 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   ts0=timestamp();
 
   //Check that internal timestamp starts at same point as time in external file
-  int start_date=scorpio::get_int_attribute_c2f(datafile.c_str(),"start_date");
-  int start_time=scorpio::get_int_attribute_c2f(datafile.c_str(),"start_time");
+  int start_date=scorpio::get_attribute<int>(datafile,"start_date");
+  int start_time=scorpio::get_attribute<int>(datafile,"start_time");
   int start_year=int(start_date/10000);
   int start_month=int((start_date-start_year*10000)/100);
   int start_day=int(start_date-start_year*10000-start_month*100);
@@ -137,7 +136,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   NudgingData_aft.time = -999;
 
   //Read in the first time step
-  data_input->read_variables(0);
+  data_input.read_variables(0);
   Kokkos::deep_copy(NudgingData_bef.T_mid,fields_ext_h["T_mid"]);
   Kokkos::deep_copy(NudgingData_bef.p_mid,fields_ext_h["p_mid"]);
   Kokkos::deep_copy(NudgingData_bef.u,fields_ext_h["u"]);
@@ -146,7 +145,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   NudgingData_bef.time = 0.;
 
   //Read in the first time step
-  data_input->read_variables(1);
+  data_input.read_variables(1);
   Kokkos::deep_copy(NudgingData_aft.T_mid,fields_ext_h["T_mid"]);
   Kokkos::deep_copy(NudgingData_aft.p_mid,fields_ext_h["p_mid"]);
   Kokkos::deep_copy(NudgingData_aft.u,fields_ext_h["u"]);
@@ -225,7 +224,7 @@ void Nudging::update_time_step (const int time_s)
       std::swap (NudgingData_bef,NudgingData_aft);
       NudgingData_bef.time = NudgingData_aft.time;
 
-      data_input->read_variables(time_index+1);
+      data_input.read_variables(time_index+1);
       Kokkos::deep_copy(NudgingData_aft.T_mid,fields_ext_h["T_mid"]);
       Kokkos::deep_copy(NudgingData_aft.p_mid,fields_ext_h["p_mid"]);
       Kokkos::deep_copy(NudgingData_aft.u,fields_ext_h["u"]);
@@ -347,7 +346,7 @@ void Nudging::run_impl (const double dt)
 // =========================================================================================
 void Nudging::finalize_impl()
 {
-  data_input->finalize();
+  data_input.finalize();
 }
 
 } // namespace scream

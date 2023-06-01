@@ -70,7 +70,10 @@ public:
   const layout_ptr_type&  get_layout_ptr () const { return m_layout;    }
   const Units&            get_units      () const { return m_units;     }
   const std::string&      get_grid_name  () const { return m_grid_name; }
-  DataType           data_type      () const { return m_data_type; }
+  DataType                data_type      () const { return m_data_type; }
+
+  // Returns a copy of this identifier, but with a different name
+  FieldIdentifier alias (const std::string& name) const;
 
   // The identifier string
   const std::string& get_id_string () const { return m_identifier; }

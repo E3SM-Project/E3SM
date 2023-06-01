@@ -2502,6 +2502,12 @@ Minimum droplet number conc (#/m3) imposed when micro_mincdnc > 0.
 Default: -999.
 </entry>
 
+<entry id="p3_mincdnc" type="real" category="microphys"
+       group="micro_nl" valid_values="" >
+Minimum droplet number conc (#/m3) imposed when p3_mincdnc > 0.
+Default: -999.
+</entry>
+
 <entry id="micro_mg_version" type="integer" category="microphys"
        group="micro_mg_nl" valid_values="" >
 Version number for MG microphysics
@@ -2914,6 +2920,68 @@ Default: set by build-namelist
        group="zmconv_nl" valid_values="" >
 Tpert scale factor in ZM deep convection scheme.
 Default: 0.D0
+</entry>
+
+<entry id="zmconv_microp" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+Microphysics option in ZM deep convection scheme.
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_clos_dyn_adj" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+Apply dynamics adjustment to CAPE closure
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_tpert_fix" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+logical switch for tpert impacts in ZM deep convection scheme
+Default: set by build-namelist
+</entry>
+
+
+<entry id="zmconv_auto_fac" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >    
+cloud droplet-rain autoconversion enhancement factor in convective microphysics scheme.
+Default: set by build-namelist  
+</entry>
+
+<entry id="zmconv_accr_fac" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >    
+cloud droplet-rain accretion enhancement factor in convective microphysics scheme.      
+Default: set by build-namelist  
+</entry>
+
+<entry id="zmconv_micro_dcs" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >    
+Autoconversion size threshold for cloud ice to snow (m)     
+Default: set by build-namelist 
+</entry>
+
+<!-- MCSP -->
+<entry id="zmconv_MCSP_heat_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), heating coefficient
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_MCSP_moisture_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), moisture coefficient
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_MCSP_uwind_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), zonal wind coefficient
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_MCSP_vwind_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), meridional wind coefficient
+Default: set by build-namelist
 </entry>
 
 

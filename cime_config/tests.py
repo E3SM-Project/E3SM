@@ -121,6 +121,19 @@ _TESTS = {
             "ERP_Ln18.ne4_oQU240.F2010.eam-condidiag_rhi",
             )
         },
+    
+    "e3sm_zm_developer" : {
+        "tests"   : (
+            "ERP.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "REP_Ln5.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "PET.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "PEM_Ln18.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.F2010.eam-zm_enhancements",
+            "SMS_D_Ln5.ne4_oQU240.F2010.eam-zm_enhancements",
+            "SMS_Ln5.ne4pg2_oQU480.F2010.eam-zm_enhancements",
+            "ERS.ne4pg2_oQU480.F2010.eam-zm_enhancements"
+            )
+        },
 
     "e3sm_atm_stealth" : {
         "tests"   : (
@@ -312,7 +325,7 @@ _TESTS = {
     #e3sm MMF tests for development
     "e3sm_mmf_integration" : {
         "tests" : (
-            "ERP_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_fixed_subcycle",
+            "ERP_Ln9.ne4pg2_oQU480.WCYCL20TRNS-MMF1.allactive-mmf_fixed_subcycle",
             "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1.eam-cosp_nhtfrq9",
             "SMS_Ln5.ne4_ne4.FSCM-ARM97-MMF1",
             )
@@ -562,7 +575,7 @@ _TESTS = {
             "ERS_Ln22.ne30_ne30.F2010-SCREAMv1",
             "PEM_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1",
             "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-small_kernels",
-            "ERP_Ln22.conusx4v1pg2_r05_oECv3.F2010-SCREAMv1-noAero",
+            "ERP_Ln22.conusx4v1pg2_r05_oECv3.F2010-SCREAMv1-noAero.scream-bfbhash",
             )
     },
 
@@ -668,6 +681,48 @@ _TESTS = {
         "tests"   : (
             "ERS.T62_oEC60to30v3_wQU225EC60to30.GMPAS-IAF-WW3",
             )
+    },
+
+    # super-BFB
+    "e3sm_superbfb_ocn_opt" : { # opt + pureMPI
+        #"share"   : True,
+        "time"    : "00:30:00",
+        "tests"   : (
+            "ERS_Ld3.T62_EC30to60E2r2.CMPASO-NYF.pemod-omp1",
+            "PEM_Lh3.T62_EC30to60E2r2.CMPASO-NYF.pemod-omp1",
+        )
+    },
+
+    "e3sm_superbfb_ocn_dbg" : { # dbg + pureMPI
+        #"share"   : True,
+        "time"    : "01:00:00",
+        "tests"   : (
+            "ERS_Ld3_D.T62_EC30to60E2r2.CMPASO-NYF.pemod-omp1",
+            "PEM_Lh3_D.T62_EC30to60E2r2.CMPASO-NYF.pemod-omp1",
+        )
+    },
+
+    "e3sm_superbfb_ocn_opt_thrd" : { # opt + threads
+        #"share"   : True,
+        "time"    : "00:30:00",
+        "tests"   : (
+            "ERS_Ld3.T62_EC30to60E2r2.CMPASO-NYF.pemod-ompfull",
+            "PET_Lh3.T62_EC30to60E2r2.CMPASO-NYF.pemod-omp2",
+        )
+    },
+
+    "e3sm_superbfb_ocn_dbg_thrd" : { # dbg + threads
+        #"share"   : True,
+        "time"    : "01:00:00",
+        "tests"   : (
+            "ERS_Ld3_D.T62_EC30to60E2r2.CMPASO-NYF.pemod-ompfull",
+            "PET_Lh3_D.T62_EC30to60E2r2.CMPASO-NYF.pemod-omp2",
+        )
+    },
+
+    "e3sm_superbfb_ocn" : {
+        "inherit" : ("e3sm_superbfb_ocn_dbg", "e3sm_superbfb_ocn_opt",
+                     "e3sm_superbfb_ocn_dbg_thrd", "e3sm_superbfb_ocn_opt_thrd"),
     },
 }
 

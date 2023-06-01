@@ -47,8 +47,6 @@ public:
   // Assignment deleted, to prevent sneaky overwrites.
   FieldHeader& operator= (const FieldHeader&) = delete;
 
-  std::shared_ptr<FieldHeader> alias (const std::string& name) const;
-
   // Set extra data
   void set_extra_data (const std::string& key,
                        const ekat::any& data,
@@ -80,6 +78,8 @@ public:
   // Get the extra data
   const extra_data_type& get_extra_data () const { return m_extra_data; }
 
+  std::shared_ptr<FieldHeader> alias (const std::string& name) const;
+
 protected:
 
   // Friend this function, so it can set up a subfield header
@@ -87,10 +87,6 @@ protected:
   create_subfield_header (const FieldIdentifier&,
                           std::shared_ptr<FieldHeader>,
                           const int, const int, const bool);
-
-  friend std::shared_ptr<FieldHeader>
-  create_alias (const FieldHeader&,
-                const std::string&);
 
   // Static information about the field: name, rank, tags
   identifier_type                 m_identifier;

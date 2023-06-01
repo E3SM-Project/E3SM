@@ -352,7 +352,7 @@ subroutine modal_aer_opt_init()
         call add_default ('AODDUST4', 1, ' ')
         call add_default ('AODMODE4', 1, ' ')
         call add_default ('BURDEN4' , 1, ' ')
-     end if 
+     end if
   end if
 
    if(cam_chempkg_is('superfast_mam5_resus_mom_soag')) then 

@@ -113,6 +113,7 @@ contains
           end do
        ! SO2 and H2SO4 can be dead zeros due to aerosol processes
        ! use a different equation for them to avoid debug built issues
+
 #if (defined MODAL_AERO_5MODE)  
        ! for MAM5, H2SO4, SO2, and DMS needs to be solved in the stratosphere     
        elseif (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
@@ -168,6 +169,7 @@ contains
     call exp_prod_loss( prod, loss, base_sol_reset, diags_reaction_rates, het_rates )
     do m = 1,clscnt1
        l = clsmap(m,1)
+
 #if (defined MODAL_AERO_5MODE)
        if (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
            do i = 1,ncol
@@ -200,6 +202,7 @@ contains
            end do
         end do
       endif 
+
     end do
 
   end subroutine exp_sol
