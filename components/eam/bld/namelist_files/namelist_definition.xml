@@ -3966,7 +3966,9 @@ Default: held-suarez
 					 linoz_mam4_resus_soag,linoz_mam4_resus_mom,
 					 linoz_mam4_resus_mom_soag,
                                          super_fast_llnl,super_fast_llnl_mam3,
-					 superfast_mam4_resus_mom_soag,none " >
+					 superfast_mam4_resus_mom_soag,
+					 superfast_mam5_resus_mom_soag,
+                                         none " >
 Name of the CAM chemistry package.  N.B. this variable may not be set by
 the user.  It is set by build-namelist via information in the configure
 cache file to be consistent with how CAM was built.
@@ -4161,6 +4163,12 @@ Default: .false.
 </entry>
 
 <entry id="history_aero_optics" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for diagnostic output of the aerosol optics
+Default: .false.
+</entry>
+
+<entry id="is_output_interactive_volc" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Switch for diagnostic output of the aerosol optics
 Default: .false.
@@ -4914,6 +4922,13 @@ Default: set by build-namelist.
 In-cloud scav for cloud-borne aerosol tuning factor
 Default: set by build-namelist.
 </entry>
+
+<entry id="modal_strat_sulfate_aod_treatment" type="logical"  category="cam_chem"
+       group="phys_ctl_nl" valid_values="" >
+Flag for H2SO4 specific stratospheric wateruptake treatment
+Default: .false.
+</entry>
+
 <!-- Flags for implementing code modifications under polar project -->
 <entry id="sscav_tuning" type="logical"  category="cam_chem"
        group="aerosol_nl" valid_values="" >

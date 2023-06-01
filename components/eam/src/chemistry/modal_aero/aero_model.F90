@@ -23,6 +23,7 @@ module aero_model
 
   use modal_aero_data,only: cnst_name_cw
   use modal_aero_data,only: ntot_amode, modename_amode
+  use ref_pres,       only: top_lev => clim_modal_aero_top_lev    
 
   implicit none
   private
@@ -35,7 +36,7 @@ module aero_model
   public :: aero_model_wetdep     ! aerosol wet removal
   public :: aero_model_emissions  ! aerosol emissions
   public :: aero_model_surfarea   ! aerosol surface area for chemistry
-
+  public :: aero_model_strat_surfarea !  stratospheric aerosol wet surface area for chemistry
   ! These are made public to be used by MMF w/ ECPP
   public :: calc_1_impact_rate
   public :: dlndg_nimptblgrow
@@ -83,7 +84,6 @@ module aero_model
   integer, dimension(ntot_amode) :: num_idx = -1
   integer :: index_tot_mass(ntot_amode,10) = -1
   integer :: index_chm_mass(ntot_amode,10) = -1
-
   integer :: ndx_h2so4
   character(len=fieldname_len) :: dgnum_name(ntot_amode)
 
@@ -108,7 +108,6 @@ module aero_model
   logical :: drydep_lq(pcnst)
   logical :: wetdep_lq(pcnst)
 
-
 contains
   
   !=============================================================================
@@ -129,8 +128,8 @@ contains
     ! Namelist variables
     character(len=16) :: aer_wetdep_list(pcnst) = ' '
     character(len=16) :: aer_drydep_list(pcnst) = ' '
-
-    namelist /aerosol_nl/ aer_wetdep_list, aer_drydep_list, sol_facti_cloud_borne, seasalt_emis_scale, sscav_tuning, &
+    namelist /aerosol_nl/ aer_wetdep_list, aer_drydep_list,          &
+             sol_facti_cloud_borne, seasalt_emis_scale, sscav_tuning, &
        sol_factb_interstitial, sol_factic_interstitial
 
     !-----------------------------------------------------------------------------
@@ -164,7 +163,6 @@ contains
 
     wetdep_list = aer_wetdep_list
     drydep_list = aer_drydep_list
-
   end subroutine aero_model_readnl
 
   !=============================================================================
@@ -204,13 +202,14 @@ contains
     integer, intent(in) :: iflagaa
 
     ! local vars
-    integer :: id, l, m, n, nspc
+    integer :: id, j,l, m, n, nspc
 
     logical  :: history_aerosol ! Output MAM or SECT aerosol tendencies
     logical  :: history_verbose ! produce verbose history output
 
     character(len=*), parameter :: subrname = 'aero_model_init'
     character(len=20) :: dummy
+    
     character(len=fieldname_len) :: wetdep_name, depflx_name
     character(len=6) :: test_name
     character(len=100) :: errmes
@@ -479,7 +478,8 @@ contains
           endif
        enddo
 
-#if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
+
        dummy = 'SSTSFMBL_OM'
        call addfld (dummy,horiz_only, 'A','kg/m2/s','Mobilization flux of marine organic matter at surface')
        if (history_aerosol) then
@@ -841,6 +841,46 @@ contains
     index_tot_mass(4,2) = get_spc_ndx('bc_a4')
     index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
     !
+#elif ( defined MODAL_AERO_5MODE )
+    ! accumulation mode #1
+    !
+    index_tot_mass(1,1) = get_spc_ndx('so4_a1')
+    index_tot_mass(1,2) = get_spc_ndx('pom_a1')
+    index_tot_mass(1,3) = get_spc_ndx('soa_a1')
+    index_tot_mass(1,4) = get_spc_ndx('bc_a1' )
+    index_tot_mass(1,5) = get_spc_ndx('dst_a1')
+    index_tot_mass(1,6) = get_spc_ndx('ncl_a1')
+    index_tot_mass(1,7) = get_spc_ndx('mom_a1')
+    index_chm_mass(1,1) = get_spc_ndx('so4_a1')
+    index_chm_mass(1,2) = get_spc_ndx('soa_a1')
+    index_chm_mass(1,3) = get_spc_ndx('bc_a1' )
+     !
+    ! aitken mode
+    !
+    index_tot_mass(2,1) = get_spc_ndx('so4_a2')
+    index_tot_mass(2,2) = get_spc_ndx('soa_a2')
+    index_tot_mass(2,3) = get_spc_ndx('ncl_a2')
+    index_tot_mass(2,4) = get_spc_ndx('mom_a2')
+    index_chm_mass(2,1) = get_spc_ndx('so4_a2')
+    index_chm_mass(2,2) = get_spc_ndx('soa_a2')
+    ! coarse mode
+    !
+    index_tot_mass(3,1) = get_spc_ndx('dst_a3')
+    index_tot_mass(3,2) = get_spc_ndx('ncl_a3')
+    index_tot_mass(3,3) = get_spc_ndx('so4_a3')
+    index_chm_mass(3,1) = get_spc_ndx('so4_a3')
+    !
+    ! POM mode
+    !
+    index_tot_mass(4,1) = get_spc_ndx('pom_a4')
+    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
+    index_tot_mass(4,3) = get_spc_ndx('mom_a4')
+    index_chm_mass(4,1) = get_spc_ndx('bc_a4' ) ! previous model use bc_a1, should be a typo
+    !
+    ! strat_coarse
+    index_tot_mass(5,1) = get_spc_ndx('so4_a5')
+    index_chm_mass(5,1) = get_spc_ndx('so4_a5')
+    
 #elif ( defined MODAL_AERO_7MODE )
     !
     ! accumulation mode #1
@@ -1314,7 +1354,9 @@ contains
 
 #if ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM )
        ntoo = modeptr_coarse
-#else
+#elif (defined MODAL_AERO_5MODE)
+       ntoo = modeptr_coarse
+#else       
        call endrun( 'modal_aero_wetscav_init: new resuspension not implemented for 7-mode or 9-mode MAM.')
 #endif
 
@@ -2367,14 +2409,49 @@ do_lphase2_conditional: &
 
   end subroutine aero_model_surfarea
 
+    !-------------------------------------------------------------------------
+  ! provides WET stratospheric aerosol surface area info for modal aerosols
+  ! if modal_strat_sulfate = TRUE -- called from mo_gas_phase_chemdr
+  !-------------------------------------------------------------------------
+  subroutine aero_model_strat_surfarea( ncol, mmr, pmid, temp, ltrop, pbuf, strato_sad )
+
+    ! dummy args
+    integer,  intent(in)    :: ncol
+    real(r8), intent(in)    :: mmr(:,:,:)
+    real(r8), intent(in)    :: pmid(:,:)
+    real(r8), intent(in)    :: temp(:,:)
+    integer,  intent(in)    :: ltrop(:) ! tropopause level indices
+    type(physics_buffer_desc), pointer :: pbuf(:)
+    real(r8), intent(out)   :: strato_sad(:,:)
+    !real(r8), intent(out)   :: reff_strat(:,:)
+
+    ! local vars
+    real(r8), pointer, dimension(:,:,:) :: dgnumwet
+    integer :: beglev(ncol)
+    integer :: endlev(ncol)
+
+    !reff_strat = 0._r8
+    strato_sad = 0._r8
+
+   ! if (.not.modal_strat_sulfate) return
+
+    call pbuf_get_field(pbuf, dgnumwet_idx, dgnumwet )
+
+    beglev(:ncol)=top_lev
+    endlev(:ncol)=ltrop(:ncol)
+    call surf_area_dens( ncol, mmr, pmid, temp, dgnumwet, beglev, endlev, strato_sad )
+
+  end subroutine aero_model_strat_surfarea
+
   !=============================================================================
   !=============================================================================
-  subroutine aero_model_gasaerexch( loffset, ncol, lchnk, delt, &
-                                    latndx, lonndx, reaction_rates, &
-                                    tfld, pmid, pdel, mbar, relhum, &
-                                    zm,  qh2o, cwat, cldfr, cldnum, &
+  subroutine aero_model_gasaerexch( loffset, ncol, lchnk, delt,              &
+                                    latndx, lonndx, reaction_rates,          &
+                                    tfld, pmid, pdel, mbar, relhum,          &
+                                    zm,  qh2o, cwat, cldfr, cldnum,          &
                                     airdens, invariants, del_h2so4_gasprod,  &
-                                    vmr0, vmr, pbuf )
+                                    vmr0, vmr, pbuf,                         &
+                                    troplev                                   ) 
 
     use time_manager,          only : get_nstep
     use modal_aero_amicphys,   only : modal_aero_amicphys_intr
@@ -2411,6 +2488,7 @@ do_lphase2_conditional: &
     real(r8), intent(in) :: vmr0(:,:,:)       ! initial mixing ratios (before gas-phase chem changes)
     real(r8), intent(inout) :: vmr(:,:,:)         ! mixing ratios ( vmr )
     type(physics_buffer_desc), pointer :: pbuf(:)
+    integer,  intent(in)  ::  troplev(pcols)   ! tropopause level
     
     ! local vars 
     
@@ -2605,7 +2683,8 @@ do_lphase2_conditional: &
             vmr0,                                    &
             dvmrdt,             dvmrcwdt,            &
             dgnum,              dgnumwet,            &
-            wetdens                                  )
+            wetdens,                                 &
+            troplev                                  )  
 !      subroutine modal_aero_amicphys_intr(          &
 !           mdo_gasaerexch,     mdo_rename,          &
 !           mdo_newnuc,         mdo_coag,            &
@@ -2728,6 +2807,87 @@ do_lphase2_conditional: &
 
   !===============================================================================
   ! private methods
+  !=============================================================================
+  subroutine surf_area_dens( ncol, mmr, pmid, temp, diam, beglev, endlev, sad, reff, sfc )
+    use mo_constants,    only : pi
+    use modal_aero_data, only : nspec_amode, alnsg_amode
+
+    ! dummy args
+    integer,  intent(in)  :: ncol
+    real(r8), intent(in)  :: mmr(:,:,:)
+    real(r8), intent(in)  :: pmid(:,:)
+    real(r8), intent(in)  :: temp(:,:)
+    real(r8), intent(in)  :: diam(:,:,:)
+    integer,  intent(in)  :: beglev(:)
+    integer,  intent(in)  :: endlev(:)
+    real(r8), intent(out) :: sad(:,:)
+    real(r8),optional, intent(out) :: reff(:,:)   
+    real(r8),optional, intent(out) :: sfc(:,:,:)
+
+    ! local vars
+    real(r8) :: sad_mode(pcols,pver,ntot_amode),radeff(pcols,pver)
+    real(r8) :: vol(pcols,pver),vol_mode(pcols,pver,ntot_amode)
+    real(r8) :: rho_air
+    integer  :: i,k,l,m
+    real(r8) :: chm_mass, tot_mass
+
+    !
+    ! Compute surface aero for each mode.
+    ! Total over all modes as the surface area for chemical reactions.
+    !
+
+    sad = 0._r8
+    sad_mode = 0._r8
+    vol = 0._r8
+    vol_mode = 0._r8
+    if (present(reff)) then 
+    reff = 0._r8
+    endif
+    do i = 1,ncol
+       do k = beglev(i),endlev(i)
+          rho_air = pmid(i,k)/(temp(i,k)*287.04_r8)
+          do l=1,ntot_amode
+             !
+             ! compute a mass weighting of the number
+             !
+             tot_mass = 0._r8
+             chm_mass = 0._r8
+             do m=1,nspec_amode(l)
+               if ( index_tot_mass(l,m) > 0 ) &
+                    tot_mass = tot_mass + mmr(i,k,index_tot_mass(l,m))
+               if ( index_chm_mass(l,m) > 0 ) &
+                    chm_mass = chm_mass + mmr(i,k,index_chm_mass(l,m))
+             end do
+             if ( tot_mass > 0._r8 ) then
+              ! surface area density
+               sad_mode(i,k,l) = chm_mass/tot_mass &
+                               * mmr(i,k,num_idx(l))*rho_air*pi*diam(i,k,l)**2._r8 &
+                               * exp(2._r8*alnsg_amode(l)**2._r8)  ! m^2/m^3
+               sad_mode(i,k,l) = 1.e-2_r8 * sad_mode(i,k,l) ! cm^2/cm^3
+
+              ! volume calculation, for use in effective radius calculation
+               vol_mode(i,k,l) = chm_mass/tot_mass &
+                               * mmr(i,k,num_idx(l))*rho_air*pi/6._r8*diam(i,k,l)**3._r8  &
+                               * exp(4.5_r8*alnsg_amode(l)**2._r8)  ! m^3/m^3 = cm^3/cm^3
+             else
+               sad_mode(i,k,l) = 0._r8
+               vol_mode(i,k,l) = 0._r8
+             end if
+          end do
+          sad(i,k) = sum(sad_mode(i,k,:))
+          vol(i,k) = sum(vol_mode(i,k,:))
+
+          if (present(reff)) then 
+          reff(i,k) = 3._r8*vol(i,k)/sad(i,k)
+          endif 
+       enddo
+    enddo
+    if (present(sfc)) then
+       sfc(:,:,:) = sad_mode(:,:,:)
+    endif
+
+  end subroutine surf_area_dens
+
 
 
   !===============================================================================

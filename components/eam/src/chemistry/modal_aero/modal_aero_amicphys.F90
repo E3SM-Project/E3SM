@@ -20,7 +20,6 @@
   use modal_aero_data, only:  ntot_aspectype, ntot_amode, nsoag, nsoa, npoa, nbc
 ! use ref_pres,        only:  top_lev => clim_modal_aero_top_lev  ! this is for gg02a
   use ref_pres,        only:  top_lev => trop_cloud_top_lev       ! this is for ee02c
-
   implicit none
   private
   save
@@ -104,6 +103,7 @@
   integer, parameter :: max_gas = nsoa + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
+
 #elif ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: max_gas = nsoa + 4
   ! the +8 in max_aer are dst, ncl(=na), so4, no3, cl, nh4, ca, co3 
@@ -123,6 +123,8 @@
 #endif
 
 #if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
+  integer, parameter :: ntot_amode_extd = ntot_amode
+#elif ( defined MODAL_AERO_5MODE)
   integer, parameter :: ntot_amode_extd = ntot_amode
 #else
   integer, parameter :: ntot_amode_extd = ntot_amode + 1
@@ -231,6 +233,7 @@
   real(r8) :: specdens2_amode(ntot_aspectype,ntot_amode)
   real(r8) :: spechygro2(ntot_aspectype,ntot_amode)
 
+  integer ::  ncrsf
 
 ! !DESCRIPTION: This module implements ...
 !
@@ -271,6 +274,7 @@ subroutine modal_aero_amicphys_intr(                             &
 #endif
                         dgncur_a,           dgncur_awet,         &
                         wetdens_host,                            &
+                        troplev,                                 & 
                         qaerwat                                  )
 
 
@@ -299,6 +303,7 @@ implicit none
    integer,  intent(in)    :: nstep                ! model time-step number
    integer,  intent(in)    :: loffset              ! offset applied to modal aero "ptrs"
    integer,  intent(in)    :: latndx(pcols), lonndx(pcols)
+   integer,  intent(in)    :: troplev(pcols)   !tropopause level
 #if ( defined( CAMBOX_ACTIVATE_THIS ) )
    integer,  intent(in)    :: nqtendbb             ! dimension for q_tendbb
    integer,  intent(in)    :: nqqcwtendbb          ! dimension for qqcw_tendbb
@@ -914,7 +919,8 @@ main_i_loop: &
          qsub3, qqcwsub3, qaerwatsub3,            &
          qsub4, qqcwsub4, qaerwatsub4,            &
          qsub_tendaa, qqcwsub_tendaa,             &
-         misc_vars_aa                             )
+         misc_vars_aa,                            &
+          troplev(i)                             )    
 
 
 !
@@ -1148,7 +1154,8 @@ main_i_loop: &
          qsub3, qqcwsub3, qaerwatsub3,            &
          qsub4, qqcwsub4, qaerwatsub4,            &
          qsub_tendaa, qqcwsub_tendaa,             &
-         misc_vars_aa                             )
+         misc_vars_aa,                            &
+         troplev_i)                               
 !
 ! calculates changes to gas and aerosol sub-area TMRs (tracer mixing ratios)
 !    for the current grid cell (with indices = lchnk,i,k)
@@ -1165,6 +1172,7 @@ main_i_loop: &
       integer,  intent(in)    :: lund                  ! logical unit for diagnostic output
       integer,  intent(in)    :: loffset
       integer,  intent(in)    :: nsubarea, ncldy_subarea
+      integer,  intent(in)    ::  troplev_i   ! tropopause level
 
       real(r8), intent(in)    :: deltat                ! time step (s)
       real(r8), intent(in)    :: afracsub(maxsubarea)   ! sub-area fractional area (0-1)
@@ -1181,7 +1189,6 @@ main_i_loop: &
       real(r8), intent(inout) :: wetdens(max_mode)
                                     ! interstitial aerosol wet density (kg/m3)
                                     ! dry & wet geo. mean dia. (m) of number distrib.
-
 ! qsubN and qqcwsubN (N=1:4) are tracer mixing ratios (TMRs, mol/mol or #/kmol) in sub-areas
 !    currently there are just clear and cloudy sub-areas
 !    the N=1:4 have same meanings as for qgcmN
@@ -1339,7 +1346,6 @@ main_jsub_loop: &
 
 
       if ( iscldy_subarea(jsub) .eqv. .true. ) then
-
       call mam_amicphys_1subarea_cloudy(             &
          do_cond_sub,            do_rename_sub,      &
          do_newnuc_sub,          do_coag_sub,        &
@@ -1362,7 +1368,8 @@ main_jsub_loop: &
          qnumcw_delaa,                               &
          qaercw2,    qaercw3,    qaercw4,            &
          qaercw_delaa,                               &
-         misc_vars_aa_sub(jsub)                      )
+         misc_vars_aa_sub(jsub),                     &
+         troplev_i         )                       
 
       else
 
@@ -1382,7 +1389,8 @@ main_jsub_loop: &
          qnum3,      qnum4,      qnum_delaa,         &
          qaer3,      qaer4,      qaer_delaa,         &
          qwtr3,      qwtr4,                          &
-         misc_vars_aa_sub(jsub)                      )
+         misc_vars_aa_sub(jsub),                     &
+         troplev_i )       
 
       end if
 
@@ -1468,7 +1476,8 @@ main_jsub_loop: &
          qnumcw_delaa,                               &
          qaercw2,    qaercw3,    qaercw4,            &
          qaercw_delaa,                               &
-         misc_vars_aa_sub                            )
+         misc_vars_aa_sub,                           &
+         troplev_i)                                  
 !
 ! calculates changes to gas and aerosol sub-area TMRs (tracer mixing ratios)
 !    for a single cloudy sub-area (with indices = lchnk,i,k,jsub)
@@ -1487,7 +1496,8 @@ main_jsub_loop: &
 !    coagulation - because cloud-borne aerosol would need to be included
 !
       use physconst, only:  r_universal
-
+      use time_manager,  only: is_first_step
+     
       logical,  intent(in)    :: do_cond, do_rename, do_newnuc, do_coag
       logical,  intent(in)    :: iscldy_subarea        ! true if sub-area is cloudy
       integer,  intent(in)    :: lchnk                 ! chunk identifier
@@ -1497,6 +1507,7 @@ main_jsub_loop: &
       integer,  intent(in)    :: lund                  ! logical unit for diagnostic output
       integer,  intent(in)    :: loffset
       integer,  intent(in)    :: jsub, nsubarea        ! sub-area index, number of sub-areas
+      integer,  intent(in)    :: troplev_i 
 
       real(r8), intent(in)    :: afracsub              ! fractional area of sub-area (0-1)
       real(r8), intent(in)    :: deltat                ! time step (s)
@@ -1645,7 +1656,8 @@ main_jsub_loop: &
       real(r8) :: tmp_relhum
       real(r8) :: uptkaer(max_gas,max_mode)
       real(r8) :: uptkrate_h2so4
-
+      logical:: strat_sulfate_xfer
+      strat_sulfate_xfer = .false.
 
 
 ! air molar density (kmol/m3)
@@ -1802,6 +1814,13 @@ do_rename_if_block30: &
       mtoo_renamexf(:) = 0
       mtoo_renamexf(nait) = nacc
 
+      if ( (k <= troplev_i ) .and. (ntot_amode==5) .and. (ncrsf > 0)) then
+          mtoo_renamexf(nacc) = ncrsf ! reanme acc --> strat coarse
+          strat_sulfate_xfer = .true.
+
+      endif
+
+
 ! qaer_delsub_grow4rnam   = change in qaer from cloud chemistry and gas condensation
 ! qaercw_delsub_grow4rnam = change in qaercw from cloud chemistry
       qaer_delsub_grow4rnam   = (qaer3 - qaer2)/ntsubstep  + qaer_delsub_grow4rnam
@@ -1812,8 +1831,10 @@ do_rename_if_block30: &
       qnumcw_sv1 = qnumcw_cur
       qaercw_sv1 = qaercw_cur
 
-      call mam_rename_1subarea(                                      &
-         nstep,             lchnk,                                   &
+
+      if ( strat_sulfate_xfer ) then
+       call mam_rename_1subarea_strat(                                      &
+              nstep,             lchnk,                              &
          i,                 k,                jsub,                  &
          latndx,            lonndx,           lund,                  &
          iscldy_subarea,                                             &
@@ -1823,7 +1844,22 @@ do_rename_if_block30: &
          qaer_cur,          qaer_delsub_grow4rnam,                   &
          qwtr_cur,                                                   &
          qnumcw_cur,                                                 &
-         qaercw_cur,        qaercw_delsub_grow4rnam                  )
+         qaercw_cur,        qaercw_delsub_grow4rnam               )
+      else
+       call mam_rename_1subarea(                                     &
+            nstep,             lchnk,                              &
+         i,                 k,                jsub,                  &
+         latndx,            lonndx,           lund,                  &
+         iscldy_subarea,                                             &
+         mtoo_renamexf,                                              &
+         n_mode,                                                     &
+         qnum_cur,                                                   &
+         qaer_cur,          qaer_delsub_grow4rnam,                   &
+         qwtr_cur,                                                   &
+         qnumcw_cur,                                                 &
+         qaercw_cur,        qaercw_delsub_grow4rnam               )
+      end if
+
 
       qnum_del_rnam = qnum_del_rnam + (qnum_cur - qnum_sv1)
       qaer_del_rnam = qaer_del_rnam + (qaer_cur - qaer_sv1)
@@ -1925,7 +1961,8 @@ do_rename_if_block30: &
          qnum3,      qnum4,      qnum_delaa,         &
          qaer3,      qaer4,      qaer_delaa,         &
          qwtr3,      qwtr4,                          &
-         misc_vars_aa_sub                            )
+         misc_vars_aa_sub,                           &
+         troplev_i )                                 
 !
 ! calculates changes to gas and aerosol sub-area TMRs (tracer mixing ratios)
 !    for a single clear sub-area (with indices = lchnk,i,k,jsub)
@@ -1961,6 +1998,7 @@ do_rename_if_block30: &
       real(r8), intent(in)    :: zmid                  ! altitude (above ground) at layer center (m)
       real(r8), intent(in)    :: pblh                  ! planetary boundary layer depth (m)
       real(r8), intent(in)    :: relhum                ! relative humidity (0-1)
+      integer,  intent(in)    :: troplev_i   ! tropopause level
 
       real(r8), intent(inout) :: dgn_a(max_mode)
       real(r8), intent(inout) :: dgn_awet(max_mode)
@@ -2073,7 +2111,7 @@ do_rename_if_block30: &
       real(r8) :: tmpa, tmpb, tmpc, tmpd, tmpe, tmpf
       real(r8) :: uptkaer(max_gas,max_mode)
       real(r8) :: uptkrate_h2so4
-
+      logical :: strat_sulfate_xfer = .false.
 
 
 ! air molar density (kmol/m3)
@@ -2168,7 +2206,7 @@ do_cond_if_block10: &
               qgas_avg,          qgas_netprod_otrproc,                   &
               uptkrate_h2so4,    misc_vars_aa_sub                        )
       else
-#endif
+#endif              
          call mam_gasaerexch_1subarea(                                &
            nstep,             lchnk,                                  &
            i,                 k,                jsub,                 &
@@ -2226,17 +2264,37 @@ do_rename_if_block30: &
 
       qnum_sv1 = qnum_cur
       qaer_sv1 = qaer_cur
+      strat_sulfate_xfer = .false.
+      if ((troplev_i >= k) .and. (ntot_amode==5) .and. (ncrsf > 0)) then
+          mtoo_renamexf(nacc) = ncrsf !reanme acc --> strat coarse
+          strat_sulfate_xfer = .true.
+      endif
 
-      call mam_rename_1subarea(                                    &
-         nstep,             lchnk,                                 &
-         i,                 k,                jsub,                &
-         latndx,            lonndx,           lund,                &
-         iscldy_subarea,                                           &
-         mtoo_renamexf,                                            &
-         n_mode,                                                   &
-         qnum_cur,                                                 &
-         qaer_cur,          qaer_delsub_grow4rnam,                 &
-         qwtr_cur                                                  )
+      if (strat_sulfate_xfer) then
+
+         call mam_rename_1subarea_strat(                                &
+              nstep,             lchnk,                                 &
+               i,                 k,                jsub,               &
+              latndx,            lonndx,           lund,                &
+              iscldy_subarea,                                           &
+              mtoo_renamexf,                                            &
+              n_mode,                                                   &
+              qnum_cur,                                                 &
+              qaer_cur,          qaer_delsub_grow4rnam,                 &
+              qwtr_cur)
+      else
+         call mam_rename_1subarea(                                    &
+                              nstep,             lchnk,                 &
+               i,                 k,                jsub,               &
+              latndx,            lonndx,           lund,                &
+              iscldy_subarea,                                           &
+              mtoo_renamexf,                                            &
+              n_mode,                                                   &
+              qnum_cur,                                                 &
+              qaer_cur,          qaer_delsub_grow4rnam,                 &
+              qwtr_cur)
+      end if
+
 
       qnum_del_rnam = qnum_del_rnam + (qnum_cur - qnum_sv1)
       qaer_del_rnam = qaer_del_rnam + (qaer_cur - qaer_sv1)
@@ -2255,7 +2313,6 @@ do_newnuc_if_block50: &
       qgas_sv1 = qgas_cur
       qnum_sv1 = qnum_cur
       qaer_sv1 = qaer_cur
-
       call mam_newnuc_1subarea(                                     &
          nstep,             lchnk,                                  &
          i,                 k,                jsub,                 &
@@ -2269,8 +2326,8 @@ do_newnuc_if_block50: &
          qnum_cur,                                                  &
          qaer_cur,                                                  &
          qwtr_cur,                                                  &
-         dnclusterdt_substep                                        )
-
+         dnclusterdt_substep,                                        &
+         troplev_i                                        )!
       qgas_del_nnuc = qgas_del_nnuc + (qgas_cur - qgas_sv1)
       qnum_del_nnuc = qnum_del_nnuc + (qnum_cur - qnum_sv1)
       qaer_del_nnuc = qaer_del_nnuc + (qaer_cur - qaer_sv1)
@@ -2820,21 +2877,6 @@ do_newnuc_if_block50: &
         !         gam_ratio, iter_mesa, aH2O_a,jaerosolstate, mass_dry_a_bgn, mass_dry_a, 
         !         dens_dry_a_bgn, dens_dry_a, water_a_hyst, jaerosolstate_bgn
 
-! *** ff03h version ***
-!       call mosaic_box_aerchemistry(                                                   &
-!            hostgridinfo,            it_mosaic,    aH2O,               T_K,            &!Intent-ins
-!            P_atm,                   RH_pc,        dtchem,                             &
-!            mcall_load_mosaic_parameters,          mcall_print_aer_in, sigmag_a,       &
-!            jaerosolstate,           aer,                                              &!Intent-inouts
-!            num_a,                   water_a,      gas,                                &
-!            gas_avg,                 gas_netprod_otrproc,              Dp_dry_a,       &
-!            dp_wet_a,                jhyst_leg,    zero_water_flag,    flag_itr_kel,   &
-!            mass_dry_a_bgn,          mass_dry_a,                                       &!Intent-outs
-!            dens_dry_a_bgn,          dens_dry_a,   water_a_hyst,       aH2O_a,         &
-!            gam_ratio,               jaerosolstate_bgn,                jASTEM_fail,    &
-!            iter_MESA,               f_neg_vol_tmp                                     )
-
-! *** ff04a version ***
         call mosaic_box_aerchemistry(               aH2O,               T_K,            &!Intent-ins
              P_atm,                   RH_pc,        dtchem,                             &
              mcall_load_mosaic_parameters,          mcall_print_aer_in, sigmag_a,       &
@@ -2861,7 +2903,6 @@ do_newnuc_if_block50: &
 !       mass_dry_a_bgn,         mass_dry_a,                                       &!Intent-outs
 !       dens_dry_a_bgn,         dens_dry_a,   water_a_hyst,       aH2O_a,         &
 !       uptkrate_h2so4,         gam_ratio,    jaerosolstate_bgn                   )
-
         if (mosaic_vars_aa%flag_itr_kel) then
            misc_vars_aa_sub%max_kelvin_iter_1grid = misc_vars_aa_sub%max_kelvin_iter_1grid + 1.0_r8
         endif
@@ -4373,7 +4414,400 @@ mainloop1_ipair:  do n = 1, ntot_amode
 
       return
       end subroutine mam_rename_1subarea
+!--------------------------------------------------------------------------------
+      subroutine mam_rename_1subarea_strat(                               &
+         nstep,             lchnk,                                  &
+         i,                 k,                jsub,                 &
+         latndx,            lonndx,           lund,                 &
+         iscldy_subarea,                                            &
+         mtoo_renamexf,                                             &
+         n_mode,                                                    &
+         qnum_cur,                                                  &
+         qaer_cur,          qaer_del_grow4rnam,                     &
+         qwtr_cur,                                                  &
+         qnumcw_cur,                                                &
+         qaercw_cur,        qaercw_del_grow4rnam)                   !
 
+#if ( defined CAM_VERSION_IS_ACME )
+      use shr_spfn_mod, only: erfc => shr_spfn_erfc  ! acme version of cam
+#else
+      use error_function,  only: erfc                ! mozart-mosaic version of cam
+#endif
+
+      logical,  intent(in)    :: iscldy_subarea        ! true if sub-area is cloudy
+      integer,  intent(in)    :: nstep                 ! model time-step number
+      integer,  intent(in)    :: lchnk                 ! chunk identifier
+      integer,  intent(in)    :: i, k                  ! column and level indices
+      integer,  intent(in)    :: jsub                  ! sub-area index
+      integer,  intent(in)    :: latndx, lonndx        ! lat and lon indices
+      integer,  intent(in)    :: lund                  ! logical unit for diagnostic output
+      integer,  intent(in)    :: mtoo_renamexf(max_mode)
+      integer,  intent(in)    :: n_mode                ! current number of modes (including temporary)
+      real(r8), intent(inout), dimension( 1:max_mode ) :: &
+         qnum_cur
+      real(r8), intent(inout), dimension( 1:max_aer, 1:max_mode ) :: &
+         qaer_cur
+      real(r8), intent(in   ), dimension( 1:max_aer, 1:max_mode ) :: &
+         qaer_del_grow4rnam
+      real(r8), intent(inout), dimension( 1:max_mode ) :: &
+         qwtr_cur    !unused in this subroutine
+
+      real(r8), intent(inout), optional, dimension( 1:max_mode ) :: &
+         qnumcw_cur
+      real(r8), intent(inout), optional, dimension( 1:max_aer, 1:max_mode ) :: &
+         qaercw_cur
+      real(r8), intent(in   ), optional, dimension( 1:max_aer, 1:max_mode ) :: &
+         qaercw_del_grow4rnam
+
+
+! !DESCRIPTION:
+! computes TMR (tracer mixing ratio) tendencies for "mode renaming"
+!    during a continuous growth process
+! currently this transfers number and mass (and surface) from the aitken
+!    to accumulation mode after gas condensation or stratiform-cloud
+!    aqueous chemistry
+! (convective cloud aqueous chemistry not yet implemented)
+!
+! !REVISION HISTORY:
+!
+
+! local variables
+      integer :: iaer
+      integer :: mfrm, mtoo
+      integer :: n, npair
+
+      integer, parameter :: ldiag1 = 0
+      real(r8), parameter :: frelax = 27.0_r8
+      real(r8), parameter :: onethird = 1.0_r8/3.0_r8
+
+      real(r8) :: deldryvol_a(ntot_amode)
+      real(r8) :: deldryvol_c(ntot_amode)
+      real(r8) :: dp_belowcut(max_mode)
+      real(r8) :: dp_cut(max_mode)
+      real(r8) :: dgn_aftr, dgn_xfer
+      real(r8) :: dgn_t_new, dgn_t_old, dgn_t_oldaa
+      real(r8) :: dryvol_t_del, dryvol_t_new
+      real(r8) :: dryvol_t_old, dryvol_t_oldaa, dryvol_t_oldbnd
+      real(r8) :: dryvol_a(ntot_amode)
+      real(r8) :: dryvol_c(ntot_amode)
+      real(r8) :: dryvol_smallest(ntot_amode)
+      real(r8) :: factoraa(ntot_amode)
+      real(r8) :: factoryy(ntot_amode)
+      real(r8) :: lndp_cut(max_mode)
+      real(r8) :: lndgn_new, lndgn_old
+      real(r8) :: lndgv_new, lndgv_old
+      real(r8) :: num_t_old, num_t_oldbnd
+      real(r8) :: tailfr_volnew, tailfr_volold
+      real(r8) :: tailfr_numnew, tailfr_numold
+      real(r8) :: tmpa, tmpb, tmpd
+      real(r8) :: tmp_alnsg2(max_mode)
+      real(r8) :: v2nhirlx(ntot_amode), v2nlorlx(ntot_amode)
+      real(r8) :: xfercoef, xfertend
+      real(r8) :: xferfrac_vol, xferfrac_num, xferfrac_max
+      real(r8) :: yn_tail, yv_tail
+      real(r8) :: dp_xfernone_thresh(max_mode)
+      real(r8) :: dp_xferall_thresh(max_mode)
+      logical  :: shrinkaa(max_mode), shrinkbb
+
+
+
+      xferfrac_max = 1.0_r8 - 10.0_r8*epsilon(1.0_r8)   ! 1-eps
+
+! calculate variable used in the renamingm mode" of each renaming pair
+! also compute dry-volume change during the continuous growth process
+      npair = 0
+      do n = 1, ntot_amode
+         shrinkaa(n) = .false. 
+         mtoo = mtoo_renamexf(n)
+         if (mtoo <= 0) cycle
+
+         npair = npair + 1
+         mfrm = n
+         factoraa(mfrm) = (pi/6.)*exp(4.5*(alnsg_aer(mfrm)**2))
+         factoraa(mtoo) = (pi/6.)*exp(4.5*(alnsg_aer(mtoo)**2))
+         factoryy(mfrm) = sqrt( 0.5 )/alnsg_aer(mfrm)
+! dryvol_smallest is a very small volume mixing ratio (m3-AP/kmol-air)
+! used for avoiding overflow.  it corresponds to dp = 1 nm
+! and number = 1e-5 #/mg-air ~= 1e-5 #/cm3-air
+         dryvol_smallest(mfrm) = 1.0e-25 
+!        v2nlorlx(mfrm) = voltonumblo_amode(mfrm)*frelax
+!        v2nhirlx(mfrm) = voltonumbhi_amode(mfrm)/frelax
+         v2nlorlx(mfrm) = ( 1._r8 / ( (pi/6._r8)* &
+            (dgnumlo_aer(mfrm)**3._r8)*exp(4.5_r8*alnsg_aer(mfrm)**2._r8) ) ) * frelax
+         v2nhirlx(mfrm) = ( 1._r8 / ( (pi/6._r8)* &
+            (dgnumhi_aer(mfrm)**3._r8)*exp(4.5_r8*alnsg_aer(mfrm)**2._r8) ) ) / frelax
+
+         tmp_alnsg2(mfrm) = 3.0 * (alnsg_aer(mfrm)**2)
+         dp_cut(mfrm) = sqrt(   &
+            dgnum_aer(mfrm)*exp(1.5*(alnsg_aer(mfrm)**2)) *   &
+            dgnum_aer(mtoo)*exp(1.5*(alnsg_aer(mtoo)**2)) )
+
+         lndp_cut(mfrm) = log( dp_cut(mfrm) )
+         dp_belowcut(mfrm) = 0.99*dp_cut(mfrm)
+! set dp_cut as fixed in stratosphere renaming
+         dp_xfernone_thresh(mfrm) = dgnum_aer(mfrm)
+         dp_xferall_thresh(mfrm) = dgnum_aer(mtoo)
+         shrinkaa(n) = .false. 
+         shrinkbb = .false. ! set initial value shrink switch: if calculate shrink fraction
+         if ( mtoo == ncrsf ) then ! stratosphere renaming
+              dp_cut(mfrm) = 4.0e-7_r8
+              lndp_cut(mfrm) = log( dp_cut(mfrm) )
+              dp_belowcut(mfrm) = 0.99*dp_cut(mfrm)
+              dp_xfernone_thresh(mfrm) = 1.0e-7_r8
+              dp_xferall_thresh(mfrm)    = 4.0e-7_r8
+         end if
+         if (1>2) then ! turn off the shrink path for now
+         if ((mfrm == ncrsf .and. ncrsf > 0)) then
+              shrinkaa(n) = .true. !find shrink may occur
+              dp_xfernone_thresh(mfrm) = dgnum_aer(mfrm)
+              dp_xferall_thresh(mfrm) = dgnum_aer(mtoo)
+         end if
+         end if
+
+      end do
+      if (npair <= 0) return
+
+! compute aerosol dry-volume for the "from mode" of each renaming pair
+! also compute dry-volume change during the continuous growth process
+      do n = 1, ntot_amode
+         mtoo = mtoo_renamexf(n)
+         if (mtoo <= 0) cycle
+
+         tmpa = 0.0_r8 ; tmpb = 0.0_r8
+         do iaer = 1, naer
+!   fac_m2v_aer converts (kmol-AP/kmol-air) to (m3-AP/kmol-air)
+            tmpa = tmpa + qaer_cur(iaer,n)*fac_m2v_aer(iaer)
+            tmpb = tmpb + qaer_del_grow4rnam(iaer,n)*fac_m2v_aer(iaer)
+         end do
+         dryvol_a(n) = tmpa-tmpb ! dry volume before growth
+         deldryvol_a(n) = tmpb   ! change to dry volume due to growth
+
+         if ( iscldy_subarea ) then
+         tmpa = 0.0_r8 ; tmpb = 0.0_r8
+         do iaer = 1, naer
+!   fac_m2v_aer converts (kmol-AP/kmol-air) to (m3-AP/kmol-air)
+            tmpa = tmpa + qaercw_cur(iaer,n)*fac_m2v_aer(iaer)
+            tmpb = tmpb + qaercw_del_grow4rnam(iaer,n)*fac_m2v_aer(iaer)
+         end do
+         dryvol_c(n) = tmpa-tmpb
+         deldryvol_c(n) = tmpb
+         end if ! ( iscldy_subarea ) then
+
+      end do
+
+
+!
+!   loop over renaming pairs
+!
+mainloop1_ipair:  do n = 1, ntot_amode
+
+      mfrm = n
+      mtoo = mtoo_renamexf(n)
+      if (mtoo <= 0) cycle mainloop1_ipair
+
+!   dryvol_t_old is the old total (a+c) dry-volume for the "from" mode
+!      in m^3-AP/kmol-air
+!   dryvol_t_new is the new total dry-volume
+!      (old/new = before/after the continuous growth)
+!   num_t_old is total number in particles/kmol-air
+      if ( iscldy_subarea ) then
+         dryvol_t_old = dryvol_a(mfrm) + dryvol_c(mfrm)
+         dryvol_t_del = deldryvol_a(mfrm) + deldryvol_c(mfrm)
+         num_t_old = (qnum_cur(mfrm) + qnumcw_cur(mfrm))
+      else
+         dryvol_t_old = dryvol_a(mfrm)
+         dryvol_t_del = deldryvol_a(mfrm)
+         num_t_old = qnum_cur(mfrm)
+      end if
+      dryvol_t_new = dryvol_t_old + dryvol_t_del
+
+!   no renaming if dryvol_t_new ~ 0 or dryvol_t_del ~ 0
+      if (dryvol_t_new .le. dryvol_smallest(mfrm)) cycle mainloop1_ipair
+      dryvol_t_oldbnd = max( dryvol_t_old, dryvol_smallest(mfrm) )
+      if (rename_method_optaa .ne. 40) then
+         if (dryvol_t_del .le. 1.0e-6*dryvol_t_oldbnd) cycle mainloop1_ipair
+      end if
+
+      num_t_old = max( 0.0_r8, num_t_old )
+      dryvol_t_oldbnd = max( dryvol_t_old, dryvol_smallest(mfrm) )
+      num_t_oldbnd = min( dryvol_t_oldbnd*v2nlorlx(mfrm), num_t_old )
+      num_t_oldbnd = max( dryvol_t_oldbnd*v2nhirlx(mfrm), num_t_oldbnd )
+
+!   no renaming if dgnum < "base" dgnum,
+      dgn_t_new = (dryvol_t_new/(num_t_oldbnd*factoraa(mfrm)))**onethird
+      if (dgn_t_new .le. dgnum_aer(mfrm)) cycle mainloop1_ipair
+!   compute new fraction of number and mass in the tail (dp > dp_cut)
+      lndgn_new = log( dgn_t_new )
+      lndgv_new = lndgn_new + tmp_alnsg2(mfrm)
+      yn_tail = (lndp_cut(mfrm) - lndgn_new)*factoryy(mfrm)
+      yv_tail = (lndp_cut(mfrm) - lndgv_new)*factoryy(mfrm)
+      tailfr_numnew = 0.5_r8*erfc( yn_tail )
+      tailfr_volnew = 0.5_r8*erfc( yv_tail )
+!   compute old fraction of number and mass in the tail (dp > dp_cut)
+      dgn_t_old =   &
+            (dryvol_t_oldbnd/(num_t_oldbnd*factoraa(mfrm)))**onethird
+      dgn_t_oldaa = dgn_t_old
+      dryvol_t_oldaa = dryvol_t_old
+
+      if (rename_method_optaa .eq. 40) then
+         if (dgn_t_old .gt. dp_belowcut(mfrm)) then
+            ! this revised volume corresponds to dgn_t_old == dp_belowcut, and same number conc
+            dryvol_t_old = dryvol_t_old * (dp_belowcut(mfrm)/dgn_t_old)**3
+            dgn_t_old = dp_belowcut(mfrm)
+         end if
+         if ((dryvol_t_new-dryvol_t_old) .le. 1.0e-6_r8*dryvol_t_oldbnd) cycle mainloop1_ipair
+      else if (dgn_t_new .ge. dp_cut(mfrm)) then
+!         if dgn_t_new exceeds dp_cut, use the minimum of dgn_t_old and
+!         dp_belowcut to guarantee some transfer
+          dgn_t_old = min( dgn_t_old, dp_belowcut(mfrm) )
+      end if
+      lndgn_old = log( dgn_t_old )
+      lndgv_old = lndgn_old + tmp_alnsg2(mfrm)
+      yn_tail = (lndp_cut(mfrm) - lndgn_old)*factoryy(mfrm)
+      yv_tail = (lndp_cut(mfrm) - lndgv_old)*factoryy(mfrm)
+      tailfr_numold = 0.5_r8*erfc( yn_tail )
+      tailfr_volold = 0.5_r8*erfc( yv_tail )
+      if (shrinkaa(n)) then
+         shrinkbb = .false.
+         if (dryvol_t_old .le. dryvol_smallest(mfrm)) cycle mainloop1_ipair
+         if (dgn_t_new .ge. dp_xfernone_thresh(mfrm)) cycle mainloop1_ipair !increased
+         if ((dryvol_t_del .le. 0.0_r8) .and. (dryvol_t_del .ge. -1.0e-6_r8*dryvol_t_oldaa)) then
+                 shrinkbb = .true.
+         else
+                 cycle mainloop1_ipair
+         end if
+      else
+         shrinkbb = .false.
+      end if
+      if (shrinkbb) then
+         if  ( dgn_t_new .le. dp_xferall_thresh(mfrm) ) then
+                !   special case of (dgn_t_new <= xferall threshold value)
+             tailfr_numnew = 1.0_r8
+             tailfr_volnew = 1.0_r8
+         else
+             !   compute new fraction of number and mass in the tail (dp < dp_cut)
+             tailfr_numnew = 1.0_r8 - 0.5_r8*erfc( yn_tail )
+             tailfr_volnew = 1.0_r8 - 0.5_r8*erfc( yv_tail )
+         endif
+             tmpa = tailfr_volnew*dryvol_t_new
+             xferfrac_vol = min( tmpa, dryvol_t_new )/dryvol_t_new
+             xferfrac_vol = min( xferfrac_vol, xferfrac_max )
+             xferfrac_num = tailfr_numnew
+             xferfrac_num = max( 0.0_r8, min( xferfrac_num, xferfrac_vol ) )
+             xferfrac_num = min( xferfrac_max, xferfrac_num )
+      endif ! if there is no shrink
+
+!   transfer fraction is difference between new and old tail-fractions
+!   transfer fraction for number cannot exceed that of mass
+     if (.not. shrinkbb) then!for the mode has no shrink (growth) transfer
+        if (shrinkaa(n)) cycle mainloop1_ipair ! leave the loop if coarse mode has no shrink
+       tmpa = tailfr_volnew*dryvol_t_new - tailfr_volold*dryvol_t_old
+       if (mtoo == ncrsf) then
+       end if
+       if (tmpa .le. 0.0_r8) cycle mainloop1_ipair
+       ! no transfer if dgn is not big enough
+       if (dgn_t_new .le. dp_xfernone_thresh(mfrm)) cycle mainloop1_ipair !  note:this threshold 1.6e-7
+         ! transfer all if dgn is too big
+       if ((dgn_t_new .ge. dp_xferall_thresh(mfrm)) .or. &
+            (dgn_t_old .ge. dp_xferall_thresh(mfrm)))    then
+            xferfrac_vol = 1.0_r8  ! transfer all part over threshold
+            xferfrac_num = 1.0_r8
+            xferfrac_vol = min( xferfrac_vol, xferfrac_max )
+            xferfrac_num = max( 0.0_r8, min( xferfrac_num, xferfrac_vol ) )
+       else
+            xferfrac_vol = min( tmpa, dryvol_t_new )/dryvol_t_new
+            xferfrac_vol = min( xferfrac_vol, xferfrac_max )
+            xferfrac_num = tailfr_numnew - tailfr_numold
+            xferfrac_num = max( 0.0_r8, min( xferfrac_num, xferfrac_vol ) )
+       end if
+    end if ! (.not. shrinkbb) 
+#if ( defined( CAMBOX_ACTIVATE_THIS ) )
+      if ( ldiag98 ) write(lun98,'(/a,2i3,1p,10e11.3)') &
+         'rename i,k, xf n/v', i, k, xferfrac_num, xferfrac_vol
+#endif
+
+#if ( defined( CAMBOX_NEVER_ACTIVATE_THIS ) )
+!   diagnostic output start ----------------------------------------
+       if (ldiag1 > 0) then
+       icol_diag = -1
+       if ((lonndx(i) == 37) .and. (latndx(i) == 23)) icol_diag = i
+       if ((i == icol_diag) .and. (mod(k-1,5) == 0)) then
+ !      write(lund,97010) fromwhere, nstep, lchnk, i, k, ipair
+       write(lund,97010) fromwhere, nstep, latndx(i), lonndx(i), k, ipair
+       write(lund,97020) 'drv olda/oldbnd/old/new/del',   &
+             dryvol_t_oldaa, dryvol_t_oldbnd, dryvol_t_old, dryvol_t_new, dryvol_t_del
+       write(lund,97020) 'num old/oldbnd, dgnold/new ',   &
+             num_t_old, num_t_oldbnd, dgn_t_old, dgn_t_new
+       write(lund,97020) 'tailfr v_old/new, n_old/new',   &
+             tailfr_volold, tailfr_volnew, tailfr_numold, tailfr_numnew
+       tmpa = max(1.0d-10,xferfrac_vol) / max(1.0d-10,xferfrac_num)
+       dgn_xfer = dgn_t_new * tmpa**onethird
+       tmpa = max(1.0d-10,(1.0d0-xferfrac_vol)) /   &
+               max(1.0d-10,(1.0d0-xferfrac_num))
+       dgn_aftr = dgn_t_new * tmpa**onethird
+       write(lund,97020) 'xferfrac_v/n; dgn_xfer/aftr',   &
+             xferfrac_vol, xferfrac_num, dgn_xfer, dgn_aftr
+ !97010      format( / 'RENAME ', a, '  nx,lc,i,k,ip', i8, 4i4 )
+ 97010      format( / 'RENAME ', a, '  nx,lat,lon,k,ip', i8, 4i4 )
+ 97020      format( a, 6(1pe15.7) )
+       end if
+       end if ! (ldiag1 > 0)
+!   diagnostic output end   ------------------------------------------
+#endif
+!
+!   compute changes to number and species masses
+!
+      tmpd = qnum_cur(mfrm)*xferfrac_num
+      qnum_cur(mfrm) = qnum_cur(mfrm) - tmpd
+      qnum_cur(mtoo) = qnum_cur(mtoo) + tmpd
+      ! note: need to confirm if same specie in both mode
+      do iaer = 1, naer
+         if (lmap_aer(iaer,mfrm)>0 .and. lmap_aer(iaer,mtoo)>0) then 
+            tmpd = qaer_cur(iaer,mfrm)*xferfrac_vol
+         qaer_cur(iaer,mfrm) = qaer_cur(iaer,mfrm) - tmpd
+         qaer_cur(iaer,mtoo) = qaer_cur(iaer,mtoo) + tmpd
+         end if
+      end do ! iaer
+
+      if ( iscldy_subarea ) then
+      tmpd = qnumcw_cur(mfrm)*xferfrac_num
+      qnumcw_cur(mfrm) = qnumcw_cur(mfrm) - tmpd
+      qnumcw_cur(mtoo) = qnumcw_cur(mtoo) + tmpd
+      do iaer = 1, naer
+         if (lmap_aercw(iaer,mfrm)>0 .and. lmap_aercw(iaer,mtoo)>0) then !
+         tmpd = qaercw_cur(iaer,mfrm)*xferfrac_vol
+         qaercw_cur(iaer,mfrm) = qaercw_cur(iaer,mfrm) - tmpd
+         qaercw_cur(iaer,mtoo) = qaercw_cur(iaer,mtoo) + tmpd
+         end if
+      end do ! iaer
+      end if ! ( iscldy_subarea ) then
+
+#if ( defined( CAMBOX_NEVER_ACTIVATE_THIS ) )
+!   diagnostic output start ----------------------------------------
+                if (ldiag1 > 0) then
+                if ((i == icol_diag) .and. (mod(k-1,5) == 0)) then
+                  if (lstooa .gt. 0) then
+                    write(lund,'(a,i4,2(2x,a),1p,10e14.6)') 'RENAME qdels', iq,   &
+                        cnst_name(lsfrma+loffset), cnst_name(lstooa+loffset),   &
+                        deltat*dqdt(i,k,lsfrma), deltat*(dqdt(i,k,lsfrma) - xfertend),   &
+                        deltat*dqdt(i,k,lstooa), deltat*(dqdt(i,k,lstooa) + xfertend)
+                  else
+                    write(lund,'(a,i4,2(2x,a),1p,10e14.6)') 'RENAME qdels', iq,   &
+                        cnst_name(lsfrma+loffset), cnst_name(lstooa+loffset),   &
+                        deltat*dqdt(i,k,lsfrma), deltat*(dqdt(i,k,lsfrma) - xfertend)
+                  end if
+                end if
+                end if
+!   diagnostic output end   ------------------------------------------
+#endif
+
+
+      end do mainloop1_ipair
+
+
+      return
+      end subroutine mam_rename_1subarea_strat
+    
 
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
@@ -4390,7 +4824,8 @@ mainloop1_ipair:  do n = 1, ntot_amode
          qnum_cur,                                                  &
          qaer_cur,                                                  &
          qwtr_cur,                                                  &
-         dnclusterdt                                                )
+         dnclusterdt,                                               &
+         troplev_i ) !
 
 ! uses
       use chem_mods,     only: adv_mass
@@ -4408,6 +4843,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
       integer,  intent(in) :: latndx, lonndx        ! lat and lon indices
       integer,  intent(in) :: lund                  ! logical unit for diagnostic output
       integer,  intent(in) :: n_mode                ! current number of modes (including temporary)
+      integer,  intent(in) :: troplev_i   ! tropopause level
 
       real(r8), intent(in) :: deltat           ! model timestep (s)
       real(r8), intent(in) :: temp             ! temperature (K)
@@ -4704,8 +5140,9 @@ mainloop1_ipair:  do n = 1, ntot_amode
 
       if (dso4dt_ait > 0.0_r8) then
          tmp_q_del = dso4dt_ait*deltat
+         ! ++ nucleation occured
+         ! stop the nucleation above stratopshere
          qaer_cur(     iaer_so4,nait) = qaer_cur(     iaer_so4,nait) + tmp_q_del
-
          tmp_q_del = min( tmp_q_del, qgas_cur(igas_h2so4) )
          qgas_cur(     igas_h2so4) = qgas_cur(     igas_h2so4) - tmp_q_del
       end if
@@ -4953,6 +5390,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
          ( 1.0_r8 + ybetajj0(1)*deltat*qnum_tmpa(nacc) ) 
       qnum_tmpc(nacc) = (qnum_tmpa(nacc) + qnum_tmpb(nacc))*0.5_r8
 
+
 ! pcarbon mode number loss - approximate analytical solution
 !    using average number conc. for accum mode
       if (npca > 0) then
@@ -5006,6 +5444,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
             ( 1.0_r8 + (tmpb*tmpn/tmpa)*(1.0_r8-tmpc) )
       end if
       qnum_tmpc(nait) = (qnum_tmpa(nait) + qnum_tmpb(nait))*0.5_r8
+
 
 ! marine-organics aitken mode number loss - approximate analytical solution
 !    using average number conc. for accum, pcarbon, aitken, and marine-org accum modes
@@ -5132,6 +5571,8 @@ mainloop1_ipair:  do n = 1, ntot_amode
             end do
          end if
       end if
+
+
 
 !! old version for 3 and 7 mode only
 !! mass transfer out of aitken mode mass
@@ -5583,7 +6024,8 @@ use modal_aero_data, only : &
     modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, &
     modeptr_maccum, modeptr_maitken, &
     nspec_amode, &
-    numptr_amode, numptrcw_amode, sigmag_amode
+    numptr_amode, numptrcw_amode, sigmag_amode, &
+    modeptr_coarsulf                           !
 
 implicit none
 
@@ -5715,7 +6157,6 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       name_aerpfx(naer) = 'so4'
       igas_h2so4 = ngas
       iaer_so4 = naer
-
       if ( (ntot_amode==7) .or. &
            (ntot_amode==8) .or. &
            (ntot_amode==9) ) then
@@ -5784,8 +6225,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       name_aerpfx(naer) = 'co3'
       iaer_co3 = naer
 #endif
-
-#if ( defined MODAL_AERO_4MODE_MOM )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
       naer = naer + 1
       name_aerpfx(naer) = 'mom'
       iaer_mom = naer
@@ -6000,6 +6440,22 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       nait = modeptr_aitken
       npca = modeptr_pcarbon
       nufi = modeptr_ufine
+
+#if (defined MODAL_AERO_5MODE)
+      ncrsf = modeptr_coarsulf
+      if ( masterproc ) then
+         write(iulog,*) 'ncrsf ', ncrsf
+         write(iulog,*) 'MAM5 for aerosol microphysics'
+      endif
+#else
+      ncrsf = big_neg_int
+      if ( masterproc ) then
+         write(iulog,*) 'ncrsf ', ncrsf
+         write(iulog,*) 'MAM5 is NOT for aerosol microphysics'
+      endif
+#endif
+
+
 #if ( defined MODAL_AERO_9MODE )
       nmacc = modeptr_maccum
       nmait = modeptr_maitken
@@ -6285,7 +6741,8 @@ use phys_control,only  :  phys_getopts
 
 use modal_aero_data, only : &
     cnst_name_cw, &
-    modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine
+    modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, &
+    modeptr_coarsulf 
 !use modal_aero_rename
 
 implicit none
@@ -6409,6 +6866,33 @@ implicit none
 ! renaming during gas-->aer condensation or cloud chemistry
       na = modeptr_aitken
       nb = modeptr_accum
+      if (na > 0 .and. nb > 0) then
+         lmza = lmap_num(na)
+         lmzb = lmap_num(nb)
+         do_q_coltendaa(lmza,iqtend_rnam) = .true.
+         do_q_coltendaa(lmzb,iqtend_rnam) = .true.
+         lmza = lmap_numcw(na)
+         lmzb = lmap_numcw(nb)
+         do_qqcw_coltendaa(lmza,iqqcwtend_rnam) = .true.
+         do_qqcw_coltendaa(lmzb,iqqcwtend_rnam) = .true.
+         do iaer = 1, naer
+            lmza = lmap_aer(iaer,na)
+            lmzb = lmap_aer(iaer,nb)
+            if (lmza > 0) then
+               do_q_coltendaa(lmza,iqtend_rnam) = .true.
+               if (lmzb > 0) do_q_coltendaa(lmzb,iqtend_rnam) = .true.
+            end if
+            lmza = lmap_aercw(iaer,na)
+            lmzb = lmap_aercw(iaer,nb)
+            if (lmza > 0) then
+               do_qqcw_coltendaa(lmza,iqqcwtend_rnam) = .true.
+               if (lmzb > 0) do_qqcw_coltendaa(lmzb,iqqcwtend_rnam) = .true.
+            end if
+         end do ! iaer
+      end if ! (na > 0 .and. nb > 0)
+     ! MAM5
+      na = modeptr_accum
+      nb = modeptr_coarsulf
       if (na > 0 .and. nb > 0) then
          lmza = lmap_num(na)
          lmzb = lmap_num(nb)

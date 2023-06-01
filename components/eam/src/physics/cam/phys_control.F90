@@ -82,6 +82,7 @@ logical           :: history_vdiag        = .false.    ! output the variables us
 logical           :: get_presc_aero_data  = .false.    ! output MAM variables needed for prescribed run
 logical           :: history_aerosol      = .false.    ! output the MAM aerosol variables and tendencies
 logical           :: history_aero_optics  = .false.    ! output the aerosol
+logical           ::  is_output_interactive_volc = .false.    ! output the stratosphere optics
 logical           :: history_eddy         = .false.    ! output the eddy variables
 logical           :: history_budget       = .false.    ! output tendencies and state variables for CAM4
                                                        ! temperature, water vapor, cloud ice and cloud
@@ -193,7 +194,7 @@ logical :: l_dry_adj       = .true.
 logical :: l_st_mac        = .true.
 logical :: l_st_mic        = .true.
 logical :: l_rad           = .true.
-
+logical :: modal_strat_sulfate_aod_treatment = .false.
 ! Numerical schemes for process coupling
 
 integer :: cflx_cpl_opt = 1  ! When to apply surface tracer fluxes (not including water vapor).
@@ -225,6 +226,7 @@ subroutine phys_ctl_readnl(nlfile)
       use_crm_accel, crm_accel_factor, crm_accel_uv, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
       get_presc_aero_data,history_aerosol, history_aero_optics, &
+      is_output_interactive_volc, &
       history_eddy, history_budget,  history_budget_histfile_num, history_waccm, &
       conv_water_in_rad, history_clubb, do_clubb_sgs, do_shoc_sgs, do_tms, state_debug_checks, &
       linearize_pbl_winds, export_gustiness, &
@@ -247,7 +249,8 @@ subroutine phys_ctl_readnl(nlfile)
       cflx_cpl_opt, &
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
-      rrtmg_temp_fix, ideal_phys_option
+      rrtmg_temp_fix, &
+      modal_strat_sulfate_aod_treatment
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -304,6 +307,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(get_presc_aero_data,             1 , mpilog,  0, mpicom)
    call mpibcast(history_aerosol,                 1 , mpilog,  0, mpicom)
    call mpibcast(history_aero_optics,             1 , mpilog,  0, mpicom)
+   call mpibcast(is_output_interactive_volc,      1 , mpilog,  0, mpicom)
    call mpibcast(history_budget,                  1 , mpilog,  0, mpicom)
    call mpibcast(history_gaschmbudget,            1 , mpilog,  0, mpicom)
    call mpibcast(history_gaschmbudget_2D,         1 , mpilog,  0, mpicom)
@@ -379,6 +383,8 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(mg_prc_coeff_fix,                1 , mpilog,  0, mpicom)
    call mpibcast(rrtmg_temp_fix,                  1 , mpilog,  0, mpicom)
    call mpibcast(cld_sed,                         1 , mpir8,   0, mpicom)
+   call mpibcast(modal_strat_sulfate_aod_treatment, 1 , mpilog,  0, mpicom)
+
 #endif
 
    call cam_ctrl_set_physics_type(cam_physpkg)
@@ -502,9 +508,11 @@ subroutine phys_ctl_readnl(nlfile)
                       .or. cam_chempkg_is('linoz_mam4_resus_mom') &
                       .or. cam_chempkg_is('linoz_mam4_resus_mom_soag') &
                       .or. cam_chempkg_is('superfast_mam4_resus_mom_soag') &
+                      .or. cam_chempkg_is('superfast_mam5_resus_mom_soag') &
                       .or. cam_chempkg_is('super_fast_llnl_mam3') &
                       .or. cam_chempkg_is('trop_mozart_mam3') &
                       .or. cam_chempkg_is('trop_strat_mam3') &
+                      .or. cam_chempkg_is('trop_strat_mam4_resus_mom_soag') &
                       .or. cam_chempkg_is('trop_strat_mam7') &
                       .or. cam_chempkg_is('waccm_mozart_mam3'))
 
@@ -558,6 +566,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         radiation_scheme_out, use_subcol_microp_out, atm_dep_flux_out, &
                         history_amwg_out, history_verbose_out, history_vdiag_out, &
                         get_presc_aero_data_out,&
+                        is_output_interactive_volc_out,&        
                         history_aerosol_out, history_aero_optics_out, history_eddy_out, &
                         history_budget_out, history_gaschmbudget_out, history_gaschmbudget_2D_out, history_gaschmbudget_2D_levels_out, &
                         gaschmbudget_2D_L1_s_out, gaschmbudget_2D_L1_e_out, gaschmbudget_2D_L2_s_out, gaschmbudget_2D_L2_e_out, &
@@ -585,7 +594,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                        ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
                        ,l_bc_energy_fix_out, l_dry_adj_out, l_st_mac_out, l_st_mic_out, l_rad_out  &
                        ,prc_coef1_out,prc_exp_out,prc_exp1_out, cld_sed_out,mg_prc_coeff_fix_out,rrtmg_temp_fix_out &
-                       )
+                       ,modal_strat_sulfate_aod_treatment_out)
 
 !-----------------------------------------------------------------------
 ! Purpose: Return runtime settings
@@ -622,6 +631,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: get_presc_aero_data_out
    logical,           intent(out), optional :: history_aerosol_out
    logical,           intent(out), optional :: history_aero_optics_out
+   logical,           intent(out), optional :: is_output_interactive_volc_out
    logical,           intent(out), optional :: history_budget_out
    logical,           intent(out), optional :: history_gaschmbudget_out
    logical,           intent(out), optional :: history_gaschmbudget_2D_out
@@ -690,6 +700,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: l_rad_out
    logical,           intent(out), optional :: mg_prc_coeff_fix_out
    logical,           intent(out), optional :: rrtmg_temp_fix_out
+   logical,           intent(out), optional :: modal_strat_sulfate_aod_treatment_out
    integer,           intent(out), optional :: cld_macmic_num_steps_out
    real(r8),          intent(out), optional :: prc_coef1_out
    real(r8),          intent(out), optional :: prc_exp_out
@@ -719,6 +730,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(ideal_phys_option_out   ) ) ideal_phys_option_out    = ideal_phys_option
    if ( present(atm_dep_flux_out        ) ) atm_dep_flux_out         = atm_dep_flux
    if ( present(history_aerosol_out     ) ) history_aerosol_out      = history_aerosol
+   if ( present(is_output_interactive_volc_out    ) ) is_output_interactive_volc_out      = is_output_interactive_volc
    if ( present(history_aero_optics_out ) ) history_aero_optics_out  = history_aero_optics
    if ( present(history_budget_out      ) ) history_budget_out       = history_budget
    if ( present(history_gaschmbudget_out) ) history_gaschmbudget_out = history_gaschmbudget
@@ -798,6 +810,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(cld_sed_out             ) ) cld_sed_out              = cld_sed
    if ( present(mg_prc_coeff_fix_out    ) ) mg_prc_coeff_fix_out     = mg_prc_coeff_fix
    if ( present(rrtmg_temp_fix_out      ) ) rrtmg_temp_fix_out       = rrtmg_temp_fix
+   if ( present(modal_strat_sulfate_aod_treatment_out      ) ) modal_strat_sulfate_aod_treatment_out &
+                                                               = modal_strat_sulfate_aod_treatment
 
 end subroutine phys_getopts
 
