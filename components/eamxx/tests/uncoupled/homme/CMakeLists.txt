@@ -62,7 +62,7 @@ configure_file(${SCREAM_BASE_DIR}/src/dynamics/homme/tests/theta.nl
 
 # Ensure test input files are present in the data dir
 GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
-GetInputFile(cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc)
+GetInputFile(cam/topo/${EAMxx_tests_TOPO_FILE})
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if running with 2+ ranks configurations

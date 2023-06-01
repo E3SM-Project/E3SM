@@ -138,7 +138,9 @@ public:
   void init();
   void reset_dev_views();
   void setup_output_file (const std::string& filename, const std::string& fp_precision);
-  void run (const std::string& filename, const bool write, const int nsteps_since_last_output,
+  void run (const std::string& filename,
+            const bool output_step, const bool checkpoint_step,
+            const int nsteps_since_last_output,
             const bool allow_invalid_fields = false);
 
   long long res_dep_memory_footprint () const;

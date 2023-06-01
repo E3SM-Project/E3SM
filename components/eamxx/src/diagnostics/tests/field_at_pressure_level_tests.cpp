@@ -18,11 +18,7 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
   const int num_global_cols = ncols*comm.size();
 
-  ekat::ParameterList gm_params;
-  gm_params.set<int>("number_of_global_columns", num_global_cols);
-  gm_params.set<int>("number_of_vertical_levels", nlevs);
-
-  auto gm = create_mesh_free_grids_manager(comm,gm_params);
+  auto gm = create_mesh_free_grids_manager(comm,0,0,nlevs,num_global_cols);
   gm->build_grids();
 
   return gm;
@@ -42,9 +38,6 @@ struct PressureBnds
   Real p_top  = 10000.0;  //  100mb
   Real p_surf = 100000.0; // 1000mb
 };
-
-std::shared_ptr<GridsManager>
-get_test_gm(const ekat::Comm& io_comm, const int num_gcols, const int num_levs);
 
 std::shared_ptr<FieldManager>
 get_test_fm(std::shared_ptr<const AbstractGrid> grid);
@@ -66,7 +59,7 @@ TEST_CASE("field_at_pressure_level_p2")
   // Create a grids manager w/ a point grid
   int ncols = 3;
   int nlevs = 10;
-  auto gm   = get_test_gm(comm,ncols,nlevs);
+  auto gm   = create_gm(comm,ncols,nlevs);
 
   // Create a field manager for testing
   auto grid = gm->get_grid("Point Grid");
@@ -149,16 +142,6 @@ TEST_CASE("field_at_pressure_level_p2")
   
 } // TEST_CASE("field_at_pressure_level")
 /*==========================================================================================================*/
-std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& io_comm, const int num_gcols, const int num_levs)
-{
-  ekat::ParameterList gm_params;
-  gm_params.set("number_of_global_columns",num_gcols);
-  gm_params.set("number_of_vertical_levels",num_levs);
-  auto gm = create_mesh_free_grids_manager(io_comm,gm_params);
-  gm->build_grids();
-  return gm;
-}
-/*===================================================================================================*/
 std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> grid)
 {
   using namespace ekat::units;

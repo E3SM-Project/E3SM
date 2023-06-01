@@ -76,7 +76,7 @@ void HorizontalMap::set_remap_segments_from_file(const std::string& remap_filena
   auto tgt_col_h = Kokkos::create_mirror_view(tgt_col);
   std::vector<std::string> vec_of_dims = {"n_s"};
   std::string i_decomp = std::string("int-row-n_s-") + std::to_string(my_chunk);
-  scorpio::get_variable(remap_filename, "row", "row", vec_of_dims, "int", i_decomp);
+  scorpio::register_variable(remap_filename, "row", "row", vec_of_dims, "int", i_decomp);
   std::vector<int64_t> var_dof(my_chunk);
   std::iota(var_dof.begin(),var_dof.end(),my_start);
   scorpio::set_dof(remap_filename,"row",var_dof.size(),var_dof.data());
@@ -148,8 +148,8 @@ void HorizontalMap::set_remap_segments_from_file(const std::string& remap_filena
   i_decomp = std::string("int-col-n_s-") + std::to_string(var_dof.size());
   std::string r_decomp = std::string("Real-S-n_s-") + std::to_string(var_dof.size());
   scorpio::register_file(remap_filename,scorpio::Read);
-  scorpio::get_variable(remap_filename, "col", "col", vec_of_dims, "int", i_decomp);
-  scorpio::get_variable(remap_filename, "S", "S", vec_of_dims, "real", r_decomp);
+  scorpio::register_variable(remap_filename, "col", "col", vec_of_dims, "int", i_decomp);
+  scorpio::register_variable(remap_filename, "S", "S", vec_of_dims, "real", r_decomp);
   scorpio::set_dof(remap_filename,"col",var_dof.size(),var_dof.data());
   scorpio::set_dof(remap_filename,"S",var_dof.size(),var_dof.data());
   scorpio::set_decomp(remap_filename);

@@ -5,7 +5,7 @@ CreateUnitTestExec (shoc_p3 shoc_p3.cpp "shoc;p3;scream_control;diagnostics")
 
 # Ensure test input files are present in the data dir
 GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
-GetInputFile(cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc)
+GetInputFile(cam/topo/${EAMxx_tests_TOPO_FILE})
 
 set (RUN_T0 2021-10-12-45000)
 

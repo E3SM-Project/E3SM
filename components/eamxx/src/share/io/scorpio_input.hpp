@@ -75,7 +75,7 @@ public:
                    const std::shared_ptr<const grid_type>& grid,
                    const std::vector<Field>& fields);
 
-  virtual ~AtmosphereInput () = default;
+  ~AtmosphereInput ();
 
   // --- Methods --- //
   // Initialize the class for reading into FieldManager-owned fields.

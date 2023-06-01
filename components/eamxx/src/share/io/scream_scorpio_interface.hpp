@@ -21,7 +21,8 @@ namespace scorpio {
   // in the scream_scorpio_interface F90 module
   enum FileMode {
     Read = 1,
-    Write = 2
+    Append = 2,
+    Write = 4
   };
   /* All scorpio usage requires that the pio_subsystem is initialized. Happens only once per simulation */
   void eam_init_pio_subsystem(const ekat::Comm& comm);
@@ -44,17 +45,18 @@ namespace scorpio {
   void register_variable(const std::string& filename, const std::string& shortname, const std::string& longname,
                          const std::string& units, const std::vector<std::string>& var_dimensions,
                          const std::string& dtype, const std::string& nc_dtype, const std::string& pio_decomp_tag);
+  void register_variable(const std::string& filename, const std::string& shortname, const std::string& longname,
+                         const std::vector<std::string>& var_dimensions,
+                         const std::string& dtype, const std::string& pio_decomp_tag);
   void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const std::string& meta_val);
   /* Register a variable with a file.  Called during the file setup, for an input stream. */
-  void get_variable(const std::string& filename,const std::string& shortname, const std::string& longname,
-                    const std::vector<std::string>& var_dimensions,
-                    const std::string& dtype, const std::string& pio_decomp_tag);
   ekat::any get_any_attribute (const std::string& filename, const std::string& att_name);
   ekat::any get_any_attribute (const std::string& filename, const std::string& var_name, const std::string& att_name);
   void set_any_attribute (const std::string& filename, const std::string& att_name, const ekat::any& att);
   /* End the definition phase for a scorpio file.  Last thing called after all dimensions, variables, dof's and decomps have been set.  Called once per file.
    * Mandatory before writing or reading can happend on file. */
   void eam_pio_enddef(const std::string &filename);
+  void eam_pio_redef(const std::string &filename);
   /* Called each timestep to update the timesnap for the last written output. */
   void pio_update_time(const std::string &filename, const double time);
 
@@ -81,7 +83,6 @@ namespace scorpio {
   {
     ekat::any a(att);
     set_any_attribute(filename,att_name,a);
-
   }
 
   // Shortcut to write/read to/from YYYYMMDD/HHMMSS attributes in the NC file
@@ -96,19 +97,10 @@ extern "C" {
   // If mode<0, then simply checks if file is open, regardless of mode
   bool is_file_open_c2f(const char*&& filename, const int& mode);
   /* Query a netCDF file for the time variable */
+  bool is_enddef_c2f(const char*&& filename);
   double read_time_at_index_c2f(const char*&& filename, const int& time_index);
   double read_curr_time_c2f(const char*&& filename);
 } // extern "C"
-
-// The strings returned by e2str(const FieldTag&) are different from
-// what existing nc files are already using. Besides upper/lower case
-// differences, the column dimension (COL) is 'ncol' in nc files,
-// but we'd like to keep 'COL' when printing our layouts, so we
-// create this other mini helper function to get the name of a tag
-// that is compatible with nc files. Note that tags that make no
-// sense for an nc file are omitted. Namely, all those that have a
-// field-dependent extent, such as vector dimensions. Those have to
-// be "unpacked", storing a separate variable for each slice.
 
 } // namespace scorpio
 } // namespace scream

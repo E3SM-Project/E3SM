@@ -4,6 +4,7 @@
 #include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/remap/vertical_remapper.hpp"
 #include "share/util/scream_timing.hpp"
+#include "share/field/field_utils.hpp"
 
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
@@ -285,18 +286,17 @@ void AtmosphereOutput::init()
 
   // Now that the fields have been gathered register the local views which will be used to determine output data to be written.
   register_views();
+}
 
-
-} // init
-/*-----*/
 void AtmosphereOutput::
 run (const std::string& filename,
-     const bool is_write_step,
+     const bool output_step, const bool checkpoint_step,
      const int nsteps_since_last_output,
      const bool allow_invalid_fields)
 {
   // If we do INSTANT output, but this is not an write step,
   // we can immediately return
+  const bool is_write_step = output_step or checkpoint_step;
   if (not is_write_step and m_avg_type==OutputAvgType::Instant) {
     return;
   }
@@ -449,7 +449,7 @@ run (const std::string& filename,
     }
 
     if (is_write_step) {
-      if (avg_type==OutputAvgType::Average) {
+      if (output_step and avg_type==OutputAvgType::Average) {
         // Divide by steps count only when the summation is complete
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
           data[i] /= nsteps_since_last_output;
