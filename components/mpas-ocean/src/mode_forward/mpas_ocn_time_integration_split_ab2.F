@@ -98,6 +98,9 @@ module ocn_time_integration_split_ab2
       splitFact, &! mask for terms in split or unsplit cases
       self_attraction_and_loading_beta
 
+   type(MPAS_Time_Type) :: nowTime
+   character(len=STRKIND) :: initialTimeStamp, nowTimeStamp
+
 !***********************************************************************
 
    contains
@@ -298,6 +301,18 @@ module ocn_time_integration_split_ab2
 
       !*** Start main time step timer
       call mpas_timer_start("se timestep")
+
+      ! get current time & setup num TS iteration
+      nowTime = mpas_get_clock_time(domain%clock, MPAS_NOW, ierr)
+      call mpas_get_time(nowTime, dateTimeString=nowTimeStamp)
+
+!     if ( nowTimeStep /= initialTimeStep ) then
+!           numTSIterations = 1
+!           numClinicIterations = 2
+!     endif
+
+      print*, nowTimeStep, initialTimeStep
+      stop
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  Prep variables before first iteration
@@ -2688,9 +2703,6 @@ module ocn_time_integration_split_ab2
          normalBaroclinicVelocity,&! normal baroclinic velocity
          normalVelocity            ! normal velocity (total)
 
-      type (mpas_time_type) :: &
-         nowTime          ! current model time
-
       type (mpas_timeInterval_type) :: &! various time step calculations
          fullTimeStep,       &! full model time step
          barotropicTimeStep, &! barotropic time step
@@ -2724,6 +2736,9 @@ module ocn_time_integration_split_ab2
       if ( remainder > zeroInterval ) then
          nBtrSubcycles = nBtrSubcycles + 1
       end if
+
+      !*** Set initial time stamp
+      call mpas_get_time(nowTime, dateTimeString=initialTimeStamp)
 
       !*** Set mask for using velocity correction
       if (config_vel_correction) then
