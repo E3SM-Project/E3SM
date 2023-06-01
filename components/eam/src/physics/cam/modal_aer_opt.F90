@@ -215,8 +215,10 @@ subroutine modal_aer_opt_init()
    call addfld ('ABSORB',(/ 'lev' /),    'A','/m','Aerosol absorption', flag_xyfill=.true.)
    call addfld ('AODVIS',horiz_only,    'A','  ','Aerosol optical depth 550 nm', flag_xyfill=.true., &
    standard_name='atmosphere_optical_thickness_due_to_ambient_aerosol_particles')
-   call addfld ('SAODVIS',horiz_only,    'A','  ','Strat. Aerosol optical depth 550 nm', flag_xyfill=.true., &
+   if (is_output_interactive_volc) then
+      call addfld ('SAODVIS',horiz_only,    'A','  ','Strat. Aerosol optical depth 550 nm', flag_xyfill=.true., &
    standard_name='Stratosphere atmosphere_optical_thickness_due_to_ambient_aerosol_particles')
+   endif
    !call addfld ('TROP_LEVEL',horiz_only,    'A','  ','tropopause level', flag_xyfill=.true., &
    !standard_name='troppopause level')
    call addfld ('AODALL',horiz_only,    'A','  ','AOD 550 nm for all time and species', flag_xyfill=.true.)
@@ -300,8 +302,6 @@ subroutine modal_aer_opt_init()
       call add_default ('AODMODE2'     , 1, ' ')
       call add_default ('AODMODE3'     , 1, ' ')
       call add_default ('AODVIS'       , 1, ' ')
-      call add_default ('SAODVIS'       , 1, ' ')
-     ! call add_default ('TROP_LEVEL'       , 1, ' ')
       call add_default ('AODALL'       , 1, ' ')
       call add_default ('AODUV'        , 1, ' ')
       call add_default ('AODNIR'       , 1, ' ')
@@ -413,8 +413,10 @@ subroutine modal_aer_opt_init()
               'Aerosol absorption', flag_xyfill=.true.)
          call addfld ('AODVIS'//diag(ilist),       horiz_only, 'A','  ', &
               'Aerosol optical depth 550 nm', flag_xyfill=.true.)
-         call addfld ('SAODVIS'//diag(ilist),       horiz_only, 'A','  ', &
-              'Aerosol optical depth 550 nm', flag_xyfill=.true.)
+         if (is_output_interactive_volc) then
+              call addfld ('SAODVIS'//diag(ilist),       horiz_only, 'A','  ', &
+                   'Aerosol optical depth 550 nm', flag_xyfill=.true.)
+         endif
          call addfld ('AODALL'//diag(ilist),       horiz_only, 'A','  ', &
               'AOD 550 nm all time', flag_xyfill=.true.)
          call addfld ('AODABS'//diag(ilist),       horiz_only, 'A','  ', &
@@ -423,7 +425,9 @@ subroutine modal_aer_opt_init()
          call add_default ('EXTINCT'//diag(ilist), 1, ' ')
          call add_default ('ABSORB'//diag(ilist),  1, ' ')
          call add_default ('AODVIS'//diag(ilist),  1, ' ')
-         call add_default ('SAODVIS'//diag(ilist),  1, ' ')
+         if (is_output_interactive_volc) then
+              call add_default ('SAODVIS'//diag(ilist),  1, ' ')
+         endif
          call add_default ('AODALL'//diag(ilist),  1, ' ')
          call add_default ('AODABS'//diag(ilist),  1, ' ')
 
@@ -620,7 +624,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    extinct(1:ncol,:)     = 0.0_r8
    absorb(1:ncol,:)      = 0.0_r8
    aodvis(1:ncol)        = 0.0_r8
-   saodvis(1:ncol)       = 0.0_r8
+   if (is_output_interactive_volc) then
+       saodvis(1:ncol)        = 0.0_r8
+   endif
    aodall(1:ncol)        = 0.0_r8
    aodabs(1:ncol)        = 0.0_r8
    burdendust(:ncol)     = 0.0_r8
@@ -1167,7 +1173,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       extinct(idxnite(i),:) = fillvalue
       absorb(idxnite(i),:)  = fillvalue
       aodvis(idxnite(i))    = fillvalue
-      saodvis(idxnite(i))   = fillvalue
+      if (is_output_interactive_volc) then
+          saodvis(idxnite(i))    = fillvalue
+      endif
       aodabs(idxnite(i))    = fillvalue
    end do
 
