@@ -330,7 +330,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
                     t_star  ,q_star, dcape,   &
                     aero    ,qi      ,dif     ,dnlf    ,dnif    , & 
                     dsf     ,dnsf    ,sprd    ,rice    ,frz     , &
-                    mudpcu  ,lambdadpcu, microp_st)
+                    mudpcu  ,lambdadpcu, microp_st, wuc)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -497,7 +497,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8), intent(out) :: frz(pcols,pver)        ! freezing heating
    real(r8), intent(out) :: rice(pcols)            ! reserved ice (not yet in cldce) for energy integrals
    real(r8), intent(out) :: qi(pcols,pver)         ! cloud ice mixing ratio. 
-
+   real(r8), intent(inout),optional :: wuc(pcols,pver) ! vertical velocity from ZMmp
 ! move these vars from local storage to output so that convective
 ! transports can be done in outside of conv_cam.
    real(r8), intent(out) :: mu(pcols,pver)
@@ -1346,6 +1346,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
             microp_st%qns (i,k) = 0.5_r8*(microp_st%qns(i,k)+microp_st%qns(i,k+1))
             microp_st%qng (i,k) = 0.5_r8*(microp_st%qng(i,k)+microp_st%qng(i,k+1))
             microp_st%wu(i,k)   = 0.5_r8*(microp_st%wu(i,k)+microp_st%wu(i,k+1))
+            wuc(i,k) = microp_st%wu(i,k)
          end if
 
          if (t(i,k).gt.tmelt .and. t(i,k-1).le.tmelt) then
