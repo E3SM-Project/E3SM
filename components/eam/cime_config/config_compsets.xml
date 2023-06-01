@@ -212,6 +212,11 @@
   </compset>
 
   <compset>
+    <alias>FIDEAL-CLDERA</alias>
+    <lname>2000_EAM%IDEAL-CLDERA_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>FADIAB</alias>
     <lname>2000_EAM%ADIAB_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
   </compset>
