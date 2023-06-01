@@ -65,8 +65,13 @@ endif()
 
 
 if (PAM_SCREAM_USE_CXX)
-add_subdirectory(external/physics/scream_cxx_p3_shoc)
-add_subdirectory(external/physics/scream_cxx_interfaces)
+  add_subdirectory(external/physics/scream_cxx_p3_shoc)
+  add_subdirectory(external/physics/scream_cxx_interfaces)
+  # add these here to allow driver to intialize P3
+  include_directories(${SCREAM_HOME}/components/eamxx/src/physics/p3       )
+  include_directories(${SCREAM_HOME}/components/eamxx/src/physics/p3/impl  )
+  include_directories(${SCREAM_HOME}/components/eamxx/src/physics/share    )
+  include_directories(${SCREAM_HOME}/components/eamxx/src                  )
 endif()
 
 add_subdirectory(external/pam_core)
@@ -120,26 +125,4 @@ else()
   target_link_libraries(pam_driver pam_core physics dynamics eigen)
 endif()
 
-# set path for P3 lookup table data
-#set (SCREAM_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/scream CACHE PATH "" FORCE)
 
-# Copy p3 lookup tables to local data directory
-#FILE (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
-#CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4
-#               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-#CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_2.dat-v4
-#               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-
-
-#set (P3_TABLES
-#  scream/tables/p3_lookup_table_1.dat-v4.1.1
-#  scream/tables/mu_r_table_vals.dat${PRECISION_SUFFIX}
-#  scream/tables/revap_table_vals.dat${PRECISION_SUFFIX}
-#  scream/tables/vm_table_vals.dat${PRECISION_SUFFIX}
-#  scream/tables/vn_table_vals.dat${PRECISION_SUFFIX}
-#)
-
-#include (ScreamUtils)
-#foreach (file IN ITEMS ${P3_TABLES})
-#  GetInputFile(${file})
-#endforeach()
