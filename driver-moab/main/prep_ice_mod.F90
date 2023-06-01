@@ -896,6 +896,14 @@ contains
 #endif
 
     !---------------------------------------------------------------
+#ifdef MOABDEBUG
+   if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+      write(lnum,"(I0.2)")num_moab_exports
+      outfile = 'OcnCplBef_o2i_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+      ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+   endif
+#endif
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eai = 1,num_inst_atm
@@ -917,6 +925,10 @@ contains
   !================================================================================================
 
   subroutine prep_ice_calc_o2x_ix(timer)
+
+#ifdef MOABDEBUG
+    use iMOAB , only : iMOAB_WriteMesh
+#endif
     !---------------------------------------------------------------
     ! Description
     ! Create o2x_ix (note that o2x_ix is a local module variable)
@@ -928,6 +940,22 @@ contains
     integer :: eoi
     type(mct_aVect) , pointer :: o2x_ox
     character(*), parameter :: subname = '(prep_ice_calc_o2x_ix)'
+
+#ifdef MOABDEBUG
+    character*32             :: outfile, wopts, lnum
+    integer                  :: ierr
+#endif
+
+    !---------------------------------------------------------------
+#ifdef MOABDEBUG
+   if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+      write(lnum,"(I0.2)")num_moab_exports
+      outfile = 'OcnCplBef_o2x_ix_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+      ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+   endif
+#endif
+
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
@@ -936,7 +964,14 @@ contains
        call seq_map_map(mapper_SFo2i, o2x_ox, o2x_ix(eoi), norm=.true.)
     enddo
     call t_drvstopf  (trim(timer))
-
+#ifdef MOABDEBUG
+   if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+      write(lnum,"(I0.2)")num_moab_exports
+      outfile = 'OcnCplAft_o2x_ix_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+      ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+   endif
+#endif
   end subroutine prep_ice_calc_o2x_ix
 
   !================================================================================================

@@ -486,14 +486,19 @@ end subroutine moab_map_init_rcfile
 
 #ifdef HAVE_MOAB
        if ( valid_moab_context ) then
+#ifdef MOABDEBUG
+         if (seq_comm_iamroot(CPLID)) then
+            write(logunit, *) subname,' iMOAB mapper rearrange or copy ', mapper%mbname, ' send/recv tags ', trim(fldlist_moab), &
+              ' mbpresent=', mbpresent, ' mbnorm=', mbnorm 
+            call shr_sys_flush(logunit)
+         endif
+#endif
          ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
          if (ierr .ne. 0) then
             write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' error in sending tags ', trim(fldlist_moab), ierr
             call shr_sys_flush(logunit)
             call shr_sys_abort(subname//' ERROR in sending tags')
          endif
-       endif
-       if ( valid_moab_context ) then
          ! receive in the target app
          ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
          if (ierr .ne. 0) then
@@ -507,7 +512,8 @@ end subroutine moab_map_init_rcfile
             write(logunit,*) subname,' error in freeing buffers ', trim(fldlist_moab)
             call shr_sys_abort(subname//' ERROR in freeing buffers') ! serious enough
          endif
-       endif
+       endif ! if (valid_moab_context)
+       
 #endif
 
       else
@@ -535,7 +541,12 @@ end subroutine moab_map_init_rcfile
                write(logunit,*) subname,' error setting init value for mapping norm factor ',ierr,trim(tagname)
                call shr_sys_abort(subname//' ERROR setting norm init value') ! serious enough
             endif
-
+#ifdef MOABDEBUG
+            if (seq_comm_iamroot(CPLID)) then
+               write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' set norm8wt 1  on source with app id: ', mapper%src_mbid
+               call shr_sys_flush(logunit)
+            endif
+#endif
             ! if a normalization factor was specified, get it and multiply src tags by it
             if(mbpresent) then
                tagname = avwtsfld_s//C_NULL_CHAR
