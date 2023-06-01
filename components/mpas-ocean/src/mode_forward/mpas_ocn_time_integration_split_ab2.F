@@ -101,6 +101,11 @@ module ocn_time_integration_split_ab2
    type(MPAS_Time_Type) :: nowTime
    character(len=STRKIND) :: initialTimeStamp, nowTimeStamp
 
+   real (kind=RKIND),allocatable, dimension(:,:) :: &
+      normalVelocityTendOld,CoriolisTermOld
+
+   real (kind=RKIND) :: eab
+
 !***********************************************************************
 
    contains
@@ -235,7 +240,7 @@ module ocn_time_integration_split_ab2
          startIndex, endIndex, &! start, end index for tracer groups
          indexSalinity          ! tracer index for salinity
 
-      integer :: iTracer, numTracers, numActiveTracers
+      integer :: iTracer, numTracers, numActiveTracers, ierr
 
       type (mpas_pool_iterator_type) :: &
          groupItr               ! iterator for tracer groups
@@ -302,17 +307,12 @@ module ocn_time_integration_split_ab2
       !*** Start main time step timer
       call mpas_timer_start("se timestep")
 
-      ! get current time & setup num TS iteration
-      nowTime = mpas_get_clock_time(domain%clock, MPAS_NOW, ierr)
-      call mpas_get_time(nowTime, dateTimeString=nowTimeStamp)
 
-!     if ( nowTimeStep /= initialTimeStep ) then
-!           numTSIterations = 1
-!           numClinicIterations = 2
-!     endif
+      if ( nowTimeStamp /= initialTimeStamp ) then
+            numTSIterations = 1
+            numClinicIterations = 2
+      endif
 
-      print*, nowTimeStep, initialTimeStep
-      stop
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  Prep variables before first iteration
@@ -745,31 +745,134 @@ module ocn_time_integration_split_ab2
 
             allocate(uTemp(nVertLevels,nEdgesOwned))
 
+            if ( nowTimeStamp == initialTimeStamp ) then
+
+               !$omp parallel
+               !$omp do schedule(runtime) &
+               !$omp private(k, cell1, cell2, uTemp, &
+               !$omp         normalThicknessFluxSum, thicknessSum)
+               do iEdge = 1, nEdgesOwned
+                  cell1 = cellsOnEdge(1,iEdge)
+                  cell2 = cellsOnEdge(2,iEdge)
+                  ! could put this after with uTemp(maxleveledgetop+1:nvertlevels)=0
+                  uTemp(:,iEdge) = 0.0_RKIND
+                  do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+   
+                     ! normalBaroclinicVelocityNew =
+                     ! normalBaroclinicVelocityOld +
+                     !                dt*(-f*normalBaroclinicVelocityPerp
+                     !                    + T(u*,w*,p*) + g*grad(SSH*) )
+                     ! Here uNew is a work variable containing
+                     !  -fEdge(iEdge)*normalBaroclinicVelocityPerp(k,iEdge)
+                     uTemp(k,iEdge) = normalBaroclinicVelocityCur(k,iEdge) &
+                              + dt * (normalVelocityTend(k,iEdge) &
+                              + normalVelocityNew(k,iEdge) &
+                              + splitFact*gravity * &
+                                (sshNew(cell2) - sshNew(cell1)) &
+                                /dcEdge(iEdge) )
+                  enddo ! vertical
+
+                  if ( j == 1 ) then
+                     do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+                        normalVelocityTendOld(k,iEdge)  = &
+                                  (normalVelocityTend(k,iEdge) &
+                                 + splitFact*gravity * &
+                                   (sshNew(cell2) - sshNew(cell1)) &
+                                   /dcEdge(iEdge))
+                        CoriolisTermOld(k,iEdge) = normalVelocityNew(k,iEdge)
+                     enddo ! vertical
+                  endif
+   
+               enddo ! iEdge
+               !$omp end do
+               !$omp end parallel
+
+            else ! nowTimeStamp
+
+               if ( j == 1 ) then
+                  !$omp parallel
+                  !$omp do schedule(runtime) &
+                  !$omp private(k, cell1, cell2, uTemp, &
+                  !$omp         normalThicknessFluxSum, thicknessSum)
+                  do iEdge = 1, nEdgesOwned
+                     cell1 = cellsOnEdge(1,iEdge)
+                     cell2 = cellsOnEdge(2,iEdge)
+                     ! could put this after with uTemp(maxleveledgetop+1:nvertlevels)=0
+                     uTemp(:,iEdge) = 0.0_RKIND
+                     do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+      
+                        ! normalBaroclinicVelocityNew =
+                        ! normalBaroclinicVelocityOld +
+                        !                dt*(-f*normalBaroclinicVelocityPerp
+                        !                    + T(u*,w*,p*) + g*grad(SSH*) )
+                        ! Here uNew is a work variable containing
+                        !  -fEdge(iEdge)*normalBaroclinicVelocityPerp(k,iEdge)
+                        uTemp(k,iEdge) = normalBaroclinicVelocityCur(k,iEdge) &
+                                 + (1.50_RKIND + eab) * dt * (normalVelocityTend(k,iEdge) &
+                                 + normalVelocityNew(k,iEdge) &
+                                 + splitFact*gravity * &
+                                   (sshNew(cell2) - sshNew(cell1)) &
+                                   /dcEdge(iEdge) ) &
+                                 - (0.5_RKIND + eab) * dt * ( normalVelocityTendOld(k,iEdge) &
+                                                             +CoriolisTermOld(k,iEdge) )
+                     enddo ! vertical
+   
+                     do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+                        CoriolisTermOld(k,iEdge) = normalVelocityNew(k,iEdge)
+                     enddo ! vertical
+      
+                  enddo ! iEdge
+                  !$omp end do
+                  !$omp end parallel
+ 
+               else ! j
+
+                  !$omp parallel
+                  !$omp do schedule(runtime) &
+                  !$omp private(k, cell1, cell2, uTemp, &
+                  !$omp         normalThicknessFluxSum, thicknessSum)
+                  do iEdge = 1, nEdgesOwned
+                     cell1 = cellsOnEdge(1,iEdge)
+                     cell2 = cellsOnEdge(2,iEdge)
+                     ! could put this after with uTemp(maxleveledgetop+1:nvertlevels)=0
+                     uTemp(:,iEdge) = 0.0_RKIND
+                     do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+      
+                        ! normalBaroclinicVelocityNew =
+                        ! normalBaroclinicVelocityOld +
+                        !                dt*(-f*normalBaroclinicVelocityPerp
+                        !                    + T(u*,w*,p*) + g*grad(SSH*) )
+                        ! Here uNew is a work variable containing
+                        !  -fEdge(iEdge)*normalBaroclinicVelocityPerp(k,iEdge)
+                        uTemp(k,iEdge) = normalBaroclinicVelocityCur(k,iEdge) &
+                                 + (1.50_RKIND + eab) * dt * (normalVelocityTend(k,iEdge) &
+                                 + splitFact*gravity * &
+                                   (sshNew(cell2) - sshNew(cell1)) &
+                                   /dcEdge(iEdge) ) &
+                                 - (0.5_RKIND + eab) * dt * normalVelocityTendOld(k,iEdge) &
+                                 +                     dt * normalVelocityNew(k,iEdge)
+                     enddo ! vertical
+   
+                     do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+                        normalVelocityTendOld(k,iEdge)  = &
+                                  (normalVelocityTend(k,iEdge) &
+                                 + splitFact*gravity * &
+                                   (sshNew(cell2) - sshNew(cell1)) &
+                                   /dcEdge(iEdge))
+                     enddo ! vertical
+      
+                  enddo ! iEdge
+                  !$omp end do
+
+               endif ! j
+
+            endif ! nowTimeStamp
+
             !$omp parallel
             !$omp do schedule(runtime) &
             !$omp private(k, cell1, cell2, uTemp, &
             !$omp         normalThicknessFluxSum, thicknessSum)
             do iEdge = 1, nEdgesOwned
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-               ! could put this after with uTemp(maxleveledgetop+1:nvertlevels)=0
-               uTemp(:,iEdge) = 0.0_RKIND
-               do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-
-                  ! normalBaroclinicVelocityNew =
-                  ! normalBaroclinicVelocityOld +
-                  !                dt*(-f*normalBaroclinicVelocityPerp
-                  !                    + T(u*,w*,p*) + g*grad(SSH*) )
-                  ! Here uNew is a work variable containing
-                  !  -fEdge(iEdge)*normalBaroclinicVelocityPerp(k,iEdge)
-                  uTemp(k,iEdge) = normalBaroclinicVelocityCur(k,iEdge) &
-                           + dt * (normalVelocityTend(k,iEdge) &
-                           + normalVelocityNew(k,iEdge) &
-                           + splitFact*gravity * &
-                             (sshNew(cell2) - sshNew(cell1)) &
-                             /dcEdge(iEdge) )
-               enddo ! vertical
-
                ! thicknessSum is initialized outside the loop because
                ! on land boundaries maxLevelEdgeTop=0, but we want to
                ! initialize thicknessSum with a nonzero value to avoid
@@ -797,9 +900,7 @@ module ocn_time_integration_split_ab2
                   normalBaroclinicVelocityNew(k,iEdge) = 0.5_RKIND*( &
                   normalBaroclinicVelocityCur(k,iEdge) + uTemp(k,iEdge) - &
                          dt * barotropicForcing(iEdge))
-
                enddo
-
             enddo ! iEdge
             !$omp end do
             !$omp end parallel
@@ -2642,6 +2743,10 @@ module ocn_time_integration_split_ab2
       end if
       deallocate(bottomDepthEdge)
 
+      ! get current time & setup num TS iteration
+      nowTime = mpas_get_clock_time(domain%clock, MPAS_NOW, ierr)
+      call mpas_get_time(nowTime, dateTimeString=nowTimeStamp)
+
       call mpas_timer_stop('se fini')
       call mpas_timer_stop("se timestep")
 
@@ -2739,6 +2844,7 @@ module ocn_time_integration_split_ab2
 
       !*** Set initial time stamp
       call mpas_get_time(nowTime, dateTimeString=initialTimeStamp)
+      call mpas_get_time(nowTime, dateTimeString=nowTimeStamp)
 
       !*** Set mask for using velocity correction
       if (config_vel_correction) then
@@ -2812,6 +2918,7 @@ module ocn_time_integration_split_ab2
          call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
+
          !*** Compute barotropic velocity at first timestep
          !*** This is only done upon start-up.
             if (config_filter_btr_mode) then
@@ -2881,6 +2988,16 @@ module ocn_time_integration_split_ab2
 
       end if ! not restart
 
+      ! Allocate AB2 necessary arrays
+      allocate(normalVelocityTendOld(nVertLevels,nEdgesAll+1))
+      allocate(CoriolisTermOld(nVertLevels,nEdgesAll+1))
+      normalVelocityTendOld(:,:) = 0.0_RKIND
+      CoriolisTermOld(:,:) = 0.0_RKIND
+
+      ! Configuration of modified AB2 coefficient
+      !    - Setting as 0 means the standard AB2
+      eab = 0.0_RKIND
+
       ! Create reusable halo exchange for subcycling
       call mpas_dmpar_exch_group_create(domain, subcycleGroupName)
       call mpas_dmpar_exch_group_add_field(domain, subcycleGroupName, &
@@ -2899,6 +3016,7 @@ module ocn_time_integration_split_ab2
       endif
 
       self_attraction_and_loading_beta = config_self_attraction_and_loading_beta
+
 
    end subroutine ocn_time_integration_split_ab2_init!}}}
 

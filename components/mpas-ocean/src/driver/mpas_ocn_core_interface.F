@@ -214,6 +214,7 @@ module ocn_core_interface
       call mpas_pool_get_config(configPool, 'config_time_integrator', config_time_integrator)
       if ( forwardModeActive ) then
          if (    config_time_integrator == trim('split_explicit') &
+            .or. config_time_integrator == trim('split_explicit_ab2') &
             .or. config_time_integrator == trim('unsplit_explicit') &
             .or. config_time_integrator == trim('split_implicit') ) then
             splitTimeIntegratorActive = .true.
