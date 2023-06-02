@@ -3310,7 +3310,8 @@ contains
 
     use icepack_intfc, only: &
          icepack_step_ridge, &
-         icepack_warnings_clear
+         icepack_warnings_clear, &
+         icepack_warnings_aborted
 
 !    use ice_colpkg, only: &
 !         colpkg_step_ridge, &
@@ -3492,7 +3493,7 @@ contains
        setGetBGCTracers     = config_use_column_biogeochemistry
 
        ! code abort
-       abortFlag = .false. ! DC no place where this gets updated here
+       abortFlag = .false.
        abortMessage = ""
 
        do iCell = 1, nCellsSolve
@@ -3551,11 +3552,6 @@ contains
                fzsal=zSalinityFlux(iCell), &
                flux_bio=oceanBioFluxes(:,iCell), & ! DC no closing argument
                Tf=seaFreezingTemperature(iCell))
-!dc removed unsure          call column_write_warnings(abortFlag)
-
-!dc added unsure          call column_write_warnings(.false.)
-
-!          call column_write_warnings(abortFlag)
 
           ! update
           do iCategory = 1, nCategories
@@ -3568,6 +3564,8 @@ contains
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           ! code abort
+          abortFlag = icepack_warnings_aborted()
+          call seaice_icepack_write_warnings(abortFlag)
           if (abortFlag) exit
 
        enddo ! iCell
