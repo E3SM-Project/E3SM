@@ -715,9 +715,9 @@
    <batch_system MACH="frontier-scream-gpu" type="slurm">
 	   <batch_submit>/lustre/orion/cli115/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
      <queues>
-       <queue strict="true" nodemin="1" nodemax="8" walltimemax="02:00:00" default="true">batch</queue>
-       <queue strict="true" nodemin="9" nodemax="64" walltimemax="02:00:00">batch</queue>
-       <queue strict="true" nodemin="65" nodemax="160" walltimemax="02:00:00">batch</queue>
+       <queue strict="true" nodemin="1" nodemax="91" walltimemax="2:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="92" nodemax="183" walltimemax="6:00:00">batch</queue>
+       <queue strict="true" nodemin="184" nodemax="9408" walltimemax="12:00:00">batch</queue>
      </queues>
    </batch_system>
 
