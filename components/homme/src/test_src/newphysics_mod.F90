@@ -524,7 +524,7 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   real(rl) :: cpstarTerm_new, rstardp, oldQ1mass, olddphi, pi_top_int, enb, ena
   real(rl), dimension(nlev)  :: pi, dphi, zero, rain, d_pnh, rain2
   real(rl), dimension(nlevp) :: p_int
-  integer  :: k
+  integer  :: k, kk
 
   massout = 0.0
   energyout = 0.0
@@ -645,8 +645,8 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   !i can just reuse rain variable
   rain2 = rain
 
-
-!in HY update, what to do about energyout and how/when to recompute p and phi?
+! in HY update, what to do about energyout and how/when to recompute p and phi?
+! decision: keep both updates the same for cpstar HY and NH
 
   do k=nlev, 1, -1
 
@@ -677,6 +677,13 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
      zi_c(1:k) = zi_c(1:k) - (olddphi - dphi(k))/gravit
 
      rain2(k) = 0.0
+
+     !the code below obeys this: d(p')=d(p-\pi)=0 in the cell with rain and cells above
+     !rain takes out change of energy in the cell with rain 
+     !and potential energy of shifted cells above. Bottom cells do not change and do nto
+     !obey d(p')=0, because total hy energy changed in them when the weight of the above 
+     !is reduced. 
+
      !rain2 contains what'd not been rained out yet
      call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c-rain2, rain2, zero,T_c,ptop,zi_c,p_c,ena)
      
