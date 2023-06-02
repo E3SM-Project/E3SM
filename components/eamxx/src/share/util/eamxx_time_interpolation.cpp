@@ -230,16 +230,7 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
   for (int ii=0; ii<list_of_files.size(); ii++) {
     const auto filename = list_of_files[ii];
     // Reference TimeStamp
-    const int date_start = scorpio::get_attribute<int>(filename,"start_date"); // Start date is in YYYYMMDD format
-    const int time_start = scorpio::get_attribute<int>(filename,"start_time"); // Start time is in hhmmss format
-    // Need to parse the start time and date into a timestamp
-    const int YY = date_start/10000;
-    const int MM = (date_start - YY*10000)/100;
-    const int DD = (date_start - YY*10000 - MM*100);
-    const int hh = time_start/10000;
-    const int mm = (time_start - hh*10000)/100;
-    const int ss = (time_start - hh*10000 - mm*100);
-    TimeStamp ts_file_start(YY,MM,DD,hh,mm,ss);
+    auto ts_file_start = scorpio::read_timestamp(filename,"case_t0");
     // Gather the units of time
     auto time_units_tmp = scorpio::get_any_attribute(filename,"time","units");
     auto& time_units = ekat::any_cast<std::string>(time_units_tmp);

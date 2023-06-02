@@ -295,9 +295,14 @@ util::TimeStamp init_timestamp()
 /* Create a grids manager for the test */
 std::shared_ptr<const GridsManager> get_gm (const ekat::Comm& comm, const int ncols, const int nlevs)
 {
+  using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("number_of_global_columns",ncols);
-  gm_params.set("number_of_vertical_levels",nlevs);
+  gm_params.set("grids_names",vos_t{"Point Grid"});
+  auto& pl = gm_params.sublist("Point Grid");
+  pl.set<std::string>("type","point_grid");
+  pl.set("aliases",vos_t{"Physics"});
+  pl.set<int>("number_of_global_columns", ncols);
+  pl.set<int>("number_of_vertical_levels", nlevs);
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   gm->build_grids();
   return gm;
