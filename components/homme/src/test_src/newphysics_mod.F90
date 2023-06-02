@@ -524,7 +524,7 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   real(rl) :: cpstarTerm_new, rstardp, oldQ1mass, olddphi, pi_top_int, enb, ena
   real(rl), dimension(nlev)  :: pi, dphi, zero, rain, d_pnh, rain2
   real(rl), dimension(nlevp) :: p_int
-  integer  :: k, kk
+  integer  :: k, ll
 
   massout = 0.0
   energyout = 0.0
@@ -612,36 +612,6 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   call energycp_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c-rain, rain, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
   !call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c-rain, rain, zero,T_c,ptop,zi_c,p_c,en2)
 
-!if(wasiactive)then
-!print *, 'en1-en2', en1-en2, (en1-en2)/en1
-!stop
-!endif
-
-#if 0
-  do k=1, nlev
-
-     !sedimentation stage
-     oldQ1mass = dp_c(k)*qv_c(k)
-     vapor_mass_change = rain(k)
-     dp_c(k) = dp_c(k) - vapor_mass_change
-     p_c(k)  = p_c(k) - vapor_mass_change
-     qv_c(k) = (oldQ1mass - vapor_mass_change)/dp_c(k)
-     rstardp = dp_c(k) * (rdry * (1.0 - qv_c(k)) + rvapor * qv_c(k))
-
-     dphi(k) = rstardp * T_c(k) / p_c(k)
-      
-     !phi_surf does not change and is most likely 0
-     energyout = energyout + (cl*T_c(k) + latice + gravit*zi_c(nlevp))*vapor_mass_change
-     !this term is not linear in dp and so it is not exact and we use approximation
-     energyout = energyout + rstardp*T_c(k)/dp_c(k)*vapor_mass_change*(pi(k)/p_c(k)-1)
-
-  enddo
-  !recompute zi after sedimentation
-  do k=nlev, 1, -1
-     zi_c(k) = zi_c(k+1) + dphi(k)/gravit
-  enddo
-#endif
-
   !i can just reuse rain variable
   rain2 = rain
 
@@ -655,7 +625,14 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 
      !rain2 contains what'd not been rained out yet
      call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c-rain2, rain2, zero,T_c,ptop,zi_c,p_c,enb)
+ 
+     !above, we only need to save dphi
+     !compute dphi above the cell
+     do ll=k-1,1,-1
+       dphi(ll) = (zi_c(ll) - zi_c(ll+1))*gravit
+     enddo
 
+     !k cell, we need to recompute state vars and dphi
      !sedimentation stage
      oldQ1mass = dp_c(k)*qv_c(k)
      vapor_mass_change = rain(k)
@@ -663,26 +640,20 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
      p_c(k)  = p_c(k) - vapor_mass_change
      qv_c(k) = (oldQ1mass - vapor_mass_change)/dp_c(k)
      rstardp = dp_c(k) * (rdry * (1.0 - qv_c(k)) + rvapor * qv_c(k))
-
-     olddphi = (zi_c(k) - zi_c(k+1))*gravit
+     rain2(k) = 0.0
      dphi(k) = rstardp * T_c(k) / p_c(k)
 
-     pi_top_int = ptop
-     if(k>1)  pi_top_int = pi_top_int + sum(dp_c(1:k-1))
+     !below, we need to recompute dphi from changed pressure
+     do ll=k+1,nlev
+        p_c(ll) = p_c(ll) - vapor_mass_change
+        rstardp = dp_c(ll) * (rdry * (1.0 - qv_c(ll)) + rvapor * qv_c(ll)) 
+        dphi(ll) = rstardp * T_c(ll) / p_c(ll)
+     enddo
 
-     !energyout = energyout + (cl*T_c(k) + latice)*vapor_mass_change
-     !energyout = energyout + pi_top_int*(olddphi - dphi(k))
-     !energyout = energyout + gravit*(zi_c(k) + zi_c(k+1))/2.0*vapor_mass_change
-
-     zi_c(1:k) = zi_c(1:k) - (olddphi - dphi(k))/gravit
-
-     rain2(k) = 0.0
-
-     !the code below obeys this: d(p')=d(p-\pi)=0 in the cell with rain and cells above
-     !rain takes out change of energy in the cell with rain 
-     !and potential energy of shifted cells above. Bottom cells do not change and do nto
-     !obey d(p')=0, because total hy energy changed in them when the weight of the above 
-     !is reduced. 
+     !recompute zi_c for all levels
+     do ll=nlev, 1, -1
+        zi_c(ll) = zi_c(ll+1) + dphi(ll)/gravit
+     enddo
 
      !rain2 contains what'd not been rained out yet
      call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c-rain2, rain2, zero,T_c,ptop,zi_c,p_c,ena)
