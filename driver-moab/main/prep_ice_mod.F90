@@ -691,7 +691,7 @@ contains
           field = mct_aVect_getRList2c(i1, o2x_i)
           mrgstr(o1) = trim(mrgstr(o1))//' = o2x%'//trim(field)
 #ifdef MOABDEBUG
-          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          write(lnum, "(I3, A18, I3)" )i1, ' in o2x_ix, x2i_ix ', o1
           mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
 #endif
        enddo
@@ -701,7 +701,7 @@ contains
           field = mct_aVect_getRList2c(i1, a2x_i)
           mrgstr(o1) = trim(mrgstr(o1))//' = a2x%'//trim(field)
 #ifdef MOABDEBUG
-          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          write(lnum, "(I3, A18, I3)" )i1, ' in a2x_ix, x2i_ix', o1
           mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
 #endif
        enddo
@@ -711,7 +711,7 @@ contains
           field = mct_aVect_getRList2c(i1, g2x_i)
           mrgstr(o1) = trim(mrgstr(o1))//' = g2x%'//trim(field)
 #ifdef MOABDEBUG
-          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          write(lnum, "(I3, A18, I3)" )i1, ' in g2x_ix, x2i_ix ', o1
           mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
 #endif
        enddo

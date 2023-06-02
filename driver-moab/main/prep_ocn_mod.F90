@@ -1237,6 +1237,15 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     endif
     lsize = nvise(1) ! number of active cells
 
+#ifdef MOABDEBUG
+    if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+     write(lnum,"(I0.2)")num_moab_exports
+     outfile = 'OcnCplBefMm'//trim(lnum)//'.h5m'//C_NULL_CHAR
+     wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+     ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+   endif
+#endif
+
 
     if (first_time) then
 
@@ -1512,7 +1521,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           o1=a2x_SharedIndices%shared_real%aVindices2(i)
           mrgstr(o1) = trim(mrgstr(o1))//' = a2x%'//trim(field_atm(i1))
 #ifdef MOABDEBUG
-          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          write(lnum, "(I3, A18, I3)" )i1, ' in a2x_o and x2o_o ', o1
           mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
 #endif
        enddo
@@ -1521,7 +1530,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           o1=i2x_SharedIndices%shared_real%aVindices2(i)
           mrgstr(o1) = trim(mrgstr(o1))//' = i2x%'//trim(field_ice(i1))
 #ifdef MOABDEBUG
-          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          write(lnum, "(I3, A20, I3)" )i1, ' in i2x_o and x2o_o ', o1
           mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
 #endif
        enddo
@@ -1530,7 +1539,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           o1=r2x_SharedIndices%shared_real%aVindices2(i)
           mrgstr(o1) = trim(mrgstr(o1))//' = r2x%'//trim(field_rof(i1))
 #ifdef MOABDEBUG
-          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          write(lnum, "(I3, A20, I3)" )i1, ' in r2x_o and x2o_o ', o1
           mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
 #endif
        enddo
@@ -1547,7 +1556,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           shared_fields_xao_x2o = trim(shared_fields_xao_x2o)//trim(field_xao(i1))//':'
           size_of_shared_values = size_of_shared_values + lSize
 #ifdef MOABDEBUG
-          write(lnum, "(I3, A6, I3)" )i1, ' mb-> ', o1
+          write(lnum, "(I3, A20, I3)" )i1, ' in xao_o and x2o_o ',o1
           mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
 #endif
        enddo
