@@ -137,6 +137,7 @@ TEST_CASE ("eamxx_time_interpolation_simple") {
 TEST_CASE ("eamxx_time_interpolation_data_from_file") {
   printf("TimeInterpolation - From File Case...\n\n\n");
   // Setup basic test
+  printf("   - Test Basics...\n");
   ekat::Comm comm(MPI_COMM_WORLD);
   scorpio::eam_init_pio_subsystem(comm);
   auto seed = get_random_test_seed(&comm);
@@ -145,19 +146,26 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
 
   const int nlevs  = SCREAM_PACK_SIZE*2+1;
   const int ncols  = comm.size()*2 + 1;
+  printf("   - Test Basics...DONE\n");
 
   // Get a grids manager for the test
+  printf("   - Grids Manager...\n");
   auto grids_man = get_gm(comm, ncols, nlevs);
   const auto& grid = grids_man->get_grid("Point Grid");
+  printf("   - Grids Manager...DONE\n");
   // Now create a fields manager to store initial data for testing.
+  printf("   - Fields Manager...\n");
   auto fields_man_t0 = get_fm(grid, t0, seed);
   auto fields_man_deep = get_fm(grid, t0, seed);  // A field manager for checking deep copies.
   std::vector<std::string> fnames;
   for (auto it : *fields_man_t0) {
     fnames.push_back(it.second->name());
   }
+  printf("   - Fields Manager...DONE\n");
   // Construct the files of interpolation data
+  printf("   - create test data files...\n");
   auto list_of_files = create_test_data_files(comm, grids_man, t0, seed);
+  printf("   - create test data files...DONE\n");
 
   // Construct a time interpolation object using the list of files with the data
   printf(  "Constructing a time interpolation object ...\n");
@@ -216,6 +224,8 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
   }
 
 
+  time_interpolator.finalize();
+  time_interpolator_deep.finalize();
   printf("                        ... DONE\n");
 
   // All done with IO

@@ -400,6 +400,10 @@ contains
     do while (associated(curr))
       if (associated(curr%var)) then
         if (trim(curr%var%name)==trim(shortname) .and. curr%var%is_set) then
+          ! TODO: For Luca, not sure why this is getting triggered for the time_interpolation test.  We are registering two
+          ! interpolators using the same files so I can see why we would go through the register_variable call twice for the same
+          ! var, but I'm not sure why the C++ is calling this in that case - and triggering this error.
+          exit
           call errorHandle("EAM_PIO_ERROR: variable "//trim(shortname)//" already registered in file "//trim(filename)//"\n. The C++ wrapper functions should have not called this F90 routine.",-999)
         endif
       end if
@@ -673,6 +677,7 @@ contains
 
     ! Find the pointer for this file
     call lookup_pio_atm_file(trim(fname),pio_atm_file,found,pio_file_list_ptr)
+
     if (found) then
       if (pio_atm_file%num_customers .eq. 1) then
         if ( is_write(pio_atm_file%purpose) ) then

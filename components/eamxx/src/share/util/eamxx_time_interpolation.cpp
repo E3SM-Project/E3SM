@@ -24,6 +24,22 @@ TimeInterpolation::TimeInterpolation(
 ) : TimeInterpolation(grid)
 {
   set_file_data_triplets(list_of_files);
+  m_is_data_from_file = true;
+}
+/*-----------------------------------------------------------------------------------------------*/
+// Destructor
+TimeInterpolation::
+~TimeInterpolation ()
+{
+  finalize();
+}
+/*-----------------------------------------------------------------------------------------------*/
+void TimeInterpolation::finalize()
+{
+  if (m_is_data_from_file) {
+    m_file_data_atm_input.finalize();
+    m_is_data_from_file=false;
+  }
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* A function to perform time interpolation using data from all the fields stored in the local
