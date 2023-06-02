@@ -3170,7 +3170,7 @@
     <MPILIBS>mpich,impi,openmpi</MPILIBS>
     <CHARGE_ACCOUNT>CSC249ADSE15_CNDA</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/gila/CSC249ADSE15_CNDA/performance_archive</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>    
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/lus/gila/projects/CSC249ADSE15_CNDA/$USER/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lus/gila/projects/CSC249ADSE15_CNDA/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lus/gila/projects/CSC249ADSE15_CNDA/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -3194,9 +3194,9 @@
        <arguments>
           <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
           <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
-	  <arg name="ranks_bind">--cpu-bind depth -envall</arg>
-	  <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS}</arg>
-	  <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
+          <arg name="ranks_bind">--cpu-bind depth -envall</arg>
+          <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS}</arg>
+          <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
        </arguments>
     </mpirun>
     <mpirun mpilib="openmpi">
@@ -3220,8 +3220,8 @@
           <command name="use">/soft/restricted/CNDA/updates/modulefiles</command>
         </modules>
         <modules compiler="!gnu">
-  	  <command name="load">oneapi/eng-compiler/2022.12.30.003</command>
-          <command name="load">mpich/52.2/icc-all-pmix-gpu</command>		
+          <command name="load">oneapi/eng-compiler/2022.12.30.003</command>
+          <command name="load">mpich/52.2/icc-all-pmix-gpu</command>
           <!--command name="load">oneapi/eng-compiler/.2023.05.15.002-rc02</command-->
           <!--command name="load">oneapi/eng-compiler/.2023.05.15.003-rc08</command-->
           <!--command name="load">oneapi/eng-compiler/2022.10.15.006</command-->
@@ -3232,10 +3232,10 @@
            <command name="unload">spack cmake</command>
            <command name="load">gcc/10.3.0</command>
         </modules>
-	<modules>
-	  <command name="load">cray-pals</command>
-	  <command name="load">append-deps/default</command>
-	  <command name="load">libfabric/1.15.2.0</command>
+        <modules>
+          <command name="load">cray-pals</command>
+          <command name="load">append-deps/default</command>
+          <command name="load">libfabric/1.15.2.0</command>
         </modules>
      </module_system>
      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -3261,17 +3261,17 @@
         <env name="romio_cb_write">disable</env>
         <env name="SYCL_CACHE_PERSISTENT">1</env>
         <env name="GATOR_INITIAL_MB">4000MB</env>
-	<env name="GATOR_DISABLE">0</env>
-	<env name="GPU_TILE_COMPACT">/soft/tools/mpi_wrapper_utils/gpu_tile_compact.sh</env>
-        <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>        
-        <env name="FI_CXI_CQ_FILL_PERCENT">20</env>	
+        <env name="GATOR_DISABLE">0</env>
+        <env name="GPU_TILE_COMPACT">/soft/tools/mpi_wrapper_utils/gpu_tile_compact.sh</env>
+        <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
+        <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
     </environment_variables>
     <environment_variables compiler="oneapi-ifx">
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
-	<env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
-        <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>        
-        <env name="FI_CXI_CQ_FILL_PERCENT">20</env>	
-        <env name="GPU_TILE_COMPACT"> </env>	
+        <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
+        <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
+        <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
+        <env name="GPU_TILE_COMPACT"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="!gnu">
         <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
