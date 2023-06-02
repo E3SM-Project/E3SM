@@ -1521,7 +1521,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           o1=a2x_SharedIndices%shared_real%aVindices2(i)
           mrgstr(o1) = trim(mrgstr(o1))//' = a2x%'//trim(field_atm(i1))
 #ifdef MOABDEBUG
-          write(lnum, "(I3, A18, I3)" )i1, ' in a2x_o and x2o_o ', o1
+          write(lnum, "(I3, A20, I3)" )i1, ' in a2x_o and x2o_o ', o1
           mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
 #endif
        enddo
@@ -1925,8 +1925,32 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
              write(logunit,'(A)') trim(mrgstr(ko))
           enddo
           write(logunit,'(A)') subname//' shared fields between xao and x2o '//trim(shared_fields_xao_x2o)
+#ifdef MOABDEBUG
+          write(logunit, *) ' Ocean fields computed on coupler'
+          do ko=1,noflds
+             write(logunit, *) trim(field_ocn(ko)), aindx(ko), amerge(ko), iindx(ko), imerge(ko), xindx(ko), xmerge(ko)
+          enddo
+          write(logunit, *) ' Atm fields projected on coupler'
+          do ka = 1,naflds
+             write(logunit, *) trim(field_atm(ka)) 
+          enddo
+          write(logunit, *) ' Ice fields projected on coupler'
+          do ki = 1,niflds
+             write(logunit, *) trim(field_ice(ki)) 
+          enddo
+          write(logunit, *) ' Runoff fields projected on coupler'
+          do kr = 1,nrflds
+             write(logunit, *) trim(field_rof(kr)) 
+          enddo
+          write(logunit, *) ' xao flux fields '
+          do kx = 1,nxflds
+             write(logunit, *) trim(field_xao(kx)) 
+          enddo
+#endif
+
        endif
        deallocate(mrgstr)
+       
        deallocate(field_atm,itemc_atm)
        deallocate(field_ocn,itemc_ocn)
        deallocate(field_ice,itemc_ice)

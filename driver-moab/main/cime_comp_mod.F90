@@ -3005,13 +3005,16 @@ contains
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
           call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
+          ! move the proj of atm to ice right after calc of a2x_ox
+          if (atm_c2_ice .and. ice_prognostic ) then
+            ! This is special to avoid remapping atm to ocn
+            ! Note it is constrained that different prep modules cannot  use or call each other
+            a2x_ox => prep_ocn_get_a2x_ox() ! array
+            call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
+          endif
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
           call t_drvstopf  ('CPL:OCNPRE1',cplrun=.true.,hashint=hashint(3))
-       endif
-       ! is this really needed here ?
-       if ( atm_c2_ocn) then
-          !call  prep_ocn_calc_a2x_ox_moab(timer='CPL:ocnpre1_atm2ocn_moab', infodata=infodata)
        endif
 
        !----------------------------------------------------------
@@ -4753,12 +4756,12 @@ contains
           if (glc_c2_ice) call prep_ice_calc_g2x_ix(timer='CPL:glcpost_glc2ice')
        end if
 
-       if (atm_c2_ice) then
-          ! This is special to avoid remapping atm to ocn
-          ! Note it is constrained that different prep modules cannot  use or call each other
-          a2x_ox => prep_ocn_get_a2x_ox() ! array
-          call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
-       endif
+      !  if (atm_c2_ice) then
+      !     ! This is special to avoid remapping atm to ocn
+      !     ! Note it is constrained that different prep modules cannot  use or call each other
+      !     a2x_ox => prep_ocn_get_a2x_ox() ! array
+      !     call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
+      !  endif
 
        call prep_ice_mrg(infodata, timer_mrg='CPL:iceprep_mrgx2i')
 
