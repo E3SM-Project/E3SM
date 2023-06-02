@@ -160,8 +160,8 @@ extern "C" void pam_driver() {
     if (enable_check_state) { pam_debug_check_state(coupler, 3, nstep); }
     if (enable_print_state) { pam_debug_print_state(coupler, 3); }
 
-    // disable psuedo friction for now because apparently there's a units problem that makes SHOC throw NaNs
-    // coupler.run_module( "compute_surface_friction"     , modules::compute_surface_friction );
+    // calculate psuedo friction which will be an input to SHOC
+    coupler.run_module( "compute_surface_friction"     , modules::compute_surface_friction );
 
     pam_statistics_save_state(coupler);
     coupler.run_module( "sgs"                          , [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
