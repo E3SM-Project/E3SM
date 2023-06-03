@@ -109,6 +109,7 @@ module physpkg
   logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
   logical :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
   logical :: history_gaschmbudget_2D_levels ! output 2D gas chemistry tracer concentrations and tendencies within certain layers
+  logical :: history_chemdyg_summary
 
   !======================================================================= 
 contains
@@ -195,7 +196,8 @@ subroutine phys_register
                       pergro_mods_out          = pergro_mods, &
                       history_gaschmbudget_out = history_gaschmbudget, &
                    history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
-            history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels)
+            history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels, &
+                   history_chemdyg_summary_out = history_chemdyg_summary )
 
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
@@ -287,17 +289,18 @@ subroutine phys_register
 
        ! NB: has to be after chem_register to use tracer names
        ! Fields for gas chemistry tracers
-       if (history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
+       if (history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
+            .or. history_chemdyg_summary) then
          call chm_diags_inti_ac() ! to get aer_species
          do m = 1,gas_pcnst
             if (.not. any( aer_species == m )) then
               spc_name = trim(solsym(m))
-              if (history_gaschmbudget .or. history_gaschmbudget_2D_levels) then
+              if (history_gaschmbudget .or. history_gaschmbudget_2D_levels .or. history_chemdyg_summary) then
                 gas_ac_name(m) = 'ac_'//spc_name
                 call pbuf_add_field(gas_ac_name(m), 'global', dtype_r8, (/pcols,pver/), gas_ac_idx)
               end if
 
-              if (history_gaschmbudget_2D) then
+              if (history_gaschmbudget_2D .or. history_chemdyg_summary) then
                 gas_ac_name_2D(m) = 'ac_2D_'//spc_name
                 call pbuf_add_field(gas_ac_name_2D(m), 'global', dtype_r8, (/pcols/), gas_ac_idx)
               end if
