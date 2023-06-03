@@ -2026,7 +2026,7 @@ Toggle to turn on the internal mixing of dust-snow.
 
 <entry id="mpi_sync_nstep_freq" type="integer(6)" category="history"
        group="elm_inparm" value="0">
-The number of steps after which a MPI_Barrier is called. By default (-1), a MPI_Barrier will
+The number of steps after which a MPI_Barrier is called. By default, a MPI_Barrier will
 not be called.
 <default>Default: 0</default>
 </entry>
