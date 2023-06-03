@@ -21,8 +21,9 @@ contains
 
     use mo_chem_utls, only : get_extfrc_ndx
     use ppgrid,       only : pver
-    use cam_history,  only : addfld
+    use cam_history,  only : addfld, add_default
     use spmd_utils,   only : masterproc
+    use phys_control, only : phys_getopts
 
     implicit none
 ! chem diags
@@ -106,6 +107,8 @@ contains
     use mo_aurora,      only : aurora
     use mo_solarproton, only : spe_prod 
     use physics_buffer, only : physics_buffer_desc
+    use phys_control, only : phys_getopts
+    use mo_constants, only : avogadro
 
     implicit none
 
@@ -155,6 +158,7 @@ contains
     extfrc(:,:,:) = 0._r8
 
     no_lgt(:,:) = 0._r8
+    no_tdlgt(:,:) = 0._r8
 
     !--------------------------------------------------------
     !     ... set frcing from datasets
@@ -165,7 +169,7 @@ contains
     !     ... set nox production from lighting
     !         note: from ground to cloud top production is c shaped
     !--------------------------------------------------------
-    if ( no_ndx > 0 ) then
+    if ( no_ndx > 0 ) then 
        do i = 1,ncol
           cldind = nint( cldtop(i) )
           if( cldind < pver .and. cldind > 0  ) then

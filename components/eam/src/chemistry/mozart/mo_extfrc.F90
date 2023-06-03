@@ -11,6 +11,7 @@ module mo_extfrc
   use cam_history,  only : addfld, horiz_only, outfld, add_default
   use cam_logfile,  only : iulog
   use tracer_data,  only : trfld,trfile
+  use mo_constants, only : avogadro
 
   implicit none
 
@@ -301,7 +302,7 @@ contains
   end subroutine extfrc_timestep_init
 
   subroutine extfrc_set( lchnk, zint, frcing, ncol )
-
+    use phys_control,  only : phys_getopts
     !--------------------------------------------------------
     !	... form the external forcing
     !--------------------------------------------------------
@@ -321,7 +322,7 @@ contains
     !--------------------------------------------------------
     integer  ::  i, m, n
     character(len=16) :: xfcname
-    real(r8) :: frcing_col(1:ncol)
+    real(r8) :: frcing_col(1:ncol), frcing_tmp(ncol,pver), no2_tdacf(ncol,pver)
     integer  :: k, isec
     real(r8),parameter :: km_to_cm = 1.e5_r8
     !chem diags
