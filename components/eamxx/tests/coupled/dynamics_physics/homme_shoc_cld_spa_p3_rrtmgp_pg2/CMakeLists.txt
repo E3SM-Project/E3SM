@@ -67,8 +67,8 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 set (TEST_INPUT_FILES
   scream/maps/map_ne4np4_to_ne2np4_mono.nc
   scream/init/spa_file_unified_and_complete_ne4_20220428.nc
-  scream/init/screami_ne4np4L72_20220823.nc
-  cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
+  scream/init/${EAMxx_tests_IC_FILE_72lev}
+  cam/topo/${EAMxx_tests_TOPO_FILE}
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(${file})
