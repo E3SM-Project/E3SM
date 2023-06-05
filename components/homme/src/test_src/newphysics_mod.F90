@@ -677,13 +677,13 @@ end subroutine rj_new
 
 
 subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
-                         en1, en2, en3, wasiactive)
+                         en1, en2, en3, encl, wasiactive)
 
   real(rl), dimension(nlev), intent(inout) :: p_c
   real(rl), dimension(nlev), intent(inout) :: dp_c
   real(rl), dimension(nlev), intent(inout) :: qv_c,ql_c,T_c
   real(rl), dimension(nlevp),intent(in)    :: zi_c
-  real(rl),                  intent(inout) :: massout,energyout, en1, en2, en3
+  real(rl),                  intent(inout) :: massout,energyout, en1, en2, en3, encl
   real(rl),                  intent(in)    :: ptop
   logical,                   intent(inout) :: wasiactive
 
@@ -697,7 +697,7 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   massout = 0.0
   energyout = 0.0
   rain = 0.0
-  en1 = 0; en2 = 0; en3 = 0;
+  en1 = 0; en2 = 0; en3 = 0; encl = 0;
 
   call construct_hydro_pressure(dp_c,ptop,pi)
 
@@ -756,6 +756,7 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 
      massout = massout + rain(k)
      energyout = energyout + rain(k)*(T_c(k)*cl + latice + (zi_c(k) + zi_c(k+1))*gravit/2.0)
+     encl      = encl + rain(k)*(T_c(k)*cl + latice)
   enddo
 
   call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c),dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c,p_c,en3)
