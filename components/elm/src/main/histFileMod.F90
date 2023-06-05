@@ -1937,6 +1937,7 @@ contains
        call ncd_defdim(lnfid, 'fates_levscpf', nlevsclass_fates*numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcapf',  nlevcoage*numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcan', nclmax_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levleaf', nlevleaf_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcnlf', nlevleaf_fates * nclmax_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcnlfpf', nlevleaf_fates * nclmax_fates * numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcdsc', nlevdamage_fates * nlevsclass_fates, dimid)
