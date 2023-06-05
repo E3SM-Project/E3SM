@@ -396,21 +396,6 @@ contains
     if (len_trim(shortname)>max_hvarname_len) call errorHandle("PIO Error: variable shortname "//trim(shortname)//" is too long, consider increasing max_hvarname_len or changing the variable shortname",-999)
     curr => pio_atm_file%var_list_top
 
-    ! Ensure var was not already registered
-    do while (associated(curr))
-      if (associated(curr%var)) then
-        if (trim(curr%var%name)==trim(shortname) .and. curr%var%is_set) then
-          ! TODO: For Luca, not sure why this is getting triggered for the time_interpolation test.  We are registering two
-          ! interpolators using the same files so I can see why we would go through the register_variable call twice for the same
-          ! var, but I'm not sure why the C++ is calling this in that case - and triggering this error.
-          exit
-          call errorHandle("EAM_PIO_ERROR: variable "//trim(shortname)//" already registered in file "//trim(filename)//"\n. The C++ wrapper functions should have not called this F90 routine.",-999)
-        endif
-      end if
-      prev => curr
-      curr => prev%next
-    end do
-
     allocate(prev%next)
     curr => prev%next
     allocate(curr%var)
