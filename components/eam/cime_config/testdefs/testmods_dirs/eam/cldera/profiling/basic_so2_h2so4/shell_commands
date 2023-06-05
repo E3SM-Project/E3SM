@@ -9,4 +9,10 @@ with open('./env_mach_specific.xml','r') as fd:
   cldera_path = [e.text for e in env_vars if e.attrib['name']=='CLDERA_PATH']
   print (cldera_path[0])
 ")
+DEBUG=$(./xmlquery --value DEBUG)
+if [ "${DEBUG}" = "TRUE" ]; then
+  CLDERA_PATH=${CLDERA_PATH}/debug
+else
+  CLDERA_PATH=${CLDERA_PATH}/release
+fi
 cp ${CLDERA_PATH}/share/cldera_profiling_config.yaml ${RUNDIR}/cldera_profiling_config.yaml
