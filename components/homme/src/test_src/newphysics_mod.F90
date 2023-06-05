@@ -676,12 +676,12 @@ end subroutine rj_new
 
 
 
-subroutine rj_new_volume(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
+subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
                          en1, en2, en3, wasiactive)
 
   real(rl), dimension(nlev), intent(inout) :: p_c
   real(rl), dimension(nlev), intent(inout) :: dp_c
-  real(rl), dimension(nlev), intent(inout) :: qv_c,T_c
+  real(rl), dimension(nlev), intent(inout) :: qv_c,ql_c,T_c
   real(rl), dimension(nlevp),intent(in)    :: zi_c
   real(rl),                  intent(inout) :: massout,energyout, en1, en2, en3
   real(rl),                  intent(in)    :: ptop
@@ -734,19 +734,22 @@ subroutine rj_new_volume(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 
        T_c(k)  = T_new
        rain(k) = vapor_mass_change
+       !this is before raining out, so dp did not change
+       qv_c(k) = (dp_loc*qv_loc - vapor_mass_change)/dp_loc
+       ql_c(k) = vapor_mass_change/dp_loc
      endif
   enddo
 
-  call energycV_nh_via_mass(dp_c*(1-qv_c),dp_c*qv_c-rain,rain,zero,T_c,ptop,zi_c,p_c,en2)
+  call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c),dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c,p_c,en2)
 
   !sedimentation stage
   do k=1, nlev
       
      !sedimentation stage
      oldQ1mass = dp_c(k)*qv_c(k)
-     vapor_mass_change = rain(k)
-     dp_c(k) = dp_c(k) - vapor_mass_change
-     qv_c(k) = (oldQ1mass - vapor_mass_change)/dp_c(k)
+     dp_c(k) = dp_c(k) - rain(k)
+     ql_c(k) = 0.0
+     qv_c(k) = oldQ1mass/dp_c(k)
 
      rstardp = dp_c(k)* (rdry * (1.0 - qv_c(k)) + rvapor * qv_c(k))
      p_c(k)  = - rstardp * T_c(k) / (zi_c(k+1) - zi_c(k) ) / gravit
@@ -755,7 +758,7 @@ subroutine rj_new_volume(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
      energyout = energyout + rain(k)*(T_c(k)*cl + latice + (zi_c(k) + zi_c(k+1))*gravit/2.0)
   enddo
 
-  call energycV_nh_via_mass(dp_c*(1-qv_c),dp_c*qv_c,zero,zero,T_c,ptop,zi_c,p_c,en3)
+  call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c),dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c,p_c,en3)
 
 end subroutine rj_new_volume
 
