@@ -13,7 +13,11 @@ MAMMicrophysics::MAMMicrophysics(
     const ekat::Comm& comm,
     const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params),
+    logger("MAM4", ekat::logger::LogLevel::trace, comm),
     aero_config_(), nucleation_(new mam4::NucleationProcess(aero_config_)) {
+
+    logger.set_format("\t[%n %l] %v");
+    logger.trace("Hello from MAM4!");
 }
 
 AtmosphereProcessType MAMMicrophysics::type() const {
@@ -26,6 +30,8 @@ std::string MAMMicrophysics::name() const {
 
 void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
+
+  logger.trace("entering MAMMicrophysics::set_grids");
 
   // The units of mixing ratio q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
@@ -72,6 +78,8 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   // Tracers group -- do we need this in addition to the tracers above? In any
   // case, this call should be idempotent, so it can't hurt.
   add_group<Updated>("tracers", grid_name, 1, Bundling::Required);
+
+  logger.trace("leaving MAMMicrophysics::set_grids");
 }
 
 // this checks whether we have the tracers we expect
@@ -167,6 +175,9 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
 }
 
 void MAMMicrophysics::initialize_impl(const RunType run_type) {
+
+  logger.trace("entering MAMMicrophysics::initialize");
+
   const auto& T_mid = get_field_in("T_mid").get_view<Real**>();
   const auto& p_mid = get_field_in("p_mid").get_view<Real**>();
   const auto& qv = get_field_in("qv").get_view<Real**>();
@@ -240,6 +251,8 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // FIXME: do we need this?
   //const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
   //workspace_mgr_.setup(buffer_.wsm_data, nlev_+1, 13+(n_wind_slots+n_trac_slots), default_policy);
+
+  logger.trace("entering MAMMicrophysics::initialize");
 }
 
 void MAMMicrophysics::run_impl(const double dt) {

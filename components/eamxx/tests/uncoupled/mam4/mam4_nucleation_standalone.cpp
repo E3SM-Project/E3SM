@@ -29,6 +29,7 @@ TEST_CASE("mam4-nucleation-standalone", "") {
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
   parse_yaml_file(fname,ad_params);
+  logger.debug("yaml parsed.");
 
   // Time stepping parameters
   const auto& ts     = ad_params.sublist("time_stepping");
@@ -40,28 +41,24 @@ TEST_CASE("mam4-nucleation-standalone", "") {
   // Need to register products in the factory *before* we create any atm process or grids manager.
   auto& proc_factory = AtmosphereProcessFactory::instance();
   auto& gm_factory = GridsManagerFactory::instance();
-  proc_factory.register_product("mam4_nucleation",&create_atmosphere_process<MAMMicrophysics>);
+  proc_factory.register_product("MAMMicrophysics",&create_atmosphere_process<MAMMicrophysics>);
   gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
   register_diagnostics();
+  logger.debug("products registered.");
 
   // Create the driver
   AtmosphereDriver ad;
+  logger.debug("driver created.");
 
   // Init and run
   ad.initialize(atm_comm,ad_params,t0);
-  if (atm_comm.am_i_root()) {
-    printf("Start time stepping loop...       [  0%%]\n");
-  }
+  logger.debug("driver initialized.");
+
+  logger.info("Start time stepping loop ... [0%]");
   for (int i=0; i<nsteps; ++i) {
     ad.run(dt);
-    if (atm_comm.am_i_root()) {
-      std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i+1 << " completed";
-      std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100*(i+1)/nsteps << "%]\n";
-    }
+    logger.info(" Iteration {} completed; [{}]", i+1, 100*(i+1)/nsteps);
   }
-
-  // TODO: get the field repo from the driver, and go get (one of)
-  //       the output(s) of mam4, to check its numerical value (if possible)
 
   // Finalize
   ad.finalize();

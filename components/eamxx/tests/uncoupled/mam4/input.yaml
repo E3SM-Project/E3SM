@@ -9,10 +9,9 @@ time_stepping:
   number_of_steps: ${NUM_STEPS}
 
 atmosphere_processes:
-  atm_procs_list: (mam4)
-  p3:
-    compute_tendencies: [T_mid,qc]
-    do_prescribed_ccn: false
+  atm_procs_list: (MAMMicrophysics)
+  MAMMicrophysics:
+    compute_tendencies: [q_aitken_so4, n_aitken_so4, q_h2so4]
 
 grids_manager:
   Type: Mesh Free
@@ -22,8 +21,10 @@ grids_manager:
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
-  precip_liq_surf_mass: 0.0
-  precip_ice_surf_mass: 0.0
+  q_aitken_so4 : 0.0
+  n_aitken_so4 : 0.0
+  q_h2so4 : 0.0000000002
+  pbl_height : 400.0
 
 # The parameters for I/O control
 Scorpio:

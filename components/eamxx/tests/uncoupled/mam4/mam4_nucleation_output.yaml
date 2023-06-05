@@ -4,9 +4,9 @@ filename_prefix: mam4_nucleation_standalone_output
 Averaging Type: Instant
 Field Names:
   - T_mid
-  - T_prev_micro_step
-  - qv
-  - qc
+  - q_aitken_so4
+  - n_aitken_so4
+  - q_h2so4
 output_control:
   Frequency: 1
   frequency_units: nsteps
