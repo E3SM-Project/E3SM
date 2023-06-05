@@ -680,7 +680,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 !print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
 !print *, 'en3, enout', energy_after,energy_prect
 !print *, 'en2, (en3+enout)', en2,(energy_after+energy_prect)
-!print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (energy_before-(energy_after+energy_prect))/en2
+!print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (en2-(energy_after+energy_prect))/en2
+!print *, 'total rel loss', (energy_before-(energy_after+energy_prect))/en2
 !print *, "    "
 !endif
 
