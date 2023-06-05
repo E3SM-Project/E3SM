@@ -395,7 +395,16 @@ contains
     ! Get a new variable pointer in var_list
     if (len_trim(shortname)>max_hvarname_len) call errorHandle("PIO Error: variable shortname "//trim(shortname)//" is too long, consider increasing max_hvarname_len or changing the variable shortname",-999)
     curr => pio_atm_file%var_list_top
-
+    do while ( associated(curr) )
+      if (associated(curr%var)) then
+        if (trim(curr%var%name)==trim(shortname) .and. curr%var%is_set) then
+          exit
+        end if
+      end if
+      prev => curr
+      curr => prev%next
+    end do
+    
     allocate(prev%next)
     curr => prev%next
     allocate(curr%var)
