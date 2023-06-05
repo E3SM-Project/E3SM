@@ -19,10 +19,11 @@ public:
    using vos_type = std::vector<std::string>;
    using fm_type = std::shared_ptr<FieldManager>;
 
-  // Constructors
+  // Constructors & Destructor
   TimeInterpolation() = default;
   TimeInterpolation(const grid_ptr_type& grid);
   TimeInterpolation(const grid_ptr_type& grid, const vos_type& list_of_files);
+  ~TimeInterpolation ();
 
   // Running the interpolation
   void initialize_timestamps(const TimeStamp& ts_in);
@@ -31,6 +32,7 @@ public:
   void update_data_from_field(const Field& field_in);
   void update_timestamp(const TimeStamp& ts_in);
   void perform_time_interpolation(const TimeStamp& time_in);
+  void finalize();
 
   // Build interpolator
   void add_field(const Field& field_in, const bool store_shallow_copy=false);
@@ -81,6 +83,7 @@ protected:
   std::vector<DataFromFileTriplet>           m_file_data_triplets;
   std::vector<DataFromFileTriplet>::iterator m_triplet_iterator;
   AtmosphereInput                            m_file_data_atm_input;
+  bool                                       m_is_data_from_file=false;
 
 
 }; // class TimeInterpolation

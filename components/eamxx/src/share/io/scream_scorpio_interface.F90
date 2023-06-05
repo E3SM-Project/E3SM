@@ -395,18 +395,16 @@ contains
     ! Get a new variable pointer in var_list
     if (len_trim(shortname)>max_hvarname_len) call errorHandle("PIO Error: variable shortname "//trim(shortname)//" is too long, consider increasing max_hvarname_len or changing the variable shortname",-999)
     curr => pio_atm_file%var_list_top
-
-    ! Ensure var was not already registered
-    do while (associated(curr))
+    do while ( associated(curr) )
       if (associated(curr%var)) then
         if (trim(curr%var%name)==trim(shortname) .and. curr%var%is_set) then
-          call errorHandle("EAM_PIO_ERROR: variable "//trim(shortname)//" already registered in file "//trim(filename)//"\n. The C++ wrapper functions should have not called this F90 routine.",-999)
-        endif
+          exit
+        end if
       end if
       prev => curr
       curr => prev%next
     end do
-
+    
     allocate(prev%next)
     curr => prev%next
     allocate(curr%var)
@@ -673,6 +671,7 @@ contains
 
     ! Find the pointer for this file
     call lookup_pio_atm_file(trim(fname),pio_atm_file,found,pio_file_list_ptr)
+
     if (found) then
       if (pio_atm_file%num_customers .eq. 1) then
         if ( is_write(pio_atm_file%purpose) ) then
