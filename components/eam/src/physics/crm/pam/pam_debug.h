@@ -22,17 +22,31 @@ void pam_debug_check_state( pam::PamCoupler &coupler, int id, int nstep ) {
 
   // Check for NaNs
   parallel_for("", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-    const auto is_nan_r_atm = isnan( rho_d(k,j,i,iens) );
+
     const auto is_nan_t_atm = isnan( temp(k,j,i,iens) );
+    const auto is_nan_r_atm = isnan( rho_d(k,j,i,iens) );
     const auto is_nan_q_atm = isnan( rho_v(k,j,i,iens) );
-    if ( is_nan_r_atm || is_nan_q_atm || is_nan_t_atm ) {
-      printf("PAM-DEBUG pam_debug nan-found - st:%d  id:%d  k:%d  i:%d  n:%d  t: %g  rv: %g  rd: %g \n",
+    if ( is_nan_t_atm || is_nan_r_atm || is_nan_q_atm ) {
+      printf("PAM-DEBUG nan-found - st:%d  id:%d  k:%d  i:%d  n:%d  t: %g  rv: %g  rd: %g \n",
         nstep,id,k,i,nens,
         temp (k,j,i,iens),
         rho_v(k,j,i,iens),
         rho_d(k,j,i,iens)
       );
     }
+
+    const auto is_neg_t_atm = temp(k,j,i,iens)  < 0;
+    const auto is_neg_r_atm = rho_d(k,j,i,iens) < 0;
+    const auto is_neg_q_atm = rho_v(k,j,i,iens) < 0;
+    if ( is_neg_t_atm || is_neg_r_atm || is_neg_q_atm ) {
+      printf("PAM-DEBUG negative-found - st:%d  id:%d  k:%d  i:%d  n:%d  t: %g  rv: %g  rd: %g \n",
+        nstep,id,k,i,nens,
+        temp (k,j,i,iens),
+        rho_v(k,j,i,iens),
+        rho_d(k,j,i,iens)
+      );
+    }
+
   });
 
 }
