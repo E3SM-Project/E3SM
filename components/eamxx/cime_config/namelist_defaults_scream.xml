@@ -314,14 +314,14 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- List of default topography files on specific grids -->
     <topography_filename type="file">UNSET</topography_filename>
-    <!-- Rough topography available for ne30, ne256, and ne1024 -->
+    <!-- Rough topography available for ne30, ne120, ne256, ne512, and ne1024 -->
     <topography_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc</topography_filename>
+    <topography_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4pg2_x6t_20230404.nc</topography_filename>
     <topography_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4pg2_x6t-SGH.c20210614.nc</topography_filename>
+    <topography_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4pg2_x6t_20230404.nc</topography_filename>
     <topography_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_x6t-SGH.c20210614.nc</topography_filename>
-    <!-- Currently no rough topography for ne4, ne120, or ne512. Use smooth topography file -->
+    <!-- Currently no rough topography for ne4. Use smooth topography file -->
     <topography_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</topography_filename>
-    <topography_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4pg2_16xdel2.nc</topography_filename>
-    <topography_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</topography_filename>
     <!-- Special case with non x6t or 16x topography file -->
     <topography_filename hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</topography_filename>
     <!-- For aquaplanet run, unset the topography_filename and set phis=0 -->
