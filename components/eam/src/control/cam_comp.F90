@@ -310,6 +310,8 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    enddo
 
    ! TRACERS fields
+   dims(2) = plev
+   dimnames(2) = "lev"
    do idx=1,pcnst
      fname = cnst_name(idx)
 

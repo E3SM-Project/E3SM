@@ -50,7 +50,7 @@ module physics_buffer
   ! If global_allocate_all is true then all fields are allocated at model
   ! start and persist until model completion.
 
-  integer, parameter :: persistence_global  = 1
+  integer, parameter, public :: persistence_global  = 1
   integer, parameter :: persistence_physpkg = 2
   logical            :: global_allocate_all = .true.
 
