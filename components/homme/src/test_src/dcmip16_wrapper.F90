@@ -658,12 +658,12 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       qv_c = qv(i,j,:); qc_c = qc(i,j,:); qr_c = qr(i,j,:); 
       p_c  = p(i,j,:); dp_c = dp(i,j,:); T_c = T(i,j,:); zi_c = zi(i,j,:);
 
+      !also needed, pressure-derived values
+      ptop = hvcoord%hyai(1) * hvcoord%ps0
+
       !compute current energy and mass
       call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en1global)  
       mass1global = sum( dp_c )
-
-      !also needed, pressure-derived values
-      ptop = hvcoord%hyai(1) * hvcoord%ps0
 
       dpdry_c = dp_c*(1.0 - qv_c - qc_c - qr_c)
 
@@ -701,15 +701,15 @@ endif
 !this is a little sus
 ! en1-en2, rel -3.814697265625000E-006 -1.637702685535182E-016
 ! en1-en2, rel  3.814697265625000E-006  1.637671777291065E-016
-if(wasiactive)then
-print *, 'en1,en2', energy_before, en2
-print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
-print *, 'en3, enout', energy_after,energy_prect
-print *, 'en2, (en3+enout)', en2,(energy_after+energy_prect)
-print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (en2-(energy_after+energy_prect))/en2
-print *, 'enout, encl, rel diff', energy_prect, encl, (energy_prect-encl)/energy_prect
-print *, "    "
-endif
+!if(wasiactive)then
+!print *, 'en1,en2', energy_before, en2
+!print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
+!print *, 'en3, enout', energy_after,energy_prect
+!print *, 'en2, (en3+enout)', en2,(energy_after+energy_prect)
+!print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (en2-(energy_after+energy_prect))/en2
+!print *, 'enout, encl, rel diff', energy_prect, encl, (energy_prect-encl)/energy_prect
+!print *, "    "
+!endif
 
         elseif(bubble_rj_cpdry) then
 
@@ -734,6 +734,9 @@ print *, 'en1g-en2g, rel', en1global-(en2global+energy_prect), ( en1global-en2gl
 print *, 'mass1global,mass2global+prect', mass1global, mass2global+mass_prect
 print *, 'm1g-m2g, rel', mass1global-(mass2global+mass_prect), ( mass1global-mass2global-mass_prect)/mass1global
 print *, "    "
+
+if(abs(en1global- en2global-energy_prect)/en1global>1e-10) stop
+
 endif
 
       precl(i,j,ie) = mass_prect / (dt * rhow) / g
