@@ -17,7 +17,7 @@
           An abbreviation of the fortran declaration for the variable.
       Valid declarations are:
 
-          char*n  
+          char*n
           integer
           logical
           real
@@ -31,7 +31,7 @@
      input_pathname
           Only include this attribute to indicate that the variable
           contains the pathname of an input dataset that resides in the
-          CESM inputdata directory tree.  
+          CESM inputdata directory tree.
 
       The recognized values are "abs" to indicate that an absolute
           pathname is required, or "rel:var_name" to indicate that the
@@ -1756,6 +1756,14 @@ Valid values: any positive real, typically 5.0e-4
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_thickness_drag_type" type="char*1024"
+	category="bottom_drag" group="bottom_drag">
+The type of layerThickness averaging to use on the drag term. The standard MPAS-O approach is 'centered'.
+
+Valid values: 'harmonic-mean', 'centered'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- Rayleigh_damping -->
 
@@ -1807,14 +1815,6 @@ Default: Defined in namelist_defaults.xml
 Vegetation drag coefficient
 
 Valid values: O(1)
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_thickness_drag_type" type="char*1024"
-	category="bottom_drag" group="bottom_drag">
-The type of layerThickness averaging to use on the drag term. The standard MPAS-O approach is 'centered'.
-
-Valid values: 'harmonic-mean', 'centered'
 Default: Defined in namelist_defaults.xml
 </entry>
 
