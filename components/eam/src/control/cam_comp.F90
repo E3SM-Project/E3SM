@@ -141,7 +141,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 #if defined(CLDERA_PROFILING)
    character(len=max_str_len) :: fname
    integer :: c, nfields, idx, rank, icmp, nparts, part_dim, ipart, fsize, ncols
-   integer :: nlcols
+   integer :: nlcols,irank
    integer :: dims(3)
    integer, allocatable :: cols_gids(:)
    real(r8), allocatable :: cols_area(:)
@@ -149,6 +149,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    logical :: in_pbuf, in_q
    real(r8), pointer :: field1d(:), field2d(:,:), field3d(:,:,:)
    type(physics_buffer_desc), pointer :: field_desc
+   character(len=5) :: int_str
 #endif
    !-----------------------------------------------------------------------
    etamid = nan
@@ -279,7 +280,16 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
      dims(:) = pbuf_get_field_dims(idx)
      dims(1) = nlcols
 
-     dimnames(2) = "lev"
+     do irank=2,rank
+       if (dims(irank) .eq. plev) then
+         dimnames(irank) = "lev"
+       elseif (dims(irank) .eq. (plev+1)) then
+         dimnames(irank) = "ilev"
+       else
+         write (int_str,"(I5)") dims(irank)
+         dimnames(irank) = "dim"//trim(adjustl(int_str))
+       endif
+     enddo
 
      call cldera_add_partitioned_field(fname,2,dims,dimnames,nparts,part_dim)
      do ipart = 1,nparts
