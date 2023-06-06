@@ -145,7 +145,13 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
 
   // set view pointers for midpoint fields
   using view_2d_t = decltype(buffer_.z_mid);
-  view_2d_t* view_2d_mid_ptrs[Buffer::num_2d_mid] = {&buffer_.z_mid, &buffer_.dz};
+  view_2d_t* view_2d_mid_ptrs[Buffer::num_2d_mid] = {
+    &buffer_.z_mid,
+    &buffer_.dz,
+    &buffer_.q_h2so4_tend,
+    &buffer_.n_aitken_tend,
+    &buffer_.q_aitken_so4_tend,
+  };
   for (int i = 0; i < Buffer::num_2d_mid; ++i) {
     *view_2d_mid_ptrs[i] = view_2d_t(mem, ncol_, nlev_);
     mem += view_2d_mid_ptrs[i]->size();
