@@ -10,5 +10,5 @@ Quick Guides
    quick-guide-anvil
    quick-guide-chrysalis
    quick-guide-compy
-   quick-guide-cori-haswell
+   quick-guide-perlmutter
    old/index

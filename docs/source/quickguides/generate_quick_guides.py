@@ -5,7 +5,7 @@ EXPANSIONS = {
     'acme1': {
         'machine_name': 'Acme1',
         'activation_path': '/usr/local/e3sm_unified/envs/load_latest_e3sm_unified_acme1.sh',
-        'obs_path': '/p/user_pub/e3sm/e3sm_diags_data/obs_for_e3sm_diags/',
+        'obs_path': '/p/user_pub/e3sm/diagnostics/observations/Atm/',
         'test_data_path': '/p/user_pub/e3sm/e3sm_diags_data/test_model_data_for_acme_diags/',
         'html_path': '/var/www/acme/acme-diags/<username>/',
         'web_address': 'https://acme-viewer.llnl.gov/<username>/',
@@ -13,7 +13,7 @@ EXPANSIONS = {
     'anvil': {
         'machine_name': 'Anvil',
         'activation_path': '/lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_anvil.sh',
-        'obs_path': '/lcrc/soft/climate/e3sm_diags_data/obs_for_e3sm_diags/',
+        'obs_path': '/lcrc/group/e3sm/diagnostics/observations/Atm/',
         'test_data_path': '/lcrc/soft/climate/e3sm_diags_data/test_model_data_for_acme_diags/',
         'html_path': '/lcrc/group/e3sm/public_html/diagnostic_output/<username>/',
         'web_address': 'https://web.lcrc.anl.gov/public/e3sm/diagnostic_output/<username>/',
@@ -21,7 +21,7 @@ EXPANSIONS = {
     'chrysalis': {
         'machine_name': 'Chrysalis',
         'activation_path': '/lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh',
-        'obs_path': '/lcrc/soft/climate/e3sm_diags_data/obs_for_e3sm_diags/',
+        'obs_path': '/lcrc/group/e3sm/diagnostics/observations/Atm/',
         'test_data_path': '/lcrc/soft/climate/e3sm_diags_data/test_model_data_for_acme_diags/',
         'html_path': '/lcrc/group/e3sm/public_html/diagnostic_output/<username>/',
         'web_address': 'https://web.lcrc.anl.gov/public/e3sm/diagnostic_output/<username>/',
@@ -29,15 +29,15 @@ EXPANSIONS = {
     'compy': {
         'machine_name': 'Compy',
         'activation_path': '/share/apps/E3SM/conda_envs/load_latest_e3sm_unified_compy.sh',
-        'obs_path': '/compyfs/e3sm_diags_data/obs_for_e3sm_diags/',
+        'obs_path': '/compyfs/diagnostics/observations/Atm/',
         'test_data_path': '/compyfs/e3sm_diags_data/test_model_data_for_acme_diags/',
         'html_path': '/compyfs/www/<username>/',
         'web_address': 'https://compy-dtn.pnl.gov/<username>/',
     },
-    'cori-haswell': {
-        'machine_name': 'Cori-Haswell',
-        'activation_path': '/global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh',
-        'obs_path': '/global/cfs/cdirs/e3sm/e3sm_diags/obs_for_e3sm_diags/',
+    'perlmutter': {
+        'machine_name': 'Perlmutter',
+        'activation_path': '/global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_pm-cpu.sh',
+        'obs_path': '/global/cfs/cdirs/e3sm/diagnostics/observations/Atm/',
         'test_data_path': '/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/',
         'html_path': '/global/cfs/cdirs/e3sm/www/<username>/',
         'web_address': 'http://portal.nersc.gov/cfs/e3sm/<username>/'

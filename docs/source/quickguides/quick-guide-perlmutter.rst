@@ -1,7 +1,7 @@
 ..
     Comment: If you want to edit `quick-guide-{machine_name}.rst`, edit `quick-guide-generic.rst` instead and run `generate_quick_guides.py`.
 
-Compy quick guide for running e3sm_diags v2
+Perlmutter quick guide for running e3sm_diags v2
 =========================================================================
 
 .. warning::
@@ -18,7 +18,7 @@ please instead refer to :ref:`Latest stable release <install_latest>`.
 
 Most of the E3SM analysis software is maintained with an Anaconda metapackage
 (E3SM unified environment).
-If you have an account on Compy,
+If you have an account on Perlmutter,
 then to get all of the tools in the metapackage in your path,
 use the activation command below.
 (Change ``.sh`` to ``.csh`` for csh shells.)
@@ -31,22 +31,22 @@ Both <obs_path> and <test_data_path> have two subdirectories:
 Also listed below are paths where the HTML files (<html_path>) must be located to be displayed
 at their corresponding web addresses (<web_address>).
 
-<activation_command>: ``source /share/apps/E3SM/conda_envs/load_latest_e3sm_unified_compy.sh``
+<activation_command>: ``source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_pm-cpu.sh``
 
-<obs_path>: ``/compyfs/diagnostics/observations/Atm/``
+<obs_path>: ``/global/cfs/cdirs/e3sm/diagnostics/observations/Atm/``
 
-<test_data_path>: ``/compyfs/e3sm_diags_data/test_model_data_for_acme_diags/``
+<test_data_path>: ``/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/``
 
-<html_path>: ``/compyfs/www/<username>/``
+<html_path>: ``/global/cfs/cdirs/e3sm/www/<username>/``
 
-<web_address>: ``https://compy-dtn.pnl.gov/<username>/``
+<web_address>: ``http://portal.nersc.gov/cfs/e3sm/<username>/``
      
 
 
 2. Config and run
 --------------------------------------------------------
 
-.. _Compy_lat_lon:
+.. _Perlmutter_lat_lon:
 
 Running the annual mean latitude-longitude contour set
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -56,11 +56,11 @@ Adjust any options as you like.
 
    **Tip:** Some of E3SM's analysis machines (**Acme1, Anvil, Compy, Cori**)
    have web servers setup to host html results.
-   On Compy,
-   create the directory ``/compyfs/www/<username>/`` using your username.
-   Set ``results_dir`` to ``/compyfs/www/<username>/doc_examples/lat_lon_demo``
+   On Perlmutter,
+   create the directory ``/global/cfs/cdirs/e3sm/www/<username>/`` using your username.
+   Set ``results_dir`` to ``/global/cfs/cdirs/e3sm/www/<username>/doc_examples/lat_lon_demo``
    in ``run_e3sm_diags.py`` below. Then, you can view results via a web browser here:
-   https://compy-dtn.pnl.gov/<username>/doc_examples/lat_lon_demo
+   http://portal.nersc.gov/cfs/e3sm/<username>/doc_examples/lat_lon_demo
 
 
     .. code:: python
@@ -71,12 +71,12 @@ Adjust any options as you like.
 
         param = CoreParameter()
 
-        param.reference_data_path = '/compyfs/diagnostics/observations/Atm/climatology/'
-        param.test_data_path = '/compyfs/e3sm_diags_data/test_model_data_for_acme_diags/climatology/'
+        param.reference_data_path = '/global/cfs/cdirs/e3sm/diagnostics/observations/Atm/climatology/'
+        param.test_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/climatology/'
         param.test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
         param.seasons = ["ANN"]   #all seasons ["ANN","DJF", "MAM", "JJA", "SON"] will run,if comment out"
 
-        prefix = '/compyfs/www/<username>/doc_examples/'
+        prefix = '/global/cfs/cdirs/e3sm/www/<username>/doc_examples/'
         param.results_dir = os.path.join(prefix, 'lat_lon_demo')
         # Use the following if running in parallel:
         #param.multiprocessing = True
@@ -101,8 +101,8 @@ using the code below for ``lat_lon_params.py``:
 
     .. code:: python
 
-        reference_data_path = '/compyfs/diagnostics/observations/Atm/climatology/'
-        test_data_path = '/compyfs/e3sm_diags_data/test_model_data_for_acme_diags/climatology/'
+        reference_data_path = '/global/cfs/cdirs/e3sm/diagnostics/observations/Atm/climatology/'
+        test_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/climatology/'
 
         test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
 
@@ -110,43 +110,36 @@ using the code below for ``lat_lon_params.py``:
         seasons = ["ANN"]
 
         # Name of folder where all results will be stored.
-        results_dir = '/compyfs/www/<username>/doc_examples/lat_lon_demo'
+        results_dir = '/global/cfs/cdirs/e3sm/www/<username>/doc_examples/lat_lon_demo'
 
 The new way of running (no ``-p``) is implemented in version 2.0.0,
 preparing ``e3sm_diags`` to accomodate more diagnostics sets with set-specific parameters.
 
 
 To enable multiprocessing rather than running in serial, the program will need to be run in an
-**interactive session** on compute nodes, or as a **batch job**.
-
-Here are some hardware details for `Compy`:
-   * 40 cores/node
-   * 192 GB DRAM/node
-   * 18400 total cores
+**interactive session** on compute nodes, or as a **batch job**. 
 
 
 Interactive session on compute nodes
 '''''''''''''''''''''''''''''''''''''
 
 First, request an interactive session with a single node
+(128 cores with Perlmutter CPU)
 for one hour (running this example should take much less than this).
+If obtaining a session takes too long, try to use the ``debug`` partition.
+Note that the maximum time allowed for that partition is ``00:30:00``.
 
     ::
 
-        salloc --nodes=1 --account=e3sm --time=01:00:00
+        salloc --nodes 1 --qos interactive --time 01:00:00 --constraint cpu --account=e3sm
 
-OR
-
-    ::
-
-        srun --pty --nodes=1 --time=01:00:00 /bin/bash
 
 Once the session is available, launch E3SM Diagnostics, to activate ``e3sm_unified``:
 
     ::
 
-        source /share/apps/E3SM/conda_envs/load_latest_e3sm_unified_compy.sh
-        python run_e3sm_diags.py --multiprocessing --num_workers=32
+        source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_pm-cpu.sh
+        python run_e3sm_diags.py --multiprocessing --num_workers=128
 
 
 We could have also set these multiprocessing parameters in the ``run_e3sm_diags.py`` as well
@@ -159,15 +152,17 @@ Alternatively, you can also create a script and submit it to the batch system.
 Copy and paste the code below into a file named ``diags.bash``.
 
     .. code:: bash
-
+    
         #!/bin/bash -l
         #SBATCH --job-name=diags
         #SBATCH --output=diags.o%j
+        #SBATCH --partition=regular
         #SBATCH --account=e3sm
         #SBATCH --nodes=1
         #SBATCH --time=01:00:00
+        #SBATCH -C cpu
 
-        source /share/apps/E3SM/conda_envs/load_latest_e3sm_unified_compy.sh
+        source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_pm-cpu.sh 
         python run_e3sm_diags.py --multiprocessing --num_workers=32
 
 And then submit it:
@@ -176,12 +171,23 @@ And then submit it:
 
         sbatch diags.bash
 
+View the status of your job with ``squeue -u <username>``.
+Here's the meaning of some values under the State (``ST``) column:
+
+* ``PD``: Pending
+* ``R``: Running
+* ``CA``: Cancelled
+* ``CD``: Completed
+* ``F``: Failed
+* ``TO``: Timeout
+* ``NF``: Node Failure
+
 View results on the web
 '''''''''''''''''''''''
 Once the run is completed,
-open  ``https://compy-dtn.pnl.gov/<username>/doc_examples/lat_lon_demo/viewer/index.html`` to view the results.
+open  ``http://portal.nersc.gov/cfs/e3sm/<username>/doc_examples/lat_lon_demo/viewer/index.html`` to view the results.
 If you don't see the results, you may need to set proper permissions.
-Run ``chmod -R 755 /compyfs/www/<username>/``.
+Run ``chmod -R 755 /global/cfs/cdirs/e3sm/www/<username>/``.
 
 **Tip:** Once you're on the webpage for a specific plot, click on the
 'Output Metadata' drop down menu to view the metadata for the displayed plot.
@@ -225,11 +231,11 @@ A ``run_e3sm_diags.py`` example for running area mean time series alone:
         
         param = CoreParameter()
         
-        param.reference_data_path = '/compyfs/diagnostics/observations/Atm/time-series/'
-        param.test_data_path = '/compyfs/e3sm_diags_data/test_model_data_for_acme_diags/time-series/E3SM_v1/'
+        param.reference_data_path = '/global/cfs/cdirs/e3sm/diagnostics/observations/Atm/time-series/'
+        param.test_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/time-series/E3SM_v1/'
         param.test_name = 'e3sm_v1'
         
-        prefix = '/compyfs/www/<username>/doc_examples/'
+        prefix = '/global/cfs/cdirs/e3sm/www/<username>/doc_examples/'
         param.results_dir = os.path.join(prefix, 'area_mean_with_obs')
         # Use the following if running in parallel:
         #param.multiprocessing = True
@@ -260,19 +266,19 @@ The following is an example to run all sets:
         
         param = CoreParameter()
         
-        param.reference_data_path = '/compyfs/diagnostics/observations/Atm/climatology/'
-        param.test_data_path = '/compyfs/e3sm_diags_data/test_model_data_for_acme_diags/climatology/'
+        param.reference_data_path = '/global/cfs/cdirs/e3sm/diagnostics/observations/Atm/climatology/'
+        param.test_data_path = '/global/cfs/cdirs/e3sm/e3sm_diags/test_model_data_for_acme_diags/climatology/'
         param.test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
         param.multiprocessing = True
         param.num_workers = 40
-        prefix = '/compyfs/www/<username>/doc_examples'
+        prefix = '/global/cfs/cdirs/e3sm/www/<username>/doc_examples'
         param.results_dir = os.path.join(prefix, 'all_sets')
         
         #
         ##Set specific parameters for new sets
         ts_param = AreaMeanTimeSeriesParameter()
-        ts_param.reference_data_path = '/compyfs/diagnostics/observations/Atm/time-series/'
-        ts_param.test_data_path = '/compyfs/diagnostics/observations/Atm/time-series/E3SM_v1/'
+        ts_param.reference_data_path = '/global/cfs/cdirs/e3sm/diagnostics/observations/Atm/time-series/'
+        ts_param.test_data_path = '/global/cfs/cdirs/e3sm/diagnostics/observations/Atm/time-series/E3SM_v1/'
         ts_param.test_name = 'e3sm_v1'
         ts_param.start_yr = '2002'
         ts_param.end_yr = '2008'
@@ -323,7 +329,7 @@ for the cfg file that was used to create all of the latitude-longitude sets.
 
 
 Run E3SM diagnostics with the ``-d`` parameter.
-Use the :ref:`above run script <Compy_lat_lon>`. And run as following:
+Use the :ref:`above run script <Perlmutter_lat_lon>`. And run as following:
 
     ::
 

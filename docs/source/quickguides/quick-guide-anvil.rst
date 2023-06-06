@@ -33,7 +33,7 @@ at their corresponding web addresses (<web_address>).
 
 <activation_command>: ``source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_anvil.sh``
 
-<obs_path>: ``/lcrc/soft/climate/e3sm_diags_data/obs_for_e3sm_diags/``
+<obs_path>: ``/lcrc/group/e3sm/diagnostics/observations/Atm/``
 
 <test_data_path>: ``/lcrc/soft/climate/e3sm_diags_data/test_model_data_for_acme_diags/``
 
@@ -71,7 +71,7 @@ Adjust any options as you like.
 
         param = CoreParameter()
 
-        param.reference_data_path = '/lcrc/soft/climate/e3sm_diags_data/obs_for_e3sm_diags/climatology/'
+        param.reference_data_path = '/lcrc/group/e3sm/diagnostics/observations/Atm/climatology/'
         param.test_data_path = '/lcrc/soft/climate/e3sm_diags_data/test_model_data_for_acme_diags/climatology/'
         param.test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
         param.seasons = ["ANN"]   #all seasons ["ANN","DJF", "MAM", "JJA", "SON"] will run,if comment out"
@@ -101,16 +101,13 @@ using the code below for ``lat_lon_params.py``:
 
     .. code:: python
 
-        reference_data_path = '/lcrc/soft/climate/e3sm_diags_data/obs_for_e3sm_diags/climatology/'
+        reference_data_path = '/lcrc/group/e3sm/diagnostics/observations/Atm/climatology/'
         test_data_path = '/lcrc/soft/climate/e3sm_diags_data/test_model_data_for_acme_diags/climatology/'
 
         test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
 
         sets = ["lat_lon"]
         seasons = ["ANN"]
-
-        # 'mpl' for matplotlib plots
-        backend = 'mpl'
 
         # Name of folder where all results will be stored.
         results_dir = '/lcrc/group/e3sm/public_html/diagnostic_output/<username>/doc_examples/lat_lon_demo'
@@ -219,7 +216,7 @@ A ``run_e3sm_diags.py`` example for running area mean time series alone:
         
         param = CoreParameter()
         
-        param.reference_data_path = '/lcrc/soft/climate/e3sm_diags_data/obs_for_e3sm_diags/time-series/'
+        param.reference_data_path = '/lcrc/group/e3sm/diagnostics/observations/Atm/time-series/'
         param.test_data_path = '/lcrc/soft/climate/e3sm_diags_data/test_model_data_for_acme_diags/time-series/E3SM_v1/'
         param.test_name = 'e3sm_v1'
         
@@ -254,7 +251,7 @@ The following is an example to run all sets:
         
         param = CoreParameter()
         
-        param.reference_data_path = '/lcrc/soft/climate/e3sm_diags_data/obs_for_e3sm_diags/climatology/'
+        param.reference_data_path = '/lcrc/group/e3sm/diagnostics/observations/Atm/climatology/'
         param.test_data_path = '/lcrc/soft/climate/e3sm_diags_data/test_model_data_for_acme_diags/climatology/'
         param.test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
         param.multiprocessing = True
@@ -265,8 +262,8 @@ The following is an example to run all sets:
         #
         ##Set specific parameters for new sets
         ts_param = AreaMeanTimeSeriesParameter()
-        ts_param.reference_data_path = '/lcrc/soft/climate/e3sm_diags_data/obs_for_e3sm_diags/time-series/'
-        ts_param.test_data_path = '/lcrc/soft/climate/e3sm_diags_data/obs_for_e3sm_diags/time-series/E3SM_v1/'
+        ts_param.reference_data_path = '/lcrc/group/e3sm/diagnostics/observations/Atm/time-series/'
+        ts_param.test_data_path = '/lcrc/group/e3sm/diagnostics/observations/Atm/time-series/E3SM_v1/'
         ts_param.test_name = 'e3sm_v1'
         ts_param.start_yr = '2002'
         ts_param.end_yr = '2008'

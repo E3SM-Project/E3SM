@@ -109,9 +109,6 @@ using the code below for ``lat_lon_params.py``:
         sets = ["lat_lon"]
         seasons = ["ANN"]
 
-        # 'mpl' for matplotlib plots
-        backend = 'mpl'
-
         # Name of folder where all results will be stored.
         results_dir = '#expand html_path#doc_examples/lat_lon_demo'
 
