@@ -243,7 +243,7 @@ class compute_sphere_operator_test {
     auto policy = Homme::get_default_team_policy<ExecSpace,TagSimpleLaplace>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     // TO FROM
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
   };
@@ -252,7 +252,7 @@ class compute_sphere_operator_test {
     auto policy = Homme::get_default_team_policy<ExecSpace,TagGradientSphere>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     // TO FROM
     Kokkos::deep_copy(vector_output_host, vector_output_d);
   };
@@ -261,7 +261,7 @@ class compute_sphere_operator_test {
     auto policy = Homme::get_default_team_policy<ExecSpace,TagDivergenceSphereWk>(_num_elems);
     sphere_ops.allocate_buffers(policy);
     Kokkos::parallel_for(policy, *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     // TO FROM
     // remember to copy correct output
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);
