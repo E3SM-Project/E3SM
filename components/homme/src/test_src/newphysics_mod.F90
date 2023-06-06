@@ -537,7 +537,6 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 
   !compute en1, energy before condensation
   call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c(nlevp),p_c,en1)
-  !call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c,zero,zero,T_c,ptop,zi_c,p_c,en1)
 
   !compute interfaces nh pressure
   p_int(2:nlev) = (p_c(1:nlev-1) + p_c(2:nlev))/2.0
@@ -672,8 +671,8 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   enddo
   endif
 
-  call energycp_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c, zero, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
-  !call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c, zero, zero,T_c,ptop,zi_c,p_c,en3)
+  !call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
+  call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c,p_c,en3)
  
  
 end subroutine rj_new
