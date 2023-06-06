@@ -970,6 +970,8 @@
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
       <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
       <env name="MPICH_SMP_SINGLE_COPY_MODE">NONE</env>
+      <env name="FI_MR_CACHE_MONITOR">memhooks</env>
+      <env name="FI_CXI_RX_MATCH_MODE">software</env>
     </environment_variables>
 
     <environment_variables SMP_PRESENT="TRUE">
