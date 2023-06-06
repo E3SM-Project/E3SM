@@ -139,6 +139,8 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
                    "Error! Insufficient buffer size.\n");
 
+  logger.trace("entering init_buffers");
+
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
   // set view pointers for midpoint fields
@@ -172,6 +174,8 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
   size_t used_mem = (mem - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMMicrophysics.");
+
+  logger.trace("leaving init_buffers");
 }
 
 void MAMMicrophysics::initialize_impl(const RunType run_type) {
