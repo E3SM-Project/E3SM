@@ -154,6 +154,48 @@
     <desc>ending year to loop data over (only used when DROF_MODE is CPLHIST)</desc>
   </entry>
 
+  <entry id="DROF_STRM_YR_ALIGN">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>1</default_value>
+    <values match="last">
+      <value compset="_DROF%JRA"          >1</value>
+      <value compset="_DROF%JRA-1p4-2018" >1</value>
+      <value compset="_DROF%JRA-1p5"      >1</value>
+    </values>
+    <group>run_component_drof</group>
+    <file>env_run.xml</file>
+    <desc>year align</desc>
+  </entry>
+
+  <entry id="DROF_STRM_YR_START">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>2004</default_value>
+    <values match="last">
+      <value compset="_DROF%JRA"          >1958</value>
+      <value compset="_DROF%JRA-1p4-2018" >1958</value>
+      <value compset="_DROF%JRA-1p5"      >1958</value>
+    </values>
+    <group>run_component_drof</group>
+    <file>env_run.xml</file>
+    <desc>starting year to loop data over</desc>
+  </entry>
+
+  <entry id="DROF_STRM_YR_END">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>2004</default_value>
+    <values match="last">
+      <value compset="_DROF%JRA"          >2016</value>
+      <value compset="_DROF%JRA-1p4-2018" >2018</value>
+      <value compset="_DROF%JRA-1p5"      >2020</value>
+    </values>
+    <group>run_component_drof</group>
+    <file>env_run.xml</file>
+    <desc>ending year to loop data over</desc>
+  </entry>
+
   <help>
     =========================================
     DROF naming conventions

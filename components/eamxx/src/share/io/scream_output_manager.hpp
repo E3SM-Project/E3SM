@@ -9,6 +9,7 @@
 #include "share/grid/grids_manager.hpp"
 #include "share/util/scream_time_stamp.hpp"
 
+#include "ekat/logging/ekat_logger.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
@@ -61,8 +62,7 @@ class OutputManager
 public:
   using fm_type = FieldManager;
   using gm_type = GridsManager;
-  using str_any_pair_t = std::pair<std::string,ekat::any>;
-  using globals_map_t = std::map<std::string,str_any_pair_t>;
+  using globals_map_t = std::map<std::string,ekat::any>;
 
   // Constructor(s) & Destructor
   OutputManager () = default;
@@ -106,7 +106,10 @@ public:
     setup (io_comm,params,field_mgrs,grids_mgr,run_t0,run_t0,is_model_restart_output);
   }
 
-  void setup_globals_map (const globals_map_t& globals);
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
+      m_atm_logger = atm_logger;
+  }
+  void add_global (const std::string& name, const ekat::any& global);
   void run (const util::TimeStamp& current_ts);
   void finalize();
 
@@ -115,7 +118,7 @@ protected:
 
   std::string compute_filename (const IOControl& control,
                                 const IOFileSpecs& file_specs,
-                                const std::string suffix,
+                                const bool is_checkpoint_step,
                                 const util::TimeStamp& timestamp) const;
 
   // Craft the restart parameter list
@@ -125,6 +128,9 @@ protected:
   void setup_file (      IOFileSpecs& filespecs,
                    const IOControl& control,
                    const util::TimeStamp& timestamp);
+
+  // Manage logging of info to atm.log
+  void push_to_logger();
 
   using output_type     = AtmosphereOutput;
   using output_ptr_type = std::shared_ptr<output_type>;
@@ -139,6 +145,8 @@ protected:
 
   // The output filename root
   std::string       m_casename;
+
+  std::vector<double> m_time_bnds;
 
   // How to combine multiple snapshots in the output: Instant, Max, Min, Average
   OutputAvgType     m_avg_type;
@@ -160,11 +168,17 @@ protected:
   // we might have to load an output checkpoint file (depending on avg type)
   bool m_is_restarted_run;
 
+  // If the user specifies freq units "none" or "never", output is disabled
+  bool m_output_disabled = false;
+
   // The initial time stamp of the simulation and run. For initial runs, they coincide,
   // but for restarted runs, run_t0>case_t0, with the former being the time at which the
   // restart happens, and the latter being the start time of the *original* run.
   util::TimeStamp   m_case_t0;
   util::TimeStamp   m_run_t0;
+
+  // The logger to be used throughout the ATM to log message
+  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
 };
 
 } // namespace scream

@@ -76,7 +76,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_forcing_explicit_bottom_drag_tend(normVelocity, &
-                                 KECell, layerThickEdgeMean, tend, err) !{{{
+                                 KECell, layerThickEdgeDrag, tend, err) !{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -85,7 +85,7 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normVelocity,      &!< [in] normal velocity
          KECell,            &!< [in] kinetic energy at cell
-         layerThickEdgeMean  !< [in] mean layer thickness at edge
+         layerThickEdgeDrag  !< [in] mean layer thickness at edge
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -130,7 +130,7 @@ contains
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, maxLevelEdgeTop, KECell, &
-      !$acc            tend, normVelocity, layerThickEdgeMean) &
+      !$acc            tend, normVelocity, layerThickEdgeDrag) &
       !$acc    private(k, cell1, cell2)
 #else
       !$omp parallel
@@ -144,7 +144,7 @@ contains
         if (k > 0) then
            tend(k,iEdge) = tend(k,iEdge) - dragCoeff* &
                            sqrt(KECell(k,cell1) + KECell(k,cell2))* &
-                           normVelocity(k,iEdge)/layerThickEdgeMean(k,iEdge)
+                           normVelocity(k,iEdge)/layerThickEdgeDrag(k,iEdge)
         end if
 
       enddo
@@ -192,7 +192,7 @@ contains
 
       !*** Reset values based on input model configuration
 
-      if (config_use_explicit_bottom_drag) then
+      if (trim(config_bottom_drag_mode) == 'explicit') then
          explicitBottomDragOff = .false.
          dragCoeff = config_explicit_bottom_drag_coeff
       endif

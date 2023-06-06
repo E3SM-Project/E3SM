@@ -414,8 +414,7 @@ void SPAFunctions<S,D>
   auto unique_src_dofs = spa_horiz_map.get_unique_source_dofs();
   const int num_local_cols = spa_horiz_map.get_num_unique_dofs();
   scorpio::register_file(spa_data_file_name,scorpio::Read);
-  const int source_data_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
-  scorpio::eam_pio_closefile(spa_data_file_name);
+  const int source_data_nlevs = scorpio::get_dimlen(spa_data_file_name,"lev");
 
   // Construct local arrays to read data into
   // Note, all of the views being created here are meant to hold the source resolution
@@ -431,7 +430,6 @@ void SPAFunctions<S,D>
   spa_data_in_params.set("Field Names",fnames);
   spa_data_in_params.set("Filename",spa_data_file_name);
   spa_data_in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
-  AtmosphereInput spa_data_input(comm,spa_data_in_params);
   
   // Construct the grid needed for input:
   auto grid = std::make_shared<PointGrid>("grid",num_local_cols,source_data_nlevs,comm);
@@ -440,8 +438,10 @@ void SPAFunctions<S,D>
 
   // Check that padding matches source size:
   EKAT_REQUIRE(source_data_nlevs+2 == spa_data.data.nlevs);
-  EKAT_REQUIRE_MSG(nswbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"swband"),"ERROR update_spa_data_from_file: Number of SW bands in simulation doesn't match the SPA data file");
-  EKAT_REQUIRE_MSG(nlwbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lwband"),"ERROR update_spa_data_from_file: Number of LW bands in simulation doesn't match the SPA data file");
+  EKAT_REQUIRE_MSG(nswbands==scorpio::get_dimlen(spa_data_file_name,"swband"),
+      "ERROR update_spa_data_from_file: Number of SW bands in simulation doesn't match the SPA data file");
+  EKAT_REQUIRE_MSG(nlwbands==scorpio::get_dimlen(spa_data_file_name,"lwband"),
+      "ERROR update_spa_data_from_file: Number of LW bands in simulation doesn't match the SPA data file");
 
   // Constuct views to read source data in from file
   typename view_1d<Real>::HostMirror hyam_v_h("hyam",source_data_nlevs);
@@ -495,9 +495,10 @@ void SPAFunctions<S,D>
   //
   
   // Now that we have all the variables defined we can use the scorpio_input class to grab the data.
-  spa_data_input.init(grid,host_views,layouts);
+  AtmosphereInput spa_data_input(spa_data_in_params,grid,host_views,layouts);
   spa_data_input.read_variables(time_index);
   spa_data_input.finalize();
+  scorpio::eam_pio_closefile(spa_data_file_name);
   stop_timer("EAMxx::SPA::update_spa_data_from_file::read_data");
   start_timer("EAMxx::SPA::update_spa_data_from_file::apply_remap");
   // Copy data from host back to the device views.

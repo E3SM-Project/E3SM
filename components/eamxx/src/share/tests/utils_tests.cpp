@@ -64,10 +64,13 @@ TEST_CASE ("time_stamp") {
     // Julian day = frac_of_year_in_days.fraction_of_day, with frac_of_year_in_days=0 at Jan 1st.
     REQUIRE (ts1.frac_of_year_in_days()==(284 + (17*3600+8*60+30)/86400.0));
     REQUIRE (ts1.get_num_steps()==0);
+  }
 
+  SECTION ("formatting") {
     REQUIRE (ts1.get_date_string()=="2021-10-12");
     REQUIRE (ts1.get_time_string()=="17:08:30");
     REQUIRE (ts1.to_string()=="2021-10-12-61710");
+    REQUIRE (util::str_to_time_stamp("2021-10-12-61710")==ts1);
   }
 
   SECTION ("comparisons") {
@@ -87,6 +90,7 @@ TEST_CASE ("time_stamp") {
 
     REQUIRE (ts1<ts2);
     REQUIRE (ts2<=ts2);
+    REQUIRE ( (ts2-1)==ts1 );
 
     // Update: check carries
     REQUIRE (ts2.get_seconds()==(ts1.get_seconds()+1));
@@ -228,16 +232,6 @@ TEST_CASE ("array_utils") {
     for (int idx_1d=0; idx_1d<s; ++idx_1d) {
       auto idx_nd = unflatten_idx(dims,idx_1d);    
 
-      std::cout << "idx1d: " << idx_1d << "\n";
-      std::cout << "  indices:";
-      for (auto i : ind) {
-        std::cout << " " << i;
-      }
-      std::cout << "\n  unflatten:";
-      for (auto i : idx_nd) {
-        std::cout << " " << i;
-      }
-      std::cout << "\n";
       REQUIRE (idx_nd==ind);
       add_one(ind.data(),rank-1,dims.data());
     }

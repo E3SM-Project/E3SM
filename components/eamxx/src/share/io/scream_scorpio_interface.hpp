@@ -1,9 +1,12 @@
 #ifndef SCREAM_SCORPIO_INTERFACE_HPP
 #define SCREAM_SCORPIO_INTERFACE_HPP
 
-#include "ekat/util/ekat_string_utils.hpp"
 #include "share/field/field_tag.hpp"
 #include "share/scream_types.hpp"
+#include "share/util/scream_time_stamp.hpp"
+
+#include "ekat/mpi/ekat_comm.hpp"
+#include "ekat/util/ekat_string_utils.hpp"
 
 #include <vector>
 
@@ -21,6 +24,7 @@ namespace scorpio {
     Write = 2
   };
   /* All scorpio usage requires that the pio_subsystem is initialized. Happens only once per simulation */
+  void eam_init_pio_subsystem(const ekat::Comm& comm);
   void eam_init_pio_subsystem(const int mpicom, const int atm_id = 0);
   /* Cleanup scorpio with pio_finalize */
   void eam_pio_finalize();
@@ -29,6 +33,8 @@ namespace scorpio {
   /* Register a new file to be used for input/output with the scorpio module */
   void register_file(const std::string& filename, const FileMode mode);
   /* Sets the IO decompostion for all variables in a particular filename.  Required after all variables have been registered.  Called once per file. */
+  int get_dimlen(const std::string& filename, const std::string& dimname);
+  bool has_variable (const std::string& filename, const std::string& varname);
   void set_decomp(const std::string& filename);
   /* Sets the degrees-of-freedom for a particular variable in a particular file.  Called once for each variable, for each file. */
   void set_dof(const std::string &filename, const std::string &varname, const Int dof_len, const offset_t* x_dof);
@@ -43,6 +49,8 @@ namespace scorpio {
   void get_variable(const std::string& filename,const std::string& shortname, const std::string& longname,
                     const std::vector<std::string>& var_dimensions,
                     const std::string& dtype, const std::string& pio_decomp_tag);
+  ekat::any get_any_attribute (const std::string& filename, const std::string& att_name);
+  void set_any_attribute (const std::string& filename, const std::string& att_name, const ekat::any& att);
   /* End the definition phase for a scorpio file.  Last thing called after all dimensions, variables, dof's and decomps have been set.  Called once per file.
    * Mandatory before writing or reading can happend on file. */
   void eam_pio_enddef(const std::string &filename);
@@ -60,15 +68,32 @@ namespace scorpio {
   void grid_write_data_array(const std::string &filename, const std::string &varname,
                              const T* hbuf, const int buf_size);
 
+  template<typename T>
+  T get_attribute (const std::string& filename, const std::string& att_name)
+  {
+    auto att = get_any_attribute(filename,att_name);
+    return ekat::any_cast<T>(att);
+  }
+
+  template<typename T>
+  void set_attribute (const std::string& filename, const std::string& att_name, const T& att)
+  {
+    ekat::any a(att);
+    set_any_attribute(filename,att_name,a);
+
+  }
+
+  // Shortcut to write/read to/from YYYYMMDD/HHMMSS attributes in the NC file
+  void write_timestamp (const std::string& filename, const std::string& ts_name, const util::TimeStamp& ts);
+  util::TimeStamp read_timestamp (const std::string& filename, const std::string& ts_name);
+
 extern "C" {
   /* Query whether the pio subsystem is inited or not */
   bool is_eam_pio_subsystem_inited();
   /* Checks if a file is already open, with the given mode */
+  int get_file_ncid_c2f(const char*&& filename);
+  // If mode<0, then simply checks if file is open, regardless of mode
   bool is_file_open_c2f(const char*&& filename, const int& mode);
-  int get_int_attribute_c2f (const char*&& filename, const char*&& attr_name);
-  void set_int_attribute_c2f (const char*&& filename, const char*&& attr_name, const int& value);
-  int get_dimlen_c2f(const char*&& filename, const char*&& dimname);
-  bool has_variable_c2f (const char*&& filename, const char*&& varname);
   /* Query a netCDF file for the time variable */
   double read_time_at_index_c2f(const char*&& filename, const int& time_index);
   double read_curr_time_c2f(const char*&& filename);
@@ -83,55 +108,6 @@ extern "C" {
 // sense for an nc file are omitted. Namely, all those that have a
 // field-dependent extent, such as vector dimensions. Those have to
 // be "unpacked", storing a separate variable for each slice.
-
-inline std::string get_nc_tag_name (const FieldTag& t, const int extent) {
-  using namespace ShortFieldTagsNames;
-
-  std::string name = "";
-  switch(t) {
-    case EL:
-      name = "elem";
-      break;
-    case LEV:
-      name = "lev";
-      break;
-    case ILEV:
-      name = "ilev";
-      break;
-    case TL:
-      name = "tl";
-      break;
-    case COL:
-      name = "ncol";
-      break;
-    case GP:
-      name = "gp";
-      break;
-    case CMP:
-      name = "dim" + std::to_string(extent);
-      break;
-    // Added for rrtmgp - TODO revisit this paradigm, see comment in field_tag.hpp
-    case NGAS:
-      name = "ngas";
-      break;
-    case SWBND:
-      name = "swband";
-      break;
-    case LWBND:
-      name = "lwband";
-      break;
-    case SWGPT:
-      name = "swgpt";
-      break;
-    case LWGPT:
-      name = "lwgpt";
-      break;
-    default:
-      EKAT_ERROR_MSG("Error! Field tag not supported in netcdf files.");
-  }
-
-  return name;
-}
 
 } // namespace scorpio
 } // namespace scream

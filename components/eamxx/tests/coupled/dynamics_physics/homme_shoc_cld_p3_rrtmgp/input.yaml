@@ -6,15 +6,14 @@ driver_options:
   energy_column_conservation_error_tolerance: 1e-4
   column_conservation_checks_fail_handling_type: Warning
 
-Time Stepping:
-  Time Step: ${ATM_TIME_STEP}
-  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
-  Start Date: [2021, 10, 12]    # Year, Month, Day
-  Number of Steps: ${NUM_STEPS}
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
 
 initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
-  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4_16x.c20160612.nc
+  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
   get_topo_from_file: true
   surf_evap: 0.0
   surf_sens_flux: 0.0

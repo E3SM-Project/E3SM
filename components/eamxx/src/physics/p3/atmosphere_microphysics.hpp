@@ -48,7 +48,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
-  std::string name () const { return "Microphysics"; }
+  std::string name () const { return "p3"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);

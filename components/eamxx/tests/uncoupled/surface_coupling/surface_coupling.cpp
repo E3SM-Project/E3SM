@@ -85,10 +85,6 @@ void setup_import_and_export_data(
     }
   }
 
-  // Set vector components
-  export_vec_comps_view(1) = 0;
-  export_vec_comps_view(2) = 1;
-
   // Set boolean for exporting during intialization
   do_export_during_init_view(0) = true;
   do_export_during_init_view(1) = true;
@@ -121,6 +117,8 @@ void test_imports(const FieldManager& fm,
   fm.get_field("surf_mom_flux"   ).sync_to_host();
   fm.get_field("surf_sens_flux"  ).sync_to_host();
   fm.get_field("surf_evap"       ).sync_to_host();
+  fm.get_field("ocnfrac"         ).sync_to_host();
+  fm.get_field("landfrac"        ).sync_to_host();
   const auto sfc_alb_dir_vis  = fm.get_field("sfc_alb_dir_vis" ).get_view<const Real*,  Host>();
   const auto sfc_alb_dir_nir  = fm.get_field("sfc_alb_dir_nir" ).get_view<const Real*,  Host>();
   const auto sfc_alb_dif_vis  = fm.get_field("sfc_alb_dif_vis" ).get_view<const Real*,  Host>();
@@ -134,6 +132,8 @@ void test_imports(const FieldManager& fm,
   const auto surf_mom_flux    = fm.get_field("surf_mom_flux"   ).get_view<const Real**, Host>();
   const auto surf_sens_flux   = fm.get_field("surf_sens_flux"  ).get_view<const Real*,  Host>();
   const auto surf_evap        = fm.get_field("surf_evap"       ).get_view<const Real*,  Host>();
+  const auto ocnfrac          = fm.get_field("ocnfrac"         ).get_view<const Real*,  Host>();
+  const auto landfrac         = fm.get_field("landfrac"        ).get_view<const Real*,  Host>();
 
   const int ncols = surf_evap.extent(0);
 
@@ -160,17 +160,21 @@ void test_imports(const FieldManager& fm,
       EKAT_REQUIRE(wind_speed_10m(i)   == 0.0);
       EKAT_REQUIRE(snow_depth_land(i)  == 0.0);
       EKAT_REQUIRE(surf_lw_flux_up(i)  == 0.0);
+      EKAT_REQUIRE(ocnfrac(i)          == 0.0);
+      EKAT_REQUIRE(landfrac(i)         == 0.0);
     } else {
-      EKAT_REQUIRE(sfc_alb_dir_vis(i)  == import_constant_multiple_view(0)*import_data_view(i, import_cpl_indices_view(0)));
-      EKAT_REQUIRE(sfc_alb_dir_nir(i)  == import_constant_multiple_view(1)*import_data_view(i, import_cpl_indices_view(1)));
-      EKAT_REQUIRE(sfc_alb_dif_vis(i)  == import_constant_multiple_view(2)*import_data_view(i, import_cpl_indices_view(2)));
-      EKAT_REQUIRE(sfc_alb_dif_nir(i)  == import_constant_multiple_view(3)*import_data_view(i, import_cpl_indices_view(3)));
-      EKAT_REQUIRE(surf_radiative_T(i) == import_constant_multiple_view(4)*import_data_view(i, import_cpl_indices_view(4)));
-      EKAT_REQUIRE(T_2m(i)             == import_constant_multiple_view(5)*import_data_view(i, import_cpl_indices_view(5)));
-      EKAT_REQUIRE(qv_2m(i)            == import_constant_multiple_view(6)*import_data_view(i, import_cpl_indices_view(6)));
-      EKAT_REQUIRE(wind_speed_10m(i)   == import_constant_multiple_view(7)*import_data_view(i, import_cpl_indices_view(7)));
-      EKAT_REQUIRE(snow_depth_land(i)  == import_constant_multiple_view(8)*import_data_view(i, import_cpl_indices_view(8)));
-      EKAT_REQUIRE(surf_lw_flux_up(i)  == import_constant_multiple_view(9)*import_data_view(i, import_cpl_indices_view(9)));
+      EKAT_REQUIRE(sfc_alb_dir_vis(i)  == import_constant_multiple_view(0 )*import_data_view(i, import_cpl_indices_view(0)));
+      EKAT_REQUIRE(sfc_alb_dir_nir(i)  == import_constant_multiple_view(1 )*import_data_view(i, import_cpl_indices_view(1)));
+      EKAT_REQUIRE(sfc_alb_dif_vis(i)  == import_constant_multiple_view(2 )*import_data_view(i, import_cpl_indices_view(2)));
+      EKAT_REQUIRE(sfc_alb_dif_nir(i)  == import_constant_multiple_view(3 )*import_data_view(i, import_cpl_indices_view(3)));
+      EKAT_REQUIRE(surf_radiative_T(i) == import_constant_multiple_view(4 )*import_data_view(i, import_cpl_indices_view(4)));
+      EKAT_REQUIRE(T_2m(i)             == import_constant_multiple_view(5 )*import_data_view(i, import_cpl_indices_view(5)));
+      EKAT_REQUIRE(qv_2m(i)            == import_constant_multiple_view(6 )*import_data_view(i, import_cpl_indices_view(6)));
+      EKAT_REQUIRE(wind_speed_10m(i)   == import_constant_multiple_view(7 )*import_data_view(i, import_cpl_indices_view(7)));
+      EKAT_REQUIRE(snow_depth_land(i)  == import_constant_multiple_view(8 )*import_data_view(i, import_cpl_indices_view(8)));
+      EKAT_REQUIRE(surf_lw_flux_up(i)  == import_constant_multiple_view(9 )*import_data_view(i, import_cpl_indices_view(9)));
+      EKAT_REQUIRE(ocnfrac(i)          == import_constant_multiple_view(14)*import_data_view(i, import_cpl_indices_view(14)));
+      EKAT_REQUIRE(landfrac(i)         == import_constant_multiple_view(15)*import_data_view(i, import_cpl_indices_view(15)));
     }
   }
 }
@@ -179,6 +183,7 @@ void test_exports(const FieldManager& fm,
                   const KokkosTypes<HostDevice>::view_2d<Real> export_data_view,
                   const KokkosTypes<HostDevice>::view_1d<int>  export_cpl_indices_view,
                   const KokkosTypes<HostDevice>::view_1d<Real> export_constant_multiple_view,
+                  const ekat::ParameterList prescribed_constants,
                   const int dt,
                   const bool called_directly_after_init = false)
 {
@@ -278,6 +283,13 @@ void test_exports(const FieldManager& fm,
   const auto Faxa_rainl_h = Kokkos::create_mirror_view_and_copy(HostDevice(), Faxa_rainl);
   const auto Faxa_snowl_h = Kokkos::create_mirror_view_and_copy(HostDevice(), Faxa_snowl);
 
+  // Recall that two fields have been set to export to a constant value, so we load those constants from the parameter list here:
+  using vor_type = std::vector<Real>;
+  const auto prescribed_const_values = prescribed_constants.get<vor_type>("values");
+  const Real Faxa_swndf_const = prescribed_const_values[0]; 
+  const Real Faxa_swndv_const = prescribed_const_values[1]; 
+
+
   // Check cpl data to scream fields
   for (int i=0; i<ncols; ++i) {
 
@@ -304,12 +316,12 @@ void test_exports(const FieldManager& fm,
       EKAT_REQUIRE(0 == export_data_view(i, export_cpl_indices_view(15)));
       EKAT_REQUIRE(0 == export_data_view(i, export_cpl_indices_view(16)));
     } else {
-      EKAT_REQUIRE(export_constant_multiple_view(9 )*Faxa_rainl_h(i)       == 0.0); // These are set to 0 in do_export() so the values can't be
-      EKAT_REQUIRE(export_constant_multiple_view(10)*Faxa_snowl_h(i)       == 0.0); // checked here. It will be tested in the V1 CIME tests.
+      EKAT_REQUIRE(export_constant_multiple_view(9 )*Faxa_rainl_h(i)       == export_data_view(i, export_cpl_indices_view(9 )));
+      EKAT_REQUIRE(export_constant_multiple_view(10)*Faxa_snowl_h(i)       == export_data_view(i, export_cpl_indices_view(10)));
       EKAT_REQUIRE(export_constant_multiple_view(11)*sfc_flux_dir_nir_h(i) == export_data_view(i, export_cpl_indices_view(11)));
       EKAT_REQUIRE(export_constant_multiple_view(12)*sfc_flux_dir_vis_h(i) == export_data_view(i, export_cpl_indices_view(12)));
-      EKAT_REQUIRE(export_constant_multiple_view(13)*sfc_flux_dif_nir_h(i) == export_data_view(i, export_cpl_indices_view(13)));
-      EKAT_REQUIRE(export_constant_multiple_view(14)*sfc_flux_dif_vis_h(i) == export_data_view(i, export_cpl_indices_view(14)));
+      EKAT_REQUIRE(Faxa_swndf_const                                        == export_data_view(i, export_cpl_indices_view(13)));
+      EKAT_REQUIRE(Faxa_swndv_const                                        == export_data_view(i, export_cpl_indices_view(14)));
       EKAT_REQUIRE(export_constant_multiple_view(15)*sfc_flux_sw_net_h(i)  == export_data_view(i, export_cpl_indices_view(15)));
       EKAT_REQUIRE(export_constant_multiple_view(16)*sfc_flux_lw_dn_h(i)   == export_data_view(i, export_cpl_indices_view(16)));
     }
@@ -322,19 +334,32 @@ TEST_CASE("surface-coupling", "") {
 
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
+  auto engine = setup_random_test(&atm_comm);
 
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
-  REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
+  parse_yaml_file(fname,ad_params);
 
   // Parameters
-  auto& ts              = ad_params.sublist("Time Stepping");
-  const auto start_date = ts.get<std::vector<int>>("Start Date");
-  const auto start_time = ts.get<std::vector<int>>("Start Time");
+  auto& ts          = ad_params.sublist("time_stepping");
+  const auto t0_str = ts.get<std::string>("run_t0");
+  const auto t0     = util::str_to_time_stamp(t0_str);
 
-  util::TimeStamp t0 (start_date, start_time);
-  EKAT_ASSERT_MSG (t0.is_valid(), "Error! Invalid start date.\n");
+  // Set two export fields to be randomly set to a constant
+  // This requires us to add a sublist to the parsed AD params yaml list.
+  using vos_type = std::vector<std::string>;
+  using vor_type = std::vector<Real>;
+  std::uniform_real_distribution<Real> pdf_real_constant_data(0.0,1.0);
+  const Real Faxa_swndf_const = pdf_real_constant_data(engine);
+  const Real Faxa_swvdf_const = pdf_real_constant_data(engine);
+  const vos_type exp_const_fields = {"Faxa_swndf","Faxa_swvdf"};
+  const vor_type exp_const_values = {Faxa_swndf_const,Faxa_swvdf_const};
+  auto& ap_params     = ad_params.sublist("atmosphere_processes");
+  auto& sc_exp_params = ap_params.sublist("SurfaceCouplingExporter");
+  auto& exp_const_params = sc_exp_params.sublist("prescribed_constants");
+  exp_const_params.set<vos_type>("fields",exp_const_fields);
+  exp_const_params.set<vor_type>("values",exp_const_values);
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
   auto& proc_factory = AtmosphereProcessFactory::instance();
@@ -359,7 +384,6 @@ TEST_CASE("surface-coupling", "") {
   // Create test data for SurfaceCouplingDataManager
 
   // Create engine and pdfs for random test data
-  auto engine = setup_random_test(&atm_comm);
   std::uniform_int_distribution<int> pdf_int_additional_fields(0,10);
   std::uniform_int_distribution<int> pdf_int_dt(1,1800);
   std::uniform_real_distribution<Real> pdf_real_import_data(0.0,1.0);
@@ -368,7 +392,7 @@ TEST_CASE("surface-coupling", "") {
   // Setup views to test import/export. For this test we consider a random number of non-imported/exported
   // cpl fields (in addition to the required scream imports/exports), then assign a random, non-repeating
   // cpl index for each field in [0, num_cpl_fields).
-  const int num_scream_imports = 14;
+  const int num_scream_imports = 16;
   const int num_scream_exports = 17;
   KokkosTypes<HostDevice>::view_1d<int> additional_import_exports("additional_import_exports", 2);
   ekat::genRandArray(additional_import_exports, engine, pdf_int_additional_fields);
@@ -405,6 +429,8 @@ TEST_CASE("surface-coupling", "") {
   std::strcpy(import_names[11], "surf_mom_flux");
   std::strcpy(import_names[12], "surf_sens_flux");
   std::strcpy(import_names[13], "surf_evap");
+  std::strcpy(import_names[14], "ocnfrac");
+  std::strcpy(import_names[15], "landfrac");
 
   // Export data is of size num_cpl_exports, the rest of the views are size num_scream_exports.
   KokkosTypes<HostDevice>::view_2d<Real> export_data_view             ("export_data",
@@ -421,23 +447,23 @@ TEST_CASE("surface-coupling", "") {
   Kokkos::deep_copy(export_data_view, -1.0);
   // Set names. For all non-scream exports, set to 0.
   char export_names[num_scream_exports][32];
-  std::strcpy(export_names[0],  "Sa_z");
-  std::strcpy(export_names[1],  "horiz_winds");
-  std::strcpy(export_names[2],  "horiz_winds");
-  std::strcpy(export_names[3],  "T_mid");
-  std::strcpy(export_names[4],  "Sa_ptem");
-  std::strcpy(export_names[5],  "p_mid");
-  std::strcpy(export_names[6],  "qv");
-  std::strcpy(export_names[7],  "Sa_dens");
-  std::strcpy(export_names[8],  "Sa_pslv");
-  std::strcpy(export_names[9],  "Faxa_rainl");
-  std::strcpy(export_names[10], "Faxa_snowl");
-  std::strcpy(export_names[11], "sfc_flux_dir_nir");
-  std::strcpy(export_names[12], "sfc_flux_dir_vis");
-  std::strcpy(export_names[13], "sfc_flux_dif_nir");
-  std::strcpy(export_names[14], "sfc_flux_dif_vis");
-  std::strcpy(export_names[15], "sfc_flux_sw_net");
-  std::strcpy(export_names[16], "sfc_flux_lw_dn");
+  std::strcpy(export_names[0],  "Sa_z"       );
+  std::strcpy(export_names[1],  "Sa_u"       );
+  std::strcpy(export_names[2],  "Sa_v"       );
+  std::strcpy(export_names[3],  "Sa_tbot"    );
+  std::strcpy(export_names[4],  "Sa_ptem"    );
+  std::strcpy(export_names[5],  "Sa_pbot"    );
+  std::strcpy(export_names[6],  "Sa_shum"    );
+  std::strcpy(export_names[7],  "Sa_dens"    );
+  std::strcpy(export_names[8],  "Sa_pslv"    );
+  std::strcpy(export_names[9],  "Faxa_rainl" );
+  std::strcpy(export_names[10], "Faxa_snowl" );
+  std::strcpy(export_names[11], "Faxa_swndr" );
+  std::strcpy(export_names[12], "Faxa_swvdr" );
+  std::strcpy(export_names[13], "Faxa_swndf" );
+  std::strcpy(export_names[14], "Faxa_swvdf" );
+  std::strcpy(export_names[15], "Faxa_swnet" );
+  std::strcpy(export_names[16], "Faxa_lwdn"  );
 
   // Setup the import/export data. This is meant to replicate the structures coming
   // from mct_coupling/scream_cpl_indices.F90
@@ -469,7 +495,7 @@ TEST_CASE("surface-coupling", "") {
   test_imports(*fm, import_data_view, import_cpl_indices_view,
                import_constant_multiple_view, true);
   test_exports(*fm, export_data_view, export_cpl_indices_view,
-               export_constant_multiple_view, dt, true);
+               export_constant_multiple_view,  exp_const_params, dt, true);
 
   // Run the AD
   ad.run(dt);
@@ -478,7 +504,7 @@ TEST_CASE("surface-coupling", "") {
   test_imports(*fm, import_data_view, import_cpl_indices_view,
                import_constant_multiple_view);
   test_exports(*fm, export_data_view, export_cpl_indices_view,
-               export_constant_multiple_view, dt);
+               export_constant_multiple_view, exp_const_params, dt);
 
   // Finalize  the AD
   ad.finalize();

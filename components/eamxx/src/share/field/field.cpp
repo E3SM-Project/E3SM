@@ -4,11 +4,9 @@
 namespace scream
 {
 
-// ================================= IMPLEMENTATION ================================== //
-
 Field::
 Field (const identifier_type& id)
- : m_header     (create_header(id))
+ : m_header (create_header(id))
 {
   // Nothing to do here
 }
@@ -23,6 +21,15 @@ Field::get_const() const {
 Field
 Field::clone() const {
   return clone(name());
+}
+
+Field
+Field::alias (const std::string& name) const {
+  Field f;
+  f.m_header = get_header().alias(name);
+  f.m_data = m_data;
+  f.m_is_read_only = m_is_read_only;
+  return f;
 }
 
 Field

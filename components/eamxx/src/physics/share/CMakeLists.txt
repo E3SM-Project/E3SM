@@ -6,7 +6,7 @@ set(PHYSICS_SHARE_SRCS
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/physics_utils.F90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/scream_abortutils.F90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/wv_sat_scream.F90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/micro_p3_utils.F90
+  ${SCREAM_BASE_DIR}/../eam/src/physics/p3/scream/micro_p3_utils.F90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/debug_info.F90
 )
 

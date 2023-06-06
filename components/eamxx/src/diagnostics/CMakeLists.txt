@@ -4,7 +4,6 @@ set(DIAGNOSTIC_SRCS
   exner.cpp
   field_at_level.cpp
   field_at_pressure_level.cpp
-  ice_cloud_mask.cpp
   ice_water_path.cpp
   liquid_water_path.cpp
   longwave_cloud_forcing.cpp
@@ -12,6 +11,7 @@ set(DIAGNOSTIC_SRCS
   potential_temperature.cpp
   precip_ice_surf_mass_flux.cpp
   precip_liq_surf_mass_flux.cpp
+  precip_total_surf_mass_flux.cpp
   rain_water_path.cpp
   relative_humidity.cpp
   rime_water_path.cpp

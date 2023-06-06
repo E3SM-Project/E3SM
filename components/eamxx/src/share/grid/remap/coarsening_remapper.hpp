@@ -2,8 +2,9 @@
 #define SCREAM_COARSENING_REMAPPER_HPP
 
 #include "share/grid/remap/abstract_remapper.hpp"
-
 #include "scream_config.h"
+
+#include "ekat/ekat_pack.hpp"
 
 #include <mpi.h>
 
@@ -47,12 +48,8 @@ class CoarseningRemapper : public AbstractRemapper
 public:
 
   CoarseningRemapper (const grid_ptr_type& src_grid,
-                      const std::string& map_file);
-
-  CoarseningRemapper (const grid_ptr_type& src_grid,
                       const std::string& map_file,
-                      const std::vector<Field>& mask_fields,
-                      const std::map<std::string,int>& mask_map);
+                      const bool track_mask = false);
 
   ~CoarseningRemapper ();
 
@@ -154,6 +151,8 @@ public:
   void recv_and_unpack ();
 
 protected:
+  // If a field
+
   ekat::Comm            m_comm;
 
   static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
@@ -176,10 +175,8 @@ protected:
   std::vector<Field>    m_tgt_fields;
 
   // Mask fields, if needed
-  bool                      m_track_mask;
-  std::vector<Field>        m_mask_fields_src;
-  std::map<std::string,int> m_mask_map_src;
-  std::map<int,int>         m_mask_map_tgt;
+  bool                  m_track_mask;
+  std::map<int,int>     m_field_idx_to_mask_idx;
 
   // ----- Sparse matrix CRS representation ---- //
   view_1d<int>    m_row_offsets;
