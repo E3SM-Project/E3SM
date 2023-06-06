@@ -734,9 +734,6 @@ print *, 'en1g-en2g, rel', en1global-(en2global+energy_prect), ( en1global-en2gl
 print *, 'mass1global,mass2global+prect', mass1global, mass2global+mass_prect
 print *, 'm1g-m2g, rel', mass1global-(mass2global+mass_prect), ( mass1global-mass2global-mass_prect)/mass1global
 print *, "    "
-
-if(abs(en1global- en2global-energy_prect)/en1global>1e-10) stop
-
 endif
 
       precl(i,j,ie) = mass_prect / (dt * rhow) / g

@@ -597,7 +597,7 @@ print *, 'with liquid V formula', en1
 
        cpstarTerm_new = cpdry*1.0 + cpv*qsatdry + cl*(qldry_loc + dq_loc)
 
-!use extra term in dh=0 rule in case of NH or not
+       !use extra term in dh=0 rule in case of NH or not
        if(bubble_rj_cpstar_nh) then
 
        ! L and Rstar are in terms of q, so, enthalpy too
@@ -611,65 +611,34 @@ print *, 'with liquid V formula', en1
          T_new = (hold - L_new)/(   cpstarTerm_new   )
        endif
 
-!print *, 'T_new - T_c', T_new - T_c(k)
-
        T_c(k)  = T_new
        rain(k) = vapor_mass_change
        !this is before raining out, so dp did not change
        qv_c(k) = (dp_loc*qv_loc - vapor_mass_change)/dp_loc
        ql_c(k) = (dp_loc*ql_loc + vapor_mass_change)/dp_loc
-
-#if 0
-       !now shift all levels above
-       olddphi = gravit*(zi_c(k) - zi_c(k+1))
-       dphi(k) = rstar_new * dpdry_loc * T_c(k) / p_c(k)
-
-       zi_c(1:k) = zi_c(1:k) + (dphi(k) - olddphi)/gravit
-#else
-
-!       do ll=k, 1, -1
-!         rstar_new = rdry * (1.0 - qv_c(ll) - ql_c(ll)) + rvapor * qv_c(ll)
-!         olddphi = rstar_new * dp_c(ll) * T_c(ll) / p_c(ll)
-!         zi_c(k) = zi_c(k+1) + olddphi/gravit
-!       enddo
-
-#endif
-
-
-
-print *, 'k=', k
-print *, 'old contribution', hold
-print *, 'new contribution', T_new*cpstarTerm_new + (pi_loc/p_loc - 1) * rstar_new * T_new + L_new
-print *, 'with dp, old', ( T_loc*dp_loc*( cpdry*(1-qv_loc-ql_loc) + cpv*qv_loc+cl*ql_loc )+&
-            dp_loc*(latvap+latice)*qv_loc + dp_loc*latice*ql_loc +&
-            ( pi_loc/p_loc - 1)*(rdry*dp_loc*(1-qv_loc-ql_loc) + rvapor*dp_loc*qv_loc)*T_loc )/dp_loc
-print *, 'with dp, new', ( T_c(k)*dp_loc*( cpdry*(1-qv_c(k)-ql_c(k)) + cpv*qv_c(k)+cl*ql_c(k) )+&
-            dp_loc*(latvap+latice)*qv_c(k) + dp_loc*latice*ql_c(k) +&
-            ( pi_loc/p_loc - 1)*(rdry*dp_loc*(1-qv_c(k)-ql_c(k)) + rvapor*dp_loc*qv_c(k))*T_c(k) )/dp_loc
  
     endif
   enddo
 
-       do ll=nlev, 1, -1
-         rstar_new = rdry * (1.0 - qv_c(ll) - ql_c(ll)) + rvapor * qv_c(ll)
-         olddphi = rstar_new * dp_c(ll) * T_c(ll) / p_c(ll)
-         zi_c(ll) = zi_c(ll+1) + olddphi/gravit
-       enddo
+  !recompute geop
+  do k=nlev, 1, -1
+    rstar_new = rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k)
+    olddphi = rstar_new * dp_c(k) * T_c(k) / p_c(k)
+    zi_c(k) = zi_c(k+1) + olddphi/gravit
+  enddo
 
-if(wasiactive)then
-
-print *, 'ql_c', ql_c
+!if(wasiactive)then
+!print *, 'ql_c', ql_c
   !compute en2, energy before sedimentation
-  call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
-print *, 'en2 via P',en2
-  call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c       ,p_c,en2)
-print *, 'en2 via V',en2
-endif
+!  call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
+!print *, 'en2 via P',en2
+!  call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c       ,p_c,en2)
+!print *, 'en2 via V',en2
+!endif
 
-
-  call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
-
-
+  !sanity check to use the opposite formulation
+  !call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
+  call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c,p_c,en2)
 
   ! in HY update, what to do about energyout and how/when to recompute p and phi?
   ! decision: keep both updates the same for cpstar HY and NH
@@ -721,8 +690,9 @@ endif
   enddo
   endif
 
-  !call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
-  call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c,p_c,en3)
+  !interchange V and P formulas of energy for debugging
+  call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
+  !call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c,p_c,en3)
  
  
 end subroutine rj_new
