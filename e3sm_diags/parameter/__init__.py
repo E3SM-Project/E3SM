@@ -7,6 +7,7 @@ from .enso_diags_parameter import EnsoDiagsParameter
 from .lat_lon_land_parameter import LatLonLandParameter
 from .lat_lon_river_parameter import LatLonRiverParameter
 from .meridional_mean_2d_parameter import MeridionalMean2dParameter
+from .mp_partition_parameter import MPpartitionParameter
 from .qbo_parameter import QboParameter
 from .streamflow_parameter import StreamflowParameter
 from .tc_analysis_parameter import TCAnalysisParameter
@@ -33,4 +34,5 @@ SET_TO_PARAMETERS = {
     "lat_lon_river": LatLonRiverParameter,
     "aerosol_aeronet": CoreParameter,
     "aerosol_budget": CoreParameter,
+    "mp_partition": MPpartitionParameter,
 }

@@ -14,6 +14,7 @@ from . import (
     default_viewer,
     enso_diags_viewer,
     mean_2d_viewer,
+    mp_partition_viewer,
     qbo_viewer,
     streamflow_viewer,
     tc_analysis_viewer,
@@ -44,6 +45,7 @@ SET_TO_VIEWER = {
     "annual_cycle_zonal_mean": annual_cycle_zonal_mean_viewer.create_viewer,
     "aerosol_aeronet": default_viewer.create_viewer,
     "aerosol_budget": aerosol_budget_viewer.create_viewer,
+    "mp_partition": mp_partition_viewer.create_viewer,
 }
 
 
