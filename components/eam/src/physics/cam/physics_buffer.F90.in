@@ -140,6 +140,7 @@ module physics_buffer
             pbuf_init_restart,    &
             pbuf_write_restart,   &
             pbuf_read_restart,    &
+            pbuf_get_field_persistence, &
             dtype_r8, dtype_r4, dtype_i4
 
    integer, public :: dyn_time_lvls  ! number of time levels in physics buffer (dycore dependent)
@@ -256,6 +257,24 @@ CONTAINS
        hdr=>hdr%nexthdr
     end do
   end function pbuf_has_field
+
+  function pbuf_get_field_persistence(fname) result(persistence)
+    character(len=16) :: fname
+    integer :: persistence
+
+    type(physics_buffer_hdr), pointer :: hdr
+
+    hdr => hdrbuffertop
+
+    do while (associated(hdr))
+       if (trim(hdr%name) == trim(fname)) then
+         persistence = hdr%persistence
+         exit
+       endif
+       hdr=>hdr%nexthdr
+    end do
+    persistence = -1
+  end function pbuf_get_field_persistence
 
   function pbuf_get_field_name(index)
     integer, intent(in) :: index

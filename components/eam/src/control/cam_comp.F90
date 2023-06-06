@@ -106,7 +106,8 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
                                    cldera_commit_field
    use physics_buffer,   only: physics_buffer_desc, col_type_grid, pbuf_get_index, &
                                pbuf_get_field_rank, pbuf_get_field_dims, pbuf_get_field, &
-                               pbuf_get_field_name, pbuf_has_field
+                               pbuf_get_field_name, pbuf_has_field, pbuf_get_field_persistence, &
+                               persistence_global
    use ppgrid,           only: begchunk, endchunk, pcols, pver
    use phys_grid,        only: get_ncols_p, get_gcol_all_p, get_area_all_p
    use constituents,     only: pcnst, cnst_name
@@ -265,6 +266,11 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    do idx=1,nfields
      ! retrieve fields
      fname = pbuf_get_field_name(idx)
+
+     ! We can only track persistent pbuf quantities
+     if (pbuf_get_field_persistence(fname) .ne. persistence_global) then
+       cycle
+     endif
 
      ! retrieve field specs
      field_desc => pbuf2d(idx,begchunk)
