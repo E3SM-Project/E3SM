@@ -508,20 +508,20 @@ end subroutine compute_mass
 
 
 
-subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
+subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
                                         en1, en2, en3, wasiactive)
 
   real(rl), dimension(nlev), intent(inout) :: p_c
   real(rl), dimension(nlev), intent(inout) :: dp_c
-  real(rl), dimension(nlev), intent(inout) :: qv_c,T_c
+  real(rl), dimension(nlev), intent(inout) :: qv_c,ql_c,T_c
   real(rl), dimension(nlevp),intent(inout) :: zi_c
   real(rl),                  intent(inout) :: massout, energyout, en1, en2, en3
   real(rl),                  intent(in)    :: ptop
   logical,                   intent(inout) :: wasiactive
 
-  real(rl) :: qsat, dp_loc, qv_loc, dpdry_loc, qvdry_loc, qsatdry, dq_loc, vapor_mass_change
+  real(rl) :: qsat, dp_loc, qv_loc, ql_loc, dpdry_loc, qvdry_loc, qsatdry, dq_loc, vapor_mass_change
   real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, rstar_old, rstar_new, hold, T_new
-  real(rl) :: cpstarTerm_new, rstardp, oldQ1mass, olddphi, pi_top_int, enb, ena
+  real(rl) :: cpstarTerm_new, rstardp, oldQ1mass, oldQ2mass, olddphi, pi_top_int, enb, ena
   real(rl), dimension(nlev)  :: pi, dphi, zero, rain, d_pnh, rain2
   real(rl), dimension(nlevp) :: p_int
   integer  :: k, ll
@@ -530,11 +530,13 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   energyout = 0.0
   zero = 0.0
   rain = 0.0
+  en1 = 0; en2 = 0; en3 = 0; 
+
 
   call construct_hydro_pressure(dp_c,ptop,pi)
 
   !compute en1, energy before condensation
-  call energycp_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c,zero,zero,T_c,ptop,zi_c(nlevp),p_c,en1)
+  call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c(nlevp),p_c,en1)
   !call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c,zero,zero,T_c,ptop,zi_c,p_c,en1)
 
   !compute interfaces nh pressure
@@ -558,6 +560,7 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
        !compute dry values
        dp_loc = dp_c(k)
        qv_loc = qv_c(k)
+       ql_loc = ql_c(k)
        dpdry_loc = dp_loc * (1.0 - qv_loc)
        qvdry_loc = qv_loc * dp_loc / dpdry_loc
        qsatdry = qsat * dp_loc / dpdry_loc     ! qv_new
@@ -594,7 +597,9 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 
        T_c(k)  = T_new
        rain(k) = vapor_mass_change
-       massout = massout + vapor_mass_change
+       !this is before raining out, so dp did not change
+       qv_c(k) = (dp_loc*qv_loc - vapor_mass_change)/dp_loc
+       ql_c(k) = (dp_loc*ql_loc + vapor_mass_change)/dp_loc
 
        !now shift all levels above
        olddphi = gravit*(zi_c(k) - zi_c(k+1))
@@ -609,8 +614,7 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 
   !qv_c hasnt changed yet
   !compute en2, energy before sedimentation
-  call energycp_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c-rain, rain, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
-  !call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c-rain, rain, zero,T_c,ptop,zi_c,p_c,en2)
+  call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
 
   !i can just reuse rain variable
   rain2 = rain
@@ -624,7 +628,7 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
      !we can save on perf by reusing 1 of these calls in next k iteration
 
      !rain2 contains what'd not been rained out yet
-     call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c-rain2, rain2, zero,T_c,ptop,zi_c,p_c,enb)
+     call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c,p_c,enb)
  
      !above, we only need to save dphi
      !compute dphi above the cell
@@ -635,10 +639,12 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
      !k cell, we need to recompute state vars and dphi
      !sedimentation stage
      oldQ1mass = dp_c(k)*qv_c(k)
+     oldQ2mass = dp_c(k)*ql_c(k)
      vapor_mass_change = rain(k)
      dp_c(k) = dp_c(k) - vapor_mass_change
      p_c(k)  = p_c(k) - vapor_mass_change
-     qv_c(k) = (oldQ1mass - vapor_mass_change)/dp_c(k)
+     qv_c(k) = oldQ1mass/dp_c(k)
+     ql_c(k) = (oldQ2mass - vapor_mass_change)/dp_c(k)
      rstardp = dp_c(k) * (rdry * (1.0 - qv_c(k)) + rvapor * qv_c(k))
      rain2(k) = 0.0
      dphi(k) = rstardp * T_c(k) / p_c(k)
@@ -656,16 +662,12 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
      enddo
 
      !rain2 contains what'd not been rained out yet
-     call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c-rain2, rain2, zero,T_c,ptop,zi_c,p_c,ena)
-     
+     call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c,p_c,ena)
+    
+     massout = massout + vapor_mass_change
      energyout = energyout + (enb - ena)
 
   enddo
-  !recompute zi after sedimentation
-  !do k=nlev, 1, -1
-  !   zi_c(k) = zi_c(k+1) + dphi(k)/gravit
-  !enddo
-
 
   call energycp_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c, zero, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
   !call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c, zero, zero,T_c,ptop,zi_c,p_c,en3)
@@ -687,9 +689,9 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   real(rl),                  intent(in)    :: ptop
   logical,                   intent(inout) :: wasiactive
 
-  real(rl) :: qsat, dp_loc, qv_loc, dpdry_loc, qvdry_loc, qsatdry, dq_loc, vapor_mass_change
+  real(rl) :: qsat, dp_loc, qv_loc, ql_loc, dpdry_loc, qvdry_loc, qsatdry, dq_loc, vapor_mass_change
   real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, Iold, T_new
-  real(rl) :: cvstarTerm_new, rstardp, oldQ1mass
+  real(rl) :: cvstarTerm_new, rstardp, oldQ1mass, oldQ2mass
   real(rl), dimension(nlev) :: pi, zero, rain
   integer  :: k
 
@@ -701,7 +703,7 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 
   call construct_hydro_pressure(dp_c,ptop,pi)
 
-  call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c,zero,zero,T_c,ptop,zi_c,p_c,en1)
+  call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c,p_c,en1)
 
   do k=1, nlev
     !call qsat_rj2(p_c(k), T_c(k), qsat)
@@ -714,6 +716,7 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
        !compute dry values
        dp_loc = dp_c(k)
        qv_loc = qv_c(k)
+       ql_loc = ql_c(k)
        dpdry_loc = dp_loc * (1.0 - qv_loc)
        qvdry_loc = qv_loc * dp_loc / dpdry_loc
        qsatdry = qsat * dp_loc / dpdry_loc     ! qv_new
@@ -736,7 +739,7 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
        rain(k) = vapor_mass_change
        !this is before raining out, so dp did not change
        qv_c(k) = (dp_loc*qv_loc - vapor_mass_change)/dp_loc
-       ql_c(k) = vapor_mass_change/dp_loc
+       ql_c(k) = (dp_loc*ql_loc + vapor_mass_change)/dp_loc
      endif
   enddo
 
@@ -747,8 +750,10 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
       
      !sedimentation stage
      oldQ1mass = dp_c(k)*qv_c(k)
+     oldQ2mass = dp_c(k)*ql_c(k)
      dp_c(k) = dp_c(k) - rain(k)
-     ql_c(k) = 0.0
+     !set a limiter here?
+     ql_c(k) = (oldQ2mass - rain(k))/dp_c(k)
      qv_c(k) = oldQ1mass/dp_c(k)
 
      rstardp = dp_c(k)* (rdry * (1.0 - qv_c(k)) + rvapor * qv_c(k))

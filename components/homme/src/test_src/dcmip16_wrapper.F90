@@ -613,6 +613,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl) :: zi(np,np,nlevp), zi_c(nlevp), rstar(nlev), vthetaa(nlev)
 
   real(rl) :: energy_before, energy_after, en2, mass_before, mass_after, discrepancy, encl
+  real(rl) :: en1global, en2global, mass1global, mass2global
   logical :: wasiactive
 
 
@@ -656,6 +657,11 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       !column values
       qv_c = qv(i,j,:); qc_c = qc(i,j,:); qr_c = qr(i,j,:); 
       p_c  = p(i,j,:); dp_c = dp(i,j,:); T_c = T(i,j,:); zi_c = zi(i,j,:);
+
+      !compute current energy and mass
+      call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en1global)  
+      mass1global = sum( dp_c )
+
       !also needed, pressure-derived values
       ptop = hvcoord%hyai(1) * hvcoord%ps0
 
@@ -672,18 +678,18 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
         if(bubble_rj_cpstar_hy .or. bubble_rj_cpstar_nh) then
 
           !returns new T, qv, new!!! dp, mass
-          call rj_new(qv_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
+          call rj_new(qv_c,qc_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
                           energy_before,en2,energy_after,wasiactive)
 !seems to work for NH update
-!if(wasiactive)then
-!print *, 'en1,en2', energy_before, en2
-!print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
-!print *, 'en3, enout', energy_after,energy_prect
-!print *, 'en2, (en3+enout)', en2,(energy_after+energy_prect)
-!print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (en2-(energy_after+energy_prect))/en2
-!print *, 'total rel loss', (energy_before-(energy_after+energy_prect))/en2
-!print *, "    "
-!endif
+if(wasiactive)then
+print *, 'en1,en2', energy_before, en2
+print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
+print *, 'en3, enout', energy_after,energy_prect
+print *, 'en2, (en3+enout)', en2,(energy_after+energy_prect)
+print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (en2-(energy_after+energy_prect))/en2
+print *, 'total rel loss', (energy_before-(energy_after+energy_prect))/en2
+print *, "    "
+endif
 
         elseif(bubble_rj_cVstar) then
 
@@ -716,6 +722,17 @@ endif
       elseif(bubble_prec_type == 0) then
         print *, 'kessler planar bubble not done';  stop
       endif ! RJ or Kessler choice
+
+      call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2global)
+      mass2global = sum( dp_c )
+
+if(wasiactive)then
+print *, 'en1global,en2global+prect', en1global, en2global+energy_prect
+print *, 'en1g-en2g, rel', en1global-(en2global+energy_prect), ( en1global-en2global-energy_prect)/en1global
+print *, 'mass1global,mass2global+prect', mass1global, mass2global+mass_prect
+print *, 'm1g-m2g, rel', mass1global-(mass2global+mass_prect), ( mass1global-mass2global-mass_prect)/mass1global
+print *, "    "
+endif
 
       precl(i,j,ie) = mass_prect / (dt * rhow) / g
 
