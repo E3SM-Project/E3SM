@@ -6,7 +6,7 @@ module newphysics
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
 
 use control_mod,          only: theta_hydrostatic_mode,&
-                   case_planar_bubble, bubble_prec_type, bubble_rj_cpstar_hy, bubble_rj_cpstar_nh
+                   case_planar_bubble, bubble_prec_type, bubble_rj_cpstar_hy, bubble_rj_cpstar_nh,bubble_rj_nosedim
 use dimensions_mod,       only: np, nlev, nlevp , qsize, qsize_d, nelemd
 use element_mod,          only: element_t
 use element_state,        only: nt=>timelevels
@@ -622,6 +622,8 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 ! in HY update, what to do about energyout and how/when to recompute p and phi?
 ! decision: keep both updates the same for cpstar HY and NH
 
+  if(.not.bubble_rj_nosedim)then
+
   do k=nlev, 1, -1
 
      !compute current level of energy
@@ -668,6 +670,7 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
      energyout = energyout + (enb - ena)
 
   enddo
+  endif
 
   call energycp_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c, zero, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
   !call energycV_nh_via_mass(dp_c*(1-qv_c), dp_c*qv_c, zero, zero,T_c,ptop,zi_c,p_c,en3)
@@ -740,10 +743,16 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
        !this is before raining out, so dp did not change
        qv_c(k) = (dp_loc*qv_loc - vapor_mass_change)/dp_loc
        ql_c(k) = (dp_loc*ql_loc + vapor_mass_change)/dp_loc
+
+       !recompute pressure here in case there is no sedim
+       rstardp = dp_c(k)* (rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k))
+       p_c(k)  = - rstardp * T_c(k) / (zi_c(k+1) - zi_c(k) ) / gravit
      endif
   enddo
 
   call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c),dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c,p_c,en2)
+
+  if(.not.bubble_rj_nosedim)then
 
   !sedimentation stage
   do k=1, nlev
@@ -756,13 +765,14 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
      ql_c(k) = (oldQ2mass - rain(k))/dp_c(k)
      qv_c(k) = oldQ1mass/dp_c(k)
 
-     rstardp = dp_c(k)* (rdry * (1.0 - qv_c(k)) + rvapor * qv_c(k))
+     rstardp = dp_c(k)* (rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k))
      p_c(k)  = - rstardp * T_c(k) / (zi_c(k+1) - zi_c(k) ) / gravit
 
      massout = massout + rain(k)
      energyout = energyout + rain(k)*(T_c(k)*cl + latice + (zi_c(k) + zi_c(k+1))*gravit/2.0)
      encl      = encl + rain(k)*(T_c(k)*cl + latice)
   enddo
+  endif
 
   call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c),dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c,p_c,en3)
 

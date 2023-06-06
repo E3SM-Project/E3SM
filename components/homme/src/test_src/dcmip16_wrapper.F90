@@ -706,7 +706,7 @@ print *, 'en1,en2', energy_before, en2
 print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
 print *, 'en3, enout', energy_after,energy_prect
 print *, 'en2, (en3+enout)', en2,(energy_after+energy_prect)
-print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (energy_before-(energy_after+energy_prect))/en2
+print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (en2-(energy_after+energy_prect))/en2
 print *, 'enout, encl, rel diff', energy_prect, encl, (energy_prect-encl)/energy_prect
 print *, "    "
 endif
@@ -723,10 +723,12 @@ endif
         print *, 'kessler planar bubble not done';  stop
       endif ! RJ or Kessler choice
 
-      call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2global)
+      !call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2global)
+      call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en2global)
       mass2global = sum( dp_c )
 
 if(wasiactive)then
+print *, 'en prect', energy_prect
 print *, 'en1global,en2global+prect', en1global, en2global+energy_prect
 print *, 'en1g-en2g, rel', en1global-(en2global+energy_prect), ( en1global-en2global-energy_prect)/en1global
 print *, 'mass1global,mass2global+prect', mass1global, mass2global+mass_prect
@@ -736,26 +738,6 @@ endif
 
       precl(i,j,ie) = mass_prect / (dt * rhow) / g
 
-
-#if 0
-      !update tendencies assuming cam_ routines are active
-      !now update 3d fields here
-      T(i,j,:)  = T_c(:)
-      qv(i,j,:) = qv_c(:)
-      qc(i,j,:) = qc_c(:)
-      qr(i,j,:) = qr_c(:)
-
-      ! set dynamics forcing
-      elem(ie)%derived%FT(i,j,:)   = (T(i,j,:) - T0(i,j,:))/dt
-
-      ! set tracer-mass forcing. conserve tracer mass
-      ! one call say, this is "rain" step, liquid water dissapears from the column
-      !this block of code is valid for dp_c not changing
-      elem(ie)%derived%FQ(i,j,:,:) = 0.0
-      elem(ie)%derived%FQ(i,j,:,1) = dp_c*(qv(i,j,:) - qv0(i,j,:))/dt !(rho_dry/rho)*dp*(qv-qv0)/dt
-      elem(ie)%derived%FQ(i,j,:,2) = dp_c*(qc(i,j,:) - qc0(i,j,:))/dt !(rho_dry/rho)*dp*(qv-qv0)/dt
-      elem(ie)%derived%FQ(i,j,:,3) = dp_c*(qr(i,j,:) - qr0(i,j,:))/dt !(rho_dry/rho)*dp*(qv-qv0)/dt
-#endif
 
 
 !!!!! CHANGE RSTAR def here
