@@ -5,7 +5,7 @@ Averaging Type: Instant
 Field Names:
   - T_mid
   - q_aitken_so4
-  - n_aitken_so4
+  - n_aitken
   - q_h2so4
 output_control:
   Frequency: 1

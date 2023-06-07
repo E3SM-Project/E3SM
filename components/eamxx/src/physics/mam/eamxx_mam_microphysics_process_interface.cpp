@@ -77,7 +77,7 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
 
   // aerosol tracers of interest: mass (q) and number (n) mixing ratios
   add_field<Updated>("q_aitken_so4", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // sulfate mixing ratio for aitken mode
-  add_field<Updated>("n_aitken_", scalar3d_layout_mid, n_unit, grid_name, "tracers"); // number mixing ratio of aitken mode
+  add_field<Updated>("n_aitken", scalar3d_layout_mid, n_unit, grid_name, "tracers"); // number mixing ratio of aitken mode
 
   // aerosol-related gases: mass mixing ratios
   add_field<Updated>("q_h2so4", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // wet mixing ratio of sulfuric acid gas
