@@ -79,9 +79,9 @@ Fields:
       - AtmosphereDensity
       - Exner
       - VirtualTemperature
-      - VerticalLayerInterface
-      - VerticalLayerThickness
-      - VerticalLayerMidpoint
+      - z_int
+      - geopotential_mid
+      - dz
       - DryStaticEnergy
       - SeaLevelPressure
       - LiqWaterPath

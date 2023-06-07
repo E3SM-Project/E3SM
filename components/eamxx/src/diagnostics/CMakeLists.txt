@@ -18,9 +18,7 @@ set(DIAGNOSTIC_SRCS
   sea_level_pressure.cpp
   shortwave_cloud_forcing.cpp
   vapor_water_path.cpp
-  vertical_layer_interface.cpp
-  vertical_layer_midpoint.cpp
-  vertical_layer_thickness.cpp
+  vertical_layer.cpp
   virtual_temperature.cpp
   zonal_vapor_flux.cpp
 )

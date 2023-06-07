@@ -95,7 +95,7 @@ public:
   struct GllFvRemapTmp;
   void remap_dyn_to_fv_phys(GllFvRemapTmp* t = nullptr) const;
   void remap_fv_phys_to_dyn() const;
-  
+
 protected:
   void run_impl        (const double dt);
   void finalize_impl   ();
