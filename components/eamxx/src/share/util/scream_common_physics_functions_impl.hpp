@@ -56,6 +56,32 @@ void PhysicsFunctions<DeviceT>::calculate_density(const MemberType& team,
   });
 }
 
+template <typename DeviceT>
+template <typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::calculate_vertical_velocity(const ScalarT& omega, const ScalarT& density)
+{
+  using C = scream::physics::Constants<Real>;
+
+  static constexpr auto g = C::gravit;
+
+  return -omega/(density * g);
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderOmega, typename InputProviderRho>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_vertical_velocity(const MemberType& team,
+                                                  const InputProviderOmega& omega,
+                                                  const InputProviderRho& rho,
+                                                  const view_1d<ScalarT>& w)
+{
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, w.extent(0)),
+    [&] (const int k) {
+      w(k) = calculate_vertical_velocity(omega(k), rho(k));
+    });
+}
+
 template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION

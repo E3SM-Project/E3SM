@@ -77,6 +77,8 @@
 [submodule "externals/haero"]
 	path = externals/haero
 	url = git@github.com:eagles-project/haero.git
+	branch = pbosler/const_column_view
 [submodule "externals/mam4xx"]
 	path = externals/mam4xx
 	url = git@github.com:eagles-project/mam4xx.git
+	branch = jeff-cohere/atm_const_column_view
