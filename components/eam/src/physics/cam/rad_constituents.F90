@@ -59,7 +59,7 @@ logical,            public :: oldcldoptics = .false.
 ! Private module data
 
 ! max number of strings in mode definitions
-integer, parameter :: n_mode_str = 100    ! max number of strings in mode definitions
+integer, parameter :: n_mode_str = 400    ! max number of strings in mode definitions
 
 ! max number of externally mixed entities in the climate/diag lists
 integer, parameter :: n_rad_cnst = N_RAD_CNST

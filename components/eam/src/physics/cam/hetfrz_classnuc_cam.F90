@@ -414,7 +414,7 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
 ! ++MW
    else if (nmodes == MAM5_nmodes) then
       if (mode_accum_idx == -1 .or. mode_coarse_idx == -1 .or. mode_pcarbon_idx == -1 .or. &
-          mode_acarbon_idx) then
+          mode_acarbon_idx == -1) then
          write(iulog,*) routine//': ERROR required mode type not found - mode idx:', &
             mode_accum_idx, mode_coarse_idx, mode_pcarbon_idx, mode_acarbon_idx
          call endrun(routine//': ERROR required mode type not found')
@@ -732,6 +732,8 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
    end if
 ! ++MW
    if (mode_acarbon_idx > 0) then
+      spec_idx(num_acarbon) = 0
+      mode_idx(num_acarbon) = mode_acarbon_idx
       spec_idx(so4_acarbon) = rad_cnst_get_spec_idx(0, mode_acarbon_idx, 'sulfate')
       mode_idx(so4_acarbon) = mode_acarbon_idx
       spec_idx(bc_acarbon)  = rad_cnst_get_spec_idx(0, mode_acarbon_idx, 'black-c')
