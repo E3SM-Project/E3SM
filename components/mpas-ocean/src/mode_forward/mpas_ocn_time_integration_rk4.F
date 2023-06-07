@@ -742,7 +742,7 @@ module ocn_time_integration_rk4
             !$acc enter data copyin(landIceDraft)
          endif
 #endif
-         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 2)
+         call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 2)
 
          ! Update the effective desnity in land ice if we're coupling to land ice
          call ocn_effective_density_in_land_ice_update(forcingPool, &
@@ -1168,7 +1168,7 @@ module ocn_time_integration_rk4
       integer, pointer :: nCells, nEdges, nVertLevels
       integer :: iCell, iEdge, k
 
-      type (mpas_pool_type), pointer :: statePool, tendPool, meshPool, scratchPool
+      type (mpas_pool_type), pointer :: statePool, tendPool, meshPool, verticalMeshPool, scratchPool
       type (mpas_pool_type), pointer :: provisStatePool, forcingPool
       type (mpas_pool_type), pointer :: tracersPool, tracersTendPool, provisTracersPool
 
@@ -1208,6 +1208,7 @@ module ocn_time_integration_rk4
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
       call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
       call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
       call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
@@ -1351,7 +1352,7 @@ module ocn_time_integration_rk4
          !$acc enter data copyin(landIceDraft)
       endif
 #endif
-      call ocn_diagnostic_solve(dt, provisStatePool, forcingPool, meshPool, scratchPool, tracersPool, 1)
+      call ocn_diagnostic_solve(dt, provisStatePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 1)
 #ifdef MPAS_OPENACC
       !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
       !$acc update host(relativeVorticity, circulation)
@@ -1556,7 +1557,7 @@ module ocn_time_integration_rk4
       integer, pointer :: nCells, nEdges
       integer :: iCell, iEdge, k
 
-      type (mpas_pool_type), pointer :: statePool, meshPool, forcingPool
+      type (mpas_pool_type), pointer :: statePool, meshPool, verticalMeshPool, forcingPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: tracersPool
 
@@ -1591,6 +1592,7 @@ module ocn_time_integration_rk4
 
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
       call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
@@ -1653,7 +1655,7 @@ module ocn_time_integration_rk4
          !$acc enter data copyin(landIceDraft)
       endif
 #endif
-      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 2)
+      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 2)
 #ifdef MPAS_OPENACC
       !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
       !$acc update host(relativeVorticity, circulation)
