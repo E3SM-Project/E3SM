@@ -538,25 +538,25 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   !compute en1, energy before condensation
   call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c(nlevp),p_c,en1)
 
-#if 0
+#if 1
 !experiment
-  qv_c = 0.01
-  ql_c = qv_c
+!  qv_c = 0.01
+!  ql_c = qv_c
 
 !recompute pressure
-!  do k=1,nlev
-!     rstar_new = rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k)
-!     olddphi = gravit*(zi_c(k) - zi_c(k+1))
-!     p_c(k) = rstar_new * dp_c(k) * T_c(k) / olddphi
-!  enddo
+  do k=1,nlev
+     rstar_new = rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k)
+     olddphi = gravit*(zi_c(k) - zi_c(k+1))
+     p_c(k) = rstar_new * dp_c(k) * T_c(k) / olddphi
+  enddo
 
 !what if we recompute dz instead?
 
-  do k=nlev, 1, -1
-    rstar_new = rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k)
-    olddphi = rstar_new * dp_c(k) * T_c(k) / p_c(k)
-    zi_c(k) = zi_c(k+1) + olddphi/gravit
-  enddo
+!  do k=nlev, 1, -1
+!    rstar_new = rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k)
+!    olddphi = rstar_new * dp_c(k) * T_c(k) / p_c(k)
+!    zi_c(k) = zi_c(k+1) + olddphi/gravit
+!  enddo
 
   call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c(nlevp),p_c,en1)
 print *, 'with liquid P formula', en1
@@ -711,10 +711,11 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   real(rl),                  intent(in)    :: ptop
   logical,                   intent(inout) :: wasiactive
 
-  real(rl) :: qsat, dp_loc, qv_loc, ql_loc, dpdry_loc, qvdry_loc, qsatdry, dq_loc, vapor_mass_change
+  real(rl) :: qsat, dp_loc, qv_loc, ql_loc, dpdry_loc, qvdry_loc, qldry_loc, &
+              qsatdry, dq_loc, vapor_mass_change
   real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, Iold, T_new
-  real(rl) :: cvstarTerm_new, rstardp, oldQ1mass, oldQ2mass
-  real(rl), dimension(nlev) :: pi, zero, rain
+  real(rl) :: cvstarTerm_new, rstardp, oldQ1mass, oldQ2mass, olddphi
+  real(rl), dimension(nlev) :: pi, zero, rain, ppp_c
   integer  :: k
 
   zero = 0.0
@@ -723,9 +724,13 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   rain = 0.0
   en1 = 0; en2 = 0; en3 = 0; encl = 0;
 
-  call construct_hydro_pressure(dp_c,ptop,pi)
-
   call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c,p_c,en1)
+!print *, 'from cV', en1
+!  call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c(nlevp),p_c,en1)
+!print *, 'from cp', en1
+
+
+  call construct_hydro_pressure(dp_c,ptop,pi)
 
   do k=1, nlev
     !call qsat_rj2(p_c(k), T_c(k), qsat)
@@ -741,6 +746,7 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
        ql_loc = ql_c(k)
        dpdry_loc = dp_loc * (1.0 - qv_loc - ql_loc)
        qvdry_loc = qv_loc * dp_loc / dpdry_loc
+       qldry_loc = ql_loc * dp_loc / dpdry_loc
        qsatdry = qsat * dp_loc / dpdry_loc     ! qv_new
        dq_loc = qvdry_loc - qsatdry            ! > 0 , is qliq_dry_new
        vapor_mass_change = dpdry_loc*dq_loc
@@ -749,15 +755,12 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
        pi_loc = pi(k)
 
        !new Q will be qsatdry
-       L_old = (latvap + latice) * qvdry_loc
-       L_new = (latvap + latice) * qsatdry   + latice * dq_loc
+       L_old = (latvap + latice) * qvdry_loc + latice * qldry_loc
+       L_new = (latvap + latice) * qsatdry   + latice * (qldry_loc + dq_loc)
 
+       Iold = T_loc*( cvdry*1.0 + cvv*qvdry_loc + cl*qldry_loc) + L_old
 
-!fix this
-       Iold = T_loc*( cvdry*1.0 + cvv*qvdry_loc ) + L_old
-
-!and this
-       cvstarTerm_new = cvdry*1.0 + cvv*qsatdry + cl*dq_loc
+       cvstarTerm_new = cvdry*1.0 + cvv*qsatdry + cl*(qldry_loc + dq_loc)
        T_new = ( Iold - L_new )/(   cvstarTerm_new   )
 
        T_c(k)  = T_new
@@ -769,10 +772,28 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
        !recompute pressure here in case there is no sedim
        rstardp = dp_c(k)* (rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k))
        p_c(k)  = - rstardp * T_c(k) / (zi_c(k+1) - zi_c(k) ) / gravit
+!print *, 'INSIDE k=',k, ' p=', p_c(k)
      endif
   enddo
 
-  call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c),dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c,p_c,en2)
+#if 0
+  do k=1,nlev
+     rstardp = rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k)
+     olddphi = gravit*(zi_c(k) - zi_c(k+1))
+     ppp_c(k) = rstardp * dp_c(k) * T_c(k) / olddphi
+!print *, 'k=',k, ' p=', p_c(k)
+  enddo
+#endif
+
+!if(wasiactive)then
+!print *, 'pressure after', p_c
+!print *, 'p diff', p_c - ppp_c
+!stop
+!endif
+
+
+  !call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c),dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c,p_c,en2)
+  call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c),dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c(nlevp),p_c,en2)
 
   if(.not.bubble_rj_nosedim)then
 
@@ -781,18 +802,17 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
       
      !sedimentation stage
      oldQ1mass = dp_c(k)*qv_c(k)
-     oldQ2mass = dp_c(k)*ql_c(k)
-     dp_c(k) = dp_c(k) - rain(k)
-     !set a limiter here?
-     ql_c(k) = (oldQ2mass - rain(k))/dp_c(k)
+     vapor_mass_change = dp_c(k)*ql_c(k)
+     dp_c(k) = dp_c(k) - vapor_mass_change
+     ql_c(k) = 0.0
      qv_c(k) = oldQ1mass/dp_c(k)
 
      rstardp = dp_c(k)* (rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k))
      p_c(k)  = - rstardp * T_c(k) / (zi_c(k+1) - zi_c(k) ) / gravit
 
-     massout = massout + rain(k)
-     energyout = energyout + rain(k)*(T_c(k)*cl + latice + (zi_c(k) + zi_c(k+1))*gravit/2.0)
-     encl      = encl + rain(k)*(T_c(k)*cl + latice)
+     massout = massout + vapor_mass_change
+     energyout = energyout + vapor_mass_change*(T_c(k)*cl + latice + (zi_c(k) + zi_c(k+1))*gravit/2.0)
+     encl      = encl + vapor_mass_change*(T_c(k)*cl + latice)
   enddo
   endif
 

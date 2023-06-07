@@ -613,7 +613,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl) :: zi(np,np,nlevp), zi_c(nlevp), rstar(nlev), vthetaa(nlev)
 
   real(rl) :: energy_before, energy_after, en2, mass_before, mass_after, discrepancy, encl
-  real(rl) :: en1global, en2global, mass1global, mass2global
+  real(rl) :: en1global, en2global, mass1global, mass2global, rstar_new, olddphi
   logical :: wasiactive
 
 
@@ -656,13 +656,26 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
       !column values
       qv_c = qv(i,j,:); qc_c = qc(i,j,:); qr_c = qr(i,j,:); 
-      p_c  = p(i,j,:); dp_c = dp(i,j,:); T_c = T(i,j,:); zi_c = zi(i,j,:);
+      dp_c = dp(i,j,:); T_c = T(i,j,:); zi_c = zi(i,j,:);
+
+      !homme uses wrong Rstar, so, T, p, dp, phi won't be concsistent with what physics uses.
+      !redo it here then!
+      do k=1,nlev
+        rstar_new = rdry * (1.0 - qv_c(k) - qc_c(k) - qr_c(k)) + rvapor * qv_c(k)
+        olddphi = gravit*(zi_c(k) - zi_c(k+1))
+        p_c(k) = rstar_new * dp_c(k) * T_c(k) / olddphi
+      enddo 
 
       !also needed, pressure-derived values
       ptop = hvcoord%hyai(1) * hvcoord%ps0
 
       !compute current energy and mass
       call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en1global)  
+
+!      print *, 'via P form ', en1global
+!      call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en1global)  
+!      print *, 'via V form ', en1global
+
       mass1global = sum( dp_c )
 
       dpdry_c = dp_c*(1.0 - qv_c - qc_c - qr_c)
@@ -698,18 +711,15 @@ endif
                energy_before,en2,energy_after,encl,wasiactive)
 
 !this seems to work
-!this is a little sus
-! en1-en2, rel -3.814697265625000E-006 -1.637702685535182E-016
-! en1-en2, rel  3.814697265625000E-006  1.637671777291065E-016
-!if(wasiactive)then
-!print *, 'en1,en2', energy_before, en2
-!print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
-!print *, 'en3, enout', energy_after,energy_prect
-!print *, 'en2, (en3+enout)', en2,(energy_after+energy_prect)
-!print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (en2-(energy_after+energy_prect))/en2
-!print *, 'enout, encl, rel diff', energy_prect, encl, (energy_prect-encl)/energy_prect
-!print *, "    "
-!endif
+if(wasiactive)then
+print *, 'en1,en2', energy_before, en2
+print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
+print *, 'en3, enout', energy_after,energy_prect
+print *, 'en2, (en3+enout)', en2,(energy_after+energy_prect)
+print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (en2-(energy_after+energy_prect))/en2
+print *, 'enout, encl, rel diff', energy_prect, encl, (energy_prect-encl)/energy_prect
+print *, "    "
+endif
 
         elseif(bubble_rj_cpdry) then
 
