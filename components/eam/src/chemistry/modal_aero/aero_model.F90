@@ -477,7 +477,7 @@ contains
           endif
        enddo
 
-#if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_AGEDCARBON)
        dummy = 'SSTSFMBL_OM'
        call addfld (dummy,horiz_only, 'A','kg/m2/s','Mobilization flux of marine organic matter at surface')
        if (history_aerosol) then
@@ -2637,9 +2637,10 @@ do_lphase2_conditional: &
        ! note that:
        !     vmr0 holds vmr before gas-phase chemistry
        !     dvmrdt and dvmrcwdt hold vmr and vmrcw before aqueous chemistry
+! ++MW
        call modal_aero_amicphys_intr(                &
             1,                  1,                   &
-            1,                  1,                   &
+            1,                  0,                   &
             lchnk,     ncol,    nstep,               &
             loffset,   delt,                         &
             latndx,    lonndx,                       &
@@ -2651,6 +2652,8 @@ do_lphase2_conditional: &
             dvmrdt,             dvmrcwdt,            &
             dgnum,              dgnumwet,            &
             wetdens                                  )
+! --MW
+
 !      subroutine modal_aero_amicphys_intr(          &
 !           mdo_gasaerexch,     mdo_rename,          &
 !           mdo_newnuc,         mdo_coag,            &
