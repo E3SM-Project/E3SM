@@ -5122,6 +5122,9 @@ use modal_aero_data, only : &
     dgnum_amode, dgnumlo_amode, dgnumhi_amode, &
     lmassptr_amode, lmassptrcw_amode, &
     modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, &
+! ++MW
+    modeptr_acarbon, &
+! --MW
     modeptr_maccum, modeptr_maitken, &
     nspec_amode, &
     numptr_amode, numptrcw_amode, sigmag_amode
