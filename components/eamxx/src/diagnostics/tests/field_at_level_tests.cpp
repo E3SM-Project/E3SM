@@ -13,11 +13,7 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
   const int num_global_cols = ncols*comm.size();
 
-  ekat::ParameterList gm_params;
-  gm_params.set<int>("number_of_global_columns", num_global_cols);
-  gm_params.set<int>("number_of_vertical_levels", nlevs);
-
-  auto gm = create_mesh_free_grids_manager(comm,gm_params);
+  auto gm = create_mesh_free_grids_manager(comm,0,0,nlevs,num_global_cols);
   gm->build_grids();
 
   return gm;

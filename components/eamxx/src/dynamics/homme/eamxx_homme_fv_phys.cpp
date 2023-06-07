@@ -10,6 +10,7 @@
 
 // Scream includes
 #include "share/field/field_manager.hpp"
+#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
 
 // Ekat includes
@@ -89,7 +90,7 @@ static void copy_prev (const int ncols, const int npacks,
       FM(icol,1,ilev) = uv(icol,1,ilev);
     });
   });
-  Kokkos::fence();  
+  Kokkos::fence();
 }
 
 void HommeDynamics::fv_phys_dyn_to_fv_phys (const bool restart) {
@@ -106,7 +107,7 @@ void HommeDynamics::fv_phys_dyn_to_fv_phys (const bool restart) {
     constexpr int NGP = HOMMEXX_NP;
     const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
     const auto npg = m_phys_grid_pgN*m_phys_grid_pgN;
-    GllFvRemapTmp t;    
+    GllFvRemapTmp t;
     t.T_mid = Homme::ExecView<Real***>("T_mid_tmp", nelem, npg, npacks*N);
     t.horiz_winds = Homme::ExecView<Real****>("horiz_winds_tmp", nelem, npg, 2, npacks*N);
     // Really need just the first tracer.
@@ -171,7 +172,7 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
   const auto nq = get_group_out("tracers").m_bundle->get_view<Real***>().extent_int(1);
   assert(get_field_out("T_mid", gn).get_view<Real**>().extent_int(0) == nelem*npg);
   assert(get_field_out("horiz_winds", gn).get_view<Real***>().extent_int(1) == 2);
-  
+
   const auto ps = Homme::GllFvRemap::Phys1T(
     get_field_out("ps", gn).get_view<Real*>().data(),
     nelem, npg);
@@ -223,40 +224,18 @@ void HommeDynamics::remap_fv_phys_to_dyn () const {
   const auto q = Homme::GllFvRemap::CPhys3T(
     get_group_in("tracers", gn).m_bundle->get_view<const Real***>().data(),
     nelem, npg, nq, nlev);
-  
+
   gfr.run_fv_phys_to_dyn(time_idx, T, uv, q);
   Kokkos::fence();
   gfr.run_fv_phys_to_dyn_dss();
   Kokkos::fence();
 }
 
-// TODO [rrtmgp active gases] This is to address issue #1782. It supports option
-// 1 in that issue. These fv_phys_rrtmgp_active_gases_* routines can be removed
-// once rrtmgp active_gases initialization is treated properly.
-
-struct TraceGasesWorkaround {
-  bool restart{false};
-  std::shared_ptr<AbstractRemapper> remapper;
-  std::vector<std::string> active_gases; // other than h2o
-};
-
-static TraceGasesWorkaround s_tgw;
-
-void fv_phys_rrtmgp_active_gases_init (const ekat::ParameterList& p) {
-  const auto& v = p.sublist("atmosphere_processes").sublist("physics")
-    .sublist("rrtmgp").get<std::vector<std::string>>("active_gases");
-  if (ekat::contains(v, "o3")) {
-    s_tgw.active_gases.push_back("o3_volume_mix_ratio");
-  }
-}
-
-void fv_phys_rrtmgp_active_gases_set_restart (const bool restart) {
-  s_tgw.restart = restart;
-}
-
+// See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
 void HommeDynamics
 ::fv_phys_rrtmgp_active_gases_init (const std::shared_ptr<const GridsManager>& gm) {
-  if (s_tgw.restart) return; // always false b/c it hasn't been set yet
+  auto& trace_gases_workaround = TraceGasesWorkaround::singleton();
+  if (trace_gases_workaround.is_restart()) return; // always false b/c it hasn't been set yet
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
   auto molmol = mol/mol;
@@ -267,23 +246,25 @@ void HommeDynamics
   const auto pnc = m_phys_grid->get_num_local_dofs();
   const auto nlev = m_cgll_grid->get_num_vertical_levels();
   constexpr int ps = SCREAM_SMALL_PACK_SIZE;
-  for (const auto& e : s_tgw.active_gases) {
+  for (const auto& e : trace_gases_workaround.get_active_gases()) {
     add_field<Required>(e, FieldLayout({COL,LEV},{rnc,nlev}), molmol, rgn, ps);
     // 'Updated' rather than just 'Computed' so that it gets written to the
     // restart file.
     add_field<Updated >(e, FieldLayout({COL,LEV},{pnc,nlev}), molmol, pgn, ps);
   }
-  s_tgw.remapper = gm->create_remapper(m_cgll_grid, m_dyn_grid);
+  trace_gases_workaround.set_remapper(gm->create_remapper(m_cgll_grid, m_dyn_grid));
 }
 
+// See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
 void HommeDynamics::fv_phys_rrtmgp_active_gases_remap () {
   // Note re: restart: Ideally, we'd know if we're restarting before having to
   // call add_field above. However, we only find out after. Because the pg2
   // field was declared Updated, it will read the restart data. But we don't
   // actually want to remap from CGLL to pg2 now. So if restarting, just do the
   // cleanup part at the end.
+  auto& trace_gases_workaround = TraceGasesWorkaround::singleton();
   const auto& rgn = m_cgll_grid->name();
-  if (not s_tgw.restart) {
+  if (not trace_gases_workaround.is_restart()) {
     using namespace ShortFieldTagsNames;
     const auto& dgn = m_dyn_grid ->name();
     const auto& pgn = m_phys_grid->name();
@@ -293,21 +274,21 @@ void HommeDynamics::fv_phys_rrtmgp_active_gases_remap () {
     const int nelem = m_dyn_grid->get_num_local_dofs()/ngll;
     { // CGLL -> DGLL
       const auto nlev = m_dyn_grid->get_num_vertical_levels();
-      for (const auto& e : s_tgw.active_gases)
+      for (const auto& e : trace_gases_workaround.get_active_gases())
         create_helper_field(e, {EL,GP,GP,LEV}, {nelem,NGP,NGP,nlev}, dgn);
-      auto& r = s_tgw.remapper;
+      auto r = trace_gases_workaround.get_remapper();
       r->registration_begins();
-      for (const auto& e : s_tgw.active_gases)
+      for (const auto& e : trace_gases_workaround.get_active_gases())
         r->register_field(get_field_in(e, rgn), m_helper_fields.at(e));
       r->registration_ends();
       r->remap(true);
-      s_tgw.remapper = nullptr;
+      trace_gases_workaround.erase_remapper();
     }
     { // DGLL -> PGN
       const auto& c = Homme::Context::singleton();
       auto& gfr = c.get<Homme::GllFvRemap>();
       const auto time_idx = c.get<Homme::TimeLevel>().n0;
-      for (const auto& e : s_tgw.active_gases) {
+      for (const auto& e : trace_gases_workaround.get_active_gases()) {
         const auto& f_dgll = m_helper_fields.at(e);
         const auto& f_phys = get_field_out(e, pgn);
         const auto& v_dgll = f_dgll.get_view<const Real****>();
@@ -325,10 +306,10 @@ void HommeDynamics::fv_phys_rrtmgp_active_gases_remap () {
     }
   }
   // Done with all of these, so remove them.
-  s_tgw.remapper = nullptr;
-  for (const auto& e : s_tgw.active_gases)
+  trace_gases_workaround.erase_remapper();
+  for (const auto& e : trace_gases_workaround.get_active_gases())
     m_helper_fields.erase(e);
-  for (const auto& e : s_tgw.active_gases)
+  for (const auto& e : trace_gases_workaround.get_active_gases())
     remove_field(e, rgn);
 }
 

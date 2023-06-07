@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
-#include "diagnostics/vertical_layer_interface.hpp"
+#include "diagnostics/vertical_layer.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -21,15 +21,16 @@ namespace scream {
 std::shared_ptr<GridsManager>
 create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
-  const int num_local_elems = 4;
-  const int np = 4;
   const int num_global_cols = ncols*comm.size();
 
+  using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set<int>("number_of_global_columns", num_global_cols);
-  gm_params.set<int>("number_of_local_elements", num_local_elems);
-  gm_params.set<int>("number_of_vertical_levels", nlevs);
-  gm_params.set<int>("number_of_gauss_points", np);
+  gm_params.set("grids_names",vos_t{"Point Grid"});
+  auto& pl = gm_params.sublist("Point Grid");
+  pl.set<std::string>("type","point_grid");
+  pl.set("aliases",vos_t{"Physics"});
+  pl.set<int>("number_of_global_columns", num_global_cols);
+  pl.set<int>("number_of_vertical_levels", nlevs);
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   gm->build_grids();
@@ -39,7 +40,7 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
 //-----------------------------------------------------------------------------------------------//
 template<typename DeviceT>
-void run(std::mt19937_64& engine)
+void run(std::mt19937_64& engine, std::string diag_type, const bool from_sea_level = false)
 {
   using PF         = scream::PhysicsFunctions<DeviceT>;
   using PC         = scream::physics::Constants<Real>;
@@ -49,10 +50,12 @@ void run(std::mt19937_64& engine)
   using MemberType = typename KT::MemberType;
   using view_1d    = typename KT::template view_1d<Pack>;
   using rview_1d   = typename KT::template view_1d<Real>;
+  using view_2d    = typename KT::template view_2d<Pack>;
 
   const     int packsize = SCREAM_PACK_SIZE;
   constexpr int num_levs = packsize*2 + 1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
-  const     int num_mid_packs = ekat::npack<Pack>(num_levs);
+  const     int num_mid_packs    = ekat::npack<Pack>(num_levs);
+  const     int num_mid_packs_p1 = ekat::npack<Pack>(num_levs+1);
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -79,18 +82,33 @@ void run(std::mt19937_64& engine)
   RPDF pdf_qv(1e-6,1e-3),
        pdf_pseudodens(1.0,100.0),
        pdf_pres(0.0,PC::P0),
-       pdf_temp(200.0,400.0);
+       pdf_temp(200.0,400.0),
+       pdf_phis(0.0,10000.0);
 
   // A time stamp
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
   // Construct the Diagnostic
   ekat::ParameterList params;
+  std::string diag_name;
+  if (diag_type == "thickness") {
+    diag_name = "dz";
+  }
+  else if (diag_type == "interface") {
+    diag_name = from_sea_level ? "z_int" : "geopotential_int";
+  } else if (diag_type == "midpoint") {
+    diag_name = from_sea_level ? "z_mid" : "geopotential_mid";
+  }
+  params.set<std::string>("diag_name", diag_name);
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  auto diag = diag_factory.create("VerticalLayerInterface",comm,params);
+  auto diag = diag_factory.create(diag_name,comm,params);
   diag->set_grids(gm);
 
+  // Helpful bools
+  const bool only_compute_dz = (diag_type == "thickness");
+  const bool is_interface_layout = (diag_type == "interface");
+  const bool generate_phis_data = (not only_compute_dz and not from_sea_level);
 
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;
@@ -121,6 +139,13 @@ void run(std::mt19937_64& engine)
     const auto& p_mid_v       = p_mid_f.get_view<Pack**>();
     const auto& qv_mid_f      = input_fields["qv"];
     const auto& qv_mid_v      = qv_mid_f.get_view<Pack**>();
+    Field phis_f;
+    rview_1d phis_v;
+    if (generate_phis_data) {
+      phis_f = input_fields["phis"];
+      phis_v = phis_f.get_view<Real*>();
+    }
+
     for (int icol=0;icol<ncols;icol++) {
       const auto& T_sub      = ekat::subview(T_mid_v,icol);
       const auto& pseudo_sub = ekat::subview(pseudo_dens_v,icol);
@@ -135,34 +160,57 @@ void run(std::mt19937_64& engine)
       Kokkos::deep_copy(p_sub,pressure);
       Kokkos::deep_copy(qv_sub,watervapor);
     }
+    if (generate_phis_data) {
+      ekat::genRandArray(phis_v, engine, pdf_phis);
+    }
 
     // Run diagnostic and compare with manual calculation
     diag->compute_diagnostic();
     const auto& diag_out = diag->get_diagnostic();
-    Field zint_f = diag_out.clone();
-    zint_f.deep_copy<double,Host>(0.0);
-    zint_f.sync_to_dev();
-    const auto& zint_v = zint_f.get_view<Pack**>();
-    view_1d dz_v("",num_mid_packs);
+
+    // Need to generate temporary values for calculation
+    const auto& dz_v   = view_2d("",ncols, num_mid_packs);
+    const auto& zmid_v = view_2d("",ncols, num_mid_packs);
+    const auto& zint_v = view_2d("",ncols, num_mid_packs_p1);
+
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
+
+      const auto& dz_s = ekat::subview(dz_v,icol);
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_mid_packs), [&] (const Int& jpack) {
-        dz_v(jpack) = PF::calculate_dz(pseudo_dens_v(icol,jpack),p_mid_v(icol,jpack),T_mid_v(icol,jpack),qv_mid_v(icol,jpack));
+        dz_s(jpack) = PF::calculate_dz(pseudo_dens_v(icol,jpack),p_mid_v(icol,jpack),T_mid_v(icol,jpack),qv_mid_v(icol,jpack));
       });
       team.team_barrier();
-      const auto& zint_s = ekat::subview(zint_v,icol);
-      PF::calculate_z_int(team,num_levs,dz_v,0.0,zint_s);
+
+      if (not only_compute_dz) {
+        const auto& zint_s = ekat::subview(zint_v,icol);
+        const Real surf_geopotential = from_sea_level ? 0.0 : phis_v(icol);
+        PF::calculate_z_int(team,num_levs,dz_s,surf_geopotential,zint_s);
+
+        if (not is_interface_layout) {
+          const auto& zmid_s = ekat::subview(zmid_v,icol);
+          PF::calculate_z_mid(team,num_levs,zint_s,zmid_s);
+        }
+      }
     });
     Kokkos::fence();
-    REQUIRE(views_are_equal(diag_out,zint_f));
+
+    Field diag_calc = diag_out.clone();
+    auto field_v = diag_calc.get_view<Pack**>();
+
+    if (diag_type == "thickness")      Kokkos::deep_copy(field_v, dz_v);
+    else if (diag_type == "interface") Kokkos::deep_copy(field_v, zint_v);
+    else if (diag_type == "midpoint")  Kokkos::deep_copy(field_v, zmid_v);
+    diag_calc.sync_to_host();
+    REQUIRE(views_are_equal(diag_out,diag_calc));
   }
- 
+
   // Finalize the diagnostic
-  diag->finalize(); 
+  diag->finalize();
 
 } // run()
 
-TEST_CASE("vertical_layer_interface_test", "vertical_layer_interface_test]"){
+TEST_CASE("vertical_layer_test", "vertical_layer_test]"){
   // Run tests for both Real and Pack, and for (potentially) different pack sizes
   using scream::Real;
   using Device = scream::DefaultDevice;
@@ -171,11 +219,21 @@ TEST_CASE("vertical_layer_interface_test", "vertical_layer_interface_test]"){
 
   auto engine = scream::setup_random_test();
 
-  printf(" -> Number of randomized runs: %d\n\n", num_runs);
+  printf(" -> Number of randomized runs: %d, Pack<Real,%d> scalar type\n\n", num_runs, SCREAM_PACK_SIZE);
 
-  printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_PACK_SIZE);
+  printf(" -> Testing dz...");
   for (int irun=0; irun<num_runs; ++irun) {
-    run<Device>(engine);
+    run<Device>(engine, "thickness");
+  }
+  printf("ok!\n");
+  printf(" -> Testing z_int/geopotential_int...");
+  for (int irun=0; irun<num_runs; ++irun) {
+    run<Device>(engine, "interface", irun%2==0); // alternate from_sea_level=true/false
+  }
+  printf("ok!\n");
+  printf(" -> Testing z_mid/geopotential_mid...");
+  for (int irun=0; irun<num_runs; ++irun) {
+    run<Device>(engine, "midpoint", irun%2==0); // alternate from_sea_level=true/false
   }
   printf("ok!\n");
 

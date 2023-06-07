@@ -18,7 +18,7 @@ void HommeDynamics::rayleigh_friction_init()
   // If m_raytau0==0, then no Rayleigh friction is applied. Return.
   if (m_raytau0 == 0) return;
 
-  // Input file is read in 1-based indexing, convert 
+  // Input file is read in 1-based indexing, convert
   // to 0-based for computations
   m_rayk0 -= 1;
 
@@ -45,7 +45,7 @@ void HommeDynamics::rayleigh_friction_init()
   // locals for lambda captures to avoid issues on GPU
   auto otau = m_otau;
   auto rayk0 = m_rayk0;
-    
+
   Kokkos::parallel_for(KT::RangePolicy(0, npacks),
                        KOKKOS_LAMBDA (const int ilev) {
     const auto range_pack = ekat::range<Pack>(ilev*N);

@@ -38,11 +38,14 @@ set (HOMME_TEST_TIME_STEP 300)
 set (HOMME_THETA_FORM 1)
 set (HOMME_TTYPE 5)
 set (HOMME_SE_FTYPE 0)
+set (HOMME_TEST_TRANSPORT_ALG 0)
+set (HOMME_TEST_CUBED_SPHERE_MAP 0)
 
 # Hyperviscosity settings
 set (HOMME_TEST_HVSCALING 0)
 set (HOMME_TEST_HVS 1)
 set (HOMME_TEST_HVS_TOM 0)
+set (HOMME_TEST_HVS_Q 1)
 
 set (HOMME_TEST_NU 7e15)
 set (HOMME_TEST_NUDIV 1e15)
@@ -62,7 +65,7 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 
 # Ensure test input files are present in the data dir
 GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
-GetInputFile(cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc)
+GetInputFile(cam/topo/${EAMxx_tests_TOPO_FILE})
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if running with 2+ ranks configurations

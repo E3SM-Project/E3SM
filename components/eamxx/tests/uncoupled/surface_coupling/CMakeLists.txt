@@ -10,7 +10,7 @@ CreateUnitTest(surface_coupling surface_coupling.cpp "${NEED_LIBS}" LABELS ${TES
 
 # Ensure test input files are present in the data dir
 GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
-GetInputFile(cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc)
+GetInputFile(cam/topo/${EAMxx_tests_TOPO_FILE})
 
 ## Copy (and configure) yaml files needed by tests
 set (RUN_T0 2021-10-12-45000)

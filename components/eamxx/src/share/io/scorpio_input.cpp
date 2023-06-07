@@ -1,7 +1,8 @@
 #include "share/io/scorpio_input.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
+
+#include <ekat/util/ekat_string_utils.hpp>
 
 #include <memory>
 #include <numeric>
@@ -41,6 +42,17 @@ AtmosphereInput (const std::string& filename,
     names.push_back(f.name());
   }
   init(params,fm);
+}
+
+AtmosphereInput::
+~AtmosphereInput ()
+{
+  // In practice, this should always be true, but since we have a do-nothing default ctor,
+  // it is possible to create an instance without ever using it. Since finalize would
+  // attempt to close the pio file, we need to call it only if init happened.
+  if (m_inited_with_views || m_inited_with_fields) {
+    finalize();
+  }
 }
 
 void AtmosphereInput::
@@ -84,8 +96,8 @@ init (const ekat::ParameterList& params,
 
   EKAT_REQUIRE_MSG (host_views_1d.size()==layouts.size(),
       "Error! Input host views and layouts maps has different sizes.\n"
-      "       Input size: " + std::to_string(host_views_1d.size()) + "\n"
-      "       Expected size: " + std::to_string(m_fields_names.size()) + "\n");
+      "       host_views_1d size: " + std::to_string(host_views_1d.size()) + "\n"
+      "       layouts size: " + std::to_string(layouts.size()) + "\n");
 
   m_layouts = layouts;
   m_host_views_1d = host_views_1d;
@@ -97,9 +109,6 @@ init (const ekat::ParameterList& params,
     EKAT_REQUIRE_MSG (m_host_views_1d.count(it.first)==1,
         "Error! Input layouts and views maps do not store the same keys.\n");
   }
-
-  // Set the host views
-  set_views(host_views_1d,layouts);
 
   // Init scorpio internal structures
   init_scorpio_structures ();
@@ -311,29 +320,6 @@ void AtmosphereInput::read_variables (const int time_index)
   }
 } 
 
-void AtmosphereInput::
-set_views (const std::map<std::string,view_1d_host>& host_views_1d,
-           const std::map<std::string,FieldLayout>&  layouts)
-{
-  EKAT_REQUIRE_MSG (host_views_1d.size()==layouts.size(),
-      "Error! Input host views and layouts maps has different sizes.\n"
-      "       Input size: " + std::to_string(host_views_1d.size()) + "\n"
-      "       Expected size: " + std::to_string(m_fields_names.size()) + "\n");
-
-  m_layouts = layouts;
-  m_host_views_1d = host_views_1d;
-
-  // Loop over one of the two maps, store key in m_fields_names,
-  // and check that the two maps have the same keys
-  for (const auto& it : m_layouts) {
-    m_fields_names.push_back(it.first);
-    EKAT_REQUIRE_MSG (m_host_views_1d.count(it.first)==1,
-        "Error! Input layouts and views maps do not store the same keys.\n");
-  }
-
-  m_inited_with_views = true;
-}
-
 /* ---------------------------------------------------------- */
 void AtmosphereInput::finalize() 
 {
@@ -373,8 +359,15 @@ void AtmosphereInput::register_variables()
   const auto& fp_precision = "real";
   for (auto const& name : m_fields_names) {
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
-    auto vec_of_dims   = get_vec_of_dims(m_layouts.at(name));
-    auto io_decomp_tag = get_io_decomp(m_layouts.at(name));
+    const auto& layout = m_layouts.at(name);
+    auto vec_of_dims   = get_vec_of_dims(layout);
+    auto io_decomp_tag = get_io_decomp(layout);
+
+    for (size_t  i=0; i<vec_of_dims.size(); ++i) {
+      auto partitioned = m_io_grid->get_partitioned_dim_tag()==layout.tags()[i];
+      auto dimlen = partitioned ? m_io_grid->get_partitioned_dim_global_size() : layout.dims()[i];
+      scorpio::register_dimension(m_filename, vec_of_dims[i], vec_of_dims[i], dimlen, partitioned);
+    }
 
     // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO,
     // may need to delete this line when switching to full C++/C implementation.
@@ -385,8 +378,8 @@ void AtmosphereInput::register_variables()
     //  Currently the field_manager only stores Real variables so it is not an issue,
     //  but in the future if non-Real variables are added we will want to accomodate that.
     //TODO: Should be able to simply inquire from the netCDF the dimensions for each variable.
-    scorpio::get_variable(m_filename, name, name,
-                          vec_of_dims, fp_precision, io_decomp_tag);
+    scorpio::register_variable(m_filename, name, name,
+                               vec_of_dims, fp_precision, io_decomp_tag);
   }
 }
 

@@ -1,6 +1,5 @@
 set(SCREAM_CONTROL_SOURCES
   atmosphere_driver.cpp
-  fvphyshack.cpp
   atmosphere_surface_coupling_importer.cpp
   atmosphere_surface_coupling_exporter.cpp
   surface_coupling_utils.cpp

@@ -101,31 +101,24 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   ts0=timestamp();
 
   //Check that internal timestamp starts at same point as time in external file
-  int start_date=scorpio::get_attribute<int>(datafile,"start_date");
-  int start_time=scorpio::get_attribute<int>(datafile,"start_time");
-  int start_year=int(start_date/10000);
-  int start_month=int((start_date-start_year*10000)/100);
-  int start_day=int(start_date-start_year*10000-start_month*100);
-  int start_hour=int(start_time/10000);
-  int start_min=int((start_time-start_hour*10000)/100);
-  int start_sec=int(start_time-start_hour*10000-start_min*100);
+  auto case_t0 = scorpio::read_timestamp(datafile,"case_t0");
 
-  EKAT_REQUIRE_MSG(start_year==ts0.get_year(),
+  EKAT_REQUIRE_MSG(case_t0.get_year()==ts0.get_year(),
 		   "ERROR: The start year from the nudging file is "\
 		   "different than the internal simulation start year\n");
-  EKAT_REQUIRE_MSG(start_month==ts0.get_month(),
+  EKAT_REQUIRE_MSG(case_t0.get_month()==ts0.get_month(),
 		   "ERROR: The start month from the nudging file is "\
 		   "different than the internal simulation start month\n");
-  EKAT_REQUIRE_MSG(start_day==ts0.get_day(),
+  EKAT_REQUIRE_MSG(case_t0.get_day()==ts0.get_day(),
 		   "ERROR: The start day from the nudging file is "\
 		   "different than the internal simulation start day\n");
-  EKAT_REQUIRE_MSG(start_hour==ts0.get_hours(),
+  EKAT_REQUIRE_MSG(case_t0.get_hours()==ts0.get_hours(),
 		   "ERROR: The start hour from the nudging file is "\
 		   "different than the internal simulation start hour\n");
-  EKAT_REQUIRE_MSG(start_min==ts0.get_minutes(),
+  EKAT_REQUIRE_MSG(case_t0.get_minutes()==ts0.get_minutes(),
 		   "ERROR: The start minute from the nudging file is "\
 		   "different than the internal simulation start minute\n");
-  EKAT_REQUIRE_MSG(start_sec==ts0.get_seconds(),
+  EKAT_REQUIRE_MSG(case_t0.get_seconds()==ts0.get_seconds(),
 		   "ERROR: The start second from the nudging file is "\
 		   "different than the internal simulation start second\n");
 		   

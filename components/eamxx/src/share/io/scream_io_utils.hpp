@@ -2,7 +2,6 @@
 #define SCREAM_IO_UTILS_HPP
 
 #include "share/util/scream_time_stamp.hpp"
-#include "share/util/scream_time_stamp.hpp"
 
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
@@ -115,7 +114,7 @@ struct IOFileSpecs {
   std::string filename;
   int num_snapshots_in_file = 0;
   int max_snapshots_in_file;
-  bool file_is_full () const { return num_snapshots_in_file==max_snapshots_in_file; }
+  bool file_is_full () const { return num_snapshots_in_file>=max_snapshots_in_file; }
   // Adding number of MPI ranks to the filenamea is useful in testing, since we can run
   // multiple instances of the same test in parallel (with different number of ranks),
   // without the risk of them overwriting each other output.
