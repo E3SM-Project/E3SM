@@ -17,6 +17,8 @@
 
 namespace scream {
 
+using vos_type = std::vector<std::string>;
+using vor_type = std::vector<Real>;
 constexpr Real test_tol = std::numeric_limits<Real>::epsilon()*1e4;
 
 // Test function for prescribed values
@@ -49,8 +51,12 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
 { 
   // Create a grids manager on the fly
   ekat::ParameterList gm_params;
-  gm_params.set("number_of_global_columns",ncols);
-  gm_params.set("number_of_vertical_levels",1); // We don't care about levels for a surface only file
+  gm_params.set("grids_names",vos_type{"Point Grid"});
+  auto& pl = gm_params.sublist("Point Grid");
+  pl.set<std::string>("type","point_grid");
+  pl.set("aliases",vos_type{"Physics"});
+  pl.set("number_of_global_columns",ncols);
+  pl.set("number_of_vertical_levels",1); // We don't care about levels for a surface only file
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   gm->build_grids();
   // Create a fields manager on the fly with the appropriate fields and grid.
@@ -450,12 +456,12 @@ TEST_CASE("surface-coupling", "") {
   const auto t0_str = ts.get<std::string>("run_t0");
   const auto t0     = util::str_to_time_stamp(t0_str);
   const auto gmp    = ad_params.sublist("grids_manager");
-  const auto ncol_in = gmp.get<int>("number_of_global_columns");
+  const auto grid_name = gmp.get<vos_type>("grids_names");
+  const auto gdp    = gmp.sublist(grid_name[0]);
+  const auto ncol_in = gdp.get<int>("number_of_global_columns");
 
   // Set two export fields to be randomly set to a constant
   // This requires us to add a sublist to the parsed AD params yaml list.
-  using vos_type = std::vector<std::string>;
-  using vor_type = std::vector<Real>;
   std::uniform_real_distribution<Real> pdf_real_constant_data(0.0,1.0);
 
   auto& ap_params     = ad_params.sublist("atmosphere_processes");
