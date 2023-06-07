@@ -27,13 +27,6 @@ TimeInterpolation::TimeInterpolation(
   m_is_data_from_file = true;
 }
 /*-----------------------------------------------------------------------------------------------*/
-// Destructor
-TimeInterpolation::
-~TimeInterpolation ()
-{
-  finalize();
-}
-/*-----------------------------------------------------------------------------------------------*/
 void TimeInterpolation::finalize()
 {
   if (m_is_data_from_file) {
