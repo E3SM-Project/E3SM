@@ -32,9 +32,7 @@ if (SCREAM_ENABLE_MAM)
 
   # Normalize CMAKE_BUILD_TYPE.
   string(TOLOWER "${CMAKE_BUILD_TYPE}" lc_build_type)
-  if (${lc_build_type} STREQUAL "debug")
-    set(mam_build_type "Debug")
-  elseif(${lc_build_type} STREQUAL "release")
+  if(${lc_build_type} STREQUAL "release")
     set(mam_build_type "Release")
   else()
     set(mam_build_type "Debug") # when in doubt...
