@@ -173,30 +173,17 @@ class VALG(TestProperty):
                 self.cmake_args.append( ("EKAT_VALGRIND_SUPPRESSION_FILE", str(persistent_supp_file)) )
 
 ###############################################################################
-class CMC(TestProperty):
-###############################################################################
-
-    def __init__(self, _):
-        TestProperty.__init__(
-            self,
-            "cuda_mem_check",
-            "debug with cuda memcheck",
-            [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_ENABLE_CUDA_MEMCHECK", "True")],
-            uses_baselines=False,
-            on_by_default=False,
-            default_test_len="short"
-        )
-
-###############################################################################
 class CSM(TestProperty):
 ###############################################################################
 
     def __init__(self, _):
         TestProperty.__init__(
             self,
-            "compute_santizer_memcheck",
+            "compute_sanitizer_memcheck",
             "debug with compute sanitizer memcheck",
-            [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_ENABLE_COMPUTE_SANITIZER", "True")],
+            [("CMAKE_BUILD_TYPE", "Debug"),
+             ("EKAT_ENABLE_COMPUTE_SANITIZER", "True"),
+             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "--tool=memcheck")],
             uses_baselines=False,
             on_by_default=False,
             default_test_len="short"
@@ -209,11 +196,11 @@ class CSR(TestProperty):
     def __init__(self, _):
         TestProperty.__init__(
             self,
-            "compute_santizer_racecheck",
+            "compute_sanitizer_racecheck",
             "debug with compute sanitizer racecheck",
             [("CMAKE_BUILD_TYPE", "Debug"),
              ("EKAT_ENABLE_COMPUTE_SANITIZER", "True"),
-             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "--tool=racecheck")],
+             ("EKAT_COMPUTE_SANITIZER_OPTIONS", "'--tool=racecheck --racecheck-detect-level=error'")],
             uses_baselines=False,
             on_by_default=False,
             default_test_len="short"
@@ -226,7 +213,7 @@ class CSI(TestProperty):
     def __init__(self, _):
         TestProperty.__init__(
             self,
-            "compute_santizer_initcheck",
+            "compute_sanitizer_initcheck",
             "debug with compute sanitizer initcheck",
             [("CMAKE_BUILD_TYPE", "Debug"),
              ("EKAT_ENABLE_COMPUTE_SANITIZER", "True"),
@@ -243,7 +230,7 @@ class CSS(TestProperty):
     def __init__(self, _):
         TestProperty.__init__(
             self,
-            "compute_santizer_synccheck",
+            "compute_sanitizer_synccheck",
             "debug with compute sanitizer synccheck",
             [("CMAKE_BUILD_TYPE", "Debug"),
              ("EKAT_ENABLE_COMPUTE_SANITIZER", "True"),
@@ -368,7 +355,7 @@ class TestAllScream(object):
 
         # Make our test objects! Change mem to default mem-check test for current platform
         if "mem" in tests:
-            tests[tests.index("mem")] = "cmc" if self.on_cuda() else "valg"
+            tests[tests.index("mem")] = "csm" if self.on_cuda() else "valg"
         self._tests = test_factory(tests, self)
 
         if self._work_dir is not None:
