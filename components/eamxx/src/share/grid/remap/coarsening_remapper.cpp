@@ -274,14 +274,6 @@ do_register_field (const identifier_type& src, const identifier_type& tgt)
 void CoarseningRemapper::
 do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 {
-  EKAT_REQUIRE_MSG (
-      src.get_header().get_identifier().get_layout().rank()>1 ||
-      src.get_header().get_alloc_properties().get_padding()==0,
-      "Error! We don't support 2d scalar fields that are padded.\n");
-  EKAT_REQUIRE_MSG (
-      tgt.get_header().get_identifier().get_layout().rank()>1 ||
-      tgt.get_header().get_alloc_properties().get_padding()==0,
-      "Error! We don't support 2d scalar fields that are padded.\n");
   m_src_fields[ifield] = src;
   m_tgt_fields[ifield] = tgt;
 
@@ -377,8 +369,13 @@ void CoarseningRemapper::do_remap_fwd ()
 
   // TODO: Add check that if there are mask values they are either 1's or 0's for unmasked/masked.
 
+  // Helpef function, to establish if a field can be handled with packs
+  auto can_pack_field = [](const Field& f) {
+    const auto& ap = f.get_header().get_alloc_properties();
+    return ap.is_compatible<RPack<SCREAM_PACK_SIZE>>();
+  };
+
   // Loop over each field
-  constexpr auto can_pack = SCREAM_PACK_SIZE>1;
   for (int i=0; i<m_num_fields; ++i) {
     // First, perform the local mat-vec. Recall that in these y=Ax products,
     // x is the src field, and y is the overlapped tgt field.
@@ -386,28 +383,17 @@ void CoarseningRemapper::do_remap_fwd ()
     const auto& f_ov_tgt = m_ov_tgt_fields[i];
 
     const int mask_idx = m_field_idx_to_mask_idx[i];
+    const Field* mask_ptr = nullptr;
     if (mask_idx>0) {
       // Pass the mask to the local_mat_vec routine
-      auto mask = m_src_fields[mask_idx];
-      // Dispatch kernel with the largest possible pack size
-      const auto& src_ap = f_src.get_header().get_alloc_properties();
-      const auto& ov_tgt_ap = f_ov_tgt.get_header().get_alloc_properties();
-      if (can_pack && src_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
-                      ov_tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
-        local_mat_vec<SCREAM_PACK_SIZE>(f_src,f_ov_tgt,&mask);
-      } else {
-        local_mat_vec<1>(f_src,f_ov_tgt,&mask);
-      }
+      mask_ptr = &m_src_fields[mask_idx];
+    }
+
+    // If possible, dispatch kernel with SCREAM_PACK_SIZE
+    if (can_pack_field(f_src) and can_pack_field(f_ov_tgt)) {
+      local_mat_vec<SCREAM_PACK_SIZE>(f_src,f_ov_tgt,mask_ptr);
     } else {
-      // Dispatch kernel with the largest possible pack size
-      const auto& src_ap = f_src.get_header().get_alloc_properties();
-      const auto& ov_tgt_ap = f_ov_tgt.get_header().get_alloc_properties();
-      if (can_pack && src_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
-                      ov_tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
-        local_mat_vec<SCREAM_PACK_SIZE>(f_src,f_ov_tgt);
-      } else {
-        local_mat_vec<1>(f_src,f_ov_tgt);
-      }
+      local_mat_vec<1>(f_src,f_ov_tgt,mask_ptr);
     }
   }
 
@@ -433,8 +419,7 @@ void CoarseningRemapper::do_remap_fwd ()
       if (mask_idx>0) {
         // Then this field did use a mask
         const auto& mask = m_tgt_fields[mask_idx];
-        const auto& tgt_ap = f_tgt.get_header().get_alloc_properties();
-        if (can_pack && tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
+        if (can_pack_field(f_tgt)) {
           rescale_masked_fields<SCREAM_PACK_SIZE>(f_tgt,mask);
         } else {
           rescale_masked_fields<1>(f_tgt,mask);
@@ -468,8 +453,11 @@ rescale_masked_fields (const Field& x, const Field& mask) const
   switch (rank) {
     case 1:
     {
-      auto x_view =    x.get_view<      Real*>();
-      auto m_view = mask.get_view<const Real*>();
+      // Unlike get_view, get_strided_view returns a LayoutStride view,
+      // therefore allowing the 1d field to be a subfield of a 2d field
+      // along the 2nd dimension.
+      auto x_view =    x.get_strided_view<      Real*>();
+      auto m_view = mask.get_strided_view<const Real*>();
       Kokkos::parallel_for(RangePolicy(0,ncols),
                            KOKKOS_LAMBDA(const int& icol) {
         if (m_view(icol)>mask_threshold) {
@@ -556,11 +544,14 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
     //       loop to zero out y before the mat-vec.
     case 1:
     {
-      auto x_view = x.get_view<const Real*>();
-      auto y_view = y.get_view<      Real*>();
+      // Unlike get_view, get_strided_view returns a LayoutStride view,
+      // therefore allowing the 1d field to be a subfield of a 2d field
+      // along the 2nd dimension.
+      auto x_view = x.get_strided_view<const Real*>();
+      auto y_view = y.get_strided_view<      Real*>();
       view_1d<Real> mask_view;
       if (mask != nullptr) {
-        mask_view = mask->get_view<Real*>();
+        mask_view = mask->get_strided_view<Real*>();
       }
       Kokkos::parallel_for(RangePolicy(0,nrows),
                            KOKKOS_LAMBDA(const int& row) {
@@ -671,13 +662,15 @@ void CoarseningRemapper::pack_and_send ()
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
     const auto& f  = m_ov_tgt_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
-    const auto lt = get_layout_type(fl.tags());
     const auto f_pid_offsets = ekat::subview(m_send_f_pid_offsets,ifield);
 
-    switch (lt) {
-      case LayoutType::Scalar2D:
+    switch (fl.rank()) {
+      case 1:
       {
-        auto v = f.get_view<const Real*>();
+        // Unlike get_view, get_strided_view returns a LayoutStride view,
+        // therefore allowing the 1d field to be a subfield of a 2d field
+        // along the 2nd dimension.
+        auto v = f.get_strided_view<const Real*>();
         Kokkos::parallel_for(RangePolicy(0,num_send_gids),
                              KOKKOS_LAMBDA(const int& i){
           const int lid = lids_pids(i,0);
@@ -688,11 +681,11 @@ void CoarseningRemapper::pack_and_send ()
           buf (offset + lidpos) = v(lid);
         });
       } break;
-      case LayoutType::Vector2D:
+      case 2:
       {
         auto v = f.get_view<const Real**>();
-        const int ndims = fl.dim(1);
-        auto policy = ESU::get_default_team_policy(num_send_gids,ndims);
+        const int dim1 = fl.dim(1);
+        auto policy = ESU::get_default_team_policy(num_send_gids,dim1);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int i = team.league_rank();
@@ -701,37 +694,18 @@ void CoarseningRemapper::pack_and_send ()
           const int lidpos = i - pid_lid_start(pid);
           const int offset = f_pid_offsets(pid);
 
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,ndims),
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
                                [&](const int idim) {
-            buf(offset + lidpos*ndims + idim) = v(lid,idim);
+            buf(offset + lidpos*dim1 + idim) = v(lid,idim);
           });
         });
       } break;
-      case LayoutType::Scalar3D:
-      {
-        auto v = f.get_view<const Real**>();
-        const int nlevs = fl.dims().back();
-        auto policy = ESU::get_default_team_policy(num_send_gids,nlevs);
-        Kokkos::parallel_for(policy,
-                             KOKKOS_LAMBDA(const MemberType& team){
-          const int i = team.league_rank();
-          const int lid = lids_pids(i,0);
-          const int pid = lids_pids(i,1);
-          const int lidpos = i - pid_lid_start(pid);
-          const int offset = f_pid_offsets(pid);
-
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs),
-                               [&](const int ilev) {
-            buf(offset + lidpos*nlevs + ilev) = v(lid,ilev);
-          });
-        });
-      } break;
-      case LayoutType::Vector3D:
+      case 3:
       {
         auto v = f.get_view<const Real***>();
-        const int ndims = fl.dim(1);
-        const int nlevs = fl.dims().back();
-        auto policy = ESU::get_default_team_policy(num_send_gids,ndims*nlevs);
+        const int dim1 = fl.dim(1);
+        const int dim2 = fl.dim(2);
+        auto policy = ESU::get_default_team_policy(num_send_gids,dim1*dim2);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int i = team.league_rank();
@@ -740,11 +714,11 @@ void CoarseningRemapper::pack_and_send ()
           const int lidpos = i - pid_lid_start(pid);
           const int offset = f_pid_offsets(pid);
 
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,ndims*nlevs),
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2),
                                [&](const int idx) {
-            const int idim = idx / nlevs;
-            const int ilev = idx % nlevs;
-            buf(offset + lidpos*ndims*nlevs + idim*nlevs + ilev) = v(lid,idim,ilev);
+            const int idim = idx / dim2;
+            const int ilev = idx % dim2;
+            buf(offset + lidpos*dim1*dim2 + idim*dim2 + ilev) = v(lid,idim,ilev);
           });
         });
       } break;
@@ -795,15 +769,16 @@ void CoarseningRemapper::recv_and_unpack ()
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
           auto& f  = m_tgt_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
-    const auto lt = get_layout_type(fl.tags());
     const auto f_pid_offsets = ekat::subview(m_recv_f_pid_offsets,ifield);
 
-
     f.deep_copy(0);
-    switch (lt) {
-      case LayoutType::Scalar2D:
+    switch (fl.rank()) {
+      case 1:
       {
-        auto v = f.get_view<Real*>();
+        // Unlike get_view, get_strided_view returns a LayoutStride view,
+        // therefore allowing the 1d field to be a subfield of a 2d field
+        // along the 2nd dimension.
+        auto v = f.get_strided_view<Real*>();
         Kokkos::parallel_for(RangePolicy(0,num_tgt_dofs),
                              KOKKOS_LAMBDA(const int& lid){
           const int recv_beg = recv_lids_beg(lid);
@@ -816,11 +791,11 @@ void CoarseningRemapper::recv_and_unpack ()
           }
         });
       } break;
-      case LayoutType::Vector2D:
+      case 2:
       {
         auto v = f.get_view<Real**>();
-        const int ndims = fl.dim(1);
-        auto policy = ESU::get_default_team_policy(num_tgt_dofs,ndims);
+        const int dim1 = fl.dim(1);
+        auto policy = ESU::get_default_team_policy(num_tgt_dofs,dim1);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int lid = team.league_rank();
@@ -829,42 +804,20 @@ void CoarseningRemapper::recv_and_unpack ()
           for (int irecv=recv_beg; irecv<recv_end; ++irecv) {
             const int pid = recv_lids_pidpos(irecv,0);
             const int lidpos = recv_lids_pidpos(irecv,1);
-            const int offset = f_pid_offsets(pid)+lidpos*ndims;
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,ndims),
+            const int offset = f_pid_offsets(pid)+lidpos*dim1;
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
                                  [&](const int idim) {
               v(lid,idim) += buf (offset + idim);
             });
           }
         });
       } break;
-      case LayoutType::Scalar3D:
-      {
-        auto v = f.get_view<Real**>();
-        const int nlevs = fl.dims().back();
-        auto policy = ESU::get_default_team_policy(num_tgt_dofs,nlevs);
-        Kokkos::parallel_for(policy,
-                             KOKKOS_LAMBDA(const MemberType& team){
-          const int lid = team.league_rank();
-          const int recv_beg = recv_lids_beg(lid);
-          const int recv_end = recv_lids_end(lid);
-          for (int irecv=recv_beg; irecv<recv_end; ++irecv) {
-            const int pid = recv_lids_pidpos(irecv,0);
-            const int lidpos = recv_lids_pidpos(irecv,1);
-            const int offset = f_pid_offsets(pid) + lidpos*nlevs;
-
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs),
-                                 [&](const int ilev) {
-              v(lid,ilev) += buf (offset + ilev);
-            });
-          }
-        });
-      } break;
-      case LayoutType::Vector3D:
+      case 3:
       {
         auto v = f.get_view<Real***>();
-        const int ndims = fl.dim(1);
-        const int nlevs = fl.dims().back();
-        auto policy = ESU::get_default_team_policy(num_tgt_dofs,nlevs*ndims);
+        const int dim1 = fl.dim(1);
+        const int dim2 = fl.dims().back();
+        auto policy = ESU::get_default_team_policy(num_tgt_dofs,dim2*dim1);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int lid = team.league_rank();
@@ -873,13 +826,13 @@ void CoarseningRemapper::recv_and_unpack ()
           for (int irecv=recv_beg; irecv<recv_end; ++irecv) {
             const int pid = recv_lids_pidpos(irecv,0);
             const int lidpos = recv_lids_pidpos(irecv,1);
-            const int offset = f_pid_offsets(pid) + lidpos*ndims*nlevs;
+            const int offset = f_pid_offsets(pid) + lidpos*dim1*dim2;
 
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs*ndims),
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim2*dim1),
                                  [&](const int idx) {
-              const int idim = idx / nlevs;
-              const int ilev = idx % nlevs;
-              v(lid,idim,ilev) += buf (offset + idim*nlevs + ilev);
+              const int idim = idx / dim2;
+              const int ilev = idx % dim2;
+              v(lid,idim,ilev) += buf (offset + idim*dim2 + ilev);
             });
           }
         });
