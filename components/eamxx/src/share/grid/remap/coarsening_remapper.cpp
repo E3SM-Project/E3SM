@@ -59,9 +59,9 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   const std::string val_decomp_tag = "coarsening_remapper::constructor_real_nnz" + std::to_string(nlweights);
 
   scorpio::register_file(map_file,scorpio::FileMode::Read);
-  scorpio::get_variable(map_file, "row", "row", {"n_s"}, "int", idx_decomp_tag);
-  scorpio::get_variable(map_file, "col", "col", {"n_s"}, "int", idx_decomp_tag);
-  scorpio::get_variable(map_file, "S",   "S",   {"n_s"}, "real", val_decomp_tag);
+  scorpio::register_variable(map_file, "row", "row", {"n_s"}, "int", idx_decomp_tag);
+  scorpio::register_variable(map_file, "col", "col", {"n_s"}, "int", idx_decomp_tag);
+  scorpio::register_variable(map_file, "S",   "S",   {"n_s"}, "real", val_decomp_tag);
   scorpio::set_dof(map_file,"row",nlweights,dofs_offsets.data());
   scorpio::set_dof(map_file,"col",nlweights,dofs_offsets.data());
   scorpio::set_dof(map_file,"S",nlweights,dofs_offsets.data());
@@ -916,8 +916,8 @@ get_my_triplets_gids (const std::string& map_file,
   std::vector<gid_t> cols(nlweights);
   std::vector<gid_t> rows(nlweights); // Needed to calculate min_dof
   const std::string idx_decomp_tag = "coarsening_remapper::get_my_triplet_gids_int_dim" + std::to_string(nlweights);
-  scorpio::get_variable(map_file, "col", "col", {"n_s"}, "int", idx_decomp_tag);
-  scorpio::get_variable(map_file, "row", "row", {"n_s"}, "int", idx_decomp_tag);
+  scorpio::register_variable(map_file, "col", "col", {"n_s"}, "int", idx_decomp_tag);
+  scorpio::register_variable(map_file, "row", "row", {"n_s"}, "int", idx_decomp_tag);
   std::vector<scorpio::offset_t> dofs_offsets(nlweights);
   std::iota(dofs_offsets.begin(),dofs_offsets.end(),offset);
   scorpio::set_dof(map_file,"col",nlweights,dofs_offsets.data());

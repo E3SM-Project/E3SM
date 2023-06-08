@@ -22,7 +22,7 @@
 // find blocks that eventually should be removed in favor of a design that
 // accounts for pg2. Some blocks may turn out to be unnecessary, and I simply
 // didn't realize I could do without the workaround.
-#include "control/fvphyshack.hpp"
+#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 
 #include <fstream>
 
@@ -124,16 +124,12 @@ set_params(const ekat::ParameterList& atm_params)
 
   m_ad_status |= s_params_set;
 
-#ifdef SCREAM_CIME_BUILD
   const auto pg_type = "PG2";
-  fvphyshack = m_atm_params.sublist("grids_manager").get<std::string>("physics_grid_type") == pg_type;
+  fvphyshack = m_atm_params.sublist("grids_manager").get<std::string>("physics_grid_type", "None") == pg_type;
   if (fvphyshack) {
-    // See the [rrtmgp active gases] note in dynamics/homme/atmosphere_dynamics_fv_phys.cpp.
+    // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
     fv_phys_rrtmgp_active_gases_init(m_atm_params);
   }
-#else
-  fvphyshack = false;
-#endif
 }
 
 void AtmosphereDriver::
@@ -595,9 +591,10 @@ void AtmosphereDriver::initialize_output_managers () {
 
   auto& io_params = m_atm_params.sublist("Scorpio");
 
-  // IMPORTANT: create model restart OutputManager first! This OM will be able to
-  // retrieve the original simulation start date, which we later pass to the
-  // OM of all the requested outputs.
+  // IMPORTANT: create model restart OutputManager first! This OM will be in charge
+  // of creating rpointer.atm, while other OM's will simply append to it.
+  // If this assumption is not verified, we must always append to rpointer, which
+  // can make the rpointer file a bit confusing.
 
   // Check for model restart output
   ekat::ParameterList checkpoint_params;
@@ -605,7 +602,6 @@ void AtmosphereDriver::initialize_output_managers () {
   checkpoint_params.set("Frequency",-1);
   if (io_params.isSublist("model_restart")) {
     auto restart_pl = io_params.sublist("model_restart");
-    // Signal that this is not a normal output, but the model restart one
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
     if (fvphyshack) {
@@ -670,10 +666,8 @@ initialize_fields ()
   start_timer("EAMxx::init");
   start_timer("EAMxx::initialize_fields");
 
-#ifdef SCREAM_CIME_BUILD
-  // See the [rrtmgp active gases] note in dynamics/homme/atmosphere_dynamics_fv_phys.cpp.
+  // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
   if (fvphyshack) fv_phys_rrtmgp_active_gases_set_restart(m_case_t0 < m_run_t0);
-#endif
 
   // See if we need to print a DAG. We do this first, cause if any input
   // field is missing from the initial condition file, an error will be thrown.

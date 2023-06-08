@@ -11,6 +11,7 @@
 #include "physics/ml_correction/eamxx_ml_correction_process_interface.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/scream_session.hpp"
 
 namespace scream {
 TEST_CASE("ml_correction-stand-alone", "") {
@@ -41,7 +42,7 @@ TEST_CASE("ml_correction-stand-alone", "") {
 
   ad.initialize(atm_comm, ad_params, t0);
 
-  const auto &grid      = ad.get_grids_manager()->get_grid("Point Grid");
+  const auto &grid      = ad.get_grids_manager()->get_grid("Physics");
   const auto &field_mgr = *ad.get_field_mgr(grid->name());
 
   int num_cols = grid->get_num_local_dofs();
@@ -62,6 +63,8 @@ TEST_CASE("ml_correction-stand-alone", "") {
   reference += 0.1;
   Real reference2 = qv(1, 30);
   reference2 += 0.1;
+  int fpe_mask = ekat::get_enabled_fpes();
+  ekat::disable_all_fpes();  // required for importing numpy
   pybind11::scoped_interpreter guard{};
   pybind11::module sys = pybind11::module::import("sys");
   sys.attr("path").attr("insert")(1, CUSTOM_SYS_PATH);
@@ -71,6 +74,7 @@ TEST_CASE("ml_correction-stand-alone", "") {
           num_cols * num_levs, qv.data(), py::str{}),
       num_cols, num_levs);
   py::gil_scoped_release no_gil;
+  ekat::enable_fpes(fpe_mask);
   REQUIRE(qv(1, 10) == reference);   // This is the one that is modified
   REQUIRE(qv(1, 30) != reference2);  // This one should be unchanged
   ad.finalize();

@@ -161,7 +161,7 @@ set_pressure_levels(const std::string& map_file) {
   std::vector<scorpio::offset_t> dofs_offsets(m_num_remap_levs);
   std::iota(dofs_offsets.begin(),dofs_offsets.end(),0);
   const std::string idx_decomp_tag = "vertical_remapper::" + std::to_string(m_num_remap_levs);
-  scorpio::get_variable(map_file, "p_levs", "p_levs", {"nlevs"}, "real", idx_decomp_tag);
+  scorpio::register_variable(map_file, "p_levs", "p_levs", {"nlevs"}, "real", idx_decomp_tag);
   scorpio::set_dof(map_file,"p_levs",m_num_remap_levs,dofs_offsets.data());
   scorpio::set_decomp(map_file);
   scorpio::grid_read_data_array(map_file,"p_levs",-1,remap_pres_scal.data(),remap_pres_scal.size());

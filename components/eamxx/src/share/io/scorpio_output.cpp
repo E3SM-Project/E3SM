@@ -4,6 +4,7 @@
 #include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/remap/vertical_remapper.hpp"
 #include "share/util/scream_timing.hpp"
+#include "share/field/field_utils.hpp"
 
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
@@ -285,18 +286,17 @@ void AtmosphereOutput::init()
 
   // Now that the fields have been gathered register the local views which will be used to determine output data to be written.
   register_views();
+}
 
-
-} // init
-/*-----*/
 void AtmosphereOutput::
 run (const std::string& filename,
-     const bool is_write_step,
+     const bool output_step, const bool checkpoint_step,
      const int nsteps_since_last_output,
      const bool allow_invalid_fields)
 {
   // If we do INSTANT output, but this is not an write step,
   // we can immediately return
+  const bool is_write_step = output_step or checkpoint_step;
   if (not is_write_step and m_avg_type==OutputAvgType::Instant) {
     return;
   }
@@ -449,7 +449,7 @@ run (const std::string& filename,
     }
 
     if (is_write_step) {
-      if (avg_type==OutputAvgType::Average) {
+      if (output_step and avg_type==OutputAvgType::Average) {
         // Divide by steps count only when the summation is complete
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
           data[i] /= nsteps_since_last_output;
@@ -957,78 +957,59 @@ void AtmosphereOutput::
 create_diagnostic (const std::string& diag_field_name) {
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
 
+  // Add empty entry for this map, so .at(..) always works
+  m_diag_depends_on_diags[diag_field_name].resize(0);
+
   // Construct a diagnostic by this name
   ekat::ParameterList params;
   std::string diag_name;
 
-  // If the diagnostic is $field@lev$N/$field_bot/$field_top,
+  // If the diagnostic is one of
+  //  - ${field_name}_at_lev_${N}     <- interface fields still use "_lev_"
+  //  - ${field_name}_at_model_bot
+  //  - ${field_name}_at_model_top
+  //  - ${field_name}_at_${M}X
+  // where M/N are numbers (N integer), X=Pa, hPa, or mb
   // then we need to set some params
-  auto tokens = ekat::split(diag_field_name,'@');
-  auto last = tokens.back();
+  auto tokens = ekat::split(diag_field_name,"_at_");
+  EKAT_REQUIRE_MSG (tokens.size()==1 || tokens.size()==2,
+      "Error! Unexpected diagnostic name: " + diag_field_name + "\n");
 
-  // FieldAtLevel          follows convention variable@lev_N (where N is some integer)
-  // FieldAtPressureLevel follows convention variable@999mb (where 999 is some integer)
-  auto lev_and_idx = ekat::split(last,'_');
-  auto pos = lev_and_idx[0].find_first_not_of("0123456789");
-  auto lev_str = lev_and_idx[0].substr(pos);
-
-  if (last=="tom" || last=="bot" || lev_str=="lev") {
-    // Diagnostic is a horizontal slice at a specific level
-    diag_name = "FieldAtLevel";
-    tokens.pop_back();
-    auto fname = ekat::join(tokens,"_");
-    // If the field is itself a diagnostic, make sure it's built
-    if (diag_factory.has_product(fname) and
-        m_diagnostics.count(fname)==0) {
-      create_diagnostic(fname);
+  if (tokens.size()==2) {
+    // If the field is itself a diagnostic, ensure that diag
+    // is already created before we handle this one
+    const auto& fname = tokens.front();
+    if (diag_factory.has_product(fname)) {
+      if (m_diagnostics.count(fname)==0) {
+        create_diagnostic(fname);
+      }
       m_diag_depends_on_diags[diag_field_name].push_back(fname);
-    } else {
-      m_diag_depends_on_diags[diag_field_name].resize(0);
     }
-    auto fid = get_field(fname,"sim").get_header().get_identifier();
-    params.set("Field Name", fname);
-    params.set("Grid Name",fid.get_grid_name());
-    params.set("Field Layout",fid.get_layout());
-    params.set("Field Units",fid.get_units());
 
-    // If last is bot or top, will simply use that
-    params.set("Field Level", lev_and_idx.back());
-  } else if (lev_str=="mb" || lev_str=="hPa" || lev_str=="Pa") {
-    // Diagnostic is a horizontal slice at a specific pressure level
-    diag_name = "FieldAtPressureLevel";
-    auto pres_str = lev_and_idx[0].substr(0,pos);
-    auto pres_units = lev_and_idx[0].substr(pos);
-    auto pres_level = std::stoi(pres_str);
-    // Convert pressure level to Pa, the units of pressure in the simulation
-    if (pres_units=="mb" || pres_units=="hPa") {
-      pres_level *= 100;
-    }
-    tokens.pop_back();
-    auto fname = ekat::join(tokens,"_");
-    // If the field is itself a diagnostic, make sure it's built
-    if (diag_factory.has_product(fname) and
-        m_diagnostics.count(fname)==0) {
-      create_diagnostic(fname);
-      m_diag_depends_on_diags[diag_field_name].push_back(fname);
-    } else {
-      m_diag_depends_on_diags[diag_field_name].resize(0);
-    }
-    auto fid = get_field(fname,"sim").get_header().get_identifier();
-    params.set("Field Name", fname);
-    params.set("Grid Name",fid.get_grid_name());
-    params.set("Field Layout",fid.get_layout());
-    params.set("Field Units",fid.get_units());
-    params.set<double>("Field Target Pressure", pres_level);
+    const auto& f = get_field(fname,"sim");
+    params.set("Field",f);
+    params.set("Field Level Location", tokens[1]);
     params.set<double>("mask_value",m_fill_value);
+    // FieldAtLevel         follows convention variable_at_levN (where N is some integer)
+    // FieldAtPressureLevel follows convention variable_at_999XYZ (where 999 is some integer, XYZ string units)
+    diag_name = tokens[1].find_first_of("0123456789.")==0 ? "FieldAtPressureLevel" : "FieldAtLevel";
   } else {
     diag_name = diag_field_name;
-    m_diag_depends_on_diags[diag_field_name].resize(0);
+  }
+
+  // These fields are special case of VerticalLayer diagnostic.
+  // The diagnostics requires the names be given as param value.
+  if (diag_name == "z_int" or diag_name == "geopotential_int" or
+      diag_name == "z_mid" or diag_name == "geopotential_mid" or
+      diag_name == "dz") {
+    params.set<std::string>("diag_name", diag_name);
   }
 
   // Create the diagnostic
   auto diag = diag_factory.create(diag_name,m_comm,params);
   diag->set_grids(m_grids_manager);
   m_diagnostics.emplace(diag_field_name,diag);
+
   // When using remappers with certain diagnostics the get_field command can be called with both the diagnostic
   // name as saved inside the diagnostic and with the name as it is given in the output control file.  If it is
   // the case that these names don't match we add their pairings to the alternate name map.

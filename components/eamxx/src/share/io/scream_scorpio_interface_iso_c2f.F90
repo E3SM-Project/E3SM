@@ -38,6 +38,24 @@ contains
     endif
   end function get_file_ncid_c2f
 !=====================================================================!
+  function get_file_mode_c2f(filename_in) result(mode) bind(c)
+    use scream_scorpio_interface, only : lookup_pio_atm_file, pio_atm_file_t
+
+    type(c_ptr), intent(in)         :: filename_in
+
+    type(pio_atm_file_t), pointer :: atm_file
+    character(len=256)      :: filename
+    integer(kind=c_int)     :: mode
+    logical :: found
+
+    call convert_c_string(filename_in,filename)
+    call lookup_pio_atm_file(filename,atm_file,found)
+    if (found) then
+      mode = atm_file%purpose
+    else
+      mode = 0
+    endif
+  end function get_file_mode_c2f
   function is_file_open_c2f(filename_in,purpose) result(res) bind(c)
     use scream_scorpio_interface, only : lookup_pio_atm_file, pio_atm_file_t
 
@@ -52,7 +70,7 @@ contains
     call convert_c_string(filename_in,filename)
     call lookup_pio_atm_file(filename,atm_file,found)
     if (found) then
-      res = LOGICAL(purpose .eq. 0 .or. atm_file%purpose .eq. purpose,kind=c_bool)
+      res = LOGICAL(purpose .lt. 0 .or. atm_file%purpose .eq. purpose,kind=c_bool)
     else
       res = .false.
     endif
@@ -123,35 +141,6 @@ contains
     call eam_update_time(trim(filename),time)
 
   end subroutine pio_update_time_c2f
-!=====================================================================!
-  subroutine get_variable_c2f(filename_in, shortname_in, longname_in, numdims, var_dimensions_in, dtype, pio_decomp_tag_in) bind(c)
-    use scream_scorpio_interface, only : get_variable
-    type(c_ptr), intent(in)                :: filename_in
-    type(c_ptr), intent(in)                :: shortname_in
-    type(c_ptr), intent(in)                :: longname_in
-    integer(kind=c_int), value, intent(in) :: numdims
-    type(c_ptr), intent(in)                :: var_dimensions_in(numdims)
-    integer(kind=c_int), value, intent(in) :: dtype
-    type(c_ptr), intent(in)                :: pio_decomp_tag_in
-
-    character(len=256) :: filename
-    character(len=256) :: shortname
-    character(len=256) :: longname
-    character(len=256) :: var_dimensions(numdims)
-    character(len=256) :: pio_decomp_tag
-    integer            :: ii
-
-    call convert_c_string(filename_in,filename)
-    call convert_c_string(shortname_in,shortname)
-    call convert_c_string(longname_in,longname)
-    call convert_c_string(pio_decomp_tag_in,pio_decomp_tag)
-    do ii = 1,numdims
-      call convert_c_string(var_dimensions_in(ii), var_dimensions(ii))
-    end do
-
-    call get_variable(filename,shortname,longname,numdims,var_dimensions,dtype,pio_decomp_tag)
-
-  end subroutine get_variable_c2f
 !=====================================================================!
   subroutine register_variable_c2f(filename_in, shortname_in, longname_in, &
                                    units_in, numdims, var_dimensions_in,   &
@@ -278,6 +267,16 @@ contains
     call convert_c_string(filename_in,filename)
     call eam_pio_enddef(filename)
   end subroutine eam_pio_enddef_c2f
+!=====================================================================!
+  subroutine eam_pio_redef_c2f(filename_in) bind(c)
+    use scream_scorpio_interface, only : eam_pio_redef
+    type(c_ptr), intent(in) :: filename_in
+
+    character(len=256)      :: filename
+
+    call convert_c_string(filename_in,filename)
+    call eam_pio_redef(filename)
+  end subroutine eam_pio_redef_c2f
 !=====================================================================!
   subroutine convert_c_string(c_string_ptr,f_string)
     use iso_c_binding, only: c_f_pointer, C_NULL_CHAR

@@ -10,7 +10,7 @@ time_stepping:
 
 initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
-  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   surf_evap: 0.0
   surf_sens_flux: 0.0
   precip_liq_surf_mass: 0.0
@@ -49,5 +49,5 @@ grids_manager:
 
 # The parameters for I/O control
 Scorpio:
-  output_yaml_files: ["homme_shoc_cld_spa_p3_rrtmgp_output.yaml","homme_shoc_cld_spa_p3_rrtmgp_diagnostics.yaml"]
+  output_yaml_files: ["homme_shoc_cld_spa_p3_rrtmgp_output.yaml"]
 ...

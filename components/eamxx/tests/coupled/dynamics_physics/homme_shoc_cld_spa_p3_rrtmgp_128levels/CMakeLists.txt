@@ -38,11 +38,14 @@ set (HOMME_TEST_TIME_STEP 300)
 set (HOMME_THETA_FORM 1)
 set (HOMME_TTYPE 5)
 set (HOMME_SE_FTYPE 0)
+set (HOMME_TEST_TRANSPORT_ALG 0)
+set (HOMME_TEST_CUBED_SPHERE_MAP 0)
 
 # Hyperviscosity settings
 set (HOMME_TEST_HVSCALING 0)
 set (HOMME_TEST_HVS 1)
 set (HOMME_TEST_HVS_TOM 0)
+set (HOMME_TEST_HVS_Q 1)
 
 set (HOMME_TEST_NU 7e15)
 set (HOMME_TEST_NUDIV 1e15)
@@ -64,7 +67,7 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 set (TEST_INPUT_FILES
   scream/init/spa_file_unified_and_complete_ne4_20220428.nc
   scream/init/${EAMxx_tests_IC_FILE_128lev}
-  cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
+  cam/topo/${EAMxx_tests_TOPO_FILE}
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(${file})

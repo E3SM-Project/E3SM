@@ -28,8 +28,8 @@ def get_hash_lines(fn):
     rlns = rlns.stdout.decode().split('\n')
     lns = []
     if len(rlns) == 0: return lns
-    pos = rlns[0].find('exxhash')
     for rln in rlns:
+        pos = rln.find('exxhash')
         lns.append(rln[pos:])
     return lns
 
@@ -86,13 +86,23 @@ def main(case_dir):
         return False
     diffs = diff(lns[0], lns[1])
 
-    if len(diffs) > 0:
+    # Flushed prints to e3sm.log can sometimes conflict with other
+    # output. Permit up to 'thr' diffs so we don't fail due to badly printed
+    # lines. This isn't a big loss in checking because an ERS_Ln22 second run
+    # writes > 1000 hash lines, and a true loss of BFBness is nearly certain to
+    # propagate to a large number of subsequent hashes.
+    thr = 5
+    if len(lns[0]) < 100: thr = 0
+
+    ok = True
+    if len(diffs) > thr:
         print('DIFF')
         print(diffs[-10:])
+        ok = False
     else:
         print('OK')
         
-    return len(diffs) == 0
+    return ok
 
 case_dir = sys.argv[1]
 sys.exit(0 if main(case_dir) else 1)
