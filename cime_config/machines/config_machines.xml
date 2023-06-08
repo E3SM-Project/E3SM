@@ -1492,7 +1492,6 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
 
     <environment_variables>
-      <env name="CLDERA_PATH" compiler="intel">/projects/cldera/cldera-tools/install/intel</env>
       <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
       <env name="NETCDF_INCLUDES">$ENV{SEMS_NETCDF_ROOT}/include</env>
       <env name="NETCDF_LIBS">$ENV{SEMS_NETCDF_ROOT}/lib</env>
@@ -1500,6 +1499,9 @@
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+    </environment_variables>
+    <environment_variables compiler="intel">
+      <env name="CLDERA_PATH">/projects/cldera/cldera-tools/install/intel</env>
     </environment_variables>
   </machine>
 
