@@ -67,7 +67,8 @@ if (SCREAM_ENABLE_MAM)
                       BUILD_COMMAND make -j
                       LOG_BUILD TRUE
                       INSTALL_COMMAND make install
-                      LOG_INSTALL TRUE)
+                      LOG_INSTALL TRUE
+                      BUILD_ALWAYS TRUE)
   add_library(haero STATIC IMPORTED GLOBAL)
   set_target_properties(haero PROPERTIES IMPORTED_LOCATION ${HAERO_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libhaero.a)
 
@@ -90,7 +91,8 @@ if (SCREAM_ENABLE_MAM)
                       BUILD_COMMAND make -j
                       LOG_BUILD TRUE
                       INSTALL_COMMAND make install
-                      LOG_INSTALL TRUE)
+                      LOG_INSTALL TRUE
+                      BUILD_ALWAYS TRUE)
   add_library(mam4xx STATIC IMPORTED GLOBAL)
   set_target_properties(mam4xx PROPERTIES IMPORTED_LOCATION ${MAM4XX_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libmam4xx.a)
   # Bring in MAM4xx-related targets by including the generated mam4xx.cmake
