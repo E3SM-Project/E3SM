@@ -83,7 +83,7 @@ SPECIES
  End Solution
 
  Fixed
-   M, N2, O2, H2O, H2, CH4, cnst_NO3, cnst_OH
+   M, N2, O2, H2O, H2, CH4, prsd_NO3, prsd_OH
  End Fixed
 
  Col-int

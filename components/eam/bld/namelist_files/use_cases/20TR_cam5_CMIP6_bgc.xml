@@ -125,6 +125,8 @@
 <tracer_cnst_type    >INTERP_MISSING_MONTHS</tracer_cnst_type>
 <tracer_cnst_file    >oxid_1.9x2.5_L26_1850-2015_c20181106.nc</tracer_cnst_file>
 <tracer_cnst_filelist>''</tracer_cnst_filelist>
+<tracer_cnst_datapath>atm/cam/chem/methane</tracer_cnst_datapath>
+<tracer_cnst_specifier>'CH4','prsd_NO3:NO3', 'prsd_OH:OH'</tracer_cnst_specifier>
 
 <!-- prescribed methane  -->
 <prescribed_ghg_file      >ch4_oxid_1.9x2.5_L26_1990-1999clim.c090804.nc</prescribed_ghg_file>
