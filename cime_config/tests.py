@@ -47,7 +47,6 @@ _TESTS = {
             "ERS.f09_g16.I1850GSWCNPRDCTCBC.elm-vstrd",
             "ERS.f19_g16.I1850GSWCNPECACNTBC.elm-eca_f19_g16_I1850GSWCNPECACNTBC",
             "ERS.f19_g16.I20TRGSWCNPECACNTBC.elm-eca_f19_g16_I20TRGSWCNPECACNTBC",
-            "ERS.f19_g16.I1850GSWCNPRDCTCBC.elm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.elm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
             )
         },
@@ -60,33 +59,41 @@ _TESTS = {
             )
         },
 
+    "e3sm_land_debug" : {
+        "time"  : "0:45:00",
+        "tests" : (
+            "ERS_D.f19_f19.IELM.elm-ic_f19_f19_ielm",
+            "ERS_D.f09_g16.I1850ELMCN",
+            "ERS_D.ne11_oQU240.I20TRELM",
+            "SMS_Ly2_P1x1_D.1x1_smallvilleIA.IELMCNCROP.elm-lulcc_sville",
+            "ERS_D.f19_g16.I1850GSWCNPRDCTCBC.elm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
+            "ERS_D.f09_f09.IELM.elm-solar_rad",
+            "ERS_D.f09_f09.IELM.elm-koch_snowflake",
+            "SMS_Ld20_D.f45_f45.IELMFATES.elm-fates_rd"
+            )
+        },
+
+
     "e3sm_land_developer" : {
         "share" : True,
         "time"  : "0:45:00",
-        "inherit" : ("e3sm_mosart_developer", "e3sm_mosart_exenoshare", "e3sm_land_exeshare", "e3sm_land_exenoshare"),
+        "inherit" : ("e3sm_mosart_developer", "e3sm_mosart_exenoshare", "e3sm_land_exeshare", "e3sm_land_exenoshare", "e3sm_land_debug"),
         "tests" : (
-            "ERS.f19_f19.IELM.elm-ic_f19_f19_ielm",
             "ERS.f19_f19.I1850ELMCN",
-            "ERS.f09_g16.I1850ELMCN",
             "ERS.f19_f19.I20TRELMCN",
             "SMS_Ld1.hcru_hcru.I1850CRUELMCN",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-force_netcdf_pio",
-            "SMS_Ld20.f45_f45.IELMFATES.elm-fates_rd",
             "SMS_Ld20.f45_f45.IELMFATES.elm-fates_eca",
             "SMS_Ld30.f45_f45.IELMFATES.elm-fates_satphen",
             "ERS.f19_g16.I1850ELM.elm-betr",
             "ERS.f19_g16.I1850ELM.elm-vst",
             "ERS.f09_g16.I1850ELMCN.elm-bgcinterface",
-            "ERS.ne11_oQU240.I20TRELM",
             "SMS.r05_r05.I1850ELMCN.elm-qian_1948",
-            "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-lulcc_sville",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-per_crop",
             "SMS.r05_r05.IELM.elm-topounit",
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
-            "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
-            "ERS.f09_f09.IELM.elm-solar_rad",
             "ERS.f09_f09.IELM.elm-lnd_rof_2way",
-            "ERS.f09_f09.IELM.elm-koch_snowflake"
+            "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features"
             )
         },
 
