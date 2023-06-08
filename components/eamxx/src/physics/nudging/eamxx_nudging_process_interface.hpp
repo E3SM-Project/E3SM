@@ -29,10 +29,10 @@ public:
   using NudgingFunc = nudging::NudgingFunctions;
   using mPack = ekat::Pack<Real,1>;
   using KT = KokkosTypes<DefaultDevice>;
-  
+
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
-  
+
   template <typename S>
   using view_2d = typename KT::template view_2d<S>;
 
@@ -59,7 +59,7 @@ public:
 
   //Update the time step
   void update_time_step(const int time_s);
-  
+
   //Time interpolation function
   void time_interpolation(const int time_s);
 
@@ -69,7 +69,7 @@ protected:
 #endif
 
   void run_impl        (const double dt);
-  
+
 protected:
 
   // The three main overrides for the subcomponent
@@ -78,25 +78,19 @@ protected:
 
   std::shared_ptr<const AbstractGrid>   m_grid;
   // Keep track of field dimensions and the iteration count
-  int m_num_cols; 
+  int m_num_cols;
   int m_num_levs;
   int m_num_src_levs;
-  int time_step_file;
-  std::string datafile;
-  std::map<std::string,view_1d_host<Real>> host_views;
-  std::map<std::string,FieldLayout>  layouts;
-  std::vector<std::string> m_fnames;
-  std::map<std::string,view_2d<Real>> fields_ext;
-  std::map<std::string,view_2d_host<Real>> fields_ext_h;
-  view_2d<Real> T_mid_ext;
-  view_2d<Real> p_mid_ext;
-  view_2d<Real> qv_ext;
-  view_2d<Real> u_ext;
-  view_2d<Real> v_ext;
-  TimeStamp ts0;
-  NudgingFunc::NudgingData NudgingData_bef;
-  NudgingFunc::NudgingData NudgingData_aft;
-  AtmosphereInput data_input;
+  int m_time_step_file;
+  std::string m_datafile;
+
+  std::map<std::string,view_2d<Real>> m_fields_ext;
+  std::map<std::string,view_2d_host<Real>> m_fields_ext_h;
+
+  TimeStamp m_ts0;
+  NudgingFunc::NudgingData m_NudgingData_bef;
+  NudgingFunc::NudgingData m_NudgingData_aft;
+  AtmosphereInput m_data_input;
 }; // class Nudging
 
 } // namespace scream
