@@ -862,7 +862,8 @@ contains
       !$acc parallel loop present(maxLevelEdgeTop, minLevelEdgeBot, cellsOnEdge, &
       !$acc    layerThickEdgeDrag, layerThickEdgeMean, layerThickness, vertViscTopOfEdge, normalVelocity, &
       !$acc    kineticEnergyCell, bottomDrag, vegetationManning, ssh, bottomDepth) &
-      !$acc    private(Nsurf, N, cell1, cell2, implicitCd, A, bTemp, C, m, rTemp, k)
+      !$acc    private(Nsurf, N, cell1, cell2, implicitCd, A, bTemp, C, m, rTemp, k, &
+      !$acc    columnThicknessDrag)
 #else
       !$omp do schedule(runtime)
 #endif
@@ -873,6 +874,14 @@ contains
 
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
+
+         if (thickEdgeDragChoice == thickEdgeDragHarMean) then
+           columnThicknessDrag = 2.0_RKIND * (ssh(cell1) + bottomDepth(cell1)) * &
+                                             (ssh(cell2) + bottomDepth(cell2)) / &
+                                 (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
+         else
+           columnThicknessDrag = 0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
+         endif
 
          ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
          if (config_use_vegetation_drag) then
@@ -968,7 +977,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_vmix_tend_implicit_spatially_variable_loglaw(forcingPool, dt, & !{{{
-                                         kineticEnergyCell, layerThickEdgeMean, &
+                                         kineticEnergyCell, layerThickEdgeDrag, layerThickEdgeMean, &
                                          normalVelocity, vertViscTopOfEdge, err)
 
       !-----------------------------------------------------------------
@@ -987,6 +996,7 @@ contains
          dt            !< Input: time step
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
+         layerThickEdgeDrag, &!< Input: thickness at edge for drag
          layerThickEdgeMean !< Input: mean thickness at edge
 
       !-----------------------------------------------------------------
@@ -1501,7 +1511,8 @@ contains
       case (dragTypeLogLaw)
 
         call ocn_vel_vmix_tend_implicit_spatially_variable_loglaw(forcingPool, dt, &
-          kineticEnergyCell, layerThickEdgeDrag, normalVelocity, vertViscTopOfEdge, err)
+          kineticEnergyCell, layerThickEdgeDrag, layerThickEdgeMean, normalVelocity, &
+          vertViscTopOfEdge, err)
 
       case (dragTypeVariable)
 
