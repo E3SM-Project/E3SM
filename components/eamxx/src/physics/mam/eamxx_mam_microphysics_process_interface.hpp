@@ -193,8 +193,12 @@ private:
                        const view_2d&     qv_dry,
                        const view_2d&     qc,
                        const view_2d&     n_qc,
+                       const view_2d&     qc_dry,
+                       const view_2d&     n_qc_dry,
                        const const_view_2d&     qi,
                        const const_view_2d&     n_qi,
+                       const view_2d&     qi_dry,
+                       const view_2d&     n_qi_dry,
                        const view_2d&     z_mid,
                        const view_2d&     z_iface,
                        const view_2d&     dz,
@@ -204,7 +208,8 @@ private:
                        const view_2d&           w_updraft,
                        const const_view_1d&     pblh,
                        const view_2d&     q_h2so4,
-                       const view_2d&     q_aitken_so4) {
+                       const view_2d&     q_aitken_so4,
+                       const view_2d&     n_aitken) {
       ncol_ = ncol;
       nlev_ = nlev;
       z_surf_ = z_surf;
@@ -215,8 +220,12 @@ private:
       qv_dry_ = qv_dry;
       qc_ = qc;
       n_qc_ = n_qc;
+      qc_dry_ = qc_dry;
+      n_qc_dry_ = n_qc_dry;
       qi_ = qi;
       n_qi_ = n_qi;
+      qi_dry_ = qi_dry;
+      n_qi_dry_ = n_qi_dry;
       z_mid_ = z_mid;
       z_iface_ = z_iface;
       dz_ = dz;
@@ -227,6 +236,7 @@ private:
       pblh_ = pblh;
       q_h2so4_ = q_h2so4;
       q_aitken_so4_ = q_aitken_so4;
+      n_aitken_ = n_aitken;
     } // set_variables
   }; // MAMMicrophysics::Preprocess
 

@@ -286,9 +286,9 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
   // hand views to our preprocess/postprocess functors
   preprocess_.set_variables(ncol_, nlev_, z_surf, convert_wet_dry_idx_d, T_mid,
-                            p_mid, qv, qv_dry, qc, n_qc, qi, n_qi,
-                            z_mid, z_iface, dz, pdel_, cldfrac, omega, w_updraft, pblh,
-                            q_h2so4_, q_aitken_so4_);
+                            p_mid, qv, qv_dry, qc, n_qc, qc_dry, n_qc_dry, qi, n_qi,
+                            qi_dry, n_qi_dry, z_mid, z_iface, dz, pdel_, cldfrac, omega, w_updraft, pblh,
+                            q_h2so4_, q_aitken_so4_, n_aitken_);
   postprocess_.set_variables(ncol_, nlev_, convert_wet_dry_idx_d, qv_dry,
                              q_h2so4_, q_aitken_so4_, n_aitken_);
 
