@@ -233,8 +233,8 @@ contains
    
      inv_ndx_cnst_o3 = get_inv_ndx( 'cnst_O3' ) ! prescribed O3 oxidant field
      inv_ndx_m       = get_inv_ndx( 'M' )        ! airmass.  Elsewhere this variable is known as m_ndx
-     inv_ndx_cnst_no3       = get_inv_ndx( 'cnst_NO3' )
-     inv_ndx_cnst_oh       = get_inv_ndx( 'cnst_OH' )
+     inv_ndx_cnst_no3       = get_inv_ndx( 'prsd_NO3' )
+     inv_ndx_cnst_oh       = get_inv_ndx( 'prsd_OH' )
      inv_ndx_cnst_ch4      = get_inv_ndx( 'CH4' )
      if ((inv_ndx_cnst_oh .gt. 0.0_r8) .and. (inv_ndx_cnst_no3 .gt. 0.0_r8)) then
         !write(iulog,*) 'prescribed_NO3_OH '
