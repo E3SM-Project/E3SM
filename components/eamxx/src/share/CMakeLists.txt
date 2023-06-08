@@ -34,6 +34,7 @@ set(SHARE_SRC
   util/scream_utils.cpp
   util/eamxx_time_interpolation.cpp
   util/scream_bfbhash.cpp
+  util/eamxx_time_interpolation.cpp
 )
 
 add_library(scream_share ${SHARE_SRC})

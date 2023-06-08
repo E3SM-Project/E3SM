@@ -23,7 +23,7 @@ public:
   TimeInterpolation() = default;
   TimeInterpolation(const grid_ptr_type& grid);
   TimeInterpolation(const grid_ptr_type& grid, const vos_type& list_of_files);
-  ~TimeInterpolation ();
+  ~TimeInterpolation () = default;
 
   // Running the interpolation
   void initialize_timestamps(const TimeStamp& ts_in);
