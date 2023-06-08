@@ -4840,6 +4840,8 @@ contains
        num2d = nlevsclass_fates*nlevage_fates
     case ('fates_levcan')
        num2d = nclmax_fates
+    case ('fates_levleaf')
+       num2d = nlevleaf_fates
     case ('fates_levcnlf')
        num2d = nlevleaf_fates * nclmax_fates
     case ('fates_levcnlfpf')
