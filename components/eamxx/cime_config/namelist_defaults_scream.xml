@@ -209,6 +209,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
 
+    <!-- For internal testing only -->
+    <testOnly inherit="atm_proc_base"/>
+
     <!-- Simple Prescribed Aerosols (SPA) -->
     <spa inherit="atm_proc_base">
       <spa_remap_file type="file">UNSET</spa_remap_file>
