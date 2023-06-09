@@ -83,7 +83,8 @@ if [ $skip_testing -eq 0 ]; then
       TAS_ARGS="${TAS_ARGS} --test-level nightly"
       # We never want to submit a fake run to the dashboard
       if [ -z "$SCREAM_FAKE_ONLY" ]; then
-          TAS_ARGS="${TAS_ARGS} --submit"
+          # Run EKAT tests for real nightly runs
+          TAS_ARGS="${TAS_ARGS} --submit -c EKAT_ENABLE_TESTS=ON"
       fi
   fi
 
@@ -95,24 +96,33 @@ if [ $skip_testing -eq 0 ]; then
       sa_fail=1
     fi
 
-    # Add a valgrind and coverage tests for mappy for nightlies
+    # Add memcheck and coverage tests for nightlies on specific machines
     if [[ $is_at_run == 0 ]]; then
       if [[ "$SCREAM_MACHINE" == "mappy" ]]; then
-        ./scripts/gather-all-data "./scripts/test-all-scream -t cov ${TAS_ARGS} -c SCREAM_TEST_SIZE=SHORT" -l -m $SCREAM_MACHINE
+        ./scripts/gather-all-data "./scripts/test-all-scream -t cov ${TAS_ARGS}" -l -m $SCREAM_MACHINE
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           cov_fail=1
         fi
       fi
 
-      # Add a memcheck test for mappy/weaver for nightlies
-      if [[ "$SCREAM_MACHINE" == "mappy" || "$SCREAM_MACHINE" == "weaver" ]]; then
-        ./scripts/gather-all-data "./scripts/test-all-scream -t dbg --mem-check ${TAS_ARGS} -c SCREAM_TEST_SIZE=SHORT" -l -m $SCREAM_MACHINE
+      # Add a memcheck test for mappy for nightlies
+      if [[ "$SCREAM_MACHINE" == "mappy" ]]; then
+        ./scripts/gather-all-data "./scripts/test-all-scream -t mem ${TAS_ARGS}" -l -m $SCREAM_MACHINE
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           memcheck_fail=1
         fi
       fi
+
+      if [[ "$SCREAM_MACHINE" == "weaver" ]]; then
+        ./scripts/gather-all-data "./scripts/test-all-scream -t cmc -t csr -t csi -t css ${TAS_ARGS}" -l -m $SCREAM_MACHINE
+        if [[ $? != 0 ]]; then
+          fails=$fails+1;
+          memcheck_fail=1
+        fi
+      fi
+
     fi
   else
     echo "SCREAM Stand-Alone tests were skipped, since the Github label 'AT: Skip Stand-Alone Testing' was found.\n"
@@ -142,6 +152,12 @@ if [ $skip_testing -eq 0 ]; then
         fails=$fails+1;
         scripts_fail=1
       fi
+
+      ./scripts/cime-nml-tests
+      if [[ $? != 0 ]]; then
+        fails=$fails+1;
+        scripts_fail=1
+      fi
     fi
 
     # We do NOT want to do any of the items below if we are running
@@ -165,7 +181,7 @@ if [ $skip_testing -eq 0 ]; then
       fi
 
       if [[ $test_v0 == 1 ]]; then
-        ../../cime/scripts/create_test e3sm_scream_v0 -c -b master
+        ../../cime/scripts/create_test e3sm_scream_v0 -c -b master --wait
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           v0_fail=1
@@ -174,7 +190,7 @@ if [ $skip_testing -eq 0 ]; then
 
       if [[ $test_v1 == 1 ]]; then
         # AT runs should be fast. => run only low resolution
-        ../../cime/scripts/create_test e3sm_scream_v1_lowres --compiler=gnu9 -c -b master
+        ../../cime/scripts/create_test e3sm_scream_v1_lowres --compiler=gnu9 -c -b master --wait
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           v1_fail=1
@@ -185,25 +201,31 @@ if [ $skip_testing -eq 0 ]; then
     fi
   fi
 
+  # Disable bash tracing to make the FAILS message stand out more
+  set +x
+
   if [[ $fails > 0 ]]; then
+    echo "######################################################"
+    echo "FAILS DETECTED:"
     if [[ $sa_fail == 1 ]]; then
-      echo "SCREAM STANDALONE TESTING FAILED!"
+      echo "  SCREAM STANDALONE TESTING FAILED!"
     fi
     if [[ $v1_fail == 1 ]]; then
-      echo "SCREAM V1 TESTING FAILED!"
+      echo "  SCREAM V1 TESTING FAILED!"
     fi
     if [[ $v0_fail == 1 ]]; then
-      echo "SCREAM V0 TESTING FAILED!"
+      echo "  SCREAM V0 TESTING FAILED!"
     fi
     if [[ $memcheck_fail == 1 ]]; then
-      echo "SCREAM MEM CHECK TESTING FAILED!"
+      echo "  SCREAM MEM CHECK TESTING FAILED!"
     fi
     if [[ $cov_fail == 1 ]]; then
-      echo "SCREAM COVERAGE BUILD FAILED!"
+      echo "  SCREAM COVERAGE BUILD FAILED!"
     fi
     if [[ $scripts_fail == 1 ]]; then
-      echo "SCREAM SCRIPTS TESTING FAILED!"
+      echo "  SCREAM SCRIPTS TESTING FAILED!"
     fi
+    echo "######################################################"
     exit 1
   fi
 

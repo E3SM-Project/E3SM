@@ -298,8 +298,15 @@ Toggle to turn on the FATES
 </entry>
 
 <entry id="fates_spitfire_mode" type="integer" category="physics"
-        group="elm_inparm" valid_values="0,1" >
-Set to 0 to keep fire off. Set to 1 to turn on fates spitfire module (only relevant if FATES is being used).
+        group="elm_inparm" valid_values="0,1,2,3,4,5", value="0" >
+Turn on spitfire module to simulate fire by setting fates_spitfire_mode > 0.
+Allowed values are:
+ 0 : Simulations of fire are off
+ 1 : use a global constant lightning rate found in fates_params
+ 2 : use an external lightning dataset
+ 3 : use an external confirmed ignitions dataset (not available through standard CESM dataset collection)
+ 4 : use external lightning and population datasets to simulate both natural and anthropogenic
+ 5 : use gross domestic production and population datasets to simulate anthropogenic fire supression
 </entry>
 
 <entry id="fates_parteh_mode" type="integer" category="physics"
@@ -1859,7 +1866,7 @@ Runtime flag to turn on/off lake water storage.
 </entry>
 
 <!-- ========================================================================================  -->
-<!-- Namelist options for downscaling from grid to topounit                                              -->
+<!-- Namelist options for downscaling from grid to topounit                                    -->
 <!-- ========================================================================================  -->
 
 <entry id="use_atm_downscaling_to_topunit" 

@@ -16,7 +16,6 @@ module ndepStreamMod
   use mct_mod
   use spmdMod     , only: mpicom, masterproc, comp_id, iam
   use elm_varctl  , only: iulog
-  use controlMod  , only: NLFilename
   use abortutils  , only: endrun
   use fileutils   , only: getavu, relavu
   use decompMod   , only: bounds_type, ldecomp, gsmap_lnd_gdc2glo 
@@ -43,7 +42,7 @@ contains
 
   !==============================================================================
 
-  subroutine ndep_init(bounds)
+  subroutine ndep_init(bounds, NLFilename)
    !    
    ! Initialize data stream information.  
    !
@@ -58,6 +57,7 @@ contains
    ! arguments
    implicit none
    type(bounds_type), intent(in) :: bounds  
+   character(len=*),  intent(in) :: NLFilename   ! Namelist filename
    !
    ! local variables
    integer            :: nu_nml    ! unit for namelist file

@@ -28,6 +28,15 @@ FieldIdentifier (const std::string& name,
   set_layout (layout);
 }
 
+FieldIdentifier
+FieldIdentifier::
+alias (const std::string& name) const
+{
+  auto fid = *this;
+  fid.m_name = name;
+  return fid;
+}
+
 void FieldIdentifier::set_layout (const layout_type& layout) {
   set_layout(std::make_shared<layout_type>(layout));
 }

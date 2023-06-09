@@ -76,7 +76,11 @@ OR
         help="Update baselines that appear to be expired.")
 
     parser.add_argument("-m", "--machine",
-        help="Provide machine name. This is *always* required")
+        help="Provide machine name. This is *always* required. It can, but does not"
+"have to, match SCREAM_MACHINE. You can decorate this with compiler"
+"info if a machine supports multiple compiler types. This value will be"
+"used as the CTEST_SITE for cdash if the tests are submitted. It is"
+"expected that a scream machine file exists for this value.")
 
     parser.add_argument("--no-tests", action="store_true", help="Only build baselines, skip testing phase")
     parser.add_argument("--config-only", action="store_true",
@@ -89,7 +93,10 @@ OR
         help="Extra custom options to pass to cmake. Can use multiple times for multiple cmake options. The -D is added for you")
 
     parser.add_argument("-e", "--custom-env-vars", action="append", default=[],
-        help="Extra custom environment variables to be used. These will override (if applicable) whatever was found in machine_specs. Each -e flag supports a single env var, so to pass multiple env var, do -e ""KEY1=VALUE1"" -e ""KEY2=VALUE2"" ")
+        help="Extra custom environment variables to be used. These will override"
+"(if applicable) whatever was found in machine_specs. Each -e flag"
+"supports a single env var, so to pass multiple env var, do -e 'KEY1=VALUE1' -e 'KEY2=VALUE2' ")
+
     parser.add_argument("--preserve-env", action="store_true",
                         help="Whether to skip machine env setup, and preserve the current user env (useful to manually test new modules)")
 
@@ -134,10 +141,9 @@ OR
     parser.add_argument("--test-level", action="store", choices=("at", "nightly", "experimental"), default="at",
                         help="Set the testing level.")
 
-    parser.add_argument("--mem-check", action="store_true",
-                        help="Run the tests you've selected with memory checking on. "
-                        "This will use valgrind for CPU, cuda-mem-check for GPU etc."
-                        "This will dramatically slow down tests and also disables baseline checking.")
+    parser.add_argument("--test-size", action="store", choices=("short", "medium", "long"),
+                        help="Set the testing level. Defaults to medium unless the test is cov or mem_check"
+                        "(short is default in those cases).")
 
     parser.add_argument("--force-baseline-regen", action="store_true",
                         help="Existing baseline will always be considered expired even if they do not appear to be.")

@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-Casename: ${CASE}.scream.arm_sites.hi
+filename_prefix: ${CASE}.scream.arm_sites.hi
 Averaging Type: Instant
 Max Snapshots Per File: 744 # One output every 31 days
 #remap_file: /g/g17/donahue5/Code/e3sm/scream-docs/regional_output_sites/20221123_ARM_sites_map.nc
@@ -62,11 +62,4 @@ Fields:
 output_control:
   Frequency: ${HIST_N}
   frequency_units: ${HIST_OPTION}
-  MPI Ranks in Filename: false
-  Timestamp in Filename: true
-  avg_type_in_filename: false
-  frequency_in_filename: false
-Checkpoint Control:
-  Frequency: ${REST_N}
-  frequency_units: ${REST_OPTION}
 ...

@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_IDENTIFIER_HPP
 
 #include "share/field/field_layout.hpp"
+#include "share/util/scream_data_type.hpp"
 
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -11,38 +12,6 @@
 
 namespace scream
 {
-
-// An enum for specifying fields data type
-enum class DataType {
-  IntType,
-  FloatType,
-  DoubleType,
-#ifdef SCREAM_DOUBLE_PRECISION
-  RealType = DoubleType
-#else
-  RealType = FloatType
-#endif
-};
-
-inline std::string e2str (const DataType data_type) {
-  switch (data_type) {
-    case DataType::IntType:    return "int";
-    case DataType::FloatType:  return "float";
-    case DataType::DoubleType: return "double";
-    default:
-      EKAT_ERROR_MSG("Error! Unsupported DataType value.\n");
-  }
-}
-
-inline int get_type_size (const DataType data_type) {
-  switch (data_type) {
-    case DataType::IntType:    return sizeof(int);
-    case DataType::FloatType:  return sizeof(float);
-    case DataType::DoubleType: return sizeof(double);
-    default:
-      EKAT_ERROR_MSG("Error! Unsupported DataType value.\n");
-  }
-}
 
 // A list of currently supported Field data types
 using FieldValidDataTypes = ekat::TypeList<int,float,double>;
@@ -101,7 +70,10 @@ public:
   const layout_ptr_type&  get_layout_ptr () const { return m_layout;    }
   const Units&            get_units      () const { return m_units;     }
   const std::string&      get_grid_name  () const { return m_grid_name; }
-  DataType           data_type      () const { return m_data_type; }
+  DataType                data_type      () const { return m_data_type; }
+
+  // Returns a copy of this identifier, but with a different name
+  FieldIdentifier alias (const std::string& name) const;
 
   // The identifier string
   const std::string& get_id_string () const { return m_identifier; }

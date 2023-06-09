@@ -3,6 +3,8 @@
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
+#include "ekat/ekat_pack.hpp"
+
 namespace scream
 {
 
@@ -39,7 +41,6 @@ protected:
   ekat::units::Units  m_field_units;
 
   int                 m_field_level;
-
 }; // class FieldAtLevel
 
 } //namespace scream

@@ -181,7 +181,7 @@ void HommeGridsManager::build_dynamics_grid () {
 
   initialize_vertical_coordinates(dyn_grid);
 
-  dyn_grid->m_short_name = "_dyn";
+  dyn_grid->m_short_name = "dyn";
   add_grid(dyn_grid);
 }
 
@@ -314,8 +314,7 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
     { "hybm", layout_mid }
   };
 
-  AtmosphereInput vcoord_reader(m_comm,vcoord_reader_pl);
-  vcoord_reader.init(dyn_grid,host_views,layouts);
+  AtmosphereInput vcoord_reader(vcoord_reader_pl,dyn_grid,host_views,layouts);
   vcoord_reader.read_variables();
   vcoord_reader.finalize();
 

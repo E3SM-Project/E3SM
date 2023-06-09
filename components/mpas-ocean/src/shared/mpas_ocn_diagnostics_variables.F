@@ -56,6 +56,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: salineContractCoeff
    real (kind=RKIND), dimension(:,:), pointer :: BruntVaisalaFreqTop
    real (kind=RKIND), dimension(:,:), pointer :: tangentialVelocity
+   real (kind=RKIND), dimension(:,:), pointer :: layerThickEdgeDrag
    real (kind=RKIND), dimension(:,:), pointer :: layerThickEdgeFlux
    real (kind=RKIND), dimension(:,:), pointer :: layerThickEdgeMean
    real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell
@@ -137,7 +138,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: viscosity
    real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfEdge
    real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfCell
-   real (kind=RKIND), dimension(:,:), pointer :: wettingVelocity
+   real (kind=RKIND), dimension(:,:), pointer :: wettingVelocityFactor
    type (field2DReal), pointer :: wettingVelocityField
 
    real (kind=RKIND), dimension(:,:), pointer :: vertDiffTopOfCell
@@ -255,9 +256,9 @@ contains
       end if
 
       if ( trim(config_ocean_run_mode) == 'forward' ) then
-         call mpas_pool_get_array(diagnosticsPool, 'wettingVelocity', &
-                   wettingVelocity)
-         call mpas_pool_get_field(diagnosticsPool, 'wettingVelocity', &
+         call mpas_pool_get_array(diagnosticsPool, 'wettingVelocityFactor', &
+                   wettingVelocityFactor)
+         call mpas_pool_get_field(diagnosticsPool, 'wettingVelocityFactor', &
                    wettingVelocityField)
       end if
 
@@ -458,6 +459,8 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'vertMLEBolusVelocityTop', &
                    vertMLEBolusVelocityTop)
 
+         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdgeDrag', &
+                   layerThickEdgeDrag)
          call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdgeFlux', &
                    layerThickEdgeFlux)
          call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdgeMean', &
@@ -722,6 +725,7 @@ contains
          !$acc                   GMStreamFuncX,                   &
          !$acc                   GMStreamFuncY,                   &
          !$acc                   GMStreamFuncZ,                   &
+         !$acc                   layerThickEdgeDrag,              &
          !$acc                   layerThickEdgeFlux,              &
          !$acc                   layerThickEdgeMean,              &
          !$acc                   slopeTriadDown,                  &
@@ -779,8 +783,8 @@ contains
          !$acc                   )
       end if
       if ( trim(config_ocean_run_mode) == 'forward' ) then
-         !$acc enter data create( &
-         !$acc                   wettingVelocity              &
+         !$acc enter data copyin( &
+         !$acc                   wettingVelocityFactor            &
          !$acc                   )
       end if
       if (config_use_GM.or.config_use_Redi) then
@@ -963,6 +967,7 @@ contains
          !$acc                   GMStreamFuncX,                   &
          !$acc                   GMStreamFuncY,                   &
          !$acc                   GMStreamFuncZ,                   &
+         !$acc                   layerThickEdgeDrag,              &
          !$acc                   layerThickEdgeFlux,              &
          !$acc                   layerThickEdgeMean,              &
          !$acc                   slopeTriadDown,                  &
@@ -1021,7 +1026,7 @@ contains
       end if
       if ( trim(config_ocean_run_mode) == 'forward' ) then
          !$acc exit data delete(                              &
-         !$acc                   wettingVelocity              &
+         !$acc                   wettingVelocityFactor        &
          !$acc                   )
       end if
       if (config_use_GM.or.config_use_Redi) then
@@ -1162,6 +1167,7 @@ contains
                  GMStreamFuncX,                   &
                  GMStreamFuncY,                   &
                  GMStreamFuncZ,                   &
+                 layerThickEdgeDrag,              &
                  layerThickEdgeFlux,              &
                  layerThickEdgeMean,              &
                  slopeTriadDown,                  &
@@ -1218,7 +1224,7 @@ contains
                  normalizedRelativeVorticityCell)
       end if
       if ( trim(config_ocean_run_mode) == 'forward' ) then
-         nullify(wettingVelocity)
+         nullify(wettingVelocityFactor)
       end if
       if (config_use_GM.or.config_use_Redi) then
          nullify(RediKappa,         &

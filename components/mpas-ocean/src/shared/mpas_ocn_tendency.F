@@ -351,7 +351,7 @@ contains
       !$acc               density, normRelVortEdge, montgomeryPotential, pressure, &
       !$acc               thermExpCoeff, salineContractCoeff, tangentialVelocity, &
       !$acc               layerThickEdgeFlux, kineticEnergyCell, sfcFlxAttCoeff, potentialDensity, &
-      !$acc               vertAleTransportTop, vertViscTopOfEdge, wettingVelocity)
+      !$acc               vertAleTransportTop, vertViscTopOfEdge, wettingVelocityFactor)
       !$acc enter data &
       !$acc    copyin(tendVel, sfcStress, sfcStressMag, &
       !$acc    ssh, normalVelocity, &
@@ -445,6 +445,7 @@ contains
       ! Add forcing and bottom drag
       call ocn_vel_forcing_tend(normalVelocity, sfcFlxAttCoeff, &
                                 sfcStress, kineticEnergyCell, &
+                                layerThickEdgeDrag, &
                                 layerThickEdgeMean, tendVel, err)
 
       ! vertical mixing treated implicitly in a later routine
@@ -452,15 +453,14 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop collapse(2) &
-      !$acc    present(tendVel, wettingVelocity)
+      !$acc    present(tendVel, wettingVelocityFactor)
 #else
       !$omp parallel
       !$omp do schedule(runtime) private(k)
 #endif
       do iEdge = 1, nEdgesAll
       do k=1,nVertLevels
-         tendVel(k,iEdge) = tendVel(k,iEdge)* &
-                            (1.0_RKIND - wettingVelocity(k,iEdge))
+         tendVel(k,iEdge) = tendVel(k,iEdge) * (1.0_RKIND - wettingVelocityFactor(k,iEdge))
       end do
       end do
 #ifndef MPAS_OPENACC
