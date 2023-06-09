@@ -4,8 +4,8 @@
  * See the file 'COPYRIGHT' in the HOMMEXX/src/share/cxx directory
  *******************************************************************************/
 
-#ifndef INTERNAL_DIAGNOSTICS_HPP
-#define INTERNAL_DIAGNOSTICS_HPP
+#ifndef HOMMEXX_INTERNAL_DIAGNOSTICS_HPP
+#define HOMMEXX_INTERNAL_DIAGNOSTICS_HPP
 
 #include <string>
 

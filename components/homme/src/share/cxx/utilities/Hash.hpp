@@ -4,8 +4,8 @@
  * See the file 'COPYRIGHT' in the HOMMEXX/src/share/cxx directory
  *******************************************************************************/
 
-#ifndef HASH_HPP
-#define HASH_HPP
+#ifndef HOMMEXX_HASH_HPP
+#define HOMMEXX_HASH_HPP
 
 #include <cstdint>
 
