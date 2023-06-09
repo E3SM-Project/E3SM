@@ -397,18 +397,18 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
     next_sample_time = next_sample_time + sample_period
 !$OMP END MASTER
 !$OMP BARRIER
-    pmax_w     = parallelMax(max_w,    hybrid)
+  !  pmax_w     = parallelMax(max_w,    hybrid)
     pmax_precl = parallelMax(max_precl,hybrid)
-    pmin_ps    = parallelMin(min_ps,   hybrid)
+  !  pmin_ps    = parallelMin(min_ps,   hybrid)
 
     if (hybrid%masterthread) then
-      print *,"time=",time_at(tl%nstep)," pmax_w (m/s)=",pmax_w
-      print *,"time=",time_at(tl%nstep)," pmax_precl (mm/day)=",pmax_precl*(1000.0)*(24.0*3600)
-      print *,"time=",time_at(tl%nstep)," pmin_ps (Pa)=",pmin_ps
+  !    print *,"time=",time_at(tl%nstep)," pmax_w (m/s)=",pmax_w
+      print *," ptt=",time_at(tl%nstep)," max_prcl =",pmax_precl*(1000.0)*(24.0*3600)
+  !    print *,"time=",time_at(tl%nstep)," pmin_ps (Pa)=",pmin_ps
 
-      open(unit=10,file=w_filename,form="formatted",position="append")
-        write(10,'(99E24.15)') pmax_w
-      close(10)
+  !    open(unit=10,file=w_filename,form="formatted",position="append")
+  !      write(10,'(99E24.15)') pmax_w
+  !    close(10)
 
       open(unit=11,file=precl_filename,form="formatted",position="append")
         write(11,'(99E24.15)') pmax_precl
@@ -418,9 +418,9 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
         write(12,'(99E24.15)') time
       close(12)
 
-      open(unit=13,file=ps_filename,form="formatted",position="append")
-        write(13,'(99E24.15)') pmin_ps
-      close(13)
+  !    open(unit=13,file=ps_filename,form="formatted",position="append")
+  !      write(13,'(99E24.15)') pmin_ps
+  !    close(13)
 
     endif
   endif
@@ -689,20 +689,19 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
         !computes its own dry values
         if(bubble_rj_cpstar_hy .or. bubble_rj_cpstar_nh) then
-
           !returns new T, qv, new!!! dp, mass
           call rj_new(qv_c,qc_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
                           energy_before,en2,energy_after,wasiactive)
 !seems to work for NH update
-if(wasiactive)then
-print *, 'en1,en2', energy_before, en2
-print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
-print *, 'en3, enout', energy_after,energy_prect
-print *, 'en2, (en3+enout)', en2,(energy_after+energy_prect)
-print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (en2-(energy_after+energy_prect))/en2
-print *, 'total rel loss', (energy_before-(energy_after+energy_prect))/en2
-print *, "    "
-endif
+!if(wasiactive)then
+!print *, 'en1,en2', energy_before, en2
+!print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
+!print *, 'en3, enout', energy_after,energy_prect
+!print *, 'en2, (en3+enout)', en2,(energy_after+energy_prect)
+!print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (en2-(energy_after+energy_prect))/en2
+!print *, 'total rel loss', (energy_before-(energy_after+energy_prect))/en2
+!print *, "    "
+!endif
 
         elseif(bubble_rj_cVstar) then
 
@@ -711,22 +710,21 @@ endif
                energy_before,en2,energy_after,encl,wasiactive)
 
 !this seems to work
-if(wasiactive)then
-print *, 'en1,en2', energy_before, en2
-print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
-print *, 'en3, enout', energy_after,energy_prect
-print *, 'en2, (en3+enout)', en2,(energy_after+energy_prect)
-print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (en2-(energy_after+energy_prect))/en2
-print *, 'enout, encl, rel diff', energy_prect, encl, (energy_prect-encl)/energy_prect
-print *, "    "
-endif
+!if(wasiactive)then
+!print *, 'en1,en2', energy_before, en2
+!print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
+!print *, 'en3, enout', energy_after,energy_prect
+!print *, 'en2, (en3+enout)', en2,(energy_after+energy_prect)
+!print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (en2-(energy_after+energy_prect))/en2
+!print *, 'enout, encl, rel diff', energy_prect, encl, (energy_prect-encl)/energy_prect
+!print *, "    "
+!endif
 
         elseif(bubble_rj_cpdry) then
 
           !this one conserves with const dp
           !returns new T, new wet qv, prect mass (dp*delta_qv), new dp_c
           call rj_old(qv_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,wasiactive)
-
         endif
 
       elseif(bubble_prec_type == 0) then
@@ -737,14 +735,14 @@ endif
       call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en2global)
       mass2global = sum( dp_c )
 
-if(wasiactive)then
-print *, 'en prect', energy_prect
-print *, 'en1global,en2global+prect', en1global, en2global+energy_prect
-print *, 'en1g-en2g, rel', en1global-(en2global+energy_prect), ( en1global-en2global-energy_prect)/en1global
-print *, 'mass1global,mass2global+prect', mass1global, mass2global+mass_prect
-print *, 'm1g-m2g, rel', mass1global-(mass2global+mass_prect), ( mass1global-mass2global-mass_prect)/mass1global
-print *, "    "
-endif
+!if(wasiactive)then
+!print *, 'en prect', energy_prect
+!print *, 'en1global,en2global+prect', en1global, en2global+energy_prect
+!print *, 'en1g-en2g, rel', en1global-(en2global+energy_prect), ( en1global-en2global-energy_prect)/en1global
+!print *, 'mass1global,mass2global+prect', mass1global, mass2global+mass_prect
+!print *, 'm1g-m2g, rel', mass1global-(mass2global+mass_prect), ( mass1global-mass2global-mass_prect)/mass1global
+!print *, "    "
+!endif
 
       precl(i,j,ie) = mass_prect / (dt * rhow) / g
 

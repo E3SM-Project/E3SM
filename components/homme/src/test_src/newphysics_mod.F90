@@ -538,7 +538,7 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   !compute en1, energy before condensation
   call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c(nlevp),p_c,en1)
 
-#if 1
+#if 0
 !experiment
 !  qv_c = 0.01
 !  ql_c = qv_c
@@ -610,6 +610,13 @@ print *, 'with liquid V formula', en1
          hold  = T_loc*( cpdry*1.0 + cpv*qvdry_loc + cl*qldry_loc ) + L_old
          T_new = (hold - L_new)/(   cpstarTerm_new   )
        endif
+
+if(T_new < T_c(k))then
+print *, 'k, T new, old', k, T_new, T_c(k)
+print *, ''
+stop
+endif 
+
 
        T_c(k)  = T_new
        rain(k) = vapor_mass_change
