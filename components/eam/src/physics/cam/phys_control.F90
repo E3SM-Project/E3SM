@@ -281,8 +281,9 @@ subroutine phys_ctl_readnl(nlfile)
         if (history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
             history_chemdyg_summary = .false.
             history_gaschmbudget_2D = .true.
+            history_UCIgaschmbudget_2D = .true.
             history_gaschmbudget_2D_levels = .true.
-            if (masterproc) write(iulog,*) 'phys_ctl_readnl: history_chemdyg_summary is in conflict with history_gaschmbudget_2D and history_gaschmbudget_2D_levels. Turn history_chemdyg_summary off and turn on both history_gaschmbudget_2D and history_gaschmbudget_2D_levels.'
+            if (masterproc) write(iulog,*) 'phys_ctl_readnl: history_chemdyg_summary is in conflict with history_gaschmbudget_2D and history_gaschmbudget_2D_levels. Turn history_chemdyg_summary off and turn on both history_gaschmbudget_2D and history_gaschmbudget_2D_levels, as well as history_UCIgaschmbudget_2D to get full outputs.'
         end if
    end if
 

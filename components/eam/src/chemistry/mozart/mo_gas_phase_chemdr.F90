@@ -986,26 +986,6 @@ contains
                   invariants(1,1,indexm), ncol, lchnk, ltrop_sol(:ncol) ) 
     call t_stopf('imp_sol')
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
-       if ( history_gaschmbudget ) then
-          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                 pdeldry(:ncol,:), mbar, delt_inverse, 'TDI' )
-       endif
-       if ( history_gaschmbudget_2D ) then
-          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI' )
-          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DMSI' )
-       endif
-       if ( history_gaschmbudget_2D_levels ) then
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI_LL' )
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI_trop', tropFlagInt )
-       endif
-       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
-    endif
-
     ! ozone production 
     if (uci1_ndx > 0) then
       chem_prod(:,:,:) = 0._r8

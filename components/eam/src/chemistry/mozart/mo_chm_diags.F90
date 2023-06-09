@@ -1672,14 +1672,6 @@ contains
                        UCIgaschmbudget_2D_L4_s_out = UCIgaschmbudget_2D_L4_s, &
                        UCIgaschmbudget_2D_L4_e_out = UCIgaschmbudget_2D_L4_e )
 
-    if (history_chemdyg_summary) then
-        if (history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then    
-            history_chemdyg_summary = .false.  
-            history_gaschmbudget_2D = .true.  
-            history_gaschmbudget_2D_levels = .true.  
-            write(iulog,*) 'gaschmmass_diags: history_chemdyg_summary is in conflict with other flags. Turn history_chemdyg_summary off.'
-        end if
-    end if
 
     if ( .not. history_gaschmbudget .and. .not. history_gaschmbudget_2D .and. .not. history_gaschmbudget_2D_levels &
          .and. .not. history_UCIgaschmbudget_2D .and. .not. history_UCIgaschmbudget_2D_levels &
