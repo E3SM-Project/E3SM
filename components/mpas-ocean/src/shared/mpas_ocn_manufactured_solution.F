@@ -118,9 +118,9 @@ contains
                                                   + eta0*(kx + ky)*cos(2.0_RKIND*phase))
          enddo
 
-         err = 0
-
       enddo
+
+      err = 0
 
    !--------------------------------------------------------------------
 
@@ -186,9 +186,9 @@ contains
             tend(k,iEdge) = tend(k,iEdge) + u*cos(angleEdge(iEdge)) + v*sin(angleEdge(iEdge))
          enddo
 
-         err = 0
-
       enddo
+
+      err = 0
 
    !--------------------------------------------------------------------
 
@@ -222,6 +222,10 @@ contains
 
       eta0 = config_manufactured_solution_amplitude
 
+
+      ! This test case assumes that the restingThickness is horizontally uniform
+      ! and that only one vertical level is used so only one set of indices is
+      ! used here.
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
