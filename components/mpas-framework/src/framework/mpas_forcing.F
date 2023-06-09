@@ -35,7 +35,8 @@ module mpas_forcing
        mpas_forcing_init_field_data, &
        mpas_forcing_get_forcing, &
        mpas_forcing_get_forcing_time, &
-       mpas_forcing_write_restart_times
+       mpas_forcing_write_restart_times, &
+       mpas_advance_forcing_clock
 
 contains
 
@@ -1193,7 +1194,7 @@ contains
        if (trim(forcingGroup % forcingGroupName) == trim(forcingGroupName)) then
 
           ! advance the forcing time
-          call advance_forcing_clock(forcingGroup, dt)
+          call mpas_advance_forcing_clock(forcingGroup, dt)
 
           ! cycle the forcing clock
           if (forcingGroup % forcingCycleUse) then
@@ -1230,7 +1231,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  advance_forcing_clock
+!  mpas_advance_forcing_clock
 !
 !> \brief set the forcing clock
 !> \author Adrian K. Turner, LANL
@@ -1241,7 +1242,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine advance_forcing_clock(&!{{{
+  subroutine mpas_advance_forcing_clock(&!{{{
        forcingGroup, &
        dt)
 
@@ -1254,11 +1255,44 @@ contains
     type(MPAS_TimeInterval_type) :: &
          timeStep ! time step interval
 
+    ! assuming it is not possible to give dts of months or years
+    integer :: DD, H, M, S, S_n, S_d, foundNumAndDen, powerOfTen
+
+    real(kind=RKIND) :: factor
+
+    DD = dt / 86400_RKIND
+    H = dt / 3600_RKIND
+    M = dt / 60_RKIND
+    S = dt
+    S_n = 0
+    S_d = 0
+    if (abs(real(S) - dt) > 1.e-10) then !the time step has decimals
+       S = 0
+       foundNumAndDen = 0
+       powerOfTen = 1
+       factor = 10_RKIND
+       S_n = abs(dt) * factor
+       S_d = factor
+       do while (foundNumAndDen == 0 .and. powerOfTen < 11) 
+          if (abs(real(S_n)/real(S_d) - abs(dt)) < 1.e-10) then
+             foundNumAndDen = 1
+          else 
+             powerOfTen = powerOfTen + 1
+             factor = 10_RKIND ** powerOfTen
+             S_n = abs(dt) * factor
+             S_d = factor
+          end if
+       end do
+       if (dt < 0.0_RKIND) then
+          S_n = - S_n
+       end if
+    end if
+
     ! increment clock with timestep
-    call mpas_set_timeInterval(timeStep, dt=dt)
+    call mpas_set_timeInterval(timeStep, DD=DD, H=H, M=M, S=S, S_n=S_n, S_d=S_d)
     call mpas_advance_clock(forcingGroup % forcingClock, timeStep)
 
-  end subroutine advance_forcing_clock!}}}
+  end subroutine mpas_advance_forcing_clock!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

@@ -43,6 +43,7 @@ module ocn_time_integration_rk4
    use ocn_effective_density_in_land_ice
    use ocn_surface_land_ice_fluxes
    use ocn_transport_tests
+   use ocn_time_varying_forcing
 
    use ocn_subgrid
 
@@ -491,6 +492,8 @@ module ocn_time_integration_rk4
         ! In RK4 notation, we are computing the right hand side f(t,y),
         ! which is the same as k_j / h.
         call mpas_timer_start("RK4 vel/thick tendency computations")
+
+       call ocn_time_varying_forcing_get(domain % streamManager, domain, domain % clock)
 
         block => domain % blocklist
         do while (associated(block))
