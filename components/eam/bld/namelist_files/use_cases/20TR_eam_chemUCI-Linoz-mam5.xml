@@ -10,7 +10,6 @@
 <history_aero_optics>.true.</history_aero_optics>
 
 <!-- extra output spec -->
-<history_gaschmbudget_2D> .true.</history_gaschmbudget_2D>
 <tropopause_output_all>.true.</tropopause_output_all>
 <tropopause_E90_thrd>76.0e-9</tropopause_E90_thrd>
 
