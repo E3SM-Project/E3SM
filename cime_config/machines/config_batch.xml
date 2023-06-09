@@ -268,7 +268,7 @@
   </batch_system>
   <!-- for lawrence livermore computing -->
 
-  <!-- for NERSC machines: cori-haswell,cori-knl -->
+  <!-- for NERSC machines: perlmutter etc -->
   <batch_system type="nersc_slurm" >
     <batch_query per_job_arg="-j">squeue</batch_query>
     <batch_submit>sbatch</batch_submit>
@@ -422,26 +422,6 @@
         <queue walltimemax="01:00:00" nodemax="512">knl</queue>
       </queues>
     </batch_system>
-
-  <batch_system MACH="cori-haswell" type="nersc_slurm">
-     <directives>
-       <directive> --constraint=haswell</directive>
-     </directives>
-     <queues>
-       <queue walltimemax="00:30:00" nodemax="64" strict="true">debug</queue>
-       <queue walltimemax="01:00:00" default="true">regular</queue>
-     </queues>
-  </batch_system>
-
-  <batch_system MACH="cori-knl" type="nersc_slurm">
-    <directives>
-      <directive> --constraint=knl,quad,cache</directive>
-    </directives>
-    <queues>
-      <queue walltimemax="00:30:00" nodemax="512" strict="true">debug</queue>
-      <queue walltimemax="01:15:00" default="true">regular</queue>
-    </queues>
-  </batch_system>
 
   <batch_system MACH="miller" type="miller_slurm">
     <queues>

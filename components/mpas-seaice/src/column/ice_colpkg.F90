@@ -3688,9 +3688,8 @@
       if (present(uvel)) then
          worku = uvel
       endif
-      ! should this be for vvel,workv?
-      if (present(uvel)) then
-         worku = uvel
+      if (present(vvel)) then
+         workv = vvel
       endif
 
                if (trim(atmbndy) == 'constant') then
