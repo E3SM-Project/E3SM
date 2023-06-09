@@ -1331,21 +1331,12 @@ contains
 
     call t_startf('aero_model_gasaerexch')
 
-#if (defined MODAL_AERO_5MODE | defined MODAL_AERO_4MODE_MOM | defined MODAL_AERO_4MODE | defined MODAL_AERO_9MODE | defined MODAL_AERO_7MODE)  
-       call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
-                                tfld, pmid, pdel, mbar, relhum,                               &
-                                zm,  qh2o, cwat, cldfr, ncldwtr,                              &
-                                invariants(:,:,indexm), invariants, del_h2so4_gasprod,        &
-                                vmr0, vmr, pbuf, troplev)
-#else
-       ! this option is for non modal aerosol
-       call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
-                                tfld, pmid, pdel, mbar, relhum,                               &
-                                zm,  qh2o, cwat, cldfr, ncldwtr,                              &
-                                invariants(:,:,indexm), invariants, del_h2so4_gasprod,        &
-                                vmr0, vmr, pbuf)
-#endif 
-   
+    call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
+                                tfld, pmid, pdel, mbar, relhum, &
+                                zm,  qh2o, cwat, cldfr, ncldwtr, &
+                                invariants(:,:,indexm), invariants, del_h2so4_gasprod,  &
+                                vmr0, vmr, pbuf )
+                                
     call t_stopf('aero_model_gasaerexch')
 !
 ! Remove the impact of aerosol processes on gas chemistry tracers ...

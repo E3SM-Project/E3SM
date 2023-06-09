@@ -376,6 +376,7 @@ contains
     ! average 2m temp.
     ! crit_onset_gdd = 150.0 ! c3 grass value
     ! crit_onset_gdd = 1000.0   ! c4 grass value
+    crit_onset_fdd=PhenolParamsInst%crit_onset_fdd
     crit_onset_swi=PhenolParamsInst%crit_onset_swi
     soilpsi_on=PhenolParamsInst%soilpsi_on
 

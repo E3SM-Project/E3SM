@@ -799,6 +799,7 @@ add_default($nl, 'config_horiz_tracer_adv_order');
 add_default($nl, 'config_coef_3rd_order');
 add_default($nl, 'config_flux_limiter');
 add_default($nl, 'config_remap_limiter');
+add_default($nl, 'config_thickness_flux_type');
 
 ###############################
 # Namelist group: bottom_drag #
@@ -948,6 +949,7 @@ add_default($nl, 'config_disable_thick_hadv');
 add_default($nl, 'config_disable_thick_vadv');
 add_default($nl, 'config_disable_thick_sflux');
 add_default($nl, 'config_disable_vel_all_tend');
+add_default($nl, 'config_disable_vel_hadv');
 add_default($nl, 'config_disable_vel_coriolis');
 add_default($nl, 'config_disable_vel_pgrad');
 add_default($nl, 'config_disable_vel_hmix');
