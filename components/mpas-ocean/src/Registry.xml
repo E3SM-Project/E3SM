@@ -1535,15 +1535,15 @@
 	</nml_record>
 	<nml_record name="manufactured_solution">
 		<nml_option name="config_use_manufactured_solution" type="logical" default_value=".false."
-					description="This flag includes additional thickness and velocity tendencies nesseary for testing with a manufactured solution."
+					description="This flag includes additional thickness and velocity tendencies necessary for testing with a manufactured solution."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_manufactured_solution_wavelength_x" type="real" default_value="2000000.0" units="m"
-					description="Wavelenth of manufactured solution in the x direction"
+					description="Wavelength of manufactured solution in the x direction"
 					possible_values="Any positive real number"
 		/>
 		<nml_option name="config_manufactured_solution_wavelength_y" type="real" default_value="2000000.0" units="m"
-					description="Wavelenth of manufactured solution in the y direction"
+					description="Wavelength of manufactured solution in the y direction"
 					possible_values="Any positive real number"
 		/>
 		<nml_option name="config_manufactured_solution_amplitude" type="real" default_value="1" units="m"
