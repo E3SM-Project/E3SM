@@ -14,7 +14,7 @@
     TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_ESP%phys][_BGC%phys]
     Where for the EAM specific compsets below the following is supported
     TIME = Time period (e.g. 2000, HIST, RCP8...)
-    ATM  = [EAM, SATM, SCREAM]
+    ATM  = [EAM, EAMXX, SATM, SCREAM]
     LND  = [ELM,  SLND]
     ICE  = [MPASSI, CICE, DICE, SICE]
     OCN  = [MPASO, DOCN, SOCN]
@@ -329,6 +329,14 @@
   <alias>BGWCYCL1850</alias>
   <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI%STATIC_SWAV</lname>
 </compset>
+
+<!-- EAMXX fully coupled compset -->
+
+<compset>
+  <alias>WCYCLXX2010</alias>
+  <lname>2010_EAMXX_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
 
 <!-- OCN + CICE + GLC Only Compsets -->
 <compset>
