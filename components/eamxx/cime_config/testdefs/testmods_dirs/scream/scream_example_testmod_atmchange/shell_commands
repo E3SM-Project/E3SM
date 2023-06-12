@@ -1,1 +1,2 @@
-./xmlchange --append SCREAM_ATMCHANGE_BUFFER='cubed_sphere_map=42'
+
+$CIMEROOT/../components/eamxx/scripts/atmchange cubed_sphere_map=42 -b

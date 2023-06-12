@@ -34,6 +34,8 @@ class TestBuildnml(unittest.TestCase):
         Convenience wrapper around create_test. Returns list of full paths to created cases. If multiple cases,
         the order of the returned list is not guaranteed to match the order of the arguments.
         """
+        extra_args = extra_args.split()
+
         test_id = f"cmd_nml_tests-{get_timestamp()}"
         extra_args.append("-t {}".format(test_id))
 
@@ -104,7 +106,7 @@ class TestBuildnml(unittest.TestCase):
 
             self._get_values(case, name, value=value, expect_equal=False, all_matches=all_matches)
 
-            run_cmd_assert_result(self, f"./atmchange {buffer_opt} {all_matches_opt} {name}={value}", from_dir=case)
+            run_cmd_assert_result(self, f"./atmchange {buffer_opt} {all_matches_opt} {name}='{value}'", from_dir=case)
 
             names = self._get_values(case, name, value=value, expect_equal=True, all_matches=all_matches)
             for item in names:
@@ -154,7 +156,7 @@ class TestBuildnml(unittest.TestCase):
         """
         Test that xmlchanges impact atm config files
         """
-        case = self._create_test("ERS_Ln22.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("ERS_Ln22.ne30_ne30.F2010-SCREAMv1 --no-build")
 
         # atm config should match case test opts
         case_rest_n = run_cmd_assert_result(self, "./xmlquery REST_N --value", from_dir=case)
@@ -177,7 +179,7 @@ class TestBuildnml(unittest.TestCase):
         """
         Test that atmchanges are not lost when eamxx setup is called
         """
-        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
         self._chg_atmconfig([("atm_log_level", "trace")], case)
 
@@ -187,7 +189,7 @@ class TestBuildnml(unittest.TestCase):
         """
         Test that manual atmchanges are lost when eamxx setup is called
         """
-        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
         # An unbuffered atmchange is semantically the same as a manual edit
         self._chg_atmconfig([("atm_log_level", "trace")], case, buff=False)
@@ -198,7 +200,7 @@ class TestBuildnml(unittest.TestCase):
         """
         Test that atmchanges are lost when resetting
         """
-        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
         self._chg_atmconfig([("atm_log_level", "trace")], case, reset=True)
 
@@ -209,7 +211,7 @@ class TestBuildnml(unittest.TestCase):
         Test that manual atmchanges are not lost when eamxx setup is called if
         xml hacking is enabled.
         """
-        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
         run_cmd_assert_result(self, "./xmlchange SCREAM_HACK_XML=TRUE", from_dir=case)
 
@@ -221,7 +223,7 @@ class TestBuildnml(unittest.TestCase):
         """
         Test that multiple atmchanges are not lost when eamxx setup is called
         """
-        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
         self._chg_atmconfig([("atm_log_level", "trace"), ("output_to_screen", "true")], case)
 
@@ -234,7 +236,7 @@ class TestBuildnml(unittest.TestCase):
         """
         def_mach_comp = \
             run_cmd_assert_result(self, "../CIME/Tools/list_e3sm_tests cime_tiny", from_dir=CIME_SCRIPTS_DIR).splitlines()[-1].split(".")[-1]
-        case = self._create_test(f"SMS.ne30_ne30.F2010-SCREAMv1.{def_mach_comp}.scream-scream_example_testmod_atmchange --no-build".split())
+        case = self._create_test(f"SMS.ne30_ne30.F2010-SCREAMv1.{def_mach_comp}.scream-scream_example_testmod_atmchange --no-build")
 
         self._chg_atmconfig([("cubed_sphere_map", "84")], case)
 
@@ -244,7 +246,7 @@ class TestBuildnml(unittest.TestCase):
         """
         Test that atmchange works for array data
         """
-        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
         self._chg_atmconfig([("surf_mom_flux", "40.0,2.0")], case)
 
@@ -254,7 +256,7 @@ class TestBuildnml(unittest.TestCase):
         """
         Test that atmchange works for all matches
         """
-        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
         self._chg_atmconfig([("enable_precondition_checks", "false", True)], case)
 
@@ -264,10 +266,25 @@ class TestBuildnml(unittest.TestCase):
         """
         Test that atmchange works for all matches and picking one specialization
         """
-        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
         self._chg_atmconfig([("enable_precondition_checks", "false", True),
                              ("p3::enable_precondition_checks", "true")], case)
+
+    ###########################################################################
+    def test_atmchanges_for_atm_procs(self):
+    ###########################################################################
+        """
+        Test that atmchanges that add atm procs create the new proc when case.setup
+        is called.
+        """
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
+
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "(shoc,cldFraction,spa,p3,testOnly)")], case)
+
+        # If we are able to change subcycles of testOnly then we know the atmchange
+        # above added the necessary atm proc XML block.
+        self._chg_atmconfig([("testOnly::number_of_subcycles", "42")], case)
 
 ###############################################################################
 def parse_command_line(args, desc):

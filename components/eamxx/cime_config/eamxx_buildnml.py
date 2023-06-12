@@ -8,6 +8,7 @@ import os, sys, re
 from collections import OrderedDict
 
 import xml.etree.ElementTree as ET
+import xml.dom.minidom as md
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
 sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
@@ -17,11 +18,12 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 # Cime imports
 from standard_script_setup import * # pylint: disable=wildcard-import
-from CIME.utils import expect, safe_copy, SharedArea, run_cmd_no_fail
+from CIME.utils import expect, safe_copy, SharedArea
 
 # SCREAM imports
 from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
         resolve_all_inheritances, gen_atm_proc_group, check_all_values
+from atm_manip import atm_config_chg_impl, unbuffer_changes, apply_buffer
 
 from utils import ensure_yaml
 ensure_yaml()
@@ -468,7 +470,7 @@ def _create_raw_xml_file_impl(case, xml):
     atm_procs_list = get_child(atm_procs_defaults,"atm_procs_list",remove=True)
 
     # 4. Form the nested list of atm procs needed, append to atmosphere_driver section
-    atm_procs = gen_atm_proc_group (atm_procs_list.text, atm_procs_defaults)
+    atm_procs = gen_atm_proc_group(atm_procs_list.text, atm_procs_defaults)
     atm_procs.tag = "atmosphere_processes"
     xml.append(atm_procs)
 
@@ -484,11 +486,17 @@ def create_raw_xml_file(case, caseroot):
     """
     src = os.path.join(case.get_value("SRCROOT"), "components/eamxx/cime_config/namelist_defaults_scream.xml")
 
-    raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
+    # Some atmchanges will require structural changes to the XML file and must
+    # be processed early by treating them as if they were made to the defaults file.
+    atmchgs = unbuffer_changes(case)[0]
     with open(src, "r") as fd:
         defaults = ET.parse(fd)
+        for change in atmchgs:
+            atm_config_chg_impl(defaults, change, all_matches=True, missing_ok=True)
+
         raw_xml = _create_raw_xml_file_impl(case, defaults.getroot())
 
+    raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
     if os.path.exists(raw_xml_file) and case.get_value("SCREAM_HACK_XML"):
         print("{} already exists and SCREAM_HACK_XML is on, will not overwrite. Remove to regenerate".format(raw_xml_file))
 
@@ -499,16 +507,16 @@ def create_raw_xml_file(case, caseroot):
         check_all_values(raw_xml)
 
         with open(raw_xml_file, "w") as fd:
-            ET.ElementTree(raw_xml).write(fd, method='xml', encoding="unicode")
+            # dom has better pretty printing than ET in older python versions < 3.9
+            dom = md.parseString(ET.tostring(raw_xml, encoding="unicode"))
+            pretty_xml = dom.toprettyxml(indent="  ")
+            pretty_xml = os.linesep.join([s for s in pretty_xml.splitlines()
+                                          if s.strip()])
+            fd.write(pretty_xml)
 
         # Now that we have our namelist_scream.xml file, we can apply buffered
         # atmchange requests.
-        atmchg_buffer = case.get_value("SCREAM_ATMCHANGE_BUFFER")
-        if atmchg_buffer:
-            if "--all" in atmchg_buffer:
-                atmchg_buffer = atmchg_buffer.replace("--all", "") + " --all"
-
-            run_cmd_no_fail("{}/atmchange {} --no-buffer".format(caseroot, atmchg_buffer))
+        apply_buffer(case)
 
 ###############################################################################
 def convert_to_dict(element):
@@ -735,7 +743,7 @@ def create_input_data_list_file(caseroot):
             fd.write("scream_dl_input_{} = {}\n".format(idx, file_path))
 
 ###############################################################################
-def do_cime_vars_on_yaml_output_files(case,caseroot):
+def do_cime_vars_on_yaml_output_files(case, caseroot):
 ###############################################################################
     rundir   = case.get_value("RUNDIR")
     eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
