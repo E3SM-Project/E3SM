@@ -174,7 +174,9 @@
                      description="mask indicating how to handle fluxes on each edge: 0=calculate based on hydropotential gradient; 1=allow outflow based on hydropotential gradient, but no inflow (NOT YET IMPLEMENTED); 2=zero flux" />
                 <var name="hydroMarineMarginMask" type="integer" dimensions="nEdges Time" units="none"
                      description="mask indicating the marine boundary of the active subglacial hydrology domain" />
-                <var name="waterFluxAdvec" type="real" dimensions="nEdges Time" units="m{^2} s^{-1}"
+		<var name="hydroTerrestrialMarginMask" type="integer" dimensions="nEdges Time" units="none"
+	 	     description="mask indicating the terrestrial boundary of the active subglacial hydrology domain" />
+		<var name="waterFluxAdvec" type="real" dimensions="nEdges Time" units="m{^2} s^{-1}"
                      description="advective water flux in subglacial hydrology system" />
                 <var name="waterFluxDiffu" type="real" dimensions="nEdges Time" units="m{^2} s^{-1}"
                      description="diffusive water flux in subglacial hydrology system" />
