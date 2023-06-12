@@ -1,1 +1,1 @@
-$CIMEROOT/../components/eamxx/scripts/atmchange rad_frequency=2
+$CIMEROOT/../components/eamxx/scripts/atmchange rad_frequency=2 -b
