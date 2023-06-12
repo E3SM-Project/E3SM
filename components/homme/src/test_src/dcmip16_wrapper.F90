@@ -632,7 +632,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     precl(:,:,ie) = 0.0d0
 
     ! get current element state
-    !returns p at midlevels just like we need for pprime
+    ! returns p at midlevels just like we need for pprime
     ! we do not need p at interfaces and at surface, only pi
     ! 'g' here is gravity
     call get_state(u,v,w,T,p,dp,ps,rho,zm,zi,g,elem(ie),hvcoord,nt,ntQ)
@@ -658,8 +658,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       qv_c = qv(i,j,:); qc_c = qc(i,j,:); qr_c = qr(i,j,:); 
       dp_c = dp(i,j,:); T_c = T(i,j,:); zi_c = zi(i,j,:);
 
-      !homme uses wrong Rstar, so, T, p, dp, phi won't be concsistent with what physics uses.
-      !redo it here then!
+      !T, p, dp, phi from homme won't be concistent with water loading
+      !redo p here
       do k=1,nlev
         rstar_new = rdry * (1.0 - qv_c(k) - qc_c(k) - qr_c(k)) + rvapor * qv_c(k)
         olddphi = gravit*(zi_c(k) - zi_c(k+1))
@@ -744,22 +744,10 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 !print *, "    "
 !endif
 
+      !do not use homme rstar routine here
+
       precl(i,j,ie) = mass_prect / (dt * rhow) / g
 
-
-
-!!!!! CHANGE RSTAR def here
-
-!current issue is that homme routine with WL computes
-!rstar = rdry*dpdry(1.0+qcdry+qrdry) + rvapor*dpdry*qvdry
-!dphi = rstar*tempe/pnh
-
-
-!regarding all p=const approaches -- when rain happens, before or after we adjust T tendencies?
-!rihgt now p=intent(in) only, so p does not see dp change? 
-
-
-#if 1
       !update states assuming cam_ routines are off
       qind=1;  elem(ie)%state%Qdp(i,j,:,qind,ntQ) = dp_c*qv_c
                elem(ie)%state%Q  (i,j,:,qind)     =      qv_c
@@ -768,21 +756,14 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       qind=3;  elem(ie)%state%Qdp(i,j,:,qind,ntQ) = dp_c*qr_c
                elem(ie)%state%Q  (i,j,:,qind)     =      qr_c
 
-!adjust pressure here
       elem(ie)%state%dp3d(i,j,:,nt) = dp_c
       elem(ie)%state%phinh_i(i,j,:,nt) = gravit*zi_c
 
-      !correct rstar
       rstar = rdry * dpdry_c + rvapor * dp_c*qv_c
-      !incorrect rstar, homme version
-      !rstar = rdry * dp_c + (rvapor-rdry) * dp_c*qv_c
 
       !rstar has dp factor in it
-
       elem(ie)%state%vtheta_dp(i,j,:,nt) = rstar/rdry * &
                     T_c * (p0/p_c)**kappa
- 
-#endif
 
     enddo; enddo; !j,i loop
 
