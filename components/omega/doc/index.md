@@ -40,6 +40,7 @@ devGuide/BuildDocs
 design/Broadcast
 design/Config
 design/DataTypes
+design/Decomp
 design/Halo
 design/Logging
 design/MachEnv

@@ -1,8 +1,6 @@
-<!--- Omega Decomposition Requirements and Design ----------------------------->
+(omega-design-decomp)=
 
-# OMEGA Requirements and Design:
-
-## *Decomp*
+# Decomp
 
 
 ## 1 Overview
@@ -57,16 +55,25 @@ While the primary partition is based on the cells and cell
 adjacency, the decomposition must also partition the edge and vertex
 index spaces.
 
-### 2.6 Required: Local to global index mapping
+### 2.6 Required: Halo
 
-The decomposition must provide the ability to return the global
-index given the processor's local index. It must also be able to
+For parallel efficiency, a halo containing copies of nearest neighbor
+points will be defined. A separate design document describes the
+capability needed for updating those halo points for field data.
+Within the decomp type, we simply keep the halo index information.
+
+### 2.7 Required: Local to global index mapping
+
+Once the mesh is decomposed, each parallel process has a set of
+local indices renumbered for the local space. The decomposition
+must provide the ability to return the global index given the
+processor's local index. It must also be able to
 provide the location (MPI rank and local index) for all the
 neighbor or halo points to facilitate later setup of halos and
 other infrastructure. Some of this information may only be needed
 for initialization (see Requirement 2.8 on release of memory).
 
-### 2.7 Required: Local sorting
+### 2.8 Required: Local sorting
 
 At a minimum, the local addresses must be sorted with owned
 indices first and each level of halo following. This is needed
@@ -74,28 +81,28 @@ for both optimal communication and for selectively computing
 only what is needed. Additional sorting within those blocks
 may be desireable for optimizing memory locality.
 
-### 2.8 Required: Release memory
+### 2.9 Required: Release memory
 
 Once the partition information has been used to set up halos,
 mesh variables, I/O and other quantities that depend on the
 partition, all or parts of the partitioning data may be
 released to free memory. Note that some of the information
-will be transferred to mesh variables as part of later
+may be transferred to mesh variables as part of later
 mesh initialization.
 
-### 2.9 Desired: Weighted partitioning option
+### 2.10 Desired: Weighted partitioning option
 
 For better load-balancing, support for supplying or computing weights
 for each cell index based on estimated workload is desireable. 
 
-### 2.10 Desired: Multiple partitions of same mesh
+### 2.11 Desired: Multiple partitions of same mesh
 
 In the future, it may be desireable to perform parts of the calculation
 (eg the communication-dominated barotropic mode) on a smaller 
 partition. We may need to support multiple partitions of the
 same mesh on different numbers of MPI ranks.
 
-### 2.11 Desired: Multiple domains, sub-blocking or coloring
+### 2.12 Desired: Multiple domains, sub-blocking or coloring
 
 For some future capabilities (eg local timestepping in regionally
 focused mesh locations), it may be desireable to decompose the
@@ -119,11 +126,9 @@ weighted decompositions. However, it should not prevent these
 options from being added later. The parmetis package will be
 used initially to provide metis back compatibility while reducing
 memory use over a serial metis approach. The cell mesh indices and
-adjacency will be read from the mesh input file rather than
-graph.info files to reduce the number of input files needed on
-initialization. Parmetis documentation describes how the initial
-cell index and adjacency data must be distributed before the
-final partitioning is performed.
+adjacency will be read from the non-decomposed graph.info files in
+metis format, allowing the adjacency info to be read serially
+before the parallel IO is set up.
 
 Once the primary (cell) mesh is partitioned, the edge and vertex
 index spaces will be assigned based on the adjacency to the local
@@ -138,12 +143,14 @@ any related setup of halos and other infrastructure.
 
 The decomposition includeds a public enum to define the
 supported partitioning method. Initially, this will support
-the two Metis methods, but others can be added:
+the default Metis method, but others can be added:
 
+```c++
     enum partMethod {
        partMethodUnknown,        ///< undefined for error checking
        partMethodMetisKWay,      ///< default KWay method in metis
        }
+```
 
 Other methods, like the Metis GeomKWay (combination of space-filling
 curve with KWay) or Zoltan options may be added later.
@@ -160,10 +167,12 @@ algorithms.
 These parameters and the mesh input file will be read as part of
 the input configuration file in a decomp configuration group:
 
+```yakl
     decomp:
        meshInputFilename: 'omegaMeshFile.nc'
        partitionMethod: 'MetisKWay'
        haloWidth: 3
+```
 
 The Metis KWay partition method will be default and the haloWidth
 will initially default to 3.
@@ -172,6 +181,8 @@ will initially default to 3.
 
 There will be a Decomp class that stores and defines a partitioning
 of the address space. 
+
+```c++
 
     class Decomp {
 
@@ -210,6 +221,7 @@ of the address space.
           // methods described below
 
     }
+```
 
 ### 4.2 Methods
 
@@ -222,14 +234,18 @@ The main method will be a constructor that decomposes the mesh and
 creates the public variables. The default decomposition will require
 no arguments and will read options from the input config file:
 
+```c++
     Decomp mainDecomp;
+```
 
 For multiple decomposition of the same mesh, a second constructor
 will be needed that starts from the default decomposition and
 uses arguments for determining decomposition options. The exact form
 will be determined later, but might look something like:
 
+```c++
     Decomp newDecomp(oldDecomp, nParts, method, haloWidth);
+```
 
 #### 4.2.2 Destructor
 
@@ -237,8 +253,9 @@ After most of the initialization is complete and the decomposition
 information has been used to initialize meshes, halo, I/O, etc.,
 we will supply a destructor to release the space in memory.
 
+```c++
     delete myDecomp;
-
+```
 
 ## 5 Verification and Testing
 
@@ -257,4 +274,13 @@ and verify that the decomposition is the same as the older
 MPAS Fortran code. This test should only be needed after initial
 development and will not need to be repeated as part of 
 routine testing
+
+### 5.3 Check global IDs
+
+To make sure all cells, etc. are accounted for, we can do a global
+sum of the number of cells as well as a sum of global IDs across
+the partition and ensure they the expected sum.
+
+
+
 
