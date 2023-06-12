@@ -91,21 +91,22 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
 
     #ifdef MMF_PAM_FORCE_TOTAL_WATER
       // use total water from GCM to force CRM water vapor
-      // For some unknown reason this appraoch causes the model to crash when clouds start to form...?
-      real input_qt      = input_ql(k_gcm,iens) + input_qccl(k_gcm,iens) + input_qiil(k_gcm,iens);
-      real gcm_rho_v_tmp = input_ql(k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
+
+      // real input_qt      = input_ql(k_gcm,iens) + input_qccl(k_gcm,iens) + input_qiil(k_gcm,iens);
+      // real gcm_rho_v_tmp = input_ql(k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
+      // gcm_rho_v(k_crm,iens) = input_qt * ( gcm_rho_d(k_crm,iens) + gcm_rho_v_tmp );
+      // gcm_rho_c(k_crm,iens) = 0;
+      // gcm_rho_i(k_crm,iens) = 0;
+
+      // set each density separately - they will be combined when the forcing is calculated
+      gcm_rho_v(k_crm,iens) = input_ql(k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
+      gcm_rho_c(k_crm,iens) = input_qccl(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
+      gcm_rho_i(k_crm,iens) = input_qiil(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
+
+      // adjust temperature to account for evaporating and sublimating condensate
       real liq_adj       = input_qccl(k_gcm,iens)* Lv     / cp_d;
       real ice_adj       = input_qiil(k_gcm,iens)*(Lv+Lf) / cp_d;
       gcm_temp(k_crm,iens)  = input_tl(k_gcm,iens) - liq_adj - ice_adj;
-      gcm_rho_v(k_crm,iens) = input_qt * ( gcm_rho_d(k_crm,iens) + gcm_rho_v_tmp );
-      gcm_rho_c(k_crm,iens) = 0;
-      gcm_rho_i(k_crm,iens) = 0;
-
-    // from SAM++:
-    // ttend(k,icrm) = (crm_input_tl(l,icrm)+gamaz(k,icrm)- fac_cond*(crm_input_qccl(l,icrm)+crm_input_qiil(l,icrm))-
-    //                                                      fac_fus*crm_input_qiil(l,icrm)-t00(k,icrm))*idt_gl;
-    // qtend(k,icrm) = (crm_input_ql(l,icrm)+crm_input_qccl(l,icrm)+crm_input_qiil(l,icrm)-q0(k,icrm))*idt_gl;
-
     #endif
 
   });
@@ -173,41 +174,45 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
 }
 
 
-// save CRM dry density to be recalled later
+// save CRM dry density to be recalled later - only for anelastic case
 inline void pam_state_save_dry_density( pam::PamCoupler &coupler ) {
-  using yakl::c::parallel_for;
-  using yakl::c::SimpleBounds;
-  auto &dm_device = coupler.get_data_manager_device_readwrite();
-  auto nens       = coupler.get_option<int>("ncrms");
-  auto nz         = coupler.get_option<int>("crm_nz");
-  auto nx         = coupler.get_option<int>("crm_nx");
-  auto ny         = coupler.get_option<int>("crm_ny");
-  auto crm_rho_d  = dm_device.get<real,4>("density_dry");
-  auto tmp_rho_d  = dm_device.get<real,4>("density_dry_save");
-  //------------------------------------------------------------------------------------------------
-  parallel_for("Horz mean of CRM dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k_crm, int j, int i, int iens) {
-    tmp_rho_d(k_crm,j,i,iens) = crm_rho_d(k_crm,j,i,iens);
-  });
-  //------------------------------------------------------------------------------------------------
+  #ifdef _MAN
+    using yakl::c::parallel_for;
+    using yakl::c::SimpleBounds;
+    auto &dm_device = coupler.get_data_manager_device_readwrite();
+    auto nens       = coupler.get_option<int>("ncrms");
+    auto nz         = coupler.get_option<int>("crm_nz");
+    auto nx         = coupler.get_option<int>("crm_nx");
+    auto ny         = coupler.get_option<int>("crm_ny");
+    auto crm_rho_d  = dm_device.get<real,4>("density_dry");
+    auto tmp_rho_d  = dm_device.get<real,4>("density_dry_save");
+    //------------------------------------------------------------------------------------------------
+    parallel_for("Horz mean of CRM dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k_crm, int j, int i, int iens) {
+      tmp_rho_d(k_crm,j,i,iens) = crm_rho_d(k_crm,j,i,iens);
+    });
+    //------------------------------------------------------------------------------------------------
+  #endif
 }
 
 
-// recall CRM dry density saved previously
+// recall CRM dry density saved previously - only for anelastic case
 inline void pam_state_recall_dry_density( pam::PamCoupler &coupler ) {
-  using yakl::c::parallel_for;
-  using yakl::c::SimpleBounds;
-  auto &dm_device = coupler.get_data_manager_device_readwrite();
-  auto nens       = coupler.get_option<int>("ncrms");
-  auto nz         = coupler.get_option<int>("crm_nz");
-  auto nx         = coupler.get_option<int>("crm_nx");
-  auto ny         = coupler.get_option<int>("crm_ny");
-  auto crm_rho_d  = dm_device.get<real,4>("density_dry");
-  auto tmp_rho_d  = dm_device.get<real,4>("density_dry_save");
-  //------------------------------------------------------------------------------------------------
-  parallel_for("Horz mean of CRM dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k_crm, int j, int i, int iens) {
-    crm_rho_d(k_crm,j,i,iens) = tmp_rho_d(k_crm,j,i,iens);
-  });
-  //------------------------------------------------------------------------------------------------
+  #ifdef _MAN
+    using yakl::c::parallel_for;
+    using yakl::c::SimpleBounds;
+    auto &dm_device = coupler.get_data_manager_device_readwrite();
+    auto nens       = coupler.get_option<int>("ncrms");
+    auto nz         = coupler.get_option<int>("crm_nz");
+    auto nx         = coupler.get_option<int>("crm_nx");
+    auto ny         = coupler.get_option<int>("crm_ny");
+    auto crm_rho_d  = dm_device.get<real,4>("density_dry");
+    auto tmp_rho_d  = dm_device.get<real,4>("density_dry_save");
+    //------------------------------------------------------------------------------------------------
+    parallel_for("Horz mean of CRM dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k_crm, int j, int i, int iens) {
+      crm_rho_d(k_crm,j,i,iens) = tmp_rho_d(k_crm,j,i,iens);
+    });
+    //------------------------------------------------------------------------------------------------
+  #endif
 }
 
 
