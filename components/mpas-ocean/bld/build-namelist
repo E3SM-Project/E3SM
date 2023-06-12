@@ -988,6 +988,15 @@ add_default($nl, 'config_transport_tests_flow_id');
 
 add_default($nl, 'config_vert_levels');
 
+#########################################
+# Namelist group: manufactured_solution #
+#########################################
+
+add_default($nl, 'config_use_manufactured_solution');
+add_default($nl, 'config_manufactured_solution_wavelength_x');
+add_default($nl, 'config_manufactured_solution_wavelength_y');
+add_default($nl, 'config_manufactured_solution_amplitude');
+
 ################################################
 # Namelist group: tracer_forcing_activeTracers #
 ################################################
@@ -1757,6 +1766,7 @@ my @groups = qw(run_modes
                 testing
                 transport_tests
                 init_mode_vert_levels
+                manufactured_solution
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers
