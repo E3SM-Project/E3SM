@@ -1,6 +1,6 @@
 ./xmlchange --append CAM_CONFIG_OPTS="-cldera_profiling -cldera_sai_trcs"
 RUNDIR=$(./xmlquery --value RUNDIR)
-mkdir ${RUNDIR}
+mkdir -p ${RUNDIR}
 CLDERA_PATH=$(python -c "
 import xml.etree.ElementTree as ET
 with open('./env_mach_specific.xml','r') as fd:
