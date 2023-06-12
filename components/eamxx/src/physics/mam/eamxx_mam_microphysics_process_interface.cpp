@@ -199,9 +199,7 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
 
 void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
-  logger.trace("entering MAMMicrophysics::initialize");
-
-  logger.trace("MAMMicrophysics::initialize {}", __LINE__);
+  logger.trace("entering MAMMicrophysics::initialize at line {}", __LINE__);
 
   const auto& T_mid = get_field_in("T_mid").get_view<const Real**>();
   const auto& p_mid = get_field_in("p_mid").get_view<const Real**>();
@@ -218,13 +216,9 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   const auto& n_aitken = get_field_out("n_aitken").get_view<Real**>();
   const auto& q_aitken_so4 = get_field_out("q_aitken_so4").get_view<Real**>();
 
-  logger.trace("MAMMicrophysics::initialize {}", __LINE__);
-
   const auto& tracers = get_group_out("tracers");
   const auto& tracers_info = tracers.m_info;
   int num_tracers = tracers_info->size();
-
-  logger.trace("MAMMicrophysics::initialize {}", __LINE__);
 
   // Alias local variables from temporary buffer
   auto z_mid = buffer_.z_mid;
@@ -237,8 +231,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   auto n_qi_dry = buffer_.n_qi_dry;
   auto w_updraft = buffer_.w_updraft;
 
-  logger.trace("MAMMicrophysics::initialize {}", __LINE__);
-
   // Perform any initialization work.
   if (run_type==RunType::Initial){
     /* e.g.
@@ -249,8 +241,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
     Kokkos::deep_copy(cldfrac_liq,0.0);
     */
   }
-
-  logger.trace("MAMMicrophysics::initialize {}", __LINE__);
 
   // set atmosphere state data
   T_mid_ = T_mid;
