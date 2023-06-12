@@ -2839,6 +2839,9 @@ contains
        !| IAC SETUP-SEND
        !----------------------------------------------------------
        if (iac_present .and. iacrun_alarm) then
+
+          !write(logunit,*) '(cime_run) calling cime_run_iac_setup_send',ymd, tod
+
           call cime_run_iac_setup_send()
        endif
 
@@ -2846,6 +2849,9 @@ contains
        !| RUN IAC MODEL
        !----------------------------------------------------------
        if (iac_present .and. iacrun_alarm) then
+
+          !write(logunit,*) '(cime_run) calling iac_run',ymd, tod
+
           call component_run(Eclock_z, iac, iac_run, infodata, &
                seq_flds_x2c_fluxes=seq_flds_x2z_fluxes, &
                seq_flds_c2x_fluxes=seq_flds_z2x_fluxes, &
@@ -2907,6 +2913,9 @@ contains
        !| LND SETUP-SEND
        !----------------------------------------------------------
        if (lnd_present .and. lndrun_alarm) then
+
+          !write(logunit,*) '(cime_run) calling cime_run_lnd_setup_send',ymd, tod
+
           call cime_run_lnd_setup_send()
        endif
 
@@ -2947,6 +2956,9 @@ contains
        !| RUN LND MODEL
        !----------------------------------------------------------
        if (lnd_present .and. lndrun_alarm) then
+
+          !write(logunit,*) '(cime_run) calling lnd_run',ymd, tod
+
           call component_run(Eclock_l, lnd, lnd_run, infodata, &
                seq_flds_x2c_fluxes=seq_flds_x2l_fluxes, &
                seq_flds_c2x_fluxes=seq_flds_l2x_fluxes, &
@@ -3020,6 +3032,9 @@ contains
        !| LND RECV-POST
        !----------------------------------------------------------
        if (lnd_present .and. lndrun_alarm) then
+
+          !write(logunit,*) '(cime_run) calling cime_run_lnd_recv_post',ymd, tod
+
           call cime_run_lnd_recv_post()
        endif
 
@@ -4031,10 +4046,17 @@ contains
        call t_drvstartf ('CPL:IACPREP', cplrun=.true., barrier=mpicom_CPLID)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-       ! Average our accumulators - now handled at very start of
-       ! timestep, so we can do it monthly rather than the yearly glc
-       ! time scale.
-       ! call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
+       ! Average our accumulators - now handled right before running the iac,
+       !    at tod=1800 at beginning of each year
+       ! these are annual average values
+       ! needs to be done here to have proper restarts
+       if (iac_present .and. iacrun_avg_alarm) then
+
+          write(logunit,*) '(cime_run_iac_setup_send) accum_avg',&
+                           ymd, tod
+
+          call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
+       endif
 
        ! Setup lnd inputs on iac grid.  Right now I think they will be the same
        ! thing, but I'm trying to code for the general case
@@ -4289,14 +4311,14 @@ contains
        ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
        if (lnd_c2_rof) call prep_rof_accum_lnd(timer='CPL:lndpost_accl2r')
        if (lnd_c2_glc .or. do_hist_l2x1yrg) call prep_glc_accum_lnd(timer='CPL:lndpost_accl2g' )
+
+       write(logunit,*) '(cime_run_lnd_recv_post) iac_accum',&
+                           ymd, tod
+
        if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
 
-       ! the iacrun_avg alarm is right at tod=0 of the first day of each
-       ! month. So we do it after lnd processing, so iac has it for
-       ! it's yearly 1/1 t0d=1800 run.
-       if (iac_present .and. iacrun_avg_alarm) then
-          call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
-       endif
+       ! the iacrun_avg alarm is now called at tod=1800 of the first day of each
+       ! year, y cime_run_iac_setup_send
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_drvstopf  ('CPL:LNDPOST',cplrun=.true.)
