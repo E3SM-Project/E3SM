@@ -370,6 +370,13 @@ void MAMMicrophysics::run_impl(const double dt) {
     tends.q_gas[ih2so4] = ekat::subview(buffer_.q_h2so4_tend, icol);
     tends.n_mode_i[iait] = ekat::subview(buffer_.n_aitken_tend, icol);
     tends.q_aero_i[iait][iso4] = ekat::subview(buffer_.q_aitken_so4_tend, icol);
+#ifndef NDEBUG
+    const int lev_idx = 0;
+    if (icol == 0) {
+    logger.debug("tends.q_gas[ih2so4] = {}, tends.n_mode_i[iait] = {}, tends.q_aero_i[iait][iso4] = {}",
+      tends.q_gas[ih2so4](lev_idx), tends.n_mode_i[iait](lev_idx), tends.q_aero_i[iait][iso4](lev_idx));
+    }
+#endif
 
     // run the nucleation process to obtain tendencies
     nucleation_->compute_tendencies(team, t, dt, atm, progs, diags, tends);
@@ -381,6 +388,8 @@ void MAMMicrophysics::run_impl(const double dt) {
       progs.q_aero_i[iait][iso4](klev) += dt * tends.q_aero_i[iait][iso4](klev);
     });
   });
+
+
 
   // postprocess output
   Kokkos::parallel_for("postprocess", policy, postprocess_);

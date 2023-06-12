@@ -38,6 +38,8 @@ TEST_CASE("mam4-nucleation-standalone", "") {
   const auto  t0_str = ts.get<std::string>("run_t0");
   const auto  t0     = util::str_to_time_stamp(t0_str);
 
+  logger.info("running MAMMicrophysics standalone test with dt = {} for {} steps.", dt, nsteps);
+
   // Need to register products in the factory *before* we create any atm process or grids manager.
   auto& proc_factory = AtmosphereProcessFactory::instance();
   auto& gm_factory = GridsManagerFactory::instance();

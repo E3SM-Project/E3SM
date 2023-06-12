@@ -26,7 +26,7 @@ initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   q_aitken_so4 : 0.0
   n_aitken : 0.0
-  q_h2so4 : 0.0000000002
+  q_h2so4 : 0.000000002
   pbl_height : 400.0
 
 # The parameters for I/O control
