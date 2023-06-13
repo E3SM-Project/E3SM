@@ -123,6 +123,16 @@
     <alias>FAQP-MMF1</alias>
     <lname>2000_EAM%AQP-MMF1_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
   </compset>
+
+  <compset>
+    <alias>FAQP-MMF-SAM</alias>
+    <lname>2000_EAM%AQP-MMF1_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FAQP-MMF-PAM-C</alias>
+    <lname>2000_EAM%AQP-MMF-PAM-C_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+  </compset>
   
   <!-- *********************************** -->
   <!-- SCREAM compsets -->
