@@ -7,7 +7,7 @@ namespace scream
 // =========================================================================================
 Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
-  , m_datafile(params.get<std::string>("Nudging_Filename"))
+  , m_datafile(params.get<std::string>("nudging_filename"))
 {}
 
 // =========================================================================================

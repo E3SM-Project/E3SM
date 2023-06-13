@@ -214,6 +214,11 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
 
+    <!-- nudging -->
+    <nudging inherit="atm_proc_base">
+      <nudging_filename>NONE</nudging_filename>
+    </nudging>
+
     <!-- For internal testing only -->
     <testOnly inherit="atm_proc_base"/>
 
