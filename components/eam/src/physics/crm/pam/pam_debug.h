@@ -10,6 +10,7 @@
 void pam_debug_check_state( pam::PamCoupler &coupler, int id, int nstep ) {
 
   auto &dm_device = coupler.get_data_manager_device_readwrite();
+  auto &dm_host   = coupler.get_data_manager_host_readwrite();
   auto nx   = coupler.get_option<int>("crm_nx");
   auto ny   = coupler.get_option<int>("crm_ny");
   auto nz   = coupler.get_option<int>("crm_nz");
@@ -20,6 +21,12 @@ void pam_debug_check_state( pam::PamCoupler &coupler, int id, int nstep ) {
   auto rho_c = dm_device.get<real,4>("cloud_water");
   auto rho_i = dm_device.get<real,4>("ice");
 
+  // real grav       = coupler.get_option<real>("grav");
+  real grav = 9.80616;
+  auto input_phis = dm_host.get<real const,1>("input_phis").createDeviceCopy();
+  auto lat        = dm_host.get<real const,1>("latitude"  ).createDeviceCopy();
+  auto lon        = dm_host.get<real const,1>("longitude" ).createDeviceCopy();
+
   // Check for NaNs
   parallel_for("", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
 
@@ -27,11 +34,17 @@ void pam_debug_check_state( pam::PamCoupler &coupler, int id, int nstep ) {
     const auto is_nan_r_atm = isnan( rho_d(k,j,i,iens) );
     const auto is_nan_q_atm = isnan( rho_v(k,j,i,iens) );
     if ( is_nan_t_atm || is_nan_r_atm || is_nan_q_atm ) {
-      printf("PAM-DEBUG nan-found - st:%d  id:%d  k:%d  i:%d  n:%d  t: %g  rv: %g  rd: %g \n",
-        nstep,id,k,i,nens,
+      auto phis = input_phis(iens)/grav;
+      printf("PAM-DEBUG nan-found - st:%d  id:%d  k:%d  i:%d  n:%d  t: %g  rv: %g  rc: %g  ri: %g  rd: %g  lat: %g  lon: %g  phis: %g \n",
+        nstep,id,k,i,iens,
         temp (k,j,i,iens),
         rho_v(k,j,i,iens),
-        rho_d(k,j,i,iens)
+        rho_c(k,j,i,iens),
+        rho_i(k,j,i,iens),
+        rho_d(k,j,i,iens),
+        lat(iens),
+        lon(iens),
+        phis
       );
     }
 
@@ -39,11 +52,17 @@ void pam_debug_check_state( pam::PamCoupler &coupler, int id, int nstep ) {
     const auto is_neg_r_atm = rho_d(k,j,i,iens) < 0;
     const auto is_neg_q_atm = rho_v(k,j,i,iens) < 0;
     if ( is_neg_t_atm || is_neg_r_atm || is_neg_q_atm ) {
-      printf("PAM-DEBUG negative-found - st:%d  id:%d  k:%d  i:%d  n:%d  t: %g  rv: %g  rd: %g \n",
-        nstep,id,k,i,nens,
+      auto phis = input_phis(iens)/grav;
+      printf("PAM-DEBUG negative-found - st:%d  id:%d  k:%d  i:%d  n:%d  t: %g  rv: %g  rc: %g  ri: %g  rd: %g  lat: %g  lon: %g  phis: %g \n",
+        nstep,id,k,i,iens,
         temp (k,j,i,iens),
         rho_v(k,j,i,iens),
-        rho_d(k,j,i,iens)
+        rho_c(k,j,i,iens),
+        rho_i(k,j,i,iens),
+        rho_d(k,j,i,iens),
+        lat(iens),
+        lon(iens),
+        phis
       );
     }
 
