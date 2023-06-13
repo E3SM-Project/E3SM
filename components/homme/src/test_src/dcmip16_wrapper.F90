@@ -43,7 +43,7 @@ real(rl):: zi(nlevp), zm(nlev)                                          ! z coor
 real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
 real(rl):: tau
 
-real(rl) :: sample_period  = 2.0_rl
+real(rl) :: sample_period  = 1.0_rl
 real(rl) :: rad2dg = 180.0_rl/pi
 
 type :: PhysgridData_t
@@ -612,8 +612,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   real(rl) :: zi(np,np,nlevp), zi_c(nlevp), rstar(nlev), vthetaa(nlev)
 
-  real(rl) :: energy_before, energy_after, en2, mass_before, mass_after, discrepancy, encl
-  real(rl) :: en1global, en2global, mass1global, mass2global, rstar_new, olddphi
+  real(rl) :: energy_before, energy_after, en2cp, en2cV, mass_before, mass_after, discrepancy, encl
+  real(rl) :: en1glob_cp, en1glob_cv, en2glob_cp, en2glob_cv, mass1global, mass2global, rstar_new, olddphi
   logical :: wasiactive
 
 
@@ -658,7 +658,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       qv_c = qv(i,j,:); qc_c = qc(i,j,:); qr_c = qr(i,j,:); 
       dp_c = dp(i,j,:); T_c = T(i,j,:); zi_c = zi(i,j,:);
 
-      !T, p, dp, phi from homme won't be concistent with water loading
+      !T, p, dp, phi from homme won't be concistent with full water loading
       !redo p here
       do k=1,nlev
         rstar_new = rdry * (1.0 - qv_c(k) - qc_c(k) - qr_c(k)) + rvapor * qv_c(k)
@@ -670,11 +670,12 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       ptop = hvcoord%hyai(1) * hvcoord%ps0
 
       !compute current energy and mass
-      call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en1global)  
+      call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en1glob_cp)  
+      call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en1glob_cv)  
 
-!      print *, 'via P form ', en1global
-!      call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en1global)  
-!      print *, 'via V form ', en1global
+#if 0
+print *, 'check consistent energy/EOS',(en1glob_cp-en1glob_cv)/en1glob_cp
+#endif
 
       mass1global = sum( dp_c )
 
@@ -691,23 +692,30 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
         if(bubble_rj_cpstar_hy .or. bubble_rj_cpstar_nh) then
           !returns new T, qv, new!!! dp, mass
           call rj_new(qv_c,qc_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
-                          energy_before,en2,energy_after,wasiactive)
-!seems to work for NH update
-!if(wasiactive)then
-!print *, 'en1,en2', energy_before, en2
-!print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
-!print *, 'en3, enout', energy_after,energy_prect
-!print *, 'en2, (en3+enout)', en2,(energy_after+energy_prect)
-!print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (en2-(energy_after+energy_prect))/en2
-!print *, 'total rel loss', (energy_before-(energy_after+energy_prect))/en2
-!print *, "    "
-!endif
+                          energy_before,en2cp,en2cv,energy_after,encl,wasiactive)
+if(wasiactive)then
+if(bubble_rj_cpstar_nh) then
+
+!!!!sanity check en1 = en1glob
+print *, 'en_before-en1glob rel', (energy_before-en1glob_cv)/en1glob_cv
+print *, 'en_before-en2cv rel', (energy_before-en2cv)/en2cv
+print *, 'en_before-(en3+enout) rel', (energy_before-(energy_after+energy_prect))/en2cv
+
+else
+
+print *, 'en_before-en2cp rel', (energy_before-en2cp)/en2cp
+print *, 'en_before-(en3+enout) rel', (energy_before-(energy_after+energy_prect))/en2cp
+
+endif
+
+print *, "    "
+endif
 
         elseif(bubble_rj_cVstar) then
 
           !returns new T, qv, new!!! dp, mass
           call rj_new_volume(qv_c,qc_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
-               energy_before,en2,energy_after,encl,wasiactive)
+               energy_before,en2cv,energy_after,encl,wasiactive)
 
 !this seems to work
 !if(wasiactive)then
@@ -731,18 +739,21 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
         print *, 'kessler planar bubble not done';  stop
       endif ! RJ or Kessler choice
 
-      !call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2global)
-      call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en2global)
+      call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2glob_cp)
+      call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en2glob_cv)
+
+if(wasiactive)then
+print *, 'after check consistent energy/EOS',(en2glob_cp-en2glob_cv)/en2glob_cp
+endif 
+
       mass2global = sum( dp_c )
 
-!if(wasiactive)then
+if(wasiactive)then
 !print *, 'en prect', energy_prect
-!print *, 'en1global,en2global+prect', en1global, en2global+energy_prect
-!print *, 'en1g-en2g, rel', en1global-(en2global+energy_prect), ( en1global-en2global-energy_prect)/en1global
-!print *, 'mass1global,mass2global+prect', mass1global, mass2global+mass_prect
-!print *, 'm1g-m2g, rel', mass1global-(mass2global+mass_prect), ( mass1global-mass2global-mass_prect)/mass1global
-!print *, "    "
-!endif
+print *, 'en1glob_cp-(en2glob_cp+prect) rel', (en1glob_cp-(en2glob_cp+energy_prect))/en1glob_cp
+print *, 'm1g-m2g, rel', mass1global-(mass2global+mass_prect), ( mass1global-mass2global-mass_prect)/mass1global
+print *, "    "
+endif
 
       !do not use homme rstar routine here
 

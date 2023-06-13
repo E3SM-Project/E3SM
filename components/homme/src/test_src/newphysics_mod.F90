@@ -24,6 +24,8 @@ use physical_constants,   only: bubble_const1, bubble_const2, bubble_const3, bub
 
 implicit none
 
+real(rl) :: Tforcl  = 300.0_rl
+
 contains
 
 !pi is the result, it is \pi at midlevels
@@ -82,13 +84,13 @@ end subroutine compute_mass
 
 
 subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
-                                        en1, en2, en3, wasiactive)
+                                        en1, en2cp, en2cV, en3, encl, wasiactive)
 
   real(rl), dimension(nlev), intent(inout) :: p_c
   real(rl), dimension(nlev), intent(inout) :: dp_c
   real(rl), dimension(nlev), intent(inout) :: qv_c,ql_c,T_c
   real(rl), dimension(nlevp),intent(inout) :: zi_c
-  real(rl),                  intent(inout) :: massout, energyout, en1, en2, en3
+  real(rl),                  intent(inout) :: massout, energyout, en1, en2cp, en2cV, en3, encl
   real(rl),                  intent(in)    :: ptop
   logical,                   intent(inout) :: wasiactive
 
@@ -104,40 +106,17 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   energyout = 0.0
   zero = 0.0
   rain = 0.0
-  en1 = 0; en2 = 0; en3 = 0; 
+  en1 = 0; en2cp = 0; en2cV=0; en3 = 0; encl = 0;
 
   call construct_hydro_pressure(dp_c,ptop,pi)
 
   !compute en1, energy before condensation
-  call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c(nlevp),p_c,en1)
+  if(bubble_rj_cpstar_nh) then
+    call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c(nlevp),p_c,en1)
+  else
+    call energycp_hy_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c(nlevp),    en1)
+  endif
 
-#if 0
-!debugging
-
-!experiment
-!  qv_c = 0.01
-!  ql_c = qv_c
-
-!recompute pressure
-  do k=1,nlev
-     rstar_new = rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k)
-     olddphi = gravit*(zi_c(k) - zi_c(k+1))
-     p_c(k) = rstar_new * dp_c(k) * T_c(k) / olddphi
-  enddo
-
-!what if we recompute dz instead?
-
-!  do k=nlev, 1, -1
-!    rstar_new = rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k)
-!    olddphi = rstar_new * dp_c(k) * T_c(k) / p_c(k)
-!    zi_c(k) = zi_c(k+1) + olddphi/gravit
-!  enddo
-
-  call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c(nlevp),p_c,en1)
-print *, 'with liquid P formula', en1
-  call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c       ,p_c,en1)
-print *, 'with liquid V formula', en1
-#endif
 
   !since one option uses geo, go from bottom to up
   do k=nlev, 1, -1
@@ -204,16 +183,21 @@ print *, 'with liquid V formula', en1
 
 !if(wasiactive)then
 !print *, 'ql_c', ql_c
-  !compute en2, energy before sedimentation
+!compute en2, energy before sedimentation
 !  call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
 !print *, 'en2 via P',en2
 !  call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c       ,p_c,en2)
 !print *, 'en2 via V',en2
 !endif
 
-  !sanity check to use the opposite formulation
-  !call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
-  call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c,p_c,en2)
+  if(bubble_rj_cpstar_nh) then
+    !sanity check is to use the opposite formulation
+    call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2cp)
+    call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c,p_c,en2cV)
+  else
+    !for HY update, there is no version of energy functional with cV
+    call energycp_hy_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),    en2cp)
+  endif
 
   ! in HY update, what to do about energyout and how/when to recompute p and phi?
   ! decision: keep both updates the same for cpstar HY and NH
@@ -261,13 +245,14 @@ print *, 'with liquid V formula', en1
     
      massout = massout + vapor_mass_change
      energyout = energyout + (enb - ena)
+     encl = encl + (Tforcl*cl+latice)*vapor_mass_change
 
   enddo
   endif
 
   !interchange V and P formulas of energy for debugging
-  call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
-  !call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c,p_c,en3)
+  !call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
+  call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c,p_c,en3)
  
 end subroutine rj_new
 
@@ -374,7 +359,8 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 
      massout = massout + vapor_mass_change
      energyout = energyout + vapor_mass_change*(T_c(k)*cl + latice + (zi_c(k) + zi_c(k+1))*gravit/2.0)
-     encl      = encl + vapor_mass_change*(T_c(k)*cl + latice)
+     !encl      = encl + vapor_mass_change*(T_c(k)*cl + latice)
+     encl = encl + (Tforcl*cl+latice)*vapor_mass_change
   enddo
   endif
 
@@ -384,8 +370,7 @@ end subroutine rj_new_volume
 
 
 
-! ABANDONED for this branch
-!in NH case, uses NH pressure
+! ABANDONED in this branch
 subroutine rj_old(qv_c,T_c,dp_c,p_c,zi_c,ptop,massout,wasiactive)
 
   real(rl), dimension(nlev), intent(inout) :: p_c 
@@ -468,22 +453,17 @@ end subroutine rj_old
 
 
 
-subroutine energycp_hy_via_mass(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zi_c,energy)
+subroutine energycp_hy_via_mass(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zbottom,energy)
 
   real(rl), dimension(nlev), intent(in) :: dpdry_c, dpv_c, dpc_c, dpr_c
-  real(rl), dimension(nlevp),intent(in) :: zi_c
   real(rl), dimension(nlev), intent(in) :: T_c
-  real(rl),                  intent(in) :: ptop
+  real(rl),                  intent(in) :: ptop, zbottom
   real(rl),                  intent(inout) :: energy
 
-  real(rl) :: zbottom, pis, cpterm, Lterm
+  real(rl) :: pis, cpterm, Lterm
   integer  :: k
 
-  zbottom = zi_c(nlevp)
   pis = ptop + sum(dpdry_c + dpv_c + dpc_c + dpr_c)
-
-  !derived pressure values
-  !call construct_hydro_pressure(dp_c,ptop,ppi)
 
   energy = zbottom * pis * gravit
 
