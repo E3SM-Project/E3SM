@@ -46,8 +46,13 @@ class TestProperty(object):
         # A longer decription of the test
         self.description    = description
 
-        # Cmake config args for this test
+        # Cmake config args for this test. Check that quoting is done with
+        # single quotes.
         self.cmake_args     = cmake_args
+        for name, arg in self.cmake_args:
+            expect('"' not in arg,
+                   f"In test definition for {longname}, found cmake args with double quotes {name}='{arg}'"
+                   "Please use single quotes if quotes are needed.")
 
         # Does the test do baseline testing
         self.uses_baselines = uses_baselines
@@ -350,7 +355,7 @@ class TestAllScream(object):
             self._root_dir = Path(__file__).resolve().parent.parent
         else:
             self._root_dir = Path(self._root_dir).resolve()
-            expect(self._root_dir.is_dir() and self._root_dir.parts()[-2:] == ('scream', 'components'),
+            expect(self._root_dir.is_dir() and self._root_dir.parts()[-2:] == ("scream", "components"),
                    f"Bad root-dir '{self._root_dir}', should be: $scream_repo/components/eamxx")
 
         # Make our test objects! Change mem to default mem-check test for current platform
@@ -495,7 +500,7 @@ class TestAllScream(object):
 
         else:
             if self._baseline_dir == "AUTO":
-                expect (self._baseline_ref is None or self._baseline_ref == 'origin/master',
+                expect (self._baseline_ref is None or self._baseline_ref == "origin/master",
                         "Do not specify `-b XYZ` when using `--baseline-dir AUTO`. The AUTO baseline dir should be used for the master baselines only.\n"
                         "       `-b XYZ` needs to probably build baselines for ref XYZ. However, no baselines will be built if the dir already contains baselines.\n")
                 # We treat the "AUTO" string as a request for automatic baseline dir.
@@ -780,7 +785,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         data = {}
 
         # This is the only version numbering supported by ctest, so far
-        data['version'] = {"major":1,"minor":0}
+        data["version"] = {"major":1,"minor":0}
 
         # We add leading zeroes to ensure that ids will sort correctly
         # both alphabetically and numerically
@@ -789,9 +794,9 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             devices.append({"id":f"{res_id:05d}"})
 
         # Add resource groups
-        data['local'] = [{"devices":devices}]
+        data["local"] = [{"devices":devices}]
 
-        with (build_dir/"ctest_resource_file.json").open('w', encoding="utf-8") as outfile:
+        with (build_dir/"ctest_resource_file.json").open("w", encoding="utf-8") as outfile:
             json.dump(data,outfile,indent=2)
 
         return (end-start)+1
@@ -836,6 +841,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         # taskset range even though the ctest script is also running the tests
         if self._parallel:
             start, end = self.get_taskset_range(test)
+            result = result.replace("'", r"'\''") # handle nested quoting
             result = f"taskset -c {start}-{end} sh -c '{result}'"
 
         return result
@@ -1024,7 +1030,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             # of tie, $IDX as tiebreaker
             for file in files:
                 file_no_path = file.name
-                tokens = re.split(r'_|-|\.',str(file_no_path))
+                tokens = re.split(r"_|-|\.",str(file_no_path))
                 if latest is None:
                     latest = file
                     curr_tag = int(tokens[1])
