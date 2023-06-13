@@ -91,7 +91,7 @@ contains
   ! This still only works for lat/lon dycores
   logical function use_scam_limits(File, start, kount, dimnames)
     use shr_scam_mod,   only: shr_scam_getCloseLatLon
-    use scamMod,        only: scmlat, scmlon, single_column
+    use iop_data_mod,   only: scmlat, scmlon, single_column
     use cam_abortutils, only: endrun
 
     ! Dummy arguments

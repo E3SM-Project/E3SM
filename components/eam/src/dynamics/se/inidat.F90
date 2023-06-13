@@ -18,9 +18,11 @@ module inidat
   use element_mod, only : element_t
   use shr_kind_mod, only: r8 => shr_kind_r8
   use spmd_utils,   only: iam, masterproc
-  use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
+  use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, &
+                              seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
-  use scamMod, only: single_column, precip_off, scmlat, scmlon, scm_multcols, dp_crm, iop_perturb_high
+  use iop_data_mod, only: single_column, precip_off, scmlat, scmlon, &
+                          scm_multcols, dp_crm, iop_perturb_high
   use perf_mod, only: t_startf, t_stopf
 
   implicit none
@@ -57,8 +59,8 @@ contains
     use cam_grid_support,        only: cam_grid_get_local_size, cam_grid_get_gcid
     use cam_map_utils,           only: iMap
     use shr_const_mod,           only: SHR_CONST_PI
-    use scamMod,                 only: setiopupdate, readiopdata
-    use se_single_column_mod,    only: scm_setinitial, scm_broadcast
+    use iop_data_mod,            only: setiopupdate, setiopupdate_init, readiopdata
+    use se_iop_intr_mod,         only: iop_setinitial, iop_broadcast
     use element_ops,             only: set_thermostate
     use gllfvremap_mod,          only: gfr_fv_phys_to_dyn_topo
 
@@ -529,10 +531,10 @@ contains
     
     if (single_column) then
       iop_update_surface = .false.
-      if (masterproc) call setiopupdate()
+      if (masterproc) call setiopupdate_init()
       if (masterproc) call readiopdata(iop_update_surface,hyam,hybm)
-      if (scm_multcols) call scm_broadcast()
-      call scm_setinitial(elem)
+      if (scm_multcols) call iop_broadcast()
+      call iop_setinitial(elem)
     endif
 
     if (pertlim .ne. D0_0) then

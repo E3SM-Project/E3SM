@@ -1,12 +1,15 @@
-module history_scam
+module history_iop
 !----------------------------------------------------------------------- 
 ! 
-! Purpose: SCAM specific history code.
+! Purpose: Provide output relevant to SCM and DP-CRM 
+!            (I.e. configurations that are driven by IOPs)
 !
 ! Public functions/subroutines:
-!   bldfld, h_default
+!   iop_intht
 ! 
-! Author: anonymous from code in cam_history.F90
+! Author: original anonymous from code in cam_history.F90
+! Updated: Peter Bogenschutz
+! This file was formerly named history_iop.F90
 !-----------------------------------------------------------------------
    use shr_kind_mod, only: r8 => shr_kind_r8, r4 => shr_kind_r4
    use constituents, only: pcnst, cnst_name, cnst_longname, hadvnam, vadvnam, &
@@ -15,17 +18,17 @@ module history_scam
    use pmgrid,       only: plev
    use cam_history,  only:    addfld, horiz_only, outfld, add_default
 
-   use scamMod, only :divq3d,divt3d,wfld,divq,divt,divu,divv,scm_multcols
+   use iop_data_mod, only :divq3d,divt3d,wfld,divq,divt,divu,divv,scm_multcols
 
    implicit none
 
 PRIVATE
 
-   public :: scm_intht
+   public :: iop_intht
 
 !#######################################################################
 CONTAINS
-   subroutine scm_intht()
+   subroutine iop_intht()
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -34,13 +37,12 @@ CONTAINS
 ! 
 ! Method: Call a subroutine to add each field
 ! 
-! Author: CCM Core Group
+! Author: CCM Core Group (original), Peter Bogenschutz (updated)
 ! 
 !-----------------------------------------------------------------------
       use ppgrid, only: pver, pverp
       use constituents
       use cam_history, only: add_default
-      use dycore, only: dycore_is
 !-----------------------------------------------------------------------
 !
 !-----------------------------------------------------------------------
@@ -50,15 +52,10 @@ CONTAINS
       real(r8) dummy
       character(len=100) dyngrid
 
-      if (dycore_is('EUL')) then
-        dyngrid = 'gauss_grid'
-      else
-        dyngrid = 'physgrid'
-      endif
+      dyngrid = 'physgrid'
 !
 ! Call addfld to add each field to the Master Field List.
 !
-      !+ Make this have backwards compatibility with Eulerian core
       if (scm_multcols) then
         call addfld ('TDIFF',(/ 'lev' /),    'A','K','difference from observed temp',gridname='GLL')
         call addfld ('QDIFF',(/ 'lev' /),    'A','kg/kg','difference from observed water',gridname='GLL')
@@ -92,7 +89,6 @@ CONTAINS
       call addfld ('LHFLXOBS',horiz_only,    'A','W/m2','Obs Surface latent heat flux',gridname=trim(dyngrid))
       call addfld ('TRELAX',(/ 'lev' /),    'A','K','t relaxation amount',gridname=trim(dyngrid))
       call addfld ('QRELAX',(/ 'lev' /),    'A','kg/kg','q relaxation amount',gridname=trim(dyngrid))
-      call addfld ('TAURELAX',(/ 'lev' /),    'A','seconds','relaxation time constant',gridname=trim(dyngrid))
       call add_default ('TDIFF     ', 1, ' ')
       call add_default ('QDIFF     ', 1, ' ')
       if (scm_multcols) then
@@ -106,7 +102,7 @@ CONTAINS
         call add_default ('QW2_RES', 1, ' ')
         call add_default ('QWTHL_RES', 1, ' ')
       endif
-   end subroutine scm_intht   
+   end subroutine iop_intht   
 
 !#######################################################################
- end module history_scam
+ end module history_iop

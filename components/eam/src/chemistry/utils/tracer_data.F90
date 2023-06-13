@@ -1110,7 +1110,7 @@ contains
     use physics_types,only : physics_state
     use ppgrid,           only: pcols, pver, pverp,begchunk,endchunk
     use physconst,        only: rair
-    use scamMod
+    use iop_data_mod
     use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_props, &
                             rad_cnst_get_mode_props, rad_cnst_get_mode_num
     

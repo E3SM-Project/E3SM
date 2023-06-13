@@ -34,7 +34,7 @@ module physpkg
   use phys_control,     only: phys_do_flux_avg, phys_getopts, waccmx_is
   use zm_conv,          only: do_zmconv_dcape_ull => trigdcape_ull, &
                               do_zmconv_dcape_only => trig_dcape_only
-  use scamMod,          only: single_column, scm_crm_mode
+  use iop_data_mod,     only: single_column
   use flux_avg,         only: flux_avg_init
   use infnan,           only: posinf, assignment(=)
 #ifdef SPMD
@@ -1165,9 +1165,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out, phy
        !call t_adj_detailf(-1)
        call t_stopf ('bc_physics')
 
-       ! Don't call the rest in CRM mode
-       if(single_column.and.scm_crm_mode) return
-
 #ifdef TRACER_CHECK
        call gmean_mass ('between DRY', phys_state)
 #endif
@@ -1347,8 +1344,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     !
     ! If exit condition just return
     !
-
-    if(single_column.and.scm_crm_mode) return
 
     if ( adiabatic .or. ideal_phys ) return
     !-----------------------------------------------------------------------

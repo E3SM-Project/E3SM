@@ -4576,29 +4576,16 @@ Full pathname of IOP dataset.
 Default: set by build-namelist.
 </entry>
 
-<entry id="scm_crm_mode" type="logical" category="scam"
-       group="cam_inparm" valid_values="">
-Column radiation mode.
-Default: FALSE
-</entry>
-
-<entry id="scm_diurnal_avg" type="logical" category="scam"
-       group="cam_inparm" valid_values="">
-If using diurnal averaging or not.
-Default: FALSE
-</entry>
-
 <entry id="scm_iop_srf_prop" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Use the specified surface properties.
 Default: FALSE
 </entry>
 
-<entry id="scm_clubb_iop_name" type="char*200" category="scam"
+<entry id="iop_nudge_tscale" type="real" category="scam"
        group="cam_inparm" valid_values="">
-IOP name for CLUBB running in single column mode
-Default: ""
-</entry>
+Time scale to nudge to IOP forcing file.
+Default: 10800 (s)
 
 <entry id="dp_crm" type="logical" category="scam"
        group="cam_inparm" valid_values="">

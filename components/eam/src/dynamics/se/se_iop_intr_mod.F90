@@ -1,36 +1,50 @@
-module se_single_column_mod
+module se_iop_intr_mod
 !--------------------------------------------------------
 ! 
-! Module for the SE single column model
+! Module for the interface between the Spectral Element
+!  dynamical core and intensive observation period (IOP) data
+!  used for single column model (SCM) and doubly-periodic (DP)
+!  cloud resolving model (CRM).
+
+!---------------------------------------------------------
+! Author: Peter Bogenschutz (bogenschutz1@llnl.gov)
+! Formerly named se_single_column_mod.F90
+!
+!----------------------------------------------------------
 
 use element_mod, only: element_t
-use scamMod
+use iop_data_mod
 use constituents, only: cnst_get_ind, pcnst
 use dimensions_mod, only: nelemd, np
 use time_manager, only: get_nstep, dtime, is_first_step, &
   is_first_restart_step, is_last_step
 use ppgrid, only: begchunk
-use pmgrid, only: plev, plon
-use parallel_mod,            only: par
+use pmgrid
+use parallel_mod, only: par
 #ifdef MODEL_THETA_L
 use element_ops, only: get_R_star, get_pottemp
 use eos, only: pnh_and_exner_from_eos
 #endif
 use element_ops, only: get_temperature
-use spmd_utils, only: masterproc
+use cam_history, only: outfld
 
 implicit none
 
-public scm_setinitial
-public scm_setfield
-public scm_broadcast
-public apply_SC_forcing
+public iop_setinitial
+public iop_setfield
+public iop_broadcast
+public apply_iop_forcing
 
 !=========================================================================
 contains
 !=========================================================================
 
-subroutine scm_setinitial(elem)
+subroutine iop_setinitial(elem)
+
+!---------------------------------------------------------
+! Purpose: Set initial values from IOP files (where available)
+!    when running SCM or DP-CRM.
+!----------------------------------------------------------
 
   use kinds, only : real_kind
   use constituents, only: qmin
@@ -128,9 +142,16 @@ subroutine scm_setinitial(elem)
     enddo
   endif
 
-end subroutine scm_setinitial
+end subroutine iop_setinitial
 
-subroutine scm_broadcast()
+
+!=========================================================================
+subroutine iop_broadcast()
+
+!---------------------------------------------------------
+! Purpose: When running DP-CRM, broadcast relevant logical 
+!   flags and data to all processors
+!----------------------------------------------------------
 
   use mpishorthand
   
@@ -156,7 +177,7 @@ subroutine scm_broadcast()
   call mpibcast(tground,1,mpir8,0,mpicom)
   call mpibcast(lhflxobs,1,mpir8,0,mpicom)
   call mpibcast(shflxobs,1,mpir8,0,mpicom)
-!  
+
   call mpibcast(tobs,plev,mpir8,0,mpicom)
   call mpibcast(qobs,plev,mpir8,0,mpicom)
   call mpibcast(uobs,plev,mpir8,0,mpicom)
@@ -171,9 +192,15 @@ subroutine scm_broadcast()
   
 #endif
 
-end subroutine scm_broadcast
+end subroutine iop_broadcast
 
-subroutine scm_setfield(elem,iop_update_phase1)
+!=========================================================================
+subroutine iop_setfield(elem,iop_update_phase1)
+
+!---------------------------------------------------------
+! Purpose: Update various fields based on available data
+!   provided by IOP file
+!----------------------------------------------------------
 
   implicit none
 
@@ -191,198 +218,239 @@ subroutine scm_setfield(elem,iop_update_phase1)
     end do
   end do
 
-end subroutine scm_setfield
+end subroutine iop_setfield
 
-subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
-! 
-    use scamMod
-    use kinds, only : real_kind
-    use dimensions_mod, only : np, np, nlev, npsq, nelem
-    use control_mod, only : use_cpstar, qsplit, qsplit
-    use hybvcoord_mod, only : hvcoord_t
-    use element_mod, only : element_t
-    use physical_constants, only : Cp, Rgas, cpwater_vapor
-    use time_mod
-    use hybrid_mod, only : hybrid_t
-    use constituents, only: pcnst
-    use time_manager, only: get_nstep
-    use cam_history, only: outfld
-    use shr_const_mod, only: SHR_CONST_PI
+!=========================================================================
 
-    integer :: t1,t2,n,nets,nete,pp
-    type (element_t)     , intent(inout), target :: elem(:)
-    type (hvcoord_t)                  :: hvcoord
-    type (TimeLevel_t), intent(in)       :: tl
-    type(hybrid_t),             intent(in) :: hybrid    
-    logical :: t_before_advance, do_column_scm
-    real(kind=real_kind), parameter :: rad2deg = 180.0_real_kind / SHR_CONST_PI
+subroutine apply_iop_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
 
-    integer :: ie,k,i,j,t,m,nm_f,tlQdp
-    integer :: nelemd_todo, np_todo
-    real (kind=real_kind), dimension(np,np,nlev)  :: dpt1,dpt2   ! delta pressure
-    real (kind=real_kind), dimension(np,np)  :: E
-    real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
-    real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
-    real (kind=real_kind), dimension(np,np,nlev)  :: p,T_v,phi, pnh
-    real (kind=real_kind), dimension(np,np,nlev)  :: dp3d
-    real (kind=real_kind), dimension(np,np,nlev+1) :: dpnh_dp_i
-    real (kind=real_kind), dimension(np,np,nlev)  :: dp, exner, vtheta_dp, Rstar
-    real (kind=real_kind), dimension(np,np,nlev) :: dpscm
-    real (kind=real_kind) :: cp_star1,cp_star2,qval_t1,qval_t2
-    real (kind=real_kind) :: Qt,dt
-    real (kind=real_kind), dimension(nlev,pcnst) :: stateQin1, stateQin2, stateQin_qfcst
-    real (kind=real_kind), dimension(nlev,pcnst) :: forecast_q
-    real (kind=real_kind), dimension(nlev) :: dummy1, dummy2, forecast_t, forecast_u, forecast_v
-    real (kind=real_kind), dimension(nlev) :: tdiff_dyn, qdiff_dyn, temp_tend
-    real (kind=real_kind), dimension(npsq,nlev) :: tdiff_out, qdiff_out
-    real (kind=real_kind) :: forecast_ps
-    real (kind=real_kind) :: temperature(np,np,nlev)
-    logical :: wet
+!---------------------------------------------------------
+! Purpose: Main interface between SE dynamical core
+!  and the large-scale forcing data provided by IOP
+!----------------------------------------------------------
 
-    integer:: icount
+  use iop_data_mod, only: single_column, use_3dfrc
+  use kinds, only : real_kind
+  use dimensions_mod, only : np, np, nlev, npsq
+  use control_mod, only : use_cpstar, qsplit
+  use hybvcoord_mod, only : hvcoord_t
+  use element_mod, only : element_t
+  use physical_constants, only : Cp, Rgas, cpwater_vapor
+  use time_mod
+  use hybrid_mod, only : hybrid_t
+  use time_manager, only: get_nstep
+  use shr_const_mod, only: SHR_CONST_PI
+  use apply_iop_forcing_mod
 
-    nm_f = 1
-    if (t_before_advance) then
-       t1=tl%nm1
-       t2=tl%n0
-    else
-       t1=tl%n0
-       t2=tl%np1
-    endif
-    
-    call TimeLevel_Qdp(tl,qsplit,tlQdp)
+  integer :: t1,t2,n,nets,nete,pp
+  type (element_t)     , intent(inout), target :: elem(:)
+  type (hvcoord_t)                  :: hvcoord
+  type (TimeLevel_t), intent(in)       :: tl
+  type(hybrid_t),             intent(in) :: hybrid
+  logical :: t_before_advance
+  real(kind=real_kind), parameter :: rad2deg = 180.0_real_kind / SHR_CONST_PI
 
-    ! Settings for traditional SCM run
-    nelemd_todo = 1
-    np_todo = 1
-    
-    if (scm_multcols) then
-      nelemd_todo = nelemd
-      np_todo = np
-    endif
+  integer :: ie, k, i, j, t, m, tlQdp
+  integer :: nelemd_todo, np_todo
+  real (kind=real_kind), dimension(np,np,nlev)  :: p, T_v, phi, pnh
+  real (kind=real_kind), dimension(np,np,nlev+1) :: dpnh_dp_i
+  real (kind=real_kind), dimension(np,np,nlev)  :: dp, exner, vtheta_dp, Rstar
+  real (kind=real_kind), dimension(np,np,nlev) :: dpscm
+  real (kind=real_kind) :: cp_star1, cp_star2, qval_t1, qval_t2, dt
+  real (kind=real_kind), dimension(nlev,pcnst) :: stateQ_in, q_update, stateQ_sub
+  real (kind=real_kind), dimension(nlev) :: temp_tend, t_update, u_update, v_update
+  real (kind=real_kind), dimension(nlev) :: t_in, u_in, v_in
+  real (kind=real_kind), dimension(nlev) :: t_sub, u_sub, v_sub
+  real (kind=real_kind), dimension(nlev) :: relaxt, relaxq
+  real (kind=real_kind), dimension(nlev) :: tdiff_dyn, qdiff_dyn
+  real (kind=real_kind), dimension(npsq,nlev) :: tdiff_out, qdiff_out
+  real (kind=real_kind) :: temperature(np,np,nlev)
+
+  if (t_before_advance) then
+     t1=tl%nm1
+     t2=tl%n0
+  else
+     t1=tl%n0
+     t2=tl%np1
+  endif
+
+  call TimeLevel_Qdp(tl,qsplit,tlQdp)
+
+  ! Settings for traditional SCM run
+  nelemd_todo = 1
+  np_todo = 1
+
+  if (scm_multcols) then
+    nelemd_todo = nelemd
+    np_todo = np
+  endif
 
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
 
-    ! collect stats from dycore for analysis
+  ! collect stats from dycore for analysis if running in DP CRM mode
 #ifdef MODEL_THETA_L
-    if (dp_crm) then
-      call crm_resolved_turb(elem,hvcoord,hybrid,t1,nelemd_todo,np_todo)
-    endif
+  if (dp_crm) then
+    call crm_resolved_turb(elem,hvcoord,hybrid,t1,nelemd_todo,np_todo)
+  endif
 #endif
 
-    do ie=1,nelemd_todo
+  do ie=1,nelemd_todo
 
-      do k=1,nlev
-        p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t1)
-        dpscm(:,:,k) = elem(ie)%state%dp3d(:,:,k,t1)
-      end do
-
-      dt=dtime
+    do k=1,nlev
+      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t1)
+      dpscm(:,:,k) = elem(ie)%state%dp3d(:,:,k,t1)
+    end do
 
 #ifdef MODEL_THETA_L
-      ! If using the theta-l dycore then need to get the exner function
-      !   and reference levels "dp", so we can convert the SCM forecasted
-      !   temperature back potential temperature on reference levels.
-      dp(:,:,:) = elem(ie)%state%dp3d(:,:,:,t1)
-      call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,t1),&
-          dp,elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i)
+    ! If using the theta-l dycore then need to get the exner function
+    !   and reference levels "dp", so we can convert the SCM updated
+    !   temperature back potential temperature on reference levels.
+    dp(:,:,:) = elem(ie)%state%dp3d(:,:,:,t1)
+    call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,t1),&
+        dp,elem(ie)%state%phinh_i(:,:,:,t1),pnh,exner,dpnh_dp_i)
 #endif
+
+    dt=dtime
 
     ! Get temperature from dynamics state
     call get_temperature(elem(ie),temperature,hvcoord,t1)
 
-      do j=1,np_todo
-        do i=1,np_todo
+    do j=1,np_todo
+      do i=1,np_todo
 
-          stateQin_qfcst(:nlev,:pcnst) = elem(ie)%state%Q(i,j,:nlev,:pcnst)
-          stateQin1(:nlev,:pcnst) = stateQin_qfcst(:nlev,:pcnst)
-          stateQin2(:nlev,:pcnst) = stateQin_qfcst(:nlev,:pcnst)
-          forecast_q(:nlev,:pcnst) = stateQin_qfcst(:nlev,:pcnst)
+        ! Set initial profiles for current column
+        stateQ_in(:nlev,:pcnst) = elem(ie)%state%Q(i,j,:nlev,:pcnst)
+        t_in(:nlev) = temperature(i,j,:nlev)
+	u_in(:nlev) = elem(ie)%state%v(i,j,1,:nlev,t1)
+	v_in(:nlev) = elem(ie)%state%v(i,j,2,:nlev,t1)
 
-          if (.not. use_3dfrc .or. dp_crm) then
-            temp_tend(:) = 0.0_real_kind
-          else
-            temp_tend(:) = elem(ie)%derived%fT(i,j,:)
-          endif
-          dummy2(:) = 0.0_real_kind
-          forecast_ps = elem(ie)%state%ps_v(i,j,t1)
-          
-#ifdef MODEL_THETA_L
-          ! At first time step the tendency term is set to the
-          !  initial condition temperature profile.  Do NOT use
-          !  as it will cause temperature profile to blow up.
-          if ( is_first_step() ) then
-            temp_tend(:) = 0.0_real_kind
-          endif
-#endif          
-
-          call forecast(begchunk,elem(ie)%state%ps_v(i,j,t1),&
-            elem(ie)%state%ps_v(i,j,t1),forecast_ps,forecast_u,&
-            elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,1,:,t1),&
-            forecast_v,elem(ie)%state%v(i,j,2,:,t1),&
-            elem(ie)%state%v(i,j,2,:,t1),forecast_t,&
-            temperature(i,j,:),temperature(i,j,:),&
-            forecast_q,stateQin2,stateQin1,dt,temp_tend,dummy2,dummy2,&
-            stateQin_qfcst,p(i,j,:),stateQin1,1,&
-            tdiff_dyn,qdiff_dyn)         
-
-            ! Update the q related arrays.  NOTE that Qdp array must
-            !  be updated first to ensure exact restarts
-            do m=1,pcnst
-              ! Update the Qdp array
-              elem(ie)%state%Qdp(i,j,:nlev,m,tlQdp) = &
-                forecast_q(:nlev,m) * dpscm(i,j,:nlev)
-              ! Update the Q array
-              elem(ie)%state%Q(i,j,:nlev,m) = &
-                elem(ie)%state%Qdp(i,j,:nlev,m,tlQdp)/dpscm(i,j,:nlev)
-            enddo
+        if (.not. use_3dfrc .or. dp_crm) then
+          temp_tend(:) = 0.0_real_kind
+        else
+          temp_tend(:) = elem(ie)%derived%fT(i,j,:)
+        endif
 
 #ifdef MODEL_THETA_L
-          ! If running theta-l model then the forecast temperature needs
-          !   to be converted back to potential temperature on reference levels, 
-          !   which is what dp_coupling expects
-          call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
-          elem(ie)%state%vtheta_dp(i,j,:,t1) = (forecast_t(:)*Rstar(i,j,:)*dp(i,j,:))/&
-                (Rgas*exner(i,j,:))
-#else
-          elem(ie)%state%T(i,j,:,t1) = forecast_t(:)
+        ! At first time step the tendency term is set to the
+        !  initial condition temperature profile.  Do NOT use
+        !  as it will cause temperature profile to blow up.
+        if ( is_first_step() ) then
+          temp_tend(:) = 0.0
+        endif
 #endif
-          elem(ie)%state%v(i,j,1,:,t1) = forecast_u(:)
-          elem(ie)%state%v(i,j,2,:,t1) = forecast_v(:)
 
-          tdiff_out(i+(j-1)*np,:)=tdiff_dyn(:)
-          qdiff_out(i+(j-1)*np,:)=qdiff_dyn(:)
-  
+        ! Compute subsidence due to large-scale forcing if three-dimensional
+        !  forcing is not provided in the IOP forcing file and running in
+        !  doubly periodic CRM mode.  This does not need to be done for SCM.
+        if (dp_crm .and. iop_dosubsidence) then
+          call advance_iop_subsidence(dt,elem(ie)%state%ps_v(i,j,t1),& ! In
+          u_in,v_in,t_in,stateQ_in,&                                   ! In
+          u_sub,v_sub,t_sub,stateQ_sub)                                ! Out
+
+          ! Transfer updated subsidence arrays into input arrays for next
+	  !   routine
+	  u_in(:nlev)=u_sub(:nlev)
+	  v_in(:nlev)=v_sub(:nlev)
+	  t_in(:nlev)=t_sub(:nlev)
+	  stateQ_in(:nlev,:pcnst)=stateQ_sub(:nlev,:pcnst)
+	endif
+
+        ! Call the main subroutine to update t, q, u, and v according to
+        !  large scale forcing as specified in IOP file.
+        call advance_iop_forcing(dt,elem(ie)%state%ps_v(i,j,t1),& ! In
+          u_in,v_in,t_in,stateQ_in,temp_tend,&                    ! In
+          u_update,v_update,t_update,q_update)                    ! Out
+
+        ! Nudge to observations if desired, for T & Q only if in SCM mode
+        if (iop_nudge_tq .and. .not. scm_multcols) then
+          call advance_iop_nudging(dt,elem(ie)%state%ps_v(i,j,t1),& ! In
+            t_update,q_update(:,1),&                                ! In
+            t_update,q_update(:,1),relaxt,relaxq)                   ! Out
+        endif
+
+        ! Update the q related arrays.  NOTE that Qdp array must
+        !  be updated first to ensure exact restarts
+        do m=1,pcnst
+          ! Update the Qdp array
+          elem(ie)%state%Qdp(i,j,:nlev,m,tlQdp) = &
+            q_update(:nlev,m) * dpscm(i,j,:nlev)
+          ! Update the Q array
+          elem(ie)%state%Q(i,j,:nlev,m) = &
+            elem(ie)%state%Qdp(i,j,:nlev,m,tlQdp)/dpscm(i,j,:nlev)
         enddo
+
+        ! Update prognostic variables to the current values
+#ifdef MODEL_THETA_L
+        ! If running theta-l model then the updated temperature needs
+        !   to be converted back to potential temperature on reference levels,
+        !   which is what dp_coupling expects
+        call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
+        elem(ie)%state%vtheta_dp(i,j,:,t1) = (t_update(:)*Rstar(i,j,:)*dp(i,j,:))/&
+              (Rgas*exner(i,j,:))
+#else
+        elem(ie)%state%T(i,j,:,t1) = t_update(:)
+#endif
+        elem(ie)%state%v(i,j,1,:,t1) = u_update(:)
+        elem(ie)%state%v(i,j,2,:,t1) = v_update(:)
+
+        ! Evaluate the differences in state information from observed
+        !  (done for diganostic purposes only)
+        do k = 1, nlev
+          tdiff_dyn(k) = t_update(k)   - tobs(k)
+          qdiff_dyn(k) = q_update(k,1) - qobs(k)
+        end do
+
+        tdiff_out(i+(j-1)*np,:)=tdiff_dyn(:)
+        qdiff_out(i+(j-1)*np,:)=qdiff_dyn(:)
+
       enddo
-      
-      if (scm_multcols) then
-        call outfld('TDIFF',tdiff_out,npsq,ie)
-        call outfld('QDIFF',qdiff_out,npsq,ie)
-      else
-        call outfld('TDIFF',tdiff_dyn,plon,begchunk)
-        call outfld('QDIFF',qdiff_dyn,plon,begchunk)
-      endif
-    
     enddo
 
-    if ((iop_nudge_tq .or. iop_nudge_uv) .and. dp_crm) then
-      ! If running in a doubly periodic CRM mode, then nudge the domain
-      !   based on the domain mean and observed quantities of T, Q, u, and v
-      call iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,dt)
+    ! Add various diganostic outfld calls
+
+    if (scm_multcols) then
+      call outfld('TDIFF',tdiff_out,npsq,ie)
+      call outfld('QDIFF',qdiff_out,npsq,ie)
+    else
+      call outfld('TDIFF',tdiff_dyn,plon,begchunk)
+      call outfld('QDIFF',qdiff_dyn,plon,begchunk)
     endif
 
-end subroutine apply_SC_forcing
+    call outfld('TOBS',tobs,plon,begchunk)
+    call outfld('QOBS',qobs,plon,begchunk)
+    call outfld('DIVQ',divq,plon,begchunk)
+    call outfld('DIVT',divt,plon,begchunk)
+    call outfld('DIVQ3D',divq3d,plon,begchunk)
+    call outfld('DIVT3D',divt3d,plon,begchunk)
+    call outfld('PRECOBS',precobs,plon,begchunk)
+    call outfld('LHFLXOBS',lhflxobs,plon,begchunk)
+    call outfld('SHFLXOBS',shflxobs,plon,begchunk)
 
+    call outfld('TRELAX',relaxt,plon,begchunk)
+    call outfld('QRELAX',relaxq,plon,begchunk)
+
+  enddo
+
+  if ((iop_nudge_tq .or. iop_nudge_uv) .and. dp_crm) then
+    ! If running in a doubly periodic CRM mode, then nudge the domain
+    !   based on the domain mean and observed quantities of T, Q, u, and v
+    call iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,dt)
+  endif
+
+end subroutine apply_iop_forcing
+
+!=========================================================================
 
 subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,dt)
 
-  ! Subroutine intended to nudge a uniformly forced grid with heterogenous
-  !   surface (i.e. doubly-periodic SCREAM).
+!---------------------------------------------------------
+! Purpose: Nudge doubly-periodic CRM to observations provided
+!   in the IOP file for T, q, u, and v.
+!----------------------------------------------------------
 
-  use scamMod
+  use iop_data_mod
   use dimensions_mod, only : np, np, nlev, npsq, nelem
   use parallel_mod, only: global_shared_buf, global_shared_sum
   use global_norms_mod, only: wrap_repro_sum
@@ -393,9 +461,9 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,d
   use physical_constants, only : Cp, Rgas
 
   ! Input/Output variables
-  type (element_t)     , intent(inout), target :: elem(:)
-  type (hvcoord_t)                  :: hvcoord
-  type(hybrid_t),             intent(in) :: hybrid
+  type (element_t), intent(inout), target :: elem(:)
+  type (hvcoord_t), intent(in) :: hvcoord
+  type(hybrid_t), intent(in) :: hybrid
   integer, intent(in) :: nelemd_todo, np_todo, t1
   real (kind=real_kind), intent(in):: dt
 
@@ -516,6 +584,8 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,d
 
 end subroutine iop_domain_relaxation
 
+!=========================================================================
+
 #ifdef MODEL_THETA_L
 subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
                               nelemd_todo,np_todo)
@@ -524,7 +594,7 @@ subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
   ! (done so to be consistent with SHOC's definition of each for ease of
   ! comparison) for DP CRM runs.
 
-  use scamMod
+  use iop_data_mod
   use dimensions_mod, only : np, np, nlev, nlevp, npsq, nelem
   use parallel_mod, only: global_shared_buf, global_shared_sum
   use global_norms_mod, only: wrap_repro_sum
@@ -537,9 +607,9 @@ subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
   use physconst, only: latvap
 
   ! Input/Output variables
-  type (element_t)     , intent(inout), target :: elem(:)
-  type (hvcoord_t)                  :: hvcoord
-  type(hybrid_t),             intent(in) :: hybrid
+  type (element_t), intent(inout), target :: elem(:)
+  type (hvcoord_t), intent(in) :: hvcoord
+  type(hybrid_t), intent(in) :: hybrid
   integer, intent(in) :: nelemd_todo, np_todo, t1
 
   ! Local variables
@@ -664,4 +734,4 @@ subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
 end subroutine crm_resolved_turb
 #endif  // MODEL_THETA_L
 
-end module se_single_column_mod
+end module se_iop_intr_mod
