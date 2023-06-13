@@ -8,8 +8,12 @@ namespace scream
 Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
-  m_datafile  = m_params.get<std::string>("nudging_filename");
+  m_datafiles  = m_params.get<std::vector<std::string>>("nudging_filename");
   m_timescale = m_params.get<int>("nudging_timescale",0);
+  m_fields_nudge = m_params.get<std::vector<std::string>>("nudging_fields");
+  // TODO: Add some warning messages here.
+  // 1. if m_timescale is <= 0 we will do direct replacement.
+  // 2. if m_fields_nudge is empty or =NONE then we skip nudging altogether.
 }
 
 // =========================================================================================
@@ -29,29 +33,30 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   auto Q = kg/kg;
   Q.set_string("kg/kg");
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name, ps);
-  add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
-  add_field<Updated>("qv", scalar3d_layout_mid, Q, grid_name, "tracers", ps);
-  add_field<Updated>("u", scalar3d_layout_mid, m/s, grid_name, ps);
-  add_field<Updated>("v", scalar3d_layout_mid, m/s, grid_name, ps);
 
-  // Helper fields that will temporarily store the target state, which can then
-  // be used to back out a nudging tendency
-  create_helper_field("T_mid", scalar3d_layout_mid, grid_name, ps);
-  create_helper_field("qv",    scalar3d_layout_mid, grid_name, ps);
-  create_helper_field("u",     scalar3d_layout_mid, grid_name, ps);  
-  create_helper_field("v",     scalar3d_layout_mid, grid_name, ps); 
+  /* ----------------------- WARNING --------------------------------*/
+  /* The following is a HACK to get things moving, we don't want to
+   * add all fields as "updated" long-term.  A separate stream of work
+   * is adapting the infrastructure to allow for a generic "add_field" call
+   * to be used here which we can then setup using the m_fields_nudge variable
+   */
+  add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
+  add_field<Updated>("qv",    scalar3d_layout_mid, Q, grid_name, "tracers", ps);
+  add_field<Updated>("u",     scalar3d_layout_mid, m/s, grid_name, ps);
+  add_field<Updated>("v",     scalar3d_layout_mid, m/s, grid_name, ps);
+  /* ----------------------- WARNING --------------------------------*/
 
   //Now need to read in the file
-  scorpio::register_file(m_datafile,scorpio::Read);
-  m_num_src_levs = scorpio::get_dimlen(m_datafile,"lev");
-  double time_value_1= scorpio::read_time_at_index_c2f(m_datafile.c_str(),1);
-  double time_value_2= scorpio::read_time_at_index_c2f(m_datafile.c_str(),2);
+  scorpio::register_file(m_datafiles[0],scorpio::Read);
+  m_num_src_levs = scorpio::get_dimlen(m_datafiles[0],"lev");
+  double time_value_1= scorpio::read_time_at_index_c2f(m_datafiles[0].c_str(),1);
+  double time_value_2= scorpio::read_time_at_index_c2f(m_datafiles[0].c_str(),2);
 
   // Here we are assuming that the time in the netcdf file is in days
   // Internally we want this in seconds so need to convert
   // Only consider integer time steps in seconds to resolve any roundoff error
   m_time_step_file=int((time_value_2-time_value_1)*86400);
-  scorpio::eam_pio_closefile(m_datafile);
+  scorpio::eam_pio_closefile(m_datafiles[0]);
 }
 // =========================================================================================
 void Nudging::apply_tendency(Field& base, const Field& next, const int dt)
@@ -75,11 +80,22 @@ void Nudging::initialize_impl (const RunType /* run_type */)
 
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
   FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_src_levs} };
-  m_fields_ext["T_mid"] = view_2d<Real>("T_mid",m_num_cols,m_num_src_levs);
-  m_fields_ext_h["T_mid"]       = Kokkos::create_mirror_view(m_fields_ext["T_mid"]);
-  auto T_mid_h=m_fields_ext_h["T_mid"];
-  host_views["T_mid"] = view_1d_host<Real>(T_mid_h.data(),T_mid_h.size());
-  layouts.emplace("T_mid", scalar3d_layout_mid);
+
+  constexpr int ps = 1;  // TODO: I think this could be the regular packsize, right?
+  const auto& grid_name = m_grid->name();
+  for (auto name : m_fields_nudge) {
+    // Helper fields that will temporarily store the target state, which can then
+    // be used to back out a nudging tendency
+    auto field  = get_field_out(name);
+    auto layout = field.get_header().get_identifier().get_layout();
+    create_helper_field(name, layout, grid_name, ps);
+    // Extended fields for handling data from file.
+    m_fields_ext[name]   = view_2d<Real>(name,m_num_cols,m_num_src_levs);
+    m_fields_ext_h[name] = Kokkos::create_mirror_view(m_fields_ext[name]);
+    auto view_h          = m_fields_ext_h[name];
+    host_views[name]     = view_1d_host<Real>(view_h.data(),view_h.size());
+    layouts.emplace(name, scalar3d_layout_mid);
+  }
 
   m_fields_ext["p_mid"] = view_2d<Real>("p_mid",m_num_cols,m_num_src_levs);
   m_fields_ext_h["p_mid"]       = Kokkos::create_mirror_view(m_fields_ext["p_mid"]);
@@ -87,30 +103,12 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   host_views["p_mid"] = view_1d_host<Real>(p_mid_h.data(),p_mid_h.size());
   layouts.emplace("p_mid", scalar3d_layout_mid);
 
-  m_fields_ext["qv"] = view_2d<Real>("qv",m_num_cols,m_num_src_levs);
-  m_fields_ext_h["qv"]       = Kokkos::create_mirror_view(m_fields_ext["qv"]);
-  auto qv_h=m_fields_ext_h["qv"];
-  host_views["qv"] = view_1d_host<Real>(qv_h.data(),qv_h.size());
-  layouts.emplace("qv", scalar3d_layout_mid);
-
-  m_fields_ext["u"] = view_2d<Real>("u",m_num_cols,m_num_src_levs);
-  m_fields_ext_h["u"]       = Kokkos::create_mirror_view(m_fields_ext["u"]);
-  auto u_h=m_fields_ext_h["u"];
-  host_views["u"] = view_1d_host<Real>(u_h.data(),u_h.size());
-  layouts.emplace("u", scalar3d_layout_mid);
-
-  m_fields_ext["v"] = view_2d<Real>("v",m_num_cols,m_num_src_levs);
-  m_fields_ext_h["v"]       = Kokkos::create_mirror_view(m_fields_ext["v"]);
-  auto v_h=m_fields_ext_h["v"];
-  host_views["v"] = view_1d_host<Real>(v_h.data(),v_h.size());
-  layouts.emplace("v", scalar3d_layout_mid);
-
   auto grid_l = m_grid->clone("Point Grid", false);
   grid_l->reset_num_vertical_lev(m_num_src_levs);
   ekat::ParameterList data_in_params;
   std::vector<std::string> fnames = {"T_mid","p_mid","qv","u","v"};
   data_in_params.set("Field Names",fnames);
-  data_in_params.set("Filename",m_datafile);
+  data_in_params.set("Filename",m_datafiles[0]);
   // We need to skip grid checks because multiple ranks
   // may want the same column of source data.
   data_in_params.set("Skip_Grid_Checks",true);
@@ -119,7 +117,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   m_ts0=timestamp();
 
   //Check that internal timestamp starts at same point as time in external file
-  auto case_t0 = scorpio::read_timestamp(m_datafile,"case_t0");
+  auto case_t0 = scorpio::read_timestamp(m_datafiles[0],"case_t0");
 
   EKAT_REQUIRE_MSG(case_t0.get_year()==m_ts0.get_year(),
 		   "ERROR: The start year from the nudging file is "\
@@ -270,135 +268,66 @@ void Nudging::run_impl (const double dt)
   //perform time interpolation
   time_interpolation(time_since_zero);
 
-  // Get current atm state fields and views
-  auto atm_field_T_mid = get_field_out("T_mid");
-  auto atm_field_qv    = get_field_out("qv");
-  auto atm_field_u     = get_field_out("u");
-  auto atm_field_v     = get_field_out("v");
-
-  auto T_mid           = atm_field_T_mid.get_view<mPack**>();
-  auto qv              = atm_field_qv.get_view<mPack**>();
-  auto u               = atm_field_u.get_view<mPack**>();
-  auto v               = atm_field_v.get_view<mPack**>();
-
-  // Get helper fields
-  auto int_field_T_mid = get_helper_field("T_mid");
-  auto int_field_qv    = get_helper_field("qv");
-  auto int_field_u     = get_helper_field("u");
-  auto int_field_v     = get_helper_field("v");
-
-  auto int_T_mid       = int_field_T_mid.get_view<mPack**>();
-  auto int_qv          = int_field_qv.get_view<mPack**>();
-  auto int_u           = int_field_u.get_view<mPack**>();
-  auto int_v           = int_field_v.get_view<mPack**>();
-
-
-  const auto& p_mid    = get_field_in("p_mid").get_view<const mPack**>();
-
-  const view_Nd<mPack,2> T_mid_ext_p(reinterpret_cast<mPack*>(m_fields_ext["T_mid"].data()),
+  // Process data and nudge the atmosphere state
+  const auto& p_mid_v     = get_field_in("p_mid").get_view<const mPack**>();
+  const auto& p_mid_ext   = m_fields_ext.at("p_mid");
+  const view_Nd<mPack,2> p_mid_ext_p(reinterpret_cast<mPack*>(p_mid_ext.data()),
 				     m_num_cols,m_num_src_levs);
-  const view_Nd<mPack,2> p_mid_ext_p(reinterpret_cast<mPack*>(m_fields_ext["p_mid"].data()),
-				     m_num_cols,m_num_src_levs);
-  const view_Nd<mPack,2> qv_ext_p(reinterpret_cast<mPack*>(m_fields_ext["qv"].data()),
-				  m_num_cols,m_num_src_levs);
-  const view_Nd<mPack,2> u_ext_p(reinterpret_cast<mPack*>(m_fields_ext["u"].data()),
-				  m_num_cols,m_num_src_levs);
-  const view_Nd<mPack,2> v_ext_p(reinterpret_cast<mPack*>(m_fields_ext["v"].data()),
-				  m_num_cols,m_num_src_levs);
+  for (auto name : m_fields_nudge) {
+    auto atm_state_field = get_field_out(name);
+    auto int_state_field = get_helper_field(name);
+    auto ext_state_field = m_fields_ext.at(name);
+    auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
+    auto int_state_view  = int_state_field.get_view<mPack**>();
+    const view_Nd<mPack,2> ext_state_view(reinterpret_cast<mPack*>(ext_state_field.data()),
+                                          m_num_cols,m_num_src_levs);
+    // Vertical Interpolation onto atmosphere state pressure levels
+    perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
+                                             p_mid_v,
+                                             ext_state_view,
+                                             int_state_view,
+                                             m_num_src_levs,
+                                             m_num_levs);
+    if (m_timescale <= 0) {
+      // We do direct replacement
+      Kokkos::deep_copy(atm_state_view,int_state_view);
+    } else {
+      // Back out a tendency and apply it.
+      apply_tendency(atm_state_field, int_state_field, dt);
+    }
 
-  //Now perform the vertical interpolation from the external file to the internal
-  //field levels
-  perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
-                                           p_mid,
-                                           T_mid_ext_p,
-                                           int_T_mid,
-                                           m_num_src_levs,
-                                           m_num_levs);
-
-  perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
-                                           p_mid,
-                                           qv_ext_p,
-                                           int_qv,
-                                           m_num_src_levs,
-                                           m_num_levs);
-
-  perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
-                                           p_mid,
-                                           u_ext_p,
-                                           int_u,
-                                           m_num_src_levs,
-                                           m_num_levs);
-
-  perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
-                                           p_mid,
-                                           v_ext_p,
-                                           int_v,
-                                           m_num_src_levs,
-                                           m_num_levs);
-
-  // Now that we have the target state from the nudging file we can back out a tendency and apply
-  // it using the set timescale
-  if (m_timescale <= 0) {
-    // We do direct replacement
-    Kokkos::deep_copy(T_mid,int_T_mid);
-    Kokkos::deep_copy(qv   ,int_qv   );
-    Kokkos::deep_copy(u    ,int_u    );
-    Kokkos::deep_copy(v    ,int_v    );
-  } else {
-    // Back out a tendency and apply it.
-    apply_tendency(atm_field_T_mid,int_field_T_mid,dt);
-    apply_tendency(atm_field_qv   ,int_field_qv   ,dt);
-    apply_tendency(atm_field_u    ,int_field_u    ,dt);
-    apply_tendency(atm_field_v    ,int_field_v    ,dt);
-
+    // Remove mask values, setting them to the nearest unmasked value in the column.
+    // TODO: This chunk of code has a bug in it where we are assigning values by PACK.
+    // Note, that in our case the packsize is hard-coded to 1, so it shouldn't actually
+    // be a problem, but the way the code is set up here could lead to confusion if we
+    // ever change that hard-coded value.  We will need to replace this with something
+    // better, in a subsequent commit.
+    const int num_cols           = atm_state_view.extent(0);
+    const int num_vert_packs     = atm_state_view.extent(1);
+    const int num_vert_packs_ext = ext_state_view.extent(1);
+    const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
+    Kokkos::parallel_for("correct_for_masked_values", policy,
+       	       KOKKOS_LAMBDA(MemberType const& team) {
+        const int icol = team.league_rank();
+        auto atm_state_view_1d = ekat::subview(atm_state_view,icol);
+        auto ext_state_view_1d = ekat::subview(ext_state_view,icol);
+        auto p_mid_1d = ekat::subview(p_mid_v,icol);
+        auto p_ext_1d = ekat::subview(p_mid_ext,icol);
+        const auto range = Kokkos::TeamThreadRange(team, num_vert_packs);
+        Kokkos::parallel_for(range, [&] (const Int & k) {
+          const auto above_max = p_mid_1d(k) > p_ext_1d(num_vert_packs_ext-1);
+          const auto below_min = p_mid_1d(k) < p_ext_1d(0);
+  	  if (above_max.any()){
+  	    atm_state_view_1d(k).set(above_max, ext_state_view_1d(num_vert_packs_ext-1));
+	  }
+	  if (below_min.any()){
+	    atm_state_view_1d(k).set(below_min,ext_state_view_1d(0));
+  	  }
+        });
+        team.team_barrier();
+    });
+    Kokkos::fence();
   }
-
-  //This code removes any masked values and sets them to the corresponding
-  //values at the lowest/highest pressure levels from the external file
-  auto T_mid_ext = m_fields_ext["T_mid"];
-  auto p_mid_ext = m_fields_ext["p_mid"];
-  auto qv_ext = m_fields_ext["qv"];
-  auto u_ext = m_fields_ext["u"];
-  auto v_ext = m_fields_ext["v"];
-
-  const int num_cols = T_mid.extent(0);
-  const int num_vert_packs = T_mid.extent(1);
-  const int num_vert_packs_ext = T_mid_ext.extent(1);
-  const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
-  Kokkos::parallel_for("correct_for_masked_values", policy,
-     	       KOKKOS_LAMBDA(MemberType const& team) {
-      const int icol = team.league_rank();
-      auto T_mid_1d = ekat::subview(T_mid,icol);
-      auto T_mid_ext_1d = ekat::subview(T_mid_ext,icol);
-      auto u_1d = ekat::subview(u,icol);
-      auto u_ext_1d = ekat::subview(u_ext,icol);
-      auto v_1d = ekat::subview(v,icol);
-      auto v_ext_1d = ekat::subview(v_ext,icol);
-
-      auto p_mid_1d = ekat::subview(p_mid,icol);
-      auto p_mid_ext_1d = ekat::subview(p_mid_ext,icol);
-      auto qv_1d = ekat::subview(qv,icol);
-      auto qv_ext_1d = ekat::subview(qv_ext,icol);
-      const auto range = Kokkos::TeamThreadRange(team, num_vert_packs);
-      Kokkos::parallel_for(range, [&] (const Int & k) {
-        const auto above_max = p_mid_1d(k) > p_mid_ext_1d(num_vert_packs_ext-1);
-        const auto below_min = p_mid_1d(k) < p_mid_ext_1d(0);
-	if (above_max.any()){
-	  T_mid_1d(k).set(above_max,T_mid_ext_1d(num_vert_packs_ext-1));
-	  qv_1d(k).set(above_max,qv_ext_1d(num_vert_packs_ext-1));
-	  u_1d(k).set(above_max,u_ext_1d(num_vert_packs_ext-1));
-	  v_1d(k).set(above_max,v_ext_1d(num_vert_packs_ext-1));
-	}
-	if (below_min.any()){
-	  T_mid_1d(k).set(below_min,T_mid_ext_1d(0));
-	  qv_1d(k).set(below_min,qv_ext_1d(0));
-	  u_1d(k).set(below_min,u_ext_1d(0));
-	  v_1d(k).set(below_min,v_ext_1d(0));
-	}
-      });
-      team.team_barrier();
-  });
-  Kokkos::fence();
 }
 
 // =========================================================================================

@@ -230,7 +230,8 @@ TEST_CASE("nudging") {
   ekat::ParameterList params_mid;
   std::string nudging_f = "io_output_test.INSTANT.nsteps_x1."\
                           "np1.2000-01-01-00000.nc";
-  params_mid.set<std::string>("nudging_filename",nudging_f);
+  params_mid.set<std::vector<std::string>>("nudging_filename",{nudging_f});
+  params_mid.set<std::vector<std::string>>("nudging_fields",{"T_mid","qv","u","v"});
   auto nudging_mid = std::make_shared<Nudging>(io_comm,params_mid);
 
   nudging_mid->set_grids(gm);

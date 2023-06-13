@@ -96,11 +96,12 @@ protected:
   int m_num_src_levs;
   int m_time_step_file;
   int m_timescale;
-  std::string m_datafile;
+  std::vector<std::string> m_datafiles;
 
   // Some helper fields.
   std::map<std::string,Field> m_helper_fields;
 
+  std::vector<std::string> m_fields_nudge;
   std::map<std::string,view_2d<Real>> m_fields_ext;
   std::map<std::string,view_2d_host<Real>> m_fields_ext_h;
 
