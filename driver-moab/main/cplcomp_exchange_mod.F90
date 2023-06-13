@@ -1057,8 +1057,7 @@ contains
       call shr_mpi_max(MPSIID, maxMSID, mpicom_join, all=.true.)
       call shr_mpi_max(mrofid, maxMRID, mpicom_join, all=.true.)
       if (seq_comm_iamroot(CPLID) ) then
-         write(logunit, *) "MOAB coupling:  maxMH: ", maxMH, " maxMPO: ", maxMPO, &
-            " maxMLID: ", maxMLID
+         write(logunit, *) "MOAB coupling for ", comp%ntype
       endif
       ! this works now for atmosphere;
       if ( comp%oneletterid == 'a' .and. maxMH /= -1) then
@@ -1309,10 +1308,15 @@ contains
             endif
             ! do not receive the mesh anymore, read it from file, then pair it with mlnid, component land PC mesh
             ! similar to rof mosart mesh  
+            
             ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE='//C_NULL_CHAR
             call seq_infodata_GetData(infodata,lnd_domain=lnd_domain)
             outfile = trim(lnd_domain)//C_NULL_CHAR
             nghlay = 0 ! no ghost layers 
+            if (seq_comm_iamroot(CPLID) ) then
+               write(logunit, *) "load land domain file from file: ", trim(lnd_domain), &
+                 " with options: ", trim(ropts)
+            endif
             ierr = iMOAB_LoadMesh(mblxid, outfile, ropts, nghlay)
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in reading land coupler mesh from ', trim(lnd_domain)
