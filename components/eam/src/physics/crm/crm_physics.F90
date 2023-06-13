@@ -1279,6 +1279,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
 #elif defined(MMF_PAM)
 
+      call pam_mirror_array_readonly( 'latitude',      latitude0   )
+      call pam_mirror_array_readonly( 'longitude',     longitude0  )
+
       call pam_mirror_array_readonly( 'input_bflxls',  crm_input%bflxls  )
       call pam_mirror_array_readonly( 'input_wndls',   crm_input%wndls   )
 
