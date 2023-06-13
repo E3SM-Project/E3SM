@@ -20,7 +20,7 @@ files or streams and their contents.
 
 Metadata can be in all supported OMEGA data types (I4, I8, R4, R8,
 Boolean/logical, strings). Initially only scalar metadata
-is required, but extending to vectors/arrays may be desireable.
+is required, but extending to vectors/arrays may be desirable.
 
 ### 2.2 Requirement: Global and variable metadata
 
@@ -41,7 +41,7 @@ To comply with conventions and E3SM practices, there will be a minimum
 set of required metadata and interfaces must enforce this minimum set.
 This minimum will be defined later, but for variables, this would
 typically include a name (short), units, long name/description,
-standard CF name (if exists), _FillValue, valid min/max and dimensions.
+standard CF name (if exists), `_FillValue`, valid min/max and dimensions.
 
 ### 2.5 Requirement: Dimensions
 
@@ -50,7 +50,7 @@ In an unstructured model like OMEGA, the dimension describes the
 global extent of the index space for each dimension that is then paired
 with mesh fields for the full description of OMEGA coordinate locations.
 For time dimensions, we require support for both a fixed length time
-dimension (eg to support multiple time levels in a restart) as well
+dimension (e.g. to support multiple time levels in a restart) as well
 as an unlimited dimension to support time series.
 
 ### 2.6 Requirement: Available fields
@@ -65,8 +65,8 @@ list of variable names to be included.
 
 Because lists of contents in the model config file can get long,
 it would be useful to define and maintain a metadata group that
-is simply a shorthand to a set of common fields (eg meshFields or
-prognosticVars). Note that these would only be for the purpose
+is simply a shorthand to a set of common fields (e.g. `meshFields` or
+`prognosticVars`). Note that these would only be for the purpose
 of shortening lists in the config file or managing lists internally.
 The full list of fields would still appear in output file metadata.
 

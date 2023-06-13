@@ -43,6 +43,7 @@ design/DataTypes
 design/Halo
 design/Logging
 design/MachEnv
+design/Metadata
 design/TimeMgr
 design/Reductions
 
