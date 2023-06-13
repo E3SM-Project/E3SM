@@ -100,7 +100,7 @@
          'aitken          ', &
          'coarse          ', &
          'primary_carbon  ', &
-         'strat_coarse  '/)
+         'strat_coarse    '/)
 #elif ( defined MODAL_AERO_9MODE )
     character(len=*), parameter :: modename_amode(ntot_amode) = (/ &
          'accum           ', &
