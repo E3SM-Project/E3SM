@@ -846,8 +846,11 @@ module ocn_forward_mode
            ! time-step as opposed at each RK substage as implemented in RK4
            call ocn_time_varying_forcing_get(domain % streamManager, domain, domain % clock)
          else
-           ! increment forcing clock to next time-step
-           call mpas_advance_forcing_clock(forcingGroupHead, dt)
+           if (config_use_time_varying_atmospheric_forcing .or. &
+               config_use_time_varying_land_ice_forcing) then
+             ! increment forcing clock to next time-step
+             call mpas_advance_forcing_clock(forcingGroupHead, dt)
+           endif
          endif
 
          ! Validate that the state is OK to run with for the next timestep.
