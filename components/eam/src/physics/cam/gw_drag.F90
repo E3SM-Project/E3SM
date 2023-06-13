@@ -1135,8 +1135,8 @@ subroutine gw_spec_outflds(prefix, lchnk, ncol, ngwv, c, u, v, xv, yv, &
   real(r8) :: tauy(ncol,-ngwv:ngwv,pver)
 
   ! Temporaries for output
-  real(r8) :: dummyx(ncol,pver)
-  real(r8) :: dummyy(ncol,pver)
+  real(r8) :: dummyx(pcols,pver)
+  real(r8) :: dummyy(pcols,pver)
   real(r8) :: dummmy_p_surf(pcols) ! data interpolated to a pressure surface
   ! Variable names
   character(len=10) :: dumc1x, dumc1y
@@ -1203,8 +1203,8 @@ subroutine gw_spec_outflds(prefix, lchnk, ncol, ngwv, c, u, v, xv, yv, &
 
   do l=-ngwv,ngwv
 
-     dummyx = taux(:,l,:)
-     dummyy = tauy(:,l,:)
+     dummyx(1:ncol,1:pver) = taux(1:ncol,l,1:pver)
+     dummyy(1:ncol,1:pver) = tauy(1:ncol,l,1:pver)
 
      dumc1x = tau_fld_name(l, prefix, x_not_y=.true.)
      dumc1y = tau_fld_name(l, prefix, x_not_y=.false.)
