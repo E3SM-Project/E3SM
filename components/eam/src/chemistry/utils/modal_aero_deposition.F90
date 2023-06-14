@@ -226,9 +226,7 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
                              0.289_r8*(aerdepwetis(i,idx_dst3)+aerdepwetcw(i,idx_dst3)))
 
 #endif
-!kzm ++
 #if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) || (defined MODAL_AERO_5MODE))
-!kzm --
       ! MAM4
 
       ! in SNICAR+MAM, bcphiwet represents BC mixed internally within

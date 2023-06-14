@@ -79,21 +79,6 @@ subroutine aer_rad_props_init()
         'EXTINCT LW H2O window band 7 output directly read from prescribed input file', flag_xyfill=.true.)
    call addfld ('extinct_sw_inp',(/ 'lev' /),    'A','1/km',&
         'Aerosol extinction directly read from prescribed input file', flag_xyfill=.true.)
-   ! add full bands radiation output
-   ! longwave: ext_sao_lw (pcols,pver,nlwbands)
-   ! ext_sao_sw, ssa_sao, af_sao (pcols,pver,nswbands)
-   !if (is_output_interactive_volc) then
-   !call add_hist_coord('nlwbands',    nlwbands,    'NLWBANDS')  
-   !call add_hist_coord('nswbands',    nswbands,    'NSWBANDS')   
-   !call addfld ('ext_sao_lw',(/ 'lev     ', 'nlwbands' /),    'A','1/m',&
-   !     'Aerosol LW radiation properties comparable to prescribed input ext_earth', flag_xyfill=.true.) 
-   !call addfld ('ext_sao_sw',(/ 'lev     ', 'nswbands' /),    'A','1/m',&
-   !     'Aerosol SW radiation properties comparable to prescribed input ext_sun', flag_xyfill=.true.) 
-   !call addfld ('ssa_sao',(/ 'lev     ', 'nswbands' /),    'A','1/m',&
-   !     'Aerosol SW radiation properties comparable to prescribed input omega_sun', flag_xyfill=.true.) 
-   !call addfld ('af_sao',(/ 'lev     ', 'nswbands' /),    'A','1/m',&
-   !     'Aerosol SW radiation properties comparable to prescribed input g_sun', flag_xyfill=.true.) 
-   !endif
    ! Contributions to AEROD_v from individual aerosols (climate species).
 
    ! number of bulk aerosols in climate list
@@ -213,12 +198,6 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
    real(r8), pointer :: ext_cmip6_sw(:,:,:)
    real(r8) :: ext_cmip6_sw_inv_m(pcols,pver,nswbands)! short wave extinction in the units of 1/m
 
-   ! for Strat. AOD output
-   !if (is_output_interactive_volc) then 
-   !real(r8) :: ext_sao_sw(pcols,0:pver,nswbands) !
-   !real(r8) :: ssa_sao   (pcols,0:pver,nswbands) !
-   !real(r8) :: af_sao    (pcols,0:pver,nswbands) !
-   !endif
    !-----------------------------------------------------------------------------
 
    ncol  = state%ncol
@@ -531,17 +510,6 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, dt, state, pbuf,  odap_aer,
       enddo
       call outfld('extinct_lw_bnd7',odap_aer(:,:,idx_lw_diag), pcols, lchnk)
    endif
-   !if (is_output_interactive_volc) then
-   !  ext_sao_lw(:,:,:) = 0.0_r8
-     !prepare strat. aerosol sw optic properties for output: 
-   !  do ipver = 1 , pver
-   !      do icol = 1, ncol
-   !         lyr_thk = state%zi(icol,ipver) - state%zi(icol,ipver+1)
-   !         ext_sao_lw(icol,ipver,:) = odap_aer(icol,ipver,:)/lyr_thk ! unit m
-   !      enddo
-   !  enddo    
-   !  call outfld('ext_sao_lw',ext_sao_lw(:,:,:), pcols, lchnk)
-   !endif
    ! Loop over bulk aerosols in list.
    do iaerosol = 1, numaerosols
 

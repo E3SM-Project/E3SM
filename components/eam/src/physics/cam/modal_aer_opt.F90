@@ -594,17 +594,6 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    lchnk = state%lchnk
    ncol  = state%ncol
 
-   ! stratosphere output
-   !ihuge = huge(ihuge)
-   !trop_level(:) = ihuge
-   !call tropopause_find(state, trop_level)!
-   !Quit if tropopause is not found
-   !if (any(trop_level(1:ncol) == -1)) then
-   !   do icol = 1, ncol
-   !      write(iulog,*)'tropopause level,lchnk,column:',trop_level(icol),lchnk,icol
-   !   enddo
-   !   call endrun('aer_rad_props_lw: tropopause not found')
-   !endif
    ! initialize output variables
    tauxar(:ncol,:,:) = 0._r8
    wa(:ncol,:,:)     = 0._r8

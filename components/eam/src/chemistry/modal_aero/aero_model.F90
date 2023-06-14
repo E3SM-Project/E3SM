@@ -868,7 +868,13 @@ contains
     index_tot_mass(3,1) = get_spc_ndx('dst_a3')
     index_tot_mass(3,2) = get_spc_ndx('ncl_a3')
     index_tot_mass(3,3) = get_spc_ndx('so4_a3')
+    index_tot_mass(3,4) = get_spc_ndx('bc_a3')
+    index_tot_mass(3,5) = get_spc_ndx('pom_a3')
+    index_tot_mass(3,6) = get_spc_ndx('soa_a3')
+    index_tot_mass(3,7) = get_spc_ndx('mom_a3') 
     index_chm_mass(3,1) = get_spc_ndx('so4_a3')
+    index_chm_mass(3,2) = get_spc_ndx('soa_a3')
+    index_chm_mass(3,3) = get_spc_ndx('bc_a3')
     !
     ! POM mode
     !
