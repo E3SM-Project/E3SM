@@ -958,7 +958,7 @@
 	<nml_record name="land_ice_fluxes" mode="init;forward">
 		<nml_option name="config_land_ice_flux_mode" type="character" default_value="off"
 					description="Selects the mode in which land-ice fluxes are computed."
-					possible_values="'off','pressure_only','standalone','coupled'"
+					possible_values="'off','pressure_only', 'data', 'standalone','coupled'"
 		/>
 		<nml_option name="config_land_ice_flux_formulation" type="character" default_value="Jenkins"
 					description="Name of land-ice flux formulation."
@@ -1551,6 +1551,7 @@
 		<package name="landIcePressurePKG" description="This package includes variables needed for runs with the sea surface depressed by land-ice pressure."/>
 		<package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
 		<package name="landIceCouplingPKG" description="This package includes varibles required for land ice coupling but not land ice fluxes in standalone mode."/>
+		<package name="dataLandIceFluxesPKG" description="This package includes varibles related to prescribed freshwater and heat fluxes from land ice."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
 		<package name="tidalForcing" description="This package includes variables required for tidal forcing on a boundary."/>
 		<package name="vegetationDragPKG" description="This package includes vegetation properties used for computing vegetation drag"/>
@@ -3166,11 +3167,11 @@
 		/>
 		<var name="topDrag" type="real" dimensions="nEdges Time" units="N m^-2"
 			description="Top drag at the surface of the ocean defined at edge midpoints. Magnitude in direction of edge normal."
-			packages="landIceFluxesPKG"
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
 		<var name="topDragMagnitude" type="real" dimensions="nCells Time" units="N m^-2"
 			description="Magnitude of top drag at the surface of the ocean, at cell centers."
-			packages="landIceFluxesPKG"
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
 		<var_array name="landIceBoundaryLayerTracers" type="real" dimensions="nCells Time" packages="landIceFluxesPKG">
 			<var name="landIceBoundaryLayerTemperature" array_group="landIceBoundaryLayerValues" units="C"
@@ -3666,11 +3667,11 @@
 		</var_array>
 		<var name="landIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
 			description="Flux of mass through the ocean surface. Positive into ocean."
-			packages="landIceFluxesPKG"
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
 		<var name="landIceHeatFlux"  type="real" dimensions="nCells Time" units="W m^-2"
 			description="Flux of heat into the ocean at land ice-ocean interface. Positive into ocean."
-			packages="landIceFluxesPKG"
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
 		<!-- Output fields from standalone land-ice flux computaiton -->
 		<var name="heatFluxToLandIce"  type="real" dimensions="nCells Time" units="W m^-2"
@@ -3697,6 +3698,15 @@
 		<var name="avgEffectiveDensityInLandIce" type="real" dimensions="nCells Time" units="kg m^-3"
 			description="The time-averaged effective ocean density within ice shelves based on Archimedes' principle."
 			packages="landIceCouplingPKG"
+		/>
+		<!-- Input fields for data (prescribed) land-ice fluxes -->
+		<var name="dataLandIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+			description="Flux of mass through the ocean surface, as read in from a forcing file. Positive into ocean."
+			packages="dataLandIceFluxesPKG"
+		/>
+		<var name="dataLandIceHeatFlux"  type="real" dimensions="nCells Time" units="W m^-2"
+			description="Flux of heat into the ocean at land ice-ocean interface, as read in from a forcing file. Positive into ocean."
+			packages="dataLandIceFluxesPKG"
 		/>
 
 		<!-- Input fields for forcing due to tides -->

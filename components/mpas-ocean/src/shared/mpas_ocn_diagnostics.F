@@ -196,7 +196,7 @@ contains
       !! Listing new inputs required by the first routine where they are used
       !! ocn_diagnostic_solve_layerThicknessEdge :: layerThickness, (not on device)
       !!                                            normalVelocity (not on device)
-      !! ocn_relativeVorticity_circulation       :: 
+      !! ocn_relativeVorticity_circulation       ::
       !! ocn_diagnostic_solve_vortVel            :: normalTransportVelocity, (diagnostics array)
       !!                                            normalGMBolusVelocity (diagnostics array)
       !! ocn_diagnostic_solve_kineticEnergy      ::
@@ -205,7 +205,7 @@ contains
       !!                                            seaIcePressure, (not on device)
       !!                                            frazilSurfacePressure, (not on device)
       !!                                            landIcePressure (not on device)
-      !! ocn_diagnostic_solve_z_coordinates      :: 
+      !! ocn_diagnostic_solve_z_coordinates      ::
       !! ocn_equation_of_state_density           :: activeTracers, (not on device)
       !!                                            tracersSurfaceValue, (diagnostics array)
       !!                                            maxLevelCell, (mesh array)
@@ -247,9 +247,9 @@ contains
       ! outputs: relativeVorticity, circulation
       call ocn_relativeVorticity_circulation(relativeVorticity, circulation, normalVelocity, err)
 
-      ! inputs: relativeVorticity, layerThickEdgeFlux, normalVelocity, normalTransportVelocity, 
+      ! inputs: relativeVorticity, layerThickEdgeFlux, normalVelocity, normalTransportVelocity,
       !         normalGMBolusVelocity
-      ! outputs: vertTransportVelocityTop, vertGMBolusVelocityTop, relativeVorticityCell, 
+      ! outputs: vertTransportVelocityTop, vertGMBolusVelocityTop, relativeVorticityCell,
       !          divergence, kineticEnergyCell, tangentialVelocity, vertMLEBolusVelocityTop
       ! in and out: vertVelocityTop
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
@@ -320,7 +320,7 @@ contains
       end if
 
       ! inputs :: normalVelocity, tangentialVelocity, layerThickness, relativeVorticity
-      ! outputs :: normRelVortEdge, normPlanetVortEdge, 
+      ! outputs :: normRelVortEdge, normPlanetVortEdge,
       !            normalizedRelativeVorticityCell
       call ocn_diagnostic_solve_vorticity(dt, normalVelocity, tangentialVelocity, &
                 layerThickness, relativeVorticity, &
@@ -351,7 +351,7 @@ contains
       ! Only need densities on 0, 1, and 2 halo cells
       nCells = nCellsAll
 
-      ! inputs: activeTracers, tracersSurfaceValue,maxLevelCell,refBottomDepth 
+      ! inputs: activeTracers, tracersSurfaceValue,maxLevelCell,refBottomDepth
       ! outputs: density, potentialDensity, displacedDensity, thermalExpansionCoeff, salineContractionCoeff
       ! compute in-place density
       call ocn_equation_of_state_density(statePool, meshPool, activeTracers, tracersSurfaceValue, &
@@ -459,7 +459,7 @@ contains
       !  compute fields needed to compute land-ice fluxes, either in the ocean model or in the coupler
       !
       ! inputs: layerThickness, normalVelocity, landIceFraction, landIceFloatingMask
-      ! outputs: 
+      ! outputs:
       if (landIcePressureOn) then
          call ocn_compute_land_ice_flux_input_fields(layerThickness, normalVelocity, activeTracers, &
                 landIceFraction, landIceFloatingMask, timeLevel, indexTemperature, indexSalinity)
@@ -473,7 +473,7 @@ contains
          if (landIcePressureOn) then
             call ocn_diagnostic_solve_ssh(forcingPool, ssh, seaIcePressure, &
                    pressureAdjustedSSH, gradSSH, landIceDraft=landIceDraft )
-        else 
+        else
             call ocn_diagnostic_solve_ssh(forcingPool, ssh, seaIcePressure, &
                    pressureAdjustedSSH, gradSSH)
          end if
@@ -494,7 +494,7 @@ contains
       !!                                            kineticEnergyCell, (diagnostics array)
       !!                                            tangentialVelocity (diagnostics array)
       !!                                            vertVelocityTop (diagnostics array)
-      !! ocn_diagnostic_solve_kineticEnergy      :: 
+      !! ocn_diagnostic_solve_kineticEnergy      ::
       !! ocn_diagnostic_solve_vorticity          :: normRelVortEdge, (diagnostics array)
       !!                                            normPlanetVortEdge, (diagnostics array)
       !!                                            normalizedRelativeVorticityCell (diagnostics array)
@@ -1007,7 +1007,7 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc    present(kineticEnergyVertexOnCells, kineticEnergyVertex,& 
+      !$acc    present(kineticEnergyVertexOnCells, kineticEnergyVertex,&
       !$acc            kiteIndexOnCell, kiteAreasOnVertex, invAreaCell,&
       !$acc            verticesOnCell, nEdgesOnCell)
 #else
@@ -1046,7 +1046,7 @@ contains
       do iCell = 1, nCells
       do k = 1, nVertLevels
          kineticEnergyCell(k,iCell) = 5.0_RKIND/8.0_RKIND* &
-                                      kineticEnergyCell(k,iCell) & 
+                                      kineticEnergyCell(k,iCell) &
                                     + 3.0_RKIND/8.0_RKIND* &
                                       kineticEnergyVertexOnCells(k,iCell)
       end do
@@ -1730,7 +1730,7 @@ contains
 !> \author  Luke Van Roekel
 !> \date    August 2022
 !> \details
-!>  This routine computes the diagnostic vertical velocity from 
+!>  This routine computes the diagnostic vertical velocity from
 !>    the normal velocity due to GM bolus velocity
 !
 !-----------------------------------------------------------------------
@@ -1846,7 +1846,7 @@ contains
 !> \author  Luke Van Roekel
 !> \date    August 2022
 !> \details
-!>  This routine computes the diagnostic vertical velocity from 
+!>  This routine computes the diagnostic vertical velocity from
 !>    the normal velocity due to MLE (submesoscale eddy) bolus velocity
 !
 !-----------------------------------------------------------------------
@@ -2029,11 +2029,11 @@ contains
       !$acc            invAreaCell, kiteAreasOnVertex, &
       !$acc            nEdgesOnCell, kiteIndexOnCell, verticesOnCell, &
       !$acc            minLevelCell, maxLevelCell) &
-      !$acc    private(i, iVertex, j, k, kmin, kmax, invAreaCell1) 
+      !$acc    private(i, iVertex, j, k, kmin, kmax, invAreaCell1)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp    private(i, iVertex, j, k, kmin, kmax, invAreaCell1) 
+      !$omp    private(i, iVertex, j, k, kmin, kmax, invAreaCell1)
 #endif
       do iCell = 1, nCellsOwned
          relativeVorticityCell(:,iCell) = 0.0_RKIND
@@ -2074,15 +2074,15 @@ contains
       !$acc            layerThicknessEdgeFlux, dcEdge, dvEdge, &
       !$acc            invAreaCell, nEdgesOnCell, edgesOnCell, &
       !$acc            edgeSignOnCell, minLevelCell, maxLevelCell) &
-      !$acc    private(div_hu, div_huTransport, i, k, kmin, kmax, & 
-      !$acc            iEdge, invAreaCell1, r_tmp, dcEdge_temp, & 
-      !$acc            dvEdge_temp, edgeSignOnCell_temp)  
+      !$acc    private(div_hu, div_huTransport, i, k, kmin, kmax, &
+      !$acc            iEdge, invAreaCell1, r_tmp, dcEdge_temp, &
+      !$acc            dvEdge_temp, edgeSignOnCell_temp)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp    private(div_hu, div_huTransport, i, k, kmin, kmax, & 
-      !$omp            iEdge, invAreaCell1, r_tmp, dcEdge_temp, & 
-      !$omp            dvEdge_temp, edgeSignOnCell_temp)  
+      !$omp    private(div_hu, div_huTransport, i, k, kmin, kmax, &
+      !$omp            iEdge, invAreaCell1, r_tmp, dcEdge_temp, &
+      !$omp            dvEdge_temp, edgeSignOnCell_temp)
 #endif
       do iCell = 1, nCells
          divergence(:,iCell) = 0.0_RKIND
@@ -2529,7 +2529,7 @@ contains
 
 #ifdef MPAS_OPENACC
          !$acc parallel loop &
-         !$acc    present(montgomeryPotential, density, bottomDepth, & 
+         !$acc    present(montgomeryPotential, density, bottomDepth, &
          !$acc            layerThickness, minLevelCell) &
          !$acc    private(pTop, k, kmin)
 #else
@@ -3243,7 +3243,7 @@ contains
       !    buoyancy forcing are not included here
       !    1. Tm: temperature associated with surfaceThicknessFlux,
       !           C  (here we assume Tm == temperatureSurfaceValue)
-      !    2. Sm: salinity associated with surfaceThicknessFlux, PSU 
+      !    2. Sm: salinity associated with surfaceThicknessFlux, PSU
       !           (here we assume Sm == salinitySurfaceValue and
       !            account for salinity flux in
       !            activeTracersSurfaceFlux array)
@@ -3393,7 +3393,9 @@ contains
 
       !-----------------------------------------------------------------
 
-      if ( trim(config_land_ice_flux_mode) .ne. 'standalone' .and. trim(config_land_ice_flux_mode) .ne. 'coupled' ) then
+      if (( trim(config_land_ice_flux_mode) == "off" ) .or.  &
+          ( trim(config_land_ice_flux_mode) == "pressure_only")) then
+         ! nothing to do here
          return
       end if
 
@@ -3429,9 +3431,9 @@ contains
       !$omp end do
 #endif
 
-      ! compute top drag magnitude and friction velocity at cell centers
+      ! compute top drag magnitude at cell centers
 #ifdef MPAS_OPENACC
-      !$acc parallel loop present(landIceFrictionVelocity, kineticEnergyCell, minLevelCell, topDragMag) &
+      !$acc parallel loop present(kineticEnergyCell, minLevelCell, topDragMag) &
       !$acc    present(landIceFraction)
 #else
       !$omp do schedule(runtime)
@@ -3440,7 +3442,28 @@ contains
          ! the magnitude of the top drag is CD*u**2 = CD*(2*KE)
          topDragMag(iCell) = rho_sw * landIceFraction(iCell) &
                            * 2.0_RKIND * landIceTopDragCoeff *  kineticEnergyCell(minLevelCell(iCell),iCell)
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
 
+      if ( trim(config_land_ice_flux_mode) == "data" ) then
+         ! top drag is set, and that's all we need in data (prescribed) mode
+         call mpas_timer_stop("land_ice_diagnostic_fields")
+         return
+      end if
+
+      ! From here on, were in "standalone" or "coupled" mode
+
+      ! compute friction velocity at cell centers
+#ifdef MPAS_OPENACC
+      !$acc parallel loop present(landIceFrictionVelocity, kineticEnergyCell, minLevelCell) &
+#else
+      !$omp parallel
+      !$omp do schedule(runtime)
+#endif
+      do iCell = 1, nCellsAll
          ! the friction velocity is the square root of the top drag + variance of tidal velocity
          ! (computed regardless of land-ice coverage)
          landIceFrictionVelocity(iCell) = sqrt(landIceTopDragCoeff * &
@@ -3613,7 +3636,7 @@ contains
                        transportVelocityMeridional    &
                       )
 
-      if(config_use_gm) then 
+      if(config_use_gm) then
          call mpas_reconstruct(meshPool, normalGMBolusVelocity,          &
                        eddyVelocityX,            &
                        eddyVelocityY,            &

@@ -227,7 +227,7 @@ _TESTS = {
 
     "e3sm_ocnice_stealth_features" : {
         "tests" : (
-            "SMS_D_Ld1.T62_oQU240wLI.GMPAS-IAF-ISMF.mpaso-impl_top_drag",
+            "SMS_D_Ld1.T62_oQU240wLI.GMPAS-IAF-PISMF.mpaso-impl_top_drag",
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-harmonic_mean_drag",
             )
         },
@@ -235,8 +235,8 @@ _TESTS = {
     "e3sm_ocnice_extra_coverage" : {
         "inherit" : ("e3sm_ocnice_stealth_features"),
         "tests" : (
-            "ERS_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-ISMF",
-            "PEM_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-ISMF",
+            "ERS_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-PISMF",
+            "PEM_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-PISMF",
             "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
             )
         },
@@ -265,6 +265,7 @@ _TESTS = {
             "NCK.f19_g16_rx1.A",
             "SMS.ne30_f19_g16_rx1.A",
             "ERS_Ld5.T62_oQU120.CMPASO-NYF",
+            "SMS_Ld1.T62_oQU240wLI.GMPAS-IAF-DISMF",
             "ERS.f09_g16_g.MALISIA",
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
             "SMS.f09_g16_a.IGELM_MLI",
