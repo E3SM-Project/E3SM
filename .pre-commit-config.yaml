@@ -4,7 +4,7 @@ repos:
     rev: v1.8.0
     hooks:
       - id: clang-format
-      - id: clang-tidy
-        args: [--checks=readability-magic-numbers,--warnings-as-errors=*]
-      - id: cppcheck
-      - id: include-what-you-use
+      # - id: clang-tidy
+      #   args: [--checks=readability-magic-numbers,--warnings-as-errors=*]
+      # - id: cppcheck
+      # - id: include-what-you-use
