@@ -8,6 +8,7 @@
 #define HOMMEXX_TRACERS_HPP
 
 #include "Types.hpp"
+#include "utilities/Hash.hpp"
 
 namespace Homme {
 
@@ -38,6 +39,8 @@ struct Tracers {
   ExecViewManaged<Scalar*[QSIZE_D][2][NUM_LEV]>                         qlim;
   ExecViewManaged<Scalar**[NP][NP][NUM_LEV]>                    Q;
   ExecViewManaged<Scalar**[NP][NP][NUM_LEV]>                    fq;
+
+  HashType hash(const int qdp_time_level) const;
 
 private:
   int nt;

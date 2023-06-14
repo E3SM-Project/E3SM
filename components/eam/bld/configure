@@ -2751,6 +2751,7 @@ sub write_filepath
       elsif ($opts{'dyn_target'} eq 'preqx_kokkos') {
         print $fh "$camsrcdir/homme/src/share/cxx\n";
         print $fh "$camsrcdir/homme/src/share/cxx/mpi\n";
+        print $fh "$camsrcdir/homme/src/share/cxx/utilities\n";
         print $fh "$camsrcdir/homme/src/preqx_kokkos\n";
         print $fh "$camsrcdir/homme/src/preqx_kokkos/cxx\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
@@ -2759,6 +2760,7 @@ sub write_filepath
       elsif ($opts{'dyn_target'} eq 'theta-l_kokkos') {
         print $fh "$camsrcdir/homme/src/share/cxx\n";
         print $fh "$camsrcdir/homme/src/share/cxx/mpi\n";
+        print $fh "$camsrcdir/homme/src/share/cxx/utilities\n";
         print $fh "$camsrcdir/homme/src/theta-l_kokkos\n";
         print $fh "$camsrcdir/homme/src/theta-l_kokkos/cxx\n";
         print $fh "$camsrcdir/homme/src/theta-l/share\n";
