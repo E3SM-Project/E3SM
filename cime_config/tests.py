@@ -515,6 +515,14 @@ _TESTS = {
             )
     },
 
+    # Tests run on exclusively on mappy for scream AT testing. These tests
+    # should be fast, so we limit it to low res and add some thread tests
+    # specifically for mappy.
+    "e3sm_scream_v1_at" : {
+        "inherit" : ("e3sm_scream_v1_lowres"),
+        "tests"   : ("PET_Ln9_P32x2.ne4pg2_ne4pg2.F2010-SCREAMv1")
+    },
+
     "e3sm_scream_v1_medres" : {
         "time"  : "02:00:00",
         "tests" : (
