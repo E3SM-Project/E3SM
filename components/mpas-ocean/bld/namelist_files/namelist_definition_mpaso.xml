@@ -1514,7 +1514,7 @@ Default: Defined in namelist_defaults.xml
 	category="land_ice_fluxes" group="land_ice_fluxes">
 Selects the mode in which land-ice fluxes are computed.
 
-Valid values: 'off','pressure_only','standalone','coupled'
+Valid values: 'off','pressure_only', 'data', 'standalone','coupled'
 Default: Defined in namelist_defaults.xml
 </entry>
 
