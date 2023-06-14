@@ -46,6 +46,8 @@ design/MachEnv
 design/Metadata
 design/TimeMgr
 design/Reductions
+design/IO
+design/IOStreams
 
 design/OmegaDesignTemplate
 ```
