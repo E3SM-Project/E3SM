@@ -203,6 +203,11 @@ module li_subglacial_hydro
          block => block % next
       end do
 
+      !update halo for iceThicknessHydro
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'iceThicknessHydro')
+      call mpas_timer_stop("halo updates")
+      
       ! === error check
       if (err > 0) then
           call mpas_log_write("An error has occurred in li_SGH_init.", MPAS_LOG_ERR)
@@ -338,6 +343,11 @@ module li_subglacial_hydro
          block => block % next
       end do
 
+      !update halo for iceThicknessHydro
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'iceThicknessHydro')
+      call mpas_timer_stop("halo updates")
+      
       ! initialize while loop
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)  ! can get from any block
       call mpas_pool_get_array(meshPool, 'deltat', masterDeltat)
@@ -2330,8 +2340,10 @@ module li_subglacial_hydro
       integer, pointer :: nCells
       integer :: iCell
       integer :: jCell
+      integer :: numCellsChanged
+      integer :: iNeighbor
       real (kind=RKIND) :: minNeighborHeight
-      real (kind=RKIND), parameter :: bigValue = 1.0_RKIND
+      real (kind=RKIND), parameter :: bigValue = 1.0e6_RKIND
       integer, dimension(:), pointer :: nEdgesOnCell
       err = 0
 
@@ -2350,26 +2362,35 @@ module li_subglacial_hydro
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       
       iceThicknessHydro = thickness
+      numCellsChanged = 0
 
       do iCell = 1, nCells
-         if ((li_mask_is_boundary(cellMask(iCell))) .and. (li_mask_is_grounded_ice(cellMask(iCell)))) then !identify domain boundaries
-           minNeighborHeight = bigValue !allocate
+         if ((li_mask_is_boundary(cellMask(iCell))) .and. &
+                 (li_mask_is_grounded_ice(cellMask(iCell)))) then !identify domain boundaries
+           
+            minNeighborHeight = bigValue !allocate
 
             do jCell = 1, nEdgesOnCell(iCell)
-               if ( .not. li_mask_is_boundary(cellMask(cellsOnCell(jCell,iCell)))) then
-                       minNeighborHeight = min(minNeighborHeight, upperSurface(cellsOnCell(jCell,iCell)))
+               iNeighbor = cellsOnCell(jCell,iCell)
+               if ( .not. li_mask_is_boundary(cellMask(iNeighbor)) .and. &
+                   (iNeighbor < nCells + 1)) then
+                    minNeighborHeight = min(minNeighborHeight, upperSurface(iNeighbor))
                endif            
             end do
             
             !only adjust surface elevation if cell is local minimum
             if ((upperSurface(iCell) < minNeighborHeight) .and. (minNeighborHeight < bigValue)) then
+               call mpas_log_write("Changed ice thickness of cell $i", intArgs=(/iCell/))
+               numCellsChanged = numCellsChanged + 1
                iceThicknessHydro(iCell) = minNeighborHeight - bedTopography(iCell)            
             endif
 
          endif
       enddo
 
-!-------------------------------------------------------------------------      
-      end subroutine calc_iceThicknessHydro
+      call mpas_log_write("Number of Cells Changed in iceThicknessHydro: $i", intArgs=(/numCellsChanged/))
+      call mpas_log_write("Minimum Neighbor Height: $r", realArgs=(/minNeighborHeight/))
+      
+   end subroutine calc_iceThicknessHydro
 
 end module li_subglacial_hydro
