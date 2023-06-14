@@ -190,7 +190,7 @@ if [ $skip_testing -eq 0 ]; then
 
       if [[ $test_v1 == 1 ]]; then
         # AT runs should be fast. => run only low resolution
-        ../../cime/scripts/create_test e3sm_scream_v1_lowres --compiler=gnu9 -c -b master --wait
+        ../../cime/scripts/create_test e3sm_scream_v1_at --compiler=gnu9 -c -b master --wait
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           v1_fail=1
