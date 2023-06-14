@@ -68,8 +68,10 @@ def buildlib(bldroot, installpath, case):
         print ("no value foudn in env for KOKKOS_PATH. building from scratch")
 
     srcroot = case.get_value("SRCROOT")
-    kokkos_dir = os.path.join(srcroot, "externals", "kokkos")
-    expect(os.path.isdir(kokkos_dir), "Missing kokkos submodule")
+    ekat_dir = os.path.join(srcroot, "externals", "ekat")
+    expect(os.path.isdir(ekat_dir), "Missing ekat submodule")
+    kokkos_dir = os.path.join(ekat_dir, "extern", "kokkos")
+    expect(os.path.isdir(kokkos_dir), "Missing kokkos submodule in EKAT")
 
     # We want to get the compiler and kokkos_options from Macros.make
     # (generated from cmake_macros), but we want to otherwise

@@ -23,7 +23,7 @@ use wv_saturation, only: qsat, qsat_water, svp_ice
 use time_manager,  only: is_first_step
 use physconst,     only: cpair, rair, gravit, latvap, epsilo
 
-use scamMod,       only: single_column, wfld
+use iop_data_mod,  only: single_column, wfld
 use cam_abortutils,    only: endrun
 
 implicit none

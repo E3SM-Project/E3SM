@@ -313,7 +313,6 @@ contains
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: meshPool
       integer, pointer :: nCells
-      integer, pointer :: nTidalPotentialConstituents
       real (kind=RKIND), dimension(:), pointer :: latCell
 
       ! End preamble
@@ -358,9 +357,6 @@ contains
          call mpas_pool_get_array(forcingPool, 'tidalPotentialEta', &
                                                 tidalPotEta)
 
-         call mpas_pool_get_array(forcingPool, &
-                            'nTidalPotentialConstituents', &
-                             nTidalPotentialConstituents)
          call mpas_pool_get_array(forcingPool, &
                             'tidalPotentialConstituentAmplitude', & 
                              tidalConstituentAmplitude)
@@ -433,9 +429,6 @@ contains
             nTidalConstituents = nTidalConstituents + 1
             constituentList(nTidalConstituents)%constituent = 'P1'
          end if 
-
-         ! set point value in forcing pool just in case
-         nTidalPotentialConstituents = nTidalConstituents
 
          call tidal_constituent_factors(constituentList, &
                                        nTidalConstituents, refTime, &

@@ -96,7 +96,7 @@ use ref_pres,       only: top_lev=>trop_cloud_top_lev
 
 use subcol_utils,   only: subcol_get_scheme
 use perf_mod,       only: t_startf, t_stopf
-use scamMod,        only: precip_off
+use iop_data_mod,   only: precip_off
 
 implicit none
 private

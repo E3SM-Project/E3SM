@@ -9,9 +9,6 @@ module restart_dynamics
        pdeld, ps, vort, div, &
        dps, phis, dpsl, dpsm, omga, ptimelevels
   use scanslt,         only:  lammp, phimp, sigmp, qfcst
-#if ( defined BFB_CAM_SCAM_IOP )
-  use iop,             only: dqfx3sav,divq3dsav,divt3dsav,t2sav,betasav
-#endif
   use cam_logfile,  only: iulog
   use spmd_utils,   only: masterproc
 
@@ -34,11 +31,7 @@ module restart_dynamics
      integer           :: timelevels
      character(len=namlen) :: name
   end type restart_var_t
-#if ( defined BFB_CAM_SCAM_IOP )
-  integer, parameter :: restartvarcnt = 22
-#else
   integer, parameter :: restartvarcnt = 17
-#endif
   type(var_desc_t) :: timedesc, tmass0desc, fixmasdesc, hw1desc, hw2desc, hw3desc, alphadesc
 
   type(restart_var_t) :: restartvars(restartvarcnt)
@@ -135,29 +128,7 @@ CONTAINS
     call set_r_var('SIGMP', 1, vcnt, v3=sigmp )
 
     vcnt=vcnt+1
-    call set_r_var('Q_fcst', 1, vcnt, v4=qfcst )
-
-
-#if ( defined BFB_CAM_SCAM_IOP )
-!
-! Write scam values
-!
-    vcnt=vcnt+1
-    call set_r_var('DQFX', 1, vcnt, v4=dqfx3sav )
-
-    vcnt=vcnt+1
-    call set_r_var('DIVQ', 1, vcnt, v4=divq3dsav )
-
-    vcnt=vcnt+1
-    call set_r_var('DIVT', 1, vcnt, v3=divt3dsav )
-
-    vcnt=vcnt+1
-    call set_r_var('T2', 1, vcnt, v3=t2sav )
-
-    vcnt=vcnt+1
-    call set_r_var('BETA', 1, vcnt, v1=betasav )
-
-#endif    
+    call set_r_var('Q_fcst', 1, vcnt, v4=qfcst )    
 
     if(vcnt.ne.restartvarcnt) then
        write(iulog,*) 'vcnt= ',vcnt, ' restartvarcnt=',restartvarcnt
@@ -392,9 +363,6 @@ subroutine init_restart_dynamics(File, dyn_out)
 
     use pmgrid,          only: plon, plat, beglat, endlat
     use scanslt,         only: scanslt_alloc
-#if ( defined BFB_CAM_SCAM_IOP )
-    use iop,             only: init_iop_fields
-#endif
     use massfix,         only: alpha, hw1, hw2, hw3
     use prognostics,     only:  ptimelevels, n3m2, n3m1, n3, initialize_prognostics
     use constituents,    only: pcnst
@@ -483,9 +451,6 @@ subroutine init_restart_dynamics(File, dyn_out)
 
     call init_restart_varlist()
 
-#if ( defined BFB_CAM_SCAM_IOP )
-    call init_iop_fields()
-#endif
     do i=1,restartvarcnt
        call get_restart_var(i, name, timelevels, ndims, vdesc)
 

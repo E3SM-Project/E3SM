@@ -41,6 +41,7 @@ module rof_cpl_indices
   integer, public :: index_x2r_Faxa_swvdf = 0   ! atm->rof shorwave visible diffus flux
   integer, public :: index_x2r_Faxa_swndr = 0   ! atm->rof shorwave near-ir direct flux
   integer, public :: index_x2r_Faxa_swndf = 0   ! atm->rof shorwave near-ir diffus flux
+  integer, public :: index_x2r_Flrl_rofmud = 0  ! lnd->rof input suspended sediment flux from soil erosion
   integer, public :: index_x2r_Flrl_inundinf = 0! lnd->rof infiltration from floodplain inundation
   integer, public :: nflds_x2r = 0
 
@@ -48,10 +49,12 @@ module rof_cpl_indices
   integer, public :: index_x2r_So_ssh = 0        ! ocn->rof ssh from ocean
 
   !TODO - nt_rtm and rtm_tracers need to be removed and set by access to the index array
-  integer, parameter, public :: nt_rtm = 2    ! number of tracers
-  character(len=3), parameter, public :: rtm_tracers(nt_rtm) =  (/'LIQ','ICE'/)
+  integer, parameter, public :: nt_rtm = 4    ! number of tracers
+  character(len=3), parameter, public :: rtm_tracers(nt_rtm) =  (/'LIQ','ICE','MUD','SAN'/)
   integer, parameter, public :: nt_nliq = 1    ! number of tracers
   integer, parameter, public :: nt_nice = 2    ! number of tracers
+  integer, parameter, public :: nt_nmud = 3    ! number of tracers
+  integer, parameter, public :: nt_nsan = 4    ! number of tracers
 
   !Routing methods used for the main-channel
   integer, parameter, public :: KW = 1         ! kinematic wave routing method
@@ -97,7 +100,8 @@ contains
     !
     ! !USES:
     use seq_flds_mod  , only: seq_flds_r2x_fields, seq_flds_x2r_fields, rof_heat, &
-                              rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way
+                              rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, &
+                              rof_sed
     use mct_mod       , only: mct_aVect, mct_aVect_init, mct_avect_indexra, &
                               mct_aVect_clean, mct_avect_nRattr
     !
@@ -141,7 +145,9 @@ contains
     endif
 
     index_x2r_coszen_str  = mct_avect_indexra(avtmp,'coszen_str')
-
+	if (rof_sed) then
+        index_x2r_Flrl_rofmud = mct_avect_indexra(avtmp,'Flrl_rofmud')
+	end if
     if (lnd_rof_two_way) then
       index_x2r_Flrl_inundinf =  mct_avect_indexra(avtmp,'Flrl_inundinf')
     endif

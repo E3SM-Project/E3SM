@@ -218,7 +218,7 @@ module ocn_time_integration
 
       case ('RK4')
          timeIntegratorChoice = timeIntRK4
-         ! No init routine needs to be run for RK4
+         call ocn_time_integration_rk4_init(domain)
 
       case default
 

@@ -79,11 +79,17 @@ module ocn_diagnostics
    real (kind=RKIND), pointer ::  coef_3rd_order
 
    ! Methods for computing thickness at edges for flux calculations
-   integer :: thickEdgeFluxChoice  ! choice of thickness flux type
+   integer :: &
+      thickEdgeFluxChoice, &! choice of thickness flux type
+      thickEdgeDragChoice   ! choice of thickness drag type
    integer, parameter :: &
-      thickEdgeFluxUnknown = 0, &! type unknown or unset
-      thickEdgeFluxCenter  = 1, &! use mean thickness of cell neighbors
-      thickEdgeFluxUpwind  = 2   ! use upwind cell thickness at edge
+      thickEdgeFluxCenter   = 1, &! use mean thickness of cell neighbors
+      thickEdgeFluxUpwind   = 2, &! use upwind cell thickness at edge
+      thickEdgeFluxConstant = 3   ! use constant thickness in time from
+                                  ! RestingThickness, for linear test problems
+   integer, parameter :: &
+      thickEdgeDragCenter  = 1, &! use mean thickness of cell neighbors
+      thickEdgeDragHarMean = 2   ! use harmonic mean cell thickness at edge
 
 !***********************************************************************
 
@@ -101,13 +107,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, &
+   subroutine ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, &
                                    timeLevelIn, full)!{{{
 
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
       type (mpas_pool_type), intent(in) :: statePool !< Input: State information
       type (mpas_pool_type), intent(in) :: forcingPool !< Input: Forcing information
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: verticalMeshPool !< Input: vertical mesh information
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch variables
       type (mpas_pool_type), intent(in) :: tracersPool !< Input: tracer fields
       integer, intent(in), optional :: timeLevelIn !< Input: Time level in state
@@ -122,7 +129,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
         ssh,  seaIcePressure, atmosphericPressure
       real (kind=RKIND), dimension(:,:), pointer :: &
-        layerThickness, layerThicknessLag, normalVelocity
+        layerThickness, layerThicknessLag, normalVelocity, restingThickness
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
@@ -166,6 +173,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'seaIcePressure', seaIcePressure)
       call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
       call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
+      call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
 
       if (landIcePressureOn) then
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
@@ -231,9 +239,9 @@ contains
 #endif
 
       ! inputs: layerThickness, normalVelocity
-      ! output: layerThickEdgeMean, layerThickEdgeFlux
+      ! output: layerThickEdgeMean, layerThickEdgeDrag, layerThickEdgeFlux
       call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, &
-                                                   layerThickness)
+                                                   layerThickness, restingThickness)
 
       ! inputs: normalVelocity
       ! outputs: relativeVorticity, circulation
@@ -474,7 +482,8 @@ contains
 
 #ifdef MPAS_OPENACC
       !! Listing outputs by first routine that modifies variable
-      !! ocn_diagnostic_solve_layerThicknessEdge :: layerThickEdgeFlux, (diagnostics array)
+      !! ocn_diagnostic_solve_layerThicknessEdge :: layerThickEdgeDrag, (diagnostics array)
+      !!                                            layerThickEdgeFlux, (diagnostics array)
       !!                                            layerThickEdgeMean (diagnostics array)
       !! ocn_relativeVorticity_circulation       :: relativeVorticity, (diagnostics array)
       !!                                            circulation (diagnostics array)
@@ -512,7 +521,9 @@ contains
       !! ocn_diagnostic_solve_ssh                :: pressureAdjustedSSH, (diagnostics array)
       !!                                            gradSSH (diagnostics array)
 
-!     !$acc update host(layerThickEdgeFlux, layerThickEdgeCenter)
+!     !$acc update host(layerThickEdgeDrag, &
+!     !$acc             layerThickEdgeFlux, &
+!     !$acc             layerThickEdgeMean)
 !     !$acc update host(relativeVorticity, circulation)
 !     !$acc update host(vertTransportVelocityTop, &
 !     !$acc             vertGMBolusVelocityTop, &
@@ -664,15 +675,15 @@ contains
 !> \author  Matt Turner
 !> \date    October 2020
 !> \details
-!>  This routine computes the diagnostic variables layerThickEdgeFlux
-!>  and layerThickEdgeMean. The Mean is a simple mean across the edge
-!>  but the Flux value can either be the mean or an upwind value,
-!>  depending on user input.
+!>  This routine computes the diagnostic variables layerThickEdgeDrag,
+!>  layerThickEdgeFlux, and layerThickEdgeMean. The Mean is a simple
+!>  mean across the edge but the Flux value can either be the mean or
+!>  an upwind value, depending on user input.
 !
 !-----------------------------------------------------------------------
 
    subroutine ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, &
-                                                      layerThickness)!{{{
+                                                      layerThickness, restingThickness)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -680,7 +691,8 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalVelocity,  &!< [in] transport
-         layerThickness    !< [in] layer thickness at cell center
+         layerThickness,  &!< [in] layer thickness at cell center
+         restingThickness  !< [in] initial layer thickness at cell center
 
       !-----------------------------------------------------------------
       ! output variables
@@ -688,8 +700,9 @@ contains
 
       ! Outputs are the shared variables from diagnostic_variables:
       !real (kind=RKIND), dimension(:,:), intent(out) :: &
-      !   layerThickEdgeMean, & !< [out] centered layer thickness on edge
-      !   layerThickEdgeFlux    !< [out] flux-related thickness on edge
+      !   layerThickEdgeDrag,    & !< [out] layer thickness on edge for drag
+      !   layerThickEdgeMean,    & !< [out] centered layer thickness on edge
+      !   layerThickEdgeFlux       !< [out] flux-related thickness on edge
 
       !-----------------------------------------------------------------
       ! local variables
@@ -800,12 +813,109 @@ contains
          !$omp end parallel
 #endif
 
+      case (thickEdgeFluxConstant)
+         ! Use linearized version H*u where H is constant in time
+
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(restingThickness, &
+         !$acc            minLevelEdgeBot, maxLevelEdgeTop, &
+         !$acc            layerThickEdgeFlux, cellsOnEdge) &
+         !$acc    private(k, kmin, kmax, cell1, cell2)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime) private(k, kmin, kmax, cell1, cell2)
+#endif
+         do iEdge = 1, nEdgesAll
+            kmin = minLevelEdgeBot(iEdge)
+            kmax = maxLevelEdgeTop(iEdge)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            do k=1,nVertLevels
+               ! initialize layerThicknessEdgeFlux to avoid divide by
+               ! zero and NaN problems.
+               layerThickEdgeFlux(k,iEdge) = -1.0e34_RKIND
+            end do
+            do k = kmin,kmax
+               layerThickEdgeFlux(k,iEdge) = 0.5_RKIND * &
+                                         (restingThickness(k,cell1) + &
+                                          restingThickness(k,cell2))
+            end do
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+         !$omp end parallel
+#endif
+
       case default
          ! Should have been caught on init
          call mpas_log_write('Thickness flux option unknown', &
                              MPAS_LOG_CRIT)
 
       end select
+
+      ! Compute edge flux based on option set on init
+      select case (thickEdgeDragChoice)
+
+      case (thickEdgeDragCenter)
+#ifdef MPAS_OPENACC
+         !$acc parallel loop collapse(2) &
+         !$acc    present(layerThickEdgeDrag, layerThickEdgeMean)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime) private(k)
+#endif
+         do iEdge = 1, nEdgesAll
+         do k = 1,nVertLevels
+            layerThickEdgeDrag(k,iEdge) = &
+            layerThickEdgeMean(k,iEdge)
+         end do
+         end do
+#ifndef MPAS_OPENACC
+        !$omp end do
+        !$omp end parallel
+#endif
+
+      case (thickEdgeDragHarMean)
+
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(layerThickness, layerThickEdgeDrag, &
+         !$acc            minLevelEdgeBot, maxLevelEdgeTop, cellsOnEdge) &
+         !$acc    private(k, kmin, kmax, cell1, cell2)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime) private(k, kmin, kmax, cell1, cell2)
+#endif
+         do iEdge = 1, nEdgesAll
+            kmin = minLevelEdgeBot(iEdge)
+            kmax = maxLevelEdgeTop(iEdge)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            do k = 1,nVertLevels
+               ! initialize layerThicknessEdgeMean to avoid divide by
+               ! zero and NaN problems.
+               layerThickEdgeDrag(k,iEdge) = -1.0e34_RKIND
+            end do
+            do k = kmin,kmax
+               ! central differenced
+               layerThickEdgeDrag(k,iEdge) = &
+                   2.0_RKIND * layerThickness(k,cell1) * layerThickness(k,cell2)/ &
+                   (max(layerThickness(k,cell1)+layerThickness(k,cell2), 1e-9_RKIND))
+            end do
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+         !$omp end parallel
+#endif
+
+      case default
+         ! Should have been caught on init
+         call mpas_log_write('Thickness flux option unknown', &
+                             MPAS_LOG_CRIT)
+
+      end select
+
 
    !--------------------------------------------------------------------
 
@@ -4220,6 +4330,15 @@ contains
       ! Initialize choice for computing thickness at edges for fluxes
       if (trim(config_thickness_flux_type) == 'centered') then
          thickEdgeFluxChoice = thickEdgeFluxCenter
+      elseif (trim(config_thickness_flux_type) == 'constant') then
+         thickEdgeFluxChoice = thickEdgeFluxConstant
+         if (.not.config_disable_vel_hadv) then
+            call mpas_log_write('config_thickness_flux_type set to ' //&
+                 & trim(config_thickness_flux_type) // ' but '//&
+                 & 'config_disable_vel_hadv is false. '//&
+                 & 'Set config_disable_vel_hadv to true for a linear test case. ', &
+                 MPAS_LOG_CRIT)
+         end if
       else
          if (config_use_wetting_drying .and. &
              (trim(config_thickness_flux_type) /= 'centered')) then
@@ -4227,10 +4346,9 @@ contains
                thickEdgeFluxChoice = thickEdgeFluxUpwind
             end if
          else
-            thickEdgeFluxChoice = thickEdgeFluxUnknown
             call mpas_log_write('Thickness flux option of ' //&
                  & trim(config_thickness_flux_type) // &
-                 & 'is not known', MPAS_LOG_CRIT)
+                 & ' is not known', MPAS_LOG_CRIT)
          end if
       end if
 
@@ -4240,6 +4358,16 @@ contains
       else
          landIceTopDragCoeff = config_land_ice_flux_explicit_topDragCoeff
       endif
+
+      if (trim(config_thickness_drag_type) == 'centered') then
+         thickEdgeDragChoice = thickEdgeDragCenter
+      elseif (trim(config_thickness_drag_type) == 'harmonic-mean') then
+         thickEdgeDragChoice = thickEdgeDragHarMean
+      else
+         call mpas_log_write('Thickness drag option of ' //&
+              & trim(config_thickness_drag_type) // &
+              & ' is not known', MPAS_LOG_CRIT)
+      end if
 
       call ocn_diagnostics_variables_init(domain, jenkinsOn, &
                                           hollandJenkinsOn, err)
