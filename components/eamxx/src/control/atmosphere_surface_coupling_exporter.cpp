@@ -232,7 +232,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
     bool do_export_from_file = are_fields_present and are_files_present;
     if (do_export_from_file) {
       // Construct a time interpolation object
-      auto time_interp = util::TimeInterpolation(m_grid,export_from_file_names);
+      m_time_interp = util::TimeInterpolation(m_grid,export_from_file_names);
       for (auto fname : export_from_file_fields) {
         // Find the index for this field in the list of export fields.
 	auto v_loc = std::find(m_export_field_names_vector.begin(),m_export_field_names_vector.end(),fname);
@@ -244,10 +244,9 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
         --m_num_from_model_exports;
         auto& f_helper = m_helper_fields.at(fname);
 	// We want to add the field as a deep copy so that the helper_fields are automatically updated.
-        time_interp.add_field(f_helper, true);
+        m_time_interp.add_field(f_helper, true);
         m_export_from_file_field_names.push_back(fname);
       }
-      m_time_interp = time_interp;
       m_time_interp.initialize_data_from_files();
     }
   }
