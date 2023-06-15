@@ -527,8 +527,8 @@ subroutine zm_convr(lchnk   ,ncol    , &
 !     diagnostic field used by chem/wetdep codes
    real(r8) ql(pcols,pver)                    ! wg grid slice of cloud liquid water.
 
-   real(r8) pblt(pcols)           ! i row of pbl top indices.
-   real(r8) pbltg(pcols)          ! i row of pbl top indices.
+   integer pblt(pcols)           ! i row of pbl top indices.
+   integer pbltg(pcols)          ! i row of pbl top indices.
 
 
 
@@ -2463,7 +2463,7 @@ subroutine buoyan(lchnk   ,ncol    , &
    real(r8), intent(in) :: p(pcols,pver)        ! pressure
    real(r8), intent(in) :: z(pcols,pver)        ! height
    real(r8), intent(in) :: pf(pcols,pver+1)     ! pressure at interfaces
-   real(r8), intent(in) :: pblt(pcols)          ! index of pbl depth
+   integer,  intent(in) :: pblt(pcols)          ! index of pbl depth
    real(r8), intent(in) :: tpert(pcols)         ! perturbation temperature by pbl processes
 
 !
@@ -2552,7 +2552,7 @@ subroutine buoyan(lchnk   ,ncol    , &
 ! Reset max moist static energy level when relative difference exceeds 1.e-4
 !
          rhd = (hmn(i) - hmax(i))/(hmn(i) + hmax(i))
-         if (k >= nint(pblt(i)) .and. k <= lon(i) .and. rhd > -1.e-4_r8) then
+         if (k >= pblt(i) .and. k <= lon(i) .and. rhd > -1.e-4_r8) then
             hmax(i) = hmn(i)
             mx(i) = k
          end if
@@ -2562,7 +2562,7 @@ subroutine buoyan(lchnk   ,ncol    , &
    do k = pver,msg + 1,-1
       do i = 1,ncol
          hmn(i) = cp*t(i,k) + grav*z(i,k) + rl*q(i,k)
-         if (k >= nint(pblt(i)) .and. k <= lon(i) .and. hmn(i) > hmax(i)) then
+         if (k >= pblt(i) .and. k <= lon(i) .and. hmn(i) > hmax(i)) then
             hmax(i) = hmn(i)
             mx(i) = k
          end if
@@ -4215,7 +4215,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &! in
    real(r8), intent(in) :: z(pcols,pver)        ! height
    real(r8), intent(in) :: pf(pcols,pver+1)     ! pressure at interfaces
 
-   real(r8), intent(in) :: pblt(pcols)          ! index of pbl depth
+   integer,  intent(in) :: pblt(pcols)          ! index of pbl depth
 
    real(r8), intent(in) :: rl
    real(r8), intent(in) :: rd
@@ -4267,7 +4267,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &! in
    integer lelten(pcols,num_cin)
 
 ! DCAPE-ULL
-   real(r8) pblt600(pcols)
+   integer pblt600(pcols)
    integer top_k(pcols)
 
    real(r8) e
@@ -4347,10 +4347,10 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &! in
 
 !DCAPE-ULL
    if (trigdcape_ull .or. trig_ull_only) then
-      pblt600(:ncol) = 1.0_r8
+      pblt600(:ncol) = 1
       do k = pver - 1,msg + 1,-1
       do i = 1,ncol
-         if ((p(i,k).le.600._r8) .and. (p(i,k+1).gt.600._r8)) pblt600(i) = dble(k)
+         if ((p(i,k).le.600._r8) .and. (p(i,k+1).gt.600._r8)) pblt600(i) = k
       end do
       end do
    endif
@@ -4379,9 +4379,9 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &! in
   ! Search for max moist static energy level
   !----------------------------------------------
    if (trigdcape_ull .or. trig_ull_only) then !DCAPE-ULL
-      top_k(:ncol) = nint(pblt600(:ncol))
+      top_k(:ncol) = pblt600(:ncol)
    else
-      top_k(:ncol) = nint(pblt(:ncol))
+      top_k(:ncol) = pblt(:ncol)
    end if
 
 #ifdef PERGRO
@@ -4542,7 +4542,7 @@ real(r8), intent(in), dimension(pcols,pver) :: p
 real(r8), intent(in), dimension(pcols,pver) :: t
 real(r8), intent(in), dimension(pcols,pver) :: q
 real(r8), intent(in), dimension(pcols) :: tpert ! PBL temperature perturbation.
-real(r8), intent(in), dimension(pcols) :: pblt          ! index of pbl depth 
+integer,  intent(in), dimension(pcols) :: pblt          ! index of pbl depth 
 
 real(r8), intent(inout), dimension(pcols,pver) :: tp    ! Parcel temp.
 real(r8), intent(inout), dimension(pcols,pver) :: qstp  ! Parcel water vapour (sat value above lcl).
@@ -4650,7 +4650,7 @@ new_s = 0._r8
 ! it. In this situation, the temporary varaible tpertg is reset to zero.  
 do i=1,ncol
   tpertg(i)=tpert(i)
-  if ( tpert_fix .and. klaunch(i)<nint(pblt(i))) tpertg(i)=0._r8
+  if ( tpert_fix .and. klaunch(i)<pblt(i)) tpertg(i)=0._r8
 end do
 
 
