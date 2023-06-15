@@ -2573,6 +2573,41 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- manufactured_solution -->
+
+<entry id="config_use_manufactured_solution" type="logical"
+	category="manufactured_solution" group="manufactured_solution">
+This flag includes additional thickness and velocity tendencies necessary for testing with a manufactured solution.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_manufactured_solution_wavelength_x" type="real"
+	category="manufactured_solution" group="manufactured_solution">
+Wavelength of manufactured solution in the x direction
+
+Valid values: Any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_manufactured_solution_wavelength_y" type="real"
+	category="manufactured_solution" group="manufactured_solution">
+Wavelength of manufactured solution in the y direction
+
+Valid values: Any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_manufactured_solution_amplitude" type="real"
+	category="manufactured_solution" group="manufactured_solution">
+Amplitude of the manufactured solution
+
+Valid values: Any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- tracer_forcing_activeTracers -->
 
 <entry id="config_use_activeTracers" type="logical"

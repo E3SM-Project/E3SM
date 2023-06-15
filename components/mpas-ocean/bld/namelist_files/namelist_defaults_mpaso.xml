@@ -534,6 +534,12 @@
 <!-- init_mode_vert_levels -->
 <config_vert_levels>-1</config_vert_levels>
 
+<!-- manufactured_solution -->
+<config_use_manufactured_solution>.false.</config_use_manufactured_solution>
+<config_manufactured_solution_wavelength_x>2000000.0</config_manufactured_solution_wavelength_x>
+<config_manufactured_solution_wavelength_y>2000000.0</config_manufactured_solution_wavelength_y>
+<config_manufactured_solution_amplitude>1</config_manufactured_solution_amplitude>
+
 <!-- tracer_forcing_activeTracers -->
 <config_use_activeTracers>.true.</config_use_activeTracers>
 <config_use_activeTracers_surface_bulk_forcing>.true.</config_use_activeTracers_surface_bulk_forcing>
