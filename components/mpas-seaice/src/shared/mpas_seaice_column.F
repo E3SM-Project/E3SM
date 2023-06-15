@@ -3028,6 +3028,8 @@ contains
          iCategory, &
          iAerosol, &
          iTracer
+!         nspint_5bd, &  ! for checking against icepack array values
+!         nmbrad_snicar  ! for checking against icepack array values
 
     integer, dimension(:), allocatable :: &
          index_shortwaveAerosol
@@ -3155,6 +3157,38 @@ contains
        call MPAS_pool_get_array(snicar, "modalSingleScatterAlbedo5band", modalSingleScatterAlbedo5band)
        call MPAS_pool_get_array(snicar, "modalAsymmetryParameter5band", modalAsymmetryParameter5band)
        call MPAS_pool_get_array(snicar, "modalBCabsorptionParameter5band", modalBCabsorptionParameter5band)
+
+! write out corner values of arrays to compare with values from icepack tables (subroutine icepack_init_radiation)
+!    call mpas_log_write(' ')
+!    call mpas_log_write(" ----- snicar parameters (column) -----")
+!    nspint_5bd = size(iceAsymmetryParameterDirect,1)
+!    nmbrad_snicar = size(iceAsymmetryParameterDirect,2)
+!    call mpas_log_write('nspint_5bd $i',intArgs=(/nspint_5bd/))
+!    call mpas_log_write('nmbrad_snicar $i',intArgs=(/nmbrad_snicar/))
+!    call mpas_log_write('ssp_sasymmdr(1,1) $r',realArgs=(/iceAsymmetryParameterDirect(1,1)/))
+!    call mpas_log_write('ssp_sasymmdr(nspint_5bd,1) $r',realArgs=(/iceAsymmetryParameterDirect(nspint_5bd,1)/))
+!    call mpas_log_write('ssp_sasymmdr(1,nmbrad_snicar) $r',realArgs=(/iceAsymmetryParameterDirect(1,nmbrad_snicar)/))
+!    call mpas_log_write('ssp_sasymmdr(nspint_5bd,nmbrad_snicar) $r',realArgs=(/iceAsymmetryParameterDirect(nspint_5bd,nmbrad_snicar)/))
+!    call mpas_log_write('ssp_sasymmdc(1,1) $r',realArgs=(/iceAsymmetryParameterDiffuse(1,1)/))
+!    call mpas_log_write('ssp_sasymmdc(nspint_5bd,1) $r',realArgs=(/iceAsymmetryParameterDiffuse(nspint_5bd,1)/))
+!    call mpas_log_write('ssp_sasymmdc(1,nmbrad_snicar) $r',realArgs=(/iceAsymmetryParameterDiffuse(1,nmbrad_snicar)/))
+!    call mpas_log_write('ssp_sasymmdc(nspint_5bd,nmbrad_snicar) $r',realArgs=(/iceAsymmetryParameterDiffuse(nspint_5bd,nmbrad_snicar)/))
+!    call mpas_log_write('ssp_snwalbdr(1,1) $r',realArgs=(/iceSingleScatterAlbedoDirect(1,1)/))
+!    call mpas_log_write('ssp_snwalbdr(nspint_5bd,1) $r',realArgs=(/iceSingleScatterAlbedoDirect(nspint_5bd,1)/))
+!    call mpas_log_write('ssp_snwalbdr(1,nmbrad_snicar) $r',realArgs=(/iceSingleScatterAlbedoDirect(1,nmbrad_snicar)/))
+!    call mpas_log_write('ssp_snwalbdr(nspint_5bd,nmbrad_snicar) $r',realArgs=(/iceSingleScatterAlbedoDirect(nspint_5bd,nmbrad_snicar)/))
+!    call mpas_log_write('ssp_snwalbdc(1,1) $r',realArgs=(/iceSingleScatterAlbedoDiffuse(1,1)/))
+!    call mpas_log_write('ssp_snwalbdc(nspint_5bd,1) $r',realArgs=(/iceSingleScatterAlbedoDiffuse(nspint_5bd,1)/))
+!    call mpas_log_write('ssp_snwalbdc(1,nmbrad_snicar) $r',realArgs=(/iceSingleScatterAlbedoDiffuse(1,nmbrad_snicar)/))
+!    call mpas_log_write('ssp_snwalbdc(nspint_5bd,nmbrad_snicar) $r',realArgs=(/iceSingleScatterAlbedoDiffuse(nspint_5bd,nmbrad_snicar)/))
+!    call mpas_log_write('ssp_snwextdr(1,1) $r',realArgs=(/iceMassExtinctionCrossSectionDirect(1,1)/))
+!    call mpas_log_write('ssp_snwextdr(nspint_5bd,1) $r',realArgs=(/iceMassExtinctionCrossSectionDirect(nspint_5bd,1)/))
+!    call mpas_log_write('ssp_snwextdr(1,nmbrad_snicar) $r',realArgs=(/iceMassExtinctionCrossSectionDirect(1,nmbrad_snicar)/))
+!    call mpas_log_write('ssp_snwextdr(nspint_5bd,nmbrad_snicar) $r',realArgs=(/iceMassExtinctionCrossSectionDirect(nspint_5bd,nmbrad_snicar)/))
+!    call mpas_log_write('ssp_snwextdc(1,1) $r',realArgs=(/iceMassExtinctionCrossSectionDiffuse(1,1)/))
+!    call mpas_log_write('ssp_snwextdc(nspint_5bd,1) $r',realArgs=(/iceMassExtinctionCrossSectionDiffuse(nspint_5bd,1)/))
+!    call mpas_log_write('ssp_snwextdc(1,nmbrad_snicar) $r',realArgs=(/iceMassExtinctionCrossSectionDiffuse(1,nmbrad_snicar)/))
+!    call mpas_log_write('ssp_snwextdc(nspint_5bd,nmbrad_snicar) $r',realArgs=(/iceMassExtinctionCrossSectionDiffuse(nspint_5bd,nmbrad_snicar)/))
 
        call MPAS_pool_get_array(snow, "snowRadiusInStandardRadiationSchemeCategory", snowRadiusInStandardRadiationSchemeCategory)
 
