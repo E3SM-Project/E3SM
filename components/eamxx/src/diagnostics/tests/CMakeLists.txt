@@ -9,6 +9,8 @@ if (NOT SCREAM_BASELINES_ONLY)
 
   # Test interpolating a field onto a single pressure level
   CreateUnitTest(field_at_pressure_level "field_at_pressure_level_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test interpolating a field at a specific height
+  CreateUnitTest(field_at_height "field_at_height_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
   # Test potential temperature diagnostic
   CreateUnitTest(potential_temperature "potential_temperature_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
