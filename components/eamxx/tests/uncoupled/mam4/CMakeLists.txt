@@ -9,7 +9,7 @@ CreateUnitTest(mam4_nucleation_standalone "mam4_nucleation_standalone.cpp" "${NE
 )
 
 # Set AD configurable options
-set (ATM_TIME_STEP 1800)
+set (ATM_TIME_STEP 1)
 SetVarDependingOnTestSize(NUM_STEPS 12 24 36)
 set (RUN_T0 2021-10-12-45000)
 

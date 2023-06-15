@@ -297,6 +297,17 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   //const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
   //workspace_mgr_.setup(buffer_.wsm_data, nlev_+1, 13+(n_wind_slots+n_trac_slots), default_policy);
 
+  // configure the nucleation parameterization
+  mam4::NucleationProcess::ProcessConfig nuc_config{};
+  nuc_config.dens_so4a_host = 1770.0;
+  nuc_config.mw_so4a_host = 115.0;
+  nuc_config.newnuc_method_user_choice = 2;
+  nuc_config.pbl_nuc_wang2008_user_choice = 1;
+  nuc_config.adjust_factor_pbl_ratenucl = 1.0;
+  nuc_config.accom_coef_h2so4 = 1.0;
+  nuc_config.newnuc_adjust_factor_dnaitdt = 1.0;
+  nucleation_->init(nuc_config);
+
   logger.trace("leaving MAMMicrophysics::initialize");
 }
 
