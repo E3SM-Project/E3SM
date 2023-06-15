@@ -172,7 +172,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       </prescribed_constants>
       <prescribed_from_file>
         <fields type="array(string)">NONE</fields>
-        <files type="array(string)">NONE</files>
+	<files type="array(string)">NONE</files>
+	<!-- Optional argument if fields have a different name in the source data files, set to NONE if not used -->
+        <fields_alt_name type="array(string)">NONE</fields_alt_name>
       </prescribed_from_file>
     </sc_export>
 

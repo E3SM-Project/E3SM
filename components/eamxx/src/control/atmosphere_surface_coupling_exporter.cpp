@@ -231,9 +231,24 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
     }
     bool do_export_from_file = are_fields_present and are_files_present;
     if (do_export_from_file) {
+      vos_type export_from_file_reg_names;
+      export_from_file_reg_names = export_from_file_fields;
+      // Check if alternative names have been provided.  This is useful for source data files
+      // that don't use the conventional EAMxx ATM->SRFC variable names.
+      if (export_from_file_params.isParameter("fields_alt_name")) {
+        // The parameter may exist but not be set, so check that it really exists
+        auto tmp = export_from_file_params.get<vos_type>("fields_alt_name");
+        bool are_alt_names_present = (std::find(tmp.begin(),tmp.end(),"NONE") == tmp.end()) and (tmp.size() > 0);
+        if (are_alt_names_present) {
+          EKAT_REQUIRE_MSG(tmp.size()==export_from_file_reg_names.size(),"Error! SurfaceCouplingExport::prescribed_from_file - List of alternative names (fields_alt_name) exists but isn't the same size as the list of fields (fields).");
+          export_from_file_reg_names = tmp;
+        }
+      }
       // Construct a time interpolation object
       m_time_interp = util::TimeInterpolation(m_grid,export_from_file_names);
-      for (auto fname : export_from_file_fields) {
+      for (int idx=0; idx<export_from_file_fields.size(); ++idx) {
+	auto fname = export_from_file_fields[idx];
+	auto rname = export_from_file_reg_names[idx];
         // Find the index for this field in the list of export fields.
 	auto v_loc = std::find(m_export_field_names_vector.begin(),m_export_field_names_vector.end(),fname);
 	EKAT_REQUIRE_MSG(v_loc != m_export_field_names_vector.end(), "ERROR!! surface_coupling_exporter::init - prescribed_from_file has field with name " << fname << " which can't be found in set of exported fields\n.");
@@ -244,7 +259,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
         --m_num_from_model_exports;
         auto& f_helper = m_helper_fields.at(fname);
 	// We want to add the field as a deep copy so that the helper_fields are automatically updated.
-        m_time_interp.add_field(f_helper, true);
+        m_time_interp.add_field(f_helper, rname, true);
         m_export_from_file_field_names.push_back(fname);
       }
       m_time_interp.initialize_data_from_files();
