@@ -237,7 +237,7 @@ contains
      inv_ndx_cnst_oh       = get_inv_ndx( 'prsd_OH' )
      inv_ndx_cnst_ch4      = get_inv_ndx( 'CH4' )
      if ((inv_ndx_cnst_oh .gt. 0.0_r8) .and. (inv_ndx_cnst_no3 .gt. 0.0_r8)) then
-        write(iulog,*) 'prescribed_NO3_OH '
+        if (masterproc) write(iulog,*) 'prescribed_NO3_OH '
      endif
      
      if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
