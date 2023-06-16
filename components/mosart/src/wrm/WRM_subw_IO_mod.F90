@@ -12,7 +12,7 @@ MODULE WRM_subw_IO_mod
                              MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
   use RtmVar        , only : iulog, inst_suffix, smat_option, rstraflag, ngeom, nlayers, rinittemp
   use RtmFileUtils  , only : getfil, getavu, relavu
-  use RtmIO         , only : pio_subsystem, ncd_pio_openfile, ncd_pio_closefile
+  use RtmIO         , only : pio_subsystem, ncd_pio_openfile, ncd_pio_closefile, ncd_inqfdims
   use RtmTimeManager, only : get_curr_date, is_new_month
   use rof_cpl_indices, only : nt_rtm
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
@@ -64,6 +64,7 @@ MODULE WRM_subw_IO_mod
      integer :: sgn,curr_sgn, nsc, ct, ct_mx, mth_op , idepend      ! number of sign change
      integer :: igrow,igcol,iwgt
      integer :: unitn
+     integer :: yr, mon, day, tod
      type(file_desc_t):: ncid       ! netcdf file
      type(var_desc_t) :: vardesc    ! netCDF variable description
      integer, pointer  :: compDOF(:)           ! pio decomp
@@ -76,12 +77,12 @@ MODULE WRM_subw_IO_mod
 
      character(len=350) :: paraFile, demandPath, DemandVariableName
      integer :: ExtractionFlag, ExtractionMainChannelFlag, RegulationFlag, &
-        ReturnFlowFlag, TotalDemandFlag, GroundWaterFlag, ExternalDemandFlag, DamConstructionFlag
-
+        ReturnFlowFlag, TotalDemandFlag, GroundWaterFlag, ExternalDemandFlag, ExternalConsumptionFlag, DamConstructionFlag
+     logical :: iswm2d = .true. ! if the wm input file is structured or unstructured     
      namelist /wrm_inparm/  &
         paraFile, demandPath, DemandVariableName, &
         ExtractionFlag, ExtractionMainChannelFlag, RegulationFlag, &
-        ReturnFlowFlag, TotalDemandFlag, GroundWaterFlag, ExternalDemandFlag, DamConstructionFlag
+        ReturnFlowFlag, TotalDemandFlag, GroundWaterFlag, ExternalDemandFlag, ExternalConsumptionFlag, DamConstructionFlag
 
      character(len=*),parameter :: subname='(WRM_init)'
 
@@ -90,6 +91,7 @@ MODULE WRM_subw_IO_mod
 
      if (masterproc) write(iulog,FORMI) subname,' begr endr = ',iam,begr,endr
      call shr_sys_flush(iulog)
+     call get_curr_date(yr, mon, day, tod)
 
      nlfilename_wrm = "mosart_in" // trim(inst_suffix)
      inquire (file = trim(nlfilename_wrm), exist = lexist)
@@ -122,6 +124,7 @@ MODULE WRM_subw_IO_mod
      call mpi_bcast(TotalDemandFlag,  1, MPI_INTEGER, 0, mpicom_rof, ier)
      call mpi_bcast(GroundWaterFlag,  1, MPI_INTEGER, 0, mpicom_rof, ier)
      call mpi_bcast(ExternalDemandFlag,  1, MPI_INTEGER, 0, mpicom_rof, ier)
+     call mpi_bcast(ExternalConsumptionFlag,  1, MPI_INTEGER, 0, mpicom_rof, ier)
      call mpi_bcast(DamConstructionFlag,  1, MPI_INTEGER, 0, mpicom_rof, ier)
 
      ctlSubwWRM%paraFile = paraFile
@@ -134,6 +137,7 @@ MODULE WRM_subw_IO_mod
      ctlSubwWRM%GroundWaterFlag = GroundWaterFlag
      ctlSubwWRM%ExternalDemandFlag = ExternalDemandFlag
      ctlSubwWRM%DemandVariableName = DemandVariableName
+     ctlSubwWRM%ExternalConsumptionFlag = ExternalConsumptionFlag
      ctlSubwWRM%DamConstructionFlag = DamConstructionFlag
 
      if (masterproc) then
@@ -147,6 +151,7 @@ MODULE WRM_subw_IO_mod
         write(iulog,*) subname," TotalDemandFlag = ",ctlSubwWRM%TotalDemandFlag
         write(iulog,*) subname," GroundWaterFlag = ",ctlSubwWRM%GroundWaterFlag
         write(iulog,*) subname," ExternalDemandFlag = ",ctlSubwWRM%ExternalDemandFlag
+        write(iulog,*) subname," ExternalConsumptionFlag = ",ctlSubwWRM%ExternalConsumptionFlag
         write(iulog,*) subname," DamConstructionFlag = ",ctlSubwWRM%DamConstructionFlag
      endif
 
@@ -170,11 +175,17 @@ MODULE WRM_subw_IO_mod
      !-------------------
 
      call ncd_pio_openfile(ncid, trim(ctlSubwWRM%paraFile), 0)
+     call ncd_inqfdims(ncid, iswm2d, dsizes(1), dsizes(2), gsize) ! determin if the WM input file is structured or unstructured
+     if (iswm2d) then
+        ndims = 2
+     else
+        ndims = 1
+     endif 
      call shr_sys_flush(iulog)
-     ier = pio_inq_varid   (ncid, 'DamInd_2d', vardesc)
-     ier = pio_inq_vardimid(ncid, vardesc, dids)
-     ier = pio_inq_dimlen  (ncid, dids(1),dsizes(1))
-     ier = pio_inq_dimlen  (ncid, dids(2),dsizes(2))
+    ! ier = pio_inq_varid   (ncid, 'DamInd_2d', vardesc)
+    ! ier = pio_inq_vardimid(ncid, vardesc, dids)
+    ! ier = pio_inq_dimlen  (ncid, dids(1),dsizes(1))
+    ! ier = pio_inq_dimlen  (ncid, dids(2),dsizes(2))
 
      write(iulog,FORMI) subname,' lnumr = ',iam,rtmCTL%lnumr,begr,endr
      write(iulog,FORMI) subname,' gindex = ',iam,minval(rtmCTL%gindex),maxval(rtmCTL%gindex)
@@ -197,15 +208,15 @@ MODULE WRM_subw_IO_mod
      write(iulog,FORMI) subname,' gindex = ',iam,minval(gindex),maxval(gindex)
      call shr_sys_flush(iulog)
 
-     gsize = dsizes(1)*dsizes(2)
+     ! gsize = dsizes(1)*dsizes(2)
      call mct_gsMap_init(gsMap_wg, gindex, mpicom_rof, ROFID, lsize, gsize )
      call mct_aVect_init(aVect_wg, rList='fld1',lsize=lsize)
      write(iulog,FORMI) subname,' gsmap_wg lsize = ',iam,mct_gsMap_lsize(gsMap_wg,mpicom_rof)
      write(iulog,FORMI) subname,' avect_wg lsize = ',iam,mct_aVect_lsize(aVect_wg)
      call shr_sys_flush(iulog)
 
-     call pio_initdecomp(pio_subsystem, pio_double, dsizes, gindex, iodesc_dbl_grd2grd)
-     call pio_initdecomp(pio_subsystem, pio_int   , dsizes, gindex, iodesc_int_grd2grd)
+     call pio_initdecomp(pio_subsystem, pio_double, dsizes(1:ndims), gindex, iodesc_dbl_grd2grd)
+     call pio_initdecomp(pio_subsystem, pio_int   , dsizes(1:ndims), gindex, iodesc_int_grd2grd)
      deallocate(gindex)
 
      !-------------------
@@ -501,6 +512,8 @@ MODULE WRM_subw_IO_mod
 
      allocate (WRMUnit%MeanMthFlow(ctlSubwWRM%localNumDam,13))
      WRMUnit%MeanMthFlow = 0._r8
+     allocate (WRMUnit%ExtCons(ctlSubwWRM%localNumDam,13))
+     WRMUnit%ExtCons = 0._r8
      allocate (WRMUnit%MeanMthDemand(ctlSubwWRM%localNumDam,13))
      WRMUnit%MeanMthDemand = 0._r8
      allocate (WRMUnit%StorTarget(ctlSubwWRM%localNumDam,13))
@@ -560,6 +573,8 @@ MODULE WRM_subw_IO_mod
      WRMUnit%StorMthStOpG = 0
      allocate (StorWater%active_stageG(begr:endr))
      StorWater%active_stageG=0
+     allocate (StorWater%ExtConsG(begr:endr))
+     StorWater%ExtCons=0._r8
 
      allocate (StorWater%WithDemIrrig(begr:endr))
      StorWater%WithDemIrrig=0._r8
@@ -594,6 +609,8 @@ MODULE WRM_subw_IO_mod
      StorWater%FCrelease = 0._r8
      allocate (StorWater%pot_evap(begr:endr))
      StorWater%pot_evap=0._r8
+     allocate (StorWater%ExtCons(ctlSubwWRM%localNumDam))
+     StorWater%ExtCons = 0._r8
      !! Used in reservoir stratification
 	 if (rstraflag) then
 		 allocate (WRMUnit%grandid(ctlSubwWRM%localNumDam))
@@ -857,7 +874,20 @@ MODULE WRM_subw_IO_mod
            WRMUnit%MeanMthFlow(idam,13) = sum(WRMUnit%MeanMthFlow(idam,1:12))/12.0_r8
         enddo
         if (masterproc) write(iulog,FORMR) trim(subname),' MeanMthFlow avg',minval(WRMUnit%MeanMthFlow(:,13)),maxval(WRMUnit%MeanMthFlow(:,13))
+        if (ctlSubwWRM%ExternalConsumptionFlag > 0) then
+         do mth = 1,12
+            ier = pio_inq_varid (ncid, 'ExtCons', vardesc)
+            frame = mth
+            call pio_setframe(ncid,vardesc,frame)
+            call pio_read_darray(ncid, vardesc, iodesc_dbl_dam2dam, WRMUnit%ExtCons(:,mth), ier)
+            if (masterproc) write(iulog,FORMR) trim(subname),' read ExtCons',minval(WRMUnit%ExtCons(:,mth)),maxval(WRMUnit%ExtCons(:,mth))
+            call shr_sys_flush(iulog)
+         enddo
 
+         do idam = 1,ctlSubwWRM%LocalNumDam
+            WRMUnit%ExtCons(idam,13) = sum(WRMUnit%ExtCons(idam,1:12))/12.0_r8
+         enddo
+        endif
         !--- read in mean monthly water demand
         do mth = 1,12
            ier = pio_inq_varid (ncid, 'demand', vardesc)
@@ -944,6 +974,7 @@ MODULE WRM_subw_IO_mod
      integer  :: nr, ier
      type(file_desc_t):: ncid       ! netcdf file
      type(var_desc_t) :: vardesc    ! netCDF variable description
+     logical          :: lexist
      character(len=*),parameter :: subname='(WRM_readDemand)'
 
      if (ctlSubwWRM%ExtractionFlag > 0) then
@@ -954,6 +985,13 @@ MODULE WRM_subw_IO_mod
         write(strYear,'(I4.4)') yr
         write(strMonth,'(I2.2)') mon
         fname = trim(ctlSubwWRM%demandPath)// strYear//'_'//strMonth//'.nc'
+
+        inquire (file = fname, exist = lexist)
+        if ( .not. lexist ) then
+          write(iulog,*) subname // ' ERROR: external demand file does NOT exist:'&
+             //trim(fname)
+          call shr_sys_abort(trim(subname)//' ERROR external demand file does not exist')
+        end if
 
         write(iulog,*) subname, ' reading ',trim(fname)
 

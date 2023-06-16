@@ -28,10 +28,6 @@ MODULE WRM_modules
   real(r8), parameter :: MYTINYVALUE = 1.0e-50_r8  ! double precisio variable has a significance of about 16 decimal digits
 
 ! !PUBLIC MEMBER FUNCTIONS:
-#if (1 == 0)
-!  public Euler_WRM  
-#endif
-  public irrigationExtraction
   public irrigationExtractionSubNetwork
   public irrigationExtractionMainChannel
   public RegulationRelease
@@ -42,198 +38,6 @@ MODULE WRM_modules
 !-----------------------------------------------------------------------
   contains
 !-----------------------------------------------------------------------
-
-#if (1 == 0)
-  subroutine Euler_WRM
-
-     ! !DESCRIPTION: solve the ODEs with Euler algorithm
-
-     implicit none
-
-     integer :: iunit, m, k   !local index
-     real(r8) :: temp_erout(nt_rtm), localDeltaT
-     character(len=*),parameter :: subname='(Euler_WRM)'
-
-     if(Tctl%RoutingFlag == 1) then
-        !print*, "Running WRM Euler"
-        do iunit=rtmCTL%begr,rtmCTL%endr
-           call hillslopeRouting(iunit, Tctl%DeltaT)
-           Trunoff%wh(iunit,:) = Trunoff%wh(iunit,:) + Trunoff%dwh(iunit,:) * Tctl%DeltaT
-           call UpdateState_hillslope(iunit)
-           Trunoff%etin(iunit,:) = (-Trunoff%ehout(iunit,:) + Trunoff%qsub(iunit,:)) * TUnit%area(iunit) * TUnit%frac(iunit)
-        end do
-        ! exctraction from available surface runoff within the subw
-        if (ctlSubwWRM%ExtractionFlag > 0) then
-           call irrigationExtractionSubNetwork
-        end if
-
-        Trunoff%flow = 0._r8
-        do m=1,Tctl%DLevelH2R
-           do iunit=rtmCTL%begr,rtmCTL%endr
-              Trunoff%erlateral(iunit,:) = 0._r8
-              do k=1,TUnit%numDT_t(iunit)
-                 localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/TUnit%numDT_t(iunit)
-                 call subnetworkRouting(iunit,localDeltaT)
-                 Trunoff%wt(iunit,:) = Trunoff%wt(iunit,:) + Trunoff%dwt(iunit,:) * localDeltaT
-                 call UpdateState_subnetwork(iunit)
-                 Trunoff%erlateral(iunit,:) = Trunoff%erlateral(iunit,:)-Trunoff%etout(iunit,:)
-              end do
-              Trunoff%erlateral(iunit,:) = Trunoff%erlateral(iunit,:) / TUnit%numDT_t(iunit)
-           end do
-
-           do iunit=rtmCTL%begr,rtmCTL%endr
-              if (TUnit%mask(iunit) > 0) then
-                 temp_erout = 0._r8
-                 do k=1,TUnit%numDT_r(iunit)
-                    localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/TUnit%numDT_r(iunit)
-                    call mainchannelRouting(iunit,localDeltaT)
-                    Trunoff%wr(iunit,:) = Trunoff%wr(iunit,:) + Trunoff%dwr(iunit,:) * localDeltaT
-                    call UpdateState_mainchannel(iunit)
-                    temp_erout(:) = temp_erout(:) + Trunoff%erout(iunit,:) ! erout here might be inflow to some downstream subbasin, so treat it differently than erlateral
-                 end do
-                 temp_erout(:) = temp_erout(:) / TUnit%numDT_r(iunit)
-                 Trunoff%erout(iunit,:) = temp_erout(:)
-                 localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
-                 if (ctlSubwWRM%ExtractionMainChannelFlag > 0 .AND. ctlSubwWRM%ExtractionFlag > 0 ) then
-                    call IrrigationExtractionMainChannel(iunit, localDeltaT )
-                    if (ctlSubwWRM%TotalDemandFlag > 0 .AND. ctlSubwWRM%ReturnFlowFlag > 0 ) then
-                       call insert_returnflow_channel(iunit, localDeltaT )
-                    endif
-                    ! update main channel storage as well
-                    temp_erout(:) = temp_erout(:) - Trunoff%erout(iunit,:) ! change in erout after regulation and extraction
-                    Trunoff%dwr(iunit,:) =  temp_erout(:)
-                    Trunoff%wr(iunit,:) = Trunoff%wr(iunit,:) + Trunoff%dwr(iunit,:) * localDeltaT
-                    call UpdateState_mainchannel(iunit)
-                 endif
-                 if ( ctlSubwWRM%RegulationFlag>0 .and. WRMUnit%INVicell(iunit) > 0 .and. WRMUnit%MeanMthFlow(iunit,13) > 0.01_r8 ) then
-                    call Regulation(iunit, localDeltaT)
-                    if ( ctlSubwWRM%ExtractionFlag > 0 ) then
-                       call ExtractionRegulatedFlow(iunit, localDeltaT)
-                    endif
-                 endif
-
-                 Trunoff%flow(iunit,:) = Trunoff%flow(iunit,:) - Trunoff%erout(iunit,:)
-                 ! do not update wr after regulation or extraction from reservoir release. Because of the regulation, the wr might get to crazy uncontrolled values, assume in this case wr is not changed. The storage in reservoir handles it.
-
-              end if
-           end do
-           !print*, "flow ", m ,Trunoff%flow(137,:), Trunoff%erlateral(137,:), StorWater%supply(137)
-        end do
-
-     else   ! routing flag
-        Trunoff%flow = 0._r8
-        do m=1,Tctl%DLevelH2R
-           do iunit=rtmCTL%begr,rtmCTL%endr
-              Trunoff%erlateral(iunit,:) = (Trunoff%qsur(iunit,:) + Trunoff%qsub(iunit,:)) * TUnit%area(iunit) * TUnit%frac(iunit)
-           end do
-           ! exctraction from available surface runoff within the subw
-           if (ctlSubwWRM%ExtractionFlag > 0) then
-              call irrigationExtraction
-           end if
-
-           ! regulation  performed prior to routing in order to route the release properly
-           !if ( ctlSubwWRM%RegulationFlag > 0 ) then
-           !   call RegulationRelease
-           !endif
-
-           do iunit=rtmCTL%begr,rtmCTL%endr
-              temp_erout = 0._r8
-              if (ctlSubwWRM%ExtractionMainChannelFlag > 0 .AND. ctlSubwWRM%ExtractionFlag > 0 ) then
-                 localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
-                 call IrrigationExtractionMainChannel(iunit, localDeltaT )
-                 !print*,"done with extraction - up[date mainchannel ",iunit
-                 if (ctlSubwWRM%TotalDemandFlag > 0 .AND. ctlSubwWRM%ReturnFlowFlag > 0 ) then
-                    call insert_returnflow_channel(iunit, localDeltaT )
-                 endif
-                 call UpdateState_mainchannel(iunit)
-              endif
-
-              do k=1,TUnit%numDT_r(iunit)
-                 localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/TUnit%numDT_r(iunit)
-                 call mainchannelRouting(iunit,localDeltaT)
-                 Trunoff%wr(iunit,:) = Trunoff%wr(iunit,:) + Trunoff%dwr(iunit,:) * localDeltaT
-                 call UpdateState_mainchannel(iunit)
-                 temp_erout(:) = temp_erout(:) + Trunoff%erout(iunit,:) ! erout here might be inflow to some downstream subbasin, so treat it differently than erlateral
-              end do
-
-              temp_erout(:) = temp_erout(:) / TUnit%numDT_r(iunit)
-              Trunoff%erout(iunit,:) = temp_erout(:)
-              localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
-              !if (ctlSubwWRM%ExtractionMainChannelFlag > 0 .AND. ctlSubwWRM%ExtractionFlag > 0 ) then
-              !   call IrrigationExtractionMainChannel(iunit, localDeltaT )
-              !   if (ctlSubwWRM%TotalDemandFlag > 0 .AND. ctlSubwWRM%ReturnFlowFlag > 0 ) then
-              !     call insert_returnflow_channel(iunit, localDeltaT )
-              !   endif
-              !   ! update main channel storage as well
-              !   temp_erout(:) = temp_erout(:) - Trunoff%erout(iunit,:) ! change in erout after regulation and extraction
-              !   Trunoff%dwr(iunit,:) =  temp_erout(:)
-              !   Trunoff%wr(iunit,:) = Trunoff%wr(iunit,:) + Trunoff%dwr(iunit,:) * localDeltaT
-              !   call UpdateState_mainchannel(iunit)
-              !endif
-
-              if ( ctlSubwWRM%RegulationFlag>0  .and. WRMUnit%INVicell(iunit) > 0 ) then
-                 call Regulation(iunit, localDeltaT)
-                 if ( ctlSubwWRM%ExtractionFlag > 0 .and. WRMUnit%subw_Ndepend(iunit) > 0) then
-                    call ExtractionRegulatedFlow(iunit, localDeltaT)
-                 endif
-              endif
-              Trunoff%flow(iunit,:) = Trunoff%flow(iunit,:) - Trunoff%erout(iunit,:)
-
-           end do
-        end do
-     end if
-
-     Trunoff%flow = Trunoff%flow / Tctl%DLevelH2R
-
-  end subroutine Euler_WRM
-#endif
-!-----------------------------------------------------------------------
-!this subroutine is not used - used to be when subnetwork routing was optional
-  subroutine irrigationExtraction(iunit, TheDeltaT)
-
-     ! !DESCRIPTION: subnetwork channel routing irrigation extraction
-
-     implicit none    
-     integer, intent(in) :: iunit
-     real(r8), intent(in) :: theDeltaT
-     real(r8) :: flow_vol      ! flow in cubic meter rather than cms
-     real(r8) :: budget
-     logical  :: check_local_budget = .false.
-     character(len=*),parameter :: subname='(irrigationExtraction)'
-
-     if (check_local_budget) then
-        budget = Trunoff%erlateral(iunit,nt_nliq)*TheDeltaT + StorWater%supply(iunit)
-     endif
-     ! erlateral is in m3/s, and flow_vol is in m3. (by Tian)
-
-     flow_vol = Trunoff%erlateral(iunit,nt_nliq) * TheDeltaT
-
-     if ( flow_vol >= StorWater%demand(iunit) ) then 
-        StorWater%supply(iunit)= StorWater%supply(iunit) + StorWater%demand(iunit)
-        flow_vol = flow_vol - StorWater%demand(iunit)
-        StorWater%demand(iunit)= 0._r8
-     else
-        StorWater%supply(iunit)= StorWater%supply(iunit) + flow_vol
-        StorWater%demand(iunit)= StorWater%demand(iunit) - flow_vol
-        flow_vol = 0._r8
-     end if 
-! dwt is not updated because extraction is taken from water getting out of subnetwork channel routing only
-! flow is updated by demand/supply and converted back to m3/2 (by Tian)
-
-     Trunoff%erlateral(iunit,nt_nliq) = flow_vol / TheDeltaT
-
-     if (check_local_budget) then
-        budget = budget - (Trunoff%erlateral(iunit,nt_nliq)*TheDeltaT + StorWater%supply(iunit))
-        if (budget > 0.001_r8) then   ! in m3 
-           write(iulog,'(2a,i8,g20.12)') subname,' budget ',iunit,budget
-           call shr_sys_abort(subname//' ERROR in budget')
-         endif
-     endif
-
-  end subroutine irrigationExtraction
-
-!-----------------------------------------------------------------------
-
   subroutine irrigationExtractionSubNetwork(iunit, TheDeltaT)
 
      ! !DESCRIPTION: subnetwork channel routing irrigation extraction
@@ -394,12 +198,6 @@ MODULE WRM_modules
            !if ( WRMUnit%use_FCon(idam) .eq. 0 .and.  WRMUnit%use_Irrig(idam).eq.0 .and. WRMUnit%use_Elec(idam) > 0 ) then
            !  StorWater%release(idam) = WRMUnit%MeanMthFlow(idam,month)
            end if
-! PRIORITY TO INTEGRATION
-!          if ( WRMUnit%use_FCon(idam) > 0 ) then
-!             StorWater%release(idam) = WRMUnit%MeanMthFlow(idam,13)
-!          endif
-
-!       endif
 
        !NV checks
  !      if ( idam .eq. 80) then
@@ -417,7 +215,7 @@ MODULE WRM_modules
 
   subroutine WRM_storage_targets
 
-     ! !DESCRIPTION: definr the necessary drop in storage based in sotrage at srta of the month
+     ! !DESCRIPTION: define the necessary drop in storage based in sotrage at srta of the month
      ! NOT TO BE RUN IN EULER
 
      implicit none
@@ -590,7 +388,7 @@ MODULE WRM_modules
      integer  :: match
      integer  :: yr, month, day, tod
      integer  :: damID,k,isDam
-     real(r8) :: flow_vol, flow_res, min_flow, min_stor, evap, max_stor, stor_init, budget
+     real(r8) :: flow_vol, flow_res, min_flow, min_stor, evap, extcons, max_stor, stor_init, budget
      logical  :: check_local_budget = .false.
      character(len=*),parameter :: subname='(Regulation)'
 
@@ -614,6 +412,8 @@ MODULE WRM_modules
      flow_vol = -Trunoff%erout(iunit,nt_nliq) * theDeltaT
      flow_res = StorWater%release(damID) * theDeltaT
      evap = StorWater%pot_evap(iunit) * theDeltaT * WRMUnit%SurfArea(damID) * 1000000._r8 ! potential evaporation in the grid cell of the reservoir
+     StorWater%ExtCons(damID) = WRMUnit%ExtCons(damID, month)* theDeltaT ! external consumptive use over the time step (m3)
+     extcons = StorWater%ExtCons(damID)
      min_flow = 0.1_r8 * WRMUnit%MeanMthFlow(damID, month) * theDeltaT
      min_stor = 0.1_r8 * WRMUnit%StorCap(damID)
      max_stor = WRMUnit%StorCap(damID)
@@ -628,43 +428,44 @@ MODULE WRM_modules
      endif
 
      !print*, "preregulation", damID, StorWater%storage(damID), flow_vol, flow_res, min_flow, month
-    if (StorWater%active_stage(damID) == 2) then
-     if ( ( flow_vol + StorWater%storage(damID) - flow_res- evap) >= max_stor ) then
-        flow_res =  flow_vol + StorWater%storage(damID) - max_stor - evap
-        StorWater%storage(damID) = max_stor
-     else if ( ( flow_vol + StorWater%storage(damID) - flow_res - evap) < min_stor ) then
-        if ( flow_res<=(flow_vol-evap)) then
-           StorWater%storage(damID) = StorWater%storage(damID) + flow_vol - flow_res - evap
-        else if ( (flow_vol-evap)>=min_flow) then
-           StorWater%storage(damID) = StorWater%storage(damID) 
-           flow_res = flow_vol - evap
-           !print*, "WARNING  No regulation", flow_vol, min_flow, damID
-        else
-           !print*, "ERROR - drying out the reservoir"
-           !print*,damID, flow_vol, flow_res, StorWater%storage(damID), min_stor, min_flow
-           !stop
-           !flow_res = 0._r8
-           !StorWater%storage(damID) = StorWater%storage(damID) - flow_res + flow_vol - evap
-           flow_res = flow_vol
-           StorWater%storage(damID) = StorWater%storage(damID) - flow_res + flow_vol - evap
-           if (StorWater%storage(damID) < 0._r8) StorWater%storage(damID) = 0._r8
-        endif
-     else
-        StorWater%storage(damID) = StorWater%storage(damID) + flow_vol - flow_res - evap 
-     end if
-   elseif (StorWater%active_stage(damID) == 1) then
-     if (flow_vol < min_flow * 2._r8) then
-         flow_res = flow_vol
+     if (StorWater%active_stage(damID) == 2) then
+      if ( ( flow_vol + StorWater%storage(damID) - flow_res- evap - extcons) >= max_stor ) then ! if the reservoir is full
+         flow_res =  flow_vol + StorWater%storage(damID) - max_stor - evap - extcons
+         StorWater%storage(damID) = max_stor
+      else if ( ( flow_vol + StorWater%storage(damID) - flow_res - evap - extcons) < min_stor ) then ! if the reservoir is below the minimum storage
+         if ( flow_res<=(flow_vol-evap - extcons)) then ! in >= out, reservoir is filling. Here "in" is the flow_vol-evap-extcons, "out" is the pre-release calculated in WRM_storage_targets
+            StorWater%storage(damID) = StorWater%storage(damID) + flow_vol - flow_res - evap - extcons ! use the pre-relase as the release, let the reservoir fill up
+         else if ( (flow_vol-evap - extcons)>=min_flow) then !in < out, reservoir is emptying but inflow is above or equal to minimum flow
+            StorWater%storage(damID) = StorWater%storage(damID) ! keep the same storage to prevent the reservoir from drying out
+            flow_res = flow_vol - evap - extcons ! Reduce the pre-release, force out = in, do not regulate
+         else ! in <= out, reservoir is emptying and inflow is below minimum flow
+            print*, "Warning - drying out the reservoir"
+            print*,damID, flow_vol, flow_res, StorWater%storage(damID), min_stor, min_flow
+            extcons = 0._r8 ! do not allow external consumptive use
+            flow_res = flow_vol
+            StorWater%storage(damID) = StorWater%storage(damID) - flow_res + flow_vol - evap - extcons
+            if (StorWater%storage(damID) < 0._r8) StorWater%storage(damID) = 0._r8
+         endif
       else
-         flow_res = min_flow * 2._r8 ! outflow during filling period is twice of minimum flow
-      endif     
-      evap = 0._r8
-      StorWater%storage(damID) = StorWater%storage(damID) + flow_vol - flow_res - evap
-   else
-      flow_res = flow_vol
-      evap = 0._r8
-      StorWater%storage(damID) = StorWater%storage(damID) + flow_vol - flow_res - evap
-   endif
+         StorWater%storage(damID) = StorWater%storage(damID) + flow_vol - flow_res - evap - extcons
+      end if
+    elseif (StorWater%active_stage(damID) == 1) then ! active_stage == 1, filling period
+      if (flow_vol < min_flow * 2._r8) then ! inflow < 2 times of minimum flow, no filling, let it run out
+          flow_res = flow_vol
+       else ! inflow >= 2 times of minimum flow, fill reservoir
+          flow_res = min_flow * 2._r8 ! outflow during filling period is twice of minimum flow
+       endif     
+       evap = 0._r8
+       extcons = 0._r8
+       StorWater%storage(damID) = StorWater%storage(damID) + flow_vol - flow_res - evap - extcons
+    else ! active_stage == 0, no dam
+       flow_res = flow_vol
+       evap = 0._r8
+       extcons = 0._r8
+       StorWater%storage(damID) = StorWater%storage(damID) + flow_vol - flow_res - evap - extcons
+    endif
+ 
+    StorWater%ExtCons(damID) = extcons ! could be zero during filling period and no dam 
    
      Trunoff%erout(iunit,nt_nliq) = -flow_res / (theDeltaT)
 

@@ -209,6 +209,10 @@ contains
       call RtmHistAddfld (fname='WRM_STORAGE', units='m3',  &
          avgflag='A', long_name='WRM storage ', &
          ptr_rof=StorWater%storageG, default='active')
+
+      call RtmHistAddfld (fname='WRM_EXTERNAL_CONSUMPTION', units='m3/s',  &
+         avgflag='A', long_name='WRM external water consumption i.e. water removed out of the system', &
+         ptr_rof=StorWater%ExtConsG, default='active')
     endif
 
     if (inundflag) then

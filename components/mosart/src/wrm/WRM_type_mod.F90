@@ -32,6 +32,7 @@ MODULE WRM_type_mod
      integer :: TotalDemandFlag  ! Flag to indicate if the demand includes irrigation and non irrigation demands
      integer :: GroundWaterFlag  ! Flag to know if demand needs to be separated with GW-SW
      integer :: ExternalDemandFlag  ! Flag to decide where does the demand come from, external files or ELM
+     integer :: ExternalConsumptionFlag  ! Flag to indicate if there's external consumption (interbasin transfer at dam)
      integer :: DamConstructionFlag  ! Flag to indicate if the dam construction year is considered
 
      character(len=256) :: paraFile         ! the path of the parameter files
@@ -92,6 +93,7 @@ MODULE WRM_type_mod
      real(r8), pointer :: StorMthStOp(:)    ! (nd) storage at beginning of the start of the operationnal year
      real(r8), pointer :: StorMthStOpG(:)   ! (b:e) same as StorMthStOp on gridcells
      real(r8), pointer :: MeanMthDemand(:,:)! (nd,13) longterm mean monthly demand
+     real(r8), pointer :: ExtCons(:,:)      ! (nd,13) external monthly consumptive use
      ! flood control
      integer , pointer :: MthStFC(:)        ! (nd) month showing the strat of the flood control
      integer , pointer :: MthNdFC(:)        ! (nd) month showing the stop of the flood control
@@ -159,6 +161,8 @@ MODULE WRM_type_mod
 
      real(r8), pointer :: storage(:)        ! (nd) storage in the reservoir units
      real(r8), pointer :: storageG(:)       ! (b:e) same as storage on gridcells
+     real(r8), pointer :: ExtCons(:)        ! (nd) external consumption in the reservoir units
+     real(r8), pointer :: ExtConsG(:)       ! (b:e) same as ExtCons on gridcells
      real(r8), pointer :: pre_release(:,:)  ! (nd,13) pre-release without the interannual fluctutation
      real(r8), pointer :: release(:)        ! (nd) pre-release with the interannual fluctutation
      real(r8), pointer :: releaseG(:)       ! (b:e) same as release on gridcells

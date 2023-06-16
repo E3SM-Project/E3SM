@@ -398,7 +398,7 @@ contains
     stormth_read = .true.
 
 if (wrmflag) then
-    nvmax = 19
+    nvmax = 20
 else
 
     nvmax = 15
@@ -551,7 +551,22 @@ endif
              uname = 'no unit'
              dfld_int  => StorWater%active_stageG(:)
           endif
-          
+       elseif (nv == 20 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+            varok = .false.
+            if (wrmflag) then
+               varok = .true.
+               StorWater%ExtConsG = 0._r8
+               if (flag == 'write') then
+                  do idam = 1, ctlSubwWRM%localNumDam
+                     ig = WRMUnit%icell(idam)
+                     StorWater%ExtConsG(ig) = StorWater%ExtCons(idam)
+                  enddo
+               endif
+               vname = 'DAM_EXT_CONS_'//trim(rtm_tracers(nt))
+               lname = 'dam external consumption'
+               uname = 'm3/s'
+               dfld  => StorWater%ExtConsG(:)
+            endif          
        else
           varok = .false.
        endif
@@ -618,6 +633,7 @@ endif
              if (abs(storWater%releaseG(n)) > 1.e30) storWater%releaseG(n) = 0.
              if (abs(WRMUnit%StorMthStOpG(n)) > 1.e30) WRMUnit%StorMthStOpG(n) = 0.
              if (abs(storWater%active_stageG(n)) > 1.e30) storWater%active_stageG(n) = 0.
+             if (abs(storWater%ExtConsG(n)) > 1.e30) storWater%ExtConsG(n) = 0.
           endif
 
           if (rtmCTL%mask(n) == 1) then
@@ -641,6 +657,7 @@ endif
              if (release_read) StorWater%release(idam) = StorWater%releaseG(ig)
              if (stormth_read) WRMUnit%StorMthStOp(idam) = WRMUnit%StorMthStOpG(ig)
              StorWater%active_stage(idam) = StorWater%active_stageG(ig)
+             StorWater%ExtCons(idam) = StorWater%ExtConsG(ig)
           enddo
           if (compute_release) then
              call WRM_computeRelease()

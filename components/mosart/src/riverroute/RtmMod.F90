@@ -2068,7 +2068,7 @@ contains
 !
 ! !LOCAL VARIABLES:
 !EOP
-    integer  :: i, j, n, nr, ns, nt, n2, nf, idam ! indices
+    integer  :: i, j, n, nr, ns, nt, n2, nf, idam, ig ! indices
     integer, parameter :: budget_terms_total = 80
     logical  :: output_all_budget_terms = .false.   ! output flag
     real(r8) :: budget_terms (budget_terms_total,nt_rtm)    ! local budget sums
@@ -2873,6 +2873,11 @@ contains
           budget_terms(br_flood,nt) = budget_terms(br_flood,nt) + rtmCTL%flood(nr)*delt_coupling           ! (This flood volume is from former method. It equals zero when the inundation scheme is turned on. --Inund.)
        enddo
        if (wrmflag) then
+          do idam = 1, ctlSubwWRM%localNumDam
+             ig = WRMUnit%icell(idam)
+             StorWater%ExtConsG(ig) = StorWater%ExtCons(idam)
+          enddo
+
           nt = 1
           do nr = rtmCTL%begr,rtmCTL%endr
              budget_terms(bv_dsupp_f,nt) = budget_terms(bv_dsupp_f,nt) + StorWater%supply(nr)
