@@ -3458,7 +3458,7 @@ contains
 
       ! compute friction velocity at cell centers
 #ifdef MPAS_OPENACC
-      !$acc parallel loop present(landIceFrictionVelocity, kineticEnergyCell, minLevelCell) &
+      !$acc parallel loop present(landIceFrictionVelocity, kineticEnergyCell, minLevelCell)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
