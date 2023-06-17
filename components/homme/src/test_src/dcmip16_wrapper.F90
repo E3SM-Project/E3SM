@@ -673,10 +673,6 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en1glob_cp)  
       call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en1glob_cv)  
 
-#if 0
-print *, 'check consistent energy/EOS',(en1glob_cp-en1glob_cv)/en1glob_cp
-#endif
-
       mass1global = sum( dp_c )
 
       dpdry_c = dp_c*(1.0 - qv_c - qc_c - qr_c)
@@ -698,13 +694,14 @@ if(bubble_rj_cpstar_nh) then
 
 !!!!sanity check en1 = en1glob
 print *, 'en_before-en1glob rel', (energy_before-en1glob_cv)/en1glob_cv
-print *, 'en_before-en2cv rel', (energy_before-en2cv)/en2cv
-print *, 'en_before-(en3+enout) rel', (energy_before-(energy_after+energy_prect))/en2cv
+print *, 'NH update en_before-en2cv rel', (energy_before-en2cv)/en2cv
+print *, 'TOTAL en_before-(en3+enout) rel', (energy_before-(energy_after+energy_prect))/en2cv
 
 else
 
-print *, 'en_before-en2cp rel', (energy_before-en2cp)/en2cp
-print *, 'en_before-(en3+enout) rel', (energy_before-(energy_after+energy_prect))/en2cp
+print *, 'HY update en_before-en2cp rel', (energy_before-en2cp)/en2cp
+!print *, 'TOTAL en_before-(en3+enout) rel', (energy_before-(energy_after+energy_prect))/en2cp
+!print *, 'TOTAL en_before, en3, enout', energy_before,energy_after,energy_prect
 
 endif
 
@@ -742,17 +739,22 @@ endif
       call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2glob_cp)
       call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en2glob_cv)
 
-if(wasiactive)then
-print *, 'after check consistent energy/EOS',(en2glob_cp-en2glob_cv)/en2glob_cp
-endif 
-
       mass2global = sum( dp_c )
 
 if(wasiactive)then
+
+print *, 'before check consistent energy/EOS',(en1glob_cp-en1glob_cv)/en1glob_cp
+!print *, 'before en1cp, en1cv',en1glob_cp,en1glob_cv
+print *, 'after check consistent energy/EOS',(en2glob_cp-en2glob_cv)/en2glob_cp
+print *, " "
+
 !print *, 'en prect', energy_prect
-print *, 'en1glob_cp-(en2glob_cp+prect) rel', (en1glob_cp-(en2glob_cp+energy_prect))/en1glob_cp
-print *, 'm1g-m2g, rel', mass1global-(mass2global+mass_prect), ( mass1global-mass2global-mass_prect)/mass1global
-print *, "    "
+!in case of HY update, TOTAL here won't be the same as TOTAL above with energies
+!from routine, because to control HY update, en_before was computed for HY formulation
+print *, 'TOTAL en1glob_cp-(en2glob_cp+prect) rel', (en1glob_cp-(en2glob_cp+energy_prect))/en1glob_cp
+!print *, 'TOTAL en1glob_cp,en2glob_cp,prect', en1glob_cp,en2glob_cp,energy_prect
+print *, 'TOTAL m1g-m2g, rel', mass1global-(mass2global+mass_prect), ( mass1global-mass2global-mass_prect)/mass1global
+print *, "  ------------------------------  "
 endif
 
       !do not use homme rstar routine here
