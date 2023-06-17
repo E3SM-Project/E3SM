@@ -38,7 +38,7 @@ use newphysics
 implicit none
 
 ! this cannot be made stack variable, nelemd is not compile option
-real(rl),dimension(:,:,:), allocatable :: precl ! storage for column precip
+real(rl),dimension(:,:,:), allocatable :: precl,en_cl_diff ! storage for column precip
 real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
 real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
 real(rl):: tau
@@ -63,7 +63,9 @@ subroutine dcmip2016_init()
 !$OMP MASTER
   if (.not.allocated(precl)) then
     allocate(precl(np,np,nelemd))
+    allocate(en_cl_diff(np,np,nelemd))
     precl(:,:,:) = 0.0
+    en_cl_diff(:,:,:) = 0.0
   else
     call abortmp('ERROR: in dcmip2016_init() precl has already been allocated') 
   endif
@@ -362,6 +364,37 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 end subroutine
 
 !_______________________________________________________________________
+subroutine dcmip2016_append_measurements2(max_precl,globprecl,en_cl_diff,tl,hybrid)
+  real(rl),           intent(in) :: max_precl, globprecl, en_cl_diff
+  type(TimeLevel_t),  intent(in) :: tl
+  type(hybrid_t),     intent(in) :: hybrid                   ! hybrid parallel structure
+
+  real(rl) :: pmax_w, pmax_precl, pmin_ps, time
+  real(rl) :: next_sample_time = 0.0
+
+  time = time_at(tl%nstep)
+  ! append measurements at regular intervals
+  if(time .ge. next_sample_time) then
+!$OMP BARRIER
+!$OMP MASTER
+    next_sample_time = next_sample_time + sample_period
+!$OMP END MASTER
+!$OMP BARRIER
+    pmax_precl = parallelMax(max_precl,hybrid)
+
+    if (hybrid%masterthread) then
+      print *," ptt=",time_at(tl%nstep)," max_prcl =",pmax_precl*(1000.0)*(24.0*3600)
+      print *," pts=",time_at(tl%nstep)," sum_prcl =",globprecl*(1000.0)*(24.0*3600)
+      print *," cls=",time_at(tl%nstep)," ecl_diff =",en_cl_diff
+
+    endif
+  endif
+
+  end subroutine dcmip2016_append_measurements2
+
+
+
+!_______________________________________________________________________
 subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
   real(rl),           intent(in) :: max_w, max_precl, min_ps
   type(TimeLevel_t),  intent(in) :: tl
@@ -426,6 +459,16 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
   endif
 
   end subroutine
+
+
+
+
+
+
+
+
+
+
 
 !_______________________________________________________________________
 subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
@@ -590,6 +633,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   use physical_constants, only: g, Rgas, cp, cpwater_vapor, cl, latvap, latice, &
                                 Rwater_vapor, bubble_epsilo, rhow
+  use parallel_mod,     only: global_shared_buf, global_shared_sum
+  use global_norms_mod, only: wrap_repro_sum
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
   type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
@@ -614,6 +659,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   real(rl) :: energy_before, energy_after, en2cp, en2cV, mass_before, mass_after, discrepancy, encl
   real(rl) :: en1glob_cp, en1glob_cv, en2glob_cp, en2glob_cv, mass1global, mass2global, rstar_new, olddphi
+  real(rl) :: en_cl_diff_sum, globprecl_sum
   logical :: wasiactive
 
 
@@ -681,8 +727,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       mass_prect = 0.0; energy_prect = 0.0;
       wasiactive = .false.
 
-#define DIAGN
-!#undef DIAGN
+!#define DIAGN
+#undef DIAGN
 
 
       ! if RJ precipitation
@@ -770,6 +816,7 @@ endif
       !do not use homme rstar routine here
 
       precl(i,j,ie) = mass_prect / (dt * rhow) / g
+      en_cl_diff(i,j,ie) = (encl-energy_prect)/en1glob_cp
 
       !update states assuming cam_ routines are off
       qind=1;  elem(ie)%state%Qdp(i,j,:,qind,ntQ) = dp_c*qv_c
@@ -797,7 +844,22 @@ endif
 
   enddo !ie loop
 
-  call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
+  do ie=nets,nete
+     global_shared_buf(ie,1) = 0
+     global_shared_buf(ie,2) = 0
+     do k=1,nlev
+        global_shared_buf(ie,1) = global_shared_buf(ie,1) + &
+                  SUM(precl(:,:,ie))
+        global_shared_buf(ie,2) = global_shared_buf(ie,2) + &
+                  SUM(en_cl_diff(:,:,ie))
+     enddo
+  enddo
+  call wrap_repro_sum(nvars=2, comm=hybrid%par%comm)
+  globprecl_sum = global_shared_sum(1)
+  en_cl_diff_sum = global_shared_sum(2)
+
+  !call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
+  call dcmip2016_append_measurements2(max_precl,globprecl_sum,en_cl_diff_sum,tl,hybrid)
 
 end subroutine bubble_new_forcing
 
