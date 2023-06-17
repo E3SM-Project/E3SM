@@ -681,6 +681,10 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       mass_prect = 0.0; energy_prect = 0.0;
       wasiactive = .false.
 
+#define DIAGN
+!#undef DIAGN
+
+
       ! if RJ precipitation
       if(bubble_prec_type == 1) then
 
@@ -689,6 +693,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
           !returns new T, qv, new!!! dp, mass
           call rj_new(qv_c,qc_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
                           energy_before,en2cp,en2cv,energy_after,encl,wasiactive)
+#ifdef DIAGN
 if(wasiactive)then
 if(bubble_rj_cpstar_nh) then
 
@@ -707,23 +712,25 @@ endif
 
 print *, "    "
 endif
+#endif
 
         elseif(bubble_rj_cVstar) then
 
           !returns new T, qv, new!!! dp, mass
           call rj_new_volume(qv_c,qc_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
-               energy_before,en2cv,energy_after,encl,wasiactive)
+               energy_before,en2cp,en2cv,energy_after,encl,wasiactive)
 
+#ifdef DIAGN
 !this seems to work
-!if(wasiactive)then
-!print *, 'en1,en2', energy_before, en2
-!print *, 'en1-en2, rel', energy_before-en2, ( energy_before-en2)/en2
-!print *, 'en3, enout', energy_after,energy_prect
-!print *, 'en2, (en3+enout)', en2,(energy_after+energy_prect)
-!print *, 'en2-(en3+enout), rel', en2-(energy_after+energy_prect), (en2-(energy_after+energy_prect))/en2
-!print *, 'enout, encl, rel diff', energy_prect, encl, (energy_prect-encl)/energy_prect
-!print *, "    "
-!endif
+if(wasiactive)then
+print *, 'en_before-en1globP rel', (energy_before-en1glob_cp)/en1glob_cv
+print *, 'en_before-en1globV rel', (energy_before-en1glob_cv)/en1glob_cv
+print *, 'NH update en_before-en2cp rel', (energy_before-en2cp)/en2cp
+print *, 'NH update en_before-en2cV rel', (energy_before-en2cV)/en2cp
+print *, 'TOTAL en_before-(en3+enout) rel', (energy_before-(energy_after+energy_prect))/en2cv
+print *, "    "
+endif
+#endif
 
         elseif(bubble_rj_cpdry) then
 
@@ -741,6 +748,7 @@ endif
 
       mass2global = sum( dp_c )
 
+#ifdef DIAGN
 if(wasiactive)then
 
 print *, 'before check consistent energy/EOS',(en1glob_cp-en1glob_cv)/en1glob_cp
@@ -754,8 +762,10 @@ print *, " "
 print *, 'TOTAL en1glob_cp-(en2glob_cp+prect) rel', (en1glob_cp-(en2glob_cp+energy_prect))/en1glob_cp
 !print *, 'TOTAL en1glob_cp,en2glob_cp,prect', en1glob_cp,en2glob_cp,energy_prect
 print *, 'TOTAL m1g-m2g, rel', mass1global-(mass2global+mass_prect), ( mass1global-mass2global-mass_prect)/mass1global
+print *, 'TOTAL (encl-enprect)/englob rel', (encl-energy_prect)/en1glob_cp
 print *, "  ------------------------------  "
 endif
+#endif
 
       !do not use homme rstar routine here
 
