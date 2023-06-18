@@ -420,7 +420,7 @@ CONTAINS
        ! when called first time, initialize MOAB atm phis grid, and create the mesh
        ! on the atm
 #ifdef HAVE_MOAB
-       call initialize_moab_atm_phys( cdata_a )
+       call init_moab_atm_phys( cdata_a )
        mblsize = lsize
        nsend = mct_avect_nRattr(a2x_a)
        totalmbls = mblsize * nsend   ! size of the double array
@@ -1111,7 +1111,7 @@ CONTAINS
   end subroutine atm_write_srfrest_mct
 
 #ifdef HAVE_MOAB
-  subroutine initialize_moab_atm_phys( cdata_a )
+  subroutine init_moab_atm_phys( cdata_a )
 
     use shr_mpi_mod,       only: shr_mpi_commrank, shr_mpi_commsize
     use shr_const_mod, only: SHR_CONST_PI
@@ -1320,7 +1320,7 @@ CONTAINS
     deallocate(areavals)
     deallocate(chunk_index)
 
-  end subroutine initialize_moab_atm_phys
+  end subroutine init_moab_atm_phys
 
   subroutine atm_export_moab(cam_out)
   !-------------------------------------------------------------------

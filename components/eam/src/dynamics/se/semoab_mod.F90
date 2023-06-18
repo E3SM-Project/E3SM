@@ -35,7 +35,6 @@ module semoab_mod
 
   integer local_map(np,np) !  what is the index of gll point (i,j) in a local moabconn(start: start+(np-1)*(np-1)*4-1)
   integer, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
-  integer  ::                     num_calls_export
   
 contains
 
@@ -761,9 +760,6 @@ contains
        endif  ! only valid for pg == 2
 
      endif
-
-     ! initialize
-     num_calls_export = 0
 
      ! deallocate
      deallocate(moabvh)

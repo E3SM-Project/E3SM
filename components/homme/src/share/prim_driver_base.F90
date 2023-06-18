@@ -42,9 +42,6 @@ module prim_driver_base
   public :: prim_init1_no_cam
 #endif
 
-#ifdef HAVE_MOAB
-  public :: prim_init_moab_mesh
-#endif
 
   public :: smooth_topo_datasets, deriv1
 
@@ -738,22 +735,6 @@ contains
 
   end subroutine prim_init1_buffers
 
-#ifdef HAVE_MOAB
-  subroutine  prim_init_moab_mesh(elem,par)
-
-    use parallel_mod,       only : parallel_t
-    use semoab_mod,         only :  create_moab_meshes
-
-    !
-    ! Inputs
-    !
-    type (element_t),   pointer     :: elem(:)
-    type (parallel_t),  intent(in)  :: par
-
-    call create_moab_meshes(par, elem)
-
-  end subroutine prim_init_moab_mesh
-#endif
   !_____________________________________________________________________
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
 
