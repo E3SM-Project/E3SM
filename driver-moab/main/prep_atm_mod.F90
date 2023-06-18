@@ -1749,17 +1749,6 @@ contains
             fldlist=seq_flds_o2x_fluxes,norm=.true.)
     enddo
 
-#ifdef MOABDEBUG
-            ! projections on atm
-         write(lnum,"(I0.2)")num_moab_exports
-         outfile = 'OIL2Atm'//trim(lnum)//'.h5m'//C_NULL_CHAR
-         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-         ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in writing ocean to atm projection'
-            call shr_sys_abort(subname//' ERROR in writing ocean to atm projection')
-         endif
-#endif
     call t_drvstopf  (trim(timer))
 
   end subroutine prep_atm_calc_o2x_ax

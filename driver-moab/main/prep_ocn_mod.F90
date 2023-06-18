@@ -1237,16 +1237,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     endif
     lsize = nvise(1) ! number of active cells
 
-#ifdef MOABDEBUG
-    if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
-     write(lnum,"(I0.2)")num_moab_exports
-     outfile = 'OcnCplBefMm'//trim(lnum)//'.h5m'//C_NULL_CHAR
-     wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-     ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
-   endif
-#endif
-
-
     if (first_time) then
 
        ! mct avs are used just for their fields metadata, not the actual reals
@@ -2718,9 +2708,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
   subroutine prep_ocn_calc_a2x_ox(timer)
     !---------------------------------------------------------------
-#ifdef MOABDEBUG
-    use iMOAB, only :  iMOAB_WriteMesh
-#endif
     ! Arguments
     character(len=*)     , intent(in) :: timer
     !
@@ -2728,10 +2715,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     integer :: eai
     type(mct_avect), pointer :: a2x_ax
     character(*), parameter  :: subname = '(prep_ocn_calc_a2x_ox)'
-#ifdef MOABDEBUG
-    character*32             :: outfile, wopts, lnum
-    integer :: ierr
-#endif
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
@@ -2750,14 +2733,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 #endif
 
     enddo
-#ifdef MOABDEBUG
-      if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
-         write(lnum,"(I0.2)")num_moab_exports
-         outfile = 'OcnCplAftA2O'//trim(lnum)//'.h5m'//C_NULL_CHAR
-         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR 
-         ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
-      endif
-#endif
 
     call t_drvstopf  (trim(timer))
 
