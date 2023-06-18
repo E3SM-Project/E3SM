@@ -64,8 +64,8 @@ module rof_comp_mct
   use ESMF
 #ifdef HAVE_MOAB
   use seq_comm_mct,     only : mrofid ! id of moab rof app
- use seq_comm_mct,     only : seq_comm_compare_mb_mct ! for debugging
- use seq_comm_mct,      only: num_moab_exports
+  use seq_comm_mct,     only : seq_comm_compare_mb_mct ! for debugging
+  use seq_comm_mct,      only: num_moab_exports
   use iso_c_binding
   use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage
 #endif
@@ -89,7 +89,7 @@ module rof_comp_mct
   private :: rof_export_mct           ! Export the river runoff model data to the CESM coupler
 !
 #ifdef HAVE_MOAB
-  private :: init_rof_moab   ! create moab mesh (cloud of points)
+  private :: init_moab_rof   ! create moab mesh (cloud of points)
   private :: rof_export_moab          ! Export the river runoff model data to the MOAB coupler
   private :: rof_import_moab          ! import the river runoff model data from the MOAB coupler
   integer , private :: mblsize, totalmbls, totalmbls_r
@@ -115,7 +115,6 @@ contains
     !
     ! !ARGUMENTS:
 #ifdef HAVE_MOAB
-    use iMOAB , only : iMOAB_RegisterApplication
     integer :: nsend ! number of fields in seq_flds_r2x_fields
     integer :: nrecv ! number of fields in seq_flds_x2r_fields
 #endif
@@ -163,7 +162,6 @@ contains
 
 #ifdef HAVE_MOAB
     integer :: ierr, tagtype, numco,  tagindex 
-    character*32  appname
     character(CXX) ::  tagname ! for fields 
     integer ::  ent_type
 #endif
@@ -307,17 +305,7 @@ contains
        call rof_export_mct( r2x_r )
 
 #ifdef HAVE_MOAB
-       appname="ROFMB"//C_NULL_CHAR ! only if rof_prognostic
-    ! first rof instance, should be
-       ierr = iMOAB_RegisterApplication(appname, mpicom_rof, ROFID, mrofid)
-       if (ierr > 0 )  &
-          call shr_sys_abort( sub//' Error: cannot register moab app')
-       if(masterproc) then
-          write(iulog,*) " "
-          write(iulog,*) "register MOAB ROF app:", trim(appname), "  mrofid=", mrofid, " ROFID=", ROFID
-          write(iulog,*) " "
-       endif
-       call init_rof_moab()
+       call init_moab_rof(mpicom_rof, ROFID)
 
     ! initialize moab tag fields array
        mblsize = lsize
@@ -920,13 +908,16 @@ contains
   end subroutine rof_export_mct
 
 #ifdef HAVE_MOAB
-  subroutine init_rof_moab()
+  subroutine init_moab_rof(mpicom_rof, ROFID)
     ! use rtmCTL that has all we need
     use seq_comm_mct,      only: mrofid  ! id of moab rof app
     use shr_const_mod, only: SHR_CONST_PI
-    use iMOAB,  only       : iMOAB_CreateVertices, iMOAB_WriteMesh, &
-    iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
+    use iMOAB,  only       : iMOAB_RegisterApplication, iMOAB_CreateVertices, iMOAB_WriteMesh, &
+    iMOAB_SetIntTagStorage, &
     iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices, iMOAB_UpdateMeshInfo
+
+    integer, intent(in) :: mpicom_rof
+    integer, intent(in) :: ROFID ! passed along
 
     integer,allocatable :: gindex(:)  ! Number the local grid points; used for global ID
     integer lsz !  keep local size
@@ -943,8 +934,20 @@ contains
     integer tagtype, numco, ent_type, mbtype, block_ID
     character*100 outfile, wopts, localmeshfile, tagname
     real(r8) :: re = SHR_CONST_REARTH*0.001_r8 ! radius of earth (km)
-    character(len=32), parameter :: sub = 'init_rof_moab'
+    character*32  appname
+    character(len=32), parameter :: sub = 'init_moab_rof'
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
+
+    appname="ROFMB"//C_NULL_CHAR ! only if rof_prognostic
+    ! first rof instance, should be
+    ierr = iMOAB_RegisterApplication(appname, mpicom_rof, ROFID, mrofid)
+       if (ierr > 0 )  &
+          call shr_sys_abort( sub//' Error: cannot register moab app')
+       if(masterproc) then
+          write(iulog,*) " "
+          write(iulog,*) "register MOAB ROF app:", trim(appname), "  mrofid=", mrofid, " ROFID=", ROFID
+          write(iulog,*) " "
+       endif
 
     dims  =3 ! store as 3d mesh
 
@@ -989,7 +992,7 @@ contains
       call shr_sys_abort( sub//' Error: fail to resolve shared entities')
 
     !there are no shared entities, but we will set a special partition tag, in order to see the
-    ! partitions ; it will be visible with a Pseudocolor plot in VisItinit_rof_moab
+    ! partitions ; it will be visible with a Pseudocolor plot in VisIt init_moab_rof
     tagname='partition'//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
@@ -1049,7 +1052,7 @@ contains
     if (ierr > 0 )  &
       call shr_sys_abort( sub//' Error: fail to write the moab runoff mesh file')
 #endif
-  end subroutine init_rof_moab
+  end subroutine init_moab_rof
 
 
 subroutine rof_export_moab()
@@ -1062,7 +1065,7 @@ subroutine rof_export_moab()
     ! ARGUMENTS:
    use seq_comm_mct,      only: mrofid  ! id of moab rof app
 
-   use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+   use iMOAB,  only       :  iMOAB_WriteMesh
    implicit none
    !
    ! LOCAL VARIABLES
