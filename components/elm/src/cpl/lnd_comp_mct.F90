@@ -41,7 +41,7 @@ module lnd_comp_mct
   private :: lnd_domain_mct   ! set the land model domain information
 
 #ifdef HAVE_MOAB
-  private :: init_land_moab   ! create moab mesh (cloud of points)
+  private :: init_moab_land   ! create moab mesh (cloud of points)
   private :: lnd_export_moab ! it could be part of lnd_import_export, but we will keep it here
   private :: lnd_import_moab ! it could be part of lnd_import_export, but we will keep it here
   integer , private :: mblsize, totalmbls
@@ -51,8 +51,8 @@ module lnd_comp_mct
   real (r8) , allocatable, private :: x2l_lm(:,:) ! for tags from MOAB
   logical :: sameg_al ! save it for export :)  
 
-#ifdef MOABCOMP
-  integer  :: mpicom_lnd_moab ! used just for mpi-reducing the difference betweebn moab tags and mct avs
+#ifdef HAVE_MOAB
+  integer  :: mpicom_lnd_moab ! used also for mpi-reducing the difference between moab tags and mct avs
   integer :: rank2
 #endif
 
@@ -100,9 +100,7 @@ contains
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
     use ESMF
-#ifdef HAVE_MOAB
-    use iMOAB            , only : iMOAB_RegisterApplication
-#endif
+
     !
     ! !ARGUMENTS:
     type(ESMF_Clock),           intent(inout) :: EClock           ! Input synchronization clock
@@ -153,7 +151,6 @@ contains
 
 #ifdef HAVE_MOAB
     integer :: ierr, nsend
-    character*32  appname
     logical :: samegrid_al !
     character(len=SHR_KIND_CL) :: atm_gnam          ! atm grid
     character(len=SHR_KIND_CL) :: lnd_gnam          ! lnd grid
@@ -172,9 +169,9 @@ contains
     call elm_instance_init( LNDID )
 
     ! Determine attriute vector indices
-#ifdef MOABCOMP
-    mpicom_lnd_moab = mpicom_lnd ! just store it now, for later use
-    call shr_mpi_commrank( mpicom_lnd_moab, rank2 )
+#ifdef HAVE_MOAB
+    mpicom_lnd_moab = mpicom_lnd ! just store it now, for later use; maybe it is the same as mpicom from spmdMod  (or a copy)
+    call shr_mpi_commrank( mpicom_lnd_moab, rank2 ) ! this will be used for differences between mct and moab tags
 #endif 
 
     call elm_cpl_indices_set()
@@ -314,34 +311,6 @@ contains
 
     call lnd_SetgsMap_mct( bounds, mpicom_lnd, LNDID, gsMap_lnd )
     lsz = mct_gsMap_lsize(gsMap_lnd, mpicom_lnd)
-#ifdef HAVE_MOAB
-    appname="LNDMB"//C_NULL_CHAR
-    ! first land instance, should be 9
-    ierr = iMOAB_RegisterApplication(appname, mpicom_lnd, LNDID, mlnid)
-    if (ierr > 0 )  &
-       call endrun('Error: cannot register moab app')
-    if(masterproc) then
-       write(iulog,*) " "
-       write(iulog,*) "register MOAB app:", trim(appname), "  mlnid=", mlnid
-       write(iulog,*) " "
-    endif
-
-#if 0
-    if (masterproc) then
-      debugGSMapFile = shr_file_getUnit()
-      open( debugGSMapFile, file='LndGSmapC.txt')
-      write(debugGSMapFile,*) gsMap_lnd%comp_id
-      write(debugGSMapFile,*) gsMap_lnd%ngseg
-      write(debugGSMapFile,*) gsMap_lnd%gsize
-      do n=1,gsMap_lnd%ngseg
-          write(debugGSMapFile,*) gsMap_lnd%start(n),gsMap_lnd%length(n),gsMap_lnd%pe_loc(n)
-      end do
-      close(debugGSMapFile)
-      call shr_file_freeunit(debugGSMapFile)
-    endif
-#endif
-!  endif HAVE_MOAB
-#endif
 
     call lnd_domain_mct( bounds, lsz, gsMap_lnd, dom_l )
 #ifdef HAVE_MOAB
@@ -352,7 +321,7 @@ contains
                    lnd_gnam=lnd_gnam           )
     if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
     mb_land_mesh = .not. samegrid_al ! global variable, saved in seq_comm
-    call init_land_moab(bounds, samegrid_al)
+    call init_moab_land(bounds, samegrid_al, LNDID)
     sameg_al = samegrid_al ! will use it for export too
 #endif
     call mct_aVect_init(x2l_l, rList=seq_flds_x2l_fields, lsize=lsz)
@@ -862,19 +831,22 @@ contains
   end subroutine lnd_domain_mct
 
 #ifdef HAVE_MOAB
-  subroutine init_land_moab(bounds, samegrid_al)
+  subroutine init_moab_land(bounds, samegrid_al, LNDID)
     use seq_flds_mod     , only :  seq_flds_l2x_fields, seq_flds_x2l_fields
     use shr_kind_mod     , only : CXX => SHR_KIND_CXX
     use spmdMod     , only: iam  ! rank on the land communicator
     use domainMod   , only: ldomain ! ldomain is coming from module, not even passed
     use elm_varcon  , only: re
     use shr_const_mod, only: SHR_CONST_PI
-    use iMOAB        , only: iMOAB_CreateVertices, iMOAB_WriteMesh, &
+    use elm_varctl  ,  only : iulog  ! for messages 
+     use spmdmod          , only: masterproc
+    use iMOAB        , only: iMOAB_CreateVertices, iMOAB_WriteMesh, iMOAB_RegisterApplication, &
     iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
     iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices, iMOAB_UpdateMeshInfo
 
     type(bounds_type) , intent(in)  :: bounds
-    logical :: samegrid_al
+    logical , intent(in) :: samegrid_al
+    integer , intent(in) :: LNDID ! id of the land app
 
     integer,allocatable :: gindex(:)  ! Number the local grid points; used for global ID
     integer lsz !  keep local size
@@ -890,8 +862,20 @@ contains
     integer tagtype, numco, ent_type, mbtype, block_ID
     character*100 outfile, wopts, localmeshfile
     character(CXX) ::  tagname ! hold all fields
+    character*32  appname
 
     integer, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
+
+    appname="LNDMB"//C_NULL_CHAR
+    ! first land instance, should be 9
+    ierr = iMOAB_RegisterApplication(appname, mpicom_lnd_moab, LNDID, mlnid)
+    if (ierr > 0 )  &
+       call endrun('Error: cannot register moab app')
+    if(masterproc) then
+       write(iulog,*) " "
+       write(iulog,*) "register MOAB app:", trim(appname), "  mlnid=", mlnid
+       write(iulog,*) " "
+    endif
 
     dims  =3 ! store as 3d mesh
     ! number the local grid
@@ -1150,7 +1134,7 @@ contains
         call endrun('Error: fail to define seq_flds_x2l_fields for land moab mesh')
     endif
 
-  end subroutine init_land_moab
+  end subroutine init_moab_land
 
   subroutine lnd_export_moab( bounds, lnd2atm_vars, lnd2glc_vars)
 
