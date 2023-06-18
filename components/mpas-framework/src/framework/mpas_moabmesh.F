@@ -24,7 +24,7 @@ module mpas_moabmesh
   return
   end subroutine
   
-  subroutine mpas_moab_instance(domain, ext_comp_id, pidmoab)
+  subroutine init_moab_mpas(domain, ext_comp_id, pidmoab)
     use iMOAB, only : iMOAB_RegisterApplication, &
      iMOAB_CreateVertices, iMOAB_CreateElements, &
      iMOAB_ResolveSharedEntities, iMOAB_DetermineGhostEntities, &
@@ -225,6 +225,6 @@ module mpas_moabmesh
 
     
     
-  end subroutine mpas_moab_instance
+  end subroutine init_moab_mpas
 #endif
 end module mpas_moabmesh
