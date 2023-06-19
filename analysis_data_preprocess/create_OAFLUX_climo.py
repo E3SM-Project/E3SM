@@ -142,7 +142,7 @@ clim_edges = [
     "-11-1",
     "-12-1",
 ]
-clim_edge_values = numpy.zeros((17, 2), dtype=numpy.int)
+clim_edge_values = numpy.zeros((17, 2), dtype=int)
 # JAN
 clim_edge_values[0, 0] = 0
 clim_edge_values[0, 1] = 1

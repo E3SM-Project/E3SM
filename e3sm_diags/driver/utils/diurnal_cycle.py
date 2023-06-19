@@ -96,7 +96,7 @@ def composite_diurnal_cycle(var, season, fft=True):
                 season_idx[cycle[n]][var_time_absolute[i].month - 1]
                 for i in range(len(var_time_absolute))
             ],
-            dtype=numpy.int,
+            dtype=int,
         ).nonzero()
         var_diurnal[n,] = ma.average(  # noqa
             numpy.reshape(

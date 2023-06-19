@@ -73,7 +73,7 @@ def climo(var, season):
                 season_idx[cycle[n]][var_time_absolute[i].month - 1]
                 for i in range(len(var_time_absolute))
             ],
-            dtype=np.int,
+            dtype=int,
         ).nonzero()
         climo[n] = ma.average(v[idx], axis=0, weights=dt[idx])
 

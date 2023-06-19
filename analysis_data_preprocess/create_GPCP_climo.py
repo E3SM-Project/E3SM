@@ -94,7 +94,7 @@ fisc=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC','M
 fisc2=['01','02','03','04','05','06','07','08','09','10','11','12','MAM','JJA','SON','DJF','ANN']
 #fisc=['JAN']
 clim_edges=["-1-1","-2-1","-3-1","-4-1","-5-1","-6-1","-7-1","-8-1","-9-1","-10-1","-11-1","-12-1"]
-clim_edge_values=numpy.zeros((17,2),dtype=numpy.int)
+clim_edge_values=numpy.zeros((17,2),dtype=int)
 #JAN
 clim_edge_values[0,0]=0
 clim_edge_values[0,1]=1
