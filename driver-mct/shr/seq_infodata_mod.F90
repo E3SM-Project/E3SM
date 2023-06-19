@@ -111,8 +111,6 @@ MODULE seq_infodata_mod
      logical                 :: flux_albav      ! T => no diurnal cycle in ocn albedos
      logical                 :: flux_diurnal    ! T => diurnal cycle in atm/ocn fluxes
      integer                 :: ocn_surface_flux_scheme  ! 0: E3SMv1 1: COARE 2: UA
-     character(SHR_KIND_CS)  :: precip_downscaling_method !Precipitation downscaling method used
-                                                          !in the land model(current possible options: ERMM (default), FNM)
      logical                 :: coldair_outbreak_mod ! (Mahrt & Sun 1995,MWR)
      real(SHR_KIND_R8)       :: flux_convergence   ! atmocn flux calc convergence value
      integer                 :: flux_max_iteration ! max number of iterations of atmocn flux loop
@@ -978,7 +976,6 @@ CONTAINS
   SUBROUTINE seq_infodata_GetData_explicit( infodata, cime_model, case_name, case_desc, timing_dir,  &
        model_version, username, hostname, rest_case_name, tchkpt_dir,     &
        start_type, restart_pfile, restart_file, perpetual, perpetual_ymd, &
-       precip_downscaling_method,                                         &
        aqua_planet,aqua_planet_sst, brnch_retain_casename, &
        single_column, scmlat,scmlon,logFilePostFix, outPathRoot,&
        scm_multcols, scm_nx, scm_ny,                                      &
@@ -1057,8 +1054,6 @@ CONTAINS
     character(len=*),       optional, intent(OUT) :: outPathRoot             ! output file root
     logical,                optional, intent(OUT) :: perpetual               ! If this is perpetual
     integer,                optional, intent(OUT) :: perpetual_ymd           ! If perpetual, date
-    character(len=*),       optional, intent(OUT) :: precip_downscaling_method!precip downscaling method from the land model
-                                                                              !ERMM (default) or  FNM
     character(len=*),       optional, intent(OUT) :: orb_mode                ! orbital mode
     integer,                optional, intent(OUT) :: orb_iyear               ! orbital year
     integer,                optional, intent(OUT) :: orb_iyear_align         ! orbital year model year align
@@ -1239,7 +1234,6 @@ CONTAINS
     if ( present(outPathRoot)    ) outPathRoot    = infodata%outPathRoot
     if ( present(perpetual)      ) perpetual      = infodata%perpetual
     if ( present(perpetual_ymd)  ) perpetual_ymd  = infodata%perpetual_ymd
-    if ( present(precip_downscaling_method)) precip_downscaling_method = infodata%precip_downscaling_method
     if ( present(orb_iyear)      ) orb_iyear      = infodata%orb_iyear
     if ( present(orb_iyear_align)) orb_iyear_align= infodata%orb_iyear_align
     if ( present(orb_mode)       ) orb_mode       = infodata%orb_mode
@@ -1545,9 +1539,8 @@ CONTAINS
        nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
        glc_g2lupdate, atm_aero, esmf_map_flag, wall_time_limit,           &
        do_budgets, do_histinit, drv_threading, flux_diurnal,              &
-       precip_downscaling_method,                                         &
-       ocn_surface_flux_scheme,                                           &
-       coldair_outbreak_mod,                                              &
+       ocn_surface_flux_scheme, &
+       coldair_outbreak_mod,                                                           &
        flux_convergence, flux_max_iteration,                              &
        budget_inst, budget_daily, budget_month, force_stop_at,            &
        budget_ann, budget_ltann, budget_ltend ,                           &
@@ -1620,8 +1613,6 @@ CONTAINS
     logical,                optional, intent(IN)    :: flux_albav              ! T => no diurnal cycle in ocn albedos
     logical,                optional, intent(IN)    :: flux_diurnal            ! T => diurnal cycle in atm/ocn flux
     integer,                optional, intent(IN)    :: ocn_surface_flux_scheme ! 0: E3SMv1 1: COARE 2:UA
-    character(len=*),       optional, intent(IN)    :: precip_downscaling_method!precip downscaling method from the land model
-                                                                                !ERMM (default) or  FNM
     logical, optional, intent(in) :: coldair_outbreak_mod
     real(SHR_KIND_R8),      optional, intent(IN)    :: flux_convergence   ! atmocn flux calc convergence value
     integer,                optional, intent(IN)    :: flux_max_iteration ! max number of iterations of atmocn flux loop
@@ -1801,8 +1792,6 @@ CONTAINS
     if ( present(flux_diurnal)   ) infodata%flux_diurnal   = flux_diurnal
     if ( present(ocn_surface_flux_scheme) ) infodata%ocn_surface_flux_scheme = &
          ocn_surface_flux_scheme
-    if ( present(precip_downscaling_method) ) infodata%precip_downscaling_method = &
-         precip_downscaling_method
     if ( present(coldair_outbreak_mod)   ) infodata%coldair_outbreak_mod  = coldair_outbreak_mod
     if ( present(flux_convergence)) infodata%flux_convergence  = flux_convergence
     if ( present(flux_max_iteration)) infodata%flux_max_iteration   = flux_max_iteration
@@ -2106,7 +2095,6 @@ CONTAINS
     call shr_mpi_bcast(infodata%flux_albav,              mpicom)
     call shr_mpi_bcast(infodata%flux_diurnal,            mpicom)
     call shr_mpi_bcast(infodata%ocn_surface_flux_scheme, mpicom)
-    call shr_mpi_bcast(infodata%precip_downscaling_method, mpicom)
     call shr_mpi_bcast(infodata%coldair_outbreak_mod,    mpicom)
     call shr_mpi_bcast(infodata%flux_convergence,        mpicom)
     call shr_mpi_bcast(infodata%flux_max_iteration,      mpicom)
@@ -2808,7 +2796,6 @@ CONTAINS
     write(logunit,F0L) subname,'flux_albav               = ', infodata%flux_albav
     write(logunit,F0L) subname,'flux_diurnal             = ', infodata%flux_diurnal
     write(logunit,F0L) subname,'ocn_surface_flux_scheme  = ', infodata%ocn_surface_flux_scheme
-    write(logunit,F0A) subname,'precip_downscaling_method = ', infodata%precip_downscaling_method
     write(logunit,F0L) subname,'coldair_outbreak_mod            = ', infodata%coldair_outbreak_mod
     write(logunit,F0R) subname,'flux_convergence         = ', infodata%flux_convergence
     write(logunit,F0I) subname,'flux_max_iteration       = ', infodata%flux_max_iteration

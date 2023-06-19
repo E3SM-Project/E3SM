@@ -54,7 +54,7 @@ module atm_comp_mct
   use co2_cycle        , only: co2_readFlux_ocn, co2_readFlux_fuel
   use runtime_opts     , only: read_namelist
   use scamMod          , only: single_column,scmlat,scmlon
-  use lnd_infodata     , only: precip_downscaling_method !Precipitation downscaling method used in the land model
+
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -263,7 +263,7 @@ CONTAINS
             hostname=hostname, username=username, model_version=version,              &
             single_column=single_column, scmlat=scmlat, scmlon=scmlon,                &
             orb_eccen=eccen, orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr, &
-            lnd_present=lnd_present, ocn_present=ocn_present,                         &
+            lnd_present=lnd_present, ocn_present=ocn_present,                         & 
             perpetual=perpetual_run, perpetual_ymd=perpetual_ymd)
        !
        ! Get nsrest from startup type methods
@@ -387,11 +387,6 @@ CONTAINS
        ! only for the purposes of finishing the flux averaged calculation to compute a2x_a
        ! Note - cam_run1 is called on restart only to have cam internal state consistent with the 
        ! a2x_a state sent to the coupler
-
-       !Obtain the precipitation downscaling method from the land model
-       call seq_infodata_GetData( infodata,                                           &
-            precip_downscaling_method=precip_downscaling_method )
-
 
        ! Redirect share output to cam log
 

@@ -505,7 +505,7 @@ verbose_output = .false.
       use FatesParameterDerivedMod, only : param_derived
       use FatesInterfaceTypesMod,   only : numpft_fates => numpft
       use elm_varsur,               only : wt_nat_patch
-      use topounit_varcon           , only: max_topounits, has_topounit
+      use topounit_varcon           , only: max_topounits
 
       implicit none
 
@@ -651,23 +651,19 @@ verbose_output = .false.
             ! Check whether or not the surface dataset has topounits.  If it doesn't set the
             ! index t to max_topounits, which should be 1.  Otherwise, determine the index
             ! from the columntype
-            if (has_topounit) then
-               t = col_pp%topounit(c)
+            if (max_topounits .ne. 1) then
+               write(iulog,*) 'max_topounits should only be one when has_topounit is false'
+               write(iulog,*) 'max_topounits: ', max_topounits
+               call endrun(msg=errMsg(sourcefile, __LINE__))
             else
-               if (max_topounits .ne. 1) then
-                  write(iulog,*) 'max_topounits should only be one when has_topounit is false'
-                  write(iulog,*) 'max_topounits, has_topounit: ', max_topounits, has_topounit
-                  call endrun(msg=errMsg(sourcefile, __LINE__))
-               else
-                  t = max_topounits
-               endif
+               t = max_topounits
             endif
 
             ! initialize static layers for reduced complexity FATES versions from HLM
             this%fates(nc)%bc_in(s)%pft_areafrac(:)=0._r8
             do m = natpft_lb,natpft_ub
                ft = m-natpft_lb
-               this%fates(nc)%bc_in(s)%pft_areafrac(ft)=wt_nat_patch(g,t,m)
+               this%fates(nc)%bc_in(s)%pft_areafrac(ft)=wt_nat_patch(g,m)
             end do
 
             if(abs(sum(this%fates(nc)%bc_in(s)%pft_areafrac(natpft_lb:natpft_ub))-1.0_r8).gt.1.0e-9)then

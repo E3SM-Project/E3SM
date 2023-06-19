@@ -10,8 +10,6 @@ module SedFluxType
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
   use ColumnType        , only : col_pp
-  use topounit_varcon , only : max_topounits 
-  use GridcellType   , only : grc_pp
   !
   implicit none
   save
@@ -161,27 +159,27 @@ contains
     type(bounds_type) , intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer            :: c, g, t, ti, topi
+    integer            :: c, g
     logical            :: readvar
     type(file_desc_t)  :: ncid
     character(len=256) :: locfn
-    real(r8) ,pointer  :: pfactor2d       (:,:)      ! read in - pfactor TKT
-    real(r8) ,pointer  :: qfactor2d       (:,:)      ! read in - qfactor TKT
-    real(r8) ,pointer  :: tfactor2d       (:,:)      ! read in - tfactor TKT
+    real(r8) ,pointer  :: pfactor2d       (:)      ! read in - pfactor
+    real(r8) ,pointer  :: qfactor2d       (:)      ! read in - qfactor
+    real(r8) ,pointer  :: tfactor2d       (:)      ! read in - tfactor
     !-----------------------------------------------------------------------
 
-    allocate(pfactor2d(bounds%begg:bounds%endg,max_topounits))  !TKT
-    allocate(qfactor2d(bounds%begg:bounds%endg,max_topounits))
-    allocate(tfactor2d(bounds%begg:bounds%endg,max_topounits))
+    allocate(pfactor2d(bounds%begg:bounds%endg))
+    allocate(qfactor2d(bounds%begg:bounds%endg))
+    allocate(tfactor2d(bounds%begg:bounds%endg))
 
     call getfil (fsurdat, locfn, 0)
     call ncd_pio_openfile (ncid, locfn, 0)
     call ncd_io(ncid=ncid, varname='parEro_c1', flag='read', data=pfactor2d, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) pfactor2d(:,:) = 0._r8
+    if (.not. readvar) pfactor2d(:) = 0._r8
     call ncd_io(ncid=ncid, varname='parEro_c2', flag='read', data=qfactor2d, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) qfactor2d(:,:) = 0._r8 
+    if (.not. readvar) qfactor2d(:) = 0._r8 
     call ncd_io(ncid=ncid, varname='parEro_c3', flag='read', data=tfactor2d, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) tfactor2d(:,:) = 0._r8 
+    if (.not. readvar) tfactor2d(:) = 0._r8 
     call ncd_pio_closefile(ncid)
 
     do c = bounds%begc, bounds%endc
@@ -192,13 +190,9 @@ contains
        this%sed_yld_col(c)                   = 0._r8
 
        g = col_pp%gridcell(c)
-       t = col_pp%topounit(c)
-       topi = grc_pp%topi(g)
-       ti = t - topi + 1
-      
-       this%pfactor_col(c)                   = pfactor2d(g,ti)
-       this%qfactor_col(c)                   = qfactor2d(g,ti)
-       this%tfactor_col(c)                   = tfactor2d(g,ti)
+       this%pfactor_col(c)                   = pfactor2d(g)
+       this%qfactor_col(c)                   = qfactor2d(g)
+       this%tfactor_col(c)                   = tfactor2d(g)
     end do
 
     deallocate(pfactor2d, qfactor2d, tfactor2d)

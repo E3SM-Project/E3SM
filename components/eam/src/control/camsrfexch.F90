@@ -81,7 +81,6 @@ module camsrfexch
      real(r8), allocatable :: wsresp(:)   ! first-order response of low-level wind to surface fluxes
      real(r8), allocatable :: tau_est(:)  ! stress estimated to be in equilibrium with ubot/vbot
      real(r8), allocatable :: ugust(:)    ! gustiness value
-     real(r8), allocatable :: uovern(:)       ! ratio of wind speed/brunt vaisalla frequency  
   end type cam_out_t 
 
 !---------------------------------------------------------------------------
@@ -496,9 +495,6 @@ CONTAINS
 
        allocate (cam_out(c)%ugust(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error ugust')
-       
-       allocate (cam_out(c)%uovern(pcols), stat=ierror)
-       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error uovern')
     enddo  
 
     do c = begchunk,endchunk
@@ -542,7 +538,6 @@ CONTAINS
        cam_out(c)%wsresp(:)   = 0._r8
        cam_out(c)%tau_est(:)  = 0._r8
        cam_out(c)%ugust(:)    = 0._r8
-       cam_out(c)%uovern(:)   = 0._r8
     end do
 
   end subroutine atm2hub_alloc
@@ -590,7 +585,6 @@ CONTAINS
           deallocate(cam_out(c)%wsresp)
           deallocate(cam_out(c)%tau_est)
           deallocate(cam_out(c)%ugust)
-          deallocate(cam_out(c)%uovern)
        enddo  
 
        deallocate(cam_out)
@@ -658,7 +652,6 @@ CONTAINS
              deallocate(cam_in(c)%depvel)
              nullify(cam_in(c)%depvel)
           end if
-          
        enddo
 
        deallocate(cam_in)

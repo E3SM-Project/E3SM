@@ -17,8 +17,7 @@ module filterMod
   use GridcellType   , only : grc_pp
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
-  use VegetationType , only : veg_pp  
-  use TopounitType   , only : top_pp
+  use VegetationType      , only : veg_pp                
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -292,7 +291,6 @@ contains
     integer :: fnc         ! non-crop filter index
     integer :: f, fn       ! general indices
     integer :: g           !gridcell index
-    integer :: t           !topounit index
     !------------------------------------------------------------------------
 
     SHR_ASSERT(bounds%level == BOUNDS_LEVEL_CLUMP, errMsg(__FILE__, __LINE__))
@@ -305,17 +303,14 @@ contains
     fl = 0
     fnl = 0
     do c = bounds%begc,bounds%endc
-       t =col_pp%topounit(c)
-       if (top_pp%active(t)) then
-          if (col_pp%active(c) .or. include_inactive) then
-             l =col_pp%landunit(c)          
-             if (lun_pp%lakpoi(l)) then
-                fl = fl + 1
-                this_filter(nc)%lakec(fl) = c
-             else
-                fnl = fnl + 1
-                this_filter(nc)%nolakec(fnl) = c
-             end if
+       if (col_pp%active(c) .or. include_inactive) then
+          l =col_pp%landunit(c)
+          if (lun_pp%lakpoi(l)) then
+             fl = fl + 1
+             this_filter(nc)%lakec(fl) = c
+          else
+             fnl = fnl + 1
+             this_filter(nc)%nolakec(fnl) = c
           end if
        end if
     end do
@@ -328,20 +323,17 @@ contains
     fnl = 0
     fnlu = 0
     do p = bounds%begp,bounds%endp
-       t =veg_pp%topounit(p)
-       if (top_pp%active(t)) then
-          if (veg_pp%active(p) .or. include_inactive) then
-             l =veg_pp%landunit(p)
-             if (lun_pp%lakpoi(l) ) then
-                fl = fl + 1
-                this_filter(nc)%lakep(fl) = p
-             else
-                fnl = fnl + 1
-                this_filter(nc)%nolakep(fnl) = p
-                if (.not. lun_pp%urbpoi(l)) then
-                   fnlu = fnlu + 1
-                   this_filter(nc)%nolakeurbanp(fnlu) = p
-                end if
+       if (veg_pp%active(p) .or. include_inactive) then
+          l =veg_pp%landunit(p)
+          if (lun_pp%lakpoi(l) ) then
+             fl = fl + 1
+             this_filter(nc)%lakep(fl) = p
+          else
+             fnl = fnl + 1
+             this_filter(nc)%nolakep(fnl) = p
+             if (.not. lun_pp%urbpoi(l)) then
+                fnlu = fnlu + 1
+                this_filter(nc)%nolakeurbanp(fnlu) = p
              end if
           end if
        end if
@@ -354,14 +346,11 @@ contains
 
     fs = 0
     do c = bounds%begc,bounds%endc
-       t =col_pp%topounit(c)
-       if (top_pp%active(t)) then
-          if (col_pp%active(c) .or. include_inactive) then
-             l =col_pp%landunit(c)
-             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
-                fs = fs + 1
-                this_filter(nc)%soilc(fs) = c
-             end if
+       if (col_pp%active(c) .or. include_inactive) then
+          l =col_pp%landunit(c)
+          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+             fs = fs + 1
+             this_filter(nc)%soilc(fs) = c
           end if
        end if
     end do
@@ -371,14 +360,11 @@ contains
 
     fs = 0
     do p = bounds%begp,bounds%endp
-       t =veg_pp%topounit(p)
-       if (top_pp%active(t)) then
-          if (veg_pp%active(p) .or. include_inactive) then
-             l =veg_pp%landunit(p)
-             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
-                fs = fs + 1
-                this_filter(nc)%soilp(fs) = p
-             end if
+       if (veg_pp%active(p) .or. include_inactive) then
+          l =veg_pp%landunit(p)
+          if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+             fs = fs + 1
+             this_filter(nc)%soilp(fs) = p
           end if
        end if
     end do
@@ -389,21 +375,18 @@ contains
     f = 0
     fn= 0
     do c = bounds%begc,bounds%endc
-       t =col_pp%topounit(c)
-       if (top_pp%active(t)) then
-          if (col_pp%active(c) .or. include_inactive) then
-             l =col_pp%landunit(c)
-             if (lun_pp%itype(l) == istsoil .or. col_pp%itype(c) == icol_road_perv .or. &
-                  lun_pp%itype(l) == istcrop) then
-                f = f + 1
-                this_filter(nc)%hydrologyc(f) = c
+       if (col_pp%active(c) .or. include_inactive) then
+          l =col_pp%landunit(c)
+          if (lun_pp%itype(l) == istsoil .or. col_pp%itype(c) == icol_road_perv .or. &
+               lun_pp%itype(l) == istcrop) then
+             f = f + 1
+             this_filter(nc)%hydrologyc(f) = c
 
-                if (col_pp%itype(c) == icol_road_perv) then
-                   fn = fn + 1
-                   this_filter(nc)%hydrononsoic(fn) = c
-                end if
-
+             if (col_pp%itype(c) == icol_road_perv) then
+                fn = fn + 1
+                this_filter(nc)%hydrononsoic(fn) = c
              end if
+
           end if
        end if
     end do
@@ -417,23 +400,20 @@ contains
     fpc = 0
     fnc = 0
     do p = bounds%begp,bounds%endp
-       t =veg_pp%topounit(p)
-       if (top_pp%active(t)) then
-          if (veg_pp%active(p) .or. include_inactive) then
-             if (veg_pp%itype(p) < npcropmin) then
-                l =veg_pp%landunit(p)
-                if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
-                   fnc = fnc + 1
-                   this_filter(nc)%soilnopcropp(fnc) = p
-                end if
-             else
-                if (veg_pp%itype(p) < nppercropmin) then
-                   fc = fc + 1
-                   this_filter(nc)%pcropp(fc) = p
-                else if (veg_pp%itype(p) >= nppercropmin) then
-                   fpc = fpc + 1
-                   this_filter(nc)%ppercropp(fpc) = p
-                end if
+       if (veg_pp%active(p) .or. include_inactive) then
+          if (veg_pp%itype(p) < npcropmin) then
+             l =veg_pp%landunit(p)
+             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
+                fnc = fnc + 1
+                this_filter(nc)%soilnopcropp(fnc) = p
+             end if
+          else
+             if (veg_pp%itype(p) < nppercropmin) then
+                fc = fc + 1
+                this_filter(nc)%pcropp(fc) = p
+             else if (veg_pp%itype(p) >= nppercropmin) then
+                fpc = fpc + 1
+                this_filter(nc)%ppercropp(fpc) = p
              end if
           end if
        end if
@@ -447,16 +427,13 @@ contains
     f = 0
     fn = 0
     do l = bounds%begl,bounds%endl
-       t =lun_pp%topounit(l)
-       if (top_pp%active(t)) then
-          if (lun_pp%active(l) .or. include_inactive) then
-             if (lun_pp%urbpoi(l)) then
-                f = f + 1
-                this_filter(nc)%urbanl(f) = l
-             else
-                fn = fn + 1
-                this_filter(nc)%nourbanl(fn) = l
-             end if
+       if (lun_pp%active(l) .or. include_inactive) then
+          if (lun_pp%urbpoi(l)) then
+             f = f + 1
+             this_filter(nc)%urbanl(f) = l
+          else
+             fn = fn + 1
+             this_filter(nc)%nourbanl(fn) = l
           end if
        end if
     end do
@@ -468,17 +445,14 @@ contains
     f = 0
     fn = 0
     do c = bounds%begc,bounds%endc
-       t =col_pp%topounit(c)
-       if (top_pp%active(t)) then
-          if (col_pp%active(c) .or. include_inactive) then
-             l = col_pp%landunit(c)
-             if (lun_pp%urbpoi(l)) then
-                f = f + 1
-                this_filter(nc)%urbanc(f) = c
-             else
-                fn = fn + 1
-                this_filter(nc)%nourbanc(fn) = c
-             end if
+       if (col_pp%active(c) .or. include_inactive) then
+          l = col_pp%landunit(c)
+          if (lun_pp%urbpoi(l)) then
+             f = f + 1
+             this_filter(nc)%urbanc(f) = c
+          else
+             fn = fn + 1
+             this_filter(nc)%nourbanc(fn) = c
           end if
        end if
     end do
@@ -490,17 +464,14 @@ contains
     f = 0
     fn = 0
     do p = bounds%begp,bounds%endp
-       t =veg_pp%topounit(p)
-       if (top_pp%active(t)) then
-          if (veg_pp%active(p) .or. include_inactive) then
-             l = veg_pp%landunit(p)
-             if (lun_pp%urbpoi(l)) then
-                f = f + 1
-                this_filter(nc)%urbanp(f) = p
-             else
-                fn = fn + 1
-                this_filter(nc)%nourbanp(fn) = p 
-             end if
+       if (veg_pp%active(p) .or. include_inactive) then
+          l = veg_pp%landunit(p)
+          if (lun_pp%urbpoi(l)) then
+             f = f + 1
+             this_filter(nc)%urbanp(f) = p
+          else
+             fn = fn + 1
+             this_filter(nc)%nourbanp(fn) = p 
           end if
        end if
     end do
@@ -509,14 +480,11 @@ contains
 
     f = 0
     do c = bounds%begc,bounds%endc
-       t =col_pp%topounit(c)
-       if (top_pp%active(t)) then
-          if (col_pp%active(c) .or. include_inactive) then
-             l = col_pp%landunit(c)
-             if (lun_pp%itype(l) == istice_mec) then
-                f = f + 1
-                this_filter(nc)%icemecc(f) = c
-             end if
+       if (col_pp%active(c) .or. include_inactive) then
+          l = col_pp%landunit(c)
+          if (lun_pp%itype(l) == istice_mec) then
+             f = f + 1
+             this_filter(nc)%icemecc(f) = c
           end if
        end if
     end do
@@ -524,16 +492,13 @@ contains
     
     f = 0
     do c = bounds%begc,bounds%endc
-       t =col_pp%topounit(c)
-       if (top_pp%active(t)) then
-          if (col_pp%active(c) .or. include_inactive) then
-             l = col_pp%landunit(c)
-             g = col_pp%gridcell(c)
-             if ( lun_pp%itype(l) == istice_mec .or. &
-                (lun_pp%itype(l) == istsoil .and. icemask_grc(g) > 0.)) then
-                f = f + 1
-                this_filter(nc)%do_smb_c(f) = c
-             end if
+       if (col_pp%active(c) .or. include_inactive) then
+          l = col_pp%landunit(c)
+          g = col_pp%gridcell(c)
+          if ( lun_pp%itype(l) == istice_mec .or. &
+             (lun_pp%itype(l) == istsoil .and. icemask_grc(g) > 0.)) then
+             f = f + 1
+             this_filter(nc)%do_smb_c(f) = c
           end if
        end if
     end do
