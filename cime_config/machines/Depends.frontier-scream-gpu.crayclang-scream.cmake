@@ -1,6 +1,13 @@
-set(LND_F90
-  BandDiagonalMod.F90)
+set(REDOPT
+  ../driver-mct/main/seq_io_mod.F90
+  elm/src/biogeophys/BandDiagonalMod.F90)
 
-foreach(ITEM IN LISTS LND_F90)
-  e3sm_add_flags("elm/src/biogeophys/${ITEM}" "-O0 -g")
-endforeach()
+if (NOT DEBUG)
+  foreach(ITEM IN LISTS REDOPT)
+    e3sm_add_flags("${ITEM}" "-O1 -g")
+    e3sm_remove_flags("${ITEM}" "-O2")
+  endforeach()
+endif()
+
+
+
