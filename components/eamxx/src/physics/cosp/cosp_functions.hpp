@@ -13,14 +13,6 @@ extern "C" void cosp_c2f_run(int ncol, int nsubcol, int nlay, int ntau, int nctp
 namespace scream {
 
     namespace CospFunc {
-        // views for single- and multi-column data
-        //using view_1d_int   = typename KT::template view_1d<int>;
-        //using view_1d       = typename KT::template view_1d<Real>;
-        //using view_1d_const = typename KT::template view_1d<const Real>;
-        //using view_2d       = typename KT::template view_2d<Real>;
-        //using view_2d_const = typename KT::template view_2d<const Real>;
-
-        using KT  = ekat::KokkosTypes<DefaultDevice>;
         using lview_host_1d = typename ekat::KokkosTypes<HostDevice>::template lview<Real*  >;
         using lview_host_2d = typename ekat::KokkosTypes<HostDevice>::template lview<Real** >;
         using lview_host_3d = typename ekat::KokkosTypes<HostDevice>::template lview<Real***>;

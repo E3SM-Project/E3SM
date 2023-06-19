@@ -20,18 +20,6 @@ namespace scream
 class Cosp : public AtmosphereProcess
 {
 
-  template <typename S>
-  using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
-  using Spack = SmallPack<Real>;
-  using Pack  = ekat::Pack<Real,Spack::n>;
-  using KT = KokkosTypes<DefaultDevice>;
-
-  template <typename S>
-  using view_1d = typename KT::template view_1d<S>;
-
-  template <typename S>
-  using view_2d = typename KT::template view_2d<S>;
-
 public:
 
   // Constructors
@@ -59,7 +47,7 @@ protected:
 
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 
-  Int m_num_subcols = 50;
+  Int m_num_subcols = 10;
   Int m_num_levs;
   Int m_num_isccptau = 7;
   Int m_num_isccpctp = 7;
