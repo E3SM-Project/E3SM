@@ -1717,10 +1717,10 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		varname_in_code = ezxml_attr(var_xml, "name");
 	}
 
-    varname_in_output = ezxml_attr(var_xml, "name_in_output");
-    if(!varname_in_output){
-        varname_in_output = ezxml_attr(var_xml, "name");
-    }
+	varname_in_output = ezxml_attr(var_xml, "name_in_output");
+	if(!varname_in_output){
+		varname_in_output = ezxml_attr(var_xml, "name");
+	}
 
 	if(!vartimelevs){
 		vartimelevs = ezxml_attr(superStruct, "time_levs");
@@ -1761,7 +1761,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	build_dimension_information(registry, var_xml, &ndims, &hasTime, &decomp);
 
 	if (time_levs_from_config || time_levs > 1) {
-	    set_pointer_name(type, ndims, pointer_name, true);
+		set_pointer_name(type, ndims, pointer_name, true);
 		if (time_levs_from_config) {
 			fortprintf(fd, "      allocate(%s(config_flag_time_levs))\n", pointer_name);
 			fortprintf(fd, "      do iTime = 1,config_flag_time_levs\n");
@@ -1771,7 +1771,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		}
 		snprintf(pointer_name_arr, 1024, "%s(iTime)", pointer_name);
 	} else {
-	    set_pointer_name(type, ndims, pointer_name, false);
+		set_pointer_name(type, ndims, pointer_name, false);
 		snprintf(pointer_name_arr, 1024, "%s", pointer_name);
 		fortprintf(fd, "      allocate(%s)\n", pointer_name);
 	}
@@ -1951,10 +1951,10 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 
 			free(tofree);
 
-		        fortprintf(fd, "      %s %% maskName = '%s'\n", pointer_name_arr , temp_str);
+			fortprintf(fd, "      %s %% maskName = '%s'\n", pointer_name_arr , temp_str);
 			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'missing_value_mask', '%s')\n", pointer_name_arr, temp_str);
-                } else {
-                        fortprintf(fd, "      %s %% maskName = 'none'\n", pointer_name_arr , temp_str);
+		} else {
+			fortprintf(fd, "      %s %% maskName = 'none'\n", pointer_name_arr , temp_str);
 		}
 
 		if ( varmissingval != NULL ) {
@@ -1966,7 +1966,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 
 	if (time_levs_from_config || time_levs > 1) {
 		fortprintf(fd, "      enddo\n");
-		}
+	}
 
 	// Parse packages if they are defined
 	fortprintf(fd, "\n");
@@ -1987,16 +1987,16 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	}
 
 	if (time_levs_from_config || time_levs > 1) {
-        if (time_levs_from_config) {
-	        fortprintf(fd, "      do iTime = 1,config_flag_time_levs\n");
-    	} else {
-	        fortprintf(fd, "      do iTime = 1,%d\n",time_levs);
-        }
+		if (time_levs_from_config) {
+			fortprintf(fd, "      do iTime = 1,config_flag_time_levs\n");
+		} else {
+			fortprintf(fd, "      do iTime = 1,%d\n",time_levs);
+		}
 		snprintf(pointer_name_arr, 1024, "%s(iTime)", pointer_name);
 	} else {
 		snprintf(pointer_name_arr, 1024, "%s", pointer_name);
 	}
-		fortprintf(fd, "         %s%s %% isActive = .true.\n", package_spacing, pointer_name_arr);
+	fortprintf(fd, "         %s%s %% isActive = .true.\n", package_spacing, pointer_name_arr);
 	if (time_levs_from_config || time_levs > 1) {
 		fortprintf(fd, "      enddo\n");
 	}
