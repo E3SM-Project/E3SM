@@ -77,7 +77,13 @@
 		            description="notional englacial porosity"
 		            possible_values="positive real number"
 		/>
-                <!-- channel options -->
+		
+		<nml_option name="config_SGH_use_iceThicknessHydro" type="logical" default_value=".true." units="unitless"
+			    description="alter ice thickness along boundaries to avoid local maxima/minima in upperSurface. This can circumvent instabilities from forming along the boundaries of the hydro model that arise from unrealistic surface anomalies left over from building the domain. This option has no significant effect on the behavior of the model but makes it more stable."
+		            possible_values=".true. or .false."
+		/>
+	
+	        <!-- channel options -->
                 <nml_option name="config_SGH_chnl_active" type="logical" default_value=".false." units="unitless"
 		            description="activate channels in subglacial hydrology model"
 		            possible_values=".true. or .false."

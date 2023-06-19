@@ -2375,8 +2375,11 @@ module li_subglacial_hydro
       integer :: numCellsChanged
       integer :: iNeighbor
       real (kind=RKIND) :: minNeighborHeight
+      real (kind=RKIND) :: maxNeighborHeight
       real (kind=RKIND), parameter :: bigValue = 1.0e6_RKIND
+      real (kind=RKIND), parameter :: bigNegativeValue = -1.0e6_RKIND
       integer, dimension(:), pointer :: nEdgesOnCell
+      logical, pointer :: config_SGH_use_iceThicknessHydro
       err = 0
 
       ! Get pools things
@@ -2392,37 +2395,50 @@ module li_subglacial_hydro
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
-      
-      iceThicknessHydro = thickness
-      numCellsChanged = 0
+      call mpas_pool_get_config(liConfigs, 'config_SGH_use_iceThicknessHydro', config_SGH_use_iceThicknessHydro)
+      iceThicknessHydro = thickness 
 
-      do iCell = 1, nCells
-         if ((li_mask_is_boundary(cellMask(iCell))) .and. &
-                 (li_mask_is_grounded_ice(cellMask(iCell)))) then !identify domain boundaries
+      !iceThicknessHydro is equivalent to thickness if
+      !config_SGH_use_iceThicknessHydro is false. Default is to alter
+      !ice thickness along boundaries. 
+
+      if (config_SGH_use_iceThicknessHydro) then
+      
+         numCellsChanged = 0
+
+         do iCell = 1, nCells
+            if ((li_mask_is_boundary(cellMask(iCell))) .and. &
+                    (li_mask_is_grounded_ice(cellMask(iCell)))) then !identify domain boundaries
            
-            minNeighborHeight = bigValue !allocate
+               minNeighborHeight = bigValue !allocate
+               maxNeighborHeight = bigNegativeValue
 
-            do jCell = 1, nEdgesOnCell(iCell)
-               iNeighbor = cellsOnCell(jCell,iCell)
-               if ( .not. li_mask_is_boundary(cellMask(iNeighbor)) .and. &
-                   (iNeighbor < nCells + 1)) then
-                    minNeighborHeight = min(minNeighborHeight, upperSurface(iNeighbor))
-               endif            
-            end do
+               do jCell = 1, nEdgesOnCell(iCell)
+                  iNeighbor = cellsOnCell(jCell,iCell)
+                  if (.not. li_mask_is_boundary(cellMask(iNeighbor)) .and. &
+                     (iNeighbor < nCells + 1)) then
+                      minNeighborHeight = min(minNeighborHeight, upperSurface(iNeighbor))
+                      maxNeighborHeight = max(maxNeighborHeight, upperSurface(iNeighbor))
+                  endif        
+               end do
             
-            !only adjust surface elevation if cell is local minimum
-            if ((upperSurface(iCell) < minNeighborHeight) .and. (minNeighborHeight < bigValue)) then
-               call mpas_log_write("Changed ice thickness of cell $i", intArgs=(/iCell/))
-               numCellsChanged = numCellsChanged + 1
-               iceThicknessHydro(iCell) = minNeighborHeight - bedTopography(iCell)            
+               !only adjust surface elevation if cell is local minimum or
+               !maximum
+               if ((upperSurface(iCell) < minNeighborHeight) .and. (minNeighborHeight < bigValue)) then
+                  numCellsChanged = numCellsChanged + 1
+                  iceThicknessHydro(iCell) = minNeighborHeight - bedTopography(iCell)            
+               elseif ((upperSurface(iCell) > maxNeighborHeight) .and. &
+                      (maxNeighborHeight > bigNegativeValue)) then
+                  numCellsChanged = numCellsChanged + 1
+                  iceThicknessHydro(iCell) = maxNeighborHeight - bedTopography(iCell)
+               endif
+
             endif
+         enddo
 
-         endif
-      enddo
-
-      call mpas_log_write("Number of Cells Changed in iceThicknessHydro: $i", intArgs=(/numCellsChanged/))
-      call mpas_log_write("Minimum Neighbor Height: $r", realArgs=(/minNeighborHeight/))
-      
+         call mpas_log_write("Number of Cells Changed in iceThicknessHydro: $i", intArgs=(/numCellsChanged/))
+      endif
+   
    end subroutine calc_iceThicknessHydro
 
 !***********************************************************************
