@@ -330,6 +330,7 @@
       <directive> --job-name={{ job_id }}</directive>
       <directive> --nodes=1</directive>
       <directive> --ntasks={{ total_tasks }}</directive>
+      <directive> --cpus-per-task={{ thread_count }}</directive>
       <directive> --output={{ job_id }}.%j </directive>
     </directives>
   </batch_system>

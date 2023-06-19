@@ -124,13 +124,6 @@ public:
   virtual ~AtmosphereOutput () = default;
 
   // Constructor
-  // Note on the last two inputs:
-  //  - is_restart_run: if true, this is a restarted run. This is only importand
-  //    if this output instance is *not* for writing model restart files,
-  //    and *only* for particular choices of "Averaging Type".
-  //  - is_model_restart_output: if true, this Output is for model restart files.
-  //    In this case, we have to also create an "rpointer.atm" file (which
-  //    contains metadata, and is expected by the component coupled)
   AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params,
                    const std::shared_ptr<const fm_type>& field_mgr,
                    const std::shared_ptr<const gm_type>& grids_mgr);
@@ -145,7 +138,9 @@ public:
   void init();
   void reset_dev_views();
   void setup_output_file (const std::string& filename, const std::string& fp_precision);
-  void run (const std::string& filename, const bool write, const int nsteps_since_last_output,
+  void run (const std::string& filename,
+            const bool output_step, const bool checkpoint_step,
+            const int nsteps_since_last_output,
             const bool allow_invalid_fields = false);
 
   long long res_dep_memory_footprint () const;

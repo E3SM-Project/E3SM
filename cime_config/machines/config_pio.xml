@@ -68,7 +68,6 @@
       <value mach="chicoma-cpu">netcdf</value>
       <value mach="bebop" mpilib="impi" compset=".*CAM5.+MPAS.*">netcdf</value>
       <value mach="fugaku" compiler="gnu">netcdf</value>
-      <value mach="quartz">netcdf</value>
     </values>
   </entry>
 

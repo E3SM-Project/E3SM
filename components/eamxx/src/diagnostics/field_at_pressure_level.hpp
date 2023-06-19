@@ -14,7 +14,6 @@ namespace scream
 class FieldAtPressureLevel : public AtmosphereDiagnostic
 {
 public:
-  using mPack = ekat::Pack<Real,1>;
 
   using KT = KokkosTypes<DefaultDevice>;
   template <typename S>
@@ -26,10 +25,10 @@ public:
   FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // The name of the diagnostic
-  std::string name () const { return m_field_name + " @ pressure " + std::to_string(m_pressure_level) + " hPa"; }
+  std::string name () const { return m_diagnostic_output.name(); }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void set_grids (const std::shared_ptr<const GridsManager> /* grids_manager */) {}
 
 protected:
 #ifdef KOKKOS_ENABLE_CUDA
@@ -38,19 +37,15 @@ public:
   void compute_diagnostic_impl ();
 protected:
 
+  using Pack1 = ekat::Pack<Real,1>;
 
-
-  // Keep track of field dimensions
+  std::string         m_pressure_name;
   std::string         m_field_name;
-  FieldLayout         m_field_layout;
-  ekat::units::Units  m_field_units;
-  std::string         m_pres_name;
 
-  view_1d<mPack>      m_p_tgt;
+  view_1d<Pack1>      m_p_tgt;
   Field               m_mask_field;
   Real                m_pressure_level;
   int                 m_num_levs;
-  int                 m_num_cols;
   Real                m_mask_val;
 
 }; // class FieldAtPressureLevel

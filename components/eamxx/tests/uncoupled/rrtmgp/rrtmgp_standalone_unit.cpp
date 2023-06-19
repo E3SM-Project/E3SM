@@ -6,7 +6,7 @@
 // Other rrtmgp specific code needed specifically for this test
 #include "physics/rrtmgp/rrtmgp_test_utils.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-#include "physics/rrtmgp/atmosphere_radiation.hpp"
+#include "physics/rrtmgp/eamxx_rrtmgp_process_interface.hpp"
 #include "mo_gas_concentrations.h"
 #include "mo_garand_atmos_io.h"
 #include "YAKL.h"
@@ -134,7 +134,6 @@ namespace scream {
         auto ncol_all = grid->get_num_global_dofs();
         auto p_lay_all = real2d("p_lay", ncol_all, nlay);
         auto t_lay_all = real2d("t_lay", ncol_all, nlay);
-        auto p_del_all = real2d("p_del", ncol_all, nlay);
         auto p_lev_all = real2d("p_lev", ncol_all, nlay+1);
         auto t_lev_all = real2d("t_lev", ncol_all, nlay+1);
         auto sfc_alb_dir_vis_all = real1d("sfc_alb_dir_vis", ncol_all);
@@ -178,7 +177,6 @@ namespace scream {
             auto icol_all = ncol * irank + icol;
             p_lay(icol,ilay) = p_lay_all(icol_all,ilay);
             t_lay(icol,ilay) = t_lay_all(icol_all,ilay);
-            p_del(icol,ilay) = p_del_all(icol_all,ilay);
             lwp(icol,ilay) = lwp_all(icol_all,ilay);
             iwp(icol,ilay) = iwp_all(icol_all,ilay);
             rel(icol,ilay) = rel_all(icol_all,ilay);
@@ -193,7 +191,6 @@ namespace scream {
         // Free temporary variables
         p_lay_all.deallocate();
         t_lay_all.deallocate();
-        p_del_all.deallocate();
         p_lev_all.deallocate();
         t_lev_all.deallocate();
         sfc_alb_dir_vis_all.deallocate();

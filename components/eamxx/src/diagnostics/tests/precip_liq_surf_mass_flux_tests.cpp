@@ -21,9 +21,14 @@ create_gm (const ekat::Comm& comm, const int ncols) {
 
   const int num_global_cols = ncols*comm.size();
 
+  using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set<int>("number_of_global_columns", num_global_cols);
-  gm_params.set<int>("number_of_vertical_levels", 1);
+  gm_params.set("grids_names",vos_t{"Point Grid"});
+  auto& pl = gm_params.sublist("Point Grid");
+  pl.set<std::string>("type","point_grid");
+  pl.set("aliases",vos_t{"Physics"});
+  pl.set<int>("number_of_global_columns", num_global_cols);
+  pl.set<int>("number_of_vertical_levels", 1);
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   gm->build_grids();

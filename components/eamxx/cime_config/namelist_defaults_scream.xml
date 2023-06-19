@@ -150,6 +150,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       <enable_precondition_checks type="logical">true</enable_precondition_checks>
       <enable_postcondition_checks type="logical">true</enable_postcondition_checks>
       <repair_log_level type="string" valid_values="trace,debug,info,warn">trace</repair_log_level>
+      <!-- Run internal checks on code correctness.
+           <= 0: off; >= 1: global hashes over state -->
+      <internal_diagnostics_level type="integer">0</internal_diagnostics_level>
       <compute_tendencies type="array(string)">NONE</compute_tendencies>
     </atm_proc_base>
 
@@ -167,6 +170,10 @@ be lost if SCREAM_HACK_XML is not enabled.
         <fields type="array(string)">NONE</fields>
         <values type="array(real)">0</values>
       </prescribed_constants>
+      <prescribed_from_file>
+        <fields type="array(string)">NONE</fields>
+        <files type="array(string)">NONE</files>
+      </prescribed_from_file>
     </sc_export>
 
     <!-- Homme dynamics -->
@@ -174,8 +181,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <Grid>Dynamics</Grid>
       <Moisture>moist</Moisture>
       <!-- Frequency in physics steps to output a global hash over the dycore's
-           in fields. <= 0 disables hashing. -->
-      <BfbHash>0</BfbHash>
+           in-fields. <= 0 disables hashing. -->
+      <BfbHash type="integer">18</BfbHash>
     </homme>
 
     <!-- P3 microphysics -->
@@ -201,6 +208,9 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
+
+    <!-- For internal testing only -->
+    <testOnly inherit="atm_proc_base"/>
 
     <!-- Simple Prescribed Aerosols (SPA) -->
     <spa inherit="atm_proc_base">
@@ -311,14 +321,14 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- List of default topography files on specific grids -->
     <topography_filename type="file">UNSET</topography_filename>
-    <!-- Rough topography available for ne30, ne256, and ne1024 -->
+    <!-- Rough topography available for ne30, ne120, ne256, ne512, and ne1024 -->
     <topography_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc</topography_filename>
+    <topography_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4pg2_x6t_20230404.nc</topography_filename>
     <topography_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4pg2_x6t-SGH.c20210614.nc</topography_filename>
+    <topography_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4pg2_x6t_20230404.nc</topography_filename>
     <topography_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_x6t-SGH.c20210614.nc</topography_filename>
-    <!-- Currently no rough topography for ne4, ne120, or ne512. Use smooth topography file -->
+    <!-- Currently no rough topography for ne4. Use smooth topography file -->
     <topography_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</topography_filename>
-    <topography_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4pg2_16xdel2.nc</topography_filename>
-    <topography_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</topography_filename>
     <!-- Special case with non x6t or 16x topography file -->
     <topography_filename hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</topography_filename>
     <!-- For aquaplanet run, unset the topography_filename and set phis=0 -->

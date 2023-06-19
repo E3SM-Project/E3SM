@@ -292,7 +292,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     //
     // NOTE: For scorpio_output.cpp the mask value for vertical remapping is std::numeric_limits<Real>::max()/10.0
     const auto& Yf_f_vert = fm_vert->get_field("Y_flat");
-    const auto& Ys_f_vert = fm_vert->get_field("Y_int@"+std::to_string(p_ref)+"Pa");
+    const auto& Ys_f_vert = fm_vert->get_field("Y_int_at_"+std::to_string(p_ref)+"Pa");
     const auto& Ym_f_vert = fm_vert->get_field("Y_mid");
     const auto& Yi_f_vert = fm_vert->get_field("Y_int");
     const auto& Vm_f_vert = fm_vert->get_field("V_mid");
@@ -344,10 +344,10 @@ TEST_CASE("io_remap_test","io_remap_test")
     // The remap we are testing is rather simple, each pair of subsequent columns are remapped to a single
     // column using `wgt` and `1-wgt` respectively.
     //
-    // Note: For horizontal remapping we added the variable Y_min@XPa to check that this diagnostic does
+    // Note: For horizontal remapping we added the variable Y_min_at_XPa to check that this diagnostic does
     // provide some masking, since it applies vertical remapping.
     const auto& Yf_f_horiz = fm_horiz->get_field("Y_flat");
-    const auto& Ys_f_horiz = fm_horiz->get_field("Y_int@"+std::to_string(p_ref)+"Pa");
+    const auto& Ys_f_horiz = fm_horiz->get_field("Y_int_at_"+std::to_string(p_ref)+"Pa");
     const auto& Ym_f_horiz = fm_horiz->get_field("Y_mid");
     const auto& Yi_f_horiz = fm_horiz->get_field("Y_int");
     const auto& Vm_f_horiz = fm_horiz->get_field("V_mid");
@@ -418,11 +418,11 @@ TEST_CASE("io_remap_test","io_remap_test")
     // There should be maksing in the vertical in all locations where the target pressure
     // is lower higher than the surface pressure, just like in the vertical test.  This should
     // also translate to more masking in the horizontal reamapping.  So we must check for potential
-    // masking for all variables rather than just the Y_int@XPa variable for the horizontal interpolation.
+    // masking for all variables rather than just the Y_int_at_XPa variable for the horizontal interpolation.
     //
     // NOTE: For scorpio_output.cpp the mask value for vertical remapping is std::numeric_limits<Real>::max()/10.0 
     const auto& Yf_f_vh = fm_vh->get_field("Y_flat");
-    const auto& Ys_f_vh = fm_vh->get_field("Y_int@"+std::to_string(p_ref)+"Pa");
+    const auto& Ys_f_vh = fm_vh->get_field("Y_int_at_"+std::to_string(p_ref)+"Pa");
     const auto& Ym_f_vh = fm_vh->get_field("Y_mid");
     const auto& Yi_f_vh = fm_vh->get_field("Y_int");
     const auto& Vm_f_vh = fm_vh->get_field("V_mid");
@@ -524,10 +524,7 @@ Real calculate_output(const Real pressure, const int col, const int cmp)
 /*==========================================================================================================*/
 std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
-  ekat::ParameterList gm_params;
-  gm_params.set("number_of_global_columns",num_gcols);
-  gm_params.set("number_of_vertical_levels",num_levs);
-  auto gm = create_mesh_free_grids_manager(io_comm,gm_params);
+  auto gm = create_mesh_free_grids_manager(io_comm,0,0,num_levs,num_gcols);
   gm->build_grids();
   return gm;
 }
@@ -584,7 +581,7 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   fm->register_field(FR{fid_Vm,"output",Pack::n});
   fm->register_field(FR{fid_Vi,"output",Pack::n});
   if (p_ref>=0) {
-    FieldIdentifier fid_di("Y_int@"+std::to_string(p_ref)+"Pa", FL{tag_h,dims_h},m,gn);
+    FieldIdentifier fid_di("Y_int_at_"+std::to_string(p_ref)+"Pa", FL{tag_h,dims_h},m,gn);
     fm->register_field(FR{fid_di,"output"});
   }
   fm->registration_ends();
@@ -613,7 +610,7 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   f_Vm.sync_to_dev();
   f_Vi.sync_to_dev();
   if (p_ref>=0) {
-    auto f_di = fm->get_field("Y_int@"+std::to_string(p_ref)+"Pa");
+    auto f_di = fm->get_field("Y_int_at_"+std::to_string(p_ref)+"Pa");
     f_di.sync_to_dev();
   }
 
@@ -636,7 +633,7 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
 
   vos_type fields_out = {"Y_flat", "Y_mid", "Y_int", "V_mid", "V_int"};
   if (p_ref>=0) {
-    fields_out.push_back("Y_int@"+std::to_string(p_ref)+"Pa");
+    fields_out.push_back("Y_int_at_"+std::to_string(p_ref)+"Pa");
   }
   if (!vert_remap && !horiz_remap) {
     fields_out.push_back("p_surf");
@@ -663,7 +660,7 @@ ekat::ParameterList set_input_params(const std::string& name, ekat::Comm& comm, 
   in_params.set<std::string>("Filename",filename);
   vos_type fields_in =  {"Y_flat", "Y_mid", "Y_int", "V_mid", "V_int"};
   if (p_ref>=0) {
-    fields_in.push_back("Y_int@"+std::to_string(p_ref)+"Pa");
+    fields_in.push_back("Y_int_at_"+std::to_string(p_ref)+"Pa");
   }
 
   in_params.set<vos_type>("Field Names", fields_in);

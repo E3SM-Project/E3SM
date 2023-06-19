@@ -22,7 +22,7 @@
 // find blocks that eventually should be removed in favor of a design that
 // accounts for pg2. Some blocks may turn out to be unnecessary, and I simply
 // didn't realize I could do without the workaround.
-#include "control/fvphyshack.hpp"
+#include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 
 #include <fstream>
 
@@ -124,16 +124,12 @@ set_params(const ekat::ParameterList& atm_params)
 
   m_ad_status |= s_params_set;
 
-#ifdef SCREAM_CIME_BUILD
   const auto pg_type = "PG2";
-  fvphyshack = m_atm_params.sublist("grids_manager").get<std::string>("physics_grid_type") == pg_type;
+  fvphyshack = m_atm_params.sublist("grids_manager").get<std::string>("physics_grid_type", "None") == pg_type;
   if (fvphyshack) {
-    // See the [rrtmgp active gases] note in dynamics/homme/atmosphere_dynamics_fv_phys.cpp.
+    // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
     fv_phys_rrtmgp_active_gases_init(m_atm_params);
   }
-#else
-  fvphyshack = false;
-#endif
 }
 
 void AtmosphereDriver::
@@ -346,32 +342,20 @@ void AtmosphereDriver::setup_column_conservation_checks ()
 
   // Get fields needed to run the mass and energy conservation checks. Require that
   // all fields exist.
-  const auto pseudo_density_ptr = phys_field_mgr->get_field_ptr("pseudo_density");
-  const auto ps_ptr             = phys_field_mgr->get_field_ptr("ps");
-  const auto phis_ptr           = phys_field_mgr->get_field_ptr("phis");
-  const auto horiz_winds_ptr    = phys_field_mgr->get_field_ptr("horiz_winds");
-  const auto T_mid_ptr          = phys_field_mgr->get_field_ptr("T_mid");
-  const auto qv_ptr             = phys_field_mgr->get_field_ptr("qv");
-  const auto qc_ptr             = phys_field_mgr->get_field_ptr("qc");
-  const auto qr_ptr             = phys_field_mgr->get_field_ptr("qr");
-  const auto qi_ptr             = phys_field_mgr->get_field_ptr("qi");
-  const auto vapor_flux_ptr     = phys_field_mgr->get_field_ptr("vapor_flux");
-  const auto water_flux_ptr     = phys_field_mgr->get_field_ptr("water_flux");
-  const auto ice_flux_ptr       = phys_field_mgr->get_field_ptr("ice_flux");
-  const auto heat_flux_ptr      = phys_field_mgr->get_field_ptr("heat_flux");
-  EKAT_REQUIRE_MSG(pseudo_density_ptr != nullptr &&
-                   ps_ptr             != nullptr &&
-                   phis_ptr           != nullptr &&
-                   horiz_winds_ptr    != nullptr &&
-                   T_mid_ptr          != nullptr &&
-                   qv_ptr             != nullptr &&
-                   qc_ptr             != nullptr &&
-                   qr_ptr             != nullptr &&
-                   qi_ptr             != nullptr &&
-                   vapor_flux_ptr     != nullptr &&
-                   water_flux_ptr     != nullptr &&
-                   ice_flux_ptr       != nullptr &&
-                   heat_flux_ptr      != nullptr,
+  EKAT_REQUIRE_MSG (
+    phys_field_mgr->has_field("pseudo_density") and
+    phys_field_mgr->has_field("ps") and
+    phys_field_mgr->has_field("phis") and
+    phys_field_mgr->has_field("horiz_winds") and
+    phys_field_mgr->has_field("T_mid") and
+    phys_field_mgr->has_field("qv") and
+    phys_field_mgr->has_field("qc") and
+    phys_field_mgr->has_field("qr") and
+    phys_field_mgr->has_field("qi") and
+    phys_field_mgr->has_field("vapor_flux") and
+    phys_field_mgr->has_field("water_flux") and
+    phys_field_mgr->has_field("ice_flux") and
+    phys_field_mgr->has_field("heat_flux"),
                    "Error! enable_column_conservation_checks=true for some atm process, "
                    "but not all fields needed for this check exist in the FieldManager.\n");
 
@@ -381,14 +365,28 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   const Real energy_error_tol = driver_options_pl.get<double>("energy_column_conservation_error_tolerance", 1e-14);
 
   // Create energy checker
+  const auto pseudo_density = phys_field_mgr->get_field("pseudo_density");
+  const auto ps             = phys_field_mgr->get_field("ps");
+  const auto phis           = phys_field_mgr->get_field("phis");
+  const auto horiz_winds    = phys_field_mgr->get_field("horiz_winds");
+  const auto T_mid          = phys_field_mgr->get_field("T_mid");
+  const auto qv             = phys_field_mgr->get_field("qv");
+  const auto qc             = phys_field_mgr->get_field("qc");
+  const auto qr             = phys_field_mgr->get_field("qr");
+  const auto qi             = phys_field_mgr->get_field("qi");
+  const auto vapor_flux     = phys_field_mgr->get_field("vapor_flux");
+  const auto water_flux     = phys_field_mgr->get_field("water_flux");
+  const auto ice_flux       = phys_field_mgr->get_field("ice_flux");
+  const auto heat_flux      = phys_field_mgr->get_field("heat_flux");
+
   auto conservation_check =
     std::make_shared<MassAndEnergyColumnConservationCheck>(phys_grid,
                                                            mass_error_tol, energy_error_tol,
-                                                           pseudo_density_ptr, ps_ptr, phis_ptr,
-                                                           horiz_winds_ptr, T_mid_ptr, qv_ptr,
-                                                           qc_ptr, qr_ptr, qi_ptr,
-                                                           vapor_flux_ptr, water_flux_ptr,
-                                                           ice_flux_ptr, heat_flux_ptr);
+                                                           pseudo_density, ps, phis,
+                                                           horiz_winds, T_mid, qv,
+                                                           qc, qr, qi,
+                                                           vapor_flux, water_flux,
+                                                           ice_flux, heat_flux);
 
   //Get fail handling type from driver_option parameters.
   const std::string fail_handling_type_str =
@@ -468,20 +466,19 @@ void AtmosphereDriver::create_fields()
         // Loop over all fields in group src_name on grid src_grid.
         for (const auto& fname : rel_info->m_fields_names) {
           // Get field on src_grid
-          auto f = rel_fm->get_field_ptr(fname);
+          const auto& rel_fid = rel_fm->get_field_id(fname);
 
           // Build a FieldRequest for the same field on greq's grid,
           // and add it to the group of this request
           if (fvphyshack) {
-            const auto& sfid = f->get_header().get_identifier();
-            auto dims = sfid.get_layout().dims();
+            auto dims = rel_fid.get_layout().dims();
             dims[0] = fm->get_grid()->get_num_local_dofs();
-            FieldLayout fl(sfid.get_layout().tags(), dims);
-            FieldIdentifier fid(sfid.name(), fl, sfid.get_units(), req.grid);
+            FieldLayout fl(rel_fid.get_layout().tags(), dims);
+            FieldIdentifier fid(rel_fid.name(), fl, rel_fid.get_units(), req.grid);
             FieldRequest freq(fid,req.name,req.pack_size);
             fm->register_field(freq);
           } else {
-            const auto fid = r->create_tgt_fid(f->get_header().get_identifier());
+            const auto fid = r->create_tgt_fid(rel_fid);
             FieldRequest freq(fid,req.name,req.pack_size);
             fm->register_field(freq);
           }
@@ -594,9 +591,10 @@ void AtmosphereDriver::initialize_output_managers () {
 
   auto& io_params = m_atm_params.sublist("Scorpio");
 
-  // IMPORTANT: create model restart OutputManager first! This OM will be able to
-  // retrieve the original simulation start date, which we later pass to the
-  // OM of all the requested outputs.
+  // IMPORTANT: create model restart OutputManager first! This OM will be in charge
+  // of creating rpointer.atm, while other OM's will simply append to it.
+  // If this assumption is not verified, we must always append to rpointer, which
+  // can make the rpointer file a bit confusing.
 
   // Check for model restart output
   ekat::ParameterList checkpoint_params;
@@ -604,7 +602,6 @@ void AtmosphereDriver::initialize_output_managers () {
   checkpoint_params.set("Frequency",-1);
   if (io_params.isSublist("model_restart")) {
     auto restart_pl = io_params.sublist("model_restart");
-    // Signal that this is not a normal output, but the model restart one
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
     if (fvphyshack) {
@@ -669,10 +666,8 @@ initialize_fields ()
   start_timer("EAMxx::init");
   start_timer("EAMxx::initialize_fields");
 
-#ifdef SCREAM_CIME_BUILD
-  // See the [rrtmgp active gases] note in dynamics/homme/atmosphere_dynamics_fv_phys.cpp.
+  // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
   if (fvphyshack) fv_phys_rrtmgp_active_gases_set_restart(m_case_t0 < m_run_t0);
-#endif
 
   // See if we need to print a DAG. We do this first, cause if any input
   // field is missing from the initial condition file, an error will be thrown.

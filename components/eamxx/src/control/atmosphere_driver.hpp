@@ -136,7 +136,6 @@ public:
   // NOTE: if already finalized, this is a no-op
   void finalize ();
 
-  field_mgr_ptr get_ref_grid_field_mgr () const;
   field_mgr_ptr get_field_mgr (const std::string& grid_name) const;
 
   // Get atmosphere time stamp

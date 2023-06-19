@@ -23,7 +23,7 @@ class MockCase(object):
             return None
 
 ###############################################################################
-def parse_string_as_list (string):
+def parse_string_as_list(string):
 ###############################################################################
     """
     Takes a string representation of nested list and creates
@@ -74,7 +74,7 @@ def parse_string_as_list (string):
     return l
 
 ###############################################################################
-def is_array_type (name):
+def is_array_type(name):
 ###############################################################################
     """
     >>> is_array_type('array(T)')
@@ -87,7 +87,7 @@ def is_array_type (name):
     return name[0:6]=="array(" and name[-1]==")"
 
 ###############################################################################
-def array_elem_type (name):
+def array_elem_type(name):
 ###############################################################################
     """
     >>> print(array_elem_type('array(T)'))
@@ -510,7 +510,7 @@ def check_all_values(root):
         check_value(root,root.text)
 
 ###############################################################################
-def resolve_inheritance (root,elem):
+def resolve_inheritance(root, elem):
 ###############################################################################
     """
     If elem inherits from another node within $root, this function adds all
@@ -561,12 +561,11 @@ def resolve_inheritance (root,elem):
         resolve_inheritance(root,child)
 
 ###############################################################################
-def resolve_all_inheritances (root):
+def resolve_all_inheritances(root):
 ###############################################################################
     """
     Resolve all inheritances in the root tree
     """
-
     for elem in root:
         resolve_inheritance(root,elem)
 
@@ -623,7 +622,7 @@ def get_valid_selectors(xml_root):
     return selectors
 
 ###############################################################################
-def gen_group_processes (ap_names_str, atm_procs_defaults):
+def gen_group_processes(ap_names_str, atm_procs_defaults):
 ###############################################################################
     """
     Given a (possibly nested) string representation of an atm group,
@@ -640,7 +639,7 @@ def gen_group_processes (ap_names_str, atm_procs_defaults):
         #  - ap is declared in the XML defaults as an atm proc group (which must store
         #    the 'atm_procs_list' child, with the string representation of the group.
 
-        if ap[0]=='(':
+        if ap.startswith("("):
             # Create the atm proc group
             proc = gen_atm_proc_group(ap,atm_procs_defaults)
         else:
@@ -649,12 +648,12 @@ def gen_group_processes (ap_names_str, atm_procs_defaults):
 
             # Check if this pre-defined proc is itself a group, and, if so,
             # build all its sub-processes
-            ptype = get_child(proc,"Type",must_exist=False)
+            ptype = get_child(proc, "Type", must_exist=False)
             if ptype is not None and ptype.text=="Group":
                 # This entry of the group is itself a group, with pre-defined
                 # defaults. Let's add its entries to it
-                sub_group_procs = get_child(proc,"atm_procs_list").text
-                proc.extend(gen_group_processes(sub_group_procs,atm_procs_defaults))
+                sub_group_procs = get_child(proc, "atm_procs_list").text
+                proc.extend(gen_group_processes(sub_group_procs, atm_procs_defaults))
 
         # Append subproc to group
         group.append(proc)
@@ -702,11 +701,11 @@ def gen_atm_proc_group(atm_procs_list, atm_procs_defaults):
     # Set defaults from atm_proc_group
     group = ET.Element("__APG__")
     group.attrib["inherit"] = "atm_proc_group"
-    resolve_inheritance(atm_procs_defaults,group)
+    resolve_inheritance(atm_procs_defaults, group)
     get_child(group,"atm_procs_list").text = atm_procs_list
 
     # Create processes
-    group_procs = gen_group_processes (atm_procs_list, atm_procs_defaults)
+    group_procs = gen_group_processes(atm_procs_list, atm_procs_defaults)
 
     # Append procs and generate name for the group.
     # NOTE: the name of a 'generic' group is 'group.AP1_AP2_..._APN.'
