@@ -83,11 +83,11 @@ int write_field_pointer_arrays(FILE* fd){/*{{{*/
 }/*}}}*/
 
 
-int set_pointer_name(int type, int ndims, char *pointer_name, int time_levs){/*{{{*/
+int set_pointer_name(int type, int ndims, char *pointer_name, bool mult_time_levs){/*{{{*/
 
 	char suffix[6];
 
-	if (time_levs > 1) {
+	if (mult_time_levs) {
 		snprintf(suffix, 6, "aPtr");
 	} else {
 		snprintf(suffix, 6, "Ptr");
@@ -1110,11 +1110,11 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	build_dimension_information(registry, var_arr_xml, &ndims, &hasTime, &decomp);
 	ndims++; // Add a dimension for constituents in var_array
 
-	// Determine name of pointer for this field.
-	set_pointer_name(type, ndims, pointer_name, time_levs);
 	if (time_levs > 1) {
+	    set_pointer_name(type, ndims, pointer_name, true);
 		fortprintf(fd, "      allocate(%s(%d))\n", pointer_name, time_levs);
 	} else {
+	    set_pointer_name(type, ndims, pointer_name, false);
 		fortprintf(fd, "      allocate(%s)\n", pointer_name);
 	}
 
@@ -1730,8 +1730,6 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	if(vartimelevs){
 		if(strncmp(vartimelevs, "namelist:", 9) == 0){
 			time_levs_from_config = true;
-            // set time_levs to 2 to trigger array declarations below
-            time_levs = 2;
 			snprintf(config_name, 1024, "%s", (vartimelevs)+9);
 			// obtain number of time steps from namelist
 			fortprintf(fd, "      call mpas_pool_get_config(block %% configs, '%s', config_flag_time_levs)\n", config_name);
@@ -1762,10 +1760,8 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	// Determine ndims, hasTime, and decomp type
 	build_dimension_information(registry, var_xml, &ndims, &hasTime, &decomp);
 
-	// Determine name of pointer for this field.
-	set_pointer_name(type, ndims, pointer_name, time_levs);
-
-	if (time_levs > 1 || time_levs_from_config) {
+	if (time_levs_from_config || time_levs > 1) {
+	    set_pointer_name(type, ndims, pointer_name, true);
 		if (time_levs_from_config) {
 			fortprintf(fd, "      allocate(%s(config_flag_time_levs))\n", pointer_name);
 			fortprintf(fd, "      do iTime = 1,config_flag_time_levs\n");
@@ -1774,10 +1770,11 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 			fortprintf(fd, "      do iTime = 1,%d\n",time_levs);
 		}
 		snprintf(pointer_name_arr, 1024, "%s(iTime)", pointer_name);
-		} else {
-			snprintf(pointer_name_arr, 1024, "%s", pointer_name);
-			fortprintf(fd, "      allocate(%s)\n", pointer_name);
-		}
+	} else {
+	    set_pointer_name(type, ndims, pointer_name, false);
+		snprintf(pointer_name_arr, 1024, "%s", pointer_name);
+		fortprintf(fd, "      allocate(%s)\n", pointer_name);
+	}
 		fortprintf(fd, "! Setting up metadata\n");
 		fortprintf(fd, "      %s %% fieldName = '%s'\n", pointer_name_arr, varname);
 		fortprintf(fd, "      %s %% outputFieldName = '%s'\n", pointer_name_arr, varname_in_output);
@@ -1967,7 +1964,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 
 		fortprintf(fd, "      %s %% block => block\n", pointer_name_arr);
 
-	if (time_levs > 1) {
+	if (time_levs_from_config || time_levs > 1) {
 		fortprintf(fd, "      enddo\n");
 		}
 
@@ -1989,7 +1986,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		fortprintf(fd, ") then\n");
 	}
 
-	if (time_levs > 1 || time_levs_from_config) {
+	if (time_levs_from_config || time_levs > 1) {
         if (time_levs_from_config) {
 	        fortprintf(fd, "      do iTime = 1,config_flag_time_levs\n");
     	} else {
@@ -2000,7 +1997,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		snprintf(pointer_name_arr, 1024, "%s", pointer_name);
 	}
 		fortprintf(fd, "         %s%s %% isActive = .true.\n", package_spacing, pointer_name_arr);
-	if (time_levs > 1) {
+	if (time_levs_from_config || time_levs > 1) {
 		fortprintf(fd, "      enddo\n");
 	}
 
