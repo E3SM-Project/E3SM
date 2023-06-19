@@ -31,11 +31,13 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: "e3sm_diags_docs"
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          use-mamba: true
+          mamba-version: "*"
           environment-file: conda-env/docs.yml
           channel-priority: strict
           auto-update-conda: true
-          # IMPORTANT: This needs to be set for caching to work properly!
-          use-only-tar-bz2: true
 
       - name: Build Sphinx Docs
         run: |

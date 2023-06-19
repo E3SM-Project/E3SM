@@ -79,31 +79,37 @@ Others/Local
 
 If the system doesn't come with conda pre-installed, follow these instructions:
 
-1. Download Conda
+1. Download Mambaforge
 
     Linux
         ::
 
-            wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+            wget https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh
 
-    MacOS
+    MacOS x86_64
         ::
 
-            wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+            wget https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-MacOSX-x86_64.sh
 
-2. Install Conda
+2. Install Mambaforge
 
     Linux
         ::
 
-            bash ./Miniconda3-latest-Linux-x86_64.sh
+            bash ./Mambaforge-Linux-x86_64.sh
 
-    MacOS
+    MacOS x86_64
         ::
 
-            bash ./Miniconda3-latest-MacOSX-x86_64.sh
+            bash ./Mambaforge-MacOSX-x86_64.sh
 
-    - ``Do you wish the installer to initialize Miniconda3 by running conda init? [yes|no] yes``
+    When you see: ::
+
+        by running conda init? [yes|no]
+        [no] >>> yes
+
+    respond with ``yes`` so ``conda`` and ``mamba`` commands are available on
+    initializing a new bash terminal.
 
 3. If you are working on a machine/network that intercepts SSL communications (such as acme1), you will get
 an SSL error unless you disable the SSL verification:
@@ -113,14 +119,9 @@ an SSL error unless you disable the SSL verification:
         conda config --set ssl_verify false
         binstar config --set ssl_verify False
 
-4. Configure Conda channels
 
-    ::
-
-        conda config --add channels conda-forge
-        conda config --set channel_priority strict
-
-5. Once conda is properly working, you can install the **(a) Latest Stable Release** or create a **(b) Development Environment**.
+4. Once conda and mamba are properly working, you can install the **(a) Latest Stable Release** or
+create a **(b) Development Environment**.
 
 .. _install_latest:
 
@@ -142,15 +143,19 @@ an SSL error unless you disable the SSL verification:
 
     ::
 
-        conda clean --all
+        mamba clean --all
 
 5. Use conda to create a new environment with E3SM Diags (``e3sm_diags``) included.
+These steps should not be necessary if you installed Mambaforge as suggested
+above but may be needed if you have previously installed Miniconda3 instead: ::
 
-    - Tip: Add the flag ``-n <name_of_env>`` to customize the name of the environment
+   conda install -y -n base mamba
+   conda config --add channels conda-forge
+   conda config --set channel_priority strict
 
-    ::
+Create a new conda environment with ``e3sm_diags`` installed and activate it: ::
 
-        conda env create -f conda-env/prod.yml
+        mamba env create -f conda-env/prod.yml # Tip: Add the flag ``-n <name_of_env>`` to customize the name of the environment  
         conda activate e3sm_diags_env
 
 .. _dev-env:
@@ -217,7 +222,7 @@ Instead, the developer will ``pip install .`` to build ``e3sm-diags`` with chang
 
     ::
 
-        conda clean --all
+        mamba clean --all
 
 4. Enter the fork directory.
 
@@ -231,7 +236,7 @@ Instead, the developer will ``pip install .`` to build ``e3sm-diags`` with chang
 
     ::
 
-        conda env create -f conda-env/dev.yml
+        mamba env create -f conda-env/dev.yml
         conda activate e3sm_diags_env_dev
 
 6. Install ``pre-commit``.

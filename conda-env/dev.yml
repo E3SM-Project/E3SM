@@ -43,6 +43,5 @@ dependencies:
   # =================
   - sphinx=5.3.0
   - sphinx_rtd_theme=1.1.1
-  - pip:
-      - sphinx-multiversion==0.2.4
+  - sphinx-multiversion==0.2.4
 prefix: /opt/miniconda3/envs/e3sm_diags_dev

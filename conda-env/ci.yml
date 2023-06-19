@@ -11,15 +11,15 @@ dependencies:
   - python>=3.8
   - pip
   - beautifulsoup4
-  - cartopy
+  - cartopy >=0.17.0
   - cartopy_offlinedata
-  - cdp
-  - cdms2
-  - cdutil
+  - cdp 1.7.0
+  - cdms2 3.1.5
+  - cdutil 8.2.1
   - dask
-  - genutil
+  - genutil 8.2.1
   - lxml
-  - mache
+  - mache >=0.15.0
   - matplotlib-base
   - netcdf4
   - numpy
