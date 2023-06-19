@@ -1775,194 +1775,194 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		snprintf(pointer_name_arr, 1024, "%s", pointer_name);
 		fortprintf(fd, "      allocate(%s)\n", pointer_name);
 	}
-		fortprintf(fd, "! Setting up metadata\n");
-		fortprintf(fd, "      %s %% fieldName = '%s'\n", pointer_name_arr, varname);
-		fortprintf(fd, "      %s %% outputFieldName = '%s'\n", pointer_name_arr, varname_in_output);
-		fortprintf(fd, "      %s %% isVarArray = .false.\n", pointer_name_arr);
-		if (decomp != -1) {
-			fortprintf(fd, "      %s %% isDecomposed = .true.\n", pointer_name_arr);
+	fortprintf(fd, "! Setting up metadata\n");
+	fortprintf(fd, "      %s %% fieldName = '%s'\n", pointer_name_arr, varname);
+	fortprintf(fd, "      %s %% outputFieldName = '%s'\n", pointer_name_arr, varname_in_output);
+	fortprintf(fd, "      %s %% isVarArray = .false.\n", pointer_name_arr);
+	if (decomp != -1) {
+		fortprintf(fd, "      %s %% isDecomposed = .true.\n", pointer_name_arr);
+	} else {
+		fortprintf(fd, "      %s %% isDecomposed = .false.\n", pointer_name_arr);
+	}
+
+	if(hasTime) {
+		fortprintf(fd, "      %s %% hasTimeDimension = .true.\n", pointer_name_arr);
+	} else {
+		fortprintf(fd, "      %s %% hasTimeDimension = .false.\n", pointer_name_arr);
+	}
+
+	if(ndims > 0){
+		if(persistence == SCRATCH){
+			fortprintf(fd, "      %s %% isPersistent = .false.\n", pointer_name_arr);
+			fortprintf(fd, "      %s %% isActive = .false.\n", pointer_name_arr);
 		} else {
-			fortprintf(fd, "      %s %% isDecomposed = .false.\n", pointer_name_arr);
+			fortprintf(fd, "      %s %% isPersistent = .true.\n", pointer_name_arr);
+			fortprintf(fd, "      %s %% isActive = .false.\n", pointer_name_arr);
 		}
 
-		if(hasTime) {
-			fortprintf(fd, "      %s %% hasTimeDimension = .true.\n", pointer_name_arr);
-		} else {
-			fortprintf(fd, "      %s %% hasTimeDimension = .false.\n", pointer_name_arr);
+		// Setup dimensions
+		fortprintf(fd, "! Setting up dimensions\n");
+		string = strdup(vardims);
+		tofree = string;
+		i = 1;
+		token = strsep(&string, " ");
+		if(strncmp(token, "Time", 1024) != 0){
+			fortprintf(fd, "      %s %% dimNames(%d) = '%s'\n", pointer_name_arr, i, token);
+			i++;
 		}
-
-		if(ndims > 0){
-			if(persistence == SCRATCH){
-				fortprintf(fd, "      %s %% isPersistent = .false.\n", pointer_name_arr);
-				fortprintf(fd, "      %s %% isActive = .false.\n", pointer_name_arr);
-			} else {
-				fortprintf(fd, "      %s %% isPersistent = .true.\n", pointer_name_arr);
-				fortprintf(fd, "      %s %% isActive = .false.\n", pointer_name_arr);
-			}
-
-			// Setup dimensions
-			fortprintf(fd, "! Setting up dimensions\n");
-			string = strdup(vardims);
-			tofree = string;
-			i = 1;
-			token = strsep(&string, " ");
+		while( (token = strsep(&string, " ")) != NULL){
 			if(strncmp(token, "Time", 1024) != 0){
 				fortprintf(fd, "      %s %% dimNames(%d) = '%s'\n", pointer_name_arr, i, token);
 				i++;
 			}
-			while( (token = strsep(&string, " ")) != NULL){
-				if(strncmp(token, "Time", 1024) != 0){
-					fortprintf(fd, "      %s %% dimNames(%d) = '%s'\n", pointer_name_arr, i, token);
-					i++;
-				}
-			}
-			free(tofree);
+		}
+		free(tofree);
+	}
+
+	fortprintf(fd, "      %s %% defaultValue = %s\n", pointer_name_arr, default_value);
+	if ( ndims == 0 ) {
+		fortprintf(fd, "      %s %% scalar = %s\n", pointer_name_arr, default_value);
+	}
+	fortprintf(fd, "      allocate(%s %% attLists(1))\n", pointer_name_arr);
+	fortprintf(fd, "      allocate(%s %% attLists(1) %% attList)\n", pointer_name_arr);
+
+	if ( varunits != NULL ) {
+		string = strdup(varunits);
+		tofree = string;
+		token = strsep(&string, "'");
+
+		sprintf(temp_str, "%s", token);
+
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		fortprintf(fd, "      %s %% defaultValue = %s\n", pointer_name_arr, default_value);
-		if ( ndims == 0 ) {
-			fortprintf(fd, "      %s %% scalar = %s\n", pointer_name_arr, default_value);
-		}
-		fortprintf(fd, "      allocate(%s %% attLists(1))\n", pointer_name_arr);
-		fortprintf(fd, "      allocate(%s %% attLists(1) %% attList)\n", pointer_name_arr);
+		free(tofree);
 
-		if ( varunits != NULL ) {
-			string = strdup(varunits);
-			tofree = string;
-			token = strsep(&string, "'");
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'units', '%s')\n", pointer_name_arr, temp_str);
+	}
 
-			sprintf(temp_str, "%s", token);
+	if ( varbounds != NULL ) {
+		string = strdup(varbounds);
+		tofree = string;
+		token = strsep(&string, "'");
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+		sprintf(temp_str, "%s", token);
 
-			free(tofree);
-
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'units', '%s')\n", pointer_name_arr, temp_str);
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		if ( varbounds != NULL ) {
-			string = strdup(varbounds);
-			tofree = string;
-			token = strsep(&string, "'");
+		free(tofree);
 
-			sprintf(temp_str, "%s", token);
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'bounds', '%s')\n", pointer_name_arr, temp_str);
+	}
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+	if ( varcellmeasures != NULL ) {
+		string = strdup(varcellmeasures);
+		tofree = string;
+		token = strsep(&string, "'");
 
-			free(tofree);
+		sprintf(temp_str, "%s", token);
 
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'bounds', '%s')\n", pointer_name_arr, temp_str);
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		if ( varcellmeasures != NULL ) {
-			string = strdup(varcellmeasures);
-			tofree = string;
-			token = strsep(&string, "'");
+		free(tofree);
 
-			sprintf(temp_str, "%s", token);
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'cell_measures', '%s')\n", pointer_name_arr, temp_str);
+	}
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+	if ( varcellmethod != NULL ) {
+		string = strdup(varcellmethod);
+		tofree = string;
+		token = strsep(&string, "'");
 
-			free(tofree);
+		sprintf(temp_str, "%s", token);
 
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'cell_measures', '%s')\n", pointer_name_arr, temp_str);
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		if ( varcellmethod != NULL ) {
-			string = strdup(varcellmethod);
-			tofree = string;
-			token = strsep(&string, "'");
+		free(tofree);
 
-			sprintf(temp_str, "%s", token);
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'cell_method', '%s')\n", pointer_name_arr, temp_str);
+	}
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+	if ( varcoords != NULL ) {
+		string = strdup(varcoords);
+		tofree = string;
+		token = strsep(&string, "'");
 
-			free(tofree);
+		sprintf(temp_str, "%s", token);
 
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'cell_method', '%s')\n", pointer_name_arr, temp_str);
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		if ( varcoords != NULL ) {
-			string = strdup(varcoords);
-			tofree = string;
-			token = strsep(&string, "'");
+		free(tofree);
 
-			sprintf(temp_str, "%s", token);
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'coordinates', '%s')\n", pointer_name_arr, temp_str);
+	}
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+	if ( varstdname != NULL ) {
+		string = strdup(varstdname);
+		tofree = string;
+		token = strsep(&string, "'");
 
-			free(tofree);
+		sprintf(temp_str, "%s", token);
 
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'coordinates', '%s')\n", pointer_name_arr, temp_str);
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		if ( varstdname != NULL ) {
-			string = strdup(varstdname);
-			tofree = string;
-			token = strsep(&string, "'");
+		free(tofree);
 
-			sprintf(temp_str, "%s", token);
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'standard_name', '%s')\n", pointer_name_arr, temp_str);
+	}
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+	if ( vardesc != NULL ) {
+		string = strdup(vardesc);
+		tofree = string;
+		token = strsep(&string, "'");
 
-			free(tofree);
+		sprintf(temp_str, "%s", token);
 
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'standard_name', '%s')\n", pointer_name_arr, temp_str);
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		if ( vardesc != NULL ) {
-			string = strdup(vardesc);
-			tofree = string;
-			token = strsep(&string, "'");
+		free(tofree);
 
-			sprintf(temp_str, "%s", token);
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'long_name', '%s')\n", pointer_name_arr, temp_str);
+	}
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+	if ( varmissing_value_mask != NULL && varmissingval != NULL ) {
+		string = strdup(varmissing_value_mask);
+		tofree = string;
 
-			free(tofree);
+		token = strsep(&string, "'");
+		sprintf(temp_str, "%s", token);
 
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'long_name', '%s')\n", pointer_name_arr, temp_str);
+		while ( ( token = strsep(&string, "'") ) != NULL ) {
+			sprintf(temp_str, "%s''%s", temp_str, token);
 		}
 
-		if ( varmissing_value_mask != NULL && varmissingval != NULL ) {
-			string = strdup(varmissing_value_mask);
-			tofree = string;
+		free(tofree);
 
-			token = strsep(&string, "'");
-			sprintf(temp_str, "%s", token);
+		fortprintf(fd, "      %s %% maskName = '%s'\n", pointer_name_arr , temp_str);
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'missing_value_mask', '%s')\n", pointer_name_arr, temp_str);
+	} else {
+		fortprintf(fd, "      %s %% maskName = 'none'\n", pointer_name_arr , temp_str);
+	}
 
-			while ( ( token = strsep(&string, "'") ) != NULL ) {
-				sprintf(temp_str, "%s''%s", temp_str, token);
-			}
+	if ( varmissingval != NULL ) {
+		fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, '_FillValue', %s)\n", pointer_name_arr, missing_value);
+	}
+	fortprintf(fd, "      %s %% missingValue = %s\n", pointer_name_arr, missing_value);
 
-			free(tofree);
-
-			fortprintf(fd, "      %s %% maskName = '%s'\n", pointer_name_arr , temp_str);
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'missing_value_mask', '%s')\n", pointer_name_arr, temp_str);
-		} else {
-			fortprintf(fd, "      %s %% maskName = 'none'\n", pointer_name_arr , temp_str);
-		}
-
-		if ( varmissingval != NULL ) {
-			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, '_FillValue', %s)\n", pointer_name_arr, missing_value);
-		}
-		fortprintf(fd, "      %s %% missingValue = %s\n", pointer_name_arr, missing_value);
-
-		fortprintf(fd, "      %s %% block => block\n", pointer_name_arr);
+	fortprintf(fd, "      %s %% block => block\n", pointer_name_arr);
 
 	if (time_levs_from_config || time_levs > 1) {
 		fortprintf(fd, "      enddo\n");
