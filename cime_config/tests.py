@@ -41,6 +41,7 @@ _TESTS = {
         "time"  : "0:45:00",
         "tests" : (
             "ERS.f09_g16.IELMBC",
+            "ERS.f09_g16.IELMBC.elm-simple_decomp",
             "ERS.f19_g16.I1850CNECACNTBC.elm-eca",
             "ERS.f19_g16.I1850CNECACTCBC.elm-eca",
             "ERS.f19_g16.I1850CNRDCTCBC.elm-rd",
