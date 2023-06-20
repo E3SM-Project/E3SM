@@ -44,7 +44,9 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics_mam4") {
   register_dynamics();
   auto& proc_factory = AtmosphereProcessFactory::instance();
   proc_factory.register_product("MAMMicrophysics",&create_atmosphere_process<MAMMicrophysics>);
-  register_diagnostics();
+//   logger.debug("registered products: {}", proc_factory.print_registered_products());
+// TODO: register_diagnostics();
+
 
   // Create the driver
   AtmosphereDriver ad;
