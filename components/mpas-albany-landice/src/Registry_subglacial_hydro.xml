@@ -24,7 +24,7 @@
 		            description="Selection of the method for calculating the tangent component of slope at edges.
 'from_vertex_barycentric' interpolates scalar values from cell centers to vertices using the barycentric interpolation routine in operators (mpas_cells_to_points_using_baryweights) and then calculates the slope between vertices.  It works for obtuse triangles, but will not work correctly across the edges of periodic meshes.
 'from_vertex_barycentric_kiteareas' interpolates scalar values from cell centers to vertices using barycentric interpolation based on kiterea values and then calculates the slope between vertices.  It will work across the edges of periodic meshes, but will not work correctly for obtuse triangles.
-'from_normal_slope' uses the vector operator mpas_tangential_vector_1d to calculate the tangent slopes from the normal slopes on the edges of the adjacent cells.  It will work for any mesh configuration, but is the least accurate method."
+'from_normal_slope' uses the vector operator mpas_tangential_vector_1d to calculate the tangent slopes from the normal slopes on the edges of the adjacent cells.  It will work for any mesh configuration. 'from_normal_slope' uses a larger stencil, so may therefore produce a smoother 'gradMagPhiEdge' field. Detailed testing yielded nearly identical results between 'from_normal_slope' and 'from_vertex_barycentric' methods, but 'from_normal_slope' seemed to produce slightly more stable results at the grounding line."
 		            possible_values="'from_vertex_barycentric', 'from_vertex_barycentric_kiteareas', 'from_normal_slope'"
 		/>
 		<nml_option name="config_SGH_pressure_calc" type="character" default_value="cavity" units="unitless"
