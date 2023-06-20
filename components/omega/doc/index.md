@@ -21,6 +21,7 @@ Development is taking place at https://github.com/E3SM-Project/Omega.
 :maxdepth: 2
 
 userGuide/QuickStart
+userGuide/DataTypes
 ```
 
 ```{toctree}
@@ -28,6 +29,7 @@ userGuide/QuickStart
 :maxdepth: 2
 
 devGuide/QuickStart
+devGuide/DataTypes
 devGuide/CondaEnv
 devGuide/Docs
 devGuide/BuildDocs
