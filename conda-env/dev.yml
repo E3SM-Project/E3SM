@@ -6,25 +6,33 @@ channels:
 dependencies:
   # Base
   # =================
-  - python=3.10.8
-  - pip=22.3.1
-  - beautifulsoup4=4.11.1
-  - cartopy=0.21.1
-  - cartopy_offlinedata=0.21.1
-  - cdp=1.7.0
-  - cdms2=3.1.5
-  - cdutil=8.2.1
-  - dask=2022.12.0
-  - genutil=8.2.1
-  - lxml=4.9.2
-  - mache=1.9.0
-  - matplotlib-base=3.6.2
-  - netcdf4=1.6.2
-  - numpy=1.22.2
-  - xarray=2022.12.0
-  # Required in test suite
-  - scipy=1.9.3
-  # Quality Assurance
+  - python >=3.9
+  - pip
+  - beautifulsoup4
+  - cartopy >=0.17.0
+  - cartopy_offlinedata
+  - cdp 1.7.0
+  - cdms2 3.1.5
+  - cdutil 8.2.1
+  - dask
+  - genutil 8.2.1
+  - lxml
+  - mache >=0.15.0
+  - matplotlib-base
+  - netcdf4
+  - numpy >=1.23.0
+  - xarray >=2023.02.0
+  # Testing
+  # ==================
+  - scipy
+  - pytest
+  - pytest-cov
+  # Documentation
+  # =================
+  - sphinx
+  - sphinx_rtd_theme
+  - sphinx-multiversion
+  # Developer Tools
   # =================
   # If versions are updated, also update 'rev' in `.pre-commit.config.yaml`
   - black=22.10.0
@@ -39,9 +47,4 @@ dependencies:
   # Developer Tools
   # =================
   - tbump=6.9.0
-  # Documentation
-  # =================
-  - sphinx=5.3.0
-  - sphinx_rtd_theme=1.1.1
-  - sphinx-multiversion==0.2.4
 prefix: /opt/miniconda3/envs/e3sm_diags_dev

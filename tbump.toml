@@ -28,10 +28,6 @@ src = "setup.py"
 [[file]]
 src = "e3sm_diags/__init__.py"
 
-[[file]]
-src = "conda-env/prod.yml"
-search = "e3sm_diags={current_version}"
-
 # You can specify a list of commands to
 # run after the files have been patched
 # and before the git commit is made
