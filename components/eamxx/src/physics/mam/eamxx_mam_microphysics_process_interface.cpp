@@ -25,7 +25,7 @@ AtmosphereProcessType MAMMicrophysics::type() const {
 }
 
 std::string MAMMicrophysics::name() const {
-  return "MAMMicrophysics";
+  return "mam4_micro";
 }
 
 void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
