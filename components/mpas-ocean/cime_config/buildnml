@@ -76,8 +76,8 @@ def buildnml(case, caseroot, compname):
     eco_forcing_file = ''
 
     if ocn_grid == 'oEC60to30v3':
-        decomp_date = '161222'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc'
         analysis_mask_file = 'oEC60to30v3_Atlantic_region_and_southern_transect.nc'
         ic_date = '170905'
@@ -109,8 +109,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oQU480':
-        decomp_date = '151209'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         ic_date = '151209'
         ic_prefix = 'ocean.QU.480km'
         if ocn_ic_mode == 'spunup':
@@ -118,8 +118,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oQU240':
-        decomp_date = '151209'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         ic_date = '151209'
         ic_prefix = 'ocean.QU.240km'
         if ocn_ic_mode == 'spunup':
@@ -127,8 +127,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oQU240wLI':
-        decomp_date = '160929'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         ic_date = '230220'
         ic_prefix = 'ocean.QU.240wLI'
         if ocn_ic_mode == 'spunup':
@@ -136,8 +136,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oQU120':
-        decomp_date = '160318'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         ic_date = '160318'
         ic_prefix = 'ocean.QU.120km'
         if ocn_ic_mode == 'spunup':
@@ -167,8 +167,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oRRS18to6v3':
-        decomp_date = '170111'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oRRS18to6v3.nc'
         analysis_mask_file = 'oRRS18to6v3_mocBasinsAndTransects20210623.nc'
         ic_date = '171116'
