@@ -42,9 +42,7 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics_mam4") {
 
   // Register all atm procs and the grids manager in the respective factories
   register_dynamics();
-  auto& proc_factory = AtmosphereProcessFactory::instance();
-  proc_factory.register_product("MAMMicrophysics",&create_atmosphere_process<MAMMicrophysics>);
-//   logger.debug("registered products: {}", proc_factory.print_registered_products());
+  register_physics();
 // TODO: register_diagnostics();
 
 

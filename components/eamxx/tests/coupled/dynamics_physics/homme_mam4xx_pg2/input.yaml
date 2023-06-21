@@ -18,10 +18,10 @@ atmosphere_processes:
   homme:
     Moisture: moist
   physics:
-    atm_procs_list: (MAMMicrophysics)
+    atm_procs_list: (mam4_micro)
     schedule_type: Sequential
     Type: Group
-  MAMMicrophysics :
+  mam4_micro :
     compute_tendencies : [q_aitken_so4, n_aitken, q_h2so4]
 
 grids_manager:
