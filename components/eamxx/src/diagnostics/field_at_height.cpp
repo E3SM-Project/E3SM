@@ -12,13 +12,16 @@ KOKKOS_INLINE_FUNCTION
 const T* find_first_smaller_z (const T* beg, const T* end, const T& z)
 {
   int count = end - beg;
-  if (count==1) {
-    return z < *beg ? beg : end;
-  } else {
+  while (count>1) {
+    count = end - beg;
     auto mid = beg + count/2;
-    return z>= *mid ? find_first_smaller_z (mid,end,z)
-                    : find_first_smaller_z (beg,mid,z);
+    if (z>=*mid) {
+      beg = mid;
+    } else {
+      end = mid;
+    }
   }
+  return z < *beg ? beg : end;
 }
 
 } // anonymous namespace
