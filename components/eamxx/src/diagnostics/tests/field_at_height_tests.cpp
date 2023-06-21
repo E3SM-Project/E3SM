@@ -1,6 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "diagnostics/field_at_height.hpp"
+#include "diagnostics/register_diagnostics.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field_utils.hpp"
@@ -12,10 +13,14 @@ TEST_CASE("field_at_height")
 {
   using namespace ShortFieldTagsNames;
 
+  register_diagnostics();
+
   // Get an MPI comm group for test
   ekat::Comm comm(MPI_COMM_WORLD);
 
   constexpr int nruns = 10;
+
+  util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
   // Create a grids manager w/ a point grid
   int ncols = 3;
@@ -48,6 +53,13 @@ TEST_CASE("field_at_height")
   v_int.allocate_view();
   z_mid.allocate_view();
   z_int.allocate_view();
+
+  s_mid.get_header().get_tracking().update_time_stamp(t0);
+  s_int.get_header().get_tracking().update_time_stamp(t0);
+  v_mid.get_header().get_tracking().update_time_stamp(t0);
+  v_int.get_header().get_tracking().update_time_stamp(t0);
+  z_mid.get_header().get_tracking().update_time_stamp(t0);
+  z_int.get_header().get_tracking().update_time_stamp(t0);
 
   auto print = [&](const std::string& msg) {
     if (comm.am_i_root()) {
@@ -83,8 +95,6 @@ TEST_CASE("field_at_height")
   for (auto f : {z_mid, z_int}) {
     auto v = f.get_view<Real**,Host>();
     const auto& dims = f.get_header().get_identifier().get_layout().dims();
-    auto beg = v.data();
-    auto end = v.data()+dims[1];
     for (int i=1; i<dims[0]; ++i) {
       for (int j=0; j<dims[1]; ++j) {
         v(i,j) = dims[1]+1-j;
