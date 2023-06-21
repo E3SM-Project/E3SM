@@ -3,6 +3,7 @@
 #include "control/atmosphere_driver.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
+#include "physics/register_physics.hpp"
 #include "physics/mam/eamxx_mam_microphysics_process_interface.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
@@ -41,9 +42,8 @@ TEST_CASE("mam4-nucleation-standalone", "") {
   logger.info("running MAMMicrophysics standalone test with dt = {} for {} steps.", dt, nsteps);
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
-  auto& proc_factory = AtmosphereProcessFactory::instance();
+  register_physics();
   auto& gm_factory = GridsManagerFactory::instance();
-  proc_factory.register_product("MAMMicrophysics",&create_atmosphere_process<MAMMicrophysics>);
   gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
   register_diagnostics();
   logger.debug("products registered.");

@@ -51,7 +51,7 @@ inline void register_physics () {
   proc_factory.register_product("Nudging",&create_atmosphere_process<Nudging>);
 #endif
 #ifdef EAMXX_HAS_MAM
-  proc_factory.register_product("MAMMicrophysics",&create_atmosphere_process<MAMMicrophysics>);
+  proc_factory.register_product("MAM4Microphysics",&create_atmosphere_process<MAMMicrophysics>);
 #endif
 }
 
