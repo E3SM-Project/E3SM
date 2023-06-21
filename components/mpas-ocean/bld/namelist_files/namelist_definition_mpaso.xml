@@ -208,6 +208,14 @@ Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_number_of_time_levels" type="integer"
+	category="time_integration" group="time_integration">
+The number of time levels in the time-stepping scheme. This is used for array allocation.
+
+Valid values: Any integer greater than or equal to 2.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- hmix -->
 
