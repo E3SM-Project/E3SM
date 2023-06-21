@@ -16,7 +16,7 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
   SET_TESTS_PROPERTIES(${target_name}_test PROPERTIES LABELS "unit")
 
   TARGET_LINK_LIBRARIES(${target_name} timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-  link_to_kokkos(${target_name})
+  target_link_libraries(${target_name} kokkos)
   IF (HOMME_USE_MKL)
     TARGET_COMPILE_OPTIONS (${target_name} PUBLIC -mkl)
     TARGET_LINK_LIBRARIES (${target_name} -mkl)

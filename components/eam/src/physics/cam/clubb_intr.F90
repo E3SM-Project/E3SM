@@ -37,6 +37,8 @@ module clubb_intr
   use shr_kind_mod,     only: core_rknd=>shr_kind_r8
 #endif
 
+  use zm_conv,      only: zm_microp
+
   implicit none
 
   private
@@ -223,6 +225,15 @@ module clubb_intr
     ixvp2 = 0
 
   integer :: cmfmc_sh_idx = 0
+
+! ZM convective microphysics(zm_microp)
+  integer :: &
+    dlfzm_idx  = -1,    & ! index of ZM detrainment of convective cloud water mixing ratio.
+    difzm_idx  = -1,    & ! index of ZM detrainment of convective cloud ice mixing ratio.
+    dsfzm_idx  = -1,    & ! index of ZM detrainment of convective snow mixing ratio.
+    dnlfzm_idx = -1,    & ! index of ZM detrainment of convective cloud water num concen.
+    dnifzm_idx = -1,    & ! index of ZM detrainment of convective cloud ice num concen.
+    dnsfzm_idx = -1       ! index of ZM detrainment of convective snow num concen.
 
   real(r8) :: dp1 !set in namelist; assigned in cloud_fraction.F90
   !  Output arrays for CLUBB statistics
@@ -764,6 +775,15 @@ end subroutine clubb_init_cnst
     iiedsclr_thl = -1
     iiedsclr_CO2 = -1
 
+    if (zm_microp) then
+        dlfzm_idx = pbuf_get_index('DLFZM')
+        difzm_idx = pbuf_get_index('DIFZM')
+        dsfzm_idx = pbuf_get_index('DSFZM')
+        dnlfzm_idx = pbuf_get_index('DNLFZM')
+        dnifzm_idx = pbuf_get_index('DNIFZM')
+        dnsfzm_idx = pbuf_get_index('DNSFZM')
+    end if
+
     ! ----------------------------------------------------------------- !
     ! Define number of tracers for CLUBB to diffuse
     ! ----------------------------------------------------------------- !
@@ -1100,7 +1120,7 @@ end subroutine clubb_init_cnst
 
 #ifdef CLUBB_SGS
    use hb_diff,                   only: pblintd
-   use scamMOD,                   only: single_column,scm_clubb_iop_name
+   use iop_data_mod,              only: single_column
    use phys_grid,                 only: get_gcol_p
    use cldfrc2m,                  only: aist_vector
    use cam_history,               only: outfld
@@ -1453,6 +1473,15 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: prer_evap
    real(r8), pointer, dimension(:,:) :: qrl
    real(r8), pointer, dimension(:,:) :: radf_clubb
+
+   ! ZM convective microphysics(zm_microp)
+   real(r8), pointer :: dlfzm(:,:)  ! ZM detrainment of convective cloud water mixing ratio.
+   real(r8), pointer :: difzm(:,:)  ! ZM detrainment of convective cloud ice mixing ratio.
+   real(r8), pointer :: dsfzm(:,:)  ! ZM detrainment of convective snow mixing ratio.
+   real(r8), pointer :: dnlfzm(:,:) ! ZM detrainment of convective cloud water num concen.
+   real(r8), pointer :: dnifzm(:,:) ! ZM detrainment of convective cloud ice num concen.
+   real(r8), pointer :: dnsfzm(:,:) ! ZM detrainment of convective snow num concen.
+
 !PMA
    real(r8)  relvarc(pcols,pver)
    real(r8)  stend(pcols,pver)
@@ -1970,59 +1999,6 @@ end subroutine clubb_init_cnst
         dum1 = -1._r8*state1%omega(i,pver-k+1)*real(invrs_rho_ds_zt(k+1), kind = r8)*invrs_gravit
         wm_zt(k+1) = real(dum1, kind = core_rknd)
       enddo
-
-      ! ------------------------------------------------- !
-      ! Begin case specific code for SCAM cases.          !
-      ! This section of code block NOT called in          !
-      ! global simulations                                !
-      ! ------------------------------------------------- !
-
-      if (single_column) then
-
-        !  Initialize zo if variable ustar is used
-
-        if (cam_in%landfrac(i) .ge. 0.5_r8) then
-           zo = 0.035_r8
-        else
-           zo = 0.0001_r8
-        endif
-
-        !  Compute surface wind (ubar)
-        ubar = sqrt(um(i,pver)**2+vm(i,pver)**2)
-        if (ubar .lt. 0.25_r8) ubar = 0.25_r8
-
-        !  Below denotes case specifics for surface momentum
-        !  and thermodynamic fluxes, depending on the case
-
-        !  Define ustar (based on case, if not variable)
-        ustar = 0.25_r8   ! Initialize ustar in case no case
-
-        if(trim(scm_clubb_iop_name) .eq. 'BOMEX_5day') then
-           ustar = 0.28_r8
-        endif
-
-        if(trim(scm_clubb_iop_name) .eq. 'ATEX_48hr') then
-           ustar = 0.30_r8
-        endif
-
-        if(trim(scm_clubb_iop_name) .eq. 'RICO_3day') then
-           ustar = 0.28_r8
-        endif
-
-        if(trim(scm_clubb_iop_name) .eq. 'arm97' .or. trim(scm_clubb_iop_name) .eq. 'gate' .or. &
-           trim(scm_clubb_iop_name) .eq. 'toga' .or. trim(scm_clubb_iop_name) .eq. 'mpace' .or. &
-           trim(scm_clubb_iop_name) .eq. 'ARM_CC') then
-
-             dum1   = real(zt_g(2), kind = r8)
-             bflx22 = (gravit/real(theta0, kind = r8))*real(wpthlp_sfc, kind = r8)
-             ustar  = diag_ustar(dum1,bflx22,ubar,zo)
-        endif
-
-        !  Compute the surface momentum fluxes, if this is a SCAM simulation
-        upwp_sfc = -real((um(i,pver)*ustar**2/ubar), kind = core_rknd)
-        vpwp_sfc = -real((vm(i,pver)*ustar**2/ubar), kind = core_rknd)
-
-      endif
 
       !  Set stats output and increment equal to CLUBB and host dt
       stats_tsamp = dtime
@@ -2628,6 +2604,15 @@ end subroutine clubb_init_cnst
 
    call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_det', ls=.true., lq=lqice)
 
+   if (zm_microp) then
+      call pbuf_get_field(pbuf, dlfzm_idx, dlfzm)
+      call pbuf_get_field(pbuf, difzm_idx, difzm)
+      call pbuf_get_field(pbuf, dsfzm_idx, dsfzm)
+      call pbuf_get_field(pbuf, dnlfzm_idx, dnlfzm)
+      call pbuf_get_field(pbuf, dnifzm_idx, dnifzm)
+      call pbuf_get_field(pbuf, dnsfzm_idx, dnsfzm)
+   end if
+
    call t_startf('ice_cloud_detrain_diag')
    do k=1,pver
       do i=1,ncol
@@ -2641,17 +2626,29 @@ end subroutine clubb_init_cnst
             dum1 = ( clubb_tk1 - state1%t(i,k) ) /(clubb_tk1 - clubb_tk2)
          endif
 
-         ptend_loc%q(i,k,ixcldliq) = dlf(i,k) * ( 1._r8 - dum1 )
-         ptend_loc%q(i,k,ixcldice) = dlf(i,k) * dum1
-         ptend_loc%q(i,k,ixnumliq) = 3._r8 * ( max(0._r8, ( dlf(i,k) - dlf2(i,k) )) * ( 1._r8 - dum1 ) ) &
-                                     / (4._r8*3.14_r8* clubb_liq_deep**3*997._r8) + & ! Deep    Convection
-                                     3._r8 * (                         dlf2(i,k)    * ( 1._r8 - dum1 ) ) &
-                                     / (4._r8*3.14_r8*clubb_liq_sh**3*997._r8)     ! Shallow Convection
-         ptend_loc%q(i,k,ixnumice) = 3._r8 * ( max(0._r8, ( dlf(i,k) - dlf2(i,k) )) *  dum1 ) &
-                                     / (4._r8*3.14_r8*clubb_ice_deep**3*500._r8) + & ! Deep    Convection
-                                     3._r8 * (                         dlf2(i,k)    *  dum1 ) &
-                                     / (4._r8*3.14_r8*clubb_ice_sh**3*500._r8)     ! Shallow Convection
-         ptend_loc%s(i,k)          = dlf(i,k) * dum1 * latice
+         if (zm_microp) then
+           ptend_loc%q(i,k,ixcldliq) = dlfzm(i,k) + dlf2(i,k) * ( 1._r8 - dum1 )
+           ptend_loc%q(i,k,ixcldice) = difzm(i,k) + dsfzm(i,k) +  dlf2(i,k) * dum1
+           ptend_loc%q(i,k,ixnumliq) = dnlfzm(i,k) + 3._r8 * ( dlf2(i,k) * ( 1._r8 - dum1 ) )   &
+                                                   / (4._r8*pi*clubb_liq_sh**3._r8*997._r8)      ! Shallow Convection
+           ptend_loc%q(i,k,ixnumice) = dnifzm(i,k) + dnsfzm(i,k) + 3._r8 * ( dlf2(i,k) * dum1 ) &
+                                                   / (4._r8*pi*clubb_ice_sh**3._r8*500._r8)      ! Shallow Convection
+           ptend_loc%s(i,k)          = dlf2(i,k) * dum1 * latice
+         else
+
+           ptend_loc%q(i,k,ixcldliq) = dlf(i,k) * ( 1._r8 - dum1 )
+           ptend_loc%q(i,k,ixcldice) = dlf(i,k) * dum1
+           ptend_loc%q(i,k,ixnumliq) = 3._r8 * ( max(0._r8, ( dlf(i,k) - dlf2(i,k) )) * ( 1._r8 - dum1 ) ) &
+                                       / (4._r8*3.14_r8* clubb_liq_deep**3._r8*997._r8) + & ! Deep    Convection
+                                       3._r8 * (                         dlf2(i,k)    * ( 1._r8 - dum1 ) ) &
+                                       / (4._r8*3.14_r8*clubb_liq_sh**3._r8*997._r8)     ! Shallow Convection
+           ptend_loc%q(i,k,ixnumice) = 3._r8 * ( max(0._r8, ( dlf(i,k) - dlf2(i,k) )) *  dum1 ) &
+                                       / (4._r8*3.14_r8*clubb_ice_deep**3._r8*500._r8) + & ! Deep    Convection
+                                       3._r8 * (                         dlf2(i,k)    *  dum1 ) &
+                                       / (4._r8*3.14_r8*clubb_ice_sh**3._r8*500._r8)     ! Shallow Convection
+           ptend_loc%s(i,k)          = dlf(i,k) * dum1 * latice
+
+         end if 
 
          ! Only rliq is saved from deep convection, which is the reserved liquid.  We need to keep
          !   track of the integrals of ice and static energy that is effected from conversion to ice
@@ -2829,20 +2826,6 @@ end subroutine clubb_init_cnst
          concld(i,k) = min(cloud_frac(i,k)-alst(i,k)+deepcu(i,k),0.80_r8)
       enddo
    enddo
-
-   if (single_column) then
-      if (trim(scm_clubb_iop_name) .eq. 'ATEX_48hr'       .or. &
-          trim(scm_clubb_iop_name) .eq. 'BOMEX_5day'      .or. &
-          trim(scm_clubb_iop_name) .eq. 'DYCOMSrf01_4day' .or. &
-          trim(scm_clubb_iop_name) .eq. 'DYCOMSrf02_06hr' .or. &
-          trim(scm_clubb_iop_name) .eq. 'RICO_3day'       .or. &
-          trim(scm_clubb_iop_name) .eq. 'ARM_CC') then
-
-             deepcu(:,:) = 0.0_r8
-             concld(:,:) = 0.0_r8
-
-      endif
-   endif
 
    ! --------------------------------------------------------------------------------- !
    !  COMPUTE THE ICE CLOUD FRACTION PORTION                                           !

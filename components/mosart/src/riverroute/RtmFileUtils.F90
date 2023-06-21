@@ -77,7 +77,7 @@ contains
      ! get local file name from full name
      locfn = get_filename( fulpath )
      if (len_trim(locfn) == 0) then
-	if (masterproc) write(iulog,*)'(GETFIL): local filename has zero length'
+	 if (masterproc) write(iulog,*)'(GETFIL): local filename has zero length'
         call shr_sys_abort()
      else
         if (masterproc) write(iulog,*)'(GETFIL): attempting to find local file ',  &

@@ -502,7 +502,7 @@ end function shoc_implements_cnst
     use trb_mtn_stress,            only: compute_tms
     use shoc,           only: shoc_main
     use cam_history,    only: outfld
-    use scamMod,        only: single_column, dp_crm
+    use iop_data_mod,   only: single_column, dp_crm
  
     implicit none
     
@@ -1207,7 +1207,7 @@ end function shoc_implements_cnst
     ! Get size of grid box if in doubly period planar mode
     ! At time of implementation planar dycore only supports uniform grids.
   
-    use scamMod,  only: dyn_dx_size
+    use iop_data_mod,  only: dyn_dx_size
     
     real(r8), intent(out) :: grid_dx, grid_dy
 

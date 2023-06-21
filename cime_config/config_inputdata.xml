@@ -7,6 +7,10 @@
     <address>https://web.lcrc.anl.gov/public/e3sm/inputdata/</address>
   </server>
   <server>
+    <protocol>wget</protocol>
+    <address>https://portal.nersc.gov/project/e3sm/inputdata</address>
+  </server>
+  <server>
     <protocol>svn</protocol>
     <address>https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
   </server>

@@ -197,13 +197,17 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
 
 void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   auto bm_exchange = Context::singleton().get<MpiBuffersManagerMap>()[MPI_EXCHANGE];
+  const auto& sp = Context::singleton().get<SimulationParams>();
   m_be = std::make_shared<BoundaryExchange>();
   m_be_tom = std::make_shared<BoundaryExchange>();
+  m_be->set_label("Hyperviscosity-std");
+  m_be_tom->set_label("Hyperviscosity-TOM");
   std::shared_ptr<BoundaryExchange> bes[] = {m_be, m_be_tom};
   const int nlevs[] = {NUM_LEV, m_nu_scale_top_ilev_pack_lim};
   for (int i = 0; i < 2; ++i) {
     if (i == 1 && m_data.nu_top <= 0) continue;
     auto be = bes[i];
+    be->set_diagnostics_level(sp.internal_diagnostics_level);
     const auto nlev = nlevs[i];
     be->set_buffers_manager(bm_exchange);
     if (m_process_nh_vars) {
