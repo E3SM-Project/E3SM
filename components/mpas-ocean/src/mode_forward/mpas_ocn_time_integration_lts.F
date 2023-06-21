@@ -57,8 +57,7 @@ module ocn_time_integration_lts
    !
    !--------------------------------------------------------------------
    public :: ocn_time_integrator_lts, &
-             ocn_time_integration_lts_init, &
-             ocn_lts_tends
+             ocn_time_integration_lts_init
 
    contains
 
@@ -410,7 +409,7 @@ module ocn_time_integration_lts
     ! --- compute tendencies for thickness and fast tendencies only for velocity
     call mpas_timer_start("lts compute tendencies")
 
-    call ocn_lts_tends(statePool, meshPool, LTSPool, tendPool, 1, 0, 1, 1, 1)
+    call ocn_lts_tends(statePool, LTSPool, tendPool, 1, 0, 1, 1, 1)
 
     call mpas_timer_stop("lts compute tendencies")
 
@@ -488,7 +487,7 @@ module ocn_time_integration_lts
     call mpas_timer_start("lts compute tendencies")
 
     ! TENDENCIES COMPUTATION ---
-    call ocn_lts_tends(statePool, meshPool, LTSPool, tendPool, 3, 0, 0, 1, 1)
+    call ocn_lts_tends(statePool, LTSPool, tendPool, 3, 0, 0, 1, 1)
 
     call mpas_timer_stop("lts compute tendencies")
 
@@ -601,7 +600,7 @@ module ocn_time_integration_lts
        call mpas_timer_start("lts compute tendencies")
 
        ! --- compute tendencies for thickness and fast tendencies only for velocity
-       call ocn_lts_tends(statePool, meshPool, LTSPool, tendPool, 1, 1, 1, 0, 1)
+       call ocn_lts_tends(statePool, LTSPool, tendPool, 1, 1, 1, 0, 1)
 
        call mpas_timer_stop("lts compute tendencies")
 
@@ -714,7 +713,7 @@ module ocn_time_integration_lts
        call mpas_timer_start("lts compute tendencies")
 
        ! TENDENCIES COMPUTATION ---
-       call ocn_lts_tends(statePool, meshPool, LTSPool, tendPool, 3, 1, 1, 0, 1)
+       call ocn_lts_tends(statePool, LTSPool, tendPool, 3, 1, 1, 0, 1)
 
        call mpas_timer_stop("lts compute tendencies")
 
@@ -831,7 +830,7 @@ module ocn_time_integration_lts
 
        call mpas_timer_start("lts compute tendencies")
 
-       call ocn_lts_tends(statePool, meshPool, LTSPool, tendPool, 4, 1, 1, 0, 1)
+       call ocn_lts_tends(statePool, LTSPool, tendPool, 4, 1, 1, 0, 1)
 
        call mpas_timer_stop("lts compute tendencies")
 
@@ -952,7 +951,7 @@ module ocn_time_integration_lts
 
     call mpas_timer_start("lts compute tendencies")
 
-    call ocn_lts_tends(statePool, meshPool, LTSPool, tendPool, 4, 0, 0, 1, 0)
+    call ocn_lts_tends(statePool, LTSPool, tendPool, 4, 0, 0, 1, 0)
 
     call mpas_timer_stop("lts compute tendencies")
 
@@ -1246,15 +1245,12 @@ module ocn_time_integration_lts
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   subroutine ocn_lts_tends(statePool, meshPool, LTSPool, tendPool, timeLevelIn, computeOnFineBig, computeOnFineSmall, computeOnCoarse, computeOnInterface)!{{{
+   subroutine ocn_lts_tends(statePool, LTSPool, tendPool, timeLevelIn, computeOnFineBig, computeOnFineSmall, computeOnCoarse, computeOnInterface)!{{{
 
    integer, intent(in) :: timeLevelIn, computeOnFineBig, computeOnFineSmall, computeOnCoarse, computeOnInterface
 
    type (mpas_pool_type), intent(in) :: &
       statePool          !< Input: state variables
-
-   type (mpas_pool_type), intent(in) :: &
-      meshPool          !< Input: mesh variables
 
    type (mpas_pool_type), intent(in) :: &
       LTSPool          !< Input: LTS data
@@ -1267,15 +1263,11 @@ module ocn_time_integration_lts
    real (kind=RKIND), dimension(:), pointer :: ssh
    real (kind=RKIND), dimension(:,:), pointer :: normalVelocityTend, layerThicknessTend, normalVelocity, layerThickness
 
-   integer :: iEdge, cell1, cell2, k, ie, iRegion, nRegions, ic, i, iCell, nCells, kmin, kmax
-   real (kind=RKIND) :: invdcEdge, betaSelfAttrLoad, flux, invAreaCell, ssh_sal_on
-
-   integer, dimension(:), pointer :: nCellsArray
+   integer :: iEdge, cell1, cell2, k, ie, iRegion, nRegions, ic, i, iCell, kmin, kmax
+   real (kind=RKIND) :: invdcEdge, betaSelfAttrLoad, flux, ssh_sal_on
 
    betaSelfAttrLoad = config_self_attraction_and_loading_beta
    nRegions = 2
-
-   call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
 
    call mpas_pool_get_array(LTSPool, 'cellsInLTSRegion',cellsInLTSRegion)
    call mpas_pool_get_array(LTSPool, 'nCellsInLTSRegion',nCellsInLTSRegion)
@@ -1352,12 +1344,11 @@ module ocn_time_integration_lts
          ! thickness tendency
          do ic = 1, nCellsInLTSRegion(iRegion,2)
             iCell = cellsInLTSRegion(iRegion,2,ic)
-            invAreaCell = 1.0_RKIND / areaCell(iCell)
             do i = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i, iCell)
                do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                   flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge)
-                  layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
+                  layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell(iCell)
                end do
             end do
          end do
@@ -1382,12 +1373,11 @@ module ocn_time_integration_lts
       ! thickness tendency
       do ic = 1, nCellsInLTSRegion(1,1)
          iCell = cellsInLTSRegion(1,1,ic)
-         invAreaCell = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge)
-               layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
+               layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell(iCell)
             end do
          end do
       end do
@@ -1411,12 +1401,11 @@ module ocn_time_integration_lts
       ! thickness tendency
       do ic = 1, nCellsInLTSRegion(1,3)
          iCell = cellsInLTSRegion(1,3,ic)
-         invAreaCell = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge)
-               layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
+               layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell(iCell)
             end do
          end do
       end do
@@ -1440,12 +1429,11 @@ module ocn_time_integration_lts
       ! thickness tendency
       do ic = 1, nCellsInLTSRegion(2,1)
          iCell = cellsInLTSRegion(2,1,ic)
-         invAreaCell = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge)
-               layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
+               layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell(iCell)
             end do
          end do
       end do
