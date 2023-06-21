@@ -131,16 +131,9 @@ set_params(const ekat::ParameterList& atm_params)
     // To figure out whether we're using RRTMGP, we create a process group and
     // see whether RRTMGP is in it. This seems heavy-handed, but it reduceѕ code
     // duplication.
-    bool using_rrtmgp = false;
     auto& atm_proc_params = m_atm_params.sublist("atmosphere_processes");
     auto group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,atm_proc_params);
-    for (int i = 0; i < group->get_num_processes(); ++i) {
-      if (group->get_process(i)->name() == "rrtmgp") {
-        using_rrtmgp = true;
-        break;
-      }
-    }
-    if (using_rrtmgp) {
+    if (group->has_process("rrtmgp")) {
       fv_phys_rrtmgp_active_gases_init(m_atm_params);
     }
   }
