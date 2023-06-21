@@ -124,14 +124,14 @@ set_params(const ekat::ParameterList& atm_params)
 
   m_ad_status |= s_params_set;
 
-  // Apply the FV-RRTMGP hack if we're using a PG2 grid and RRTMGP.
   const auto pg_type = "PG2";
-  bool using_pg2 = m_atm_params.sublist("grids_manager").get<std::string>("physics_grid_type", "None") == pg_type;
-  bool using_rrtmgp = false;
-  {
+  fvphyshack = m_atm_params.sublist("grids_manager").get<std::string>("physics_grid_type", "None") == pg_type;
+  if (fvphyshack) {
+    // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
     // To figure out whether we're using RRTMGP, we create a process group and
     // see whether RRTMGP is in it. This seems heavy-handed, but it reduceѕ code
     // duplication.
+    bool using_rrtmgp = false;
     auto& atm_proc_params = m_atm_params.sublist("atmosphere_processes");
     auto group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,atm_proc_params);
     for (int i = 0; i < group->get_num_processes(); ++i) {
@@ -140,11 +140,9 @@ set_params(const ekat::ParameterList& atm_params)
         break;
       }
     }
-  }
-  bool fvphyshack = using_pg2 && using_rrtmgp;
-  if (fvphyshack) {
-    // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
-    fv_phys_rrtmgp_active_gases_init(m_atm_params);
+    if (using_rrtmgp) {
+      fv_phys_rrtmgp_active_gases_init(m_atm_params);
+    }
   }
 }
 
