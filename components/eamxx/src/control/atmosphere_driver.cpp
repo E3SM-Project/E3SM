@@ -1353,8 +1353,10 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_output_managers.clear();
 
   // Finalize, and then destroy all atmosphere processes
-  m_atm_process_group->finalize( /* inputs ? */ );
-  m_atm_process_group = nullptr;
+  if (m_atm_process_group.get()) {
+    m_atm_process_group->finalize( /* inputs ? */ );
+    m_atm_process_group = nullptr;
+  }
 
   // Destroy the buffer manager
   m_memory_buffer = nullptr;

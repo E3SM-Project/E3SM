@@ -59,6 +59,10 @@ public:
     return m_atm_processes.at(i);
   }
 
+  // returns true if this group contains the process (either directly or within
+  // a nested group), false if not
+  bool has_process(const std::string& name) const;
+
   ScheduleType get_schedule_type () const { return m_group_schedule_type; }
 
   // Computes total number of bytes needed for local variables
