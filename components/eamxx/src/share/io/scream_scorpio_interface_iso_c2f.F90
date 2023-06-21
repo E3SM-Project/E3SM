@@ -108,16 +108,18 @@ contains
 
     character(len=256)            :: filename
     character(len=256)            :: varname
-    integer(kind=pio_offset_kind) :: dof_vec_f90(dof_len)
     integer                       :: ii
+    integer(kind=pio_offset_kind), allocatable :: dof_vec_f90(:)
 
     call convert_c_string(filename_in,filename)
     call convert_c_string(varname_in,varname)
     ! Need to add 1 to the dof_vec because C++ starts indices at 0 not 1:
+    allocate(dof_vec_f90(dof_len))
     do ii = 1,dof_len
       dof_vec_f90(ii) = dof_vec(ii) + 1
     end do
     call set_dof(trim(filename),trim(varname),dof_len,dof_vec_f90)
+    deallocate(dof_vec_f90)
   end subroutine set_dof_c2f
 !=====================================================================!
   subroutine eam_pio_closefile_c2f(filename_in) bind(c)
