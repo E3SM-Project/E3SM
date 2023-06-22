@@ -493,16 +493,19 @@ module ocn_time_integration_rk4
         ! which is the same as k_j / h.
         call mpas_timer_start("RK4 vel/thick tendency computations")
 
-       call ocn_time_varying_forcing_get(domain % streamManager, domain, domain % clock)
-
         block => domain % blocklist
         do while (associated(block))
            call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
            call mpas_pool_get_array(forcingPool, 'forcingTimeIncrement', forcingTimeIncrement)
            forcingTimeIncrement = forcingTimeIncrementRK4(rk_step)
-           
-           call ocn_time_integrator_rk4_compute_vel_tends(domain, block, dt, rk_substep_weights(rk_step), domain % dminfo, err )
+           block => block % next
+        end do
 
+        call ocn_time_varying_forcing_get(domain % streamManager, domain, domain % clock)
+
+        block => domain % blocklist
+        do while (associated(block))
+           call ocn_time_integrator_rk4_compute_vel_tends(domain, block, dt, rk_substep_weights(rk_step), domain % dminfo, err )
            call ocn_time_integrator_rk4_compute_thick_tends( block, dt, rk_substep_weights(rk_step), err )
            block => block % next
         end do
