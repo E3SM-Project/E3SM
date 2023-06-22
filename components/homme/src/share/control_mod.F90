@@ -270,6 +270,8 @@ module control_mod
   logical,               public :: bubble_rj_cpstar_hy = .FALSE.
   logical,               public :: bubble_rj_cpstar_nh = .FALSE.
   logical,               public :: bubble_rj_cVstar = .FALSE.
+  logical,               public :: bubble_rj_eamcpdry = .FALSE.
+  logical,               public :: bubble_rj_eamcpstar = .FALSE.
   logical,               public :: bubble_rj_nosedim = .FALSE.
 
   public :: set_planar_defaults
@@ -716,6 +718,8 @@ use physical_constants, only: Lx, Ly, Sx, Sy
          print *, 'bubble_rj_cpstar_hy', bubble_rj_cpstar_hy
          print *, 'bubble_rj_cpstar_nh', bubble_rj_cpstar_nh
          print *, 'bubble_rj_cVstar', bubble_rj_cVstar
+         print *, 'bubble_rj_eamcpdry', bubble_rj_eamcpdry
+         print *, 'bubble_rj_eamcpstar', bubble_rj_eamcpstar
     end if
 
 end subroutine set_planar_defaults

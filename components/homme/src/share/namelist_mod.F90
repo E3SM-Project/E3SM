@@ -124,6 +124,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     bubble_rj_cpstar_hy, &
     bubble_rj_cpstar_nh, &
     bubble_rj_cVstar, &
+    bubble_rj_eamcpdry, &
+    bubble_rj_eamcpstar, &
     bubble_rj_nosedim
 #endif
 
@@ -360,6 +362,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       bubble_rj_cpstar_hy, &
       bubble_rj_cpstar_nh, &
       bubble_rj_cVstar, &
+      bubble_rj_eamcpdry, &
+      bubble_rj_eamcpstar, &
       bubble_rj_nosedim
     namelist /vert_nl/        &
       vfile_mid,          &
@@ -844,6 +848,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(bubble_rj_cpstar_hy,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(bubble_rj_cpstar_nh,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(bubble_rj_cVstar,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_rj_eamcpdry,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_rj_eamcpstar,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(bubble_rj_nosedim,1,MPIlogical_t,par%root,par%comm,ierr)
 #endif
 

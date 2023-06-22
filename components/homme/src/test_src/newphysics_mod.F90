@@ -6,7 +6,8 @@ module newphysics
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
 
 use control_mod,          only: theta_hydrostatic_mode,&
-                   case_planar_bubble, bubble_prec_type, bubble_rj_cpstar_hy, bubble_rj_cpstar_nh,bubble_rj_nosedim
+                   case_planar_bubble, bubble_prec_type, bubble_rj_cpstar_hy, bubble_rj_cpstar_nh,bubble_rj_nosedim, &
+                   bubble_rj_eamcpdry, bubble_rj_eamcpstar
 use dimensions_mod,       only: np, nlev, nlevp , qsize, qsize_d, nelemd
 use element_mod,          only: element_t
 use element_state,        only: nt=>timelevels
@@ -202,7 +203,7 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   ! in HY update, what to do about energyout and how/when to recompute p and phi?
   ! decision: keep both updates the same for cpstar HY and NH
 
-  if(.not.bubble_rj_nosedim)then
+  if(wasiactive)then
 
   do k=nlev, 1, -1
 
@@ -255,6 +256,180 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c,p_c,en3)
  
 end subroutine rj_new
+
+
+
+
+
+subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
+                                                               encl, wasiactive)
+
+  real(rl), dimension(nlev), intent(inout) :: p_c
+  real(rl), dimension(nlev), intent(inout) :: dp_c
+  real(rl), dimension(nlev), intent(inout) :: qv_c,ql_c,T_c
+  real(rl), dimension(nlevp),intent(inout) :: zi_c
+  real(rl),                  intent(inout) :: massout, energyout, encl
+  real(rl),                  intent(in)    :: ptop
+  logical,                   intent(inout) :: wasiactive
+
+  real(rl) :: qsat, dp_loc, qv_loc, ql_loc, dq_loc, &
+                vapor_mass_change
+  real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, hold, T_new, en1, en2, en3
+  real(rl) :: cpstar, rstardp, oldQ1mass, oldQ2mass, olddphi, pi_top_int, enb, ena
+  real(rl), dimension(nlev)  :: pi, dphi, zero, rain, d_pnh, rain2
+  real(rl), dimension(nlevp) :: p_int
+  integer  :: k, ll
+
+  massout = 0.0
+  energyout = 0.0
+  zero = 0.0
+  rain = 0.0
+  encl = 0;
+
+  if(bubble_rj_eamcpdry) then
+  !call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en1)
+  call energycp_hy_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en1)
+  elseif (bubble_rj_eamcpstar) then
+  call energycp_hy_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en1)
+  endif
+
+  call construct_hydro_pressure(dp_c,ptop,pi)
+
+  !since one option uses geo, go from bottom to up
+  do k=nlev, 1, -1
+    !call qsat_rj2(p_c(k), T_c(k), qsat)
+    call qsat_rj2(pi(k), T_c(k), qsat)
+
+    if (qv_c(k) > qsat) then
+
+       !condensation stage
+
+       wasiactive = .true.
+       !compute dry values
+       dp_loc = dp_c(k)
+       qv_loc = qv_c(k)
+       ql_loc = ql_c(k)
+
+       dq_loc = qv_loc - qsat            ! > 0 , is qliq_dry_new
+       vapor_mass_change = dp_loc*dq_loc
+       T_loc = T_c(k)
+       p_loc = p_c(k)
+       pi_loc = pi(k)
+
+       !new Q will be qsat
+       L_old = (latvap + latice) * qv_loc + latice *  ql_loc
+       L_new = (latvap + latice) * qsat   + latice * (ql_loc + dq_loc)
+
+       !use extra term in dh=0 rule in case of NH or not
+       if(bubble_rj_eamcpdry) then
+
+          cpstar = cpdry
+
+       elseif (bubble_rj_eamcpstar) then
+
+          !ql_loc here should be 0
+          cpstar = cpdry*(1.0-qv_loc-ql_loc) + cpv*qv_loc + cl*ql_loc
+
+       endif
+
+       hold = T_loc*cpstar + L_old
+       T_new = (hold - L_new) / cpstar
+
+       T_c(k)  = T_new
+       rain(k) = vapor_mass_change
+
+       qv_c(k) = (dp_loc*qv_loc - vapor_mass_change)/dp_loc
+       ql_c(k) = (dp_loc*ql_loc + vapor_mass_change)/dp_loc
+
+    endif
+  enddo
+
+  if(wasiactive)then
+  if(bubble_rj_eamcpdry) then
+  !call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
+  call energycp_hy_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en2)
+  elseif (bubble_rj_eamcpstar) then
+  call energycp_hy_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en2)
+  endif
+
+  do k=nlev, 1, -1
+
+     !above, we only need to save dphi
+     !compute dphi above the cell
+     do ll=k-1,1,-1
+       dphi(ll) = (zi_c(ll) - zi_c(ll+1))*gravit
+     enddo
+
+     !k cell, we need to recompute state vars and dphi
+     !sedimentation stage
+     oldQ1mass         = dp_c(k)*qv_c(k)
+     vapor_mass_change = dp_c(k)*ql_c(k)
+
+     dp_c(k) = dp_c(k) - vapor_mass_change
+     p_c(k)  = p_c(k)  - vapor_mass_change
+     qv_c(k) = oldQ1mass/dp_c(k)
+     ql_c(k) = 0.0
+
+     rstardp = dp_c(k) * (rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k))
+     dphi(k) = rstardp * T_c(k) / p_c(k)
+
+     !below, we need to recompute dphi from changed pressure
+     do ll=k+1,nlev
+        p_c(ll) = p_c(ll) - vapor_mass_change
+        rstardp = dp_c(ll) * (rdry * (1.0 - qv_c(ll) - ql_c(ll)) + rvapor * qv_c(ll))
+        dphi(ll) = rstardp * T_c(ll) / p_c(ll)
+     enddo
+
+     !recompute zi_c for all levels
+     do ll=nlev, 1, -1
+        zi_c(ll) = zi_c(ll+1) + dphi(ll)/gravit
+     enddo
+
+     massout = massout + vapor_mass_change
+     energyout = energyout + latice*vapor_mass_change
+     encl = encl + (Tforcl*cl+latice)*vapor_mass_change
+
+  enddo
+
+  if(bubble_rj_eamcpdry) then
+  !call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
+  call energycp_hy_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en3)
+  elseif (bubble_rj_eamcpstar) then
+  call energycp_hy_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en3)
+  endif
+
+print *, '<<<<<<<<<<'
+if(bubble_rj_eamcpdry) then
+
+print *, 'en1-en2, rel', en1-en2, (en1-en2)/en2
+print *, 'en2, en3', en2,en3
+print *, 'en2-en3', en2-en3
+print *, 'Lterm, cpdry term', latice*massout, Tforcl*cpdry*massout
+!those are almost =
+print *, 'PA vs cpdry*t*M', en2-en3-latice*massout, Tforcl*cpdry*massout
+print *, 'PA vs cl*T*M', en1-en3-latice*massout, encl-latice*massout
+print *, 'PA diagn', (en1-en3-latice*massout)/(encl-latice*massout)
+
+elseif (bubble_rj_eamcpstar) then
+
+!for this option comparing en1 and e2 won't work, we dont have energy routine with fixed cpstar \= cpdry
+print *, 'en1-en2 rel', (en1-en2)/en1
+print *, 'en1-en3', en1-en3
+print *, 'Lterm,cpv term', latice*massout, Tforcl*cpv*massout
+!those are almost =
+print *, 'PA vs cpvapor*t*M', en1-en3-latice*massout, Tforcl*cpv*massout
+print *, 'PA vs cl*T*M', en1-en3-latice*massout, encl-latice*massout
+print *, 'PA diagn', (en1-en3-latice*massout)/(encl-latice*massout)
+
+endif
+print *, '>>>>>>>>>>>>>'
+
+  endif
+
+end subroutine rj_new_eam
+
+
+
 
 
 
@@ -339,7 +514,7 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c),dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c,p_c,en2cp)
   call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c),dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c(nlevp),p_c,en2cv)
 
-  if(.not.bubble_rj_nosedim)then
+  if(wasiactive)then
 
   !sedimentation stage
   do k=1, nlev
@@ -450,6 +625,28 @@ end subroutine rj_old
 
 
 
+subroutine energycp_hy_via_massCPDRY(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zbottom,energy)
+
+  real(rl), dimension(nlev), intent(in) :: dpdry_c, dpv_c, dpc_c, dpr_c
+  real(rl), dimension(nlev), intent(in) :: T_c
+  real(rl),                  intent(in) :: ptop, zbottom
+  real(rl),                  intent(inout) :: energy
+
+  real(rl) :: pis, cpterm, Lterm
+  integer  :: k
+
+  pis = ptop + sum(dpdry_c + dpv_c + dpc_c + dpr_c)
+
+  energy = zbottom * pis * gravit
+
+  do k=1,nlev
+    cpterm = cpdry*(dpdry_c(k) + dpv_c(k) + dpc_c(k) + dpr_c(k))
+    Lterm = (latvap+latice) * dpv_c(k) + latice * (dpc_c(k) + dpr_c(k))
+    energy = energy + T_c(k)*cpterm + Lterm
+  enddo
+
+end subroutine energycp_hy_via_massCPDRY
+
 
 subroutine energycp_hy_via_mass(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zbottom,energy)
 
@@ -472,6 +669,45 @@ subroutine energycp_hy_via_mass(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zbottom,energ
   enddo
 
 end subroutine energycp_hy_via_mass
+
+
+
+
+subroutine energycp_nh_via_massCPDRY(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zbottom,p_c,energy)
+
+  real(rl), dimension(nlev), intent(in) :: dpdry_c, dpv_c, dpc_c, dpr_c, p_c
+  real(rl), dimension(nlev), intent(in) :: T_c
+  real(rl),                  intent(in) :: ptop, zbottom
+  real(rl),                  intent(inout) :: energy
+
+  real(rl) :: pis, cpterm, Lterm, nhterm, rstar
+  integer  :: k
+  real(rl), dimension(nlev) :: ppi
+  real(rl), dimension(nlev) :: pnh, dpi
+
+  dpi = dpdry_c + dpv_c + dpc_c + dpr_c
+  pis = ptop + sum(dpi)
+
+  !derived pressure values, on midlevels
+  call construct_hydro_pressure(dpi,ptop,ppi)
+  pnh = p_c
+
+  energy = zbottom * pis * gravit
+
+  do k=1,nlev
+    cpterm = cpdry*(dpdry_c(k) + dpv_c(k) + dpc_c(k) + dpr_c(k))
+
+    Lterm  = (latvap+latice) * dpv_c(k) + latice * (dpc_c(k) + dpr_c(k))
+
+    rstar = rdry*dpdry_c(k)/dpi(k) + rvapor*dpv_c(k)/dpi(k)
+
+    nhterm = rstar*T_c(k)*(ppi(k)/pnh(k)-1.0)*dpi(k)
+
+    energy = energy + T_c(k)*cpterm + Lterm + nhterm
+  enddo
+
+end subroutine energycp_nh_via_massCPDRY
+
 
 
 

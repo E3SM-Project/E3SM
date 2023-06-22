@@ -716,8 +716,13 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       ptop = hvcoord%hyai(1) * hvcoord%ps0
 
       !compute current energy and mass
+      if(bubble_rj_eamcpdry) then
+      call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en1glob_cp)  
+      en1glob_cv = en1glob_cp
+      else
       call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en1glob_cp)  
       call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en1glob_cv)  
+      endif
 
       mass1global = sum( dp_c )
 
@@ -727,8 +732,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       mass_prect = 0.0; energy_prect = 0.0;
       wasiactive = .false.
 
-!#define DIAGN
-#undef DIAGN
+#define DIAGN
+!#undef DIAGN
 
 
       ! if RJ precipitation
@@ -760,6 +765,12 @@ print *, "    "
 endif
 #endif
 
+        elseif(bubble_rj_eamcpdry .or. bubble_rj_eamcpstar) then
+
+          !returns new T, qv, new!!! dp, mass
+          call rj_new_eam(qv_c,qc_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
+               encl,wasiactive)
+
         elseif(bubble_rj_cVstar) then
 
           !returns new T, qv, new!!! dp, mass
@@ -789,8 +800,13 @@ endif
         print *, 'kessler planar bubble not done';  stop
       endif ! RJ or Kessler choice
 
+      if(bubble_rj_eamcpdry) then
+      call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2glob_cp)
+      en2glob_cv = en2glob_cp
+      else
       call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2glob_cp)
       call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en2glob_cv)
+      endif
 
       mass2global = sum( dp_c )
 
