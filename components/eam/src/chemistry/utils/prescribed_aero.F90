@@ -460,7 +460,7 @@ end subroutine spec_c_to_a
     use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_get_chunk, &
          pbuf_get_index
     use ppgrid,       only : pcols, pver
-    use scamMod,      only : single_column
+    use iop_data_mod, only : single_column
 
     !Arguments
     type(physics_state), intent(in)    :: state(begchunk:endchunk)

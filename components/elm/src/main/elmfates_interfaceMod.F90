@@ -1045,7 +1045,7 @@ contains
       call fates_hist%update_history_dyn( nc,                    &
            this%fates(nc)%nsites, &
            this%fates(nc)%sites,  &
-           this%fates(nc)%bc_in)
+           this%fates(nc)%bc_in) 
 
       if (masterproc) then
          write(iulog, *) 'FATES dynamics complete'
@@ -1599,6 +1599,7 @@ contains
                   ! This call sends internal fates variables into the
                   ! output boundary condition structures. Note: this is called
                   ! internally in fates dynamics as well.
+
                   call FluxIntoLitterPools(this%fates(nc)%sites(s), &
                        this%fates(nc)%bc_in(s), &
                        this%fates(nc)%bc_out(s))
@@ -1655,9 +1656,6 @@ contains
                        this%fates(nc)%bc_out)
                end if
 
-
-
-
                ! ------------------------------------------------------------------------
                ! Update diagnostics of FATES ecosystem structure used in HLM.
                ! ------------------------------------------------------------------------
@@ -1675,15 +1673,17 @@ contains
                ! Update history IO fields that depend on ecosystem dynamics
                ! ------------------------------------------------------------------------
                call fates_hist%flush_hvars(nc,upfreq_in=1)
+               call fates_hist%flush_hvars(nc,upfreq_in=5)
                do s = 1,this%fates(nc)%nsites
                   call fates_hist%zero_site_hvars(this%fates(nc)%sites(s),     &
                        upfreq_in=1)
+                  call fates_hist%zero_site_hvars(this%fates(nc)%sites(s),     &
+                       upfreq_in=5)
                end do
                call fates_hist%update_history_dyn( nc, &
                     this%fates(nc)%nsites,                 &
                     this%fates(nc)%sites,  &
                     this%fates(nc)%bc_in)
-
 
             end if
          end do
@@ -1817,6 +1817,7 @@ contains
               ! This call sends internal fates variables into the
               ! output boundary condition structures. Note: this is called
               ! internally in fates dynamics as well.
+
               call FluxIntoLitterPools(this%fates(nc)%sites(s), &
                    this%fates(nc)%bc_in(s), &
                    this%fates(nc)%bc_out(s))
@@ -1833,16 +1834,17 @@ contains
            ! ------------------------------------------------------------------------
 
            call fates_hist%flush_hvars(nc,upfreq_in=1)
+           call fates_hist%flush_hvars(nc,upfreq_in=5)
            do s = 1,this%fates(nc)%nsites
               call fates_hist%zero_site_hvars(this%fates(nc)%sites(s),     &
                    upfreq_in=1)
+              call fates_hist%zero_site_hvars(this%fates(nc)%sites(s),     &
+                   upfreq_in=5)
            end do
            call fates_hist%update_history_dyn( nc, &
                 this%fates(nc)%nsites,                 &
-                this%fates(nc)%sites,  &
-                this%fates(nc)%bc_in)
-
-
+                this%fates(nc)%sites, &
+                this%fates(nc)%bc_in) 
 
         end if
      end do

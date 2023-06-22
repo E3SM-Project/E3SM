@@ -226,6 +226,14 @@ public:
   // If you are really not sure whether we are still transmitting, you can make sure we're done by calling this
   void waitall ();
 
+  // Set an optional string label for this object. If present, it is used in
+  // optional diagnostic output.
+  void set_label (const std::string& label);
+  const std::string& get_label () const;
+  // Request diagnostic output after each boundary exchange. Default is level =
+  // 0, corresponding to none.
+  void set_diagnostics_level (const int level);
+
 private:
 
   short int m_exchange_type;
@@ -295,6 +303,9 @@ private:
   bool        m_recv_pending;
 
   int         m_num_elems;
+
+  std::string m_label;
+  int m_diagnostics_level;
 
   void init_slot_idx_to_elem_conn_pair(
     std::vector<int>& h_slot_idx_to_elem_conn_pair,

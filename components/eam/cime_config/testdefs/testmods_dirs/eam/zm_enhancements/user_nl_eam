@@ -1,0 +1,4 @@
+zmconv_microp = .true.
+zmconv_clos_dyn_adj = .true.
+zmconv_MCSP_heat_coeff = 0.3
+zmconv_tpert_fix = .true.

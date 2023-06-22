@@ -9,6 +9,7 @@
 
 #include "Types.hpp"
 #include "kokkos_utils.hpp"
+#include "utilities/Hash.hpp"
 
 namespace Homme {
 
@@ -77,6 +78,8 @@ public:
   // Push the results from the exec space views to the F90 pointers
   void push_to_f90_pointers(F90Ptr& state_v, F90Ptr& state_w_i, F90Ptr& state_vtheta_dp,
                             F90Ptr& state_phinh_i, F90Ptr& state_dp) const;
+
+  HashType hash(const int time_level) const;
 
 private:
   int m_num_elems;

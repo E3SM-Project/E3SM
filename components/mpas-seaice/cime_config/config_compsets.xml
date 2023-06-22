@@ -10,7 +10,7 @@
   <!-- E3SM D compsets -->
 
   <compset>
-    <alias>DTEST-JRA1p5</alias>
+    <alias>DTESTM-JRA1p5</alias>
     <lname>2000_DATM%JRA-1p5_SLND_MPASSI_DOCN%SOM_DROF%JRA-1p5_SGLC_SWAV_TEST</lname>
   </compset>
 
@@ -27,6 +27,11 @@
   <compset>
     <alias>DTESTM-PRES</alias>
     <lname>2000_DATM%NYF_SLND_MPASSI%PRES_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST</lname>
+  </compset>
+
+  <compset>
+    <alias>DTESTM-COL</alias>
+    <lname>2000_DATM%NYF_SLND_MPASSI%COL_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST</lname>
   </compset>
 
 </compsets>

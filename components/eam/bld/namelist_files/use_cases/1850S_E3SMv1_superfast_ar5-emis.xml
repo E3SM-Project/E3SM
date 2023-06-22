@@ -169,11 +169,16 @@
 <chlorine_loading_fixed_ymd >18500101</chlorine_loading_fixed_ymd>
 <chlorine_loading_type      >FIXED</chlorine_loading_type>
 <linoz_data_cycle_yr        >1850</linoz_data_cycle_yr>
-<linoz_data_file            >linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc</linoz_data_file>
+<linoz_data_file            >linv3_1849-2015_2010JPL_cmip6_historical_10deg_58km_c20210625.nc</linoz_data_file>
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            >CYCLICAL</linoz_data_type>
 
 <!-- Turn off ozone dry deposition, as Linoz O3v2 and ozone are not separated for now. Need to turn on ozone dry deposition when interactive tropospheric chemistry is implemented -->
 <drydep_list            >'O3', 'H2O2', 'H2SO4', 'SO2'</drydep_list>
+
+<!-- sim_year used for CLM datasets and SSTs forcings -->
+<sim_year>1955</sim_year>
+
+<!-- Set in components/clm/bld/namelist_files/use_cases/1950_CMIP6LR_control.xml -->
 
 </namelist_defaults>

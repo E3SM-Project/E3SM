@@ -1905,7 +1905,7 @@ module ocn_time_integration_split
             ! layerThickEdgeFlux, density, pressure, and SSH
             ! in this diagnostics solve.
             call ocn_diagnostic_solve(dt, statePool, forcingPool, &
-                                      meshPool, scratchPool, &
+                                      meshPool, verticalMeshPool, scratchPool, &
                                       tracersPool, 2, full=.false.)
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2370,7 +2370,7 @@ module ocn_time_integration_split
          !$acc enter data copyin(landIceDraft)
       endif
 #endif
-      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, &
+      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, &
                                 scratchPool, tracersPool, 2)
 
       call mpas_dmpar_field_halo_exch(domain, 'surfaceFrictionVelocity')
@@ -2554,7 +2554,7 @@ module ocn_time_integration_split
 #endif
       end if
 
-      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, &
+      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, &
                                 scratchPool, tracersPool, 2)
 
       ! Update the effective desnity in land ice if we're coupling to

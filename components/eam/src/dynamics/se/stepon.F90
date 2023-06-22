@@ -25,12 +25,12 @@ module stepon
    use quadrature_mod, only: gauss, gausslobatto, quadrature_t
    use edge_mod,       only: edge_g, edgeVpack_nlyr, edgeVunpack_nlyr
    use parallel_mod,   only : par
-   use scamMod,        only: use_iop, doiopupdate, single_column, &
-                             setiopupdate, readiopdata, dp_crm
+   use iop_data_mod,   only: use_iop, doiopupdate, single_column, dp_crm, &
+                             setiopupdate, setiopupdate_init, readiopdata
    use element_mod,    only: element_t
    use element_ops,    only: get_field, get_field_i
    use shr_const_mod,       only: SHR_CONST_PI
-   use se_single_column_mod, only: scm_broadcast
+   use se_iop_intr_mod, only: iop_broadcast
 
    implicit none
    private
@@ -175,11 +175,11 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   
   use dp_coupling, only: d_p_coupling
   use time_mod,    only: tstep      ! dynamics timestep
-  use time_manager, only: is_last_step
+  use time_manager, only: is_last_step, is_first_step
   use control_mod, only: ftype
   use physics_buffer, only : physics_buffer_desc
   use hycoef,      only: hyam, hybm
-  use se_single_column_mod, only: scm_setfield, scm_setinitial
+  use se_iop_intr_mod, only: iop_setfield, iop_setinitial
   use mpishorthand
   implicit none
 !
@@ -209,32 +209,35 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    ! Move data into phys_state structure.
    !----------------------------------------------------------
    
-  ! Determine whether it is time for an IOP update;
-  ! doiopupdate set to true if model time step > next available IOP 
+   ! Determine whether it is time for an IOP update;
+   ! doiopupdate set to true if model time step > next available IOP 
 
-  if (use_iop) then
-    if (masterproc) call setiopupdate
-    if (masterproc .and. is_first_restart_step() ) call setiopupdate(override_init=.true.)
-  end if 
-  
-  if (single_column) then
+   if (use_iop .and. masterproc) then
+     if (is_first_step() .or. is_first_restart_step()) then
+       call setiopupdate_init()
+     else
+       call setiopupdate
+     endif
+   end if
 
-    ! If first restart step then ensure that IOP data is read
-    if (is_first_restart_step()) then
-      iop_update_phase1 = .false.
-      call scm_setinitial(elem)
-      if (masterproc) call readiopdata( iop_update_phase1,hyam,hybm )
-      call scm_broadcast()
-    endif
+   if (single_column) then
 
-    iop_update_phase1 = .true. 
-    if ((is_first_restart_step() .or. doiopupdate) .and. masterproc) then
-      call readiopdata( iop_update_phase1,hyam,hybm )
-    endif
-    call scm_broadcast()
+     ! If first restart step then ensure that IOP data is read
+     if (is_first_restart_step()) then
+       iop_update_phase1 = .false.
+       call iop_setinitial(elem)
+       if (masterproc) call readiopdata( iop_update_phase1,hyam,hybm )
+       call iop_broadcast()
+     endif
 
-    if (.not. dp_crm) call scm_setfield(elem,iop_update_phase1)
-  endif
+     iop_update_phase1 = .true. 
+     if ((is_first_restart_step() .or. doiopupdate) .and. masterproc) then
+       call readiopdata( iop_update_phase1,hyam,hybm )
+     endif
+     call iop_broadcast()
+
+     if (.not. dp_crm) call iop_setfield(elem,iop_update_phase1)
+   endif
   
    call t_barrierf('sync_d_p_coupling', mpicom)
    call t_startf('d_p_coupling')
@@ -522,7 +525,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    use time_mod,    only: tstep
    use hycoef,      only: hyam, hybm
    use dimensions_mod, only: nlev, nelemd, np, npsq
-   use se_single_column_mod, only: scm_setfield, scm_setinitial
+   use se_iop_intr_mod, only: iop_setfield, iop_setinitial
    use dyn_comp, only: TimeLevel
    use cam_history,     only: outfld   
    use cam_logfile, only: iulog
@@ -566,10 +569,10 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 #endif     
      iop_update_phase1 = .false. 
      if (doiopupdate) then
-       call scm_setinitial(elem)
+       call iop_setinitial(elem)
        if (masterproc) call readiopdata(iop_update_phase1,hyam,hybm)
-       call scm_broadcast()
-       if (.not. dp_crm) call scm_setfield(elem,iop_update_phase1)
+       call iop_broadcast()
+       if (.not. dp_crm) call iop_setfield(elem,iop_update_phase1)
      endif  
 
    endif

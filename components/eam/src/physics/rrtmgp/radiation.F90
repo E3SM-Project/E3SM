@@ -16,7 +16,7 @@ module radiation
    use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
    use cam_abortutils,   only: endrun
    use cam_history_support, only: add_hist_coord
-   use scamMod,          only: scm_crm_mode, single_column
+   use iop_data_mod,     only: single_column
    use rad_constituents, only: N_DIAG
    use radconstants,     only: nswbands, nlwbands, &
       get_band_index_sw, get_band_index_lw, test_get_band_index, &
@@ -737,13 +737,6 @@ contains
                   'Cosine of solar zenith angle', &
                   sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
-      if (single_column .and. scm_crm_mode) then
-         call add_default ('FUS     ', 1, ' ')
-         call add_default ('FUSC    ', 1, ' ')
-         call add_default ('FDS     ', 1, ' ')
-         call add_default ('FDSC    ', 1, ' ')
-      end if
-
       ! Longwave radiation
       do icall = 0,N_DIAG
          if (active_calls(icall)) then
@@ -821,14 +814,6 @@ contains
       end do
 
       call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud longwave (10.5 micron) emissivity')
-
-      ! Add default fields for single column mode
-      if (single_column.and.scm_crm_mode) then
-         call add_default ('FUL     ', 1, ' ')
-         call add_default ('FULC    ', 1, ' ')
-         call add_default ('FDL     ', 1, ' ')
-         call add_default ('FDLC    ', 1, ' ')
-      endif
 
       ! HIRS/MSU diagnostic brightness temperatures
       if (dohirs) then
