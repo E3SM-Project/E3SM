@@ -304,12 +304,15 @@ TEST_CASE("nudging") {
         //If destination pressure is 0 than it will use pressure value of 1
 	//from external file since that is the lowest value. A time interpolation
 	//is performed but there is no interpolation between levels necessary
+	//NOTE: The nearest unmasked value will be the average between ilev=1 and 
+	//      ilev=2 so the vertical contribution will be 200*((1-1) + (2-1))/2 = 100
 	if (ilev == 0){
-	  double val_before  = 10000*(icol-1) + 10*int(time_index-1);
-	  double val_after   = 10000*(icol-1) + 10*int(time_index);
+	  double val_before  = 10000*(icol-1) + 100.0 + 10*int(time_index-1);
+	  double val_after   = 10000*(icol-1) + 100.0 + 10*int(time_index);
 	  double w_aft       = time_s*100.-time_index*250.;
 	  double w_bef       = (time_index+1)*250-time_s*100.;
 	  double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
+	  printf("ASD - (%3d, %3d): %f, %f, %e\n",icol,ilev,T_mid_v_h_o(icol,ilev),val_tim_avg,abs(T_mid_v_h_o(icol,ilev) - val_tim_avg));
           REQUIRE(abs(T_mid_v_h_o(icol,ilev) - val_tim_avg)<0.001);
           REQUIRE(abs(qv_h_o(icol,ilev) - val_tim_avg)<0.001);
           REQUIRE(abs(u_h_o(icol,ilev) - val_tim_avg)<0.001);
@@ -320,9 +323,12 @@ TEST_CASE("nudging") {
         //If destination pressure is 68 than it will use highest pressure value
 	//from external file. A time interpolation is performed but there is
 	//no interpolation between levels necessary
+	//NOTE: The nearest unmasked value will be the average between ilev=nlevs-1 and 
+	//      ilev=nlevs-2 so the vertical contribution will be 
+	//      200*((nlevs-2) + (nlevs-3))/2 = 100*(nlevs-5)
 	if (ilev == (nlevs-1)){
-	  double val_before  = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index-1);
-	  double val_after   = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index);
+	  double val_before  = 10000*(icol-1) + 200*(nlevs-5) + 10*int(time_index-1);
+	  double val_after   = 10000*(icol-1) + 200*(nlevs-5) + 10*int(time_index);
 	  double w_aft       = time_s*100.-time_index*250.;
 	  double w_bef       = (time_index+1)*250-time_s*100.;
 	  double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;

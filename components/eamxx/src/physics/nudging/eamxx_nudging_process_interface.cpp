@@ -134,20 +134,54 @@ void Nudging::run_impl (const double dt)
                                              m_num_src_levs,
                                              m_num_levs);
 
-    // Check that none of the nudging targets are masked
+    // Check that none of the nudging targets are masked, if they are, set value to
+    // nearest unmasked value above.
+    // NOTE: We use an algorithm whichs scans from TOM to the surface.
+    //       If TOM is masked we keep scanning until we hit an unmasked value,
+    //       we then set all masked values above to the unmasked value.
+    //       We continue scanning towards the surface until we hit an unmasked value, we
+    //       then assign that masked value the most recent unmasked value, until we hit the
+    //       surface.
     const int num_cols           = int_state_view.extent(0);
     const int num_vert_packs     = int_state_view.extent(1);
     const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
     Kokkos::parallel_for("correct_for_masked_values", policy,
        	       KOKKOS_LAMBDA(MemberType const& team) {
       const int icol = team.league_rank();
-      auto int_mask_view_1d = ekat::subview(int_mask_view,icol);
-      const auto range = Kokkos::TeamThreadRange(team, num_vert_packs);
-      Kokkos::parallel_for(range, [&] (const Int & k) {
-        EKAT_REQUIRE_MSG(!int_mask_view_1d(k).any(),"Error! Nudging::run_impl - encountered a masked value in the nudging targets.\n"
-			<< "  A potential cause would be that some ATM state pressure values lie outside the pressure values of the nudging data");
-      });
-
+      auto int_mask_view_1d  = ekat::subview(int_mask_view,icol);
+      auto int_state_view_1d = ekat::subview(int_state_view,icol);
+      Real fill_value;
+      int  fill_idx = -1;
+      // Scan top to surf and backfill all values near TOM that are masked.
+      for (int kk=0; kk<m_num_src_levs; ++kk) {
+        const auto ipack = kk / mPack::n;
+	const auto iidx  = kk % mPack::n;
+        // Check if this index is masked
+	if (!int_mask_view_1d(ipack)[iidx]) {
+	  fill_value = int_state_view_1d(ipack)[iidx];
+	  fill_idx = kk;
+	  for (int jj=0; jj<kk; ++jj) {
+            const auto jpack = jj / mPack::n;
+	    const auto jidx  = jj % mPack::n;
+	    int_state_view_1d(jpack)[jidx] = fill_value;
+	  }
+	  break;
+	}
+      }
+      printf("ASD - icol = %2d, fill_idx = %2d, fill_value = %f\n",icol, fill_idx,fill_value);
+      // Now fill the rest, the fill_idx should be non-negative.  If it isn't that means
+      // we have a column that is fully masked - throw an error.
+      EKAT_REQUIRE_MSG(fill_idx>-1,"Error! Nudging::run_impl - error encountered when filling masked values.  Column (" << std::to_string(icol) << ") is fully masked.");
+      for (int kk=fill_idx+1; kk<m_num_src_levs; ++kk) {
+        const auto ipack = kk / mPack::n;
+	const auto iidx  = kk % mPack::n;
+        // Check if this index is masked
+	if (!int_mask_view_1d(ipack)[iidx]) {
+	  fill_value = int_state_view_1d(ipack)[iidx];
+	} else {
+	  int_state_view_1d(ipack)[iidx] = fill_value;
+	}
+      }
     });
 
     // Apply the nudging tendencies to the ATM state
