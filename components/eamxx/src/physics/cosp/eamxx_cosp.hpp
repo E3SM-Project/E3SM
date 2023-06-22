@@ -38,12 +38,28 @@ public:
   struct Buffer {
   };
 
+  inline bool cosp_do(const int icosp, const int nstep) {
+      // If icosp == 0, then never do cosp;
+      // Otherwise, we always call cosp at the first step,
+      // and afterwards we do cosp if the timestep is divisible
+      // by icosp
+      if (icosp == 0) {
+          return false;
+      } else {
+          return ( (nstep == 0) || (nstep % icosp == 0) );
+      }
+  }
+
+
 protected:
 
   // The three main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
   void run_impl        (const double dt);
   void finalize_impl   ();
+
+  // cosp frequency in number of steps
+  int m_cosp_freq_in_steps;
 
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 

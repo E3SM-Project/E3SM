@@ -78,8 +78,12 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 // =========================================================================================
 void Cosp::initialize_impl (const RunType /* run_type */)
 {
+
+  // Determine how often to call COSP, specified as number of atm steps
+  m_cosp_freq_in_steps = m_params.get<Int>("cosp_frequency", 1);
+
   // Set property checks for fields in this process
-  using Interval = FieldWithinIntervalCheck;
+  //using Interval = FieldWithinIntervalCheck;
   //add_postcondition_check<Interval>(get_field_out("cldfrac_tot"),m_grid,0.0,1.0,false);
   //add_postcondition_check<Interval>(get_field_out("cldfrac_tot_for_analysis"),m_grid,0.0,1.0,false);
   CospFunc::initialize(m_num_cols, m_num_subcols, m_num_levs);
@@ -88,6 +92,11 @@ void Cosp::initialize_impl (const RunType /* run_type */)
 // =========================================================================================
 void Cosp::run_impl (const double /* dt */)
 {
+
+  // Determine if we should update COSP this timestep; use rad function to compare COSP frequency with this timestep
+  auto ts = timestamp();
+  auto update_cosp = cosp_do(m_cosp_freq_in_steps, ts.get_num_steps());
+
   // Get fields from field manager; note that we get host views because this
   // interface serves primarily as a wrapper to a c++ to f90 bridge for the COSP
   // code, which is all in F90 and not ported to run on GPU kernels. These will
@@ -114,15 +123,16 @@ void Cosp::run_impl (const double /* dt */)
 
 
   // Call COSP wrapper routines
-  Real emsfc_lw = 0.99;
-  CospFunc::main(
-          m_num_cols, m_num_subcols, m_num_levs, m_num_isccptau, m_num_isccpctp,
-          emsfc_lw, sunlit, skt, T_mid, p_mid, p_int, qv,
-          cldfrac, reff_qc, reff_qi, dtau067, dtau105,
-          isccp_cldtot, isccp_ctptau
-  );
+  if (update_cosp) {
+    Real emsfc_lw = 0.99;
+    CospFunc::main(
+            m_num_cols, m_num_subcols, m_num_levs, m_num_isccptau, m_num_isccpctp,
+            emsfc_lw, sunlit, skt, T_mid, p_mid, p_int, qv,
+            cldfrac, reff_qc, reff_qi, dtau067, dtau105,
+            isccp_cldtot, isccp_ctptau
+    );
+  }
 
-  // Sync to device?
 }
 
 // =========================================================================================
