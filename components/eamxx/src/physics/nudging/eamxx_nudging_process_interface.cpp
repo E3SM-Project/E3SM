@@ -101,13 +101,15 @@ void Nudging::run_impl (const double dt)
 {
   using namespace scream::vinterp;
 
-  //Have to add dt because first time iteration is at 0 seconds where you will
-  //not have any data from the field. The timestamp is only iterated at the
-  //end of the full step in scream.
+  // Have to add dt because first time iteration is at 0 seconds where you will
+  // not have any data from the field. The timestamp is only iterated at the
+  // end of the full step in scream.
   auto ts = timestamp()+dt;
 
-  //perform time interpolation
+  // Perform time interpolation
   m_time_interp.perform_time_interpolation(ts);
+
+  // Map any masked value
 
   // Process data and nudge the atmosphere state
   const auto& p_mid_v     = get_field_in("p_mid").get_view<const mPack**>();
@@ -120,6 +122,7 @@ void Nudging::run_impl (const double dt)
     auto ext_state_field = get_helper_field(name+"_ext").get_view<mPack**>();
     auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
     auto int_state_view  = int_state_field.get_view<mPack**>();
+    view_Nd<mMask,2> int_mask_view("",m_num_cols,m_num_levs); // Track mask of interpolated values
     const view_Nd<mPack,2> ext_state_view(reinterpret_cast<mPack*>(ext_state_field.data()),
                                           m_num_cols,m_num_src_levs);
     // Vertical Interpolation onto atmosphere state pressure levels
@@ -127,8 +130,27 @@ void Nudging::run_impl (const double dt)
                                              p_mid_v,
                                              ext_state_view,
                                              int_state_view,
+                                             int_mask_view,
                                              m_num_src_levs,
                                              m_num_levs);
+
+    // Check that none of the nudging targets are masked
+    const int num_cols           = int_state_view.extent(0);
+    const int num_vert_packs     = int_state_view.extent(1);
+    const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
+    Kokkos::parallel_for("correct_for_masked_values", policy,
+       	       KOKKOS_LAMBDA(MemberType const& team) {
+      const int icol = team.league_rank();
+      auto int_mask_view_1d = ekat::subview(int_mask_view,icol);
+      const auto range = Kokkos::TeamThreadRange(team, num_vert_packs);
+      Kokkos::parallel_for(range, [&] (const Int & k) {
+        EKAT_REQUIRE_MSG(!int_mask_view_1d(k).any(),"Error! Nudging::run_impl - encountered a masked value in the nudging targets.\n"
+			<< "  A potential cause would be that some ATM state pressure values lie outside the pressure values of the nudging data");
+      });
+
+    });
+
+    // Apply the nudging tendencies to the ATM state
     if (m_timescale <= 0) {
       // We do direct replacement
       Kokkos::deep_copy(atm_state_view,int_state_view);
@@ -137,37 +159,6 @@ void Nudging::run_impl (const double dt)
       apply_tendency(atm_state_field, int_state_field, dt);
     }
 
-    // Remove mask values, setting them to the nearest unmasked value in the column.
-    // TODO: This chunk of code has a bug in it where we are assigning values by PACK.
-    // Note, that in our case the packsize is hard-coded to 1, so it shouldn't actually
-    // be a problem, but the way the code is set up here could lead to confusion if we
-    // ever change that hard-coded value.  We will need to replace this with something
-    // better, in a subsequent commit.
-    const int num_cols           = atm_state_view.extent(0);
-    const int num_vert_packs     = atm_state_view.extent(1);
-    const int num_vert_packs_ext = ext_state_view.extent(1);
-    const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
-    Kokkos::parallel_for("correct_for_masked_values", policy,
-       	       KOKKOS_LAMBDA(MemberType const& team) {
-        const int icol = team.league_rank();
-        auto atm_state_view_1d = ekat::subview(atm_state_view,icol);
-        auto ext_state_view_1d = ekat::subview(ext_state_view,icol);
-        auto p_mid_1d = ekat::subview(p_mid_v,icol);
-        auto p_ext_1d = ekat::subview(p_mid_ext,icol);
-        const auto range = Kokkos::TeamThreadRange(team, num_vert_packs);
-        Kokkos::parallel_for(range, [&] (const Int & k) {
-          const auto above_max = p_mid_1d(k) > p_ext_1d(num_vert_packs_ext-1);
-          const auto below_min = p_mid_1d(k) < p_ext_1d(0);
-  	  if (above_max.any()){
-  	    atm_state_view_1d(k).set(above_max, ext_state_view_1d(num_vert_packs_ext-1));
-	  }
-	  if (below_min.any()){
-	    atm_state_view_1d(k).set(below_min,ext_state_view_1d(0));
-  	  }
-        });
-        team.team_barrier();
-    });
-    Kokkos::fence();
   }
 }
 

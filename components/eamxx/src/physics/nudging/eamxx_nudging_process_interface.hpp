@@ -13,7 +13,6 @@
 #include "share/grid/point_grid.hpp"
 #include "share/util/scream_vertical_interpolation.hpp"
 #include "share/util/scream_time_stamp.hpp"
-#include "physics/nudging/nudging_functions.hpp"
 
 #include <string>
 
@@ -27,8 +26,8 @@ namespace scream
 class Nudging : public AtmosphereProcess
 {
 public:
-  using NudgingFunc = nudging::NudgingFunctions;
   using mPack = ekat::Pack<Real,1>;
+  using mMask = ekat::Mask<1>;
   using KT = KokkosTypes<DefaultDevice>;
 
   template <typename S>
