@@ -62,6 +62,8 @@ namespace ShortFieldTagsNames {
   constexpr auto LWBND = FieldTag::LongWaveBand;
   constexpr auto SWGPT = FieldTag::ShortWaveGpoint;
   constexpr auto LWGPT = FieldTag::LongWaveGpoint;
+  constexpr auto ISCCPTAU = FieldTag::IsccpTau;
+  constexpr auto ISCCPPRS = FieldTag::IsccpPrs;
 }
 
 inline std::string e2str (const FieldTag ft) {
