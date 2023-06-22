@@ -667,6 +667,9 @@ contains
     call mpas_add_clock_alarm(domain % clock, coupleAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
     call mpas_reset_clock_alarm(domain_ptr % clock, coupleAlarmID, ierr=ierr)
 
+    timeStep = mpas_get_clock_timestep(domain_ptr % clock, ierr=ierr)
+    call mpas_get_timeInterval(timeStep, dt=dt)
+
     ! Build forcing arrays.
     block_ptr => domain % blocklist
     do while(associated(block_ptr))
@@ -808,9 +811,6 @@ contains
 !   get initial state from driver
 !
 !-----------------------------------------------------------------------
-
-    timeStep = mpas_get_clock_timestep(domain_ptr % clock, ierr=ierr)
-    call mpas_get_timeInterval(timeStep, dt=dt)
 
     call ocn_import_mct(x2o_o, errorCode)
     if (errorCode /= 0) then
