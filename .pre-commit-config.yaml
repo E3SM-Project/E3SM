@@ -1,7 +1,7 @@
 files: ^components/omega/
 repos:
   - repo: https://github.com/Takishima/cmake-pre-commit-hooks
-    rev: v1.8.0
+    rev: v1.9.0
     hooks:
       - id: clang-format
       # - id: clang-tidy
