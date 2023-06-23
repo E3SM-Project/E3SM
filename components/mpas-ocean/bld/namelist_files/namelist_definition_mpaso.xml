@@ -1732,6 +1732,38 @@ Valid values: any positive real, typically 1.0e-3
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_loglaw_bottom_roughness" type="real"
+	category="bottom_drag" group="bottom_drag">
+Bottom roughness, $z_0$, in meters.
+
+Valid values: any positive real, typically 1.0e-3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_loglaw_layer_depth_max" type="real"
+	category="bottom_drag" group="bottom_drag">
+Maximum distance above the seafloor at which log-law drag is applied.
+
+Valid values: any positive real, typically 10m
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_loglaw_bottom_drag_min" type="real"
+	category="bottom_drag" group="bottom_drag">
+Dimensionless bottom drag minimum used in log-law parameterization.
+
+Valid values: any positive real, typically 2.5e-3
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_loglaw_bottom_drag_max" type="real"
+	category="bottom_drag" group="bottom_drag">
+Dimensionless bottom drag maximum used in log-law parameterization.
+
+Valid values: any positive real, typically 1.0e-1
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_explicit_bottom_drag_coeff" type="real"
 	category="bottom_drag" group="bottom_drag">
 Dimensionless explicit bottom drag coefficient, $c_{drag}$.
