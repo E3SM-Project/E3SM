@@ -166,6 +166,9 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
          T_new = (hold - L_new)/(   cpstarTerm_new   )
        endif
 
+!print *, 'k cps T', k,cpstarTerm_new, T_new, hold
+!print *, 'rain', vapor_mass_change
+
        T_c(k)  = T_new
        rain(k) = vapor_mass_change
        !this is before raining out, so dp did not change
@@ -308,6 +311,7 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
        !compute dry values
        dp_loc = dp_c(k)
        qv_loc = qv_c(k)
+       !ql_loc here should be 0
        ql_loc = ql_c(k)
 
        dq_loc = qv_loc - qsat            ! > 0 , is qliq_dry_new
@@ -320,20 +324,21 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
        L_old = (latvap + latice) * qv_loc + latice *  ql_loc
        L_new = (latvap + latice) * qsat   + latice * (ql_loc + dq_loc)
 
-       !use extra term in dh=0 rule in case of NH or not
        if(bubble_rj_eamcpdry) then
 
           cpstar = cpdry
 
        elseif (bubble_rj_eamcpstar) then
 
-          !ql_loc here should be 0
           cpstar = cpdry*(1.0-qv_loc-ql_loc) + cpv*qv_loc + cl*ql_loc
 
        endif
 
        hold = T_loc*cpstar + L_old
        T_new = (hold - L_new) / cpstar
+
+!print *, 'k cps T', k,cpstar, T_new
+!print *, 'rain', vapor_mass_change
 
        T_c(k)  = T_new
        rain(k) = vapor_mass_change
@@ -344,6 +349,14 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
     endif
   enddo
 
+  !recompute geop
+  ! this was for running without sedim, now it is useless cause below geop will be updated
+  do k=nlev, 1, -1
+    rstardp = dp_c(k)*(rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k))
+    olddphi = rstardp * T_c(k) / p_c(k)
+    zi_c(k) = zi_c(k+1) + olddphi/gravit
+  enddo
+
   if(wasiactive)then
   if(bubble_rj_eamcpdry) then
   !call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
@@ -351,6 +364,7 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   elseif (bubble_rj_eamcpstar) then
   call energycp_hy_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en2)
   endif
+
 
   do k=nlev, 1, -1
 
@@ -364,12 +378,10 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
      !sedimentation stage
      oldQ1mass         = dp_c(k)*qv_c(k)
      vapor_mass_change = dp_c(k)*ql_c(k)
-
      dp_c(k) = dp_c(k) - vapor_mass_change
      p_c(k)  = p_c(k)  - vapor_mass_change
      qv_c(k) = oldQ1mass/dp_c(k)
      ql_c(k) = 0.0
-
      rstardp = dp_c(k) * (rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k))
      dphi(k) = rstardp * T_c(k) / p_c(k)
 
@@ -386,10 +398,12 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
      enddo
 
      massout = massout + vapor_mass_change
+     !mimic eam
      energyout = energyout + latice*vapor_mass_change
      encl = encl + (Tforcl*cl+latice)*vapor_mass_change
 
   enddo
+
 
   if(bubble_rj_eamcpdry) then
   !call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
@@ -398,6 +412,7 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   call energycp_hy_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en3)
   endif
 
+#if 0
 print *, '<<<<<<<<<<'
 if(bubble_rj_eamcpdry) then
 
@@ -423,6 +438,7 @@ print *, 'PA diagn', (en1-en3-latice*massout)/(encl-latice*massout)
 
 endif
 print *, '>>>>>>>>>>>>>'
+#endif
 
   endif
 

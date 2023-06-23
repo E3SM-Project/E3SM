@@ -732,8 +732,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       mass_prect = 0.0; energy_prect = 0.0;
       wasiactive = .false.
 
-#define DIAGN
-!#undef DIAGN
+!#define DIAGN
+#undef DIAGN
 
 
       ! if RJ precipitation
@@ -825,6 +825,7 @@ print *, 'TOTAL en1glob_cp-(en2glob_cp+prect) rel', (en1glob_cp-(en2glob_cp+ener
 !print *, 'TOTAL en1glob_cp,en2glob_cp,prect', en1glob_cp,en2glob_cp,energy_prect
 print *, 'TOTAL m1g-m2g, rel', mass1global-(mass2global+mass_prect), ( mass1global-mass2global-mass_prect)/mass1global
 print *, 'TOTAL (encl-enprect)/englob rel', (encl-energy_prect)/en1glob_cp
+print *, 'EAMD (encl-enprect)/englob rel', (en1glob_cp-en2glob_cp-latice*mass_prect)/(encl-latice*mass_prect)
 print *, "  ------------------------------  "
 endif
 #endif
@@ -832,7 +833,17 @@ endif
       !do not use homme rstar routine here
 
       precl(i,j,ie) = mass_prect / (dt * rhow) / g
-      en_cl_diff(i,j,ie) = (encl-energy_prect)/en1glob_cp
+!ver 1
+!      en_cl_diff(i,j,ie) = (encl-energy_prect)/en1glob_cp
+!ver 2, comparing only cp/cl terms
+      if(wasiactive)then
+
+!print *, 'time ie, i, j',ie, i, j, tl%nstep
+
+      en_cl_diff(i,j,ie) = (en1glob_cp-en2glob_cp-latice*mass_prect)/(encl-latice*mass_prect)
+      else
+      en_cl_diff(i,j,ie) = 0.0
+      endif
 
       !update states assuming cam_ routines are off
       qind=1;  elem(ie)%state%Qdp(i,j,:,qind,ntQ) = dp_c*qv_c
