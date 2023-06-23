@@ -1002,6 +1002,18 @@ create_diagnostic (const std::string& diag_field_name) {
     // FieldAtLevel         follows convention variable_at_levN (where N is some integer)
     // FieldAtPressureLevel follows convention variable_at_999XYZ (where 999 is some integer, XYZ string units)
     diag_name = tokens[1].find_first_of("0123456789.")==0 ? "FieldAtPressureLevel" : "FieldAtLevel";
+  } else if (diag_field_name=="PrecipLiqSurfMassFlux" or
+             diag_field_name=="precip_liq_surf_mass_flux") {
+    diag_name = "precip_surf_mass_flux";
+    params.set<std::string>("precip_type","liquid");
+  } else if (diag_field_name=="PrecipIceSurfMassFlux" or
+             diag_field_name=="precip_ice_surf_mass_flux") {
+    diag_name = "precip_surf_mass_flux";
+    params.set<std::string>("precip_type","ice");
+  } else if (diag_field_name=="PrecipTotalSurfMassFlux" or
+             diag_field_name=="precip_total_surf_mass_flux") {
+    diag_name = "precip_surf_mass_flux";
+    params.set<std::string>("precip_type","total");
   } else {
     diag_name = diag_field_name;
   }

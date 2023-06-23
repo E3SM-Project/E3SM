@@ -9,9 +9,7 @@ set(DIAGNOSTIC_SRCS
   longwave_cloud_forcing.cpp
   meridional_vapor_flux.cpp
   potential_temperature.cpp
-  precip_ice_surf_mass_flux.cpp
-  precip_liq_surf_mass_flux.cpp
-  precip_total_surf_mass_flux.cpp
+  precip_surf_mass_flux.cpp
   rain_water_path.cpp
   relative_humidity.cpp
   rime_water_path.cpp

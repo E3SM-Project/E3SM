@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
-#include "diagnostics/precip_total_surf_mass_flux.hpp"
+#include "diagnostics/precip_surf_mass_flux.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -59,12 +59,15 @@ void run(std::mt19937_64& engine)
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
   // Construct the Diagnostics
-  ekat::ParameterList params;
   register_diagnostics();
+  ekat::ParameterList params;
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  auto diag_total = diag_factory.create("PrecipTotalSurfMassFlux", comm, params);
-  auto diag_ice   = diag_factory.create("PrecipIceSurfMassFlux",   comm, params);
-  auto diag_liq   = diag_factory.create("PrecipLiqSurfMassFlux",   comm, params);
+  params.set<std::string>("precip_type","total");
+  auto diag_total = diag_factory.create("precip_surf_mass_flux", comm, params);
+  params.set<std::string>("precip_type","ice");
+  auto diag_ice   = diag_factory.create("precip_surf_mass_flux"  , comm, params);
+  params.set<std::string>("precip_type","liquid");
+  auto diag_liq   = diag_factory.create("precip_surf_mass_flux"  , comm, params);
   diag_total->set_grids(gm);
   diag_ice->set_grids(gm);
   diag_liq->set_grids(gm);
