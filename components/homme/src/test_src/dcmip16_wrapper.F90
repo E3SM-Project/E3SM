@@ -671,10 +671,6 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   do ie = nets,nete
 
-    elem(ie)%derived%FM(:,:,1,:) = 0.0 !(u - u0)/dt
-    elem(ie)%derived%FM(:,:,2,:) = 0.0 !(v - v0)/dt
-
-    !precl(:,:,ie) = -1.0d0
     precl(:,:,ie) = 0.0d0
 
     ! get current element state
@@ -717,11 +713,11 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
       !compute current energy and mass
       if(bubble_rj_eamcpdry) then
-      call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en1glob_cp)  
-      en1glob_cv = en1glob_cp
+        call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en1glob_cp)  
+        en1glob_cv = en1glob_cp
       else
-      call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en1glob_cp)  
-      call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en1glob_cv)  
+        call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en1glob_cp)  
+        call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en1glob_cv)  
       endif
 
       mass1global = sum( dp_c )
@@ -735,13 +731,11 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 !#define DIAGN
 #undef DIAGN
 
-
       ! if RJ precipitation
       if(bubble_prec_type == 1) then
 
-        !computes its own dry values
         if(bubble_rj_cpstar_hy .or. bubble_rj_cpstar_nh) then
-          !returns new T, qv, new!!! dp, mass
+
           call rj_new(qv_c,qc_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
                           energy_before,en2cp,en2cv,energy_after,encl,wasiactive)
 #ifdef DIAGN
@@ -778,7 +772,6 @@ endif
                energy_before,en2cp,en2cv,energy_after,encl,wasiactive)
 
 #ifdef DIAGN
-!this seems to work
 if(wasiactive)then
 print *, 'en_before-en1globP rel', (energy_before-en1glob_cp)/en1glob_cv
 print *, 'en_before-en1globV rel', (energy_before-en1glob_cv)/en1glob_cv
@@ -801,11 +794,11 @@ endif
       endif ! RJ or Kessler choice
 
       if(bubble_rj_eamcpdry) then
-      call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2glob_cp)
-      en2glob_cv = en2glob_cp
+        call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2glob_cp)
+        en2glob_cv = en2glob_cp
       else
-      call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2glob_cp)
-      call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en2glob_cv)
+        call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2glob_cp)
+        call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en2glob_cv)
       endif
 
       mass2global = sum( dp_c )
@@ -833,16 +826,18 @@ endif
       !do not use homme rstar routine here
 
       precl(i,j,ie) = mass_prect / (dt * rhow) / g
-!ver 1
+
+!ver 1 for total en_cl comparison, with L term
+!good only for exact methods -- P and V updates
 !      en_cl_diff(i,j,ie) = (encl-energy_prect)/en1glob_cp
-!ver 2, comparing only cp/cl terms
+!ver 2, comparing only cp/cl terms without L terms for exact methods and eam interface methods
       if(wasiactive)then
 
 !print *, 'time ie, i, j',ie, i, j, tl%nstep
 
-      en_cl_diff(i,j,ie) = (en1glob_cp-en2glob_cp-latice*mass_prect)/(encl-latice*mass_prect)
+        en_cl_diff(i,j,ie) = (en1glob_cp-en2glob_cp-latice*mass_prect)/(encl-latice*mass_prect)
       else
-      en_cl_diff(i,j,ie) = 0.0
+        en_cl_diff(i,j,ie) = 0.0
       endif
 
       !update states assuming cam_ routines are off
@@ -885,7 +880,6 @@ endif
   globprecl_sum = global_shared_sum(1)
   en_cl_diff_sum = global_shared_sum(2)
 
-  !call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
   call dcmip2016_append_measurements2(max_precl,globprecl_sum,en_cl_diff_sum,tl,hybrid)
 
 end subroutine bubble_new_forcing

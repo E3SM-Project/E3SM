@@ -178,22 +178,6 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
     endif
   enddo
 
-  !recompute geop
-  do k=nlev, 1, -1
-    rstar_new = rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k)
-    olddphi = rstar_new * dp_c(k) * T_c(k) / p_c(k)
-    zi_c(k) = zi_c(k+1) + olddphi/gravit
-  enddo
-
-!if(wasiactive)then
-!print *, 'ql_c', ql_c
-!compute en2, energy before sedimentation
-!  call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
-!print *, 'en2 via P',en2
-!  call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c       ,p_c,en2)
-!print *, 'en2 via V',en2
-!endif
-
   if(bubble_rj_cpstar_nh) then
     !sanity check is to use the opposite formulation
     call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2cp)
@@ -349,20 +333,13 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
     endif
   enddo
 
-  !recompute geop
-  ! this was for running without sedim, now it is useless cause below geop will be updated
-  do k=nlev, 1, -1
-    rstardp = dp_c(k)*(rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k))
-    olddphi = rstardp * T_c(k) / p_c(k)
-    zi_c(k) = zi_c(k+1) + olddphi/gravit
-  enddo
 
   if(wasiactive)then
-  if(bubble_rj_eamcpdry) then
-  !call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
-  call energycp_hy_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en2)
+    if(bubble_rj_eamcpdry) then
+    !call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
+    call energycp_hy_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en2)
   elseif (bubble_rj_eamcpstar) then
-  call energycp_hy_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en2)
+    call energycp_hy_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en2)
   endif
 
 
@@ -404,41 +381,12 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 
   enddo
 
-
   if(bubble_rj_eamcpdry) then
-  !call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
-  call energycp_hy_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en3)
+    !call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
+    call energycp_hy_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en3)
   elseif (bubble_rj_eamcpstar) then
-  call energycp_hy_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en3)
+    call energycp_hy_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en3)
   endif
-
-#if 0
-print *, '<<<<<<<<<<'
-if(bubble_rj_eamcpdry) then
-
-print *, 'en1-en2, rel', en1-en2, (en1-en2)/en2
-print *, 'en2, en3', en2,en3
-print *, 'en2-en3', en2-en3
-print *, 'Lterm, cpdry term', latice*massout, Tforcl*cpdry*massout
-!those are almost =
-print *, 'PA vs cpdry*t*M', en2-en3-latice*massout, Tforcl*cpdry*massout
-print *, 'PA vs cl*T*M', en1-en3-latice*massout, encl-latice*massout
-print *, 'PA diagn', (en1-en3-latice*massout)/(encl-latice*massout)
-
-elseif (bubble_rj_eamcpstar) then
-
-!for this option comparing en1 and e2 won't work, we dont have energy routine with fixed cpstar \= cpdry
-print *, 'en1-en2 rel', (en1-en2)/en1
-print *, 'en1-en3', en1-en3
-print *, 'Lterm,cpv term', latice*massout, Tforcl*cpv*massout
-!those are almost =
-print *, 'PA vs cpvapor*t*M', en1-en3-latice*massout, Tforcl*cpv*massout
-print *, 'PA vs cl*T*M', en1-en3-latice*massout, encl-latice*massout
-print *, 'PA diagn', (en1-en3-latice*massout)/(encl-latice*massout)
-
-endif
-print *, '>>>>>>>>>>>>>'
-#endif
 
   endif
 
