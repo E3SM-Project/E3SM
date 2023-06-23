@@ -307,11 +307,11 @@ TEST_CASE("nudging") {
 	//NOTE: The nearest unmasked value will be the average between ilev=1 and 
 	//      ilev=2 so the vertical contribution will be 200*((1-1) + (2-1))/2 = 100
 	if (ilev == 0){
-	  double val_before  = 10000*(icol-1) + 100.0 + 10*int(time_index-1);
-	  double val_after   = 10000*(icol-1) + 100.0 + 10*int(time_index);
-	  double w_aft       = time_s*100.-time_index*250.;
-	  double w_bef       = (time_index+1)*250-time_s*100.;
-	  double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
+	  Real val_before  = 10000*(icol-1) + 100.0 + 10*int(time_index-1);
+	  Real val_after   = 10000*(icol-1) + 100.0 + 10*int(time_index);
+	  Real w_aft       = time_s*100.-time_index*250.;
+	  Real w_bef       = (time_index+1)*250-time_s*100.;
+	  Real val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
           REQUIRE(abs(T_mid_v_h_o(icol,ilev) - val_tim_avg)<0.001);
           REQUIRE(abs(qv_h_o(icol,ilev) - val_tim_avg)<0.001);
           REQUIRE(abs(u_h_o(icol,ilev) - val_tim_avg)<0.001);
@@ -329,11 +329,11 @@ TEST_CASE("nudging") {
 	//      of levels in the source data and nlevs is the number of levels on the test
 	//      atm. state.
 	if (ilev == (nlevs-1)){
-	  double val_before  = 10000*(icol-1) + 100*(2*num_levs-3) + 10*int(time_index-1);
-	  double val_after   = 10000*(icol-1) + 100*(2*num_levs-3) + 10*int(time_index);
-	  double w_aft       = time_s*100.-time_index*250.;
-	  double w_bef       = (time_index+1)*250-time_s*100.;
-	  double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
+	  Real val_before  = 10000*(icol-1) + 100*(2*num_levs-3) + 10*int(time_index-1);
+	  Real val_after   = 10000*(icol-1) + 100*(2*num_levs-3) + 10*int(time_index);
+	  Real w_aft       = time_s*100.-time_index*250.;
+	  Real w_bef       = (time_index+1)*250-time_s*100.;
+	  Real val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
           REQUIRE(abs(T_mid_v_h_o(icol,ilev) - val_tim_avg)<0.001);
           REQUIRE(abs(qv_h_o(icol,ilev) - val_tim_avg)<0.001);
           REQUIRE(abs(u_h_o(icol,ilev) - val_tim_avg)<0.001);
@@ -341,18 +341,18 @@ TEST_CASE("nudging") {
 	  continue;
 	}
 
-        double val_before = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index-1);
-        double val_after = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index);
-        double w_aft = time_s*100.-time_index*250.;
-        double w_bef = (time_index+1)*250-time_s*100.;
-	double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
+        Real val_before = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index-1);
+        Real val_after = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index);
+        Real w_aft = time_s*100.-time_index*250.;
+        Real w_bef = (time_index+1)*250-time_s*100.;
+	Real val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
 
-        double val_before_n = 10000*(icol-1) + 200*(ilev) + 10*int(time_index-1);
-        double val_after_n = 10000*(icol-1) + 200*(ilev) + 10*int(time_index);
-        double w_aft_n = time_s*100.-time_index*250.;
-        double w_bef_n = (time_index+1)*250-time_s*100.;
-	double val_tim_avg_next = (val_before_n*w_bef_n + val_after_n*w_aft_n) / 250.;
-	double val_avg = (val_tim_avg_next + val_tim_avg)/2.;
+        Real val_before_n = 10000*(icol-1) + 200*(ilev) + 10*int(time_index-1);
+        Real val_after_n = 10000*(icol-1) + 200*(ilev) + 10*int(time_index);
+        Real w_aft_n = time_s*100.-time_index*250.;
+        Real w_bef_n = (time_index+1)*250-time_s*100.;
+	Real val_tim_avg_next = (val_before_n*w_bef_n + val_after_n*w_aft_n) / 250.;
+	Real val_avg = (val_tim_avg_next + val_tim_avg)/2.;
 
 	REQUIRE(abs(T_mid_v_h_o(icol,ilev) - val_avg)<0.001);
 	REQUIRE(abs(qv_h_o(icol,ilev) - val_avg)<0.001);

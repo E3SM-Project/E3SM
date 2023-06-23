@@ -70,8 +70,8 @@ void Nudging::apply_tendency(Field& base, const Field& next, const int dt)
   // Now apply the tendency.
   Field tend = base.clone();
   // Use update internal to set tendency, will be (1.0*next - 1.0*base), note tend=base at this point.
-  tend.update(next,1.0,-1.0);
-  base.update(tend,dtend,1.0);
+  tend.update(next,Real(1.0),Real(-1.0));
+  base.update(tend,dtend,Real(1.0));
 }
 // =========================================================================================
 void Nudging::initialize_impl (const RunType /* run_type */)
