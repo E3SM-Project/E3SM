@@ -124,7 +124,7 @@ void apply_interpolation_impl_1d(
   const LIV<T,P>& vert_interp);
 
 /* ---------------------------------------------------------------------- 
- * Versions where x_tgt is a 2-D view
+ * Versions where x_src is a 2-D view and x_tgt is a 2-D view
  * ---------------------------------------------------------------------- */
 template<typename T, int P, int N> 
 void perform_checks(
@@ -160,7 +160,7 @@ void apply_interpolation(
   const view_3d<        Mask<P>>& mask);
 
 /* ---------------------------------------------------------------------- 
- * Versions where x_tgt is a single 1-D vertical profile
+ * Versions where x_src is a 2-D view and x_tgt is a single 1-D vertical profile
  * ---------------------------------------------------------------------- */
 template<typename T, int P, int N> 
 void perform_checks(
@@ -190,6 +190,78 @@ void apply_interpolation(
   const                        T  mask_val,
   const                 LIV<T,P>& vert_interp,
   const view_2d<const Pack<T,P>>& x_src,
+  const view_1d<const Pack<T,P>>& x_tgt,
+  const view_3d<const Pack<T,P>>& input,
+  const view_3d<      Pack<T,P>>& output,
+  const view_3d<        Mask<P>>& mask);
+
+/* ---------------------------------------------------------------------- 
+ * Versions where x_src is a 1-D view and x_tgt is a 2-D view
+ * ---------------------------------------------------------------------- */
+template<typename T, int P, int N> 
+void perform_checks(
+  const view_1d<const Pack<T,P>>&   x_src,
+  const view_2d<const Pack<T,P>>&   x_tgt,
+  const view_Nd<const Pack<T,P>,N>& input,
+  const view_Nd<      Pack<T,P>,N>& output,
+  const int                         nlevs_src,
+  const int                         nlevs_tgt);
+
+template<typename T, int P> 
+void apply_interpolation(
+  const                      int  num_levs_src,
+  const                      int  num_levs_tgt,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_1d<const Pack<T,P>>& x_src,
+  const view_2d<const Pack<T,P>>& x_tgt,
+  const view_2d<const Pack<T,P>>& input,
+  const view_2d<      Pack<T,P>>& output,
+  const view_2d<        Mask<P>>& mask);
+
+template<typename T, int P> 
+void apply_interpolation(
+  const                      int  num_levs_src,
+  const                      int  num_levs_tgt,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_1d<const Pack<T,P>>& x_src,
+  const view_2d<const Pack<T,P>>& x_tgt,
+  const view_3d<const Pack<T,P>>& input,
+  const view_3d<      Pack<T,P>>& output,
+  const view_3d<        Mask<P>>& mask);
+
+/* ---------------------------------------------------------------------- 
+ * Versions where x_src is a single 1-D view and x_tgt is a single 1-D vertical profile
+ * ---------------------------------------------------------------------- */
+template<typename T, int P, int N> 
+void perform_checks(
+  const view_1d<const Pack<T,P>>&   x_src,
+  const view_1d<const Pack<T,P>>&   x_tgt,
+  const view_Nd<const Pack<T,P>,N>& input,
+  const view_Nd<      Pack<T,P>,N>& output,
+  const int                         nlevs_src,
+  const int                         nlevs_tgt);
+
+template<typename T, int P> 
+void apply_interpolation(
+  const                      int  num_levs_src,
+  const                      int  num_levs_tgt,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_1d<const Pack<T,P>>& x_src,
+  const view_1d<const Pack<T,P>>& x_tgt,
+  const view_2d<const Pack<T,P>>& input,
+  const view_2d<      Pack<T,P>>& output,
+  const view_2d<        Mask<P>>& mask);
+
+template<typename T, int P> 
+void apply_interpolation(
+  const                      int  num_levs_src,
+  const                      int  num_levs_tgt,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_1d<const Pack<T,P>>& x_src,
   const view_1d<const Pack<T,P>>& x_tgt,
   const view_3d<const Pack<T,P>>& input,
   const view_3d<      Pack<T,P>>& output,
