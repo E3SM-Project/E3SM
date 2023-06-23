@@ -79,8 +79,11 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 void Cosp::initialize_impl (const RunType /* run_type */)
 {
 
-  // Determine how often to call COSP, specified as number of atm steps
-  m_cosp_freq_in_steps = m_params.get<Int>("cosp_frequency", 1);
+  // Determine how often to call COSP, specified as number of atm steps (>0) or number of hours (<0)
+  m_cosp_frequency = m_params.get<Int>("cosp_frequency", 1);
+
+  // How many subcolumns to use for COSP
+  m_num_subcols = m_params.get<Int>("cosp_subcolumns", 10);
 
   // Set property checks for fields in this process
   //using Interval = FieldWithinIntervalCheck;
@@ -90,12 +93,18 @@ void Cosp::initialize_impl (const RunType /* run_type */)
 }
 
 // =========================================================================================
-void Cosp::run_impl (const double /* dt */)
+void Cosp::run_impl (const double dt)
 {
 
   // Determine if we should update COSP this timestep; use rad function to compare COSP frequency with this timestep
   auto ts = timestamp();
-  auto update_cosp = cosp_do(m_cosp_freq_in_steps, ts.get_num_steps());
+  auto cosp_freq_in_steps = m_cosp_frequency;
+  if (m_cosp_frequency < 0) {
+      // interpret cosp_freq as nhours
+      cosp_freq_in_steps = -3600.0 * m_cosp_frequency / dt;
+  }
+  // Make sure cosp frequency is multiple of rad frequency?
+  auto update_cosp = cosp_do(cosp_freq_in_steps, ts.get_num_steps());
 
   // Get fields from field manager; note that we get host views because this
   // interface serves primarily as a wrapper to a c++ to f90 bridge for the COSP

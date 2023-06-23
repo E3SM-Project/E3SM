@@ -58,12 +58,12 @@ protected:
   void run_impl        (const double dt);
   void finalize_impl   ();
 
-  // cosp frequency in number of steps
-  int m_cosp_freq_in_steps;
+  // cosp frequency; positive is interpreted as number of steps, negative as number of hours
+  int m_cosp_frequency;
 
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 
-  Int m_num_subcols = 10;
+  Int m_num_subcols;
   Int m_num_levs;
   Int m_num_isccptau = 7;
   Int m_num_isccpctp = 7;

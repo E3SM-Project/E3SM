@@ -288,13 +288,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     </mac_aero_mic>
 
     <cosp inherit="atm_proc_base">
-      <cosp_frequency hgrid="ne4np4">1</cosp_frequency>
-      <cosp_frequency hgrid="ne30np4">4</cosp_frequency>
-      <cosp_frequency hgrid="ne120np4">8</cosp_frequency>
-      <cosp_frequency hgrid="ne256np4">6</cosp_frequency>
-      <cosp_frequency hgrid="ne512np4">6</cosp_frequency>
-      <cosp_frequency hgrid="ne1024np4">6</cosp_frequency>
-      <cosp_frequency hgrid="ne0np4_conus_x4v1_lowcon">8</cosp_frequency>
+      <cosp_subcolumns>10</cosp_subcolumns>
+      <!-- Frequency at which to call COSP; positive values interpreted as number of steps, negative as number of hours -->
+      <cosp_frequency>-1</cosp_frequency>
     </cosp>
 
     <physics inherit="atm_proc_group">
