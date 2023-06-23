@@ -95,16 +95,16 @@ TEST_CASE("field_at_height")
   for (auto f : {z_mid, z_int}) {
     auto v = f.get_view<Real**,Host>();
     const auto& dims = f.get_header().get_identifier().get_layout().dims();
-    for (int i=1; i<dims[0]; ++i) {
+    for (int i=0; i<dims[0]; ++i) {
       for (int j=0; j<dims[1]; ++j) {
-        v(i,j) = dims[1]+1-j;
+        v(i,j) = nlevs-j;
       }
     };
     f.sync_to_dev();
   }
 
   // Run many times
-  Real z_tgt;
+  Real z_tgt,lev_tgt;
   std::string loc;
   for (int irun=0; irun<nruns; ++irun) {
 
@@ -121,19 +121,22 @@ TEST_CASE("field_at_height")
 
     z_tgt = pdf_levs(engine);
     loc = std::to_string(z_tgt) + "m";
+    // z[ilev] = nlevs-ilev, so the tgt slice is nlevs-z_tgt
+    lev_tgt = nlevs-z_tgt;
 
     print(" -> Testing with z_tgt coinciding with a z level\n");
     {
       print("    -> scalar midpoint field...............\n");
       auto d = run_diag (s_mid,z_mid,loc);
-      auto tgt = s_mid.subfield(1,static_cast<int>(z_tgt));
+      auto tgt = s_mid.subfield(1,static_cast<int>(lev_tgt));
       REQUIRE (views_are_equal(d,tgt,&comm));
       print("    -> scalar midpoint field............... OK!\n");
     }
     {
       print("    -> scalar interface field...............\n");
       auto d = run_diag (s_int,z_int,loc);
-      auto tgt = s_int.subfield(1,static_cast<int>(z_tgt));
+      // z_mid = nlevs+1-ilev, so the tgt slice is nlevs+1-z_tgt
+      auto tgt = s_int.subfield(1,static_cast<int>(lev_tgt));
       REQUIRE (views_are_equal(d,tgt,&comm));
       print("    -> scalar interface field............... OK!\n");
     }
@@ -145,7 +148,7 @@ TEST_CASE("field_at_height")
       for (int i=0; i<ncols; ++i) {
         auto fi = v_mid.subfield(0,i);
         auto di = d.subfield(0,i);
-        auto tgt = fi.subfield(1,static_cast<int>(z_tgt));
+        auto tgt = fi.subfield(1,static_cast<int>(lev_tgt));
         REQUIRE (views_are_equal(di,tgt,&comm));
       }
       print("    -> vector midpoint field............... OK!\n");
@@ -158,17 +161,18 @@ TEST_CASE("field_at_height")
       for (int i=0; i<ncols; ++i) {
         auto fi = v_int.subfield(0,i);
         auto di = d.subfield(0,i);
-        auto tgt = fi.subfield(1,static_cast<int>(z_tgt));
+        auto tgt = fi.subfield(1,static_cast<int>(lev_tgt));
         REQUIRE (views_are_equal(di,tgt,&comm));
       }
       print("    -> vector interface field............... OK!\n");
     }
 
     z_tgt = pdf_levs(engine) + 0.5;
+    lev_tgt = nlevs-z_tgt;
     loc = std::to_string(z_tgt) + "m";
 
-    auto zp1 = static_cast<int>(std::round(z_tgt+0.5));
-    auto zm1 = static_cast<int>(std::round(z_tgt-0.5));
+    auto zp1 = static_cast<int>(std::round(lev_tgt+0.5));
+    auto zm1 = static_cast<int>(std::round(lev_tgt-0.5));
 
     print(" -> Testing with z_tgt between levels\n");
     {
@@ -182,8 +186,8 @@ TEST_CASE("field_at_height")
     {
       print("    -> scalar interface field...............\n");
       auto d = run_diag (s_int,z_int,loc);
-      auto tgt = s_mid.subfield(1,zp1).clone();
-      tgt.update(s_mid.subfield(1,zm1),0.5,0.5);
+      auto tgt = s_int.subfield(1,zp1).clone();
+      tgt.update(s_int.subfield(1,zm1),0.5,0.5);
       REQUIRE (views_are_equal(d,tgt,&comm));
       print("    -> scalar interface field............... OK!\n");
     }

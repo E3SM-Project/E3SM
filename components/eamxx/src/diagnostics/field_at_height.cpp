@@ -11,17 +11,21 @@ template<typename T>
 KOKKOS_INLINE_FUNCTION
 const T* find_first_smaller_z (const T* beg, const T* end, const T& z)
 {
+  // It's easier to find the last entry that is not smaller than z,
+  // and then we'll return the ptr after that
   int count = end - beg;
   while (count>1) {
-    count = end - beg;
-    auto mid = beg + count/2;
-    if (z>=*mid) {
-      beg = mid;
+    auto mid = beg + count/2 - 1;
+    // if (z>=*mid) {
+    if (*mid>=z) {
+      beg = mid+1;
     } else {
-      end = mid;
+      end = mid+1;
     }
+    count = end - beg;
   }
-  return z < *beg ? beg : end;
+
+  return *beg < z ? beg : end;
 }
 
 } // anonymous namespace
@@ -29,7 +33,6 @@ const T* find_first_smaller_z (const T* beg, const T* end, const T& z)
 namespace scream
 {
 
-// =========================================================================================
 FieldAtHeight::
 FieldAtHeight (const ekat::Comm& comm, const ekat::ParameterList& params)
  : AtmosphereDiagnostic(comm,params)
@@ -115,11 +118,11 @@ void FieldAtHeight::compute_diagnostic_impl()
         auto end = beg+nlevs;
         auto it = find_first_smaller_z(beg,end,z_tgt);
         if (it==beg) {
-          // We just extapolate *beg
-          d_view(i) = *beg;
+          // We just extapolate with first entry
+          d_view(i) = f_i(0);
         } else if (it==end) {
-          // We just extapolate *end
-          d_view(i) = *(--end);
+          // We just extapolate with last entry
+          d_view(i) = f_i(nlevs-1);
         } else {
           auto pos = it-beg;
           auto z0 = z_i(pos-1);
@@ -148,9 +151,11 @@ void FieldAtHeight::compute_diagnostic_impl()
         auto end = beg+nlevs;
         auto it = find_first_smaller_z(beg,end,z_tgt);
         if (it==beg) {
-          d_view(i,j) = *beg;
+          // We just extapolate with first entry
+          d_view(i,j) = f_ij(0);
         } else if (it==end) {
-          d_view(i,j) = *(--end);
+          // We just extapolate with last entry
+          d_view(i,j) = f_ij(nlevs-1);
         } else {
           auto pos = it-beg;
           auto z0 = z_i(pos-1);
