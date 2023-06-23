@@ -211,7 +211,7 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
      oldQ1mass         = dp_c(k)*qv_c(k)
      vapor_mass_change = dp_c(k)*ql_c(k)
      dp_c(k) = dp_c(k) - vapor_mass_change
-     p_c(k)  = p_c(k)  - vapor_mass_change
+     p_c(k)  = p_c(k)  - vapor_mass_change/2.0
      qv_c(k) = oldQ1mass/dp_c(k)
      ql_c(k) = 0.0
      rstardp = dp_c(k) * (rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k))
@@ -356,7 +356,7 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
      oldQ1mass         = dp_c(k)*qv_c(k)
      vapor_mass_change = dp_c(k)*ql_c(k)
      dp_c(k) = dp_c(k) - vapor_mass_change
-     p_c(k)  = p_c(k)  - vapor_mass_change
+     p_c(k)  = p_c(k)  - vapor_mass_change/2.0
      qv_c(k) = oldQ1mass/dp_c(k)
      ql_c(k) = 0.0
      rstardp = dp_c(k) * (rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k))
