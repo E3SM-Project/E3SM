@@ -245,7 +245,6 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& tk             = get_field_out("eddy_diff_mom").get_view<Spack**>();
   const auto& inv_qc_relvar  = get_field_out("inv_qc_relvar").get_view<Spack**>();
   const auto& phis           = get_field_in("phis").get_view<const Real*>();
-  const auto& tracer_info    = get_group_out("tracers").m_info; // obtain tracer info structure
 
   // Alias local variables from temporary buffer
   auto z_mid       = m_buffer.z_mid;

@@ -236,7 +236,7 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
   std::vector<int>       time_idx_tmp;
   std::map<int,int>      map_of_times_to_vector_idx;
   int running_idx = 0;
-  for (int ii=0; ii<list_of_files.size(); ii++) {
+  for (size_t ii=0; ii<list_of_files.size(); ii++) {
     const auto filename = list_of_files[ii];
     // Reference TimeStamp
     auto ts_file_start = scorpio::read_timestamp(filename,"case_t0");
