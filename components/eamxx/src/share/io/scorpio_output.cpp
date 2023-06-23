@@ -903,6 +903,15 @@ compute_diagnostic(const std::string& name, const bool allow_invalid_fields)
 
   // Either allow_invalid_fields=false, or all inputs are valid. Proceed.
   diag->compute_diagnostic();
+
+  // The diag may have failed to compute (e.g., t=0 output with a flux-like diag).
+  // If we're allowing invalid fields, then we should simply set diag=m_fill_value
+  if (allow_invalid_fields) {
+    auto d = diag->get_diagnostic();
+    if (not d.get_header().get_tracking().get_time_stamp().is_valid()) {
+      d.deep_copy(m_fill_value);
+    }
+  }
 }
 /* ---------------------------------------------------------- */
 // General get_field routine for output.
