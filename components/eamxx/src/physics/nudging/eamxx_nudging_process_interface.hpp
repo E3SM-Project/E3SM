@@ -23,6 +23,12 @@ namespace scream
  * The class responsible to handle the nudging of variables
 */
 
+// enum to track how the source pressure levels are defined
+enum SourcePresType {
+  DYNAMIC = 0,  // DEFAULT - source data should include time/spatially varying p_mid
+  STATIC  = 1,  // source data includes p_lev which is a static set of levels in both space and time.
+};
+
 class Nudging : public AtmosphereProcess
 {
 public:
@@ -90,6 +96,8 @@ protected:
   int m_num_src_levs;
   int m_timescale;
   std::vector<std::string> m_datafiles;
+  SourcePresType m_src_pres_type;
+  
 
   // Some helper fields.
   std::map<std::string,Field> m_helper_fields;

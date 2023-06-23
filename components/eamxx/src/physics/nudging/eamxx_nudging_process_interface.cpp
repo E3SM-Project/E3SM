@@ -11,9 +11,17 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_datafiles  = m_params.get<std::vector<std::string>>("nudging_filename");
   m_timescale = m_params.get<int>("nudging_timescale",0);
   m_fields_nudge = m_params.get<std::vector<std::string>>("nudging_fields");
+  auto src_pres_type = m_params.get<std::string>("source_pressure_type","DYNAMIC");
+  if (src_pres_type=="DYNAMIC") {
+    m_src_pres_type = DYNAMIC;
+  } else if (src_pres_type=="STATIC") {
+    m_src_pres_type = STATIC;
+  } else {
+    EKAT_ERROR_MSG("ERROR! Nudging::parameter_list - unsupported source_pressure_type provided.  Current options are [DYNAMICS,STATIC].  Please check");
+  }
   // TODO: Add some warning messages here.
   // 1. if m_timescale is <= 0 we will do direct replacement.
-  // 2. if m_fields_nudge is empty or =NONE then we skip nudging altogether.
+  // 2. if m_fields_nudge is empty or =NONE then we will skip nudging altogether.
 }
 
 // =========================================================================================
@@ -73,14 +81,33 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   // Initialize the time interpolator
   auto grid_ext = m_grid->clone("Point Grid", false);
   grid_ext->reset_num_vertical_lev(m_num_src_levs);
+  FieldLayout scalar2d_layout_mid { {LEV}, {m_num_src_levs} };
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
   m_time_interp = util::TimeInterpolation(grid_ext, m_datafiles);
 
   constexpr int ps = 1;  // TODO: I think this could be the regular packsize, right?
   const auto& grid_name = m_grid->name();
-  create_helper_field("p_mid_ext", scalar3d_layout_mid, grid_name, ps);
-  auto pmid_ext = get_helper_field("p_mid_ext");
-  m_time_interp.add_field(pmid_ext,"p_mid",true);
+  if (m_src_pres_type == DYNAMIC) {
+    create_helper_field("p_mid_ext", scalar3d_layout_mid, grid_name, ps);
+    auto pmid_ext = get_helper_field("p_mid_ext");
+    m_time_interp.add_field(pmid_ext,"p_mid",true);
+  } else if (m_src_pres_type == STATIC) {
+    // Load p_lev from source data file
+    create_helper_field("p_mid_ext", scalar2d_layout_mid, grid_name, ps);
+    auto pmid_ext = get_helper_field("p_mid_ext");
+    auto pmid_ext_v = pmid_ext.get_view<Real*,Host>();
+    ekat::ParameterList in_params;
+    in_params.set<std::vector<std::string>>("Field Names",{"p_lev"});
+    in_params.set("Filename",m_datafiles[0]);
+    in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
+    std::map<std::string,view_1d_host<Real>> host_views;
+    std::map<std::string,FieldLayout>  layouts;
+    host_views["p_lev"] = pmid_ext_v;
+    layouts.emplace("p_lev",scalar2d_layout_mid);
+    AtmosphereInput src_input(in_params,grid_ext,host_views,layouts);
+    src_input.read_variables(-1);
+    src_input.finalize();
+  }
   for (auto name : m_fields_nudge) {
     std::string name_ext = name + "_ext";
     // Helper fields that will temporarily store the target state, which can then
@@ -113,9 +140,15 @@ void Nudging::run_impl (const double dt)
 
   // Process data and nudge the atmosphere state
   const auto& p_mid_v     = get_field_in("p_mid").get_view<const mPack**>();
-  const auto& p_mid_ext   = get_helper_field("p_mid_ext").get_view<mPack**>();
-  const view_Nd<mPack,2> p_mid_ext_p(reinterpret_cast<mPack*>(p_mid_ext.data()),
-				     m_num_cols,m_num_src_levs);
+  view_Nd<mPack,2> p_mid_ext_p;
+  view_Nd<mPack,1> p_mid_ext_1d;
+  if (m_src_pres_type == DYNAMIC) {
+    const auto& p_mid_ext   = get_helper_field("p_mid_ext").get_view<mPack**>();
+    p_mid_ext_p = view_Nd<mPack,2>(reinterpret_cast<mPack*>(p_mid_ext.data()),
+  				     m_num_cols,m_num_src_levs);
+  } else if (m_src_pres_type == STATIC) {
+    p_mid_ext_1d   = get_helper_field("p_mid_ext").get_view<mPack*>();
+  }
   for (auto name : m_fields_nudge) {
     auto atm_state_field = get_field_out(name);
     auto int_state_field = get_helper_field(name);
@@ -126,13 +159,23 @@ void Nudging::run_impl (const double dt)
     const view_Nd<mPack,2> ext_state_view(reinterpret_cast<mPack*>(ext_state_field.data()),
                                           m_num_cols,m_num_src_levs);
     // Vertical Interpolation onto atmosphere state pressure levels
-    perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
-                                             p_mid_v,
-                                             ext_state_view,
-                                             int_state_view,
-                                             int_mask_view,
-                                             m_num_src_levs,
-                                             m_num_levs);
+    if (m_src_pres_type == DYNAMIC) {
+      perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
+                                               p_mid_v,
+                                               ext_state_view,
+                                               int_state_view,
+                                               int_mask_view,
+                                               m_num_src_levs,
+                                               m_num_levs);
+    } else if (m_src_pres_type == STATIC) {
+      perform_vertical_interpolation<Real,1,2>(p_mid_ext_1d,
+                                               p_mid_v,
+                                               ext_state_view,
+                                               int_state_view,
+                                               int_mask_view,
+                                               m_num_src_levs,
+                                               m_num_levs);
+    }
 
     // Check that none of the nudging targets are masked, if they are, set value to
     // nearest unmasked value above.
