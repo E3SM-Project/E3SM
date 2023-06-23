@@ -655,7 +655,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl) :: ptop
   real(rl) :: loc_mass_p, mass_prect, loc_energy_p, energy_prect
 
-  real(rl) :: zi(np,np,nlevp), zi_c(nlevp), rstar(nlev), vthetaa(nlev)
+  real(rl) :: zi(np,np,nlevp), zi_c(nlevp), rstar(nlev), ttend(nlev)
 
   real(rl) :: energy_before, energy_after, en2cp, en2cV, mass_before, mass_after, discrepancy, encl
   real(rl) :: en1glob_cp, en1glob_cv, en2glob_cp, en2glob_cv, mass1global, mass2global, rstar_new, olddphi
@@ -672,6 +672,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   do ie = nets,nete
 
     precl(:,:,ie) = 0.0d0
+    ttend = 0.0
 
     ! get current element state
     ! returns p at midlevels just like we need for pprime
@@ -737,7 +738,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
         if(bubble_rj_cpstar_hy .or. bubble_rj_cpstar_nh) then
 
           call rj_new(qv_c,qc_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
-                          energy_before,en2cp,en2cv,energy_after,encl,wasiactive)
+                          energy_before,en2cp,en2cv,energy_after,encl,wasiactive,ttend)
 #ifdef DIAGN
 if(wasiactive)then
 if(bubble_rj_cpstar_nh) then
@@ -763,7 +764,7 @@ endif
 
           !returns new T, qv, new!!! dp, mass
           call rj_new_eam(qv_c,qc_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
-               encl,wasiactive)
+               encl,wasiactive,ttend)
 
         elseif(bubble_rj_cVstar) then
 
@@ -850,6 +851,8 @@ endif
 
       elem(ie)%state%dp3d(i,j,:,nt) = dp_c
       elem(ie)%state%phinh_i(i,j,:,nt) = gravit*zi_c
+
+      elem(ie)%derived%FM(i,j,1,:) = ttend(:)
 
       rstar = rdry * dpdry_c + rvapor * dp_c*qv_c
 

@@ -85,7 +85,7 @@ end subroutine compute_mass
 
 
 subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
-                                        en1, en2cp, en2cV, en3, encl, wasiactive)
+                                        en1, en2cp, en2cV, en3, encl, wasiactive,ttend)
 
   real(rl), dimension(nlev), intent(inout) :: p_c
   real(rl), dimension(nlev), intent(inout) :: dp_c
@@ -94,6 +94,7 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   real(rl),                  intent(inout) :: massout, energyout, en1, en2cp, en2cV, en3, encl
   real(rl),                  intent(in)    :: ptop
   logical,                   intent(inout) :: wasiactive
+  real(rl), dimension(nlev), intent(inout) :: ttend
 
   real(rl) :: qsat, dp_loc, qv_loc, ql_loc, dpdry_loc, qvdry_loc, qldry_loc, qsatdry, dq_loc, &
                 vapor_mass_change
@@ -107,7 +108,7 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   energyout = 0.0
   zero = 0.0
   rain = 0.0
-  en1 = 0; en2cp = 0; en2cV=0; en3 = 0; encl = 0;
+  en1 = 0; en2cp = 0; en2cV=0; en3 = 0; encl = 0; ttend = 0;
 
   call construct_hydro_pressure(dp_c,ptop,pi)
 
@@ -168,6 +169,8 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 
 !print *, 'k cps T', k,cpstarTerm_new, T_new, hold
 !print *, 'rain', vapor_mass_change
+
+       ttend(k) = T_new - T_c(k)
 
        T_c(k)  = T_new
        rain(k) = vapor_mass_change
@@ -249,7 +252,7 @@ end subroutine rj_new
 
 
 subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
-                                                               encl, wasiactive)
+                                                               encl, wasiactive,ttend)
 
   real(rl), dimension(nlev), intent(inout) :: p_c
   real(rl), dimension(nlev), intent(inout) :: dp_c
@@ -258,6 +261,7 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   real(rl),                  intent(inout) :: massout, energyout, encl
   real(rl),                  intent(in)    :: ptop
   logical,                   intent(inout) :: wasiactive
+  real(rl), dimension(nlev), intent(inout) :: ttend
 
   real(rl) :: qsat, dp_loc, qv_loc, ql_loc, dq_loc, &
                 vapor_mass_change
@@ -271,7 +275,7 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   energyout = 0.0
   zero = 0.0
   rain = 0.0
-  encl = 0;
+  encl = 0; ttend = 0
 
   if(bubble_rj_eamcpdry) then
   !call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en1)
@@ -324,6 +328,7 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 !print *, 'k cps T', k,cpstar, T_new
 !print *, 'rain', vapor_mass_change
 
+       ttend(k) = T_new - T_c(k)
        T_c(k)  = T_new
        rain(k) = vapor_mass_change
 
