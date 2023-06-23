@@ -5,9 +5,6 @@ IndentWidth: 3
 Language: Cpp
 AlignConsecutiveAssignments: true
 AlignConsecutiveBitFields: true
-AlignConsecutiveMacros:
-  Enabled: true
-  AcrossEmptyLines: true
-  AcrossComments: false
+AlignConsecutiveMacros: true
 AlignEscapedNewlines: true
 AlignTrailingComments: true
