@@ -153,7 +153,7 @@ void Nudging::run_impl (const double dt)
       Real fill_value;
       int  fill_idx = -1;
       // Scan top to surf and backfill all values near TOM that are masked.
-      for (int kk=0; kk<m_num_src_levs; ++kk) {
+      for (int kk=0; kk<m_num_levs; ++kk) {
         const auto ipack = kk / mPack::n;
 	const auto iidx  = kk % mPack::n;
         // Check if this index is masked
@@ -168,11 +168,10 @@ void Nudging::run_impl (const double dt)
 	  break;
 	}
       }
-      printf("ASD - icol = %2d, fill_idx = %2d, fill_value = %f\n",icol, fill_idx,fill_value);
       // Now fill the rest, the fill_idx should be non-negative.  If it isn't that means
       // we have a column that is fully masked - throw an error.
       EKAT_REQUIRE_MSG(fill_idx>-1,"Error! Nudging::run_impl - error encountered when filling masked values.  Column (" << std::to_string(icol) << ") is fully masked.");
-      for (int kk=fill_idx+1; kk<m_num_src_levs; ++kk) {
+      for (int kk=fill_idx+1; kk<m_num_levs; ++kk) {
         const auto ipack = kk / mPack::n;
 	const auto iidx  = kk % mPack::n;
         // Check if this index is masked
