@@ -15,3 +15,10 @@ fi
 
 #avoid errors on over-decomposing DATM's T62 grid beyond 9600 tasks
 if [ `./xmlquery --value NTASKS_ATM` -gt 9600 ]; then ./xmlchange NTASKS_ATM=9600; fi
+
+# on PM-CPU, set 16 CPL tasks/node
+if [ `./xmlquery --value MACH` == pm-cpu ]; then
+  ./xmlchange PSTRID_CPL=8
+  mpi_cpl=$(echo `./xmlquery NTASKS_CPL --value` / 8 | bc)
+  ./xmlchange NTASKS_CPL=$mpi_cpl
+fi
