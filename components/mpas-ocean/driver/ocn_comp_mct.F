@@ -890,6 +890,11 @@ contains
     timeStep = mpas_get_clock_timestep(domain_ptr % clock, ierr=ierr)
     call mpas_get_timeInterval(timeStep, dt=dt)
 
+    call ocn_import_mct(x2o_o, errorCode)  
+    if (errorCode /= 0) then
+       call mpas_log_write('Error in ocn_import_mct', MPAS_LOG_CRIT)
+    endif
+
 #ifdef HAVE_MOAB
 
 #ifdef MOABCOMP
@@ -913,10 +918,7 @@ contains
        call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
     endif
 #endif
-    call ocn_import_mct(x2o_o, errorCode)  
-    if (errorCode /= 0) then
-       call mpas_log_write('Error in ocn_import_mct', MPAS_LOG_CRIT)
-    endif
+    
 
     itimestep = 0
 
@@ -1036,7 +1038,9 @@ contains
       call mpas_get_timeInterval(timeStep, dt=dt)
       call mpas_reset_clock_alarm(domain_ptr % clock, coupleAlarmID, ierr=ierr)
 
-    ! Import state from moab coupler
+      ! Import state from coupler
+      call ocn_import_mct(x2o_o, ierr)
+      ! Import state from moab coupler
 #ifdef HAVE_MOAB
 
 
@@ -1060,8 +1064,7 @@ contains
          call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
       endif
 #endif
-      ! Import state from coupler
-      call ocn_import_mct(x2o_o, ierr)
+      
 
       ! Ensures MPAS AM write/compute startup steps are performed
       call ocn_analysis_compute_startup(domain_ptr, ierr)

@@ -478,13 +478,14 @@ CONTAINS
     call mct_list_clean(temp_list)
 
 #endif
-
+          ! so the cam import is before moab    
+          call atm_import( x2a_a%rattr, cam_in )
 #ifdef HAVE_MOAB
+          ! move moab import after cam import, so moab takes precedence
           call atm_import_moab(cam_in)
 #endif    
-          ! move moab import before cam import
-          ! so the cam import takes precedence, and fixes eventual problems in moab import     
-          call atm_import( x2a_a%rattr, cam_in )
+
+
 
           call t_startf('CAM_run1')
           call cam_run1 ( cam_in, cam_out ) 
@@ -633,7 +634,8 @@ CONTAINS
     ! Map input from mct to cam data structure
 
     call t_startf ('CAM_import')
-
+! move moab import after regular atm import, so it would be in charge
+    call atm_import( x2a_a%rattr, cam_in )
 #ifdef HAVE_MOAB
 
 #ifdef MOABCOMP
@@ -655,8 +657,7 @@ CONTAINS
 
      call atm_import_moab(cam_in)
 #endif
-   ! move moab import before regular atm import, so it would hopefully not be a problem
-     call atm_import( x2a_a%rattr, cam_in )
+   
     call t_stopf  ('CAM_import')
     
     ! Cycle over all time steps in the atm coupling interval

@@ -825,6 +825,10 @@ contains
 !
 !   get intial state from driver
 !
+    call ice_import_mct(x2i_i, errorCode)  
+    if (errorCode /= 0) then
+       call mpas_log_write('Error in ice_import_mct', MPAS_LOG_CRIT)
+    endif
 !-----------------------------------------------------------------------
 #ifdef HAVE_MOAB
 
@@ -847,10 +851,7 @@ contains
 
     call ice_import_moab()
 #endif 
-    call ice_import_mct(x2i_i, errorCode)  
-    if (errorCode /= 0) then
-       call mpas_log_write('Error in ice_import_mct', MPAS_LOG_CRIT)
-    endif
+    
 
     currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
     call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
@@ -1164,6 +1165,8 @@ contains
 
       ! reinitialize fluxes
       call seaice_column_reinitialize_fluxes(domain)
+      ! Import state from coupler
+      call ice_import_mct(x2i_i, ierr)
 #ifdef HAVE_MOAB
 #ifdef MOABCOMP
     ! loop over all fields in seq_flds_x2i_fields
@@ -1182,8 +1185,7 @@ contains
 #endif
       call ice_import_moab()
 #endif
-      ! Import state from coupler
-      call ice_import_mct(x2i_i, ierr)
+      
 
       ! Post coupling calls
       block => domain % blocklist

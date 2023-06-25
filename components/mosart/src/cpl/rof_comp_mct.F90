@@ -437,6 +437,8 @@ contains
 
     ! Map MCT to land data type (output is totrunin, subrunin)
     call t_startf ('lc_rof_import')
+    call rof_import_mct( x2r_r)
+    call t_stopf ('lc_rof_import')
 #ifdef HAVE_MOAB
 
 #ifdef MOABCOMP
@@ -458,8 +460,7 @@ contains
 
     call rof_import_moab( )
 #endif
-    call rof_import_mct( x2r_r)
-    call t_stopf ('lc_rof_import')
+    
 
     ! Run mosart (input is *runin, output is rtmCTL%runoff)
     ! First advance mosart time step

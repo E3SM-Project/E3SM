@@ -536,6 +536,8 @@ contains
     ! Map to elm (only when state and/or fluxes need to be updated)
 
     call t_startf ('lc_lnd_import')
+    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars)
+    
 #ifdef HAVE_MOAB
     ! first call moab import 
 #ifdef MOABCOMP
@@ -559,7 +561,6 @@ contains
     call lnd_import_moab( bounds, atm2lnd_vars, glc2lnd_vars)
 #endif
 
-    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars)
     call t_stopf ('lc_lnd_import')
 
     ! Use infodata to set orbital values if updated mid-run
