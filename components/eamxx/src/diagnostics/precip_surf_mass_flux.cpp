@@ -95,6 +95,7 @@ void PrecipSurfMassFlux::compute_diagnostic_impl()
     // setting the time stamp of the diag to invalid to signal that we did
     // not successfully compute it.
     m_diagnostic_output.get_header().get_tracking().invalidate_time_stamp();
+    return;
   }
 
   auto rhodt = PC::RHO_H2O*dt;
