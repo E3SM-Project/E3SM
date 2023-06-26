@@ -78,8 +78,7 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
     // Initialize data
     auto f_view_h = f.get_view<Real*,Host>();
     for (int ii=0; ii<nlcols; ii++) {
-      int icol = dofs_gids(ii);
-      f_view_h(ii) = test_func(icol,0);
+      f_view_h(ii) = test_func(ii,0);
     }
     f.sync_to_dev();
     // Update timestamp
@@ -111,8 +110,7 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
     // Note we only care about surface values so we only need to generate data over nlcols.
     auto f_view_h = field.get_view<Real*,Host>();
     for (int ii=0; ii<nlcols; ii++) {
-      int icol = dofs_gids(ii);
-      f_view_h(ii) = test_func(icol,dt);
+      f_view_h(ii) = test_func(ii,dt);
     }
     field.sync_to_dev();
   }
