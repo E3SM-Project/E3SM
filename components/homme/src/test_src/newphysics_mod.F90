@@ -167,8 +167,13 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
          T_new = (hold - L_new)/(   cpstarTerm_new   )
        endif
 
-!print *, 'k cps T', k,cpstarTerm_new, T_new, hold
+!print *, 'Told', T_loc
+!print *, 'L old', L_old
+!print *, 'k cps T', k,cpstarTerm_new, T_new
+!print *, 'Tnew-Told', T_new - T_loc
+!print *,'hold, Lnew', hold, L_new
 !print *, 'rain', vapor_mass_change
+!stop
 
        ttend(k) = T_new - T_c(k)
 
@@ -180,6 +185,15 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
  
     endif
   enddo
+
+
+!update geo here for proper energy diagn
+  do k=nlev, 1, -1
+    rstar_new = rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k)
+    olddphi = rstar_new * dp_c(k) * T_c(k) / p_c(k)
+    zi_c(k) = zi_c(k+1) + olddphi/gravit
+  enddo
+
 
   if(bubble_rj_cpstar_nh) then
     !sanity check is to use the opposite formulation
@@ -254,6 +268,7 @@ end subroutine rj_new
 subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
                                                                encl, wasiactive,ttend)
 
+
   real(rl), dimension(nlev), intent(inout) :: p_c
   real(rl), dimension(nlev), intent(inout) :: dp_c
   real(rl), dimension(nlev), intent(inout) :: qv_c,ql_c,T_c
@@ -263,10 +278,10 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   logical,                   intent(inout) :: wasiactive
   real(rl), dimension(nlev), intent(inout) :: ttend
 
-  real(rl) :: qsat, dp_loc, qv_loc, ql_loc, dq_loc, &
-                vapor_mass_change
-  real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, hold, T_new, en1, en2, en3
-  real(rl) :: cpstar, rstardp, oldQ1mass, oldQ2mass, olddphi, pi_top_int, enb, ena
+  real(rl) :: qsat, dp_loc, qv_loc, ql_loc, dpdry_loc, qvdry_loc, qldry_loc, qsatdry, dq_loc, &
+                vapor_mass_change, en1, en2, en3
+  real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, hold, T_new
+  real(rl) :: cpstarTerm_new, rstardp, oldQ1mass, oldQ2mass, olddphi, pi_top_int, enb, ena
   real(rl), dimension(nlev)  :: pi, dphi, zero, rain, d_pnh, rain2
   real(rl), dimension(nlevp) :: p_int
   integer  :: k, ll
@@ -275,7 +290,8 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   energyout = 0.0
   zero = 0.0
   rain = 0.0
-  encl = 0; ttend = 0
+  en1 = 0; en2=0; en3 = 0; encl = 0; ttend = 0;
+
 
   if(bubble_rj_eamcpdry) then
   !call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en1)
@@ -285,6 +301,7 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   endif
 
   call construct_hydro_pressure(dp_c,ptop,pi)
+
 
   !since one option uses geo, go from bottom to up
   do k=nlev, 1, -1
@@ -299,45 +316,56 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
        !compute dry values
        dp_loc = dp_c(k)
        qv_loc = qv_c(k)
-       !ql_loc here should be 0
        ql_loc = ql_c(k)
-
-       dq_loc = qv_loc - qsat            ! > 0 , is qliq_dry_new
-       vapor_mass_change = dp_loc*dq_loc
+       dpdry_loc = dp_loc * (1.0 - qv_loc - ql_loc)
+       qvdry_loc = qv_loc * dp_loc / dpdry_loc
+       qldry_loc = ql_loc * dp_loc / dpdry_loc
+       qsatdry = qsat * dp_loc / dpdry_loc     ! qv_new
+       dq_loc = qvdry_loc - qsatdry            ! > 0 , is qliq_dry_new
+       vapor_mass_change = dpdry_loc*dq_loc
        T_loc = T_c(k)
        p_loc = p_c(k)
        pi_loc = pi(k)
 
-       !new Q will be qsat
-       L_old = (latvap + latice) * qv_loc + latice *  ql_loc
-       L_new = (latvap + latice) * qsat   + latice * (ql_loc + dq_loc)
+       !new Q will be qsatdry
+       L_old = (latvap + latice) * qvdry_loc + latice * qldry_loc
+       L_new = (latvap + latice) * qsatdry   + latice * (qldry_loc + dq_loc)
 
-       if(bubble_rj_eamcpdry) then
+       !use extra term in dh=0 rule in case of NH or not
+       if(bubble_rj_eamcpstar) then
 
-          cpstar = cpdry
+         !in this case it is not new, it is frozen cp*
+         cpstarTerm_new = cpdry*1.0 + cpv*qvdry_loc + cl*qldry_loc
 
-       elseif (bubble_rj_eamcpstar) then
+       elseif (bubble_rj_eamcpdry) then
 
-          cpstar = cpdry*(1.0-qv_loc-ql_loc) + cpv*qv_loc + cl*ql_loc
+         cpstarTerm_new = cpdry*(1.0 + qvdry_loc + qldry_loc)
 
        endif
 
-       hold = T_loc*cpstar + L_old
-       T_new = (hold - L_new) / cpstar
+       hold = T_loc*cpstarTerm_new + L_old
+       T_new = (hold - L_new)/(   cpstarTerm_new   )
 
-!print *, 'k cps T', k,cpstar, T_new
+!print *, 'Told', T_loc
+!print *, 'L old', L_old
+!print *, 'k cps T', k,cpstarTerm_new, T_new
+!print *, 'Tnew-Told', T_new - T_loc
+!print *,'hold, Lnew', hold, L_new
 !print *, 'rain', vapor_mass_change
+!stop
 
        ttend(k) = T_new - T_c(k)
+
        T_c(k)  = T_new
        rain(k) = vapor_mass_change
-
+       !this is before raining out, so dp did not change
        qv_c(k) = (dp_loc*qv_loc - vapor_mass_change)/dp_loc
        ql_c(k) = (dp_loc*ql_loc + vapor_mass_change)/dp_loc
 
     endif
   enddo
 
+  !if we used V formulation for energy here, we would recompute geop here too
 
   if(wasiactive)then
     if(bubble_rj_eamcpdry) then

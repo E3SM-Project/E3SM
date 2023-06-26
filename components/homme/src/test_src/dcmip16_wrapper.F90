@@ -729,8 +729,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       mass_prect = 0.0; energy_prect = 0.0;
       wasiactive = .false.
 
-!#define DIAGN
-#undef DIAGN
+#define DIAGN
+!#undef DIAGN
 
       ! if RJ precipitation
       if(bubble_prec_type == 1) then
@@ -739,26 +739,6 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
           call rj_new(qv_c,qc_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
                           energy_before,en2cp,en2cv,energy_after,encl,wasiactive,ttend)
-#ifdef DIAGN
-if(wasiactive)then
-if(bubble_rj_cpstar_nh) then
-
-!!!!sanity check en1 = en1glob
-print *, 'en_before-en1glob rel', (energy_before-en1glob_cv)/en1glob_cv
-print *, 'NH update en_before-en2cv rel', (energy_before-en2cv)/en2cv
-print *, 'TOTAL en_before-(en3+enout) rel', (energy_before-(energy_after+energy_prect))/en2cv
-
-else
-
-print *, 'HY update en_before-en2cp rel', (energy_before-en2cp)/en2cp
-!print *, 'TOTAL en_before-(en3+enout) rel', (energy_before-(energy_after+energy_prect))/en2cp
-!print *, 'TOTAL en_before, en3, enout', energy_before,energy_after,energy_prect
-
-endif
-
-print *, "    "
-endif
-#endif
 
         elseif(bubble_rj_eamcpdry .or. bubble_rj_eamcpstar) then
 
@@ -772,17 +752,6 @@ endif
           call rj_new_volume(qv_c,qc_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
                energy_before,en2cp,en2cv,energy_after,encl,wasiactive)
 
-#ifdef DIAGN
-if(wasiactive)then
-print *, 'en_before-en1globP rel', (energy_before-en1glob_cp)/en1glob_cv
-print *, 'en_before-en1globV rel', (energy_before-en1glob_cv)/en1glob_cv
-print *, 'NH update en_before-en2cp rel', (energy_before-en2cp)/en2cp
-print *, 'NH update en_before-en2cV rel', (energy_before-en2cV)/en2cp
-print *, 'TOTAL en_before-(en3+enout) rel', (energy_before-(energy_after+energy_prect))/en2cv
-print *, "    "
-endif
-#endif
-
         elseif(bubble_rj_cpdry) then
 
           !this one conserves with const dp
@@ -793,6 +762,36 @@ endif
       elseif(bubble_prec_type == 0) then
         print *, 'kessler planar bubble not done';  stop
       endif ! RJ or Kessler choice
+
+
+#ifdef DIAGN
+if(wasiactive)then
+!if(bubble_rj_cpstar_nh) then
+
+print *, 'rof for nh, v, not rof for hy'
+print *, 'en_before-en1globV rel', (energy_before-en1glob_cv)/en1glob_cv
+print *, 'rof for nh, v, not rof for hy'
+print *, 'en_before-en1globP rel', (energy_before-en1glob_cp)/en1glob_cp
+print *, '  '
+
+if(.not.bubble_rj_cpstar_hy) then
+print *, 'rof for nh, v, not rof for hy'
+print *, 'NH update en_before-en2cv rel', (energy_before-en2cv)/en2cv
+print *, '  '
+endif
+
+print *, 'rof for nh, v, hy!'
+print *, 'NH update en_before-en2cp rel', (energy_before-en2cp)/en2cp
+print *, '  '
+
+print *, 'rof for nh, v, not for hy'
+print *, 'TOTAL en_before-(en3+enout) rel', (energy_before-(energy_after+energy_prect))/energy_after
+print *, '  '
+
+print *, "    "
+endif
+#endif
+
 
       if(bubble_rj_eamcpdry) then
         call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2glob_cp)
@@ -807,19 +806,23 @@ endif
 #ifdef DIAGN
 if(wasiactive)then
 
+print *, 'rof for all'
 print *, 'before check consistent energy/EOS',(en1glob_cp-en1glob_cv)/en1glob_cp
-!print *, 'before en1cp, en1cv',en1glob_cp,en1glob_cv
+print *, 'rof for all'
 print *, 'after check consistent energy/EOS',(en2glob_cp-en2glob_cv)/en2glob_cp
 print *, " "
 
 !print *, 'en prect', energy_prect
 !in case of HY update, TOTAL here won't be the same as TOTAL above with energies
 !from routine, because to control HY update, en_before was computed for HY formulation
+print *, 'rof for NH, V, not for HY'
 print *, 'TOTAL en1glob_cp-(en2glob_cp+prect) rel', (en1glob_cp-(en2glob_cp+energy_prect))/en1glob_cp
 !print *, 'TOTAL en1glob_cp,en2glob_cp,prect', en1glob_cp,en2glob_cp,energy_prect
+print *, 'rof for all'
 print *, 'TOTAL m1g-m2g, rel', mass1global-(mass2global+mass_prect), ( mass1global-mass2global-mass_prect)/mass1global
-print *, 'TOTAL (encl-enprect)/englob rel', (encl-energy_prect)/en1glob_cp
-print *, 'EAMD (encl-enprect)/englob rel', (en1glob_cp-en2glob_cp-latice*mass_prect)/(encl-latice*mass_prect)
+
+print *, 'CL TOTAL (encl-enprect)/englob rel', (encl-energy_prect)/en1glob_cp
+print *, 'CL no L, (encl-enprect)/encl rel', (en1glob_cp-en2glob_cp-latice*mass_prect)/(encl-latice*mass_prect)
 print *, "  ------------------------------  "
 endif
 #endif
