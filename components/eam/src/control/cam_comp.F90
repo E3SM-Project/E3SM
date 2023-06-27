@@ -106,7 +106,8 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
                                    cldera_commit_field
    use physics_buffer,   only: physics_buffer_desc, col_type_grid, pbuf_get_index, &
                                pbuf_get_field_rank, pbuf_get_field_dims, pbuf_get_field, &
-                               pbuf_get_field_name, pbuf_has_field
+                               pbuf_get_field_name, pbuf_has_field, pbuf_get_field_persistence, &
+                               persistence_global
    use ppgrid,           only: begchunk, endchunk, pcols, pver
    use phys_grid,        only: get_ncols_p, get_gcol_all_p, get_area_all_p
    use constituents,     only: pcnst, cnst_name
@@ -140,7 +141,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 #if defined(CLDERA_PROFILING)
    character(len=max_str_len) :: fname
    integer :: c, nfields, idx, rank, icmp, nparts, part_dim, ipart, fsize, ncols
-   integer :: nlcols
+   integer :: nlcols,irank
    integer :: dims(3)
    integer, allocatable :: cols_gids(:)
    real(r8), allocatable :: cols_area(:)
@@ -148,6 +149,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    logical :: in_pbuf, in_q
    real(r8), pointer :: field1d(:), field2d(:,:), field3d(:,:,:)
    type(physics_buffer_desc), pointer :: field_desc
+   character(len=5) :: int_str
 #endif
    !-----------------------------------------------------------------------
    etamid = nan
@@ -266,6 +268,11 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
      ! retrieve fields
      fname = pbuf_get_field_name(idx)
 
+     ! We can only track persistent pbuf quantities
+     if (pbuf_get_field_persistence(fname) .ne. persistence_global) then
+       cycle
+     endif
+
      ! retrieve field specs
      field_desc => pbuf2d(idx,begchunk)
 
@@ -273,7 +280,16 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
      dims(:) = pbuf_get_field_dims(idx)
      dims(1) = nlcols
 
-     dimnames(2) = "lev"
+     do irank=2,rank
+       if (dims(irank) .eq. plev) then
+         dimnames(irank) = "lev"
+       elseif (dims(irank) .eq. (plev+1)) then
+         dimnames(irank) = "ilev"
+       else
+         write (int_str,"(I5)") dims(irank)
+         dimnames(irank) = "dim"//trim(adjustl(int_str))
+       endif
+     enddo
 
      call cldera_add_partitioned_field(fname,2,dims,dimnames,nparts,part_dim)
      do ipart = 1,nparts
@@ -294,6 +310,8 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    enddo
 
    ! TRACERS fields
+   dims(2) = plev
+   dimnames(2) = "lev"
    do idx=1,pcnst
      fname = cnst_name(idx)
 
@@ -318,6 +336,12 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    call cldera_add_partitioned_field("psdry",1,dims,dimnames,nparts,part_dim)
    call cldera_add_partitioned_field("phis",1,dims,dimnames,nparts,part_dim)
 
+   ! Last arg is view=false, since AOD fields are *not* views of EAM persistent data.
+   call cldera_add_partitioned_field("aod"    , 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("aod_so2", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("aod_ash", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("aod_sulf",1,dims,dimnames,nparts,part_dim,.false.)
+
    !2d, mid points
    dims(2) = pver
    dimnames(2) = 'lev'
@@ -332,12 +356,6 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    call cldera_add_partitioned_field("pdel_dry",2,dims,dimnames,nparts,part_dim)
    call cldera_add_partitioned_field("exner",2,dims,dimnames,nparts,part_dim)
    call cldera_add_partitioned_field("zm",2,dims,dimnames,nparts,part_dim)
-
-   ! Last arg is view=false, since AOD fields are *not* views of EAM persistent data.
-   call cldera_add_partitioned_field("aod_tot", 2,dims,dimnames,nparts,part_dim,.false.)
-   call cldera_add_partitioned_field("aod_so2", 2,dims,dimnames,nparts,part_dim,.false.)
-   call cldera_add_partitioned_field("aod_ash", 2,dims,dimnames,nparts,part_dim,.false.)
-   call cldera_add_partitioned_field("aod_sulf",2,dims,dimnames,nparts,part_dim,.false.)
 
    ! 2d, interfaces
    dims(2) = pver+1
@@ -441,7 +459,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
      call cldera_set_field_part_data("tw",ipart,field1d)
 
      ! Copied field (AOD)
-     call cldera_set_field_part_size("aod_tot", ipart,ncols)
+     call cldera_set_field_part_size("aod"    , ipart,ncols)
      call cldera_set_field_part_size("aod_so2", ipart,ncols)
      call cldera_set_field_part_size("aod_ash", ipart,ncols)
      call cldera_set_field_part_size("aod_sulf",ipart,ncols)

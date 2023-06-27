@@ -1191,24 +1191,28 @@
 <!-- Defaults for CLDERA SAI                                            -->
 <!-- ================================================================== -->
 <cldera_sai_read_from_ic_file> .false. </cldera_sai_read_from_ic_file>
+<cldera_sai_formSulfate> .true. </cldera_sai_formSulfate>
+<cldera_sai_stratHeating> .true. </cldera_sai_stratHeating>
+<cldera_sai_surfCooling> .true. </cldera_sai_surfCooling>
 <cldera_sai_t0> 0.0 </cldera_sai_t0>
-<cldera_sai_duration> 9.0 </cldera_sai_duration>
+<cldera_sai_duration> 24.0 </cldera_sai_duration>
 <cldera_sai_lat0> 15.15 </cldera_sai_lat0>
 <cldera_sai_lon0> 120.35 </cldera_sai_lon0>
+<cldera_sai_z0> 14.0 </cldera_sai_z0>
 <cldera_sai_MSO2> 17.0 </cldera_sai_MSO2>
 <cldera_sai_Mash> 50.0 </cldera_sai_Mash>
 <cldera_sai_rkSO2> 25.0 </cldera_sai_rkSO2>
 <cldera_sai_rkash> 1.0 </cldera_sai_rkash>
 <cldera_sai_rksulf> 360.0 </cldera_sai_rksulf>
 <cldera_sai_w> 2.04 </cldera_sai_w>
-<cldera_sai_dTstrat> 0.35 </cldera_sai_dTstrat>
-<cldera_sai_dTsurf> -0.012 </cldera_sai_dTsurf>
-<cldera_sai_qstar> 9.5E-7 </cldera_sai_qstar>
-<cldera_sai_taustar> 1E7 </cldera_sai_taustar>
-<cldera_sai_zAOD> 5.0 </cldera_sai_zAOD>
-<cldera_sai_formSulfate> .true. </cldera_sai_formSulfate>
-<cldera_sai_stratHeating> .true. </cldera_sai_stratHeating>
-<cldera_sai_surfCooling> .true. </cldera_sai_surfCooling>
+<cldera_sai_z_cool> 100 </cldera_sai_z_cool>
+<cldera_sai_zeta> 0.004 </cldera_sai_zeta>
+<cldera_sai_bsw_so2> 400 </cldera_sai_bsw_so2>
+<cldera_sai_bsw_sulf> 1900 </cldera_sai_bsw_sulf>
+<cldera_sai_bsw_ash> 400 </cldera_sai_bsw_ash>
+<cldera_sai_blw_so2> 0.01 </cldera_sai_blw_so2>
+<cldera_sai_blw_sulf> 29 </cldera_sai_blw_sulf>
+<cldera_sai_blw_ash> 0.00001 </cldera_sai_blw_ash>
 
 
 

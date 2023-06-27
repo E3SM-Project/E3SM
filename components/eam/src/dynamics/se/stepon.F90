@@ -630,12 +630,9 @@ subroutine stepon_final(dyn_in, dyn_out)
 
    ! Deallocate variables needed for the FV physics grid
    if (fv_nphys > 0) then
-     if (par%masterproc)  write(iulog,*) "stepon: phygrid finalization..."
      call fv_physgrid_final()
    end if ! fv_nphys > 0
-   if (par%masterproc)  write(iulog,*) "stepon: HOMME finalization..."
    call prim_finalize
-   if (par%masterproc)  write(iulog,*) "stepon: End of finalization"
 !EOC
 end subroutine stepon_final
 

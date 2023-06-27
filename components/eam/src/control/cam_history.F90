@@ -3425,6 +3425,7 @@ end subroutine print_active_fldlst
   subroutine h_inquire (t)
     use pio,           only: pio_inq_varid, pio_inq_attlen
     use cam_pio_utils, only: cam_pio_handle_error
+    use cam_control_mod, only: ideal_phys
    !
     !----------------------------------------------------------------------- 
     ! 
@@ -3470,7 +3471,7 @@ end subroutine print_active_fldlst
       ierr=pio_inq_varid (tape(t)%File,'tsec    ',tape(t)%tsecid)
       ierr=pio_inq_varid (tape(t)%File,'bdate   ',tape(t)%bdateid)
 #endif
-      if (.not. is_initfile(file_index=t) ) then
+      if (.not. is_initfile(file_index=t) .and. .not. ideal_phys) then
         ! Don't write the GHG/Solar forcing data to the IC file.  It is never
         ! read from that file so it's confusing to have it there.
         ierr=pio_inq_varid (tape(t)%File,'co2vmr  ',    tape(t)%co2vmrid)
@@ -3662,6 +3663,7 @@ end subroutine print_active_fldlst
     use cam_pio_utils,    only: vdesc_ptr, cam_pio_handle_error, cam_pio_def_dim
     use cam_pio_utils,    only: cam_pio_createfile, cam_pio_def_var
     use sat_hist,         only: sat_hist_define
+    use cam_control_mod, only: ideal_phys
 
     !-----------------------------------------------------------------------
 
@@ -3925,7 +3927,7 @@ end subroutine print_active_fldlst
       ierr=pio_put_att (tape(t)%File, tape(t)%nscurid, 'long_name', trim(str))
 
 
-      if (.not. is_initfile(file_index=t)) then
+      if (.not. is_initfile(file_index=t) .and. .not. ideal_phys) then
         ! Don't write the GHG/Solar forcing data to the IC file.
         ierr=pio_def_var (tape(t)%File,'co2vmr  ',pio_double,(/timdim/),tape(t)%co2vmrid)
         str = 'co2 volume mixing ratio'
@@ -4590,6 +4592,7 @@ end subroutine print_active_fldlst
     use sat_hist,      only: sat_hist_write
     use interp_mod,    only: set_interp_hfile
     use cam_pio_utils, only: cam_pio_closefile
+    use cam_control_mod, only: ideal_phys
 
     logical, intent(in), optional :: rgnht_in(ptapes)
     !
@@ -4745,7 +4748,7 @@ end subroutine print_active_fldlst
           ierr = pio_put_var (tape(t)%File, tape(t)%nscurid,(/start/), (/count1/),(/nscur/))
           ierr = pio_put_var (tape(t)%File, tape(t)%dateid,(/start/), (/count1/),(/ncdate/))
 
-          if (.not. is_initfile(file_index=t)) then
+          if (.not. is_initfile(file_index=t) .and. .not. ideal_phys) then
             ! Don't write the GHG/Solar forcing data to the IC file.
             ierr=pio_put_var (tape(t)%File, tape(t)%co2vmrid,(/start/), (/count1/),(/chem_surfvals_co2_rad(vmr_in=.true.)/))
             ierr=pio_put_var (tape(t)%File, tape(t)%ch4vmrid,(/start/), (/count1/),(/chem_surfvals_get('CH4VMR')/))

@@ -4264,9 +4264,31 @@ conditions file. If this is not specified then they are not read from IC file.
 Default: FALSE
 </entry>
 
+<entry id="cldera_sai_formSulfate" type="logical" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+If true, sulfate formation from SO2 decay is activated. If false, the SO2 decay is 
+unchanged, but no sulfate is produced.
+Default: TRUE
+</entry>
+
+<entry id="cldera_sai_stratHeating" type="logical" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+If true, sulfur species (SO2, as well as sulfate if cldera_sai_formSulfate is true) 
+cause local diabatic heating. If false, no heating occurs.
+Default: TRUE
+</entry>
+
+<entry id="cldera_sai_surfCooling" type="logical" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+If true, a net AOD due to SAI tracer species (SO2, ash, and sulfate if 
+cldera_sai_formSulfate is true) causes a negative diabatic heating near the surface.
+If false, no cooling occurs.
+Default: TRUE
+</entry>
+
 <entry id="cldera_sai_t0" type="real" category="test_tracers"
        group="cldera_sai_tracers_nl" valid_values="" >
-Desired time of injection from simulation start, in hours.
+Desired time of injection from simulation start, in days.
 Default: 0 (injection occurs at first timestep)
 </entry>
 
@@ -4288,6 +4310,14 @@ Default: 15.15
        group="cldera_sai_tracers_nl" valid_values="" >
 Desired longitude of injection in degrees. The injection will occur at the grid point
 nearest this position.
+Default: 15.15
+</entry>
+
+
+<entry id="cldera_sai_z0" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Desired height of injection in km. The Gaussian injection vertical profile will occur 
+at the grid point nearest this position.
 Default: 15.15
 </entry>
 
@@ -4328,62 +4358,62 @@ produced per units mass of SO2 as a dimensionless ratio
 Default: 2.04
 </entry>
 
-<entry id="cldera_sai_dTstrat" type="real" category="test_tracers"
+<entry id="cldera_sai_z_cool" type="real" category="test_tracers"
        group="cldera_sai_tracers_nl" valid_values="" >
-Local temperature rate of change by sulfur species (SO2, as well as sulfate 
-if cldera_sai_formSulfate is true) in K/day
-Default: 0.35
+Maximum height above the surface at which to apply cooling by AOD, in m. Increasing this
+value will dillute total cooling
+Default: 200 m
 </entry>
 
-<entry id="cldera_sai_dTsurf" type="real" category="test_tracers"
-       group="cldera_sai_tracers_nl" valid_values="" >
-Local temperature rate of change by the net AOD species (from SO2, ash, and 
-sulfate if cldera_sai_formSulfate is true) in K/day
-Default: -0.012
+<entry id="cldera_sai_zeta" type="real" category="test_tracers"
+    group="cldera_sai_tracers_nl" valid_values="" >
+Dimensionless urface cooling efficiency factor. Increasing increases relative strength of 
+surface cooling rate pre unit mass.
+Default: 4.7e-4
 </entry>
 
-<entry id="cldera_sai_qstar" type="real" category="test_tracers"
-       group="cldera_sai_tracers_nl" valid_values="" >
-Mixing ratio normalization for local heating by sulfur species. This is the 
-dimensionless mixing ratio at which the local temperature rate of change will 
-be cldera_sai_dTstrat.
-Default: 1.2e-4
+<entry id="cldera_sai_bsw_so2" type="real" category="test_tracers"
+    group="cldera_sai_tracers_nl" valid_values="" >
+SO2 shortwave mass extinction coefficient, in m2/kg. Increasing increases shortwave exticntion,
+and thus increases surface cooling rate pre unit mass.
+Default: 400
 </entry>
 
-<entry id="cldera_sai_taustar" type="real" category="test_tracers"
-       group="cldera_sai_tracers_nl" valid_values="" >
-AOD normalization for surface cooling. This is the dimensionless AOD at which 
-the local temperature rate of change will be cldera_sai_dTsurf.
-Default: 3.0e10
+<entry id="cldera_sai_bsw_sulf" type="real" category="test_tracers"
+    group="cldera_sai_tracers_nl" valid_values="" >
+Sulfate shortwave mass extinction coefficient, in m2/kg. Increasing increases shortwave exticntion,
+and thus increases surface cooling rate pre unit mass.
+Default: 400
 </entry>
 
-<entry id="cldera_sai_zAOD" type="real" category="test_tracers"
-       group="cldera_sai_tracers_nl" valid_values="" >
-Maximum height above the surface at which to apply cooling by AOD in km
-Default: 5
+<entry id="cldera_sai_bsw_ash" type="real" category="test_tracers"
+    group="cldera_sai_tracers_nl" valid_values="" >
+Ash shortwave mass extinction coefficient, in m2/kg. increasing increases shortwave exticntion,
+and thus increases surface cooling rate pre unit mass.
+Default: 400
 </entry>
 
-<entry id="cldera_sai_formSulfate" type="logical" category="test_tracers"
-       group="cldera_sai_tracers_nl" valid_values="" >
-If true, sulfate formation from SO2 decay is activated. If false, the SO2 decay is 
-unchanged, but no sulfate is produced.
-Default: TRUE
+<entry id="cldera_sai_blw_so2" type="real" category="test_tracers"
+    group="cldera_sai_tracers_nl" valid_values="" >
+SO2 longwave mass extinction coefficient, in m2/kg. increasing increases longwave exticntion,
+and thus increases local heating rate pre unit mass.
+Default: 0.062
 </entry>
 
-<entry id="cldera_sai_stratHeating" type="logical" category="test_tracers"
-       group="cldera_sai_tracers_nl" valid_values="" >
-If true, sulfur species (SO2, as well as sulfate if cldera_sai_formSulfate is true) 
-cause local diabatic heating. If false, no heating occurs.
-Default: TRUE
+<entry id="cldera_sai_blw_sulf" type="real" category="test_tracers"
+    group="cldera_sai_tracers_nl" valid_values="" >
+Sulfate longwave mass extinction coefficient, in m2/kg. increasing increases longwave exticntion,
+and thus increases local heating rate pre unit mass.
+Default: 0.062
 </entry>
 
-<entry id="cldera_sai_surfCooling" type="logical" category="test_tracers"
-       group="cldera_sai_tracers_nl" valid_values="" >
-If true, a net AOD due to SAI tracer species (SO2, ash, and sulfate if 
-cldera_sai_formSulfate is true) causes a negative diabatic heating near the surface.
-If false, no cooling occurs.
-Default: TRUE
+<entry id="cldera_sai_blw_ash" type="real" category="test_tracers"
+    group="cldera_sai_tracers_nl" valid_values="" >
+Ash longwave mass extinction coefficient, in m2/kg. increasing increases longwave exticntion,
+and thus increases local heating rate pre unit mass.
+Default: 0.062
 </entry>
+
 
 <!-- Time step -->
 

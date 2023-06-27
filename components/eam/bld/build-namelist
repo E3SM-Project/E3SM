@@ -971,24 +971,29 @@ if ($cfg->get('cldera_dynamic_trcs')) { add_default($nl,'cldera_dynamic_tracers_
 # CLDERA SAI tracers
 if ($cfg->get('cldera_sai_trcs')) { add_default($nl, 'cldera_sai_tracers_flag', 'val'=>'.true.'); }
 add_default($nl, 'cldera_sai_read_from_ic_file');
+add_default($nl, 'cldera_sai_formSulfate');
+add_default($nl, 'cldera_sai_stratHeating');
+add_default($nl, 'cldera_sai_surfCooling');
 add_default($nl, 'cldera_sai_t0');
 add_default($nl, 'cldera_sai_duration');
 add_default($nl, 'cldera_sai_lat0');
 add_default($nl, 'cldera_sai_lon0');
+add_default($nl, 'cldera_sai_z0');
 add_default($nl, 'cldera_sai_MSO2');
 add_default($nl, 'cldera_sai_Mash');
 add_default($nl, 'cldera_sai_w');
-add_default($nl, 'cldera_sai_dTstrat');
-add_default($nl, 'cldera_sai_dTsurf');
-add_default($nl, 'cldera_sai_qstar');
-add_default($nl, 'cldera_sai_taustar');
-add_default($nl, 'cldera_sai_zAOD');
-add_default($nl, 'cldera_sai_formSulfate');
-add_default($nl, 'cldera_sai_stratHeating');
-add_default($nl, 'cldera_sai_surfCooling');
 add_default($nl, 'cldera_sai_rkSO2');
 add_default($nl, 'cldera_sai_rkash');
 add_default($nl, 'cldera_sai_rksulf');
+add_default($nl, 'cldera_sai_z_cool');
+add_default($nl, 'cldera_sai_zeta');
+add_default($nl, 'cldera_sai_bsw_so2');
+add_default($nl, 'cldera_sai_bsw_sulf');
+add_default($nl, 'cldera_sai_bsw_ash');
+add_default($nl, 'cldera_sai_blw_so2');
+add_default($nl, 'cldera_sai_blw_sulf');
+add_default($nl, 'cldera_sai_blw_ash');
+
 
 # Defaults for radiatively active constituents
 

@@ -1516,7 +1516,7 @@ else {
     }
 
     if ($cldera_sai_trcs eq "ON") {
-	$nadv += 5;
+	$nadv += 3;
         if ($print>=2) { print "Advected constituents added by the CLDERA SAI tracer package: 5$eol"; }
     }
 

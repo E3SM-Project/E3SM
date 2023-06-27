@@ -2868,7 +2868,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use radiation,           only: radiation_do
   use tracers,             only: tracers_timestep_init
   use aoa_tracers,         only: aoa_tracers_timestep_init
-  use cldera_sai_tracers,  only: cldera_sai_tracers_timestep_init
   use vertical_diffusion,  only: vertical_diffusion_ts_init
   use radheat,             only: radheat_timestep_init
   use solar_data,          only: solar_data_advance
@@ -2958,9 +2957,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
 
   ! age of air tracers
   call aoa_tracers_timestep_init(phys_state)
-  
-  ! CLDERA stratopsheric aerosol injection tracers
-  call cldera_sai_tracers_timestep_init(phys_state)
 
   ! Update Nudging values, if needed
   !----------------------------------
