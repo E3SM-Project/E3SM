@@ -239,12 +239,19 @@ CONTAINS
     use cam_instance,     only: inst_index
     use element_ops,      only: set_thermostate
     use phys_control,     only: phys_getopts
+    use cldera_dynamic_tracers, only: cldera_dynamic_tracers_pv_idx, &
+                                      cldera_dynamic_tracers_pt_idx, &
+                                      cldera_dynamic_tracers_pv_offset
+    use element_ops,            only: get_pot_vort, &
+                                      get_field
+ 
 
     type (dyn_import_t), intent(inout) :: dyn_in
 
     type(element_t),    pointer :: elem(:)
 
-    integer :: ithr, nets, nete, ie, k, tlev
+    integer :: ithr, nets, nete, ie, k, tlev, i, j, lt
+    integer :: pv_idx, pt_idx
     real(r8), parameter :: Tinit=300.0_r8
     type(hybrid_t) :: hybrid
     real(r8) :: temperature(np,np,nlev),ps(np,np)
@@ -302,6 +309,8 @@ CONTAINS
           if(allocated(sgh30)) sgh30=0.0_r8
        end if
 
+ 
+
        do ie=nets,nete
           elem(ie)%derived%FM=0.0_r8
           elem(ie)%derived%FT=0.0_r8
@@ -317,7 +326,21 @@ CONTAINS
           ! new run, scale mass to value given in namelist, if needed
           call prim_set_mass(elem, TimeLevel,hybrid,hvcoord,nets,nete)
        endif
+       call cldera_dynamic_tracers_pv_idx(pv_idx)
+       if (pv_idx /= 0) then
+          do ie=nets,nete
+            call get_pot_vort(elem(ie), elem(ie)%state%Q(:,:,:,pv_idx), hvcoord, TimeLevel%n0)
+            elem(ie)%state%Q(:,:,:,pv_idx) = elem(ie)%state%Q(:,:,:,pv_idx)+cldera_dynamic_tracers_pv_offset
+          end do
+       end if
 
+       call cldera_dynamic_tracers_pt_idx(pt_idx)
+       if (pt_idx /= 0) then
+          do ie=nets,nete
+            call get_field(elem(ie),"pottemp",elem(ie)%state%Q(:,:,:,pt_idx),hvcoord,TimeLevel%n0,TimeLevel%n0)
+          end do
+       end if  
+ 
        call t_startf('prim_init2')
        call prim_init2(elem,hybrid,nets,nete, TimeLevel, hvcoord)
        call t_stopf('prim_init2')

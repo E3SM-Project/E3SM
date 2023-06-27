@@ -14,6 +14,7 @@ use physics_buffer, only: physics_buffer_desc, pbuf_add_field, dtype_r8, dyn_tim
 
 
 use cam_history,   only: outfld, write_inithist, hist_fld_active
+use cam_logfile,      only: iulog
 use constituents,  only: pcnst, cnst_name, cnst_longname, cnst_cam_outfld, ptendnam, dmetendnam, apcnst, bpcnst, &
                          cnst_get_ind
 use chemistry,     only: chem_is
@@ -182,7 +183,8 @@ subroutine diag_init()
    call addfld ('T',(/ 'lev' /), 'A','K','Temperature',standard_name='air_temperature')
    call addfld ('U',(/ 'lev' /), 'A','m/s','Zonal wind',standard_name='eastward_wind')
    call addfld ('V',(/ 'lev' /), 'A','m/s','Meridional wind',standard_name='northward_wind')
-   call addfld ('PV',(/ 'lev' /),'A','m2 K/kg/s','Ertel Potential Vorticity')
+   call addfld ('PV',(/ 'lev' /),'I','m2 K/kg/s','Ertel Potential Vorticity')
+   call addfld ('PT',(/ 'lev' /),'I','K','Potential Temperature')
    call addfld (cnst_name(1),(/ 'lev' /), 'A','kg/kg',cnst_longname(1))
 
    ! State before physics
@@ -448,6 +450,7 @@ subroutine diag_init()
       call add_default ('U       '  , 1, ' ')
       call add_default ('V       '  , 1, ' ')
       call add_default ('PV      '  , 1, ' ')
+      call add_default ('PT      '  , 1, ' ')
       call add_default (cnst_name(1), 1, ' ')
       call add_default ('Z3      '  , 1, ' ')
       call add_default ('OMEGA   '  , 1, ' ')
@@ -1006,6 +1009,7 @@ end subroutine diag_conv_tend_ini
     real(r8) esi(pcols,pver)   ! 
     real(r8) dlon(pcols)      ! width of grid cell (meters)
     integer  plon             ! number of longitudes
+    integer pv_idx
 
     integer i, k, m, lchnk, ncol, nstep
 !
@@ -1024,6 +1028,7 @@ end subroutine diag_conv_tend_ini
     call outfld('U       ',state%u , pcols   ,lchnk   )
     call outfld('V       ',state%v , pcols   ,lchnk   )
     call outfld('PV      ',state%pv, pcols   ,lchnk   )
+    call outfld('PT      ',state%pt, pcols   ,lchnk   )
     do m=1,pcnst
        if ( cnst_cam_outfld(m) ) then
           call outfld(cnst_name(m),state%q(1,1,m),pcols ,lchnk )

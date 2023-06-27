@@ -26,15 +26,25 @@ module cldera_dynamic_tracers
   ! Public interfaces
   public :: cldera_dynamic_tracers_register        ! register constituents
   public :: cldera_dynamic_tracers_implements_cnst ! true if constituent is implemented by this package
+  public :: cldera_dynamic_tracers_is_pt
+  public :: cldera_dynamic_tracers_is_pv
+  public :: cldera_dynamic_tracers_is_enabled
   public :: cldera_dynamic_tracers_init            ! initialize history fields, datasets
   public :: cldera_dynamic_tracers_init_cnst       ! initialize constituent field
+  public :: cldera_dynamic_tracers_timestep_tend
   public :: cldera_dynamic_tracers_readnl          ! read namelist options
+  public :: cldera_dynamic_tracers_pv_idx
+  public :: cldera_dynamic_tracers_pt_idx
+  public :: cldera_dynamic_tracers_pv_offset
+
+  real(r8), parameter :: cldera_dynamic_tracers_pv_offset = 1_r8
 
   ! ----- Private module data
   integer, parameter :: ncnst=2  ! number of constituents implemented by this module
 
   ! constituent names
-  character(len=8), parameter :: c_names(ncnst) = (/'PV_TRCR     ', 'PT_TRCR    '/)
+  character(len=8), parameter :: c_names(ncnst) = (/'PV_TRCR_   ', 'PT_TRCR    '/)
+  character(len=8), parameter :: pv_out_name = 'PV_TRCR    '
 
   integer :: ifirst ! global index of first constituent
   integer :: ixpv  ! global index for PV tracer
@@ -108,10 +118,14 @@ contains
     ! The default 'mixtype' defaults to 'wet' when not passed to cnst_add; this also seems
     ! unused by default for a newly added constituent (this might not be true for WACCM?)
     call cnst_add(c_names(1), 0._r8, 0._r8, 0._r8, ixpv,  readiv=.false., &
-                  longname='Potential vorticity tracer')
+                  longname='Potential vorticity tracer', cam_outfld=.false.)
     ifirst = ixpv
+
+
+
     call cnst_add(c_names(2), 0._r8, 0._r8, 0._r8, ixpt,  readiv=.false., &
                   longname='Potential temperature tracer')
+
 
   end subroutine cldera_dynamic_tracers_register
 
@@ -144,6 +158,126 @@ contains
 
   end function cldera_dynamic_tracers_implements_cnst
 
+  subroutine cldera_dynamic_tracers_pv_idx(idx)
+    integer, intent(out) :: idx
+
+    idx = 0
+    if (.not. cldera_dynamic_tracers_flag) return
+
+    idx = ixpv
+
+
+  end subroutine cldera_dynamic_tracers_pv_idx
+  subroutine cldera_dynamic_tracers_pt_idx(idx)
+    integer, intent(out) :: idx
+
+    idx = 0
+    if (.not. cldera_dynamic_tracers_flag) return
+
+    idx = ixpt
+
+
+  end subroutine cldera_dynamic_tracers_pt_idx
+
+
+  subroutine cldera_dynamic_tracers_timestep_tend(state, ptend, dt, ncol)
+
+    use physics_types, only: physics_state, physics_ptend, physics_ptend_init
+    use phys_grid,     only: get_rlat_all_p , get_lat_all_p
+    use physconst,     only: gravit, avogad
+    use cam_history,   only: outfld
+    use time_manager,  only: get_nstep
+    use ref_pres,      only: pref_mid_norm
+    use time_manager,  only: get_curr_time
+
+    ! Arguments
+    type(physics_state), intent(inout) :: state              ! state variables
+    type(physics_ptend), intent(out)   :: ptend              ! package tendencies
+    real(r8),            intent(in)    :: dt                 ! timestep
+    integer,             intent(in)    :: ncol
+
+    !----------------- Local workspace-------------------------------
+
+    integer :: i, k
+    integer :: lchnk             ! chunk identifier
+
+    real(r8) :: pv_out(ncol,pver)
+    if (.not. cldera_dynamic_tracers_flag) then
+      return
+    end if
+    lchnk = state%lchnk
+    do i=1,ncol
+      do k=1,pver
+        pv_out(i,k) = state%q(i,k,ixpv)
+      end do
+    end do
+    call outfld(pv_out_name, pv_out(:,:)-cldera_dynamic_tracers_pv_offset, ncol, lchnk)           
+
+  end subroutine cldera_dynamic_tracers_timestep_tend
+
+!
+
+
+! ===========================================================================
+
+  function cldera_dynamic_tracers_is_pv(name)
+    !----------------------------------------------------------------------- 
+    ! 
+    ! Purpose: return true if specified constituent is treated as pv
+    ! 
+    !-----------------------------------------------------------------------
+
+    character(len=*), intent(in) :: name   ! constituent name
+    logical :: cldera_dynamic_tracers_is_pv        ! return value
+
+    !-----------------------------------------------------------------------
+
+    cldera_dynamic_tracers_is_pv = (cldera_dynamic_tracers_flag) .and. (name == c_names(1))
+
+
+  end function cldera_dynamic_tracers_is_pv
+
+! ==========================================================================
+
+ function cldera_dynamic_tracers_is_enabled()
+    !----------------------------------------------------------------------- 
+    ! 
+    ! Purpose: return true if specified constituent is treated as pv
+    ! 
+    !-----------------------------------------------------------------------
+
+    logical :: cldera_dynamic_tracers_is_enabled        ! return value
+
+    !-----------------------------------------------------------------------
+
+    cldera_dynamic_tracers_is_enabled = cldera_dynamic_tracers_flag
+
+
+  end function cldera_dynamic_tracers_is_enabled
+
+! ==========================================================================
+
+ 
+  function cldera_dynamic_tracers_is_pt(name)
+    !----------------------------------------------------------------------- 
+    ! 
+    ! Purpose: return true if specified constituent is treated as pt
+    ! 
+    !-----------------------------------------------------------------------
+
+    character(len=*), intent(in) :: name   ! constituent name
+    logical :: cldera_dynamic_tracers_is_pt        ! return value
+
+
+    cldera_dynamic_tracers_is_pt = (cldera_dynamic_tracers_flag) .and. (name == c_names(2))
+
+
+  end function cldera_dynamic_tracers_is_pt
+
+
+!===============================================================================
+ 
+
 !===============================================================================
   
   subroutine cldera_dynamic_tracers_init
@@ -162,9 +296,9 @@ contains
     if (.not. cldera_dynamic_tracers_flag) return
 
     ! decalre PV, PT tracers as history variables
-    call addfld (cnst_name(ixpv), (/ 'lev' /), 'A', 'm2 K/kg/s', cnst_longname(ixpv))
-    call add_default (cnst_name(ixpv), 1, ' ')
-    call addfld (cnst_name(ixpt), (/ 'lev' /), 'A', 'K', cnst_longname(ixpt))
+    call addfld (pv_out_name, (/ 'lev' /), 'I', 'm2 K/kg/s', cnst_longname(ixpv))
+    call add_default (pv_out_name, 1, ' ')
+    call addfld (cnst_name(ixpt), (/ 'lev' /), 'I', 'K', cnst_longname(ixpt))
     call add_default (cnst_name(ixpt), 1, ' ')
     
   end subroutine cldera_dynamic_tracers_init

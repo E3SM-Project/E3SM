@@ -52,7 +52,12 @@ contains
     use cldera_passive_tracers,  only: cldera_passive_tracers_implements_cnst, &
                                        cldera_passive_tracers_init_cnst
     use cldera_dynamic_tracers,  only: cldera_dynamic_tracers_implements_cnst, &
-                                       cldera_dynamic_tracers_init_cnst
+                                       cldera_dynamic_tracers_init_cnst, &
+                                       cldera_dynamic_tracers_is_pt, &
+                                       cldera_dynamic_tracers_is_pv, &
+                                       cldera_dynamic_tracers_is_enabled
+    use element_ops,                only: get_pot_vort, &
+                                       get_field
     use clubb_intr,              only: clubb_implements_cnst, clubb_init_cnst
     use stratiform,              only: stratiform_implements_cnst, stratiform_init_cnst
     use microp_driver,           only: microp_driver_implements_cnst, microp_driver_init_cnst
@@ -104,6 +109,9 @@ contains
     real(r8) :: scmposlon, minpoint, testlat, testlon, testval 
     character*16 :: subname='READ_INIDAT'
     integer :: nlev_tot
+
+    integer :: pv_idx =  1
+    integer :: pt_idx =  1
 
     logical :: iop_update_surface
 
@@ -381,6 +389,11 @@ contains
              call cldera_dynamic_tracers_init_cnst(cnst_name(m_cnst), qtmp, gcid)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
                    ' initialized by "cldera_dynamic_tracers_init_cnst"'
+             if (cldera_dynamic_tracers_is_pv(cnst_name(m_cnst))) then
+               pv_idx = m_cnst
+             else if (cldera_dynamic_tracers_is_pt(cnst_name(m_cnst))) then
+               pt_idx = m_cnst
+             end if
           else if (cldera_sai_tracers_implements_cnst(cnst_name(m_cnst))) then
              call cldera_sai_tracers_init_cnst(cnst_name(m_cnst), qtmp, gcid)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
@@ -396,7 +409,7 @@ contains
           ! Since the rest of processing uses tmp, copy qtmp into tmp
           do ie = 1, nelemd
             do k=1,nlev
-              do i = 1, npsq
+             do i = 1, npsq
                 ! Implicit reshape (qtmp is (np*np*nelemd, nlev)
                 tmp(i,k,ie) = qtmp(i+((ie-1)*npsq),k)
               end do
@@ -430,7 +443,8 @@ contains
                 indx = indx + 1
              end do
           end do
-       end do
+ 
+      end do
     end do
     ! Cleanup
     if (associated(gcid)) then
@@ -617,6 +631,7 @@ contains
 #else
        call set_thermostate(elem(ie),ps,elem(ie)%state%T(:,:,:,tl),hvcoord)
 #endif
+  
     end do
 
     deallocate(tmp)
