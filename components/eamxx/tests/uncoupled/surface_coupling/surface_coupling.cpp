@@ -78,8 +78,7 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
     // Initialize data
     auto f_view_h = f.get_view<Real*,Host>();
     for (int ii=0; ii<nlcols; ii++) {
-      int icol = dofs_gids(ii);
-      f_view_h(ii) = test_func(icol,0);
+      f_view_h(ii) = test_func(ii,0);
     }
     f.sync_to_dev();
     // Update timestamp
@@ -111,8 +110,7 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
     // Note we only care about surface values so we only need to generate data over nlcols.
     auto f_view_h = field.get_view<Real*,Host>();
     for (int ii=0; ii<nlcols; ii++) {
-      int icol = dofs_gids(ii);
-      f_view_h(ii) = test_func(icol,dt);
+      f_view_h(ii) = test_func(ii,dt);
     }
     field.sync_to_dev();
   }
@@ -126,6 +124,8 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
 }
 
 void setup_import_and_export_data(
+        std::mt19937_64& engine,
+  const ekat::Comm& comm,
   // Imports
   const int num_cpl_imports, const int num_scream_imports,
   const KokkosTypes<HostDevice>::view_1d<int >& import_cpl_indices_view,
@@ -152,7 +152,9 @@ void setup_import_and_export_data(
   {
     std::vector<int> import_order(num_cpl_imports);
     for (int f=0; f<num_cpl_imports; ++f) { import_order[f] = f; }
-    std::random_shuffle(import_order.begin(), import_order.end());
+    std::shuffle(import_order.begin(), import_order.end(),engine);
+
+    comm.broadcast(import_order.data(),num_cpl_imports,0);
     for (int f=0; f<num_scream_imports; ++f) {
       import_cpl_indices_view(f) = import_order[f];
     }
@@ -188,7 +190,8 @@ void setup_import_and_export_data(
   {
     std::vector<int> export_order(num_cpl_exports);
     for (int f=0; f<num_cpl_exports; ++f) { export_order[f] = f; }
-    std::random_shuffle(export_order.begin(), export_order.end());
+    std::shuffle(export_order.begin(), export_order.end(),engine);
+    comm.broadcast(export_order.data(),num_cpl_exports,0);
     for (int f=0; f<num_scream_exports; ++f) {
       export_cpl_indices_view(f) = export_order[f];
     }
@@ -433,7 +436,7 @@ void test_exports(const FieldManager& fm,
       EKAT_REQUIRE(Faxa_swndf_const                                        == export_data_view(i, export_cpl_indices_view(13)));
       EKAT_REQUIRE(Faxa_swndv_const                                        == export_data_view(i, export_cpl_indices_view(14)));
       EKAT_REQUIRE(export_constant_multiple_view(15)*sfc_flux_sw_net_h(i)  == export_data_view(i, export_cpl_indices_view(15)));
-      EKAT_REQUIRE(std::abs(Faxa_lwdn_file - export_data_view(i, export_cpl_indices_view(16))<test_tol));
+      EKAT_REQUIRE(std::abs(Faxa_lwdn_file - export_data_view(i, export_cpl_indices_view(16)))<test_tol);
     }
   }
 }
@@ -470,7 +473,8 @@ TEST_CASE("surface-coupling", "") {
   const Real Faxa_swndf_const = pdf_real_constant_data(engine);
   const Real Faxa_swvdf_const = pdf_real_constant_data(engine);
   const vos_type exp_const_fields = {"Faxa_swndf","Faxa_swvdf"};
-  const vor_type exp_const_values = {Faxa_swndf_const,Faxa_swvdf_const};
+  vor_type exp_const_values = {Faxa_swndf_const,Faxa_swvdf_const};
+  atm_comm.broadcast(exp_const_values.data(),2,0);
   auto& exp_const_params = sc_exp_params.sublist("prescribed_constants");
   exp_const_params.set<vos_type>("fields",exp_const_fields);
   exp_const_params.set<vor_type>("values",exp_const_values);
@@ -506,7 +510,8 @@ TEST_CASE("surface-coupling", "") {
   std::uniform_int_distribution<int> pdf_int_dt(1,1800);
   std::uniform_real_distribution<Real> pdf_real_import_data(0.0,1.0);
   // Set up random value for dt
-  const int dt = pdf_int_dt(engine);
+  int dt = pdf_int_dt(engine);
+  atm_comm.broadcast(&dt,1,0);
   // Setup views to test import/export. For this test we consider a random number of non-imported/exported
   // cpl fields (in addition to the required scream imports/exports), then assign a random, non-repeating
   // cpl index for each field in [0, num_cpl_fields).
@@ -514,6 +519,7 @@ TEST_CASE("surface-coupling", "") {
   const int num_scream_exports = 17;
   KokkosTypes<HostDevice>::view_1d<int> additional_import_exports("additional_import_exports", 2);
   ekat::genRandArray(additional_import_exports, engine, pdf_int_additional_fields);
+  atm_comm.broadcast(additional_import_exports.data(),2,0);
   const int num_additional_imports = additional_import_exports(0);
   const int num_additional_exports = additional_import_exports(1);
   const int num_cpl_imports = num_scream_imports + num_additional_imports;
@@ -531,6 +537,7 @@ TEST_CASE("surface-coupling", "") {
                                                                        num_scream_imports);
   // Set import data to random (0,1) values
   ekat::genRandArray(import_data_view, engine, pdf_real_import_data);
+  atm_comm.broadcast(import_data_view.data(), num_cpl_imports, 0);
   // Set import names
   char import_names[num_scream_imports][32];
   std::strcpy(import_names[0],  "sfc_alb_dir_vis");
@@ -585,7 +592,8 @@ TEST_CASE("surface-coupling", "") {
 
   // Setup the import/export data. This is meant to replicate the structures coming
   // from mct_coupling/scream_cpl_indices.F90
-  setup_import_and_export_data(num_cpl_imports, num_scream_imports,
+  setup_import_and_export_data(engine, atm_comm,
+                               num_cpl_imports, num_scream_imports,
                                import_cpl_indices_view, import_vec_comps_view,
                                import_constant_multiple_view, do_import_during_init_view,
                                num_cpl_exports, num_scream_exports,
