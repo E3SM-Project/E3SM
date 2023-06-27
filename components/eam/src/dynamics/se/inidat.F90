@@ -56,7 +56,7 @@ contains
                                        cldera_dynamic_tracers_is_pt, &
                                        cldera_dynamic_tracers_is_pv, &
                                        cldera_dynamic_tracers_is_enabled
-    use element_ops,                only: get_pot_vort, &
+    use element_ops,             only: get_pot_vort, &
                                        get_field
     use clubb_intr,              only: clubb_implements_cnst, clubb_init_cnst
     use stratiform,              only: stratiform_implements_cnst, stratiform_init_cnst
@@ -630,8 +630,7 @@ contains
        elem(ie)%derived%FT = 0.0
 #else
        call set_thermostate(elem(ie),ps,elem(ie)%state%T(:,:,:,tl),hvcoord)
-#endif
-  
+#endif 
     end do
 
     deallocate(tmp)

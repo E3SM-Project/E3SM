@@ -239,11 +239,11 @@ CONTAINS
     use cam_instance,     only: inst_index
     use element_ops,      only: set_thermostate
     use phys_control,     only: phys_getopts
+    use element_ops,      only: get_pot_vort, &
+                                get_field
     use cldera_dynamic_tracers, only: cldera_dynamic_tracers_pv_idx, &
                                       cldera_dynamic_tracers_pt_idx, &
                                       cldera_dynamic_tracers_pv_offset
-    use element_ops,            only: get_pot_vort, &
-                                      get_field
  
 
     type (dyn_import_t), intent(inout) :: dyn_in
@@ -308,8 +308,6 @@ CONTAINS
           if(allocated(sgh)) sgh=0.0_r8
           if(allocated(sgh30)) sgh30=0.0_r8
        end if
-
- 
 
        do ie=nets,nete
           elem(ie)%derived%FM=0.0_r8

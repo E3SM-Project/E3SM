@@ -1232,7 +1232,7 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        ! Dump dynamics variables to history buffers
        call diag_phys_writeout(phys_state(c))
 
-       ! --JH--: Allow evolution of CLDERA tracer tendencies if enabled
+       ! --JH--: Allow evolution of CLDERA dynamic, passive tracer tendencies if enabled
        call cldera_dynamic_tracers_timestep_tend(phys_state(c), ptend(c), ztodt, phys_state(c)%ncol)
        call cldera_passive_tracers_timestep_tend(phys_state(c), ptend(c), ztodt, dummy_cflx)
        call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
@@ -1713,9 +1713,13 @@ if (l_tracer_aero) then
          cam_in%cflx)
 
     call cldera_passive_tracers_timestep_tend(state, ptend, ztodt, cam_in%cflx)
-    call cldera_dynamic_tracers_timestep_tend(state, ptend, ztodt, ncol)
     call physics_update(state, ptend, ztodt, tend)
     call check_tracers_chng(state, tracerint, "cldera_passive_tracers_timestep_tend", nstep, ztodt, &
+                            cam_in%cflx)
+    
+    call cldera_dynamic_tracers_timestep_tend(state, ptend, ztodt, ncol)
+    call physics_update(state, ptend, ztodt, tend)
+    call check_tracers_chng(state, tracerint, "cldera_dynamic_tracers_timestep_tend", nstep, ztodt, &
                             cam_in%cflx)
     
     call cldera_sai_tracers_timestep_tend(state, ptend, ztodt, ncol)

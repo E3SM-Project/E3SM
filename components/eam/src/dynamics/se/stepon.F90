@@ -171,8 +171,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   use control_mod, only: ftype
   use physics_buffer, only : physics_buffer_desc
   use hycoef,      only: hyam, hybm
-  use dimensions_mod,  only: nelemd
- 
+  use dimensions_mod,  only: nelemd 
   use se_single_column_mod, only: scm_setfield, scm_setinitial
   implicit none
 !
@@ -235,8 +234,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use cam_history,     only: outfld, hist_fld_active
    use prim_driver_base,only: applyCAMforcing_tracers
    use prim_advance_mod,only: applyCAMforcing_dynamics
-   use element_ops,     only: get_temperature
- 
+   use element_ops,     only: get_temperature 
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type(physics_tend),  intent(inout) :: phys_tend(begchunk:endchunk)
@@ -345,8 +343,6 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       endif ! .not. single_column
 
       tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
-
-
 
       call TimeLevel_Qdp(TimeLevel, qsplit, tl_fQdp)
 
@@ -557,7 +553,6 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    call t_startf ('dyn_run')
    call dyn_run(dyn_out,rc)	
    call t_stopf  ('dyn_run')
-
  
    
    ! Update to get tendency 

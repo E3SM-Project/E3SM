@@ -14,7 +14,7 @@ use physics_buffer, only: physics_buffer_desc, pbuf_add_field, dtype_r8, dyn_tim
 
 
 use cam_history,   only: outfld, write_inithist, hist_fld_active
-use cam_logfile,      only: iulog
+use cam_logfile,   only: iulog
 use constituents,  only: pcnst, cnst_name, cnst_longname, cnst_cam_outfld, ptendnam, dmetendnam, apcnst, bpcnst, &
                          cnst_get_ind
 use chemistry,     only: chem_is
