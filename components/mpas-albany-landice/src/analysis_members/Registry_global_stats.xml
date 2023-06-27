@@ -100,6 +100,43 @@
                 <var name="basalSpeedMax" type="real" dimensions="Time" units="m yr^{-1}"
                         description="maximum basal speed in the domain"
                 />
+                <var name="totalSubglacialWaterVolume" type="real" dimensions="Time" units="m^3"
+                        description="total subglacial water volume"
+                />
+                <var name="totalLakeVolume" type="real" dimensions="Time" units="m^3"
+                        description="total volume of lakes"
+                />
+                <var name="totalLakeArea" type="real" dimensions="Time" units="m^2"
+                        description="total area of lakes"
+                />
+                <var name="totalBasalMeltInput" type="real" dimensions="Time" units="kg s^{-1}"
+                        description="total basal meltwater contributing to the subglacial hydrologic system"
+                />
+                <var name="totalExternalWaterInput" type="real" dimensions="Time" units="kg s^{-1}"
+                        description="total external meltwater contributing to the subglacial hydrologic system"
+                />
+                <var name="totalChannelMelt" type="real" dimensions="Time" units="kg s^{-1}"
+                        description="total melt rate in the subglacial hydrologic system "
+                />
+                <var name="totalGLMeltFlux" type="real" dimensions="Time" units="kg s^{-1}"
+                        description="total distributed meltwater flux across the grounding line"
+                />
+                <var name="totalTerrestrialMeltFlux" type="real" dimensions="Time" units="kg s^{-1}"
+                        description="total distrubuted meltwater flux across terrestrial margins"
+                />
+                <var name="totalChannelGLMeltFlux" type="real" dimensions="Time" units="kg s^{-1}"
+                        description="total channelized meltwater flux across the grounding line"
+                />
+                <var name="totalChannelTerrestrialMeltFlux" type="real" dimensions="Time" units="kg s^{-1}"
+                        description="total channelized meltwater flux across terrestrial margins"
+                />
+                <var name="totalFlotationFraction" type="real" dimensions="Time" units="none"
+                        description="total flotation fraction to calculate avgFlotationFraction"
+                />
+                <var name="avgFlotationFraction" type="real" dimensions="Time" units="none"
+                        description="area-weighted average of the flotation fraction"
+                />
+    
  	</var_struct>
 	<streams>
 		<stream name="globalStatsOutput" type="output"
