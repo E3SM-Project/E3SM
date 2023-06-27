@@ -903,6 +903,15 @@ compute_diagnostic(const std::string& name, const bool allow_invalid_fields)
 
   // Either allow_invalid_fields=false, or all inputs are valid. Proceed.
   diag->compute_diagnostic();
+
+  // The diag may have failed to compute (e.g., t=0 output with a flux-like diag).
+  // If we're allowing invalid fields, then we should simply set diag=m_fill_value
+  if (allow_invalid_fields) {
+    auto d = diag->get_diagnostic();
+    if (not d.get_header().get_tracking().get_time_stamp().is_valid()) {
+      d.deep_copy(m_fill_value);
+    }
+  }
 }
 /* ---------------------------------------------------------- */
 // General get_field routine for output.
@@ -993,6 +1002,18 @@ create_diagnostic (const std::string& diag_field_name) {
     // FieldAtLevel         follows convention variable_at_levN (where N is some integer)
     // FieldAtPressureLevel follows convention variable_at_999XYZ (where 999 is some integer, XYZ string units)
     diag_name = tokens[1].find_first_of("0123456789.")==0 ? "FieldAtPressureLevel" : "FieldAtLevel";
+  } else if (diag_field_name=="PrecipLiqSurfMassFlux" or
+             diag_field_name=="precip_liq_surf_mass_flux") {
+    diag_name = "precip_surf_mass_flux";
+    params.set<std::string>("precip_type","liquid");
+  } else if (diag_field_name=="PrecipIceSurfMassFlux" or
+             diag_field_name=="precip_ice_surf_mass_flux") {
+    diag_name = "precip_surf_mass_flux";
+    params.set<std::string>("precip_type","ice");
+  } else if (diag_field_name=="PrecipTotalSurfMassFlux" or
+             diag_field_name=="precip_total_surf_mass_flux") {
+    diag_name = "precip_surf_mass_flux";
+    params.set<std::string>("precip_type","total");
   } else {
     diag_name = diag_field_name;
   }

@@ -263,7 +263,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
     bool are_fields_present = (std::find(export_constant_fields.begin(),export_constant_fields.end(),"NONE") == export_constant_fields.end()) and (export_constant_fields.size() > 0);
     if (are_fields_present) {
       // Determine which fields need constants
-      for (int ii=0; ii<export_constant_fields.size(); ii++) {
+      for (size_t ii=0; ii<export_constant_fields.size(); ii++) {
         auto fname = export_constant_fields[ii];
         // Find the index for this field in the list of export fields.
 	auto v_loc = std::find(m_export_field_names_vector.begin(),m_export_field_names_vector.end(),fname);

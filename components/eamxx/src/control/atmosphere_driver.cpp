@@ -740,6 +740,9 @@ initialize_fields ()
     }
   }
 
+  // Zero out accumulated fields
+  reset_accummulated_fields();
+
 #ifdef SCREAM_HAS_MEMORY_USAGE
   long long my_mem_usage = get_mem_usage(MB);
   long long max_mem_usage;
@@ -1298,9 +1301,6 @@ initialize (const ekat::Comm& atm_comm,
 void AtmosphereDriver::run (const int dt) {
   start_timer("EAMxx::run");
 
-  // Zero out accumulated fields
-  reset_accummulated_fields();
-
   // Make sure the end of the time step is after the current start_time
   EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
 
@@ -1320,6 +1320,10 @@ void AtmosphereDriver::run (const int dt) {
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
   }
+
+  // Reset accum fields right away, so that if we have t=0 output,
+  // we don't run into errors in the IO or diagnostics layers.
+  reset_accummulated_fields();
 
 #ifdef SCREAM_HAS_MEMORY_USAGE
   long long my_mem_usage = get_mem_usage(MB);
