@@ -26,16 +26,16 @@ module cldera_dynamic_tracers
   ! Public interfaces
   public :: cldera_dynamic_tracers_register        ! register constituents
   public :: cldera_dynamic_tracers_implements_cnst ! true if constituent is implemented by this package
-  public :: cldera_dynamic_tracers_is_pt
-  public :: cldera_dynamic_tracers_is_pv
-  public :: cldera_dynamic_tracers_is_enabled
   public :: cldera_dynamic_tracers_init            ! initialize history fields, datasets
   public :: cldera_dynamic_tracers_init_cnst       ! initialize constituent field
-  public :: cldera_dynamic_tracers_timestep_tend
+  public :: cldera_dynamic_tracers_timestep_tend   ! compute timestep tendencies
   public :: cldera_dynamic_tracers_readnl          ! read namelist options
-  public :: cldera_dynamic_tracers_pv_idx
-  public :: cldera_dynamic_tracers_pt_idx
-  public :: cldera_dynamic_tracers_pv_offset
+  public :: cldera_dynamic_tracers_is_enabled      ! getter function for checking if package is activated
+  public :: cldera_dynamic_tracers_pv_idx          ! getter function for PV tracer global constituent index
+  public :: cldera_dynamic_tracers_pt_idx          ! getter function for PT tracer global constituent index
+  public :: cldera_dynamic_tracers_is_pt           ! return true if named tracer is PT tracer
+  public :: cldera_dynamic_tracers_is_pv           ! return true if names tracer is PV tracer
+  public :: cldera_dynamic_tracers_pv_offset       
 
   real(r8), parameter :: cldera_dynamic_tracers_pv_offset = 1_r8
 
@@ -47,8 +47,8 @@ module cldera_dynamic_tracers
   character(len=8), parameter :: pv_out_name = 'PV_TRCR    '
 
   integer :: ifirst ! global index of first constituent
-  integer :: ixpv  ! global index for PV tracer
-  integer :: ixpt  ! global index for PT tracer
+  integer :: ixpv   ! global index for PV tracer
+  integer :: ixpt   ! global index for PT tracer
 
   ! Data from namelist variables
   logical :: cldera_dynamic_tracers_flag  = .false. ! true => activate this module, namelist variable
@@ -57,7 +57,6 @@ module cldera_dynamic_tracers
 contains
 !===============================================================================
 
-!================================================================================
   subroutine cldera_dynamic_tracers_readnl(nlfile)
 
     use namelist_utils, only: find_group_name
@@ -158,7 +157,14 @@ contains
 
   end function cldera_dynamic_tracers_implements_cnst
 
+!===============================================================================
+
   subroutine cldera_dynamic_tracers_pv_idx(idx)
+    !----------------------------------------------------------------------- 
+    ! 
+    ! Purpose: getter fucntion returning global constituent index of PV tracer
+    ! 
+    !-----------------------------------------------------------------------
     integer, intent(out) :: idx
 
     idx = 0
@@ -168,7 +174,15 @@ contains
 
 
   end subroutine cldera_dynamic_tracers_pv_idx
+  
+!===============================================================================
+
   subroutine cldera_dynamic_tracers_pt_idx(idx)
+    !----------------------------------------------------------------------- 
+    ! 
+    ! Purpose: getter fucntion returning global constituent index of PT tracer
+    ! 
+    !-----------------------------------------------------------------------
     integer, intent(out) :: idx
 
     idx = 0
@@ -179,6 +193,7 @@ contains
 
   end subroutine cldera_dynamic_tracers_pt_idx
 
+!===============================================================================
 
   subroutine cldera_dynamic_tracers_timestep_tend(state, ptend, dt, ncol)
 
@@ -215,68 +230,52 @@ contains
 
   end subroutine cldera_dynamic_tracers_timestep_tend
 
-!
-
-
 ! ===========================================================================
 
   function cldera_dynamic_tracers_is_pv(name)
     !----------------------------------------------------------------------- 
     ! 
-    ! Purpose: return true if specified constituent is treated as pv
+    ! Purpose: return true if specified constituent is treated as PV
     ! 
     !-----------------------------------------------------------------------
 
-    character(len=*), intent(in) :: name   ! constituent name
-    logical :: cldera_dynamic_tracers_is_pv        ! return value
-
-    !-----------------------------------------------------------------------
-
+    character(len=*), intent(in) :: name    ! constituent name
+    logical :: cldera_dynamic_tracers_is_pv ! return value
     cldera_dynamic_tracers_is_pv = (cldera_dynamic_tracers_flag) .and. (name == c_names(1))
 
 
   end function cldera_dynamic_tracers_is_pv
 
 ! ==========================================================================
-
- function cldera_dynamic_tracers_is_enabled()
-    !----------------------------------------------------------------------- 
-    ! 
-    ! Purpose: return true if specified constituent is treated as pv
-    ! 
-    !-----------------------------------------------------------------------
-
-    logical :: cldera_dynamic_tracers_is_enabled        ! return value
-
-    !-----------------------------------------------------------------------
-
-    cldera_dynamic_tracers_is_enabled = cldera_dynamic_tracers_flag
-
-
-  end function cldera_dynamic_tracers_is_enabled
-
-! ==========================================================================
-
  
   function cldera_dynamic_tracers_is_pt(name)
     !----------------------------------------------------------------------- 
     ! 
-    ! Purpose: return true if specified constituent is treated as pt
+    ! Purpose: return true if specified constituent is treated as PT
     ! 
     !-----------------------------------------------------------------------
 
-    character(len=*), intent(in) :: name   ! constituent name
-    logical :: cldera_dynamic_tracers_is_pt        ! return value
-
-
+    character(len=*), intent(in) :: name    ! constituent name
+    logical :: cldera_dynamic_tracers_is_pt ! return value
     cldera_dynamic_tracers_is_pt = (cldera_dynamic_tracers_flag) .and. (name == c_names(2))
 
 
   end function cldera_dynamic_tracers_is_pt
 
+! ==========================================================================
 
-!===============================================================================
- 
+ function cldera_dynamic_tracers_is_enabled()
+    !----------------------------------------------------------------------- 
+    ! 
+    ! Purpose: return true if package is activated
+    ! 
+    !-----------------------------------------------------------------------
+
+    logical :: cldera_dynamic_tracers_is_enabled        ! return value
+    cldera_dynamic_tracers_is_enabled = cldera_dynamic_tracers_flag
+
+
+  end function cldera_dynamic_tracers_is_enabled 
 
 !===============================================================================
   
@@ -368,6 +367,5 @@ contains
   end subroutine init_cnst_3d
 
 !=====================================================================
-
 
 end module cldera_dynamic_tracers
