@@ -3149,15 +3149,26 @@ module ocn_time_integration_split_ab2
 
       end if ! not restart
 
+
       ! Allocate AB2 necessary arrays
-      allocate(normalVelocityTendOld(nVertLevels,nEdgesAll+1))
-      allocate(CoriolisTermOld(nVertLevels,nEdgesAll+1))
-      normalVelocityTendOld(:,:) = 0.0_RKIND
-      CoriolisTermOld(:,:) = 0.0_RKIND
+      block => domain % blocklist
+      call mpas_pool_get_dimension(block % dimensions, 'nVertLevels',nVertLevels)
+      call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
+
+      ! Allocate AB2 necessary arrays
+      if ( .not. allocated(normalVelocityTendOld) ) then
+           allocate(normalVelocityTendOld(nVertLevels,nEdges+1))
+           normalVelocityTendOld(:,:) = 0.0_RKIND
+      endif
+      if ( .not. allocated(CoriolisTermOld) ) then
+         allocate(CoriolisTermOld(nVertLevels,nEdges+1))
+         CoriolisTermOld(:,:) = 0.0_RKIND
+      endif
 
       ! Configuration of modified AB2 coefficient
       !    - Setting as 0 means the standard AB2
       eab = 0.0_RKIND
+
 
       ! Create reusable halo exchange for subcycling
       call mpas_dmpar_exch_group_create(domain, subcycleGroupName)
@@ -3168,7 +3179,6 @@ module ocn_time_integration_split_ab2
       call mpas_dmpar_exch_group_build_reusable_buffers(domain, &
                                                      subcycleGroupName)
 
-      !-----------------------------------------------------------------
       if (config_use_self_attraction_loading) then
          ! set ssh_sal_on to 1
          ssh_sal_on = 1
