@@ -744,7 +744,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
           !returns new T, qv, new!!! dp, mass
           call rj_new_eam(qv_c,qc_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
-               encl,wasiactive,ttend)
+               energy_before,en2cp,en2cv,energy_after,encl,wasiactive,ttend)
 
         elseif(bubble_rj_cVstar) then
 

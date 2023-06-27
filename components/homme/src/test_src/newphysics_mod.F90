@@ -266,20 +266,20 @@ end subroutine rj_new
 
 
 subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
-                                                               encl, wasiactive,ttend)
+                                 en1, en2cp, en2cV, en3,encl, wasiactive,ttend)
 
 
   real(rl), dimension(nlev), intent(inout) :: p_c
   real(rl), dimension(nlev), intent(inout) :: dp_c
   real(rl), dimension(nlev), intent(inout) :: qv_c,ql_c,T_c
   real(rl), dimension(nlevp),intent(inout) :: zi_c
-  real(rl),                  intent(inout) :: massout, energyout, encl
+  real(rl),                  intent(inout) :: massout, energyout, en1, en2cp, en2cV, en3, encl
   real(rl),                  intent(in)    :: ptop
   logical,                   intent(inout) :: wasiactive
   real(rl), dimension(nlev), intent(inout) :: ttend
 
   real(rl) :: qsat, dp_loc, qv_loc, ql_loc, dpdry_loc, qvdry_loc, qldry_loc, qsatdry, dq_loc, &
-                vapor_mass_change, en1, en2, en3
+                vapor_mass_change
   real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, hold, T_new
   real(rl) :: cpstarTerm_new, rstardp, oldQ1mass, oldQ2mass, olddphi, pi_top_int, enb, ena
   real(rl), dimension(nlev)  :: pi, dphi, zero, rain, d_pnh, rain2
@@ -290,8 +290,7 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   energyout = 0.0
   zero = 0.0
   rain = 0.0
-  en1 = 0; en2=0; en3 = 0; encl = 0; ttend = 0;
-
+  en1 = 0; en2cp=0;en2cv=0; en3 = 0; encl = 0; ttend = 0;
 
   if(bubble_rj_eamcpdry) then
   !call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en1)
@@ -301,7 +300,6 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   endif
 
   call construct_hydro_pressure(dp_c,ptop,pi)
-
 
   !since one option uses geo, go from bottom to up
   do k=nlev, 1, -1
@@ -370,9 +368,9 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   if(wasiactive)then
     if(bubble_rj_eamcpdry) then
     !call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
-    call energycp_hy_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en2)
+    call energycp_hy_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en2cp)
   elseif (bubble_rj_eamcpstar) then
-    call energycp_hy_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en2)
+    call energycp_hy_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en2cp)
   endif
 
 
