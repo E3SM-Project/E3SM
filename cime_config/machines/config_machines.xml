@@ -2898,15 +2898,16 @@
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>104</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifx">104</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>208</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifx">208</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">104</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>104</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifx">52</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifx">104</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
        <executable>mpiexec</executable>
+       <!--executable>numactl -m 2-3 mpiexec</executable--><!--for HBM runs-->
        <arguments>
           <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
           <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
@@ -2987,6 +2988,7 @@
         <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
+        <env name="MPIR_CVAR_ENABLE_GPU">0</env>
         <env name="GPU_TILE_COMPACT"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="!gnu">
