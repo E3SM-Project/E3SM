@@ -471,11 +471,21 @@ update_impl (const Field& x, const ST alpha, const ST beta)
   switch (x_l.rank()) {
     case 1:
       {
-        auto xv = x.get_view<const ST*,HD>();
-        auto yv =   get_view<      ST*,HD>();
-        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-          combine<CM>(xv(idx),yv(idx),alpha,beta);
-        });
+        // Must handle the case where one of the two views is strided
+        if (x.get_header().get_alloc_properties().contiguous() and
+              get_header().get_alloc_properties().contiguous()) {
+          auto xv = x.get_view<const ST*,HD>();
+          auto yv =   get_view<      ST*,HD>();
+          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+            combine<CM>(xv(idx),yv(idx),alpha,beta);
+          });
+        } else {
+          auto xv = x.get_strided_view<const ST*,HD>();
+          auto yv =   get_strided_view<      ST*,HD>();
+          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+            combine<CM>(xv(idx),yv(idx),alpha,beta);
+          });
+        }
       }
       break;
     case 2:

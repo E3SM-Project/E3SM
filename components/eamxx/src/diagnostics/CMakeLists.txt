@@ -4,6 +4,7 @@ set(DIAGNOSTIC_SRCS
   exner.cpp
   field_at_level.cpp
   field_at_pressure_level.cpp
+  field_at_height.cpp
   ice_water_path.cpp
   liquid_water_path.cpp
   longwave_cloud_forcing.cpp

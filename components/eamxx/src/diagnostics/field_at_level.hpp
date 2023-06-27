@@ -9,7 +9,7 @@ namespace scream
 {
 
 /*
- * This diagnostic will produce the potential temperature.
+ * This diagnostic will produce a slice of a field at a given vertical level index
  */
 
 class FieldAtLevel : public AtmosphereDiagnostic
