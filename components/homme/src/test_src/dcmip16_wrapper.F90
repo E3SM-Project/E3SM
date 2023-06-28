@@ -768,20 +768,21 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 if(wasiactive)then
 !if(bubble_rj_cpstar_nh) then
 
-print *, 'rof for nh, v, not rof for hy'
+print *, 'rof for nh, v, not rof for hy, eamcpdry, eamcpstar'
 print *, 'en_before-en1globV rel', (energy_before-en1glob_cv)/en1glob_cv
-print *, 'rof for nh, v, not rof for hy'
+print *, 'rof for nh, v, not rof for hy, eamcpdry, eamcpstar'
 print *, 'en_before-en1globP rel', (energy_before-en1glob_cp)/en1glob_cp
 print *, '  '
 
-if(.not.bubble_rj_cpstar_hy) then
-print *, 'rof for nh, v, not rof for hy'
-print *, 'NH update en_before-en2cv rel', (energy_before-en2cv)/en2cv
+if(bubble_rj_cpstar_nh .or. bubble_rj_cVstar) then
+print *, 'rof for cpstarnh, v'
+print *, 'condens update en_before-en2cv rel', (energy_before-en2cv)/en2cv
 print *, '  '
 endif
 
-print *, 'rof for nh, v, hy!'
-print *, 'NH update en_before-en2cp rel', (energy_before-en2cp)/en2cp
+!wont be rof for eamcpstar, cause used cpstar frozen
+print *, 'rof for nh, v, hy, eamcpdry, not eamcpstar'
+print *, 'condens update en_before-en2cp rel', (energy_before-en2cp)/en2cp
 print *, '  '
 
 print *, 'rof for nh, v, not for hy'
