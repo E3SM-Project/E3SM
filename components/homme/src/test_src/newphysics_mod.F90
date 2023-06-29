@@ -100,7 +100,7 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
                 vapor_mass_change
   real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, rstar_old, rstar_new, hold, T_new
   real(rl) :: cpstarTerm_new, rstardp, oldQ1mass, oldQ2mass, olddphi, pi_top_int, enb, ena
-  real(rl), dimension(nlev)  :: pi, dphi, zero, rain, d_pnh, rain2
+  real(rl), dimension(nlev)  :: pi, dphi, zero, rain, d_pnh, oldqdp, pprime
   real(rl), dimension(nlevp) :: p_int
   integer  :: k, ll
 
@@ -205,59 +205,34 @@ subroutine rj_new(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   endif
 
   ! in HY update, what to do about energyout and how/when to recompute p and phi?
-  ! decision: keep both updates the same for cpstar HY and NH
+  ! decision: keep sedim update the same for cpstar HY and NH
 
   if(wasiactive)then
 
-  do k=nlev, 1, -1
+    oldqdp = dp_c * qv_c
+    pprime = p_c - pi
 
-     !compute current level of energy
-     !we can save on perf by reusing 1 of these calls in next k iteration
-
-     !rain2 contains what'd not been rained out yet
-     call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c,p_c,enb)
- 
-     !above, we only need to save dphi
-     !compute dphi above the cell
-     do ll=k-1,1,-1
-       dphi(ll) = (zi_c(ll) - zi_c(ll+1))*gravit
-     enddo
-
-     !k cell, we need to recompute state vars and dphi
-     !sedimentation stage
-     oldQ1mass         = dp_c(k)*qv_c(k)
-     vapor_mass_change = dp_c(k)*ql_c(k)
-     dp_c(k) = dp_c(k) - vapor_mass_change
-     p_c(k)  = p_c(k)  - vapor_mass_change/2.0
-     qv_c(k) = oldQ1mass/dp_c(k)
-     ql_c(k) = 0.0
-     rstardp = dp_c(k) * (rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k))
-     dphi(k) = rstardp * T_c(k) / p_c(k)
-
-     !below, we need to recompute dphi from changed pressure
-     do ll=k+1,nlev
-        p_c(ll) = p_c(ll) - vapor_mass_change
-        rstardp = dp_c(ll) * (rdry * (1.0 - qv_c(ll) - ql_c(ll)) + rvapor * qv_c(ll)) 
-        dphi(ll) = rstardp * T_c(ll) / p_c(ll)
-     enddo
-
-     !recompute zi_c for all levels
-     do ll=nlev, 1, -1
-        zi_c(ll) = zi_c(ll+1) + dphi(ll)/gravit
-     enddo
-
-     call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c,p_c,ena)
-    
-     massout = massout + vapor_mass_change
-     energyout = energyout + (enb - ena)
-     encl = encl + (Tforcl*cl+latice)*vapor_mass_change
-
-  enddo
+    !rain out 
+    dp_c = dp_c - rain
+    ql_c = 0.0
+    qv_c = oldqdp/dp_c
+    call construct_hydro_pressure(dp_c,ptop,pi)
+    p_c = pprime + pi
+    do k=nlev, 1, -1
+      rstar_new = rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k)
+      olddphi = rstar_new * dp_c(k) * T_c(k) / p_c(k)
+      zi_c(k) = zi_c(k+1) + olddphi/gravit
+    enddo    
   endif
 
   !interchange V and P formulas of energy for debugging
   !call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
   call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c,p_c,en3)
+
+  vapor_mass_change = sum(rain)
+  massout = massout + vapor_mass_change
+  energyout = energyout + (en2cp - en3)
+  encl = encl + (Tforcl*cl+latice)*vapor_mass_change
  
 end subroutine rj_new
 
@@ -282,7 +257,7 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
                 vapor_mass_change
   real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, hold, T_new
   real(rl) :: cpstarTerm_new, rstardp, oldQ1mass, oldQ2mass, olddphi, pi_top_int, enb, ena
-  real(rl), dimension(nlev)  :: pi, dphi, zero, rain, d_pnh, rain2
+  real(rl), dimension(nlev)  :: pi, dphi, zero, rain, d_pnh, oldqdp, pprime
   real(rl), dimension(nlevp) :: p_int
   integer  :: k, ll
 
@@ -344,14 +319,6 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
        hold = T_loc*cpstarTerm_new + L_old
        T_new = (hold - L_new)/(   cpstarTerm_new   )
 
-!print *, 'Told', T_loc
-!print *, 'L old', L_old
-!print *, 'k cps T', k,cpstarTerm_new, T_new
-!print *, 'Tnew-Told', T_new - T_loc
-!print *,'hold, Lnew', hold, L_new
-!print *, 'rain', vapor_mass_change
-!stop
-
        ttend(k) = T_new - T_c(k)
 
        T_c(k)  = T_new
@@ -365,52 +332,31 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 
   !if we used V formulation for energy here, we would recompute geop here too
 
-  if(wasiactive)then
-    if(bubble_rj_eamcpdry) then
+  if(bubble_rj_eamcpdry) then
     !call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en2)
     call energycp_hy_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en2cp)
   elseif (bubble_rj_eamcpstar) then
     call energycp_hy_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en2cp)
   endif
 
+  if(wasiactive)then
 
-  do k=nlev, 1, -1
+    oldqdp = dp_c * qv_c
+    pprime = p_c - pi
+    !rain out 
+    dp_c = dp_c - rain
+    ql_c = 0.0
+    qv_c = oldqdp/dp_c
+    call construct_hydro_pressure(dp_c,ptop,pi)
+    p_c = pprime + pi
 
-     !above, we only need to save dphi
-     !compute dphi above the cell
-     do ll=k-1,1,-1
-       dphi(ll) = (zi_c(ll) - zi_c(ll+1))*gravit
-     enddo
+    do k=nlev, 1, -1
+      rstardp = rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k)
+      olddphi = rstardp * dp_c(k) * T_c(k) / p_c(k)
+      zi_c(k) = zi_c(k+1) + olddphi/gravit
+    enddo
 
-     !k cell, we need to recompute state vars and dphi
-     !sedimentation stage
-     oldQ1mass         = dp_c(k)*qv_c(k)
-     vapor_mass_change = dp_c(k)*ql_c(k)
-     dp_c(k) = dp_c(k) - vapor_mass_change
-     p_c(k)  = p_c(k)  - vapor_mass_change/2.0
-     qv_c(k) = oldQ1mass/dp_c(k)
-     ql_c(k) = 0.0
-     rstardp = dp_c(k) * (rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k))
-     dphi(k) = rstardp * T_c(k) / p_c(k)
-
-     !below, we need to recompute dphi from changed pressure
-     do ll=k+1,nlev
-        p_c(ll) = p_c(ll) - vapor_mass_change
-        rstardp = dp_c(ll) * (rdry * (1.0 - qv_c(ll) - ql_c(ll)) + rvapor * qv_c(ll))
-        dphi(ll) = rstardp * T_c(ll) / p_c(ll)
-     enddo
-
-     !recompute zi_c for all levels
-     do ll=nlev, 1, -1
-        zi_c(ll) = zi_c(ll+1) + dphi(ll)/gravit
-     enddo
-
-     massout = massout + vapor_mass_change
-     !mimic eam
-     energyout = energyout + latice*vapor_mass_change
-     encl = encl + (Tforcl*cl+latice)*vapor_mass_change
-
-  enddo
+  endif
 
   if(bubble_rj_eamcpdry) then
     !call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
@@ -419,7 +365,10 @@ subroutine rj_new_eam(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
     call energycp_hy_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),en3)
   endif
 
-  endif
+  vapor_mass_change = sum(rain)
+  massout = massout + vapor_mass_change
+  energyout = energyout + latice*vapor_mass_change
+  encl = encl + (Tforcl*cl+latice)*vapor_mass_change
 
 end subroutine rj_new_eam
 
