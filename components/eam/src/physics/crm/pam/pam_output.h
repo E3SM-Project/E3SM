@@ -152,6 +152,7 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   forcing_tend_out_rho_v  .deep_copy_to(output_rho_v_ls);
   forcing_tend_out_rho_l  .deep_copy_to(output_rho_l_ls);
   forcing_tend_out_rho_i  .deep_copy_to(output_rho_i_ls);
+  yakl::fence();
   //------------------------------------------------------------------------------------------------
 }
 

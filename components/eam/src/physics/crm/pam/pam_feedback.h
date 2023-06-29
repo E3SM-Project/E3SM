@@ -147,6 +147,7 @@ inline void pam_feedback_copy_to_host( pam::PamCoupler &coupler ) {
   crm_feedback_tend_qv  .deep_copy_to(output_qvltend_host);
   crm_feedback_tend_qc  .deep_copy_to(output_qcltend_host);
   crm_feedback_tend_qi  .deep_copy_to(output_qiltend_host);
+  yakl::fence();
   //------------------------------------------------------------------------------------------------
 }
 

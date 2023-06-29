@@ -216,5 +216,6 @@ inline void pam_radiation_copy_to_host( pam::PamCoupler &coupler ) {
   rad_nc         .deep_copy_to(gcm_rad_nc         );
   rad_ni         .deep_copy_to(gcm_rad_ni         );
   rad_cld        .deep_copy_to(gcm_rad_cld        );
+  yakl::fence();
   //------------------------------------------------------------------------------------------------
 }

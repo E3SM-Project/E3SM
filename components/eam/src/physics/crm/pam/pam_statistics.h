@@ -301,6 +301,7 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto zint       = dm_device.get<real const,2>("vertical_interface_height");
   //------------------------------------------------------------------------------------------------
   // get CRM variables to be aggregated
+  auto input_pdel       = dm_host.get<real const,2>("input_pdel").createDeviceCopy();
   auto precip_liq       = dm_device.get<real const,3>("precip_liq_surf_out");
   auto precip_ice       = dm_device.get<real const,3>("precip_ice_surf_out");
   auto temp             = dm_device.get<real const,4>("temp"       );
@@ -308,7 +309,6 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto rho_v            = dm_device.get<real const,4>("water_vapor");
   auto rho_l            = dm_device.get<real const,4>("cloud_water");
   auto rho_i            = dm_device.get<real const,4>("ice"        );
-  auto input_pdel       = dm_host.get<real const,2>("input_pdel").createDeviceCopy();
   auto liq_ice_exchange = dm_device.get<real const,4>("liq_ice_exchange_out");
   auto vap_liq_exchange = dm_device.get<real const,4>("vap_liq_exchange_out");
   auto vap_ice_exchange = dm_device.get<real const,4>("vap_ice_exchange_out");
@@ -685,6 +685,7 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   phys_tend_sponge_qc_gcm  .deep_copy_to(phys_tend_sponge_qc_host);
   phys_tend_sponge_qi_gcm  .deep_copy_to(phys_tend_sponge_qi_host);
   phys_tend_sponge_qr_gcm  .deep_copy_to(phys_tend_sponge_qr_host);
+  yakl::fence();
   //------------------------------------------------------------------------------------------------
 }
 

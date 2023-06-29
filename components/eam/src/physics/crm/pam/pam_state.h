@@ -395,5 +395,6 @@ inline void pam_state_copy_to_host( pam::PamCoupler &coupler ) {
   crm_shoc_wthv     .deep_copy_to( host_state_shoc_wthv     );
   crm_shoc_relvar   .deep_copy_to( host_state_shoc_relvar   );
   crm_shoc_cldfrac  .deep_copy_to( host_state_shoc_cldfrac  );
+  yakl::fence();
   //------------------------------------------------------------------------------------------------
 }
