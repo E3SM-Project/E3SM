@@ -21,7 +21,7 @@
 #include "p3_f90.hpp"
 
 #include "pam_debug.h"
-real constexpr enable_check_state = false;
+bool constexpr enable_check_state = false;
 
 extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
@@ -38,12 +38,17 @@ extern "C" void pam_driver() {
   auto gcm_dt        = coupler.get_option<real>("gcm_dt");
   auto crm_dt        = coupler.get_option<real>("crm_dt");
   auto is_first_step = coupler.get_option<bool>("is_first_step");
+  bool enable_physics_tend_stats = coupler.get_option<bool>("enable_physics_tend_stats");
   //------------------------------------------------------------------------------------------------
   // set various coupler options
   coupler.set_option<real>("gcm_physics_dt",gcm_dt);
   coupler.set_option<real>("sponge_time_scale",60);
-  coupler.set_option<int>("sponge_num_layers",crm_nz*0.4);
-  coupler.set_option<int>("crm_per_phys",1);
+  coupler.set_option<int>("sponge_num_layers",crm_nz*0.3);
+  coupler.set_option<int>("crm_per_phys",4);
+  if (crm_dt==10) { coupler.set_option<int>("crm_per_phys",10); }
+  if (crm_dt==20) { coupler.set_option<int>("crm_per_phys",2); }
+  if (crm_dt==30) { coupler.set_option<int>("crm_per_phys",3); }
+  if (crm_dt==60) { coupler.set_option<int>("crm_per_phys",6); }
   //------------------------------------------------------------------------------------------------
   // Allocate the coupler state and retrieve host/device data managers
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
@@ -119,6 +124,8 @@ extern "C" void pam_driver() {
     dycore.pre_time_loop(coupler);
   #endif
 
+  //------------------------------------------------------------------------------------------------
+  //------------------------------------------------------------------------------------------------
 
   real4d save_temp("save_temp",crm_nz,crm_ny,crm_nx,nens);
   real4d save_rhod("save_rhod",crm_nz,crm_ny,crm_nx,nens);
@@ -150,10 +157,10 @@ extern "C" void pam_driver() {
   auto wvel = dm_device.get<real,4>("wvel");
 
 
-  real grav = 9.80616;
-  auto input_phis = dm_host.get<real const,1>("input_phis").createDeviceCopy();
-  auto lat        = dm_host.get<real const,1>("latitude"  ).createDeviceCopy();
-  auto lon        = dm_host.get<real const,1>("longitude" ).createDeviceCopy();
+  // real grav = 9.80616;
+  // auto input_phis = dm_host.get<real const,1>("input_phis").createDeviceCopy();
+  // auto lat        = dm_host.get<real const,1>("latitude"  ).createDeviceCopy();
+  // auto lon        = dm_host.get<real const,1>("longitude" ).createDeviceCopy();
 
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
@@ -174,16 +181,18 @@ extern "C" void pam_driver() {
 
     if (enable_check_state) { pam_debug_check_state(coupler, 2, nstep); }
 
-    // // save stuff for after-dycor check
-    // parallel_for("", SimpleBounds<4>(crm_nz,crm_ny,crm_nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-    //   save_temp(k,j,i,iens) = temp(k,j,i,iens);
-    //   save_rhod(k,j,i,iens) = rhod(k,j,i,iens);
-    //   save_rhov(k,j,i,iens) = rhov(k,j,i,iens);
-    //   save_rhoc(k,j,i,iens) = rhoc(k,j,i,iens);
-    //   save_rhoi(k,j,i,iens) = rhoi(k,j,i,iens);
-    //   save_uvel(k,j,i,iens) = uvel(k,j,i,iens);
-    //   save_wvel(k,j,i,iens) = wvel(k,j,i,iens);
-    // });
+    // if (enable_check_state) { 
+      // save stuff for after-dycor check
+      parallel_for("", SimpleBounds<4>(crm_nz,crm_ny,crm_nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+        save_temp(k,j,i,iens) = temp(k,j,i,iens);
+        save_rhod(k,j,i,iens) = rhod(k,j,i,iens);
+        save_rhov(k,j,i,iens) = rhov(k,j,i,iens);
+        save_rhoc(k,j,i,iens) = rhoc(k,j,i,iens);
+        save_rhoi(k,j,i,iens) = rhoi(k,j,i,iens);
+        save_uvel(k,j,i,iens) = uvel(k,j,i,iens);
+        save_wvel(k,j,i,iens) = wvel(k,j,i,iens);
+      });
+    // }
 
     // anelastic dycor messes up the dry density ddue to how the GCM forcing changes total density
     // so we need to save it here and recall after the dycor
@@ -191,53 +200,64 @@ extern "C" void pam_driver() {
 
     pam_statistics_save_state(coupler);
     coupler.run_module( "dycore"                       , [&] (pam::PamCoupler &coupler) {dycore.timeStep(coupler);} );
-    pam_statistics_aggregate_tendency(coupler,"dycor");
+    if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"dycor"); }
 
     // recall the dry density to the values before the dycor
     pam_state_recall_dry_density(coupler);
 
-    // // Check stuff
-    // parallel_for("", SimpleBounds<3>(crm_ny,crm_nx,nens), YAKL_LAMBDA (int j, int i, int iens) {
-    //   int  tmp_i = -1;
-    //   int  tmp_j = -1;
-    //   int  tmp_n = -1;
-    //   bool problem_found = false;
-
-    //   for (int k=0; k<crm_nz; k++) {
-    //     if ( temp(k,j,i,iens)<0 || isnan(temp(k,j,i,iens)) ) {
-    //       problem_found = true;
-    //       tmp_i = i;
-    //       tmp_j = j;
-    //       tmp_n = iens;
-    //       real dz = (zint(k+1,iens) - zint(k,iens));
-    //       printf("WHDEBUG - st:%d n:%d i:%d k:%d z:%g dz:%g =curr= t: %g rv: %g rc: %g ri: %g rd: %g u: %g w: %g =prev= t: %g rv: %g rc: %g ri: %g u: %g w: %g \n",
-    //         nstep,iens,i,k,
-    //         zmid(k,iens),
-    //         dz,
-    //         temp(k,j,i,iens),
-    //         rhov(k,j,i,iens),
-    //         rhoc(k,j,i,iens),
-    //         rhoi(k,j,i,iens),
-    //         rhod(k,j,i,iens),
-    //         uvel(k,j,i,iens),
-    //         wvel(k,j,i,iens),
-    //         save_temp(k,j,i,iens),
-    //         save_rhov(k,j,i,iens),
-    //         save_rhoc(k,j,i,iens),
-    //         save_rhoi(k,j,i,iens),
-    //         save_uvel(k,j,i,iens),
-    //         save_wvel(k,j,i,iens)
-    //       );
-    //     }
-    //   }
-
-    // });
+    // Check stuff
+    // if (enable_check_state) { 
+      parallel_for("", SimpleBounds<3>(crm_ny,crm_nx,nens), YAKL_LAMBDA (int j, int i, int iens) {
+        int  tmp_i = -1;
+        int  tmp_j = -1;
+        int  tmp_n = -1;
+        // bool problem_found = false;
+        for (int k=0; k<crm_nz; k++) {
+          if ( temp(k,j,i,iens)<0 || isnan(temp(k,j,i,iens)) ) {
+            // problem_found = true;
+            tmp_i = i;
+            tmp_j = j;
+            tmp_n = iens;
+            real dz = (zint(k+1,iens) - zint(k,iens));
+            // printf("WHDEBUG - st:%3.3d n:%3.3d i:%3.3d k:%3.3d z:%8.2g dz:%8.2g =curr= t: %8.2g rv: %8.2g rc: %8.2g ri: %8.2g rd: %8.2g u: %8.2g w: %8.2g =prev= t: %8.2g rv: %8.2g rc: %8.2g ri: %8.2g u: %8.2g w: %8.2g \n",
+            //   nstep,iens,i,k,
+            //   zmid(k,iens),
+            //   dz,
+            //   temp(k,j,i,iens),
+            //   rhov(k,j,i,iens),
+            //   rhoc(k,j,i,iens),
+            //   rhoi(k,j,i,iens),
+            //   rhod(k,j,i,iens),
+            //   uvel(k,j,i,iens),
+            //   wvel(k,j,i,iens),
+            //   save_temp(k,j,i,iens),
+            //   save_rhov(k,j,i,iens),
+            //   save_rhoc(k,j,i,iens),
+            //   save_rhoi(k,j,i,iens),
+            //   save_uvel(k,j,i,iens),
+            //   save_wvel(k,j,i,iens)
+            // );
+            printf("WHDEBUG - st:%3.3d n:%3.3d i:%3.3d k:%3.3d z:%8.2g dz:%8.2g =curr= t: %8.2g u: %8.2g w: %8.2g =prev= t: %8.2g u: %8.2g w: %8.2g \n",
+              nstep,iens,i,k,
+              zmid(k,iens),
+              dz,
+              temp(k,j,i,iens),
+              uvel(k,j,i,iens),
+              wvel(k,j,i,iens),
+              save_temp(k,j,i,iens),
+              save_uvel(k,j,i,iens),
+              save_wvel(k,j,i,iens)
+            );
+          }
+        }
+      });
+    // }
 
     if (enable_check_state) { pam_debug_check_state(coupler, 3, nstep); }
 
     pam_statistics_save_state(coupler);
     coupler.run_module( "sponge_layer"                 , modules::sponge_layer );
-    pam_statistics_aggregate_tendency(coupler,"sponge");
+    if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"sponge"); }
 
     if (enable_check_state) { pam_debug_check_state(coupler, 4, nstep); }
 
@@ -246,13 +266,13 @@ extern "C" void pam_driver() {
 
     pam_statistics_save_state(coupler);
     coupler.run_module( "sgs"                          , [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
-    pam_statistics_aggregate_tendency(coupler,"sgs");
+    if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"sgs"); }
 
     if (enable_check_state) { pam_debug_check_state(coupler, 5, nstep); }
 
     pam_statistics_save_state(coupler);
     coupler.run_module( "micro"                        , [&] (pam::PamCoupler &coupler) {micro .timeStep(coupler);} );
-    pam_statistics_aggregate_tendency(coupler,"micro");
+    if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"micro"); }
 
     if (enable_check_state) { pam_debug_check_state(coupler, 6, nstep); }
 
