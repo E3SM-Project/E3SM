@@ -72,6 +72,8 @@ module crm_physics
    integer :: crm_shoc_relvar_idx   = -1
    integer :: crm_shoc_cldfrac_idx  = -1
 
+   logical :: pam_enable_physics_tend_stats = .false.
+
 contains
 !===================================================================================================
 !===================================================================================================
@@ -340,7 +342,7 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    use phys_control,          only: phys_getopts, use_gw_convect
    use phys_grid,             only: get_ncols_p
    use crm_history,           only: crm_history_init
-   use cam_history,           only: addfld
+   use cam_history,           only: addfld, hist_fld_active
    use constituents,          only: apcnst, bpcnst, cnst_name, cnst_longname, cnst_get_ind
    use constituents,          only: pcnst, cnst_get_ind
 #ifdef ECPP
@@ -361,6 +363,7 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    logical :: use_MMF_VT
    character(len=16) :: MMF_microphysics_scheme
    integer :: lchnk, ncol
+   logical :: pam_stat_fields_active
    !----------------------------------------------------------------------------
    call phys_getopts(use_ECPP_out = use_ECPP)
    call phys_getopts(use_MMF_VT_out = use_MMF_VT)
@@ -486,6 +489,32 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
 
       if (use_gw_convect) call pbuf_set_field(pbuf2d, ttend_dp_idx, 0._r8)
    end if
+
+#if defined(MMF_PAM)
+   pam_enable_physics_tend_stats = .true.
+   ! pam_stat_fields_active = .false.
+   ! if (hist_fld_active('MMF_DT_SGS    ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQV_SGS   ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQC_SGS   ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQI_SGS   ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQR_SGS   ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DT_MICRO  ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQV_MICRO ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQC_MICRO ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQI_MICRO ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQR_MICRO ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DT_DYCOR  ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQV_DYCOR ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQC_DYCOR ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQI_DYCOR ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQR_DYCOR ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DT_SPONGE ')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQV_SPONGE')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQC_SPONGE')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQI_SPONGE')) pam_stat_fields_active = .true.
+   ! if (hist_fld_active('MMF_DQR_SPONGE')) pam_stat_fields_active = .true.
+   ! if (pam_stat_fields_active)  pam_enable_physics_tend_stats = .true.
+#endif
 
 end subroutine crm_physics_init
 
@@ -1466,6 +1495,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_set_option('use_MMF_ESMT', use_MMF_ESMT_tmp )
       call pam_set_option('use_crm_accel', use_crm_accel_tmp )
       call pam_set_option('crm_accel_factor', crm_accel_factor )
+
+      call pam_set_option('enable_physics_tend_stats', pam_enable_physics_tend_stats )
 
       call pam_set_option('is_first_step', (nstep<=1) )
       call pam_set_option('am_i_root', masterproc )
