@@ -1406,14 +1406,13 @@ class GenBoiler(object):
     ###########################################################################
     def _get_db(self, phys):
     ###########################################################################
-        if phys in self._db:
-            return self._db[phys]
-        else:
+        if phys not in self._db:
             origin_files = self._source_repo / get_physics_data(phys, ORIGIN_FILES)
+            self._db[phys] = {}
             for origin_file in origin_files:
                 expect(origin_file.exists(), f"Missing origin file for physics {phys}: {origin_file}")
                 db = parse_origin(origin_file.open(encoding="utf-8").read(), self._subs)
-                self._db[phys] = db
+                self._db[phys].update(db)
                 if self._verbose:
                     print("For physics {}, found:")
                     for sub in self._subs:
@@ -1423,7 +1422,7 @@ class GenBoiler(object):
                                 print("    name:{} type:{} intent:{} dims:({})".\
                                       format(name, argtype, intent, ",".join(dims) if dims else "scalar"))
 
-            return db
+        return self._db[phys]
 
     ###########################################################################
     def _get_arg_data(self, phys, sub):
