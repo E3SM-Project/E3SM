@@ -2,7 +2,8 @@ from utils import expect
 from git_utils import get_git_toplevel_dir
 
 from collections import OrderedDict
-import pathlib, re, os
+import re, os
+from pathlib import Path
 
 #
 # Global hardcoded data
@@ -173,7 +174,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_func_impl", (
-        lambda phys, sub, gb: "{}_{}_impl.hpp".format(phys, sub),
+        lambda phys, sub, gb: "impl/{}_{}_impl.hpp".format(phys, sub),
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_func_impl"),
         lambda phys, sub, gb: get_namespace_close_regex(phys),   # insert at end of namespace
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub, template="Functions<S,D>"), # cxx begin
@@ -200,7 +201,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_eti", (
-        lambda phys, sub, gb: "{}_{}.cpp".format(phys, sub),
+        lambda phys, sub, gb: "eti/{}_{}.cpp".format(phys, sub),
         lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_eti"),
         lambda phys, sub, gb: re.compile(".*"), # insert at top of file
         lambda phys, sub, gb: re.compile(".*"), # start at top of file
@@ -221,7 +222,7 @@ PIECES = OrderedDict([
         lambda phys, sub, gb: "tests/CMakeLists.txt",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cmake_unit_test"),
         lambda phys, sub, gb: re.compile(r".*[)]\s*#\s*{}_TESTS_SRCS".format(phys.upper())), # insert at end of test src list, reqs special comment
-        lambda phys, sub, gb: re.compile(r".*{}".format(os.path.basename(get_piece_data(phys, sub, "cxx_bfb_unit_impl", FILEPATH, gb)))),
+        lambda phys, sub, gb: re.compile(r".*{}".format(Path(get_piece_data(phys, sub, "cxx_bfb_unit_impl", FILEPATH, gb)).name)),
         lambda phys, sub, gb: re.compile(".*"),
         lambda *x           : "Make cmake aware of the unit test"
     )),
@@ -230,17 +231,22 @@ PIECES = OrderedDict([
 
 # physics map. maps the name of a physics packages containing the original fortran subroutines to:
 #   (path-to-origin, path-to-cxx-src)
-ORIGIN_FILE, CXX_ROOT, INIT_CODE = range(3)
+ORIGIN_FILES, CXX_ROOT, INIT_CODE = range(3)
 PHYSICS = {
     "p3"   : (
-        "components/eam/src/physics/cam/micro_p3.F90",
+        ("components/eam/src/physics/cam/micro_p3.F90",),
         "components/eamxx/src/physics/p3",
         "p3_init();"
     ),
     "shoc" : (
-        "components/eam/src/physics/cam/shoc.F90",
+        ("components/eam/src/physics/cam/shoc.F90",),
         "components/eamxx/src/physics/shoc",
         "shoc_init(REPLACE_ME, true);"
+    ),
+    "dp" : (
+        ("components/eam/src/control/apply_iop_forcing.F90", "components/eam/src/dynamics/se/se_iop_intr_mod.F90", "components/eam/src/control/iop_data_mod.F90", "components/eam/src/control/history_iop.F90"),
+        "components/eamxx/src/physics/dp",
+        "dp_init(REPLACE_ME, true);"
     ),
 }
 
@@ -507,7 +513,7 @@ def create_template(physics, sub, gb, piece, force=False, force_arg_data=None):
 
     >>> gb = GenBoiler(["linear_interp"], ["cxx_func_impl"], dry_run=True)
     >>> create_template("shoc", "linear_interp", gb, "cxx_func_impl", force=True, force_arg_data=UT_ARG_DATA) #doctest: +ELLIPSIS
-    Would create file .../components/eamxx/src/physics/shoc/shoc_linear_interp_impl.hpp with contents:
+    Would create file .../components/eamxx/src/physics/shoc/impl/shoc_linear_interp_impl.hpp with contents:
     #ifndef SHOC_LINEAR_INTERP_IMPL_HPP
     #define SHOC_LINEAR_INTERP_IMPL_HPP
     <BLANKLINE>
@@ -1385,8 +1391,8 @@ class GenBoiler(object):
         self._physics     = physics
         self._overwrite   = overwrite
         self._kernel      = kernel
-        self._source_repo = pathlib.Path(source_repo).resolve()
-        self._target_repo = pathlib.Path(target_repo).resolve()
+        self._source_repo = Path(source_repo).resolve()
+        self._target_repo = Path(target_repo).resolve()
         self._dry_run     = dry_run
         self._verbose     = verbose
 
@@ -1406,18 +1412,20 @@ class GenBoiler(object):
         if phys in self._db:
             return self._db[phys]
         else:
-            origin_file = self._source_repo / get_physics_data(phys, ORIGIN_FILE)
-            expect(origin_file.exists(), "Missing origin file for physics {}: {}".format(phys, origin_file))
-            db = parse_origin(origin_file.open(encoding="utf-8").read(), self._subs)
-            self._db[phys] = db
-            if self._verbose:
-                print("For physics {}, found:")
-                for sub in self._subs:
-                    if sub in db:
-                        print("  For subroutine {}, found args:")
-                        for name, argtype, intent, dims in db[sub]:
-                            print("    name:{} type:{} intent:{} dims:({})".\
-                                  format(name, argtype, intent, ",".join(dims) if dims else "scalar"))
+            origin_files = self._source_repo / get_physics_data(phys, ORIGIN_FILES)
+            for origin_file in origin_files:
+                expect(origin_file.exists(), "Missing origin file for physics {}: {}".format(phys, origin_file))
+                db = parse_origin(origin_file.open(encoding="utf-8").read(), self._subs)
+                self._db[phys] = db
+                if self._verbose:
+                    print("For physics {}, found:")
+                    for sub in self._subs:
+                        if sub in db:
+                            print("  For subroutine {}, found args:")
+                            for name, argtype, intent, dims in db[sub]:
+                                print("    name:{} type:{} intent:{} dims:({})".\
+                                      format(name, argtype, intent, ",".join(dims) if dims else "scalar"))
+
             return db
 
     ###########################################################################
@@ -1435,7 +1443,7 @@ class GenBoiler(object):
     ###############################################################################
     def get_path_for_piece_file(self, physics, sub, piece):
     ###############################################################################
-        root_dir = pathlib.Path(get_physics_data(physics, CXX_ROOT))
+        root_dir = Path(get_physics_data(physics, CXX_ROOT))
         filepath = self._target_repo / root_dir / get_piece_data(physics, sub, piece, FILEPATH, self)
         return filepath
 
@@ -1845,7 +1853,7 @@ class GenBoiler(object):
         """
         >>> gb = GenBoiler([])
         >>> print(gb.gen_cxx_incl_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-        # include "shoc_fake_sub_impl.hpp"
+        # include "impl/shoc_fake_sub_impl.hpp"
         """
         impl_path = get_piece_data(phys, sub, "cxx_func_impl", FILEPATH, self)
         return '# include "{}"'.format(impl_path)
@@ -2211,7 +2219,7 @@ class GenBoiler(object):
         """
         >>> gb = GenBoiler([])
         >>> print(gb.gen_cxx_eti("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-        #include "shoc_fake_sub_impl.hpp"
+        #include "impl/shoc_fake_sub_impl.hpp"
         <BLANKLINE>
         namespace scream {
         namespace shoc {
@@ -2254,7 +2262,7 @@ template struct Functions<Real,DefaultDevice>;
         """
         >>> gb = GenBoiler([])
         >>> print(gb.gen_cmake_impl_eti("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
-            shoc_fake_sub.cpp
+            eti/shoc_fake_sub.cpp
         """
         eti_src = get_piece_data(phys, sub, "cxx_eti", FILEPATH, self)
         return "    {}".format(eti_src)
@@ -2267,7 +2275,7 @@ template struct Functions<Real,DefaultDevice>;
         >>> print(gb.gen_cmake_unit_test("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
             shoc_fake_sub_tests.cpp
         """
-        test_src = os.path.basename(get_piece_data(phys, sub, "cxx_bfb_unit_impl", FILEPATH, self))
+        test_src = Path(get_piece_data(phys, sub, "cxx_bfb_unit_impl", FILEPATH, self)).name
         return "    {}".format(test_src)
 
     #
