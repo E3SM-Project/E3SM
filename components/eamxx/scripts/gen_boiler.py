@@ -167,7 +167,7 @@ PIECES = OrderedDict([
     ("cxx_incl_impl", (
         lambda phys, sub, gb: f"{phys}_functions.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_incl_impl"),
-        lambda phys, sub, gb: re.compile(r"^\s*#\s*endif\s+//\s*KOKKOS_ENABLE_CUDA"), # insert at end of impl includes, reqs special comment
+        lambda phys, sub, gb: re.compile(r"^\s*#\s*endif\s+//\s*GPU"), # insert at end of impl includes, reqs special comment
         lambda phys, sub, gb: re.compile(r'^\s*#\s*include\s+"{}"'.format(get_piece_data(phys, sub, "cxx_func_impl", FILEPATH, gb))),
         lambda phys, sub, gb: re.compile(r".*"),
         lambda *x           : "The include of *impl.hpp file at bottom of main hpp"
@@ -1407,9 +1407,10 @@ class GenBoiler(object):
     def _get_db(self, phys):
     ###########################################################################
         if phys not in self._db:
-            origin_files = self._source_repo / get_physics_data(phys, ORIGIN_FILES)
+            origin_files = get_physics_data(phys, ORIGIN_FILES)
             self._db[phys] = {}
             for origin_file in origin_files:
+                origin_file = self._source_repo / origin_file
                 expect(origin_file.exists(), f"Missing origin file for physics {phys}: {origin_file}")
                 db = parse_origin(origin_file.open(encoding="utf-8").read(), self._subs)
                 self._db[phys].update(db)
