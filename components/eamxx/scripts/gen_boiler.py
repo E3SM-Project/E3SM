@@ -12,42 +12,42 @@ from pathlib import Path
 # Templates: maps piece name to generic file text
 FILE_TEMPLATES = {
     "cxx_bfb_unit_impl": lambda phys, sub, gen_code:
-"""#include "catch2/catch.hpp"
+f"""#include "catch2/catch.hpp"
 
 #include "share/scream_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "physics/{physics}/{physics}_functions.hpp"
-#include "physics/{physics}/{physics}_functions_f90.hpp"
+#include "physics/{phys}/{phys}_functions.hpp"
+#include "physics/{phys}/{phys}_functions_f90.hpp"
 
-#include "{physics}_unit_tests_common.hpp"
+#include "{phys}_unit_tests_common.hpp"
 
 namespace scream {{
-namespace {physics} {{
+namespace {phys} {{
 namespace unit_test {{
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::{test_data_struct} {{
+struct UnitWrap::UnitTest<D>::{get_data_test_struct_name(sub)} {{
 
 {gen_code}
 
 }};
 
 }} // namespace unit_test
-}} // namespace {physics}
+}} // namespace {phys}
 }} // namespace scream
 
 namespace {{
 
-TEST_CASE("{sub}_bfb", "[{physics}]")
+TEST_CASE("{sub}_bfb", "[{phys}]")
 {{
-  using TestStruct = scream::{physics}::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::{test_data_struct};
+  using TestStruct = scream::{phys}::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::{get_data_test_struct_name(sub)};
 
   TestStruct::run_bfb();
 }}
 
 }} // empty namespace
-""".format(physics=phys, sub=sub, test_data_struct=get_data_test_struct_name(sub), gen_code=gen_code),
+""",
 
 ###############################################################################
 
@@ -86,7 +86,7 @@ PIECES = OrderedDict([
     ("f90_c2f_bind", (
         lambda phys, sub, gb: f"{phys}_iso_c.f90",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_c2f_bind"),
-        lambda phys, sub, gb: re.compile(r"^\s*end\s+module\s{}_iso_c".format(phys)), # put at end of module
+        lambda phys, sub, gb: re.compile(fr"^\s*end\s+module\s{phys}_iso_c"), # put at end of module
         lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_c"), # sub_c begin
         lambda phys, sub, gb: get_subroutine_end_regex(sub + "_c"),    # sub_c end
         lambda *x           : "The c to f90 fortran subroutine(<name>_c)"
@@ -212,8 +212,8 @@ PIECES = OrderedDict([
     ("cmake_impl_eti", (
         lambda phys, sub, gb: "CMakeLists.txt",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cmake_impl_eti"),
-        lambda phys, sub, gb: re.compile(r".*[)]\s*#\s*{} ETI SRCS".format(phys.upper())), # insert at end of ETI src list, reqs special comment
-        lambda phys, sub, gb: re.compile(r".*{}".format(get_piece_data(phys, sub, "cxx_eti", FILEPATH, gb))),
+        lambda phys, sub, gb: re.compile(fr".*[)]\s*#\s*{phys.upper()} ETI SRCS"), # insert at end of ETI src list, reqs special comment
+        lambda phys, sub, gb: re.compile(fr".*{get_piece_data(phys, sub, 'cxx_eti', FILEPATH, gb)}"),
         lambda phys, sub, gb: re.compile(".*"),
         lambda *x           : "Make cmake aware of the ETI file if not cuda build"
     )),
@@ -221,8 +221,8 @@ PIECES = OrderedDict([
     ("cmake_unit_test", (
         lambda phys, sub, gb: "tests/CMakeLists.txt",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cmake_unit_test"),
-        lambda phys, sub, gb: re.compile(r".*[)]\s*#\s*{}_TESTS_SRCS".format(phys.upper())), # insert at end of test src list, reqs special comment
-        lambda phys, sub, gb: re.compile(r".*{}".format(Path(get_piece_data(phys, sub, "cxx_bfb_unit_impl", FILEPATH, gb)).name)),
+        lambda phys, sub, gb: re.compile(fr".*[)]\s*#\s*{phys.upper()}_TESTS_SRCS"), # insert at end of test src list, reqs special comment
+        lambda phys, sub, gb: re.compile(fr".*{Path(get_piece_data(phys, sub, 'cxx_bfb_unit_impl', FILEPATH, gb)).name}"),
         lambda phys, sub, gb: re.compile(".*"),
         lambda *x           : "Make cmake aware of the unit test"
     )),
@@ -322,7 +322,7 @@ def get_subroutine_begin_regex(name):
     >>> bool(get_subroutine_begin_regex("fake_sub").match("subroutine fake_sub"))
     False
     """
-    subroutine_begin_regex_str = r"^\s*subroutine\s+{}\s*[(]".format(name)
+    subroutine_begin_regex_str = fr"^\s*subroutine\s+{name}\s*[(]"
     return re.compile(subroutine_begin_regex_str)
 
 ###############################################################################
@@ -344,7 +344,7 @@ def get_function_begin_regex(name):
     >>> bool(get_function_begin_regex("fake_sub").match("end function fake_sub"))
     False
     """
-    function_begin_regex_str = r"^\s*((pure\s+)?function)\s+{}\s*[(].*result\s*[(]\s*([^) ]+)".format(name)
+    function_begin_regex_str = fr"^\s*((pure\s+)?function)\s+{name}\s*[(].*result\s*[(]\s*([^) ]+)"
     return re.compile(function_begin_regex_str)
 
 ###############################################################################
@@ -364,7 +364,7 @@ def get_subroutine_end_regex(name):
     >>> bool(get_subroutine_end_regex("fake_sub").match("end function fake_sub_2"))
     False
     """
-    subroutine_end_regex_str = r"^\s*end\s+(subroutine|function)\s+{}\s*$".format(name)
+    subroutine_end_regex_str = fr"^\s*end\s+(subroutine|function)\s+{name}\s*$"
     return re.compile(subroutine_end_regex_str)
 
 ###############################################################################
@@ -389,8 +389,8 @@ def get_cxx_function_begin_regex(name, static=False, template=None):
     True
     """
     static_regex_str = r"static\s+" if static else ""
-    template_regex_str = r"{}::".format(template) if template else ""
-    function_begin_regex_str = r"^\s*{}void\s+{}{}\s*[(]".format(static_regex_str, template_regex_str, name)
+    template_regex_str = fr"{template}::" if template else ""
+    function_begin_regex_str = fr"^\s*{static_regex_str}void\s+{template_regex_str}{name}\s*[(]"
     return re.compile(function_begin_regex_str)
 
 ###############################################################################
@@ -426,8 +426,8 @@ def get_cxx_close_block_regex(semicolon=False, comment=None, at_line_start=False
     """
     semicolon_regex_str = r"\s*;" if semicolon else ""
     line_start_regex_str = "" if at_line_start else r"\s*"
-    comment_regex_str   = r"\s*//\s*{}".format(comment) if comment else ""
-    close_block_regex_str = re.compile(r"^{}}}{}{}\s*$".format(line_start_regex_str, semicolon_regex_str, comment_regex_str))
+    comment_regex_str   = fr"\s*//\s*{comment}" if comment else ""
+    close_block_regex_str = re.compile(fr"^{line_start_regex_str}}}{semicolon_regex_str}{comment_regex_str}\s*$")
     return re.compile(close_block_regex_str)
 
 ###############################################################################
@@ -439,7 +439,7 @@ def get_namespace_close_regex(namespace):
     >>> bool(get_namespace_close_regex("foo").match(" } // namespace foo_bar"))
     False
     """
-    return get_cxx_close_block_regex(comment=r"namespace\s+{}".format(namespace))
+    return get_cxx_close_block_regex(comment=fr"namespace\s+{namespace}")
 
 ###############################################################################
 def get_cxx_struct_begin_regex(struct):
@@ -452,7 +452,7 @@ def get_cxx_struct_begin_regex(struct):
     >>> bool(get_cxx_struct_begin_regex("Foo").match("struct FooBar"))
     False
     """
-    struct_regex_str = r"^\s*struct\s+{}([\W]|$)".format(struct)
+    struct_regex_str = fr"^\s*struct\s+{struct}([\W]|$)"
     return re.compile(struct_regex_str)
 
 ###############################################################################
@@ -501,8 +501,8 @@ def get_physics_data(physics_name, physics_data):
 def expect_exists(physics, sub, gb, piece):
 ###############################################################################
     filepath = gb.get_path_for_piece_file(physics, sub, piece)
-    expect(filepath.exists(), "For generating {}'s {} for phyiscs {}, expected file {} to already exist".\
-           format(sub, piece, physics, filepath))
+    expect(filepath.exists(),
+           f"For generating {sub}'s {piece} for phyiscs {physics}, expected file {filepath} to already exist")
     return False # File was not created
 
 ###############################################################################
@@ -876,7 +876,7 @@ def parse_origin(contents, subs):
             if decl_match is not None:
                 arg_decls.extend(parse_f90_args(line))
             elif result_name:
-                result_decl_regex = re.compile(r".+::\s*{}([^\w]|$)".format(result_name))
+                result_decl_regex = re.compile(fr".+::\s*{result_name}([^\w]|$)")
                 result_decl_match = result_decl_regex.match(line)
                 if result_decl_match is not None:
                     line = line.replace("::", " , intent(out) ::")
@@ -1337,8 +1337,7 @@ def check_existing_piece(lines, begin_regex, end_regex):
 
         if begin_match:
             expect(begin_idx is None,
-                   "Found multiple begin matches for pattern '{}' before end pattern '{}' was found".\
-                   format(begin_regex.pattern, end_regex.pattern))
+                   f"Found multiple begin matches for pattern '{begin_regex.pattern}' before end pattern '{end_regex.pattern}' was found")
 
             begin_idx = idx
 
@@ -1348,8 +1347,7 @@ def check_existing_piece(lines, begin_regex, end_regex):
 
     if begin_idx is not None:
         expect(end_idx is not None,
-               "Found no ending match for begin pattern '{}' starting on line {} and searching end pattern '{}'".\
-               format(begin_regex.pattern, begin_idx, end_regex.pattern))
+               "Found no ending match for begin pattern '{begin_regex.pattern}' starting on line {begin_idx} and searching end pattern '{end_regex.pattern}'")
 
     return None if begin_idx is None else (begin_idx, end_idx+1)
 
@@ -1875,11 +1873,11 @@ f"""{decl}
 
         # I don't think any intelligent guess at an impl is possible here
         result = \
-"""{decl}
+f"""{decl}
 {{
   // TODO
   // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
-}}""".format(decl=decl)
+}}"""
         return result
 
     ###########################################################################
@@ -2421,8 +2419,7 @@ template struct Functions<Real,DefaultDevice>;
                     try:
                         self.gen_piece(phys, sub, piece)
                     except SystemExit as e:
-                        print("Warning: failed to generate subroutine {} piece {} for physics {}, error: {}".\
-                              format(sub, piece, phys, e))
+                        print(f"Warning: failed to generate subroutine {sub} piece {piece} for physics {phys}, error: {e}")
                         all_success = False
 
         return all_success
