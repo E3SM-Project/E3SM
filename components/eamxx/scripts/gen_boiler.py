@@ -52,27 +52,27 @@ TEST_CASE("{sub}_bfb", "[{physics}]")
 ###############################################################################
 
     "cxx_func_impl": lambda phys, sub, gen_code:
-"""#ifndef {phys_upper}_{sub_upper}_IMPL_HPP
-#define {phys_upper}_{sub_upper}_IMPL_HPP
+f"""#ifndef {phys.upper()}_{sub.upper()}_IMPL_HPP
+#define {phys.upper()}_{sub.upper()}_IMPL_HPP
 
-#include "{physics}_functions.hpp" // for ETI only but harmless for GPU
+#include "{phys}_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {{
-namespace {physics} {{
+namespace {phys} {{
 
 /*
- * Implementation of {physics} {sub}. Clients should NOT
- * #include this file, but include {physics}_functions.hpp instead.
+ * Implementation of {phys} {sub}. Clients should NOT
+ * #include this file, but include {phys}_functions.hpp instead.
  */
 
 template<typename S, typename D>
 {gen_code}
 
-}} // namespace {physics}
+}} // namespace {phys}
 }} // namespace scream
 
 #endif
-""".format(physics=phys, sub=sub, gen_code=gen_code, phys_upper=phys.upper(), sub_upper=sub.upper()),
+""",
 
 ###############################################################################
 
@@ -1577,13 +1577,13 @@ class GenBoiler(object):
         init_code        = init_code.replace("REPLACE_ME", "d.nlev")
 
         result = \
-"""void {sub}({data_struct}& d)
+f"""void {sub}({data_struct}& d)
 {{
   {init_code}{transpose_code_1}
   {sub}_c({arg_data_args});{transpose_code_2}
 }}
 
-""".format(sub=sub, data_struct=data_struct, init_code=init_code, transpose_code_1=transpose_code_1, transpose_code_2=transpose_code_2, arg_data_args=arg_data_args)
+"""
         return result
 
     ###########################################################################
@@ -1762,8 +1762,8 @@ f"""struct {struct_name}{inheritance} {{
             # make output views for host and device
             for output_group, prefix_char in zip([oreals, oints, obools], prefix_list):
                 if output_group:
-                    impl += '  {0}view_1d {0}t_d("{0}t_d", {1});\n'.format(prefix_char, len(output_group))
-                    impl += "  const auto {0}t_h = Kokkos::create_mirror_view({0}t_d);\n".format(prefix_char)
+                    impl += f'  {prefix_char}view_1d {prefix_char}t_d("{prefix_char}t_d", {len(output_group)});\n'
+                    impl += f"  const auto {prefix_char}t_h = Kokkos::create_mirror_view({prefix_char}t_d);\n"
                     impl += "\n"
 
             # inout data must be derefenced before the kernel
@@ -1783,11 +1783,11 @@ f"""struct {struct_name}{inheritance} {{
                     temp_cons = []
                     for item in output_group:
                         if item in inouts:
-                            temp_cons.append("{0}_(local_{0})".format(item))
+                            temp_cons.append(f"{item}_(local_{item})")
                         elif item in outputs:
                             temp_cons.append(f"{item}_()")
                         else:
-                            temp_cons.append("{0}_({0})".format(item))
+                            temp_cons.append(f"{item}_({item})")
 
                     impl += f"{', '.join(temp_cons)};\n"
 
@@ -1815,7 +1815,7 @@ f"""struct {struct_name}{inheritance} {{
             # copy outputs back to host
             for output_group, prefix_char in zip([oreals, oints, obools], prefix_list):
                 if output_group:
-                    impl += "  Kokkos::deep_copy({0}t_h, {0}t_d);\n".format(prefix_char)
+                    impl += f"  Kokkos::deep_copy({prefix_char}t_h, {prefix_char}t_d);\n"
 
             # copy from views into pointer args
             for output_group, prefix_char in zip([oreals, oints, obools], prefix_list):
@@ -2049,7 +2049,7 @@ f"""{decl}
         _, _, _, _, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_out_intent="in")
         check_scalars, check_arrays = "", ""
         for scalar in scalars:
-            check_scalars += "        REQUIRE(d_f90.{name} == d_cxx.{name});\n".format(name=scalar[0])
+            check_scalars += f"        REQUIRE(d_f90.{scalar[0]} == d_cxx.{scalar[0]});\n"
 
         if has_array:
             c2f_transpose_code = "" if not need_transpose else \
@@ -2071,7 +2071,7 @@ f"""{decl}
                 check_arrays += f"        for (Int k = 0; k < d_f90.total(d_f90.{data[0]}); ++k) {{\n"
                 for datum in data:
                     check_arrays += f"          REQUIRE(d_f90.total(d_f90.{data[0]}) == d_cxx.total(d_cxx.{datum}));\n"
-                    check_arrays += "          REQUIRE(d_f90.{name}[k] == d_cxx.{name}[k]);\n".format(name=datum)
+                    check_arrays += f"          REQUIRE(d_f90.{datum}[k] == d_cxx.{datum}[k]);\n"
 
                 check_arrays += "        }"
 
@@ -2237,7 +2237,7 @@ f"""// Init outputs
         include_file = get_piece_data(phys, sub, "cxx_func_impl", FILEPATH, self)
 
         result = \
-"""#include "{include_file}"
+f"""#include "{include_file}"
 
 namespace scream {{
 namespace {phys} {{
@@ -2251,7 +2251,7 @@ template struct Functions<Real,DefaultDevice>;
 
 }} // namespace {phys}
 }} // namespace scream
-""".format(sub=sub, include_file=include_file, phys=phys)
+"""
 
         return result
 
