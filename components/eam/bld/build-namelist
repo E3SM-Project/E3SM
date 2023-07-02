@@ -3810,6 +3810,15 @@ if ($chem =~ /_mam/) {
 #Sea Salt aerosol emission scale factors
 add_default($nl, 'seasalt_emis_scale');
 
+# Aerosol hygroscopicity (kappa) scaling
+add_default($nl, 'dust_hygro_scale');
+add_default($nl, 'sulfate_hygro_scale');
+add_default($nl, 'bc_hygro_scale');
+add_default($nl, 'pom_hygro_scale');
+add_default($nl, 'soa_hygro_scale');
+add_default($nl, 'seasalt_hygro_scale');
+add_default($nl, 'mom_hygro_scale');
+
 # Turbulent Mountain Stress
 add_default($nl, 'do_tms');
 my $do_tms = $nl->get_value('do_tms');

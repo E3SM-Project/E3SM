@@ -294,6 +294,15 @@
 <seasalt_emis_scale chem="trop_strat_mam7">   1.62 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam9">         1.62 </seasalt_emis_scale>
 
+<!-- Aerosol hygroscopicity (kappa) scaling -->
+<dust_hygro_scale>    1.0 </dust_hygro_scale>
+<sulfate_hygro_scale> 1.0 </sulfate_hygro_scale>
+<bc_hygro_scale>      1.0 </bc_hygro_scale>
+<pom_hygro_scale>     1.0 </pom_hygro_scale>
+<soa_hygro_scale>     1.0 </soa_hygro_scale>
+<seasalt_hygro_scale> 1.0 </seasalt_hygro_scale>
+<mom_hygro_scale>     1.0 </mom_hygro_scale>
+
 <!-- Modal optics calculations -->
 <mam3_mode1_file rad="rrtmg">atm/cam/physprops/mam3_mode1_rrtmg_c110318.nc</mam3_mode1_file>
 <mam3_mode2_file rad="rrtmg">atm/cam/physprops/mam3_mode2_rrtmg_c110318.nc</mam3_mode2_file>

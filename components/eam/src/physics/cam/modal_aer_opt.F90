@@ -49,6 +49,9 @@ character(len=*), parameter :: unset_str = 'UNSET'
 character(shr_kind_cl)      :: modal_optics_file = unset_str   ! full pathname for modal optics dataset
 character(shr_kind_cl)      :: water_refindex_file = unset_str ! full pathname for water refractive index dataset
 
+! Aerosol hygroscopicity (kappa) scaling (namelist variables)
+real(r8) :: dust_hygro_scale, sulfate_hygro_scale, bc_hygro_scale, pom_hygro_scale, soa_hygro_scale, seasalt_hygro_scale, mom_hygro_scale
+
 ! Dimension sizes in coefficient arrays used to parameterize aerosol radiative properties
 ! in terms of refractive index and wet radius
 integer, parameter :: ncoef=5, prefr=7, prefi=10
@@ -92,7 +95,9 @@ subroutine modal_aer_opt_readnl(nlfile)
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'modal_aer_opt_readnl'
 
-   namelist /modal_aer_opt_nl/ water_refindex_file
+   namelist /modal_aer_opt_nl/ water_refindex_file, &
+      dust_hygro_scale, sulfate_hygro_scale, bc_hygro_scale, pom_hygro_scale, soa_hygro_scale, seasalt_hygro_scale, mom_hygro_scale
+   
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -731,7 +736,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                         dustvol(i)    = vol(i)
                         scatdust(i)   = vol(i)*specrefr
                         absdust(i)    = -vol(i)*specrefi
-                        hygrodust(i)  = vol(i)*hygro_aer
+                        hygrodust(i)  = vol(i)*hygro_aer*dust_hygro_scale
                      end do
                   end if
 
@@ -740,7 +745,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                         burdenso4(i) = burdenso4(i) + specmmr(i,k)*mass(i,k)
                         scatso4(i)   = vol(i)*specrefr
                         absso4(i)    = -vol(i)*specrefi
-                        hygroso4(i)  = vol(i)*hygro_aer
+                        hygroso4(i)  = vol(i)*hygro_aer*sulfate_hygro_scale
                      end do
                   end if
                   if (trim(spectype) == 'black-c') then
@@ -748,7 +753,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                         burdenbc(i) = burdenbc(i) + specmmr(i,k)*mass(i,k)
                         scatbc(i)   = vol(i)*specrefr
                         absbc(i)    = -vol(i)*specrefi
-                        hygrobc(i)  = vol(i)*hygro_aer
+                        hygrobc(i)  = vol(i)*hygro_aer*bc_hygro_scale
                    end do
                   end if
                   if (trim(spectype) == 'p-organic') then
@@ -756,7 +761,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                         burdenpom(i) = burdenpom(i) + specmmr(i,k)*mass(i,k)
                         scatpom(i)   = vol(i)*specrefr
                         abspom(i)    = -vol(i)*specrefi
-                        hygropom(i)  = vol(i)*hygro_aer
+                        hygropom(i)  = vol(i)*hygro_aer*pom_hygro_scale
                       end do
                   end if
                   if (trim(spectype) == 's-organic') then
@@ -764,7 +769,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                         burdensoa(i) = burdensoa(i) + specmmr(i,k)*mass(i,k)
                         scatsoa(i)   = vol(i)*specrefr
                         abssoa(i)    = -vol(i)*specrefi
-                        hygrosoa(i)  = vol(i)*hygro_aer
+                        hygrosoa(i)  = vol(i)*hygro_aer*soa_hygro_scale
                      end do
                   end if
                   if (trim(spectype) == 'seasalt') then
@@ -772,7 +777,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                         burdenseasalt(i) = burdenseasalt(i) + specmmr(i,k)*mass(i,k)
                         scatseasalt(i)   = vol(i)*specrefr
                         absseasalt(i)    = -vol(i)*specrefi
-                        hygroseasalt(i)  = vol(i)*hygro_aer
+                        hygroseasalt(i)  = vol(i)*hygro_aer*seasalt_hygro_scale
                       end do
                   end if
 #if ( defined MODAL_AERO_4MODE_MOM )
@@ -781,7 +786,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                         burdenmom(i) = burdenmom(i) + specmmr(i,k)*mass(i,k)
                         scatmom(i)   = vol(i)*specrefr
                         absmom(i)    = -vol(i)*specrefi
-                        hygromom(i)  = vol(i)*hygro_aer
+                        hygromom(i)  = vol(i)*hygro_aer*mom_hygro_scale
                      end do
                   end if
 #elif ( defined MODAL_AERO_9MODE )

@@ -4914,6 +4914,48 @@ Seasalt aerosol emission tuning factor
 Default: set by build-namelist.
 </entry>
 
+<entry id="dust_hygro_scale" type="real" category="cam_chem"
+       group="modal_aer_opt_nl" valid_values="" >
+Dust aerosol hygroscopicity (kappa) tuning factor
+Default: 1.
+</entry>
+
+<entry id="sulfate_hygro_scale" type="real" category="cam_chem"
+       group="modal_aer_opt_nl" valid_values="" >
+Sulfate aerosol hygroscopicity (kappa) tuning factor
+Default: 1.
+</entry>
+
+<entry id="bc_hygro_scale" type="real" category="cam_chem"
+       group="modal_aer_opt_nl" valid_values="" >
+Black carbon aerosol hygroscopicity (kappa) tuning factor
+Default: 1.
+</entry>
+
+<entry id="pom_hygro_scale" type="real" category="cam_chem"
+       group="modal_aer_opt_nl" valid_values="" >
+Primary organic matter aerosol hygroscopicity (kappa) tuning factor
+Default: 1.
+</entry>
+
+<entry id="soa_hygro_scale" type="real" category="cam_chem"
+       group="modal_aer_opt_nl" valid_values="" >
+Secondary organic aerosol hygroscopicity (kappa) tuning factor
+Default: 1.
+</entry>
+
+<entry id="seasalt_hygro_scale" type="real" category="cam_chem"
+       group="modal_aer_opt_nl" valid_values="" >
+Seasalt aerosol hygroscopicity (kappa) tuning factor
+Default: 1.
+</entry>
+
+<entry id="mom_hygro_scale" type="real" category="cam_chem"
+       group="modal_aer_opt_nl" valid_values="" >
+Marine organic matter aerosol hygroscopicity (kappa) tuning factor
+Default: 1.
+</entry>
+
 <entry id="airpl_emis_file" type="char*256" input_pathname="abs" category="cam_chem"
        group="chem_inparm" valid_values="" >
 Full pathname of boundary dataset for airplane emissions.
