@@ -258,6 +258,8 @@ subroutine modal_aer_opt_init()
    ! ABURDEN... for interstitial and cloud-borne
    call addfld ('ABURDENDUST',horiz_only,  'A','kg/m2'   ,'Dust aerosol burden'        , flag_xyfill=.true.)
    call addfld ('ABURDENSO4',horiz_only,  'A','kg/m2'    ,'Sulfate aerosol burden'     , flag_xyfill=.true.)
+   call addfld ('ABURDENSO4_STR',horiz_only,  'A','kg/m2'    ,'Sulfate aerosol burden'     , flag_xyfill=.true.)
+   call addfld ('ABURDENSO4_TRO',horiz_only,  'A','kg/m2'    ,'Sulfate aerosol burden'     , flag_xyfill=.true.)
    call addfld ('ABURDENPOM',horiz_only,  'A','kg/m2'    ,'POM aerosol burden'         , flag_xyfill=.true.)
    call addfld ('ABURDENSOA',horiz_only,  'A','kg/m2'    ,'SOA aerosol burden'         , flag_xyfill=.true.)
    call addfld ('ABURDENBC',horiz_only,  'A','kg/m2'     ,'Black carbon aerosol burden', flag_xyfill=.true.)
@@ -337,6 +339,8 @@ subroutine modal_aer_opt_init()
       call add_default ('BURDENSEASALT', 1, ' ')
       call add_default ('ABURDENDUST'   , 1, ' ')
       call add_default ('ABURDENSO4'    , 1, ' ')
+      call add_default ('ABURDENSO4_STR'    , 1, ' ')
+      call add_default ('ABURDENSO4_TRO'    , 1, ' ')
       call add_default ('ABURDENPOM'    , 1, ' ')
       call add_default ('ABURDENSOA'    , 1, ' ')
       call add_default ('ABURDENBC'     , 1, ' ')
@@ -547,8 +551,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    real(r8) :: burden(pcols)
    real(r8) :: burdendust(pcols), burdenso4(pcols), burdenbc(pcols), &
                burdenpom(pcols), burdensoa(pcols), burdenseasalt(pcols)
-   real(r8) :: aburdendust(pcols), aburdenso4(pcols), aburdenbc(pcols), &
-               aburdenpom(pcols), aburdensoa(pcols), aburdenseasalt(pcols)
+   real(r8) :: aburdendust(pcols), aburdenso4(pcols), &
+               aburdenso4_str(pcols), aburdenso4_tro(pcols), &
+               aburdenbc(pcols), aburdenpom(pcols), aburdensoa(pcols), aburdenseasalt(pcols)
 #if ( defined MODAL_AERO_4MODE_MOM )
    real(r8) :: burdenmom(pcols)
    real(r8) :: aburdenmom(pcols)
@@ -663,6 +668,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    burdenseasalt(:ncol)  = 0.0_r8
    aburdendust(:ncol)    = 0.0_r8
    aburdenso4(:ncol)     = 0.0_r8
+   aburdenso4_str(:ncol) = 0.0_r8
+   aburdenso4_tro(:ncol) = 0.0_r8
    aburdenpom(:ncol)     = 0.0_r8
    aburdensoa(:ncol)     = 0.0_r8
    aburdenbc(:ncol)      = 0.0_r8
@@ -827,6 +834,11 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                      do i = 1, ncol
                         burdenso4(i) = burdenso4(i) + specmmr(i,k)*mass(i,k)
                         aburdenso4(i) = aburdenso4(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                        if ((k .le. trop_level(i)) .and. (is_output_interactive_volc)) then ! in stratosphere
+                           aburdenso4_str(i)    = aburdenso4_str(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                        else
+                           aburdenso4_tro(i)    = aburdenso4_tro(i) + specmmr(i,k)*mass(i,k) + aspecmmr(i,k)*mass(i,k)
+                        endif    
                         scatso4(i)   = vol(i)*specrefr
                         absso4(i)    = -vol(i)*specrefi
                         hygroso4(i)  = vol(i)*hygro_aer
@@ -1297,6 +1309,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       call outfld('BURDENSEASALT', burdenseasalt, pcols, lchnk)
       call outfld('ABURDENDUST',    aburdendust,    pcols, lchnk)
       call outfld('ABURDENSO4' ,    aburdenso4,     pcols, lchnk)
+      call outfld('ABURDENSO4_STR', aburdenso4_str, pcols, lchnk)
+      call outfld('ABURDENSO4_TRO', aburdenso4_tro, pcols, lchnk)
       call outfld('ABURDENPOM' ,    aburdenpom,     pcols, lchnk)
       call outfld('ABURDENSOA' ,    aburdensoa,     pcols, lchnk)
       call outfld('ABURDENBC'  ,    aburdenbc,      pcols, lchnk)
