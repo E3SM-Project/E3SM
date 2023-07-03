@@ -56,4 +56,9 @@ contains
 
     !call iop_setinitial(nelemd, elem)
   end subroutine iop_setinitial_c
+  subroutine iop_broadcast_c() bind(C)
+    !use dp, only : iop_broadcast
+
+    !call iop_broadcast()
+  end subroutine iop_broadcast_c
 end module dp_iso_c

@@ -49,6 +49,11 @@ interface
     integer(kind=c_int) , value, intent(in) :: nelemd
     type(c_ptr) , intent(inout), dimension(nelemd) :: elem
   end subroutine iop_setinitial_f
+  subroutine iop_broadcast_f() bind(C)
+    use iso_c_binding
+
+    
+  end subroutine iop_broadcast_f
 end interface
 
 end module dp_iso_f

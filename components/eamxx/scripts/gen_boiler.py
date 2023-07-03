@@ -2242,6 +2242,8 @@ f"""// Init outputs
             result = \
 """  static void run_bfb()
   {{
+    auto engine = setup_random_test();
+
     {data_struct} f90_data[max_pack_size] = {{
       // TODO
     }};

@@ -84,6 +84,8 @@ struct Functions
   static void advance_iop_subsidence(const Int& plev, const Int& pcnst, const Spack& scm_dt, const Spack& ps_in, const uview_1d<const Spack>& u_in, const uview_1d<const Spack>& v_in, const uview_1d<const Spack>& t_in, const uview_1d<const Spack>& q_in, const uview_1d<Spack>& u_update, const uview_1d<Spack>& v_update, const uview_1d<Spack>& t_update, const uview_1d<Spack>& q_update);
   KOKKOS_FUNCTION
   static void iop_setinitial(const Int& nelemd, const uview_1d<element_t>& elem);
+  KOKKOS_FUNCTION
+  static void iop_broadcast();
 }; // struct Functions
 
 } // namespace dp
@@ -98,6 +100,7 @@ struct Functions
 # include "impl/dp_advance_iop_nudging_impl.hpp"
 # include "impl/dp_advance_iop_subsidence_impl.hpp"
 # include "impl/dp_iop_setinitial_impl.hpp"
+# include "impl/dp_iop_broadcast_impl.hpp"
 #endif // GPU || !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 
 #endif // DP_FUNCTIONS_HPP

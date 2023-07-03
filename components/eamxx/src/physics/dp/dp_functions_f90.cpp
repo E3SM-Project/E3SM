@@ -24,6 +24,7 @@ void advance_iop_forcing_c(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u
 void advance_iop_nudging_c(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* q_in, Real* t_update, Real* q_update, Real* relaxt, Real* relaxq);
 void advance_iop_subsidence_c(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
 void iop_setinitial_c(Int nelemd, scream::dp::element_t* elem);
+void iop_broadcast_c();
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -62,6 +63,12 @@ void iop_setinitial(IopSetinitialData& d)
   iop_setinitial_c(d.nelemd, d.elem);
 }
 
+void iop_broadcast(IopBroadcastData& d)
+{
+  dp_init(d.plev, true);
+  iop_broadcast_c();
+}
+
 // end _c impls
 
 //
@@ -83,6 +90,19 @@ void advance_iop_subsidence_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real
 void iop_setinitial_f(Int nelemd, element_t* elem)
 {
   // TODO
+}
+void iop_broadcast_f()
+{
+#if 0
+  using PF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename PF::Spack;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    PF::iop_broadcast();
+  });
+#endif
+
 }
 } // namespace dp
 } // namespace scream
