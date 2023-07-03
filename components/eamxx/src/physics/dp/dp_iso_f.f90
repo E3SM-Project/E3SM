@@ -25,6 +25,14 @@ interface
     real(kind=c_real) , intent(out), dimension(plev) :: u_update, v_update, t_update
     real(kind=c_real) , intent(out), dimension(plev, pcnst) :: q_update
   end subroutine advance_iop_forcing_f
+  subroutine advance_iop_nudging_f(plev, scm_dt, ps_in, t_in, q_in, t_update, q_update, relaxt, relaxq) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: plev
+    real(kind=c_real) , value, intent(in) :: scm_dt, ps_in
+    real(kind=c_real) , intent(in), dimension(plev) :: t_in, q_in
+    real(kind=c_real) , intent(out), dimension(plev) :: t_update, q_update, relaxt, relaxq
+  end subroutine advance_iop_nudging_f
 end interface
 
 end module dp_iso_f

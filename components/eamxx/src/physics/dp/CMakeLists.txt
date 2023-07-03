@@ -17,6 +17,7 @@ endif()
 if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
   list(APPEND DP_SRCS
     eti/dp_advance_iop_forcing.cpp
+    eti/dp_advance_iop_nudging.cpp
     ) # DP ETI SRCS
 endif()
 

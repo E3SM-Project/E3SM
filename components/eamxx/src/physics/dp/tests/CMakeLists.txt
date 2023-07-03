@@ -4,6 +4,7 @@ SET (NEED_LIBS dp physics_share scream_share)
 set(DP_TESTS_SRCS
   dp_unit_tests.cpp
     dp_advance_iop_forcing_tests.cpp
+    dp_advance_iop_nudging_tests.cpp
     ) # DP_TESTS_SRCS
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
