@@ -739,13 +739,20 @@ def parse_f90_args(line):
     [('x1', 'real', 'in', ('ncol', 'km1')), ('y1', 'real', 'in', ('ncol', 'km1'))]
     >>> parse_f90_args('real(rtype), intent(in) :: x1(ncol,km1,ntracers)')
     [('x1', 'real', 'in', ('ncol', 'km1', 'ntracers'))]
+    >>> parse_f90_args('type(element_t), intent(inout) :: elem(:)')
+    [('elem', 'type::element_t', 'inout', (':',))]
     """
     expect(line.count("::") == 1, f"Expected line format 'type-info :: names' for: {line}")
     metadata_str, names_str = line.split("::")
     names_dims = split_top_commas(names_str)
     metadata   = split_top_commas(metadata_str)
 
-    argtype = metadata[0].split("(")[0].strip()
+    argtoken = metadata[0]
+    argtype = argtoken.split("(")[0].strip()
+    if argtype == "type":
+        expect("(" in argtoken, f"Undefined type for {argtoken}")
+        argtype += ("::" + argtoken.split("(")[1].strip().rstrip(")"))
+
     intent, dims = None, None
     for metadatum in metadata:
         if metadatum.startswith("intent"):
@@ -860,6 +867,10 @@ def parse_origin(contents, subs):
     ...    real(r8), intent(out) :: v_update(plev)      ! updated meridional wind [m/s]
     ...
     ...  end subroutine advance_iop_forcing
+    ...
+    ...  subroutine iop_setinitial(elem)
+    ...    type(element_t), intent(inout) :: elem(:)
+    ...  end subroutine iop_setinitial
     ... '''
     >>> print("\n".join([str(item) for item in sorted(parse_origin(teststr, ["p3_get_tables", "p3_init_b"]).items())]))
     ('p3_get_tables', [('mu_r_user', 'real', 'out', ('150',)), ('revap_user', 'real', 'out', ('300', '10')), ('tracerd', 'real', 'out', ('300', '10', '42')), ('vn_user', 'real', 'out', ('300', '10')), ('vm_user', 'real', 'out', ('300', '10'))])
@@ -868,6 +879,8 @@ def parse_origin(contents, subs):
     ('impli_srf_stress_term', [('shcol', 'integer', 'in', None), ('rho_zi_sfc', 'real', 'in', ('shcol',)), ('uw_sfc', 'real', 'in', ('shcol',)), ('vw_sfc', 'real', 'in', ('shcol',)), ('u_wind_sfc', 'real', 'in', ('shcol',)), ('v_wind_sfc', 'real', 'in', ('shcol',)), ('ksrf', 'real', 'out', ('shcol',))])
     >>> print("\n".join([str(item) for item in parse_origin(teststr, ["advance_iop_forcing"]).items()]))
     ('advance_iop_forcing', [('plev', 'integer', 'in', None), ('pcnst', 'integer', 'in', None), ('scm_dt', 'real', 'in', None), ('ps_in', 'real', 'in', None), ('u_in', 'real', 'in', ('plev',)), ('v_in', 'real', 'in', ('plev',)), ('t_in', 'real', 'in', ('plev',)), ('q_in', 'real', 'in', ('plev', 'pcnst')), ('t_phys_frc', 'real', 'in', ('plev',)), ('u_update', 'real', 'out', ('plev',)), ('v_update', 'real', 'out', ('plev',)), ('t_update', 'real', 'out', ('plev',)), ('q_update', 'real', 'out', ('plev', 'pcnst'))])
+    >>> print("\n".join([str(item) for item in parse_origin(teststr, ["iop_setinitial"]).items()]))
+    ('iop_setinitial', [('elem', 'type::element_t', 'inout', (':',))])
     """
     begin_sub_regexes  = [get_subroutine_begin_regex(sub) for sub in subs]
     begin_func_regexes = [get_function_begin_regex(sub)   for sub in subs]
@@ -936,7 +949,7 @@ def parse_origin(contents, subs):
                     arg_dims = arg_datum[ARG_DIMS]
                     if arg_dims is not None:
                         for arg_dim in arg_dims:
-                            if not arg_dim.isdigit() and arg_dim not in arg_names:
+                            if not arg_dim.isdigit() and arg_dim not in arg_names and arg_dim != ":":
                                 global_ints_to_insert.append((arg_dim, "integer", "in", None))
                                 arg_names.add(arg_dim)
 
@@ -966,16 +979,33 @@ def gen_arg_f90_decl(argtype, intent, dims, names):
     'integer(kind=c_int) , intent(inout) :: barg'
     >>> gen_arg_f90_decl("integer", "out", None, ["barg"])
     'integer(kind=c_int) , intent(out) :: barg'
+    >>> gen_arg_f90_decl('type::element_t', 'inout', (':',), ["foo"])
+    'type(c_ptr) , intent(inout), dimension(:) :: foo'
     """
-    expect(argtype in C_TYPE_MAP, f"Unrecognized argtype for C_TYPE_MAP: {argtype}")
-    c_type = C_TYPE_MAP[argtype]
     value  = ", value" if dims is None and intent == "in" else ""
     intent_s = f", intent({intent})"
     dimension_s = f", dimension({', '.join(dims)})" if dims is not None else ""
     names_s = ", ".join(names)
-    return f"{argtype}(kind={c_type}) {value}{intent_s}{dimension_s} :: {names_s}"
+
+    if argtype.startswith("type::"):
+        return f"type(c_ptr) {intent_s}{dimension_s} :: {names_s}"
+    else:
+        expect(argtype in C_TYPE_MAP, f"Unrecognized argtype for C_TYPE_MAP: {argtype}")
+        c_type = C_TYPE_MAP[argtype]
+        return f"{argtype}(kind={c_type}) {value}{intent_s}{dimension_s} :: {names_s}"
 
 CXX_TYPE_MAP = {"real" : "Real", "integer" : "Int", "logical" : "bool"}
+###############################################################################
+def get_cxx_scalar_type(arg_type):
+###############################################################################
+    if arg_type.startswith("type::"):
+        arg_cxx_type = arg_type.split("::")[-1]
+    else:
+        expect(arg_type in CXX_TYPE_MAP, f"Unrecognized argtype for CXX_TYPE_MAP: {arg_type}")
+        arg_cxx_type = CXX_TYPE_MAP[arg_type]
+
+    return arg_cxx_type
+
 ###############################################################################
 def get_cxx_type(arg_datum):
 ###############################################################################
@@ -996,11 +1026,12 @@ def get_cxx_type(arg_datum):
     'Real*'
     >>> get_cxx_type(("foo", "integer", "inout", None))
     'Int*'
+    >>> get_cxx_type(('elem', 'type::element_t', 'inout', (':',)))
+    'element_t*'
     """
     is_ptr = arg_datum[ARG_DIMS] is not None or arg_datum[ARG_INTENT] != "in"
     arg_type = arg_datum[ARG_TYPE]
-    expect(arg_type in CXX_TYPE_MAP, f"Unrecognized argtype for CXX_TYPE_MAP: {arg_type}")
-    arg_cxx_type = CXX_TYPE_MAP[arg_type]
+    arg_cxx_type = get_cxx_scalar_type(arg_type)
     return f"{arg_cxx_type}{'*' if is_ptr else ''}"
 
 KOKKOS_TYPE_MAP = {"real" : "Spack", "integer" : "Int", "logical" : "bool"}
@@ -1027,10 +1058,18 @@ def get_kokkos_type(arg_datum):
     'Spack&'
     >>> get_kokkos_type(("foo", "integer", "inout", None))
     'Int&'
+    >>> get_kokkos_type(('elem', 'type::element_t', 'inout', (':',)))
+    'const uview_1d<element_t>&'
     """
     is_const  = arg_datum[ARG_INTENT] == "in"
     is_view   = arg_datum[ARG_DIMS] is not None
-    base_type = f"{'const ' if is_const else ''}{KOKKOS_TYPE_MAP[arg_datum[ARG_TYPE]]}"
+    arg_type  = arg_datum[ARG_TYPE]
+    if arg_type.startswith("type::"):
+        kokkos_type = arg_type.split("::")[-1]
+    else:
+        kokkos_type = KOKKOS_TYPE_MAP[arg_type]
+
+    base_type = f"{'const ' if is_const else ''}{kokkos_type}"
 
     # We assume 1d even if the f90 array is 2d since we assume c++ will spawn a kernel
     # over one of the dimensions
@@ -1211,7 +1250,7 @@ def gen_struct_members(arg_data):
             type_map = metadata[intent]
             for type_info, names in type_map.items():
                 type_name, is_ptr = type_info
-                decl_str = CXX_TYPE_MAP[type_name]
+                decl_str = get_cxx_scalar_type(type_name)
                 decl_str += f" {', '.join(['{}{}'.format('*' if is_ptr else '', name) for name in names])};"
                 result.append(decl_str)
 
@@ -1271,7 +1310,7 @@ def group_data(arg_data, filter_out_intent=None):
         if filter_out_intent is None or intent != filter_out_intent:
             if dims is None:
                 if name not in all_dims:
-                    scalars.append( (name, CXX_TYPE_MAP[argtype]))
+                    scalars.append( (name, get_cxx_scalar_type(argtype)))
                 else:
                     expect(argtype == "integer", f"Expected dimension {name} to be of type integer")
 
