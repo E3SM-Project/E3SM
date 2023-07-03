@@ -41,7 +41,6 @@ _TESTS = {
         "time"  : "0:45:00",
         "tests" : (
             "ERS.f09_g16.IELMBC",
-            "ERS.f09_g16.IELMBC.elm-simple_decomp",
             "ERS.f19_g16.I1850CNECACNTBC.elm-eca",
             "ERS.f19_g16.I1850CNECACTCBC.elm-eca",
             "ERS.f19_g16.I1850CNRDCTCBC.elm-rd",
@@ -57,6 +56,7 @@ _TESTS = {
         "tests" : (
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
             "ERS.hcru_hcru.I20TRGSWCNPRDCTCBC.elm-erosion",
+            "ERS.f09_g16.IELMBC.elm-simple_decomp",
             )
         },
 
