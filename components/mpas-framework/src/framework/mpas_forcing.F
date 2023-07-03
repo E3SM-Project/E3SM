@@ -1255,41 +1255,44 @@ contains
     type(MPAS_TimeInterval_type) :: &
          timeStep ! time step interval
 
-    ! assuming it is not possible to give dts of months or years
-    integer :: DD, H, M, S, S_n, S_d, foundNumAndDen, powerOfTen
+    !! assuming it is not possible to give dts of months or years
+    !integer :: DD, H, M, S, S_n, S_d, foundNumAndDen, powerOfTen
 
-    real(kind=RKIND) :: factor
+    !real(kind=RKIND) :: factor
 
-    DD = dt / 86400_RKIND
-    H = dt / 3600_RKIND
-    M = dt / 60_RKIND
-    S = dt
-    S_n = 0
-    S_d = 0
-    if (abs(real(S) - dt) > 1.e-10) then !the time step has decimals
-       S = 0
-       foundNumAndDen = 0
-       powerOfTen = 1
-       factor = 10_RKIND
-       S_n = abs(dt) * factor
-       S_d = factor
-       do while (foundNumAndDen == 0 .and. powerOfTen < 11) 
-          if (abs(real(S_n)/real(S_d) - abs(dt)) < 1.e-10) then
-             foundNumAndDen = 1
-          else 
-             powerOfTen = powerOfTen + 1
-             factor = 10_RKIND ** powerOfTen
-             S_n = abs(dt) * factor
-             S_d = factor
-          end if
-       end do
-       if (dt < 0.0_RKIND) then
-          S_n = - S_n
-       end if
-    end if
+    !DD = dt / 86400_RKIND
+    !H = dt / 3600_RKIND
+    !M = dt / 60_RKIND
+    !S = dt
+    !S_n = 0
+    !S_d = 0
+    !if (abs(real(S) - dt) > 1.e-10) then !the time step has decimals
+    !   S = 0
+    !   foundNumAndDen = 0
+    !   powerOfTen = 1
+    !   factor = 10_RKIND
+    !   S_n = abs(dt) * factor
+    !   S_d = factor
+    !   do while (foundNumAndDen == 0 .and. powerOfTen < 11) 
+    !      if (abs(real(S_n)/real(S_d) - abs(dt)) < 1.e-10) then
+    !         foundNumAndDen = 1
+    !      else 
+    !         powerOfTen = powerOfTen + 1
+    !         factor = 10_RKIND ** powerOfTen
+    !         S_n = abs(dt) * factor
+    !         S_d = factor
+    !      end if
+    !   end do
+    !   if (dt < 0.0_RKIND) then
+    !      S_n = - S_n
+    !   end if
+    !end if
 
     ! increment clock with timestep
-    call mpas_set_timeInterval(timeStep, DD=DD, H=H, M=M, S=S, S_n=S_n, S_d=S_d)
+    ! call mpas_set_timeInterval(timeStep, DD=DD, H=H, M=M, S=S, S_n=S_n, S_d=S_d)
+    call mpas_set_timeInterval(timeStep, dt=dt)
+    !call mpas_log_write('jl time step $i $i $i', intArgs=(/S, S_n, S_d /))
+    !call mpas_log_write('time step $i $i $i', intArgs=(/int(timeStep%ti%basetime%S), int(timeStep%ti%basetime%Sn), int(timeStep%ti%basetime%Sd) /))
     call mpas_advance_clock(forcingGroup % forcingClock, timeStep)
 
   end subroutine mpas_advance_forcing_clock!}}}
@@ -1631,8 +1634,10 @@ contains
     call mpas_get_timeInterval(diff1, forcingStream % forcingTimes(1), dt=diffr1)
     call mpas_get_timeInterval(diff2, currentTime, dt=diffr2)
 
+    !call mpas_log_write('diffr2 $r, diffr, $r', realArgs=(/ diffr2, diffr /))
     interpolants(1) = diffr2 / diffr
     interpolants(2) = 1.0_RKIND - interpolants(1) !diffr1 / diffr
+    
 
   end subroutine get_interpolants_linear!}}}
 
@@ -1646,7 +1651,7 @@ contains
 !> \details
 !>  Given the current time and forcing times calculate the correct
 !>  interpolants with piecewise constant interpolation
-!
+
 !-----------------------------------------------------------------------
 
   subroutine get_interpolants_constant(interpolants, forcingStream, currentTime)!{{{

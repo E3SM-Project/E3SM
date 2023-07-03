@@ -286,7 +286,7 @@ contains
          "ocn_atmospheric_forcing", &      ! forcingGroupName
          currentForcingTime)               ! forcingTime
     call mpas_get_time(curr_time=currentForcingTime, dateTimeString=timeStamp, ierr=err)
-    call mpas_log_write('Forcing time for atmospheric forcing' // trim(timeStamp))
+    !call mpas_log_write('Forcing time for atmospheric forcing' // trim(timeStamp))
 
     call mpas_advance_forcing_clock(forcingGroupHead, dtSimReverse)
 
@@ -296,7 +296,7 @@ contains
          currentForcingTime)               ! forcingTime
 
     call mpas_get_time(curr_time=currentForcingTime, dateTimeString=timeStamp, ierr=err)
-    call mpas_log_write('Forcing time reversed for atmospheric forcing' // trim(timeStamp))
+    !call mpas_log_write('Forcing time reversed for atmospheric forcing' // trim(timeStamp))
 
     ! perform post forcing
     block => domain % blocklist
