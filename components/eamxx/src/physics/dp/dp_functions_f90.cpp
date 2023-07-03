@@ -23,6 +23,7 @@ extern "C" {
 void advance_iop_forcing_c(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* t_phys_frc, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
 void advance_iop_nudging_c(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* q_in, Real* t_update, Real* q_update, Real* relaxt, Real* relaxq);
 void advance_iop_subsidence_c(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
+void iop_setinitial_c(Int nelemd, scream::dp::element_t* elem);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -55,6 +56,12 @@ void advance_iop_subsidence(AdvanceIopSubsidenceData& d)
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
+void iop_setinitial(IopSetinitialData& d)
+{
+  dp_init(d.plev, true);
+  iop_setinitial_c(d.nelemd, d.elem);
+}
+
 // end _c impls
 
 //
@@ -70,6 +77,10 @@ void advance_iop_nudging_f(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* 
   // TODO
 }
 void advance_iop_subsidence_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* u_update, Real* v_update, Real* t_update, Real* q_update)
+{
+  // TODO
+}
+void iop_setinitial_f(Int nelemd, element_t* elem)
 {
   // TODO
 }

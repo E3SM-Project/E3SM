@@ -48,4 +48,12 @@ contains
 
     !call advance_iop_subsidence(plev, pcnst, scm_dt, ps_in, u_in, v_in, t_in, q_in, u_update, v_update, t_update, q_update)
   end subroutine advance_iop_subsidence_c
+  subroutine iop_setinitial_c(nelemd, elem) bind(C)
+    !use dp, only : iop_setinitial
+
+    integer(kind=c_int) , value, intent(in) :: nelemd
+    type(c_ptr) , intent(inout), dimension(nelemd) :: elem
+
+    !call iop_setinitial(nelemd, elem)
+  end subroutine iop_setinitial_c
 end module dp_iso_c

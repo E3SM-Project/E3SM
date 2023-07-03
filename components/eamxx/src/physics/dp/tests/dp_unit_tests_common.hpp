@@ -56,6 +56,7 @@ struct UnitWrap {
     struct TestAdvanceIopForcing;
     struct TestAdvanceIopNudging;
     struct TestAdvanceIopSubsidence;
+    struct TestIopSetinitial;
   };
 
 };

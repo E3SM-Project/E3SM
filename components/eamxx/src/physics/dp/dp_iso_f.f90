@@ -43,6 +43,12 @@ interface
     real(kind=c_real) , intent(out), dimension(plev) :: u_update, v_update, t_update
     real(kind=c_real) , intent(out), dimension(plev, pcnst) :: q_update
   end subroutine advance_iop_subsidence_f
+  subroutine iop_setinitial_f(nelemd, elem) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: nelemd
+    type(c_ptr) , intent(inout), dimension(nelemd) :: elem
+  end subroutine iop_setinitial_f
 end interface
 
 end module dp_iso_f

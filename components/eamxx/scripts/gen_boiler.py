@@ -1320,7 +1320,7 @@ def group_data(arg_data, filter_out_intent=None):
             elif argtype == "real":
                 real_data.setdefault(dims, []).append(name)
 
-            else:
+            elif argtype == "logical":
                 bool_data.setdefault(dims, []).append(name)
 
     return fst_dims, snd_dims, trd_dims, all_dims, scalars, real_data, int_data, bool_data
