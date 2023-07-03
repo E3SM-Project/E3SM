@@ -22,6 +22,7 @@ extern "C" {
 
 void advance_iop_forcing_c(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* t_phys_frc, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
 void advance_iop_nudging_c(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* q_in, Real* t_update, Real* q_update, Real* relaxt, Real* relaxq);
+void advance_iop_subsidence_c(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -46,6 +47,14 @@ void advance_iop_nudging(AdvanceIopNudgingData& d)
   advance_iop_nudging_c(d.plev, d.scm_dt, d.ps_in, d.t_in, d.q_in, d.t_update, d.q_update, d.relaxt, d.relaxq);
 }
 
+void advance_iop_subsidence(AdvanceIopSubsidenceData& d)
+{
+  dp_init(d.plev, true);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  advance_iop_subsidence_c(d.plev, d.pcnst, d.scm_dt, d.ps_in, d.u_in, d.v_in, d.t_in, d.q_in, d.u_update, d.v_update, d.t_update, d.q_update);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
 // end _c impls
 
 //
@@ -57,6 +66,10 @@ void advance_iop_forcing_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u
   // TODO
 }
 void advance_iop_nudging_f(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* q_in, Real* t_update, Real* q_update, Real* relaxt, Real* relaxq)
+{
+  // TODO
+}
+void advance_iop_subsidence_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* u_update, Real* v_update, Real* t_update, Real* q_update)
 {
   // TODO
 }

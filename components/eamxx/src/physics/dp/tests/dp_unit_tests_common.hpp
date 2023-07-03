@@ -55,6 +55,7 @@ struct UnitWrap {
     // Put struct decls here
     struct TestAdvanceIopForcing;
     struct TestAdvanceIopNudging;
+    struct TestAdvanceIopSubsidence;
   };
 
 };

@@ -36,4 +36,16 @@ contains
 
     !call advance_iop_nudging(plev, scm_dt, ps_in, t_in, q_in, t_update, q_update, relaxt, relaxq)
   end subroutine advance_iop_nudging_c
+  subroutine advance_iop_subsidence_c(plev, pcnst, scm_dt, ps_in, u_in, v_in, t_in, q_in, u_update, v_update, t_update, q_update) bind(C)
+    !use dp, only : advance_iop_subsidence
+
+    integer(kind=c_int) , value, intent(in) :: plev, pcnst
+    real(kind=c_real) , value, intent(in) :: scm_dt, ps_in
+    real(kind=c_real) , intent(in), dimension(plev) :: u_in, v_in, t_in
+    real(kind=c_real) , intent(in), dimension(plev, pcnst) :: q_in
+    real(kind=c_real) , intent(out), dimension(plev) :: u_update, v_update, t_update
+    real(kind=c_real) , intent(out), dimension(plev, pcnst) :: q_update
+
+    !call advance_iop_subsidence(plev, pcnst, scm_dt, ps_in, u_in, v_in, t_in, q_in, u_update, v_update, t_update, q_update)
+  end subroutine advance_iop_subsidence_c
 end module dp_iso_c
