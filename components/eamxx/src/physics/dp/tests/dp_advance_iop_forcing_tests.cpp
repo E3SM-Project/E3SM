@@ -17,6 +17,8 @@ struct UnitWrap::UnitTest<D>::TestAdvanceIopForcing {
 
   static void run_bfb()
   {
+    auto engine = setup_random_test();
+
     AdvanceIopForcingData f90_data[] = {
       // TODO
     };
@@ -26,7 +28,7 @@ struct UnitWrap::UnitTest<D>::TestAdvanceIopForcing {
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
-      d.randomize();
+      d.randomize(engine);
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
@@ -46,7 +48,7 @@ struct UnitWrap::UnitTest<D>::TestAdvanceIopForcing {
     // Get data from cxx
     for (auto& d : cxx_data) {
       d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      advance_iop_forcing_f(d.scm_dt, d.ps_in, d.u_in, d.v_in, d.t_in, d.q_in, d.t_phys_frc, d.u_update, d.v_update, d.t_update, d.q_update);
+      advance_iop_forcing_f(d.plev, d.pcnst, d.scm_dt, d.ps_in, d.u_in, d.v_in, d.t_in, d.q_in, d.t_phys_frc, d.u_update, d.v_update, d.t_update, d.q_update);
       d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 
@@ -62,10 +64,12 @@ struct UnitWrap::UnitTest<D>::TestAdvanceIopForcing {
           REQUIRE(d_f90.v_update[k] == d_cxx.v_update[k]);
           REQUIRE(d_f90.total(d_f90.u_update) == d_cxx.total(d_cxx.t_update));
           REQUIRE(d_f90.t_update[k] == d_cxx.t_update[k]);
-        }        for (Int k = 0; k < d_f90.total(d_f90.q_update); ++k) {
+        }
+        for (Int k = 0; k < d_f90.total(d_f90.q_update); ++k) {
           REQUIRE(d_f90.total(d_f90.q_update) == d_cxx.total(d_cxx.q_update));
           REQUIRE(d_f90.q_update[k] == d_cxx.q_update[k]);
         }
+
       }
     }
   } // run_bfb

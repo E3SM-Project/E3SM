@@ -20,7 +20,7 @@ using scream::Int;
 
 extern "C" {
 
-void advance_iop_forcing_c(Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* t_phys_frc, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
+void advance_iop_forcing_c(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* t_phys_frc, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -32,11 +32,12 @@ namespace dp {
 
 void advance_iop_forcing(AdvanceIopForcingData& d)
 {
-  dp_init(d.nlev, true);
+  dp_init(d.plev, true);
   d.transpose<ekat::TransposeDirection::c2f>();
-  advance_iop_forcing_c(d.scm_dt, d.ps_in, d.u_in, d.v_in, d.t_in, d.q_in, d.t_phys_frc, d.u_update, d.v_update, d.t_update, d.q_update);
+  advance_iop_forcing_c(d.plev, d.pcnst, d.scm_dt, d.ps_in, d.u_in, d.v_in, d.t_in, d.q_in, d.t_phys_frc, d.u_update, d.v_update, d.t_update, d.q_update);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
+
 
 // end _c impls
 
@@ -44,7 +45,7 @@ void advance_iop_forcing(AdvanceIopForcingData& d)
 // _f function definitions. These expect data in C layout
 //
 
-void advance_iop_forcing_f(Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* t_phys_frc, Real* u_update, Real* v_update, Real* t_update, Real* q_update)
+void advance_iop_forcing_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* t_phys_frc, Real* u_update, Real* v_update, Real* t_update, Real* q_update)
 {
   // TODO
 }

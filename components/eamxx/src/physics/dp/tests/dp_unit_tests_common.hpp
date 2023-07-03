@@ -4,6 +4,7 @@
 #include "dp_functions.hpp"
 #include "share/scream_types.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 
 namespace scream {
 namespace dp {

@@ -15,9 +15,10 @@ module dp_iso_f
 
 interface
 
-  subroutine advance_iop_forcing_f(scm_dt, ps_in, u_in, v_in, t_in, q_in, t_phys_frc, u_update, v_update, t_update, q_update) bind(C)
+  subroutine advance_iop_forcing_f(plev, pcnst, scm_dt, ps_in, u_in, v_in, t_in, q_in, t_phys_frc, u_update, v_update, t_update, q_update) bind(C)
     use iso_c_binding
 
+    integer(kind=c_int) , value, intent(in) :: plev, pcnst
     real(kind=c_real) , value, intent(in) :: scm_dt, ps_in
     real(kind=c_real) , intent(in), dimension(plev) :: u_in, v_in, t_in, t_phys_frc
     real(kind=c_real) , intent(in), dimension(plev, pcnst) :: q_in

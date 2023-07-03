@@ -20,6 +20,7 @@ namespace dp {
 
 struct AdvanceIopForcingData : public PhysicsTestData {
   // Inputs
+  Int plev, pcnst;
   Real scm_dt, ps_in;
   Real *u_in, *v_in, *t_in, *q_in, *t_phys_frc;
   
@@ -32,12 +33,13 @@ struct AdvanceIopForcingData : public PhysicsTestData {
   PTD_STD_DEF(AdvanceIopForcingData, 4, plev, pcnst, scm_dt, ps_in);
 };
 
+
 // Glue functions to call fortran from from C++ with the Data struct
 
 void advance_iop_forcing(AdvanceIopForcingData& d);
 extern "C" { // _f function decls
 
-void advance_iop_forcing_f(Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* t_phys_frc, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
+void advance_iop_forcing_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* t_phys_frc, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
 } // end _f function decls
 
 }  // namespace dp

@@ -241,12 +241,12 @@ PHYSICS = {
     "shoc" : (
         ("components/eam/src/physics/cam/shoc.F90",),
         "components/eamxx/src/physics/shoc",
-        "shoc_init(REPLACE_ME, true);"
+        "shoc_init(d.nlev, true);"
     ),
     "dp" : (
         ("components/eam/src/control/apply_iop_forcing.F90", "components/eam/src/dynamics/se/se_iop_intr_mod.F90", "components/eam/src/control/iop_data_mod.F90", "components/eam/src/control/history_iop.F90"),
         "components/eamxx/src/physics/dp",
-        "dp_init(REPLACE_ME, true);"
+        "dp_init(d.plev, true);"
     ),
 }
 
@@ -839,12 +839,35 @@ def parse_origin(contents, subs):
     ...
     ...   return foo
     ...  end function impli_srf_stress_term
+    ...
+    ...  subroutine advance_iop_forcing(scm_dt, ps_in, &             ! In
+    ...                    u_in, v_in, t_in, q_in, t_phys_frc,&    ! In
+    ...                    u_update, v_update, t_update, q_update) ! Out
+    ...
+    ...    ! Input arguments
+    ...    real(r8), intent(in) :: ps_in             ! surface pressure [Pa]
+    ...    real(r8), intent(in) :: u_in(plev)        ! zonal wind [m/s]
+    ...    real(r8), intent(in) :: v_in(plev)        ! meridional wind [m/s]
+    ...    real(r8), intent(in) :: t_in(plev)        ! temperature [K]
+    ...    real(r8), intent(in) :: q_in(plev,pcnst)  ! q tracer array [units vary]
+    ...    real(r8), intent(in) :: t_phys_frc(plev)  ! temperature forcing from physics [K/s]
+    ...    real(r8), intent(in) :: scm_dt            ! model time step [s]
+    ...
+    ...    ! Output arguments
+    ...    real(r8), intent(out) :: t_update(plev)      ! updated temperature [K]
+    ...    real(r8), intent(out) :: q_update(plev,pcnst)! updated q tracer array [units vary]
+    ...    real(r8), intent(out) :: u_update(plev)      ! updated zonal wind [m/s]
+    ...    real(r8), intent(out) :: v_update(plev)      ! updated meridional wind [m/s]
+    ...
+    ...  end subroutine advance_iop_forcing
     ... '''
     >>> print("\n".join([str(item) for item in sorted(parse_origin(teststr, ["p3_get_tables", "p3_init_b"]).items())]))
     ('p3_get_tables', [('mu_r_user', 'real', 'out', ('150',)), ('revap_user', 'real', 'out', ('300', '10')), ('tracerd', 'real', 'out', ('300', '10', '42')), ('vn_user', 'real', 'out', ('300', '10')), ('vm_user', 'real', 'out', ('300', '10'))])
     ('p3_init_b', [])
     >>> print("\n".join([str(item) for item in parse_origin(teststr, ["impli_srf_stress_term"]).items()]))
     ('impli_srf_stress_term', [('shcol', 'integer', 'in', None), ('rho_zi_sfc', 'real', 'in', ('shcol',)), ('uw_sfc', 'real', 'in', ('shcol',)), ('vw_sfc', 'real', 'in', ('shcol',)), ('u_wind_sfc', 'real', 'in', ('shcol',)), ('v_wind_sfc', 'real', 'in', ('shcol',)), ('ksrf', 'real', 'out', ('shcol',))])
+    >>> print("\n".join([str(item) for item in parse_origin(teststr, ["advance_iop_forcing"]).items()]))
+    ('advance_iop_forcing', [('plev', 'integer', 'in', None), ('pcnst', 'integer', 'in', None), ('scm_dt', 'real', 'in', None), ('ps_in', 'real', 'in', None), ('u_in', 'real', 'in', ('plev',)), ('v_in', 'real', 'in', ('plev',)), ('t_in', 'real', 'in', ('plev',)), ('q_in', 'real', 'in', ('plev', 'pcnst')), ('t_phys_frc', 'real', 'in', ('plev',)), ('u_update', 'real', 'out', ('plev',)), ('v_update', 'real', 'out', ('plev',)), ('t_update', 'real', 'out', ('plev',)), ('q_update', 'real', 'out', ('plev', 'pcnst'))])
     """
     begin_sub_regexes  = [get_subroutine_begin_regex(sub) for sub in subs]
     begin_func_regexes = [get_function_begin_regex(sub)   for sub in subs]
@@ -901,7 +924,23 @@ def parse_origin(contents, subs):
 
                     expect(found, f"Could not find decl for arg {arg} in\n{arg_decls}")
 
-                db[active_sub] = ordered_decls
+                # Dim resolution. Arrays with global dims must have the
+                # dim as an input in the converted code.
+                global_ints_to_insert = []
+                arg_names = set()
+                for arg_datum in ordered_decls:
+                    arg_name = arg_datum[ARG_NAME]
+                    arg_names.add(arg_name)
+
+                for arg_datum in ordered_decls:
+                    arg_dims = arg_datum[ARG_DIMS]
+                    if arg_dims is not None:
+                        for arg_dim in arg_dims:
+                            if not arg_dim.isdigit() and arg_dim not in arg_names:
+                                global_ints_to_insert.append((arg_dim, "integer", "in", None))
+                                arg_names.add(arg_dim)
+
+                db[active_sub] = global_ints_to_insert + ordered_decls
                 active_sub = None
                 result_name = None
                 arg_decls = []
@@ -1572,7 +1611,6 @@ class GenBoiler(object):
         transpose_code_2 = "\n  d.transpose<ekat::TransposeDirection::f2c>();" if need_transpose else ""
         data_struct      = get_data_struct_name(sub)
         init_code        = get_physics_data(phys, INIT_CODE)
-        init_code        = init_code.replace("REPLACE_ME", "d.nlev")
 
         result = \
 f"""void {sub}({data_struct}& d)
@@ -1899,6 +1937,8 @@ f"""{decl}
         >>> print(gb.gen_cxx_bfb_unit_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
           static void run_bfb()
           {
+            auto engine = setup_random_test();
+        <BLANKLINE>
             FakeSubData f90_data[] = {
               // TODO
             };
@@ -1908,7 +1948,7 @@ f"""{decl}
             // Generate random input data
             // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
             for (auto& d : f90_data) {
-              d.randomize();
+              d.randomize(engine);
             }
         <BLANKLINE>
             // Create copies of data for use by cxx. Needs to happen before fortran calls so that
@@ -1947,6 +1987,7 @@ f"""{decl}
                   REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.ball2));
                   REQUIRE(d_f90.ball2[k] == d_cxx.ball2[k]);
                 }
+        <BLANKLINE>
               }
             }
           } // run_bfb
@@ -1962,7 +2003,7 @@ f"""{decl}
             // Generate random input data
             // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
             for (auto& d : f90_data) {
-              d.randomize();
+              d.randomize(engine);
             }
         <BLANKLINE>
             // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
@@ -2041,7 +2082,7 @@ f"""{decl}
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
     for (auto& d : f90_data) {
-      d.randomize();
+      d.randomize(engine);
     }"""
 
         _, _, _, _, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_out_intent="in")
@@ -2071,12 +2112,14 @@ f"""{decl}
                     check_arrays += f"          REQUIRE(d_f90.total(d_f90.{data[0]}) == d_cxx.total(d_cxx.{datum}));\n"
                     check_arrays += f"          REQUIRE(d_f90.{datum}[k] == d_cxx.{datum}[k]);\n"
 
-                check_arrays += "        }"
+                check_arrays += "        }\n"
 
         if has_array:
             result = \
 """  static void run_bfb()
   {{
+    auto engine = setup_random_test();
+
     {data_struct} f90_data[] = {{
       // TODO
     }};
