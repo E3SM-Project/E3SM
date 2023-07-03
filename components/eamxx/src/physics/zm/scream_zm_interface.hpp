@@ -16,6 +16,7 @@ extern "C"
 {
 
 // Fortran routines to be called from C
+// placeholder: how to set integer here for jctop and jcbot?
 void zm_init_f90     (const Real& limcnv_in, const bool& no_deep_pbl_in);
 void zm_main_f90(const Real& lchnk, const Real& ncol, Real* t, Real* qh, Real* prec,
 			Real* jctop, Real* jcbot, Real* pblh, Real *zm, Real* geos, Real* zi,

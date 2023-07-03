@@ -70,8 +70,8 @@ subroutine zm_main_f90(lchnk   ,ncol    , &
    real(kind=c_real), intent(inout) :: t(pcols,pver) ! State array  kg/kg
    real(kind=c_real) :: qh(pcols,pver) 
    real(kind=c_real), intent(out) :: prec(pcols)
-   real(kind=c_real), intent(out) :: jctop(pcols)  ! o row of top-of-deep-convection indices passed out.
-   real(kind=c_real), intent(out) :: jcbot(pcols)  ! o row of base of cloud indices passed out.
+   integer, intent(out) :: jctop(pcols)  ! o row of top-of-deep-convection indices passed out.
+   integer, intent(out) :: jcbot(pcols)  ! o row of base of cloud indices passed out.
    integer jt(pcols)                          ! wg top  level index of deep cumulus convection.
    integer maxg(pcols)                        ! wg gathered values of maxi.
    integer ideep(pcols)                       ! w holds position of gathered points vs longitude index.
