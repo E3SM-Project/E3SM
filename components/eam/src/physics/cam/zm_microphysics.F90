@@ -2713,7 +2713,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  qnitend(i,k) = (prai(k)+psacws(k)+prci(k))+pracs(k)-psacr(k)+piacrs(k)   &
                                  +pracis(k)
                  
-                 qgtend(i,k) = (pracg(k)+psacwg(k)+pgsacw(k)+pgracs(k)+ &
+                 qgtend(i,k) = (pracg(k)+psacwg(k)+pgsacw(k)+pgracs(k) &
                                 +mnuccr(k)+piacr(k)+praci(k)+psacr(k))
 
                  if ((qnitend(i,k)+qrtend(i,k)+qgtend(i,k))<0._r8) then

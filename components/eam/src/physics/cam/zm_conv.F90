@@ -507,8 +507,8 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8), intent(out) :: ed(pcols,pver)
    real(r8), intent(out) :: dp(pcols,pver)       ! wg layer thickness in mbs (between upper/lower interface).
    real(r8), intent(out) :: dsubcld(pcols)       ! wg layer thickness in mbs between lcl and maxi.
-   real(r8), intent(out) :: jctop(pcols)  ! o row of top-of-deep-convection indices passed out.
-   real(r8), intent(out) :: jcbot(pcols)  ! o row of base of cloud indices passed out.
+   integer,  intent(out) :: jctop(pcols)  ! o row of top-of-deep-convection indices passed out.
+   integer,  intent(out) :: jcbot(pcols)  ! o row of base of cloud indices passed out.
    real(r8), intent(out) :: prec(pcols)
    real(r8), intent(out) :: rliq(pcols)   ! reserved liquid (not yet in cldliq) for energy integrals
    real(r8), intent(out) :: dcape(pcols)           ! output dynamical CAPE
