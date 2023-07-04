@@ -24,6 +24,7 @@ userGuide/QuickStart
 userGuide/OmegaBuild
 userGuide/DataTypes
 userGuide/MachEnv
+userGuide/Logging
 ```
 
 ```{toctree}
@@ -37,6 +38,7 @@ devGuide/CondaEnv
 devGuide/Docs
 devGuide/BuildDocs
 devGuide/CMakeBuild
+devGuide/Logging
 ```
 
 ```{toctree}

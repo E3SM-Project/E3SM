@@ -19,6 +19,8 @@ set(OMEGA_DEFAULT_BUILD_TYPE      Release) # Debug or Release
 ###########################
 macro(setup_common_variables)
  
+  option(OMEGA_DEBUG "Turn on error message throwing (default OFF)." OFF)
+
   if(NOT DEFINED OMEGA_CXX_FLAGS )
     # initialize cxx flags as an empty list
     set(OMEGA_CXX_FLAGS "")
@@ -72,13 +74,6 @@ endmacro()
 
 macro(setup_e3sm_build)
 
-  # prints generates all cmake variables
-  #get_cmake_property(_variableNames VARIABLES)
-  #list (SORT _variableNames)
-  #foreach (_variableName ${_variableNames})
-  #    message(STATUS "${_variableName}=${${_variableName}}")
-  #endforeach()
-
   setup_common_variables()
 
   set(OMEGA_BUILD_TYPE ${E3SM_DEFAULT_BUILD_TYPE})
@@ -98,6 +93,12 @@ endmacro()
 # Set cmake and YAKL variables #
 ################################
 macro(update_variables)
+
+
+  if(OMEGA_DEBUG)
+    add_compile_definitions(OMEGA_DEBUG)
+    add_compile_definitions(LOG_UNBUFFERED_LOGGING="1")
+  endif()
 
   # Set the build type
   set(CMAKE_BUILD_TYPE ${OMEGA_BUILD_TYPE})
@@ -121,10 +122,16 @@ macro(update_variables)
     endif()
 
   else()
- 
     set(YAKL_ARCH "")
 
   endif()
+
+#  # prints generates all cmake variables
+#  get_cmake_property(_variableNames VARIABLES)
+#  list (SORT _variableNames)
+#  foreach (_variableName ${_variableNames})
+#      message(STATUS "${_variableName}=${${_variableName}}")
+#  endforeach()
 
 endmacro()
 

@@ -160,7 +160,7 @@ message:
 ```c++
 Array1DR8 var;
 ...
-LOG_INFO("log message", var);
+LOG_INFO("log message {}", var);
 ```
 
 ## 5 Verification and Testing
