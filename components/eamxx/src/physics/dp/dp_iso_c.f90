@@ -61,4 +61,16 @@ contains
 
     !call iop_broadcast()
   end subroutine iop_broadcast_c
+  subroutine apply_iop_forcing_c(nelemd, elem, hvcoord, hybrid, tl, n, t_before_advance, nets, nete) bind(C)
+    !use dp, only : apply_iop_forcing
+
+    integer(kind=c_int) , value, intent(in) :: nelemd, n, nets, nete
+    type(c_ptr) , intent(inout), dimension(nelemd) :: elem
+    type(c_ptr) , intent(inout) :: hvcoord
+    type(c_ptr) , intent(in) :: hybrid
+    type(c_ptr) , intent(in) :: tl
+    logical(kind=c_bool) , value, intent(in) :: t_before_advance
+
+    !call apply_iop_forcing(nelemd, elem, hvcoord, hybrid, tl, n, t_before_advance, nets, nete)
+  end subroutine apply_iop_forcing_c
 end module dp_iso_c

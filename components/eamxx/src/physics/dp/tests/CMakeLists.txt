@@ -8,6 +8,7 @@ set(DP_TESTS_SRCS
     dp_advance_iop_subsidence_tests.cpp
     dp_iop_setinitial_tests.cpp
     dp_iop_broadcast_tests.cpp
+    dp_apply_iop_forcing_tests.cpp
     ) # DP_TESTS_SRCS
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build

@@ -54,6 +54,16 @@ interface
 
     
   end subroutine iop_broadcast_f
+  subroutine apply_iop_forcing_f(nelemd, elem, hvcoord, hybrid, tl, n, t_before_advance, nets, nete) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: nelemd, n, nets, nete
+    type(c_ptr) , intent(inout), dimension(nelemd) :: elem
+    type(c_ptr) , intent(inout) :: hvcoord
+    type(c_ptr) , intent(in) :: hybrid
+    type(c_ptr) , intent(in) :: tl
+    logical(kind=c_bool) , value, intent(in) :: t_before_advance
+  end subroutine apply_iop_forcing_f
 end interface
 
 end module dp_iso_f

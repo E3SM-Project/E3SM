@@ -25,6 +25,7 @@ void advance_iop_nudging_c(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* 
 void advance_iop_subsidence_c(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
 void iop_setinitial_c(Int nelemd, scream::dp::element_t* elem);
 void iop_broadcast_c();
+void apply_iop_forcing_c(Int nelemd, scream::dp::element_t* elem, scream::dp::hvcoord_t* hvcoord, scream::dp::hybrid_t* hybrid, scream::dp::timelevel_t* tl, Int n, bool t_before_advance, Int nets, Int nete);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -69,6 +70,12 @@ void iop_broadcast(IopBroadcastData& d)
   iop_broadcast_c();
 }
 
+void apply_iop_forcing(ApplyIopForcingData& d)
+{
+  dp_init(d.plev, true);
+  apply_iop_forcing_c(d.nelemd, d.elem, &d.hvcoord, &d.hybrid, &d.tl, d.n, d.t_before_advance, d.nets, d.nete);
+}
+
 // end _c impls
 
 //
@@ -103,6 +110,10 @@ void iop_broadcast_f()
   });
 #endif
 
+}
+void apply_iop_forcing_f(Int nelemd, element_t* elem, hvcoord_t* hvcoord, hybrid_t hybrid, timelevel_t tl, Int n, bool t_before_advance, Int nets, Int nete)
+{
+  // TODO
 }
 } // namespace dp
 } // namespace scream
