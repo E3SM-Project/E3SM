@@ -22,6 +22,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/dp_iop_setinitial.cpp
     eti/dp_iop_broadcast.cpp
     eti/dp_apply_iop_forcing.cpp
+    eti/dp_iop_domain_relaxation.cpp
     ) # DP ETI SRCS
 endif()
 

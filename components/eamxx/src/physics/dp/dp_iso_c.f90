@@ -73,4 +73,16 @@ contains
 
     !call apply_iop_forcing(nelemd, elem, hvcoord, hybrid, tl, n, t_before_advance, nets, nete)
   end subroutine apply_iop_forcing_c
+  subroutine iop_domain_relaxation_c(nelemd, np, nlev, elem, hvcoord, hybrid, t1, dp, nelemd_todo, np_todo, dt) bind(C)
+    !use dp, only : iop_domain_relaxation
+
+    integer(kind=c_int) , value, intent(in) :: nelemd, np, nlev, t1, nelemd_todo, np_todo
+    type(c_ptr) , intent(inout), dimension(nelemd) :: elem
+    type(c_ptr) , intent(in) :: hvcoord
+    type(c_ptr) , intent(in) :: hybrid
+    real(kind=c_real) , intent(inout), dimension(np, np, nlev) :: dp
+    real(kind=c_real) , value, intent(in) :: dt
+
+    !call iop_domain_relaxation(nelemd, np, nlev, elem, hvcoord, hybrid, t1, dp, nelemd_todo, np_todo, dt)
+  end subroutine iop_domain_relaxation_c
 end module dp_iso_c

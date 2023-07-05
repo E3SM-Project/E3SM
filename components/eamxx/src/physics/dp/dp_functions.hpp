@@ -91,6 +91,8 @@ struct Functions
   static void iop_broadcast();
   KOKKOS_FUNCTION
   static void apply_iop_forcing(const Int& nelemd, const uview_1d<element_t>& elem, hvcoord_t& hvcoord, const hybrid_t& hybrid, const timelevel_t& tl, const Int& n, const bool& t_before_advance, const Int& nets, const Int& nete);
+  KOKKOS_FUNCTION
+  static void iop_domain_relaxation(const Int& nelemd, const Int& np, const Int& nlev, const uview_1d<element_t>& elem, const hvcoord_t& hvcoord, const hybrid_t& hybrid, const Int& t1, const uview_1d<Spack>& dp, const Int& nelemd_todo, const Int& np_todo, const Spack& dt);
 }; // struct Functions
 
 } // namespace dp
@@ -107,6 +109,7 @@ struct Functions
 # include "impl/dp_iop_setinitial_impl.hpp"
 # include "impl/dp_iop_broadcast_impl.hpp"
 # include "impl/dp_apply_iop_forcing_impl.hpp"
+# include "impl/dp_iop_domain_relaxation_impl.hpp"
 #endif // GPU || !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 
 #endif // DP_FUNCTIONS_HPP

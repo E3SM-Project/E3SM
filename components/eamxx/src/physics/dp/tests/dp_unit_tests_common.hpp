@@ -59,6 +59,7 @@ struct UnitWrap {
     struct TestIopSetinitial;
     struct TestIopBroadcast;
     struct TestApplyIopForcing;
+    struct TestIopDomainRelaxation;
   };
 
 };

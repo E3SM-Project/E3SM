@@ -104,6 +104,23 @@ struct ApplyIopForcingData : public PhysicsTestData {
   PTD_STD_DEF(ApplyIopForcingData, 6, plev, nelemd, n, nets, nete, t_before_advance);
 };
 
+struct IopDomainRelaxationData : public PhysicsTestData {
+  // Inputs
+  Int nelemd, np, nlev, t1, nelemd_todo, np_todo;
+  hvcoord_t hvcoord;
+  hybrid_t hybrid;
+  Real dt;
+  
+  // Inputs/Outputs
+  element_t *elem;
+  Real *dp;
+  
+  IopDomainRelaxationData(Int nelemd_, Int np_, Int nlev_, Int t1_, Int nelemd_todo_, Int np_todo_, Real dt_) :
+    PhysicsTestData({{ np_, np_, nlev_ }}, {{ &dp }}), nelemd(nelemd_), np(np_), nlev(nlev_), t1(t1_), nelemd_todo(nelemd_todo_), np_todo(np_todo_), dt(dt_) {}
+  
+  PTD_STD_DEF(IopDomainRelaxationData, 7, nelemd, np, nlev, t1, nelemd_todo, np_todo, dt);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 
 void advance_iop_forcing(AdvanceIopForcingData& d);
@@ -112,6 +129,7 @@ void advance_iop_subsidence(AdvanceIopSubsidenceData& d);
 void iop_setinitial(IopSetinitialData& d);
 void iop_broadcast(IopBroadcastData& d);
 void apply_iop_forcing(ApplyIopForcingData& d);
+void iop_domain_relaxation(IopDomainRelaxationData& d);
 extern "C" { // _f function decls
 
 void advance_iop_forcing_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* t_phys_frc, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
@@ -120,6 +138,7 @@ void advance_iop_subsidence_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real
 void iop_setinitial_f(Int nelemd, element_t* elem);
 void iop_broadcast_f();
 void apply_iop_forcing_f(Int nelemd, element_t* elem, hvcoord_t* hvcoord, hybrid_t hybrid, timelevel_t tl, Int n, bool t_before_advance, Int nets, Int nete);
+void iop_domain_relaxation_f(Int nelemd, Int np, Int nlev, element_t* elem, hvcoord_t hvcoord, hybrid_t hybrid, Int t1, Real* dp, Int nelemd_todo, Int np_todo, Real dt);
 } // end _f function decls
 
 }  // namespace dp
