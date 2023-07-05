@@ -63,6 +63,7 @@ struct UnitWrap {
     struct TestCrmResolvedTurb;
     struct TestIopDefaultOpts;
     struct TestIopSetopts;
+    struct TestSetiopupdateInit;
   };
 
 };

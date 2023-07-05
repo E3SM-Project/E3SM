@@ -35,6 +35,7 @@ void iop_domain_relaxation_c(Int nelemd, Int np, Int nlev, element_t* elem, hvco
 void crm_resolved_turb_c(Int nelemd, element_t* elem, hvcoord_t hvcoord, hybrid_t hybrid, Int t1, Int nelemd_todo, Int np_todo);
 void iop_default_opts_c(Real* scmlat_out, Real* scmlon_out, char** iopfile_out, bool* single_column_out, bool* scm_iop_srf_prop_out, bool* iop_nudge_tq_out, bool* iop_nudge_uv_out, Real* iop_nudge_tq_low_out, Real* iop_nudge_tq_high_out, Real* iop_nudge_tscale_out, bool* scm_observed_aero_out, bool* iop_dosubsidence_out, bool* scm_multcols_out, bool* dp_crm_out, Real* iop_perturb_high_out, bool* precip_off_out, bool* scm_zero_non_iop_tracers_out);
 void iop_setopts_c(Real scmlat_in, Real scmlon_in, const char** iopfile_in, bool single_column_in, bool scm_iop_srf_prop_in, bool iop_nudge_tq_in, bool iop_nudge_uv_in, Real iop_nudge_tq_low_in, Real iop_nudge_tq_high_in, Real iop_nudge_tscale_in, bool scm_observed_aero_in, bool iop_dosubsidence_in, bool scm_multcols_in, bool dp_crm_in, Real iop_perturb_high_in, bool precip_off_in, bool scm_zero_non_iop_tracers_in);
+void setiopupdate_init_c();
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -113,6 +114,12 @@ void iop_setopts(IopSetoptsData& d)
   dp_init(d.plev, true);
   const char* cptr = d.iopfile_in.c_str();
   iop_setopts_c(d.scmlat_in, d.scmlon_in, &cptr, d.single_column_in, d.scm_iop_srf_prop_in, d.iop_nudge_tq_in, d.iop_nudge_uv_in, d.iop_nudge_tq_low_in, d.iop_nudge_tq_high_in, d.iop_nudge_tscale_in, d.scm_observed_aero_in, d.iop_dosubsidence_in, d.scm_multcols_in, d.dp_crm_in, d.iop_perturb_high_in, d.precip_off_in, d.scm_zero_non_iop_tracers_in);
+}
+
+void setiopupdate_init(SetiopupdateInitData& d)
+{
+  dp_init(d.plev, true);
+  setiopupdate_init_c();
 }
 
 // end _c impls
@@ -229,6 +236,19 @@ void iop_setopts_f(Real scmlat_in, Real scmlon_in, char** iopfile_in, bool singl
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
     Spack iop_nudge_tq_high_in_(iop_nudge_tq_high_in), iop_nudge_tq_low_in_(iop_nudge_tq_low_in), iop_nudge_tscale_in_(iop_nudge_tscale_in), iop_perturb_high_in_(iop_perturb_high_in), scmlat_in_(scmlat_in), scmlon_in_(scmlon_in);
     PF::iop_setopts(scmlat_in_, scmlon_in_, iopfile_in, single_column_in, scm_iop_srf_prop_in, iop_nudge_tq_in, iop_nudge_uv_in, iop_nudge_tq_low_in_, iop_nudge_tq_high_in_, iop_nudge_tscale_in_, scm_observed_aero_in, iop_dosubsidence_in, scm_multcols_in, dp_crm_in, iop_perturb_high_in_, precip_off_in, scm_zero_non_iop_tracers_in);
+  });
+#endif
+
+}
+void setiopupdate_init_f()
+{
+#if 0
+  using PF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename PF::Spack;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    PF::setiopupdate_init();
   });
 #endif
 

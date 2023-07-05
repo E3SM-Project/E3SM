@@ -113,4 +113,9 @@ contains
 
     !call iop_setopts(scmlat_in, scmlon_in, iopfile_in, single_column_in, scm_iop_srf_prop_in, iop_nudge_tq_in, iop_nudge_uv_in, iop_nudge_tq_low_in, iop_nudge_tq_high_in, iop_nudge_tscale_in, scm_observed_aero_in, iop_dosubsidence_in, scm_multcols_in, dp_crm_in, iop_perturb_high_in, precip_off_in, scm_zero_non_iop_tracers_in)
   end subroutine iop_setopts_c
+  subroutine setiopupdate_init_c() bind(C)
+    !use dp, only : setiopupdate_init
+
+    ! call setiopupdate_init()
+  end subroutine setiopupdate_init_c
 end module dp_iso_c

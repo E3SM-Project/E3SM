@@ -96,6 +96,11 @@ interface
     type(c_ptr) , intent(in) :: iopfile_in
     logical(kind=c_bool) , value, intent(in) :: single_column_in, scm_iop_srf_prop_in, iop_nudge_tq_in, iop_nudge_uv_in, scm_observed_aero_in, iop_dosubsidence_in, scm_multcols_in, dp_crm_in, precip_off_in, scm_zero_non_iop_tracers_in
   end subroutine iop_setopts_f
+  subroutine setiopupdate_init_f() bind(C)
+    use iso_c_binding
+
+    
+  end subroutine setiopupdate_init_f
 end interface
 
 end module dp_iso_f

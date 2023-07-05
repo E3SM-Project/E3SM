@@ -97,6 +97,8 @@ struct Functions
   static void crm_resolved_turb(const Int& nelemd, const uview_1d<element_t>& elem, const hvcoord_t& hvcoord, const hybrid_t& hybrid, const Int& t1, const Int& nelemd_todo, const Int& np_todo);
   static void iop_default_opts(Spack& scmlat_out, Spack& scmlon_out, std::string& iopfile_out, bool& single_column_out, bool& scm_iop_srf_prop_out, bool& iop_nudge_tq_out, bool& iop_nudge_uv_out, Spack& iop_nudge_tq_low_out, Spack& iop_nudge_tq_high_out, Spack& iop_nudge_tscale_out, bool& scm_observed_aero_out, bool& iop_dosubsidence_out, bool& scm_multcols_out, bool& dp_crm_out, Spack& iop_perturb_high_out, bool& precip_off_out, bool& scm_zero_non_iop_tracers_out);
   static void iop_setopts(const Spack& scmlat_in, const Spack& scmlon_in, const std::string& iopfile_in, const bool& single_column_in, const bool& scm_iop_srf_prop_in, const bool& iop_nudge_tq_in, const bool& iop_nudge_uv_in, const Spack& iop_nudge_tq_low_in, const Spack& iop_nudge_tq_high_in, const Spack& iop_nudge_tscale_in, const bool& scm_observed_aero_in, const bool& iop_dosubsidence_in, const bool& scm_multcols_in, const bool& dp_crm_in, const Spack& iop_perturb_high_in, const bool& precip_off_in, const bool& scm_zero_non_iop_tracers_in);
+  KOKKOS_FUNCTION
+  static void setiopupdate_init();
 }; // struct Functions
 
 } // namespace dp
@@ -117,6 +119,7 @@ struct Functions
 # include "impl/dp_crm_resolved_turb_impl.hpp"
 # include "impl/dp_iop_default_opts_impl.hpp"
 # include "impl/dp_iop_setopts_impl.hpp"
+# include "impl/dp_setiopupdate_init_impl.hpp"
 #endif // GPU || !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 
 #endif // DP_FUNCTIONS_HPP
