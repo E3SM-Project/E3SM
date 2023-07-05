@@ -89,6 +89,13 @@ interface
     type(c_ptr) , intent(out) :: iopfile_out
     logical(kind=c_bool) , intent(out) :: single_column_out, scm_iop_srf_prop_out, iop_nudge_tq_out, iop_nudge_uv_out, scm_observed_aero_out, iop_dosubsidence_out, scm_multcols_out, dp_crm_out, precip_off_out, scm_zero_non_iop_tracers_out
   end subroutine iop_default_opts_f
+  subroutine iop_setopts_f(scmlat_in, scmlon_in, iopfile_in, single_column_in, scm_iop_srf_prop_in, iop_nudge_tq_in, iop_nudge_uv_in, iop_nudge_tq_low_in, iop_nudge_tq_high_in, iop_nudge_tscale_in, scm_observed_aero_in, iop_dosubsidence_in, scm_multcols_in, dp_crm_in, iop_perturb_high_in, precip_off_in, scm_zero_non_iop_tracers_in) bind(C)
+    use iso_c_binding
+
+    real(kind=c_real) , value, intent(in) :: scmlat_in, scmlon_in, iop_nudge_tq_low_in, iop_nudge_tq_high_in, iop_nudge_tscale_in, iop_perturb_high_in
+    type(c_ptr) , intent(in) :: iopfile_in
+    logical(kind=c_bool) , value, intent(in) :: single_column_in, scm_iop_srf_prop_in, iop_nudge_tq_in, iop_nudge_uv_in, scm_observed_aero_in, iop_dosubsidence_in, scm_multcols_in, dp_crm_in, precip_off_in, scm_zero_non_iop_tracers_in
+  end subroutine iop_setopts_f
 end interface
 
 end module dp_iso_f

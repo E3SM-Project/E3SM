@@ -62,6 +62,7 @@ struct UnitWrap {
     struct TestIopDomainRelaxation;
     struct TestCrmResolvedTurb;
     struct TestIopDefaultOpts;
+    struct TestIopSetopts;
   };
 
 };
