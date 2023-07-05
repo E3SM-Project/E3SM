@@ -21,6 +21,7 @@ Development is taking place at https://github.com/E3SM-Project/Omega.
 :maxdepth: 2
 
 userGuide/QuickStart
+userGuide/OmegaBuild
 userGuide/DataTypes
 ```
 
@@ -33,6 +34,7 @@ devGuide/DataTypes
 devGuide/CondaEnv
 devGuide/Docs
 devGuide/BuildDocs
+devGuide/CMakeBuild
 ```
 
 ```{toctree}
