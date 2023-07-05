@@ -113,6 +113,11 @@ interface
     logical(kind=c_bool) , value, intent(in) :: iop_update_phase1
     real(kind=c_real) , intent(in), dimension(plev) :: hyam, hybm
   end subroutine readiopdata_f
+  subroutine iop_intht_f() bind(C)
+    use iso_c_binding
+
+    
+  end subroutine iop_intht_f
 end interface
 
 end module dp_iso_f

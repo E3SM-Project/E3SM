@@ -132,4 +132,9 @@ contains
 
     !call readiopdata(plev, iop_update_phase1, hyam, hybm)
   end subroutine readiopdata_c
+  subroutine iop_intht_c() bind(C)
+    !use dp, only : iop_intht
+
+    !call iop_intht()
+  end subroutine iop_intht_c
 end module dp_iso_c

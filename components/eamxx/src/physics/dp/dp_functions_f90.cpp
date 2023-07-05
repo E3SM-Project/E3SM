@@ -38,6 +38,7 @@ void iop_setopts_c(Real scmlat_in, Real scmlon_in, const char** iopfile_in, bool
 void setiopupdate_init_c();
 void setiopupdate_c();
 void readiopdata_c(Int plev, bool iop_update_phase1, Real* hyam, Real* hybm);
+void iop_intht_c();
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -134,6 +135,12 @@ void readiopdata(ReadiopdataData& d)
 {
   dp_init(d.plev, true);
   readiopdata_c(d.plev, d.iop_update_phase1, d.hyam, d.hybm);
+}
+
+void iop_intht(IopInthtData& d)
+{
+  dp_init(d.plev, true);
+  iop_intht_c();
 }
 
 // end _c impls
@@ -283,6 +290,19 @@ void setiopupdate_f()
 void readiopdata_f(Int plev, bool iop_update_phase1, Real* hyam, Real* hybm)
 {
   // TODO
+}
+void iop_intht_f()
+{
+#if 0
+  using PF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename PF::Spack;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    PF::iop_intht();
+  });
+#endif
+
 }
 } // namespace dp
 } // namespace scream

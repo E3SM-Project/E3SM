@@ -66,6 +66,7 @@ struct UnitWrap {
     struct TestSetiopupdateInit;
     struct TestSetiopupdate;
     struct TestReadiopdata;
+    struct TestIopIntht;
   };
 
 };

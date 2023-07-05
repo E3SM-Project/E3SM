@@ -103,6 +103,8 @@ struct Functions
   static void setiopupdate();
   KOKKOS_FUNCTION
   static void readiopdata(const Int& plev, const bool& iop_update_phase1, const uview_1d<const Spack>& hyam, const uview_1d<const Spack>& hybm);
+  KOKKOS_FUNCTION
+  static void iop_intht();
 }; // struct Functions
 
 } // namespace dp
@@ -126,6 +128,7 @@ struct Functions
 # include "impl/dp_setiopupdate_init_impl.hpp"
 # include "impl/dp_setiopupdate_impl.hpp"
 # include "impl/dp_readiopdata_impl.hpp"
+# include "impl/dp_iop_intht_impl.hpp"
 #endif // GPU || !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 
 #endif // DP_FUNCTIONS_HPP
