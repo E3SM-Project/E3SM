@@ -85,4 +85,14 @@ contains
 
     !call iop_domain_relaxation(nelemd, np, nlev, elem, hvcoord, hybrid, t1, dp, nelemd_todo, np_todo, dt)
   end subroutine iop_domain_relaxation_c
+  subroutine crm_resolved_turb_c(nelemd, elem, hvcoord, hybrid, t1, nelemd_todo, np_todo) bind(C)
+    !use dp, only : crm_resolved_turb
+
+    integer(kind=c_int) , value, intent(in) :: nelemd, t1, nelemd_todo, np_todo
+    type(c_ptr) , intent(inout), dimension(nelemd) :: elem
+    type(c_ptr) , intent(in) :: hvcoord
+    type(c_ptr) , intent(in) :: hybrid
+
+    !call crm_resolved_turb(nelemd, elem, hvcoord, hybrid, t1, nelemd_todo, np_todo)
+  end subroutine crm_resolved_turb_c
 end module dp_iso_c

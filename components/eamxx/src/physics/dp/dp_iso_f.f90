@@ -74,6 +74,14 @@ interface
     real(kind=c_real) , intent(inout), dimension(np, np, nlev) :: dp
     real(kind=c_real) , value, intent(in) :: dt
   end subroutine iop_domain_relaxation_f
+  subroutine crm_resolved_turb_f(nelemd, elem, hvcoord, hybrid, t1, nelemd_todo, np_todo) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: nelemd, t1, nelemd_todo, np_todo
+    type(c_ptr) , intent(inout), dimension(nelemd) :: elem
+    type(c_ptr) , intent(in) :: hvcoord
+    type(c_ptr) , intent(in) :: hybrid
+  end subroutine crm_resolved_turb_f
 end interface
 
 end module dp_iso_f

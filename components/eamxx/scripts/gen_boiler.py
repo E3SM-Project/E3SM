@@ -2,7 +2,7 @@ from utils import expect
 from git_utils import get_git_toplevel_dir
 
 from collections import OrderedDict
-import re, os
+import re
 from pathlib import Path
 
 #
@@ -987,18 +987,23 @@ def gen_arg_f90_decl(argtype, intent, dims, names):
     dimension_s = f", dimension({', '.join(dims)})" if dims is not None else ""
     names_s = ", ".join(names)
 
-    if argtype.startswith("type::"):
+    if is_custom_type(argtype):
         return f"type(c_ptr) {intent_s}{dimension_s} :: {names_s}"
     else:
         expect(argtype in C_TYPE_MAP, f"Unrecognized argtype for C_TYPE_MAP: {argtype}")
         c_type = C_TYPE_MAP[argtype]
         return f"{argtype}(kind={c_type}) {value}{intent_s}{dimension_s} :: {names_s}"
 
+###############################################################################
+def is_custom_type(arg_type):
+###############################################################################
+    return arg_type.startswith("type::")
+
 CXX_TYPE_MAP = {"real" : "Real", "integer" : "Int", "logical" : "bool"}
 ###############################################################################
 def get_cxx_scalar_type(arg_type):
 ###############################################################################
-    if arg_type.startswith("type::"):
+    if is_custom_type(arg_type):
         arg_cxx_type = arg_type.split("::")[-1]
     else:
         expect(arg_type in CXX_TYPE_MAP, f"Unrecognized argtype for CXX_TYPE_MAP: {arg_type}")
@@ -1064,7 +1069,7 @@ def get_kokkos_type(arg_datum):
     is_const  = arg_datum[ARG_INTENT] == "in"
     is_view   = arg_datum[ARG_DIMS] is not None
     arg_type  = arg_datum[ARG_TYPE]
-    if arg_type.startswith("type::"):
+    if is_custom_type(arg_type):
         kokkos_type = arg_type.split("::")[-1]
     else:
         kokkos_type = KOKKOS_TYPE_MAP[arg_type]
@@ -1259,7 +1264,7 @@ def gen_struct_members(arg_data):
     return result
 
 ###############################################################################
-def group_data(arg_data, filter_out_intent=None):
+def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=False):
 ###############################################################################
     r"""
     Given data, return ([fst_dims], [snd_dims], [trd_dims], [all-dims], [scalars], {dims->[real_data]}, {dims->[int_data]}, {dims->[bool_data]})
@@ -1309,10 +1314,11 @@ def group_data(arg_data, filter_out_intent=None):
     for name, argtype, intent, dims in arg_data:
         if filter_out_intent is None or intent != filter_out_intent:
             if dims is None:
-                if name not in all_dims:
-                    scalars.append( (name, get_cxx_scalar_type(argtype)))
-                else:
-                    expect(argtype == "integer", f"Expected dimension {name} to be of type integer")
+                if not (is_custom_type(argtype) and filter_scalar_custom_types):
+                    if name not in all_dims:
+                        scalars.append( (name, get_cxx_scalar_type(argtype)))
+                    else:
+                        expect(argtype == "integer", f"Expected dimension {name} to be of type integer")
 
             elif argtype == "integer":
                 int_data.setdefault(dims, []).append(name)
@@ -1337,7 +1343,7 @@ def gen_struct_api(physics, struct_name, arg_data):
     <BLANKLINE>
     PTD_STD_DEF(DataSubName, 8, shcol, nlev, nlevi, ntracers, gag, bab1, bab2, val);
     """
-    _, _, _, all_dims, scalars, real_data, int_data, bool_data = group_data(arg_data)
+    _, _, _, all_dims, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_scalar_custom_types=True)
 
     result = []
     dim_args = [(item, "Int") for item in all_dims if item is not None]
@@ -2033,6 +2039,8 @@ f"""{decl}
         >>> print(gb.gen_cxx_bfb_unit_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA_ALL_SCALAR))
           static void run_bfb()
           {
+            auto engine = setup_random_test();
+        <BLANKLINE>
             FakeSubData f90_data[max_pack_size] = {
               // TODO
             };

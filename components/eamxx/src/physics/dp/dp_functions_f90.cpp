@@ -32,6 +32,7 @@ void iop_setinitial_c(Int nelemd, element_t* elem);
 void iop_broadcast_c();
 void apply_iop_forcing_c(Int nelemd, element_t* elem, hvcoord_t* hvcoord, hybrid_t* hybrid, timelevel_t* tl, Int n, bool t_before_advance, Int nets, Int nete);
 void iop_domain_relaxation_c(Int nelemd, Int np, Int nlev, element_t* elem, hvcoord_t hvcoord, hybrid_t hybrid, Int t1, Real* dp, Int nelemd_todo, Int np_todo, Real dt);
+void crm_resolved_turb_c(Int nelemd, element_t* elem, hvcoord_t hvcoord, hybrid_t hybrid, Int t1, Int nelemd_todo, Int np_todo);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -90,6 +91,12 @@ void iop_domain_relaxation(IopDomainRelaxationData& d)
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
+void crm_resolved_turb(CrmResolvedTurbData& d)
+{
+  dp_init(d.plev, true);
+  crm_resolved_turb_c(d.nelemd, d.elem, d.hvcoord, d.hybrid, d.t1, d.nelemd_todo, d.np_todo);
+}
+
 // end _c impls
 
 //
@@ -130,6 +137,10 @@ void apply_iop_forcing_f(Int nelemd, element_t* elem, hvcoord_t* hvcoord, hybrid
   // TODO
 }
 void iop_domain_relaxation_f(Int nelemd, Int np, Int nlev, element_t* elem, hvcoord_t hvcoord, hybrid_t hybrid, Int t1, Real* dp, Int nelemd_todo, Int np_todo, Real dt)
+{
+  // TODO
+}
+void crm_resolved_turb_f(Int nelemd, element_t* elem, hvcoord_t hvcoord, hybrid_t hybrid, Int t1, Int nelemd_todo, Int np_todo)
 {
   // TODO
 }
