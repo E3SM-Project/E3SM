@@ -33,6 +33,7 @@ void iop_broadcast_c();
 void apply_iop_forcing_c(Int nelemd, element_t* elem, hvcoord_t* hvcoord, hybrid_t* hybrid, timelevel_t* tl, Int n, bool t_before_advance, Int nets, Int nete);
 void iop_domain_relaxation_c(Int nelemd, Int np, Int nlev, element_t* elem, hvcoord_t hvcoord, hybrid_t hybrid, Int t1, Real* dp, Int nelemd_todo, Int np_todo, Real dt);
 void crm_resolved_turb_c(Int nelemd, element_t* elem, hvcoord_t hvcoord, hybrid_t hybrid, Int t1, Int nelemd_todo, Int np_todo);
+void iop_default_opts_c(Real* scmlat_out, Real* scmlon_out, char** iopfile_out, bool* single_column_out, bool* scm_iop_srf_prop_out, bool* iop_nudge_tq_out, bool* iop_nudge_uv_out, Real* iop_nudge_tq_low_out, Real* iop_nudge_tq_high_out, Real* iop_nudge_tscale_out, bool* scm_observed_aero_out, bool* iop_dosubsidence_out, bool* scm_multcols_out, bool* dp_crm_out, Real* iop_perturb_high_out, bool* precip_off_out, bool* scm_zero_non_iop_tracers_out);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -97,6 +98,15 @@ void crm_resolved_turb(CrmResolvedTurbData& d)
   crm_resolved_turb_c(d.nelemd, d.elem, d.hvcoord, d.hybrid, d.t1, d.nelemd_todo, d.np_todo);
 }
 
+void iop_default_opts(IopDefaultOptsData& d)
+{
+  dp_init(d.plev, true);
+  char cbuff[512];
+  char* buffptr = cbuff;
+  iop_default_opts_c(&d.scmlat_out, &d.scmlon_out, &buffptr, &d.single_column_out, &d.scm_iop_srf_prop_out, &d.iop_nudge_tq_out, &d.iop_nudge_uv_out, &d.iop_nudge_tq_low_out, &d.iop_nudge_tq_high_out, &d.iop_nudge_tscale_out, &d.scm_observed_aero_out, &d.iop_dosubsidence_out, &d.scm_multcols_out, &d.dp_crm_out, &d.iop_perturb_high_out, &d.precip_off_out, &d.scm_zero_non_iop_tracers_out);
+  d.iopfile_out = std::string(buffptr);
+}
+
 // end _c impls
 
 //
@@ -143,6 +153,63 @@ void iop_domain_relaxation_f(Int nelemd, Int np, Int nlev, element_t* elem, hvco
 void crm_resolved_turb_f(Int nelemd, element_t* elem, hvcoord_t hvcoord, hybrid_t hybrid, Int t1, Int nelemd_todo, Int np_todo)
 {
   // TODO
+}
+void iop_default_opts_f(Real* scmlat_out, Real* scmlon_out, char** iopfile_out, bool* single_column_out, bool* scm_iop_srf_prop_out, bool* iop_nudge_tq_out, bool* iop_nudge_uv_out, Real* iop_nudge_tq_low_out, Real* iop_nudge_tq_high_out, Real* iop_nudge_tscale_out, bool* scm_observed_aero_out, bool* iop_dosubsidence_out, bool* scm_multcols_out, bool* dp_crm_out, Real* iop_perturb_high_out, bool* precip_off_out, bool* scm_zero_non_iop_tracers_out)
+{
+#if 0
+  using PF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename PF::Spack;
+  using view_1d = typename PF::view_1d<Real>;
+  using bview_1d = typename PF::view_1d<bool>;
+
+  view_1d t_d("t_d", 6);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  bview_1d bt_d("bt_d", 10);
+  const auto bt_h = Kokkos::create_mirror_view(bt_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Spack iop_nudge_tq_high_out_(), iop_nudge_tq_low_out_(), iop_nudge_tscale_out_(), iop_perturb_high_out_(), scmlat_out_(), scmlon_out_();
+    bool dp_crm_out_(), iop_dosubsidence_out_(), iop_nudge_tq_out_(), iop_nudge_uv_out_(), precip_off_out_(), scm_iop_srf_prop_out_(), scm_multcols_out_(), scm_observed_aero_out_(), scm_zero_non_iop_tracers_out_(), single_column_out_();
+    PF::iop_default_opts(scmlat_out_, scmlon_out_, iopfile_out_, single_column_out_, scm_iop_srf_prop_out_, iop_nudge_tq_out_, iop_nudge_uv_out_, iop_nudge_tq_low_out_, iop_nudge_tq_high_out_, iop_nudge_tscale_out_, scm_observed_aero_out_, iop_dosubsidence_out_, scm_multcols_out_, dp_crm_out_, iop_perturb_high_out_, precip_off_out_, scm_zero_non_iop_tracers_out_);
+    t_d(0) = iop_nudge_tq_high_out_[0];
+    t_d(1) = iop_nudge_tq_low_out_[0];
+    t_d(2) = iop_nudge_tscale_out_[0];
+    t_d(3) = iop_perturb_high_out_[0];
+    t_d(4) = scmlat_out_[0];
+    t_d(5) = scmlon_out_[0];
+    bt_d(0) = dp_crm_out_;
+    bt_d(1) = iop_dosubsidence_out_;
+    bt_d(2) = iop_nudge_tq_out_;
+    bt_d(3) = iop_nudge_uv_out_;
+    bt_d(4) = precip_off_out_;
+    bt_d(5) = scm_iop_srf_prop_out_;
+    bt_d(6) = scm_multcols_out_;
+    bt_d(7) = scm_observed_aero_out_;
+    bt_d(8) = scm_zero_non_iop_tracers_out_;
+    bt_d(9) = single_column_out_;
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  Kokkos::deep_copy(bt_h, bt_d);
+  *iop_nudge_tq_high_out = t_h(0);
+  *iop_nudge_tq_low_out = t_h(1);
+  *iop_nudge_tscale_out = t_h(2);
+  *iop_perturb_high_out = t_h(3);
+  *scmlat_out = t_h(4);
+  *scmlon_out = t_h(5);
+  *dp_crm_out = bt_h(0);
+  *iop_dosubsidence_out = bt_h(1);
+  *iop_nudge_tq_out = bt_h(2);
+  *iop_nudge_uv_out = bt_h(3);
+  *precip_off_out = bt_h(4);
+  *scm_iop_srf_prop_out = bt_h(5);
+  *scm_multcols_out = bt_h(6);
+  *scm_observed_aero_out = bt_h(7);
+  *scm_zero_non_iop_tracers_out = bt_h(8);
+  *single_column_out = bt_h(9);
+#endif
+
 }
 } // namespace dp
 } // namespace scream

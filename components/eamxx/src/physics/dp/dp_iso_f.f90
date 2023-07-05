@@ -82,6 +82,13 @@ interface
     type(c_ptr) , intent(in) :: hvcoord
     type(c_ptr) , intent(in) :: hybrid
   end subroutine crm_resolved_turb_f
+  subroutine iop_default_opts_f(scmlat_out, scmlon_out, iopfile_out, single_column_out, scm_iop_srf_prop_out, iop_nudge_tq_out, iop_nudge_uv_out, iop_nudge_tq_low_out, iop_nudge_tq_high_out, iop_nudge_tscale_out, scm_observed_aero_out, iop_dosubsidence_out, scm_multcols_out, dp_crm_out, iop_perturb_high_out, precip_off_out, scm_zero_non_iop_tracers_out) bind(C)
+    use iso_c_binding
+
+    real(kind=c_real) , intent(out) :: scmlat_out, scmlon_out, iop_nudge_tq_low_out, iop_nudge_tq_high_out, iop_nudge_tscale_out, iop_perturb_high_out
+    type(c_ptr) , intent(out) :: iopfile_out
+    logical(kind=c_bool) , intent(out) :: single_column_out, scm_iop_srf_prop_out, iop_nudge_tq_out, iop_nudge_uv_out, scm_observed_aero_out, iop_dosubsidence_out, scm_multcols_out, dp_crm_out, precip_off_out, scm_zero_non_iop_tracers_out
+  end subroutine iop_default_opts_f
 end interface
 
 end module dp_iso_f

@@ -11,6 +11,7 @@ set(DP_TESTS_SRCS
     dp_apply_iop_forcing_tests.cpp
     dp_iop_domain_relaxation_tests.cpp
     dp_crm_resolved_turb_tests.cpp
+    dp_iop_default_opts_tests.cpp
     ) # DP_TESTS_SRCS
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build

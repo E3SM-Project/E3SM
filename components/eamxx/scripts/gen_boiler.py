@@ -741,6 +741,8 @@ def parse_f90_args(line):
     [('x1', 'real', 'in', ('ncol', 'km1', 'ntracers'))]
     >>> parse_f90_args('type(element_t), intent(inout) :: elem(:)')
     [('elem', 'type::element_t', 'inout', (':',))]
+    >>> parse_f90_args('character*(max_path_len), intent(out), optional ::  iopfile_out')
+    [('iopfile_out', 'type::string', 'out', None)]
     """
     expect(line.count("::") == 1, f"Expected line format 'type-info :: names' for: {line}")
     metadata_str, names_str = line.split("::")
@@ -752,6 +754,8 @@ def parse_f90_args(line):
     if argtype == "type":
         expect("(" in argtoken, f"Undefined type for {argtoken}")
         argtype += ("::" + argtoken.split("(")[1].strip().rstrip(")"))
+    elif argtype == "character*":
+        argtype = "type::string"
 
     intent, dims = None, None
     for metadatum in metadata:
@@ -1158,6 +1162,8 @@ def split_by_type(arg_data):
             ints.append(name)
         elif argtype == "logical":
             logicals.append(name)
+        elif is_custom_type(argtype):
+            pass
         else:
             expect(False, f"Unhandled argtype: {argtype}")
 
