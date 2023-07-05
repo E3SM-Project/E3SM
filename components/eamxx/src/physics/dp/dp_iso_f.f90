@@ -106,6 +106,13 @@ interface
 
     
   end subroutine setiopupdate_f
+  subroutine readiopdata_f(plev, iop_update_phase1, hyam, hybm) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int) , value, intent(in) :: plev
+    logical(kind=c_bool) , value, intent(in) :: iop_update_phase1
+    real(kind=c_real) , intent(in), dimension(plev) :: hyam, hybm
+  end subroutine readiopdata_f
 end interface
 
 end module dp_iso_f

@@ -123,4 +123,13 @@ contains
 
     !call setiopupdate()
   end subroutine setiopupdate_c
+  subroutine readiopdata_c(plev, iop_update_phase1, hyam, hybm) bind(C)
+    !use dp, only : readiopdata
+
+    integer(kind=c_int) , value, intent(in) :: plev
+    logical(kind=c_bool) , value, intent(in) :: iop_update_phase1
+    real(kind=c_real) , intent(in), dimension(plev) :: hyam, hybm
+
+    !call readiopdata(plev, iop_update_phase1, hyam, hybm)
+  end subroutine readiopdata_c
 end module dp_iso_c

@@ -172,6 +172,18 @@ struct SetiopupdateData {
   void randomize(std::mt19937_64& engine) {}
 };
 
+struct ReadiopdataData : public PhysicsTestData {
+  // Inputs
+  Int plev;
+  bool iop_update_phase1;
+  Real *hyam, *hybm;
+  
+  ReadiopdataData(Int plev_, bool iop_update_phase1_) :
+    PhysicsTestData({{ plev_ }}, {{ &hyam, &hybm }}), plev(plev_), iop_update_phase1(iop_update_phase1_) {}
+  
+  PTD_STD_DEF(ReadiopdataData, 2, plev, iop_update_phase1);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 
 void advance_iop_forcing(AdvanceIopForcingData& d);
@@ -186,6 +198,7 @@ void iop_default_opts(IopDefaultOptsData& d);
 void iop_setopts(IopSetoptsData& d);
 void setiopupdate_init(SetiopupdateInitData& d);
 void setiopupdate(SetiopupdateData& d);
+void readiopdata(ReadiopdataData& d);
 extern "C" { // _f function decls
 
 void advance_iop_forcing_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* t_phys_frc, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
@@ -200,6 +213,7 @@ void iop_default_opts_f(Real* scmlat_out, Real* scmlon_out, char** iopfile_out, 
 void iop_setopts_f(Real scmlat_in, Real scmlon_in, const char** iopfile_in, bool single_column_in, bool scm_iop_srf_prop_in, bool iop_nudge_tq_in, bool iop_nudge_uv_in, Real iop_nudge_tq_low_in, Real iop_nudge_tq_high_in, Real iop_nudge_tscale_in, bool scm_observed_aero_in, bool iop_dosubsidence_in, bool scm_multcols_in, bool dp_crm_in, Real iop_perturb_high_in, bool precip_off_in, bool scm_zero_non_iop_tracers_in);
 void setiopupdate_init_f();
 void setiopupdate_f();
+void readiopdata_f(Int plev, bool iop_update_phase1, Real* hyam, Real* hybm);
 } // end _f function decls
 
 }  // namespace dp

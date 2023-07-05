@@ -37,6 +37,7 @@ void iop_default_opts_c(Real* scmlat_out, Real* scmlon_out, char** iopfile_out, 
 void iop_setopts_c(Real scmlat_in, Real scmlon_in, const char** iopfile_in, bool single_column_in, bool scm_iop_srf_prop_in, bool iop_nudge_tq_in, bool iop_nudge_uv_in, Real iop_nudge_tq_low_in, Real iop_nudge_tq_high_in, Real iop_nudge_tscale_in, bool scm_observed_aero_in, bool iop_dosubsidence_in, bool scm_multcols_in, bool dp_crm_in, Real iop_perturb_high_in, bool precip_off_in, bool scm_zero_non_iop_tracers_in);
 void setiopupdate_init_c();
 void setiopupdate_c();
+void readiopdata_c(Int plev, bool iop_update_phase1, Real* hyam, Real* hybm);
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -127,6 +128,12 @@ void setiopupdate(SetiopupdateData& d)
 {
   dp_init(d.plev, true);
   setiopupdate_c();
+}
+
+void readiopdata(ReadiopdataData& d)
+{
+  dp_init(d.plev, true);
+  readiopdata_c(d.plev, d.iop_update_phase1, d.hyam, d.hybm);
 }
 
 // end _c impls
@@ -272,6 +279,10 @@ void setiopupdate_f()
   });
 #endif
 
+}
+void readiopdata_f(Int plev, bool iop_update_phase1, Real* hyam, Real* hybm)
+{
+  // TODO
 }
 } // namespace dp
 } // namespace scream
