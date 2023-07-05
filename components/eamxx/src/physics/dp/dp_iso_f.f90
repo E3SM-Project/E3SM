@@ -101,6 +101,11 @@ interface
 
     
   end subroutine setiopupdate_init_f
+  subroutine setiopupdate_f() bind(C)
+    use iso_c_binding
+
+    
+  end subroutine setiopupdate_f
 end interface
 
 end module dp_iso_f

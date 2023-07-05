@@ -64,6 +64,7 @@ struct UnitWrap {
     struct TestIopDefaultOpts;
     struct TestIopSetopts;
     struct TestSetiopupdateInit;
+    struct TestSetiopupdate;
   };
 
 };

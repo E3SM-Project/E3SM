@@ -14,6 +14,7 @@ set(DP_TESTS_SRCS
     dp_iop_default_opts_tests.cpp
     dp_iop_setopts_tests.cpp
     dp_setiopupdate_init_tests.cpp
+    dp_setiopupdate_tests.cpp
     ) # DP_TESTS_SRCS
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build

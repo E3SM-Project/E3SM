@@ -118,4 +118,9 @@ contains
 
     ! call setiopupdate_init()
   end subroutine setiopupdate_init_c
+  subroutine setiopupdate_c() bind(C)
+    !use dp, only : setiopupdate
+
+    !call setiopupdate()
+  end subroutine setiopupdate_c
 end module dp_iso_c

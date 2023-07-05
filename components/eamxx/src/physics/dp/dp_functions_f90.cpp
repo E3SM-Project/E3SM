@@ -36,6 +36,7 @@ void crm_resolved_turb_c(Int nelemd, element_t* elem, hvcoord_t hvcoord, hybrid_
 void iop_default_opts_c(Real* scmlat_out, Real* scmlon_out, char** iopfile_out, bool* single_column_out, bool* scm_iop_srf_prop_out, bool* iop_nudge_tq_out, bool* iop_nudge_uv_out, Real* iop_nudge_tq_low_out, Real* iop_nudge_tq_high_out, Real* iop_nudge_tscale_out, bool* scm_observed_aero_out, bool* iop_dosubsidence_out, bool* scm_multcols_out, bool* dp_crm_out, Real* iop_perturb_high_out, bool* precip_off_out, bool* scm_zero_non_iop_tracers_out);
 void iop_setopts_c(Real scmlat_in, Real scmlon_in, const char** iopfile_in, bool single_column_in, bool scm_iop_srf_prop_in, bool iop_nudge_tq_in, bool iop_nudge_uv_in, Real iop_nudge_tq_low_in, Real iop_nudge_tq_high_in, Real iop_nudge_tscale_in, bool scm_observed_aero_in, bool iop_dosubsidence_in, bool scm_multcols_in, bool dp_crm_in, Real iop_perturb_high_in, bool precip_off_in, bool scm_zero_non_iop_tracers_in);
 void setiopupdate_init_c();
+void setiopupdate_c();
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -120,6 +121,12 @@ void setiopupdate_init(SetiopupdateInitData& d)
 {
   dp_init(d.plev, true);
   setiopupdate_init_c();
+}
+
+void setiopupdate(SetiopupdateData& d)
+{
+  dp_init(d.plev, true);
+  setiopupdate_c();
 }
 
 // end _c impls
@@ -249,6 +256,19 @@ void setiopupdate_init_f()
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
     PF::setiopupdate_init();
+  });
+#endif
+
+}
+void setiopupdate_f()
+{
+#if 0
+  using PF = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename PF::Spack;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    PF::setiopupdate();
   });
 #endif
 

@@ -99,6 +99,8 @@ struct Functions
   static void iop_setopts(const Spack& scmlat_in, const Spack& scmlon_in, const std::string& iopfile_in, const bool& single_column_in, const bool& scm_iop_srf_prop_in, const bool& iop_nudge_tq_in, const bool& iop_nudge_uv_in, const Spack& iop_nudge_tq_low_in, const Spack& iop_nudge_tq_high_in, const Spack& iop_nudge_tscale_in, const bool& scm_observed_aero_in, const bool& iop_dosubsidence_in, const bool& scm_multcols_in, const bool& dp_crm_in, const Spack& iop_perturb_high_in, const bool& precip_off_in, const bool& scm_zero_non_iop_tracers_in);
   KOKKOS_FUNCTION
   static void setiopupdate_init();
+  KOKKOS_FUNCTION
+  static void setiopupdate();
 }; // struct Functions
 
 } // namespace dp
@@ -120,6 +122,7 @@ struct Functions
 # include "impl/dp_iop_default_opts_impl.hpp"
 # include "impl/dp_iop_setopts_impl.hpp"
 # include "impl/dp_setiopupdate_init_impl.hpp"
+# include "impl/dp_setiopupdate_impl.hpp"
 #endif // GPU || !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 
 #endif // DP_FUNCTIONS_HPP
