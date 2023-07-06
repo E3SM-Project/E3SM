@@ -1995,7 +1995,7 @@ loop:    do i = icldphy+1, pcnst
           end do ! l
 
           !BSINGH - Printout ipoa, isoa and ibc values
-          write( *,*)'2D pointers for nso4, nsoa, npoa and nbc(mode:',m,'): [nso4=',nso4,' nsoa=',nsoa,' npoa=',npoa,' nbc=',nbc,'] [iso4=',iso4,' isoa=',isoa,' ipoa=',ipoa,' ibc=',ibc,']'
+          !write( *,*)'2D pointers for nso4, nsoa, npoa and nbc(mode:',m,'): [nso4=',nso4,' nsoa=',nsoa,' npoa=',npoa,' nbc=',nbc,'] [iso4=',iso4,' isoa=',isoa,' ipoa=',ipoa,' ibc=',ibc,']'
 
       end do !m
 

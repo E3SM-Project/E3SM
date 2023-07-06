@@ -648,25 +648,25 @@ contains
                          do tag_loop = 1, nbc
                                  if (trim(solsym(m)) == 'bc'//tagged_suffix(tag_loop)//'_a1' .or. trim(solsym(m)) == 'bc'//tagged_suffix(tag_loop)//'_a3' .or. trim(solsym(m)) == 'bc'//tagged_suffix(tag_loop)//'_a4') then
                                           !write(iulog,*)'hybrown, mo_chm_diags, m=1,gas_cnst, m = ',m,' solsym(m) = ',trim(solsym(m))
-                                         mass_bc(:ncol,:,nbc) = mass_bc(:ncol,:,nbc) + mmr(:ncol,:,m)
+                                         mass_bc(:ncol,:,tag_loop) = mass_bc(:ncol,:,tag_loop) + mmr(:ncol,:,m)
                                  endif
                          enddo
                         
                          do tag_loop = 1, npoa
                                  if (trim(solsym(m)) == 'pom'//tagged_suffix(tag_loop)//'_a1' .or. trim(solsym(m)) == 'pom'//tagged_suffix(tag_loop)//'_a3' .or. trim(solsym(m)) == 'pom'//tagged_suffix(tag_loop)//'_a4') then
-                                         mass_pom(:ncol,:,npoa) = mass_pom(:ncol,:,npoa) + mmr(:ncol,:,m)
+                                         mass_pom(:ncol,:,tag_loop) = mass_pom(:ncol,:,tag_loop) + mmr(:ncol,:,m)
                                  endif
                          enddo
                         
                          do tag_loop = 1, nso4
                                  if (trim(solsym(m)) == 'so4'//tagged_suffix(tag_loop)//'_a1' .or. trim(solsym(m)) == 'so4'//tagged_suffix(tag_loop)//'_a2' .or. trim(solsym(m)) == 'so4'//tagged_suffix(tag_loop)//'_a3') then
-                                         mass_so4(:ncol,:,nso4) = mass_so4(:ncol,:,nso4) + mmr(:ncol,:,m)
+                                         mass_so4(:ncol,:,tag_loop) = mass_so4(:ncol,:,tag_loop) + mmr(:ncol,:,m)
                                  endif
                          enddo
                         
                          do tag_loop = 1, nsoa
                                  if (trim(solsym(m)) == 'soa'//tagged_suffix(tag_loop)//'_a1' .or. trim(solsym(m)) == 'soa'//tagged_suffix(tag_loop)//'_a2' .or. trim(solsym(m)) == 'soa'//tagged_suffix(tag_loop)//'_a3') then
-                                         mass_soa(:ncol,:,nsoa) = mass_soa(:ncol,:,nsoa) + mmr(:ncol,:,m)
+                                         mass_soa(:ncol,:,tag_loop) = mass_soa(:ncol,:,tag_loop) + mmr(:ncol,:,m)
                                  endif
                          enddo
 !--hybrown
@@ -728,28 +728,28 @@ contains
                          do tag_loop = 1, nbc
                                  if (trim(cnst_name_cw(n)) == 'bc'//tagged_suffix(tag_loop)//'_c1' .or. trim(cnst_name_cw(n)) == 'bc'//tagged_suffix(tag_loop)//'_c3' .or. trim(cnst_name_cw(n)) == 'bc'//tagged_suffix(tag_loop)//'_c4') then
                                          !write(iulog,*)'hybrown, mo_chm_diags, cnst_name_cw(n) = ',trim(cnst_name_cw(n)),' cnst_name_cw(m) (what mmr is but shoudlnt be?) = ',trim(cnst_name_cw(m))
-                                         mass_bc(:ncol,:,nbc) = mass_bc(:ncol,:,nbc) + fldcw(:ncol,:)
+                                         mass_bc(:ncol,:,tag_loop) = mass_bc(:ncol,:,tag_loop) + fldcw(:ncol,:)
                                  endif
                          enddo
                         
                          do tag_loop = 1, npoa
                                  if (trim(cnst_name_cw(n)) == 'pom'//tagged_suffix(tag_loop)//'_c1' .or. trim(cnst_name_cw(n)) == 'pom'//tagged_suffix(tag_loop)//'_c3' .or. trim(cnst_name_cw(n)) == 'pom'//tagged_suffix(tag_loop)//'_c4') then
                                          !write(iulog,*)'hybrown, mo_chm_diags, cnst_name_cw(n) = ',trim(cnst_name_cw(n)),' cnst_name_cw(m) (what mmr is but shoudlnt be?) = ',trim(cnst_name_cw(m))
-                                         mass_pom(:ncol,:,npoa) = mass_pom(:ncol,:,npoa) + fldcw(:ncol,:)
+                                         mass_pom(:ncol,:,tag_loop) = mass_pom(:ncol,:,tag_loop) + fldcw(:ncol,:)
                                  endif
                          enddo
                         
                          do tag_loop = 1, nso4
                                  if (trim(cnst_name_cw(n)) == 'so4'//tagged_suffix(tag_loop)//'_c1' .or. trim(cnst_name_cw(n)) == 'so4'//tagged_suffix(tag_loop)//'_c2' .or. trim(cnst_name_cw(n)) == 'so4'//tagged_suffix(tag_loop)//'_c3') then
                                          !write(iulog,*)'hybrown, mo_chm_diags, cnst_name_cw(n) = ',trim(cnst_name_cw(n)),' cnst_name_cw(m) (what mmr is but shoudlnt be?) = ',trim(cnst_name_cw(m))
-                                         mass_so4(:ncol,:,nso4) = mass_so4(:ncol,:,nso4) + fldcw(:ncol,:)
+                                         mass_so4(:ncol,:,tag_loop) = mass_so4(:ncol,:,tag_loop) + fldcw(:ncol,:)
                                  endif
                          enddo
                         
                          do tag_loop = 1, nsoa
                                  if (trim(cnst_name_cw(n)) == 'soa'//tagged_suffix(tag_loop)//'_c1' .or. trim(cnst_name_cw(n)) == 'soa'//tagged_suffix(tag_loop)//'_c2' .or. trim(cnst_name_cw(n)) =='soa'//tagged_suffix(tag_loop)//'_c3') then
                                          !write(iulog,*)'hybrown, mo_chm_diags, cnst_name_cw(n) = ',trim(cnst_name_cw(n)),' cnst_name_cw(m) (what mmr is but shoudlnt be?) = ',trim(cnst_name_cw(m))
-                                         mass_soa(:ncol,:,nsoa) = mass_soa(:ncol,:,nsoa) + fldcw(:ncol,:)
+                                         mass_soa(:ncol,:,tag_loop) = mass_soa(:ncol,:,tag_loop) + fldcw(:ncol,:)
                                  endif
                          enddo
 !--hybrown
@@ -767,7 +767,7 @@ contains
 
     if (nbc>1) then
        do tag_loop = 1, nbc
-              call outfld( 'Mass_bc'//tagged_suffix(tag_loop), mass_bc(:ncol,:,nbc),ncol,lchnk )
+              call outfld( 'Mass_bc'//tagged_suffix(tag_loop), mass_bc(:ncol,:,tag_loop),ncol,lchnk )
        end do
     else
        call outfld( 'Mass_bc', mass_bc(:ncol,:,:),ncol,lchnk)
@@ -775,7 +775,7 @@ contains
         
     if (npoa>1) then
        do tag_loop = 1, npoa
-              call outfld( 'Mass_pom'//tagged_suffix(tag_loop), mass_pom(:ncol,:,npoa),ncol,lchnk )
+              call outfld( 'Mass_pom'//tagged_suffix(tag_loop), mass_pom(:ncol,:,tag_loop),ncol,lchnk )
        end do
     else
        call outfld( 'Mass_pom', mass_pom(:ncol,:,:),ncol,lchnk)
@@ -783,7 +783,7 @@ contains
         
     if (nso4>1) then
        do tag_loop = 1, nso4
-              call outfld( 'Mass_so4'//tagged_suffix(tag_loop), mass_so4(:ncol,:,nso4),ncol,lchnk )
+              call outfld( 'Mass_so4'//tagged_suffix(tag_loop), mass_so4(:ncol,:,tag_loop),ncol,lchnk )
        end do
     else
        call outfld( 'Mass_so4', mass_so4(:ncol,:,:),ncol,lchnk)
@@ -791,7 +791,7 @@ contains
         
     if (nsoa>1) then
        do tag_loop = 1, nsoa
-              call outfld( 'Mass_soa'//tagged_suffix(tag_loop), mass_soa(:ncol,:,nsoa),ncol,lchnk )
+              call outfld( 'Mass_soa'//tagged_suffix(tag_loop), mass_soa(:ncol,:,tag_loop),ncol,lchnk )
        end do
     else
        call outfld( 'Mass_soa', mass_soa(:ncol,:,:),ncol,lchnk)
