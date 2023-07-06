@@ -73,6 +73,7 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   // Set of fields used strictly as output
   add_field<Computed>("isccp_cldtot", scalar2d_layout, nondim, grid_name);
   add_field<Computed>("isccp_ctptau", scalar4d_layout_ctptau, nondim, grid_name, 1);
+  add_field<Computed>("isccp_mask"  , scalar2d_layout, nondim, grid_name);
 }
 
 // =========================================================================================
@@ -129,18 +130,32 @@ void Cosp::run_impl (const double dt)
   auto cldfrac_tot_for_analysis = get_field_in("cldfrac_tot_for_analysis").get_view<const Real**, Host>();
   auto isccp_cldtot = get_field_out("isccp_cldtot").get_view<Real*, Host>();
   auto isccp_ctptau = get_field_out("isccp_ctptau").get_view<Real***, Host>();
-
+  auto isccp_mask   = get_field_out("isccp_mask"  ).get_view<Real*, Host>();  // Copy of sunlit flag with COSP frequency for proper averaging
 
   // Call COSP wrapper routines
   if (update_cosp) {
     Real emsfc_lw = 0.99;
+    Kokkos::deep_copy(isccp_mask, sunlit);
     CospFunc::main(
             m_num_cols, m_num_subcols, m_num_levs, m_num_isccptau, m_num_isccpctp,
             emsfc_lw, sunlit, skt, T_mid, p_mid, p_int, qv,
             cldfrac, reff_qc, reff_qi, dtau067, dtau105,
             isccp_cldtot, isccp_ctptau
     );
-  }
+  } else {
+    // If not updating COSP statistics, set these to ZERO; this essentially weights
+    // the ISCCP cloud properties by the sunlit mask. What will be output for time-averages
+    // then is the time-average mask-weighted statistics; to get true averages, we need to
+    // divide by the time-average of the mask. I.e., if M is the sunlit mask, and X is the ISCCP
+    // statistic, then
+    //
+    //     avg(X) = sum(M * X) / sum(M) = (sum(M * X)/N) / (sum(M)/N) = avg(M * X) / avg(M)
+    //
+    // TODO: mask this when/if the AD ever supports masked averages
+    Kokkos::deep_copy(isccp_cldtot, 0.0);
+    Kokkos::deep_copy(isccp_ctptau, 0.0);
+    Kokkos::deep_copy(isccp_mask  , 0.0);
+ }
 
 }
 
