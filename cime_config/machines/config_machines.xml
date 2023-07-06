@@ -884,6 +884,7 @@
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
       <env name="NTASKS_PER_GPU"> </env>
       <env name="GPU_BIND_ARGS"> </env>
+      <env name="FI_CXI_RX_MATCH_MODE">software</env>
     </environment_variables>
     <environment_variables compiler="amdclang">
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LIBSCI_DIR}/amd/4.0/x86_64/lib:$ENV{LD_LIBRARY_PATH}</env>
