@@ -23,7 +23,7 @@ struct UnitWrap::UnitTest<D>::TestIopDefaultOpts {
       // TODO
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(IopDefaultOptsData);
+    static constexpr Int num_runs = 0; //sizeof(f90_data) / sizeof(IopDefaultOptsData);
 
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
