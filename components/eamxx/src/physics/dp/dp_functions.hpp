@@ -129,6 +129,6 @@ struct Functions
 # include "impl/dp_setiopupdate_impl.hpp"
 # include "impl/dp_readiopdata_impl.hpp"
 # include "impl/dp_iop_intht_impl.hpp"
-#endif // GPU || !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
+#endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 
 #endif // DP_FUNCTIONS_HPP
