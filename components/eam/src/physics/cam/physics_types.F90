@@ -1764,6 +1764,7 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   allocate(state%shf_diff(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%shf_diff')
 
+  !alloc indep of diagnostics flag co2_transport()
   allocate(state%tc_curr(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tc_curr')
 

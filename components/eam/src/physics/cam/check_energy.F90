@@ -35,7 +35,7 @@ module check_energy
   use physics_types,   only: physics_state, physics_tend, physics_ptend, physics_ptend_init
   use constituents,    only: cnst_get_ind, pcnst, cnst_name, cnst_get_type_byind, &
                              icldliq, icldice, irain, isnow
-  use time_manager,    only: is_first_step
+  use time_manager,    only: is_first_step, is_first_restart_step
   use cam_logfile,     only: iulog
   use cam_abortutils,  only: endrun 
   use phys_control,    only: ieflx_opt
@@ -94,6 +94,8 @@ module check_energy
      integer :: count(pcnst)               ! count of values with significant imbalances
   end type check_tracers_data
 
+  integer, public ::  nstep_ignore_diagn1 = -10
+  integer, public ::  nstep_ignore_diagn2 = -10
 
 !===============================================================================
 contains
@@ -484,7 +486,11 @@ end subroutine check_energy_get_integrals
 
     real(r8) :: dflux, dstep
     real(r8) :: delta_te_glob, rr_glob, cflxdiff, shfdiff
+    logical  :: print_ext_diagn
 !-----------------------------------------------------------------------
+
+    print_ext_diagn = .true.
+    if (nstep == nstep_ignore_diagn1 .or. nstep == nstep_ignore_diagn2) print_ext_diagn = .false.
 
     ! Copy total energy out of input and output states
 #ifdef CPRCRAY
@@ -543,6 +549,7 @@ end subroutine check_energy_get_integrals
           ! integrated state%te_cur is J/m2
           write(iulog,'(1x,a9,1x,i8,4(1x,e25.17))') "nstep, te", nstep, teinp_glob, teout_glob, heat_glob, psurf_glob
 
+          if (print_ext_diagn) then
           ! integrated state%tw_cur is kg/m2
           ! integrated dflux, dstep are kg/m2
           ! integrated cflx is kg/m2/sec
@@ -557,6 +564,7 @@ end subroutine check_energy_get_integrals
           write(iulog,'(1x,a24,1x,i8,2(1x,e25.17))') "n, E d(TE)/dt, RR [W/m2]", nstep-1, delta_te_glob/dtime, rr_glob
           write(iulog,'(1x,a22,1x,i8,1(1x,e25.17))') "n, E difference [W/m2]",   nstep-1, delta_te_glob/dtime-rr_glob
           write(iulog,'(1x,a20,1x,i8,2(1x,e25.17))') "n, E shf loss [W/m2]",     nstep-1, shfdiff
+          endif
 
        end if
     else
@@ -564,6 +572,12 @@ end subroutine check_energy_get_integrals
     end if  !  (begchunk .le. endchunk)
     
   end subroutine check_energy_gmean
+
+
+
+
+
+
 
 !===============================================================================
 

@@ -49,6 +49,8 @@ module physpkg
   use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
                                     modal_aero_wateruptake_reg
 
+  use check_energy,    only: nstep_ignore_diagn1, nstep_ignore_diagn2
+
   implicit none
   private
 
@@ -72,6 +74,10 @@ module physpkg
   integer ::  snow_dp_idx        = 0
   integer ::  prec_sh_idx        = 0
   integer ::  snow_sh_idx        = 0
+
+!  integer ::  nstep_ignore_diagn1 = -10
+!  integer ::  nstep_ignore_diagn2 = -10
+
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
 
   save
@@ -683,7 +689,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     use physics_buffer,     only: physics_buffer_desc, pbuf_initialize, pbuf_get_index
     use physics_buffer,     only: pbuf_get_chunk
-    use time_manager,       only: is_first_step
+    use time_manager,       only: get_nstep, is_first_step, is_first_restart_step
     use physconst,          only: rair, cpair, gravit, stebol, tmelt, &
                                   latvap, latice, rh2o, rhoh2o, pstd, zvir, &
                                   karman, rhodair, physconst_init 
@@ -974,6 +980,17 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     
    !BSINGH -  addfld and adddefault calls for perturb growth testing    
     if(pergro_test_active)call add_fld_default_calls()
+
+    if(is_first_step().or.is_first_restart_step())then
+      nstep_ignore_diagn1 = get_nstep()
+      nstep_ignore_diagn2 = nstep_ignore_diagn1 + 1
+
+if(masterproc) then
+print *, 'HEY my steps are', nstep_ignore_diagn1, nstep_ignore_diagn2
+endif
+
+    endif
+
 
 end subroutine phys_init
 
