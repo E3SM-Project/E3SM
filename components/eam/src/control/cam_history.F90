@@ -260,7 +260,7 @@ module cam_history
   !        logic in the routine that optimizes character strings of length 8.
   !
 
-  integer, parameter :: gen_hash_key_offset = z'000053db'
+  integer, parameter :: gen_hash_key_offset = int(z'000053db')
 
   integer, parameter :: tbl_max_idx = 15  ! 2**N - 1
   integer, dimension(0:tbl_max_idx) :: tbl_gen_hash_key = &
