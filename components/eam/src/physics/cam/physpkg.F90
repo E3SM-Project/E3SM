@@ -49,7 +49,8 @@ module physpkg
   use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
                                     modal_aero_wateruptake_reg
 
-  use check_energy,    only: nstep_ignore_diagn1, nstep_ignore_diagn2
+  use check_energy,    only: nstep_ignore_diagn1, nstep_ignore_diagn2, &
+                             check_energy_gmean, check_energy_gmean_additional_diagn
 
   implicit none
   private
@@ -1007,7 +1008,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out, phy
     !-----------------------------------------------------------------------
     use time_manager,   only: get_nstep
     use cam_diagnostics,only: diag_allocate, diag_physvar_ic
-    use check_energy,   only: check_energy_gmean
 
     use physics_buffer,         only: physics_buffer_desc, pbuf_get_chunk, pbuf_allocate
 #if (defined E3SM_SCM_REPLAY )
@@ -1052,8 +1052,13 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out, phy
     real(r8)    :: chunk_cost                    ! measured cost per chunk
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
 
+    logical     :: print_additional_diagn
+
     call t_startf ('physpkg_st1')
     nstep = get_nstep()
+
+    print_additional_diagn=.true.
+    if(nstep == nstep_ignore_diagn1 .or. nstep == nstep_ignore_diagn2) print_additional_diagn = .false.
 
 #if ( defined OFFLINE_DYN )
     !
@@ -1153,7 +1158,14 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out, phy
 #ifdef TRACER_CHECK
        call gmean_mass ('between DRY', phys_state)
 #endif
-    end if
+
+       if( print_additional_diagn ) then
+       call t_startf ('chk_en_gmean_additional')
+       call check_energy_gmean_additional_diagn(phys_state, pbuf2d, ztodt, nstep)
+       call t_stopf ('chk_en_gmean_additional')
+       endif
+
+    end if !not adiabatic or ideal
 
 end subroutine phys_run1
 

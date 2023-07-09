@@ -55,6 +55,7 @@ module check_energy
   public :: check_energy_timestep_init  ! timestep initialization of energy integrals and cumulative boundary fluxes
   public :: check_energy_chng      ! check changes in integrals against cumulative boundary fluxes
   public :: check_energy_gmean     ! global means of physics input and output total energy
+  public :: check_energy_gmean_additional_diagn  ! global means for energy/mass diagn
   public :: check_energy_fix       ! add global mean energy difference as a heating
   public :: check_tracers_init      ! initialize tracer integrals and cumulative boundary fluxes
   public :: check_tracers_chng      ! check changes in integrals against cumulative boundary fluxes
@@ -479,18 +480,15 @@ end subroutine check_energy_get_integrals
     integer :: ncol                      ! number of active columns
     integer :: lchnk                     ! chunk index
 
-    real(r8) :: te(pcols,begchunk:endchunk,9)   
+    real(r8) :: te(pcols,begchunk:endchunk,3)   
                                          ! total energy of input/output states (copy)
-    real(r8) :: te_glob(9)               ! global means of total energy
+    real(r8) :: te_glob(3)               ! global means of total energy
     real(r8), pointer :: teout(:)
 
     real(r8) :: dflux, dstep
     real(r8) :: delta_te_glob, rr_glob, cflxdiff, shfdiff
     logical  :: print_ext_diagn
 !-----------------------------------------------------------------------
-
-    print_ext_diagn = .true.
-    if (nstep == nstep_ignore_diagn1 .or. nstep == nstep_ignore_diagn2) print_ext_diagn = .false.
 
     ! Copy total energy out of input and output states
 #ifdef CPRCRAY
@@ -506,37 +504,16 @@ end subroutine check_energy_get_integrals
        te(:ncol,lchnk,2) = teout(1:ncol)
        ! surface pressure for heating rate
        te(:ncol,lchnk,3) = state(lchnk)%pint(:ncol,pver+1)
-
-       !water changes
-       te(:ncol,lchnk,4) = state(lchnk)%deltaw_flux(:ncol)
-       te(:ncol,lchnk,5) = state(lchnk)%deltaw_step(:ncol)
-
-       !energy change versus restom-ressurf
-       te(:ncol,lchnk,6) = state(lchnk)%delta_te(:ncol)
-       te(:ncol,lchnk,7) = state(lchnk)%rr(:ncol)
-
-       !qneg4 diagnostics values
-       te(:ncol,lchnk,8) = state(lchnk)%cflx_diff(:ncol)
-       te(:ncol,lchnk,9) = state(lchnk)%shf_diff(:ncol)
-
     end do
 
     ! Compute global means of input and output energies and of
     ! surface pressure for heating rate (assume uniform ptop)
-    call gmean(te, te_glob, 9)
+    call gmean(te, te_glob, 3)
 
     if (begchunk .le. endchunk) then
        teinp_glob = te_glob(1)
        teout_glob = te_glob(2)
        psurf_glob = te_glob(3)
-
-       dflux = te_glob(4)
-       dstep = te_glob(5)
-
-       delta_te_glob = te_glob(6)
-       rr_glob       = te_glob(7)
-       cflxdiff      = te_glob(8)
-       shfdiff       = te_glob(9)
 
        ptopb_glob = state(begchunk)%pint(1,1)
 
@@ -548,8 +525,84 @@ end subroutine check_energy_get_integrals
           ! this diagnostics is current
           ! integrated state%te_cur is J/m2
           write(iulog,'(1x,a9,1x,i8,4(1x,e25.17))') "nstep, te", nstep, teinp_glob, teout_glob, heat_glob, psurf_glob
+       end if
+    else
+       heat_glob = 0._r8
+    end if  !  (begchunk .le. endchunk)
+    
+  end subroutine check_energy_gmean
 
-          if (print_ext_diagn) then
+
+
+!===============================================================================
+  subroutine check_energy_gmean_additional_diagn(state, pbuf2d, dtime, nstep)
+
+    use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_get_chunk
+
+!-----------------------------------------------------------------------
+! Compute global mean total energy of physics input and output states
+!-----------------------------------------------------------------------
+!------------------------------Arguments--------------------------------
+
+    type(physics_state), intent(in   ), dimension(begchunk:endchunk) :: state
+    type(physics_buffer_desc),    pointer    :: pbuf2d(:,:)
+
+    real(r8), intent(in) :: dtime        ! physics time step
+    integer , intent(in) :: nstep        ! current timestep number
+
+!---------------------------Local storage-------------------------------
+    integer :: ncol                      ! number of active columns
+    integer :: lchnk                     ! chunk index
+
+    real(r8) :: te(pcols,begchunk:endchunk,6)
+                                         ! total energy of input/output states (copy)
+    real(r8) :: te_glob(6)               ! global means of total energy
+    real(r8), pointer :: teout(:)
+
+    real(r8) :: dflux, dstep
+    real(r8) :: delta_te_glob, rr_glob, cflxdiff, shfdiff
+!    logical  :: print_ext_diagn
+!-----------------------------------------------------------------------
+
+!    print_ext_diagn = .true.
+!    if (nstep == nstep_ignore_diagn1 .or. nstep == nstep_ignore_diagn2) print_ext_diagn = .false.
+
+    ! Copy total energy out of input and output states
+#ifdef CPRCRAY
+!DIR$ CONCURRENT
+#endif
+    do lchnk = begchunk, endchunk
+       ncol = state(lchnk)%ncol
+
+       !water changes
+       te(:ncol,lchnk,1) = state(lchnk)%deltaw_flux(:ncol)
+       te(:ncol,lchnk,2) = state(lchnk)%deltaw_step(:ncol)
+
+       !energy change versus restom-ressurf
+       te(:ncol,lchnk,3) = state(lchnk)%delta_te(:ncol)
+       te(:ncol,lchnk,4) = state(lchnk)%rr(:ncol)
+
+       !qneg4 diagnostics values
+       te(:ncol,lchnk,5) = state(lchnk)%cflx_diff(:ncol)
+       te(:ncol,lchnk,6) = state(lchnk)%shf_diff(:ncol)
+
+    end do
+
+    ! Compute global means of input and output energies and of
+    ! surface pressure for heating rate (assume uniform ptop)
+    call gmean(te, te_glob, 6)
+
+    if (begchunk .le. endchunk) then
+
+       dflux = te_glob(1)
+       dstep = te_glob(2)
+
+       delta_te_glob = te_glob(3)
+       rr_glob       = te_glob(4)
+       cflxdiff      = te_glob(5)
+       shfdiff       = te_glob(6)
+
+       if (masterproc) then
           ! integrated state%tw_cur is kg/m2
           ! integrated dflux, dstep are kg/m2
           ! integrated cflx is kg/m2/sec
@@ -564,20 +617,11 @@ end subroutine check_energy_get_integrals
           write(iulog,'(1x,a24,1x,i8,2(1x,e25.17))') "n, E d(TE)/dt, RR [W/m2]", nstep-1, delta_te_glob/dtime, rr_glob
           write(iulog,'(1x,a22,1x,i8,1(1x,e25.17))') "n, E difference [W/m2]",   nstep-1, delta_te_glob/dtime-rr_glob
           write(iulog,'(1x,a20,1x,i8,2(1x,e25.17))') "n, E shf loss [W/m2]",     nstep-1, shfdiff
-          endif
 
        end if
-    else
-       heat_glob = 0._r8
     end if  !  (begchunk .le. endchunk)
-    
-  end subroutine check_energy_gmean
 
-
-
-
-
-
+  end subroutine check_energy_gmean_additional_diagn
 
 !===============================================================================
 
