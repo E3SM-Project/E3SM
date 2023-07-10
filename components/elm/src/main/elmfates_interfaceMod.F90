@@ -109,7 +109,7 @@ module ELMFatesInterfaceMod
    use shr_log_mod       , only : errMsg => shr_log_errMsg
    use elm_varcon        , only : dzsoi_decomp
    use FuncPedotransferMod, only: get_ipedof
-
+   use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
 
    ! Used FATES Modules
    use FatesConstantsMod     , only : ifalse
@@ -837,7 +837,7 @@ contains
 
    subroutine dynamics_driv(this, bounds_clump, top_as_inst,          &
          top_af_inst, atm2lnd_inst, soilstate_inst, temperature_inst, &
-         canopystate_inst, frictionvel_inst )
+         canopystate_inst, frictionvel_inst, soil_water_retention_curve )
 
       use FatesConstantsMod     , only : m2_per_km2
 
@@ -856,10 +856,12 @@ contains
       type(temperature_type)  , intent(in)           :: temperature_inst
       type(canopystate_type)  , intent(inout)        :: canopystate_inst
       type(frictionvel_type)  , intent(inout)        :: frictionvel_inst
-
+      class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
+      
       ! !LOCAL VARIABLES:
       integer  :: s                        ! site index
       integer  :: c                        ! column index (HLM)
+      integer  :: j                        ! Soil layer index
       integer  :: t                        ! topounit index (HLM)
       integer  :: ifp                      ! patch index
       integer  :: ft                       ! patch functional type index
@@ -868,6 +870,7 @@ contains
       integer  :: nc                       ! clump index
       integer  :: nlevsoil                 ! number of soil layers at the site
       integer  :: ier                      ! allocate status code
+      real(r8) :: s_node, smp_node         ! local for relative water content and potential
       
       real(r8), pointer :: lnfm24(:)       ! 24-hour averaged lightning data
       real(r8), pointer :: gdp_lf_col(:)          ! gdp data
@@ -948,6 +951,26 @@ contains
          this%fates(nc)%bc_in(s)%max_rooting_depth_index_col = &
               min(nlevsoil, canopystate_inst%altmax_lastyear_indx_col(c))
 
+         do j = 1,nlevsoil
+            this%fates(nc)%bc_in(s)%tempk_sl(j) = temperature_inst%t_soisno_col(c,j)
+         end do
+
+         call get_active_suction_layers(this%fates(nc)%nsites, &
+             this%fates(nc)%sites,  &
+             this%fates(nc)%bc_in,  &
+             this%fates(nc)%bc_out)
+
+         do j = 1,nlevsoil
+            if(this%fates(nc)%bc_out(s)%active_suction_sl(j)) then
+               s_node = max(col_ws%h2osoi_liqvol(c,j)/soilstate_inst%eff_porosity_col(c,j) ,0.01_r8)
+               call soil_water_retention_curve%soil_suction(soilstate_inst%sucsat_col(c,j), &
+                       s_node, &
+                       soilstate_inst%bsw_col(c,j), &
+                       smp_node)
+               this%fates(nc)%bc_in(s)%smp_sl(j) = smp_node
+            end if
+         end do
+         
          do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
             p = ifp+col_pp%pfti(c)
 
@@ -1989,7 +2012,7 @@ contains
       !
       ! ---------------------------------------------------------------------------------
 
-      use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
+      
 
       implicit none
 
