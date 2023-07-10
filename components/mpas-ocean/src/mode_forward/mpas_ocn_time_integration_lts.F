@@ -113,6 +113,7 @@ module ocn_time_integration_lts
        tendPool, & ! structure holding tendencies
        statePool, & ! structure holding state variables
        meshPool, & ! structure holding mesh variables
+       verticalMeshPool, & ! structure holding mesh variables
        forcingPool, & ! structure holding forcing variables
        scratchPool, & ! structure holding temporary variables
        tracersPool  ! structure holding tracers variables
@@ -200,6 +201,8 @@ module ocn_time_integration_lts
 
     call mpas_pool_get_subpool(block%structs, 'mesh', &
                                                meshPool)
+    call mpas_pool_get_subpool(block%structs, 'verticalMesh', &
+                                               verticalMeshPool)
     call mpas_pool_get_subpool(block%structs, 'state', &
                                                statePool)
     call mpas_pool_get_subpool(block%structs, 'forcing', &
@@ -1023,7 +1026,7 @@ module ocn_time_integration_lts
 
     call mpas_timer_start("lts implicit vmix")
     if (.not. config_disable_vel_vmix) then
-       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 2)
+       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 2)
        call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, scratchPool, err, 2)
        call mpas_dmpar_field_halo_exch(domain, 'normalVelocity', timeLevel=2)
        call mpas_dmpar_field_halo_exch(domain, 'layerThickness', timeLevel=2)
@@ -1088,7 +1091,7 @@ module ocn_time_integration_lts
 
 
     ! DIAGNOSTICS UPDATE ---
-    call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 2)
+    call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 2)
 
     call mpas_pool_destroy_pool(tendSum1stPool)
     call mpas_pool_destroy_pool(tendSum2ndPool)
