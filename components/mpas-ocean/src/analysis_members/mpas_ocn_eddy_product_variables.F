@@ -310,7 +310,6 @@ contains
             end do
             !$omp end do
 
-            !$omp parallel
             !$omp do schedule(runtime) private(k)
             do iCell = 1,nCellsSolve
                do k = 1, maxLevelCell(iCell)
