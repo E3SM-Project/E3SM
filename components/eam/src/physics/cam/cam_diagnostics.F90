@@ -1761,6 +1761,8 @@ end subroutine diag_conv_tend_ini
 
 !! Boundary layer atmospheric stability, temperature, water vapor diagnostics
 
+    p_surf_t1 = 0._r8
+    p_surf_t2 = 0._r8
     if (hist_fld_active('T1000')      .or. &
         hist_fld_active('T9251000')   .or. & 
         hist_fld_active('TH9251000')  .or. &

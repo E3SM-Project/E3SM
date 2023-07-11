@@ -2406,6 +2406,8 @@ subroutine tphysbc (ztodt,               &
     zero = 0._r8
     zero_tracers(:,:) = 0._r8
     zero_sc(:) = 0._r8
+    flx_cnd(:) = 0._r8
+    flx_heat(:) = 0._r8
 
     lchnk = state%lchnk
     ncol  = state%ncol
