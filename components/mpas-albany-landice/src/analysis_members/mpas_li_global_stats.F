@@ -436,7 +436,8 @@ contains
                blockSumSubglacialWaterVolume = blockSumSubglacialWaterVolume + waterThickness(iCell) * areaCell(iCell)
 
                ! Basal melt input
-               blockSumBasalMeltInput = blockSumBasalMeltInput + basalMeltInput(iCell) * areaCell(iCell)
+               blockSumBasalMeltInput = blockSumBasalMeltInput + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) * &
+                                        basalMeltInput(iCell) * areaCell(iCell)
 
                ! External water input
                blockSumExternalWaterInput = blockSumExternalWaterInput + externalWaterInput(iCell) * areaCell(iCell)
@@ -647,6 +648,8 @@ contains
                 avgFlotationFraction = 0.0_RKIND
             endif
          endif
+
+
 
          block => block % next
       end do
