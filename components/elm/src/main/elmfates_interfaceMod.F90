@@ -836,7 +836,7 @@ contains
    ! ------------------------------------------------------------------------------------
 
    subroutine dynamics_driv(this, bounds_clump, top_as_inst,          &
-         top_af_inst, atm2lnd_inst, soilstate_inst, temperature_inst, &
+         top_af_inst, atm2lnd_inst, soilstate_inst, &
          canopystate_inst, frictionvel_inst, soil_water_retention_curve )
 
       use FatesConstantsMod     , only : m2_per_km2
@@ -853,7 +853,6 @@ contains
       type(topounit_atmospheric_flux),  intent(in)   :: top_af_inst
       type(atm2lnd_type)      , intent(in)           :: atm2lnd_inst
       type(soilstate_type)    , intent(in)           :: soilstate_inst
-      type(temperature_type)  , intent(in)           :: temperature_inst
       type(canopystate_type)  , intent(inout)        :: canopystate_inst
       type(frictionvel_type)  , intent(inout)        :: frictionvel_inst
       class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
@@ -952,7 +951,7 @@ contains
               min(nlevsoil, canopystate_inst%altmax_lastyear_indx_col(c))
 
          do j = 1,nlevsoil
-            this%fates(nc)%bc_in(s)%tempk_sl(j) = temperature_inst%t_soisno_col(c,j)
+            this%fates(nc)%bc_in(s)%tempk_sl(j) = col_es%t_soisno(c,j)
          end do
 
          call get_active_suction_layers(this%fates(nc)%nsites, &
@@ -2001,7 +2000,7 @@ contains
    ! ====================================================================================
 
    subroutine wrap_btran(this,bounds_clump,fn,filterc,soilstate_inst, &
-                         temperature_inst, energyflux_inst,  &
+                         energyflux_inst,  &
                          soil_water_retention_curve)
 
       ! ---------------------------------------------------------------------------------
@@ -2023,7 +2022,6 @@ contains
       integer                , intent(in)            :: filterc(fn) ! This is a list of
                                                                         ! columns with exposed veg
       type(soilstate_type)   , intent(inout)         :: soilstate_inst
-      type(temperature_type) , intent(in)            :: temperature_inst
       type(energyflux_type)  , intent(inout)         :: energyflux_inst
       class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
 
@@ -2183,7 +2181,7 @@ contains
 
    subroutine wrap_photosynthesis(this, bounds_clump, fn, filterp, &
          esat_tv, eair, oair, cair, rb, dayl_factor,             &
-         atm2lnd_inst, temperature_inst, canopystate_inst, photosyns_inst)
+         atm2lnd_inst, canopystate_inst, photosyns_inst)
 
     use shr_log_mod       , only : errMsg => shr_log_errMsg
     use abortutils        , only : endrun
@@ -2206,7 +2204,6 @@ contains
     real(r8)               , intent(in)            :: rb( bounds_clump%begp: )          ! boundary layer resistance (s/m)
     real(r8)               , intent(in)            :: dayl_factor( bounds_clump%begp: ) ! scalar (0-1) for daylength
     type(atm2lnd_type)     , intent(in)            :: atm2lnd_inst
-    type(temperature_type) , intent(in)            :: temperature_inst
     type(canopystate_type) , intent(inout)         :: canopystate_inst
     type(photosyns_type)   , intent(inout)         :: photosyns_inst
 

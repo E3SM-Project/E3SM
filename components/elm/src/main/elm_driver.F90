@@ -1286,7 +1286,7 @@ contains
            call alm_fates%wrap_update_hifrq_hist(bounds_clump)
            if ( is_beg_curr_day() ) then ! run ED at the start of each day
                call alm_fates%dynamics_driv( bounds_clump, top_as,          &
-                    top_af, atm2lnd_vars, soilstate_vars, temperature_vars, &
+                    top_af, atm2lnd_vars, soilstate_vars, &
                     canopystate_vars, frictionvel_vars, soil_water_retention_curve)
            end if
        end if
