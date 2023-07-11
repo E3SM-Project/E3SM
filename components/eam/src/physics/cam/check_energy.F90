@@ -71,6 +71,11 @@ module check_energy
 
   public :: energy_helper_eam_def
 
+  logical, public, protected ::  print_additional_diagn = .false.
+
+  integer, public ::  nstep_ignore_diagn1 = -10
+  integer, public ::  nstep_ignore_diagn2 = -10
+
 ! Private module data
 
   logical  :: print_energy_errors = .false.
@@ -95,24 +100,25 @@ module check_energy
      integer :: count(pcnst)               ! count of values with significant imbalances
   end type check_tracers_data
 
-  integer, public ::  nstep_ignore_diagn1 = -10
-  integer, public ::  nstep_ignore_diagn2 = -10
-
 !===============================================================================
 contains
 !===============================================================================
 
 subroutine check_energy_defaultopts( &
-   print_energy_errors_out)
+   print_energy_errors_out, print_additional_diagn_out)
 !----------------------------------------------------------------------- 
 ! Purpose: Return default runtime options
 !-----------------------------------------------------------------------
 
    logical,          intent(out), optional :: print_energy_errors_out
+   logical,          intent(out), optional :: print_additional_diagn_out
 !-----------------------------------------------------------------------
 
    if ( present(print_energy_errors_out) ) then
       print_energy_errors_out = print_energy_errors
+   endif
+   if ( present(print_additional_diagn_out) ) then
+      print_additional_diagn_out = print_additional_diagn
    endif
 
 end subroutine check_energy_defaultopts
@@ -120,16 +126,20 @@ end subroutine check_energy_defaultopts
 !================================================================================================
 
 subroutine check_energy_setopts( &
-   print_energy_errors_in)
+   print_energy_errors_in, print_additional_diagn_in)
 !----------------------------------------------------------------------- 
 ! Purpose: Return default runtime options
 !-----------------------------------------------------------------------
 
    logical,          intent(in), optional :: print_energy_errors_in
+   logical,          intent(in), optional :: print_additional_diagn_in
 !-----------------------------------------------------------------------
 
    if ( present(print_energy_errors_in) ) then
       print_energy_errors = print_energy_errors_in
+   endif
+   if ( present(print_additional_diagn_in) ) then
+      print_additional_diagn = print_additional_diagn_in
    endif
 
 end subroutine check_energy_setopts

@@ -158,7 +158,8 @@ logical :: pbuf_global_allocate       ! allocate all buffers as global (default:
 
 ! Conservation checks
 
-logical            :: print_energy_errors ! switch for diagnostic output from check_energy module
+logical            :: print_energy_errors    ! switch for diagnostic output from check_energy module
+logical            :: print_additional_diagn ! switch for more diagnostic output
 
 ! SCM Options
 logical  :: single_column
@@ -330,7 +331,7 @@ contains
    namelist /cam_inparm/ pbuf_global_allocate
 
    ! conservation checks
-   namelist /cam_inparm/ print_energy_errors
+   namelist /cam_inparm/ print_energy_errors, print_additional_diagn
 
    ! scam
    namelist /cam_inparm/ iopfile,scm_iop_srf_prop,iop_dosubsidence, &
@@ -370,7 +371,8 @@ contains
 
    ! conservation
    call check_energy_defaultopts( &
-      print_energy_errors_out = print_energy_errors )
+      print_energy_errors_out = print_energy_errors, &
+      print_additional_diagn_out  = print_additional_diagn )
 
    ! Set default options for single column model
    if (present(single_column_in)) then
@@ -450,7 +452,8 @@ contains
 
    ! conservation
    call check_energy_setopts( &
-      print_energy_errors_in = print_energy_errors )
+      print_energy_errors_in = print_energy_errors, &
+      print_additional_diagn_in = print_additional_diagn )
 
    ! Set runtime options for single column mode 
    if (present(single_column_in) .and. present(scmlon_in) .and. present(scmlat_in)) then 
@@ -680,7 +683,8 @@ subroutine distnl
    call mpibcast (pbuf_global_allocate, 1, mpilog, 0, mpicom)
 
    ! Conservation
-   call mpibcast (print_energy_errors, 1, mpilog, 0, mpicom)
+   call mpibcast (print_energy_errors,    1, mpilog, 0, mpicom)
+   call mpibcast (print_additional_diagn, 1, mpilog, 0, mpicom)
 
 end subroutine distnl
 #endif
