@@ -180,6 +180,9 @@ module seq_frac_mct
         iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh, &
         iMOAB_ApplyScalarProjectionWeights, iMOAB_SendElementTag, iMOAB_ReceiveElementTag, &
         iMOAB_FreeSenderBuffers, iMOAB_GetDoubleTagStorage
+#ifdef MOABDEBUG
+   use seq_comm_mct,     only : num_moab_exports
+#endif
   
   use shr_kind_mod, only: CL => SHR_KIND_CL, CX => SHR_KIND_CX, CXX => SHR_KIND_CXX
   use iso_c_binding ! C_NULL_CHAR 
@@ -847,6 +850,9 @@ contains
     real(r8),    allocatable, save :: tagValues(:) ! used for setting some tags
     real(r8),    allocatable, save :: tagValuesOfrac(:) ! used for setting some tags
     integer ,    allocatable, save :: GlobalIds(:) ! used for setting values associated with ids
+#ifdef MOABDEBUG
+    character(len=100) :: outfile, wopts, lnum
+#endif
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_frac_set) '
@@ -915,6 +921,13 @@ contains
              write(logunit,*) subname,' error in setting ofrac on ice moab instance  '
              call shr_sys_abort(subname//' ERROR in setting ofrac on ice moab instance ')
           endif
+#ifdef MOABDEBUG
+         write(lnum,"(I0.2)")num_moab_exports
+         outfile = 'iceCplFr_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+         wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+         ierr = iMOAB_WriteMesh(mbixid, outfile, wopts)
+#endif
+
        endif
 
        if (ocn_present) then
@@ -927,6 +940,10 @@ contains
           ent_type = 1! cells
           ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, local_size_mb_ocn , ent_type, tagValuesOfrac)
           ierr = iMOAB_SetDoubleTagStorage ( mbofxid, tagname, local_size_mb_ocn , ent_type, tagValuesOfrac)
+          if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in setting ofrac on mbofxid moab instance  '
+             call shr_sys_abort(subname//' ERROR in setting ofrac on mbofxid moab instance ')
+          endif
        endif
 
 
@@ -934,7 +951,12 @@ contains
           mapper_i2a => prep_atm_get_mapper_Fi2a()
           call seq_map_map(mapper_i2a, fractions_i, fractions_a, &
                fldlist='ofrac:ifrac', norm=.false.)
-
+#ifdef MOABDEBUG
+            write(lnum,"(I0.2)")num_moab_exports
+            outfile = 'atmCplFr_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+            wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+            ierr = iMOAB_WriteMesh(mbaxid, outfile, wopts)
+#endif
           !tcx---  fraction correction, this forces the fractions_a to sum to 1.0_r8.
           !   ---  but it introduces a conservation error in mapping
           if (atm_frac_correct) then
