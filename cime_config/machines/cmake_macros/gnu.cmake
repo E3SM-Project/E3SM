@@ -1,3 +1,8 @@
+# Set standard explicitly to avoid GNU extensions
+# Ref: https://gcc.gnu.org/onlinedocs/gfortran/Extensions-implemented-in-GNU-Fortran.html
+# https://github.com/E3SM-Project/E3SM/issues/5726
+string(APPEND FFLAGS " -std=f2008")
+
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64")
   string(APPEND CFLAGS "-mcmodel=small")
   string(APPEND FFLAGS "-mcmodel=small")
