@@ -1,3 +1,15 @@
+set(MPICC "cc")
+set(MPICXX "hipcc")
+set(MPIFC "ftn")
+set(SCC "cc")
+set(SCXX "hipcc")
+set(SFC "ftn")
+
+string(APPEND CPPDEFS " -DLINUX")
+if (COMP_NAME STREQUAL gptl)
+    string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY")
+endif()
+
 if (compile_threaded)
   string(APPEND FFLAGS   " -fopenmp")
   string(APPEND CFLAGS   " -fopenmp")
@@ -29,12 +41,6 @@ string(APPEND LDFLAGS " -Wl,--allow-multiple-definition -Wl,--allow-shlib-undefi
 
 set(SUPPORTS_CXX "TRUE")
 set(CXX_LINKER "FORTRAN")
-set(MPICC "cc")
-set(MPICXX "hipcc")
-set(MPIFC "ftn")
-set(SCC "cc")
-set(SCXX "hipcc")
-set(SFC "ftn")
 
 # Switch to O3 for better performance
 # Using O2 to ensure passing tests
@@ -61,6 +67,7 @@ string(APPEND CXX_LIBS " -lstdc++")
 
 string(APPEND CXXFLAGS " -I$ENV{MPICH_DIR}/include --offload-arch=gfx90a")
 string(APPEND SLIBS    " -L$ENV{MPICH_DIR}/lib -lmpi -L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa")
+string(APPEND SLIBS " -L$ENV{ROCM_PATH}/lib -lamdhip64")
 if (NOT MPILIB STREQUAL mpi-serial)
   string(APPEND SLIBS " -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core -ladios2_evpath -ladios2_ffs -ladios2_dill -ladios2_atl -ladios2_enet")
 endif()
