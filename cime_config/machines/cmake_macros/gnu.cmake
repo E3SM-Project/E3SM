@@ -1,14 +1,14 @@
 # Set standard explicitly to avoid GNU extensions
 # Ref: https://gcc.gnu.org/onlinedocs/gfortran/Extensions-implemented-in-GNU-Fortran.html
 # https://github.com/E3SM-Project/E3SM/issues/5726
-string(APPEND FFLAGS " -std=f2008")
+string(APPEND FFLAGS " -std=f2008 ")
 
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64")
-  string(APPEND CFLAGS "-mcmodel=small")
-  string(APPEND FFLAGS "-mcmodel=small")
+  string(APPEND CFLAGS " -mcmodel=small")
+  string(APPEND FFLAGS " -mcmodel=small")
 else()
-  string(APPEND CFLAGS "-mcmodel=medium")
-  string(APPEND FFLAGS "-mcmodel=medium")
+  string(APPEND CFLAGS " -mcmodel=medium")
+  string(APPEND FFLAGS " -mcmodel=medium")
 endif()
 string(APPEND FFLAGS " -ffree-line-length-none -ffixed-line-length-none")
 if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 10)
