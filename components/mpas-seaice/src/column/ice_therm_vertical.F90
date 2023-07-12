@@ -185,8 +185,8 @@
          yday         ! day of year
 
       logical (kind=log_kind), intent(in) :: &
-         tr_snow ,    &  ! if .true., use snow tracers
-         tr_rsnw         ! if .true., use dynamic snow grain radius
+         tr_snow ,    &  ! if .true., use snow density tracer
+         tr_rsnw         ! if .true., use dynamic snow grain radius, liquid and snow mass
 
       logical (kind=log_kind), intent(out) :: &
          l_stop       ! if true, print diagnostics and abort on return
@@ -310,7 +310,7 @@
                                               fadvocn,   snoice,    &
                                               einit,                &
                                               smice,     smliq,     &
-                                              tr_snow,              &
+                                              tr_rsnw,              &
                                               l_stop,    stop_label)
                
             if (l_stop) return
@@ -1124,8 +1124,8 @@
          sss             ! ocean salinity (PSU) 
 
       logical (kind=log_kind), intent(in) :: &
-         tr_snow    , &  ! if .true., use snow tracers
-         tr_rsnw         ! if .true., use snow dynamic snow grain radius
+         tr_snow    , &  ! if .true., use snow density tracer
+         tr_rsnw         ! if .true., use snow dynamic snow grain radius, snow liquid and mass
 
       ! local variables
 
@@ -1198,7 +1198,7 @@
          dzs(k) = hslyr
          smicetot(k) = c0
          smliqtot(k) = c0
-         if (tr_snow) then
+         if (tr_rsnw) then
            smicetot(k) = dzs(k) * smice(k)
            smliqtot(k) = dzs(k) * smliq(k)
          endif
@@ -1506,7 +1506,7 @@
             ! avoid roundoff errors
             zqsn(1) = min(zqsn(1), -rhos*Lfresh)
 
-            if (tr_snow) then
+            if (tr_rsnw) then
 
               smtot = c0
               if (abs(dzs(1)) > c0) smtot = smicetot(1)/dzs(1) !smice(1) ! save for now
@@ -1585,7 +1585,7 @@
     !-------------------------------------------------------------------
     ! Update snow mass tracers, smice and smliq, for uneven layers
     !-------------------------------------------------------------------
-       if (tr_snow) then
+       if (tr_rsnw) then
          do k = 1, nslyr
             meltsliq = meltsliq + smliqtot(k)  ! total liquid (in case all snow melted)
             if (dzs(k) > c0) then
@@ -1687,13 +1687,11 @@
                                hslyr,    hsn,      &
                                zqsn)   
 
-         if (tr_rsnw) &
-               call adjust_enthalpy (nslyr,              &
-                                     zs1(:),   zs2(:),   &
-                                     hslyr,    hsn,      &
-                                     rsnw(:))
-
-        if (tr_snow) then
+         if (tr_rsnw) then
+              call adjust_enthalpy (nslyr,              &
+                                    zs1(:),   zs2(:),   &
+                                    hslyr,    hsn,      &
+                                    rsnw(:))
               call adjust_enthalpy (nslyr,              &
                                     zs1(:),   zs2(:),   &
                                     hslyr,    hsn,      &
@@ -1721,7 +1719,7 @@
                fhocnn = fhocnn &
                       + zqsn(k)*hsn/(real(nslyr,kind=dbl_kind)*dt)
                zqsn(k) = -rhos*Lfresh
-               if (tr_snow) then
+               if (tr_rsnw) then
                  meltsliq = meltsliq + smicetot(k)  ! add to meltponds
                  smice(k) = rhos
                  smliq(k) = c0
