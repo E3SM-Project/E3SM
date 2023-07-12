@@ -39,6 +39,7 @@ set (SCREAM_LIBS
      spa
      nudging
      diagnostics
+     ml_correction
 )
 
 # Create atm lib

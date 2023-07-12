@@ -209,6 +209,12 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
 
+    <!-- nudging -->
+    <mlcorrection inherit="atm_proc_base">
+      <ML_model_path type="array(string)">NONE</ML_model_path>
+      <ML_output_fields type="array(string)">NONE</ML_output_fields>
+    </mlcorrection>
+
     <!-- For internal testing only -->
     <testOnly inherit="atm_proc_base"/>
 

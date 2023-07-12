@@ -27,6 +27,9 @@
 #ifdef EAMXX_HAS_MAM
 #include "physics/mam/eamxx_mam_microphysics_process_interface.hpp"
 #endif
+#ifdef EAMXX_HAS_ML_CORRECTION
+#include "physics/ml_correction/eamxx_ml_correction_process_interface.hpp"
+#endif
 
 namespace scream {
 
@@ -52,6 +55,9 @@ inline void register_physics () {
 #endif
 #ifdef EAMXX_HAS_MAM
   proc_factory.register_product("MAMMicrophysics",&create_atmosphere_process<MAMMicrophysics>);
+#endif
+#ifdef EAMXX_HAS_ML_CORRECTION
+  proc_factory.register_product("MLCorrection",&create_atmosphere_process<MLCorrection>);
 #endif
 }
 

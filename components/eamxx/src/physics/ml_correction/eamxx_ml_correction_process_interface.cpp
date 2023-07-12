@@ -1,3 +1,7 @@
+#define PYBIND11_DETAILED_ERROR_MESSAGES
+#include <pybind11/embed.h>
+#include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
 #include <array>
 
 #include "eamxx_ml_correction_process_interface.hpp"
@@ -9,7 +13,8 @@ namespace scream {
 MLCorrection::MLCorrection(const ekat::Comm &comm,
                            const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
-  // Nothing to do here
+  m_ML_model_path = m_params.get<std::vector<std::string>>("ML_model_path");
+  m_fields_ml_output_variables = m_params.get<std::vector<std::string>>("ML_output_fields");
 }
 
 // =========================================================================================
@@ -22,7 +27,7 @@ void MLCorrection::set_grids(
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Q = kg / kg;
   Q.set_string("kg/kg");
-
+  constexpr int ps = SCREAM_SMALL_PACK_SIZE;
   m_grid                = grids_manager->get_grid("Physics");
   const auto &grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs();  // Number of columns on this rank
@@ -35,27 +40,58 @@ void MLCorrection::set_grids(
   // interfaces
   FieldLayout scalar3d_layout_mid{{COL, LEV}, {m_num_cols, m_num_levs}};
 
-  // Set of fields used strictly as input
-  add_field<Required>("qv", scalar3d_layout_mid, Q, grid_name, "tracers");
+  /* ----------------------- WARNING --------------------------------*/
+  /* The following is a HACK to get things moving, we don't want to
+   * add all fields as "updated" long-term.  A separate stream of work
+   * is adapting the infrastructure to allow for a generic "add_field" call
+   * to be used here which we can then setup using the m_fields_ml_output_variables variable
+   */
+  add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
+  add_field<Updated>("qv",    scalar3d_layout_mid, Q, grid_name, "tracers", ps);
+  add_field<Updated>("u",     scalar3d_layout_mid, m/s, grid_name, ps);
+  add_field<Updated>("v",     scalar3d_layout_mid, m/s, grid_name, ps);
+  /* ----------------------- WARNING --------------------------------*/
 
-  // Set of fields used strictly as output
-  add_field<Computed>("qv_nudging_tend", scalar3d_layout_mid, Q, grid_name);
-
-  // Set of fields used as input and output
-  // - There are no fields used as both input and output.
 }
 
-// =========================================================================================
 void MLCorrection::initialize_impl(const RunType /* run_type */) {
-  // Nothing to do
+  // Do nothing
 }
 
 // =========================================================================================
-void MLCorrection::run_impl(const double /* dt */) {
-  auto qv         = get_field_in("qv").get_view<const Real **>();
-  auto qv_nudging = get_field_out("qv_nudging").get_view<Real **>();
+void MLCorrection::run_impl(const double dt) {
+  namespace py      = pybind11;
+  // use model time to infer solar zenith angle for the ML prediction
+  auto current_ts = timestamp();
+  const auto &qv_field = get_field_out("qv");
+  const auto &qv       = qv_field.get_view<Real **, Host>();
+  const auto &T_mid_field = get_field_out("T_mid");
+  const auto &T_mid       = T_mid_field.get_view<Real **, Host>();
+  const auto &u_field = get_field_out("u");
+  const auto &u       = u_field.get_view<Real **, Host>();
+  const auto &v_field = get_field_out("v");
+  const auto &v       = v_field.get_view<Real **, Host>();
 
-  // ML correction proceess is not yet implemented
+  // T_mid_field.sync_to_dev();
+  int fpe_mask = ekat::get_enabled_fpes();
+  ekat::disable_all_fpes();  // required for importing numpy
+  py::initialize_interpreter();
+  py::module sys = pybind11::module::import("sys");
+  sys.attr("path").attr("insert")(1, ML_CORRECTION_CUSTOM_PATH);
+  auto py_correction = py::module::import("ml_correction");
+  py::object ob1     = py_correction.attr("update_fields")(
+      py::array_t<Real, py::array::c_style | py::array::forcecast>(
+          m_num_cols * m_num_levs, T_mid.data(), py::str{}),
+      py::array_t<Real, py::array::c_style | py::array::forcecast>(
+          m_num_cols * m_num_levs, qv.data(), py::str{}),          
+      py::array_t<Real, py::array::c_style | py::array::forcecast>(
+          m_num_cols * m_num_levs, u.data(), py::str{}),        
+      py::array_t<Real, py::array::c_style | py::array::forcecast>(
+          m_num_cols * m_num_levs, v.data(), py::str{}),                            
+      m_num_cols, m_num_levs);
+  py::gil_scoped_release no_gil;  
+  ekat::enable_fpes(fpe_mask);
+  printf("[eamxx::MLCorrection] finished doing nothing in Python");
 }
 
 // =========================================================================================
