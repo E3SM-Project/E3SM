@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import os, sys, re
-#import numpy as np
+import numpy as np
 
 def readall(fn):
     with open(fn,'r') as f:
@@ -36,38 +36,104 @@ def uncompress(filename):
     return filename
 
 def gather_energy_data(atm_log_fn):
-    d = {'ttime': [], 'rr': []}
+    #process only water, energy leaks, ignore statistics on cflx, shflx
+    dgmean1 = {'nstep': [], 'te': []}
+    dgmean2 = {'nstep': [], 'dt': [], 'tw': [], 'wdiff': [], 'ediff': []}
 
     #file lines
-    #nstep, te        1   0.25844877776869764E+10   0.25845216307593832E+10   0.46806180877977696E-03   0.98515700139519613E+05
-    #nstep, d(te)/dt, rr        1   0.35896133760546986E+06  -0.94100652141702469E+02
-    #nstep, di        1   0.35905543825761159E+06
+    # nstep, te        2   0.25846082320679531E+10   0.25845989127171683E+10  -0.12885108527156013E-03   0.98516311352621502E+05
+    # n, dt, W tot mass [kg/m2]        1   0.72000000000000000E+04   0.23608972524228417E+02
+    # n, W flux, dWater [kg/m2]        1   0.69364453203771062E-01   0.69458133498910668E-01
+    # n, W flux-dWater [kg/m2]        1  -0.93680295139605962E-04
+    # n, W cflx*dt loss [kg/m2]        1  -0.83649589965878964E-04
+    # n, E d(TE)/dt, RR [W/m2]        1   0.14448525118182053E+02   0.14477581732178772E+02
+    # n, E difference [W/m2]        1  -0.29056613996718994E-01
+    # n, E shf loss [W/m2]        1   0.29056614514536561E-01
 
-    ll = "nstep, di"
+    l1 = "nstep, te "
+    l2 = "n, dt, W tot mass [kg/m2]    "
+    l3 = "n, W flux-dWater [kg/m2]     "
+    l4 = "n, E diff"
     with open(atm_log_fn, 'r') as f:
         for ln in f:
-            if ll in ln: 
+            if l1 in ln: 
                 nstep = float(ln.split()[2])
-                rr = float(ln.split()[3])
-                d['ttime'].append(nstep)
-                d['rr'].append(rr)
+                te = float(ln.split()[3])
+                dgmean1['nstep'].append(nstep)
+                dgmean1['te'].append(te)
                 #print (nstep)
                 #print (rr)
-    return d
+        #reset
+        f.seek(0)
 
-def conservative(start_time, time, rr, tol, verbose):
+        for ln in f:
+            if l2 in ln: 
+                nstep = float(ln.split()[6])
+                dt = float(ln.split()[7])
+                tw = float(ln.split()[8])
+                dgmean2['nstep'].append(nstep)
+                dgmean2['dt'].append(dt)
+                dgmean2['tw'].append(tw)
+        #reset
+        f.seek(0)
+
+        for ln in f:
+            if l3 in ln:
+                diff = float(ln.split()[5])
+                dgmean2['wdiff'].append(diff)
+        #reset
+        f.seek(0)
+
+        for ln in f:
+            if l4 in ln:
+                diff = float(ln.split()[5])
+                dgmean2['ediff'].append(diff)
+        #reset
+        f.seek(0)
+
+    return dgmean1, dgmean2
+
+def conservativeW(start_time, nstep, tw, wdiff, tol, verbose):
    
-    shortarr=rr[start_time:]
-    aver = sum(shortarr)/len(shortarr)
-    #stdd = np.std(np.array(rr))
+    short_tw=tw[start_time:]
+    short_wdiff=wdiff[start_time:]
+    short_wdiff = np.array(short_wdiff)/np.array(short_tw)
+
+    aver = sum(short_wdiff)/len(short_wdiff)
+    stdd = np.std(np.array(short_wdiff))
     if (verbose):
-        #print('RR average {:1.3e}, std {:1.3e}, min {:1.3e}, max {:1.3e}'.format(aver, std,min(rr),max(rr)))
+        print('Water leak rel:', short_wdiff)
         print('starting index is {}'.format(start_time))
-        print('number of samples: {}'.format(len(shortarr)))
-        print('RR average {:1.3e}, min {:1.3e}, max {:1.3e}'.format(aver,min(rr),max(rr)))
+        print('number of samples: {}'.format(len(short_wdiff)))
+        print('Wdiff average {:1.3e}, std {:1.3e}'.format(aver,stdd))
+        print('Wdiff min {:1.3e}, max {:1.3e}'.format(min(short_wdiff),max(short_wdiff)))
         #maxabs = max(abs(rr))
         maxx = abs(aver)
     return maxx <= tol
+
+
+def conservativeE(s1, s2, te, nstep, ediff, tol, verbose):
+
+    #TE will be used for rel computations
+    #it is not essential that TE and ediff are outputed for lagged time steps, TE is practically the same
+    #for all time steps
+
+    short_te=te[s1:]
+    short_ediff=ediff[s2:]
+    short_ediff = np.array(short_ediff)/np.array(short_te)
+
+    aver = sum(short_ediff)/len(short_ediff)
+    stdd = np.std(np.array(short_ediff))
+    if (verbose):
+        print('Energy leak rel:', short_ediff)
+        print('starting indices are {},{}'.format(s1,s2))
+        print('number of samples: {}'.format(len(short_ediff)))
+        print('Ediff average {:1.3e}, std {:1.3e}'.format(aver,stdd))
+        print('Ediff min {:1.3e}, max {:1.3e}'.format(min(short_ediff),max(short_ediff)))
+        #maxabs = max(abs(rr))
+        maxx = abs(aver)
+    return maxx <= tol
+
 
 
 #############################################################3
@@ -88,11 +154,15 @@ atm_fn = get_atm_log(run_dir)
 
 atm_fn = uncompress(atm_fn)
 print('Using log file {}'.format(atm_fn))
-d = gather_energy_data(atm_fn)
+[d1,d2] = gather_energy_data(atm_fn)
 
-good = (conservative(3,d['ttime'],d['rr'],2e-13,True))
+goodw = (conservativeW(0,d2['nstep'],d2['tw'],d2['wdiff'],2e-5,True))
+#d1 and d2 arrays are of different size
+#d1 array has values for nstep 0, 1, 2, 3
+#d2 array has values for nstep 2, 3 (but they are named as 1 and 2, they are shifted by 1 wrt te arrays)
+goode = (conservativeE(2,0,d1['te'],d2['nstep'],d2['ediff'],2e-9,True))
 
-if good:
+if (goodw and goode):
     print('PASS')
     sys.exit(0)
 else:
