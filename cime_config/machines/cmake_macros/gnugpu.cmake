@@ -1,5 +1,10 @@
+# Set standard explicitly to avoid GNU extensions
+# Ref: https://gcc.gnu.org/onlinedocs/gfortran/Extensions-implemented-in-GNU-Fortran.html
+# https://github.com/E3SM-Project/E3SM/issues/5726
+string(APPEND FFLAGS " -std=f2008")
+
 string(APPEND CFLAGS " -mcmodel=medium")
-string(APPEND FFLAGS " -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none")
+string(APPEND FFLAGS " -mcmodel=medium -ffree-line-length-none -ffixed-line-length-none")
 if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 10)
    string(APPEND FFLAGS " -fallow-argument-mismatch")
 endif()
