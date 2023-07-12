@@ -77,9 +77,6 @@ module physpkg
   integer ::  prec_sh_idx        = 0
   integer ::  snow_sh_idx        = 0
 
-!  integer ::  nstep_ignore_diagn1 = -10
-!  integer ::  nstep_ignore_diagn2 = -10
-
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
 
   save
@@ -986,11 +983,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     if(is_first_step().or.is_first_restart_step())then
       nstep_ignore_diagn1 = get_nstep()
       nstep_ignore_diagn2 = nstep_ignore_diagn1 + 1
-
-if(masterproc) then
-print *, 'HEY my steps are', nstep_ignore_diagn1, nstep_ignore_diagn2
-endif
-
     endif
 
 
@@ -1061,12 +1053,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out, phy
     print_additional_diagn_local = .true.
     if(nstep == nstep_ignore_diagn1 .or. nstep == nstep_ignore_diagn2) print_additional_diagn_local = .false.
     if(.not. print_additional_diagn) print_additional_diagn_local = .false.
-
-if(masterproc)then
-print *, 'nstep, nstep_ignore_diagn1,2', nstep,nstep_ignore_diagn1, nstep_ignore_diagn2
-print *, 'logic ', print_additional_diagn_local
-endif
-
 
 #if ( defined OFFLINE_DYN )
     !
@@ -1761,8 +1747,6 @@ end if ! l_tracer_aero
     call t_stopf('tphysac_init')
     call cnd_diag_checkpoint( diag, 'PACINI', state, pbuf, cam_in, cam_out )
 
-
-
 if (l_tracer_aero) then
     !===================================================
     ! Source/sink terms for advected tracers.
@@ -2093,9 +2077,9 @@ subroutine additional_diagn_after_step(state, cam_in, cam_out, fsns, fsnt, flns,
     ncol  = state%ncol
 
     !if including effects from qneg4
-    state%deltaw_flux(:ncol) = state%cflx_raw(:ncol)
+    !state%deltaw_flux(:ncol) = state%cflx_raw(:ncol)
     !if excluding qneg4 from diagnostics
-    !state%deltaw_flux(:ncol) = cam_in%cflx(:ncol,1)
+    state%deltaw_flux(:ncol) = cam_in%cflx(:ncol,1)
 
     state%deltaw_flux(:ncol) = state%deltaw_flux(:ncol) - &
     1000.0*(cam_out%precc(:ncol)+cam_out%precl(:ncol))
@@ -2111,9 +2095,9 @@ subroutine additional_diagn_after_step(state, cam_in, cam_out, fsns, fsnt, flns,
     state%delta_te(1:ncol)=state%te_cur(1:ncol)-state%te_before_physstep(:ncol)
 
     !if including effects from qneg4
-    state%rr(1:ncol) = state%shf_raw(1:ncol)
+    !state%rr(1:ncol) = state%shf_raw(1:ncol)
     !if excluding qneg4 from diagnostisc -- do it consistently with cflx_raw
-    !state%rr(1:ncol) = cam_in%shf(1:ncol)
+    state%rr(1:ncol) = cam_in%shf(1:ncol)
 
     state%rr(1:ncol) = state%rr(1:ncol)                    &
       + ( fsnt(1:ncol) - flnt(1:ncol) )                    &
@@ -2679,8 +2663,6 @@ end if
     call cnd_diag_checkpoint( diag, 'SHCU', state, pbuf, cam_in, cam_out )
 
     call t_stopf('moist_convection')
-
-
 
 if (l_tracer_aero) then
 

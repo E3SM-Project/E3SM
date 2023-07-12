@@ -241,9 +241,8 @@ end subroutine check_energy_get_integrals
     call addfld('AC02QFLX', horiz_only,    'A', 'kg/m2/s', 'total water change due to water flux ')
     call addfld('BC01QFLX', horiz_only,    'A', 'kg/m2/s', 'total water change due to water flux ')
 
-
     if (masterproc) then
-       write (iulog,*) ' print_energy_errors is set', print_energy_errors
+       write (iulog,*) ' print_energy_errors is set to', print_energy_errors
     endif
 
     if ( history_budget ) then
@@ -494,10 +493,6 @@ end subroutine check_energy_get_integrals
                                          ! total energy of input/output states (copy)
     real(r8) :: te_glob(3)               ! global means of total energy
     real(r8), pointer :: teout(:)
-
-    real(r8) :: dflux, dstep
-    real(r8) :: delta_te_glob, rr_glob, cflxdiff, shfdiff
-    logical  :: print_ext_diagn
 !-----------------------------------------------------------------------
 
     ! Copy total energy out of input and output states
@@ -532,7 +527,6 @@ end subroutine check_energy_get_integrals
        heat_glob  = -tedif_glob/dtime * gravit / (psurf_glob - ptopb_glob)
 
        if (masterproc) then
-          ! this diagnostics is current
           ! integrated state%te_cur is J/m2
           write(iulog,'(1x,a9,1x,i8,4(1x,e25.17))') "nstep, te", nstep, teinp_glob, teout_glob, heat_glob, psurf_glob
        end if
@@ -564,18 +558,14 @@ end subroutine check_energy_get_integrals
     integer :: ncol                      ! number of active columns
     integer :: lchnk                     ! chunk index
 
-    real(r8) :: te(pcols,begchunk:endchunk,6)
+    real(r8) :: te(pcols,begchunk:endchunk,7)
                                          ! total energy of input/output states (copy)
-    real(r8) :: te_glob(6)               ! global means of total energy
+    real(r8) :: te_glob(7)               ! global means of total energy
     real(r8), pointer :: teout(:)
 
     real(r8) :: dflux, dstep
-    real(r8) :: delta_te_glob, rr_glob, cflxdiff, shfdiff
-!    logical  :: print_ext_diagn
+    real(r8) :: delta_te_glob, rr_glob, cflxdiff, shfdiff, totalw
 !-----------------------------------------------------------------------
-
-!    print_ext_diagn = .true.
-!    if (nstep == nstep_ignore_diagn1 .or. nstep == nstep_ignore_diagn2) print_ext_diagn = .false.
 
     ! Copy total energy out of input and output states
 #ifdef CPRCRAY
@@ -596,11 +586,13 @@ end subroutine check_energy_get_integrals
        te(:ncol,lchnk,5) = state(lchnk)%cflx_diff(:ncol)
        te(:ncol,lchnk,6) = state(lchnk)%shf_diff(:ncol)
 
+       te(:ncol,lchnk,7) = state(lchnk)%tw_cur(:ncol)
+
     end do
 
     ! Compute global means of input and output energies and of
     ! surface pressure for heating rate (assume uniform ptop)
-    call gmean(te, te_glob, 6)
+    call gmean(te, te_glob, 7)
 
     if (begchunk .le. endchunk) then
 
@@ -611,15 +603,21 @@ end subroutine check_energy_get_integrals
        rr_glob       = te_glob(4)
        cflxdiff      = te_glob(5)
        shfdiff       = te_glob(6)
+       totalw        = te_glob(7)
 
        if (masterproc) then
           ! integrated state%tw_cur is kg/m2
           ! integrated dflux, dstep are kg/m2
           ! integrated cflx is kg/m2/sec
           ! this diagnostics is from the previous time step
+
+          !these are not relative errors, but te_cur is globally intergated in the other gmean call,
+          !and we will integrate tw_cur [kg/m2] here. 
+          !rel errors can be obtained in post processing
+          write(iulog,'(1x,a25,1x,i8,2(1x,e25.17))') "n, dt, W tot mass [kg/m2]", nstep-1, dtime, totalw
           write(iulog,'(1x,a25,1x,i8,2(1x,e25.17))') "n, W flux, dWater [kg/m2]", nstep-1, dflux, dstep
-          write(iulog,'(1x,a23,1x,i8,1(1x,e25.17))') "n, W difference [kg/m2]",   nstep-1, dflux - dstep
-          write(iulog,'(1x,a25,1x,i8,2(1x,e25.17))') "n, W cflx*dt loss [kg/m2]", nstep-1, cflxdiff*dstep
+          write(iulog,'(1x,a24,1x,i8,1(1x,e25.17))') "n, W flux-dWater [kg/m2]",   nstep-1, dflux - dstep
+          write(iulog,'(1x,a25,1x,i8,2(1x,e25.17))') "n, W cflx*dt loss [kg/m2]", nstep-1, cflxdiff*dtime
 
           ! integrated delta_te_glob is J/m2, rr_glob is W/m2
           ! integrated shf is W/m2

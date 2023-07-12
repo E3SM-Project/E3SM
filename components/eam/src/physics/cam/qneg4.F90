@@ -71,8 +71,8 @@ subroutine qneg4 (subnam  ,lchnk   ,ncol    ,ztodt   ,        &
          nptsexc = nptsexc + 1
          indxexc(nptsexc) = i
          qflx (i,1) = qflx (i,1) - excess(i)
-!!!OG for evaporated ice !
-! also this does not help with energy trends, it makes it worse
+
+         !this does not help with energy trends, it makes it worse
          lhflx(i) = lhflx(i) - excess(i)*latvap
          shflx(i) = shflx(i) + excess(i)*latvap
       end if
