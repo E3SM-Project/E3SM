@@ -9801,7 +9801,8 @@ contains
          config_pond_refreezing_type, &
          config_salt_flux_coupling_type, &
          config_ocean_heat_transfer_type, &
-         config_sea_freezing_temperature_type
+         config_sea_freezing_temperature_type, &
+         config_snow_redistribution_scheme
 
     logical, pointer :: &
          config_calc_surface_stresses, &
@@ -9829,7 +9830,11 @@ contains
          config_use_DON, &
          config_use_iron, &
          config_use_modal_aerosols, &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_column_snow_tracers, &
+         config_use_effective_snow_density, &
+         config_use_snow_liquid_ponds, &
+         config_use_snow_grain_radius
 
     logical :: &
          use_meltponds
@@ -9893,6 +9898,11 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
     call MPAS_pool_get_config(domain % configs, "config_nSnowLayers", config_nSnowLayers)
     call MPAS_pool_get_config(domain % configs, "config_nIceLayers", config_nIceLayers)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_snow_tracers", config_use_column_snow_tracers)
+    call MPAS_pool_get_config(domain % configs, "config_use_effective_snow_density", config_use_effective_snow_density)
+    call MPAS_pool_get_config(domain % configs, "config_snow_redistribution_scheme", config_snow_redistribution_scheme)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_liquid_ponds", config_use_snow_liquid_ponds)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
     !-----------------------------------------------------------------------
     ! Check values
@@ -10028,6 +10038,35 @@ contains
     if (config_use_level_meltponds .and. abs(config_snow_to_ice_transition_depth) > seaicePuny) then
        call mpas_log_write(&
             "check_column_package_configs: config_use_level_meltponds = .true. and config_snow_to_ice_transition_depth /= 0", &
+            messageType=MPAS_LOG_CRIT)
+    endif
+
+    ! check config_snow_redistribution_scheme
+      if ((trim(config_snow_redistribution_scheme) == "ITDrdg" .or. &
+         trim(config_snow_redistribution_scheme) == "ITDsd") .and. .not. config_use_effective_snow_density) then
+       call mpas_log_write(&
+         "check_column_package_configs: config_snow_redistribution = 'ITD' but config_use_effective_snow_density is false", &
+            messageType=MPAS_LOG_CRIT)
+    endif
+
+    ! check config_use_snow_liquid_ponds and config_use_snow_grain_radius
+    if (config_use_snow_liquid_ponds .and. .not. config_use_snow_grain_radius) then
+       call mpas_log_write(&
+         "check_column_package_configs: config_use_snow_liquid_ponds = true but config_use_snow_grain_radius = false", &
+            messageType=MPAS_LOG_CRIT)
+    endif
+
+    ! check config_use_snow_grain_radius and config_use_column_snow_tracers
+    if (config_use_snow_grain_radius .and. .not. config_use_column_snow_tracers) then
+       call mpas_log_write(&
+         "check_column_package_configs: config_use_snow_grain_radius = true but config_use_column_snow_tracers = false", &
+            messageType=MPAS_LOG_CRIT)
+    endif
+
+    ! check config_use_snow_grain_radius and config_use_column_snow_tracers
+    if (config_use_column_snow_tracers .and. .not. config_use_snow_grain_radius) then
+       call mpas_log_write(&
+         "check_column_package_configs: config_use_column_snow_tracers but config_use_snow_grain_radius = false", &
             messageType=MPAS_LOG_CRIT)
     endif
 
