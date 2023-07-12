@@ -2562,6 +2562,7 @@ contains
     ! add flux for phosphorus - X.YANG
     ! !USES:
     use pftvarcon            , only : percrop
+    use elm_varctl           , only : use_crop
     !
     ! !ARGUMENTS:
       !$acc routine seq
@@ -2642,7 +2643,7 @@ contains
             ! The transfer rate is a linearly decreasing function of time,
             ! going to zero on the last timestep of the onset period
 
-            if (onset_counter(p) == dt .or. percrop(ivt(p)) == 1.0_r8) then
+            if (onset_counter(p) == dt .or. (use_crop .and. percrop(ivt(p)) == 1.0_r8) ) then
                t1 = 1.0_r8 / dt
             else
                t1 = 2.0_r8 / (onset_counter(p))
