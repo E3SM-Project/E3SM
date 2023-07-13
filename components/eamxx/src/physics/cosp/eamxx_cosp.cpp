@@ -112,6 +112,24 @@ void Cosp::run_impl (const double dt)
   // code, which is all in F90 and not ported to run on GPU kernels. These will
   // all then need to be copied to layoutLeft views to permute the indices for
   // F90.
+  //
+  // Need to make sure device data is synced to host?
+  get_field_in("qv").sync_to_host();
+  get_field_in("qc").sync_to_host();
+  get_field_in("qi").sync_to_host();
+  get_field_in("qr").sync_to_host();
+  get_field_in("qm").sync_to_host();
+  get_field_in("sunlit").sync_to_host();
+  get_field_in("surf_radiative_T").sync_to_host();
+  get_field_in("T_mid").sync_to_host();
+  get_field_in("p_mid").sync_to_host();
+  get_field_in("p_int").sync_to_host();
+  get_field_in("cldfrac_tot_for_analysis").sync_to_host();
+  get_field_in("reff_qc").sync_to_host();
+  get_field_in("reff_qi").sync_to_host();
+  get_field_in("dtau067").sync_to_host();
+  get_field_in("dtau105").sync_to_host();
+
   auto qv      = get_field_in("qv").get_view<const Real**, Host>();
   auto qc      = get_field_in("qc").get_view<const Real**, Host>();
   auto qi      = get_field_in("qi").get_view<const Real**, Host>();
@@ -142,6 +160,18 @@ void Cosp::run_impl (const double dt)
             cldfrac, reff_qc, reff_qi, dtau067, dtau105,
             isccp_cldtot, isccp_ctptau
     );
+    // Remask night values to ZERO since our I/O does not know how to handle masked/missing values
+    // in temporal averages; this is all host data, so we can just use host loops like its the 1980s
+    for (int i = 0; i < m_num_cols; i++) {
+        if (sunlit(i) == 0) {
+            isccp_cldtot(i) = 0;
+            for (int j = 0; j < m_num_isccptau; j++) {
+                for (int k = 0; k < m_num_isccpctp; k++) {
+                    isccp_ctptau(i,j,k) = 0;
+                }
+            }
+        }
+    }
   } else {
     // If not updating COSP statistics, set these to ZERO; this essentially weights
     // the ISCCP cloud properties by the sunlit mask. What will be output for time-averages
