@@ -34,8 +34,8 @@ bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm)
   switch (l1.rank()) {
     case 1:
       {
-        auto v1 = f1.template get_view<ST*,Host>();
-        auto v2 = f2.template get_view<ST*,Host>();
+        auto v1 = f1.template get_strided_view<ST*,Host>();
+        auto v2 = f2.template get_strided_view<ST*,Host>();
         for (int i=0; i<dims[0]; ++i) {
           if (v1(i) != v2(i)) {
             same_locally = false;
@@ -604,12 +604,6 @@ void print_field_hyperslab (const Field& f,
 {
   // General idea: call f.subfield with the proper index, and recurse
   // until all indices are exausted, then print the field that is left.
-  // HOWEVER. In order to keep LayoutRight in Kokkos, we can only subview
-  //   - along 1st dimension
-  //   - along 2nd dimension if rank>2
-  // So if the input field is 2d and the index to subview at is along
-  // the 2nd dim, we must stop recursion, and print the field manually
-  // extracting the last slice.
   //
   // We keep all the tags/indices we slice away, since we need them at
   // the end of recursion when we print the info of the field location.
@@ -691,7 +685,7 @@ void print_field_hyperslab (const Field& f,
       {
         dims_str[dims_left[0]] = ":";
         out << "  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
-        auto v = f.get_view<const T*,Host>();
+        auto v = f.get_strided_view<const T*,Host>();
         for (int i=0; i<layout.dim(0); ++i) {
           if (i%max_per_line==0) {
             out << "\n    ";
@@ -787,47 +781,8 @@ void print_field_hyperslab (const Field& f,
         "  - loc tags    : <" + ekat::join(tags,",") + ">\n"
         "  - loc indices : (" + ekat::join(indices,",") + ")\n");
 
-    // It's always safe to take subview along 1st dim. For 2nd dim, we can
-    // only do it if the rank is 3+
-    if (idim==0 || layout.rank()>2) {
-      // Slice field, and recurse.
-      auto sub_f = f.subfield(idim,idx);
-      return print_field_hyperslab<T>(sub_f,tags,indices,out,orig_rank,curr_idx+1);
-    } else {
-      // It must be that we have one last slicing to do,
-      // along the 2nd dimension of a rank2 field.
-      EKAT_REQUIRE_MSG (curr_idx==(tags.size()-1) && layout.rank()==2,
-          "Error! Unexpected inputs in print_field_hyperslab.\n"
-          "  - field name : " + f.name() + "\n"
-          "  - field layout: " + to_string(layout) + "\n"
-          "  - curr tag   : " + e2str(tag) + "\n"
-          "  - loc tags   : <" + ekat::join(tags,",") + ">\n"
-          "  - loc indices: (" + ekat::join(indices,",") +")\n");
-
-      const auto& orig_layout = get_orig_header()->get_identifier().get_layout();
-      const auto dims_left = get_dims_left(orig_layout);
-      auto dims_str = get_dims_str(orig_layout);
-
-      // Although the view we extract still has rank2, get_dims_[str|left] only
-      // use the original layout and the loc tags/indices, so it already filled
-      // all the dims string corresponding to the input loc tags/indices.
-      // The only dim left is the current 1st dim of the field.
-      // In other words, even though we have a rank2 field, we should have ended
-      // with a rank 1 field (if Kokkos had allowed us to take the subview)
-      dims_str[dims_left[0]] = ":";
-
-      out << "     " << f.name() << to_string(orig_layout) << "\n\n";
-      f.sync_to_host();
-      auto v = f.get_view<const T**,Host>();
-      out << "  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
-      for (int i=0; i<layout.dim(0); ++i) {
-        if (i%max_per_line==0) {
-          out << "\n    ";
-        }
-        out << v(i,idx) << ", ";
-      }
-      out << "\n";
-    }
+    auto sub_f = f.subfield(idim,idx);
+    return print_field_hyperslab<T>(sub_f,tags,indices,out,orig_rank,curr_idx+1);
   }
 }
 

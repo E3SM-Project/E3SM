@@ -3,6 +3,7 @@
 
 // Include all diagnostics
 #include "diagnostics/field_at_level.hpp"
+#include "diagnostics/field_at_height.hpp"
 #include "diagnostics/potential_temperature.hpp"
 #include "diagnostics/atm_density.hpp"
 #include "diagnostics/exner.hpp"
@@ -21,9 +22,7 @@
 #include "diagnostics/zonal_vapor_flux.hpp"
 #include "diagnostics/meridional_vapor_flux.hpp"
 #include "diagnostics/field_at_pressure_level.hpp"
-#include "diagnostics/precip_liq_surf_mass_flux.hpp"
-#include "diagnostics/precip_ice_surf_mass_flux.hpp"
-#include "diagnostics/precip_total_surf_mass_flux.hpp"
+#include "diagnostics/precip_surf_mass_flux.hpp"
 
 namespace scream {
 
@@ -31,6 +30,7 @@ inline void register_diagnostics () {
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
   diag_factory.register_product("PotentialTemperature",&create_atmosphere_diagnostic<PotentialTemperatureDiagnostic>);
   diag_factory.register_product("FieldAtLevel",&create_atmosphere_diagnostic<FieldAtLevel>);
+  diag_factory.register_product("FieldAtHeight",&create_atmosphere_diagnostic<FieldAtHeight>);
   diag_factory.register_product("FieldAtPressureLevel",&create_atmosphere_diagnostic<FieldAtPressureLevel>);
   diag_factory.register_product("AtmosphereDensity",&create_atmosphere_diagnostic<AtmDensityDiagnostic>);
   diag_factory.register_product("Exner",&create_atmosphere_diagnostic<ExnerDiagnostic>);
@@ -52,9 +52,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("RelativeHumidity",&create_atmosphere_diagnostic<RelativeHumidityDiagnostic>);
   diag_factory.register_product("ZonalVapFlux",&create_atmosphere_diagnostic<ZonalVapFluxDiagnostic>);
   diag_factory.register_product("MeridionalVapFlux",&create_atmosphere_diagnostic<MeridionalVapFluxDiagnostic>);
-  diag_factory.register_product("PrecipLiqSurfMassFlux",&create_atmosphere_diagnostic<PrecipLiqSurfMassFluxDiagnostic>);
-  diag_factory.register_product("PrecipIceSurfMassFlux",&create_atmosphere_diagnostic<PrecipIceSurfMassFluxDiagnostic>);
-  diag_factory.register_product("PrecipTotalSurfMassFlux",&create_atmosphere_diagnostic<PrecipTotalSurfMassFluxDiagnostic>);
+  diag_factory.register_product("precip_surf_mass_flux",&create_atmosphere_diagnostic<PrecipSurfMassFlux>);
 }
 
 } // namespace scream
