@@ -4114,10 +4114,10 @@
 	</var_struct>
 	<var_struct name="LTS" time_levs="1">
 		<var name="LTSRegion"					type="integer"	dimensions="nCells"/>
-		<var name="cellsInLTSRegion"			type="integer"	dimensions="TWO FIVE nCells"/>
-		<var name="nCellsInLTSRegion"			type="integer"	dimensions="TWO FIVE"/>
-		<var name="edgesInLTSRegion"			type="integer"	dimensions="TWO FIVE nEdges"/>
-		<var name="nEdgesInLTSRegion"			type="integer"	dimensions="TWO FIVE"/>
+		<var name="cellsInLTSRegion"			type="integer"	dimensions="TWO R3 nCells"/>
+		<var name="nCellsInLTSRegion"			type="integer"	dimensions="TWO R3"/>
+		<var name="edgesInLTSRegion"			type="integer"	dimensions="TWO R3 nEdges"/>
+		<var name="nEdgesInLTSRegion"			type="integer"	dimensions="TWO R3"/>
 	</var_struct>
 
 <!-- Include registry files from subdirectories -->
