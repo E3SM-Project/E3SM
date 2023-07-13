@@ -45,6 +45,8 @@ namespace scream {
                   reff_qc_h("reff_qc_h", ncol, nlay), reff_qi_h("reff_qi_h", ncol, nlay),
                   dtau067_h("dtau_067_h", ncol, nlay), dtau105_h("dtau105_h", ncol, nlay);
             lview_host_3d isccp_ctptau_h("isccp_ctptau_h", ncol, ntau, nctp);
+            // NOTE: these should already be host views, so we could probably
+            // skip creating the mirror views here
             auto sunlit_h = Kokkos::create_mirror_view(sunlit);
             auto skt_h = Kokkos::create_mirror_view(skt);
             auto isccp_cldtot_h = create_mirror_view(isccp_cldtot);

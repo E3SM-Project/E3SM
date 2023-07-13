@@ -155,8 +155,10 @@ void Cosp::run_impl (const double dt)
     Kokkos::deep_copy(isccp_cldtot, 0.0);
     Kokkos::deep_copy(isccp_ctptau, 0.0);
     Kokkos::deep_copy(isccp_mask  , 0.0);
- }
-
+  }
+  get_field_out("isccp_cldtot").sync_to_dev();
+  get_field_out("isccp_ctptau").sync_to_dev();
+  get_field_out("isccp_mask"  ).sync_to_dev();
 }
 
 // =========================================================================================
