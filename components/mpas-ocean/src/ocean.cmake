@@ -10,16 +10,14 @@ find_package(LAPACK)
 find_package(BLAS)
 if (LAPACK_FOUND AND BLAS_FOUND)
   list(APPEND CPPDEFS "-DUSE_LAPACK")
-  string(APPEND SLIBS "${LAPACK_LIBRARIES} ${BLAS_LIBRARIES}")
+  list(APPEND LIBRARIES "${LAPACK_LIBRARIES};${BLAS_LIBRARIES}")
 endif()
 find_package(PETSc)
 if (PETSC_FOUND)
   list(APPEND CPPDEFS "-DUSE_PETSC")
   list(APPEND INCLUDES "${PETSC_INCLUDES}")
-  string(APPEND SLIBS " -L$ENV{PETSC_DIR}/lib -lpetsc")
+  list(APPEND LIBRARIES "${PETSC_LIBRARIES}")
 endif()
-# SLIBS is used by the main cmake scope, not the child dir scope
-set(SLIBS ${SLIBS} PARENT_SCOPE)
 
 # driver (files live in E3SM)
 list(APPEND RAW_SOURCES
@@ -113,7 +111,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_wetting_drying.F
   core_ocean/shared/mpas_ocn_vel_tidal_potential.F
   core_ocean/shared/mpas_ocn_stokes_drift.F
-  core_ocean/shared/mpas_ocn_manufactured_solution.F 
+  core_ocean/shared/mpas_ocn_manufactured_solution.F
 )
 
 set(OCEAN_DRIVER
