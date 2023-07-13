@@ -2288,11 +2288,11 @@
       ! Transport liquid water in snow between layers and
       ! compute the meltpond contribution
       !-----------------------------------------------------------------
-
-      call drain_snow (dt,            nslyr,        &
-                       vsnon   (n) ,  aicen    (n), &
-                       smice  (:,n),  smliq  (:,n), &
-                       meltsliqn(n),  use_smliq_pnd)
+      if (tr_rsnw) &
+         call drain_snow (dt,            nslyr,        &
+                          vsnon   (n) ,  aicen    (n), &
+                          smice  (:,n),  smliq  (:,n), &
+                          meltsliqn(n),  use_smliq_pnd)
 
 
       !-----------------------------------------------------------------
@@ -3842,7 +3842,6 @@
                                    vicen,     vsnon,    &
                                    alvl,      vlvl,     &
                                    smice,     smliq,    &
-                                   rhos_effn, rhos_eff, &
                                    rhos_cmpn, rhos_cmp, &
                                    rsnw,      zqin1,    &
                                    zSin1,     Tsfc,     &
@@ -3905,11 +3904,9 @@
          smice    , & ! mass of ice in snow (kg/m^3)
          smliq    , & ! mass of liquid in snow (kg/m^3)
          rsnw     , & ! snow grain radius (10^-6 m)
-         rhos_effn, & ! effective snow density: content (kg/m^3)
          rhos_cmpn    ! effective snow density: compaction (kg/m^3)
 
       real (kind=dbl_kind), intent(inout) :: &
-         rhos_eff , & ! mean effective snow density: content (kg/m^3)
          rhos_cmp     ! mean effective snow density: compaction (kg/m^3)
 
       ! dry snow aging parameters
@@ -3956,9 +3953,7 @@
 
       call snow_effective_density(nslyr,     ncat,     &
                                   vsnon,     vsno,     &
-                                  smice,     smliq,    &
                                   rhosnew,             &
-                                  rhos_effn, rhos_eff, &
                                   rhos_cmpn, rhos_cmp)
 
       !-----------------------------------------------------------------
@@ -4950,8 +4945,8 @@
            tr_pond_cesm_in , & ! if .true., use cesm pond tracer
            tr_pond_lvl_in  , & ! if .true., use level-ice pond tracer
            tr_pond_topo_in , & ! if .true., use explicit topography-based ponds
-           tr_snow_in      , & ! if .true., use snow trcrs (smice, smliq, rhos_cmp)
-           tr_rsnw_in      , & ! if .true., use snow grain radius tracer
+           tr_snow_in      , & ! if .true., use snow density tracer (rhos_cmp)
+           tr_rsnw_in      , & ! if .true., use snow grain radius, liquid and mass tracers (smice, smliq, rsnw)
            tr_aero_in      , & ! if .true., use aerosol tracers
            tr_brine_in     , & ! if .true., brine height differs from ice thickness
            tr_bgc_S_in     , & ! if .true., use zsalinity
@@ -4977,8 +4972,8 @@
              tr_pond_cesm , & ! if .true., use cesm pond tracer
              tr_pond_lvl  , & ! if .true., use level-ice pond tracer
              tr_pond_topo , & ! if .true., use explicit topography-based ponds
-             tr_snow      , & ! if .true., use snow trcrs (smice, smliq, rhos_cmp)
-             tr_rsnw      , & ! if .true., use snow grain radius tracer
+             tr_snow      , & ! if .true., use snow density tracer (rhos_cmp)
+             tr_rsnw      , & ! if .true., use snow grain radius, liquid and mass tracers (smice, smliq, rsnw)
              tr_aero      , & ! if .true., use aerosol tracers
              tr_brine     , & ! if .true., brine height differs from ice thickness
              tr_bgc_S     , & ! if .true., use zsalinity
@@ -5004,8 +4999,8 @@
              tr_pond_cesm_in , & ! if .true., use cesm pond tracer
              tr_pond_lvl_in  , & ! if .true., use level-ice pond tracer
              tr_pond_topo_in , & ! if .true., use explicit topography-based ponds
-             tr_snow_in      , & ! if .true., use snow trcrs (smice, smliq, rhos_cmp)
-             tr_rsnw_in      , & ! if .true., use snow grain radius tracer
+             tr_snow_in      , & ! if .true., use snow density tracer (rhos_cmp)
+             tr_rsnw_in      , & ! if .true., use snow grain radius, liquid and mass tracers (smice, smliq, rsnw)
              tr_aero_in      , & ! if .true., use aerosol tracers
              tr_brine_in     , & ! if .true., brine height differs from ice thickness
              tr_bgc_S_in     , & ! if .true., use zsalinity
