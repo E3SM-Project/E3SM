@@ -8,10 +8,18 @@ list(APPEND INCLUDES "core_ocean/gotm/include")
 # check if lapack is linked
 find_package(LAPACK)
 find_package(BLAS)
-if(LAPACK_FOUND AND BLAS_FOUND)
+if (LAPACK_FOUND AND BLAS_FOUND)
   list(APPEND CPPDEFS "-DUSE_LAPACK")
-  list(APPEND SLIBS "${LAPACK_LIBRARIES} ${BLAS_LIBRARIES}")
+  string(APPEND SLIBS "${LAPACK_LIBRARIES} ${BLAS_LIBRARIES}")
 endif()
+find_package(PETSc)
+if (PETSc_FOUND)
+  list(APPEND CPPDEFS "-DUSE_PETSC")
+  list(APPEND INCLUDES "${PETSC_INCLUDES}")
+  string(APPEND SLIBS " -L$ENV{PETSC_DIR}/lib -lpetsc")
+endif()
+# SLIBS is used by the main cmake scope, not the child dir scope
+set(SLIBS ${SLIBS} PARENT_SCOPE)
 
 # driver (files live in E3SM)
 list(APPEND RAW_SOURCES
