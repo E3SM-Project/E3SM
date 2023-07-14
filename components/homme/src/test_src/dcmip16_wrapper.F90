@@ -737,14 +737,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       ptop = hvcoord%hyai(1) * hvcoord%ps0
 
       !compute current energy and mass
-      if(bubble_rj_eamcpdry) then
-        call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en1glob_cp)  
-        en1glob_cv = en1glob_cp
-      else
-        call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en1glob_cp)  
-        call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en1glob_cv)  
-      endif
-
+      call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en1glob_cp)  
+      call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en1glob_cv)  
       mass1global = sum( dp_c )
 
       dpdry_c = dp_c*(1.0 - qv_c - qc_c - qr_c)
@@ -817,14 +811,8 @@ print *, "    "
 endif
 #endif
 
-
-      if(bubble_rj_eamcpdry) then
-        call energycp_nh_via_massCPDRY(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2glob_cp)
-        en2glob_cv = en2glob_cp
-      else
-        call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2glob_cp)
-        call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en2glob_cv)
-      endif
+      call energycp_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c(nlevp),p_c,en2glob_cp)
+      call energycV_nh_via_mass(dp_c*(1-qv_c-qc_c-qr_c), dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,en2glob_cv)
 
       mass2global = sum( dp_c )
 
@@ -862,6 +850,14 @@ endif
 !ver 2, comparing only cp/cl terms without L terms for exact methods and eam interface methods
       if(wasiactive)then
         !en_cl_diff(i,j,ie) = (en1glob_cp-en2glob_cp-latice*mass_prect)/(encl-latice*mass_prect)
+
+!regarding en_before, en2, en_after as returned by RJ routines:
+!in case of cpstarHY update, en_before and en2 are HY functionals and wont match en1global.
+!this was done to check that the update is conserving.
+!therefore energy_prect will also be based on HY functional.
+!in case of EAM updates, energy_prect is even less of dE, it is only an L=latice*PRECT term.
+!we won't do analysis based on energy_prect, we will only use en1glob - en2glob and compare it
+!with E cl.
 
         !above neither mass not energy have factor 1/gravit
         prect_mass_forint(i,j,ie) = mass_prect/gravit/dt
