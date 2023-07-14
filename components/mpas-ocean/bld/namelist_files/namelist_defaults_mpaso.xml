@@ -401,9 +401,6 @@
 <!-- ocean_constants -->
 <config_density0>1026.0</config_density0>
 
-<!-- lts -->
-<config_dt_scaling_LTS>1</config_dt_scaling_LTS>
-
 <!-- pressure_gradient -->
 <config_pressure_gradient_type>'Jacobian_from_TS'</config_pressure_gradient_type>
 <config_common_level_weight>0.5</config_common_level_weight>
