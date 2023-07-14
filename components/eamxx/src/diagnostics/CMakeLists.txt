@@ -20,6 +20,7 @@ set(DIAGNOSTIC_SRCS
   vertical_layer.cpp
   virtual_temperature.cpp
   zonal_vapor_flux.cpp
+  surf_upward_latent_heat_flux.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})
