@@ -1425,7 +1425,9 @@ contains
      seq_flds_o2x_fields, seq_flds_r2x_fields, seq_flds_i2x_fields
     use seq_comm_mct , only :  mphaid, mbaxid, mlnid, mblxid,  mrofid, mbrxid, mpoid, mboxid,  mpsiid, mbixid
     use seq_comm_mct,        only: num_moab_exports  ! used to count the steps for moab files
-
+#ifdef MOABDEBUGMCT
+    integer :: dummy_iMOAB
+#endif
 
 103 format( 5A )
 104 format( A, i10.8, i8)
@@ -2605,22 +2607,22 @@ contains
        call shr_sys_flush(logunit)
     endif
     if (atm_present) then
-      call expose_mct_grid_moab(atm(1))
+      call expose_mct_grid_moab(atm(1), dummy_iMOAB)
     endif
     if (lnd_present) then
-      call expose_mct_grid_moab(lnd(1))
+      call expose_mct_grid_moab(lnd(1), dummy_iMOAB)
     endif
     if (ocn_present) then
-      call expose_mct_grid_moab(ocn(1))
+      call expose_mct_grid_moab(ocn(1), dummy_iMOAB)
     endif
     if (ice_present) then
-      call expose_mct_grid_moab(ice(1))
+      call expose_mct_grid_moab(ice(1), dummy_iMOAB)
     endif
     if (rof_present) then
-      call expose_mct_grid_moab(rof(1))
+      call expose_mct_grid_moab(rof(1), dummy_iMOAB)
     endif
     if (glc_present) then
-      call expose_mct_grid_moab(glc(1))
+      call expose_mct_grid_moab(glc(1), dummy_iMOAB)
     endif
 
 #endif

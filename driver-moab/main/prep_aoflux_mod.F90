@@ -8,7 +8,9 @@ module prep_aoflux_mod
   use seq_comm_mct,     only: num_inst_xao, num_inst_frc, num_inst_ocn
   use seq_comm_mct,     only: CPLID, logunit
   use seq_comm_mct,     only : mbofxid ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
-  use seq_comm_mct,     only : mbox2id !
+#ifdef MOABDEBUG
+  use seq_comm_mct,     only : mbox2id ! used only for debugging ocn and mct
+#endif
   use seq_comm_mct,     only : mbaxid ! iMOAB app id for atm on cpl pes
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_comm_mct, only : num_moab_exports
