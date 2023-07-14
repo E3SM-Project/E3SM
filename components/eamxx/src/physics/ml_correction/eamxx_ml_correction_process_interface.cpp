@@ -13,7 +13,7 @@ namespace scream {
 MLCorrection::MLCorrection(const ekat::Comm &comm,
                            const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
-  m_ML_model_path = m_params.get<std::vector<std::string>>("ML_model_path");
+  m_ML_model_path = m_params.get<std::string>("ML_model_path");
   m_fields_ml_output_variables = m_params.get<std::vector<std::string>>("ML_output_fields");
 }
 
@@ -33,7 +33,8 @@ void MLCorrection::set_grids(
   m_num_cols = m_grid->get_num_local_dofs();  // Number of columns on this rank
   m_num_levs =
       m_grid->get_num_vertical_levels();  // Number of levels per column
-
+  m_lat  = m_grid->get_geometry_data("lat");
+  m_lon  = m_grid->get_geometry_data("lon");
   // Define the different field layouts that will be used for this process
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
@@ -63,6 +64,7 @@ void MLCorrection::run_impl(const double dt) {
   namespace py      = pybind11;
   // use model time to infer solar zenith angle for the ML prediction
   auto current_ts = timestamp();
+  std::string datetime_str = current_ts.get_date_string() + " " + current_ts.get_time_string();
   const auto &qv_field = get_field_out("qv");
   const auto &qv       = qv_field.get_view<Real **, Host>();
   const auto &T_mid_field = get_field_out("T_mid");
@@ -72,10 +74,15 @@ void MLCorrection::run_impl(const double dt) {
   const auto &v_field = get_field_out("v");
   const auto &v       = v_field.get_view<Real **, Host>();
 
+  auto h_lat  = m_lat.get_view<const Real*,Host>();
+  auto h_lon  = m_lon.get_view<const Real*,Host>();
+
   // T_mid_field.sync_to_dev();
   int fpe_mask = ekat::get_enabled_fpes();
   ekat::disable_all_fpes();  // required for importing numpy
-  py::initialize_interpreter();
+  if ( Py_IsInitialized() == 0 ) {
+    py::initialize_interpreter();
+  }
   py::module sys = pybind11::module::import("sys");
   sys.attr("path").attr("insert")(1, ML_CORRECTION_CUSTOM_PATH);
   auto py_correction = py::module::import("ml_correction");
@@ -87,8 +94,12 @@ void MLCorrection::run_impl(const double dt) {
       py::array_t<Real, py::array::c_style | py::array::forcecast>(
           m_num_cols * m_num_levs, u.data(), py::str{}),        
       py::array_t<Real, py::array::c_style | py::array::forcecast>(
-          m_num_cols * m_num_levs, v.data(), py::str{}),                            
-      m_num_cols, m_num_levs);
+          m_num_cols * m_num_levs, v.data(), py::str{}),       
+      py::array_t<Real, py::array::c_style | py::array::forcecast>(
+          m_num_cols, h_lat.data(), py::str{}),       
+      py::array_t<Real, py::array::c_style | py::array::forcecast>(
+          m_num_cols, h_lon.data(), py::str{}),                                                
+      m_num_cols, m_num_levs, m_ML_model_path, datetime_str);
   py::gil_scoped_release no_gil;  
   ekat::enable_fpes(fpe_mask);
   printf("[eamxx::MLCorrection] finished doing nothing in Python");

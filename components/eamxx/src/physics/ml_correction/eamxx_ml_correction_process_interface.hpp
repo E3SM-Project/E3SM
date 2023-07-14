@@ -49,7 +49,9 @@ class MLCorrection : public AtmosphereProcess {
   // Keep track of field dimensions and the iteration count
   Int m_num_cols;
   Int m_num_levs;
-  std::vector<std::string> m_ML_model_path;
+  Field m_lat;
+  Field m_lon;
+  std::string m_ML_model_path;
   std::vector<std::string> m_fields_ml_output_variables;
 };  // class MLCorrection
 
