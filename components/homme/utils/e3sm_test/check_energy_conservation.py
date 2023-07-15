@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import os, sys, re
-import numpy as np
+#import numpy as np
 
 def readall(fn):
     with open(fn,'r') as f:
@@ -97,16 +97,21 @@ def conservativeW(start_time, nstep, tw, wdiff, tol, verbose):
    
     short_tw=tw[start_time:]
     short_wdiff=wdiff[start_time:]
-    short_wdiff = np.array(short_wdiff)/np.array(short_tw)
+    res = []
+    for i in range(len(short_wdiff)):
+       res.append(short_wdiff[i] / short_tw[i])
+    short_wdiff = res
 
     aver = sum(short_wdiff)/len(short_wdiff)
-    stdd = np.std(np.array(short_wdiff))
+    short_wdiff_abs = [abs(ele) for ele in short_wdiff]
+
+    #stdd = np.std(np.array(short_wdiff))
     if (verbose):
         print('Water leak rel:', short_wdiff)
         print('starting index is {}'.format(start_time))
         print('number of samples: {}'.format(len(short_wdiff)))
-        print('Wdiff average {:1.3e}, std {:1.3e}'.format(aver,stdd))
-        print('Wdiff min {:1.3e}, max {:1.3e}'.format(min(short_wdiff),max(short_wdiff)))
+        print('Water leak average: {:1.3e}'.format(aver))
+        print('abs(Water leak): min {:1.3e}, max {:1.3e}'.format(min(short_wdiff_abs),max(short_wdiff_abs)))
         #maxabs = max(abs(rr))
         maxx = abs(aver)
     return maxx <= tol
@@ -120,16 +125,22 @@ def conservativeE(s1, s2, te, nstep, ediff, tol, verbose):
 
     short_te=te[s1:]
     short_ediff=ediff[s2:]
-    short_ediff = np.array(short_ediff)/np.array(short_te)
+    res = []
+    for i in range(len(short_ediff)):
+       res.append(short_ediff[i] / short_te[i])
+    short_ediff = res 
 
     aver = sum(short_ediff)/len(short_ediff)
-    stdd = np.std(np.array(short_ediff))
+    short_ediff_abs = [abs(ele) for ele in short_ediff]
+
+    aver = sum(short_ediff)/len(short_ediff)
+    #stdd = np.std(np.array(short_ediff))
     if (verbose):
         print('Energy leak rel:', short_ediff)
         print('starting indices are {},{}'.format(s1,s2))
         print('number of samples: {}'.format(len(short_ediff)))
-        print('Ediff average {:1.3e}, std {:1.3e}'.format(aver,stdd))
-        print('Ediff min {:1.3e}, max {:1.3e}'.format(min(short_ediff),max(short_ediff)))
+        print('Ediff average: {:1.3e}'.format(aver))
+        print('abs(Ediff): min {:1.3e}, max {:1.3e}'.format(min(short_ediff_abs),max(short_ediff_abs)))
         #maxabs = max(abs(rr))
         maxx = abs(aver)
     return maxx <= tol
@@ -156,11 +167,11 @@ atm_fn = uncompress(atm_fn)
 print('Using log file {}'.format(atm_fn))
 [d1,d2] = gather_energy_data(atm_fn)
 
-goodw = (conservativeW(0,d2['nstep'],d2['tw'],d2['wdiff'],2e-5,True))
+goodw = (conservativeW(0,d2['nstep'],d2['tw'],d2['wdiff'],2e-8,True))
 #d1 and d2 arrays are of different size
 #d1 array has values for nstep 0, 1, 2, 3
 #d2 array has values for nstep 2, 3 (but they are named as 1 and 2, they are shifted by 1 wrt te arrays)
-goode = (conservativeE(2,0,d1['te'],d2['nstep'],d2['ediff'],2e-9,True))
+goode = (conservativeE(2,0,d1['te'],d2['nstep'],d2['ediff'],2e-13,True))
 
 if (goodw and goode):
     print('PASS')
