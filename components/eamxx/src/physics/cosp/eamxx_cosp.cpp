@@ -48,7 +48,6 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("surf_radiative_T", scalar2d_layout    , K,      grid_name);
   //add_field<Required>("surfelev",    scalar2d_layout    , m,      grid_name);
   //add_field<Required>("landmask",    scalar2d_layout    , nondim, grid_name);
-  //add_field<Required>("horiz_wind",  scalar3d_layout_mid, m/s,    grid_name);
   add_field<Required>("sunlit",           scalar2d_layout    , nondim, grid_name);
   add_field<Required>("p_mid",             scalar3d_layout_mid, Pa,     grid_name);
   add_field<Required>("p_int",             scalar3d_layout_int, Pa,     grid_name);
@@ -58,8 +57,6 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("qv",               scalar3d_layout_mid, Q,      grid_name, "tracers");
   add_field<Required>("qc",               scalar3d_layout_mid, Q,      grid_name, "tracers");
   add_field<Required>("qi",               scalar3d_layout_mid, Q,      grid_name, "tracers");
-  add_field<Required>("qr",               scalar3d_layout_mid, Q,      grid_name, "tracers");
-  add_field<Required>("qm",               scalar3d_layout_mid, Q,      grid_name, "tracers");
   add_field<Required>("cldfrac_tot_for_analysis", scalar3d_layout_mid, nondim, grid_name);
   // Optical properties, should be computed in radiation interface
   add_field<Required>("dtau067",     scalar3d_layout_mid, nondim, grid_name); // 0.67 micron optical depth
@@ -67,9 +64,6 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   // Effective radii, should be computed in either microphysics or radiation interface
   add_field<Required>("eff_radius_qc",     scalar3d_layout_mid, m,      grid_name);
   add_field<Required>("eff_radius_qi",     scalar3d_layout_mid, m,      grid_name);
-  //add_field<Required>("eff_radius_qr",     scalar3d_layout_mid, m,      grid_name);
-  //add_field<Required>("eff_radius_qm",     scalar3d_layout_mid, m,      grid_name);
-
   // Set of fields used strictly as output
   add_field<Computed>("isccp_cldtot", scalar2d_layout, nondim, grid_name);
   add_field<Computed>("isccp_ctptau", scalar4d_layout_ctptau, nondim, grid_name, 1);
@@ -87,9 +81,6 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   m_num_subcols = m_params.get<Int>("cosp_subcolumns", 10);
 
   // Set property checks for fields in this process
-  //using Interval = FieldWithinIntervalCheck;
-  //add_postcondition_check<Interval>(get_field_out("cldfrac_tot"),m_grid,0.0,1.0,false);
-  //add_postcondition_check<Interval>(get_field_out("cldfrac_tot_for_analysis"),m_grid,0.0,1.0,false);
   CospFunc::initialize(m_num_cols, m_num_subcols, m_num_levs);
 }
 
@@ -109,7 +100,6 @@ void Cosp::run_impl (const double dt)
 
   // Get fields from field manager; note that we get host views because this
   // interface serves primarily as a wrapper to a c++ to f90 bridge for the COSP
-  // code, which is all in F90 and not ported to run on GPU kernels. These will
   // all then need to be copied to layoutLeft views to permute the indices for
   // F90.
   //
@@ -117,8 +107,6 @@ void Cosp::run_impl (const double dt)
   get_field_in("qv").sync_to_host();
   get_field_in("qc").sync_to_host();
   get_field_in("qi").sync_to_host();
-  get_field_in("qr").sync_to_host();
-  get_field_in("qm").sync_to_host();
   get_field_in("sunlit").sync_to_host();
   get_field_in("surf_radiative_T").sync_to_host();
   get_field_in("T_mid").sync_to_host();
@@ -133,8 +121,6 @@ void Cosp::run_impl (const double dt)
   auto qv      = get_field_in("qv").get_view<const Real**, Host>();
   auto qc      = get_field_in("qc").get_view<const Real**, Host>();
   auto qi      = get_field_in("qi").get_view<const Real**, Host>();
-  auto qr      = get_field_in("qr").get_view<const Real**, Host>();
-  auto qm      = get_field_in("qm").get_view<const Real**, Host>();
   auto sunlit  = get_field_in("sunlit").get_view<const Real*, Host>();
   auto skt     = get_field_in("surf_radiative_T").get_view<const Real*, Host>();
   auto T_mid   = get_field_in("T_mid").get_view<const Real**, Host>();
@@ -145,7 +131,6 @@ void Cosp::run_impl (const double dt)
   auto reff_qi = get_field_in("eff_radius_qi").get_view<const Real**, Host>();
   auto dtau067 = get_field_in("dtau067").get_view<const Real**, Host>();
   auto dtau105 = get_field_in("dtau105").get_view<const Real**, Host>();
-  auto cldfrac_tot_for_analysis = get_field_in("cldfrac_tot_for_analysis").get_view<const Real**, Host>();
   auto isccp_cldtot = get_field_out("isccp_cldtot").get_view<Real*, Host>();
   auto isccp_ctptau = get_field_out("isccp_ctptau").get_view<Real***, Host>();
   auto isccp_mask   = get_field_out("isccp_mask"  ).get_view<Real*, Host>();  // Copy of sunlit flag with COSP frequency for proper averaging
