@@ -74,12 +74,7 @@ module scream_scorpio_interface
             grid_write_data_array,       & ! Write gridded data to a pio managed netCDF file
             grid_read_data_array,        & ! Read gridded data from a pio managed netCDF file
             eam_update_time,             & ! Update the timestamp (i.e. time variable) for a given pio netCDF file
-            get_int_attribute,           & ! Retrieves an integer global attribute from the nc file
-            set_int_attribute,           & ! Writes an integer global attribute to the nc file
-            set_str_attribute,           & ! Writes an string global attribute to the nc file
-            get_dimlen,                  & ! Returns the length of a specific dimension in a file
-            read_time_at_index,          & ! Returns the time stamp for a specific time index
-            has_variable                   ! Checks if given file contains a certain variable
+            read_time_at_index             ! Returns the time stamp for a specific time index
 
   private :: errorHandle, get_coord
 
@@ -1181,130 +1176,6 @@ contains
 
   end subroutine get_var
 !=====================================================================!
-  ! Retrieves an integer global attribute from the nc file
-  function get_int_attribute (file_name, attr_name) result(val)
-    use pionfatt_mod, only: PIO_get_att => get_att
-    character(len=*), intent(in) :: file_name  ! Name of the filename
-    character(len=*), intent(in) :: attr_name  ! Name of the attribute
-    type(pio_atm_file_t), pointer :: pio_atm_file
-    integer :: val, ierr
-    logical :: found
-
-    call lookup_pio_atm_file(trim(file_name),pio_atm_file,found)
-    if (.not.found) then
-      call errorHandle("PIO Error: can't find pio_atm_file associated with file: "//trim(file_name),-999)
-    endif
-    ierr = PIO_get_att(pio_atm_file%pioFileDesc, PIO_GLOBAL, attr_name, val)
-    if (ierr .ne. 0) then
-      call errorHandle("Error retrieving global attribute '" // trim(attr_name) &
-                       // "' in pio file " // trim(file_name) // ".", -999)
-    endif
-  end function get_int_attribute
-
-  ! Writes an integer global attribute to the nc file
-  subroutine set_int_attribute (file_name, attr_name, val)
-    use pionfatt_mod, only: PIO_put_att => put_att
-    use pio_nf, only: pio_redef, PIO_inq_att
-
-    character(len=*), intent(in) :: file_name  ! Name of the filename
-    character(len=*), intent(in) :: attr_name  ! Name of the attribute
-    integer, intent(in) :: val
-    type(pio_atm_file_t), pointer :: pio_atm_file
-    integer(pio_offset_kind) :: len
-    integer :: ierr,xtype
-    logical :: found, enddef_needed
-
-    call lookup_pio_atm_file(trim(file_name),pio_atm_file,found)
-    if (.not.found) then
-      call errorHandle("PIO Error: can't find pio_atm_file associated with file: "//trim(file_name),-999)
-    endif
-
-    ! If this attribute does not exist, we need to re-open the nc file for definition,
-    ! then re-close it to put it in data mode again.
-    ! NOTE: this check step is only for pre-NetCDF4 format, where attributes can
-    !       only be defined while in 'define' mode. For NetCDF4/HDF5, attributes
-    !       can be defined at any time.
-    ! TODO: add check on netcdf format, to see if this inq_att shenanigans is needed.
-    ierr = PIO_inq_att(pio_atm_file%pioFileDesc,PIO_GLOBAL,attr_name,xtype,len)
-    enddef_needed = .false.
-    if (ierr .ne. PIO_NOERR .and. pio_atm_file%is_enddef) then
-      ! In theory, there are several reason why this could fail. However, pio.F90
-      ! does *not* expose all the nc error codes like pio.h does (e.g., no PIO_ENOTATT).
-      ! So we just *assume* that the attribute was not found, and try to define it
-      ! NOTE: We also check if we have ended the definition phase for this file,
-      ! if not we don't need to open it again, and we don't need to flag it to
-      ! be ended when we are done.
-      ierr = PIO_redef(pio_atm_file%pioFileDesc)
-      if (ierr .ne. 0) then
-        call errorHandle("Error while re-opening pio file " // trim(file_name) // ".", -999)
-      endif
-      enddef_needed = .true.
-    endif
-    ierr = PIO_put_att(pio_atm_file%pioFileDesc, PIO_GLOBAL, attr_name, val)
-    if (ierr .ne. 0) then
-      call errorHandle("Error setting global attribute '" // trim(attr_name) &
-                       // "' in pio file " // trim(file_name) // ".", -999)
-    endif
-    if (enddef_needed) then
-      ierr = PIO_enddef(pio_atm_file%pioFileDesc)
-      if (ierr .ne. 0) then
-        call errorHandle("Error while re-closing pio file " // trim(file_name) // ".", -999)
-      endif
-    endif
-  end subroutine set_int_attribute
-!=====================================================================!
-  ! Writes a string  global attribute to the nc file
-  subroutine set_str_attribute (file_name, attr_name, val)
-    use pionfatt_mod, only: PIO_put_att => put_att
-    use pio_nf, only: pio_redef, PIO_inq_att
-
-    character(len=*), intent(in) :: file_name  ! Name of the filename
-    character(len=*), intent(in) :: attr_name  ! Name of the attribute
-    character(len=*), intent(in) :: val
-    type(pio_atm_file_t), pointer :: pio_atm_file
-    integer(pio_offset_kind) :: len
-    integer :: ierr,xtype
-    logical :: found, enddef_needed
-
-    call lookup_pio_atm_file(trim(file_name),pio_atm_file,found)
-    if (.not.found) then
-      call errorHandle("PIO Error: can't find pio_atm_file associated with file: "//trim(file_name),-999)
-    endif
-
-    ! If this attribute does not exist, we need to re-open the nc file for definition,
-    ! then re-close it to put it in data mode again.
-    ! NOTE: this check step is only for pre-NetCDF4 format, where attributes can
-    !       only be defined while in 'define' mode. For NetCDF4/HDF5, attributes
-    !       can be defined at any time.
-    ! TODO: add check on netcdf format, to see if this inq_att shenanigans is needed.
-    ierr = PIO_inq_att(pio_atm_file%pioFileDesc,PIO_GLOBAL,attr_name,xtype,len)
-    enddef_needed = .false.
-    if (ierr .ne. PIO_NOERR .and. pio_atm_file%is_enddef) then
-      ! In theory, there are several reason why this could fail. However, pio.F90
-      ! does *not* expose all the nc error codes like pio.h does (e.g., no PIO_ENOTATT).
-      ! So we just *assume* that the attribute was not found, and try to define it
-      ! NOTE: We also check if we have ended the definition phase for this file,
-      ! if not we don't need to open it again, and we don't need to flag it to
-      ! be ended when we are done.
-      ierr = PIO_redef(pio_atm_file%pioFileDesc)
-      if (ierr .ne. 0) then
-        call errorHandle("Error while re-opening pio file " // trim(file_name) // ".", -999)
-      endif
-      enddef_needed = .true.
-    endif
-    ierr = PIO_put_att(pio_atm_file%pioFileDesc, PIO_GLOBAL, attr_name, val)
-    if (ierr .ne. 0) then
-      call errorHandle("Error setting global attribute '" // trim(attr_name) &
-                       // "' in pio file " // trim(file_name) // ".", -999)
-    endif
-    if (enddef_needed) then
-      ierr = PIO_enddef(pio_atm_file%pioFileDesc)
-      if (ierr .ne. 0) then
-        call errorHandle("Error while re-closing pio file " // trim(file_name) // ".", -999)
-      endif
-    endif
-  end subroutine set_str_attribute
-!=====================================================================!
   ! Lookup pointer for pio file based on filename.
   subroutine lookup_pio_atm_file(filename,pio_file,found,pio_file_list_ptr_in)
 
@@ -1409,21 +1280,22 @@ contains
   end subroutine get_pio_atm_file
 !=====================================================================!
   ! Retrieve the time value for a specific time_index
-  ! If the input arg time_index is <= 0 then it is assumed the user wants
-  ! the last time entry.
+  ! If the input arg time_index is not provided, then it is assumed the user wants
+  ! the last time entry. If time_index is present, it MUST be valid
   function read_time_at_index(filename,time_index) result(val)
     use pio,          only: PIO_get_var
     use pio_nf,       only: PIO_inq_varid
-    character(len=*), intent(in) :: filename
-    integer, intent(in)          :: time_index
-    real(c_double)               :: val
-    real(c_double)               :: val_buf(1)
+
+    character(len=*), intent(in)   :: filename
+    integer, intent(in), optional  :: time_index
+    real(c_double)                 :: val
+    real(c_double)                 :: val_buf(1)
     
     type(pio_atm_file_t), pointer :: pio_atm_file
     logical                       :: found
     integer                       :: dim_id, time_len, ierr
     type(var_desc_t)              :: varid ! netCDF variable ID
-    integer                       :: strt(1), cnt(1)
+    integer                       :: strt(1), cnt(1), timeidx
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     if (.not.found) call errorHandle("read_time_at_index ERROR: File "//trim(filename)//" not found",-999)
@@ -1433,66 +1305,24 @@ contains
     ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim("time"),dim_id)
     call errorHandle("read_time_at_index ERROR: dimension 'time' not found in file "//trim(filename)//".",ierr)
     ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,dim_id,time_len)
-    if (time_index .gt. time_len) then
-      call errorHandle("read_time_at_index ERROR: time_index arg larger than length of time dimension",-999)
-    end if
 
-    if (time_index .gt. 0) then
-      strt(1) = time_index
+    if (present(time_index)) then
+      timeidx = time_index
     else
-      strt(1) = int(pio_atm_file%numRecs)
+      timeidx = time_len
+    endif
+    if (timeidx .gt. time_len) then
+      call errorHandle("read_time_at_index ERROR: time_index arg larger than length of time dimension",-999)
+    elseif (timeidx .le. 0) then
+      call errorHandle("read_time_at_index ERROR: time_index arg must be positive",-999)
     end if
 
+    strt(1) = timeidx
     cnt(1)  = 1
     ierr = PIO_get_var(pio_atm_file%pioFileDesc,varid,strt,cnt,val_buf)
     call errorHandle('read_time_at_index: Error reading variable "time" in file '//trim(filename)//'.',ierr);
     val  = val_buf(1)
   end function read_time_at_index
-!=====================================================================!
-  ! Retrieve the dimension length for a file.
-  function get_dimlen(filename,dimname) result(val)
-    character(len=*), intent(in) :: filename
-    character(len=*), intent(in) :: dimname
-    integer                      :: val
-
-    type(pio_atm_file_t), pointer :: pio_atm_file
-    integer                       :: dim_id, ierr
-    logical                       :: found
-
-    call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
-    if (.not.found) call errorHandle("pio_inq_dimlen ERROR: File "//trim(filename)//" not found",-999)
-    ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim(dimname),dim_id)
-    call errorHandle("pio_inq_dimlen ERROR: dimension "//trim(dimname)//" not found in file "//trim(filename)//".",ierr)
-    ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,dim_id,val)
-
-  end function get_dimlen
-
-  function has_variable(filename,varname) result(has)
-    character(len=*), intent(in) :: filename
-    character(len=*), intent(in) :: varname
-
-    logical                       :: has, found
-    type(pio_atm_file_t), pointer :: pio_atm_file
-    integer                       :: nvars, ivar, ierr
-    character (len=256)           :: vname
-
-    call register_file(filename,file_purpose_in)
-    call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
-
-    ierr = PIO_inquire(pio_atm_file%pioFileDesc,nVariables=nvars)
-    call errorHandle("pio_inquire on file "//trim(filename)//" returned nonzero error code.",ierr)
-
-    has = .false.
-    do ivar=1,nvars
-      ierr = pio_inquire_variable(pio_atm_file%pioFileDesc, ivar, name=vname)
-      if (trim(vname) == trim(varname)) then
-        has = .true.
-        exit
-      endif
-    enddo
-
-    call eam_pio_closefile(filename)
-  end function has_variable
 !=====================================================================!
   ! Write output to file based on type (int or real)
   ! --Note-- that any dimensionality could be written if it is flattened to 1D

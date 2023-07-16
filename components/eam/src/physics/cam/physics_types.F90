@@ -235,7 +235,7 @@ contains
 !-----------------------------------------------------------------------
     use shr_sys_mod,  only: shr_sys_flush
     use constituents, only: cnst_get_ind, cnst_mw
-    use scamMod,      only: scm_crm_mode, single_column
+    use iop_data_mod, only: single_column
     use phys_control, only: phys_getopts
     use physconst,    only: physconst_update ! Routine which updates physconst variables (WACCM-X)
     use ppgrid,       only: begchunk, endchunk
@@ -273,12 +273,6 @@ contains
 
     ! Whether to do validation of state on each call.
     logical :: state_debug_checks
-
-    !-----------------------------------------------------------------------
-
-    ! The column radiation model does not update the state
-    if(single_column.and.scm_crm_mode) return
-
 
     !-----------------------------------------------------------------------
     ! If no fields are set, then return

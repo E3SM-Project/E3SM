@@ -1861,7 +1861,7 @@ contains
     &Mailing address: LLNL Climate Program, c/o David C. Bader, &
     &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
     call ncd_putatt(lnfid, ncd_global, 'contact', &
-          'e3sm-data-support@listserv.llnl.gov')
+          'e3sm-data-support@llnl.gov')
     call ncd_putatt(lnfid, ncd_global, 'Conventions', trim(conventions))
     call ncd_putatt(lnfid, ncd_global, 'comment', &
           "NOTE: None of the variables are weighted by land fraction!" )
@@ -1937,6 +1937,7 @@ contains
        call ncd_defdim(lnfid, 'fates_levscpf', nlevsclass_fates*numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcapf',  nlevcoage*numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcan', nclmax_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levleaf', nlevleaf_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcnlf', nlevleaf_fates * nclmax_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcnlfpf', nlevleaf_fates * nclmax_fates * numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcdsc', nlevdamage_fates * nlevsclass_fates, dimid)
@@ -2468,8 +2469,8 @@ contains
                    long_name='FATES cwd size class', ncid=nfid(t))
              call ncd_defvar(varname='fates_levcan',xtype=ncd_int, dim1name='fates_levcan', &
                    long_name='FATES canopy level', ncid=nfid(t))
-             call ncd_defvar(varname='fates_levleaf',xtype=ncd_int, dim1name='fates_levleaf', &
-                   long_name='FATES leaf+stem level', units='VAI', ncid=nfid(t))
+             call ncd_defvar(varname='fates_levleaf', xtype=tape(t)%ncprec, dim1name='fates_levleaf', &
+                  long_name='FATES integrated leaf+stem area index lower bound', units='m2/m2', ncid=nfid(t))
              call ncd_defvar(varname='fates_canmap_levcnlf',xtype=ncd_int, dim1name='fates_levcnlf', &
                    long_name='FATES canopy level of combined canopy-leaf dimension', ncid=nfid(t))
              call ncd_defvar(varname='fates_lfmap_levcnlf',xtype=ncd_int, dim1name='fates_levcnlf', &
@@ -4839,6 +4840,8 @@ contains
        num2d = nlevsclass_fates*nlevage_fates
     case ('fates_levcan')
        num2d = nclmax_fates
+    case ('fates_levleaf')
+       num2d = nlevleaf_fates
     case ('fates_levcnlf')
        num2d = nlevleaf_fates * nclmax_fates
     case ('fates_levcnlfpf')

@@ -54,7 +54,7 @@ module atm_comp_mct
   use co2_cycle        , only: co2_readFlux_ocn, co2_readFlux_fuel
   use runtime_opts     , only: read_namelist
 
-  use scamMod          , only: single_column,scmlat,scmlon,scm_multcols
+  use iop_data_mod     , only: single_column,scmlat,scmlon,scm_multcols
   use lnd_infodata     , only: precip_downscaling_method !Precipitation downscaling method used in the land model
 
 !

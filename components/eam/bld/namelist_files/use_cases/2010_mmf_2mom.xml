@@ -74,7 +74,7 @@
 <chlorine_loading_fixed_ymd >20100101</chlorine_loading_fixed_ymd>
 <chlorine_loading_type      >FIXED</chlorine_loading_type>
 <linoz_data_cycle_yr        >2010</linoz_data_cycle_yr>
-<linoz_data_file            >linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc</linoz_data_file>
+<linoz_data_file            >linv3_1849-2015_2010JPL_cmip6_historical_10deg_58km_c20210625.nc</linoz_data_file>
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            >CYCLICAL</linoz_data_type>
 

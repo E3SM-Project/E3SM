@@ -12,6 +12,14 @@
 
 #include "utilities/VectorUtils.hpp"
 
+#ifndef HOMME_BE_NO_HASHER
+// It's convenient and clean to use boundary exchanges as the place to hash
+// state. However, this interferes with the BoundaryExchange unit test's
+// isolation of code. Guard these calls so that the unit test can disable the
+// hasher and thus avoid bringing in extra symbols, in particular ElementsState.
+# include "utilities/InternalDiagnostics.hpp"
+#endif
+
 #define tstart(x)
 #define tstop(x)
 
@@ -51,6 +59,8 @@ BoundaryExchange::BoundaryExchange()
   m_cleaned_up = true;
   m_send_pending = false;
   m_recv_pending = false;
+
+  m_diagnostics_level = 0;
 }
 
 BoundaryExchange::BoundaryExchange(std::shared_ptr<Connectivity> connectivity, std::shared_ptr<MpiBuffersManager> buffers_manager)
@@ -61,6 +71,8 @@ BoundaryExchange::BoundaryExchange(std::shared_ptr<Connectivity> connectivity, s
 
   // Set the buffers manager
   set_buffers_manager (buffers_manager);
+
+  m_diagnostics_level = 0;
 }
 
 BoundaryExchange::~BoundaryExchange()
@@ -73,6 +85,10 @@ BoundaryExchange::~BoundaryExchange()
     m_buffers_manager->remove_customer(this);
   }
 }
+
+void BoundaryExchange::set_label (const std::string& label) { m_label = label; }
+const std::string& BoundaryExchange::get_label () const { return m_label; }
+void BoundaryExchange::set_diagnostics_level (const int level) { m_diagnostics_level = level; }
 
 void BoundaryExchange::set_connectivity (std::shared_ptr<Connectivity> connectivity)
 {
@@ -279,6 +295,11 @@ void BoundaryExchange::exchange (const ExecViewUnmanaged<const Real * [NP][NP]>*
     build_buffer_views_and_requests();
   }
 
+#ifndef HOMME_BE_NO_HASHER
+  if (m_diagnostics_level > 1)
+    Homme::print_global_state_hash(std::string("BE-pre-") + m_label);
+#endif
+
   // Hey, if some process can already send me stuff while I'm still packing, that's ok
   if ( ! m_recv_requests.empty())
     HOMMEXX_MPI_CHECK_ERROR(MPI_Startall(m_recv_requests.size(), m_recv_requests.data()),
@@ -290,6 +311,11 @@ void BoundaryExchange::exchange (const ExecViewUnmanaged<const Real * [NP][NP]>*
 
   // --- Recv and unpack --- //
   recv_and_unpack (rspheremp);
+
+#ifndef HOMME_BE_NO_HASHER
+  if (m_diagnostics_level > 0)
+    Homme::print_global_state_hash(std::string("BE-post-") + m_label);
+#endif
 }
 
 void BoundaryExchange::exchange_min_max ()
@@ -311,6 +337,11 @@ void BoundaryExchange::exchange_min_max ()
     build_buffer_views_and_requests();
   }
 
+#ifndef HOMME_BE_NO_HASHER
+  if (m_diagnostics_level > 1)
+    Homme::print_global_state_hash(std::string("BE-minmax-pre-") + m_label);
+#endif
+
   // Hey, if some process can already send me stuff while I'm still packing, that's ok
   if ( ! m_recv_requests.empty())
     HOMMEXX_MPI_CHECK_ERROR(MPI_Startall(m_recv_requests.size(), m_recv_requests.data()),
@@ -322,6 +353,11 @@ void BoundaryExchange::exchange_min_max ()
 
   // --- Recv and unpack --- //
   recv_and_unpack_min_max ();
+
+#ifndef HOMME_BE_NO_HASHER
+  if (m_diagnostics_level > 0)
+    Homme::print_global_state_hash(std::string("BE-minmax-post-") + m_label);
+#endif
 }
 
 static void

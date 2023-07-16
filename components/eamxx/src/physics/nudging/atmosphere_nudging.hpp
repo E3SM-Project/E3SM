@@ -96,7 +96,7 @@ protected:
   TimeStamp ts0;
   NudgingFunc::NudgingData NudgingData_bef;
   NudgingFunc::NudgingData NudgingData_aft;
-  std::shared_ptr<AtmosphereInput> data_input;
+  AtmosphereInput data_input;
 }; // class Nudging
 
 } // namespace scream

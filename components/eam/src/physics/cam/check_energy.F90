@@ -828,7 +828,7 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 !------------------------------Arguments--------------------------------
 
     use cam_history, only: outfld
-    use scamMod, only: heat_glob_scm, single_column, use_replay
+    use iop_data_mod, only: heat_glob_scm, single_column, use_replay
 
     type(physics_state), intent(in   ) :: state
     type(physics_ptend), intent(out)   :: ptend

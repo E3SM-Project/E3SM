@@ -3641,7 +3641,7 @@ contains
        allocate(TUnit%domainfrac(begr:endr))
        call check_var(ncid, 'domainfrac', vardesc, readvar)
        if (readvar) then
-         ier = pio_inq_varid(ncid, name='domainfrac', vardesc=vardesc)
+         ier = pio_inq_varid(ncid, 'domainfrac', vardesc)
          write(iulog,*) subname,' ier =',ier
          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%domainfrac, ier)
        else
@@ -3852,7 +3852,7 @@ contains
 
      if (sediflag) then
         allocate(TSedi_para%d50(begr:endr))
-        ier = pio_inq_varid(ncid, name='D50', vardesc=vardesc)
+        ier = pio_inq_varid(ncid, 'D50', vardesc)
         call pio_read_darray(ncid, vardesc, iodesc_dbl, TSedi_para%d50, ier)
         if (masterproc) write(iulog,FORMR) trim(subname),' read D50 ',minval(TSedi_para%d50),maxval(TSedi_para%d50)
         call shr_sys_flush(iulog)

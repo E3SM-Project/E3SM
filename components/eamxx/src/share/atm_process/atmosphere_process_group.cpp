@@ -39,6 +39,10 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
   // Create the individual atmosphere processes
   m_group_name = params.name();
 
+  // Temp to store which atm proc needs each restart extra data. We'll use it to ensure
+  // only one atm proc request a particular extra data key
+  strmap_t<std::string> ed2proc;
+
   auto& apf = AtmosphereProcessFactory::instance();
   // Ensure the "Group" atm proc is registered in the factory,
   // so we can recursively create groups. Groups are an impl detail,
@@ -109,7 +113,8 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
     params_i.set("Logger",this->m_atm_logger);
 
     // Create the atm proc
-    m_atm_processes.emplace_back(apf.create(ap_type,proc_comm,params_i));
+    auto ap = apf.create(ap_type,proc_comm,params_i);
+    m_atm_processes.push_back(ap);
 
     // NOTE: the shared_ptr of the new atmosphere process *MUST* have been created correctly.
     //       Namely, the creation process must have set up enable_shared_from_this's status correctly.
@@ -118,7 +123,7 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
     //       in the AtmosphereProcessFactory, he/she may have forgot to set the self pointer in the process.
     //       To make sure this is not the case, we check that the weak_ptr in the newly created
     //       atmosphere process (which comes through inheritance from enable_shared_from_this) is valid.
-    EKAT_REQUIRE_MSG(!m_atm_processes.back()->weak_from_this().expired(),
+    EKAT_REQUIRE_MSG(!ap->weak_from_this().expired(),
         "Error! The newly created std::shared_ptr<AtmosphereProcess> did not correctly setup\n"
         "       the 'enable_shared_from_this' interface.\n"
         "       Did you by chance register your own creator function in the AtmosphereProccessFactory class?\n"
@@ -128,15 +133,18 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
     // Store a copy of all the restart extra data of the atm proc.
     // NOTE: any uses std::shared_ptr internally, so if the atm proc updates
     //       the extra data, it will be updated in this class too.
-    for (const auto& it : m_atm_processes.back()->get_restart_extra_data()) {
+    for (const auto& it : ap->get_restart_extra_data()) {
       // We don't want to risk having two processes overwriting restart data, in case
       // of a "common name" var (e.g., "num_steps"). Each process should try its best
       // to provide names that are likely to be unique. Even if two procs *actyally need*
       // the same var, we can write it twice to file.
-      EKAT_REQUIRE_MSG (m_restart_extra_data.find(it.first)==m_restart_extra_data.end(),
-          "Error! Cannot add restart extra data, since it was already added by another process.\n"
-          "  - extra data name: " + it.first + "\n");
-      m_restart_extra_data.emplace(it);
+      EKAT_REQUIRE_MSG (m_restart_extra_data.count(it.first)==0,
+          "Error! Two atmosphere processes use the same restart extra data key.\n"
+          " - Extra data key : " + it.first + "\n"
+          " - First atm proc : " + ed2proc[it.first] + "\n"
+          " - Second atm proc: " + ap->name() + "\n");
+      m_restart_extra_data[it.first] = it.second;
+      ed2proc[it.first] = ap->name();
     }
   }
 }

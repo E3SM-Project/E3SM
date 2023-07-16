@@ -34,7 +34,7 @@ module physpkg
   use phys_control,     only: phys_do_flux_avg, phys_getopts, waccmx_is
   use zm_conv,          only: do_zmconv_dcape_ull => trigdcape_ull, &
                               do_zmconv_dcape_only => trig_dcape_only
-  use scamMod,          only: single_column, scm_crm_mode
+  use iop_data_mod,     only: single_column
   use flux_avg,         only: flux_avg_init
   use infnan,           only: posinf, assignment(=)
 #ifdef SPMD
@@ -48,6 +48,10 @@ module physpkg
                                     modal_aero_calcsize_reg
   use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
                                     modal_aero_wateruptake_reg
+  use chem_mods,    only : gas_pcnst
+  use mo_tracname,  only : solsym
+  use mo_chm_diags, only : aer_species
+  use mo_gas_phase_chemdr, only : gas_ac_name, gas_ac_name_2D
 
   use check_energy,    only: nstep_ignore_diagn1, nstep_ignore_diagn2, &
                              check_energy_gmean, check_energy_gmean_additional_diagn, &
@@ -76,7 +80,8 @@ module physpkg
   integer ::  snow_dp_idx        = 0
   integer ::  prec_sh_idx        = 0
   integer ::  snow_sh_idx        = 0
-
+  integer ::  rice2_idx          = 0
+  integer ::  gas_ac_idx         = 0
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
 
   save
@@ -105,6 +110,9 @@ module physpkg
   logical           :: pergro_test_active= .false.
   logical           :: pergro_mods = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
+  logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
+  logical :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
+  logical :: history_gaschmbudget_2D_levels ! output 2D gas chemistry tracer concentrations and tendencies within certain layers
 
   !======================================================================= 
 contains
@@ -166,6 +174,7 @@ subroutine phys_register
     use subcol,             only: subcol_register
     use subcol_utils,       only: is_subcol_on
     use output_aerocom_aie, only: output_aerocom_aie_register, do_aerocom_ind3
+    use mo_chm_diags,       only: chm_diags_inti_ac
 
     !---------------------------Local variables-----------------------------
     !
@@ -174,6 +183,7 @@ subroutine phys_register
     !-----------------------------------------------------------------------
 
     integer :: nmodes
+    character(len=16) :: spc_name
 
     call phys_getopts(shallow_scheme_out       = shallow_scheme, &
                       macrop_scheme_out        = macrop_scheme,   &
@@ -186,7 +196,11 @@ subroutine phys_register
                       state_debug_checks_out   = state_debug_checks, &
                       micro_do_icesupersat_out = micro_do_icesupersat, &
                       pergro_test_active_out   = pergro_test_active, &
-                      pergro_mods_out          = pergro_mods)
+                      pergro_mods_out          = pergro_mods, &
+                      history_gaschmbudget_out = history_gaschmbudget, &
+                   history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
+            history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels)
+
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
 
@@ -274,6 +288,26 @@ subroutine phys_register
 
        ! register chemical constituents including aerosols ...
        call chem_register(species_class)
+
+       ! NB: has to be after chem_register to use tracer names
+       ! Fields for gas chemistry tracers
+       if (history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
+         call chm_diags_inti_ac() ! to get aer_species
+         do m = 1,gas_pcnst
+            if (.not. any( aer_species == m )) then
+              spc_name = trim(solsym(m))
+              if (history_gaschmbudget .or. history_gaschmbudget_2D_levels) then
+                gas_ac_name(m) = 'ac_'//spc_name
+                call pbuf_add_field(gas_ac_name(m), 'global', dtype_r8, (/pcols,pver/), gas_ac_idx)
+              end if
+
+              if (history_gaschmbudget_2D) then
+                gas_ac_name_2D(m) = 'ac_2D_'//spc_name
+                call pbuf_add_field(gas_ac_name_2D(m), 'global', dtype_r8, (/pcols/), gas_ac_idx)
+              end if
+            end if
+         enddo
+       end if
 
        ! co2 constituents
        call co2_register()
@@ -1146,9 +1180,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out, phy
        !call t_adj_detailf(-1)
        call t_stopf ('bc_physics')
 
-       ! Don't call the rest in CRM mode
-       if(single_column.and.scm_crm_mode) return
-
 #ifdef TRACER_CHECK
        call gmean_mass ('between DRY', phys_state)
 #endif
@@ -1335,8 +1366,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     !
     ! If exit condition just return
     !
-
-    if(single_column.and.scm_crm_mode) return
 
     if ( adiabatic .or. ideal_phys ) return
     !-----------------------------------------------------------------------
@@ -2177,7 +2206,7 @@ subroutine tphysbc (ztodt,               &
     use clubb_intr,      only: clubb_tend_cam
     use shoc_intr,       only: shoc_tend_e3sm
     use sslt_rebin,      only: sslt_rebin_adv
-    use tropopause,      only: tropopause_output
+    use tropopause,      only: tropopause_output, tropopause_e90_3d_output
     use output_aerocom_aie, only: do_aerocom_ind3, cloud_top_aerocom
     use cam_abortutils,      only: endrun
     use subcol,          only: subcol_gen, subcol_ptend_avg
@@ -2267,6 +2296,7 @@ subroutine tphysbc (ztodt,               &
     real(r8),pointer :: snow_dp(:)                ! snow from ZM convection
     real(r8),pointer :: prec_sh(:)                ! total precipitation from Hack convection
     real(r8),pointer :: snow_sh(:)                ! snow from Hack convection
+    real(r8) :: totice_dp(pcols)                  ! total frozen precip from ZM convection
 
     ! stratiform precipitation variables
     real(r8),pointer :: prec_str(:)    ! sfc flux of precip from stratiform (m/s)
@@ -2290,6 +2320,7 @@ subroutine tphysbc (ztodt,               &
     real(r8) :: zero(pcols)                    ! array of zeros
     real(r8) :: zero_sc(pcols*psubcols)        ! array of zeros
     real(r8) :: rliq(pcols)                    ! vertical integral of liquid not yet in q(ixcldliq)
+    real(r8) :: rice(pcols)                    ! vertical integral of ice not yet in q(ixcldice)
     real(r8) :: rliq2(pcols)                   ! vertical integral of liquid from shallow scheme
     real(r8) :: det_s  (pcols)                 ! vertical integral of detrained static energy from ice
     real(r8) :: det_ice(pcols)                 ! vertical integral of detrained ice
@@ -2613,7 +2644,7 @@ end if
     call convect_deep_tend(  &
          cmfmc,      cmfcme,             &
          dlf,        pflx,    zdu,       &
-         rliq,    &
+         rliq,       rice, &
          ztodt,   &
          state,   ptend, cam_in%landfrac, pbuf, mu, eu, du, md, ed, dp,   &
          dsubcld, jt, maxg, ideep, lengath) 
@@ -2639,7 +2670,8 @@ end if
 
     ! Check energy integrals, including "reserved liquid"
     flx_cnd(:ncol) = prec_dp(:ncol) + rliq(:ncol)
-    call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, flx_cnd, snow_dp, zero)
+    totice_dp(:ncol) = snow_dp(:ncol) + rice(:ncol)
+    call check_energy_chng(state, tend, "convect_deep", nstep, ztodt, zero, flx_cnd, totice_dp, zero)
 
     call cnd_diag_checkpoint( diag, 'DEEPCU', state, pbuf, cam_in, cam_out )
 
@@ -3051,6 +3083,7 @@ end if ! l_rad
     ! Diagnose the location of the tropopause and its location to the history file(s).
     call t_startf('tropopause')
     call tropopause_output(state)
+    call tropopause_e90_3d_output(state)
     call t_stopf('tropopause')
 
     ! Save atmospheric fields to force surface models

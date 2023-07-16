@@ -342,15 +342,14 @@ class TestTestAllScream(TestBaseOuter.TestBase):
 
     def test_mem_check_details(self):
         """
-        Test the --mem-check flag in test-all-scream. It should set certain CMake values
+        Test the mem (default mem-check build) in test-all-scream. It should set certain CMake values
         """
         if not self._jenkins:
-            options = "-b HEAD -k -t dbg --mem-check --config-only"
+            options = "-b HEAD -k -t mem --config-only"
             cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
                                 self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-            extension = "cuda_mem_check" if is_cuda_machine(self._machine) else "valgrind"
-            builddir = f"full_debug_{extension}"
+            builddir = "cuda_mem_check" if is_cuda_machine(self._machine) else "valgrind"
             test_cmake_cache_contents(self, builddir, "CMAKE_BUILD_TYPE", "Debug")
             test_cmake_cache_contents(self, builddir, "SCREAM_TEST_SIZE", "SHORT")
             if is_cuda_machine(self._machine):

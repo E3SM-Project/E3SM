@@ -34,7 +34,7 @@ module mo_photo
   integer ::  jho2no2_ndx
   integer ::  jch3cho_a_ndx, jch3cho_b_ndx, jch3cho_c_ndx
   integer ::  jo2_a_ndx, jo2_b_ndx
-  integer ::  ox_ndx, o3_ndx, o3_inv_ndx, o3rad_ndx
+  integer ::  ox_ndx, o3_ndx, o3lnz_ndx, o3_inv_ndx, o3rad_ndx
   integer ::  oc1_ndx, oc2_ndx
   integer ::  cb1_ndx, cb2_ndx
   integer ::  soa_ndx
@@ -261,6 +261,7 @@ contains
        ox_ndx  = get_spc_ndx( 'O3' )
     end if
     o3_ndx     = get_spc_ndx( 'O3' )
+    o3lnz_ndx  = get_spc_ndx( 'O3LNZ')
     o3rad_ndx  = get_spc_ndx( 'O3RAD' )
     o3_inv_ndx = get_inv_ndx( 'O3' )
 
@@ -593,7 +594,7 @@ contains
     integer,  intent(in)    :: ncol
     real(r8), intent(in)    :: esfact                       ! earth sun distance factor
     real(r8), intent(in)    :: vmr(ncol,pver,max(1,gas_pcnst)) ! vmr
-    real(r8), intent(in)    :: col_dens(ncol,pver,ncol_abs) ! column densities (molecules/cm^2)
+    real(r8), intent(in)    :: col_dens(ncol,pver,ncol_abs+1) ! column densities (molecules/cm^2)
     real(r8), intent(in)    :: zen_angle(ncol)              ! solar zenith angle (radians)
     real(r8), intent(in)    :: srf_alb(pcols)               ! surface albedo
     real(r8), intent(in)    :: lwc(ncol,pver)               ! liquid water content (kg/kg)
@@ -916,7 +917,7 @@ contains
     real(r8), intent(in)    :: esfact                       ! earth sun distance factor
     real(r8), intent(in)    :: ps(pcols)                    ! surface pressure (Pa)
     real(r8), intent(in)    :: ts(ncol)                     ! surface temperature (K)
-    real(r8), intent(in)    :: col_dens(ncol,pver,ncol_abs) ! column densities (molecules/cm^2)
+    real(r8), intent(in)    :: col_dens(ncol,pver,ncol_abs +1) ! column densities (molecules/cm^2)
     real(r8), intent(in)    :: zen_angle(ncol)              ! solar zenith angle (radians)
     real(r8), intent(in)    :: srf_alb(pcols)               ! surface albedo
     real(r8), intent(in)    :: tdens(ncol,pver)             ! total atms density (molecules/cm^3)
@@ -1355,7 +1356,7 @@ secant_in_bounds : &
     real(r8), intent(in)    ::  vmr(ncol,pver,gas_pcnst)               ! xported species vmr
     real(r8), intent(in)    ::  pdel(pcols,pver)                       ! pressure delta about midpoints (Pa)
     real(r8), intent(in)    ::  invariants(ncol,pver,nfs)
-    real(r8), intent(out)   ::  col_delta(ncol,0:pver,max(1,nabscol))  ! /cm**2 o2,o3 col dens above model
+    real(r8), intent(out)   ::  col_delta(ncol,0:pver,max(1,nabscol)+1)  ! /cm**2 o2,o3 col dens above model
 
     !---------------------------------------------------------------
     !        ... local variables
@@ -1478,7 +1479,16 @@ secant_in_bounds : &
           col_delta(:,:,2) = 0._r8
        end if
     end if
-
+!added for o3lnz to avoid using col_delta(:,k,1) because O3 could be an invariant
+!col_delta(:,:,nabscol+1) added +1 to nabscol
+!    write(iulog,*)'ncol_abs= ', ncol_abs
+    if( ncol_abs > 1 .and. o3lnz_ndx >0 ) then
+     	     col_delta(:,0,3) = o3_exo_col(:)
+       	     do k = 1,pver
+                col_delta(:ncol,k,3) = xfactor * pdel(:ncol,k) * vmr(:ncol,k,o3lnz_ndx)
+       	     end do   
+    endif
+    
   end subroutine set_ub_col
 
   subroutine p_interp( lchnk, ncol, ptop, o2_exo_col, o3_exo_col )
@@ -1582,7 +1592,7 @@ secant_in_bounds : &
     !           current eta index in the calling routine.
     !           the first column is o3 and the second is o2.
     !---------------------------------------------------------------
-    do m = 1,ncol_abs
+    do m = 1,ncol_abs+1
        col_dens(:,1,m) = col_delta(:,0,m) + .5_r8 * col_delta(:,1,m)
        do k = 2,pver
           km1 = k - 1

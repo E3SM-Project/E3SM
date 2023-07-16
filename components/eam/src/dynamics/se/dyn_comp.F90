@@ -334,8 +334,8 @@ CONTAINS
   subroutine dyn_run( dyn_state, rc )
 
     ! !USES:
-    use scamMod,          only: single_column, dp_crm, use_3dfrc
-    use se_single_column_mod, only: apply_SC_forcing
+    use iop_data_mod,     only: single_column, dp_crm, use_3dfrc
+    use se_iop_intr_mod,  only: apply_iop_forcing
     use parallel_mod,     only : par
     use prim_driver_mod,  only: prim_run_subcycle
     use dimensions_mod,   only : nlev
@@ -405,7 +405,7 @@ CONTAINS
        endif
 
        if (single_column) then
-         call apply_SC_forcing(dyn_state%elem,hvcoord,hybrid,TimeLevel,3,.false.,nets,nete)
+         call apply_iop_forcing(dyn_state%elem,hvcoord,hybrid,TimeLevel,3,.false.,nets,nete)
        endif
 
 #ifdef HORIZ_OPENMP
