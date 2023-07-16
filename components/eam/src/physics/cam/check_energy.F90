@@ -255,6 +255,7 @@ end subroutine check_energy_get_integrals
        call add_default ('IEFLX', 1, ' ') 
     end if 
 
+    if(print_additional_diagn)then
     do lchnk = begchunk, endchunk
        ncol = state(lchnk)%ncol
        state(lchnk)%te_before_physstep(:ncol) = 0._r8
@@ -268,6 +269,7 @@ end subroutine check_energy_get_integrals
        state(lchnk)%shf_raw(:ncol)            = 0._r8
        state(lchnk)%shf_diff(:ncol)           = 0._r8
     enddo
+    endif
   end subroutine check_energy_init
 
 !===============================================================================

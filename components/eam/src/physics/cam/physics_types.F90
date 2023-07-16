@@ -14,7 +14,7 @@ module physics_types
   use phys_grid,    only: get_ncols_p, get_rlon_all_p, get_rlat_all_p, get_gcol_all_p
   use cam_logfile,  only: iulog
   use cam_abortutils,   only: endrun
-  use phys_control, only: waccmx_is, use_mass_borrower
+  use phys_control, only: waccmx_is, use_mass_borrower, print_additional_diagn_phys_control
   use shr_const_mod,only: shr_const_rwv
   use perf_mod,     only: t_startf, t_stopf
 
@@ -528,17 +528,22 @@ contains
          varname="state%te_ini",    msg=msg)
     call shr_assert_in_domain(state%te_cur(:ncol),      is_nan=.false., &
          varname="state%te_cur",    msg=msg)
+
+    if(print_additional_diagn_phys_control)then
     call shr_assert_in_domain(state%te_before_physstep(:ncol), is_nan=.false., &
          varname="state%te_before_physstep",    msg=msg)
     call shr_assert_in_domain(state%delta_te(:ncol),           is_nan=.false., &
          varname="state%delta_te",    msg=msg)
     call shr_assert_in_domain(state%rr(:ncol),          is_nan=.false., &
          varname="state%rr",    msg=msg)
+    endif
+
     call shr_assert_in_domain(state%tw_ini(:ncol),      is_nan=.false., &
          varname="state%tw_ini",    msg=msg)
     call shr_assert_in_domain(state%tw_cur(:ncol),      is_nan=.false., &
          varname="state%tw_cur",    msg=msg)
 
+    if(print_additional_diagn_phys_control)then
     call shr_assert_in_domain(state%tw_before(:ncol),      is_nan=.false., &
          varname="state%tw_before",    msg=msg)
     call shr_assert_in_domain(state%deltaw_flux(:ncol),      is_nan=.false., &
@@ -554,6 +559,7 @@ contains
          varname="state%shf_raw",    msg=msg)
     call shr_assert_in_domain(state%shf_diff(:ncol),      is_nan=.false., &
          varname="state%shf_diff",    msg=msg)
+    endif
 
     call shr_assert_in_domain(state%tc_curr(:ncol),      is_nan=.false., &
          varname="state%tc_curr",    msg=msg)
@@ -657,18 +663,24 @@ contains
          varname="state%te_ini",    msg=msg)
     call shr_assert_in_domain(state%te_cur(:ncol),      lt=posinf_r8, gt=neginf_r8, &
          varname="state%te_cur",    msg=msg)
+
+    if(print_additional_diagn_phys_control)then
     call shr_assert_in_domain(state%te_before_physstep(:ncol),  lt=posinf_r8, gt=neginf_r8, &
          varname="state%te_before_physstep",    msg=msg)
     call shr_assert_in_domain(state%delta_te(:ncol),    lt=posinf_r8, gt=neginf_r8, &
          varname="state%delta_te",  msg=msg)
     call shr_assert_in_domain(state%rr(:ncol),          lt=posinf_r8, gt=neginf_r8, &
          varname="state%rr",        msg=msg)
+    endif
+
     call shr_assert_in_domain(state%tw_ini(:ncol),      lt=posinf_r8, gt=neginf_r8, &
          varname="state%tw_ini",    msg=msg)
     call shr_assert_in_domain(state%tw_cur(:ncol),      lt=posinf_r8, gt=neginf_r8, &
          varname="state%tw_cur",    msg=msg)
+
+    if(print_additional_diagn_phys_control)then
     call shr_assert_in_domain(state%tw_before(:ncol),      lt=posinf_r8, gt=neginf_r8, &
-         varname="state%tw_before",    msg=msg)
+        varname="state%tw_before",    msg=msg)
     call shr_assert_in_domain(state%deltaw_flux(:ncol),      lt=posinf_r8, gt=neginf_r8, &
          varname="state%deltaw_flux",    msg=msg)
     call shr_assert_in_domain(state%deltaw_step(:ncol),      lt=posinf_r8, gt=neginf_r8, &
@@ -681,6 +693,8 @@ contains
          varname="state%shf_raw",    msg=msg)
     call shr_assert_in_domain(state%cflx_diff(:ncol),      lt=posinf_r8, gt=neginf_r8, &
          varname="state%shf_diff",    msg=msg)
+    endif
+
     call shr_assert_in_domain(state%tc_curr(:ncol),     lt=posinf_r8, gt=neginf_r8, &
          varname="state%tc_curr",     msg=msg)
     call shr_assert_in_domain(state%tc_init(:ncol),     lt=posinf_r8, gt=neginf_r8, &
@@ -1370,13 +1384,18 @@ end subroutine physics_ptend_copy
        state_out%ps(i)     = state_in%ps(i)
        state_out%phis(i)   = state_in%phis(i)
        state_out%te_ini(i) = state_in%te_ini(i) 
-       state_out%te_cur(i) = state_in%te_cur(i) 
+       state_out%te_cur(i) = state_in%te_cur(i)
+
+       if(print_additional_diagn_phys_control)then
        state_out%te_before_physstep(i) = state_in%te_before_physstep(i) 
        state_out%delta_te(i)           = state_in%delta_te(i) 
        state_out%rr(i)     = state_in%rr(i) 
+       endif
+
        state_out%tw_ini(i) = state_in%tw_ini(i) 
        state_out%tw_cur(i) = state_in%tw_cur(i) 
 
+       if(print_additional_diagn_phys_control)then
        state_out%tw_before(i)   = state_in%tw_before(i) 
        state_out%deltaw_flux(i) = state_in%deltaw_flux(i) 
        state_out%deltaw_step(i) = state_in%deltaw_step(i) 
@@ -1385,6 +1404,7 @@ end subroutine physics_ptend_copy
        state_out%cflx_diff(i) = state_in%cflx_diff(i)
        state_out%shf_raw(i)   = state_in%shf_raw(i)
        state_out%shf_diff(i)  = state_in%shf_diff(i)
+       endif
 
        state_out%tc_curr(i)    = state_in%tc_curr(i)
        state_out%tc_init(i)    = state_in%tc_init(i)
@@ -1727,7 +1747,9 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   
   allocate(state%te_cur(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_cur')
+
   
+  if(print_additional_diagn_phys_control)then
   allocate(state%te_before_physstep(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_before_pstep')
 
@@ -1736,13 +1758,17 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
 
   allocate(state%rr(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%rr')
+  endif
+
 
   allocate(state%tw_ini(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tw_ini')
   
   allocate(state%tw_cur(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tw_cur')
+
   
+  if(print_additional_diagn_phys_control)then
   allocate(state%tw_before(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tw_before')
 
@@ -1763,6 +1789,8 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   
   allocate(state%shf_diff(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%shf_diff')
+  endif
+
 
   !alloc indep of diagnostics flag co2_transport()
   allocate(state%tc_curr(psetcols), stat=ierr)
@@ -1857,6 +1885,7 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   state%tw_ini(:) = inf
   state%tw_cur(:) = inf
 
+  if(print_additional_diagn_phys_control)then
   state%te_before_physstep(:) = inf
   state%delta_te(:)           = inf
   state%rr(:)                 = inf
@@ -1870,6 +1899,7 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   state%deltaw_step(:) = inf
   state%deltaw_flux(:) = inf
   state%tw_before(:)   = inf
+  endif
 
   state%tc_curr(:)    = inf
   state%tc_init(:)    = inf
@@ -1989,6 +2019,7 @@ subroutine physics_state_dealloc(state)
   deallocate(state%te_cur, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%te_cur')
   
+  if(print_additional_diagn_phys_control)then
   deallocate(state%te_before_physstep, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%te_before_pstep')
 
@@ -1997,12 +2028,16 @@ subroutine physics_state_dealloc(state)
 
   deallocate(state%rr, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%rr')
+  endif
 
   deallocate(state%tw_ini, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tw_ini')
   
   deallocate(state%tw_cur, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tw_cur')
+
+
+  if(print_additional_diagn_phys_control)then
 
   deallocate(state%tw_before, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tw_before')
@@ -2024,6 +2059,8 @@ subroutine physics_state_dealloc(state)
 
   deallocate(state%shf_diff, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%shf_diff')
+  endif
+
 
   deallocate(state%tc_curr, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tc_curr')

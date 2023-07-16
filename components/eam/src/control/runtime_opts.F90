@@ -230,7 +230,7 @@ contains
    ! Some modules read their own namelist input.
    use spmd_utils,          only: spmd_utils_readnl
    use physconst,           only: physconst_readnl
-   use phys_control,        only: phys_ctl_readnl
+   use phys_control,        only: phys_ctl_readnl, set_additional_diagn_in_phys_control
    use wv_saturation,       only: wv_sat_readnl
    use ref_pres,            only: ref_pres_readnl
    use cam3_aero_data,      only: cam3_aero_data_readnl
@@ -454,6 +454,8 @@ contains
    call check_energy_setopts( &
       print_energy_errors_in = print_energy_errors, &
       print_additional_diagn_in = print_additional_diagn )
+
+   call set_additional_diagn_in_phys_control(print_additional_diagn)
 
    ! Set runtime options for single column mode 
    if (present(single_column_in) .and. present(scmlon_in) .and. present(scmlat_in)) then 
