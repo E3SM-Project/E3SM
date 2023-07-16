@@ -1184,8 +1184,8 @@
 	</nml_record>
 	<nml_record name="lts" mode="forward">
 		<nml_option name="config_dt_scaling_LTS" type="integer" default_value="1"
-					description="The ratio of time step length between the fine and course regions. Specifically, it is the positive integer M that defines dtFine for LTS, dtFine = dt / M. The value is roughly calculated by the ratio of the smallest cell width in the course to the fine, i.e. dx_Course/dxFine. That is an approximate value, as in practice it is the ratio of largest stable dts in the course to fine region, and the velocity depends on the depth and mean current."
-					possible_values="Any positive integer greater or equal to one, typically ranging from 2 to 10. A value of 1 employs the same dt in all regions."
+					description="The ratio between the dt on the coarse region and the dt on the fine region. Specifically, it is the positive integer M that defines dtFine for LTS, dtFine = dt / M."
+					possible_values="Any positive integer greater than or equal to one. A value of one employs the same dt in all regions."
 		/>
 	</nml_record>
 	<nml_record name="pressure_gradient" mode="forward">
@@ -4114,16 +4114,16 @@
 	</var_struct>
 	<var_struct name="LTS" time_levs="1">
 		<var name="LTSRegion" type="integer" dimensions="nCells"
-			description="Definition of LTS regions. This is read from the initial condition file (typically names init.nc), and set up as a pre-processing step. The values are: 1 = fine; 2 = coarse; 3 = interface 1; 4 = interface 2; 5 = coarse adjacent fine."
+			description="Definition of LTS regions. This is read from the initial condition file (typically named init.nc), and set up with a pre-processing step. The values are: 1 = fine; 2 = coarse; 3 = interface layer one; 4 = interface layer two; 5 = fine close to interface layer one."
 			/>
 		<var name="cellsInLTSRegion" type="integer" dimensions="TWO R3 nCells"
-			description="Cell mask for each region. For the first two dimensions, the regions in the array are defined as follows: (1,1): fine, (1,2) interface layer 1, (1,3) fine closest to the interface, (2,2) interface layer 2, (2,1) coarse."
+			description="Cell mask for each region. For the first two dimensions, the regions in the array are defined as follows: (1,1): fine, (1,2) interface layer one, (1,3) fine close to interface layer one, (2,2) interface layer two, (2,1) coarse."
 			/>
 		<var name="nCellsInLTSRegion" type="integer" dimensions="TWO R3"
 			description="Number of cells in each region of cellsInLTSRegion."
 			/>
 		<var name="edgesInLTSRegion" type="integer" dimensions="TWO R3 nEdges"
-			description="Edge mask for each region. For the first two dimensions, the regions in the array are defined as follows: (1,1): fine, (1,2) interface layer 1, (1,3) fine closest to the interface, (2,2) interface layer 2, (2,1) coarse."
+			description="Edge mask for each region. For the first two dimensions, the regions in the array are defined as follows: (1,1): fine, (1,2) interface layer one, (1,3) fine close to interface layer one, (2,2) interface layer two, (2,1) coarse."
 			/>
 		<var name="nEdgesInLTSRegion" type="integer" dimensions="TWO R3"
 			description="Number of edges in each region of edgesInLTSRegion."
