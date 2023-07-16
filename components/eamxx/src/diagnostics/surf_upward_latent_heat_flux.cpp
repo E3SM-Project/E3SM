@@ -1,11 +1,11 @@
-#include "diagnostics/surf_latent_heat_flux.hpp"
+#include "diagnostics/surf_upward_latent_heat_flux.hpp"
 
 #include "physics/share/physics_constants.hpp"
 
 namespace scream {
 
 // ==============================================================================
-SurfaceUpwardLatentHeatFlux::SurfaceUpwardLatentHeatFlux(const ekat::Comm& comm, const ekat::ParameterList& params) : m_name("surface_upward_latent_heat_flux"),
+SurfaceUpwardLatentHeatFlux::SurfaceUpwardLatentHeatFlux(const ekat::Comm& comm, const ekat::ParameterList& params) : AtmosphereDiagnostic(comm, params), m_name("surface_upward_latent_heat_flux"),
 cf_long_name("surface_upward_latent_heat_flux_due_to_evaporation")
 {
   // In the future we may add options to include latent heat fluxes due to other water species.
@@ -25,11 +25,11 @@ void SurfaceUpwardLatentHeatFlux::set_grids (const std::shared_ptr<const GridsMa
   const auto& grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
 
-  FieldLayout scalar2d_layout_mid { {COL}, {m_num_cols} };
+  FieldLayout scalar2d_layout_mid { {ShortFieldTagsNames::COL}, {m_num_cols} };
 
   // The fields required for this diagnostic to be computed
   // surf_evap is defined by SurfaceCouplingImporter
-  add_field<Required>("surf_evap", scalar2d_layout_mid, surf_evap_units,  grid_name, ps);
+  add_field<Required>("surf_evap", scalar2d_layout_mid, surf_evap_units,  grid_name);
 
   // Construct and allocate the diagnostic field
   FieldIdentifier fid(name(), scalar2d_layout_mid, W/m2, grid_name);
@@ -55,7 +55,7 @@ void SurfaceUpwardLatentHeatFlux::compute_diagnostic_impl() {
   Kokkos::parallel_for("SurfaceUpwardLatentHeatFlux",
     KT::RangePolicy(0, m_num_cols),
     KOKKOS_LAMBDA (const Int& icol) {
-      flux_view(i) = evap_view_d(icol) * latent_heat_evap;
+      flux_view(icol) = evap_view_d(icol) * latent_heat_evap;
     });
 
 }

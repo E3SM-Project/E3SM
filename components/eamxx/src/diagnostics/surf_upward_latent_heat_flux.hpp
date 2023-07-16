@@ -17,6 +17,8 @@ public:
   SurfaceUpwardLatentHeatFlux (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // The name of the diagnostic
+  // Future extensions to latent heat flux due may include processes
+  // other than evaporation, so we don't inline the name function here.
   std::string name () const { return m_name; }
 
   // Set the grid

@@ -13,8 +13,6 @@
 #include "ekat/util/ekat_test_utils.hpp"
 #include "ekat/logging/ekat_logger.hpp"
 
-#include <iomanip>
-
 namespace scream {
 
 std::shared_ptr<GridsManager>
@@ -103,9 +101,9 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, LoggerType& logger)
     // Catch2's REQUIRE macro
     logger.error("error: surf_lhf_v and diag_latent_heat_out are not passing the views_are_equal test.");
     auto surf_lhf_h = Kokkos::create_mirror_view(surf_lhf_v);
-    auto diag_latent_heat_out_h = Kokkos::create_mirror_view(diag_latent_heat_out);
+    diag_latent_heat_out.sync_to_host();
+    auto diag_latent_heat_out_h = diag_latent_heat->get_diagnostic().get_view<Real*,Host>();
     Kokkos::deep_copy(surf_lhf_h, surf_lhf_v);
-    Kokkos::deep_copy(diag_latent_heat_out_h, diag_latent_heat_out);
     for (int i=0; i<ncols; ++i) {
       logger.debug("\tat col {}: diag_latent_heat_out = {} surf_lhf = {}", i,
         diag_latent_heat_out_h(i), surf_lhf_h(i));
