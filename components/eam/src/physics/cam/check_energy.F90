@@ -256,19 +256,19 @@ end subroutine check_energy_get_integrals
     end if 
 
     if(print_additional_diagn)then
-    do lchnk = begchunk, endchunk
-       ncol = state(lchnk)%ncol
-       state(lchnk)%te_before_physstep(:ncol) = 0._r8
-       state(lchnk)%tw_before(:ncol)          = 0._r8
-       state(lchnk)%deltaw_flux(:ncol)        = 0._r8
-       state(lchnk)%deltaw_step(:ncol)        = 0._r8
-       state(lchnk)%delta_te(:ncol)           = 0._r8
-       state(lchnk)%rr(:ncol)                 = 0._r8
-       state(lchnk)%cflx_raw(:ncol)           = 0._r8
-       state(lchnk)%cflx_diff(:ncol)          = 0._r8
-       state(lchnk)%shf_raw(:ncol)            = 0._r8
-       state(lchnk)%shf_diff(:ncol)           = 0._r8
-    enddo
+       do lchnk = begchunk, endchunk
+          ncol = state(lchnk)%ncol
+          state(lchnk)%te_before_physstep(:ncol) = 0._r8
+          state(lchnk)%tw_before(:ncol)          = 0._r8
+          state(lchnk)%deltaw_flux(:ncol)        = 0._r8
+          state(lchnk)%deltaw_step(:ncol)        = 0._r8
+          state(lchnk)%delta_te(:ncol)           = 0._r8
+          state(lchnk)%rr(:ncol)                 = 0._r8
+          state(lchnk)%cflx_raw(:ncol)           = 0._r8
+          state(lchnk)%cflx_diff(:ncol)          = 0._r8
+          state(lchnk)%shf_raw(:ncol)            = 0._r8
+          state(lchnk)%shf_diff(:ncol)           = 0._r8
+       enddo
     endif
   end subroutine check_energy_init
 
