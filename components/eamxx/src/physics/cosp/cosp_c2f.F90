@@ -250,10 +250,13 @@ contains
        ldouble = .true.
        lsingle = .false.
     endif
-    call quickbeam_optics_init()
 
-    ! Initialize the distributional parameters for hydrometeors in radar simulator
-    call hydro_class_init(lsingle,ldouble,sd)
+    if (Lcloudsat) then
+       call quickbeam_optics_init()
+
+       ! Initialize the distributional parameters for hydrometeors in radar simulator
+       call hydro_class_init(lsingle,ldouble,sd)
+    end if
 
     ! Initialize COSP simulator
     call cosp_init(Lisccp, Lmodis, Lmisr, Lcloudsat, Lcalipso, LgrLidar532, Latlid,        &

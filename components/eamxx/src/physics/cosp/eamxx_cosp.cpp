@@ -29,6 +29,7 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   auto Q = kg/kg;
   Q.set_string("kg/kg");
   auto nondim = Units::nondimensional();
+  auto micron = m / 1000000;
 
   m_grid = grids_manager->get_grid("Physics");
   const auto& grid_name = m_grid->name();
@@ -62,8 +63,12 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("dtau067",     scalar3d_layout_mid, nondim, grid_name); // 0.67 micron optical depth
   add_field<Required>("dtau105",     scalar3d_layout_mid, nondim, grid_name); // 10.5 micron optical depth
   // Effective radii, should be computed in either microphysics or radiation interface
-  add_field<Required>("eff_radius_qc",     scalar3d_layout_mid, m,      grid_name);
-  add_field<Required>("eff_radius_qi",     scalar3d_layout_mid, m,      grid_name);
+  // TODO: should these be meters or microns? Was meters before, but using "m" instead
+  // of "micron" seemed to cause prim_model_finalize to throw error with the following:
+  // ABORTING WITH ERROR: Error! prim_init_model_f90 was not called yet (or prim_finalize_f90 was already called).
+  // P3 defines this field with micron instead of meters units, so is this a unit conversion issue?
+  add_field<Required>("eff_radius_qc",     scalar3d_layout_mid, micron,      grid_name);
+  add_field<Required>("eff_radius_qi",     scalar3d_layout_mid, micron,      grid_name);
   // Set of fields used strictly as output
   add_field<Computed>("isccp_cldtot", scalar2d_layout, nondim, grid_name);
   add_field<Computed>("isccp_ctptau", scalar4d_layout_ctptau, nondim, grid_name, 1);
@@ -73,7 +78,6 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 // =========================================================================================
 void Cosp::initialize_impl (const RunType /* run_type */)
 {
-
   // Determine how often to call COSP, specified as number of atm steps (>0) or number of hours (<0)
   m_cosp_frequency = m_params.get<Int>("cosp_frequency", 1);
 
@@ -87,7 +91,6 @@ void Cosp::initialize_impl (const RunType /* run_type */)
 // =========================================================================================
 void Cosp::run_impl (const double dt)
 {
-
   // Determine if we should update COSP this timestep; use rad function to compare COSP frequency with this timestep
   auto ts = timestamp();
   auto cosp_freq_in_steps = m_cosp_frequency;
