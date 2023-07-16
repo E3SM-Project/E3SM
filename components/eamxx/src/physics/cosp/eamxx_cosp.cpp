@@ -65,10 +65,10 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("dtau067",     scalar3d_layout_mid, nondim, grid_name); // 0.67 micron optical depth
   add_field<Required>("dtau105",     scalar3d_layout_mid, nondim, grid_name); // 10.5 micron optical depth
   // Effective radii, should be computed in either microphysics or radiation interface
-  add_field<Required>("reff_qc",     scalar3d_layout_mid, m,      grid_name);
-  add_field<Required>("reff_qi",     scalar3d_layout_mid, m,      grid_name);
-  //add_field<Required>("reff_qr",     scalar3d_layout_mid, m,      grid_name);
-  //add_field<Required>("reff_qm",     scalar3d_layout_mid, m,      grid_name);
+  add_field<Required>("eff_radius_qc",     scalar3d_layout_mid, m,      grid_name);
+  add_field<Required>("eff_radius_qi",     scalar3d_layout_mid, m,      grid_name);
+  //add_field<Required>("eff_radius_qr",     scalar3d_layout_mid, m,      grid_name);
+  //add_field<Required>("eff_radius_qm",     scalar3d_layout_mid, m,      grid_name);
 
   // Set of fields used strictly as output
   add_field<Computed>("isccp_cldtot", scalar2d_layout, nondim, grid_name);
@@ -125,8 +125,8 @@ void Cosp::run_impl (const double dt)
   get_field_in("p_mid").sync_to_host();
   get_field_in("p_int").sync_to_host();
   get_field_in("cldfrac_tot_for_analysis").sync_to_host();
-  get_field_in("reff_qc").sync_to_host();
-  get_field_in("reff_qi").sync_to_host();
+  get_field_in("eff_radius_qc").sync_to_host();
+  get_field_in("eff_radius_qi").sync_to_host();
   get_field_in("dtau067").sync_to_host();
   get_field_in("dtau105").sync_to_host();
 
@@ -141,8 +141,8 @@ void Cosp::run_impl (const double dt)
   auto p_mid   = get_field_in("p_mid").get_view<const Real**, Host>();
   auto p_int   = get_field_in("p_int").get_view<const Real**, Host>();
   auto cldfrac = get_field_in("cldfrac_tot_for_analysis").get_view<const Real**, Host>();
-  auto reff_qc = get_field_in("reff_qc").get_view<const Real**, Host>();
-  auto reff_qi = get_field_in("reff_qi").get_view<const Real**, Host>();
+  auto reff_qc = get_field_in("eff_radius_qc").get_view<const Real**, Host>();
+  auto reff_qi = get_field_in("eff_radius_qi").get_view<const Real**, Host>();
   auto dtau067 = get_field_in("dtau067").get_view<const Real**, Host>();
   auto dtau105 = get_field_in("dtau105").get_view<const Real**, Host>();
   auto cldfrac_tot_for_analysis = get_field_in("cldfrac_tot_for_analysis").get_view<const Real**, Host>();
