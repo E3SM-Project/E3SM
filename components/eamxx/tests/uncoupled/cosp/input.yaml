@@ -24,8 +24,8 @@ initial_conditions:
   dtau067: 1.0
   dtau105: 1.0
   cldfrac_tot_for_analysis: 0.5
-  reff_qc: 0.0
-  reff_qi: 0.0
+  eff_radius_qc: 0.0
+  eff_radius_qi: 0.0
   sunlit: 1.0
   surf_radiative_T: 0.0
 
