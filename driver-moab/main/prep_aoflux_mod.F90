@@ -171,6 +171,7 @@ contains
          call shr_sys_abort(subname//' ERROR in zeroing out xao_fields in init ')
        endif
 
+#ifdef MOABDEBUG
        allocate(xao_omct(lsize_o, size_list)) ! the transpose of xao_ox(size_list, lsize_o) 
        ! create for debugging the tags on mbox2id (mct grid on coupler)
        ierr = iMOAB_DefineTagStorage(mbox2id, tagname, tagtype, numco, tagindex )
@@ -188,7 +189,6 @@ contains
        endif
        deallocate(tagValues)
        !deallocate(xao_omct)
-#ifdef MOABDEBUG
         ! debug out file
       outfile = 'o_flux.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
