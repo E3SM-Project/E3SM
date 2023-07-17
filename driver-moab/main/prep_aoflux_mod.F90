@@ -166,20 +166,21 @@ contains
        ent_type = 1 ! cell type
        tagValues = 0._r8
        ierr = iMOAB_SetDoubleTagStorage ( mbofxid, tagname, arrSize , ent_type, tagValues(1))
+       deallocate(tagValues)
        if (ierr .ne. 0) then
          write(logunit,*) subname,' error in zeroing out xao_fields  '
          call shr_sys_abort(subname//' ERROR in zeroing out xao_fields in init ')
        endif
 
-#ifdef MOABDEBUG
        allocate(xao_omct(lsize_o, size_list)) ! the transpose of xao_ox(size_list, lsize_o) 
+       xao_omct = 0._r8
+#ifdef MOABDEBUG
        ! create for debugging the tags on mbox2id (mct grid on coupler)
        ierr = iMOAB_DefineTagStorage(mbox2id, tagname, tagtype, numco, tagindex )
        if (ierr .ne. 0) then
           write(logunit,*) subname,' error in defining tags on ocn mct mesh on cpl '
           call shr_sys_abort(subname//' ERROR in defining tags on ocn mct mesh on cpl')
        endif
-       xao_omct = 0._r8
        ent_type = 0 ! cell type, this is point cloud mct
        arrSize = lsize_o * size_list
        ierr = iMOAB_SetDoubleTagStorage ( mbox2id, tagname, arrSize , ent_type, xao_omct )
@@ -187,7 +188,6 @@ contains
          write(logunit,*) subname,' error in zeroing out xao_fields on mct instance ocn '
          call shr_sys_abort(subname//' ERROR in zeroing out xao_fields on mct instance ocn ')
        endif
-       deallocate(tagValues)
        !deallocate(xao_omct)
         ! debug out file
       outfile = 'o_flux.h5m'//C_NULL_CHAR
@@ -206,7 +206,6 @@ contains
          write(logunit,*) subname,' error in writing ox_mct mesh with 0 values '
          call shr_sys_abort(subname//' ERROR in writing ox_mct mesh ')
       endif
-
 #endif
     endif
 
@@ -233,6 +232,7 @@ contains
        ent_type = 1 ! cell type now, not a point cloud anymore
        tagValues = 0._r8
        ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrSize , ent_type, tagValues)
+       deallocate(tagValues)
        if (ierr .ne. 0) then
          write(logunit,*) subname,' error in zeroing out xao_fields  '
          call shr_sys_abort(subname//' ERROR in zeroing out xao_fields in init ')
