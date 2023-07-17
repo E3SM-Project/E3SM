@@ -60,6 +60,7 @@ module check_energy
   public :: check_tracers_init      ! initialize tracer integrals and cumulative boundary fluxes
   public :: check_tracers_chng      ! check changes in integrals against cumulative boundary fluxes
   public :: check_tracers_fini      ! free memory associated with check_tracers_data type variable
+  public :: check_energy_set_print_additional_diagn
 
   public :: qflx_gmean              ! calculate global mean of qflx for water conservation check 
   public :: check_qflx              ! output qflx at certain locations for water conservation check  
@@ -143,6 +144,16 @@ subroutine check_energy_setopts( &
    endif
 
 end subroutine check_energy_setopts
+
+!================================================================================================
+
+subroutine check_energy_set_print_additional_diagn(print_additional_diagn_in)
+
+   logical,          intent(in), optional :: print_additional_diagn_in
+
+   print_additional_diagn = print_additional_diagn_in
+
+end subroutine check_energy_set_print_additional_diagn 
 
 !================================================================================================
 
