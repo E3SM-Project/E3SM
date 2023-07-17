@@ -738,8 +738,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    real(r8), pointer :: mudpcu(:,:)     ! width parameter of droplet size distr
    real(r8), pointer :: qi(:,:)         ! wg grid slice of cloud ice.
 
-   real(r8) :: jctop(pcols)  ! o row of top-of-deep-convection indices passed out.
-   real(r8) :: jcbot(pcols)  ! o row of base of cloud indices passed out.
+   integer :: jctop(pcols)  ! o row of top-of-deep-convection indices passed out.
+   integer :: jcbot(pcols)  ! o row of base of cloud indices passed out.
 
    real(r8) :: pcont(pcols), pconb(pcols), freqzm(pcols)
 
