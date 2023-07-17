@@ -23,6 +23,7 @@
 #include "diagnostics/meridional_vapor_flux.hpp"
 #include "diagnostics/field_at_pressure_level.hpp"
 #include "diagnostics/precip_surf_mass_flux.hpp"
+#include "diagnostics/surf_upward_latent_heat_flux.hpp"
 
 namespace scream {
 
@@ -53,6 +54,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("ZonalVapFlux",&create_atmosphere_diagnostic<ZonalVapFluxDiagnostic>);
   diag_factory.register_product("MeridionalVapFlux",&create_atmosphere_diagnostic<MeridionalVapFluxDiagnostic>);
   diag_factory.register_product("precip_surf_mass_flux",&create_atmosphere_diagnostic<PrecipSurfMassFlux>);
+  diag_factory.register_product("surface_upward_latent_heat_flux",&create_atmosphere_diagnostic<SurfaceUpwardLatentHeatFlux>);
 }
 
 } // namespace scream
