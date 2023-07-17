@@ -27,6 +27,7 @@ extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
   using yakl::intrinsics::abs;
   using yakl::intrinsics::maxval;
+  using yakl::atomicAdd;
   auto &coupler = pam_interface::get_coupler();
   //------------------------------------------------------------------------------------------------
   // retreive coupler options
@@ -44,11 +45,19 @@ extern "C" void pam_driver() {
   coupler.set_option<real>("gcm_physics_dt",gcm_dt);
   coupler.set_option<real>("sponge_time_scale",60);
   coupler.set_option<int>("sponge_num_layers",crm_nz*0.3);
+#ifdef CRM_DYN_PER_PHYS
+  int cdpp = CRM_DYN_PER_PHYS;
+  coupler.set_option<int>("crm_per_phys",cdpp);
+#else
   coupler.set_option<int>("crm_per_phys",4);
-  if (crm_dt==10) { coupler.set_option<int>("crm_per_phys",10); }
+  if (crm_dt== 1) { coupler.set_option<int>("crm_per_phys",1); }
+  if (crm_dt== 5) { coupler.set_option<int>("crm_per_phys",2); }
+  if (crm_dt==10) { coupler.set_option<int>("crm_per_phys",4); }
   if (crm_dt==20) { coupler.set_option<int>("crm_per_phys",2); }
   if (crm_dt==30) { coupler.set_option<int>("crm_per_phys",3); }
   if (crm_dt==60) { coupler.set_option<int>("crm_per_phys",6); }
+#endif
+
   //------------------------------------------------------------------------------------------------
   // Allocate the coupler state and retrieve host/device data managers
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
@@ -59,9 +68,6 @@ extern "C" void pam_driver() {
   // get seperate data manager objects for host and device
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
-
-  // temporary variable for saving and recalling dry density in pam_state
-  dm_device.register_and_allocate<real>("density_dry_save", "temporary CRM dry density", {crm_nz,crm_ny,crm_nx,nens}, {"z","y","x","nens"} );
   //------------------------------------------------------------------------------------------------
   // Create objects for dycor, microphysics, and turbulence and initialize them
   Microphysics micro;
@@ -106,8 +112,8 @@ extern "C" void pam_driver() {
 
   if (is_first_step) {
     // Perturb the CRM at the beginning of the run
-    auto gcolp = dm_host.get<int const,1>("gcolp").createDeviceCopy();
-    modules::perturb_temperature( coupler , gcolp );
+    auto global_column_id = dm_host.get<int const,1>("global_column_id").createDeviceCopy();
+    modules::perturb_temperature( coupler , global_column_id );
 
     #if defined(P3_CXX)
       auto am_i_root = coupler.get_option<bool>("am_i_root");
@@ -119,48 +125,9 @@ extern "C" void pam_driver() {
   }
 
   #if defined(MMF_PAM_DYCOR_SPAM)
-    // set anelastic reference state using GCM state
     pam_state_set_reference_state(coupler);
     dycore.pre_time_loop(coupler);
   #endif
-
-  //------------------------------------------------------------------------------------------------
-  //------------------------------------------------------------------------------------------------
-
-  real4d save_temp("save_temp",crm_nz,crm_ny,crm_nx,nens);
-  real4d save_rhod("save_rhod",crm_nz,crm_ny,crm_nx,nens);
-  real4d save_rhov("save_rhov",crm_nz,crm_ny,crm_nx,nens);
-  real4d save_rhoc("save_rhoc",crm_nz,crm_ny,crm_nx,nens);
-  real4d save_rhoi("save_rhoi",crm_nz,crm_ny,crm_nx,nens);
-  real4d save_uvel("save_uvel",crm_nz,crm_ny,crm_nx,nens);
-  real4d save_wvel("save_wvel",crm_nz,crm_ny,crm_nx,nens);
-
-  auto ref_rho_d  = dm_device.get<real const,2>("ref_density_dry");
-  auto ref_rho_v  = dm_device.get<real const,2>("ref_density_vapor");
-  auto ref_rho_c  = dm_device.get<real const,2>("ref_density_liq");
-  auto ref_rho_i  = dm_device.get<real const,2>("ref_density_ice");
-  auto ref_temp   = dm_device.get<real const,2>("ref_temp");
-  auto gcm_rho_d  = dm_device.get<real const,2>("gcm_density_dry");
-  auto gcm_temp   = dm_device.get<real const,2>("gcm_temp"       );
-  auto gcm_rho_v  = dm_device.get<real const,2>("gcm_water_vapor");
-  auto gcm_rho_c  = dm_device.get<real const,2>("gcm_cloud_water");
-  auto gcm_rho_i  = dm_device.get<real const,2>("gcm_cloud_ice"  );
-
-  auto temp = dm_device.get<real,4>("temp");
-  auto rhod = dm_device.get<real,4>("density_dry");
-  auto rhov = dm_device.get<real,4>("water_vapor");
-  auto rhoc = dm_device.get<real,4>("cloud_water");
-  auto rhoi = dm_device.get<real,4>("ice");
-  auto zmid = dm_device.get<real,2>("vertical_midpoint_height" );
-  auto zint = dm_device.get<real,2>("vertical_interface_height");
-  auto uvel = dm_device.get<real,4>("uvel");
-  auto wvel = dm_device.get<real,4>("wvel");
-
-
-  // real grav = 9.80616;
-  // auto input_phis = dm_host.get<real const,1>("input_phis").createDeviceCopy();
-  // auto lat        = dm_host.get<real const,1>("latitude"  ).createDeviceCopy();
-  // auto lon        = dm_host.get<real const,1>("longitude" ).createDeviceCopy();
 
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
@@ -181,19 +148,6 @@ extern "C" void pam_driver() {
 
     if (enable_check_state) { pam_debug_check_state(coupler, 2, nstep); }
 
-    // if (enable_check_state) { 
-      // save stuff for after-dycor check
-      parallel_for("", SimpleBounds<4>(crm_nz,crm_ny,crm_nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-        save_temp(k,j,i,iens) = temp(k,j,i,iens);
-        save_rhod(k,j,i,iens) = rhod(k,j,i,iens);
-        save_rhov(k,j,i,iens) = rhov(k,j,i,iens);
-        save_rhoc(k,j,i,iens) = rhoc(k,j,i,iens);
-        save_rhoi(k,j,i,iens) = rhoi(k,j,i,iens);
-        save_uvel(k,j,i,iens) = uvel(k,j,i,iens);
-        save_wvel(k,j,i,iens) = wvel(k,j,i,iens);
-      });
-    // }
-
     // anelastic dycor messes up the dry density ddue to how the GCM forcing changes total density
     // so we need to save it here and recall after the dycor
     pam_state_save_dry_density(coupler);
@@ -204,54 +158,6 @@ extern "C" void pam_driver() {
 
     // recall the dry density to the values before the dycor
     pam_state_recall_dry_density(coupler);
-
-    // Check stuff
-    // if (enable_check_state) { 
-      parallel_for("", SimpleBounds<3>(crm_ny,crm_nx,nens), YAKL_LAMBDA (int j, int i, int iens) {
-        int  tmp_i = -1;
-        int  tmp_j = -1;
-        int  tmp_n = -1;
-        // bool problem_found = false;
-        for (int k=0; k<crm_nz; k++) {
-          if ( temp(k,j,i,iens)<0 || isnan(temp(k,j,i,iens)) ) {
-            // problem_found = true;
-            tmp_i = i;
-            tmp_j = j;
-            tmp_n = iens;
-            real dz = (zint(k+1,iens) - zint(k,iens));
-            // printf("WHDEBUG - st:%3.3d n:%3.3d i:%3.3d k:%3.3d z:%8.2g dz:%8.2g =curr= t: %8.2g rv: %8.2g rc: %8.2g ri: %8.2g rd: %8.2g u: %8.2g w: %8.2g =prev= t: %8.2g rv: %8.2g rc: %8.2g ri: %8.2g u: %8.2g w: %8.2g \n",
-            //   nstep,iens,i,k,
-            //   zmid(k,iens),
-            //   dz,
-            //   temp(k,j,i,iens),
-            //   rhov(k,j,i,iens),
-            //   rhoc(k,j,i,iens),
-            //   rhoi(k,j,i,iens),
-            //   rhod(k,j,i,iens),
-            //   uvel(k,j,i,iens),
-            //   wvel(k,j,i,iens),
-            //   save_temp(k,j,i,iens),
-            //   save_rhov(k,j,i,iens),
-            //   save_rhoc(k,j,i,iens),
-            //   save_rhoi(k,j,i,iens),
-            //   save_uvel(k,j,i,iens),
-            //   save_wvel(k,j,i,iens)
-            // );
-            printf("WHDEBUG - st:%3.3d n:%3.3d i:%3.3d k:%3.3d z:%8.2g dz:%8.2g =curr= t: %8.2g u: %8.2g w: %8.2g =prev= t: %8.2g u: %8.2g w: %8.2g \n",
-              nstep,iens,i,k,
-              zmid(k,iens),
-              dz,
-              temp(k,j,i,iens),
-              uvel(k,j,i,iens),
-              wvel(k,j,i,iens),
-              save_temp(k,j,i,iens),
-              save_uvel(k,j,i,iens),
-              save_wvel(k,j,i,iens)
-            );
-          }
-        }
-      });
-    // }
 
     if (enable_check_state) { pam_debug_check_state(coupler, 3, nstep); }
 
@@ -271,7 +177,7 @@ extern "C" void pam_driver() {
     if (enable_check_state) { pam_debug_check_state(coupler, 5, nstep); }
 
     pam_statistics_save_state(coupler);
-    coupler.run_module( "micro"                        , [&] (pam::PamCoupler &coupler) {micro .timeStep(coupler);} );
+    coupler.run_module( "micro"                        , [&] (pam::PamCoupler &coupler) {micro .timeStep(coupler, is_first_step);} );
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"micro"); }
 
     if (enable_check_state) { pam_debug_check_state(coupler, 6, nstep); }
