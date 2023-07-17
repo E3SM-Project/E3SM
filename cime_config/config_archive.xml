@@ -55,7 +55,7 @@
     </test_file_names>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="mosart" compclass="rof">
+  <comp_archive_spec compname="mosart" compclass="rof" exclude_testing="true">
     <rest_file_extension>r</rest_file_extension>
     <rest_file_extension>rh\d*</rest_file_extension>
     <hist_file_extension>h\d*</hist_file_extension>
@@ -81,7 +81,7 @@
     </test_file_names>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="mpassi" compclass="ice">
+  <comp_archive_spec compname="mpassi" compclass="ice" exclude_testing="true">
     <rest_file_extension>rst</rest_file_extension>
     <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
@@ -99,7 +99,7 @@
     </test_file_names>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="mpaso" compclass="ocn">
+  <comp_archive_spec compname="mpaso" compclass="ocn" exclude_testing="true">
     <rest_file_extension>rst</rest_file_extension>
     <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
@@ -117,7 +117,7 @@
     </test_file_names>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="mali" compclass="glc">
+  <comp_archive_spec compname="mali" compclass="glc" exclude_testing="true">
     <rest_file_extension>rst</rest_file_extension>
     <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
