@@ -1476,7 +1476,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_mirror_array_readwrite( 'output_dqi_sponge', crm_output%dqi_sponge,   '' )
       call pam_mirror_array_readwrite( 'output_dqr_sponge', crm_output%dqr_sponge,   '' )
 
-      call pam_mirror_array_readonly( 'gcolp', gcolp )
+      call pam_mirror_array_readonly( 'global_column_id', gcolp )
 
       call pam_set_option('ncrms', ncrms )
       call pam_set_option('gcm_nlev', pver )
