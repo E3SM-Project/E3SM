@@ -366,6 +366,7 @@ end subroutine
 
 !_______________________________________________________________________
 subroutine dcmip2016_append_measurements2(elem,prect_mass_forint,prect_en_forint,cl_en_forint,en_leak_forint,mass_leak_forint,&
+                                      tot_mass_forint, tot_energy_forint, &
                                       tl,hybrid,nets,nete)
   type(TimeLevel_t),  intent(in) :: tl
   type(hybrid_t),     intent(in) :: hybrid                   ! hybrid parallel structure
@@ -373,9 +374,9 @@ subroutine dcmip2016_append_measurements2(elem,prect_mass_forint,prect_en_forint
   type(element_t)      , intent(in) :: elem(:)
   integer,            intent(in)            :: nets,nete                ! start, end element index
   real(rl), dimension(np,np,nets:nete), intent(in) :: prect_mass_forint,prect_en_forint,cl_en_forint,en_leak_forint,&
-                                               mass_leak_forint
+                                               mass_leak_forint, tot_mass_forint, tot_energy_forint
 
-  real(rl) :: time, prect_mass, prect_en, cl_en, en_leak, mass_leak
+  real(rl) :: time, prect_mass, prect_en, cl_en, en_leak, mass_leak, tot_mass, tot_energy
   real(rl) :: next_sample_time = 0.0
 
   time = time_at(tl%nstep)
@@ -395,6 +396,8 @@ subroutine dcmip2016_append_measurements2(elem,prect_mass_forint,prect_en_forint
     cl_en      = global_integral(elem,cl_en_forint,     hybrid,np,nets,nete)
     en_leak    = global_integral(elem,en_leak_forint,   hybrid,np,nets,nete)
     mass_leak  = global_integral(elem,mass_leak_forint, hybrid,np,nets,nete)
+    tot_mass   = global_integral(elem,tot_mass_forint,  hybrid,np,nets,nete)
+    tot_energy = global_integral(elem,tot_energy_forint,hybrid,np,nets,nete)
 
     if (hybrid%masterthread) then
 !      print *," ptt=",time_at(tl%nstep)," max_prcl =",pmax_precl*(1000.0)*(24.0*3600)
@@ -402,10 +405,13 @@ subroutine dcmip2016_append_measurements2(elem,prect_mass_forint,prect_en_forint
 !      print *," cls=",time_at(tl%nstep)," ecl_diff =",en_cl_diff
 
        print *, 'p Mass [kg/m2/sec]',time_at(tl%nstep),prect_mass
-       print *, 'p En [W/m2/sec]',time_at(tl%nstep),prect_en
-       print *, 'p cl En [W/m2/sec]',time_at(tl%nstep),cl_en
-       print *, 'leak En [W/m2/sec]',time_at(tl%nstep),en_leak
+       print *, 'p En    [W/m2]',time_at(tl%nstep),prect_en
+       print *, 'p cl En [W/m2]',time_at(tl%nstep),cl_en
+       print *, 'leak En [W/m2]',time_at(tl%nstep),en_leak
        print *, 'leak M [ks/m2/sec]',time_at(tl%nstep),mass_leak
+       print *, 'total M [ks/m2/sec]',time_at(tl%nstep),tot_mass
+       print *, 'total E [W/m2]',time_at(tl%nstep),tot_energy
+       print *, ' '
 
     endif
   endif
@@ -683,7 +689,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   logical :: wasiactive
 
   real(rl), dimension(np,np,nets:nete)      :: prect_mass_forint,prect_en_forint,cl_en_forint,en_leak_forint,&
-                                               mass_leak_forint
+                                               mass_leak_forint, mass_forint, energy_forint
 
   if (qsize .ne. 3) call abortmp('ERROR: moist bubble test requires qsize=3')
 
@@ -692,7 +698,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   min_ps    = +huge(rl)
 
   prect_mass_forint = 0; prect_en_forint = 0; cl_en_forint = 0; en_leak_forint = 0; mass_leak_forint = 0;
-
+  mass_forint = 0; energy_forint = 0;
+ 
   do ie = nets,nete
 
     precl(:,:,ie) = 0.0d0
@@ -786,7 +793,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 if(wasiactive)then
 !if(bubble_rj_cpstar_nh) then
 
-print *, 'rof for nh, v, not rof for hy, eamcpdry, eamcpstar'
+print *, 'rof for nh, v, not rof for hy (small), eamcpdry, eamcpstar'
 print *, 'en_before-en1globV rel', (energy_before-en1glob_cv)/en1glob_cv
 print *, 'rof for nh, v, not rof for hy, eamcpdry, eamcpstar'
 print *, 'en_before-en1globP rel', (energy_before-en1glob_cp)/en1glob_cp
@@ -828,7 +835,7 @@ print *, " "
 !print *, 'en prect', energy_prect
 !in case of HY update, TOTAL here won't be the same as TOTAL above with energies
 !from routine, because to control HY update, en_before was computed for HY formulation
-print *, 'rof for NH, V, not for HY'
+print *, 'rof for NH, V, not for HY. small for P HY, not small for EAM'
 print *, 'TOTAL en1glob_cp-(en2glob_cp+prect) rel', (en1glob_cp-(en2glob_cp+energy_prect))/en1glob_cp
 !print *, 'TOTAL en1glob_cp,en2glob_cp,prect', en1glob_cp,en2glob_cp,energy_prect
 print *, 'rof for all'
@@ -843,6 +850,8 @@ endif
       !do not use homme rstar routine here
 
       precl(i,j,ie) = mass_prect / (dt * rhow) / g
+      mass_forint(i,j,ie) = mass1global/gravit/dt
+      energy_forint(i,j,ie) = en1glob_cp/gravit/dt
 
 !ver 1 for total en_cl comparison, with L term
 !good only for exact methods -- P and V updates
@@ -900,28 +909,8 @@ endif
 
   enddo !ie loop
 
-#if 0
-!not weighted by area
-  do ie=nets,nete
-     global_shared_buf(ie,1) = 0
-     global_shared_buf(ie,2) = 0
-     do k=1,nlev
-        global_shared_buf(ie,1) = global_shared_buf(ie,1) + &
-                  SUM(precl(:,:,ie))
-        global_shared_buf(ie,2) = global_shared_buf(ie,2) + &
-                  SUM(en_cl_diff(:,:,ie))
-     enddo
-  enddo
-  call wrap_repro_sum(nvars=2, comm=hybrid%par%comm)
-!
-!    Mass2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-
-  globprecl_sum = global_shared_sum(1)
-  en_cl_diff_sum = global_shared_sum(2)
-#endif
-
   call dcmip2016_append_measurements2(elem,prect_mass_forint,prect_en_forint,cl_en_forint,en_leak_forint,mass_leak_forint,&
-                                      tl,hybrid,nets,nete)
+                                      mass_forint, energy_forint, tl,hybrid,nets,nete)
 
 end subroutine bubble_new_forcing
 
