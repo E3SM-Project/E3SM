@@ -127,6 +127,8 @@ static void run_bfb_rain_sed()
 {
   auto engine = setup_random_test();
 
+  // F90 is quite slow on weaver, so we decrease dt to reduce
+  // the number of steps in rain_sed.
 #ifdef EAMXX_ENABLE_GPU
   constexpr Scalar dt = 5.800E+01;
 #else
