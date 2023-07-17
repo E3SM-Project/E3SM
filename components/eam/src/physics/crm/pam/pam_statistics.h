@@ -584,9 +584,13 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
       phys_tend_sponge_qr_gcm  (k_gcm,iens) = phys_tend_sponge_qr  (k_crm,iens);
 
     } else {
-      liqwp_gcm  (k_gcm,iens) = 0.;
-      icewp_gcm  (k_gcm,iens) = 0.;
-      cldfrac_gcm(k_gcm,iens) = 0.;
+      liqwp_gcm           (k_gcm,iens) = 0.;
+      icewp_gcm           (k_gcm,iens) = 0.;
+      liq_ice_exchange_gcm(k_gcm,iens) = 0.;
+      vap_liq_exchange_gcm(k_gcm,iens) = 0.;
+      vap_ice_exchange_gcm(k_gcm,iens) = 0.;
+      cldfrac_gcm         (k_gcm,iens) = 0.;
+
       phys_tend_sgs_temp_gcm  (k_gcm,iens) = 0.;
       phys_tend_sgs_qv_gcm    (k_gcm,iens) = 0.;
       phys_tend_sgs_qc_gcm    (k_gcm,iens) = 0.;
