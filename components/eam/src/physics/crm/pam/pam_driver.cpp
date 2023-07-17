@@ -118,7 +118,6 @@ extern "C" void pam_driver() {
     #if defined(P3_CXX)
       auto am_i_root = coupler.get_option<bool>("am_i_root");
       scream::p3::p3_init(/*write_tables=*/false, am_i_root);
-
       // Load P3 lookup table data to avoid re-loading it every CRM call
       pam::p3_init_lookup_tables();
     #endif
@@ -145,26 +144,20 @@ extern "C" void pam_driver() {
     // run a PAM time step
     coupler.run_module( "apply_gcm_forcing_tendencies" , modules::apply_gcm_forcing_tendencies );
     coupler.run_module( "radiation"                    , [&] (pam::PamCoupler &coupler) {rad   .timeStep(coupler);} );
-
     if (enable_check_state) { pam_debug_check_state(coupler, 2, nstep); }
 
-    // anelastic dycor messes up the dry density ddue to how the GCM forcing changes total density
-    // so we need to save it here and recall after the dycor
+    // anelastic dycor can dramatically change the dry density due to the assumption that the total 
+    // density does not change, so we will save it here and recall after the dycor
     pam_state_save_dry_density(coupler);
-
     pam_statistics_save_state(coupler);
     coupler.run_module( "dycore"                       , [&] (pam::PamCoupler &coupler) {dycore.timeStep(coupler);} );
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"dycor"); }
-
-    // recall the dry density to the values before the dycor
     pam_state_recall_dry_density(coupler);
-
     if (enable_check_state) { pam_debug_check_state(coupler, 3, nstep); }
 
     pam_statistics_save_state(coupler);
     coupler.run_module( "sponge_layer"                 , modules::sponge_layer );
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"sponge"); }
-
     if (enable_check_state) { pam_debug_check_state(coupler, 4, nstep); }
 
     // calculate psuedo friction which will be an input to SHOC
@@ -173,13 +166,11 @@ extern "C" void pam_driver() {
     pam_statistics_save_state(coupler);
     coupler.run_module( "sgs"                          , [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"sgs"); }
-
     if (enable_check_state) { pam_debug_check_state(coupler, 5, nstep); }
 
     pam_statistics_save_state(coupler);
-    coupler.run_module( "micro"                        , [&] (pam::PamCoupler &coupler) {micro .timeStep(coupler, is_first_step);} );
+    coupler.run_module( "micro"                        , [&] (pam::PamCoupler &coupler) {micro .timeStep(coupler);} );
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"micro"); }
-
     if (enable_check_state) { pam_debug_check_state(coupler, 6, nstep); }
 
     pam_radiation_timestep_aggregation(coupler);
