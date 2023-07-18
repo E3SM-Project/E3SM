@@ -2334,6 +2334,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: iceThicknessHydro
+      real (kind=RKIND), dimension(:), pointer :: upperSurfaceHydro
       real (kind=RKIND), dimension(:), pointer :: upperSurface
       integer, dimension(:,:), pointer :: cellsOnCell
       integer, dimension(:), pointer :: cellMask
@@ -2341,8 +2342,8 @@ module li_subglacial_hydro
       integer :: iCell
       integer :: jCell
       integer :: iNeighbor
-      real (kind=RKIND) :: minNeighborHeight
       real (kind=RKIND) :: maxNeighborHeight
+      real (kind=RKIND) :: minNeighborHeight
       real (kind=RKIND) :: meanNeighborHeight
       real (kind=RKIND) :: totNeighborHeight
       real (kind=RKIND) :: numCells
@@ -2361,6 +2362,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(hydroPool, 'iceThicknessHydro', iceThicknessHydro)
+      call mpas_pool_get_array(hydroPool, 'upperSurfaceHydro', upperSurfaceHydro)
       call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -2371,69 +2373,56 @@ module li_subglacial_hydro
 
       !iceThicknessHydro is equivalent to thickness if
       !config_SGH_use_iceThicknessHydro is false. Default is to alter
-      !ice thickness along boundaries. 
+      !ice thickness
 
       if (config_SGH_use_iceThicknessHydro) then
 
          do iCell = 1, nCells
             if ((li_mask_is_grounded_ice(cellMask(iCell))) .and. (.not. li_mask_is_margin(cellMask(iCell)))) then !identify domain boundaries
-               !Smooth by making each cell equal to the mean of its
-               !neighbors.
 
-               do jCell = 1, nEdgesOnCell(iCell)
-                  iNeighbor = cellsOnCell(jCell,iCell)
-                  if (iNeighbor < nCells + 1) then
-                          if (jCell == 1) then
-                             totNeighborHeight = upperSurface(iNeighbor)
-                             numCells = 1
-                          else
-                             totNeighborHeight = totNeighborHeight +  upperSurface(iNeighbor)
-                             numCells = numCells + 1
-                          endif
-                  endif
-
-                     meanNeighborHeight = totNeighborHeight / numCells
-               end do
-
-               iceThicknessHydro(iCell) = meanNeighborHeight - bedTopography(iCell)
-
-               !Above averaging is not sequential with respect to flow
-               !direction, so cells can still be local minima or maxima
-               !after smoothing. Find and correct cells where this is the case
-
-               minNeighborHeight = bigValue !allocate
-               maxNeighborHeight = bigNegativeValue
+               maxNeighborHeight = bigValue !allocate
+               minNeighborHeight = bigNegativeValue
                
                do jCell = 1, nEdgesOnCell(iCell)
                   iNeighbor = cellsOnCell(jCell,iCell)
+
+                  if (jCell == 1) then
+                          totNeighborHeight = upperSurface(iNeighbor)
+                          numCells = 1
+                  endif 
+
                   if (iNeighbor < nCells + 1) then
 
-                      minNeighborHeight = min(minNeighborHeight, iceThicknessHydro(iNeighbor) + &
-                      bedTopography(iNeighbor))
+                      minNeighborHeight = min(minNeighborHeight, upperSurface(iNeighbor))
 
-                      maxNeighborHeight = max(maxNeighborHeight, iceThicknessHydro(iNeighbor) + &
-                      bedTopography(iNeighbor))
+                      maxNeighborHeight = max(maxNeighborHeight, upperSurface(iNeighbor))
 
+                      totNeighborHeight = totNeighborHeight + upperSurface(iNeighbor)
+                      numCells = numCells + 1
                   endif
                end do
 
+               meanNeighborHeight = totNeighborHeight / numCells
+
                !only adjust surface elevation if cell is local minimum or
                !maximum
-               if (((iceThicknessHydro(iCell) + bedTopography(iCell)) < minNeighborHeight) &
+               if ((upperSurface(iCell) < minNeighborHeight) &
                        .and. (minNeighborHeight < bigValue)) then
 
-                  iceThicknessHydro(iCell) = minNeighborHeight - bedTopography(iCell)
+                  iceThicknessHydro(iCell) = meanNeighborHeight - bedTopography(iCell)
 
-               elseif (((iceThicknessHydro(iCell) + bedTopography(iCell)) > maxNeighborHeight) &
+               elseif ((upperSurface(iCell) > maxNeighborHeight) &
                        .and. (maxNeighborHeight > bigNegativeValue)) then
 
-                  iceThicknessHydro(iCell) = maxNeighborHeight - bedTopography(iCell)
+                  iceThicknessHydro(iCell) = meanNeighborHeight - bedTopography(iCell)
 
                endif
 
             endif
          enddo
       endif
+
+      upperSurfaceHydro = iceThicknessHydro + bedTopography
 
    end subroutine calc_iceThicknessHydro
 
