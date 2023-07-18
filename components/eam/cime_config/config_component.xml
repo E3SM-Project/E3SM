@@ -65,24 +65,13 @@
 
       <!-- Multiscale modeling framework (MMF) -->
       <value compset="_EAM%.*MMF1"     >-crm samxx</value>
-      <value compset="_EAM%.*MMF-SAM"  >-crm samxx</value>
-      <value compset="_EAM%.*MMF-PAM-A">-crm pam -pam_dycor awfl</value>
-      <value compset="_EAM%.*MMF-PAM-C">-crm pam -pam_dycor spam</value>
+      <value compset="_EAM%.*MMF2"     >-crm pam -pam_dycor spam</value>
       <value compset="_EAM%.*MMF"      >-use_MMF -nlev 60 -crm_nz 50</value>
-      <!-- <value compset="_EAM%.*MMF"      >-crm_dt 10 -crm_dx 2000 -crm_nx 64 -crm_ny 1 </value> -->
-      <value compset="_EAM%.*MMF"      >-crm_dt 10 -crm_dx 2000 -crm_ny 1 </value>
-      <value compset="_EAM%.*MMF"      >-crm_nx_rad 4 -crm_ny_rad 1 -rad rrtmgp -rrtmgpxx</value>
+      <value compset="_EAM%.*MMF1"     >-crm_dt 10 -crm_dx 2000 -crm_nx 64 -crm_ny 1 </value>
+      <value compset="_EAM%.*MMF2"     >-crm_dt 5  -crm_dx 2000 -crm_nx 64 -crm_ny 1 </value>
       <value compset="_EAM%.*MMF1"     >-MMF_microphysics_scheme sam1mom -chem none</value>
-      <value compset="_EAM%.*MMF-SAM"  >-MMF_microphysics_scheme sam1mom -chem none</value>
-      <value compset="_EAM%.*MMF-PAM"  >-MMF_microphysics_scheme p3 -chem none</value>
-      <!-- for testing use one rad col and small CRM -->
-      <!-- <value compset="_EAM%.*MMF1_"    >-crm_nx_rad 1 -crm_nx 16 </value>  -->
-      <value compset="_EAM%.*MMF-SAM"  >-crm_nx_rad 1 -crm_nx 16 </value>
-      <value compset="_EAM%.*MMF-PAM-A">-crm_nx_rad 1 -crm_nx 16 </value>
-      <value compset="_EAM%.*MMF-PAM-C">-crm_nx_rad 1 -crm_nx 16 </value>
-      <!-- Temporarily disable these for PAM development -->
-      <!-- <value compset="_EAM%.*MMF"      >-use_MMF_VT</value> -->
-      <!-- <value compset="_EAM%.*MMF"      >-use_MMF_ESMT</value> -->
+      <value compset="_EAM%.*MMF2"     >-MMF_microphysics_scheme p3 -chem none</value>
+      <value compset="_EAM%.*MMF"      >-crm_nx_rad 4 -crm_ny_rad 1 -rad rrtmgp -rrtmgpxx</value>
       <value compset="_EAM%AQP-MMF.*"  >-aquaplanet</value>
       <value compset="_EAM%RCE-MMF.*"  >-aquaplanet -rce</value>
       <value compset="_EAM%SCM-MMF.*"  >-scam</value>
@@ -144,10 +133,8 @@
       <value compset="_EAM%SCREAM-LR-AQUA"              >aquaplanet_SCREAM-LR</value>
       <value compset="_EAM%SCREAM-HR-AQUA"              >aquaplanet_SCREAM-HR</value>
       <!-- MMF / Super-Parameterization -->
-      <value compset="2010(?:SOI)?_EAM%MMF1"            >2010_mmf_1mom</value>
-      <value compset="2010(?:SOI)?_EAM%MMF2"            >2010_mmf_2mom</value>
-      <value compset="2010(?:SOI)?_EAM%MMF-SAM"         >2010_mmf_1mom</value>
-      <value compset="2010(?:SOI)?_EAM%MMF-PAM"         >2010_mmf_1mom</value>
+      <!-- TODO: revisit the MMF2 use case when aerosols are not prescribed -->
+      <value compset="2010(?:SOI)?_EAM%MMF"             >2010_mmf_1mom</value>
       <value compset="_EAM%AQP.*MMF"                    >aquaplanet_MMF-1mom</value>
       <value compset="_EAM%RCE.*MMF"                    >RCEMIP_EAMv1</value>
       <value compset="ARM97_EAM%SCM.*MMF"               >scam_arm97_MMF-1mom</value>

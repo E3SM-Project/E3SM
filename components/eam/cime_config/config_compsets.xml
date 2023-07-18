@@ -76,23 +76,23 @@
   </compset>
 
   <compset>
-    <alias>FSCM-ARM97-MMF-SAM</alias>
-    <lname>ARM97_EAM%SCM-MMF-SAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <alias>FSCM-ARM97-MMF1</alias>
+    <lname>ARM97_EAM%SCM-MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>FSCM-ARM97-MMF-PAM-A</alias>
-    <lname>ARM97_EAM%SCM-MMF-PAM-A_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FSCM-ARM97-MMF-PAM-C</alias>
-    <lname>ARM97_EAM%SCM-MMF-PAM-C_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <alias>FSCM-ARM97-MMF2</alias>
+    <lname>ARM97_EAM%SCM-MMF2_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>FSCM-RICO-MMF1</alias>
     <lname>RICO_EAM%SCM-MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FSCM-RICO-MMF2</alias>
+    <lname>RICO_EAM%SCM-MMF2_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- ************************************************* -->
@@ -125,13 +125,8 @@
   </compset>
 
   <compset>
-    <alias>FAQP-MMF-SAM</alias>
-    <lname>2000_EAM%AQP-MMF1_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FAQP-MMF-PAM-C</alias>
-    <lname>2000_EAM%AQP-MMF-PAM-C_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+    <alias>FAQP-MMF2</alias>
+    <lname>2000_EAM%AQP-MMF2_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
   </compset>
   
   <!-- *********************************** -->
@@ -249,24 +244,19 @@
   </compset>
 
   <compset>
-    <alias>F2010-MMF-SAM</alias>
-    <lname>2010_EAM%MMF-SAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F2010-MMF-PAM-A</alias>
-    <lname>2010_EAM%MMF-PAM-A_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F2010-MMF-PAM-C</alias>
-    <lname>2010_EAM%MMF-PAM-C_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <alias>F2010-MMF2</alias>
+    <lname>2010_EAM%MMF2_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- F compsets with transient SST (AMIP) -->
   <compset>
     <alias>F20TR-MMF1</alias>
     <lname>20TR_EAM%CMIP6-MMF1_ELM%SP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F20TR-MMF1</alias>
+    <lname>20TR_EAM%CMIP6-MMF2_ELM%SP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <!-- ******************************* -->
