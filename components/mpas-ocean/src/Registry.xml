@@ -38,6 +38,9 @@
 		<dim name="FOUR" definition="4"
 			 description="The number four as a dimension."
 		/>
+		<dim name="FIVE" definition="5"
+			 description="The number five as a dimension."
+		/>
 		<dim name="SIX" definition="6"
 			 description="The number six as a dimension."
 		/>
@@ -199,7 +202,7 @@
 		/>
 		<nml_option name="config_time_integrator" type="character" default_value="split_explicit"
 					description="Time integration method."
-					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit'"
+					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS'"
 		/>
 		<nml_option name="config_number_of_time_levels" type="integer" default_value="2"
 					description="The number of time levels in the time-stepping scheme. This is used for array allocation."
@@ -1179,6 +1182,12 @@
 					possible_values="any positive real, but typically 1000-1035"
 		/>
 	</nml_record>
+	<nml_record name="lts" mode="forward">
+		<nml_option name="config_dt_scaling_LTS" type="integer" default_value="1"
+					description="The ratio between the dt on the coarse region and the dt on the fine region. Specifically, it is the positive integer M that defines dtFine for LTS, dtFine = dt / M."
+					possible_values="Any positive integer greater than or equal to one. A value of one employs the same dt in all regions."
+		/>
+	</nml_record>
 	<nml_record name="pressure_gradient" mode="forward">
 		<nml_option name="config_pressure_gradient_type" type="character" default_value="pressure_and_zmid"
 					description="Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential.  The sea surface height gradient (ssh_gradient) option is for barotropic, depth-averaged pressure."
@@ -1656,6 +1665,7 @@
 			<var name="fVertex"/>
 			<var name="fCell"/>
 			<var name="bed_elevation"/>
+			<var name="LTSRegion"/>
 		</stream>
 
 		<stream name="output_init"
@@ -1689,6 +1699,7 @@
 			<var name="landIceDraft"/>
 			<var name="landIceFloatingMask"/>
 			<var name="landIceFloatingFraction"/>
+			<var name="LTSRegion"/>
 		</stream>
 
 		<stream name="forcing_data_init"
@@ -4099,6 +4110,23 @@
 			type="text"
 			dimensions="nTransectGroups"
 			description="The name for each transect group."
+			/>
+	</var_struct>
+	<var_struct name="LTS" time_levs="1">
+		<var name="LTSRegion" type="integer" dimensions="nCells"
+			description="Definition of LTS regions. This is read from the initial condition file (typically named init.nc), and set up with a pre-processing step. The values are: 1 = fine; 2 = coarse; 3 = interface layer one; 4 = interface layer two; 5 = fine close to interface layer one."
+			/>
+		<var name="cellsInLTSRegion" type="integer" dimensions="TWO R3 nCells"
+			description="Cell mask for each region. For the first two dimensions, the regions in the array are defined as follows: (1,1): fine, (1,2) interface layer one, (1,3) fine close to interface layer one, (2,2) interface layer two, (2,1) coarse."
+			/>
+		<var name="nCellsInLTSRegion" type="integer" dimensions="TWO R3"
+			description="Number of cells in each region of cellsInLTSRegion."
+			/>
+		<var name="edgesInLTSRegion" type="integer" dimensions="TWO R3 nEdges"
+			description="Edge mask for each region. For the first two dimensions, the regions in the array are defined as follows: (1,1): fine, (1,2) interface layer one, (1,3) fine close to interface layer one, (2,2) interface layer two, (2,1) coarse."
+			/>
+		<var name="nEdgesInLTSRegion" type="integer" dimensions="TWO R3"
+			description="Number of edges in each region of edgesInLTSRegion."
 			/>
 	</var_struct>
 
