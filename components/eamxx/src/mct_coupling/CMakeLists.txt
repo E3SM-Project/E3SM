@@ -32,6 +32,7 @@ set (SCREAM_LIBS
      scream_share
      scream_control
      ${dynLibName}
+     mam
      p3
      shoc
      scream_rrtmgp
