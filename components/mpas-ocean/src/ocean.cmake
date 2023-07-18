@@ -8,9 +8,15 @@ list(APPEND INCLUDES "core_ocean/gotm/include")
 # check if lapack is linked
 find_package(LAPACK)
 find_package(BLAS)
-if(LAPACK_FOUND AND BLAS_FOUND)
+if (LAPACK_FOUND AND BLAS_FOUND)
   list(APPEND CPPDEFS "-DUSE_LAPACK")
-  list(APPEND SLIBS "${LAPACK_LIBRARIES} ${BLAS_LIBRARIES}")
+  list(APPEND LIBRARIES "${LAPACK_LIBRARIES};${BLAS_LIBRARIES}")
+endif()
+find_package(PETSc)
+if (PETSC_FOUND)
+  list(APPEND CPPDEFS "-DUSE_PETSC")
+  list(APPEND INCLUDES "${PETSC_INCLUDES}")
+  list(APPEND LIBRARIES "${PETSC_LIBRARIES}")
 endif()
 
 # driver (files live in E3SM)
@@ -105,7 +111,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_wetting_drying.F
   core_ocean/shared/mpas_ocn_vel_tidal_potential.F
   core_ocean/shared/mpas_ocn_stokes_drift.F
-  core_ocean/shared/mpas_ocn_manufactured_solution.F 
+  core_ocean/shared/mpas_ocn_manufactured_solution.F
 )
 
 set(OCEAN_DRIVER
