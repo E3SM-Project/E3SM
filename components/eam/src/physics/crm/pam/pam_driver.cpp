@@ -43,21 +43,9 @@ extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
   // set various coupler options
   coupler.set_option<real>("gcm_physics_dt",gcm_dt);
-  coupler.set_option<real>("sponge_time_scale",60);
+  coupler.set_option<int>("crm_per_phys",2);
   coupler.set_option<int>("sponge_num_layers",crm_nz*0.3);
-#ifdef CRM_DYN_PER_PHYS
-  int cdpp = CRM_DYN_PER_PHYS;
-  coupler.set_option<int>("crm_per_phys",cdpp);
-#else
-  coupler.set_option<int>("crm_per_phys",4);
-  if (crm_dt== 1) { coupler.set_option<int>("crm_per_phys",1); }
-  if (crm_dt== 5) { coupler.set_option<int>("crm_per_phys",2); }
-  if (crm_dt==10) { coupler.set_option<int>("crm_per_phys",4); }
-  if (crm_dt==20) { coupler.set_option<int>("crm_per_phys",2); }
-  if (crm_dt==30) { coupler.set_option<int>("crm_per_phys",3); }
-  if (crm_dt==60) { coupler.set_option<int>("crm_per_phys",6); }
-#endif
-
+  coupler.set_option<real>("sponge_time_scale",60);
   //------------------------------------------------------------------------------------------------
   // Allocate the coupler state and retrieve host/device data managers
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
