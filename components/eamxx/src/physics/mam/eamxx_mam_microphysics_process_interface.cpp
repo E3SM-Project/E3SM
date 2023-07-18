@@ -68,7 +68,7 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("qi", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // ice wet mixing ratio
   add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name, "tracers"); // ice number mixing ratio
   add_field<Required>("pbl_height", scalar2d_layout_col, m, grid_name); // planetary boundary layer height
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, q_unit, grid_name); // pdel, hydrostatic pressure
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name); // pdel, hydrostatic pressure
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name); // cloud fraction
 
   // droplet activation can alter cloud liquid and number mixing ratios
