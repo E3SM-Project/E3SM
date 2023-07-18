@@ -2322,6 +2322,7 @@ module li_calving
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:), pointer :: cellMask, edgeMask
       integer, dimension(:), pointer :: frontAblationMask
+      integer, dimension(:), pointer :: openOceanMask
       real (kind=RKIND), dimension(:), pointer :: calvingThickness, faceMeltingThickness
       real (kind=RKIND), pointer :: config_sea_level
       real (kind=RKIND), pointer :: config_calving_error_threshold
@@ -2390,6 +2391,7 @@ module li_calving
       call mpas_pool_get_array(geometryPool, 'ablatedVolumeNonDynCell', ablatedVolumeNonDynCell)
       call mpas_pool_get_array(geometryPool, 'ablatedVolumeDynCell', ablatedVolumeDynCell)
       call mpas_pool_get_array(geometryPool, 'frontAblationMask', frontAblationMask)
+      call mpas_pool_get_array(geometryPool, 'openOceanMask', openOceanMask)
       call mpas_pool_get_array(geometryPool, 'requiredAblationVolumeNonDynEdge', requiredAblationVolumeNonDynEdge)
       call mpas_pool_get_array(geometryPool, 'requiredAblationVolumeDynEdge', requiredAblationVolumeDynEdge)
       call mpas_pool_get_array(geometryPool, 'requiredAblationVolumeNonDynCell', requiredAblationVolumeNonDynCell)
@@ -2460,14 +2462,27 @@ module li_calving
       endif
 
       if ( applyToFloating ) then
+         call find_open_ocean(domain, openOceanMask, err_tmp)
+         err = ior(err, err_tmp)
          do iCell = 1,nCells
             ! If applyToFloating: marine marginal cells are dynamic floating margin cells
             if ( li_mask_is_floating_ice(cellMask(iCell)) .and. &
                li_mask_is_dynamic_margin(cellMask(iCell)) ) then
-               frontAblationMask(iCell) = 1
+               do iEdge = 1, nEdgesOnCell(iCell)
+                  iNeighbor = cellsOnCell(iEdge, iCell)
+                  ! only mark this cell if it neighbors the open ocean (don't apply calving to holes in ice shelf)
+                  if (openOceanMask(iNeighbor) == 1) then
+                     frontAblationMask(iCell) = 1
+                     exit ! no need to keep searching for neighbors
+                  endif
+               enddo
             endif
          enddo
       endif
+
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'frontAblationMask')
+      call mpas_timer_stop("halo updates")
 
       ! Now extend the mask forward to include non-dynamic floating neighbors (appropriate for any of the mask types)
       ! Use value 2 to indicate the non-dynamic cells
@@ -3009,6 +3024,92 @@ module li_calving
        scale_edge_length =  abs(u/mag * cos(angleEdgeHere) + v/mag * sin(angleEdgeHere))  ! dot product of unit vectors
        !scale_edge_length = abs(cos(angleEdgeHere - atan2(v, u)))
     end function scale_edge_length
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine find_open_ocean
+!
+!> \brief Generate a mask of open ocean (i.e. ignore 'holes' in ice shelf)
+!-----------------------------------------------------------------------
+   subroutine find_open_ocean(domain, openOceanMask, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, dimension(:), intent(out) :: openOceanMask
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, scratchPool
+      integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
+      integer, dimension(:), pointer :: nEdgesOnCell
+      type (field1dInteger), pointer :: seedMaskField, growMaskField
+      integer, dimension(:), pointer :: seedMask, growMask
+      real (kind=RKIND), dimension(:), pointer :: bedTopography, thickness
+      real (kind=RKIND), pointer :: config_sea_level
+      integer, pointer :: nCells
+      integer :: iCell, iNeighbor, jCell
+
+      err = 0
+
+      block => domain % blocklist
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
+      call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
+      seedMask => seedMaskField % array
+      call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
+      call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
+      growMask => growMaskField % array
+
+      seedMask(:) = 0
+      growMask(:) = 0
+      do iCell = 1, nCells
+         if ((bedTopography(iCell) < config_sea_level) .and. (thickness(iCell) == 0.0_RKIND)) then
+            growMask(iCell) = 1
+            do iNeighbor = 1, nEdgesOnCell(iCell)
+               jCell = cellsOnCell(iNeighbor, iCell)
+               if (jCell == nCells + 1) then
+                  seedMask(iCell) = 1  ! this is the seed locations - open ocean along domain boundary
+                  exit
+               endif
+            enddo
+         endif
+      enddo
+
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'seedMask')
+      call mpas_timer_stop("halo updates")
+
+      call li_flood_fill(seedMask, growMask, domain)
+      openOceanMask = seedMask
+
+      call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)
+      call mpas_deallocate_scratch_field(growMaskField, single_block_in=.true.)
+   end subroutine find_open_ocean
 
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
