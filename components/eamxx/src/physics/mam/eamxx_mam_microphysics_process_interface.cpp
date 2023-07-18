@@ -345,7 +345,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     const Int icol = team.league_rank(); // column index
 
     // extract column-specific atmosphere state data
-    haero::Atmosphere atm(ekat::subview(T_mid_, icol),
+    haero::Atmosphere atm(nlev_, ekat::subview(T_mid_, icol),
       ekat::subview(p_mid_, icol),
       ekat::subview(qv_dry, icol),
       ekat::subview(qc_, icol),
