@@ -729,6 +729,9 @@ register_variables(const std::string& filename,
     register_variable(filename, name, name, units, vec_of_dims,
                       "real",fp_precision, io_decomp_tag);
 
+    // Add FillValue as an attribute of each variable
+    set_variable_metadata(filename, name, "_FillValue",m_fill_value);
+
     // Add any extra attributes for this variable, examples include:
     //   1. A list of subfields associated with a field group output
     //   2. A CF longname (TODO)

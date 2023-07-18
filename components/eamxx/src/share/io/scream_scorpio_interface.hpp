@@ -49,6 +49,8 @@ namespace scorpio {
                          const std::vector<std::string>& var_dimensions,
                          const std::string& dtype, const std::string& pio_decomp_tag);
   void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const std::string& meta_val);
+  void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const float meta_val);
+  void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const double meta_val);
   /* Register a variable with a file.  Called during the file setup, for an input stream. */
   ekat::any get_any_attribute (const std::string& filename, const std::string& att_name);
   ekat::any get_any_attribute (const std::string& filename, const std::string& var_name, const std::string& att_name);
