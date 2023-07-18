@@ -127,12 +127,20 @@ static void run_bfb_rain_sed()
 {
   auto engine = setup_random_test();
 
+  // F90 is quite slow on weaver, so we decrease dt to reduce
+  // the number of steps in rain_sed.
+#ifdef EAMXX_ENABLE_GPU
+  constexpr Scalar dt = 5.800E+01;
+#else
+  constexpr Scalar dt = 1.800E+03;
+#endif
+
   RainSedData rsds_fortran[] = {
-    //        kts, kte, ktop, kbot, kdir,        dt,   inv_dt, precip_liq_surf
-    RainSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,            0.0),
-    RainSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,            1.0),
-    RainSedData(1,  72,   27,   27,   -1, 1.800E+03, 5.556E-04,            0.0),
-    RainSedData(1,  72,   27,   27,    1, 1.800E+03, 5.556E-04,            2.0),
+    //        kts, kte, ktop, kbot, kdir, dt, inv_dt, precip_liq_surf
+    RainSedData(1,  72,   27,   72,   -1, dt,   1/dt,            0.0),
+    RainSedData(1,  72,   72,   27,    1, dt,   1/dt,            1.0),
+    RainSedData(1,  72,   27,   27,   -1, dt,   1/dt,            0.0),
+    RainSedData(1,  72,   27,   27,    1, dt,   1/dt,            2.0),
   };
 
   static constexpr Int num_runs = sizeof(rsds_fortran) / sizeof(RainSedData);
