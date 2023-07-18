@@ -34,6 +34,11 @@ module seq_map_type_mod
      real(R8), pointer       :: clat_d(:)
      integer(IN)             :: mpicom    ! mpicom
      !
+     !---- optional nonlinear map; see seq_nlmap_mod.F90
+     logical :: nl_available, nl_conservative
+     type(mct_ggrid), pointer :: dom_cx_s, dom_cx_d
+     type(mct_sMatp) :: nl_sMatp
+     character(CX) :: nl_mapfile
   end type seq_map
   public seq_map
 
@@ -60,7 +65,8 @@ module seq_map_type_mod
 contains
   !===============================================================================
 
-  subroutine seq_map_mapmatch(mapid,gsMap_s,gsMap_d,mapfile,strategy)
+  subroutine seq_map_mapmatch(mapid,gsMap_s,gsMap_d,mapfile,strategy, &
+       nl_available,nl_mapfile,nl_conservative)
 
     ! This method searches through the current seq_maps to find a
     ! mapping file that matches the values passed in
@@ -71,6 +77,9 @@ contains
     type(mct_gsMap) ,intent(in),optional :: gsMap_d
     character(len=*),intent(in),optional :: mapfile
     character(len=*),intent(in),optional :: strategy
+    logical         ,intent(in),optional :: nl_available
+    character(len=*),intent(in),optional :: nl_mapfile
+    logical         ,intent(in),optional :: nl_conservative
 
     integer(IN) :: m
     logical     :: match
@@ -95,6 +104,17 @@ contains
        if (match .and. present(gsMap_d)) then
           if (.not.mct_gsmap_Identical(gsmap_d,seq_maps(m)%gsmap_d)) match = .false.
        endif
+       if (match .and. present(nl_available)) then
+          if (nl_available .neqv. seq_maps(m)%nl_available) match = .false.
+          if (match .and. nl_available) then
+             if (match .and. present(nl_mapfile)) then
+                if (trim(nl_mapfile) /= trim(seq_maps(m)%nl_mapfile)) match = .false.
+             end if
+             if (match .and. present(nl_conservative)) then
+                if (nl_conservative .neqv. seq_maps(m)%nl_conservative) match = .false.
+             end if
+          end if
+       end if
 
        if (match) then
           mapid = m
@@ -175,5 +195,17 @@ contains
 
   end subroutine seq_map_gsmapcheck
 
+  function seq_map_should_nonlinear_map_conserve(maprcname) result(conserve)
+    character(len=*),intent(in) :: maprcname
+    
+    logical :: conserve
+    integer :: idx
+
+    ! smap and vmap do not conserve.
+    idx = index(maprcname, 'smap')
+    if (idx == 0) idx = index(maprcname, 'vmap')
+    ! Conserve if not an smap or vmap, meaning this is an fmap.
+    conserve = idx == 0
+  end function seq_map_should_nonlinear_map_conserve
 
 end module seq_map_type_mod
