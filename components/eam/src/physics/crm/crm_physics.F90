@@ -1117,7 +1117,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   do ii = 1,crm_nx
                      if (MMF_microphysics_scheme .eq. 'p3') then
                         qli_hydro_before(c,i) = qli_hydro_before(c,i)+(crm_state%qr(icrm,ii,jj,m)) * dp_g
-                        ! TODO: how do we handle qi_hydro_before for P3?
+                        ! P3 does not have a separate category for snow, so qi_hydro_before should be zero
                      end if
                      if (MMF_microphysics_scheme .eq. 'sam1mom') then
                         sfactor = max(0._r8,min(1._r8,(crm_state%temperature(icrm,ii,jj,m)-268.16)*1./(283.16-268.16)))
@@ -1842,7 +1842,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   do ii = 1,crm_nx
                      if(MMF_microphysics_scheme .eq. 'p3') then 
                         qli_hydro_after(c,i) = qli_hydro_after(c,i)+(crm_state%qr(icrm,ii,jj,m)) * dp_g
-                        ! TODO: how do we handle qi_hydro_after for P3?
+                        ! P3 does not have a separate category for snow, so qi_hydro_after should be zero
                      end if
                      if(MMF_microphysics_scheme .eq. 'sam1mom') then 
                         sfactor = max(0._r8,min(1._r8,(crm_state%temperature(icrm,ii,jj,m)-268.16)*1./(283.16-268.16)))
