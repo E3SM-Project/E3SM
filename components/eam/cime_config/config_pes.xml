@@ -1692,7 +1692,7 @@
   <grid name="a%ne120np4">
     <mach name="pm-cpu|alvarez">
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+SGLC.+SWAV.*" pesize="any">
-        <comment>pm-cpu ne120pg2 F-compset with MPASSI on 43 nodes 128x1c8 0.6 sypd</comment>
+        <comment>pm-cpu ne120pg2 F-compset with MPASSI on 43 nodes 128x1c8 1.3 sypd</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>5504</ntasks_atm>
