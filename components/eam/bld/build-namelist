@@ -617,6 +617,12 @@ if ($ideal_or_adia_or_aqua) {
     $ice_active = 0;
 }
 
+# Set default numerical scheme for coupling surface tracer fluxes
+# Hardwired default scheme 1 would be used if a configuration does not set a value
+if (defined($defaults->get_value('cflx_cpl_opt'))) {
+   add_default($nl, 'cflx_cpl_opt', 'val' =>$nl->get_value('cflx_cpl_opt'));
+}
+
 # Note that the prescribed SSTs
 # used by aqua-planet mode are implemented in the eam_aqua component.)
 
@@ -873,6 +879,11 @@ add_default($nl, 'bnd_topo', 'nofail'=>1);
 
 # Tropopause climatology
 add_default($nl, 'tropopause_climo_file');
+
+# Set default E90 based tropopause threshold, only if present in the default NML file
+if (defined($defaults->get_value('tropopause_e90_thrd'))) {
+   add_default($nl, 'tropopause_e90_thrd', 'val' =>$nl->get_value('tropopause_e90_thrd'));
+}
 
 # Solar irradiance
 
@@ -3104,6 +3115,13 @@ if ($chem eq 'superfast_mam4_resus_mom_soag' || $chem eq 'superfast_mam5_resus_m
     if (! $megan_emis ) {
       %species = ( %species,
 		'ISOP   -> ' => 'isop_emis_file',  );
+      if ($vbs_soa) {
+         %species = ( %species,
+                     'ISOP_VBS -> ' => 'isop_vbs_emis_file',  
+                     'C10H16 -> ' => 'c10h16_emis_file',  
+                     'SOAG0  -> ' => 'soag0_emis_file'  
+                    );
+      }
     }
     # tentatively add chemUCI-Linozv2|3 additional species here with superfast_mam4_resus_soag
     # May later add a block to use a new chem package name in parallel with superfast_mam4_resus_soag 
@@ -3138,14 +3156,14 @@ if ($chem eq 'superfast_mam4_resus_mom_soag' || $chem eq 'superfast_mam5_resus_m
     # Vertical emission datasets:
     %species = ();
     %species = ('SO2         -> ' => 'so2_ext_file',
-		'SOAG        -> ' => 'soag_ext_file',
+		'SOAG0       -> ' => 'soag0_ext_file',
                 'so4_a1      -> ' => 'so4_a1_ext_file', 
                 'so4_a2      -> ' => 'so4_a2_ext_file',
 		'pom_a4      -> ' => 'pom_a4_ext_file',
 		'bc_a4       -> ' => 'bc_a4_ext_file',
 		'num_a1      -> ' => 'mam7_num_a1_ext_file',
 		'num_a2      -> ' => 'num_a2_ext_file',
-		'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+		'num_a4      -> ' => 'mam7_num_a3_ext_file' );
     # tentatively add chemUCI-Linozv2|3 additional species here with superfast_mam4_resus_soag
     if ($opts{'use_case'} =~ /chemUCI-Linoz/) {
         %species = ( %species,

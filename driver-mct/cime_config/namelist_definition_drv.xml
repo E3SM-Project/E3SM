@@ -5133,9 +5133,10 @@
     <desc>
       Dust emission scheme.
       1 = Zender et al. (2003) as in E3SMv1 and v2.
+      2 = Feng, Y. (2023) as default for E3SMv3
     </desc>
 	  <values>
-		  <value>1</value>
+		  <value>2</value>
 	  </values>
   </entry>
 
