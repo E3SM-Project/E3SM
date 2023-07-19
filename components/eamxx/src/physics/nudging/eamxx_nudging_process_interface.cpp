@@ -136,8 +136,6 @@ void Nudging::run_impl (const double dt)
   // Perform time interpolation
   m_time_interp.perform_time_interpolation(ts);
 
-  // Map any masked value
-
   // Process data and nudge the atmosphere state
   const auto& p_mid_v     = get_field_in("p_mid").get_view<const mPack**>();
   view_Nd<mPack,2> p_mid_ext_p;
@@ -158,6 +156,54 @@ void Nudging::run_impl (const double dt)
     view_Nd<mMask,2> int_mask_view("",m_num_cols,m_num_levs); // Track mask of interpolated values
     const view_Nd<mPack,2> ext_state_view(reinterpret_cast<mPack*>(ext_state_field.data()),
                                           m_num_cols,m_num_src_levs);
+    // Masked values in the source data can lead to strange behavior in the vertical interpolation.
+    // We pre-process the data and map any masked values (sometimes called "filled" values) to the
+    // nearest un-masked value.
+    Real var_fill_value;
+    // WARNING!!! Assumes that all datafiles use the same FillValue.  It is unlikely that a user will use a mismatch of files
+    // with different defined FillValues, but if they do, this loop won't catch the change.
+    scorpio::get_variable_metadata(m_datafiles[0],name,"_FillValue",var_fill_value);
+    const int num_cols           = int_state_view.extent(0);
+    const int num_vert_packs     = int_state_view.extent(1);
+    const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
+    Kokkos::parallel_for("correct_for_masked_values", policy,
+       	       KOKKOS_LAMBDA(MemberType const& team) {
+      const int icol = team.league_rank();
+      auto int_mask_view_1d  = ekat::subview(int_mask_view,icol);
+      auto int_state_view_1d = ekat::subview(int_state_view,icol);
+      Real fill_value;
+      int  fill_idx = -1;
+      // Scan top to surf and backfill all values near TOM that are masked.
+      for (int kk=0; kk<m_num_levs; ++kk) {
+        const auto ipack = kk / mPack::n;
+	const auto iidx  = kk % mPack::n;
+        // Check if this index is masked
+	if (!(int_state_view_1d(ipack)[iidx]==var_fill_value)) {
+	  fill_value = int_state_view_1d(ipack)[iidx];
+	  fill_idx = kk;
+	  for (int jj=0; jj<kk; ++jj) {
+            const auto jpack = jj / mPack::n;
+	    const auto jidx  = jj % mPack::n;
+	    int_state_view_1d(jpack)[jidx] = fill_value;
+	  }
+	  break;
+	}
+      }
+      // Now fill the rest, the fill_idx should be non-negative.  If it isn't that means
+      // we have a column that is fully masked 
+      for (int kk=fill_idx+1; kk<m_num_levs; ++kk) {
+        const auto ipack = kk / mPack::n;
+	const auto iidx  = kk % mPack::n;
+        // Check if this index is masked
+	if (!(int_state_view_1d(ipack)[iidx]==var_fill_value)) {
+	  fill_value = int_state_view_1d(ipack)[iidx];
+	} else {
+	  int_state_view_1d(ipack)[iidx] = fill_value;
+	}
+      }
+    });
+
+
     // Vertical Interpolation onto atmosphere state pressure levels
     if (m_src_pres_type == DYNAMIC) {
       perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
@@ -185,9 +231,6 @@ void Nudging::run_impl (const double dt)
     //       We continue scanning towards the surface until we hit an unmasked value, we
     //       then assign that masked value the most recent unmasked value, until we hit the
     //       surface.
-    const int num_cols           = int_state_view.extent(0);
-    const int num_vert_packs     = int_state_view.extent(1);
-    const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
     Kokkos::parallel_for("correct_for_masked_values", policy,
        	       KOKKOS_LAMBDA(MemberType const& team) {
       const int icol = team.league_rank();
