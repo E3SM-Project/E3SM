@@ -177,51 +177,6 @@ module li_time_integration
       err = ior(err,err_tmp)
 
 
-      ! ===
-      ! === Adaptive timestep: update clock information
-      ! ===
-      ! Set time step in clock object since the time step could have changed
-      ! Need to get value out of a block, but all blocks should have the same value, so just use first block
-      if (config_adaptive_timestep) then
-         block => domain % blocklist
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_array(meshPool, 'deltat', deltat)
-         ! convert dt in seconds to timeInterval type
-         call mpas_set_timeInterval(timeStepInterval, dt=deltat, ierr=err_tmp)
-         err = ior(err,err_tmp)
-         ! update the clock with the timeInterval
-         call mpas_set_clock_timestep(domain % clock, timeStepInterval, err_tmp)
-         err = ior(err,err_tmp)
-      endif
-
-      ! ===
-      ! === Update clock information
-      ! ===
-      ! Advance clock - needed to wait until after time step is completed in case the dt has changed!
-      call mpas_advance_clock(domain % clock)
-      currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
-      call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_log_write('  Completed timestep.  New time is: ' // trim(timeStamp), flushNow=.true.)
-
-
-      block => domain % blocklist
-      do while (associated(block))
-         ! Assign the time stamp for this time step
-         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_array(meshPool, 'xtime', xtime)
-         xtime = timeStamp
-
-         ! compute time since start of simulation, in days
-         call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
-         call mpas_pool_get_array(meshPool, 'daysSinceStart',daysSinceStart)
-         call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
-         call mpas_get_timeInterval(currTime - simulationStartTime_timeType, dt=daysSinceStart)
-         daysSinceStart = daysSinceStart / seconds_per_day
-
-         block => block % next
-      end do
-
       ! === error check
       if (err > 0) then
           call mpas_log_write("An error has occurred in li_timestep.", MPAS_LOG_ERR)
