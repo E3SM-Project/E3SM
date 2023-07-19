@@ -57,8 +57,6 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   FieldLayout scalar3d_layout_mid{ {COL, LEV}, {ncol_, nlev_} };
 
   // Define fields needed in mam4xx.
-  const auto m2 = m*m;
-  const auto s2 = s*s;
 
   // atmospheric quantities
   add_field<Required>("omega", scalar3d_layout_mid, Pa/s, grid_name); // vertical pressure velocity
