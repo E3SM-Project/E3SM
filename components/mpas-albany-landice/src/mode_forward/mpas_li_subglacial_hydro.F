@@ -1018,6 +1018,7 @@ module li_subglacial_hydro
          endif
       end do
       where (waterFluxMask == 2)
+         diffusivity = 0.0_RKIND
          waterFluxAdvec = 0.0_RKIND
          waterFluxDiffu = 0.0_RKIND
          waterVelocity = 0.0_RKIND
