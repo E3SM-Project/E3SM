@@ -83,10 +83,10 @@ private:
 
   // views that store optical parameters, dimensions are (ncol, nbands, nlev),
   // where nbands is swbands for shortwave quantities and lwbands for longwave
-  view_3d aero_g_sw_;   // [-]
-  view_3d aero_ssa_sw_; // [-]
-  view_3d aero_tau_sw_; // [m] -- assumed SI length units (verify)
-  view_3d aero_tau_lw_; // [m] -- assumed SI length units (verify)
+  view_3d aero_g_sw_;   // shortwave aerosol optical asymmetry parameter [-]
+  view_3d aero_ssa_sw_; // shortwave aerosol single-scattering albedo [-]
+  view_3d aero_tau_sw_; // shortwave aerosol optical depth [m] -- assumed SI length units (verify)
+  view_3d aero_tau_lw_; // longwave aerosol optical depth [m] -- assumed SI length units (verify)
 }; // MAMOptics
 
 } // namespace scream
