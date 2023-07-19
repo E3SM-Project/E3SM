@@ -249,6 +249,7 @@ subroutine convect_deep_tend( &
     cme = 0
     zdu = 0
     rliq = 0
+    lengath = 0 !(zhang73) avoid unexpected init lengath=191 in BRC branch for ZM-off
 
     call physics_ptend_init(ptend, state%psetcols, 'convect_deep')
 

@@ -528,6 +528,7 @@ subroutine ma_convproc_dp_intr(                &
    use phys_grid,      only: get_lat_all_p, get_lon_all_p, get_rlat_all_p, get_rlon_all_p
 
    use modal_aero_data, only: lmassptr_amode, nspec_amode, ntot_amode, numptr_amode
+  use spmd_utils,     only: masterproc
  
 ! Arguments
    type(physics_state), intent(in ) :: state          ! Physics state variables
@@ -625,6 +626,7 @@ subroutine ma_convproc_dp_intr(                &
 
 ! initialize dpdry (units=mb), which is used for tracers of dry mixing ratio type
    dpdry = 0._r8
+ if(masterproc) write(iulog,*)'(zhang73 ma_convproc_dp_intr) lengath=',lengath
    do i = 1, lengath
       dpdry(i,:) = state%pdeldry(ideep(i),:)/100._r8
    end do
