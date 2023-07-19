@@ -51,6 +51,8 @@ namespace scorpio {
   void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const std::string& meta_val);
   void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const float meta_val);
   void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const double meta_val);
+  void get_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, float& meta_val);
+  void get_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, double& meta_val);
   /* Register a variable with a file.  Called during the file setup, for an input stream. */
   ekat::any get_any_attribute (const std::string& filename, const std::string& att_name);
   ekat::any get_any_attribute (const std::string& filename, const std::string& var_name, const std::string& att_name);
@@ -102,6 +104,9 @@ extern "C" {
   bool is_enddef_c2f(const char*&& filename);
   double read_time_at_index_c2f(const char*&& filename, const int& time_index);
   double read_curr_time_c2f(const char*&& filename);
+  /* Query a netCDF file for the metadata associated w/ a variable */
+  float get_variable_metadata_float_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name);
+  double get_variable_metadata_double_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name);
 } // extern "C"
 
 } // namespace scorpio

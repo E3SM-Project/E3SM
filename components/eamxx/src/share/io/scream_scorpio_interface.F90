@@ -70,6 +70,8 @@ module scream_scorpio_interface
             set_variable_metadata_char,  & ! Sets a variable metadata (char data)
             set_variable_metadata_float, & ! Sets a variable metadata (float data)
             set_variable_metadata_double,& ! Sets a variable metadata (double data)
+            get_variable_metadata_float, & ! Gets a variable metadata (float data)
+            get_variable_metadata_double,& ! Gets a variable metadata (double data)
             register_dimension,          & ! Register a dimension with a particular pio output file
             set_decomp,                  & ! Set the pio decomposition for all variables in file.
             set_dof,                     & ! Set the pio dof decomposition for specific variable in file.
@@ -552,6 +554,105 @@ contains
     endif
 
   end subroutine set_variable_metadata_double
+!=====================================================================!
+  function get_variable_metadata_float(filename, varname, metaname) result(metaval)
+    use pionfatt_mod, only: PIO_get_att => get_att
+
+    character(len=256), intent(in) :: filename
+    character(len=256), intent(in) :: varname
+    character(len=256), intent(in) :: metaname
+    real(kind=c_float)             :: metaval
+    
+
+    ! Local variables
+    type(pio_atm_file_t),pointer :: pio_file
+    type(hist_var_t),    pointer :: var
+    integer                      :: ierr
+    logical                      :: found
+
+    type(hist_var_list_t), pointer :: curr
+
+    ! Find the pointer for this file
+    call lookup_pio_atm_file(trim(filename),pio_file,found)
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+    endif
+
+    ! Find the variable in the file
+    curr => pio_file%var_list_top
+
+    found = .false.
+    do while (associated(curr))
+      if (associated(curr%var)) then
+        if (trim(curr%var%name)==trim(varname) .and. curr%var%is_set) then
+          found = .true.
+          var => curr%var
+          exit
+        endif
+      endif
+      curr => curr%next
+    end do
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n Variable not found.",-999)
+    endif
+
+    ierr = PIO_get_att(pio_file%pioFileDesc, var%piovar, metaname, metaval)
+    if (ierr .ne. 0) then
+      call errorHandle("Error getting attribute '" // trim(metaname) &
+                       // "' on variable '" // trim(varname) &
+                       // "' in pio file " // trim(filename) // ".", -999)
+    endif
+
+  end function get_variable_metadata_float
+!=====================================================================!
+  function get_variable_metadata_double(filename, varname, metaname) result(metaval)
+    use pionfatt_mod, only: PIO_get_att => get_att
+
+    character(len=256), intent(in) :: filename
+    character(len=256), intent(in) :: varname
+    character(len=256), intent(in) :: metaname
+    real(kind=c_double)            :: metaval
+
+    ! Local variables
+    type(pio_atm_file_t),pointer :: pio_file
+    type(hist_var_t),    pointer :: var
+    integer                      :: ierr
+    logical                      :: found
+
+    type(hist_var_list_t), pointer :: curr
+
+    ! Find the pointer for this file
+    call lookup_pio_atm_file(trim(filename),pio_file,found)
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+    endif
+
+    ! Find the variable in the file
+    curr => pio_file%var_list_top
+
+    found = .false.
+    do while (associated(curr))
+      if (associated(curr%var)) then
+        if (trim(curr%var%name)==trim(varname) .and. curr%var%is_set) then
+          found = .true.
+          var => curr%var
+          exit
+        endif
+      endif
+      curr => curr%next
+    end do
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n Variable not found.",-999)
+    endif
+
+    ierr = PIO_get_att(pio_file%pioFileDesc, var%piovar, metaname, metaval)
+    if (ierr .ne. 0) then
+      call errorHandle("Error getting attribute '" // trim(metaname) &
+                       // "' on variable '" // trim(varname) &
+                       // "' in pio file " // trim(filename) // ".", -999)
+    endif
+
+  end function get_variable_metadata_double
 !=====================================================================!
   subroutine set_variable_metadata_char(filename, varname, metaname, metaval)
     use pionfatt_mod, only: PIO_put_att => put_att
