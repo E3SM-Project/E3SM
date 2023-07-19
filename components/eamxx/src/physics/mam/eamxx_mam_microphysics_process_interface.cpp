@@ -357,7 +357,6 @@ void MAMMicrophysics::run_impl(const double dt) {
       pblh_(icol));
 
     // extract column-specific subviews into aerosol prognostics
-    using AeroConfig = mam4::AeroConfig;
     using ModeIndex = mam4::ModeIndex;
     using AeroId = mam4::AeroId;
     using GasId = mam4::GasId;
