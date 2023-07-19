@@ -26,9 +26,6 @@ class MAMOptics final : public scream::AtmosphereProcess {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
-  // view type that stores optical properties
-  using view_3d = typename KT::template view_3d<Real>;
-
   // a quantity stored in a single vertical column with a single index
   using ColumnView = mam4::ColumnView;
 
@@ -80,13 +77,6 @@ private:
 
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
-
-  // views that store optical parameters, dimensions are (ncol, nbands, nlev),
-  // where nbands is swbands for shortwave quantities and lwbands for longwave
-  view_3d aero_g_sw_;   // shortwave aerosol optical asymmetry parameter [-]
-  view_3d aero_ssa_sw_; // shortwave aerosol single-scattering albedo [-]
-  view_3d aero_tau_sw_; // shortwave aerosol optical depth [-]
-  view_3d aero_tau_lw_; // longwave aerosol optical depth [-]
 }; // MAMOptics
 
 } // namespace scream

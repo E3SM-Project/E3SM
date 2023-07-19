@@ -47,29 +47,31 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   auto nondim = Units::nondimensional();
   FieldLayout scalar3d_swband_layout { {COL,SWBND, LEV}, {ncol_, nswbands_, nlev_} };
   FieldLayout scalar3d_lwband_layout { {COL,LWBND, LEV}, {ncol_, nlwbands_, nlev_} };
+
+  // shortwave aerosol scattering asymmetry parameter [-]
   add_field<Computed>("aero_g_sw",   scalar3d_swband_layout, nondim, grid_name);
+  // shortwave aerosol single-scattering albedo [-]
   add_field<Computed>("aero_ssa_sw", scalar3d_swband_layout, nondim, grid_name);
+  // shortwave aerosol optical depth [-]
   add_field<Computed>("aero_tau_sw", scalar3d_swband_layout, nondim, grid_name);
+  // longwave aerosol optical depth [-]
   add_field<Computed>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name);
 
   logger.trace("leaving MAMOptics::set_grids");
 }
 
 void MAMOptics::initialize_impl(const RunType run_type) {
-
-  logger.trace("entering MAMOptics::initialize");
-
-  aero_g_sw_   = get_field_out("aero_g_sw").get_view<Real***>();
-  aero_ssa_sw_ = get_field_out("aero_ssa_sw").get_view<Real***>();
-  aero_tau_sw_ = get_field_out("aero_tau_sw").get_view<Real***>();
-  aero_tau_lw_ = get_field_out("aero_tau_lw").get_view<Real***>();
-
-  logger.trace("leaving MAMOptics::initialize");
 }
 
 void MAMOptics::run_impl(const double dt) {
 
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
+
+  // get the aerosol optics fields
+  auto aero_g_sw   = get_field_out("aero_g_sw");
+  auto aero_ssa_sw = get_field_out("aero_ssa_sw");
+  auto aero_tau_sw = get_field_out("aero_tau_sw");
+  auto aero_tau_lw = get_field_out("aero_tau_lw");
 
   // Compute optical properties on all local columns.
   // (Strictly speaking, we don't need this parallel_for here yet, but we leave
@@ -77,17 +79,25 @@ void MAMOptics::run_impl(const double dt) {
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
     const Int icol = team.league_rank(); // column index
 
-    auto aero_g_sw = ekat::subview(aero_g_sw_, icol);
-    auto aero_ssa_sw = ekat::subview(aero_ssa_sw_, icol);
-    auto aero_tau_sw = ekat::subview(aero_tau_sw_, icol);
-    auto aero_tau_lw = ekat::subview(aero_tau_lw_, icol);
+    auto g_sw = ekat::subview(aero_g_sw.get_view<Real***>(), icol);
+    auto ssa_sw = ekat::subview(aero_ssa_sw.get_view<Real***>(), icol);
+    auto tau_sw = ekat::subview(aero_tau_sw.get_view<Real***>(), icol);
+    auto tau_lw = ekat::subview(aero_tau_lw.get_view<Real***>(), icol);
 
     // populate these fields with reasonable representative values
-    Kokkos::deep_copy(aero_g_sw, 0.5);
-    Kokkos::deep_copy(aero_ssa_sw, 0.7);
-    Kokkos::deep_copy(aero_tau_sw, 1.0);
-    Kokkos::deep_copy(aero_tau_lw, 1.0);
+    Kokkos::deep_copy(g_sw, 0.5);
+    Kokkos::deep_copy(ssa_sw, 0.7);
+    Kokkos::deep_copy(tau_sw, 1.0);
+    Kokkos::deep_copy(tau_lw, 1.0);
   });
+
+  // update the timestamps for the fields
+  auto t = aero_g_sw.get_header().get_tracking().get_time_stamp();
+  t += dt;
+  aero_g_sw.get_header().get_tracking().update_time_stamp(t);
+  aero_ssa_sw.get_header().get_tracking().update_time_stamp(t);
+  aero_tau_sw.get_header().get_tracking().update_time_stamp(t);
+  aero_tau_lw.get_header().get_tracking().update_time_stamp(t);
 }
 
 void MAMOptics::finalize_impl()
