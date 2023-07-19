@@ -83,10 +83,10 @@ void MAMOptics::run_impl(const double dt) {
     auto aero_tau_lw = ekat::subview(aero_tau_lw_, icol);
 
     // populate these fields with reasonable representative values
-    Kokkos::deep_copy(aero_g_sw, 0.0);
+    Kokkos::deep_copy(aero_g_sw, 0.5);
     Kokkos::deep_copy(aero_ssa_sw, 0.7);
-    Kokkos::deep_copy(aero_tau_sw, 0.0);
-    Kokkos::deep_copy(aero_tau_lw, 0.0);
+    Kokkos::deep_copy(aero_tau_sw, 1.0);
+    Kokkos::deep_copy(aero_tau_lw, 1.0);
   });
 }
 
