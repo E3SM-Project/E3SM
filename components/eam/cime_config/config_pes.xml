@@ -1698,8 +1698,8 @@
           <ntasks_atm>5504</ntasks_atm>
           <ntasks_lnd>5504</ntasks_lnd>
           <ntasks_rof>5504</ntasks_rof>
-          <ntasks_ice>5200</ntasks_ice>
-          <ntasks_ocn>5200</ntasks_ocn>
+          <ntasks_ice>5400</ntasks_ice>
+          <ntasks_ocn>5504</ntasks_ocn>
           <ntasks_glc>64</ntasks_glc>
           <ntasks_wav>64</ntasks_wav>
           <ntasks_cpl>688</ntasks_cpl>
