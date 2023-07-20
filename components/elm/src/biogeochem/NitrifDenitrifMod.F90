@@ -263,7 +263,7 @@ contains
                     ((d_con_w(2,1) + d_con_w(2,2)*t_soisno(c,j) + d_con_w(2,3)*t_soisno(c,j)**2) * 1.e-9_r8)
 
                if (o2_decomp_depth_unsat(c,j) /= spval .and. conc_o2_unsat(c,j) /= spval .and.  &
-                    o2_decomp_depth_unsat(c,j) > 0._r8) then
+                    o2_decomp_depth_unsat(c,j) > 1.E-16_r8) then
                   anaerobic_frac(c,j) = exp(-rij_kro_a * r_psi(c,j)**(-rij_kro_alpha) * &
                        o2_decomp_depth_unsat(c,j)**(-rij_kro_beta) * &
                        conc_o2_unsat(c,j)**rij_kro_gamma * (h2osoi_vol(c,j) + ratio_diffusivity_water_gas(c,j) * &
