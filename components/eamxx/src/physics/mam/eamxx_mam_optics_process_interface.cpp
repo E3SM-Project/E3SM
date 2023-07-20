@@ -45,8 +45,8 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
 
   // Define aerosol optics fields computed by this process.
   auto nondim = Units::nondimensional();
-  FieldLayout scalar3d_swband_layout { {COL,SWBND, LEV}, {ncol_, nswbands_, nlev_} };
-  FieldLayout scalar3d_lwband_layout { {COL,LWBND, LEV}, {ncol_, nlwbands_, nlev_} };
+  FieldLayout scalar3d_swband_layout { {COL, SWBND, LEV}, {ncol_, nswbands_, nlev_} };
+  FieldLayout scalar3d_lwband_layout { {COL, LWBND, LEV}, {ncol_, nlwbands_, nlev_} };
 
   // shortwave aerosol scattering asymmetry parameter [-]
   add_field<Computed>("aero_g_sw",   scalar3d_swband_layout, nondim, grid_name);
@@ -63,7 +63,7 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   using Spack      = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
   using Pack       = ekat::Pack<Real,Spack::n>;
   constexpr int ps = Pack::n;
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {ncol_, nlev_} };
+  FieldLayout scalar3d_layout_mid { {COL, LEV}, {ncol_, nlev_} };
   add_field<Computed>("nccn", scalar3d_layout_mid, 1/kg, grid_name, ps);
 
   logger.trace("leaving MAMOptics::set_grids");
@@ -102,7 +102,7 @@ void MAMOptics::run_impl(const double dt) {
     Kokkos::deep_copy(tau_lw, 0.0);
 
     // FIXME: Get rid of this
-    auto nccn = ekat::subview(aero_nccn.get_view<Real***>(), icol);
+    auto nccn = ekat::subview(aero_nccn.get_view<Real**>(), icol);
     Kokkos::deep_copy(nccn, 50.0);
   });
 
