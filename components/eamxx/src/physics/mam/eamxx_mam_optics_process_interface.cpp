@@ -57,6 +57,15 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   // longwave aerosol optical depth [-]
   add_field<Computed>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name);
 
+  // FIXME: this field doesn't belong here, but this is a convenient place to
+  // FIXME: put it for now.
+  // number mixing ratio for CCN
+  using Spack      = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
+  using Pack       = ekat::Pack<Real,Spack::n>;
+  constexpr int ps = Pack::n;
+  FieldLayout scalar3d_layout_mid { {COL,LEV}, {ncol_, nlev_} };
+  add_field<Computed>("nccn", scalar3d_layout_mid, 1/kg, grid_name, ps);
+
   logger.trace("leaving MAMOptics::set_grids");
 }
 
@@ -73,6 +82,8 @@ void MAMOptics::run_impl(const double dt) {
   auto aero_tau_sw = get_field_out("aero_tau_sw");
   auto aero_tau_lw = get_field_out("aero_tau_lw");
 
+  auto aero_nccn   = get_field_out("nccn"); // FIXME: get rid of this
+
   // Compute optical properties on all local columns.
   // (Strictly speaking, we don't need this parallel_for here yet, but we leave
   //  it in anticipation of column-specific aerosol optics to come.)
@@ -87,8 +98,12 @@ void MAMOptics::run_impl(const double dt) {
     // populate these fields with reasonable representative values
     Kokkos::deep_copy(g_sw, 0.5);
     Kokkos::deep_copy(ssa_sw, 0.7);
-    Kokkos::deep_copy(tau_sw, 1.0);
-    Kokkos::deep_copy(tau_lw, 1.0);
+    Kokkos::deep_copy(tau_sw, 0.0);
+    Kokkos::deep_copy(tau_lw, 0.0);
+
+    // FIXME: Get rid of this
+    auto nccn = ekat::subview(aero_nccn.get_view<Real***>(), icol);
+    Kokkos::deep_copy(nccn, 50.0);
   });
 
   /*
