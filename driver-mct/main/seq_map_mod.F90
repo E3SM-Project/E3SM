@@ -178,7 +178,7 @@ contains
        write(logunit,'(2A,I6,4A)') subname,' mapper counter, strategy, mapfile = ', &
             mapper%counter,' ',trim(mapper%strategy),' ',trim(mapper%mapfile)
        if (mapper%nl_available) then
-          write(logunit,'(2A,I6,3A,L,2A)') subname, &
+          write(logunit,'(2A,I6,3A,L1,2A)') subname, &
                ' mapper counter, nl_strategy, nl_conservative, nl_mapfile = ', &
                mapper%counter,' ',nl_strategy,' ',nl_conservative,' ',trim(mapper%nl_mapfile)
        end if
