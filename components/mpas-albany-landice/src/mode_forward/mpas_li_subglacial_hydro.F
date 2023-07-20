@@ -2412,19 +2412,19 @@ module li_subglacial_hydro
          do iCell = 1, nCells
             if ((li_mask_is_grounded_ice(cellMask(iCell))) .and. (.not. li_mask_is_margin(cellMask(iCell)))) then !identify domain boundaries
 
-               maxNeighborHeight = bigValue !allocate
-               minNeighborHeight = bigNegativeValue
+               maxNeighborHeight = bigNegativeValue !allocate
+               minNeighborHeight = bigValue
                
                do jCell = 1, nEdgesOnCell(iCell)
                   iNeighbor = cellsOnCell(jCell,iCell)
 
-                  if (jCell == 1) then
-                          totNeighborHeight = upperSurface(iNeighbor)
-                          numCells = 1
-                  endif 
-
                   if (iNeighbor < nCells + 1) then
 
+                      if (jCell == 1) then
+                              totNeighborHeight = upperSurface(iNeighbor)
+                              numCells = 1
+                      endif 
+                      
                       minNeighborHeight = min(minNeighborHeight, upperSurface(iNeighbor))
 
                       maxNeighborHeight = max(maxNeighborHeight, upperSurface(iNeighbor))
