@@ -356,6 +356,9 @@ void MAMMicrophysics::run_impl(const double dt) {
       ekat::subview(w_updraft, icol),
       pblh_(icol));
 
+    // set surface state data
+    haero::Surface sfc{};
+
     // extract column-specific subviews into aerosol prognostics
     using ModeIndex = mam4::ModeIndex;
     using AeroId = mam4::AeroId;
@@ -387,7 +390,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 #endif
 
     // run the nucleation process to obtain tendencies
-    nucleation_->compute_tendencies(team, t, dt, atm, progs, diags, tends);
+    nucleation_->compute_tendencies(team, t, dt, atm, sfc, progs, diags, tends);
 
     // accumulate tendencies into prognostics
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int klev) {
