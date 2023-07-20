@@ -91,6 +91,7 @@ void MAMOptics::run_impl(const double dt) {
     Kokkos::deep_copy(tau_lw, 1.0);
   });
 
+  /*
   // update the timestamps for the fields
   auto t = aero_g_sw.get_header().get_tracking().get_time_stamp();
   t += dt;
@@ -98,6 +99,7 @@ void MAMOptics::run_impl(const double dt) {
   aero_ssa_sw.get_header().get_tracking().update_time_stamp(t);
   aero_tau_sw.get_header().get_tracking().update_time_stamp(t);
   aero_tau_lw.get_header().get_tracking().update_time_stamp(t);
+  */
 }
 
 void MAMOptics::finalize_impl()
