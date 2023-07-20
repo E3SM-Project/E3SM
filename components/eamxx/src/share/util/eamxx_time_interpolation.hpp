@@ -36,6 +36,7 @@ public:
 
   // Build interpolator
   void add_field(const Field& field_in, const bool store_shallow_copy=false);
+  void add_field(const Field& field_in, const std::string& alt_name, const bool store_shallow_copy=false);
 
   // Getters
   Field get_field(const std::string& name) {

@@ -82,14 +82,19 @@ void TimeInterpolation::perform_time_interpolation(const TimeStamp& time_in)
  */
 void TimeInterpolation::add_field(const Field& field_in, const bool store_shallow_copy)
 {
+  // Typical case, name of field matches the name in the data files.
+  add_field(field_in,"",store_shallow_copy);
+}
+void TimeInterpolation::add_field(const Field& field_in, const std::string& alt_name, const bool store_shallow_copy)
+{
   // First check that we haven't already added a field with the same name.
-  const auto name = field_in.name();
+  const std::string name = alt_name == "" ? field_in.name() : alt_name;
   EKAT_REQUIRE_MSG(!m_fm_time0->has_field(name) and !m_fm_time1->has_field(name),
 		  "Error!! TimeInterpolation:add_field, field + " << name << " has already been added." << "\n");
 
   // Clone the field for each field manager to get all the metadata correct.
-  auto field0 = field_in.clone();
-  auto field1 = field_in.clone();
+  auto field0 = field_in.clone(name);
+  auto field1 = field_in.clone(name);
   m_fm_time0->add_field(field0);
   m_fm_time1->add_field(field1);
   if (store_shallow_copy) {
@@ -97,7 +102,7 @@ void TimeInterpolation::add_field(const Field& field_in, const bool store_shallo
     m_interp_fields.emplace(name,field_in);
   } else {
     // We want to store a copy of the field but not ovveride
-    auto field_out = field_in.clone();
+    auto field_out = field_in.clone(name);
     m_interp_fields.emplace(name,field_out);
   }
   m_field_names.push_back(name);
