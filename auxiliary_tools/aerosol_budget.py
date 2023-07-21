@@ -17,19 +17,34 @@ def global_integral(var, area_m2):
 
 def calc_column_integral(data, aerosol, season):
     """ Calculate column integrated mass """
-    mass = data.get_climo_variable(f'Mass_{aerosol}', season)
-    hyai, hybi, ps = data.get_extra_variables_only(
-         f'Mass_{aerosol}', season, extra_vars=["hyai", "hybi", "PS"]
-     )
 
-    p0 = 100000.0  # Pa
-    ps = ps   # Pa
-    pressure_levs = cdutil.vertical.reconstructPressureFromHybrid(ps, hyai, hybi, p0)
+    # take aerosol and change it to the appropriate string
+    # ncl -> SEASALT, dst -> DUST, rest1 -> REST1
+    # only needed if ABURDEN terms are available
+    if aerosol == "ncl":
+        aerosol_name = "SEASALT"
+    elif aerosol == "dst":
+        aerosol_name = "DUST"
+    else:
+        aerosol_name = aerosol.upper()
+    try:
+        # if ABURDEN terms are available, use them
+        burden = data.get_climo_variable(f"ABURDEN{aerosol_name}", season)
+    except RuntimeError:
+        # if not, use the Mass_ terms and integrate over the column
+        mass = data.get_climo_variable(f'Mass_{aerosol}', season)
+        hyai, hybi, ps = data.get_extra_variables_only(
+            f'Mass_{aerosol}', season, extra_vars=["hyai", "hybi", "PS"]
+        )
 
-    #(72,lat,lon)
-    delta_p = numpy.diff(pressure_levs,axis = 0)
-    mass_3d = mass*delta_p/9.8 #mass density * mass air   kg/m2
-    burden = numpy.nansum(mass_3d,axis = 0)   #kg/m2
+        p0 = 100000.0  # Pa
+        ps = ps   # Pa
+        pressure_levs = cdutil.vertical.reconstructPressureFromHybrid(ps, hyai, hybi, p0)
+
+        #(72,lat,lon)
+        delta_p = numpy.diff(pressure_levs,axis = 0)
+        mass_3d = mass*delta_p/9.8 #mass density * mass air   kg/m2
+        burden = numpy.nansum(mass_3d,axis = 0)   #kg/m2
     return burden
     
 def generate_metrics_dic(data, aerosol, season):
