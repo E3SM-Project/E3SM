@@ -141,7 +141,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       so it must be of the form (a,b,...).
       NOTE: *CANNOT* be changed.
     -->
-    <!-- <atm_procs_list>(sc_import,homme,((shoc,cldFraction,spa,p3),rrtmgp,sc_export))</atm_procs_list> -->
+    <!-- <atm_procs_list>(sc_import,homme,((tms,shoc,cldFraction,spa,p3),rrtmgp,sc_export))</atm_procs_list> -->
     <atm_procs_list locked="true">(sc_import,homme,physics,sc_export)</atm_procs_list>
 
     <!-- Basic options for each atm process -->
@@ -210,6 +210,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
 
+    <!-- Turbulent Mountain Stress -->
+    <tms inherit="atm_proc_base"/>
+
     <!-- For internal testing only -->
     <testOnly inherit="atm_proc_base"/>
 
@@ -275,8 +278,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
-      <atm_procs_list>(shoc,cldFraction,spa,p3)</atm_procs_list>
-      <atm_procs_list COMPSET=".*SCREAM.*noAero">(shoc,cldFraction,p3)</atm_procs_list>
+      <atm_procs_list>(tms,shoc,cldFraction,spa,p3)</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM.*noAero">(tms,shoc,cldFraction,p3)</atm_procs_list>
       <number_of_subcycles hgrid="ne4np4">24</number_of_subcycles>
       <number_of_subcycles hgrid="ne30np4">6</number_of_subcycles>
       <number_of_subcycles hgrid="ne120np4">3</number_of_subcycles>

@@ -39,6 +39,7 @@ set (SCREAM_LIBS
      spa
      nudging
      diagnostics
+     tms
 )
 if (SCREAM_ENABLE_MAM)
   set(SCREAM_LIBS ${SCREAM_LIBS} mam)

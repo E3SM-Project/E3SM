@@ -956,7 +956,7 @@ void AtmosphereDriver::set_initial_conditions ()
         } else {
           EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
         }
-        this_grid_topo_eamxx_fnames.push_back("phis");
+        this_grid_topo_eamxx_fnames.push_back(fname);
       } else if (c.size()==0) {
         // If this field is the parent of other subfields, we only read from file the subfields.
         if (not ekat::contains(this_grid_ic_fnames,fname)) {
@@ -980,6 +980,14 @@ void AtmosphereDriver::set_initial_conditions ()
           }
         }
       }
+    } else if (fname == "sgh30") {
+      // The field sgh30 is also loaded from topography file, but unlike
+      // phis, we need to store values from PG2 grid.
+      EKAT_ASSERT_MSG(grid_name == "Physics PG2",
+                      "Error! Requesting sgh30 field on " + grid_name +
+                      " topo file only has sgh30 for Physics PG2.\n");
+      topography_file_fields_names[grid_name].push_back("SGH30");
+      topography_eamxx_fields_names[grid_name].push_back(fname);
     }
   };
 
