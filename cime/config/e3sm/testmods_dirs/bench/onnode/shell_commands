@@ -1,0 +1,2 @@
+#!/bin/bash
+./xmlchange ATM_NCPL=48

@@ -191,5 +191,27 @@ _TESTS = {
     ),
     "e3sm_bench_all" : (("e3sm_bench_hires", "e3sm_bench_lores"),"03:00:00", ( )
     ),
-
+    "e3sm_bench_onnode_mpi" : (None, "01:00:00", (
+                 ("PFS_Ld5_P256x1.ne11_ne11.FC5AQUAP","bench-onnode"),
+                 ("PFS_Ld5_P128x1.ne11_ne11.FC5AQUAP","bench-onnode"),
+                 ("PFS_Ld5_P64x1.ne11_ne11.FC5AQUAP" ,"bench-onnode"),
+                 ("PFS_Ld5_P32x1.ne11_ne11.FC5AQUAP" ,"bench-onnode"),
+                 ("PFS_Ld5_P16x1.ne11_ne11.FC5AQUAP" ,"bench-onnode"),
+                 ("PFS_Ld5_P8x1.ne11_ne11.FC5AQUAP"  ,"bench-onnode"),
+                 ("PFS_Ld3_P4x1.ne11_ne11.FC5AQUAP"  ,"bench-onnode"),
+                 ("PFS_Ld2_P2x1.ne11_ne11.FC5AQUAP"  ,"bench-onnode"),
+                 ("PFS_Ld1_P1x1.ne11_ne11.FC5AQUAP"  ,"bench-onnode"),
+    )),
+    "e3sm_bench_onnode_omp" : (None, "01:00:00", (
+                 ("PFS_Ld5_P128x2.ne11_ne11.FC5AQUAP","bench-onnode"),
+                 ("PFS_Ld5_P64x4.ne11_ne11.FC5AQUAP" ,"bench-onnode"),
+                 ("PFS_Ld5_P32x8.ne11_ne11.FC5AQUAP" ,"bench-onnode"),
+                 ("PFS_Ld5_P16x16.ne11_ne11.FC5AQUAP","bench-onnode"),
+                 ("PFS_Ld5_P8x32.ne11_ne11.FC5AQUAP" ,"bench-onnode"),
+                 ("PFS_Ld3_P4x64.ne11_ne11.FC5AQUAP" ,"bench-onnode"),
+                 ("PFS_Ld2_P2x128.ne11_ne11.FC5AQUAP","bench-onnode"),
+                 ("PFS_Ld1_P1x256.ne11_ne11.FC5AQUAP","bench-onnode"),
+    )),
+    "e3sm_bench_onnode" : (("e3sm_bench_onnode_mpi", "e3sm_bench_onnode_omp"),"01:00:00", ( )
+    ),
 }
