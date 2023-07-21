@@ -204,7 +204,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- SHOC macrophysics -->
     <shoc inherit="atm_proc_base">
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
-      <check_flux_state_consistency>false</check_flux_state_consistency>
+      <check_flux_state_consistency>true</check_flux_state_consistency>
     </shoc>
 
     <!-- CLD fraction -->
