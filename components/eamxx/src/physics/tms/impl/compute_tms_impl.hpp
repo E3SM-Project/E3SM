@@ -21,14 +21,14 @@ void Functions<S,D>::compute_tms(
   const view_2d<Scalar>&       tau_tms)
 {
   // Define some constants used
-  static constexpr Scalar horomin = 1;          // Minimum value of subgrid orographic height for mountain stress [ m ]
-  static constexpr Scalar z0max   = 100;        // Maximum value of z_0 for orography [ m ]
-  static constexpr Scalar dv2min  = 0.01;       // Minimum shear squared [ m2/s2 ]
-  static constexpr Scalar orocnst = C::orocnst; // Converts from standard deviation to height [ no unit ]
-  static constexpr Scalar z0fac   = C::z0fac;   // Factor determining z_0 from orographic standard deviation [ no unit ]
-  static constexpr Scalar karman  = C::Karman;  // von Karman constant
-  static constexpr Scalar gravit  = C::gravit;  // Acceleration due to gravity
-  static constexpr Scalar rair    = C::Rair;    // Gas constant for dry air
+  const Scalar horomin = 1;          // Minimum value of subgrid orographic height for mountain stress [ m ]
+  const Scalar z0max   = 100;        // Maximum value of z_0 for orography [ m ]
+  const Scalar dv2min  = 0.01;       // Minimum shear squared [ m2/s2 ]
+  const Scalar orocnst = C::orocnst; // Converts from standard deviation to height [ no unit ]
+  const Scalar z0fac   = C::z0fac;   // Factor determining z_0 from orographic standard deviation [ no unit ]
+  const Scalar karman  = C::Karman;  // von Karman constant
+  const Scalar gravit  = C::gravit;  // Acceleration due to gravity
+  const Scalar rair    = C::Rair;    // Gas constant for dry air
 
   // Loop over columns
   const auto nlev_packs = ekat::npack<Spack>(nlevs);
