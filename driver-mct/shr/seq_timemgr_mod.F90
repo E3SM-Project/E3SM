@@ -1138,7 +1138,7 @@ contains
     call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
          EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_iacrun_avg),  &
          option  = seq_timemgr_optNSeconds,         &
-         opt_n   = dtime(seq_timemgr_nclock_iac), &
+         opt_n   = 5*dtime(seq_timemgr_nclock_iac), &
          RefTime = OffsetTime,                    &
          alarmname = trim(seq_timemgr_alarm_iacrun_avg))
 

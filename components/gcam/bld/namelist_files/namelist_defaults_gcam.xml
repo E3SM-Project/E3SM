@@ -35,9 +35,9 @@ for the iac data in the e3sm distribution
 <base_gcam_lu_wh_file>iac/giac/gcam/gcam_6_0/data/lu_wh_2015_gcam_out.csv</base_gcam_lu_wh_file>
 <base_co2_surface_file>iac/giac/gcam/gcam_6_0/data/gcam_CO2-em-anthro_0.9x1.25_201401-201412_c20200406.txt</base_co2_surface_file>
 <base_co2_aircraft_file>iac/giac/gcam/gcam_6_0/data/gcam_CO2-em-AIR-anthro_0.9x1.25_201401-201412_c20200427.txt</base_co2_aircraft_file>
-<base_npp_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvg_2014-2014_npp.csv</base_npp_file>
-<base_hr_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvg_2014-2014_hr.csv</base_hr_file>
-<base_pft_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvg_2014-2014_pft_wt.csv</base_pft_file>
+<base_npp_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_npp.csv</base_npp_file>
+<base_hr_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_hr.csv</base_hr_file>
+<base_pft_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
 <gcam2elm_co2_mapping_file>iac/giac/gcam/gcam_6_0/mappings/co2.xml</gcam2elm_co2_mapping_file>
 <gcam2elm_luc_mapping_file>iac/giac/gcam/gcam_6_0/mappings/luc.xml</gcam2elm_luc_mapping_file>
 <gcam2elm_woodharvest_mapping_file>iac/giac/gcam/gcam_6_0/mappings/woodharvest.xml</gcam2elm_woodharvest_mapping_file>
