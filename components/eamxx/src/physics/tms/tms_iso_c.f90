@@ -1,13 +1,9 @@
+
 module tms_iso_c
   use iso_c_binding
   implicit none
 
 #include "scream_config.f"
-#ifdef SCREAM_DOUBLE_PRECISION
-# define c_real c_double
-#else
-# define c_real c_float
-#endif
 
 !
 ! This file contains bridges from scream c++ to tms fortran.
@@ -17,7 +13,7 @@ contains
   subroutine init_tms_c(orocnst, z0fac, karman, gravit, rair) bind(c)
     use trb_mtn_stress, only: init_tms
 
-    real(kind=c_real), value, intent(in)  :: orocnst, z0fac, karman, gravit, rair
+    real(kind=c_double), value, intent(in)  :: orocnst, z0fac, karman, gravit, rair
     character(len=128) :: errstring
 
     integer,  parameter :: r8 = selected_real_kind(12) ! 8 byte real
@@ -30,9 +26,9 @@ contains
     use trb_mtn_stress, only: compute_tms
 
     integer(kind=c_int), value, intent(in) :: ncols, nlevs
-    real(kind=c_real) , intent(in), dimension(ncols, nlevs) :: u_wind,v_wind,t_mid,p_mid,exner,zm
-    real(kind=c_real) , intent(in), dimension(ncols) :: sgh,landfrac
-    real(kind=c_real) , intent(out), dimension(ncols) :: ksrf, taux, tauy
+    real(kind=c_double) , intent(in), dimension(ncols, nlevs) :: u_wind,v_wind,t_mid,p_mid,exner,zm
+    real(kind=c_double) , intent(in), dimension(ncols) :: sgh,landfrac
+    real(kind=c_double) , intent(out), dimension(ncols) :: ksrf, taux, tauy
 
     call compute_tms(ncols, nlevs, ncols, u_wind, v_wind, t_mid, p_mid, exner, zm, sgh, ksrf, taux, tauy, landfrac)
   end subroutine compute_tms_c

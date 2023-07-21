@@ -1,6 +1,5 @@
 set(TMS_SRCS
   tms_iso_c.f90
-  tms_iso_f.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/trb_mtn_stress.F90
   #eamxx_tms_process_interface.cpp
 )
