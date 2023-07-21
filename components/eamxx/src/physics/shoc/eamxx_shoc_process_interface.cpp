@@ -469,14 +469,17 @@ void SHOCMacrophysics::check_flux_state_consistency(const double dt)
 {
   using PC = scream::physics::Constants<Real>;
   const Real gravit = PC::gravit;
+  const Real qmin   = 1e-12; // minimum permitted constituent concentration (kg/kg)
 
   const auto& pseudo_density = get_field_in ("pseudo_density").get_view<const Spack**>();
   const auto& surf_evap      = get_field_out("surf_evap").get_view<Real*>();
   const auto& qv             = get_field_out("qv").get_view<Spack**>();
 
-  const auto nlevs      = m_num_levs;
-  const auto nlev_packs = ekat::npack<Spack>(nlevs);
-  const auto policy     = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto nlevs           = m_num_levs;
+  const auto nlev_packs      = ekat::npack<Spack>(nlevs);
+  const auto last_pack_idx   = (nlevs-1)/Spack::n;
+  const auto last_pack_entry = (nlevs-1)%Spack::n;
+  const auto policy          = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
   Kokkos::parallel_for("check_flux_state_consistency",
                        policy,
                        KOKKOS_LAMBDA (const KT::MemberType& team) {
@@ -485,15 +488,21 @@ void SHOCMacrophysics::check_flux_state_consistency(const double dt)
     const auto& pseudo_density_i = ekat::subview(pseudo_density, i);
     const auto& qv_i             = ekat::subview(qv, i);
 
-    if (surf_evap(i) < 0) {
+    // reciprocal of pseudo_density at the bottom layer
+    const auto rpdel = 1.0/pseudo_density_i(last_pack_idx)[last_pack_entry];
+
+    // Check if the negative surface latent heat flux can exhaust
+    // the moisture in the lowest model level. If so, apply fixer.
+    const auto condition = surf_evap(i) - (qmin - qv_i(last_pack_idx)[last_pack_entry])/(dt*gravit*rpdel);
+    if (condition < 0) {
       const auto cc = abs(surf_evap(i)*dt*gravit);
 
-      auto qv_x_pdel = [&](const int k) {
+      auto tracer_mass = [&](const int k) {
         return qv_i(k)*pseudo_density_i(k);
       };
-      Real mm = ekat::ExeSpaceUtils<KT::ExeSpace>::view_reduction(team, 0, nlevs, qv_x_pdel);
+      Real mm = ekat::ExeSpaceUtils<KT::ExeSpace>::view_reduction(team, 0, nlevs, tracer_mass);
 
-      EKAT_KERNEL_ASSERT_MSG(mm >= cc, "Error! Accumulated column moisture should be greater than surf_evap.\n");
+      EKAT_KERNEL_ASSERT_MSG(mm >= cc, "Error! Total mass of column vapor should be greater than mass of surf_evap.\n");
 
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&](const int& k) {
         const auto adjust = cc*qv_i(k)*pseudo_density_i(k)/mm;
