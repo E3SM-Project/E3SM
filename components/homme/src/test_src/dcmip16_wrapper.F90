@@ -810,7 +810,9 @@ print *, 'rof for nh, v, hy, eamcpdry, not eamcpstar'
 print *, 'condens update en_before-en2cp rel', (energy_before-en2cp)/en2cp
 print *, '  '
 
-print *, 'rof for nh, v, not for hy'
+!eam code uses either cpdry or cpstar hy functional. for eamcpstar condensation leaks
+!for both eams en_precipitation contains only L term, so this cannot pass
+print *, 'rof for all except eam'
 print *, 'TOTAL en_before-(en3+enout) rel', (energy_before-(energy_after+energy_prect))/energy_after
 print *, '  '
 
