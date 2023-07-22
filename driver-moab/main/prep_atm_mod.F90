@@ -440,9 +440,11 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Si2a'
          endif
+         no_match = .true. ! force to create a new mapper object
+         ! otherwise it may find ocean map, and this will not work on ice vars
          call seq_map_init_rcfile(mapper_Si2a, ice(1), atm(1), &
             'seq_maps.rc','ice2atm_smapname:','ice2atm_smaptype:',samegrid_ao, &
-            'mapper_Si2a initialization',esmf_map_flag)
+            'mapper_Si2a initialization',esmf_map_flag, no_match)
             ! similar to ocn-atm mapping, do ice 2 atm mapping / set up
 
 #ifdef HAVE_MOAB
@@ -567,9 +569,10 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Fi2a'
          endif
+         no_match = .true. ! force a different map, we do not want to match to ocean
          call seq_map_init_rcfile(mapper_Fi2a, ice(1), atm(1), &
             'seq_maps.rc','ice2atm_fmapname:','ice2atm_fmaptype:',samegrid_ao, &
-            'mapper_Fi2a initialization',esmf_map_flag)
+            'mapper_Fi2a initialization',esmf_map_flag, no_match)
 
 #ifdef HAVE_MOAB
            ! now take care of the mapper for MOAB

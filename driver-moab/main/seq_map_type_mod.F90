@@ -117,6 +117,10 @@ contains
           mapid = m
           if (seq_comm_iamroot(CPLID)) then
              write(logunit,'(A,i6)') subname//' found match ',mapid
+#ifdef MOABCOMP
+             write(logunit,'(A,i6)') subname//' strategy '//trim(seq_maps(mapid)%strategy)//&
+             ' mapfile '//trim(seq_maps(mapid)%mapfile)
+#endif
              call shr_sys_flush(logunit)
           endif
           return
@@ -161,6 +165,12 @@ contains
     mapper%tag_entity_type = 1 ! cells most of the time when we need it
     mapper%mbname    = "undefined"
     mapper%read_map = .false.
+#ifdef MOABCOMP
+    if (seq_comm_iamroot(CPLID)) then
+      write(logunit,'(A,i6)') subname//' call init map for mapper with id ',mapper%counter
+      call shr_sys_flush(logunit)
+    endif
+#endif
 #endif
 
   end subroutine seq_map_mapinit
