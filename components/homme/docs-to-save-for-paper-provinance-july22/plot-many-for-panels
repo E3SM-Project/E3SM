@@ -1,0 +1,44 @@
+
+
+ttime=8
+option=cpstarnh
+ztop=15000
+
+ddt=0.2
+ncl plot-in-height.ncl fili=\"${option}${ddt}-planar_rising_bubble1.nc\" tt=${ttime} ztop=${ztop} shortc=\"panel-${option}${ddt}\" fff=\"Th\"
+
+#ddt=0.1
+#ncl plot-in-height.ncl fili=\"${option}${ddt}-planar_rising_bubble1.nc\" tt=${ttime} ztop=${ztop} shortc=\"panel-${option}${ddt}\" fff=\"Th\"
+
+#ddt=0.05
+#ncl plot-in-height.ncl fili=\"${option}${ddt}-planar_rising_bubble1.nc\" tt=${ttime} ztop=${ztop} shortc=\"panel-${option}${ddt}\" fff=\"Th\"
+
+ddt=0.02
+ncl plot-in-height.ncl fili=\"${option}${ddt}-planar_rising_bubble1.nc\" tt=${ttime} ztop=${ztop} shortc=\"panel-${option}${ddt}\" fff=\"Th\"
+
+#ddt=0.01
+#ncl plot-in-height.ncl fili=\"${option}${ddt}-planar_rising_bubble1.nc\" tt=${ttime} ztop=${ztop} shortc=\"panel-${option}${ddt}\" fff=\"Th\"
+
+#ddt=0.005
+#ncl plot-in-height.ncl fili=\"${option}${ddt}-planar_rising_bubble1.nc\" tt=${ttime} ztop=${ztop} shortc=\"panel-${option}${ddt}\" fff=\"Th\"
+
+ddt=0.002
+ncl plot-in-height.ncl fili=\"${option}${ddt}-planar_rising_bubble1.nc\" tt=${ttime} ztop=${ztop} shortc=\"panel-${option}${ddt}\" fff=\"Th\"
+
+#ddt=0.001
+#ncl plot-in-height.ncl fili=\"${option}${ddt}-planar_rising_bubble1.nc\" tt=${ttime} ztop=${ztop} shortc=\"panel-${option}${ddt}\" fff=\"Th\"
+
+ddt=0.0001
+ncl plot-in-height.ncl fili=\"${option}${ddt}-planar_rising_bubble1.nc\" tt=${ttime} ztop=${ztop} shortc=\"panel-${option}${ddt}\" fff=\"Th\"
+
+
+
+
+
+
+
+
+
+
+
+

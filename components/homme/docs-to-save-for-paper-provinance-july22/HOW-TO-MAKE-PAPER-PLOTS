@@ -1,0 +1,80 @@
+
+need files
+5 files create-namelists*sh
+5 files *TEMPLATE //nl templates
+5 files make-convergence*ncl
+compute-ref-solns-difference.ncl
+convergence-rates.py
+total-precipitation-plots
+parse-precip.py
+parse-5files.py
+plot-in-height.ncl
+plot-many-for-panels
+
+running homme: -------------------------------------------------------
+
+build planar homme theta-l-nlev128-native
+run create-namelists-and-run*sh for all 5 updates (10 hours on 8 chrys nodes)
+they use templated namelists *TEMPLATE to build nl files for each update and time step
+
+making convergence plots: --------------------------------------------
+use ncl:
+
+
+compute difference between CP and CV ref solutions at 0.0001:
+run
+>>ncl compute-ref-solns-difference.ncl fff=\"Th\" tt=8
+and extract from the output line like
+dt=0.0001 NOerr 544.6542895845852 nerr = 0.002356846320803758
+use nerr value to add it to convergence-rates.py to lines
+
+#make hor line
+hline=np.array(seriesV)-np.array(seriesV)+0.0024 <-- this number, 0.0024, is rounded nerr number form above
+
+this will give the horizontal "uncertainty" line in the convergence plot
+
+>>ncl make-convergence-*.ncl fff=\"Th\" tt=8
+and extract from the output lines like
+seriesP=[ 0.003077509496527265,0.002971564287359151,0.00263778452855153,0.001755425382169638,0.001118177876390719,0.0006099010453942045,0.0002608441075285435,0.0001272050274434055 ]
+seriesPhy=[ 0.003086108128760258,0.002972611990412168,0.002636010412023117,0.00175533930861668,0.001118370217551115,0.0006091090534282601,0.0002605342125618298,0.0001270081037904339 ]
+seriesV=[ 0.00693267677466352,0.006481375979017358,0.005289501660810096,0.001935662595967612,0.0009215228580399363,0.0007046734778502718,0.0002752273001902675,0.00017930304565655 ]
+seriesEdry=[ 0.006129476690641761,0.007223143634597555,0.00708357263368673,0.002762966755376245,0.001217748855692548,0.0004386992155546833,0.001146164225601199,0.00035028576305705 ]
+seriesEstar=[ 0.006212394002788509,0.006912952061895793,0.006839840418866516,0.002742073244445472,0.001390152505598283,0.0004116095426320242,0.001410724895259956,0.001009662491319665 ]
+
+edit file convergence-rates.py to add/replace the lines above
+load python module (on chrysalis, can be python3)
+run:
+>> python convergence-rates.py
+
+it produces plot p-v-convergence.pdf (figure 1)
+
+make precipitation plots: ---------------------------------------------
+
+now check that ${pp} variable is set to where text output from 5 updates and all time steps was saved (pp is folder) in file total-precipitation-plots 
+
+then on anvil with unified and python 2 (module load anaconda) do
+
+>>source total-precipitation-plots 
+
+this produces 5 files precl-mass*pdf and 5 of precl-mass*png
+
+Figure 2 uses 4 of them, since CP NH and CP HY updates are very similar
+
+make Energy CL plots: -------------------------------------------------
+
+python 2 on anvil
+
+>>python parse-5files.py ../../output-cpstarnh-l128-dt0.0001 ../../output-cpstarhy-l128-dt0.0001 ../../output-cv-l128-dt0.0001 ../../output-eamcpstar-l128-dt0.0001 ../../output-eamcpdry-l128-dt0.0001 "const pressure" "const pressure HY" "const volume" "EAM cpstar" "EAM cpdry"
+
+it produces a few files, but we need only mass-for5.pdf and encl-diagn-for5.pdf
+
+for Figure 3.
+
+make bubble plots: ----------------------------------------------------
+
+on machine with ncl edit plot-many-for-panels for options: "eamcpstar" (cp hy approx lat), "cpstarnh" (cp nh var lat),"cv" (cv nh var lat)
+for each option, execute
+>> source plot-many-for-panels
+
+total will be 12 panels for Figure 4
+

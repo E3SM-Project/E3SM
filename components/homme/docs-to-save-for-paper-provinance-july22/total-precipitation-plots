@@ -1,0 +1,16 @@
+
+pp="./"
+
+
+python parse-precip.py ${pp}/output-cpstarnh-l128-dt0.02 ${pp}/output-cpstarnh-l128-dt0.01 ${pp}/output-cpstarnh-l128-dt0.005 ${pp}/output-cpstarnh-l128-dt0.002 ${pp}/output-cpstarnh-l128-dt0.001  ${pp}/output-cpstarnh-l128-dt0.0001  "dt=0.02" "dt=0.01" "dt=0.005" "dt=0.002" "dt=0.001" "dt=0.0001" precl-mass-cpstarnh "p Mass" precl
+
+python parse-precip.py ${pp}/output-cv-l128-dt0.02 ${pp}/output-cv-l128-dt0.01 ${pp}/output-cv-l128-dt0.005 ${pp}/output-cv-l128-dt0.002 ${pp}/output-cv-l128-dt0.001  ${pp}/output-cv-l128-dt0.0001  "dt=0.02" "dt=0.01" "dt=0.005" "dt=0.002" "dt=0.001" "dt=0.0001" precl-mass-cv "p Mass" precl
+
+
+python parse-precip.py ${pp}/output-eamcpdry-l128-dt0.02 ${pp}/output-eamcpdry-l128-dt0.01 ${pp}/output-eamcpdry-l128-dt0.005 ${pp}/output-eamcpdry-l128-dt0.002 ${pp}/output-eamcpdry-l128-dt0.001  ${pp}/output-eamcpdry-l128-dt0.0001  "dt=0.02" "dt=0.01" "dt=0.005" "dt=0.002" "dt=0.001" "dt=0.0001" precl-mass-eamcpdry "p Mass" precl
+
+
+python parse-precip.py ${pp}/output-eamcpstar-l128-dt0.02 ${pp}/output-eamcpstar-l128-dt0.01 ${pp}/output-eamcpstar-l128-dt0.005 ${pp}/output-eamcpstar-l128-dt0.002 ${pp}/output-eamcpstar-l128-dt0.001  ${pp}/output-eamcpstar-l128-dt0.0001  "dt=0.02" "dt=0.01" "dt=0.005" "dt=0.002" "dt=0.001" "dt=0.0001" precl-mass-eamcpstar "p Mass" precl
+
+
+python parse-precip.py ${pp}/output-cpstarhy-l128-dt0.02 ${pp}/output-cpstarhy-l128-dt0.01 ${pp}/output-cpstarhy-l128-dt0.005 ${pp}/output-cpstarhy-l128-dt0.002 ${pp}/output-cpstarhy-l128-dt0.001  ${pp}/output-cpstarhy-l128-dt0.0001  "dt=0.02" "dt=0.01" "dt=0.005" "dt=0.002" "dt=0.001" "dt=0.0001" precl-mass-cpstarhy "p Mass" precl
