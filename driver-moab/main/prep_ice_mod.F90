@@ -121,6 +121,7 @@ contains
     character(CL)                    :: rof_gnam      ! rof grid
     type(mct_avect), pointer         :: i2x_ix
     character(*), parameter          :: subname = '(prep_ice_init)'
+    logical                          :: no_match      ! to force a new map between ocean and ice, always
     character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
 !MOAB stuff
     ! MOAB stuff
@@ -191,7 +192,8 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_SFo2i'
           end if
-          call seq_map_init_rearrolap(mapper_SFo2i, ocn(1), ice(1), 'mapper_SFo2i')
+          no_match = .true.
+          call seq_map_init_rearrolap(mapper_SFo2i, ocn(1), ice(1), 'mapper_SFo2i', no_match) ! force a new map always
 
 #ifdef HAVE_MOAB
           if ( (mbixid .ge. 0) .and. (mboxid .ge. 0)) then
@@ -220,6 +222,13 @@ contains
             if ( ierr == 1 ) then
                call shr_sys_abort( subname//' ERROR: cannot define tags for ice proj to ocn' )
             end if
+            if ( mapper_SFo2i%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_SFo2i%mbname) &
+                             //' mapper_SFo2i'
+                endif
+            endif
+
             mapper_SFo2i%src_mbid = mboxid
             mapper_SFo2i%tgt_mbid = mbixid
             ! no intersection, so will have to transform data without it

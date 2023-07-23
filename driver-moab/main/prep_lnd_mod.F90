@@ -250,6 +250,13 @@ contains
                   call shr_sys_abort(subname//' ERROR in computing comm graph , rof-lnd')
                endif
                ! context for rearrange is target in this case
+            if ( mapper_Fr2l%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Fr2l%mbname) &
+                             //' mapper_Fr2l'
+                endif
+            endif
+
                mapper_Fr2l%src_mbid = mbrxid
                mapper_Fr2l%tgt_mbid = mblxid
                mapper_Fr2l%src_context = rof(1)%cplcompid
@@ -277,6 +284,12 @@ contains
                 call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, lnd-rof')
               endif
               ! now take care of the mapper 
+            if ( mapper_Fr2l%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Fr2l%mbname) &
+                             //' mapper_Fr2l'
+                endif
+            endif
               mapper_Fr2l%src_mbid = mbrxid
               mapper_Fr2l%tgt_mbid = mblxid
               mapper_Fr2l%intx_mbid = mbintxrl 
@@ -399,6 +412,12 @@ contains
               write(logunit,*) subname,' error in registering atm lnd intx '
               call shr_sys_abort(subname//' ERROR in registering atm lnd intx ')
             endif
+            if ( mapper_Sa2l%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Sa2l%mbname) &
+                             //' mapper_Sa2l'
+                endif
+            endif
             mapper_Sa2l%src_mbid = mbaxid
             mapper_Sa2l%tgt_mbid = mblxid
             mapper_Sa2l%intx_mbid = mbintxal
@@ -508,6 +527,12 @@ contains
             endif ! if tri-grid
 
              ! use the same map for fluxes too
+            if ( mapper_Fa2l%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Fa2l%mbname) &
+                             //' mapper_Fa2l'
+                endif
+            endif
             mapper_Fa2l%src_mbid = mbaxid
             mapper_Fa2l%tgt_mbid = mapper_Sa2l%tgt_mbid ! mblxid
             mapper_Fa2l%intx_mbid = mbintxal

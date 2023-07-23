@@ -276,6 +276,12 @@ contains
             endif
 
             ! now take care of the mapper
+            if ( mapper_So2a%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_So2a%mbname) &
+                             //' mapper_So2a'
+                endif
+            endif
             mapper_So2a%src_mbid = mboxid
             mapper_So2a%tgt_mbid = mbaxid !
             mapper_So2a%intx_mbid = mbintxoa
@@ -372,6 +378,12 @@ contains
                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocnf-atm')
             endif
 
+            if ( mapper_Sof2a%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Sof2a%mbname) &
+                             //' mapper_Sof2a'
+                endif
+            endif
             mapper_Sof2a%src_mbid = mbofxid
             mapper_Sof2a%tgt_mbid = mbaxid
             mapper_Sof2a%intx_mbid = mbintxoa
@@ -410,6 +422,12 @@ contains
 #ifdef HAVE_MOAB
          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
             ! now take care of the mapper
+            if ( mapper_Fo2a%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Fo2a%mbname) &
+                             //' mapper_Fo2a'
+                endif
+            endif
             mapper_Fo2a%src_mbid = mboxid
             mapper_Fo2a%tgt_mbid = mbaxid
             mapper_Fo2a%intx_mbid = mbintxoa
@@ -420,6 +438,12 @@ contains
             mapper_Fo2a%mbname = 'mapper_Fo2a'
          endif
          if ((mbaxid .ge. 0) .and.  (mbofxid .ge. 0)) then
+            if ( mapper_Fof2a%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Fof2a%mbname) &
+                             //' mapper_Fof2a'
+                endif
+            endif
             mapper_Fof2a%src_mbid = mbofxid
             mapper_Fof2a%tgt_mbid = mbaxid
             mapper_Fof2a%intx_mbid = mbintxoa
@@ -483,6 +507,12 @@ contains
                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ice-atm')
             endif
             ! now take care of the mapper
+            if ( mapper_Si2a%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Si2a%mbname) &
+                             //' mapper_Si2a'
+                endif
+            endif
             mapper_Si2a%src_mbid = mbixid
             mapper_Si2a%tgt_mbid = mbaxid
             mapper_Si2a%intx_mbid = mbintxia
@@ -576,6 +606,13 @@ contains
 
 #ifdef HAVE_MOAB
            ! now take care of the mapper for MOAB
+            if ( mapper_Fi2a%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Fi2a%mbname) &
+                             //' mapper_Fi2a'
+                endif
+            endif
+                
             mapper_Fi2a%src_mbid = mbixid
             mapper_Fi2a%tgt_mbid = mbaxid
             mapper_Fi2a%intx_mbid = mbintxia
@@ -610,6 +647,12 @@ contains
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering lnd atm intx '
               call shr_sys_abort(subname//' ERROR in registering lnd atm intx ')
+            endif
+            if ( mapper_Fl2a%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Fl2a%mbname) &
+                             //' mapper_Fl2a'
+                endif
             endif
             mapper_Fl2a%src_mbid = mblxid
             mapper_Fl2a%tgt_mbid = mbaxid !
@@ -739,6 +782,12 @@ contains
             'mapper_Sl2a initialization',esmf_map_flag)
 #ifdef HAVE_MOAB
          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
+            if ( mapper_Sl2a%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Sl2a%mbname) &
+                             //' mapper_Sl2a'
+                endif
+            endif
             mapper_Sl2a%src_mbid = mblxid
             mapper_Sl2a%tgt_mbid = mapper_Fl2a%tgt_mbid !
             mapper_Sl2a%intx_mbid = mbintxla

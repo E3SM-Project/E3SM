@@ -417,6 +417,12 @@ contains
                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, atm-ocn')
             endif
             ! now take care of the mapper
+            if ( mapper_Fa2o%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Fa2o%mbname) &
+                             //' mapper_Fa2o'
+                endif
+            endif
             mapper_Fa2o%src_mbid = mbaxid
             mapper_Fa2o%tgt_mbid = mboxid
             mapper_Fa2o%intx_mbid = mbintxao
@@ -547,6 +553,12 @@ contains
           ! will use the same map for mapper_Sa2o and Va2o, using the bilinear map option
           if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
             ! now take care of the 2 new mappers
+            if ( mapper_Sa2o%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Sa2o%mbname) &
+                             //' mapper_Sa2o'
+                endif
+            endif
             mapper_Sa2o%src_mbid = mbaxid
             mapper_Sa2o%tgt_mbid = mboxid
             mapper_Sa2o%intx_mbid = mbintxao
@@ -555,6 +567,12 @@ contains
             mapper_Sa2o%weight_identifier = 'bilinear'//C_NULL_CHAR
             mapper_Sa2o%mbname = 'mapper_Sa2o'
 
+            if ( mapper_Va2o%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Va2o%mbname) &
+                             //' mapper_Va2o'
+                endif
+            endif
             mapper_Va2o%src_mbid = mbaxid
             mapper_Va2o%tgt_mbid = mboxid
             mapper_Va2o%intx_mbid = mbintxao
@@ -600,6 +618,12 @@ contains
             if ( ierr == 1 ) then
                call shr_sys_abort( subname//' ERROR: cannot define tags for ice proj to ocn' )
             end if
+            if ( mapper_SFi2o%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_SFi2o%mbname) &
+                             //' mapper_SFi2o'
+                endif
+            endif
             mapper_SFi2o%src_mbid = mbixid
             mapper_SFi2o%tgt_mbid = mboxid
             ! no intersection, so will have to do without it
@@ -742,6 +766,12 @@ contains
          endif
 #endif
 ! now take care of the mapper for MOAB mapper_Rr2o_liq
+            if ( mapper_Rr2o_liq%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Rr2o_liq%mbname) &
+                             //' mapper_Rr2o_liq'
+                endif
+            endif
             mapper_Rr2o_liq%src_mbid = mbrxid
             mapper_Rr2o_liq%tgt_mbid = mbrxoid ! this is special, it will really need this coverage type mesh
             mapper_Rr2o_liq%intx_mbid = mbrmapro
@@ -764,6 +794,12 @@ contains
 ! us the same one for mapper_Rr2o_ice and mapper_Fr2o
 #ifdef HAVE_MOAB
 ! now take care of the mapper for MOAB mapper_Rr2o_ice
+            if ( mapper_Rr2o_ice%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Rr2o_ice%mbname) &
+                             //' mapper_Rr2o_ice'
+                endif
+            endif
             mapper_Rr2o_ice%src_mbid = mbrxid
             mapper_Rr2o_ice%tgt_mbid = mbrxoid ! special
             mapper_Rr2o_ice%intx_mbid = mbrmapro
@@ -784,6 +820,12 @@ contains
                   string='mapper_Fr2o initialization', esmf_map=esmf_map_flag)
 #ifdef HAVE_MOAB
 ! now take care of the mapper for MOAB mapper_Fr2o
+            if ( mapper_Fr2o%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Fr2o%mbname) &
+                             //' mapper_Fr2o'
+                endif
+            endif
                mapper_Fr2o%src_mbid = mbrxid
                mapper_Fr2o%tgt_mbid = mbrxoid ! special
                mapper_Fr2o%intx_mbid = mbrmapro
