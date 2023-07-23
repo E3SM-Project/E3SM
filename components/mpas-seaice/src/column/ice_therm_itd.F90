@@ -1238,6 +1238,7 @@
             Sprofile(k) = Si0new
          enddo
          Ti = liquidus_temperature_mush(Si0new/phi_init)
+!         Ti = min(liquidus_temperature_mush(Si0new/phi_init), Tliquidus_max) !echmod BFB in 3-month tests
          qi0new = enthalpy_mush(Ti, Si0new)
       else
          do k = 1, nilyr
