@@ -30,6 +30,7 @@ function(build_core CORE)
   add_library(${COMPONENT})
   target_compile_definitions(${COMPONENT} PRIVATE ${CPPDEFS})
   target_include_directories(${COMPONENT} PRIVATE ${INCLUDES})
+  target_link_libraries(${COMPONENT} PUBLIC ${LIBRARIES})
 
   # Make .inc files
   add_custom_command (

@@ -276,7 +276,7 @@ contains
                   r_min_sat = 2._r8 * surface_tension_water / (rho_w * grav * abs(grav * 1.e-6_r8 * sucsat(c,j)))
                   r_psi_sat = sqrt(r_min_sat * r_max)
                   if (o2_decomp_depth_sat(c,j) /= spval .and. conc_o2_sat(c,j) /= spval .and. &
-                       o2_decomp_depth_sat(c,j) > 0._r8) then
+                       o2_decomp_depth_sat(c,j) > 1.E-16_r8) then
                      anaerobic_frac_sat = exp(-rij_kro_a * r_psi_sat**(-rij_kro_alpha) * &
                           o2_decomp_depth_sat(c,j)**(-rij_kro_beta) * &
                           conc_o2_sat(c,j)**rij_kro_gamma * (watsat(c,j) + ratio_diffusivity_water_gas(c,j) * &

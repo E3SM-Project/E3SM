@@ -110,6 +110,11 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_mpas_model.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_eamxx.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_model.cmake)
 
+# Set up CMAKE_MODULE_PATH so any component can use E3SM
+# and CIME cmake modules if they want.
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+list(APPEND CMAKE_MODULE_PATH ${CIMEROOT}/CIME/non_py/src/CMake)
+
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
 if(USE_CUDA)
@@ -135,7 +140,6 @@ set(BUILDCONF ${CASEROOT}/Buildconf)
 build_mpas_models()
 
 # Set global cmake settings
-set(CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 
 # Set global targets
