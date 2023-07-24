@@ -65,10 +65,8 @@ real(rtype) :: lambda_slope = 2.65_rtype ! stability correction slope
 real(rtype) :: lambda_thresh = 0.02_rtype ! value to apply stability correction
 real(rtype) :: Ckh = 0.1_rtype ! Eddy diffusivity coefficient for heat
 real(rtype) :: Ckm = 0.1_rtype ! Eddy diffusivity coefficient for momentum
-real(rtype) :: Ckh_s_min = 0.1_rtype ! Stable PBL diffusivity minimum for heat
-real(rtype) :: Ckm_s_min = 0.1_rtype ! Stable PBL diffusivity minimum for momentum
-real(rtype) :: Ckh_s_max = 0.1_rtype ! Stable PBL diffusivity maximum for heat
-real(rtype) :: Ckm_s_max = 0.1_rtype ! Stable PBL diffusivity maximum for momentum
+real(rtype) :: Ckh_s = 0.1_rtype ! Stable PBL diffusivity for heat
+real(rtype) :: Ckm_s = 0.1_rtype ! Stable PBL diffusivity for momentum
 
 !=========================================================
 ! Private module parameters
@@ -132,8 +130,7 @@ subroutine shoc_init( &
          thl2tune_in, qw2tune_in, qwthl2tune_in, &
          w2tune_in, length_fac_in, c_diag_3rd_mom_in, &
          lambda_low_in, lambda_high_in, lambda_slope_in, &
-         lambda_thresh_in, Ckh_in, Ckm_in, Ckh_s_min_in, &
-         Ckm_s_min_in, Ckh_s_max_in, Ckm_s_max_in)
+         lambda_thresh_in, Ckh_in, Ckm_in, Ckh_s_in, Ckm_s_in)
 
   implicit none
 
@@ -170,10 +167,8 @@ subroutine shoc_init( &
   real(rtype), intent(in), optional :: lambda_thresh_in ! value to apply stability correction
   real(rtype), intent(in), optional :: Ckh_in ! eddy diffusivity coefficient for heat
   real(rtype), intent(in), optional :: Ckm_in ! eddy diffusivity coefficient for momentum
-  real(rtype), intent(in), optional :: Ckh_s_min_in ! Stable PBL diffusivity minimum for heat
-  real(rtype), intent(in), optional :: Ckm_s_min_in ! Stable PBL diffusivity minimum for momentum
-  real(rtype), intent(in), optional :: Ckh_s_max_in ! Stable PBL diffusivity maximum for heat
-  real(rtype), intent(in), optional :: Ckm_s_max_in ! Stable PBL diffusivity maximum for momentum
+  real(rtype), intent(in), optional :: Ckh_s_in ! Stable PBL diffusivity for heat
+  real(rtype), intent(in), optional :: Ckm_s_in ! Stable PBL diffusivity for momentum
 
   integer :: k
 
@@ -200,10 +195,8 @@ subroutine shoc_init( &
   if (present(lambda_thresh_in)) lambda_thresh=lambda_thresh_in
   if (present(Ckh_in)) Ckh=Ckh_in
   if (present(Ckm_in)) Ckm=Ckm_in
-  if (present(Ckh_s_min_in)) Ckh_s_min=Ckh_s_min_in
-  if (present(Ckm_s_min_in)) Ckm_s_min=Ckm_s_min_in
-  if (present(Ckh_s_max_in)) Ckh_s_max=Ckh_s_max_in
-  if (present(Ckm_s_max_in)) Ckm_s_max=Ckm_s_max_in
+  if (present(Ckh_s_in)) Ckh_s=Ckh_s_in
+  if (present(Ckm_s_in)) Ckm_s=Ckm_s_in
 
    ! Limit pbl height to regions below 400 mb
    ! npbl = max number of levels (from bottom) in pbl
@@ -3355,13 +3348,11 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
 
   !local vars
   integer     :: i, k
-  real(rtype) :: z_over_L, zt_grid_1d(shcol)
-  real(rtype) :: Ckh_s, Ckm_s
 
   !parameters
-  ! Critical value of dimensionless Monin-Obukhov length,
-  !  for which diffusivities are no longer damped
-  real(rtype), parameter :: zL_crit_val = 100.0_rtype
+  ! Value for of Monin-Obukov length [m] for which to
+  !  apply stable PBL diffusivities
+  real(rtype), parameter :: obk_crit = 1000.0_rtype
   ! Transition depth [m] above PBL top to allow
   ! stability diffusivities
   real(rtype), parameter :: pbl_trans = 200.0_rtype
@@ -3374,27 +3365,15 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
    endif
 #endif
 
-  !store zt_grid at nlev in 1d array
-  zt_grid_1d(1:shcol) = zt_grid(1:shcol,nlev)
-
   do k = 1, nlev
      do i = 1, shcol
 
-        ! Dimensionless Okukhov length considering only
-        !  the lowest model grid layer height to scale
-        z_over_L = zt_grid_1d(i)/obklen(i)
-
-        if (z_over_L .gt. 0._rtype .and. (zt_grid(i,k) .lt. pblh(i)+pbl_trans)) then
+        if (obklen(i) .gt. obk_crit .and. (zt_grid(i,k) .lt. pblh(i)+pbl_trans)) then
            ! If surface layer is stable, based on near surface
            !  dimensionless Monin-Obukov use modified coefficients of
            !  tkh and tk that are primarily based on shear production
            !  and SHOC length scale, to promote mixing within the PBL
            !  and to a height slighty above to ensure smooth transition.
-
-	   ! Compute diffusivity coefficient as function of dimensionless
-           !  Obukhov, given a critical value
-           Ckh_s = max(Ckh_s_min,min(Ckh_s_max,z_over_L/zL_crit_val))
-           Ckm_s = max(Ckm_s_min,min(Ckm_s_max,z_over_L/zL_crit_val))
 
 	   ! Compute stable PBL diffusivities
            tkh(i,k) = Ckh_s*bfb_square(shoc_mix(i,k))*bfb_sqrt(sterm_zt(i,k))
