@@ -188,10 +188,9 @@ void scream_setup_surface_coupling (const char*& import_field_names, int*& impor
   });
 }
 
-void scream_init_atm (const int run_start_ymd,
-                      const int run_start_tod,
-                      const int case_start_ymd,
-                      const int case_start_tod)
+void scream_init_atm (const char* caseid,
+                      const char* hostname,
+                      const char* username)
 {
   using namespace scream;
   using namespace scream::control;
@@ -199,6 +198,9 @@ void scream_init_atm (const int run_start_ymd,
   fpe_guard_wrapper([&](){
     // Get the ad, then complete initialization
     auto& ad = get_ad_nonconst();
+
+    // Set provenance info in the driver (will be added to the output files)
+    ad.set_provenance_data (caseid,hostname,username);
 
     // Init all fields, atm processes, and output streams
     ad.initialize_fields ();
