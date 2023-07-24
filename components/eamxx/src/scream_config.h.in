@@ -48,4 +48,7 @@
 // Whether monolithic kernels are on
 #cmakedefine SCREAM_SMALL_KERNELS
 
+// The sha of the last commit
+#define EAMXX_GIT_VERSION "${EAMXX_GIT_VERSION}"
+
 #endif
