@@ -83,6 +83,8 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
   auto nens       = coupler.get_option<int>("ncrms");
   auto crm_nz     = coupler.get_option<int>("crm_nz");
+  auto crm_nx     = coupler.get_option<int>("crm_nx");
+  auto crm_ny     = coupler.get_option<int>("crm_ny");
   auto gcm_nlev   = coupler.get_option<int>("gcm_nlev");
   //------------------------------------------------------------------------------------------------
   auto qc_mean                = dm_device.get<real const,2>("qc_mean");
@@ -101,13 +103,40 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   // auto gcm_forcing_tend_uvel  = dm_device.get<real const,2>("gcm_forcing_tend_uvel" );
   // auto gcm_forcing_tend_vvel  = dm_device.get<real const,2>("gcm_forcing_tend_vvel" );
   //------------------------------------------------------------------------------------------------
+  // calculate quantites needed for forcing of total water mixing ratio
+  auto gcm_qv = dm_host.get<real const,2>("input_ql").createDeviceCopy();
+  auto gcm_qc = dm_host.get<real const,2>("input_qccl").createDeviceCopy();
+  auto gcm_qi = dm_host.get<real const,2>("input_qiil").createDeviceCopy();
+  auto dt_gcm = coupler.get_option<real>("gcm_physics_dt");
+  real r_dt_gcm = 1._fp / dt_gcm;
+  auto rho_d = dm_device.get<real,4>("density_dry");
+  auto rho_v = dm_device.get<real,4>("water_vapor");
+  auto rho_c = dm_device.get<real,4>("cloud_water");
+  auto rho_i = dm_device.get<real,4>("ice"        );
+  real2d crm_hmean_qv   ("crm_hmean_qv"   ,crm_nz,nens);
+  real2d crm_hmean_qc   ("crm_hmean_qc"   ,crm_nz,nens);
+  real2d crm_hmean_qi   ("crm_hmean_qi"   ,crm_nz,nens);
+  parallel_for("Initialize horzontal means", SimpleBounds<2>(crm_nz,nens), YAKL_LAMBDA (int k_crm, int iens) {
+    crm_hmean_qv(k_crm,iens) = 0;
+    crm_hmean_qc(k_crm,iens) = 0;
+    crm_hmean_qi(k_crm,iens) = 0;
+  });
+  real r_nx_ny  = 1._fp/(crm_nx*crm_ny);  // precompute reciprocal to avoid costly divisions
+  parallel_for("Horz mean of CRM state", SimpleBounds<4>(crm_nz,crm_ny,crm_nx,nens), YAKL_LAMBDA (int k_crm, int j, int i, int iens) {
+    real rho_total = rho_d(k_crm,j,i,iens) + rho_v(k_crm,j,i,iens);
+    atomicAdd( crm_hmean_qv  (k_crm,iens),(rho_v(k_crm,j,i,iens)/rho_total) * r_nx_ny );
+    atomicAdd( crm_hmean_qc  (k_crm,iens),(rho_c(k_crm,j,i,iens)/rho_total) * r_nx_ny );
+    atomicAdd( crm_hmean_qi  (k_crm,iens),(rho_i(k_crm,j,i,iens)/rho_total) * r_nx_ny );
+  });
+  //------------------------------------------------------------------------------------------------
   // convert variables to GCM vertical grid
   real2d forcing_tend_out_temp ("forcing_tend_out_temp ",gcm_nlev,nens);
   real2d forcing_tend_out_rho_d("forcing_tend_out_rho_d",gcm_nlev,nens);
   real2d forcing_tend_out_rho_v("forcing_tend_out_rho_v",gcm_nlev,nens);
   real2d forcing_tend_out_rho_l("forcing_tend_out_rho_l",gcm_nlev,nens);
   real2d forcing_tend_out_rho_i("forcing_tend_out_rho_i",gcm_nlev,nens);
-  parallel_for("Initialize output forcing tendencies", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
+  real2d forcing_tend_out_qt("forcing_tend_out_qt ",gcm_nlev,nens);
+  parallel_for("set output forcing tendencies", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
     int k_crm = gcm_nlev-1-k_gcm;
     if (k_crm<crm_nz) {
       forcing_tend_out_temp (k_gcm,iens) = gcm_forcing_tend_temp (k_crm,iens);
@@ -115,12 +144,16 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
       forcing_tend_out_rho_v(k_gcm,iens) = gcm_forcing_tend_rho_v(k_crm,iens);
       forcing_tend_out_rho_l(k_gcm,iens) = gcm_forcing_tend_rho_l(k_crm,iens);
       forcing_tend_out_rho_i(k_gcm,iens) = gcm_forcing_tend_rho_i(k_crm,iens);
+      real crm_qt = crm_hmean_qv(k_crm,iens) + crm_hmean_qc(k_crm,iens) + crm_hmean_qi(k_crm,iens);
+      real gcm_qt = gcm_qv      (k_gcm,iens) + gcm_qc      (k_gcm,iens) + gcm_qi      (k_gcm,iens);
+      forcing_tend_out_qt   (k_gcm,iens) =( gcm_qt - crm_qt ) * r_dt_gcm;
     } else {
       forcing_tend_out_temp (k_gcm,iens) = 0.;
       forcing_tend_out_rho_d(k_gcm,iens) = 0.;
       forcing_tend_out_rho_v(k_gcm,iens) = 0.;
       forcing_tend_out_rho_l(k_gcm,iens) = 0.;
       forcing_tend_out_rho_i(k_gcm,iens) = 0.;
+      forcing_tend_out_qt   (k_gcm,iens) = 0.;
     }
   });
   //------------------------------------------------------------------------------------------------
@@ -137,6 +170,7 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   auto output_rho_d_ls  = dm_host.get<real,2>("output_rho_d_ls");
   auto output_rho_l_ls  = dm_host.get<real,2>("output_rho_l_ls");
   auto output_rho_i_ls  = dm_host.get<real,2>("output_rho_i_ls");
+  auto output_qt_ls     = dm_host.get<real,2>("output_qt_ls");
   //------------------------------------------------------------------------------------------------
   // Copy the data to host
   qc_mean                 .deep_copy_to(output_qc_mean);
@@ -152,6 +186,7 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   forcing_tend_out_rho_v  .deep_copy_to(output_rho_v_ls);
   forcing_tend_out_rho_l  .deep_copy_to(output_rho_l_ls);
   forcing_tend_out_rho_i  .deep_copy_to(output_rho_i_ls);
+  forcing_tend_out_qt     .deep_copy_to(output_qt_ls);
   yakl::fence();
   //------------------------------------------------------------------------------------------------
 }
