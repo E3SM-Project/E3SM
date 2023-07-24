@@ -33,10 +33,10 @@ module crm_input_module
       real(crm_rknd), allocatable :: tau00  (:)          ! large-scale surface stress (N/m2)
       real(crm_rknd), allocatable :: wndls  (:)          ! large-scale surface wind (m/s)
       real(crm_rknd), allocatable :: bflxls (:)          ! large-scale surface buoyancy flux (K m/s)
-      real(crm_rknd), allocatable :: fluxu00(:)          ! surface momenent fluxes [N/m2]
-      real(crm_rknd), allocatable :: fluxv00(:)          ! surface momenent fluxes [N/m2]
-      real(crm_rknd), allocatable :: fluxt00(:)          ! surface sensible heat fluxes [K Kg/ (m2 s)]
-      real(crm_rknd), allocatable :: fluxq00(:)          ! surface latent heat fluxes [ kg/(m2 s)]
+      real(crm_rknd), allocatable :: fluxu00(:)          ! surface momenent fluxes      [N/m2]
+      real(crm_rknd), allocatable :: fluxv00(:)          ! surface momenent fluxes      [N/m2]
+      real(crm_rknd), allocatable :: fluxt00(:)          ! surface sensible heat fluxes [W/m2/s]
+      real(crm_rknd), allocatable :: fluxq00(:)          ! surface latent heat fluxes   [W/m2/s]
 
       real(crm_rknd), allocatable :: ul_esmt(:,:)        ! input u for ESMT
       real(crm_rknd), allocatable :: vl_esmt(:,:)        ! input v for ESMT

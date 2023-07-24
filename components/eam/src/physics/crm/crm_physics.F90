@@ -1206,10 +1206,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             icrm = ncol_sum + i
             crm_input%tau00(icrm)   = sqrt(wsx_tmp(i)**2 + wsy_tmp(i)**2)
             crm_input%bflxls(icrm)  = shf_tmp(i)/cpair + 0.61*state(c)%t(i,pver)*lhf_tmp(i)/latvap
-            crm_input%fluxu00(icrm) = wsx_tmp(i)         ! N/m2
-            crm_input%fluxv00(icrm) = wsy_tmp(i)         ! N/m2
-            crm_input%fluxt00(icrm) = shf_tmp(i)/cpair   ! K Kg/ (m2 s)
-            crm_input%fluxq00(icrm) = lhf_tmp(i)/latvap  ! Kg/(m2 s)
+            crm_input%fluxu00(icrm) = wsx_tmp(i) ! N/m2
+            crm_input%fluxv00(icrm) = wsy_tmp(i) ! N/m2
+            crm_input%fluxt00(icrm) = shf_tmp(i) ! W/m2/s  ( divide by cpair  to get K kg/(m2 s) )
+            crm_input%fluxq00(icrm) = lhf_tmp(i) ! W/m2/s  ( divide by latvap to get   kg/(m2 s) )
             crm_input%wndls(icrm)   = sqrt(state(c)%u(i,pver)**2 + state(c)%v(i,pver)**2)
          end do
 
@@ -1314,6 +1314,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_mirror_array_readonly( 'input_bflxls',  crm_input%bflxls  )
       call pam_mirror_array_readonly( 'input_wndls',   crm_input%wndls   )
 
+      call pam_mirror_array_readonly( 'input_shf',     crm_input%fluxt00 )
+      call pam_mirror_array_readonly( 'input_lhf',     crm_input%fluxq00 )
+
       call pam_mirror_array_readonly( 'input_zmid',    crm_input%zmid    )
       call pam_mirror_array_readonly( 'input_zint',    crm_input%zint    )
       call pam_mirror_array_readonly( 'input_pmid',    crm_input%pmid    )
@@ -1413,7 +1416,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       ! call pam_mirror_array_readwrite( 'output_qp_fall',     crm_output%qp_fall,     '' )
       ! call pam_mirror_array_readwrite( 'output_qp_evp',      crm_output%qp_evp,      '' )
       ! call pam_mirror_array_readwrite( 'output_qp_src',      crm_output%qp_src,      '' )
-      ! call pam_mirror_array_readwrite( 'output_qt_ls',       crm_output%qt_ls,       '' )
+      call pam_mirror_array_readwrite( 'output_qt_ls',       crm_output%qt_ls,       '' )
       call pam_mirror_array_readwrite( 'output_t_ls',        crm_output%t_ls,        '' )
       call pam_mirror_array_readwrite( 'output_rho_v_ls',    crm_output%rho_v_ls,    '' )
       call pam_mirror_array_readwrite( 'output_rho_d_ls',    crm_output%rho_d_ls,    '' )
