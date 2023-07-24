@@ -12,6 +12,10 @@ if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
   cmake_policy(SET CMP0074 NEW)
 endif()
 
+set (EAMXX_VERSION_MAJOR 1)
+set (EAMXX_VERSION_MINOR 0)
+set (EAMXX_VERSION_PATCH 0)
+
 if ($ENV{SCREAM_FORCE_CONFIG_FAIL})
   message(FATAL_ERROR "Failed, as instructed by environment")
 endif()
