@@ -366,7 +366,6 @@
     <submit_args>
       <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
       <arg flag="-p" name="$JOB_QUEUE"/>
-      <arg flag="--account" name="$PROJECT"/>
     </submit_args>
     <directives>
       <directive> --job-name={{ job_id }}</directive>
