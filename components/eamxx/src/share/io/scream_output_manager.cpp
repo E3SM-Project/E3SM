@@ -711,6 +711,7 @@ void OutputManager::set_file_header(const std::string& filename)
   set_attribute<std::string>(filename,"source","E3SM Atmosphere Model Version 4 (EAMxx)");  // TODO: probably want to make sure that new versions are reflected here.
   set_attribute<std::string>(filename,"case",p.get<std::string>("caseid","NONE"));  // TODO
   set_attribute<std::string>(filename,"title","EAMxx History File");
+  set_attribute<std::string>(filename,"source","E3SM Atmosphere Model (EAMxx)");
   set_attribute<std::string>(filename,"eamxx_version",EAMXX_VERSION);
   set_attribute<std::string>(filename,"git_version",p.get<std::string>("git_version",EAMXX_GIT_VERSION));
   set_attribute<std::string>(filename,"hostname",p.get<std::string>("hostname","UNKNOWN"));
@@ -720,7 +721,7 @@ void OutputManager::set_file_header(const std::string& filename)
   set_attribute<std::string>(filename,"contact","e3sm-data-support@listserv.llnl.gov");
   set_attribute<std::string>(filename,"institution_id","E3SM-Projet");
   set_attribute<std::string>(filename,"product",(m_is_model_restart_output ? "model-restart" : "model-output"));  // TODO
-  set_attribute<std::string>(filename,"component","ATM");
+  set_attribute<std::string>(filename,"realm","atmos");
   set_attribute<std::string>(filename,"history",ts_str);
   set_attribute<std::string>(filename,"Conventions","CF-1.8");  // TODO: In the future we may be able to have this be set at runtime.  We hard-code for now, because post-processing needs something in this global attribute. 2023-04-12
 }
