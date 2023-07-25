@@ -20,23 +20,36 @@ namespace scream
 // according to the "averaging" type, and according to the number of
 // model time steps since the last output step.
 KOKKOS_INLINE_FUNCTION
-void combine (const Real& new_val, Real& curr_val, const OutputAvgType avg_type)
+void combine (const Real& new_val, Real& curr_val, Real& avg_coeff, const OutputAvgType avg_type, const Real fill_value)
 {
-  switch (avg_type) {
-    case OutputAvgType::Instant:
-      curr_val = new_val;
-      break;
-    case OutputAvgType::Max:
-      curr_val = ekat::impl::max(curr_val,new_val);
-      break;
-    case OutputAvgType::Min:
-      curr_val = ekat::impl::min(curr_val,new_val);
-      break;
-    case OutputAvgType::Average:
-      curr_val += new_val;
-      break;
-    default:
-      EKAT_KERNEL_ERROR_MSG ("Unexpected value for m_avg_type. Please, contact developers.\n");
+  const bool new_fill  = new_val == fill_value;
+  const bool curr_fill = curr_val == fill_value;
+  if (!new_fill) {
+    avg_coeff += 1;
+  }
+  if (curr_fill & new_fill) {
+    // Then the value is already set to be filled and the new value doesn't change things.
+    return;
+  } else if (curr_fill) {
+    // Then the current value is filled but the new value will replace that for all cases.
+    curr_val = new_val;
+  } else {
+    switch (avg_type) {
+      case OutputAvgType::Instant:
+        curr_val = new_val;
+        break;
+      case OutputAvgType::Max:
+        curr_val = new_fill ? curr_val : ekat::impl::max(curr_val,new_val);
+        break;
+      case OutputAvgType::Min:
+        curr_val = new_fill ? curr_val : ekat::impl::min(curr_val,new_val);
+        break;
+      case OutputAvgType::Average:
+        curr_val += (new_fill ? 0.0 : new_val);
+        break;
+      default:
+        EKAT_KERNEL_ERROR_MSG ("Unexpected value for m_avg_type. Please, contact developers.\n");
+    }
   }
 }
 
@@ -368,7 +381,9 @@ run (const std::string& filename,
     // by combining new data with current avg values.
     // NOTE: this is skipped for instant output, if IO view is aliasing Field view.
     auto view_dev = m_dev_views_1d.at(name);
+    auto view_avg_coeff = m_avg_coeff_views_1d.at(name);
     auto data = view_dev.data();
+    auto coeff_data = view_avg_coeff.data();
     KT::RangePolicy policy(0,layout.size());
     const auto extents = layout.extents();
 
@@ -383,8 +398,9 @@ run (const std::string& filename,
           // handling a few more scenarios
           auto new_view_1d = field.get_strided_view<const Real*,Device>();
           auto avg_view_1d = view_Nd_dev<1>(data,dims[0]);
+          auto avg_coeff_1d = view_Nd_dev<1>(coeff_data,dims[0]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-            combine(new_view_1d(i), avg_view_1d(i),avg_type);
+            combine(new_view_1d(i), avg_view_1d(i),avg_coeff_1d(i),avg_type,m_fill_value);
           });
           break;
         }
@@ -392,10 +408,11 @@ run (const std::string& filename,
         {
           auto new_view_2d = field.get_view<const Real**,Device>();
           auto avg_view_2d = view_Nd_dev<2>(data,dims[0],dims[1]);
+          auto avg_coeff_2d = view_Nd_dev<2>(coeff_data,dims[0],dims[1]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j;
             unflatten_idx(idx,extents,i,j);
-            combine(new_view_2d(i,j), avg_view_2d(i,j),avg_type);
+            combine(new_view_2d(i,j), avg_view_2d(i,j),avg_coeff_2d(i,j),avg_type,m_fill_value);
           });
           break;
         }
@@ -403,10 +420,11 @@ run (const std::string& filename,
         {
           auto new_view_3d = field.get_view<const Real***,Device>();
           auto avg_view_3d = view_Nd_dev<3>(data,dims[0],dims[1],dims[2]);
+          auto avg_coeff_3d = view_Nd_dev<3>(coeff_data,dims[0],dims[1],dims[2]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k;
             unflatten_idx(idx,extents,i,j,k);
-            combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_type);
+            combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_coeff_3d(i,j,k),avg_type,m_fill_value);
           });
           break;
         }
@@ -414,10 +432,11 @@ run (const std::string& filename,
         {
           auto new_view_4d = field.get_view<const Real****,Device>();
           auto avg_view_4d = view_Nd_dev<4>(data,dims[0],dims[1],dims[2],dims[3]);
+          auto avg_coeff_4d = view_Nd_dev<4>(coeff_data,dims[0],dims[1],dims[2],dims[3]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k,l;
             unflatten_idx(idx,extents,i,j,k,l);
-            combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_type);
+            combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_coeff_4d(i,j,k,l),avg_type,m_fill_value);
           });
           break;
         }
@@ -425,10 +444,11 @@ run (const std::string& filename,
         {
           auto new_view_5d = field.get_view<const Real*****,Device>();
           auto avg_view_5d = view_Nd_dev<5>(data,dims[0],dims[1],dims[2],dims[3],dims[4]);
+          auto avg_coeff_5d = view_Nd_dev<5>(coeff_data,dims[0],dims[1],dims[2],dims[3],dims[4]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k,l,m;
             unflatten_idx(idx,extents,i,j,k,l,m);
-            combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_type);
+            combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_coeff_5d(i,j,k,l,m),avg_type,m_fill_value);
           });
           break;
         }
@@ -436,10 +456,11 @@ run (const std::string& filename,
         {
           auto new_view_6d = field.get_view<const Real******,Device>();
           auto avg_view_6d = view_Nd_dev<6>(data,dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]);
+          auto avg_coeff_6d = view_Nd_dev<6>(coeff_data,dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k,l,m,n;
             unflatten_idx(idx,extents,i,j,k,l,m,n);
-            combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),avg_type);
+            combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n), avg_coeff_6d(i,j,k,l,m,n),avg_type,m_fill_value);
           });
           break;
         }
@@ -452,7 +473,11 @@ run (const std::string& filename,
       if (output_step and avg_type==OutputAvgType::Average) {
         // Divide by steps count only when the summation is complete
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-          data[i] /= nsteps_since_last_output;
+	  if (data[i] == m_fill_value || coeff_data[i] == 0) {
+	    data[i] = m_fill_value;
+	  } else {
+            data[i] /= coeff_data[i];
+	  }
         });
       }
       // Bring data to host
@@ -644,8 +669,8 @@ void AtmosphereOutput::register_views()
       // Create a local view.
       m_dev_views_1d.emplace(name,view_1d_dev("",size));
       m_host_views_1d.emplace(name,Kokkos::create_mirror(m_dev_views_1d[name]));
-
     }
+    m_avg_coeff_views_1d.emplace(name,view_1d_dev("",size));
   }
   // Initialize the local views
   reset_dev_views();
@@ -668,7 +693,8 @@ reset_dev_views()
         Kokkos::deep_copy(m_dev_views_1d[name],std::numeric_limits<Real>::infinity());
         break;
       case OutputAvgType::Average:
-        Kokkos::deep_copy(m_dev_views_1d[name],0);
+        Kokkos::deep_copy(m_dev_views_1d[name],m_fill_value);
+        Kokkos::deep_copy(m_avg_coeff_views_1d[name],0);
         break;
       default:
         EKAT_ERROR_MSG ("Unrecognized averaging type.\n");
