@@ -234,6 +234,8 @@ subroutine modal_aer_opt_init()
    call addfld ('AODDUST3',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 3 from dust', flag_xyfill=.true.)
    call addfld ('AODDUST',horiz_only,    'A','  ','Aerosol optical depth 550 nm from dust', flag_xyfill=.true.)
    call addfld ('AODSO4',horiz_only,    'A','  ','Aerosol optical depth 550 nm from SO4', flag_xyfill=.true.)
+   call addfld ('AODSO4_STR',horiz_only,'A','  ','Aerosol optical depth 550 nm from stratospheric SO4', flag_xyfill=.true.)
+   call addfld ('AODSO4_TRO',horiz_only,'A','  ','Aerosol optical depth 550 nm from tropospheric SO4', flag_xyfill=.true.)
    call addfld ('AODPOM',horiz_only,    'A','  ','Aerosol optical depth 550 nm from POM', flag_xyfill=.true.)
    call addfld ('AODSOA',horiz_only,    'A','  ','Aerosol optical depth 550 nm from SOA', flag_xyfill=.true.)
    call addfld ('AODBC',horiz_only,    'A','  ','Aerosol optical depth 550 nm from BC', flag_xyfill=.true.)
@@ -593,7 +595,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
    ! total species AOD
    real(r8) :: dustaod(pcols), so4aod(pcols), bcaod(pcols), &
-               pomaod(pcols), soaaod(pcols), seasaltaod(pcols)
+               pomaod(pcols), soaaod(pcols), seasaltaod(pcols), &
+               so4aod_str(pcols), so4aod_tro(pcols)
 #if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE )
    real(r8) :: momaod(pcols)
 #elif ( defined MODAL_AERO_9MODE )
@@ -662,6 +665,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    aodabs(1:ncol)        = 0.0_r8
    burdendust(:ncol)     = 0.0_r8
    burdenso4(:ncol)      = 0.0_r8
+   so4aod_str(:ncol)     = 0.0_r8
+   so4aod_tro(:ncol)     = 0.0_r8
    burdenpom(:ncol)      = 0.0_r8
    burdensoa(:ncol)      = 0.0_r8
    burdenbc(:ncol)       = 0.0_r8
@@ -1098,6 +1103,11 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
                      aodc           = (absso4(i)*(1.0_r8 - palb(i)) + palb(i)*scatso4(i))*dopaer(i)
                      so4aod(i)      = so4aod(i) + aodc
+                     if ((k .le. trop_level(i)) .and. (is_output_interactive_volc)) then ! in stratosphere
+                        so4aod_str(i)      = so4aod_str(i) + aodc
+                     else   
+                        so4aod_tro(i)      = so4aod_tro(i) + aodc   
+                     endif    
 
                      aodc           = (abspom(i)*(1.0_r8 - palb(i)) + palb(i)*scatpom(i))*dopaer(i)
                      pomaod(i)      = pomaod(i) + aodc
@@ -1284,6 +1294,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
          dustaod(idxnite(i))    = fillvalue
          so4aod(idxnite(i))     = fillvalue
+         so4aod_str(idxnite(i)) = fillvalue
+         so4aod_tro(idxnite(i)) = fillvalue
          pomaod(idxnite(i))     = fillvalue
          soaaod(idxnite(i))     = fillvalue
          bcaod(idxnite(i))      = fillvalue
@@ -1332,6 +1344,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
       call outfld('AODDUST',       dustaod,       pcols, lchnk)
       call outfld('AODSO4',        so4aod,        pcols, lchnk)
+      call outfld('AODSO4_STR',    so4aod_str,    pcols, lchnk)
+      call outfld('AODSO4_TRO',    so4aod_tro,    pcols, lchnk)
       call outfld('AODPOM',        pomaod,        pcols, lchnk)
       call outfld('AODSOA',        soaaod,        pcols, lchnk)
       call outfld('AODBC',         bcaod,         pcols, lchnk)
