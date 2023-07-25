@@ -61,19 +61,46 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
   ) # P3 ETI SRCS
 endif()
 
-add_library(p3 ${P3_SRCS})
+# List of dispatch source files if monolithic kernels are off
+set(P3_SK_SRCS
+    disp/p3_check_values_impl_disp.cpp  
+    disp/p3_ice_sed_impl_disp.cpp  
+    disp/p3_main_impl_part1_disp.cpp  
+    disp/p3_main_impl_part3_disp.cpp
+    disp/p3_cloud_sed_impl_disp.cpp     
+    disp/p3_main_impl_disp.cpp     
+    disp/p3_main_impl_part2_disp.cpp  
+    disp/p3_rain_sed_impl_disp.cpp
+    )
+
+set(P3_LIBS "p3")
+if (SCREAM_SMALL_KERNELS)
+  add_library(p3 ${P3_SRCS} ${P3_SK_SRCS})
+else()
+  add_library(p3 ${P3_SRCS})
+  if (NOT SCREAM_LIBS_ONLY AND NOT SCREAM_BASELINES_ONLY)
+    add_library(p3_sk ${P3_SRCS} ${P3_SK_SRCS})
+    # Always build shoc_sk with SCREAM_SMALL_KERNELS on
+    target_compile_definitions(p3_sk PUBLIC "SCREAM_SMALL_KERNELS")
+    list(APPEND P3_LIBS "p3_sk")
+  endif()
+endif()
+
 target_compile_definitions(p3 PUBLIC EAMXX_HAS_P3)
-set_target_properties(p3 PROPERTIES
-  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
-)
-target_include_directories(p3 PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/../share
-  ${CMAKE_CURRENT_BINARY_DIR}/modules
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/impl
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam
-)
-target_link_libraries(p3 physics_share scream_share)
+
+foreach (P3_LIB IN LISTS P3_LIBS)
+  set_target_properties(${P3_LIB} PROPERTIES
+    Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
+  )
+  target_include_directories(${P3_LIB} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../share
+    ${CMAKE_CURRENT_BINARY_DIR}/modules
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/impl
+    ${SCREAM_BASE_DIR}/../eam/src/physics/cam
+  )
+  target_link_libraries(${P3_LIB} physics_share scream_share)
+endforeach()
 
 # Ensure tables are present in the data dir
 if (SCREAM_DOUBLE_PRECISION)
