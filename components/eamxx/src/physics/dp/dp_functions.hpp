@@ -79,7 +79,6 @@ struct Functions
   //
 
   KOKKOS_FUNCTION
-  KOKKOS_FUNCTION
   static void advance_iop_forcing(const Int& plev, const Int& pcnst, const Spack& scm_dt, const Spack& ps_in, const uview_1d<const Spack>& u_in, const uview_1d<const Spack>& v_in, const uview_1d<const Spack>& t_in, const uview_1d<const Spack>& q_in, const uview_1d<const Spack>& t_phys_frc, const uview_1d<Spack>& u_update, const uview_1d<Spack>& v_update, const uview_1d<Spack>& t_update, const uview_1d<Spack>& q_update);
   KOKKOS_FUNCTION
   static void advance_iop_nudging(const Int& plev, const Spack& scm_dt, const Spack& ps_in, const uview_1d<const Spack>& t_in, const uview_1d<const Spack>& q_in, const uview_1d<Spack>& t_update, const uview_1d<Spack>& q_update, const uview_1d<Spack>& relaxt, const uview_1d<Spack>& relaxq);

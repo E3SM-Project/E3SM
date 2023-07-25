@@ -33,10 +33,9 @@ struct UnitWrap::UnitTest<D>::TestIopSetopts {
 
     // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
     // inout data is in original state
-    view_1d<IopSetoptsData> cxx_device("cxx_device", max_pack_size);
-    const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
+    using host_view = typename view_1d<IopSetoptsData>::host_mirror_type;
+    host_view cxx_host("cxx_host", max_pack_size);
     std::copy(&f90_data[0], &f90_data[0] + max_pack_size, cxx_host.data());
-    Kokkos::deep_copy(cxx_device, cxx_host);
 
     // Get data from fortran
     for (auto& d : f90_data) {
@@ -44,28 +43,22 @@ struct UnitWrap::UnitTest<D>::TestIopSetopts {
     }
 
     // Get data from cxx. Run iop_setopts from a kernel and copy results back to host
-    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+    for (Int i = 0; i < num_test_itrs; ++i) {
       const Int offset = i * Spack::n;
 
       // Init pack inputs
       Spack iop_nudge_tq_high_in, iop_nudge_tq_low_in, iop_nudge_tscale_in, iop_perturb_high_in, scmlat_in, scmlon_in;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        iop_nudge_tq_high_in[s] = cxx_device(vs).iop_nudge_tq_high_in;
-        iop_nudge_tq_low_in[s] = cxx_device(vs).iop_nudge_tq_low_in;
-        iop_nudge_tscale_in[s] = cxx_device(vs).iop_nudge_tscale_in;
-        iop_perturb_high_in[s] = cxx_device(vs).iop_perturb_high_in;
-        scmlat_in[s] = cxx_device(vs).scmlat_in;
-        scmlon_in[s] = cxx_device(vs).scmlon_in;
+        iop_nudge_tq_high_in[s] = cxx_host(vs).iop_nudge_tq_high_in;
+        iop_nudge_tq_low_in[s] = cxx_host(vs).iop_nudge_tq_low_in;
+        iop_nudge_tscale_in[s] = cxx_host(vs).iop_nudge_tscale_in;
+        iop_perturb_high_in[s] = cxx_host(vs).iop_perturb_high_in;
+        scmlat_in[s] = cxx_host(vs).scmlat_in;
+        scmlon_in[s] = cxx_host(vs).scmlon_in;
       }
 
-      
-
-      Functions::iop_setopts(scmlat_in, scmlon_in, cxx_device(0).iopfile_in, cxx_device(0).single_column_in, cxx_device(0).scm_iop_srf_prop_in, cxx_device(0).iop_nudge_tq_in, cxx_device(0).iop_nudge_uv_in, iop_nudge_tq_low_in, iop_nudge_tq_high_in, iop_nudge_tscale_in, cxx_device(0).scm_observed_aero_in, cxx_device(0).iop_dosubsidence_in, cxx_device(0).scm_multcols_in, cxx_device(0).dp_crm_in, iop_perturb_high_in, cxx_device(0).precip_off_in, cxx_device(0).scm_zero_non_iop_tracers_in);
-
-      
-    });
-
-    Kokkos::deep_copy(cxx_host, cxx_device);
+      Functions::iop_setopts(scmlat_in, scmlon_in, cxx_host(0).iopfile_in, cxx_host(0).single_column_in, cxx_host(0).scm_iop_srf_prop_in, cxx_host(0).iop_nudge_tq_in, cxx_host(0).iop_nudge_uv_in, iop_nudge_tq_low_in, iop_nudge_tq_high_in, iop_nudge_tscale_in, cxx_host(0).scm_observed_aero_in, cxx_host(0).iop_dosubsidence_in, cxx_host(0).scm_multcols_in, cxx_host(0).dp_crm_in, iop_perturb_high_in, cxx_host(0).precip_off_in, cxx_host(0).scm_zero_non_iop_tracers_in);
+    }
 
     // Verify BFB results
     if (SCREAM_BFB_TESTING) {

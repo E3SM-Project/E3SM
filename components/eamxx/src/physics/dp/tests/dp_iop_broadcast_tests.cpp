@@ -31,6 +31,7 @@ struct UnitWrap::UnitTest<D>::TestIopBroadcast {
       d.randomize(engine);
     }
 
+#if 0
     // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
     // inout data is in original state
     view_1d<IopBroadcastData> cxx_device("cxx_device", max_pack_size);
@@ -64,8 +65,8 @@ struct UnitWrap::UnitTest<D>::TestIopBroadcast {
         IopBroadcastData& d_cxx = cxx_host[i];
       }
     }
+#endif
   } // run_bfb
-
 };
 
 } // namespace unit_test

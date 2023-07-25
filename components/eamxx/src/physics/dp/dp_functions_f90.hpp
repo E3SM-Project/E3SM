@@ -146,6 +146,8 @@ struct IopDefaultOptsData {
   bool single_column_out, scm_iop_srf_prop_out, iop_nudge_tq_out, iop_nudge_uv_out, scm_observed_aero_out, iop_dosubsidence_out, scm_multcols_out, dp_crm_out, precip_off_out, scm_zero_non_iop_tracers_out;
 
   void randomize(std::mt19937_64& engine) {}
+
+  IopDefaultOptsData() = default;
 };
 
 struct IopSetoptsData {
@@ -156,6 +158,8 @@ struct IopSetoptsData {
   bool single_column_in, scm_iop_srf_prop_in, iop_nudge_tq_in, iop_nudge_uv_in, scm_observed_aero_in, iop_dosubsidence_in, scm_multcols_in, dp_crm_in, precip_off_in, scm_zero_non_iop_tracers_in;
 
   void randomize(std::mt19937_64& engine) {}
+
+  IopSetoptsData() = default;
 };
 
 struct SetiopupdateInitData {

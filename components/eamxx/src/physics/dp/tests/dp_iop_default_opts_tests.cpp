@@ -33,40 +33,34 @@ struct UnitWrap::UnitTest<D>::TestIopDefaultOpts {
 
     // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
     // inout data is in original state
-    view_1d<IopDefaultOptsData> cxx_device("cxx_device", max_pack_size);
-    const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
+    using host_view = typename view_1d<IopDefaultOptsData>::host_mirror_type;
+    host_view cxx_host("cxx_host", max_pack_size);
     std::copy(&f90_data[0], &f90_data[0] + max_pack_size, cxx_host.data());
-    Kokkos::deep_copy(cxx_device, cxx_host);
 
     // Get data from fortran
     for (auto& d : f90_data) {
       iop_default_opts(d);
     }
 
-#if 0
     // Get data from cxx. Run iop_default_opts from a kernel and copy results back to host
-    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+    for (Int i = 0; i < num_test_itrs; ++i) {
       const Int offset = i * Spack::n;
 
       // Init outputs
       Spack iop_nudge_tq_high_out(0), iop_nudge_tq_low_out(0), iop_nudge_tscale_out(0), iop_perturb_high_out(0), scmlat_out(0), scmlon_out(0);
 
+      Functions::iop_default_opts(scmlat_out, scmlon_out, cxx_host(0).iopfile_out, cxx_host(0).single_column_out, cxx_host(0).scm_iop_srf_prop_out, cxx_host(0).iop_nudge_tq_out, cxx_host(0).iop_nudge_uv_out, iop_nudge_tq_low_out, iop_nudge_tq_high_out, iop_nudge_tscale_out, cxx_host(0).scm_observed_aero_out, cxx_host(0).iop_dosubsidence_out, cxx_host(0).scm_multcols_out, cxx_host(0).dp_crm_out, iop_perturb_high_out, cxx_host(0).precip_off_out, cxx_host(0).scm_zero_non_iop_tracers_out);
 
-      Functions::iop_default_opts(scmlat_out, scmlon_out, cxx_device(0).iopfile_out, cxx_device(0).single_column_out, cxx_device(0).scm_iop_srf_prop_out, cxx_device(0).iop_nudge_tq_out, cxx_device(0).iop_nudge_uv_out, iop_nudge_tq_low_out, iop_nudge_tq_high_out, iop_nudge_tscale_out, cxx_device(0).scm_observed_aero_out, cxx_device(0).iop_dosubsidence_out, cxx_device(0).scm_multcols_out, cxx_device(0).dp_crm_out, iop_perturb_high_out, cxx_device(0).precip_off_out, cxx_device(0).scm_zero_non_iop_tracers_out);
-
-      // Copy spacks back into cxx_device view
+      // Copy spacks back into cxx_host view
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        cxx_device(vs).iop_nudge_tq_high_out = iop_nudge_tq_high_out[s];
-        cxx_device(vs).iop_nudge_tq_low_out = iop_nudge_tq_low_out[s];
-        cxx_device(vs).iop_nudge_tscale_out = iop_nudge_tscale_out[s];
-        cxx_device(vs).iop_perturb_high_out = iop_perturb_high_out[s];
-        cxx_device(vs).scmlat_out = scmlat_out[s];
-        cxx_device(vs).scmlon_out = scmlon_out[s];
+        cxx_host(vs).iop_nudge_tq_high_out = iop_nudge_tq_high_out[s];
+        cxx_host(vs).iop_nudge_tq_low_out = iop_nudge_tq_low_out[s];
+        cxx_host(vs).iop_nudge_tscale_out = iop_nudge_tscale_out[s];
+        cxx_host(vs).iop_perturb_high_out = iop_perturb_high_out[s];
+        cxx_host(vs).scmlat_out = scmlat_out[s];
+        cxx_host(vs).scmlon_out = scmlon_out[s];
       }
-
-    });
-
-    Kokkos::deep_copy(cxx_host, cxx_device);
+    }
 
     // Verify BFB results
     if (SCREAM_BFB_TESTING) {
@@ -92,7 +86,6 @@ struct UnitWrap::UnitTest<D>::TestIopDefaultOpts {
         REQUIRE(d_f90.scm_zero_non_iop_tracers_out == d_cxx.scm_zero_non_iop_tracers_out);
       }
     }
-#endif
   } // run_bfb
 
 };
