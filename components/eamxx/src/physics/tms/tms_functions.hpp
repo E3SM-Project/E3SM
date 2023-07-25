@@ -58,8 +58,8 @@ struct Functions
   // --------- Functions ---------
   //
   static void compute_tms(
-    const int                    ncols,
-    const int                    nlevs,
+    const int&                   ncols,
+    const int&                   nlevs,
     const view_3d<const Spack>&  horiz_wind,
     const view_2d<const Spack>&  t_mid,
     const view_2d<const Spack>&  p_mid,

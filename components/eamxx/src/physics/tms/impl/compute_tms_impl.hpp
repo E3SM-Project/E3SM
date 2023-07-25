@@ -8,8 +8,8 @@ namespace tms {
 
 template<typename S, typename D>
 void Functions<S,D>::compute_tms(
-  int                          ncols,
-  int                          nlevs,
+  const int&                   ncols,
+  const int&                   nlevs,
   const view_3d<const Spack>&  horiz_wind,
   const view_2d<const Spack>&  t_mid,
   const view_2d<const Spack>&  p_mid,
