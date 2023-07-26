@@ -102,8 +102,13 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 {
   using vos_t = std::vector<std::string>;
 
-  if (params.isParameter("Fill Value")) {
-    m_fill_value = static_cast<float>(params.get<double>("Fill Value"));
+  if (params.isParameter("fill_value")) {
+    m_fill_value = static_cast<float>(params.get<double>("fill_value"));
+  }
+  if (params.isParameter("fill_threshold")) {
+    m_avg_coeff_threshold = params.get<Real>("fill_threshold");
+  } else {
+    m_avg_coeff_threshold = 0.5; // default to 0.5
   }
 
   // Figure out what kind of averaging is requested
@@ -476,10 +481,11 @@ run (const std::string& filename,
       if (output_step and avg_type==OutputAvgType::Average) {
         // Divide by steps count only when the summation is complete
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-	  if (data[i] == m_fill_value || coeff_data[i] == 0) {
-	    data[i] = m_fill_value;
-	  } else {
+	  Real coeff_percentage = coeff_data[i]/nsteps_since_last_output;
+	  if (data[i] != m_fill_value && coeff_percentage > m_avg_coeff_threshold) {
             data[i] /= coeff_data[i];
+	  } else {
+	    data[i] = m_fill_value;
 	  }
         });
       }
