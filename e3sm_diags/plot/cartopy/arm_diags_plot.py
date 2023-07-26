@@ -1,5 +1,6 @@
 import math
 import os
+import warnings
 
 import matplotlib
 import numpy as np
@@ -189,7 +190,7 @@ def plot_convection_onset_statistics(
         precip_binned = np.empty([number_of_bins, cwv.size]) * np.nan
         precip_counts = np.zeros([number_of_bins, cwv.size])
 
-        np.warnings.filterwarnings("ignore")
+        warnings.filterwarnings("ignore")
         # Bin the data by CWV value as specified above
         for i in range(0, number_of_bins):
             tmp1 = np.where(cwv > cwv_min + (i * bin_width))
