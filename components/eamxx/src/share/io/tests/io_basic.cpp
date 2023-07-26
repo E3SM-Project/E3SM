@@ -2,6 +2,7 @@
 
 #include "share/io/scream_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
+#include "share/io/scream_io_utils.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 
@@ -25,6 +26,7 @@
 namespace scream {
 
 constexpr int num_output_steps = 5;
+constexpr Real FillValue = DEFAULT_FILL_VALUE;
 
 void add (const Field& f, const double v) {
   auto data = f.get_internal_view_data<Real,Host>();
@@ -112,6 +114,16 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
     f.get_header().get_tracking().update_time_stamp(t0);
     fm->add_field(f);
   }
+  // Add a field which will include filled values
+  {
+    const auto fl = layouts[0];
+    FID fid("f_filled",fl,units,grid->name());
+    Field f(fid);
+    f.allocate_view();
+    f.deep_copy(FillValue); // For the "filled" field we start with a filled value.
+    f.get_header().get_tracking().update_time_stamp(t0);
+    fm->add_field(f);
+  }
 
   return fm;
 }
@@ -141,6 +153,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   om_pl.set("filename_prefix",std::string("io_basic"));
   om_pl.set("Field Names",fnames);
   om_pl.set("Averaging Type", avg_type);
+  om_pl.set("Fill Value",FillValue);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",freq_units);
   ctrl_pl.set("Frequency",freq);
@@ -162,6 +175,13 @@ void write (const std::string& avg_type, const std::string& freq_units,
     for (const auto& n : fnames) {
       auto f = fm->get_field(n);
       add(f,1.0);
+    }
+    // Treat f_filled specially, since we will Fill the first and last point:
+    const auto fsrc = fm->get_field("f_3");
+    auto f_fill = fm->get_field("f_filled");
+    f_fill.deep_copy(fsrc);
+    if (n==nsteps-1) {
+      f_fill.deep_copy(FillValue);
     }
 
     // Run output manager
@@ -224,20 +244,42 @@ void read (const std::string& avg_type, const std::string& freq_units,
     reader.read_variables(n);
     for (const auto& fn : fnames) {
       auto f0 = fm0->get_field(fn).clone();
+      if (fn == "f_filled") {
+        f0 = fm0->get_field("f_3").clone();
+      }
       auto f  = fm->get_field(fn);
       if (avg_type=="MIN") {
         // The 1st snap in the avg window (the smallest)
         // is one past window_start=n*freq
         add(f0,n*freq+1);
+	// TODO: The MIN function ignores the initial condition, so the filling
+	// doesn't change any results for this test.  
+	// QUESTION: Should MIN include initial condition, should MAX as well?
         REQUIRE (views_are_equal(f,f0));
       } else if (avg_type=="MAX") {
-        add(f0,(n+1)*freq);
+	if (fn=="f_filled" && n==num_writes-1) {
+	  // We fill the last value so
+	  // the maximum should be the value just before that.
+          add(f0,(n+1)*freq-1);
+	} else {
+          add(f0,(n+1)*freq);
+	}
         REQUIRE (views_are_equal(f,f0));
       } else if (avg_type=="INSTANT") {
-        add(f0,n*freq);
+	if (fn=="f_filled" && n==num_writes-1) {
+  	  f0.deep_copy(FillValue);
+	} else if (fn=="f_filled" && n==0) {
+  	  f0.deep_copy(FillValue);
+	} else {
+          add(f0,n*freq);
+	}
         REQUIRE (views_are_equal(f,f0));
       } else {
-        add(f0,n*freq+delta);
+	if (fn=="f_filled" && n==num_writes-1) {
+          add(f0,n*freq+delta-1/2.0);
+	} else {
+          add(f0,n*freq+delta);
+	}
         REQUIRE (views_are_equal(f,f0));
       }
     }
