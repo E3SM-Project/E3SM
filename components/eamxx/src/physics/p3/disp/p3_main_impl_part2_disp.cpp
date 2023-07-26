@@ -14,7 +14,7 @@ template <>
 void Functions<Real,DefaultDevice>
 ::p3_main_part2_disp(
   const Int& nj,
-  const Int& nk,
+  const Int& nk_pack,
   const bool& predictNc,
   const bool& do_prescribed_CCN,
   const Scalar& dt,
@@ -91,7 +91,6 @@ void Functions<Real,DefaultDevice>
   const uview_1d<bool>& hydrometeorsPresent)
 {
   using ExeSpace = typename KT::ExeSpace;
-  const Int nk_pack = ekat::npack<Spack>(nk);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
   // p3_cloud_sedimentation loop
   Kokkos::parallel_for(

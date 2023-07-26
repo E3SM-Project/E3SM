@@ -1088,7 +1088,7 @@ struct Functions
 #ifdef SCREAM_SMALL_KERNELS
   static void p3_main_part2_disp(
     const Int& nj,
-    const Int& nk,
+    const Int& nk_pack,
     const bool& do_predict_nc,
     const bool& do_prescribed_CCN,
     const Scalar& dt,
