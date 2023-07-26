@@ -282,12 +282,15 @@ void AtmosphereOutput::restart (const std::string& filename)
 
   AtmosphereInput hist_restart (res_params,m_io_grid,m_host_views_1d,m_layouts);
   hist_restart.read_variables();
+  auto coeff_rest = scorpio::get_attribute<int>(filename,"num_snapshots_since_last_write");
   hist_restart.finalize();
   for (auto& it : m_host_views_1d) {
     const auto& name = it.first;
     const auto& host = it.second;
     const auto& dev  = m_dev_views_1d.at(name);
+    const auto& coeff = m_avg_coeff_views_1d[name];
     Kokkos::deep_copy(dev,host);
+    Kokkos::deep_copy(coeff,Real(coeff_rest));
   }
 }
 
