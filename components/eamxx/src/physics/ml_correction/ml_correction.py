@@ -9,7 +9,7 @@ from scream_run.steppers.machine_learning import (
 )
 
 
-def get_ML_correction(model_path, T_mid, qv, cos_zenith, current_time):
+def get_ML_correction(model_path, T_mid, qv, cos_zenith):
     config = MachineLearningConfig(models=[model_path])
     model = open_model(config)
     ds = xr.Dataset(
@@ -22,16 +22,30 @@ def get_ML_correction(model_path, T_mid, qv, cos_zenith, current_time):
     return predict(model, ds)
 
 
-def update_fields(T_mid, qv, u, v, lat, lon, Ncol, Nlev, model_path, current_time):
+def update_fields(
+    T_mid,
+    qv,
+    u,
+    v,
+    lat,
+    lon,
+    Ncol,
+    Nlev,
+    num_tracers,
+    dt,
+    model_path,
+    current_time,
+):
     T_mid = np.reshape(T_mid, (-1, Nlev))
-    qv = np.reshape(qv, (-1, Nlev))
+    # qv is a 3D array of shape (Ncol, num_tracers, Nlev)
+    # by default, qv is the frist tracer variable
+    qv = np.reshape(qv, (-1, num_tracers, Nlev))
     current_datetime = datetime.datetime.strptime(current_time, "%Y-%m-%d %H:%M:%S")
     cos_zenith = cos_zenith_angle(
         current_datetime,
         lon,
         lat,
     )
-    correction = get_ML_correction(model_path, T_mid, qv, cos_zenith, current_datetime)
-    print(f"[Python] prediction for dQ1 is of shape {correction['dQ1'].shape}")
-    print(f"[Python] prediction for dQ2 is of shape {correction['dQ2'].shape}")
-    print("[Python] update fields completed without any changes")
+    correction = get_ML_correction(model_path, T_mid, qv[:, 0, :], cos_zenith)
+    T_mid[:, :] += correction["dQ1"].values * dt
+    qv[:, 0, :] += correction["dQ2"].values * dt

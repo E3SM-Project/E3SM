@@ -7,6 +7,7 @@
 #include "eamxx_ml_correction_process_interface.hpp"
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
+#include "share/field/field_utils.hpp"
 
 namespace scream {
 // =========================================================================================
@@ -33,8 +34,6 @@ void MLCorrection::set_grids(
   m_num_cols = m_grid->get_num_local_dofs();  // Number of columns on this rank
   m_num_levs =
       m_grid->get_num_vertical_levels();  // Number of levels per column
-  m_lat  = m_grid->get_geometry_data("lat");
-  m_lon  = m_grid->get_geometry_data("lon");
   // Define the different field layouts that will be used for this process
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and
@@ -52,7 +51,7 @@ void MLCorrection::set_grids(
   add_field<Updated>("u",     scalar3d_layout_mid, m/s, grid_name, ps);
   add_field<Updated>("v",     scalar3d_layout_mid, m/s, grid_name, ps);
   /* ----------------------- WARNING --------------------------------*/
-
+  add_group<Updated>("tracers", grid_name, 1, Bundling::Required);
 }
 
 void MLCorrection::initialize_impl(const RunType /* run_type */) {
@@ -74,10 +73,17 @@ void MLCorrection::run_impl(const double dt) {
   const auto &v_field = get_field_out("v");
   const auto &v       = v_field.get_view<Real **, Host>();
 
+  // having m_lat and m_lon in set_grids breaks the standalone unit test
+  m_lat  = m_grid->get_geometry_data("lat");
+  m_lon  = m_grid->get_geometry_data("lon");
   auto h_lat  = m_lat.get_view<const Real*,Host>();
   auto h_lon  = m_lon.get_view<const Real*,Host>();
 
-  // T_mid_field.sync_to_dev();
+  const auto& tracers = get_group_out("tracers");
+  const auto& tracers_info = tracers.m_info;
+  Int num_tracers = tracers_info->size();
+  Real qv_max_before = field_max<Real>(qv_field);
+  Real qv_min_before = field_min<Real>(qv_field);
   int fpe_mask = ekat::get_enabled_fpes();
   ekat::disable_all_fpes();  // required for importing numpy
   if ( Py_IsInitialized() == 0 ) {
@@ -86,11 +92,13 @@ void MLCorrection::run_impl(const double dt) {
   py::module sys = pybind11::module::import("sys");
   sys.attr("path").attr("insert")(1, ML_CORRECTION_CUSTOM_PATH);
   auto py_correction = py::module::import("ml_correction");
+
+  // for qv, we need to stride across number of tracers
   py::object ob1     = py_correction.attr("update_fields")(
       py::array_t<Real, py::array::c_style | py::array::forcecast>(
           m_num_cols * m_num_levs, T_mid.data(), py::str{}),
       py::array_t<Real, py::array::c_style | py::array::forcecast>(
-          m_num_cols * m_num_levs, qv.data(), py::str{}),          
+          m_num_cols * m_num_levs * num_tracers, qv.data(), py::str{}),          
       py::array_t<Real, py::array::c_style | py::array::forcecast>(
           m_num_cols * m_num_levs, u.data(), py::str{}),        
       py::array_t<Real, py::array::c_style | py::array::forcecast>(
@@ -99,10 +107,15 @@ void MLCorrection::run_impl(const double dt) {
           m_num_cols, h_lat.data(), py::str{}),       
       py::array_t<Real, py::array::c_style | py::array::forcecast>(
           m_num_cols, h_lon.data(), py::str{}),                                                
-      m_num_cols, m_num_levs, m_ML_model_path, datetime_str);
+      m_num_cols, m_num_levs, num_tracers, dt, m_ML_model_path, datetime_str);
   py::gil_scoped_release no_gil;  
   ekat::enable_fpes(fpe_mask);
-  printf("[eamxx::MLCorrection] finished doing nothing in Python");
+  Real qv_max_after = field_max<Real>(qv_field);
+  Real qv_min_after = field_min<Real>(qv_field);  
+  printf("[eamxx::MLCorrection] max qv before is %f, after ML correction is %f\n",
+        qv_max_before, qv_max_after);
+  printf("[eamxx::MLCorrection] min qv before is %f, after ML correction is %f\n",
+        qv_min_before, qv_min_after);        
 }
 
 // =========================================================================================
@@ -111,4 +124,4 @@ void MLCorrection::finalize_impl() {
 }
 // =========================================================================================
 
-}  // namespace scream
+}  // namespace scream 
