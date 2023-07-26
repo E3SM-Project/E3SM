@@ -30,7 +30,7 @@ void Functions<S,D>::eddy_diffusivities(
 
   // Critical value of dimensionless Monin-Obukhov length,
   // for which stable PBL diffusivities are applied
-  const Int obk_crit = 1000;
+  const Int obk_crit = 1e4;
   // Transition depth [m] above PBL top to allow
   // stability diffusivities
   const Int pbl_trans = 200;

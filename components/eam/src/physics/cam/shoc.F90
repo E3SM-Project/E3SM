@@ -3352,7 +3352,7 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
   !parameters
   ! Value for of Monin-Obukov length [m] for which to
   !  apply stable PBL diffusivities
-  real(rtype), parameter :: obk_crit = 1000.0_rtype
+  real(rtype), parameter :: obk_crit = 1.0e4_rtype
   ! Transition depth [m] above PBL top to allow
   ! stability diffusivities
   real(rtype), parameter :: pbl_trans = 200.0_rtype
