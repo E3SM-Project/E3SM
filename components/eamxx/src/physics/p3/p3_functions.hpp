@@ -1206,7 +1206,6 @@ struct Functions
     const uview_1d<Spack>& diag_eff_radius_qc);
 
 #ifdef SCREAM_SMALL_KERNELS
-  KOKKOS_FUNCTION
   static void p3_main_part3_disp(
     const Int& nj,
     const Int& nk_pack,

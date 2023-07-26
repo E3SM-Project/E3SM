@@ -6,7 +6,6 @@ namespace scream {
 namespace p3 {
 
 template <>
-KOKKOS_FUNCTION
 void Functions<Real,DefaultDevice>
 ::rain_sedimentation_disp(
   const uview_2d<const Spack>& rho,

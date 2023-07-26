@@ -51,8 +51,7 @@ void Functions<Real,DefaultDevice>
 
     Kokkos::parallel_for(
       Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
-
-        diag_equiv_reflectivity(i,k)           = -99;
+        diag_equiv_reflectivity(i,k) = -99;
         ze_ice(i,k)            = 1.e-22;
         ze_rain(i,k)           = 1.e-22;
         diag_eff_radius_qc(i,k)         = 10.e-6;
@@ -64,12 +63,16 @@ void Functions<Real,DefaultDevice>
         T_atm(i,k)                 = th_atm(i,k) * exner(i,k);
         qv(i,k)                = max(qv(i,k), 0);
         inv_dz(i,k)            = 1 / dz(i,k);
-
-        for (size_t j = 0; j < zero_init.size(); ++j) {
-          (*zero_init[j])(i,k) = 0;
-        }
    });
  });
+
+ for (size_t i=0; i < zero_init.size(); ++i) {
+    auto temp_view = zero_init[i];
+    Kokkos::parallel_for(
+       Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>>({0, 0}, {nj, nk_pack}), KOKKOS_LAMBDA (int j, int k) {
+         (*temp_view)(j,k) = 0.;
+   });
+ }
 }
 
 template <>
@@ -195,7 +198,6 @@ Int Functions<Real,DefaultDevice>
       &mu_c, &lamc, &rho_qi, &qv2qi_depos_tend, &precip_total_tend, &nevapr, &precip_liq_flux, &precip_ice_flux
     };
 
-
   // initialize
   p3_main_init_disp(
       nj, nk_pack,
@@ -203,7 +205,6 @@ Int Functions<Real,DefaultDevice>
       ze_ice, ze_rain, diag_eff_radius_qc, diag_eff_radius_qi, inv_cld_frac_i, inv_cld_frac_l,
       inv_cld_frac_r, exner, T_atm, qv, inv_dz,
       diagnostic_outputs.precip_liq_surf, diagnostic_outputs.precip_ice_surf, zero_init);
-
 
   p3_main_part1_disp(
       nj, nk, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt,
@@ -213,7 +214,6 @@ Int Functions<Real,DefaultDevice>
       rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, qm,
       bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
       ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent);
-
 
   // ------------------------------------------------------------------------------------------
   // main k-loop (for processes):
@@ -230,7 +230,6 @@ Int Functions<Real,DefaultDevice>
       mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
       vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
       pratot, prctot, nucleationPossible, hydrometeorsPresent);
-
 
   //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
   //      a problem; those values get clipped to zero in the sedimentation section (if necessary).
@@ -292,7 +291,7 @@ Int Functions<Real,DefaultDevice>
 #ifndef NDEBUG
   Kokkos::parallel_for(
       Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>>({0, 0}, {nj, nk_pack}), KOKKOS_LAMBDA (int i, int k) {
-      tmparr1(i,k) = th_atm(i,k) * exner(i,k);
+      tmparr1(i,k) = th(i,k) * exner(i,k);
   });
   check_values_disp(qv, tmparr1, ktop, kbot, infrastructure.it, debug_ABORT, 900, col_location, nj, nk);
 #endif

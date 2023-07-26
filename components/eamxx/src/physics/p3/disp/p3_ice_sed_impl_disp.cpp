@@ -55,7 +55,6 @@ void Functions<Real,DefaultDevice>
 }
 
 template <>
-KOKKOS_FUNCTION
 void Functions<Real,DefaultDevice>
 ::homogeneous_freezing_disp(
   const uview_2d<const Spack>& T_atm,
