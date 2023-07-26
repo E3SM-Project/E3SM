@@ -19,8 +19,10 @@ cdms2.setNetcdfDeflateLevelFlag(
 
 # data_path = "/global/cfs/cdirs/e3sm/e3sm_diags/postprocessed_e3sm_v2_data_for_e3sm_diags/20210719.PhaseII.F20TR-P3.NGD.ne30pg2.compy/h4/"
 # out_path = "/global/cfs/cdirs/e3sm/e3sm_diags/postprocessed_e3sm_v2_data_for_e3sm_diags/20210719.PhaseII.F20TR-P3.NGD.ne30pg2.compy/arm-diags-data/"
-data_path = "/Users/zhang40/Documents/ACME/ARMDiags/data/h6_file/"
-out_path = "/Users/zhang40/Documents/ACME/ARMDiags/data/processed_h6_file/"
+# data_path = "/Users/zhang40/Documents/ACME/ARMDiags/data/h6_file/"
+# out_path = "/Users/zhang40/Documents/ACME/ARMDiags/data/processed_h6_file/"
+data_path = "/global/cfs/cdirs/e3sm/e3sm_diags/postprocessed_e3sm_v2_data_for_e3sm_diags/20221103.v2.LR.amip.NGD_v3atm.chrysalis/h6/"
+out_path = "/global/cfs/cdirs/e3sm/e3sm_diags/postprocessed_e3sm_v2_data_for_e3sm_diags/20221103.v2.LR.amip.NGD_v3atm.chrysalis/arm-diags-data/"
 Path(out_path).mkdir(parents=True, exist_ok=True)
 
 # time_range = "000101_000112"

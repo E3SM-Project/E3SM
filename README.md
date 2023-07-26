@@ -22,17 +22,17 @@
 - [Documentation Website](https://e3sm-project.github.io/e3sm_diags)
 - [Sample Output, Model vs Observations](https://web.lcrc.anl.gov/public/e3sm/e3sm_diags_test_data/unit_test_complete_run/expected/all_sets/viewer/)
 - Quick Start Guides:
-  - [Quick Start Guide for NERSC Perlmutter CPU](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-perlmutter.html)
-  - [Quick Start Guide for COMPY](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-compy.html)
-  - [Quick Start Guide for LCRC-Anvil](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-anvil.html)
-  - [Quick Start Guide for LCRC-Chrysalis](https://e3sm-project.github.io/e3sm_diags/_build/html/master/quickguides/quick-guide-chrysalis.html)
+  - [Quick Start Guide for NERSC Perlmutter CPU](https://e3sm-project.github.io/e3sm_diags/_build/html/main/quickguides/quick-guide-perlmutter.html)
+  - [Quick Start Guide for COMPY](https://e3sm-project.github.io/e3sm_diags/_build/html/main/quickguides/quick-guide-compy.html)
+  - [Quick Start Guide for LCRC-Anvil](https://e3sm-project.github.io/e3sm_diags/_build/html/main/quickguides/quick-guide-anvil.html)
+  - [Quick Start Guide for LCRC-Chrysalis](https://e3sm-project.github.io/e3sm_diags/_build/html/main/quickguides/quick-guide-chrysalis.html)
 - Example run scripts:
-  - [Model Climo vs Observation Climo Comparison](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex5-model-vs-obs)
-  - [Model Climo vs Model Climo Comparison](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex4-model-vs-model)
-  - [Model Time-series vs Model Time-series](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex1-model_ts-vs-model_ts)
-  - [Model Time-series vs Model Time-series with CMIP data](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex2-model_ts-vs-model_ts-cmip)
-  - [Model Time-series vs Observation Time-series with CMIP data](https://github.com/E3SM-Project/e3sm_diags/blob/master/examples/ex3-model_ts-vs-obs_ts-cmip)
-  - [Observation vs Observation Comparison](https://github.com/E3SM-Project/e3sm_diags/tree/master/examples/ex7-obs-vs-obs)
+  - [Model Climo vs Observation Climo Comparison](https://github.com/E3SM-Project/e3sm_diags/blob/main/examples/ex5-model-vs-obs)
+  - [Model Climo vs Model Climo Comparison](https://github.com/E3SM-Project/e3sm_diags/blob/main/examples/ex4-model-vs-model)
+  - [Model Time-series vs Model Time-series](https://github.com/E3SM-Project/e3sm_diags/blob/main/examples/ex1-model_ts-vs-model_ts)
+  - [Model Time-series vs Model Time-series with CMIP data](https://github.com/E3SM-Project/e3sm_diags/blob/main/examples/ex2-model_ts-vs-model_ts-cmip)
+  - [Model Time-series vs Observation Time-series with CMIP data](https://github.com/E3SM-Project/e3sm_diags/blob/main/examples/ex3-model_ts-vs-obs_ts-cmip)
+  - [Observation vs Observation Comparison](https://github.com/E3SM-Project/e3sm_diags/tree/main/examples/ex7-obs-vs-obs)
 
 ## Overview<a name="overview"></a>
 
@@ -62,6 +62,7 @@ E3SM Diags is modeled after the National Center for Atmospheric Research (NCAR) 
 | Streamflow diags (streamflow)                                | Seasonality map, annual-mean map/scatterplots based on gauge station data from GSIM                                                                                                                    | Ryan Forsyth, Tian Zhou                                                                                                                                            | 2.3.0            |
 | Diurnal cycle (diurnal_cycle)                                | Amplitude and phase map of the seasonal-mean diurnal cycle of precipitation compare with TRMM 3hourly data.                                                                                            | Jill Zhang, Charlie Zender, Wuyin Lin, Shaocheng Xie                                                                                                               | 2.3.0            |
 | Quasi-biennial oscillation analysis (qbo)                    | Quasi-biennial oscillation (QBO) analysis between 5S and 5N , including monthly mean zonal-mean zonal wind as a function of pressure and time and the power spectrum and amplitude                 | Chris Terai, Jack Chen, Jadwiga (Yaga) Richter, Sasha Glanville, Chris Golaz                                                                                       | 2.1.0            |
+| ENSO diagnostics (enso_diags) 	| Maps of the regression coefficient of atmospheric fields over the SST anomaly, scatterplots of atmospheric feedback on the SST anomaly 	| Ryan Forsyth, Salil Mahajan 	| 2.1.0 	|
 
 *: The code infrastructure and maintenance are supported by the core developer group including: Jill Zhang, Chris Golaz, Tom Vo, Ryan Forsyth, Xylar Asay-Davis.
 

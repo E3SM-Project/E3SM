@@ -67,7 +67,7 @@ drc_out=${dir_out_ts}/native
 
 echo "Variables for Streamflow"
 cd ${drc_in_river};eval ls ${caseid}*mosart.h0.*{${start}..${end}}*.nc | ncclimo --caseid=${caseid} --var_xtr=areatotal2 -v RIVER_DISCHARGE_OVER_LAND_LIQ --yr_srt=$start --yr_end=$end --drc_out=${drc_rgr} --split
-#
+
 echo "Variables for supporting diags using monthly time series as input(ENSO, QBO, mixed-phase partition etc.)"
 cd ${drc_in};eval ls ${caseid}.${atm_name}.h0.*{${start}..${end}}*.nc | ncclimo -P ${atm_name} --caseid=${caseid} --var=U,CLDICE,CLDLIQ,CLDHGH,CLDLOW,CLDMED,CLDTOT,FLNS,FLUT,FSNS,FSNT,FSNTOA,LANDFRAC,LHFLX,LWCF,OCNFRAC,PRECC,PRECL,PSL,QFLX,SHFLX,SWCF,T,TAUX,TAUY,TREFHT,TS --yr_srt=$start --yr_end=$end --drc_out=${drc_out} -O $drc_rgr --map=${map_file} --split
 #done
