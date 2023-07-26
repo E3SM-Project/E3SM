@@ -1953,42 +1953,6 @@ flags should be captured within MPAS CMake files.
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
-<!--(zhang73) ruby: copy+format from scream's cime_config/machines/cmake_macros/intel_ruby.cmake by Aaron-->
-<compiler MACH="ruby" COMPILER="intel">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </CFLAGS>
-  <CPPDEFS>
-    <append> -DNO_SHR_VMATH -DCNL </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <!--<append DEBUG="TRUE"> -check all -ftrapuv </append>-->
-    <append DEBUG="FALSE"> -O2 </append>
-    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
-  </FFLAGS>
-  <SLIBS>
-    <append> -llapack -lblas</append>
-  </SLIBS>
-  <CXXFLAGS>
-    <append> -cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh </append>
-  </CXXFLAGS>
-  <LDFLAGS>
-    <append> -L/usr/tce/packages/gcc/gcc-8.3.1/rh/lib/gcc/x86_64-redhat-linux/8/ </append>
-    <append> -cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh </append>
-  </LDFLAGS>
-  <KOKKOS_OPTIONS> --with-serial --cxxflags='-cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh' --ldflags='-L/usr/tce/packages/gcc/gcc-8.3.1/rh/lib/gcc/x86_64-redhat-linux/8/'</KOKKOS_OPTIONS>
-    <!--<append>  -DKokkos_ARCH_BDW=On -DCMAKE_CXX_FLAGS='-cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh'</KOKKOS_OPTIONS> -->
-  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/</MPI_PATH>
-  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</NETCDF_PATH>
-  <!--intel_quartz.cmake in new E3SM & config_machines: set(PNETCDF_PATH "$ENV{PNETCDFROOT}") (zhang73) -->
-  <PNETCDF_PATH>/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-19.0.4-mvapich2-2.3/</PNETCDF_PATH>
-  <SLIBS>
-    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/bin/nf-config --flibs}</append>
-  </SLIBS>
-</compiler>
-
-
 <compiler MACH="syrah" COMPILER="intel">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
@@ -2021,6 +1985,36 @@ flags should be captured within MPAS CMake files.
   </SLIBS>
 </compiler>
 
+<!--(zhang73) ruby: copy from SCREAM_update's intel_ruby.cmake-->
+<compiler MACH="ruby" COMPILER="intel">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <CPPDEFS>
+    <append> -DNO_SHR_VMATH -DCNL </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
+    <!--<append DEBUG="TRUE"> -check all -ftrapuv </append>-->
+  </FFLAGS>
+  <SLIBS>
+    <append> -llapack -lblas</append>
+  </SLIBS>
+  <LDFLAGS>
+    <append>  -L/usr/tce/packages/gcc/gcc-10.3.1-magic/lib/gcc/x86_64-redhat-linux/10/ </append>
+  </LDFLAGS>
+  <KOKKOS_OPTIONS> --with-serial --ldflags='-L/usr/tce/packages/gcc/gcc-10.3.1-magic/lib/gcc/x86_64-redhat-linux/10/'</KOKKOS_OPTIONS>
+  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
+  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.3.7-intel-classic-2021.6.0/</MPI_PATH>
+  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</NETCDF_PATH>
+  <PNETCDF_PATH>/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0/</PNETCDF_PATH>
+  <SLIBS>
+    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/bin/nf-config --flibs}</append>
+  </SLIBS>
+</compiler>
+
+
 <compiler MACH="quartz" COMPILER="intel">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
@@ -2030,24 +2024,22 @@ flags should be captured within MPAS CMake files.
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append DEBUG="TRUE"> -check all -ftrapuv </append>
+    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
+    <!--<append DEBUG="TRUE"> -check all -ftrapuv </append>-->
   </FFLAGS>
   <SLIBS>
     <append> -llapack -lblas</append>
   </SLIBS>
-  <!--<CXXFLAGS>
-    <append> -cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh </append>
-  </CXXFLAGS>-->
   <LDFLAGS>
     <append>  -L/usr/tce/packages/gcc/gcc-10.3.1-magic/lib/gcc/x86_64-redhat-linux/10/ </append>
   </LDFLAGS>
   <KOKKOS_OPTIONS> --with-serial --ldflags='-L/usr/tce/packages/gcc/gcc-10.3.1-magic/lib/gcc/x86_64-redhat-linux/10/'</KOKKOS_OPTIONS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.3.6-intel-classic-2021.6.0/</MPI_PATH>
-  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.6-intel-classic-2021.6.0/</NETCDF_PATH>
-  <!--<PNETCDF_PATH>/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-19.0.4-mvapich2-2.3/</PNETCDF_PATH>-->
+  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.3.7-intel-classic-2021.6.0/</MPI_PATH>
+  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</NETCDF_PATH>
+  <PNETCDF_PATH>/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0/</PNETCDF_PATH>
   <SLIBS>
-    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.6-intel-classic-2021.6.0/bin/nf-config --flibs OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0 OUTPUT_STRIP_TRAILING_WHITESPACE}</append>
+    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/bin/nf-config --flibs}</append>
   </SLIBS>
 </compiler>
 

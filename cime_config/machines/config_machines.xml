@@ -1453,13 +1453,15 @@
     </environment_variables>
   </machine>
 
-<!--(zhang73) ruby: copy from scream's config by Aaron-->
+<!--(zhang73) ruby: copy from SCREAM_update's config-->
   <machine MACH="ruby">
     <DESC>LLNL Linux Cluster, Linux (pgi), 56 pes/node, batch system is Slurm</DESC>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cbronze</PROJECT>
+    <SAVE_TIMING_DIR>/usr/gdata/climdat</SAVE_TIMING_DIR> <!--PACE: Aaron 164b2babca4fb1e8701c268189a789fd1bb9dd65-->
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/ruby</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/usr/gdata/climdat/ccsm3data/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -1487,24 +1489,24 @@
       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
       <modules compiler="intel">
-        <command name="load">python/3.8.2</command>
+        <command name="load">python/3.9.12</command>
         <command name="load">git</command>
-        <command name="load">intel/19.0.4</command>
-        <command name="load">mvapich2/2.3</command>
-        <command name="load">cmake/3.18.0</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
-        <command name="load">pnetcdf/1.9.0</command>
+        <command name="load">mkl/2022.1.0</command>
+        <command name="load">intel-classic/2021.6.0-magic</command>
+        <command name="load">mvapich2/2.3.7</command>
+        <command name="load">cmake/3.19.2</command>
+        <command name="load">netcdf-fortran-parallel/4.6.0</command>
+        <command name="load">netcdf-c-parallel/4.9.0</command>
+        <command name="load">parallel-netcdf/1.12.3</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</env>
-      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</env>
-    </environment_variables>
-    <environment_variables compiler="intel" mpilib="!mpi-serial">
-      <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-19.0.4-mvapich2-2.3/</env>
-    </environment_variables>
+      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</env>
+      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</env>    
+      <env name="PNETCDFROOT">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0/</env>
+      </environment_variables>
   </machine>
 
   <machine MACH="quartz">
@@ -1546,17 +1548,19 @@
         <command name="load">git</command>
         <command name="load">mkl/2022.1.0</command>
         <command name="load">intel-classic/2021.6.0-magic</command>
-        <command name="load">mvapich2/2.3.6</command>
+        <command name="load">mvapich2/2.3.7</command>
         <command name="load">cmake/3.19.2</command>
         <command name="load">netcdf-fortran-parallel/4.6.0</command>
         <command name="load">netcdf-c-parallel/4.9.0</command>
+        <command name="load">parallel-netcdf/1.12.3</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
-      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.6-intel-classic-2021.6.0/</env>
-      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.6-intel-classic-2021.6.0/</env>
+      <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</env>
+      <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-classic-2021.6.0/</env>
+      <env name="PNETCDFROOT">/usr/tce/packages/parallel-netcdf/parallel-netcdf-1.12.3-mvapich2-2.3.7-intel-classic-2021.6.0</env>
     </environment_variables>
   </machine>
 
