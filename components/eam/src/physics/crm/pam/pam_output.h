@@ -151,9 +151,6 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
       forcing_tend_out_rho_v(k_gcm,iens) = gcm_forcing_tend_rho_v(k_crm,iens);
       forcing_tend_out_rho_l(k_gcm,iens) = gcm_forcing_tend_rho_l(k_crm,iens);
       forcing_tend_out_rho_i(k_gcm,iens) = gcm_forcing_tend_rho_i(k_crm,iens);
-      // real crm_qt = crm_hmean_qv(k_crm,iens) + crm_hmean_qc(k_crm,iens) + crm_hmean_qi(k_crm,iens);
-      // real gcm_qt = gcm_qv      (k_gcm,iens) + gcm_qc      (k_gcm,iens) + gcm_qi      (k_gcm,iens);
-      // forcing_tend_out_qt   (k_gcm,iens) =( gcm_qt - crm_qt ) * r_dt_gcm;
       real gcm_qt = gcm_qv(k_gcm,iens) + gcm_qc(k_gcm,iens) + gcm_qi(k_gcm,iens);
       forcing_tend_out_qt(k_gcm,iens) =( gcm_qt - crm_hmean_qt(k_crm,iens) ) * r_dt_gcm;
     } else {
