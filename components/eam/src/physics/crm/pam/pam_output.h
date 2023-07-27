@@ -21,13 +21,14 @@ inline void pam_output_compute_means( pam::PamCoupler &coupler ) {
   auto crm_rho_c = dm_device.get<real,4>("cloud_water");
   auto crm_rho_r = dm_device.get<real,4>("rain");
   auto crm_rho_i = dm_device.get<real,4>("ice");
-  auto nc        = dm_device.get<real,4>("cloud_water_num");
-  auto ni        = dm_device.get<real,4>("ice_num");
-  auto nr        = dm_device.get<real,4>("rain_num");
-  auto qm        = dm_device.get<real,4>("ice_rime");
-  auto bm        = dm_device.get<real,4>("ice_rime_vol");
+  auto crm_nc    = dm_device.get<real,4>("cloud_water_num");
+  auto crm_ni    = dm_device.get<real,4>("ice_num");
+  auto crm_nr    = dm_device.get<real,4>("rain_num");
+  auto crm_qm    = dm_device.get<real,4>("ice_rime");
+  auto crm_bm    = dm_device.get<real,4>("ice_rime_vol");
   //------------------------------------------------------------------------------------------------
   // Create arrays to hold the current column average of the CRM internal columns
+  dm_device.register_and_allocate<real>("qv_mean", "domain mean qv", {gcm_nlev,nens},{"gcm_lev","nens"});
   dm_device.register_and_allocate<real>("qc_mean", "domain mean qc", {gcm_nlev,nens},{"gcm_lev","nens"});
   dm_device.register_and_allocate<real>("qi_mean", "domain mean qi", {gcm_nlev,nens},{"gcm_lev","nens"});
   dm_device.register_and_allocate<real>("qr_mean", "domain mean qr", {gcm_nlev,nens},{"gcm_lev","nens"});
@@ -36,6 +37,7 @@ inline void pam_output_compute_means( pam::PamCoupler &coupler ) {
   dm_device.register_and_allocate<real>("nr_mean", "domain mean nr", {gcm_nlev,nens},{"gcm_lev","nens"});
   dm_device.register_and_allocate<real>("qm_mean", "domain mean qm", {gcm_nlev,nens},{"gcm_lev","nens"});
   dm_device.register_and_allocate<real>("bm_mean", "domain mean bm", {gcm_nlev,nens},{"gcm_lev","nens"});
+  auto qv_mean = dm_device.get<real,2>("qv_mean");
   auto qc_mean = dm_device.get<real,2>("qc_mean");
   auto qi_mean = dm_device.get<real,2>("qi_mean");
   auto qr_mean = dm_device.get<real,2>("qr_mean");
@@ -47,6 +49,7 @@ inline void pam_output_compute_means( pam::PamCoupler &coupler ) {
   //------------------------------------------------------------------------------------------------
   // We will be essentially reducing a summation to these variables, so initialize them to zero
   parallel_for("Initialize horzontal means", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
+    qv_mean(k_gcm,iens) = 0;
     qc_mean(k_gcm,iens) = 0;
     qi_mean(k_gcm,iens) = 0;
     qr_mean(k_gcm,iens) = 0;
@@ -62,14 +65,15 @@ inline void pam_output_compute_means( pam::PamCoupler &coupler ) {
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(crm_nz,crm_ny,crm_nx,nens), YAKL_LAMBDA (int k_crm, int j, int i, int iens) {
     int k_gcm = gcm_nlev-1-k_crm;
     real rho_total = crm_rho_d(k_crm,j,i,iens) + crm_rho_v(k_crm,j,i,iens);
+    atomicAdd( qv_mean(k_gcm,iens), (crm_rho_v(k_crm,j,i,iens) / rho_total) * r_nx_ny );
     atomicAdd( qc_mean(k_gcm,iens), (crm_rho_c(k_crm,j,i,iens) / rho_total) * r_nx_ny );
     atomicAdd( qi_mean(k_gcm,iens), (crm_rho_i(k_crm,j,i,iens) / rho_total) * r_nx_ny );
     atomicAdd( qr_mean(k_gcm,iens), (crm_rho_r(k_crm,j,i,iens) / rho_total) * r_nx_ny );
-    atomicAdd( nc_mean(k_gcm,iens),  nc       (k_crm,j,i,iens)              * r_nx_ny );
-    atomicAdd( ni_mean(k_gcm,iens),  ni       (k_crm,j,i,iens)              * r_nx_ny );
-    atomicAdd( nr_mean(k_gcm,iens),  nr       (k_crm,j,i,iens)              * r_nx_ny );
-    atomicAdd( qm_mean(k_gcm,iens),  qm       (k_crm,j,i,iens)              * r_nx_ny );
-    atomicAdd( bm_mean(k_gcm,iens),  bm       (k_crm,j,i,iens)              * r_nx_ny );
+    atomicAdd( nc_mean(k_gcm,iens),  crm_nc   (k_crm,j,i,iens)              * r_nx_ny );
+    atomicAdd( ni_mean(k_gcm,iens),  crm_ni   (k_crm,j,i,iens)              * r_nx_ny );
+    atomicAdd( nr_mean(k_gcm,iens),  crm_nr   (k_crm,j,i,iens)              * r_nx_ny );
+    atomicAdd( qm_mean(k_gcm,iens),  crm_qm   (k_crm,j,i,iens)              * r_nx_ny );
+    atomicAdd( bm_mean(k_gcm,iens),  crm_bm   (k_crm,j,i,iens)              * r_nx_ny );
   });
   //------------------------------------------------------------------------------------------------
 }
@@ -87,6 +91,7 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   auto crm_ny     = coupler.get_option<int>("crm_ny");
   auto gcm_nlev   = coupler.get_option<int>("gcm_nlev");
   //------------------------------------------------------------------------------------------------
+  auto qv_mean                = dm_device.get<real const,2>("qv_mean");
   auto qc_mean                = dm_device.get<real const,2>("qc_mean");
   auto qi_mean                = dm_device.get<real const,2>("qi_mean");
   auto qr_mean                = dm_device.get<real const,2>("qr_mean");
@@ -109,24 +114,26 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   auto gcm_qi = dm_host.get<real const,2>("input_qiil").createDeviceCopy();
   auto dt_gcm = coupler.get_option<real>("gcm_physics_dt");
   real r_dt_gcm = 1._fp / dt_gcm;
-  auto rho_d = dm_device.get<real,4>("density_dry");
-  auto rho_v = dm_device.get<real,4>("water_vapor");
-  auto rho_c = dm_device.get<real,4>("cloud_water");
-  auto rho_i = dm_device.get<real,4>("ice"        );
-  real2d crm_hmean_qv   ("crm_hmean_qv"   ,crm_nz,nens);
-  real2d crm_hmean_qc   ("crm_hmean_qc"   ,crm_nz,nens);
-  real2d crm_hmean_qi   ("crm_hmean_qi"   ,crm_nz,nens);
+  auto rho_d               = dm_device.get<real,4>("density_dry");
+  auto state_rho_d         = dm_host.get<real const,4>("state_rho_dry").createDeviceCopy();
+  auto state_qv            = dm_host.get<real const,4>("state_qv").createDeviceCopy();
+  auto state_qc            = dm_host.get<real const,4>("state_qc").createDeviceCopy();
+  auto state_qi            = dm_host.get<real const,4>("state_qi").createDeviceCopy();
+  real2d crm_hmean_qt   ("crm_hmean_qt"   ,crm_nz,nens);
   parallel_for("Initialize horzontal means", SimpleBounds<2>(crm_nz,nens), YAKL_LAMBDA (int k_crm, int iens) {
-    crm_hmean_qv(k_crm,iens) = 0;
-    crm_hmean_qc(k_crm,iens) = 0;
-    crm_hmean_qi(k_crm,iens) = 0;
+    crm_hmean_qt(k_crm,iens) = 0;
   });
   real r_nx_ny  = 1._fp/(crm_nx*crm_ny);  // precompute reciprocal to avoid costly divisions
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(crm_nz,crm_ny,crm_nx,nens), YAKL_LAMBDA (int k_crm, int j, int i, int iens) {
-    real rho_total = rho_d(k_crm,j,i,iens) + rho_v(k_crm,j,i,iens);
-    atomicAdd( crm_hmean_qv  (k_crm,iens),(rho_v(k_crm,j,i,iens)/rho_total) * r_nx_ny );
-    atomicAdd( crm_hmean_qc  (k_crm,iens),(rho_c(k_crm,j,i,iens)/rho_total) * r_nx_ny );
-    atomicAdd( crm_hmean_qi  (k_crm,iens),(rho_i(k_crm,j,i,iens)/rho_total) * r_nx_ny );
+    real tmp_qt = state_qv(k_crm,j,i,iens) + state_qc(k_crm,j,i,iens) + state_qi(k_crm,j,i,iens);
+    real rho_v_old = state_qv(k_crm,j,i,iens) * state_rho_d(k_crm,j,i,iens) / ( 1 - state_qv(k_crm,j,i,iens) ) ;
+    real rho_total_old = state_rho_d(k_crm,j,i,iens) + rho_v_old;
+    real rho_total_new = rho_d(k_crm,j,i,iens)       + rho_v_old;
+    // the current forcing approach updates dry density instantaneously 
+    // to match the GCM dry density, so for this diagnostic total water 
+    // forcing we need to account for difference in old/new dry density
+    tmp_qt = tmp_qt * rho_total_old / rho_total_new; 
+    atomicAdd( crm_hmean_qt(k_crm,iens), tmp_qt * r_nx_ny );
   });
   //------------------------------------------------------------------------------------------------
   // convert variables to GCM vertical grid
@@ -144,9 +151,11 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
       forcing_tend_out_rho_v(k_gcm,iens) = gcm_forcing_tend_rho_v(k_crm,iens);
       forcing_tend_out_rho_l(k_gcm,iens) = gcm_forcing_tend_rho_l(k_crm,iens);
       forcing_tend_out_rho_i(k_gcm,iens) = gcm_forcing_tend_rho_i(k_crm,iens);
-      real crm_qt = crm_hmean_qv(k_crm,iens) + crm_hmean_qc(k_crm,iens) + crm_hmean_qi(k_crm,iens);
-      real gcm_qt = gcm_qv      (k_gcm,iens) + gcm_qc      (k_gcm,iens) + gcm_qi      (k_gcm,iens);
-      forcing_tend_out_qt   (k_gcm,iens) =( gcm_qt - crm_qt ) * r_dt_gcm;
+      // real crm_qt = crm_hmean_qv(k_crm,iens) + crm_hmean_qc(k_crm,iens) + crm_hmean_qi(k_crm,iens);
+      // real gcm_qt = gcm_qv      (k_gcm,iens) + gcm_qc      (k_gcm,iens) + gcm_qi      (k_gcm,iens);
+      // forcing_tend_out_qt   (k_gcm,iens) =( gcm_qt - crm_qt ) * r_dt_gcm;
+      real gcm_qt = gcm_qv(k_gcm,iens) + gcm_qc(k_gcm,iens) + gcm_qi(k_gcm,iens);
+      forcing_tend_out_qt(k_gcm,iens) =( gcm_qt - crm_hmean_qt(k_crm,iens) ) * r_dt_gcm;
     } else {
       forcing_tend_out_temp (k_gcm,iens) = 0.;
       forcing_tend_out_rho_d(k_gcm,iens) = 0.;
@@ -157,6 +166,7 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
     }
   });
   //------------------------------------------------------------------------------------------------
+  auto output_qv_mean   = dm_host.get<real,2>("output_qv_mean");
   auto output_qc_mean   = dm_host.get<real,2>("output_qc_mean");
   auto output_qi_mean   = dm_host.get<real,2>("output_qi_mean");
   auto output_qr_mean   = dm_host.get<real,2>("output_qr_mean");
@@ -173,6 +183,7 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   auto output_qt_ls     = dm_host.get<real,2>("output_qt_ls");
   //------------------------------------------------------------------------------------------------
   // Copy the data to host
+  qv_mean                 .deep_copy_to(output_qv_mean);
   qc_mean                 .deep_copy_to(output_qc_mean);
   qi_mean                 .deep_copy_to(output_qi_mean);
   qr_mean                 .deep_copy_to(output_qr_mean);
