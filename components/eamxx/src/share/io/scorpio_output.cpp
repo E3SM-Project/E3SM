@@ -591,12 +591,6 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
       (grid->get_global_max_dof_gid()-grid->get_global_min_dof_gid()+1)==grid->get_num_global_dofs(),
       "Error! In order for IO to work, the grid must (globally) have dof gids in interval [gid_0,gid_0+num_global_dofs).\n");
 
-//ASD  IS THIS STILL TRUE
-//ASD  EKAT_REQUIRE_MSG(m_comm.size()<=grid->get_num_global_dofs(),
-//ASD      "Error! PIO interface requires the size of the IO MPI group to be\n"
-//ASD      "       no greater than the global number of columns.\n"
-//ASD      "       Consider decreasing the size of IO MPI group.\n");
-
   // The grid is good. Store it.
   m_io_grid = grid;
 }
