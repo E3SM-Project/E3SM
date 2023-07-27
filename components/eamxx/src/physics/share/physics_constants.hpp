@@ -107,6 +107,10 @@ struct Constants
   static constexpr int VTABLE_DIM1    = 10;
   static constexpr int MU_R_TABLE_DIM = 150;
 
+  // Turbulent Mountain Stress constants
+  static constexpr Scalar orocnst = 1;     // Converts from standard deviation to height [ no unit ]
+  static constexpr Scalar z0fac   = 0.075; // Factor determining z_0 from orographic standard deviation [ no unit ]
+
   // switch for warm-rain parameterization
   // = 1 Seifert and Beheng 2001
   // = 2 Beheng 1994
@@ -117,10 +121,10 @@ struct Constants
   static Scalar get_gas_mol_weight(ci_string gas_name);
 
   // For use in converting area to length for a column cell
-  // World Geodetic System 1984 (WGS84) 
-  static constexpr Scalar earth_ellipsoid1 = 111132.92; // first coefficient, meters per degree longitude at equator 
-  static constexpr Scalar earth_ellipsoid2 = 559.82;    // second expansion coefficient for WGS84 ellipsoid 
-  static constexpr Scalar earth_ellipsoid3 = 1.175;     // third expansion coefficient for WGS84 ellipsoid 
+  // World Geodetic System 1984 (WGS84)
+  static constexpr Scalar earth_ellipsoid1 = 111132.92; // first coefficient, meters per degree longitude at equator
+  static constexpr Scalar earth_ellipsoid2 = 559.82;    // second expansion coefficient for WGS84 ellipsoid
+  static constexpr Scalar earth_ellipsoid3 = 1.175;     // third expansion coefficient for WGS84 ellipsoid
 };
 
 // Gases
