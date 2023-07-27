@@ -45,7 +45,7 @@ extern "C" void pam_driver() {
   coupler.set_option<real>("gcm_physics_dt",gcm_dt);
   coupler.set_option<int>("crm_per_phys",2);
   coupler.set_option<int>("sponge_num_layers",crm_nz*0.3);
-  coupler.set_option<real>("sponge_time_scale",60);
+  coupler.set_option<real>("sponge_time_scale",60*5);
   //------------------------------------------------------------------------------------------------
   // Allocate the coupler state and retrieve host/device data managers
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
@@ -64,7 +64,8 @@ extern "C" void pam_driver() {
   Radiation    rad;
   micro .init(coupler);
   sgs   .init(coupler);
-  dycore.init(coupler,is_first_step);
+  // dycore.init(coupler,is_first_step); // pass is_first_step to PAM-C to disable print statements
+  dycore.init(coupler);
   rad   .init(coupler);
   //------------------------------------------------------------------------------------------------
   // update coupler GCM state with input GCM state
@@ -76,7 +77,10 @@ extern "C" void pam_driver() {
   // update horizontal mean of CRM dry density to match GCM (also disables dry density forcing)
   // pam_state_update_dry_density(coupler);
 
-  if (enable_check_state) { pam_debug_check_state(coupler, 0, 0); }
+  if (enable_check_state) {
+    pam_debug_init(coupler);
+    pam_debug_check_state(coupler, 0, 0);
+  }
 
   // now that initial state is set, more dycor initialization
   coupler.update_hydrostasis();
@@ -106,8 +110,7 @@ extern "C" void pam_driver() {
     #if defined(P3_CXX)
       auto am_i_root = coupler.get_option<bool>("am_i_root");
       scream::p3::p3_init(/*write_tables=*/false, am_i_root);
-      // Load P3 lookup table data to avoid re-loading it every CRM call
-      pam::p3_init_lookup_tables();
+      pam::p3_init_lookup_tables(); // Load P3 lookup table data - avoid re-loading every CRM call
     #endif
   }
 
@@ -115,6 +118,37 @@ extern "C" void pam_driver() {
     pam_state_set_reference_state(coupler);
     dycore.pre_time_loop(coupler);
   #endif
+
+  //------------------------------------------------------------------------------------------------
+  // special inputs for P3/SHOC - TODO: move this stuff to it's own routine, maybe in pam_state?
+
+  auto input_nccn_prescribed = dm_host.get<real const,2>("input_nccn_prescribed").createDeviceCopy();
+  auto input_nc_nuceat_tend  = dm_host.get<real const,2>("input_nc_nuceat_tend").createDeviceCopy();
+  auto input_ni_activated    = dm_host.get<real const,2>("input_ni_activated").createDeviceCopy();
+  auto nccn_prescribed       = dm_device.get<real,4>("nccn_prescribed");
+  auto nc_nuceat_tend        = dm_device.get<real,4>("nc_nuceat_tend");
+  auto ni_activated          = dm_device.get<real,4>("ni_activated");
+  parallel_for( SimpleBounds<4>(crm_nz,crm_ny,crm_nx,nens), 
+    YAKL_LAMBDA (int k_crm, int j, int i, int iens ) {
+    int k_gcm = (gcm_nlev+1)-1-k_crm;
+    nccn_prescribed(k_crm,j,i,iens) = input_nccn_prescribed(k_gcm,iens);
+    nc_nuceat_tend (k_crm,j,i,iens) = input_nc_nuceat_tend (k_gcm,iens);
+    ni_activated   (k_crm,j,i,iens) = input_ni_activated   (k_gcm,iens);
+  });
+
+  // auto input_shf = dm_host.get<real const,1>("input_shf").createDeviceCopy();
+  // auto input_lhf = dm_host.get<real const,1>("input_lhf").createDeviceCopy();
+  // auto sfc_shf = dm_device.get<real,3>("sfc_shf");
+  // auto sfc_lhf = dm_device.get<real,3>("sfc_lhf");
+  // parallel_for( SimpleBounds<3>(crm_ny,crm_nx,nens),
+  //   YAKL_LAMBDA (int j, int i, int iens) {
+  //   sfc_shf(j,i,iens) = input_shf(iens);
+  //   sfc_lhf(j,i,iens) = input_lhf(iens);
+  // });
+
+  //------------------------------------------------------------------------------------------------
+
+
 
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
@@ -136,11 +170,15 @@ extern "C" void pam_driver() {
 
     // anelastic dycor can dramatically change the dry density due to the assumption that the total 
     // density does not change, so we will save it here and recall after the dycor
-    pam_state_save_dry_density(coupler);
     pam_statistics_save_state(coupler);
+    #if defined(MMF_PAM_DYCOR_SPAM)
+      pam_state_save_dry_density(coupler);
+    #endif
     coupler.run_module( "dycore"                       , [&] (pam::PamCoupler &coupler) {dycore.timeStep(coupler);} );
+    #if defined(MMF_PAM_DYCOR_SPAM)
+      pam_state_recall_dry_density(coupler);
+    #endif
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"dycor"); }
-    pam_state_recall_dry_density(coupler);
     if (enable_check_state) { pam_debug_check_state(coupler, 3, nstep); }
 
     pam_statistics_save_state(coupler);
