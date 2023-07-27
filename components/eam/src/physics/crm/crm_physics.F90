@@ -1172,15 +1172,18 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          ! P3 input data
          !------------------------------------------------------------------------------------------
          if (MMF_microphysics_scheme .eq. 'p3') then
+            ! NOTE - nccn_prescribed is only used when do_prescribed_CCN=true
+            ! if do_prescribed_CCN=false then nc_nuceat_tend and ni_activated
+            ! must be provided by an aerosol activation scheme
+            ! TODO: build interface for SPA to get nccn_prescribed consistent with SCREAM
             do i = 1,ncol
                icrm = ncol_sum + i
                do k = 1, pver
-                  crm_input%nccn          (icrm,k) = 1e3
-                  crm_input%nc_nuceat_tend(icrm,k) = 1.0 ! npccn       (i,l)
-                  crm_input%ni_activated  (icrm,k) = 1.0 ! ni_activated(i,l)
+                  crm_input%nccn_prescribed(icrm,k) = 50e6 ! 50 [#/cm3] 1e6 [cm3/m3] / (kg/m3) => 50e6 [#/kg]
+                  crm_input%nc_nuceat_tend (icrm,k) = 0.0 ! [#/kg/s]
+                  crm_input%ni_activated   (icrm,k) = 0.0 ! [#/kg]
                end do
             end do
-
          end if
 
          !------------------------------------------------------------------------------------------
@@ -1208,8 +1211,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             crm_input%bflxls(icrm)  = shf_tmp(i)/cpair + 0.61*state(c)%t(i,pver)*lhf_tmp(i)/latvap
             crm_input%fluxu00(icrm) = wsx_tmp(i) ! N/m2
             crm_input%fluxv00(icrm) = wsy_tmp(i) ! N/m2
-            crm_input%fluxt00(icrm) = shf_tmp(i) ! W/m2/s  ( divide by cpair  to get K kg/(m2 s) )
-            crm_input%fluxq00(icrm) = lhf_tmp(i) ! W/m2/s  ( divide by latvap to get   kg/(m2 s) )
+            crm_input%fluxt00(icrm) = shf_tmp(i) ! W/m2  ( divide by cpair  to get K kg/(m2 s) )
+            crm_input%fluxq00(icrm) = lhf_tmp(i) ! W/m2  ( divide by latvap to get   kg/(m2 s) )
             crm_input%wndls(icrm)   = sqrt(state(c)%u(i,pver)**2 + state(c)%v(i,pver)**2)
          end do
 
@@ -1337,6 +1340,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       ! call pam_mirror_array_readonly( 'input_q_vt',    crm_input%q_vt    )
       ! call pam_mirror_array_readonly( 'input_u_vt',    crm_input%u_vt    )
 
+      call pam_mirror_array_readonly( 'input_nccn_prescribed',crm_input%nccn_prescribed )
+      call pam_mirror_array_readonly( 'input_nc_nuceat_tend', crm_input%nc_nuceat_tend  )
+      call pam_mirror_array_readonly( 'input_ni_activated',   crm_input%ni_activated    )
+
       call pam_mirror_array_readwrite( 'state_u_wind',      crm_state%u_wind      )
       call pam_mirror_array_readwrite( 'state_v_wind',      crm_state%v_wind      )
       call pam_mirror_array_readwrite( 'state_w_wind',      crm_state%w_wind      )
@@ -1387,6 +1394,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       ! call pam_mirror_array_readwrite( 'output_mcdn',            crm_output%mcdn,            '' )
       ! call pam_mirror_array_readwrite( 'output_mcuup',           crm_output%mcuup,           '' )
       ! call pam_mirror_array_readwrite( 'output_mcudn',           crm_output%mcudn,           '' )
+
+      call pam_mirror_array_readwrite( 'output_qv_mean',         crm_output%qv_mean,         '' )
       call pam_mirror_array_readwrite( 'output_qc_mean',         crm_output%qc_mean,         '' )
       call pam_mirror_array_readwrite( 'output_qr_mean',         crm_output%qr_mean,         '' )
       call pam_mirror_array_readwrite( 'output_qi_mean',         crm_output%qi_mean,         '' )

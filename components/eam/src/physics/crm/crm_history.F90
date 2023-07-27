@@ -202,6 +202,7 @@ subroutine crm_history_init(species_class)
    call addfld('DU_CRM',     (/'lev'/), 'A','/s',     'detrainment from updraft from CRM')
    call addfld('EU_CRM',     (/'lev'/), 'A','/s',     'entraiment rate from updraft')
    call addfld('ED_CRM',     (/'lev'/), 'A','/s',     'entraiment rate from downdraft')
+   call addfld('MMF_QV',     (/'lev'/), 'A','kg/kg',  'Water vapor from CRM' )
    call addfld('MMF_QC',     (/'lev'/), 'A','kg/kg',  'Cloud water from CRM' )
    call addfld('MMF_QI',     (/'lev'/), 'A','kg/kg',  'Cloud ice from CRM' )
    call addfld('MMF_QR',     (/'lev'/), 'A','kg/kg',  'Rain from CRM' )
@@ -494,6 +495,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
 
    !----------------------------------------------------------------------------
    ! CRM domain average condensate and precipitation
+   call outfld('MMF_QV    ',crm_output%qv_mean(icol_beg:icol_end,:), ncol ,lchnk )
    call outfld('MMF_QC    ',crm_output%qc_mean(icol_beg:icol_end,:), ncol ,lchnk )
    call outfld('MMF_QI    ',crm_output%qi_mean(icol_beg:icol_end,:), ncol ,lchnk )
    call outfld('MMF_QR    ',crm_output%qr_mean(icol_beg:icol_end,:), ncol ,lchnk )
