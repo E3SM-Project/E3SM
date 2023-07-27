@@ -1238,7 +1238,10 @@
             Sprofile(k) = Si0new
          enddo
          Ti = liquidus_temperature_mush(Si0new/phi_init)
-!         Ti = min(liquidus_temperature_mush(Si0new/phi_init), Tliquidus_max) !echmod BFB in 3-month tests
+!echmod - icepack limits Ti <= Tliquidus_max
+!echmod - Tliquidus_max = 0. by default, can be changed when initializing icepack (namelist)
+!echmod - BFB in 3-month D cases and 1-year standalone MPAS-SI tests
+!         Ti = min(liquidus_temperature_mush(Si0new/phi_init), Tliquidus_max) !echmod - as in icepack 
          qi0new = enthalpy_mush(Ti, Si0new)
       else
          do k = 1, nilyr

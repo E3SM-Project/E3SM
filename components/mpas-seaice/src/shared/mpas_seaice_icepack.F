@@ -12580,7 +12580,9 @@ contains
          icepack_configure, &
          icepack_query_parameters ! debugging
 
-    use ice_colpkg_shared, only: &                                 !echmod: these should be configs
+!echmod: These constants will need to be defined in the MPAS-SI driver (or a shared E3SM constants file) 
+!echmod: eventually, rather than in the old column package. For now, use the column package's values.
+    use ice_colpkg_shared, only: &
          dSin0_frazil,             &
          phi_init, &
          hs_ssl
