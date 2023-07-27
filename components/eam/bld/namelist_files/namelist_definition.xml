@@ -4375,7 +4375,7 @@ Approximate value of decay time at model top (days);
 Default: 0.0D0
 </entry>
 
-<entry id="mode_defs" type="char*256(100)"  category="radiation"
+<entry id="mode_defs" type="char*256(1000)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
 Definitions for the aerosol modes that may be used in the rad_climate and
 rad_diag_* variables.
