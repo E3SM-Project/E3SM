@@ -91,25 +91,23 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
     gcm_pmid(k_crm,iens) = input_pmid(k_gcm,iens);
 
     // #ifdef MMF_PAM_FORCE_ALL_WATER_SPECIES
-    //   // force vapor/liquid/ice species separately
-    //   gcm_rho_v(k_crm,iens) = input_ql(k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
-    //   gcm_rho_c(k_crm,iens) = input_qccl(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
-    //   gcm_rho_i(k_crm,iens) = input_qiil(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
-    //   gcm_temp(k_crm,iens)  = input_tl(k_gcm,iens);
-    // #endif
-
-    // #ifdef MMF_PAM_FORCE_TOTAL_WATER
-      // use total water from GCM to force CRM water vapor
-
-      // set each density separately - they will be combined when the forcing is calculated
+      // force vapor/liquid/ice species separately
       gcm_rho_v(k_crm,iens) = input_ql(k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
       gcm_rho_c(k_crm,iens) = input_qccl(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
       gcm_rho_i(k_crm,iens) = input_qiil(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
+      gcm_temp(k_crm,iens)  = input_tl(k_gcm,iens);
+    // #endif
 
-      // adjust temperature to account for evaporating and sublimating condensate
-      real liq_adj = input_qccl(k_gcm,iens)* Lv     / cp_d;
-      real ice_adj = input_qiil(k_gcm,iens)*(Lv+Lf) / cp_d;
-      gcm_temp(k_crm,iens) = input_tl(k_gcm,iens) - liq_adj - ice_adj;
+    // #ifdef MMF_PAM_FORCE_TOTAL_WATER
+      // // use total water from GCM to force CRM water vapor
+      // // set each density separately - they will be combined when the forcing is calculated
+      // gcm_rho_v(k_crm,iens) = input_ql(k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
+      // gcm_rho_c(k_crm,iens) = input_qccl(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
+      // gcm_rho_i(k_crm,iens) = input_qiil(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
+      // // adjust temperature to account for evaporating and sublimating condensate
+      // real liq_adj = input_qccl(k_gcm,iens)* Lv     / cp_d;
+      // real ice_adj = input_qiil(k_gcm,iens)*(Lv+Lf) / cp_d;
+      // gcm_temp(k_crm,iens) = input_tl(k_gcm,iens) - liq_adj - ice_adj;
     // #endif
 
   });
@@ -319,6 +317,7 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   auto crm_shoc_wthv     = dm_device.get<real,4>("wthv_sec");
   auto crm_shoc_relvar   = dm_device.get<real,4>("inv_qc_relvar");
   auto crm_shoc_cldfrac  = dm_device.get<real,4>("cldfrac");
+  auto gcm_rho_d         = dm_device.get<real,2>("gcm_density_dry");
   //------------------------------------------------------------------------------------------------
   // wrap the host CRM state data in YAKL arrays
   auto state_u_wind        = dm_host.get<real const,4>("state_u_wind").createDeviceCopy();
@@ -347,10 +346,12 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   parallel_for( "Copy in old CRM state",
                 SimpleBounds<4>(nz,ny,nx,nens),
                 YAKL_LAMBDA (int k, int j, int i, int iens) {
-    crm_rho_d        (k,j,i,iens) = state_rho_dry(k,j,i,iens);
+    crm_rho_d        (k,j,i,iens) = gcm_rho_d(k,iens);
+    // crm_rho_d        (k,j,i,iens) = state_rho_dry(k,j,i,iens);
     // NOTE - convert specific mass mixing ratios to density using previous state dry density from pbuf
     crm_rho_v        (k,j,i,iens) = state_qv(k,j,i,iens) * state_rho_dry(k,j,i,iens) / ( 1 - state_qv(k,j,i,iens) ) ;
-    real rho_total = crm_rho_d(k,j,i,iens) + crm_rho_v(k,j,i,iens);
+    // real rho_total = crm_rho_d(k,j,i,iens) + crm_rho_v(k,j,i,iens);
+    real rho_total = state_rho_dry(k,j,i,iens) + crm_rho_v(k,j,i,iens);
     crm_rho_c        (k,j,i,iens) = state_qc(k,j,i,iens) * rho_total ;
     crm_rho_r        (k,j,i,iens) = state_qr(k,j,i,iens) * rho_total ;
     crm_rho_i        (k,j,i,iens) = state_qi(k,j,i,iens) * rho_total ;
