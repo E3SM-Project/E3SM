@@ -346,7 +346,7 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   parallel_for( "Copy in old CRM state",
                 SimpleBounds<4>(nz,ny,nx,nens),
                 YAKL_LAMBDA (int k, int j, int i, int iens) {
-    crm_rho_d        (k,j,i,iens) = gcm_rho_d(k,iens);
+    crm_rho_d        (k,j,i,iens) = gcm_rho_d(k,iens); // this disables dry density forcing
     // crm_rho_d        (k,j,i,iens) = state_rho_dry(k,j,i,iens);
     // NOTE - convert specific mass mixing ratios to density using previous state dry density from pbuf
     crm_rho_v        (k,j,i,iens) = state_qv(k,j,i,iens) * state_rho_dry(k,j,i,iens) / ( 1 - state_qv(k,j,i,iens) ) ;
