@@ -1092,12 +1092,14 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          end do ! i=1,ncol
 
          ! Retrieve radiative heating tendency
+         ! Rad tendency was normalized for energy conservation 
+         ! un-normalize before sending to CRM - this yields units of [K/s]
          call pbuf_get_field(pbuf_chunk, crm_qrad_idx, crm_qrad)
          do m = 1,crm_nz
             k = pver-m+1
             do i = 1,ncol
                icrm = ncol_sum + i
-               crm_rad%qrad(icrm,:,:,m) = crm_qrad(i,:,:,m) / state(c)%pdel(i,k) ! normalize for energy conservation
+               crm_rad%qrad(icrm,:,:,m) = crm_qrad(i,:,:,m) / state(c)%pdel(i,k)
             end do
          end do
 
