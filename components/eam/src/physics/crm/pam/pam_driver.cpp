@@ -43,9 +43,9 @@ extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
   // set various coupler options
   coupler.set_option<real>("gcm_physics_dt",gcm_dt);
-  coupler.set_option<int>("crm_per_phys",2);
-  coupler.set_option<int>("sponge_num_layers",crm_nz*0.3);
-  coupler.set_option<real>("sponge_time_scale",60*5);
+  coupler.set_option<int>("crm_per_phys",2);               // # of PAM-C dynamics steps per physics
+  coupler.set_option<int>("sponge_num_layers",crm_nz*0.3); // depth of sponge layer
+  coupler.set_option<real>("sponge_time_scale",60);        // min damping timescale at top of sponge
   //------------------------------------------------------------------------------------------------
   // Allocate the coupler state and retrieve host/device data managers
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
@@ -64,8 +64,7 @@ extern "C" void pam_driver() {
   Radiation    rad;
   micro .init(coupler);
   sgs   .init(coupler);
-  // dycore.init(coupler,is_first_step); // pass is_first_step to PAM-C to disable print statements
-  dycore.init(coupler);
+  dycore.init(coupler,is_first_step); // pass is_first_step to control verbosity in PAM-C
   rad   .init(coupler);
   //------------------------------------------------------------------------------------------------
   // update coupler GCM state with input GCM state
