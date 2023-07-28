@@ -800,7 +800,7 @@ _TESTS = {
         "time"    : "02:00:00",
         "tests"   : (
             "PET_Ld3_D.ne30pg2_EC30to60E2r2.WCYCL1850.pemod-omp2",
-            "ERS_Ld3_D.ne30pg2_EC30to60E2r2.WCYCL1850.pemod-ompfull",
+            "ERS_Ld3_D.ne30pg2_EC30to60E2r2.WCYCL1850.pemod-omp2",
         )
     },
 
