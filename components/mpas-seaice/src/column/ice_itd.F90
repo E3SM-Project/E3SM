@@ -427,11 +427,17 @@
       character(len=char_len_long) :: &
         warning ! warning message
 
+      real (kind=dbl_kind), dimension(ncat) :: aicen_init !echmod - as in icepack
+      real (kind=dbl_kind), dimension(ncat) :: vsnon_init !echmod - as in icepack
+
       !-----------------------------------------------------------------
       ! Initialize
       !-----------------------------------------------------------------
 
       l_stop = .false.
+
+      aicen_init(:) = aicen(:) !echmod - as in icepack
+      vsnon_init(:) = vsnon(:) !echmod - as in icepack
 
       !-----------------------------------------------------------------
       ! Define variables equal to aicen*trcrn, vicen*trcrn, vsnon*trcrn
@@ -586,15 +592,18 @@
                endif
          endif
          if (l_stop) return
+      enddo       ! boundaries, 1 to ncat-1     !echmod - as in icepack
 
       !-----------------------------------------------------------------
       ! transfer volume and energy between categories
       !-----------------------------------------------------------------
 
+      do n = 1, ncat-1                          !echmod - as in icepack
+
          if (daice(n) > c0) then ! daice(n) can be < puny
 
             nd = donor(n)
-            worka = daice(n) / aicen(nd)
+!            worka = daice(n) / aicen(nd)       !echmod - column
             if (nd  ==  n) then
                nr = nd+1
             else                ! nd = n+1
@@ -607,7 +616,9 @@
             vicen(nd) = vicen(nd) - dvice(n)
             vicen(nr) = vicen(nr) + dvice(n)
 
-            dvsnow = vsnon(nd) * worka
+!            dvsnow = vsnon(nd) * worka         !echmod - column
+            worka = daice(n) / aicen_init(nd)   !echmod - as in icepack
+            dvsnow = vsnon_init(nd) * worka     !echmod - as in icepack
             vsnon(nd) = vsnon(nd) - dvsnow
             vsnon(nr) = vsnon(nr) + dvsnow
             workb = dvsnow
