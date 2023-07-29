@@ -344,6 +344,9 @@ add_default($nl, 'gcam2glm_glumap');
 add_default($nl, 'gcam2glm_baselu');
 add_default($nl, 'gcam2glm_basebiomass');
 
+# name of dynamic landuse timeseries file
+add_default($nl, 'fdyndat_ehc');
+
 # runtime options
 add_default($nl, 'read_scalars');
 add_default($nl, 'write_scalars');

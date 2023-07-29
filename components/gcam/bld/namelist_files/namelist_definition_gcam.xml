@@ -237,6 +237,15 @@ Glm base biomass file
 </entry>
 
 
+<entry id="fdyndat_ehc"
+        type="char*256"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Name of dynamic landuse timeseries file
+</entry>
+
+
 <entry id="read_scalars"
 	type="logical"
 	category="gcam"

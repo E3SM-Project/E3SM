@@ -42,13 +42,16 @@ for the iac data in the e3sm distribution
 <gcam2elm_luc_mapping_file>iac/giac/gcam/gcam_6_0/mappings/luc.xml</gcam2elm_luc_mapping_file>
 <gcam2elm_woodharvest_mapping_file>iac/giac/gcam/gcam_6_0/mappings/woodharvest.xml</gcam2elm_woodharvest_mapping_file>
 
-<!-- Grid and mapping and initialization files with relative paths off
+<!-- Grid and mapping and initialization files with relative paths from
      inputdata directory -->
 <gcam_gridfile>iac/giac/glm2iac/landuse.timeseries_0.9x1.25_template_simyr2015-2100_c201021.nc</gcam_gridfile>
 <elm2gcam_mapping_file>iac/giac/iac2gcam/elm0.9x1.25togcam_mapping.csv</elm2gcam_mapping_file>
 <gcam2glm_glumap>iac/giac/glm/inputs/gcam2glm_mapping.csv</gcam2glm_glumap>
 <gcam2glm_baselu>iac/giac/glm/inputs/initial/initial_state_LUH2_2015_v3.nc</gcam2glm_baselu>
 <gcam2glm_basebiomass>iac/giac/glm/inputs/vba_LUH1format.nc</gcam2glm_basebiomass>
+
+<!-- Name of dynamic landuse timeseries file  -->
+<fdyndat_ehc>surfdata_iESM_dyn.nc</fdyndat_ehc>
 
 <!-- Runtime options -->
 <read_scalars>.false.</read_scalars>
