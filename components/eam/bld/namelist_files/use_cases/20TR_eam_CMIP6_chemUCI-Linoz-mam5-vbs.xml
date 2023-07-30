@@ -17,12 +17,6 @@
 <bndtvghg>atm/cam/ggas/GHG_CMIP-1-2-0_Annual_Global_0000-2014_c20180105.nc</bndtvghg>
 <scenario_ghg>RAMPED</scenario_ghg>
 
-<!-- Stratospheric aerosols from CMIP6 input4MIPS -->
-<prescribed_volcaero_datapath>atm/cam/volc                                             </prescribed_volcaero_datapath>
-<prescribed_volcaero_file>CMIP_DOE-ACME_radiation_1850-2014_v3_c20171205.nc</prescribed_volcaero_file>
-<prescribed_volcaero_filetype>VOLC_CMIP6					       </prescribed_volcaero_filetype>
-<prescribed_volcaero_type>SERIAL</prescribed_volcaero_type>
-
 <!-- External forcing for BAM or MAM.  CMIP6 input4mips data -->
 <ext_frc_type>INTERP_MISSING_MONTHS</ext_frc_type>
 <no2_ext_file         >atm/cam/chem/trop_mozart_aero/emis/chem_gases/2degrees/emissions-cmip6_NO2_aircraft_vertical_1750-2015_1.9x2.5_c20170608.nc </no2_ext_file>
@@ -69,7 +63,7 @@
 <tracer_cnst_file    >ch4_oxid_1.9x2.5_L26_1990-1999clim.c090804.nc</tracer_cnst_file>
 <tracer_cnst_filelist>''</tracer_cnst_filelist>
 <tracer_cnst_datapath>atm/cam/chem/methane</tracer_cnst_datapath>
-<tracer_cnst_specifier>'CH4','prsd_O3:O3','prsd_NO3:NO3','prsd_OH:OH'</tracer_cnst_specifier>
+<tracer_cnst_specifier>'prsd_O3:O3','prsd_NO3:NO3','prsd_OH:OH'</tracer_cnst_specifier>
 
 <!-- prescribed methane  -->
 <prescribed_ghg_file      >ch4_oxid_1.9x2.5_L26_1990-1999clim.c090804.nc</prescribed_ghg_file>
