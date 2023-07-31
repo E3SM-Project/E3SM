@@ -337,7 +337,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         wind0 = max(sqrt((ubot(n) - us(n))**2 + (vbot(n) - vs(n))**2), 0.01_r8)
         vmag = wind0
         if (present(ugust)) then
-           vmag = vmag + ugust(n)
+           vmag = sqrt(vmag**2 + ugust(n)**2)
         end if
         vmag = max(seq_flux_atmocn_minwind, vmag)
         if (use_coldair_outbreak_mod) then
@@ -382,7 +382,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
                 tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
            vmag = wind_adj
            if (present(ugust)) then
-              vmag = vmag + ugust(n)
+              vmag = sqrt(vmag**2 + ugust(n)**2)
            end if
            vmag = max(seq_flux_atmocn_minwind, vmag)
         else
@@ -431,7 +431,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
                    tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
               vmag = wind_adj
               if (present(ugust)) then
-                 vmag = vmag + ugust(n)
+                 vmag = sqrt(vmag**2 + ugust(n)**2)
               end if
               vmag = max(seq_flux_atmocn_minwind, vmag)
            end if

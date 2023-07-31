@@ -707,11 +707,11 @@ contains
          if (implicit_stress) then
             wind_speed0(p) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
             wind_speed_adj(p) = wind_speed0(p)
-            ur(p) = max(1.0_r8, wind_speed_adj(p) + ugust(t))
+            ur(p) = max(1.0_r8, sqrt(wind_speed_adj(p)**2 + ugust(t)**2))
 
             prev_tau(p) = tau_est(t)
          else
-            ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)) + ugust(t))
+            ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)+ugust(t)*ugust(t)))
          end if
          tau_diff(p) = 1.e100_r8
 
@@ -790,7 +790,7 @@ contains
                call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
                     tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
                     wind_speed_adj(p))
-               ur(p) = max(1.0_r8, wind_speed_adj(p) + ugust(t))
+               ur(p) = max(1.0_r8, sqrt(wind_speed_adj(p)**2 + ugust(t)**2))
             end if
 
             ! Bulk boundary layer resistance of leaves

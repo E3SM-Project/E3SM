@@ -1049,7 +1049,7 @@ contains
          ! Horizontal windspeed (m/s)
          top_as%windbot(topo) = sqrt(top_as%ubot(topo)**2 + top_as%vbot(topo)**2)
          if (atm_gustiness) then
-            top_as%windbot(topo) = top_as%windbot(topo) + top_as%ugust(topo)
+            top_as%windbot(topo) = sqrt(top_as%windbot(topo)**2 + top_as%ugust(topo)**2)
          end if
          ! Relative humidity (percent)
          if (top_as%tbot(topo) > SHR_CONST_TKFRZ) then
@@ -1148,9 +1148,9 @@ contains
            ! assign the state forcing fields derived from other inputs
            ! Horizontal windspeed (m/s)
            top_as%windbot(topo) = sqrt(top_as%ubot(topo)**2 + top_as%vbot(topo)**2)
-         if (atm_gustiness) then
-            top_as%windbot(topo) = top_as%windbot(topo) + top_as%ugust(topo)
-         end if
+           if (atm_gustiness) then
+              top_as%windbot(topo) = sqrt(top_as%windbot(topo)**2 + top_as%ugust(topo)**2)
+           end if
            ! Relative humidity (percent)
            if (top_as%tbot(topo) > SHR_CONST_TKFRZ) then
             e = esatw(tdc(top_as%tbot(topo)))
