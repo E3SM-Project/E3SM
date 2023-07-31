@@ -149,7 +149,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
            &               evap  ,evap_16O, evap_HDO, evap_18O, &
            &               taux  ,tauy  ,tref  ,qref  ,   &
            &               ocn_surface_flux_scheme, &
-           &               duu10n,  ustar_sv   ,re_sv ,ssq_sv,   &
+           &               duu10n, u10res, ustar_sv   ,re_sv ,ssq_sv,   &
            &               missval, wsresp, tau_est, ugust)
 
 ! !USES:
@@ -194,6 +194,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    real(R8),intent(out)  ::  tref (nMax) ! diag:  2m ref height T     (K)
    real(R8),intent(out)  ::  qref (nMax) ! diag:  2m ref humidity (kg/kg)
    real(R8),intent(out)  :: duu10n(nMax) ! diag: 10m wind speed squared (m/s)^2
+   real(R8),intent(out)  :: u10res(nMax) ! diag: 10m "resolved" (no gustiness) wind speed (m/s)^2
 
    real(R8),intent(out),optional :: ustar_sv(nMax) ! diag: ustar
    real(R8),intent(out),optional :: re_sv   (nMax) ! diag: sqrt of exchange coefficient (water)
@@ -481,6 +482,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         qref(n) =  qbot(n) - delq*fac
 
         duu10n(n) = u10n*u10n ! 10m wind speed squared
+        u10res(n) = u10n*wind_adj/vmag
 
         !------------------------------------------------------------
         ! optional diagnostics, needed for water tracer fluxes (dcn)
@@ -505,6 +507,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         tref  (n) = spval  !  2m reference height temperature (K)
         qref  (n) = spval  !  2m reference height humidity (kg/kg)
         duu10n(n) = spval  ! 10m wind speed squared (m/s)^2
+        u10res(n) = spval  ! 10m "resolved" (no gustiness) wind speed (m/s)^2
 
         if (present(ustar_sv)) ustar_sv(n) = spval
         if (present(re_sv   )) re_sv   (n) = spval
@@ -585,6 +588,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         tref(n) = trf
         qref(n) = qrf
         duu10n(n) = urf**2+vrf**2
+        u10res(n) = sqrt(duu10n(n)) ! atm-supplied gustiness not implemented for COARE
 
         !------------------------------------------------------------
         ! optional diagnostics, needed for water tracer fluxes (dcn)
@@ -609,6 +613,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         tref     (n) = spval  !  2m reference height temperature (K)
         qref     (n) = spval  !  2m reference height humidity (kg/kg)
         duu10n   (n) = spval  ! 10m wind speed squared (m/s)^2
+        u10res   (n) = spval  ! 10m "resolved" (no gustiness) wind speed (m/s)^2
 
         if (present(ustar_sv)) ustar_sv(n) = spval
         if (present(re_sv   )) re_sv   (n) = spval

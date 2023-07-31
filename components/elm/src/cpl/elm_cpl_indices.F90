@@ -43,6 +43,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Sl_anidf        ! albedo: diffuse, near-ir
   integer, public ::index_l2x_Sl_snowh        ! snow height
   integer, public ::index_l2x_Sl_u10          ! 10m wind
+  integer, public ::index_l2x_Sl_u10withgusts ! 10m wind with gustiness included
   integer, public ::index_l2x_Sl_ddvel        ! dry deposition velocities (optional)
   integer, public ::index_l2x_Sl_fv           ! friction velocity  
   integer, public ::index_l2x_Sl_ram1         ! aerodynamical resistance
@@ -201,6 +202,7 @@ contains
     index_l2x_Sl_tref       = mct_avect_indexra(l2x,'Sl_tref')
     index_l2x_Sl_qref       = mct_avect_indexra(l2x,'Sl_qref')
     index_l2x_Sl_u10        = mct_avect_indexra(l2x,'Sl_u10')
+    index_l2x_Sl_u10withgusts = mct_avect_indexra(l2x,'Sl_u10withgusts')
     index_l2x_Sl_ram1       = mct_avect_indexra(l2x,'Sl_ram1')
     index_l2x_Sl_fv         = mct_avect_indexra(l2x,'Sl_fv')
     index_l2x_Sl_soilw      = mct_avect_indexra(l2x,'Sl_soilw',perrwith='quiet')

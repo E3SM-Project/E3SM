@@ -104,6 +104,7 @@ module camsrfexch
      real(r8), allocatable :: tref(:)       ! ref height surface air temp
      real(r8), allocatable :: qref(:)       ! ref height specific humidity 
      real(r8), allocatable :: u10(:)        ! 10m wind speed
+     real(r8), allocatable :: u10withgusts(:) ! 10m wind speed with gustiness
      real(r8), allocatable :: ts(:)         ! merged surface temp 
      real(r8), allocatable :: sst(:)        ! sea surface temp
      real(r8), allocatable :: snowhland(:)  ! snow depth (liquid water equivalent) over land
@@ -219,6 +220,9 @@ CONTAINS
        allocate (cam_in(c)%u10(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error u10')
 
+       allocate (cam_in(c)%u10withgusts(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error u10withgusts')
+
        allocate (cam_in(c)%ts(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error ts')
 
@@ -308,6 +312,7 @@ CONTAINS
        cam_in(c)%tref     (:) = 0._r8
        cam_in(c)%qref     (:) = 0._r8
        cam_in(c)%u10      (:) = 0._r8
+       cam_in(c)%u10withgusts(:) = 0._r8
        cam_in(c)%ts       (:) = 0._r8
        cam_in(c)%sst      (:) = 0._r8
        cam_in(c)%snowhland(:) = 0._r8
@@ -617,6 +622,7 @@ CONTAINS
           deallocate(cam_in(c)%tref)
           deallocate(cam_in(c)%qref)
           deallocate(cam_in(c)%u10)
+          deallocate(cam_in(c)%u10withgusts)
           deallocate(cam_in(c)%ts)
           deallocate(cam_in(c)%sst)
           deallocate(cam_in(c)%snowhland)
