@@ -314,7 +314,14 @@ contains
       end do
 
       ! acquire aircraft fluxes from physics buffer
-      index_ac_CO2 = pbuf_get_index('ac_CO2')   
+      ! index_ac_CO2 = pbuf_get_index('ac_CO2')   
+      ! TRS use iac first, then aircraft_emit
+      index_ac_CO2 = pbuf_get_index('iac_CO2')
+
+      if (index_ac_CO2 <= 0) then
+         index_ac_CO2 = pbuf_get_index('ac_CO2')   
+      endif
+
       call pbuf_get_field(pbuf, index_ac_CO2, ac_CO2)
 
       ! initialize arrays

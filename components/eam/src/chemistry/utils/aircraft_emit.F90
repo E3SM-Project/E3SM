@@ -262,7 +262,6 @@ contains
     !------------------------------------------------------------------
     if (aircraft_cnt == 0 ) return
 
-
     !------------------------------------------------------------------
     ! For forcing files which has to be on the native grid,dimensions
     ! are set in the following if condition
@@ -320,7 +319,9 @@ contains
           native_grid_frc_air(m)%input_file     = trim(air_datapath)//'/'//trim(spc_fname(m))
 
           native_grid_frc_air(m)%initialized    = .false.
-          dtime = -1.0_r8 ! This is the offset that gives the correct time alignment -BEH 
+          dtime = -1.0_r8 ! This is the offset that gives the correct
+          ! time alignment -BEH 
+
           call native_grid_frc_air(m)%time_coord%initialize(trim(adjustl(native_grid_frc_air(m)%input_file)), &
                force_time_interp=.true., delta_days=dtime)
 

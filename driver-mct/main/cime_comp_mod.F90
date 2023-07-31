@@ -1440,7 +1440,6 @@ contains
 
     ! TRS - we need to initialize iac first so atm and lnd know it's
     ! there, via gcam_active -> iac_active
-    !write (*,*) 'TRS iac_init'
 
     call t_startf('comp_init_cc_iac')
     call t_adj_detailf(+2)
@@ -1455,10 +1454,6 @@ contains
     call component_init_cc(Eclock_a, atm, atm_init, infodata, NLFilename)
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cc_atm')
-
-    if (Iamroot_CPLID) then 
-       write (*,*) 'TRS lnd_init'
-    endif
 
     call t_startf('CPL:comp_init_cc_lnd')
     call t_adj_detailf(+2)

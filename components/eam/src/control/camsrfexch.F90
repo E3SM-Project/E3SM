@@ -110,7 +110,7 @@ module camsrfexch
      real(r8), allocatable :: snowhice(:)   ! snow depth over ice
      real(r8), allocatable :: fco2_lnd(:)   ! co2 flux from lnd
      real(r8), allocatable :: fco2_ocn(:)   ! co2 flux from ocn
-     real(r8), allocatable :: fco2_iac(:)   ! co2 flux from iac
+     real(r8), allocatable :: fco2_iac(:)   ! co2 flux from iac (surface)
      real(r8), allocatable :: fdms(:)       ! dms flux
      real(r8), allocatable :: landfrac(:)   ! land area fraction
      real(r8), allocatable :: icefrac(:)    ! sea-ice areal fraction

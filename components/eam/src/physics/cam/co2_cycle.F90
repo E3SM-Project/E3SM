@@ -1,5 +1,3 @@
-
-
 module co2_cycle
 
 !------------------------------------------------------------------------------------------------
@@ -18,6 +16,7 @@ module co2_cycle
 
 use shr_kind_mod,   only: r8 => shr_kind_r8, cxx =>SHR_KIND_CXX, cl =>SHR_KIND_CL
 use co2_data_flux,  only: co2_data_flux_type
+use cam_logfile,      only: iulog
 
 implicit none
 private
@@ -185,7 +184,7 @@ subroutine co2_register
   integer  :: idx
   
   if (.not. co2_flag) return
-  
+
   ! CO2 as dry tracer
   do idx = 1, ncnst
      !mwco2(molecular weight), cpair (heat capacities),1.e-20_r8 (minimum allowed mmr)
@@ -413,6 +412,7 @@ subroutine co2_cycle_set_ptend(state, pbuf, ptend)
 !-------------------------------------------------------------------------------
 ! Purpose:
 ! Set ptend, using aircraft CO2 emissions in ac_CO2 from pbuf
+! TRS Update: using iac_CO2 (coupled from iac component) first, if it exists.
 !
 ! Called by:
 !    physpkg.F90
@@ -424,6 +424,8 @@ subroutine co2_cycle_set_ptend(state, pbuf, ptend)
    use ppgrid,         only: pver
    use physconst,      only: gravit
 
+   use iac_coupled_fields, only: iac_present
+
    ! Arguments
    type(physics_state), intent(in)    :: state
    type(physics_buffer_desc), pointer :: pbuf(:)
@@ -431,11 +433,14 @@ subroutine co2_cycle_set_ptend(state, pbuf, ptend)
 
    ! Local variables
    logical :: lq(pcnst)
-   integer :: ifld, ncol, k
+   integer :: ifld, ncol, k,i
    real(r8), pointer :: ac_CO2(:,:)
 
    !----------------------------------------------------------------------------
-   if (.not. co2_flag .or. .not. co2_readFlux_aircraft) then
+
+   ! TRS run this if either iac_present or co2_readFlux_aircraft is
+   ! set, along with co2_flag
+   if (.not. co2_flag .or. (.not. iac_present .and. .not. co2_readFlux_aircraft)) then
       call physics_ptend_init(ptend, state%psetcols, 'none')
       return
    end if
@@ -447,10 +452,15 @@ subroutine co2_cycle_set_ptend(state, pbuf, ptend)
 
    call physics_ptend_init(ptend, state%psetcols, 'co2_cycle_ac', lq=lq)
 
-   ifld = pbuf_get_index('ac_CO2')   
+   ! Look for iac_CO2 first, then ac_CO2
+   ifld = pbuf_get_index('iac_CO2')
+   if (ifld <= 0) then
+      ifld = pbuf_get_index('ac_CO2')   
+   endif
+
    call pbuf_get_field(pbuf, ifld, ac_CO2)
 
-   ! [ac_CO2] = 'kg m-2 s-1'
+     ! [ac_CO2] = 'kg m-2 s-1'
    ! [ptend%q] = 'kg kg-1 s-1'
    ncol = state%ncol
    do k = 1, pver

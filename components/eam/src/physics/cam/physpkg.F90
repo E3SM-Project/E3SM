@@ -148,6 +148,7 @@ subroutine phys_register
     use sslt_rebin,         only: sslt_rebin_register
     use aoa_tracers,        only: aoa_tracers_register
     use aircraft_emit,      only: aircraft_emit_register
+    use iac_coupled_fields, only: iac_coupled_fields_register
     use cam_diagnostics,    only: diag_register
     use cloud_diagnostics,  only: cloud_diagnostics_register
     use cospsimulator_intr, only: cospsimulator_intr_register
@@ -289,6 +290,9 @@ subroutine phys_register
        endif
 
        call aircraft_emit_register()
+
+       ! Coupling co2 from iac
+       call iac_coupled_fields_register()
 
        ! deep convection
        call convect_deep_register
@@ -689,6 +693,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use seasalt_model,      only: init_ocean_data, has_mam_mom
     use aerodep_flx,        only: aerodep_flx_init
     use aircraft_emit,      only: aircraft_emit_init
+    use iac_coupled_fields, only: iac_coupled_fields_init
     use prescribed_volcaero,only: prescribed_volcaero_init
     use cloud_fraction,     only: cldfrc_init
     use cldfrc2m,           only: cldfrc2m_init
@@ -822,7 +827,11 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call prescribed_ghg_init()
     call prescribed_aero_init()
     call aerodep_flx_init()
+
     call aircraft_emit_init(phys_state,pbuf2d)
+    
+    call iac_coupled_fields_init(phys_state, pbuf2d)
+
     !when is_cmip6_volc is true ,cmip6 style volcanic file is read
     !Initialized to .false. here but it gets its values from prescribed_volcaero_init
     is_cmip6_volc = .false. 
@@ -2815,6 +2824,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use prescribed_aero,     only: prescribed_aero_adv
   use aerodep_flx,         only: aerodep_flx_adv
   use aircraft_emit,       only: aircraft_emit_adv
+  use iac_coupled_fields,  only: iac_coupled_fields_adv
   use prescribed_volcaero, only: prescribed_volcaero_adv
   use nudging,             only: Nudge_Model,nudging_timestep_init
 
@@ -2845,6 +2855,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   call prescribed_ghg_adv(phys_state, pbuf2d)
   call prescribed_aero_adv(phys_state, pbuf2d)
   call aircraft_emit_adv(phys_state, pbuf2d)
+  call iac_coupled_fields_adv(phys_state, pbuf2d)
 
   call t_startf('prescribed_volcaero_adv')
   call prescribed_volcaero_adv(phys_state, pbuf2d)

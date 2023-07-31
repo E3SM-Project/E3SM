@@ -72,6 +72,7 @@
       <value compset="GEOS_EAM"       >-offline_dyn</value>
       <value compset="GEOS_EAM"      >-nlev 56</value>
       <value compset="_EAM.*_BGC%*"   >-co2_cycle</value>
+      <!-- value compset="_GCAM"          >-co2_cycle</value-->
       <value compset="EAM%SCAM"   >-scam</value>
       <value compset="AR97_EAM%SCAM"   >-phys default -scam -nlev 72 -clubb_sgs -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates</value>
       <value compset="_EAM.%L60"      >-nlev 60</value>

@@ -6,7 +6,7 @@ module atm_import_export
 
 contains
 
-  subroutine atm_import( x2a, cam_in, restart_init , mon_spec)
+  subroutine atm_import( x2a, cam_in, restart_init , mon_spec, day_spec, tod_spec)
 
     !-----------------------------------------------------------------------
     use cam_cpl_indices
@@ -18,6 +18,7 @@ contains
     use co2_cycle     , only: c_i, co2_readFlux_ocn, co2_readFlux_fuel
     use co2_cycle     , only: co2_transport, co2_time_interp_ocn, co2_time_interp_fuel
     use co2_cycle     , only: data_flux_ocn, data_flux_fuel
+    use iac_coupled_fields, only: iac_coupled_data, iac_coupled_timeinterp
     use physconst     , only: mwco2
     use time_manager  , only: is_first_step
     !
@@ -26,13 +27,18 @@ contains
     real(r8)      , intent(in)    :: x2a(:,:)
     type(cam_in_t), intent(inout) :: cam_in(begchunk:endchunk)
     logical, optional, intent(in) :: restart_init
-    ! For iac monthly coupling fields
+    ! For iac monthly coupling fields - need time to interpolate
+    ! monthly values to
     integer, intent(in), optional :: mon_spec        ! Simulation month
+    integer, intent(in), optional :: day_spec        ! Simulation day
+    integer, intent(in), optional :: tod_spec        ! Simulation time of day (secs)
     !
     ! Local variables
     !		
     integer            :: i,lat,n,c,ig  ! indices
     integer            :: ncols         ! number of columns
+    integer            :: b1, b2        ! boundary month indeces for iac coupling
+    real(r8)           :: tfrac         ! time fraction between boundary months for iac coupling
     logical, save      :: first_time = .true.
     integer, parameter :: ndst = 2
     integer, target    :: spc_ndx(ndst)
@@ -46,6 +52,15 @@ contains
     if (present(restart_init)) overwrite_flds = .not. restart_init
 
     ! ccsm sign convention is that fluxes are positive downward
+
+    ! Calculate iac boundary month indeces and interpolation fraction
+    ! up here, so we don't do it for every column.  We don't set the
+    ! optional time variables during initialization, so we'll switch on
+    ! that
+    if (present(mon_spec)) then 
+       call iac_coupled_timeinterp(mon_spec, day_spec, tod_spec, &
+            b1, b2, tfrac)
+    endif
 
     ig=1
     do c=begchunk,endchunk
@@ -133,9 +148,25 @@ contains
           if (present(mon_spec)) then 
              if (index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
                 ! TRS - iac co2 coupling
-                ! For now, just use the monthly value, without any
+                ! OLD(see below)For now, just use the monthly value, without any
                 ! interpolation.  This will change with the rebase.
-                cam_in(c)%fco2_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(mon_spec),ig)
+                !cam_in(c)%fco2_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(mon_spec),ig)
+                !cam_in(c)%fco2_low_iac(i) = -x2a(index_x2a_Fazz_co2airlo_iac(mon_spec),ig)
+                !cam_in(c)%fco2_high_iac(i) = -x2a(index_x2a_Fazz_co2airhi_iac(mon_spec),ig)
+
+                ! TRS - interpolate iac from monthly values to the simulation time using boundary
+                ! months b1, b2, and tfrac 
+                cam_in(c)%fco2_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(b1),ig) * (1-tfrac) + &
+                     -x2a(index_x2a_Fazz_co2sfc_iac(b2),ig) * tfrac
+
+                ! iac air high and low fields have their own structure inside iac_coupled_fields
+                iac_coupled_data(c)%fco2_low_iac(i) = &
+                     -x2a(index_x2a_Fazz_co2airlo_iac(b1),ig) * (1-tfrac) + &
+                     -x2a(index_x2a_Fazz_co2sfc_iac(b2),ig) * tfrac
+
+                iac_coupled_data(c)%fco2_high_iac(i) = &
+                     -x2a(index_x2a_Fazz_co2airhi_iac(b1),ig) * (1-tfrac) + &
+                     -x2a(index_x2a_Fazz_co2sfc_iac(b2),ig) * tfrac
              endif
           endif
           if (index_x2a_Faoo_fco2_ocn /= 0) then

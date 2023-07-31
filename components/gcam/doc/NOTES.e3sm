@@ -1,3 +1,379 @@
+7/31/2023
+
+* Last day
+
+* Some miscellaneous things I had to do that I've uncovered as I get ready
+  for final push - here is the last commit I made, which allowed EAM to
+  compile with an active GCAM after the rebase.
+
+* Changed location of buildlib.kokkos
+* Added co2flux_fuel_file to eam namelist defaults
+* Added the legacy iac coupling defaults for eam for the fv dycore
+* camsrfexch - co2flux from iac variables, refactored to not use vmag_gust
+  unless do_clubb_sgs is set (as it is only allocated inside clubb)
+* dyn_comp.F90: moved history_defaults() to public so we could call after
+  physics grid init, to get everything initialized correctly
+* Update code in a couple places to work with PIO version 2 (required by
+  elm) (restart_dynamics.F90, metadata.F90)
+* physpkg.F90: vmag_gust_idx indexing in do_clubb_sgs block.
+* Added dimensions_mod.F90 to eam utils from elsewhere (homme), to access nlev and
+  other variables where we need them.
+* Updated NOTES.e3sm file to this branch in gcam/doc
+
+7/25/2023 20:17:00 PDT
+
+* Geez, it's really hard to figure this kind of thing out.  But!
+
+1 Changing the values in config_component.xml to add the -co2_cycle
+  CAM_CONFIG_OPTS only takes with a create_newcase, so a regular old
+  ./case.build won't work.
+
+? How about ./case.setup
+
+2 The comment in config_component.xml is confusing and I don't really
+  understand it, but I gather that modifying config_component.xml is not
+  really the right way to change the options.  It says instead that:
+
+     It is recommended that if you want to modify this value for your
+     experiment, you should use your own user-defined component sets via
+     using  create_newcase with a compset_file argument  
+
+  ...whatever that means.
+
+3 I'm testing simply adding a user_nl_eam with these options:
+
+  co2_flag = .true.
+  co2_readFlux_aircraft = .false.
+
+  ...just to see if that will run.
+
+* zatm_gcam_working2 contains the create_newcase with the modified
+  CAM_CONFIG_OPTS.  I'll test case.setup --reset on that, after commenting
+  out my new lines in config_component.xml, to see if that gets it to
+  take...
+  
+  ...no, it doesn't seem like you can apply changes to config_component.xml
+  without a full create_newcase.  That's pretty irritating.
+
+! Okay, the user_nl_eam doesn't work - it seems to try to add constituents
+  beyond the limit.  So maybe -co2_cycle does more than just make namelist
+  value changes, it also tells something to count co2 as a constituent?
+  Doing another diagnostic run with writes.
+
+! The -co2_cycle run seems to be chugging away.  I though it would crash
+  because it couldn't read the co2flux file, but who knows.  We'll check
+  the log after it finishes (although it was configured with teh full 8
+  hour run, because I didn't think it would run at all!)
+
+  [Update] no, actually, it was taking so long because I asked it to write
+  out too much debugging info, so it locked up on i/o.
+
+7/25/2023
+
+* Okay, so co2_flag is not being set in the namelist, and I still don't
+  really understand how things get put into the various namelist blocks.
+  There is no default value for co2_flag anywhere in the .xml files,
+  including in namelist_defaults - but, I did find this nugget inside of
+  config_component.xml in eam/cime_config in the CAM_CONFIG_OPTS block,
+  under "modifier='additive'" subblock:
+
+      <value compset="_EAM.*_BGC%*"   >-co2_cycle</value>
+
+  That seems to make sense - when using a compset that has the BGC elements
+  set, that's when you turn on the carbon cycle, as I believe the old name
+  for the human factor stuff was BGC.  So I added:
+
+      <value compset="_EAM.*_GCAM"   >-co2_cycle</value>
+
+  ...just beneath it, which hopefully will turn on co2_cycle configuration
+  and add all the proper namelist values.
+
+* You can see in eam/bld/build-namelist where the co2_cycle configuration
+  gets added, around line 912, although it also seems to add a
+  co2_readFlux_fuel namelist variable, which means it's going to try and
+  read in an external fossil fuel file.  Hopefully, it finds the files it
+  needs, but if not, I may have to turn that off in user_nl_eam.
+
+7/21/2023
+
+* Sigh, there's a circular dependency issue if I try to use camsrfexch
+  inside of iac_coupled_fields.F90 - I only need that to get the cam_in_t
+  so I can pass in the cam_in pointer, which (as of now) contains the place
+  I'm storing the coupled (and time interpolated) airhi and airlo fields,
+  but since it won't build camsrfexch first my current iac_coupled_fields
+  mod won't build.
+
+  I don't know where the circular part is - something depends on
+  iac_coupled_fields, camsrfexch depends on that something, and
+  iac_coupled_fields depends on camsrfexch, I guess.
+
+* Anyway, the solution is to build my own internal structure to hold the
+  airlo and airhi fields instead of using cam_in - but this means
+  declaring, allocating, and importing to that structure.  But!  This does
+  mean I don't have to drag the cam_in pointer around, and I can keep all
+  these data arrays inside the iac_coupled_fields module, so yay for me.
+
+7/20/2023
+
+* The way the aircraft CO2 gets inserted into the physics calculations is
+  in the physics tendency, via a call to co2_cycle_set_ptend() in
+  co2_cycle.F90, called from physpkg.F90 in tphysac(), which itself is
+  called after coupling.  So, make sure iac_coupled_fields_adv() is called
+  before that, although since I'm tagging along with aircraft_emit_XXX()
+  calls everywhere like a puppy it really should be.
+
+  Anyway, update co2_cycle_set_ptend() to use iac_CO2 if available, then
+  look for ac_CO2 - this way, we can keep aircraft_emit for other aerosols
+  and only overwrite the tendency with our couple CO2...AND set a pattern
+  for changing the tendency with other iac coupled aerosols in the future.
+
+* Check co2_readFlux_aircraft and iac_present logicals, and make sure they
+  are set for our runs - the logical at the top of of co2_cycle_set_ptend()
+  needs to be checked to make sure we really do the update.
+
+  It might make sense to add a 'co2_readFlux_iac' logical to the
+  /co2_cycle_nl/ namelist, and work off that.
+
+7/17/2023
+
+* Okay, so one dumb thing I forgot is that I'm not actually importing the
+  airlo and airhi fields!  So iac_coupled_fields.F90 has no data to work
+  with yet.
+
+  As it turns out, the easiest thing to do is include them in cam_in from
+  camsrfexch.F90 - they are not strictly surface fluxes, but iac is roughly
+  a surface-ish component, so we'll treat them that way.
+
+? One big question I still have is the sign - the convention is fluxes are
+  downward, so we use -x2a(...) to couple fluxes from surface to air, since
+  that direction is (of course) upward.  I need to make sure that thought
+  process is still correct for iac air fluxes, which are kind of injected
+  laterally?  I think?
+
+* This actually makes temporal interpolation easier - I can do all three in
+  the old fco2_iac() assignment section, but I need a new function at the
+  top of the column loop so I don't do the same thing for every column.
+
+@ I do need to triple check my math on the interpolation, because it gets
+  silly generating a tfrac from mid-month to mid-month, especially with
+  different numbers of days in the month.  I *also* need to verify that
+  mon_spec is [1:12], day_spec is [1:31], and tod_spec is [1:86400].
+
+  Assuming that is true, then the trick is to convert day_spec to a
+  zero_offset number of days since 0000Z on the 16th (or 15th for
+  February).  So:
+
+  If we are in the first half of this month, then b1 is last month and we
+  need: 
+
+     d0 = day_spec - 1 + (number of days in last half of b1).
+
+  If we arre in the second half of this month, then b1 is this month and we
+  need: 
+
+     d0 = day_spec -1 - (number of days in first half of this month)
+
+  *Then*:
+
+     tfrac = (d0 + tod_spec/86400)/denom, 
+
+  where:
+
+     denom=mon_length[b1]-mon_mid[b1]+mon_mid[b2] 
+
+6/15/2023
+
+* Example CO2 aircraft file:
+
+  file=./atm/cam/ggas/ne4_eam_CO2-em-AIR-anthro_input4MIPs_emissions_CMIP_CEDS-2017-08-30_gr_175001-201412_c20201111.nc
+
+  Doing a quick scan of various columns, like so:
+
+  ncks -H -v ac_CO2 -d time,3000 -d ncol,500 $file
+  ncks -H -v ac_CO2 -d time,3000 -d ncol,400 $file
+  ncks -H -v ac_CO2 -d time,3000 -d ncol,300 $file
+  ncks -H -v ac_CO2 -d time,3000 -d ncol,200 $file
+  ncks -H -v ac_CO2 -d time,3000 -d ncol,100 $file
+
+  ...suggests two kinds of columns - those with values right around 10-11
+  km (one to three layers), and those with values from the surface all the
+  way up to 10-11 km.  So our "two level" model doesn't really match the
+  vertical distribution we see in this file, at least for the handful of
+  columns I tracked down. 
+
+  My conjecture is that all (or maybe most) columns have 11km fluxes, since
+  airplanes fly everywhere, but only those columns with airports have
+  values throughout.  Or, if not airports, at least some reason to fly
+  throughout the atmosphere - regional flights, maybe?
+
+  There are other files in that directory for different grids, so exploring
+  those might be good.
+ 
+6/7/2023
+
+* Vertical interpolation details:
+
+  The eam h0 file has 30 layers, indexed by pressure (hPA):
+
+=============
+  dimensions:
+    lev = 30 ;
+
+  variables:
+    double lev(lev) ;
+
+  data:
+    lev = 3.64346569404006, 7.59481964632869, 14.3566322512925, 24.6122200042009, 38.268299773
+3355, 54.5954797416925, 72.0124505460262, 87.8212302923203, 103.317126631737, 121.547240763903
+, 142.994038760662, 168.225079774857, 197.908086702228, 232.828618958592, 273.910816758871, 32
+2.241902351379, 379.100903868675, 445.992574095726, 524.687174707651, 609.778694808483, 691.38
+9430314302, 763.404481112957, 820.858368650079, 859.53476652503, 887.020248919725, 912.6445469
+44648, 936.198398470879, 957.485479535535, 976.325407391414, 992.556095123291 ;
+
+==========
+ 
+  The vertical grid seems to be stored in the state variable from
+  physics_state in physics_types mod (in the cam directory).
+
+* See c. line 820 in aircraft emit - the geopotential height above the
+  surface in units [m] for chunk ic, column icol, and vertical layer kmdl
+  is:
+
+   state(ic)%zi(icol, kmdl)
+
+  The vertical_interp() procedure in aircraft_emit.F90 does some
+  complicated linear algebra to ensure co2 conservation, as the native grid
+  files may not line up the vertical bin boundaries correctly.  I'll have
+  to review the paper they cite, but our case is simpler - we have a low
+  and high value, and just need to interpolate through.
+
+* So I need to verify what heights the low and high are, and whether it
+  makes sense to extrapolate beyond those limits onto the regular grid
+  (which appears to be surface to TOA, from the pressues above), or what
+  those CO2 values we are coupling actually mean.  It's time to get the
+  details right, with the module infrastructure set up.
+
+5/8/2023
+
+* Okay, since we don't read in the aircraft file by default, I need to
+  generate an ac_CO2 profile myself, and slap it in.  
+
+  Alternatively, I could *overwrite* the ac_CO2 section of pbuf, or create
+  a new iac_ac_CO2 section in pbuf.  That may be ultimately be the right
+  way to do this - apparently, pbuf is the tool used to drag all the
+  relevant fields around.
+
+* So, the place that ac_CO2 is used is in
+  .../src/physics/cam/co2_cycle.F90, in co2_cycle_set_ptend(), around lines
+  450-460.  Since this is the only place the ac_CO2 field is used,
+  constructing my coupled CO2 to look like this seems like my best shot
+  towards getting it in the right place in the code.  But, I need to track
+  down when co2_cycle_set_ptend() is called, and make sure it will be
+  called even if we don't read aircraft aerosols externally.
+
+@ Check where ac_CO2 is used
+@ Check how and where co2_cycle_set_ptend() is called
+@ Add iac_ac_CO2 field to pbuf (including interpolations, etc.)
+@ Verify that surface co2, vis a vis the fossil fuel flux stuff I
+  implemented pre-rebase, is still there.
+
+* That last point is troubling - as I was tracking down CO2 stuff, I saw
+  some other stuff in physpkg - co2_data_flux - that suggests we might not
+  be including my surface co2 flux correctly.
+
+  Also, I need to check to make sure the interpolation across the year is
+  working right - I did something with that, but I don't know if I finished
+  that or if it makes sense now.
+
+5/6/2023
+
+* Aw, geez, it looks like the aircraft stuff isn't even being called under
+  current zatm alignment.  Doing a run to check aircraft_cnt in
+  aircraft_emit.F90 now, but my write statements in that file never
+  triggered, while the pre-call write in physpkg.F90 did.
+
+  Okay, so either figure out how to turn aircraft back on and see what the
+  config is, or skip all that and just add back in the human factor co2
+  even when skipping the aircraft options in eam.
+
+* ./src/chemistry/mozart/mo_airplane.F90 has some writes that show up in
+  the log (saying no airplane source for CO and NO).  
+
+* co2_cycle.F90 seems to be where we tag in extrnal co2 fluxes.
+
+* Ask Dalei to track down a couple things about the co2 coming out of gcam:
+  is it just aircraft flux, or does it include other factors (like, I
+  dunno, burned biomass or something) that I also need to replace in EAM,
+  if it currently also handles them in a different way.
+
+  Also, ask him to track down what the "lo" and "hi" altitudes are - I hope
+  Kate put them at the top and bottom atmospheric levels in our grid so we
+  can interpolate directly onto our vertical grid...but I suspect it's more
+  likely they are put at specific heights that don't match eam's vertical
+  boundaries, which will require (probably) extrapolation as well.  It
+  doesn't really matter - the interpolation math is the same, I just need
+  to know what specific altitudes they use.  (Although, extrapolation can
+  diverge wonkily if you aren't careful, and there should probably be error
+  and total column checking somehow.)
+
+5/5/2023
+
+* Okay, just to note some stuff down that I have scribbled elsewhere:
+
+  It looks like the co2 data stuff is in
+  .../eam/src/physics/cam/co2_data_flux.F90.  I need to retrack down where
+  co2_data_flux_init() is called to find input_file, and make sure I'm
+  matching up the data formats.
+
+  Then, I need to find the data structure that holds the co2 amount, and
+  see how that evolves and when it is updated.  That is the point where the
+  iac coupling will come in.
+
+* One question I had that I set aside was: how does eam update carbon now?
+  Do I *replace* that with iac coupling, or *add* my iac coupling?
+  Realistically, it's probably a little of both - I need to tease out the
+  current eam aircraft/human factor co2 update, and replace that with the
+  flux from iac.
+
+* co2_data_flux_init() is called in .../eam/src/physics/cam/co2_cycle.F90,
+  which makes sense.  That's obviously where co2 is being updated.
+
+! But!  There's a .../eam/src/chemistry/utils/aircraft_emit.F90 file!  I
+  need to review what that does.
+
+  ...well, it handles reading in files to deal with aircraft aerosols,
+  including but not limited to co2.  So, hmm.  I don't think it makes sense
+  to overwrite what is going on here, since it's broader than co2 coupling,
+  but I need to see what uses the output of this routine, and replace the
+  co2 part *there* with iac-coupling.
+
+4/11/2023
+
+* Alan's comment on iac slack page - I'm saving this so when I get eam
+  running I can merge in the gcam6 branch, just in case slack rolls it off
+  or I can't find it again.
+
+=========
+  I have pushed my gcam6 branches: aldivi/e3sm_gcam6, aldivi/iac_gcam6,
+  aldivi/gcam_gcam6. Land carbon scaling on works, although the data coming
+  from the coupler isn't correct yet; the c++ scalar code is trapping lots
+  of bad values. Historical zlnd also works with gcam off, at least at
+  2-degree, although I don't think I was using the correct datm setup. gcam
+  spinup also works and i have created new gcam restart and baseline
+  files. I have also created new elm baseline files for the scalars (these
+  will have to be updated again when these data are updated in the
+  coupler). The gcam namelist is updated and the defaults are set to draw
+  from inputdata - no more hardcoded values. If the gcam restarts don't
+  work for some reason just turn on gcam spinup and change the location of
+  the two gcam base files to the rundir, in user_nl_gcam. See my run script
+  for the new setup (/qfs/people/divi553/e3sm/run_ELM_GCAM_adivi.sh), as I
+  also put all the relevant files to be copied into inputdata. There are
+  also some notes about running future vs historical. I still can't get the
+  1-degree future version to run, so any help here is appreciated. Also,
+  the reduced harvest area isn't reduced that much, so we may have to deal
+  with this issue again. 
+=========
+
 2/16/2023
 
 * Trying to log all the changes I had to make to get this to build in a
