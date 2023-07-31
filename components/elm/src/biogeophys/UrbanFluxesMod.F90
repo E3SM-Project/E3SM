@@ -338,11 +338,11 @@ contains
          if (implicit_stress) then
             wind_speed0(l) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
             wind_speed_adj(l) = wind_speed0(l)
-            ur(l) = max(1.0_r8, wind_speed_adj(l) + ugust(t))
+            ur(l) = max(1.0_r8, sqrt(wind_speed_adj(l)**2 + ugust(t)**2))
 
             prev_tau(l) = tau_est(t)
          else
-            ur(l) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)) + ugust(t))
+            ur(l) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)+ugust(t)*ugust(t)))
          end if
          tau_diff(l) = 1.e100_r8
 
@@ -433,7 +433,7 @@ contains
                call shr_flux_update_stress(wind_speed0(l), wsresp(t), tau_est(t), &
                     tau(l), prev_tau(l), tau_diff(l), prev_tau_diff(l), &
                     wind_speed_adj(l))
-               ur(l) = max(1.0_r8, wind_speed_adj(l) + ugust(t))
+               ur(l) = max(1.0_r8, sqrt(wind_speed_adj(l)**2 + ugust(t)**2))
             end if
 
             ! Canyon top wind
