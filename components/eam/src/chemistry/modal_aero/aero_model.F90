@@ -92,8 +92,9 @@ module aero_model
 
   ! Namelist variables
   integer :: mam_amicphys_optaa
-  logical :: sscav_tuning, convproc_do_aer, convproc_do_gas, resus_fix 
+  logical :: sscav_tuning, convproc_do_aer, convproc_do_gas, resus_fix
   logical :: get_presc_aero_data 
+  character(len=16) :: deep_scheme
   character(len=16) :: wetdep_list(pcnst) = ' '
   character(len=16) :: drydep_list(pcnst) = ' '
   real(r8)          :: sol_facti_cloud_borne = 1._r8
@@ -224,7 +225,8 @@ contains
          convproc_do_gas_out = convproc_do_gas, &
          resus_fix_out       = resus_fix,       &
          get_presc_aero_data_out = get_presc_aero_data, &
-         mam_amicphys_optaa_out = mam_amicphys_optaa ) ! REASTER 08/04/2015
+         mam_amicphys_optaa_out = mam_amicphys_optaa, &
+         deep_scheme_out = deep_scheme ) 
 
 
     ! REASTER 08/04/2015 BEGIN
@@ -377,7 +379,9 @@ contains
     icwmrsh_idx      = pbuf_get_index('ICWMRSH')
     sh_frac_idx      = pbuf_get_index('SH_FRAC')
     dp_frac_idx      = pbuf_get_index('DP_FRAC')
-    wuc_idx          = pbuf_get_index('WUC')
+
+    ! Defense against configurations that do not use ZM
+    if (deep_scheme == 'ZM') wuc_idx          = pbuf_get_index('WUC')
 
     nwetdep = 0
     ndrydep = 0
@@ -1684,18 +1688,32 @@ contains
        call pbuf_get_field(pbuf, icwmrsh_idx,     icwmrsh )
        call pbuf_get_field(pbuf, sh_frac_idx,     sh_frac )
        call pbuf_get_field(pbuf, dp_frac_idx,     dp_frac )
-       call pbuf_get_field(pbuf, wuc_idx,          wuc )
 
        call t_startf('ma_convproc')
-       call ma_convproc_intr( state, ptend, pbuf, dt,                   &
-            dp_frac, icwmrdp, rprddp, evapcdp,                          &
-            sh_frac, icwmrsh, rprdsh, evapcsh,                          &
-            dlf, dlf2, cmfmc2, sh_e_ed_ratio,                           &
-            nsrflx_mzaer2cnvpr, qsrflx_mzaer2cnvpr, aerdepwetis,        &
-            mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath,  &
-            species_class, mam_prevap_resusp_optaa,                     &
-            history_aero_prevap_resusp, &
-            dcondt_resusp3d=dcondt_resusp3d,wuc=wuc)
+
+       if ( deep_scheme == 'ZM' ) then
+          call pbuf_get_field(pbuf, wuc_idx,          wuc )
+          call ma_convproc_intr( state, ptend, pbuf, dt,                   &
+               dp_frac, icwmrdp, rprddp, evapcdp,                          &
+               sh_frac, icwmrsh, rprdsh, evapcsh,                          &
+               dlf, dlf2, cmfmc2, sh_e_ed_ratio,                           &
+               nsrflx_mzaer2cnvpr, qsrflx_mzaer2cnvpr, aerdepwetis,        &
+               mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath,  &
+               species_class, mam_prevap_resusp_optaa,                     &
+               history_aero_prevap_resusp, &
+               dcondt_resusp3d=dcondt_resusp3d,wuc=wuc)
+       else
+          call ma_convproc_intr( state, ptend, pbuf, dt,                   &
+               dp_frac, icwmrdp, rprddp, evapcdp,                          &
+               sh_frac, icwmrsh, rprdsh, evapcsh,                          &
+               dlf, dlf2, cmfmc2, sh_e_ed_ratio,                           &
+               nsrflx_mzaer2cnvpr, qsrflx_mzaer2cnvpr, aerdepwetis,        &
+               mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath,  &
+               species_class, mam_prevap_resusp_optaa,                     &
+               history_aero_prevap_resusp, &
+               dcondt_resusp3d=dcondt_resusp3d)
+       endif
+
     do m = 1, ntot_amode ! main loop over aerosol modes
      do lphase = strt_loop,end_loop, stride_loop
       ! loop over interstitial (1) and cloud-borne (2) forms
