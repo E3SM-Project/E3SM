@@ -21,14 +21,14 @@ module histFileMod
   use ColumnType     , only : col_pp                
   use VegetationType , only : veg_pp                
   use ncdio_pio 
-  use EDTypesMod        , only : nclmax_fates     => nclmax
-  use EDTypesMod        , only : nlevleaf_fates   => nlevleaf
+  use EDParamsMod            , only : nclmax_fates     => nclmax
+  use EDParamsMod            , only : nlevleaf_fates   => nlevleaf
   use FatesInterfaceTypesMod , only : nlevsclass_fates => nlevsclass
   use FatesInterfaceTypesMod , only : nlevage_fates    => nlevage
   use FatesInterfaceTypesMod , only : nlevheight_fates => nlevheight
   use FatesInterfaceTypesMod , only : nlevdamage_fates => nlevdamage
   use FatesInterfaceTypesMod , only : nlevcoage
-  use EDTypesMod        , only : nfsc_fates       => nfsc
+  use FatesLitterMod        , only : nfsc_fates       => nfsc
   use FatesLitterMod    , only : ncwd_fates       => ncwd
   use FatesInterfaceTypesMod , only : numpft_fates     => numpft
   use PRTGenericMod          , only : nelements_fates  => num_elements
