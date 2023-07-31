@@ -71,7 +71,6 @@ void pam_debug_check_state( pam::PamCoupler &coupler, int id, int nstep ) {
   // Check for invalid values
   parallel_for("", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     // Check for NaNs
-
     const auto is_nan_t_atm = isnan( temp(k,j,i,iens) );
     const auto is_nan_r_atm = isnan( rhod(k,j,i,iens) );
     const auto is_nan_q_atm = isnan( rhov(k,j,i,iens) );
