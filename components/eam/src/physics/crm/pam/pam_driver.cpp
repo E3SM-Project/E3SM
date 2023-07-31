@@ -12,6 +12,7 @@
 #include "pam_radiation.h"
 #include "pam_statistics.h"
 #include "pam_output.h"
+#include "pam_accelerate.h"
 #include "sponge_layer.h"
 #include "surface_friction.h"
 #include "scream_cxx_interface_finalize.h"
@@ -39,6 +40,7 @@ extern "C" void pam_driver() {
   auto gcm_dt        = coupler.get_option<real>("gcm_dt");
   auto crm_dt        = coupler.get_option<real>("crm_dt");
   auto is_first_step = coupler.get_option<bool>("is_first_step");
+  bool use_crm_accel = coupler.get_option<bool>("use_crm_accel");
   bool enable_physics_tend_stats = coupler.get_option<bool>("enable_physics_tend_stats");
   //------------------------------------------------------------------------------------------------
   // set various coupler options
@@ -46,6 +48,8 @@ extern "C" void pam_driver() {
   coupler.set_option<int>("crm_per_phys",2);               // # of PAM-C dynamics steps per physics
   coupler.set_option<int>("sponge_num_layers",crm_nz*0.3); // depth of sponge layer
   coupler.set_option<real>("sponge_time_scale",60);        // min damping timescale at top of sponge
+  coupler.set_option<bool>("crm_acceleration_ceaseflag",false);
+  auto crm_acceleration_ceaseflag = coupler.get_option<bool>("crm_acceleration_ceaseflag");
   //------------------------------------------------------------------------------------------------
   // Allocate the coupler state and retrieve host/device data managers
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
@@ -96,6 +100,9 @@ extern "C" void pam_driver() {
   // initialize stat variables
   pam_statistics_init(coupler);
 
+  // initialize variables for CRM mean-state acceleration
+  if (use_crm_accel) { pam_accelerate_init(coupler); }
+
   // initilize surface "psuedo-friction" (psuedo => doesn't match "real" GCM friction)
   auto input_tau  = dm_host.get<real const,1>("input_tau00").createDeviceCopy();
   auto input_bflx = dm_host.get<real const,1>("input_bflxls").createDeviceCopy();
@@ -135,6 +142,7 @@ extern "C" void pam_driver() {
     ni_activated   (k_crm,j,i,iens) = input_ni_activated   (k_gcm,iens);
   });
 
+  // // Set surface fluxes here if being used or applied in SHOC
   // auto input_shf = dm_host.get<real const,1>("input_shf").createDeviceCopy();
   // auto input_lhf = dm_host.get<real const,1>("input_lhf").createDeviceCopy();
   // auto sfc_shf = dm_device.get<real,3>("sfc_shf");
@@ -144,19 +152,25 @@ extern "C" void pam_driver() {
   //   sfc_shf(j,i,iens) = input_shf(iens);
   //   sfc_lhf(j,i,iens) = input_lhf(iens);
   // });
-
-  //------------------------------------------------------------------------------------------------
-
-
-
+  
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
+
+  // set number of CRM steps
+  int nstop = int(gcm_dt/crm_dt);
+
+  // for mean-state acceleration adjust nstop and diagnose horizontal means
+  if (use_crm_accel) { 
+    pam_accelerate_nstop(coupler,nstop);
+    pam_accelerate_diagnose(coupler);
+  };
 
   // Run the CRM
   real etime_crm = 0;
   int nstep = 0;
-  while (etime_crm < gcm_dt) {
+  // while (etime_crm < gcm_dt) {
+  while (nstep < nstop) {
     if (crm_dt == 0.) { crm_dt = dycore.compute_time_step(coupler); }
     if (etime_crm + crm_dt > gcm_dt) { crm_dt = gcm_dt - etime_crm; }
 
@@ -197,6 +211,11 @@ extern "C" void pam_driver() {
     coupler.run_module( "micro"                        , [&] (pam::PamCoupler &coupler) {micro .timeStep(coupler);} );
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"micro"); }
     if (enable_check_state) { pam_debug_check_state(coupler, 6, nstep); }
+
+    if (use_crm_accel & !crm_acceleration_ceaseflag) {
+      pam_accelerate(coupler, nstep, nstop);
+      pam_accelerate_diagnose(coupler);
+    }
 
     pam_radiation_timestep_aggregation(coupler);
     pam_statistics_timestep_aggregation(coupler);

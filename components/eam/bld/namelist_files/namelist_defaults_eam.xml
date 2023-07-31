@@ -1117,12 +1117,17 @@
 <use_crm_accel    >.false.</use_crm_accel>
 <crm_accel_uv     >.false.</crm_accel_uv>
 <crm_accel_factor >0</crm_accel_factor>
-<use_crm_accel    use_MMF="1" MMF_microphysics_scheme="sam1mom">.true.</use_crm_accel>
-<crm_accel_uv     use_MMF="1" MMF_microphysics_scheme="sam1mom">.true.</crm_accel_uv>
-<!-- Disable MMF MSA for 2-mom microphyics -->
-<use_crm_accel    use_MMF="1" MMF_microphysics_scheme="m2005">.false.</use_crm_accel>
-<crm_accel_uv     use_MMF="1" MMF_microphysics_scheme="m2005">.false.</crm_accel_uv>
-<crm_accel_factor use_MMF="1">2</crm_accel_factor>
+<!-- sam1mom vs  -->
+<crm_accel_factor use_MMF="1" crm="sam"  >2</crm_accel_factor>
+<use_crm_accel    use_MMF="1" crm="sam"  >.true.</use_crm_accel>
+<crm_accel_uv     use_MMF="1" crm="sam"  >.true.</crm_accel_uv>
+<crm_accel_factor use_MMF="1" crm="samxx">2</crm_accel_factor>
+<use_crm_accel    use_MMF="1" crm="samxx">.true.</use_crm_accel>
+<crm_accel_uv     use_MMF="1" crm="samxx">.true.</crm_accel_uv>
+<crm_accel_factor use_MMF="1" crm="pam"  >1</crm_accel_factor>
+<use_crm_accel    use_MMF="1" crm="pam"  >.true.</use_crm_accel>
+<crm_accel_uv     use_MMF="1" crm="pam"  >.true.</crm_accel_uv>
+
 
 <!-- Cloud fraction -->
 <cldfrc_freeze_dry             >.true.</cldfrc_freeze_dry>

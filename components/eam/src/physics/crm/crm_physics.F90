@@ -72,8 +72,6 @@ module crm_physics
    integer :: crm_shoc_relvar_idx   = -1
    integer :: crm_shoc_cldfrac_idx  = -1
 
-   logical :: pam_enable_physics_tend_stats = .false.
-
 contains
 !===================================================================================================
 !===================================================================================================
@@ -490,32 +488,6 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       if (use_gw_convect) call pbuf_set_field(pbuf2d, ttend_dp_idx, 0._r8)
    end if
 
-#if defined(MMF_PAM)
-   pam_enable_physics_tend_stats = .true.
-   ! pam_stat_fields_active = .false.
-   ! if (hist_fld_active('MMF_DT_SGS    ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQV_SGS   ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQC_SGS   ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQI_SGS   ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQR_SGS   ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DT_MICRO  ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQV_MICRO ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQC_MICRO ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQI_MICRO ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQR_MICRO ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DT_DYCOR  ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQV_DYCOR ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQC_DYCOR ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQI_DYCOR ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQR_DYCOR ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DT_SPONGE ')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQV_SPONGE')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQC_SPONGE')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQI_SPONGE')) pam_stat_fields_active = .true.
-   ! if (hist_fld_active('MMF_DQR_SPONGE')) pam_stat_fields_active = .true.
-   ! if (pam_stat_fields_active)  pam_enable_physics_tend_stats = .true.
-#endif
-
 end subroutine crm_physics_init
 
 !===================================================================================================
@@ -760,13 +732,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    call phys_getopts(crm_accel_uv_out     = crm_accel_uv_tmp)
    use_crm_accel = use_crm_accel_tmp
    crm_accel_uv = crm_accel_uv_tmp
-
-   if (masterproc) then
-     if (use_crm_accel .and. trim(MMF_microphysics_scheme)/='sam1mom') then
-       write(0,*) "CRM time step relaxation is only compatible with sam1mom microphysics"
-       call endrun('crm main')
-     endif
-   endif
 
    nstep = get_nstep()
    itim = pbuf_old_tim_idx() ! "Old" pbuf time index (what does all this mean?)
@@ -1407,26 +1372,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_mirror_array_readwrite( 'output_qm_mean',         crm_output%qm_mean,         '' )
       call pam_mirror_array_readwrite( 'output_bm_mean',         crm_output%bm_mean,         '' )
 
-      ! call pam_mirror_array_readwrite( 'output_mu_crm',      crm_output%mu_crm,      '' )
-      ! call pam_mirror_array_readwrite( 'output_md_crm',      crm_output%md_crm,      '' )
-      ! call pam_mirror_array_readwrite( 'output_eu_crm',      crm_output%eu_crm,      '' )
-      ! call pam_mirror_array_readwrite( 'output_du_crm',      crm_output%du_crm,      '' )
-      ! call pam_mirror_array_readwrite( 'output_ed_crm',      crm_output%ed_crm,      '' )
-      ! call pam_mirror_array_readwrite( 'output_flux_qt',     crm_output%flux_qt,     '' )
-      ! call pam_mirror_array_readwrite( 'output_flux_u',      crm_output%flux_u,      '' )
-      ! call pam_mirror_array_readwrite( 'output_flux_v',      crm_output%flux_v,      '' )
-      ! call pam_mirror_array_readwrite( 'output_fluxsgs_qt',  crm_output%fluxsgs_qt,  '' )
-      ! call pam_mirror_array_readwrite( 'output_tkez',        crm_output%tkez,        '' )
-      ! call pam_mirror_array_readwrite( 'output_tkew',        crm_output%tkew,        '' )
-      ! call pam_mirror_array_readwrite( 'output_tkesgsz',     crm_output%tkesgsz,     '' )
-      ! call pam_mirror_array_readwrite( 'output_tkz',         crm_output%tkz,         '' )
-      ! call pam_mirror_array_readwrite( 'output_flux_qp',     crm_output%flux_qp,     '' )
-      ! call pam_mirror_array_readwrite( 'output_precflux',    crm_output%precflux,    '' )
-      ! call pam_mirror_array_readwrite( 'output_qt_trans',    crm_output%qt_trans,    '' )
-      ! call pam_mirror_array_readwrite( 'output_qp_trans',    crm_output%qp_trans,    '' )
-      ! call pam_mirror_array_readwrite( 'output_qp_fall',     crm_output%qp_fall,     '' )
-      ! call pam_mirror_array_readwrite( 'output_qp_evp',      crm_output%qp_evp,      '' )
-      ! call pam_mirror_array_readwrite( 'output_qp_src',      crm_output%qp_src,      '' )
       call pam_mirror_array_readwrite( 'output_qt_ls',       crm_output%qt_ls,       '' )
       call pam_mirror_array_readwrite( 'output_t_ls',        crm_output%t_ls,        '' )
       call pam_mirror_array_readwrite( 'output_rho_v_ls',    crm_output%rho_v_ls,    '' )
@@ -1457,9 +1402,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       ! call pam_mirror_array_readwrite( 'output_qci',         crm_output%qci,         '' )
       ! call pam_mirror_array_readwrite( 'output_qpl',         crm_output%qpl,         '' )
       ! call pam_mirror_array_readwrite( 'output_qpi',         crm_output%qpi,         '' )
-      ! call pam_mirror_array_readwrite( 'output_z0m',         crm_output%z0m,         '' )
-      ! call pam_mirror_array_readwrite( 'output_taux',        crm_output%taux,        '' )
-      ! call pam_mirror_array_readwrite( 'output_tauy',        crm_output%tauy,        '' )
       call pam_mirror_array_readwrite( 'output_precc',       crm_output%precc,       '' )
       call pam_mirror_array_readwrite( 'output_precl',       crm_output%precl,       '' )
       call pam_mirror_array_readwrite( 'output_precsc',      crm_output%precsc,      '' )
@@ -1504,18 +1446,20 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_set_option('gcm_dt',ztodt )
       call pam_set_option('crm_dt',crm_dt )
 
+      call pam_register_dimension('gcm_lev',pver)
+
       call pam_set_option('use_MMF_VT', use_MMF_VT_tmp )
       call pam_set_option('MMF_VT_wn_max', MMF_VT_wn_max )
       call pam_set_option('use_MMF_ESMT', use_MMF_ESMT_tmp )
+
       call pam_set_option('use_crm_accel', use_crm_accel_tmp )
+      call pam_set_option('crm_accel_uv', crm_accel_uv_tmp)
       call pam_set_option('crm_accel_factor', crm_accel_factor )
 
-      call pam_set_option('enable_physics_tend_stats', pam_enable_physics_tend_stats )
+      call pam_set_option('enable_physics_tend_stats', .false. )
 
       call pam_set_option('is_first_step', (nstep<=1) )
       call pam_set_option('am_i_root', masterproc )
-
-      call pam_register_dimension('gcm_lev',pver)
 
       call t_startf ('crm_call')
       call pam_driver()
