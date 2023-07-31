@@ -98,6 +98,7 @@ contains
           cam_in(c)%tref(i)      =  x2a(index_x2a_Sx_tref,  ig)  
           cam_in(c)%qref(i)      =  x2a(index_x2a_Sx_qref,  ig)
           cam_in(c)%u10(i)       =  x2a(index_x2a_Sx_u10,   ig)
+          cam_in(c)%u10withgusts(i) = x2a(index_x2a_Sx_u10withgusts, ig)
           cam_in(c)%icefrac(i)   =  x2a(index_x2a_Sf_ifrac, ig)  
           cam_in(c)%ocnfrac(i)   =  x2a(index_x2a_Sf_ofrac, ig)
           cam_in(c)%landfrac(i)  =  x2a(index_x2a_Sf_lfrac, ig)

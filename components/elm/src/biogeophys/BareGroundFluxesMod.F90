@@ -82,6 +82,7 @@ contains
     real(r8) :: zeta                             ! dimensionless height used in Monin-Obukhov theory
     real(r8) :: beta                             ! coefficient of convective velocity [-]
     real(r8) :: wc                               ! convective velocity [m/s]
+    real(r8) :: ugust_total(bounds%begp:bounds%endp) ! gustiness including convective velocity [m/s]
     real(r8) :: dth(bounds%begp:bounds%endp)     ! diff of virtual temp. between ref. height and surface
     real(r8) :: dthv                             ! diff of vir. poten. temp. between ref. height and surface
     real(r8) :: dqh(bounds%begp:bounds%endp)     ! diff of humidity between ref. height and surface
@@ -234,6 +235,7 @@ contains
             ur(p)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)+ugust(t)*ugust(t)))
          end if
          tau_diff(p) = 1.e100_r8
+         ugust_total(p) = ugust(t)
 
          dth(p)   = thm(p)-t_grnd(c)
          dqh(p)   = forc_q(t) - qg(c)
@@ -269,7 +271,7 @@ contains
 
          call FrictionVelocity(begp, endp, fn, filterp, &
               displa(begp:endp), z0mg_patch(begp:endp), z0hg_patch(begp:endp), z0qg_patch(begp:endp), &
-              obu(begp:endp), iter, ur(begp:endp), um(begp:endp), ustar(begp:endp), &
+              obu(begp:endp), iter, ur(begp:endp), um(begp:endp), ugust_total(begp:endp), ustar(begp:endp), &
               temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), fm(begp:endp), &
               frictionvel_vars)
 
@@ -302,6 +304,7 @@ contains
             else                                      !unstable
                zeta = max(-100._r8,min(zeta,-0.01_r8))
                wc = beta*(-grav*ustar(p)*thvstar*zii(c)/thv(c))**0.333_r8
+               ugust_total(p) = sqrt(ugust(t)**2 + wc**2)
                um(p) = sqrt(ur(p)*ur(p) + wc*wc)
             end if
             obu(p) = zldis(p)/zeta

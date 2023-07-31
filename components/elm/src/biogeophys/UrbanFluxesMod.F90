@@ -162,6 +162,7 @@ contains
     real(r8) :: t_roof_innerl(bounds%begl:bounds%endl)               ! temperature of inner layer of roof (K)
     real(r8) :: lngth_roof                                           ! length of roof (m)
     real(r8) :: wc                                                   ! convective velocity (m/s)
+    real(r8) :: ugust_total(bounds%begl:bounds%endl)                 ! gustiness including convective velocity [m/s]
     real(r8) :: zeta                                                 ! dimensionless height used in Monin-Obukhov theory
     real(r8) :: eflx_sh_grnd_scale(bounds%begp:bounds%endp)          ! scaled sensible heat flux from ground (W/m**2) [+ to atm]
     real(r8) :: qflx_evap_soi_scale(bounds%begp:bounds%endp)         ! scaled soil evaporation (mm H2O/s) (+ = to atm)
@@ -345,6 +346,7 @@ contains
             ur(l) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)+ugust(t)*ugust(t)))
          end if
          tau_diff(l) = 1.e100_r8
+         ugust_total(l) = ugust(t)
 
       end do
 
@@ -411,7 +413,7 @@ contains
             call FrictionVelocity(begl, endl, &
                  num_urbanl, filter_urbanl, &
                  z_d_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), &
-                 obu(begl:endl), iter, ur(begl:endl), um(begl:endl), ustar(begl:endl), &
+                 obu(begl:endl), iter, ur(begl:endl), um(begl:endl), ugust_total(begl:endl), ustar(begl:endl), &
                  temp1(begl:endl), temp2(begl:endl), temp12m(begl:endl), temp22m(begl:endl), fm(begl:endl), &
                  frictionvel_vars, landunit_index=.true.)
          end if
@@ -712,6 +714,7 @@ contains
             else                                      !unstable
                zeta = max(-100._r8,min(zeta,-0.01_r8))
                wc = beta(l)*(-grav*ustar(l)*thvstar*zii(l)/thv_g(l))**0.333_r8
+               ugust_total(l) = sqrt(ugust(t)**2 + wc**2)
                um(l) = sqrt(ur(l)*ur(l) + wc*wc)
             end if
 
