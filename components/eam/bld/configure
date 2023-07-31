@@ -271,21 +271,21 @@ OPTIONS
 
   Options for MMF:
 
-     -use_MMF           Build the MMF configuration (super-parameterized EAM)
-     -use_MMF_VT        enable CRM variance transport (VT)
-     -use_MMF_ESMT      enable CRM explicit scalar momentum transport (ESMT)
-     -use_ECPP          enable explicit-clouds-parameterized-pollutants scheme
-     -crm_nx <n>        CRM's x-grid.
-     -crm_ny <n>        CRM's y-grid.
-     -crm_nz <n>        CRM's z-grid.
-     -crm_dx <n>        CRM's horizontal grid spacing.
-     -crm_dt <n>        CRM's timestep.
-     -crm_nx_rad <n>    number of averaged columns for CRM radiation calculation in x direction
-     -crm_ny_rad <n>    number of averaged columns for CRM radiation calculation in y direction
-     -MMF_microphysics_scheme <string> CRM micro scheme - depends on CRM model [ sam1mom | p3 ].
-     -crm <model>       MMF CRM model              [ sam | samomp | samxx | pam]
-     -crm_adv           SAM CRM advection scheme   [ MPDATA | UM5]
-     -pam_dycor <dycor> PAM CRM dycor option       [ awfl | spam ]
+     -use_MMF                  Build the MMF configuration (super-parameterized EAM)
+     -use_MMF_VT               enable CRM variance transport (VT)
+     -use_MMF_ESMT             enable CRM explicit scalar momentum transport (ESMT)
+     -use_ECPP                 enable explicit-clouds-parameterized-pollutants scheme
+     -crm_nx <n>               CRM's x-grid.
+     -crm_ny <n>               CRM's y-grid.
+     -crm_nz <n>               CRM's z-grid.
+     -crm_dx <n>               CRM's horizontal grid spacing.
+     -crm_dt <n>               CRM's timestep.
+     -crm_nx_rad <n>           # of columns for CRM radiation calculation in x direction
+     -crm_ny_rad <n>           # of columns for CRM radiation calculation in y direction
+     -MMF_microphysics_scheme  CRM micro scheme - depends on CRM model [ sam1mom | p3 ].
+     -crm                      MMF CRM model            [ sam | samomp | samxx | pam]
+     -crm_adv                  SAM CRM advection scheme [ MPDATA | UM5]
+     -pam_dycor                PAM CRM dycor option     [ awfl | spam ]
 
    Options for radiation:
 
