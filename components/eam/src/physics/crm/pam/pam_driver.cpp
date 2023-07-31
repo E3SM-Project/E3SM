@@ -29,6 +29,8 @@ extern "C" void pam_driver() {
   using yakl::intrinsics::abs;
   using yakl::intrinsics::maxval;
   using yakl::atomicAdd;
+  using yakl::c::parallel_for;
+  using yakl::c::SimpleBounds;
   auto &coupler = pam_interface::get_coupler();
   //------------------------------------------------------------------------------------------------
   // retreive coupler options

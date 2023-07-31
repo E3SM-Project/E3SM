@@ -6,7 +6,7 @@ real constexpr dtemp_max = 5; // temperature tendency max threshold =>  5 K foll
 real constexpr temp_min = 50; // temperature minimum minthreshold   => 50 K following original UP-CAM implementation
 
 
-void pam_accelerate_nstop( pam::PamCoupler &coupler, int nstop) {
+void pam_accelerate_nstop( pam::PamCoupler &coupler, int &nstop) {
   auto crm_accel_factor = coupler.get_option<real>("crm_accel_factor");
   if(nstop%static_cast<int>((1+crm_accel_factor)) != 0) {
     printf("pam_accelerate_nstop: Error: (1+crm_accel_factor) does not divide equally into nstop: %4.4d  crm_accel_factor: %6.1f",nstop, crm_accel_factor);
@@ -85,7 +85,7 @@ inline void pam_accelerate_diagnose( pam::PamCoupler &coupler ) {
 }
 
 
-inline void pam_accelerate( pam::PamCoupler &coupler, int nstep, int nstop ) {
+inline void pam_accelerate( pam::PamCoupler &coupler, int nstep, int &nstop ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
   using yakl::atomicAdd;

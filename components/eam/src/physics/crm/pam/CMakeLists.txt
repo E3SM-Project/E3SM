@@ -77,7 +77,6 @@ endif()
 add_subdirectory(external/pam_core)
 add_subdirectory(external/physics)
 add_subdirectory(external/dynamics)
-add_subdirectory(external/externals/eigen)
 
 target_include_directories(pam_driver PUBLIC
       ${CMAKE_CURRENT_SOURCE_DIR}
@@ -120,9 +119,9 @@ target_compile_options(pam_driver PUBLIC
 )
 
 if (PAM_SCREAM_USE_CXX)
-  target_link_libraries(pam_driver pam_core physics dynamics eigen pam_scream_cxx_interfaces ekat p3 shoc physics_share scream_share kokkoscontainers kokkoscore)
+  target_link_libraries(pam_driver pam_core physics dynamics pam_scream_cxx_interfaces ekat p3 shoc physics_share scream_share kokkoscontainers kokkoscore)
 else()
-  target_link_libraries(pam_driver pam_core physics dynamics eigen)
+  target_link_libraries(pam_driver pam_core physics dynamics )
 endif()
 
 

@@ -182,6 +182,8 @@ void pam_debug_check_state( pam::PamCoupler &coupler, int id, int nstep ) {
 
 // print certain state variables
 void pam_debug_print_state( pam::PamCoupler &coupler, int id ) {
+  using yakl::c::parallel_for;
+  using yakl::c::SimpleBounds;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto nz     = coupler.get_option<int>("crm_nz");
   auto nx     = coupler.get_option<int>("crm_nx");

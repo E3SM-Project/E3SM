@@ -23,7 +23,7 @@ inline void pam_state_set_grid( pam::PamCoupler &coupler ) {
   real2d zint_tmp("zint_tmp",crm_nz+1,nens);
   // auto grav = coupler.get_option<double>("grav");
   real grav = 9.80616; // note - we can't use the coupler grav because it is set by micro init
-  parallel_for( Bounds<2>(crm_nz+1,nens) , YAKL_LAMBDA (int k_crm, int iens) {
+  parallel_for( SimpleBounds<2>(crm_nz+1,nens) , YAKL_LAMBDA (int k_crm, int iens) {
     int k_gcm = (gcm_nlev+1)-1-k_crm;
     zint_tmp(k_crm,iens) = input_zint(k_gcm,iens) + input_phis(iens)/grav;
   });
@@ -73,7 +73,7 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   auto input_zint = dm_host.get<real const,2>("input_zint").createDeviceCopy();
   //------------------------------------------------------------------------------------------------
   // Define GCM state for forcing
-  parallel_for( Bounds<2>(crm_nz+1,nens) , YAKL_LAMBDA (int k_crm, int iens) {
+  parallel_for( SimpleBounds<2>(crm_nz+1,nens) , YAKL_LAMBDA (int k_crm, int iens) {
     int k_gcm = (gcm_nlev+1)-1-k_crm;
     gcm_pint(k_crm,iens) = input_pint(k_gcm,iens);
   });
