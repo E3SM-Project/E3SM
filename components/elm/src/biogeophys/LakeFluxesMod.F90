@@ -57,7 +57,8 @@ contains
     use LakeCon             , only : lake_use_old_fcrit_minz0
     use LakeCon             , only : minz0lake, cur0, cus, curm, fcrit
     use QSatMod             , only : QSat
-    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, implicit_stress
+    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, &
+         implicit_stress, atm_gustiness, force_land_gustiness
     use elm_time_manager    , only : get_nstep
     !
     ! !ARGUMENTS:
@@ -495,9 +496,13 @@ contains
                um(p) = max(ur(p),0.1_r8)
             else                     !unstable
                zeta = max(-100._r8,min(zeta,-0.01_r8))
-               wc = beta1*(-grav*ustar(p)*thvstar*zii/thv(c))**0.333_r8
-               ugust_total(p) = sqrt(ugust(t)**2 + wc**2)
-               um(p) = sqrt(ur(p)*ur(p)+wc*wc)
+               if ((.not. atm_gustiness) .or. force_land_gustiness) then
+                  wc = beta1*(-grav*ustar(p)*thvstar*zii/thv(c))**0.333_r8
+                  ugust_total(p) = sqrt(ugust(t)**2 + wc**2)
+                  um(p) = sqrt(ur(p)*ur(p)+wc*wc)
+               else
+                  um(p) = max(ur(p),0.1_r8)
+               end if
             end if
             obu(p) = zldis(p)/zeta
 
