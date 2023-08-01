@@ -20,6 +20,7 @@ module FrictionVelocityMod
 
   logical, public :: implicit_stress = .false.
   logical, public :: atm_gustiness = .false.
+  logical, public :: force_land_gustiness = .false.
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: FrictionVelocity       ! Calculate friction velocity

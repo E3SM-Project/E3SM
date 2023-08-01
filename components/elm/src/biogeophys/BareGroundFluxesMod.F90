@@ -48,7 +48,8 @@ contains
     use elm_varcon           , only : cpair, vkc, grav, denice, denh2o
     use elm_varctl           , only : iulog, use_lch4
     use landunit_varcon      , only : istsoil, istcrop
-    use FrictionVelocityMod  , only : FrictionVelocity, MoninObukIni, implicit_stress
+    use FrictionVelocityMod  , only : FrictionVelocity, MoninObukIni, &
+         implicit_stress, atm_gustiness, force_land_gustiness
     use QSatMod              , only : QSat
     use SurfaceResistanceMod , only : do_soilevap_beta
     use elm_time_manager     , only : get_nstep
@@ -303,9 +304,13 @@ contains
                um(p) = max(ur(p),0.1_r8)
             else                                      !unstable
                zeta = max(-100._r8,min(zeta,-0.01_r8))
-               wc = beta*(-grav*ustar(p)*thvstar*zii(c)/thv(c))**0.333_r8
-               ugust_total(p) = sqrt(ugust(t)**2 + wc**2)
-               um(p) = sqrt(ur(p)*ur(p) + wc*wc)
+               if ((.not. atm_gustiness) .or. force_land_gustiness) then
+                  wc = beta*(-grav*ustar(p)*thvstar*zii(c)/thv(c))**0.333_r8
+                  ugust_total(p) = sqrt(ugust(t)**2 + wc**2)
+                  um(p) = sqrt(ur(p)*ur(p) + wc*wc)
+               else
+                  um(p) = max(ur(p),0.1_r8)
+               end if
             end if
             obu(p) = zldis(p)/zeta
          end do

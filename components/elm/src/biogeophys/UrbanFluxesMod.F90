@@ -64,7 +64,8 @@ contains
     use column_varcon       , only : icol_shadewall, icol_road_perv, icol_road_imperv
     use column_varcon       , only : icol_roof, icol_sunwall
     use filterMod           , only : filter
-    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, implicit_stress
+    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, &
+         implicit_stress, atm_gustiness, force_land_gustiness
     use QSatMod             , only : QSat
     use elm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd
     use elm_varctl          , only : use_vsfm
@@ -713,9 +714,13 @@ contains
                um(l) = max(ur(l),0.1_r8)
             else                                      !unstable
                zeta = max(-100._r8,min(zeta,-0.01_r8))
-               wc = beta(l)*(-grav*ustar(l)*thvstar*zii(l)/thv_g(l))**0.333_r8
-               ugust_total(l) = sqrt(ugust(t)**2 + wc**2)
-               um(l) = sqrt(ur(l)*ur(l) + wc*wc)
+               if ((.not. atm_gustiness) .or. force_land_gustiness) then
+                  wc = beta(l)*(-grav*ustar(l)*thvstar*zii(l)/thv_g(l))**0.333_r8
+                  ugust_total(l) = sqrt(ugust(t)**2 + wc**2)
+                  um(l) = sqrt(ur(l)*ur(l) + wc*wc)
+               else
+                  um(l) = max(ur(l),0.1_r8)
+               end if
             end if
 
             obu(l) = zldis(l)/zeta
