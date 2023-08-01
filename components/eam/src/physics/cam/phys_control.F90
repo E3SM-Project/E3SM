@@ -252,7 +252,7 @@ subroutine phys_ctl_readnl(nlfile)
       cflx_cpl_opt, &
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
-      rrtmg_temp_fix, &
+      rrtmg_temp_fix, ideal_phys_option, &
       modal_strat_sulfate_aod_treatment
    !-----------------------------------------------------------------------------
 
