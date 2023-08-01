@@ -89,6 +89,9 @@ extern "C" void pam_driver() {
 
   // now that initial state is set, more dycor initialization
   coupler.update_hydrostasis();
+  #if defined(MMF_PAM_DYCOR_AWFL)
+    dycore.declare_current_profile_as_hydrostatic(coupler,/*use_gcm_data=*/true);
+  #endif
 
   // Compute CRM forcing tendencies
   modules::compute_gcm_forcing_tendencies(coupler);

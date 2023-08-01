@@ -107,8 +107,8 @@ inline void pam_statistics_init( pam::PamCoupler &coupler ) {
   auto phys_tend_sponge_qc   = dm_device.get<real,2>("phys_tend_sponge_qc");
   auto phys_tend_sponge_qi   = dm_device.get<real,2>("phys_tend_sponge_qi");
   auto phys_tend_sponge_qr   = dm_device.get<real,2>("phys_tend_sponge_qr");
-
-  parallel_for("Initialize 0D aggregated quantities", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
+  // Initialize 0D aggregated quantities
+  parallel_for(SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     stat_aggregation_cnt (iens) = 0;
     phys_tend_sgs_cnt    (iens) = 0;
     phys_tend_micro_cnt  (iens) = 0;
@@ -117,7 +117,8 @@ inline void pam_statistics_init( pam::PamCoupler &coupler ) {
     precip_liq_aggregated(iens) = 0;
     precip_ice_aggregated(iens) = 0;
   });
-  parallel_for("Initialize 1D aggregated quantities", SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
+  // Initialize 1D aggregated quantities
+  parallel_for(SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
     liqwp_aggregated           (k,iens) = 0;
     icewp_aggregated           (k,iens) = 0;
     liq_ice_exchange_aggregated(k,iens) = 0;;
@@ -179,9 +180,9 @@ using yakl::c::parallel_for;
   auto phys_tend_save_qi      = dm_device.get<real,4>("phys_tend_save_qi");
   auto phys_tend_save_qr      = dm_device.get<real,4>("phys_tend_save_qr");
   //------------------------------------------------------------------------------------------------
-  // perform aggregation
+  // save temporary state for physics tendency calculation
   real r_nx_ny  = 1._fp / (nx*ny);
-  parallel_for("save temporary state for physics tendency calculation", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+  parallel_for(SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     phys_tend_save_temp(k,j,i,iens) = temp(k,j,i,iens);
     real rho_total = rho_d(k,j,i,iens) + rho_v(k,j,i,iens);
     phys_tend_save_qv(k,j,i,iens) = rho_v(k,j,i,iens) / rho_total;
@@ -257,9 +258,10 @@ inline void pam_statistics_aggregate_tendency( pam::PamCoupler &coupler, std::st
     phys_tend_qr    = dm_device.get<real,2>("phys_tend_sponge_qr");
   }
   //------------------------------------------------------------------------------------------------
+  // save temporary state for physics tendency calculation
   real r_crm_dt = 1._fp / crm_dt;  // precompute reciprocal to avoid costly divisions
   real r_nx_ny  = 1._fp / (nx*ny);  // precompute reciprocal to avoid costly divisions
-  parallel_for("save temporary state for physics tendency calculation", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+  parallel_for(SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     real rho_total = rho_d(k,j,i,iens) + rho_v(k,j,i,iens);
     real qv_tmp = rho_v(k,j,i,iens) / rho_total;
     real qc_tmp = rho_l(k,j,i,iens) / rho_total;
@@ -276,7 +278,8 @@ inline void pam_statistics_aggregate_tendency( pam::PamCoupler &coupler, std::st
     atomicAdd( phys_tend_qi  (k,iens) ,  tmp_tend_qi  *r_nx_ny );
     atomicAdd( phys_tend_qr  (k,iens) ,  tmp_tend_qr  *r_nx_ny );
   });
-  parallel_for("update aggregation count for phyics tendencies", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
+  // update aggregation count for phyics tendencies
+  parallel_for(SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     phys_tend_cnt(iens) += 1;
   });
   //------------------------------------------------------------------------------------------------
@@ -327,17 +330,19 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto clear_rh_cnt                = dm_device.get<real,2>("clear_rh_cnt");
   
   //------------------------------------------------------------------------------------------------
-  // perform aggregation
-  parallel_for("update aggregation count", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
+  // update aggregation count
+  parallel_for(SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     stat_aggregation_cnt(iens) = stat_aggregation_cnt(iens) + 1;
   });
   real r_nx_ny  = 1._fp/(nx*ny);
-  parallel_for("aggregate 0D statistics", SimpleBounds<3>(ny,nx,nens), YAKL_LAMBDA (int j, int i, int iens) {
-    // precip is already in m/s
+  // aggregate 0D statistics
+  parallel_for(SimpleBounds<3>(ny,nx,nens), YAKL_LAMBDA (int j, int i, int iens) {
+    // NOTE - precip is already in m/s
     atomicAdd( precip_liq_aggregated(iens), precip_liq(j,i,iens) * r_nx_ny );
     atomicAdd( precip_ice_aggregated(iens), precip_ice(j,i,iens) * r_nx_ny );
   });
-  parallel_for("aggregate 1D statistics", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+  // aggregate 1D statistics
+  parallel_for(SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     int k_gcm = gcm_nlev-1-k;
     real rho_total = rho_d(k,j,i,iens) + rho_v(k,j,i,iens);
     atomicAdd( liqwp_aggregated(k,iens), (rho_l(k,j,i,iens)/rho_total) * r_nx_ny * input_pdel(k_gcm,iens)*1000.0/grav );
@@ -411,12 +416,13 @@ inline void pam_statistics_compute_means( pam::PamCoupler &coupler ) {
   auto phys_tend_sponge_qc   = dm_device.get<real,2>("phys_tend_sponge_qc");
   auto phys_tend_sponge_qi   = dm_device.get<real,2>("phys_tend_sponge_qi");
   auto phys_tend_sponge_qr   = dm_device.get<real,2>("phys_tend_sponge_qr");
-
-  parallel_for("finalize 1D aggregated variables", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
+  // finalize 1D aggregated variables
+  parallel_for(SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     precip_liq(iens) = precip_liq(iens) / aggregation_cnt(iens);
     precip_ice(iens) = precip_ice(iens) / aggregation_cnt(iens);
   });
-  parallel_for("finalize 2D aggregated variables", SimpleBounds<2>(crm_nz,nens), YAKL_LAMBDA (int k, int iens) {
+  // finalize 2D aggregated variables
+  parallel_for(SimpleBounds<2>(crm_nz,nens), YAKL_LAMBDA (int k, int iens) {
     liqwp           (k,iens) = liqwp           (k,iens) / aggregation_cnt(iens);
     icewp           (k,iens) = icewp           (k,iens) / aggregation_cnt(iens);
     liq_ice_exchange(k,iens) = liq_ice_exchange(k,iens) / aggregation_cnt(iens);
@@ -548,8 +554,8 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   real2d phys_tend_sponge_qc_gcm  ("phys_tend_sponge_qc_gcm",  gcm_nlev,nens);
   real2d phys_tend_sponge_qi_gcm  ("phys_tend_sponge_qi_gcm",  gcm_nlev,nens);
   real2d phys_tend_sponge_qr_gcm  ("phys_tend_sponge_qr_gcm",  gcm_nlev,nens);
-
-  parallel_for("Initialize aggregated precipitation", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
+  // copy variables to equivalent variables on GCM grid
+  parallel_for(SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
     int k_crm = gcm_nlev-1-k_gcm;
     if (k_crm<crm_nz) {
       liqwp_gcm           (k_gcm,iens) = liqwp           (k_crm,iens);

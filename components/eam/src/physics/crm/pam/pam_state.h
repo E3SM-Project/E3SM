@@ -77,7 +77,7 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
     int k_gcm = (gcm_nlev+1)-1-k_crm;
     gcm_pint(k_crm,iens) = input_pint(k_gcm,iens);
   });
-  parallel_for("", SimpleBounds<2>(crm_nz,nens), YAKL_LAMBDA (int k_crm, int iens) {
+  parallel_for(SimpleBounds<2>(crm_nz,nens), YAKL_LAMBDA (int k_crm, int iens) {
     int k_gcm = gcm_nlev-1-k_crm;
 
     gcm_uvel (k_crm,iens) = input_ul(k_gcm,iens);
@@ -113,36 +113,6 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   });
   //------------------------------------------------------------------------------------------------
 }
-
-// // update horizontal mean of CRM dry density to match GCM dry density
-// inline void pam_state_update_dry_density( pam::PamCoupler &coupler ) {
-//   using yakl::c::parallel_for;
-//   using yakl::c::SimpleBounds;
-//   using yakl::atomicAdd;
-//   auto &dm_device = coupler.get_data_manager_device_readwrite();
-//   auto &dm_host   = coupler.get_data_manager_host_readwrite();
-//   auto nens       = coupler.get_option<int>("ncrms");
-//   auto nz         = coupler.get_option<int>("crm_nz");
-//   auto nx         = coupler.get_option<int>("crm_nx");
-//   auto ny         = coupler.get_option<int>("crm_ny");
-//   auto crm_rho_d  = dm_device.get<real,4>("density_dry");
-//   //------------------------------------------------------------------------------------------------
-//   // calculate horizontal mean
-//   real2d crm_hmean_rho_d("crm_hmean_rho_d"   ,nz,nens);
-//   parallel_for("Initialize horz mean of CRM dry density", SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
-//     crm_hmean_rho_d(k,iens) = 0;
-//   });
-//   real r_nx_ny  = 1._fp/(nx*ny);  // precompute reciprocal to avoid costly divisions
-//   parallel_for("Horz mean of CRM dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-//     atomicAdd( crm_hmean_rho_d(k,iens), crm_rho_d(k,j,i,iens) * r_nx_ny );
-//   });
-//   // replace horizontal mean dry density with GCM value
-//   auto gcm_rho_d = dm_device.get<real,2>("gcm_density_dry");
-//   parallel_for("update CRM state dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-//     crm_rho_d(k,j,i,iens) = crm_rho_d(k,j,i,iens) - crm_hmean_rho_d(k,iens) + gcm_rho_d(k,iens);
-//   });
-//   //------------------------------------------------------------------------------------------------
-// }
 
 
 // update anelastic reference state
@@ -188,8 +158,8 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
   real2d hmean_rho_i("hmean_rho_i",nz  ,nens);
   real2d hmean_temp ("hmean_temp" ,nz  ,nens);
   real r_nx_ny  = 1._fp/(nx*ny);  // precompute reciprocal to avoid costly divisions
-
-  parallel_for("", SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
+  // initialize horizontal means
+  parallel_for(SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
     hmean_pint(k,iens) = 0;
     if (k < nz) { 
       hmean_pmid (k,iens) = 0;
@@ -200,8 +170,8 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
       hmean_temp (k,iens) = 0;
     }
   });
-
-  parallel_for("", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+  // calculate horizontal means
+  parallel_for(SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     real pmid_tmp = rho_d(k,j,i,iens)*R_d*temp(k,j,i,iens) + rho_v(k,j,i,iens)*R_v*temp(k,j,i,iens);
     atomicAdd( hmean_pmid (k,iens), pmid_tmp * r_nx_ny );
     atomicAdd( hmean_rho_d(k,iens), rho_d   (k,j,i,iens) * r_nx_ny );
@@ -210,20 +180,27 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
     atomicAdd( hmean_rho_i(k,iens), rho_i   (k,j,i,iens) * r_nx_ny );
     atomicAdd( hmean_temp (k,iens), temp    (k,j,i,iens) * r_nx_ny );
   });
-
-  parallel_for("", SimpleBounds<4>(nz+1,ny,nx,nens) , YAKL_LAMBDA (int k, int j, int i, int iens) {
+  // calculate interface pressure from mid-level pressure
+  parallel_for(SimpleBounds<4>(nz+1,ny,nx,nens) , YAKL_LAMBDA (int k, int j, int i, int iens) {
     if (k == 0 ) {
-      hmean_pint(k,iens) = hmean_pmid(k  ,iens) + grav*(rho_d(k  ,j,i,iens)+rho_v(k  ,j,i,iens))*(zint(k+1,iens)-zint(k  ,iens))/2;
+      real rho = rho_d(k  ,j,i,iens)+rho_v(k  ,j,i,iens);
+      real dz  = zint(k+1,iens)-zint(k  ,iens);
+      hmean_pint(k,iens) = hmean_pmid(k  ,iens) + grav*rho*dz/2;
     } else if (k == nz) {
-      hmean_pint(k,iens) = hmean_pmid(k-1,iens) - grav*(rho_d(k-1,j,i,iens)+rho_v(k-1,j,i,iens))*(zint(k  ,iens)-zint(k-1,iens))/2;
+      real rho = rho_d(k-1,j,i,iens)+rho_v(k-1,j,i,iens);
+      real dz  = zint(k  ,iens)-zint(k-1,iens);
+      hmean_pint(k,iens) = hmean_pmid(k-1,iens) - grav*rho*dz/2;
     } else {
-      hmean_pint(k,iens) = 0.5_fp * ( hmean_pmid(k-1,iens) - grav*(rho_d(k-1,j,i,iens)+rho_v(k-1,j,i,iens))*(zint(k  ,iens)-zint(k-1,iens))/2 +
-                                      hmean_pmid(k  ,iens) + grav*(rho_d(k  ,j,i,iens)+rho_v(k  ,j,i,iens))*(zint(k+1,iens)-zint(k  ,iens))/2 );
+      real rhokm1 = rho_d(k-1,j,i,iens)+rho_v(k-1,j,i,iens);
+      real rhokm0 = rho_d(k  ,j,i,iens)+rho_v(k  ,j,i,iens);
+      real dzkm1  = zint(k  ,iens)-zint(k-1,iens);
+      real dzkm0  = zint(k+1,iens)-zint(k  ,iens);
+      hmean_pint(k,iens) = 0.5_fp * ( hmean_pmid(k-1,iens) - grav*rhokm1*dzkm1/2 +
+                                      hmean_pmid(k  ,iens) + grav*rhokm0*dzkm0/2 );
     }
   });
-
   // set anelastic reference state from CRM horizontal mean
-  parallel_for("", SimpleBounds<2>(nz+1,nens) , YAKL_LAMBDA (int k, int iens) {
+  parallel_for(SimpleBounds<2>(nz+1,nens) , YAKL_LAMBDA (int k, int iens) {
     ref_presi(k,iens) = hmean_pint(k,iens);
     if (k < nz) {
       ref_pres (k,iens) = hmean_pmid (k,iens);
@@ -236,6 +213,37 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
   });
   //------------------------------------------------------------------------------------------------
 }
+
+
+// // update horizontal mean of CRM dry density to match GCM dry density
+// inline void pam_state_update_dry_density( pam::PamCoupler &coupler ) {
+//   using yakl::c::parallel_for;
+//   using yakl::c::SimpleBounds;
+//   using yakl::atomicAdd;
+//   auto &dm_device = coupler.get_data_manager_device_readwrite();
+//   auto &dm_host   = coupler.get_data_manager_host_readwrite();
+//   auto nens       = coupler.get_option<int>("ncrms");
+//   auto nz         = coupler.get_option<int>("crm_nz");
+//   auto nx         = coupler.get_option<int>("crm_nx");
+//   auto ny         = coupler.get_option<int>("crm_ny");
+//   auto crm_rho_d  = dm_device.get<real,4>("density_dry");
+//   //------------------------------------------------------------------------------------------------
+//   // calculate horizontal mean
+//   real2d crm_hmean_rho_d("crm_hmean_rho_d"   ,nz,nens);
+//   parallel_for("Initialize horz mean of CRM dry density", SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
+//     crm_hmean_rho_d(k,iens) = 0;
+//   });
+//   real r_nx_ny  = 1._fp/(nx*ny);  // precompute reciprocal to avoid costly divisions
+//   parallel_for("Horz mean of CRM dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+//     atomicAdd( crm_hmean_rho_d(k,iens), crm_rho_d(k,j,i,iens) * r_nx_ny );
+//   });
+//   // replace horizontal mean dry density with GCM value
+//   auto gcm_rho_d = dm_device.get<real,2>("gcm_density_dry");
+//   parallel_for("update CRM state dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+//     crm_rho_d(k,j,i,iens) = crm_rho_d(k,j,i,iens) - crm_hmean_rho_d(k,iens) + gcm_rho_d(k,iens);
+//   });
+//   //------------------------------------------------------------------------------------------------
+// }
 
 
 // save CRM dry density to be recalled later - only for anelastic case
