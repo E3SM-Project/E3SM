@@ -1,6 +1,8 @@
 #ifndef SCREAM_COMBINE_OPS_HPP
 #define SCREAM_COMBINE_OPS_HPP
 
+#include "share/util/scream_universal_constants.hpp"
+
 // For KOKKOS_INLINE_FUNCTION
 #include <Kokkos_Core.hpp>
 #include <type_traits>
@@ -64,37 +66,68 @@ template<CombineMode CM, typename ScalarIn, typename ScalarOut,
 KOKKOS_FORCEINLINE_FUNCTION
 void combine (const ScalarIn& newVal, ScalarOut& result,
               const CoeffType alpha = CoeffType(1),
-              const CoeffType beta = CoeffType(0))
+              const CoeffType beta = CoeffType(0),
+	      const ScalarOut fill_val = constants::DEFAULT_FILL_VALUE)
 {
   switch (CM) {
     case CombineMode::Replace:
       result = newVal;
       break;
     case CombineMode::Rescale:
-      result *= beta;
+      if (result != fill_val) {
+        result *= beta;
+      }
       break;
     case CombineMode::ScaleReplace:
-      result = alpha*newVal;
+      if (newVal == fill_val) {
+        result = fill_val;
+      } else {
+        result = alpha*newVal;
+      }
       break;
     case CombineMode::Update:
-      result *= beta;
-      result += newVal;
+      if (result == fill_val || newVal == fill_val) {
+        result = fill_val;
+      } else {
+        result *= beta;
+        result += newVal;
+      }
       break;
     case CombineMode::ScaleUpdate:
-      result *= beta;
-      result += alpha*newVal;
+      if (result == fill_val || newVal == fill_val) {
+        result = fill_val;
+      } else {
+        result *= beta;
+        result += alpha*newVal;
+      }
       break;
     case CombineMode::ScaleAdd:
-      result += alpha*newVal;
+      if (result == fill_val || newVal == fill_val) {
+        result = fill_val;
+      } else {
+        result += alpha*newVal;
+      }
       break;
     case CombineMode::Add:
-      result += newVal;
+      if (result == fill_val || newVal == fill_val) {
+        result = fill_val;
+      } else {
+        result += newVal;
+      }
       break;
     case CombineMode::Multiply:
-      result *= newVal;
+      if (result == fill_val || newVal == fill_val) {
+        result = fill_val;
+      } else {
+        result *= newVal;
+      }
       break;
     case CombineMode::Divide:
-      result /= newVal;
+      if (result == fill_val || newVal == fill_val) {
+        result = fill_val;
+      } else {
+        result /= newVal;
+      }
       break;
   }
 }

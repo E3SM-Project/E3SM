@@ -3,6 +3,7 @@
 
 #include "share/field/field_header.hpp"
 #include "share/util/scream_combine_ops.hpp"
+#include "share/util/scream_universal_constants.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/std_meta/ekat_std_type_traits.hpp"
@@ -206,11 +207,11 @@ public:
   //       casting the values to whatever the data type of this field is.
   //       E.g., if data_type()=IntType, you can't pass double's.
   template<HostOrDevice HD = Device, typename ST = void>
-  void update (const Field& x, const ST alpha, const ST beta);
+  void update (const Field& x, const ST alpha, const ST beta, const float fill_val = constants::DEFAULT_FILL_VALUE);
 
   // Special case of update with alpha=0
   template<HostOrDevice HD = Device, typename ST = void>
-  void scale (const ST beta);
+  void scale (const ST beta, const float fill_val = constants::DEFAULT_FILL_VALUE);
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -271,7 +272,7 @@ protected:
   void deep_copy_impl (const Field& src);
 
   template<CombineMode CM, HostOrDevice HD, typename ST>
-  void update_impl (const Field& x, const ST alpha, const ST beta);
+  void update_impl (const Field& x, const ST alpha, const ST beta, const float fill_val = constants::DEFAULT_FILL_VALUE);
 
 protected:
 
