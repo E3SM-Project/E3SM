@@ -389,7 +389,7 @@ void perform_vertical_interpolation(
   const int nlevs_tgt,
   const Real msk_val)
 {
-  int ndofs = 1
+  int ndofs = 1;
   for (int ii=0; ii<N; ii++) {
     ndofs *= input.extent_int(ii);
   }

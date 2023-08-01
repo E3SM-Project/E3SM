@@ -104,6 +104,48 @@ void perform_vertical_interpolation(
   const int nlevs_tgt,
   const Real msk_val = masked_val);
 
+template<typename T, int P, int N> 
+void perform_vertical_interpolation(
+  const view_1d<const Pack<T,P>>&   x_src,
+  const view_1d<const Pack<T,P>>&   x_tgt,
+  const view_Nd<const Pack<T,P>,N>& input,
+  const view_Nd<      Pack<T,P>,N>& output,
+  const int nlevs_src,
+  const int nlevs_tgt,
+  const Real msk_val = masked_val);
+
+template<typename T, int P, int N> 
+void perform_vertical_interpolation(
+  const view_1d<const Pack<T,P>>&   x_src,
+  const view_1d<const Pack<T,P>>&   x_tgt,
+  const view_Nd<const Pack<T,P>,N>& input,
+  const view_Nd<      Pack<T,P>,N>& output,
+  const view_Nd<      Mask<P>,N>&   mask,
+  const int nlevs_src,
+  const int nlevs_tgt,
+  const Real msk_val = masked_val);
+
+template<typename T, int P, int N> 
+void perform_vertical_interpolation(
+  const view_1d<const Pack<T,P>>&   x_src,
+  const view_2d<const Pack<T,P>>&   x_tgt,
+  const view_Nd<const Pack<T,P>,N>& input,
+  const view_Nd<      Pack<T,P>,N>& output,
+  const int nlevs_src,
+  const int nlevs_tgt,
+  const Real msk_val = masked_val);
+
+template<typename T, int P, int N> 
+void perform_vertical_interpolation(
+  const view_1d<const Pack<T,P>>&   x_src,
+  const view_2d<const Pack<T,P>>&   x_tgt,
+  const view_Nd<const Pack<T,P>,N>& input,
+  const view_Nd<      Pack<T,P>,N>& output,
+  const view_Nd<      Mask<P>,N>&   mask,
+  const int nlevs_src,
+  const int nlevs_tgt,
+  const Real msk_val = masked_val);
+
 /* ---------------------------------------------------------------------- 
  * Main interpolation routine that applies vertical interpolation to a
  * single vertical slice of data. 
