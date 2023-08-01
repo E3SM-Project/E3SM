@@ -215,35 +215,36 @@ inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
 }
 
 
-// // update horizontal mean of CRM dry density to match GCM dry density
-// inline void pam_state_update_dry_density( pam::PamCoupler &coupler ) {
-//   using yakl::c::parallel_for;
-//   using yakl::c::SimpleBounds;
-//   using yakl::atomicAdd;
-//   auto &dm_device = coupler.get_data_manager_device_readwrite();
-//   auto &dm_host   = coupler.get_data_manager_host_readwrite();
-//   auto nens       = coupler.get_option<int>("ncrms");
-//   auto nz         = coupler.get_option<int>("crm_nz");
-//   auto nx         = coupler.get_option<int>("crm_nx");
-//   auto ny         = coupler.get_option<int>("crm_ny");
-//   auto crm_rho_d  = dm_device.get<real,4>("density_dry");
-//   //------------------------------------------------------------------------------------------------
-//   // calculate horizontal mean
-//   real2d crm_hmean_rho_d("crm_hmean_rho_d"   ,nz,nens);
-//   parallel_for("Initialize horz mean of CRM dry density", SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
-//     crm_hmean_rho_d(k,iens) = 0;
-//   });
-//   real r_nx_ny  = 1._fp/(nx*ny);  // precompute reciprocal to avoid costly divisions
-//   parallel_for("Horz mean of CRM dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-//     atomicAdd( crm_hmean_rho_d(k,iens), crm_rho_d(k,j,i,iens) * r_nx_ny );
-//   });
-//   // replace horizontal mean dry density with GCM value
-//   auto gcm_rho_d = dm_device.get<real,2>("gcm_density_dry");
-//   parallel_for("update CRM state dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-//     crm_rho_d(k,j,i,iens) = crm_rho_d(k,j,i,iens) - crm_hmean_rho_d(k,iens) + gcm_rho_d(k,iens);
-//   });
-//   //------------------------------------------------------------------------------------------------
-// }
+// update horizontal mean of CRM dry density to match GCM dry density
+inline void pam_state_update_dry_density( pam::PamCoupler &coupler ) {
+  using yakl::c::parallel_for;
+  using yakl::c::SimpleBounds;
+  using yakl::atomicAdd;
+  auto &dm_device = coupler.get_data_manager_device_readwrite();
+  auto &dm_host   = coupler.get_data_manager_host_readwrite();
+  auto nens       = coupler.get_option<int>("ncrms");
+  auto nz         = coupler.get_option<int>("crm_nz");
+  auto nx         = coupler.get_option<int>("crm_nx");
+  auto ny         = coupler.get_option<int>("crm_ny");
+  auto crm_rho_d  = dm_device.get<real,4>("density_dry");
+  //------------------------------------------------------------------------------------------------
+  // initialize horizontal mean of CRM dry density
+  real2d crm_hmean_rho_d("crm_hmean_rho_d"   ,nz,nens);
+  parallel_for(SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
+    crm_hmean_rho_d(k,iens) = 0;
+  });
+  real r_nx_ny  = 1._fp/(nx*ny);  // precompute reciprocal to avoid costly divisions
+  // calculate horizontal mean of CRM dry density
+  parallel_for(SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+    atomicAdd( crm_hmean_rho_d(k,iens), crm_rho_d(k,j,i,iens) * r_nx_ny );
+  });
+  // replace horizontal mean dry density with GCM value
+  auto gcm_rho_d = dm_device.get<real,2>("gcm_density_dry");
+  parallel_for(SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+    crm_rho_d(k,j,i,iens) = crm_rho_d(k,j,i,iens) - crm_hmean_rho_d(k,iens) + gcm_rho_d(k,iens);
+  });
+  //------------------------------------------------------------------------------------------------
+}
 
 
 // save CRM dry density to be recalled later - only for anelastic case
@@ -326,39 +327,45 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   auto crm_shoc_relvar   = dm_device.get<real,4>("inv_qc_relvar");
   auto crm_shoc_cldfrac  = dm_device.get<real,4>("cldfrac");
   auto gcm_rho_d         = dm_device.get<real,2>("gcm_density_dry");
+  auto nccn_prescribed   = dm_device.get<real,4>("nccn_prescribed");
+  auto nc_nuceat_tend    = dm_device.get<real,4>("nc_nuceat_tend");
+  auto ni_activated      = dm_device.get<real,4>("ni_activated");
   //------------------------------------------------------------------------------------------------
   // wrap the host CRM state data in YAKL arrays
-  auto state_u_wind        = dm_host.get<real const,4>("state_u_wind").createDeviceCopy();
-  auto state_v_wind        = dm_host.get<real const,4>("state_v_wind").createDeviceCopy();
-  auto state_w_wind        = dm_host.get<real const,4>("state_w_wind").createDeviceCopy();
-  auto state_temperature   = dm_host.get<real const,4>("state_temperature").createDeviceCopy();
-  auto state_rho_dry       = dm_host.get<real const,4>("state_rho_dry").createDeviceCopy();
-  auto state_qv            = dm_host.get<real const,4>("state_qv").createDeviceCopy();
-  auto state_qc            = dm_host.get<real const,4>("state_qc").createDeviceCopy();
-  auto state_qr            = dm_host.get<real const,4>("state_qr").createDeviceCopy();
-  auto state_qi            = dm_host.get<real const,4>("state_qi").createDeviceCopy();
-  auto state_nc            = dm_host.get<real const,4>("state_nc").createDeviceCopy();
-  auto state_nr            = dm_host.get<real const,4>("state_nr").createDeviceCopy();
-  auto state_ni            = dm_host.get<real const,4>("state_ni").createDeviceCopy();
-  auto state_qm            = dm_host.get<real const,4>("state_qm").createDeviceCopy();
-  auto state_bm            = dm_host.get<real const,4>("state_bm").createDeviceCopy();
-  auto state_t_prev        = dm_host.get<real const,4>("state_t_prev").createDeviceCopy();
-  auto state_q_prev        = dm_host.get<real const,4>("state_q_prev").createDeviceCopy();
-  auto state_shoc_tk       = dm_host.get<real const,4>("state_shoc_tk").createDeviceCopy();
-  auto state_shoc_tkh      = dm_host.get<real const,4>("state_shoc_tkh").createDeviceCopy();
-  auto state_shoc_wthv     = dm_host.get<real const,4>("state_shoc_wthv").createDeviceCopy();
-  auto state_shoc_relvar   = dm_host.get<real const,4>("state_shoc_relvar").createDeviceCopy();
-  auto state_shoc_cldfrac  = dm_host.get<real const,4>("state_shoc_cldfrac").createDeviceCopy();
+  auto state_u_wind          = dm_host.get<real const,4>("state_u_wind").createDeviceCopy();
+  auto state_v_wind          = dm_host.get<real const,4>("state_v_wind").createDeviceCopy();
+  auto state_w_wind          = dm_host.get<real const,4>("state_w_wind").createDeviceCopy();
+  auto state_temperature     = dm_host.get<real const,4>("state_temperature").createDeviceCopy();
+  auto state_rho_dry         = dm_host.get<real const,4>("state_rho_dry").createDeviceCopy();
+  auto state_qv              = dm_host.get<real const,4>("state_qv").createDeviceCopy();
+  auto state_qc              = dm_host.get<real const,4>("state_qc").createDeviceCopy();
+  auto state_qr              = dm_host.get<real const,4>("state_qr").createDeviceCopy();
+  auto state_qi              = dm_host.get<real const,4>("state_qi").createDeviceCopy();
+  auto state_nc              = dm_host.get<real const,4>("state_nc").createDeviceCopy();
+  auto state_nr              = dm_host.get<real const,4>("state_nr").createDeviceCopy();
+  auto state_ni              = dm_host.get<real const,4>("state_ni").createDeviceCopy();
+  auto state_qm              = dm_host.get<real const,4>("state_qm").createDeviceCopy();
+  auto state_bm              = dm_host.get<real const,4>("state_bm").createDeviceCopy();
+  auto state_t_prev          = dm_host.get<real const,4>("state_t_prev").createDeviceCopy();
+  auto state_q_prev          = dm_host.get<real const,4>("state_q_prev").createDeviceCopy();
+  auto state_shoc_tk         = dm_host.get<real const,4>("state_shoc_tk").createDeviceCopy();
+  auto state_shoc_tkh        = dm_host.get<real const,4>("state_shoc_tkh").createDeviceCopy();
+  auto state_shoc_wthv       = dm_host.get<real const,4>("state_shoc_wthv").createDeviceCopy();
+  auto state_shoc_relvar     = dm_host.get<real const,4>("state_shoc_relvar").createDeviceCopy();
+  auto state_shoc_cldfrac    = dm_host.get<real const,4>("state_shoc_cldfrac").createDeviceCopy();
+  auto input_nccn_prescribed = dm_host.get<real const,2>("input_nccn_prescribed").createDeviceCopy();
+  auto input_nc_nuceat_tend  = dm_host.get<real const,2>("input_nc_nuceat_tend").createDeviceCopy();
+  auto input_ni_activated    = dm_host.get<real const,2>("input_ni_activated").createDeviceCopy();
   //------------------------------------------------------------------------------------------------
   // Copy the host CRM data to the coupler
   parallel_for( "Copy in old CRM state",
                 SimpleBounds<4>(nz,ny,nx,nens),
                 YAKL_LAMBDA (int k, int j, int i, int iens) {
-    crm_rho_d        (k,j,i,iens) = gcm_rho_d(k,iens); // this disables dry density forcing
-    // crm_rho_d        (k,j,i,iens) = state_rho_dry(k,j,i,iens);
+    int k_gcm = (gcm_nlev+1)-1-k_crm;
+    // crm_rho_d        (k,j,i,iens) = gcm_rho_d(k,iens); // this disables dry density forcing
+    crm_rho_d        (k,j,i,iens) = state_rho_dry(k,j,i,iens);
     // NOTE - convert specific mass mixing ratios to density using previous state dry density from pbuf
     crm_rho_v        (k,j,i,iens) = state_qv(k,j,i,iens) * state_rho_dry(k,j,i,iens) / ( 1 - state_qv(k,j,i,iens) ) ;
-    // real rho_total = crm_rho_d(k,j,i,iens) + crm_rho_v(k,j,i,iens);
     real rho_total = state_rho_dry(k,j,i,iens) + crm_rho_v(k,j,i,iens);
     crm_rho_c        (k,j,i,iens) = state_qc(k,j,i,iens) * rho_total ;
     crm_rho_r        (k,j,i,iens) = state_qr(k,j,i,iens) * rho_total ;
@@ -372,14 +379,30 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
     crm_ni           (k,j,i,iens) = state_ni           (k,j,i,iens);
     crm_qm           (k,j,i,iens) = state_qm           (k,j,i,iens);
     crm_bm           (k,j,i,iens) = state_bm           (k,j,i,iens);
-    crm_t_prev       (k,j,i,iens) = state_t_prev       (k,j,i,iens);
-    crm_q_prev       (k,j,i,iens) = state_q_prev       (k,j,i,iens);
+    // shoc inputs
     crm_shoc_tk      (k,j,i,iens) = state_shoc_tk      (k,j,i,iens);
     crm_shoc_tkh     (k,j,i,iens) = state_shoc_tkh     (k,j,i,iens);
     crm_shoc_wthv    (k,j,i,iens) = state_shoc_wthv    (k,j,i,iens);
     crm_shoc_relvar  (k,j,i,iens) = state_shoc_relvar  (k,j,i,iens);
     crm_shoc_cldfrac (k,j,i,iens) = state_shoc_cldfrac (k,j,i,iens);
+    // p3 inputs
+    crm_t_prev       (k,j,i,iens) = state_t_prev       (k,j,i,iens);
+    crm_q_prev       (k,j,i,iens) = state_q_prev       (k,j,i,iens);
+    nccn_prescribed  (k,j,i,iens) = input_nccn_prescribed(k_gcm,iens);
+    nc_nuceat_tend   (k,j,i,iens) = input_nc_nuceat_tend (k_gcm,iens);
+    ni_activated     (k,j,i,iens) = input_ni_activated   (k_gcm,iens);
   });
+  //------------------------------------------------------------------------------------------------
+  // // Set surface fluxes here if being used or applied in SHOC
+  // auto input_shf = dm_host.get<real const,1>("input_shf").createDeviceCopy();
+  // auto input_lhf = dm_host.get<real const,1>("input_lhf").createDeviceCopy();
+  // auto sfc_shf = dm_device.get<real,3>("sfc_shf");
+  // auto sfc_lhf = dm_device.get<real,3>("sfc_lhf");
+  // parallel_for( SimpleBounds<3>(crm_ny,crm_nx,nens),
+  //   YAKL_LAMBDA (int j, int i, int iens) {
+  //   sfc_shf(j,i,iens) = input_shf(iens);
+  //   sfc_lhf(j,i,iens) = input_lhf(iens);
+  // });
   //------------------------------------------------------------------------------------------------
 }
 

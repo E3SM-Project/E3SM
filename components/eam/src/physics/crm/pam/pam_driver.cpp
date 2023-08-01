@@ -79,30 +79,25 @@ extern "C" void pam_driver() {
   // Copy input CRM state (saved by the GCM) to coupler
   pam_state_copy_input_to_coupler(coupler);
 
-  // update horizontal mean of CRM dry density to match GCM (also disables dry density forcing)
-  // pam_state_update_dry_density(coupler);
+  // update horizontal mean of dry density to match GCM (also disables dry density forcing)
+  pam_state_update_dry_density(coupler);
 
+  // if debugging - initialize saved state variables and check initial CRM state
   if (enable_check_state) {
     pam_debug_init(coupler);
     pam_debug_check_state(coupler, 0, 0);
   }
 
-  // now that initial state is set, more dycor initialization
-  coupler.update_hydrostasis();
-  #if defined(MMF_PAM_DYCOR_AWFL)
-    dycore.declare_current_profile_as_hydrostatic(coupler,/*use_gcm_data=*/true);
-  #endif
-
   // Compute CRM forcing tendencies
   modules::compute_gcm_forcing_tendencies(coupler);
 
-  // Copy input rad tendencies to coupler
+  // Copy input radiation tendencies to coupler
   pam_radiation_copy_input_to_coupler(coupler);
 
-  // initialize rad output variables
+  // initialize aggregated variables needed for radiation
   pam_radiation_init(coupler);
 
-  // initialize stat variables
+  // initialize aggregated variables for output statistics
   pam_statistics_init(coupler);
 
   // initialize variables for CRM mean-state acceleration
@@ -113,51 +108,29 @@ extern "C" void pam_driver() {
   auto input_bflx = dm_host.get<real const,1>("input_bflxls").createDeviceCopy();
   modules::surface_friction_init(coupler, input_tau, input_bflx);
 
+  // Perturb the CRM at the only on first CRM call
   if (is_first_step) {
-    // Perturb the CRM at the beginning of the run
     auto global_column_id = dm_host.get<int const,1>("global_column_id").createDeviceCopy();
     modules::perturb_temperature( coupler , global_column_id );
+  }
 
-    #if defined(P3_CXX)
+  // Microphysics initialization - load lookup tables
+  #if defined(P3_CXX)
+    if (is_first_step) {
       auto am_i_root = coupler.get_option<bool>("am_i_root");
       scream::p3::p3_init(/*write_tables=*/false, am_i_root);
       pam::p3_init_lookup_tables(); // Load P3 lookup table data - avoid re-loading every CRM call
-    #endif
-  }
+    }
+  #endif
 
+  // dycor initialization
   #if defined(MMF_PAM_DYCOR_SPAM)
     pam_state_set_reference_state(coupler);
     dycore.pre_time_loop(coupler);
+  #elif defined(MMF_PAM_DYCOR_AWFL)
+    dycore.declare_current_profile_as_hydrostatic(coupler,/*use_gcm_data=*/true);
   #endif
 
-  //------------------------------------------------------------------------------------------------
-  // special inputs for P3/SHOC - TODO: move this stuff to it's own routine, maybe in pam_state?
-
-  auto input_nccn_prescribed = dm_host.get<real const,2>("input_nccn_prescribed").createDeviceCopy();
-  auto input_nc_nuceat_tend  = dm_host.get<real const,2>("input_nc_nuceat_tend").createDeviceCopy();
-  auto input_ni_activated    = dm_host.get<real const,2>("input_ni_activated").createDeviceCopy();
-  auto nccn_prescribed       = dm_device.get<real,4>("nccn_prescribed");
-  auto nc_nuceat_tend        = dm_device.get<real,4>("nc_nuceat_tend");
-  auto ni_activated          = dm_device.get<real,4>("ni_activated");
-  parallel_for( SimpleBounds<4>(crm_nz,crm_ny,crm_nx,nens), 
-    YAKL_LAMBDA (int k_crm, int j, int i, int iens ) {
-    int k_gcm = (gcm_nlev+1)-1-k_crm;
-    nccn_prescribed(k_crm,j,i,iens) = input_nccn_prescribed(k_gcm,iens);
-    nc_nuceat_tend (k_crm,j,i,iens) = input_nc_nuceat_tend (k_gcm,iens);
-    ni_activated   (k_crm,j,i,iens) = input_ni_activated   (k_gcm,iens);
-  });
-
-  // // Set surface fluxes here if being used or applied in SHOC
-  // auto input_shf = dm_host.get<real const,1>("input_shf").createDeviceCopy();
-  // auto input_lhf = dm_host.get<real const,1>("input_lhf").createDeviceCopy();
-  // auto sfc_shf = dm_device.get<real,3>("sfc_shf");
-  // auto sfc_lhf = dm_device.get<real,3>("sfc_lhf");
-  // parallel_for( SimpleBounds<3>(crm_ny,crm_nx,nens),
-  //   YAKL_LAMBDA (int j, int i, int iens) {
-  //   sfc_shf(j,i,iens) = input_shf(iens);
-  //   sfc_lhf(j,i,iens) = input_lhf(iens);
-  // });
-  
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
