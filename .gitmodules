@@ -63,8 +63,8 @@
 	url = https://github.com/knbarton/fftw-3.3.8.git
 [submodule "gcam"]
 	path = components/gcam/src
-	url = git@github.com:E3SM-Project/giac
+	url = git@github.com:daleihao/giac.git
 	branch = working
 [submodule "giac"]
 	path = giac
-	url = git@github.com:E3SM-Project/giac
+	url = git@github.com:daleihao/giac.git
