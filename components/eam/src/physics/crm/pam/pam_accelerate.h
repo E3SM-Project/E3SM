@@ -185,7 +185,7 @@ inline void pam_accelerate( pam::PamCoupler &coupler, int nstep, int &nstop ) {
     // This only can happen once!
     coupler.set_option<bool>("crm_acceleration_ceaseflag",true);
     int nstop_new = nstop + (nstop - nstep + 1)*crm_accel_factor;
-    printf("pam_accelerate: MSA tendencies too large - nstop increased from %4.4d to %4.4d",nstop, nstop_new);
+    printf("pam_accelerate: MSA tendencies too large - nstop increased from %d to %d",nstop, nstop_new);
     nstop = nstop_new; 
     return;
   }
@@ -201,7 +201,7 @@ inline void pam_accelerate( pam::PamCoupler &coupler, int nstep, int &nstop ) {
       vvel(k,j,i,n) = vvel(k,j,i,n) + crm_accel_factor * vtend_acc(k,n); 
     }
     // apply limiter on temperature
-    temp(k,j,i,n) = max( temp_min, temp(k,j,i,n) );
+    temp(k,j,i,n) = std::max( temp_min, temp(k,j,i,n) );
   });
   //------------------------------------------------------------------------------------------------
   // Evaluate and address instances of negative water vapor
@@ -227,11 +227,9 @@ inline void pam_accelerate( pam::PamCoupler &coupler, int nstep, int &nstop ) {
       // Clip vapor density values at 0 and remove the negative excess in each layer
       // proportionally from the positive qt fields in the layer
       factor = 1.0 + qneg(k,n) / qpoz(k,n);
-      rhov(k,j,i,n) = max(0.0, rhov(k,j,i,n) * factor);
+      rhov(k,j,i,n) = std::max(0.0, rhov(k,j,i,n) * factor);
     } 
   });
   //------------------------------------------------------------------------------------------------
 }
-
-
 
