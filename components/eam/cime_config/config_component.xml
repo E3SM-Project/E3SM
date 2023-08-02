@@ -112,14 +112,14 @@
       <value compset="1850(?:SOI)?_EAM.*CHEMUCI.*LINOZ"  >1850_eam_chemUCI-Linoz</value>
       <value compset="1850(?:SOI)?_EAM.*CHEMUCI.*LINOZ.*MAM5"  >1850_eam_chemUCI-Linoz-mam5</value>
       <value compset="1950(?:SOI)?_EAM.*CMIP6"          >1950_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
-      <value compset="1850(?:SOI)?_EAM.*CMIP6.*_BGC%*"  >1850_eam_CMIP6_bgc</value>
+      <value compset="1850(?:SOI)?_EAM.*CMIP6.*_BGC%*"  >1850_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="2010(?:SOI)?_EAM.*CMIP6"          >2010_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="2010(?:SOI)?_EAM.*CHEMUCI.*LINOZ"  >2010_eam_chemUCI-Linoz</value>
       <value compset="2010(?:SOI)?_EAM.*CHEMUCI.*LINOZ.*MAM5"  >2010_eam_chemUCI-Linoz-mam5</value>
       <value compset="1850(?:SOI)?_EAM.*AR5sf"          >1850_E3SMv1_superfast_ar5-emis</value>
       <value compset="1850S_EAM.*AR5sf"                 >1850S_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6"          >20TR_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
-      <value compset="20TR(?:SOI)?_EAM.*CMIP6.*_BGC*"   >20TR_eam_CMIP6_bgc</value>
+      <value compset="20TR(?:SOI)?_EAM.*CMIP6.*_BGC*"   >20TR_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6"        >SSP585_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="SSP370(?:SOI)?_EAM.*CMIP6"        >SSP370_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6.*_BGC%B">SSP585_cam5_CMIP6_bgc</value>
