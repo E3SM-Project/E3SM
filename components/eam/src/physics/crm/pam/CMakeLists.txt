@@ -57,10 +57,12 @@ if ("${PAM_DYCORE}" STREQUAL "spam")
   set(PAMC_IO     none)
 endif()
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-   set(PAM_Fortran_FLAGS -g -real-size 64)
-else()
-   set(PAM_Fortran_FLAGS -g -fdefault-real-8 -fdefault-double-8 -ffree-line-length-none -ffixed-line-length-none )
+if (NOT PAM_SCREAM_USE_CXX)
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+     set(PAM_Fortran_FLAGS -g -real-size 64)
+  else()
+     set(PAM_Fortran_FLAGS -g -ffree-line-length-none -ffixed-line-length-none )
+  endif()
 endif()
 
 
@@ -108,9 +110,11 @@ endif()
 include(${YAKL_HOME}/yakl_utils.cmake)
 yakl_process_target(pam_driver)
 
-set_target_properties(pam_driver PROPERTIES
-  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
-)
+if (NOT PAM_SCREAM_USE_CXX)
+  set_target_properties(pam_driver PROPERTIES
+    Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
+  )
+endif()
 
 add_compile_options($<$<COMPILE_LANGUAGE:CXX>: -g >)
 
