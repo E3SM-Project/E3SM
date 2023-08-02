@@ -68,9 +68,15 @@ void Functions<Real,DefaultDevice>
 
  for (size_t i=0; i < zero_init.size(); ++i) {
     auto temp_view = zero_init[i];
-    Kokkos::parallel_for(
-       Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>>({0, 0}, {nj, nk_pack}), KOKKOS_LAMBDA (int j, int k) {
+    Kokkos::parallel_for("p3_main_init_zero",
+         policy, KOKKOS_LAMBDA(const MemberType& team) {
+
+      const Int j = team.league_rank();
+      Kokkos::parallel_for(
+        Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
          (*temp_view)(j,k) = 0.;
+     });
+
    });
  }
 }
