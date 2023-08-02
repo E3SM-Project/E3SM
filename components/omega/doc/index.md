@@ -23,6 +23,7 @@ Development is taking place at https://github.com/E3SM-Project/Omega.
 userGuide/QuickStart
 userGuide/OmegaBuild
 userGuide/DataTypes
+userGuide/MachEnv
 ```
 
 ```{toctree}
@@ -31,6 +32,7 @@ userGuide/DataTypes
 
 devGuide/QuickStart
 devGuide/DataTypes
+devGuide/MachEnv
 devGuide/CondaEnv
 devGuide/Docs
 devGuide/BuildDocs
