@@ -159,7 +159,7 @@ extern "C" void pam_driver() {
     coupler.run_module( "radiation"                    , [&] (pam::PamCoupler &coupler) {rad   .timeStep(coupler);} );
     if (enable_check_state) { pam_debug_check_state(coupler, 2, nstep); }
 
-    // The PAM-C anelastic dycor can dramatically change the dry density due to the assumption that 
+    // The PAM-C anelastic dycor can dramatically change the dry density due to the assumption that
     // the total density does not change, so we will save it here and recall after the dycor
     pam_statistics_save_state(coupler);
     #if defined(MMF_PAM_DYCOR_SPAM)
