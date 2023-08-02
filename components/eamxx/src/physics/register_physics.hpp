@@ -24,6 +24,9 @@
 #ifdef EAMXX_HAS_NUDGING
 #include "physics/nudging/eamxx_nudging_process_interface.hpp"
 #endif
+#ifdef EAMXX_HAS_MAM
+#include "physics/mam/eamxx_mam_microphysics_process_interface.hpp"
+#endif
 
 namespace scream {
 
@@ -46,6 +49,9 @@ inline void register_physics () {
 #endif
 #ifdef EAMXX_HAS_NUDGING
   proc_factory.register_product("Nudging",&create_atmosphere_process<Nudging>);
+#endif
+#ifdef EAMXX_HAS_MAM
+  proc_factory.register_product("MAMMicrophysics",&create_atmosphere_process<MAMMicrophysics>);
 #endif
 }
 

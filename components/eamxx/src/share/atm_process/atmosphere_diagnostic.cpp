@@ -22,8 +22,6 @@ void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
   // Some diagnostics need the timestep, store in case.
   m_dt = dt;
 
-  compute_diagnostic_impl ();
-
   // Set the timestamp of the diagnostic to the most
   // recent timestamp among the inputs
   const auto& inputs = get_fields_in();
@@ -41,8 +39,14 @@ void AtmosphereDiagnostic::compute_diagnostic (const double dt) {
       "  - Diag name: " + name() + "\n");
 
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-}
 
+  // Note: call the impl method *after* setting the diag time stamp.
+  // Some derived classes may "refuse" to compute the diag, due to some
+  // inconsistency of data. In that case, they can reset the diag time stamp
+  // to something invalid, which can be used by downstream classes to determine
+  // if the diag has been successfully computed or not.
+  compute_diagnostic_impl ();
+}
 
 void AtmosphereDiagnostic::run_impl (const double dt) {
   compute_diagnostic(dt);

@@ -4,14 +4,13 @@ set(DIAGNOSTIC_SRCS
   exner.cpp
   field_at_level.cpp
   field_at_pressure_level.cpp
+  field_at_height.cpp
   ice_water_path.cpp
   liquid_water_path.cpp
   longwave_cloud_forcing.cpp
   meridional_vapor_flux.cpp
   potential_temperature.cpp
-  precip_ice_surf_mass_flux.cpp
-  precip_liq_surf_mass_flux.cpp
-  precip_total_surf_mass_flux.cpp
+  precip_surf_mass_flux.cpp
   rain_water_path.cpp
   relative_humidity.cpp
   rime_water_path.cpp
@@ -21,6 +20,7 @@ set(DIAGNOSTIC_SRCS
   vertical_layer.cpp
   virtual_temperature.cpp
   zonal_vapor_flux.cpp
+  surf_upward_latent_heat_flux.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})

@@ -169,14 +169,12 @@ real(r8) :: iop_nudge_tscale
 real(r8) :: iop_perturb_high
 integer, parameter :: max_chars = 128
 character(len=max_chars) iopfile
-character(len=200) :: scm_clubb_iop_name
 logical  :: scm_iop_srf_prop
 logical  :: iop_dosubsidence
 logical  :: iop_coriolis
 logical  :: iop_nudge_tq
 logical  :: iop_nudge_uv
 logical  :: scm_diurnal_avg
-logical  :: scm_crm_mode
 logical  :: scm_observed_aero
 logical  :: precip_off
 logical  :: scm_multcols
@@ -225,7 +223,7 @@ contains
    use cam_restart,      only: restart_defaultopts, restart_setopts, restart_printopts
    use co2_cycle,        only: co2_cycle_readnl
    use shr_string_mod,   only: shr_string_toUpper
-   use scamMod,          only: scam_setopts,scam_default_opts
+   use iop_data_mod,     only: iop_setopts,iop_default_opts
 
    ! Some modules read their own namelist input.
    use spmd_utils,          only: spmd_utils_readnl
@@ -333,14 +331,12 @@ contains
    ! conservation checks
    namelist /cam_inparm/ print_energy_errors
 
-   ! scam
-   namelist /cam_inparm/ iopfile,scm_iop_srf_prop,iop_dosubsidence,iop_coriolis, &
-                         iop_nudge_tq, iop_nudge_uv, iop_nudge_tq_low, &
-                         iop_nudge_tq_high, iop_nudge_tscale, &
-                         scm_diurnal_avg,scm_crm_mode,scm_clubb_iop_name, &
-                         scm_observed_aero, precip_off, &
-                         iop_perturb_high, dp_crm, &
-                         scm_zero_non_iop_tracers
+   ! IOP
+    namelist /cam_inparm/ iopfile, scm_iop_srf_prop, iop_nudge_tq, iop_nudge_uv, &
+                         iop_nudge_tq_low, iop_nudge_tq_high, iop_nudge_tscale, &
+                         scm_observed_aero, precip_off, iop_coriolis, &
+                         scm_zero_non_iop_tracers, iop_perturb_high, dp_crm, &
+                         iop_dosubsidence, scm_zero_non_iop_tracers
 
 !-----------------------------------------------------------------------
 
@@ -373,9 +369,9 @@ contains
    call check_energy_defaultopts( &
       print_energy_errors_out = print_energy_errors )
 
-   ! Set default options for single column model
+   ! Set default options for single column or doubly periodic CRM mode
    if (present(single_column_in)) then
-      call scam_default_opts(scmlat_out=scmlat,scmlon_out=scmlon, &
+      call iop_default_opts(scmlat_out=scmlat,scmlon_out=scmlon, &
         single_column_out=single_column, &
         scm_iop_srf_prop_out=scm_iop_srf_prop,&
         iop_dosubsidence_out=iop_dosubsidence, &
@@ -385,14 +381,12 @@ contains
         iop_nudge_tq_low_out=iop_nudge_tq_low, &
         iop_nudge_tq_high_out=iop_nudge_tq_high, &
         iop_nudge_tscale_out=iop_nudge_tscale, &
-        iop_perturb_high_out=iop_perturb_high, &
-        scm_diurnal_avg_out=scm_diurnal_avg, &
-        scm_crm_mode_out=scm_crm_mode, &
         scm_observed_aero_out=scm_observed_aero, &
         precip_off_out=precip_off, &
+        iop_dosubsidence_out=iop_dosubsidence, &
+        iop_perturb_high_out=iop_perturb_high, &
         scm_multcols_out=scm_multcols, &
         dp_crm_out=dp_crm, &
-        scm_clubb_iop_name_out=scm_clubb_iop_name, &
         scm_zero_non_iop_tracers_out=scm_zero_non_iop_tracers)
    end if
 
@@ -454,14 +448,14 @@ contains
    call check_energy_setopts( &
       print_energy_errors_in = print_energy_errors )
 
-   ! Set runtime options for single column mode 
+   ! Set runtime options for single column or doubly periodic CRM mode 
    if (present(single_column_in) .and. present(scmlon_in) .and. present(scmlat_in)) then 
       if (single_column_in) then
          single_column = single_column_in
          scmlon = scmlon_in
          scmlat = scmlat_in
          scm_multcols = scm_multcols_in
-         call scam_setopts( scmlat_in=scmlat,scmlon_in=scmlon, &
+         call iop_setopts( scmlat_in=scmlat,scmlon_in=scmlon, &
                             iopfile_in=iopfile,single_column_in=single_column,&
                             scm_iop_srf_prop_in=scm_iop_srf_prop,&
                             iop_dosubsidence_in=iop_dosubsidence,&
@@ -471,14 +465,11 @@ contains
                             iop_nudge_tq_low_in=iop_nudge_tq_low, &
                             iop_nudge_tq_high_in=iop_nudge_tq_high, &
                             iop_nudge_tscale_in=iop_nudge_tscale, &
-                            iop_perturb_high_in=iop_perturb_high, &
-                            scm_diurnal_avg_in=scm_diurnal_avg, &
-                            scm_crm_mode_in=scm_crm_mode, &
+			    iop_perturb_high_in=iop_perturb_high, &
                             scm_observed_aero_in=scm_observed_aero, &
                             precip_off_in=precip_off, &
                             scm_multcols_in=scm_multcols,&
                             dp_crm_in=dp_crm,&
-                            scm_clubb_iop_name_in=scm_clubb_iop_name, &
                             scm_zero_non_iop_tracers_in=scm_zero_non_iop_tracers)
       end if
    endif

@@ -319,7 +319,7 @@ Default: Defined in namelist_defaults.xml
 	category="initialize" group="initialize">
 Initial condition type for sea ice state.
 
-Valid values: 'restart', 'uniform', 'circle', 'square' or 'uniform_interior'
+Valid values: 'restart', 'uniform', 'circle', 'square', 'uniform_interior' or 'uniform_1D'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -461,7 +461,7 @@ Default: Defined in namelist_defaults.xml
 	category="forcing" group="forcing">
 Atmospheric forcing type.
 
-Valid values: 'CORE'
+Valid values: 'CORE' or 'ISPOL'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -501,7 +501,15 @@ Default: Defined in namelist_defaults.xml
 	category="forcing" group="forcing">
 Sea surface temperature ocean forcing type.
 
-Valid values: 'ncar'
+Valid values: 'ncar' or 'ISPOL'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_forcing_bgc_type" type="char*1024"
+	category="forcing" group="forcing">
+Ocean biogeochemistry forcing type.
+
+Valid values: 'ISPOL'
 Default: Defined in namelist_defaults.xml
 </entry>
 

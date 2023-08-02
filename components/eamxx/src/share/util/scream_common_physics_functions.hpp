@@ -52,6 +52,18 @@ struct PhysicsFunctions
   static ScalarT calculate_density(const ScalarT& pseudo_density, const ScalarT& dz);
 
   //-----------------------------------------------------------------------------------------------//
+  // Determines the vertical wind velocity given the vertical pressure velocity
+  //   w = - omega / ( density * g )
+  // where,
+  //   rho            is the vertical wind velocity, [m/s]
+  //   omega          is the vertical pressure velocity , [Pa/s]
+  //   g              is the gravitational constant, [m/s2] - defined in physics_constants.hpp
+  //-----------------------------------------------------------------------------------------------//
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_vertical_velocity(const ScalarT& omega, const ScalarT& density);
+
+  //-----------------------------------------------------------------------------------------------//
   // Applies Exners Function which follows:
   //   Exner = (P/P0)^(Rd/Cp),
   // where,
@@ -193,7 +205,7 @@ struct PhysicsFunctions
 
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_drymmr_from_wetmmr_dp_based(const ScalarT& wetmmr, 
+  static ScalarT calculate_drymmr_from_wetmmr_dp_based(const ScalarT& wetmmr,
                                                        const ScalarT& pseudo_density, const ScalarT& pseudo_density_dry);
 
   //-----------------------------------------------------------------------------------------------//
@@ -359,6 +371,13 @@ struct PhysicsFunctions
                                  const InputProviderP& pseudo_density,
                                  const InputProviderZ& dz,
                                  const view_1d<ScalarT>& density);
+
+  template<typename ScalarT, typename InputProviderOmega, typename InputProviderRho>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_vertical_velocity (const MemberType& team,
+                                           const InputProviderOmega& omega,
+                                           const InputProviderRho& rho,
+                                           const view_1d<ScalarT>& w);
 
   template<typename ScalarT, typename InputProviderP>
   KOKKOS_INLINE_FUNCTION

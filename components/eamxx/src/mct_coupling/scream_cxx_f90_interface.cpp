@@ -51,7 +51,8 @@ void fpe_guard_wrapper (const Lambda& f) {
   // Execute wrapped function
   try {
     f();
-  } catch (...) {
+  } catch (std::exception &e) {
+    fprintf(stderr, "%s\n", e.what());
     auto& c = ScreamContext::singleton();
     c.clean_up();
     throw;

@@ -68,7 +68,6 @@ public:
       for (int ipack=0;ipack<m_npack;ipack++) {
         // The ipack slice of input variables used more than once
         const Spack& pmid_pack(pmid(icol,ipack));
-        const Spack& pmid_dry_pack(pmid_dry(icol,ipack));
         const Spack& T_atm_pack(T_atm(icol,ipack));
         const Spack& cld_frac_t_pack(cld_frac_t(icol,ipack));
         const Spack& pseudo_density_pack(pseudo_density(icol,ipack));

@@ -200,8 +200,10 @@ deep_copy_impl (const Field& src) {
   //       field might be a subfield of another. We need the reshaped view.
   //       Also, don't call Kokkos::deep_copy if this field and src have
   //       different pack sizes.
-  auto src_alloc = src.get_header().get_alloc_properties().get_alloc_size();
-  auto tgt_alloc =     get_header().get_alloc_properties().get_alloc_size();
+  auto src_alloc_props = src.get_header().get_alloc_properties();
+  auto tgt_alloc_props =     get_header().get_alloc_properties();
+  auto src_alloc_size  = src_alloc_props.get_alloc_size();
+  auto tgt_alloc_size  = tgt_alloc_props.get_alloc_size();
 
   // If a manual parallel_for is required (b/c of alloc sizes difference),
   // we need to create extents (rather than just using the one in layout),
@@ -217,14 +219,26 @@ deep_copy_impl (const Field& src) {
   switch (rank) {
     case 1:
       {
-        auto v     =     get_view<      ST*,HD>();
-        auto v_src = src.get_view<const ST*,HD>();
-        if (src_alloc==tgt_alloc) {
-          Kokkos::deep_copy(v,v_src);
+        if (src_alloc_props.contiguous() and tgt_alloc_props.contiguous()) {
+          auto v     =     get_view<      ST*,HD>();
+          auto v_src = src.get_view<const ST*,HD>();
+          if (src_alloc_size==tgt_alloc_size) {
+            Kokkos::deep_copy(v,v_src);
+          } else {
+            Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+              v(idx) = v_src(idx);
+            });
+          }
         } else {
-          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            v(idx) = v_src(idx);
-          });
+          auto v     =     get_strided_view<      ST*,HD>();
+          auto v_src = src.get_strided_view<const ST*,HD>();
+          if (src_alloc_size==tgt_alloc_size) {
+            Kokkos::deep_copy(v,v_src);
+          } else {
+            Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+              v(idx) = v_src(idx);
+            });
+          }
         }
       }
       break;
@@ -232,7 +246,7 @@ deep_copy_impl (const Field& src) {
       {
         auto v     =     get_view<      ST**,HD>();
         auto v_src = src.get_view<const ST**,HD>();
-        if (src_alloc==tgt_alloc) {
+        if (src_alloc_size==tgt_alloc_size) {
           Kokkos::deep_copy(v,v_src);
         } else {
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
@@ -247,7 +261,7 @@ deep_copy_impl (const Field& src) {
       {
         auto v     =     get_view<      ST***,HD>();
         auto v_src = src.get_view<const ST***,HD>();
-        if (src_alloc==tgt_alloc) {
+        if (src_alloc_size==tgt_alloc_size) {
           Kokkos::deep_copy(v,v_src);
         } else {
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
@@ -262,7 +276,7 @@ deep_copy_impl (const Field& src) {
       {
         auto v     =     get_view<      ST****,HD>();
         auto v_src = src.get_view<const ST****,HD>();
-        if (src_alloc==tgt_alloc) {
+        if (src_alloc_size==tgt_alloc_size) {
           Kokkos::deep_copy(v,v_src);
         } else {
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
@@ -277,7 +291,7 @@ deep_copy_impl (const Field& src) {
       {
         auto v     =     get_view<      ST*****,HD>();
         auto v_src = src.get_view<const ST*****,HD>();
-        if (src_alloc==tgt_alloc) {
+        if (src_alloc_size==tgt_alloc_size) {
           Kokkos::deep_copy(v,v_src);
         } else {
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
@@ -305,8 +319,13 @@ void Field::deep_copy_impl (const ST value) {
   switch (rank) {
     case 1:
       {
-        auto v = get_view<ST*,HD>();
-        Kokkos::deep_copy(v,value);
+        if (m_header->get_alloc_properties().contiguous()) {
+          auto v = get_view<ST*,HD>();
+          Kokkos::deep_copy(v,value);
+        } else {
+          auto v = get_strided_view<ST*,HD>();
+          Kokkos::deep_copy(v,value);
+        }
       }
       break;
     case 2:
@@ -452,11 +471,21 @@ update_impl (const Field& x, const ST alpha, const ST beta)
   switch (x_l.rank()) {
     case 1:
       {
-        auto xv = x.get_view<const ST*,HD>();
-        auto yv =   get_view<      ST*,HD>();
-        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-          combine<CM>(xv(idx),yv(idx),alpha,beta);
-        });
+        // Must handle the case where one of the two views is strided
+        if (x.get_header().get_alloc_properties().contiguous() and
+              get_header().get_alloc_properties().contiguous()) {
+          auto xv = x.get_view<const ST*,HD>();
+          auto yv =   get_view<      ST*,HD>();
+          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+            combine<CM>(xv(idx),yv(idx),alpha,beta);
+          });
+        } else {
+          auto xv = x.get_strided_view<const ST*,HD>();
+          auto yv =   get_strided_view<      ST*,HD>();
+          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+            combine<CM>(xv(idx),yv(idx),alpha,beta);
+          });
+        }
       }
       break;
     case 2:

@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
-#include "diagnostics/precip_ice_surf_mass_flux.hpp"
+#include "diagnostics/precip_surf_mass_flux.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -61,10 +61,11 @@ void run(std::mt19937_64& engine)
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
   // Construct the Diagnostic
-  ekat::ParameterList params;
   register_diagnostics();
+  ekat::ParameterList params;
+  params.set<std::string>("precip_type","ice");
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  auto diag = diag_factory.create("PrecipIceSurfMassFlux",comm,params);
+  auto diag = diag_factory.create("precip_surf_mass_flux",comm,params);
   diag->set_grids(gm);
 
   // Set the required fields for the diagnostic.

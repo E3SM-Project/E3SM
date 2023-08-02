@@ -2,13 +2,14 @@
 #define EAMXX_FIELD_AT_PRESSURE_LEVEL_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
-#include "share/util/scream_vertical_interpolation.hpp"
+
+#include <ekat/ekat_pack.hpp>
 
 namespace scream
 {
 
 /*
- * This diagnostic will produce the potential temperature.
+ * This diagnostic will produce a slice of a field at a given pressure level
  */
 
 class FieldAtPressureLevel : public AtmosphereDiagnostic
