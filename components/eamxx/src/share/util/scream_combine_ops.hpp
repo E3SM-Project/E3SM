@@ -66,8 +66,47 @@ template<CombineMode CM, typename ScalarIn, typename ScalarOut,
 KOKKOS_FORCEINLINE_FUNCTION
 void combine (const ScalarIn& newVal, ScalarOut& result,
               const CoeffType alpha = CoeffType(1),
-              const CoeffType beta = CoeffType(0),
-	      const ScalarOut fill_val = constants::DEFAULT_FILL_VALUE)
+              const CoeffType beta  = CoeffType(0))
+{
+  switch (CM) {
+    case CombineMode::Replace:
+      result = newVal;
+      break;
+    case CombineMode::Rescale:
+      result *= beta;
+      break;
+    case CombineMode::ScaleReplace:
+      result = alpha*newVal;
+      break;
+    case CombineMode::Update:
+      result *= beta;
+      result += newVal;
+      break;
+    case CombineMode::ScaleUpdate:
+      result *= beta;
+      result += alpha*newVal;
+      break;
+    case CombineMode::ScaleAdd:
+      result += alpha*newVal;
+      break;
+    case CombineMode::Add:
+      result += newVal;
+      break;
+    case CombineMode::Multiply:
+      result *= newVal;
+      break;
+    case CombineMode::Divide:
+      result /= newVal;
+      break;
+  }
+}
+/* Special version of combine that takes a mask into account */
+template<CombineMode CM, typename ScalarIn, typename ScalarOut,
+         typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
+KOKKOS_FORCEINLINE_FUNCTION
+void combine (const ScalarIn& newVal, ScalarOut& result, const float fill_val,
+              const CoeffType alpha = CoeffType(1),
+              const CoeffType beta  = CoeffType(0))
 {
   switch (CM) {
     case CombineMode::Replace:

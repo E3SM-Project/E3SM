@@ -477,13 +477,13 @@ update_impl (const Field& x, const ST alpha, const ST beta, const float fill_val
           auto xv = x.get_view<const ST*,HD>();
           auto yv =   get_view<      ST*,HD>();
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            combine<CM>(xv(idx),yv(idx),alpha,beta,fill_val);
+            combine<CM>(xv(idx),yv(idx),fill_val,alpha,beta);
           });
         } else {
           auto xv = x.get_strided_view<const ST*,HD>();
           auto yv =   get_strided_view<      ST*,HD>();
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            combine<CM>(xv(idx),yv(idx),alpha,beta,fill_val);
+            combine<CM>(xv(idx),yv(idx),fill_val,alpha,beta);
           });
         }
       }
@@ -495,7 +495,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const float fill_val
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j;
           unflatten_idx(idx,ext,i,j);
-          combine<CM>(xv(i,j),yv(i,j),alpha,beta,fill_val);
+          combine<CM>(xv(i,j),yv(i,j),fill_val,alpha,beta);
         });
       }
       break;
@@ -506,7 +506,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const float fill_val
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k;
           unflatten_idx(idx,ext,i,j,k);
-          combine<CM>(xv(i,j,k),yv(i,j,k),alpha,beta,fill_val);
+          combine<CM>(xv(i,j,k),yv(i,j,k),fill_val,alpha,beta);
         });
       }
       break;
@@ -517,7 +517,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const float fill_val
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k,l;
           unflatten_idx(idx,ext,i,j,k,l);
-          combine<CM>(xv(i,j,k,l),yv(i,j,k,l),alpha,beta,fill_val);
+          combine<CM>(xv(i,j,k,l),yv(i,j,k,l),fill_val,alpha,beta);
         });
       }
       break;
@@ -528,7 +528,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const float fill_val
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k,l,m;
           unflatten_idx(idx,ext,i,j,k,l,m);
-          combine<CM>(xv(i,j,k,l,m),yv(i,j,k,l,m),alpha,beta,fill_val);
+          combine<CM>(xv(i,j,k,l,m),yv(i,j,k,l,m),fill_val,alpha,beta);
         });
       }
       break;
@@ -539,7 +539,7 @@ update_impl (const Field& x, const ST alpha, const ST beta, const float fill_val
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k,l,m,n;
           unflatten_idx(idx,ext,i,j,k,l,m,n);
-          combine<CM>(xv(i,j,k,l,m,n),yv(i,j,k,l,m,n),alpha,beta,fill_val);
+          combine<CM>(xv(i,j,k,l,m,n),yv(i,j,k,l,m,n),fill_val,alpha,beta);
         });
       }
       break;
