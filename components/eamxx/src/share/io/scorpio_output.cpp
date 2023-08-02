@@ -107,8 +107,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   }
   if (params.isParameter("fill_threshold")) {
     m_avg_coeff_threshold = params.get<Real>("fill_threshold");
-  } else {
-    m_avg_coeff_threshold = 0.5; // default to 0.5
   }
 
   // Figure out what kind of averaging is requested
