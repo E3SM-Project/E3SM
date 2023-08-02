@@ -21,6 +21,14 @@ namespace scream
  * in its list of subcomponents (the AD should make sure of this).
 */
 
+// enum to track how exported fields will be set.
+enum ExportType {
+  FROM_MODEL =  0,  // Variable will be derived from atmosphere model state
+  FROM_FILE  =  1,  // Variable will be set given data from a file
+  CONSTANT   =  2   // Set variable to a constant value
+};
+
+
 class SurfaceCouplingExporter : public AtmosphereProcess
 {
 public:
@@ -69,7 +77,10 @@ public:
   // If calling in initialize_impl(), set
   // called_during_initialization=true to avoid exporting fields
   // which do not have valid entries.
-  void do_export(const double dt, const bool called_during_initialization=false);
+  void do_export(const double dt, const bool called_during_initialization=false);             // Main export routine
+  void compute_eamxx_exports(const double dt, const bool called_during_initialization=false); // Export vars are derived from eamxx state
+  void set_constant_exports(const double dt, const bool called_during_initialization=false);  // Export vars are set to a constant
+  void do_export_to_cpl(const bool called_during_initialization=false);                       // Finish export by copying data to cpl structures.
 
   // Take and store data from SCDataManager
   void setup_surface_coupling_data(const SCDataManager &sc_data_manager);
@@ -111,8 +122,13 @@ protected:
   // Number of fields in cpl data
   Int m_num_cpl_exports;
 
-  // Number of exports from SCREAM
-  Int m_num_scream_exports;
+  // Number of exports from EAMxx and how they will be handled
+  Int                               m_num_scream_exports;
+  view_1d<DefaultDevice,ExportType> m_export_source;
+  view_1d<HostDevice,ExportType>    m_export_source_h;
+  std::map<std::string,Real>        m_export_constants;
+  int                               m_num_from_model_exports=0;
+  int                               m_num_const_exports=0;
 
   // Views storing a 2d array with dims (num_cols,num_fields) for cpl export data.
   // The field idx strides faster, since that's what mct does (so we can "view" the

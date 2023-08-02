@@ -55,6 +55,17 @@ module ocn_time_integration_si
    use ocn_surface_land_ice_fluxes
    use ocn_transport_tests
 
+#ifdef MPAS_OPENACC
+#ifdef USE_MAGMA
+   use magma
+   use iso_c_binding
+#endif
+
+#ifdef USE_CUBLAS
+   use cublas
+#endif
+#endif  
+
    implicit none
    private
    save
@@ -71,7 +82,7 @@ module ocn_time_integration_si
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_time_integrator_si, &
+   public :: ocn_time_integrator_si,                  &
              ocn_time_integration_si_init,            &
              ocn_time_integrator_si_preconditioner,   &
              ocn_time_integrator_si_variable_destroy
@@ -98,7 +109,7 @@ module ocn_time_integration_si
       self_attraction_and_loading_beta
 
    ! Global variables for the split-implicit time stepper ---------------
-   real (kind=RKIND), allocatable,dimension(:)   :: &
+   real (kind=RKIND), allocatable,dimension(:,:) :: &
       prec_ivmat    ! an inversed preconditioning matrix
    real (kind=RKIND), dimension(2) :: &
       SIcst_allreduce_local2, &! array for local  summations
@@ -126,7 +137,13 @@ module ocn_time_integration_si
       tolerance_inner,  &! tolerance for the main solver iterations
       total_num_cells,  &! total number of surface cells
       mean_num_cells,   &! mean #cells for each core
-      dt_si              ! dt for the SI btr mode solver
+      dt_si,            &! dt for the SI btr mode solver
+      ! SI constants
+      SIcst_alpha0,SIcst_alpha1,SIcst_beta0,SIcst_beta1,           &
+      SIcst_omega0,SIcst_gamma0,SIcst_gamma1,SIcst_rho0,SIcst_rho1,&
+      SIcst_r0rh0,SIcst_w0rh0,SIcst_r0r0 ,SIcst_r00r0,SIcst_r00w0, &
+      SIcst_r00s0,SIcst_r00z0,SIcst_q0y0 ,SIcst_y0y0 ,SIcst_r00q0, &
+      SIcst_r00y0,SIcst_r00t0,SIcst_r00v0,SIcst_q0q0,resid
    integer :: &
       nPrecVec,         &! vector lenghts for preconditioner
       si_ismf,          &! SI solver linearization for ISMF cases
@@ -134,9 +151,45 @@ module ocn_time_integration_si
       nSiLargeIter       ! #iteration for the barotropic system
    character(len=5) :: si_algorithm ! Name of the iterative solver algorithm
 
+   type (field1DReal), pointer :: &
+      SIvec_zh1_field,SIvec_wh0_field,SIvec_rh1_field   
+                         ! field pointer for halo update
+
    integer :: ssh_sal_on
 
-!***********************************************************************
+#ifdef USE_GPU_AWARE_MPI
+   ! SI - halo exch related variables ----------------------------------
+
+   integer :: nSendCommList,nRecvCommList
+   integer :: nMaxSendList,nMaxRecvList
+
+   integer,dimension(:),pointer :: haloLayers
+
+   type si_exchList
+      integer,allocatable,dimension(:) :: destList,srcList
+   end type si_exchList
+
+   type si_halo
+      type(si_exchList),allocatable,dimension(:) :: exch
+      integer,allocatable,dimension(:) :: endPointID,nList
+   end type si_halo
+
+   type si_local_mpi
+      type(si_halo),allocatable,dimension(:) :: halo
+      real(kind=RKIND),allocatable,dimension(:) :: buffer
+      integer,allocatable,dimension(:) :: nExch,bufferOffset
+      integer :: procID,nList,reqID
+   end type si_local_mpi
+   
+   type(si_local_mpi),allocatable,dimension(:),target :: exchSend,exchRecv
+
+   real(kind=RKIND),pointer,dimension(:) :: sbuffer,rbuffer
+   real(kind=RKIND),allocatable,dimension(:) :: s1buffer,r1buffer
+#endif
+
+#ifdef USE_MAGMA
+   integer(kind=8) :: dprec_ivmat,queue,dxvec,dyvec
+#endif   
 
 !***********************************************************************
 
@@ -331,16 +384,6 @@ module ocn_time_integration_si
       real (kind=RKIND), dimension(:,:), pointer :: &
          layerThicknessLagNew
 
-      ! Semi-implicit variables
-      real (kind=RKIND) ::  &        !  temp scalars for the SI method
-         SIcst_q0y0_global , SIcst_y0y0_global , SIcst_q0q0_global , &
-         SIcst_r00r0_global, SIcst_r00w0_global, SIcst_r00w1_global, &
-         SIcst_r00q0_global, SIcst_r00t0_global, SIcst_r00v0_global, &
-         SIcst_r00y0_global, SIcst_r00s0_global, SIcst_r00z0_global, &
-         SIcst_r0rh0_global, SIcst_w0rh0_global, SIcst_gamma0      , &
-         SIcst_alpha0      , SIcst_beta0       ,                     &
-         SIcst_omega0      , SIcst_rho0
-
       integer ::     &
          siLargeIter  ! Index of the large btr system iteration
 
@@ -475,9 +518,10 @@ module ocn_time_integration_si
 
 #ifdef MPAS_OPENACC
       !$acc enter data copyin(normalVelocityCur, normalBarotropicVelocityCur, &
-      !$acc   sshCur, layerThicknessCur)
+      !$acc   sshCur, layerThicknessCur,sshSubcycleCur,sshSubcycleNew)
       !$acc enter data create(normalBaroClinicVelocityCur, normalVelocityNew, &
       !$acc   normalBaroclinicVelocityNew, sshNew, layerThicknessNew)
+
       if (associated(highFreqThicknessNew)) then
          !$acc enter data copyin(highFreqThicknessCur)
          !$acc enter data create(highFreqThicknessNew)
@@ -486,6 +530,7 @@ module ocn_time_integration_si
          !$acc enter data copyin(lowFreqDivergenceCur)
          !$acc enter data create(lowFreqDivergenceNew)
       endif
+
 #endif
 
       ! Initialize * variables that are used to compute baroclinic
@@ -658,7 +703,8 @@ module ocn_time_integration_si
       !$acc exit data delete(normalVelocityCur, normalBarotropicVelocityCur, &
       !$acc    sshCur, layerThicknessCur)
       !$acc exit data copyout(normalBaroClinicVelocityCur, normalVelocityNew, &
-      !$acc    normalBaroclinicVelocityNew, sshNew, layerThicknessNew)
+      !$acc    normalBaroclinicVelocityNew, sshNew, layerThicknessNew,        &
+      !$acc    sshSubcycleCur,sshSubcycleNew)
       if (associated(highFreqThicknessNew)) then
          !$acc exit data delete(highFreqThicknessCur)
          !$acc exit data copyout(highFreqThicknessNew)
@@ -667,7 +713,13 @@ module ocn_time_integration_si
          !$acc exit data delete(lowFreqDivergenceCur)
          !$acc exit data copyout(lowFreqDivergenceNew)
       endif
+
+      if (config_use_tidal_potential_forcing) then
+         !$acc enter data copyin(ssh_sal)
+         !$acc enter data create(sshSubcycleCurWithTides,tidalPotentialEta)
+      endif
 #endif
+
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! BEGIN large outer timestep iteration loop
@@ -974,6 +1026,17 @@ module ocn_time_integration_si
          ! Stage 2.1 : Preparation of variables before outer iterations
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#ifdef MPAS_OPENACC
+         !$acc enter data copyin(sshCur,sshNew,                       &
+         !$acc                   sshSubcycleCur,sshSubcycleNew,       &
+         !$acc                   normalBarotropicVelocitySubcycleCur, &
+         !$acc                   normalBarotropicVelocitySubcycleNew, &
+         !$acc                   normalBarotropicVelocityCur,         &
+         !$acc                   normalBarotropicVelocityNew,         &
+         !$acc                   bottomDepthEdge)
+         !$acc update device(barotropicForcing)
+#endif
+
          call mpas_timer_start("si btr vel")
 
          cellHaloComputeCounter = config_num_halos
@@ -983,13 +1046,19 @@ module ocn_time_integration_si
          nEdges = nEdgesHalo(edgeHaloComputeCounter-1)
 
          if (config_filter_btr_mode) then
+#ifdef MPAS_OPENACC
+            !$acc parallel loop present(barotropicForcing)
+#else
             !$omp parallel
             !$omp do schedule(runtime)
+#endif
             do iEdge = 1, nEdges
                barotropicForcing(iEdge) = 0.0_RKIND
             end do
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
          endif
 
 
@@ -1006,30 +1075,58 @@ module ocn_time_integration_si
                ! Here sshSubcycleNew and normalBarotropicVelocityCur
                ! are at time n+1/2.
    
+#ifdef MPAS_OPENACC
+               !$acc parallel present(sshSubcycleNew,sshCur,        &
+               !$acc    sshSubcycleCur,normalBarotropicVelocityCur, &
+               !$acc    normalBarotropicVelocitySubcycleCur)
+               !$acc loop gang
+#else
                !$omp parallel
                !$omp do schedule(runtime)
+#endif
                do iCell = 1,nCellsAll
                   sshSubcycleNew(iCell) = &
                      0.5_RKIND*( sshSubcycleNew(iCell) &
                                 +sshCur(iCell) )
                   sshSubcycleCur(iCell) = sshSubcycleNew(iCell)
                end do
+#ifndef MPAS_OPENACC
                !$omp end do
+#endif
    
+
+#ifdef MPAS_OPENACC
+               !$acc loop gang
+#else
                !$omp do schedule(runtime)
+#endif
                do iEdge = 1,nEdgesAll
                   normalBarotropicVelocityCur(iEdge) = &
                      normalBarotropicVelocitySubcycleCur(iEdge)
                end do
+#ifdef MPAS_OPENACC
+               !$acc end parallel
+#else
                !$omp end do
                !$omp end parallel
+#endif
             endif ! splitImplicitStep
    
+#ifdef MPAS_OPENACC
+            !$acc parallel loop gang &
+            !$acc    present(nEdgesOnEdge,weightsOnEdge,        &
+            !$acc            normalBarotropicVelocityCur,fEdge, &
+            !$acc            barotropicCoriolisTerm,            &
+            !$acc            edgesOnEdge)                       &
+            !$acc    private(CoriolisTerm,i,eoe)
+#else
             !$omp parallel
             !$omp do schedule(runtime) private(CoriolisTerm, i, eoe)
+#endif
             do iEdge = 1, nEdgesAll
                ! Compute the barotropic Coriolis term, -f*uPerp
                CoriolisTerm = 0.d0
+               !$acc loop vector reduction(+:CoriolisTerm)
                do i = 1, nEdgesOnEdge(iEdge)
                   eoe = edgesOnEdge(i,iEdge)
                   CoriolisTerm = CoriolisTerm + weightsOnEdge(i,iEdge) &
@@ -1038,8 +1135,10 @@ module ocn_time_integration_si
                end do ! i
                   barotropicCoriolisTerm(iEdge) = CoriolisTerm
             end do ! iEdge
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
    
             ! Subtract tidal potential from ssh, if needed
             ! Subtract the tidal potential from the current
@@ -1056,31 +1155,50 @@ module ocn_time_integration_si
                                        'tidalPotentialEta', &
                                         tidalPotentialEta)
    
+#ifdef MPAS_OPENACC
+               !$acc update device(sshSubcycleCurWithTides,tidalPotentialEta)
+ 
+               !$acc parallel loop gang  &
+               !$acc    present(sshSubcycleCurWithTides,sshSubcycleCur, &
+               !$acc       tidalPotentialEta,ssh_sal,sshSubcycleCur)
+#else
                !$omp parallel
                !$omp do schedule(runtime)
+#endif
                do iCell = 1, nCellsAll
-                 sshSubcycleCurWithTides(iCell) = sshSubcycleCur(iCell) &
-                            - tidalPotentialEta(iCell)                  &
-                            - ssh_sal_on * ssh_sal(iCell)               &
-                            - (1 - ssh_sal_on)                          &
-                            * config_self_attraction_and_loading_beta   &
-                            * sshSubcycleCur(iCell)
+                  sshSubcycleCurWithTides(iCell) = &
+                           sshSubcycleCur(iCell) - &
+                        tidalPotentialEta(iCell) - &
+                     ssh_sal_on * ssh_sal(iCell) - &
+                     (1 - ssh_sal_on) * self_attraction_and_loading_beta* &
+                           sshSubcycleCur(iCell)
                end do
+#ifndef MPAS_OPENACC
                !$omp end do
                !$omp end parallel
+#endif
    
                call mpas_pool_get_array(forcingPool,            &
                                      'sshSubcycleCurWithTides', &
                                       sshSubcycleNew)
    
+#ifdef MPAS_OPENACC
+               !$acc update device(sshSubcycleNew)
+
+               !$acc parallel loop gang  &
+               !$acc    present(sshSubcycleCur,sshSubcycleNew)
+#else
                !$omp parallel
                !$omp do schedule(runtime)
+#endif
                do iCell = 1,nCellsAll
                   sshSubcycleCur(iCell) = sshSubcycleNew(iCell)
                end do
+#ifndef MPAS_OPENACC
                !$omp end do
                !$omp end parallel
-   
+#endif
+
             endif !config_use_tidal_potential_forcing
    
             call mpas_timer_stop('btr vel si init')
@@ -1092,16 +1210,31 @@ module ocn_time_integration_si
    
             call mpas_timer_start("si btr residual")
    
+#ifdef MPAS_OPENACC
+            !$acc parallel loop gang async                              &
+            !$acc    present(nEdgesOnCell,edgesOnCell,cellsOnEdge,      &
+            !$acc       sshSubcycleCur,bottomDepthEdge,dcEdge,          &
+            !$acc       normalBarotropicVelocityCur,maxLevelEdgeTop,    &
+            !$acc       barotropicCoriolisTerm,barotropicForcing,       &
+            !$acc       edgeSignOnCell,dvEdge,areaCell,SIvec_r0,        &
+            !$acc       SIvec_r00,SIvec_s0,SIvec_z0)                    &
+            !$acc    private(sshTendb1,sshTendb2,sshTendAx,iEdge,cell1, &
+            !$acc       cell2,sshEdgeCur,thicknessSumCur,sshDiffCur,    &
+            !$acc       fluxb1,fluxb2,fluxAx,sshCurArea,i)
+#else
             !$omp parallel
             !$omp do schedule(runtime) &
             !$omp private(sshTendb1,sshTendb2,sshTendAx,iEdge, &
             !$omp         cell1,cell2,sshEdgeCur,thicknessSumCur, &
             !$omp         sshDiffCur,fluxb1,fluxb2,fluxAx,sshCurArea)
+#endif
             do iCell = 1, nPrecVec
                sshTendb1 = 0.0_RKIND
                sshTendb2 = 0.0_RKIND
                sshTendAx = 0.0_RKIND
    
+               !$acc loop vector                                  &
+               !$acc    reduction(+:sshTendb1,sshTendb2,sshTendAx)
                do i = 1, nEdgesOnCell(iCell)
                   iEdge = edgesOnCell(i, iCell)
                   if (maxLevelEdgeTop(iEdge).eq.0) cycle
@@ -1145,18 +1278,27 @@ module ocn_time_integration_si
                SIvec_r0(iCell) = (-sshCurArea - sshTendb1 + sshTendb2) &
                                 -(-sshCurArea - sshTendAx)
                SIvec_r00(iCell) = SIvec_r0(iCell)
-   
+               SIvec_s0(iCell)  = 0.0_RKIND
+               SIvec_z0(iCell)  = 0.0_RKIND
             end do ! iCell
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
    
             ! Preconditioning --------------------------------------------!
 
             call si_precond(SIvec_r0,SIvec_rh0)
+            !$acc wait
    
-            call mpas_timer_start("si halo r0")
+            call mpas_timer_start("si 1st halo")
+#ifdef USE_GPU_AWARE_MPI
+            call si_halo_exch(domain,SIvec_rh0)
+#else
             call mpas_dmpar_field_halo_exch(domain, 'SIvec_rh0')
-            call mpas_timer_stop("si halo r0")
+            !$acc update device(SIvec_rh0) async
+#endif
+            call mpas_timer_stop("si 1st halo")
    
             ! SpMV -------------------------------------------------------!
    
@@ -1168,10 +1310,16 @@ module ocn_time_integration_si
             ! Preconditioning --------------------------------------------!
 
                call si_precond(SIvec_w0,SIvec_wh0)
-      
-               call mpas_timer_start("si halo r0")
+               !$acc wait
+
+               call mpas_timer_start("si 1st halo")
+#ifdef USE_GPU_AWARE_MPI
+               call si_halo_exch(domain,SIvec_wh0)
+#else
                call mpas_dmpar_field_halo_exch(domain, 'SIvec_wh0')
-               call mpas_timer_stop("si halo r0")
+               !$acc update device(SIvec_wh0) async
+#endif
+               call mpas_timer_stop("si 1st halo")
       
                ! SpMV -------------------------------------------------------!
       
@@ -1180,47 +1328,58 @@ module ocn_time_integration_si
    
                ! Reduction --------------------------------------------------!
    
-               call mpas_timer_start("si reduction r0")
+               call mpas_timer_start("si 1st global reduction")
                call si_global_reduction(SIcst_allreduce_local2, &
                                    SIcst_allreduce_global2,     &
                                    globalReprodSum2fld1,        &
                                    globalReprodSum2fld2,        &
                                    si_algorithm,2,domain,       &
                                    SIvec_r00,SIvec_r0,SIvec_w0)
-               call mpas_timer_stop ("si reduction r0")
+               call mpas_timer_stop("si 1st global reduction")
    
-               SIcst_r00r0_global = SIcst_allreduce_global2(1)
-               SIcst_r00w0_global = SIcst_allreduce_global2(2)
-      
-               SIcst_rho0   = SIcst_r00r0_global
-               SIcst_alpha0 = SIcst_rho0 / SIcst_r00w0_global
+               !$acc serial async present(SIcst_r00r0,SIcst_r00w0,    &
+               !$acc           SIcst_alpha0,SIcst_beta0,SIcst_omega0, &
+               !$acc           SIcst_alpha1,SIcst_beta1,SIcst_rho0,   &
+               !$acc           SIcst_allreduce_global2)
+               SIcst_r00r0  = SIcst_allreduce_global2(1)
+               SIcst_r00w0  = SIcst_allreduce_global2(2)
+               SIcst_rho0   = SIcst_r00r0
+               SIcst_alpha0 = SIcst_rho0 / SIcst_r00w0
                SIcst_beta0  = 0.0_RKIND
                SIcst_omega0 = 0.0_RKIND
 
+               SIcst_alpha1 = SIcst_alpha0
+               SIcst_beta1  = SIcst_beta0
+               SIcst_r00r0  = 0.0_RKIND
+               SIcst_r00w0  = 0.0_RKIND
+               !$acc end serial
+               !$acc wait
+
             else if ( si_algorithm == 'scg' ) then !!!
            
-               do iCell = 1, nPrecVec
-                  SIvec_s0(iCell)  = 0.0_RKIND
-                  SIvec_z0(iCell)  = 0.0_RKIND
-               end do ! iCell
-   
                ! Reduction --------------------------------------------------!
-               call mpas_timer_start("si reduction r0")
+
+               call mpas_timer_start("si 1st global reduction")
                call si_global_reduction(SIcst_allreduce_local2, &
                                    SIcst_allreduce_global2,     &
                                    globalReprodSum2fld1,        &
                                    globalReprodSum2fld2,        &
                                    si_algorithm,2,domain,       &
                                    SIvec_r0,SIvec_w0,SIvec_rh0)
-               call mpas_timer_stop ("si reduction r0")
+               call mpas_timer_stop("si 1st global reduction")
    
-               SIcst_r0rh0_global = SIcst_allreduce_global2(1)
-               SIcst_w0rh0_global = SIcst_allreduce_global2(2)
-   
-               SIcst_alpha0 = SIcst_r0rh0_global / SIcst_w0rh0_global
+               !$acc serial present(SIcst_r0rh0,SIcst_w0rh0,SIcst_alpha0, &
+               !$acc           SIcst_beta0,SIcst_gamma0,                  &
+               !$acc           SIcst_allreduce_global2)
+               SIcst_r0rh0  = SIcst_allreduce_global2(1)
+               SIcst_w0rh0  = SIcst_allreduce_global2(2)
+               SIcst_alpha0 = SIcst_r0rh0 / SIcst_w0rh0
                SIcst_beta0  = 0.0_RKIND
-               SIcst_gamma0 = SIcst_r0rh0_global
-   
+               SIcst_gamma0 = SIcst_r0rh0
+               SIcst_r0rh0  = 0.0_RKIND
+               SIcst_w0rh0  = 0.0_RKIND
+               !$acc end serial
+
             end if !!!
    
             call mpas_timer_stop("si btr residual")
@@ -1236,18 +1395,19 @@ module ocn_time_integration_si
             if ( si_algorithm == 'sbicg' ) then
                call si_solver_sbicg(domain,                                &
                     sshSubcycleNew,sshSubcycleCur,bottomDepthEdge,         &
-                    tolerance_outer,SIcst_alpha0,SIcst_beta0,SIcst_gamma0, &
-                    SIcst_rho0)
+                    tolerance_outer)
             else if ( si_algorithm == 'scg' ) then
                call si_solver_scg(domain,                                  &
                     sshSubcycleNew,sshSubcycleCur,bottomDepthEdge,         &
-                    tolerance_outer,SIcst_alpha0,SIcst_beta0,SIcst_gamma0)
+                    tolerance_outer)
             endif
 
             !   boundary update on sshNew
             call mpas_timer_start("si halo iter")
+            !$acc update host(sshSubcycleNew)
             call mpas_dmpar_field_halo_exch(domain, 'sshSubcycle', &
                                             timeLevel=2)
+            !$acc update device(sshSubcycleNew) async
             call mpas_timer_stop("si halo iter")
    
             call mpas_timer_stop("si btr iteration")
@@ -1259,8 +1419,13 @@ module ocn_time_integration_si
    
             call mpas_timer_start("si btr vel update")
 
+#ifdef MPAS_OPENACC
+            !$acc parallel loop gang async &
+            !$acc    present(sshNew,sshSubcycleNew)
+#else
             !$omp parallel
             !$omp do schedule(runtime)
+#endif
             do iCell = 1,nCellsAll
                ! Use of sshNew to save the lagged SSH
                sshNew(iCell) = sshSubcycleNew(iCell)
@@ -1268,9 +1433,20 @@ module ocn_time_integration_si
             !$omp end do
             !$omp end parallel
    
+#ifdef MPAS_OPENACC
+            !$acc parallel loop async &
+            !$acc    present(edgeMask,cellsOnEdge,sshNew,dcEdge,    &
+            !$acc       normalBarotropicVelocityNew,sshSubcycleCur, &
+            !$acc       normalBarotropicVelocitySubcycleNew,        &
+            !$acc       normalBarotropicVelocityCur,                &
+            !$acc       barotropicCoriolisTerm,barotropicForcing,   &
+            !$acc       nEdgesHalo)                                 &
+            !$acc    private(temp_mask,cell1,cell2)
+#else
             !$omp parallel
             !$omp do schedule(runtime) &
             !$omp private(temp_mask,cell1,cell2)
+#endif
             do iEdge = 1,nEdgesHalo( edgeHaloComputeCounter-1 )
                temp_mask = edgeMask(1, iEdge)
    
@@ -1291,14 +1467,26 @@ module ocn_time_integration_si
                           *normalBarotropicVelocityNew(iEdge)          &
                           /dcEdge(iEdge) - barotropicForcing(iEdge)))
             end do ! iEdge
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
    
+#ifdef MPAS_OPENACC
+            !$acc parallel loop gang async &
+            !$acc    present(nEdgesOnEdge,edgesOnEdge,weightsOnEdge, &
+            !$acc        normalBarotropicVelocitySubcycleNew,        &
+            !$acc        normalBarotropicVelocityCur,fEdge,          &
+            !$acc        barotropicCoriolisTerm,nEdgesHalo)          &
+            !$acc    private(CoriolisTerm,eoe,i)
+#else
             !$omp parallel
             !$omp do schedule(runtime) private(CoriolisTerm, i, eoe)
+#endif
             do iEdge = 1,nEdgesHalo(2)
                ! Compute the barotropic Coriolis term, -f*uPerp
                CoriolisTerm = 0.0_RKIND
+               !$acc loop vector reduction(+:CoriolisTerm)
                do i = 1, nEdgesOnEdge(iEdge)
                   eoe = edgesOnEdge(i,iEdge)
                   CoriolisTerm = CoriolisTerm + weightsOnEdge(i,iEdge)       &
@@ -1309,12 +1497,25 @@ module ocn_time_integration_si
                end do
                barotropicCoriolisTerm(iEdge) = CoriolisTerm
             end do
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
 
+#ifdef MPAS_OPENACC
+            !$acc parallel loop gang async &
+            !$acc    present(edgeMask,cellsOnEdge,dcEdge,         &
+            !$acc       normalBarotropicVelocityNew,              &
+            !$acc       normalBarotropicVelocitySubcycleNew,      &
+            !$acc       normalBarotropicVelocityCur,              &
+            !$acc       barotropicCoriolisTerm,barotropicForcing, &
+            !$acc       nEdgesHalo) &
+            !$acc    private(temp_mask,cell1,cell2)
+#else
             !$omp parallel
             !$omp do schedule(runtime) &
             !$omp private(temp_mask,cell1,cell2)
+#endif
             do iEdge = 1,nEdgesHalo(2)
                temp_mask = edgeMask(1, iEdge)
    
@@ -1327,14 +1528,27 @@ module ocn_time_integration_si
                           *normalBarotropicVelocityNew(iEdge)        &
                           /dcEdge(iEdge) - barotropicForcing(iEdge)))
             end do ! iEdge
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
    
+
+#ifdef MPAS_OPENACC
+            !$acc parallel loop gang async &
+            !$acc    present(nEdgesOnEdge,edgesOnEdge,weightsOnEdge, &
+            !$acc        normalBarotropicVelocitySubcycleNew,        &
+            !$acc        normalBarotropicVelocityCur,fEdge,          &
+            !$acc        barotropicCoriolisTerm)                     &
+            !$acc    private(CoriolisTerm,eoe,i)
+#else
             !$omp parallel
             !$omp do schedule(runtime) private(CoriolisTerm, i, eoe)
+#endif
             do iEdge = 1,nEdgesOwned
                ! Compute the barotropic Coriolis term, -f*uPerp
                CoriolisTerm = 0.0_RKIND
+               !$acc loop vector reduction(+:CoriolisTerm)
                do i = 1, nEdgesOnEdge(iEdge)
                   eoe = edgesOnEdge(i,iEdge)
                   CoriolisTerm = CoriolisTerm + weightsOnEdge(i,iEdge)      &
@@ -1345,11 +1559,16 @@ module ocn_time_integration_si
                end do
                barotropicCoriolisTerm(iEdge) = CoriolisTerm
             end do
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
    
             call mpas_timer_start("si halo btr coriolis")
+            !$acc wait
+            !$acc update host(barotropicCoriolisTerm)
             call mpas_dmpar_field_halo_exch(domain, 'barotropicCoriolisTerm')
+            !$acc update device(barotropicCoriolisTerm) async
             call mpas_timer_stop("si halo btr coriolis")
    
             call mpas_timer_stop ("si btr vel update")
@@ -1364,6 +1583,20 @@ module ocn_time_integration_si
    
             ! SpMV -------------------------------------------------------!
    
+#ifdef MPAS_OPENACC
+            !$acc parallel loop gang async &
+            !$acc    present(nEdgesOnCell,edgesOnCell,cellsOnEdge,        &
+            !$acc       sshSubcycleCur,sshNew,bottomDepthEdge,dcEdge,     &
+            !$acc       normalBarotropicVelocityCur,maxLevelEdgeTop,      &
+            !$acc       barotropicCoriolisTerm,barotropicForcing,         &
+            !$acc       edgeSignOnCell,dvEdge,areaCell,SIvec_r0,          &
+            !$acc       SIvec_r00,SIvec_s0,SIvec_z0)                      &
+            !$acc    private(sshTendb1,sshTendb2,sshTendAx,iEdge,cell1,   &
+            !$acc       cell2,sshEdgeCur,sshEdgeLag,sshEdgeMid,k,         &
+            !$acc       thicknessSumCur,thicknessSumLag,thicknessSumMid,  &
+            !$acc       sshDiffCur,sshDiffLag,                            &
+            !$acc       fluxb1,fluxb2,fluxAx,sshCurArea,sshLagArea)
+#else
             !$omp parallel
             !$omp do schedule(runtime) &
             !$omp private(sshTendb1,sshTendb2,sshTendAx,iEdge, &
@@ -1371,11 +1604,13 @@ module ocn_time_integration_si
             !$omp         thicknessSumCur,thicknessSumMid, &
             !$omp         thicknessSumLag,sshDiffCur,sshDiffLag, &
             !$omp         fluxb1,fluxb2,fluxAx,sshCurArea,sshLagArea)
+#endif
             do iCell = 1, nPrecVec
                sshTendb1 = 0.0_RKIND
                sshTendb2 = 0.0_RKIND
                sshTendAx = 0.0_RKIND
    
+               !$acc loop vector reduction(+:sshTendb1,sshTendb2,sshTendAx)
                do i = 1, nEdgesOnCell(iCell)
                   iEdge = edgesOnCell(i, iCell)
                   if (maxLevelEdgeTop(iEdge).eq.0) cycle
@@ -1431,6 +1666,8 @@ module ocn_time_integration_si
                SIvec_r0(iCell) = (-sshCurArea - sshTendb1 + sshTendb2) &
                                 -(-sshLagArea - sshTendAx)
                SIvec_r00(iCell) = SIvec_r0(iCell)
+               SIvec_s0(iCell)  = 0.0_RKIND
+               SIvec_z0(iCell)  = 0.0_RKIND
             end do ! iCell
             !$omp end do
             !$omp end parallel
@@ -1438,9 +1675,15 @@ module ocn_time_integration_si
             ! Preconditioning --------------------------------------------!
 
             call si_precond(SIvec_r0,SIvec_rh0)
+            !$acc wait
    
             call mpas_timer_start("si halo r0")
+#ifdef USE_GPU_AWARE_MPI
+            call si_halo_exch(domain,SIvec_rh0)
+#else
             call mpas_dmpar_field_halo_exch(domain, 'SIvec_rh0')
+            !$acc update device(SIvec_rh0) async
+#endif
             call mpas_timer_stop("si halo r0")
    
             ! SpMV -------------------------------------------------------!
@@ -1452,9 +1695,15 @@ module ocn_time_integration_si
             ! Preconditioning --------------------------------------------!
 
                call si_precond(SIvec_w0,SIvec_wh0)
+               !$acc wait
       
                call mpas_timer_start("si halo r0")
+#ifdef USE_GPU_AWARE_MPI
+               call si_halo_exch(domain,SIvec_wh0)
+#else
                call mpas_dmpar_field_halo_exch(domain, 'SIvec_wh0')
+               !$acc update device(SIvec_wh0) async
+#endif
                call mpas_timer_stop("si halo r0")
       
                ! SpMV -------------------------------------------------------!
@@ -1463,46 +1712,51 @@ module ocn_time_integration_si
    
                ! Reduction --------------------------------------------------!
    
-               call mpas_timer_start("si reduction r0")
                call si_global_reduction(SIcst_allreduce_local2, &
                                    SIcst_allreduce_global2,     &
                                    globalReprodSum2fld1,        &
                                    globalReprodSum2fld2,        &
                                    si_algorithm,2,domain,       &
                                    SIvec_r00,SIvec_r0,SIvec_w0)
-               call mpas_timer_stop ("si reduction r0")
    
-               SIcst_r00r0_global = SIcst_allreduce_global2(1)
-               SIcst_r00w0_global = SIcst_allreduce_global2(2)
-      
-               SIcst_rho0   = SIcst_r00r0_global
-               SIcst_alpha0 = SIcst_rho0 / SIcst_r00w0_global
+               !$acc serial async present(SIcst_r00r0,SIcst_r00w0,    &
+               !$acc           SIcst_alpha0,SIcst_beta0,SIcst_omega0, &
+               !$acc           SIcst_alpha1,SIcst_beta1,SIcst_rho0,   &
+               !$acc           SIcst_allreduce_global2)
+               SIcst_r00r0 = SIcst_allreduce_global2(1)
+               SIcst_r00w0 = SIcst_allreduce_global2(2)
+               SIcst_rho0   = SIcst_r00r0
+               SIcst_alpha0 = SIcst_rho0 / SIcst_r00w0
                SIcst_beta0  = 0.0_RKIND
                SIcst_omega0 = 0.0_RKIND
 
+               SIcst_alpha1 = SIcst_alpha0
+               SIcst_beta1  = SIcst_beta0
+               SIcst_r00r0  = 0.0_RKIND
+               SIcst_r00w0  = 0.0_RKIND
+               !$acc end serial
+
             else if ( si_algorithm == 'scg' ) then !!!
            
-               do iCell = 1, nPrecVec
-                  SIvec_s0(iCell)  = 0.0_RKIND
-                  SIvec_z0(iCell)  = 0.0_RKIND
-               end do ! iCell
-   
                ! Reduction --------------------------------------------------!
-               call mpas_timer_start("si reduction r0")
                call si_global_reduction(SIcst_allreduce_local2, &
                                    SIcst_allreduce_global2,     &
                                    globalReprodSum2fld1,        &
                                    globalReprodSum2fld2,        &
                                    si_algorithm,2,domain,       &
                                    SIvec_r0,SIvec_w0,SIvec_rh0)
-               call mpas_timer_stop ("si reduction r0")
    
-               SIcst_r0rh0_global = SIcst_allreduce_global2(1)
-               SIcst_w0rh0_global = SIcst_allreduce_global2(2)
-   
-               SIcst_alpha0 = SIcst_r0rh0_global / SIcst_w0rh0_global
+               !$acc serial present(SIcst_r0rh0,SIcst_w0rh0,SIcst_alpha0, &
+               !$acc           SIcst_beta0,SIcst_gamma0,                  &
+               !$acc           SIcst_allreduce_global2)
+               SIcst_r0rh0 = SIcst_allreduce_global2(1)
+               SIcst_w0rh0 = SIcst_allreduce_global2(2)
+               SIcst_alpha0 = SIcst_r0rh0 / SIcst_w0rh0
                SIcst_beta0  = 0.0_RKIND
-               SIcst_gamma0 = SIcst_r0rh0_global
+               SIcst_gamma0 = SIcst_r0rh0
+               SIcst_r0rh0  = 0.0_RKIND
+               SIcst_w0rh0  = 0.0_RKIND
+               !$acc end serial
    
             end if !!!
 
@@ -1516,18 +1770,17 @@ module ocn_time_integration_si
 
             if ( si_algorithm == 'sbicg' ) then
                call si_solver_sbicg(domain,                                &
-                    sshSubcycleNew,sshNew,bottomDepthEdge,                 &
-                    tolerance_inner,SIcst_alpha0,SIcst_beta0,SIcst_gamma0, &
-                    SIcst_rho0)
+                    sshSubcycleNew,sshNew,bottomDepthEdge,tolerance_inner)
             else if ( si_algorithm == 'scg' ) then
                call si_solver_scg(domain,                                  &
-                    sshSubcycleNew,sshNew,bottomDepthEdge,                 &
-                    tolerance_inner,SIcst_alpha0,SIcst_beta0,SIcst_gamma0)
+                    sshSubcycleNew,sshNew,bottomDepthEdge,tolerance_inner)
             endif
 
             ! boundary update on SSHnew
             call mpas_timer_start("si halo iter")
+            !$acc update host(sshSubcycleNew)
             call mpas_dmpar_field_halo_exch(domain, 'sshSubcycle', timeLevel=2)
+            !$acc update device(sshSubcycleNew)
             call mpas_timer_stop("si halo iter")
    
             call mpas_timer_stop("si btr iteration")
@@ -1538,9 +1791,20 @@ module ocn_time_integration_si
    
             call mpas_timer_start("si btr vel update")
    
+#ifdef MPAS_OPENACC
+            !$acc parallel loop gang &
+            !$acc    present(edgeMask,cellsOnEdge,sshNew,dcEdge,    &
+            !$acc       normalBarotropicVelocityNew,sshSubcycleCur, &
+            !$acc       normalBarotropicVelocitySubcycleNew,        &
+            !$acc       normalBarotropicVelocityCur,                &
+            !$acc       barotropicCoriolisTerm,barotropicForcing,   &
+            !$acc       sshSubcycleNew,nEdgesHalo)                  &
+            !$acc    private(temp_mask,cell1,cell2)
+#else
             !$omp parallel
             !$omp do schedule(runtime) &
             !$omp private(temp_mask,cell1,cell2)
+#endif
             do iEdge = 1, nEdgesHalo(2)
                temp_mask = edgeMask(1, iEdge)
    
@@ -1561,14 +1825,26 @@ module ocn_time_integration_si
                           *normalBarotropicVelocityNew(iEdge)          &
                           /dcEdge(iEdge) - barotropicForcing(iEdge)))
             end do ! iEdge
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
-   
+#endif
+
+#ifdef MPAS_OPENACC
+            !$acc parallel loop gang  &
+            !$acc    present(nEdgesOnEdge,edgesOnEdge,weightsOnEdge, &
+            !$acc        normalBarotropicVelocitySubcycleNew,        &
+            !$acc        normalBarotropicVelocityCur,fEdge,          &
+            !$acc        barotropicCoriolisTerm,nEdgesHalo)          &
+            !$acc    private(CoriolisTerm,eoe,i)
+#else
             !$omp parallel
             !$omp do schedule(runtime) private(CoriolisTerm, i, eoe)
+#endif
             do iEdge = 1,nEdgesHalo(1)
                ! Compute the barotropic Coriolis term, -f*uPerp
                CoriolisTerm = 0.0_RKIND
+               !$acc loop vector reduction(+:CoriolisTerm)
                do i = 1, nEdgesOnEdge(iEdge)
                   eoe = edgesOnEdge(i,iEdge)
                   CoriolisTerm =  CoriolisTerm + weightsOnEdge(i,iEdge)     &
@@ -1579,12 +1855,24 @@ module ocn_time_integration_si
                end do
                barotropicCoriolisTerm(iEdge) = CoriolisTerm
             end do
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
    
+#ifdef MPAS_OPENACC
+            !$acc parallel loop gang                                &
+            !$acc    present(edgeMask,cellsOnEdge,dcEdge,           &
+            !$acc       normalBarotropicVelocityNew,                &
+            !$acc       normalBarotropicVelocitySubcycleNew,        &
+            !$acc       normalBarotropicVelocityCur,                &
+            !$acc       barotropicCoriolisTerm,barotropicForcing)   &
+            !$acc    private(temp_mask,cell1,cell2)
+#else
             !$omp parallel
             !$omp do schedule(runtime) &
             !$omp private(temp_mask,cell1,cell2)
+#endif
             do iEdge = 1, nEdgesOwned
                temp_mask = edgeMask(1, iEdge)
    
@@ -1598,12 +1886,27 @@ module ocn_time_integration_si
                           *normalBarotropicVelocityNew(iEdge)          &
                           /dcEdge(iEdge) - barotropicForcing(iEdge)))
             end do ! iEdge
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
    
+#ifdef MPAS_OPENACC
+            !$acc parallel loop gang &
+            !$acc    present(cellsOnEdge,sshSubcycleCur,sshSubcycleNew, &
+            !$acc       normalBarotropicVelocitySubcycleCur,            &
+            !$acc       normalBarotropicVelocitySubcycleNew,            &
+            !$acc       normalBarotropicVelocityCur,dcEdge,             &
+            !$acc       normalBarotropicVelocityNew,edgeMask,           &
+            !$acc       bottomDepthEdge,barotropicThicknessFlux,        &
+            !$acc       barotropicCoriolisTerm,barotropicForcing,       &
+            !$acc       maxLevelEdgeTop)                                &
+            !$acc    private(cell1,cell2,sshEdge,thicknessSum)
+#else
             !$omp parallel
             !$omp do schedule(runtime) &
             !$omp private(cell1,cell2,sshEdge,thicknessSum)
+#endif
             do iEdge = 1, nEdgesOwned
                if (maxLevelEdgeTop(iEdge).eq.0) cycle
 
@@ -1629,12 +1932,15 @@ module ocn_time_integration_si
                          + normalBarotropicVelocityCur(iEdge) )       &
                          * thicknessSum
             end do ! iEdge
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
-   
+#endif
    
             ! boundary update on F
             call mpas_timer_start("si halo btr vel")
+            !$acc update host(barotropicThicknessFlux, &
+            !$acc             normalBarotropicVelocitySubcycleCur)
             call mpas_dmpar_exch_group_create(domain, finalBtrGroupName)
             call mpas_dmpar_exch_group_add_field(domain, &
                       finalBtrGroupName, 'barotropicThicknessFlux')
@@ -1645,16 +1951,26 @@ module ocn_time_integration_si
             call mpas_dmpar_exch_group_full_halo_exch(domain, &
                       finalBtrGroupName)
             call mpas_dmpar_exch_group_destroy(domain, finalBtrGroupName)
+            !$acc update device(barotropicThicknessFlux, &
+            !$acc               normalBarotropicVelocitySubcycleCur)
             call mpas_timer_stop("si halo btr vel")
    
+#ifdef MPAS_OPENACC
+            !$acc parallel loop gang &
+            !$acc    present(normalBarotropicVelocityNew, &
+            !$acc            normalBarotropicVelocitySubcycleCur)
+#else
             !$omp parallel
             !$omp do schedule(runtime)
+#endif
             do iEdge = 1, nEdgesAll
                normalBarotropicVelocityNew(iEdge)              &
                   = normalBarotropicVelocitySubcycleCur(iEdge) 
             end do ! iEdge
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
 
             call mpas_timer_stop("si btr vel update")
 
@@ -1663,6 +1979,18 @@ module ocn_time_integration_si
          !-------------------------------------------------------------!
          ! END   Large barotropic system iteration loop
          !-------------------------------------------------------------!
+
+         call mpas_timer_stop("si btr vel")
+
+         !$acc exit data copyout(sshNew,normalBarotropicVelocityNew)  &
+         !$acc           delete (sshCur,                              &
+         !$acc                   sshSubcycleCur,sshSubcycleNew,       &
+         !$acc                   normalBarotropicVelocitySubcycleCur, &
+         !$acc                   normalBarotropicVelocitySubcycleNew, &
+         !$acc                   normalBarotropicVelocityCur,         &
+         !$acc                   bottomDepthEdge)
+
+         !$acc update host(barotropicThicknessFlux,barotropicForcing)
 
          ! Check that you can compute SSH using the total sum or the
          ! individual increments over the barotropic subcycles.
@@ -1764,8 +2092,6 @@ module ocn_time_integration_si
          deallocate(uTemp)
 
          call mpas_timer_stop('btr si ssh verif')
-
-         call mpas_timer_stop("si btr vel")
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          ! Stage 3: Tracer, density, pressure, vert velocity prediction
@@ -2039,7 +2365,7 @@ module ocn_time_integration_si
             ! layerThickEdgeFlux, density, pressure, and SSH
             ! in this diagnostics solve.
             call ocn_diagnostic_solve(dt, statePool, forcingPool, &
-                                      meshPool, scratchPool, &
+                                      meshPool, verticalMeshPool, scratchPool, &
                                       tracersPool, 2, full=.false.)
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2473,6 +2799,13 @@ module ocn_time_integration_si
       ! END large iteration loop
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#ifdef MPAS_OPENACC
+      if (config_use_tidal_potential_forcing) then
+         !$acc exit data delete(ssh_sal,tidalPotentialEta)
+         !$acc exit data copyout(sshSubcycleCurWithTides)
+      endif
+#endif
+
       call mpas_timer_start("si implicit vert mix")
 
       ! Call ocean diagnostic solve in preparation for vertical mixing.
@@ -2503,7 +2836,7 @@ module ocn_time_integration_si
          !$acc enter data copyin(landIceDraft)
       endif
 #endif
-      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, &
+      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, &
                                 scratchPool, tracersPool, 2)
 
       call mpas_dmpar_field_halo_exch(domain, 'surfaceFrictionVelocity')
@@ -2688,7 +3021,7 @@ module ocn_time_integration_si
 #endif
       end if
 
-      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, &
+      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, &
                                 scratchPool, tracersPool, 2)
 
       ! Update the effective desnity in land ice if we're coupling to
@@ -2834,6 +3167,8 @@ module ocn_time_integration_si
 !-----------------------------------------------------------------------
 
    subroutine ocn_time_integration_si_init(domain, dt)!{{{
+     
+      include 'mpif.h'
 
       !-----------------------------------------------------------------
       ! Input/output variables
@@ -2852,7 +3187,8 @@ module ocn_time_integration_si
 
       type (mpas_pool_type), pointer :: &
          statePool,         &! structure holding state variables
-         meshPool            ! structure holding mesh variables
+         meshPool,          &! structure holding mesh variables
+         diagnosticsPool     ! structure holding diagnostic variables
 
       integer, pointer :: nVertLevels
 
@@ -2891,6 +3227,13 @@ module ocn_time_integration_si
          normalVelocity             ! normal velocity (total)
 
       real (kind=RKIND), dimension(:), pointer :: ssh
+
+#ifdef USE_GPU_AWARE_MPI
+      type (mpas_communication_list), pointer :: sendList, recvList
+      type (mpas_communication_list), pointer :: commListPtr,commListPtr2
+      type (mpas_exchange_list), pointer :: exchListPtr
+      integer :: iHalo, nHaloLayers, threadNum, nAdded, i, j,iComm,iExch
+#endif
 
 #ifndef USE_LAPACK
       call mpas_log_write( &
@@ -2940,6 +3283,7 @@ module ocn_time_integration_si
 
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
+      call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
       call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', &
                                                         nVertLevels)
@@ -2972,6 +3316,11 @@ module ocn_time_integration_si
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
       call mpas_pool_get_array(statePool, 'ssh', ssh, 2)
+
+      ! Get fields to use 1d-real halo exchange routine
+      call mpas_pool_get_field(diagnosticsPool, 'SIvec_zh1', SIvec_zh1_field,1)
+      call mpas_pool_get_field(diagnosticsPool, 'SIvec_wh0', SIvec_wh0_field,1)
+      call mpas_pool_get_field(diagnosticsPool, 'SIvec_rh1', SIvec_rh1_field,1)
 
       nCells = nCellsArray(config_num_halos)
       nEdges = nEdgesArray(config_num_halos+1)
@@ -3159,6 +3508,231 @@ module ocn_time_integration_si
 
       self_attraction_and_loading_beta = config_self_attraction_and_loading_beta
 
+
+#ifdef USE_GPU_AWARE_MPI
+      !--------------------------------------------------------------------
+      ! Initialization for the si_halo_exch routine
+      !    - Save sendList and recvList
+      !    - Allocate send & recv buffer
+      !    - Define dest & source list
+      !--------------------------------------------------------------------
+
+      call mpi_barrier(domain%dminfo%comm,ierr)
+
+      threadNum = mpas_threading_get_thread_num()
+      if ( threadNum == 0 ) then
+         nHaloLayers = size( SIvec_rh1_field % sendList % halos)
+         allocate(haloLayers(nHaloLayers))
+         do iHalo = 1, nHaloLayers
+            haloLayers(iHalo) = iHalo
+         end do
+      end if
+
+      call mpas_dmpar_build_comm_lists(                                    &
+               SIvec_rh1_field % sendList, SIvec_rh1_field % recvList,     &
+               haloLayers, SIvec_rh1_field % dimsizes, sendList, recvList )
+
+      !-----------------------------------------------------------------
+
+      i = 0
+      nMaxSendList = 0
+      commListPtr => sendList
+      do while(associated(commListPtr))
+         i = i + 1
+         if ( nMaxSendList < commListPtr%nList ) then
+              nMaxSendList = commListPtr%nList
+         endif
+         commListPtr => commListPtr % next
+      end do
+      nSendCommList = i
+
+      i = 0
+      nMaxRecvList = 0
+      commListPtr => recvList
+      do while(associated(commListPtr))
+         i = i + 1
+         if ( nMaxRecvList < commListPtr%nList ) then
+              nMaxRecvList = commListPtr%nList
+         endif
+         commListPtr => commListPtr % next
+      end do
+      nRecvCommList = i
+
+      allocate(exchSend(nSendCommList))
+      allocate(exchRecv(nRecvCommList))
+
+      !-----------------------------------------------------------------
+      ! Exchange list for SEND
+
+      commListPtr => sendList 
+      i = 0
+      do while(associated(commListPtr))
+         i = i + 1
+
+         allocate(exchSend(i)%buffer(commListPtr%nList))
+         allocate(exchSend(i)%bufferOffset(nHaloLayers))
+         allocate(exchSend(i)%halo(nHaloLayers))
+         allocate(exchSend(i)%nExch(nHaloLayers))
+
+         exchSend(i)%procID = commListPtr%procID
+         exchSend(i)%nList  = commListPtr%nList
+      
+         nAdded = 0
+         do iHalo = 1,nHaloLayers
+            exchSend(i)%bufferOffset(iHalo) = nAdded
+            exchListPtr => SIvec_rh1_field % sendList %      &
+                           halos(haloLayers(iHalo)) % exchList
+            j = 0
+            do while (associated(exchListPtr))
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  do k = 1,exchListPtr % nList
+                     nAdded = nAdded + 1 
+                  end do
+               endif
+               j = j+1
+               exchListPtr => exchListPtr % next
+            end do
+ 
+            exchSend(i)%nExch(iHalo) = j
+
+            allocate(exchSend(i)%halo(iHalo)%endPointID(j))
+            allocate(exchSend(i)%halo(iHalo)%nList(j))
+            allocate(exchSend(i)%halo(iHalo)%exch(j))
+
+            nullify(exchListPtr)
+            exchListPtr => SIvec_rh1_field % sendList %      &
+                           halos(haloLayers(iHalo)) % exchList
+            j = 0
+            do while (associated(exchListPtr))
+               j = j+1
+               exchSend(i)%halo(iHalo)%endPointID(j) = exchListPtr % endPointID
+               exchSend(i)%halo(iHalo)%nList(j) = exchListPtr % nList
+
+               allocate(exchSend(i)%halo(iHalo)%exch(j)%destList(exchListPtr % nList))
+               allocate(exchSend(i)%halo(iHalo)%exch(j)%srcList(exchListPtr % nList))
+
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  do k = 1,exchListPtr % nList
+                     exchSend(i)%halo(iHalo)%exch(j)%destList(k) = &
+                        exchListPtr % destList(k) + exchSend(i)%bufferOffset(iHalo)
+                     exchSend(i)%halo(iHalo)%exch(j)%srcList(k) = &
+                        exchListPtr % srcList(k)
+                  end do
+               endif
+               exchListPtr => exchListPtr % next
+            end do
+
+         end do ! iHalo
+         commListPtr => commListPtr  % next
+      end do
+
+      !-----------------------------------------------------------------
+      ! Exchange list for RECV
+
+      commListPtr => recvList 
+      i = 0
+      do while(associated(commListPtr))
+         i = i + 1
+
+         allocate(exchRecv(i)%buffer(commListPtr%nList))
+         allocate(exchRecv(i)%bufferOffset(nHaloLayers))
+         allocate(exchRecv(i)%halo(nHaloLayers))
+         allocate(exchRecv(i)%nExch(nHaloLayers))
+
+         exchRecv(i)%procID = commListPtr%procID
+         exchRecv(i)%nList  = commListPtr%nList
+
+         nAdded = 0
+         do iHalo = 1,nHaloLayers
+            exchRecv(i)%bufferOffset(iHalo) = nAdded
+            exchListPtr => SIvec_rh1_field % recvList %      &
+                           halos(haloLayers(iHalo)) % exchList
+            j = 0
+            do while (associated(exchListPtr))
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  do k = 1,exchListPtr % nList
+                     nAdded = nAdded + 1 
+                  end do
+               endif
+               j = j+1
+               exchListPtr => exchListPtr % next
+            end do
+ 
+            exchRecv(i)%nExch(iHalo) = j
+
+            allocate(exchRecv(i)%halo(iHalo)%endPointID(j))
+            allocate(exchRecv(i)%halo(iHalo)%nList(j))
+            allocate(exchRecv(i)%halo(iHalo)%exch(j))
+
+            nullify(exchListPtr)
+            exchListPtr => SIvec_rh1_field % recvList %      &
+                           halos(haloLayers(iHalo)) % exchList
+            j = 0
+            do while (associated(exchListPtr))
+               j = j+1
+               exchRecv(i)%halo(iHalo)%endPointID(j) = exchListPtr % endPointID
+               exchRecv(i)%halo(iHalo)%nList(j) = exchListPtr % nList
+
+               allocate(exchRecv(i)%halo(iHalo)%exch(j)%destList(exchListPtr % nList))
+               allocate(exchRecv(i)%halo(iHalo)%exch(j)%srcList(exchListPtr % nList))
+
+               if ( exchListPtr % endPointID == commListPtr % procID ) then
+                  do k = 1,exchListPtr % nList
+                     exchRecv(i)%halo(iHalo)%exch(j)%destList(k) = &
+                        exchListPtr % destList(k)
+                     exchRecv(i)%halo(iHalo)%exch(j)%srcList(k) = &
+                        exchListPtr % srcList(k) + exchRecv(i)%bufferOffset(iHalo)
+                  end do
+               endif
+               exchListPtr => exchListPtr % next
+            end do
+
+         end do ! iHalo
+         commListPtr => commListPtr  % next
+      end do
+
+      nullify(sendList,recvList) 
+      !-----------------------------------------------------------------
+
+      !$acc enter data create(sbuffer,rbuffer)
+
+      !$acc enter data copyin(exchRecv)
+      do iComm = 1,nRecvCommList
+         !$acc enter data copyin(exchRecv(iComm)%buffer, &
+         !$acc                   exchRecv(iComm)%nExch,  &
+         !$acc                   exchRecv(iComm)%halo,   &
+         !$acc                   exchRecv(iComm)%procID)
+         do iHalo = 1,config_num_halos
+            !$acc enter data copyin(exchRecv(iComm)%halo(iHalo)%nList,      &
+            !$acc                   exchRecv(iComm)%halo(iHalo)%endPointID, &
+            !$acc                   exchRecv(iComm)%halo(iHalo)%exch )
+            do iExch = 1,exchRecv(iComm)%nExch(iHalo)
+               !$acc enter data copyin(                                   &
+               !$acc    exchRecv(iComm)%halo(iHalo)%exch(iExch)%destList, &
+               !$acc    exchRecv(iComm)%halo(iHalo)%exch(iExch)%srcList )
+            end do
+         end do
+      end do
+
+      !$acc enter data copyin(exchSend)
+      do iComm = 1,nSendCommList
+         !$acc enter data copyin(exchSend(iComm)%buffer, &
+         !$acc                   exchSend(iComm)%nExch,  &
+         !$acc                   exchSend(iComm)%halo,   &
+         !$acc                   exchSend(iComm)%procID)
+         do iHalo = 1,config_num_halos
+            !$acc enter data copyin(exchSend(iComm)%halo(iHalo)%nList,      &
+            !$acc                   exchSend(iComm)%halo(iHalo)%endPointID, &
+            !$acc                   exchSend(iComm)%halo(iHalo)%exch)
+            do iExch = 1,exchSend(iComm)%nExch(iHalo)
+               !$acc enter data copyin(                                   &
+               !$acc    exchSend(iComm)%halo(iHalo)%exch(iExch)%destList, &
+               !$acc    exchSend(iComm)%halo(iHalo)%exch(iExch)%srcList)
+            end do
+         end do
+      end do
+#endif
+
    end subroutine ocn_time_integration_si_init!}}}
 
 !***********************************************************************
@@ -3234,32 +3808,16 @@ module ocn_time_integration_si
       call mpas_log_write('   config_btr_si_preconditioner: ' &
                            // trim(config_btr_si_preconditioner) )
 
-      if ( trim(config_btr_si_preconditioner) == 'ras' .or. &
-           trim(config_btr_si_preconditioner) == 'block_jacobi') then
-         if ( int(mean_num_cells) > 1200 ) then
-            call mpas_log_write( &
-            '      nCells per core is larger than 1200.')
-            call mpas_log_write( &
-            '      Because of memory and computational efficiency,')
-            call mpas_log_write( &
-            '      the preconditioner is configured as jacobi.')
-            config_btr_si_preconditioner = 'jacobi'
-            call mpas_log_write( &
-            '      The solver algorithm is configured as scg.')
-            call mpas_log_write( &
-            '      (Default is sbicg.)')
-            si_algorithm = 'scg'
-         endif
-      endif
 
       if ( config_btr_si_partition_match_mode ) then
+
          call mpas_log_write( &
-         '       Partition-match mode is turned on.')
+         '       Partition-match (bit-for-bit) mode is turned on.')
          call mpas_log_write( &
          '       The preconditioner is configured as jacobi.')
          config_btr_si_preconditioner = 'jacobi'
          call mpas_log_write( &
-         '       The bit-for-bit allreduce is used.')
+         '       The bit-for-bit allreduce is enabled.')
          call mpas_log_write( &
          '       The solver algorithm is configured as scg.')
          call mpas_log_write( &
@@ -3272,17 +3830,58 @@ module ocn_time_integration_si
                    globalReprodSum3fld1(nCellsOwned,3),  &
                    globalReprodSum3fld2(nCellsOwned,3) )
 
+      else
+
+         if ( trim(config_btr_si_preconditioner) == 'ras' .or. &
+              trim(config_btr_si_preconditioner) == 'block_jacobi') then
+#if defined USE_MAGMA
+            if ( int(mean_num_cells) > 4800 ) then
+               call mpas_log_write( &
+               '      nCells per core is larger than 4800 (MAGMA enabled).')
+#elif defined USE_CUBLAS
+            if ( int(mean_num_cells) > 4800 ) then
+               call mpas_log_write( &
+               '      nCells per core is larger than 4800 (CUBLAS enabled).')
+#elif defined MPAS_OPENACC
+            if ( int(mean_num_cells) > 2400 ) then
+               call mpas_log_write( &
+               '      nCells per core is larger than 2400 (no MAGMA or CUBLAS).')
+#else
+            if ( int(mean_num_cells) > 1200 ) then
+               call mpas_log_write( &
+               '      nCells per core is larger than 1200.')
+#endif
+               call mpas_log_write( &
+               '      Because of memory and computational efficiency,')
+               call mpas_log_write( &
+               '      the preconditioner is configured as jacobi.')
+               config_btr_si_preconditioner = 'jacobi'
+               call mpas_log_write( &
+               '      The solver algorithm is configured as scg.')
+               call mpas_log_write( &
+               '      (Default is sbicg.)')
+               si_algorithm = 'scg'
+            endif
+         endif
+
       endif
 
       ! Restricted Additive Schwarz preconditioner --------------------!
-      if ( trim(config_btr_si_preconditioner) == 'ras' ) then
+      if ( trim(config_btr_si_preconditioner) == 'ras' .or. &
+           trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
 
-         nPrecVec = nCellsHalo2nd ! length of preconditioning vector
-         nPrecMatPacked = (nPrecVec*(nPrecVec+1))/2
-                                  ! Packed size of preconditiong matrix
+! MAGMA IF ----!
+#if defined(USE_MAGMA) || defined(USE_CUBLAS)
+! MAGMA IF ----!
 
-         allocate(prec_ivmat(1:nPrecMatPacked))
-                  prec_ivmat(:) = 0.0_RKIND
+         if ( trim(config_btr_si_preconditioner) == 'ras' ) then
+            nPrecVec = nCellsHalo2nd ! length of preconditioning vector
+         else
+            nPrecVec = nCells        ! length of preconditioning vector
+         endif
+
+         allocate(prec_ivmat(1:nPrecVec,1:nPrecVec))
+                  prec_ivmat(:,:) = 0.0_RKIND
 
          do iCell = 1, nPrecVec
 
@@ -3302,8 +3901,8 @@ module ocn_time_integration_si
                     globalCellId(cell1) < total_num_cells+1 ) then
 
                   if ( cell1 >= iCell .and. cell1 <= nPrecVec) then
-                     prec_ivmat(iCell+((cell1-1)*cell1)/2) = &
-                     prec_ivmat(iCell+((cell1-1)*cell1)/2) + fluxAx
+                     prec_ivmat(iCell,cell1) = &
+                     prec_ivmat(iCell,cell1) + fluxAx
                   endif
                endif
 
@@ -3311,100 +3910,118 @@ module ocn_time_integration_si
                     globalCellId(cell2) < total_num_cells+1 ) then
 
                   if ( cell2 >= iCell .and. cell2 <= nPrecVec) then
-                     prec_ivmat(iCell+((cell2-1)*cell2)/2) = &
-                     prec_ivmat(iCell+((cell2-1)*cell2)/2) - fluxAx
+                     prec_ivmat(iCell,cell2) = &
+                     prec_ivmat(iCell,cell2) - fluxAx
                   endif
                endif
             end do ! i
 
-            prec_ivmat(iCell+((iCell-1)*iCell)/2) = &
-            prec_ivmat(iCell+((iCell-1)*iCell)/2)   &
+            prec_ivmat(iCell,iCell) = &
+            prec_ivmat(iCell,iCell)   &
+               - (4.0_RKIND/(gravity*dt**2.0)) * areaCell(iCell)
+         end do ! iCell
+
+         ! Inversion of the preconditioning matrix
+         prec_ivmat = -prec_ivmat
+
+         ! DPOTRF computes the Cholesky factorizaton of a symmetric positive
+         ! defnitie matrix.
+#ifdef USE_LAPACK
+         call DPOTRF('U',nPrecVec,prec_ivmat,nPrecVec,info)
+#endif
+
+         if (info.lt.0) stop 'ERROR in inverse routine: Matrix is numerically singular!'
+         if (info.gt.0) stop 'ERROR in inverse routine: Matrix is not positive definite!'
+
+         ! DPOTRI computes the inverse of a symmetric positive definite matrix,
+         ! using the Cholesky factorization computed by DPOTRF
+#ifdef USE_LAPACK
+         call DPOTRI('U',nPrecVec,prec_ivmat,nPrecVec,info)
+#endif
+
+         prec_ivmat = -prec_ivmat ! (-) sign to restore a matrix sign
+
+         if (info.ne.0) stop 'ERROR in inverse routine: Matrix inversion failed!'
+
+! MAGMA IF ----!
+#else
+! MAGMA IF ----!
+
+         if ( trim(config_btr_si_preconditioner) == 'ras' ) then
+            nPrecVec = nCellsHalo2nd ! length of preconditioning vector
+         else
+            nPrecVec = nCells        ! length of preconditioning vector
+         endif
+
+         nPrecMatPacked = (nPrecVec*(nPrecVec+1))/2
+                                  ! Packed size of preconditionig matrix
+
+         allocate(prec_ivmat(1:nPrecMatPacked,1))
+                  prec_ivmat(:,:) = 0.0_RKIND
+
+         do iCell = 1, nPrecVec
+
+            do i = 1, nEdgesOnCell(iCell)   
+               iEdge = edgesOnCell(i, iCell)
+               cell1 = cellsOnEdge(1, iEdge)
+               cell2 = cellsOnEdge(2, iEdge)
+
+               ! method 1, matches method 0 without pbcs,
+               ! works with pbcs.
+               thicknessSum = min(bottomDepth(cell1), &
+                                  bottomDepth(cell2))
+               fluxAx = edgeSignOnCell(i,iCell) * dvEdge(iEdge) &
+                      * thicknessSum / dcEdge(iEdge)
+
+               if ( globalCellId(cell1) > 0 .and. &
+                    globalCellId(cell1) < total_num_cells+1 ) then
+
+                  if ( cell1 >= iCell .and. cell1 <= nPrecVec) then
+                     prec_ivmat(iCell+((cell1-1)*cell1)/2,1) = &
+                     prec_ivmat(iCell+((cell1-1)*cell1)/2,1) + fluxAx
+                  endif
+               endif
+
+               if ( globalCellId(cell2) > 0 .and. &
+                    globalCellId(cell2) < total_num_cells+1 ) then
+
+                  if ( cell2 >= iCell .and. cell2 <= nPrecVec) then
+                     prec_ivmat(iCell+((cell2-1)*cell2)/2,1) = &
+                     prec_ivmat(iCell+((cell2-1)*cell2)/2,1) - fluxAx
+                  endif
+               endif
+            end do ! i
+
+            prec_ivmat(iCell+((iCell-1)*iCell)/2,1) = &
+            prec_ivmat(iCell+((iCell-1)*iCell)/2,1)   &
                - (4.0_RKIND/(gravity*dt**2.0)) * areaCell(iCell)
          end do ! iCell
 
          ! Inversiion
-           ! 1. Cholesky factorization of a real symmetric 
+           ! 1. Cholesky factorization of a real symmetric
            !    positive definite matirx A
-         prec_ivmat(:) = -prec_ivmat(:)
+         prec_ivmat(:,1) = -prec_ivmat(:,1)
 #ifdef USE_LAPACK
-         call DPPTRF('U',nPrecVec,prec_ivmat,info)
-#endif
-           ! 2. Inversion of a real symmetric positive definite 
-           !    matrix A using the Cholesky factorization
-#ifdef USE_LAPACK
-         call DPPTRI('U',nPrecVec,prec_ivmat,info)
-#endif
-         prec_ivmat(:) = -prec_ivmat(:)
-
-         ! Block-Jacobi preconditioner --------------------------------!
-      elseif ( trim(config_btr_si_preconditioner) == &
-                                        'block_jacobi' ) then
-
-         nPrecVec = nCells        ! length of preconditioning vector
-         nPrecMatPacked = (nPrecVec*(nPrecVec+1))/2
-                                  ! Packed size of preconditiong matrix
-
-         allocate(prec_ivmat(1:nPrecMatPacked))
-                  prec_ivmat(:) = 0.0_RKIND
-
-         do iCell = 1, nPrecVec
-
-            do i = 1, nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i, iCell)
-               cell1 = cellsOnEdge(1, iEdge)
-               cell2 = cellsOnEdge(2, iEdge)
-
-               ! method 1, matches method 0 without pbcs,
-               ! works with pbcs.
-               thicknessSum = min(bottomDepth(cell1), &
-                                  bottomDepth(cell2))
-               fluxAx = edgeSignOnCell(i,iCell) * dvEdge(iEdge) &
-                      * thicknessSum / dcEdge(iEdge)
-
-               if ( globalCellId(cell1) > 0 .and. &
-                    globalCellId(cell1) < total_num_cells+1 ) then
-
-                  if ( cell1 >= iCell .and. cell1 <= nPrecVec) then
-                     prec_ivmat(iCell+((cell1-1)*cell1)/2) = &
-                     prec_ivmat(iCell+((cell1-1)*cell1)/2) + fluxAx
-                  endif
-               endif
-
-               if ( globalCellId(cell2) > 0 .and. &
-                    globalCellId(cell2) < total_num_cells+1 ) then
-                  if ( cell2 >= iCell .and. cell2 <= nPrecVec) then
-                     prec_ivmat(iCell+((cell2-1)*cell2)/2) = &
-                     prec_ivmat(iCell+((cell2-1)*cell2)/2) - fluxAx
-                  endif
-               endif
-            end do ! i
-
-            prec_ivmat(iCell+((iCell-1)*iCell)/2) = &
-            prec_ivmat(iCell+((iCell-1)*iCell)/2)   &
-               - (4.0_RKIND/(gravity*dt**2.0)) * areaCell(iCell)
-         end do ! iCell
-
-         ! Inversion
-           ! 1. Cholesky factorization of a real symmetric 
-           !    positive definite matirx A
-         prec_ivmat(:) = -prec_ivmat(:)
-#ifdef USE_LAPACK
-         call DPPTRF('U',nPrecVec,prec_ivmat,info)
+         call DPPTRF('U',nPrecVec,prec_ivmat(:,1),info)
 #endif
            ! 2. Inversion of a real symmetric positive definite
            !    matrix A using the Cholesky factorization
 #ifdef USE_LAPACK
-         call DPPTRI('U',nPrecVec,prec_ivmat,info)
+         call DPPTRI('U',nPrecVec,prec_ivmat(:,1),info)
 #endif
-         prec_ivmat(:) = -prec_ivmat(:)
+         prec_ivmat(:,1) = -prec_ivmat(:,1)
+
+! MAGMA IF ----!
+#endif
+! MAGMA IF ----!
 
       ! Jacobi preconditioner -----------------------------------------!
       else if ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
 
          nPrecVec = nCells ! length of preconditioning vector
 
-         allocate(prec_ivmat(1:nPrecVec))
-                  prec_ivmat(:) = 0.0_RKIND
+         allocate(prec_ivmat(1:nPrecVec,1))
+                  prec_ivmat(:,1) = 0.0_RKIND
 
          do iCell = 1, nPrecVec
 
@@ -3422,18 +4039,18 @@ module ocn_time_integration_si
                       * thicknessSum / dcEdge(iEdge)
 
                if (cell1 == iCell) then
-                  prec_ivmat(iCell) = prec_ivmat(iCell) + fluxAx 
+                  prec_ivmat(iCell,1) = prec_ivmat(iCell,1) + fluxAx
                                                         ! reversed sign
                elseif ( cell2 == iCell) then
-                  prec_ivmat(iCell) = prec_ivmat(iCell) - fluxAx
+                  prec_ivmat(iCell,1) = prec_ivmat(iCell,1) - fluxAx
                                                         ! reversed sign
                endif
             end do ! i
 
-            temp1 = prec_ivmat(iCell) &
+            temp1 = prec_ivmat(iCell,1) &
                   - (4.0_RKIND/(gravity*dt**2.0)) * areaCell(iCell)
 
-            prec_ivmat(iCell) = 1.0_RKIND / temp1
+            prec_ivmat(iCell,1) = 1.0_RKIND / temp1
 
          end do ! iCell
 
@@ -3442,8 +4059,8 @@ module ocn_time_integration_si
 
          nPrecVec = nCells ! length of preconditioning vector
 
-         allocate(prec_ivmat(1))
-         prec_ivmat(:) = 1.0_RKIND
+         allocate(prec_ivmat(1,1))
+         prec_ivmat(:,1) = 1.0_RKIND
 
       else
 
@@ -3454,6 +4071,99 @@ module ocn_time_integration_si
          MPAS_LOG_CRIT)
 
       endif ! config_btr_si_preconditioner
+
+
+#ifdef MPAS_OPENACC
+
+#ifdef USE_MAGMA
+      ! Allocate and setup the preconditioning matrix and vectors
+      !    on GPU. Construct the preconditioing matrix on CPU
+      !    first, then copy to GPU.
+
+      call mpas_log_write( "MAGMA --- malloc GPU memory prec mat" )
+      info = magmaf_dmalloc( dprec_ivmat, nPrecVec*nPrecVec)
+      info = magmaf_dmalloc( dxvec, nPrecVec )
+      info = magmaf_dmalloc( dyvec, nPrecVec )
+
+      if (dprec_ivmat == 0 .or. dxvec == 0 .or. dyvec == 0) then
+          call mpas_log_write( "MAGMA dmalloc failed", MPAS_LOG_CRIT)
+      endif
+
+      call mpas_log_write( "MAGMA --- set matrices" )
+      call magmaf_queue_create( 0, queue )
+      call magmaf_dsetmatrix( nPrecVec, nPrecVec, prec_ivmat, nPrecVec, &
+                              dprec_ivmat, nPrecVec, queue )
+
+      !$acc parallel loop present(SIvec_r0)
+      do iCell = 1,nPrecVec
+          SIvec_r0(iCell) = float(iCell)
+      end do
+
+      !$acc host_data use_device(SIvec_r0)
+      dxvec = loc(SIvec_r0(1:nPrecVec))
+      !$acc end host_data
+
+      call magmaf_dsymv('U', nPrecVec, 1.0d0, dprec_ivmat, &
+                             nPrecVec, dxvec, 1, 0.0d0,    &
+                                       dyvec, 1, queue)
+    
+      call magmaf_dgetvector( nPrecVec,dyvec, 1, &
+                              SIvec_rh0(1:nPrecVec), 1, queue )
+#endif
+
+      !$acc enter data copyin(prec_ivmat,                            &
+      !$acc    SIcst_allreduce_local2,SIcst_allreduce_global2,       &
+      !$acc    SIcst_allreduce_local3,SIcst_allreduce_global3,       &
+      !$acc    SIcst_allreduce_local9,SIcst_allreduce_global9,       &
+      !$acc    SIcst_alpha0,SIcst_alpha1,SIcst_beta0,SIcst_beta1,    &
+      !$acc    SIcst_omega0,SIcst_gamma0,SIcst_gamma1,resid,         &
+      !$acc    SIcst_r0rh0,SIcst_w0rh0,SIcst_r0r0 ,SIcst_r00r0,      &
+      !$acc    SIcst_r00s0,SIcst_r00z0,SIcst_q0y0 ,SIcst_y0y0 ,      &
+      !$acc    SIcst_r00y0,SIcst_r00t0,SIcst_r00v0,SIcst_q0q0 ,      &
+      !$acc    SIcst_r00w0,SIcst_r00q0,SIcst_rho0,SIcst_rho1)
+
+      if ( config_btr_si_partition_match_mode ) then
+      !$acc enter data copyin(                                       &
+      !$acc               globalReprodSum2fld1,globalReprodSum2fld2, &
+      !$acc               globalReprodSum3fld1,globalReprodSum3fld2 )
+      endif
+
+#ifdef USE_CUBLAS
+! Dummy preconditioning
+      call si_precond(SIvec_r0,SIvec_rh0)
+#endif
+
+#endif
+
+      !$acc serial present(                                          &
+      !$acc    SIcst_allreduce_local2,SIcst_allreduce_global2,       &
+      !$acc    SIcst_allreduce_local3,SIcst_allreduce_global3,       &
+      !$acc    SIcst_allreduce_local9,SIcst_allreduce_global9,       &
+      !$acc    SIcst_alpha0,SIcst_alpha1,SIcst_beta0,SIcst_beta1,    &
+      !$acc    SIcst_omega0,SIcst_gamma0,SIcst_gamma1,resid,         &
+      !$acc    SIcst_r0rh0,SIcst_w0rh0,SIcst_r0r0 ,SIcst_r00r0,      &
+      !$acc    SIcst_r00s0,SIcst_r00z0,SIcst_q0y0 ,SIcst_y0y0 ,      &
+      !$acc    SIcst_r00y0,SIcst_r00t0,SIcst_r00v0,SIcst_q0q0 ,      &
+      !$acc    SIcst_r00w0,SIcst_r00q0,SIcst_rho0,SIcst_rho1)
+      SIcst_allreduce_local2  = 0.0_RKIND
+      SIcst_allreduce_global2 = 0.0_RKIND
+      SIcst_allreduce_local3  = 0.0_RKIND
+      SIcst_allreduce_global3 = 0.0_RKIND
+      SIcst_allreduce_local9  = 0.0_RKIND
+      SIcst_allreduce_global9 = 0.0_RKIND
+
+      SIcst_alpha0 = 0.0_RKIND ; SIcst_alpha1 = 0.0_RKIND
+      SIcst_beta0  = 0.0_RKIND ; SIcst_beta1  = 0.0_RKIND
+      SIcst_gamma0 = 0.0_RKIND ; SIcst_gamma1 = 0.0_RKIND
+      SIcst_r0rh0  = 0.0_RKIND ; SIcst_w0rh0  = 0.0_RKIND
+      SIcst_r0r0   = 0.0_RKIND ; SIcst_r00r0  = 0.0_RKIND
+      SIcst_r00s0  = 0.0_RKIND ; SIcst_r00z0  = 0.0_RKIND
+      SIcst_q0y0   = 0.0_RKIND ; SIcst_y0y0   = 0.0_RKIND
+      SIcst_r00y0  = 0.0_RKIND ; SIcst_r00t0  = 0.0_RKIND
+      SIcst_r00v0  = 0.0_RKIND ; SIcst_q0q0   = 0.0_RKIND
+      SIcst_r00w0  = 0.0_RKIND ; SIcst_r00q0  = 0.0_RKIND
+      SIcst_rho0   = 0.0_RKIND ; SIcst_rho1   = 0.0_RKIND
+      !$acc end serial
 
    end subroutine ocn_time_integrator_si_preconditioner !}}}
 
@@ -3486,13 +4196,26 @@ module ocn_time_integration_si
 
       integer :: iEdge, cell1, cell2, i, iCell
  
+      call mpas_timer_start("si matvec_mul")
+
+#ifdef MPAS_OPENACC
+      !$acc parallel loop gang async                          &
+      !$acc    present(SIvec_in,SIvec_out,ssh,                &
+      !$acc       nEdgesOnCell,edgesOnCell,cellsOnEdge,       &
+      !$acc       bottomDepthEdge, dcEdge,edgeSignOnCell,     &
+      !$acc       dvEdge,areaCell,maxLevelEdgeTop)            &
+      !$acc    private(sshTendAx,i,iEdge,cell1,cell2,sshEdge, &
+      !$acc       thicknessSum,fluxAx,sshArea,sshDiff)
+#else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp private(sshTendAx,iEdge,cell1,cell2,sshEdge, &
       !$omp         thicknessSum,sshDiff,fluxAx,sshArea )
+#endif
       do iCell = 1, nPrecVec
          sshTendAx = 0.0_RKIND
 
+         !$acc loop vector reduction(+:sshTendAx)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             if (maxLevelEdgeTop(iEdge).eq.0) cycle
@@ -3501,17 +4224,14 @@ module ocn_time_integration_si
             cell2 = cellsOnEdge(2, iEdge)
 
             ! Interpolation sshEdge
-            sshEdge = 0.5_RKIND * (  ssh(cell1)   &
-                                   + ssh(cell2) )
+            sshEdge = 0.5_RKIND * (ssh(cell1) + ssh(cell2))
 
             ! method 1, matches method 0 without pbcs,
             ! works with pbcs.
-            thicknessSum = si_ismf * sshEdge    &
-                         + bottomDepthEdge(iEdge)
+            thicknessSum = si_ismf * sshEdge + bottomDepthEdge(iEdge)
 
             ! nabla (ssh^0)
-            sshDiff = (SIvec_in(cell2)-SIvec_in(cell1)) &
-                    / dcEdge(iEdge)
+            sshDiff = (SIvec_in(cell2)-SIvec_in(cell1)) / dcEdge(iEdge)
 
             fluxAx = thicknessSum * sshDiff
 
@@ -3519,14 +4239,17 @@ module ocn_time_integration_si
                       * fluxAx * dvEdge(iEdge)
          end do ! i
 
-         sshArea = R1_alpha1s_g_dts * SIvec_in(iCell) &
-                    * areaCell(iCell)
+         sshArea = R1_alpha1s_g_dts * SIvec_in(iCell) * areaCell(iCell)
 
          SIvec_out(iCell) = -sshArea - sshTendAx
 
       end do ! iCell
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
+
+      call mpas_timer_stop("si matvec_mul")
       
    end subroutine si_matvec_mul
 
@@ -3551,35 +4274,109 @@ module ocn_time_integration_si
       real(kind=RKIND), dimension(:), intent(out) :: SIvec_out
                                         ! SI vector to be preconditioned
 
+      integer :: iCell
+
+      call mpas_timer_start("si preconditioning")
+
       ! Preconditioning --------------------------------------------!
-      if ( trim(config_btr_si_preconditioner) == 'ras' ) then
-         ! RAS preconditioning: Use BLAS for the symmetric 
-         !                      matrix-vector multiplication
-#ifdef USE_LAPACK
-      call DSPMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, &
-                 SIvec_in(1:nPrecVec) , 1, 0.0_RKIND,  &
-                 SIvec_out(1:nPrecVec), 1)
+      if ( trim(config_btr_si_preconditioner) == 'ras' .or. &
+           trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
+         ! Domain decomposition preconditioning 
+         !    : Use BLAS for the symmetric
+         !      matrix-vector multiplication
+
+!#######################################################################
+#if defined(USE_MAGMA)
+
+         ! MAGMA
+         !$acc host_data use_device(SIvec_in)
+         dxvec = loc(SIvec_in(1:nPrecVec))
+         !$acc end host_data
+
+         call magmaf_dsymv('U', nPrecVec, 1.0_RKIND, dprec_ivmat, &
+                                nPrecVec, dxvec, 1, 0.0_RKIND,    &
+                                          dyvec, 1, queue)
+
+#ifndef USE_GPU_AWARE_MPI
+         ! GPU -> CPU copy the out vector for halo exch
+         call magmaf_dgetvector( nPrecVec,dyvec, 1, &
+                                 SIvec_out(1:nPrecVec), 1, queue)
+#else                                 
+         ! GPU -> GPU copy the out vector for halo exch
+         !$acc host_data use_device(SIvec_out)
+         call magmaf_dgetvector( nPrecVec,dyvec, 1, &
+                                 SIvec_out(1:nPrecVec), 1, queue)
+         !$acc end host_data
+#endif                                 
+
+!#######################################################################
+#elif defined(USE_CUBLAS)
+
+         ! CUBLAS
+         !$acc host_data use_device(prec_ivmat,SIvec_in,SIvec_out)
+         call cublasDsymv('U', nPrecVec, 1.0_RKIND,prec_ivmat(:,:), &
+                               nPrecVec, SIvec_in(1:nPrecVec),      &
+                                      1, 0.0_RKIND,                 &
+                                         SIvec_out(1:nPrecVec), 1)
+         !$acc end host_data
+#ifndef USE_GPU_AWARE_MPI
+         !$acc update host(SIvec_out)
 #endif
-      elseif ( trim(config_btr_si_preconditioner) == &
-                                        'block_jacobi' ) then
-         ! Block-Jacobi preconditioning: Use BLAS for the symmetric 
-         !                               matrix-vector multiplication
-#ifdef USE_LAPACK
-      call DSPMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, &
-                 SIvec_in(1:nPrecVec) , 1, 0.0_RKIND,  &
-                 SIvec_out(1:nPrecVec), 1)
+
+!#######################################################################
+#elif defined(USE_LAPACK)
+
+         ! LAPACK on CPU 
+         !    (also if no MAGMA & CUBLAS for GPU ; Data staging)
+         !$acc update host(SIvec_in)
+         call DSPMV('U', nPrecVec, 1.0_RKIND, prec_ivmat(:,1), &
+                         SIvec_in(1:nPrecVec) , 1, 0.0_RKIND,  &
+                         SIvec_out(1:nPrecVec), 1)
 #endif
-      elseif ( trim(config_btr_si_preconditioner) == &
-                                              'jacobi' ) then
+
+      elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
          ! Jacobi preconditioning
-         SIvec_out(1:nPrecVec) = SIvec_in(1:nPrecVec) &
-                               * prec_ivmat(1:nPrecVec)
-   
-      elseif ( trim(config_btr_si_preconditioner) == &
-                                                'none' ) then
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang                       &
+         !$acc    present(SIvec_out,SIvec_in,prec_ivmat)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime)
+#endif
+         do iCell = 1,nPrecVec
+            SIvec_out(iCell) = SIvec_in(iCell) &
+                             * prec_ivmat(iCell,1)
+         end do
+#if defined(MPAS_OPENACC) && !defined(USE_GPU_AWARE_MPI)
+         !$acc update host(SIvec_out)
+#else
+         !$omp end do
+         !$omp end parallel
+#endif
+
+      elseif ( trim(config_btr_si_preconditioner) == 'none' ) then
+
          ! No preconditioning
-         SIvec_out(1:nPrecVec) = SIvec_in(1:nPrecVec)
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang present(SIvec_out,SIvec_in)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime)
+#endif
+         do iCell = 1,nPrecVec
+            SIvec_out(iCell) = SIvec_in(iCell)
+         end do
+#if defined(MPAS_OPENACC) && !defined(USE_GPU_AWARE_MPI)
+         !$acc update host(SIvec_out)
+#else
+         !$omp end do
+         !$omp end parallel
+#endif
+
       end if
+
+      call mpas_timer_stop("si preconditioning")
+
    end subroutine si_precond !}}}
 
 !***********************************************************************
@@ -3601,7 +4398,9 @@ module ocn_time_integration_si
                              reprodSum1,reprodSum2,           &
                              si_algorithm,nfld,domain,        &
                              SIvec_1,SIvec_2,SIvec_3,SIvec_4, &
-                             SIvec_5,SIvec_6,SIvec_7,SIvec_8)  
+                             SIvec_5,SIvec_6,SIvec_7)  
+
+      include 'mpif.h'
 
       type (domain_type), intent(in) :: &
          domain  !< [inout] model state to advance forward
@@ -3609,7 +4408,7 @@ module ocn_time_integration_si
       real(kind=RKIND), dimension(:), intent(in) :: &
          SIvec_1,SIvec_2 ! SI vectors
       real(kind=RKIND), dimension(:), intent(in), optional :: &
-         SIvec_3,SIvec_4,SIvec_5,SIvec_6,SIvec_7,SIvec_8 ! SI vectors
+         SIvec_3,SIvec_4,SIvec_5,SIvec_6,SIvec_7 ! SI vectors
 
       character(*), intent(in) :: si_algorithm ! Solver algorithm
 
@@ -3621,19 +4420,22 @@ module ocn_time_integration_si
       real(kind=RKIND), dimension(:), intent(out) :: &
          localProd,globalProd ! Array for global summation
 
-      real(kind=RKIND) :: &
-         SIcst_r0rh0,SIcst_w0rh0,SIcst_r0r0,SIcst_r00r0,SIcst_r00w0, &
-         SIcst_r00s0,SIcst_r00z0,SIcst_q0y0,SIcst_y0y0,SIcst_r00q0,  &
-         SIcst_r00y0,SIcst_r00t0,SIcst_r00v0,SIcst_q0q0 
+      integer :: iCell,ierr,threadNum
 
-      integer :: iCell
+      call mpas_timer_start("si global reduction")
 
       if ( si_algorithm == 'scg' .and. nfld == 2 ) then !!!
    
          if ( config_btr_si_partition_match_mode ) then
     
+#ifdef MPAS_OPENACC
+            !$acc parallel loop                      &
+            !$acc    present(reprodSum1,reprodSum2,  &
+            !$acc            SIvec_1,SIvec_2,SIvec_3)
+#else
             !$omp parallel
             !$omp do schedule(runtime)
+#endif
             ! Reproducible sum of multiple fields over products
             do iCell = 1,nCellsOwned
                reprodSum1(iCell,1) = SIvec_1(iCell) !r0
@@ -3642,33 +4444,51 @@ module ocn_time_integration_si
                reprodSum2(iCell,1) = SIvec_3(iCell) !rh0
                reprodSum2(iCell,2) = SIvec_3(iCell) !rh0
             end do
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
         
-            globalProd(:) = 0.0_RKIND
+            !$acc update host(reprodSum1,reprodSum2)
             globalProd(:) =                   &
                mpas_global_sum_nfld(reprodSum1, &
                                     reprodSum2, &
                                     domain%dminfo%comm)
+            !$acc update device(globalProd)
+
          else
     
-            SIcst_r0rh0 = 0.0_RKIND
-            SIcst_w0rh0 = 0.0_RKIND
-    
+            !$acc parallel loop gang                     &
+            !$acc    present(SIcst_r0rh0,SIcst_w0rh0,    &
+            !$acc            SIvec_1,SIvec_2,SIvec_3)    &
+            !$acc    reduction(+:SIcst_r0rh0,SIcst_w0rh0)
             do iCell = 1, nCellsOwned
                SIcst_r0rh0 = SIcst_r0rh0 + SIvec_1(iCell) &
                                          * SIvec_3(iCell)
                SIcst_w0rh0 = SIcst_w0rh0 + SIvec_2(iCell) &
                                          * SIvec_3(iCell)
             end do ! iCell
-    
+
+            !$acc serial present(SIcst_r0rh0,SIcst_w0rh0,localProd)
             localProd(1) = SIcst_r0rh0
             localProd(2) = SIcst_w0rh0
-    
+            SIcst_r0rh0 = 0.0_RKIND
+            SIcst_w0rh0 = 0.0_RKIND
+            !$acc end serial
+
             ! Global sum across CPUs
-            call mpas_dmpar_sum_real_array(domain % dminfo, nfld,      &
-                                           localProd,  &
-                                           globalProd)
+#ifdef USE_GPU_AWARE_MPI
+            !$acc host_data use_device(localProd,globalProd)
+#else
+            !$acc update host(localProd)
+#endif
+            call mpas_dmpar_sum_real_array(domain % dminfo, nfld, &
+                                           localProd,globalProd)
+#ifdef USE_GPU_AWARE_MPI
+            !$acc end host_data
+#else
+            !$acc update device(globalProd)
+#endif
          endif
    
       elseif ( si_algorithm == 'scg' .and. nfld == 3 ) then !!!
@@ -3676,8 +4496,14 @@ module ocn_time_integration_si
          if ( config_btr_si_partition_match_mode ) then
    
             ! Reproducible sum of multiple fields over products
+#ifdef MPAS_OPENACC
+            !$acc parallel loop gang                 &
+            !$acc    present(reprodSum1,reprodSum2,  &
+            !$acc            SIvec_1,SIvec_2,SIvec_3)
+#else
             !$omp parallel
             !$omp do schedule(runtime)
+#endif
             do iCell = 1,nCellsOwned
                reprodSum1(iCell,1) = SIvec_1(iCell) !r1
                reprodSum1(iCell,2) = SIvec_2(iCell) !w1
@@ -3687,40 +4513,58 @@ module ocn_time_integration_si
                reprodSum2(iCell,2) = SIvec_3(iCell) !rh1
                reprodSum2(iCell,3) = SIvec_1(iCell)  !r1
             end do
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
       
-            globalProd(:) = 0.0_RKIND
+            !$acc update host(reprodSum1,reprodSum2)
             globalProd(:) =                   &
                mpas_global_sum_nfld(reprodSum1, &
                                     reprodSum2, &
                                     domain%dminfo%comm)
+            !$acc update device(globalProd)
+
          else
-   
-            SIcst_r0rh0 = 0.0_RKIND
-            SIcst_w0rh0 = 0.0_RKIND
-            SIcst_r0r0  = 0.0_RKIND
-         
+
+            !$acc parallel loop present(SIcst_r0rh0,SIcst_w0rh0,     &
+            !$acc    SIcst_r0r0,SIvec_1,SIvec_2,SIvec_3)             &
+            !$acc    reduction(+:SIcst_r0rh0,SIcst_w0rh0,SIcst_r0r0)
             do iCell = 1,nCellsOwned
                SIcst_r0rh0 = SIcst_r0rh0 + SIvec_1(iCell) &
                                          * SIvec_3(iCell) ! s1
-         
+
                SIcst_w0rh0 = SIcst_w0rh0 + SIvec_2(iCell) &
                                          * SIvec_3(iCell) ! z1
-   
+
                SIcst_r0r0  = SIcst_r0r0  + SIvec_1(iCell) &
                                          * SIvec_1(iCell) ! z1
             end do
-      
+
+            !$acc serial present(SIcst_r0rh0,SIcst_w0rh0,SIcst_r0r0, &
+            !$acc                localProd)
             localProd(1) = SIcst_r0rh0
             localProd(2) = SIcst_w0rh0
             localProd(3) = SIcst_r0r0
-         
+            SIcst_r0rh0 = 0.0_RKIND
+            SIcst_w0rh0 = 0.0_RKIND
+            SIcst_r0r0  = 0.0_RKIND
+            !$acc end serial
+
             ! Global sum across CPUs
-            call mpas_dmpar_sum_real_array(domain % dminfo, nfld,      &
-                                           localProd,  &
-                                           globalProd)
-   
+#ifdef USE_GPU_AWARE_MPI
+            !$acc host_data use_device(localProd,globalProd)
+#else
+            !$acc update host(localProd)
+#endif
+            call MPI_Allreduce(localProd,globalProd,nfld,MPI_REAL8, &
+                               MPI_SUM,domain%dminfo%comm,ierr)
+#ifdef USE_GPU_AWARE_MPI
+            !$acc end host_data
+#else
+            !$acc update device(globalProd)
+#endif
+
          endif
    
       elseif ( si_algorithm == 'sbicg' .and. nfld == 2 ) then !!!
@@ -3728,43 +4572,67 @@ module ocn_time_integration_si
          if ( config_btr_si_partition_match_mode ) then
 
             ! Reproducible sum of multiple fields over products
- 
+#ifdef MPAS_OPENACC
+            !$acc parallel loop                      &
+            !$acc    present(reprodSum1,reprodSum2,  &
+            !$acc            SIvec_1,SIvec_2,SIvec_3)
+#else
             !$omp parallel
             !$omp do schedule(runtime)
+#endif
             do iCell = 1,nCellsOwned
-               globalReprodSum2fld1(iCell,1) = SIvec_1(iCell) !r00
-               globalReprodSum2fld1(iCell,2) = SIvec_1(iCell) !r00
+               reprodSum1(iCell,1) = SIvec_1(iCell) !r00
+               reprodSum1(iCell,2) = SIvec_1(iCell) !r00
 
-               globalReprodSum2fld2(iCell,1) = SIvec_2(iCell) !r0
-               globalReprodSum2fld2(iCell,2) = SIvec_3(iCell) !w0
+               reprodSum2(iCell,1) = SIvec_2(iCell) !r0
+               reprodSum2(iCell,2) = SIvec_3(iCell) !w0
             end do
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
 
-            SIcst_allreduce_global2(:) =                   &
-               mpas_global_sum_nfld(globalReprodSum2fld1, &
-                                    globalReprodSum2fld2, &
+            !$acc update host(reprodSum1,reprodSum2)
+            globalProd(:) =                                &
+               mpas_global_sum_nfld(reprodSum1,reprodSum2, &
                                     domain%dminfo%comm)
+            !$acc update device(globalProd)
 
          else
 
-            SIcst_r00r0 = 0.0_RKIND
-            SIcst_r00w0 = 0.0_RKIND
-   
+            !$acc parallel loop present(SIcst_r00r0,SIcst_r00w0, &
+            !$acc    SIvec_1,SIvec_2,SIvec_3)                    &
+            !$acc    reduction(+:SIcst_r00r0,SIcst_r00w0)
             do iCell = 1, nCellsOwned
                SIcst_r00r0 = SIcst_r00r0 + SIvec_1(iCell) &
                                          * SIvec_2(iCell)
                SIcst_r00w0 = SIcst_r00w0 + SIvec_1(iCell) &
                                          * SIvec_3(iCell)
             end do ! iCell
-   
-            SIcst_allreduce_local2(1) = SIcst_r00r0
-            SIcst_allreduce_local2(2) = SIcst_r00w0
-   
+
+            !$acc serial present(SIcst_r00r0,SIcst_r00w0,localProd)   
+            localProd(1) = SIcst_r00r0
+            localProd(2) = SIcst_r00w0
+            SIcst_r00r0 = 0.0_RKIND
+            SIcst_r00w0 = 0.0_RKIND
+            !$acc end serial
+
             ! Global sum across CPUs
-            call mpas_dmpar_sum_real_array(domain % dminfo, 2,      &
-                                           SIcst_allreduce_local2,  &
-                                           SIcst_allreduce_global2)
+            threadNum = mpas_threading_get_thread_num()
+            if ( threadNum == 0 ) then
+#ifdef USE_GPU_AWARE_MPI
+            !$acc host_data use_device(localProd,globalProd)
+#else
+            !$acc update host(localProd)
+#endif
+            call MPI_Allreduce(localProd,globalProd,nfld,MPI_REAL8, &
+                               MPI_SUM,domain%dminfo%comm,ierr)
+#ifdef USE_GPU_AWARE_MPI
+            !$acc end host_data
+#else
+            !$acc update device(globalProd)
+#endif
+            endif ! thread
 
          endif
 
@@ -3774,8 +4642,15 @@ module ocn_time_integration_si
  
             ! Reproducible sum of multiple fields over products
              
+#ifdef MPAS_OPENACC
+            !$acc parallel loop                                  &
+            !$acc    present(reprodSum1,reprodSum2,              &
+            !$acc       SIvec_1,SIvec_2,SIvec_3,SIvec_4,SIvec_5, &
+            !$acc       SIvec_6,SIvec_7)
+#else
             !$omp parallel
             !$omp do schedule(runtime)
+#endif
             do iCell = 1,nCellsOwned
                globalReprodSum9fld1(iCell,1) = SIvec_1(iCell) !r00
                globalReprodSum9fld1(iCell,2) = SIvec_1(iCell) !r00
@@ -3797,26 +4672,26 @@ module ocn_time_integration_si
                globalReprodSum9fld2(iCell,8) = SIvec_7(iCell) !v0
                globalReprodSum9fld2(iCell,9) = SIvec_2(iCell) !q0
             end do
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
     
-            SIcst_allreduce_global9(:) =                   &
-               mpas_global_sum_nfld(globalReprodSum9fld1, &
-                                    globalReprodSum9fld2, &
+            !$acc update host(reprodSum1,reprodSum2)
+            globalProd(:) =                                &
+               mpas_global_sum_nfld(reprodSum1,reprodSum2, &
                                     domain%dminfo%comm)
     
          else
  
-            SIcst_r00s0 = 0.0_RKIND
-            SIcst_r00z0 = 0.0_RKIND
-            SIcst_q0y0  = 0.0_RKIND
-            SIcst_y0y0  = 0.0_RKIND
-            SIcst_r00q0 = 0.0_RKIND
-            SIcst_r00y0 = 0.0_RKIND
-            SIcst_r00t0 = 0.0_RKIND
-            SIcst_r00v0 = 0.0_RKIND
-            SIcst_q0q0  = 0.0_RKIND
-       
+            !$acc parallel loop async present(SIcst_q0q0,                      &
+            !$acc       SIcst_r00s0,SIcst_r00z0,SIcst_q0y0 ,SIcst_y0y0,  &
+            !$acc       SIcst_r00q0,SIcst_r00y0,SIcst_r00t0,SIcst_r00v0, &
+            !$acc       SIvec_1,SIvec_2,SIvec_3,SIvec_4,SIvec_5,SIvec_6, &
+            !$acc       SIvec_7)                                         &
+            !$acc    reduction(+:SIcst_q0q0,                             &
+            !$acc       SIcst_r00s0,SIcst_r00z0,SIcst_q0y0 ,SIcst_y0y0,  &
+            !$acc       SIcst_r00q0,SIcst_r00y0,SIcst_r00t0,SIcst_r00v0)
             do iCell = 1,nCellsOwned
                SIcst_r00s0 = SIcst_r00s0 + SIvec_1(iCell) &
                                          * SIvec_4(iCell) ! s1
@@ -3846,26 +4721,51 @@ module ocn_time_integration_si
                                          * SIvec_2(iCell)
             end do
     
-            SIcst_allreduce_local9(1) = SIcst_r00s0
-            SIcst_allreduce_local9(2) = SIcst_r00z0
-            SIcst_allreduce_local9(3) = SIcst_q0y0 
-            SIcst_allreduce_local9(4) = SIcst_y0y0 
-            SIcst_allreduce_local9(5) = SIcst_r00q0
-            SIcst_allreduce_local9(6) = SIcst_r00y0
-            SIcst_allreduce_local9(7) = SIcst_r00t0
-            SIcst_allreduce_local9(8) = SIcst_r00v0
-            SIcst_allreduce_local9(9) = SIcst_q0q0
-       
+            !$acc serial async present(localProd,SIcst_q0q0,               &
+            !$acc    SIcst_r00s0,SIcst_r00z0,SIcst_q0y0 ,SIcst_y0y0, &
+            !$acc    SIcst_r00q0,SIcst_r00y0,SIcst_r00t0,SIcst_r00v0)
+            localProd(1) = SIcst_r00s0
+            localProd(2) = SIcst_r00z0
+            localProd(3) = SIcst_q0y0
+            localProd(4) = SIcst_y0y0
+            localProd(5) = SIcst_r00q0
+            localProd(6) = SIcst_r00y0
+            localProd(7) = SIcst_r00t0
+            localProd(8) = SIcst_r00v0
+            localProd(9) = SIcst_q0q0
+            SIcst_r00s0 = 0.0_RKIND
+            SIcst_r00z0 = 0.0_RKIND
+            SIcst_q0y0  = 0.0_RKIND
+            SIcst_y0y0  = 0.0_RKIND
+            SIcst_r00q0 = 0.0_RKIND
+            SIcst_r00y0 = 0.0_RKIND
+            SIcst_r00t0 = 0.0_RKIND
+            SIcst_r00v0 = 0.0_RKIND
+            SIcst_q0q0  = 0.0_RKIND
+            !$acc end serial
+            !$acc wait
+
             ! Global sum across CPUs
-            call mpas_timer_start("si reduction iter")
-            call mpas_dmpar_sum_real_array(domain % dminfo, 9,      &
-                                           SIcst_allreduce_local9,  &
-                                           SIcst_allreduce_global9)
-            call mpas_timer_stop("si reduction iter")
-    
+            if ( threadNum == 0 ) then
+#ifdef USE_GPU_AWARE_MPI
+            !$acc host_data use_device(localProd,globalProd)
+#else
+            !$acc update host(localProd)
+#endif
+            call mpas_dmpar_sum_real_array(domain % dminfo, nfld,      &
+                                           localProd,globalProd)
+#ifdef USE_GPU_AWARE_MPI
+            !$acc end host_data
+#else
+            !$acc update device(globalProd) async
+#endif
+            endif ! thread
+
          endif
 
-      endif !!!
+      endif !!! si_algorithm & nfld
+
+      call mpas_timer_stop("si global reduction")
    
    end subroutine si_global_reduction !}}}
 
@@ -3885,8 +4785,7 @@ module ocn_time_integration_si
 !-----------------------------------------------------------------------
 
    subroutine si_solver_scg(domain,sshSolved,ssh,bottomDepthEdge, & !{{{
-                            tolerance,SIcst_alpha0,SIcst_beta0,   &
-                            SIcst_gamma0)
+                            tolerance)
 
       type (domain_type), intent(inout) :: &
          domain  !< [inout] model state to advance forward
@@ -3902,16 +4801,10 @@ module ocn_time_integration_si
 
       real(kind=RKIND), intent(in) :: tolerance ! Tolerance of solver
 
-      real(kind=RKIND), intent(inout) :: &
-         SIcst_alpha0,SIcst_beta0,SIcst_gamma0  ! Initial reductions
-
-      real(kind=RKIND) :: &
-         SIcst_beta1,SIcst_alpha1,SIcst_gamma1,resid,SIcst_omega0, &
-         SIcst_r0rh0_global,SIcst_w0rh0_global
-
       integer :: iter, iCell
 
       iter = 0
+
       resid = (tolerance+100.0)**2.0
 
       !-------------------------------------------------------------!
@@ -3920,8 +4813,15 @@ module ocn_time_integration_si
 
          iter = iter + 1
 
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang                                   &
+         !$acc    present(SIvec_z1,SIvec_rh0,SIcst_beta0,           &
+         !$acc       SIvec_z0,SIvec_s1,SIvec_w0,SIvec_s0,sshSolved, &
+         !$acc       SIcst_alpha0,SIvec_r1,SIvec_r0)
+#else
          !$omp parallel
          !$omp do schedule(runtime)
+#endif
          do iCell = 1, nPrecVec
             SIvec_z1(iCell) = SIvec_rh0(iCell) &
                             + SIcst_beta0 * SIvec_z0(iCell)
@@ -3935,14 +4835,19 @@ module ocn_time_integration_si
             SIvec_r1(iCell) = SIvec_r0(iCell) &
                             - SIcst_alpha0 * SIvec_s1(iCell)
          end do ! iCell
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
   
          ! Preconditioning -----------------------------------------!
          call si_precond(SIvec_r1,SIvec_rh1)
   
          call mpas_timer_start("si halo iter")
-         call mpas_dmpar_field_halo_exch(domain, 'SIvec_rh1')
+         call mpas_dmpar_exch_halo_field(SIvec_rh1_field)
+#ifndef USE_GPU_AWARE_MPI
+         !$acc update device(SIvec_rh1)
+#endif
          call mpas_timer_stop("si halo iter")
   
   
@@ -3951,29 +4856,45 @@ module ocn_time_integration_si
   
          ! Reduction -----------------------------------------------!
 
-         call mpas_timer_start("si reduction iter")
          call si_global_reduction(SIcst_allreduce_local3,&
                              SIcst_allreduce_global3,    &
                              globalReprodSum3fld1,       &
                              globalReprodSum3fld2,       &
                              si_algorithm,3,domain,      &
                              SIvec_r1,SIvec_w1,SIvec_rh1)
-         call mpas_timer_stop("si reduction iter")
-  
-         SIcst_r0rh0_global = SIcst_allreduce_global3(1) 
-         SIcst_w0rh0_global = SIcst_allreduce_global3(2)
-                      resid = SIcst_allreduce_global3(3)
 
-         ! Omega0
-         SIcst_gamma1 = SIcst_r0rh0_global
-         SIcst_omega0 = SIcst_w0rh0_global
+         !$acc serial present(SIcst_r0rh0,SIcst_w0rh0,SIcst_gamma1,  &
+         !$acc    SIcst_allreduce_global3,SIcst_omega0,SIcst_beta1,  &
+         !$acc    SIcst_alpha1,SIcst_gamma0,SIcst_alpha0,resid,      &
+         !$acc    SIcst_beta0,SIcst_r0r0)
+         SIcst_r0rh0 = SIcst_allreduce_global3(1)
+         SIcst_w0rh0 = SIcst_allreduce_global3(2)
+               resid = SIcst_allreduce_global3(3)
+         SIcst_gamma1 = SIcst_r0rh0
+         SIcst_omega0 = SIcst_w0rh0
          SIcst_beta1  = SIcst_gamma1 / SIcst_gamma0
          SIcst_alpha1 = SIcst_gamma1                            &
                       /(SIcst_omega0 - SIcst_beta1*SIcst_gamma1 &
                                      / SIcst_alpha0 )
+         SIcst_beta0  = SIcst_beta1
+         SIcst_alpha0 = SIcst_alpha1
+         SIcst_gamma0 = SIcst_gamma1
 
+         SIcst_r0rh0 = 0.0_RKIND
+         SIcst_w0rh0 = 0.0_RKIND
+         SIcst_r0r0  = 0.0_RKIND
+         !$acc end serial
+         !$acc update host(resid)
+
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang                              &
+         !$acc    present(SIvec_r0,SIvec_r1,SIvec_s0,SIvec_s1, &
+         !$acc       SIvec_w0,SIvec_w1,SIvec_z0,SIvec_z1,      &
+         !$acc       SIvec_rh0,SIvec_rh1)
+#else
          !$omp parallel
          !$omp do schedule(runtime)
+#endif
          do iCell = 1,nPrecVec
             SIvec_r0(iCell)  = SIvec_r1(iCell)
             SIvec_s0(iCell)  = SIvec_s1(iCell)
@@ -3981,12 +4902,10 @@ module ocn_time_integration_si
             SIvec_z0(iCell)  = SIvec_z1(iCell)
             SIvec_rh0(iCell) = SIvec_rh1(iCell)
          end do ! iCell
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
-
-         SIcst_beta0  = SIcst_beta1
-         SIcst_alpha0 = SIcst_alpha1
-         SIcst_gamma0 = SIcst_gamma1
+#endif
 
          if ( iter > int(mean_num_cells*5) ) then
             call mpas_log_write(&
@@ -4026,8 +4945,7 @@ module ocn_time_integration_si
 !-----------------------------------------------------------------------
 
    subroutine si_solver_sbicg(domain,sshSolved,ssh,bottomDepthEdge, & !{{{
-                 tolerance,SIcst_alpha0,SIcst_beta0,SIcst_gamma0,   &
-                 SIcst_rho0)
+                 tolerance)
 
       type (domain_type), intent(inout) :: &
          domain  !< [inout] model state to advance forward
@@ -4043,17 +4961,6 @@ module ocn_time_integration_si
 
       real(kind=RKIND), intent(in) :: tolerance ! Tolerance of solver
 
-      real(kind=RKIND), intent(inout) :: &
-         SIcst_alpha0,SIcst_beta0,SIcst_gamma0,SIcst_rho0
-                                                ! Initial reductions
-
-      real(kind=RKIND) :: &
-         SIcst_beta1,SIcst_alpha1,SIcst_gamma1,resid,SIcst_omega0, &
-         SIcst_r0rh0_global,SIcst_w0rh0_global,SIcst_q0q0_global,  &
-         SIcst_q0y0_global,SIcst_r00q0_global,SIcst_r00s0_global,  &
-         SIcst_r00t0_global,SIcst_r00v0_global,SIcst_r00y0_global, &
-         SIcst_r00z0_global,SIcst_rho1,SIcst_y0y0_global
-
       integer :: iter, iCell
 
       iter = 0
@@ -4065,53 +4972,67 @@ module ocn_time_integration_si
  
          iter = iter + 1
  
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang async present(                    &
+         !$acc       SIvec_ph1,SIvec_rh0,SIvec_ph0,                 &
+         !$acc       SIvec_sh0,SIvec_s1,SIvec_w0,                   &
+         !$acc       SIvec_s0,SIvec_z0,SIvec_sh1,SIvec_wh0,         &
+         !$acc       SIvec_zh0,SIvec_z1,SIvec_t0,SIvec_v0,SIvec_q0, &
+         !$acc       SIvec_r0,SIvec_qh0,SIvec_y0,                   &
+         !$acc       SIcst_alpha1,SIcst_beta1,SIcst_omega0)
+#else
          !$omp parallel
          !$omp do schedule(runtime)
+#endif
          do iCell = 1, nPrecVec
-            SIvec_ph1(iCell) =  SIvec_rh0(iCell) + SIcst_beta0      &
+            SIvec_ph1(iCell) =  SIvec_rh0(iCell) + SIcst_beta1      &
                              * (SIvec_ph0(iCell) - SIcst_omega0     &
                                                  * SIvec_sh0(iCell))
- 
-            SIvec_s1(iCell)  =  SIvec_w0(iCell)  + SIcst_beta0      &
+
+            SIvec_s1(iCell)  =  SIvec_w0(iCell)  + SIcst_beta1      &
                              * (SIvec_s0(iCell)  - SIcst_omega0     &
                                                  * SIvec_z0(iCell))
- 
-            SIvec_sh1(iCell) =  SIvec_wh0(iCell) + SIcst_beta0      &
+
+            SIvec_sh1(iCell) =  SIvec_wh0(iCell) + SIcst_beta1      &
                              * (SIvec_sh0(iCell) - SIcst_omega0     &
                                                  * SIvec_zh0(iCell))
- 
-            SIvec_z1(iCell)  =  SIvec_t0(iCell)  + SIcst_beta0      &
+
+            SIvec_z1(iCell)  =  SIvec_t0(iCell)  + SIcst_beta1      &
                              * (SIvec_z0(iCell)  - SIcst_omega0     &
                                                  * SIvec_v0(iCell))
- 
-            SIvec_q0(iCell)  =  SIvec_r0(iCell)  - SIcst_alpha0     &
+
+            SIvec_q0(iCell)  =  SIvec_r0(iCell)  - SIcst_alpha1     &
                                                  * SIvec_s1(iCell)
- 
-            SIvec_qh0(iCell) =  SIvec_rh0(iCell) - SIcst_alpha0     &
+
+            SIvec_qh0(iCell) =  SIvec_rh0(iCell) - SIcst_alpha1     &
                                                  * SIvec_sh1(iCell)
- 
-            SIvec_y0(iCell)  =  SIvec_w0(iCell)  - SIcst_alpha0     &
+
+            SIvec_y0(iCell)  =  SIvec_w0(iCell)  - SIcst_alpha1     &
                                                  * SIvec_z1(iCell)
          end do ! iCell
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
  
          ! Preconditioning -----------------------------------------!
- 
          call si_precond(SIvec_z1,SIvec_zh1)
+         !$acc wait
  
          call mpas_timer_start("si halo iter")
-         call mpas_dmpar_field_halo_exch(domain, 'SIvec_zh1')
+#ifdef USE_GPU_AWARE_MPI
+         call si_halo_exch(domain,SIvec_zh1)
+#else
+         call mpas_dmpar_exch_halo_field(SIvec_zh1_field)
+         !$acc update device(SIvec_zh1) async
+#endif
          call mpas_timer_stop("si halo iter")
  
  
          ! SpMV ----------------------------------------------------!
- 
          call si_matvec_mul(SIvec_zh1,bottomDepthEdge,SIvec_v0,ssh)
- 
+
          ! Reduction -----------------------------------------------!
- 
-         call mpas_timer_start("si reduction iter")
          call si_global_reduction(SIcst_allreduce_local9,          &
                              SIcst_allreduce_global9,              &
                              globalReprodSum9fld1,                 &
@@ -4119,112 +5040,254 @@ module ocn_time_integration_si
                              si_algorithm,9,domain,                &
                              SIvec_r00,SIvec_q0,SIvec_y0,SIvec_s1, &
                              SIvec_z1,SIvec_t0,SIvec_v0)
-         call mpas_timer_stop("si reduction iter")
  
-         SIcst_r00s0_global = SIcst_allreduce_global9(1) 
-         SIcst_r00z0_global = SIcst_allreduce_global9(2)
-         SIcst_q0y0_global  = SIcst_allreduce_global9(3)
-         SIcst_y0y0_global  = SIcst_allreduce_global9(4)
-         SIcst_r00q0_global = SIcst_allreduce_global9(5)
-         SIcst_r00y0_global = SIcst_allreduce_global9(6)
-         SIcst_r00t0_global = SIcst_allreduce_global9(7)
-         SIcst_r00v0_global = SIcst_allreduce_global9(8)
-         SIcst_q0q0_global  = SIcst_allreduce_global9(9)
- 
-         ! Omega0
-         SIcst_omega0 = SIcst_q0y0_global / SIcst_y0y0_global
- 
-         ! Residual
-         resid = SIcst_q0q0_global &
-               - 2.0_RKIND * SIcst_omega0 * SIcst_q0y0_global  &
-               + SIcst_omega0**2.0_RKIND  * SIcst_y0y0_global
- 
+         !$acc serial async present(SIcst_rho1,SIcst_r00q0,          &
+         !$acc    SIcst_gamma1,SIcst_r00y0,SIcst_r00t0,SIcst_omega0, &
+         !$acc    SIcst_alpha0,SIcst_r00v0,SIcst_beta0,SIcst_rho0,   &
+         !$acc    SIcst_r00s0,SIcst_r00z0,SIcst_q0q0,resid,          &
+         !$acc    SIcst_q0y0,SIcst_y0y0,SIcst_alpha1,SIcst_beta1,    &
+         !$acc    SIcst_allreduce_global9)
+         SIcst_r00s0 = SIcst_allreduce_global9(1)
+         SIcst_r00z0 = SIcst_allreduce_global9(2)
+         SIcst_q0y0  = SIcst_allreduce_global9(3)
+         SIcst_y0y0  = SIcst_allreduce_global9(4)
+         SIcst_r00q0 = SIcst_allreduce_global9(5)
+         SIcst_r00y0 = SIcst_allreduce_global9(6)
+         SIcst_r00t0 = SIcst_allreduce_global9(7)
+         SIcst_r00v0 = SIcst_allreduce_global9(8)
+         SIcst_q0q0  = SIcst_allreduce_global9(9)
+
+         SIcst_alpha0 = SIcst_alpha1
+         SIcst_beta0  = SIcst_beta1
+
+         SIcst_omega0 = SIcst_q0y0 / SIcst_y0y0
+
+         resid = SIcst_q0q0 &
+               - 2.0_RKIND * SIcst_omega0 * SIcst_q0y0  &
+               + SIcst_omega0**2.0_RKIND  * SIcst_y0y0
+
+         SIcst_rho1 = SIcst_r00q0 - SIcst_omega0 * SIcst_r00y0
+
+         SIcst_gamma1 = SIcst_r00y0 - SIcst_omega0 * SIcst_r00t0  &
+                                    + SIcst_omega0 * SIcst_alpha0 &
+                                                   * SIcst_r00v0
+
+         SIcst_beta1 = (SIcst_alpha0/SIcst_omega0) &
+                     * (SIcst_rho1 / SIcst_rho0)
+
+         SIcst_alpha1 = SIcst_rho1 &
+                      / ( SIcst_gamma1 + SIcst_beta1 * SIcst_r00s0   &
+                                       - SIcst_beta1 * SIcst_omega0  &
+                                                     * SIcst_r00z0 )
+         SIcst_rho0 = SIcst_rho1
+
+         SIcst_r00s0 = 0.0_RKIND
+         SIcst_r00z0 = 0.0_RKIND
+         SIcst_q0y0  = 0.0_RKIND
+         SIcst_y0y0  = 0.0_RKIND
+         SIcst_r00q0 = 0.0_RKIND
+         SIcst_r00y0 = 0.0_RKIND
+         SIcst_r00t0 = 0.0_RKIND
+         SIcst_r00v0 = 0.0_RKIND
+         SIcst_q0q0  = 0.0_RKIND
+         !$acc end serial
+         !$acc update host(resid) async
+
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang present(sshSolved,          &
+         !$acc       SIvec_qh0,SIvec_q0,SIvec_y0,SIvec_wh0,   &
+         !$acc       SIvec_t0,SIvec_v0,SIvec_w0, SIvec_r0,    &
+         !$acc       SIvec_s0,SIvec_s1,SIvec_z0,SIvec_z1,     &
+         !$acc       SIvec_rh0,SIvec_sh0,SIvec_sh1,           &
+         !$acc       SIvec_ph0,SIvec_ph1,SIvec_zh0,SIvec_zh1, &
+         !$acc       SIcst_alpha0,SIcst_omega0)
+#else
          !$omp parallel
          !$omp do schedule(runtime)
+#endif
          do iCell = 1,nPrecVec
-            sshSolved(iCell) = sshSolved(iCell)           &
-                                  + SIcst_alpha0 * SIvec_ph1(iCell) &
-                                  + SIcst_omega0 * SIvec_qh0(iCell)
- 
-            SIvec_r1(iCell)  = SIvec_q0(iCell) - SIcst_omega0       &
+            sshSolved(iCell) = sshSolved(iCell)                &
+                             + SIcst_alpha0 * SIvec_ph1(iCell) &
+                             + SIcst_omega0 * SIvec_qh0(iCell)
+
+            SIvec_r0(iCell)  = SIvec_q0(iCell) - SIcst_omega0       &
                              * SIvec_y0(iCell)
- 
-            SIvec_rh1(iCell) =  SIvec_qh0(iCell) - SIcst_omega0     &
+
+            SIvec_rh0(iCell) =  SIvec_qh0(iCell) - SIcst_omega0     &
                              * (SIvec_wh0(iCell) - SIcst_alpha0     &
                                                  * SIvec_zh1(iCell))
- 
-            SIvec_w1(iCell)  =   SIvec_y0(iCell) - SIcst_omega0     &
+
+            SIvec_w0(iCell)  =   SIvec_y0(iCell) - SIcst_omega0     &
                              * ( SIvec_t0(iCell) - SIcst_alpha0     &
                                                  * SIvec_v0(iCell))
+
+            SIvec_s0(iCell)  = SIvec_s1(iCell)
+            SIvec_z0(iCell)  = SIvec_z1(iCell)
+            SIvec_sh0(iCell) = SIvec_sh1(iCell)
+            SIvec_ph0(iCell) = SIvec_ph1(iCell)
+            SIvec_zh0(iCell) = SIvec_zh1(iCell)
          end do
+
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
+         !$acc wait
  
          ! Preconditioning -----------------------------------------!
- 
-         call si_precond(SIvec_w1,SIvec_wh1)
+         call si_precond(SIvec_w0,SIvec_wh0) !wh1 -> wh0; w1->w0
  
          call mpas_timer_start("si halo iter")
-         call mpas_dmpar_field_halo_exch(domain, 'SIvec_wh1')
+#ifdef USE_GPU_AWARE_MPI
+         call si_halo_exch(domain,SIvec_wh0)
+#else
+         call mpas_dmpar_exch_halo_field(SIvec_wh0_field)
+         !$acc update device(SIvec_wh0) async
+#endif
          call mpas_timer_stop("si halo iter")
  
          ! SpMV ----------------------------------------------------!
+         call si_matvec_mul(SIvec_wh0,bottomDepthEdge,SIvec_t0,ssh) 
+                                             !wh1 -> wh0; t1 -> t0
+         !$acc wait
  
-         call si_matvec_mul(SIvec_wh1,bottomDepthEdge,SIvec_t1,ssh)
- 
-         SIcst_rho1 = SIcst_r00q0_global - SIcst_omega0 * SIcst_r00y0_global 
- 
-         SIcst_gamma1 = SIcst_r00y0_global - SIcst_omega0 * SIcst_r00t0_global  &
-                                    + SIcst_omega0 * SIcst_alpha0 &
-                                                   * SIcst_r00v0_global
- 
-         SIcst_beta0 = (SIcst_alpha0/SIcst_omega0) &
-                     * (SIcst_rho1 / SIcst_rho0)
- 
-         SIcst_alpha0 = SIcst_rho1 &
-                      / ( SIcst_gamma1 + SIcst_beta0 * SIcst_r00s0_global   &
-                                       - SIcst_beta0 * SIcst_omega0  &
-                                                     * SIcst_r00z0_global )
-         SIcst_rho0 = SIcst_rho1
- 
-         !$omp parallel
-         !$omp do schedule(runtime)
-         do iCell = 1,nPrecVec
-           SIvec_r0(iCell) = SIvec_r1(iCell)
-           SIvec_s0(iCell) = SIvec_s1(iCell)
-           SIvec_z0(iCell) = SIvec_z1(iCell)
-           SIvec_w0(iCell) = SIvec_w1(iCell)
-           SIvec_t0(iCell) = SIvec_t1(iCell)
+         if ( iter > int(mean_num_cells*5) ) then
+            call mpas_log_write(&
+            '******************************************************')
+            call mpas_log_write(&
+            'Iteration number exceeds Max. #iteration: PROGRAM STOP')
+            call mpas_log_write(&
+            'Current #Iteration = $i ', intArgs=(/ iter /) )
+            call mpas_log_write(&
+            'Max.    #Iteration = $i ', &
+            intArgs=(/ int(mean_num_cells*5) /) )
+            call mpas_log_write(&
+            '******************************************************')
+            call mpas_log_write('',MPAS_LOG_CRIT)
+         endif
 
-           SIvec_rh0(iCell) = SIvec_rh1(iCell)
-           SIvec_sh0(iCell) = SIvec_sh1(iCell)
-           SIvec_ph0(iCell) = SIvec_ph1(iCell)
-           SIvec_wh0(iCell) = SIvec_wh1(iCell)
-           SIvec_zh0(iCell) = SIvec_zh1(iCell)
-        end do ! iCell
-        !$omp end do
-        !$omp end parallel
-
-        if ( iter > int(mean_num_cells*5) ) then
-           call mpas_log_write(&
-           '******************************************************')
-           call mpas_log_write(&
-           'Iteration number exceeds Max. #iteration: PROGRAM STOP')
-           call mpas_log_write(&
-           'Current #Iteration = $i ', intArgs=(/ iter /) )
-           call mpas_log_write(&
-           'Max.    #Iteration = $i ', &
-           intArgs=(/ int(mean_num_cells*5) /) )
-           call mpas_log_write(&
-           '******************************************************')
-           call mpas_log_write('',MPAS_LOG_CRIT)
-        endif
-
-     !-------------------------------------------------------------!
-     end do ! do iter
-     !-------------------------------------------------------------!
+      !-------------------------------------------------------------!
+      end do ! do iter
+      !-------------------------------------------------------------!
 
    end subroutine si_solver_sbicg !}}}
+
+!***********************************************************************
+!
+!  routine si_halo_exch
+!
+!> \brief  Halo exchange for the SI baroropic mode solver
+!
+!> \author  Hyun-Gyu Kang
+!
+!> \details
+!   This routine performs local halo exchanges for the semi-implicit
+!   barotropic mode solver.
+!   This routine enables the GPU-aware MPI halo exchanges during
+!   solver iterations.
+!
+!-----------------------------------------------------------------------
+#ifdef USE_GPU_AWARE_MPI
+
+   subroutine si_halo_exch(domain,field_array) !{{{
+
+      include 'mpif.h'
+
+      type (domain_type), intent(inout) :: &
+         domain  !< [inout] model state to advance forward
+   
+      real(kind=RKIND),dimension(:),intent(inout) :: field_array
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+
+      integer,dimension(mpi_status_size) :: stats
+
+      integer :: i,iComm, iHalo, iExch, mpi_ierr, threadNum
+
+      threadNum = mpas_threading_get_thread_num()
+     
+      if ( threadNum == 0 ) then
+
+      do iComm = 1,nRecvCommList
+         call mpas_timer_start("irecv")
+         ! Initiate mpi_irecv calls ---------------------------------------
+         rbuffer => exchRecv(iComm)%buffer
+         !$acc host_data use_device(rbuffer)
+         call MPI_Irecv(                                               &
+                             rbuffer, exchRecv(iComm)%nList, MPI_REAL8,&
+              exchRecv(iComm)%procID, exchRecv(iComm)%procID,          &
+              domain%dminfo%comm, exchRecv(iComm)%reqID, mpi_ierr )
+         !$acc end host_data
+         call mpas_timer_stop("irecv")
+
+         ! Copy data into buffer, and initiate mpi_isend calls ------------
+         call mpas_timer_start("send loop")
+         !$acc parallel loop present(exchSend,field_array)
+         do iHalo = 1,config_num_halos
+            do iExch = 1,exchSend(iComm)%nExch(iHalo)
+               if (exchSend(iComm)%halo(iHalo)%endPointID(iExch) == &
+                   exchSend(iComm)%procID) then
+                   !$acc loop vector
+                   do i = 1,exchSend(iComm)%halo(iHalo)%nList(iExch)
+                      exchSend(iComm)%buffer( exchSend(iComm)%  &
+                                                  halo(iHalo)%  &
+                                                  exch(iExch)%  &
+                                                 destList(i)) = &
+                      field_array(exchSend(iComm)%halo(iHalo)   &
+                                     %exch(iExch)%srcList(i))
+                   end do ! i
+               endif
+            end do ! iExch
+         end do ! iHalo
+         call mpas_timer_stop("send loop")
+
+         call mpas_timer_start("isend")
+         sbuffer => exchSend(iComm)%buffer
+         !$acc host_data use_device(sbuffer)
+         call MPI_Isend(                                               &
+                             sbuffer, exchSend(iComm)%nList, MPI_REAL8,&
+              exchSend(iComm)%procID, domain%dminfo%my_proc_id,        &
+              domain%dminfo%comm, exchSend(iComm)%reqID, mpi_ierr )
+         !$acc end host_data
+         call mpas_timer_stop("isend")
+
+      end do ! iComm
+
+      ! Wait for mpi_irecv to finish, and unpack data from buffer ------
+      do iComm = 1,nRecvCommList
+         call MPI_Wait(exchRecv(iComm)%reqID,stats,mpi_ierr)
+
+         call mpas_timer_start("recv loop")
+         !$acc parallel loop present(exchRecv,field_array)
+         do iHalo = 1,config_num_halos
+            do iExch = 1,exchRecv(iComm)%nExch(iHalo)
+               if (exchRecv(iComm)%halo(iHalo)%endPointID(iExch) == &
+                   exchRecv(iComm)%procID) then
+                   !acc loop vector
+                   do i = 1,exchRecv(iComm)%halo(iHalo)%nList(iExch)
+                      field_array(exchRecv(iComm)%halo(iHalo)    &
+                                     %exch(iExch)%destList(i)) = &
+                      exchRecv(iComm)%buffer(exchRecv(iComm)%    &
+                                                 halo(iHalo)%    &
+                                                 exch(iExch)%    &
+                                                 srcList(i))
+                   end do ! i
+               endif
+            end do ! iExch
+         end do ! iHalo
+         call mpas_timer_stop("recv loop")
+      end do ! iComm
+
+      ! Wait for mpi_isend to finish ----------------------------------
+      do iComm = 1,nSendCommList
+         call MPI_Wait(exchSend(iComm)%reqID,MPI_STATUS_IGNORE,mpi_ierr)
+      end do
+
+      endif ! threadNum
+
+   end subroutine si_halo_exch
+
+#endif
 
 !***********************************************************************
 !
@@ -4240,6 +5303,75 @@ module ocn_time_integration_si
 !-----------------------------------------------------------------------
 
    subroutine ocn_time_integrator_si_variable_destroy() !{{{
+
+      integer :: info,iComm,iHalo,iExch
+
+#ifdef MPAS_OPENACC
+
+#ifdef USE_MAGMA
+      info = magmaf_free( dprec_ivmat )
+      info = magmaf_free( dxvec )
+      info = magmaf_free( dyvec )
+#endif
+
+      !$acc exit data delete(prec_ivmat,                             &
+      !$acc    SIcst_allreduce_local2,SIcst_allreduce_global2,       &
+      !$acc    SIcst_allreduce_local3,SIcst_allreduce_global3,       &
+      !$acc    SIcst_allreduce_local9,SIcst_allreduce_global9,       &
+      !$acc    SIcst_alpha0,SIcst_alpha1,SIcst_beta0,SIcst_beta1,    &
+      !$acc    SIcst_omega0,SIcst_gamma0,SIcst_gamma1,resid,         &
+      !$acc    SIcst_r0rh0,SIcst_w0rh0,SIcst_r0r0 ,SIcst_r00r0,      &
+      !$acc    SIcst_r00s0,SIcst_r00z0,SIcst_q0y0 ,SIcst_y0y0 ,      &
+      !$acc    SIcst_r00y0,SIcst_r00t0,SIcst_r00v0,SIcst_q0q0 ,      &
+      !$acc    SIcst_r00w0,SIcst_r00q0,SIcst_rho0,SIcst_rho1)
+
+      if ( config_btr_si_partition_match_mode ) then
+      !$acc exit data delete(                                        &
+      !$acc               globalReprodSum2fld1,globalReprodSum2fld2, &
+      !$acc               globalReprodSum3fld1,globalReprodSum3fld2 )
+      endif
+
+#ifdef USE_GPU_AWARE_MPI
+      do iComm = 1,nRecvCommList
+         do iHalo = 1,config_num_halos
+            do iExch = 1,exchRecv(iComm)%nExch(iHalo)
+               !$acc exit data delete(                                    &
+               !$acc    exchRecv(iComm)%halo(iHalo)%exch(iExch)%destList, &
+               !$acc    exchRecv(iComm)%halo(iHalo)%exch(iExch)%srcList )
+            end do
+            !$acc exit data delete(exchRecv(iComm)%halo(iHalo)%nList,       &
+            !$acc                   exchRecv(iComm)%halo(iHalo)%endPointID, &
+            !$acc                   exchRecv(iComm)%halo(iHalo)%exch )
+         end do
+         !$acc exit data delete(exchRecv(iComm)%buffer,  &
+         !$acc                   exchRecv(iComm)%nExch,  &
+         !$acc                   exchRecv(iComm)%halo,   &
+         !$acc                   exchRecv(iComm)%procID)
+      end do
+
+      do iComm = 1,nSendCommList
+         do iHalo = 1,config_num_halos
+            do iExch = 1,exchSend(iComm)%nExch(iHalo)
+               !$acc exit data delete(                                    &
+               !$acc    exchSend(iComm)%halo(iHalo)%exch(iExch)%destList, &
+               !$acc    exchSend(iComm)%halo(iHalo)%exch(iExch)%srcList)
+            end do
+            !$acc exit data delete(exchSend(iComm)%halo(iHalo)%nList,       &
+            !$acc                   exchSend(iComm)%halo(iHalo)%endPointID, &
+            !$acc                   exchSend(iComm)%halo(iHalo)%exch)
+         end do
+         !$acc exit data delete(exchSend(iComm)%buffer,  &
+         !$acc                   exchSend(iComm)%nExch,  &
+         !$acc                   exchSend(iComm)%halo,   &
+         !$acc                   exchSend(iComm)%procID)
+      end do
+
+      !$acc exit data delete(exchSend,exchRecv,sbuffer,rbuffer)
+#endif
+
+#endif
+
+      deallocate(prec_ivmat)
 
       if ( config_btr_si_partition_match_mode ) then
          deallocate( globalReprodSum2fld1,  &

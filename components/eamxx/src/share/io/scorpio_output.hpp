@@ -25,7 +25,7 @@
  *
  *  The EKAT parameter list contains the following options to control output behavior
  *  ------
- *  Casename:                     STRING
+ *  filename_prefix:              STRING
  *  Averaging Type:               STRING
  *  Max Snapshots Per File:       INT                   (default: 1)
  *  Fields:
@@ -42,15 +42,12 @@
  *  output_control:
  *    Frequency:                  INT
  *    frequency_units:            STRING                (default: nsteps)
- *  Checkpoint Control:
- *    Frequency:                  INT                   (default: 0)
- *    frequency_units:            STRING                (default: ${Output->frequency_units})
  *  Restart:
- *    Casename:                   STRING                (default: ${Casename})
+ *    filename_prefix:            STRING                (default: ${filename_prefix})
  *    Perform Restart:            BOOL                  (default: true)
  *  -----
  *  The meaning of these parameters is the following:
- *  - Casename: the output filename root.
+ *  - filename_prefix: the output filename root.
  *  - Averaging Type: a string that describes which type of output, current options are:
  *      instant - no averaging, output each snap as is.
  *      average - average of the field over some interval.
@@ -64,6 +61,7 @@
  *        - IO Grid Name: if provided, remap fields to this grid before output (useful to remap
  *                        SEGrid fields to PointGrid fields on the fly, to save on output size)
  *  - Max Snapshots Per File: the maximum number of snapshots saved per file. After this many
+ *    snapshots, the current files is closed and a new file created.
  *  - Output: parameters for output control
  *    - Frequency: the frequency of output writes (in the units specified by ${Output frequency_units})
  *    - frequency_units: the units of output frequency (nsteps, nmonths, nyears, nhours, ndays,...)
@@ -73,7 +71,7 @@
  *      if Averaging Type is *not* Instant. A value of 0 is interpreted as 'no checkpointing'.
  *    - frequency_units: the units of restart history output.
  *  - Restart: parameters for history restart
- *    - Casename: the history restart filename root.
+ *    - filename_prefix: the history restart filename root.
  *    - Perform Restart: if this is a restarted run, and Averaging Type is not Instant, this flag
  *      determines whether we want to restart the output history or start from scrach. That is,
  *      you can set this to false to force a fresh new history, even in a restarted run.
@@ -147,24 +145,22 @@ public:
   void init();
   void reset_dev_views();
   void setup_output_file (const std::string& filename, const std::string& fp_precision);
-  void run (const std::string& filename, const bool write, const int nsteps_since_last_output);
-  void finalize() {}
+  void run (const std::string& filename, const bool write, const int nsteps_since_last_output,
+            const bool allow_invalid_fields = false);
 
   long long res_dep_memory_footprint () const;
 
   std::shared_ptr<const AbstractGrid> get_io_grid () const {
     return m_io_grid;
   }
+
 protected:
   // Internal functions
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::string& mode);
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::vector<std::string>& modes);
 
-  std::shared_ptr<const fm_type> get_field_manager (const std::string& mode) const {
-    EKAT_REQUIRE_MSG (m_field_mgrs.count(mode),"ERROR! AtmosphereOutput::get_field_manager FM for mode = " + mode + " not found in list of available field managers!.");
-    return m_field_mgrs.at(mode);
-  }
+  std::shared_ptr<const fm_type> get_field_manager (const std::string& mode) const;
 
   void register_dimensions(const std::string& name);
   void register_variables(const std::string& filename, const std::string& fp_precision);
@@ -172,7 +168,7 @@ protected:
   std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
   Field get_field(const std::string& name, const std::string mode) const;
-  void compute_diagnostic(const std::string& name);
+  void compute_diagnostic (const std::string& name, const bool allow_invalid_fields = false);
   void set_diagnostics();
   void create_diagnostic (const std::string& diag_name);
 
@@ -201,6 +197,13 @@ protected:
   std::map<std::string,std::shared_ptr<atm_diag_type>>  m_diagnostics;
   std::map<std::string,std::vector<std::string>>        m_diag_depends_on_diags;
   std::map<std::string,bool>                            m_diag_computed;
+
+  // Use float, so that if output fp_precision=float, this is a representable value.
+  // Otherwise, you would get an error from Netcdf, like
+  //   NetCDF: Numeric conversion not representable
+  // Also, by default, don't pick max float, to avoid any overflow if the value
+  // is used inside other calculation and/or remap.
+  float m_fill_value = DEFAULT_FILL_VALUE;
 
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;

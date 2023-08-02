@@ -2,10 +2,13 @@
 #define SCREAM_IO_UTILS_HPP
 
 #include "share/util/scream_time_stamp.hpp"
+#include "share/util/scream_time_stamp.hpp"
+
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
+
 #include <string>
-#include "share/util/scream_time_stamp.hpp"
+#include <limits>
 
 namespace scream
 {
@@ -17,6 +20,8 @@ enum class OutputAvgType {
   Average,
   Invalid
 };
+
+constexpr float DEFAULT_FILL_VALUE = std::numeric_limits<float>::max() / 1e5;
 
 inline std::string e2str(const OutputAvgType avg) {
   using OAT = OutputAvgType;
@@ -43,18 +48,22 @@ inline OutputAvgType str2avg (const std::string& s) {
 
 // Mini struct to hold IO frequency info
 struct IOControl {
-  // A non-positive frequency can be used to signal IO disabled
+  // If units is not "none" or "never", freq *must* be set to a positive number
   int frequency = -1;
-  int nsamples_since_last_write;  // Needed when updating output data, such as with the OAT::Average flag
+  int nsamples_since_last_write = 0;  // Needed when updating output data, such as with the OAT::Average flag
   util::TimeStamp timestamp_of_last_write;
   std::string frequency_units = "none";
+
+  bool output_enabled () const {
+    return frequency_units!="none" && frequency_units!="never";
+  }
 
   bool is_write_step (const util::TimeStamp& ts) {
     // Mini-routine to determine if it is time to write output to file.
     // The current allowable options are nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears
     // We query the frequency_units string value to determine which option it is.
     bool ret = false;
-    if (frequency > 0 && frequency_units != "never" && frequency_units != "none") {
+    if (frequency_units != "never" && frequency_units != "none") {
       auto ts_diff = (ts-timestamp_of_last_write);
       if (frequency_units == "nsteps") {
         // Just use the num_steps from timestamps
@@ -71,6 +80,8 @@ struct IOControl {
       } else if (frequency_units == "nmonths" || frequency_units == "nyears") {
         // For months and years we need to be careful, can't just divide ts_diff by a set value.
         // First we make sure that if we are the same day of the month and at the same time of day.
+        // TODO: Potential bug, if the day of last write >=29 there is a chance that we won't write
+        //       in some subset of months, think Feb (28 days) and all of the months with only 30 days.
         if (ts.get_day() == timestamp_of_last_write.get_day() &&
             ts.sec_of_day() == timestamp_of_last_write.sec_of_day()) {
           auto diff = 0;
@@ -102,19 +113,19 @@ struct IOControl {
 struct IOFileSpecs {
   bool is_open = false;
   std::string filename;
-  int num_snapshots_in_file;
+  int num_snapshots_in_file = 0;
   int max_snapshots_in_file;
   bool file_is_full () const { return num_snapshots_in_file==max_snapshots_in_file; }
-  // Whether a time string or the number of mpiranks should be attached to the filename.
-  // Attaching the timestamp to each file ensures that in runs with multiple
-  // outputs, old output isn't accidentally overwritten, so it's on by default.
-  // Attaching the nranks, OTOH, is necessary only when running multiple mpi configs
-  // of the same test, so they run concurrently, writing on different files.
-  bool filename_with_time_string = true;
+  // Adding number of MPI ranks to the filenamea is useful in testing, since we can run
+  // multiple instances of the same test in parallel (with different number of ranks),
+  // without the risk of them overwriting each other output.
+  // For production runs, this is not desirable.
   bool filename_with_mpiranks    = false;
-  bool filename_with_avg_type    = true;
-  bool filename_with_frequency   = true;
+
   bool save_grid_data            = true;
+
+  // Whether this struct refers to a history restart file
+  bool hist_restart_file         = false;
 };
 
 std::string find_filename_in_rpointer (

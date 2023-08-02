@@ -6,7 +6,7 @@ module scream_cpl_indices
   private
 
   ! Focus only on the ones that scream imports/exports (subsets of x2a and a2x)
-  integer, parameter, public :: num_scream_imports = 14
+  integer, parameter, public :: num_scream_imports = 16
   integer, parameter, public :: num_scream_exports = 17
   integer, public :: num_cpl_imports, num_cpl_exports, import_field_size, export_field_size
 
@@ -87,6 +87,8 @@ module scream_cpl_indices
     import_field_names(12) = 'surf_mom_flux'
     import_field_names(13) = 'surf_sens_flux'
     import_field_names(14) = 'surf_evap'
+    import_field_names(15) = 'ocnfrac'
+    import_field_names(16) = 'landfrac'
 
     ! CPL indices
     import_cpl_indices(1)  = mct_avect_indexra(x2a,'Sx_avsdr')
@@ -103,6 +105,8 @@ module scream_cpl_indices
     import_cpl_indices(12) = mct_avect_indexra(x2a,'Faxx_tauy')
     import_cpl_indices(13) = mct_avect_indexra(x2a,'Faxx_sen')
     import_cpl_indices(14) = mct_avect_indexra(x2a,'Faxx_evap')
+    import_cpl_indices(15) = mct_avect_indexra(x2a,'Sf_ofrac')
+    import_cpl_indices(16) = mct_avect_indexra(x2a,'Sf_lfrac') 
 
     ! Vector components
     import_vector_components(11) = 0
@@ -139,22 +143,22 @@ module scream_cpl_indices
 
     ! SCREAM names
     export_field_names(1)  = 'Sa_z'
-    export_field_names(2)  = 'horiz_winds'
-    export_field_names(3)  = 'horiz_winds'
-    export_field_names(4)  = 'T_mid'
+    export_field_names(2)  = 'Sa_u'
+    export_field_names(3)  = 'Sa_v'
+    export_field_names(4)  = 'Sa_tbot' 
     export_field_names(5)  = 'Sa_ptem'
-    export_field_names(6)  = 'p_mid'
-    export_field_names(7)  = 'qv'
+    export_field_names(6)  = 'Sa_pbot'
+    export_field_names(7)  = 'Sa_shum'
     export_field_names(8)  = 'Sa_dens'
     export_field_names(9)  = 'Sa_pslv'
     export_field_names(10) = 'Faxa_rainl'
     export_field_names(11) = 'Faxa_snowl'
-    export_field_names(12) = 'sfc_flux_dir_nir'
-    export_field_names(13) = 'sfc_flux_dir_vis'
-    export_field_names(14) = 'sfc_flux_dif_nir'
-    export_field_names(15) = 'sfc_flux_dif_vis'
-    export_field_names(16) = 'sfc_flux_sw_net'
-    export_field_names(17) = 'sfc_flux_lw_dn'
+    export_field_names(12) = 'Faxa_swndr' 
+    export_field_names(13) = 'Faxa_swvdr' 
+    export_field_names(14) = 'Faxa_swndf' 
+    export_field_names(15) = 'Faxa_swvdf' 
+    export_field_names(16) = 'Faxa_swnet' 
+    export_field_names(17) = 'Faxa_lwdn'  
 
     ! CPL indices
     export_cpl_indices(1)  = mct_avect_indexra(a2x,'Sa_z')
@@ -174,10 +178,6 @@ module scream_cpl_indices
     export_cpl_indices(15) = mct_avect_indexra(a2x,'Faxa_swvdf')
     export_cpl_indices(16) = mct_avect_indexra(a2x,'Faxa_swnet')
     export_cpl_indices(17) = mct_avect_indexra(a2x,'Faxa_lwdn')
-
-    ! Vector components
-    export_vector_components(2) = 0
-    export_vector_components(3) = 1
 
     ! Does this field need to be imported during intialization
     do_export_during_init(1) = .true.

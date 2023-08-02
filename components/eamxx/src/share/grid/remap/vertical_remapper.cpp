@@ -54,7 +54,7 @@ VerticalRemapper (const grid_ptr_type& src_grid,
   // as the source field, but will have a different number of 
   // vertical levels.
   scorpio::register_file(map_file,scorpio::FileMode::Read);
-  m_num_remap_levs = scorpio::get_dimlen_c2f(map_file.c_str(),"nlevs");
+  m_num_remap_levs = scorpio::get_dimlen(map_file,"nlevs");
   scorpio::eam_pio_closefile(map_file);
 
   auto tgt_grid_gids = src_grid->get_unique_gids();
@@ -258,11 +258,10 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
         src_lay = src_lay.strip_dim(tag);
       }
     }
-    const auto  lt     = get_layout_type(src_lay.tags());
     const auto  lname  = src.get_header().get_identifier().get_id_string()+"_mask";
     bool found = false;
     // Check if a field with lname has already been created:
-    for (int ii=0; ii<m_src_masks.size(); ii++) {
+    for (unsigned ii=0; ii<m_src_masks.size(); ii++) {
       const auto src_fld = m_src_masks[ii];
       if (lname == src_fld.name()) {
         auto& mask_tgt_fld = m_tgt_masks[ii];
@@ -360,7 +359,7 @@ void VerticalRemapper::do_remap_fwd ()
       f_tgt.deep_copy(f_src);
     }
   }
-  for (int i=0; i<m_tgt_masks.size(); ++i) {
+  for (unsigned i=0; i<m_tgt_masks.size(); ++i) {
           auto& f_src    = m_src_masks[i];
           auto& f_tgt    = m_tgt_masks[i];
     const auto& layout   = f_src.get_header().get_identifier().get_layout();

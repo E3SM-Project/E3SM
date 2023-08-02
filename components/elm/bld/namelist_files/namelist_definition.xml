@@ -1768,7 +1768,7 @@ If TRUE setup up lateral grid connectivity in CLM.
 </entry>
 
 <entry id="domain_decomp_type" type="char*256" category="elm_initialization"
-       group="elm_inparm" valid_values="round_robin,graph_partitioning" >
+       group="elm_inparm" valid_values="round_robin,graph_partitioning,simple" >
 Specifies the method for decomposing CLM grids across processors.
 </entry>
 
@@ -1866,7 +1866,7 @@ Runtime flag to turn on/off lake water storage.
 </entry>
 
 <!-- ========================================================================================  -->
-<!-- Namelist options for downscaling from grid to topounit                                              -->
+<!-- Namelist options for downscaling from grid to topounit                                    -->
 <!-- ========================================================================================  -->
 
 <entry id="use_atm_downscaling_to_topunit" 
@@ -2020,5 +2020,15 @@ explain the SZA dependence of direct irradiance.
 Toggle to turn on the internal mixing of dust-snow. 
 </entry>
 
+<!-- ========================================================================================  -->
+<!-- Namelist option for MPI syncing                                                           -->
+<!-- ========================================================================================  -->
+
+<entry id="mpi_sync_nstep_freq" type="integer(6)" category="history"
+       group="elm_inparm" value="0">
+The number of steps after which a MPI_Barrier is called. By default, a MPI_Barrier will
+not be called.
+<default>Default: 0</default>
+</entry>
 
 </namelist_definition>

@@ -944,7 +944,9 @@ contains
     call ncd_defdim(ncid , namel      , numl           ,  dimid)
     call ncd_defdim(ncid , namec      , numc           ,  dimid)
     call ncd_defdim(ncid , namep      , nump           ,  dimid)
-    call ncd_defdim(ncid , nameCohort , numCohort      ,  dimid)
+    if ( use_fates ) then
+       call ncd_defdim(ncid , nameCohort , numCohort      ,  dimid)
+    endif
 
     call ncd_defdim(ncid , 'levgrnd' , nlevgrnd       ,  dimid)
     call ncd_defdim(ncid , 'levurb'  , nlevurb        ,  dimid)

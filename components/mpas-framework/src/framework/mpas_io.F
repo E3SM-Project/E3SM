@@ -277,8 +277,14 @@ module mpas_io
             pio_iotype = PIO_iotype_pnetcdf
             pio_mode = PIO_64BIT_DATA
          else if (ioformat == MPAS_IO_ADIOS) then
+#ifdef HAVE_ADIOS
             pio_iotype = PIO_iotype_adios
             pio_mode = 0
+#else
+            call mpas_log_write( &
+               'ERROR Building with HAVE_ADIOS=false but ADIOS format was requested in a stream', &
+               MPAS_LOG_CRIT)
+#endif
          else if (ioformat == MPAS_IO_NETCDF) then
             pio_iotype = PIO_iotype_netcdf
             pio_mode = PIO_64BIT_OFFSET

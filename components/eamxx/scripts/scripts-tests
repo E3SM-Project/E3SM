@@ -17,9 +17,9 @@ If you are on a batch machine, it is expected that you are on a compute node.
 TODO: Add doctests to libs
 """
 
-from utils import run_cmd, check_minimum_python_version, expect, ensure_pylint, run_cmd_no_fail
+from utils import check_minimum_python_version, expect, ensure_pylint, run_cmd_no_fail, run_cmd_assert_result
 
-check_minimum_python_version(3, 4)
+check_minimum_python_version(3, 6)
 
 from machines_specs import is_machine_supported, is_cuda_machine
 
@@ -38,30 +38,6 @@ CONFIG = {
     "full"     : False,
     "jenkins"  : False
 }
-
-###############################################################################
-def run_cmd_assert_result(test_obj, cmd, from_dir=None, expect_works=True, env=None, verbose=False):
-###############################################################################
-    from_dir = Path() if from_dir is None else from_dir
-    stat, output, errput = run_cmd(cmd, from_dir=from_dir, env=env, verbose=verbose)
-    problem = None
-    if expect_works and stat != 0:
-        problem = "SHOULD HAVE WORKED"
-    elif not expect_works and stat == 0:
-        problem = "SHOULD NOT HAVE WORKED"
-
-    if problem is not None:
-        msg = \
-"""
-COMMAND: %s
-FROM_DIR: %s
-%s
-OUTPUT: %s
-ERRPUT: %s
-""" % (cmd, from_dir, problem, output, errput)
-        test_obj.assertTrue(False, msg=msg)
-
-    return output
 
 ###############################################################################
 def run_cmd_store_output(test_obj, cmd, output_file):
@@ -366,15 +342,14 @@ class TestTestAllScream(TestBaseOuter.TestBase):
 
     def test_mem_check_details(self):
         """
-        Test the --mem-check flag in test-all-scream. It should set certain CMake values
+        Test the mem (default mem-check build) in test-all-scream. It should set certain CMake values
         """
         if not self._jenkins:
-            options = "-b HEAD -k -t dbg --mem-check --config-only"
+            options = "-b HEAD -k -t mem --config-only"
             cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
                                 self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-            extension = "cuda_mem_check" if is_cuda_machine(self._machine) else "valgrind"
-            builddir = f"full_debug_{extension}"
+            builddir = "cuda_mem_check" if is_cuda_machine(self._machine) else "valgrind"
             test_cmake_cache_contents(self, builddir, "CMAKE_BUILD_TYPE", "Debug")
             test_cmake_cache_contents(self, builddir, "SCREAM_TEST_SIZE", "SHORT")
             if is_cuda_machine(self._machine):
@@ -536,22 +511,27 @@ class TestTestAllScream(TestBaseOuter.TestBase):
 
     def test_mpirank_and_thread_spreading(self):
         """
-        Test that MPI ranks and threads are properly spread across a machine's computing resources
+        Test that MPI ranks and threads are properly spread across a machine's computing resources.
+
+        We use mappy using pre-srun configuration to test that test-launcher
+        can manage resources correctly.
         """
         if self._full and self._machine == "mappy":
-            cmd = self.get_cmd("./test-all-scream -x -e SCREAM_TEST_THREAD_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            spread_test_opts = "-x -e SCREAM_TEST_THREAD_SPREAD=True -c EKAT_TEST_LAUNCHER_MANAGE_RESOURCES=True -c EKAT_MPIRUN_EXE=mpiexec -c EKAT_MPI_EXTRA_ARGS='-bind-to core' -c EKAT_MPI_NP_FLAG='--map-by' -c EKAT_MPI_THREAD_FLAG='' -m $machine -b HEAD -k -t dbg"
+
+            cmd = self.get_cmd(f"./test-all-scream {spread_test_opts} --ctest-parallel-level=40 ", self._machine, dry_run=False)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_omp_spread(self, output, 40)
 
-            cmd = self.get_cmd("./test-all-scream -x -e SCREAM_TEST_RANK_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            cmd = self.get_cmd(f"./test-all-scream {spread_test_opts} --ctest-parallel-level=40 ", self._machine, dry_run=False)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_omp_spread(self, output, 40)
 
-            cmd = self.get_cmd("taskset -c 8-47 ./test-all-scream -x -e SCREAM_TEST_THREAD_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            cmd = self.get_cmd(f"taskset -c 8-47 ./test-all-scream {spread_test_opts} --ctest-parallel-level=40 ", self._machine, dry_run=False)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_omp_spread(self, output, 48, begin=8)
 
-            cmd = self.get_cmd("taskset -c 8-47 ./test-all-scream -x -e SCREAM_TEST_RANK_SPREAD=True -m $machine -b HEAD -k -t dbg --ctest-parallel-level=40 ", self._machine, dry_run=False)
+            cmd = self.get_cmd(f"taskset -c 8-47 ./test-all-scream {spread_test_opts} --ctest-parallel-level=40 ", self._machine, dry_run=False)
             output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_omp_spread(self, output, 48, begin=8)
 

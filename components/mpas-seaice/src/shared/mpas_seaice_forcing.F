@@ -73,10 +73,12 @@ contains
 
     logical, pointer :: &
          config_use_forcing, &
-         config_use_data_icebergs
+         config_use_data_icebergs, &
+         config_use_column_biogeochemistry
 
     call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
     call MPAS_pool_get_config(domain % configs, "config_use_data_icebergs", config_use_data_icebergs)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
 
     if (config_use_forcing) then
 
@@ -85,6 +87,10 @@ contains
 
        ! init the ocean forcing
        call init_oceanic_forcing(domain)
+
+       ! init the ocean bgc forcing
+       if (config_use_column_biogeochemistry) &
+          call init_oceanic_bgc_forcing(domain)
 
     endif
 
@@ -120,6 +126,8 @@ contains
     select case (trim(config_atmospheric_forcing_type))
     case ("CORE")
        call init_atmospheric_forcing_CORE(domain)
+    case ("ISPOL")
+       call init_atmospheric_forcing_ISPOL(domain)
     case ("hourly_velocities")
        call init_atmospheric_forcing_hourly_velocities(domain)
     case default
@@ -287,6 +295,183 @@ contains
          .false.)
 
   end subroutine init_atmospheric_forcing_CORE
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_atmospheric_forcing_ISPOL
+!
+!> \brief Initialize the forcing objects
+!> \author Nicole Jeffery, LANL
+!> \date Nov, 2022
+!> \details
+!> This routine calls the MPAS_forcing module subroutines that initializes
+!> a 1D forcing dataset. The data corresponds to the Weddell Sea (67.9S, 54W)
+!> from June 16, 2004 to December 31, 2004, and is from the 2004
+!> Ice Station Polarstern (ISPOL) field experiment.
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_atmospheric_forcing_ISPOL(domain)
+
+    type(domain_type) :: domain
+
+    real(kind=RKIND), pointer :: &
+         config_dt
+
+    character(len=strKIND), pointer :: &
+         config_forcing_start_time, &
+         config_forcing_cycle_start, &
+         config_forcing_cycle_duration
+
+    logical, pointer :: &
+         config_do_restart
+
+    character(len=strKIND) :: &
+         forcingIntervalSixHourly, &
+         forcingReferenceTimeSixHourly, &
+         forcingIntervalDaily, &
+         forcingReferenceTimeDaily
+
+    ! get atmospheric forcing configuration options
+    call MPAS_pool_get_config(domain % configs, "config_forcing_start_time", config_forcing_start_time)
+    call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
+    call MPAS_pool_get_config(domain % configs, "config_forcing_cycle_start", config_forcing_cycle_start)
+    call MPAS_pool_get_config(domain % configs, "config_forcing_cycle_duration", config_forcing_cycle_duration)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+
+    ! create the six hourly forcing group
+    call MPAS_forcing_init_group(&
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_sixhrly", &
+         domain, &
+         config_forcing_start_time, &
+         config_forcing_cycle_start, &
+         config_forcing_cycle_duration, &
+         config_do_restart, &
+         .false.)
+
+    forcingIntervalSixHourly = "06:00:00"
+    forcingReferenceTimeSixHourly = "2004-01-01_00:00:00"
+
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_sixhrly", &
+         "shortwaveDown", &
+         "ISPOLSixHourlyForcing", &
+         "atmos_forcing", &
+         "shortwaveDown", &
+         "linear", &
+         forcingReferenceTimeSixHourly, &
+         forcingIntervalSixHourly, &
+         "next")
+
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_sixhrly", &
+         "longwaveDown", &
+         "ISPOLSixHourlyForcing", &
+         "atmos_coupling", &
+         "longwaveDown", &
+         "linear", &
+         forcingReferenceTimeSixHourly, &
+         forcingIntervalSixHourly, &
+         "next")
+
+    call MPAS_forcing_init_field_data(&
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_sixhrly", &
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
+
+    ! create the daily forcing group
+    call MPAS_forcing_init_group(&
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_daily", &
+         domain, &
+         config_forcing_start_time, &
+         config_forcing_cycle_start, &
+         config_forcing_cycle_duration, &
+         config_do_restart)
+
+    forcingIntervalDaily = "00-00-01_00:00:00"
+    forcingReferenceTimeDaily = "2004-01-01_00:00:00"
+
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_daily", &
+         "airTemperature", &
+         "ISPOLDailyForcing", &
+         "atmos_coupling", &
+         "airTemperature", &
+         "linear", &
+         forcingReferenceTimeDaily, &
+         forcingIntervalDaily, &
+         "next")
+
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_daily", &
+         "airSpecificHumidity", &
+         "ISPOLDailyForcing", &
+         "atmos_coupling", &
+         "airSpecificHumidity", &
+         "linear", &
+         forcingReferenceTimeDaily, &
+         forcingIntervalDaily, &
+         "next")
+
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_daily", &
+         "uAirVelocity", &
+         "ISPOLDailyForcing", &
+         "atmos_coupling", &
+         "uAirVelocity", &
+         "linear", &
+         forcingReferenceTimeDaily, &
+         forcingIntervalDaily, &
+         "next")
+
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_daily", &
+         "vAirVelocity", &
+         "ISPOLDailyForcing", &
+         "atmos_coupling", &
+         "vAirVelocity", &
+         "linear", &
+         forcingReferenceTimeDaily, &
+         forcingIntervalDaily, &
+         "next")
+
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_daily", &
+         "rainfallRate", &
+         "ISPOLDailyForcing", &
+         "atmos_coupling", &
+         "rainfallRate", &
+         "linear", &
+         forcingReferenceTimeDaily, &
+         forcingIntervalDaily, &
+         "next")
+
+    call MPAS_forcing_init_field_data(&
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_daily", &
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
+
+  end subroutine init_atmospheric_forcing_ISPOL
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -501,6 +686,20 @@ contains
             streamManager, &
             config_dt)
 
+    else if (trim(config_atmospheric_forcing_type) == "ISPOL") then
+
+       call MPAS_forcing_get_forcing(&
+            seaiceForcingGroups, &
+            "seaice_atmospheric_forcing_sixhrly", &
+            streamManager, &
+            config_dt)
+
+       call MPAS_forcing_get_forcing(&
+            seaiceForcingGroups, &
+            "seaice_atmospheric_forcing_daily", &
+            streamManager, &
+            config_dt)
+
     endif
 
     block => domain % blocklist
@@ -510,6 +709,8 @@ contains
        select case (trim(config_atmospheric_forcing_type))
        case ("CORE")
           call prepare_atmospheric_coupling_variables_CORE(block)
+       case ("ISPOL")
+          call prepare_atmospheric_coupling_variables_ISPOL(block)
        end select
 
        ! perform post coupling operations
@@ -694,6 +895,154 @@ contains
     enddo ! iCell
 
   end subroutine prepare_atmospheric_coupling_variables_CORE
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  prepare_atmospheric_coupling_variables_ISPOL
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date
+!> \details
+!> Defines the cell fields corresponding to the 1D forcing fields.
+!
+!-----------------------------------------------------------------------
+
+  subroutine prepare_atmospheric_coupling_variables_ISPOL(block)
+
+    use seaice_constants, only: &
+         seaiceFreshWaterFreezingPoint, &
+         pii
+
+    type (block_type), pointer :: block
+
+    type (mpas_pool_type), pointer :: &
+         mesh, &
+         atmosCoupling, &
+         atmosForcing, &
+         oceanCoupling, &
+         tracers_aggregate
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         airLevelHeight, &
+         airPotentialTemperature, &
+         airTemperature, &
+         airSpecificHumidity, &
+         airDensity, &
+         shortwaveDown, &
+         shortwaveVisibleDirectDown, &
+         shortwaveVisibleDiffuseDown, &
+         shortwaveIRDirectDown, &
+         shortwaveIRDiffuseDown, &
+         rainfallRate, &
+         snowfallRate, &
+         cloudFraction, &
+         lonCell, &
+         latCell, &
+         iceAreaCell
+
+    type (MPAS_time_type) :: &
+         currentForcingTime
+
+    real(kind=RKIND) :: &
+         secondsToday
+
+    integer, pointer :: &
+         nCellsSolve
+
+    integer :: &
+         dayOfYear, &
+         iCell
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
+    call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
+    call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
+    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
+
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+
+    call MPAS_pool_get_array(mesh, "lonCell", lonCell)
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
+
+    call MPAS_pool_get_array(atmosCoupling, "airLevelHeight", airLevelHeight)
+    call MPAS_pool_get_array(atmosCoupling, "airPotentialTemperature", airPotentialTemperature)
+    call MPAS_pool_get_array(atmosCoupling, "airTemperature", airTemperature)
+    call MPAS_pool_get_array(atmosCoupling, "airSpecificHumidity", airSpecificHumidity)
+    call MPAS_pool_get_array(atmosCoupling, "airDensity", airDensity)
+    call MPAS_pool_get_array(atmosCoupling, "shortwaveVisibleDirectDown", shortwaveVisibleDirectDown)
+    call MPAS_pool_get_array(atmosCoupling, "shortwaveVisibleDiffuseDown", shortwaveVisibleDiffuseDown)
+    call MPAS_pool_get_array(atmosCoupling, "shortwaveIRDirectDown", shortwaveIRDirectDown)
+    call MPAS_pool_get_array(atmosCoupling, "shortwaveIRDiffuseDown", shortwaveIRDiffuseDown)
+    call MPAS_pool_get_array(atmosCoupling, "rainfallRate", rainfallRate)
+    call MPAS_pool_get_array(atmosCoupling, "snowfallRate", snowfallRate)
+
+    call MPAS_pool_get_array(atmosForcing, "cloudFraction", cloudFraction)
+    call MPAS_pool_get_array(atmosForcing, "shortwaveDown", shortwaveDown)
+
+    call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)
+
+    ! get the current time
+    call MPAS_forcing_get_forcing_time(&
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_sixhrly", &
+         currentForcingTime)
+
+    ! get the number of seconds so far today
+    call get_seconds_today(&
+         currentForcingTime, &
+         secondsToday, &
+         dayOfYear)
+
+    do iCell = 1, nCellsSolve
+
+       ! not sure if we need this
+       cloudFraction(iCell)       = 0.5_RKIND
+
+       ! limit air temperature values where ice is present
+       if (iceAreaCell(iCell) > 0.1_RKIND) then
+          airTemperature(iCell) = min(airTemperature(iCell), seaiceFreshWaterFreezingPoint + 0.1_RKIND)
+       endif
+
+       ! prevent supersaturated humidity
+       call limit_specific_humidity(&
+            airTemperature(iCell), &
+            airSpecificHumidity(iCell))
+
+       shortwaveVisibleDirectDown(iCell)  = shortwaveDown(iCell) * fracShortwaveVisibleDirect
+       shortwaveVisibleDiffuseDown(iCell) = shortwaveDown(iCell) * fracShortwaveVisibleDiffuse
+       shortwaveIRDirectDown(iCell)       = shortwaveDown(iCell) * fracShortwaveIRDirectDown
+       shortwaveIRDiffuseDown(iCell)      = shortwaveDown(iCell) * fracShortwaveIRDiffuseDown
+
+       ! ensure physically realistic values
+       shortwaveDown(iCell)       = max(shortwaveDown(iCell),0.0_RKIND)
+       rainfallRate(iCell)        = max(rainfallRate(iCell),0.0_RKIND)
+       airSpecificHumidity(iCell) = max(airSpecificHumidity(iCell),0.0_RKIND)
+
+       ! atmospheric level height
+       airLevelHeight(iCell) = 10.0_RKIND ! for velocities, 2-m for air T and specific humidity
+
+       ! air potential temperature
+       airPotentialTemperature(iCell) = airTemperature(iCell)
+
+       ! air density
+       airDensity(iCell) = 1.3_RKIND
+
+       ! precipitation
+
+       ! divide total precipitation between rain and snow
+       snowfallRate(iCell) = 0.0_RKIND
+
+       if (airTemperature(iCell) < seaiceFreshWaterFreezingPoint) then
+
+          snowfallRate(iCell) = rainfallRate(iCell)
+          rainfallRate(iCell) = 0.0_RKIND
+
+       endif
+
+    enddo ! iCell
+
+  end subroutine prepare_atmospheric_coupling_variables_ISPOL
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1286,6 +1635,8 @@ contains
     select case (trim(config_forcing_sst_type))
     case ("ncar")
        call init_oceanic_forcing_ncar(domain)
+    case ("ISPOL")
+       call init_oceanic_forcing_ISPOL(domain)
     case ("hourly_velocities")
        call init_oceanic_forcing_hourly_velocities(domain)
     case ("som_varying_thickness")
@@ -1295,6 +1646,34 @@ contains
     end select
 
   end subroutine init_oceanic_forcing
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_ocean_bgc_forcing
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date 3rd March 2023
+!> \details
+!> Uses an ocean biogeochemistry forcing file
+!  for bgc enabled sea ice only test cases.
+!-----------------------------------------------------------------------
+
+  subroutine init_oceanic_bgc_forcing(domain)
+
+    type (domain_type) :: domain
+
+    character(len=strKIND), pointer :: &
+         config_forcing_bgc_type
+
+    call MPAS_pool_get_config(domain % configs, "config_forcing_bgc_type", config_forcing_bgc_type)
+
+    select case (trim(config_forcing_bgc_type))
+    case ("ISPOL")
+       call init_oceanic_bgc_forcing_ISPOL(domain)
+    end select
+
+  end subroutine init_oceanic_bgc_forcing
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1464,6 +1843,262 @@ contains
          .false.)
 
   end subroutine init_oceanic_forcing_ncar
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_oceanic_forcing_ISPOL
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date October 2022
+!> \details
+!> The physical data corresponds to the Weddell Sea (67.9S, 54W) location from a
+!> POP 1-degree (gx1v3) field derived from an ocean-ice simulation
+!> forced with Ice Station Polarstern (ISPOL) 2004 atmospheric data.
+!> Biogeochemical data is World Ocean Atlas (NCEP 2013) surface nutrient data.
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_oceanic_forcing_ISPOL(domain)
+
+    type (domain_type) :: domain
+
+    logical, pointer :: &
+         config_do_restart
+
+    character(len=strKIND), pointer :: &
+         config_forcing_start_time, &
+         config_forcing_cycle_start, &
+         config_forcing_cycle_duration
+
+    character(len=strKIND) :: &
+         forcingIntervalMonthly, &
+         forcingReferenceTimeMonthly, &
+         forcingIntervaldaily, &
+         forcingReferenceTimedaily
+
+    ! get oceanic forcing configuration options
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+
+    ! get ispol forcing configuration options
+    call MPAS_pool_get_config(domain % configs, "config_forcing_start_time", config_forcing_start_time)
+    call MPAS_pool_get_config(domain % configs, "config_forcing_cycle_start", config_forcing_cycle_start)
+    call MPAS_pool_get_config(domain % configs, "config_forcing_cycle_duration", config_forcing_cycle_duration)
+
+    ! create the sea surface temperature forcing group
+    call MPAS_forcing_init_group(&
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         domain, &
+         config_forcing_start_time, &
+         config_forcing_cycle_start, &
+         config_forcing_cycle_duration, &
+         config_do_restart)
+
+    forcingIntervalMonthly = "00-01-00_00:00:00"
+    forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
+
+    ! sea surface temperature
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "seaSurfaceTemperature", &
+         "ISPOLMonthlyForcing", &
+         "ocean_coupling", &
+         "seaSurfaceTemperature", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! sea surface salinity
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "seaSurfaceSalinity", &
+         "ISPOLMonthlyForcing", &
+         "ocean_coupling", &
+         "seaSurfaceSalinity", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! u ocean velocity
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "uOceanVelocity", &
+         "ISPOLMonthlyForcing", &
+         "ocean_coupling", &
+         "uOceanVelocity", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! v ocean velocity
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "vOceanVelocity", &
+         "ISPOLMonthlyForcing", &
+         "ocean_coupling", &
+         "vOceanVelocity", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! ocean mixed layer depth
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "oceanMixedLayerDepth", &
+         "ISPOLMonthlyForcing", &
+         "ocean_coupling", &
+         "oceanMixedLayerDepth", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! ocean sea surface tilt
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "seaSurfaceTiltU", &
+         "ISPOLMonthlyForcing", &
+         "ocean_coupling", &
+         "seaSurfaceTiltU", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "seaSurfaceTiltV", &
+         "ISPOLMonthlyForcing", &
+         "ocean_coupling", &
+         "seaSurfaceTiltV", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! deep ocean heat flux convergence
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "oceanHeatFluxConvergence", &
+         "ISPOLMonthlyForcing", &
+         "ocean_coupling", &
+         "oceanHeatFluxConvergence", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    call MPAS_forcing_init_field_data(&
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
+
+  end subroutine init_oceanic_forcing_ISPOL
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_oceanic_forcing_ISPOL
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date March 2023
+!> \details
+!>  surface nutrient data corresponds to the Weddell Sea (67.9S, 54W) location from
+!>  the World Ocean Atlas (NCEP 2013).
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_oceanic_bgc_forcing_ISPOL(domain)
+
+    type (domain_type) :: domain
+
+    logical, pointer :: &
+         config_do_restart
+
+    character(len=strKIND), pointer :: &
+         config_forcing_start_time, &
+         config_forcing_cycle_start, &
+         config_forcing_cycle_duration
+
+    character(len=strKIND) :: &
+         forcingIntervalMonthly, &
+         forcingReferenceTimeMonthly, &
+         forcingIntervaldaily, &
+         forcingReferenceTimedaily
+
+    ! get oceanic forcing configuration options
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+
+    ! get ispol forcing configuration options
+    call MPAS_pool_get_config(domain % configs, "config_forcing_start_time", config_forcing_start_time)
+    call MPAS_pool_get_config(domain % configs, "config_forcing_cycle_start", config_forcing_cycle_start)
+    call MPAS_pool_get_config(domain % configs, "config_forcing_cycle_duration", config_forcing_cycle_duration)
+
+
+    ! ocean surface biogeochemistry fields
+
+    ! create the sea surface biogeochemistry forcing group
+    call MPAS_forcing_init_group(&
+         seaiceForcingGroups, &
+         "seaice_oceanic_biogeochemistry_forcing_daily", &
+         domain, &
+         config_forcing_start_time, &
+         config_forcing_cycle_start, &
+         config_forcing_cycle_duration, &
+         config_do_restart)
+
+    forcingIntervalDaily = "00-00-01_00:00:00"
+    forcingReferenceTimeDaily = "2004-01-01_00:00:00"
+
+    ! sea surface nitrate
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_biogeochemistry_forcing_daily", &
+         "oceanNitrateConc1D", &
+         "ISPOLDailyWOAForcing", &
+         "1D_ocean_biogeochemistry_forcing", &
+         "oceanNitrateConc1D", &
+         "linear", &
+         forcingReferenceTimeDaily, &
+         forcingIntervalDaily)
+
+    ! sea surface silicate
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_biogeochemistry_forcing_daily", &
+         "oceanSilicateConc1D", &
+         "ISPOLDailyWOAForcing", &
+         "1D_ocean_biogeochemistry_forcing", &
+         "oceanSilicateConc1D", &
+         "linear", &
+         forcingReferenceTimeDaily, &
+         forcingIntervalDaily)
+
+    call MPAS_forcing_init_field_data(&
+         seaiceForcingGroups, &
+         "seaice_oceanic_biogeochemistry_forcing_daily", &
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
+
+  end subroutine init_oceanic_bgc_forcing_ISPOL
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1758,15 +2393,19 @@ contains
          config_dt
 
     character(len=strKIND), pointer :: &
-         config_forcing_sst_type
+         config_forcing_sst_type, &
+         config_forcing_bgc_type
 
     logical, pointer :: &
-         config_do_restart
+         config_do_restart, &
+         config_use_column_biogeochemistry
 
     ! configurations
     call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
     call mpas_pool_get_config(domain % configs, 'config_forcing_sst_type', config_forcing_sst_type)
+    call mpas_pool_get_config(domain % configs, 'config_forcing_bgc_type', config_forcing_bgc_type)
     call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
+    call mpas_pool_get_config(domain % configs, 'config_use_column_biogeochemistry', config_use_column_biogeochemistry)
 
     ! use the forcing layer to get data
     if (trim(config_forcing_sst_type) == 'ncar' .or. &
@@ -1797,17 +2436,43 @@ contains
             streamManager, &
             config_dt)
 
+    else if (trim(config_forcing_sst_type) == 'ISPOL') then
+
+       call MPAS_forcing_get_forcing(&
+            seaiceForcingGroups, &
+            "seaice_oceanic_forcing_monthly", &
+            streamManager, &
+            config_dt)
+    endif
+    if (config_use_column_biogeochemistry) then
+       if (trim(config_forcing_bgc_type) == 'ISPOL') then
+
+          call MPAS_forcing_get_forcing(&
+               seaiceForcingGroups, &
+               "seaice_oceanic_biogeochemistry_forcing_daily", &
+               streamManager, &
+               config_dt)
+       endif
     endif
 
     block => domain % blocklist
     do while (associated(block))
 
-       if (trim(config_forcing_sst_type) == 'ncar' .or. &
-           trim(config_forcing_sst_type) == 'som_varying_thickness') then
-
+       ! convert the input forcing variables to the coupling variables
+       select case (trim(config_forcing_sst_type))
+       case ("ncar","som_varying_thickness")
           call prepare_oceanic_coupling_variables_ncar(block, firstTimeStep)
+       case ("ISPOL")
+          call prepare_oceanic_coupling_variables_ISPOL(block, firstTimeStep)
+       end select
 
-       endif
+       if (config_use_column_biogeochemistry) then
+          ! convert the input forcing variables to the coupling variables
+          select case (trim(config_forcing_bgc_type))
+          case ("ISPOL")
+             call prepare_oceanic_coupling_bgc_variables_ISPOL(block, firstTimeStep)
+          end select
+       end if
 
        call post_oceanic_coupling(block)
 
@@ -1899,6 +2564,205 @@ contains
     endif
 
   end subroutine prepare_oceanic_coupling_variables_ncar
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  prepare_oceanic_coupling_variables_ISPOL
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date  October, 2022
+!> \details
+!> Prepares the ocean coupling variables from the ISPOL 1D forcing
+!
+!-----------------------------------------------------------------------
+
+  subroutine prepare_oceanic_coupling_variables_ISPOL(block, firstTimeStep)
+
+    use ice_colpkg, only: &
+         colpkg_sea_freezing_temperature
+
+    type (block_type), pointer :: block
+
+    logical, intent(in) :: &
+         firstTimeStep
+
+    type (mpas_pool_type), pointer :: &
+         mesh, &
+         ocean_coupling
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         seaSurfaceTemperature, &
+         seaSurfaceSalinity, &
+         oceanMixedLayerDepth, &
+         seaFreezingTemperature
+
+    character(len=strKIND), pointer :: &
+         config_sea_freezing_temperature_type
+
+    logical, pointer :: &
+         config_do_restart
+
+    integer, pointer :: &
+         nCellsSolve, &
+         nCells
+
+    integer :: &
+         iCell
+
+    call MPAS_pool_get_config(block % configs, "config_do_restart", config_do_restart)
+    call MPAS_pool_get_config(block % configs, "config_sea_freezing_temperature_type", config_sea_freezing_temperature_type)
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
+
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
+    call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
+    call MPAS_pool_get_array(ocean_coupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
+    call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
+
+    do iCell = 1, nCellsSolve
+
+       ! ensure physical realism
+       seaSurfaceSalinity(iCell)   = max(seaSurfaceSalinity(iCell), 0.0_RKIND)
+       oceanMixedLayerDepth(iCell) = max(oceanMixedLayerDepth(iCell), 0.0_RKIND)
+
+       ! sea freezing temperature
+       seaFreezingTemperature(iCell) = colpkg_sea_freezing_temperature(seaSurfaceSalinity(iCell))
+
+    enddo ! iCell
+
+    ! only update sea surface temperature on first non-restart timestep
+    if (firstTimeStep .and. .not. config_do_restart) then
+
+       do iCell = 1, nCellsSolve
+
+          ! sea surface temperature
+          seaSurfaceTemperature(iCell) = max(seaSurfaceTemperature(iCell), seaFreezingTemperature(iCell))
+
+       enddo ! iCell
+
+    endif
+
+  end subroutine prepare_oceanic_coupling_variables_ISPOL
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  prepare_oceanic_coupling_variables_ISPOL
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date  March, 2023
+!> \details
+!> Defines the ocean bgc cell fields corresponding to the 1D forcing fields.
+!
+!-----------------------------------------------------------------------
+
+  subroutine prepare_oceanic_coupling_bgc_variables_ISPOL(block, firstTimeStep)
+
+    use seaice_constants, only: &
+         oceanAmmoniumISPOL, oceanDMSISPOL, oceanDMSPISPOL, oceanDiatomsISPOL, &
+         oceanSmallAlgaeISPOL, oceanPhaeocystisISPOL, oceanPolysaccharidsISPOL, &
+         oceanLipidsISPOL, oceanDICISPOL, oceanProteinsISPOL, oceanDissolvedIronISPOL, &
+         oceanParticulateIronISPOL, oceanHumicsISPOL, oceanProteinsCarbonISPOL
+
+    type (block_type), pointer :: block
+
+    logical, intent(in) :: &
+         firstTimeStep
+
+    type (mpas_pool_type), pointer :: &
+         mesh, &
+         oceanBGCForcing, &
+         biogeochemistry
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         oceanDONConc, &
+         oceanDICConc, &
+         oceanDOCConc, &
+         oceanAlgaeConc, &
+         oceanParticulateIronConc, &
+         oceanDissolvedIronConc
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         oceanNitrateConc, &
+         oceanSilicateConc, &
+         oceanAmmoniumConc, &
+         oceanDMSConc, &
+         oceanDMSPConc, &
+         oceanHumicsConc
+
+    real(kind=RKIND), pointer :: &
+         oceanNitrateConc1D, &
+         oceanSilicateConc1D
+
+    logical, pointer :: &
+         config_do_restart, &
+         config_use_column_biogeochemistry
+
+    integer, pointer :: &
+         nCellsSolve, &
+         nCells
+
+    integer :: &
+         iCell
+
+    call MPAS_pool_get_config(block % configs, "config_do_restart", config_do_restart)
+    call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+
+    call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_subpool(block % structs, "biogeochemistry",biogeochemistry)
+    call MPAS_pool_get_subpool(block % structs, "1D_ocean_biogeochemistry_forcing", &
+            oceanBGCForcing)
+
+    call MPAS_pool_get_array(oceanBGCForcing, "oceanNitrateConc1D", oceanNitrateConc1D)
+    call MPAS_pool_get_array(oceanBGCForcing, "oceanSilicateConc1D", oceanSilicateConc1D)
+    call MPAS_pool_get_array(biogeochemistry, "oceanSilicateConc", oceanSilicateConc)
+    call MPAS_pool_get_array(biogeochemistry, "oceanNitrateConc", oceanNitrateConc)
+    call MPAS_pool_get_array(biogeochemistry, "oceanAlgaeConc", oceanAlgaeConc)
+    call MPAS_pool_get_array(biogeochemistry, "oceanAmmoniumConc", oceanAmmoniumConc)
+    call MPAS_pool_get_array(biogeochemistry, "oceanDMSConc", oceanDMSConc)
+    call MPAS_pool_get_array(biogeochemistry, "oceanDMSPConc", oceanDMSPConc)
+    call MPAS_pool_get_array(biogeochemistry, "oceanHumicsConc", oceanHumicsConc)
+    call MPAS_pool_get_array(biogeochemistry, "oceanDONConc", oceanDONConc)
+    call MPAS_pool_get_array(biogeochemistry, "oceanDICConc", oceanDICConc)
+    call MPAS_pool_get_array(biogeochemistry, "oceanDOCConc", oceanDOCConc)
+    call MPAS_pool_get_array(biogeochemistry, "oceanParticulateIronConc", oceanParticulateIronConc)
+    call MPAS_pool_get_array(biogeochemistry, "oceanDissolvedIronConc", oceanDissolvedIronConc)
+
+    do iCell = 1, nCellsSolve
+       ! define cell quantities
+       oceanNitrateConc(iCell) = oceanNitrateConc1D
+       oceanSilicateConc(iCell) = oceanSilicateConc1D
+    end do
+
+    if (firstTimeStep) then
+       do iCell = 1, nCellsSolve
+          oceanAmmoniumConc(iCell) = oceanAmmoniumISPOL
+          oceanDMSConc(iCell) = oceanDMSISPOL
+          oceanDMSPConc(iCell) = oceanDMSPISPOL
+          oceanAlgaeConc(:,iCell) = oceanDiatomsISPOL
+          oceanAlgaeConc(2,iCell) = oceanSmallAlgaeISPOL
+          oceanAlgaeConc(3,iCell) = oceanPhaeocystisISPOL
+          oceanDOCConc(:,iCell) = oceanPolysaccharidsISPOL
+          oceanDOCConc(2,iCell) = oceanLipidsISPOL
+          oceanDOCConc(3,iCell) = oceanProteinsCarbonISPOL
+          oceanDONConc(:,iCell) = oceanProteinsISPOL
+          oceanDICConc(:,iCell) = oceanDICISPOL
+          oceanHumicsConc(iCell) = oceanHumicsISPOL
+          oceanParticulateIronConc(:,iCell) = oceanParticulateIronISPOL
+          oceanDissolvedIronConc(:,iCell) = oceanDissolvedIronISPOL
+       enddo ! iCell
+    endif
+
+  end subroutine prepare_oceanic_coupling_bgc_variables_ISPOL
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

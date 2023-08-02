@@ -100,10 +100,13 @@ void GllFvRemapImpl::init_boundary_exchanges () {
   assert(m_data.qsize > 0); // after reset() called
 
   auto& c = Context::singleton();
+  auto& sp = c.get<SimulationParams>();
 
   {
     auto bm_exchange = c.get<MpiBuffersManagerMap>()[MPI_EXCHANGE];
     m_dss_be = std::make_shared<BoundaryExchange>();
+    m_dss_be->set_label("GllFvRemap-DSS");
+    m_dss_be->set_diagnostics_level(sp.internal_diagnostics_level);
     m_dss_be->set_buffers_manager(bm_exchange);
     m_dss_be->set_num_fields(0, 0, m_data.n_dss_fld);
     m_dss_be->register_field(m_tracers.fq, m_data.qsize, 0);
@@ -116,6 +119,8 @@ void GllFvRemapImpl::init_boundary_exchanges () {
     auto bm_exchange_minmax = c.get<MpiBuffersManagerMap>()[MPI_EXCHANGE_MIN_MAX];
     m_extrema_be = std::make_shared<BoundaryExchange>();
     BoundaryExchange& be = *m_extrema_be;
+    be.set_label("GllFvRemap-extrema");
+    be.set_diagnostics_level(sp.internal_diagnostics_level);
     be.set_buffers_manager(bm_exchange_minmax);
     be.set_num_fields(m_data.qsize, 0, 0);
     be.register_min_max_fields(m_tracers.qlim, m_data.qsize, 0);

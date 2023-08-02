@@ -44,16 +44,6 @@
           call outfld('T&IC       ' , t3  (1,1,lat), plon, lat)
           call outfld('U&IC       ' , u3  (1,1,lat), plon, lat)
           call outfld('V&IC       ' , v3  (1,1,lat), plon, lat)
-#if (defined BFB_CAM_SCAM_IOP) 
-          clat_plon(:)=clat(lat)
-          call outfld('CLAT1&IC    ', clat_plon,      plon, lat)
-          call outfld('CLON1&IC    ', clon,      plon, lat)
-          call get_horiz_grid_d(plat, clat_d_out=phi)
-          call get_horiz_grid_d(plon, clon_d_out=lam)
-          clat_plon(:)=phi(lat)
-          call outfld('LAM&IC    ', lam,      plon, lat)
-          call outfld('PHI&IC    ', clat_plon,      plon, lat)
-#endif
 
           do m=1,pcnst
              call outfld(trim(cnst_name(m))//'&IC', q3(1,1,m,lat), plon, lat)

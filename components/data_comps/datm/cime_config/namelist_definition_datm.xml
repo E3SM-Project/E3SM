@@ -1868,7 +1868,7 @@
       <value stream="CORE2_IAF.NCEP.V_10">1948</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">1948</value>
       <value stream="CORE_IAF_JRA.*">$DATM_CLMNCEP_YR_START</value>
-      <value stream="IAF_JRA_1p5.*">1958</value>
+      <value stream="IAF_JRA_1p5.*">$DATM_CLMNCEP_YR_START</value>
       <value stream="CORE_RYF8485_JRA">1984</value>
       <value stream="CORE_RYF9091_JRA">1990</value>
       <value stream="CORE_RYF0304_JRA">2003</value>
@@ -1940,9 +1940,9 @@
       <value stream="CORE2_IAF.CORE2.ArcFactor">2009</value>
       <value stream="co2tseries.20tr" cime_model="e3sm">2007</value>
       <value stream="co2tseries.20tr" cime_model="cesm">2014</value>
-      <value stream="CORE_IAF_JRA.*2018">2018</value>
+      <value stream="CORE_IAF_JRA.*2018">$DATM_CLMNCEP_YR_END</value>
       <value stream="CORE_IAF_JRA.*">$DATM_CLMNCEP_YR_END</value>
-      <value stream="IAF_JRA_1p5.*">2020</value>
+      <value stream="IAF_JRA_1p5.*">$DATM_CLMNCEP_YR_END</value>
       <value stream="CORE_RYF8485_JRA">1984</value>
       <value stream="CORE_RYF9091_JRA">1990</value>
       <value stream="CORE_RYF0304_JRA">2003</value>

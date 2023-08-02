@@ -95,8 +95,8 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 !   use shr_orb_mod,      only: shr_orb_params
    use camsrfexch,       only: hub2atm_alloc, atm2hub_alloc
    use cam_history,      only: intht, init_masterlinkedlist
-   use history_scam,     only: scm_intht
-   use scamMod,          only: single_column
+   use history_iop,      only: iop_intht
+   use iop_data_mod,     only: single_column
    use cam_pio_utils,    only: init_pio_subsystem
    use cam_instance,     only: inst_suffix
    use conditional_diag, only: cnd_diag_info, cnd_diag_alloc
@@ -202,7 +202,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 
    call stepon_init( dyn_in, dyn_out ) ! dyn_out necessary?
 
-   if (single_column) call scm_intht()
+   if (single_column) call iop_intht()
    call intht()
 
 end subroutine cam_init
@@ -225,7 +225,7 @@ subroutine cam_run1(cam_in, cam_out)
    use mpishorthand,     only: mpicom
 #endif
    use time_manager,     only: get_nstep
-   use scamMod,          only: single_column
+   use iop_data_mod,     only: single_column
 
    type(cam_in_t)  :: cam_in(begchunk:endchunk)
    type(cam_out_t) :: cam_out(begchunk:endchunk)

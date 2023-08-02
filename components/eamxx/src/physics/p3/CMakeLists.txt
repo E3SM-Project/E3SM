@@ -70,6 +70,7 @@ target_include_directories(p3 PUBLIC
   ${CMAKE_CURRENT_BINARY_DIR}/modules
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/impl
+  ${SCREAM_BASE_DIR}/../eam/src/physics/cam
 )
 target_link_libraries(p3 physics_share scream_share)
 

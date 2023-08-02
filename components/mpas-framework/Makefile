@@ -162,6 +162,9 @@ pgi-summit:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_MAGMA = $(USE_MAGMA)" \
+	"USE_CUBLAS = $(USE_CUBLAS)" \
+	"USE_GPU_AWARE_MPI = $(USE_GPU_AWARE_MPI)" \
 	"OPENMP = $(OPENMP)" \
 	"OPENACC = $(OPENACC)" \
 	"USE_SHTNS = $(USE_SHTNS)" \
@@ -513,6 +516,18 @@ ifeq "$(USE_PIO2)" "true"
 endif
 
 #
+# If user has indicated ADIOS isn't supported, define HAVE_ADIOS pre-processor macro
+#
+# Default is that we have ADIOS if a user hasn't said anything
+ifeq "$(HAVE_ADIOS)" ""
+	override CPPFLAGS += -DHAVE_ADIOS
+endif
+
+ifeq "$(HAVE_ADIOS)" "true"
+	override CPPFLAGS += -DHAVE_ADIOS
+endif
+
+#
 # Regardless of PIO library version, look for a lib subdirectory of PIO path
 # NB: PIO_LIB is used later, so we don't just set LIBS directly
 #
@@ -700,6 +715,25 @@ ifeq "$(OPENMP_OFFLOAD)" "true"
 	LDFLAGS += $(LDFLAGS_GPU)
 endif #OPENMP_OFFLOAD IF
 
+ifeq "$(USE_MAGMA)" "true"
+   LIBS += -L$(MAGMADIR)/lib -lmagma
+   FCINCLUDES += -I${MAGMADIR}/include
+   override CPPFLAGS += "-DUSE_MAGMA"
+   override FFLAGS_ACC += -Mcudalib=cublas
+endif
+
+ifeq "$(USE_CUBLAS)" "true"
+   override FFLAGS_ACC = -acc -Minfo=accel -gpu=cc70
+   FFLAGS += $(FFLAGS_CUBLAS)
+   CFLAGS += $(CFLAGS_CUBLAS)
+   override CPPFLAGS += "-DUSE_CUBLAS"
+   LDFLAGS += $(FFLAGS_CUBLAS)
+endif #USE_CUBLAS IF
+
+ifeq "$(USE_GPU_AWARE_MPI)" "true"
+   override CPPFLAGS += "-DUSE_GPU_AWARE_MPI"
+endif #USE_GPUAWARE
+
 ifeq "$(PRECISION)" "single"
 	CFLAGS += "-DSINGLE_PRECISION"
 	CXXFLAGS += "-DSINGLE_PRECISION"
@@ -800,6 +834,18 @@ ifeq "$(OPENACC)" "true"
 	OPENACC_MESSAGE="MPAS was built with OpenACC accelerator support enabled."
 else
 	OPENACC_MESSAGE="MPAS was built without OpenACC accelerator support."
+endif
+
+ifeq "$(USE_MAGMA)" "true"
+   MAGMA_MESSAGE="MPAS was built with MAGMA library."
+endif
+
+ifeq "$(USE_CUBLAS)" "true"
+   CUBLAS_MESSAGE="MPAS was built with CUBLAS library."
+endif
+
+ifeq "$(USE_GPU_AWARE_MPI)" "true"
+   GPUAWARE_MESSAGE="GPU-aware MPI is enabled."
 endif
 
 ifeq "$(USE_SHTNS)" "true"
@@ -1044,6 +1090,15 @@ endif
 	@echo $(TIMER_MESSAGE)
 	@echo $(PIO_MESSAGE)
 	@echo $(SHTNS_MESSAGE)
+ifeq "$(USE_MAGMA)" "true"
+   @echo $(MAGMA_MESSAGE)
+endif
+ifeq "$(USE_CUBLAS)" "true"
+   @echo $(CUBLAS_MESSAGE)
+endif
+ifeq "$(USE_GPUAWARE)" "true"
+   @echo $(GPUAWARE_MESSAGE)
+endif
 	@echo "*******************************************************************************"
 clean:
 	cd $(FWPATH); $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
@@ -1116,6 +1171,7 @@ errmsg:
 	@echo "    SHAREDLIB=true - generate position-independent code suitable for use in a shared library. Default is false."
 	@echo "    USE_LAPACK=true - builds and links with LAPACK / BLAS libraries.  Default is to not use LAPACK."
 	@echo "    USE_SHTNS=true - builds and links with SHTNS/FFTW.  Default is false."
+	@echo "    HAVE_ADIOS=false   - PIO2 library does not include ADIOS support.  Default is true."
 	@echo ""
 	@echo "Ensure that NETCDF, PNETCDF, PIO, LAPACK (if USE_LAPACK=true), and PAPI (if USE_PAPI=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."
@@ -1123,4 +1179,3 @@ errmsg:
 ifdef CORE
 	exit 1
 endif
-
