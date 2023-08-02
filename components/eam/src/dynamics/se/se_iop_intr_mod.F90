@@ -609,7 +609,7 @@ subroutine iop_apply_coriolis(elem,t1,nelemd_todo,np_todo,dt)
   !  winds specified in IOP forcing file.
 
   use kinds, only : real_kind
-  use scamMod
+  use iop_data_mod
   use dimensions_mod, only : np, np, nlev, npsq, nelem
   use parallel_mod, only: global_shared_buf, global_shared_sum
   use global_norms_mod, only: wrap_repro_sum

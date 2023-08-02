@@ -173,8 +173,6 @@ module iop_data_mod
   logical*4, public ::  iop_coriolis ! use geostropic winds to apply coriolis forcing
   logical*4, public ::  iop_nudge_tq! use relaxation for t and q
   logical*4, public ::  iop_nudge_uv! use relaxation for u and v
-  logical*4, public ::  iop_nudge_tq ! use relaxation for t and q
-  logical*4, public ::  iop_nudge_uv ! use relaxation for u and v
   logical*4, public ::  scm_observed_aero ! use observed aerosols in SCM file
   logical*4, public ::  precip_off    ! turn off precipitation processes
   logical*4, public ::  scm_zero_non_iop_tracers ! initialize non-IOP-specified tracers to zero
@@ -1317,8 +1315,7 @@ endif !scm_observed_aero
 
      ! large scale / geostropic horizontal wind (for nudging)
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-       'u_ls', have_srf, srf(1), .true. , scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, uls, status )
+       'u_ls', have_srf, srf(1), .true. , dplevs, nlev,psobs, hyam, hybm, uls, status )
      if ( status .ne. nf90_noerr ) then
        have_uls = .false.
        if (iop_coriolis) then
@@ -1351,8 +1348,7 @@ endif !scm_observed_aero
 
      ! large scale / geostropic meridional wind (for nudging)
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-       'v_ls', have_srf, srf(1), .true. , scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, vls, status )
+       'v_ls', have_srf, srf(1), .true. , dplevs, nlev,psobs, hyam, hybm, vls, status )
      if ( status .ne. nf90_noerr ) then
        have_vls = .false.
        if (iop_coriolis) then

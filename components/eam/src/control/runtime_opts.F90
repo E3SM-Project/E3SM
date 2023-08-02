@@ -383,7 +383,6 @@ contains
         iop_nudge_tscale_out=iop_nudge_tscale, &
         scm_observed_aero_out=scm_observed_aero, &
         precip_off_out=precip_off, &
-        iop_dosubsidence_out=iop_dosubsidence, &
         iop_perturb_high_out=iop_perturb_high, &
         scm_multcols_out=scm_multcols, &
         dp_crm_out=dp_crm, &
