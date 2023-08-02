@@ -79,7 +79,7 @@ extern "C" void pam_driver() {
   // Copy input CRM state (saved by the GCM) to coupler
   pam_state_copy_input_to_coupler(coupler);
 
-  // update horizontal mean of dry density to match GCM (also disables dry density forcing)
+  // update horz mean of CRM dry density to match GCM - also disables dry density forcing
   pam_state_update_dry_density(coupler);
 
   // if debugging - initialize saved state variables and check initial CRM state
@@ -159,8 +159,8 @@ extern "C" void pam_driver() {
     coupler.run_module( "radiation"                    , [&] (pam::PamCoupler &coupler) {rad   .timeStep(coupler);} );
     if (enable_check_state) { pam_debug_check_state(coupler, 2, nstep); }
 
-    // anelastic dycor can dramatically change the dry density due to the assumption that the total 
-    // density does not change, so we will save it here and recall after the dycor
+    // The PAM-C anelastic dycor can dramatically change the dry density due to the assumption that 
+    // the total density does not change, so we will save it here and recall after the dycor
     pam_statistics_save_state(coupler);
     #if defined(MMF_PAM_DYCOR_SPAM)
       pam_state_save_dry_density(coupler);
