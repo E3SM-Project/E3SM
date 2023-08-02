@@ -227,6 +227,7 @@ inline void pam_state_update_dry_density( pam::PamCoupler &coupler ) {
   auto nx         = coupler.get_option<int>("crm_nx");
   auto ny         = coupler.get_option<int>("crm_ny");
   auto crm_rho_d  = dm_device.get<real,4>("density_dry");
+  auto gcm_rho_d  = dm_device.get<real,2>("gcm_density_dry");
   //------------------------------------------------------------------------------------------------
   // initialize horizontal mean of CRM dry density
   real2d crm_hmean_rho_d("crm_hmean_rho_d"   ,nz,nens);
@@ -239,7 +240,6 @@ inline void pam_state_update_dry_density( pam::PamCoupler &coupler ) {
     atomicAdd( crm_hmean_rho_d(k,iens), crm_rho_d(k,j,i,iens) * r_nx_ny );
   });
   // replace horizontal mean dry density with GCM value
-  auto gcm_rho_d = dm_device.get<real,2>("gcm_density_dry");
   parallel_for(SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     crm_rho_d(k,j,i,iens) = crm_rho_d(k,j,i,iens) - crm_hmean_rho_d(k,iens) + gcm_rho_d(k,iens);
   });
@@ -306,6 +306,7 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   auto gcm_nlev   = coupler.get_option<int>("gcm_nlev");
   //------------------------------------------------------------------------------------------------
   // get the coupler state variables
+  auto gcm_rho_d         = dm_device.get<real,2>("gcm_density_dry");
   auto crm_uvel          = dm_device.get<real,4>("uvel");
   auto crm_vvel          = dm_device.get<real,4>("vvel");
   auto crm_wvel          = dm_device.get<real,4>("wvel");
@@ -327,7 +328,6 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   auto crm_shoc_wthv     = dm_device.get<real,4>("wthv_sec");
   auto crm_shoc_relvar   = dm_device.get<real,4>("inv_qc_relvar");
   auto crm_shoc_cldfrac  = dm_device.get<real,4>("cldfrac");
-  auto gcm_rho_d         = dm_device.get<real,2>("gcm_density_dry");
   auto nccn_prescribed   = dm_device.get<real,4>("nccn_prescribed");
   auto nc_nuceat_tend    = dm_device.get<real,4>("nc_nuceat_tend");
   auto ni_activated      = dm_device.get<real,4>("ni_activated");
@@ -363,7 +363,6 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
                 SimpleBounds<4>(nz,ny,nx,nens),
                 YAKL_LAMBDA (int k, int j, int i, int iens) {
     int k_gcm = (gcm_nlev+1)-1-k;
-    // crm_rho_d        (k,j,i,iens) = gcm_rho_d(k,iens); // this disables dry density forcing
     crm_rho_d        (k,j,i,iens) = state_rho_dry(k,j,i,iens);
     // NOTE - convert specific mass mixing ratios to density using previous state dry density from pbuf
     crm_rho_v        (k,j,i,iens) = state_qv(k,j,i,iens) * state_rho_dry(k,j,i,iens) / ( 1 - state_qv(k,j,i,iens) ) ;
@@ -371,24 +370,24 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
     crm_rho_c        (k,j,i,iens) = state_qc(k,j,i,iens) * rho_total ;
     crm_rho_r        (k,j,i,iens) = state_qr(k,j,i,iens) * rho_total ;
     crm_rho_i        (k,j,i,iens) = state_qi(k,j,i,iens) * rho_total ;
-    crm_uvel         (k,j,i,iens) = state_u_wind       (k,j,i,iens);
-    crm_vvel         (k,j,i,iens) = state_v_wind       (k,j,i,iens);
-    crm_wvel         (k,j,i,iens) = state_w_wind       (k,j,i,iens);
-    crm_temp         (k,j,i,iens) = state_temperature  (k,j,i,iens);
-    crm_nc           (k,j,i,iens) = state_nc           (k,j,i,iens);
-    crm_nr           (k,j,i,iens) = state_nr           (k,j,i,iens);
-    crm_ni           (k,j,i,iens) = state_ni           (k,j,i,iens);
-    crm_qm           (k,j,i,iens) = state_qm           (k,j,i,iens);
-    crm_bm           (k,j,i,iens) = state_bm           (k,j,i,iens);
+    crm_uvel         (k,j,i,iens) = state_u_wind         (k,j,i,iens);
+    crm_vvel         (k,j,i,iens) = state_v_wind         (k,j,i,iens);
+    crm_wvel         (k,j,i,iens) = state_w_wind         (k,j,i,iens);
+    crm_temp         (k,j,i,iens) = state_temperature    (k,j,i,iens);
+    crm_nc           (k,j,i,iens) = state_nc             (k,j,i,iens);
+    crm_nr           (k,j,i,iens) = state_nr             (k,j,i,iens);
+    crm_ni           (k,j,i,iens) = state_ni             (k,j,i,iens);
+    crm_qm           (k,j,i,iens) = state_qm             (k,j,i,iens);
+    crm_bm           (k,j,i,iens) = state_bm             (k,j,i,iens);
     // shoc inputs
-    crm_shoc_tk      (k,j,i,iens) = state_shoc_tk      (k,j,i,iens);
-    crm_shoc_tkh     (k,j,i,iens) = state_shoc_tkh     (k,j,i,iens);
-    crm_shoc_wthv    (k,j,i,iens) = state_shoc_wthv    (k,j,i,iens);
-    crm_shoc_relvar  (k,j,i,iens) = state_shoc_relvar  (k,j,i,iens);
-    crm_shoc_cldfrac (k,j,i,iens) = state_shoc_cldfrac (k,j,i,iens);
+    crm_shoc_tk      (k,j,i,iens) = state_shoc_tk        (k,j,i,iens);
+    crm_shoc_tkh     (k,j,i,iens) = state_shoc_tkh       (k,j,i,iens);
+    crm_shoc_wthv    (k,j,i,iens) = state_shoc_wthv      (k,j,i,iens);
+    crm_shoc_relvar  (k,j,i,iens) = state_shoc_relvar    (k,j,i,iens);
+    crm_shoc_cldfrac (k,j,i,iens) = state_shoc_cldfrac   (k,j,i,iens);
     // p3 inputs
-    crm_t_prev       (k,j,i,iens) = state_t_prev       (k,j,i,iens);
-    crm_q_prev       (k,j,i,iens) = state_q_prev       (k,j,i,iens);
+    crm_t_prev       (k,j,i,iens) = state_t_prev         (k,j,i,iens);
+    crm_q_prev       (k,j,i,iens) = state_q_prev         (k,j,i,iens);
     nccn_prescribed  (k,j,i,iens) = input_nccn_prescribed(k_gcm,iens);
     nc_nuceat_tend   (k,j,i,iens) = input_nc_nuceat_tend (k_gcm,iens);
     ni_activated     (k,j,i,iens) = input_ni_activated   (k_gcm,iens);
