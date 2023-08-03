@@ -2619,7 +2619,6 @@ sub write_filepath
             print $fh "$camsrcdir/eam/src/physics/crm/ecpp\n";
         }
 
-        #my $crm = $cfg_ref->get('crm');
         if ($crm eq 'sam') {
           #####################################################
           ## -crm sam will GLOB directories for CMake
@@ -2741,11 +2740,12 @@ sub write_filepath
        print $fh "$camsrcdir/eam/src/physics/silhs\n";
     }
 
-    # set Fortran P3 path, needed even if microphys is not P3
-    if ($is_scream_config eq '1') {
-       print $fh "$camsrcdir/eam/src/physics/p3/scream\n";
-    } else {
-       print $fh "$camsrcdir/eam/src/physics/p3/eam\n";
+    if (not(defined $opts{'use_MMF'})) {
+       if ($is_scream_config eq '1') {
+          print $fh "$camsrcdir/eam/src/physics/p3/scream\n";
+       } else {
+          print $fh "$camsrcdir/eam/src/physics/p3/eam\n";
+       }
     }
 
     print $fh "$camsrcdir/eam/src/dynamics/$dyn\n";
