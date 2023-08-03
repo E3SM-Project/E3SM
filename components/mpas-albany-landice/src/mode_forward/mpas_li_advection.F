@@ -184,8 +184,8 @@ module li_advection
            thermalCellMaskField
 
       ! Allocatable arrays need for flux-corrected transport advection
-      real (kind=RKIND), dimension(:,:), allocatable :: tendLayerThickness
       real (kind=RKIND), dimension(:,:,:), allocatable :: tend
+      real (kind=RKIND), dimension(:,:,:), allocatable :: activeTracerHorizontalAdvectionEdgeFlux
 
       integer, dimension(:), pointer :: &
            cellMask,              & ! integer bitmask for cells
@@ -403,10 +403,10 @@ module li_advection
 
          if ((trim(config_thickness_advection) .eq. 'fct') .or. &
              (trim(config_tracer_advection) .eq. 'fct' ) ) then
-            allocate(tendLayerThickness(nVertLevels,nCells+1))
-            tendLayerThickness(:,:) = 0.0_RKIND
             allocate(tend(nTracers,nVertLevels,nCells+1))
             tend(:,:,:) = 0.0_RKIND
+            allocate(activeTracerHorizontalAdvectionEdgeFlux(nTracers,nVertLevels+1,nEdges+1))
+            activeTracerHorizontalAdvectionEdgeFlux(:,:,:) = 0.0_RKIND
          endif
 
          ! Transport thickness and tracers using a first-order upwind scheme
@@ -469,16 +469,20 @@ module li_advection
              ! Reset tracers after fo advection for fct advection
              advectedTracers(:,:,:) = advectedTracersOld(:,:,:)
 
+             ! Pass FO upwind normalThicknessFlux (layerThicknessEdge * layerNormalVelocity)
+             ! to fct tracer routine
              call li_tracer_advection_fct_tend(&
                   tend, advectedTracers, layerThicknessOld, &
                   layerThicknessEdge * layerNormalVelocity, 0 * normalVelocity, dt,    &
-                  nTracers, computeBudgets=.false.)!{{{
+                  nTracers, activeTracerHorizontalAdvectionEdgeFlux, computeBudgets=.false.)!{{{
          elseif ((trim(config_thickness_advection) .eq. 'fct') .and. &
                   trim(config_tracer_advection) .eq. 'fct') then
+             ! Call fct routine for thickness first, and use activeTracerHorizontalAdvectionEdgeFlux
+             ! returned by that call as normalThicknessFlux for call to tracer fct
              call li_tracer_advection_fct_tend(&
                   tend, advectedTracers, layerThicknessOld * 0.0_RKIND + 1.0_RKIND, &
                   layerNormalVelocity, 0 * normalVelocity, dt,    &
-                  nTracers, computeBudgets=.false.)
+                  nTracers, activeTracerHorizontalAdvectionEdgeFlux, computeBudgets=.false.)
              ! layerThickness is last tracer. However, for some reason
              ! this: layerThickness(:,:) = advectedTracers(nTracers,:,:) does not conserve mass!
              ! This does conserve mass:
@@ -487,10 +491,13 @@ module li_advection
              ! TODO: determine whether we need to treat other tracer tendencies
              ! the same as layerThickness for conservation.
              advectedTracers(:,:,:) = advectedTracersOld(:,:,:)
+             tend(:,:,:) = 0.0_RKIND
+             ! Call fct for tracers, using activeTracerHorizontalAdvectionEdgeFlux
+             ! from fct thickness advection as normalThicknessFlux
              call li_tracer_advection_fct_tend(&
                   tend, advectedTracers, layerThicknessOld, &
-                  layerThicknessEdge * layerNormalVelocity, 0 * normalVelocity, dt,    &
-                  nTracers, computeBudgets=.false.)
+                  activeTracerHorizontalAdvectionEdgeFlux(nTracers,:,:), 0 * normalVelocity, dt,    &
+                  nTracers, activeTracerHorizontalAdvectionEdgeFlux, computeBudgets=.false.)
          endif
 
          if (config_print_thickness_advection_info) then
@@ -690,7 +697,9 @@ module li_advection
                      advCoefs, &
                      advCoefs3rd, &
                      advMaskHighOrder, &
-                     advMask2ndOrder)
+                     advMask2ndOrder, &
+                     tend, &
+                     activeTracerHorizontalAdvectionEdgeFlux)
       endif
 
       ! clean up

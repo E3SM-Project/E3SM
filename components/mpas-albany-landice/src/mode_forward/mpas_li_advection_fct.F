@@ -66,15 +66,17 @@ module li_tracer_advection_fct
    subroutine li_tracer_advection_fct_tend( &
                                         tend, tracers, layerThickness, &
                                         normalThicknessFlux, w, dt,    &
-                                        nTracers, computeBudgets)!{{{
+                                        nTracers, &
+                                        activeTracerHorizontalAdvectionEdgeFlux, &
+                                        computeBudgets)!{{{
       use li_mesh
       !-----------------------------------------------------------------
       ! Input/Output parameters
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         tend    !< [inout] Tracer tendency to which advection added
-
+         tend, &    !< [inout] Tracer tendency to which advection added
+         activeTracerHorizontalAdvectionEdgeFlux  !< [inout] used to compute higher order normalThicknessFlux
       !-----------------------------------------------------------------
       ! Input parameters
       !-----------------------------------------------------------------
@@ -160,6 +162,21 @@ module li_tracer_advection_fct
                lowOrderFlx (nVertLevels+1,max(nCells,nEdges)+1), &
                highOrderFlx(nVertLevels+1,max(nCells,nEdges)+1))
 
+      ! Initialize variables so you don't get floating point exceptions
+      wgtTmp(:) = 0.0_RKIND
+      flxTmp(:) = 0.0_RKIND
+      sgnTmp(:) = 0.0_RKIND
+      tracerCur(:,:) = 0.0_RKIND
+      tracerMin(:,:) = 0.0_RKIND
+      tracerMax(:,:) = 0.0_RKIND
+      hNewInv(:,:) = 0.0_RKIND
+      hProv(:,:) = 0.0_RKIND
+      hProvInv(:,:) = 0.0_RKIND
+      flxIn(:,:) = 0.0_RKIND
+      flxOut(:,:) = 0.0_RKIND
+      workTend(:,:) = 0.0_RKIND
+      lowOrderFlx(:,:) = 0.0_RKIND
+      highOrderFlx(:,:) = 0.0_RKIND
       !$acc enter data create(wgtTmp, flxTmp, sgnTmp, &
       !$acc                   tracerCur, tracerMin, tracerMax, &
       !$acc                   hNewInv, hProv, hProvInv, flxIn, flxOut, &
@@ -588,17 +605,22 @@ module li_tracer_advection_fct
 !           !$omp parallel
 !           !$omp do schedule(runtime) private(k)
 !#endif
-!
-!           ! TODO: Determine if it is necessary to define activeTracerHorizontalAdvectionEdgeFlux
-!           !do iEdge = 1,nEdges
-!           !do k = minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
-!           !   ! Save u*h*T flux on edge for analysis. This variable will be
-!           !   ! divided by h at the end of the time step.
-!           !   activeTracerHorizontalAdvectionEdgeFlux(iTracer,k,iEdge) = &
-!           !      (lowOrderFlx(k,iEdge) + highOrderFlx(k,iEdge))/dvEdge(iEdge)
-!           !enddo
-!           !enddo
-!
+
+           ! Use activeTracerHorizontalAdvectionEdgeFlux from the call to fct for thickness
+           ! advection as the higher-order normalThicknessFlux for fct tracer advection.
+           do iEdge = 1,nEdges
+           do k = 1, nVertLevels
+              ! Save u*h*T flux on edge for analysis. This variable will be
+              ! divided by h at the end of the time step.
+              if (dvEdge(iEdge) > 0.0_RKIND) then
+                 activeTracerHorizontalAdvectionEdgeFlux(iTracer,k,iEdge) = &
+                     (lowOrderFlx(k,iEdge) + highOrderFlx(k,iEdge))/dvEdge(iEdge)
+              else
+                 activeTracerHorizontalAdvectionEdgeFlux(iTracer,k,iEdge) = 0.0_RKIND
+              endif
+           enddo
+           enddo
+
 !#ifndef MPAS_OPENACC
 !          !$omp end do
 !#endif
