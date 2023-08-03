@@ -4,7 +4,7 @@
 
 <!DOCTYPE phys_defaults [
   <!ENTITY eam_phys_defaults "-nlev 72 -clubb_sgs -microphys p3">
-  <!ENTITY eam_chem_defaults "-chem superfast_mam5_resus_mom_soag -rain_evap_to_coarse_aero -vbs -usr_mech_infile $SRCROOT/components/eam/chem_proc/inputs/pp_chemUCI_linozv3_mam5_vbs.in">
+  <!ENTITY eam_chem_defaults "-chem superfast_mam5_resus_mom_soag -rain_evap_to_coarse_aero -vbs">
 ]>
 
 <definitions_variables>
