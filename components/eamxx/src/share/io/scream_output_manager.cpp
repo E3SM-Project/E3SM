@@ -10,12 +10,11 @@
 
 #include <fstream>
 #include <memory>
+#include <chrono>
+#include <ctime>
 
 namespace scream
 {
-
-// Local helper functions:
-void set_file_header(const std::string& filename);
 
 void OutputManager::
 setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
@@ -653,7 +652,7 @@ setup_file (      IOFileSpecs& filespecs,
     set_attribute(filename,"averaging_frequency",m_output_control.frequency);
     set_attribute(filename,"max_snapshots_per_file",m_output_file_specs.max_snapshots_in_file);
     set_attribute(filename,"fp_precision",fp_precision);
-    set_file_header(filename);
+    set_file_header(filespecs);
   }
 
   // Set degree of freedom for "time" and "time_bnds"
@@ -694,27 +693,43 @@ setup_file (      IOFileSpecs& filespecs,
   m_resume_output_file = false;
 }
 /*===============================================================================================*/
-void set_file_header(const std::string& filename)
+void OutputManager::set_file_header(const IOFileSpecs& file_specs)
 {
   using namespace scorpio;
 
   // TODO: All attributes marked TODO below need to be set.  Hopefully by a universal value that reflects
   // what the attribute is.  For example, git-hash should be the git-hash associated with this version of
   // the code at build time for this executable.
-  set_attribute<std::string>(filename,"source","E3SM Atmosphere Model Version 4 (EAMxx)");  // TODO: probably want to make sure that new versions are reflected here.
-  set_attribute<std::string>(filename,"case","");  // TODO
-  set_attribute<std::string>(filename,"title","EAMxx History File");
-  set_attribute<std::string>(filename,"compset","");  // TODO
-  set_attribute<std::string>(filename,"git_hash","");  // TODO
-  set_attribute<std::string>(filename,"host","");  // TODO
-  set_attribute<std::string>(filename,"version","");  // TODO
-  set_attribute<std::string>(filename,"initial_file","");  // TODO
-  set_attribute<std::string>(filename,"topography_file","");  // TODO
-  set_attribute<std::string>(filename,"contact","");  // TODO
-  set_attribute<std::string>(filename,"institution_id","");  // TODO
-  set_attribute<std::string>(filename,"product","");  // TODO
-  set_attribute<std::string>(filename,"component","ATM");
-  set_attribute<std::string>(filename,"Conventions","CF-1.8");  // TODO: In the future we may be able to have this be set at runtime.  We hard-code for now, because post-processing needs something in this global attribute. 2023-04-12
+  auto& p = m_params.sublist("provenance");
+  auto now = std::chrono::system_clock::now();
+  std::time_t time = std::chrono::system_clock::to_time_t(now);
+  std::stringstream timestamp;
+  timestamp << "created on " << std::ctime(&time);
+  std::string ts_str = timestamp.str();
+  ts_str = std::strtok(&ts_str[0],"\n"); // Remove the \n appended by ctime
+
+  const auto& filename = file_specs.filename;
+
+  set_attribute<std::string>(filename,"case",p.get<std::string>("caseid","NONE"));
+  set_attribute<std::string>(filename,"source","E3SM Atmosphere Model (EAMxx)");
+  set_attribute<std::string>(filename,"eamxx_version",EAMXX_VERSION);
+  set_attribute<std::string>(filename,"git_version",p.get<std::string>("git_version",EAMXX_GIT_VERSION));
+  set_attribute<std::string>(filename,"hostname",p.get<std::string>("hostname","UNKNOWN"));
+  set_attribute<std::string>(filename,"username",p.get<std::string>("username","UNKNOWN"));
+  set_attribute<std::string>(filename,"atm_initial_conditions_file",p.get<std::string>("initial_conditions_file","NONE"));
+  set_attribute<std::string>(filename,"topography_file",p.get<std::string>("topography_file","NONE"));
+  set_attribute<std::string>(filename,"contact","e3sm-data-support@llnl.gov");
+  set_attribute<std::string>(filename,"institution_id","E3SM-Projet");
+  set_attribute<std::string>(filename,"realm","atmos");
+  set_attribute<std::string>(filename,"history",ts_str);
+  set_attribute<std::string>(filename,"Conventions","CF-1.8");
+  if (m_is_model_restart_output) {
+    set_attribute<std::string>(filename,"product","model-restart");
+  } else if (file_specs.hist_restart_file) {
+    set_attribute<std::string>(filename,"product","history-restart");
+  } else {
+    set_attribute<std::string>(filename,"product","model-output");
+  }
 }
 /*===============================================================================================*/
 void OutputManager::
