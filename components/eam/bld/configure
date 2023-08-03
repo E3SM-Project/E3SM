@@ -1863,7 +1863,7 @@ if (!$ccsm_seq){
 # on some older compilers used by HOMME standalone.
 if ($dyn_pkg eq 'se') {
     my $csnp = $cfg_ref->get('csnp');
-    $cfg_cppdefs .= " -DNP=$csnp -DNC=4 -DHAVE_F2003_PTR_BND_REMAP";
+    $cfg_cppdefs .= " -DNP=$csnp -DHAVE_F2003_PTR_BND_REMAP";
     if ($smp eq 'ON') {
       $cfg_cppdefs .= " -DHORIZ_OPENMP"
     }
