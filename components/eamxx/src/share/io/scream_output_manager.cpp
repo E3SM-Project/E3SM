@@ -331,10 +331,17 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   //       Since we *always* write a history restart file, we can have a non-full checkpoint, if the average
   //       type is Instant and/or the frequency is every step. A non-full checkpoint will simply write some
   //       global attribute, such as the time of last write.
+  //       Also, notice that units="nhours" and freq=1 would still output evey step if dt=3600s. However,
+  //       it is somewhat hard to figure out if output happens every step, without having a dt to compare
+  //       against. Therefore, we simply assume that if units!=nsteps OR freq>1, then we don't output every
+  //       timestep. If, in fact, we are outputing every timestep, it's likely a small test, so it's not too
+  //       bad if we write out some extra data.
+  const bool output_every_step       = m_output_control.frequency_units=="nsteps" &&
+                                       m_output_control.frequency==1;
   const bool is_t0_output            = timestamp==m_case_t0;
   const bool is_output_step          = m_output_control.is_write_step(timestamp) || is_t0_output;
   const bool is_checkpoint_step      = m_checkpoint_control.is_write_step(timestamp) && not is_t0_output;
-  const bool has_checkpoint_data     = (m_avg_type!=OutputAvgType::Instant && m_output_control.frequency>1);
+  const bool has_checkpoint_data     = m_avg_type!=OutputAvgType::Instant && not output_every_step;
   const bool is_full_checkpoint_step = is_checkpoint_step && has_checkpoint_data && not is_output_step;
   const bool is_write_step           = is_output_step || is_checkpoint_step;
 
@@ -741,9 +748,6 @@ push_to_logger()
   m_atm_logger->info("      Includes Grid Data ?: " + bool_to_string(m_output_file_specs.save_grid_data));
   // List each GRID - TODO
   // List all FIELDS - TODO
-
-
-
 }
 
 } // namespace scream
