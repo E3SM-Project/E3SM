@@ -9,8 +9,8 @@ time_stepping:
   number_of_steps: ${NUM_STEPS}
 
 atmosphere_processes:
-  atm_procs_list: (mam4microphysics)
-  mam4_microphysics:
+  atm_procs_list: (mam4_micro)
+  mam4_micro:
     compute_tendencies: [q_aitken_so4, n_aitken, q_h2so4]
 
 grids_manager:
