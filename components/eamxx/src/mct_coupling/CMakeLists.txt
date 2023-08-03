@@ -32,7 +32,6 @@ set (SCREAM_LIBS
      scream_share
      scream_control
      ${dynLibName}
-     mam
      p3
      shoc
      scream_rrtmgp
@@ -41,6 +40,10 @@ set (SCREAM_LIBS
      nudging
      diagnostics
 )
+if (SCREAM_ENABLE_MAM)
+  set(SCREAM_LIBS ${SCREAM_LIBS} mam)
+endif()
+
 
 # Create atm lib
 add_library(atm ${ATM_SRC})

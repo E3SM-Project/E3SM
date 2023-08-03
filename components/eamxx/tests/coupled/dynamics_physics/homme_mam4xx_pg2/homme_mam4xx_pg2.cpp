@@ -43,8 +43,6 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics_mam4") {
   // Register all atm procs and the grids manager in the respective factories
   register_dynamics();
   register_physics();
-// TODO: register_diagnostics();
-
 
   // Create the driver
   AtmosphereDriver ad;

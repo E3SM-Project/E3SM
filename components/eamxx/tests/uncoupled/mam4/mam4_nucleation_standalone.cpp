@@ -43,8 +43,7 @@ TEST_CASE("mam4-nucleation-standalone", "") {
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
   register_physics();
-  auto& gm_factory = GridsManagerFactory::instance();
-  gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
+  register_mesh_free_grids_manager();
   register_diagnostics();
   logger.debug("products registered.");
 
