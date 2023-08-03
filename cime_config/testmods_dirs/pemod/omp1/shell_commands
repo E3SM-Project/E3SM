@@ -10,4 +10,5 @@ ppn=`./xmlquery --value MAX_MPITASKS_PER_NODE`
 ./xmlchange NTASKS=$(($ppn * 8))
 ./xmlchange NTHRDS=1
 ./xmlchange ROOTPE=0
+./xmlchange PSTRID=1
 
