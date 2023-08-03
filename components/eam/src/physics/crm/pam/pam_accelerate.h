@@ -2,10 +2,6 @@
 
 #include "pam_coupler.h"
 
-real constexpr dtemp_max = 5; // temperature tendency max threshold =>  5 K following original UP-CAM implementation
-real constexpr temp_min = 50; // temperature minimum minthreshold   => 50 K following original UP-CAM implementation
-
-
 void pam_accelerate_nstop( pam::PamCoupler &coupler, int &nstop) {
   auto crm_accel_factor = coupler.get_option<real>("crm_accel_factor");
   if(nstop%static_cast<int>((1+crm_accel_factor)) != 0) {
@@ -124,6 +120,9 @@ inline void pam_accelerate( pam::PamCoupler &coupler, int nstep, int &nstop ) {
   real2d vtend_acc("vtend_acc", nz,nens);
   real2d qpoz     ("qpoz",      nz,nens);
   real2d qneg     ("qneg",      nz,nens);
+  //------------------------------------------------------------------------------------------------
+  real constexpr dtemp_max = 5; // temperature tendency max threshold =>  5 K following UP-CAM
+  real constexpr temp_min = 50; // temperature minimum minthreshold   => 50 K following UP-CAM
   //------------------------------------------------------------------------------------------------
   // Compute the horizontal mean for each variable
   parallel_for( SimpleBounds<2>(nz,nens) , YAKL_LAMBDA (int k, int n) {
