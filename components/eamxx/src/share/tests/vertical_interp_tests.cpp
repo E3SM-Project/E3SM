@@ -27,6 +27,7 @@ void run(){
   //4) n_layers_src= 2*P+1, n_layers_tgt= 2*P-1
   //For each scenario target levels are at the midpoint and so should be the average
   //of the source layers. 
+  // TODO: ASD - Add a test for when the source pressure is a single column and target is multiple columns
 
   int n_layers_src[4] = {2*P,2*P+1,2*P,2*P+1};
   int n_layers_tgt[4] = {2*P,2*P,2*P-1,2*P-1};
