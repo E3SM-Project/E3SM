@@ -5,6 +5,7 @@ module crm_physics
    use shr_kind_mod,    only: r8 => shr_kind_r8
    use shr_sys_mod,     only: shr_sys_flush   
    use shr_const_mod,   only: SHR_CONST_RDAIR,SHR_CONST_RWV
+   use spmd_utils,      only: masterproc
    use cam_abortutils,  only: endrun
    use cam_logfile,     only: iulog
    use physics_types,   only: physics_state, physics_tend
@@ -80,7 +81,6 @@ subroutine crm_physics_register()
 !---------------------------------------------------------------------------------------------------
 ! Purpose:  add necessary fields into physics buffer
 !---------------------------------------------------------------------------------------------------
-   use spmd_utils,          only: masterproc
    use physconst,           only: cpair, mwh2o, mwdry
    use physics_buffer,      only: dyn_time_lvls, pbuf_add_field, dtype_r8, pbuf_get_index
    use phys_control,        only: phys_getopts, use_gw_convect
@@ -356,11 +356,10 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    ! local variables
    integer :: m, mm, c
    integer :: ncnst
-   integer :: ierror   ! Error code
    logical :: use_ECPP
    logical :: use_MMF_VT
    character(len=16) :: MMF_microphysics_scheme
-   integer :: lchnk, ncol
+   integer :: ncol
    logical :: pam_stat_fields_active
    !----------------------------------------------------------------------------
    call phys_getopts(use_ECPP_out = use_ECPP)
@@ -553,7 +552,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
    use iso_c_binding,         only: c_bool
    use phys_grid,             only: get_rlon_p, get_rlat_p, get_gcol_p  
-   use spmd_utils,            only: masterproc
    use openacc_utils,         only: prefetch
 
    real(r8),                                        intent(in   ) :: ztodt            ! global model time increment and CRM run length
