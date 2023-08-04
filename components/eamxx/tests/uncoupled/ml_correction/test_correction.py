@@ -1,4 +1,5 @@
 import numpy as np
+import h5py
 import xarray as xr
 import fv3fit
 from scream_run.steppers.machine_learning import (
@@ -25,7 +26,7 @@ def sample_ML_prediction(nz: int, input_data: np.ndarray):
     if len(input_data.shape) < 2:
         input_data = input_data[np.newaxis, :]
     input_data = xr.Dataset({"qv": xr.DataArray(data=input_data, dims=["ncol", "z"])})
-    output = predict(model, input_data)
+    output = predict(model, input_data, dt=1.0)
     return output["qv"].values
 
 
