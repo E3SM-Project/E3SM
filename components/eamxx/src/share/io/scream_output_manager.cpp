@@ -221,8 +221,10 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       }
 
       // If the type/freq of output needs restart data, we need to restart the streams
-      const auto has_restart_data = m_avg_type!=OutputAvgType::Instant && m_output_control.frequency>1;
-      if (has_restart_data && m_output_control.nsamples_since_last_write>0) {
+      const bool output_every_step       = m_output_control.frequency_units=="nsteps" &&
+                                           m_output_control.frequency==1;
+      const bool has_checkpoint_data     = m_avg_type!=OutputAvgType::Instant && not output_every_step;
+      if (has_checkpoint_data && m_output_control.nsamples_since_last_write>0) {
         for (auto stream : m_output_streams) {
           stream->restart(rhist_file);
         }
