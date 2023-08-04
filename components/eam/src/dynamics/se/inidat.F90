@@ -626,7 +626,7 @@ contains
        elem(ie)%derived%FT = 0.0
 #else
        call set_thermostate(elem(ie),ps,elem(ie)%state%T(:,:,:,tl),hvcoord)
-#endif 
+#endif
     end do
 
     deallocate(tmp)
