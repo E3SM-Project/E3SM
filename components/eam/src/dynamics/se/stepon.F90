@@ -513,7 +513,6 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    type (element_t), pointer :: elem(:)
    integer :: rc, i, j, k, p, ie, tl_f
-   integer :: pv_idx
  
 #if defined (E3SM_SCM_REPLAY)
    real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
