@@ -1,36 +1,35 @@
-#include <catch2/catch.hpp>
+#include "catch2/catch.hpp"
 
+// The AD
 #include "control/atmosphere_driver.hpp"
-#include "diagnostics/register_diagnostics.hpp"
 
+// Dynamics includes
+#include "dynamics/register_dynamics.hpp"
+
+// Physics includes
 #include "physics/register_physics.hpp"
+#include "diagnostics/register_diagnostics.hpp"
 #include "physics/mam/eamxx_mam_microphysics_process_interface.hpp"
 
-#include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/atm_process/atmosphere_process.hpp"
-
+// EKAT headers
+#include "ekat/ekat_assert.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/logging/ekat_logger.hpp"
+#include "ekat/ekat_assert.hpp"
 
-#include <iomanip>
-
-namespace scream {
-
-TEST_CASE("mam4-nucleation-standalone", "") {
+TEST_CASE("scream_homme_physics", "scream_homme_physics_mam4") {
   using namespace scream;
   using namespace scream::control;
 
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
-  ekat::logger::Logger<> logger("mam4-nucleation",
+  ekat::logger::Logger<> logger("homme-mam4",
                                 ekat::logger::LogLevel::debug, atm_comm);
-
 
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
   parse_yaml_file(fname,ad_params);
-  logger.debug("yaml parsed.");
+  ad_params.print();
 
   // Time stepping parameters
   const auto& ts     = ad_params.sublist("time_stepping");
@@ -39,19 +38,20 @@ TEST_CASE("mam4-nucleation-standalone", "") {
   const auto  t0_str = ts.get<std::string>("run_t0");
   const auto  t0     = util::str_to_time_stamp(t0_str);
 
-  logger.info("running MAMMicrophysics standalone test with dt = {} for {} steps.", dt, nsteps);
+  logger.info("running HOMME/MAMMicrophysics coupled test with dt = {} for {} steps.", dt, nsteps);
 
-  // Need to register products in the factory *before* we create any atm process or grids manager.
+  // Register all atm procs and the grids manager in the respective factories
+  register_dynamics();
   register_physics();
-  register_mesh_free_grids_manager();
-  register_diagnostics();
-  logger.debug("products registered.");
 
   // Create the driver
   AtmosphereDriver ad;
   logger.debug("driver created.");
 
-  // Init and run
+  // Init, run, and finalize
+  // NOTE: Kokkos is finalize in ekat_catch_main.cpp, and YAKL is finalized
+  //       during RRTMGPRatiation::finalize_impl, after RRTMGP has deallocated
+  //       all its arrays.
   ad.initialize(atm_comm,ad_params,t0);
   logger.debug("driver initialized.");
 
@@ -60,11 +60,9 @@ TEST_CASE("mam4-nucleation-standalone", "") {
     ad.run(dt);
     logger.info(" Iteration {} completed; [{}]", i+1, 100*(i+1)/nsteps);
   }
-
-  // Finalize
   ad.finalize();
 
-  // If we got here, we were able to run mam4 nucleation
-  REQUIRE(true);
+
+  // If we got here, we were able to run without errors.
+  REQUIRE (true);
 }
-} // namespace scream
