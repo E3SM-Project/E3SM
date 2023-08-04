@@ -54,10 +54,7 @@ contains
     use cldera_dynamic_tracers,  only: cldera_dynamic_tracers_implements_cnst, &
                                        cldera_dynamic_tracers_init_cnst, &
                                        cldera_dynamic_tracers_is_pt, &
-                                       cldera_dynamic_tracers_is_pv, &
-                                       cldera_dynamic_tracers_is_enabled
-    use element_ops,             only: get_pot_vort, &
-                                       get_field
+                                       cldera_dynamic_tracers_is_pv
     use clubb_intr,              only: clubb_implements_cnst, clubb_init_cnst
     use stratiform,              only: stratiform_implements_cnst, stratiform_init_cnst
     use microp_driver,           only: microp_driver_implements_cnst, microp_driver_init_cnst
