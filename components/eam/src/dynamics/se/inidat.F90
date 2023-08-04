@@ -406,7 +406,7 @@ contains
           ! Since the rest of processing uses tmp, copy qtmp into tmp
           do ie = 1, nelemd
             do k=1,nlev
-             do i = 1, npsq
+              do i = 1, npsq
                 ! Implicit reshape (qtmp is (np*np*nelemd, nlev)
                 tmp(i,k,ie) = qtmp(i+((ie-1)*npsq),k)
               end do
