@@ -2605,6 +2605,7 @@ sub write_filepath
 
         # interface and base model code
         print $fh "$camsrcdir/eam/src/physics/crm\n";
+        print $fh "$camsrcdir/eam/src/physics/crm/dummy_modules\n";
 
         # MMF-specific radiation drivers (overrides default drivers that exist
         # in each individual radiation package; done this way to avoid
