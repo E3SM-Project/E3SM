@@ -171,7 +171,6 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   use control_mod, only: ftype
   use physics_buffer, only : physics_buffer_desc
   use hycoef,      only: hyam, hybm
-  use dimensions_mod,  only: nelemd 
   use se_single_column_mod, only: scm_setfield, scm_setinitial
   implicit none
 !
