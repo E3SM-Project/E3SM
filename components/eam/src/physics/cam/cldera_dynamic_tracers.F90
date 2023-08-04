@@ -105,8 +105,6 @@ contains
     ! Purpose: register advected constituents
     ! 
     !-----------------------------------------------------------------------
-    use physconst,  only: cpair, mwdry
-    !-----------------------------------------------------------------------
 
     if (.not. cldera_dynamic_tracers_flag) return
 
