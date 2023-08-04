@@ -1146,7 +1146,7 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     use check_energy,     only: check_energy_fix, check_energy_chng
     use dycore,           only: dycore_is
   
-    ! --JH--: adding to allow calling of custom tracer tendencies
+    ! adding to allow calling of custom tracer tendencies
     use check_energy,    only: check_tracers_chng, check_tracers_data
     use aoa_tracers,     only: aoa_tracers_timestep_tend
     use ppgrid,          only: pcols
@@ -1183,7 +1183,7 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     integer(i8)         :: sysclock_max    ! system clock max value
     real(r8)            :: chunk_cost      ! measured cost per chunk
 
-    ! --JH--: adding to allow custom tracer module tendencies
+    ! adding to allow custom tracer module tendencies
     type(check_tracers_data):: tracerint    ! tracer mass integrals and cummulative boundary fluxes
     real(r8) :: dummy_cflx(pcols, pcnst)    ! array of zeros
 
@@ -1232,14 +1232,14 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        ! Dump dynamics variables to history buffers
        call diag_phys_writeout(phys_state(c))
 
-       ! --JH--: Allow evolution of CLDERA dynamic, passive tracer tendencies if enabled
+       ! Allow evolution of CLDERA dynamic, passive tracer tendencies if enabled
        call cldera_dynamic_tracers_timestep_tend(phys_state(c), ptend(c), ztodt, phys_state(c)%ncol)
        call cldera_passive_tracers_timestep_tend(phys_state(c), ptend(c), ztodt, dummy_cflx)
        call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
        call check_tracers_chng(phys_state(c), tracerint, "cldera_passive_tracers_timestep_tend", &
                                nstep, ztodt, dummy_cflx)
         
-       ! --JH--: Allow evolution of CLDERA SAI tendencies if enabled
+       ! Allow evolution of CLDERA SAI tendencies if enabled
        call cldera_sai_tracers_timestep_tend(phys_state(c), ptend(c), ztodt, phys_state(c)%ncol) 
        call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
        call check_tracers_chng(phys_state(c),tracerint,"cldera_sai_tracers_timestep_tend",nstep,&
