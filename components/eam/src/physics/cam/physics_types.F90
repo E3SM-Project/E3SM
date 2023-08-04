@@ -1749,10 +1749,10 @@ subroutine physics_state_dealloc(state)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%t')
   
   deallocate(state%pv, stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%t')
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%pv')
 
   deallocate(state%pt, stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%t')
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%pt')
   
   deallocate(state%u, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%u')
