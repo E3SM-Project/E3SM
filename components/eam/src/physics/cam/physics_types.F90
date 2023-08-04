@@ -576,7 +576,7 @@ contains
     call shr_assert_in_domain(state%pv(:ncol,:),        is_nan=.false., &
          varname="state%pv",         msg=msg)
     call shr_assert_in_domain(state%pt(:ncol,:),        is_nan=.false., &
-         varname="state%pv",         msg=msg)
+         varname="state%pt",         msg=msg)
     call shr_assert_in_domain(state%u(:ncol,:),         is_nan=.false., &
          varname="state%u",         msg=msg)
     call shr_assert_in_domain(state%v(:ncol,:),         is_nan=.false., &
