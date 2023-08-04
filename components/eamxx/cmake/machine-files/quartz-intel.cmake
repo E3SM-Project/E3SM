@@ -3,3 +3,5 @@ set(CMAKE_EXE_LINKER_FLAGS "-L/usr/tce/packages/gcc/gcc-10.3.1-magic/lib/gcc/x86
 set(PYTHON_EXECUTABLE "/usr/tce/packages/python/python-3.9.12/bin/python3" CACHE STRING "" FORCE)
 set(PYTHON_LIBRARIES "/usr/lib64/libpython3.9.so.1.0" CACHE STRING "" FORCE)
 set(RUN_ML_CORRECTION_TEST TRUE CACHE BOOL "")
+set(HDF5_DISABLE_VERSION_CHECK 1 CACHE STRING "" FORCE)
+execute_process(COMMAND source /usr/WS1/climdat/python_venv/3.9.2/screamML/bin/activate)
