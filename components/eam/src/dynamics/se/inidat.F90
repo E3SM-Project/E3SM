@@ -440,7 +440,6 @@ contains
                 indx = indx + 1
              end do
           end do
- 
       end do
     end do
     ! Cleanup
