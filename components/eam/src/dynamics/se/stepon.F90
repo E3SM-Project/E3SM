@@ -232,7 +232,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use cam_history,     only: outfld, hist_fld_active
    use prim_driver_base,only: applyCAMforcing_tracers
    use prim_advance_mod,only: applyCAMforcing_dynamics
-   use element_ops,     only: get_temperature 
+   use element_ops,     only: get_temperature
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type(physics_tend),  intent(inout) :: phys_tend(begchunk:endchunk)
