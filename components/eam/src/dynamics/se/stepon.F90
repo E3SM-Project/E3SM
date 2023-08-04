@@ -545,12 +545,10 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 
    endif   
  
- 
    call t_barrierf('sync_dyn_run', mpicom)
    call t_startf ('dyn_run')
    call dyn_run(dyn_out,rc)	
    call t_stopf  ('dyn_run')
- 
    
    ! Update to get tendency 
 #if (defined E3SM_SCM_REPLAY) 
