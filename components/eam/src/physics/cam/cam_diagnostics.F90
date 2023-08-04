@@ -1008,7 +1008,6 @@ end subroutine diag_conv_tend_ini
     real(r8) esi(pcols,pver)   ! 
     real(r8) dlon(pcols)      ! width of grid cell (meters)
     integer  plon             ! number of longitudes
-    integer pv_idx
 
     integer i, k, m, lchnk, ncol, nstep
 !
