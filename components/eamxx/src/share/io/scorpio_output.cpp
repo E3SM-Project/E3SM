@@ -27,7 +27,7 @@ void combine (const Real& new_val, Real& curr_val, Real& avg_coeff, const Output
   if (!new_fill) {
     avg_coeff += 1;
   }
-  if (curr_fill & new_fill) {
+  if (curr_fill && new_fill) {
     // Then the value is already set to be filled and the new value doesn't change things.
     return;
   } else if (curr_fill) {
