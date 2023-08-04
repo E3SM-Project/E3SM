@@ -1593,7 +1593,7 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pv')
 
   allocate(state%pt(psetcols,pver), stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pv')
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pt')
   
   allocate(state%u(psetcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%u')
