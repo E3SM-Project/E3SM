@@ -184,7 +184,6 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    type (physics_buffer_desc), pointer :: pbuf2d(:,:)
    type (element_t), pointer :: elem(:)
-   integer :: pv_idx, ie
 
 !-----------------------------------------------------------------------
 
