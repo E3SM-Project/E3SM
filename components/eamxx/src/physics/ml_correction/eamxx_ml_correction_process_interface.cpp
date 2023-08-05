@@ -111,11 +111,7 @@ void MLCorrection::run_impl(const double dt) {
   py::gil_scoped_release no_gil;  
   ekat::enable_fpes(fpe_mask);
   Real qv_max_after = field_max<Real>(qv_field);
-  Real qv_min_after = field_min<Real>(qv_field);  
-  printf("[eamxx::MLCorrection] max qv before is %f, after ML correction is %f\n",
-        qv_max_before, qv_max_after);
-  printf("[eamxx::MLCorrection] min qv before is %f, after ML correction is %f\n",
-        qv_min_before, qv_min_after);        
+  Real qv_min_after = field_min<Real>(qv_field);        
 }
 
 // =========================================================================================
