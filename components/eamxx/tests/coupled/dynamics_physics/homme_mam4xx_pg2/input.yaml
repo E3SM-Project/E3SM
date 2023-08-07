@@ -18,15 +18,15 @@ atmosphere_processes:
   homme:
     Moisture: moist
   physics:
-    atm_procs_list: (mam4microphysics)
+    atm_procs_list: (mam4_micro,mam4_optics)
     schedule_type: Sequential
     Type: Group
-    mam4microphysics:
+    mam4_micro:
       compute_tendencies : [q_aitken_so4, n_aitken, q_h2so4]
 
 grids_manager:
   Type: Homme
-  physics_grid_type: PG2
+  physics_grid_type: GLL
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: IC_FILE
 
