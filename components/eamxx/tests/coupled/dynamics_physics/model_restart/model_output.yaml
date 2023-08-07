@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 filename_prefix: model_output_baseline
-Averaging Type: Instant
+Averaging Type: Average
 Fields:
   Physics GLL:
     Field Names:
@@ -70,6 +70,6 @@ Fields:
       - dp3d_dyn
 output_control:
   MPI Ranks in Filename: true
-  Frequency: 2
-  frequency_units: nsteps
+  Frequency: 1
+  frequency_units: nmins
 ...
