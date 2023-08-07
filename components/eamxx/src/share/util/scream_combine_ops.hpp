@@ -104,68 +104,66 @@ void combine (const ScalarIn& newVal, ScalarOut& result,
 template<CombineMode CM, typename ScalarIn, typename ScalarOut,
          typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
 KOKKOS_FORCEINLINE_FUNCTION
-void combine (const ScalarIn& newVal, ScalarOut& result, const float fill_val,
+void combine_and_fill (const ScalarIn& newVal, ScalarOut& result, const float fill_val,
               const CoeffType alpha = CoeffType(1),
               const CoeffType beta  = CoeffType(0))
 {
   switch (CM) {
     case CombineMode::Replace:
-      result = newVal;
+      combine<CM>(newVal,result,alpha,beta);
       break;
     case CombineMode::Rescale:
       if (result != fill_val) {
-        result *= beta;
+        combine<CM>(newVal,result,alpha,beta);
       }
       break;
     case CombineMode::ScaleReplace:
       if (newVal == fill_val) {
         result = fill_val;
       } else {
-        result = alpha*newVal;
+        combine<CM>(newVal,result,alpha,beta);
       }
       break;
     case CombineMode::Update:
       if (result == fill_val || newVal == fill_val) {
         result = fill_val;
       } else {
-        result *= beta;
-        result += newVal;
+        combine<CM>(newVal,result,alpha,beta);
       }
       break;
     case CombineMode::ScaleUpdate:
       if (result == fill_val || newVal == fill_val) {
         result = fill_val;
       } else {
-        result *= beta;
-        result += alpha*newVal;
+        combine<CM>(newVal,result,alpha,beta);
       }
       break;
     case CombineMode::ScaleAdd:
       if (result == fill_val || newVal == fill_val) {
         result = fill_val;
       } else {
-        result += alpha*newVal;
+        combine<CM>(newVal,result,alpha,beta);
       }
       break;
     case CombineMode::Add:
       if (result == fill_val || newVal == fill_val) {
         result = fill_val;
       } else {
-        result += newVal;
+        combine<CM>(newVal,result,alpha,beta);
       }
       break;
     case CombineMode::Multiply:
       if (result == fill_val || newVal == fill_val) {
         result = fill_val;
       } else {
-        result *= newVal;
+        combine<CM>(newVal,result,alpha,beta);
       }
       break;
     case CombineMode::Divide:
       if (result == fill_val || newVal == fill_val) {
         result = fill_val;
       } else {
-        result /= newVal;
+        combine<CM>(newVal,result,alpha,beta);
       }
       break;
   }
