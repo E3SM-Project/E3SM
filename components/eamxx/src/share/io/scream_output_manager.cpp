@@ -666,14 +666,14 @@ setup_file (      IOFileSpecs& filespecs,
 
   // Make all output streams register their dims/vars
   for (auto& it : m_output_streams) {
-    it->setup_output_file(filename,fp_precision);
+    it->setup_output_file(filename,fp_precision,mode);
   }
 
   // If grid data is needed,  also register geo data fields. Skip if file is resumed,
   // since grid data was written in the previous run
   if (filespecs.save_grid_data and not m_resume_output_file) {
     for (auto& it : m_geo_data_streams) {
-      it->setup_output_file(filename,fp_precision);
+      it->setup_output_file(filename,fp_precision,mode);
     }
   }
 
