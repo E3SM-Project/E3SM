@@ -7,6 +7,7 @@ module crm_physics
    use shr_const_mod,   only: SHR_CONST_RDAIR,SHR_CONST_RWV
    use spmd_utils,      only: masterproc
    use cam_abortutils,  only: endrun
+   use cam_control_mod, only: nsrest  ! restart flag
    use cam_logfile,     only: iulog
    use physics_types,   only: physics_state, physics_tend
    use ppgrid,          only: begchunk, endchunk, pcols, pver, pverp
@@ -1457,6 +1458,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_set_option('enable_physics_tend_stats', .false. )
 
       call pam_set_option('is_first_step', (nstep<=1) )
+      call pam_set_option('is_restart', (nsrest>0) )
       call pam_set_option('am_i_root', masterproc )
 
       call t_startf ('crm_call')

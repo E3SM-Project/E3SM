@@ -42,12 +42,17 @@ extern "C" void pam_driver() {
   auto gcm_dt        = coupler.get_option<real>("gcm_dt");
   auto crm_dt        = coupler.get_option<real>("crm_dt");
   auto is_first_step = coupler.get_option<bool>("is_first_step");
+  auto is_restart    = coupler.get_option<bool>("is_restart");
   bool use_crm_accel = coupler.get_option<bool>("use_crm_accel");
   bool enable_physics_tend_stats = coupler.get_option<bool>("enable_physics_tend_stats");
   //------------------------------------------------------------------------------------------------
   // set various coupler options
   coupler.set_option<real>("gcm_physics_dt",gcm_dt);
-  coupler.set_option<int>("crm_per_phys",2);               // # of PAM-C dynamics steps per physics
+  #ifdef MMF_PAM_DPP
+  coupler.set_option<int>("crm_per_phys",MMF_PAM_DPP);
+  #else
+  coupler.set_option<int>("crm_per_phys",4);               // # of PAM-C dynamics steps per physics
+  #endif
   coupler.set_option<int>("sponge_num_layers",crm_nz*0.3); // depth of sponge layer
   coupler.set_option<real>("sponge_time_scale",60);        // min damping timescale at top of sponge
   coupler.set_option<bool>("crm_acceleration_ceaseflag",false);
@@ -64,13 +69,14 @@ extern "C" void pam_driver() {
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
   //------------------------------------------------------------------------------------------------
   // Create objects for dycor, microphysics, and turbulence and initialize them
+  bool verbose = is_first_step || is_restart;
   Microphysics micro;
   SGS          sgs;
   Dycore       dycore;
   Radiation    rad;
   micro .init(coupler);
   sgs   .init(coupler);
-  dycore.init(coupler,is_first_step); // pass is_first_step to control verbosity in PAM-C
+  dycore.init(coupler,verbose); // pass is_first_step to control verbosity in PAM-C
   rad   .init(coupler);
   //------------------------------------------------------------------------------------------------
   // update coupler GCM state with input GCM state
@@ -116,7 +122,7 @@ extern "C" void pam_driver() {
 
   // Microphysics initialization - load lookup tables
   #if defined(P3_CXX)
-    if (is_first_step) {
+    if (is_first_step || is_restart) {
       auto am_i_root = coupler.get_option<bool>("am_i_root");
       scream::p3::p3_init(/*write_tables=*/false, am_i_root);
       pam::p3_init_lookup_tables(); // Load P3 lookup table data - avoid re-loading every CRM call
