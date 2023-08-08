@@ -97,6 +97,10 @@ public:
   // and pass to m_atm_process_group.
   void setup_column_conservation_checks ();
 
+  void set_provenance_data (std::string caseid = "",
+                            std::string hostname = "",
+                            std::string username = "");
+
   // Load initial conditions for atm inputs
   void initialize_fields ();
 

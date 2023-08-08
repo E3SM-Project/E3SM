@@ -90,6 +90,8 @@ CONTAINS
     ! TODO: read this from the namelist?
     character(len=256)                :: yaml_fname = "./data/scream_input.yaml"
     character(kind=c_char,len=256), target :: yaml_fname_c, atm_log_fname_c
+    character(len=256) :: caseid, username, hostname
+    character(kind=c_char,len=256), target :: caseid_c, username_c, hostname_c
     logical (kind=c_bool) :: restarted_run
 
     !-------------------------------------------------------------------------------
@@ -101,7 +103,8 @@ CONTAINS
          gsMap=gsmap_atm, &
          dom=dom_atm, &
          infodata=infodata)
-    call seq_infodata_getData(infodata, atm_phase=phase, start_type=run_type)
+    call seq_infodata_getData(infodata, atm_phase=phase, start_type=run_type, &
+                              username=username, case_name=caseid, hostname=hostname)
     call seq_infodata_PutData(infodata, atm_aero=.true.)
     call seq_infodata_PutData(infodata, atm_prognostic=.true.)
 
@@ -183,7 +186,10 @@ CONTAINS
                                         c_loc(export_constant_multiple), c_loc(do_export_during_init), &
                                         num_cpl_exports, num_scream_exports, export_field_size)
 
-    call scream_init_atm ()
+    call string_f2c(trim(caseid),caseid_c)
+    call string_f2c(trim(username),username_c)
+    call string_f2c(trim(hostname),hostname_c)
+    call scream_init_atm (caseid_c,hostname_c,username_c)
 
   end subroutine atm_init_mct
 
