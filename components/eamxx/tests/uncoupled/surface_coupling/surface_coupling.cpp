@@ -482,7 +482,7 @@ TEST_CASE("surface-coupling", "") {
   const auto exp_file_files = create_from_file_test_data(atm_comm, t0, ncol_in);
   const vos_type exp_file_fields = {"Faxa_lwdn"};
   // Test the use of an alternative name as stored in the data file(s).
-  const vos_type exp_file_fields_alt_name = {"lwdn"};
+  const vos_type exp_file_fields_alt_name = {"Faxa_lwdn:lwdn"};
   auto& exp_file_params = sc_exp_params.sublist("prescribed_from_file");
   exp_file_params.set<vos_type>("fields",exp_file_fields);
   exp_file_params.set<vos_type>("fields_alt_name",exp_file_fields_alt_name);

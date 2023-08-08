@@ -104,7 +104,7 @@ void combine (const ScalarIn& newVal, ScalarOut& result,
 template<CombineMode CM, typename ScalarIn, typename ScalarOut,
          typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
 KOKKOS_FORCEINLINE_FUNCTION
-void combine_and_fill (const ScalarIn& newVal, ScalarOut& result, const float fill_val,
+void combine_and_fill (const ScalarIn& newVal, ScalarOut& result, const ScalarOut fill_val,
               const CoeffType alpha = CoeffType(1),
               const CoeffType beta  = CoeffType(0))
 {
@@ -125,40 +125,10 @@ void combine_and_fill (const ScalarIn& newVal, ScalarOut& result, const float fi
       }
       break;
     case CombineMode::Update:
-      if (result == fill_val || newVal == fill_val) {
-        result = fill_val;
-      } else {
-        combine<CM>(newVal,result,alpha,beta);
-      }
-      break;
     case CombineMode::ScaleUpdate:
-      if (result == fill_val || newVal == fill_val) {
-        result = fill_val;
-      } else {
-        combine<CM>(newVal,result,alpha,beta);
-      }
-      break;
     case CombineMode::ScaleAdd:
-      if (result == fill_val || newVal == fill_val) {
-        result = fill_val;
-      } else {
-        combine<CM>(newVal,result,alpha,beta);
-      }
-      break;
     case CombineMode::Add:
-      if (result == fill_val || newVal == fill_val) {
-        result = fill_val;
-      } else {
-        combine<CM>(newVal,result,alpha,beta);
-      }
-      break;
     case CombineMode::Multiply:
-      if (result == fill_val || newVal == fill_val) {
-        result = fill_val;
-      } else {
-        combine<CM>(newVal,result,alpha,beta);
-      }
-      break;
     case CombineMode::Divide:
       if (result == fill_val || newVal == fill_val) {
         result = fill_val;

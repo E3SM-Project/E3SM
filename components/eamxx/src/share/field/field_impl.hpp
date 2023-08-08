@@ -365,9 +365,18 @@ void Field::deep_copy_impl (const ST value) {
 
 template<HostOrDevice HD, typename ST>
 void Field::
-update (const Field& x, const ST alpha, const ST beta, const float fill_val)
+update (const Field& x, const ST alpha, const ST beta)
 {
   const auto& dt = data_type();
+
+  // Determine if there is a FillValue that requires extra treatment.
+  ST fill_val;
+  const auto& xtra_data = get_header().get_extra_data();
+  if (xtra_data.count("mask_value")) {
+    fill_val = ekat::any_cast<ST>(xtra_data.at("mask_value"));
+  } else {
+    fill_val = constants::DEFAULT_FILL_VALUE;
+  }
 
   // If user passes, say, double alpha/beta for an int field, we should error out, warning about
   // a potential narrowing rounding. The other way around, otoh, is allowed (even though
@@ -392,9 +401,18 @@ update (const Field& x, const ST alpha, const ST beta, const float fill_val)
 
 template<HostOrDevice HD, typename ST>
 void Field::
-scale (const ST beta, const float fill_val)
+scale (const ST beta)
 {
   const auto& dt = data_type();
+
+  // Determine if there is a FillValue that requires extra treatment.
+  ST fill_val;
+  const auto& xtra_data = get_header().get_extra_data();
+  if (xtra_data.count("mask_value")) {
+    fill_val = ekat::any_cast<ST>(xtra_data.at("mask_value"));
+  } else {
+    fill_val = constants::DEFAULT_FILL_VALUE;
+  }
 
   // If user passes, say, double beta for an int field, we should error out, warning about
   // a potential narrowing rounding. The other way around, otoh, is allowed (even though
@@ -419,7 +437,7 @@ scale (const ST beta, const float fill_val)
 
 template<CombineMode CM, HostOrDevice HD,typename ST>
 void Field::
-update_impl (const Field& x, const ST alpha, const ST beta, const float fill_val)
+update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
 {
   // Check x/y are allocated
   EKAT_REQUIRE_MSG (is_allocated(),
