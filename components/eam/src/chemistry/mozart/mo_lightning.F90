@@ -324,11 +324,11 @@ contains
     glob_flashfreq=wrk2(1)/60._r8
     call shr_reprosum_calc( glob_prod_no_col, wrk2,kk,kk,1, commid=mpicom)
     glob_noprod = wrk2(1)
-    if( masterproc ) then
-       write(iulog,*) ' '
-       write(iulog,'(''Global flash freq (/s), lightning NOx (TgN/y) = '',2f10.4)') &
-            glob_flashfreq, glob_noprod
-    end if
+   !  if( masterproc ) then
+   !     write(iulog,*) ' '
+   !     write(iulog,'(''Global flash freq (/s), lightning NOx (TgN/y) = '',2f10.4)') &
+   !          glob_flashfreq, glob_noprod
+   !  end if
 
     if( glob_noprod > 0._r8 ) then
        !--------------------------------------------------------------------------------

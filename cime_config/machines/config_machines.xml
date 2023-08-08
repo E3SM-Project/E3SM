@@ -148,7 +148,7 @@
     <DESC>Perlmutter CPU-only nodes at NERSC.  Phase2 only: Each node has 2 AMD EPYC 7713 64-Core (Milan) 512GB</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:perlmutter</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnu,intel,nvidia,amdclang</COMPILERS>
+    <COMPILERS>intel,gnu,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -233,8 +233,8 @@
 
       <modules>
         <command name="load">craype-accel-host</command>
-        <command name="load">craype/2.7.19</command>
-        <command name="load">cray-mpich/8.1.24</command>
+        <command name="load">craype/2.7.20</command>
+        <command name="load">cray-mpich/8.1.25</command>
         <command name="load">cray-hdf5-parallel/1.12.2.3</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
         <command name="load">cray-parallel-netcdf/1.12.3.3</command>
@@ -367,8 +367,8 @@
 
       <modules>
         <command name="load">cray-libsci/23.02.1.1</command>
-        <command name="load">craype/2.7.19</command>
-        <command name="load">cray-mpich/8.1.24</command>
+        <command name="load">craype/2.7.20</command>
+        <command name="load">cray-mpich/8.1.25</command>
         <command name="load">cray-hdf5-parallel/1.12.2.3</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
         <command name="load">cray-parallel-netcdf/1.12.3.3</command>
