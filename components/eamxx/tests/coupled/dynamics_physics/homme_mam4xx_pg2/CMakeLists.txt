@@ -30,7 +30,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_mam4xx_pg2_output.yaml
 
 # Set homme's test options, so that we can configure the namelist correctly
 # Discretization/algorithm settings
-set (HOMME_TEST_NE 2)
+set (HOMME_TEST_NE 4)
 set (HOMME_TEST_LIM 9)
 set (HOMME_TEST_REMAP_FACTOR 3)
 set (HOMME_TEST_TRACERS_FACTOR 6)
