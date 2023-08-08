@@ -167,7 +167,7 @@ algorithms.
 These parameters and the mesh input file will be read as part of
 the input configuration file in a decomp configuration group:
 
-```yakl
+```yaml
     decomp:
        meshInputFilename: 'omegaMeshFile.nc'
        partitionMethod: 'MetisKWay'

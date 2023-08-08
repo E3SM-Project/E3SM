@@ -34,7 +34,7 @@ with an underscore ("_").
 The following is a list of Omega-specific variables available in
 this version:
 
-```vbnet
+```
 OMEGA_PROJECT_NAME: Name of the project ("OmegaOceanModel")
 OMEGA_EXE_NAME: Name of the executable ("omega.exe")
 OMEGA_LIB_NAME: Name of the library ("OmegaLib")
@@ -52,7 +52,7 @@ OMEGA_BUILD_TEST: Enable building Omega tests
 
 E3SM-specific variables
 
-```vbnet
+```
 E3SM_SOURCE_DIR: E3SM component directory (${E3SM_ROOT}/components)
 E3SM_CIME_ROOT: CIME root directory
 E3SM_CIMECONFIG_ROOT: E3SM CIME config directory
@@ -62,7 +62,7 @@ E3SM_DEFAULT_BUILD_TYPE: E3SM build type (Release or Debug)
 
 CMake variables
 
-```vbnet
+```
 CMAKE_CURRENT_SOURCE_DIR
 CMAKE_CXX_STANDARD
 CMAKE_CURRENT_LIST_DIR
