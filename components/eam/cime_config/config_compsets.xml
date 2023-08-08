@@ -233,6 +233,11 @@
     <lname>2000_EAM%RCE-MMF1_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>FRCE-MMF2</alias>
+    <lname>2000_EAM%RCE-MMF2_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
+  </compset>
+
   <!-- *********************************** -->
   <!-- idealized / adiabatic -->
   <!-- *********************************** -->
