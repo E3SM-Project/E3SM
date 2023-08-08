@@ -48,7 +48,7 @@ private:
 };
 
 std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, const util::TimeStamp& t0, const int ncols )
-{ 
+{
   // Create a grids manager on the fly
   ekat::ParameterList gm_params;
   gm_params.set("grids_names",vos_type{"Point Grid"});
@@ -226,7 +226,7 @@ void test_imports(const FieldManager& fm,
   fm.get_field("wind_speed_10m"  ).sync_to_host();
   fm.get_field("snow_depth_land" ).sync_to_host();
   fm.get_field("surf_lw_flux_up" ).sync_to_host();
-  fm.get_field("surf_mom_flux"   ).sync_to_host();
+  fm.get_field("wind_stress"   ).sync_to_host();
   fm.get_field("surf_sens_flux"  ).sync_to_host();
   fm.get_field("surf_evap"       ).sync_to_host();
   fm.get_field("ocnfrac"         ).sync_to_host();
@@ -241,7 +241,7 @@ void test_imports(const FieldManager& fm,
   const auto wind_speed_10m   = fm.get_field("wind_speed_10m"  ).get_view<const Real*,  Host>();
   const auto snow_depth_land  = fm.get_field("snow_depth_land" ).get_view<const Real*,  Host>();
   const auto surf_lw_flux_up  = fm.get_field("surf_lw_flux_up" ).get_view<const Real*,  Host>();
-  const auto surf_mom_flux    = fm.get_field("surf_mom_flux"   ).get_view<const Real**, Host>();
+  const auto wind_stress      = fm.get_field("wind_stress"     ).get_view<const Real**, Host>();
   const auto surf_sens_flux   = fm.get_field("surf_sens_flux"  ).get_view<const Real*,  Host>();
   const auto surf_evap        = fm.get_field("surf_evap"       ).get_view<const Real*,  Host>();
   const auto ocnfrac          = fm.get_field("ocnfrac"         ).get_view<const Real*,  Host>();
@@ -254,10 +254,10 @@ void test_imports(const FieldManager& fm,
     // Check cpl data to scream fields
 
     // The following are imported both during initialization and run phase
-    EKAT_REQUIRE(surf_mom_flux(i,0) == import_constant_multiple_view(10)*import_data_view(i, import_cpl_indices_view(10)));
-    EKAT_REQUIRE(surf_mom_flux(i,1) == import_constant_multiple_view(11)*import_data_view(i, import_cpl_indices_view(11)));
-    EKAT_REQUIRE(surf_sens_flux(i)  == import_constant_multiple_view(12)*import_data_view(i, import_cpl_indices_view(12)));
-    EKAT_REQUIRE(surf_evap(i)       == import_constant_multiple_view(13)*import_data_view(i, import_cpl_indices_view(13)));
+    EKAT_REQUIRE(wind_stress(i,0)  == import_constant_multiple_view(10)*import_data_view(i, import_cpl_indices_view(10)));
+    EKAT_REQUIRE(wind_stress(i,1)  == import_constant_multiple_view(11)*import_data_view(i, import_cpl_indices_view(11)));
+    EKAT_REQUIRE(surf_sens_flux(i) == import_constant_multiple_view(12)*import_data_view(i, import_cpl_indices_view(12)));
+    EKAT_REQUIRE(surf_evap(i)      == import_constant_multiple_view(13)*import_data_view(i, import_cpl_indices_view(13)));
 
     // The following are only imported during run phase. If this test is called
     // during initialization, all values should still be 0.
@@ -398,13 +398,13 @@ void test_exports(const FieldManager& fm,
   // Recall that two fields have been set to export to a constant value, so we load those constants from the parameter list here:
   using vor_type = std::vector<Real>;
   const auto prescribed_const_values = prescribed_constants.get<vor_type>("values");
-  const Real Faxa_swndf_const = prescribed_const_values[0]; 
-  const Real Faxa_swndv_const = prescribed_const_values[1]; 
+  const Real Faxa_swndf_const = prescribed_const_values[0];
+  const Real Faxa_swndv_const = prescribed_const_values[1];
 
 
   // Check cpl data to scream fields
   for (int i=0; i<ncols; ++i) {
-    const Real Faxa_lwdn_file = test_func(i,dt); 
+    const Real Faxa_lwdn_file = test_func(i,dt);
 
     // The following are exported both during initialization and run phase
     EKAT_REQUIRE(export_constant_multiple_view(0)*Sa_z_h(i)                  == export_data_view(i, export_cpl_indices_view(0)));
@@ -531,7 +531,7 @@ TEST_CASE("surface-coupling", "") {
                                                                        num_scream_imports);
   KokkosTypes<HostDevice>::view_1d<int>  import_vec_comps_view        ("import_vec_comps",
                                                                        num_scream_imports);
-  KokkosTypes<HostDevice>::view_1d<Real> import_constant_multiple_view("import_constant_multiple_view", 
+  KokkosTypes<HostDevice>::view_1d<Real> import_constant_multiple_view("import_constant_multiple_view",
                                                                        num_scream_imports);
   KokkosTypes<HostDevice>::view_1d<bool> do_import_during_init_view   ("do_import_during_init_view",
                                                                        num_scream_imports);
@@ -550,8 +550,8 @@ TEST_CASE("surface-coupling", "") {
   std::strcpy(import_names[7],  "wind_speed_10m");
   std::strcpy(import_names[8],  "snow_depth_land");
   std::strcpy(import_names[9],  "surf_lw_flux_up");
-  std::strcpy(import_names[10], "surf_mom_flux");
-  std::strcpy(import_names[11], "surf_mom_flux");
+  std::strcpy(import_names[10], "wind_stress");
+  std::strcpy(import_names[11], "wind_stress");
   std::strcpy(import_names[12], "surf_sens_flux");
   std::strcpy(import_names[13], "surf_evap");
   std::strcpy(import_names[14], "ocnfrac");
@@ -562,9 +562,9 @@ TEST_CASE("surface-coupling", "") {
                                                                        ncols, num_cpl_exports);
   KokkosTypes<HostDevice>::view_1d<int>  export_cpl_indices_view      ("export_vec_comps",
                                                                        num_scream_exports);
-  KokkosTypes<HostDevice>::view_1d<int>  export_vec_comps_view        ("export_vec_comps", 
+  KokkosTypes<HostDevice>::view_1d<int>  export_vec_comps_view        ("export_vec_comps",
                                                                        num_scream_exports);
-  KokkosTypes<HostDevice>::view_1d<Real> export_constant_multiple_view("export_constant_multiple_view", 
+  KokkosTypes<HostDevice>::view_1d<Real> export_constant_multiple_view("export_constant_multiple_view",
                                                                        num_scream_exports);
   KokkosTypes<HostDevice>::view_1d<bool> do_export_during_init_view   ("do_export_during_init_view",
                                                                        num_scream_exports);

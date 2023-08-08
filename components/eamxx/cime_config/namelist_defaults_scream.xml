@@ -362,7 +362,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <sfc_alb_dif_nir   >0.0</sfc_alb_dif_nir>
     <surf_sens_flux    >0.0</surf_sens_flux>
     <surf_lw_flux_up   >0.0</surf_lw_flux_up>
-    <surf_mom_flux     >0.0,0.0</surf_mom_flux>
+    <wind_stress       >0.0,0.0</wind_stress>
     <!-- default ne1024 initial condition files do not have these, so init to zero here -->
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
     <qc hgrid="ne256np4|ne1024np4">0.0</qc>

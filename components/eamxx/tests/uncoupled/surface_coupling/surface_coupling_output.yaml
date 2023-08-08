@@ -13,7 +13,7 @@ Field Names:
   - surf_lw_flux_up
   - surf_sens_flux
   - surf_evap
-  - surf_mom_flux
+  - wind_stress
   - ocnfrac
   - landfrac
   # EXPORTER

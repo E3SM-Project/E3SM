@@ -63,7 +63,7 @@ foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
     LABELS "${TEST_LABELS}")
 endforeach()
 
-# Check that the content of sliced vars U/V and corresponding surf_mom_flux
+# Check that the content of sliced vars U/V and corresponding wind_stress
 # components in all output NC files matches the content of corresponding components
 # of the vector quantities
 foreach (RANK RANGE ${TEST_RANK_START} ${TEST_RANK_END})
@@ -74,12 +74,12 @@ foreach (RANK RANGE ${TEST_RANK_START} ${TEST_RANK_END})
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties (check_U_V_slices_np${RANK} PROPERTIES
             FIXTURES_REQUIRED shoc_generate_output_nc_files)
-  add_test (NAME check_surf_mom_flux_slices_np${RANK}
+  add_test (NAME check_wind_stress_slices_np${RANK}
             COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
-            -s ${nc_file} -c "surf_mom_flux(:,:,1)=surf_mom_flux_U(:,:)"
-                             "surf_mom_flux(:,:,2)=surf_mom_flux_V(:,:)"
+            -s ${nc_file} -c "wind_stress(:,:,1)=wind_stress_U(:,:)"
+                             "wind_stress(:,:,2)=wind_stress_V(:,:)"
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-  set_tests_properties (check_surf_mom_flux_slices_np${RANK} PROPERTIES
+  set_tests_properties (check_wind_stress_slices_np${RANK} PROPERTIES
             FIXTURES_REQUIRED shoc_generate_output_nc_files)
 endforeach()
 

@@ -157,8 +157,8 @@ public:
 
       wpthlp_sfc(i) = (surf_sens_flux(i)/(cpair*rrho_i(i,nlevi_v)[nlevi_p]))*inv_exner_int_surf;
       wprtp_sfc(i)  = surf_evap(i)/rrho_i(i,nlevi_v)[nlevi_p];
-      upwp_sfc(i)   = surf_mom_flux(i,0)/rrho_i(i,nlevi_v)[nlevi_p];
-      vpwp_sfc(i)   = surf_mom_flux(i,1)/rrho_i(i,nlevi_v)[nlevi_p];
+      upwp_sfc(i)   = wind_stress(i,0)/rrho_i(i,nlevi_v)[nlevi_p];
+      vpwp_sfc(i)   = wind_stress(i,1)/rrho_i(i,nlevi_v)[nlevi_p];
 
       const int num_qtracer_packs = ekat::npack<Spack>(num_qtracers);
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_qtracer_packs), [&] (const Int& q) {
@@ -179,7 +179,7 @@ public:
     view_1d_const        phis;
     view_1d_const        surf_sens_flux;
     view_1d_const        surf_evap;
-    sview_2d_const       surf_mom_flux;
+    sview_2d_const       wind_stress;
     view_3d              qtracers;
     view_2d              qv;
     view_2d_const        qc;
@@ -214,7 +214,7 @@ public:
                        const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_2d_const& p_int_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_evap_,
-                       const sview_2d_const& surf_mom_flux_,
+                       const sview_2d_const& wind_stress_,
                        const view_3d& qtracers_,
                        const view_2d& qv_, const view_2d_const& qc_, const view_2d& qc_copy_,
                        const view_2d& tke_, const view_2d& tke_copy_,
@@ -240,7 +240,7 @@ public:
       phis = phis_;
       surf_sens_flux = surf_sens_flux_;
       surf_evap = surf_evap_;
-      surf_mom_flux = surf_mom_flux_;
+      wind_stress = wind_stress_;
       qv = qv_;
       // OUT
       qtracers = qtracers_;

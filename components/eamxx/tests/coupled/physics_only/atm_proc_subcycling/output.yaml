@@ -25,12 +25,12 @@ Field Names:
   - inv_qc_relvar
   - pbl_height
   - surf_evap
-  - surf_mom_flux
+  - wind_stress
   - surf_sens_flux
   - nccn
   - ni_activated
   - nc_nuceat_tend
- 
+
 output_control:
   Frequency: ${NUM_STEPS}
   frequency_units: nsteps
