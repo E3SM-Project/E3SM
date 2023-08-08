@@ -23,13 +23,13 @@ namespace scream {
         template <typename S>
         using view_3d = typename ekat::KokkosTypes<HostDevice>::template view_3d<S>;
 
-        void initialize(int ncol, int nsubcol, int nlay) {
+        inline void initialize(int ncol, int nsubcol, int nlay) {
             cosp_c2f_init(ncol, nsubcol, nlay);
         };
-        void finalize() {
+        inline void finalize() {
             cosp_c2f_final();
         };
-        void main(
+        inline void main(
                 const Int ncol, const Int nsubcol, const Int nlay, const Int ntau, const Int nctp, const Real emsfc_lw,
                 view_1d<const Real>& sunlit , view_1d<const Real>& skt,
                 view_2d<const Real>& T_mid  , view_2d<const Real>& p_mid  , view_2d<const Real>& p_int,
