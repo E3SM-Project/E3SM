@@ -59,14 +59,9 @@ TEST_CASE("cosp-stand-alone", "") {
     }
   }
 
-  // TODO: get the field repo from the driver, and go get (one of)
-  //       the output(s) of SHOC, to check its numerical value (if possible)
-
   // Finalize 
   ad.finalize();
 
-  // If we got here, we were able to run shoc
-  REQUIRE(true);
 }
 
 } // empty namespace
