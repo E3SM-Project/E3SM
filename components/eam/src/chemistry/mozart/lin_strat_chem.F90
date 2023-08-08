@@ -158,14 +158,6 @@ end subroutine linoz_readnl
     h2olnz_ndx  =   get_spc_ndx('H2OLNZ')
 
     uci1_ndx    = get_rxt_ndx('uci1')
-!!Jinbo Xie
-    !if (uci1_ndx <=0 ) then
-    !   !write(iulog,*) 'skip Linoz, need to have tracer O3LNZ at least '
-    !   write(iulog,*) 'skip Linoz, temporally change '
-    !   do_lin_strat_chem = .false.
-    !   return
-    !end if
-!!Jinbo Xie
 
     !linoz_v3= (o3lnz_ndx > 0 .and. n2olnz_ndx >0  .and. noylnz_ndx >0  .and. ch4lnz_ndx > 0)
     !linoz_v2= (o3lnz_ndx > 0 .and. n2olnz_ndx <0  .and. noylnz_ndx <0  .and. ch4lnz_ndx < 0)
@@ -291,7 +283,7 @@ end subroutine linoz_readnl
     real(r8), intent(in)                           :: delta_t             ! timestep size (secs)
     real(r8), intent(in)                           :: rlats(ncol)         ! column latitudes (radians)
     integer,  intent(in)   , dimension(pcols)      :: ltrop               ! chunk index    
-    real(r8), intent(in)   , dimension(pcols ,pver) :: pdeldry             !  dry pressure delta about midpoints (Pa) 
+    real(r8), intent(in)   , dimension(pcols,pver) :: pdeldry             !  dry pressure delta about midpoints (Pa) 
     logical, optional, intent(in)                  :: tropFlag(pcols,pver)! 3D tropospheric level flag
     !
     integer  :: i,k,n,ll,lt0,lt, n_dl !,index_lat,index_month
