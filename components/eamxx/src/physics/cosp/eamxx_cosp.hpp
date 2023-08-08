@@ -3,8 +3,6 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
-#include "share/atm_process/ATMBufferManager.hpp"
 
 #include <string>
 
@@ -33,10 +31,6 @@ public:
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
-
-  // Scratch space for local variables
-  struct Buffer {
-  };
 
   inline bool cosp_do(const int icosp, const int nstep) {
       // If icosp == 0, then never do cosp;
@@ -70,6 +64,7 @@ protected:
   Int m_num_cth = 16;
 
   std::shared_ptr<const AbstractGrid> m_grid;
+
 }; // class Cosp
 
 } // namespace scream
