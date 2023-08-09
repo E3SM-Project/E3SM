@@ -206,9 +206,8 @@ module li_subglacial_hydro
          ! set pressure correctly under floating ice and open ocean
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-         where ( (li_mask_is_floating_ice(cellMask)) .or. &
-                 ( (.not. li_mask_is_ice(cellMask)) .and. (bedTopography < config_sea_level) ) )
-            waterPressure = rhoo * gravity * (config_sea_level - bedTopography)
+         where (.not. (li_mask_is_grounded_ice(cellMask)))
+            waterPressure = 0.0_RKIND
          end where
 
          ! Initialize diagnostic pressure variables
@@ -1617,14 +1616,11 @@ module li_subglacial_hydro
       select case (trim(config_SGH_pressure_calc))
       case ('cavity')
 
-         where (li_mask_is_floating_ice(cellMask))
-            waterPressure = rhoi * gravity * iceThicknessHydro
-         elsewhere (.not. li_mask_is_ice(cellMask))
-            waterPressure = 0.0_RKIND
-         elsewhere
-            waterPressure = (zeroOrderSum - divergence - divergenceChannel - channelAreaChangeCell) * &
-               rho_water * gravity * deltatSGH / porosity + waterPressureOld
-         end where
+      where (li_mask_is_grounded_ice(cellMask))        
+         waterPressure = (zeroOrderSum - divergence - divergenceChannel - channelAreaChangeCell) * &
+      elsewhere
+         waterPressure = 0.0_RKIND ! zero waterPressure where no grounded ice 
+      end where
 
       case ('overburden')
          where (li_mask_is_floating_ice(cellMask))
@@ -1738,15 +1734,14 @@ module li_subglacial_hydro
 
       effectivePressure = rhoi * gravity * iceThicknessHydro - waterPressure
          ! < this should evalute to 0 for floating ice if Pw set correctly there.
-      where (.not. li_mask_is_grounded_ice(cellmask))
+      where (.not. (li_mask_is_grounded_ice(cellMask)))
          effectivePressure = 0.0_RKIND  ! zero effective pressure where no ice to avoid confusion
       end where
       
       hydropotentialBase = rho_water * gravity * bedTopography + waterPressure
-      ! This is still correct under ice shelves/open ocean because waterPressure has been set appropriately there already.
-      ! Note this leads to a nonuniform hydropotential at sea level that is a function of the ocean depth.
-      ! That is what we want because we use this as a boundary condition on the subglacial system,
-      ! and we want the subglacial system to feel the pressure of the ocean column at its edge.
+      where (.not. (li_mask_is_grounded_ice(cellMask))) 
+         hydropotentialBase = 0.0_RKIND !zero hydropotential where no grounded ice
+      end where      
 
       ! hydropotential with water thickness
       hydropotential = hydropotentialBase + rho_water * gravity * waterThickness
