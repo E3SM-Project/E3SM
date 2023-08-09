@@ -78,8 +78,9 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 // =========================================================================================
 void Cosp::initialize_impl (const RunType /* run_type */)
 {
-  // Determine how often to call COSP, specified as number of atm steps (>0) or number of hours (<0)
+  // Determine how often to call COSP; units can be steps or hours
   m_cosp_frequency = m_params.get<Int>("cosp_frequency", 1);
+  m_cosp_frequency_units = m_params.get<std::string>("cosp_frequency_units", "steps");
 
   // How many subcolumns to use for COSP
   m_num_subcols = m_params.get<Int>("cosp_subcolumns", 10);
@@ -91,14 +92,22 @@ void Cosp::initialize_impl (const RunType /* run_type */)
 // =========================================================================================
 void Cosp::run_impl (const double dt)
 {
-  // Determine if we should update COSP this timestep; use rad function to compare COSP frequency with this timestep
-  auto ts = timestamp();
-  auto cosp_freq_in_steps = m_cosp_frequency;
-  if (m_cosp_frequency < 0) {
-      // interpret cosp_freq as nhours
-      cosp_freq_in_steps = -3600.0 * m_cosp_frequency / dt;
+  // Determine if we should update COSP this timestep
+  // First get frequency in steps
+  int cosp_freq_in_steps = 1;
+  if (m_cosp_frequency_units == "steps") {
+      cosp_freq_in_steps = m_cosp_frequency;
+  } else if (m_cosp_frequency_units == "hours") {
+      EKAT_REQUIRE_MSG((3600 % int(dt)) == 0, "cosp_frequency_units is hours but dt does not evenly divide 1 hour");
+      cosp_freq_in_steps = 3600.0 * m_cosp_frequency / dt;
+  } else {
+      EKAT_ERROR_MSG("cosp_frequency_units " + m_cosp_frequency_units + " not supported");
   }
+
   // Make sure cosp frequency is multiple of rad frequency?
+
+  // Compare frequency in steps with current timestep
+  auto ts = timestamp();
   auto update_cosp = cosp_do(cosp_freq_in_steps, ts.get_num_steps());
 
   // Get fields from field manager; note that we get host views because this

@@ -290,7 +290,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <cosp inherit="atm_proc_base">
       <cosp_subcolumns>10</cosp_subcolumns>
       <!-- Frequency at which to call COSP; positive values interpreted as number of steps, negative as number of hours -->
-      <cosp_frequency>-1</cosp_frequency>
+      <cosp_frequency>1</cosp_frequency>
+      <cosp_frequency_units>hours</cosp_frequency_units>
     </cosp>
 
     <physics inherit="atm_proc_group">

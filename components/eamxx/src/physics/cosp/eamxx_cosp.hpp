@@ -54,6 +54,7 @@ protected:
 
   // cosp frequency; positive is interpreted as number of steps, negative as number of hours
   int m_cosp_frequency;
+  ekat::CaseInsensitiveString m_cosp_frequency_units;
 
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 
