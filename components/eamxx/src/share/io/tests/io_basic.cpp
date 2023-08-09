@@ -242,6 +242,13 @@ void read (const std::string& avg_type, const std::string& freq_units,
       }
     }
   }
+
+  // Check that the fill value gets appropriately set for each variable
+  Real fill_out;
+  for (const auto& fn: fnames) {
+    scorpio::get_variable_metadata(filename,fn,"_FillValue",fill_out);
+    REQUIRE(fill_out==DEFAULT_FILL_VALUE);
+  }
 }
 
 TEST_CASE ("io_basic") {
