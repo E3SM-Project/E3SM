@@ -81,24 +81,6 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   create_helper_field("Faxa_swnet", scalar2d_layout, grid_name);
   create_helper_field("Faxa_lwdn",  scalar2d_layout, grid_name);
 
-  // DELETE!!!!
-  add_field<Computed>("a2x_Sa_z",       scalar2d_layout, kg, grid_name);
-  add_field<Computed>("a2x_Sa_u",       scalar2d_layout, kg, grid_name); 
-  add_field<Computed>("a2x_Sa_v",       scalar2d_layout, kg, grid_name); 
-  add_field<Computed>("a2x_Sa_tbot",    scalar2d_layout, kg, grid_name); 
-  add_field<Computed>("a2x_Sa_ptem",    scalar2d_layout, kg, grid_name);
-  add_field<Computed>("a2x_Sa_pbot",    scalar2d_layout, kg, grid_name); 
-  add_field<Computed>("a2x_Sa_shum",    scalar2d_layout, kg, grid_name); 
-  add_field<Computed>("a2x_Sa_dens",    scalar2d_layout, kg, grid_name);
-  add_field<Computed>("a2x_Sa_pslv",    scalar2d_layout, kg, grid_name);
-  add_field<Computed>("a2x_Faxa_rainl", scalar2d_layout, kg, grid_name);
-  add_field<Computed>("a2x_Faxa_snowl", scalar2d_layout, kg, grid_name);
-  add_field<Computed>("a2x_Faxa_swndr", scalar2d_layout, kg, grid_name);
-  add_field<Computed>("a2x_Faxa_swvdr", scalar2d_layout, kg, grid_name);
-  add_field<Computed>("a2x_Faxa_swndf", scalar2d_layout, kg, grid_name);
-  add_field<Computed>("a2x_Faxa_swvdf", scalar2d_layout, kg, grid_name);
-  add_field<Computed>("a2x_Faxa_swnet", scalar2d_layout, kg, grid_name);
-  add_field<Computed>("a2x_Faxa_lwdn",  scalar2d_layout, kg, grid_name);
 }
 // =========================================================================================
 void SurfaceCouplingExporter::create_helper_field (const std::string& name,
@@ -555,42 +537,6 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
   if (m_export_source_h(idx_Faxa_swnet)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swnet, sfc_flux_sw_net); }
   if (m_export_source_h(idx_Faxa_lwdn )==FROM_MODEL) { Kokkos::deep_copy(Faxa_lwdn,  sfc_flux_lw_dn); }
 
-  // DELETE
-  const auto out_Sa_z       = get_field_out("a2x_Sa_z").get_view<Real*>();
-  const auto out_Sa_u       = get_field_out("a2x_Sa_u").get_view<Real*>();
-  const auto out_Sa_v       = get_field_out("a2x_Sa_v").get_view<Real*>();
-  const auto out_Sa_tbot    = get_field_out("a2x_Sa_tbot").get_view<Real*>();
-  const auto out_Sa_ptem    = get_field_out("a2x_Sa_ptem").get_view<Real*>();
-  const auto out_Sa_pbot    = get_field_out("a2x_Sa_pbot").get_view<Real*>();
-  const auto out_Sa_shum    = get_field_out("a2x_Sa_shum").get_view<Real*>();
-  const auto out_Sa_dens    = get_field_out("a2x_Sa_dens").get_view<Real*>();
-  const auto out_Sa_pslv    = get_field_out("a2x_Sa_pslv").get_view<Real*>();
-  const auto out_Faxa_rainl = get_field_out("a2x_Faxa_rainl").get_view<Real*>();
-  const auto out_Faxa_snowl = get_field_out("a2x_Faxa_snowl").get_view<Real*>();
-  const auto out_Faxa_swndr = get_field_out("a2x_Faxa_swndr").get_view<Real*>();
-  const auto out_Faxa_swvdr = get_field_out("a2x_Faxa_swvdr").get_view<Real*>();
-  const auto out_Faxa_swndf = get_field_out("a2x_Faxa_swndf").get_view<Real*>();
-  const auto out_Faxa_swvdf = get_field_out("a2x_Faxa_swvdf").get_view<Real*>();
-  const auto out_Faxa_swnet = get_field_out("a2x_Faxa_swnet").get_view<Real*>();
-  const auto out_Faxa_lwdn  = get_field_out("a2x_Faxa_lwdn" ).get_view<Real*>();
-
-  Kokkos::deep_copy(out_Sa_z      , Sa_z);
-  Kokkos::deep_copy(out_Sa_u      , Sa_u);
-  Kokkos::deep_copy(out_Sa_v      , Sa_v);
-  Kokkos::deep_copy(out_Sa_tbot   , Sa_tbot);
-  Kokkos::deep_copy(out_Sa_ptem   , Sa_ptem);
-  Kokkos::deep_copy(out_Sa_pbot   , Sa_pbot);
-  Kokkos::deep_copy(out_Sa_shum   , Sa_shum);
-  Kokkos::deep_copy(out_Sa_dens   , Sa_dens);
-  Kokkos::deep_copy(out_Sa_pslv   , Sa_pslv);
-  Kokkos::deep_copy(out_Faxa_rainl, Faxa_rainl);
-  Kokkos::deep_copy(out_Faxa_snowl, Faxa_snowl);
-  Kokkos::deep_copy(out_Faxa_swndr, Faxa_swndr);
-  Kokkos::deep_copy(out_Faxa_swvdr, Faxa_swvdr);
-  Kokkos::deep_copy(out_Faxa_swndf, Faxa_swndf);
-  Kokkos::deep_copy(out_Faxa_swvdf, Faxa_swvdf);
-  Kokkos::deep_copy(out_Faxa_swnet, Faxa_swnet);
-  Kokkos::deep_copy(out_Faxa_lwdn , Faxa_lwdn);
 }
 // =========================================================================================
 void SurfaceCouplingExporter::do_export_to_cpl(const bool called_during_initialization)
