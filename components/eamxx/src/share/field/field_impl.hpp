@@ -3,6 +3,7 @@
 
 #include "share/field/field.hpp"
 #include "share/util/scream_array_utils.hpp"
+#include "share/util/scream_universal_constants.hpp"
 
 namespace scream
 {
@@ -370,12 +371,10 @@ update (const Field& x, const ST alpha, const ST beta)
   const auto& dt = data_type();
 
   // Determine if there is a FillValue that requires extra treatment.
-  ST fill_val;
+  ST fill_val = constants::DefaultFillValue<ST>().value;
   const auto& xtra_data = get_header().get_extra_data();
   if (xtra_data.count("mask_value")) {
     fill_val = ekat::any_cast<ST>(xtra_data.at("mask_value"));
-  } else {
-    fill_val = constants::DEFAULT_FILL_VALUE;
   }
 
   // If user passes, say, double alpha/beta for an int field, we should error out, warning about
@@ -406,12 +405,10 @@ scale (const ST beta)
   const auto& dt = data_type();
 
   // Determine if there is a FillValue that requires extra treatment.
-  ST fill_val;
+  ST fill_val = constants::DefaultFillValue<ST>().value;
   const auto& xtra_data = get_header().get_extra_data();
   if (xtra_data.count("mask_value")) {
     fill_val = ekat::any_cast<ST>(xtra_data.at("mask_value"));
-  } else {
-    fill_val = constants::DEFAULT_FILL_VALUE;
   }
 
   // If user passes, say, double beta for an int field, we should error out, warning about
