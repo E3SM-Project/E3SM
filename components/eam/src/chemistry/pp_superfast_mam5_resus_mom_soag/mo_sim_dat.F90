@@ -101,11 +101,13 @@
                             64,  69,  74,  79,  88,  97, 107, 118, 128, 137, &
                            155, 171, 184, 196, 212, 235, 251 /)
 
-      extfrc_lst(: 10) = (/ 'NO2             ','SO2             ','so4_a1          ','so4_a2          ','pom_a4          ', &
-                            'bc_a4           ','num_a1          ','num_a2          ','num_a4          ','SOAG0           ' /)
+      extfrc_lst(: 11) = (/ 'NO              ','NO2             ','SO2             ','so4_a1          ','so4_a2          ', &
+                            'pom_a4          ','bc_a4           ','num_a1          ','num_a2          ','num_a4          ', &
+                            'SOAG0           ' /)
 
-      frc_from_dataset(: 10) = (/ .true., .true., .true., .true., .true., &
-                                  .true., .true., .true., .true., .true. /)
+      frc_from_dataset(: 11) = (/ .false., .true., .true., .true., .true., &
+                                  .true., .true., .true., .true., .true., &
+                                  .true. /)
 
       inv_lst(:  9) = (/ 'M               ', 'N2              ', 'O2              ', 'H2O             ', 'H2              ', &
                          'CH4             ', 'prsd_O3         ', 'prsd_NO3        ', 'prsd_OH         ' /)
