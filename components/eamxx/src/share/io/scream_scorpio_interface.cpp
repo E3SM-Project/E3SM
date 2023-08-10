@@ -34,7 +34,11 @@ extern "C" {
   void register_variable_c2f(const char*&& filename, const char*&& shortname, const char*&& longname,
                              const char*&& units, const int numdims, const char** var_dimensions,
                              const int dtype, const int nc_dtype, const char*&& pio_decomp_tag);
-  void set_variable_metadata_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name, const char*&& meta_val);
+  void set_variable_metadata_char_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name, const char*&& meta_val);
+  void set_variable_metadata_float_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name, const float meta_val);
+  void set_variable_metadata_double_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name, const double meta_val);
+  float get_variable_metadata_float_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name);
+  double get_variable_metadata_double_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name);
   void eam_pio_redef_c2f(const char*&& filename);
   void eam_pio_enddef_c2f(const char*&& filename);
   bool is_enddef_c2f(const char*&& filename);
@@ -381,8 +385,24 @@ void register_variable(const std::string &filename, const std::string& shortname
                         nctype(dtype), nctype(nc_dtype), pio_decomp_tag.c_str());
 }
 /* ----------------------------------------------------------------- */
+void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const float meta_val) {
+  set_variable_metadata_float_c2f(filename.c_str(),varname.c_str(),meta_name.c_str(),meta_val);
+}
+/* ----------------------------------------------------------------- */
+void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const double meta_val) {
+  set_variable_metadata_double_c2f(filename.c_str(),varname.c_str(),meta_name.c_str(),meta_val);
+}
+/* ----------------------------------------------------------------- */
 void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const std::string& meta_val) {
-  set_variable_metadata_c2f(filename.c_str(),varname.c_str(),meta_name.c_str(),meta_val.c_str());
+  set_variable_metadata_char_c2f(filename.c_str(),varname.c_str(),meta_name.c_str(),meta_val.c_str());
+}
+/* ----------------------------------------------------------------- */
+void get_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, float& meta_val) {
+  meta_val = get_variable_metadata_float_c2f(filename.c_str(),varname.c_str(),meta_name.c_str());
+}
+/* ----------------------------------------------------------------- */
+void get_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, double& meta_val) {
+  meta_val = get_variable_metadata_double_c2f(filename.c_str(),varname.c_str(),meta_name.c_str());
 }
 /* ----------------------------------------------------------------- */
 ekat::any get_any_attribute (const std::string& filename, const std::string& att_name) {
