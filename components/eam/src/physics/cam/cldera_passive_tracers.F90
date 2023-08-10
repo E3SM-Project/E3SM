@@ -235,8 +235,8 @@ contains
 
     integer :: i, k
     integer :: lchnk             ! chunk identifier
-    integer :: nstep             ! current timestep number
     integer :: ncol              ! no. of column in chunk
+    integer :: nstep             ! current timestep number
     integer :: trop_level(pcols) ! tropopause level for all columns 
 
     logical  :: lq(pcnst)
