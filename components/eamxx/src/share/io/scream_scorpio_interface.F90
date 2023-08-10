@@ -890,11 +890,11 @@ contains
             if (associated(var%iodesc_list)) then
               ! Remove this variable as a customer of the associated iodesc
               var%iodesc_list%num_customers = var%iodesc_list%num_customers - 1
-              ! Dellocate select memory from this variable.  Note we can't just
-              ! deallocate the whole var structure because this would also
-              ! deallocate the iodesc_list.
-              call deallocate_hist_var_t(var)
             end if ! associated(var%iodesc_list)
+            ! Dellocate select memory from this variable.  Note we can't just
+            ! deallocate the whole var structure because this would also
+            ! deallocate the iodesc_list.
+            call deallocate_hist_var_t(var)
           end if ! associated(var)
           curr_var_list => curr_var_list%next  ! Move on to the next variable
         end do ! associated(curr_var_list)
