@@ -9,6 +9,7 @@
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 
+#include "share/util/scream_universal_constants.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/scream_types.hpp"
@@ -247,7 +248,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   Real fill_out;
   for (const auto& fn: fnames) {
     scorpio::get_variable_metadata(filename,fn,"_FillValue",fill_out);
-    REQUIRE(fill_out==DEFAULT_FILL_VALUE);
+    REQUIRE(fill_out==constants::DefaultFillValue<float>().value);
   }
 }
 

@@ -256,9 +256,9 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
       }
       // Construct a time interpolation object
       m_time_interp = util::TimeInterpolation(m_grid,export_from_file_names);
-      for (int idx=0; idx<export_from_file_fields.size(); ++idx) {
-	auto fname = export_from_file_fields[idx];
-	auto rname = export_from_file_reg_names[idx];
+      for (int ii=0; ii<export_from_file_fields.size(); ++ii) {
+	auto fname = export_from_file_fields[ii];
+	auto rname = export_from_file_reg_names[ii];
         // Find the index for this field in the list of export fields.
 	auto v_loc = std::find(m_export_field_names_vector.begin(),m_export_field_names_vector.end(),fname);
 	EKAT_REQUIRE_MSG(v_loc != m_export_field_names_vector.end(), "ERROR!! surface_coupling_exporter::init - prescribed_from_file has field with name " << fname << " which can't be found in set of exported fields\n.");
