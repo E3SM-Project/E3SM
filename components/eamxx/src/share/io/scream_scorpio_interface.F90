@@ -887,8 +887,10 @@ contains
         do while (associated(curr_var_list))
           var => curr_var_list%var  ! The actual variable pointer
           if (associated(var)) then
-            ! Remove this variable as a customer of the associated iodesc
-            var%iodesc_list%num_customers = var%iodesc_list%num_customers - 1
+            if (associated(var%iodesc_list)) then
+              ! Remove this variable as a customer of the associated iodesc
+              var%iodesc_list%num_customers = var%iodesc_list%num_customers - 1
+            end if ! associated(var%iodesc_list)
             ! Dellocate select memory from this variable.  Note we can't just
             ! deallocate the whole var structure because this would also
             ! deallocate the iodesc_list.
