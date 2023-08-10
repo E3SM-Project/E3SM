@@ -77,6 +77,11 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'gis_1to10km_r01'
         decomp_date += '051920'
         decomp_prefix += 'mpasli.graph.info.'
+    elif glc_grid == 'mpas.gis1to10kmR2':
+        grid_date += '20230202'
+        grid_prefix += 'gis_1to10km_r02'
+        decomp_date += '020223'
+        decomp_prefix += 'mpasli.graph.info.'
     else:
         expect(False, "ERROR: mali buildnml encountered unknown GLC_GRID: " + glc_grid)
 

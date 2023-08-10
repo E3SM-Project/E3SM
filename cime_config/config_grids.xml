@@ -1708,6 +1708,16 @@
       <mask>EC30to60E2r2</mask>
     </model_grid>
 
+    <model_grid alias="ne30pg2_r05_EC30to60E2r2_gis1to10r02" compset="_MALI">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">EC30to60E2r2</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">mpas.gis1to10kmR2</grid>
+      <grid name="wav">null</grid>
+      <mask>EC30to60E2r2</mask>
+    </model_grid>
+
     <model_grid alias="ne120pg2_r0125_EC30to60E2r2_gis1to10" compset="_MALI">
       <grid name="atm">ne120np4.pg2</grid>
       <grid name="lnd">r0125</grid>
@@ -2901,6 +2911,12 @@
 
     <domain name="mpas.gis1to10km">
       <nx>817165</nx>
+      <ny>1</ny>
+      <desc>mpas.gis1to10km is a variable-resolution, from 1- to 10-km, MALI grid of the Greenland Ice Sheet.</desc>
+    </domain>
+
+    <domain name="mpas.gis1to10kmR2">
+      <nx>427386</nx>
       <ny>1</ny>
       <desc>mpas.gis1to10km is a variable-resolution, from 1- to 10-km, MALI grid of the Greenland Ice Sheet.</desc>
     </domain>
@@ -4913,6 +4929,35 @@
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_EC30to60E2r2_aave.210304.nc</map>
       <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_EC30to60E2r2_aave.210304.nc</map>
       <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10km_to_EC30to60E2r2_aave.210304.nc</map>
+    </gridmap>
+
+    <!-- ====================    -->
+    <!-- GLC: mpas.gis1to10kmR2  -->
+    <!-- ====================    -->
+      
+    <gridmap glc_grid="mpas.gis1to10kmR2" lnd_grid="r05">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/r05/map_r05_to_gis1to10r02_mono.230725.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/r05/map_r05_to_gis1to10r02_bilin.230725.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10r02_to_r05_mono.230725.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10r02_to_r05_mono.230725.nc</map>
+    </gridmap>
+      
+    <gridmap glc_grid="mpas.gis1to10kmR2" lnd_grid="ne30np4.pg2">
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_gis1to10r02_mono.230725.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_to_gis1to10r02_bilin.230725.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10r02_to_ne30pg2_mono.230725.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10r02_to_ne30pg2_mono.230725.nc</map>
+    </gridmap>
+    
+    <gridmap glc_grid="mpas.gis1to10kmR2" ocn_grid="EC30to60E2r2">
+      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis1to10r02_aave.230725.nc</map>
+      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_gis1to10r02_bilin.230725.nc</map>
+      <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10r02_to_EC30to60E2r2_aave.230725.nc</map>
+      <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10r02_to_EC30to60E2r2_aave.230725.nc</map>
+      <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10r02_to_EC30to60E2r2_aave.230725.nc</map>
+      <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10r02_to_EC30to60E2r2_aave.230725.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10r02_to_EC30to60E2r2_aave.230725.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.gis1to10km/map_gis1to10r02_to_EC30to60E2r2_aave.230725.nc</map>
     </gridmap>
 
     <!-- ====================  -->
