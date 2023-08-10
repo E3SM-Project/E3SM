@@ -1658,7 +1658,7 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
-    <model_grid alias="ne30pg2_r05_EC30to60E2r_gis20" compset="_MALI">
+    <model_grid alias="ne30pg2_r05_EC30to60E2r2_gis20" compset="_MALI">
       <grid name="atm">ne30np4.pg2</grid>
       <grid name="lnd">r05</grid>
       <grid name="ocnice">EC30to60E2r2</grid>
@@ -1686,6 +1686,16 @@
       <grid name="glc">mpas.gis1to10km</grid>
       <grid name="wav">null</grid>
       <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_r05_EC30to60E2r2_gis1to10" compset="_MALI">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">EC30to60E2r2</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">mpas.gis1to10km</grid>
+      <grid name="wav">null</grid>
+      <mask>EC30to60E2r2</mask>
     </model_grid>
 
     <model_grid alias="ne30pg2_r0125_EC30to60E2r2_gis1to10" compset="_MALI">
