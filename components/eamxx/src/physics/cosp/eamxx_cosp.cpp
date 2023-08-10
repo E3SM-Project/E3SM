@@ -15,7 +15,16 @@ namespace scream
 Cosp::Cosp (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
-  // Nothing to do here
+   // Determine how often to call COSP; units can be steps or hours
+  m_cosp_frequency = m_params.get<Int>("cosp_frequency", 1);
+  m_cosp_frequency_units = m_params.get<std::string>("cosp_frequency_units", "steps");
+  EKAT_REQUIRE_MSG(
+    (m_cosp_frequency_units == "steps") || (m_cosp_frequency_units == "hours"),
+    "cosp_frequency_units " + m_cosp_frequency_units + " not supported"
+  );
+
+  // How many subcolumns to use for COSP
+  m_num_subcols = m_params.get<Int>("cosp_subcolumns", 10);
 }
 
 // =========================================================================================
@@ -78,13 +87,6 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 // =========================================================================================
 void Cosp::initialize_impl (const RunType /* run_type */)
 {
-  // Determine how often to call COSP; units can be steps or hours
-  m_cosp_frequency = m_params.get<Int>("cosp_frequency", 1);
-  m_cosp_frequency_units = m_params.get<std::string>("cosp_frequency_units", "steps");
-
-  // How many subcolumns to use for COSP
-  m_num_subcols = m_params.get<Int>("cosp_subcolumns", 10);
-
   // Set property checks for fields in this process
   CospFunc::initialize(m_num_cols, m_num_subcols, m_num_levs);
 }
