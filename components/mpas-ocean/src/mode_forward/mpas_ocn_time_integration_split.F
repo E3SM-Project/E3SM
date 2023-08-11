@@ -185,7 +185,8 @@ module ocn_time_integration_split
          temp_mask,        &! temporary mask (edgeMask)
          lat,              &! cell latitude
          sshCell1,         &! sea sfc height in neighboring cells
-         sshCell2
+         sshCell2,         &
+         sshGrad            ! temp for holding ssh gradient
 
       real (kind=RKIND), dimension(:,:), allocatable:: &
          uTemp
@@ -734,13 +735,16 @@ module ocn_time_integration_split
 
             !$omp parallel
             !$omp do schedule(runtime) &
-            !$omp private(k, cell1, cell2, uTemp, &
+            !$omp private(k, cell1, cell2, uTemp, sshGrad, &
             !$omp         normalThicknessFluxSum, thicknessSum)
             do iEdge = 1, nEdgesOwned
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
                ! could put this after with uTemp(maxleveledgetop+1:nvertlevels)=0
                uTemp(:,iEdge) = 0.0_RKIND
+               sshGrad = splitFact * gravity * &
+                         (sshNew(cell2) - sshNew(cell1)) &
+                         /dcEdge(iEdge)
                do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
 
                   ! normalBaroclinicVelocityNew =
@@ -752,9 +756,7 @@ module ocn_time_integration_split
                   uTemp(k,iEdge) = normalBaroclinicVelocityCur(k,iEdge) &
                            + dt * (normalVelocityTend(k,iEdge) &
                            + normalVelocityNew(k,iEdge) &
-                           + splitFact*gravity * &
-                             (sshNew(cell2) - sshNew(cell1)) &
-                             /dcEdge(iEdge) )
+                           + sshGrad )
                enddo ! vertical
 
                ! thicknessSum is initialized outside the loop because
