@@ -184,6 +184,9 @@ contains
 
         endif
 
+        ! ssh_sal currently computed on host but must be transferred
+        ! to device for later tendency calculations
+        !$acc update device(ssh_sal)
 
         call mpas_timer_stop('SAL Calculation')
 
