@@ -24,7 +24,10 @@ public:
 
   using KT               = ekat::KokkosTypes<DefaultDevice>;
   template<typename ScalarT>
-  using uview_1d         = Unmanaged<typename KT::template view_1d<ScalarT>>;
+  using uview_1d = Unmanaged<typename KT::template view_1d<ScalarT>>;
+
+  using uview_2d = Unmanaged<typename KT::template view_2d<Real>>;
+  using uview_3d = Unmanaged<typename KT::template view_3d<Real>>;
 
   // Constructors
   RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -103,8 +106,8 @@ public:
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     static constexpr int num_1d_ncol        = 10;
-    static constexpr int num_2d_nlay        = 13;
-    static constexpr int num_2d_nlay_p1     = 12;
+    static constexpr int num_2d_nlay        = 14;
+    static constexpr int num_2d_nlay_p1     = 13;
     static constexpr int num_2d_nswbands    = 2;
     static constexpr int num_3d_nlev_nswbands = 4;
     static constexpr int num_3d_nlev_nlwbands = 2;
@@ -112,6 +115,8 @@ public:
     static constexpr int num_3d_nlay_nlwbands = 1;
     static constexpr int num_3d_nlay_nswgpts = 1;
     static constexpr int num_3d_nlay_nlwgpts = 1;
+    static constexpr int num_3d_nlay_nswbands_ncol = 3;
+    static constexpr int num_3d_nlay_nlwbands_ncol = 1;
 
     // 1d size (ncol)
     real1d mu0;
@@ -139,6 +144,7 @@ public:
     real2d iwp;
     real2d sw_heating;
     real2d lw_heating;
+    uview_2d d_dz;
 
     // 2d size (ncol, nlay+1)
     real2d p_lev;
@@ -153,6 +159,7 @@ public:
     real2d sw_clrsky_flux_dn_dir;
     real2d lw_clrsky_flux_up;
     real2d lw_clrsky_flux_dn;
+    uview_2d d_tint;
 
     // 3d size (ncol, nlay+1, nswbands)
     real3d sw_bnd_flux_up;
@@ -173,10 +180,15 @@ public:
     real3d aero_ssa_sw;
     real3d aero_g_sw;
     real3d aero_tau_lw;
+    uview_3d d_aero_tau_sw;
+    uview_3d d_aero_ssa_sw;
+    uview_3d d_aero_g_sw;
+    uview_3d d_aero_tau_lw;
 
     // 3d size (ncol, nlay, n[sw,lw]gpts)
     real3d cld_tau_sw_gpt;
     real3d cld_tau_lw_gpt;
+
   };
 
 protected:

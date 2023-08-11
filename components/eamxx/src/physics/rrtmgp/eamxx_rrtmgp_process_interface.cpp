@@ -176,7 +176,9 @@ size_t RRTMGPRadiation::requested_buffer_size_in_bytes() const
     Buffer::num_3d_nlay_nswbands*m_col_chunk_size*(m_nlay)*m_nswbands +
     Buffer::num_3d_nlay_nlwbands*m_col_chunk_size*(m_nlay)*m_nlwbands +
     Buffer::num_3d_nlay_nswgpts*m_col_chunk_size*(m_nlay)*m_nswgpts +
-    Buffer::num_3d_nlay_nlwgpts*m_col_chunk_size*(m_nlay)*m_nlwgpts;
+    Buffer::num_3d_nlay_nlwgpts*m_col_chunk_size*(m_nlay)*m_nlwgpts +
+    Buffer::num_3d_nlay_nswbands_ncol * m_ncol * m_nlay * m_nswbands +
+    Buffer::num_3d_nlay_nlwbands_ncol * m_ncol * m_nlay * m_nlwbands;
 
   return interface_request * sizeof(Real);
 } // RRTMGPRadiation::requested_buffer_size
@@ -237,11 +239,15 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.sw_heating.totElems();
   m_buffer.lw_heating = decltype(m_buffer.lw_heating)("lw_heating", mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.lw_heating.totElems();
-  // 3d arrays
   m_buffer.p_lev = decltype(m_buffer.p_lev)("p_lev", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.p_lev.totElems();
   m_buffer.t_lev = decltype(m_buffer.t_lev)("t_lev", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.t_lev.totElems();
+  m_buffer.d_tint = decltype(m_buffer.d_tint)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.d_tint.size();
+  m_buffer.d_dz  = decltype(m_buffer.d_dz )(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.d_dz.size();
+  // 3d arrays
   m_buffer.sw_flux_up = decltype(m_buffer.sw_flux_up)("sw_flux_up", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.sw_flux_up.totElems();
   m_buffer.sw_flux_dn = decltype(m_buffer.sw_flux_dn)("sw_flux_dn", mem, m_col_chunk_size, m_nlay+1);
@@ -290,12 +296,19 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.aero_g_sw.totElems();
   m_buffer.aero_tau_lw = decltype(m_buffer.aero_tau_lw)("aero_tau_lw", mem, m_col_chunk_size, m_nlay, m_nlwbands);
   mem += m_buffer.aero_tau_lw.totElems();
+  m_buffer.d_aero_tau_sw = decltype(m_buffer.d_aero_tau_sw)(mem, m_ncol, m_nswbands, m_nlay);
+  mem += m_buffer.d_aero_tau_sw.size();
+  m_buffer.d_aero_ssa_sw = decltype(m_buffer.d_aero_ssa_sw)(mem, m_ncol, m_nswbands, m_nlay);
+  mem += m_buffer.d_aero_ssa_sw.size();
+  m_buffer.d_aero_g_sw = decltype(m_buffer.d_aero_g_sw)(mem, m_ncol, m_nswbands, m_nlay);
+  mem += m_buffer.d_aero_g_sw.size();
+  m_buffer.d_aero_tau_lw = decltype(m_buffer.d_aero_tau_lw)(mem, m_ncol, m_nlwbands, m_nlay);
+  mem += m_buffer.d_aero_tau_lw.size();
   // 3d arrays with extra ngpt dimension (cloud optics by gpoint; primarily for debugging)
   m_buffer.cld_tau_sw_gpt = decltype(m_buffer.cld_tau_sw_gpt)("cld_tau_sw_gpt", mem, m_col_chunk_size, m_nlay, m_nswgpts);
   mem += m_buffer.cld_tau_sw_gpt.totElems();
   m_buffer.cld_tau_lw_gpt = decltype(m_buffer.cld_tau_lw_gpt)("cld_tau_lw_gpt", mem, m_col_chunk_size, m_nlay, m_nlwgpts);
   mem += m_buffer.cld_tau_lw_gpt.totElems();
-
   size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
 } // RRTMGPRadiation::init_buffers
@@ -393,12 +406,18 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_surf_lw_flux_up = get_field_in("surf_lw_flux_up").get_view<const Real*>();
   // Output fields
   auto d_tmid = get_field_out("T_mid").get_view<Real**>();
-  using SmallPack = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
-  const int n_lay_w_pack = SCREAM_SMALL_PACK_SIZE*ekat::npack<SmallPack>(m_nlay);
-  view_3d_real d_aero_tau_sw("aero_tau_sw",m_ncol,m_nswbands,n_lay_w_pack);
-  view_3d_real d_aero_ssa_sw("aero_ssa_sw",m_ncol,m_nswbands,n_lay_w_pack);
-  view_3d_real d_aero_g_sw  ("aero_g_sw"  ,m_ncol,m_nswbands,n_lay_w_pack);
-  view_3d_real d_aero_tau_lw("aero_tau_lw",m_ncol,m_nlwbands,n_lay_w_pack);
+
+  // This is annoying to have to have to make extra copies of these, but we
+  // cannot use directly from the FM because if m_do_aerosol_rad is false they
+  // might not exist, so we need dummy versions to populate with zeros. This
+  // inflates memory (non-trivially since these are sized ncol * nbands * nlay),
+  // so we should really find a better way to handle this. It might actually be
+  // better to ALWAYS require the aerosol rad properties even when we want no
+  // aerosol. Then we would not need to carry around this extra deep copy.
+  auto d_aero_tau_sw = m_buffer.d_aero_tau_sw;
+  auto d_aero_ssa_sw = m_buffer.d_aero_ssa_sw;
+  auto d_aero_g_sw   = m_buffer.d_aero_g_sw;
+  auto d_aero_tau_lw = m_buffer.d_aero_tau_lw;
   if (m_do_aerosol_rad) {
     Kokkos::deep_copy(d_aero_tau_sw,get_field_in("aero_tau_sw").get_view<const Real***>());
     Kokkos::deep_copy(d_aero_ssa_sw,get_field_in("aero_ssa_sw").get_view<const Real***>());
@@ -409,7 +428,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
     Kokkos::deep_copy(d_aero_ssa_sw,0.0);
     Kokkos::deep_copy(d_aero_g_sw  ,0.0);
     Kokkos::deep_copy(d_aero_tau_lw,0.0);
-
   }
   auto d_sw_flux_up = get_field_out("SW_flux_up").get_view<Real**>();
   auto d_sw_flux_dn = get_field_out("SW_flux_dn").get_view<Real**>();
@@ -538,6 +556,9 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto cld_tau_sw_gpt  = subview_3d(m_buffer.cld_tau_sw_gpt);
       auto cld_tau_lw_gpt  = subview_3d(m_buffer.cld_tau_lw_gpt);
 
+      auto d_tint = m_buffer.d_tint;
+      auto d_dz = m_buffer.d_dz;
+
       // Set gas concs to "view" only the first ncol columns
       m_gas_concs.ncol = ncol;
       m_gas_concs.concs = subview_3d(gas_concs);
@@ -562,10 +583,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
           }
         }
         Kokkos::deep_copy(d_mu0,h_mu0);
-
-        // dz and T_int will need to be computed
-        view_2d_real d_tint("T_int", ncol, m_nlay+1);
-        view_2d_real d_dz  ("dz",    ncol, m_nlay);
 
         const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
