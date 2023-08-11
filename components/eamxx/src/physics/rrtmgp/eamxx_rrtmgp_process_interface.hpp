@@ -54,6 +54,7 @@ public:
   int m_col_chunk_size;
   std::vector<int> m_col_chunk_beg;
   int m_nlay;
+  int m_nlay_w_pack;
   Field m_lat;
   Field m_lon;
 

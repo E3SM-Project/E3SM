@@ -57,6 +57,8 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   m_nlay = m_grid->get_num_vertical_levels();
   m_lat  = m_grid->get_geometry_data("lat");
   m_lon  = m_grid->get_geometry_data("lon");
+  using SmallPack = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
+  m_nlay_w_pack = SCREAM_SMALL_PACK_SIZE*ekat::npack<SmallPack>(m_nlay);
 
   // Figure out radiation column chunks stats
   m_col_chunk_size = std::min(m_params.get("column_chunk_size", m_ncol),m_ncol);
@@ -177,8 +179,8 @@ size_t RRTMGPRadiation::requested_buffer_size_in_bytes() const
     Buffer::num_3d_nlay_nlwbands*m_col_chunk_size*(m_nlay)*m_nlwbands +
     Buffer::num_3d_nlay_nswgpts*m_col_chunk_size*(m_nlay)*m_nswgpts +
     Buffer::num_3d_nlay_nlwgpts*m_col_chunk_size*(m_nlay)*m_nlwgpts +
-    Buffer::num_3d_nlay_nswbands_ncol * m_ncol * m_nlay * m_nswbands +
-    Buffer::num_3d_nlay_nlwbands_ncol * m_ncol * m_nlay * m_nlwbands;
+    Buffer::num_3d_nlay_nswbands_ncol * m_ncol * m_nlay_w_pack * m_nswbands +
+    Buffer::num_3d_nlay_nlwbands_ncol * m_ncol * m_nlay_w_pack * m_nlwbands;
 
   return interface_request * sizeof(Real);
 } // RRTMGPRadiation::requested_buffer_size
@@ -296,13 +298,13 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.aero_g_sw.totElems();
   m_buffer.aero_tau_lw = decltype(m_buffer.aero_tau_lw)("aero_tau_lw", mem, m_col_chunk_size, m_nlay, m_nlwbands);
   mem += m_buffer.aero_tau_lw.totElems();
-  m_buffer.d_aero_tau_sw = decltype(m_buffer.d_aero_tau_sw)(mem, m_ncol, m_nswbands, m_nlay);
+  m_buffer.d_aero_tau_sw = decltype(m_buffer.d_aero_tau_sw)(mem, m_ncol, m_nswbands, m_nlay_w_pack);
   mem += m_buffer.d_aero_tau_sw.size();
-  m_buffer.d_aero_ssa_sw = decltype(m_buffer.d_aero_ssa_sw)(mem, m_ncol, m_nswbands, m_nlay);
+  m_buffer.d_aero_ssa_sw = decltype(m_buffer.d_aero_ssa_sw)(mem, m_ncol, m_nswbands, m_nlay_w_pack);
   mem += m_buffer.d_aero_ssa_sw.size();
-  m_buffer.d_aero_g_sw = decltype(m_buffer.d_aero_g_sw)(mem, m_ncol, m_nswbands, m_nlay);
+  m_buffer.d_aero_g_sw = decltype(m_buffer.d_aero_g_sw)(mem, m_ncol, m_nswbands, m_nlay_w_pack);
   mem += m_buffer.d_aero_g_sw.size();
-  m_buffer.d_aero_tau_lw = decltype(m_buffer.d_aero_tau_lw)(mem, m_ncol, m_nlwbands, m_nlay);
+  m_buffer.d_aero_tau_lw = decltype(m_buffer.d_aero_tau_lw)(mem, m_ncol, m_nlwbands, m_nlay_w_pack);
   mem += m_buffer.d_aero_tau_lw.size();
   // 3d arrays with extra ngpt dimension (cloud optics by gpoint; primarily for debugging)
   m_buffer.cld_tau_sw_gpt = decltype(m_buffer.cld_tau_sw_gpt)("cld_tau_sw_gpt", mem, m_col_chunk_size, m_nlay, m_nswgpts);
