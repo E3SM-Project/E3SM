@@ -57,6 +57,7 @@ module ocn_diagnostics
 
    public :: ocn_diagnostic_solve, &
              ocn_diagnostic_solve_layerThicknessEdge, &
+             ocn_diagnostic_solve_wctEdge, &
              ocn_relativeVorticity_circulation, &
              ocn_vert_transport_velocity_top, &
              ocn_fuperp, &
@@ -666,6 +667,89 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine ocn_relativeVorticity_circulation!}}}
+
+!***********************************************************************
+!
+!  routine ocn_diagnostic_solve_wctEdge
+!
+!> \brief   Computes layer thickness at edge
+!> \author  Carolyn Begeman
+!> \date    July 2023
+!> \details
+!>  This routine computes the water column thickness on edges, wctEdge, which
+!>  can either be the mean or an upwind value, depending on user input.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_diagnostic_solve_wctEdge(btrVelocity, sshCell, &
+                         bottomDepthEdge, wctEdge)!{{{
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         btrVelocity,   &!< barotropic velocity
+         sshCell,       &!< ssh at cells, used for centered water column
+                         !< thickness
+         bottomDepthEdge !< bottom depth centered at edges, used for
+                         !< centered water column thickness
+      ! bottomDepth is already present
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      ! Outputs are the shared variables from diagnostic_variables:
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+         wctEdge !< water column thickness on edge
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      integer :: &
+         iCell, iEdge, &! edge and cell loop indices
+         cell1, cell2  ! neighbor cell indices across an edge
+
+      real (kind=RKIND), dimension(:), allocatable :: wctCell
+
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
+
+      ! Compute edge flux based on option set on init
+
+      ! Use centered (mean) thickness as flux value
+
+      ! Compute mean layer thickness at edge
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(bottomDepthEdge, sshCell, wctEdge)
+      !$acc parallel loop &
+      !$acc    present(bottomDepthEdge, sshCell, wctEdge, cellsOnEdge) &
+      !$acc    private(iEdge, cell1, cell2)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) private (cell1, cell2)
+#endif
+      do iEdge = 1, nEdgesAll
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+         wctEdge(iEdge) = 0.5_RKIND*(sshCell(cell1) + sshCell(cell2)) &
+                          + bottomDepthEdge(iEdge)
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+      !$acc exit data copyout(wctEdge) delete(bottomDepthEdge, sshCell)
+#endif
+
+   !--------------------------------------------------------------------
+
+   end subroutine ocn_diagnostic_solve_wctEdge!}}}
 
 !***********************************************************************
 !

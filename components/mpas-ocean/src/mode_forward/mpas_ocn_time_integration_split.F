@@ -1120,24 +1120,8 @@ module ocn_time_integration_split
 
                ! Compute barotropic thickness at the edge. Note this
                ! matches the sum of baroclinic thicknesses at this edge.
-               !$omp parallel
-               !$omp do schedule(runtime) &
-               !$omp private(cell1, cell2, sshEdge)
-               do iEdge = 1, nEdgesAll
-                  if (maxLevelEdgeTop(iEdge).eq.0) cycle
-
-                  cell1 = cellsOnEdge(1, iEdge)
-                  cell2 = cellsOnEdge(2, iEdge)
-
-                  sshEdge = 0.5_RKIND*(sshSubcycleCur(cell1) + &
-                                       sshSubcycleCur(cell2))
-
-                  ! Compute barotropic thickness at the edge. Note this
-                  ! matches the sum of baroclinic thicknesses at this edge.
-                  wctEdge(iEdge) = sshEdge + bottomDepthEdge(iEdge)
-               end do
-               !$omp end do
-               !$omp end parallel
+               call ocn_diagnostic_solve_wctEdge(btrvel_temp, sshSubcycleCur, &
+                         bottomDepthEdge, wctEdge)
 
                !$omp parallel
                !$omp do schedule(runtime) &
@@ -1407,24 +1391,8 @@ module ocn_time_integration_split
                   !$omp end do
                   !$omp end parallel
 
-                  !$omp parallel
-                  !$omp do schedule(runtime) &
-                  !$omp private(cell1, cell2, sshEdge)
-                  do iEdge = 1, nEdgesAll
-                     if (maxLevelEdgeTop(iEdge).eq.0) cycle
-
-                     cell1 = cellsOnEdge(1, iEdge)
-                     cell2 = cellsOnEdge(2, iEdge)
-
-                     sshEdge = 0.5_RKIND*(sshTemp(cell1) + &
-                                          sshTemp(cell2))
-
-                     ! Compute barotropic thickness at the edge. Note this
-                     ! matches the sum of baroclinic thicknesses at this edge.
-                     wctEdge(iEdge) = sshEdge + bottomDepthEdge(iEdge)
-                  end do
-                  !$omp end do
-                  !$omp end parallel
+                  call ocn_diagnostic_solve_wctEdge(btrvel_temp, sshTemp, &
+                         bottomDepthEdge, wctEdge)
 
                   !$omp parallel
                   !$omp do schedule(runtime) &
@@ -1464,24 +1432,8 @@ module ocn_time_integration_split
                   !$omp end do
                   !$omp end parallel
 
-                  !$omp parallel
-                  !$omp do schedule(runtime) &
-                  !$omp private(cell1, cell2, sshEdge)
-                  do iEdge = 1, nEdgesAll
-                     if (maxLevelEdgeTop(iEdge).eq.0) cycle
-
-                     cell1 = cellsOnEdge(1, iEdge)
-                     cell2 = cellsOnEdge(2, iEdge)
-
-                     sshEdge = 0.5_RKIND*(sshTemp(cell1) + &
-                                          sshTemp(cell2))
-
-                     ! Compute barotropic thickness at the edge. Note this
-                     ! matches the sum of baroclinic thicknesses at this edge.
-                     wctEdge(iEdge) = sshEdge + bottomDepthEdge(iEdge)
-                  end do
-                  !$omp end do
-                  !$omp end parallel
+                  call ocn_diagnostic_solve_wctEdge(btrvel_temp, sshTemp, &
+                         bottomDepthEdge, wctEdge)
 
                   ! compute barotropic thickness flux on edges
                   !$omp parallel
