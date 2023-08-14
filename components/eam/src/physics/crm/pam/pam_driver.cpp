@@ -49,12 +49,13 @@ extern "C" void pam_driver() {
   // set various coupler options
   coupler.set_option<real>("gcm_physics_dt",gcm_dt);
   #ifdef MMF_PAM_DPP
+  // this is leftover from debugging, but it might still be useful for testing values of crm_per_phys
   coupler.set_option<int>("crm_per_phys",MMF_PAM_DPP);
   #else
-  coupler.set_option<int>("crm_per_phys",4);               // # of PAM-C dynamics steps per physics
+  coupler.set_option<int>("crm_per_phys",2);               // # of PAM-C dynamics steps per physics
   #endif
   coupler.set_option<int>("sponge_num_layers",crm_nz*0.3); // depth of sponge layer
-  coupler.set_option<real>("sponge_time_scale",60);        // min damping timescale at top of sponge
+  coupler.set_option<real>("sponge_time_scale",60);        // minimum damping timescale at top
   coupler.set_option<bool>("crm_acceleration_ceaseflag",false);
   auto crm_acceleration_ceaseflag = coupler.get_option<bool>("crm_acceleration_ceaseflag");
   //------------------------------------------------------------------------------------------------
@@ -196,7 +197,7 @@ extern "C" void pam_driver() {
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"micro"); }
     if (enable_check_state) { pam_debug_check_state(coupler, 6, nstep); }
 
-    if (use_crm_accel & !crm_acceleration_ceaseflag) {
+    if (use_crm_accel && !crm_acceleration_ceaseflag) {
       pam_accelerate(coupler, nstep, nstop);
       pam_accelerate_diagnose(coupler);
     }
