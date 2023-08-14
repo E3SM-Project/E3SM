@@ -42,7 +42,21 @@ module cldera_dynamic_tracers
   ! ----- Private module data
   integer, parameter :: ncnst=2  ! number of constituents implemented by this module
 
-  ! constituent names
+  ! ----- constituent names
+  ! We will need to define fields for both the PT and PV tracers. Tracers transported by
+  ! the advection scheme are expected to be positive-definite, but PV is a signed quantity.
+  ! The strategy is then:
+  ! 1. Initialize the PV tracer field from the diagnostic PV, and add a positive offset
+  !    to prevent negative PV tracer values. Call this tracer the "offset PV tracer"
+  ! 2. Allow the advection routine to transport the "offset PV tracer"
+  ! 3. After advection, finish the timestep by subtracting off the offset from the 
+  !    "offset PV tracer" to recover the "derived PV tracer"
+  ! 4. Write out the "derived PV tracer"
+  ! Step 1 is done in dyn_comp.F90. Steps 3-4 are done in the present file, in the subroutine
+  ! cldera_dynamic_tracers_timestep_tend. The fields defined below are:
+  ! "PT_TRCR"  - potential temperature tracer
+  ! "PV_TRCR_" - the offset potential vorticirty tracer (advected)
+  ! "PV_TRCR"  - the derived potential vorticity tracer (output)
   character(len=8), parameter :: c_names(ncnst) = (/'PV_TRCR_   ', 'PT_TRCR    '/)
   character(len=8), parameter :: pv_out_name = 'PV_TRCR    '
 
@@ -117,10 +131,8 @@ contains
     ! The default 'mixtype' defaults to 'wet' when not passed to cnst_add; this also seems
     ! unused by default for a newly added constituent (this might not be true for WACCM?)
     call cnst_add(c_names(1), 0._r8, 0._r8, 0._r8, ixpv,  readiv=.false., &
-                  longname='Potential vorticity tracer', cam_outfld=.false.)
+                  longname='Offset potential vorticity tracer', cam_outfld=.false.)
     ifirst = ixpv
-
-
 
     call cnst_add(c_names(2), 0._r8, 0._r8, 0._r8, ixpt,  readiv=.false., &
                   longname='Potential temperature tracer')
@@ -216,6 +228,10 @@ contains
     integer :: i, k
     integer :: lchnk             ! chunk identifier
 
+    ! on each timestep, we need to recover the actual PV by shifting the offset PV
+    ! by an amount cldera_dyanmic_tracers_pv_offset, and then output the derived quantity
+    ! see comments near the declaration of c_names for more info on the advected
+    ! vs. derived PV
     real(r8) :: pv_out(ncol,pver)
     if (.not. cldera_dynamic_tracers_flag) then
       return

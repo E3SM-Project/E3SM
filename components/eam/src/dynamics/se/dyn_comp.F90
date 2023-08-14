@@ -326,6 +326,11 @@ CONTAINS
        endif
        call cldera_dynamic_tracers_pv_idx(pv_idx)
        if (pv_idx /= 0) then
+          ! if PV tracers are enabled, initialize this with the diagnostic PV field, and add
+          ! an offset quantity cldear_dynamic_tracers_pv_offset. This ensures that an "offset PV"
+          ! tracer will be transported by the advection scheme which has no negative tracer values.
+          ! This offset is subtracted back off before output of PV_TRCR. See comments in 
+          ! cldera_dynamic_tracers 
           do ie=nets,nete
             call get_pot_vort(elem(ie), elem(ie)%state%Q(:,:,:,pv_idx), hvcoord, TimeLevel%n0)
             elem(ie)%state%Q(:,:,:,pv_idx) = elem(ie)%state%Q(:,:,:,pv_idx)+cldera_dynamic_tracers_pv_offset
@@ -334,6 +339,7 @@ CONTAINS
 
        call cldera_dynamic_tracers_pt_idx(pt_idx)
        if (pt_idx /= 0) then
+          ! if PT tracers are enabled, initialize this with the diagnostic PT field
           do ie=nets,nete
             call get_field(elem(ie),"pottemp",elem(ie)%state%Q(:,:,:,pt_idx),hvcoord,TimeLevel%n0,TimeLevel%n0)
           end do
