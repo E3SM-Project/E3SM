@@ -77,12 +77,12 @@ void MAMOptics::run_impl(const double dt) {
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
 
   // get the aerosol optics fields
-  auto aero_g_sw   = get_field_out("aero_g_sw");
-  auto aero_ssa_sw = get_field_out("aero_ssa_sw");
-  auto aero_tau_sw = get_field_out("aero_tau_sw");
-  auto aero_tau_lw = get_field_out("aero_tau_lw");
+  auto aero_g_sw   = get_field_out("aero_g_sw").get_view<Real***>();
+  auto aero_ssa_sw = get_field_out("aero_ssa_sw").get_view<Real***>();
+  auto aero_tau_sw = get_field_out("aero_tau_sw").get_view<Real***>();
+  auto aero_tau_lw = get_field_out("aero_tau_lw").get_view<Real***>();
 
-  auto aero_nccn   = get_field_out("nccn"); // FIXME: get rid of this
+  auto aero_nccn   = get_field_out("nccn").get_view<Real**>(); // FIXME: get rid of this
 
   // Compute optical properties on all local columns.
   // (Strictly speaking, we don't need this parallel_for here yet, but we leave
@@ -90,10 +90,10 @@ void MAMOptics::run_impl(const double dt) {
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
     const Int icol = team.league_rank(); // column index
 
-    auto g_sw = ekat::subview(aero_g_sw.get_view<Real***>(), icol);
-    auto ssa_sw = ekat::subview(aero_ssa_sw.get_view<Real***>(), icol);
-    auto tau_sw = ekat::subview(aero_tau_sw.get_view<Real***>(), icol);
-    auto tau_lw = ekat::subview(aero_tau_lw.get_view<Real***>(), icol);
+    auto g_sw = ekat::subview(aero_g_sw, icol);
+    auto ssa_sw = ekat::subview(aero_ssa_sw, icol);
+    auto tau_sw = ekat::subview(aero_tau_sw, icol);
+    auto tau_lw = ekat::subview(aero_tau_lw, icol);
 
     // populate these fields with reasonable representative values
     Kokkos::deep_copy(g_sw, 0.5);
@@ -102,7 +102,7 @@ void MAMOptics::run_impl(const double dt) {
     Kokkos::deep_copy(tau_lw, 0.0);
 
     // FIXME: Get rid of this
-    auto nccn = ekat::subview(aero_nccn.get_view<Real**>(), icol);
+    auto nccn = ekat::subview(aero_nccn, icol);
     Kokkos::deep_copy(nccn, 50.0);
   });
 
