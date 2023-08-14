@@ -8,8 +8,7 @@
 
       use ice_kinds_mod
       use ice_constants_colpkg, only: puny, c0, c1, c10, rhos, Lfresh, &
-                                      rhow, rhoi, rhofresh, snwlvlfac, &
-                                      rhosmin
+                                      rhow, rhoi, rhofresh, rhosmin
       use ice_warnings, only: add_warning
 
       implicit none
@@ -108,7 +107,7 @@
 
       subroutine snow_redist(dt, nslyr, ncat, wind, ain, vin, vsn, zqsn, &
          snwredist, alvl, vlvl, fresh, fhocn, fsloss, rhos_cmpn, &
-         fsnow, rhosmax, windmin, drhosdwind, l_stop, stop_label)
+         fsnow, rhosmax, windmin, drhosdwind, snwlvlfac, l_stop, stop_label)
 
       use ice_therm_vertical, only: adjust_enthalpy
 
@@ -122,7 +121,8 @@
          fsnow     , & ! snowfall rate (kg m-2 s-1)
          rhosmax   , & ! maximum snow density (kg/m^3)
          windmin   , & ! minimum wind speed to compact snow (m/s)
-         drhosdwind    ! wind compaction factor (kg s/m^4)
+         drhosdwind, & ! wind compaction factor (kg s/m^4)
+         snwlvlfac     ! snow loss factor for wind redistribution
 
       real (kind=dbl_kind), dimension(:), intent(in) :: &
          ain       , & ! ice area fraction

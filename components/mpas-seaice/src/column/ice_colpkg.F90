@@ -1873,8 +1873,7 @@
       use ice_aerosol, only: update_aerosol
       use ice_atmo, only: neutral_drag_coeffs
       use ice_age, only: increment_age
-      use ice_constants_colpkg, only: rhofresh, rhoi, rhos, c0, c1, puny, &
-          snwlvlfac
+      use ice_constants_colpkg, only: rhofresh, rhoi, rhos, c0, c1, puny
       use ice_firstyear, only: update_FYarea
       use ice_flux_colpkg, only: set_sfcflux, merge_fluxes
       use ice_meltpond_cesm, only: compute_ponds_cesm
@@ -1907,6 +1906,11 @@
 
       logical (kind=log_kind), intent(in), optional :: &
          prescribed_ice  ! if .true., use prescribed ice instead of computed
+
+      !NJ: for bulk conservation fix
+      !real (kind=dbl_kind), intent(in) :: &
+      !   frain       , & ! rainfall rate (kg/m^2 s)
+      !   fsnow           ! snowfall rate (kg/m^2 s)
 
       real (kind=dbl_kind), intent(inout) :: &
          aice0       , & ! open water fraction
@@ -2074,19 +2078,24 @@
       !---------------------------------------------------------------
 
       fsloss = fsnow*aice0
+      !NJ: for bulk conservation fix
+      !fsloss = c0
 
       !---------------------------------------------------------------
       ! 30% rule for snow redistribution: precip factor
       !---------------------------------------------------------------
 
       if (trim(snwredist) == '30percent') then
-         worka = c0      
+         worka = c0
          do n = 1, ncat
-            worka = worka + alvl(n)
+            worka = worka + alvl(n)*aicen(n)
          enddo
-         worka  = worka * snwlvlfac/(c1+snwlvlfac)
-         fsloss = fsloss + fsnow*(c1-worka)
-         fsnow  =          fsnow*    worka
+         worka  = worka * snwlvlfac/(c1+snwlvlfac)/aice
+         fsloss = fsloss + fsnow * worka
+         fsnow  =          fsnow * (c1-worka)
+         !NJ: for bulk conservation fix.
+         !don't change fsnow above
+         !fsloss = fsnow * worka
       endif ! snwredist
 
       !-----------------------------------------------------------------
@@ -2250,9 +2259,11 @@
                                  mlt_onset,    frz_onset,    &
                                  yday,         dsnown   (n), &
                                  tr_rsnw,                    &
+                                 !NJ: for bulk conservation fix
+                                 !tr_rsnw,      fsloss      , &
                                  l_stop,       stop_label,   &
                                  prescribed_ice)
-               
+
             if (l_stop) then
                stop_label = 'ice: Vertical thermo error: '//trim(stop_label)
                return
@@ -3486,7 +3497,7 @@
                                    vice ,     vsno,          &
                                    trcr_base, n_trcr_strata, &
                                    nt_strata, trcr,          &
-                                   Tf)   
+                                   Tf)
 
       deallocate (atrcr)
 
@@ -3850,7 +3861,7 @@
                                    fsloss,    fsnow,    &
                                    rhosnew,   rhosmax,  &
                                    windmin,   drhosdwind, &
-                                   snowage_tau, &
+                                   snwlvlfac, snowage_tau, &
                                    snowage_kappa, &
                                    snowage_drdt0, &
                                    idx_T_max, &
@@ -3880,7 +3891,8 @@
          rhosnew, & ! new snow density (kg/m^3)
          rhosmax, & ! maximum snow density (kg/m^3)
          windmin, & ! minimum wind speed to compact snow (m/s)
-         drhosdwind ! wind compaction factor (kg s/m^4)
+         drhosdwind, & ! wind compaction factor (kg s/m^4)
+         snwlvlfac  ! snow loss factor for wind redistribution
 
       real (kind=dbl_kind), dimension(:), intent(in) :: &
          aicen, & ! ice area fraction
@@ -3973,6 +3985,7 @@
                           fsloss,   rhos_cmpn, &
                           fsnow,    rhosmax,   &
                           windmin,  drhosdwind, &
+                          snwlvlfac,            &
                           l_stop,   stop_label)
       endif
 
@@ -4218,6 +4231,7 @@
            rhosnew_in, &
            rhosmax_in, &
            windmin_in, &
+           snwlvlfac_in, &
            drhosdwind_in)
            !restore_bgc_in)
 
@@ -4411,6 +4425,7 @@
              rhosnew, &
              rhosmax, &
              windmin, &
+             snwlvlfac, &
              drhosdwind
             !restore_bgc
 
@@ -4729,6 +4744,7 @@
          rhosnew_in   , & ! new snow density (kg/m^3)
          rhosmax_in   , & ! maximum snow density (kg/m^3)
          windmin_in   , & ! minimum wind speed to compact snow (m/s)
+         snwlvlfac_in , & ! snow loss factor for wind redistribution
          drhosdwind_in    ! wind compaction factor (kg s/m^4)
 
       character(len=char_len), intent(in) :: & 
@@ -4930,6 +4946,7 @@
         rhosnew = rhosnew_in
         rhosmax = rhosmax_in
         windmin = windmin_in
+        snwlvlfac = snwlvlfac_in
         drhosdwind = drhosdwind_in
 
       end subroutine colpkg_init_parameters

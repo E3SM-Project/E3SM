@@ -2698,7 +2698,8 @@ contains
          config_new_snow_density, &
          config_max_snow_density, &
          config_minimum_wind_compaction, &
-         config_wind_compaction_factor
+         config_wind_compaction_factor, &
+         config_wind_snow_loss_factor
 
     integer, pointer :: &
          nCellsSolve, &
@@ -2745,6 +2746,7 @@ contains
        call MPAS_pool_get_config(block % configs, "config_max_snow_density", config_max_snow_density)
        call MPAS_pool_get_config(block % configs, "config_minimum_wind_compaction", config_minimum_wind_compaction)
        call MPAS_pool_get_config(block % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
+       call MPAS_pool_get_config(block % configs, "config_wind_snow_loss_factor", config_wind_snow_loss_factor)
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
 
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
@@ -2827,6 +2829,7 @@ contains
                config_max_snow_density, &
                config_minimum_wind_compaction, &
                config_wind_compaction_factor, &
+               config_wind_snow_loss_factor, &
                snowEmpiricalGrowthParameterTau(:,:,:), &
                snowEmpiricalGrowthParameterKappa(:,:,:), &
                snowPropertyRate(:,:,:), &
@@ -10164,20 +10167,6 @@ contains
             messageType=MPAS_LOG_CRIT)
     endif
 
-    ! check config_use_snow_grain_radius and config_use_column_snow_tracers
-    if (config_use_snow_grain_radius .and. .not. config_use_column_snow_tracers) then
-       call mpas_log_write(&
-         "check_column_package_configs: config_use_snow_grain_radius = true but config_use_column_snow_tracers = false", &
-            messageType=MPAS_LOG_CRIT)
-    endif
-
-    ! check config_use_snow_grain_radius and config_use_column_snow_tracers
-    if (config_use_column_snow_tracers .and. .not. config_use_snow_grain_radius) then
-       call mpas_log_write(&
-         "check_column_package_configs: config_use_column_snow_tracers but config_use_snow_grain_radius = false", &
-            messageType=MPAS_LOG_CRIT)
-    endif
-
     ! check cesm ponds and freezing lids inconsistency
     if (config_use_cesm_meltponds .and. trim(config_pond_refreezing_type) /= "cesm") then
        call mpas_log_write(&
@@ -11138,6 +11127,7 @@ contains
          config_new_snow_density, &
          config_max_snow_density, &
          config_minimum_wind_compaction, &
+         config_wind_snow_loss_factor, &
          config_wind_compaction_factor, &
          config_max_dry_snow_radius
 
@@ -11341,6 +11331,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_new_snow_density", config_new_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_max_snow_density", config_max_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_minimum_wind_compaction", config_minimum_wind_compaction)
+    call MPAS_pool_get_config(domain % configs, "config_wind_snow_loss_factor", config_wind_snow_loss_factor)
     call MPAS_pool_get_config(domain % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
     call MPAS_pool_get_config(domain % configs, "config_max_dry_snow_radius", config_max_dry_snow_radius)
 
@@ -11530,6 +11521,7 @@ contains
          config_new_snow_density, &
          config_max_snow_density, &
          config_minimum_wind_compaction, &
+         config_wind_snow_loss_factor, &
          config_wind_compaction_factor)
 
     !-----------------------------------------------------------------------
@@ -12327,6 +12319,10 @@ contains
     ! windmin:
     ! minimum wind speed to compact snow (m/s)
     ! windmin = config_minimum_wind_compaction
+
+    ! snwlvlfac:
+    ! snow loss factor for wind redistribution
+    ! snwlvlfac = config_wind_snow_loss_factor
 
     ! drhosdwind:
     ! wind compaction factor (kg s/m^4)
