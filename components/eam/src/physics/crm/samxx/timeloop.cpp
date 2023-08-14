@@ -3,7 +3,7 @@
 
 #ifdef MMF_RAD_SORT
 void update_sort_idx() {
-  // YAKL_SCOPE( t                        , :: t );
+  YAKL_SCOPE( t                        , :: t );
   YAKL_SCOPE( qv                       , :: qv  );
   YAKL_SCOPE( qcl                      , :: qcl );
   YAKL_SCOPE( qci                      , :: qci );
