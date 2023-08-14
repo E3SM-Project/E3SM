@@ -13,8 +13,11 @@
 #include <string>
 
 #ifndef KOKKOS_ENABLE_CUDA
-#define protected public
-#define private public
+#define protected_except_cuda public
+#define private_except_cuda public
+#else
+#define protected_except_cuda protected
+#define private_except_cuda private
 #endif
 
 namespace scream
@@ -41,7 +44,7 @@ public:
   // Constructor
   MAMOptics(const ekat::Comm& comm, const ekat::ParameterList& params);
 
-protected:
+protected_except_cuda:
 
   // --------------------------------------------------------------------------
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
@@ -59,7 +62,7 @@ protected:
   void run_impl(const double dt) override;
   void finalize_impl() override;
 
-private:
+private_except_cuda:
 
   Logger logger;
 

@@ -13,8 +13,11 @@
 #include <string>
 
 #ifndef KOKKOS_ENABLE_CUDA
-#define protected public
-#define private public
+#define protected_except_cuda public
+#define private_except_cuda public
+#else
+#define protected_except_cuda protected
+#define private_except_cuda private
 #endif
 
 namespace scream
@@ -52,7 +55,7 @@ public:
   // Constructor
   MAMMicrophysics(const ekat::Comm& comm, const ekat::ParameterList& params);
 
-protected:
+protected_except_cuda:
 
   // --------------------------------------------------------------------------
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
@@ -77,7 +80,7 @@ protected:
   // performs some checks on the tracers group
   void set_computed_group_impl(const FieldGroup& group) override;
 
-private:
+private_except_cuda:
 
   Logger logger;
 
