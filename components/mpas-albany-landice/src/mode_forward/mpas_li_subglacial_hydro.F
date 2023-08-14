@@ -1640,24 +1640,18 @@ module li_subglacial_hydro
       waterPressure = min(waterPressure, rhoi * gravity * iceThicknessHydro)
       
       do iCell = 1, nCells
-        if ( li_mask_is_floating_ice(cellMask(iCell)) .or. &
-             ((.not. li_mask_is_ice(cellMask(iCell))) .and. (bedTopography(iCell) < config_sea_level) ) ) then
-           ! set pressure correctly under floating ice and open ocean
-           waterPressure(iCell) = rhoo * gravity * (config_sea_level - bedTopography(iCell))
-        else
-           onMarineMargin = .false.
-           do iEdge = 1, nEdgesOnCell(iCell)
-              if (hydroMarineMarginMask(edgesOnCell(iEdge, iCell)) == 1) then
-                 onMarineMargin = .true.
-                 exit
-              endif
-           enddo
-           if (onMarineMargin) then
-              ! At marine margin, don't let water pressure fall below ocean pressure
-              ! TODO: Not sure if this should include the water layer thickness term.  Leaving it off.
-              if (waterPressure(iCell) < rhoo * gravity * (config_sea_level - bedTopography(iCell))) then
-                  waterPressure(iCell) = rhoo * gravity * (config_sea_level - bedTopography(iCell))
-              endif
+        onMarineMargin = .false.
+        do iEdge = 1, nEdgesOnCell(iCell)
+           if (hydroMarineMarginMask(edgesOnCell(iEdge, iCell)) == 1) then
+              onMarineMargin = .true.
+              exit
+           endif
+        enddo
+        if (onMarineMargin) then
+           ! At marine margin, don't let water pressure fall below ocean pressure
+           ! TODO: Not sure if this should include the water layer thickness term.  Leaving it off.
+           if (waterPressure(iCell) < rho_water * gravity * (config_sea_level - bedTopography(iCell))) then
+               waterPressure(iCell) = rho_water * gravity * (config_sea_level - bedTopography(iCell))
            endif
         endif
       enddo
