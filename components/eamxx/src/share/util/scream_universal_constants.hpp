@@ -14,7 +14,11 @@ constexpr int days_per_nonleap_year = 365;
 // TODO: When we switch to supporting C++17 we can use a simple `inline constexpr` rather than a struct
 template<typename T>
 struct DefaultFillValue {
-  const T value = std::numeric_limits<float>::max() / 1e5;
+  static const bool is_float = std::is_floating_point<T>::value;
+  static const bool is_int   = std::is_integral<T>::value;
+  T value = is_int ? std::numeric_limits<int>::max() / 2 : 
+	  is_float ? std::numeric_limits<float>::max() / 2 : std::numeric_limits<char>::max();
+
 };
 
 } // namespace constants
