@@ -314,7 +314,14 @@ contains
 !
     rliqocean = 14.0_r8
     rliqice   = 14.0_r8
+    ! rliqland  = 8.0_r8
+
+#ifdef EFFRAD_RLIQLAND
+    rliqland  = EFFRAD_RLIQLAND
+#else
     rliqland  = 8.0_r8
+#endif
+
     do k=1,pver
        do i=1,ncol
 ! jrm Reworked effective radius algorithm

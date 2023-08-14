@@ -3,7 +3,7 @@
 
 #ifdef MMF_RAD_SORT
 void update_sort_idx() {
-  YAKL_SCOPE( t                        , :: t );
+  // YAKL_SCOPE( t                        , :: t );
   YAKL_SCOPE( qv                       , :: qv  );
   YAKL_SCOPE( qcl                      , :: qcl );
   YAKL_SCOPE( qci                      , :: qci );
@@ -88,6 +88,7 @@ void timeloop() {
   YAKL_SCOPE( CF3D                     , :: CF3D );
   YAKL_SCOPE( crm_rad_temperature      , :: crm_rad_temperature );
   YAKL_SCOPE( tabs                     , :: tabs );
+  YAKL_SCOPE( pres                     , :: pres );
   YAKL_SCOPE( crm_rad_qv               , :: crm_rad_qv );
   YAKL_SCOPE( crm_rad_qc               , :: crm_rad_qc );
   YAKL_SCOPE( crm_rad_qi               , :: crm_rad_qi );
@@ -297,7 +298,7 @@ void timeloop() {
   update_sort_idx();
 
   // average output rad data
-  int num_idx = ny*nx;
+  // int num_idx = ny*nx;
   // parallel_for( SimpleBounds<2>(num_idx,ncrms) , YAKL_LAMBDA (int idx, int icrm) {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int idx = i*ny + j;
