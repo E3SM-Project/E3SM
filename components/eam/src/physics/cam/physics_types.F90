@@ -576,7 +576,7 @@ contains
     call shr_assert_in_domain(state%pv(:ncol,:),        is_nan=.false., &
          varname="state%pv",         msg=msg)
     call shr_assert_in_domain(state%pt(:ncol,:),        is_nan=.false., &
-         varname="state%pv",         msg=msg)
+         varname="state%pt",         msg=msg)
     call shr_assert_in_domain(state%u(:ncol,:),         is_nan=.false., &
          varname="state%u",         msg=msg)
     call shr_assert_in_domain(state%v(:ncol,:),         is_nan=.false., &
@@ -1593,7 +1593,7 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pv')
 
   allocate(state%pt(psetcols,pver), stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pv')
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pt')
   
   allocate(state%u(psetcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%u')
@@ -1749,10 +1749,10 @@ subroutine physics_state_dealloc(state)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%t')
   
   deallocate(state%pv, stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%t')
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%pv')
 
   deallocate(state%pt, stat=ierr)
-  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%t')
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%pt')
   
   deallocate(state%u, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%u')

@@ -14,7 +14,6 @@ use physics_buffer, only: physics_buffer_desc, pbuf_add_field, dtype_r8, dyn_tim
 
 
 use cam_history,   only: outfld, write_inithist, hist_fld_active
-use cam_logfile,   only: iulog
 use constituents,  only: pcnst, cnst_name, cnst_longname, cnst_cam_outfld, ptendnam, dmetendnam, apcnst, bpcnst, &
                          cnst_get_ind
 use chemistry,     only: chem_is
@@ -1009,7 +1008,6 @@ end subroutine diag_conv_tend_ini
     real(r8) esi(pcols,pver)   ! 
     real(r8) dlon(pcols)      ! width of grid cell (meters)
     integer  plon             ! number of longitudes
-    integer pv_idx
 
     integer i, k, m, lchnk, ncol, nstep
 !

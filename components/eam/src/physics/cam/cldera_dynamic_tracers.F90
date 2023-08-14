@@ -109,7 +109,7 @@ contains
     call mpibcast(cldera_dynamic_tracers_flag, 1, mpilog,  0, mpicom)
 #endif
 
-  endsubroutine cldera_dynamic_tracers_readnl
+  end subroutine cldera_dynamic_tracers_readnl
 
 !================================================================================
 
@@ -118,8 +118,6 @@ contains
     ! 
     ! Purpose: register advected constituents
     ! 
-    !-----------------------------------------------------------------------
-    use physconst,  only: cpair, mwdry
     !-----------------------------------------------------------------------
 
     if (.not. cldera_dynamic_tracers_flag) return
