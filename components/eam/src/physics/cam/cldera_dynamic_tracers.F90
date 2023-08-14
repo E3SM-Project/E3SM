@@ -57,6 +57,8 @@ module cldera_dynamic_tracers
   ! "PT_TRCR"  - potential temperature tracer
   ! "PV_TRCR_" - the offset potential vorticirty tracer (advected)
   ! "PV_TRCR"  - the derived potential vorticity tracer (output)
+  ! The result is that the two variable names written to the history fields will be
+  ! c_names(ixpt) and pv_out_name
   character(len=8), parameter :: c_names(ncnst) = (/'PV_TRCR_   ', 'PT_TRCR    '/)
   character(len=8), parameter :: pv_out_name = 'PV_TRCR    '
 
@@ -226,10 +228,11 @@ contains
     integer :: i, k
     integer :: lchnk             ! chunk identifier
 
-    ! on each timestep, we need to recover the actual PV by shifting the offset PV
-    ! by an amount cldera_dyanmic_tracers_pv_offset, and then output the derived quantity
-    ! see comments near the declaration of c_names for more info on the advected
-    ! vs. derived PV
+    ! On each timestep, we need to recover the actual PV by shifting the offset PV
+    ! by an amount cldera_dyanmic_tracers_pv_offset, and then output the derived quantity.
+    ! See comments near the declaration of c_names above for more info on the advected
+    ! vs. derived PV. Specifically, we output the derived data in pv_out with history field
+    ! name pv_out_name
     real(r8) :: pv_out(ncol,pver)
     if (.not. cldera_dynamic_tracers_flag) then
       return
@@ -308,7 +311,7 @@ contains
 
     if (.not. cldera_dynamic_tracers_flag) return
 
-    ! decalre PV, PT tracers as history variables
+    ! decalre (derived) PV, PT tracers as history variables
     call addfld (pv_out_name, (/ 'lev' /), 'I', 'm2 K/kg/s', cnst_longname(ixpv))
     call add_default (pv_out_name, 1, ' ')
     call addfld (cnst_name(ixpt), (/ 'lev' /), 'I', 'K', cnst_longname(ixpt))
