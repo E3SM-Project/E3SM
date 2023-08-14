@@ -257,12 +257,11 @@ end subroutine micro_p3_readnl
 
   logical :: prog_modal_aero ! prognostic aerosols
 
+  integer :: idim
   integer,parameter :: P3_in_dimsize = 16
   integer,parameter :: P3_out_dimsize = 32
-  integer,parameter,dimension(P3_in_dimsize) :: &
-          P3_input_dim = (/ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16/)
-  integer,parameter,dimension(P3_out_dimsize) :: &
-          P3_output_dim = (/ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32 /)
+  integer,parameter :: P3_input_dim(P3_in_dimsize)   = [ (idim, idim = 1, P3_in_dimsize) ]
+  integer,parameter :: P3_output_dim(P3_out_dimsize) = [ (idim, idim = 1, P3_out_dimsize) ]
 
   if (masterproc) write(iulog,'(A20)') ' P3 register start ...'
 
