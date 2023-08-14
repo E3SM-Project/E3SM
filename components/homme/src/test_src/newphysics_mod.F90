@@ -383,7 +383,7 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   real(rl), dimension(nlev), intent(inout) :: p_c
   real(rl), dimension(nlev), intent(inout) :: dp_c
   real(rl), dimension(nlev), intent(inout) :: qv_c,ql_c,T_c
-  real(rl), dimension(nlevp),intent(in)    :: zi_c
+  real(rl), dimension(nlevp),intent(inout) :: zi_c
   real(rl),                  intent(inout) :: massout,energyout, en1, en2cp, en2cv, en3, encl
   real(rl),                  intent(in)    :: ptop
   logical,                   intent(inout) :: wasiactive
@@ -391,8 +391,8 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   real(rl) :: qsat, dp_loc, qv_loc, ql_loc, dpdry_loc, qvdry_loc, qldry_loc, &
               qsatdry, dq_loc, vapor_mass_change
   real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, Iold, T_new
-  real(rl) :: cvstarTerm_new, rstardp, oldQ1mass, oldQ2mass, olddphi
-  real(rl), dimension(nlev) :: pi, zero, rain, ppp_c
+  real(rl) :: cvstarTerm_new, rstardp, oldQ1mass, oldQ2mass, olddphi, rstar_new
+  real(rl), dimension(nlev)  :: pi, zero, rain, ppp_c, oldqdp, pprime
   integer  :: k
 
   zero = 0.0
@@ -458,6 +458,9 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
   call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c),dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c,p_c,en2cp)
   call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c),dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c(nlevp),p_c,en2cv)
 
+
+#if 1
+  !CV sedimentation, time split
   if(wasiactive)then
 
   !sedimentation stage
@@ -482,6 +485,38 @@ subroutine rj_new_volume(qv_c,ql_c,T_c,dp_c,p_c,zi_c,ptop,massout,energyout,&
 
   call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c),dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c(nlevp),p_c,en3)
   !call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c),dp_c*qv_c,dp_c*ql_c,zero,T_c,ptop,zi_c,p_c,en3)
+
+#else
+  !p' sedimentation
+  if(wasiactive)then
+
+    oldqdp = dp_c * qv_c
+    pprime = p_c - pi
+
+    !rain out 
+    dp_c = dp_c - rain
+    ql_c = 0.0
+    qv_c = oldqdp/dp_c
+    call construct_hydro_pressure(dp_c,ptop,pi)
+    p_c = pprime + pi
+    do k=nlev, 1, -1
+      rstar_new = rdry * (1.0 - qv_c(k) - ql_c(k)) + rvapor * qv_c(k)
+      olddphi = rstar_new * dp_c(k) * T_c(k) / p_c(k)
+      zi_c(k) = zi_c(k+1) + olddphi/gravit
+    enddo
+  endif
+
+  !interchange V and P formulas of energy for debugging
+  !call energycp_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c(nlevp),p_c,en3)
+  call energycV_nh_via_mass(dp_c*(1-qv_c-ql_c), dp_c*qv_c, dp_c*ql_c, zero,T_c,ptop,zi_c,p_c,en3)
+
+  vapor_mass_change = sum(rain)
+  massout = massout + vapor_mass_change
+  energyout = energyout + (en2cp - en3)
+  encl = encl + (Tforcl*cl+latice)*vapor_mass_change
+#endif
+
+
 
 end subroutine rj_new_volume
 
