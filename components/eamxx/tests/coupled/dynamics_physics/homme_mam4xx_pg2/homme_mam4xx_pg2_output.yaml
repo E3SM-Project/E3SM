@@ -4,7 +4,7 @@ filename_prefix: homme_mam4xx_pg2_output
 Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:
-  Physics PG2:
+  Physics GLL:
     Field Names:
       # HOMME
       - ps
