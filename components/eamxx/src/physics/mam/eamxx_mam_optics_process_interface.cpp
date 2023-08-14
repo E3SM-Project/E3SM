@@ -13,10 +13,7 @@ MAMOptics::MAMOptics(
     const ekat::Comm& comm,
     const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params),
-    logger("MAM4 optics", ekat::logger::LogLevel::trace, comm),
     aero_config_() {
-
-  logger.set_format("\t[%n %l] %v");
 }
 
 AtmosphereProcessType MAMOptics::type() const {
@@ -29,8 +26,6 @@ std::string MAMOptics::name() const {
 
 void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
-
-  logger.trace("entering MAMOptics::set_grids");
 
   grid_ = grids_manager->get_grid("Physics");
   const auto& grid_name = grid_->name();
@@ -65,8 +60,6 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   constexpr int ps = Pack::n;
   FieldLayout scalar3d_layout_mid { {COL, LEV}, {ncol_, nlev_} };
   add_field<Computed>("nccn", scalar3d_layout_mid, 1/kg, grid_name, ps);
-
-  logger.trace("leaving MAMOptics::set_grids");
 }
 
 void MAMOptics::initialize_impl(const RunType run_type) {

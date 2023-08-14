@@ -13,11 +13,7 @@ MAMMicrophysics::MAMMicrophysics(
     const ekat::Comm& comm,
     const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params),
-    logger("MAM4", ekat::logger::LogLevel::trace, comm),
     aero_config_(), nucleation_(new mam4::NucleationProcess(aero_config_)) {
-
-    logger.set_format("\t[%n %l] %v");
-    logger.trace("Hello from MAM4!");
 }
 
 AtmosphereProcessType MAMMicrophysics::type() const {
@@ -30,8 +26,6 @@ std::string MAMMicrophysics::name() const {
 
 void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
-
-  logger.trace("entering MAMMicrophysics::set_grids");
 
   // The units of mixing ratio q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
@@ -83,8 +77,6 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   // Tracers group -- do we need this in addition to the tracers above? In any
   // case, this call should be idempotent, so it can't hurt.
   add_group<Updated>("tracers", grid_name, 1, Bundling::Required);
-
-  logger.trace("leaving MAMMicrophysics::set_grids");
 }
 
 // this checks whether we have the tracers we expect
@@ -144,8 +136,6 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
                    "Error! Insufficient buffer size.\n");
 
-  logger.trace("entering init_buffers");
-
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
   // set view pointers for midpoint fields
@@ -191,13 +181,9 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
   size_t used_mem = (mem - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMMicrophysics.");
-
-  logger.trace("leaving init_buffers");
 }
 
 void MAMMicrophysics::initialize_impl(const RunType run_type) {
-
-  logger.trace("entering MAMMicrophysics::initialize at line {}", __LINE__);
 
   const auto& T_mid = get_field_in("T_mid").get_view<const Real**>();
   const auto& p_mid = get_field_in("p_mid").get_view<const Real**>();
@@ -305,8 +291,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   nuc_config.accom_coef_h2so4 = 1.0;
   nuc_config.newnuc_adjust_factor_dnaitdt = 1.0;
   nucleation_->init(nuc_config);
-
-  logger.trace("leaving MAMMicrophysics::initialize");
 }
 
 void MAMMicrophysics::run_impl(const double dt) {
@@ -387,7 +371,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 #ifndef NDEBUG
     const int lev_idx = 0;
     if (icol == 0) {
-    logger.debug("tends.q_gas[ih2so4] = {}, tends.n_mode_i[iait] = {}, tends.q_aero_i[iait][iso4] = {}",
+    m_atm_logger->debug("tends.q_gas[ih2so4] = {}, tends.n_mode_i[iait] = {}, tends.q_aero_i[iait][iso4] = {}",
       tends.q_gas[ih2so4](lev_idx), tends.n_mode_i[iait](lev_idx), tends.q_aero_i[iait][iso4](lev_idx));
     }
 #endif

@@ -7,7 +7,6 @@
 
 #include <ekat/ekat_parameter_list.hpp>
 #include <ekat/ekat_workspace.hpp>
-#include <ekat/logging/ekat_logger.hpp>
 #include <mam4xx/mam4.hpp>
 
 #include <string>
@@ -35,10 +34,6 @@ class MAMOptics final : public scream::AtmosphereProcess {
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
 
-  // a logger for this process
-  using Logger = ekat::logger::Logger<ekat::logger::LogNoFile,
-                                      ekat::logger::LogRootRank>;
-
 public:
 
   // Constructor
@@ -63,8 +58,6 @@ protected_except_cuda:
   void finalize_impl() override;
 
 private_except_cuda:
-
-  Logger logger;
 
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
