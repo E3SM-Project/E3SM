@@ -94,6 +94,7 @@ def plot4arrays(arr1, arr2, arr3, arr4, arr1name, arr2name, arr3name, arr4name, 
 # leak En [W/m2/sec]   798.000000000000       3.227660888293464E-009
 # leak M [ks/m2/sec]   798.000000000000       2.142152774586057E-014
 
+latvap=2.501e6
 latice=3.337e5
 Tforcl=300.0
 
@@ -489,24 +490,34 @@ finally:
 
    #################333
 
+   #this plot needs removal of L terms
+
+   #from the code, each of 5 updates compure encl with latice*mass term
+
+   #also, from the code, each of 5 updates computes energy_precip with latice*mass part, too
+   #thus we just remove latice*mass part from encl (which is then IEFLX in the paper)
+   #and from E_before - E_after
+   #in other words, consider exact cases where en_precip = energy_before-energy_after=cpTerm + latice*mass
+   #since we want to compare only cpTerms, we need to substact from en_before-en_after latice term
+
    plotname="encl-diagn-for5"
    plt.figure()
 
    clcolor='blueviolet'
-   plt.plot(ns1,apclen1,  color=clcolor)
-   plt.plot(ns1,apclen2,  color=clcolor)
-   plt.plot(ns1,apclen3,  color=clcolor)
-   plt.plot(ns1,apclen4,  color=clcolor)
-   plt.plot(ns1,apclen5,  color=clcolor, label='E precipitation')
+   plt.plot(ns1,apclen1 - latice*apmass1, color=clcolor)
+   plt.plot(ns1,apclen2 - latice*apmass2, color=clcolor)
+   plt.plot(ns1,apclen3 - latice*apmass3, color=clcolor)
+   plt.plot(ns1,apclen4 - latice*apmass4, color=clcolor)
+   plt.plot(ns1,apclen5 - latice*apmass5, color=clcolor, label='E precipitation')
 
    #apleake = en_leak = E_before - E_after - E_precip
    #apen = E_precip, so together
    #apleake + apen = E_before - E_after
-   plt.plot(ns1,apleake1+apen1,  color='red',      label=label1, linewidth=3)
-   plt.plot(ns1,apleake2+apen2,  color='black',    label=label2, linewidth=1)
-   plt.plot(ns1,apleake3+apen3,  color='limegreen',label=label3, linewidth=2)
-   plt.plot(ns1,apleake4+apen4,  color='orange',   label=label4, linewidth=3)
-   plt.plot(ns1,apleake5+apen5,  color='blue',     label=label5, linewidth=1)
+   plt.plot(ns1,apleake1+apen1 - latice*apmass1,  color='red',      label=label1, linewidth=3)
+   plt.plot(ns1,apleake2+apen2 - latice*apmass2,  color='black',    label=label2, linewidth=1)
+   plt.plot(ns1,apleake3+apen3 - latice*apmass3,  color='limegreen',label=label3, linewidth=2)
+   plt.plot(ns1,apleake4+apen4 - latice*apmass4,  color='orange',   label=label4, linewidth=3)
+   plt.plot(ns1,apleake5+apen5 - latice*apmass5,  color='blue',     label=label5, linewidth=1)
 
    #dE for cpstarhy option
    #need relative error
