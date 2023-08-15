@@ -39,6 +39,7 @@ add_default($nl, 'config_SLM_to_MALI_weights_file');
 ###########################
 
 add_default($nl, 'config_calving');
+add_default($nl, 'config_apply_calving_mask');
 add_default($nl, 'config_use_Albany_flowA_eqn_for_vM');
 add_default($nl, 'config_calving_topography');
 add_default($nl, 'config_calving_thickness');
@@ -49,6 +50,7 @@ add_default($nl, 'config_calving_velocity_const');
 add_default($nl, 'config_data_calving');
 add_default($nl, 'config_calving_timescale');
 add_default($nl, 'config_restore_calving_front');
+add_default($nl, 'config_restore_calving_front_prevent_retreat');
 add_default($nl, 'config_remove_icebergs');
 add_default($nl, 'config_remove_small_islands');
 add_default($nl, 'config_calving_speed_limit');
@@ -109,6 +111,7 @@ add_default($nl, 'config_temperature_profile_variability_period');
 add_default($nl, 'config_temperature_profile_variability_phase');
 add_default($nl, 'config_temperature_profile_GL_depth_fraction');
 add_default($nl, 'config_front_mass_bal_grounded');
+add_default($nl, 'config_use_3d_thermal_forcing_for_face_melt');
 add_default($nl, 'config_beta_ocean_thermal_forcing');
 add_default($nl, 'config_add_ocean_thermal_forcing');
 add_default($nl, 'config_alpha_subglacial_discharge');
@@ -138,8 +141,10 @@ add_default($nl, 'config_min_adaptive_timestep');
 add_default($nl, 'config_max_adaptive_timestep');
 add_default($nl, 'config_adaptive_timestep_CFL_fraction');
 add_default($nl, 'config_adaptive_timestep_calvingCFL_fraction');
+add_default($nl, 'config_adaptive_timestep_faceMeltingCFL_fraction');
 add_default($nl, 'config_adaptive_timestep_include_DCFL');
 add_default($nl, 'config_adaptive_timestep_include_calving');
+add_default($nl, 'config_adaptive_timestep_include_face_melting');
 add_default($nl, 'config_adaptive_timestep_force_interval');
 
 ###################################
