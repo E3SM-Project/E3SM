@@ -374,6 +374,8 @@ subroutine shoc_main ( &
   real(rtype) :: rho_zt(shcol,nlev)
   ! SHOC water vapor [kg/kg]
   real(rtype) :: shoc_qv(shcol,nlev)
+  ! SHOC temperature [K]
+  real(rtype) :: shoc_tabs(shcol,nlev)
 
   ! Grid difference centereted on thermo grid [m]
   real(rtype) :: dz_zt(shcol,nlev)
@@ -455,6 +457,11 @@ subroutine shoc_main ( &
        shcol,nlev,qw,shoc_ql,&              ! Input
        shoc_qv)                             ! Output
 
+    ! Diagnose absolute temperature
+    call compute_shoc_temperature(&
+       shcol,nlev,thetal,shoc_ql,inv_exner,& ! Input
+       shoc_tabs)                            ! Output
+
     call shoc_diag_obklen(&
        shcol,uw_sfc,vw_sfc,&                          ! Input
        wthl_sfc,wqw_sfc,thetal(:shcol,nlev),&         ! Input
@@ -480,8 +487,8 @@ subroutine shoc_main ( &
     call shoc_tke(&
        shcol,nlev,nlevi,dtime,&             ! Input
        wthv_sec,shoc_mix,&                  ! Input
-       dz_zi,dz_zt,pres,&                   ! Input
-       u_wind,v_wind,brunt,obklen,&         ! Input
+       dz_zi,dz_zt,pres,shoc_tabs,&         ! Input
+       u_wind,v_wind,brunt,&                ! Input
        zt_grid,zi_grid,pblh,&               ! Input
        tke,tk,tkh,&                         ! Input/Output
        isotropy)                            ! Output
@@ -722,6 +729,59 @@ subroutine compute_shoc_vapor( &
   return
 
 end subroutine compute_shoc_vapor
+
+!==============================================================
+! Compute temperature from SHOC prognostic/diagnostic variables
+
+subroutine compute_shoc_temperature( &
+          shcol,nlev,thetal,ql,inv_exner,& ! Input
+          tabs)                            ! Output
+
+  ! Purpose of this subroutine is to compute temperature
+  !   based on SHOC's prognostic liquid water potential
+  !   temperature.
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_shoc_temperature_f
+#endif
+
+  implicit none
+
+! INPUT VARIABLES
+  ! number of columns [-]
+  integer, intent(in) :: shcol
+  ! number of mid-point levels [-]
+  integer, intent(in) :: nlev
+  ! liquid water potential temperature [K]
+  real(rtype), intent(in) :: thetal(shcol,nlev)
+  ! cloud water mixing ratio [kg/kg]
+  real(rtype), intent(in) :: ql(shcol,nlev)
+  ! inverse exner function [-]
+  real(rtype), intent(in) :: inv_exner(shcol,nlev)
+
+! OUTPUT VARIABLES
+  ! absolute temperature [K]
+  real(rtype), intent(out) :: tabs(shcol,nlev)
+
+! LOCAL VARIABLES
+  integer :: i, k
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+     call compute_shoc_temperature_f(shcol,nlev,thetal,ql,inv_exner,tabs)
+     return
+  endif
+#endif
+
+  do k = 1, nlev
+    do i = 1, shcol
+      tabs(i,k) = thetal(i,k)/inv_exner(i,k)+(lcond/cp)*ql(i,k)
+    enddo
+  enddo
+
+  return
+
+end subroutine compute_shoc_temperature
 
 !==============================================================
 ! Update T, q, tracers, tke, u, and v based on implicit diffusion
@@ -2962,8 +3022,8 @@ end subroutine shoc_assumed_pdf_compute_buoyancy_flux
 subroutine shoc_tke(&
          shcol,nlev,nlevi,dtime,&    ! Input
          wthv_sec,shoc_mix,&         ! Input
-         dz_zi,dz_zt,pres,&          ! Input
-         u_wind,v_wind,brunt,obklen,&! Input
+         dz_zi,dz_zt,pres,tabs,&     ! Input
+         u_wind,v_wind,brunt,&       ! Input
          zt_grid,zi_grid,pblh,&      ! Input
          tke,tk,tkh, &               ! Input/Output
          isotropy)                   ! Output
@@ -2990,14 +3050,14 @@ subroutine shoc_tke(&
   real(rtype), intent(in) :: u_wind(shcol,nlev)
   ! Zonal wind [m/s]
   real(rtype), intent(in) :: v_wind(shcol,nlev)
-  ! Obukov length
-  real(rtype), intent(in) :: obklen(shcol)
   ! thickness on interface grid [m]
   real(rtype), intent(in) :: dz_zi(shcol,nlevi)
   ! thickness on thermodynamic grid [m]
   real(rtype), intent(in) :: dz_zt(shcol,nlev)
   ! pressure [Pa]
   real(rtype), intent(in) :: pres(shcol,nlev)
+  ! absolute temperature [K]
+  real(rtype), intent(in) :: tabs(shcol,nlev)
   ! Brunt Vaisalla frequncy [/s]
   real(rtype), intent(in) :: brunt(shcol,nlev)
   ! heights on midpoint grid [m]
@@ -3045,7 +3105,7 @@ subroutine shoc_tke(&
   call isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
 
   !Compute eddy diffusivity for heat and momentum
-  call eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
+  call eddy_diffusivities(nlev, shcol, pblh, zt_grid, tabs, &
        shoc_mix, sterm_zt, isotropy, tke, tkh, tk)
 
   return
@@ -3309,7 +3369,7 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
 
 end subroutine isotropic_ts
 
-subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
+subroutine eddy_diffusivities(nlev, shcol, pblh, zt_grid, tabs, &
      shoc_mix, sterm_zt, isotropy, tke, tkh, tk)
 
   !------------------------------------------------------------
@@ -3325,12 +3385,12 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
   !intent-ins
   integer, intent(in) :: nlev, shcol
 
-  ! Monin-Okbukov length [m]
-  real(rtype), intent(in) :: obklen(shcol)
   ! PBL height [m]
   real(rtype), intent(in) :: pblh(shcol)
   ! Heights on the mid-point grid [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
+  ! Absolute temperature [K]
+  real(rtype), intent(in) :: tabs(shcol,nlev)
   ! Mixing length [m]
   real(rtype), intent(in) :: shoc_mix(shcol,nlev)
   ! Interpolate shear production to thermo grid
@@ -3350,16 +3410,15 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
   integer     :: i, k
 
   !parameters
-  ! Value for of Monin-Obukov length [m] for which to
-  !  apply stable PBL diffusivities
-  real(rtype), parameter :: obk_crit = 1.0e4_rtype
+  ! Minimum absolute temperature threshold for which to apply extra mixing [K]
+  real(rtype), parameter :: temp_crit = 182.0_rtype
   ! Transition depth [m] above PBL top to allow
   ! stability diffusivities
   real(rtype), parameter :: pbl_trans = 200.0_rtype
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
-      call eddy_diffusivities_f(nlev, shcol, obklen, pblh, zt_grid, &
+      call eddy_diffusivities_f(nlev, shcol, pblh, zt_grid, tabs, &
                                 shoc_mix, sterm_zt, isotropy, tke, tkh, tk)
       return
    endif
@@ -3368,14 +3427,11 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
   do k = 1, nlev
      do i = 1, shcol
 
-        if (obklen(i) .gt. obk_crit .and. (zt_grid(i,k) .lt. pblh(i)+pbl_trans)) then
-           ! If surface layer is stable, based on near surface
-           !  dimensionless Monin-Obukov use modified coefficients of
-           !  tkh and tk that are primarily based on shear production
-           !  and SHOC length scale, to promote mixing within the PBL
-           !  and to a height slighty above to ensure smooth transition.
+        if (tabs(i,nlev) .lt. temp_crit .and. (zt_grid(i,k) .lt. pblh(i)+pbl_trans)) then
+           ! If surface layer temperature is running away, apply extra mixing
+	   !   based on traditional stable PBL diffusivities that are not damped
+	   !   by stability functions.
 
-	   ! Compute stable PBL diffusivities
            tkh(i,k) = Ckh_s*bfb_square(shoc_mix(i,k))*bfb_sqrt(sterm_zt(i,k))
            tk(i,k)  = Ckm_s*bfb_square(shoc_mix(i,k))*bfb_sqrt(sterm_zt(i,k))
         else
