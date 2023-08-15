@@ -381,7 +381,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <output_yaml_files type="array(string)">${SRCROOT}/components/eamxx/data/scream_default_output.yaml</output_yaml_files>
     <model_restart>
       <filename_prefix>./${CASE}.scream</filename_prefix>
-      <output_control>
+      <output_control locked="true">
         <Frequency>${REST_N}</Frequency>
         <frequency_units>${REST_OPTION}</frequency_units>
       </output_control>
