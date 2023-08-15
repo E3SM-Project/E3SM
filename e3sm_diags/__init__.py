@@ -5,7 +5,7 @@ import sys
 import shapely  # isort: skip
 import esmpy  # isort: skip
 
-__version__ = "v2.9.0rc2"
+__version__ = "v2.9.0rc3"
 INSTALL_PATH = os.path.join(sys.prefix, "share/e3sm_diags/")
 
 # Disable MPI in cdms2, which is not currently supported by E3SM-unified
