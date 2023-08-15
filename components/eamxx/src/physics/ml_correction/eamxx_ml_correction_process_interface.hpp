@@ -25,7 +25,7 @@ namespace scream {
 
 class MLCorrection : public AtmosphereProcess {
  public:
-  using mPack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+  using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   // Constructors
   MLCorrection(const ekat::Comm &comm, const ekat::ParameterList &params);
 

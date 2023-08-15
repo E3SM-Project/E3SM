@@ -211,7 +211,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- ML correction -->
     <mlcorrection inherit="atm_proc_base">
-      <ML_model_path type="array(string)">NONE</ML_model_path>
+      <ML_model_path type="string">NONE</ML_model_path>
       <ML_output_fields type="array(string)">NONE</ML_output_fields>
     </mlcorrection>
 
