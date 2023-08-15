@@ -735,6 +735,7 @@ contains
          !$omp do schedule(runtime) private (cell1, cell2)
 #endif
          do iEdge = 1, nEdgesAll
+            if ( maxLevelEdgeTop(iEdge) == 0 ) cycle
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             wctEdge(iEdge) = 0.5_RKIND*(sshCell(cell1) + sshCell(cell2)) &
