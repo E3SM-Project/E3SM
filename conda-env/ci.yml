@@ -17,12 +17,14 @@ dependencies:
   - cdms2 3.1.5
   - cdutil 8.2.1
   - dask
+  - esmpy >=8.4.0
   - genutil 8.2.1
   - lxml
   - mache >=0.15.0
   - matplotlib-base
   - netcdf4
   - numpy >=1.23.0
+  - shapely >=2.0.0,<3.0.0
   - xarray >=2023.02.0
   # Testing
   # ==================

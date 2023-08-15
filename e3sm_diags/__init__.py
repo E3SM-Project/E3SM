@@ -1,6 +1,10 @@
 import os
 import sys
 
+# import shapely before esmpy to prevent a segfault related to multiprocessing
+import shapely  # isort: skip
+import esmpy  # isort: skip
+
 __version__ = "v2.9.0rc2"
 INSTALL_PATH = os.path.join(sys.prefix, "share/e3sm_diags/")
 
