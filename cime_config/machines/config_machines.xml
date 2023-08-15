@@ -2918,7 +2918,7 @@
           <command name="use">/soft/restricted/CNDA/updates/modulefiles</command>
         </modules>
         <modules compiler="!gnu">
-          <command name="load">oneapi/eng-compiler/2022.12.30.003</command>
+          <command name="load">oneapi/eng-compiler/2023.05.15.007</command>
           <command name="load">mpich/52.2/icc-all-pmix-gpu</command>
           <!--command name="load">oneapi/eng-compiler/.2023.05.15.002-rc02</command-->
           <!--command name="load">oneapi/eng-compiler/.2023.05.15.003-rc08</command-->
