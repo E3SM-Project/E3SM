@@ -92,6 +92,9 @@ subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
   ! Heating conversion factor
   real(r8), intent(in) :: CF
 
+  ! Scaling factor for the heating depth
+  real(r8), intent(in) :: hdepth_scaling_factor
+
   ! Indices of top gravity wave source level and lowest level where wind
   ! tendencies are allowed.
   integer, intent(out) :: src_level(ncol)
@@ -108,9 +111,6 @@ subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
 
   ! Heating depth and maximum heating in each column.
   real(r8), intent(out) :: hdepth(ncol), maxq0(ncol)
-
-  ! Scaling factor for the heating depth
-  real(r8), intent(out) :: hdepth_scaling_factor
 
 !---------------------------Local Storage-------------------------------
   ! Column and level indices.
