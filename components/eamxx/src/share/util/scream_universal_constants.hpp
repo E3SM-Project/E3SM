@@ -17,7 +17,7 @@ struct DefaultFillValue {
   static const bool is_float = std::is_floating_point<T>::value;
   static const bool is_int   = std::is_integral<T>::value;
   T value = is_int ? std::numeric_limits<int>::max() / 2 : 
-	  is_float ? std::numeric_limits<float>::max() / 2 : std::numeric_limits<char>::max();
+	  is_float ? std::numeric_limits<float>::max() / 1e5 : std::numeric_limits<char>::max();
 
 };
 
