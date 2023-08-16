@@ -163,8 +163,7 @@ inline void pam_accelerate( pam::PamCoupler &coupler, int nstep, int &nstop ) {
   bool ceaseflag = ceaseflag_liveout.hostRead();
   //------------------------------------------------------------------------------------------------
   // If acceleration tendencies are insane then just abort the acceleration
-  // and indicate this in the log files
-  if (ceaseflag) { // special case for dT/dt too large
+  if (ceaseflag) {
     // When temperature tendency threshold is triggered the acceleration will
     // not be applied for the remainder of the CRM integration.
     // The number of CRM steps for this integration (nstop) must be  updated

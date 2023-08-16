@@ -57,7 +57,6 @@ extern "C" void pam_driver() {
   coupler.set_option<int>("sponge_num_layers",crm_nz*0.3); // depth of sponge layer
   coupler.set_option<real>("sponge_time_scale",60);        // minimum damping timescale at top
   coupler.set_option<bool>("crm_acceleration_ceaseflag",false);
-  auto crm_acceleration_ceaseflag = coupler.get_option<bool>("crm_acceleration_ceaseflag");
   //------------------------------------------------------------------------------------------------
   // Allocate the coupler state and retrieve host/device data managers
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
@@ -197,7 +196,7 @@ extern "C" void pam_driver() {
     if (enable_physics_tend_stats) { pam_statistics_aggregate_tendency(coupler,"micro"); }
     if (enable_check_state) { pam_debug_check_state(coupler, 6, nstep); }
 
-    if (use_crm_accel && !crm_acceleration_ceaseflag) {
+    if (use_crm_accel && !coupler.get_option<bool>("crm_acceleration_ceaseflag")) {
       pam_accelerate(coupler, nstep, nstop);
       pam_accelerate_diagnose(coupler);
     }
