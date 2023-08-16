@@ -281,7 +281,9 @@ void AtmosphereOutput::restart (const std::string& filename)
   // Create an input stream on the fly, and init averaging data
   ekat::ParameterList res_params("Input Parameters");
   res_params.set<std::string>("Filename",filename);
-  res_params.set("Field Names",m_fields_names);
+  std::vector<std::string> input_field_names = m_fields_names;
+  input_field_names.insert(input_field_names.end(),m_avg_cnt_names.begin(),m_avg_cnt_names.end());
+  res_params.set("Field Names",input_field_names);
 
   AtmosphereInput hist_restart (res_params,m_io_grid,m_host_views_1d,m_layouts);
   hist_restart.read_variables();
@@ -493,6 +495,18 @@ run (const std::string& filename,
       grid_write_data_array(filename,name,view_host.data(),view_host.size());
     }
   }
+  // Handle writing the average count variables to file
+  if (is_write_step) {
+    for (const auto name : m_avg_cnt_names) {
+      auto& view_dev = m_dev_views_1d.at(name);
+      Kokkos::deep_copy(view_dev,1); //ASD DELETE and replace with actual algorithm to set these values
+      // Bring data to host
+      auto view_host = m_host_views_1d.at(name);
+      Kokkos::deep_copy (view_host,view_dev);
+      grid_write_data_array(filename,name,view_host.data(),view_host.size());
+    }
+  }
+
 } // run
 
 long long AtmosphereOutput::
@@ -661,6 +675,7 @@ void AtmosphereOutput::register_views()
         field.get_header().get_parent().expired() &&
         not is_diagnostic;
 
+    const auto layout = m_layouts.at(name);
     const auto size = m_layouts.at(name).size();
     if (can_alias_field_view) {
       // Alias field's data, to save storage.
@@ -671,7 +686,24 @@ void AtmosphereOutput::register_views()
       m_dev_views_1d.emplace(name,view_1d_dev("",size));
       m_host_views_1d.emplace(name,Kokkos::create_mirror(m_dev_views_1d[name]));
     }
-    m_avg_coeff_views_1d.emplace(name,view_1d_dev("",size));
+    m_avg_coeff_views_1d.emplace(name,view_1d_dev("",size)); // TODO: DELETE THESE, no longer needed.
+
+    // Now create and store a dev view to track the averaging count for this layout (if needed)
+    // We don't need to track average counts for files that are not tracking the time dim nor
+    // for any variable with LayoutType = Invalid
+    const auto tags = layout.tags();
+    auto lt = get_layout_type(tags);
+    if (m_add_time_dim && lt != LayoutType::Invalid) {
+      std::string avg_cnt_name = "avg_count_" + e2str(lt);
+      for (int ii=0; ii<layout.rank(); ++ii) {
+        auto tag_name = m_io_grid->get_dim_name(layout.tag(ii));
+        avg_cnt_name += "_" + tag_name;
+      }
+      m_avg_cnt_names.push_back(avg_cnt_name);
+      m_dev_views_1d.emplace(avg_cnt_name,view_1d_dev("",size));  // Note, emplace will only add a new key if one isn't already there
+      m_host_views_1d.emplace(avg_cnt_name,Kokkos::create_mirror(m_dev_views_1d[avg_cnt_name]));
+      m_layouts.emplace(avg_cnt_name,layout);
+    }
   }
   // Initialize the local views
   reset_dev_views();
@@ -700,6 +732,10 @@ reset_dev_views()
       default:
         EKAT_ERROR_MSG ("Unrecognized averaging type.\n");
     }
+  }
+  // Reset all views for averaging count to 0
+  for (auto const& name : m_avg_cnt_names) {
+    Kokkos::deep_copy(m_dev_views_1d[name],0);
   }
 }
 /* ---------------------------------------------------------- */
@@ -792,6 +828,14 @@ register_variables(const std::string& filename,
       children_list += " ]";
       set_variable_metadata(filename,name,"sub_fields",children_list);
     }
+  }
+  // Now register the average count variables
+  for (const auto& name : m_avg_cnt_names) {
+    const auto layout = m_layouts.at(name);
+    auto io_decomp_tag = set_decomp_tag(layout);
+    auto vec_of_dims   = set_vec_of_dims(layout);
+    register_variable(filename, name, name, "unitless", vec_of_dims,
+                      "real",fp_precision, io_decomp_tag);
   }
 } // register_variables
 /* ---------------------------------------------------------- */
@@ -888,6 +932,13 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
     auto field = get_field(name,"io");
     const auto& fid  = field.get_header().get_identifier();
     auto var_dof = get_var_dof_offsets(fid.get_layout());
+    set_dof(filename,name,var_dof.size(),var_dof.data());
+    m_dofs.emplace(std::make_pair(name,var_dof.size()));
+  }
+  // Cycle through the average count fields and set degrees of freedom
+  for (auto const& name : m_avg_cnt_names) {
+    const auto layout = m_layouts.at(name);
+    auto var_dof = get_var_dof_offsets(layout);
     set_dof(filename,name,var_dof.size(),var_dof.data());
     m_dofs.emplace(std::make_pair(name,var_dof.size()));
   }
