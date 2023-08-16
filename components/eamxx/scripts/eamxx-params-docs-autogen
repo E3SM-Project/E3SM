@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 
 """
-Generate a markdown file with explanation of all EAMxx namelist defaults parameters
+This script parses the file `cime_config/namelist_defaults_scream.xml'
+and generates the markdown file `docs/mkdocs/docs/common/eamxx_params.md`,
+containing all the runtime parameters that can be configured via calls
+to `atmchange` (in the case folder). For each parameter, we also report
+a doc string and its type, as well as, if present, constraints and valid values.
 """
 
-import sys, os
+import argparse, sys, os, pathlib
 
-from pathlib import Path
 from utils import _ensure_pylib_impl
 
 _ensure_pylib_impl("mdutils")
@@ -17,46 +20,18 @@ from mdutils import Html
 
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
 from eamxx_buildnml_impl import resolve_all_inheritances, get_valid_selectors
-#  import os, sys, re
 
-#  import xml.etree.ElementTree as ET
-#  import xml.dom.minidom as md
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""{0}
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
-#  _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
-#  sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
-
-#  # Add path to scream libs
-#  sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
-
-#  # Cime imports
-#  from standard_script_setup import * # pylint: disable=wildcard-import
-#  from CIME.utils import expect, safe_copy, SharedArea
-
-#  # SCREAM imports
-#  from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
-#          resolve_all_inheritances, gen_atm_proc_group, check_all_values
-#  from atm_manip import atm_config_chg_impl, unbuffer_changes, apply_buffer
-
-#  from utils import ensure_yaml
-#  ensure_yaml()
-#  import yaml
-
-#  logger = logging.getLogger(__name__) # pylint: disable=undefined-variable
-
-#  CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
-
-# These are special attributes used by buildnml and other scripts to
-# perform some checks. In particular:
-#  - type: allows to verify compatibility (e.g., can't assing 3.2 to an integer)
-#  - valid_values: allows to specify a set of valid values
-#  - locked: if set to true, the parameter cannot be modified (via atmchange)
-#  - constraints: allows to specify constraints on values. Valid constraints
-#    are lt, le, ne, gt, ge, and mod. Multiple constrained are separated by ';'.
-#    Examples:
-#      - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
-#      - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
-METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit")
-
+    return parser.parse_args(args[1:])
 
 ###########################################################################
 def add_param(docs,scope,item):
@@ -109,7 +84,7 @@ def add_children(docs,xml,scope=""):
 def generate_params_docs():
 ###########################################################################
 
-    eamxx = Path(__file__).parent.parent.resolve()
+    eamxx = pathlib.Path(__file__).parent.parent.resolve()
     xml_defaults_file = eamxx / "cime_config" / "namelist_defaults_scream.xml"
     output_file = eamxx / "docs" / "mkdocs" / "docs" / "common" / "eamxx_params.md"
 
@@ -157,8 +132,7 @@ def generate_params_docs():
 def _main_func(description):
 ###############################################################################
 
-    success = generate_params_docs()
-    #  success = generate_params_docs(**vars(parse_command_line(sys.argv, description)))
+    success = generate_params_docs(**vars(parse_command_line(sys.argv, description)))
 
     sys.exit(0 if success else 1)
 
