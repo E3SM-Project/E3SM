@@ -965,6 +965,9 @@ if ($cfg->get('age_of_air_trcs')) { add_default($nl, 'aoa_tracers_flag', 'val'=>
 # CLDERA AOA, E90, ST80_25 tracers
 if ($cfg->get('cldera_passive_trcs')) { add_default($nl,'cldera_passive_tracers_flag','val'=>'.true.');}
 
+# CLDERA PV, PT tracers
+if ($cfg->get('cldera_dynamic_trcs')) { add_default($nl,'cldera_dynamic_tracers_flag','val'=>'.true.');}
+
 # CLDERA SAI tracers
 if ($cfg->get('cldera_sai_trcs')) { add_default($nl, 'cldera_sai_tracers_flag', 'val'=>'.true.'); }
 add_default($nl, 'cldera_sai_read_from_ic_file');

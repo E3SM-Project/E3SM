@@ -20,7 +20,7 @@ module dp_coupling
   use perf_mod,       only: t_startf, t_stopf, t_barrierf
   use parallel_mod,   only: par
   use scamMod,        only: single_column
-  use element_ops,    only: get_temperature, get_pot_vort
+  use element_ops,    only: get_temperature, get_pot_vort, get_pottemp
   use phys_grid,      only: get_ncols_p, get_gcol_all_p, &
                             transpose_block_to_chunk, transpose_chunk_to_block,   &
                             chunk_to_block_send_pters, chunk_to_block_recv_pters, &
@@ -40,7 +40,8 @@ CONTAINS
     use dyn_comp,                only: frontgf_idx, frontga_idx, hvcoord
     use phys_control,            only: use_gw_front
     use dyn_comp,                only: dom_mt
-    use gllfvremap_mod,          only: gfr_dyn_to_fv_phys, gfr_dyn_to_fv_phys_potvort
+    use gllfvremap_mod,          only: gfr_dyn_to_fv_phys, gfr_dyn_to_fv_phys_potvort, & 
+                                                           gfr_dyn_to_fv_phys_pottemp
     use spmd_utils,              only: masterproc
 
     implicit none
@@ -56,6 +57,7 @@ CONTAINS
     real(kind=real_kind), dimension(npsq,nelemd)            :: zs_tmp ! temp array to hold phis  
     real(kind=real_kind), dimension(npsq,pver,nelemd)       :: T_tmp  ! temp array to hold T
     real(kind=real_kind), dimension(npsq,pver,nelemd)       :: pv_tmp  ! temp array to hold potential vorticity
+    real(kind=real_kind), dimension(npsq,pver,nelemd)       :: pt_tmp  ! temp array to hold potential vorticity
     real(kind=real_kind), dimension(npsq,2,pver,nelemd)     :: uv_tmp ! temp array to hold u and v
     real(kind=real_kind), dimension(npsq,pver,pcnst,nelemd) :: q_tmp  ! temp to hold advected constituents
     real(kind=real_kind), dimension(npsq,pver,nelemd)       :: om_tmp ! temp array to hold omega
@@ -77,6 +79,7 @@ CONTAINS
     integer                  :: nphys, nphys_sq           ! physics grid parameters
     real (kind=real_kind)    :: temperature(np,np,nlev)   ! Temperature from dynamics
     real (kind=real_kind)    :: potvort(np,np,nlev)       ! potential vorticity from dynamics
+    real (kind=real_kind)    :: pottemp(np,np,nlev)       ! potential temperature from dynamics
     ! Frontogenesis
     real (kind=real_kind), allocatable :: frontgf(:,:,:)  ! frontogenesis function
     real (kind=real_kind), allocatable :: frontga(:,:,:)  ! frontogenesis angle 
@@ -120,6 +123,7 @@ CONTAINS
         call gfr_dyn_to_fv_phys(par, dom_mt, tl_f, hvcoord, elem, ps_tmp, zs_tmp, &
              T_tmp, uv_tmp, om_tmp, q_tmp)
         call gfr_dyn_to_fv_phys_potvort(par, dom_mt, tl_f, hvcoord, elem, pv_tmp)
+        call gfr_dyn_to_fv_phys_pottemp(par, dom_mt, tl_f, hvcoord, elem, pt_tmp)
         call t_stopf('dyn_to_fv_phys')
 
         !-----------------------------------------------------------------------
@@ -133,10 +137,12 @@ CONTAINS
           ncols = elem(ie)%idxP%NumUniquePts
           call get_temperature(elem(ie),temperature,hvcoord,tl_f)
           call get_pot_vort(elem(ie),potvort,hvcoord,tl_f)
+          call get_pottemp(elem(ie),pottemp,hvcoord,tl_f, -1)
           call UniquePoints(elem(ie)%idxP,       elem(ie)%state%ps_v(:,:,tl_f), ps_tmp(1:ncols,ie))
           call UniquePoints(elem(ie)%idxP,       elem(ie)%state%phis,           zs_tmp(1:ncols,ie))
           call UniquePoints(elem(ie)%idxP,  nlev, temperature,                  T_tmp(1:ncols,:,ie))
           call UniquePoints(elem(ie)%idxP,  nlev, potvort,                     pv_tmp(1:ncols,:,ie))
+          call UniquePoints(elem(ie)%idxP,  nlev, pottemp,                     pt_tmp(1:ncols,:,ie))
           call UniquePoints(elem(ie)%idxP,  nlev,elem(ie)%derived%omega_p,      om_tmp(1:ncols,:,ie))
           call UniquePoints(elem(ie)%idxP,2,nlev,elem(ie)%state%V(:,:,:,:,tl_f),uv_tmp(1:ncols,:,:,ie))
           call UniquePoints(elem(ie)%idxP,nlev,pcnst,elem(ie)%state%Q(:,:,:,:), q_tmp(1:ncols,:,:,ie))
@@ -151,6 +157,7 @@ CONTAINS
       ps_tmp(:,:)      = 0._r8
       T_tmp(:,:,:)     = 0._r8
       pv_tmp(:,:,:)    = 0._r8
+      pt_tmp(:,:,:)    = 0._r8
       uv_tmp(:,:,:,:)  = 0._r8
       om_tmp(:,:,:)    = 0._r8
       zs_tmp(:,:)      = 0._r8
@@ -189,6 +196,7 @@ CONTAINS
             phys_state(lchnk)%v(icol,ilyr)     = uv_tmp(ioff,2,ilyr,ie)
             phys_state(lchnk)%omega(icol,ilyr) = om_tmp(ioff,ilyr,ie)
             phys_state(lchnk)%pv(icol,ilyr)    = pv_tmp(ioff,ilyr,ie)
+            phys_state(lchnk)%pt(icol,ilyr)    = pt_tmp(ioff,ilyr,ie)
             if (use_gw_front) then
               pbuf_frontgf(icol,ilyr) = frontgf(ioff,ilyr,ie)
               pbuf_frontga(icol,ilyr) = frontga(ioff,ilyr,ie)
@@ -231,9 +239,10 @@ CONTAINS
               bbuffer(bpter(icol,ilyr)+2) = uv_tmp(icol,2,ilyr,ie)
               bbuffer(bpter(icol,ilyr)+3) = om_tmp(icol,ilyr,ie)
               bbuffer(bpter(icol,ilyr)+4) = pv_tmp(icol,ilyr,ie)
+              bbuffer(bpter(icol,ilyr)+5) = pt_tmp(icol,ilyr,ie)
               if (use_gw_front) then
-                bbuffer(bpter(icol,ilyr)+5) = frontgf(icol,ilyr,ie)
-                bbuffer(bpter(icol,ilyr)+6) = frontga(icol,ilyr,ie)
+                bbuffer(bpter(icol,ilyr)+6) = frontgf(icol,ilyr,ie)
+                bbuffer(bpter(icol,ilyr)+7) = frontga(icol,ilyr,ie)
               end if
               do m = 1,pcnst
                 bbuffer(bpter(icol,ilyr)+tsize-pcnst-1+m) = q_tmp(icol,ilyr,m,ie)
@@ -269,9 +278,10 @@ CONTAINS
             phys_state(lchnk)%v    (icol,ilyr) = cbuffer(cpter(icol,ilyr)+2)
             phys_state(lchnk)%omega(icol,ilyr) = cbuffer(cpter(icol,ilyr)+3)
             phys_state(lchnk)%pv   (icol,ilyr) = cbuffer(cpter(icol,ilyr)+4)
+            phys_state(lchnk)%pt   (icol,ilyr) = cbuffer(cpter(icol,ilyr)+5)
              if (use_gw_front) then
-                pbuf_frontgf(icol,ilyr) = cbuffer(cpter(icol,ilyr)+5)
-                pbuf_frontga(icol,ilyr) = cbuffer(cpter(icol,ilyr)+6)
+                pbuf_frontgf(icol,ilyr) = cbuffer(cpter(icol,ilyr)+6)
+                pbuf_frontga(icol,ilyr) = cbuffer(cpter(icol,ilyr)+7)
              end if
              do m = 1,pcnst
                 phys_state(lchnk)%q(icol,ilyr,m) = cbuffer(cpter(icol,ilyr)+tsize-pcnst-1+m)

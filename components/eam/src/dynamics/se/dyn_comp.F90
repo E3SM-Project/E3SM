@@ -239,12 +239,19 @@ CONTAINS
     use cam_instance,     only: inst_index
     use element_ops,      only: set_thermostate
     use phys_control,     only: phys_getopts
+    use element_ops,      only: get_pot_vort, &
+                                get_field
+    use cldera_dynamic_tracers, only: cldera_dynamic_tracers_pv_idx, &
+                                      cldera_dynamic_tracers_pt_idx, &
+                                      cldera_dynamic_tracers_pv_offset
+ 
 
     type (dyn_import_t), intent(inout) :: dyn_in
 
     type(element_t),    pointer :: elem(:)
 
-    integer :: ithr, nets, nete, ie, k, tlev
+    integer :: ithr, nets, nete, ie, k, tlev, i, j, lt
+    integer :: pv_idx, pt_idx
     real(r8), parameter :: Tinit=300.0_r8
     type(hybrid_t) :: hybrid
     real(r8) :: temperature(np,np,nlev),ps(np,np)
@@ -317,7 +324,27 @@ CONTAINS
           ! new run, scale mass to value given in namelist, if needed
           call prim_set_mass(elem, TimeLevel,hybrid,hvcoord,nets,nete)
        endif
+       call cldera_dynamic_tracers_pv_idx(pv_idx)
+       if (pv_idx /= 0) then
+          ! if PV tracers are enabled, initialize this with the diagnostic PV field, and add
+          ! an offset quantity cldear_dynamic_tracers_pv_offset. This ensures that an "offset PV"
+          ! tracer will be transported by the advection scheme which has no negative tracer values.
+          ! This offset is subtracted back off before output of PV_TRCR. See comments in 
+          ! cldera_dynamic_tracers 
+          do ie=nets,nete
+            call get_pot_vort(elem(ie), elem(ie)%state%Q(:,:,:,pv_idx), hvcoord, TimeLevel%n0)
+            elem(ie)%state%Q(:,:,:,pv_idx) = elem(ie)%state%Q(:,:,:,pv_idx)+cldera_dynamic_tracers_pv_offset
+          end do
+       end if
 
+       call cldera_dynamic_tracers_pt_idx(pt_idx)
+       if (pt_idx /= 0) then
+          ! if PT tracers are enabled, initialize this with the diagnostic PT field
+          do ie=nets,nete
+            call get_field(elem(ie),"pottemp",elem(ie)%state%Q(:,:,:,pt_idx),hvcoord,TimeLevel%n0,TimeLevel%n0)
+          end do
+       end if  
+ 
        call t_startf('prim_init2')
        call prim_init2(elem,hybrid,nets,nete, TimeLevel, hvcoord)
        call t_stopf('prim_init2')
