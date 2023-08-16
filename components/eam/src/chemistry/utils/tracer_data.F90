@@ -1275,7 +1275,7 @@ contains
              cnt3(flds(f)%coords(ZA_TIMDIM)) = 1
              strt3(flds(f)%coords(ZA_TIMDIM)) = recnos(i)
              !!
-             if (file%linoz_v3.eq..true..or.file%linoz_v2.eq..true.) then
+             if (file%linoz_v3.eqv..true..or.file%linoz_v2.eqv..true.) then
                      !!check if these are the surface variables
                      !!no need to do interpolate since only used
                      !!in preprocessing,
