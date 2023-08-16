@@ -1565,9 +1565,9 @@ end subroutine micro_p3_readnl
            numrain(:ncol,top_lev:) * rho(:ncol,top_lev:), &
            rho(:ncol,top_lev:), rho_h2o)
 
-      aqrain = rain * cld_frac_r
-      anrain = numrain * cld_frac_r
-      freqr = cld_frac_r
+      aqrain(:ncol,top_lev:) = rain(:ncol,top_lev:) * cld_frac_r(:ncol,top_lev:)
+      anrain(:ncol,top_lev:) = numrain(:ncol,top_lev:) * cld_frac_r(:ncol,top_lev:)
+      freqr(:ncol,top_lev:) = cld_frac_r(:ncol,top_lev:)
       reff_rain(:ncol,top_lev:) = drout2(:ncol,top_lev:) * &
            1.5_rtype * 1.e6_rtype
    end where
