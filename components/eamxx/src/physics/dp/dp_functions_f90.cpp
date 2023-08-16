@@ -106,7 +106,7 @@ void crm_resolved_turb(CrmResolvedTurbData& d)
 void iop_default_opts(IopDefaultOptsData& d)
 {
   dp_init(d.plev, true);
-  char cbuff[512];
+  char cbuff[512] = "";
   char* buffptr = cbuff;
   iop_default_opts_c(&d.scmlat_out, &d.scmlon_out, &buffptr, &d.single_column_out, &d.scm_iop_srf_prop_out, &d.iop_nudge_tq_out, &d.iop_nudge_uv_out, &d.iop_nudge_tq_low_out, &d.iop_nudge_tq_high_out, &d.iop_nudge_tscale_out, &d.scm_observed_aero_out, &d.iop_dosubsidence_out, &d.scm_multcols_out, &d.dp_crm_out, &d.iop_perturb_high_out, &d.precip_off_out, &d.scm_zero_non_iop_tracers_out);
   d.iopfile_out = std::string(buffptr);
