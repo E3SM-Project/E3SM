@@ -1591,7 +1591,7 @@ contains
     real(r8), allocatable, target :: wrk2d(:,:)
     real(r8), pointer :: wrk2d_in(:,:)
     integer :: c, k, ierr, ncols
-  
+
      nullify(wrk2d_in)
      allocate( wrk2d(cnt(1),cnt(2)), stat=ierr )
      if( ierr /= 0 ) then
@@ -2678,25 +2678,27 @@ contains
     !
        END SUBROUTINE vert_interp_uci
 !------------------------------------------------------------------------------
-       SUBROUTINE vert_interp_uci_single(P1,P2,F0,PS,F,NL)
+       SUBROUTINE vert_interp_uci_single(P1,P2,F0,P,F,NL)
 !-----------------------------------------------------------------------
-!---For a CTM model level bounded by pressure P1 > P2, 
-!---    integrates (p-avg) the value F0 from F on the std (2-km) grid PS
-!---    assumes  top=PS(1) < PS(2) < PS(3) ... < PS(30) = 1000 mb
+!---Ths function is the vertical interpolation used for 
+!---vertical interpolation of linoz tracers in E3SM.
+!---For a model level P bounded by pressure P1 > P2 (decreasing up) 
+!---    integrates (p-avg) the value F0 from F on the grid P
+!---    assumes model pressure increases from top to bottom.
 !---NOTE reverse order in P's
 !---Assume that the quantity is constant over range halfway to layer above/below
-!---    and calculate box edges from P=0 to P=1000
-
-!---For a CTM model level between pressure range P1 > P2 (decreasing up)
+!---    and calculate box edges from model top to model bottom
+!
+!---For a model level between pressure range P1 > P2 (decreasing up)
 !---calculate the SOM Z-moments of the loss freq at std z* (log-p) intervals
 !--------  the pressure levels BETWEEN z* values are:
-!                         PS(i) < PS(i+1) bounds z*(i)
+!                         P(i) < P(i+1) bounds z*(i)
 !-------- The MOMENTS for a square-wave or 'bar': F(x)=F0  b<=x<=c, =0.0 else
 !-----     S0 =   f0 (x)                      [from x=b to x=c]
 !-----------------------------------------------------------------------
       implicit none
       integer,  intent(in) ::   NL
-      real(r8), intent(in) ::   P1,P2,PS(NL+1),F(NL)
+      real(r8), intent(in) ::   P1,P2,P(NL+1),F(NL)
       real(r8), intent(out)::   F0
       integer  I
       real(r8)   XB,XC,PC,PB,SGNF0,PF1,PF2
@@ -2704,8 +2706,8 @@ contains
       F0 = 0._r8
       !
       do I = 1,NL
-        PF1=PS(I)
-        PF2=PS(I+1)
+        PF1=P(I)
+        PF2=P(I+1)
         !
         PC   = min(P1,PF2)
         PB   = max(P2,PF1)
@@ -2716,7 +2718,7 @@ contains
           XC = (PC-P2)/(P1-P2)
           XB = (PB-P2)/(P1-P2)
 !-------- assume that the quantity, F, is constant over interval [XLO,XUP],
-!--------   F0: (c-b),   F1: 6((c2-c)-(b2-b)),  F2: 5((2c3-3c2+c)-(2b3-3b2+b))
+!--------   F0: (c-b),   
 !-------- calculate its contribution to the moments in the interval [0,1]
           F0 = F0 +F(I) *(XC -XB)
         endif

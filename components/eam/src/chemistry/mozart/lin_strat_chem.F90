@@ -371,7 +371,7 @@ end subroutine linoz_readnl
        dNOY(:,:)    =  noy_vmr(:,:)  - linoz_noy_clim(:ncol,:) 
        dCH4(:,:)    =  ch4_vmr(:,:)  - linoz_ch4_clim(:ncol,:)
        dH2O(:,:)    =  h2o_vmr(:,:)  - linoz_h2o_clim(:ncol,:) 
-       dTemp(:,:)   =  temp(:ncol,:)     - linoz_t_clim(:ncol,:)
+       dTemp(:,:)   =  temp(:ncol,:) - linoz_t_clim(:ncol,:)
        dCOL(:,:)     =  o3col(:,:)*convert_to_du - linoz_o3col_clim(:ncol,:)
 
 ! potential water 2*ch4 +h2o !it might be better to get maxch4 3-4 years back in time but this will do for now 
@@ -418,7 +418,7 @@ end subroutine linoz_readnl
        linoz_dPmL_dT      => fields(pn2o_dPmL_dT_ndx)      %data(:,:,lchnk )
        linoz_dPmL_dO3col  => fields(pn2o_dPmL_dO3col_ndx)  %data(:,:,lchnk )
 !Taylor-expansion of P (mr/sec)
-       P_n2o =  linoz_PmL_clim(:ncol,:)              &   
+       P_n2o =  linoz_PmL_clim(:ncol,:)           &
             +  linoz_dPmL_dO3(:ncol,:)    * dO3      &
             +  linoz_dPmL_dn2o(:ncol,:)   * dN2O     &
             +  linoz_dPmL_dnoy(:ncol,:)   * dNOY     &

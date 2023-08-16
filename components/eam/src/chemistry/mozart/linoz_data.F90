@@ -213,7 +213,7 @@ contains
        if (ndx < 1) then
           call endrun('linoz_data_init: '//trim(fields(i)%fldnam)//' is not one of the named linoz data fields ')
        endif
-       !write(iulog,*)'fld_names(i)=',fld_names(i)
+!       write(iulog,*)'fld_names(i)=',fld_names(i)
 
        if (index(fields(i)%fldnam,"_srf").le.0) then
                 call addfld(fld_names(i), (/ 'lev' /), 'I', fld_units(i), 'linoz data' )
@@ -365,7 +365,6 @@ contains
     real(r8) :: to_mmr(pcols,pver)
 
     if( .not. has_linoz_data ) return
-
 
     call advance_trcdata( fields, file, state, pbuf2d  )
     
