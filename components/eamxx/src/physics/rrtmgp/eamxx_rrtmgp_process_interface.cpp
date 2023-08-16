@@ -178,9 +178,7 @@ size_t RRTMGPRadiation::requested_buffer_size_in_bytes() const
     Buffer::num_3d_nlay_nswbands*m_col_chunk_size*(m_nlay)*m_nswbands +
     Buffer::num_3d_nlay_nlwbands*m_col_chunk_size*(m_nlay)*m_nlwbands +
     Buffer::num_3d_nlay_nswgpts*m_col_chunk_size*(m_nlay)*m_nswgpts +
-    Buffer::num_3d_nlay_nlwgpts*m_col_chunk_size*(m_nlay)*m_nlwgpts +
-    Buffer::num_3d_nlay_nswbands_ncol * m_ncol * m_nlay_w_pack * m_nswbands +
-    Buffer::num_3d_nlay_nlwbands_ncol * m_ncol * m_nlay_w_pack * m_nlwbands;
+    Buffer::num_3d_nlay_nlwgpts*m_col_chunk_size*(m_nlay)*m_nlwgpts;
 
   return interface_request * sizeof(Real);
 } // RRTMGPRadiation::requested_buffer_size
@@ -298,14 +296,6 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.aero_g_sw.totElems();
   m_buffer.aero_tau_lw = decltype(m_buffer.aero_tau_lw)("aero_tau_lw", mem, m_col_chunk_size, m_nlay, m_nlwbands);
   mem += m_buffer.aero_tau_lw.totElems();
-  m_buffer.d_aero_tau_sw = decltype(m_buffer.d_aero_tau_sw)(mem, m_ncol, m_nswbands, m_nlay_w_pack);
-  mem += m_buffer.d_aero_tau_sw.size();
-  m_buffer.d_aero_ssa_sw = decltype(m_buffer.d_aero_ssa_sw)(mem, m_ncol, m_nswbands, m_nlay_w_pack);
-  mem += m_buffer.d_aero_ssa_sw.size();
-  m_buffer.d_aero_g_sw = decltype(m_buffer.d_aero_g_sw)(mem, m_ncol, m_nswbands, m_nlay_w_pack);
-  mem += m_buffer.d_aero_g_sw.size();
-  m_buffer.d_aero_tau_lw = decltype(m_buffer.d_aero_tau_lw)(mem, m_ncol, m_nlwbands, m_nlay_w_pack);
-  mem += m_buffer.d_aero_tau_lw.size();
   // 3d arrays with extra ngpt dimension (cloud optics by gpoint; primarily for debugging)
   m_buffer.cld_tau_sw_gpt = decltype(m_buffer.cld_tau_sw_gpt)("cld_tau_sw_gpt", mem, m_col_chunk_size, m_nlay, m_nswgpts);
   mem += m_buffer.cld_tau_sw_gpt.totElems();
@@ -409,27 +399,17 @@ void RRTMGPRadiation::run_impl (const double dt) {
   // Output fields
   auto d_tmid = get_field_out("T_mid").get_view<Real**>();
 
-  // This is annoying to have to have to make extra copies of these, but we
-  // cannot use directly from the FM because if m_do_aerosol_rad is false they
-  // might not exist, so we need dummy versions to populate with zeros. This
-  // inflates memory (non-trivially since these are sized ncol * nbands * nlay),
-  // so we should really find a better way to handle this. It might actually be
-  // better to ALWAYS require the aerosol rad properties even when we want no
-  // aerosol. Then we would not need to carry around this extra deep copy.
-  auto d_aero_tau_sw = m_buffer.d_aero_tau_sw;
-  auto d_aero_ssa_sw = m_buffer.d_aero_ssa_sw;
-  auto d_aero_g_sw   = m_buffer.d_aero_g_sw;
-  auto d_aero_tau_lw = m_buffer.d_aero_tau_lw;
+  // Aerosol optics only exist if m_do_aerosol_rad is true, so declare views and copy from FM if so
+  using view_3d = Field::view_dev_t<const Real***>;
+  view_3d d_aero_tau_sw;
+  view_3d d_aero_ssa_sw;
+  view_3d d_aero_g_sw;
+  view_3d d_aero_tau_lw;
   if (m_do_aerosol_rad) {
-    Kokkos::deep_copy(d_aero_tau_sw,get_field_in("aero_tau_sw").get_view<const Real***>());
-    Kokkos::deep_copy(d_aero_ssa_sw,get_field_in("aero_ssa_sw").get_view<const Real***>());
-    Kokkos::deep_copy(d_aero_g_sw  ,get_field_in("aero_g_sw"  ).get_view<const Real***>());
-    Kokkos::deep_copy(d_aero_tau_lw,get_field_in("aero_tau_lw").get_view<const Real***>());
-  } else {
-    Kokkos::deep_copy(d_aero_tau_sw,0.0);
-    Kokkos::deep_copy(d_aero_ssa_sw,0.0);
-    Kokkos::deep_copy(d_aero_g_sw  ,0.0);
-    Kokkos::deep_copy(d_aero_tau_lw,0.0);
+    d_aero_tau_sw = get_field_in("aero_tau_sw").get_view<const Real***>();
+    d_aero_ssa_sw = get_field_in("aero_ssa_sw").get_view<const Real***>();
+    d_aero_g_sw   = get_field_in("aero_g_sw"  ).get_view<const Real***>();
+    d_aero_tau_lw = get_field_in("aero_tau_lw").get_view<const Real***>();
   }
   auto d_sw_flux_up = get_field_out("SW_flux_up").get_view<Real**>();
   auto d_sw_flux_dn = get_field_out("SW_flux_dn").get_view<Real**>();
@@ -643,18 +623,33 @@ void RRTMGPRadiation::run_impl (const double dt) {
           t_lev(i+1,nlay+1) = d_tint(i,nlay);
 
           // Note that RRTMGP expects ordering (col,lay,bnd) but the FM keeps things in (col,bnd,lay) order
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands*nlay), [&] (const int&idx) {
-              auto b = idx / nlay;
-              auto k = idx % nlay;
-              aero_tau_sw(i+1,k+1,b+1) = d_aero_tau_sw(icol,b,k);
-              aero_ssa_sw(i+1,k+1,b+1) = d_aero_ssa_sw(icol,b,k);
-              aero_g_sw  (i+1,k+1,b+1) = d_aero_g_sw  (icol,b,k);
-          });
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands*nlay), [&] (const int&idx) {
-              auto b = idx / nlay;
-              auto k = idx % nlay;
-              aero_tau_lw(i+1,k+1,b+1) = d_aero_tau_lw(icol,b,k);
-          });
+          if (m_do_aerosol_rad) {
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands*nlay), [&] (const int&idx) {
+                auto b = idx / nlay;
+                auto k = idx % nlay;
+                aero_tau_sw(i+1,k+1,b+1) = d_aero_tau_sw(icol,b,k);
+                aero_ssa_sw(i+1,k+1,b+1) = d_aero_ssa_sw(icol,b,k);
+                aero_g_sw  (i+1,k+1,b+1) = d_aero_g_sw  (icol,b,k);
+            });
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands*nlay), [&] (const int&idx) {
+                auto b = idx / nlay;
+                auto k = idx % nlay;
+                aero_tau_lw(i+1,k+1,b+1) = d_aero_tau_lw(icol,b,k);
+            });
+          } else {
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands*nlay), [&] (const int&idx) {
+                auto b = idx / nlay;
+                auto k = idx % nlay;
+                aero_tau_sw(i+1,k+1,b+1) = 0;
+                aero_ssa_sw(i+1,k+1,b+1) = 0;
+                aero_g_sw  (i+1,k+1,b+1) = 0;
+            });
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands*nlay), [&] (const int&idx) {
+                auto b = idx / nlay;
+                auto k = idx % nlay;
+                aero_tau_lw(i+1,k+1,b+1) = 0;
+            });
+          }
         });
       }
       Kokkos::fence();
