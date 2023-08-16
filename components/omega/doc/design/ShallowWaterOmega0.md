@@ -3,13 +3,13 @@
 
 ## 1 Overview
 
-This design document describes the first version of the Omega ocean model, Omega0. Overall, Omega is an unstructured-mesh ocean model based on TRiSK numerical methods (ref) that is specifically designed for modern exascale computing architectures. The algorithms in Omega will be nearly identical to those in MPAS-Ocean, but it will be written in c++ rather than Fortran in order to take advantage of libraries to run on GPUs, such as YAKL (Yet Another Kernel Library, ref).
+This design document describes the first version of the Omega ocean model, Omega0. Overall, Omega is an unstructured-mesh ocean model based on TRiSK numerical methods ([Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434)) that is specifically designed for modern exascale computing architectures. The algorithms in Omega will be nearly identical to those in MPAS-Ocean, but it will be written in c++ rather than Fortran in order to take advantage of libraries to run on GPUs, such as YAKL (Yet Another Kernel Library, [Norman et al. 2023](https://link.springer.com/10.1007/s10766-022-00739-0)).
 
 The planned versions of Omega are:
 
 1. **Omega-0: Shallow water equations with identical vertical layers and inactive tracers.** There is no vertical transport or advection. The tracer equation is horizontal advection-diffusion, but tracers do not feed back to dynamics. Pressure gradient is simply gradient of sea surface height. Capability is similar to [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780)
 1. **Omega-1: Minimal stand-alone primitive equation eddy-permitting model.** This adds active temperature, salinity, density, and pressure as a function of depth. There is a true pressure gradient. Vertical velocity is from the continuity equation. An equation of state and simple vertical mixing scheme are needed. Capability is same as [Ringler et al. 2013](https://www.sciencedirect.com/science/article/pii/S1463500313000760)
-1. **Omega-2: Eddying ocean with advanced parameterizations.** This model will have sufficient capability to run realistic global simulations, similar to E3SM V1 [Petersen et al. 2019]().
+1. **Omega-2: Eddying ocean with advanced parameterizations.** This model will have sufficient capability to run realistic global simulations, similar to E3SM V1 [Petersen et al. 2019](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2018MS001373).
 
 
 We will produce separate design documents for the time-stepping scheme and the tracer equations in Omega-0. Some of the requirements stated here are repeated or implied by the Omega framework design documents, but are included for clarity.
@@ -43,10 +43,13 @@ To do: Complete table of symbol definitions. See [markdown table generator](http
 | $\phi$ | tracer    | varies |
 | $t$    | time      | s      |
 
+To do: Add wind forcing term (aka surface stress) for Stommel case?
+To do: Specify boundary conditions: Original TRiSK boundaries are zero vorticity, so no slip. See Darren Enwirda's recent github PR (add link) for free-slip implementation. Details will be added below in the algorithm section.
+
 ### 2.2 Requirement: Numerical method will be the TRiSK formulation
 
 The horizontal discretization will be taken from 
-[Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434) and [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780), as described in detail in the algorithmic formulation in Section 3 below. This is the same base formulation as in MPAS-Ocean. In addition, we will consider small alterations from the original MPAS-Ocean horizontal discretization and include them as options if they are of minimal additional effort. This includes the recent AUST formulation in [Calandrini et al. 2021](https://www.sciencedirect.com/science/article/pii/S146350032100161X) and simple vorticity averaging considered by the Omega team this past year.
+[Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434) and [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780), as described in the algorithmic formulation in Section 3 below. This is the same base formulation as in MPAS-Ocean. In addition, we will consider small alterations from the original MPAS-Ocean horizontal discretization and include them as options if they are of minimal additional effort. This includes the recent AUST formulation in [Calandrini et al. 2021](https://www.sciencedirect.com/science/article/pii/S146350032100161X) and simple vorticity averaging considered by the Omega team this past year.
 
 ### 2.3 Requirement: Omega-0 will use MPAS format unstructured-mesh domains
 
@@ -66,11 +69,11 @@ The test cases relevant to this design document are in Section 5 below.
 
 Omega will be able to run on all the upcoming DOE architectures and make good use of GPU hardware. This should occur with minimal alterations in the high-level PDE solver code for different platforms. 
 
-The proposed solution is to use YAKL [(Norman et al. 2023)](https://link.springer.com/10.1007/s10766-022-00739-0) for within-node, shared memory computations. All large arrays will be YAKL objects, and computations that loop over array indices will use YAKL function calls.
+Options include: writing kernels directly for GPUs in CUDA; adding OpenACC pragmas for the GPUs; or calling libraries such as Kokkos [(Trott et al. 2022)](https://ieeexplore.ieee.org/document/9485033), YAKL [(Norman et al. 2023)](https://link.springer.com/10.1007/s10766-022-00739-0) or [HIP](https://github.com/ROCm-Developer-Tools/HIP) that execute code optimized for specialized architectures on the back-end, while providing a simpler front-end interface for the domain scientist.
 
 ### 2.6 Requirement: Omega-0 will run on multi-node with domain decomposition
 
-This is with MPI and halo communication, as described in framework design documents.
+This is with MPI and halo communication, as described in framework design documents. Results must be bit-for-bit identical across different number of partitions. This may be demonstrated with the ''QU240 partition test'' in Polaris.
 
 ### 2.7 Requirement: Correct convergence rates of operators and exact solutions
 
@@ -82,13 +85,21 @@ The total volume of the domain should be conserved to machine precision in the a
 
 ### 2.9 Requirement: Performance will be at least as good or better than MPAS-Ocean
 
-Performance will assessed with the following metrics:
+Performance will be assessed with the following metrics:
 
 1. Single CPU throughput
 1. Parallel CPU scalability to high node counts
 1. Single GPU throughput
 
-The first two items will be compared to MPAS-Ocean with the same test configuration.
+The first two items will be compared to MPAS-Ocean with the same test configuration. For Omega-0, these may be tested first with the layered shallow water equations (momentum and thickness only) and be compared directly to the results in [Bishnu et al. 2023a](https://egusphere.copernicus.org/preprints/2023/egusphere-2023-57), using the inertia-gravity wave test case described in Section 6.2 below. After tracer transport capabilities are added, performance may be compared against MPAS-Ocean with test cases using active tracers in addition to momentum and thickness.
+
+For these comparisons, MPAS-Ocean will be set up with the identical terms and functionality as Omega-0. This means that vertical advection, vertical mixing, and all parameterizations will be disabled. Comparisons with these terms will be made with Omega-1 and higher and will be described in future design documents.
+
+### 2.10 Requirement: Full-node GPU throughput will be comparable or better than full-node CPU throughput
+
+For GPU throughput, comparisons should be made between full-node CPU throughput and full-node GPU throughput. For example, [Perlmutter at NERSC](https://docs.nersc.gov/systems/perlmutter/architecture/) has nodes with 64 and 128 CPU cores (AMD EPYC 7763) and 4 GPUs (NVIDIA A100). We expect the full-node GPU throughput to be at least as good as the full-node CPU throughput, and potentially a factor of four higher.
+
+Like the previous requirement, tests will first be conducted with layered shallow water equations and later with additional tracer advection. For reference, [Bishnu et al. 2023a](https://egusphere.copernicus.org/preprints/2023/egusphere-2023-57) was able to obtain nearly identical throughput between 64 CPU cores and a single GPU on Perlmutter using a Julia code and a layered shallow water test case.
 
 ## 3 Algorithmic Formulation
 
@@ -126,7 +137,7 @@ interface that would be in header file). Describe typical use cases.
 
 ### 5.1 Convergence of individual terms
 
-The following terms can be tested with sine waves on periodic domains on a cartesian regular-hexagon mesh, as described in (ref Bishnu thesis) and (ref Julia paper).
+The following terms can be tested with sine waves on periodic domains on a cartesian regular-hexagon mesh, as described in [Bishnu et al. 2023b](https://www.authorea.com/doi/full/10.22541/essoar.167100170.03833124/v1) (note: update links later when JAMES articles are published) and [Bishnu et al. 2021](https://doi.org/10.5281/zenodo.7439539).
 
 1. Divergence operator at cell centers (2nd order)
 1. Gradient operator normal to edges (2nd order)
@@ -136,19 +147,15 @@ The following terms can be tested with sine waves on periodic domains on a carte
 
 Requirements for tests are:
 
-- expected order of convergence
+- compares order of convergence against an expected threshold
 
-These tests can be conducted at the earliest stages of dycore development, in tandem with the implementation of each operator.
+These tests can be conducted at the earliest stages of dycore development, in tandem with the implementation of each operator. In the longer term, these tests will be subsumed by the inertia gravity wave, which tests the order of convergence of all these operators together.
 
-Note: consider applying this as a unit test.
-
-Note: We may not need this group of tests long-term, because the inertia gravity wave tests all of them together.
-
-Question: should we make tests for spherical domain here as well? Hyun has done those before with spherical harmonics.
+Operator convergence tests may additionally be conducted on the sphere using spherical harmonics for the analytic solution. This was conducted on MPAS-Ocean by Hyun Kang in 2023.
 
 ### 5.2 Inertia Gravity Wave: linearized shallow water, no tracers
 
-The inertia gravity wave test provides an exact solution in time for the linearized shallow water equations (momentum and thickness). It tests the time stepping scheme along with the linearized advection terms, the SSH gradient. It does not test diffusive terms or bottom drag. It is conducted on a doubly periodic cartesian mesh, so does not test boundary conditions. Error should converge at 1st order, as described by [Bishnu 2021](https://zenodo.org/record/7439539) and Bishnu et al. 2023. Also see the inertia gravity test case in Polaris.
+The inertia gravity wave test provides an exact solution in time for the linearized shallow water equations (momentum and thickness). It tests the time stepping scheme along with the linearized advection terms, the SSH gradient. It does not test diffusive terms or bottom drag. It is conducted on a doubly periodic cartesian mesh, so does not test boundary conditions. The numerical solution should converge to the analytic solution at 2nd order, as shown in [Bishnu et al. 2023b](https://www.authorea.com/doi/full/10.22541/essoar.167100170.03833124/v1) (add figure number and link when published). Also see the inertia gravity test case in Polaris.
 
 Requirements for tests are:
 
@@ -160,7 +167,7 @@ This test should be conducted as soon as momentum and thickness equations and ti
 
 ### 5.3 Manufactured Solution: full nonlinear shallow water, no tracers
 
-The manufactured solution test provides an exact solution in time for the full nonlinear shallow water equations (momentum and thickness). It tests the time stepping scheme along with the the full advection terms and the SSH gradient.  It is conducted on a doubly periodic cartesian mesh, so does not test boundary conditions. Error should converge at 1st order, as described by [Bishnu 2021](https://zenodo.org/record/7439539) and Bishnu et al. 2023. Also see the manufactured solution test case in Polaris.
+The manufactured solution test provides an exact solution in time for the full nonlinear shallow water equations (momentum and thickness). It tests the time stepping scheme along with the the full advection terms and the SSH gradient.  It is conducted on a doubly periodic cartesian mesh, so does not test boundary conditions. Error should converge at 2nd order, as shown in [Bishnu et al. 2023b](https://www.authorea.com/doi/full/10.22541/essoar.167100170.03833124/v1) (add figure number and link when published). Also see the manufactured solution test case in Polaris.
 
 Requirements for tests are:
 
@@ -170,20 +177,22 @@ Requirements for tests are:
 
 This test should be conducted as soon as momentum and thickness equations and time-stepping is in place. It does not require any tracer infrastructure.
 
-### 5.4 Advection of cosine bell on a sphere
+### 5.4 Tracer transport on a sphere
 
-Advection of a tracer cosine bell around the sphere was described in [Williamson et al. 1992](https://www.sciencedirect.com/science/article/pii/S0021999105800166) as test case 1. It tests the tracer advection and tracer time stepping. Velocity and thickness are predefined fields and remain fixed, so this does not exercise those modules.
+A test suite will be used to test horizontal transport schemes on the sphere comprised of test case 1 from [Williamson et al. (1992)](https://www.sciencedirect.com/science/article/pii/S0021999105800166) and several tests from [Lauritzen et al. (2012)](www.geosci-model-dev.net/5/887/2012/).
+They test the tracer advection and tracer time stepping. Velocity and thickness are predefined fields and remain fixed, so this does not exercise those equations.
 
 Requirements for tests are:
 
-- expected order of convergence (check)
+- compares order of convergence against an expected threshold
 - conservation of total tracer amount
+- produces visualization that allows the user to evaluate whether numerical mixing resembles real mixing (preserves functional relationships between tracers)
 - tracer min and max values should remain bounded by initial bounds.
 - automation and reproducibility in polaris
 
 ### 5.5 Performance testing
 
-Tests can be conducted with inertia-gravity wave tests but with full non-linear terms and 100 identical layers. Domain will be cartesian resolutions from 64x64 up to 512x512. These can be compared with Bishnu 2023 (ref). Additionally, we could test spherical cases with a Williamson test case or similar.
+Tests can be conducted with inertia-gravity wave tests but with full non-linear terms and 100 identical layers. Domain will be cartesian resolutions from 64x64 up to 512x512. See performance test results using MPAS-Ocean on Perlmutter, using this setup, in [Bishnu et al. 2023a](https://egusphere.copernicus.org/preprints/2023/egusphere-2023-57). Additionally, we could test spherical cases with a Williamson test case or similar.
 
 Requirements for tests are:
 
@@ -193,20 +202,20 @@ Requirements for tests are:
 - Scaling on GPUs for multi-node should be close to perfect scaling for 512x512 mesh.
 - automation and reproducibility in polaris
 
-### 5.6 Demonstration cases with realistic coastlines
+### 5.6 Shallow water tests on spherical domains and with realistic coastlines
 
-Tests in realistic domains will facilitate the testing of boundary conditions on realistic coastlines, which are not included in any of the previous tests. They will also be useful for highlights and talks to show that Omega-0 can run in global realistic domains, albeit with shallow water equations only.
+Global cases will facilitate the testing of shallow water dynamics on the sphere and of boundary conditions with realistic coastlines, which are not included in any of the previous tests. This includes testing conservation of volume and tracers in global domains.
 
 Potential test cases include:
 
-1. Coastal inundation: Delaware Bay mesh, after ICOM tests, to demonstrate boundary conditions, resolution, and for 'splashy' images. Would tidal forcing be required for that?
-1. Global realistic Tsunami to test boundary conditions and grid-scale noise. See Darren Engwirda's recent tests on Alaska's Aleutian Islands.
-1. Test for boundary conditions - perhaps Stommel double gyre in [Pal et al. 2023](https://gmd.copernicus.org/articles/16/1297/2023). 
+1. Surface gravity wave: The speed of the surface gravity wave can be compared to the theoretical expectation, as shown in [Pal et al. 2023](https://gmd.copernicus.org/articles/16/1297/2023) Appendix A.
+1. Stommel double gyre:  This may be compared to an exact solution in the Cartesian case, as in [Pal et al. 2023](https://gmd.copernicus.org/articles/16/1297/2023) Appendix B, or qualitative comparisons for the spherical case using either idealized boundaries or an isolated Atlantic Basin domain.
+
+Tests of realistic global circulation cannot be done with the shallow water equations of Omega-0, but will be part of Omega-1 development with the layered primitive equation model.
 
 ### 5.7 Further tests for Omega-0
 
-Potential additional test cases:
+Potential additional test cases include the following. These are useful to explore and validate model behavior, but are optional, depending on the time available.
 
 1. [Williamson et al. 1992](https://www.sciencedirect.com/science/article/pii/S0021999105800166) as test case 2 or 3, global steady state solutions.
 1. Global case with unstable jet [Galewsky et al. 2003](https://doi.org/10.3402/tellusa.v56i5.14436)
-1. Sphere transport [Lauritzen et al. 2012](https://doi.org/10.5194/gmd-5-887-2012)
