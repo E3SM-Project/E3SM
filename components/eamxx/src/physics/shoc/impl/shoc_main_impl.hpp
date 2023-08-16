@@ -167,6 +167,11 @@ void Functions<S,D>::shoc_main_internal(
     compute_shoc_vapor(team,nlev,qw,shoc_ql, // Input
                        shoc_qv);             // Output
 
+    // Update SHOC temperature
+    compute_shoc_temperature(team,nlev,thetal,  // Input
+                             shoc_ql,inv_exner, // Input
+                             shoc_tabs);        // Output
+
     team.team_barrier();
     shoc_diag_obklen(uw_sfc,vw_sfc,     // Input
                      wthl_sfc, wqw_sfc, // Input
@@ -191,13 +196,13 @@ void Functions<S,D>::shoc_main_internal(
                 brunt,shoc_mix);       // Output
 
     // Advance the SGS TKE equation
-    shoc_tke(team,nlev,nlevi,dtime,wthv_sec,    // Input
-             shoc_mix,dz_zi,dz_zt,pres,u_wind,  // Input
-             v_wind,brunt,obklen,zt_grid,       // Input
-             zi_grid,pblh,                      // Input
-             workspace,                         // Workspace
-             tke,tk,tkh,                        // Input/Output
-             isotropy);                         // Output
+    shoc_tke(team,nlev,nlevi,dtime,wthv_sec,     // Input
+             shoc_mix,dz_zi,dz_zt,pres,shoc_tabs,// Input
+             u_wind,v_wind,brunt,zt_grid,        // Input
+             zi_grid,pblh,                       // Input
+             workspace,                          // Workspace
+             tke,tk,tkh,                         // Input/Output
+             isotropy);                          // Output
 
     // Update SHOC prognostic variables here
     // via implicit diffusion solver
@@ -423,13 +428,13 @@ void Functions<S,D>::shoc_main_internal(
                      brunt,shoc_mix);       // Output
 
     // Advance the SGS TKE equation
-    shoc_tke_disp(shcol,nlev,nlevi,dtime,wthv_sec,   // Input
-                  shoc_mix,dz_zi,dz_zt,pres,u_wind,  // Input
-                  v_wind,brunt,obklen,zt_grid,       // Input
-                  zi_grid,pblh,                      // Input
-                  workspace_mgr,                     // Workspace mgr
-                  tke,tk,tkh,                        // Input/Output
-                  isotropy);                         // Output
+    shoc_tke_disp(shcol,nlev,nlevi,dtime,wthv_sec,    // Input
+                  shoc_mix,dz_zi,dz_zt,pres,shoc_tabs,// Input
+                  u_wind,v_wind,brunt,obklen,zt_grid, // Input
+                  zi_grid,pblh,                       // Input
+                  workspace_mgr,                      // Workspace mgr
+                  tke,tk,tkh,                         // Input/Output
+                  isotropy);                          // Output
 
     // Update SHOC prognostic variables here
     // via implicit diffusion solver
@@ -496,6 +501,11 @@ void Functions<S,D>::shoc_main_internal(
   // Update SHOC water vapor, to be used by the next two routines
   compute_shoc_vapor_disp(shcol,nlev,qw,shoc_ql, // Input
                           shoc_qv);             // Output
+
+  // Update SHOC temperature
+  compute_shoc_temperature_disp(team,nlev,thetal,  // Input
+                                shoc_ql,inv_exner, // Input
+                                shoc_tabs);        // Output
 
   shoc_diag_obklen_disp(shcol, nlev, uw_sfc,vw_sfc,      // Input
                         wthl_sfc,wqw_sfc,   // Input

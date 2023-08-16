@@ -16,9 +16,9 @@ KOKKOS_FUNCTION
 void Functions<S,D>::eddy_diffusivities(
   const MemberType&            team,
   const Int&                   nlev,
-  const Scalar&                obklen,
   const Scalar&                pblh,
   const uview_1d<const Spack>& zt_grid,
+  const uview_1d<const Spack>& tabs,
   const uview_1d<const Spack>& shoc_mix,
   const uview_1d<const Spack>& sterm_zt,
   const uview_1d<const Spack>& isotropy,
@@ -28,9 +28,8 @@ void Functions<S,D>::eddy_diffusivities(
 {
   // Parameters
 
-  // Critical value of dimensionless Monin-Obukhov length,
-  // for which stable PBL diffusivities are applied
-  const Int obk_crit = 1e4;
+  // Minimum absolute temperature [K] to which apply extra mixing
+  const Int tabs_crit = 182;
   // Transition depth [m] above PBL top to allow
   // stability diffusivities
   const Int pbl_trans = 200;
@@ -41,13 +40,14 @@ void Functions<S,D>::eddy_diffusivities(
   const Scalar Ckh_s = 0.1;
   const Scalar Ckm_s = 0.1;
 
+  const auto s_tabs = ekat::scalarize(tabs);
+
   const Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
-    // If surface layer is stable, based on near surface dimensionless Monin-Obukov
-    // use modified coefficients of tkh and tk that are primarily based on shear
-    // production and SHOC length scale, to promote mixing within the PBL and to a
-    // height slighty above to ensure smooth transition.
-    const Smask condition = (zt_grid(k) < pblh+pbl_trans) && (obklen > obk_crit);
+    // If surface layer temperature is running away, apply extra mixing
+    //   based on traditional stable PBL diffusivities that are not damped
+    //   by stability functions.
+    const Smask condition = (zt_grid(k) < pblh+pbl_trans) && (s_tabs(nlev-1) < tabs_crit);
     tkh(k).set(condition, Ckh_s*ekat::square(shoc_mix(k))*ekat::sqrt(sterm_zt(k)));
     tk(k).set(condition,  Ckm_s*ekat::square(shoc_mix(k))*ekat::sqrt(sterm_zt(k)));
 

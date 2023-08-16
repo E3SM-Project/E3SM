@@ -574,6 +574,24 @@ struct Functions
 #endif
 
   KOKKOS_FUNCTION
+  static void compute_shoc_temperature(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const uview_1d<const Spack>& thetal,
+    const uview_1d<const Spack>& ql,
+    const uview_1d<const Spack>& inv_exner,
+    const uview_1d<Spack>&       tabs);
+#ifdef SCREAM_SMALL_KERNELS
+  static void compute_shoc_temperature_disp(
+    const Int&                  shcol,
+    const Int&                  nlev,
+    const view_2d<const Spack>& thetal,
+    const view_2d<const Spack>& ql,
+    const view_2d<const Spack>& inv_exner,
+    const view_2d<Spack>&       tabs);
+#endif
+
+  KOKKOS_FUNCTION
   static void update_prognostics_implicit(
     const MemberType&            team,
     const Int&                   nlev,
