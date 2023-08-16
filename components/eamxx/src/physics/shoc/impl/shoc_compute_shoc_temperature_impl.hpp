@@ -30,8 +30,7 @@ void Functions<S,D>::compute_shoc_temperature(
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
-    qv(k) = qw(k) - ql(k);
-    tabs(k) = thetal(k)/inv_exner(k)+(lcond/cp)*ql(k)
+    tabs(k) = thetal(k)/inv_exner(k)+(lcond/cp)*ql(k);
   });
 }
 

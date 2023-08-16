@@ -124,10 +124,10 @@ void Functions<S,D>::shoc_main_internal(
 {
 
   // Define temporary variables
-  uview_1d<Spack> rho_zt, shoc_qv, dz_zt, dz_zi, tkh;
-  workspace.template take_many_and_reset<5>(
-    {"rho_zt", "shoc_qv", "dz_zt", "dz_zi", "tkh"},
-    {&rho_zt, &shoc_qv, &dz_zt, &dz_zi, &tkh});
+  uview_1d<Spack> rho_zt, shoc_qv, shoc_tabs, dz_zt, dz_zi, tkh;
+  workspace.template take_many_and_reset<6>(
+    {"rho_zt", "shoc_qv", "shoc_tabs", "dz_zt", "dz_zi", "tkh"},
+    {&rho_zt, &shoc_qv, &shoc_tabs, &dz_zt, &dz_zi, &tkh});
 
   // Local scalars
   Scalar se_b{0},   ke_b{0}, wv_b{0},   wl_b{0},
@@ -289,8 +289,8 @@ void Functions<S,D>::shoc_main_internal(
           pblh);                          // Output
 
   // Release temporary variables from the workspace
-  workspace.template release_many_contiguous<5>(
-    {&rho_zt, &shoc_qv, &dz_zt, &dz_zi, &tkh});
+  workspace.template release_many_contiguous<6>(
+    {&rho_zt, &shoc_qv, &shoc_tabs, &dz_zt, &dz_zi, &tkh});
 }
 #else
 template<typename S, typename D>
@@ -367,6 +367,7 @@ void Functions<S,D>::shoc_main_internal(
   const view_1d<Scalar>& wstar,
   const view_2d<Spack>& rho_zt,
   const view_2d<Spack>& shoc_qv,
+  const view_2d<Spack>& shoc_tabs,
   const view_2d<Spack>& dz_zt,
   const view_2d<Spack>& dz_zi,
   const view_2d<Spack>& tkh)
@@ -430,7 +431,7 @@ void Functions<S,D>::shoc_main_internal(
     // Advance the SGS TKE equation
     shoc_tke_disp(shcol,nlev,nlevi,dtime,wthv_sec,    // Input
                   shoc_mix,dz_zi,dz_zt,pres,shoc_tabs,// Input
-                  u_wind,v_wind,brunt,obklen,zt_grid, // Input
+                  u_wind,v_wind,brunt,zt_grid,        // Input
                   zi_grid,pblh,                       // Input
                   workspace_mgr,                      // Workspace mgr
                   tke,tk,tkh,                         // Input/Output
