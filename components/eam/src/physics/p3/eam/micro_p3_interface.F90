@@ -257,6 +257,14 @@ end subroutine micro_p3_readnl
 
   logical :: prog_modal_aero ! prognostic aerosols
 
+  integer :: idim
+  integer,parameter :: P3_in_dimsize = 16
+  integer,parameter :: P3_out_dimsize = 32
+  integer,parameter,dimension(P3_in_dimsize) :: &
+          P3_input_dim = (/ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16/)
+  integer,parameter,dimension(P3_out_dimsize) :: &
+          P3_output_dim = (/ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32 /)
+
   if (masterproc) write(iulog,'(A20)') ' P3 register start ...'
 
   call phys_getopts( prog_modal_aero_out   = prog_modal_aero )
@@ -341,8 +349,8 @@ end subroutine micro_p3_readnl
    call pbuf_add_field('MON_CCN_1',  'global', dtype_r8,(/pcols,pver/),mon_ccn_1_idx)
    call pbuf_add_field('MON_CCN_2',  'global', dtype_r8,(/pcols,pver/),mon_ccn_2_idx)
 
-   call add_hist_coord('P3_input_dim',  16, 'Input field dimension for p3_main subroutine',  'N/A', (/ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 /))
-   call add_hist_coord('P3_output_dim',    32, 'Output field dimension for p3_main subroutine', 'N/A', (/ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32 /))
+   call add_hist_coord('P3_input_dim',  P3_in_dimsize, 'Input field dimension for p3_main subroutine',  'N/A', P3_input_dim)
+   call add_hist_coord('P3_output_dim', P3_out_dimsize, 'Output field dimension for p3_main subroutine', 'N/A', P3_output_dim)
 
    if (masterproc) write(iulog,'(A20)') '    P3 register finished'
   end subroutine micro_p3_register
