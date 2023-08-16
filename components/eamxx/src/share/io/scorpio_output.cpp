@@ -707,9 +707,50 @@ void AtmosphereOutput::
 register_variables(const std::string& filename,
                    const std::string& fp_precision)
 {
+
   using namespace scorpio;
   using namespace ShortFieldTagsNames;
 
+  // Helper lambdas 
+  auto set_decomp_tag = [&](const FieldLayout& layout) {
+    std::string io_decomp_tag = (std::string("Real-") + m_io_grid->name() + "-" +
+                                 std::to_string(m_io_grid->get_num_global_dofs()));
+    for (int i=0; i<layout.rank(); ++i) {
+      auto tag_name = m_io_grid->get_dim_name(layout.tag(i));
+      if (layout.tag(i)==CMP) {
+        tag_name += std::to_string(layout.dim(i));
+      }
+      io_decomp_tag += "-" + tag_name;
+      // If tag==CMP, we already attached the length to the tag name
+      if (layout.tag(i)!=ShortFieldTagsNames::CMP) {
+        io_decomp_tag += "_" + std::to_string(layout.dim(i));
+      }
+    }
+    if (m_add_time_dim) {
+      io_decomp_tag += "-time";
+    } else {
+      io_decomp_tag += "-notime";
+    }
+    return io_decomp_tag;
+  };
+  // 
+  auto set_vec_of_dims = [&](const FieldLayout& layout) {
+    std::vector<std::string> vec_of_dims;
+    for (int i=0; i<layout.rank(); ++i) {
+      auto tag_name = m_io_grid->get_dim_name(layout.tag(i));
+      if (layout.tag(i)==CMP) {
+        tag_name += std::to_string(layout.dim(i));
+      }
+      vec_of_dims.push_back(tag_name); // Add dimensions string to vector of dims.
+    }
+    // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO,
+    // may need to delete this line when switching to fully C++/C implementation.
+    std::reverse(vec_of_dims.begin(),vec_of_dims.end());
+    if (m_add_time_dim) {
+      vec_of_dims.push_back("time");  //TODO: See the above comment on time.
+    }
+    return vec_of_dims;
+  };
   // Cycle through all fields and register.
   for (auto const& name : m_fields_names) {
     auto field = get_field(name,"io");
@@ -720,34 +761,10 @@ register_variables(const std::string& filename,
     // dimension data.
     //   We use real here because the data type for the decomp is the one used
     // in the simulation and not the one used in the output file.
-    std::string io_decomp_tag = (std::string("Real-") + m_io_grid->name() + "-" +
-                                 std::to_string(m_io_grid->get_num_global_dofs()));
-    std::vector<std::string> vec_of_dims;
     const auto& layout = fid.get_layout();
+    const auto& io_decomp_tag = set_decomp_tag(layout);
+    auto vec_of_dims   = set_vec_of_dims(layout);
     std::string units = to_string(fid.get_units());
-    for (int i=0; i<fid.get_layout().rank(); ++i) {
-      auto tag_name = m_io_grid->get_dim_name(layout.tag(i));
-      if (layout.tag(i)==CMP) {
-        tag_name += std::to_string(layout.dim(i));
-      }
-      // Concatenate the dimension string to the io-decomp string
-      io_decomp_tag += "-" + tag_name;
-      // If tag==CMP, we already attached the length to the tag name
-      if (layout.tag(i)!=ShortFieldTagsNames::CMP) {
-        io_decomp_tag += "_" + std::to_string(layout.dim(i));
-      }
-      vec_of_dims.push_back(tag_name); // Add dimensions string to vector of dims.
-    }
-
-    // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO,
-    // may need to delete this line when switching to fully C++/C implementation.
-    std::reverse(vec_of_dims.begin(),vec_of_dims.end());
-    if (m_add_time_dim) {
-      io_decomp_tag += "-time";
-      vec_of_dims.push_back("time");  //TODO: See the above comment on time.
-    } else {
-      io_decomp_tag += "-notime";
-    }
 
     // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
