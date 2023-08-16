@@ -98,8 +98,10 @@ module iop_data_mod
   real(r8), public ::      tsair(1)            ! air temperature at the surface
   real(r8), public ::      udiff(plev)         ! model minus observed uwind
   real(r8), public ::      uobs(plev)          ! actual u wind
+  real(r8), public ::      uls(plev)           ! large scale / geostropic u wind
   real(r8), public ::      vdiff(plev)         ! model minus observed vwind
   real(r8), public ::      vobs(plev)          ! actual v wind
+  real(r8), public ::      vls(plev)           ! large scale / geostropic v wind
   real(r8), public ::      cldobs(plev)        ! observed cld
   real(r8), public ::      clwpobs(plev)       ! observed clwp
   real(r8), public ::      aldirobs(1)         ! observed aldir
@@ -154,6 +156,8 @@ module iop_data_mod
   logical*4, public ::  have_tsair    ! dataset contains tsair
   logical*4, public ::  have_u        ! dataset contains u 
   logical*4, public ::  have_v        ! dataset contains v 
+  logical*4, public ::  have_uls      ! dataset contains large scale u
+  logical*4, public ::  have_vls      ! dataset contains large scale v
   logical*4, public ::  have_cld      ! dataset contains cld
   logical*4, public ::  have_cldliq   ! dataset contains cldliq
   logical*4, public ::  have_cldice   ! dataset contains cldice
@@ -166,8 +170,9 @@ module iop_data_mod
   logical*4, public ::  have_asdif    ! dataset contains asdif
   logical*4, public ::  scm_iop_srf_prop   ! use the specified surface properties
   logical*4, public ::  iop_dosubsidence ! compute Eulerian LS vertical advection
-  logical*4, public ::  iop_nudge_tq ! use relaxation for t and q
-  logical*4, public ::  iop_nudge_uv ! use relaxation for u and v
+  logical*4, public ::  iop_coriolis ! use geostropic winds to apply coriolis forcing
+  logical*4, public ::  iop_nudge_tq! use relaxation for t and q
+  logical*4, public ::  iop_nudge_uv! use relaxation for u and v
   logical*4, public ::  scm_observed_aero ! use observed aerosols in SCM file
   logical*4, public ::  precip_off    ! turn off precipitation processes
   logical*4, public ::  scm_zero_non_iop_tracers ! initialize non-IOP-specified tracers to zero
@@ -184,7 +189,7 @@ module iop_data_mod
 subroutine iop_default_opts( scmlat_out,scmlon_out,iopfile_out, &
         single_column_out,scm_iop_srf_prop_out, iop_nudge_tq_out, iop_nudge_uv_out, &
         iop_nudge_tq_low_out, iop_nudge_tq_high_out, iop_nudge_tscale_out, &
-        scm_observed_aero_out, iop_dosubsidence_out, &
+        scm_observed_aero_out, iop_dosubsidence_out, iop_coriolis_out, &
         scm_multcols_out, dp_crm_out, iop_perturb_high_out, &
         precip_off_out, scm_zero_non_iop_tracers_out)
    !-----------------------------------------------------------------------
@@ -193,6 +198,7 @@ subroutine iop_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    logical, intent(out), optional ::  single_column_out
    logical, intent(out), optional ::  scm_iop_srf_prop_out
    logical, intent(out), optional ::  iop_dosubsidence_out
+   logical, intent(out), optional ::  iop_coriolis_out
    logical, intent(out), optional ::  iop_nudge_tq_out
    logical, intent(out), optional ::  iop_nudge_uv_out
    logical, intent(out), optional ::  scm_observed_aero_out
@@ -211,6 +217,7 @@ subroutine iop_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(single_column_out) )    single_column_out  = .false.
    if ( present(scm_iop_srf_prop_out) )scm_iop_srf_prop_out  = .false.
    if ( present(iop_dosubsidence_out) )iop_dosubsidence_out = .false.
+   if ( present(iop_coriolis_out) )   iop_coriolis_out  = .false.
    if ( present(iop_nudge_tq_out) )   iop_nudge_tq_out  = .false.
    if ( present(iop_nudge_uv_out) )   iop_nudge_uv_out  = .false.
    if ( present(iop_nudge_tq_low_out) ) iop_nudge_tq_low_out = 1050.0_r8
@@ -229,7 +236,7 @@ end subroutine iop_default_opts
 subroutine iop_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          scm_iop_srf_prop_in, iop_nudge_tq_in, iop_nudge_uv_in, &
                          iop_nudge_tq_low_in, iop_nudge_tq_high_in, iop_nudge_tscale_in, &
-                         scm_observed_aero_in, iop_dosubsidence_in, &
+                         scm_observed_aero_in, iop_dosubsidence_in, iop_coriolis_in, &
                          scm_multcols_in, dp_crm_in, iop_perturb_high_in, &
                          precip_off_in, scm_zero_non_iop_tracers_in)
   !-----------------------------------------------------------------------
@@ -238,6 +245,7 @@ subroutine iop_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   logical, intent(in), optional        :: single_column_in
   logical, intent(in), optional        :: scm_iop_srf_prop_in
   logical, intent(in), optional        :: iop_dosubsidence_in
+  logical, intent(in), optional        :: iop_coriolis_in
   logical, intent(in), optional        :: iop_nudge_tq_in
   logical, intent(in), optional        :: iop_nudge_uv_in
   logical, intent(in), optional        :: scm_observed_aero_in
@@ -272,7 +280,11 @@ subroutine iop_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   if (present (iop_dosubsidence_in)) then
      iop_dosubsidence=iop_dosubsidence_in
   endif
-  
+
+  if (present (iop_coriolis_in)) then
+     iop_coriolis=iop_coriolis_in
+  endif
+
   if (present (iop_nudge_tq_in)) then
      iop_nudge_tq=iop_nudge_tq_in
   endif
@@ -317,6 +329,7 @@ subroutine iop_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   call mpibcast(scm_iop_srf_prop,1,mpilog,0,mpicom)
   call mpibcast(dp_crm,1,mpilog,0,mpicom)
   call mpibcast(iop_dosubsidence,1,mpilog,0,mpicom)
+  call mpibcast(iop_coriolis,1,mpilog,0,mpicom)
   call mpibcast(iop_nudge_tq,1,mpilog,0,mpicom)
   call mpibcast(iop_nudge_uv,1,mpilog,0,mpicom)
   call mpibcast(iop_nudge_tq_high,1,mpir8,0,mpicom)
@@ -1300,6 +1313,21 @@ endif !scm_observed_aero
        have_u = .true.
      endif
 
+     ! large scale / geostropic horizontal wind (for nudging)
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
+       'u_ls', have_srf, srf(1), .true. , dplevs, nlev,psobs, hyam, hybm, uls, status )
+     if ( status .ne. nf90_noerr ) then
+       have_uls = .false.
+       if (iop_coriolis) then
+         write(iulog,*) 'Large scale / geostrophic winds required for Coriolis forcing'
+	 write(iulog,*) 'Missing variable u_ls in the IOP file'
+	 write(iulog,*) 'Aborting run'
+	 call endrun
+       endif
+     else
+       have_uls = .true.
+     endif
+
      status = nf90_inq_varid( ncid, 'vsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
@@ -1317,6 +1345,21 @@ endif !scm_observed_aero
        have_v = .true.
      endif
      call shr_sys_flush( iulog )
+
+     ! large scale / geostropic meridional wind (for nudging)
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
+       'v_ls', have_srf, srf(1), .true. , dplevs, nlev,psobs, hyam, hybm, vls, status )
+     if ( status .ne. nf90_noerr ) then
+       have_vls = .false.
+       if (iop_coriolis) then
+         write(iulog,*) 'Large scale / geostrophic winds required for Coriolis forcing'
+	 write(iulog,*) 'Missing variable v_ls in the IOP file'
+	 write(iulog,*) 'Aborting run'
+	 call endrun
+       endif
+     else
+       have_vls = .true.
+     endif
 
      status = nf90_inq_varid( ncid, 'Prec', varid   )
      if ( status .ne. nf90_noerr ) then

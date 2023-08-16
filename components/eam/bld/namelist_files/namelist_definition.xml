@@ -4599,6 +4599,12 @@ Compute LS vertical transport using omega prescribed from IOP file.
 Default: FALSE
 </entry>
 
+<entry id="iop_coriolis" type="logical" category="scam"
+       group="cam_inparm" valid_values="">
+Use geostropic winds specified in IOP file to apply coriolis force.
+Default: FALSE
+</entry>
+
 <entry id="iop_nudge_tq" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Use relaxation for temperature and moisture.
