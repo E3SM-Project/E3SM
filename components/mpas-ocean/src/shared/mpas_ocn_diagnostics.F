@@ -712,7 +712,6 @@ contains
          iCell, iEdge, &! edge and cell loop indices
          cell1, cell2  ! neighbor cell indices across an edge
 
-      real (kind=RKIND), dimension(:), allocatable :: wctCell
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -752,28 +751,11 @@ contains
 
       case (thickEdgeFluxUpwind)
 
-         allocate(wctCell(nCellsAll))
-#ifdef MPAS_OPENACC
-         !$acc enter data copyin(wctCell, sshCell, btrVelocity, wctEdge)
-         !$acc parallel loop &
-         !$acc    present(wctCell, sshCell, bottomDepth) &
-         !$acc    private(iCell)
-#else
-         !$omp parallel
-         !$omp do schedule(runtime)
-#endif
-         do iCell = 1, nCellsAll
-            wctCell(iCell) = sshCell(iCell) + bottomDepth(iCell)
-         end do ! cell loop for ssh
-#ifndef MPAS_OPENACC
-         !$omp end do
-         !$omp end parallel
-#endif
-
          ! Use upwind thickness as the edge flux value
 #ifdef MPAS_OPENACC
+         !$acc enter data copyin(bottomDepthEdge, sshCell, btrVelocity, wctEdge)
          !$acc parallel loop &
-         !$acc    present(btrVelocity, sshCell, cellsOnEdge, maxLevelEdgeTop, wctCell, wctEdge) &
+         !$acc    present(bottomDepthEdge, btrVelocity, sshCell, cellsOnEdge, maxLevelEdgeTop, wctEdge) &
          !$acc    private(cell1, cell2, iEdge)
 #else
          !$omp parallel
@@ -784,11 +766,12 @@ contains
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
             if (btrVelocity(iEdge) > 0.0_RKIND) then
-               wctEdge(iEdge) = wctCell(cell1)
+               wctEdge(iEdge) = sshCell(cell1) + bottomDepthEdge(iEdge)
             elseif (btrVelocity(iEdge) < 0.0_RKIND) then
-               wctEdge(iEdge) = wctCell(cell2)
+               wctEdge(iEdge) = sshCell(cell2) + bottomDepthEdge(iEdge)
             else
-               wctEdge(iEdge) = max(wctCell(cell1), wctCell(cell2))
+               wctEdge(iEdge) = max(sshCell(cell1), sshCell(cell2)) &
+                                + bottomDepthEdge(iEdge)
             end if
          end do
 #ifndef MPAS_OPENACC
@@ -797,9 +780,8 @@ contains
 #endif
 
 #ifdef MPAS_OPENACC
-         !$acc exit data copyout(wctEdge) delete(wctCell, sshCell, btrVelocity)
+         !$acc exit data copyout(wctEdge) delete(bottomDepthEdge, sshCell, btrVelocity)
 #endif
-         deallocate(wctCell)
 
       case default
          ! Should have been caught on init

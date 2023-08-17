@@ -798,6 +798,7 @@ module ocn_time_integration_split
             !$omp end do
             !$omp end parallel
 
+            bottomDepthEdge(:) = 0.0_RKIND
             !$omp parallel
             !$omp do schedule(runtime) &
             !$omp private(cell1, cell2, k, thicknessSum)
