@@ -67,6 +67,7 @@ endif()
 
 
 if (PAM_SCREAM_USE_CXX)
+  set(EKAT_ENABLE_YAML_PARSER OFF CACHE BOOL "" FORCE)
   add_subdirectory(external/physics/scream_cxx_p3_shoc)
   add_subdirectory(external/physics/scream_cxx_interfaces)
   # add these here to allow driver to intialize P3
