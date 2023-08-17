@@ -165,6 +165,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- Basic options for each atm process group -->
     <atm_proc_group inherit="atm_proc_base">
       <atm_procs_list>ERROR_NO_ATM_PROCS</atm_procs_list>
+      <Type>Group</Type>
       <schedule_type valid_values="Sequential">Sequential</schedule_type>
     </atm_proc_group>
 
