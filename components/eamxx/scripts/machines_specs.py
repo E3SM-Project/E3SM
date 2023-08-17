@@ -30,7 +30,7 @@ MACHINE_METADATA = {
                  ["mpicxx","mpifort","mpicc"],
                   "",
                   "/sems-data-store/ACME/baselines/scream/master-baselines"),
-    "lassen" : (["module --force purge", "module load git gcc/8.3.1 cuda/10.1.243 cmake/3.16.8 spectrum-mpi python/3.7.2", "export LLNL_USE_OMPI_VARS='y'"],
+    "lassen" : (["module --force purge", "module load git gcc/8.3.1 cuda/11.8.0 cmake/3.16.8 spectrum-mpi python/3.7.2", "export LLNL_USE_OMPI_VARS='y'"],
                  ["mpicxx","mpifort","mpicc"],
                   "bsub -Ip -qpdebug",
                   ""),
