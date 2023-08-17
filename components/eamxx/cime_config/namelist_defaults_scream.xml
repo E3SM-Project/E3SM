@@ -146,25 +146,20 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- Basic options for each atm process -->
     <atm_proc_base>
-      <number_of_subcycles constraints="gt 0"
-        doc="how many times to subcycle this atm process">
-        1
-      </number_of_subcycles>
+      <number_of_subcycles constraints="gt 0" doc="how many times to subcycle this atm process">1</number_of_subcycles>
       <enable_precondition_checks type="logical">true</enable_precondition_checks>
       <enable_postcondition_checks type="logical">true</enable_postcondition_checks>
       <repair_log_level type="string" valid_values="trace,debug,info,warn">trace</repair_log_level>
       <!-- Run internal checks on code correctness.
            <= 0: off; >= 1: global hashes over state -->
       <internal_diagnostics_level type="integer">0</internal_diagnostics_level>
-      <compute_tendencies type="array(string)"
-        doc="list of computed fields for which this process will back out tendencies">
-        NONE
-      </compute_tendencies>
+      <compute_tendencies type="array(string)" doc="list of computed fields for which this process will back out tendencies">NONE</compute_tendencies>
     </atm_proc_base>
 
     <!-- Basic options for each atm process group -->
     <atm_proc_group inherit="atm_proc_base">
       <atm_procs_list>ERROR_NO_ATM_PROCS</atm_procs_list>
+      <Type>Group</Type>
       <schedule_type valid_values="Sequential">Sequential</schedule_type>
     </atm_proc_group>
 
