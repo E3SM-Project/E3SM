@@ -207,6 +207,8 @@ int main (int argc, char** argv) {
     aer_tau_lw.deallocate();
     cld_tau_sw.deallocate();
     cld_tau_lw.deallocate();
+    cld_tau_sw_bnd.deallocate();
+    cld_tau_lw_bnd.deallocate();
     sw_flux_up_ref.deallocate();
     sw_flux_dn_ref.deallocate();
     sw_flux_dn_dir_ref.deallocate();

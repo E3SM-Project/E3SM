@@ -263,6 +263,8 @@ int run(int argc, char** argv) {
     aer_tau_lw.deallocate();
     cld_tau_sw.deallocate();
     cld_tau_lw.deallocate();
+    cld_tau_sw_bnd.deallocate();
+    cld_tau_lw_bnd.deallocate();
     yakl::finalize();
 
     return nerr != 0 ? 1 : 0;
