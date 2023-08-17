@@ -19,8 +19,28 @@ namespace scream
 // This helper function updates the current output val with a new one,
 // according to the "averaging" type, and according to the number of
 // model time steps since the last output step.
+void combine (const Real& new_val, Real& curr_val, const OutputAvgType avg_type)
+{
+  switch (avg_type) {
+    case OutputAvgType::Instant:
+      curr_val = new_val;
+      break;
+    case OutputAvgType::Max:
+      curr_val = ekat::impl::max(curr_val,new_val);
+      break;
+    case OutputAvgType::Min:
+      curr_val = ekat::impl::min(curr_val,new_val);
+      break;
+    case OutputAvgType::Average:
+      curr_val += new_val;
+      break;
+    default:
+      EKAT_KERNEL_ERROR_MSG ("Unexpected value for m_avg_type. Please, contact developers.\n");
+  }
+}
+// This one covers cases where a variable might be masked.
 KOKKOS_INLINE_FUNCTION
-void combine (const Real& new_val, Real& curr_val, Real& avg_coeff, const OutputAvgType avg_type, const Real fill_value)
+void combine_and_fill (const Real& new_val, Real& curr_val, Real& avg_coeff, const OutputAvgType avg_type, const Real fill_value)
 {
   const bool new_fill  = new_val == fill_value;
   const bool curr_fill = curr_val == fill_value;
@@ -104,6 +124,8 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   if (params.isParameter("fill_value")) {
     m_fill_value = static_cast<float>(params.get<double>("fill_value"));
+    // If the fill_value is specified there is a good chance the user expects the average count to track filling.
+    m_track_avg_cnt = true;
   }
   if (params.isParameter("fill_threshold")) {
     m_avg_coeff_threshold = params.get<Real>("fill_threshold");
@@ -180,6 +202,8 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   // Setup remappers - if needed
   if (use_vertical_remap_from_file) {
+    // When vertically remapping there is a chance that filled values will be present, so be sure to track these
+    m_track_avg_cnt = true;
     // We build a remapper, to remap fields from the fm grid to the io grid
     auto vert_remap_file   = params.get<std::string>("vertical_remap_file");
     auto f_lev = get_field("p_mid","sim");
@@ -408,7 +432,11 @@ run (const std::string& filename,
           auto avg_view_1d = view_Nd_dev<1>(data,dims[0]);
           auto avg_coeff_1d = view_Nd_dev<1>(coeff_data,dims[0]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-            combine(new_view_1d(i), avg_view_1d(i),avg_coeff_1d(i),avg_type,m_fill_value);
+	    if (m_track_avg_cnt) {
+              combine_and_fill(new_view_1d(i), avg_view_1d(i),avg_coeff_1d(i),avg_type,m_fill_value);
+	    } else {
+              combine(new_view_1d(i), avg_view_1d(i),avg_type);
+	    }
           });
           break;
         }
@@ -420,7 +448,11 @@ run (const std::string& filename,
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j;
             unflatten_idx(idx,extents,i,j);
-            combine(new_view_2d(i,j), avg_view_2d(i,j),avg_coeff_2d(i,j),avg_type,m_fill_value);
+	    if (m_track_avg_cnt) {
+              combine_and_fill(new_view_2d(i,j), avg_view_2d(i,j),avg_coeff_2d(i,j),avg_type,m_fill_value);
+	    } else {
+              combine(new_view_2d(i,j), avg_view_2d(i,j),avg_type);
+	    }
           });
           break;
         }
@@ -432,7 +464,11 @@ run (const std::string& filename,
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k;
             unflatten_idx(idx,extents,i,j,k);
-            combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_coeff_3d(i,j,k),avg_type,m_fill_value);
+	    if (m_track_avg_cnt) {
+              combine_and_fill(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_coeff_3d(i,j,k),avg_type,m_fill_value);
+	    } else {
+              combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_type);
+	    }
           });
           break;
         }
@@ -444,7 +480,11 @@ run (const std::string& filename,
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k,l;
             unflatten_idx(idx,extents,i,j,k,l);
-            combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_coeff_4d(i,j,k,l),avg_type,m_fill_value);
+	    if (m_track_avg_cnt) {
+              combine_and_fill(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_coeff_4d(i,j,k,l),avg_type,m_fill_value);
+	    } else {
+              combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_type);
+	    }
           });
           break;
         }
@@ -456,7 +496,11 @@ run (const std::string& filename,
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k,l,m;
             unflatten_idx(idx,extents,i,j,k,l,m);
-            combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_coeff_5d(i,j,k,l,m),avg_type,m_fill_value);
+	    if (m_track_avg_cnt) {
+              combine_and_fill(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_coeff_5d(i,j,k,l,m),avg_type,m_fill_value);
+	    } else {
+              combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_type);
+	    }
           });
           break;
         }
@@ -468,7 +512,11 @@ run (const std::string& filename,
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k,l,m,n;
             unflatten_idx(idx,extents,i,j,k,l,m,n);
-            combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n), avg_coeff_6d(i,j,k,l,m,n),avg_type,m_fill_value);
+	    if (m_track_avg_cnt) {
+              combine_and_fill(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n), avg_coeff_6d(i,j,k,l,m,n),avg_type,m_fill_value);
+	    } else {
+              combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),avg_type);
+	    }
           });
           break;
         }
@@ -688,12 +736,12 @@ void AtmosphereOutput::register_views()
     }
     m_avg_coeff_views_1d.emplace(name,view_1d_dev("",size)); // TODO: DELETE THESE, no longer needed.
 
-    // Now create and store a dev view to track the averaging count for this layout (if needed)
+    // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
     // We don't need to track average counts for files that are not tracking the time dim nor
     // for any variable with LayoutType = Invalid
     const auto tags = layout.tags();
     auto lt = get_layout_type(tags);
-    if (m_add_time_dim && lt != LayoutType::Invalid) {
+    if (m_add_time_dim && lt != LayoutType::Invalid && m_track_avg_cnt) {
       std::string avg_cnt_name = "avg_count_" + e2str(lt);
       for (int ii=0; ii<layout.rank(); ++ii) {
         auto tag_name = m_io_grid->get_dim_name(layout.tag(ii));
