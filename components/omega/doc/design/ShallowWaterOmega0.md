@@ -21,30 +21,48 @@ We will produce separate design documents for the time-stepping scheme and the t
 The governing equations for Omega-0 are conservation of momentum, volume, and tracers in a single layer:
 
 $$
-\frac{\partial \boldsymbol{u}}{\partial t} + q\left(h\boldsymbol{u}^{\perp}\right) = -g\nabla(h+b) - \nabla K + \nu_2 \nabla^2 \boldsymbol{u} - \nu_4 \nabla^4 \boldsymbol{u} - c\boldsymbol{u}\left|\boldsymbol{u}\right|
+\frac{\partial \boldsymbol{u}}{\partial t} + q\left(h\boldsymbol{u}^{\perp}\right) = -g\nabla(h+b) - \nabla K + \nu_2 \nabla^2 \boldsymbol{u} - \nu_4 \nabla^4 \boldsymbol{u} + C_D \frac{\boldsymbol{u}\left|\boldsymbol{u}\right|}{h} - C_W \frac{(\boldsymbol{u}_W - \boldsymbol{u})\left|\boldsymbol{u}_W - \boldsymbol{u}\right|}{h}
+\hspace{1cm}   (1)
 $$
 
 $$
 \frac{\partial h}{\partial t} + \nabla \cdot \left(h \boldsymbol{u}\right) = 0,
+\hspace{1cm}   (2)
 $$
 
 $$
-\frac{\partial h \phi}{\partial t} + \nabla \cdot \left(h \boldsymbol{u} \phi\right) = \kappa_2 h \nabla^2 \phi - \kappa_4 h \nabla^4 \phi
+\frac{\partial h \phi}{\partial t} + \nabla \cdot \left(h \boldsymbol{u} \phi\right) = \kappa_2 h \nabla^2 \phi - \kappa_4 h \nabla^4 \phi.
+\hspace{1cm}   (3)
 $$
 
-where the first two equations are from [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780), equations 2 and 7, with additional viscosity and bottom drag terms.
+The first two equations are from [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780), equations 2 and 7, with additional viscosity, bottom drag, and wind forcing (see equation 1 in [Lilly et al. 2023](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2022MS003327)). 
 This equation set does not include any vertical advection or diffusion. Omega-0 will have a vertical index for performance testing and future expansion, but vertical layers will be simply redundant.
+Additional information on governing equations may be found in chapter 8 of the MPAS User's Guide ([Petersen et al. 2018](https://zenodo.org/record/1246893)).
 
-To do: Complete table of symbol definitions. See [markdown table generator](https://www.tablesgenerator.com/markdown_tables)
-| symbol | name      | units  |
-|--------|-----------|--------|
-| $u$    | velocity  | m/s    |
-| $h$    | thickness | m      |
-| $\phi$ | tracer    | varies |
-| $t$    | time      | s      |
+| symbol              | name                        | units    | location | notes                                                        |
+|---------------------|-----------------------------|----------|----------|--------------------------------------------------------------|
+| $C_D$               | bottom drag                 | 1/m      | edge     |                                                              |
+| $C_W$               | wind stress coefficient     | 1/m      | edge     |                                                              |
+| $f$                 | Coriolis parameter          | 1/s      | vertex   |                                                              |
+| $g$                 | gravitational acceleration  | m/s^2    | constant |                                                              |
+| $H$                 | total unperturbed depth     | m        | cell     |                                                              |
+| $h$                 | thickness                   | m        | cell     |                                                              |
+| ${\boldsymbol k}$   | vertical unit vector        | unitless | none     |                                                              |
+| $K$                 | kinetic energy              | m^2/s^2  | cell     |  $K = \left\| {\boldsymbol u} \right\|^2 / 2$                |
+| $q$                 | potential vorticity         | 1/m/s    | vertex   | $q = \eta/h$                                                 |
+| $t$                 | time                        | s        | none     |                                                              |
+| ${\boldsymbol u}$   | velocity                    | m/s      | edge     |                                                              |
+| ${\boldsymbol u}_W$ | wind velocity               | m/s      | edge     |                                                              |
+| $\eta$              | absolute vorticity          | 1/s      | vertex   | $\eta={\boldsymbol k} \cdot \nabla \times {\boldsymbol u}+f$ |
+| $\kappa_2$          | tracer diffusion            | m^2/2    | constant |                                                              |
+| $\kappa_4$          | biharmonic tracer diffusion | m^4/2    | constant |                                                              |
+| $\nu_2$             | viscosity                   | m^2/2    | constant |                                                              |
+| $\nu_4$             | biharmonic viscosity        | m^4/2    | constant |                                                              |
+| $\phi$              | tracer                      | varies   | cell     |                                                              |
 
-To do: Add wind forcing term (aka surface stress) for Stommel case?
-To do: Specify boundary conditions: Original TRiSK boundaries are zero vorticity, so no slip. See Darren Enwirda's recent github PR (add link) for free-slip implementation. Details will be added below in the algorithm section.
+Note: Table created with [markdown table generator](https://www.tablesgenerator.com/markdown_tables) and original [google sheet](https://docs.google.com/spreadsheets/d/1rz-QXDiwfemq5NpSR1XsvomI7aSKQ1myTNweCY4afcE/edit#gid=0).
+
+Boundary conditions will include both no-slip and free-slip. The original MPAS-Ocean implementation had no-slip boundaries, implemented by setting vorticity to zero at the boundaries. The free-slip implementation is described by Darren Engwirda in a [github discussion](https://github.com/E3SM-Ocean-Discussion/E3SM/pull/49).
 
 ### 2.2 Requirement: Numerical method will be the TRiSK formulation
 
@@ -57,7 +75,7 @@ We will continue to use the MPAS-format netcdf files for input and output, with 
 
 Omega mesh information will be stored in a separate mesh file, and not be included with initial condition, restart, or output files. This way there is never redundant mesh data stored in these files.
 
-To do: add list of minimum number of variables that defines the mesh, and the additional variables that can be computed on start-up.
+To do: In the design section below, add list of minimum number of variables that defines the mesh, and the additional variables that can be computed on start-up.
 
 ### 2.4 Requirement: Omega-0 will interface with polaris for preprocessing and postprocessing
 
@@ -67,9 +85,9 @@ The test cases relevant to this design document are in Section 5 below.
 
 ### 2.5 Requirement: Omega-0 will run portably on various DOE architectures (CPU and GPU nodes)
 
-Omega will be able to run on all the upcoming DOE architectures and make good use of GPU hardware. This should occur with minimal alterations in the high-level PDE solver code for different platforms. 
+Omega will be able to run on all the upcoming DOE architectures and make good use of GPU hardware. This should occur with minimal alterations in the high-level PDE solver code for different platforms.
 
-Options include: writing kernels directly for GPUs in CUDA; adding OpenACC pragmas for the GPUs; or calling libraries such as Kokkos [(Trott et al. 2022)](https://ieeexplore.ieee.org/document/9485033), YAKL [(Norman et al. 2023)](https://link.springer.com/10.1007/s10766-022-00739-0) or [HIP](https://github.com/ROCm-Developer-Tools/HIP) that execute code optimized for specialized architectures on the back-end, while providing a simpler front-end interface for the domain scientist.
+Options include: writing kernels directly for GPUs in CUDA; adding OpenACC pragmas for the GPUs; or calling libraries such as Kokkos ([Trott et al. 2022](https://ieeexplore.ieee.org/document/9485033)), YAKL ([Norman et al. 2023](https://link.springer.com/10.1007/s10766-022-00739-0)) or [HIP](https://github.com/ROCm-Developer-Tools/HIP) that execute code optimized for specialized architectures on the back-end, while providing a simpler front-end interface for the domain scientist.
 
 ### 2.6 Requirement: Omega-0 will run on multi-node with domain decomposition
 
@@ -97,7 +115,7 @@ For these comparisons, MPAS-Ocean will be set up with the identical terms and fu
 
 ### 2.10 Requirement: Full-node GPU throughput will be comparable or better than full-node CPU throughput
 
-For GPU throughput, comparisons should be made between full-node CPU throughput and full-node GPU throughput. For example, [Perlmutter at NERSC](https://docs.nersc.gov/systems/perlmutter/architecture/) has nodes with 64 and 128 CPU cores (AMD EPYC 7763) and 4 GPUs (NVIDIA A100). We expect the full-node GPU throughput to be at least as good as the full-node CPU throughput, and potentially a factor of four higher.
+For GPU throughput, comparisons should be made between full-node CPU throughput and full-node GPU throughput. For example, [Perlmutter at NERSC](https://docs.nersc.gov/systems/perlmutter/architecture/) has nodes with 64 and 128 CPU cores (AMD EPYC 7763) and 4 GPUs (NVIDIA A100). We expect the full-node GPU throughput to be at least as good as the full-node CPU throughput, and potentially a factor of four higher. These numbers depend on the performance specifications of the particular hardware.
 
 Like the previous requirement, tests will first be conducted with layered shallow water equations and later with additional tracer advection. For reference, [Bishnu et al. 2023a](https://egusphere.copernicus.org/preprints/2023/egusphere-2023-57) was able to obtain nearly identical throughput between 64 CPU cores and a single GPU on Perlmutter using a Julia code and a layered shallow water test case.
 
