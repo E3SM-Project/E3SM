@@ -438,6 +438,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   const auto nlwbands = m_nlwbands;
   const auto nswbands = m_nswbands;
   const auto nlwgpts = m_nlwgpts;
+  const auto do_aerosol_rad = m_do_aerosol_rad;
 
   // Are we going to update fluxes and heating this step?
   auto ts = timestamp();
@@ -623,7 +624,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
           t_lev(i+1,nlay+1) = d_tint(i,nlay);
 
           // Note that RRTMGP expects ordering (col,lay,bnd) but the FM keeps things in (col,bnd,lay) order
-          if (m_do_aerosol_rad) {
+          if (do_aerosol_rad) {
             Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands*nlay), [&] (const int&idx) {
                 auto b = idx / nlay;
                 auto k = idx % nlay;
