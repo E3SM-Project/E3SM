@@ -24,7 +24,7 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   const auto& grid_name = m_grid->name();
 
   m_num_cols = m_grid->get_num_local_dofs();      // Number of columns on this rank
-
+ 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Qunit = kg/kg;
@@ -47,7 +47,7 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Computed>("surf_lw_flux_up",  scalar2d_layout, W/m2,    grid_name);
   add_field<Computed>("surf_sens_flux",   scalar2d_layout, W/m2,    grid_name);
   add_field<Computed>("surf_evap",        scalar2d_layout, kg/m2/s, grid_name);
-  add_field<Computed>("wind_stress",    vector2d_layout, N/m2,    grid_name);
+  add_field<Computed>("surf_mom_flux",    vector2d_layout, N/m2,    grid_name);
   add_field<Computed>("surf_radiative_T", scalar2d_layout, K,       grid_name);
   add_field<Computed>("T_2m",             scalar2d_layout, K,       grid_name);
   add_field<Computed>("qv_2m",            scalar2d_layout, Qunit,   grid_name);
@@ -130,7 +130,7 @@ void SurfaceCouplingImporter::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_vis"),m_grid,0.0,1.0,true);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_nir"),m_grid,0.0,1.0,true);
 
-  // Perform initial import (if any are marked for import during initialization)
+  // Perform initial import (if any are marked for import during initialization) 
   if (any_initial_imports) do_import(true);
 }
 // =========================================================================================

@@ -44,8 +44,8 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   // Layout for 2D (1d horiz X 1d vertical) variable
   FieldLayout scalar2d_layout_col{ {COL}, {m_num_cols} };
 
-  // Layout for wind_stress
-  FieldLayout  wind_stress_layout { {COL, CMP}, {m_num_cols, 2} };
+  // Layout for surf_mom_flux
+  FieldLayout surf_mom_flux_layout { {COL, CMP}, {m_num_cols, 2} };
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
@@ -67,7 +67,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Required>("omega",               scalar3d_layout_mid,  Pa/s,    grid_name, ps);
   add_field<Required>("surf_sens_flux",      scalar2d_layout_col,  W/m2,    grid_name);
   add_field<Required>("surf_evap",           scalar2d_layout_col,  kg/m2/s, grid_name);
-  add_field<Required>("wind_stress",         wind_stress_layout,   N/m2,    grid_name);
+  add_field<Required>("surf_mom_flux",       surf_mom_flux_layout, N/m2, grid_name);
   add_field<Updated> ("surf_drag_coeff_tms", scalar2d_layout_col,  kg/s/m2, grid_name);
   add_field<Updated> ("T_mid",               scalar3d_layout_mid,  K,       grid_name, ps);
   add_field<Updated> ("qv",                  scalar3d_layout_mid,  Qunit,   grid_name, "tracers", ps);
@@ -235,7 +235,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& omega               = get_field_in("omega").get_view<const Spack**>();
   const auto& surf_sens_flux      = get_field_in("surf_sens_flux").get_view<const Real*>();
   const auto& surf_evap           = get_field_in("surf_evap").get_view<const Real*>();
-  const auto& wind_stress         = get_field_in("wind_stress").get_view<const Real**>();
+  const auto& surf_mom_flux       = get_field_in("surf_mom_flux").get_view<const Real**>();
   const auto& qtracers            = get_group_out("tracers").m_bundle->get_view<Spack***>();
   const auto& qc                  = get_field_out("qc").get_view<Spack**>();
   const auto& qv                  = get_field_out("qv").get_view<Spack**>();
@@ -289,7 +289,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
 
   shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,z_surf,m_cell_area,m_cell_lat,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_evap,
-                                wind_stress,surf_drag_coeff_tms,horiz_winds,qtracers,qv,qc,qc_copy,tke,
+                                surf_mom_flux,surf_drag_coeff_tms,horiz_winds,qtracers,qv,qc,qc_copy,tke,
                                 tke_copy,z_mid,z_int,cell_length,dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,
                                 wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,wtracer_sfc,wm_zt,inv_exner,thlm,qw);
 

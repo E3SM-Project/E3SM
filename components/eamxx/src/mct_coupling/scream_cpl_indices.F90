@@ -83,8 +83,8 @@ module scream_cpl_indices
     import_field_names(8)  = 'wind_speed_10m'
     import_field_names(9)  = 'snow_depth_land'
     import_field_names(10) = 'surf_lw_flux_up'
-    import_field_names(11) = 'wind_stress'
-    import_field_names(12) = 'wind_stress'
+    import_field_names(11) = 'surf_mom_flux'
+    import_field_names(12) = 'surf_mom_flux'
     import_field_names(13) = 'surf_sens_flux'
     import_field_names(14) = 'surf_evap'
     import_field_names(15) = 'ocnfrac'
@@ -106,7 +106,7 @@ module scream_cpl_indices
     import_cpl_indices(13) = mct_avect_indexra(x2a,'Faxx_sen')
     import_cpl_indices(14) = mct_avect_indexra(x2a,'Faxx_evap')
     import_cpl_indices(15) = mct_avect_indexra(x2a,'Sf_ofrac')
-    import_cpl_indices(16) = mct_avect_indexra(x2a,'Sf_lfrac')
+    import_cpl_indices(16) = mct_avect_indexra(x2a,'Sf_lfrac') 
 
     ! Vector components
     import_vector_components(11) = 0
@@ -145,7 +145,7 @@ module scream_cpl_indices
     export_field_names(1)  = 'Sa_z'
     export_field_names(2)  = 'Sa_u'
     export_field_names(3)  = 'Sa_v'
-    export_field_names(4)  = 'Sa_tbot'
+    export_field_names(4)  = 'Sa_tbot' 
     export_field_names(5)  = 'Sa_ptem'
     export_field_names(6)  = 'Sa_pbot'
     export_field_names(7)  = 'Sa_shum'
@@ -153,12 +153,12 @@ module scream_cpl_indices
     export_field_names(9)  = 'Sa_pslv'
     export_field_names(10) = 'Faxa_rainl'
     export_field_names(11) = 'Faxa_snowl'
-    export_field_names(12) = 'Faxa_swndr'
-    export_field_names(13) = 'Faxa_swvdr'
-    export_field_names(14) = 'Faxa_swndf'
-    export_field_names(15) = 'Faxa_swvdf'
-    export_field_names(16) = 'Faxa_swnet'
-    export_field_names(17) = 'Faxa_lwdn'
+    export_field_names(12) = 'Faxa_swndr' 
+    export_field_names(13) = 'Faxa_swvdr' 
+    export_field_names(14) = 'Faxa_swndf' 
+    export_field_names(15) = 'Faxa_swvdf' 
+    export_field_names(16) = 'Faxa_swnet' 
+    export_field_names(17) = 'Faxa_lwdn'  
 
     ! CPL indices
     export_cpl_indices(1)  = mct_avect_indexra(a2x,'Sa_z')

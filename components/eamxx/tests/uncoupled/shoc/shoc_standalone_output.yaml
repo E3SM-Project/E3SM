@@ -11,9 +11,9 @@ Fields:
       - horiz_winds
       - U
       - V
-      - wind_stress
-      - wind_stress_U
-      - wind_stress_V
+      - surf_mom_flux
+      - surf_mom_flux_U
+      - surf_mom_flux_V
       - qv
       - qc
       - sgs_buoy_flux

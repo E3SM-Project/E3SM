@@ -248,7 +248,7 @@ class TestBuildnml(unittest.TestCase):
         """
         case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
 
-        self._chg_atmconfig([("wind_stress", "40.0,2.0")], case)
+        self._chg_atmconfig([("surf_mom_flux", "40.0,2.0")], case)
 
     ###########################################################################
     def test_atmchanges_on_all_matches(self):
