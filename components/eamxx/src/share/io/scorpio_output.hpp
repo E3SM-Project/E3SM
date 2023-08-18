@@ -166,6 +166,7 @@ protected:
   void compute_diagnostic (const std::string& name, const bool allow_invalid_fields = false);
   void set_diagnostics();
   void create_diagnostic (const std::string& diag_name);
+  void update_avg_cnt_view(const Field&, view_1d_dev& dev_view);
 
   // --- Internal variables --- //
   ekat::Comm                          m_comm;
@@ -187,6 +188,7 @@ protected:
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
   std::vector<std::string>                              m_fields_names;
   std::vector<std::string>                              m_avg_cnt_names;
+  std::map<std::string,std::string>                     m_field_to_avg_cnt_map;
   std::map<std::string,std::string>                     m_fields_alt_name;
   std::map<std::string,FieldLayout>                     m_layouts;
   std::map<std::string,int>                             m_dofs;
@@ -205,10 +207,11 @@ protected:
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;
   std::map<std::string,view_1d_dev>     m_dev_views_1d;
+  std::map<std::string,view_1d_dev>     m_local_tmp_avg_cnt_views_1d;
   std::map<std::string,view_1d_dev>     m_avg_coeff_views_1d;
 
   bool m_add_time_dim;
-  bool m_track_avg_cnt = false;
+  bool m_track_avg_cnt = true;  //TODO: return this to default as "false"
 };
 
 } //namespace scream
