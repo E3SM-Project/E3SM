@@ -919,10 +919,11 @@ void AtmosphereDriver::set_initial_conditions ()
     const auto& fname = fid.name();
     const auto& grid_name = fid.get_grid_name();
 
-    // First, check if the input file contains constant values for some of the fields
     if (ic_pl.isParameter(fname)) {
-      // The user provided a constant value for this field. Simply use that.
+      // This is the case that the user provided an initialization
+      // for this field in the parameter file.
       if (ic_pl.isType<double>(fname) or ic_pl.isType<std::vector<double>>(fname)) {
+        // Initial condition is a constant
         initialize_constant_field(fid, ic_pl);
         fields_inited[grid_name].push_back(fname);
 
@@ -930,22 +931,20 @@ void AtmosphereDriver::set_initial_conditions ()
         auto f_nonconst = m_field_mgrs.at(grid_name)->get_field(fid.name());
         f_nonconst.get_header().get_tracking().update_time_stamp(m_current_ts);
       } else if (ic_pl.isType<std::string>(fname)) {
+        // Initial condition is a string
         ic_fields_to_copy.push_back(fid);
         fields_inited[grid_name].push_back(fname);
       } else {
-        EKAT_REQUIRE_MSG (false, "ERROR: invalid assignment for variable " + fname + ", only scalar double or string, or vector double arguments are allowed");
+        EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
+                        "double or string, or vector double arguments are allowed");
       }
-    } else if (not (fvphyshack and grid_name == "Physics PG2")) {
-      auto& this_grid_ic_fnames = ic_fields_names[grid_name];
+    } else if (fname == "phis" or fname == "sgh30") {
+      // Both phis and sgh30 need to be loaded from the topography file
       auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
       auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
 
-      auto c = f.get_header().get_children();
-
       if (fname == "phis") {
-        // Topography (phis) is a special case that should
-        // be loaded from the topography file, where the
-        // eamxx field "phis" corresponds to the name
+        // The eamxx field "phis" corresponds to the name
         // "PHIS_d" on the GLL and Point grids and "PHIS"
         // on the PG2 grid in the topography file.
         if (grid_name == "Physics PG2") {
@@ -957,7 +956,22 @@ void AtmosphereDriver::set_initial_conditions ()
           EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
         }
         this_grid_topo_eamxx_fnames.push_back(fname);
-      } else if (c.size()==0) {
+      } else if (fname == "sgh30") {
+        // The eamxx field "sgh30" is called "SGH30" in the
+        // topography file and is only available on the PG2 grid.
+        EKAT_ASSERT_MSG(grid_name == "Physics PG2",
+                        "Error! Requesting sgh30 field on " + grid_name +
+                        " topo file only has sgh30 for Physics PG2.\n");
+        topography_file_fields_names[grid_name].push_back("SGH30");
+        topography_eamxx_fields_names[grid_name].push_back(fname);
+      }
+    } else if (not (fvphyshack and grid_name == "Physics PG2")) {
+      // The IC file is written for the GLL grid, so we only load
+      // fields from there. Any other input fields on the PG2 grid
+      // will be properly computed in the dynamics interface.
+      auto& this_grid_ic_fnames = ic_fields_names[grid_name];
+      auto c = f.get_header().get_children();
+      if (c.size()==0) {
         // If this field is the parent of other subfields, we only read from file the subfields.
         if (not ekat::contains(this_grid_ic_fnames,fname)) {
           this_grid_ic_fnames.push_back(fname);
@@ -980,14 +994,6 @@ void AtmosphereDriver::set_initial_conditions ()
           }
         }
       }
-    } else if (fname == "sgh30") {
-      // The field sgh30 is also loaded from topography file, but unlike
-      // phis, we need to store values from PG2 grid.
-      EKAT_ASSERT_MSG(grid_name == "Physics PG2",
-                      "Error! Requesting sgh30 field on " + grid_name +
-                      " topo file only has sgh30 for Physics PG2.\n");
-      topography_file_fields_names[grid_name].push_back("SGH30");
-      topography_eamxx_fields_names[grid_name].push_back(fname);
     }
   };
 
