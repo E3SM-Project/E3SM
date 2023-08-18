@@ -503,9 +503,9 @@ module li_advection
              ! Call fct for tracers, using activeTracerHorizontalAdvectionEdgeFlux
              ! from fct thickness advection as normalThicknessFlux
              call li_tracer_advection_fct_tend(&
-                  tend, advectedTracers, layerThicknessOld, &
+                  tend(1:nTracers-1,:,:), advectedTracers(1:nTracers-1,:,:), layerThicknessOld, &
                   activeTracerHorizontalAdvectionEdgeFlux(nTracers,:,:), 0.0_RKIND * normalVelocity, dt,    &
-                  nTracers, activeTracerHorizontalAdvectionEdgeFlux, computeBudgets=.false.)
+                  nTracers-1, computeBudgets=.false.)
          elseif ((trim(config_thickness_advection) .eq. 'fct') .and. &
                   trim(config_tracer_advection) .eq. 'fo') then
             err_tmp = 1
