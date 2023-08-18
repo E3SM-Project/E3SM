@@ -153,14 +153,14 @@ Column_loop : &
 !           do_diag = lev == 5 .and. isec == 2 .and. lchnk == 290
             do_diag = .false.
             if( do_diag ) then
-	      write(*,*) ' '
-	      write(*,*) 'imp_sol: lchnk,lev,isec,cols = ',lchnk,lev,isec,cols
-	      write(*,*) ' '
-	      write(*,*) 'imp_sol: lrxt'
-	      write(*,'(1p,4g20.10)') lrxt(1,:)
-	      write(*,*) 'imp_sol: lhet'
-	      write(*,'(1p,4g20.10)') lhet(1,:)
-	    end if
+               write(*,*) ' '
+               write(*,*) 'imp_sol: lchnk,lev,isec,cols = ',lchnk,lev,isec,cols
+               write(*,*) ' '
+               write(*,*) 'imp_sol: lrxt'
+               write(*,'(1p,4g20.10)') lrxt(1,:)
+               write(*,*) 'imp_sol: lhet'
+               write(*,'(1p,4g20.10)') lhet(1,:)
+            end if
 !-----------------------------------------------------------------------      
 !        ... Time step loop
 !-----------------------------------------------------------------------      
@@ -187,10 +187,10 @@ Time_step_loop : &
                   solution(:cols,m) = lsol(:cols,j)
                end do
                if( do_diag ) then
-	         write(*,*) ' '
-	         write(*,*) 'imp_sol: solution'
-	         write(*,'(1p,4g20.10)') solution(1,:)
-	       end if
+                  write(*,*) ' '
+                  write(*,*) 'imp_sol: solution'
+                  write(*,'(1p,4g20.10)') solution(1,:)
+               end if
 !-----------------------------------------------------------------------      
 !        ... Set the iteration invariant part of the function F(y)
 !        ... If there is "independent" production put it in the forcing
@@ -238,29 +238,29 @@ Iteration_loop : &
 !         ... Factor the "system" matrix
 !-----------------------------------------------------------------------      
 #ifdef DEBUG_LU
-		     if( do_diag ) then
-			write(*,*) 'imp_sol: before lu_fac - lchnk,lev,isec,iter,dt = ',lchnk,lev,isec,nr_iter,dt
-			write(*,*) 'imp_sol: lu(110,20,21,109)'
-			write(*,'(1p,4g20.10)') sys_jac(:cols,110)
-			write(*,'(1p,4g20.10)') sys_jac(:cols,20)
-			write(*,'(1p,4g20.10)') sys_jac(:cols,21)
-			write(*,'(1p,4g20.10)') sys_jac(:cols,109)
-			write(*,*) 'imp_sol: maxval sys_jac(3,:) = ',maxval( sys_jac(3,:) )
-			write(*,*) 'imp_sol: maxval sys_jac(4,:) = ',maxval( sys_jac(4,:) )
-		     end if
+                  if( do_diag ) then
+                     write(*,*) 'imp_sol: before lu_fac - lchnk,lev,isec,iter,dt = ',lchnk,lev,isec,nr_iter,dt
+                     write(*,*) 'imp_sol: lu(110,20,21,109)'
+                     write(*,'(1p,4g20.10)') sys_jac(:cols,110)
+                     write(*,'(1p,4g20.10)') sys_jac(:cols,20)
+                     write(*,'(1p,4g20.10)') sys_jac(:cols,21)
+                     write(*,'(1p,4g20.10)') sys_jac(:cols,109)
+                     write(*,*) 'imp_sol: maxval sys_jac(3,:) = ',maxval( sys_jac(3,:) )
+                     write(*,*) 'imp_sol: maxval sys_jac(4,:) = ',maxval( sys_jac(4,:) )
+                  end if
 #endif
 	             call lu_fac( sys_jac, cols )
 #ifdef DEBUG_LU
-		     if( do_diag ) then
-			write(*,*) 'imp_sol: after lu_fac - lchnk,lev,isec,iter,dt = ',lchnk,lev,isec,nr_iter,dt
-			write(*,*) 'imp_sol: lu(110,20,21,109)'
-			write(*,'(1p,4g20.10)') sys_jac(:cols,110)
-			write(*,'(1p,4g20.10)') sys_jac(:cols,20)
-			write(*,'(1p,4g20.10)') sys_jac(:cols,21)
-			write(*,'(1p,4g20.10)') sys_jac(:cols,109)
-			write(*,*) 'imp_sol: maxval sys_jac(3,:) = ',maxval( sys_jac(3,:) )
-			write(*,*) 'imp_sol: maxval sys_jac(4,:) = ',maxval( sys_jac(4,:) )
-		     end if
+                  if( do_diag ) then
+                     write(*,*) 'imp_sol: after lu_fac - lchnk,lev,isec,iter,dt = ',lchnk,lev,isec,nr_iter,dt
+                     write(*,*) 'imp_sol: lu(110,20,21,109)'
+                     write(*,'(1p,4g20.10)') sys_jac(:cols,110)
+                     write(*,'(1p,4g20.10)') sys_jac(:cols,20)
+                     write(*,'(1p,4g20.10)') sys_jac(:cols,21)
+                     write(*,'(1p,4g20.10)') sys_jac(:cols,109)
+                     write(*,*) 'imp_sol: maxval sys_jac(3,:) = ',maxval( sys_jac(3,:) )
+                     write(*,*) 'imp_sol: maxval sys_jac(4,:) = ',maxval( sys_jac(4,:) )
+                  end if
 #endif
 #ifdef DEBUG
 		     call t_stopf('lu_fac')
@@ -278,19 +278,19 @@ Iteration_loop : &
 	          end do
 
                   if( do_diag ) then
-	            write(*,*) ' '
-	            write(*,*) 'imp_sol: frcing @ iter,dt = ',nr_iter,dt
-	            write(*,'(1p,4g20.10)') forcing(1,:)
-	            write(*,*) ' '
-	            write(*,*) 'imp_sol: iter_invariant @ iter,dt = ',nr_iter,dt
-	            write(*,'(1p,4g20.10)') iter_invariant(1,:)
-	            write(*,*) ' '
-	            write(*,*) 'imp_sol: prod @ iter,dt = ',nr_iter,dt
-	            write(*,'(1p,4g20.10)') prod(1,:)
-	            write(*,*) ' '
-	            write(*,*) 'imp_sol: loss @ iter,dt = ',nr_iter,dt
-	            write(*,'(1p,4g20.10)') loss(1,:)
-	          end if
+                     write(*,*) ' '
+                     write(*,*) 'imp_sol: frcing @ iter,dt = ',nr_iter,dt
+                     write(*,'(1p,4g20.10)') forcing(1,:)
+                     write(*,*) ' '
+                     write(*,*) 'imp_sol: iter_invariant @ iter,dt = ',nr_iter,dt
+                     write(*,'(1p,4g20.10)') iter_invariant(1,:)
+                     write(*,*) ' '
+                     write(*,*) 'imp_sol: prod @ iter,dt = ',nr_iter,dt
+                     write(*,'(1p,4g20.10)') prod(1,:)
+                     write(*,*) ' '
+                     write(*,*) 'imp_sol: loss @ iter,dt = ',nr_iter,dt
+                     write(*,'(1p,4g20.10)') loss(1,:)
+                  end if
 #ifdef DEBUG
 		  call t_stopf('frcing')
 		  call t_startf('lu_slv')
@@ -300,18 +300,18 @@ Iteration_loop : &
 !-----------------------------------------------------------------------      
 	          call lu_slv( sys_jac, forcing, cols )
                   if( do_diag ) then
-	            write(*,*) ' '
-	            write(*,*) 'imp_sol: frcing @ iter,dt = ',nr_iter,dt
-	            write(*,'(1p,4g20.10)') forcing(1,:)
-	          end if
+                     write(*,*) ' '
+                     write(*,*) 'imp_sol: frcing @ iter,dt = ',nr_iter,dt
+                     write(*,'(1p,4g20.10)') forcing(1,:)
+                  end if
 	          do m = 1,clscnt4
                      solution(:cols,m) = solution(:cols,m) + forcing(:cols,m)
 	          end do
                   if( do_diag ) then
-	            write(*,*) ' '
-	            write(*,*) 'imp_sol: solution @ iter,dt = ',nr_iter,dt
-	            write(*,'(1p,4g20.10)') solution(1,:)
-	          end if
+                     write(*,*) ' '
+                     write(*,*) 'imp_sol: solution @ iter,dt = ',nr_iter,dt
+                     write(*,'(1p,4g20.10)') solution(1,:)
+                  end if
 #ifdef DEBUG
 		  call t_stopf('lu_slv')
 #endif
@@ -409,56 +409,61 @@ Iteration_loop : &
 !-----------------------------------------------------------------------      
 !   	... Non-convergence
 !-----------------------------------------------------------------------      
-		  fail_cnt = fail_cnt + 1
-		  nstep = get_nstep()
- 	          write(*,'('' imp_sol: Time step '',1p,e21.13,'' failed to converge @ (lchnk,lev,isec,nstep) = '',4i6)') dt,lchnk,lev,isec,nstep
-		  stp_con_cnt = 0
+                  fail_cnt = fail_cnt + 1
+                  nstep = get_nstep()
+                  if( do_diag ) then
+                     write(*,'('' imp_sol: Time step '',1p,e21.13,'' failed to converge @ (lchnk,lev,isec,nstep) = '',4i6)') & 
+                     dt,lchnk,lev,isec,nstep
+                  end if
+                  stp_con_cnt = 0
                   if( cut_cnt < cut_limit ) then
-		     cut_cnt = cut_cnt + 1
-		     if( cut_cnt < cut_limit ) then
-		        dt = .5_r8 * dt
-		     else
-		        dt = .1_r8 * dt
-		     end if
-		     cycle Time_step_loop
-		  else
-	             write(*,'('' imp_sol: Failed to converge @ (lchnk,lev,isec,nstep,dt,time) = '',4i6,1p,2e21.13)') &
-				       lchnk,lev,isec,nstep,dt,interval_done+dt
-	             do m = 1,clscnt4
-	                if( .not. converged(m) ) then
-	                   write(*,'(1x,a8,1x,1pe10.3)') solsym(clsmap(m,4)), max_delta(m)
-	                end if
-	             end do
-		  end if
-	       end if
+                     cut_cnt = cut_cnt + 1
+                     if( cut_cnt < cut_limit ) then
+                        dt = .5_r8 * dt
+                     else
+                        dt = .1_r8 * dt
+                     end if
+                     cycle Time_step_loop
+                  else
+                     if( do_diag ) then
+                        write(*,'('' imp_sol: Failed to converge @ (lchnk,lev,isec,nstep,dt,time) = '',4i6,1p,2e21.13)') &
+                     end if
+                     lchnk,lev,isec,nstep,dt,interval_done+dt
+                     do m = 1,clscnt4
+                        if( .not. converged(m) .and. do_diag  ) then
+                           write(*,'(1x,a8,1x,1pe10.3)') solsym(clsmap(m,4)), max_delta(m)
+                        end if
+                     end do
+                  end if
+               end if
 !-----------------------------------------------------------------------      
 !   	... Check for interval done
 !-----------------------------------------------------------------------      
-	       interval_done = interval_done + dt
-	       if( abs( delt - interval_done ) <= .0001_r8 ) then
-		  if( fail_cnt > 0 ) then
-	             write(*,*) 'imp_sol : @ (lchnk,lev,isec) = ',lchnk,lev,isec,' failed ',fail_cnt,' times'
-		  end if
+               interval_done = interval_done + dt
+               if( abs( delt - interval_done ) <= .0001_r8 ) then
+                  if( fail_cnt > 0 .and. do_diag ) then
+                     write(*,*) 'imp_sol : @ (lchnk,lev,isec) = ',lchnk,lev,isec,' failed ',fail_cnt,' times'
+                  end if
 #ifdef DEBUG
                   call t_stopf('outer_conv')
 #endif
-		  exit Time_step_loop
-	       else
+                  exit Time_step_loop
+               else
 !-----------------------------------------------------------------------      
 !   	... Transfer latest solution back to base array
 !-----------------------------------------------------------------------      
-		  if( convergence ) then
-		     stp_con_cnt = stp_con_cnt + 1
-		  end if
+                  if( convergence ) then
+                     stp_con_cnt = stp_con_cnt + 1
+                  end if
                   do m = 1,gas_pcnst
                      base_sol(ofl:ofu,lev,m) = lsol(:cols,m)
                   end do
-		  if( stp_con_cnt >= 2 ) then
-		     dt = 2._r8*dt
-		     stp_con_cnt = 0
-		  end if
-		  dt = min( dt,delt-interval_done )
-!	  write(*,'('' imp_sol: New time step '',1p,e21.13)') dt
+                  if( stp_con_cnt >= 2 ) then
+                     dt = 2._r8*dt
+                     stp_con_cnt = 0
+                  end if
+                  dt = min( dt,delt-interval_done )
+                  ! write(*,'('' imp_sol: New time step '',1p,e21.13)') dt
                end if
 #ifdef DEBUG
                call t_stopf('outer_conv')
