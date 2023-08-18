@@ -388,6 +388,8 @@ module li_tracer_advection_fct
                                     + tracerWeight*(tracerCur(k,cell1) &
                                                   + tracerCur(k,cell2))
 
+              ! only remove low order flux where high order flux is valid to
+              ! avoid introducing nonzero values to highOrderFlx where it is invalid
               highOrderFlx(k,iEdge) = highOrderFlx(k,iEdge) &
                                     -  lowOrderFlx(k,iEdge) * &
                                     (advMaskHighOrder(k,iEdge) + advMask2ndOrder(k,iEdge) &

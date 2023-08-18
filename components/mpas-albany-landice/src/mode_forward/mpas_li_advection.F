@@ -1,3 +1,11 @@
+! Copyright (c) 2013-2018,  Los Alamos National Security, LLC (LANS)
+! and the University Corporation for Atmospheric Research (UCAR).
+!
+! Unless noted otherwise source code is licensed under the BSD license.
+! Additional copyright and license information can be found in the LICENSE file
+! distributed with this code, or at http://mpas-dev.github.io/license.html
+!
+
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  li_advection
@@ -481,7 +489,7 @@ module li_advection
              ! returned by that call as normalThicknessFlux for call to tracer fct
              call li_tracer_advection_fct_tend(&
                   tend, advectedTracers, layerThicknessOld * 0.0_RKIND + 1.0_RKIND, &
-                  layerNormalVelocity, 0 * normalVelocity, dt,    &
+                  layerNormalVelocity, 0.0_RKIND * normalVelocity, dt,    &
                   nTracers, activeTracerHorizontalAdvectionEdgeFlux, computeBudgets=.false.)
              ! layerThickness is last tracer. However, for some reason
              ! this: layerThickness(:,:) = advectedTracers(nTracers,:,:) does not conserve mass!
@@ -496,7 +504,7 @@ module li_advection
              ! from fct thickness advection as normalThicknessFlux
              call li_tracer_advection_fct_tend(&
                   tend, advectedTracers, layerThicknessOld, &
-                  activeTracerHorizontalAdvectionEdgeFlux(nTracers,:,:), 0 * normalVelocity, dt,    &
+                  activeTracerHorizontalAdvectionEdgeFlux(nTracers,:,:), 0.0_RKIND * normalVelocity, dt,    &
                   nTracers, activeTracerHorizontalAdvectionEdgeFlux, computeBudgets=.false.)
          endif
 
@@ -1069,8 +1077,8 @@ module li_advection
          nTracers)
 
       use li_thermal, only: li_temperature_to_enthalpy_kelvin
-      use li_tracer_advection_fct_shared!, only: li_tracer_advection_fct_shared_init
-      use li_tracer_advection_fct!, only: li_tracer_advection_fct_init
+      use li_tracer_advection_fct_shared
+      use li_tracer_advection_fct
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -1266,7 +1274,7 @@ module li_advection
          iTracer = iTracer + 1
 
          ! copy 2d thickness to all vertical levels in the tracer array
-         advectedTracers(iTracer,:,:) = layerThickness(:,:) !1.0_RKIND
+         advectedTracers(iTracer,:,:) = layerThickness(:,:)
          surfaceTracers(iTracer,:) = 0.0_RKIND
          basalTracers(iTracer,:) = 0.0_RKIND
 

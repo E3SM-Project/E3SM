@@ -51,8 +51,8 @@ module li_tracer_advection_fct_shared
    real (kind=RKIND), public, dimension(:,:), allocatable :: &
       advCoefs,       &! common advection coefficients
       advCoefs3rd,    &! common advection coeffs for high order
-      advMaskHighOrder, & ! mask for high order advection terms
-      advMask2ndOrder
+      advMaskHighOrder, & ! mask where high order advection terms are valid
+      advMask2ndOrder  ! mask where 2nd order advection terms are valid
 
    !--------------------------------------------------------------------
    ! Public member functions 
