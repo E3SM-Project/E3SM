@@ -97,6 +97,10 @@ public:
   // and pass to m_atm_process_group.
   void setup_column_conservation_checks ();
 
+  // If TMS process exists, creates link to SHOC for applying
+  // tms' surface drag coefficient.
+  void setup_shoc_tms_links();
+
   void set_provenance_data (std::string caseid = "",
                             std::string hostname = "",
                             std::string username = "");

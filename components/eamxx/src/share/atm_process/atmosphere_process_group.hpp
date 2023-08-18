@@ -59,6 +59,9 @@ public:
     return m_atm_processes.at(i);
   }
 
+  // Returns atmosphere process if contained in this group, error out if not
+  std::shared_ptr<atm_proc_type> get_process_nonconst (const std::string& name) const;
+
   // returns true if this group contains the process (either directly or within
   // a nested group), false if not
   bool has_process(const std::string& name) const;

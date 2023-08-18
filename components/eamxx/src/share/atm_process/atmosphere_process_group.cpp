@@ -149,6 +149,24 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
   }
 }
 
+std::shared_ptr<AtmosphereProcessGroup::atm_proc_type>
+AtmosphereProcessGroup::get_process_nonconst (const std::string& name) const {
+  EKAT_REQUIRE_MSG(has_process(name), "Error! Process "+name+" requested from group "+this->name()+
+                                      " but is not constained in this group.\n");
+
+  std::shared_ptr<atm_proc_type> return_process;
+  for (auto& process: m_atm_processes) {
+    if (process->type() == AtmosphereProcessType::Group) {
+      const auto* group = dynamic_cast<const AtmosphereProcessGroup*>(process.get());
+      return group->get_process_nonconst(name);
+    } else if (process->name() == name) {
+        return_process = process;
+        break;
+    }
+  }
+  return return_process;
+}
+
 bool AtmosphereProcessGroup::has_process(const std::string& name) const {
   for (auto& process: m_atm_processes) {
     if (process->type() == AtmosphereProcessType::Group) {
@@ -304,7 +322,7 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
                      "for non-physics process \"" + atm_proc->name() + "\". "
                      "This check is column local and therefore can only be run "
                      "on physics processes.\n");
- 
+
     // Query the computed fields for this atm process and see if either the mass or energy computation
     // might be changed after the process has run. If no field used in the mass or energy calculate
     // is updated by this process, there is no need to run the check.

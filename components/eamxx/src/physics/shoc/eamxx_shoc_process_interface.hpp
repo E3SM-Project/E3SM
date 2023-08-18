@@ -157,12 +157,8 @@ public:
 
       wpthlp_sfc(i) = (surf_sens_flux(i)/(cpair*rrho_i(i,nlevi_v)[nlevi_p]))*inv_exner_int_surf;
       wprtp_sfc(i)  = surf_evap(i)/rrho_i(i,nlevi_v)[nlevi_p];
-
-      // Surface momentum flux. surf_drag_coeff_tms should be initialized to 0 if not running with turbulent mountain stress.
-      const int nlev_v = (nlev-1)/Spack::n;
-      const int nlev_p = (nlev-1)%Spack::n;
-      upwp_sfc(i) = (surf_mom_flux(i,0) - surf_drag_coeff_tms(i)*horiz_winds(i,0,nlev_v)[nlev_p])/rrho_i(i,nlevi_v)[nlevi_p];
-      vpwp_sfc(i) = (surf_mom_flux(i,1) - surf_drag_coeff_tms(i)*horiz_winds(i,1,nlev_v)[nlev_p])/rrho_i(i,nlevi_v)[nlevi_p];
+      upwp_sfc(i) = surf_mom_flux(i,0)/rrho_i(i,nlevi_v)[nlevi_p];
+      vpwp_sfc(i) = surf_mom_flux(i,1)/rrho_i(i,nlevi_v)[nlevi_p];
 
       const int num_qtracer_packs = ekat::npack<Spack>(num_qtracers);
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_qtracer_packs), [&] (const Int& q) {
@@ -184,8 +180,6 @@ public:
     view_1d_const  surf_sens_flux;
     view_1d_const  surf_evap;
     sview_2d_const surf_mom_flux;
-    view_1d_const  surf_drag_coeff_tms;
-    view_3d        horiz_winds;
     view_3d        qtracers;
     view_2d        qv;
     view_2d_const  qc;
@@ -220,7 +214,7 @@ public:
                        const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_2d_const& p_int_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_evap_,
-                       const sview_2d_const& surf_mom_flux_, const view_1d_const& surf_drag_coeff_tms_, const view_3d& horiz_winds_,
+                       const sview_2d_const& surf_mom_flux_,
                        const view_3d& qtracers_,
                        const view_2d& qv_, const view_2d_const& qc_, const view_2d& qc_copy_,
                        const view_2d& tke_, const view_2d& tke_copy_,
@@ -247,8 +241,6 @@ public:
       surf_sens_flux = surf_sens_flux_;
       surf_evap = surf_evap_;
       surf_mom_flux = surf_mom_flux_;
-      surf_drag_coeff_tms = surf_drag_coeff_tms_;
-      horiz_winds = horiz_winds_;
       qv = qv_;
       // OUT
       qtracers = qtracers_;
@@ -485,6 +477,9 @@ protected:
 
   // Update flux (if necessary)
   void check_flux_state_consistency(const double dt);
+
+  // Apply TMS drag coeff to shoc_main inputs (if necessary)
+  void apply_turbulent_mountain_stress ();
 
 protected:
 
