@@ -222,9 +222,10 @@ contains
 
     chlorine_loading = iloading(1) + delt*( iloading(2) - iloading(1) )
     
-    if ( masterproc ) then
-       write(iulog,101) year, month, day, sec, chlorine_loading
-    endif
+    ! This message was overly verbose and not useful, so it has been disabled
+    ! if ( masterproc ) then
+    !    write(iulog,101) year, month, day, sec, chlorine_loading
+    ! endif
 
 101 FORMAT('chlorine_loading_advance: date, loading : ',i4.4,'-',i2.2,'-',i2.2,'-',i5.5,',  ',f12.6)
 102 FORMAT('chlorine_loading_advance: not able to find data for : ',i4.4,'-',i2.2,'-',i2.2,'-',i5.5)
