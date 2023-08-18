@@ -251,6 +251,7 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
   int min_col_lid, max_col_lid;
   bool has_latlon;
   bool has_col_info = m_grid and layout.tag(0)==COL;
+  bool has_additional_col_info = not additional_data_fields().empty();
   const Real* lat;
   const Real* lon;
 
@@ -279,6 +280,14 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
       msg << "    - lat/lon: (" << lat[min_col_lid] << ", " << lon[min_col_lid] << ")\n";
     }
   }
+  if (has_additional_col_info) {
+    for (auto& f : additional_data_fields()) {
+      f.sync_to_host();
+      msg << "    - " << f.name() << ": "
+          << f.get_internal_view_data<const Real, Host>()[min_col_lid]
+          << "\n";
+    }
+  }
 
   msg << "  - maximum:\n";
   msg << "    - value: " << minmaxloc.max_val << "\n";
@@ -291,6 +300,14 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
     msg << ")\n";
     if (has_latlon) {
       msg << "    - lat/lon: (" << lat[max_col_lid] << ", " << lon[max_col_lid] << ")\n";
+    }
+  }
+  if (has_additional_col_info) {
+    for (auto& f : additional_data_fields()) {
+      f.sync_to_host();
+      msg << "    - " << f.name() << ": "
+          << f.get_internal_view_data<const Real, Host>()[max_col_lid]
+          << "\n";
     }
   }
 

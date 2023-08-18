@@ -149,7 +149,17 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
         auto lon = m_grid->get_geometry_data("lon").get_internal_view_data<const Real,Host>();
         res_and_msg.msg += "  - lat/lon: (" + std::to_string(lat[col_lid]) + ", " + std::to_string(lon[col_lid]) + ")\n";
       }
+      bool has_additional_col_info = not additional_data_fields().empty();
+      if (has_additional_col_info) {
+        for (auto& f : additional_data_fields()) {
+          f.sync_to_host();
+          res_and_msg.msg += "  - "+ f.name() + ": "+
+                             std::to_string(f.get_internal_view_data<const Real, Host>()[col_lid]) +
+                             "\n";
+        }
+      }
     }
+
   } else {
     res_and_msg.msg = "FieldNaNCheck passed.\n";
   }

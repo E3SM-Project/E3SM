@@ -99,6 +99,9 @@ public:
   // (that are on the same grid) at the location of the fail.
   void add_postcondition_nan_checks () const;
 
+  // Add additional data fields to all property checks in the group
+  void add_additional_data_fields_to_property_checks (const Field& data_field);
+
 protected:
 
   // Adds fid to the list of required/computed fields of the group (as a whole).
