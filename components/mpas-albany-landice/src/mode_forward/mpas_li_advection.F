@@ -506,6 +506,11 @@ module li_advection
                   tend, advectedTracers, layerThicknessOld, &
                   activeTracerHorizontalAdvectionEdgeFlux(nTracers,:,:), 0.0_RKIND * normalVelocity, dt,    &
                   nTracers, activeTracerHorizontalAdvectionEdgeFlux, computeBudgets=.false.)
+         elseif ((trim(config_thickness_advection) .eq. 'fct') .and. &
+                  trim(config_tracer_advection) .eq. 'fo') then
+            err_tmp = 1
+            call mpas_log_write("config_tracer_advection = fo is not currently supposed &
+                                 with config_thickness_advection = fct", MPAS_LOG_ERR)
          endif
 
          if (config_print_thickness_advection_info) then
