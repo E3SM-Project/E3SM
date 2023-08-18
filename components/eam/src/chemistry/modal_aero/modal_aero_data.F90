@@ -11,11 +11,19 @@
       save
 
 !++hybrown
+#ifdef USE_CLDERA_TAGGED_TRACERS
       integer, parameter :: nbc = NBC   ! number of differently tagged black-carbon species
       integer, parameter :: npoa = NPOA   ! number of differently tagged primary-organic   species
       integer, parameter :: nsoa = NSOA   ! number of differently tagged secondary-organic species
       integer, parameter :: nsoag = NSOA   ! number of differently tagged secondary-organic species
       integer, parameter :: nso4 = NSO4
+#else
+      integer, parameter :: nbc = 1
+      integer, parameter :: npoa = 1
+      integer, parameter :: nsoa = 1
+      integer, parameter :: nsoag = 1
+      integer, parameter :: nso4 = 1
+#endif
 
 !     integer, parameter ::  maxd_aspectype = 14
 !--hybrown
