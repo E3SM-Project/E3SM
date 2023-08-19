@@ -109,6 +109,43 @@ contains
                 base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
              end do
           end do
+       ! apply brc -> pom decay to entire atmosphere
+       elseif (trim(solsym(l)) == 'brc_a4' .or. trim(solsym(l)) == 'brc_a1' .or. trim(solsym(l)) == 'brc_a3') then
+               ! V2-like explicit equation 
+          do i = 1,ncol
+             do k = 1,pver
+                chem_loss(i,k,l) = -loss(i,k,m)
+                chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+             end do
+          end do
+       elseif (trim(solsym(l)) == 'pom_a4' .or. trim(solsym(l)) == 'pom_a1' .or. trim(solsym(l)) == 'pom_a3') then
+               ! V2-like explicit equation 
+          do i = 1,ncol
+             do k = 1,pver
+                chem_loss(i,k,l) = -loss(i,k,m)
+                chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+             end do
+          end do
+       elseif (trim(solsym(l)) == 'bc_a4' .or. trim(solsym(l)) == 'bc_a1' .or. trim(solsym(l)) == 'bc_a3') then
+               ! V2-like explicit equation
+          do i = 1,ncol
+             do k = 1,pver
+                chem_loss(i,k,l) = -loss(i,k,m)
+                chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+             end do
+          end do
+       elseif (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2' .or. trim(solsym(l)) == 'DMS') then
+               ! V2-like explicit equation is used to solve H2SO4 and SO2 due to dead zero values
+          do i = 1,ncol
+             do k = 1,pver
+                chem_loss(i,k,l) = -loss(i,k,m)
+                chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+             end do
+          end do
        else
           do i = 1,ncol
              do k = ltrop(i)+1,pver
@@ -131,12 +168,43 @@ contains
     call exp_prod_loss( prod, loss, base_sol_reset, diags_reaction_rates, het_rates )
     do m = 1,clscnt1
        l = clsmap(m,1)
+       ! v2 like treatment
+       if (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2' .or. trim(solsym(l)) == 'DMS') then
+           do i = 1,ncol
+              do k = ltrop(i)+1,pver
+                 chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                 chemmp_loss(i,k,l) = -loss(i,k,m)
+               end do
+           end do
+       elseif (trim(solsym(l)) == 'brc_a1' .or. trim(solsym(l)) == 'brc_a4' .or. trim(solsym(l)) == 'brc_a3') then
+           do i = 1,ncol
+              do k = ltrop(i)+1,pver
+                 chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                 chemmp_loss(i,k,l) = -loss(i,k,m)
+               end do
+           end do
+       elseif (trim(solsym(l)) == 'pom_a1' .or. trim(solsym(l)) == 'pom_a4' .or. trim(solsym(l)) == 'pom_a3') then 
+           do i = 1,ncol
+              do k = ltrop(i)+1,pver
+                 chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                 chemmp_loss(i,k,l) = -loss(i,k,m)
+               end do
+           end do
+       elseif (trim(solsym(l)) == 'bc_a1' .or. trim(solsym(l)) == 'bc_a4' .or. trim(solsym(l)) == 'bc_a3') then
+           do i = 1,ncol
+              do k = ltrop(i)+1,pver
+                 chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                 chemmp_loss(i,k,l) = -loss(i,k,m)
+               end do
+           end do 
+       else
         do i = 1,ncol
            do k = ltrop(i)+1,pver
               chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
               chemmp_loss(i,k,l) = (base_sol_reset(i,k,l)*exp(-delt*loss(i,k,m)/base_sol_reset(i,k,l)) - base_sol_reset(i,k,l))/delt
            end do
         end do
+       end if
     end do
 
   end subroutine exp_sol
