@@ -3972,7 +3972,6 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
             call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, &
                  prt_accum, inv_dz, inv_rho, rho, num_arrays, vs, fluxes, qnr, dt_sub)
             do k = k_qxbot,k_qxtop,kdir
-!                  cflx(k+1) = cflx(k+1) + flux_qx(k)
                   cflx(k+1) = cflx(k+1) + flux_qx(k)*dt_sub
             enddo
                  
@@ -4010,7 +4009,6 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                  prt_accum, inv_dz, inv_rho, rho, 1, vs, fluxes, qnr, dt_sub)
             do k = k_qxbot,k_qxtop,kdir
                   cflx(k+1) = cflx(k+1) + flux_qx(k)*dt_sub
-!                  cflx(k+1) = cflx(k+1) + flux_qx(k)
             enddo
 
             !Update _incld values with end-of-step cell-ave values
