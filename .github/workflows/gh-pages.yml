@@ -15,10 +15,14 @@ jobs:
           repository: e3sm-project/scream
           ref: master
           fetch-depth: 0 # Needed, or else gh-pages won't be fetched, and push rejected
+          submodules: recursive
       - name: Show action trigger
         run: echo "= The job was automatically triggered by a ${{github.event_name}} event."
       - name: Install python deps
         run: python3 -m pip install mkdocs pymdown-extensions mkdocs-material
+      - name: Generate eamxx params docs
+        run: ./eamxx-params-docs-autogen
+        working-directory: components/eamxx/scripts
       - name: Build and deploy
         working-directory: components/eamxx/docs/mkdocs
         run: mkdocs build && mkdocs gh-deploy
