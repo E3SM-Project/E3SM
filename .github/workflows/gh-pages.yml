@@ -4,6 +4,7 @@ on:
   # Runs every time master branch is updated
   push:
     branches: ["master"]
+  workflow_dispatch:
 
 jobs:
   Build-and-Deploy-docs:
