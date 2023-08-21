@@ -4,7 +4,7 @@ filename_prefix: homme_mam4xx_pg2_output
 Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:
-  Physics PG2:
+  Physics GLL:
     Field Names:
       # HOMME
       - ps
@@ -17,7 +17,7 @@ Fields:
       - p_dry_mid
       - qv
       - T_mid
-      # MAM4
+      # MAM4 microphysics
       - q_h2so4
       - q_aitken_so4
       - n_aitken
