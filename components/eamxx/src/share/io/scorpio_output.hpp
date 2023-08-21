@@ -198,7 +198,7 @@ protected:
   //   NetCDF: Numeric conversion not representable
   // Also, by default, don't pick max float, to avoid any overflow if the value
   // is used inside other calculation and/or remap.
-  float m_fill_value = DEFAULT_FILL_VALUE;
+  float m_fill_value = constants::DefaultFillValue<float>().value;
 
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;
