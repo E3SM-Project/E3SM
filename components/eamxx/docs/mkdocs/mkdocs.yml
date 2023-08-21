@@ -6,6 +6,7 @@ nav:
     - 'Overview': 'user/index.md'
     - 'Installation': 'common/installation.md'
     - 'Model output': 'user/model_output.md'
+    - 'Model input': 'user/model_input.md'
   - 'Developer Guide':
     - 'Overview': 'dev/index.md'
     - 'Installation': 'common/installation.md'
