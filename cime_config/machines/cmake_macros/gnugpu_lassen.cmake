@@ -22,3 +22,7 @@ set(NETCDF_FORTRAN_PATH "$ENV{NETCDF_PATH}")
 set(HDF5_PATH "$ENV{NETCDF_PATH}")
 set(PNETCDF_PATH "$ENV{NETCDF_PATH}")
 set(USE_CUDA "TRUE")
+
+# This may not be needed once we figure out why MPI calls are segfaulting
+# on lassen when this is ON.
+set(SCREAM_MPI_ON_DEVICE OFF CACHE STRING "")
