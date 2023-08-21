@@ -245,7 +245,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
           EKAT_REQUIRE_MSG(tokens.size()==2,"Error! surface_coupling_exporter::init - expected 'EAMxx_var_name:FILE_var_name' entry in fields_alt_names, got '" + entry + "' instead.\n");
           auto it = ekat::find(export_from_file_fields,tokens[0]);
           EKAT_REQUIRE_MSG(it!=export_from_file_fields.end(),
-                	  "Error! surface_coupling_exporter::init - RHS of entry '" + entry + "' in field_alt_names does not match a valid EAMxx field.\n");
+                         "Error! surface_coupling_exporter::init - LHS of entry '" + entry + "' in field_alt_names does not match a valid EAMxx field.\n");
           // Make sure that a user hasn't accidentally copy/pasted 
           auto chk = ekat::find(export_from_file_reg_names,tokens[1]);
           EKAT_REQUIRE_MSG(chk==export_from_file_reg_names.end(),
