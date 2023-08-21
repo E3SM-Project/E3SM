@@ -12,9 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          repository: bartgol/scream
+          repository: e3sm-project/scream
           ref: master
           fetch-depth: 0 # Needed, or else gh-pages won't be fetched, and push rejected
+      - name: Show action trigger
+        run: echo "= The job was automatically triggered by a ${{github.event_name}} event."
       - name: Install python deps
         run: python3 -m pip install mkdocs pymdown-extensions mkdocs-material
       - name: Build and deploy
