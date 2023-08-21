@@ -15,7 +15,7 @@ jobs:
           ref: master
           fetch-depth: 0 # Needed, or else gh-pages won't be fetched, and push rejected
       - name: Install python deps
-        run: pip install mkdocs pymdown-extensions mkdocs-material
+        run: python3 -m pip install mkdocs pymdown-extensions mkdocs-material
       - name: Build and deploy
         working-directory: components/eamxx/docs/mkdocs
         run: mkdocs build && mkdocs gh-deploy
