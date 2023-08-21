@@ -123,6 +123,11 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     // If the fill_value is specified there is a good chance the user expects the average count to track filling.
     m_track_avg_cnt = true;
   }
+  if (params.isParameter("track_fill")) {
+    // Note, we do this after checking for fill_value to give users that opportunity to turn off fill tracking, even
+    // if they specify a specific fill value.
+    m_track_avg_cnt = params.get<bool>("track_fill");
+  }
   if (params.isParameter("fill_threshold")) {
     m_avg_coeff_threshold = params.get<Real>("fill_threshold");
   }
@@ -307,15 +312,12 @@ void AtmosphereOutput::restart (const std::string& filename)
 
   AtmosphereInput hist_restart (res_params,m_io_grid,m_host_views_1d,m_layouts);
   hist_restart.read_variables();
-  auto coeff_rest = scorpio::get_attribute<int>(filename,"num_snapshots_since_last_write");
   hist_restart.finalize();
   for (auto& it : m_host_views_1d) {
     const auto& name = it.first;
     const auto& host = it.second;
     const auto& dev  = m_dev_views_1d.at(name);
-    const auto& coeff = m_avg_coeff_views_1d[name];
     Kokkos::deep_copy(dev,host);
-    Kokkos::deep_copy(coeff,Real(coeff_rest));
   }
 }
 
@@ -446,9 +448,7 @@ run (const std::string& filename,
     // by combining new data with current avg values.
     // NOTE: this is skipped for instant output, if IO view is aliasing Field view.
     auto view_dev = m_dev_views_1d.at(name);
-    auto view_avg_coeff = m_avg_coeff_views_1d.at(name);
     auto data = view_dev.data();
-    auto coeff_data = view_avg_coeff.data();
     KT::RangePolicy policy(0,layout.size());
     const auto extents = layout.extents();
 
@@ -458,8 +458,8 @@ run (const std::string& filename,
     auto avg_cnt_dims = dims;
     auto avg_cnt_data = data;
     if (m_track_avg_cnt && m_add_time_dim) {
-      const auto avg_name = m_field_to_avg_cnt_map.at(name);
-      avg_cnt_data = m_dev_views_1d.at(avg_name).data();
+      const auto lookup = m_field_to_avg_cnt_map.at(name);
+      avg_cnt_data = m_local_tmp_avg_cnt_views_1d.at(lookup).data();
     } else {
       for (int ii=0; ii<dims.size(); ii++) {
         avg_cnt_dims[ii] = 1;
@@ -481,7 +481,9 @@ run (const std::string& filename,
           auto avg_coeff_1d = view_Nd_dev<1>(avg_cnt_data,avg_cnt_dims[0]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
 	    if (m_track_avg_cnt && m_add_time_dim) {
+	      printf("ASD - %s\t, %d, %e, %e, %f, %e  -->  ",name.c_str(),i,new_view_1d(i), avg_view_1d(i), avg_coeff_1d(i), m_fill_value);
               combine_and_fill(new_view_1d(i), avg_view_1d(i),avg_coeff_1d(i),avg_type,m_fill_value);
+	      printf("%e\n ",new_view_1d(i));
 	    } else {
               combine(new_view_1d(i), avg_view_1d(i),avg_type);
 	    }
@@ -784,7 +786,6 @@ void AtmosphereOutput::register_views()
       m_dev_views_1d.emplace(name,view_1d_dev("",size));
       m_host_views_1d.emplace(name,Kokkos::create_mirror(m_dev_views_1d[name]));
     }
-    m_avg_coeff_views_1d.emplace(name,view_1d_dev("",size)); // TODO: DELETE THESE, no longer needed.
 
     // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
     // We don't need to track average counts for files that are not tracking the time dim 
@@ -828,7 +829,6 @@ reset_dev_views()
         break;
       case OutputAvgType::Average:
         Kokkos::deep_copy(m_dev_views_1d[name],m_fill_value);
-        Kokkos::deep_copy(m_avg_coeff_views_1d[name],0);
         break;
       default:
         EKAT_ERROR_MSG ("Unrecognized averaging type.\n");
@@ -929,14 +929,21 @@ register_variables(const std::string& filename,
       children_list += " ]";
       set_variable_metadata(filename,name,"sub_fields",children_list);
     }
+    // If tracking average count variables then add the name of the tracking variable for this variable
+    if (m_track_avg_cnt && m_add_time_dim) {
+      const auto lookup = m_field_to_avg_cnt_map.at(name);
+      set_variable_metadata(filename,name,"averaging_count_tracker",lookup);
+    }
   }
   // Now register the average count variables
-  for (const auto& name : m_avg_cnt_names) {
-    const auto layout = m_layouts.at(name);
-    auto io_decomp_tag = set_decomp_tag(layout);
-    auto vec_of_dims   = set_vec_of_dims(layout);
-    register_variable(filename, name, name, "unitless", vec_of_dims,
-                      "real",fp_precision, io_decomp_tag);
+  if (m_track_avg_cnt && m_add_time_dim) {
+    for (const auto& name : m_avg_cnt_names) {
+      const auto layout = m_layouts.at(name);
+      auto io_decomp_tag = set_decomp_tag(layout);
+      auto vec_of_dims   = set_vec_of_dims(layout);
+      register_variable(filename, name, name, "unitless", vec_of_dims,
+                        "real",fp_precision, io_decomp_tag);
+    }
   }
 } // register_variables
 /* ---------------------------------------------------------- */
