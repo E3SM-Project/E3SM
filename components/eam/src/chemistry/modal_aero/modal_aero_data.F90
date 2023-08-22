@@ -11,17 +11,17 @@
       save
 
 #ifdef USE_CLDERA_TAGGED_TRACERS
-      public, integer, parameter :: nbc = NBC   ! number of differently tagged black-carbon species
-      public, integer, parameter :: npoa = NPOA   ! number of differently tagged primary-organic   species
-      public, integer, parameter :: nsoa = NSOA   ! number of differently tagged secondary-organic species
-      public, integer, parameter :: nsoag = NSOA   ! number of differently tagged secondary-organic species
-      public, integer, parameter :: nso4 = NSO4
+      integer, parameter, public :: nbc = NBC   ! number of differently tagged black-carbon species
+      integer, parameter, public :: npoa = NPOA   ! number of differently tagged primary-organic   species
+      integer, parameter, public :: nsoa = NSOA   ! number of differently tagged secondary-organic species
+      integer, parameter, public :: nsoag = NSOA   ! number of differently tagged secondary-organic species
+      integer, parameter, public :: nso4 = NSO4
 #else
-      public, integer, parameter :: nbc = 1
-      public, integer, parameter :: npoa = 1
-      public, integer, parameter :: nsoa = 1
-      public, integer, parameter :: nsoag = 1
-      public, integer, parameter :: nso4 = 1
+      integer, parameter, public :: nbc = 1
+      integer, parameter, public :: npoa = 1
+      integer, parameter, public :: nsoa = 1
+      integer, parameter, public :: nsoag = 1
+      integer, parameter, public :: nso4 = 1
 #endif
 
     ! aerosol mode definitions
