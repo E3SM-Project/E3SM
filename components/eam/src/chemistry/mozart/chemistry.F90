@@ -419,7 +419,7 @@ end function chem_is
     use tracer_srcs,      only: tracer_srcs_defaultopts, tracer_srcs_setopts
     use aero_model,       only: aero_model_readnl
     use dust_model,       only: dust_readnl
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM ||  defined MODAL_AERO_5MODE)
     use seasalt_model,    only: ocean_data_readnl
 #endif
     use gas_wetdep_opts,  only: gas_wetdep_readnl
@@ -828,7 +828,7 @@ end function chem_is
 
    call aero_model_readnl(nlfile)
    call dust_readnl(nlfile)     
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM ||  defined MODAL_AERO_5MODE)
    call ocean_data_readnl(nlfile)
 #endif
 !
@@ -1438,6 +1438,7 @@ end function chem_is_active
     logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
     logical :: history_gaschmbudget_2D
     logical :: history_gaschmbudget_2D_levels
+    logical :: history_chemdyg_summary
     integer :: gaschmbudget_2D_L1_s
     integer :: gaschmbudget_2D_L1_e
     integer :: gaschmbudget_2D_L2_s
@@ -1461,6 +1462,7 @@ end function chem_is_active
     call phys_getopts(history_gaschmbudget_out = history_gaschmbudget, &
                    history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
             history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels, &
+                   history_chemdyg_summary_out = history_chemdyg_summary, &
                       gaschmbudget_2D_L1_s_out = gaschmbudget_2D_L1_s, &
                       gaschmbudget_2D_L1_e_out = gaschmbudget_2D_L1_e, &
                       gaschmbudget_2D_L2_s_out = gaschmbudget_2D_L2_s, &
@@ -1519,7 +1521,8 @@ end function chem_is_active
 !-----------------------------------------------------------------------
 ! output gas concentration and tendency
 !-----------------------------------------------------------------------
-    if (history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
+    if (history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
+            .or. history_chemdyg_summary) then
       do m = 1,pcnst
          n = map2chm(m)
          if (n > 0 .and. (.not. any( aer_species == n ))) then
@@ -1542,13 +1545,14 @@ end function chem_is_active
              call outfld(trim(solsym(n))//'_TDO', Diff, pcols, lchnk )
            end if
            !
-           if (history_gaschmbudget_2D) then
+           if (history_gaschmbudget_2D .or. history_chemdyg_summary) then
              ftem_layers = 0.0_r8
              do k=1,pver
                ftem_layers(:ncol,1) = ftem_layers(:ncol,1) + ftem(:ncol,k)
              end do
+             if (history_gaschmbudget_2D ) then
              call outfld(trim(solsym(n))//'_2DMSB', ftem_layers(:ncol,1), pcols, lchnk )
-
+             endif            
              gas_ac_idx = pbuf_get_index(gas_ac_name_2D(n))
              call pbuf_get_field(pbuf, gas_ac_idx, gas_ac_2D )
              if( nstep == 0 ) then
@@ -1560,10 +1564,12 @@ end function chem_is_active
              else
                 Diff(:ncol,1) = (ftem_layers(:ncol,1) - gas_ac_2D(:ncol))/dt
              end if
+             if (history_gaschmbudget_2D ) then
              call outfld(trim(solsym(n))//'_2DTDO', Diff(:ncol,1), pcols, lchnk )
+             end if
            end if
            ! HHLEE 20210923
-           if (history_gaschmbudget_2D_levels ) then
+           if (history_gaschmbudget_2D_levels .or. history_chemdyg_summary) then
              ftem_layers = 0.0_r8
              gas_ac_layers = 0.0_r8
 
@@ -1591,10 +1597,12 @@ end function chem_is_active
                ftem_layers(:ncol,4) = ftem_layers(:ncol,4) + ftem(:ncol,k)
                gas_ac_layers(:ncol,4) = gas_ac_layers(:ncol,4) + gas_ac(:ncol,k)
              end do
+             if (history_gaschmbudget_2D_levels ) then
              call outfld(trim(solsym(n))//'_2DMSB_L1', ftem_layers(:ncol,1), pcols, lchnk)
              call outfld(trim(solsym(n))//'_2DMSB_L2', ftem_layers(:ncol,2), pcols, lchnk)
              call outfld(trim(solsym(n))//'_2DMSB_L3', ftem_layers(:ncol,3), pcols, lchnk)
              call outfld(trim(solsym(n))//'_2DMSB_L4', ftem_layers(:ncol,4), pcols, lchnk)
+             endif
 
              if( nstep == 0 ) then
                 Diff_layers(:ncol,:) = 0.0_r8
@@ -1605,10 +1613,12 @@ end function chem_is_active
                 Diff_layers(:ncol,3) = (ftem_layers(:ncol,3) - gas_ac_layers(:ncol,3))/dt
                 Diff_layers(:ncol,4) = (ftem_layers(:ncol,4) - gas_ac_layers(:ncol,4))/dt
              end if
+             if (history_gaschmbudget_2D_levels ) then
              call outfld(trim(solsym(n))//'_2DTDO_L1', Diff_layers(:ncol,1), pcols, lchnk)
              call outfld(trim(solsym(n))//'_2DTDO_L2', Diff_layers(:ncol,2), pcols, lchnk)
              call outfld(trim(solsym(n))//'_2DTDO_L3', Diff_layers(:ncol,3), pcols, lchnk)
              call outfld(trim(solsym(n))//'_2DTDO_L4', Diff_layers(:ncol,4), pcols, lchnk)
+             endif
 
              ! for the tropospheric budget diagnostics
              if (trim(solsym(n))=='O3' .or. trim(solsym(n))=='O3LNZ' .or. &
@@ -1619,7 +1629,9 @@ end function chem_is_active
                    ftem_layers(:ncol,1) = ftem_layers(:ncol,1) + ftem(:ncol,k) * tropFlagInt(:ncol,k)
                    gas_ac_layers(:ncol,1) = gas_ac_layers(:ncol,1) + gas_ac(:ncol,k) * tropFlagInt(:ncol,k)
                 end do
+                if (history_gaschmbudget_2D_levels ) then
                 call outfld(trim(solsym(n))//'_2DMSB_trop', ftem_layers(:ncol,1), pcols, lchnk )
+                endif
 
                 if( nstep == 0 ) then
                    Diff_layers(:ncol,:) = 0.0_r8
@@ -1627,7 +1639,14 @@ end function chem_is_active
                    Diff_layers(:ncol,:) = 0.0_r8
                    Diff_layers(:ncol,1) = (ftem_layers(:ncol,1) - gas_ac_layers(:ncol,1))/dt
                 end if
+                        
+                if (history_gaschmbudget_2D_levels ) then
                 call outfld(trim(solsym(n))//'_2DTDO_trop', Diff_layers(:ncol,1), pcols, lchnk)
+                else
+                   if (trim(solsym(n))=='O3' ) then
+                      call outfld(trim(solsym(n))//'_2DTDO_trop', Diff_layers(:ncol,1), pcols, lchnk)
+                   end if
+                end if
              end if
 
            end if ! history_gaschmbudget_2D_levels
