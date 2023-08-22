@@ -182,7 +182,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.inv_exner, &m_buffer.thlm, &m_buffer.qw, &m_buffer.dse, &m_buffer.tke_copy, &m_buffer.qc_copy,
     &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
 #ifdef SCREAM_SMALL_KERNELS
-    , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.dz_zt, &m_buffer.tkh
+    , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.tabs, &m_buffer.dz_zt, &m_buffer.tkh
 #endif
   };
 
@@ -355,6 +355,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
 
   temporaries.rho_zt = m_buffer.rho_zt;
   temporaries.shoc_qv = m_buffer.shoc_qv;
+  temporaries.tabs = m_buffer.tabs;
   temporaries.dz_zt = m_buffer.dz_zt;
   temporaries.dz_zi = m_buffer.dz_zi;
   temporaries.tkh = m_buffer.tkh;
@@ -394,7 +395,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
-  workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 13+(n_wind_slots+n_trac_slots), default_policy);
+  workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 14+(n_wind_slots+n_trac_slots), default_policy);
 
   // Calculate pref_mid, and use that to calculate
   // maximum number of levels in pbl from surface

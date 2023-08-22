@@ -398,7 +398,7 @@ public:
     static constexpr int num_2d_vector_mid  = 18;
     static constexpr int num_2d_vector_int  = 12;
 #else
-    static constexpr int num_2d_vector_mid  = 22;
+    static constexpr int num_2d_vector_mid  = 23;
     static constexpr int num_2d_vector_int  = 13;
 #endif
     static constexpr int num_2d_vector_tr   = 1;
@@ -460,6 +460,7 @@ public:
 #ifdef SCREAM_SMALL_KERNELS
     uview_2d<Spack> rho_zt;
     uview_2d<Spack> shoc_qv;
+    uview_2d<Spack> tabs;
     uview_2d<Spack> dz_zt;
     uview_2d<Spack> dz_zi;
     uview_2d<Spack> tkh;

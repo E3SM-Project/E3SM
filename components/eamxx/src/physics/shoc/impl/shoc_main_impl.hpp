@@ -504,7 +504,7 @@ void Functions<S,D>::shoc_main_internal(
                           shoc_qv);             // Output
 
   // Update SHOC temperature
-  compute_shoc_temperature_disp(team,nlev,thetal,  // Input
+  compute_shoc_temperature_disp(shcol,nlev,thetal,  // Input
                                 shoc_ql,inv_exner, // Input
                                 shoc_tabs);        // Output
 
@@ -641,8 +641,8 @@ Int Functions<S,D>::shoc_main(
     shoc_temporaries.se_b, shoc_temporaries.ke_b, shoc_temporaries.wv_b, shoc_temporaries.wl_b,
     shoc_temporaries.se_a, shoc_temporaries.ke_a, shoc_temporaries.wv_a, shoc_temporaries.wl_a,
     shoc_temporaries.ustar, shoc_temporaries.kbfs, shoc_temporaries.obklen, shoc_temporaries.ustar2,
-    shoc_temporaries.wstar, shoc_temporaries.rho_zt, shoc_temporaries.shoc_qv, shoc_temporaries.dz_zt,
-    shoc_temporaries.dz_zi, shoc_temporaries.tkh);
+    shoc_temporaries.wstar, shoc_temporaries.rho_zt, shoc_temporaries.shoc_qv,
+    shoc_temporaries.tabs, shoc_temporaries.dz_zt, shoc_temporaries.dz_zi, shoc_temporaries.tkh);
 #endif
 
   auto finish = std::chrono::steady_clock::now();
