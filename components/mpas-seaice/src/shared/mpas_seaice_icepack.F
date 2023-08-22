@@ -317,7 +317,12 @@ contains
 
   subroutine init_column_itd(domain)
 
-    use ice_colpkg, only: colpkg_init_itd
+!echmod    use ice_colpkg, only: colpkg_init_itd
+
+    use icepack_intfc, only: &
+         icepack_init_itd, &
+         icepack_warnings_clear, &
+         icepack_warnings_aborted
 
     type(domain_type), intent(inout) :: domain
 
@@ -348,19 +353,26 @@ contains
 
        call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
 
-       abortFlag = .false.
-       abortMessage = ""
+!echmod       abortFlag = .false.
+!echmod       abortMessage = ""
 
-       call colpkg_init_itd(&
+!echmod       call colpkg_init_itd(&
+!echmod            nCategories, &
+!echmod            categoryThicknessLimits, &
+!echmod            abortFlag, &
+!echmod            abortMessage)
+!echmod       call colpkg_init_itd(&
+
+       call icepack_init_itd(&
             nCategories, &
-            categoryThicknessLimits, &
-            abortFlag, &
-            abortMessage)
+            categoryThicknessLimits)
 
        ! code abort
-       if (abortFlag) then
-          call mpas_log_write("init_column_itd: "//trim(abortMessage), messageType=MPAS_LOG_CRIT)
-       endif
+       call seaice_icepack_write_warnings(seaice_icepack_aborted())
+!echmod - remove this?
+!       if (abortFlag) then
+!          call mpas_log_write("init_column_itd: "//trim(abortMessage), messageType=MPAS_LOG_CRIT)
+!       endif
 
        block => block % next
     end do
@@ -381,9 +393,9 @@ contains
 
   subroutine init_column_thermodynamic_profiles(domain)
 
-    use ice_colpkg, only: &             !echmod - remove
-         colpkg_init_thermo, &          !echmod - remove
-         colpkg_liquidus_temperature    !echmod - remove
+!echmod    use ice_colpkg, only: &             !echmod - remove
+!echmod         colpkg_init_thermo, &          !echmod - remove
+!echmod         colpkg_liquidus_temperature    !echmod - remove
     use icepack_intfc, only: &
          icepack_init_thermo, &
          icepack_liquidus_temperature
@@ -419,9 +431,9 @@ contains
 
        allocate(initialSalinityProfileVertical(1:nIceLayers+1))
 
-       call colpkg_init_thermo(&              !echmod - remove
-            nIceLayers, &                     !echmod - remove
-            initialSalinityProfileVertical)   !echmod - remove
+!echmod       call colpkg_init_thermo(&              !echmod - remove
+!echmod            nIceLayers, &                     !echmod - remove
+!echmod            initialSalinityProfileVertical)   !echmod - remove
        call icepack_init_thermo(&
             nIceLayers, &
             initialSalinityProfileVertical)
@@ -644,9 +656,9 @@ contains
 
   subroutine seaice_init_icepack_shortwave(domain, clock)
 
-    use ice_colpkg, only: &
-         colpkg_init_orbit, &
-         colpkg_clear_warnings
+!echmod    use ice_colpkg, only: &
+!echmod         colpkg_init_orbit, &
+!echmod         colpkg_clear_warnings
 
     use icepack_intfc, only: &
          icepack_init_orbit, &
@@ -729,18 +741,18 @@ contains
 
     if (trim(config_shortwave_type(1:4)) == "dEdd") then
 
-       abortFlag = .false.
-       abortMessage = ""
+!echmod       abortFlag = .false.
+!echmod       abortMessage = ""
 
-       call colpkg_clear_warnings()
-       call colpkg_init_orbit(&
-            abortFlag, &
-            abortMessage)
-       call column_write_warnings(abortFlag)
+!echmod       call colpkg_clear_warnings()
+!echmod       call colpkg_init_orbit(&
+!echmod            abortFlag, &
+!echmod            abortMessage)
+!echmod       call column_write_warnings(abortFlag)
 
-       if (abortFlag) then
-          call mpas_log_write("colpkg_init_orbit: "//trim(abortMessage), messageType=MPAS_LOG_CRIT)
-       endif
+!echmod       if (abortFlag) then
+!echmod          call mpas_log_write("colpkg_init_orbit: "//trim(abortMessage), messageType=MPAS_LOG_CRIT)
+!echmod       endif
 
        call icepack_init_orbit()
        call seaice_icepack_write_warnings(seaice_icepack_aborted())
@@ -3357,10 +3369,6 @@ contains
          icepack_warnings_clear, &
          icepack_warnings_aborted
 
-!    use ice_colpkg, only: &
-!         colpkg_step_ridge, &
-!         colpkg_clear_warnings
-
     type(domain_type), intent(inout) :: domain
 
     type(block_type), pointer :: block
@@ -3551,7 +3559,6 @@ contains
           call set_cice_tracer_array_category(block, ciceTracerObject, &
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-!          call colpkg_clear_warnings()
           call icepack_warnings_clear()
           call icepack_step_ridge(&
                dt=dynamicsTimeStep, &
@@ -5921,10 +5928,15 @@ contains
        nCategories, &
        categoryThicknessLimits, &
        abortFlag, &
-       abortMessage)
+       abortMessage)  !echmod: remove 
 
-    use ice_colpkg, only: &
-         colpkg_init_itd
+!echmod    use ice_colpkg, only: &
+!echmod         colpkg_init_itd
+
+       use icepack_intfc, only: &
+         icepack_init_itd, &
+         icepack_warnings_clear, &
+         icepack_warnings_aborted
 
     integer, intent(in) :: &
          nCategories ! number of thickness categories
@@ -5938,11 +5950,17 @@ contains
     character(len=*), intent(out) :: &
          abortMessage ! abort error message
 
-    call colpkg_init_itd(&
+!echmod    call colpkg_init_itd(&
+!echmod         nCategories, &
+!echmod         categoryThicknessLimits, &
+!echmod         abortFlag, &
+!echmod         abortMessage)
+    call icepack_init_itd(&
          nCategories, &
-         categoryThicknessLimits, &
-         abortFlag, &
-         abortMessage)
+         categoryThicknessLimits)
+
+    abortFlag = icepack_warnings_aborted()
+    call seaice_icepack_write_warnings(abortFlag)
 
   end subroutine seaice_icepack_init_itd
 
@@ -6033,8 +6051,11 @@ contains
        iceVolumeCategory, &
        icePressure)
 
-    use ice_colpkg, only: &
-         colpkg_ice_strength
+!echmod    use ice_colpkg, only: &
+!echmod         colpkg_ice_strength
+
+    use icepack_intfc, only: &
+         icepack_ice_strength
 
     integer, intent(in) :: &
          nCategories ! number of thickness categories
@@ -6051,7 +6072,8 @@ contains
     real(kind=RKIND), intent(inout) :: &
          icePressure ! ice strength (N/m)
 
-    call colpkg_ice_strength(&
+!echmod    call colpkg_ice_strength(&
+    call icepack_ice_strength(&
          nCategories, &
          iceAreaCell, &
          iceVolumeCell, &
