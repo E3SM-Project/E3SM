@@ -917,23 +917,19 @@ contains
        if (trim(config_column_physics_type) == "icepack") then
           call seaice_icepack_init_itd(&
                nCategories, &
-               categoryThicknessLimits, &
-               abortFlag, &
-               abortMessage)
+               categoryThicknessLimits)
        else if (trim(config_column_physics_type) == "column_package") then
           call seaice_column_init_itd(&
                nCategories, &
                categoryThicknessLimits, &
                abortFlag, &
                abortMessage)
+          if (abortFlag) then
+             call mpas_log_write(&
+                  "initial_category_areas_and_volumes: "//trim(abortMessage), &
+                  MPAS_LOG_CRIT)
+          endif
        endif ! config_column_physics_type
-
-       ! code abort
-       if (abortFlag) then
-          call mpas_log_write(&
-               "initial_category_areas_and_volumes: "//trim(abortMessage), &
-               MPAS_LOG_CRIT)
-       endif
 
     endif
 

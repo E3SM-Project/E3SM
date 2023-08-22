@@ -12,6 +12,9 @@
 
 module seaice_icepack
 
+  use icepack_intfc, only: &
+      icepack_warnings_aborted
+
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_timekeeping
@@ -317,12 +320,8 @@ contains
 
   subroutine init_column_itd(domain)
 
-!echmod    use ice_colpkg, only: colpkg_init_itd
-
     use icepack_intfc, only: &
-         icepack_init_itd, &
-         icepack_warnings_clear, &
-         icepack_warnings_aborted
+         icepack_init_itd
 
     type(domain_type), intent(inout) :: domain
 
@@ -338,12 +337,6 @@ contains
     integer, pointer :: &
          nCategories
 
-    logical :: &
-         abortFlag
-
-    character(len=strKIND) :: &
-         abortMessage
-
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
 
     block => domain % blocklist
@@ -353,26 +346,11 @@ contains
 
        call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
 
-!echmod       abortFlag = .false.
-!echmod       abortMessage = ""
-
-!echmod       call colpkg_init_itd(&
-!echmod            nCategories, &
-!echmod            categoryThicknessLimits, &
-!echmod            abortFlag, &
-!echmod            abortMessage)
-!echmod       call colpkg_init_itd(&
-
        call icepack_init_itd(&
             nCategories, &
             categoryThicknessLimits)
 
-       ! code abort
-       call seaice_icepack_write_warnings(seaice_icepack_aborted())
-!echmod - remove this?
-!       if (abortFlag) then
-!          call mpas_log_write("init_column_itd: "//trim(abortMessage), messageType=MPAS_LOG_CRIT)
-!       endif
+       call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
        block => block % next
     end do
@@ -393,9 +371,6 @@ contains
 
   subroutine init_column_thermodynamic_profiles(domain)
 
-!echmod    use ice_colpkg, only: &             !echmod - remove
-!echmod         colpkg_init_thermo, &          !echmod - remove
-!echmod         colpkg_liquidus_temperature    !echmod - remove
     use icepack_intfc, only: &
          icepack_init_thermo, &
          icepack_liquidus_temperature
@@ -431,13 +406,10 @@ contains
 
        allocate(initialSalinityProfileVertical(1:nIceLayers+1))
 
-!echmod       call colpkg_init_thermo(&              !echmod - remove
-!echmod            nIceLayers, &                     !echmod - remove
-!echmod            initialSalinityProfileVertical)   !echmod - remove
        call icepack_init_thermo(&
             nIceLayers, &
             initialSalinityProfileVertical)
-       call seaice_icepack_write_warnings(seaice_icepack_aborted())
+       call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
        call MPAS_pool_get_subpool(block % structs, "initial", initial)
 
@@ -656,10 +628,6 @@ contains
 
   subroutine seaice_init_icepack_shortwave(domain, clock)
 
-!echmod    use ice_colpkg, only: &
-!echmod         colpkg_init_orbit, &
-!echmod         colpkg_clear_warnings
-
     use icepack_intfc, only: &
          icepack_init_orbit, &
          icepack_init_radiation
@@ -670,12 +638,6 @@ contains
     type(domain_type), intent(inout) :: domain
 
     type(MPAS_clock_type), intent(in) :: clock
-
-    logical :: &
-         abortFlag
-
-    character(len=strKIND) :: &
-         abortMessage
 
     type(block_type), pointer :: &
          block
@@ -734,28 +696,15 @@ contains
          config_do_restart
 
     call icepack_init_radiation()
-    call seaice_icepack_write_warnings(seaice_icepack_aborted())
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
     if (trim(config_shortwave_type(1:4)) == "dEdd") then
 
-!echmod       abortFlag = .false.
-!echmod       abortMessage = ""
-
-!echmod       call colpkg_clear_warnings()
-!echmod       call colpkg_init_orbit(&
-!echmod            abortFlag, &
-!echmod            abortMessage)
-!echmod       call column_write_warnings(abortFlag)
-
-!echmod       if (abortFlag) then
-!echmod          call mpas_log_write("colpkg_init_orbit: "//trim(abortMessage), messageType=MPAS_LOG_CRIT)
-!echmod       endif
-
        call icepack_init_orbit()
-       call seaice_icepack_write_warnings(seaice_icepack_aborted())
+       call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
     endif
 
@@ -969,7 +918,7 @@ contains
        block => block % next
     end do
 
-    call seaice_icepack_write_warnings(seaice_icepack_aborted())
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
   end subroutine init_column_thermodynamic_tracers
 
@@ -1306,9 +1255,7 @@ contains
   subroutine column_vertical_thermodynamics(domain, clock)
 
     use icepack_intfc, only: &
-         icepack_step_therm1, &
-         icepack_warnings_clear, &
-         icepack_warnings_aborted
+         icepack_step_therm1
 
     use seaice_constants, only: &
          seaicePuny
@@ -2142,9 +2089,7 @@ contains
   subroutine column_itd_thermodynamics(domain, clock)
 
     use icepack_intfc, only: &
-         icepack_step_therm2, &
-         icepack_warnings_clear, &
-         icepack_warnings_aborted
+         icepack_step_therm2
 
     type(domain_type), intent(inout) :: domain
 
@@ -2703,7 +2648,7 @@ contains
        block => block % next
     end do
 
-    call seaice_icepack_write_warnings(seaice_icepack_aborted())
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
   end subroutine column_prep_radiation
 
@@ -3346,7 +3291,7 @@ contains
        block => block % next
     end do
 
-    call seaice_icepack_write_warnings(seaice_icepack_aborted())
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
   end subroutine column_radiation
 
@@ -3365,9 +3310,7 @@ contains
   subroutine column_ridging(domain)
 
     use icepack_intfc, only: &
-         icepack_step_ridge, &
-         icepack_warnings_clear, &
-         icepack_warnings_aborted
+         icepack_step_ridge
 
     type(domain_type), intent(inout) :: domain
 
@@ -3460,13 +3403,8 @@ contains
          newlyFormedIceLogical
 
     logical :: &
-         abortFlag, &
          setGetPhysicsTracers, &
          setGetBGCTracers
-
-    character(len=strKIND) :: &
-         abortMessage, &
-         abortLocation
 
     block => domain % blocklist
     do while (associated(block))
@@ -3544,10 +3482,6 @@ contains
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
 
-       ! code abort
-       abortFlag = .false.
-       abortMessage = ""
-
        do iCell = 1, nCellsSolve
 
           ! newly formed ice
@@ -3559,7 +3493,6 @@ contains
           call set_cice_tracer_array_category(block, ciceTracerObject, &
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          call icepack_warnings_clear()
           call icepack_step_ridge(&
                dt=dynamicsTimeStep, &
                ndtd=config_dynamics_subcycle_number, &
@@ -3614,20 +3547,9 @@ contains
           call get_cice_tracer_array_category(block, ciceTracerObject, &
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          ! code abort
-          abortFlag = icepack_warnings_aborted()
-          call seaice_icepack_write_warnings(abortFlag)
-          if (abortFlag) exit
-
        enddo ! iCell
 
-       ! code abort
-       if (abortFlag) then
-          call mpas_log_write("column_ridging: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-          call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-       endif
-       call seaice_critical_error_write_block(domain, block, abortFlag)
-       call seaice_check_critical_error(domain, abortFlag)
+       call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
@@ -4486,7 +4408,8 @@ contains
 
   subroutine seaice_icepack_aggregate(domain)
 
-    use ice_colpkg, only: colpkg_aggregate
+!echmod    use ice_colpkg, only: colpkg_aggregate
+    use icepack_intfc, only: icepack_aggregate
 
     type(domain_type), intent(inout) :: domain
 
@@ -4560,23 +4483,41 @@ contains
           call set_cice_tracer_array_category(block, ciceTracerObject, &
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          call colpkg_aggregate(&
-               nCategories, &
-               seaFreezingTemperature(iCell), &
-               iceAreaCategory(1,:,iCell), &
-               tracerArrayCategory, & ! trcrn
-               iceVolumeCategory(1,:,iCell), &
-               snowVolumeCategory(1,:,iCell), &
-               iceAreaCell(iCell), &
-               tracerArrayCell, & ! trcr
-               iceVolumeCell(iCell), &
-               snowVolumeCell(iCell), &
-               openWaterArea(iCell), &
-               ciceTracerObject % nTracers, &
-               ciceTracerObject % parentIndex, & ! trcr_depend
+!echmod          call colpkg_aggregate(&
+!echmod               nCategories, &
+!echmod               seaFreezingTemperature(iCell), &
+!echmod               iceAreaCategory(1,:,iCell), &
+!echmod               tracerArrayCategory, & ! trcrn
+!echmod               iceVolumeCategory(1,:,iCell), &
+!echmod               snowVolumeCategory(1,:,iCell), &
+!echmod               iceAreaCell(iCell), &
+!echmod               tracerArrayCell, & ! trcr
+!echmod               iceVolumeCell(iCell), &
+!echmod               snowVolumeCell(iCell), &
+!echmod               openWaterArea(iCell), &
+!echmod               ciceTracerObject % nTracers, &
+!echmod               ciceTracerObject % parentIndex, & ! trcr_depend
+!echmod               ciceTracerObject % firstAncestorMask, & ! trcr_base
+!echmod               ciceTracerObject % ancestorNumber, & ! n_trcr_strata
+!echmod               ciceTracerObject % ancestorIndices) ! nt_strata
+
+          call icepack_aggregate(                    &
+               nCategories,                          &
+               iceAreaCategory(1,:,iCell),           &
+               tracerArrayCategory,                  & ! trcrn
+               iceVolumeCategory(1,:,iCell),         &
+               snowVolumeCategory(1,:,iCell),        &
+               iceAreaCell(iCell),                   &
+               tracerArrayCell,                      & ! trcr
+               iceVolumeCell(iCell),                 &
+               snowVolumeCell(iCell),                &
+               openWaterArea(iCell),                 &
+               ciceTracerObject % nTracers,          &
+               ciceTracerObject % parentIndex,       & ! trcr_depend
                ciceTracerObject % firstAncestorMask, & ! trcr_base
-               ciceTracerObject % ancestorNumber, & ! n_trcr_strata
-               ciceTracerObject % ancestorIndices) ! nt_strata
+               ciceTracerObject % ancestorNumber,    & ! n_trcr_strata
+               ciceTracerObject % ancestorIndices,   & ! nt_strata
+               seaFreezingTemperature(iCell))          ! Tf
 
           ! set the cell tracer array
           call get_cice_tracer_array_cell(block, ciceTracerObject, &
@@ -4586,6 +4527,8 @@ contains
 
        block => block % next
     end do
+
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
   end subroutine seaice_icepack_aggregate
 
@@ -5839,7 +5782,7 @@ contains
        block => block % next
     enddo
 
-    call seaice_icepack_write_warnings(seaice_icepack_aborted())
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
     ! remove frazil from below ice shelves if were testing that
     call MPAS_pool_get_config(domain % configs, "config_use_test_ice_shelf", config_use_test_ice_shelf)
@@ -5918,7 +5861,7 @@ contains
          iceEnthalpy, &
          snowEnthalpy)
 
-    call seaice_icepack_write_warnings(seaice_icepack_aborted())
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
   end subroutine seaice_icepack_init_trcr
 
@@ -5926,17 +5869,10 @@ contains
 
   subroutine seaice_icepack_init_itd(&
        nCategories, &
-       categoryThicknessLimits, &
-       abortFlag, &
-       abortMessage)  !echmod: remove 
-
-!echmod    use ice_colpkg, only: &
-!echmod         colpkg_init_itd
+       categoryThicknessLimits)
 
        use icepack_intfc, only: &
-         icepack_init_itd, &
-         icepack_warnings_clear, &
-         icepack_warnings_aborted
+         icepack_init_itd
 
     integer, intent(in) :: &
          nCategories ! number of thickness categories
@@ -5944,23 +5880,11 @@ contains
     real(kind=RKIND), intent(out) :: &
          categoryThicknessLimits(0:nCategories)  ! category limits (m)
 
-    logical, intent(inout) :: &
-         abortFlag ! if true, print diagnostics and abort model
-
-    character(len=*), intent(out) :: &
-         abortMessage ! abort error message
-
-!echmod    call colpkg_init_itd(&
-!echmod         nCategories, &
-!echmod         categoryThicknessLimits, &
-!echmod         abortFlag, &
-!echmod         abortMessage)
     call icepack_init_itd(&
          nCategories, &
          categoryThicknessLimits)
 
-    abortFlag = icepack_warnings_aborted()
-    call seaice_icepack_write_warnings(abortFlag)
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
   end subroutine seaice_icepack_init_itd
 
@@ -6051,9 +5975,6 @@ contains
        iceVolumeCategory, &
        icePressure)
 
-!echmod    use ice_colpkg, only: &
-!echmod         colpkg_ice_strength
-
     use icepack_intfc, only: &
          icepack_ice_strength
 
@@ -6072,7 +5993,6 @@ contains
     real(kind=RKIND), intent(inout) :: &
          icePressure ! ice strength (N/m)
 
-!echmod    call colpkg_ice_strength(&
     call icepack_ice_strength(&
          nCategories, &
          iceAreaCell, &
@@ -6081,6 +6001,8 @@ contains
          iceAreaCategory, &
          iceVolumeCategory, &
          icePressure)
+
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
   end subroutine seaice_icepack_ice_strength
 
@@ -6242,7 +6164,7 @@ contains
          !R_gC2molC
 
     call icepack_configure()
-    call seaice_icepack_write_warnings(seaice_icepack_aborted())
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
     seaicePi                         = pi
     seaiceGravity                    = gravit
@@ -10536,7 +10458,7 @@ contains
          tr_bgc_hum_in   = config_use_humics, &
          tr_bgc_PON_in   = config_use_nonreactive)
 
-    call seaice_icepack_write_warnings(seaice_icepack_aborted())
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
   end subroutine init_icepack_package_tracer_flags
 
@@ -10632,7 +10554,7 @@ contains
          nbtrcr_in    = tracerObject % nBioTracers, &
          nbtrcr_sw_in = tracerObject % nBioTracersShortwave)
 
-    call seaice_icepack_write_warnings(seaice_icepack_aborted())
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
   end subroutine init_icepack_package_tracer_sizes
 
@@ -10995,7 +10917,7 @@ contains
          bio_index_o_in   = tracerObject % index_LayerIndexToDataArray, &
          bio_index_in     = tracerObject % index_LayerIndexToBioIndex)
 
-    call seaice_icepack_write_warnings(seaice_icepack_aborted())
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
   end subroutine init_icepack_package_tracer_indices
 
@@ -13390,7 +13312,7 @@ contains
          snw_ssp_table_in        = tmp_config_snw_ssp_table &
          )
 
-    call seaice_icepack_write_warnings(seaice_icepack_aborted())
+    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
 !note that icepack_recompute_constants, called from icepck_init_parameters above, recomputes Lfresh
 ! - make Lfresh optional for E3SM?
@@ -13399,7 +13321,7 @@ contains
 !    if (mpas_log_info % taskID == 0) then
 !      call icepack_write_parameters(101)
 !    endif
-!    call seaice_icepack_write_warnings(seaice_icepack_aborted())
+!    call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
     call mpas_log_write(" ----- compare values after icepack init -----")
 
@@ -18288,6 +18210,8 @@ contains
 ! Warning messages
 !-----------------------------------------------------------------------
 
+!echmod: remove this subroutine and all calls to it 
+
   subroutine column_write_warnings(logAsErrors)
 
     use ice_colpkg, only: colpkg_get_warnings
@@ -18348,20 +18272,6 @@ contains
     call icepack_warnings_clear()
 
   end subroutine seaice_icepack_write_warnings
-
-  !-----------------------------------------------------------------------
-
-  function seaice_icepack_aborted() result(aborted)
-
-    use icepack_intfc, only: &
-         icepack_warnings_aborted
-
-    logical :: &
-         aborted
-
-    aborted = icepack_warnings_aborted()
-
-  end function seaice_icepack_aborted
 
   !-----------------------------------------------------------------------
 
