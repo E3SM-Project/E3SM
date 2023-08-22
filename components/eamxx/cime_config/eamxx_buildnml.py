@@ -110,6 +110,8 @@ def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
     Copied from: https://stackoverflow.com/a/21912744
     Added ability to pass filename
     """
+    from yaml_utils import Bools,Ints,Floats,Strings,array_representer
+
     class OrderedDumper(Dumper):
         pass
     def _dict_representer(dumper, data):
@@ -117,6 +119,12 @@ def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
             data.items())
     OrderedDumper.add_representer(OrderedDict, _dict_representer)
+
+    # These allow to dump arrays with a tag specifying the type
+    OrderedDumper.add_representer(Bools,    array_representer)
+    OrderedDumper.add_representer(Ints,     array_representer)
+    OrderedDumper.add_representer(Floats,   array_representer)
+    OrderedDumper.add_representer(Strings,  array_representer)
 
     if isinstance(item, str) and item.endswith(".yaml"):
         # Item is a filepath
@@ -547,14 +555,14 @@ def convert_to_dict(element):
     result = OrderedDict()
     for child in element:
         child_name = child.tag.replace("__", " ")
-        child_val = child.text
 
         has_children = len(child) > 0
-        if not has_children:
+        if has_children:
+            result[child_name] = convert_to_dict(child)
+        else:
+            child_val = child.text
             force_type = None if "type" not in child.attrib.keys() else child.attrib["type"]
             result[child_name] = refine_type(child_val,force_type=force_type)
-        else:
-            result[child_name] = convert_to_dict(child)
 
     return result
 
@@ -746,6 +754,8 @@ def create_input_data_list_file(caseroot):
 ###############################################################################
 def do_cime_vars_on_yaml_output_files(case, caseroot):
 ###############################################################################
+    from yaml_utils import array_constructor
+
     rundir   = case.get_value("RUNDIR")
     eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
 
@@ -756,11 +766,18 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
     out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
     out_files = out_files_xml.text.split(",") if (out_files_xml is not None and out_files_xml.text is not None) else []
 
+    # Add array parsing knowledge to yaml loader
+    loader = yaml.SafeLoader
+    loader.add_constructor("!bools",array_constructor)
+    loader.add_constructor("!ints",array_constructor)
+    loader.add_constructor("!floats",array_constructor)
+    loader.add_constructor("!strings",array_constructor)
+
     # We will also change the 'output_yaml_files' entry in scream_input.yaml,
     # to point to the copied files in $rundir/data
     output_yaml_files = []
     scream_input_file = os.path.join(rundir,'data','scream_input.yaml')
-    scream_input = yaml.safe_load(open(scream_input_file,"r"))
+    scream_input = yaml.load(open(scream_input_file,"r"),Loader=loader)
 
     # Determine the physics grid type for use in CIME-var substitution.
     pgt = 'GLL'
@@ -780,7 +797,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
             safe_copy(src_yaml,dst_yaml)
 
         # Now load dst file, and process any CIME var present (if any)
-        content = yaml.safe_load(open(dst_yaml,"r"))
+        content = yaml.load(open(dst_yaml,"r"),Loader=loader)
         do_cime_vars(content,case,refine=True,
                      extra={'PHYSICS_GRID_TYPE': pgt})
 
