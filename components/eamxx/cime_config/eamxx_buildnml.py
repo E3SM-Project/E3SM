@@ -245,7 +245,7 @@ def evaluate_selectors(element, case, ez_selectors):
             evaluate_selectors(child, case, ez_selectors)
         else:
             child_name = child.tag
-            child.text = str(child.text).strip(' \n')
+            child.text = None if child.text is None else child.text.strip(' \n')
             child_val = child.text
 
             selectors = child.attrib
