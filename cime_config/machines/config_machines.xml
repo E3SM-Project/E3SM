@@ -1500,6 +1500,9 @@
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
+    <environment_variables compiler="intel">
+      <env name="CLDERA_PATH">/projects/cldera/cldera-tools/install/intel</env>
+    </environment_variables>
   </machine>
 
 

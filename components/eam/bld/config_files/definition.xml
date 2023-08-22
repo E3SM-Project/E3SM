@@ -205,6 +205,9 @@ Switch on (off) idealized stratospheric aerosol injection tracers: 0=off, 1=on.
 <entry id="cldera_passive_trcs" valid_values="0,1" value="0">
 Switch on (off) CLDERA aoa, e90, st80 tracers: 0=off, 1=on.
 </entry>
+<entry id="cldera_dynamic_trcs" valid_values="0,1" value="0">
+Switch on (off) CLDERA PV, PT tracers: 0=off, 1=on.
+</entry>
 <entry id="max_n_rad_cnst" value="30">
 Maximum number of constituents that are radiatively active or in any one
 diagnostic list.

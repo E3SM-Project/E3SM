@@ -74,6 +74,7 @@ module element_ops
   public copy_state, tests_finalize
   public state0
   public get_pot_vort
+  public get_pottemp
 
   ! promote this to _real_kind after V2 code freeze
   real (kind=real_kind), public :: tref_lapse_rate=0.0065e0

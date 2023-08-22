@@ -1,0 +1,18 @@
+./xmlchange --append CAM_CONFIG_OPTS="-cldera_profiling -cldera_sai_trcs"
+RUNDIR=$(./xmlquery --value RUNDIR)
+mkdir -p ${RUNDIR}
+CLDERA_PATH=$(python -c "
+import xml.etree.ElementTree as ET
+with open('./env_mach_specific.xml','r') as fd:
+  tree = ET.parse(fd).getroot()
+  env_vars = tree.find('environment_variables')
+  cldera_path = [e.text for e in env_vars if e.attrib['name']=='CLDERA_PATH']
+  print (cldera_path[0])
+")
+DEBUG=$(./xmlquery --value DEBUG)
+if [ "${DEBUG}" = "TRUE" ]; then
+  CLDERA_PATH=${CLDERA_PATH}/debug
+else
+  CLDERA_PATH=${CLDERA_PATH}/release
+fi
+cp ${CLDERA_PATH}/share/cldera_profiling_config.yaml ${RUNDIR}/cldera_profiling_config.yaml

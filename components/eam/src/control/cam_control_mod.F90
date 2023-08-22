@@ -58,6 +58,7 @@ contains
 subroutine cam_ctrl_set_physics_type(phys_package)
   use cam_abortutils, only : endrun
   use spmd_utils,     only: masterproc
+  use cam_logfile,  only : iulog
 
   ! Dummy argument
   character(len=*), intent(in) :: phys_package
