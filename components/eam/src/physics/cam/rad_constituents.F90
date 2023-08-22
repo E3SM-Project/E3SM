@@ -51,9 +51,7 @@ public :: &
    rad_cnst_get_call_list        ! return list of active climate/diagnostic calls to radiation
 
 integer, parameter :: cs1 = 256
-!++hybrown
 integer, public, parameter :: N_DIAG = 99
-!--hybrown
 character(len=cs1), public :: iceopticsfile, liqopticsfile
 character(len=32),  public :: icecldoptics,liqcldoptics
 logical,            public :: oldcldoptics = .false.
@@ -61,9 +59,7 @@ logical,            public :: oldcldoptics = .false.
 ! Private module data
 
 ! max number of strings in mode definitions
-!++hybrown
 integer, parameter :: n_mode_str = 99999    ! max number of strings in mode definitions
-!--hybrown
 
 ! max number of externally mixed entities in the climate/diag lists
 integer, parameter :: n_rad_cnst = N_RAD_CNST
@@ -81,7 +77,6 @@ character(len=cs1) :: rad_diag_7(n_rad_cnst) = ' '
 character(len=cs1) :: rad_diag_8(n_rad_cnst) = ' '
 character(len=cs1) :: rad_diag_9(n_rad_cnst) = ' '
 character(len=cs1) :: rad_diag_10(n_rad_cnst) = ' '
-!++hybrown
 character(len=cs1) :: rad_diag_11(n_rad_cnst) = ' '
 character(len=cs1) :: rad_diag_12(n_rad_cnst) = ' '
 character(len=cs1) :: rad_diag_13(n_rad_cnst) = ' '
@@ -171,7 +166,6 @@ character(len=cs1) :: rad_diag_96(n_rad_cnst) = ' '
 character(len=cs1) :: rad_diag_97(n_rad_cnst) = ' '
 character(len=cs1) :: rad_diag_98(n_rad_cnst) = ' '
 character(len=cs1) :: rad_diag_99(n_rad_cnst) = ' '
-!--hybrown
 
 ! type to provide access to the components of a mode
 type :: mode_component_t
@@ -366,7 +360,6 @@ subroutine rad_cnst_readnl(nlfile)
                           rad_diag_8,    &
                           rad_diag_9,    &
                           rad_diag_10,   &
-!++hybrown
                           rad_diag_11,    &
                           rad_diag_12,    &
                           rad_diag_13,    &
@@ -456,7 +449,6 @@ subroutine rad_cnst_readnl(nlfile)
                           rad_diag_97,    &
                           rad_diag_98,    &
                           rad_diag_99,    &
-!--hybrown
                           iceopticsfile, &
                           liqopticsfile, &
                           icecldoptics,  &
@@ -493,7 +485,6 @@ subroutine rad_cnst_readnl(nlfile)
    call mpibcast (rad_diag_8,    len(rad_diag_8(1))*n_rad_cnst,    mpichar, 0, mpicom)
    call mpibcast (rad_diag_9,    len(rad_diag_9(1))*n_rad_cnst,    mpichar, 0, mpicom)
    call mpibcast (rad_diag_10,   len(rad_diag_10(1))*n_rad_cnst,   mpichar, 0, mpicom)
-!++hybrown
    call mpibcast (rad_diag_11,   len(rad_diag_11(1))*n_rad_cnst,   mpichar, 0,mpicom)
    call mpibcast (rad_diag_12,   len(rad_diag_12(1))*n_rad_cnst,   mpichar, 0, mpicom)
    call mpibcast (rad_diag_13,   len(rad_diag_13(1))*n_rad_cnst,   mpichar, 0, mpicom)
@@ -583,7 +574,6 @@ subroutine rad_cnst_readnl(nlfile)
    call mpibcast (rad_diag_97,   len(rad_diag_97(1))*n_rad_cnst,   mpichar, 0, mpicom)
    call mpibcast (rad_diag_98,   len(rad_diag_98(1))*n_rad_cnst,   mpichar, 0, mpicom)
    call mpibcast (rad_diag_99,   len(rad_diag_99(1))*n_rad_cnst,   mpichar, 0, mpicom)
-!--hybrown
    call mpibcast (iceopticsfile, len(iceopticsfile),               mpichar, 0, mpicom)
    call mpibcast (liqopticsfile, len(liqopticsfile),               mpichar, 0, mpicom)
    call mpibcast (liqcldoptics,  len(liqcldoptics),                mpichar, 0, mpicom)
@@ -621,7 +611,6 @@ subroutine rad_cnst_readnl(nlfile)
          call parse_rad_specifier(rad_diag_9, namelist(i))
       case (10)
          call parse_rad_specifier(rad_diag_10, namelist(i))
-!++hybrown
       case (11)
          call parse_rad_specifier(rad_diag_11, namelist(i))
       case (12)
@@ -800,7 +789,6 @@ subroutine rad_cnst_readnl(nlfile)
          call parse_rad_specifier(rad_diag_98, namelist(i))
       case (99)
          call parse_rad_specifier(rad_diag_99, namelist(i))
-!--hybrown
       end select
    enddo
 

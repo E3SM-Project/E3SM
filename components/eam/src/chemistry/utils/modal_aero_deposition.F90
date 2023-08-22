@@ -22,9 +22,7 @@ use camsrfexch,       only: cam_out_t
 use constituents,     only: pcnst, cnst_get_ind
 use ppgrid,           only: pcols
 use cam_abortutils,       only: endrun
-!++hybrown
 use modal_aero_data,  only: nso4, nsoa, npoa, nbc, so4SpecName, soaSpecName, poaSpecName, bcSpecName
-!--hybrown
 
 implicit none
 private
@@ -36,35 +34,20 @@ public :: &
    set_srf_wetdep
 
 ! Private module data
-!++hybrown
-!integer :: idx_bc1  = -1
-!integer :: idx_pom1 = -1
-!integer :: idx_soa1 = -1
-!integer :: idx_soa2 = -1
 integer :: idx_bc1(1:nbc)   = -1
 integer :: idx_pom1(1:npoa) = -1
 integer :: idx_soa1(1:nsoa) = -1
 integer :: idx_soa2(1:nsoa) = -1
-!--hybrown
 integer :: idx_dst1 = -1
 integer :: idx_dst3 = -1
 integer :: idx_ncl3 = -1
-!++hybrown
-!integer :: idx_so43 = -1
-!integer :: idx_bc4  = -1
-!integer :: idx_pom4 = -1
 integer :: idx_so43(1:nso4) = -1
 integer :: idx_bc4(1:nbc)  = -1
 integer :: idx_pom4(1:npoa) = -1
-!--hybrown
 
 !mgf++ MAM7
-!++hybrown
-!integer :: idx_bc3  = -1
-!integer :: idx_pom3 = -1
 integer :: idx_bc3(1:nbc)  = -1
 integer :: idx_pom3(1:npoa) = -1
-!--hybrown
 integer :: idx_dst5 = -1
 integer :: idx_dst7 = -1
 !mgf--
@@ -77,11 +60,7 @@ logical :: initialized = .false.
 contains
 !==============================================================================
 
-!++hybrown
-!subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_ndx, &
-!                            dst3_ndx,ncl3_ndx,so43_ndx,num3_ndx,bc4_ndx,pom4_ndx)
 subroutine modal_aero_deposition_init()
-!--hybrown
 
 ! set aerosol indices for re-mapping surface deposition fluxes:
 ! *_a1 = accumulation mode
@@ -91,68 +70,12 @@ subroutine modal_aero_deposition_init()
    ! can be initialized with user specified indices
    ! if called from aerodep_flx module (for prescribed modal aerosol fluxes) then these indices are specified
 
-!++hybrown
-!   integer, optional, intent(in) :: bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_ndx,dst3_ndx,ncl3_ndx,so43_ndx,num3_ndx
-!   integer, optional, intent(in) :: bc4_ndx,pom4_ndx
    integer :: i
-!--hybrown
 
    ! if already initialized abort the run
    if (initialized) then
      call endrun('modal_aero_deposition_init is already initialized')
    endif
-
-!++hybrown
-!   if (present(bc1_ndx)) then
-!      idx_bc1  = bc1_ndx
-!   else
-!      call cnst_get_ind('bc_a1',  idx_bc1)
-!   endif
-!   if (present(pom1_ndx)) then
-!      idx_pom1 = pom1_ndx
-!   else
-!      call cnst_get_ind('pom_a1', idx_pom1)
-!   endif
-!   if (present(soa1_ndx)) then
-!      idx_soa1 = soa1_ndx
-!   else
-!      call cnst_get_ind('soa_a1', idx_soa1)
-!   endif
-!   if (present(soa2_ndx)) then
-!      idx_soa2 = soa2_ndx
-!   else
-!      call cnst_get_ind('soa_a2', idx_soa2)
-!   endif
-!   if (present(dst1_ndx)) then
-!      idx_dst1 = dst1_ndx
-!   else
-!      call cnst_get_ind('dst_a1', idx_dst1,abrtf=.false.)
-!   endif
-!   if (present(dst3_ndx)) then
-!      idx_dst3 = dst3_ndx
-!   else
-!      call cnst_get_ind('dst_a3', idx_dst3,abrtf=.false.)
-!   endif
-!   if (present(ncl3_ndx)) then
-!      idx_ncl3 = ncl3_ndx
-!   else
-!      call cnst_get_ind('ncl_a3', idx_ncl3,abrtf=.false.)
-!   endif
-!   if (present(so43_ndx)) then
-!      idx_so43 = so43_ndx
-!   else
-!      call cnst_get_ind('so4_a3', idx_so43,abrtf=.false.)
-!   endif
-!   if (present(bc4_ndx)) then
-!      idx_bc4 = bc4_ndx
-!   else
-!      call cnst_get_ind('bc_a4', idx_bc4,abrtf=.false.)
-!   endif
-!   if (present(pom4_ndx)) then
-!      idx_pom4 = pom4_ndx
-!   else
-!      call cnst_get_ind('pom_a4', idx_pom4,abrtf=.false.)   
-!   endif
 
    do i = 1, nbc
       call cnst_get_ind(trim(bcSpecName(i))//'_a1',  idx_bc1(i))
@@ -187,8 +110,6 @@ subroutine modal_aero_deposition_init()
 #endif
 #endif
 
-!--hybrown
-
 #ifdef MODAL_AER
 !mgf++ incorporate MAM7 fluxes
    
@@ -207,16 +128,11 @@ subroutine modal_aero_deposition_init()
 
 #else
 !  for 7 mode bin_fluxes will be false
-!++hybrown
    bin_fluxes = idx_dst1>0 .and. idx_dst3>0 .and.idx_ncl3>0 .and. idx_so43(1)>0
-!--hybrown
 #endif
 
 #ifdef RAIN_EVAP_TO_COARSE_AERO
       ! assign additional indices for resuspended BC and POM to coarse mode:
-!++hybrown
-!      call cnst_get_ind('bc_a3',  idx_bc3)
-!      call cnst_get_ind('pom_a3', idx_pom3)
 
    do i = 1, nbc
       call cnst_get_ind(trim(bcSpecName(i))//'_a3',  idx_bc3(i))
@@ -225,7 +141,6 @@ subroutine modal_aero_deposition_init()
    do i = 1, npoa
       call cnst_get_ind(trim(poaSpecName(i))//'_a3',  idx_pom3(i))
    enddo
-!--hybrown
 #endif
 
    initialized = .true.
@@ -243,16 +158,10 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
    type(cam_out_t), intent(inout) :: cam_out     ! cam export state
 
    ! Local variables:
-!++hybrown
    integer :: i, ispec
-!--hybrown
    integer :: ncol                      ! number of columns
-!++hybrown
    real(r8) :: bcphiwet_sum, bcphidry_sum, ocphiwet_sum, ocphidry_sum
    !----------------------------------------------------------------------------
-
-!   if (.not.bin_fluxes) return
-!--hybrown
 
    ncol = cam_out%ncol
 
@@ -263,18 +172,10 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
 #ifdef MODAL_AERO_3MODE
       ! MAM3
  
-!++hybrown   
 !      ! in SNICAR+MAM, bcphiwet represents BC mixed internally within hydrometeors
-!      cam_out%bcphiwet(i) = -(aerdepwetcw(i,idx_bc1))
-
 !      ! bcphidry represents BC mixed externally to hydrometeors
-!      cam_out%bcphidry(i) = -(aerdepwetis(i,idx_bc1))
-
 !      ! ocphiwet represents OC mixed internally within hydrometeors
-!      cam_out%ocphiwet(i) = -(aerdepwetcw(i,idx_pom1)+aerdepwetcw(i,idx_soa1)+aerdepwetcw(i,idx_soa2))
-
 !      ! ocphidry represents OC mixed externally to hydrometeors
-!      cam_out%ocphidry(i) = -(aerdepwetis(i,idx_pom1)+aerdepwetis(i,idx_soa1)+aerdepwetis(i,idx_soa2))
 
       bcphiwet_sum = 0.0_r8
       do ispec = 1, nbc
@@ -305,15 +206,8 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
          ocphidry_sum = ocphidry_sum + aerdepwetis(i,idx_soa1(ispec)) + aerdepwetis(i,idx_soa2(ispec))
       enddo
       cam_out%ocphidry(i)= -(ocphidry_sum)
-!--hybrown
 
 #ifdef RAIN_EVAP_TO_COARSE_AERO
-!++hybrown
-!       ! add resuspended coarse-mode BC and OC
-!         cam_out%bcphiwet(i) = cam_out%bcphiwet(i) -aerdepwetcw(i,idx_bc3)
-!         cam_out%bcphidry(i) = cam_out%bcphidry(i) -aerdepwetis(i,idx_bc3)
-!         cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -aerdepwetcw(i,idx_pom3)
-!         cam_out%ocphidry(i) = cam_out%ocphidry(i) -aerdepwetis(i,idx_pom3)
       do ispec = 1, nbc
          cam_out%bcphiwet(i) = cam_out%bcphiwet(i) -aerdepwetcw(i,idx_bc3(ispec))
          cam_out%bcphidry(i) = cam_out%bcphidry(i) -aerdepwetis(i,idx_bc3(ispec))
@@ -323,7 +217,6 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
          cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -aerdepwetcw(i,idx_pom3(ispec))
          cam_out%ocphidry(i) = cam_out%ocphidry(i) -aerdepwetis(i,idx_pom3(ispec))
       enddo
-!--hybrown
 #endif
 
       
@@ -349,21 +242,11 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
 
 #if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) )
       ! MAM4
-!++hybrown
 !      ! in SNICAR+MAM, bcphiwet represents BC mixed internally within
 !      ! hydrometeors
-!      cam_out%bcphiwet(i) = -(aerdepwetcw(i,idx_bc1)+aerdepwetcw(i,idx_bc4))
-
 !      ! bcphidry represents BC mixed externally to hydrometeors
-!      cam_out%bcphidry(i) = -(aerdepwetis(i,idx_bc1)+aerdepwetis(i,idx_bc4))
-
 !      ! ocphiwet represents OC mixed internally within hydrometeors
-!      cam_out%ocphiwet(i) = -(aerdepwetcw(i,idx_pom1)+aerdepwetcw(i,idx_pom4)+ &
-!                              aerdepwetcw(i,idx_soa1)+aerdepwetcw(i,idx_soa2))
-
 !      ! ocphidry represents OC mixed externally to hydrometeors
-!      cam_out%ocphidry(i) = -(aerdepwetis(i,idx_pom1)+aerdepwetis(i,idx_pom4)+ &
-!                              aerdepwetis(i,idx_soa1)+aerdepwetis(i,idx_soa2))
 
       bcphiwet_sum = 0.0_r8
       do ispec = 1, nbc
@@ -394,15 +277,9 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
          ocphidry_sum = ocphidry_sum + aerdepwetis(i,idx_soa1(ispec)) + aerdepwetis(i,idx_soa2(ispec))
       enddo
       cam_out%ocphidry(i)= -(ocphidry_sum)
-!--hybrown
 
 #ifdef RAIN_EVAP_TO_COARSE_AERO
        ! add resuspended coarse-mode BC and OC
-!++hybrown
-!         cam_out%bcphiwet(i) = cam_out%bcphiwet(i) -aerdepwetcw(i,idx_bc3)
-!         cam_out%bcphidry(i) = cam_out%bcphidry(i) -aerdepwetis(i,idx_bc3)
-!         cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -aerdepwetcw(i,idx_pom3)
-!         cam_out%ocphidry(i) = cam_out%ocphidry(i) -aerdepwetis(i,idx_pom3)
 
       do ispec = 1, nbc
          cam_out%bcphiwet(i) = cam_out%bcphiwet(i) -aerdepwetcw(i,idx_bc3(ispec))
@@ -413,7 +290,6 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
          cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -aerdepwetcw(i,idx_pom3(ispec))
          cam_out%ocphidry(i) = cam_out%ocphidry(i) -aerdepwetis(i,idx_pom3(ispec))
       enddo
-!--hybrown
 #endif
 
       ! Four dust bins in SNICAR represent dust with dry diameters of
@@ -495,13 +371,7 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
    !        dry deposition fluxes are positive into surface.
    !        srf models want positive definite fluxes.
    do i = 1, ncol
-!++hybrown
-!      ! black carbon fluxes
-!      if (idx_bc1>0) &
-!         cam_out%bcphiwet(i) = cam_out%bcphiwet(i) -(aerdepwetis(i,idx_bc1)+aerdepwetcw(i,idx_bc1))
-!      if (idx_bc4>0) &
-!         cam_out%bcphiwet(i) = cam_out%bcphiwet(i) -(aerdepwetis(i,idx_bc4)+aerdepwetcw(i,idx_bc4))
-
+      ! black carbon fluxes
       bcphiwet_sum = 0.0_r8
       do ispec = 1, nbc
          if (idx_bc1(1)>0) then
@@ -517,16 +387,7 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
       enddo
       cam_out%bcphiwet(i) = -(bcphiwet_sum)
 
-!      ! organic carbon fluxes
-!      if (idx_soa1>0) &
-!         cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -(aerdepwetis(i,idx_soa1)+aerdepwetcw(i,idx_soa1))
-!      if (idx_soa2>0) &
-!         cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -(aerdepwetis(i,idx_soa2)+aerdepwetcw(i,idx_soa2))
-!      if (idx_pom1>0) &
-!         cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -(aerdepwetis(i,idx_pom1)+aerdepwetcw(i,idx_pom1))
-!      if (idx_pom4>0) &
-!         cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -(aerdepwetis(i,idx_pom4)+aerdepwetcw(i,idx_pom4))
-
+      ! organic carbon fluxes
       ocphiwet_sum = 0.0_r8
       do ispec = 1, npoa
          if (idx_pom1(1)>0) then
@@ -545,13 +406,9 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
          endif
       enddo
       cam_out%ocphiwet(i)= -(ocphiwet_sum)
-!--hybrown
 
 #ifdef RAIN_EVAP_TO_COARSE_AERO
        ! add resuspended coarse-mode BC and OC
-!++hybrown
-!         cam_out%bcphiwet(i) = cam_out%bcphiwet(i) -(aerdepwetis(i,idx_bc3)+aerdepwetcw(i,idx_bc3))
-!         cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -(aerdepwetis(i,idx_pom3)+aerdepwetcw(i,idx_pom3))
 
       do ispec = 1, nbc
          cam_out%bcphiwet(i) = cam_out%bcphiwet(i) -(aerdepwetis(i,idx_bc3(ispec))+aerdepwetcw(i,idx_bc3(ispec)))
@@ -559,7 +416,6 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
       do ispec = 1, npoa
          cam_out%ocphiwet(i) = cam_out%ocphiwet(i) -(aerdepwetis(i,idx_pom3(ispec))+aerdepwetcw(i,idx_pom3(ispec)))
       enddo
-!--hybrown
 #endif
 
       ! dust fluxes
@@ -594,15 +450,10 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
    type(cam_out_t), intent(inout) :: cam_out     ! cam export state
 
    ! Local variables:
-!++hybrown
    integer :: i, ispec
-!--hybrown
    integer :: ncol                      ! number of columns
-!++hybrown
    real(r8):: bcphidry_sum, bcphodry_sum, ocphidry_sum, ocphodry_sum
    !----------------------------------------------------------------------------
-!   if (.not.bin_fluxes) return
-!--hybrown
 
    ncol = cam_out%ncol
 
@@ -613,18 +464,14 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
 !mgf++
 #ifdef MODAL_AERO_3MODE
       ! MAM3
-!++hybrown     
-!      ! in SNICAR+MAM, bcphodry represents BC mixed external to hydrometeors
-!      cam_out%bcphodry(i) = aerdepdryis(i,idx_bc1)+aerdepdrycw(i,idx_bc1)
+      ! in SNICAR+MAM, bcphodry represents BC mixed external to hydrometeors
       bcphodry_sum = 0.0_r8
       do ispec = 1, nbc
          bcphodry_sum = bcphodry_sum + aerdepdryis(i,idx_bc1(ispec))+aerdepdrycw(i,idx_bc1(ispec))
       enddo
       cam_out%bcphodry(i) = bcphodry_sum
       
-!      ! ocphodry represents OC mixed external to hydrometeors
-!      cam_out%ocphodry(i) = aerdepdryis(i,idx_pom1)+aerdepdryis(i,idx_soa1)+aerdepdryis(i,idx_soa2)+ &
-!                            aerdepdrycw(i,idx_pom1)+aerdepdrycw(i,idx_soa1)+aerdepdrycw(i,idx_soa2)
+      ! ocphodry represents OC mixed external to hydrometeors
       ocphodry_sum = 0.0_r8
       do ispec = 1, npoa
          ocphodry_sum = ocphodry_sum+aerdepdryis(i,idx_pom1(ispec))+aerdepdrycw(i,idx_pom1(ispec))
@@ -634,20 +481,15 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
                                      aerdepdryis(i,idx_soa2(ispec))+aerdepdrycw(i,idx_soa2(ispec))
       enddo
       cam_out%ocphodry(i) = ocphodry_sum
-!--hybrown
 
 #ifdef RAIN_EVAP_TO_COARSE_AERO
        ! add resuspended coarse-mode BC and OC
-!++hybrown
-!         cam_out%bcphodry(i) = cam_out%bcphodry(i) + (aerdepdryis(i,idx_bc3)+aerdepdrycw(i,idx_bc3))
-!         cam_out%ocphodry(i) = cam_out%ocphodry(i) + (aerdepdryis(i,idx_pom3)+aerdepdrycw(i,idx_pom3))
       do ispec = 1, nbc
          cam_out%bcphodry(i) = cam_out%bcphodry(i) +(aerdepdryis(i,idx_bc3(ispec))+aerdepdrycw(i,idx_bc3(ispec)))
       enddo
       do ispec = 1, npoa
          cam_out%ocphodry(i) = cam_out%ocphodry(i) +(aerdepdryis(i,idx_pom3(ispec))+aerdepdrycw(i,idx_pom3(ispec)))
       enddo
-!--hybrown
 #endif
 
 
@@ -681,11 +523,7 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
 #if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) )
       ! MAM4
 
-!++hybrown
-!      ! in SNICAR+MAM, bcphodry represents BC mixed external to hydrometeors
-!      cam_out%bcphodry(i) = aerdepdryis(i,idx_bc1)+aerdepdryis(i,idx_bc4)+ &
-!                            aerdepdrycw(i,idx_bc1)+aerdepdrycw(i,idx_bc4)
-
+      ! in SNICAR+MAM, bcphodry represents BC mixed external to hydrometeors
       bcphodry_sum = 0.0_r8
       do ispec = 1, nbc
          bcphodry_sum = bcphodry_sum +aerdepdryis(i,idx_bc1(ispec))+aerdepdrycw(i,idx_bc1(ispec))+ &
@@ -693,9 +531,7 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
       enddo
       cam_out%bcphodry(i) = bcphodry_sum
 
-!      ! ocphodry represents OC mixed external to hydrometeors
-!      cam_out%ocphodry(i) = aerdepdryis(i,idx_pom1)+aerdepdryis(i,idx_pom4)+aerdepdryis(i,idx_soa1)+aerdepdryis(i,idx_soa2)+ &
-!                            aerdepdrycw(i,idx_pom1)+aerdepdrycw(i,idx_pom4)+aerdepdrycw(i,idx_soa1)+aerdepdrycw(i,idx_soa2)
+      ! ocphodry represents OC mixed external to hydrometeors
       ocphodry_sum = 0.0_r8
       do ispec = 1, npoa
          ocphodry_sum = ocphodry_sum+aerdepdryis(i,idx_pom1(ispec))+aerdepdrycw(i,idx_pom1(ispec))+ &
@@ -706,13 +542,9 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
                                      aerdepdryis(i,idx_soa2(ispec))+aerdepdrycw(i,idx_soa2(ispec))
       enddo
       cam_out%ocphodry(i) = ocphodry_sum
-!--hybrown
 
 #ifdef RAIN_EVAP_TO_COARSE_AERO
        ! add resuspended coarse-mode BC and OC
-!++hybrown
-!         cam_out%bcphodry(i) = cam_out%bcphodry(i) + (aerdepdryis(i,idx_bc3)+aerdepdrycw(i,idx_bc3))
-!         cam_out%ocphodry(i) = cam_out%ocphodry(i) + (aerdepdryis(i,idx_pom3)+aerdepdrycw(i,idx_pom3))
 
       do ispec = 1, nbc
          cam_out%bcphodry(i) = cam_out%bcphodry(i) +(aerdepdryis(i,idx_bc3(ispec))+aerdepdrycw(i,idx_bc3(ispec)))
@@ -721,7 +553,6 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
          cam_out%ocphodry(i) = cam_out%ocphodry(i) +(aerdepdryis(i,idx_pom3(ispec))+aerdepdrycw(i,idx_pom3(ispec)))
       enddo
 #endif
-!--hybrown
 
       ! NOTE: drycw fluxes shown above ideally would be included as
       ! within-hydrometeor species, but this would require passing
@@ -810,13 +641,7 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
    !        dry deposition fluxes are positive into surface.
    !        srf models want positive definite fluxes.
    do i = 1, ncol
-!++hybrown
       ! black carbon fluxes
-!      if (idx_bc1>0) &
-!           cam_out%bcphidry(i) = cam_out%bcphidry(i) + aerdepdryis(i,idx_bc1)+aerdepdrycw(i,idx_bc1)
-!      if (idx_bc4>0) &
-!           cam_out%bcphodry(i) = cam_out%bcphodry(i) + aerdepdryis(i,idx_bc4)+aerdepdrycw(i,idx_bc4)
-
       bcphidry_sum = 0.0_r8
       if (idx_bc1(1)>0) then
          do ispec = 1, nbc
@@ -834,15 +659,6 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
       endif
 
       ! organic carbon fluxes
-!      if (idx_pom1>0) &
-!           cam_out%ocphidry(i) = cam_out%ocphidry(i) + aerdepdryis(i,idx_pom1)+aerdepdrycw(i,idx_pom1)
-!      if( idx_pom4>0) &
-!           cam_out%ocphodry(i) = cam_out%ocphodry(i) + aerdepdryis(i,idx_pom4)+aerdepdrycw(i,idx_pom4)
-!      if (idx_soa1>0) &
-!           cam_out%ocphidry(i) = cam_out%ocphidry(i) + aerdepdryis(i,idx_soa1)+aerdepdrycw(i,idx_soa1)
-!      if (idx_soa2>0) &
-!           cam_out%ocphodry(i) = cam_out%ocphodry(i) + aerdepdryis(i,idx_soa2)+aerdepdrycw(i,idx_soa2)
-
       ocphidry_sum = 0.0_r8
       if (idx_pom1(1)>0) then
          do ispec = 1, npoa
@@ -868,19 +684,14 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
          enddo
       endif
       cam_out%ocphodry(i) = ocphodry_sum
-!--hybrown
 #ifdef RAIN_EVAP_TO_COARSE_AERO
        ! add resuspended coarse-mode BC and OC to xxphidry
-!++hybrown
-!         cam_out%bcphidry(i) = cam_out%bcphidry(i) + (aerdepdryis(i,idx_bc3)+aerdepdrycw(i,idx_bc3))
-!         cam_out%ocphidry(i) = cam_out%ocphidry(i) + (aerdepdryis(i,idx_pom3)+aerdepdrycw(i,idx_pom3))
       do ispec = 1, nbc
          cam_out%bcphidry(i) = cam_out%bcphidry(i) +(aerdepdryis(i,idx_bc3(ispec))+aerdepdrycw(i,idx_bc3(ispec)))
       enddo
       do ispec = 1, npoa
          cam_out%ocphidry(i) = cam_out%ocphidry(i) +(aerdepdryis(i,idx_pom3(ispec))+aerdepdrycw(i,idx_pom3(ispec)))
       enddo
-!--hybrown
 #endif
 
       ! dust fluxes

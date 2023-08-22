@@ -82,11 +82,9 @@ module mo_drydep
              glyald_dd, hyac_dd, ch3oh_dd, hydrald_dd, h2_dd, Pb_dd, o3s_dd, o3inert_dd
 
   integer :: so2_ndx
-!++hybrown
   integer :: so201_ndx, so202_ndx, so203_ndx, so204_ndx, so205_ndx, so206_ndx, so207_ndx, so208_ndx, so209_ndx, so210_ndx
   integer :: so211_ndx, so212_ndx, so213_ndx, so214_ndx, so215_ndx, so216_ndx, so217_ndx, so218_ndx, so219_ndx, so220_ndx
   integer :: so221_ndx, so222_ndx, so223_ndx, so224_ndx, so225_ndx, so226_ndx, so227_ndx, so228_ndx, so229_ndx, so230_ndx
-!--hybrown
   integer :: ch3cn_ndx, hcn_ndx, hcooh_ndx
   logical :: ch3cn_dd,  hcn_dd, hcooh_dd
 
@@ -175,7 +173,6 @@ contains
 
     do ispc = 1,nddvels
 
-       !write(iulog,*)'hybrown, mo_drydep, ispc = ',ispc,' get_spec_ndx(drydep_list(ispc)) = ',get_spc_ndx(drydep_list(ispc)),' drydep list = ',trim(drydep_list(ispc))
 
        spc_ndx(ispc) = get_spc_ndx(drydep_list(ispc))
        if (spc_ndx(ispc) < 1) then
@@ -1624,7 +1621,6 @@ contains
        o3_ndx  = get_spc_ndx( 'O3' )
     end if
     so2_ndx     = get_spc_ndx( 'SO2' )
-!++hybrown
     so201_ndx     = get_spc_ndx( 'SO201' )
     so202_ndx     = get_spc_ndx( 'SO202' )
     so203_ndx     = get_spc_ndx( 'SO203' )
@@ -1655,7 +1651,6 @@ contains
     so228_ndx     = get_spc_ndx( 'SO228' )
     so229_ndx     = get_spc_ndx( 'SO229' )
     so230_ndx     = get_spc_ndx( 'SO230' )
-!--hybrown
     alkooh_ndx  = get_spc_ndx( 'ALKOOH')
     mekooh_ndx  = get_spc_ndx( 'MEKOOH')
     tolooh_ndx  = get_spc_ndx( 'TOLOOH')
@@ -2764,7 +2759,6 @@ contains
              do i = 1,ncol
                 if( fr_lnduse(i,lt) ) then
                    sndx = index_season(i,lt)
-!++hybrown
                   if( ispec == o3_ndx .or. ispec == o3a_ndx .or. ispec == so2_ndx &
                   .or. ispec == so201_ndx  .or. ispec == so202_ndx  .or. ispec == so203_ndx  .or. ispec == so204_ndx  .or. ispec == so205_ndx  &
                   .or. ispec == so206_ndx  .or. ispec == so207_ndx  .or. ispec == so208_ndx  .or. ispec == so209_ndx  .or. ispec == so210_ndx  &
@@ -2772,7 +2766,6 @@ contains
                   .or. ispec == so216_ndx  .or. ispec == so217_ndx  .or. ispec == so218_ndx  .or. ispec == so219_ndx  .or. ispec == so220_ndx  &
                   .or. ispec == so221_ndx  .or. ispec == so222_ndx  .or. ispec == so223_ndx  .or. ispec == so224_ndx  .or. ispec == so225_ndx  &
                   .or. ispec == so226_ndx  .or. ispec == so227_ndx  .or. ispec == so228_ndx  .or. ispec == so229_ndx  .or. ispec == so230_ndx  ) then
-!--hybrown
                       rmx = 0._r8
                    else
                       rmx = 1._r8/(heff(i,m)/3000._r8 + 100._r8*foxd(m))
@@ -2883,7 +2876,6 @@ contains
     species_loop2 : do ispec = 1,gas_pcnst
        m = map_dvel(ispec)
        if( has_dvel(ispec) ) then
-!++hybrown
           if( ispec /= o3_ndx .and. ispec /= o3a_ndx .and. ispec /= so2_ndx &
               .and. ispec /= so201_ndx  .and. ispec /= so202_ndx  .and. ispec /= so203_ndx  .and. ispec /= so204_ndx  .and. ispec /= so205_ndx  &
               .and. ispec /= so206_ndx  .and. ispec /= so207_ndx  .and. ispec /= so208_ndx  .and. ispec /= so209_ndx  .and. ispec /= so210_ndx  &
@@ -2891,7 +2883,6 @@ contains
               .and. ispec /= so216_ndx  .and. ispec /= so217_ndx  .and. ispec /= so218_ndx  .and. ispec /= so219_ndx  .and. ispec /= so220_ndx  &
               .and. ispec /= so221_ndx  .and. ispec /= so222_ndx  .and. ispec /= so223_ndx  .and. ispec /= so224_ndx  .and. ispec /= so225_ndx  &
               .and. ispec /= so226_ndx  .and. ispec /= so227_ndx  .and. ispec /= so228_ndx  .and. ispec /= so229_ndx  .and. ispec /= so230_ndx  ) then
-!--hybrown
              do lt = beglt,endlt
                 if( lt /= 7 ) then
                    do i = 1,ncol
@@ -2910,7 +2901,6 @@ contains
                    end do
                 end if
              end do
-!++hybrown
           else if( ispec == so2_ndx &
                   .or. ispec == so201_ndx  .or. ispec == so202_ndx  .or. ispec == so203_ndx  .or. ispec == so204_ndx  .or. ispec == so205_ndx  &
                   .or. ispec == so206_ndx  .or. ispec == so207_ndx  .or. ispec == so208_ndx  .or. ispec == so209_ndx  .or. ispec == so210_ndx  &
@@ -2918,7 +2908,6 @@ contains
                   .or. ispec == so216_ndx  .or. ispec == so217_ndx  .or. ispec == so218_ndx  .or. ispec == so219_ndx  .or. ispec == so220_ndx  &
                   .or. ispec == so221_ndx  .or. ispec == so222_ndx  .or. ispec == so223_ndx  .or. ispec == so224_ndx  .or. ispec == so225_ndx  &
                   .or. ispec == so226_ndx  .or. ispec == so227_ndx  .or. ispec == so228_ndx  .or. ispec == so229_ndx  .or. ispec == so230_ndx  ) then
-!--hybrown             
              do lt = beglt,endlt
                 if( lt /= 7 ) then
                    do i = 1,ncol
@@ -2974,9 +2963,7 @@ contains
              ! 	... compute average deposition velocity
              !-------------------------------------------------------------------------------------
              select case( solsym(ispec) )
-!++hybrown
              case( 'SO2' , 'SO201', 'SO202', 'SO203', 'SO204', 'SO205', 'SO206', 'SO207', 'SO208', 'SO209', 'SO210', 'SO211', 'SO212', 'SO213', 'SO214', 'SO215', 'SO216', 'SO217', 'SO218', 'SO219', 'SO220', 'SO221', 'SO222', 'SO223', 'SO224', 'SO225', 'SO226', 'SO227', 'SO228', 'SO229', 'SO230')
-!--hybrown
                 if( lt == 7 ) then
                    where( fr_lnduse(:ncol,lt) )
                       ! assume no surface resistance for SO2 over water`

@@ -195,12 +195,7 @@ contains
        idx_dst3_wetis = index_modal_map(21)
        idx_dst3_wetcw = index_modal_map(22)
 
-!++hybrown
-!       call modal_aero_deposition_init( bc1_ndx=idx_bc1,   pom1_ndx=idx_pom1, soa1_ndx=idx_soa1, &
-!                                        soa2_ndx=idx_soa2, dst1_ndx=idx_dst1, dst3_ndx=idx_dst3, &
-!                                        ncl3_ndx=idx_ncl3, so43_ndx=idx_so43 )
        call modal_aero_deposition_init
-!--hybrown
     else
 
        ibcphiwet = index_bulk_map(1)

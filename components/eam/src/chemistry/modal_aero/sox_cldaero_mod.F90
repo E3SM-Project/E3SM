@@ -1,4 +1,4 @@
-!----------------------------------------------------------------------------------
+o----------------------------------------------------------------------------------
 ! Modal aerosol implementation
 !----------------------------------------------------------------------------------
 module sox_cldaero_mod
@@ -8,12 +8,7 @@ module sox_cldaero_mod
   use ppgrid,          only : pcols, pver
   use mo_chem_utls,    only : get_spc_ndx
   use cldaero_mod,     only : cldaero_conc_t, cldaero_allocate, cldaero_deallocate
-!++hybrown
-!  use modal_aero_data, only : ntot_amode, modeptr_accum, lptr_so4_cw_amode, lptr_msa_cw_amode
-!  use modal_aero_data, only : numptrcw_amode, lptr_nh4_cw_amode
-!  use modal_aero_data, only : cnst_name_cw, specmw_so4_amode
   use modal_aero_data
-!--hybrown
   use cam_history,     only : outfld
   use cam_history,     only : addfld, horiz_only, add_default
   use chem_mods,       only : adv_mass
@@ -30,9 +25,7 @@ module sox_cldaero_mod
   public :: sox_cldaero_update
   public :: sox_cldaero_destroy_obj
 
-!++hybrown
   integer :: id_msa, id_h2so4(nso4), id_so2(nso4), id_h2o2, id_nh3
-!--hybrown
 
   real(r8), parameter :: small_value = 1.e-20_r8
 
@@ -43,7 +36,6 @@ contains
 
   subroutine sox_cldaero_init
 
-!++hybrown
     integer :: l, m, jso4
     logical :: history_aerosol      ! Output the MAM aerosol tendencies
     logical :: history_verbose      ! produce verbose history output
@@ -69,7 +61,6 @@ contains
 
 
       if (id_h2so4(1)<1 .or. id_so2(1)<1 .or. id_h2o2<1) then
-!--hybrown
       call endrun('sox_cldaero_init:MAM mech does not include necessary species' &
                   //' -- should not invoke sox_cldaero_mod ')
     endif
@@ -80,10 +71,8 @@ contains
     !   add to history
     !
     do m = 1, ntot_amode
-!++hybrown
        do jso4 = 1, nso4
        l = lptr2_so4_cw_amode(m,jso4)
-!--hybrown
        if (l > 0) then
           call addfld (&
                trim(cnst_name_cw(l))//'AQSO4',horiz_only,  'A','kg/m2/s', &
@@ -96,9 +85,7 @@ contains
              call add_default (trim(cnst_name_cw(l))//'AQH2SO4', 1, ' ')
           endif
        end if
-!++hybrown
        end do !jso4
-!--hybrown
 
     end do
 
@@ -127,9 +114,7 @@ contains
 
     type(cldaero_conc_t), pointer :: conc_obj
 
-!++hybrown
     integer :: id_so4_1a(nso4), id_so4_2a(nso4), id_so4_3a(nso4), id_so4_4a(nso4), id_so4_5a(nso4), id_so4_6a(nso4), jso4
-!--hybrown
     integer :: id_nh4_1a, id_nh4_2a, id_nh4_3a, id_nh4_4a, id_nh4_5a, id_nh4_6a
     integer :: l,n
     integer :: i,k
@@ -172,7 +157,6 @@ contains
        id_nh4_5a = lptr_nh4_cw_amode(6) - loffset
        id_nh4_6a = lptr_nh4_cw_amode(7) - loffset
 #endif
-!++hybrown
 do jso4 = 1, nso4
        conc_obj%so4c(:ncol,:,jso4) &
             = qcw(:ncol,:,id_so4_1a(jso4)) &
@@ -182,7 +166,6 @@ do jso4 = 1, nso4
             + qcw(:ncol,:,id_so4_5a(jso4)) &
             + qcw(:ncol,:,id_so4_6a(jso4))
 end do
-!--hybrown
        conc_obj%nh4c(:ncol,:) &
             = qcw(:ncol,:,id_nh4_1a) &
             + qcw(:ncol,:,id_nh4_2a) &
@@ -191,7 +174,6 @@ end do
             + qcw(:ncol,:,id_nh4_5a) &
             + qcw(:ncol,:,id_nh4_6a) 
     else
-!++hybrown
    do jso4 = 1, nso4
        id_so4_1a(jso4) = lptr2_so4_cw_amode(1,jso4) - loffset
        id_so4_2a(jso4) = lptr2_so4_cw_amode(2,jso4) - loffset
@@ -201,7 +183,6 @@ end do
             + qcw(:,:,id_so4_2a(jso4)) &
             + qcw(:,:,id_so4_3a(jso4))
    end do !jso4
-!--hybrown
 
         ! for 3-mode, so4 is assumed to be nh4hso4
         ! the partial neutralization of so4 is handled by using a 
@@ -240,21 +221,17 @@ end do
     real(r8), intent(in) :: cfact(:,:)
     real(r8), intent(in) :: xlwc(:,:)
 
-!++hybrown
     real(r8), intent(in) :: delso4_hprxn(:,:,:)
     real(r8), intent(in) :: xh2so4(:,:,:)
     real(r8), intent(in) :: xso4(:,:,:)
     real(r8), intent(in) :: xso4_init(:,:,:)
-!--hybrown
     real(r8), intent(in) :: nh3g(:,:)
     real(r8), intent(in) :: hno3g(:,:)
     real(r8), intent(in) :: xnh3(:,:)
     real(r8), intent(in) :: xhno3(:,:)
     real(r8), intent(in) :: xnh4c(:,:)
     real(r8), intent(in) :: xmsa(:,:)
-!++hybrown
     real(r8), intent(in) :: xso2(:,:,:)
-!--hybrown
     real(r8), intent(in) :: xh2o2(:,:)
     real(r8), intent(in) :: xno3c(:,:)
 
@@ -267,22 +244,18 @@ end do
          dqdt_aqh2so4(ncol,pver,gas_pcnst), &
          dqdt_aqhprxn(ncol,pver), dqdt_aqo3rxn(ncol,pver), &
          sflx(1:ncol)
-!++hybrown
     real(r8) :: faqgain_msa(ntot_amode), faqgain_so4(ntot_amode,nso4), qnum_c(ntot_amode)
 
     real(r8) :: delso4_o3rxn(nso4), &
          dso4dt_aqrxn(nso4), dso4dt_hprxn(nso4), &
          dso4dt_gasuptk(nso4), dmsadt_gasuptk, &
-!--hybrown
          dmsadt_gasuptk_tomsa, dmsadt_gasuptk_toso4, &
          dqdt_aq, dqdt_wr, dqdt
 
     real(r8) :: fwetrem, sumf, uptkrate
     real(r8) :: delnh3, delnh4
 
-!++hybrown
     integer :: l, n, m, jso4
-!--hybrown
     integer :: ntot_msa_c
 
     integer :: i,k
@@ -301,11 +274,9 @@ end do
 
              IF (XL .ge. 1.e-8_r8) THEN !! WHEN CLOUD IS PRESENTED
 
-!++hybrown
                 do jso4 = 1, nso4
                    delso4_o3rxn(jso4) = xso4(i,k,jso4) - xso4_init(i,k,jso4)
                 end do !jso4
-!--hybrown
 
                 if (id_nh3>0) then
                    delnh3 = nh3g(i,k) - xnh3(i,k)
@@ -336,7 +307,6 @@ end do
 
                 ! faqgain_so4(n) = fraction of total so4_c gain going to mode n
                 ! these are proportional to the activated particle MR for each mode
-!++hybrown
              do jso4 = 1, nso4
                 sumf = 0.0_r8
                 do n = 1, ntot_amode
@@ -353,7 +323,6 @@ end do
                    end do
                 end if
              end do !jso4
-!--hybrown
                 ! at this point (sumf <= 0.0) only when all the faqgain_so4 are zero
 
                 ! faqgain_msa(n) = fraction of total msa_c gain going to mode n
@@ -381,11 +350,9 @@ end do
 
                 ! dso4dt_gasuptk = so4_c tendency from h2so4 gas uptake (mol/mol/s)
                 ! dmsadt_gasuptk = msa_c tendency from msa gas uptake (mol/mol/s)
-!++hybrown
                 do jso4 = 1, nso4
                 dso4dt_gasuptk(jso4) = xh2so4(i,k,jso4) * uptkrate
                 end do
-!--hybrown
                 if (id_msa > 0) then
                    dmsadt_gasuptk = xmsa(i,k) * uptkrate
                 else
@@ -406,12 +373,10 @@ end do
                 ! the uptake of highly soluble aerosol precursor gases (h2so4, msa, ...)
                 ! AND the wetremoval of dissolved, unreacted so2 and h2o2
 
-!++hybrown
                 do jso4 = 1, nso4
                    dso4dt_aqrxn(jso4) = (delso4_o3rxn(jso4) + delso4_hprxn(i,k,jso4)) / dtime
                    dso4dt_hprxn(jso4) = delso4_hprxn(i,k,jso4) / dtime
                 end do !jso4
-!--hybrown
 
                 ! fwetrem = fraction of in-cloud-water material that is wet removed
                 ! fwetrem = max( 0.0_r8, (1.0_r8-exp(-min(100._r8,dtime*clwlrat(i,k)))) )
@@ -419,7 +384,6 @@ end do
 
                 ! compute TMR tendencies for so4 and msa aerosol-in-cloud-water
                 do n = 1, ntot_amode
-!++hybrown
                    do jso4 = 1, nso4
                    l = lptr2_so4_cw_amode(n,jso4) - loffset
                    if (l > 0) then
@@ -432,7 +396,6 @@ end do
                       qcw(i,k,l) = qcw(i,k,l) + dqdt*dtime
                    end if
                    end do !jso4
-!--hybrown
 
                    l = lptr_msa_cw_amode(n) - loffset
                    if (l > 0) then
@@ -445,12 +408,10 @@ end do
                    l = lptr_nh4_cw_amode(n) - loffset
                    if (l > 0) then
                       if (delnh4 > 0.0_r8) then
-!++hybrown
                          dqdt_aq = 0
                          do jso4 = 1, nso4
                             dqdt_aq = dqdt_aq+faqgain_so4(n,jso4)*delnh4/dtime*cldfrc(i,k)
                          end do !jso4
-!--hybrown
                          dqdt = dqdt_aq
                          qcw(i,k,l) = qcw(i,k,l) + dqdt*dtime
                       else
@@ -469,11 +430,9 @@ end do
                 ! Need to multiply both these parts by cldfrc
 
                 ! h2so4 (g) & msa (g)
-!++hybrown
                 do jso4 = 1, nso4
                    qin(i,k,id_h2so4(jso4)) = qin(i,k,id_h2so4(jso4)) - dso4dt_gasuptk(jso4) * dtime * cldfrc(i,k)
                 end do !jso4
-!--hybrown
 
                 if (id_msa > 0) qin(i,k,id_msa) = qin(i,k,id_msa) - dmsadt_gasuptk * dtime * cldfrc(i,k)
 
@@ -481,26 +440,22 @@ end do
                 ! fwetrem = max( 0.0_r8, (1.0_r8-exp(-min(100._r8,dtime*frso2_c*clwlrat(i,k)))) )
                 fwetrem = 0.0_r8 ! don't include so2 wet removal here
 
-!++hybrown
                 do jso4 = 1, nso4
                    dqdt_wr = -fwetrem*xso2(i,k,jso4)/dtime*cldfrc(i,k)
                    dqdt_aq = -dso4dt_aqrxn(jso4)*cldfrc(i,k)
                    dqdt = dqdt_aq + dqdt_wr
                    qin(i,k,id_so2(jso4)) = qin(i,k,id_so2(jso4)) + dqdt * dtime
                 end do !jso4
-!--hybrown
 
                 ! h2o2 -- the first order loss rate for h2o2 is frh2o2_c*clwlrat(i,k)
                 ! fwetrem = max( 0.0_r8, (1.0_r8-exp(-min(100._r8,dtime*frh2o2_c*clwlrat(i,k)))) )
                 fwetrem = 0.0_r8 ! don't include h2o2 wet removal here
 
-!++hybrown
                 dqdt_wr = -fwetrem*xh2o2(i,k)/dtime*cldfrc(i,k)
                 dqdt_aq = 0._r8
                 do jso4 = 1, nso4
                    dqdt_aq = dqdt_aq-dso4dt_hprxn(jso4)*cldfrc(i,k)
                 end do !jso4
-!--hybrown
                 dqdt = dqdt_aq + dqdt_wr
                 qin(i,k,id_h2o2) = qin(i,k,id_h2o2) + dqdt * dtime
 
@@ -512,12 +467,10 @@ end do
                 endif
 
                 ! for SO4 from H2O2/O3 budgets
-!++hybrown
                 do jso4 = 1, nso4
                    dqdt_aqhprxn(i,k) = dqdt_aqhprxn(i,k)+dso4dt_hprxn(jso4)*cldfrc(i,k)
                    dqdt_aqo3rxn(i,k) = dqdt_aqo3rxn(i,k)+(dso4dt_aqrxn(jso4) - dso4dt_hprxn(jso4))*cldfrc(i,k)
                 end do !jso4
-!--hybrown
 
              ENDIF !! WHEN CLOUD IS PRESENTED
           endif cloud
@@ -531,14 +484,12 @@ end do
 
        do n = 1, ntot_amode
 
-!++hybrown
           do jso4 = 1, nso4
              l = lptr2_so4_cw_amode(n,jso4) - loffset
              if (l > 0) then
                 qcw(:,k,l) = MAX(qcw(:,k,l), small_value )
              end if
           end do !jso4
-!--hybrown
           l = lptr_msa_cw_amode(n) - loffset
           if (l > 0) then
              qcw(:,k,l) = MAX(qcw(:,k,l), small_value )
@@ -550,11 +501,9 @@ end do
 
        end do
 
-!++hybrown
        do jso4 = 1, nso4
           qin(:,k,id_so2(jso4)) =  MAX( qin(:,k,id_so2(jso4)),    small_value )
        end do !jso4
-!--hybrown
 
        if ( id_nh3 > 0 ) then
           qin(:,k,id_nh3) =  MAX( qin(:,k,id_nh3),    small_value )
@@ -565,10 +514,8 @@ end do
     ! diagnostics
 
     do n = 1, ntot_amode
-!++hybrown
        do jso4 = 1, nso4
           m = lptr2_so4_cw_amode(n,jso4)
-!--hybrown
        l = m - loffset
        if (l > 0) then
           sflx(:)=0._r8

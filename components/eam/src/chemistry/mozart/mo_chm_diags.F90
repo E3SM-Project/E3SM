@@ -9,10 +9,8 @@ module mo_chm_diags
   use mo_chem_utls, only : get_rxt_ndx, get_spc_ndx
   use cam_history,  only : fieldname_len
   use mo_jeuv,      only : neuv
-!++hybrown
   use modal_aero_data,only: nso4, nbc, npoa, nsoa
   use cam_logfile,    only: iulog
-!--hybrown
 
   private
 
@@ -54,11 +52,9 @@ module mo_chm_diags
 
   character(len=32) :: chempkg
 
-!++hybrown
     character(len=2) :: tagged_suffix(30) = (/ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', &
                                                '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', &
                                                '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'/)
-!--hybrown
 
 contains
 
@@ -72,7 +68,7 @@ contains
     use dyn_grid,     only : get_dyn_grid_parm, get_horiz_grid_d
     use phys_control, only: phys_getopts
 
-    use cam_logfile,    only: iulog !hybrown
+    use cam_logfile,    only: iulog
 
     implicit none
 
@@ -95,7 +91,7 @@ contains
     logical :: history_verbose      ! produce verbose history output
     integer :: bulkaero_species(20)
 
-    integer :: tag_loop !hybrown
+    integer :: tag_loop 
 
     !-----------------------------------------------------------------------
 
@@ -263,7 +259,6 @@ contains
 
        spc_name = trim(solsym(m))
 
-       !write(iulog,*)'hybrown, mo_chm_diags, m = ',m,' spec_name = ',spc_name
        call cnst_get_ind(spc_name, n, abrtf=.false. )
        if ( n > 0 ) then
           attr = cnst_longname(n)
@@ -303,7 +298,6 @@ contains
 
        if ((m /= id_cly) .and. (m /= id_bry)) then
           if (history_aerosol) then
-!++hybrown
              if (history_verbose .or. trim(spc_name) == 'O3' .or. trim(spc_name) == 'SO2' &
                          .or. trim(spc_name) == 'SO201' .or. trim(spc_name) == 'SO202' .or. trim(spc_name) == 'SO203' .or. trim(spc_name) == 'SO204' .or. trim(spc_name) == 'SO205' &
                          .or. trim(spc_name) == 'SO206' .or. trim(spc_name) == 'SO207' .or. trim(spc_name) == 'SO208' .or. trim(spc_name) == 'SO209' .or. trim(spc_name) == 'SO210' &
@@ -314,7 +308,6 @@ contains
              call add_default( spc_name, 1, ' ' )
              call add_default( trim(spc_name)//'_SRF', 1, ' ' )
              endif
-!--hybrown
           endif 
           if (history_amwg) then
              call add_default( trim(spc_name)//'_SRF', 1, ' ' )
@@ -325,7 +318,6 @@ contains
 
     ! Add sum of mass mixing ratios for each aerosol class
     if (history_aerosol .and. .not. history_verbose) then
-!++hybrown
    if (nbc>1) then
        do tag_loop = 1, nbc
           call addfld( 'Mass_bc'//tagged_suffix(tag_loop),   (/ 'lev' /), 'A', 'kg/kg ', &
@@ -373,7 +365,6 @@ contains
             'sum of soa mass concentration soa_a1+soa_c1+soa_a2+soa_c2+soa_a3+soa_c3')
        call add_default( 'Mass_soa', 1, ' ' )
     end if
-!--hybrown
 
        call addfld( 'Mass_mom',   (/ 'lev' /), 'A', 'kg/kg ', &
             'sum of mom mass concentration mom_a1+mom_c1+mom_a2+mom_c2+mom_a3+mom_c3+mom_a4+mom_c4')
@@ -426,7 +417,7 @@ contains
     use modal_aero_data,  only : cnst_name_cw, qqcw_get_field ! for calculate sum of aerosol masses
 #endif
 
-    use cam_logfile,    only: iulog !hybrown
+    use cam_logfile,    only: iulog 
 
     use phys_control, only: phys_getopts
     
@@ -466,8 +457,6 @@ contains
     real(r8) :: wgt
     character(len=16) :: spc_name
     real(r8), pointer :: fldcw(:,:)  !working pointer to extract data from pbuf for sum of mass for aerosol classes
-!++hybrown
-!    real(r8), dimension(ncol,pver) :: mass_bc, mass_dst, mass_mom, mass_ncl, mass_pom, mass_so4, mass_soa
     real(r8), dimension(ncol,pver) :: mass_dst, mass_mom, mass_ncl
         real(r8), dimension(ncol,pver,nbc) :: mass_bc
         real(r8), dimension(ncol,pver,npoa) :: mass_pom
@@ -475,7 +464,6 @@ contains
         real(r8), dimension(ncol,pver,nsoa) :: mass_soa
 
     integer :: tag_loop        
-!--hybrown
 
     logical :: history_aerosol      ! output aerosol variables
     logical :: history_verbose      ! produce verbose history output
@@ -515,7 +503,6 @@ contains
 
     !initialize the mass arrays
     if (history_aerosol .and. .not. history_verbose) then
-!++hybrown
        mass_bc(:ncol,:,:) = 0._r8
        mass_dst(:ncol,:) = 0._r8
        mass_mom(:ncol,:) = 0._r8
@@ -523,7 +510,6 @@ contains
        mass_pom(:ncol,:,:) = 0._r8
        mass_so4(:ncol,:,:) = 0._r8
        mass_soa(:ncol,:,:) = 0._r8
-!--hybrown
     endif
 
     call get_area_all_p(lchnk, ncol, area)
@@ -626,28 +612,17 @@ contains
           call outfld( trim(solsym(m))//'_SRF', mmr(:ncol,pver,m), ncol ,lchnk )
 #ifdef MODAL_AERO
           if (history_aerosol .and. .not. history_verbose) then
-!++hybrown
              select case (trim(solsym(m)))
-!             case ('bc_a1','bc_a3','bc_a4')
-!                  mass_bc(:ncol,:) = mass_bc(:ncol,:) + mmr(:ncol,:,m)
              case ('dst_a1','dst_a3')
                   mass_dst(:ncol,:) = mass_dst(:ncol,:) + mmr(:ncol,:,m)
              case ('mom_a1','mom_a2','mom_a3','mom_a4')
                   mass_mom(:ncol,:) = mass_mom(:ncol,:) + mmr(:ncol,:,m)
              case ('ncl_a1','ncl_a2','ncl_a3')
                   mass_ncl(:ncol,:) = mass_ncl(:ncol,:) + mmr(:ncol,:,m)
-!             case ('pom_a1','pom_a3','pom_a4')
-!                  mass_pom(:ncol,:) = mass_pom(:ncol,:) + mmr(:ncol,:,m)
-!             case ('so4_a1','so4_a2','so4_a3')
-!                  mass_so4(:ncol,:) = mass_so4(:ncol,:) + mmr(:ncol,:,m)
-!             case ('soa_a1','soa_a2','soa_a3')
-!                  mass_soa(:ncol,:) = mass_soa(:ncol,:) + mmr(:ncol,:,m)
              end select
-             !write(iulog,*)'hybrown, mo_chm_diags, n=1,gas_pcnst, gas_pcnst = ',gas_pcnst,' m = ',m
 
                          do tag_loop = 1, nbc
                                  if (trim(solsym(m)) == 'bc'//tagged_suffix(tag_loop)//'_a1' .or. trim(solsym(m)) == 'bc'//tagged_suffix(tag_loop)//'_a3' .or. trim(solsym(m)) == 'bc'//tagged_suffix(tag_loop)//'_a4') then
-                                          !write(iulog,*)'hybrown, mo_chm_diags, m=1,gas_cnst, m = ',m,' solsym(m) = ',trim(solsym(m))
                                          mass_bc(:ncol,:,tag_loop) = mass_bc(:ncol,:,tag_loop) + mmr(:ncol,:,m)
                                  endif
                          enddo
@@ -669,7 +644,6 @@ contains
                                          mass_soa(:ncol,:,tag_loop) = mass_soa(:ncol,:,tag_loop) + mmr(:ncol,:,m)
                                  endif
                          enddo
-!--hybrown
           endif
 #endif
        else
@@ -707,63 +681,44 @@ contains
        do n = 1,pcnst
           fldcw => qqcw_get_field(pbuf,n,lchnk,errorhandle=.true.)
           if(associated(fldcw)) then
-!++hybrown
              select case (trim(cnst_name_cw(n)))
-!                case ('bc_c1','bc_c3','bc_c4')
-!                     mass_bc(:ncol,:) = mass_bc(:ncol,:) + fldcw(:ncol,:)
                 case ('dst_c1','dst_c3')
                      mass_dst(:ncol,:) = mass_dst(:ncol,:) + fldcw(:ncol,:)
                 case ('mom_c1','mom_c2','mom_c3','mom_c4')
                      mass_mom(:ncol,:) = mass_mom(:ncol,:) + fldcw(:ncol,:)
                 case ('ncl_c1','ncl_c2','ncl_c3')
                      mass_ncl(:ncol,:) = mass_ncl(:ncol,:) + fldcw(:ncol,:)
-!                case ('pom_c1','pom_c3','pom_c4')
-!                     mass_pom(:ncol,:) = mass_pom(:ncol,:) + fldcw(:ncol,:)
-!                case ('so4_c1','so4_c2','so4_c3')
-!                     mass_so4(:ncol,:) = mass_so4(:ncol,:) + fldcw(:ncol,:)
-!                case ('soa_c1','soa_c2','soa_c3')
-!                     mass_soa(:ncol,:) = mass_soa(:ncol,:) + fldcw(:ncol,:)
              end select
 
                          do tag_loop = 1, nbc
                                  if (trim(cnst_name_cw(n)) == 'bc'//tagged_suffix(tag_loop)//'_c1' .or. trim(cnst_name_cw(n)) == 'bc'//tagged_suffix(tag_loop)//'_c3' .or. trim(cnst_name_cw(n)) == 'bc'//tagged_suffix(tag_loop)//'_c4') then
-                                         !write(iulog,*)'hybrown, mo_chm_diags, cnst_name_cw(n) = ',trim(cnst_name_cw(n)),' cnst_name_cw(m) (what mmr is but shoudlnt be?) = ',trim(cnst_name_cw(m))
                                          mass_bc(:ncol,:,tag_loop) = mass_bc(:ncol,:,tag_loop) + fldcw(:ncol,:)
                                  endif
                          enddo
                         
                          do tag_loop = 1, npoa
                                  if (trim(cnst_name_cw(n)) == 'pom'//tagged_suffix(tag_loop)//'_c1' .or. trim(cnst_name_cw(n)) == 'pom'//tagged_suffix(tag_loop)//'_c3' .or. trim(cnst_name_cw(n)) == 'pom'//tagged_suffix(tag_loop)//'_c4') then
-                                         !write(iulog,*)'hybrown, mo_chm_diags, cnst_name_cw(n) = ',trim(cnst_name_cw(n)),' cnst_name_cw(m) (what mmr is but shoudlnt be?) = ',trim(cnst_name_cw(m))
                                          mass_pom(:ncol,:,tag_loop) = mass_pom(:ncol,:,tag_loop) + fldcw(:ncol,:)
                                  endif
                          enddo
                         
                          do tag_loop = 1, nso4
                                  if (trim(cnst_name_cw(n)) == 'so4'//tagged_suffix(tag_loop)//'_c1' .or. trim(cnst_name_cw(n)) == 'so4'//tagged_suffix(tag_loop)//'_c2' .or. trim(cnst_name_cw(n)) == 'so4'//tagged_suffix(tag_loop)//'_c3') then
-                                         !write(iulog,*)'hybrown, mo_chm_diags, cnst_name_cw(n) = ',trim(cnst_name_cw(n)),' cnst_name_cw(m) (what mmr is but shoudlnt be?) = ',trim(cnst_name_cw(m))
                                          mass_so4(:ncol,:,tag_loop) = mass_so4(:ncol,:,tag_loop) + fldcw(:ncol,:)
                                  endif
                          enddo
                         
                          do tag_loop = 1, nsoa
                                  if (trim(cnst_name_cw(n)) == 'soa'//tagged_suffix(tag_loop)//'_c1' .or. trim(cnst_name_cw(n)) == 'soa'//tagged_suffix(tag_loop)//'_c2' .or. trim(cnst_name_cw(n)) =='soa'//tagged_suffix(tag_loop)//'_c3') then
-                                         !write(iulog,*)'hybrown, mo_chm_diags, cnst_name_cw(n) = ',trim(cnst_name_cw(n)),' cnst_name_cw(m) (what mmr is but shoudlnt be?) = ',trim(cnst_name_cw(m))
                                          mass_soa(:ncol,:,tag_loop) = mass_soa(:ncol,:,tag_loop) + fldcw(:ncol,:)
                                  endif
                          enddo
-!--hybrown
           endif
        end do
 
-!++hybrown
-!       call outfld( 'Mass_bc', mass_bc(:ncol,:),ncol,lchnk)
        call outfld( 'Mass_dst', mass_dst(:ncol,:),ncol,lchnk)
        call outfld( 'Mass_mom', mass_mom(:ncol,:),ncol,lchnk)
        call outfld( 'Mass_ncl', mass_ncl(:ncol,:),ncol,lchnk)
-!       call outfld( 'Mass_pom', mass_pom(:ncol,:),ncol,lchnk)
-!       call outfld( 'Mass_so4', mass_so4(:ncol,:),ncol,lchnk)
-!       call outfld( 'Mass_soa', mass_soa(:ncol,:),ncol,lchnk)
 
     if (nbc>1) then
        do tag_loop = 1, nbc
@@ -796,7 +751,6 @@ contains
     else
        call outfld( 'Mass_soa', mass_soa(:ncol,:,:),ncol,lchnk)
     end if
-!--hybrown
     endif
 #endif
 

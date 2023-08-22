@@ -12,9 +12,7 @@ module mo_gas_phase_chemdr
   use phys_control,     only : phys_getopts
   use cam_logfile,      only : iulog
 
-!++hybrown
   use modal_aero_data,only: nso4
-!--hybrown
 
   implicit none
   save
@@ -29,9 +27,7 @@ module mo_gas_phase_chemdr
   integer :: o3_ndx
   integer :: het1_ndx
   integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
-!++hybrown  
   integer :: ndx_h2so4(nso4)
-!--hybrown
   integer :: inv_ndx_cnst_o3, inv_ndx_m
 
   character(len=fieldname_len),dimension(rxntot-phtcnt) :: rxn_names
@@ -63,19 +59,16 @@ contains
     integer           :: n, m
     logical           :: history_aerosol      ! Output the MAM aerosol tendencies
 
-!++hybrown
     character(len=2) :: tagged_sulfur_suffix(30) = (/ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', &
                                                       '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', &
                                                       '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'/)
     integer :: tag_loop
-!--hybrown
 
     !-----------------------------------------------------------------------
 
     call phys_getopts( history_aerosol_out = history_aerosol, &
          convproc_do_aer_out = convproc_do_aer ) 
 
-!++hybrown
  if (nso4==1) then
     ndx_h2so4 = get_spc_ndx( 'H2SO4' )
  else if (nso4>1) then
@@ -83,7 +76,6 @@ contains
        ndx_h2so4(tag_loop) = get_spc_ndx('H2SO4'//tagged_sulfur_suffix(tag_loop))
     end do
  end if
-!--hybrown
 
     het1_ndx= get_rxt_ndx('het1')
     o3_ndx  = get_spc_ndx('O3')
@@ -97,10 +89,7 @@ contains
     call cnst_get_ind( 'CLDICE', cldice_ndx )
 
     do m = 1,extcnt
-!++hybrown
-!       WRITE(UNIT=string, FMT='(I2.2)') m
        WRITE(UNIT=string, FMT='(I3.2)') m
-!--hybrown
        extfrc_name(m) = 'extfrc_'// trim(string)
        call addfld( extfrc_name(m), (/ 'lev' /), 'I', ' ', 'ext frcing' )
        !call add_default( extfrc_name(m), 3, ' ' )
@@ -370,9 +359,7 @@ contains
     real(r8)                  ::  sad_sage(pcols,pver)             ! SAGE SAD (cm2/cm3)
 
     real(r8) :: tvs(pcols)
-!++hybrown
     integer  :: ncdate,yr,mon,day,sec,jso4
-!--hybrown
     real(r8) :: wind_speed(pcols)        ! surface wind speed (m/s)
     logical, parameter :: dyn_soilw = .false.
     logical  :: table_soilw
@@ -402,9 +389,7 @@ contains
     real(r8) :: o3lsfcsink(ncol)               ! linoz o3l surface sink from call lin_strat_sfcsink 
 
   ! for aerosol formation....  
-!++hybrown
     real(r8) :: del_h2so4_gasprod(ncol,pver,nso4)
-!--hybrown
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
 
     ! flags for MMF configuration
@@ -771,7 +756,6 @@ contains
     endif
 
     ! save h2so4 before gas phase chem (for later new particle nucleation)
-!++hybrown
 do jso4=1,nso4
     if (ndx_h2so4(jso4) > 0) then
        del_h2so4_gasprod(1:ncol,:,jso4) = vmr(1:ncol,:,ndx_h2so4(jso4))
@@ -779,7 +763,6 @@ do jso4=1,nso4
        del_h2so4_gasprod(:,:,jso4) = 0.0_r8
     endif
  end do
-!--hybrown
 
     vmr0(:ncol,:,:) = vmr(:ncol,:,:) ! mixing ratios before chemistry changes
 
@@ -814,13 +797,11 @@ do jso4=1,nso4
     endif
 
     ! save h2so4 change by gas phase chem (for later new particle nucleation)
-!++hybrown
  do jso4=1,nso4
     if (ndx_h2so4(jso4) > 0) then
        del_h2so4_gasprod(1:ncol,:,jso4) = vmr(1:ncol,:,ndx_h2so4(jso4)) - del_h2so4_gasprod(1:ncol,:,jso4)
     endif
  end do
-!--hybrown
 
 !
 ! Aerosol processes ...

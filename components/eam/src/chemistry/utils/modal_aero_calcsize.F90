@@ -28,9 +28,7 @@ use modal_aero_data, only: ntot_amode, numptr_amode, modename_amode
 use modal_aero_data,  only: numptrcw_amode, mprognum_amode, qqcw_get_field, &
      modeptr_accum, modeptr_aitken, ntot_aspectype, cnst_name_cw
 
-!++hybrown
 use modal_aero_data,  only: nso4, nsoa, npoa, nbc
-!--hybrown
 
 #endif
 !---------------------------------------------------------------------------------------------------------
@@ -58,10 +56,7 @@ integer :: dgnum_idx = -1 !pbuf id for dgnum
 
 integer, parameter :: maxpair_csizxf = N_DIAG
 #ifdef MODAL_AERO
-!++hybrown
-!integer, parameter :: maxspec_csizxf = ntot_aspectype
 integer, parameter, public :: maxspec_csizxf = nso4+nsoa+npoa+nbc+ntot_aspectype-4
-!--hybrown
 #else
 ! TODO: this is a kludge.  This value should probably be assigned
 ! elsewhere for the non-modal case.  S.M. Burrows.
@@ -719,7 +714,6 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
       !----------------------------------------------------------------------
       !(for radiation diagnostics, # of species in a mode can be differnet from the default)
       call rad_cnst_get_info(list_idx_local, imode, nspec=nspec)
-      !write(iulog,*)'hybrown, modal_aero_calcsize_sub, nmodes = ',nmodes,' nspec = ',nspec
       !----------------------------------------------------------------------
       !Compute dry volume mixrats (aerosol diameter)
       !Current default: number mmr is prognosed
@@ -875,7 +869,6 @@ subroutine set_initial_sz_and_volumes(list_idx, top_lev, ncol, imode, & !input
   integer  :: icol, klev
   real(r8) :: dgnum, sigmag, voltonumb
 
-  !write(iulog,*)'hybrown, modal_aero_calcsize->set_initial_sz_and_volumes, imode = ',imode
   call rad_cnst_get_mode_props(list_idx, imode, dgnum=dgnum, sigmag=sigmag)
   voltonumb   = 1._r8 / ( (pi/6._r8)*(dgnum**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
 
@@ -1047,7 +1040,6 @@ subroutine size_adjustment(list_idx, top_lev, ncol, lchnk, imode, dryvol_a, stat
   fldcw => qqcw_get_field(pbuf,num_cldbrn_mode_idx,lchnk,.true.)
 
   !Compute a common factor for size computations
-  !write(iulog,*)'hybrown, modal_aero_calcsize -> size adjustment, imode = ',imode
   call rad_cnst_get_mode_props(list_idx, imode, sigmag=sigmag, dgnumhi=dgnumhi, dgnumlo=dgnumlo)
   cmn_factor = exp(4.5_r8*log(sigmag)**2.0_r8)*pi/6.0_r8
 
@@ -1156,7 +1148,6 @@ real(r8), parameter :: relax_factor = 27.0_r8 !relax_factor=3**3=27,
 real(r8), parameter :: szadj_block_fac = 1.0e6_r8
 real(r8) :: dgnumlo, dgnumhi, sigmag, cmn_factor
 
-!write(iulog,*)'hybrown, modal_aero_calcsize->compute_dgn_vol_limits, imode = ',imode
 call rad_cnst_get_mode_props(list_idx, imode, dgnumlo=dgnumlo, dgnumhi=dgnumhi, sigmag=sigmag)
 cmn_factor = exp(4.5_r8*log(sigmag)**2.0_r8)*pi/6.0_r8
 !v2nmin = voltonumbhi is proportional to dgnumhi**(-3),
@@ -1441,7 +1432,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
   real(r8) :: xfercoef_num_ait2acc, xfercoef_vol_ait2acc
   real(r8) :: xfercoef_num_acc2ait, xfercoef_vol_acc2ait
   real(r8) :: xfertend, xfertend_num(2,2)
-  logical  :: noxf_acc2ait(maxspec_csizxf), accum_exists, aitken_exists !hybrown, changed ntot_asapectype to maxspec_csizxf
+  logical  :: noxf_acc2ait(maxspec_csizxf), accum_exists, aitken_exists 
 
   character(len=32)  :: spec_name
   character(len=800) :: err_msg
@@ -1506,11 +1497,9 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
   !Now compute species which can be transfered
   !Get # of species in accumulation mode
   call rad_cnst_get_info(list_idx, iacc, nspec = nspec_acc) !output:nspec_acc
-  !write(iulog,*)'hybrown, modal_aero_calcsize, aitken_accum_exchange, list_idx = ',list_idx,' iacc = ',iacc,' nspec_acc = ',nspec_acc
   do ispec_acc = 1, nspec_acc     !Go through all species within accumulation mode (only species, not number (e.g. num_a1))
      call rad_cnst_get_info(list_idx, iacc, ispec_acc,spec_name=spec_name) !output:spec_name
      call cnst_get_ind(spec_name, idx)
-     !write(iulog,*)'hybrown, modal_aero_calcsize, ispec_acc do loop, ispec_acc = ',ispec_acc,' list_idx = ',list_idx,'ispec_acc = ',ispec_acc,' spec_name = ',spec_name,' spec idx = ',idx 
      do iq = 1, nspecfrm_csizxf(list_idx) !Go through all mapped species (and number) for the accumulation mode
         if (lspectooa_csizxf(iq,list_idx) == idx) then !compare idx with mapped species in the accumulation mode
            noxf_acc2ait(ispec_acc) = .false. ! species which can be tranferred
@@ -1521,11 +1510,9 @@ subroutine  aitken_accum_exchange(ncol, lchnk, list_idx, update_mmr, tadjinv, &
 
   ! v2n_geomean is voltonumb at the "geometrically-defined" mid-point
   ! between the aitken and accum modes
-  !write(iulog,*)'hybrown, modal_aero_calcsize-> aitken_accum_exchange, iait= ',iait
   call rad_cnst_get_mode_props(list_idx, iait, dgnum=dgnum, sigmag=sigmag)
   voltonumb_ait   = 1._r8 / ( (pi/6._r8)*(dgnum**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
  
-  !write(iulog,*)'hybrown, modal_aero_calcsize-> aitken_accum_exchange, iacc= ',iacc
   call rad_cnst_get_mode_props(list_idx, iacc, dgnum=dgnum, sigmag=sigmag)
   voltonumb_acc   = 1._r8 / ( (pi/6._r8)*(dgnum**3._r8)*exp(4.5_r8*log(sigmag)**2._r8) )
 
@@ -1809,7 +1796,6 @@ subroutine compute_coef_acc_ait_transfer( iait, iacc, icol, klev, list_idx, lchn
         drv_t_noxf = drv_a_noxf + drv_c_noxf !total volume which can't be moved to the aitken mode
 
         !Compute voltonumlo
-        !write(iulog,*)'hybrown, modal_aero_calcsize->compute_coef_acc_ait_transfer, iacc= ',iacc
         call rad_cnst_get_mode_props(list_idx, iacc, dgnumlo=dgnumlo, sigmag=sigmag)
         voltonumblo = 1._r8 / ( (pi/6._r8)*(dgnumlo**3.0_r8)*exp(4.5_r8*log(sigmag)**2.0_r8) )
 
@@ -1871,7 +1857,6 @@ real(r8), intent(inout) :: dgncur, v2ncur
 real(r8) :: cmn_factor, sigmag, dgnum, dgnumlo, dgnumhi, voltonumb, voltonumbhi, voltonumblo
 
 !Compute a common factor for size computations
-!write(iulog,*)'hybrown, modal_aero_calcsize->compute_new_sz_after_transfer, imode= ',imode
 call rad_cnst_get_mode_props(list_idx, imode, dgnum=dgnum, dgnumlo=dgnumlo, dgnumhi=dgnumhi, sigmag=sigmag)
 cmn_factor = exp(4.5_r8*log(sigmag)**2.0_r8)*pi/6.0_r8
 
@@ -2169,7 +2154,6 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
       end if
 
       ! get mode properties
-      !write(iulog,*)'hybrown, modal_aero_calcsize->modal_aero_calcsize_diag, n = ',n
       call rad_cnst_get_mode_props(list_idx, n, dgnum=dgnum, dgnumhi=dgnumhi, dgnumlo=dgnumlo, &
                                    sigmag=sigmag)
 

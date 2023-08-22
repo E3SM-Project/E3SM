@@ -3,9 +3,7 @@ module MO_SETSOX
 
   use shr_kind_mod, only : r8 => shr_kind_r8
   use cam_logfile,  only : iulog
-!++hybrown
   use modal_aero_data
-!--hybrown
 
   private
   public :: sox_inti, setsox
@@ -15,13 +13,11 @@ module MO_SETSOX
   logical            ::  inv_o3
   integer            ::  id_msa
 
-!++hybrown
   integer :: id_so2(nso4), id_nh3, id_hno3, id_h2o2, id_o3, id_ho2
   integer :: id_so4(nso4), id_h2so4(nso4)
 
   logical :: has_sox = .true.
   logical :: inv_so2(nso4), inv_nh3, inv_hno3, inv_h2o2, inv_ox, inv_nh4no3, inv_ho2
-!--hybrown
 
   logical :: cloud_borne = .false.
   logical :: modal_aerosols = .false.
@@ -47,12 +43,10 @@ contains
 
     logical :: history_aerosol   ! Output aerosol diagnostics
     logical :: history_verbose   ! produce verbose history output
-!++hybrown
     character(len=2) :: tagged_sulfur_suffix(30) = (/ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', &
                                                       '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', &
                                                       '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'/)
     integer :: tag_loop
-!--hybrown
 
     call phys_getopts( &
          history_aerosol_out = history_aerosol, &
@@ -64,13 +58,6 @@ contains
     !-----------------------------------------------------------------
     !       ... get species indicies
     !-----------------------------------------------------------------
-!++hybrown   
-!    if (cloud_borne) then
-!       id_h2so4 = get_spc_ndx( 'H2SO4' )
-!    else
-!       id_so4 = get_spc_ndx( 'SO4' )
-!    endif
-
     if (cloud_borne) then
        if (nso4==1) then
           id_h2so4 = get_spc_ndx( 'H2SO4' )
@@ -88,11 +75,9 @@ contains
           end do
        end if
     end if
-!--hybrown
 
     id_msa = get_spc_ndx( 'MSA' )
 
-!++hybrown
     inv_so2(:) = .false.
 
     if (nso4==1) then
@@ -118,7 +103,6 @@ contains
        end do
 
     end if
-!--hybrown
 
     inv_NH3 = .false.
     id_NH3 = get_inv_ndx( 'NH3' )
@@ -161,13 +145,11 @@ contains
        id_ho2 = get_spc_ndx( 'HO2' )
     endif
 
-!++hybrown
     has_sox = (id_so2(1)>0) .and. (id_h2o2>0) .and. (id_o3>0) .and. (id_ho2>0)
     if (cloud_borne) then
        has_sox = has_sox .and. (id_h2so4(1)>0)
     else
        has_sox = has_sox .and. (id_so4(1)>0) .and. (id_nh3>0)
-!--hybrown
     endif
 
     if (masterproc) then
@@ -237,9 +219,7 @@ contains
     use sox_cldaero_mod, only : sox_cldaero_update, sox_cldaero_create_obj, sox_cldaero_destroy_obj
     use cldaero_mod,     only : cldaero_conc_t
     use phys_control, only : phys_getopts
-!++hybrown
     use cam_abortutils,   only : endrun
-!--hybrown
     !
     implicit none
     !
@@ -287,21 +267,17 @@ contains
     real(r8), parameter :: xkw = 1.e-14_r8          ! water acidity
 
     !
-!++hybrown
     real(r8) :: xdelso4hp(ncol,pver,nso4)
     real(r8) :: xphlwc(ncol,pver)
 
     integer  :: k, i, iter, file, jso4
-!--hybrown
     real(r8) :: wrk, delta
     real(r8) :: xph0, aden, xk, xe, x2
     real(r8) :: tz, xl, px, qz, pz, es, qs, patm
-!++hybrown
     real(r8) :: Eso2(nso4), Eso4(nso4), Ehno3, Eco2, Eh2o, Enh3
     real(r8) :: so2g(nso4), h2o2g, co2g, o3g
     real(r8) :: hno3a, nh3a, so2a(nso4), h2o2a, co2a, o3a
     real(r8) :: rah2o2, rao3, pso4(nso4), ccc
-!--hybrown
     real(r8) :: cnh3, chno3, com, com1, com2, xra
 
     real(r8) :: hno3g(ncol,pver), nh3g(ncol,pver)
@@ -317,43 +293,33 @@ contains
     real(r8) :: r2h2o2 ! prod(h2o2) by ho2 in mix/s
 
     real(r8), dimension(ncol,pver)  ::             &
-!++hybrown
          xhno3, xh2o2, xno3, &
-!--hybrown
          xnh3, xnh4, xo3,         &
          cfact, &
          xph, xho2,         &
-!++hybrown
          xmsa, &
-!--hybrown
          hehno3, &            ! henry law const for hno3
          heh2o2, &            ! henry law const for h2o2
          heso2,  &            ! henry law const for so2
          henh3,  &            ! henry law const for nh3
          heo3              !!,   &            ! henry law const for o3
 
-!++hybrown
     real(r8), dimension(ncol,pver,nso4)  :: xso2, xso4, xh2so4, xso4_init
-!--hybrown
 
     real(r8) :: patm_x
 
     real(r8), dimension(ncol)  :: work1
     logical :: converged
-!++hybrown
     real(r8), pointer :: xso4c(:,:,:)
-!--hybrown
     real(r8), pointer :: xnh4c(:,:)
     real(r8), pointer :: xno3c(:,:)
     type(cldaero_conc_t), pointer :: cldconc
 
     real(r8) :: fact1_hno3, fact2_hno3, fact3_hno3
-!++hybrown
     real(r8) :: fact1_so2(nso4), fact2_so2(nso4), fact3_so2(nso4), fact4_so2(nso4)
     real(r8) :: fact1_nh3, fact2_nh3, fact3_nh3
     real(r8) :: tmp_hp, tmp_hso3(nso4), tmp_hco3, tmp_nh4, tmp_no3
     real(r8) :: tmp_oh, tmp_so3(nso4), tmp_so4(nso4)
-!--hybrown
     real(r8) :: tmp_neg, tmp_pos
     real(r8) :: yph, yph_lo, yph_hi
     real(r8) :: ynetpos, ynetpos_lo, ynetpos_hi
@@ -386,16 +352,13 @@ contains
     xnh4c => cldconc%nh4c
     xno3c => cldconc%no3c
 
-!++hybrown
     xso4(:,:,:) = 0._r8
-!--hybrown
     xno3(:,:) = 0._r8
     xnh4(:,:) = 0._r8
 
     do k = 1,pver
        xph(:,k) = xph0                                ! initial PH value
 
-!++hybrown
        do jso4 = 1, nso4
        if ( inv_so2(jso4) ) then
           xso2 (:,k,jso4) = invariants(:,k,id_so2(jso4))/xhnm(:,k)  ! mixing ratio
@@ -403,7 +366,6 @@ contains
           xso2 (:,k,jso4) = qin(:,k,id_so2(jso4))                   ! mixing ratio
        endif
        end do !jso4
-!--hybrown
 
        if (id_hno3 > 0) then
           xhno3(:,k) = qin(:,k,id_hno3)
@@ -435,7 +397,6 @@ contains
        endif
 
        if (cloud_borne) then
-!++hybrown
        do jso4 = 1, nso4
           xh2so4(:,k,jso4) = qin(:,k,id_h2so4(jso4))
        end do !jso4
@@ -443,7 +404,6 @@ contains
        do jso4 = 1, nso4
           xso4  (:,k,jso4) = qin(:,k,id_so4(jso4)) ! mixing ratio
        end do !jso4
-!--hybrown
        endif
        if (id_msa > 0) xmsa (:,k) = qin(:,k,id_msa)
 
@@ -452,20 +412,16 @@ contains
     !-----------------------------------------------------------------
     !       ... Temperature dependent Henry constants
     !-----------------------------------------------------------------
-!++hybrown
     if (.not. cloud_borne .and. nso4>1) then
        call endrun('nso4 shoud == 1 when cloud_borne == .false.')
     end if
-!--hybrown
     ver_loop0: do k = 1,pver                               !! pver loop for STEP 0
        col_loop0: do i = 1,ncol
           
           if (cloud_borne .and. cldfrc(i,k)>0._r8) then
-!++hybrown
              do jso4 = 1, nso4
              xso4(i,k,jso4) = xso4c(i,k,jso4) / cldfrc(i,k)
              end do !jso4
-!--hybrown
              xnh4(i,k) = xnh4c(i,k) / cldfrc(i,k)
              xno3(i,k) = xno3c(i,k) / cldfrc(i,k)
           endif
@@ -536,14 +492,12 @@ contains
              xk = 1.23_r8  *EXP( 3120._r8*work1(i) )
              xe = 1.7e-2_r8*EXP( 2090._r8*work1(i) )
              x2 = 6.0e-8_r8*EXP( 1120._r8*work1(i) )
-!++hybrown
              do jso4 = 1, nso4
              fact1_so2(jso4) = xk*xe*patm*xso2(i,k,jso4)
              fact2_so2(jso4) = xk*ra*tz*xl
              fact3_so2(jso4) = xe
              fact4_so2(jso4) = x2
              end do !jso4
-!--hybrown
              !-----------------------------------------------------------------
              !          ... nh3
              !-----------------------------------------------------------------
@@ -584,12 +538,10 @@ contains
              !-----------------------------------------------------------------
              !         ... so4 effect
              !-----------------------------------------------------------------
-!++hybrown
              do jso4 = 1, nso4
              Eso4(jso4) = xso4(i,k,jso4)*xhnm(i,k)   &         ! /cm3(a)
                   *const0/xl
              end do !jso4
-!--hybrown
 
              !-----------------------------------------------------------------
              ! now use bisection method to solve electro-neutrality equation
@@ -632,12 +584,10 @@ contains
                 !-----------------------------------------------------------------
                 !          ... so2
                 !-----------------------------------------------------------------
-!++hybrown
                 do jso4 = 1, nso4
                 Eso2(jso4) = fact1_so2(jso4)/(1.0_r8 + fact2_so2(jso4)*(1.0_r8 + (fact3_so2(jso4)/xph(i,k)) &
                      *(1.0_r8 +  fact4_so2(jso4)/xph(i,k))))
                 end do !jso4
-!--hybrown
 
                 !-----------------------------------------------------------------
                 !          ... nh3
@@ -645,28 +595,22 @@ contains
                 Enh3 = fact1_nh3/(1.0_r8 + fact2_nh3*(1.0_r8 + fact3_nh3*xph(i,k)))
 
                 tmp_nh4  = Enh3 * xph(i,k)
-!++hybrown
                 do jso4 = 1, nso4
                 tmp_hso3(jso4) = Eso2(jso4) / xph(i,k)
                 tmp_so3(jso4)  = tmp_hso3(jso4) * 2.0_r8*fact4_so2(jso4)/xph(i,k)
                 end do !jso4
-!--hybrown
                 tmp_hco3 = Eco2 / xph(i,k)
                 tmp_oh   = Eh2o / xph(i,k)
                 tmp_no3  = Ehno3 / xph(i,k)
-!++hybrown
                 do jso4 = 1, nso4
                 tmp_so4(jso4) = cldconc%so4_fact*Eso4(jso4)
                 end do !jso4
-!--hybrown
                 tmp_pos = xph(i,k) + tmp_nh4
-!++hybrown
                 tmp_neg = 0
                 do jso4 = 1, nso4
                 tmp_neg = tmp_neg + tmp_hso3(jso4) + tmp_so3(jso4) + tmp_so4(jso4)
                 end do !jso4
                 tmp_neg = tmp_neg + tmp_oh + tmp_hco3 + tmp_no3
-!--hybrown
 
                 ynetpos = tmp_pos - tmp_neg
 
@@ -832,11 +776,9 @@ contains
           !         ... so2
           !------------------------------------------------------------------------
           px = heso2(i,k) * Ra * tz * xl
-!++hybrown
           do jso4 = 1, nso4
           so2g(jso4) =  xso2(i,k,jso4)/(1._r8+ px)
           end do
-!--hybrown
 
           !------------------------------------------------------------------------
           !         ... o3
@@ -897,12 +839,9 @@ contains
                 patm_x = 1._r8
              endif
 
-!++hybrown
           do jso4 = 1, nso4
-!-hybrown
 
              if (modal_aerosols) then
-!++hybrown
                 pso4 (jso4) = rah2o2 * 7.4e4_r8*EXP(6621._r8*work1(i)) * h2o2g * patm_x &
                      * 1.23_r8 *EXP(3120._r8*work1(i)) * so2g(jso4) * patm_x
              else
@@ -912,13 +851,11 @@ contains
              endif
 
              pso4(jso4) = pso4(jso4) & ! [M/s] = [mole/L(w)/s]
-!--hybrown
                   * xl & ! [mole/L(a)/s]
                   / const0 & ! [/L(a)/s]
                   / xhnm(i,k)
 
 
-!++hybrown
              ccc = pso4(jso4)*dtime
              ccc = max(ccc, 1.e-30_r8)
 
@@ -957,13 +894,11 @@ contains
              endif
 
           end do !jso4
-!--hybrown
 
              !...........................
              !       S(IV) + O3 = S(VI)
              !...........................
 
-!++hybrown
           do jso4 = 1, nso4
 
              pso4(jso4) = rao3 * heo3(i,k)*o3g*patm_x * heso2(i,k)*so2g(jso4)*patm_x  ! [M/s]
@@ -986,7 +921,6 @@ contains
                 xso2(i,k,jso4) = xso2(i,k,jso4) - ccc
              end if
           end do
-!--hybrown
 
           END IF !! WHEN CLOUD IS PRESENTED
 

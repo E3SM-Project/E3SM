@@ -29,7 +29,6 @@ module mo_usrrxt
   integer :: usr_MPAN_M_ndx
   integer :: usr_XOOH_OH_ndx
   integer :: usr_SO2_OH_ndx
-!++hybrown
   integer :: usr_SO2_OH01_ndx
   integer :: usr_SO2_OH02_ndx
   integer :: usr_SO2_OH03_ndx
@@ -60,7 +59,6 @@ module mo_usrrxt
   integer :: usr_SO2_OH28_ndx
   integer :: usr_SO2_OH29_ndx
   integer :: usr_SO2_OH30_ndx
-!-hybrown
   integer :: usr_DMS_OH_ndx
   integer :: usr_HO2_aer_ndx
   
@@ -192,7 +190,6 @@ contains
     usr_MPAN_M_ndx       = get_rxt_ndx( 'usr_MPAN_M' )
     usr_XOOH_OH_ndx      = get_rxt_ndx( 'usr_XOOH_OH' )
     usr_SO2_OH_ndx       = get_rxt_ndx( 'usr_SO2_OH' )
-!++hybrown
     usr_SO2_OH01_ndx       = get_rxt_ndx( 'usr_SO2_OH01' )
     usr_SO2_OH02_ndx       = get_rxt_ndx( 'usr_SO2_OH02' )
     usr_SO2_OH03_ndx       = get_rxt_ndx( 'usr_SO2_OH03' )
@@ -223,7 +220,6 @@ contains
     usr_SO2_OH28_ndx       = get_rxt_ndx( 'usr_SO2_OH28' )
     usr_SO2_OH29_ndx       = get_rxt_ndx( 'usr_SO2_OH29' )
     usr_SO2_OH30_ndx       = get_rxt_ndx( 'usr_SO2_OH30' )
-!--hybrown
     usr_DMS_OH_ndx       = get_rxt_ndx( 'usr_DMS_OH' )
     usr_HO2_aer_ndx      = get_rxt_ndx( 'usr_HO2_aer' )
  !
@@ -750,7 +746,6 @@ contains
           ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8) 
           rxt(:,k,usr_SO2_OH_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
        end if
-!++hybrown
        if( usr_SO2_OH01_ndx > 0 ) then
           fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
           ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
@@ -901,7 +896,6 @@ contains
           ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
           rxt(:,k,usr_SO2_OH30_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
        end if   
-!--hybrown
 
 !
 ! reduced hydrocarbon scheme

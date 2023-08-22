@@ -16,9 +16,7 @@
    use cam_logfile,   only:  iulog
    use mo_constants,  only:  pi
    use chem_mods,     only:  gas_pcnst
-!++hybrown
    use modal_aero_data
-!--hybrown
 
   implicit none
   private
@@ -44,9 +42,7 @@
 
 ! !NON-PUBLIC DATA MEMBERS:
   integer, parameter  :: pcnstxx = gas_pcnst
-!++hybrown
   integer  :: l_h2so4_sv(nso4), l_nh3_sv, lnumait_sv, lnh4ait_sv, lso4ait_sv(nso4)
-!--hybrown
 
 ! max cloud fraction for nuc calcs
   real(r8), parameter :: cld_cutoff = 0.99_r8
@@ -119,14 +115,10 @@
                                             ! tracer mixing ratio (TMR) array
                                             ! *** MUST BE mol/mol-air or #/mol-air
                                             ! *** NOTE ncol & pcnstxx dimensions
-!++hybrown
    real(r8), intent(in) :: del_h2so4_gasprod(ncol,pver,nso4) 
-!--hybrown
                                             ! h2so4 gas-phase production
                                             ! change over deltat (mol/mol)
-!++hybrown
    real(r8), intent(in) :: del_h2so4_aeruptk(ncol,pver,nso4) 
-!--hybrown
                                             ! h2so4 gas-phase loss to
                                             ! aerosol over deltat (mol/mol)
 
@@ -149,10 +141,8 @@
 
 !   local variables
 	integer :: i, itmp, k, l, lmz, lun, m, mait
-!++hybrown
 	integer :: lnumait, lso4ait(nso4), lnh4ait
 	integer :: l_h2so4(nso4), l_nh3, jso4
-!--hybrown
 	integer :: ldiagveh02
 	integer, parameter :: ldiag1=-1, ldiag2=-1, ldiag3=-1, ldiag4=-1
         integer, parameter :: newnuc_method_flagaa = 11
@@ -174,9 +164,7 @@
 	real(r8) :: mass1p_aithi, mass1p_aitlo 
 	real(r8) :: mw_so4a_host
 	real(r8) :: pdel_fac
-!++hybrown
 	real(r8) :: qh2so4_cur, qh2so4_avg, qh2so4_del, frac_to_j
-!--hybrown
 	real(r8) :: qnh3_cur, qnh3_del, qnh4a_del
 	real(r8) :: qnuma_del
 	real(r8) :: qso4a_del
@@ -219,23 +207,16 @@
 !--------------------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
-!++hybrown
     do jso4 = 1, nso4
        l_h2so4(jso4) = l_h2so4_sv(jso4) - loffset
        lso4ait(jso4) = lso4ait_sv(jso4) - loffset
     end do ! jso4
-!	l_h2so4 = l_h2so4_sv - loffset
-!--hybrown
 	l_nh3   = l_nh3_sv   - loffset
 	lnumait = lnumait_sv - loffset
 	lnh4ait = lnh4ait_sv - loffset
-!++hybrown
-!	lso4ait = lso4ait_sv - loffset
-
 !   skip if no aitken mode OR if no h2so4 species
 
 	if ((l_h2so4(1) <= 0) .or. (lso4ait(1) <= 0) .or. (lnumait <= 0)) return
-!--hybrown
 
 	dotend(:) = .false.
 	dqdt(1:ncol,:,:) = 0.0_r8
@@ -244,12 +225,10 @@
 !   set dotend
 	mait = modeptr_aitken
 	dotend(lnumait) = .true.
-!++hybrown
     do jso4 = 1, nso4
 	dotend(lso4ait(jso4)) = .true.
 	dotend(l_h2so4(jso4)) = .true.
     end do ! jso4
-!--hybrown
 	lnh4ait = lptr_nh4_a_amode(mait) - loffset
 	if ((l_nh3   > 0) .and. (l_nh3   <= pcnst) .and. &
 	    (lnh4ait > 0) .and. (lnh4ait <= pcnst)) then
@@ -295,13 +274,10 @@ main_i:	do i = 1, ncol
 	if (cld(i,k) >= cld_cutoff) cycle main_i
 
 !   qh2so4_cur = current qh2so4, after aeruptk
-!++hybrown
-!	qh2so4_cur = q(i,k,l_h2so4)
         qh2so4_cur = 0.0_r8
         do jso4 = 1, nso4
            qh2so4_cur = qh2so4_cur + max( 0.0_r8, q(i,k,l_h2so4(jso4)) )
         end do
-!--hybrown
 !   skip if h2so4 vapor < qh2so4_cutoff
 !   05-jul-2013 - maybe should only skip here if qh2so4_cur << cutoff
 !      because may have qh2so4_avg >> qh2so4_cur
@@ -310,22 +286,15 @@ main_i:	do i = 1, ncol
         else
             if (qh2so4_cur <= qh2so4_cutoff*1.0e-10_r8) cycle main_i
         end if
-!++hybrown
         tmpa = 0.0_r8
         tmp_q3 = qh2so4_cur
         tmp_q2 = tmp_q3
         do jso4 = 1, nso4
-!	tmpa = max( 0.0_r8, del_h2so4_gasprod(i,k) )
-!	tmp_q3 = qh2so4_cur
-!--hybrown
 !   tmp_q2 = qh2so4 before aeruptk
 !   (note tmp_q3, tmp_q2 both >= 0.0)
-!++hybrown
-!	tmp_q2 = tmp_q3 + max( 0.0_r8, -del_h2so4_aeruptk(i,k) )
            tmpa = tmpa + max( 0.0_r8, del_h2so4_gasprod(i,k,jso4) )
            tmp_q2 = tmp_q2 + max( 0.0_r8, -del_h2so4_aeruptk(i,k,jso4) )
         end do
-!--hybrown
 
 !   *** temporary -- in order to get more nucleation
 !	qh2so4_cur = qh2so4_cur*1.0e1
@@ -361,14 +330,11 @@ main_i:	do i = 1, ncol
         if (newnuc_h2so4_conc_flag == 11) then
             qh2so4_avg = qh2so4_cur
         else if (newnuc_h2so4_conc_flag == 12) then
-!++hybrown
-!            qh2so4_avg = qh2so4_cur + 0.5_r8*max( 0.0_r8, -del_h2so4_aeruptk(i,k) )
              qh2so4_avg = 0.0_r8
                  do jso4 = 1, nso4
                  qh2so4_avg = qh2so4_avg + 0.5_r8*max( 0.0_r8, -del_h2so4_aeruptk(i,k,jso4) )
                  end do
              qh2so4_avg = qh2so4_avg + qh2so4_cur
-!--hybrown
         end if
 
 	if (qh2so4_avg <= qh2so4_cutoff) cycle main_i
@@ -521,7 +487,6 @@ main_i:	do i = 1, ncol
 !   dso4dt_ait, dnh4dt_ait are (kmol/kmol-air/s)
         dso4dt_ait = dmdt_ait*tmp_frso4/specmw_so4_amode
         dnh4dt_ait = dmdt_ait*(1.0_r8 - tmp_frso4)/specmw_nh4_amode
-!++hybrown
         do jso4 = 1, nso4
 !   partition the gas h2so4 loss and aitken so4 gain to the various tagged jso4
 !   since most of the dso4dt_ait comes from growing the 
@@ -538,7 +503,6 @@ main_i:	do i = 1, ncol
             qsrflx(i,lso4ait(jso4),1) = qsrflx(i,lso4ait(jso4),1) + dqdt(i,k,lso4ait(jso4))*pdel_fac
             q(i,k,lso4ait(jso4)) = q(i,k,lso4ait(jso4)) + dqdt(i,k,lso4ait(jso4))*deltat
         end do ! jso4
-!--hybrown
 	if (lnumait > 0) then
 	    dqdt(i,k,lnumait) = dndt_ait*(1.0_r8-cldx)
 	    qsrflx(i,lnumait,1) = qsrflx(i,lnumait,1)   &
@@ -1539,10 +1503,8 @@ implicit none
 
 !-----------------------------------------------------------------------
 ! local
-!++hybrown
    integer  :: l_h2so4(nso4), l_nh3, jso4
    integer  :: lnumait, lnh4ait, lso4ait(nso4)
-!--hybrown
    integer  :: l
    integer  :: m, mait
 
@@ -1566,24 +1528,18 @@ implicit none
 	lnh4ait_sv = 0
 	lso4ait_sv = 0
 
-!++hybrown
-!	call cnst_get_ind( 'H2SO4', l_h2so4, .false. )
-
     do jso4 = 1, nso4
        l_h2so4(jso4) = lptr2_so4_g_amode(jso4)
     end do
-!--hybrown
 
 	call cnst_get_ind( 'NH3', l_nh3, .false. )
 
 	mait = modeptr_aitken
 	if (mait > 0) then
 	    lnumait = numptr_amode(mait)
-!++hybrown
         do jso4 = 1, nso4
            lso4ait(jso4) = lptr2_so4_a_amode(mait,jso4)
         end do
-!	    lso4ait = lptr_so4_a_amode(mait)
 	    lnh4ait = lptr_nh4_a_amode(mait)
 	end if
 	if ((l_h2so4(1)  <= 0) .or. (l_h2so4(1) > pcnst)) then
@@ -1591,7 +1547,6 @@ implicit none
 		'*** modal_aero_newnuc bypass -- l_h2so4 <= 0'
 	    return
 	else if ((lso4ait(1) <= 0) .or. (lso4ait(1) > pcnst)) then
-!--hybrown
 	    write(iulog,'(/a/)')   &
 		'*** modal_aero_newnuc bypass -- lso4ait <= 0'
 	    return
@@ -1605,7 +1560,6 @@ implicit none
 	    return
 	end if
 
-!++hybrown
     do jso4 = 1, nso4
        l_h2so4_sv(jso4) = l_h2so4(jso4)
        lso4ait_sv(jso4) = lso4ait(jso4)
@@ -1623,12 +1577,10 @@ implicit none
 
 	dotend(:) = .false.
 	dotend(lnumait) = .true.
-!++hybrown
     do jso4 = 1, nso4
 	dotend(lso4ait(jso4)) = .true.
 	dotend(l_h2so4(jso4)) = .true.
     end do
-!--hybrown
 	if ((l_nh3   > 0) .and. (l_nh3   <= pcnst) .and. &
 	    (lnh4ait > 0) .and. (lnh4ait <= pcnst)) then
 	    dotend(lnh4ait) = .true.
