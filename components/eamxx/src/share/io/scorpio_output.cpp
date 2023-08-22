@@ -523,8 +523,8 @@ run (const std::string& filename,
         case 4:
         {
           auto new_view_4d = field.get_view<const Real****,Device>();
-          auto avg_view_4d = view_Nd_dev<4>(data,avg_cnt_dims[0],avg_cnt_dims[1],avg_cnt_dims[2],avg_cnt_dims[3]);
-          auto avg_coeff_4d = view_Nd_dev<4>(avg_cnt_data,dims[0],dims[1],dims[2],dims[3]);
+          auto avg_view_4d = view_Nd_dev<4>(data,dims[0],dims[1],dims[2],dims[3]);
+          auto avg_coeff_4d = view_Nd_dev<4>(avg_cnt_data,avg_cnt_dims[0],avg_cnt_dims[1],avg_cnt_dims[2],avg_cnt_dims[3]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k,l;
             unflatten_idx(idx,extents,i,j,k,l);
@@ -836,7 +836,7 @@ reset_dev_views()
 	const Real tmp = (m_track_avg_cnt && m_add_time_dim) ? m_fill_value : 0.0;
         Kokkos::deep_copy(m_dev_views_1d[name],tmp);
         break;
-      default:
+      DEFAULT:
         EKAT_ERROR_MSG ("Unrecognized averaging type.\n");
     }
   }
@@ -1265,6 +1265,7 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
       field.get_header().get_alloc_properties().get_padding()==0 &&
       field.get_header().get_parent().expired() &&
       not is_diagnostic;
+  const auto fill_value = m_fill_value;
   if (not is_aliasing_field_view) {
     KT::RangePolicy policy(0,layout.size());
     const auto extents = layout.extents();
@@ -1276,7 +1277,7 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
         auto src_view_1d = field.get_strided_view<const Real*,Device>();
         auto tgt_view_1d = view_Nd_dev<1>(data,dims[0]);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-	  if (src_view_1d(i)==m_fill_value) {
+	  if (src_view_1d(i)==fill_value) {
 	    tgt_view_1d(i) = 0.0;
 	  }
         });
@@ -1289,7 +1290,7 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
           int i,j;
           unflatten_idx(idx,extents,i,j);
-	  if (src_view_2d(i,j)==m_fill_value) {
+	  if (src_view_2d(i,j)==fill_value) {
 	    tgt_view_2d(i,j) = 0.0;
 	  }
         });
@@ -1302,7 +1303,7 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
           int i,j,k;
           unflatten_idx(idx,extents,i,j,k);
-	  if (src_view_3d(i,j,k)==m_fill_value) {
+	  if (src_view_3d(i,j,k)==fill_value) {
 	    tgt_view_3d(i,j,k) = 0.0;
 	  }
         });
@@ -1315,7 +1316,7 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
           int i,j,k,l;
           unflatten_idx(idx,extents,i,j,k,l);
-	  if (src_view_4d(i,j,k,l)==m_fill_value) {
+	  if (src_view_4d(i,j,k,l)==fill_value) {
 	    tgt_view_4d(i,j,k,l) = 0.0;
 	  }
         });
@@ -1328,7 +1329,7 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
           int i,j,k,l,m;
           unflatten_idx(idx,extents,i,j,k,l,m);
-	  if (src_view_5d(i,j,k,l,m)==m_fill_value) {
+	  if (src_view_5d(i,j,k,l,m)==fill_value) {
 	    tgt_view_5d(i,j,k,l,m) = 0.0;
 	  }
         });
@@ -1341,7 +1342,7 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
           int i,j,k,l,m,n;
           unflatten_idx(idx,extents,i,j,k,l,m,n);
-	  if (src_view_6d(i,j,k,l,m,n)==m_fill_value) {
+	  if (src_view_6d(i,j,k,l,m,n)==fill_value) {
 	    tgt_view_6d(i,j,k,l,m,n) = 0.0;
 	  }
         });

@@ -26,7 +26,7 @@
 namespace scream {
 
 constexpr int num_output_steps = 5;
-constexpr Real FillValue = DEFAULT_FILL_VALUE;
+constexpr float FillValue = DEFAULT_FILL_VALUE;
 
 void add (const Field& f, const double v) {
   auto data = f.get_internal_view_data<Real,Host>();
@@ -153,7 +153,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   om_pl.set("filename_prefix",std::string("io_basic"));
   om_pl.set("Field Names",fnames);
   om_pl.set("Averaging Type", avg_type);
-  om_pl.set("Fill Value",FillValue);
+  om_pl.set("fill_value",FillValue);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",freq_units);
   ctrl_pl.set("Frequency",freq);

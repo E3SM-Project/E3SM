@@ -137,6 +137,7 @@ public:
   void restart (const std::string& filename);
   void init();
   void reset_dev_views();
+  void update_avg_cnt_view(const Field&, view_1d_dev& dev_view);
   void setup_output_file (const std::string& filename, const std::string& fp_precision);
   void run (const std::string& filename,
             const bool output_step, const bool checkpoint_step,
@@ -166,7 +167,6 @@ protected:
   void compute_diagnostic (const std::string& name, const bool allow_invalid_fields = false);
   void set_diagnostics();
   void create_diagnostic (const std::string& diag_name);
-  void update_avg_cnt_view(const Field&, view_1d_dev& dev_view);
 
   // --- Internal variables --- //
   ekat::Comm                          m_comm;
