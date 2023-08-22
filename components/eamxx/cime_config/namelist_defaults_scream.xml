@@ -388,7 +388,11 @@ be lost if SCREAM_HACK_XML is not enabled.
   <!-- driver_options options for scream -->
   <driver_options>
     <atmosphere_dag_verbosity_level>0</atmosphere_dag_verbosity_level>
-    <atm_log_level valid_values="trace,debug,info,warn,error">info</atm_log_level>
+    <atm_log_level type="string"
+                   valid_values="trace,debug,info,warn,error"
+                   doc="Verbosity level for the atm logger">
+      info
+    </atm_log_level>
     <output_to_screen type="logical">false</output_to_screen>
     <mass_column_conservation_error_tolerance>1e-10</mass_column_conservation_error_tolerance>
     <energy_column_conservation_error_tolerance>1e-14</energy_column_conservation_error_tolerance>

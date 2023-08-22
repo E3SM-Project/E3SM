@@ -238,15 +238,16 @@ def evaluate_selectors(element, case, ez_selectors):
     child_values = {} # elem_name -> evaluated XML element
     children_to_remove = []
     for child in element:
-        child_name = child.tag
-        child_val = child.text
-
         # Note: in our system, an XML element is either a "node" (has children)
         # or a "leaf" (has a value).
         has_children = len(child) > 0
         if has_children:
             evaluate_selectors(child, case, ez_selectors)
         else:
+            child_name = child.tag
+            child.text = str(child.text).strip(' \n')
+            child_val = child.text
+
             selectors = child.attrib
             if selectors:
                 all_match = True
