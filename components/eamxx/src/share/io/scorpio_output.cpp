@@ -119,7 +119,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   using vos_t = std::vector<std::string>;
 
   if (params.isParameter("fill_value")) {
-    m_fill_value = static_cast<float>(params.get<double>("fill_value"));
+    m_fill_value = static_cast<float>(params.get<Real>("fill_value"));
     // If the fill_value is specified there is a good chance the user expects the average count to track filling.
     m_track_avg_cnt = true;
   }
@@ -575,18 +575,25 @@ run (const std::string& filename,
 
     if (is_write_step) {
       if (output_step and avg_type==OutputAvgType::Average) {
-	const auto avg_cnt_lookup = m_field_to_avg_cnt_map.at(name);
-        const auto avg_cnt_view = m_dev_views_1d.at(avg_cnt_lookup);
-	const auto avg_cnt_data_1 = avg_cnt_view.data();
-        // Divide by steps count only when the summation is complete
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-	  Real coeff_percentage = Real(avg_cnt_data_1[i])/nsteps_since_last_output;
-	  if (data[i] != m_fill_value && coeff_percentage > m_avg_coeff_threshold) {
-            data[i] /= avg_cnt_data_1[i];  //TODO, change the name of this,
-	  } else {
-	    data[i] = m_fill_value;
-	  }
-        });
+	if (m_track_avg_cnt && m_add_time_dim) {
+	  const auto avg_cnt_lookup = m_field_to_avg_cnt_map.at(name);
+          const auto avg_cnt_view = m_dev_views_1d.at(avg_cnt_lookup);
+	  const auto avg_nsteps = avg_cnt_view.data();
+          // Divide by steps count only when the summation is complete
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
+	    Real coeff_percentage = Real(avg_nsteps[i])/nsteps_since_last_output;
+	    if (data[i] != m_fill_value && coeff_percentage > m_avg_coeff_threshold) {
+              data[i] /= avg_nsteps[i]; 
+	    } else {
+	      data[i] = m_fill_value;
+	    }
+          });
+	} else {
+          // Divide by steps count only when the summation is complete
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
+            data[i] /= nsteps_since_last_output;
+          });
+	}
       }
       // Bring data to host
       auto view_host = m_host_views_1d.at(name);
@@ -826,7 +833,8 @@ reset_dev_views()
         Kokkos::deep_copy(m_dev_views_1d[name],std::numeric_limits<Real>::infinity());
         break;
       case OutputAvgType::Average:
-        Kokkos::deep_copy(m_dev_views_1d[name],m_fill_value);
+	const Real tmp = (m_track_avg_cnt && m_add_time_dim) ? m_fill_value : 0.0;
+        Kokkos::deep_copy(m_dev_views_1d[name],tmp);
         break;
       default:
         EKAT_ERROR_MSG ("Unrecognized averaging type.\n");

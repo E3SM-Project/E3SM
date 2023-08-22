@@ -27,6 +27,8 @@
 
 namespace scream {
 
+constexpr Real FillValue = DEFAULT_FILL_VALUE;
+
 std::shared_ptr<FieldManager>
 get_test_fm(const std::shared_ptr<const AbstractGrid>& grid);
 
@@ -74,7 +76,8 @@ TEST_CASE("output_restart","io")
   // Create output params (some options are set below, depending on the run type
   ekat::ParameterList output_params;
   output_params.set<std::string>("Floating Point Precision","real");
-  output_params.set<std::vector<std::string>>("Field Names",{"field_1", "field_2", "field_3", "field_4"});
+  output_params.set<std::vector<std::string>>("Field Names",{"field_1", "field_2", "field_3", "field_4","field_5"});
+  output_params.set<Real>("fill_value",FillValue);
   output_params.sublist("output_control").set<bool>("MPI Ranks in Filename","true");
   output_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
   output_params.sublist("output_control").set<int>("Frequency",10);
@@ -166,11 +169,13 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid)
   std::vector<FieldTag> tag_v  = {LEV};
   std::vector<FieldTag> tag_2d = {COL,LEV};
   std::vector<FieldTag> tag_3d = {COL,CMP,LEV};
+  std::vector<FieldTag> tag_bnd = {COL,SWBND,LEV};
 
   std::vector<Int>     dims_h  = {num_lcols};
   std::vector<Int>     dims_v  = {num_levs};
   std::vector<Int>     dims_2d = {num_lcols,num_levs};
   std::vector<Int>     dims_3d = {num_lcols,2,num_levs};
+  std::vector<Int>     dims_bnd = {num_lcols,3,num_levs};
 
   const std::string& gn = grid->name();
 
@@ -178,6 +183,7 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid)
   FieldIdentifier fid2("field_2",FL{tag_v,dims_v},kg,gn);
   FieldIdentifier fid3("field_3",FL{tag_2d,dims_2d},kg/m,gn);
   FieldIdentifier fid4("field_4",FL{tag_3d,dims_3d},kg/m,gn);
+  FieldIdentifier fid5("field_5",FL{tag_bnd,dims_bnd},m*m,gn);
 
   // Register fields with fm
   fm->registration_begins();
@@ -185,12 +191,13 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid)
   fm->register_field(FR{fid2,SL{"output"}});
   fm->register_field(FR{fid3,SL{"output"}});
   fm->register_field(FR{fid4,SL{"output"}});
+  fm->register_field(FR{fid5,SL{"output"}});
   fm->registration_ends();
 
   // Initialize fields to -1.0, and set initial time stamp
   util::TimeStamp time ({2000,1,1},{0,0,0});
   fm->init_fields_time_stamp(time);
-  for (const auto& fn : {"field_1","field_2","field_3","field_4"} ) {
+  for (const auto& fn : {"field_1","field_2","field_3","field_4","field_5"} ) {
     fm->get_field(fn).deep_copy(-1.0);
     fm->get_field(fn).sync_to_host();
   }
@@ -222,10 +229,12 @@ void randomize_fields (const FieldManager& fm, Engine& engine)
   const auto& f2 = fm.get_field("field_2");
   const auto& f3 = fm.get_field("field_3");
   const auto& f4 = fm.get_field("field_4");
+  const auto& f5 = fm.get_field("field_5");
   randomize(f1,engine,pdf);
   randomize(f2,engine,pdf);
   randomize(f3,engine,pdf);
   randomize(f4,engine,pdf);
+  randomize(f5,engine,pdf);
 }
 
 /*=============================================================================================*/
@@ -269,7 +278,15 @@ void time_advance (const FieldManager& fm,
           for (int i=0; i<fl.dim(0); ++i) {
             for (int j=0; j<fl.dim(1); ++j) {
               for (int k=0; k<fl.dim(2); ++k) {
-                v(i,j,k) += dt;
+		if (fname == "field_5") {
+		  // field_5 is used to test restarts w/ filled values, so
+		  // we cycle between filled and unfilled states.
+		  const auto tmp = v(i,j,k);
+		  v(i,j,k) = (v(i,j,k)==FillValue) ? dt :
+			  ( (v(i,j,k)==1.0) ? 2.0*dt : FillValue );
+		} else {
+                  v(i,j,k) += dt;
+		}
               }
             }
           }
@@ -290,7 +307,7 @@ backup_fm (const std::shared_ptr<FieldManager>& src_fm)
 {
   // Now, create a copy of the field manager current status, for comparisong
   auto dst_fm = get_test_fm(src_fm->get_grid());
-  for (const auto& fn : {"field_1","field_2","field_3","field_4"} ) {
+  for (const auto& fn : {"field_1","field_2","field_3","field_4","field_5"} ) {
           auto f_dst = dst_fm->get_field(fn);
     const auto f_src = src_fm->get_field(fn);
     f_dst.deep_copy(f_src);

@@ -211,7 +211,7 @@ protected:
   std::map<std::string,view_1d_dev>     m_avg_coeff_views_1d;
 
   bool m_add_time_dim;
-  bool m_track_avg_cnt = true;  //TODO: return this to default as "false"
+  bool m_track_avg_cnt = false;
 };
 
 } //namespace scream
