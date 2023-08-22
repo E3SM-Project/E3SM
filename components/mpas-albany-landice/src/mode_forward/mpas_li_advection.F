@@ -445,7 +445,8 @@ module li_advection
 
          ! compute new values of layer thickness and tracers
          if ((trim(config_thickness_advection) .eq. 'fo') .and. &
-             (trim(config_tracer_advection) .eq. 'fo'))then
+             ( (trim(config_tracer_advection) .eq. 'fo') .or. &
+               (trim(config_tracer_advection) .eq. 'none') ) ) then
              call advect_thickness_tracers_upwind(&
                   dt,                      &
                   meshPool,                &
