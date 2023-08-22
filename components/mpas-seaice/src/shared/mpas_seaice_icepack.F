@@ -4408,7 +4408,6 @@ contains
 
   subroutine seaice_icepack_aggregate(domain)
 
-!echmod    use ice_colpkg, only: colpkg_aggregate
     use icepack_intfc, only: icepack_aggregate
 
     type(domain_type), intent(inout) :: domain
@@ -4482,24 +4481,6 @@ contains
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject, &
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
-
-!echmod          call colpkg_aggregate(&
-!echmod               nCategories, &
-!echmod               seaFreezingTemperature(iCell), &
-!echmod               iceAreaCategory(1,:,iCell), &
-!echmod               tracerArrayCategory, & ! trcrn
-!echmod               iceVolumeCategory(1,:,iCell), &
-!echmod               snowVolumeCategory(1,:,iCell), &
-!echmod               iceAreaCell(iCell), &
-!echmod               tracerArrayCell, & ! trcr
-!echmod               iceVolumeCell(iCell), &
-!echmod               snowVolumeCell(iCell), &
-!echmod               openWaterArea(iCell), &
-!echmod               ciceTracerObject % nTracers, &
-!echmod               ciceTracerObject % parentIndex, & ! trcr_depend
-!echmod               ciceTracerObject % firstAncestorMask, & ! trcr_base
-!echmod               ciceTracerObject % ancestorNumber, & ! n_trcr_strata
-!echmod               ciceTracerObject % ancestorIndices) ! nt_strata
 
           call icepack_aggregate(                    &
                nCategories,                          &
@@ -6010,13 +5991,16 @@ contains
 
   function seaice_icepack_sea_freezing_temperature(seaSurfaceSalinity) result(seaFreezingTemperature)
 
-    use ice_colpkg, only: &
-         colpkg_sea_freezing_temperature
+!echmod    use ice_colpkg, only: &
+!echmod         colpkg_sea_freezing_temperature
+    use icepack_intfc, only: &
+         icepack_sea_freezing_temperature
 
     real(kind=RKIND), intent(in) :: seaSurfaceSalinity
     real(kind=RKIND) :: seaFreezingTemperature
 
-    seaFreezingTemperature = colpkg_sea_freezing_temperature(seaSurfaceSalinity)
+!echmod    seaFreezingTemperature = colpkg_sea_freezing_temperature(seaSurfaceSalinity)
+    seaFreezingTemperature = icepack_sea_freezing_temperature(seaSurfaceSalinity)
 
   end function seaice_icepack_sea_freezing_temperature
 
@@ -6024,13 +6008,16 @@ contains
 
   function seaice_icepack_liquidus_temperature(salinity) result(liquidusTemperature)
 
-    use ice_colpkg, only: &
-         colpkg_liquidus_temperature
+!echmod    use ice_colpkg, only: &
+!echmod         colpkg_liquidus_temperature
+    use icepack_intfc, only: &
+         icepack_liquidus_temperature
 
     real(kind=RKIND), intent(in) :: salinity
     real(kind=RKIND) :: liquidusTemperature
 
-    liquidusTemperature = colpkg_liquidus_temperature(salinity)
+!echmod    liquidusTemperature = colpkg_liquidus_temperature(salinity)
+    liquidusTemperature = icepack_liquidus_temperature(salinity)
 
   end function seaice_icepack_liquidus_temperature
 
@@ -6038,13 +6025,16 @@ contains
 
   function seaice_icepack_enthalpy_snow(snowTemperature) result(snowEnthalpy)
 
-    use ice_colpkg, only: &
-         colpkg_enthalpy_snow
+!echmod    use ice_colpkg, only: &
+!echmod         colpkg_enthalpy_snow
+    use icepack_intfc, only: &
+         icepack_enthalpy_snow
 
     real(kind=RKIND), intent(in) :: snowTemperature
     real(kind=RKIND) :: snowEnthalpy
 
-    snowEnthalpy = colpkg_enthalpy_snow(snowTemperature)
+!echmod    snowEnthalpy = colpkg_enthalpy_snow(snowTemperature)
+    snowEnthalpy = icepack_enthalpy_snow(snowTemperature)
 
   end function seaice_icepack_enthalpy_snow
 
