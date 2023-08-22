@@ -248,16 +248,16 @@ void read (const std::string& avg_type, const std::string& freq_units,
         f0 = fm0->get_field("f_3").clone();
       }
       auto f  = fm->get_field(fn);
+      const auto fill_chk = (fn=="f_filled" || fn=="f_3") && (n==num_writes-1);
       if (avg_type=="MIN") {
         // The 1st snap in the avg window (the smallest)
         // is one past window_start=n*freq
         add(f0,n*freq+1);
 	// TODO: The MIN function ignores the initial condition, so the filling
 	// doesn't change any results for this test.  
-	// QUESTION: Should MIN include initial condition, should MAX as well?
         REQUIRE (views_are_equal(f,f0));
       } else if (avg_type=="MAX") {
-	if (fn=="f_filled" && n==num_writes-1) {
+        if (fill_chk) {
 	  // We fill the last value so
 	  // the maximum should be the value just before that.
           add(f0,(n+1)*freq-1);
@@ -275,7 +275,10 @@ void read (const std::string& avg_type, const std::string& freq_units,
 	}
         REQUIRE (views_are_equal(f,f0));
       } else {
-	if (fn=="f_filled" && n==num_writes-1) {
+        if (fill_chk) {
+	  // Note, if for a specific layout one value is filled, it is considered filled for all
+	  // other variables with the same layout.  In this test f_3 shares a layout with f_filled
+	  // so they will have the same fill behavior.
           add(f0,n*freq+delta-1/2.0);
 	} else {
           add(f0,n*freq+delta);

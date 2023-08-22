@@ -42,7 +42,7 @@ void combine (const Real& new_val, Real& curr_val, const OutputAvgType avg_type)
 KOKKOS_INLINE_FUNCTION
 void combine_and_fill (const Real& new_val, Real& curr_val, Real& avg_coeff, const OutputAvgType avg_type, const Real fill_value)
 {
-  const bool new_fill  = (avg_coeff == 0);
+  const bool new_fill  = (avg_coeff == 0.0);
   const bool curr_fill = curr_val == fill_value;
   if (curr_fill && new_fill) {
     // Then the value is already set to be filled and the new value doesn't change things.
@@ -481,9 +481,7 @@ run (const std::string& filename,
           auto avg_coeff_1d = view_Nd_dev<1>(avg_cnt_data,avg_cnt_dims[0]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
 	    if (m_track_avg_cnt && m_add_time_dim) {
-	      printf("ASD - %s\t, %d, %e, %e, %f, %e  -->  ",name.c_str(),i,new_view_1d(i), avg_view_1d(i), avg_coeff_1d(i), m_fill_value);
               combine_and_fill(new_view_1d(i), avg_view_1d(i),avg_coeff_1d(i),avg_type,m_fill_value);
-	      printf("%e\n ",new_view_1d(i));
 	    } else {
               combine(new_view_1d(i), avg_view_1d(i),avg_type);
 	    }
@@ -582,7 +580,7 @@ run (const std::string& filename,
 	const auto avg_cnt_data_1 = avg_cnt_view.data();
         // Divide by steps count only when the summation is complete
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-	  Real coeff_percentage = avg_cnt_data_1[i]/nsteps_since_last_output;
+	  Real coeff_percentage = Real(avg_cnt_data_1[i])/nsteps_since_last_output;
 	  if (data[i] != m_fill_value && coeff_percentage > m_avg_coeff_threshold) {
             data[i] /= avg_cnt_data_1[i];  //TODO, change the name of this,
 	  } else {
