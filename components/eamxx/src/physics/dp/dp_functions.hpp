@@ -85,10 +85,12 @@ struct Functions
   KOKKOS_FUNCTION
   static void plevs0(
     // Input arguments
-    const Int& ncol,                 // Longitude dimension
-    const Int& ncold,                // Declared longitude dimension
-    const Int& nver,                 // vertical dimension
-    const Spack& ps,                 // Surface pressure (pascals)
+    const Int& nver,                   // vertical dimension
+    const Scalar& ps,                  // Surface pressure (pascals)
+    const uview_1d<const Spack>& hyai, // ps0 component of hybrid coordinate - interfaces
+    const uview_1d<const Spack>& hyam, // ps0 component of hybrid coordinate - midpoints
+    const uview_1d<const Spack>& hybi, // ps component of hybrid coordinate - interfaces
+    const uview_1d<const Spack>& hybm, // ps component of hybrid coordinate - midpoints
     // Kokkos stuff
     const MemberType& team,
     // Output arguments
@@ -113,11 +115,13 @@ struct Functions
   static void advance_iop_forcing(
     // Input arguments
     const Int& plev,                         // number of vertical levels
-    const Int& plon,                         // number of longitudes
     const Int& pcnst,                        // number of advected constituents including cloud water
+    const bool& have_u,                      // dataset contains u
+    const bool& have_v,                      // dataset contains v
+    const bool& dp_crm,                      // use 3d forcing
     const bool& use_3dfrc,                   // use 3d forcing
-    const Spack& scm_dt,                     // model time step [s]
-    const Spack& ps_in,                      // surface pressure [Pa]
+    const Scalar& scm_dt,                    // model time step [s]
+    const Scalar& ps_in,                     // surface pressure [Pa]
     const uview_1d<const Spack>& u_in,       // zonal wind [m/s]
     const uview_1d<const Spack>& v_in,       // meridional wind [m/s]
     const uview_1d<const Spack>& t_in,       // temperature [K]
@@ -128,6 +132,12 @@ struct Functions
     const uview_1d<const Spack>& divt,       // Divergence of temperature
     const uview_2d<const Spack>& divq,       // Divergence of moisture
     const uview_1d<const Spack>& wfld,       // Vertical motion (slt)
+    const uview_1d<const Spack>& uobs,       // actual u wind
+    const uview_1d<const Spack>& vobs,       // actual v wind
+    const uview_1d<const Spack>& hyai,       // ps0 component of hybrid coordinate - interfaces
+    const uview_1d<const Spack>& hyam,       // ps0 component of hybrid coordinate - midpoints
+    const uview_1d<const Spack>& hybi,       // ps component of hybrid coordinate - interfaces
+    const uview_1d<const Spack>& hybm,       // ps component of hybrid coordinate - midpoints
     // Kokkos stuff
     const MemberType& team,
     const Workspace& workspace,
