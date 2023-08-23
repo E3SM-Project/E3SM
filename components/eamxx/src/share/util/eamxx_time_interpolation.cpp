@@ -83,7 +83,7 @@ void TimeInterpolation::perform_time_interpolation(const TimeStamp& time_in)
 void TimeInterpolation::add_field(const Field& field_in, const bool store_shallow_copy)
 {
   // First check that we haven't already added a field with the same name.
-  const auto name = field_in.name();
+  const std::string name = field_in.name();
   EKAT_REQUIRE_MSG(!m_fm_time0->has_field(name) and !m_fm_time1->has_field(name),
 		  "Error!! TimeInterpolation:add_field, field + " << name << " has already been added." << "\n");
 
@@ -155,17 +155,18 @@ void TimeInterpolation::initialize_data_from_field(const Field& field_in)
  */
 void TimeInterpolation::initialize_data_from_files()
 {
+  auto triplet_curr = m_file_data_triplets[m_triplet_idx];
   // Initialize the AtmosphereInput object that will be used to gather data
   ekat::ParameterList input_params;
   input_params.set("Field Names",m_field_names);
-  input_params.set("Filename",m_triplet_iterator->filename);
+  input_params.set("Filename",triplet_curr.filename);
   m_file_data_atm_input = AtmosphereInput(input_params,m_fm_time1);
   // Read first snap of data and shift to time0
   read_data();
   shift_data();
-  update_timestamp(m_triplet_iterator->timestamp);
+  update_timestamp(triplet_curr.timestamp);
   // Advance the iterator and read the next set of data for time1
-  ++m_triplet_iterator;
+  ++m_triplet_idx;
   read_data();
 }
 /*-----------------------------------------------------------------------------------------------*/
@@ -290,7 +291,7 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
     m_file_data_triplets.push_back(my_trip);
   }
   // Finally set the iterator to point to the first triplet.
-  m_triplet_iterator = m_file_data_triplets.begin();
+  m_triplet_idx = 0;
 }	
 /*-----------------------------------------------------------------------------------------------*/
 /* Function to read a new set of data from file using the current iterator pointing to the current
@@ -298,16 +299,17 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
  */
 void TimeInterpolation::read_data()
 {
-  if (m_triplet_iterator->filename != m_file_data_atm_input.get_filename()) {
+  const auto triplet_curr = m_file_data_triplets[m_triplet_idx];
+  if (triplet_curr.filename != m_file_data_atm_input.get_filename()) {
     // Then we need to close this input stream and open a new one
     m_file_data_atm_input.finalize();
     ekat::ParameterList input_params;
     input_params.set("Field Names",m_field_names);
-    input_params.set("Filename",m_triplet_iterator->filename);
+    input_params.set("Filename",triplet_curr.filename);
     m_file_data_atm_input = AtmosphereInput(input_params,m_fm_time1);
   }
-  m_file_data_atm_input.read_variables(m_triplet_iterator->time_idx);
-  m_time1 = m_triplet_iterator->timestamp;
+  m_file_data_atm_input.read_variables(triplet_curr.time_idx);
+  m_time1 = triplet_curr.timestamp;
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* Function to check the current set of interpolation data against a timestamp and, if needed,
@@ -326,10 +328,10 @@ void TimeInterpolation::check_and_update_data(const TimeStamp& ts_in)
     // First cycle through the DataFromFileTriplet's to find a timestamp that is greater than this one.
     bool found = false;
     int step_cnt = 0; // Track how many triplets we passed to find one that worked. 
-    while (m_triplet_iterator != m_file_data_triplets.end()) {
-      ++m_triplet_iterator;
+    while (m_triplet_idx < m_file_data_triplets.size()) {
+      ++m_triplet_idx;
       ++step_cnt;
-      auto ts_tmp = m_triplet_iterator->timestamp;
+      auto ts_tmp = m_file_data_triplets[m_triplet_idx].timestamp;
       if (ts_tmp.seconds_from(ts_in) >= 0) {
         // This timestamp is greater than the input timestamp, we can use it
 	found = true;
@@ -343,13 +345,13 @@ void TimeInterpolation::check_and_update_data(const TimeStamp& ts_in)
     // incorrect.
     if (step_cnt>1) {
       // Then we need to populate data for time1 as the previous triplet before shifting data to time0
-      --m_triplet_iterator;
+      --m_triplet_idx;
       read_data();
-      ++m_triplet_iterator;
+      ++m_triplet_idx;
     }
     // We shift the time1 data to time0 and read the new data.
     shift_data();
-    update_timestamp(m_triplet_iterator->timestamp);
+    update_timestamp(m_file_data_triplets[m_triplet_idx].timestamp);
     read_data();
     // Sanity Check
     bool current_data_check = (ts_in.seconds_from(m_time0) >= 0) and (m_time1.seconds_from(ts_in) >= 0);

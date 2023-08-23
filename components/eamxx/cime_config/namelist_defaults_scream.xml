@@ -146,21 +146,21 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- Basic options for each atm process -->
     <atm_proc_base>
-      <number_of_subcycles constraints="gt 0">1</number_of_subcycles>
+      <number_of_subcycles constraints="gt 0" doc="how many times to subcycle this atm process">1</number_of_subcycles>
       <enable_precondition_checks type="logical">true</enable_precondition_checks>
       <enable_postcondition_checks type="logical">true</enable_postcondition_checks>
       <repair_log_level type="string" valid_values="trace,debug,info,warn">trace</repair_log_level>
       <!-- Run internal checks on code correctness.
            <= 0: off; >= 1: global hashes over state -->
       <internal_diagnostics_level type="integer">0</internal_diagnostics_level>
-      <compute_tendencies type="array(string)">NONE</compute_tendencies>
+      <compute_tendencies type="array(string)" doc="list of computed fields for which this process will back out tendencies">NONE</compute_tendencies>
     </atm_proc_base>
 
     <!-- Basic options for each atm process group -->
     <atm_proc_group inherit="atm_proc_base">
       <atm_procs_list>ERROR_NO_ATM_PROCS</atm_procs_list>
       <Type>Group</Type>
-      <schedule_type>Sequential</schedule_type>
+      <schedule_type valid_values="Sequential">Sequential</schedule_type>
     </atm_proc_group>
 
     <!-- Surface coupling (import and export) -->
@@ -172,13 +172,14 @@ be lost if SCREAM_HACK_XML is not enabled.
       </prescribed_constants>
       <prescribed_from_file>
         <fields type="array(string)">NONE</fields>
-        <files type="array(string)">NONE</files>
+	<files type="array(string)">NONE</files>
+	<!-- Optional argument if fields have a different name in the source data files, set to NONE if not used -->
+        <fields_alt_name type="array(string)">NONE</fields_alt_name>
       </prescribed_from_file>
     </sc_export>
 
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
-      <Grid>Dynamics</Grid>
       <Moisture>moist</Moisture>
       <!-- Frequency in physics steps to output a global hash over the dycore's
            in-fields. <= 0 disables hashing. -->
@@ -204,6 +205,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- SHOC macrophysics -->
     <shoc inherit="atm_proc_base">
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
+      <check_flux_state_consistency>false</check_flux_state_consistency>
     </shoc>
 
     <!-- CLD fraction -->
@@ -376,7 +378,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <output_yaml_files type="array(string)">${SRCROOT}/components/eamxx/data/scream_default_output.yaml</output_yaml_files>
     <model_restart>
       <filename_prefix>./${CASE}.scream</filename_prefix>
-      <output_control>
+      <output_control locked="true">
         <Frequency>${REST_N}</Frequency>
         <frequency_units>${REST_OPTION}</frequency_units>
       </output_control>

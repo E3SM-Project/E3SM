@@ -120,6 +120,8 @@ protected:
                                 const IOFileSpecs& file_specs,
                                 const util::TimeStamp& timestamp) const;
 
+  void set_file_header(const IOFileSpecs& file_specs);
+
   // Craft the restart parameter list
   void set_params (const ekat::ParameterList& params,
                    const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs);

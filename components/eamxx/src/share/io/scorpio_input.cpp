@@ -107,7 +107,8 @@ init (const ekat::ParameterList& params,
   for (const auto& it : m_layouts) {
     m_fields_names.push_back(it.first);
     EKAT_REQUIRE_MSG (m_host_views_1d.count(it.first)==1,
-        "Error! Input layouts and views maps do not store the same keys.\n");
+        "Error! Input layouts and views maps do not store the same keys.\n"
+	"    layout = " + it.first);
   }
 
   // Init scorpio internal structures
@@ -189,11 +190,6 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
         "   - global max GID : " + std::to_string(grid->get_global_max_dof_gid()) + "\n"
         "   - num global dofs: " + std::to_string(grid->get_num_global_dofs()) + "\n");
   }
-
-  EKAT_REQUIRE_MSG(grid->get_comm().size()<=grid->get_num_global_dofs(),
-      "Error! PIO interface requires the size of the IO MPI group to be\n"
-      "       no greater than the global number of columns.\n"
-      "       Consider decreasing the size of IO MPI group.\n");
 
   // The grid is good. Store it.
   m_io_grid = grid;

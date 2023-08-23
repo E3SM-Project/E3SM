@@ -1179,6 +1179,7 @@ struct Functions
 # include "shoc_eddy_diffusivities_impl.hpp"
 # include "shoc_tke_impl.hpp"
 # include "shoc_compute_shoc_temperature_impl.hpp"
+
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 
 #endif // SHOC_FUNCTIONS_HPP

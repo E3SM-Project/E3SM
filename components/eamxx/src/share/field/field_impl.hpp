@@ -3,6 +3,7 @@
 
 #include "share/field/field.hpp"
 #include "share/util/scream_array_utils.hpp"
+#include "share/util/scream_universal_constants.hpp"
 
 namespace scream
 {
@@ -369,6 +370,13 @@ update (const Field& x, const ST alpha, const ST beta)
 {
   const auto& dt = data_type();
 
+  // Determine if there is a FillValue that requires extra treatment.
+  ST fill_val = constants::DefaultFillValue<ST>().value;
+  const auto& xtra_data = get_header().get_extra_data();
+  if (xtra_data.count("mask_value")) {
+    fill_val = ekat::any_cast<ST>(xtra_data.at("mask_value"));
+  }
+
   // If user passes, say, double alpha/beta for an int field, we should error out, warning about
   // a potential narrowing rounding. The other way around, otoh, is allowed (even though
   // there's an upper limit to the int values that a double can store, it is unlikely the user
@@ -380,11 +388,11 @@ update (const Field& x, const ST alpha, const ST beta)
       " - coeff data type: " + e2str(dt_st) + "\n");
 
   if (dt==DataType::IntType) {
-    return update_impl<CombineMode::ScaleUpdate,HD,int>(x,alpha,beta);
+    return update_impl<CombineMode::ScaleUpdate,HD,int>(x,alpha,beta,fill_val);
   } else if (dt==DataType::FloatType) {
-    return update_impl<CombineMode::ScaleUpdate,HD,float>(x,alpha,beta);
+    return update_impl<CombineMode::ScaleUpdate,HD,float>(x,alpha,beta,fill_val);
   } else if (dt==DataType::DoubleType) {
-    return update_impl<CombineMode::ScaleUpdate,HD,double>(x,alpha,beta);
+    return update_impl<CombineMode::ScaleUpdate,HD,double>(x,alpha,beta,fill_val);
   } else {
     EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
   }
@@ -395,6 +403,13 @@ void Field::
 scale (const ST beta)
 {
   const auto& dt = data_type();
+
+  // Determine if there is a FillValue that requires extra treatment.
+  ST fill_val = constants::DefaultFillValue<ST>().value;
+  const auto& xtra_data = get_header().get_extra_data();
+  if (xtra_data.count("mask_value")) {
+    fill_val = ekat::any_cast<ST>(xtra_data.at("mask_value"));
+  }
 
   // If user passes, say, double beta for an int field, we should error out, warning about
   // a potential narrowing rounding. The other way around, otoh, is allowed (even though
@@ -407,11 +422,11 @@ scale (const ST beta)
       " - coeff data type: " + e2str(dt_st) + "\n");
 
   if (dt==DataType::IntType) {
-    return update_impl<CombineMode::Rescale,HD,int>(*this,ST(0),beta);
+    return update_impl<CombineMode::Rescale,HD,int>(*this,ST(0),beta,fill_val);
   } else if (dt==DataType::FloatType) {
-    return update_impl<CombineMode::Rescale,HD,float>(*this,ST(0),beta);
+    return update_impl<CombineMode::Rescale,HD,float>(*this,ST(0),beta,fill_val);
   } else if (dt==DataType::DoubleType) {
-    return update_impl<CombineMode::Rescale,HD,double>(*this,ST(0),beta);
+    return update_impl<CombineMode::Rescale,HD,double>(*this,ST(0),beta,fill_val);
   } else {
     EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::scale.\n");
   }
@@ -419,7 +434,7 @@ scale (const ST beta)
 
 template<CombineMode CM, HostOrDevice HD,typename ST>
 void Field::
-update_impl (const Field& x, const ST alpha, const ST beta)
+update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val)
 {
   // Check x/y are allocated
   EKAT_REQUIRE_MSG (is_allocated(),
@@ -477,13 +492,13 @@ update_impl (const Field& x, const ST alpha, const ST beta)
           auto xv = x.get_view<const ST*,HD>();
           auto yv =   get_view<      ST*,HD>();
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            combine<CM>(xv(idx),yv(idx),alpha,beta);
+            combine_and_fill<CM>(xv(idx),yv(idx),fill_val,alpha,beta);
           });
         } else {
           auto xv = x.get_strided_view<const ST*,HD>();
           auto yv =   get_strided_view<      ST*,HD>();
           Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-            combine<CM>(xv(idx),yv(idx),alpha,beta);
+            combine_and_fill<CM>(xv(idx),yv(idx),fill_val,alpha,beta);
           });
         }
       }
@@ -495,7 +510,7 @@ update_impl (const Field& x, const ST alpha, const ST beta)
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j;
           unflatten_idx(idx,ext,i,j);
-          combine<CM>(xv(i,j),yv(i,j),alpha,beta);
+          combine_and_fill<CM>(xv(i,j),yv(i,j),fill_val,alpha,beta);
         });
       }
       break;
@@ -506,7 +521,7 @@ update_impl (const Field& x, const ST alpha, const ST beta)
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k;
           unflatten_idx(idx,ext,i,j,k);
-          combine<CM>(xv(i,j,k),yv(i,j,k),alpha,beta);
+          combine_and_fill<CM>(xv(i,j,k),yv(i,j,k),fill_val,alpha,beta);
         });
       }
       break;
@@ -517,7 +532,7 @@ update_impl (const Field& x, const ST alpha, const ST beta)
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k,l;
           unflatten_idx(idx,ext,i,j,k,l);
-          combine<CM>(xv(i,j,k,l),yv(i,j,k,l),alpha,beta);
+          combine_and_fill<CM>(xv(i,j,k,l),yv(i,j,k,l),fill_val,alpha,beta);
         });
       }
       break;
@@ -528,7 +543,7 @@ update_impl (const Field& x, const ST alpha, const ST beta)
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k,l,m;
           unflatten_idx(idx,ext,i,j,k,l,m);
-          combine<CM>(xv(i,j,k,l,m),yv(i,j,k,l,m),alpha,beta);
+          combine_and_fill<CM>(xv(i,j,k,l,m),yv(i,j,k,l,m),fill_val,alpha,beta);
         });
       }
       break;
@@ -539,7 +554,7 @@ update_impl (const Field& x, const ST alpha, const ST beta)
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k,l,m,n;
           unflatten_idx(idx,ext,i,j,k,l,m,n);
-          combine<CM>(xv(i,j,k,l,m,n),yv(i,j,k,l,m,n),alpha,beta);
+          combine_and_fill<CM>(xv(i,j,k,l,m,n),yv(i,j,k,l,m,n),fill_val,alpha,beta);
         });
       }
       break;

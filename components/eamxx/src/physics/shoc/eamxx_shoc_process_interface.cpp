@@ -64,13 +64,13 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   const auto s2 = s*s;
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
-  add_field<Required>("omega",            scalar3d_layout_mid,  Pa/s,    grid_name, ps);
-  add_field<Required>("surf_sens_flux",   scalar2d_layout_col,  W/m2,    grid_name);
-  add_field<Required>("surf_evap",        scalar2d_layout_col,  kg/m2/s, grid_name);
-  add_field<Required>("surf_mom_flux",    surf_mom_flux_layout, N/m2,    grid_name);
+  add_field<Required>("omega",          scalar3d_layout_mid,  Pa/s, grid_name, ps);
+  add_field<Required>("surf_sens_flux", scalar2d_layout_col,  W/m2, grid_name);
+  add_field<Required>("surf_mom_flux",  surf_mom_flux_layout, N/m2, grid_name);
 
-  add_field<Updated> ("T_mid",            scalar3d_layout_mid, K,       grid_name, ps);
-  add_field<Updated> ("qv",               scalar3d_layout_mid, Qunit,   grid_name, "tracers", ps);
+  add_field<Updated>("surf_evap", scalar2d_layout_col, kg/m2/s, grid_name);
+  add_field<Updated> ("T_mid",    scalar3d_layout_mid, K,       grid_name, ps);
+  add_field<Updated> ("qv",       scalar3d_layout_mid, Qunit,   grid_name, "tracers", ps);
 
   // Input variables
   add_field<Required>("p_mid",          scalar3d_layout_mid, Pa,    grid_name, ps);
@@ -91,7 +91,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Computed>("inv_qc_relvar", scalar3d_layout_mid, Qunit*Qunit, grid_name, ps);
 
   // Tracer group
-  add_group<Updated>("tracers",grid_name,ps,Bundling::Required);
+  add_group<Updated>("tracers", grid_name, ps, Bundling::Required);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
@@ -372,7 +372,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
     const auto& ice_flux   = get_field_out("ice_flux").get_view<Real*>();
     const auto& heat_flux  = get_field_out("heat_flux").get_view<Real*>();
     shoc_postprocess.set_mass_and_energy_fluxes (surf_evap, surf_sens_flux,
-      					         vapor_flux, water_flux,
+                                                 vapor_flux, water_flux,
                                                  ice_flux, heat_flux);
   }
 
@@ -433,6 +433,10 @@ void SHOCMacrophysics::run_impl (const double dt)
                        shoc_preprocess);
   Kokkos::fence();
 
+  if (m_params.get<bool>("check_flux_state_consistency", false)) {
+    check_flux_state_consistency(dt);
+  }
+
   // For now set the host timestep to the shoc timestep. This forces
   // number of SHOC timesteps (nadv) to be 1.
   // TODO: input parameter?
@@ -462,5 +466,53 @@ void SHOCMacrophysics::finalize_impl()
   // Do nothing
 }
 // =========================================================================================
+void SHOCMacrophysics::check_flux_state_consistency(const double dt)
+{
+  using PC = scream::physics::Constants<Real>;
+  const Real gravit = PC::gravit;
+  const Real qmin   = 1e-12; // minimum permitted constituent concentration (kg/kg)
 
+  const auto& pseudo_density = get_field_in ("pseudo_density").get_view<const Spack**>();
+  const auto& surf_evap      = get_field_out("surf_evap").get_view<Real*>();
+  const auto& qv             = get_field_out("qv").get_view<Spack**>();
+
+  const auto nlevs           = m_num_levs;
+  const auto nlev_packs      = ekat::npack<Spack>(nlevs);
+  const auto last_pack_idx   = (nlevs-1)/Spack::n;
+  const auto last_pack_entry = (nlevs-1)%Spack::n;
+  const auto policy          = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  Kokkos::parallel_for("check_flux_state_consistency",
+                       policy,
+                       KOKKOS_LAMBDA (const KT::MemberType& team) {
+    const auto i = team.league_rank();
+
+    const auto& pseudo_density_i = ekat::subview(pseudo_density, i);
+    const auto& qv_i             = ekat::subview(qv, i);
+
+    // reciprocal of pseudo_density at the bottom layer
+    const auto rpdel = 1.0/pseudo_density_i(last_pack_idx)[last_pack_entry];
+
+    // Check if the negative surface latent heat flux can exhaust
+    // the moisture in the lowest model level. If so, apply fixer.
+    const auto condition = surf_evap(i) - (qmin - qv_i(last_pack_idx)[last_pack_entry])/(dt*gravit*rpdel);
+    if (condition < 0) {
+      const auto cc = abs(surf_evap(i)*dt*gravit);
+
+      auto tracer_mass = [&](const int k) {
+        return qv_i(k)*pseudo_density_i(k);
+      };
+      Real mm = ekat::ExeSpaceUtils<KT::ExeSpace>::view_reduction(team, 0, nlevs, tracer_mass);
+
+      EKAT_KERNEL_ASSERT_MSG(mm >= cc, "Error! Total mass of column vapor should be greater than mass of surf_evap.\n");
+
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&](const int& k) {
+        const auto adjust = cc*qv_i(k)*pseudo_density_i(k)/mm;
+        qv_i(k) = (qv_i(k)*pseudo_density_i(k) - adjust)/pseudo_density_i(k);
+      });
+
+      surf_evap(i) = 0;
+    }
+  });
+}
+// =========================================================================================
 } // namespace scream

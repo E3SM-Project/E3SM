@@ -274,7 +274,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   {
     // Note, the vertical remapper defaults to a mask value of std numeric limits scaled by 0.1;
     const float mask_val = vert_remap_control.isParameter("Fill Value")
-                         ? vert_remap_control.get<double>("Fill Value") : DEFAULT_FILL_VALUE;
+                         ? vert_remap_control.get<double>("Fill Value") : constants::DefaultFillValue<float>().value;
     print ("    -> vertical remap ... \n",io_comm);
     auto gm_vert   = get_test_gm(io_comm,ncols_src,nlevs_tgt);
     auto grid_vert = gm_vert->get_grid("Point Grid");
@@ -330,7 +330,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   {
     // Note, the vertical remapper defaults to a mask value of std numeric limits scaled by 0.1;
     const float mask_val = horiz_remap_control.isParameter("Fill Value")
-                         ? horiz_remap_control.get<double>("Fill Value") : DEFAULT_FILL_VALUE;
+                         ? horiz_remap_control.get<double>("Fill Value") : constants::DefaultFillValue<float>().value;
     print ("    -> horizontal remap ... \n",io_comm);
     auto gm_horiz   = get_test_gm(io_comm,ncols_tgt,nlevs_src);
     auto grid_horiz = gm_horiz->get_grid("Point Grid");
@@ -403,7 +403,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   //                                ---  Vertical + Horizontal Remapping ---
   {
     const float mask_val = vert_horiz_remap_control.isParameter("Fill Value")
-                         ? vert_horiz_remap_control.get<double>("Fill Value") : DEFAULT_FILL_VALUE;
+                         ? vert_horiz_remap_control.get<double>("Fill Value") : constants::DefaultFillValue<float>().value;
     print ("    -> vertical + horizontal remap ... \n",io_comm);
     auto gm_vh   = get_test_gm(io_comm,ncols_tgt,nlevs_tgt);
     auto grid_vh = gm_vh->get_grid("Point Grid");

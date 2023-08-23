@@ -13,11 +13,7 @@ MAMMicrophysics::MAMMicrophysics(
     const ekat::Comm& comm,
     const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params),
-    logger("MAM4", ekat::logger::LogLevel::trace, comm),
     aero_config_(), nucleation_(new mam4::NucleationProcess(aero_config_)) {
-
-    logger.set_format("\t[%n %l] %v");
-    logger.trace("Hello from MAM4!");
 }
 
 AtmosphereProcessType MAMMicrophysics::type() const {
@@ -25,13 +21,11 @@ AtmosphereProcessType MAMMicrophysics::type() const {
 }
 
 std::string MAMMicrophysics::name() const {
-  return "MAMMicrophysics";
+  return "mam4_micro";
 }
 
 void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
-
-  logger.trace("entering MAMMicrophysics::set_grids");
 
   // The units of mixing ratio q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
@@ -57,8 +51,6 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   FieldLayout scalar3d_layout_mid{ {COL, LEV}, {ncol_, nlev_} };
 
   // Define fields needed in mam4xx.
-  const auto m2 = m*m;
-  const auto s2 = s*s;
 
   // atmospheric quantities
   add_field<Required>("omega", scalar3d_layout_mid, Pa/s, grid_name); // vertical pressure velocity
@@ -68,7 +60,7 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("qi", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // ice wet mixing ratio
   add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name, "tracers"); // ice number mixing ratio
   add_field<Required>("pbl_height", scalar2d_layout_col, m, grid_name); // planetary boundary layer height
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, q_unit, grid_name); // pdel, hydrostatic pressure
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name); // pdel, hydrostatic pressure
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name); // cloud fraction
 
   // droplet activation can alter cloud liquid and number mixing ratios
@@ -85,8 +77,6 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   // Tracers group -- do we need this in addition to the tracers above? In any
   // case, this call should be idempotent, so it can't hurt.
   add_group<Updated>("tracers", grid_name, 1, Bundling::Required);
-
-  logger.trace("leaving MAMMicrophysics::set_grids");
 }
 
 // this checks whether we have the tracers we expect
@@ -146,8 +136,6 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
                    "Error! Insufficient buffer size.\n");
 
-  logger.trace("entering init_buffers");
-
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
   // set view pointers for midpoint fields
@@ -193,15 +181,9 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
   size_t used_mem = (mem - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMMicrophysics.");
-
-  logger.trace("leaving init_buffers");
 }
 
 void MAMMicrophysics::initialize_impl(const RunType run_type) {
-
-  logger.trace("entering MAMMicrophysics::initialize");
-
-  logger.trace("MAMMicrophysics::initialize {}", __LINE__);
 
   const auto& T_mid = get_field_in("T_mid").get_view<const Real**>();
   const auto& p_mid = get_field_in("p_mid").get_view<const Real**>();
@@ -218,13 +200,9 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   const auto& n_aitken = get_field_out("n_aitken").get_view<Real**>();
   const auto& q_aitken_so4 = get_field_out("q_aitken_so4").get_view<Real**>();
 
-  logger.trace("MAMMicrophysics::initialize {}", __LINE__);
-
   const auto& tracers = get_group_out("tracers");
   const auto& tracers_info = tracers.m_info;
   int num_tracers = tracers_info->size();
-
-  logger.trace("MAMMicrophysics::initialize {}", __LINE__);
 
   // Alias local variables from temporary buffer
   auto z_mid = buffer_.z_mid;
@@ -237,8 +215,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   auto n_qi_dry = buffer_.n_qi_dry;
   auto w_updraft = buffer_.w_updraft;
 
-  logger.trace("MAMMicrophysics::initialize {}", __LINE__);
-
   // Perform any initialization work.
   if (run_type==RunType::Initial){
     /* e.g.
@@ -249,8 +225,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
     Kokkos::deep_copy(cldfrac_liq,0.0);
     */
   }
-
-  logger.trace("MAMMicrophysics::initialize {}", __LINE__);
 
   // set atmosphere state data
   T_mid_ = T_mid;
@@ -307,7 +281,16 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   //const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
   //workspace_mgr_.setup(buffer_.wsm_data, nlev_+1, 13+(n_wind_slots+n_trac_slots), default_policy);
 
-  logger.trace("leaving MAMMicrophysics::initialize");
+  // configure the nucleation parameterization
+  mam4::NucleationProcess::ProcessConfig nuc_config{};
+  nuc_config.dens_so4a_host = 1770.0;
+  nuc_config.mw_so4a_host = 115.0;
+  nuc_config.newnuc_method_user_choice = 2;
+  nuc_config.pbl_nuc_wang2008_user_choice = 1;
+  nuc_config.adjust_factor_pbl_ratenucl = 1.0;
+  nuc_config.accom_coef_h2so4 = 1.0;
+  nuc_config.newnuc_adjust_factor_dnaitdt = 1.0;
+  nucleation_->init(nuc_config);
 }
 
 void MAMMicrophysics::run_impl(const double dt) {
@@ -344,7 +327,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     const Int icol = team.league_rank(); // column index
 
     // extract column-specific atmosphere state data
-    haero::Atmosphere atm(ekat::subview(T_mid_, icol),
+    haero::Atmosphere atm(nlev_, ekat::subview(T_mid_, icol),
       ekat::subview(p_mid_, icol),
       ekat::subview(qv_dry, icol),
       ekat::subview(qc_, icol),
@@ -357,8 +340,10 @@ void MAMMicrophysics::run_impl(const double dt) {
       ekat::subview(w_updraft, icol),
       pblh_(icol));
 
+    // set surface state data
+    haero::Surface sfc{};
+
     // extract column-specific subviews into aerosol prognostics
-    using AeroConfig = mam4::AeroConfig;
     using ModeIndex = mam4::ModeIndex;
     using AeroId = mam4::AeroId;
     using GasId = mam4::GasId;
@@ -382,7 +367,14 @@ void MAMMicrophysics::run_impl(const double dt) {
     tends.q_aero_i[iait][iso4] = ekat::subview(buffer_.q_aitken_so4_tend, icol);
 
     // run the nucleation process to obtain tendencies
-    nucleation_->compute_tendencies(team, t, dt, atm, progs, diags, tends);
+    nucleation_->compute_tendencies(team, t, dt, atm, sfc, progs, diags, tends);
+#ifndef NDEBUG
+    const int lev_idx = 0;
+    if (icol == 0) {
+    m_atm_logger->debug("tends.q_gas[ih2so4] = {}, tends.n_mode_i[iait] = {}, tends.q_aero_i[iait][iso4] = {}",
+      tends.q_gas[ih2so4](lev_idx), tends.n_mode_i[iait](lev_idx), tends.q_aero_i[iait][iso4](lev_idx));
+    }
+#endif
 
     // accumulate tendencies into prognostics
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int klev) {

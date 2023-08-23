@@ -678,7 +678,8 @@ reset_dev_views()
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::
 register_variables(const std::string& filename,
-                   const std::string& fp_precision)
+                   const std::string& fp_precision,
+                   const scorpio::FileMode mode)
 {
   using namespace scorpio;
   using namespace ShortFieldTagsNames;
@@ -728,6 +729,18 @@ register_variables(const std::string& filename,
 
     register_variable(filename, name, name, units, vec_of_dims,
                       "real",fp_precision, io_decomp_tag);
+
+    // Add FillValue as an attribute of each variable
+    // FillValue is a protected metadata, do not add it if it already existed
+    if (mode != FileMode::Append ) {
+     if (fp_precision == "real") {
+       Real fill_value = m_fill_value;
+       set_variable_metadata(filename, name, "_FillValue",fill_value);
+     } else {
+       float fill_value = m_fill_value;
+       set_variable_metadata(filename, name, "_FillValue",fill_value);
+     }
+    }
 
     // Add any extra attributes for this variable, examples include:
     //   1. A list of subfields associated with a field group output
@@ -855,7 +868,8 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::
 setup_output_file(const std::string& filename,
-                  const std::string& fp_precision)
+                  const std::string& fp_precision,
+                  const scorpio::FileMode mode)
 {
   using namespace scream::scorpio;
 
@@ -865,7 +879,7 @@ setup_output_file(const std::string& filename,
   }
 
   // Register variables with netCDF file.  Must come after dimensions are registered.
-  register_variables(filename,fp_precision);
+  register_variables(filename,fp_precision,mode);
 
   // Set the offsets of the local dofs in the global vector.
   set_degrees_of_freedom(filename);
