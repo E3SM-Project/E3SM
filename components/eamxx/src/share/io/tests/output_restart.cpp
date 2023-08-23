@@ -27,7 +27,7 @@
 
 namespace scream {
 
-constexpr Real FillValue = DEFAULT_FILL_VALUE;
+constexpr Real FillValue = constants::DefaultFillValue<float>().value;
 
 std::shared_ptr<FieldManager>
 get_test_fm(const std::shared_ptr<const AbstractGrid>& grid);
