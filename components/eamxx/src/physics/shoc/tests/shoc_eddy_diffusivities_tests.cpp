@@ -24,6 +24,7 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
 
+  // TODO: Property tests need to be fixed to account for change of inputs (no obklen, add tabs)
   /*
   static void run_property()
   {
