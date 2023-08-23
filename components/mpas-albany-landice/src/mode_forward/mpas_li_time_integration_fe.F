@@ -122,6 +122,12 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("advection prep")
 
+! === Advance the clock before all other physics happen ===========
+      call mpas_timer_start("advancing clock")
+      call advance_clock(domain, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("advancing clock")
+
 !TODO: Determine whether grounded melting should in fact be called first
 ! === Face melting for grounded ice ===========
       call mpas_timer_start("face melting for grounded ice")
@@ -1079,6 +1085,115 @@ module li_time_integration_fe
 
    !--------------------------------------------------------------------
    end subroutine calculate_layerThicknessEdge
+
+!***********************************************************************
+!
+!  routine advance_clock
+!
+!> \brief   Update the clock
+!> \author  Holly Han
+!> \date    July 2023
+!> \details
+!>  This routine advances the clock and is called right after the
+!>  subroutine 'prepare_advection' such that the clock is updated
+!>  earlier in the timestep before other physics are calculated
+!-----------------------------------------------------------------------
+
+   subroutine advance_clock(domain, err)
+
+      use mpas_timekeeping
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+
+      type (mpas_pool_type), pointer :: meshPool
+      type (MPAS_Time_Type) :: currTime  !< current time as time type
+      type (MPAS_TimeInterval_type) :: timeStepInterval !< the current time step as an interval
+      type (MPAS_Time_type) :: simulationStartTime_timeType
+
+      logical, pointer :: config_adaptive_timestep
+
+      character (len=StrKIND), pointer :: xtime
+      character (len=StrKIND), pointer :: simulationStartTime
+      character(len=StrKIND) :: timeStamp !< current time as a string
+
+      real (kind=RKIND), pointer :: daysSinceStart
+      real (kind=RKIND), pointer :: deltat ! variable in blocks
+
+      integer :: err_tmp
+
+      err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
+
+      ! ===
+      ! === Adaptive timestep: update clock information
+      ! ===
+      ! Set time step in clock object since the time step could have changed
+      ! Need to get value out of a block, but all blocks should have the same value, so just use first block
+      if (config_adaptive_timestep) then
+         block => domain % blocklist
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
+         ! convert dt in seconds to timeInterval type
+         call mpas_set_timeInterval(timeStepInterval, dt=deltat, ierr=err_tmp)
+         err = ior(err,err_tmp)
+         ! update the clock with the timeInterval
+         call mpas_set_clock_timestep(domain % clock, timeStepInterval, err_tmp)
+         err = ior(err,err_tmp)
+      endif
+
+      ! ===
+      ! === Update clock information
+      ! ===
+      ! Advance clock - needed to wait until after time step is completed in case the dt has changed!
+      call mpas_advance_clock(domain % clock)
+      currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
+      call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_log_write('  Completed timestep.  New time is: ' // trim(timeStamp), flushNow=.true.)
+
+      block => domain % blocklist
+      do while (associated(block))
+         ! Assign the time stamp for this time step
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_array(meshPool, 'xtime', xtime)
+         xtime = timeStamp
+
+         ! compute time since start of simulation, in days
+         call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
+         call mpas_pool_get_array(meshPool, 'daysSinceStart',daysSinceStart)
+         call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
+         call mpas_get_timeInterval(currTime - simulationStartTime_timeType, dt=daysSinceStart)
+         daysSinceStart = daysSinceStart / seconds_per_day
+
+         block => block % next
+      end do
+
+      ! === error check
+      if (err > 0) then
+          call mpas_log_write("An error has occurred in advance_clock.", MPAS_LOG_ERR)
+      endif
+
+   !--------------------------------------------------------------------
+    end subroutine advance_clock
 
 
 end module li_time_integration_fe
