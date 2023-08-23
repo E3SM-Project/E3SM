@@ -66,7 +66,7 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   const auto grid = gm->get_grid("Physics");
   const int nlcols = grid->get_num_local_dofs();
   const auto dofs_gids = grid->get_dofs_gids().get_view<const int*,Host>();
-  std::vector<std::string> fnames = {"Faxa_lwdn"};
+  std::vector<std::string> fnames = {"lwdn"};
   FieldLayout layout({COL},{nlcols});
   auto fm = std::make_shared<FieldManager>(grid);
   fm->registration_begins();
@@ -488,8 +488,11 @@ TEST_CASE("surface-coupling", "") {
   // Set up forcing to data interpolated from file
   const auto exp_file_files = create_from_file_test_data(atm_comm, t0, ncol_in);
   const vos_type exp_file_fields = {"Faxa_lwdn"};
+  // Test the use of an alternative name as stored in the data file(s).
+  const vos_type exp_file_fields_alt_name = {"Faxa_lwdn:lwdn"};
   auto& exp_file_params = sc_exp_params.sublist("prescribed_from_file");
   exp_file_params.set<vos_type>("fields",exp_file_fields);
+  exp_file_params.set<vos_type>("fields_alt_name",exp_file_fields_alt_name);
   exp_file_params.set<vos_type>("files",exp_file_files);
 
   // Need to register products in the factory *before* we create any atm process or grids manager.

@@ -40,6 +40,10 @@ set (SCREAM_LIBS
      nudging
      diagnostics
 )
+if (SCREAM_ENABLE_MAM)
+  set(SCREAM_LIBS ${SCREAM_LIBS} mam)
+endif()
+
 
 # Create atm lib
 add_library(atm ${ATM_SRC})

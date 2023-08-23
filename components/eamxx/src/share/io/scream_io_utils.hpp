@@ -7,7 +7,6 @@
 #include "ekat/mpi/ekat_comm.hpp"
 
 #include <string>
-#include <limits>
 
 namespace scream
 {
@@ -19,8 +18,6 @@ enum class OutputAvgType {
   Average,
   Invalid
 };
-
-constexpr float DEFAULT_FILL_VALUE = std::numeric_limits<float>::max() / 1e5;
 
 inline std::string e2str(const OutputAvgType avg) {
   using OAT = OutputAvgType;

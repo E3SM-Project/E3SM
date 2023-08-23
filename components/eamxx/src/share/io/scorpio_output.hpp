@@ -138,7 +138,7 @@ public:
   void init();
   void reset_dev_views();
   void update_avg_cnt_view(const Field&, view_1d_dev& dev_view);
-  void setup_output_file (const std::string& filename, const std::string& fp_precision);
+  void setup_output_file (const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
   void run (const std::string& filename,
             const bool output_step, const bool checkpoint_step,
             const int nsteps_since_last_output,
@@ -159,7 +159,7 @@ protected:
   std::shared_ptr<const fm_type> get_field_manager (const std::string& mode) const;
 
   void register_dimensions(const std::string& name);
-  void register_variables(const std::string& filename, const std::string& fp_precision);
+  void register_variables(const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
   void set_degrees_of_freedom(const std::string& filename);
   std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
@@ -202,7 +202,7 @@ protected:
   //   NetCDF: Numeric conversion not representable
   // Also, by default, don't pick max float, to avoid any overflow if the value
   // is used inside other calculation and/or remap.
-  float m_fill_value = DEFAULT_FILL_VALUE;
+  float m_fill_value = constants::DefaultFillValue<float>().value;
 
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;

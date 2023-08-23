@@ -26,6 +26,7 @@
 #endif
 #ifdef EAMXX_HAS_MAM
 #include "physics/mam/eamxx_mam_microphysics_process_interface.hpp"
+#include "physics/mam/eamxx_mam_optics_process_interface.hpp"
 #endif
 
 namespace scream {
@@ -51,7 +52,8 @@ inline void register_physics () {
   proc_factory.register_product("Nudging",&create_atmosphere_process<Nudging>);
 #endif
 #ifdef EAMXX_HAS_MAM
-  proc_factory.register_product("MAMMicrophysics",&create_atmosphere_process<MAMMicrophysics>);
+  proc_factory.register_product("mam4_micro",&create_atmosphere_process<MAMMicrophysics>);
+  proc_factory.register_product("mam4_optics",&create_atmosphere_process<MAMOptics>);
 #endif
 }
 

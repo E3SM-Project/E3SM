@@ -57,6 +57,8 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   m_nlay = m_grid->get_num_vertical_levels();
   m_lat  = m_grid->get_geometry_data("lat");
   m_lon  = m_grid->get_geometry_data("lon");
+  using SmallPack = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
+  m_nlay_w_pack = SCREAM_SMALL_PACK_SIZE*ekat::npack<SmallPack>(m_nlay);
 
   // Figure out radiation column chunks stats
   m_col_chunk_size = std::min(m_params.get("column_chunk_size", m_ncol),m_ncol);
@@ -237,11 +239,15 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.sw_heating.totElems();
   m_buffer.lw_heating = decltype(m_buffer.lw_heating)("lw_heating", mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.lw_heating.totElems();
-  // 3d arrays
   m_buffer.p_lev = decltype(m_buffer.p_lev)("p_lev", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.p_lev.totElems();
   m_buffer.t_lev = decltype(m_buffer.t_lev)("t_lev", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.t_lev.totElems();
+  m_buffer.d_tint = decltype(m_buffer.d_tint)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.d_tint.size();
+  m_buffer.d_dz  = decltype(m_buffer.d_dz )(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.d_dz.size();
+  // 3d arrays
   m_buffer.sw_flux_up = decltype(m_buffer.sw_flux_up)("sw_flux_up", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.sw_flux_up.totElems();
   m_buffer.sw_flux_dn = decltype(m_buffer.sw_flux_dn)("sw_flux_dn", mem, m_col_chunk_size, m_nlay+1);
@@ -295,7 +301,6 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.cld_tau_sw_gpt.totElems();
   m_buffer.cld_tau_lw_gpt = decltype(m_buffer.cld_tau_lw_gpt)("cld_tau_lw_gpt", mem, m_col_chunk_size, m_nlay, m_nlwgpts);
   mem += m_buffer.cld_tau_lw_gpt.totElems();
-
   size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
 } // RRTMGPRadiation::init_buffers
@@ -393,23 +398,18 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_surf_lw_flux_up = get_field_in("surf_lw_flux_up").get_view<const Real*>();
   // Output fields
   auto d_tmid = get_field_out("T_mid").get_view<Real**>();
-  using SmallPack = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
-  const int n_lay_w_pack = SCREAM_SMALL_PACK_SIZE*ekat::npack<SmallPack>(m_nlay);
-  view_3d_real d_aero_tau_sw("aero_tau_sw",m_ncol,m_nswbands,n_lay_w_pack);
-  view_3d_real d_aero_ssa_sw("aero_ssa_sw",m_ncol,m_nswbands,n_lay_w_pack);
-  view_3d_real d_aero_g_sw  ("aero_g_sw"  ,m_ncol,m_nswbands,n_lay_w_pack);
-  view_3d_real d_aero_tau_lw("aero_tau_lw",m_ncol,m_nlwbands,n_lay_w_pack);
-  if (m_do_aerosol_rad) {
-    Kokkos::deep_copy(d_aero_tau_sw,get_field_in("aero_tau_sw").get_view<const Real***>());
-    Kokkos::deep_copy(d_aero_ssa_sw,get_field_in("aero_ssa_sw").get_view<const Real***>());
-    Kokkos::deep_copy(d_aero_g_sw  ,get_field_in("aero_g_sw"  ).get_view<const Real***>());
-    Kokkos::deep_copy(d_aero_tau_lw,get_field_in("aero_tau_lw").get_view<const Real***>());
-  } else {
-    Kokkos::deep_copy(d_aero_tau_sw,0.0);
-    Kokkos::deep_copy(d_aero_ssa_sw,0.0);
-    Kokkos::deep_copy(d_aero_g_sw  ,0.0);
-    Kokkos::deep_copy(d_aero_tau_lw,0.0);
 
+  // Aerosol optics only exist if m_do_aerosol_rad is true, so declare views and copy from FM if so
+  using view_3d = Field::view_dev_t<const Real***>;
+  view_3d d_aero_tau_sw;
+  view_3d d_aero_ssa_sw;
+  view_3d d_aero_g_sw;
+  view_3d d_aero_tau_lw;
+  if (m_do_aerosol_rad) {
+    d_aero_tau_sw = get_field_in("aero_tau_sw").get_view<const Real***>();
+    d_aero_ssa_sw = get_field_in("aero_ssa_sw").get_view<const Real***>();
+    d_aero_g_sw   = get_field_in("aero_g_sw"  ).get_view<const Real***>();
+    d_aero_tau_lw = get_field_in("aero_tau_lw").get_view<const Real***>();
   }
   auto d_sw_flux_up = get_field_out("SW_flux_up").get_view<Real**>();
   auto d_sw_flux_dn = get_field_out("SW_flux_dn").get_view<Real**>();
@@ -438,6 +438,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   const auto nlwbands = m_nlwbands;
   const auto nswbands = m_nswbands;
   const auto nlwgpts = m_nlwgpts;
+  const auto do_aerosol_rad = m_do_aerosol_rad;
 
   // Are we going to update fluxes and heating this step?
   auto ts = timestamp();
@@ -538,6 +539,9 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto cld_tau_sw_gpt  = subview_3d(m_buffer.cld_tau_sw_gpt);
       auto cld_tau_lw_gpt  = subview_3d(m_buffer.cld_tau_lw_gpt);
 
+      auto d_tint = m_buffer.d_tint;
+      auto d_dz = m_buffer.d_dz;
+
       // Set gas concs to "view" only the first ncol columns
       m_gas_concs.ncol = ncol;
       m_gas_concs.concs = subview_3d(gas_concs);
@@ -562,10 +566,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
           }
         }
         Kokkos::deep_copy(d_mu0,h_mu0);
-
-        // dz and T_int will need to be computed
-        view_2d_real d_tint("T_int", ncol, m_nlay+1);
-        view_2d_real d_dz  ("dz",    ncol, m_nlay);
 
         const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -624,18 +624,33 @@ void RRTMGPRadiation::run_impl (const double dt) {
           t_lev(i+1,nlay+1) = d_tint(i,nlay);
 
           // Note that RRTMGP expects ordering (col,lay,bnd) but the FM keeps things in (col,bnd,lay) order
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands*nlay), [&] (const int&idx) {
-              auto b = idx / nlay;
-              auto k = idx % nlay;
-              aero_tau_sw(i+1,k+1,b+1) = d_aero_tau_sw(icol,b,k);
-              aero_ssa_sw(i+1,k+1,b+1) = d_aero_ssa_sw(icol,b,k);
-              aero_g_sw  (i+1,k+1,b+1) = d_aero_g_sw  (icol,b,k);
-          });
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands*nlay), [&] (const int&idx) {
-              auto b = idx / nlay;
-              auto k = idx % nlay;
-              aero_tau_lw(i+1,k+1,b+1) = d_aero_tau_lw(icol,b,k);
-          });
+          if (do_aerosol_rad) {
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands*nlay), [&] (const int&idx) {
+                auto b = idx / nlay;
+                auto k = idx % nlay;
+                aero_tau_sw(i+1,k+1,b+1) = d_aero_tau_sw(icol,b,k);
+                aero_ssa_sw(i+1,k+1,b+1) = d_aero_ssa_sw(icol,b,k);
+                aero_g_sw  (i+1,k+1,b+1) = d_aero_g_sw  (icol,b,k);
+            });
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands*nlay), [&] (const int&idx) {
+                auto b = idx / nlay;
+                auto k = idx % nlay;
+                aero_tau_lw(i+1,k+1,b+1) = d_aero_tau_lw(icol,b,k);
+            });
+          } else {
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands*nlay), [&] (const int&idx) {
+                auto b = idx / nlay;
+                auto k = idx % nlay;
+                aero_tau_sw(i+1,k+1,b+1) = 0;
+                aero_ssa_sw(i+1,k+1,b+1) = 0;
+                aero_g_sw  (i+1,k+1,b+1) = 0;
+            });
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands*nlay), [&] (const int&idx) {
+                auto b = idx / nlay;
+                auto k = idx % nlay;
+                aero_tau_lw(i+1,k+1,b+1) = 0;
+            });
+          }
         });
       }
       Kokkos::fence();

@@ -43,7 +43,7 @@ CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
 #    Examples:
 #      - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
 #      - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
-METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit")
+METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit", "doc")
 
 ###############################################################################
 def do_cime_vars(entry, case, refine=False, extra=None):

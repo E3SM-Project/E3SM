@@ -102,7 +102,7 @@ public:
         // to tracer group in postprocessing.
         // TODO: remove *_copy views once SHOC can request a subset of tracers.
         tke_copy(i,k) = tke(i,k);
-        qc_copy(i,k)  = qc(i,k); 
+        qc_copy(i,k)  = qc(i,k);
 
         qw(i,k) = qv(i,k) + qc(i,k);
 
@@ -294,7 +294,7 @@ public:
 
         cldfrac_liq(i,k) = ekat::min(cldfrac_liq(i,k), 1);
 
-        //P3 uses inv_qc_relvar, P3 is using dry mmrs, but 
+        //P3 uses inv_qc_relvar, P3 is using dry mmrs, but
         //wet<->dry conversion is a constant factor that cancels out in mean(qc)^2/mean(qc'*qc').
         inv_qc_relvar(i,k) = 1;
         const auto condition = (qc(i,k) != 0 && qc2(i,k) != 0);
@@ -474,6 +474,9 @@ protected:
 #endif
 
   void initialize_impl (const RunType run_type);
+
+  // Update flux (if necessary)
+  void check_flux_state_consistency(const double dt);
 
 protected:
 
