@@ -5321,243 +5321,6 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_column_ocean_mixed_layer
-!
-!> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th April
-!> \details
-!>
-!
-!-----------------------------------------------------------------------
-
-  subroutine seaice_column_ocean_mixed_layer(domain)
-
-    use ice_colpkg, only: &
-         colpkg_atm_boundary, &
-         colpkg_ocn_mixed_layer
-
-    use seaice_constants, only: &
-         seaiceOceanAlbedo
-
-    type(domain_type) :: domain
-
-    type(block_type), pointer :: block
-
-    type(MPAS_pool_type), pointer :: &
-         oceanCoupling, &
-         atmosCoupling, &
-         atmosForcing, &
-         tracersAggregate, &
-         drag, &
-         oceanFluxes, &
-         oceanAtmosphere
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         seaSurfaceTemperature, &
-         seaFreezingTemperature, &
-         oceanMixedLayerDepth, &
-         oceanHeatFluxConvergence, &
-         airPotentialTemperature, &
-         airSpecificHumidity, &
-         uAirVelocity, &
-         vAirVelocity, &
-         windSpeed, &
-         airLevelHeight, &
-         airDensity, &
-         longwaveDown, &
-         iceAreaCell, &
-         freezingMeltingPotential, &
-         shortwaveVisibleDirectDown, &
-         shortwaveVisibleDiffuseDown, &
-         shortwaveIRDirectDown, &
-         shortwaveIRDiffuseDown, &
-         airDragCoefficient, &
-         airOceanDragCoefficientRatio, &
-         oceanHeatFlux, &
-         oceanShortwaveFlux, &
-         airStressOceanU, &
-         airStressOceanV, &
-         atmosReferenceTemperature2mOcean, &
-         atmosReferenceHumidity2mOcean, &
-         longwaveUpOcean, &
-         sensibleHeatFluxOcean, &
-         latentHeatFluxOcean, &
-         evaporativeWaterFluxOcean, &
-         albedoVisibleDirectOcean, &
-         albedoIRDirectOcean, &
-         albedoVisibleDiffuseOcean, &
-         albedoIRDiffuseOcean
-
-    real(kind=RKIND) :: &
-         sensibleTransferCoefficient, &
-         latentTransferCoefficient, &
-         potentialTemperatureDifference, &
-         specificHumidityDifference
-
-    real(kind=RKIND), pointer :: &
-         config_dt
-
-    integer :: &
-         iCell
-
-    integer, pointer :: &
-         nCellsSolve
-
-    integer, dimension(:), pointer :: &
-           landIceMask
-
-    logical, pointer :: &
-         config_use_test_ice_shelf
-
-    call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
-
-    block => domain % blocklist
-    do while (associated(block))
-
-       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
-       call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
-       call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
-       call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregate)
-       call MPAS_pool_get_subpool(block % structs, "drag", drag)
-       call MPAS_pool_get_subpool(block % structs, "ocean_fluxes", oceanFluxes)
-       call MPAS_pool_get_subpool(block % structs, "ocean_atmosphere", oceanAtmosphere)
-
-       call MPAS_pool_get_dimension(oceanCoupling, "nCellsSolve", nCellsSolve)
-
-       call MPAS_pool_get_array(oceanCoupling, "seaSurfaceTemperature", seaSurfaceTemperature)
-       call MPAS_pool_get_array(oceanCoupling, "seaFreezingTemperature", seaFreezingTemperature)
-       call MPAS_pool_get_array(oceanCoupling, "freezingMeltingPotential", freezingMeltingPotential)
-       call MPAS_pool_get_array(oceanCoupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
-       call MPAS_pool_get_array(oceanCoupling, "oceanHeatFluxConvergence", oceanHeatFluxConvergence)
-
-       call MPAS_pool_get_array(atmosCoupling, "airPotentialTemperature", airPotentialTemperature)
-       call MPAS_pool_get_array(atmosCoupling, "uAirVelocity", uAirVelocity)
-       call MPAS_pool_get_array(atmosCoupling, "vAirVelocity", vAirVelocity)
-       call MPAS_pool_get_array(atmosCoupling, "airLevelHeight", airLevelHeight)
-       call MPAS_pool_get_array(atmosCoupling, "airSpecificHumidity", airSpecificHumidity)
-       call MPAS_pool_get_array(atmosCoupling, "airDensity", airDensity)
-       call MPAS_pool_get_array(atmosCoupling, "longwaveDown", longwaveDown)
-       call MPAS_pool_get_array(atmosCoupling, "shortwaveVisibleDirectDown", shortwaveVisibleDirectDown)
-       call MPAS_pool_get_array(atmosCoupling, "shortwaveVisibleDiffuseDown", shortwaveVisibleDiffuseDown)
-       call MPAS_pool_get_array(atmosCoupling, "shortwaveIRDirectDown", shortwaveIRDirectDown)
-       call MPAS_pool_get_array(atmosCoupling, "shortwaveIRDiffuseDown", shortwaveIRDiffuseDown)
-
-       call MPAS_pool_get_array(atmosForcing, "windSpeed", windSpeed)
-
-       call MPAS_pool_get_array(tracersAggregate, "iceAreaCell", iceAreaCell)
-
-       call MPAS_pool_get_array(drag, "airDragCoefficient", airDragCoefficient)
-       call MPAS_pool_get_array(drag, "airOceanDragCoefficientRatio", airOceanDragCoefficientRatio)
-
-       call MPAS_pool_get_array(oceanFluxes, "oceanHeatFlux", oceanHeatFlux)
-       call MPAS_pool_get_array(oceanFluxes, "oceanShortwaveFlux", oceanShortwaveFlux)
-
-       call MPAS_pool_get_array(oceanAtmosphere, "airStressOceanU", airStressOceanU)
-       call MPAS_pool_get_array(oceanAtmosphere, "airStressOceanV", airStressOceanV)
-       call MPAS_pool_get_array(oceanAtmosphere, "atmosReferenceTemperature2mOcean", atmosReferenceTemperature2mOcean)
-       call MPAS_pool_get_array(oceanAtmosphere, "atmosReferenceHumidity2mOcean", atmosReferenceHumidity2mOcean)
-       call MPAS_pool_get_array(oceanAtmosphere, "albedoVisibleDirectOcean", albedoVisibleDirectOcean)
-       call MPAS_pool_get_array(oceanAtmosphere, "albedoVisibleDiffuseOcean", albedoVisibleDiffuseOcean)
-       call MPAS_pool_get_array(oceanAtmosphere, "albedoIRDirectOcean", albedoIRDirectOcean)
-       call MPAS_pool_get_array(oceanAtmosphere, "albedoIRDiffuseOcean", albedoIRDiffuseOcean)
-       call MPAS_pool_get_array(oceanAtmosphere, "longwaveUpOcean", longwaveUpOcean)
-       call MPAS_pool_get_array(oceanAtmosphere, "sensibleHeatFluxOcean", sensibleHeatFluxOcean)
-       call MPAS_pool_get_array(oceanAtmosphere, "latentHeatFluxOcean", latentHeatFluxOcean)
-       call MPAS_pool_get_array(oceanAtmosphere, "evaporativeWaterFluxOcean", evaporativeWaterFluxOcean)
-
-       do iCell = 1, nCellsSolve
-          call colpkg_atm_boundary(&
-               'ocn', &
-               seaSurfaceTemperature(iCell), &
-               airPotentialTemperature(iCell), &
-               uAirVelocity(iCell), &
-               vAirVelocity(iCell), &
-               windSpeed(iCell), &
-               airLevelHeight(iCell), &
-               airSpecificHumidity(iCell), &
-               airDensity(iCell), &
-               airStressOceanU(iCell), &
-               airStressOceanV(iCell), &
-               atmosReferenceTemperature2mOcean(iCell), &
-               atmosReferenceHumidity2mOcean(iCell), &
-               potentialTemperatureDifference, &
-               specificHumidityDifference, &
-               latentTransferCoefficient, &
-               sensibleTransferCoefficient, &
-               airDragCoefficient(iCell), &
-               airOceanDragCoefficientRatio(iCell))
-
-          albedoVisibleDirectOcean(iCell)  = seaiceOceanAlbedo
-          albedoIRDirectOcean(iCell)       = seaiceOceanAlbedo
-          albedoVisibleDiffuseOcean(iCell) = seaiceOceanAlbedo
-          albedoIRDiffuseOcean(iCell)      = seaiceOceanAlbedo
-
-          call colpkg_ocn_mixed_layer(&
-               albedoVisibleDirectOcean(iCell), &
-               shortwaveVisibleDirectDown(iCell), &
-               albedoIRDirectOcean(iCell), &
-               shortwaveIRDirectDown(iCell), &
-               albedoVisibleDiffuseOcean(iCell), &
-               shortwaveVisibleDiffuseDown(iCell), &
-               albedoIRDiffuseOcean(iCell), &
-               shortwaveIRDiffuseDown(iCell), &
-               seaSurfaceTemperature(iCell), &
-               longwaveUpOcean(iCell), &
-               sensibleHeatFluxOcean(iCell), &
-               sensibleTransferCoefficient, &
-               latentHeatFluxOcean(iCell), &
-               latentTransferCoefficient, &
-               evaporativeWaterFluxOcean(iCell), &
-               longwaveDown(iCell), &
-               potentialTemperatureDifference, &
-               specificHumidityDifference, &
-               iceAreaCell(iCell), &
-               oceanHeatFlux(iCell), &
-               oceanShortwaveFlux(iCell), &
-               oceanMixedLayerDepth(iCell), &
-               seaFreezingTemperature(iCell), &
-               oceanHeatFluxConvergence(iCell), &
-               freezingMeltingPotential(iCell), &
-               config_dt)
-
-       enddo ! iCell
-
-       block => block % next
-    enddo
-
-    ! remove frazil from below ice shelves if were testing that
-    call MPAS_pool_get_config(domain % configs, "config_use_test_ice_shelf", config_use_test_ice_shelf)
-
-    if (config_use_test_ice_shelf) then
-
-       block => domain % blocklist
-       do while (associated(block))
-
-          call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
-
-          call MPAS_pool_get_array(oceanCoupling, "freezingMeltingPotential", freezingMeltingPotential)
-          call MPAS_pool_get_array(oceanCoupling, "landIceMask", landIceMask)
-
-          call MPAS_pool_get_dimension(oceanCoupling, "nCellsSolve", nCellsSolve)
-
-          do iCell = 1, nCellsSolve
-
-             if (landIceMask(iCell) == 1) then
-                freezingMeltingPotential(iCell) = 0.0_RKIND
-             endif
-
-          enddo ! iCell
-
-          block => block % next
-       enddo
-
-    endif !
-
-  end subroutine seaice_column_ocean_mixed_layer
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
 !  seaice_icepack_ocean_mixed_layer
 !
 !> \brief
@@ -5765,7 +5528,7 @@ contains
 
     call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
-    ! remove frazil from below ice shelves if were testing that
+    ! remove frazil from below ice shelves if we are testing that
     call MPAS_pool_get_config(domain % configs, "config_use_test_ice_shelf", config_use_test_ice_shelf)
 
     if (config_use_test_ice_shelf) then
@@ -5991,15 +5754,12 @@ contains
 
   function seaice_icepack_sea_freezing_temperature(seaSurfaceSalinity) result(seaFreezingTemperature)
 
-!echmod    use ice_colpkg, only: &
-!echmod         colpkg_sea_freezing_temperature
     use icepack_intfc, only: &
          icepack_sea_freezing_temperature
 
     real(kind=RKIND), intent(in) :: seaSurfaceSalinity
     real(kind=RKIND) :: seaFreezingTemperature
 
-!echmod    seaFreezingTemperature = colpkg_sea_freezing_temperature(seaSurfaceSalinity)
     seaFreezingTemperature = icepack_sea_freezing_temperature(seaSurfaceSalinity)
 
   end function seaice_icepack_sea_freezing_temperature
@@ -6008,15 +5768,12 @@ contains
 
   function seaice_icepack_liquidus_temperature(salinity) result(liquidusTemperature)
 
-!echmod    use ice_colpkg, only: &
-!echmod         colpkg_liquidus_temperature
     use icepack_intfc, only: &
          icepack_liquidus_temperature
 
     real(kind=RKIND), intent(in) :: salinity
     real(kind=RKIND) :: liquidusTemperature
 
-!echmod    liquidusTemperature = colpkg_liquidus_temperature(salinity)
     liquidusTemperature = icepack_liquidus_temperature(salinity)
 
   end function seaice_icepack_liquidus_temperature
@@ -6025,15 +5782,12 @@ contains
 
   function seaice_icepack_enthalpy_snow(snowTemperature) result(snowEnthalpy)
 
-!echmod    use ice_colpkg, only: &
-!echmod         colpkg_enthalpy_snow
     use icepack_intfc, only: &
          icepack_enthalpy_snow
 
     real(kind=RKIND), intent(in) :: snowTemperature
     real(kind=RKIND) :: snowEnthalpy
 
-!echmod    snowEnthalpy = colpkg_enthalpy_snow(snowTemperature)
     snowEnthalpy = icepack_enthalpy_snow(snowTemperature)
 
   end function seaice_icepack_enthalpy_snow
@@ -6042,14 +5796,41 @@ contains
 
   function seaice_icepack_enthalpy_ice(iceTemperature, iceSalinity) result(iceEnthalpy)
 
-    use ice_colpkg, only: &
-         colpkg_enthalpy_ice
+!echmod - this function will be needed for the prescribed ice configuration - not tested
+
+    use ice_mushy_physics, only: enthalpy_mush
+
+    use seaice_constants, only: &
+        seaiceMeltingTemperatureDepression, & ! melting temperature depression factor (C/ppt)
+        seaiceDensityIce, &                   ! density of ice (kg/m^3)
+        seaiceFreshIceSpecificHeat, &         ! specific heat of fresh ice (J/kg/K)
+        seaiceLatentHeatMelting, &            ! latent heat of melting of fresh ice (J/kg)
+        seaiceSeaWaterSpecificHeat            ! specific heat of ocn (J/kg/K)
+
+    type(domain_type) :: domain
 
     real(kind=RKIND), intent(in) :: iceTemperature
     real(kind=RKIND), intent(in) :: iceSalinity
     real(kind=RKIND) :: iceEnthalpy
 
-    iceEnthalpy = colpkg_enthalpy_ice(iceTemperature, iceSalinity)
+    real(kind=RKIND) :: qin
+    real(kind=RKIND) :: Tmlt
+
+    character(len=strKIND), pointer :: config_thermodynamics_type
+
+    call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
+
+    if (trim(config_thermodynamics_type) == "mushy") then
+
+       qin = enthalpy_mush(iceTemperature, iceSalinity)
+
+    else
+
+       Tmlt = -iceSalinity*seaiceMeltingTemperatureDepression
+       qin = -(seaiceDensityIce * (seaiceFreshIceSpecificHeat*(Tmlt-iceTemperature) &
+               + seaiceLatentHeatMelting*(1.0_RKIND-Tmlt/iceTemperature) - seaiceSeaWaterSpecificHeat*Tmlt))
+
+    endif
 
   end function seaice_icepack_enthalpy_ice
 
@@ -6057,8 +5838,11 @@ contains
 
   function seaice_icepack_salinity_profile(depth) result(iceSalinity)
 
-    use ice_colpkg, only: &
-         colpkg_salinity_profile
+!echmod - this function will be needed for the prescribed ice configuration - not tested
+
+    use seaice_constants, only: &
+       pii, &        !echmod - use SHR_CONST_PI
+       seaiceMaximumSalinity         ! ice maximum salinity (ppt)
 
     real(kind=RKIND), intent(in) :: &
          depth ! depth
@@ -6066,7 +5850,11 @@ contains
     real(kind=RKIND) :: &
          iceSalinity ! initial salinity profile
 
-    iceSalinity = colpkg_salinity_profile(depth)
+    real (kind=RKIND), parameter :: &
+         nsal    = 0.407_RKIND, &
+         msal    = 0.573_RKIND
+
+    iceSalinity = (seaiceMaximumSalinity/2.0_RKIND)*(1.0_RKIND-cos(pii*depth**(nsal/(msal+depth))))
 
   end function seaice_icepack_salinity_profile
 
@@ -6101,6 +5889,8 @@ contains
          seaiceSnowSurfaceMeltingTemperature, &
          seaiceZvir, &
          seaiceReferenceSalinity, &
+         seaiceMaximumSalinity, &
+         seaiceMeltingTemperatureDepression, &
          seaiceOceanAlbedo, &
          seaiceVonKarmanConstant, &
          seaiceIceSurfaceRoughness, &
@@ -6141,6 +5931,7 @@ contains
          Tsmelt, &
          zvir, &
          ice_ref_salinity, &
+         depressT, &
          Pstar, &
          Cstar, &
          dragio, &
@@ -6152,6 +5943,10 @@ contains
          snowpatch, &
          sk_l!, &
          !R_gC2molC
+
+!echmod - move this somewhere else!
+      real (kind=RKIND) :: &
+         saltmax = 3.2_RKIND  ! max salinity at ice base for BL99 (ppt)
 
     call icepack_configure()
     call seaice_icepack_write_warnings(icepack_warnings_aborted())
@@ -6177,6 +5972,8 @@ contains
     seaiceSnowSurfaceMeltingTemperature = Tsmelt
     seaiceZvir                       = zvir
     seaiceReferenceSalinity          = ice_ref_salinity
+    seaiceMaximumSalinity            = saltmax
+    seaiceMeltingTemperatureDepression = depressT
     seaiceOceanAlbedo                = albocn
     seaiceVonKarmanConstant          = vonkar
     seaiceIceSurfaceRoughness        = iceruf
@@ -12548,6 +12345,8 @@ contains
          seaiceVonKarmanConstant, &          ! Von Karman constant
          seaiceOceanAlbedo, &                ! Ocean albedo
          seaiceReferenceSalinity, &          ! ice reference salinity (ppt)
+         seaiceMaximumSalinity, &            ! ice maximum salinity (ppt)
+         seaiceMeltingTemperatureDepression, &  ! melting temperature depression factor (C/ppt)
          seaicePi, &                         ! pi
          seaiceGravity, &                    ! gravitational acceleration (m/s^2)
          seaiceSnowPatchiness, &             ! snow patchiness parameter
@@ -13083,6 +12882,14 @@ contains
     call icepack_query_parameters(ice_ref_salinity_out=rtmp2)
     if (rtmp1 /= rtmp2) call mpas_log_write('ice_ref_salinity differs $r $r',realArgs=(/rtmp1,rtmp2/))
 
+    rtmp1 = seaiceMaximumSalinity
+    call icepack_query_parameters(saltmax_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('saltmax differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceMeltingTemperatureDepression
+    call icepack_query_parameters(depressT_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('depressT differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
     rtmp1 = seaiceFreshWaterFreezingPoint
     call icepack_query_parameters(Tffresh_out=rtmp2)
     if (rtmp1 /= rtmp2) call mpas_log_write('Tffresh differs $r $r',realArgs=(/rtmp1,rtmp2/))
@@ -13140,7 +12947,7 @@ contains
          cp_ocn_in               = seaiceSeaWaterSpecificHeat, &
          !hfrazilmin_in           = , &
          !floediam_in             = , &
-         !depressT_in             = , &             ! used for prescribed ice in CICE
+         depressT_in             = seaiceMeltingTemperatureDepression, &
          dragio_in               = seaiceIceOceanDragCoefficient, & ! note calc_dragio not implemented
          !thickness_ocn_layer1_in = , &        ! not yet implemented in MPAS-SI (stealth feature)
          !iceruf_ocn_in           = , &        ! under-ice roughness, not yet implemented
@@ -13171,7 +12978,7 @@ contains
          snowpatch_in            = seaiceSnowPatchiness, & ! ccsm3 radiation scheme
          !rhosi_in                = , &        ! brine, zbgc, zsalinity
          sk_l_in                 = skeletalLayerThickness, & !
-         !saltmax_in              = , &        ! brine
+         saltmax_in              = seaiceMaximumSalinity, &
          phi_init_in             = phi_init, &        ! therm_itd  config_frazil_ice_porosity
          !min_salin_in            = , &        ! ktherm=1, brine, zsalinity
          !salt_loss_in            = , &        ! brine, zsalinity
