@@ -210,7 +210,7 @@ contains
     !
     ! !USES:
     use elm_varcon      , only: secspday, spval
-    use clm_time_manager, only: get_step_size
+    use elm_time_manager, only: get_step_size
     use elm_varpar      , only: crop_prog
     use elm_varctl      , only: iulog
     use elm_varctl      , only : carbon_only          
@@ -274,7 +274,7 @@ contains
 
   subroutine EvaluateSupplStatus()
 
-    use clm_time_manager, only: get_curr_date
+    use elm_time_manager, only: get_curr_date
 
     ! This module evaluates the current status of N and P
     ! supplementation, and uses that to set flags which indicates

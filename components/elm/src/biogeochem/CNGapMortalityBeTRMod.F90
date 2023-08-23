@@ -89,7 +89,7 @@ contains
     ! Gap-phase mortality routine for coupled carbon-nitrogen code (CN)
     !
     ! !USES:
-    use clm_time_manager , only: get_days_per_year
+    use elm_time_manager , only: get_days_per_year
     use elm_varcon       , only: secspday
     use pftvarcon        , only: npcropmin
     use elm_varctl       , only: spinup_state, spinup_mortality_factor

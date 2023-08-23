@@ -104,7 +104,7 @@ module CNEcosystemDynBetrMod
     use PhosphorusDynamicsMod              , only : PhosphorusBiochemMin_balance,PhosphorusDeposition,PhosphorusWeathering
     use VerticalProfileMod      , only : decomp_vertprofiles
     use RootDynamicsMod              , only : RootDynamics
-    use clm_time_manager , only : get_step_size 
+    use elm_time_manager , only : get_step_size 
     implicit none
 
 
@@ -570,7 +570,7 @@ module CNEcosystemDynBetrMod
     !
     ! DESCRIPTION
     ! calculate gpp downregulation factor
-    use clm_time_manager         , only : get_step_size
+    use elm_time_manager         , only : get_step_size
     use ColumnType               , only : column_physical_properties
     use VegetationType           , only : vegetation_physical_properties
     use pftvarcon                , only : noveg

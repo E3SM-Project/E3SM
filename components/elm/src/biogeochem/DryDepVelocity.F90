@@ -47,7 +47,7 @@ Module DryDepVelocity
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use abortutils           , only : endrun
-  use clm_time_manager     , only : get_nstep, get_curr_date, get_curr_time
+  use elm_time_manager     , only : get_nstep, get_curr_date, get_curr_time
   use spmdMod              , only : masterproc
   use seq_drydep_mod       , only : n_drydep, drydep_list
   use seq_drydep_mod       , only : drydep_method, DD_XLND

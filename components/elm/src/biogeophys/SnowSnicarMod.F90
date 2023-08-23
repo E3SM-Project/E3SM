@@ -1804,7 +1804,7 @@ contains
      ! !USES:
       !$acc routine seq
      use elm_varpar       , only : nlevsno, numrad
-     use clm_time_manager , only : get_nstep
+     use elm_time_manager , only : get_nstep
      use shr_const_mod    , only : SHR_CONST_PI
      use elm_varctl       , only : snow_shape, snicar_atm_type, use_dust_snow_internal_mixing
      !

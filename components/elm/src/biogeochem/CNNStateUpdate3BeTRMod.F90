@@ -8,7 +8,7 @@ module CNNStateUpdate3BeTRMod
   ! !USES:
   use shr_kind_mod        , only: r8 => shr_kind_r8
   use elm_varpar          , only: nlevdecomp, ndecomp_pools
-  use clm_time_manager    , only : get_step_size
+  use elm_time_manager    , only : get_step_size
   use elm_varctl          , only : iulog
   use elm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use CNNitrogenStateType , only : nitrogenstate_type

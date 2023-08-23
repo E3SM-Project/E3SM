@@ -58,7 +58,7 @@ contains
     use LakeCon             , only : minz0lake, cur0, cus, curm, fcrit
     use QSatMod             , only : QSat
     use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, implicit_stress
-    use clm_time_manager    , only : get_nstep
+    use elm_time_manager    , only : get_nstep
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds

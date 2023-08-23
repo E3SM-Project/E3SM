@@ -11,7 +11,7 @@ module EcosystemBalanceCheckMod
   use decompMod           , only : bounds_type
   use abortutils          , only : endrun
   use elm_varctl          , only : iulog, use_fates
-  use clm_time_manager    , only : get_step_size,get_nstep
+  use elm_time_manager    , only : get_step_size,get_nstep
   use elm_varpar          , only : crop_prog
   use elm_varpar          , only : nlevdecomp
   use elm_varcon          , only : dzsoi_decomp
@@ -26,7 +26,7 @@ module EcosystemBalanceCheckMod
   ! bgc interface & pflotran:
   use elm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
   ! forest fertilization experiment
-  use clm_time_manager    , only : get_curr_date
+  use elm_time_manager    , only : get_curr_date
   use CNStateType         , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
   use elm_varctl          , only : forest_fert_exp
   use pftvarcon           , only: noveg

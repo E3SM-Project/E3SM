@@ -1529,7 +1529,7 @@ contains
 
     ! !USES
     use accumulMod       , only : init_accum_field, extract_accum_field
-    use clm_time_manager , only : get_nstep
+    use elm_time_manager , only : get_nstep
     use elm_varctl       , only : nsrest
     use abortutils       , only : endrun
     !
@@ -1573,7 +1573,7 @@ contains
   subroutine UpdateAccVars (this, bounds)
     !
     ! USES
-    use clm_time_manager , only : get_step_size, get_nstep, is_end_curr_day, get_curr_date
+    use elm_time_manager , only : get_step_size, get_nstep, is_end_curr_day, get_curr_date
     use accumulMod       , only : update_accum_field, extract_accum_field
     !
     ! !ARGUMENTS:
