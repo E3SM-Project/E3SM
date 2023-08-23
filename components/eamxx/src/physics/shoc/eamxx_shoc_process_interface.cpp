@@ -66,8 +66,9 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   // These variables are needed by the interface, but not actually passed to shoc_main.
   add_field<Required>("omega",               scalar3d_layout_mid,  Pa/s,    grid_name, ps);
   add_field<Required>("surf_sens_flux",      scalar2d_layout_col,  W/m2,    grid_name);
-  add_field<Required>("surf_evap",           scalar2d_layout_col,  kg/m2/s, grid_name);
   add_field<Required>("surf_mom_flux",       surf_mom_flux_layout, N/m2, grid_name);
+
+  add_field<Updated>("surf_evap",           scalar2d_layout_col,  kg/m2/s, grid_name);
   add_field<Updated> ("T_mid",               scalar3d_layout_mid,  K,       grid_name, ps);
   add_field<Updated> ("qv",                  scalar3d_layout_mid,  Qunit,   grid_name, "tracers", ps);
 
