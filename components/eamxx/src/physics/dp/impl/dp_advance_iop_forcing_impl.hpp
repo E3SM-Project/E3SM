@@ -137,14 +137,22 @@ void Functions<S,D>::advance_iop_forcing(
   ////////////////////////////////////////////////////////////
   //  Set U and V fields
 
+  uview_1d<const Spack> u_src, v_src;
+
   if (have_v && have_u && !dp_crm) {
-    Kokkos::deep_copy(u_update, uobs);
-    Kokkos::deep_copy(v_update, vobs);
+    u_src = uobs;
+    v_src = vobs;
   }
   else {
-    Kokkos::deep_copy(u_update, u_in);
-    Kokkos::deep_copy(v_update, v_in);
+    u_src = u_in;
+    v_src = v_in;
   }
+
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, plev_pack), [&] (Int k) {
+      u_update(k) = u_src(k);
+      v_update(k) = v_src(k);
+  });
 
   workspace.template release_many_contiguous<3>(
     {&pmidm1, &pintm1, &pdelm1});

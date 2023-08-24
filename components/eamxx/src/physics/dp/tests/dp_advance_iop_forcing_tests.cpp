@@ -59,9 +59,9 @@ struct UnitWrap::UnitTest<D>::TestAdvanceIopForcing {
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+      d.template transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
       advance_iop_forcing_f(d.plev, d.pcnst, d.scm_dt, d.ps_in, d.have_u, d.have_v, d.dp_crm, d.use_3dfrc, d.u_in, d.v_in, d.t_in, d.q_in, d.t_phys_frc, d.divt3d, d.divq3d, d.divt, d.divq, d.wfld, d.uobs, d.vobs, d.hyai, d.hyam, d.hybi, d.hybm, d.u_update, d.v_update, d.t_update, d.q_update);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      d.template transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 
     // We can't call into fortran. Due to all the dependencies it has, it's not possible
