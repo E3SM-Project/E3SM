@@ -1,5 +1,6 @@
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/util/scream_array_utils.hpp"
+#include "share/field/field_utils.hpp"
 
 #include <ekat/util/ekat_math_utils.hpp>
 
@@ -281,12 +282,13 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
     }
   }
   if (has_additional_col_info) {
+    msg << "    - additional data:\n";
     for (auto& f : additional_data_fields()) {
       f.sync_to_host();
-      msg << "    - " << f.name() << ": "
-          << f.get_internal_view_data<const Real, Host>()[min_col_lid]
-          << "\n";
+      msg << "\n";
+      print_field_hyperslab(f, {COL}, {min_col_lid}, msg);
     }
+    msg << "\n    END OF ADDITIONAL DATA\n";
   }
 
   msg << "  - maximum:\n";
@@ -303,12 +305,13 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
     }
   }
   if (has_additional_col_info) {
+    msg << "    - additional data:\n";
     for (auto& f : additional_data_fields()) {
       f.sync_to_host();
-      msg << "    - " << f.name() << ": "
-          << f.get_internal_view_data<const Real, Host>()[max_col_lid]
-          << "\n";
+      msg << "\n";
+      print_field_hyperslab(f, {COL}, {max_col_lid}, msg);
     }
+    msg << "\n    END OF ADDITIONAL DATA\n";
   }
 
   res_and_msg.msg += msg.str();

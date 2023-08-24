@@ -151,12 +151,15 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
       }
       bool has_additional_col_info = not additional_data_fields().empty();
       if (has_additional_col_info) {
+        std::stringstream msg;
+        msg << "  - additional data:\n";
         for (auto& f : additional_data_fields()) {
           f.sync_to_host();
-          res_and_msg.msg += "  - "+ f.name() + ": "+
-                             std::to_string(f.get_internal_view_data<const Real, Host>()[col_lid]) +
-                             "\n";
+          msg << "\n";
+          print_field_hyperslab(f, {COL}, {col_lid}, msg);
         }
+        msg << "\n  END OF ADDITIONAL DATA\n";
+        res_and_msg.msg += msg.str();
       }
     }
 
