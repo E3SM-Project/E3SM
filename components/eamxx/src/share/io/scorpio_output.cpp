@@ -117,19 +117,22 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
  : m_comm         (comm)
  , m_add_time_dim (true)
 {
+  params.print();
   using vos_t = std::vector<std::string>;
 
   if (params.isParameter("fill_value")) {
-    m_fill_value = static_cast<float>(params.get<Real>("fill_value"));
+    m_fill_value = static_cast<float>(params.get<double>("fill_value"));
     // If the fill_value is specified there is a good chance the user expects the average count to track filling.
     m_track_avg_cnt = true;
   }
   if (params.isParameter("track_fill")) {
+    printf("ASD - Reading track_fill\n");
     // Note, we do this after checking for fill_value to give users that opportunity to turn off fill tracking, even
     // if they specify a specific fill value.
     m_track_avg_cnt = params.get<bool>("track_fill");
   }
   if (params.isParameter("fill_threshold")) {
+    printf("ASD - Reading fill_threshold\n");
     m_avg_coeff_threshold = params.get<Real>("fill_threshold");
   }
 

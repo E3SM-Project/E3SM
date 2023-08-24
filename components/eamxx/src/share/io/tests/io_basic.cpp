@@ -154,7 +154,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   om_pl.set("filename_prefix",std::string("io_basic"));
   om_pl.set("Field Names",fnames);
   om_pl.set("Averaging Type", avg_type);
-  om_pl.set<Real>("fill_value",FillValue);
+  om_pl.set<double>("fill_value",FillValue);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",freq_units);
   ctrl_pl.set("Frequency",freq);
