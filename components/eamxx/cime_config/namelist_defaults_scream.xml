@@ -287,6 +287,13 @@ be lost if SCREAM_HACK_XML is not enabled.
       <number_of_subcycles hgrid="ne0np4_conus_x4v1_lowcon">5</number_of_subcycles>
     </mac_aero_mic>
 
+    <cosp inherit="atm_proc_base">
+      <cosp_subcolumns>10</cosp_subcolumns>
+      <!-- Frequency at which to call COSP; positive values interpreted as number of steps, negative as number of hours -->
+      <cosp_frequency>1</cosp_frequency>
+      <cosp_frequency_units valid_values="steps,hours">hours</cosp_frequency_units>
+    </cosp>
+
     <physics inherit="atm_proc_group">
       <atm_procs_list>(mac_aero_mic,rrtmgp)</atm_procs_list>
     </physics>

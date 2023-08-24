@@ -35,6 +35,7 @@ set (SCREAM_LIBS
      p3
      shoc
      scream_rrtmgp
+     eamxx_cosp
      cld_fraction
      spa
      nudging
