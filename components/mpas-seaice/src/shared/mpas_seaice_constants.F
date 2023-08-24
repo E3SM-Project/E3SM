@@ -61,12 +61,14 @@ module seaice_constants
        seaiceLatentHeatMelting, &       ! latent heat of melting of fresh ice (J/kg)
        seaiceIceSurfaceMeltingTemperature, &  ! melting temp. ice top surface  (C)
        seaiceSnowSurfaceMeltingTemperature, & ! melting temp. snow top surface  (C)
+       seaiceMeltingTemperatureDepression, &  ! melting temp. depression factor (C/ppt)
        seaiceOceanAlbedo, &             ! Ocean albedo
        seaiceVonKarmanConstant, &       ! Von Karman constant
        seaiceIceSurfaceRoughness, &     ! ice surface roughness (m)
        seaiceSeaWaterSpecificHeat, &    ! specific heat of ocn (J/kg/K)
        seaiceLatentHeatVaporization, &  ! latent heat, vaporization freshwater (J/kg)
        seaiceReferenceSalinity, &       ! ice reference salinity (ppt)
+       seaiceMaximumSalinity, &         ! ice maximum salinity (ppt)
        seaiceStabilityReferenceHeight, &! stability reference height (m)
        seaiceSnowPatchiness             ! snow patchiness parameter
 
