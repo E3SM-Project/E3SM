@@ -28,6 +28,7 @@ from atm_manip import atm_config_chg_impl, unbuffer_changes, apply_buffer
 from utils import ensure_yaml
 ensure_yaml()
 import yaml
+from yaml_utils import Bools,Ints,Floats,Strings,array_representer
 
 logger = logging.getLogger(__name__) # pylint: disable=undefined-variable
 
@@ -110,7 +111,6 @@ def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
     Copied from: https://stackoverflow.com/a/21912744
     Added ability to pass filename
     """
-    from yaml_utils import Bools,Ints,Floats,Strings,array_representer
 
     class OrderedDumper(Dumper):
         pass

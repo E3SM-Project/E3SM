@@ -25,6 +25,7 @@ class Strings(Array):
 
 ###############################################################################
 def make_array (vals,etype):
+###############################################################################
     if etype=="bool":
         return Bools(vals)
     elif etype=="int":
@@ -35,7 +36,6 @@ def make_array (vals,etype):
         return Strings(vals)
     else:
         raise ValueError (f"Unsupported element type '{etype}' for arrays.")
-###############################################################################
 
 ###############################################################################
 def array_constructor(loader: yaml.SafeLoader, node: yaml.nodes.SequenceNode) -> list:

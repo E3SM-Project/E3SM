@@ -5,6 +5,8 @@ _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","
 sys.path.append(_CIMEROOT)
 
 from CIME.utils import expect
+from yaml_utils import make_array
+
 
 ###############################################################################
 class MockCase(object):
@@ -190,8 +192,6 @@ def has_child (root,name):
 ###############################################################################
 def refine_type(entry, force_type=None):
 ###############################################################################
-    from yaml_utils import make_array
-
     """
     Try to convert the text entry to the appropriate type based on its contents.
 
