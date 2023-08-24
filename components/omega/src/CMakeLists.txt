@@ -1,16 +1,27 @@
 # build Omega
 
 # Add source files for the library
-file(GLOB _LIBSRC_FILES ocn/*.cpp)
+file(GLOB _LIBSRC_FILES ocn/*.cpp infra/*.cpp)
 
 list(JOIN OMEGA_CXX_FLAGS " " _CXX_FLAGS_EXPANDED)
 
 # Create the library target
 add_library(${OMEGA_LIB_NAME} ${_LIBSRC_FILES})
-set_target_properties(${OMEGA_LIB_NAME} PROPERTIES COMPILE_FLAGS "${_CXX_FLAGS_EXPANDED}")
+set_target_properties(
+		${OMEGA_LIB_NAME}
+		PROPERTIES COMPILE_FLAGS "${_CXX_FLAGS_EXPANDED}"
+)
+
+# add link directories
+target_link_libraries(${OMEGA_LIB_NAME} spdlog "${OMEGA_LDFLAGS}")
 
 # add include directories
-target_include_directories(${OMEGA_LIB_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/infra")
+target_include_directories(
+		${OMEGA_LIB_NAME}
+		PRIVATE 
+		"${OMEGA_SOURCE_DIR}/src/base"
+		"${OMEGA_SOURCE_DIR}/src/infra"
+)
 
 # include yakl cmake utility
 include(${E3SM_EXTERNALS_ROOT}/YAKL/yakl_utils.cmake)
@@ -29,12 +40,20 @@ endif()
 # build Omega executable
 if(OMEGA_BUILD_EXECUTABLE)
   set(EXESRC_FILES
-    drivers/drvdummy.cpp
+    drivers/DrvDummy.cpp
   )
   # Create the executable target
   add_executable(${OMEGA_EXE_NAME} ${EXESRC_FILES})
-  set_target_properties(${OMEGA_EXE_NAME} PROPERTIES COMPILE_FLAGS "${_CXX_FLAGS_EXPANDED}")
-  target_include_directories(${OMEGA_EXE_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/infra")
+  set_target_properties(
+		${OMEGA_EXE_NAME}
+		PROPERTIES COMPILE_FLAGS "${_CXX_FLAGS_EXPANDED}"
+  )
+  target_include_directories(
+		${OMEGA_EXE_NAME}
+		PRIVATE
+		"${OMEGA_SOURCE_DIR}/src/base"
+		"${CMAKE_CURRENT_SOURCE_DIR}/infra"
+  )
   target_link_libraries(${OMEGA_EXE_NAME} ${OMEGA_LIB_NAME})
 
   # help the executable target to be built with yakl
