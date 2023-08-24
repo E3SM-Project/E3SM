@@ -415,12 +415,20 @@ void AtmosphereDriver::setup_column_conservation_checks ()
 }
 
 void AtmosphereDriver::add_additional_column_data_to_property_checks () {
+  // Get list of additional data fields from driver_options parameters.
+  // If no fields given, return.
+  using vos_t = std::vector<std::string>;
+  auto additional_data_fields = m_atm_params.sublist("driver_options").get<vos_t>("property_check_data_fields",
+                                                                                  {"NONE"});
+  if (additional_data_fields == vos_t{"NONE"}) return;
+
+  // Add requested fields to property checks
   auto phys_field_mgr = m_field_mgrs[m_grids_manager->get_grid("Physics")->name()];
-  if (phys_field_mgr->has_field("landfrac")) {
-    m_atm_process_group->add_additional_data_fields_to_property_checks(phys_field_mgr->get_field("landfrac"));
-  }
-  if (phys_field_mgr->has_field("phis")) {
-    m_atm_process_group->add_additional_data_fields_to_property_checks(phys_field_mgr->get_field("phis"));
+  for (auto fname : additional_data_fields) {
+    EKAT_REQUIRE_MSG(phys_field_mgr->has_field(fname), "Error! The field "+fname+" is requested for property check output "
+                                                       "but does not exist in the physics field manager.\n");
+    
+    m_atm_process_group->add_additional_data_fields_to_property_checks(phys_field_mgr->get_field(fname));
   }
 }
 
