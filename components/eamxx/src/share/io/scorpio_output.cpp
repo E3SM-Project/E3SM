@@ -19,6 +19,7 @@ namespace scream
 // This helper function updates the current output val with a new one,
 // according to the "averaging" type, and according to the number of
 // model time steps since the last output step.
+KOKKOS_INLINE_FUNCTION
 void combine (const Real& new_val, Real& curr_val, const OutputAvgType avg_type)
 {
   switch (avg_type) {
@@ -821,6 +822,7 @@ reset_dev_views()
 {
   // Reset the local device views depending on the averaging type
   // Init dev view with an "identity" for avg_type
+  const Real fill_for_average = (m_track_avg_cnt && m_add_time_dim) ? m_fill_value : 0.0;
   for (auto const& name : m_fields_names) {
     switch (m_avg_type) {
       case OutputAvgType::Instant:
@@ -833,10 +835,9 @@ reset_dev_views()
         Kokkos::deep_copy(m_dev_views_1d[name],std::numeric_limits<Real>::infinity());
         break;
       case OutputAvgType::Average:
-	const Real tmp = (m_track_avg_cnt && m_add_time_dim) ? m_fill_value : 0.0;
-        Kokkos::deep_copy(m_dev_views_1d[name],tmp);
+        Kokkos::deep_copy(m_dev_views_1d[name],fill_for_average);
         break;
-      DEFAULT:
+      default:
         EKAT_ERROR_MSG ("Unrecognized averaging type.\n");
     }
   }
