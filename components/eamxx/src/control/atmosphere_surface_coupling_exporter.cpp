@@ -64,12 +64,12 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Required>("precip_ice_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
 
   create_helper_field("Sa_z",       scalar2d_layout, grid_name);
-  create_helper_field("Sa_u",       scalar2d_layout, grid_name); 
-  create_helper_field("Sa_v",       scalar2d_layout, grid_name); 
-  create_helper_field("Sa_tbot",    scalar2d_layout, grid_name); 
+  create_helper_field("Sa_u",       scalar2d_layout, grid_name);
+  create_helper_field("Sa_v",       scalar2d_layout, grid_name);
+  create_helper_field("Sa_tbot",    scalar2d_layout, grid_name);
   create_helper_field("Sa_ptem",    scalar2d_layout, grid_name);
-  create_helper_field("Sa_pbot",    scalar2d_layout, grid_name); 
-  create_helper_field("Sa_shum",    scalar2d_layout, grid_name); 
+  create_helper_field("Sa_pbot",    scalar2d_layout, grid_name);
+  create_helper_field("Sa_shum",    scalar2d_layout, grid_name);
   create_helper_field("Sa_dens",    scalar2d_layout, grid_name);
   create_helper_field("Sa_pslv",    scalar2d_layout, grid_name);
   create_helper_field("Faxa_rainl", scalar2d_layout, grid_name);
@@ -157,7 +157,7 @@ void SurfaceCouplingExporter::setup_surface_coupling_data(const SCDataManager &s
   m_constant_multiple_view =
       decltype(m_constant_multiple_view)  (sc_data_manager.get_field_constant_multiple_ptr(),
                                            m_num_scream_exports);
-  m_do_export_during_init_view = 
+  m_do_export_during_init_view =
     decltype(m_do_export_during_init_view)(sc_data_manager.get_field_transfer_during_init_ptr(),
                                            m_num_scream_exports);
 
@@ -234,27 +234,25 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
       export_from_file_reg_names = export_from_file_fields;
       // Check if alternative names have been provided.  This is useful for source data files
       // that don't use the conventional EAMxx ATM->SRFC variable names.
-      if (export_from_file_params.isParameter("fields_alt_name")) {
-        // The parameter may exist but not be set, so check that it really exists
-        auto alt_names = export_from_file_params.get<vos_type>("fields_alt_name");
-        for (auto entry : alt_names) {
-          ekat::strip(entry, ' '); // remove empty spaces in case user did `a : b`
-          auto tokens = ekat::split(entry,':');
-          EKAT_REQUIRE_MSG(tokens.size()==2,"Error! surface_coupling_exporter::init - expected 'EAMxx_var_name:FILE_var_name' entry in fields_alt_names, got '" + entry + "' instead.\n");
-          auto it = ekat::find(export_from_file_fields,tokens[0]);
-          EKAT_REQUIRE_MSG(it!=export_from_file_fields.end(),
-                         "Error! surface_coupling_exporter::init - LHS of entry '" + entry + "' in field_alt_names does not match a valid EAMxx field.\n");
-          // Make sure that a user hasn't accidentally copy/pasted 
-          auto chk = ekat::find(export_from_file_reg_names,tokens[1]);
-          EKAT_REQUIRE_MSG(chk==export_from_file_reg_names.end(),
-                	  "Error! surface_coupling_exporter::init - RHS of entry '" + entry + "' in field_alt_names has already been used for a different field.\n");
-          auto idx = std::distance(export_from_file_fields.begin(),it);
-          export_from_file_reg_names[idx] = tokens[1];
-        }
+      auto alt_names = export_from_file_params.get<vos_type>("fields_alt_name",{});
+      for (auto entry : alt_names) {
+        ekat::strip(entry, ' '); // remove empty spaces in case user did `a : b`
+        auto tokens = ekat::split(entry,':');
+        EKAT_REQUIRE_MSG(tokens.size()==2,
+            "Error! surface_coupling_exporter::init - expected 'EAMxx_var_name:FILE_var_name' entry in fields_alt_names, got '" + entry + "' instead.\n");
+        auto it = ekat::find(export_from_file_fields,tokens[0]);
+        EKAT_REQUIRE_MSG(it!=export_from_file_fields.end(),
+                       "Error! surface_coupling_exporter::init - LHS of entry '" + entry + "' in field_alt_names does not match a valid EAMxx field.\n");
+        // Make sure that a user hasn't accidentally copy/pasted
+        auto chk = ekat::find(export_from_file_reg_names,tokens[1]);
+        EKAT_REQUIRE_MSG(chk==export_from_file_reg_names.end(),
+                  "Error! surface_coupling_exporter::init - RHS of entry '" + entry + "' in field_alt_names has already been used for a different field.\n");
+        auto idx = std::distance(export_from_file_fields.begin(),it);
+        export_from_file_reg_names[idx] = tokens[1];
       }
       // Construct a time interpolation object
       m_time_interp = util::TimeInterpolation(m_grid,export_from_file_names);
-      for (int ii=0; ii<export_from_file_fields.size(); ++ii) {
+      for (size_t ii=0; ii<export_from_file_fields.size(); ++ii) {
         auto fname = export_from_file_fields[ii];
         auto rname = export_from_file_reg_names[ii];
         // Find the index for this field in the list of export fields.
@@ -276,7 +274,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
     }
   }
 
-  // Parse all fields that will be set to a constant value: 
+  // Parse all fields that will be set to a constant value:
   if (m_params.isSublist("prescribed_constants")) {
     auto export_constant_params = m_params.sublist("prescribed_constants");
     EKAT_REQUIRE_MSG(export_constant_params.isParameter("fields"),"Error! surface_coupling_exporter::init - prescribed_constants does not have 'fields' parameter.");
@@ -349,7 +347,7 @@ void SurfaceCouplingExporter::set_constant_exports()
   }
   // Gotta catch em all
   EKAT_REQUIRE_MSG(num_set==m_num_const_exports,"ERROR! SurfaceCouplingExporter::set_constant_exports() - Number of fields set to a constant (" + std::to_string(num_set) +") doesn't match the number recorded at initialization (" + std::to_string(m_num_const_exports) +").  Something went wrong.");
-  
+
 }
 // =========================================================================================
 void SurfaceCouplingExporter::set_from_file_exports(const int dt)
@@ -460,7 +458,7 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
     // Currently only needed for Sa_z, Sa_dens and Sa_pslv
     const bool calculate_z_vars = export_source(idx_Sa_z)==FROM_MODEL
                                || export_source(idx_Sa_dens)==FROM_MODEL
-                               || export_source(idx_Sa_pslv)==FROM_MODEL; 
+                               || export_source(idx_Sa_pslv)==FROM_MODEL;
     if (calculate_z_vars) {
       PF::calculate_dz(team, pseudo_density_i, p_mid_i, T_mid_i, qv_i, dz_i);
       team.team_barrier();
@@ -473,10 +471,10 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
 
     // Set the values in the helper fields which correspond to the exported variables
 
-    if (export_source(idx_Sa_z)==FROM_MODEL) { 
+    if (export_source(idx_Sa_z)==FROM_MODEL) {
       // Assugb to Sa_z
       const auto s_z_mid_i = ekat::scalarize(z_mid_i);
-      Sa_z(i)    = s_z_mid_i(num_levs-1); 
+      Sa_z(i)    = s_z_mid_i(num_levs-1);
     }
 
     if (export_source(idx_Sa_u)==FROM_MODEL) {
@@ -501,9 +499,9 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
       Sa_pbot(i) = s_p_mid_i(num_levs-1);
     }
 
-    if (export_source(idx_Sa_shum)==FROM_MODEL) { 
+    if (export_source(idx_Sa_shum)==FROM_MODEL) {
       const auto s_qv_i = ekat::scalarize(qv_i);
-      Sa_shum(i) = s_qv_i(num_levs-1); 
+      Sa_shum(i) = s_qv_i(num_levs-1);
     }
 
     if (export_source(idx_Sa_dens)==FROM_MODEL) {

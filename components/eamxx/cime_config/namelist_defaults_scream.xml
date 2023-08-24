@@ -176,8 +176,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <prescribed_from_file>
         <fields type="array(string)"/>
         <files type="array(string)"/>
-	<!-- Optional argument if fields have a different name in the source data files, set to NONE if not used -->
-        <fields_alt_name type="array(string)">NONE</fields_alt_name>
+        <!-- Optional argument if fields have a different name in the source data files -->
+        <fields_alt_name type="array(string)"/>
       </prescribed_from_file>
     </sc_export>
 
