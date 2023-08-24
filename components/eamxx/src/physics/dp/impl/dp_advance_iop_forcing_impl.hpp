@@ -121,13 +121,6 @@ void Functions<S,D>::advance_iop_forcing(
       //  considered if using the preq-x dycore and if three dimensional
       //  forcing is not provided by IOP forcing file.
       Spack t_expan = 0;
-#ifndef MODEL_THETA_L
-      // this term is already taken into account through
-      //  LS vertical advection in theta-l dycore
-      if (!use_3dfrc) {
-        t_expan = scm_dt*wfld(k)*t_in(k)*rair/(cpair*pmidm1(k));
-      }
-#endif
       t_update(k) = t_in(k) + t_expan + scm_dt*(t_phys_frc(k) + t_lsf(k));
       for (Int m = 0; m < pcnst; ++m) {
         q_update(m, k) = q_in(m, k) + scm_dt*q_lsf(m, k);
