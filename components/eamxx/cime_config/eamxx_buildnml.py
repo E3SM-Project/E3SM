@@ -807,7 +807,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
         # Hence, change default output settings to perform a single AVERAGE step at the end of the run
         if case.get_value("TESTCASE") in ["ERP", "ERS"]:
             test_env = case.get_env('test')
-            stop_n = test_env.get_value("STOP_N")
+            stop_n = int(test_env.get_value("STOP_N"))
             stop_opt = test_env.get_value("STOP_OPTION")
             content['output_control']['Frequency'] = stop_n
             content['output_control']['frequency_units'] = stop_opt
