@@ -149,10 +149,75 @@ void iop_intht(IopInthtData& d)
 // _f function definitions. These expect data in C layout
 //
 
-void advance_iop_forcing_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* t_phys_frc, Real* u_update, Real* v_update, Real* t_update, Real* q_update)
+void advance_iop_forcing_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, bool have_u, bool have_v, bool dp_crm, bool use_3dfrc, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* t_phys_frc, Real* divt3d, Real* divq3d, Real* divt, Real* divq, Real* wfld, Real* uobs, Real* vobs, Real* hyai, Real* hyam, Real* hybi, Real* hybm, Real* u_update, Real* v_update, Real* t_update, Real* q_update)
 {
-  // TODO
+  using DPF  = Functions<Real, DefaultDevice>;
+
+  using Spack = typename DPF::Spack;
+  using view_1d = typename DPF::view_1d<Spack>;
+  using view_2d = typename DPF::view_2d<Spack>;
+  using KT = typename DPF::KT;
+  using ExeSpace = typename KT::ExeSpace;
+  using MemberType = typename DPF::MemberType;
+
+  // Some of the workspaces need plev+1 items
+  const Int plev_pack = ekat::npack<Spack>(plev);
+  const Int plevp_pack = ekat::npack<Spack>(plev+1);
+
+  // Set up views
+  std::vector<view_1d> temp_d(AdvanceIopForcingData::NUM_ARRAYS-4);
+  std::vector<view_2d> temp_2d_d(4);
+
+  ekat::host_to_device({u_in, v_in, t_in, t_phys_frc, divt3d, divt, wfld, uobs, vobs, hyai, hyam, hybi, hybm, u_update, v_update, t_update},
+                       plev, temp_d);
+
+  ekat::host_to_device({ q_in, divq3d, divq, q_update },
+                       pcnst, plev, temp_2d_d, true);
+
+  view_1d
+    u_in_d       (temp_d[0]),
+    v_in_d       (temp_d[1]),
+    t_in_d       (temp_d[2]),
+    t_phys_frc_d (temp_d[3]),
+    divt3d_d     (temp_d[4]),
+    divt_d       (temp_d[5]),
+    wfld_d       (temp_d[6]),
+    uobs_d       (temp_d[7]),
+    vobs_d       (temp_d[8]),
+    hyai_d       (temp_d[9]),
+    hyam_d       (temp_d[10]),
+    hybi_d       (temp_d[11]),
+    hybm_d       (temp_d[12]),
+    u_update_d   (temp_d[13]),
+    v_update_d   (temp_d[14]),
+    t_update_d   (temp_d[15]);
+
+  view_2d
+    q_in_d    (temp_2d_d[0]),
+    divq3d_d  (temp_2d_d[1]),
+    divq_d    (temp_2d_d[2]),
+    q_update_d(temp_2d_d[3]);
+
+  // Call core function from kernel
+  auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, plev_pack);
+  ekat::WorkspaceManager<Spack> wsm(plevp_pack, 3, policy);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+
+      DPF::advance_iop_forcing(
+        plev, pcnst, have_u, have_v, dp_crm, use_3dfrc, scm_dt, ps_in,
+        u_in_d, v_in_d, t_in_d, q_in_d, t_phys_frc_d, divt3d_d, divq3d_d, divt_d, divq_d, wfld_d, uobs_d, vobs_d, hyai_d, hyam_d, hybi_d, hybm_d,
+        team, wsm.get_workspace(team),
+        u_update_d, v_update_d, t_update_d, q_update_d);
+  });
+
+  // Sync back to host
+  std::vector<view_1d> inout_views    = {t_update_d, u_update_d, v_update_d};
+  std::vector<view_2d> inout_views_2d = {q_update_d};
+
+  ekat::device_to_host({t_update, u_update, v_update}, plev, inout_views);
+  ekat::device_to_host({q_update}, pcnst, plev, inout_views_2d, true);
 }
+
 void advance_iop_nudging_f(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* q_in, Real* t_update, Real* q_update, Real* relaxt, Real* relaxq)
 {
   // TODO
