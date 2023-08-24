@@ -129,8 +129,6 @@
 
       ! snow parameters
       real (kind=dbl_kind), parameter, public :: &
-         snwlvlfac =   0.3_dbl_kind, & ! 30% rule: fractional increase in snow depth
-                                       ! over ridged ice, compared with level ice
          rhosmin   = 100.0_dbl_kind    ! minimum snow density (kg/m^3)
 
       !-----------------------------------------------------------------

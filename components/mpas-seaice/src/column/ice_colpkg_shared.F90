@@ -191,6 +191,7 @@
          rhosnew   , & ! new snow density (kg/m^3)
          rhosmax   , & ! maximum snow density (kg/m^3)
          windmin   , & ! minimum wind speed to compact snow (m/s)
+         snwlvlfac , & ! snow loss factor for wind redistribution
          drhosdwind    ! wind compaction factor (kg s/m^4)
 
       character(len=char_len), public :: & 

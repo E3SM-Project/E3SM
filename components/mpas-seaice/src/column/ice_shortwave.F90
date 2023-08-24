@@ -45,10 +45,10 @@
       use ice_constants_colpkg, only: c0, c1, c1p5, c2, c3, c4, c10, &
           p01, p1, p15, p25, p5, p75, puny, &
           albocn, Timelt, snowpatch, awtvdr, awtidr, awtvdf, awtidf, &
-          kappav, hs_min, rhofresh, rhos, nspint, nspint_5bd, snwlvlfac
+          kappav, hs_min, rhofresh, rhos, nspint, nspint_5bd
       use ice_colpkg_shared, only: hi_ssl, hs_ssl, modal_aero, max_aero
       use ice_colpkg_shared, only: hi_ssl, hs_ssl, modal_aero, rsnw_fall, &
-          rsnw_tmax
+          rsnw_tmax, snwlvlfac
       use ice_warnings, only: add_warning
 
       implicit none
@@ -982,7 +982,7 @@
                apeffn(n) = fpn ! for history
             elseif (tr_pond_lvl) then
                hsnlvl = hsn ! initialize
-               if (trim(snwredist) == '30percentsw') then
+               if (trim(snwredist) == '30percent') then
                   hsnlvl = hsn / (c1 + snwlvlfac*(c1-alvln(n)))
                   ! snow volume over level ice
                   alvl = aicen(n) * alvln(n)
