@@ -42,6 +42,10 @@ module radiation
                               handle_error, fluxes_t, &
                               initialize_fluxes, reset_fluxes, free_fluxes, expand_day_fluxes, &
                               get_gas_vmr
+#if defined(CLDERA_PROFILING)
+use ppgrid,         only: begchunk
+use cldera_interface_mod, only: cldera_set_field_part_data
+#endif
 
    implicit none
    private
@@ -2298,6 +2302,13 @@ contains
       call outfld('FLNS'//diag(icall), -flux_all%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
       call outfld('FLUT'//diag(icall), flux_all%flux_up(1:ncol,ktop), ncol, state%lchnk)
       call outfld('FLDS'//diag(icall), flux_all%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
+#if defined(CLDERA_PROFILING)
+      call cldera_set_field_part_data('FLNT'//diag(icall) ,state%lchnk-begchunk+1,-flux_all%flux_net(1:ncol,ktop))   
+#endif
+
+
+
+
 
       ! Clear-sky fluxes
       ! NOTE: sign change on net fluxes because internally net fluxes are assumed

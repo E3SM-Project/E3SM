@@ -35,6 +35,10 @@ use cam_abortutils,        only: endrun
 use modal_aero_wateruptake, only: modal_aero_wateruptake_dr
 use modal_aero_calcsize,    only: modal_aero_calcsize_diag,modal_aero_calcsize_sub
 use shr_log_mod ,           only: errmsg => shr_log_errmsg
+#if defined(CLDERA_PROFILING)
+use ppgrid,         only: begchunk
+use cldera_interface_mod, only: cldera_set_field_part_data
+#endif
 
 implicit none
 private
@@ -1183,6 +1187,10 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
       call outfld('BURDENDUST',    burdendust,    pcols, lchnk)
       call outfld('BURDENSO4' ,    burdenso4,     pcols, lchnk)
+#if defined(CLDERA_PROFILING)
+      call cldera_set_field_part_data("BURDENSO4" ,lchnk-begchunk+1,burdenso4)
+#endif
+
       call outfld('BURDENPOM' ,    burdenpom,     pcols, lchnk)
       call outfld('BURDENSOA' ,    burdensoa,     pcols, lchnk)
       call outfld('BURDENBC'  ,    burdenbc,      pcols, lchnk)
