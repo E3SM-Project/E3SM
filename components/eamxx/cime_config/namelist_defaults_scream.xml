@@ -153,7 +153,10 @@ be lost if SCREAM_HACK_XML is not enabled.
       <!-- Run internal checks on code correctness.
            <= 0: off; >= 1: global hashes over state -->
       <internal_diagnostics_level type="integer">0</internal_diagnostics_level>
-      <compute_tendencies type="array(string)" doc="list of computed fields for which this process will back out tendencies">NONE</compute_tendencies>
+      <compute_tendencies
+        type="array(string)"
+        doc="list of computed fields for which this process will back out tendencies"
+        />
     </atm_proc_base>
 
     <!-- Basic options for each atm process group -->
@@ -167,12 +170,12 @@ be lost if SCREAM_HACK_XML is not enabled.
     <sc_import inherit="atm_proc_base"/>
     <sc_export inherit="atm_proc_base">
       <prescribed_constants>
-        <fields type="array(string)">NONE</fields>
-        <values type="array(real)">0</values>
+        <fields type="array(string)"/>
+        <values type="array(real)"/>
       </prescribed_constants>
       <prescribed_from_file>
-        <fields type="array(string)">NONE</fields>
-	<files type="array(string)">NONE</files>
+        <fields type="array(string)"/>
+        <files type="array(string)"/>
 	<!-- Optional argument if fields have a different name in the source data files, set to NONE if not used -->
         <fields_alt_name type="array(string)">NONE</fields_alt_name>
       </prescribed_from_file>
@@ -363,7 +366,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <sfc_alb_dif_nir   >0.0</sfc_alb_dif_nir>
     <surf_sens_flux    >0.0</surf_sens_flux>
     <surf_lw_flux_up   >0.0</surf_lw_flux_up>
-    <surf_mom_flux     >0.0,0.0</surf_mom_flux>
+    <surf_mom_flux     type="array(real)">0.0,0.0</surf_mom_flux>
     <!-- default ne1024 initial condition files do not have these, so init to zero here -->
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
     <qc hgrid="ne256np4|ne1024np4">0.0</qc>

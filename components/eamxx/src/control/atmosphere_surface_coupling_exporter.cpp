@@ -216,20 +216,18 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
   if (m_params.isSublist("prescribed_from_file")) {
     // Retrieve the parameters for prescribed from file
     auto export_from_file_params = m_params.sublist("prescribed_from_file");
-    EKAT_REQUIRE_MSG(export_from_file_params.isParameter("fields"),"Error! surface_coupling_exporter::init - prescribed_from_file does not have 'fields' parameter.");
+    EKAT_REQUIRE_MSG(export_from_file_params.isParameter("fields"),
+        "Error! surface_coupling_exporter::init - prescribed_from_file does not have 'fields' parameter.");
     auto export_from_file_fields = export_from_file_params.get<vos_type>("fields");
 
-    EKAT_REQUIRE_MSG(export_from_file_params.isParameter("files"),"Error! surface_coupling_exporter::init - prescribed_from_file does not have 'files' parameter.");
+    EKAT_REQUIRE_MSG(export_from_file_params.isParameter("files"),
+        "Error! surface_coupling_exporter::init - prescribed_from_file does not have 'files' parameter.");
     auto export_from_file_names = export_from_file_params.get<vos_type>("files");
 
-    bool are_fields_present = (std::find(export_from_file_fields.begin(),export_from_file_fields.end(),"NONE") == export_from_file_fields.end()) and (export_from_file_fields.size() > 0);
-    bool are_files_present  = (std::find(export_from_file_names.begin(),export_from_file_names.end(),"NONE") == export_from_file_names.end()) and (export_from_file_names.size() > 0);
-    if (are_fields_present) {
-      EKAT_REQUIRE_MSG(are_files_present,"ERROR!! surface_coupling_exporter::init - prescribed_from_file has fields but no files.");
-    }
-    if (are_files_present) {
-      EKAT_REQUIRE_MSG(are_fields_present,"ERROR!! surface_coupling_exporter::init - prescribed_from_file has files but no fields.");
-    }
+    bool are_fields_present = export_from_file_fields.size() > 0;
+    bool are_files_present  = export_from_file_names.size() > 0;
+    EKAT_REQUIRE_MSG(are_files_present==are_fields_present,
+        "ERROR!! When prescribing export fields from file, you must provide both fields names and file name(s).\n");
     bool do_export_from_file = are_fields_present and are_files_present;
     if (do_export_from_file) {
       vos_type export_from_file_reg_names;
@@ -257,14 +255,16 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
       // Construct a time interpolation object
       m_time_interp = util::TimeInterpolation(m_grid,export_from_file_names);
       for (int ii=0; ii<export_from_file_fields.size(); ++ii) {
-	auto fname = export_from_file_fields[ii];
-	auto rname = export_from_file_reg_names[ii];
+        auto fname = export_from_file_fields[ii];
+        auto rname = export_from_file_reg_names[ii];
         // Find the index for this field in the list of export fields.
-	auto v_loc = std::find(m_export_field_names_vector.begin(),m_export_field_names_vector.end(),fname);
-	EKAT_REQUIRE_MSG(v_loc != m_export_field_names_vector.end(), "ERROR!! surface_coupling_exporter::init - prescribed_from_file has field with name " << fname << " which can't be found in set of exported fields\n.");
-	auto idx = v_loc - m_export_field_names_vector.begin();
-	EKAT_REQUIRE_MSG(m_export_source_h(idx)==FROM_MODEL,"Error! surface_coupling_exporter::init - attempting to set field " << fname << " export type, which has already been set. Please check namelist options");
-	m_export_source_h(idx) = FROM_FILE;
+        auto v_loc = std::find(m_export_field_names_vector.begin(),m_export_field_names_vector.end(),fname);
+        EKAT_REQUIRE_MSG(v_loc != m_export_field_names_vector.end(),
+            "ERROR!! surface_coupling_exporter::init - prescribed_from_file has field with name " << fname << " which can't be found in set of exported fields\n.");
+        auto idx = v_loc - m_export_field_names_vector.begin();
+        EKAT_REQUIRE_MSG(m_export_source_h(idx)==FROM_MODEL,
+            "Error! surface_coupling_exporter::init - attempting to set field " << fname << " export type, which has already been set. Please check namelist options");
+        m_export_source_h(idx) = FROM_FILE;
         ++m_num_from_file_exports;
         --m_num_from_model_exports;
         auto& f_helper = m_helper_fields.at(fname);
@@ -284,7 +284,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
     auto export_constant_fields = export_constant_params.get<vos_type>("fields");
     auto export_constant_values = export_constant_params.get<vor_type>("values");
     EKAT_REQUIRE_MSG(export_constant_fields.size()==export_constant_values.size(),"Error! surface_coupling_exporter::init - prescribed_constants 'fields' and 'values' are not the same size");
-    bool are_fields_present = (std::find(export_constant_fields.begin(),export_constant_fields.end(),"NONE") == export_constant_fields.end()) and (export_constant_fields.size() > 0);
+    bool are_fields_present = export_constant_fields.size() > 0;
     if (are_fields_present) {
       // Determine which fields need constants
       for (size_t ii=0; ii<export_constant_fields.size(); ii++) {
