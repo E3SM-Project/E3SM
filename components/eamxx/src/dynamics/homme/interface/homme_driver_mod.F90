@@ -65,11 +65,15 @@ contains
   subroutine prim_complete_init1_phase_f90 () bind(c)
     use prim_driver_base,  only: prim_init1_buffers, prim_init1_compose, prim_init1_cleanup
     use homme_context_mod, only: par, elem
+#ifdef HOMME_ENABLE_COMPOSE
     use compose_mod,       only: compose_control_kokkos_init_and_fin
+#endif
     use prim_driver_mod,   only: prim_init_grid_views
 
+#ifdef HOMME_ENABLE_COMPOSE
     ! Compose is not in charge of init/finalize kokkos
     call compose_control_kokkos_init_and_fin(.false.)
+#endif
 
     ! Init compose
     call prim_init1_compose(par,elem)
