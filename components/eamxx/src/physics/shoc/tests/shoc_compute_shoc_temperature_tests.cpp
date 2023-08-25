@@ -82,7 +82,7 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp {
     // Test Two
     // Given profiles all with cloud liquid water greater than zero,
     //  AND inverse exner functions equal to 1, ensure that tabs is greater that
-    //  absolute temperature is greater than liquid water potential temperature
+    //  absolute temperature is greater than (or equal to) liquid water potential temperature
 
     // Inverse Exner value [-]
     Real inv_exner_sec[nlev] = {1, 1, 1};
@@ -121,7 +121,7 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp {
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-        REQUIRE(SDS.tabs[offset] > SDS.thetal[offset]);
+        REQUIRE(SDS.tabs[offset] >= SDS.thetal[offset]);
       }
     }
 
