@@ -405,6 +405,11 @@ void Functions<S,D>::shoc_main_internal(
     compute_shoc_vapor_disp(shcol,nlev,qw,shoc_ql, // Input
                             shoc_qv);             // Output
 
+    // Update SHOC temperature
+    compute_shoc_temperature_disp(shcol,nlev,thetal,  // Input
+                                  shoc_ql,inv_exner, // Input
+                                  shoc_tabs);        // Output
+
     shoc_diag_obklen_disp(shcol, nlev,
                           uw_sfc,vw_sfc,     // Input
                           wthl_sfc, wqw_sfc, // Input
@@ -502,11 +507,6 @@ void Functions<S,D>::shoc_main_internal(
   // Update SHOC water vapor, to be used by the next two routines
   compute_shoc_vapor_disp(shcol,nlev,qw,shoc_ql, // Input
                           shoc_qv);             // Output
-
-  // Update SHOC temperature
-  compute_shoc_temperature_disp(shcol,nlev,thetal,  // Input
-                                shoc_ql,inv_exner, // Input
-                                shoc_tabs);        // Output
 
   shoc_diag_obklen_disp(shcol, nlev, uw_sfc,vw_sfc,      // Input
                         wthl_sfc,wqw_sfc,   // Input
