@@ -1115,7 +1115,7 @@ struct Functions
 // If a GPU build, without relocatable device code enabled, make all code available
 // to the translation unit; otherwise, ETI is used.
 #if defined(EAMXX_ENABLE_GPU) && !defined(KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)  \
-                                && !defined(KOKKOS_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)  
+                                && !defined(KOKKOS_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
 
 # include "shoc_calc_shoc_varorcovar_impl.hpp"
 # include "shoc_calc_shoc_vertflux_impl.hpp"
@@ -1158,6 +1158,6 @@ struct Functions
 # include "shoc_grid_impl.hpp"
 # include "shoc_eddy_diffusivities_impl.hpp"
 # include "shoc_tke_impl.hpp"
-#endif // GPU || !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
+#endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 
 #endif // SHOC_FUNCTIONS_HPP

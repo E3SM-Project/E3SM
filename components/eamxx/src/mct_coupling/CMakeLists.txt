@@ -35,12 +35,17 @@ set (SCREAM_LIBS
      p3
      shoc
      scream_rrtmgp
+     eamxx_cosp
      cld_fraction
      spa
      nudging
      diagnostics
      ml_correction
 )
+if (SCREAM_ENABLE_MAM)
+  set(SCREAM_LIBS ${SCREAM_LIBS} mam)
+endif()
+
 
 # Create atm lib
 add_library(atm ${ATM_SRC})

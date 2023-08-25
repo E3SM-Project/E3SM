@@ -271,7 +271,7 @@ protected:
   void deep_copy_impl (const Field& src);
 
   template<CombineMode CM, HostOrDevice HD, typename ST>
-  void update_impl (const Field& x, const ST alpha, const ST beta);
+  void update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val);
 
 protected:
 

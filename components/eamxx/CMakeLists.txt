@@ -12,6 +12,10 @@ if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
   cmake_policy(SET CMP0074 NEW)
 endif()
 
+set (EAMXX_VERSION_MAJOR 1)
+set (EAMXX_VERSION_MINOR 0)
+set (EAMXX_VERSION_PATCH 0)
+
 if ($ENV{SCREAM_FORCE_CONFIG_FAIL})
   message(FATAL_ERROR "Failed, as instructed by environment")
 endif()
@@ -66,17 +70,18 @@ if (NOT SCREAM_CIME_BUILD)
     list(REMOVE_ITEM CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "ifport")
   endif()
 
-  # Print the sha of the last commit (useful to double check which version was tested on CDash)
-  execute_process (COMMAND git rev-parse HEAD
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE LAST_GIT_COMMIT_SHA
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-  set(LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
-  message(STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
 else()
   # Ensure our languages are all enabled
   enable_language(C CXX Fortran)
 endif()
+
+# Print the sha of the last commit (useful to double check which version was tested on CDash)
+execute_process (COMMAND git rev-parse HEAD
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE LAST_GIT_COMMIT_SHA
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+set(EAMXX_GIT_VERSION ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
+message(STATUS "The sha of the last commit is ${EAMXX_GIT_VERSION}")
 
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE BOOL "Set to double precision (default True)")
 

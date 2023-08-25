@@ -12,7 +12,7 @@ macro (CreateGPTLTarget)
     endif ()
 
     # Look for libgptl in INSTALL_SHAREDPATH/lib
-    find_library(GPTL_LIB gptl REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
+    find_library(GPTL_LIB gptl REQUIRED HINTS ${INSTALL_SHAREDPATH}/lib)
 
     # Create the imported target that scream targets can link to
     add_library (gptl INTERFACE)

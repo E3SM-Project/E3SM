@@ -74,7 +74,9 @@ interface
   ! During this call, all fields are initialized (i.e., initial conditions are
   ! loaded), as well as the atm procs (which might use some initial conditions
   ! to further initialize internal structures), and the output manager.
-  subroutine scream_init_atm () bind(c)
+  subroutine scream_init_atm (caseid,hostname,username) bind(c)
+    use iso_c_binding, only: c_char
+    character(kind=c_char), target, intent(in) :: caseid(*), hostname(*), username(*)
   end subroutine scream_init_atm
 
   ! This subroutine will run the whole atm model for one atm timestep

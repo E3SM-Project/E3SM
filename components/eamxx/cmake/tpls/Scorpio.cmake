@@ -34,7 +34,7 @@ macro (CreateScorpioTargets)
     ######################
 
     # Look for pioc in INSTALL_SHAREDPATH/lib
-    find_library(SCORPIO_C_LIB pioc REQUIRED PATHS ${SCORPIO_LIB_DIR})
+    find_library(SCORPIO_C_LIB pioc REQUIRED HINTS ${SCORPIO_LIB_DIR})
 
     # Create the interface library, and set target properties
     add_library (pioc INTERFACE)
@@ -58,7 +58,7 @@ macro (CreateScorpioTargets)
     ######################
 
     # Look for piof lib in INSTALL_SHAREDPATH/lib
-    find_library(SCORPIO_F_LIB piof REQUIRED PATHS ${SCORPIO_LIB_DIR})
+    find_library(SCORPIO_F_LIB piof REQUIRED HINTS ${SCORPIO_LIB_DIR})
 
     # Create the interface library, and set target properties
     add_library(piof INTERFACE)

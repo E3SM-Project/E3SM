@@ -115,6 +115,12 @@ TEST_CASE("output_restart","io")
   };
   // Run test for different avg type choices
   for (const std::string& avg_type : {"INSTANT","AVERAGE"}) {
+    {
+      // In normal runs, the OM for the model restart takes care of nuking rpointer.atm,
+      // and re-creating a new one. Here, we don't have that, so we must nuke it manually
+      std::ofstream ofs;
+      ofs.open("rpointer.atm", std::ofstream::out | std::ofstream::trunc);
+    }
     print("   -> Averaging type: " + avg_type + " ", 40);
     output_params.set<std::string>("Averaging Type",avg_type);
 

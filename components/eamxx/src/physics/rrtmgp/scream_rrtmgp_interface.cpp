@@ -215,6 +215,7 @@ namespace scream {
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 real2d &lwp, real2d &iwp, real2d &rel, real2d &rei, real2d &cldfrac,
                 real3d &aer_tau_sw, real3d &aer_ssa_sw, real3d &aer_asm_sw, real3d &aer_tau_lw,
+                real3d &cld_tau_sw_bnd, real3d &cld_tau_lw_bnd,
                 real3d &cld_tau_sw_gpt,
                 real3d &cld_tau_lw_gpt,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
@@ -295,10 +296,12 @@ namespace scream {
             check_range(aerosol_lw.tau,  0, 1e3, "rrtmgp_main:aerosol_lw.tau");
 #endif
 
-
             // Convert cloud physical properties to optical properties for input to RRTMGP
             OpticalProps2str clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw, k_dist_sw, lwp, iwp, rel, rei);
             OpticalProps1scl clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw, k_dist_lw, lwp, iwp, rel, rei);        
+            clouds_sw.tau.deep_copy_to(cld_tau_sw_bnd);
+            clouds_lw.tau.deep_copy_to(cld_tau_lw_bnd);
+
             // Do subcolumn sampling to map bands -> gpoints based on cloud fraction and overlap assumption;
             // This implements the Monte Carlo Independing Column Approximation by mapping only a single 
             // subcolumn (cloud state) to each gpoint.
@@ -876,6 +879,33 @@ namespace scream {
                     cld_area(icol) += subcol_mask(icol,igpt) * ngpt_inv;
                 }
             });
+        }
+
+        int get_wavelength_index_sw(double wavelength) { return get_wavelength_index(k_dist_sw, wavelength); }
+
+        int get_wavelength_index_lw(double wavelength) { return get_wavelength_index(k_dist_lw, wavelength); }
+
+        int get_wavelength_index(OpticalProps &kdist, double wavelength) {
+            // Get wavelength bounds for all wavelength bands
+            auto wavelength_bounds = kdist.get_band_lims_wavelength();
+
+            // Find the band index for the specified wavelength
+            // Note that bands are stored in wavenumber space, units of cm-1, so if we are passed wavelength
+            // in units of meters, we need a conversion factor of 10^2
+            int nbnds = kdist.get_nband();
+            yakl::ScalarLiveOut<int> band_index(-1);
+            yakl::fortran::parallel_for(SimpleBounds<1>(nbnds), YAKL_LAMBDA(int ibnd) {
+                if (wavelength_bounds(1,ibnd) < wavelength_bounds(2,ibnd)) {
+                    if (wavelength_bounds(1,ibnd) <= wavelength * 1e2 && wavelength * 1e2 <= wavelength_bounds(2,ibnd)) {
+                        band_index = ibnd;
+                    }
+                } else {
+                    if (wavelength_bounds(1,ibnd) >= wavelength * 1e2 && wavelength * 1e2 >= wavelength_bounds(2,ibnd)) {
+                        band_index = ibnd;
+                    }
+                }
+            });
+            return band_index.hostRead();
         }
 
     }  // namespace rrtmgp

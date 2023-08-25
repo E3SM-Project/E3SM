@@ -146,39 +146,43 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- Basic options for each atm process -->
     <atm_proc_base>
-      <number_of_subcycles constraints="gt 0">1</number_of_subcycles>
+      <number_of_subcycles constraints="gt 0" doc="how many times to subcycle this atm process">1</number_of_subcycles>
       <enable_precondition_checks type="logical">true</enable_precondition_checks>
       <enable_postcondition_checks type="logical">true</enable_postcondition_checks>
       <repair_log_level type="string" valid_values="trace,debug,info,warn">trace</repair_log_level>
       <!-- Run internal checks on code correctness.
            <= 0: off; >= 1: global hashes over state -->
       <internal_diagnostics_level type="integer">0</internal_diagnostics_level>
-      <compute_tendencies type="array(string)">NONE</compute_tendencies>
+      <compute_tendencies
+        type="array(string)"
+        doc="list of computed fields for which this process will back out tendencies"
+        />
     </atm_proc_base>
 
     <!-- Basic options for each atm process group -->
     <atm_proc_group inherit="atm_proc_base">
       <atm_procs_list>ERROR_NO_ATM_PROCS</atm_procs_list>
       <Type>Group</Type>
-      <schedule_type>Sequential</schedule_type>
+      <schedule_type valid_values="Sequential">Sequential</schedule_type>
     </atm_proc_group>
 
     <!-- Surface coupling (import and export) -->
     <sc_import inherit="atm_proc_base"/>
     <sc_export inherit="atm_proc_base">
       <prescribed_constants>
-        <fields type="array(string)">NONE</fields>
-        <values type="array(real)">0</values>
+        <fields type="array(string)"/>
+        <values type="array(real)"/>
       </prescribed_constants>
       <prescribed_from_file>
-        <fields type="array(string)">NONE</fields>
-        <files type="array(string)">NONE</files>
+        <fields type="array(string)"/>
+        <files type="array(string)"/>
+        <!-- Optional argument if fields have a different name in the source data files -->
+        <fields_alt_name type="array(string)"/>
       </prescribed_from_file>
     </sc_export>
 
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
-      <Grid>Dynamics</Grid>
       <Moisture>moist</Moisture>
       <!-- Frequency in physics steps to output a global hash over the dycore's
            in-fields. <= 0 disables hashing. -->
@@ -204,6 +208,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- SHOC macrophysics -->
     <shoc inherit="atm_proc_base">
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
+      <check_flux_state_consistency>false</check_flux_state_consistency>
     </shoc>
 
     <!-- CLD fraction -->
@@ -291,6 +296,13 @@ be lost if SCREAM_HACK_XML is not enabled.
       <number_of_subcycles hgrid="ne0np4_conus_x4v1_lowcon">5</number_of_subcycles>
     </mac_aero_mic>
 
+    <cosp inherit="atm_proc_base">
+      <cosp_subcolumns>10</cosp_subcolumns>
+      <!-- Frequency at which to call COSP; positive values interpreted as number of steps, negative as number of hours -->
+      <cosp_frequency>1</cosp_frequency>
+      <cosp_frequency_units valid_values="steps,hours">hours</cosp_frequency_units>
+    </cosp>
+
     <physics inherit="atm_proc_group">
       <atm_procs_list>(mac_aero_mic,rrtmgp)</atm_procs_list>
     </physics>
@@ -367,7 +379,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <sfc_alb_dif_nir   >0.0</sfc_alb_dif_nir>
     <surf_sens_flux    >0.0</surf_sens_flux>
     <surf_lw_flux_up   >0.0</surf_lw_flux_up>
-    <surf_mom_flux     >0.0,0.0</surf_mom_flux>
+    <surf_mom_flux     type="array(real)">0.0,0.0</surf_mom_flux>
     <!-- default ne1024 initial condition files do not have these, so init to zero here -->
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
     <qc hgrid="ne256np4|ne1024np4">0.0</qc>
@@ -382,7 +394,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <output_yaml_files type="array(string)">${SRCROOT}/components/eamxx/data/scream_default_output.yaml</output_yaml_files>
     <model_restart>
       <filename_prefix>./${CASE}.scream</filename_prefix>
-      <output_control>
+      <output_control locked="true">
         <Frequency>${REST_N}</Frequency>
         <frequency_units>${REST_OPTION}</frequency_units>
       </output_control>
@@ -392,7 +404,11 @@ be lost if SCREAM_HACK_XML is not enabled.
   <!-- driver_options options for scream -->
   <driver_options>
     <atmosphere_dag_verbosity_level>0</atmosphere_dag_verbosity_level>
-    <atm_log_level valid_values="trace,debug,info,warn,error">info</atm_log_level>
+    <atm_log_level type="string"
+                   valid_values="trace,debug,info,warn,error"
+                   doc="Verbosity level for the atm logger">
+      info
+    </atm_log_level>
     <output_to_screen type="logical">false</output_to_screen>
     <mass_column_conservation_error_tolerance>1e-10</mass_column_conservation_error_tolerance>
     <energy_column_conservation_error_tolerance>1e-14</energy_column_conservation_error_tolerance>
