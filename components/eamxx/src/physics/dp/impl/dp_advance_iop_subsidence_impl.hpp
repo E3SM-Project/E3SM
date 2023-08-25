@@ -17,6 +17,7 @@ template<typename S, typename D>
 KOKKOS_INLINE_FUNCTION
 void Functions<S,D>::do_advance_iop_subsidence_update(
     const Int& k,
+    const Int& plev,
     const Spack& fac,
     const Spack& swfldint,
     const Spack& swfldint_p1,
@@ -28,9 +29,11 @@ void Functions<S,D>::do_advance_iop_subsidence_update(
 
   auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
   auto range_pack2_m1_safe = range_pack1;
+  auto range_pack2_p1_safe = range_pack1;
   range_pack2_m1_safe.set(range_pack1 < 1, 1); // don't want the shift to go below zero. we mask out that result anyway
+  range_pack2_p1_safe.set(range_pack1 > plev-2, plev-2); // don't want the shift to go beyond pack.
   ekat::index_and_shift<-1>(in_s, range_pack2_m1_safe, sin, sin_m1);
-  ekat::index_and_shift< 1>(in_s, range_pack1,         sin, sin_p1);
+  ekat::index_and_shift< 1>(in_s, range_pack2_p1_safe, sin, sin_p1);
 
   update(k) = in(k) - fac*(swfldint_p1*(sin_p1 - sin) + swfldint*(sin - sin_m1));
 }
@@ -100,21 +103,24 @@ void Functions<S,D>::advance_iop_subsidence(
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, plev_pack), [&] (Int k) {
       Spack swfldint, swfldint_p1;
-      auto range_pack = ekat::range<IntSmallPack>(k*Spack::n);
-      ekat::index_and_shift<1>(wfldint_s, range_pack, swfldint, swfldint_p1);
+      auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
+      auto range_pack2 = range_pack1;
+      range_pack2.set(range_pack1 > plev-1, plev-1);
+
+      ekat::index_and_shift<1>(wfldint_s, range_pack2, swfldint, swfldint_p1);
 
       Spack fac = scm_dt/(2 * pdelm1(k));
 
-      do_advance_iop_subsidence_update(k, fac, swfldint, swfldint_p1, u_in, u_in_s, u_update);
-      do_advance_iop_subsidence_update(k, fac, swfldint, swfldint_p1, v_in, v_in_s, v_update);
-      do_advance_iop_subsidence_update(k, fac, swfldint, swfldint_p1, t_in, t_in_s, t_update);
+      do_advance_iop_subsidence_update(k, plev, fac, swfldint, swfldint_p1, u_in, u_in_s, u_update);
+      do_advance_iop_subsidence_update(k, plev, fac, swfldint, swfldint_p1, v_in, v_in_s, v_update);
+      do_advance_iop_subsidence_update(k, plev, fac, swfldint, swfldint_p1, t_in, t_in_s, t_update);
 
       for (Int m = 0; m < pcnst; ++m) {
         // Grab m-th subview of q stuff
         auto q_update_sub = ekat::subview(q_update, m);
         auto q_in_sub     = ekat::subview(q_in, m);
         auto q_in_sub_s   = scalarize(q_in_sub);
-        do_advance_iop_subsidence_update(k, fac, swfldint, swfldint_p1, q_in_sub, q_in_sub_s, q_update_sub);
+        do_advance_iop_subsidence_update(k, plev, fac, swfldint, swfldint_p1, q_in_sub, q_in_sub_s, q_update_sub);
       }
   });
 
@@ -124,18 +130,19 @@ void Functions<S,D>::advance_iop_subsidence(
     const auto k = bot_top[i];
     const auto pack_idx = ekat::npack<Spack>(k+1) - 1;
     const auto s_idx    = k % Spack::n;
+    const auto idx1 = k == 0 ? k+1 : k;
 
     Scalar fac = scm_dt/(2 * pdelm1(pack_idx)[s_idx]);
-    u_update(pack_idx)[s_idx] = u_in_s(k) - fac*(wfldint_s(k+1)*(u_in_s(k+1) - u_in_s(k)));
-    v_update(pack_idx)[s_idx] = v_in_s(k) - fac*(wfldint_s(k+1)*(v_in_s(k+1) - v_in_s(k)));
-    t_update(pack_idx)[s_idx] = t_in_s(k) - fac*(wfldint_s(k+1)*(t_in_s(k+1) - t_in_s(k)));
+    u_update(pack_idx)[s_idx] = u_in_s(k) - fac*(wfldint_s(idx1)*(u_in_s(idx1) - u_in_s(idx1-1)));
+    v_update(pack_idx)[s_idx] = v_in_s(k) - fac*(wfldint_s(idx1)*(v_in_s(idx1) - v_in_s(idx1-1)));
+    t_update(pack_idx)[s_idx] = t_in_s(k) - fac*(wfldint_s(idx1)*(t_in_s(idx1) - t_in_s(idx1-1)));
 
     for (Int m = 0; m < pcnst; ++m) {
       auto q_update_sub = ekat::subview(q_update, m);
       auto q_in_sub     = ekat::subview(q_in, m);
       auto q_in_sub_s   = scalarize(q_in_sub);
 
-      q_update_sub(pack_idx)[s_idx] = q_in_sub_s(k) - fac*(wfldint_s(k+1)*(q_in_sub_s(k+1) - q_in_sub_s(k)));
+      q_update_sub(pack_idx)[s_idx] = q_in_sub_s(k) - fac*(wfldint_s(idx1)*(q_in_sub_s(idx1) - q_in_sub_s(idx1-1)));
     }
   }
 

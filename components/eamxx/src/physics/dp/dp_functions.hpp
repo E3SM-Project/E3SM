@@ -153,6 +153,7 @@ struct Functions
   KOKKOS_INLINE_FUNCTION
   static void do_advance_iop_subsidence_update(
     const Int& k,
+    const Int& plev,
     const Spack& fac,
     const Spack& swfldint,
     const Spack& swfldint_p1,
