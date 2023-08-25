@@ -113,6 +113,18 @@ namespace scream {
         void compute_cloud_area(
                 int ncol, int nlay, int ngpt, Real pmin, Real pmax,
                 const real2d& pmid, const real3d& cld_tau_gpt, real1d& cld_area);
+        /*
+         * Return select cloud-top diagnostics following AeroCOM recommendation
+         */
+        void compute_aerocom_cloudtop(
+            int ncol, int nlay, const real2d &tmid, const real2d &pmid,
+            const real2d &p_del, const real2d &z_del, const real2d &qc,
+            const real2d &qi, const real2d &rel, const real2d &rei,
+            const real2d &cldfrac_tot, const real2d &nc,
+            real1d &T_mid_at_cldtop, real1d &p_mid_at_cldtop,
+            real1d &cldfrac_ice_at_cldtop, real1d &cldfrac_liq_at_cldtop,
+            real1d &cldfrac_tot_at_cldtop, real1d &cdnc_at_cldtop,
+            real1d &eff_radius_qc_at_cldtop, real1d &eff_radius_qi_at_cldtop);
 
         /* 
          * Provide a function to convert cloud (water and ice) mixing ratios to layer mass per unit area
