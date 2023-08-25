@@ -1,3 +1,5 @@
+# This workflow aims to automatically rebuild eamxx documentation
+# every time the master branch is updated on github
 name: Build and deploy gh-pages branch with Mkdocs
 
 on:
@@ -24,5 +26,5 @@ jobs:
         run: ./eamxx-params-docs-autogen
         working-directory: components/eamxx/scripts
       - name: Build and deploy
-        working-directory: components/eamxx/docs/mkdocs
+        working-directory: components/eamxx
         run: mkdocs build && mkdocs gh-deploy
