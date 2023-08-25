@@ -1,6 +1,5 @@
 // OCN dummy driver
 
-#include "Logging.h"
 #include <iostream>
 
 void dummy(int argc, char **argv);

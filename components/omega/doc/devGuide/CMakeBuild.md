@@ -14,6 +14,8 @@ steps: Setup, Update, Build, and Output.
 The build step consists of adding three subdirectories that drive builds
 for external libraries, the Omega model, and optional tests.
 
+Python is required to use this build system.
+
 ## Step 1: Setup
 
 During this step, the build-controlling variables are configured.
@@ -45,7 +47,12 @@ OMEGA_SOURCE_DIR: Directory where the top-level Omega CMakeLists.txt is located
 OMEGA_INSTALL_PREFIX: User-defined output directory for the library and executable
 OMEGA_ARCH: User-defined programming framework (e.g., "CUDA", "HIP", "OPENMP", "SYCL", "")
 OMEGA_${YAKL_ARCH}_FLAGS: Framework-specific compiler flags
-OMEGA_CXX_FLAGS: C++ compiler flags
+OMEGA_CXX_COMPILER: C++ compiler
+OMEGA_CIME_COMPILER: E3SM compiler name defined in config_machines.xml
+OMEGA_CXX_FLAGS: a list for C++ compiler flags
+OMEGA_LINK_OPTIONS: a list for linker flags
+OMEGA_INCLUDE_DIRECTORIES: Directory where header files are located
+OMEGA_LINK_DIRECTORIES: Directory where library files are located
 OMEGA_BUILD_EXECUTABLE: Enable building the Omega executable
 OMEGA_BUILD_TEST: Enable building Omega tests
 ```
@@ -65,6 +72,8 @@ CMake variables
 ```
 CMAKE_CURRENT_SOURCE_DIR
 CMAKE_CXX_STANDARD
+CMAKE_CXX_COMPILER
+CMAKE_CXX_FLAGS
 CMAKE_CURRENT_LIST_DIR
 CMAKE_BUILD_TYPE
 CMAKE_INSTALL_PREFIX
@@ -75,8 +84,9 @@ CMAKE_VERSION
 ## Step 2: Update
 
 In this step, CMake is configured, and external library variables,
-such as YAKL, are set based on the settings defined in the Setup step.
-The integrity of the build setup is verified at the end of this step.
+such as YAKL, MPI, NetCDF, and PNetCDF, are set based on the settings
+defined in the Setup step. The integrity of the build setup is verified
+at the end of this step.
 
 ## Step 3: Build
 

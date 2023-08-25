@@ -5,6 +5,15 @@
 #    2) e3sm build
 
 
+# Included scripts do automatic cmake_policy() PUSH and POP
+cmake_policy(SET CMP0011 NEW)
+
+# list command no longer ignores empty elements
+cmake_policy(SET CMP0007 NEW)
+
+# Only interpret if() arguments as variables or keywords when unquoted
+cmake_policy(SET CMP0054 NEW)
+
 ###########################################################
 # STEP 1: Setup                                           #
 #                                                         #
