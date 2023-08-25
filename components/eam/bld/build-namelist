@@ -1130,7 +1130,7 @@ if ($aer_model eq 'mam' ) {
   if ($chem =~ /_mam4/) {$aero_modes = '4mode';}
   if ($chem =~ /_mam4_mom/) {$aero_modes = '4mode_mom';}
   if ($chem =~ /_mam4_resus_mom/) {$aero_modes = '4mode_mom';}
-  if ($chem =~ /_mam5_resus_mom/) {$aero_modes = '5mode';}
+  if ($chem =~ /_mam5/) {$aero_modes = '5mode';}
   if ($chem =~ /_mam7/) {$aero_modes = '7mode';}
   if ($chem =~ /_mam9/) {$aero_modes = '9mode';}
 
@@ -3093,7 +3093,7 @@ if ($chem eq 'linoz_mam4_resus_mom' || $chem eq 'linoz_mam4_resus_mom_soag') {
     }
 }
 
-if ($chem eq 'superfast_mam4_resus_mom_soag' || $chem eq 'superfast_mam5_resus_mom_soag') {
+if ($chem eq 'superfast_mam4_resus_mom_soag' || $chem eq 'chemuci_linozv3_mam5_vbs') {
 
     # Surface emission datasets:
     my %species;
