@@ -218,9 +218,53 @@ void advance_iop_forcing_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, bool ha
   ekat::device_to_host({q_update}, pcnst, plev, inout_views_2d, true);
 }
 
-void advance_iop_nudging_f(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* q_in, Real* t_update, Real* q_update, Real* relaxt, Real* relaxq)
+void advance_iop_nudging_f(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* q_in, Real* hyai, Real* hyam, Real* hybi, Real* hybm,
+                           Real* t_update, Real* q_update, Real* relaxt, Real* relaxq)
 {
-  // TODO
+  using DPF  = Functions<Real, DefaultDevice>;
+
+  using Spack = typename DPF::Spack;
+  using view_1d = typename DPF::view_1d<Spack>;
+  using KT = typename DPF::KT;
+  using ExeSpace = typename KT::ExeSpace;
+  using MemberType = typename DPF::MemberType;
+
+  const Int plev_pack = ekat::npack<Spack>(plev);
+
+  // Set up views
+  std::vector<view_1d> temp_d(AdvanceIopForcingData::NUM_ARRAYS);
+
+  ekat::host_to_device({t_in, q_in, hyai, hyam, hybi, hybm, t_update, q_update, relaxt, relaxq},
+                       plev, temp_d);
+
+  int counter=0;
+  view_1d
+    t_in_d    (temp_d[counter++]),
+    q_in_d    (temp_d[counter++]),
+    hyai_d    (temp_d[counter++]),
+    hyam_d    (temp_d[counter++]),
+    hybi_d    (temp_d[counter++]),
+    hybm_d    (temp_d[counter++]),
+    t_update_d(temp_d[counter++]),
+    q_update_d(temp_d[counter++]),
+    relaxt_d  (temp_d[counter++]),
+    relaxq_d  (temp_d[counter++]);
+
+  // Call core function from kernel
+  auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, plev_pack);
+  ekat::WorkspaceManager<Spack> wsm(plev_pack, 4, policy);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+
+      DPF::advance_iop_nudging(
+        plev, scm_dt, ps_in, t_in_d, q_in_d, hyai_d, hyam_d, hybi_d, hybm_d,
+        team, wsm.get_workspace(team),
+        t_update_d, q_update_d, relaxt_d, relaxq_d);
+  });
+
+  // Sync back to host
+  std::vector<view_1d> out_views = {t_update_d, q_update_d, relaxt_d, relaxq_d};
+
+  ekat::device_to_host({t_update, q_update, relaxt, relaxq}, plev, out_views);
 }
 
 void advance_iop_subsidence_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* hyai, Real* hyam, Real* hybi, Real* hybm, Real* wfld, Real* u_update, Real* v_update, Real* t_update, Real* q_update)
