@@ -106,6 +106,16 @@
     <lname>2010_EAM%CHEMUCI-LINOZV3-MAM5_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>FSSP370</alias>
+    <lname>SSP370_eam_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FSSP585</alias>
+    <lname>SSP585_eam_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
 
   <!-- *********************************** -->
   <!-- Single column model -->
