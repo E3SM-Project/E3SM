@@ -1600,7 +1600,7 @@
 			possible_values="positive real"
 			icepack_name="drhosdwind"
 		/>
-		<nml_option name="config_wind_snow_loss_factor" type="real" default_value="0.3" units="none"
+		<nml_option name="config_snow_redistribution_factor" type="real" default_value="0.3" units="none"
 			description="snow loss factor for wind redistribution"
 			possible_values="positive real less than or equal to 1"
 			icepack_name="snwlvlfac"

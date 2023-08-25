@@ -2853,9 +2853,6 @@ contains
 
           abortFlag = icepack_warnings_aborted()
           call seaice_icepack_write_warnings(abortFlag)
-          if (abortFlag) then
-              call mpas_log_write("step_snow: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-          end if
 
           if (config_use_snow_grain_radius) then
              snowDensityViaContent(iCell) = 0.0_RKIND
@@ -11051,7 +11048,7 @@ contains
          config_max_snow_density, &
          config_minimum_wind_compaction, &
          config_wind_compaction_factor, &
-         config_wind_snow_loss_factor, &
+         config_snow_redistribution_factor, &
          config_max_dry_snow_radius
 
     integer, pointer :: &
@@ -11255,7 +11252,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_max_snow_density", config_max_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_minimum_wind_compaction", config_minimum_wind_compaction)
     call MPAS_pool_get_config(domain % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
-    call MPAS_pool_get_config(domain % configs, "config_wind_snow_loss_factor", config_wind_snow_loss_factor)
+    call MPAS_pool_get_config(domain % configs, "config_snow_redistribution_factor", config_snow_redistribution_factor)
     call MPAS_pool_get_config(domain % configs, "config_max_dry_snow_radius", config_max_dry_snow_radius)
 
     call colpkg_init_parameters(&
@@ -11445,7 +11442,7 @@ contains
          config_max_snow_density, &
          config_minimum_wind_compaction, &
          config_wind_compaction_factor, &
-         config_wind_snow_loss_factor)
+         config_snow_redistribution_factor)
 
     !-----------------------------------------------------------------------
     ! Parameters for thermodynamics
@@ -12245,7 +12242,7 @@ contains
 
     ! snwlvlfac:
     ! snow loss factor for wind redistribution
-    ! snwlvlfac = config_wind_snow_loss_factor
+    ! snwlvlfac = config_snow_redistribution_factor
 
     ! drhosdwind:
     ! wind compaction factor (kg s/m^4)
@@ -12517,7 +12514,7 @@ contains
          config_max_snow_density, &
          config_minimum_wind_compaction, &
          config_wind_compaction_factor, &
-         config_wind_snow_loss_factor, &
+         config_snow_redistribution_factor, &
          config_max_dry_snow_radius
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
@@ -12750,7 +12747,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_max_snow_density", config_max_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_minimum_wind_compaction", config_minimum_wind_compaction)
     call MPAS_pool_get_config(domain % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
-    call MPAS_pool_get_config(domain % configs, "config_wind_snow_loss_factor", config_wind_snow_loss_factor)
+    call MPAS_pool_get_config(domain % configs, "config_snow_redistribution_factor", config_snow_redistribution_factor)
     call MPAS_pool_get_config(domain % configs, "config_max_dry_snow_radius", config_max_dry_snow_radius)
     call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nGrainAgingTemperature", nGrainAgingTemperature)
@@ -13078,7 +13075,7 @@ contains
          rhosmax_in              = config_max_snow_density, &
          windmin_in              = config_minimum_wind_compaction, &
          drhosdwind_in           = config_wind_compaction_factor, &
-         snwlvlfac_in            = config_wind_snow_loss_factor, &
+         snwlvlfac_in            = config_snow_redistribution_factor, &
          isnw_T_in               = nGrainAgingTemperature, &
          isnw_Tgrd_in            = nGrainAgingTempGradient, &
          isnw_rhos_in            = nGrainAgingSnowDensity, &
