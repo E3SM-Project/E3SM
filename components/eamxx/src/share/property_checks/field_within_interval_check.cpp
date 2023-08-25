@@ -249,12 +249,12 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
 
   using namespace ShortFieldTagsNames;
 
-  int min_col_lid, max_col_lid;
-  bool has_latlon;
+  int min_col_lid = -1, max_col_lid = -1;
+  bool has_latlon = false;
   bool has_col_info = m_grid and layout.tag(0)==COL;
   bool has_additional_col_info = not additional_data_fields().empty();
-  const Real* lat;
-  const Real* lon;
+  const Real* lat = nullptr;
+  const Real* lon = nullptr;
 
   if (has_col_info) {
     // We are storing grid info, and the field is over columns. Get col id and coords.
@@ -272,7 +272,7 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
   msg << "    - value: " << minmaxloc.min_val << "\n";
   if (has_col_info) {
     auto gids = m_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
-    msg << "    - entry: (" << gids(min_col_lid);
+    msg << "    - indices (w/ global column index): (" << gids(min_col_lid);
     for (size_t i=1; i<idx_min.size(); ++i) {
       msg << "," << idx_min[i];
     }
@@ -282,20 +282,20 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
     }
   }
   if (has_additional_col_info) {
-    msg << "    - additional data:\n";
+    msg << "    - additional data (w/ local column index):\n";
     for (auto& f : additional_data_fields()) {
       f.sync_to_host();
       msg << "\n";
       print_field_hyperslab(f, {COL}, {min_col_lid}, msg);
     }
-    msg << "\n    END OF ADDITIONAL DATA\n";
+    msg << "\n    END OF ADDITIONAL DATA\n\n";
   }
 
   msg << "  - maximum:\n";
   msg << "    - value: " << minmaxloc.max_val << "\n";
   if (has_col_info) {
     auto gids = m_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
-    msg << "    - entry: (" << gids(max_col_lid);
+    msg << "    - indices (w/ global column index): (" << gids(max_col_lid);
     for (size_t i=1; i<idx_max.size(); ++i) {
       msg << "," << idx_max[i];
     }
@@ -305,7 +305,7 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
     }
   }
   if (has_additional_col_info) {
-    msg << "    - additional data:\n";
+    msg << "    - additional data (w/ local column index):\n";
     for (auto& f : additional_data_fields()) {
       f.sync_to_host();
       msg << "\n";

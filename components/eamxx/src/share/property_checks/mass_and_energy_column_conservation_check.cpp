@@ -241,7 +241,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
       msg << "    - (lat, lon): (" << lat(maxloc_mass.loc) << ", " << lon(maxloc_mass.loc) << ")\n";
     }
     if (has_additional_col_info) {
-      msg << "    - additional data:\n";
+      msg << "    - additional data (w/ local column index):\n";
       for (auto& f : additional_data_fields()) {
         f.sync_to_host();
         msg << "\n";
@@ -260,7 +260,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
       msg << "    - (lat, lon): (" << lat(maxloc_energy.loc) << ", " << lon(maxloc_energy.loc) << ")\n";
     }
     if (has_additional_col_info) {
-      msg << "    - additional data:\n";
+      msg << "    - additional data (w/ local column index):\n";
       for (auto& f : additional_data_fields()) {
         f.sync_to_host();
         msg << "\n";
