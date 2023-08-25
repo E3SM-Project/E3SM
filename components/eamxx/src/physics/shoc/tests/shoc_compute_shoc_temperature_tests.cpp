@@ -25,7 +25,175 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp {
 
   static void run_property()
   {
-    // TODO: Add property test?
+    static constexpr Int shcol    = 1;
+    static constexpr Int nlev     = 3;
+
+    // Test One
+    // Given Exner value = 1 and cloud liquid = 0 everywhere
+    //  verify that all points of absolute temperature (tabs)
+    //  are exactly equal to liquid water potential temperature (thetal)
+
+    // Inverse Exner value [-]
+    Real inv_exner_first[nlev] = {1, 1, 1};
+    // Liquid water potential temperature [K]
+    Real thetal_first[nlev] = {300, 290, 280};
+    // Liquid water mixing ratio [kg/kg]
+    Real ql_first[nlev] = {0, 0, 0};
+
+    ComputeShocTempData SDS(shcol, nlev);
+
+    REQUIRE(SDS.shcol > 0);
+    REQUIRE(SDS.nlev > 0);
+
+    // Fill in test data on zt_grid.
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        SDS.inv_exner[offset] = inv_exner_first[n];
+        SDS.thetal[offset] = thetal_first[n];
+        SDS.ql[offset] = ql_first[n];
+      }
+    }
+
+    // Check that inputs are as expected
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        REQUIRE(SDS.ql[offset] == 0);
+        REQUIRE(SDS.inv_exner[offset] == 1);
+        REQUIRE(SDS.thetal[offset] > 0);
+      }
+    }
+
+    // Call the fortran implementation
+    compute_shoc_temperature(SDS);
+
+    // Require that absolute temperature is equal to thetal
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        REQUIRE(SDS.tabs[offset] == SDS.thetal[offset]);
+      }
+    }
+
+    // Test Two
+    // Given profiles all with cloud liquid water greater than zero,
+    //  AND inverse exner functions equal to 1, ensure that tabs is greater that
+    //  absolute temperature is greater than liquid water potential temperature
+
+    // Inverse Exner value [-]
+    Real inv_exner_sec[nlev] = {1, 1, 1};
+    // Liquid water potential temperature [K]
+    Real thetal_sec[nlev] = {300, 290, 280};
+    // Liquid water mixing ratio [kg/kg]
+    Real ql_sec[nlev] = {3e-5, 1e-10, 1e-3};
+
+    // Fill in test data on zt_grid.
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        SDS.inv_exner[offset] = inv_exner_sec[n];
+        SDS.thetal[offset] = thetal_sec[n];
+        SDS.ql[offset] = ql_sec[n];
+      }
+    }
+
+    // Check that inputs are as expected
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        REQUIRE(SDS.ql[offset] > 0);
+        REQUIRE(SDS.inv_exner[offset] == 1);
+        REQUIRE(SDS.thetal[offset] > 0);
+      }
+    }
+
+    // Call the fortran implementation
+    compute_shoc_temperature(SDS);
+
+    // Require that absolute temperature is greather than thetal
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        REQUIRE(SDS.tabs[offset] > SDS.thetal[offset]);
+      }
+    }
+
+    // Test Three
+    // Given "realistic" atmospheric profiles with thetal increasing
+    //  with height, as well as inv_exner function; verify that
+    //  absolute temperature is decreasing with height.  Give
+    //  all levels the same amount of cloud liquid water
+
+    // Inverse Exner value [-]
+    Real inv_exner_third[nlev] = {1.1, 1.5, 2};
+    // Liquid water potential temperature [K]
+    Real thetal_third[nlev] = {300, 350, 400};
+    // Liquid water mixing ratio [kg/kg]
+    Real ql_third[nlev] = {1e-5, 1e-5, 1e-5};
+
+    // Fill in test data on zt_grid.
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        SDS.inv_exner[offset] = inv_exner_third[n];
+        SDS.thetal[offset] = thetal_third[n];
+        SDS.ql[offset] = ql_third[n];
+      }
+    }
+
+    // Check that inputs are as expected
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        REQUIRE(SDS.ql[offset] > 0);
+        REQUIRE(SDS.inv_exner[offset] > 1);
+        REQUIRE(SDS.thetal[offset] > 0);
+      }
+    }
+
+    // Check that inputs are changing with height as expected
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 1; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        const auto offsetl = (n-1) + s * nlev;
+
+        // Verify inverse exner and thetal are increasing with height
+        REQUIRE(SDS.inv_exner[offset] > SDS.inv_exner[offsetl]);
+        REQUIRE(SDS.thetal[offset] > SDS.thetal[offsetl]);
+      }
+    }
+
+    // Call the fortran implementation
+    compute_shoc_temperature(SDS);
+
+    // Require that absolute temperature be less than thetal
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        REQUIRE(SDS.tabs[offset] < SDS.thetal[offset]);
+      }
+    }
+
+    // Check that tabs is decreasing with height as expected
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 1; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        const auto offsetl = (n-1) + s * nlev;
+
+        REQUIRE(SDS.tabs[offset] < SDS.tabs[offsetl]);
+      }
+    }
+
   }
 
   static void run_bfb()
@@ -89,12 +257,12 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp {
 
 namespace {
 
-// TEST_CASE("shoc_imp_dp_inverse_property", "shoc")
-// {
-//   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeShocTemp;
+TEST_CASE("shoc_compute_shoc_temperature_property", "shoc")
+ {
+   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeShocTemp;
 
-//   TestStruct::run_property();
-// }
+   TestStruct::run_property();
+ }
 
 TEST_CASE("shoc_compute_shoc_temperature_bfb", "shoc")
 {

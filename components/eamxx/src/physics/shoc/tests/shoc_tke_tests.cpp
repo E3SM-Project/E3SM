@@ -23,8 +23,6 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestShocTke {
 
-  // TODO: Property tests need to be fixed to account for change of inputs (no obklen, add tabs)
-  /*
   static void run_property()
   {
     static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
@@ -59,8 +57,8 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     Real u_wind[nlev] = {2, 1, 0, -1, -2};
     // Define meridional wind on nlev grid [m/s]
     Real v_wind[nlev] = {1, 2, 3, 4, 5};
-    // Define Obukov length [m]
-    Real obklen = -1;
+    // Define surface temperature [K] (value irrelevant, just make sure it's physical)
+    Real tabs[nlev] ={300, 300, 300, 300, 300};
     // Define thickness on the interface grid [m]
     Real dz_zi[nlevi] = {0, 100, 100, 100, 100, 50};
     // Define thickness on the thermo grid [m]
@@ -96,7 +94,6 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       SDS.pblh[s] = pblh;
-      SDS.obklen[s] = obklen;
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
@@ -110,6 +107,7 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
         SDS.tke[offset] = tke_init[n];
         SDS.tkh[offset] = tkh[n];
         SDS.tk[offset] = tk[n];
+        SDS.tabs[offset] = tabs[n];
       }
 
       // Fill in test data on zi_grid.
@@ -247,7 +245,6 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
       }
     }
   }
-  */
 
   static void run_bfb()
   {
@@ -319,15 +316,12 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
 
 namespace {
 
-// TODO: Property tests need to be fixed to account for change of inputs (no obklen, add tabs)
-/*
 TEST_CASE("shoc_tke_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocTke;
 
   TestStruct::run_property();
 }
-*/
 
 TEST_CASE("shoc_tke_bfb", "shoc")
 {
