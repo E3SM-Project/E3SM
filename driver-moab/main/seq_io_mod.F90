@@ -84,6 +84,7 @@ module seq_io_mod
      module procedure seq_io_write_r81d
      module procedure seq_io_write_char
      module procedure seq_io_write_time
+     module procedure seq_io_write_moab_tags
   end interface seq_io_write
 
   !-------------------------------------------------------------------------------
@@ -1562,6 +1563,148 @@ contains
 
   end subroutine seq_io_write_time
 
+  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, file_ind )
+
+    use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
+
+    use iMOAB,            only: iMOAB_GetGlobalInfo, iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
+        iMOAB_GetIntTagStorage
+
+     ! !INPUT/OUTPUT PARAMETERS:
+    implicit none
+    character(len=*),intent(in) :: filename      ! file
+    integer(in), intent(in)     :: mbxid         ! imoab app id, on coupler 
+    character(len=*),intent(in) :: dname         ! name of data (prefix) 
+    character(len=*),intent(in) :: tag_list      ! fields, separated by colon
+    logical,optional,intent(in) :: whead         ! write header
+    logical,optional,intent(in) :: wdata         ! write data
+    integer,optional,intent(in) :: file_ind
+
+    logical :: lwhead, lwdata
+    !integer :: start(2),count(2)
+    character(*),parameter :: subName = '(seq_io_write_moab_tags) '
+    integer :: ndims, lfile_ind, iam, rcode
+    integer(in)              :: ns, ng, lnx, lny
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+
+    type(var_desc_t) :: varid
+    type(io_desc_t)  :: iodesc
+    character(CL)    :: name1       ! var name
+    character(CL)    :: cunit       ! var units
+    character(CL)    :: lname       ! long name
+    character(CL)    :: sname       ! standard name
+
+    character(CL)  :: lpre
+
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list
+    type(mct_string)    :: mctOStr  !
+    character(CXX) ::tagname, field
+
+    integer(in)        :: dimid2(2)
+    integer(in)              :: dummy, ent_type, ierr
+    real(r8)                 :: lfillvalue ! or just use fillvalue ?
+    integer, allocatable         :: Dof(:)  ! will be filled with global ids from cells
+    real(r8), allocatable        :: data1(:)
+
+    !-------------------------------------------------------------------------------
+    !
+    !-------------------------------------------------------------------------------
+
+    lwhead = .true.
+    lwdata = .true.
+    lfillvalue = fillvalue 
+    if (present(whead)) lwhead = whead
+    if (present(wdata)) lwdata = wdata
+
+    if (.not.lwhead .and. .not.lwdata) then
+       ! should we write a warning?
+       return
+    endif
+    ent_type = 1 ! cells type
+
+    lfile_ind = 0
+    if (present(file_ind)) lfile_ind=file_ind
+
+    call seq_comm_setptrs(CPLID,iam=iam)
+
+    call mct_list_init(temp_list ,trim(tag_list))
+    size_list=mct_list_nitem (temp_list)  ! role of nf, number fields
+    ent_type = 1 ! cell for atm, atm_pg_active
+
+    if (size_list < 1) then
+       write(logunit,*) subname,' ERROR: size_list = ',size_list,trim(dname)
+       call shr_sys_abort(subname//'size_list error')
+    endif
+
+    lpre = trim(dname)
+    ! find out the number of global cells, needed for defining the variables length
+    ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
+    lnx = ng
+    lny = 1 ! do we need 2 var, or just 1 
+    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
+    ns = nvise(1) ! local cells 
+
+    if (lwhead) then
+       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
+       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       do index_list = 1, size_list
+          call mct_list_get(mctOStr,index_list,temp_list)
+          field = mct_string_toChar(mctOStr)
+          !-------tcraig, this is a temporary mod to NOT write hgt
+          if (trim(field) /= "hgt") then
+             name1 = trim(lpre)//'_'//trim(field)
+             call seq_flds_lookup(field,longname=lname,stdname=sname,units=cunit)
+            !  if (luse_float) then
+            !     rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_REAL,dimid1,varid)
+            !     rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",real(lfillvalue,r4))
+            !  else
+             rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_DOUBLE,dimid2,varid)
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",lfillvalue)
+             !end if
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"internal_dname",trim(dname))
+             !-------tcraig
+          endif
+       enddo
+       if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
+    end if
+
+    if (lwdata) then
+       allocate(data1(ns))
+       allocate(dof(ns))
+
+       ! note: size of dof is ns
+       tagname = 'GLOBAL_ID'//C_NULL_CHAR
+       ierr = iMOAB_GetIntTagStorage ( mbxid, tagname, ns , ent_type, dof(1))
+   
+       call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
+
+       deallocate(dof)
+
+       do index_list = 1, size_list
+          call mct_list_get(mctOStr,index_list,temp_list)
+          field = mct_string_toChar(mctOStr)
+          !-------tcraig, this is a temporary mod to NOT write hgt
+          if (trim(field) /= "hgt") then
+             name1 = trim(lpre)//'_'//trim(field)
+             rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
+             !call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
+             tagname = trim(field)//C_NULL_CHAR
+             ierr = iMOAB_GetDoubleTagStorage (mbxid, tagname, ns , ent_type, data1(1))
+             call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data1, rcode, fillval=lfillvalue)
+          endif
+       enddo
+
+       call pio_freedecomp(cpl_io_file(lfile_ind), iodesc)
+       deallocate(data1)
+
+    end if
+
+
+  end subroutine seq_io_write_moab_tags
   !===============================================================================
   !BOP ===========================================================================
   !

@@ -126,7 +126,7 @@ module cime_comp_mod
   use seq_hist_mod, only : seq_hist_write, seq_hist_writeavg, seq_hist_writeaux
 
   ! restart file routines
-  use seq_rest_mod, only : seq_rest_read, seq_rest_write
+  use seq_rest_mod, only : seq_rest_read, seq_rest_write, seq_rest_mb_write
 
   ! flux calc routines
   use seq_flux_mct, only: seq_flux_init_mct, seq_flux_initexch_mct, seq_flux_ocnalb_mct
@@ -5344,6 +5344,12 @@ contains
                fractions_rx, fractions_gx, fractions_wx, fractions_zx, &
                trim(cpl_inst_tag), drv_resume_file)
           call t_stopf('CPL:seq_rest_write')
+
+          call t_startf('CPL:seq_rest_mb_write')
+          call seq_rest_mb_write(EClock_d, seq_SyncClock, infodata,       &
+               atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
+               trim(cpl_inst_tag), drv_resume_file)
+          call t_stopf('CPL:seq_rest_mb_write')
 
           if (iamroot_CPLID) then
              write(logunit,103) ' Restart filename: ',trim(drv_resume_file)

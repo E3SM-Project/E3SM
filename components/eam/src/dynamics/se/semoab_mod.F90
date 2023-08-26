@@ -465,35 +465,8 @@ contains
       ! set the global ids for coarse vertices the same as corresponding fine vertices
       ent_type = 0 ! vertex type
       ierr = iMOAB_SetIntTagStorage ( MHID, newtagg, nverts_c , ent_type, vdone_c)
-
-      ! create a new tag, for transfer example ; will use it now for temperature on the surface
-      !  (bottom atm to surface of ocean)
-      tagname='a2oTbot'//C_NULL_CHAR !  atm to ocean temp bottom tag
-      tagtype = 1  ! dense, double
-      numco = np*np !  usually, it is 16; each element will have the same order as dofs
-      ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
       if (ierr > 0 )  &
-        call endrun('Error: fail to create atm to ocean temp bottom tag')
-
-      tagname='a2oUbot'//C_NULL_CHAR !  atm to ocean U bottom tag
-      ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
-      if (ierr > 0 )  &
-        call endrun('Error: fail to create atm to ocean U velocity bottom tag')
-
-      tagname='a2oVbot'//C_NULL_CHAR !  atm to ocean V bottom tag
-      ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
-      if (ierr > 0 )  &
-        call endrun('Error: fail to create atm to ocean V velocity bottom tag')
-
-
-      ! create a new tag, for transfer example ; will use it now for temperature on the surface
-      !  (bottom atm to surface of ocean); for debugging, use it on fine mesh
-      tagname='a2o_T'//C_NULL_CHAR !  atm to ocean tag
-      tagtype = 1  ! dense, double
-      numco = 1 !  usually, it is 1; one value per gdof
-      ierr = iMOAB_DefineTagStorage(MHFID, tagname, tagtype, numco,  tagindex )
-      if (ierr > 0 )  &
-        call endrun('Error: fail to create atm to ocean tag')
+        call endrun('Error: fail to set GLOBAL_DOFS tag values')
 
       ierr = iMOAB_UpdateMeshInfo(MHID)
       if (ierr > 0 )  &

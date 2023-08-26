@@ -68,6 +68,7 @@ module seq_rest_mod
   use prep_aoflux_mod, only: prep_aoflux_get_xao_ox
   use prep_aoflux_mod, only: prep_aoflux_get_xao_ax
 
+  use seq_flds_mod, only: seq_flds_a2x_fields, seq_flds_xao_fields
   implicit none
 
   private
@@ -80,6 +81,7 @@ module seq_rest_mod
 
   public :: seq_rest_read   ! read  cpl7 restart data
   public :: seq_rest_write  ! write cpl7 restart data
+  public :: seq_rest_mb_write ! read  cpl7_moab restart data
 
   ! !PUBLIC DATA MEMBERS:
 
@@ -657,6 +659,325 @@ contains
     endif
   end subroutine seq_rest_write
 
+
+  subroutine seq_rest_mb_write(EClock_d, seq_SyncClock, infodata,       &
+               atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
+               tag, rest_file)
+
+    use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid ! coupler side instances
+
+    implicit none
+
+    type(ESMF_Clock)       , intent(in)    :: EClock_d      ! driver clock
+    type(seq_timemgr_type) , intent(inout) :: seq_SyncClock ! contains ptr to driver clock
+    type(seq_infodata_type), intent(in)    :: infodata
+    type (component_type)       , intent(inout) :: atm(:)
+    type (component_type)  , intent(inout) :: lnd(:)
+    type (component_type)  , intent(inout) :: ice(:)
+    type (component_type)  , intent(inout) :: ocn(:)
+    type (component_type)  , intent(inout) :: rof(:)
+    type (component_type)  , intent(inout) :: glc(:)
+    type (component_type)  , intent(inout) :: wav(:)
+    type (component_type)  , intent(inout) :: esp(:)
+    type (component_type)  , intent(inout) :: iac(:)
+
+    character(len=*)       , intent(in)    :: tag
+    character(len=CL)      , intent(out)   :: rest_file         ! Restart filename
+
+    integer(IN)   :: n,n1,n2,n3,fk
+    integer(IN)   :: curr_ymd         ! Current date YYYYMMDD
+    integer(IN)   :: curr_tod         ! Current time-of-day (s)
+    integer(IN)   :: yy,mm,dd         ! year, month, day
+    character(CL) :: case_name        ! case name
+    character(CL) :: cvar             ! char variable
+    integer(IN)   :: ivar             ! integer variable
+    real(r8)      :: rvar             ! real variable
+    logical       :: whead,wdata      ! flags header/data writing
+    logical       :: cplroot          ! root pe on cpl id
+    integer(IN)   :: iun              ! unit number
+    !type(mct_gsMap),pointer :: gsmap
+    character(len=6) :: year_char
+
+    real(r8),allocatable :: ds(:)     ! for reshaping diag data for restart file
+    real(r8),allocatable :: ns(:)     ! for reshaping diag data for restart file
+    real(r8),allocatable :: dsBGC(:)  ! for reshaping diag data for restart file
+    real(r8),allocatable :: nsBGC(:)  ! for reshaping diag data for restart file
+    character(CL) :: model_doi_url
+    character(len=*),parameter :: subname = "(seq_rest_mb_write) "
+
+    !-------------------------------------------------------------------------------
+    !
+    !-------------------------------------------------------------------------------
+
+    !----------------------------------------------------------------------------
+    ! get required infodata
+    !----------------------------------------------------------------------------
+    iamin_CPLID  = seq_comm_iamin(CPLID)
+
+    call seq_comm_getdata(GLOID,&
+         mpicom=mpicom_GLOID, nthreads=nthreads_GLOID)
+
+    call seq_comm_getdata(CPLID,&
+         mpicom=mpicom_CPLID, nthreads=nthreads_CPLID, iamroot=cplroot)
+
+    call seq_infodata_getData(infodata,      &
+         drv_threading=drv_threading,        &
+         atm_present=atm_present,        &
+         lnd_present=lnd_present,        &
+         rof_present=rof_present,        &
+         ice_present=ice_present,        &
+         ocn_present=ocn_present,        &
+         glc_present=glc_present,        &
+         wav_present=wav_present,        &
+         esp_present=esp_present,        &
+         iac_present=iac_present,        &
+         atm_prognostic=atm_prognostic,      &
+         lnd_prognostic=lnd_prognostic,      &
+         ice_prognostic=ice_prognostic,      &
+         rof_prognostic=rof_prognostic,      &
+         rofocn_prognostic=rofocn_prognostic,    &
+         ocn_prognostic=ocn_prognostic,      &
+         ocnrof_prognostic=ocnrof_prognostic,    &
+         glc_prognostic=glc_prognostic,      &
+         wav_prognostic=wav_prognostic,      &
+         esp_prognostic=esp_prognostic,      &
+         iac_prognostic=iac_prognostic,      &
+         ocn_c2_glcshelf=ocn_c2_glcshelf,    &
+         do_bgc_budgets=do_bgc_budgets,      &
+         case_name=case_name,                &
+         model_doi_url=model_doi_url)
+
+    ! Write out infodata and time manager data to restart file
+
+    call seq_timemgr_EClockGetData( EClock_d, curr_ymd=curr_ymd, curr_tod=curr_tod)
+    call shr_cal_date2ymd(curr_ymd,yy,mm,dd)
+    write(year_char,'(i6.4)') yy
+    write(rest_file,"(4a,i2.2,a,i2.2,a,i5.5,a)") &
+         'moab_'//trim(case_name), '.cpl'//trim(tag)//'.r.',trim(adjustl(year_char)),'-',mm,'-',dd,'-',curr_tod,'.nc'
+
+    ! Write driver data to restart file
+
+    if (iamin_CPLID) then
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       ! copy budg_dataG into 1d array
+       n = size(budg_dataG)
+       allocate(ds(n),ns(n))
+       call shr_mpi_bcast(budg_dataG,mpicom_CPLID) ! pio requires data on all pe's?
+
+       n = 0
+       do n1 = 1,size(budg_dataG,dim=1)
+          do n2 = 1,size(budg_dataG,dim=2)
+             do n3 = 1,size(budg_dataG,dim=3)
+                n = n + 1
+                ds(n) = budg_dataG(n1,n2,n3)
+                ns(n) = budg_ns(n1,n2,n3)
+             enddo
+          enddo
+       enddo
+
+       ! copy budg_dataGBGC into 1d array if BGC budgets are on
+       if (do_bgc_budgets) then
+          n = size(budg_dataGBGC)
+          allocate(dsBGC(n),nsBGC(n))
+          call shr_mpi_bcast(budg_dataGBGC,mpicom_CPLID) ! pio requires data on all pe's?
+
+          n = 0
+          do n1 = 1,size(budg_dataGBGC,dim=1)
+             do n2 = 1,size(budg_dataGBGC,dim=2)
+                do n3 = 1,size(budg_dataGBGC,dim=3)
+                   n = n + 1
+                   dsBGC(n) = budg_dataGBGC(n1,n2,n3)
+                   nsBGC(n) = budg_nsBGC(n1,n2,n3)
+                enddo
+             enddo
+          enddo
+       endif
+
+       if (cplroot) then
+          iun = shr_file_getUnit()
+          call seq_infodata_GetData(infodata,restart_pfile=cvar)
+          if (loglevel > 0) write(logunit,"(3A)") subname," write rpointer file ", &
+               trim(cvar)
+          open(iun, file=cvar, form='FORMATTED')
+          write(iun,'(a)') rest_file
+          close(iun)
+          call shr_file_freeUnit( iun )
+       endif
+
+       call shr_mpi_bcast(rest_file,mpicom_CPLID)
+       call seq_io_wopen(rest_file,clobber=.true., model_doi_url=model_doi_url)
+
+       ! loop twice (for perf), first time write header, second time write data
+       do fk = 1,2
+          if (fk == 1) then
+             whead = .true.
+             wdata = .false.
+          elseif (fk == 2) then
+             whead = .false.
+             wdata = .true.
+             call seq_io_enddef(rest_file)
+          else
+             call shr_sys_abort('driver_write_rstart fk illegal')
+          end if
+          call seq_infodata_GetData(infodata,nextsw_cday=rvar)
+          call seq_io_write(rest_file,rvar,'seq_infodata_nextsw_cday',whead=whead,wdata=wdata)
+          call seq_infodata_GetData(infodata,precip_fact=rvar)
+          call seq_io_write(rest_file,rvar,'seq_infodata_precip_fact',whead=whead,wdata=wdata)
+          call seq_infodata_GetData(infodata,case_name=cvar)
+          call seq_io_write(rest_file,trim(cvar),'seq_infodata_case_name',whead=whead,wdata=wdata)
+
+          call seq_timemgr_EClockGetData( EClock_d, start_ymd=ivar)
+          call seq_io_write(rest_file,ivar,'seq_timemgr_start_ymd',whead=whead,wdata=wdata)
+          call seq_timemgr_EClockGetData( EClock_d, start_tod=ivar)
+          call seq_io_write(rest_file,ivar,'seq_timemgr_start_tod',whead=whead,wdata=wdata)
+          call seq_timemgr_EClockGetData( EClock_d, ref_ymd=ivar)
+          call seq_io_write(rest_file,ivar,'seq_timemgr_ref_ymd'  ,whead=whead,wdata=wdata)
+          call seq_timemgr_EClockGetData( EClock_d, ref_tod=ivar)
+          call seq_io_write(rest_file,ivar,'seq_timemgr_ref_tod'  ,whead=whead,wdata=wdata)
+          call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ivar)
+          call seq_io_write(rest_file,ivar,'seq_timemgr_curr_ymd' ,whead=whead,wdata=wdata)
+          call seq_timemgr_EClockGetData( EClock_d, curr_tod=ivar)
+          call seq_io_write(rest_file,ivar,'seq_timemgr_curr_tod' ,whead=whead,wdata=wdata)
+
+          call seq_io_write(rest_file,ds,'budg_dataG',whead=whead,wdata=wdata)
+          call seq_io_write(rest_file,ns,'budg_ns',whead=whead,wdata=wdata)
+
+          if (do_bgc_budgets) then
+             call seq_io_write(rest_file,dsBGC,'budg_dataGBGC',whead=whead,wdata=wdata)
+             call seq_io_write(rest_file,nsBGC,'budg_nsBGC',whead=whead,wdata=wdata)
+          endif
+
+          if (atm_present) then
+!              gsmap => component_get_gsmap_cx(atm(1))
+!              xao_ax        => prep_aoflux_get_xao_ax()
+             call seq_io_write(rest_file, mbaxid, 'fractions_ax', &
+              'afrac:ifrac:ofrac:lfrac:lfrin', &
+               whead=whead, wdata=wdata)
+             call seq_io_write(rest_file, mbaxid, 'a2x_ax', &
+                 trim(seq_flds_a2x_fields), &
+                 whead=whead, wdata=wdata)
+             call seq_io_write(rest_file, mbaxid, 'xao_ax', &
+                 trim(seq_flds_xao_fields), &
+                 whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, gsmap, fractions_ax, 'fractions_ax', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, atm, 'c2x', 'a2x_ax', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, gsmap, xao_ax, 'xao_ax', &
+!                   whead=whead, wdata=wdata)
+          endif
+          if (lnd_present) then
+             call seq_io_write(rest_file, mblxid, 'fractions_lx', &
+                 'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin' 
+                 whead=whead, wdata=wdata)
+!                   whead=whead, wdata=wdata)
+!              gsmap => component_get_gsmap_cx(lnd(1))
+!              call seq_io_write(rest_file, gsmap, fractions_lx, 'fractions_lx', &
+!                   whead=whead, wdata=wdata)
+          endif
+!           if (lnd_present .and. rof_prognostic) then
+!              gsmap         => component_get_gsmap_cx(lnd(1))
+!              l2racc_lx     => prep_rof_get_l2racc_lx()
+!              l2racc_lx_cnt =>  prep_rof_get_l2racc_lx_cnt()
+!              call seq_io_write(rest_file, gsmap, l2racc_lx, 'l2racc_lx', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, l2racc_lx_cnt, 'l2racc_lx_cnt', &
+!                   whead=whead, wdata=wdata)
+!           end if
+!           if (ocn_present .and. rofocn_prognostic) then
+!              gsmap         => component_get_gsmap_cx(ocn(1))
+!              o2racc_ox     => prep_rof_get_o2racc_ox()
+!              o2racc_ox_cnt =>  prep_rof_get_o2racc_ox_cnt()
+!              call seq_io_write(rest_file, gsmap, o2racc_ox, 'o2racc_ox', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, o2racc_ox_cnt, 'o2racc_ox_cnt', &
+!                   whead=whead, wdata=wdata)
+!           end if
+!           if (lnd_present .and. glc_prognostic) then
+!              gsmap         => component_get_gsmap_cx(lnd(1))
+!              l2gacc_lx     => prep_glc_get_l2gacc_lx()
+!              l2gacc_lx_cnt => prep_glc_get_l2gacc_lx_cnt()
+!              call seq_io_write(rest_file, gsmap, l2gacc_lx, 'l2gacc_lx', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, l2gacc_lx_cnt, 'l2gacc_lx_cnt', &
+!                   whead=whead, wdata=wdata)
+!           end if
+!           if (ocn_c2_glcshelf) then
+!              gsmap         => component_get_gsmap_cx(glc(1))
+!              x2gacc_gx => prep_glc_get_x2gacc_gx()
+!              x2gacc_gx_cnt => prep_glc_get_x2gacc_gx_cnt()
+!              call seq_io_write(rest_file, gsmap, x2gacc_gx , 'x2gacc_gx', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, x2gacc_gx_cnt, 'x2gacc_gx_cnt', &
+!                   whead=whead, wdata=wdata)
+!           end if
+!           if (ocn_present) then
+!              gsmap         => component_get_gsmap_cx(ocn(1))
+!              x2oacc_ox     => prep_ocn_get_x2oacc_ox()
+! #ifdef SUMMITDEV_PGI
+!              dummy_pgibugfix = associated(x2oacc_ox)
+! #endif
+!              x2oacc_ox_cnt => prep_ocn_get_x2oacc_ox_cnt()
+!              xao_ox        => prep_aoflux_get_xao_ox()
+!              call seq_io_write(rest_file, gsmap, fractions_ox, 'fractions_ox', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, ocn, 'c2x', 'o2x_ox', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, gsmap, x2oacc_ox, 'x2oacc_ox', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, x2oacc_ox_cnt, 'x2oacc_ox_cnt', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, gsmap, xao_ox, 'xao_ox', &
+!                   whead=whead, wdata=wdata)
+!           endif
+!           if (ice_present) then
+!              gsmap  => component_get_gsmap_cx(ice(1))
+!              call seq_io_write(rest_file, gsmap, fractions_ix, 'fractions_ix', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, ice, 'c2x', 'i2x_ix', &
+!                   whead=whead, wdata=wdata)
+!           endif
+!           if (rof_present) then
+!              gsmap  => component_get_gsmap_cx(rof(1))
+!              call seq_io_write(rest_file, gsmap, fractions_rx, 'fractions_rx', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, rof, 'c2x', 'r2x_rx', &
+!                   whead=whead, wdata=wdata)
+!           endif
+!           if (glc_present) then
+!              gsmap  => component_get_gsmap_cx(glc(1))
+!              call seq_io_write(rest_file, gsmap, fractions_gx, 'fractions_gx', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, glc, 'c2x', 'g2x_gx', &
+!                   whead=whead, wdata=wdata)
+!           endif
+!           if (wav_present) then
+!              gsmap  => component_get_gsmap_cx(wav(1))
+!              call seq_io_write(rest_file, gsmap, fractions_wx, 'fractions_wx', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, wav, 'c2x', 'w2x_wx', &
+!                   whead=whead, wdata=wdata)
+!           endif
+!           if (iac_present) then
+!              gsmap  => component_get_gsmap_cx(iac(1))
+!              call seq_io_write(rest_file, gsmap, fractions_zx, 'fractions_zx', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, iac, 'c2x', 'z2x_zx', &
+!                   whead=whead, wdata=wdata)
+!           endif
+          ! Write ESP restart data here
+       enddo
+
+       call seq_io_close(rest_file)
+       deallocate(ds,ns)
+       if (do_bgc_budgets) deallocate(dsBGC,nsBGC)
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+    endif
+
+  end subroutine seq_rest_mb_write
   !===============================================================================
 
 end module seq_rest_mod
