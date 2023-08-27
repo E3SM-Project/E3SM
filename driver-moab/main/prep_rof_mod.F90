@@ -74,6 +74,8 @@ module prep_rof_mod
   public :: prep_rof_get_mapper_Sa2r
   public :: prep_rof_get_mapper_Fa2r
 
+  public :: prep_rof_get_sharedFieldsOcnRof
+  public :: prep_rof_get_o2racc_om_cnt
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
@@ -1936,5 +1938,16 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     type(seq_map), pointer :: prep_rof_get_mapper_Sa2r
     prep_rof_get_mapper_Sa2r => mapper_Sa2r
   end function prep_rof_get_mapper_Sa2r
+
+ ! moab 
+  function prep_rof_get_o2racc_om_cnt()
+    integer, pointer :: prep_rof_get_o2racc_om_cnt
+    prep_rof_get_o2racc_om_cnt => o2racc_om_cnt
+  end function prep_rof_get_o2racc_om_cnt
+
+  function prep_rof_get_sharedFieldsOcnRof()
+     character(CXX) :: prep_rof_get_sharedFieldsOcnRof
+     prep_rof_get_sharedFieldsOcnRof = sharedFieldsOcnRof
+  end function prep_rof_get_sharedFieldsOcnRof
 
 end module prep_rof_mod

@@ -23,7 +23,7 @@ module seq_rest_mod
   ! !USES:
 
   use shr_kind_mod,      only: R8 => SHR_KIND_R8, IN => SHR_KIND_IN
-  use shr_kind_mod,      only: CL => SHR_KIND_CL, CS => SHR_KIND_CS
+  use shr_kind_mod,      only: CL => SHR_KIND_CL, CS => SHR_KIND_CS, CXX => SHR_KIND_CXX
   use shr_sys_mod,       only: shr_sys_abort, shr_sys_flush
   use shr_mpi_mod,       only: shr_mpi_bcast
   use shr_cal_mod,       only: shr_cal_date2ymd
@@ -60,6 +60,8 @@ module seq_rest_mod
   use prep_rof_mod,    only: prep_rof_get_l2racc_lx_cnt
   use prep_rof_mod,    only: prep_rof_get_o2racc_ox
   use prep_rof_mod,    only: prep_rof_get_o2racc_ox_cnt
+  use prep_rof_mod,    only: prep_rof_get_sharedFieldsOcnRof
+  use prep_rof_mod,    only: prep_rof_get_o2racc_om_cnt
   use prep_glc_mod,    only: prep_glc_get_l2gacc_lx
   use prep_glc_mod,    only: prep_glc_get_l2gacc_lx_cnt
   use prep_glc_mod,    only: prep_glc_get_x2gacc_gx
@@ -703,6 +705,8 @@ contains
     real(r8),allocatable :: dsBGC(:)  ! for reshaping diag data for restart file
     real(r8),allocatable :: nsBGC(:)  ! for reshaping diag data for restart file
     character(CL) :: model_doi_url
+    character(CXX) :: tagname
+    integer (in)   :: o2racc_om_cnt ! replacement, moab version for o2racc_ox_cnt
     character(len=*),parameter :: subname = "(seq_rest_mb_write) "
 
     !-------------------------------------------------------------------------------
@@ -869,10 +873,9 @@ contains
 !                   whead=whead, wdata=wdata)
           endif
           if (lnd_present) then
-             call seq_io_write(rest_file, mblxid, 'fractions_lx', &
-                 'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin' 
-                 whead=whead, wdata=wdata)
-!                   whead=whead, wdata=wdata)
+            !  call seq_io_write(rest_file, mblxid, 'fractions_lx', &
+            !      'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin' 
+            !      whead=whead, wdata=wdata)
 !              gsmap => component_get_gsmap_cx(lnd(1))
 !              call seq_io_write(rest_file, gsmap, fractions_lx, 'fractions_lx', &
 !                   whead=whead, wdata=wdata)
@@ -886,7 +889,20 @@ contains
 !              call seq_io_write(rest_file, l2racc_lx_cnt, 'l2racc_lx_cnt', &
 !                   whead=whead, wdata=wdata)
 !           end if
-!           if (ocn_present .and. rofocn_prognostic) then
+          if (ocn_present .and. rofocn_prognostic) then
+             tagname = prep_rof_get_sharedFieldsOcnRof()
+             o2racc_om_cnt = prep_rof_get_o2racc_om_cnt()
+             call seq_io_write(rest_file, mboxid, 'o2racc_om', &
+                 trim(tagname), &
+                 whead=whead, wdata=wdata)
+             call seq_io_write(rest_file, o2racc_om_cnt, 'o2racc_om_cnt', &
+                  whead=whead, wdata=wdata)
+!              o2racc_ox     => prep_rof_get_o2racc_ox()
+!              o2racc_ox_cnt =>  prep_rof_get_o2racc_ox_cnt()
+!              call seq_io_write(rest_file, gsmap, o2racc_ox, 'o2racc_ox', &
+!                   whead=whead, wdata=wdata)
+!              call seq_io_write(rest_file, o2racc_ox_cnt, 'o2racc_ox_cnt', &
+!                   whead=whead, wdata=wdata)
 !              gsmap         => component_get_gsmap_cx(ocn(1))
 !              o2racc_ox     => prep_rof_get_o2racc_ox()
 !              o2racc_ox_cnt =>  prep_rof_get_o2racc_ox_cnt()
@@ -894,7 +910,7 @@ contains
 !                   whead=whead, wdata=wdata)
 !              call seq_io_write(rest_file, o2racc_ox_cnt, 'o2racc_ox_cnt', &
 !                   whead=whead, wdata=wdata)
-!           end if
+          end if
 !           if (lnd_present .and. glc_prognostic) then
 !              gsmap         => component_get_gsmap_cx(lnd(1))
 !              l2gacc_lx     => prep_glc_get_l2gacc_lx()
