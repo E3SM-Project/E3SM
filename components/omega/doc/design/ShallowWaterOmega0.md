@@ -1,4 +1,4 @@
-(omega-design-my-class)=
+(omega-design-shallow-water-omega0)=
 # ShallowWaterOmega0
 
 ## 1 Overview
@@ -197,7 +197,7 @@ This test should be conducted as soon as momentum and thickness equations and ti
 
 ### 5.4 Tracer transport on a sphere
 
-A test suite will be used to test horizontal transport schemes on the sphere comprised of test case 1 from [Williamson et al. (1992)](https://www.sciencedirect.com/science/article/pii/S0021999105800166) and several tests from [Lauritzen et al. (2012)](www.geosci-model-dev.net/5/887/2012/).
+A test suite will be used to test horizontal transport schemes on the sphere comprised of test case 1 from [Williamson et al. (1992)](https://www.sciencedirect.com/science/article/pii/S0021999105800166) and several tests from [Lauritzen et al. (2012)](https://www.geosci-model-dev.net/5/887/2012/).
 They test the tracer advection and tracer time stepping. Velocity and thickness are predefined fields and remain fixed, so this does not exercise those equations.
 
 Requirements for tests are:
