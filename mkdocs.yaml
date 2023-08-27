@@ -1,0 +1,8 @@
+site_name: E3SM
+
+nav:
+  - Intro: 'index.md'
+  - Components: '*include ./components/*/mkdocs.yml'
+
+plugins:
+  - monorepo
