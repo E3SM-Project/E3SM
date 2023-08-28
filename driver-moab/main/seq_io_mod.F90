@@ -1563,7 +1563,7 @@ contains
 
   end subroutine seq_io_write_time
 
-  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, file_ind )
+  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, nx, file_ind )
 
     use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
 
@@ -1578,6 +1578,7 @@ contains
     character(len=*),intent(in) :: tag_list      ! fields, separated by colon
     logical,optional,intent(in) :: whead         ! write header
     logical,optional,intent(in) :: wdata         ! write data
+    integer, optional,intent(in):: nx
     integer,optional,intent(in) :: file_ind
 
     logical :: lwhead, lwdata
@@ -1641,6 +1642,9 @@ contains
     ! find out the number of global cells, needed for defining the variables length
     ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
     lnx = ng
+    ! it is needed to overwrite that for land, ng is too small
+    !  ( for ne4pg2 it is 201 instead of 384)
+    if (present(nx)) lnx = nx 
     lny = 1 ! do we need 2 var, or just 1 
     ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
     ns = nvise(1) ! local cells 

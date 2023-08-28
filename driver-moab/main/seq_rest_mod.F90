@@ -53,6 +53,8 @@ module seq_rest_mod
   ! prep modules - coupler communication between different components
   use prep_ocn_mod,    only: prep_ocn_get_x2oacc_ox
   use prep_ocn_mod,    only: prep_ocn_get_x2oacc_ox_cnt
+  ! moab version
+  use prep_ocn_mod,    only: prep_ocn_get_x2oacc_om_cnt
 #ifdef SUMMITDEV_PGI
   use prep_ocn_mod,    only: dummy_pgibugfix
 #endif
@@ -70,7 +72,7 @@ module seq_rest_mod
   use prep_aoflux_mod, only: prep_aoflux_get_xao_ox
   use prep_aoflux_mod, only: prep_aoflux_get_xao_ax
 
-  use seq_flds_mod, only: seq_flds_a2x_fields, seq_flds_xao_fields
+  use seq_flds_mod, only: seq_flds_a2x_fields, seq_flds_xao_fields, seq_flds_o2x_fields, seq_flds_x2o_fields
   implicit none
 
   private
@@ -664,9 +666,10 @@ contains
 
   subroutine seq_rest_mb_write(EClock_d, seq_SyncClock, infodata,       &
                atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
-               tag, rest_file)
+               tag, samegrid_al, rest_file)
 
-    use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid ! coupler side instances
+    use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
+    use iMOAB,            only: iMOAB_GetGlobalInfo
 
     implicit none
 
@@ -684,7 +687,9 @@ contains
     type (component_type)  , intent(inout) :: iac(:)
 
     character(len=*)       , intent(in)    :: tag
+    logical        ,         intent(in)    :: samegrid_al ! needed for 
     character(len=CL)      , intent(out)   :: rest_file         ! Restart filename
+
 
     integer(IN)   :: n,n1,n2,n3,fk
     integer(IN)   :: curr_ymd         ! Current date YYYYMMDD
@@ -706,7 +711,10 @@ contains
     real(r8),allocatable :: nsBGC(:)  ! for reshaping diag data for restart file
     character(CL) :: model_doi_url
     character(CXX) :: tagname
-    integer (in)   :: o2racc_om_cnt ! replacement, moab version for o2racc_ox_cnt
+    integer (in), pointer   :: o2racc_om_cnt ! replacement, moab version for o2racc_ox_cnt
+    integer (in), pointer   :: x2oacc_om_cnt ! replacement, moab version for x2oacc_ox_cnt
+    integer (in)   :: nx_lnd ! will be used if land and atm are on same grid
+    integer (in)   ::  ierr, dummy
     character(len=*),parameter :: subname = "(seq_rest_mb_write) "
 
     !-------------------------------------------------------------------------------
@@ -873,6 +881,17 @@ contains
 !                   whead=whead, wdata=wdata)
           endif
           if (lnd_present) then
+             if(samegrid_al) then
+                ! nx for land will be from global nb atmosphere
+                ierr = iMOAB_GetGlobalInfo(mbaxid, dummy, nx_lnd) ! max id for land will come from atm
+                call seq_io_write(rest_file, mblxid, 'fractions_lx', &
+                 'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin' 
+                  whead=whead, wdata=wdata, nx=nx_lnd) 
+             else
+                call seq_io_write(rest_file, mblxid, 'fractions_lx', &
+                 'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin' 
+                  whead=whead, wdata=wdata)
+             endif
             !  call seq_io_write(rest_file, mblxid, 'fractions_lx', &
             !      'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin' 
             !      whead=whead, wdata=wdata)
@@ -891,7 +910,7 @@ contains
 !           end if
           if (ocn_present .and. rofocn_prognostic) then
              tagname = prep_rof_get_sharedFieldsOcnRof()
-             o2racc_om_cnt = prep_rof_get_o2racc_om_cnt()
+             o2racc_om_cnt => prep_rof_get_o2racc_om_cnt()
              call seq_io_write(rest_file, mboxid, 'o2racc_om', &
                  trim(tagname), &
                  whead=whead, wdata=wdata)
@@ -929,9 +948,32 @@ contains
 !              call seq_io_write(rest_file, x2gacc_gx_cnt, 'x2gacc_gx_cnt', &
 !                   whead=whead, wdata=wdata)
 !           end if
-!           if (ocn_present) then
+
+        if (ocn_present) then
 !              gsmap         => component_get_gsmap_cx(ocn(1))
 !              x2oacc_ox     => prep_ocn_get_x2oacc_ox()
+           
+           call seq_io_write(rest_file, mboxid,  'fractions_ox', &
+               'afrac:ifrac:ofrac:ifrad:ofrad', & ! fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
+               whead=whead, wdata=wdata)
+           
+           call seq_io_write(rest_file, mboxid,  'o2x_ox', &
+               trim(seq_flds_o2x_fields), &
+               whead=whead, wdata=wdata)
+           tagname = trim(seq_flds_x2o_fields)
+           x2oacc_om_cnt => prep_ocn_get_x2oacc_om_cnt()
+           call seq_io_write(rest_file, mboxid, 'x2oacc_ox', &
+               trim(tagname), &
+               whead=whead, wdata=wdata)
+           call seq_io_write(rest_file, x2oacc_om_cnt, 'x2oacc_om_cnt', &
+              whead=whead, wdata=wdata)
+   !            tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
+   !  arrsize = nxflds * lsize !        allocate (xao_om (lsize, nxflds))
+   !  ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om(1,1))
+            call seq_io_write(rest_file, mbofxid, 'xao_om', &
+               trim(seq_flds_xao_fields), &
+               whead=whead, wdata=wdata)
+!                   whead=whead, wdata=wdata)
 ! #ifdef SUMMITDEV_PGI
 !              dummy_pgibugfix = associated(x2oacc_ox)
 ! #endif
@@ -947,7 +989,7 @@ contains
 !                   whead=whead, wdata=wdata)
 !              call seq_io_write(rest_file, gsmap, xao_ox, 'xao_ox', &
 !                   whead=whead, wdata=wdata)
-!           endif
+        endif
 !           if (ice_present) then
 !              gsmap  => component_get_gsmap_cx(ice(1))
 !              call seq_io_write(rest_file, gsmap, fractions_ix, 'fractions_ix', &

@@ -5348,7 +5348,7 @@ contains
           call t_startf('CPL:seq_rest_mb_write')
           call seq_rest_mb_write(EClock_d, seq_SyncClock, infodata,       &
                atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
-               trim(cpl_inst_tag), drv_resume_file)
+               trim(cpl_inst_tag), samegrid_al, drv_resume_file)
           call t_stopf('CPL:seq_rest_mb_write')
 
           if (iamroot_CPLID) then

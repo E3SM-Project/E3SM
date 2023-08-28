@@ -79,6 +79,8 @@ module prep_ocn_mod
 
   public :: prep_ocn_get_x2oacc_ox
   public :: prep_ocn_get_x2oacc_ox_cnt
+
+  public :: prep_ocn_get_x2oacc_om_cnt
 #ifdef SUMMITDEV_PGI
   ! Sarat: Dummy variable added to workaround PGI compiler bug (PGI 17.9) as of Oct 23, 2017
   public :: dummy_pgibugfix
@@ -3014,5 +3016,10 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     type(seq_map), pointer :: prep_ocn_get_mapper_Sw2o
     prep_ocn_get_mapper_Sw2o => mapper_Sw2o
   end function prep_ocn_get_mapper_Sw2o
+
+  function prep_ocn_get_x2oacc_om_cnt()
+    integer, pointer :: prep_ocn_get_x2oacc_om_cnt
+    prep_ocn_get_x2oacc_om_cnt => x2oacc_om_cnt
+  end function prep_ocn_get_x2oacc_om_cnt
 
 end module prep_ocn_mod
