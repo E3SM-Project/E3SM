@@ -753,7 +753,7 @@
                         <var name="uReconstructX" packages="higherOrderVelocity"/>
 			<var name="uReconstructY" packages="higherOrderVelocity"/>
                         <var name="basalFrictionFlux"/>
-                        <var name="passiveTracer"/>
+                        <var name="passiveTracer2d"/>
 			<var name="damage"/>
 			<var name="calvingVelocityData"/>
 			<var name="basalMeltInput" packages="hydro"/>
@@ -863,7 +863,7 @@
 			<var name="waterPressure" packages="hydro"/>
                         <var name="channelArea" packages="hydro"/>  <!-- this is only needed if running with channels - could be package-controlled -->
 			<var name="waterFluxMask" packages="hydro"/>
-                        <var name="passiveTracer"/>
+                        <var name="passiveTracer2d"/>
 			<var name="damage"/>
 			<var name="calvingVelocityData"/>
 			<var name="damageMax"/>
@@ -1284,7 +1284,7 @@ is the value of that variable from the *previous* time level!
                 <var name="calvingVelocityData" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
                      description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane), given by the input netCDF file."
                 />
-                <var name="passiveTracer" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                <var name="passiveTracer2d" type="real" dimensions="nCells Time" units="none" time_levs="1"
                      description="passive tracer used to verify advection routines"
                 />
                 <var name="damage" type="real" dimensions="nCells Time" units="none" time_levs="1"

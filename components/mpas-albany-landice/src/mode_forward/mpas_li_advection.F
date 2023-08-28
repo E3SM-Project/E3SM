@@ -1149,7 +1149,7 @@ module li_advection
 
       real (kind=RKIND), dimension(:), pointer :: &
            damage, & ! damage
-           passiveTracer
+           passiveTracer2d
 
       real (kind=RKIND), pointer ::  &
            config_ice_density         ! ice density
@@ -1171,7 +1171,7 @@ module li_advection
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
       call mpas_pool_get_array(geometryPool, 'damage', damage)
-      call mpas_pool_get_array(geometryPool, 'passiveTracer', passiveTracer)
+      call mpas_pool_get_array(geometryPool, 'passiveTracer2d', passiveTracer2d)
 
       ! get arrays from thermal pool
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -1262,11 +1262,11 @@ module li_advection
 
       endif
 
-      ! always advect passiveTracer
+      ! always advect passiveTracer2d
       iTracer = iTracer + 1
-      ! copy 2d passiveTracer to all vertical levels in the tracer array
+      ! copy 2d passiveTracer2d to all vertical levels in the tracer array
       do k = 1, nVertLevels
-         advectedTracers(iTracer,k,:) = passiveTracer(:)
+         advectedTracers(iTracer,k,:) = passiveTracer2d(:)
       enddo
       surfaceTracers(iTracer,:) = 0.0_RKIND
       basalTracers(iTracer,:) = 0.0_RKIND
@@ -1368,7 +1368,7 @@ module li_advection
 
       real (kind=RKIND), dimension(:), pointer :: &
            damage, & ! damage
-           passiveTracer
+           passiveTracer2d
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,             & ! interior ice temperature
@@ -1389,7 +1389,7 @@ module li_advection
       ! get arrays from geometry pool
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'damage', damage)
-      call mpas_pool_get_array(geometryPool, 'passiveTracer', passiveTracer)
+      call mpas_pool_get_array(geometryPool, 'passiveTracer2d', passiveTracer2d)
 
       ! get arrays from thermal pool
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -1440,10 +1440,10 @@ module li_advection
          enddo
       endif
 
-      ! Always advect passiveTracer
+      ! Always advect passiveTracer2d
       iTracer = iTracer + 1
       do iCell = 1, nCellsSolve
-         passiveTracer(iCell) = sum(advectedTracers(iTracer,:,iCell) * layerThicknessFractions)  ! thickness-weighted average
+         passiveTracer2d(iCell) = sum(advectedTracers(iTracer,:,iCell) * layerThicknessFractions)  ! thickness-weighted average
       enddo
 
       ! Note: Other tracers (e.g., ice age) can be added here as needed.
