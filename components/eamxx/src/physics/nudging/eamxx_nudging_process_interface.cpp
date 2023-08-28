@@ -90,7 +90,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   if (m_src_pres_type == DYNAMIC) {
     create_helper_field("p_mid_ext", scalar3d_layout_mid, grid_name, ps);
     auto pmid_ext = get_helper_field("p_mid_ext");
-    m_time_interp.add_field(pmid_ext,"p_mid",true);
+    m_time_interp.add_field(pmid_ext.alias("p_mid"),true);
   } else if (m_src_pres_type == STATIC) {
     // Load p_lev from source data file
     create_helper_field("p_mid_ext", scalar2d_layout_mid, grid_name, ps);
