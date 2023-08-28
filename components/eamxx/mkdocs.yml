@@ -7,11 +7,13 @@ nav:
     - 'Installation': 'common/installation.md'
     - 'Model output': 'user/model_output.md'
     - 'Model input': 'user/model_input.md'
+    - 'Runtime parameters': 'common/eamxx_params.md'
   - 'Developer Guide':
     - 'Overview': 'developer/index.md'
     - 'Installation': 'common/installation.md'
-    - 'Style Guide': 'developer/style_guide.md'
-    - 'Kokkos and EKAT': 'developer/kokkos_ekat.md'
+    - 'Style Guide': 'dev/style_guide.md'
+    - 'Kokkos and EKAT': 'dev/kokkos_ekat.md'
+    - 'Source Tree': 'developer/source_tree.md'
     - 'Important Data Structures':
       - 'Fields': 'developer/field.md'
       - 'Grids and Remappers': 'developer/grid.md'
