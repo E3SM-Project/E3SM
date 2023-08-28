@@ -489,18 +489,14 @@ module li_advection
              ! Call fct routine for thickness first, and use activeTracerHorizontalAdvectionEdgeFlux
              ! returned by that call as normalThicknessFlux for call to tracer fct
              call li_tracer_advection_fct_tend(&
-                  tend, advectedTracers, layerThicknessOld * 0.0_RKIND + 1.0_RKIND, &
+                  tend(nTracers:,:,:), advectedTracers(nTracers:,:,:), layerThicknessOld * 0.0_RKIND + 1.0_RKIND, &
                   layerNormalVelocity, 0.0_RKIND * normalVelocity, dt,    &
-                  nTracers, activeTracerHorizontalAdvectionEdgeFlux, computeBudgets=.false.)
+                  1, activeTracerHorizontalAdvectionEdgeFlux(nTracers:,:,:), computeBudgets=.false.)
              ! layerThickness is last tracer. However, for some reason
              ! this: layerThickness(:,:) = advectedTracers(nTracers,:,:) does not conserve mass!
              ! This does conserve mass:
              layerThickness(:,:) = layerThickness(:,:) + tend(nTracers,:,:) * dt
-             ! Reset tracers after thickness advection for tracer advection
-             ! TODO: determine whether we need to treat other tracer tendencies
-             ! the same as layerThickness for conservation.
-             advectedTracers(:,:,:) = advectedTracersOld(:,:,:)
-             tend(:,:,:) = 0.0_RKIND
+
              ! Call fct for tracers, using activeTracerHorizontalAdvectionEdgeFlux
              ! from fct thickness advection as normalThicknessFlux
              call li_tracer_advection_fct_tend(&
