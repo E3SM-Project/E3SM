@@ -73,6 +73,7 @@ module seq_rest_mod
   use prep_aoflux_mod, only: prep_aoflux_get_xao_ax
 
   use seq_flds_mod, only: seq_flds_a2x_fields, seq_flds_xao_fields, seq_flds_o2x_fields, seq_flds_x2o_fields
+  use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_r2x_fields
   implicit none
 
   private
@@ -923,12 +924,6 @@ contains
 !              call seq_io_write(rest_file, o2racc_ox_cnt, 'o2racc_ox_cnt', &
 !                   whead=whead, wdata=wdata)
 !              gsmap         => component_get_gsmap_cx(ocn(1))
-!              o2racc_ox     => prep_rof_get_o2racc_ox()
-!              o2racc_ox_cnt =>  prep_rof_get_o2racc_ox_cnt()
-!              call seq_io_write(rest_file, gsmap, o2racc_ox, 'o2racc_ox', &
-!                   whead=whead, wdata=wdata)
-!              call seq_io_write(rest_file, o2racc_ox_cnt, 'o2racc_ox_cnt', &
-!                   whead=whead, wdata=wdata)
           end if
 !           if (lnd_present .and. glc_prognostic) then
 !              gsmap         => component_get_gsmap_cx(lnd(1))
@@ -949,61 +944,73 @@ contains
 !                   whead=whead, wdata=wdata)
 !           end if
 
-        if (ocn_present) then
-!              gsmap         => component_get_gsmap_cx(ocn(1))
-!              x2oacc_ox     => prep_ocn_get_x2oacc_ox()
-           
-           call seq_io_write(rest_file, mboxid,  'fractions_ox', &
-               'afrac:ifrac:ofrac:ifrad:ofrad', & ! fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
+         if (ocn_present) then
+   !              gsmap         => component_get_gsmap_cx(ocn(1))
+   !              x2oacc_ox     => prep_ocn_get_x2oacc_ox()
+            
+            call seq_io_write(rest_file, mboxid,  'fractions_ox', &
+                  'afrac:ifrac:ofrac:ifrad:ofrad', & ! fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
+                  whead=whead, wdata=wdata)
+            
+            call seq_io_write(rest_file, mboxid,  'o2x_ox', &
+                  trim(seq_flds_o2x_fields), &
+                  whead=whead, wdata=wdata)
+            tagname = trim(seq_flds_x2o_fields)
+            x2oacc_om_cnt => prep_ocn_get_x2oacc_om_cnt()
+            call seq_io_write(rest_file, mboxid, 'x2oacc_ox', &
+                  trim(tagname), &
+                  whead=whead, wdata=wdata)
+            call seq_io_write(rest_file, x2oacc_om_cnt, 'x2oacc_om_cnt', &
                whead=whead, wdata=wdata)
-           
-           call seq_io_write(rest_file, mboxid,  'o2x_ox', &
-               trim(seq_flds_o2x_fields), &
+      !            tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
+      !  arrsize = nxflds * lsize !        allocate (xao_om (lsize, nxflds))
+      !  ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om(1,1))
+               call seq_io_write(rest_file, mbofxid, 'xao_om', &
+                  trim(seq_flds_xao_fields), &
+                  whead=whead, wdata=wdata)
+   !                   whead=whead, wdata=wdata)
+   ! #ifdef SUMMITDEV_PGI
+   !              dummy_pgibugfix = associated(x2oacc_ox)
+   ! #endif
+   !              x2oacc_ox_cnt => prep_ocn_get_x2oacc_ox_cnt()
+   !              xao_ox        => prep_aoflux_get_xao_ox()
+   !              call seq_io_write(rest_file, gsmap, fractions_ox, 'fractions_ox', &
+   !                   whead=whead, wdata=wdata)
+   !              call seq_io_write(rest_file, ocn, 'c2x', 'o2x_ox', &
+   !                   whead=whead, wdata=wdata)
+   !              call seq_io_write(rest_file, gsmap, x2oacc_ox, 'x2oacc_ox', &
+   !                   whead=whead, wdata=wdata)
+   !              call seq_io_write(rest_file, x2oacc_ox_cnt, 'x2oacc_ox_cnt', &
+   !                   whead=whead, wdata=wdata)
+   !              call seq_io_write(rest_file, gsmap, xao_ox, 'xao_ox', &
+   !                   whead=whead, wdata=wdata)
+         endif
+         if (ice_present) then
+            call seq_io_write(rest_file, mbixid, 'fractions_ix', &
+               'afrac:ifrac:ofrac', & ! fraclist_i = 'afrac:ifrac:ofrac'
                whead=whead, wdata=wdata)
-           tagname = trim(seq_flds_x2o_fields)
-           x2oacc_om_cnt => prep_ocn_get_x2oacc_om_cnt()
-           call seq_io_write(rest_file, mboxid, 'x2oacc_ox', &
-               trim(tagname), &
+            call seq_io_write(rest_file, mbixid, 'i2x_ix', &
+               trim(seq_flds_i2x_fields), &
+               whead=whead, wdata=wdata) 
+   !              gsmap  => component_get_gsmap_cx(ice(1))
+   !              call seq_io_write(rest_file, gsmap, fractions_ix, 'fractions_ix', &
+   !                   whead=whead, wdata=wdata)
+   !              call seq_io_write(rest_file, ice, 'c2x', 'i2x_ix', &
+   !                   whead=whead, wdata=wdata)
+         endif
+         if (rof_present) then
+            call seq_io_write(rest_file, mbrxid, 'fractions_rx', &
+               'lfrac:lfrin:rfrac', & ! fraclist_r = 'lfrac:lfrin:rfrac'
                whead=whead, wdata=wdata)
-           call seq_io_write(rest_file, x2oacc_om_cnt, 'x2oacc_om_cnt', &
-              whead=whead, wdata=wdata)
-   !            tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
-   !  arrsize = nxflds * lsize !        allocate (xao_om (lsize, nxflds))
-   !  ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om(1,1))
-            call seq_io_write(rest_file, mbofxid, 'xao_om', &
-               trim(seq_flds_xao_fields), &
+            call seq_io_write(rest_file, mbrxid, 'r2x_rx', &
+               trim(seq_flds_r2x_fields), &
                whead=whead, wdata=wdata)
-!                   whead=whead, wdata=wdata)
-! #ifdef SUMMITDEV_PGI
-!              dummy_pgibugfix = associated(x2oacc_ox)
-! #endif
-!              x2oacc_ox_cnt => prep_ocn_get_x2oacc_ox_cnt()
-!              xao_ox        => prep_aoflux_get_xao_ox()
-!              call seq_io_write(rest_file, gsmap, fractions_ox, 'fractions_ox', &
-!                   whead=whead, wdata=wdata)
-!              call seq_io_write(rest_file, ocn, 'c2x', 'o2x_ox', &
-!                   whead=whead, wdata=wdata)
-!              call seq_io_write(rest_file, gsmap, x2oacc_ox, 'x2oacc_ox', &
-!                   whead=whead, wdata=wdata)
-!              call seq_io_write(rest_file, x2oacc_ox_cnt, 'x2oacc_ox_cnt', &
-!                   whead=whead, wdata=wdata)
-!              call seq_io_write(rest_file, gsmap, xao_ox, 'xao_ox', &
-!                   whead=whead, wdata=wdata)
-        endif
-!           if (ice_present) then
-!              gsmap  => component_get_gsmap_cx(ice(1))
-!              call seq_io_write(rest_file, gsmap, fractions_ix, 'fractions_ix', &
-!                   whead=whead, wdata=wdata)
-!              call seq_io_write(rest_file, ice, 'c2x', 'i2x_ix', &
-!                   whead=whead, wdata=wdata)
-!           endif
-!           if (rof_present) then
 !              gsmap  => component_get_gsmap_cx(rof(1))
 !              call seq_io_write(rest_file, gsmap, fractions_rx, 'fractions_rx', &
 !                   whead=whead, wdata=wdata)
 !              call seq_io_write(rest_file, rof, 'c2x', 'r2x_rx', &
 !                   whead=whead, wdata=wdata)
-!           endif
+         endif
 !           if (glc_present) then
 !              gsmap  => component_get_gsmap_cx(glc(1))
 !              call seq_io_write(rest_file, gsmap, fractions_gx, 'fractions_gx', &
