@@ -20,6 +20,8 @@ void Functions<S,D>::advance_iop_nudging(
     const Scalar& ps_in,
     const uview_1d<const Spack>& t_in,
     const uview_1d<const Spack>& q_in,
+    const uview_1d<const Spack>& tobs,
+    const uview_1d<const Spack>& qobs,
     const uview_1d<const Spack>& hyai,
     const uview_1d<const Spack>& hyam,
     const uview_1d<const Spack>& hybi,
@@ -60,8 +62,8 @@ void Functions<S,D>::advance_iop_nudging(
                            &&
                            pmidm1(k) >= iop_nudge_tq_high*100;
     rtau(k).set(condition, std::max(scm_dt, iop_nudge_tscale));
-    relaxt(k).set(condition, (t_in(k) /*- tobs(k)*/)/rtau(k));
-    relaxq(k).set(condition, (q_in(k) /*- qobs(k)*/)/rtau(k));
+    relaxt(k).set(condition, (t_in(k) - tobs(k))/rtau(k));
+    relaxq(k).set(condition, (q_in(k) - qobs(k))/rtau(k));
 
     t_update(k).set(condition, t_in(k) + relaxt(k)*scm_dt);
     q_update(k).set(condition, q_in(k) + relaxq(k)*scm_dt);

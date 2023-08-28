@@ -218,7 +218,8 @@ void advance_iop_forcing_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, bool ha
   ekat::device_to_host({q_update}, pcnst, plev, inout_views_2d, true);
 }
 
-void advance_iop_nudging_f(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* q_in, Real* hyai, Real* hyam, Real* hybi, Real* hybm,
+void advance_iop_nudging_f(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* q_in, Real* tobs, Real* qobs,
+                           Real* hyai, Real* hyam, Real* hybi, Real* hybm,
                            Real* t_update, Real* q_update, Real* relaxt, Real* relaxq)
 {
   using DPF  = Functions<Real, DefaultDevice>;
@@ -232,15 +233,17 @@ void advance_iop_nudging_f(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* 
   const Int plev_pack = ekat::npack<Spack>(plev);
 
   // Set up views
-  std::vector<view_1d> temp_d(AdvanceIopForcingData::NUM_ARRAYS);
+  std::vector<view_1d> temp_d(AdvanceIopNudgingData::NUM_ARRAYS);
 
-  ekat::host_to_device({t_in, q_in, hyai, hyam, hybi, hybm, t_update, q_update, relaxt, relaxq},
+  ekat::host_to_device({t_in, q_in, tobs, qobs, hyai, hyam, hybi, hybm, t_update, q_update, relaxt, relaxq},
                        plev, temp_d);
 
   int counter=0;
   view_1d
     t_in_d    (temp_d[counter++]),
     q_in_d    (temp_d[counter++]),
+    tobs_d    (temp_d[counter++]),
+    qobs_d    (temp_d[counter++]),
     hyai_d    (temp_d[counter++]),
     hyam_d    (temp_d[counter++]),
     hybi_d    (temp_d[counter++]),
@@ -256,7 +259,8 @@ void advance_iop_nudging_f(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
       DPF::advance_iop_nudging(
-        plev, scm_dt, ps_in, t_in_d, q_in_d, hyai_d, hyam_d, hybi_d, hybm_d,
+        plev, scm_dt, ps_in, t_in_d, q_in_d, tobs_d, qobs_d,
+        hyai_d, hyam_d, hybi_d, hybm_d,
         team, wsm.get_workspace(team),
         t_update_d, q_update_d, relaxt_d, relaxq_d);
   });

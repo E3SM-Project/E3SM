@@ -50,7 +50,9 @@ struct UnitWrap::UnitTest<D>::TestAdvanceIopNudging {
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      advance_iop_nudging_f(d.plev, d.scm_dt, d.ps_in, d.t_in, d.q_in, d.hyai, d.hyam, d.hybi, d.hybm, d.t_update, d.q_update, d.relaxt, d.relaxq);
+      advance_iop_nudging_f(d.plev, d.scm_dt, d.ps_in, d.t_in, d.q_in, d.tobs, d.qobs,
+                            d.hyai, d.hyam, d.hybi, d.hybm,
+                            d.t_update, d.q_update, d.relaxt, d.relaxq);
     }
 
     // We can't call into fortran. Due to all the dependencies it has, it's not possible
