@@ -2,6 +2,7 @@
 
 #include "share/io/scream_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
+#include "share/io/scream_io_utils.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 
@@ -26,12 +27,14 @@
 namespace scream {
 
 constexpr int num_output_steps = 5;
+constexpr Real FillValue = constants::DefaultFillValue<float>().value;
+constexpr Real fill_threshold = 0.5;
 
-void add (const Field& f, const double v) {
+void set (const Field& f, const double v) {
   auto data = f.get_internal_view_data<Real,Host>();
   auto nscalars = f.get_header().get_alloc_properties().get_num_scalars();
   for (int i=0; i<nscalars; ++i) {
-    data[i] += v;
+    data[i] = v;
   }
   f.sync_to_dev();
 }
@@ -79,20 +82,6 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   using FID = FieldIdentifier;
   using namespace ShortFieldTagsNames;
 
-  // Random number generation stuff
-  // NOTES
-  //  - Use integers, so we can check answers without risk of
-  //    non bfb diffs due to different order of sums.
-  //  - Uniform_int_distribution returns an int, and the randomize
-  //    util checks that return type matches the Field data type.
-  //    So wrap the int pdf in a lambda, that does the cast.
-  std::mt19937_64 engine(seed); 
-  auto my_pdf = [&](std::mt19937_64& engine) -> Real {
-    std::uniform_int_distribution<int> pdf (0,100);
-    Real v = pdf(engine);
-    return v;
-  };
-
   const int nlcols = grid->get_num_local_dofs();
   const int nlevs  = grid->get_num_vertical_levels();
 
@@ -110,7 +99,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
     FID fid("f_"+std::to_string(fl.size()),fl,units,grid->name());
     Field f(fid);
     f.allocate_view();
-    randomize (f,engine,my_pdf);
+    f.deep_copy(0.0); // For the "filled" field we start with a filled value.
     f.get_header().get_tracking().update_time_stamp(t0);
     fm->add_field(f);
   }
@@ -140,9 +129,12 @@ void write (const std::string& avg_type, const std::string& freq_units,
   // Create output params
   ekat::ParameterList om_pl;
   om_pl.set("MPI Ranks in Filename",true);
-  om_pl.set("filename_prefix",std::string("io_basic"));
+  om_pl.set("filename_prefix",std::string("io_filled"));
   om_pl.set("Field Names",fnames);
   om_pl.set("Averaging Type", avg_type);
+  om_pl.set<double>("fill_value",FillValue);
+  om_pl.set<bool>("track_fill",true);
+  om_pl.set<Real>("fill_threshold",fill_threshold);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",freq_units);
   ctrl_pl.set("Frequency",freq);
@@ -160,10 +152,11 @@ void write (const std::string& avg_type, const std::string& freq_units,
     // Update time
     t += dt;
 
-    // Add 1 to all fields entries
+    // Set fields to n or the FillValue, depending on timesnap
+    Real setval = ((n+1) % 2 == 0) ? 1.0*(n+1) : FillValue;
     for (const auto& n : fnames) {
       auto f = fm->get_field(n);
-      add(f,1.0);
+      set(f,setval);
     }
 
     // Run output manager
@@ -199,7 +192,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
 
   // Create reader pl
   ekat::ParameterList reader_pl;
-  std::string casename = "io_basic";
+  std::string casename = "io_filled";
   auto filename = casename
     + "." + avg_type
     + "." + freq_units
@@ -211,35 +204,44 @@ void read (const std::string& avg_type, const std::string& freq_units,
   reader_pl.set("Field Names",fnames);
   AtmosphereInput reader(reader_pl,fm);
 
-  // We added 1.0 to the input fields for each timestep
-  // Hence, at output step N, we should get
-  //  avg=INSTANT: output = f(N) = f(0) + N*freq
-  //  avg=MAX:     output = f(N) = f(0) + N*freq
-  //  avg=MIN:     output = f(N*freq+dt)
-  //  avg=AVERAGE: output = f(0) + N*freq + (freq+1)/2
+  // We set the value n to each input field for each odd valued timestep and FillValue for each even valued timestep
+  // Hence, at output step N = snap*freq, we should get
+  //  avg=INSTANT: output = N if (N%2=0), else Fillvalue
+  //  avg=MAX:     output = N if (N%2=0), else N-1
+  //  avg=MIN:     output = N + 1, where n is the first timesnap of the Nth output step. 
+  //                        we add + 1 more in cases where (N%2=0) because that means the first snap was filled.
+  //  avg=AVERAGE: output = a + M+1 = a + M*(M+1)/M
   // The last one comes from
-  //   (a+1 + a+2 +..+a+freq)/freq =
-  //   a + sum(i)/freq = a + (freq(freq+1)/2)/freq
-  double delta = (freq+1)/2.0;
-
+  //   a + 2*(1 + 2 +..+M)/M =
+  //   a + 2*sum(i)/M = a + 2*(M(M+1)/2)/M,
+  //         where M = freq/2 + ( N%2=0 ? 0 : 1 ), 
+  //               a = floor(N/freq)*freq + ( N%2=0 ? 0 : -1)
   for (int n=0; n<num_writes; ++n) {
     reader.read_variables(n);
     for (const auto& fn : fnames) {
       auto f0 = fm0->get_field(fn).clone();
       auto f  = fm->get_field(fn);
       if (avg_type=="MIN") {
-        // The 1st snap in the avg window (the smallest)
-        // is one past window_start=n*freq
-        add(f0,n*freq+1);
+	Real test_val = ((n+1)*freq%2==0) ? n*freq+1 : n*freq+2;
+        set(f0,test_val);
         REQUIRE (views_are_equal(f,f0));
       } else if (avg_type=="MAX") {
-        add(f0,(n+1)*freq);
+	Real test_val = ((n+1)*freq%2==0) ? (n+1)*freq : (n+1)*freq-1;
+        set(f0,test_val);
         REQUIRE (views_are_equal(f,f0));
       } else if (avg_type=="INSTANT") {
-        add(f0,n*freq);
+	Real test_val = (n*freq%2==0) ? n*freq : FillValue;
+        set(f0,test_val);
         REQUIRE (views_are_equal(f,f0));
-      } else {
-        add(f0,n*freq+delta);
+      } else { // Is avg_type = AVERAGE
+	// Note, for AVERAGE type output with filling we need to check that the
+	// number of contributing fill steps surpasses the fill_threshold, if not
+	// then we know that the snap will reflect the fill value.
+	Real test_val;
+	Real M = freq/2 + (n%2==0 ? 0.0 :  1.0);
+	Real a = n*freq + (n%2==0 ? 0.0 : -1.0);
+        test_val = (M/freq > fill_threshold) ? a + (M+1.0) : FillValue;
+        set(f0,test_val);
         REQUIRE (views_are_equal(f,f0));
       }
     }
@@ -253,7 +255,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   }
 }
 
-TEST_CASE ("io_basic") {
+TEST_CASE ("io_filled") {
   std::vector<std::string> freq_units = {
     "nsteps",
     "nsecs",
