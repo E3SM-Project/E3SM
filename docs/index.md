@@ -2,4 +2,6 @@
 
 The documentation for the components of E3SM is found here.
 
+## Components
+- [ELM](./ELM/index.md)
 

@@ -1,0 +1,5 @@
+site_name: ELM
+
+nav:
+ - Intro: 'index.md'
+ - Users's Guide: users-guide/index.md
