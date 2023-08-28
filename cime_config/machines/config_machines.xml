@@ -1478,6 +1478,7 @@
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
+      <env name="PATH">/ascldap/users/jgfouca/packages/cmake-3.26.3/bin:$ENV{PATH}</env>
     </environment_variables>
   </machine>
 
