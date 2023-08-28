@@ -7,8 +7,10 @@ namespace scream
 // =========================================================================================
 Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
-  , m_datafile(params.get<std::string>("nudging_filename"))
-{}
+{
+  m_datafile  = m_params.get<std::string>("nudging_filename");
+  m_timescale = m_params.get<int>("nudging_timescale",0);
+}
 
 // =========================================================================================
 void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
@@ -32,6 +34,13 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Updated>("u", scalar3d_layout_mid, m/s, grid_name, ps);
   add_field<Updated>("v", scalar3d_layout_mid, m/s, grid_name, ps);
 
+  // Helper fields that will temporarily store the target state, which can then
+  // be used to back out a nudging tendency
+  create_helper_field("T_mid", scalar3d_layout_mid, grid_name, ps);
+  create_helper_field("qv",    scalar3d_layout_mid, grid_name, ps);
+  create_helper_field("u",     scalar3d_layout_mid, grid_name, ps);  
+  create_helper_field("v",     scalar3d_layout_mid, grid_name, ps); 
+
   //Now need to read in the file
   scorpio::register_file(m_datafile,scorpio::Read);
   m_num_src_levs = scorpio::get_dimlen(m_datafile,"lev");
@@ -44,7 +53,18 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   m_time_step_file=int((time_value_2-time_value_1)*86400);
   scorpio::eam_pio_closefile(m_datafile);
 }
-
+// =========================================================================================
+void Nudging::apply_tendency(Field& base, const Field& next, const int dt)
+{
+  // Calculate the weight to apply the tendency
+  const Real dtend = Real(dt)/Real(m_timescale);
+  EKAT_REQUIRE_MSG(dtend>=0,"Error! Nudging::apply_tendency - timescale tendency of " << std::to_string(dt) << " / " << std::to_string(m_timescale) << " = " << std::to_string(dtend) << " is invalid.  Please check the timescale and/or dt");
+  // Now apply the tendency.
+  Field tend = base.clone();
+  // Use update internal to set tendency, will be (1.0*next - 1.0*base), note tend=base at this point.
+  tend.update(next,1.0,-1.0);
+  base.update(tend,dtend,1.0);
+}
 // =========================================================================================
 void Nudging::initialize_impl (const RunType /* run_type */)
 {
@@ -250,10 +270,28 @@ void Nudging::run_impl (const double dt)
   //perform time interpolation
   time_interpolation(time_since_zero);
 
-  auto T_mid       = get_field_out("T_mid").get_view<mPack**>();
-  auto qv          = get_field_out("qv").get_view<mPack**>();
-  auto u          = get_field_out("u").get_view<mPack**>();
-  auto v          = get_field_out("v").get_view<mPack**>();
+  // Get current atm state fields and views
+  auto atm_field_T_mid = get_field_out("T_mid");
+  auto atm_field_qv    = get_field_out("qv");
+  auto atm_field_u     = get_field_out("u");
+  auto atm_field_v     = get_field_out("v");
+
+  auto T_mid           = atm_field_T_mid.get_view<mPack**>();
+  auto qv              = atm_field_qv.get_view<mPack**>();
+  auto u               = atm_field_u.get_view<mPack**>();
+  auto v               = atm_field_v.get_view<mPack**>();
+
+  // Get helper fields
+  auto int_field_T_mid = get_helper_field("T_mid");
+  auto int_field_qv    = get_helper_field("qv");
+  auto int_field_u     = get_helper_field("u");
+  auto int_field_v     = get_helper_field("v");
+
+  auto int_T_mid       = int_field_T_mid.get_view<mPack**>();
+  auto int_qv          = int_field_qv.get_view<mPack**>();
+  auto int_u           = int_field_u.get_view<mPack**>();
+  auto int_v           = int_field_v.get_view<mPack**>();
+
 
   const auto& p_mid    = get_field_in("p_mid").get_view<const mPack**>();
 
@@ -273,30 +311,47 @@ void Nudging::run_impl (const double dt)
   perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
                                            p_mid,
                                            T_mid_ext_p,
-                                           T_mid,
+                                           int_T_mid,
                                            m_num_src_levs,
                                            m_num_levs);
 
   perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
                                            p_mid,
                                            qv_ext_p,
-                                           qv,
+                                           int_qv,
                                            m_num_src_levs,
                                            m_num_levs);
 
   perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
                                            p_mid,
                                            u_ext_p,
-                                           u,
+                                           int_u,
                                            m_num_src_levs,
                                            m_num_levs);
 
   perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
                                            p_mid,
                                            v_ext_p,
-                                           v,
+                                           int_v,
                                            m_num_src_levs,
                                            m_num_levs);
+
+  // Now that we have the target state from the nudging file we can back out a tendency and apply
+  // it using the set timescale
+  if (m_timescale <= 0) {
+    // We do direct replacement
+    Kokkos::deep_copy(T_mid,int_T_mid);
+    Kokkos::deep_copy(qv   ,int_qv   );
+    Kokkos::deep_copy(u    ,int_u    );
+    Kokkos::deep_copy(v    ,int_v    );
+  } else {
+    // Back out a tendency and apply it.
+    apply_tendency(atm_field_T_mid,int_field_T_mid,dt);
+    apply_tendency(atm_field_qv   ,int_field_qv   ,dt);
+    apply_tendency(atm_field_u    ,int_field_u    ,dt);
+    apply_tendency(atm_field_v    ,int_field_v    ,dt);
+
+  }
 
   //This code removes any masked values and sets them to the corresponding
   //values at the lowest/highest pressure levels from the external file
@@ -350,6 +405,28 @@ void Nudging::run_impl (const double dt)
 void Nudging::finalize_impl()
 {
   m_data_input.finalize();
+}
+// =========================================================================================
+void Nudging::create_helper_field (const std::string& name,
+                                             const FieldLayout& layout,
+                                             const std::string& grid_name,
+                                             const int ps)
+{
+  using namespace ekat::units;
+  // For helper fields we don't bother w/ units, so we set them to non-dimensional
+  FieldIdentifier id(name,layout,Units::nondimensional(),grid_name);
+
+  // Create the field. Init with NaN's, so we spot instances of uninited memory usage
+  Field f(id);
+  if (ps>=0) {
+    f.get_header().get_alloc_properties().request_allocation(ps);
+  } else {
+    f.get_header().get_alloc_properties().request_allocation();
+  }
+  f.allocate_view();
+  f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+
+  m_helper_fields[name] = f;
 }
 
 } // namespace scream

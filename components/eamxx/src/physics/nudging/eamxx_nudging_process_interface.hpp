@@ -72,19 +72,22 @@ protected:
 
 protected:
 
-  // The three main overrides for the subcomponent
+  // The two other main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
   void finalize_impl   ();
 
   // Creates an helper field, not to be shared with the AD's FieldManager
   void create_helper_field (const std::string& name,
                             const FieldLayout& layout,
-                            const std::string& grid_name);
+                            const std::string& grid_name,
+                            const int ps=0);
 
   // Query if a local field exists
   bool has_helper_field (const std::string& name) const { return m_helper_fields.find(name)!=m_helper_fields.end(); }
   // Retrieve a helper field
   Field get_helper_field (const std::string& name) const { return m_helper_fields.at(name); }
+  // Internal function to apply nudging at specific timescale
+  void apply_tendency(Field& base, const Field& next, const int dt);
 
   std::shared_ptr<const AbstractGrid>   m_grid;
   // Keep track of field dimensions and the iteration count
@@ -92,6 +95,7 @@ protected:
   int m_num_levs;
   int m_num_src_levs;
   int m_time_step_file;
+  int m_timescale;
   std::string m_datafile;
 
   // Some helper fields.
