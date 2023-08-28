@@ -49,13 +49,6 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   //Now need to read in the file
   scorpio::register_file(m_datafiles[0],scorpio::Read);
   m_num_src_levs = scorpio::get_dimlen(m_datafiles[0],"lev");
-  double time_value_1= scorpio::read_time_at_index_c2f(m_datafiles[0].c_str(),1);
-  double time_value_2= scorpio::read_time_at_index_c2f(m_datafiles[0].c_str(),2);
-
-  // Here we are assuming that the time in the netcdf file is in days
-  // Internally we want this in seconds so need to convert
-  // Only consider integer time steps in seconds to resolve any roundoff error
-  m_time_step_file=int((time_value_2-time_value_1)*86400);
   scorpio::eam_pio_closefile(m_datafiles[0]);
 }
 // =========================================================================================
@@ -63,7 +56,9 @@ void Nudging::apply_tendency(Field& base, const Field& next, const int dt)
 {
   // Calculate the weight to apply the tendency
   const Real dtend = Real(dt)/Real(m_timescale);
-  EKAT_REQUIRE_MSG(dtend>=0,"Error! Nudging::apply_tendency - timescale tendency of " << std::to_string(dt) << " / " << std::to_string(m_timescale) << " = " << std::to_string(dtend) << " is invalid.  Please check the timescale and/or dt");
+  EKAT_REQUIRE_MSG(dtend>=0,"Error! Nudging::apply_tendency - timescale tendency of " << std::to_string(dt) 
+		  << " / " << std::to_string(m_timescale) << " = " << std::to_string(dtend) 
+		  << " is invalid.  Please check the timescale and/or dt");
   // Now apply the tendency.
   Field tend = base.clone();
   // Use update internal to set tendency, will be (1.0*next - 1.0*base), note tend=base at this point.
@@ -75,181 +70,31 @@ void Nudging::initialize_impl (const RunType /* run_type */)
 {
   using namespace ShortFieldTagsNames;
 
-  std::map<std::string,view_1d_host<Real>> host_views;
-  std::map<std::string,FieldLayout>  layouts;
-
+  // Initialize the time interpolator
+  auto grid_ext = m_grid->clone("Point Grid", false);
+  grid_ext->reset_num_vertical_lev(m_num_src_levs);
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
-  FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_src_levs} };
+  m_time_interp = util::TimeInterpolation(grid_ext, m_datafiles);
 
   constexpr int ps = 1;  // TODO: I think this could be the regular packsize, right?
   const auto& grid_name = m_grid->name();
+  create_helper_field("p_mid_ext", scalar3d_layout_mid, grid_name, ps);
+  auto pmid_ext = get_helper_field("p_mid_ext");
+  m_time_interp.add_field(pmid_ext,"p_mid",true);
   for (auto name : m_fields_nudge) {
+    std::string name_ext = name + "_ext";
     // Helper fields that will temporarily store the target state, which can then
     // be used to back out a nudging tendency
     auto field  = get_field_out(name);
     auto layout = field.get_header().get_identifier().get_layout();
-    create_helper_field(name, layout, grid_name, ps);
-    // Extended fields for handling data from file.
-    m_fields_ext[name]   = view_2d<Real>(name,m_num_cols,m_num_src_levs);
-    m_fields_ext_h[name] = Kokkos::create_mirror_view(m_fields_ext[name]);
-    auto view_h          = m_fields_ext_h[name];
-    host_views[name]     = view_1d_host<Real>(view_h.data(),view_h.size());
-    layouts.emplace(name, scalar3d_layout_mid);
+    create_helper_field(name,     layout,              grid_name, ps);
+    create_helper_field(name_ext, scalar3d_layout_mid, grid_name, ps);
+    auto field_ext = get_helper_field(name_ext);
+    m_time_interp.add_field(field_ext.alias(name),true);
   }
-
-  m_fields_ext["p_mid"] = view_2d<Real>("p_mid",m_num_cols,m_num_src_levs);
-  m_fields_ext_h["p_mid"]       = Kokkos::create_mirror_view(m_fields_ext["p_mid"]);
-  auto p_mid_h=m_fields_ext_h["p_mid"];
-  host_views["p_mid"] = view_1d_host<Real>(p_mid_h.data(),p_mid_h.size());
-  layouts.emplace("p_mid", scalar3d_layout_mid);
-
-  auto grid_l = m_grid->clone("Point Grid", false);
-  grid_l->reset_num_vertical_lev(m_num_src_levs);
-  ekat::ParameterList data_in_params;
-  std::vector<std::string> fnames = {"T_mid","p_mid","qv","u","v"};
-  data_in_params.set("Field Names",fnames);
-  data_in_params.set("Filename",m_datafiles[0]);
-  // We need to skip grid checks because multiple ranks
-  // may want the same column of source data.
-  data_in_params.set("Skip_Grid_Checks",true);
-  m_data_input.init(data_in_params,grid_l,host_views,layouts);
-
-  m_ts0=timestamp();
-
-  //Check that internal timestamp starts at same point as time in external file
-  auto case_t0 = scorpio::read_timestamp(m_datafiles[0],"case_t0");
-
-  EKAT_REQUIRE_MSG(case_t0.get_year()==m_ts0.get_year(),
-		   "ERROR: The start year from the nudging file is "\
-		   "different than the internal simulation start year\n");
-  EKAT_REQUIRE_MSG(case_t0.get_month()==m_ts0.get_month(),
-		   "ERROR: The start month from the nudging file is "\
-		   "different than the internal simulation start month\n");
-  EKAT_REQUIRE_MSG(case_t0.get_day()==m_ts0.get_day(),
-		   "ERROR: The start day from the nudging file is "\
-		   "different than the internal simulation start day\n");
-  EKAT_REQUIRE_MSG(case_t0.get_hours()==m_ts0.get_hours(),
-		   "ERROR: The start hour from the nudging file is "\
-		   "different than the internal simulation start hour\n");
-  EKAT_REQUIRE_MSG(case_t0.get_minutes()==m_ts0.get_minutes(),
-		   "ERROR: The start minute from the nudging file is "\
-		   "different than the internal simulation start minute\n");
-  EKAT_REQUIRE_MSG(case_t0.get_seconds()==m_ts0.get_seconds(),
-		   "ERROR: The start second from the nudging file is "\
-		   "different than the internal simulation start second\n");
-
-  //Initialize before and after data
-  m_NudgingData_bef.init(m_num_cols,m_num_src_levs,true);
-  m_NudgingData_bef.time = -999;
-  m_NudgingData_aft.init(m_num_cols,m_num_src_levs,true);
-  m_NudgingData_aft.time = -999;
-
-  //Read in the first time step
-  m_data_input.read_variables(0);
-  Kokkos::deep_copy(m_NudgingData_bef.T_mid,m_fields_ext_h["T_mid"]);
-  Kokkos::deep_copy(m_NudgingData_bef.p_mid,m_fields_ext_h["p_mid"]);
-  Kokkos::deep_copy(m_NudgingData_bef.u,m_fields_ext_h["u"]);
-  Kokkos::deep_copy(m_NudgingData_bef.v,m_fields_ext_h["v"]);
-  Kokkos::deep_copy(m_NudgingData_bef.qv,m_fields_ext_h["qv"]);
-  m_NudgingData_bef.time = 0.;
-
-  //Read in the first time step
-  m_data_input.read_variables(1);
-  Kokkos::deep_copy(m_NudgingData_aft.T_mid,m_fields_ext_h["T_mid"]);
-  Kokkos::deep_copy(m_NudgingData_aft.p_mid,m_fields_ext_h["p_mid"]);
-  Kokkos::deep_copy(m_NudgingData_aft.u,m_fields_ext_h["u"]);
-  Kokkos::deep_copy(m_NudgingData_aft.v,m_fields_ext_h["v"]);
-  Kokkos::deep_copy(m_NudgingData_aft.qv,m_fields_ext_h["qv"]);
-  m_NudgingData_aft.time = m_time_step_file;
+  m_time_interp.initialize_data_from_files();
 
 }
-
-void Nudging::time_interpolation (const int time_s) {
-
-  using KT = KokkosTypes<DefaultDevice>;
-  using ExeSpace = typename KT::ExeSpace;
-  using ESU = ekat::ExeSpaceUtils<ExeSpace>;
-  using MemberType = typename KT::MemberType;
-
-  const int time_index = time_s/m_time_step_file;
-  double time_step_file_d = m_time_step_file;
-  double w_bef = ((time_index+1)*m_time_step_file-time_s) / time_step_file_d;
-  double w_aft = (time_s-(time_index)*m_time_step_file) / time_step_file_d;
-  const int num_cols = m_NudgingData_aft.T_mid.extent(0);
-  const int num_vert_packs = m_NudgingData_aft.T_mid.extent(1);
-  const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
-
-  auto T_mid_ext = m_fields_ext["T_mid"];
-  auto p_mid_ext = m_fields_ext["p_mid"];
-  auto qv_ext = m_fields_ext["qv"];
-  auto u_ext = m_fields_ext["u"];
-  auto v_ext = m_fields_ext["v"];
-
-  auto T_mid_bef = m_NudgingData_bef.T_mid;
-  auto T_mid_aft = m_NudgingData_aft.T_mid;
-  auto u_bef = m_NudgingData_bef.u;
-  auto u_aft = m_NudgingData_aft.u;
-  auto v_bef = m_NudgingData_bef.v;
-  auto v_aft = m_NudgingData_aft.v;
-  auto p_mid_bef = m_NudgingData_bef.p_mid;
-  auto p_mid_aft = m_NudgingData_aft.p_mid;
-  auto qv_bef = m_NudgingData_bef.qv;
-  auto qv_aft = m_NudgingData_aft.qv;
-
-  Kokkos::parallel_for("nudging_time_interpolation", policy,
-     	       KOKKOS_LAMBDA(MemberType const& team) {
-      const int icol = team.league_rank();
-
-      auto T_mid_1d = ekat::subview(T_mid_ext,icol);
-      auto T_mid_bef_1d = ekat::subview(T_mid_bef,icol);
-      auto T_mid_aft_1d = ekat::subview(T_mid_aft,icol);
-      auto u_1d = ekat::subview(u_ext,icol);
-      auto u_bef_1d = ekat::subview(u_bef,icol);
-      auto u_aft_1d = ekat::subview(u_aft,icol);
-      auto v_1d = ekat::subview(v_ext,icol);
-      auto v_bef_1d = ekat::subview(v_bef,icol);
-      auto v_aft_1d = ekat::subview(v_aft,icol);
-      auto p_mid_1d = ekat::subview(p_mid_ext,icol);
-      auto p_mid_bef_1d = ekat::subview(p_mid_bef,icol);
-      auto p_mid_aft_1d = ekat::subview(p_mid_aft,icol);
-      auto qv_1d = ekat::subview(qv_ext,icol);
-      auto qv_bef_1d = ekat::subview(qv_bef,icol);
-      auto qv_aft_1d = ekat::subview(qv_aft,icol);
-
-      const auto range = Kokkos::TeamThreadRange(team, num_vert_packs);
-      Kokkos::parallel_for(range, [&] (const Int & k) {
-        T_mid_1d(k)=w_bef*T_mid_bef_1d(k) + w_aft*T_mid_aft_1d(k);
-        p_mid_1d(k)=w_bef*p_mid_bef_1d(k) + w_aft*p_mid_aft_1d(k);
-        u_1d(k)=w_bef*u_bef_1d(k) + w_aft*u_aft_1d(k);
-        v_1d(k)=w_bef*v_bef_1d(k) + w_aft*v_aft_1d(k);
-        qv_1d(k)=w_bef*qv_bef_1d(k) + w_aft*qv_aft_1d(k);
-      });
-      team.team_barrier();
-  });
-  Kokkos::fence();
-}
-
-// =========================================================================================
-void Nudging::update_time_step (const int time_s)
-{
-  //Check to see in time state needs to be updated
-  if (time_s >= m_NudgingData_aft.time)
-    {
-      const int time_index = time_s/m_time_step_file;
-      std::swap (m_NudgingData_bef,m_NudgingData_aft);
-      m_NudgingData_bef.time = m_NudgingData_aft.time;
-
-      m_data_input.read_variables(time_index+1);
-      Kokkos::deep_copy(m_NudgingData_aft.T_mid,m_fields_ext_h["T_mid"]);
-      Kokkos::deep_copy(m_NudgingData_aft.p_mid,m_fields_ext_h["p_mid"]);
-      Kokkos::deep_copy(m_NudgingData_aft.u,m_fields_ext_h["u"]);
-      Kokkos::deep_copy(m_NudgingData_aft.v,m_fields_ext_h["v"]);
-      Kokkos::deep_copy(m_NudgingData_aft.qv,m_fields_ext_h["qv"]);
-      m_NudgingData_aft.time = m_time_step_file*(time_index+1);
-    }
-
-}
-
 
 // =========================================================================================
 void Nudging::run_impl (const double dt)
@@ -260,23 +105,19 @@ void Nudging::run_impl (const double dt)
   //not have any data from the field. The timestamp is only iterated at the
   //end of the full step in scream.
   auto ts = timestamp()+dt;
-  auto time_since_zero = ts.seconds_from(m_ts0);
-
-  //update time state information and check whether need to update data
-  update_time_step(time_since_zero);
 
   //perform time interpolation
-  time_interpolation(time_since_zero);
+  m_time_interp.perform_time_interpolation(ts);
 
   // Process data and nudge the atmosphere state
   const auto& p_mid_v     = get_field_in("p_mid").get_view<const mPack**>();
-  const auto& p_mid_ext   = m_fields_ext.at("p_mid");
+  const auto& p_mid_ext   = get_helper_field("p_mid_ext").get_view<mPack**>();
   const view_Nd<mPack,2> p_mid_ext_p(reinterpret_cast<mPack*>(p_mid_ext.data()),
 				     m_num_cols,m_num_src_levs);
   for (auto name : m_fields_nudge) {
     auto atm_state_field = get_field_out(name);
     auto int_state_field = get_helper_field(name);
-    auto ext_state_field = m_fields_ext.at(name);
+    auto ext_state_field = get_helper_field(name+"_ext").get_view<mPack**>();
     auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
     auto int_state_view  = int_state_field.get_view<mPack**>();
     const view_Nd<mPack,2> ext_state_view(reinterpret_cast<mPack*>(ext_state_field.data()),
@@ -333,7 +174,7 @@ void Nudging::run_impl (const double dt)
 // =========================================================================================
 void Nudging::finalize_impl()
 {
-  m_data_input.finalize();
+  m_time_interp.finalize();
 }
 // =========================================================================================
 void Nudging::create_helper_field (const std::string& name,

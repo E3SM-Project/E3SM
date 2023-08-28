@@ -216,8 +216,9 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- nudging -->
     <nudging inherit="atm_proc_base">
-      <nudging_filename>NONE</nudging_filename>
-      <nudging_timescale>0</nudging_timescale>
+      <nudging_filename type="array(string)">NONE</nudging_filename>
+      <nudging_fields type="array(string)">NONE</nudging_filename>
+      <nudging_timescale type="integer">0</nudging_timescale>
     </nudging>
 
     <!-- For internal testing only -->
