@@ -169,4 +169,4 @@ can set the number of threads by passing it as an argument to `-j` (e.g.
 ## Running Tests
 
 You can run EAMxx's tests to make sure your build works by following the
-instructions [here](../dev/standalone_testing.md).
+instructions [here](../developer/standalone_testing.md).
