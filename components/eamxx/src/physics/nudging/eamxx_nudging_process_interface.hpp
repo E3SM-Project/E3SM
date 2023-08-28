@@ -76,6 +76,16 @@ protected:
   void initialize_impl (const RunType run_type);
   void finalize_impl   ();
 
+  // Creates an helper field, not to be shared with the AD's FieldManager
+  void create_helper_field (const std::string& name,
+                            const FieldLayout& layout,
+                            const std::string& grid_name);
+
+  // Query if a local field exists
+  bool has_helper_field (const std::string& name) const { return m_helper_fields.find(name)!=m_helper_fields.end(); }
+  // Retrieve a helper field
+  Field get_helper_field (const std::string& name) const { return m_helper_fields.at(name); }
+
   std::shared_ptr<const AbstractGrid>   m_grid;
   // Keep track of field dimensions and the iteration count
   int m_num_cols;
@@ -83,6 +93,9 @@ protected:
   int m_num_src_levs;
   int m_time_step_file;
   std::string m_datafile;
+
+  // Some helper fields.
+  std::map<std::string,Field> m_helper_fields;
 
   std::map<std::string,view_2d<Real>> m_fields_ext;
   std::map<std::string,view_2d_host<Real>> m_fields_ext_h;
