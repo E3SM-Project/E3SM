@@ -434,7 +434,6 @@ contains
           call ocn_compute_self_attraction_loading(domain, forcingPool, dminfo, ssh, err)
           call mpas_reset_clock_alarm(domain % clock, 'salComputeAlarm', ierr=err)
       endif
-      !$acc update device(ssh_sal)
 
       ! Add tidal potential (if needed) 
       call ocn_compute_tidal_potential_forcing(err)
