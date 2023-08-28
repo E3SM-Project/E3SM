@@ -23,6 +23,7 @@ struct UnitWrap::UnitTest<D>::TestAdvanceIopNudging {
       //                    plev, scm_dt, ps_in
       AdvanceIopNudgingData(72,   0.1,    1000),
       AdvanceIopNudgingData(27,   0.1,    1000),
+      AdvanceIopNudgingData(32,   0.1,    1000),
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(AdvanceIopNudgingData);
@@ -38,7 +39,8 @@ struct UnitWrap::UnitTest<D>::TestAdvanceIopNudging {
     AdvanceIopNudgingData cxx_data[] = {
       AdvanceIopNudgingData(f90_data[0]),
       AdvanceIopNudgingData(f90_data[1]),
-    };
+      AdvanceIopNudgingData(f90_data[2]),
+   };
 
     // Assume all data is in C layout
 
