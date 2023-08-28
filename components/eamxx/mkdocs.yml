@@ -8,20 +8,20 @@ nav:
     - 'Model output': 'user/model_output.md'
     - 'Model input': 'user/model_input.md'
   - 'Developer Guide':
-    - 'Overview': 'dev/index.md'
+    - 'Overview': 'developer/index.md'
     - 'Installation': 'common/installation.md'
-    - 'Style Guide': 'dev/style_guide.md'
-    - 'Kokkos and EKAT': 'dev/kokkos_ekat.md'
+    - 'Style Guide': 'developer/style_guide.md'
+    - 'Kokkos and EKAT': 'developer/kokkos_ekat.md'
     - 'Important Data Structures':
-      - 'Fields': 'dev/field.md'
-      - 'Grids and Remappers': 'dev/grid.md'
-      - 'Atmosphere Processes': 'dev/processes.md'
-      - 'Managers': 'dev/managers.md'
-    - 'I/O': 'dev/io.md'
+      - 'Fields': 'developer/field.md'
+      - 'Grids and Remappers': 'developer/grid.md'
+      - 'Atmosphere Processes': 'developer/processes.md'
+      - 'Managers': 'developer/managers.md'
+    - 'I/O': 'developer/io.md'
     - 'Testing':
-      - 'Standalone': 'dev/standalone_testing.md'
-      - 'Full model': 'dev/cime_testing.md'
-      - 'CI and Nightly Testing': 'dev/ci_nightly.md'
+      - 'Standalone': 'developer/standalone_testing.md'
+      - 'Full model': 'developer/cime_testing.md'
+      - 'CI and Nightly Testing': 'developer/ci_nightly.md'
 
 edit_uri: ""
 
