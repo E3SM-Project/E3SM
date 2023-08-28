@@ -19,7 +19,7 @@ Checklist
   * [ ] Unit tests have passed. Please provide a relevant CDash build entry for verification.
   * [ ] Polaris test suite has passed
   * [ ] Performance related PRs: Please include a relevant PACE experiment link documenting performance before and after.
-* [  ] Stealth Features
+* [ ] Stealth Features
   * [ ] If any stealth features are included in the PR, please confirm that they have been documented.
 
 <!--
