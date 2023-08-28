@@ -1,9 +1,10 @@
 import os
 import sys
 
-# import shapely before esmpy to prevent a segfault related to multiprocessing
-import shapely  # isort: skip
-import esmpy  # isort: skip
+# import shapely here (before any esmpy imports via cdms2) to prevent a
+# segfault related to multiprocessing.  Do not import esmpy here to prevent
+# issue with dask when using ESMF with system compilers.
+import shapely
 
 __version__ = "v2.9.0rc3"
 INSTALL_PATH = os.path.join(sys.prefix, "share/e3sm_diags/")
