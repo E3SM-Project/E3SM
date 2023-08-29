@@ -1322,6 +1322,15 @@ contains
                write(logunit,*) subname,' error in reading land coupler mesh from ', trim(lnd_domain)
                call shr_sys_abort(subname//' ERROR in reading land coupler mesh')
             endif
+            ! need to add global id tag to the app, it will be used in restart
+            tagtype = 0  ! dense, integer
+            numco = 1
+            tagname='GLOBAL_ID'//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in adding global id tag to lndx'
+               call shr_sys_abort(subname//' ERROR in adding global id tag to lndx ')
+            endif
 #ifdef MOABDEBUG
             outfile = 'recLand.h5m'//C_NULL_CHAR
             wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
@@ -1497,6 +1506,16 @@ contains
             if ( ierr .ne. 0  ) then
                call shr_sys_abort( subname//' ERROR: cannot read rof mesh on coupler' )
             end if
+             ! need to add global id tag to the app, it will be used in restart
+            tagtype = 0  ! dense, integer
+            numco = 1
+            tagname='GLOBAL_ID'//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in adding global id tag to rof'
+               call shr_sys_abort(subname//' ERROR in adding global id tag to rof ')
+            endif
+            
 #ifdef MOABDEBUG
    !      debug test
             outfile = 'recRof.h5m'//C_NULL_CHAR

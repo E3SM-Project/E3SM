@@ -881,6 +881,7 @@ contains
 !              call seq_io_write(rest_file, gsmap, xao_ax, 'xao_ax', &
 !                   whead=whead, wdata=wdata)
           endif
+
           if (lnd_present) then
              if(samegrid_al) then
                 ! nx for land will be from global nb atmosphere
