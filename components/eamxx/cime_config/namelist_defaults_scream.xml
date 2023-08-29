@@ -216,8 +216,8 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- nudging -->
     <nudging inherit="atm_proc_base">
-      <nudging_filename type="array(string)">NONE</nudging_filename>
-      <nudging_fields type="array(string)">NONE</nudging_fields>
+      <nudging_filename type="array(string)"/>
+      <nudging_fields type="array(string)"/>
       <nudging_timescale type="integer">0</nudging_timescale>
       <source_pressure_type type="string">DYNAMIC</source_pressure_type>
     </nudging>

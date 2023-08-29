@@ -17,7 +17,7 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   } else if (src_pres_type=="STATIC") {
     m_src_pres_type = STATIC;
   } else {
-    EKAT_ERROR_MSG("ERROR! Nudging::parameter_list - unsupported source_pressure_type provided.  Current options are [DYNAMICS,STATIC].  Please check");
+    EKAT_ERROR_MSG("ERROR! Nudging::parameter_list - unsupported source_pressure_type provided.  Current options are [DYNAMIC,STATIC].  Please check");
   }
   // TODO: Add some warning messages here.
   // 1. if m_timescale is <= 0 we will do direct replacement.
@@ -178,7 +178,7 @@ void Nudging::run_impl (const double dt)
         const auto ipack = kk / mPack::n;
 	const auto iidx  = kk % mPack::n;
         // Check if this index is masked
-	if (!(int_state_view_1d(ipack)[iidx]==var_fill_value)) {
+	if (int_state_view_1d(ipack)[iidx]!=var_fill_value) {
 	  fill_value = int_state_view_1d(ipack)[iidx];
 	  fill_idx = kk;
 	  for (int jj=0; jj<kk; ++jj) {
