@@ -7,7 +7,7 @@ on:
   # Runs every time master branch is updated
   push:
     branches: [ master ]
-  # Runs every time master a PR is open against master
+  # Runs every time a PR is open against master
   pull_request:
     branches: [ master ]
   workflow_dispatch:
