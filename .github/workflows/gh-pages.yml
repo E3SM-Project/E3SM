@@ -1,30 +1,55 @@
 # This workflow aims to automatically rebuild eamxx documentation
-# every time the master branch is updated on github
-name: Build and deploy gh-pages branch with Mkdocs
+# every time the master branch is updated on github and within every PR
+
+name: EAMxx Docs
 
 on:
   # Runs every time master branch is updated
   push:
-    branches: ["master"]
+    branches: [ master ]
+  # Runs every time master a PR is open against master
+  pull_request:
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
-  Build-and-Deploy-docs:
+
+  emaxx-docs:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out the repository
+        uses: actions/checkout@v3
         with:
-          repository: e3sm-project/scream
-          ref: master
           fetch-depth: 0 # Needed, or else gh-pages won't be fetched, and push rejected
           submodules: recursive
+  
       - name: Show action trigger
-        run: echo "= The job was automatically triggered by a ${{github.event_name}} event."
-      - name: Install python deps
-        run: python3 -m pip install mkdocs pymdown-extensions mkdocs-material
-      - name: Generate eamxx params docs
-        run: ./eamxx-params-docs-autogen
+        run: |
+          echo "= The job was automatically triggered by a ${{github.event_name}} event."
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4.7.0
+        with:
+          python-version: "3.10"
+
+      - name: Install Python deps
+        run: |
+          pip install mkdocs pymdown-extensions mkdocs-material mdutils
+  
+      - name: Generate EAMxx params docs
         working-directory: components/eamxx/scripts
-      - name: Build and deploy
+        run: |
+          ./eamxx-params-docs-autogen
+
+      - name: Build docs
         working-directory: components/eamxx
-        run: mkdocs build && mkdocs gh-deploy
+        run: |
+          mkdocs build 
+
+      # only deploy when there is a push to master
+      - if: ${{ github.event_name == 'push' }}
+        name: Deploy docs
+        working-directory: components/eamxx
+        run: |
+          mkdocs gh-deploy
