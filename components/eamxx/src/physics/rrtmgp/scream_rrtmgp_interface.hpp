@@ -68,6 +68,7 @@ namespace scream {
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 real2d &lwp, real2d &iwp, real2d &rel, real2d &rei, real2d &cldfrac,
                 real3d &aer_tau_sw, real3d &aer_ssa_sw, real3d &aer_asm_sw, real3d &aer_tau_lw,
+                real3d &cld_tau_sw_bnd, real3d &cld_tau_lw_bnd,
                 real3d &cld_tau_sw_gpt, real3d &cld_tau_lw_gpt,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
                 real2d &lw_flux_up, real2d &lw_flux_dn,
@@ -154,6 +155,9 @@ namespace scream {
             });
         }
 
+        int get_wavelength_index(OpticalProps &kdist, double wavelength);
+        int get_wavelength_index_sw(double wavelength);
+        int get_wavelength_index_lw(double wavelength);
 
     } // namespace rrtmgp
 }  // namespace scream

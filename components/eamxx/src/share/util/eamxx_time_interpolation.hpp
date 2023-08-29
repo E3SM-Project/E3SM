@@ -81,7 +81,7 @@ protected:
 
   // Variables related to the case where we use data from file
   std::vector<DataFromFileTriplet>           m_file_data_triplets;
-  std::vector<DataFromFileTriplet>::iterator m_triplet_iterator;
+  int                                        m_triplet_idx;
   AtmosphereInput                            m_file_data_atm_input;
   bool                                       m_is_data_from_file=false;
 

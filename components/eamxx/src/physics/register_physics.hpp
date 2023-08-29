@@ -26,6 +26,10 @@
 #endif
 #ifdef EAMXX_HAS_MAM
 #include "physics/mam/eamxx_mam_microphysics_process_interface.hpp"
+#include "physics/mam/eamxx_mam_optics_process_interface.hpp"
+#endif
+#ifdef EAMXX_HAS_COSP
+#include "physics/cosp/eamxx_cosp.hpp"
 #endif
 #ifdef EAMXX_HAS_TMS
 #include "physics/tms/eamxx_tms_process_interface.hpp"
@@ -55,6 +59,10 @@ inline void register_physics () {
 #endif
 #ifdef EAMXX_HAS_MAM
   proc_factory.register_product("mam4_micro",&create_atmosphere_process<MAMMicrophysics>);
+  proc_factory.register_product("mam4_optics",&create_atmosphere_process<MAMOptics>);
+#endif
+#ifdef EAMXX_HAS_COSP
+  proc_factory.register_product("Cosp",&create_atmosphere_process<Cosp>);
 #endif
 #ifdef EAMXX_HAS_TMS
   proc_factory.register_product("tms",&create_atmosphere_process<TurbulentMountainStress>);

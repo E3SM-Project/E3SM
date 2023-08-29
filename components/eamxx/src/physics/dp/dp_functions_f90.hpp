@@ -19,18 +19,28 @@ namespace scream {
 namespace dp {
 
 struct AdvanceIopForcingData : public PhysicsTestData {
+  static constexpr size_t NUM_ARRAYS = 20;
+
   // Inputs
   Int plev, pcnst;
   Real scm_dt, ps_in;
-  Real *u_in, *v_in, *t_in, *q_in, *t_phys_frc;
+  bool have_u, have_v, dp_crm, use_3dfrc;
+  Real *u_in, *v_in, *t_in, *q_in, *t_phys_frc, *divt3d, *divq3d, *divt,
+    *divq, *wfld, *uobs, *vobs, *hyai, *hyam, *hybi, *hybm;
 
   // Outputs
   Real *u_update, *v_update, *t_update, *q_update;
 
-  AdvanceIopForcingData(Int plev_, Int pcnst_, Real scm_dt_, Real ps_in_) :
-    PhysicsTestData({{ plev_ }, { plev_, pcnst_ }}, {{ &u_in, &v_in, &t_in, &t_phys_frc, &u_update, &v_update, &t_update }, { &q_in, &q_update }}), plev(plev_), pcnst(pcnst_), scm_dt(scm_dt_), ps_in(ps_in_) {}
+  AdvanceIopForcingData(Int plev_, Int pcnst_, Real scm_dt_, Real ps_in_, bool have_u_, bool have_v_, bool dp_crm_, bool use_3dfrc_) :
+    PhysicsTestData(
+      {{ plev_ }, { pcnst_, plev_ }},
+      {
+        { &u_in, &v_in, &t_in, &t_phys_frc, &divt3d, &divt, &divq, &wfld, &uobs, &vobs, &hyai, &hyam, &hybi, &hybm, &u_update, &v_update, &t_update },
+        { &q_in, &divq3d, &divq, &q_update }
+      }),
+    plev(plev_), pcnst(pcnst_), scm_dt(scm_dt_), ps_in(ps_in_), have_u(have_u_), have_v(have_v_), dp_crm(dp_crm_), use_3dfrc(use_3dfrc_) {}
 
-  PTD_STD_DEF(AdvanceIopForcingData, 4, plev, pcnst, scm_dt, ps_in);
+  PTD_STD_DEF(AdvanceIopForcingData, 8, plev, pcnst, scm_dt, ps_in, have_u, have_v, dp_crm, use_3dfrc);
 };
 
 
@@ -50,16 +60,24 @@ struct AdvanceIopNudgingData : public PhysicsTestData {
 };
 
 struct AdvanceIopSubsidenceData : public PhysicsTestData {
+  static constexpr size_t NUM_ARRAYS = 13;
+
   // Inputs
   Int plev, pcnst;
   Real scm_dt, ps_in;
-  Real *u_in, *v_in, *t_in, *q_in;
+  Real *u_in, *v_in, *t_in, *q_in, *hyai, *hyam, *hybi, *hybm, *wfld;
 
   // Outputs
   Real *u_update, *v_update, *t_update, *q_update;
 
   AdvanceIopSubsidenceData(Int plev_, Int pcnst_, Real scm_dt_, Real ps_in_) :
-    PhysicsTestData({{ plev_ }, { plev_, pcnst_ }}, {{ &u_in, &v_in, &t_in, &u_update, &v_update, &t_update }, { &q_in, &q_update }}), plev(plev_), pcnst(pcnst_), scm_dt(scm_dt_), ps_in(ps_in_) {}
+    PhysicsTestData(
+      {{ plev_ }, { plev_, pcnst_ }},
+      {
+        { &u_in, &v_in, &t_in, &hyai, &hyam, &hybi, &hybm, &wfld, &u_update, &v_update, &t_update },
+        { &q_in, &q_update }
+      }),
+    plev(plev_), pcnst(pcnst_), scm_dt(scm_dt_), ps_in(ps_in_) {}
 
   PTD_STD_DEF(AdvanceIopSubsidenceData, 4, plev, pcnst, scm_dt, ps_in);
 };
@@ -213,9 +231,9 @@ void readiopdata(ReadiopdataData& d);
 void iop_intht(IopInthtData& d);
 extern "C" { // _f function decls
 
-void advance_iop_forcing_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* t_phys_frc, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
+void advance_iop_forcing_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, bool have_u, bool have_v, bool dp_crm, bool use_3dfrc, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* t_phys_frc, Real* divt3d, Real* divq3d, Real* divt, Real* divq, Real* wfld, Real* uobs, Real* vobs, Real* hyai, Real* hyam, Real* hybi, Real* hybm, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
 void advance_iop_nudging_f(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* q_in, Real* t_update, Real* q_update, Real* relaxt, Real* relaxq);
-void advance_iop_subsidence_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
+void advance_iop_subsidence_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* hyai, Real* hyam, Real* hybi, Real* hybm, Real* wfld, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
 void iop_setinitial_f(Int nelemd, element_t* elem);
 void iop_broadcast_f();
 void apply_iop_forcing_f(Int nelemd, element_t* elem, hvcoord_t* hvcoord, hybrid_t hybrid, timelevel_t tl, Int n, bool t_before_advance, Int nets, Int nete);

@@ -153,6 +153,20 @@ public:
   void run_postcondition_checks () const;
   void run_column_conservation_check () const;
 
+  // Returns pre/postcondition checks
+  std::list<std::pair<CheckFailHandling,prop_check_ptr>>
+  get_precondition_checks () {
+    return m_precondition_checks;
+  }
+  std::list<std::pair<CheckFailHandling,prop_check_ptr>>
+  get_postcondition_checks() {
+    return m_postcondition_checks;
+  }
+  std::pair<CheckFailHandling,prop_check_ptr>
+  get_column_conservation_check() {
+    return m_column_conservation_check;
+  }
+
 
   void init_step_tendencies ();
   void compute_step_tendencies (const double dt);

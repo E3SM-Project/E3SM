@@ -114,7 +114,9 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     target_compile_definitions(${hommeLibName} PUBLIC HOMMEXX_CONFIG_IS_CMAKE SCREAM)
     # Link to cime's csm_share lib
     target_link_libraries (${hommeLibName} csm_share)
-    target_link_libraries (${hommeLibName} composec++)
+    if (HOMME_ENABLE_COMPOSE)
+      target_link_libraries (${hommeLibName} composec++)
+    endif()
     SetCudaFlags(${hommeLibName})
     SetOmpFlags(${hommeLibName})
 

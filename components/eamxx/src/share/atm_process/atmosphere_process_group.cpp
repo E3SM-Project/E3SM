@@ -382,6 +382,25 @@ void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
   }
 }
 
+void AtmosphereProcessGroup::add_additional_data_fields_to_property_checks (const Field& data_field) {
+  for (auto proc : m_atm_processes) {
+    auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(proc);
+    if (group) {
+      group->add_additional_data_fields_to_property_checks(data_field);
+    } else {
+      for (auto& prop_check : proc->get_precondition_checks()) {
+        prop_check.second->set_additional_data_field(data_field);
+      }
+      for (auto& prop_check : proc->get_postcondition_checks()) {
+        prop_check.second->set_additional_data_field(data_field);
+      }
+      if (proc->has_column_conservation_check()) {
+        proc->get_column_conservation_check().second->set_additional_data_field(data_field);
+      }
+    }
+  }
+}
+
 void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
   for (auto& atm_proc : m_atm_processes) {
     atm_proc->initialize(timestamp(),run_type);
