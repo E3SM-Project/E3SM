@@ -14,6 +14,13 @@ use physics_buffer, only: physics_buffer_desc, pbuf_add_field, dtype_r8, dyn_tim
 
 
 use cam_history,   only: outfld, write_inithist, hist_fld_active
+
+#if defined(CLDERA_PROFILING)
+use cam_logfile,    only: iulog
+use ppgrid,         only: begchunk
+use cldera_interface_mod, only: cldera_set_field_part_data
+#endif
+
 use constituents,  only: pcnst, cnst_name, cnst_longname, cnst_cam_outfld, ptendnam, dmetendnam, apcnst, bpcnst, &
                          cnst_get_ind
 use chemistry,     only: chem_is
@@ -2110,10 +2117,15 @@ subroutine diag_surf (cam_in, cam_out, ps, trefmxav, trefmnav )
     call outfld('SHFLX',    cam_in%shf,       pcols, lchnk)
     call outfld('LHFLX',    cam_in%lhf,       pcols, lchnk)
     call outfld('QFLX',     cam_in%cflx(1,1), pcols, lchnk)
-
+#if defined(CLDERA_PROFILING)
+!    call cldera_set_field_part_data("QFLX" ,lchnk-begchunk+1,cam_in%cflx(1,1))
+#endif
     call outfld('TAUX',     cam_in%wsx,       pcols, lchnk)
     call outfld('TAUY',     cam_in%wsy,       pcols, lchnk)
     call outfld('TREFHT  ', cam_in%tref,      pcols, lchnk)
+#if defined(CLDERA_PROFILING)
+    call cldera_set_field_part_data("TREFHT" ,lchnk-begchunk+1,cam_in%tref)
+#endif
     call outfld('TREFHTMX', cam_in%tref,      pcols, lchnk)
     call outfld('TREFHTMN', cam_in%tref,      pcols, lchnk)
     call outfld('QREFHT',   cam_in%qref,      pcols, lchnk)

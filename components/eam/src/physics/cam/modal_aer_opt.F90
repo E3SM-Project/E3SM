@@ -29,6 +29,10 @@ use cam_pio_utils,     only: cam_pio_openfile
 use cam_history,       only:  addfld, horiz_only, add_default, outfld
 use cam_history_support, only: fillvalue
 use cam_logfile,       only: iulog
+#if defined(CLDERA_PROFILING)
+use ppgrid,         only: begchunk
+use cldera_interface_mod, only: cldera_set_field_part_data
+#endif
 use perf_mod,          only: t_startf, t_stopf
 use cam_abortutils,        only: endrun
 
@@ -1129,9 +1133,21 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    call outfld('EXTINCT'//diag(list_idx),  extinct, pcols, lchnk)
    call outfld('tropopause_m', tropopause_m, pcols, lchnk)
    call outfld('ABSORB'//diag(list_idx),   absorb,  pcols, lchnk)
+#if defined(CLDERA_PROFILING)
+   call cldera_set_field_part_data("ABSORB" ,lchnk-begchunk+1,absorb)
+#endif
    call outfld('AODVIS'//diag(list_idx),   aodvis,  pcols, lchnk)
+#if defined(CLDERA_PROFILING)
+   call cldera_set_field_part_data("AODVIS" ,lchnk-begchunk+1,aodvis)
+#endif
    call outfld('AODALL'//diag(list_idx),   aodall,  pcols, lchnk)
+#if defined(CLDERA_PROFILING)
+   call cldera_set_field_part_data("AODALL" ,lchnk-begchunk+1,aodall)
+#endif
    call outfld('AODABS'//diag(list_idx),   aodabs,  pcols, lchnk)
+#if defined(CLDERA_PROFILING)
+   call cldera_set_field_part_data("AODABS" ,lchnk-begchunk+1,aodabs)
+#endif
 
    ! These diagnostics are output only for climate list
    if (list_idx == 0) then
