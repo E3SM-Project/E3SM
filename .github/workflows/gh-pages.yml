@@ -45,11 +45,11 @@ jobs:
       - name: Build docs
         working-directory: components/eamxx
         run: |
-          mkdocs build 
+          mkdocs build --strict --verbose
 
       # only deploy when there is a push to master
       - if: ${{ github.event_name == 'push' }}
         name: Deploy docs
         working-directory: components/eamxx
         run: |
-          mkdocs gh-deploy
+          mkdocs gh-deploy --verbose
