@@ -486,6 +486,7 @@ CONTAINS
     use pmgrid,          only: plev, plevp
     use constituents,    only: pcnst
     use shr_sys_mod,     only: shr_sys_flush
+    use physpkg,         only: is_atm_init
 
     ! 
     ! Arguments
@@ -528,6 +529,7 @@ CONTAINS
     character(len=*), parameter :: subname="atm_run_mct"
     !-----------------------------------------------------------------------
 
+    is_atm_init = .false.
 #if (defined _MEMTRACE)
     if(masterproc) then
       lbnum=1
