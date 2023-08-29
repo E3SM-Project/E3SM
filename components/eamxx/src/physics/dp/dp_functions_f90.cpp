@@ -231,6 +231,7 @@ void advance_iop_nudging_f(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* 
   using MemberType = typename DPF::MemberType;
 
   const Int plev_pack = ekat::npack<Spack>(plev);
+  const Int plevp_pack = ekat::npack<Spack>(plev+1);
 
   // Set up views
   std::vector<view_1d> temp_d(AdvanceIopNudgingData::NUM_ARRAYS);
@@ -255,7 +256,7 @@ void advance_iop_nudging_f(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* 
 
   // Call core function from kernel
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, plev_pack);
-  ekat::WorkspaceManager<Spack> wsm(plev_pack, 4, policy);
+  ekat::WorkspaceManager<Spack> wsm(plevp_pack, 4, policy);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
       DPF::advance_iop_nudging(
