@@ -18,29 +18,41 @@ build planar homme theta-l-nlev128-native
 run create-namelists-and-run*sh for all 5 updates (10 hours on 8 chrys nodes)
 they use templated namelists *TEMPLATE to build nl files for each update and time step
 
+for a small *nc file with area:
+srun -n 1  --cpu_bind=cores test_execs/theta-l-nlev128-native/theta-l-nlev128-native <dump-area.nl
+rename the file then 'area.nc'
+
 making convergence plots: --------------------------------------------
 use ncl:
 
 
 compute difference between CP and CV ref solutions at 0.0001:
 run
->>ncl compute-ref-solns-difference.ncl fff=\"Th\" tt=8
+>>>ncl compute-ref-solns-difference-using-remap.ncl fff=\"Th\" tt=8
 and extract from the output line like
-dt=0.0001 NOerr 544.6542895845852 nerr = 0.002356846320803758
+(0)	dt=0.0001 NOerr 39032.78224291373 nerr = 0.002624088197179717
 use nerr value to add it to convergence-rates.py to lines
 
 #make hor line
-hline=np.array(seriesV)-np.array(seriesV)+0.0024 <-- this number, 0.0024, is rounded nerr number form above
+hline=np.array(seriesV)-np.array(seriesV)+0.0026 <-- this number, 0.0026, is rounded nerr number form above
 
 this will give the horizontal "uncertainty" line in the convergence plot
 
->>ncl make-convergence-*.ncl fff=\"Th\" tt=8
+For self-convergence, do
+
+>>> ncl make-convergence-remap.ncl fff=\"Th\" tt=8 myname=\"cpstarnh\" mynameShort=\"P\"
+>>> ncl make-convergence-remap.ncl fff=\"Th\" tt=8 myname=\"cpstarhy\" mynameShort=\"Phy\"
+>>> ncl make-convergence-remap.ncl fff=\"Th\" tt=8 myname=\"cv\" mynameShort=\"V\"
+>>> ncl make-convergence-remap.ncl fff=\"Th\" tt=8 myname=\"eamcpdry\" mynameShort=\"Edry\"
+>>> ncl make-convergence-remap.ncl fff=\"Th\" tt=8 myname=\"eamcpstar\" mynameShort=\"Estar\"
+
 and extract from the output lines like
-seriesP=[ 0.003077509496527265,0.002971564287359151,0.00263778452855153,0.001755425382169638,0.001118177876390719,0.0006099010453942045,0.0002608441075285435,0.0001272050274434055 ]
-seriesPhy=[ 0.003086108128760258,0.002972611990412168,0.002636010412023117,0.00175533930861668,0.001118370217551115,0.0006091090534282601,0.0002605342125618298,0.0001270081037904339 ]
-seriesV=[ 0.00693267677466352,0.006481375979017358,0.005289501660810096,0.001935662595967612,0.0009215228580399363,0.0007046734778502718,0.0002752273001902675,0.00017930304565655 ]
-seriesEdry=[ 0.006129476690641761,0.007223143634597555,0.00708357263368673,0.002762966755376245,0.001217748855692548,0.0004386992155546833,0.001146164225601199,0.00035028576305705 ]
-seriesEstar=[ 0.006212394002788509,0.006912952061895793,0.006839840418866516,0.002742073244445472,0.001390152505598283,0.0004116095426320242,0.001410724895259956,0.001009662491319665 ]
+seriesP=[ 0.003470219900093927,0.003409600138394569,0.002999268555545242,0.002003238327450248,0.001259866170997827,0.0006784205117481457,0.0002865313909660209,0.0001397353066118329 ]
+seriesPhy=[ 0.00348026000624766,0.003410699232002172,0.002997358686058668,0.002003334688997635,0.001259811057794131,0.0006779506324187278,0.0002862759612438212,0.0001395234378750366 ]
+seriesV=[ 0.008099264907336133,0.007440089835241521,0.006131482487330701,0.002154116427663535,0.001026479812111427,0.0007995946160644042,0.0003073213851727845,0.0001987616843327972 ]
+seriesEdry=[ 0.006962328352674943,0.008317725221624302,0.008139471108749049,0.003090257122566238,0.001304576973127931,0.0004519860341391564,0.001263328930838435,0.0003842799495964573 ]
+seriesEstar=[ 0.007059505857799219,0.007972185219984801,0.007853645681927235,0.003082155175314198,0.00152380480096253,0.0004252325971472421,0.00156793355264248,0.0011246447542791 ]
+
 
 edit file convergence-rates.py to add/replace the lines above
 load python module (on chrysalis, can be python3)
