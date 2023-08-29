@@ -26,6 +26,9 @@ have the following software installed:
 * [CMake](https://cmake.org) and [GNU Make](https://www.gnu.org/software/make/)
 * A working set of C, C++, and Fortran compilers
 * A recent version of [Git](https://git-scm.com/)
+* A working installation of [NetCDF](https://www.unidata.ucar.edu/software/netcdf/),
+  including both [C](https://github.com/Unidata/netcdf-c) and
+  [Fortran](https://github.com/Unidata/netcdf-fortran) libraries.
 
 ## Setting Up Your Environment
 
@@ -87,7 +90,6 @@ cmake \
     -D CMAKE_Fortran_COMPILER=mpif90 \
     -D MPIEXEC_EXECUTABLE=`which mpiexec` \
     -D EKAT_MPI_NP_FLAG:STRING=-n \
-    -D SCREAM_CIME_BUILD=OFF \
     -D SCREAM_DYNAMICS_DYCORE=HOMME \
     -D SCREAM_DOUBLE_PRECISION:BOOL=ON \
     -D SCREAM_INPUT_ROOT:PATH=/path/to/scream-input \
@@ -122,10 +124,6 @@ know what they do:
 * `EKAT_MPI_NP_FLAG`: the flag passed to `MPIEXEC_EXECUTABLE` that you use to
   specify the number of desired MPI processes. This is typically `-n` for
   `mpiexec` and `-np` for `mpirun`.
-* `SCREAM_CIME_BUILD`: indicates whether EAMxx uses [CIME](https://e3sm.org/resources/tools/other-tools/cime/)
-  to build itself (required when building EAMxx as part of a full E3SM case).
-  Set this to `OFF` if you are only interested in running standalone EAMxx
-  tests.
 * `SCREAM_DYNAMICS_DYCORE`: specifies the dycore used for configuring EAMxx,
   which is `NONE` if you are not configuring EAMxx to run its dycore-related
   tests, or `HOMME` if you want to use HOMMExx

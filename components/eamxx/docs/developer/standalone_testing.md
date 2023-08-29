@@ -14,7 +14,9 @@ configurations. We use several types of tests
   circumstances.
 * **Fortran-C++ "bit-for-bit" (BFB) tests** are test programs, often implemented
   as unit tests, that demonstrate that a set of C++ code ported from Fortran
-  produces bit-for-bit identical results to its Fortran counterpart.
+  produces bit-for-bit identical results to its Fortran counterpart, provided
+  certain compiler options are enabled (such as "strict" floating-point
+  arithmetic).
 * **Test Suites** are named collections of tests that can be run on demand using
   the [ctest](https://cmake.org/cmake/help/latest/manual/ctest.1.html) command.
 
