@@ -23,12 +23,13 @@
 
 module cldera_passive_tracers
 
-  use shr_kind_mod, only: r8 => shr_kind_r8
-  use spmd_utils,   only: masterproc
-  use ppgrid,       only: pcols, pver
-  use constituents, only: pcnst, cnst_add, cnst_name, cnst_longname
-  use cam_logfile,  only: iulog
-  use ref_pres,     only: pref_mid_norm
+  use shr_kind_mod,   only: r8 => shr_kind_r8
+  use spmd_utils,     only: masterproc
+  use ppgrid,         only: pcols, pver
+  use constituents,   only: pcnst, cnst_add, cnst_name, cnst_longname
+  use cam_logfile,    only: iulog
+  use ref_pres,       only: pref_mid_norm
+  use cam_abortutils, only: endrun
 
   implicit none
   private
@@ -222,6 +223,7 @@ contains
     use time_manager,  only: get_nstep
     use ref_pres,      only: pref_mid_norm
     use time_manager,  only: get_curr_time
+    use tropopause,    only: tropopause_find, TROP_ALG_TWMO, TROP_ALG_STOBIE, NOTFOUND
 
     ! Arguments
     type(physics_state), intent(inout) :: state              ! state variables
@@ -235,6 +237,7 @@ contains
     integer :: lchnk             ! chunk identifier
     integer :: ncol              ! no. of column in chunk
     integer :: nstep             ! current timestep number
+    integer :: trop_level(pcols) ! tropopause level for all columns 
 
     logical  :: lq(pcnst)
 
@@ -282,6 +285,16 @@ contains
     ! convert mol to g, g to kg, cm^-2 to m^-2, ==>  flux in [kg m^-2 s^-1]
     sflx_e90    = sflx_e90 * mweight_e90 * (1._r8/1000._r8) * 10000._r8
 
+    ! ---- identify tropopuase level
+    call tropopause_find(state, trop_level, primary=TROP_ALG_TWMO, backup=TROP_ALG_STOBIE)
+    ! Quit if tropopause is not found
+    if (any(trop_level(1:ncol) == NOTFOUND)) then
+       do i = 1, ncol
+          write(iulog,*)'tropopause level,state%lchnk,column:',trop_level(i),lchnk,i
+       enddo
+       call endrun('cldera_passive_tracers_timestep_tend: tropopause not found')
+    endif
+
 
     ! -------------------- TRACER TENDENCIES --------------------
     do k = 1, pver
@@ -309,13 +322,15 @@ contains
           end if
 
           ! ============ ST80_25 ============
-          ! dissipates with e-folding time of 25 days below ~80 hPa, 
-          ! constant concentration of 200 ppbv above
-          if (state%pmid(i, k) >= 8000._r8) then
+          ! constant concentration of 200 ppbv above 80 hPa
+          if (state%pmid(i, k) <= 8000._r8) then
+              state%q(i, k, ixst80) = 200e-9_r8
+          end if
+          ! dissipates with e-folding time of 25 days below the tropopause
+          if (k >= trop_level(i)) then
               ptend%q(i,k,ixst80) =  -(1/efold_st80) * state%q(i, k, ixst80)
           else
               ptend%q(i, k,ixst80) = 0._r8
-              state%q(i, k, ixst80) = 200e-9_r8  ! 200 ppbv to vmr
           end if
        end do
     end do
