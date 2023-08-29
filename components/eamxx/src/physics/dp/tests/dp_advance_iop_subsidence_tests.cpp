@@ -20,7 +20,13 @@ struct UnitWrap::UnitTest<D>::TestAdvanceIopSubsidence {
     auto engine = setup_random_test();
 
     AdvanceIopSubsidenceData f90_data[] = {
-      // TODO
+      //                     plev, pcnst, scm_dt, ps_in
+      AdvanceIopSubsidenceData(72,    10,    0.1, 1000.0),
+      AdvanceIopSubsidenceData(72,     7,    0.1, 1000.0),
+      AdvanceIopSubsidenceData(27,    10,    0.1, 1000.0),
+      AdvanceIopSubsidenceData(27,     7,    0.1, 1000.0),
+      AdvanceIopSubsidenceData(32,    10,    0.1, 1000.0),
+      AdvanceIopSubsidenceData(32,     7,    0.1, 1000.0),
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(AdvanceIopSubsidenceData);
@@ -33,8 +39,13 @@ struct UnitWrap::UnitTest<D>::TestAdvanceIopSubsidence {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    AdvanceIopSubsidenceData cxx_data[] = {
-      // TODO
+    AdvanceIopSubsidenceData cxx_data[num_runs] = {
+      AdvanceIopSubsidenceData(f90_data[0]),
+      AdvanceIopSubsidenceData(f90_data[1]),
+      AdvanceIopSubsidenceData(f90_data[2]),
+      AdvanceIopSubsidenceData(f90_data[3]),
+      AdvanceIopSubsidenceData(f90_data[4]),
+      AdvanceIopSubsidenceData(f90_data[5]),
     };
 
     // Assume all data is in C layout
@@ -47,11 +58,14 @@ struct UnitWrap::UnitTest<D>::TestAdvanceIopSubsidence {
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      advance_iop_subsidence_f(d.plev, d.pcnst, d.scm_dt, d.ps_in, d.u_in, d.v_in, d.t_in, d.q_in, d.u_update, d.v_update, d.t_update, d.q_update);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      d.template transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
+      advance_iop_subsidence_f(d.plev, d.pcnst, d.scm_dt, d.ps_in, d.u_in, d.v_in, d.t_in, d.q_in, d.hyai, d.hyam, d.hybi, d.hybm, d.wfld, d.u_update, d.v_update, d.t_update, d.q_update);
+      d.template transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
     }
 
+    // We can't call into fortran. Due to all the dependencies it has, it's not possible
+    // to build it in standalone eamxx. Without fortran, we cannot do BFB tests.
+#if 0
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING) {
       for (Int i = 0; i < num_runs; ++i) {
@@ -72,6 +86,7 @@ struct UnitWrap::UnitTest<D>::TestAdvanceIopSubsidence {
 
       }
     }
+#endif
   } // run_bfb
 
 };

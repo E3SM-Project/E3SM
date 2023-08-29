@@ -150,8 +150,48 @@ struct Functions
   KOKKOS_FUNCTION
   static void advance_iop_nudging(const Int& plev, const Spack& scm_dt, const Spack& ps_in, const uview_1d<const Spack>& t_in, const uview_1d<const Spack>& q_in, const uview_1d<Spack>& t_update, const uview_1d<Spack>& q_update, const uview_1d<Spack>& relaxt, const uview_1d<Spack>& relaxq);
 
+  KOKKOS_INLINE_FUNCTION
+  static void do_advance_iop_subsidence_update(
+    const Int& k,
+    const Int& plev,
+    const Spack& fac,
+    const Spack& swfldint,
+    const Spack& swfldint_p1,
+    const uview_1d<const Spack>& in,
+    const uview_1d<const Scalar>& in_s,
+    const uview_1d<Spack>& update);
+
+  //-----------------------------------------------------------------------
+  //
+  // Purpose:
+  // Option to compute effects of large scale subsidence on T, q, u, and v.
+  // Code originated from CAM3.5/CAM5 Eulerian subsidence computation for SCM
+  // in the old forecast.f90 routine.
+  //-----------------------------------------------------------------------
   KOKKOS_FUNCTION
-  static void advance_iop_subsidence(const Int& plev, const Int& pcnst, const Spack& scm_dt, const Spack& ps_in, const uview_1d<const Spack>& u_in, const uview_1d<const Spack>& v_in, const uview_1d<const Spack>& t_in, const uview_1d<const Spack>& q_in, const uview_1d<Spack>& u_update, const uview_1d<Spack>& v_update, const uview_1d<Spack>& t_update, const uview_1d<Spack>& q_update);
+  static void advance_iop_subsidence(
+    // Input arguments
+    const Int& plev,                   // number of vertical levels
+    const Int& pcnst,                  // number of advected constituents including cloud water
+    const Scalar& scm_dt,              // model time step [s]
+    const Scalar& ps_in,               // surface pressure [Pa]
+    const uview_1d<const Spack>& u_in, // zonal wind [m/s]
+    const uview_1d<const Spack>& v_in, // meridional wind [m/s]
+    const uview_1d<const Spack>& t_in, // temperature [K]
+    const uview_2d<const Spack>& q_in, // tracer [vary]
+    const uview_1d<const Spack>& hyai, // ps0 component of hybrid coordinate - interfaces
+    const uview_1d<const Spack>& hyam, // ps0 component of hybrid coordinate - midpoints
+    const uview_1d<const Spack>& hybi, // ps component of hybrid coordinate - interfaces
+    const uview_1d<const Spack>& hybm, // ps component of hybrid coordinate - midpoints
+    const uview_1d<const Spack>& wfld, // Vertical motion (slt)
+    // Kokkos stuff
+    const MemberType& team,
+    const Workspace& workspace,
+    // Output arguments
+    const uview_1d<Spack>& u_update,   // zonal wind [m/s]
+    const uview_1d<Spack>& v_update,   // meridional wind [m/s]
+    const uview_1d<Spack>& t_update,   // temperature [m/s]
+    const uview_2d<Spack>& q_update);  // tracer [vary]
 
   KOKKOS_FUNCTION
   static void iop_setinitial(const Int& nelemd, const uview_1d<element_t>& elem);

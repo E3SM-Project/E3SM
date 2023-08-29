@@ -39,11 +39,15 @@ void Functions<S,D>::plevs0(
   });
 
   // Set midpoint pressures and layer thicknesses
-  const auto pdel_s = scalarize(pdel);
   const auto pint_s = scalarize(pint);
   Kokkos::parallel_for(
-    Kokkos::TeamVectorRange(team, nver), [&] (Int k) {
-      pdel_s(k) = pint_s(k+1) - pint_s(k);
+    Kokkos::TeamVectorRange(team, nver_pack), [&] (Int k) {
+      Spack spint, spint_1;
+      IntSmallPack range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
+      auto range_pack2_p1_safe = range_pack1;
+      range_pack2_p1_safe.set(range_pack1 > nver-1, nver-1);
+      ekat::index_and_shift<1>(pint_s, range_pack2_p1_safe, spint, spint_1);
+      pdel(k) = spint_1 - spint;
   });
 }
 
@@ -95,9 +99,6 @@ void Functions<S,D>::advance_iop_forcing(
 
   // Get vertical level profiles
   plevs0(plev, ps_in, hyai, hyam, hybi, hybm, team, pintm1, pmidm1, pdelm1);
-
-  constexpr Scalar rair = C::Rair;
-  constexpr Scalar cpair = C::Cpair;
 
   ////////////////////////////////////////////////////////////
   //  Advance T and Q due to large scale forcing
