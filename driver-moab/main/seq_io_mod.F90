@@ -1570,6 +1570,8 @@ contains
     use iMOAB,            only: iMOAB_GetGlobalInfo, iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
         iMOAB_GetIntTagStorage
 
+    use m_MergeSorts,     only: IndexSet, IndexSort
+
      ! !INPUT/OUTPUT PARAMETERS:
     implicit none
     character(len=*),intent(in) :: filename      ! file
@@ -1585,7 +1587,7 @@ contains
     !integer :: start(2),count(2)
     character(*),parameter :: subName = '(seq_io_write_moab_tags) '
     integer :: ndims, lfile_ind, iam, rcode
-    integer(in)              :: ns, ng, lnx, lny
+    integer(in)              :: ns, ng, lnx, lny, ix
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
 
     type(var_desc_t) :: varid
@@ -1605,8 +1607,10 @@ contains
     integer(in)        :: dimid2(2)
     integer(in)              :: dummy, ent_type, ierr
     real(r8)                 :: lfillvalue ! or just use fillvalue ?
+    integer, allocatable         :: indx(:) !  this will be ordered
     integer, allocatable         :: Dof(:)  ! will be filled with global ids from cells
-    real(r8), allocatable        :: data1(:)
+    integer, allocatable         :: Dof_reorder(:)  !
+    real(r8), allocatable        :: data1(:), data_reorder(:)
 
     !-------------------------------------------------------------------------------
     !
@@ -1678,16 +1682,27 @@ contains
 
     if (lwdata) then
        allocate(data1(ns))
+       allocate(data_reorder(ns))
        allocate(dof(ns))
+       allocate(dof_reorder(ns))
 
        ! note: size of dof is ns
        tagname = 'GLOBAL_ID'//C_NULL_CHAR
        ierr = iMOAB_GetIntTagStorage ( mbxid, tagname, ns , ent_type, dof(1))
-   
-       call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
+
+       allocate(indx(ns))
+       call IndexSet(ns, indx)
+       call IndexSort(ns, indx, dof, descend=.false.)
+       !      after sort, dof( indx(i)) < dof( indx(i+1) )
+       do ix=1,ns
+          dof_reorder(ix) = dof(indx(ix)) ! 
+       enddo
+       ! so we know that dof_reorder(ix) < dof_reorder(ix+1)
+
+       call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof_reorder, iodesc)
 
        deallocate(dof)
-
+       deallocate(dof_reorder) 
        do index_list = 1, size_list
           call mct_list_get(mctOStr,index_list,temp_list)
           field = mct_string_toChar(mctOStr)
@@ -1698,12 +1713,18 @@ contains
              !call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
              tagname = trim(field)//C_NULL_CHAR
              ierr = iMOAB_GetDoubleTagStorage (mbxid, tagname, ns , ent_type, data1(1))
-             call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data1, rcode, fillval=lfillvalue)
+             do ix=1,ns
+                data_reorder(ix) = data1(indx(ix)) ! 
+             enddo
+             
+             call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data_reorder, rcode, fillval=lfillvalue)
           endif
        enddo
 
        call pio_freedecomp(cpl_io_file(lfile_ind), iodesc)
        deallocate(data1)
+       deallocate(data_reorder)
+       deallocate(indx)
 
     end if
 
