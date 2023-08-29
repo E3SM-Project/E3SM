@@ -298,7 +298,7 @@ Toggle to turn on the FATES
 </entry>
 
 <entry id="fates_spitfire_mode" type="integer" category="physics"
-        group="elm_inparm" valid_values="0,1,2,3,4,5", value="0" >
+        group="elm_inparm" valid_values="0,1,2,3,4,5" value="0" >
 Turn on spitfire module to simulate fire by setting fates_spitfire_mode > 0.
 Allowed values are:
  0 : Simulations of fire are off
@@ -1823,6 +1823,7 @@ Type of saturation function used in VSFM.
 <entry id="vsfm_use_dynamic_linesearch"  type="logical" category="default_settings"
        group="elm_inparm" valid_values="">
 Runtime flag to dynamically modify PETSc SNES linesearch option when VSFM fails to converge before cutting the timestep.
+</entry>
 
 <entry id="vsfm_lateral_model_type" type="char*32" category="elm_physics"
        group="elm_inparm"
@@ -1854,7 +1855,7 @@ Runtime flag to turn on/off PETSc based thermal model.
 <entry id="use_var_soil_thick" type="logical" category="default_settings"
         group="elm_inparm" valid_values="">
 Runtime flag to turn on/off variable soil thickness.
-</entry
+</entry>
 
 <!-- ======================================================================================== -->
 <!-- Namelist options for lake water storage                                                  -->
