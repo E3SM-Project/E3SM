@@ -472,6 +472,7 @@ run (const std::string& filename,
     auto track_avg_cnt = m_track_avg_cnt;
     auto add_time_dim = m_add_time_dim;
     auto fill_value = m_fill_value;
+    auto avg_coeff_threshold = m_avg_coeff_threshold;
     // If the dev_view_1d is aliasing the field device view (must be Instant output),
     // then there's no point in copying from the field's view to dev_view
     if (not is_aliasing_field_view) {
@@ -485,9 +486,9 @@ run (const std::string& filename,
           auto avg_coeff_1d = view_Nd_dev<1>(avg_cnt_data,avg_cnt_dims[0]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
             if (track_avg_cnt && add_time_dim) {
-                    combine_and_fill(new_view_1d(i), avg_view_1d(i),avg_coeff_1d(i),avg_type,fill_value);
+              combine_and_fill(new_view_1d(i), avg_view_1d(i),avg_coeff_1d(i),avg_type,fill_value);
             } else {
-                    combine(new_view_1d(i), avg_view_1d(i),avg_type);
+              combine(new_view_1d(i), avg_view_1d(i),avg_type);
             }
           });
           break;
@@ -501,9 +502,9 @@ run (const std::string& filename,
             int i,j;
             unflatten_idx(idx,extents,i,j);
             if (track_avg_cnt && add_time_dim) {
-                    combine_and_fill(new_view_2d(i,j), avg_view_2d(i,j),avg_coeff_2d(i,j),avg_type,fill_value);
+              combine_and_fill(new_view_2d(i,j), avg_view_2d(i,j),avg_coeff_2d(i,j),avg_type,fill_value);
             } else {
-                    combine(new_view_2d(i,j), avg_view_2d(i,j),avg_type);
+              combine(new_view_2d(i,j), avg_view_2d(i,j),avg_type);
             }
           });
           break;
@@ -517,9 +518,9 @@ run (const std::string& filename,
             int i,j,k;
             unflatten_idx(idx,extents,i,j,k);
             if (track_avg_cnt && add_time_dim) {
-                    combine_and_fill(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_coeff_3d(i,j,k),avg_type,fill_value);
+              combine_and_fill(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_coeff_3d(i,j,k),avg_type,fill_value);
             } else {
-                    combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_type);
+              combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_type);
             }
           });
           break;
@@ -533,9 +534,9 @@ run (const std::string& filename,
             int i,j,k,l;
             unflatten_idx(idx,extents,i,j,k,l);
             if (track_avg_cnt && add_time_dim) {
-                    combine_and_fill(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_coeff_4d(i,j,k,l),avg_type,fill_value);
+              combine_and_fill(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_coeff_4d(i,j,k,l),avg_type,fill_value);
             } else {
-                    combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_type);
+              combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_type);
             }
           });
           break;
@@ -549,9 +550,9 @@ run (const std::string& filename,
             int i,j,k,l,m;
             unflatten_idx(idx,extents,i,j,k,l,m);
             if (track_avg_cnt && add_time_dim) {
-                    combine_and_fill(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_coeff_5d(i,j,k,l,m),avg_type,fill_value);
+              combine_and_fill(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_coeff_5d(i,j,k,l,m),avg_type,fill_value);
             } else {
-                    combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_type);
+              combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_type);
             }
           });
           break;
@@ -565,9 +566,9 @@ run (const std::string& filename,
             int i,j,k,l,m,n;
             unflatten_idx(idx,extents,i,j,k,l,m,n);
             if (track_avg_cnt && add_time_dim) {
-                    combine_and_fill(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n), avg_coeff_6d(i,j,k,l,m,n),avg_type,fill_value);
+              combine_and_fill(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n), avg_coeff_6d(i,j,k,l,m,n),avg_type,fill_value);
             } else {
-                    combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),avg_type);
+              combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),avg_type);
             }
           });
           break;
@@ -586,10 +587,10 @@ run (const std::string& filename,
           // Divide by steps count only when the summation is complete
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
             Real coeff_percentage = Real(avg_nsteps[i])/nsteps_since_last_output;
-            if (data[i] != m_fill_value && coeff_percentage > m_avg_coeff_threshold) {
-                    data[i] /= avg_nsteps[i];
+            if (data[i] != fill_value && coeff_percentage > avg_coeff_threshold) {
+              data[i] /= avg_nsteps[i];
             } else {
-              data[i] = m_fill_value;
+              data[i] = fill_value;
             }
           });
         } else {
@@ -1294,9 +1295,9 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
         auto src_view_1d = field.get_strided_view<const Real*,Device>();
         auto tgt_view_1d = view_Nd_dev<1>(data,dims[0]);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-	  if (src_view_1d(i)==fill_value) {
-	    tgt_view_1d(i) = 0.0;
-	  }
+          if (src_view_1d(i)==fill_value) {
+            tgt_view_1d(i) = 0.0;
+          }
         });
         break;
       }
@@ -1307,9 +1308,9 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
           int i,j;
           unflatten_idx(idx,extents,i,j);
-	  if (src_view_2d(i,j)==fill_value) {
-	    tgt_view_2d(i,j) = 0.0;
-	  }
+          if (src_view_2d(i,j)==fill_value) {
+            tgt_view_2d(i,j) = 0.0;
+          }
         });
         break;
       }
@@ -1320,9 +1321,9 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
           int i,j,k;
           unflatten_idx(idx,extents,i,j,k);
-	  if (src_view_3d(i,j,k)==fill_value) {
-	    tgt_view_3d(i,j,k) = 0.0;
-	  }
+          if (src_view_3d(i,j,k)==fill_value) {
+            tgt_view_3d(i,j,k) = 0.0;
+          }
         });
         break;
       }
@@ -1333,9 +1334,9 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
           int i,j,k,l;
           unflatten_idx(idx,extents,i,j,k,l);
-	  if (src_view_4d(i,j,k,l)==fill_value) {
-	    tgt_view_4d(i,j,k,l) = 0.0;
-	  }
+          if (src_view_4d(i,j,k,l)==fill_value) {
+            tgt_view_4d(i,j,k,l) = 0.0;
+          }
         });
         break;
       }
@@ -1346,9 +1347,9 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
           int i,j,k,l,m;
           unflatten_idx(idx,extents,i,j,k,l,m);
-	  if (src_view_5d(i,j,k,l,m)==fill_value) {
-	    tgt_view_5d(i,j,k,l,m) = 0.0;
-	  }
+          if (src_view_5d(i,j,k,l,m)==fill_value) {
+            tgt_view_5d(i,j,k,l,m) = 0.0;
+          }
         });
         break;
       }
@@ -1359,9 +1360,9 @@ update_avg_cnt_view(const Field& field, view_1d_dev& dev_view) {
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
           int i,j,k,l,m,n;
           unflatten_idx(idx,extents,i,j,k,l,m,n);
-	  if (src_view_6d(i,j,k,l,m,n)==fill_value) {
-	    tgt_view_6d(i,j,k,l,m,n) = 0.0;
-	  }
+          if (src_view_6d(i,j,k,l,m,n)==fill_value) {
+            tgt_view_6d(i,j,k,l,m,n) = 0.0;
+          }
         });
         break;
       }
