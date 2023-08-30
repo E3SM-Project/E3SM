@@ -74,6 +74,8 @@ module seq_rest_mod
 
   use seq_flds_mod, only: seq_flds_a2x_fields, seq_flds_xao_fields, seq_flds_o2x_fields, seq_flds_x2o_fields
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_r2x_fields
+
+  use prep_ocn_mod, only: prep_ocn_get_x2oacc_om
   implicit none
 
   private
@@ -716,6 +718,8 @@ contains
     integer (in), pointer   :: x2oacc_om_cnt ! replacement, moab version for x2oacc_ox_cnt
     integer (in)   :: nx_lnd ! will be used if land and atm are on same grid
     integer (in)   ::  ierr, dummy
+
+    real(r8), dimension(:,:), pointer  :: p_x2oacc_om
     character(len=*),parameter :: subname = "(seq_rest_mb_write) "
 
     !-------------------------------------------------------------------------------
@@ -958,9 +962,11 @@ contains
                   whead=whead, wdata=wdata)
             tagname = trim(seq_flds_x2o_fields)
             x2oacc_om_cnt => prep_ocn_get_x2oacc_om_cnt()
+            p_x2oacc_om => prep_ocn_get_x2oacc_om()
+
             call seq_io_write(rest_file, mboxid, 'x2oacc_ox', &
                   trim(tagname), &
-                  whead=whead, wdata=wdata)
+                  whead=whead, wdata=wdata, matrix=p_x2oacc_om)
             call seq_io_write(rest_file, x2oacc_om_cnt, 'x2oacc_om_cnt', &
                whead=whead, wdata=wdata)
       !            tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR

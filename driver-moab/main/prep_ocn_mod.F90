@@ -99,6 +99,8 @@ module prep_ocn_mod
   public :: prep_ocn_get_mapper_Fg2o
   public :: prep_ocn_get_mapper_Sw2o
 
+  public :: prep_ocn_get_x2oacc_om ! will return a pointer to the local private matrix ? is that correct ?
+
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
@@ -137,7 +139,7 @@ module prep_ocn_mod
   integer        , target  :: x2oacc_ox_cnt ! x2oacc_ox: number of time samples accumulated
 
   ! accumulation variables for moab data
-  real (kind=r8) , allocatable, private :: x2oacc_om (:,:)   ! Ocn import, ocn grid, cpl pes, moab array
+  real (kind=r8) , allocatable, private, target :: x2oacc_om (:,:)   ! Ocn import, ocn grid, cpl pes, moab array
   integer        , target  :: x2oacc_om_cnt ! x2oacc_ox: number of time samples accumulated, in moab array
   integer                  :: arrSize_x2o_om !   this will be a module variable, size moabLocal_size * nof
 
@@ -3016,7 +3018,10 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     type(seq_map), pointer :: prep_ocn_get_mapper_Sw2o
     prep_ocn_get_mapper_Sw2o => mapper_Sw2o
   end function prep_ocn_get_mapper_Sw2o
-
+  function prep_ocn_get_x2oacc_om()
+    real(r8), DIMENSION(:, :), pointer :: prep_ocn_get_x2oacc_om
+    prep_ocn_get_x2oacc_om => x2oacc_om
+  end function prep_ocn_get_x2oacc_om
   function prep_ocn_get_x2oacc_om_cnt()
     integer, pointer :: prep_ocn_get_x2oacc_om_cnt
     prep_ocn_get_x2oacc_om_cnt => x2oacc_om_cnt

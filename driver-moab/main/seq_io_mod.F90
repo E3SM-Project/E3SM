@@ -1563,7 +1563,7 @@ contains
 
   end subroutine seq_io_write_time
 
-  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, nx, file_ind )
+  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, file_ind )
 
     use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
 
@@ -1580,6 +1580,7 @@ contains
     character(len=*),intent(in) :: tag_list      ! fields, separated by colon
     logical,optional,intent(in) :: whead         ! write header
     logical,optional,intent(in) :: wdata         ! write data
+    real(r8), dimension(:,:), pointer, optional :: matrix  ! this may or may not be passed
     integer, optional,intent(in):: nx
     integer,optional,intent(in) :: file_ind
 
@@ -1689,6 +1690,10 @@ contains
        ! note: size of dof is ns
        tagname = 'GLOBAL_ID'//C_NULL_CHAR
        ierr = iMOAB_GetIntTagStorage ( mbxid, tagname, ns , ent_type, dof(1))
+       if (ierr .ne. 0) then
+         write(logunit,*) subname,' ERROR: cannot get dofs '
+         call shr_sys_abort(subname//'cannot get dofs ')
+       endif
 
        allocate(indx(ns))
        call IndexSet(ns, indx)
@@ -1711,8 +1716,16 @@ contains
              name1 = trim(lpre)//'_'//trim(field)
              rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
              !call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
-             tagname = trim(field)//C_NULL_CHAR
-             ierr = iMOAB_GetDoubleTagStorage (mbxid, tagname, ns , ent_type, data1(1))
+             if (present(matrix)) then
+               data1(:) = matrix(:, index_list) ! 
+             else
+               tagname = trim(field)//C_NULL_CHAR
+               ierr = iMOAB_GetDoubleTagStorage (mbxid, tagname, ns , ent_type, data1(1))
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' ERROR: cannot get tag data ', trim(tagname)
+                  call shr_sys_abort(subname//'cannot get tag data ')
+               endif
+             endif
              do ix=1,ns
                 data_reorder(ix) = data1(indx(ix)) ! 
              enddo
@@ -1730,6 +1743,7 @@ contains
 
 
   end subroutine seq_io_write_moab_tags
+
   !===============================================================================
   !BOP ===========================================================================
   !
