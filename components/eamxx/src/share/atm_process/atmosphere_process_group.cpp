@@ -304,7 +304,7 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
                      "for non-physics process \"" + atm_proc->name() + "\". "
                      "This check is column local and therefore can only be run "
                      "on physics processes.\n");
- 
+
     // Query the computed fields for this atm process and see if either the mass or energy computation
     // might be changed after the process has run. If no field used in the mass or energy calculate
     // is updated by this process, there is no need to run the check.
@@ -359,6 +359,25 @@ void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
           auto nan_check = std::make_shared<FieldNaNCheck>(*f.second,grid);
           proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);
         }
+      }
+    }
+  }
+}
+
+void AtmosphereProcessGroup::add_additional_data_fields_to_property_checks (const Field& data_field) {
+  for (auto proc : m_atm_processes) {
+    auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(proc);
+    if (group) {
+      group->add_additional_data_fields_to_property_checks(data_field);
+    } else {
+      for (auto& prop_check : proc->get_precondition_checks()) {
+        prop_check.second->set_additional_data_field(data_field);
+      }
+      for (auto& prop_check : proc->get_postcondition_checks()) {
+        prop_check.second->set_additional_data_field(data_field);
+      }
+      if (proc->has_column_conservation_check()) {
+        proc->get_column_conservation_check().second->set_additional_data_field(data_field);
       }
     }
   }

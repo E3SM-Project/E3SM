@@ -28,6 +28,10 @@ struct UnitWrap::UnitTest<D>::TestAdvanceIopForcing {
       AdvanceIopForcingData(27,     7,    0.1,  1000.0,   true,   true,   true, true),
       AdvanceIopForcingData(27,     7,    0.1,  1000.0,   true,   true,   true, false),
       AdvanceIopForcingData(27,     7,    0.1,  1000.0,   true,   true,  false, true),
+
+      AdvanceIopForcingData(32,     7,    0.1,  1000.0,   true,   true,   true, true),
+      AdvanceIopForcingData(32,     7,    0.1,  1000.0,   true,   true,   true, false),
+      AdvanceIopForcingData(32,     7,    0.1,  1000.0,   true,   true,  false, true),
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(AdvanceIopForcingData);
@@ -47,6 +51,9 @@ struct UnitWrap::UnitTest<D>::TestAdvanceIopForcing {
       AdvanceIopForcingData(f90_data[3]),
       AdvanceIopForcingData(f90_data[4]),
       AdvanceIopForcingData(f90_data[5]),
+      AdvanceIopForcingData(f90_data[6]),
+      AdvanceIopForcingData(f90_data[7]),
+      AdvanceIopForcingData(f90_data[8]),
     };
 
     // Assume all data is in C layout
