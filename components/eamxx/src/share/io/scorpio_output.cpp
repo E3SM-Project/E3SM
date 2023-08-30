@@ -469,6 +469,9 @@ run (const std::string& filename,
     }
 
     auto avg_type = m_avg_type;
+    auto track_avg_cnt = m_track_avg_cnt;
+    auto add_time_dim = m_add_time_dim;
+    auto fill_value = m_fill_value;
     // If the dev_view_1d is aliasing the field device view (must be Instant output),
     // then there's no point in copying from the field's view to dev_view
     if (not is_aliasing_field_view) {
@@ -481,8 +484,8 @@ run (const std::string& filename,
           auto avg_view_1d = view_Nd_dev<1>(data,dims[0]);
           auto avg_coeff_1d = view_Nd_dev<1>(avg_cnt_data,avg_cnt_dims[0]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-	    if (m_track_avg_cnt && m_add_time_dim) {
-              combine_and_fill(new_view_1d(i), avg_view_1d(i),avg_coeff_1d(i),avg_type,m_fill_value);
+	    if (track_avg_cnt && add_time_dim) {
+              combine_and_fill(new_view_1d(i), avg_view_1d(i),avg_coeff_1d(i),avg_type,fill_value);
 	    } else {
               combine(new_view_1d(i), avg_view_1d(i),avg_type);
 	    }
@@ -497,8 +500,8 @@ run (const std::string& filename,
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j;
             unflatten_idx(idx,extents,i,j);
-	    if (m_track_avg_cnt && m_add_time_dim) {
-              combine_and_fill(new_view_2d(i,j), avg_view_2d(i,j),avg_coeff_2d(i,j),avg_type,m_fill_value);
+	    if (track_avg_cnt && add_time_dim) {
+              combine_and_fill(new_view_2d(i,j), avg_view_2d(i,j),avg_coeff_2d(i,j),avg_type,fill_value);
 	    } else {
               combine(new_view_2d(i,j), avg_view_2d(i,j),avg_type);
 	    }
@@ -513,8 +516,8 @@ run (const std::string& filename,
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k;
             unflatten_idx(idx,extents,i,j,k);
-	    if (m_track_avg_cnt && m_add_time_dim) {
-              combine_and_fill(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_coeff_3d(i,j,k),avg_type,m_fill_value);
+	    if (track_avg_cnt && add_time_dim) {
+              combine_and_fill(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_coeff_3d(i,j,k),avg_type,fill_value);
 	    } else {
               combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_type);
 	    }
@@ -529,8 +532,8 @@ run (const std::string& filename,
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k,l;
             unflatten_idx(idx,extents,i,j,k,l);
-	    if (m_track_avg_cnt && m_add_time_dim) {
-              combine_and_fill(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_coeff_4d(i,j,k,l),avg_type,m_fill_value);
+	    if (track_avg_cnt && add_time_dim) {
+              combine_and_fill(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_coeff_4d(i,j,k,l),avg_type,fill_value);
 	    } else {
               combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_type);
 	    }
@@ -545,8 +548,8 @@ run (const std::string& filename,
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k,l,m;
             unflatten_idx(idx,extents,i,j,k,l,m);
-	    if (m_track_avg_cnt && m_add_time_dim) {
-              combine_and_fill(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_coeff_5d(i,j,k,l,m),avg_type,m_fill_value);
+	    if (track_avg_cnt && add_time_dim) {
+              combine_and_fill(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_coeff_5d(i,j,k,l,m),avg_type,fill_value);
 	    } else {
               combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_type);
 	    }
@@ -561,8 +564,8 @@ run (const std::string& filename,
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
             int i,j,k,l,m,n;
             unflatten_idx(idx,extents,i,j,k,l,m,n);
-	    if (m_track_avg_cnt && m_add_time_dim) {
-              combine_and_fill(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n), avg_coeff_6d(i,j,k,l,m,n),avg_type,m_fill_value);
+	    if (track_avg_cnt && add_time_dim) {
+              combine_and_fill(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n), avg_coeff_6d(i,j,k,l,m,n),avg_type,fill_value);
 	    } else {
               combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),avg_type);
 	    }
