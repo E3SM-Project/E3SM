@@ -34,6 +34,9 @@
 #ifdef EAMXX_HAS_TMS
 #include "physics/tms/eamxx_tms_process_interface.hpp"
 #endif
+#ifdef EAMXX_HAS_ML_CORRECTION
+#include "physics/ml_correction/eamxx_ml_correction_process_interface.hpp"
+#endif
 
 namespace scream {
 
@@ -66,6 +69,9 @@ inline void register_physics () {
 #endif
 #ifdef EAMXX_HAS_TMS
   proc_factory.register_product("tms",&create_atmosphere_process<TurbulentMountainStress>);
+#endif
+#ifdef EAMXX_HAS_ML_CORRECTION
+  proc_factory.register_product("MLCorrection",&create_atmosphere_process<MLCorrection>);
 #endif
 }
 
