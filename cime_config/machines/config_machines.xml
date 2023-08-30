@@ -3780,30 +3780,31 @@
         <command name="unload">PrgEnv-aocc</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
+        <command name="unload">cce</command>
       </modules>
 
       <modules compiler="gnu">
-        <command name="load">PrgEnv-gnu/8.3.3</command>
-        <command name="load">gcc/12.1.0</command>
+        <command name="load">PrgEnv-gnu/8.4.0</command>
+        <command name="load">gcc/12.2.0</command>
       </modules>
 
       <modules compiler="nvidia">
-        <command name="load">PrgEnv-nvidia/8.3.3</command>
-        <command name="load">nvidia/22.3</command>
+        <command name="load">PrgEnv-nvidia/8.4.0</command>
+        <command name="load">nvidia/22.7</command>
       </modules>
 
       <modules compiler="intel">
-        <command name="load">PrgEnv-intel/8.3.3</command>
-        <command name="load">intel-classic/2022.2.1</command>
+        <command name="load">PrgEnv-intel/8.4.0</command>
+        <command name="load">intel-classic/2023.2.0</command>
       </modules>
 
       <modules compiler="aocc">
-        <command name="load">PrgEnv-aocc</command>
+        <command name="load">PrgEnv-aocc/8.4.0</command>
         <command name="load">aocc/3.2.0</command>
       </modules>
 
       <modules compiler="amdclang">
-        <command name="load">PrgEnv-aocc</command>
+        <command name="load">PrgEnv-aocc/8.4.0</command>
         <command name="load">aocc/3.2.0</command>
       </modules>
 
@@ -3811,12 +3812,12 @@
         <command name="load">craype-accel-host</command>
         <command name="load">cray-libsci</command>
         <command name="load">craype</command>
-        <command name="load">cray-mpich/8.1.21</command>
-        <command name="load">libfabric/1.15.0.0</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.1</command>
-        <command name="load">cmake/3.20.3</command>
+        <command name="load">cray-mpich/8.1.26</command>
+        <command name="load">libfabric/1.15.2.0</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.3</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.3</command>
+        <command name="load">cmake/3.22.3</command>
       </modules>
     </module_system>
 
