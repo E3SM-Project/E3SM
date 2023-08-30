@@ -397,19 +397,19 @@ run (const std::string& filename,
     // stream.
     // We cycle through all fields and mark points that are filled/masked in the local views.  First
     // initialize them to 1 representing unfilled.
-    for (const auto name : m_avg_cnt_names) {
+    for (const auto& name : m_avg_cnt_names) {
       auto& dev_view = m_local_tmp_avg_cnt_views_1d.at(name);
       Kokkos::deep_copy(dev_view,1.0);
     }
     // Now we cycle through all the fields
-    for (const auto name : m_fields_names) {
+    for (const auto& name : m_fields_names) {
       auto field    = get_field(name,"io");
       auto lookup   = m_field_to_avg_cnt_map.at(name);
       auto dev_view = m_local_tmp_avg_cnt_views_1d.at(lookup);
       update_avg_cnt_view(field,dev_view);
     }
     // Finally, we update the overall avg_cnt_views
-    for (const auto name : m_avg_cnt_names) {
+    for (const auto& name : m_avg_cnt_names) {
       auto track_view = m_dev_views_1d.at(name);
       auto local_view = m_local_tmp_avg_cnt_views_1d.at(name);
       const auto layout = m_layouts.at(name);
@@ -608,7 +608,7 @@ run (const std::string& filename,
   }
   // Handle writing the average count variables to file
   if (is_write_step) {
-    for (const auto name : m_avg_cnt_names) {
+    for (const auto& name : m_avg_cnt_names) {
       auto& view_dev = m_dev_views_1d.at(name);
       // Bring data to host
       auto view_host = m_host_views_1d.at(name);
