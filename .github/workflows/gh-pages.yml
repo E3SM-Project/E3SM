@@ -51,7 +51,7 @@ jobs:
         run: |
           mkdocs build --strict --verbose
 
-      # only deploy when there is a push to master
+      # only deploy to the main github page when there is a push to master
       - if: ${{ github.event_name == 'push' }}
         name: GitHub Pages action
         uses: peaceiris/actions-gh-pages@v3.9.3
@@ -59,3 +59,10 @@ jobs:
           # information about GITHUB_TOKEN are in settings
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./components/eamxx/site
+
+      # If it's a PR, deploy to a preview page
+      - if: ${{ github.event_name == 'pull_request' }}
+        name: Preview docs
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: components/eamxx/site/
