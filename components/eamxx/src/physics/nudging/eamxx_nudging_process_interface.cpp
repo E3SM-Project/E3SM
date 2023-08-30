@@ -153,7 +153,7 @@ void Nudging::run_impl (const double dt)
     auto ext_state_field = get_helper_field(name+"_ext").get_view<mPack**>();
     auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
     auto int_state_view  = int_state_field.get_view<mPack**>();
-    view_Nd<mMask,2> int_mask_view("",m_num_cols,m_num_levs); // Track mask of interpolated values
+    auto int_mask_view = m_buffer.int_mask_view;
     const view_Nd<mPack,2> ext_state_view(reinterpret_cast<mPack*>(ext_state_field.data()),
                                           m_num_cols,m_num_src_levs);
     // Masked values in the source data can lead to strange behavior in the vertical interpolation.
@@ -306,6 +306,24 @@ void Nudging::create_helper_field (const std::string& name,
   f.deep_copy(ekat::ScalarTraits<Real>::invalid());
 
   m_helper_fields[name] = f;
+}
+
+// =========================================================================================
+size_t Nudging::requested_buffer_size_in_bytes() const {
+  return m_buffer.num_2d_midpoint_mask_views*m_num_cols*m_num_levs*sizeof(mMask);
+}
+
+// =========================================================================================
+void Nudging::init_buffers(const ATMBufferManager& buffer_manager) {
+  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
+                   "Error, Nudging::init_buffers! Buffers size not sufficient.\n");
+  mMask* mem = reinterpret_cast<mMask*>(buffer_manager.get_memory());
+
+  m_buffer.int_mask_view = decltype(m_buffer.int_mask_view)(mem,m_num_cols,m_num_levs);
+  mem += m_buffer.int_mask_view.size();
+
+  size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
+  EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error: Nudging::init_buffers! Used memory != requested memory.");
 }
 
 } // namespace scream

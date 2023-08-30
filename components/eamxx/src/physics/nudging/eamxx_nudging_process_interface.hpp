@@ -42,6 +42,8 @@ public:
   template <typename S>
   using view_2d = typename KT::template view_2d<S>;
 
+  using uview_2d_mask  = Unmanaged<view_2d<mMask>>;
+
   template <typename S, int N>
   using view_Nd_host = typename KT::template view_ND<S,N>::HostMirror;
 
@@ -63,6 +65,15 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
+  // Structure for storing local variables initialized using the ATMBufferManager
+  struct Buffer {
+    // 2D view
+    uview_2d_mask int_mask_view;
+    
+    // Total number of 2d views
+    static constexpr int num_2d_midpoint_mask_views = 1;
+  };
+
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
@@ -75,6 +86,13 @@ protected:
   // The two other main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
   void finalize_impl   ();
+
+  // Computes total number of bytes needed for local variables
+  size_t requested_buffer_size_in_bytes() const;
+
+  // Set local variables using memory provided by
+  // the ATMBufferManager
+  void init_buffers(const ATMBufferManager &buffer_manager);
 
   // Creates an helper field, not to be shared with the AD's FieldManager
   void create_helper_field (const std::string& name,
@@ -105,6 +123,8 @@ protected:
   std::vector<std::string> m_fields_nudge;
 
   util::TimeInterpolation m_time_interp;
+
+  Buffer m_buffer;
 }; // class Nudging
 
 } // namespace scream
