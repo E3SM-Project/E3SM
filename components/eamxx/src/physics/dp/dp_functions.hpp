@@ -166,8 +166,8 @@ struct Functions
     const Scalar& ps_in,               // surface pressure [Pa]
     const uview_1d<const Spack>& t_in, // temperature [K]
     const uview_1d<const Spack>& q_in, // water vapor mixing ratio [kg/kg]
-    const uview_1d<const Spack>& tobs, // actual temperature [K]
-    const uview_1d<const Spack>& qobs, // actual vapor mixing ratio [kg/kg]
+    const uview_1d<const Spack>& tobs, // observed temperature [K]
+    const uview_1d<const Spack>& qobs, // observed vapor mixing ratio [kg/kg]
     const uview_1d<const Spack>& hyai, // ps0 component of hybrid coordinate - interfaces
     const uview_1d<const Spack>& hyam, // ps0 component of hybrid coordinate - midpoints
     const uview_1d<const Spack>& hybi, // ps component of hybrid coordinate - interfaces
