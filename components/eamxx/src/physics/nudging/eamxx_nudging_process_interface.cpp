@@ -11,15 +11,13 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_datafiles  = m_params.get<std::vector<std::string>>("nudging_filename");
   m_timescale = m_params.get<int>("nudging_timescale",0);
   m_fields_nudge = m_params.get<std::vector<std::string>>("nudging_fields");
-  auto src_pres_type = m_params.get<std::string>("source_pressure_type","TIME_DEPENDENT");
-  if (src_pres_type=="TIME_DEPENDENT") {
-    m_src_pres_type = TIME_DEPENDENT;
-  } else if (src_pres_type=="SINGLE_VERTICAL_PROFILE") {
-    m_src_pres_type = SINGLE_VERTICAL_PROFILE;
-  } else if (src_pres_type=="HORIZ_VARING") {
-    m_src_pres_type = HORIZ_VARYING;
+  auto src_pres_type = m_params.get<std::string>("source_pressure_type","TIME_DEPENDENT_3D_PROFILE");
+  if (src_pres_type=="TIME_DEPENDENT_3D_PROFILE") {
+    m_src_pres_type = TIME_DEPENDENT_3D_PROFILE;
+  } else if (src_pres_type=="STATIC_1D_VERTICAL_PROFILE") {
+    m_src_pres_type = STATIC_1D_VERTICAL_PROFILE;
   } else {
-    EKAT_ERROR_MSG("ERROR! Nudging::parameter_list - unsupported source_pressure_type provided.  Current options are [TIME_DEPENDENT,SINGLE_VERTICAL_PROFILE, HORIZ_VARYING].  Please check");
+    EKAT_ERROR_MSG("ERROR! Nudging::parameter_list - unsupported source_pressure_type provided.  Current options are [TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE].  Please check");
   }
   // TODO: Add some warning messages here.
   // 1. if m_timescale is <= 0 we will do direct replacement.
@@ -89,32 +87,23 @@ void Nudging::initialize_impl (const RunType /* run_type */)
 
   constexpr int ps = 1;  // TODO: I think this could be the regular packsize, right?
   const auto& grid_name = m_grid->name();
-  if (m_src_pres_type == TIME_DEPENDENT) {
+  if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
     create_helper_field("p_mid_ext", scalar3d_layout_mid, grid_name, ps);
     auto pmid_ext = get_helper_field("p_mid_ext");
     m_time_interp.add_field(pmid_ext.alias("p_mid"),true);
-  } else if (m_src_pres_type == SINGLE_VERTICAL_PROFILE || m_src_pres_type == HORIZ_VARYING) {
+  } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
     // Load p_lev from source data file
     ekat::ParameterList in_params;
     in_params.set("Filename",m_datafiles[0]);
     in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
     std::map<std::string,view_1d_host<Real>> host_views;
     std::map<std::string,FieldLayout>  layouts;
-    if (m_src_pres_type == SINGLE_VERTICAL_PROFILE) {
-      create_helper_field("p_mid_ext", scalar2d_layout_mid, grid_name, ps);
-      auto pmid_ext = get_helper_field("p_mid_ext");
-      auto pmid_ext_v = pmid_ext.get_view<Real*,Host>();
-      in_params.set<std::vector<std::string>>("Field Names",{"p_lev"});
-      host_views["p_lev"] = pmid_ext_v;
-      layouts.emplace("p_lev",scalar2d_layout_mid);
-    } else {
-      create_helper_field("p_mid_ext", scalar3d_layout_mid, grid_name, ps);
-      auto pmid_ext = get_helper_field("p_mid_ext");
-      auto pmid_ext_v = pmid_ext.get_view<Real**,Host>();
-      in_params.set<std::vector<std::string>>("Field Names",{"p_mid"});
-      host_views["p_mid"] = view_1d_host<Real>(pmid_ext_v.data(),pmid_ext_v.size());
-      layouts.emplace("p_lev",scalar3d_layout_mid);
-    }
+    create_helper_field("p_mid_ext", scalar2d_layout_mid, grid_name, ps);
+    auto pmid_ext = get_helper_field("p_mid_ext");
+    auto pmid_ext_v = pmid_ext.get_view<Real*,Host>();
+    in_params.set<std::vector<std::string>>("Field Names",{"p_lev"});
+    host_views["p_lev"] = pmid_ext_v;
+    layouts.emplace("p_lev",scalar2d_layout_mid);
     AtmosphereInput src_input(in_params,grid_ext,host_views,layouts);
     src_input.read_variables(-1);
     src_input.finalize();
@@ -151,11 +140,11 @@ void Nudging::run_impl (const double dt)
   const auto& p_mid_v     = get_field_in("p_mid").get_view<const mPack**>();
   view_Nd<mPack,2> p_mid_ext_p;
   view_Nd<mPack,1> p_mid_ext_1d;
-  if (m_src_pres_type == TIME_DEPENDENT || m_src_pres_type == HORIZ_VARYING) {
+  if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
     const auto& p_mid_ext   = get_helper_field("p_mid_ext").get_view<mPack**>();
     p_mid_ext_p = view_Nd<mPack,2>(reinterpret_cast<mPack*>(p_mid_ext.data()),
   				     m_num_cols,m_num_src_levs);
-  } else if (m_src_pres_type == SINGLE_VERTICAL_PROFILE) {
+  } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
     p_mid_ext_1d   = get_helper_field("p_mid_ext").get_view<mPack*>();
   }
   for (auto name : m_fields_nudge) {
@@ -216,7 +205,7 @@ void Nudging::run_impl (const double dt)
 
 
     // Vertical Interpolation onto atmosphere state pressure levels
-    if (m_src_pres_type == TIME_DEPENDENT || m_src_pres_type == HORIZ_VARYING) {
+    if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
       perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
                                                p_mid_v,
                                                ext_state_view,
@@ -224,7 +213,7 @@ void Nudging::run_impl (const double dt)
                                                int_mask_view,
                                                m_num_src_levs,
                                                m_num_levs);
-    } else if (m_src_pres_type == SINGLE_VERTICAL_PROFILE) {
+    } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
       perform_vertical_interpolation<Real,1,2>(p_mid_ext_1d,
                                                p_mid_v,
                                                ext_state_view,
