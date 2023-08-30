@@ -124,7 +124,7 @@
         <command name="load">cray-netcdf-hdf5parallel/4.8.1.3</command>
         <command name="load">cray-parallel-netcdf/1.12.2.3</command>
       </modules>
-    </module_system>    
+    </module_system>
 
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -2145,7 +2145,7 @@
       <executable>srun</executable>
       <arguments>
         <arg name="num_tasks">--mpi=pmi2 -l -n {{ total_tasks }} -N {{ num_nodes }} --kill-on-bad-exit </arg>
-        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>	
+        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
         <arg name="thread_count">-c $SHELL{echo 128/ {{ tasks_per_node }} |bc}</arg>
         <arg name="placement">-m plane={{ tasks_per_node }}</arg>
       </arguments>
@@ -2831,7 +2831,7 @@
       <env name="SYCL_CACHE_PERSISTENT">0</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="GATOR_DISABLE">0</env>
-    </environment_variables>    
+    </environment_variables>
     <environment_variables compiler="oneapi-ifx">
       <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
       <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
@@ -3267,7 +3267,7 @@
     <BASELINE_ROOT>/compyfs/e3sm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/compyfs/e3sm_baselines/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
-    <TESTS>e3sm_integration</TESTS>	  
+    <TESTS>e3sm_integration</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>bibi.mathew -at- pnnl.gov</SUPPORTED_BY>
@@ -3325,7 +3325,7 @@
       </modules>
       <modules mpilib="impi" compiler="pgi">
 	<command name="load">intelmpi/2019u3</command>
-      </modules>      
+      </modules>
       <modules>
         <command name="load">netcdf/4.6.3</command>
         <command name="load">pnetcdf/1.9.0</command>
@@ -3387,7 +3387,7 @@
     <BASELINE_ROOT>/tahoma/emsls60153/e3sm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/tahoma/emsls60153/e3sm_baselines/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
-    <TESTS>e3sm_integration</TESTS>	  
+    <TESTS>e3sm_integration</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
@@ -4044,7 +4044,7 @@
       <arguments>
         <arg name="num_tasks">-np {{ total_tasks }}</arg>
       </arguments>
-      
+
     </mpirun>
     <module_system type="module">
       <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
@@ -4096,7 +4096,7 @@
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
     </environment_variables>
   </machine>
-  
+
   <machine MACH="lobata">
     <DESC>FATES development machine at LBNL, System76 Thelio Massive Workstation Pop!_OS 20.04</DESC>
     <NODENAME_REGEX>lobata</NODENAME_REGEX>
@@ -4171,7 +4171,7 @@
       </arguments>
     </mpirun>
     <module_system type="none"/>
-    <environment_variables compiler="gnu" > 
+    <environment_variables compiler="gnu" >
       <env name="CMAKE_ROOT">/usr/local/share/cmake-3.21/</env>
       <env name="NETCDF_PATH">$ENV{NETCDF_HOME}</env>
     </environment_variables>
@@ -4539,7 +4539,7 @@
               <command name="load">libxml2/2.9.2</command>
               <command name="load">maui/3.3.1</command>
               <command name="load">python/2.7.15</command>
-              <command name="load">python/3.6.2</command> 
+              <command name="load">python/3.6.2</command>
           </modules>
           <modules compiler="gnu">
               <command name="load">gcc/5.4.0</command>
@@ -4865,9 +4865,9 @@
         <command name="find">--loaded</command>
       </modules>
     </module_system>
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR> 
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE> 
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="PERL5LIB">/data/hp210190/soft/perl5/lib/perl5:/home/hp210190/u02380/perl5/lib/perl5</env>
