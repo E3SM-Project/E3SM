@@ -2064,9 +2064,11 @@ contains
                       pin(:,k) = file%levs(k)
                    enddo
                    !!Currently designed for linoz_v2/v3 use
-		   do k = 1,file%nilev
-                      pint(:,k) = file%ilevs(k)
-                   enddo
+                   if (file%linoz_v3 .or. file%linoz_v2) then
+                      do k = 1,file%nilev
+                         pint(:,k) = file%ilevs(k)
+                      enddo
+                   endif
                 endif
              endif
 
