@@ -432,6 +432,14 @@ contains
 
     flds_loop: do f = 1,mxnflds
 
+       ! initialize the coordinate values to -1,
+       ! to defend against fields that do not have certain dimension, e.g., zonal average surface fields
+       ! and check against it when assigning value to cnt3 for that dimension
+
+       do did = 1,4
+          flds(f)%coords(did) = -1
+       end do
+
        ! get netcdf variable id for the field
        ierr = pio_inq_varid( file%curr_fileid, flds(f)%srcnam, flds(f)%var_id )
 
@@ -1268,7 +1276,8 @@ contains
           if ( file%zonal_ave ) then
              cnt3(flds(f)%coords(ZA_LATDIM)) = file%nlat
              if (flds(f)%srf_fld) then
-                cnt3(flds(f)%coords(ZA_LEVDIM)) = 1
+                ! Defend against zonal mean surface fields that do not set the value via dimension match
+                if (flds(f)%coords(ZA_LEVDIM) .gt. 0) cnt3(flds(f)%coords(ZA_LEVDIM)) = 1
              else
                 cnt3(flds(f)%coords(ZA_LEVDIM)) = file%nlev
              endif
@@ -1756,6 +1765,7 @@ contains
     !!
     real(r8), allocatable, target :: wrk(:)
     real(r8), pointer :: wrk_in(:)
+    real(r8) :: wrk_out(pcols)
     type(interp_type) :: lat_wgts
     real(r8) :: to_lats(pcols), to_lons(pcols)
     integer :: c, k, ierr, ncols
@@ -1789,8 +1799,8 @@ contains
            call get_rlat_all_p(c, pcols, to_lats)
            call lininterp_init(file%lats, file%nlat, to_lats, ncols, 1, lat_wgts)
            do k=1,1
-           call lininterp(wrk_in(:), file%nlat, wrk(1:ncols), ncols, lat_wgts)
-           loc_arr(1:ncols,k,c-begchunk+1) = wrk(1:ncols)
+           call lininterp(wrk_in(:), file%nlat, wrk_out(1:ncols), ncols, lat_wgts)
+           loc_arr(1:ncols,k,c-begchunk+1) = wrk_out(1:ncols)
            end do
            call lininterp_finish(lat_wgts)
         end do
