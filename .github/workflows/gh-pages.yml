@@ -10,19 +10,23 @@ on:
   # Runs every time a PR is open against master
   pull_request:
     branches: [ master ]
+
   workflow_dispatch:
 
 jobs:
 
-  emaxx-docs:
+  eamxx-docs:
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out the repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # Needed, or else gh-pages won't be fetched, and push rejected
-          submodules: recursive
+          # TODO: git rid of dependency on CIME
+          # TODO: another option to investigate is a sparse checkout. 
+          # In the scream repo, all other components do not need to be checked out. 
+          # And even in the upstream, we mainly need only components/xyz/docs (and a few more places).
+          submodules: true
   
       - name: Show action trigger
         run: |
@@ -49,7 +53,9 @@ jobs:
 
       # only deploy when there is a push to master
       - if: ${{ github.event_name == 'push' }}
-        name: Deploy docs
-        working-directory: components/eamxx
-        run: |
-          mkdocs gh-deploy --verbose
+        name: GitHub Pages action
+        uses: peaceiris/actions-gh-pages@v3.9.3
+        with:
+          # information about GITHUB_TOKEN are in settings
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./components/eamxx/site
