@@ -654,7 +654,7 @@
       <value  stream="topo.cplhist">$DATM_CPLHIST_CASE.cpl.ha2x3h.%ym.nc</value>
       <value  stream="E3SMWCv2Forcing.Solar">v2.LR.piControl_land.cpl.ha2x3h.%ym.nc</value>
       <value  stream="E3SMWCv2Forcing.nonSolarFlux">v2.LR.piControl_land.cpl.ha2x3h.%ym.nc</value>
-      <value  stream="E3SMWCv2Forcing.State3hr">v2.LR.piControl_0101_land.cpl.ha2x3h.%ym.nc</value>
+      <value  stream="E3SMWCv2Forcing.State3hr">v2.LR.piControl_land.cpl.ha2x3h.%ym.nc</value>
       <value  stream="E3SMWCv2Forcing.State1hr">v2.LR.piControl_land.cpl.ha2x3h.%ym.nc</value>
       <value  stream="presaero.e3smwcv2">aerosoldep_monthly_1850_mean_1.9x2.5_c090421.nc</value>
       <value  stream="topo.e3smwcv2">v2.LR.piControl_land.cpl.ha2x3h.0476-01.nc</value>
