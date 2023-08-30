@@ -75,7 +75,12 @@ module prep_rof_mod
   public :: prep_rof_get_mapper_Fa2r
 
   public :: prep_rof_get_sharedFieldsOcnRof
+  public :: prep_rof_get_o2racc_om ! return a pointer to private array !!! 
   public :: prep_rof_get_o2racc_om_cnt
+
+  public :: prep_rof_get_l2racc_lm_cnt
+  public :: prep_rof_get_l2racc_lm
+  public :: prep_rof_get_sharedFieldsLndRof
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
@@ -107,7 +112,7 @@ module prep_rof_mod
 
   ! accumulation variables over moab fields 
   character(CXX)                        :: sharedFieldsLndRof ! used in moab to define l2racc_lm
-  real (kind=r8) , allocatable, private :: l2racc_lm(:,:)   ! lnd export, lnd grid, cpl pes
+  real (kind=r8) , allocatable, private, target :: l2racc_lm(:,:)   ! lnd export, lnd grid, cpl pes
   real (kind=r8) , allocatable, private :: l2x_lm2(:,:)  ! basically l2x_lm, but in another copy, on rof module
   integer        , target  :: l2racc_lm_cnt  ! l2racc_lm: number of time samples accumulated
   integer :: nfields_sh_lr ! number of fields in sharedFieldsLndRof
@@ -121,7 +126,7 @@ module prep_rof_mod
   integer :: lsize_am ! size of atm in moab, local
 
   character(CXX)       :: sharedFieldsOcnRof ! used in moab to define o2racc_om
-  real (kind=r8) , allocatable, private ::  o2racc_om(:,:)   ! ocn export, ocn grid, cpl pes
+  real (kind=r8) , allocatable, private, target ::  o2racc_om(:,:)   ! ocn export, ocn grid, cpl pes
   real (kind=r8) , allocatable, private :: o2r_om2(:,:)  ! basically o2x_om, but in another copy, on rof module, only shared with rof
   integer        , target  :: o2racc_om_cnt  ! o2racc_om: number of time samples accumulated
   integer :: nfields_sh_or ! number of fields in sharedFieldsOcnRof
@@ -1940,14 +1945,37 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
   end function prep_rof_get_mapper_Sa2r
 
  ! moab 
+ ! for ocean
   function prep_rof_get_o2racc_om_cnt()
     integer, pointer :: prep_rof_get_o2racc_om_cnt
     prep_rof_get_o2racc_om_cnt => o2racc_om_cnt
   end function prep_rof_get_o2racc_om_cnt
 
+  function prep_rof_get_o2racc_om()
+   real(r8), DIMENSION(:, :), pointer :: prep_rof_get_o2racc_om
+   prep_rof_get_o2racc_om => o2racc_om
+  end function prep_rof_get_o2racc_om
+
   function prep_rof_get_sharedFieldsOcnRof()
      character(CXX) :: prep_rof_get_sharedFieldsOcnRof
      prep_rof_get_sharedFieldsOcnRof = sharedFieldsOcnRof
   end function prep_rof_get_sharedFieldsOcnRof
+ 
+  ! for land
+  function prep_rof_get_l2racc_lm_cnt()
+    integer, pointer :: prep_rof_get_l2racc_lm_cnt
+    prep_rof_get_l2racc_lm_cnt => l2racc_lm_cnt
+  end function prep_rof_get_l2racc_lm_cnt
+
+  function prep_rof_get_l2racc_lm()
+    real(r8), DIMENSION(:, :), pointer :: prep_rof_get_l2racc_lm
+    prep_rof_get_l2racc_lm => l2racc_lm
+  end function prep_rof_get_l2racc_lm
+
+  function prep_rof_get_sharedFieldsLndRof()
+     character(CXX) :: prep_rof_get_sharedFieldsLndRof
+     prep_rof_get_sharedFieldsLndRof = sharedFieldsLndRof
+  end function prep_rof_get_sharedFieldsLndRof
+
 
 end module prep_rof_mod

@@ -76,6 +76,11 @@ module seq_rest_mod
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_r2x_fields
 
   use prep_ocn_mod, only: prep_ocn_get_x2oacc_om
+  use prep_rof_mod, only: prep_rof_get_o2racc_om ! return a pointer to a moab matrix
+
+  use prep_rof_mod, only: prep_rof_get_l2racc_lm_cnt
+  use prep_rof_mod, only: prep_rof_get_l2racc_lm
+  use prep_rof_mod, only: prep_rof_get_sharedFieldsLndRof
   implicit none
 
   private
@@ -690,7 +695,7 @@ contains
     type (component_type)  , intent(inout) :: iac(:)
 
     character(len=*)       , intent(in)    :: tag
-    logical        ,         intent(in)    :: samegrid_al ! needed for 
+    logical        ,         intent(in)    :: samegrid_al ! needed for land nx
     character(len=CL)      , intent(out)   :: rest_file         ! Restart filename
 
 
@@ -716,10 +721,14 @@ contains
     character(CXX) :: tagname
     integer (in), pointer   :: o2racc_om_cnt ! replacement, moab version for o2racc_ox_cnt
     integer (in), pointer   :: x2oacc_om_cnt ! replacement, moab version for x2oacc_ox_cnt
+
+    integer (in), pointer   :: l2racc_lm_cnt
     integer (in)   :: nx_lnd ! will be used if land and atm are on same grid
     integer (in)   ::  ierr, dummy
 
     real(r8), dimension(:,:), pointer  :: p_x2oacc_om
+    real(r8), dimension(:,:), pointer  :: p_o2racc_om
+    real(r8), dimension(:,:), pointer  :: p_l2racc_lm
     character(len=*),parameter :: subname = "(seq_rest_mb_write) "
 
     !-------------------------------------------------------------------------------
@@ -905,7 +914,21 @@ contains
 !              call seq_io_write(rest_file, gsmap, fractions_lx, 'fractions_lx', &
 !                   whead=whead, wdata=wdata)
           endif
-!           if (lnd_present .and. rof_prognostic) then
+          if (lnd_present .and. rof_prognostic) then
+             tagname = prep_rof_get_sharedFieldsLndRof()
+             l2racc_lm_cnt => prep_rof_get_l2racc_lm_cnt()
+             p_l2racc_lm => prep_rof_get_l2racc_lm()
+             if(samegrid_al) then
+                ! nx for land will be from global nb atmosphere
+                ierr = iMOAB_GetGlobalInfo(mbaxid, dummy, nx_lnd) ! max id for land will come from atm
+                call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
+                 trim(tagname), &
+                 whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=nx_lnd) 
+             else
+                call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
+                 trim(tagname), &
+                 whead=whead, wdata=wdata, matrix = p_l2racc_lm )
+             endif
 !              gsmap         => component_get_gsmap_cx(lnd(1))
 !              l2racc_lx     => prep_rof_get_l2racc_lx()
 !              l2racc_lx_cnt =>  prep_rof_get_l2racc_lx_cnt()
@@ -913,13 +936,14 @@ contains
 !                   whead=whead, wdata=wdata)
 !              call seq_io_write(rest_file, l2racc_lx_cnt, 'l2racc_lx_cnt', &
 !                   whead=whead, wdata=wdata)
-!           end if
+          end if
           if (ocn_present .and. rofocn_prognostic) then
              tagname = prep_rof_get_sharedFieldsOcnRof()
              o2racc_om_cnt => prep_rof_get_o2racc_om_cnt()
+             p_o2racc_om => prep_rof_get_o2racc_om()
              call seq_io_write(rest_file, mboxid, 'o2racc_om', &
                  trim(tagname), &
-                 whead=whead, wdata=wdata)
+                 whead=whead, wdata=wdata, matrix = p_o2racc_om )
              call seq_io_write(rest_file, o2racc_om_cnt, 'o2racc_om_cnt', &
                   whead=whead, wdata=wdata)
 !              o2racc_ox     => prep_rof_get_o2racc_ox()
