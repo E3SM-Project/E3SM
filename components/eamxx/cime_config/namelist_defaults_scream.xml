@@ -214,6 +214,12 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
 
+    <!-- ML correction -->
+    <mlcorrection inherit="atm_proc_base">
+      <ML_model_path type="string">NONE</ML_model_path>
+      <ML_output_fields type="array(string)">NONE</ML_output_fields>
+    </mlcorrection>
+
     <!-- For internal testing only -->
     <testOnly inherit="atm_proc_base"/>
 
@@ -408,6 +414,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <energy_column_conservation_error_tolerance>1e-14</energy_column_conservation_error_tolerance>
     <column_conservation_checks_fail_handling_type>Warning</column_conservation_checks_fail_handling_type>
     <check_all_computed_fields_for_nans type="logical">true</check_all_computed_fields_for_nans >
+    <property_check_data_fields type="array(string)" doc="list of additional data fields to output in property checks (only for physics grid)">phis,landfrac</property_check_data_fields>
   </driver_options>
 
   <!-- E3SM Simulation Settings -->

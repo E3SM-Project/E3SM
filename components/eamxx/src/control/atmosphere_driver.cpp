@@ -414,6 +414,24 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   m_atm_process_group->setup_column_conservation_checks(conservation_check, fail_handling_type);
 }
 
+void AtmosphereDriver::add_additional_column_data_to_property_checks () {
+  // Get list of additional data fields from driver_options parameters.
+  // If no fields given, return.
+  using vos_t = std::vector<std::string>;
+  auto additional_data_fields = m_atm_params.sublist("driver_options").get<vos_t>("property_check_data_fields",
+                                                                                  {"NONE"});
+  if (additional_data_fields == vos_t{"NONE"}) return;
+
+  // Add requested fields to property checks
+  auto phys_field_mgr = m_field_mgrs[m_grids_manager->get_grid("Physics")->name()];
+  for (auto fname : additional_data_fields) {
+    EKAT_REQUIRE_MSG(phys_field_mgr->has_field(fname), "Error! The field "+fname+" is requested for property check output "
+                                                       "but does not exist in the physics field manager.\n");
+    
+    m_atm_process_group->add_additional_data_fields_to_property_checks(phys_field_mgr->get_field(fname));
+  }
+}
+
 void AtmosphereDriver::create_fields()
 {
   m_atm_logger->info("[EAMxx] create_fields ...");
@@ -1305,6 +1323,9 @@ void AtmosphereDriver::initialize_atm_procs ()
   if (m_atm_params.sublist("driver_options").get("check_all_computed_fields_for_nans",true)) {
     m_atm_process_group->add_postcondition_nan_checks();
   }
+
+  // Add additional column data fields to pre/postcondition checks (if they exist)
+  add_additional_column_data_to_property_checks();
 
   if (fvphyshack) {
     // [CGLL ICs in pg2] See related notes in atmosphere_dynamics.cpp.

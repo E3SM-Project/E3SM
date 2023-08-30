@@ -97,6 +97,10 @@ public:
   // and pass to m_atm_process_group.
   void setup_column_conservation_checks ();
 
+  // Add column data to all pre/postcondition property checks
+  // for use in output.
+  void add_additional_column_data_to_property_checks ();
+
   void set_provenance_data (std::string caseid = "",
                             std::string hostname = "",
                             std::string username = "");
