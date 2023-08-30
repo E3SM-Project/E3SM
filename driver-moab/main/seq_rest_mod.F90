@@ -92,6 +92,7 @@ module seq_rest_mod
   ! !PUBLIC MEMBER FUNCTIONS
 
   public :: seq_rest_read   ! read  cpl7 restart data
+  public :: seq_rest_mb_read   ! read  cpl7 restart data
   public :: seq_rest_write  ! write cpl7 restart data
   public :: seq_rest_mb_write ! read  cpl7_moab restart data
 
@@ -356,6 +357,190 @@ contains
     endif
 
   end subroutine seq_rest_read
+
+subroutine seq_rest_mb_read(rest_file, infodata)
+
+    use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
+    
+    implicit none
+
+    character(*)           , intent(in) :: rest_file  ! restart file path/name
+    type(seq_infodata_type), intent(in) :: infodata
+
+    integer(IN)          :: n,n1,n2,n3
+    real(r8),allocatable :: ds(:)         ! for reshaping diag data for restart file
+    real(r8),allocatable :: ns(:)         ! for reshaping diag data for restart file
+    character(len=*), parameter :: subname = "(seq_rest_mb_read) "
+    
+    character(CXX)        :: moab_rest_file
+    !-------------------------------------------------------------------------------
+    !
+    !-------------------------------------------------------------------------------
+    ! actual moab name is
+    moab_rest_file = 'moab_'//trim(rest_file)
+    !----------------------------------------------------------------------------
+    ! get required infodata
+    !----------------------------------------------------------------------------
+    iamin_CPLID  = seq_comm_iamin(CPLID)
+
+    call seq_comm_getdata(GLOID,&
+         mpicom=mpicom_GLOID, nthreads=nthreads_GLOID)
+    call seq_comm_getdata(CPLID, &
+         mpicom=mpicom_CPLID, nthreads=nthreads_CPLID)
+
+    call seq_infodata_getData(infodata,      &
+         drv_threading=drv_threading,        &
+         atm_present=atm_present,        &
+         lnd_present=lnd_present,        &
+         rof_present=rof_present,        &
+         ice_present=ice_present,        &
+         ocn_present=ocn_present,        &
+         glc_present=glc_present,        &
+         wav_present=wav_present,        &
+         esp_present=esp_present,        &
+         iac_present=iac_present,        &
+         atm_prognostic=atm_prognostic,      &
+         lnd_prognostic=lnd_prognostic,      &
+         ice_prognostic=ice_prognostic,      &
+         ocn_prognostic=ocn_prognostic,      &
+         rofocn_prognostic=rofocn_prognostic,    &
+         rof_prognostic=rof_prognostic,      &
+         ocnrof_prognostic=ocnrof_prognostic,    &
+         glc_prognostic=glc_prognostic,      &
+         wav_prognostic=wav_prognostic,      &
+         iac_prognostic=iac_prognostic,      &
+         esp_prognostic=esp_prognostic,      &
+         ocn_c2_glcshelf=ocn_c2_glcshelf,    &
+         do_bgc_budgets=do_bgc_budgets)
+
+    if (iamin_CPLID) then
+!        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+        if (atm_present) then
+           call seq_io_read(moab_rest_file, mbaxid, 'fractions_ax', 'afrac:ifrac:ofrac:lfrac:lfrin')
+!           gsmap => component_get_gsmap_cx(atm(1))
+!           xao_ax        => prep_aoflux_get_xao_ax()
+!           call seq_io_read(rest_file, gsmap, fractions_ax, 'fractions_ax')
+!           call seq_io_read(rest_file, atm, 'c2x', 'a2x_ax')
+!           call seq_io_read(rest_file, gsmap, xao_ax, 'xao_ax')
+        endif
+!        if (lnd_present) then
+!           gsmap => component_get_gsmap_cx(lnd(1))
+!           call seq_io_read(rest_file, gsmap, fractions_lx, 'fractions_lx')
+!        endif
+!        if (lnd_present .and. rof_prognostic) then
+!           gsmap         => component_get_gsmap_cx(lnd(1))
+!           l2racc_lx     => prep_rof_get_l2racc_lx()
+!           l2racc_lx_cnt => prep_rof_get_l2racc_lx_cnt()
+!           call seq_io_read(rest_file, gsmap, l2racc_lx, 'l2racc_lx')
+!           call seq_io_read(rest_file, l2racc_lx_cnt ,'l2racc_lx_cnt')
+!        end if
+!        if (ocn_present .and. rofocn_prognostic) then
+!           gsmap         => component_get_gsmap_cx(ocn(1))
+!           o2racc_ox     => prep_rof_get_o2racc_ox()
+!           o2racc_ox_cnt => prep_rof_get_o2racc_ox_cnt()
+!           call seq_io_read(rest_file, gsmap, o2racc_ox, 'o2racc_ox')
+!           call seq_io_read(rest_file, o2racc_ox_cnt ,'o2racc_ox_cnt')
+!        end if
+!        if (lnd_present .and. glc_prognostic) then
+!           gsmap         => component_get_gsmap_cx(lnd(1))
+!           l2gacc_lx     => prep_glc_get_l2gacc_lx()
+!           l2gacc_lx_cnt => prep_glc_get_l2gacc_lx_cnt()
+!           call seq_io_read(rest_file, gsmap, l2gacc_lx, 'l2gacc_lx')
+!           call seq_io_read(rest_file, l2gacc_lx_cnt ,'l2gacc_lx_cnt')
+!        end if
+
+!        if (ocn_c2_glcshelf) then
+!           gsmap         => component_get_gsmap_cx(glc(1))
+!           x2gacc_gx     => prep_glc_get_x2gacc_gx()
+!           x2gacc_gx_cnt => prep_glc_get_x2gacc_gx_cnt()
+!           call seq_io_read(rest_file, gsmap, x2gacc_gx, 'x2gacc_gx')
+!           call seq_io_read(rest_file, x2gacc_gx_cnt ,'x2gacc_gx_cnt')
+!        end if
+
+!        if (ocn_present) then
+!           gsmap         => component_get_gsmap_cx(ocn(1))
+!           x2oacc_ox     => prep_ocn_get_x2oacc_ox()
+! #ifdef SUMMITDEV_PGI
+!           dummy_pgibugfix = associated(x2oacc_ox)
+! #endif
+!           x2oacc_ox_cnt => prep_ocn_get_x2oacc_ox_cnt()
+!           xao_ox        => prep_aoflux_get_xao_ox()
+!           call seq_io_read(rest_file, gsmap, fractions_ox, 'fractions_ox')
+!           call seq_io_read(rest_file, ocn, 'c2x', 'o2x_ox')  ! get o2x_ox
+!           call seq_io_read(rest_file, gsmap, x2oacc_ox, 'x2oacc_ox')
+!           call seq_io_read(rest_file, x2oacc_ox_cnt, 'x2oacc_ox_cnt')
+!           call seq_io_read(rest_file, gsmap, xao_ox, 'xao_ox')
+!        endif
+!        if (ice_present) then
+!           gsmap => component_get_gsmap_cx(ice(1))
+!           call seq_io_read(rest_file, gsmap, fractions_ix, 'fractions_ix')
+!           call seq_io_read(rest_file, ice, 'c2x', 'i2x_ix')
+!        endif
+!        if (rof_present) then
+!           gsmap => component_get_gsmap_cx(rof(1))
+!           call seq_io_read(rest_file, gsmap, fractions_rx, 'fractions_rx')
+!           call seq_io_read(rest_file, rof, 'c2x', 'r2x_rx')
+!        endif
+!        if (glc_present) then
+!           gsmap => component_get_gsmap_cx(glc(1))
+!           call seq_io_read(rest_file, gsmap, fractions_gx, 'fractions_gx')
+!           call seq_io_read(rest_file, glc, 'c2x', 'g2x_gx')
+!        endif
+!        if (wav_present) then
+!           gsmap => component_get_gsmap_cx(wav(1))
+!           call seq_io_read(rest_file, gsmap, fractions_wx, 'fractions_wx')
+!           call seq_io_read(rest_file, wav, 'c2x', 'w2x_wx')
+!        endif
+!        if (iac_present) then
+!           gsmap => component_get_gsmap_cx(iac(1))
+!           call seq_io_read(rest_file, gsmap, fractions_zx, 'fractions_zx')
+!           call seq_io_read(rest_file, iac, 'c2x', 'z2x_zx')
+!        endif
+!        ! Add ESP restart read here
+
+       n = size(budg_dataG)
+       allocate(ds(n),ns(n))
+       call seq_io_read(rest_file, ds, 'budg_dataG')
+       call seq_io_read(rest_file, ns, 'budg_ns')
+
+       n = 0
+       do n1 = 1,size(budg_dataG,dim=1)
+          do n2 = 1,size(budg_dataG,dim=2)
+             do n3 = 1,size(budg_dataG,dim=3)
+                n = n + 1
+                budg_dataG(n1,n2,n3) = ds(n)
+                budg_ns   (n1,n2,n3) = ns(n)
+             enddo
+          enddo
+       enddo
+       !     call shr_mpi_bcast(budg_dataG,cpl_io_root) ! not necessary, io lib does bcast
+       deallocate(ds,ns)
+
+       if (do_bgc_budgets) then
+          n = size(budg_dataGBGC)
+          allocate(ds(n),ns(n))
+          call seq_io_read(rest_file, ds, 'budg_dataGBGC')
+          call seq_io_read(rest_file, ns, 'budg_nsBGC')
+
+          n = 0
+          do n1 = 1,size(budg_dataGBGC,dim=1)
+             do n2 = 1,size(budg_dataGBGC,dim=2)
+                do n3 = 1,size(budg_dataGBGC,dim=3)
+                   n = n + 1
+                   budg_dataGBGC(n1,n2,n3) = ds(n)
+                   budg_nsBGC   (n1,n2,n3) = ns(n)
+                enddo
+             enddo
+          enddo
+          !     call shr_mpi_bcast(budg_dataG,cpl_io_root) ! not necessary, io lib does bcast
+          deallocate(ds,ns)
+       endif
+
+       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+
+    endif
+
+  end subroutine seq_rest_mb_read
 
   !===============================================================================
 

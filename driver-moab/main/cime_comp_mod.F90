@@ -126,7 +126,7 @@ module cime_comp_mod
   use seq_hist_mod, only : seq_hist_write, seq_hist_writeavg, seq_hist_writeaux
 
   ! restart file routines
-  use seq_rest_mod, only : seq_rest_read, seq_rest_write, seq_rest_mb_write
+  use seq_rest_mod, only : seq_rest_read, seq_rest_mb_read, seq_rest_write, seq_rest_mb_write
 
   ! flux calc routines
   use seq_flux_mct, only: seq_flux_init_mct, seq_flux_initexch_mct, seq_flux_ocnalb_mct
@@ -2521,6 +2521,11 @@ contains
             fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
             fractions_rx, fractions_gx, fractions_wx, fractions_zx)
        call t_stopf('CPL:seq_rest_read-init')
+
+       call t_startf('CPL:seq_rest_read-moab')
+       call seq_rest_mb_read(rest_file, infodata)
+       call t_stopf('CPL:seq_rest_read-moab')
+
 
     endif
 

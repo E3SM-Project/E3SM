@@ -73,6 +73,7 @@ module seq_io_mod
      module procedure seq_io_read_r8
      module procedure seq_io_read_r81d
      module procedure seq_io_read_char
+     module procedure seq_io_read_moab_tags
   end interface seq_io_read
   interface seq_io_write
      module procedure seq_io_write_av
@@ -2483,6 +2484,205 @@ contains
     call pio_closefile(pioid)
 
   end subroutine seq_io_read_char
+
+  subroutine seq_io_read_moab_tags(filename, mbxid, dname, tag_list, matrix, nx)
+
+    use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
+    use iMOAB,            only: iMOAB_GetGlobalInfo, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
+        iMOAB_GetIntTagStorage
+    use m_MergeSorts,     only: IndexSet, IndexSort
+     ! !INPUT/OUTPUT PARAMETERS:
+    implicit none
+    character(len=*),intent(in) :: filename      ! file
+    integer(in), intent(in)     :: mbxid         ! imoab app id, on coupler 
+    character(len=*),intent(in) :: dname         ! name of data (prefix) 
+    character(len=*),intent(in) :: tag_list      ! fields, separated by colon
+    real(r8), dimension(:,:), pointer, optional :: matrix  ! this may or may not be passed
+    integer, optional,intent(in):: nx
+
+    integer(in)              :: ns, ng, ix
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+
+    integer(in) :: rcode
+    integer(in) :: iam,mpicom
+    integer(in) :: k,n,n1,n2,ndims
+    type(file_desc_t) :: pioid
+    integer(in) :: dimid(4)
+    type(var_desc_t) :: varid
+    integer(in) :: lnx,lny,lni
+    type(mct_string) :: mstring     ! mct char type
+    character(CL)    :: itemc       ! string converted to char
+    logical :: exists
+    type(io_desc_t) :: iodesc
+
+    integer, allocatable         :: indx(:) !  this will be ordered
+    integer, allocatable         :: Dof(:)  ! will be filled with global ids from cells
+    integer, allocatable         :: Dof_reorder(:)  !
+    real(r8), allocatable        :: data1(:), data_reorder(:)
+
+    character(CL)  :: lversion
+    character(CL)  :: name1
+    character(CL)  :: lpre
+
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list
+    type(mct_string)    :: mctOStr  !
+    character(CXX) ::tagname, field
+
+    integer(in)              :: dummy, ent_type, ierr
+    character(*),parameter :: subName = '(seq_io_read_moab_tags) '
+
+    
+    lpre = trim(dname)
+
+    call seq_comm_setptrs(CPLID,iam=iam,mpicom=mpicom)
+
+    call mct_list_init(temp_list ,trim(tag_list))
+    size_list=mct_list_nitem (temp_list)  ! role of nf, number fields
+    ent_type = 1 ! cell for atm, atm_pg_active
+
+    if (size_list < 1) then
+       write(logunit,*) subname,' ERROR: size_list = ',size_list,trim(dname)
+       call shr_sys_abort(subname//'size_list error')
+    endif
+
+
+    !call mct_gsmap_OrderedPoints(gsmap, iam, Dof)
+
+    if (iam==0) inquire(file=trim(filename),exist=exists)
+    call shr_mpi_bcast(exists,mpicom,'seq_io_read_avs exists')
+    if (exists) then
+       rcode = pio_openfile(cpl_io_subsystem, pioid, cpl_pio_iotype, trim(filename),pio_nowrite)
+       if(iam==0) write(logunit,*) subname,' open file ',trim(filename),' for ',trim(dname)
+       call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)
+       rcode = pio_get_att(pioid,pio_global,"file_version",lversion)
+       call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
+    else
+       if(iam==0) write(logunit,*) subname,' ERROR: file invalid ',trim(filename),' ',trim(dname)
+       call shr_sys_abort(subname//'ERROR: file invalid '//trim(filename)//' '//trim(dname))
+    endif
+
+        ! find out the number of global cells, needed for defining the variables length
+    ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
+    lnx = ng
+    ! it is needed to overwrite that for land, ng is too small
+    !  ( for ne4pg2 it is 201 instead of 384)
+    if (present(nx)) lnx = nx 
+    lny = 1 ! do we need 2 var, or just 1 
+    ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
+    ns = nvise(1) ! local cells 
+    allocate(data1(ns))
+    allocate(data_reorder(ns))
+    allocate(dof(ns))
+    allocate(dof_reorder(ns))
+
+   ! note: size of dof is ns
+    tagname = 'GLOBAL_ID'//C_NULL_CHAR
+    ierr = iMOAB_GetIntTagStorage ( mbxid, tagname, ns , ent_type, dof(1))
+    if (ierr .ne. 0) then
+       write(logunit,*) subname,' ERROR: cannot get dofs '
+       call shr_sys_abort(subname//'cannot get dofs ')
+    endif
+
+   allocate(indx(ns))
+   call IndexSet(ns, indx)
+   call IndexSort(ns, indx, dof, descend=.false.)
+   !      after sort, dof( indx(i)) < dof( indx(i+1) )
+   do ix=1,ns
+      dof_reorder(ix) = dof(indx(ix)) ! 
+   enddo
+   deallocate(dof)
+
+   do k = 1, size_list
+       call mct_list_get(mctOStr,index_list,temp_list)
+       field = mct_string_toChar(mctOStr)
+       name1 = trim(lpre)//'_'//trim(field)
+      
+       call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+       rcode = pio_inq_varid(pioid,trim(name1),varid)
+       if (rcode == pio_noerr) then
+          if (k==1) then
+             rcode = pio_inq_varndims(pioid, varid, ndims)
+             rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
+             rcode = pio_inq_dimlen(pioid, dimid(1), lnx)
+             if (ndims>=2) then
+                rcode = pio_inq_dimlen(pioid, dimid(2), lny)
+             else
+                lny = 1
+             end if
+             if (lnx*lny /= ng) then
+                write(logunit,*) subname,' ERROR: dimensions do not match',&
+                     lnx,lny, ng
+                call shr_sys_abort(subname//'ERROR: dimensions do not match')
+             end if
+             
+             call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof_reorder, iodesc)
+
+             deallocate(dof_reorder)
+          end if
+
+          call pio_read_darray(pioid,varid,iodesc, data1, rcode)
+          do ix=1,ns
+             data_reorder(indx(ix)) = data1(ix) ! or is it data_reorder(ix) = data1(indx(ix)) ? 
+          enddo
+          if (present(matrix)) then
+            matrix(:, index_list)  = data_reorder(:) ! 
+          else
+            tagname = trim(field)//C_NULL_CHAR
+            ierr = iMOAB_SetDoubleTagStorage (mbxid, tagname, ns , ent_type, data_reorder(1))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' ERROR: cannot set tag data ', trim(tagname)
+               call shr_sys_abort(subname//'cannot set tag data ')
+            endif
+          endif
+         !  n = 0
+         !  do n1 = 1,ni
+         !     do n2 = 1,ns
+         !        n = n + 1
+         !        avs(n1)%rAttr(k,n2) = data(n)
+         !     enddo
+         !  enddo
+       else
+          write(logunit,*)'seq_io_readav warning: field ',trim(field),' is not on restart file'
+          write(logunit,*)'for backwards compatibility will set it to 0'
+         !  do n1 = 1,ni
+         !     avs(n1)%rattr(k,:) = 0.0_r8
+         !  enddo
+         data_reorder = 0.
+         if (present(matrix)) then
+            matrix(:, index_list)  = data_reorder(:) ! 
+         else
+            tagname = trim(field)//C_NULL_CHAR
+            ierr = iMOAB_SetDoubleTagStorage (mbxid, tagname, ns , ent_type, data_reorder(1))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' ERROR: cannot set tag data ', trim(tagname)
+               call shr_sys_abort(subname//'cannot set tag data ')
+            endif
+         endif
+
+       end if
+       call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
+    enddo
+
+    deallocate(data1)
+    deallocate(data_reorder)
+    deallocate(dof_reorder)
+
+   !  !--- zero out fill value, this is somewhat arbitrary
+   !  do n1 = 1,ni
+   !     do n2 = 1,ns
+   !        do k = 1,nf
+   !           if (AVS(n1)%rAttr(k,n2) == fillvalue) then
+   !              AVS(n1)%rAttr(k,n2) = 0.0_r8
+   !           endif
+   !        enddo
+   !     enddo
+   !  enddo
+
+    call pio_freedecomp(pioid, iodesc)
+    call pio_closefile(pioid)
+
+  end subroutine seq_io_read_moab_tags
 
   !===============================================================================
   !===============================================================================
