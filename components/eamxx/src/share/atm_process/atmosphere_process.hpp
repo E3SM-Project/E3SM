@@ -115,7 +115,7 @@ public:
   const ekat::Comm& get_comm () const { return m_comm; }
 
   // Return the parameter list
-  const ekat::ParameterList& get_params () const { return m_params; }
+  ekat::ParameterList& get_params () { return m_params; }
 
   // This method prepares the atm proc for computing the tendency of
   // output fields, as prescribed via parameter list

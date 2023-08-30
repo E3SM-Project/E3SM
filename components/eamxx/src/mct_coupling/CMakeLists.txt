@@ -40,6 +40,7 @@ set (SCREAM_LIBS
      spa
      nudging
      diagnostics
+     tms
      ml_correction
 )
 if (SCREAM_ENABLE_MAM)

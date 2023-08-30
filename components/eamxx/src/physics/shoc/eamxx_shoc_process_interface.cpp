@@ -45,7 +45,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   FieldLayout scalar2d_layout_col{ {COL}, {m_num_cols} };
 
   // Layout for surf_mom_flux
-  FieldLayout  surf_mom_flux_layout { {COL, CMP}, {m_num_cols, 2} };
+  FieldLayout surf_mom_flux_layout { {COL, CMP}, {m_num_cols, 2} };
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
@@ -64,13 +64,18 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   const auto s2 = s*s;
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
-  add_field<Required>("omega",          scalar3d_layout_mid,  Pa/s, grid_name, ps);
-  add_field<Required>("surf_sens_flux", scalar2d_layout_col,  W/m2, grid_name);
-  add_field<Required>("surf_mom_flux",  surf_mom_flux_layout, N/m2, grid_name);
+  add_field<Required>("omega",               scalar3d_layout_mid,  Pa/s,    grid_name, ps);
+  add_field<Required>("surf_sens_flux",      scalar2d_layout_col,  W/m2,    grid_name);
+  add_field<Required>("surf_mom_flux",       surf_mom_flux_layout, N/m2, grid_name);
 
-  add_field<Updated>("surf_evap", scalar2d_layout_col, kg/m2/s, grid_name);
-  add_field<Updated> ("T_mid",    scalar3d_layout_mid, K,       grid_name, ps);
-  add_field<Updated> ("qv",       scalar3d_layout_mid, Qunit,   grid_name, "tracers", ps);
+  add_field<Updated>("surf_evap",           scalar2d_layout_col,  kg/m2/s, grid_name);
+  add_field<Updated> ("T_mid",               scalar3d_layout_mid,  K,       grid_name, ps);
+  add_field<Updated> ("qv",                  scalar3d_layout_mid,  Qunit,   grid_name, "tracers", ps);
+
+  // If TMS is a process, add surface drag coefficient to required fields
+  if (m_params.get<bool>("apply_tms", false)) {
+    add_field<Required>("surf_drag_coeff_tms", scalar2d_layout_col,  kg/s/m2, grid_name);
+  }
 
   // Input variables
   add_field<Required>("p_mid",          scalar3d_layout_mid, Pa,    grid_name, ps);
@@ -228,23 +233,23 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
-  const auto& T_mid          = get_field_out("T_mid").get_view<Spack**>();
-  const auto& p_mid          = get_field_in("p_mid").get_view<const Spack**>();
-  const auto& p_int          = get_field_in("p_int").get_view<const Spack**>();
-  const auto& pseudo_density = get_field_in("pseudo_density").get_view<const Spack**>();
-  const auto& omega          = get_field_in("omega").get_view<const Spack**>();
-  const auto& surf_sens_flux = get_field_in("surf_sens_flux").get_view<const Real*>();
-  const auto& surf_evap      = get_field_in("surf_evap").get_view<const Real*>();
-  const auto& surf_mom_flux  = get_field_in("surf_mom_flux").get_view<const Real**>();
-  const auto& qtracers       = get_group_out("tracers").m_bundle->get_view<Spack***>();
-  const auto& qc             = get_field_out("qc").get_view<Spack**>();
-  const auto& qv             = get_field_out("qv").get_view<Spack**>();
-  const auto& tke            = get_field_out("tke").get_view<Spack**>();
-  const auto& cldfrac_liq    = get_field_out("cldfrac_liq").get_view<Spack**>();
-  const auto& sgs_buoy_flux  = get_field_out("sgs_buoy_flux").get_view<Spack**>();
-  const auto& tk             = get_field_out("eddy_diff_mom").get_view<Spack**>();
-  const auto& inv_qc_relvar  = get_field_out("inv_qc_relvar").get_view<Spack**>();
-  const auto& phis           = get_field_in("phis").get_view<const Real*>();
+  const auto& T_mid               = get_field_out("T_mid").get_view<Spack**>();
+  const auto& p_mid               = get_field_in("p_mid").get_view<const Spack**>();
+  const auto& p_int               = get_field_in("p_int").get_view<const Spack**>();
+  const auto& pseudo_density      = get_field_in("pseudo_density").get_view<const Spack**>();
+  const auto& omega               = get_field_in("omega").get_view<const Spack**>();
+  const auto& surf_sens_flux      = get_field_in("surf_sens_flux").get_view<const Real*>();
+  const auto& surf_evap           = get_field_in("surf_evap").get_view<const Real*>();
+  const auto& surf_mom_flux       = get_field_in("surf_mom_flux").get_view<const Real**>();
+  const auto& qtracers            = get_group_out("tracers").m_bundle->get_view<Spack***>();
+  const auto& qc                  = get_field_out("qc").get_view<Spack**>();
+  const auto& qv                  = get_field_out("qv").get_view<Spack**>();
+  const auto& tke                 = get_field_out("tke").get_view<Spack**>();
+  const auto& cldfrac_liq         = get_field_out("cldfrac_liq").get_view<Spack**>();
+  const auto& sgs_buoy_flux       = get_field_out("sgs_buoy_flux").get_view<Spack**>();
+  const auto& tk                  = get_field_out("eddy_diff_mom").get_view<Spack**>();
+  const auto& inv_qc_relvar       = get_field_out("inv_qc_relvar").get_view<Spack**>();
+  const auto& phis                = get_field_in("phis").get_view<const Real*>();
 
   // Alias local variables from temporary buffer
   auto z_mid       = m_buffer.z_mid;
@@ -432,6 +437,10 @@ void SHOCMacrophysics::run_impl (const double dt)
                        shoc_preprocess);
   Kokkos::fence();
 
+  if (m_params.get<bool>("apply_tms", false)) {
+    apply_turbulent_mountain_stress();
+  }
+
   if (m_params.get<bool>("check_flux_state_consistency", false)) {
     check_flux_state_consistency(dt);
   }
@@ -463,6 +472,26 @@ void SHOCMacrophysics::run_impl (const double dt)
 void SHOCMacrophysics::finalize_impl()
 {
   // Do nothing
+}
+// =========================================================================================
+void SHOCMacrophysics::apply_turbulent_mountain_stress()
+{
+  auto surf_drag_coeff_tms = get_field_in("surf_drag_coeff_tms").get_view<const Real*>();
+  auto horiz_winds         = get_field_in("horiz_winds").get_view<const Spack***>();
+
+  auto rrho_i   = m_buffer.rrho_i;
+  auto upwp_sfc = m_buffer.upwp_sfc;
+  auto vpwp_sfc = m_buffer.vpwp_sfc;
+
+  const int nlev_v  = (m_num_levs-1)/Spack::n;
+  const int nlev_p  = (m_num_levs-1)%Spack::n;
+  const int nlevi_v = m_num_levs/Spack::n;
+  const int nlevi_p = m_num_levs%Spack::n;
+
+  Kokkos::parallel_for("apply_tms", KT::RangePolicy(0, m_num_cols), KOKKOS_LAMBDA (const int i) {
+    upwp_sfc(i) -= surf_drag_coeff_tms(i)*horiz_winds(i,0,nlev_v)[nlev_p]/rrho_i(i,nlevi_v)[nlevi_p];
+    vpwp_sfc(i) -= surf_drag_coeff_tms(i)*horiz_winds(i,1,nlev_v)[nlev_p]/rrho_i(i,nlevi_v)[nlevi_p];
+  });
 }
 // =========================================================================================
 void SHOCMacrophysics::check_flux_state_consistency(const double dt)
