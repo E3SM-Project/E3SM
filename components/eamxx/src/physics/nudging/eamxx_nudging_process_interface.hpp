@@ -25,8 +25,9 @@ namespace scream
 
 // enum to track how the source pressure levels are defined
 enum SourcePresType {
-  DYNAMIC = 0,  // DEFAULT - source data should include time/spatially varying p_mid
-  STATIC  = 1,  // source data includes p_lev which is a static set of levels in both space and time.
+  TIME_DEPENDENT           = 0,  // DEFAULT - source data should include time/spatially varying p_mid with dimensions (time, col, lev)
+  SINGLE_VERTICAL_PROFILE  = 1,  // source data includes p_lev which is a static set of levels in both space and time, with dimensions (lev)
+  HORIZ_VARYING            = 2,  // source data includes p_mid as a single snapshot w/ dimensions (col,lev)
 };
 
 class Nudging : public AtmosphereProcess

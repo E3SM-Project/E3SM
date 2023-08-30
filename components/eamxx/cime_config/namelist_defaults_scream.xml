@@ -219,7 +219,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <nudging_filename type="array(string)"/>
       <nudging_fields type="array(string)"/>
       <nudging_timescale type="integer">0</nudging_timescale>
-      <source_pressure_type type="string">DYNAMIC</source_pressure_type>
+      <source_pressure_type type="string">TIME_DEPENDENT</source_pressure_type>
     </nudging>
 
     <!-- For internal testing only -->
