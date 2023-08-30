@@ -269,7 +269,7 @@ end subroutine linoz_readnl
                               nch4_PmL_clim_ndx, nch4_dPmL_dO3_ndx,  nch4_dPmL_dN2O_ndx,nch4_dPmL_dNOy_ndx,  &
                               nch4_dPmL_dCH4_ndx,nch4_dPmL_dH2O_ndx, nch4_dPmL_dT_ndx,  nch4_dPmL_dO3col_ndx,&
                               cariolle_pscs_ndx, o3lbs_ndx,o3_clim_srf_ndx,n2o_clim_srf_ndx,noy_clim_srf_ndx,&
-                              ch4_clim_srf_ndx
+                              ch4_clim_srf_ndx,  ch4_avg_srf_ndx
     !
     integer,  intent(in)                           :: ncol                ! number of columns in chunk
     integer,  intent(in)                           :: lchnk               ! chunk index
@@ -323,6 +323,7 @@ end subroutine linoz_readnl
     real(r8), dimension(:,:), pointer :: linoz_n2o_clim_srf
     real(r8), dimension(:,:), pointer :: linoz_noy_clim_srf
     real(r8), dimension(:,:), pointer :: linoz_ch4_clim_srf
+    real(r8), dimension(:,:), pointer :: linoz_ch4_avg_srf
     ! real O3 variables
     real(r8), dimension(ncol,pver) :: do3_linoz_du, do3_linoz_psc_du
     real(r8), dimension(ncol) :: twod_do3_linoz
@@ -365,7 +366,9 @@ end subroutine linoz_readnl
        linoz_n2o_clim_srf => fields(n2o_clim_srf_ndx)  %data(:,:,lchnk )
        linoz_noy_clim_srf => fields(noy_clim_srf_ndx)  %data(:,:,lchnk )
        linoz_ch4_clim_srf => fields(ch4_clim_srf_ndx)  %data(:,:,lchnk )
-
+       !!add avg
+       linoz_ch4_avg_srf  => fields(ch4_avg_srf_ndx)  %data(:,:,lchnk )
+       !!
        dO3(:,:)     =   o3_vmr(:,:)  - linoz_o3_clim(:ncol,:)
        dN2O(:,:)    =  n2o_vmr(:,:)  - linoz_n2o_clim(:ncol,:)
        dNOY(:,:)    =  noy_vmr(:,:)  - linoz_noy_clim(:ncol,:) 

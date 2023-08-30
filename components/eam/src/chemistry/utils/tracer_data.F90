@@ -1297,6 +1297,9 @@ contains
                                                                 (/ flds(f)%order(ZA_LATDIM),flds(f)%order(ZA_LEVDIM)/), &
                                                                 vid_srf=flds(f+57)%var_id )
                      elseif (index(flds(f)%fldnam,"_srf").gt.0) then
+                             if (index(flds(f)%fldnam,"ch4_avg_srf").gt.0) then
+                                      cnt3(1)=1!set 1st dim since no ZA_LATDIM
+                             endif
                              call read_zasrf_trc_linoz(fids(i), flds(f)%var_id, flds(f)%input(i)%data, strt3, cnt3, file)
                      else
                              call read_za_trc_linoz( fids(i), flds(f)%var_id, flds(f)%input(i)%data, strt3, cnt3, file, &
@@ -1784,7 +1787,8 @@ contains
     strt_srf(1)=strt(1)
     strt_srf(2)=strt(3)
     !!
-    !for surface variable with the dimension of (time,lat)
+    !for surface variable with the dimension of (time,lat) or (time,1)
+    !for (time) it is also set like (time,1)
         ierr = pio_get_var( fid, vid, strt_srf, cnt_srf, wrk )
         !!
         if(associated(wrk_in)) then
@@ -1798,10 +1802,18 @@ contains
            ncols = get_ncols_p(c)
            call get_rlat_all_p(c, pcols, to_lats)
            call lininterp_init(file%lats, file%nlat, to_lats, ncols, 1, lat_wgts)
-           do k=1,1
-           call lininterp(wrk_in(:), file%nlat, wrk_out(1:ncols), ncols, lat_wgts)
-           loc_arr(1:ncols,k,c-begchunk+1) = wrk_out(1:ncols)
-           end do
+           !!
+           if (cnt(1).eq.1) then!!for single timeseries
+                do k=1,1
+                loc_arr(1:ncols,k,c-begchunk+1) = wrk_out(1)
+                end do
+           else
+                do k=1,1
+                call lininterp(wrk_in(:), file%nlat, wrk_out(1:ncols), ncols, lat_wgts)
+                loc_arr(1:ncols,k,c-begchunk+1) = wrk_out(1:ncols)
+                end do
+           end if
+           !!
            call lininterp_finish(lat_wgts)
         end do
     !!
