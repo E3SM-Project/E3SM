@@ -902,10 +902,10 @@ void RRTMGPRadiation::run_impl (const double dt) {
       );
 
       // Compute diagnostic total cloud area (vertically-projected cloud cover)
-      auto cldlow = real1d("cldlow", ncol);
-      auto cldmed = real1d("cldmed", ncol);
-      auto cldhgh = real1d("cldhgh", ncol);
-      auto cldtot = real1d("cldtot", ncol);
+      real1d cldlow = real1d("cldlow", d_cldlow.data(), ncol);
+      real1d cldmed = real1d("cldmed", d_cldmed.data(), ncol);
+      real1d cldhgh = real1d("cldhgh", d_cldhgh.data(), ncol);
+      real1d cldtot = real1d("cldtot", d_cldtot.data(), ncol);
       // NOTE: limits for low, mid, and high clouds are mostly taken from EAM F90 source, with the
       // exception that I removed the restriction on low clouds to be above (numerically lower pressures)
       // 1200 hPa, and on high clouds to be below (numerically high pressures) 50 hPa. This probably
@@ -957,10 +957,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
         d_sfc_flux_dif_vis(icol) = sfc_flux_dif_vis(i+1);
         d_sfc_flux_sw_net(icol)  = sw_flux_dn(i+1,kbot) - sw_flux_up(i+1,kbot);
         d_sfc_flux_lw_dn(icol)   = lw_flux_dn(i+1,kbot);
-        d_cldlow(icol) = cldlow(i+1);
-        d_cldmed(icol) = cldmed(i+1);
-        d_cldhgh(icol) = cldhgh(i+1);
-        d_cldtot(icol) = cldtot(i+1);
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay+1), [&] (const int& k) {
           d_sw_flux_up(icol,k)            = sw_flux_up(i+1,k+1);
           d_sw_flux_dn(icol,k)            = sw_flux_dn(i+1,k+1);
