@@ -524,6 +524,7 @@ module li_advection
              endif
 
              ! Update tendencies for RK integration
+             ! How do we deal with these? should they be divided by updated layerThickness now?
              iTracer = 0
              if ( (trim(config_thermal_solver) == 'enthalpy') .or. (trim(config_thermal_solver) == 'temperature') ) then
                 iTracer = iTracer + 1

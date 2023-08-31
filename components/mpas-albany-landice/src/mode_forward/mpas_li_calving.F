@@ -3348,6 +3348,7 @@ module li_calving
       real(kind=RKIND), pointer :: config_flowLawExponent
       logical, pointer :: config_print_calving_info
 
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: eMax
       real (kind=RKIND), dimension(:), pointer :: tauMax, tauMin
@@ -3402,6 +3403,7 @@ module li_calving
          call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
          call mpas_pool_get_array(geometryPool, 'damage', damage)
          call mpas_pool_get_array(geometryPool, 'ddamagedt', ddamagedt)
          call mpas_pool_get_array(geometryPool, 's0', s0)
@@ -3458,7 +3460,7 @@ module li_calving
          ddamagedt(:) = damageSource(:) * damage(:)
          ! Update damage tendency for RK time integration
          do k = 1, nVertLevels
-            rkTend(k,:) = rkTend(k,:) + ddamagedt(:)
+            rkTend(k,:) = rkTend(k,:) + ddamagedt(:) * layerThickness(k,:)
          enddo
 
          damage(:) = damage(:) + ddamagedt(:) * deltat

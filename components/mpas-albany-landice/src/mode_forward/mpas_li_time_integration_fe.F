@@ -119,10 +119,13 @@ module li_time_integration_fe
                                                     waterFrac
       real (kind=RKIND), dimension(:), pointer :: thickness, damage, passiveTracer2d
       real (kind=RKIND), dimension(:), pointer :: layerCenterSigma, layerThicknessFractions
-      real (kind=RKIND), dimension(:), allocatable :: damageProv, passiveTracer2dProv
       real (kind=RKIND), dimension(:,:), allocatable :: layerThicknessProv, &
                                                         temperatureProv, &
-                                                        enthalpyProv
+                                                        enthalpyProv, &
+                                                        passiveTracer3d, &
+                                                        passiveTracer3dProv, &
+                                                        damage3d, &
+                                                        damage3dProv
       integer, pointer :: nVertLevels
       integer, pointer :: nCells
       real (kind=RKIND), pointer :: deltat
@@ -147,14 +150,18 @@ module li_time_integration_fe
       allocate(temperatureProv(nVertLevels, nCells+1))
       allocate(enthalpyProv(nVertLevels, nCells+1))
       allocate(layerThicknessProv(nVertLevels, nCells+1))
-      allocate(damageProv(nCells+1))
-      allocate(passiveTracer2dProv(nCells+1))
+      allocate(damage3dProv(nVertLevels, nCells+1))
+      allocate(damage3d(nVertLevels, nCells+1))
+      allocate(passiveTracer3dProv(nVertLevels, nCells+1))
+      allocate(passiveTracer3d(nVertLevels, nCells+1))
 
       temperatureProv(:,:) = 0.0_RKIND
       enthalpyProv(:,:) = 0.0_RKIND
       layerThicknessProv(:,:) = 0.0_RKIND
-      damageProv(:) = 0.0_RKIND
-      passiveTracer2dProv(:) = 0.0_RKIND
+      damage3dProv(:,:) = 0.0_RKIND
+      damage3d(:,:) = 0.0_RKIND
+      passiveTracer3dProv(:,:) = 0.0_RKIND
+      passiveTracer3d(:,:) = 0.0_RKIND
 
 ! === Prepare for advection (including CFL checks) ===========
 ! This has to come first currently, because it sets the time step!
@@ -215,8 +222,10 @@ module li_time_integration_fe
       temperatureProv(:,:) = temperature(:,:)
       enthalpyProv(:,:) =  enthalpy(:,:)
       layerThicknessProv(:,:) = layerThickness(:,:)
-      damageProv(:) = damage(:)
-      passiveTracer2dProv(:) = passiveTracer2d(:)
+      do k = 1, nVertLevels
+         damage3dProv(k,:) = damage(:)
+         passiveTracer3dProv(k,:) = passiveTracer2d(:)
+      enddo
       rkTend(:,:,:) = 0.0_RKIND
 ! *** Start RK loop ***
       do rkStep = 1, 2
@@ -246,8 +255,19 @@ module li_time_integration_fe
          ! before final velocity solve
          if (rkStep .eq. 2) then ! or whichever is last rk step
             ! y_{n+1} = y_n + (k1 + k2) / 2
+
+            ! Need layerThickness first in order to update other tracers
+            if (trim(config_thickness_advection) == 'fct') then
+               layerThickness(:,:) = layerThicknessProv(:,:) + deltat * rkTend(4,:,:) / 2.0_RKIND
+               thickness = sum(layerThickness, 1)
+            endif
+
             if (trim(config_thermal_solver) == 'enthalpy') then
-               enthalpy(:,:) = enthalpyProv(:,:) + deltat * rkTend(1,:,:) / 2.0_RKIND
+               where (layerThickness(:,:) > 0.0_RKIND)
+                  enthalpy(:,:) = ( enthalpyProv(:,:) * layerThicknessProv(:,:) + &
+                                    deltat * rkTend(1,:,:) / 2.0_RKIND ) / layerThickness(:,:)
+               ! elsewhere, what? 
+               end where
                ! given the enthalpy, compute the temperature and water fraction
                do iCell = 1, nCells
 
@@ -259,26 +279,40 @@ module li_time_integration_fe
                        waterFrac(:,iCell))
 
                enddo
+
             elseif (trim(config_thermal_solver) == 'temperature') then
-               temperature(:,:) = temperatureProv(:,:) + deltat * rkTend(1,:,:) / 2.0_RKIND
+               where (layerThickness(:,:) > 0.0_RKIND)
+                  temperature(:,:) = ( temperatureProv(:,:) * layerThicknessProv(:,:) + &
+                                       deltat * rkTend(1,:,:) / 2.0_RKIND ) / layerThickness(:,:)
+               ! elsewhere, what?
+               end where
             endif
 
             if (config_calculate_damage) then
                do iCell = 1, nCells
-                  damage(iCell) = damageProv(iCell) + deltat * sum(rkTend(2,:,iCell) &
-                              * layerThicknessFractions) / 2.0_RKIND
+                  do k = 1, nVertLevels
+                     if (layerThickness(k,iCell) > 0.0_RKIND) then 
+                        damage3d(k,iCell) = ( damage3dProv(k,iCell) * layerThicknessProv(k,iCell) + &
+                                            deltat * rkTend(2,k,iCell) / 2.0_RKIND ) / layerThickness(k,iCell)
+                     else
+                        damage3d(k,iCell) = 0.0_RKIND
+                     endif
+                  enddo
+                  damage(iCell) = sum(damage3d(:, iCell) * layerThicknessFractions)
                enddo
             endif
 
             do iCell = 1, nCells
-               passiveTracer2d(iCell) = passiveTracer2dProv(iCell) + deltat * & 
-                                        sum(rkTend(3,:,iCell) * layerThicknessFractions) / 2.0_RKIND
+               do k = 1, nVertLevels
+                  if (layerThickness(k,iCell) > 0.0_RKIND) then
+                     passiveTracer3d(k,iCell) = ( passiveTracer3dProv(k,iCell) * layerThicknessProv(k,iCell) + &
+                                                  deltat * rkTend(3,k,iCell) / 2.0_RKIND ) / layerThickness(k,iCell)
+                  else
+                     passiveTracer3d(k,iCell) = 0.0_RKIND
+                  endif
+               enddo
+               passiveTracer2d(iCell) = sum(passiveTracer3d(:,iCell) * layerThicknessFractions)
             enddo
-
-            if (trim(config_thickness_advection) == 'fct') then
-               layerThickness(:,:) = layerThicknessProv(:,:) + deltat * rkTend(4,:,:) / 2.0_RKIND
-               thickness = sum(layerThickness, 1)
-            endif
 
             ! === Ensure damage is within bounds after full time integration ===
             if (config_finalize_damage_after_advection) then
@@ -344,6 +378,13 @@ module li_time_integration_fe
           call mpas_log_write("An error has occurred in li_time_integrator_forwardeuler.", MPAS_LOG_ERR)
       endif
 
+      deallocate(temperatureProv)
+      deallocate(enthalpyProv)
+      deallocate(layerThicknessProv)
+      deallocate(damage3dProv)
+      deallocate(damage3d)
+      deallocate(passiveTracer3dProv)
+      deallocate(passiveTracer3d)
    !--------------------------------------------------------------------
    end subroutine li_time_integrator_forwardeuler
 
