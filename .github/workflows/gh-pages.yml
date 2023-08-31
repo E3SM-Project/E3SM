@@ -74,8 +74,8 @@ jobs:
           clean-exclude: pr-preview
           folder: ./components/eamxx/site
 
-      # If it's a PR, deploy to a preview page
-      - if: ${{ github.event_name == 'pull_request' }}
+      # If it's a PR from within the same repo, deploy to a preview page
+      - if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         name: Preview docs
         uses: rossjrw/pr-preview-action@v1
         with:
