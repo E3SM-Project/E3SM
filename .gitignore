@@ -28,4 +28,4 @@ buildlib_cmakec
 *~
 
 # Ignore mkdocs site-generated files in eamxx
-components/eamxx/docs/mkdocs/site/*
+components/eamxx/site/*
