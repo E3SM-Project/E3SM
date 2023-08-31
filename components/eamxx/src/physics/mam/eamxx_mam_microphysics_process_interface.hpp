@@ -1,6 +1,7 @@
 #ifndef EAMXX_MAM_MICROPHYSICS_HPP
 #define EAMXX_MAM_MICROPHYSICS_HPP
 
+#include <physics/mam/mam_coupling.hpp>
 #include <share/atm_process/atmosphere_process.hpp>
 #include <share/util/scream_common_physics_functions.hpp>
 #include <share/atm_process/ATMBufferManager.hpp>
@@ -22,8 +23,8 @@
 namespace scream
 {
 
-// The process responsible for handling MAM4 aerosols. The AD stores exactly ONE
-// instance of this class in its list of subcomponents.
+// The process responsible for handling MAM4 aerosol microphysics. The AD
+// stores exactly ONE instance of this class in its list of subcomponents.
 class MAMMicrophysics final : public scream::AtmosphereProcess {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
   using KT = ekat::KokkosTypes<DefaultDevice>;
@@ -86,14 +87,27 @@ private_except_cuda:
   struct Preprocess {
     Preprocess() = default;
 
+    // on host: initializes preprocess functor with necessary state data
+    void init(const int ncol, const int nlev, const Real z_surf,
+              const view_1d_int& convert_wet_dry_idx_d,
+              const mam_coupling::AtmosphericState& atm,
+              const mam_coupling::AerosolState& aero) {
+      ncol_ = ncol;
+      nlev_ = nlev;
+      z_surf_ = z_surf;
+      convert_wet_dry_idx_d_ = convert_wet_dry_idx_d;
+      atm_ = atm;
+      aero_ = aero;
+    }
+
     KOKKOS_INLINE_FUNCTION
     void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) const {
       const int i = team.league_rank(); // column index
 
-      // Compute vertical layer heights
-      const auto dz_i = ekat::subview(dz_,    i);
-      auto z_iface_i = ekat::subview(z_iface_, i);
-      auto z_mid_i   = ekat::subview(z_mid_, i);
+      // compute vertical layer heights
+      const auto dz_i = ekat::subview(atm_.dz,    i);
+      auto z_iface_i  = ekat::subview(atm_.z_iface, i);
+      auto z_mid_i    = ekat::subview(atm_.z_mid, i);
       PF::calculate_z_int(team, nlev_, dz_i, z_surf_, z_iface_i);
       team.team_barrier();  // TODO: is this barrier necessary?
       PF::calculate_z_mid(team, nlev_, z_iface_i, z_mid_i);
@@ -123,19 +137,27 @@ private_except_cuda:
           // Units of all tracers become [kg/kg(dry-air)] for mass mixing ratios and
           // [#/kg(dry-air)] for number mixing ratios after the following
           // conversion.
-          const auto qv_ik = qv_(i,k);
-          // const fields need separate storage for "dry" values
-          qv_dry_(i,k) = PF::calculate_drymmr_from_wetmmr(qv_(i,k), qv_ik);
-          qc_dry_(i,k) = PF::calculate_drymmr_from_wetmmr(qc_(i,k), qv_ik);
-          n_qc_dry_(i,k) = PF::calculate_drymmr_from_wetmmr(n_qc_(i,k), qv_ik);
-          qi_dry_(i,k) = PF::calculate_drymmr_from_wetmmr(qi_(i,k), qv_ik);
-          n_qi_dry_(i,k) = PF::calculate_drymmr_from_wetmmr(n_qi_(i,k), qv_ik);
+          const auto qv_ik = atm_.qv_wet(i,k);
 
-          // non-const fields can be overwritten; we'll convert back to moist
-          // air ratios during postprocess
-          q_h2so4_(i,k) = PF::calculate_drymmr_from_wetmmr(q_h2so4_(i,k), qv_ik);
-          q_aitken_so4_(i,k) = PF::calculate_drymmr_from_wetmmr(q_aitken_so4_(i,k), qv_ik);
-          n_aitken_(i,k) = PF::calculate_drymmr_from_wetmmr(n_aitken_(i,k), qv_ik);
+          // calculate dry atmospheric mixing ratios
+          atm_.qv_dry(i,k) = PF::calculate_drymmr_from_wetmmr(atm_.qv_wet(i,k), qv_ik);
+          atm_.qc_dry(i,k) = PF::calculate_drymmr_from_wetmmr(atm_.qc_wet(i,k), qv_ik);
+          atm_.nc_dry(i,k) = PF::calculate_drymmr_from_wetmmr(atm_.nc_wet(i,k), qv_ik);
+          atm_.qi_dry(i,k) = PF::calculate_drymmr_from_wetmmr(atm_.qi_wet(i,k), qv_ik);
+          atm_.ni_dry(i,k) = PF::calculate_drymmr_from_wetmmr(atm_.ni_wet(i,k), qv_ik);
+
+          // calculate dry aerosol mixing ratios
+          for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+            aero_.dry_aero_nmr[m]n_aitken_(i,k) = PF::calculate_drymmr_from_wetmmr(aero_.dry_aero_nmr[m](i,k), qv_ik);
+            for (int a = 0; a < mam_coupling::num_aero_species()); ++a) {
+              if (aero_.dry_aero_mmr[m][a].data()) {
+                aero_.dry_aero_mmr[m][a](i,k) = PF::calculate_drymmr_from_wetmmr(aero_.dry_aero_mmr[m][a](i,k), qv_ik);
+              }
+            }
+          }
+          for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+            aero_.dry_gas_mmr[g](i,k) = PF::calculate_drymmr_from_wetmmr(aero_.dry_gas_mmr[g](i,k), qv_ik);
+          }
         });
       // make sure all operations are done before exiting kernel
       team.team_barrier();
@@ -150,143 +172,61 @@ private_except_cuda:
     // used for converting between wet and dry mixing ratios
     view_1d_int convert_wet_dry_idx_d_;
 
-    // local atmospheric state column variables
-    const_view_2d T_mid_;   // temperature at grid midpoints [K]
-    const_view_2d p_mid_;   // total pressure at grid midpoints [Pa]
-    const_view_2d qv_;      // water vapor specific humidity [kg vapor / kg moist air]
-    view_2d qv_dry_;  // water vapor mixing ratio [kg vapor / kg dry air]
-    const_view_2d qc_;      // cloud liquid water mass mixing ratio [kg vapor/kg moist air]
-    view_2d qc_dry_;
-    const_view_2d n_qc_;      // cloud liquid water number mixing ratio [kg cloud water / kg moist air]
-    view_2d n_qc_dry_; // cloud liquid water number mixing ratio (dry air)
-    const_view_2d qi_;      // cloud ice water mass mixing ratio
-    view_2d qi_dry_;     // [kg vapor/kg dry air]
-    const_view_2d n_qi_;      // cloud ice water number mixing ratio
-    view_2d n_qi_dry_;
-    view_2d z_mid_;   // height at layer midpoints [m]
-    view_2d z_iface_; // height at layer interfaces [m]
-    view_2d dz_;      // layer thickness [m]
-    const_view_2d pdel_;    // hydrostatic "pressure thickness" at grid
-                      // interfaces [Pa]
-    const_view_2d cloud_f_; // cloud fraction [-]
-    const_view_2d omega_; // vertical pressure velocity [Pa/s]
-    view_2d w_updraft_;  // updraft velocity [m/s]
-    const_view_1d pblh_;    // planetary boundary layer height [m]
+    // local atmospheric and aerosol state column variables
+    mam_coupling::AtmosphericState atm_;
+    mam_coupling::AerosolState     aero_;
 
-    // local aerosol-related gases
-    view_2d q_h2so4_; // H2SO4 gas [kg/kg dry air]
-
-    // local aerosols (more to appear as we improve this atm process)
-    view_2d n_aitken_; // aitken mode number mixing ratio [1/kg dry air]
-    view_2d q_aitken_so4_; // SO4 mass mixing ratio in aitken mode [kg/kg dry air]
-
-    // assigns local variables
-    void set_variables(const int ncol, const int nlev, const Real z_surf,
-                       const view_1d_int& convert_wet_dry_idx_d,
-                       const const_view_2d&     T_mid,
-                       const const_view_2d&     p_mid,
-                       const const_view_2d&     qv,
-                       const view_2d&     qv_dry,
-                       const view_2d&     qc,
-                       const view_2d&     n_qc,
-                       const view_2d&     qc_dry,
-                       const view_2d&     n_qc_dry,
-                       const const_view_2d&     qi,
-                       const const_view_2d&     n_qi,
-                       const view_2d&     qi_dry,
-                       const view_2d&     n_qi_dry,
-                       const view_2d&     z_mid,
-                       const view_2d&     z_iface,
-                       const view_2d&     dz,
-                       const const_view_2d&     pdel,
-                       const const_view_2d&     cf,
-                       const const_view_2d&     omega,
-                       const view_2d&           w_updraft,
-                       const const_view_1d&     pblh,
-                       const view_2d&     q_h2so4,
-                       const view_2d&     q_aitken_so4,
-                       const view_2d&     n_aitken) {
-      ncol_ = ncol;
-      nlev_ = nlev;
-      z_surf_ = z_surf;
-      convert_wet_dry_idx_d_ = convert_wet_dry_idx_d;
-      T_mid_ = T_mid;
-      p_mid_ = p_mid;
-      qv_ = qv;
-      qv_dry_ = qv_dry;
-      qc_ = qc;
-      n_qc_ = n_qc;
-      qc_dry_ = qc_dry;
-      n_qc_dry_ = n_qc_dry;
-      qi_ = qi;
-      n_qi_ = n_qi;
-      qi_dry_ = qi_dry;
-      n_qi_dry_ = n_qi_dry;
-      z_mid_ = z_mid;
-      z_iface_ = z_iface;
-      dz_ = dz;
-      pdel_ = pdel;
-      cloud_f_ = cf;
-      omega_ = omega;
-      w_updraft_ = w_updraft;
-      pblh_ = pblh;
-      q_h2so4_ = q_h2so4;
-      q_aitken_so4_ = q_aitken_so4;
-      n_aitken_ = n_aitken;
-    } // set_variables
   }; // MAMMicrophysics::Preprocess
 
   // Postprocessing functor
   struct Postprocess {
     Postprocess() = default;
 
+    // on host: initializes postprocess functor with necessary state data
+    void init(const int ncol, const int nlev,
+              const view_1d_int& convert_wet_dry_idx_d,
+              const mam_coupling::AtmosphericState& atm,
+              const mam_coupling::AerosolState& aero) {
+      ncol_ = ncol;
+      nlev_ = nlev;
+      convert_wet_dry_idx_d_ = convert_wet_dry_idx_d;
+      atm_ = atm;
+      aero_ = aero;
+    }
+
     KOKKOS_INLINE_FUNCTION
     void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) const {
-      // After these updates, all non-const tracers are converted from dry mmr to wet mmr
+      // after these updates, all non-const tracers are converted from dry mmr to wet mmr
       const int i = team.league_rank();
 
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_),
         [&] (const int k) {
-          const auto qv_ik = qv_dry_(i,k);
-          q_h2so4_(i,k) = PF::calculate_wetmmr_from_drymmr(q_h2so4_(i,k), qv_ik);
-          q_aitken_so4_(i,k) = PF::calculate_wetmmr_from_drymmr(q_aitken_so4_(i,k), qv_ik);
-          n_aitken_(i,k) = PF::calculate_wetmmr_from_drymmr(n_aitken_(i,k), qv_ik);
+          const auto qv_ik = atm_.qv_dry(i,k);
+          for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+            aero_.wet_aero_nmr[m]n_aitken_(i,k) = PF::calculate_wetmmr_from_drymmr(aero_.dry_aero_nmr[m](i,k), qv_ik);
+            for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+              if (aero_.wet_aero_mmr[m][a].data()) {
+                aero_.wet_aero_mmr[m][a](i,k) = PF::calculate_wetmmr_from_drymmr(aero_.dry_aero_mmr[m][a](i,k), qv_ik);
+              }
+            }
+          }
+          for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+            aero_.wet_gas_mmr[g](i,k) = PF::calculate_wetmmr_from_wetmmr(aero_.wet_gas_mmr[g](i,k), qv_ik);
+          }
       });
       team.team_barrier();
     } // operator()
 
-    // Local variables
+    // number of horizontal columns and vertical levels
     int ncol_, nlev_;
-    view_2d qv_dry_;
 
     // used for converting between wet and dry mixing ratios
     view_1d_int convert_wet_dry_idx_d_;
 
-    // local aerosol-related gases
-    view_2d q_h2so4_; // H2SO4 gas [kg/kg dry air]
+    // local atmospheric and aerosol state column variables
+    mam_coupling::AtmosphericState atm_;
+    mam_coupling::AerosolState     aero_;
 
-    // local aerosols (more to appear as we improve this atm process)
-    view_2d q_aitken_so4_; // SO4 aerosol in aitken mode [kg/kg dry air]
-
-    // modal quantities
-    view_2d n_aitken_;
-
-    // assigns local variables
-    void set_variables(const int ncol,
-                       const int nlev,
-                       const view_1d_int& convert_wet_dry_idx_d,
-                       const view_2d& qv_dry,
-                       const view_2d& q_h2so4,
-                       const view_2d& q_aitken_so4,
-                       const view_2d& n_aitken) {
-      ncol_ = ncol;
-      nlev_ = nlev;
-      convert_wet_dry_idx_d_ = convert_wet_dry_idx_d;
-      qv_dry_ = qv_dry;
-      q_h2so4_ = q_h2so4;
-      q_aitken_so4_ = q_aitken_so4;
-      n_aitken_ = n_aitken;
-    } // set_variables
   }; // MAMMicrophysics::Postprocess
 
   // storage for local variables, initialized with ATMBufferManager
@@ -297,11 +237,11 @@ private_except_cuda:
     // local column midpoint fields
     uview_2d z_mid;             // height at midpoints
     uview_2d dz;                // layer thickness
-    uview_2d qv_dry;            // water vapor mixing ratio (dry air)
-    uview_2d qc_dry;            // cloud water mass mixing ratio
-    uview_2d n_qc_dry;          // cloud water number mixing ratio
+    uview_2d qv_dry;            // dry water vapor mixing ratio (dry air)
+    uview_2d qc_dry;            // dry cloud water mass mixing ratio
+    uview_2d nc_dry;            // dry cloud water number mixing ratio
     uview_2d qi_dry;            // cloud ice mass mixing ratio
-    uview_2d n_qi_dry;          // cloud ice number mixing ratio
+    uview_2d ni_dry;            // dry cloud ice number mixing ratio
     uview_2d w_updraft;         // vertical wind velocity
     uview_2d q_h2so4_tend;      // tendency for H2SO4 gas
     uview_2d n_aitken_tend;     // tendency for aitken aerosol mode
@@ -327,30 +267,9 @@ private_except_cuda:
   Preprocess preprocess_;
   Postprocess postprocess_;
 
-  // local atmospheric state column variables
-  const_view_2d T_mid_;   // temperature at grid midpoints [K]
-  const_view_2d p_mid_;   // total pressure at grid midpoints [Pa]
-  const_view_2d qv_;      // water vapor specific humidity [kg h2o vapor / kg moist air]
-                          // we keep the specific humidity to use in the PostProcess step.
-  view_2d qc_;      // cloud liquid mass mixing ratio
-                    // must be converted from wet to dry [kg cloud water /kg dry air]
-  view_2d n_qc_;      // cloud liquid number mixing ratio
-                    // must be converted from wet to dry [1 /kg dry air]
-  const_view_2d qi_;      // cloud ice mass mixing ratio
-                    // must be converted from wet to dry [kg cloud water /kg dry air]
-  const_view_2d n_qi_;      // cloud ice number mixing ratio
-                    // must be converted from wet to dry [1 /kg dry air]
-  const_view_2d pdel_;    // hydrostatic "pressure thickness" at grid
-                          // interfaces [Pa]
-  const_view_2d cloud_f_; // cloud fraction [-]
-  const_view_1d pblh_;    // planetary boundary layer height [m]
-
-  // local aerosol-related gases
-  view_2d q_h2so4_; // H2SO3 gas [kg/kg dry air]
-
-  // local aerosols (more to appear as we improve this atm process)
-  view_2d n_aitken_; // aitken mode number mixing ratio [1/kg dry air]
-  view_2d q_aitken_so4_; // SO4 mass mixing ratio in aitken mode [kg/kg dry air]
+  // atmospheric and aerosol state variables
+  mam_coupling::AtmosphericState atm_;
+  mam_coupling::AerosolState     aero_;
 
   // workspace manager for internal local variables
   //ekat::WorkspaceManager<Real, KT::Device> workspace_mgr_;

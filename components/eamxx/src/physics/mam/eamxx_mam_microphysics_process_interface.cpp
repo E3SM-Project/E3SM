@@ -187,14 +187,14 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
   const auto& T_mid = get_field_in("T_mid").get_view<const Real**>();
   const auto& p_mid = get_field_in("p_mid").get_view<const Real**>();
-  const auto& qv = get_field_in("qv").get_view<const Real**>();
+  const auto& qv_wet = get_field_in("qv").get_view<const Real**>();
   const auto& pblh = get_field_in("pbl_height").get_view<const Real*>();
   const auto& p_del = get_field_in("pseudo_density").get_view<const Real**>();
   const auto& cldfrac = get_field_in("cldfrac_tot").get_view<const Real**>(); // FIXME: tot or liq?
-  const auto& qc = get_field_out("qc").get_view<Real**>();
-  const auto& n_qc = get_field_out("nc").get_view<Real**>();
-  const auto& qi = get_field_in("qi").get_view<const Real**>();
-  const auto& n_qi = get_field_in("ni").get_view<const Real**>();
+  const auto& qc_wet = get_field_out("qc").get_view<Real**>();
+  const auto& nc_wet = get_field_out("nc").get_view<Real**>();
+  const auto& qi_wet = get_field_in("qi").get_view<const Real**>();
+  const auto& ni_wet = get_field_in("ni").get_view<const Real**>();
   const auto& omega = get_field_in("omega").get_view<const Real**>();
   const auto& q_h2so4 = get_field_out("q_h2so4").get_view<Real**>();
   const auto& n_aitken = get_field_out("n_aitken").get_view<Real**>();
@@ -210,9 +210,9 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   auto z_iface = buffer_.z_iface;
   auto qv_dry = buffer_.qv_dry;
   auto qc_dry = buffer_.qc_dry;
-  auto n_qc_dry = buffer_.n_qc_dry;
+  auto nc_dry = buffer_.n_qc_dry;
   auto qi_dry = buffer_.qi_dry;
-  auto n_qi_dry = buffer_.n_qi_dry;
+  auto ni_dry = buffer_.n_qi_dry;
   auto w_updraft = buffer_.w_updraft;
 
   // Perform any initialization work.
@@ -227,16 +227,23 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   }
 
   // set atmosphere state data
-  T_mid_ = T_mid;
-  p_mid_ = p_mid;
-  qv_ = qv;
-  qc_ = qc;
-  n_qc_ = n_qc;
-  qi_ = qi;
-  n_qi_ = n_qi;
-  pdel_ = p_del;
-  cloud_f_ = cldfrac;
-  pblh_ = pblh;
+  atm_.T_mid = T_mid;
+  atm_.p_mid = p_mid;
+  atm_.qv_wet = qv_wet;
+  atm_.qv_dry = qv_dry;
+  atm_.qc_wet = qc_wet;
+  atm_.qc_dry = qc_wet;
+  atm_.nc_wet = nc_wet;
+  atm_.nc_dry = nc_dry;
+  atm_.qi_wet = qi_wet;
+  atm_.qi_dry = qi_dry;
+  atm_.ni_wet = ni_wet;
+  atm_.ni_dry = ni_dry;
+  atm_.pdel = p_del;
+  atm_.cldfrac = cldfrac;
+  atm.pblh = pblh;
+
+  // set aerosol state data
   q_h2so4_ = q_h2so4;
   q_aitken_so4_ = q_aitken_so4;
   n_aitken_ = n_aitken;
@@ -312,10 +319,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   auto T_mid = T_mid_;
   auto p_mid = p_mid_;
   auto qv_dry = buffer_.qv_dry;
-  auto qc = qc_;
-  auto n_qc = n_qc_;
-  auto qi = qi_;
-  auto n_qi = n_qi_;
+  auto qc_dry = buffer_.qc_dry;
+  auto n_qc_dry = buffer_.n_qc_dry;
+  auto qi_dry = buffer_.qi_dry;
+  auto n_qi_dry = buffer_.n_qi_dry;
   auto z_mid = buffer_.z_mid;
   auto cldfrac = cloud_f_;
   auto pdel = pdel_;
@@ -330,10 +337,10 @@ void MAMMicrophysics::run_impl(const double dt) {
     haero::Atmosphere atm(nlev_, ekat::subview(T_mid_, icol),
       ekat::subview(p_mid_, icol),
       ekat::subview(qv_dry, icol),
-      ekat::subview(qc_, icol),
-      ekat::subview(n_qc_, icol),
-      ekat::subview(qi_, icol),
-      ekat::subview(n_qi_, icol),
+      ekat::subview(qc_dry, icol),
+      ekat::subview(n_qc_dry, icol),
+      ekat::subview(qi_dry, icol),
+      ekat::subview(n_qi_dry, icol),
       ekat::subview(z_mid, icol),
       ekat::subview(pdel, icol),
       ekat::subview(cldfrac, icol),
