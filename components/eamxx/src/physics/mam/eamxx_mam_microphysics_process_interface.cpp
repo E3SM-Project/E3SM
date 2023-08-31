@@ -117,8 +117,8 @@ size_t MAMMicrophysics::requested_buffer_size_in_bytes() const
 {
   // number of Reals needed by local views in interface
   const size_t request = sizeof(Real) *
-    (Buffer::num_2d_mid * ncol_ * nlev_ +
-     Buffer::num_2d_iface * ncol_ * (nlev_+1));
+    (mam_coupling::Buffer::num_2d_mid * ncol_ * nlev_ +
+     mam_coupling::Buffer::num_2d_iface * ncol_ * (nlev_+1));
 
   // FIXME: Need to figure out whether we need this stuff
   /*
@@ -140,27 +140,24 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
 
   // set view pointers for midpoint fields
   using view_2d_t = decltype(buffer_.z_mid);
-  view_2d_t* view_2d_mid_ptrs[Buffer::num_2d_mid] = {
+  view_2d_t* view_2d_mid_ptrs[mam_coupling::Buffer::num_2d_mid] = {
     &buffer_.z_mid,
     &buffer_.dz,
     &buffer_.qv_dry,
     &buffer_.qc_dry,
-    &buffer_.n_qc_dry,
+    &buffer_.nc_dry,
     &buffer_.qi_dry,
-    &buffer_.n_qi_dry,
+    &buffer_.ni_dry,
     &buffer_.w_updraft,
-    &buffer_.q_h2so4_tend,
-    &buffer_.n_aitken_tend,
-    &buffer_.q_aitken_so4_tend,
   };
-  for (int i = 0; i < Buffer::num_2d_mid; ++i) {
+  for (int i = 0; i < mam_coupling::Buffer::num_2d_mid; ++i) {
     *view_2d_mid_ptrs[i] = view_2d_t(mem, ncol_, nlev_);
     mem += view_2d_mid_ptrs[i]->size();
   }
 
   // set view pointers for interface fields
-  view_2d_t* view_2d_iface_ptrs[Buffer::num_2d_iface] = {&buffer_.z_iface};
-  for (int i = 0; i < Buffer::num_2d_iface; ++i) {
+  view_2d_t* view_2d_iface_ptrs[mam_coupling::Buffer::num_2d_iface] = {&buffer_.z_iface};
+  for (int i = 0; i < mam_coupling::Buffer::num_2d_iface; ++i) {
     *view_2d_iface_ptrs[i] = view_2d_t(mem, ncol_, nlev_+1);
     mem += view_2d_iface_ptrs[i]->size();
   }
@@ -196,9 +193,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   const auto& qi_wet = get_field_in("qi").get_view<const Real**>();
   const auto& ni_wet = get_field_in("ni").get_view<const Real**>();
   const auto& omega = get_field_in("omega").get_view<const Real**>();
-  const auto& q_h2so4 = get_field_out("q_h2so4").get_view<Real**>();
-  const auto& n_aitken = get_field_out("n_aitken").get_view<Real**>();
-  const auto& q_aitken_so4 = get_field_out("q_aitken_so4").get_view<Real**>();
 
   const auto& tracers = get_group_out("tracers");
   const auto& tracers_info = tracers.m_info;
@@ -210,20 +204,13 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   auto z_iface = buffer_.z_iface;
   auto qv_dry = buffer_.qv_dry;
   auto qc_dry = buffer_.qc_dry;
-  auto nc_dry = buffer_.n_qc_dry;
+  auto nc_dry = buffer_.nc_dry;
   auto qi_dry = buffer_.qi_dry;
-  auto ni_dry = buffer_.n_qi_dry;
+  auto ni_dry = buffer_.ni_dry;
   auto w_updraft = buffer_.w_updraft;
 
   // Perform any initialization work.
   if (run_type==RunType::Initial){
-    /* e.g.
-    Kokkos::deep_copy(sgs_buoy_flux,0.0);
-    Kokkos::deep_copy(tk,0.0);
-    Kokkos::deep_copy(tke,0.0004);
-    Kokkos::deep_copy(tke_copy,0.0004);
-    Kokkos::deep_copy(cldfrac_liq,0.0);
-    */
   }
 
   // set atmosphere state data
@@ -241,12 +228,28 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   atm_.ni_dry = ni_dry;
   atm_.pdel = p_del;
   atm_.cldfrac = cldfrac;
-  atm.pblh = pblh;
+  atm_.pblh = pblh;
 
-  // set aerosol state data
-  q_h2so4_ = q_h2so4;
-  q_aitken_so4_ = q_aitken_so4;
-  n_aitken_ = n_aitken;
+  // set aerosol state data (interstitial aerosols only)
+  for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    const char* int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
+    aero_.wet_int_aero_nmr[m] = get_field_out(int_nmr_field_name).get_view<Real**>();
+    aero_.dry_int_aero_nmr[m] = buffer_.dry_int_aero_nmr[m];
+    for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      const char* int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(m, a);
+      if (strlen(int_mmr_field_name) > 0) {
+        aero_.wet_int_aero_mmr[m][a] = get_field_out(int_mmr_field_name).get_view<Real**>();
+        aero_.dry_int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
+      }
+    }
+  }
+
+  // set aerosol-related gas state data
+  for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    const char* mmr_field_name = mam_coupling::gas_mmr_field_name(g);
+    aero_.wet_gas_mmr[g] = get_field_out(mmr_field_name).get_view<Real**>();
+    aero_.dry_gas_mmr[g] = buffer_.dry_gas_mmr[g];
+  }
 
   // FIXME: For now, set z_surf to zero.
   const Real z_surf = 0.0;
@@ -266,12 +269,8 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   Kokkos::deep_copy(convert_wet_dry_idx_d, convert_wet_dry_idx_h);
 
   // hand views to our preprocess/postprocess functors
-  preprocess_.set_variables(ncol_, nlev_, z_surf, convert_wet_dry_idx_d, T_mid,
-                            p_mid, qv, qv_dry, qc, n_qc, qc_dry, n_qc_dry, qi, n_qi,
-                            qi_dry, n_qi_dry, z_mid, z_iface, dz, pdel_, cldfrac, omega, w_updraft, pblh,
-                            q_h2so4_, q_aitken_so4_, n_aitken_);
-  postprocess_.set_variables(ncol_, nlev_, convert_wet_dry_idx_d, qv_dry,
-                             q_h2so4_, q_aitken_so4_, n_aitken_);
+  preprocess_.initialize(ncol_, nlev_, z_surf, convert_wet_dry_idx_d, atm_, aero_);
+  postprocess_.initialize(ncol_, nlev_, convert_wet_dry_idx_d, atm_, aero_);
 
   // Set field property checks for the fields in this process
   /* e.g.
@@ -315,66 +314,57 @@ void MAMMicrophysics::run_impl(const double dt) {
   // FIXME: nothing depends on simulation time (yet), so we can just use zero for now
   double t = 0.0;
 
-  // Alias member variables
-  auto T_mid = T_mid_;
-  auto p_mid = p_mid_;
-  auto qv_dry = buffer_.qv_dry;
-  auto qc_dry = buffer_.qc_dry;
-  auto n_qc_dry = buffer_.n_qc_dry;
-  auto qi_dry = buffer_.qi_dry;
-  auto n_qi_dry = buffer_.n_qi_dry;
-  auto z_mid = buffer_.z_mid;
-  auto cldfrac = cloud_f_;
-  auto pdel = pdel_;
-  auto w_updraft = buffer_.w_updraft;
-
   // Compute nucleation tendencies on all local columns and accumulate them
   // into our tracer state.
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
     const Int icol = team.league_rank(); // column index
 
     // extract column-specific atmosphere state data
-    haero::Atmosphere atm(nlev_, ekat::subview(T_mid_, icol),
-      ekat::subview(p_mid_, icol),
-      ekat::subview(qv_dry, icol),
-      ekat::subview(qc_dry, icol),
-      ekat::subview(n_qc_dry, icol),
-      ekat::subview(qi_dry, icol),
-      ekat::subview(n_qi_dry, icol),
-      ekat::subview(z_mid, icol),
-      ekat::subview(pdel, icol),
-      ekat::subview(cldfrac, icol),
-      ekat::subview(w_updraft, icol),
-      pblh_(icol));
+    haero::Atmosphere atm(nlev_, ekat::subview(atm_.T_mid, icol),
+      ekat::subview(atm_.p_mid, icol),
+      ekat::subview(atm_.qv_dry, icol),
+      ekat::subview(atm_.qc_dry, icol),
+      ekat::subview(atm_.nc_dry, icol),
+      ekat::subview(atm_.qi_dry, icol),
+      ekat::subview(atm_.ni_dry, icol),
+      ekat::subview(atm_.z_mid, icol),
+      ekat::subview(atm_.pdel, icol),
+      ekat::subview(atm_.cldfrac, icol),
+      ekat::subview(atm_.w_updraft, icol),
+      atm_.pblh(icol));
 
     // set surface state data
     haero::Surface sfc{};
 
     // extract column-specific subviews into aerosol prognostics
-    using ModeIndex = mam4::ModeIndex;
-    using AeroId = mam4::AeroId;
-    using GasId = mam4::GasId;
-
     mam4::Prognostics progs(nlev_);
-    int iait = static_cast<int>(ModeIndex::Aitken);
-    progs.n_mode_i[iait] = ekat::subview(n_aitken_, icol);
-    int iso4 = mam4::aerosol_index_for_mode(ModeIndex::Aitken, AeroId::SO4);
-    progs.q_aero_i[iait][iso4] = ekat::subview(q_aitken_so4_, icol);
-    int ih2so4 = static_cast<int>(GasId::H2SO4);
-    progs.q_gas[ih2so4] = ekat::subview(q_h2so4_, icol);
+    for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+      // this process only deals with interstitial aerosols
+      progs.n_mode_i[m] = ekat::subview(aero_.dry_int_aero_nmr[m], icol);
+      for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+        if (aero_.dry_int_aero_mmr[m][a].data()) {
+          progs.q_aero_i[m][a] = ekat::subview(aero_.dry_int_aero_mmr[m][a], icol);
+        }
+      }
+    }
+    for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+      progs.q_gas[g] = ekat::subview(aero_.dry_gas_mmr[g], icol);
+    }
 
-    // nucleation doesn't use any diagnostics, so it's okay to leave this alone
-    // for now
+    // set up diagnostics
     mam4::Diagnostics diags(nlev_);
 
     // grab views from the buffer to store tendencies
     mam4::Tendencies tends(nlev_);
+    /*
     tends.q_gas[ih2so4] = ekat::subview(buffer_.q_h2so4_tend, icol);
     tends.n_mode_i[iait] = ekat::subview(buffer_.n_aitken_tend, icol);
     tends.q_aero_i[iait][iso4] = ekat::subview(buffer_.q_aitken_so4_tend, icol);
+    */
 
     // run the nucleation process to obtain tendencies
     nucleation_->compute_tendencies(team, t, dt, atm, sfc, progs, diags, tends);
+    /*
 #ifndef NDEBUG
     const int lev_idx = 0;
     if (icol == 0) {
@@ -389,6 +379,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       progs.n_mode_i[iait](klev) += dt * tends.n_mode_i[iait](klev);
       progs.q_aero_i[iait][iso4](klev) += dt * tends.q_aero_i[iait][iso4](klev);
     });
+    */
   });
 
   // postprocess output

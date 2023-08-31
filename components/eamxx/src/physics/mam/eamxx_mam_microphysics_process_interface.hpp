@@ -88,10 +88,10 @@ private_except_cuda:
     Preprocess() = default;
 
     // on host: initializes preprocess functor with necessary state data
-    void init(const int ncol, const int nlev, const Real z_surf,
-              const view_1d_int& convert_wet_dry_idx_d,
-              const mam_coupling::AtmosphericState& atm,
-              const mam_coupling::AerosolState& aero) {
+    void initialize(const int ncol, const int nlev, const Real z_surf,
+                    const view_1d_int& convert_wet_dry_idx_d,
+                    const mam_coupling::AtmosphericState& atm,
+                    const mam_coupling::AerosolState& aero) {
       ncol_ = ncol;
       nlev_ = nlev;
       z_surf_ = z_surf;
@@ -119,8 +119,8 @@ private_except_cuda:
           //--------------------------
           // Vertical velocity from pressure to height
           //--------------------------
-          const auto rho = PF::calculate_density(pdel_(i,k), dz_i(k));
-          w_updraft_(i,k) = PF::calculate_vertical_velocity(omega_(i,k), rho);
+          const auto rho = PF::calculate_density(atm_.pdel(i,k), dz_i(k));
+          atm_.w_updraft(i,k) = PF::calculate_vertical_velocity(atm_.omega(i,k), rho);
 
           //--------------------------
           // Wet to dry mixing ratios
@@ -148,10 +148,14 @@ private_except_cuda:
 
           // calculate dry aerosol mixing ratios
           for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-            aero_.dry_aero_nmr[m]n_aitken_(i,k) = PF::calculate_drymmr_from_wetmmr(aero_.dry_aero_nmr[m](i,k), qv_ik);
-            for (int a = 0; a < mam_coupling::num_aero_species()); ++a) {
-              if (aero_.dry_aero_mmr[m][a].data()) {
-                aero_.dry_aero_mmr[m][a](i,k) = PF::calculate_drymmr_from_wetmmr(aero_.dry_aero_mmr[m][a](i,k), qv_ik);
+            aero_.dry_int_aero_nmr[m](i,k) = PF::calculate_drymmr_from_wetmmr(aero_.wet_int_aero_nmr[m](i,k), qv_ik);
+            aero_.dry_cld_aero_nmr[m](i,k) = PF::calculate_drymmr_from_wetmmr(aero_.wet_cld_aero_nmr[m](i,k), qv_ik);
+            for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+              if (aero_.dry_int_aero_mmr[m][a].data()) {
+                aero_.dry_int_aero_mmr[m][a](i,k) = PF::calculate_drymmr_from_wetmmr(aero_.wet_int_aero_mmr[m][a](i,k), qv_ik);
+              }
+              if (aero_.dry_cld_aero_mmr[m][a].data()) {
+                aero_.dry_cld_aero_mmr[m][a](i,k) = PF::calculate_drymmr_from_wetmmr(aero_.wet_cld_aero_mmr[m][a](i,k), qv_ik);
               }
             }
           }
@@ -183,10 +187,10 @@ private_except_cuda:
     Postprocess() = default;
 
     // on host: initializes postprocess functor with necessary state data
-    void init(const int ncol, const int nlev,
-              const view_1d_int& convert_wet_dry_idx_d,
-              const mam_coupling::AtmosphericState& atm,
-              const mam_coupling::AerosolState& aero) {
+    void initialize(const int ncol, const int nlev,
+                    const view_1d_int& convert_wet_dry_idx_d,
+                    const mam_coupling::AtmosphericState& atm,
+                    const mam_coupling::AerosolState& aero) {
       ncol_ = ncol;
       nlev_ = nlev;
       convert_wet_dry_idx_d_ = convert_wet_dry_idx_d;
@@ -203,15 +207,16 @@ private_except_cuda:
         [&] (const int k) {
           const auto qv_ik = atm_.qv_dry(i,k);
           for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-            aero_.wet_aero_nmr[m]n_aitken_(i,k) = PF::calculate_wetmmr_from_drymmr(aero_.dry_aero_nmr[m](i,k), qv_ik);
+            aero_.wet_int_aero_nmr[m](i,k) = PF::calculate_wetmmr_from_drymmr(aero_.dry_int_aero_nmr[m](i,k), qv_ik);
+            aero_.wet_cld_aero_nmr[m](i,k) = PF::calculate_wetmmr_from_drymmr(aero_.dry_cld_aero_nmr[m](i,k), qv_ik);
             for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-              if (aero_.wet_aero_mmr[m][a].data()) {
-                aero_.wet_aero_mmr[m][a](i,k) = PF::calculate_wetmmr_from_drymmr(aero_.dry_aero_mmr[m][a](i,k), qv_ik);
+              if (aero_.wet_int_aero_mmr[m][a].data()) {
+                aero_.wet_int_aero_mmr[m][a](i,k) = PF::calculate_wetmmr_from_drymmr(aero_.dry_int_aero_mmr[m][a](i,k), qv_ik);
               }
             }
           }
           for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-            aero_.wet_gas_mmr[g](i,k) = PF::calculate_wetmmr_from_wetmmr(aero_.wet_gas_mmr[g](i,k), qv_ik);
+            aero_.wet_gas_mmr[g](i,k) = PF::calculate_wetmmr_from_drymmr(aero_.wet_gas_mmr[g](i,k), qv_ik);
           }
       });
       team.team_barrier();
@@ -229,34 +234,6 @@ private_except_cuda:
 
   }; // MAMMicrophysics::Postprocess
 
-  // storage for local variables, initialized with ATMBufferManager
-  struct Buffer {
-    // number of local fields stored at column midpoints
-    static constexpr int num_2d_mid = 11;
-
-    // local column midpoint fields
-    uview_2d z_mid;             // height at midpoints
-    uview_2d dz;                // layer thickness
-    uview_2d qv_dry;            // dry water vapor mixing ratio (dry air)
-    uview_2d qc_dry;            // dry cloud water mass mixing ratio
-    uview_2d nc_dry;            // dry cloud water number mixing ratio
-    uview_2d qi_dry;            // cloud ice mass mixing ratio
-    uview_2d ni_dry;            // dry cloud ice number mixing ratio
-    uview_2d w_updraft;         // vertical wind velocity
-    uview_2d q_h2so4_tend;      // tendency for H2SO4 gas
-    uview_2d n_aitken_tend;     // tendency for aitken aerosol mode
-    uview_2d q_aitken_so4_tend; // tendency for aitken mode sulfate aerosol
-
-    // number of local fields stored at column interfaces
-    static constexpr int num_2d_iface = 1;
-
-    // local column interface fields
-    uview_2d z_iface; // height at interfaces
-
-    // storage
-    Real* wsm_data;
-  };
-
   // MAM4 aerosol particle size description
   mam4::AeroConfig aero_config_;
 
@@ -273,7 +250,7 @@ private_except_cuda:
 
   // workspace manager for internal local variables
   //ekat::WorkspaceManager<Real, KT::Device> workspace_mgr_;
-  Buffer buffer_;
+  mam_coupling::Buffer buffer_;
 
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
