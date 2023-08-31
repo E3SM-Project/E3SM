@@ -53,10 +53,11 @@ design/Halo
 design/Logging
 design/MachEnv
 design/Metadata
-design/TimeMgr
-design/Reductions
 design/IO
 design/IOStreams
+design/Reductions
+design/ShallowWaterOmega0
+design/TimeMgr
 
 design/OmegaDesignTemplate
 ```
