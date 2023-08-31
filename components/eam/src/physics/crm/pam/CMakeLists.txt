@@ -59,7 +59,7 @@ endif()
 
 if (NOT PAM_SCREAM_USE_CXX)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-     set(PAM_Fortran_FLAGS -g -real-size 64)
+     set(PAM_Fortran_FLAGS -g )
   else()
      set(PAM_Fortran_FLAGS -g -ffree-line-length-none -ffixed-line-length-none )
   endif()
