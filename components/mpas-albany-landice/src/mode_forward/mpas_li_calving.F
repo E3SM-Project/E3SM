@@ -3683,14 +3683,18 @@ module li_calving
          endif
          ! put the damageMax value back to preserve the damage value (no heal)
 
-         where (damage < 0.0_RKIND)
-             damage = 0.0_RKIND
-         end where
-
-         where (damage > 1.0_RKIND)
-             damage = 1.0_RKIND
-         end where
-
+         ! limit damage to [damageNye, 1.0]
+         do iCell = 1, nCells
+            if (damage(iCell) < 0.0_RKIND) then
+                damage(iCell) = 0.0_RKIND
+            end if
+            if (damage(iCell) < damageNye(iCell)) then
+                damage(iCell) = damageNye(iCell)
+            end if
+            if (damage(iCell) > 1.0_RKIND) then
+                damage(iCell) = 1.0_RKIND
+            end if
+         end do
 
          do iCell = 1, nCells
             if (li_mask_is_grounded_ice(cellMask(iCell)) .or. .not. li_mask_is_ice(cellMask(iCell))) then
