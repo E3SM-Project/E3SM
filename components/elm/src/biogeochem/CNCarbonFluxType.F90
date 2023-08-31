@@ -1113,7 +1113,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod   , only : isnan => shr_infnan_isnan, nan => shr_infnan_nan, assignment(=)
-    use clm_time_manager , only : is_restart
+    use elm_time_manager , only : is_restart
     use elm_varcon       , only : c13ratio, c14ratio
     use elm_varctl       , only : use_lch4, use_betr
     use restUtilMod
@@ -1584,7 +1584,7 @@ contains
     !
     ! !USES:
     use elm_varctl       , only : iulog
-    use clm_time_manager , only : get_step_size
+    use elm_time_manager , only : get_step_size
     use elm_varcon       , only : secspday
     use elm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
     use subgridAveMod    , only : p2c
@@ -2338,7 +2338,7 @@ subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
    use shr_sys_mod, only: shr_sys_flush
    use elm_varpar , only: nlevdecomp_full,ndecomp_pools,ndecomp_cascade_transitions
    use elm_varpar , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-   use clm_time_manager    , only : get_step_size
+   use elm_time_manager    , only : get_step_size
 !
 ! !ARGUMENTS:
    implicit none

@@ -338,7 +338,7 @@ contains
   !  get soil temperature/saturation from CLM to soil BGC module
   !
   ! !USES:
-    use clm_time_manager    , only : get_nstep
+    use elm_time_manager    , only : get_nstep
     use shr_const_mod       , only : SHR_CONST_G
 
 
@@ -418,7 +418,7 @@ contains
   !  get soil temperature/saturation from CLM to soil BGC module
   !
   ! !USES:
-    use clm_time_manager    , only : get_nstep
+    use elm_time_manager    , only : get_nstep
     use shr_const_mod       , only : SHR_CONST_G
 
 
@@ -602,7 +602,7 @@ contains
   ! get clm bgc flux variables: external inputs to bgc state variables (pools)
   !
   ! !USES:
-    use clm_time_manager      , only : get_curr_date
+    use elm_time_manager      , only : get_curr_date
     use elm_varctl            , only : spinup_state
     use CNDecompCascadeConType, only : decomp_cascade_con
 
@@ -925,7 +925,7 @@ contains
            nitrogenstate_vars, phosphorusstate_vars)
 
     use CNDecompCascadeConType, only : decomp_cascade_con
-    use clm_time_manager, only : get_step_size
+    use elm_time_manager, only : get_step_size
 
     implicit none
 
@@ -1360,7 +1360,7 @@ contains
 
     ! USES:
     use SoilLittDecompMod          , only: SoilLittDecompAlloc
-    use clm_time_manager           , only: get_step_size
+    use elm_time_manager           , only: get_step_size
 
     ! ARGUMENTS:
     type(bounds_type)                   , intent(in)    :: bounds

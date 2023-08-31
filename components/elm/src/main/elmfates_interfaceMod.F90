@@ -81,10 +81,10 @@ module ELMFatesInterfaceMod
    use SurfaceAlbedoType , only : surfalb_type
    use SolarAbsorbedType , only : solarabs_type
    use FrictionVelocityType , only : frictionvel_type
-   use clm_time_manager  , only : is_restart
+   use elm_time_manager  , only : is_restart
    use ncdio_pio         , only : file_desc_t, ncd_int, ncd_double
    use restUtilMod,        only : restartvar
-   use clm_time_manager  , only : get_days_per_year, &
+   use elm_time_manager  , only : get_days_per_year, &
                                   get_curr_date,     &
                                   get_ref_date,      &
                                   timemgr_datediff,  &
@@ -131,7 +131,7 @@ module ELMFatesInterfaceMod
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
 
    use PRTGenericMod         , only : num_elements
-   use EDTypesMod            , only : ed_patch_type
+   use FatesPatchMod         , only : fates_patch_type
    use FatesInterfaceTypesMod, only : hlm_stepsize
    use EDMainMod             , only : ed_ecosystem_dynamics
    use EDMainMod             , only : ed_update_site
@@ -1908,7 +1908,7 @@ contains
                                               ! on the site
       integer  :: nc                          ! clump index
 
-      type(ed_patch_type), pointer :: cpatch  ! c"urrent" patch  INTERF-TODO: SHOULD
+      type(fates_patch_type), pointer :: cpatch  ! c"urrent" patch  INTERF-TODO: SHOULD
                                               ! BE HIDDEN AS A FATES PRIVATE
 
       associate( forc_solad => top_af_inst%solad, &
@@ -2189,7 +2189,6 @@ contains
     use elm_varcon        , only : rgas, tfrz, namep
     use elm_varctl        , only : iulog
     use quadraticMod      , only : quadratic
-    use EDtypesMod        , only : ed_patch_type, ed_cohort_type, ed_site_type
 
     !
     ! !ARGUMENTS:
@@ -3107,10 +3106,10 @@ end subroutine wrap_update_hifrq_hist
    use FatesInterfaceTypesMod, only : nlevage_fates    => nlevage
    use FatesInterfaceTypesMod, only : nlevheight_fates => nlevheight
    use FatesInterfaceTypesMod, only : nlevdamage_fates => nlevdamage
-   use EDtypesMod,        only : nfsc_fates       => nfsc
+   use FatesLitterMod,        only : nfsc_fates       => nfsc
    use FatesLitterMod,    only : ncwd_fates       => ncwd
-   use EDtypesMod,        only : nlevleaf_fates   => nlevleaf
-   use EDtypesMod,        only : nclmax_fates     => nclmax
+   use EDParamsMod,       only : nlevleaf_fates   => nlevleaf
+   use EDParamsMod,       only : nclmax_fates     => nclmax
    use FatesInterfaceTypesMod, only : numpft_fates     => numpft
    use FatesInterfaceTypesMod, only : nlevcoage
 
@@ -3204,7 +3203,7 @@ end subroutine wrap_update_hifrq_hist
  subroutine GetAndSetTime()
 
    ! CLM MODULES
-   use clm_time_manager  , only : get_days_per_year, &
+   use elm_time_manager  , only : get_days_per_year, &
                                   get_curr_date,     &
                                   get_ref_date,      &
                                   timemgr_datediff

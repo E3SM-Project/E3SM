@@ -16,7 +16,7 @@ module CH4Mod
   use elm_varcon         , only : denh2o, denice, tfrz, grav, spval, rgas, grlnd
   use elm_varcon         , only : catomw, s_con, d_con_w, d_con_g, c_h_inv, kh_theta, kh_tbase
   use landunit_varcon    , only : istdlak
-  use clm_time_manager   , only : get_step_size, get_nstep
+  use elm_time_manager   , only : get_step_size, get_nstep
   use elm_varctl         , only : iulog, use_cn, use_lch4, use_fates
   use abortutils         , only : endrun
   use decompMod          , only : bounds_type

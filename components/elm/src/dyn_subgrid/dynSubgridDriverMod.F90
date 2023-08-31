@@ -170,7 +170,7 @@ contains
     use dynPatchStateUpdaterMod   , only : set_old_patch_weights, set_new_patch_weights
     use dynColumnStateUpdaterMod  , only : set_old_column_weights, set_new_column_weights
     use dynPriorWeightsMod        , only : set_prior_weights
-    use clm_time_manager , only : get_step_size
+    use elm_time_manager , only : get_step_size
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds_proc  ! processor-level bounds

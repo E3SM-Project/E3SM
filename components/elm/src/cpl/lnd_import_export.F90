@@ -31,7 +31,7 @@ contains
     use elm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn, use_fates
     use elm_varctl       , only: startdate_add_temperature, startdate_add_co2
     use elm_varcon       , only: rair, o2_molar_const, c13ratio
-    use clm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
+    use elm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
     use controlMod       , only: NLFilename
     use shr_const_mod    , only: SHR_CONST_TKFRZ, SHR_CONST_STEBOL
     use domainMod        , only: ldomain
@@ -1353,7 +1353,7 @@ contains
     ! !USES:
     use shr_kind_mod       , only : r8 => shr_kind_r8
     use elm_varctl         , only : iulog, create_glacier_mec_landunit
-    use clm_time_manager   , only : get_nstep, get_step_size  
+    use elm_time_manager   , only : get_nstep, get_step_size  
     use domainMod          , only : ldomain
     use seq_drydep_mod     , only : n_drydep
     use shr_megan_mod      , only : shr_megan_mechcomps_n

@@ -31,8 +31,8 @@ module ColumnDataType
   use ch4varcon       , only : allowlakeprod
   use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr, pinit_beta1, pinit_beta2
   use soilorder_varcon, only : smax, ks_sorption
-  use clm_time_manager, only : is_restart, get_nstep
-  use clm_time_manager, only : is_first_step, get_step_size
+  use elm_time_manager, only : is_restart, get_nstep
+  use elm_time_manager, only : is_first_step, get_step_size
   use landunit_varcon , only : istice, istwet, istsoil, istdlak, istcrop, istice_mec
   use column_varcon   , only : icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall, icol_shadewall
   use histFileMod     , only : hist_addfld1d, hist_addfld2d, no_snow_normal
