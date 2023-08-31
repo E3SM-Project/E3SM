@@ -1275,7 +1275,7 @@ contains
        do f = 1,nflds
           if ( file%zonal_ave ) then
                 ! Defend against zonal mean surface fields that do not set the value via dimension match
-                if (flds(f)%coords(ZA_LEVDIM) .gt. 0) cnt3(flds(f)%coords(ZA_LATDIM)) = file%nlat
+                if (flds(f)%coords(ZA_LATDIM) .gt. 0) cnt3(flds(f)%coords(ZA_LATDIM)) = file%nlat
              if (flds(f)%srf_fld) then
                 ! Defend against zonal mean surface fields that do not set the value via dimension match
                 if (flds(f)%coords(ZA_LEVDIM) .gt. 0) cnt3(flds(f)%coords(ZA_LEVDIM)) = 1
