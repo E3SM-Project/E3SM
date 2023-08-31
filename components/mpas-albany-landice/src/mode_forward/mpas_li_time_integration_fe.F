@@ -245,6 +245,8 @@ module li_time_integration_fe
          err = ior(err, err_tmp)
          call mpas_timer_stop("advect thickness and tracers")
 
+         call mpas_dmpar_field_halo_exch(domain, 'rkTend')
+
          ! === finalize damage after advection ===========
          if (config_finalize_damage_after_advection) then
              call mpas_timer_start("finalize damage")
