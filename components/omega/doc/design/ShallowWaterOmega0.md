@@ -1,5 +1,5 @@
 (omega-design-shallow-water-omega0)=
-# ShallowWaterOmega0
+# Omega v0: Shallow Water
 
 ## 1 Overview
 
