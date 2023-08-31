@@ -57,6 +57,7 @@ module ocn_diagnostics
 
    public :: ocn_diagnostic_solve, &
              ocn_diagnostic_solve_layerThicknessEdge, &
+             ocn_diagnostic_solve_wctEdge, &
              ocn_relativeVorticity_circulation, &
              ocn_vert_transport_velocity_top, &
              ocn_fuperp, &
@@ -666,6 +667,130 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine ocn_relativeVorticity_circulation!}}}
+
+!***********************************************************************
+!
+!  routine ocn_diagnostic_solve_wctEdge
+!
+!> \brief   Computes layer thickness at edge
+!> \author  Carolyn Begeman
+!> \date    July 2023
+!> \details
+!>  This routine computes the water column thickness on edges, wctEdge, which
+!>  can either be the mean or an upwind value, depending on user input.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_diagnostic_solve_wctEdge(btrVelocity, sshCell, &
+                         bottomDepthEdge, wctEdge)!{{{
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         btrVelocity,   &!< barotropic velocity
+         sshCell,       &!< ssh at cells, used for centered water column
+                         !< thickness
+         bottomDepthEdge !< bottom depth centered at edges, used for
+                         !< centered water column thickness
+      ! bottomDepth is already present
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      ! Outputs are the shared variables from diagnostic_variables:
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+         wctEdge !< water column thickness on edge
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      integer :: &
+         iCell, iEdge, &! edge and cell loop indices
+         cell1, cell2  ! neighbor cell indices across an edge
+
+
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
+
+      ! Compute edge flux based on option set on init
+      select case (thickEdgeFluxChoice)
+
+      case (thickEdgeFluxCenter)
+         ! Use centered (mean) thickness as flux value
+
+         ! Compute mean layer thickness at edge
+#ifdef MPAS_OPENACC
+         !$acc enter data copyin(bottomDepthEdge, sshCell, wctEdge)
+         !$acc parallel loop &
+         !$acc    present(bottomDepthEdge, sshCell, wctEdge, cellsOnEdge) &
+         !$acc    private(iEdge, cell1, cell2)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime) private (cell1, cell2)
+#endif
+         do iEdge = 1, nEdgesAll
+            if ( maxLevelEdgeTop(iEdge) == 0 ) cycle
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            wctEdge(iEdge) = 0.5_RKIND*(sshCell(cell1) + sshCell(cell2)) &
+                             + bottomDepthEdge(iEdge)
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+         !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+         !$acc exit data copyout(wctEdge) delete(bottomDepthEdge, sshCell)
+#endif
+
+      case (thickEdgeFluxUpwind)
+
+         ! Use upwind thickness as the edge flux value
+#ifdef MPAS_OPENACC
+         !$acc enter data copyin(bottomDepthEdge, sshCell, btrVelocity, wctEdge)
+         !$acc parallel loop &
+         !$acc    present(bottomDepthEdge, btrVelocity, sshCell, cellsOnEdge, maxLevelEdgeTop, wctEdge) &
+         !$acc    private(cell1, cell2, iEdge)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime) private(cell1, cell2)
+#endif
+         do iEdge = 1, nEdgesAll
+            if ( maxLevelEdgeTop(iEdge) == 0 ) cycle
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
+            if (btrVelocity(iEdge) > 0.0_RKIND) then
+               wctEdge(iEdge) = sshCell(cell1) + bottomDepthEdge(iEdge)
+            elseif (btrVelocity(iEdge) < 0.0_RKIND) then
+               wctEdge(iEdge) = sshCell(cell2) + bottomDepthEdge(iEdge)
+            else
+               wctEdge(iEdge) = max(sshCell(cell1), sshCell(cell2)) &
+                                + bottomDepthEdge(iEdge)
+            end if
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+         !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+         !$acc exit data copyout(wctEdge) delete(bottomDepthEdge, sshCell, btrVelocity)
+#endif
+
+      case default
+         ! Should have been caught on init
+         call mpas_log_write('Thickness flux option unknown', &
+                             MPAS_LOG_CRIT)
+
+      end select
+
+   end subroutine ocn_diagnostic_solve_wctEdge!}}}
 
 !***********************************************************************
 !
@@ -4362,17 +4487,14 @@ contains
                  & 'Set config_disable_vel_hadv to true for a linear test case. ', &
                  MPAS_LOG_CRIT)
          end if
+      elseif (trim(config_thickness_flux_type) == 'upwind') then
+         thickEdgeFluxChoice = thickEdgeFluxUpwind
+         call mpas_log_write('Thickness flux option set to ' //&
+              & trim(config_thickness_flux_type))
       else
-         if (config_use_wetting_drying .and. &
-             (trim(config_thickness_flux_type) /= 'centered')) then
-            if ( trim(config_thickness_flux_type) == 'upwind') then
-               thickEdgeFluxChoice = thickEdgeFluxUpwind
-            end if
-         else
-            call mpas_log_write('Thickness flux option of ' //&
-                 & trim(config_thickness_flux_type) // &
-                 & ' is not known', MPAS_LOG_CRIT)
-         end if
+         call mpas_log_write('Thickness flux option of ' //&
+              & trim(config_thickness_flux_type) // &
+              & 'is not known', MPAS_LOG_CRIT)
       end if
 
       ! Initialize coefficient choice for computing land ice drag
