@@ -24,6 +24,8 @@ nav:
       - 'Standalone': 'developer/standalone_testing.md'
       - 'Full model': 'developer/cime_testing.md'
       - 'CI and Nightly Testing': 'developer/ci_nightly.md'
+  - 'Technical Guide':
+    - 'AeroCOM cloud top': 'technical/aerocom_cldtop.md'
 
 edit_uri: ""
 
