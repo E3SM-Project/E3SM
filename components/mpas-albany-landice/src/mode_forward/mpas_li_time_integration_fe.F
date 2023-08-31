@@ -30,11 +30,12 @@ module li_time_integration_fe
 
    use li_advection
    use li_calving, only: li_calve_ice, li_restore_calving_front, li_calculate_damage, li_finalize_damage_after_advection
-   use li_thermal, only: li_thermal_solver
+   use li_thermal, only: li_thermal_solver, li_enthalpy_to_temperature_kelvin
    use li_iceshelf_melt
    use li_diagnostic_vars
    use li_setup
    use li_constants
+   use li_mesh
 
    implicit none
    private
@@ -103,17 +104,57 @@ module li_time_integration_fe
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
       integer :: err_tmp
-
+      type (mpas_pool_type), pointer :: geometryPool, thermalPool, meshPool
+      
       logical, pointer :: config_restore_calving_front
       logical, pointer :: config_calculate_damage
       logical, pointer :: config_finalize_damage_after_advection
+      character (len=StrKIND), pointer :: config_thickness_advection
+      character (len=StrKIND), pointer :: config_thermal_solver
+      integer :: rkStep, iCell, iTracer, k
+      real (kind=RKIND), dimension(:,:,:), pointer :: rkTend
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, &
+                                                    temperature, &
+                                                    enthalpy, &
+                                                    waterFrac
+      real (kind=RKIND), dimension(:), pointer :: thickness, damage, passiveTracer2d
+      real (kind=RKIND), dimension(:), pointer :: layerCenterSigma, layerThicknessFractions
+      real (kind=RKIND), dimension(:), allocatable :: damageProv, passiveTracer2dProv
+      real (kind=RKIND), dimension(:,:), allocatable :: layerThicknessProv, &
+                                                        temperatureProv, &
+                                                        enthalpyProv
+      integer, pointer :: nVertLevels
+      integer, pointer :: nCells
+      real (kind=RKIND), pointer :: deltat
 
       err = 0
       err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_restore_calving_front', config_restore_calving_front)
       call mpas_pool_get_config(liConfigs, 'config_calculate_damage',config_calculate_damage)
-      call mpas_pool_get_config(liConfigs, 'config_finalize_damage_after_advection',config_finalize_damage_after_advection)
+      call mpas_pool_get_config(liConfigs, 'config_finalize_damage_after_advection', config_finalize_damage_after_advection)
+      call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
+      call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'thermal', thermalPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+
+      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
+      call mpas_pool_get_array(meshPool, 'deltat', deltat)
+      call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
+
+      allocate(temperatureProv(nVertLevels, nCells+1))
+      allocate(enthalpyProv(nVertLevels, nCells+1))
+      allocate(layerThicknessProv(nVertLevels, nCells+1))
+      allocate(damageProv(nCells+1))
+      allocate(passiveTracer2dProv(nCells+1))
+
+      temperatureProv(:,:) = 0.0_RKIND
+      enthalpyProv(:,:) = 0.0_RKIND
+      layerThicknessProv(:,:) = 0.0_RKIND
+      damageProv(:) = 0.0_RKIND
+      passiveTracer2dProv(:) = 0.0_RKIND
 
 ! === Prepare for advection (including CFL checks) ===========
 ! This has to come first currently, because it sets the time step!
@@ -135,6 +176,8 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("face melting for grounded ice")
 
+! *** TODO: Should basal melt rate calculation and column physics go inside RK loop? ***
+
 ! === Basal melting for floating ice ===========
       call mpas_timer_start("basal melting for floating ice")
       call li_basal_melt_floating_ice(domain, err_tmp)
@@ -147,37 +190,112 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("vertical therm")
 
-! === calculate damage ===========
-      if (config_calculate_damage) then
-          call mpas_timer_start("damage")
-          call li_calculate_damage(domain, err_tmp)
-          err = ior(err, err_tmp)
-          call mpas_timer_stop("damage")
-      endif
-
-! === Compute new state for prognostic variables ==================================
-      call mpas_timer_start("advect thickness and tracers")
-      call advection_solver(domain, err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_timer_stop("advect thickness and tracers")
-
-! === finalize damage after advection ===========
-      if (config_finalize_damage_after_advection) then
-          call mpas_timer_start("finalize damage")
-          call li_finalize_damage_after_advection(domain, err_tmp)
-          err = ior(err, err_tmp)
-          call mpas_timer_stop("finalize damage")
-      endif
-
 ! === Update subglacial hydrology  ===========
 ! It's not clear where the best place to call this should be.
 ! Seems sensible to put it after thermal evolution is complete to get updated basal melting source term.
 ! Also seems (might be?) better to put it after geometry evolution.
 ! We want it before the velocity solve since the hydro model can control  the velo basal b.c.
+! This was moved to be before geometry evolution to simplify RK time integration.
       call mpas_timer_start("subglacial hydro")
       call li_SGH_solve(domain, err_tmp)
       err = ior(err, err_tmp)
       call mpas_timer_stop("subglacial hydro")
+
+! *** TODO: Should basal melt rate calculation and column physics go inside RK loop? ***
+      call mpas_pool_get_array(geometryPool, 'rkTend', rkTend)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
+      call mpas_pool_get_array(geometryPool, 'passiveTracer2d', passiveTracer2d)
+      call mpas_pool_get_array(geometryPool, 'damage', damage)
+
+      call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+      call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
+      call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
+      ! Save relevant fields before RK loop, to be used in update at the end
+      temperatureProv(:,:) = temperature(:,:)
+      enthalpyProv(:,:) =  enthalpy(:,:)
+      layerThicknessProv(:,:) = layerThickness(:,:)
+      damageProv(:) = damage(:)
+      passiveTracer2dProv(:) = passiveTracer2d(:)
+      rkTend(:,:,:) = 0.0_RKIND
+! *** Start RK loop ***
+      do rkStep = 1, 2
+         ! === calculate damage ===========
+         if (config_calculate_damage) then
+             call mpas_timer_start("damage")
+             call li_calculate_damage(domain, rkTend(2,:,:), err_tmp)
+             err = ior(err, err_tmp)
+             call mpas_timer_stop("damage")
+         endif
+
+         ! === Compute new state for prognostic variables ===
+         call mpas_timer_start("advect thickness and tracers")
+         call advection_solver(domain, rkTend, err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_timer_stop("advect thickness and tracers")
+
+         ! === finalize damage after advection ===========
+         if (config_finalize_damage_after_advection) then
+             call mpas_timer_start("finalize damage")
+             call li_finalize_damage_after_advection(domain, err_tmp)
+             err = ior(err, err_tmp)
+             call mpas_timer_stop("finalize damage")
+         endif
+
+         ! Update thickness, damage, temperature or enthalpy, passiveTracer2d 
+         ! before final velocity solve
+         if (rkStep .eq. 2) then ! or whichever is last rk step
+            ! y_{n+1} = y_n + (k1 + k2) / 2
+            if (trim(config_thermal_solver) == 'enthalpy') then
+               enthalpy(:,:) = enthalpyProv(:,:) + deltat * rkTend(1,:,:) / 2.0_RKIND
+               ! given the enthalpy, compute the temperature and water fraction
+               do iCell = 1, nCells
+
+                  call li_enthalpy_to_temperature_kelvin(&
+                       layerCenterSigma,                           &
+                       thickness(iCell),                           &
+                       enthalpy(:,iCell),     &
+                       temperature(:,iCell),  &
+                       waterFrac(:,iCell))
+
+               enddo
+            elseif (trim(config_thermal_solver) == 'temperature') then
+               temperature(:,:) = temperatureProv(:,:) + deltat * rkTend(1,:,:) / 2.0_RKIND
+            endif
+
+            if (config_calculate_damage) then
+               do iCell = 1, nCells
+                  damage(iCell) = damageProv(iCell) + deltat * sum(rkTend(2,:,iCell) &
+                              * layerThicknessFractions) / 2.0_RKIND
+               enddo
+            endif
+
+            do iCell = 1, nCells
+               passiveTracer2d(iCell) = passiveTracer2dProv(iCell) + deltat * & 
+                                        sum(rkTend(3,:,iCell) * layerThicknessFractions) / 2.0_RKIND
+            enddo
+
+            if (trim(config_thickness_advection) == 'fct') then
+               layerThickness(:,:) = layerThicknessProv(:,:) + deltat * rkTend(4,:,:) / 2.0_RKIND
+               thickness = sum(layerThickness, 1)
+            endif
+
+            ! === Ensure damage is within bounds after full time integration ===
+            if (config_finalize_damage_after_advection) then
+                call mpas_timer_start("finalize damage")
+                call li_finalize_damage_after_advection(domain, err_tmp)
+                err = ior(err, err_tmp)
+                call mpas_timer_stop("finalize damage")
+            endif
+         endif
+         
+         ! Update velocity for each RK step
+         ! === Solve Velocity =====================
+         call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
+         err = ior(err, err_tmp)
+
+! *** end RK loop ***
+      enddo
 
 ! === Calve ice ========================
       call mpas_timer_start("calve_ice")
@@ -207,10 +325,11 @@ module li_time_integration_fe
       call li_bedtopo_solve(domain, err=err_tmp)
       err = ior(err, err_tmp)
 
+! TODO: Determine whether we need to update velocities again
 ! === Solve Velocity =====================
-      ! During time-stepping, we always solveVelo
-      call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
-      err = ior(err, err_tmp)
+!      ! During time-stepping, we always solveVelo
+!      call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
+!      err = ior(err, err_tmp)
 
 ! === Calculate diagnostic variables for new state =====================
 
@@ -591,7 +710,7 @@ module li_time_integration_fe
 !>        in calculate tendencies are now in prepare_advection.
 !-----------------------------------------------------------------------
 
-   subroutine advection_solver(domain, err)
+   subroutine advection_solver(domain, rkTend, err)
 
       use mpas_timekeeping
       use li_mask
@@ -604,7 +723,7 @@ module li_time_integration_fe
       ! input/output variables
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
-
+      real (kind=RKIND), dimension(:,:,:), intent(inout) :: rkTend
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------

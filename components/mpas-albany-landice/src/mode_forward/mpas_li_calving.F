@@ -3314,7 +3314,7 @@ module li_calving
 
 !-----------------------------------------------------------------------
 
-   subroutine li_calculate_damage(domain, err)
+   subroutine li_calculate_damage(domain, rkTend, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -3330,7 +3330,7 @@ module li_calving
       ! output variables
       !-----------------------------------------------------------------
       integer, intent(out) :: err !< Output: error flag
-
+      real (kind=RKIND), dimension(:,:), intent(out) :: rkTend
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
@@ -3368,8 +3368,8 @@ module li_calving
       real (kind=RKIND), pointer :: deltat !< time step (s)
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
-      integer, pointer :: nCells
-      integer :: iCell, jCell, iNeighbor, n_damage_downstream
+      integer, pointer :: nCells, nVertLevels
+      integer :: iCell, jCell, iNeighbor, n_damage_downstream, k
       real(kind=RKIND) :: damage_downstream
       real(kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY
       real(kind=RKIND), dimension(6) :: localMinInfo, localMaxInfo, globalMinInfo, globalMaxInfo
@@ -3396,6 +3396,7 @@ module li_calving
 
          ! get fields
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
          call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
          call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
@@ -3455,6 +3456,10 @@ module li_calving
          !    damageSource(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
 
          ddamagedt(:) = damageSource(:) * damage(:)
+         ! Update damage tendency for RK time integration
+         do k = 1, nVertLevels
+            rkTend(k,:) = rkTend(k,:) + ddamagedt(:)
+         enddo
 
          damage(:) = damage(:) + ddamagedt(:) * deltat
 

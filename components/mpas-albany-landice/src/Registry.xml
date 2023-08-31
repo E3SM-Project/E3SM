@@ -1183,6 +1183,9 @@ is the value of that variable from the *previous* time level!
                 <var name="dynamicThickening" type="real" dimensions="nCells Time" units="m a^{-1}"
                      description="diagnostic field of dynamic thickening rate (calculated as negative of flux divergence)"
                 />
+                <var name="rkTend" type="real" dimensions="maxTracersAdvect nCells Time" units="varies"
+                     description="accumulated tendencies for RK time integration"
+                />
                 <var name="cellMask" type="integer" dimensions="nCells Time" units="none"
                      description="bitmask indicating various properties about the ice sheet on cells.  cellMask only needs to be a restart field if config_allow_additional_advance = false (to keep the mask of initial ice extent)"
                 />
