@@ -32,6 +32,7 @@
 	path = cime
 	url = git@github.com:ESMCI/cime.git
 	branch = master
+        ignore = dirty
 [submodule "externals/YAKL"]
 	path = externals/YAKL
 	url = git@github.com:mrnorman/YAKL.git
