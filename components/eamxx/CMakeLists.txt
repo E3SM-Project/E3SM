@@ -477,6 +477,7 @@ if (SCREAM_CIME_BUILD AND SCREAM_DYN_TARGET STREQUAL "theta-l_kokkos")
   set (DEFAULT_SCREAM_DYNAMICS_DYCORE "Homme")
 endif()
 
+option (SCREAM_ENABLE_ML_CORRECTION "Whether to enable ML correction parametrization" OFF)
 set(SCREAM_DYNAMICS_DYCORE ${DEFAULT_SCREAM_DYNAMICS_DYCORE} CACHE STRING
   "The name of the dycore to be used for dynamics. If NONE, then any code/test requiring dynamics is disabled.")
 

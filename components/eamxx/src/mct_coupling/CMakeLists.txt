@@ -42,10 +42,12 @@ set (SCREAM_LIBS
      diagnostics
      tms
 )
+if (SCREAM_ENABLE_ML_CORRECTION)
+  list (APPEND SCREAM_LIBS ml_correction)
+endif ()
 if (SCREAM_ENABLE_MAM)
-  set(SCREAM_LIBS ${SCREAM_LIBS} mam)
+  list (APPEND SCREAM_LIBS mam)
 endif()
-
 
 # Create atm lib
 add_library(atm ${ATM_SRC})
