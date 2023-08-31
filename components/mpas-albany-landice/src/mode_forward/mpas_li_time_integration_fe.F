@@ -146,6 +146,8 @@ module li_time_integration_fe
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
       call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       allocate(temperatureProv(nVertLevels, nCells+1))
       allocate(enthalpyProv(nVertLevels, nCells+1))

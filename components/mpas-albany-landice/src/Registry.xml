@@ -1183,7 +1183,7 @@ is the value of that variable from the *previous* time level!
                 <var name="dynamicThickening" type="real" dimensions="nCells Time" units="m a^{-1}"
                      description="diagnostic field of dynamic thickening rate (calculated as negative of flux divergence)"
                 />
-                <var name="rkTend" type="real" dimensions="maxTracersAdvect nCells Time" units="varies"
+                <var name="rkTend" type="real" dimensions="maxTracersAdvect nVertLevels nCells Time" units="none"
                      description="accumulated tendencies for RK time integration"
                 />
                 <var name="cellMask" type="integer" dimensions="nCells Time" units="none"
