@@ -15,3 +15,4 @@ TODO: add links to papers/github-repos, and a SMALL description
 * spa: prescribed aerosols, blah blah
 * surface coupling: blah
 * mam: prognostic aerosols, blah blah
+nudging: This process is responsible for nudging the model simulation given a set of files with a target nudged state.
