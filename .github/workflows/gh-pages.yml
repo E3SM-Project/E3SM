@@ -54,11 +54,11 @@ jobs:
       # only deploy to the main github page when there is a push to master
       - if: ${{ github.event_name == 'push' }}
         name: GitHub Pages action
-        uses: peaceiris/actions-gh-pages@v3.9.3
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          # information about GITHUB_TOKEN are in settings
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./components/eamxx/site
+          # Do not remove existing pr-preview pages
+          clean-exclude: pr-preview
+          folder: ./components/eamxx/site
 
       # If it's a PR, deploy to a preview page
       - if: ${{ github.event_name == 'pull_request' }}
