@@ -1808,7 +1808,7 @@ contains
            !!
            if (cnt(1).eq.1) then!!for single timeseries
                 do k=1,1
-                loc_arr(1:ncols,k,c-begchunk+1) = wrk_out(1)
+                loc_arr(1:ncols,k,c-begchunk+1) = wrk_in(1)
                 end do
            else
                 do k=1,1
