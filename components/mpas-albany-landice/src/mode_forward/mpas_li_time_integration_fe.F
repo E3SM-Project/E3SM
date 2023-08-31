@@ -841,6 +841,7 @@ module li_time_integration_fe
                  geometryPool,           &
                  thermalPool,            &
                  scratchPool,            &
+                 rkTend,                 &
                  err_tmp,                &
                  advectTracersIn = .true.)
 
@@ -860,6 +861,7 @@ module li_time_integration_fe
                  geometryPool,           &
                  thermalPool,            &
                  scratchPool,            &
+                 rkTend,                 &
                  err_tmp,                &
                  advectTracersIn = .false.)
 

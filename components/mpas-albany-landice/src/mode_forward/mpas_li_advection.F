@@ -81,6 +81,7 @@ module li_advection
         geometryPool,           &
         thermalPool,            &
         scratchPool,            &
+        rkTend,                 &
         err,                    &
         advectTracersIn)
 
@@ -109,6 +110,9 @@ module li_advection
       !
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
+
+      real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
+           rkTend                 !< Input/output: accumulated tendencies for RK time integration
 
       type (mpas_pool_type), intent(inout) :: &
            velocityPool           !< Input/output: velocity information
@@ -207,12 +211,14 @@ module li_advection
       real (kind=RKIND), dimension(:), pointer :: dvEdge
 
       character (len=StrKIND), pointer :: &
-           config_thickness_advection   ! method for advecting thickness and tracers
+           config_thickness_advection, &   ! method for advecting thickness and tracers
+           config_thermal_solver
 
       logical, pointer :: &
            config_print_thickness_advection_info, &  !TODO - change to config_print_advection_info?
            config_print_thermal_info, &
-           config_thermal_calculate_bmb
+           config_thermal_calculate_bmb, &
+           config_calculate_damage
 
       real (kind=RKIND), pointer :: &
            config_ice_density,    & ! rhoi
@@ -225,7 +231,7 @@ module li_advection
 
       logical :: advectTracers     ! if true, then advect tracers as well as thickness
 
-      integer :: iCell1, iCell2, theGroundedCell
+      integer :: iCell1, iCell2, theGroundedCell, iTracer
       integer, parameter :: horizAdvOrder = 4
       integer, parameter :: vertAdvOrder = 1
 
@@ -315,6 +321,8 @@ module li_advection
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_num_halos', config_num_halos)
+      call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
+      call mpas_pool_get_config(liConfigs, 'config_calculate_damage', config_calculate_damage)
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
@@ -514,11 +522,27 @@ module li_advection
                 call mpas_log_write(trim(config_tracer_advection) // &
                                     ' tracer advection is not currently supported with fct thickness advection.', MPAS_LOG_ERR)
              endif
+
+             ! Update tendencies for RK integration
+             iTracer = 0
+             if ( (trim(config_thermal_solver) == 'enthalpy') .or. (trim(config_thermal_solver) == 'temperature') ) then
+                iTracer = iTracer + 1
+                rkTend(1,:,:) = rkTend(1,:,:) + tend(iTracer,:,:)
+             endif
+             if (config_calculate_damage) then
+                iTracer = iTracer + 1
+                rkTend(2,:,:) = rkTend(2,:,:) + tend(iTracer,:,:)
+             endif
+             iTracer = iTracer + 1
+             rkTend(3,:,:) = rkTend(3,:,:) + tend(iTracer,:,:)  ! passiveTracer2d
+             iTracer = iTracer + 1
+             rkTend(4,:,:) = rkTend(4,:,:) + tend(iTracer,:,:)  ! layerThickness
+
          else
-            err_tmp = 1
-            call mpas_log_write("config_thickness_advection = " // trim(config_thickness_advection) // &
-                                ", config_tracer_advection = " // trim(config_tracer_advection) // &
-                                " is not a supported combination.", MPAS_LOG_ERR)
+             err_tmp = 1
+             call mpas_log_write("config_thickness_advection = " // trim(config_thickness_advection) // &
+                                 ", config_tracer_advection = " // trim(config_tracer_advection) // &
+                                 " is not a supported combination.", MPAS_LOG_ERR)
          endif
 
          if (config_print_thickness_advection_info) then
