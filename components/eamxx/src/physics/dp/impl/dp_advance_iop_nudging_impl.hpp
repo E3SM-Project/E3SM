@@ -61,7 +61,7 @@ void Functions<S,D>::advance_iop_nudging(
     const auto condition = pmidm1(k) <= iop_nudge_tq_low*100
                            &&
                            pmidm1(k) >= iop_nudge_tq_high*100;
-    rtau(k).set(condition, std::max(scm_dt, iop_nudge_tscale));
+    rtau(k).set(condition, ekat::impl::max(scm_dt, iop_nudge_tscale));
     relaxt(k).set(condition, (t_in(k) - tobs(k))/rtau(k));
     relaxq(k).set(condition, (q_in(k) - qobs(k))/rtau(k));
 
