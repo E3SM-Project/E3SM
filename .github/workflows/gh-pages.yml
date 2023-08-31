@@ -23,6 +23,10 @@ on:
 
   workflow_dispatch:
 
+concurrency:
+  # Prevent 2+ copies of this workflow from running concurrently
+  group: eamxx-docs-action
+
 jobs:
 
   eamxx-docs:
