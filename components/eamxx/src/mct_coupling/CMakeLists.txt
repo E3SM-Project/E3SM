@@ -41,7 +41,6 @@ set (SCREAM_LIBS
      nudging
      diagnostics
      tms
-     ml_correction
 )
 if (SCREAM_ENABLE_MAM)
   set(SCREAM_LIBS ${SCREAM_LIBS} mam)
