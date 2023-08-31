@@ -5326,6 +5326,7 @@ contains
     logical         , intent(in)    :: drv_pause
     logical         , intent(in)    :: write_restart
     character(len=*), intent(inout) :: drv_resume_file ! Driver resets state from restart file
+    character(len=CL) :: drv_moab_resume_file ! use a different file for moab; do not overwrite the regular name
 
 103 format( 5A )
 104 format( A, i10.8, i8)
@@ -5353,7 +5354,7 @@ contains
           call t_startf('CPL:seq_rest_mb_write')
           call seq_rest_mb_write(EClock_d, seq_SyncClock, infodata,       &
                atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
-               trim(cpl_inst_tag), samegrid_al, drv_resume_file)
+               trim(cpl_inst_tag), samegrid_al, drv_moab_resume_file)
           call t_stopf('CPL:seq_rest_mb_write')
 
           if (iamroot_CPLID) then
