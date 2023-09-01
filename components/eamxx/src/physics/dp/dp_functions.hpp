@@ -9,6 +9,8 @@
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/ekat_workspace.hpp"
 
+#include "Elements.hpp"
+
 namespace scream {
 namespace dp {
 
@@ -21,7 +23,7 @@ namespace dp {
  *  - Kokkos team policies have a vector length of 1
  */
 
-struct element_t{};
+using element_t = Homme::Elements;
 struct hvcoord_t{};
 struct timelevel_t{};
 struct hybrid_t{};
@@ -193,8 +195,24 @@ struct Functions
     const uview_1d<Spack>& t_update,   // temperature [m/s]
     const uview_2d<Spack>& q_update);  // tracer [vary]
 
+  //---------------------------------------------------------
+  // Purpose: Set initial values from IOP files (where available)
+  //   when running SCM or DP-CRM.
+  //----------------------------------------------------------
   KOKKOS_FUNCTION
-  static void iop_setinitial(const Int& nelemd, const uview_1d<element_t>& elem);
+  static void iop_setinitial(
+    // Input arguments
+    const Int& plev,                   // number of vertical levels
+    const Int& pcnst,                  // number of advected constituents including cloud water
+    const Int& nelemd,                 // number of elements per MPI task
+    const Int& np,                     // NP
+    const Int& nstep,                  // the timestep number
+    const bool& use_replay,            // use e3sm generated forcing
+    const bool& dynproc,               // Designation of a dynamics processor - AaronDonahue
+    // Input/Output arguments
+    const uview_1d<element_t>& elem,
+    const uview_1d<Spack>& tobs,       // actual temperature, dims=(plev)
+    const uview_1d<Spack>& qobs);      // actual W.V. Mixing ratio
 
   KOKKOS_FUNCTION
   static void iop_broadcast();

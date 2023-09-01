@@ -1,3 +1,5 @@
+include (ScreamUtils)
+
 set(DP_SRCS
   dp_f90.cpp
   dp_iso_c.f90
@@ -6,6 +8,15 @@ set(DP_SRCS
   #${SCREAM_BASE_DIR}/../eam/src/control/iop_data_mod.F90",
   #${SCREAM_BASE_DIR}/../eam/src/control/history_iop.F90"
 )
+
+# Set cmake config options for Homme
+if (NOT "${SCREAM_DYNAMICS_DYCORE}" STREQUAL "HOMME")
+  message(FATAL_ERROR "Requires homme")
+endif()
+
+# Get or create the dynamics lib
+#                 HOMME_TARGET   NP PLEV QSIZE_D
+CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
 if (NOT SCREAM_LIB_ONLY)
   list(APPEND DP_SRCS
@@ -44,7 +55,7 @@ target_include_directories(dp PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/impl
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam
 )
-target_link_libraries(dp physics_share scream_share)
+target_link_libraries(dp physics_share scream_share ${dynLibName})
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
