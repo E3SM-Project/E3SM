@@ -357,6 +357,7 @@
 <config_max_snow_density>450.0</config_max_snow_density>
 <config_minimum_wind_compaction>10.0</config_minimum_wind_compaction>
 <config_wind_compaction_factor>27.3</config_wind_compaction_factor>
+<config_snow_redistribution_factor>0.3</config_snow_redistribution_factor>
 <config_max_dry_snow_radius>2800.0</config_max_dry_snow_radius>
 
 <!-- meltponds -->

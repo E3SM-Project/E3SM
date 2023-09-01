@@ -364,6 +364,7 @@ add_default($nl, 'config_new_snow_density');
 add_default($nl, 'config_max_snow_density');
 add_default($nl, 'config_minimum_wind_compaction');
 add_default($nl, 'config_wind_compaction_factor');
+add_default($nl, 'config_snow_redistribution_factor');
 add_default($nl, 'config_max_dry_snow_radius');
 
 #############################

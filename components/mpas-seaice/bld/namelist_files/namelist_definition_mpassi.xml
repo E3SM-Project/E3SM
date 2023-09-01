@@ -2249,6 +2249,14 @@ Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_snow_redistribution_factor" type="real"
+	category="snow" group="snow">
+snow loss factor for wind redistribution
+
+Valid values: positive real less than or equal to 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_max_dry_snow_radius" type="real"
 	category="snow" group="snow">
 maximum dry metamorphism snow grain radius

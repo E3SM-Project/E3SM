@@ -1055,9 +1055,9 @@
 
       use ice_colpkg_tracers, only: nt_Tsfc, nt_qice, nt_qsno, nt_aero, &
                              nt_apnd, nt_hpnd, nt_fbri, tr_brine, nt_bgc_S, &
-                             bio_index
+                             bio_index, nt_rhos, nt_rsnw, nt_smice, tr_rsnw, tr_snow
       use ice_colpkg_shared, only:  solve_zsal, skl_bgc, z_tracers, min_salin, &
-                             rhosi
+                             rhosi, rhosnew, rsnw_fall
       use ice_constants_colpkg, only: sk_l
       use ice_zbgc_shared, only: zap_small_bgc
 
@@ -1236,6 +1236,17 @@
                   else
                      trcrn(it,n) = c0
                   endif
+               enddo
+            endif
+            if (tr_snow) then
+               do k = 1, nslyr
+                  trcrn(nt_rhos +k-1,n) = rhosnew
+               enddo
+            endif
+            if (tr_rsnw) then
+               do k = 1, nslyr
+                  trcrn(nt_smice+k-1,n) = rhos
+                  trcrn(nt_rsnw +k-1,n) = rsnw_fall
                enddo
             endif
             first_ice(n) = .true.

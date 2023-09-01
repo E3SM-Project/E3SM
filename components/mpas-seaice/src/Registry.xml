@@ -1600,6 +1600,11 @@
 			possible_values="positive real"
 			icepack_name="drhosdwind"
 		/>
+		<nml_option name="config_snow_redistribution_factor" type="real" default_value="0.3" units="none"
+			description="snow loss factor for wind redistribution"
+			possible_values="positive real less than or equal to 1"
+			icepack_name="snwlvlfac"
+		/>
 		<nml_option name="config_max_dry_snow_radius" type="real" default_value="2800.0" units="um"
 			description="maximum dry metamorphism snow grain radius"
 			possible_values="positive real"
@@ -2563,7 +2568,7 @@
 		<package name="pkgColumnTracerPonds" description=""/>
 		<package name="pkgColumnTracerLidThickness" description=""/>
 		<package name="pkgColumnTracerAerosols" description=""/>
-		<package name="pkgColumnTracerEffectiveSnowDensity" description="Computes effective snow density based on liquid and ice snow content and snow compaction"/>
+		<package name="pkgColumnTracerEffectiveSnowDensity" description="Computes effective snow density based on snow compaction"/>
 		<package name="pkgColumnTracerSnowGrainRadius" description="Evolves snow grain radius for radiative transfer based on dry and wet metamorphism"/>
 		<package name="pkgTracerBrine" description=""/>
 		<package name="pkgTracerMobileFraction" description=""/>
@@ -2658,13 +2663,13 @@
 		     type="real"
 		     dimensions="nSnowLayers nCategories nCells Time"
 		     units="kg m-3"
-		     packages="pkgColumnTracerEffectiveSnowDensity"
+		     packages="pkgColumnTracerSnowGrainRadius"
 		/>
 		<var name="snowLiquidMass"
 		     type="real"
 		     dimensions="nSnowLayers nCategories nCells Time"
 		     units="kg m-3"
-		     packages="pkgColumnTracerEffectiveSnowDensity"
+		     packages="pkgColumnTracerSnowGrainRadius"
 		/>
 		<var name="snowGrainRadius"
 		     type="real"
@@ -3104,14 +3109,14 @@
 		     dimensions="nSnowLayers nCells Time"
 		     units="kg m-3"
 		     description="Mass of ice in snow layer"
-		     packages="pkgColumnTracerEffectiveSnowDensity"
+		     packages="pkgColumnTracerSnowGrainRadius"
 		/>
 		<var name="snowLiquidMassCell"
 		     type="real"
 		     dimensions="nSnowLayers nCells Time"
 		     units="kg m-3"
 		     description="Mass of liquid in snow layer"
-		     packages="pkgColumnTracerEffectiveSnowDensity"
+		     packages="pkgColumnTracerSnowGrainRadius"
 		/>
 		<var name="snowGrainRadiusCell"
 		     type="real"

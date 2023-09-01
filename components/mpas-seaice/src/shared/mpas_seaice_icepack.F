@@ -290,7 +290,7 @@ contains
        ! snow
        call MPAS_pool_get_config(domain % configs, "config_use_column_snow_tracers", config_use_column_snow_tracers)
        if (config_use_column_snow_tracers) &
-            call init_column_snow_tracers(domain)
+            call init_icepack_snow_tracers(domain)
 
        ! shortwave
        call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
@@ -436,12 +436,12 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_snow_tracers
+!  init_icepack_snow_tracers
 !
 !> \brief Initializes snow physics tracers
 !>
 !> \author Nicole Jeffery, LANL
-!> \date 1 April 2017
+!> \date 1 April 2017; modified for icepack July 2023
 !> \details
 !>
 !> The following snow tracers are initialized:
@@ -453,11 +453,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_column_snow_tracers(domain)
+  subroutine init_icepack_snow_tracers(domain)
 
     use seaice_constants, only: &
          seaicePuny, &
          seaiceDensitySnow
+
+    use icepack_intfc, only: &
+         icepack_init_snow
 
     type(domain_type), intent(in) :: &
          domain
@@ -506,6 +509,8 @@ contains
          iCell, &
          iSnowLayer, &
          iCategory
+
+    call icepack_init_snow()
 
     call MPAS_pool_get_config(domain % configs, "config_use_effective_snow_density", config_use_effective_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
@@ -576,11 +581,12 @@ contains
        endif !config_use_effective_snow_density
 
        if (config_use_snow_grain_radius) then
-          if (.not. config_do_restart_snow_grain_radius) then
 
-             call MPAS_pool_get_array(tracers, "snowIceMass", snowIceMass, 1)
-             call MPAS_pool_get_array(tracers, "snowLiquidMass", snowLiquidMass, 1)
-             call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
+          call MPAS_pool_get_array(tracers, "snowIceMass", snowIceMass, 1)
+          call MPAS_pool_get_array(tracers, "snowLiquidMass", snowLiquidMass, 1)
+          call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
+
+          if (.not. config_do_restart_snow_grain_radius) then
 
              snowGrainRadius(:,:,:)      = config_fallen_snow_radius
              snowIceMass(:,:,:)          = seaiceDensitySnow
@@ -612,7 +618,7 @@ contains
         block => block % next
      end do
 
-  end subroutine init_column_snow_tracers
+  end subroutine init_icepack_snow_tracers
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1216,7 +1222,7 @@ contains
 
        call mpas_timer_start("Column snow")
        if (config_use_column_snow_tracers) &
-            call column_snow(domain)
+            call icepack_snow(domain)
        call mpas_timer_stop("Column snow")
 
        !-----------------------------------------------------------------
@@ -2654,12 +2660,12 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  column_snow
+!  icepack_snow
 !
 !> \brief Enable snow grain aging, effective snow density, wind compaction and redistribution
 !>
 !> \author Nicole Jeffery, LANL
-!> \date 3rd April 2017
+!> \date 3rd April 2017. Modified for icepack July 2023
 !> \details
 !>
 !> Snow physics improvements include:
@@ -2673,12 +2679,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine column_snow(domain)
+  subroutine icepack_snow(domain)
 
-    use ice_colpkg, only: &
-         colpkg_step_snow, &
-         colpkg_clear_warnings, &
-         colpkg_get_warnings
+    use icepack_intfc, only: &
+         icepack_step_snow, &
+         icepack_warnings_clear, &
+         icepack_warnings_aborted
 
     use seaice_constants, only: &
          seaicePuny, &
@@ -2737,20 +2743,13 @@ contains
          snowMeltMassCell
 
     real(kind=RKIND), pointer :: &
-         config_dt, &
-         config_new_snow_density, &
-         config_max_snow_density, &
-         config_minimum_wind_compaction, &
-         config_wind_compaction_factor
+         config_dt
 
     integer, pointer :: &
          nCellsSolve, &
          nSnowLayers, &
          nIceLayers, &
-         nCategories, &
-         nGrainAgingTemperature, &
-         nGrainAgingTempGradient, &
-         nGrainAgingSnowDensity
+         nCategories
 
     integer :: &
          iCell, &
@@ -2767,9 +2766,6 @@ contains
          abortMessage, &
          abortLocation
 
-    character(len=strKINDWarnings), dimension(:), allocatable :: &
-         warnings
-
     block => domain % blocklist
     do while (associated(block))
 
@@ -2784,28 +2780,18 @@ contains
        call MPAS_pool_get_config(block % configs, "config_use_effective_snow_density", config_use_effective_snow_density)
        call MPAS_pool_get_config(block % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
-       call MPAS_pool_get_config(block % configs, "config_new_snow_density", config_new_snow_density)
-       call MPAS_pool_get_config(block % configs, "config_max_snow_density", config_max_snow_density)
-       call MPAS_pool_get_config(block % configs, "config_minimum_wind_compaction", config_minimum_wind_compaction)
-       call MPAS_pool_get_config(block % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
        call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
 
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(block % dimensions, "nCategories", nCategories)
        call MPAS_pool_get_dimension(block % dimensions, "nSnowLayers", nSnowLayers)
        call MPAS_pool_get_dimension(block % dimensions, "nIceLayers", nIceLayers)
-       call MPAS_pool_get_dimension(block % dimensions, "nGrainAgingTemperature", nGrainAgingTemperature)
-       call MPAS_pool_get_dimension(block % dimensions, "nGrainAgingTempGradient", nGrainAgingTempGradient)
-       call MPAS_pool_get_dimension(block % dimensions, "nGrainAgingSnowDensity", nGrainAgingSnowDensity)
 
        call MPAS_pool_get_array(snow, "snowDensityViaContent", snowDensityViaContent)
        call MPAS_pool_get_array(snow, "snowDensityViaCompaction", snowDensityViaCompaction)
        call MPAS_pool_get_array(snow, "snowMeltMassCategory", snowMeltMassCategory)
        call MPAS_pool_get_array(snow, "snowMeltMassCell", snowMeltMassCell)
        call MPAS_pool_get_array(snow, "snowLossToLeads", snowLossToLeads)
-       call MPAS_pool_get_array(snow, "snowEmpiricalGrowthParameterTau", snowEmpiricalGrowthParameterTau)
-       call MPAS_pool_get_array(snow, "snowEmpiricalGrowthParameterKappa", snowEmpiricalGrowthParameterKappa)
-       call MPAS_pool_get_array(snow, "snowPropertyRate", snowPropertyRate)
 
        call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
        call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
@@ -2839,46 +2825,35 @@ contains
           abortFlag = .false.
           abortMessage = ""
 
-          call colpkg_clear_warnings()
-          call colpkg_step_snow (&
-               config_dt, &
-               windSpeed(iCell), &
-               nIceLayers, &
-               nSnowLayers, &
-               nCategories, &
-               iceAreaCell(iCell), &
-               iceAreaCategory(1,:,iCell), &
-               iceVolumeCategory(1,:,iCell), &
-               snowVolumeCategory(1,:,iCell), &
-               levelIceArea(1,:,iCell), &
-               levelIceVolume(1,:,iCell), &
-               snowIceMass(:,:,iCell), &
-               snowLiquidMass(:,:,iCell), &
-               snowDensity(:,:,iCell), &
-               snowDensityViaCompaction(iCell), &
-               snowGrainRadius(:,:,iCell), &
-               iceEnthalpy(1,:,iCell), &
-               iceSalinity(1,:,iCell), &
-               surfaceTemperature(1,:,iCell), &
-               snowEnthalpy(:,:,iCell), &
-               oceanFreshWaterFlux(iCell), &
-               oceanHeatFlux(iCell), &
-               snowLossToLeads(iCell), &
-               snowfallRate(iCell), &
-               config_new_snow_density, &
-               config_max_snow_density, &
-               config_minimum_wind_compaction, &
-               config_wind_compaction_factor, &
-               snowEmpiricalGrowthParameterTau(:,:,:), &
-               snowEmpiricalGrowthParameterKappa(:,:,:), &
-               snowPropertyRate(:,:,:), &
-               nGrainAgingTemperature, &
-               nGrainAgingTempGradient, &
-               nGrainAgingSnowDensity, &
-               abortFlag, &
-               abortMessage)
+          call icepack_warnings_clear()
+          call icepack_step_snow (&
+               dt=config_dt, &
+               wind=windSpeed(iCell), &
+               nilyr=nIceLayers, &
+               nslyr=nSnowLayers, &
+               ncat=nCategories, &
+               aice=iceAreaCell(iCell), &
+               aicen=iceAreaCategory(1,:,iCell), &
+               vicen=iceVolumeCategory(1,:,iCell), &
+               vsnon=snowVolumeCategory(1,:,iCell), &
+               alvl=levelIceArea(1,:,iCell), &
+               vlvl=levelIceVolume(1,:,iCell), &
+               smice=snowIceMass(:,:,iCell), &
+               smliq=snowLiquidMass(:,:,iCell), &
+               rhos_cmpn=snowDensity(:,:,iCell), &
+               rsnw=snowGrainRadius(:,:,iCell), &
+               zqin1=iceEnthalpy(1,:,iCell), &
+               zSin1=iceSalinity(1,:,iCell), &
+               Tsfc=surfaceTemperature(1,:,iCell), &
+               zqsn=snowEnthalpy(:,:,iCell), &
+               fresh=oceanFreshWaterFlux(iCell), &
+               fhocn=oceanHeatFlux(iCell), &
+               fsloss=snowLossToLeads(iCell), &
+               fsnow=snowfallRate(iCell) &
+               )
 
-          call column_write_warnings(abortFlag)
+          abortFlag = icepack_warnings_aborted()
+          call seaice_icepack_write_warnings(abortFlag)
 
           if (config_use_snow_grain_radius) then
              snowDensityViaContent(iCell) = 0.0_RKIND
@@ -2905,7 +2880,7 @@ contains
        block => block % next
     end do
 
-  end subroutine column_snow
+  end subroutine icepack_snow
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -9821,10 +9796,9 @@ contains
     endif
 
     ! check config_snow_redistribution_scheme
-      if ((trim(config_snow_redistribution_scheme) == "ITDrdg" .or. &
-         trim(config_snow_redistribution_scheme) == "ITDsd") .and. .not. config_use_effective_snow_density) then
+      if (trim(config_snow_redistribution_scheme) == "ITDrdg".and. .not. config_use_effective_snow_density) then
        call mpas_log_write(&
-         "check_column_package_configs: config_snow_redistribution = 'ITD' but config_use_effective_snow_density is false", &
+         "check_column_package_configs: config_snow_redistribution = 'ITDrdg' but config_use_effective_snow_density is false", &
             messageType=MPAS_LOG_CRIT)
     endif
 
@@ -9832,20 +9806,6 @@ contains
     if (config_use_snow_liquid_ponds .and. .not. config_use_snow_grain_radius) then
        call mpas_log_write(&
          "check_column_package_configs: config_use_snow_liquid_ponds = true but config_use_snow_grain_radius = false", &
-            messageType=MPAS_LOG_CRIT)
-    endif
-
-    ! check config_use_snow_grain_radius and config_use_column_snow_tracers
-    if (config_use_snow_grain_radius .and. .not. config_use_column_snow_tracers) then
-       call mpas_log_write(&
-         "check_column_package_configs: config_use_snow_grain_radius = true but config_use_column_snow_tracers = false", &
-            messageType=MPAS_LOG_CRIT)
-    endif
-
-    ! check config_use_snow_grain_radius and config_use_column_snow_tracers
-    if (config_use_column_snow_tracers .and. .not. config_use_snow_grain_radius) then
-       call mpas_log_write(&
-         "check_column_package_configs: config_use_column_snow_tracers but config_use_snow_grain_radius = false", &
             messageType=MPAS_LOG_CRIT)
     endif
 
@@ -10114,7 +10074,6 @@ contains
     !tr_pond_cesm = config_use_cesm_meltponds
     !tr_pond_lvl  = config_use_level_meltponds
     !tr_pond_topo = config_use_topo_meltponds
-    !tr_snow      = config_use_effective_snow_density
     !tr_rsnw      = config_use_snow_grain_radius
     !tr_aero      = config_use_aerosols
     !tr_brine     = config_use_brine
@@ -10180,7 +10139,6 @@ contains
          config_use_snow_grain_radius
 
     logical :: &
-         use_snow, &
          use_meltponds, &
          use_nitrogen
 
@@ -10209,10 +10167,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_effective_snow_density", config_use_effective_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
-    use_snow = .false.
-    if (config_use_effective_snow_density .or. config_use_snow_grain_radius) &
-         use_snow = .true.
-
     use_nitrogen = .false.
     if (config_use_skeletal_biochemistry .or. config_use_vertical_biochemistry) &
          use_nitrogen = .true.
@@ -10223,7 +10177,6 @@ contains
          tr_iage_in      = config_use_ice_age, &
          tr_FY_in        = config_use_first_year_ice, &
          tr_lvl_in       = config_use_level_ice, &
-         tr_snow_in      = config_use_effective_snow_density, &
          tr_pond_in      = use_meltponds, &
          !tr_pond_cesm_in = config_use_cesm_meltponds, & ! deprecated
          tr_pond_lvl_in  = config_use_level_meltponds, &
@@ -11096,6 +11049,7 @@ contains
          config_max_snow_density, &
          config_minimum_wind_compaction, &
          config_wind_compaction_factor, &
+         config_snow_redistribution_factor, &
          config_max_dry_snow_radius
 
     integer, pointer :: &
@@ -11299,6 +11253,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_max_snow_density", config_max_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_minimum_wind_compaction", config_minimum_wind_compaction)
     call MPAS_pool_get_config(domain % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
+    call MPAS_pool_get_config(domain % configs, "config_snow_redistribution_factor", config_snow_redistribution_factor)
     call MPAS_pool_get_config(domain % configs, "config_max_dry_snow_radius", config_max_dry_snow_radius)
 
     call colpkg_init_parameters(&
@@ -11487,7 +11442,8 @@ contains
          config_new_snow_density, &
          config_max_snow_density, &
          config_minimum_wind_compaction, &
-         config_wind_compaction_factor)
+         config_wind_compaction_factor, &
+         config_snow_redistribution_factor)
 
     !-----------------------------------------------------------------------
     ! Parameters for thermodynamics
@@ -12285,6 +12241,10 @@ contains
     ! minimum wind speed to compact snow (m/s)
     ! windmin = config_minimum_wind_compaction
 
+    ! snwlvlfac:
+    ! snow loss factor for wind redistribution
+    ! snwlvlfac = config_snow_redistribution_factor
+
     ! drhosdwind:
     ! wind compaction factor (kg s/m^4)
     ! drhosdwind = config_wind_compaction_factor
@@ -12356,6 +12316,9 @@ contains
 
     type(domain_type), intent(inout) :: &
          domain
+
+    type(MPAS_pool_type), pointer :: &
+         snow
 
     character(len=strKIND), pointer :: &
          config_thermodynamics_type, &
@@ -12552,10 +12515,19 @@ contains
          config_max_snow_density, &
          config_minimum_wind_compaction, &
          config_wind_compaction_factor, &
+         config_snow_redistribution_factor, &
          config_max_dry_snow_radius
 
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         snowEmpiricalGrowthParameterTau, &
+         snowEmpiricalGrowthParameterKappa, &
+         snowPropertyRate
+
     integer, pointer :: &
-         config_boundary_layer_iteration_number
+         config_boundary_layer_iteration_number, &
+         nGrainAgingTemperature, &
+         nGrainAgingTempGradient, &
+         nGrainAgingSnowDensity
 
     integer :: &
          config_thermodynamics_type_int, &
@@ -12567,6 +12539,7 @@ contains
 
     character(len=strKIND) :: tmp_config_shortwave
     character(len=strKIND) :: tmp_config_snw_ssp_table
+    character(len=strKIND) :: snw_aging_table = 'snicar'
 
     ! debugging
     integer :: itmp1, itmp2
@@ -12775,8 +12748,16 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_max_snow_density", config_max_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_minimum_wind_compaction", config_minimum_wind_compaction)
     call MPAS_pool_get_config(domain % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
+    call MPAS_pool_get_config(domain % configs, "config_snow_redistribution_factor", config_snow_redistribution_factor)
     call MPAS_pool_get_config(domain % configs, "config_max_dry_snow_radius", config_max_dry_snow_radius)
     call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nGrainAgingTemperature", nGrainAgingTemperature)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nGrainAgingTempGradient", nGrainAgingTempGradient)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nGrainAgingSnowDensity", nGrainAgingSnowDensity)
+    call MPAS_pool_get_subpool(domain % blocklist % structs, "snow", snow)
+    call MPAS_pool_get_array(snow, "snowEmpiricalGrowthParameterTau", snowEmpiricalGrowthParameterTau)
+    call MPAS_pool_get_array(snow, "snowEmpiricalGrowthParameterKappa", snowEmpiricalGrowthParameterKappa)
+    call MPAS_pool_get_array(snow, "snowPropertyRate", snowPropertyRate)
 
     config_thermodynamics_type_int = config_cice_int("config_thermodynamics_type", config_thermodynamics_type)
     config_ice_strength_formulation_int = config_cice_int("config_ice_strength_formulation", config_ice_strength_formulation)
@@ -13087,25 +13068,22 @@ contains
          !sw_frac_in              = , &        ! not yet implemented in MPAS-SI (stealth feature)
          !sw_dtemp_in             = , &        ! not yet implemented in MPAS-SI (stealth feature)
          snwgrain_in             = config_use_snow_grain_radius, &
-         !snwredist_in            = config_snow_redistribution_scheme, &
-         !use_smliq_pnd_in        = config_use_snow_liquid_ponds, &
-         !rsnw_fall_in            = config_fallen_snow_radius, &
-         !rsnw_tmax_in            = config_max_dry_snow_radius, &
-         !rhosnew_in              = config_new_snow_density, &
-         !rhosmax_in              = config_max_snow_density, &
-         !windmin_in              = config_minimum_wind_compaction, &
-         !drhosdwind_in           = config_wind_compaction_factor), &
-         !snwlvlfac_in            = , &        ! namelist option needs to be added
-         !isnw_T_in               = , &
-         !isnw_Tgrd_in            = , &
-         !isnw_rhos_in            = , &
-         !snowage_rhos_in         = , &
-         !snowage_Tgrd_in         = , &
-         !snowage_T_in            = , &
-         !snowage_tau_in          = , &
-         !snowage_kappa_in        = , &
-         !snowage_drdt0_in        = , &
-         !snw_aging_table_in      = , &
+         snwredist_in            = config_snow_redistribution_scheme, &
+         use_smliq_pnd_in        = config_use_snow_liquid_ponds, &
+         rsnw_fall_in            = config_fallen_snow_radius, &
+         rsnw_tmax_in            = config_max_dry_snow_radius, &
+         rhosnew_in              = config_new_snow_density, &
+         rhosmax_in              = config_max_snow_density, &
+         windmin_in              = config_minimum_wind_compaction, &
+         drhosdwind_in           = config_wind_compaction_factor, &
+         snwlvlfac_in            = config_snow_redistribution_factor, &
+         isnw_T_in               = nGrainAgingTemperature, &
+         isnw_Tgrd_in            = nGrainAgingTempGradient, &
+         isnw_rhos_in            = nGrainAgingSnowDensity, &
+         snowage_tau_in          = snowEmpiricalGrowthParameterTau(:,:,:), &
+         snowage_kappa_in        = snowEmpiricalGrowthParameterKappa(:,:,:), &
+         snowage_drdt0_in        = snowPropertyRate(:,:,:), &
+         snw_aging_table_in      = snw_aging_table, &
          snw_ssp_table_in        = tmp_config_snw_ssp_table &
          )
 
