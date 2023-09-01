@@ -1,0 +1,9 @@
+
+
+ncl compute-ref-solns-difference-using-remap.ncl f00001=\"cpstarnh0.0001-planar_rising_bubble1.nc\" fff=\"Th\" tt=8
+ncl compute-ref-solns-difference-using-remap.ncl f00001=\"cpstarhy0.0001-planar_rising_bubble1.nc\" fff=\"Th\" tt=8
+ncl compute-ref-solns-difference-using-remap.ncl f00001=\"eamcpstar0.0001-planar_rising_bubble1.nc\" fff=\"Th\" tt=8
+ncl compute-ref-solns-difference-using-remap.ncl f00001=\"eamcpdry0.0001-planar_rising_bubble1.nc\" fff=\"Th\" tt=8
+ncl compute-ref-solns-difference-using-remap.ncl f00001=\"cv0.0001-planar_rising_bubble1.nc\" fff=\"Th\" tt=8
+
+

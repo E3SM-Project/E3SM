@@ -3,8 +3,10 @@
 need files
 5 files create-namelists*sh
 5 files *TEMPLATE //nl templates
-5 files make-convergence*ncl
-compute-ref-solns-difference.ncl
+1 dump-area.nl file
+1 files make-convergence-remap.ncl
+compute-ref-solns-difference-using-remap.ncl
+compute-CP-ref-solns-difference-using-remap.ncl
 convergence-rates.py
 total-precipitation-plots
 parse-precip.py
@@ -20,7 +22,7 @@ they use templated namelists *TEMPLATE to build nl files for each update and tim
 
 for a small *nc file with area:
 srun -n 1  --cpu_bind=cores test_execs/theta-l-nlev128-native/theta-l-nlev128-native <dump-area.nl
-rename the file then 'area.nc'
+rename the file to 'area.nc'
 
 making convergence plots: --------------------------------------------
 use ncl:
@@ -37,6 +39,10 @@ use nerr value to add it to convergence-rates.py to lines
 hline=np.array(seriesV)-np.array(seriesV)+0.0026 <-- this number, 0.0026, is rounded nerr number form above
 
 this will give the horizontal "uncertainty" line in the convergence plot
+
+for CP-HY vs CP-NH error, run (used in text)
+ncl compute-CP-ref-solns-difference-using-remap.ncl tt=8 fff=\"Th\"
+
 
 For self-convergence, do
 
@@ -77,7 +83,7 @@ make Energy CL plots: -------------------------------------------------
 
 python 2 on anvil
 
->>python parse-5files.py ../../output-cpstarnh-l128-dt0.0001 ../../output-cpstarhy-l128-dt0.0001 ../../output-cv-l128-dt0.0001 ../../output-eamcpstar-l128-dt0.0001 ../../output-eamcpdry-l128-dt0.0001 "const pressure" "const pressure HY" "const volume" "EAM cpstar" "EAM cpdry"
+>>python parse-5files.py output-cpstarnh-l128-dt0.0001 output-cpstarhy-l128-dt0.0001 output-cv-l128-dt0.0001 output-eamcpdry-l128-dt0.0001 output-eamcpstar-l128-dt0.0001 "CP-VL-NH" "CP-VL-HY" "CV-VL-NH" "CP-CL-HY" "CP-AL-HY"
 
 it produces a few files, but we need only mass-for5.pdf and encl-diagn-for5.pdf
 

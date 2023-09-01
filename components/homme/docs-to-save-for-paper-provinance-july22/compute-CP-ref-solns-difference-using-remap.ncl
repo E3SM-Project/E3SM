@@ -25,8 +25,8 @@ numz=200
 
 dt=0.0001
 
-;f00001   = "cpstarnh"+dt+"-planar_rising_bubble1.nc"
-f00001cv = "cv"+dt+"-planar_rising_bubble1.nc"
+f00001   = "cpstarnh"+dt+"-planar_rising_bubble1.nc"
+f00001cv = "cpstarhy"+dt+"-planar_rising_bubble1.nc"
 ;-- open file and read variable 
 
 print("comparing with "+f00001)
@@ -94,7 +94,7 @@ err = newcv - newcp
 err = err*err*aaarea
 nerr = sqrt(sum(err))/lref
 NOerr = sqrt(sum(err))
-print("------------------ L2 error, not normalized and normalized by CV-VL-NH frame ")
+print("------------------ L2 error, not normalized and normalized by CPHY frame ")
 print("dt=" +dt+ " NOerr "+NOerr +" nerr = "+nerr)
 
 

@@ -32,20 +32,29 @@ seriesPerf=np.asarray(ddt)*seriesP[7]*500
 MS=10
 FS=14
 
-plot.loglog(ddt, seriesV,    label="const volume (V)",       color="limegreen", linewidth=3,marker='^',markersize=MS )
-plot.loglog(ddt, seriesPhy,  label="const pressure HY",      color="black", linewidth=3,marker='s',markersize=MS )
-plot.loglog(ddt, seriesP,    label="const pressure (P)",     color="red", linewidth=3,marker='^',markersize=MS )
-plot.loglog(ddt, seriesEdry, label="EAM cpdry", color="orange", linewidth=3,marker='v',markersize=MS )
-plot.loglog(ddt, seriesEstar,label="EAM cpstar", color="blue", linewidth=3,marker='p',markersize=MS )
+#plot.axes().set_aspect('equal','datalim')
+#fig, ax = plot.subplots(1)
+
+plot.loglog(ddt, seriesPhy,  label="CP-VL-HY",      color="black", linewidth=3,marker='s',markersize=MS )
+plot.loglog(ddt, seriesP,    label="CP-VL-NH",     color="red", linewidth=3,marker='^',markersize=MS )
+plot.loglog(ddt, seriesV,    label="CV-VL-NH",       color="limegreen", linewidth=3,marker='^',markersize=MS )
+plot.loglog(ddt, seriesEdry, label="CP-CL-HY", color="orange", linewidth=3,marker='v',markersize=MS )
+plot.loglog(ddt, seriesEstar,label="CP-AL-HY", color="blue", linewidth=3,marker='p',markersize=MS )
 plot.loglog(ddt, seriesPerf, label="1st order scaling", color="gray", linewidth=1.5 )
-plot.loglog(ddt, hline, label="uncertainty P vs V", color="gray", linewidth=1.5, linestyle='--')
+plot.loglog(ddt, hline, label="CV-VL-NH vs CP-VL-NH", color="gray", linewidth=1.5, linestyle='--')
 
 plot.tick_params(labelsize=FS)
 plot.legend(loc='lower left',fontsize=FS)
 plot.xlabel("time step", fontsize=FS)
 plot.ylabel("normalized error", fontsize=FS)
 plot.gca().invert_xaxis()
-plot.ylim([1e-5,2e-2])
+plot.ylim([6e-5,2e-2])
+
+#works but cuts left label a little, while 5,5 cuts it completely!
+#plot.gcf().set_size_inches((6.2,6.2))
+plot.gcf().set_size_inches((6.2,6.2))
+
+#ax.set_aspect("equal")
 
 plot.savefig('p-v-convergence.pdf')
 
