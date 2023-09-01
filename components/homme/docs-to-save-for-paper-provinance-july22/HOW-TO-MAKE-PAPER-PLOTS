@@ -14,6 +14,9 @@ parse-5files.py
 plot-in-height.ncl
 plot-many-for-panels
 
+#not used in the paper
+compute-diffs-between-ref-solns
+
 running homme: -------------------------------------------------------
 
 build planar homme theta-l-nlev128-native
