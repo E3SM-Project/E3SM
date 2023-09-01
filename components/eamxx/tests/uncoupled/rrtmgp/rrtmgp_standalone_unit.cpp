@@ -213,6 +213,7 @@ namespace scream {
         // NOTE: test problem provides lwp/iwp in g/m2, not kg/m2! Factor of 1e3 here!
         using physconst = scream::physics::Constants<double>;
         auto qc = real2d("qc", ncol, nlay);
+        auto nc = real2d("nc", ncol, nlay);
         auto qi = real2d("qi", ncol, nlay);
         yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
             qc(icol,ilay) = 1e-3 * lwp(icol,ilay) * cld(icol,ilay) * physconst::gravit / p_del(icol,ilay);
@@ -244,6 +245,7 @@ namespace scream {
         auto d_sfc_alb_dif_nir = field_mgr.get_field("sfc_alb_dif_nir").get_view<Real*>();
         auto d_surf_lw_flux_up = field_mgr.get_field("surf_lw_flux_up").get_view<Real*>();
         auto d_qc = field_mgr.get_field("qc").get_view<Real**>();
+        auto d_nc = field_mgr.get_field("nc").get_view<Real**>();
         auto d_qi = field_mgr.get_field("qi").get_view<Real**>();
         auto d_rel = field_mgr.get_field("eff_radius_qc").get_view<Real**>();
         auto d_rei = field_mgr.get_field("eff_radius_qi").get_view<Real**>();
@@ -281,6 +283,7 @@ namespace scream {
               d_tmid(i,k) = t_lay(i+1,k+1);
               d_pdel(i,k) = p_del(i+1,k+1);
               d_qc(i,k)   = qc(i+1,k+1);
+              d_nc(i,k)   = nc(i+1,k+1);
               d_qi(i,k)   = qi(i+1,k+1);
               d_rel(i,k)  = rel(i+1,k+1);
               d_rei(i,k)  = rei(i+1,k+1);
@@ -391,6 +394,7 @@ namespace scream {
         rei.deallocate();
         cld.deallocate();
         qc.deallocate();
+        nc.deallocate();
         qi.deallocate();
         mu0.deallocate();
         gas_vmr.deallocate();

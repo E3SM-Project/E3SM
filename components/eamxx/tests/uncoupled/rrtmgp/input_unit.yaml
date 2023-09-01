@@ -45,6 +45,7 @@ initial_conditions:
   sfc_alb_dif_nir: 0.0
   cos_zenith: 0.0
   qc: 0.0
+  nc: 0.0
   qi: 0.0
   cldfrac_tot: 0.0
   eff_radius_qc: 0.0
