@@ -1006,16 +1006,16 @@ subroutine seq_rest_mb_read(rest_file, infodata)
           enddo
        endif
 
-       if (cplroot) then
-          iun = shr_file_getUnit()
-          call seq_infodata_GetData(infodata,restart_pfile=cvar)
-          if (loglevel > 0) write(logunit,"(3A)") subname," write rpointer file ", &
-               trim(cvar)
-          open(iun, file=cvar, form='FORMATTED')
-          write(iun,'(a)') rest_file
-          close(iun)
-          call shr_file_freeUnit( iun )
-       endif
+!       if (cplroot) then
+!          iun = shr_file_getUnit()
+!          call seq_infodata_GetData(infodata,restart_pfile=cvar)
+!          if (loglevel > 0) write(logunit,"(3A)") subname," write rpointer file ", &
+!               trim(cvar)
+!          open(iun, file=cvar, form='FORMATTED')
+!          write(iun,'(a)') rest_file
+!          close(iun)
+!          call shr_file_freeUnit( iun )
+!       endif
 
        call shr_mpi_bcast(rest_file,mpicom_CPLID)
        call seq_io_wopen(rest_file,clobber=.true., model_doi_url=model_doi_url)
