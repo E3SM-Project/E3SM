@@ -2523,7 +2523,7 @@ contains
        call t_stopf('CPL:seq_rest_read-init')
 
        call t_startf('CPL:seq_rest_read-moab')
-       call seq_rest_mb_read(rest_file, infodata)
+       call seq_rest_mb_read(rest_file, infodata, samegrid_al)
        call t_stopf('CPL:seq_rest_read-moab')
 
 

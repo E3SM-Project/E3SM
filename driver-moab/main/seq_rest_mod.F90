@@ -358,21 +358,36 @@ contains
 
   end subroutine seq_rest_read
 
-subroutine seq_rest_mb_read(rest_file, infodata)
+subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
 
     use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
+    use iMOAB,            only: iMOAB_GetGlobalInfo
     
     implicit none
 
     character(*)           , intent(in) :: rest_file  ! restart file path/name
     type(seq_infodata_type), intent(in) :: infodata
+    logical        ,         intent(in) :: samegrid_al ! needed for land nx
 
     integer(IN)          :: n,n1,n2,n3
     real(r8),allocatable :: ds(:)         ! for reshaping diag data for restart file
     real(r8),allocatable :: ns(:)         ! for reshaping diag data for restart file
+
+    character(CXX)        :: moab_rest_file
+    character(CXX)        :: tagname  
+    integer (in), pointer   :: o2racc_om_cnt ! replacement, moab version for o2racc_ox_cnt
+    integer (in), pointer   :: x2oacc_om_cnt ! replacement, moab version for x2oacc_ox_cnt
+
+    integer (in), pointer   :: l2racc_lm_cnt
+    integer (in)   :: nx_lnd ! will be used if land and atm are on same grid
+    integer (in)   ::  ierr, dummy
+
+    real(r8), dimension(:,:), pointer  :: p_x2oacc_om
+    real(r8), dimension(:,:), pointer  :: p_o2racc_om
+    real(r8), dimension(:,:), pointer  :: p_l2racc_lm
+
     character(len=*), parameter :: subname = "(seq_rest_mb_read) "
     
-    character(CXX)        :: moab_rest_file
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -417,30 +432,64 @@ subroutine seq_rest_mb_read(rest_file, infodata)
 !        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
         if (atm_present) then
            call seq_io_read(moab_rest_file, mbaxid, 'fractions_ax', 'afrac:ifrac:ofrac:lfrac:lfrin')
+           call seq_io_read(moab_rest_file, mbaxid, 'a2x_ax', &
+              trim(seq_flds_a2x_fields) )
+           call seq_io_read(moab_rest_file, mbaxid, 'xao_ax', &
+              trim(seq_flds_xao_fields) )
 !           gsmap => component_get_gsmap_cx(atm(1))
 !           xao_ax        => prep_aoflux_get_xao_ax()
 !           call seq_io_read(rest_file, gsmap, fractions_ax, 'fractions_ax')
 !           call seq_io_read(rest_file, atm, 'c2x', 'a2x_ax')
 !           call seq_io_read(rest_file, gsmap, xao_ax, 'xao_ax')
         endif
-!        if (lnd_present) then
+        if (lnd_present) then
+             if(samegrid_al) then
+                ! nx for land will be from global nb atmosphere
+                ierr = iMOAB_GetGlobalInfo(mbaxid, dummy, nx_lnd) ! max id for land will come from atm
+                call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
+                   'afrac:lfrac:lfrin', nx=nx_lnd)
+             else
+                call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
+                   'afrac:lfrac:lfrin')
+             endif
 !           gsmap => component_get_gsmap_cx(lnd(1))
 !           call seq_io_read(rest_file, gsmap, fractions_lx, 'fractions_lx')
-!        endif
-!        if (lnd_present .and. rof_prognostic) then
+        endif
+       if (lnd_present .and. rof_prognostic) then
+             tagname = prep_rof_get_sharedFieldsLndRof()
+             l2racc_lm_cnt => prep_rof_get_l2racc_lm_cnt()
+             p_l2racc_lm => prep_rof_get_l2racc_lm()
+             if(samegrid_al) then
+                ! nx for land will be from global nb atmosphere
+                ierr = iMOAB_GetGlobalInfo(mbaxid, dummy, nx_lnd) ! max id for land will come from atm
+                call seq_io_read(rest_file, mblxid, 'l2racc_lx', &
+                 trim(tagname), &
+                 matrix = p_l2racc_lm, nx=nx_lnd)
+             else
+                call seq_io_read(rest_file, mblxid, 'l2racc_lx', &
+                 trim(tagname), &
+                 matrix = p_l2racc_lm )
+             endif
 !           gsmap         => component_get_gsmap_cx(lnd(1))
 !           l2racc_lx     => prep_rof_get_l2racc_lx()
 !           l2racc_lx_cnt => prep_rof_get_l2racc_lx_cnt()
 !           call seq_io_read(rest_file, gsmap, l2racc_lx, 'l2racc_lx')
 !           call seq_io_read(rest_file, l2racc_lx_cnt ,'l2racc_lx_cnt')
-!        end if
-!        if (ocn_present .and. rofocn_prognostic) then
+       end if
+       if (ocn_present .and. rofocn_prognostic) then
+             tagname = prep_rof_get_sharedFieldsOcnRof()
+             o2racc_om_cnt => prep_rof_get_o2racc_om_cnt()
+             p_o2racc_om => prep_rof_get_o2racc_om()
+             call seq_io_read(rest_file, mboxid, 'o2racc_om', &
+                 trim(tagname), &
+                 matrix = p_o2racc_om )
+             call seq_io_read(rest_file, o2racc_om_cnt, 'o2racc_ox_cnt')
 !           gsmap         => component_get_gsmap_cx(ocn(1))
 !           o2racc_ox     => prep_rof_get_o2racc_ox()
 !           o2racc_ox_cnt => prep_rof_get_o2racc_ox_cnt()
 !           call seq_io_read(rest_file, gsmap, o2racc_ox, 'o2racc_ox')
 !           call seq_io_read(rest_file, o2racc_ox_cnt ,'o2racc_ox_cnt')
-!        end if
+       end if
 !        if (lnd_present .and. glc_prognostic) then
 !           gsmap         => component_get_gsmap_cx(lnd(1))
 !           l2gacc_lx     => prep_glc_get_l2gacc_lx()
@@ -457,7 +506,24 @@ subroutine seq_rest_mb_read(rest_file, infodata)
 !           call seq_io_read(rest_file, x2gacc_gx_cnt ,'x2gacc_gx_cnt')
 !        end if
 
-!        if (ocn_present) then
+       if (ocn_present) then
+           call seq_io_read(rest_file, mboxid,  'fractions_ox', &
+              'afrac:ifrac:ofrac:ifrad:ofrad') ! fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
+           call seq_io_read(rest_file, mboxid,  'o2x_ox', &
+                  trim(seq_flds_o2x_fields)) 
+           tagname = trim(seq_flds_x2o_fields)
+           x2oacc_om_cnt => prep_ocn_get_x2oacc_om_cnt()
+           p_x2oacc_om => prep_ocn_get_x2oacc_om()
+
+           call seq_io_read (rest_file, mboxid, 'x2oacc_ox', &
+                  trim(tagname), &
+                  matrix=p_x2oacc_om)
+           call seq_io_read(rest_file, x2oacc_om_cnt, 'x2oacc_ox_cnt') 
+      !           tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
+      !  arrsize = nxflds * lsize !        allocate (xao_om (lsize, nxflds))
+      !  ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om(1,1))
+           call seq_io_read(rest_file, mbofxid, 'xao_om', &
+              trim(seq_flds_xao_fields) )
 !           gsmap         => component_get_gsmap_cx(ocn(1))
 !           x2oacc_ox     => prep_ocn_get_x2oacc_ox()
 ! #ifdef SUMMITDEV_PGI
@@ -470,17 +536,25 @@ subroutine seq_rest_mb_read(rest_file, infodata)
 !           call seq_io_read(rest_file, gsmap, x2oacc_ox, 'x2oacc_ox')
 !           call seq_io_read(rest_file, x2oacc_ox_cnt, 'x2oacc_ox_cnt')
 !           call seq_io_read(rest_file, gsmap, xao_ox, 'xao_ox')
-!        endif
-!        if (ice_present) then
+       endif
+       if (ice_present) then
+           call seq_io_read(rest_file, mbixid, 'fractions_ix', &
+               'afrac:ifrac:ofrac')  ! fraclist_i = 'afrac:ifrac:ofrac'
+           call seq_io_read(rest_file, mbixid, 'i2x_ix', &
+               trim(seq_flds_i2x_fields) ) 
 !           gsmap => component_get_gsmap_cx(ice(1))
 !           call seq_io_read(rest_file, gsmap, fractions_ix, 'fractions_ix')
 !           call seq_io_read(rest_file, ice, 'c2x', 'i2x_ix')
-!        endif
-!        if (rof_present) then
+       endif
+       if (rof_present) then
+           call seq_io_read(rest_file, mbrxid, 'fractions_rx', &
+               'lfrac:lfrin:rfrac') ! fraclist_r = 'lfrac:lfrin:rfrac'
+           call seq_io_read(rest_file, mbrxid, 'r2x_rx', &
+               trim(seq_flds_r2x_fields) ) 
 !           gsmap => component_get_gsmap_cx(rof(1))
 !           call seq_io_read(rest_file, gsmap, fractions_rx, 'fractions_rx')
 !           call seq_io_read(rest_file, rof, 'c2x', 'r2x_rx')
-!        endif
+       endif
 !        if (glc_present) then
 !           gsmap => component_get_gsmap_cx(glc(1))
 !           call seq_io_read(rest_file, gsmap, fractions_gx, 'fractions_gx')
@@ -1114,6 +1188,8 @@ subroutine seq_rest_mb_read(rest_file, infodata)
                  trim(tagname), &
                  whead=whead, wdata=wdata, matrix = p_l2racc_lm )
              endif
+             call seq_io_write(rest_file, l2racc_lm_cnt, 'l2racc_lx_cnt', &
+                 whead=whead, wdata=wdata)
 !              gsmap         => component_get_gsmap_cx(lnd(1))
 !              l2racc_lx     => prep_rof_get_l2racc_lx()
 !              l2racc_lx_cnt =>  prep_rof_get_l2racc_lx_cnt()
@@ -1125,11 +1201,11 @@ subroutine seq_rest_mb_read(rest_file, infodata)
           if (ocn_present .and. rofocn_prognostic) then
              tagname = prep_rof_get_sharedFieldsOcnRof()
              o2racc_om_cnt => prep_rof_get_o2racc_om_cnt()
-             p_o2racc_om => prep_rof_get_o2racc_om()
-             call seq_io_write(rest_file, mboxid, 'o2racc_om', &
+             p_o2racc_om => prep_rof_get_o2racc_om() ! still write o2racc_ox and o2racc_ox_cnt
+             call seq_io_write(rest_file, mboxid, 'o2racc_ox', &
                  trim(tagname), &
                  whead=whead, wdata=wdata, matrix = p_o2racc_om )
-             call seq_io_write(rest_file, o2racc_om_cnt, 'o2racc_om_cnt', &
+             call seq_io_write(rest_file, o2racc_om_cnt, 'o2racc_ox_cnt', &
                   whead=whead, wdata=wdata)
 !              o2racc_ox     => prep_rof_get_o2racc_ox()
 !              o2racc_ox_cnt =>  prep_rof_get_o2racc_ox_cnt()
@@ -1176,7 +1252,7 @@ subroutine seq_rest_mb_read(rest_file, infodata)
             call seq_io_write(rest_file, mboxid, 'x2oacc_ox', &
                   trim(tagname), &
                   whead=whead, wdata=wdata, matrix=p_x2oacc_om)
-            call seq_io_write(rest_file, x2oacc_om_cnt, 'x2oacc_om_cnt', &
+            call seq_io_write(rest_file, x2oacc_om_cnt, 'x2oacc_ox_cnt', &
                whead=whead, wdata=wdata)
       !            tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
       !  arrsize = nxflds * lsize !        allocate (xao_om (lsize, nxflds))
