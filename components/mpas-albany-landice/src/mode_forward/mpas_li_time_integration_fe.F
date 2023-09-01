@@ -699,7 +699,7 @@ module li_time_integration_fe
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
          if ( (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') .or. &
-              (trim(config_thickness_advection) == 'fct' .and. trim(config_tracer_advection) == 'fct') .or. &
+              (trim(config_thickness_advection) == 'fct') .or. &
               (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fct') ) then
 
             ! Note: This subroutine requires that thickness and tracers are correct in halos

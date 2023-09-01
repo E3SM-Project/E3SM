@@ -132,9 +132,19 @@ module li_tracer_advection_fct_shared
                 advCellsForEdge (nAdvCellsMax,nEdges), &
                 advCoefs        (nAdvCellsMax,nEdges), &
                 advCoefs3rd     (nAdvCellsMax,nEdges), &
-                advMaskHighOrder(nVertLevels ,nEdges), &
-                advMask2ndOrder(nVertLevels ,nEdges), &
+                advMaskHighOrder(nVertLevels, nEdges), &
+                advMask2ndOrder(nVertLevels,  nEdges), &
                 derivTwo      (nAdvCellsMax,2,nEdges))
+
+      ! Initialize all these allocatable arrays
+      nAdvCellsForEdge(:) = 0
+      advCellsForEdge(:,:) = 0
+      advCoefs(:,:) = 0.0_RKIND
+      advCoefs3rd(:,:) = 0.0_RKIND
+      advMaskHighOrder(:,:) = 0.0_RKIND
+      advMask2ndOrder(:,:) = 0.0_RKIND
+      derivTwo(:,:,:) = 0.0_RKIND
+
       ! Compute derivTwo array
       call computeDerivTwo(derivTwo, err)
       if (err /= 0) then
@@ -148,6 +158,9 @@ module li_tracer_advection_fct_shared
       allocate(cellIndx      (   maxEdges2 + 2), &
                cellIndxSorted(2, maxEdges2 + 2))
 
+      cellIndx(:) = 0
+      cellIndxSorted(:,:) = 0
+      
       ! calculate boundaryCell. A boundary cell is one that
       ! has at least one empty or non-dynamic neighbor
       boundaryCell(:) = 0

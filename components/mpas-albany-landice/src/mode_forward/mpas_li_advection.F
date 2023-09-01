@@ -386,7 +386,7 @@ module li_advection
          endif
 
 
-         if (advectTracers) then
+         if ( (advectTracers) .or. (trim(config_thickness_advection) .eq. 'fct') ) then
 
             ! Copy the old tracer values into the advectedTracers array.
             ! This requires setting a tracer pointer to either temperature or enthalpy,
@@ -484,8 +484,7 @@ module li_advection
                   tend, advectedTracers, layerThicknessOld, &
                   layerThicknessEdge * layerNormalVelocity, 0 * normalVelocity, dt,    &
                   nTracers, activeTracerHorizontalAdvectionEdgeFlux, computeBudgets=.false.)!{{{
-         elseif ((trim(config_thickness_advection) .eq. 'fct') .and. &
-                  trim(config_tracer_advection) .eq. 'fct') then
+         elseif (trim(config_thickness_advection) .eq. 'fct') then
              ! Call fct routine for thickness first, and use activeTracerHorizontalAdvectionEdgeFlux
              ! returned by that call as normalThicknessFlux for call to tracer fct
              call li_tracer_advection_fct_tend(&
@@ -497,17 +496,25 @@ module li_advection
              ! This does conserve mass:
              layerThickness(:,:) = layerThickness(:,:) + tend(nTracers,:,:) * dt
 
-             ! Call fct for tracers, using activeTracerHorizontalAdvectionEdgeFlux
-             ! from fct thickness advection as normalThicknessFlux
-             call li_tracer_advection_fct_tend(&
-                  tend(1:nTracers-1,:,:), advectedTracers(1:nTracers-1,:,:), layerThicknessOld, &
-                  activeTracerHorizontalAdvectionEdgeFlux(nTracers,:,:), 0.0_RKIND * normalVelocity, dt,    &
-                  nTracers-1, computeBudgets=.false.)
-         elseif ((trim(config_thickness_advection) .eq. 'fct') .and. &
-                  trim(config_tracer_advection) .eq. 'fo') then
+             if (trim(config_tracer_advection) .eq. 'fct') then
+                ! Call fct for tracers, using activeTracerHorizontalAdvectionEdgeFlux
+                ! from fct thickness advection as normalThicknessFlux
+                call li_tracer_advection_fct_tend(&
+                     tend(1:nTracers-1,:,:), advectedTracers(1:nTracers-1,:,:), layerThicknessOld, &
+                     activeTracerHorizontalAdvectionEdgeFlux(nTracers,:,:), 0.0_RKIND * normalVelocity, dt,    &
+                     nTracers-1, computeBudgets=.false.)
+             elseif (trim(config_tracer_advection) .eq. 'none') then
+                ! do nothing
+             else
+                err_tmp = 1
+                call mpas_log_write(trim(config_tracer_advection) // &
+                                    ' tracer advection is not currently supported with fct thickness advection.', MPAS_LOG_ERR)
+             endif
+         else
             err_tmp = 1
-            call mpas_log_write("config_tracer_advection = fo is not currently supposed &
-                                 with config_thickness_advection = fct", MPAS_LOG_ERR)
+            call mpas_log_write("config_thickness_advection = " // trim(config_thickness_advection) // &
+                                ", config_tracer_advection = " // trim(config_tracer_advection) // &
+                                " is not a supported combination.", MPAS_LOG_ERR)
          endif
 
          if (config_print_thickness_advection_info) then
@@ -701,7 +708,8 @@ module li_advection
       err = ior(err,err_tmp)
 
       ! Deallocate arrays for fct
-      if (trim(config_tracer_advection) .eq. 'fct') then
+      if ( (trim(config_thickness_advection) .eq. 'fct') .or. &
+           (trim(config_tracer_advection) .eq. 'fct') ) then
          deallocate( nAdvCellsForEdge, &
                      advCellsForEdge, &
                      advCoefs, &
@@ -1285,7 +1293,8 @@ module li_advection
       nTracers = iTracer
       ! Note: Other tracers (e.g., ice age) can be added here as needed.
       !       May need to increase maxTracers in the Registry.
-      if (trim(config_tracer_advection) == 'fct') then
+      if ( (trim(config_tracer_advection) == 'fct') .or. &
+           (trim(config_thickness_advection) == 'fct') ) then
          call li_tracer_advection_fct_shared_init(geometryPool, err1)
          call li_tracer_advection_fct_init(err2)
 
