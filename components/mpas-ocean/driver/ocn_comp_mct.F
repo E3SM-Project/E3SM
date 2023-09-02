@@ -675,7 +675,7 @@ contains
         call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
         call mpas_timer_start("land_ice_build_arrays", .false.)
         call ocn_surface_land_ice_fluxes_build_arrays(meshPool, forcingPool, scratchPool, &
-                                                      statePool, dt=0.0_RKIND, err=ierr)
+                                                      statePool, err=ierr)
         call mpas_timer_stop("land_ice_build_arrays")
 
         call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
@@ -962,8 +962,10 @@ contains
 
             call mpas_timer_start("land_ice_build_arrays", .false.)
             call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
-                                                          forcingPool, scratchPool, statePool, dt, ierr)
+                                                          forcingPool, scratchPool, statePool, ierr)
             call mpas_timer_stop("land_ice_build_arrays")
+            call ocn_surface_land_ice_fluxes_accumulate_fluxes(meshPool, forcingPool, &
+                                                               statePool, dt, ierr)
 
             call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
 
