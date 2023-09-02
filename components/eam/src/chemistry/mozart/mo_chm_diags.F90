@@ -62,7 +62,6 @@ module mo_chm_diags
 
   character(len=32) :: chempkg
 
-  integer :: aerosol_idx
   integer, parameter :: aerosol_number = 7
   character(len=3) :: aerosol_name(aerosol_number)
 
@@ -124,6 +123,8 @@ contains
 
     integer :: bulkaero_species(20)
     integer :: e90_ndx
+
+    integer :: aerosol_idx
 
     !-----------------------------------------------------------------------
 
@@ -1120,6 +1121,8 @@ contains
     logical :: history_aerosol      ! output aerosol variables
     logical :: history_verbose      ! produce verbose history output
     logical :: get_presc_aero_data      ! produce output to drive prescribed aerosol run
+
+    integer :: aerosol_idx
 
     !-----------------------------------------------------------------------
 
