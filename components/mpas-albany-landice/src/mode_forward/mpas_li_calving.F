@@ -3314,12 +3314,12 @@ module li_calving
 
 !-----------------------------------------------------------------------
 
-   subroutine li_calculate_damage(domain, rkTend, err)
+   subroutine li_calculate_damage(domain, rkTend, rkWeight, err)
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-
+      real (kind=RKIND), intent(in) :: rkWeight
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
@@ -3460,7 +3460,7 @@ module li_calving
          ddamagedt(:) = damageSource(:) * damage(:)
          ! Update damage tendency for RK time integration
          do k = 1, nVertLevels
-            rkTend(k,:) = rkTend(k,:) + ddamagedt(:) * layerThickness(k,:)
+            rkTend(k,:) = rkTend(k,:) + ddamagedt(:) * layerThickness(k,:) * rkWeight
          enddo
 
          damage(:) = damage(:) + ddamagedt(:) * deltat

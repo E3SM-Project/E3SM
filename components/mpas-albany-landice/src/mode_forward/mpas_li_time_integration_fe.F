@@ -111,6 +111,8 @@ module li_time_integration_fe
       logical, pointer :: config_finalize_damage_after_advection
       character (len=StrKIND), pointer :: config_thickness_advection
       character (len=StrKIND), pointer :: config_thermal_solver
+      character (len=StrKIND), pointer :: config_time_integration
+      integer, pointer :: config_rk_order
       integer :: rkStep, iCell, iTracer, k
       real (kind=RKIND), dimension(:,:,:), pointer :: rkTend
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, &
@@ -129,6 +131,8 @@ module li_time_integration_fe
       integer, pointer :: nVertLevels
       integer, pointer :: nCells
       real (kind=RKIND), pointer :: deltat
+      real (kind=RKIND) :: deltatFull
+      real (kind=RKIND), dimension(4) :: rkWeights, rkSubstepWeights
 
       err = 0
       err_tmp = 0
@@ -138,6 +142,8 @@ module li_time_integration_fe
       call mpas_pool_get_config(liConfigs, 'config_finalize_damage_after_advection', config_finalize_damage_after_advection)
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
       call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
+      call mpas_pool_get_config(liConfigs, 'config_rk_order', config_rk_order)
+      call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'thermal', thermalPool)
@@ -229,19 +235,55 @@ module li_time_integration_fe
          passiveTracer3dProv(k,:) = passiveTracer2d(:)
       enddo
       rkTend(:,:,:) = 0.0_RKIND
+      deltatFull = deltat ! Save deltat in order to reset it at end of RK loop
+
+      if ( (trim(config_time_integration) == 'forward_euler') .or. &
+           ((trim(config_time_integration) == 'runge_kutta') .and. &
+           (config_rk_order == 1)) ) then
+         rkWeights(:) = 1.0_RKIND
+         rkSubstepWeights(:) = 1.0_RKIND
+      elseif ( (trim(config_time_integration) == 'runge_kutta') .and. &
+               (config_rk_order == 2) ) then
+         ! use classical (i.e., endpoint, or Heun's method) RK2. Could also
+         ! add config option to use midpoint
+         rkWeights(:) = 0.5_RKIND
+         rkSubstepWeights(:) = 1.0_RKIND
+      !elseif ( (trim(config_time_integration) == 'runge_kutta') .and. &
+      !         (config_rk_order == 3) ) then
+         ! use Strong Stability Preserving RK3?
+      elseif ( (trim(config_time_integration) == 'runge_kutta') .and. &
+               (config_rk_order == 4) ) then
+         rkWeights(1) = 1.0_RKIND / 6.0_RKIND
+         rkWeights(2) = 1.0_RKIND / 3.0_RKIND
+         rkWeights(3) = 1.0_RKIND / 3.0_RKIND
+         rkWeights(4) = 1.0_RKIND / 6.0_RKIND
+
+         rkSubstepWeights(1) = 0.5_RKIND
+         rkSubstepWeights(2) = 0.5_RKIND
+         rkSubstepWeights(3) = 1.0_RKIND
+         rkSubstepWeights(4) = 1.0_RKIND
+      else
+         err = 1
+         call mpas_log_write('config_time_integration = ' // trim(config_time_integration) &
+                             // ' is not supported with config_rk_order = $i', &
+                             intArgs=(/config_rk_order/), messageType=MPAS_LOG_ERR)
+      endif 
 ! *** Start RK loop ***
-      do rkStep = 1, 2
+      do rkStep = 1, config_rk_order
+         call mpas_log_write('beginning rk step $i;  rkSubstepWeight = $r', &
+                             intArgs=(/rkStep/), realArgs=(/rkSubstepWeights(rkStep)/))
+         deltat = deltatFull * rkSubstepWeights(rkStep)
          ! === calculate damage ===========
          if (config_calculate_damage) then
              call mpas_timer_start("damage")
-             call li_calculate_damage(domain, rkTend(2,:,:), err_tmp)
+             call li_calculate_damage(domain, rkTend(2,:,:), rkWeights(rkStep), err_tmp)
              err = ior(err, err_tmp)
              call mpas_timer_stop("damage")
          endif
 
          ! === Compute new state for prognostic variables ===
          call mpas_timer_start("advect thickness and tracers")
-         call advection_solver(domain, rkTend, err_tmp)
+         call advection_solver(domain, rkTend, rkWeights(rkStep), err_tmp)
          err = ior(err, err_tmp)
          call mpas_timer_stop("advect thickness and tracers")
 
@@ -257,19 +299,19 @@ module li_time_integration_fe
 
          ! Update thickness, damage, temperature or enthalpy, passiveTracer2d 
          ! before final velocity solve
-         if (rkStep .eq. 2) then ! or whichever is last rk step
+         if (rkStep .eq. config_rk_order) then ! or whichever is last rk step
             ! y_{n+1} = y_n + (k1 + k2) / 2
 
             ! Need layerThickness first in order to update other tracers
             if (trim(config_thickness_advection) == 'fct') then
-               layerThickness(:,:) = layerThicknessProv(:,:) + deltat * rkTend(4,:,:) / 2.0_RKIND
+               layerThickness(:,:) = layerThicknessProv(:,:) + deltatFull * rkTend(4,:,:)
                thickness = sum(layerThickness, 1)
             endif
 
             if (trim(config_thermal_solver) == 'enthalpy') then
                where (layerThickness(:,:) > 0.0_RKIND)
                   enthalpy(:,:) = ( enthalpyProv(:,:) * layerThicknessProv(:,:) + &
-                                    deltat * rkTend(1,:,:) / 2.0_RKIND ) / layerThickness(:,:)
+                                    deltatFull * rkTend(1,:,:) ) / layerThickness(:,:)
                ! elsewhere, what? 
                end where
                ! given the enthalpy, compute the temperature and water fraction
@@ -287,7 +329,7 @@ module li_time_integration_fe
             elseif (trim(config_thermal_solver) == 'temperature') then
                where (layerThickness(:,:) > 0.0_RKIND)
                   temperature(:,:) = ( temperatureProv(:,:) * layerThicknessProv(:,:) + &
-                                       deltat * rkTend(1,:,:) / 2.0_RKIND ) / layerThickness(:,:)
+                                       deltatFull * rkTend(1,:,:) ) / layerThickness(:,:)
                ! elsewhere, what?
                end where
             endif
@@ -297,7 +339,7 @@ module li_time_integration_fe
                   do k = 1, nVertLevels
                      if (layerThickness(k,iCell) > 0.0_RKIND) then 
                         damage3d(k,iCell) = ( damage3dProv(k,iCell) * layerThicknessProv(k,iCell) + &
-                                            deltat * rkTend(2,k,iCell) / 2.0_RKIND ) / layerThickness(k,iCell)
+                                            deltatFull * rkTend(2,k,iCell) ) / layerThickness(k,iCell)
                      else
                         damage3d(k,iCell) = 0.0_RKIND
                      endif
@@ -310,7 +352,7 @@ module li_time_integration_fe
                do k = 1, nVertLevels
                   if (layerThickness(k,iCell) > 0.0_RKIND) then
                      passiveTracer3d(k,iCell) = ( passiveTracer3dProv(k,iCell) * layerThicknessProv(k,iCell) + &
-                                                  deltat * rkTend(3,k,iCell) / 2.0_RKIND ) / layerThickness(k,iCell)
+                                                  deltatFull * rkTend(3,k,iCell) ) / layerThickness(k,iCell)
                   else
                      passiveTracer3d(k,iCell) = 0.0_RKIND
                   endif
@@ -335,6 +377,8 @@ module li_time_integration_fe
 ! *** end RK loop ***
       enddo
 
+! Reset time step to full length after RK loop
+      deltat = deltatFull
 ! === Calve ice ========================
       call mpas_timer_start("calve_ice")
 
@@ -755,7 +799,7 @@ module li_time_integration_fe
 !>        in calculate tendencies are now in prepare_advection.
 !-----------------------------------------------------------------------
 
-   subroutine advection_solver(domain, rkTend, err)
+   subroutine advection_solver(domain, rkTend, rkWeight, err)
 
       use mpas_timekeeping
       use li_mask
@@ -763,7 +807,7 @@ module li_time_integration_fe
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-
+      real (kind=RKIND), intent(in) :: rkWeight
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
@@ -887,6 +931,7 @@ module li_time_integration_fe
                  thermalPool,            &
                  scratchPool,            &
                  rkTend,                 &
+                 rkWeight,               &
                  err_tmp,                &
                  advectTracersIn = .true.)
 
@@ -907,6 +952,7 @@ module li_time_integration_fe
                  thermalPool,            &
                  scratchPool,            &
                  rkTend,                 &
+                 rkWeight,               &
                  err_tmp,                &
                  advectTracersIn = .false.)
 

@@ -486,8 +486,12 @@
 		/>
 		<nml_option name="config_time_integration" type="character" default_value="forward_euler" units="unitless"
 		            description="Time integration method (currently, only forward Euler is supported)."
-		            possible_values="'forward_euler'"
+		            possible_values="'forward_euler' or 'runge_kutta'"
 		/>
+                <nml_option name="config_rk_order" type="integer" default_value="2" units="unitless"
+                            description="Order of Runge-Kutta time integration to use. A value of 1 is equivalent to forward euler."
+                            possible_values="1, 2, 3, 4"
+                />
 		<nml_option name="config_adaptive_timestep" type="logical" default_value=".false." units="unitless"
 			description="Determines if the time step should be adjusted based on the CFL condition or should be steady in time. If true, the config_dt_* options are ignored."
 			possible_values=".true. or .false."

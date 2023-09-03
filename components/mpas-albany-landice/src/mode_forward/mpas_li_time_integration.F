@@ -167,9 +167,8 @@ module li_time_integration
       select case (config_time_integration)
       case ('forward_euler')
          call li_time_integrator_forwardeuler(domain, err_tmp)
-      case ('rk4')
-         call mpas_log_write(trim(config_time_integration) // ' is not currently supported.', MPAS_LOG_ERR)
-         err_tmp = 1
+      case ('runge_kutta')
+         call li_time_integrator_forwardeuler(domain, err_tmp)
       case default
          call mpas_log_write(trim(config_time_integration) // ' is not a valid land ice time integration option.', MPAS_LOG_ERR)
          err_tmp = 1

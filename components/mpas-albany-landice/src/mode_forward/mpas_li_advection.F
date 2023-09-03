@@ -82,6 +82,7 @@ module li_advection
         thermalPool,            &
         scratchPool,            &
         rkTend,                 &
+        rkWeight,               &
         err,                    &
         advectTracersIn)
 
@@ -96,6 +97,8 @@ module li_advection
 
       real (kind=RKIND), intent(in) :: &
            dt                     !< Input: time step (s)
+
+      real (kind=RKIND), intent(in) :: rkWeight
 
       type (mpas_pool_type), intent(in) :: &
            meshPool               !< Input: mesh information
@@ -528,14 +531,14 @@ module li_advection
              iTracer = 0
              if ( (trim(config_thermal_solver) == 'enthalpy') .or. (trim(config_thermal_solver) == 'temperature') ) then
                 iTracer = iTracer + 1
-                rkTend(1,:,:) = rkTend(1,:,:) + tend(iTracer,:,:)
+                rkTend(1,:,:) = rkTend(1,:,:) + tend(iTracer,:,:) * rkWeight
              endif
              if (config_calculate_damage) then
                 iTracer = iTracer + 1
-                rkTend(2,:,:) = rkTend(2,:,:) + tend(iTracer,:,:)
+                rkTend(2,:,:) = rkTend(2,:,:) + tend(iTracer,:,:) * rkWeight
              endif
              iTracer = iTracer + 1
-             rkTend(3,:,:) = rkTend(3,:,:) + tend(iTracer,:,:)  ! passiveTracer2d
+             rkTend(3,:,:) = rkTend(3,:,:) + tend(iTracer,:,:) * rkWeight ! passiveTracer2d
              iTracer = iTracer + 1
              rkTend(4,:,:) = rkTend(4,:,:) + tend(iTracer,:,:)  ! layerThickness
 
