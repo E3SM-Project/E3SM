@@ -539,9 +539,12 @@ MODULE MOSART_physics_mod
                          call insert_returnflow_channel(iunit, localDeltaT )
                       endif
                       ! update main channel storage as well
-                      temp_erout = temp_erout - TRunoff%erout(iunit,nt) ! change in erout after regulation and extraction
-                      TRunoff%dwr(iunit,nt) =  temp_erout
-                      TRunoff%wr(iunit,nt) = TRunoff%wr(iunit,nt) + TRunoff%dwr(iunit,nt) * localDeltaT
+                      !! commented out by Hongyi Li, 
+					  !! TRunoff%wr has already been directly modified in IrrigationExtractionMainChannel and insert_returnflow_channel
+                      !! so here there is no need to modify it again, only update the state variables
+                      !temp_erout = temp_erout - TRunoff%erout(iunit,nt) ! change in erout after regulation and extraction
+                      !TRunoff%dwr(iunit,nt) =  temp_erout
+                      !TRunoff%wr(iunit,nt) = TRunoff%wr(iunit,nt) + TRunoff%dwr(iunit,nt) * localDeltaT
                       call UpdateState_mainchannel(iunit,nt)
                    endif
                 ! moved out of loop
