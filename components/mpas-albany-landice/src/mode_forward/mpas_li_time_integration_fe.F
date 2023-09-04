@@ -216,7 +216,7 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("subglacial hydro")
 
-! *** TODO: Should basal melt rate calculation and column physics go inside RK loop? ***
+! *** TODO: Should basal melt rate calculation, column physics, and hydrology go inside RK loop? ***
       call mpas_pool_get_array(geometryPool, 'rkTend', rkTend)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
@@ -240,6 +240,7 @@ module li_time_integration_fe
       if ( (trim(config_time_integration) == 'forward_euler') .or. &
            ((trim(config_time_integration) == 'runge_kutta') .and. &
            (config_rk_order == 1)) ) then
+         config_rk_order = 1
          rkWeights(:) = 1.0_RKIND
          rkSubstepWeights(:) = 1.0_RKIND
       elseif ( (trim(config_time_integration) == 'runge_kutta') .and. &
@@ -297,10 +298,10 @@ module li_time_integration_fe
              call mpas_timer_stop("finalize damage")
          endif
 
-         ! Update thickness, damage, temperature or enthalpy, passiveTracer2d 
-         ! before final velocity solve
-         if (rkStep .eq. config_rk_order) then ! or whichever is last rk step
-            ! y_{n+1} = y_n + (k1 + k2) / 2
+         ! If using Runge-Kutta time integration, update thickness, damage,
+         ! temperature or enthalpy, passiveTracer2d before final velocity solve.
+         ! If using forward Euler, these have already been updated above. 
+         if ( (rkStep .eq. config_rk_order) .and. (config_rk_order > 1) ) then
 
             ! Need layerThickness first in order to update other tracers
             if (trim(config_thickness_advection) == 'fct') then
