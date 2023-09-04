@@ -26,7 +26,7 @@ module li_time_integration
    use mpas_timekeeping
    use mpas_log
 
-   use li_time_integration_fe
+   use li_time_integration_fe_rk
    use li_setup
    use li_constants
 
@@ -166,9 +166,9 @@ module li_time_integration
       !call mpas_log_write('Using ' // trim(config_time_integration) // ' time integration.')
       select case (config_time_integration)
       case ('forward_euler')
-         call li_time_integrator_forwardeuler(domain, err_tmp)
+         call li_time_integrator_forwardeuler_rungekutta(domain, err_tmp)
       case ('runge_kutta')
-         call li_time_integrator_forwardeuler(domain, err_tmp)
+         call li_time_integrator_forwardeuler_rungekutta(domain, err_tmp)
       case default
          call mpas_log_write(trim(config_time_integration) // ' is not a valid land ice time integration option.', MPAS_LOG_ERR)
          err_tmp = 1

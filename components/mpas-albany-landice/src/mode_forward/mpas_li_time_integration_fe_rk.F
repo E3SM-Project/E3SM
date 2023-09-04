@@ -9,17 +9,17 @@
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  li_time_integration_fe
+!  li_time_integration_fe_rk
 !
-!> \brief MPAS land ice Forward Euler time integration scheme
-!> \author Matt Hoffman
-!> \date   17 April 2011
+!> \brief MPAS land ice Forward Euler and Runge-Kutta time integration schemes
+!> \author Matt Hoffman, Trevor Hillebrand
+!> \date   17 April 2011, Runge-Kutta added Sept 2023
 !> \details
-!>  This module contains the Forward Euler time integration scheme
+!>  This module contains the Forward Euler and Runge-Kutta time integration schemes
 !
 !-----------------------------------------------------------------------
 
-module li_time_integration_fe
+module li_time_integration_fe_rk
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -52,7 +52,7 @@ module li_time_integration_fe
    !
    !--------------------------------------------------------------------
 
-   public :: li_time_integrator_forwardeuler
+   public :: li_time_integrator_forwardeuler_rungekutta
 
    !--------------------------------------------------------------------
    !
@@ -68,16 +68,16 @@ module li_time_integration_fe
 
 !***********************************************************************
 !
-!  routine li_time_integrator_forwardeuler
+!  routine li_time_integrator_forwardeuler_rungekutta
 !
-!> \brief   Forward Euler time integration scheme
+!> \brief   Forward Euler and Runge-Kutta time integration schemes
 !> \author  Matthew Hoffman
 !> \date    10 January 2012
 !> \details
-!>  This routine performs Forward Euler time integration.
+!>  This routine performs Forward Euler and Runge-Kutta time integration.
 !
 !-----------------------------------------------------------------------
-   subroutine li_time_integrator_forwardeuler(domain, err)
+   subroutine li_time_integrator_forwardeuler_rungekutta(domain, err)
 
       use li_subglacial_hydro
       use li_velocity
@@ -424,7 +424,7 @@ module li_time_integration_fe
 
       ! === error check
       if (err == 1) then
-          call mpas_log_write("An error has occurred in li_time_integrator_forwardeuler.", MPAS_LOG_ERR)
+          call mpas_log_write("An error has occurred in li_time_integrator_forwardeuler_rungekutta.", MPAS_LOG_ERR)
       endif
 
       deallocate(temperatureProv)
@@ -435,7 +435,7 @@ module li_time_integration_fe
       deallocate(passiveTracer3dProv)
       deallocate(passiveTracer3d)
    !--------------------------------------------------------------------
-   end subroutine li_time_integrator_forwardeuler
+   end subroutine li_time_integrator_forwardeuler_rungekutta
 
 
 
@@ -1414,5 +1414,5 @@ module li_time_integration_fe
     end subroutine advance_clock
 
 
-end module li_time_integration_fe
+end module li_time_integration_fe_rk
 

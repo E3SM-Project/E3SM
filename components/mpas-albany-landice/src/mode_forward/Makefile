@@ -4,7 +4,7 @@
 OBJS =  mpas_li_core.o \
     mpas_li_core_interface.o \
     mpas_li_time_integration.o \
-    mpas_li_time_integration_fe.o \
+    mpas_li_time_integration_fe_rk.o \
     mpas_li_diagnostic_vars.o \
     mpas_li_advection.o \
     mpas_li_advection_fct_shared.o \
@@ -35,9 +35,9 @@ mpas_li_core.o: mpas_li_time_integration.o \
                      mpas_li_statistics.o \
                      mpas_li_calving.o
 
-mpas_li_time_integration.o: mpas_li_time_integration_fe.o
+mpas_li_time_integration.o: mpas_li_time_integration_fe_rk.o
 
-mpas_li_time_integration_fe.o: mpas_li_advection.o \
+mpas_li_time_integration_fe_rk.o: mpas_li_advection.o \
 	                       mpas_li_calving.o \
                                mpas_li_thermal.o \
 			       mpas_li_iceshelf_melt.o \
