@@ -12,6 +12,7 @@
 #include "mct_coupling/ScreamContext.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/scream_session.hpp"
+#include "share/scream_config.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_parse_yaml_file.hpp"
@@ -86,7 +87,8 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
                                  const int run_start_ymd,
                                  const int run_start_tod,
                                  const int case_start_ymd,
-                                 const int case_start_tod)
+                                 const int case_start_tod,
+                                 const char* calendar_name)
 {
   using namespace scream;
   using namespace scream::control;
@@ -102,6 +104,17 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
 
     // Initialize the scream session.
     scream::initialize_scream_session(atm_comm.am_i_root());
+
+    std::string cal = calendar_name;
+    if (cal=="NO_LEAP") {
+      scream::set_use_leap_year (false);
+    } else if (cal=="GREGORIAN") {
+      scream::set_use_leap_year (true);
+    } else {
+      EKAT_ERROR_MSG ("Error! Invalid/unsupported calendar name.\n"
+          "   - input name : " + cal + "\n"
+          "   - valid names: NO_LEAP, GREGORIAN\n");
+    }
 
     // Create a parameter list for inputs
     ekat::ParameterList scream_params("Scream Parameters");

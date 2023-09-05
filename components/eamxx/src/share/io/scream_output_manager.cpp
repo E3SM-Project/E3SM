@@ -3,6 +3,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/util/scream_timing.hpp"
+#include "share/scream_config.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
@@ -97,7 +98,6 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgrs.begin()->second,grids_mgr);
     m_output_streams.push_back(output);
   } else {
-    const auto& fields_pl = m_params.sublist("Fields");
     for (auto it=fields_pl.sublists_names_cbegin(); it!=fields_pl.sublists_names_cend(); ++it) {
       const auto& gname = *it;
 
@@ -635,11 +635,11 @@ setup_file (      IOFileSpecs& filespecs,
   // Register time (and possibly time_bnds) var(s)
   auto time_units="days since " + m_case_t0.get_date_string() + " " + m_case_t0.get_time_string();
   register_variable(filename,"time","time",time_units,{"time"}, "double", "double","time");
-#ifdef SCREAM_HAS_LEAP_YEAR
-  set_variable_metadata (filename,"time","calendar","gregorian");
-#else
-  set_variable_metadata (filename,"time","calendar","noleap");
-#endif
+  if (use_leap_year()) {
+    set_variable_metadata (filename,"time","calendar","gregorian");
+  } else {
+    set_variable_metadata (filename,"time","calendar","noleap");
+  }
   if (m_avg_type!=OutputAvgType::Instant) {
     // First, ensure a 'dim2' dimension with len=2 is registered.
     register_dimension(filename,"dim2","dim2",2,false);
