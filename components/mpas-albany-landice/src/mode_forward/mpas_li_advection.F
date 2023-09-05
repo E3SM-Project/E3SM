@@ -27,6 +27,8 @@ module li_advection
    use li_setup
    use li_mask
    use li_constants
+   use li_config
+   use li_mesh
 
    implicit none
    private
@@ -82,7 +84,8 @@ module li_advection
         advectTracersIn)
 
      use li_setup, only: li_calculate_layerThickness
-
+     use li_tracer_advection_fct, only: li_tracer_advection_fct_tend
+     use li_tracer_advection_fct_shared
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -162,7 +165,8 @@ module li_advection
            layerNormalVelocity,   & ! normal component of velocity on cell edges at layer midpoints
            layerThickness,        & ! thickness of each layer
            layerThicknessOld,     & ! old layer thickness
-           layerThicknessEdge       ! layer thickness on upstream edge of cell
+           layerThicknessEdge,    & ! layer thickness on upstream edge of cell
+           normalVelocity           ! horizontal velocity on interfaces
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
            advectedTracers,       & ! values of advected tracers
@@ -187,6 +191,10 @@ module li_advection
            cellMaskTemporaryField, & ! scratch field containing old values of cellMask
            thermalCellMaskField
 
+      ! Allocatable arrays need for flux-corrected transport advection
+      real (kind=RKIND), dimension(:,:,:), allocatable :: tend
+      real (kind=RKIND), dimension(:,:,:), allocatable :: activeTracerHorizontalAdvectionEdgeFlux
+
       integer, dimension(:), pointer :: &
            cellMask,              & ! integer bitmask for cells
            edgeMask,              & ! integer bitmask for edges
@@ -208,15 +216,22 @@ module li_advection
            config_ice_density,    & ! rhoi
            config_ocean_density,  & ! rhoo
            config_sea_level,      & ! sea level relative to z = 0
-           config_thermal_thickness
+           config_thermal_thickness, &
+           config_advection_coef_3rd_order
+
+      integer, pointer :: config_num_halos
 
       logical :: advectTracers     ! if true, then advect tracers as well as thickness
 
       integer :: iCell1, iCell2, theGroundedCell
+      integer, parameter :: horizAdvOrder = 4
+      integer, parameter :: vertAdvOrder = 1
 
       real(kind=RKIND) :: GLfluxSign, thicknessFluxEdge
 
       integer :: err_tmp
+      integer :: nTracers
+      integer, pointer :: maxEdges2
 
       !WHL - debug
       integer, dimension(:), pointer :: indexToCellID, indexToEdgeID
@@ -277,6 +292,7 @@ module li_advection
 
       ! get arrays from the velocity pool
       call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
+      call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
       call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLine', fluxAcrossGroundingLine)
       call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLineOnCells', fluxAcrossGroundingLineOnCells)
 
@@ -295,11 +311,12 @@ module li_advection
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_config(liConfigs, 'config_num_halos', config_num_halos)
 
-      !WHL - debug
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'maxEdges2', maxEdges2)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
@@ -339,6 +356,9 @@ module li_advection
       call mpas_allocate_scratch_field(thermalCellMaskField, .true.)
       thermalCellMask => thermalCellMaskField % array
 
+      ! define max number of advection cells as max number of edges*2
+      nAdvCellsMax = maxEdges2
+
       ! given the old thickness, compute the thickness in each layer
       call li_calculate_layerThickness(meshPool, thickness, layerThickness)
 
@@ -353,9 +373,8 @@ module li_advection
       ! Horizontal transport of thickness and tracers
       !-----------------------------------------------------------------
 
-      select case (trim(config_thickness_advection))
-
-      case ('fo')
+      if ( (trim(config_thickness_advection) .eq. 'fo') .or. &
+          (trim(config_thickness_advection) .eq. 'fct') ) then
 
          if (config_print_thickness_advection_info) then
             call mpas_log_write('Using first-order upwind for thickness advection')
@@ -367,7 +386,7 @@ module li_advection
          endif
 
 
-         if (advectTracers) then
+         if ( (advectTracers) .or. (trim(config_thickness_advection) .eq. 'fct') ) then
 
             ! Copy the old tracer values into the advectedTracers array.
             ! This requires setting a tracer pointer to either temperature or enthalpy,
@@ -381,12 +400,21 @@ module li_advection
                  thermalPool,       &
                  advectedTracers,   &
                  surfaceTracers,    &
-                 basalTracers)
+                 basalTracers,      &
+                 nTracers)
 
          else   ! no tracer advection; pass a tracer array full of zeroes
 
             advectedTracers(:,:,:) = 0.0_RKIND
 
+         endif
+
+         if ((trim(config_thickness_advection) .eq. 'fct') .or. &
+             (trim(config_tracer_advection) .eq. 'fct' ) ) then
+            allocate(tend(nTracers,nVertLevels,nCells+1))
+            tend(:,:,:) = 0.0_RKIND
+            allocate(activeTracerHorizontalAdvectionEdgeFlux(nTracers,nVertLevels+1,nEdges+1))
+            activeTracerHorizontalAdvectionEdgeFlux(:,:,:) = 0.0_RKIND
          endif
 
          ! Transport thickness and tracers using a first-order upwind scheme
@@ -402,8 +430,10 @@ module li_advection
                        intArgs=(/iCell, indexToCellID(iCell)/), realArgs=(/thickness(iCell), advectedTracers(1,1,iCell)/))
                   do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(iEdgeOnCell,iCell)
-                     call mpas_log_write('iEdge (local=$i, global=$i), layerNormalVelocity=$r:', &
-                        intArgs=(/iEdge, indexToEdgeID(iEdge)/), realArgs=(/layerNormalVelocity(1,iEdge)/))
+                     call mpas_log_write('iEdge (local=$i, global=$i), &
+                             layerNormalVelocity=$r:', &
+                             intArgs=(/iEdge, indexToEdgeID(iEdge)/), &
+                             realArgs=(/layerNormalVelocity(1,iEdge)/))
                   enddo
                endif
             enddo
@@ -414,18 +444,78 @@ module li_advection
          advectedTracersOld(:,:,:) = advectedTracers(:,:,:)
 
          ! compute new values of layer thickness and tracers
-         call advect_thickness_tracers_upwind(&
-              dt,                      &
-              meshPool,                &
-              layerNormalVelocity,     &
-              layerThicknessEdge,      &
-              layerThicknessOld,       &
-              advectedTracersOld,      &
-              cellMask,                &
-              edgeMask,                &
-              layerThickness,          &
-              advectedTracers,         &
-              err)
+         if ((trim(config_thickness_advection) .eq. 'fo') .and. &
+             ( (trim(config_tracer_advection) .eq. 'fo') .or. &
+               (trim(config_tracer_advection) .eq. 'none') ) ) then
+             call advect_thickness_tracers_upwind(&
+                  dt,                      &
+                  meshPool,                &
+                  layerNormalVelocity,     &
+                  layerThicknessEdge,      &
+                  layerThicknessOld,       &
+                  advectedTracersOld,      &
+                  cellMask,                &
+                  edgeMask,                &
+                  layerThickness,          &
+                  advectedTracers,         &
+                  err)
+         elseif ((trim(config_thickness_advection) .eq. 'fo') .and. &
+                  trim(config_tracer_advection) .eq. 'fct') then
+             ! TODO: Decide what to do about w (vertical vel).
+             ! For now, just setting it to 0 to try to get this to compile.
+             call advect_thickness_tracers_upwind(&
+                  dt,                      &
+                  meshPool,                &
+                  layerNormalVelocity,     &
+                  layerThicknessEdge,      &
+                  layerThicknessOld,       &
+                  advectedTracersOld,      &
+                  cellMask,                &
+                  edgeMask,                &
+                  layerThickness,          &
+                  advectedTracers,         &
+                  err)
+             ! Reset tracers after fo advection for fct advection
+             advectedTracers(:,:,:) = advectedTracersOld(:,:,:)
+
+             ! Pass FO upwind normalThicknessFlux (layerThicknessEdge * layerNormalVelocity)
+             ! to fct tracer routine
+             call li_tracer_advection_fct_tend(&
+                  tend, advectedTracers, layerThicknessOld, &
+                  layerThicknessEdge * layerNormalVelocity, 0 * normalVelocity, dt,    &
+                  nTracers, activeTracerHorizontalAdvectionEdgeFlux, computeBudgets=.false.)!{{{
+         elseif (trim(config_thickness_advection) .eq. 'fct') then
+             ! Call fct routine for thickness first, and use activeTracerHorizontalAdvectionEdgeFlux
+             ! returned by that call as normalThicknessFlux for call to tracer fct
+             call li_tracer_advection_fct_tend(&
+                  tend(nTracers:,:,:), advectedTracers(nTracers:,:,:), layerThicknessOld * 0.0_RKIND + 1.0_RKIND, &
+                  layerNormalVelocity, 0.0_RKIND * normalVelocity, dt,    &
+                  1, activeTracerHorizontalAdvectionEdgeFlux(nTracers:,:,:), computeBudgets=.false.)
+             ! layerThickness is last tracer. However, for some reason
+             ! this: layerThickness(:,:) = advectedTracers(nTracers,:,:) does not conserve mass!
+             ! This does conserve mass:
+             layerThickness(:,:) = layerThickness(:,:) + tend(nTracers,:,:) * dt
+
+             if (trim(config_tracer_advection) .eq. 'fct') then
+                ! Call fct for tracers, using activeTracerHorizontalAdvectionEdgeFlux
+                ! from fct thickness advection as normalThicknessFlux
+                call li_tracer_advection_fct_tend(&
+                     tend(1:nTracers-1,:,:), advectedTracers(1:nTracers-1,:,:), layerThicknessOld, &
+                     activeTracerHorizontalAdvectionEdgeFlux(nTracers,:,:), 0.0_RKIND * normalVelocity, dt,    &
+                     nTracers-1, computeBudgets=.false.)
+             elseif (trim(config_tracer_advection) .eq. 'none') then
+                ! do nothing
+             else
+                err_tmp = 1
+                call mpas_log_write(trim(config_tracer_advection) // &
+                                    ' tracer advection is not currently supported with fct thickness advection.', MPAS_LOG_ERR)
+             endif
+         else
+            err_tmp = 1
+            call mpas_log_write("config_thickness_advection = " // trim(config_thickness_advection) // &
+                                ", config_tracer_advection = " // trim(config_tracer_advection) // &
+                                " is not a supported combination.", MPAS_LOG_ERR)
+         endif
 
          if (config_print_thickness_advection_info) then
             do iCell = 1, nCells
@@ -601,22 +691,34 @@ module li_advection
                  geometryPool,          &
                  thermalPool,           &
                  advectedTracers)
-
          endif
 
-      case ('none')
+      elseif (trim(config_thickness_advection) .eq. 'none') then
 
          ! Do nothing
 
-      case default
+      else
 
          call mpas_log_write(trim(config_thickness_advection) // ' is not a valid option for thickness/tracer advection.', &
                  MPAS_LOG_ERR)
          err_tmp = 1
 
-      end select
+      end if ! config_thickness_advection
 
       err = ior(err,err_tmp)
+
+      ! Deallocate arrays for fct
+      if ( (trim(config_thickness_advection) .eq. 'fct') .or. &
+           (trim(config_tracer_advection) .eq. 'fct') ) then
+         deallocate( nAdvCellsForEdge, &
+                     advCellsForEdge, &
+                     advCoefs, &
+                     advCoefs3rd, &
+                     advMaskHighOrder, &
+                     advMask2ndOrder, &
+                     tend, &
+                     activeTracerHorizontalAdvectionEdgeFlux)
+      endif
 
       ! clean up
       call mpas_deallocate_scratch_field(advectedTracersField, .true.)
@@ -981,10 +1083,12 @@ module li_advection
          thermalPool,      &
          advectedTracers,  &
          surfaceTracers,   &
-         basalTracers)
+         basalTracers,     &
+         nTracers)
 
       use li_thermal, only: li_temperature_to_enthalpy_kelvin
-
+      use li_tracer_advection_fct_shared
+      use li_tracer_advection_fct
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -1015,6 +1119,7 @@ module li_advection
            basalTracers      ! tracer values for new ice at lower surface
                              ! dimension 1 = maxTracers, 2 = nCells
 
+      integer, intent(out)  :: nTracers
       !-----------------------------------------------------------------
       !
       ! local variables
@@ -1022,7 +1127,8 @@ module li_advection
       !-----------------------------------------------------------------
 
       character (len=StrKIND), pointer :: &
-           config_thermal_solver
+           config_thermal_solver, &
+           config_thickness_advection
 
       logical, pointer :: &
            config_calculate_damage
@@ -1036,7 +1142,8 @@ module li_advection
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,             & ! interior ice temperature
            waterFrac,               & ! interior water fraction
-           enthalpy                   ! interior ice enthalpy
+           enthalpy,                & ! interior ice enthalpy
+           layerThickness
 
       real (kind=RKIND), dimension(:), pointer :: &
            surfaceAirTemperature,   & ! surface air temperature
@@ -1049,12 +1156,17 @@ module li_advection
            thickness                  ! ice thickness
 
       real (kind=RKIND), dimension(:), pointer :: &
-           damage ! damage
+           damage, & ! damage
+           passiveTracer2d
 
       real (kind=RKIND), pointer ::  &
            config_ice_density         ! ice density
 
-      integer :: iCell, iTracer, k
+      integer :: iCell, iTracer, k, err, err1, err2
+
+      err  = 0
+      err1 = 0
+      err2 = 0
 
       ! get dimensions
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -1065,7 +1177,9 @@ module li_advection
 
       ! get arrays from geometry pool
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
       call mpas_pool_get_array(geometryPool, 'damage', damage)
+      call mpas_pool_get_array(geometryPool, 'passiveTracer2d', passiveTracer2d)
 
       ! get arrays from thermal pool
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -1078,6 +1192,7 @@ module li_advection
       call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
       call mpas_pool_get_config(liConfigs, 'config_calculate_damage', config_calculate_damage)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
 
       ! initialize
       advectedTracers(:,:,:) = 0.0_RKIND
@@ -1155,8 +1270,41 @@ module li_advection
 
       endif
 
+      ! always advect passiveTracer2d
+      iTracer = iTracer + 1
+      ! copy 2d passiveTracer2d to all vertical levels in the tracer array
+      do k = 1, nVertLevels
+         advectedTracers(iTracer,k,:) = passiveTracer2d(:)
+      enddo
+      surfaceTracers(iTracer,:) = 0.0_RKIND
+      basalTracers(iTracer,:) = 0.0_RKIND
+ 
+      if (trim(config_thickness_advection) == 'fct') then
+         ! increment the tracer index
+         iTracer = iTracer + 1
+
+         ! copy 2d thickness to all vertical levels in the tracer array
+         advectedTracers(iTracer,:,:) = layerThickness(:,:)
+         surfaceTracers(iTracer,:) = 0.0_RKIND
+         basalTracers(iTracer,:) = 0.0_RKIND
+
+      endif
+
+      nTracers = iTracer
       ! Note: Other tracers (e.g., ice age) can be added here as needed.
       !       May need to increase maxTracers in the Registry.
+      if ( (trim(config_tracer_advection) == 'fct') .or. &
+           (trim(config_thickness_advection) == 'fct') ) then
+         call li_tracer_advection_fct_shared_init(geometryPool, err1)
+         call li_tracer_advection_fct_init(err2)
+
+         if (err1 /= 0 .or. err2 /= 0) then
+            err = 1
+            call mpas_log_write(                                 &
+               'Error encountered during fct tracer advection init', &
+               MPAS_LOG_ERR, masterOnly=.true.)
+         endif
+      endif
 
     end subroutine tracer_setup
 
@@ -1228,7 +1376,8 @@ module li_advection
            thickness                  ! ice thickness
 
       real (kind=RKIND), dimension(:), pointer :: &
-           damage ! damage
+           damage, & ! damage
+           passiveTracer2d
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,             & ! interior ice temperature
@@ -1249,6 +1398,7 @@ module li_advection
       ! get arrays from geometry pool
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'damage', damage)
+      call mpas_pool_get_array(geometryPool, 'passiveTracer2d', passiveTracer2d)
 
       ! get arrays from thermal pool
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -1298,6 +1448,12 @@ module li_advection
             damage(iCell) = sum(advectedTracers(iTracer,:,iCell) * layerThicknessFractions)  ! thickness-weighted average
          enddo
       endif
+
+      ! Always advect passiveTracer2d
+      iTracer = iTracer + 1
+      do iCell = 1, nCellsSolve
+         passiveTracer2d(iCell) = sum(advectedTracers(iTracer,:,iCell) * layerThicknessFractions)  ! thickness-weighted average
+      enddo
 
       ! Note: Other tracers (e.g., ice age) can be added here as needed.
       !       May need to increase maxTracers in the Registry.

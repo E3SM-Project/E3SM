@@ -667,7 +667,8 @@ module li_time_integration_fe
       ! ===
       ! === Calculate layerThicknessEdge, which is needed for advection
       ! ===
-      if (trim(config_thickness_advection) == 'fo' .or. trim(config_tracer_advection) == 'fo') then
+      if (trim(config_thickness_advection) == 'fo' .or. trim(config_tracer_advection) == 'fo' .or. &
+          trim(config_thickness_advection) == 'fct' .or. trim(config_tracer_advection) == 'fct') then
          block => domain % blocklist
          do while (associated(block))
 
@@ -703,7 +704,9 @@ module li_time_integration_fe
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
-         if (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') then
+         if ( (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') .or. &
+              (trim(config_thickness_advection) == 'fct') .or. &
+              (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fct') ) then
 
             ! Note: This subroutine requires that thickness and tracers are correct in halos
 
@@ -758,7 +761,6 @@ module li_time_integration_fe
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel=1)
 
-
          allocate( masktmp(nCells + 1) )
          masktmp = 0
 
@@ -795,6 +797,7 @@ module li_time_integration_fe
       call mpas_dmpar_field_halo_exch(domain, 'waterFrac')
       call mpas_dmpar_field_halo_exch(domain, 'enthalpy')
       call mpas_dmpar_field_halo_exch(domain, 'damage')
+      call mpas_dmpar_field_halo_exch(domain, 'passiveTracer2d')
 
       call mpas_timer_stop("halo updates")
 

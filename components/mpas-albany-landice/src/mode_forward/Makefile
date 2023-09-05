@@ -7,6 +7,8 @@ OBJS =  mpas_li_core.o \
     mpas_li_time_integration_fe.o \
     mpas_li_diagnostic_vars.o \
     mpas_li_advection.o \
+    mpas_li_advection_fct_shared.o \
+    mpas_li_advection_fct.o \
     mpas_li_calving.o \
     mpas_li_statistics.o \
     mpas_li_velocity.o \
@@ -45,7 +47,11 @@ mpas_li_time_integration_fe.o: mpas_li_advection.o \
 			       mpas_li_bedtopo.o
 
 mpas_li_advection.o: mpas_li_thermal.o \
+                     mpas_li_advection_fct.o \
+                     mpas_li_advection_fct_shared.o \
 	             mpas_li_diagnostic_vars.o
+
+mpas_li_advection_fct.o:  mpas_li_advection_fct_shared.o
 
 mpas_li_calving.o: mpas_li_thermal.o \
 		   mpas_li_advection.o
