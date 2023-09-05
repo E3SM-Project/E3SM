@@ -89,13 +89,11 @@ private_except_cuda:
 
     // on host: initializes preprocess functor with necessary state data
     void initialize(const int ncol, const int nlev, const Real z_surf,
-                    const view_1d_int& convert_wet_dry_idx_d,
                     const mam_coupling::AtmosphericState& atm,
                     const mam_coupling::AerosolState& aero) {
       ncol_ = ncol;
       nlev_ = nlev;
       z_surf_ = z_surf;
-      convert_wet_dry_idx_d_ = convert_wet_dry_idx_d;
       atm_ = atm;
       aero_ = aero;
     }
@@ -173,9 +171,6 @@ private_except_cuda:
     // height of bottom of atmosphere
     Real z_surf_;
 
-    // used for converting between wet and dry mixing ratios
-    view_1d_int convert_wet_dry_idx_d_;
-
     // local atmospheric and aerosol state column variables
     mam_coupling::AtmosphericState atm_;
     mam_coupling::AerosolState     aero_;
@@ -188,12 +183,10 @@ private_except_cuda:
 
     // on host: initializes postprocess functor with necessary state data
     void initialize(const int ncol, const int nlev,
-                    const view_1d_int& convert_wet_dry_idx_d,
                     const mam_coupling::AtmosphericState& atm,
                     const mam_coupling::AerosolState& aero) {
       ncol_ = ncol;
       nlev_ = nlev;
-      convert_wet_dry_idx_d_ = convert_wet_dry_idx_d;
       atm_ = atm;
       aero_ = aero;
     }
@@ -224,9 +217,6 @@ private_except_cuda:
 
     // number of horizontal columns and vertical levels
     int ncol_, nlev_;
-
-    // used for converting between wet and dry mixing ratios
-    view_1d_int convert_wet_dry_idx_d_;
 
     // local atmospheric and aerosol state column variables
     mam_coupling::AtmosphericState atm_;

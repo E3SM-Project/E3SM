@@ -67,12 +67,23 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Updated>("qc", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // cloud liquid wet mixing ratio
   add_field<Updated>("nc", scalar3d_layout_mid, n_unit, grid_name, "tracers"); // cloud liquid wet number mixing ratio
 
-  // aerosol tracers of interest: mass (q) and number (n) mixing ratios
-  add_field<Updated>("q_aitken_so4", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // sulfate mixing ratio for aitken mode
-  add_field<Updated>("n_aitken", scalar3d_layout_mid, n_unit, grid_name, "tracers"); // number mixing ratio of aitken mode
+  // (interstitial) aerosol tracers of interest: mass (q) and number (n) mixing ratios
+  for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    const char* int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
+    add_field<Updated>(int_nmr_field_name, scalar3d_layout_mid, n_unit, grid_name, "tracers");
+    for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      const char* int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(m, a);
+      if (strlen(int_mmr_field_name) > 0) {
+        add_field<Updated>(int_mmr_field_name, scalar3d_layout_mid, q_unit, grid_name, "tracers");
+      }
+    }
+  }
 
   // aerosol-related gases: mass mixing ratios
-  add_field<Updated>("q_h2so4", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // wet mixing ratio of sulfuric acid gas
+  for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    const char* gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
+    add_field<Updated>(gas_mmr_field_name, scalar3d_layout_mid, q_unit, grid_name, "tracers");
+  }
 
   // Tracers group -- do we need this in addition to the tracers above? In any
   // case, this call should be idempotent, so it can't hurt.
@@ -89,28 +100,12 @@ set_computed_group_impl(const FieldGroup& group) {
   EKAT_REQUIRE_MSG(group.m_info->m_bundled,
     "Error! MAM4 expects bundled fields for tracers.\n");
 
-  // How many aerosol/gas tracers do we expect? Recall that we maintain
-  // both cloudborne and interstitial aerosol tracers. For now, though, we have
-  // 3 aerosol tracers:
-  // * H2SO4 gas mass mixing ratio
-  // * interstitial aitken-mode sulfate number + mass mixing ratios
-  int num_aero_tracers = 3;
-  /*
-    aero_config_.num_gas_ids() +  // gas tracers
-    2 * aero_config_.num_modes(); // modal number mixing ratio tracers
-  for (int m = 0; m < aero_config_.num_modes(); ++m) {
-    auto m_index = static_cast<mam4::ModeIndex>(m);
-    for (int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
-      auto a_id = static_cast<mam4::AeroId>(a);
-      if (mam4::aerosol_index_for_mode(m_index, a_id) != -1) {
-        num_aero_tracers += 2; // aerosol mass mixing ratios (interstitial, cloudborne)
-      }
-    }
-  }
-  */
-
-  EKAT_REQUIRE_MSG(group.m_info->size() >= num_aero_tracers,
-    "Error! MAM4 requires at least " << num_aero_tracers << " aerosol tracers.");
+  // How many aerosol/gas tracers do we expect?
+  int num_tracers = mam_coupling::num_aero_modes() +
+                2 * mam_coupling::num_aero_tracers() + // interstitial + cloudborne aerosol mmrs
+                    mam_coupling::num_aero_gases();
+  EKAT_REQUIRE_MSG(group.m_info->size() >= num_tracers,
+    "Error! MAM4 requires at least " << num_tracers << " aerosol tracers.");
 }
 
 size_t MAMMicrophysics::requested_buffer_size_in_bytes() const
@@ -196,7 +191,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
   const auto& tracers = get_group_out("tracers");
   const auto& tracers_info = tracers.m_info;
-  int num_tracers = tracers_info->size();
 
   // Alias local variables from temporary buffer
   auto z_mid = buffer_.z_mid;
@@ -254,23 +248,9 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // FIXME: For now, set z_surf to zero.
   const Real z_surf = 0.0;
 
-  // Determine indices of aerosol/gas tracers for wet<->dry conversion
-  auto q_aitken_so4_index  = tracers_info->m_subview_idx.at("q_aitken_so4");
-  auto q_h2so4_index       = tracers_info->m_subview_idx.at("q_h2so4");
-  int num_aero_tracers = 2; // for now, just 1 gas + aitken so4
-  view_1d_int convert_wet_dry_idx_d("convert_wet_dry_idx_d", num_aero_tracers);
-  auto convert_wet_dry_idx_h = Kokkos::create_mirror_view(convert_wet_dry_idx_d);
-  for (int it=0, iq=0; it < num_tracers; ++it) {
-    if ((it == q_aitken_so4_index) || (it == q_h2so4_index)) {
-      convert_wet_dry_idx_h(iq) = it;
-      ++iq;
-    }
-  }
-  Kokkos::deep_copy(convert_wet_dry_idx_d, convert_wet_dry_idx_h);
-
-  // hand views to our preprocess/postprocess functors
-  preprocess_.initialize(ncol_, nlev_, z_surf, convert_wet_dry_idx_d, atm_, aero_);
-  postprocess_.initialize(ncol_, nlev_, convert_wet_dry_idx_d, atm_, aero_);
+  // set up our preprocess/postprocess functors
+  preprocess_.initialize(ncol_, nlev_, z_surf, atm_, aero_);
+  postprocess_.initialize(ncol_, nlev_, atm_, aero_);
 
   // Set field property checks for the fields in this process
   /* e.g.
