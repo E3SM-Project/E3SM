@@ -286,8 +286,10 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
     auto& esf = c.create_if_not_there<EulerStepFunctor>(num_elems);
     fbm.request_size(esf.requested_buffer_size());
   } else {
+#ifdef HOMME_ENABLE_COMPOSE
     auto& ct = c.create_if_not_there<ComposeTransport>(num_elems);
     fbm.request_size(ct.requested_buffer_size());
+#endif
   }
   if (need_dirk) {
     // Create dirk functor only if needed

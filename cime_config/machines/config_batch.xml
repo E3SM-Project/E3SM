@@ -668,6 +668,13 @@
      </queues>
    </batch_system>
 
+   <batch_system MACH="lassen" type="lsf" >
+     <queues>
+       <queue walltimemax="02:00" nodemin="1" nodemax="18" strict="true" default="true">pdebug</queue>
+       <queue walltimemax="02:00" nodemin="1" nodemax="256" default="false">pbatch</queue>
+     </queues>
+   </batch_system>
+
    <batch_system MACH="ascent" type="lsf" >
      <batch_submit>/gpfs/wolf/cli115/world-shared/e3sm/tools/bsub/throttle</batch_submit>
      <directives>

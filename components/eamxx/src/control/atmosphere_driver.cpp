@@ -24,6 +24,10 @@
 // didn't realize I could do without the workaround.
 #include "share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 
+#ifndef SCREAM_CIME_BUILD
+#include <unistd.h>
+#endif
+
 #include <fstream>
 
 namespace scream {
@@ -209,9 +213,12 @@ void AtmosphereDriver::create_grids()
     const auto& casename = ic_pl.get<std::string>("restart_casename");
     auto filename = find_filename_in_rpointer (casename,true,m_atm_comm,m_run_t0);
     gm_params.set("ic_filename", filename);
+    m_atm_params.sublist("provenance").set("initial_conditions_file",filename);
   } else if (ic_pl.isParameter("Filename")) {
     // Initial run, if an IC file is present, pass it.
-    gm_params.set("ic_filename", ic_pl.get<std::string>("Filename"));
+    auto filename = ic_pl.get<std::string>("Filename");
+    gm_params.set("ic_filename", filename);
+    m_atm_params.sublist("provenance").set("initial_conditions_file",filename);
   }
 
   m_atm_logger->debug("  [EAMxx] Creating grid manager '" + gm_type + "' ...");
@@ -224,6 +231,14 @@ void AtmosphereDriver::create_grids()
   m_grids_manager->build_grids();
 
   m_atm_logger->debug("  [EAMxx] Grids created.");
+
+  // If TMS process is enabled, SHOC needs to know to request tms' surface drag coefficient
+  // as a required field during the set_grid() call below, but SHOC does not have knowledge
+  // of other processes. The driver needs propgate this information to SHOC.
+  if(m_atm_process_group->has_process("tms") &&
+     m_atm_process_group->has_process("shoc")) {
+    setup_shoc_tms_links();
+  }
 
   // Set the grids in the processes. Do this by passing the grids manager.
   // Each process will grab what they need
@@ -405,6 +420,37 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   // Pass energy checker to the process group to be added
   // to postcondition checks of appropriate processes.
   m_atm_process_group->setup_column_conservation_checks(conservation_check, fail_handling_type);
+}
+
+void AtmosphereDriver::setup_shoc_tms_links ()
+{
+  EKAT_REQUIRE_MSG(m_atm_process_group->has_process("tms"),
+                   "Error! Attempting to setup link between "
+                   "SHOC and TMS, but TMS is not defined.\n");
+  EKAT_REQUIRE_MSG(m_atm_process_group->has_process("shoc"),
+                   "Error! Attempting to setup link between "
+                   "SHOC and TMS, but SHOC is not defined.\n");
+
+  auto shoc_process = m_atm_process_group->get_process_nonconst("shoc");
+  shoc_process->get_params().set<bool>("apply_tms", true);
+}
+
+void AtmosphereDriver::add_additional_column_data_to_property_checks () {
+  // Get list of additional data fields from driver_options parameters.
+  // If no fields given, return.
+  using vos_t = std::vector<std::string>;
+  auto additional_data_fields = m_atm_params.sublist("driver_options").get<vos_t>("property_check_data_fields",
+                                                                                  {"NONE"});
+  if (additional_data_fields == vos_t{"NONE"}) return;
+
+  // Add requested fields to property checks
+  auto phys_field_mgr = m_field_mgrs[m_grids_manager->get_grid("Physics")->name()];
+  for (auto fname : additional_data_fields) {
+    EKAT_REQUIRE_MSG(phys_field_mgr->has_field(fname), "Error! The field "+fname+" is requested for property check output "
+                                                       "but does not exist in the physics field manager.\n");
+    
+    m_atm_process_group->add_additional_data_fields_to_property_checks(phys_field_mgr->get_field(fname));
+  }
 }
 
 void AtmosphereDriver::create_fields()
@@ -603,6 +649,7 @@ void AtmosphereDriver::initialize_output_managers () {
   if (io_params.isSublist("model_restart")) {
     auto restart_pl = io_params.sublist("model_restart");
     m_output_managers.emplace_back();
+    restart_pl.sublist("provenance") = m_atm_params.sublist("provenance");
     auto& om = m_output_managers.back();
     if (fvphyshack) {
       // Don't save CGLL fields from ICs to the restart file.
@@ -643,6 +690,7 @@ void AtmosphereDriver::initialize_output_managers () {
       params.set<std::string>("filename_prefix",m_casename+".scream.h"+std::to_string(om_tally));
       om_tally++;
     }
+    params.sublist("provenance") = m_atm_params.sublist("provenance");
     // Add a new output manager
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
@@ -655,6 +703,43 @@ void AtmosphereDriver::initialize_output_managers () {
   stop_timer("EAMxx::initialize_output_managers");
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMxx] initialize_output_managers ... done!");
+}
+
+void AtmosphereDriver::
+set_provenance_data (std::string caseid,
+                     std::string hostname,
+                     std::string username)
+{
+#ifdef SCREAM_CIME_BUILD
+  // Check the inputs are valid
+  EKAT_REQUIRE_MSG (caseid!="", "Error! Invalid case id: " + caseid + "\n");
+  EKAT_REQUIRE_MSG (hostname!="", "Error! Invalid hostname: " + hostname + "\n");
+  EKAT_REQUIRE_MSG (username!="", "Error! Invalid username: " + username + "\n");
+#else
+  caseid = "EAMxx standalone";
+  char* user = new char[32];
+  char* host = new char[256];
+  int err;
+  err = gethostname(host,255);
+  if (err==0) {
+    hostname = std::string(host);
+  } else {
+    hostname = "UNKNOWN";
+  }
+  err = getlogin_r(user,31);
+  if (err==0) {
+    username = std::string(user);
+  } else {
+    username = "UNKNOWN";
+  }
+  delete[] user;
+  delete[] host;
+#endif
+  auto& provenance = m_atm_params.sublist("provenance");
+  provenance.set("caseid",caseid);
+  provenance.set("hostname",hostname);
+  provenance.set("username",username);
+  provenance.set("version",std::string(EAMXX_GIT_VERSION));
 }
 
 void AtmosphereDriver::
@@ -873,10 +958,11 @@ void AtmosphereDriver::set_initial_conditions ()
     const auto& fname = fid.name();
     const auto& grid_name = fid.get_grid_name();
 
-    // First, check if the input file contains constant values for some of the fields
     if (ic_pl.isParameter(fname)) {
-      // The user provided a constant value for this field. Simply use that.
+      // This is the case that the user provided an initialization
+      // for this field in the parameter file.
       if (ic_pl.isType<double>(fname) or ic_pl.isType<std::vector<double>>(fname)) {
+        // Initial condition is a constant
         initialize_constant_field(fid, ic_pl);
         fields_inited[grid_name].push_back(fname);
 
@@ -884,22 +970,20 @@ void AtmosphereDriver::set_initial_conditions ()
         auto f_nonconst = m_field_mgrs.at(grid_name)->get_field(fid.name());
         f_nonconst.get_header().get_tracking().update_time_stamp(m_current_ts);
       } else if (ic_pl.isType<std::string>(fname)) {
+        // Initial condition is a string
         ic_fields_to_copy.push_back(fid);
         fields_inited[grid_name].push_back(fname);
       } else {
-        EKAT_REQUIRE_MSG (false, "ERROR: invalid assignment for variable " + fname + ", only scalar double or string, or vector double arguments are allowed");
+        EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
+                        "double or string, or vector double arguments are allowed");
       }
-    } else if (not (fvphyshack and grid_name == "Physics PG2")) {
-      auto& this_grid_ic_fnames = ic_fields_names[grid_name];
+    } else if (fname == "phis" or fname == "sgh30") {
+      // Both phis and sgh30 need to be loaded from the topography file
       auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
       auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
 
-      auto c = f.get_header().get_children();
-
       if (fname == "phis") {
-        // Topography (phis) is a special case that should
-        // be loaded from the topography file, where the
-        // eamxx field "phis" corresponds to the name
+        // The eamxx field "phis" corresponds to the name
         // "PHIS_d" on the GLL and Point grids and "PHIS"
         // on the PG2 grid in the topography file.
         if (grid_name == "Physics PG2") {
@@ -910,8 +994,23 @@ void AtmosphereDriver::set_initial_conditions ()
         } else {
           EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
         }
-        this_grid_topo_eamxx_fnames.push_back("phis");
-      } else if (c.size()==0) {
+        this_grid_topo_eamxx_fnames.push_back(fname);
+      } else if (fname == "sgh30") {
+        // The eamxx field "sgh30" is called "SGH30" in the
+        // topography file and is only available on the PG2 grid.
+        EKAT_ASSERT_MSG(grid_name == "Physics PG2",
+                        "Error! Requesting sgh30 field on " + grid_name +
+                        " topo file only has sgh30 for Physics PG2.\n");
+        topography_file_fields_names[grid_name].push_back("SGH30");
+        topography_eamxx_fields_names[grid_name].push_back(fname);
+      }
+    } else if (not (fvphyshack and grid_name == "Physics PG2")) {
+      // The IC file is written for the GLL grid, so we only load
+      // fields from there. Any other input fields on the PG2 grid
+      // will be properly computed in the dynamics interface.
+      auto& this_grid_ic_fnames = ic_fields_names[grid_name];
+      auto c = f.get_header().get_children();
+      if (c.size()==0) {
         // If this field is the parent of other subfields, we only read from file the subfields.
         if (not ekat::contains(this_grid_ic_fnames,fname)) {
           this_grid_ic_fnames.push_back(fname);
@@ -1075,6 +1174,8 @@ void AtmosphereDriver::set_initial_conditions ()
                              topography_eamxx_fields_names[grid_name],
                              io_grid,file_name,m_current_ts);
     }
+    // Store in provenance list, for later usage in output file metadata
+    m_atm_params.sublist("provenance").set("topography_file",file_name);
     m_atm_logger->debug("    [EAMxx] Processing topography from file ... done!");
   } else {
     // Ensure that, if no topography_filename is given, no
@@ -1087,6 +1188,8 @@ void AtmosphereDriver::set_initial_conditions ()
                       "topography_filename or entry matching the field name "
                       "was given in IC parameters.\n");
     }
+
+    m_atm_params.sublist("provenance").set<std::string>("topography_file","NONE");
   }
 
   m_atm_logger->info("  [EAMxx] set_initial_conditions ... done!");
@@ -1256,6 +1359,9 @@ void AtmosphereDriver::initialize_atm_procs ()
     m_atm_process_group->add_postcondition_nan_checks();
   }
 
+  // Add additional column data fields to pre/postcondition checks (if they exist)
+  add_additional_column_data_to_property_checks();
+
   if (fvphyshack) {
     // [CGLL ICs in pg2] See related notes in atmosphere_dynamics.cpp.
     const auto gn = "Physics GLL";
@@ -1280,6 +1386,7 @@ initialize (const ekat::Comm& atm_comm,
 {
   set_comm(atm_comm);
   set_params(params);
+  set_provenance_data ();
 
   init_scorpio ();
 

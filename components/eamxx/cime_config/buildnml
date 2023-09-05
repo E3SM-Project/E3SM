@@ -26,7 +26,7 @@ import os, sys
 
 from CIME.case import Case
 from CIME.utils import expect, safe_copy, SharedArea, run_cmd_no_fail
-from CIME.buildlib import parse_input
+from CIME.buildnml import parse_input
 
 from eamxx_buildnml import create_raw_xml_file, create_input_files, create_input_data_list_file, \
     do_cime_vars_on_yaml_output_files

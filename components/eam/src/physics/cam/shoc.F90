@@ -65,10 +65,8 @@ real(rtype) :: lambda_slope = 2.65_rtype ! stability correction slope
 real(rtype) :: lambda_thresh = 0.02_rtype ! value to apply stability correction
 real(rtype) :: Ckh = 0.1_rtype ! Eddy diffusivity coefficient for heat
 real(rtype) :: Ckm = 0.1_rtype ! Eddy diffusivity coefficient for momentum
-real(rtype) :: Ckh_s_min = 0.1_rtype ! Stable PBL diffusivity minimum for heat
-real(rtype) :: Ckm_s_min = 0.1_rtype ! Stable PBL diffusivity minimum for momentum
-real(rtype) :: Ckh_s_max = 0.1_rtype ! Stable PBL diffusivity maximum for heat
-real(rtype) :: Ckm_s_max = 0.1_rtype ! Stable PBL diffusivity maximum for momentum
+real(rtype) :: Ckh_s = 0.1_rtype ! Stable PBL diffusivity for heat
+real(rtype) :: Ckm_s = 0.1_rtype ! Stable PBL diffusivity for momentum
 
 !=========================================================
 ! Private module parameters
@@ -132,8 +130,7 @@ subroutine shoc_init( &
          thl2tune_in, qw2tune_in, qwthl2tune_in, &
          w2tune_in, length_fac_in, c_diag_3rd_mom_in, &
          lambda_low_in, lambda_high_in, lambda_slope_in, &
-         lambda_thresh_in, Ckh_in, Ckm_in, Ckh_s_min_in, &
-         Ckm_s_min_in, Ckh_s_max_in, Ckm_s_max_in)
+         lambda_thresh_in, Ckh_in, Ckm_in, Ckh_s_in, Ckm_s_in)
 
   implicit none
 
@@ -170,10 +167,8 @@ subroutine shoc_init( &
   real(rtype), intent(in), optional :: lambda_thresh_in ! value to apply stability correction
   real(rtype), intent(in), optional :: Ckh_in ! eddy diffusivity coefficient for heat
   real(rtype), intent(in), optional :: Ckm_in ! eddy diffusivity coefficient for momentum
-  real(rtype), intent(in), optional :: Ckh_s_min_in ! Stable PBL diffusivity minimum for heat
-  real(rtype), intent(in), optional :: Ckm_s_min_in ! Stable PBL diffusivity minimum for momentum
-  real(rtype), intent(in), optional :: Ckh_s_max_in ! Stable PBL diffusivity maximum for heat
-  real(rtype), intent(in), optional :: Ckm_s_max_in ! Stable PBL diffusivity maximum for momentum
+  real(rtype), intent(in), optional :: Ckh_s_in ! Stable PBL diffusivity for heat
+  real(rtype), intent(in), optional :: Ckm_s_in ! Stable PBL diffusivity for momentum
 
   integer :: k
 
@@ -200,10 +195,8 @@ subroutine shoc_init( &
   if (present(lambda_thresh_in)) lambda_thresh=lambda_thresh_in
   if (present(Ckh_in)) Ckh=Ckh_in
   if (present(Ckm_in)) Ckm=Ckm_in
-  if (present(Ckh_s_min_in)) Ckh_s_min=Ckh_s_min_in
-  if (present(Ckm_s_min_in)) Ckm_s_min=Ckm_s_min_in
-  if (present(Ckh_s_max_in)) Ckh_s_max=Ckh_s_max_in
-  if (present(Ckm_s_max_in)) Ckm_s_max=Ckm_s_max_in
+  if (present(Ckh_s_in)) Ckh_s=Ckh_s_in
+  if (present(Ckm_s_in)) Ckm_s=Ckm_s_in
 
    ! Limit pbl height to regions below 400 mb
    ! npbl = max number of levels (from bottom) in pbl
@@ -381,6 +374,8 @@ subroutine shoc_main ( &
   real(rtype) :: rho_zt(shcol,nlev)
   ! SHOC water vapor [kg/kg]
   real(rtype) :: shoc_qv(shcol,nlev)
+  ! SHOC temperature [K]
+  real(rtype) :: shoc_tabs(shcol,nlev)
 
   ! Grid difference centereted on thermo grid [m]
   real(rtype) :: dz_zt(shcol,nlev)
@@ -462,6 +457,11 @@ subroutine shoc_main ( &
        shcol,nlev,qw,shoc_ql,&              ! Input
        shoc_qv)                             ! Output
 
+    ! Diagnose absolute temperature
+    call compute_shoc_temperature(&
+       shcol,nlev,thetal,shoc_ql,inv_exner,& ! Input
+       shoc_tabs)                            ! Output
+
     call shoc_diag_obklen(&
        shcol,uw_sfc,vw_sfc,&                          ! Input
        wthl_sfc,wqw_sfc,thetal(:shcol,nlev),&         ! Input
@@ -487,8 +487,8 @@ subroutine shoc_main ( &
     call shoc_tke(&
        shcol,nlev,nlevi,dtime,&             ! Input
        wthv_sec,shoc_mix,&                  ! Input
-       dz_zi,dz_zt,pres,&                   ! Input
-       u_wind,v_wind,brunt,obklen,&         ! Input
+       dz_zi,dz_zt,pres,shoc_tabs,&         ! Input
+       u_wind,v_wind,brunt,&                ! Input
        zt_grid,zi_grid,pblh,&               ! Input
        tke,tk,tkh,&                         ! Input/Output
        isotropy)                            ! Output
@@ -729,6 +729,59 @@ subroutine compute_shoc_vapor( &
   return
 
 end subroutine compute_shoc_vapor
+
+!==============================================================
+! Compute temperature from SHOC prognostic/diagnostic variables
+
+subroutine compute_shoc_temperature( &
+          shcol,nlev,thetal,ql,inv_exner,& ! Input
+          tabs)                            ! Output
+
+  ! Purpose of this subroutine is to compute temperature
+  !   based on SHOC's prognostic liquid water potential
+  !   temperature.
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_shoc_temperature_f
+#endif
+
+  implicit none
+
+! INPUT VARIABLES
+  ! number of columns [-]
+  integer, intent(in) :: shcol
+  ! number of mid-point levels [-]
+  integer, intent(in) :: nlev
+  ! liquid water potential temperature [K]
+  real(rtype), intent(in) :: thetal(shcol,nlev)
+  ! cloud water mixing ratio [kg/kg]
+  real(rtype), intent(in) :: ql(shcol,nlev)
+  ! inverse exner function [-]
+  real(rtype), intent(in) :: inv_exner(shcol,nlev)
+
+! OUTPUT VARIABLES
+  ! absolute temperature [K]
+  real(rtype), intent(out) :: tabs(shcol,nlev)
+
+! LOCAL VARIABLES
+  integer :: i, k
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+     call compute_shoc_temperature_f(shcol,nlev,thetal,ql,inv_exner,tabs)
+     return
+  endif
+#endif
+
+  do k = 1, nlev
+    do i = 1, shcol
+      tabs(i,k) = thetal(i,k)/inv_exner(i,k)+(lcond/cp)*ql(i,k)
+    enddo
+  enddo
+
+  return
+
+end subroutine compute_shoc_temperature
 
 !==============================================================
 ! Update T, q, tracers, tke, u, and v based on implicit diffusion
@@ -2969,8 +3022,8 @@ end subroutine shoc_assumed_pdf_compute_buoyancy_flux
 subroutine shoc_tke(&
          shcol,nlev,nlevi,dtime,&    ! Input
          wthv_sec,shoc_mix,&         ! Input
-         dz_zi,dz_zt,pres,&          ! Input
-         u_wind,v_wind,brunt,obklen,&! Input
+         dz_zi,dz_zt,pres,tabs,&     ! Input
+         u_wind,v_wind,brunt,&       ! Input
          zt_grid,zi_grid,pblh,&      ! Input
          tke,tk,tkh, &               ! Input/Output
          isotropy)                   ! Output
@@ -2997,14 +3050,14 @@ subroutine shoc_tke(&
   real(rtype), intent(in) :: u_wind(shcol,nlev)
   ! Zonal wind [m/s]
   real(rtype), intent(in) :: v_wind(shcol,nlev)
-  ! Obukov length
-  real(rtype), intent(in) :: obklen(shcol)
   ! thickness on interface grid [m]
   real(rtype), intent(in) :: dz_zi(shcol,nlevi)
   ! thickness on thermodynamic grid [m]
   real(rtype), intent(in) :: dz_zt(shcol,nlev)
   ! pressure [Pa]
   real(rtype), intent(in) :: pres(shcol,nlev)
+  ! absolute temperature [K]
+  real(rtype), intent(in) :: tabs(shcol,nlev)
   ! Brunt Vaisalla frequncy [/s]
   real(rtype), intent(in) :: brunt(shcol,nlev)
   ! heights on midpoint grid [m]
@@ -3052,7 +3105,7 @@ subroutine shoc_tke(&
   call isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
 
   !Compute eddy diffusivity for heat and momentum
-  call eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
+  call eddy_diffusivities(nlev, shcol, pblh, zt_grid, tabs, &
        shoc_mix, sterm_zt, isotropy, tke, tkh, tk)
 
   return
@@ -3316,7 +3369,7 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
 
 end subroutine isotropic_ts
 
-subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
+subroutine eddy_diffusivities(nlev, shcol, pblh, zt_grid, tabs, &
      shoc_mix, sterm_zt, isotropy, tke, tkh, tk)
 
   !------------------------------------------------------------
@@ -3332,12 +3385,12 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
   !intent-ins
   integer, intent(in) :: nlev, shcol
 
-  ! Monin-Okbukov length [m]
-  real(rtype), intent(in) :: obklen(shcol)
   ! PBL height [m]
   real(rtype), intent(in) :: pblh(shcol)
   ! Heights on the mid-point grid [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
+  ! Absolute temperature [K]
+  real(rtype), intent(in) :: tabs(shcol,nlev)
   ! Mixing length [m]
   real(rtype), intent(in) :: shoc_mix(shcol,nlev)
   ! Interpolate shear production to thermo grid
@@ -3355,48 +3408,30 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
 
   !local vars
   integer     :: i, k
-  real(rtype) :: z_over_L, zt_grid_1d(shcol)
-  real(rtype) :: Ckh_s, Ckm_s
 
   !parameters
-  ! Critical value of dimensionless Monin-Obukhov length,
-  !  for which diffusivities are no longer damped
-  real(rtype), parameter :: zL_crit_val = 100.0_rtype
+  ! Minimum absolute temperature threshold for which to apply extra mixing [K]
+  real(rtype), parameter :: temp_crit = 182.0_rtype
   ! Transition depth [m] above PBL top to allow
   ! stability diffusivities
   real(rtype), parameter :: pbl_trans = 200.0_rtype
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
-      call eddy_diffusivities_f(nlev, shcol, obklen, pblh, zt_grid, &
+      call eddy_diffusivities_f(nlev, shcol, pblh, zt_grid, tabs, &
                                 shoc_mix, sterm_zt, isotropy, tke, tkh, tk)
       return
    endif
 #endif
 
-  !store zt_grid at nlev in 1d array
-  zt_grid_1d(1:shcol) = zt_grid(1:shcol,nlev)
-
   do k = 1, nlev
      do i = 1, shcol
 
-        ! Dimensionless Okukhov length considering only
-        !  the lowest model grid layer height to scale
-        z_over_L = zt_grid_1d(i)/obklen(i)
+        if (tabs(i,nlev) .lt. temp_crit .and. (zt_grid(i,k) .lt. pblh(i)+pbl_trans)) then
+           ! If surface layer temperature is running away, apply extra mixing
+	   !   based on traditional stable PBL diffusivities that are not damped
+	   !   by stability functions.
 
-        if (z_over_L .gt. 0._rtype .and. (zt_grid(i,k) .lt. pblh(i)+pbl_trans)) then
-           ! If surface layer is stable, based on near surface
-           !  dimensionless Monin-Obukov use modified coefficients of
-           !  tkh and tk that are primarily based on shear production
-           !  and SHOC length scale, to promote mixing within the PBL
-           !  and to a height slighty above to ensure smooth transition.
-
-	   ! Compute diffusivity coefficient as function of dimensionless
-           !  Obukhov, given a critical value
-           Ckh_s = max(Ckh_s_min,min(Ckh_s_max,z_over_L/zL_crit_val))
-           Ckm_s = max(Ckm_s_min,min(Ckm_s_max,z_over_L/zL_crit_val))
-
-	   ! Compute stable PBL diffusivities
            tkh(i,k) = Ckh_s*bfb_square(shoc_mix(i,k))*bfb_sqrt(sterm_zt(i,k))
            tk(i,k)  = Ckm_s*bfb_square(shoc_mix(i,k))*bfb_sqrt(sterm_zt(i,k))
         else

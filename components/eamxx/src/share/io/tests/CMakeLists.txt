@@ -10,6 +10,11 @@ CreateUnitTest(io_basic "io_basic.cpp" "scream_io" LABELS "io"
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
+## Test basic output (no packs, no diags, all avg types, all freq units)
+CreateUnitTest(io_filled "io_filled.cpp" "scream_io" LABELS "io"
+  MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+)
+
 ## Test packed I/O
 CreateUnitTest(io_packed "io_packed.cpp" "scream_io" LABELS "io"
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}

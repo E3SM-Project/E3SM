@@ -94,7 +94,7 @@ struct Constants
   static constexpr Scalar MWWV          = MWH2O;
   static constexpr Scalar RWV           = Rgas / MWWV;
   static constexpr Scalar ZVIR          = (RWV / Rair) - 1.0;
-  static constexpr Scalar max_total_ni  = 500.e+3;  // maximum total ice concentration (sum of all categories) (m)
+  static constexpr Scalar max_total_ni  = 740.e+3;  // maximum total ice concentration (sum of all categories) (m)
   static constexpr Scalar f1r           = 0.78;
   static constexpr Scalar f2r           = 0.32;
   static constexpr Scalar nmltratio     = 1.0; // ratio of rain number produced to ice number loss from melting
@@ -107,6 +107,10 @@ struct Constants
   static constexpr int VTABLE_DIM1    = 10;
   static constexpr int MU_R_TABLE_DIM = 150;
 
+  // Turbulent Mountain Stress constants
+  static constexpr Scalar orocnst = 1;     // Converts from standard deviation to height [ no unit ]
+  static constexpr Scalar z0fac   = 0.075; // Factor determining z_0 from orographic standard deviation [ no unit ]
+
   // switch for warm-rain parameterization
   // = 1 Seifert and Beheng 2001
   // = 2 Beheng 1994
@@ -117,10 +121,10 @@ struct Constants
   static Scalar get_gas_mol_weight(ci_string gas_name);
 
   // For use in converting area to length for a column cell
-  // World Geodetic System 1984 (WGS84) 
-  static constexpr Scalar earth_ellipsoid1 = 111132.92; // first coefficient, meters per degree longitude at equator 
-  static constexpr Scalar earth_ellipsoid2 = 559.82;    // second expansion coefficient for WGS84 ellipsoid 
-  static constexpr Scalar earth_ellipsoid3 = 1.175;     // third expansion coefficient for WGS84 ellipsoid 
+  // World Geodetic System 1984 (WGS84)
+  static constexpr Scalar earth_ellipsoid1 = 111132.92; // first coefficient, meters per degree longitude at equator
+  static constexpr Scalar earth_ellipsoid2 = 559.82;    // second expansion coefficient for WGS84 ellipsoid
+  static constexpr Scalar earth_ellipsoid3 = 1.175;     // third expansion coefficient for WGS84 ellipsoid
 };
 
 // Gases

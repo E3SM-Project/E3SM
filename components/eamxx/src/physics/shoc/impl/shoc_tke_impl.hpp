@@ -29,10 +29,10 @@ void Functions<S,D>::shoc_tke(
   const uview_1d<const Spack>& dz_zi,
   const uview_1d<const Spack>& dz_zt,
   const uview_1d<const Spack>& pres,
+  const uview_1d<const Spack>& tabs,
   const uview_1d<const Spack>& u_wind,
   const uview_1d<const Spack>& v_wind,
   const uview_1d<const Spack>& brunt,
-  const Scalar&                obklen,
   const uview_1d<const Spack>& zt_grid,
   const uview_1d<const Spack>& zi_grid,
   const Scalar&                pblh,
@@ -67,7 +67,7 @@ void Functions<S,D>::shoc_tke(
   isotropic_ts(team,nlev,brunt_int,tke,a_diss,brunt,isotropy);
 
   // Compute eddy diffusivity for heat and momentum
-  eddy_diffusivities(team,nlev,obklen,pblh,zt_grid,shoc_mix,sterm_zt,isotropy,tke,tkh,tk);
+  eddy_diffusivities(team,nlev,pblh,zt_grid,tabs,shoc_mix,sterm_zt,isotropy,tke,tkh,tk);
 
   // Release temporary variables from the workspace
   workspace.template release_many_contiguous<3>(
