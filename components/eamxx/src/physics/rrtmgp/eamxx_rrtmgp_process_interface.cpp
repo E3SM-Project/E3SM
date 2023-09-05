@@ -923,22 +923,14 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto idx_105 = rrtmgp::get_wavelength_index_lw(10.5e-6);
 
       // Compute cloud-top diagnostics following AeroCOM recommendation
-      real1d T_mid_at_cldtop =
-          real1d("T_mid_at_cldtop", d_T_mid_at_cldtop.data(), ncol);
-      real1d p_mid_at_cldtop =
-          real1d("p_mid_at_cldtop", d_p_mid_at_cldtop.data(), ncol);
-      real1d cldfrac_ice_at_cldtop =
-          real1d("cldfrac_ice_at_cldtop", d_cldfrac_ice_at_cldtop.data(), ncol);
-      real1d cldfrac_liq_at_cldtop =
-          real1d("cldfrac_liq_at_cldtop", d_cldfrac_liq_at_cldtop.data(), ncol);
-      real1d cldfrac_tot_at_cldtop =
-          real1d("cldfrac_tot_at_cldtop", d_cldfrac_tot_at_cldtop.data(), ncol);
-      real1d cdnc_at_cldtop =
-          real1d("cdnc_at_cldtop", d_cdnc_at_cldtop.data(), ncol);
-      real1d eff_radius_qc_at_cldtop = real1d(
-          "eff_radius_qc_at_cldtop", d_eff_radius_qc_at_cldtop.data(), ncol);
-      real1d eff_radius_qi_at_cldtop = real1d(
-          "eff_radius_qi_at_cldtop", d_eff_radius_qi_at_cldtop.data(), ncol);
+      real1d T_mid_at_cldtop ("T_mid_at_cldtop", d_T_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d p_mid_at_cldtop ("p_mid_at_cldtop", d_p_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldfrac_ice_at_cldtop ("cldfrac_ice_at_cldtop", d_cldfrac_ice_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldfrac_liq_at_cldtop ("cldfrac_liq_at_cldtop", d_cldfrac_liq_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldfrac_tot_at_cldtop ("cldfrac_tot_at_cldtop", d_cldfrac_tot_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d cdnc_at_cldtop ("cdnc_at_cldtop", d_cdnc_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d eff_radius_qc_at_cldtop ("eff_radius_qc_at_cldtop", d_eff_radius_qc_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d eff_radius_qi_at_cldtop ("eff_radius_qi_at_cldtop", d_eff_radius_qi_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
 
       rrtmgp::compute_aerocom_cloudtop(
           ncol, nlay, t_lay, p_lay, p_del, z_del, qc, qi, rel, rei, cldfrac_tot,
