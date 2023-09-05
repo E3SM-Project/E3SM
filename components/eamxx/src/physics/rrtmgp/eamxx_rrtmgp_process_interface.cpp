@@ -902,10 +902,10 @@ void RRTMGPRadiation::run_impl (const double dt) {
       );
 
       // Compute diagnostic total cloud area (vertically-projected cloud cover)
-      real1d cldlow = real1d("cldlow", d_cldlow.data(), ncol);
-      real1d cldmed = real1d("cldmed", d_cldmed.data(), ncol);
-      real1d cldhgh = real1d("cldhgh", d_cldhgh.data(), ncol);
-      real1d cldtot = real1d("cldtot", d_cldtot.data(), ncol);
+      real1d cldlow ("cldlow", d_cldlow.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldmed ("cldmed", d_cldmed.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldhgh ("cldhgh", d_cldhgh.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldtot ("cldtot", d_cldtot.data() + m_col_chunk_beg[ic], ncol);
       // NOTE: limits for low, mid, and high clouds are mostly taken from EAM F90 source, with the
       // exception that I removed the restriction on low clouds to be above (numerically lower pressures)
       // 1200 hPa, and on high clouds to be below (numerically high pressures) 50 hPa. This probably
