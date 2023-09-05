@@ -2,6 +2,7 @@
 #define MAM_COUPLING_HPP
 
 #include <mam4xx/mam4.hpp>
+#include <ekat/kokkos/ekat_subview_utils.hpp>
 
 // These data structures and functions are used to move data between EAMxx
 // and mam4xx. This file must be adjusted whenever the aerosol modes and
@@ -261,6 +262,96 @@ struct Buffer {
   // storage
   Real* wsm_data;
 };
+
+// Given a mam_coupling::AtmosphericState with views for wet and dry quantities,
+// creates a haero::Atmosphere object for the column with the given index. This
+// object can be provided to mam4xx for the column.
+KOKKOS_INLINE_FUNCTION
+haero::Atmosphere atmosphere_for_column(const AtmosphericState& atm_state,
+                                        int column_index) {
+  EKAT_KERNEL_ASSERT_MSG(atm_state.T_mid.data() != nullptr,
+    "T_mid not defined for atmospheric state!");
+  EKAT_KERNEL_ASSERT_MSG(atm_state.p_mid.data() != nullptr,
+    "p_mid not defined for atmospheric state!");
+  EKAT_KERNEL_ASSERT_MSG(atm_state.qv_dry.data() != nullptr,
+    "qv_dry not defined for atmospheric state!");
+  EKAT_KERNEL_ASSERT_MSG(atm_state.qc_dry.data() != nullptr,
+    "qc_dry not defined for atmospheric state!");
+  EKAT_KERNEL_ASSERT_MSG(atm_state.nc_dry.data() != nullptr,
+    "nc_dry not defined for atmospheric state!");
+  EKAT_KERNEL_ASSERT_MSG(atm_state.qi_dry.data() != nullptr,
+    "qi_dry not defined for atmospheric state!");
+  EKAT_KERNEL_ASSERT_MSG(atm_state.ni_dry.data() != nullptr,
+    "ni_dry not defined for atmospheric state!");
+  EKAT_KERNEL_ASSERT_MSG(atm_state.z_mid.data() != nullptr,
+    "z_mid not defined for atmospheric state!");
+  EKAT_KERNEL_ASSERT_MSG(atm_state.pdel.data() != nullptr,
+    "pdel not defined for atmospheric state!");
+  EKAT_KERNEL_ASSERT_MSG(atm_state.cldfrac.data() != nullptr,
+    "cldfrac not defined for atmospheric state!");
+  EKAT_KERNEL_ASSERT_MSG(atm_state.w_updraft.data() != nullptr,
+    "w_updraft not defined for atmospheric state!");
+  return haero::Atmosphere(mam4::nlev,
+                           ekat::subview(atm_state.T_mid, column_index),
+                           ekat::subview(atm_state.p_mid, column_index),
+                           ekat::subview(atm_state.qv_dry, column_index),
+                           ekat::subview(atm_state.qc_dry, column_index),
+                           ekat::subview(atm_state.nc_dry, column_index),
+                           ekat::subview(atm_state.qi_dry, column_index),
+                           ekat::subview(atm_state.ni_dry, column_index),
+                           ekat::subview(atm_state.z_mid, column_index),
+                           ekat::subview(atm_state.pdel, column_index),
+                           ekat::subview(atm_state.cldfrac, column_index),
+                           ekat::subview(atm_state.w_updraft, column_index),
+                           atm_state.pblh(column_index));
+}
+
+// Given a mam_coupling::AerosolState with views for wet and dry quantities,
+// creates a mam4::Prognostics object for the column with the given index with
+// ONLY INTERSTITIAL AEROSOL VIEWS DEFINED. This object can be provided to
+// mam4xx for the column.
+KOKKOS_INLINE_FUNCTION
+mam4::Prognostics interstitial_aerosols_for_column(const AerosolState& aero_state,
+                                                   int column_index) {
+  mam4::Prognostics progs(mam4::nlev);
+  for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    EKAT_KERNEL_ASSERT_MSG(aero_state.dry_int_aero_nmr[m].data() != nullptr,
+      "dry_int_aero_nmr not defined for aerosol state!");
+    progs.n_mode_i[m] = ekat::subview(aero_state.dry_int_aero_nmr[m], column_index);
+    for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      if (aero_state.dry_int_aero_mmr[m][a].data()) {
+        progs.q_aero_i[m][a] = ekat::subview(aero_state.dry_int_aero_mmr[m][a], column_index);
+      }
+    }
+  }
+  for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    EKAT_KERNEL_ASSERT_MSG(aero_state.dry_gas_mmr[g].data() != nullptr,
+      "dry_gas_mmr not defined for aerosol state!");
+    progs.q_gas[g] = ekat::subview(aero_state.dry_gas_mmr[g], column_index);
+  }
+  return progs;
+}
+
+// Given a mam_coupling::AerosolState with views for wet and dry quantities,
+// creates a mam4::Prognostics object for the column with the given index with
+// interstitial and cloudborne aerosol views defined. This object can be
+// provided to mam4xx for the column.
+KOKKOS_INLINE_FUNCTION
+mam4::Prognostics aerosols_for_column(const AerosolState& aero_state,
+                                      int column_index) {
+  auto progs = interstitial_aerosols_for_column(aero_state, column_index);
+  for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    EKAT_KERNEL_ASSERT_MSG(aero_state.dry_cld_aero_nmr[m].data() != nullptr,
+      "dry_cld_aero_nmr not defined for aerosol state!");
+    progs.n_mode_c[m] = ekat::subview(aero_state.dry_cld_aero_nmr[m], column_index);
+    for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      if (aero_state.dry_cld_aero_mmr[m][a].data()) {
+        progs.q_aero_c[m][a] = ekat::subview(aero_state.dry_cld_aero_mmr[m][a], column_index);
+      }
+    }
+  }
+  return progs;
+}
 
 } // namespace scream::mam_coupling
 

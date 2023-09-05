@@ -320,36 +320,13 @@ void MAMMicrophysics::run_impl(const double dt) {
     const Int icol = team.league_rank(); // column index
 
     // extract column-specific atmosphere state data
-    haero::Atmosphere atm(nlev_, ekat::subview(atm_.T_mid, icol),
-      ekat::subview(atm_.p_mid, icol),
-      ekat::subview(atm_.qv_dry, icol),
-      ekat::subview(atm_.qc_dry, icol),
-      ekat::subview(atm_.nc_dry, icol),
-      ekat::subview(atm_.qi_dry, icol),
-      ekat::subview(atm_.ni_dry, icol),
-      ekat::subview(atm_.z_mid, icol),
-      ekat::subview(atm_.pdel, icol),
-      ekat::subview(atm_.cldfrac, icol),
-      ekat::subview(atm_.w_updraft, icol),
-      atm_.pblh(icol));
+    auto atm = atmosphere_for_column(atm_, icol);
 
     // set surface state data
     haero::Surface sfc{};
 
     // extract column-specific subviews into aerosol prognostics
-    mam4::Prognostics progs(nlev_);
-    for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-      // this process only deals with interstitial aerosols
-      progs.n_mode_i[m] = ekat::subview(aero_.dry_int_aero_nmr[m], icol);
-      for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-        if (aero_.dry_int_aero_mmr[m][a].data()) {
-          progs.q_aero_i[m][a] = ekat::subview(aero_.dry_int_aero_mmr[m][a], icol);
-        }
-      }
-    }
-    for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-      progs.q_gas[g] = ekat::subview(aero_.dry_gas_mmr[g], icol);
-    }
+    auto progs = mam_coupling::interstitial_aerosols_for_column(aero_, icol);
 
     // set up diagnostics
     mam4::Diagnostics diags(nlev_);
