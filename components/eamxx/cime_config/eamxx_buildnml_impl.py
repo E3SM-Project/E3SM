@@ -250,7 +250,7 @@ def refine_type(entry, force_type=None):
                 # Try to derive type from first element
                 elem_type = derive_type([item.strip() for item in entry.split(",")][0])
             else:
-                elem_type = force_type if force_type is None else array_elem_type(force_type)
+                elem_type = array_elem_type(force_type)
 
             try:
                 result = [refine_type(item.strip(), force_type=elem_type) for item in entry.split(",") if item.strip() != ""]
