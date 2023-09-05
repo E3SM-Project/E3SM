@@ -57,7 +57,7 @@ void Functions<S,D>::compute_tms(
       const auto z0oro = ekat::impl::min(z0fac*horo, z0max);
 
       // Calculate neutral drag coefficient
-      const auto tmp = karman/log((z_mid_i(nlevs-1) + z0oro )/z0oro);
+      const auto tmp = karman/std::log((z_mid_i(nlevs-1) + z0oro )/z0oro);
       auto cd = tmp*tmp;
 
       // Calculate the Richardson number over the lowest 2 layers
@@ -79,8 +79,8 @@ void Functions<S,D>::compute_tms(
 
       // Compute density, velocity magnitude and stress using bottom level properties
       const auto rho = p_mid_i(nlevs-1)/(rair*t_mid_i(nlevs-1));
-      const auto vmag = sqrt(u_wind_i(nlevs-1)*u_wind_i(nlevs-1) +
-                             v_wind_i(nlevs-1)*v_wind_i(nlevs-1));
+      const auto vmag = std::sqrt(u_wind_i(nlevs-1)*u_wind_i(nlevs-1) +
+                                  v_wind_i(nlevs-1)*v_wind_i(nlevs-1));
       ksrf(i)       = rho*cd*vmag*landfrac(i);
       tau_tms(i, 0) = -ksrf(i)*u_wind_i(nlevs-1);
       tau_tms(i, 1) = -ksrf(i)*v_wind_i(nlevs-1);
