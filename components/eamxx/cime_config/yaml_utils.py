@@ -1,3 +1,7 @@
+# Add path to scream libs
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
+
 from utils import ensure_yaml
 ensure_yaml()
 import yaml
@@ -26,9 +30,9 @@ class Strings(Array):
 ###############################################################################
 def make_array (vals,etype):
 ###############################################################################
-    if etype=="bool":
+    if etype=="bool" or etype=="logical":
         return Bools(vals)
-    elif etype=="int":
+    elif etype=="int" or etype=="integer":
         return Ints(vals)
     elif etype=="float" or etype=="real":
         return Floats(vals)
