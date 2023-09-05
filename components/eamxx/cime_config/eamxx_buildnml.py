@@ -10,25 +10,25 @@ from collections import OrderedDict
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as md
 
-_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
-sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
-
 # Add path to scream libs
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
-
-# Cime imports
-from standard_script_setup import * # pylint: disable=wildcard-import
-from CIME.utils import expect, safe_copy, SharedArea
 
 # SCREAM imports
 from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
         resolve_all_inheritances, gen_atm_proc_group, check_all_values
 from atm_manip import atm_config_chg_impl, unbuffer_changes, apply_buffer
 
-from utils import ensure_yaml
+from utils import ensure_yaml # pylint: disable=no-name-in-module
 ensure_yaml()
 import yaml
 from yaml_utils import Bools,Ints,Floats,Strings,array_representer
+
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
+sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
+
+# Cime imports
+from standard_script_setup import * # pylint: disable=wildcard-import
+from CIME.utils import expect, safe_copy, SharedArea
 
 logger = logging.getLogger(__name__) # pylint: disable=undefined-variable
 

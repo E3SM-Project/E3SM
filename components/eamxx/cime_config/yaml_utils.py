@@ -2,7 +2,7 @@
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 
-from utils import ensure_yaml
+from utils import ensure_yaml # pylint: disable=no-name-in-module
 ensure_yaml()
 import yaml
 
