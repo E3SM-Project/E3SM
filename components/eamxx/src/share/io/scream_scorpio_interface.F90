@@ -575,7 +575,7 @@ contains
     ! Find the pointer for this file
     call lookup_pio_atm_file(trim(filename),pio_file,found)
     if (.not.found ) then
-      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+      call errorHandle("PIO ERROR: error getting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
     endif
 
     ! Find the variable in the file
@@ -593,9 +593,11 @@ contains
       curr => curr%next
     end do
     if (.not.found ) then
-      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n Variable not found.",-999)
+      call errorHandle("PIO ERROR: error getting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n Variable not found.",-999)
     endif
 
+    ! TODO: Maybe we shouldn't throw an error when the metadata isn't there, maybe we provide an output like ierr as an integer?
+    ! That way we can query for a metadata and on the EAMxx side decide what to do if the metadata is missing.
     ierr = PIO_get_att(pio_file%pioFileDesc, var%piovar, metaname, metaval)
     if (ierr .ne. 0) then
       call errorHandle("Error getting attribute '" // trim(metaname) &
@@ -624,7 +626,7 @@ contains
     ! Find the pointer for this file
     call lookup_pio_atm_file(trim(filename),pio_file,found)
     if (.not.found ) then
-      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+      call errorHandle("PIO ERROR: error getting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
     endif
 
     ! Find the variable in the file
@@ -642,7 +644,7 @@ contains
       curr => curr%next
     end do
     if (.not.found ) then
-      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n Variable not found.",-999)
+      call errorHandle("PIO ERROR: error getting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n Variable not found.",-999)
     endif
 
     ierr = PIO_get_att(pio_file%pioFileDesc, var%piovar, metaname, metaval)

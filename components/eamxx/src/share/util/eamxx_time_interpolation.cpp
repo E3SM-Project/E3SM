@@ -307,6 +307,13 @@ void TimeInterpolation::read_data()
     input_params.set("Field Names",m_field_names);
     input_params.set("Filename",triplet_curr.filename);
     m_file_data_atm_input = AtmosphereInput(input_params,m_fm_time1);
+    // Also determine the FillValue, if used
+    float var_fill_value;
+    for (auto& name : m_field_names) {
+      scorpio::get_variable_metadata(triplet_curr.filename,name,"_FillValue",var_fill_value);
+      auto& field = m_fm_time1->get_field(name);
+      field.get_header().set_extra_data("mask_value",var_fill_value);
+    }
   }
   m_file_data_atm_input.read_variables(triplet_curr.time_idx);
   m_time1 = triplet_curr.timestamp;
