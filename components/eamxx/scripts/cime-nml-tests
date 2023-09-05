@@ -286,6 +286,10 @@ class TestBuildnml(unittest.TestCase):
         # above added the necessary atm proc XML block.
         self._chg_atmconfig([("testOnly::number_of_subcycles", "42")], case)
 
+        # Now remove the testOnly proc. Things should still work even though
+        # the buffer will have changes that cannot be applied.
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "(shoc,cldFraction,spa,p3)")], case)
+
 ###############################################################################
 def parse_command_line(args, desc):
 ###############################################################################

@@ -45,7 +45,7 @@ def atm_config_chg(changes, no_buffer=False, reset=False, all_matches=False, buf
 
         any_change = False
         for change in changes:
-            this_changed = atm_config_chg_impl(root, change, all_matches)
+            this_changed = atm_config_chg_impl(root, change, all_matches, missing_ok=no_buffer)
             any_change |= this_changed
 
         if any_change:
