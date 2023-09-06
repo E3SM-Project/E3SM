@@ -81,7 +81,8 @@ module li_advection
         geometryPool,           &
         thermalPool,            &
         scratchPool,            &
-        rkTend,                 &
+        rkTendAccum,            &
+        tend,                 &
         rkWeight,               &
         err,                    &
         advectTracersIn)
@@ -115,7 +116,7 @@ module li_advection
       type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-           rkTend                 !< Input/output: accumulated tendencies for RK time integration
+           rkTendAccum            !< Input/output: accumulated tendencies for RK time integration
 
       type (mpas_pool_type), intent(inout) :: &
            velocityPool           !< Input/output: velocity information
@@ -136,6 +137,7 @@ module li_advection
       !
       !-----------------------------------------------------------------
 
+      real (kind=RKIND), dimension(:,:,:), intent(out) :: tend
       integer, intent(out) :: &
            err                    !< Output: error flag
 
@@ -530,17 +532,16 @@ module li_advection
              iTracer = 0
              if ( (trim(config_thermal_solver) == 'enthalpy') .or. (trim(config_thermal_solver) == 'temperature') ) then
                 iTracer = iTracer + 1
-                rkTend(1,:,:) = rkTend(1,:,:) + tend(iTracer,:,:) * rkWeight
+                rkTendAccum(1,:,:) = rkTendAccum(1,:,:) + tend(iTracer,:,:) * rkWeight
              endif
              if (config_calculate_damage) then
                 iTracer = iTracer + 1
-                rkTend(2,:,:) = rkTend(2,:,:) + tend(iTracer,:,:) * rkWeight
+                rkTendAccum(2,:,:) = rkTendAccum(2,:,:) + tend(iTracer,:,:) * rkWeight
              endif
              iTracer = iTracer + 1
-             rkTend(3,:,:) = rkTend(3,:,:) + tend(iTracer,:,:) * rkWeight ! passiveTracer2d
+             rkTendAccum(3,:,:) = rkTendAccum(3,:,:) + tend(iTracer,:,:) * rkWeight ! passiveTracer2d
              iTracer = iTracer + 1
-             rkTend(4,:,:) = rkTend(4,:,:) + tend(iTracer,:,:)  ! layerThickness
-
+             rkTendAccum(4,:,:) = rkTendAccum(4,:,:) + tend(iTracer,:,:) * rkWeight  ! layerThickness
          else
              err_tmp = 1
              call mpas_log_write("config_thickness_advection = " // trim(config_thickness_advection) // &

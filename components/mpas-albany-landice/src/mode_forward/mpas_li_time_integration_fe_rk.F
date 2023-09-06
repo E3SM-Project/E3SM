@@ -114,7 +114,7 @@ module li_time_integration_fe_rk
       character (len=StrKIND), pointer :: config_time_integration
       integer, pointer :: config_rk_order
       integer :: rkStage, iCell, iTracer, k
-      real (kind=RKIND), dimension(:,:,:), pointer :: rkTend
+      real (kind=RKIND), dimension(:,:,:), pointer :: rkTendAccum, rkTend
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, &
                                                     temperature, &
                                                     enthalpy, &
@@ -135,6 +135,7 @@ module li_time_integration_fe_rk
       real (kind=RKIND) :: deltatFull
       real (kind=RKIND), dimension(4) :: rkWeights, rkSubstepWeights
       real (kind=RKIND), dimension(3) :: rkSSPweights
+      integer :: nRKstages
 
       err = 0
       err_tmp = 0
@@ -221,6 +222,7 @@ module li_time_integration_fe_rk
       call mpas_timer_stop("subglacial hydro")
 
 ! *** TODO: Should basal melt rate calculation, column physics, and hydrology go inside RK loop? ***
+      call mpas_pool_get_array(geometryPool, 'rkTendAccum', rkTendAccum)
       call mpas_pool_get_array(geometryPool, 'rkTend', rkTend)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
@@ -238,6 +240,7 @@ module li_time_integration_fe_rk
          damage3dProv(k,:) = damage(:)
          passiveTracer3dProv(k,:) = passiveTracer2d(:)
       enddo
+      rkTendAccum(:,:,:) = 0.0_RKIND
       rkTend(:,:,:) = 0.0_RKIND
       deltatFull = deltat ! Save deltat in order to reset it at end of RK loop
 
@@ -252,25 +255,30 @@ module li_time_integration_fe_rk
            ((trim(config_time_integration) == 'runge_kutta') .and. &
            (config_rk_order == 1)) ) then
          config_rk_order = 1
+         nRKstages = 1
          rkWeights(:) = 1.0_RKIND
          rkSubstepWeights(:) = 1.0_RKIND
       elseif ( (trim(config_time_integration) == 'runge_kutta') .and. &
                (config_rk_order == 2) ) then
          ! use classical (i.e., endpoint, or Heun's method) RK2. Could also
          ! add config option to use midpoint
+         nRKstages = 1
          rkWeights(:) = 0.5_RKIND
          rkSubstepWeights(:) = 1.0_RKIND
       elseif ( (trim(config_time_integration) == 'runge_kutta') .and. &
                (config_rk_order == 3) ) then
          ! use Strong Stability Preserving RK3
+         nRKstages = 3
          rkWeights(:) = 1.0_RKIND
          rkSubstepWeights(:) = 1.0_RKIND
 
          rkSSPweights(1) = 1.0_RKIND
          rkSSPweights(2) = 3.0_RKIND / 4.0_RKIND
          rkSSPweights(3) = 1.0_RKIND / 3.0_RKIND
+        ! Add option for 4-stage SSP-RK3? Allows for CFL=2.
       elseif ( (trim(config_time_integration) == 'runge_kutta') .and. &
                (config_rk_order == 4) ) then
+         nRKstages = 4
          rkWeights(1) = 1.0_RKIND / 6.0_RKIND
          rkWeights(2) = 1.0_RKIND / 3.0_RKIND
          rkWeights(3) = 1.0_RKIND / 3.0_RKIND
@@ -287,34 +295,27 @@ module li_time_integration_fe_rk
                              intArgs=(/config_rk_order/), messageType=MPAS_LOG_ERR)
       endif 
 ! *** Start RK loop ***
-      do rkStage = 1, config_rk_order
+      do rkStage = 1, nRKstages
          call mpas_log_write('beginning rk step $i;  rkSubstepWeight = $r', &
                              intArgs=(/rkStage/), realArgs=(/rkSubstepWeights(rkStage)/))
          deltat = deltatFull * rkSubstepWeights(rkStage)
+         rkTend(:,:,:) = 0.0_RKIND
 
          ! === calculate damage ===========
          if (config_calculate_damage) then
              call mpas_timer_start("damage")
-             call li_calculate_damage(domain, rkTend(2,:,:), rkWeights(rkStage), err_tmp)
+             call li_calculate_damage(domain, rkTendAccum(2,:,:), rkTend(2,:,:), rkWeights(rkStage), err_tmp)
              err = ior(err, err_tmp)
              call mpas_timer_stop("damage")
          endif
 
          ! === Compute new state for prognostic variables ===
          call mpas_timer_start("advect thickness and tracers")
-         call advection_solver(domain, rkTend, rkWeights(rkStage), err_tmp)
+         call advection_solver(domain, rkTendAccum, rkTend, rkWeights(rkStage), err_tmp)
          err = ior(err, err_tmp)
          call mpas_timer_stop("advect thickness and tracers")
 
-         call mpas_dmpar_field_halo_exch(domain, 'rkTend')
-
-         ! === finalize damage after advection ===========
-         if (config_finalize_damage_after_advection) then
-             call mpas_timer_start("finalize damage")
-             call li_finalize_damage_after_advection(domain, err_tmp)
-             err = ior(err, err_tmp)
-             call mpas_timer_stop("finalize damage")
-         endif
+         call mpas_dmpar_field_halo_exch(domain, 'rkTendAccum')
 
          ! If using SSP RK3, then update thickness and tracers incrementally.
          ! For first RK stage, thickness and tracer updates above are sufficient
@@ -329,14 +330,15 @@ module li_time_integration_fe_rk
             call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
 
             layerThicknessTmp(:,:) = layerThickness(:,:)
-               layerThickness(:,:) = rkSSPweights(rkStage) * layerThicknessProv(:,:) + &
+            layerThickness(:,:) = rkSSPweights(rkStage) * layerThicknessProv(:,:) + &
                                      (1.0_RKIND - rkSSPweights(rkStage)) * layerThickness(:,:)
-               thickness = sum(layerThickness, 1)
+            thickness = sum(layerThickness, 1)
 
             if (trim(config_thermal_solver) == 'enthalpy') then
                where (layerThickness(:,:) > 0.0_RKIND)
                   enthalpy(:,:) = ( rkSSPweights(rkStage) * enthalpyProv(:,:) * layerThicknessProv(:,:) + &
-                                    (1.0_RKIND - rkSSPweights(rkStage)) * enthalpy(:,:) * layerThicknessTmp(:,:) ) / layerThickness(:,:)
+                                    (1.0_RKIND - rkSSPweights(rkStage)) * enthalpy(:,:) * &
+                                    layerThicknessTmp(:,:) ) / layerThickness(:,:)
                ! elsewhere, what?
                end where
                ! given the enthalpy, compute the temperature and water fraction
@@ -354,7 +356,8 @@ module li_time_integration_fe_rk
             elseif (trim(config_thermal_solver) == 'temperature') then
                where (layerThickness(:,:) > 0.0_RKIND)
                   temperature(:,:) = ( rkSSPweights(rkStage) * temperatureProv(:,:) * layerThicknessProv(:,:) + &
-                                       (1.0_RKIND - rkSSPweights(rkStage)) * temperature(:,:) * layerThicknessTmp(:,:) ) / layerThickness(:,:)
+                                       (1.0_RKIND - rkSSPweights(rkStage)) * temperature(:,:) * &
+                                       layerThicknessTmp(:,:) ) / layerThickness(:,:)
                ! elsewhere, what?
                end where
             endif
@@ -364,7 +367,8 @@ module li_time_integration_fe_rk
                   do k = 1, nVertLevels
                      if (layerThickness(k,iCell) > 0.0_RKIND) then
                         damage3d(k,iCell) = ( rkSSPweights(rkStage) * damage3dProv(k,iCell) * layerThicknessProv(k,iCell) + &
-                                              (1.0_RKIND - rkSSPweights(rkStage)) * damage(iCell) * layerThicknessTmp(k,iCell) ) / layerThickness(k,iCell)
+                                              (1.0_RKIND - rkSSPweights(rkStage)) * damage(iCell) * &
+                                              layerThicknessTmp(k,iCell) ) / layerThickness(k,iCell)
                      else
                         damage3d(k,iCell) = 0.0_RKIND
                      endif
@@ -377,7 +381,8 @@ module li_time_integration_fe_rk
                do k = 1, nVertLevels
                   if (layerThickness(k,iCell) > 0.0_RKIND) then
                      passiveTracer3d(k,iCell) = ( rkSSPweights(rkStage) * passiveTracer3dProv(k,iCell) * layerThicknessProv(k,iCell) + &
-                                                  (1.0_RKIND - rkSSPweights(rkStage)) * passiveTracer2d(iCell) * layerThicknessTmp(k,iCell) ) / layerThickness(k,iCell)
+                                                  (1.0_RKIND - rkSSPweights(rkStage)) * passiveTracer2d(iCell) * &
+                                                  layerThicknessTmp(k,iCell) ) / layerThickness(k,iCell)
                   else
                      passiveTracer3d(k,iCell) = 0.0_RKIND
                   endif
@@ -385,30 +390,27 @@ module li_time_integration_fe_rk
                passiveTracer2d(iCell) = sum(passiveTracer3d(:,iCell) * layerThicknessFractions)
             enddo
 
-            ! === Ensure damage is within bounds after full time integration ===
-            if ( (rkStage .eq. config_rk_order) .and. (config_finalize_damage_after_advection) ) then
-                call mpas_timer_start("finalize damage")
-                call li_finalize_damage_after_advection(domain, err_tmp)
-                err = ior(err, err_tmp)
-                call mpas_timer_stop("finalize damage")
-            endif
          endif  ! if config_rk_order == 3
 
          ! If using RK2 or RK4 time integration, update thickness, damage,
          ! temperature or enthalpy, passiveTracer2d before final velocity solve.
          ! If using forward Euler or SSPRK3, these have already been updated above.
-         if ( (rkStage .eq. config_rk_order) .and. ( (config_rk_order == 2) .or. (config_rk_order == 4) ) ) then
+         if ( (config_rk_order == 2) .or. (config_rk_order == 4) ) then
+            if (rkStage == nRKstages) then
+               deltat = deltatFull
+               rkTend(:,:,:) = rkTendAccum(:,:,:)
+            endif
 
             ! Need layerThickness first in order to update other tracers
             if (trim(config_thickness_advection) == 'fct') then
-               layerThickness(:,:) = layerThicknessProv(:,:) + deltatFull * rkTend(4,:,:)
+               layerThickness(:,:) = layerThicknessProv(:,:) + deltat * rkTend(4,:,:)
                thickness = sum(layerThickness, 1)
             endif
 
             if (trim(config_thermal_solver) == 'enthalpy') then
                where (layerThickness(:,:) > 0.0_RKIND)
                   enthalpy(:,:) = ( enthalpyProv(:,:) * layerThicknessProv(:,:) + &
-                                    deltatFull * rkTend(1,:,:) ) / layerThickness(:,:)
+                                    deltat * rkTend(1,:,:) ) / layerThickness(:,:)
                ! elsewhere, what?
                end where
                ! given the enthalpy, compute the temperature and water fraction
@@ -426,17 +428,18 @@ module li_time_integration_fe_rk
             elseif (trim(config_thermal_solver) == 'temperature') then
                where (layerThickness(:,:) > 0.0_RKIND)
                   temperature(:,:) = ( temperatureProv(:,:) * layerThicknessProv(:,:) + &
-                                       deltatFull * rkTend(1,:,:) ) / layerThickness(:,:)
+                                       deltat * rkTend(1,:,:) ) / layerThickness(:,:)
                ! elsewhere, what?
                end where
             endif
 
+            damage3d(:,:) = 0.0_RKIND
             if (config_calculate_damage) then
                do iCell = 1, nCells
                   do k = 1, nVertLevels
                      if (layerThickness(k,iCell) > 0.0_RKIND) then 
                         damage3d(k,iCell) = ( damage3dProv(k,iCell) * layerThicknessProv(k,iCell) + &
-                                            deltatFull * rkTend(2,k,iCell) ) / layerThickness(k,iCell)
+                                            deltat * rkTend(2,k,iCell) ) / layerThickness(k,iCell)
                      else
                         damage3d(k,iCell) = 0.0_RKIND
                      endif
@@ -445,11 +448,12 @@ module li_time_integration_fe_rk
                enddo
             endif
 
+            passiveTracer3d(:,:) = 0.0_RKIND
             do iCell = 1, nCells
                do k = 1, nVertLevels
                   if (layerThickness(k,iCell) > 0.0_RKIND) then
                      passiveTracer3d(k,iCell) = ( passiveTracer3dProv(k,iCell) * layerThicknessProv(k,iCell) + &
-                                                  deltatFull * rkTend(3,k,iCell) ) / layerThickness(k,iCell)
+                                                  deltat * rkTend(3,k,iCell) ) / layerThickness(k,iCell)
                   else
                      passiveTracer3d(k,iCell) = 0.0_RKIND
                   endif
@@ -457,15 +461,16 @@ module li_time_integration_fe_rk
                passiveTracer2d(iCell) = sum(passiveTracer3d(:,iCell) * layerThicknessFractions)
             enddo
 
-            ! === Ensure damage is within bounds after full time integration ===
-            if (config_finalize_damage_after_advection) then
-                call mpas_timer_start("finalize damage")
-                call li_finalize_damage_after_advection(domain, err_tmp)
-                err = ior(err, err_tmp)
-                call mpas_timer_stop("finalize damage")
-            endif
+         endif ! config_rk_order == 2 or 4
+        
+         ! === Ensure damage is within bounds after full time integration ===
+         if ( (rkStage .eq. nRKstages) .and. (config_finalize_damage_after_advection) ) then
+             call mpas_timer_start("finalize damage")
+             call li_finalize_damage_after_advection(domain, err_tmp)
+             err = ior(err, err_tmp)
+             call mpas_timer_stop("finalize damage")
          endif
-         
+ 
          ! Update velocity for each RK step
          ! === Solve Velocity =====================
          call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
@@ -897,7 +902,7 @@ module li_time_integration_fe_rk
 !>        in calculate tendencies are now in prepare_advection.
 !-----------------------------------------------------------------------
 
-   subroutine advection_solver(domain, rkTend, rkWeight, err)
+   subroutine advection_solver(domain, rkTendAccum, rkTend, rkWeight, err)
 
       use mpas_timekeeping
       use li_mask
@@ -910,7 +915,7 @@ module li_time_integration_fe_rk
       ! input/output variables
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
-      real (kind=RKIND), dimension(:,:,:), intent(inout) :: rkTend
+      real (kind=RKIND), dimension(:,:,:), intent(inout) :: rkTendAccum, rkTend
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
@@ -1028,6 +1033,7 @@ module li_time_integration_fe_rk
                  geometryPool,           &
                  thermalPool,            &
                  scratchPool,            &
+                 rkTendAccum,            &
                  rkTend,                 &
                  rkWeight,               &
                  err_tmp,                &
@@ -1049,6 +1055,7 @@ module li_time_integration_fe_rk
                  geometryPool,           &
                  thermalPool,            &
                  scratchPool,            &
+                 rkTendAccum,            &
                  rkTend,                 &
                  rkWeight,               &
                  err_tmp,                &
