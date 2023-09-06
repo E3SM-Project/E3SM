@@ -100,7 +100,7 @@ contains
          zMid                 !< Input: Z coordinate at the center of a cell
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
-        slopeTriadUp, slopeTriadDown, &
+        slopeTriadUp, slopeTriadDown, limiterUp, limiterDown, &
         tracers !< Input: tracer quantities
 
       real (kind=RKIND), intent(in) :: dt
