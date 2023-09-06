@@ -279,8 +279,8 @@ struct Buffer {
 // Buffer type given the number of columns and vertical levels
 inline size_t buffer_size(const int ncol, const int nlev) {
   return sizeof(Real) *
-    (mam_coupling::Buffer::num_2d_mid * ncol * nlev +
-     mam_coupling::Buffer::num_2d_iface * ncol * (nlev+1));
+    (Buffer::num_2d_mid * ncol * nlev +
+     Buffer::num_2d_iface * ncol * (nlev+1));
 }
 
 // ON HOST, initializeѕ the Buffer type with sufficient memory to store
@@ -292,7 +292,7 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
   // set view pointers for midpoint fields
-  uview_2d* view_2d_mid_ptrs[mam_coupling::Buffer::num_2d_mid] = {
+  uview_2d* view_2d_mid_ptrs[Buffer::num_2d_mid] = {
     &buffer.z_mid,
     &buffer.dz,
     &buffer.qv_dry,
@@ -370,16 +370,16 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
     &buffer.dry_gas_mmr[1],
     &buffer.dry_gas_mmr[2]
   };
-  for (int i = 0; i < mam_coupling::Buffer::num_2d_mid; ++i) {
+  for (int i = 0; i < Buffer::num_2d_mid; ++i) {
     *view_2d_mid_ptrs[i] = view_2d(mem, ncol, nlev);
     mem += view_2d_mid_ptrs[i]->size();
   }
 
   // set view pointers for interface fields
-  uview_2d* view_2d_iface_ptrs[mam_coupling::Buffer::num_2d_iface] = {
+  uview_2d* view_2d_iface_ptrs[Buffer::num_2d_iface] = {
     &buffer.z_iface
   };
-  for (int i = 0; i < mam_coupling::Buffer::num_2d_iface; ++i) {
+  for (int i = 0; i < Buffer::num_2d_iface; ++i) {
     *view_2d_iface_ptrs[i] = view_2d(mem, ncol, nlev+1);
     mem += view_2d_iface_ptrs[i]->size();
   }
@@ -444,7 +444,7 @@ haero::Atmosphere atmosphere_for_column(const DryAtmosphere& dry_atm,
                            dry_atm.pblh(column_index));
 }
 
-// Given a mam_coupling::AerosolState with views for wet and dry quantities,
+// Given an AerosolState with views for wet and dry quantities,
 // creates a mam4::Prognostics object for the column with the given index with
 // ONLY INTERSTITIAL AEROSOL VIEWS DEFINED. This object can be provided to
 // mam4xx for the column.
@@ -452,17 +452,17 @@ KOKKOS_INLINE_FUNCTION
 mam4::Prognostics interstitial_aerosols_for_column(const AerosolState& dry_aero,
                                                    const int column_index) {
   mam4::Prognostics progs(mam4::nlev);
-  for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for (int m = 0; m < num_aero_modes(); ++m) {
     EKAT_KERNEL_ASSERT_MSG(dry_aero.int_aero_nmr[m].data(),
       "int_aero_nmr not defined for dry aerosol state!");
     progs.n_mode_i[m] = ekat::subview(dry_aero.int_aero_nmr[m], column_index);
-    for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for (int a = 0; a < num_aero_species(); ++a) {
       if (dry_aero.int_aero_mmr[m][a].data()) {
         progs.q_aero_i[m][a] = ekat::subview(dry_aero.int_aero_mmr[m][a], column_index);
       }
     }
   }
-  for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+  for (int g = 0; g < num_aero_gases(); ++g) {
     EKAT_KERNEL_ASSERT_MSG(dry_aero.gas_mmr[g].data(),
       "gas_mmr not defined for dry aerosol state!");
     progs.q_gas[g] = ekat::subview(dry_aero.gas_mmr[g], column_index);
@@ -477,11 +477,11 @@ KOKKOS_INLINE_FUNCTION
 mam4::Prognostics aerosols_for_column(const AerosolState& dry_aero,
                                       const int column_index) {
   auto progs = interstitial_aerosols_for_column(dry_aero, column_index);
-  for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for (int m = 0; m < num_aero_modes(); ++m) {
     EKAT_KERNEL_ASSERT_MSG(dry_aero.cld_aero_nmr[m].data(),
       "dry_cld_aero_nmr not defined for aerosol state!");
     progs.n_mode_c[m] = ekat::subview(dry_aero.cld_aero_nmr[m], column_index);
-    for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for (int a = 0; a < num_aero_species(); ++a) {
       if (dry_aero.cld_aero_mmr[m][a].data()) {
         progs.q_aero_c[m][a] = ekat::subview(dry_aero.cld_aero_mmr[m][a], column_index);
       }
@@ -509,9 +509,9 @@ void compute_vertical_layer_heights(const Team& team,
 }
 
 
-// Given a thread team and a mam_coupling::AtmosphericState, dispatches threads
-// from the team to compute the vertical updraft velocity for the column with
-// the given index.
+// Given a thread team and wet and dry atmospheres, dispatches threads from the
+// team to compute the vertical updraft velocity for the column with the given
+// index.
 KOKKOS_INLINE_FUNCTION
 void compute_updraft_velocities(const Team& team,
                                 const WetAtmosphere& wet_atm,
@@ -564,12 +564,12 @@ void compute_dry_mixing_ratios(const Team& team,
   int i = column_index;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, mam4::nlev), [&] (const int k) {
     const auto qv_ik = wet_atm.qv(i,k);
-    for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    for (int m = 0; m < num_aero_modes(); ++m) {
       dry_aero.int_aero_nmr[m](i,k) = PF::calculate_drymmr_from_wetmmr(wet_aero.int_aero_nmr[m](i,k), qv_ik);
       if (dry_aero.cld_aero_nmr[m].data()) {
         dry_aero.cld_aero_nmr[m](i,k) = PF::calculate_drymmr_from_wetmmr(wet_aero.cld_aero_nmr[m](i,k), qv_ik);
       }
-      for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      for (int a = 0; a < num_aero_species(); ++a) {
         if (dry_aero.int_aero_mmr[m][a].data()) {
           dry_aero.int_aero_mmr[m][a](i,k) = PF::calculate_drymmr_from_wetmmr(wet_aero.int_aero_mmr[m][a](i,k), qv_ik);
         }
@@ -578,7 +578,7 @@ void compute_dry_mixing_ratios(const Team& team,
         }
       }
     }
-    for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    for (int g = 0; g < num_aero_gases(); ++g) {
       dry_aero.gas_mmr[g](i,k) = PF::calculate_drymmr_from_wetmmr(wet_aero.gas_mmr[g](i,k), qv_ik);
     }
   });
@@ -599,12 +599,12 @@ void compute_wet_mixing_ratios(const Team& team,
   int i = column_index;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, mam4::nlev), [&] (const int k) {
     const auto qv_ik = dry_atm.qv(i,k);
-    for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+    for (int m = 0; m < num_aero_modes(); ++m) {
       wet_aero.int_aero_nmr[m](i,k) = PF::calculate_wetmmr_from_drymmr(dry_aero.int_aero_nmr[m](i,k), qv_ik);
       if (wet_aero.cld_aero_nmr[m].data()) {
         wet_aero.cld_aero_nmr[m](i,k) = PF::calculate_wetmmr_from_drymmr(dry_aero.cld_aero_nmr[m](i,k), qv_ik);
       }
-      for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+      for (int a = 0; a < num_aero_species(); ++a) {
         if (wet_aero.int_aero_mmr[m][a].data()) {
           wet_aero.int_aero_mmr[m][a](i,k) = PF::calculate_wetmmr_from_drymmr(dry_aero.int_aero_mmr[m][a](i,k), qv_ik);
         }
@@ -613,7 +613,7 @@ void compute_wet_mixing_ratios(const Team& team,
         }
       }
     }
-    for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    for (int g = 0; g < num_aero_gases(); ++g) {
       wet_aero.gas_mmr[g](i,k) = PF::calculate_wetmmr_from_drymmr(dry_aero.gas_mmr[g](i,k), qv_ik);
     }
   });
