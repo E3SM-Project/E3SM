@@ -251,12 +251,26 @@ struct FieldRequest {
     parent_name = parent.fid.name();
   }
 
+  FieldRequest (const std::string& field_name, const std::string& grid_name,
+                const std::list<std::string>& groups = {}, const int ps = 1)
+   : FieldRequest (incomplete_fid(field_name,grid_name),groups,ps)
+  {
+    incomplete = true;
+  }
+
+  static FieldIdentifier
+  incomplete_fid (const std::string& field_name, const std::string& grid_name)
+  {
+    return FieldIdentifier(field_name,FieldLayout::invalid(),Units::invalid(),grid_name,DataType::Invalid);
+  }
+
   // Data
   FieldIdentifier           fid;
   int                       pack_size;
   std::list<std::string>    groups;
   SubviewInfo               subview_info;
   std::string               parent_name;
+  bool                      incomplete = false;
 };
 
 // In order to use FieldRequest in std sorted containers (like std::set),

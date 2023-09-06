@@ -100,7 +100,7 @@ protected:
 
   ci_string       m_grid_name;
 
-  DataType   m_data_type;
+  DataType        m_data_type;
 
   // The identifier string is a conveniet way to display the information of
   // the identifier, so that it can be easily read.

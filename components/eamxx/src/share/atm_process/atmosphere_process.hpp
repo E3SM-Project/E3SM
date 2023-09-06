@@ -296,6 +296,14 @@ protected:
 
   // Field requests
   template<RequestType RT>
+  void add_field (const std::string& name, const std::string& grid_name,
+                  const std::list<std::string>& groups, const int ps = 1)
+  { add_field<RT>(FieldRequest(name,grid_name,groups,ps)); }
+  template<RequestType RT>
+  void add_field (const std::string& name, const std::string& grid_name, const int ps = 1)
+  { add_field<RT>(name,grid_name,{},ps);}
+
+  template<RequestType RT>
   void add_field (const std::string& name, const FieldLayout& layout,
                   const ekat::units::Units& u, const std::string& grid_name,
                   const int ps = 1)
@@ -329,6 +337,23 @@ protected:
   void add_field (const FieldIdentifier& fid, const std::list<std::string>& groups, const int ps)
   { add_field<RT>(FieldRequest(fid,groups,ps)); }
 
+  // Group requests
+  template<RequestType RT>
+  void add_group (const std::string& name, const std::string& grid, const int ps, const Bundling b,
+                  const DerivationType t, const std::string& src_name, const std::string& src_grid,
+                  const std::list<std::string>& excl = {})
+  { add_group<RT>(GroupRequest(name,grid,ps,b,t,src_name,src_grid,excl)); }
+
+  template<RequestType RT>
+  void add_group (const std::string& name, const std::string& grid_name,
+                  const Bundling b = Bundling::NotNeeded)
+  { add_group<RT> (GroupRequest(name,grid_name,b)); }
+
+  template<RequestType RT>
+  void add_group (const std::string& name, const std::string& grid_name,
+                  const int pack_size, const Bundling b = Bundling::NotNeeded)
+  { add_group<RT> (GroupRequest(name,grid_name,pack_size,b)); }
+
   template<RequestType RT>
   void add_field (const FieldRequest& req)
   {
@@ -349,23 +374,6 @@ protected:
         break;
     }
   }
-
-  // Group requests
-  template<RequestType RT>
-  void add_group (const std::string& name, const std::string& grid, const int ps, const Bundling b,
-                  const DerivationType t, const std::string& src_name, const std::string& src_grid,
-                  const std::list<std::string>& excl = {})
-  { add_group<RT>(GroupRequest(name,grid,ps,b,t,src_name,src_grid,excl)); }
-
-  template<RequestType RT>
-  void add_group (const std::string& name, const std::string& grid_name,
-                  const Bundling b = Bundling::NotNeeded)
-  { add_group<RT> (GroupRequest(name,grid_name,b)); }
-
-  template<RequestType RT>
-  void add_group (const std::string& name, const std::string& grid_name,
-                  const int pack_size, const Bundling b = Bundling::NotNeeded)
-  { add_group<RT> (GroupRequest(name,grid_name,pack_size,b)); }
 
   template<RequestType RT>
   void add_group (const GroupRequest& req)

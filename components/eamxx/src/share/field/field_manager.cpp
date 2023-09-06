@@ -29,35 +29,40 @@ void FieldManager::register_field (const FieldRequest& req)
       "         - stored grid name:   " + m_grid->name() + "\n");
 
   // Get or create the new field
-  if (!has_field(id.name())) {
-    EKAT_REQUIRE_MSG (id.data_type()==field_valid_data_types().at<Real>(),
-        "Error! While refactoring, we only allow the Field data type to be Real.\n"
-        "       If you're done with refactoring, go back and fix things.\n");
-    m_fields[id.name()] = std::make_shared<Field>(id);
+  if (req.incomplete) {
+    m_incomplete_requests.emplace_back(id.name(),id.get_grid_name());
   } else {
-    // Make sure the input field has the same layout and units as the field already stored.
-    // TODO: this is the easiest way to ensure everyone uses the same units.
-    //       However, in the future, we *may* allow different units, providing
-    //       the users with conversion routines perhaps.
-    const auto id0 = m_fields[id.name()]->get_header().get_identifier();
-    EKAT_REQUIRE_MSG(id.get_units()==id0.get_units(),
-        "Error! Field '" + id.name() + "' already registered with different units:\n"
-        "         - input field units:  " + to_string(id.get_units()) + "\n"
-        "         - stored field units: " + to_string(id0.get_units()) + "\n"
-        "       Please, check and make sure all atmosphere processes use the same units.\n");
+    if (!has_field(id.name())) {
 
-    EKAT_REQUIRE_MSG(id.get_layout()==id0.get_layout(),
-        "Error! Field '" + id.name() + "' already registered with different layout:\n"
-        "         - input id:  " + id.get_id_string() + "\n"
-        "         - stored id: " + id0.get_id_string() + "\n"
-        "       Please, check and make sure all atmosphere processes use the same layout for a given field.\n");
+      EKAT_REQUIRE_MSG (id.data_type()==field_valid_data_types().at<Real>(),
+          "Error! While refactoring, we only allow the Field data type to be Real.\n"
+          "       If you're done with refactoring, go back and fix things.\n");
+      m_fields[id.name()] = std::make_shared<Field>(id);
+    } else {
+      // Make sure the input field has the same layout and units as the field already stored.
+      // TODO: this is the easiest way to ensure everyone uses the same units.
+      //       However, in the future, we *may* allow different units, providing
+      //       the users with conversion routines perhaps.
+      const auto id0 = m_fields[id.name()]->get_header().get_identifier();
+      EKAT_REQUIRE_MSG(id.get_units()==id0.get_units(),
+          "Error! Field '" + id.name() + "' already registered with different units:\n"
+          "         - input field units:  " + to_string(id.get_units()) + "\n"
+          "         - stored field units: " + to_string(id0.get_units()) + "\n"
+          "       Please, check and make sure all atmosphere processes use the same units.\n");
+
+      EKAT_REQUIRE_MSG(id.get_layout()==id0.get_layout(),
+          "Error! Field '" + id.name() + "' already registered with different layout:\n"
+          "         - input id:  " + id.get_id_string() + "\n"
+          "         - stored id: " + id0.get_id_string() + "\n"
+          "       Please, check and make sure all atmosphere processes use the same layout for a given field.\n");
+    }
   }
 
   if (req.subview_info.dim_idx>=0) {
     // This is a request for a subfield. Store request info, so we can correctly set up
     // the subfield at the end of registration_ends() call
     m_subfield_requests.emplace(id.name(),req);
-  } else {
+  } else if (not req.incomplete) {
     // Make sure the field can accommodate the requested value type
     m_fields[id.name()]->get_header().get_alloc_properties().request_allocation(req.pack_size);
   }
@@ -122,11 +127,6 @@ add_to_group (const std::string& field_name, const std::string& group_name)
   group->m_fields_names.push_back(field_name);
   auto& ft = get_field(field_name).get_header().get_tracking();
   ft.add_to_group(group);
-}
-
-bool FieldManager::has_field (const identifier_type& id) const
-{
-  return has_field(id.name()) && m_fields.at(id.name())->get_header().get_identifier()==id;
 }
 
 const FieldIdentifier& FieldManager::get_field_id (const std::string& name) const {
@@ -231,6 +231,17 @@ void FieldManager::registration_begins ()
 
 void FieldManager::registration_ends ()
 {
+  // Before doing anything, ensure that for each incomplete requests the field has
+  // been registered with a complete FID.
+  for (const auto& it : m_incomplete_requests) {
+    EKAT_REQUIRE_MSG (has_field(it.first),
+        "Error! Found an incomplete FieldRequest for a field not registered with a valid identifier.\n"
+        "  - field name: " + it.first + "\n"
+        "  - grid  name: " + it.second + "\n");
+  }
+  // We no longer need this
+  m_incomplete_requests.clear();
+
   // This method is responsible of allocating the fields in the repo. The most delicate part is
   // the allocation of fields group, in the case where bundling is requested. In particular,
   // we want to try to honor as many requests for bundling as possible. If we can't accommodate
@@ -289,7 +300,6 @@ void FieldManager::registration_ends ()
   //        to remove.
   //
 
-
   // Start by processing group request. This function will ensure that, if there's a
   // request for group A that depends on the content of group B, the FieldGroupInfo
   // for group A is updated to contain the correct fields, based on the content
@@ -342,7 +352,7 @@ void FieldManager::registration_ends ()
   if (groups_to_bundle.size()>0) {
     using namespace ShortFieldTagsNames;
 
-    // A cluster is a pair <cluster_name,list of names of groups in the cluster>
+    // A cluster is a list of names of groups in the cluster
     using cluster_type = std::list<std::string>;
 
     // Determine if two lists have elements in common (does not compute the intersection)
@@ -388,7 +398,7 @@ void FieldManager::registration_ends ()
     }
 
     // Now we have clusters. For each cluster, build the list of lists, and call
-    // the contiguous_superset method.
+    // the contiguous_superset utility.
     for (auto& cluster : clusters) {
       using LOL_t = std::list<std::list<ci_string>>;
 
@@ -726,7 +736,7 @@ void FieldManager::add_field (const Field& f) {
       "Error! Input field to 'add_field' is defined on a grid different from the one stored.\n"
       "  - field manager grid: " + m_grid->name() + "\n"
       "  - input field grid:   " + f.get_header().get_identifier().get_grid_name() + "\n");
-  EKAT_REQUIRE_MSG (not has_field(f.get_header().get_identifier().name()),
+  EKAT_REQUIRE_MSG (not has_field(f.name()),
       "Error! The method 'add_field' requires the input field to not be already existing.\n"
       "  - field name: " + f.get_header().get_identifier().name() + "\n");
   EKAT_REQUIRE_MSG (f.get_header().get_tracking().get_groups_info().size()==0 ||
