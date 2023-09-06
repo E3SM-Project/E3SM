@@ -3,6 +3,7 @@
 
 #include <mam4xx/mam4.hpp>
 #include <ekat/kokkos/ekat_subview_utils.hpp>
+#include <share/atm_process/ATMBufferManager.hpp>
 #include <share/util/scream_common_physics_functions.hpp>
 
 // These data structures and functions are used to move data between EAMxx
@@ -237,21 +238,22 @@ struct Buffer {
 
   // number of local fields stored at column midpoints
   static constexpr int num_2d_mid = 8 + // number of dry atm fields
-                                    num_aero_modes() +
-                                2 * num_aero_tracers() + // interstitial + cloudborne
+                                    2 * (num_aero_modes() + num_aero_tracers()) +
                                     num_aero_gases();
 
   // (dry) atmospheric state
-  uview_2d z_mid;             // height at midpoints
-  uview_2d dz;                // layer thickness
-  uview_2d qv_dry;            // dry water vapor mixing ratio (dry air)
-  uview_2d qc_dry;            // dry cloud water mass mixing ratio
-  uview_2d nc_dry;            // dry cloud water number mixing ratio
-  uview_2d qi_dry;            // cloud ice mass mixing ratio
-  uview_2d ni_dry;            // dry cloud ice number mixing ratio
-  uview_2d w_updraft;         // vertical wind velocity
+  uview_2d z_mid;     // height at midpoints
+  uview_2d dz;        // layer thickness
+  uview_2d qv_dry;    // dry water vapor mixing ratio (dry air)
+  uview_2d qc_dry;    // dry cloud water mass mixing ratio
+  uview_2d nc_dry;    // dry cloud water number mixing ratio
+  uview_2d qi_dry;    // cloud ice mass mixing ratio
+  uview_2d ni_dry;    // dry cloud ice number mixing ratio
+  uview_2d w_updraft; // vertical wind velocity
 
   // aerosol dry interstitial/cloudborne number/mass mixing ratios
+  // (because the number of species per mode varies, not all of these will
+  //  be used)
   uview_2d dry_int_aero_nmr[num_aero_modes()];
   uview_2d dry_cld_aero_nmr[num_aero_modes()];
   uview_2d dry_int_aero_mmr[num_aero_modes()][num_aero_species()];
@@ -272,6 +274,132 @@ struct Buffer {
   // storage
   Real* wsm_data;
 };
+
+// ON HOST, returns the number of bytes of device memory needed by the above
+// Buffer type given the number of columns and vertical levels
+inline size_t buffer_size(const int ncol, const int nlev) {
+  return sizeof(Real) *
+    (mam_coupling::Buffer::num_2d_mid * ncol * nlev +
+     mam_coupling::Buffer::num_2d_iface * ncol * (nlev+1));
+}
+
+// ON HOST, initializeѕ the Buffer type with sufficient memory to store
+// intermediate (dry) quantities on the given number of columns with the given
+// number of vertical levels. Returns the number of bytes allocated.
+inline size_t init_buffer(const ATMBufferManager &buffer_manager,
+                          const int ncol, const int nlev,
+                          Buffer &buffer) {
+  Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
+
+  // set view pointers for midpoint fields
+  uview_2d* view_2d_mid_ptrs[mam_coupling::Buffer::num_2d_mid] = {
+    &buffer.z_mid,
+    &buffer.dz,
+    &buffer.qv_dry,
+    &buffer.qc_dry,
+    &buffer.nc_dry,
+    &buffer.qi_dry,
+    &buffer.ni_dry,
+    &buffer.w_updraft,
+
+    // aerosol modes
+    &buffer.dry_int_aero_nmr[0],
+    &buffer.dry_int_aero_nmr[1],
+    &buffer.dry_int_aero_nmr[2],
+    &buffer.dry_int_aero_nmr[3],
+    &buffer.dry_cld_aero_nmr[0],
+    &buffer.dry_cld_aero_nmr[1],
+    &buffer.dry_cld_aero_nmr[2],
+    &buffer.dry_cld_aero_nmr[3],
+
+    // the following requires knowledge of mam4's mode-species layout
+    // (see mode_aero_species() in mam4xx/aero_modes.hpp)
+
+    // accumulation mode
+    &buffer.dry_int_aero_mmr[0][0],
+    &buffer.dry_int_aero_mmr[0][1],
+    &buffer.dry_int_aero_mmr[0][2],
+    &buffer.dry_int_aero_mmr[0][3],
+    &buffer.dry_int_aero_mmr[0][4],
+    &buffer.dry_int_aero_mmr[0][5],
+    &buffer.dry_int_aero_mmr[0][6],
+    &buffer.dry_cld_aero_mmr[0][0],
+    &buffer.dry_cld_aero_mmr[0][1],
+    &buffer.dry_cld_aero_mmr[0][2],
+    &buffer.dry_cld_aero_mmr[0][3],
+    &buffer.dry_cld_aero_mmr[0][4],
+    &buffer.dry_cld_aero_mmr[0][5],
+    &buffer.dry_cld_aero_mmr[0][6],
+
+    // aitken mode
+    &buffer.dry_int_aero_mmr[1][0],
+    &buffer.dry_int_aero_mmr[1][1],
+    &buffer.dry_int_aero_mmr[1][2],
+    &buffer.dry_int_aero_mmr[1][3],
+    &buffer.dry_cld_aero_mmr[1][0],
+    &buffer.dry_cld_aero_mmr[1][1],
+    &buffer.dry_cld_aero_mmr[1][2],
+    &buffer.dry_cld_aero_mmr[1][3],
+
+    // coarse mode
+    &buffer.dry_int_aero_mmr[2][0],
+    &buffer.dry_int_aero_mmr[2][1],
+    &buffer.dry_int_aero_mmr[2][2],
+    &buffer.dry_int_aero_mmr[2][3],
+    &buffer.dry_int_aero_mmr[2][4],
+    &buffer.dry_int_aero_mmr[2][5],
+    &buffer.dry_int_aero_mmr[2][6],
+    &buffer.dry_cld_aero_mmr[2][0],
+    &buffer.dry_cld_aero_mmr[2][1],
+    &buffer.dry_cld_aero_mmr[2][2],
+    &buffer.dry_cld_aero_mmr[2][3],
+    &buffer.dry_cld_aero_mmr[2][4],
+    &buffer.dry_cld_aero_mmr[2][5],
+    &buffer.dry_cld_aero_mmr[2][6],
+
+    // primary carbon mode
+    &buffer.dry_int_aero_mmr[3][0],
+    &buffer.dry_int_aero_mmr[3][1],
+    &buffer.dry_int_aero_mmr[3][2],
+    &buffer.dry_cld_aero_mmr[3][0],
+    &buffer.dry_cld_aero_mmr[3][1],
+    &buffer.dry_cld_aero_mmr[3][2],
+
+    // aerosol gases
+    &buffer.dry_gas_mmr[0],
+    &buffer.dry_gas_mmr[1],
+    &buffer.dry_gas_mmr[2]
+  };
+  for (int i = 0; i < mam_coupling::Buffer::num_2d_mid; ++i) {
+    *view_2d_mid_ptrs[i] = view_2d(mem, ncol, nlev);
+    mem += view_2d_mid_ptrs[i]->size();
+  }
+
+  // set view pointers for interface fields
+  uview_2d* view_2d_iface_ptrs[mam_coupling::Buffer::num_2d_iface] = {
+    &buffer.z_iface
+  };
+  for (int i = 0; i < mam_coupling::Buffer::num_2d_iface; ++i) {
+    *view_2d_iface_ptrs[i] = view_2d(mem, ncol, nlev+1);
+    mem += view_2d_iface_ptrs[i]->size();
+  }
+
+  // WSM data
+  buffer.wsm_data = mem;
+
+  /* FIXME: this corresponds to the FIXME in the above function
+  // Compute workspace manager size to check used memory
+  // vs. requested memory
+  const auto policy      = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
+  const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
+  const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
+  const int wsm_size     = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy)/sizeof(Spack);
+  mem += wsm_size;
+  */
+
+  // return the number of bytes allocated
+  return (mem - buffer_manager.get_memory())*sizeof(Real);
+}
 
 // Given a dry atmosphere state, creates a haero::Atmosphere object for the
 // column with the given index. This object can be provided to mam4xx for the

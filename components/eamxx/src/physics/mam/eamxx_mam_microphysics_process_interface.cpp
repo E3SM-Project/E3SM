@@ -27,30 +27,28 @@ std::string MAMMicrophysics::name() const {
 void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
-  // The units of mixing ratio q are technically non-dimensional.
-  // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto q_unit = kg/kg;
+  auto q_unit = kg/kg; // mass mixing ratios [kg stuff / kg air]
   q_unit.set_string("kg/kg");
-  auto n_unit = 1/kg;
+  auto n_unit = 1/kg;  // number mixing ratios [# / kg air]
   n_unit.set_string("#/kg");
   Units nondim(0,0,0,0,0,0,0);
 
   grid_ = grids_manager->get_grid("Physics");
   const auto& grid_name = grid_->name();
 
-  ncol_ = grid_->get_num_local_dofs(); // Number of columns on this rank
-  nlev_ = grid_->get_num_vertical_levels(); // Number of levels per column
+  ncol_ = grid_->get_num_local_dofs();      // number of columns on this rank
+  nlev_ = grid_->get_num_vertical_levels(); // number of levels per column
 
-  // Define the different field layouts that will be used for this process
+  // define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
-  // Layout for 2D (1d horiz X 1d vertical) variable
+  // layout for 2D (1d horiz X 1d vertical) variable
   FieldLayout scalar2d_layout_col{ {COL}, {ncol_} };
 
-  // Layout for 3D (2d horiz X 1d vertical) variables
+  // layout for 3D (2d horiz X 1d vertical) variables
   FieldLayout scalar3d_layout_mid{ {COL, LEV}, {ncol_, nlev_} };
 
-  // Define fields needed in mam4xx.
+  // define fields needed in mam4xx
 
   // atmospheric quantities
   add_field<Required>("omega", scalar3d_layout_mid, Pa/s, grid_name); // vertical pressure velocity
@@ -100,9 +98,9 @@ set_computed_group_impl(const FieldGroup& group) {
   EKAT_REQUIRE_MSG(group.m_info->m_bundled,
     "Error! MAM4 expects bundled fields for tracers.\n");
 
-  // How many aerosol/gas tracers do we expect?
-  int num_tracers = mam_coupling::num_aero_modes() +
-                2 * mam_coupling::num_aero_tracers() + // interstitial + cloudborne aerosol mmrs
+  // how many aerosol/gas tracers do we expect?
+  int num_tracers = 2 * (mam_coupling::num_aero_modes() +
+                         mam_coupling::num_aero_tracers()) +
                     mam_coupling::num_aero_gases();
   EKAT_REQUIRE_MSG(group.m_info->size() >= num_tracers,
     "Error! MAM4 requires at least " << num_tracers << " aerosol tracers.");
@@ -110,67 +108,14 @@ set_computed_group_impl(const FieldGroup& group) {
 
 size_t MAMMicrophysics::requested_buffer_size_in_bytes() const
 {
-  // number of Reals needed by local views in interface
-  const size_t request = sizeof(Real) *
-    (mam_coupling::Buffer::num_2d_mid * ncol_ * nlev_ +
-     mam_coupling::Buffer::num_2d_iface * ncol_ * (nlev_+1));
-
-  // FIXME: Need to figure out whether we need this stuff
-  /*
-  // Number of Reals needed by the WorkspaceManager passed to shoc_main
-  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
-  const int n_wind_slots  = ekat::npack<Spack>(2)*Spack::n;
-  const int n_trac_slots  = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
-  const size_t wsm_request= WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
-  */
-
-  return request;// + wsm_request;
+  return mam_coupling::buffer_size(ncol_, nlev_);
 }
 
 void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
                    "Error! Insufficient buffer size.\n");
 
-  Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
-
-  // set view pointers for midpoint fields
-  using view_2d_t = decltype(buffer_.z_mid);
-  view_2d_t* view_2d_mid_ptrs[mam_coupling::Buffer::num_2d_mid] = {
-    &buffer_.z_mid,
-    &buffer_.dz,
-    &buffer_.qv_dry,
-    &buffer_.qc_dry,
-    &buffer_.nc_dry,
-    &buffer_.qi_dry,
-    &buffer_.ni_dry,
-    &buffer_.w_updraft,
-  };
-  for (int i = 0; i < mam_coupling::Buffer::num_2d_mid; ++i) {
-    *view_2d_mid_ptrs[i] = view_2d_t(mem, ncol_, nlev_);
-    mem += view_2d_mid_ptrs[i]->size();
-  }
-
-  // set view pointers for interface fields
-  view_2d_t* view_2d_iface_ptrs[mam_coupling::Buffer::num_2d_iface] = {&buffer_.z_iface};
-  for (int i = 0; i < mam_coupling::Buffer::num_2d_iface; ++i) {
-    *view_2d_iface_ptrs[i] = view_2d_t(mem, ncol_, nlev_+1);
-    mem += view_2d_iface_ptrs[i]->size();
-  }
-
-  // WSM data
-  buffer_.wsm_data = mem;
-
-  /* FIXME: this corresponds to the FIXME in the above function
-  // Compute workspace manager size to check used memory
-  // vs. requested memory
-  const auto policy      = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
-  const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
-  const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
-  const int wsm_size     = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy)/sizeof(Spack);
-  mem += wsm_size;
-  */
-
-  size_t used_mem = (mem - buffer_manager.get_memory())*sizeof(Real);
+  size_t used_mem = mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMMicrophysics.");
 }
