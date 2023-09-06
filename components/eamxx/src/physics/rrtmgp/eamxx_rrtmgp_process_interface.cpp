@@ -143,20 +143,14 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("dtau105"       , scalar3d_layout_mid, nondim, grid_name, "RESTART");
   add_field<Computed>("sunlit"        , scalar2d_layout    , nondim, grid_name, "RESTART");
   // Cloud-top diagnostics following AeroCOM recommendation
-  add_field<Computed>("T_mid_at_cldtop", scalar2d_layout, K, grid_name);
-  add_field<Computed>("p_mid_at_cldtop", scalar2d_layout, Pa, grid_name);
-  add_field<Computed>("cldfrac_ice_at_cldtop", scalar2d_layout, nondim,
-                      grid_name);
-  add_field<Computed>("cldfrac_liq_at_cldtop", scalar2d_layout, nondim,
-                      grid_name);
-  add_field<Computed>("cldfrac_tot_at_cldtop", scalar2d_layout, nondim,
-                      grid_name);
-  add_field<Computed>("cdnc_at_cldtop", scalar2d_layout, 1 / (m * m * m),
-                      grid_name);
-  add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d_layout, micron,
-                      grid_name);
-  add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d_layout, micron,
-                      grid_name);
+  add_field<Computed>("T_mid_at_cldtop", scalar2d_layout, K, grid_name, "RESTART");
+  add_field<Computed>("p_mid_at_cldtop", scalar2d_layout, Pa, grid_name, "RESTART");
+  add_field<Computed>("cldfrac_ice_at_cldtop", scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cldfrac_liq_at_cldtop", scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cldfrac_tot_at_cldtop", scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cdnc_at_cldtop", scalar2d_layout, 1 / (m * m * m), grid_name, "RESTART");
+  add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d_layout, micron, grid_name, "RESTART");
+  add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d_layout, micron, grid_name, "RESTART");
 
   // Translation of variables from EAM
   // --------------------------------------------------------------
@@ -902,10 +896,10 @@ void RRTMGPRadiation::run_impl (const double dt) {
       );
 
       // Compute diagnostic total cloud area (vertically-projected cloud cover)
-      real1d cldlow = real1d("cldlow", d_cldlow.data(), ncol);
-      real1d cldmed = real1d("cldmed", d_cldmed.data(), ncol);
-      real1d cldhgh = real1d("cldhgh", d_cldhgh.data(), ncol);
-      real1d cldtot = real1d("cldtot", d_cldtot.data(), ncol);
+      real1d cldlow ("cldlow", d_cldlow.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldmed ("cldmed", d_cldmed.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldhgh ("cldhgh", d_cldhgh.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldtot ("cldtot", d_cldtot.data() + m_col_chunk_beg[ic], ncol);
       // NOTE: limits for low, mid, and high clouds are mostly taken from EAM F90 source, with the
       // exception that I removed the restriction on low clouds to be above (numerically lower pressures)
       // 1200 hPa, and on high clouds to be below (numerically high pressures) 50 hPa. This probably
@@ -923,22 +917,14 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto idx_105 = rrtmgp::get_wavelength_index_lw(10.5e-6);
 
       // Compute cloud-top diagnostics following AeroCOM recommendation
-      real1d T_mid_at_cldtop =
-          real1d("T_mid_at_cldtop", d_T_mid_at_cldtop.data(), ncol);
-      real1d p_mid_at_cldtop =
-          real1d("p_mid_at_cldtop", d_p_mid_at_cldtop.data(), ncol);
-      real1d cldfrac_ice_at_cldtop =
-          real1d("cldfrac_ice_at_cldtop", d_cldfrac_ice_at_cldtop.data(), ncol);
-      real1d cldfrac_liq_at_cldtop =
-          real1d("cldfrac_liq_at_cldtop", d_cldfrac_liq_at_cldtop.data(), ncol);
-      real1d cldfrac_tot_at_cldtop =
-          real1d("cldfrac_tot_at_cldtop", d_cldfrac_tot_at_cldtop.data(), ncol);
-      real1d cdnc_at_cldtop =
-          real1d("cdnc_at_cldtop", d_cdnc_at_cldtop.data(), ncol);
-      real1d eff_radius_qc_at_cldtop = real1d(
-          "eff_radius_qc_at_cldtop", d_eff_radius_qc_at_cldtop.data(), ncol);
-      real1d eff_radius_qi_at_cldtop = real1d(
-          "eff_radius_qi_at_cldtop", d_eff_radius_qi_at_cldtop.data(), ncol);
+      real1d T_mid_at_cldtop ("T_mid_at_cldtop", d_T_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d p_mid_at_cldtop ("p_mid_at_cldtop", d_p_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldfrac_ice_at_cldtop ("cldfrac_ice_at_cldtop", d_cldfrac_ice_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldfrac_liq_at_cldtop ("cldfrac_liq_at_cldtop", d_cldfrac_liq_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldfrac_tot_at_cldtop ("cldfrac_tot_at_cldtop", d_cldfrac_tot_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d cdnc_at_cldtop ("cdnc_at_cldtop", d_cdnc_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d eff_radius_qc_at_cldtop ("eff_radius_qc_at_cldtop", d_eff_radius_qc_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d eff_radius_qi_at_cldtop ("eff_radius_qi_at_cldtop", d_eff_radius_qi_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
 
       rrtmgp::compute_aerocom_cloudtop(
           ncol, nlay, t_lay, p_lay, p_del, z_del, qc, qi, rel, rei, cldfrac_tot,
