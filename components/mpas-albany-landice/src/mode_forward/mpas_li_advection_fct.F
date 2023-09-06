@@ -7,11 +7,11 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  tracer_advection_mono
+!  li_tracer_advection_fct
 !
 !> \brief MPAS monotonic tracer advection with FCT
-!> \author Mark Petersen, David Lee, Doug Jacobsen, Phil Jones
-!> \date   October 2017, updated May 2019
+!> \author Mark Petersen, David Lee, Doug Jacobsen, Phil Jones, Trevor Hillebrand
+!> \date   October 2017, updated May 2019, ported to MALI Sept 2023
 !> \details
 !>  This module contains routines for monotonic advection of tracers
 !>  using a Flux Corrected Transport (FCT) algorithm
@@ -53,8 +53,8 @@ module li_tracer_advection_fct
 !  routine li_tracer_advection_fct_tend
 !
 !> \brief MPAS monotonic tracer horizontal advection tendency with FCT
-!> \author Mark Petersen, David Lee, Doug Jacobsen, Phil Jones
-!> \date   October 2017, updated May 2019
+!> \author Mark Petersen, David Lee, Doug Jacobsen, Phil Jones, Trevor Hillebrand
+!> \date   October 2017, updated May 2019, ported to MALI Sept 2023
 !> \details
 !>  This routine computes the monotonic tracer horizontal advection
 !>  tendency using a flux-corrected transport (FCT) algorithm.
