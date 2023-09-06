@@ -147,6 +147,8 @@ def modify_ap_list(xml_root, node, ap_list_str, append_this):
         new_aps = [n for n in add_aps if find_node(ap_defaults,n) is None]
 
         for ap in new_aps:
+            expect (ap[0]=="_" and ap[-1]=="_",
+                   f"Unrecognized atm proc name '{ap}'. To declare a new group, prepend and append '_' to the name.")
             group = gen_atm_proc_group("", ap_defaults)
             group.tag = ap
             
