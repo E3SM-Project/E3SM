@@ -208,32 +208,38 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   }
 
   // set atmosphere state data
-  atm_.T_mid = T_mid;
-  atm_.p_mid = p_mid;
-  atm_.qv_wet = qv_wet;
-  atm_.qv_dry = qv_dry;
-  atm_.qc_wet = qc_wet;
-  atm_.qc_dry = qc_wet;
-  atm_.nc_wet = nc_wet;
-  atm_.nc_dry = nc_dry;
-  atm_.qi_wet = qi_wet;
-  atm_.qi_dry = qi_dry;
-  atm_.ni_wet = ni_wet;
-  atm_.ni_dry = ni_dry;
-  atm_.pdel = p_del;
-  atm_.cldfrac = cldfrac;
-  atm_.pblh = pblh;
+  // TODO: should we set T, p, etc for wet_atm_?
+  wet_atm_.qv = qv_wet;
+  wet_atm_.qv = qv_dry;
+  wet_atm_.qc = qc_wet;
+  wet_atm_.nc = nc_wet;
+  wet_atm_.qi = qi_wet;
+  wet_atm_.ni = ni_wet;
+
+  dry_atm_.T_mid = T_mid;
+  dry_atm_.p_mid = p_mid;
+  dry_atm_.qv = buffer_.qv_dry;
+  dry_atm_.qc = buffer_.qc_dry;
+  dry_atm_.nc = buffer_.nc_dry;
+  dry_atm_.qi = buffer_.qi_dry;
+  dry_atm_.ni = buffer_.ni_dry;
+  dry_atm_.pdel = p_del;
+  dry_atm_.cldfrac = cldfrac;
+  dry_atm_.pblh = pblh;
+
+  // FIXME: For now, set z_surf to zero.
+  dry_atm_.z_surf = 0.0;
 
   // set aerosol state data (interstitial aerosols only)
   for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     const char* int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
-    aero_.wet_int_aero_nmr[m] = get_field_out(int_nmr_field_name).get_view<Real**>();
-    aero_.dry_int_aero_nmr[m] = buffer_.dry_int_aero_nmr[m];
+    wet_aero_.int_aero_nmr[m] = get_field_out(int_nmr_field_name).get_view<Real**>();
+    dry_aero_.int_aero_nmr[m] = buffer_.dry_int_aero_nmr[m];
     for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       const char* int_mmr_field_name = mam_coupling::int_aero_mmr_field_name(m, a);
       if (strlen(int_mmr_field_name) > 0) {
-        aero_.wet_int_aero_mmr[m][a] = get_field_out(int_mmr_field_name).get_view<Real**>();
-        aero_.dry_int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
+        wet_aero_.int_aero_mmr[m][a] = get_field_out(int_mmr_field_name).get_view<Real**>();
+        dry_aero_.int_aero_mmr[m][a] = buffer_.dry_int_aero_mmr[m][a];
       }
     }
   }
@@ -241,16 +247,13 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // set aerosol-related gas state data
   for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char* mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    aero_.wet_gas_mmr[g] = get_field_out(mmr_field_name).get_view<Real**>();
-    aero_.dry_gas_mmr[g] = buffer_.dry_gas_mmr[g];
+    wet_aero_.gas_mmr[g] = get_field_out(mmr_field_name).get_view<Real**>();
+    dry_aero_.gas_mmr[g] = buffer_.dry_gas_mmr[g];
   }
 
-  // FIXME: For now, set z_surf to zero.
-  const Real z_surf = 0.0;
-
   // set up our preprocess/postprocess functors
-  preprocess_.initialize(ncol_, nlev_, z_surf, atm_, aero_);
-  postprocess_.initialize(ncol_, nlev_, atm_, aero_);
+  preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_, dry_aero_);
+  postprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_, dry_aero_);
 
   // Set field property checks for the fields in this process
   /* e.g.
@@ -300,13 +303,13 @@ void MAMMicrophysics::run_impl(const double dt) {
     const Int icol = team.league_rank(); // column index
 
     // extract column-specific atmosphere state data
-    auto atm = atmosphere_for_column(atm_, icol);
+    auto atm = mam_coupling::atmosphere_for_column(dry_atm_, icol);
 
     // set surface state data
     haero::Surface sfc{};
 
     // extract column-specific subviews into aerosol prognostics
-    auto progs = mam_coupling::interstitial_aerosols_for_column(aero_, icol);
+    auto progs = mam_coupling::interstitial_aerosols_for_column(dry_aero_, icol);
 
     // set up diagnostics
     mam4::Diagnostics diags(nlev_);

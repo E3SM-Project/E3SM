@@ -88,92 +88,38 @@ private_except_cuda:
     Preprocess() = default;
 
     // on host: initializes preprocess functor with necessary state data
-    void initialize(const int ncol, const int nlev, const Real z_surf,
-                    const mam_coupling::AtmosphericState& atm,
-                    const mam_coupling::AerosolState& aero) {
+    void initialize(const int ncol, const int nlev,
+                    const mam_coupling::WetAtmosphere& wet_atm,
+                    const mam_coupling::AerosolState& wet_aero,
+                    const mam_coupling::DryAtmosphere& dry_atm,
+                    const mam_coupling::AerosolState& dry_aero) {
       ncol_ = ncol;
       nlev_ = nlev;
-      z_surf_ = z_surf;
-      atm_ = atm;
-      aero_ = aero;
+      wet_atm_ = wet_atm;
+      wet_aero_ = wet_aero;
+      dry_atm_ = dry_atm;
+      dry_aero_ = dry_aero;
     }
 
     KOKKOS_INLINE_FUNCTION
     void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) const {
       const int i = team.league_rank(); // column index
 
-      // compute vertical layer heights
-      const auto dz_i = ekat::subview(atm_.dz,    i);
-      auto z_iface_i  = ekat::subview(atm_.z_iface, i);
-      auto z_mid_i    = ekat::subview(atm_.z_mid, i);
-      PF::calculate_z_int(team, nlev_, dz_i, z_surf_, z_iface_i);
-      team.team_barrier();  // TODO: is this barrier necessary?
-      PF::calculate_z_mid(team, nlev_, z_iface_i, z_mid_i);
-      // barrier here allows the kernels that follow to use layer heights
-      team.team_barrier();
-
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_),
-        [&] (const int k) {
-          //--------------------------
-          // Vertical velocity from pressure to height
-          //--------------------------
-          const auto rho = PF::calculate_density(atm_.pdel(i,k), dz_i(k));
-          atm_.w_updraft(i,k) = PF::calculate_vertical_velocity(atm_.omega(i,k), rho);
-
-          //--------------------------
-          // Wet to dry mixing ratios
-          //--------------------------
-          //
-          // Since tracers from the host model (or AD) are wet mixing ratios, and
-          // MAM4 expects these tracers in dry mixing ratios, we convert the wet
-          // mixing ratios to dry mixing ratios for all the tracers.
-          //
-          // The function calculate_drymmr_from_wetmmr takes 2 arguments:
-          // 1. wet mmr
-          // 2. "wet" water vapor mixing ratio
-          //
-          // Units of all tracers become [kg/kg(dry-air)] for mass mixing ratios and
-          // [#/kg(dry-air)] for number mixing ratios after the following
-          // conversion.
-          const auto qv_ik = atm_.qv_wet(i,k);
-
-          // calculate dry atmospheric mixing ratios
-          atm_.qv_dry(i,k) = PF::calculate_drymmr_from_wetmmr(atm_.qv_wet(i,k), qv_ik);
-          atm_.qc_dry(i,k) = PF::calculate_drymmr_from_wetmmr(atm_.qc_wet(i,k), qv_ik);
-          atm_.nc_dry(i,k) = PF::calculate_drymmr_from_wetmmr(atm_.nc_wet(i,k), qv_ik);
-          atm_.qi_dry(i,k) = PF::calculate_drymmr_from_wetmmr(atm_.qi_wet(i,k), qv_ik);
-          atm_.ni_dry(i,k) = PF::calculate_drymmr_from_wetmmr(atm_.ni_wet(i,k), qv_ik);
-
-          // calculate dry aerosol mixing ratios
-          for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-            aero_.dry_int_aero_nmr[m](i,k) = PF::calculate_drymmr_from_wetmmr(aero_.wet_int_aero_nmr[m](i,k), qv_ik);
-            aero_.dry_cld_aero_nmr[m](i,k) = PF::calculate_drymmr_from_wetmmr(aero_.wet_cld_aero_nmr[m](i,k), qv_ik);
-            for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-              if (aero_.dry_int_aero_mmr[m][a].data()) {
-                aero_.dry_int_aero_mmr[m][a](i,k) = PF::calculate_drymmr_from_wetmmr(aero_.wet_int_aero_mmr[m][a](i,k), qv_ik);
-              }
-              if (aero_.dry_cld_aero_mmr[m][a].data()) {
-                aero_.dry_cld_aero_mmr[m][a](i,k) = PF::calculate_drymmr_from_wetmmr(aero_.wet_cld_aero_mmr[m][a](i,k), qv_ik);
-              }
-            }
-          }
-          for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-            aero_.dry_gas_mmr[g](i,k) = PF::calculate_drymmr_from_wetmmr(aero_.dry_gas_mmr[g](i,k), qv_ik);
-          }
-        });
-      // make sure all operations are done before exiting kernel
+      compute_vertical_layer_heights(team, dry_atm_, i);
+      team.team_barrier(); // allows kernels below to use layer heights
+      compute_updraft_velocities(team, wet_atm_, dry_atm_, i);
+      compute_dry_mixing_ratios(team, wet_atm_, dry_atm_, i);
+      compute_dry_mixing_ratios(team, wet_atm_, wet_aero_, dry_aero_, i);
       team.team_barrier();
     } // operator()
 
     // number of horizontal columns and vertical levels
     int ncol_, nlev_;
 
-    // height of bottom of atmosphere
-    Real z_surf_;
-
-    // local atmospheric and aerosol state column variables
-    mam_coupling::AtmosphericState atm_;
-    mam_coupling::AerosolState     aero_;
+    // local atmospheric and aerosol state data
+    mam_coupling::WetAtmosphere wet_atm_;
+    mam_coupling::DryAtmosphere dry_atm_;
+    mam_coupling::AerosolState  wet_aero_, dry_aero_;
 
   }; // MAMMicrophysics::Preprocess
 
@@ -183,45 +129,32 @@ private_except_cuda:
 
     // on host: initializes postprocess functor with necessary state data
     void initialize(const int ncol, const int nlev,
-                    const mam_coupling::AtmosphericState& atm,
-                    const mam_coupling::AerosolState& aero) {
+                    const mam_coupling::WetAtmosphere& wet_atm,
+                    const mam_coupling::AerosolState& wet_aero,
+                    const mam_coupling::DryAtmosphere& dry_atm,
+                    const mam_coupling::AerosolState& dry_aero) {
       ncol_ = ncol;
       nlev_ = nlev;
-      atm_ = atm;
-      aero_ = aero;
+      wet_atm_ = wet_atm;
+      wet_aero_ = wet_aero;
+      dry_atm_ = dry_atm;
+      dry_aero_ = dry_aero;
     }
 
     KOKKOS_INLINE_FUNCTION
     void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) const {
-      // after these updates, all non-const tracers are converted from dry mmr to wet mmr
-      const int i = team.league_rank();
-
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_),
-        [&] (const int k) {
-          const auto qv_ik = atm_.qv_dry(i,k);
-          for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-            aero_.wet_int_aero_nmr[m](i,k) = PF::calculate_wetmmr_from_drymmr(aero_.dry_int_aero_nmr[m](i,k), qv_ik);
-            aero_.wet_cld_aero_nmr[m](i,k) = PF::calculate_wetmmr_from_drymmr(aero_.dry_cld_aero_nmr[m](i,k), qv_ik);
-            for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
-              if (aero_.wet_int_aero_mmr[m][a].data()) {
-                aero_.wet_int_aero_mmr[m][a](i,k) = PF::calculate_wetmmr_from_drymmr(aero_.dry_int_aero_mmr[m][a](i,k), qv_ik);
-              }
-            }
-          }
-          for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-            aero_.wet_gas_mmr[g](i,k) = PF::calculate_wetmmr_from_drymmr(aero_.wet_gas_mmr[g](i,k), qv_ik);
-          }
-      });
+      const int i = team.league_rank(); // column index
+      compute_wet_mixing_ratios(team, dry_atm_, dry_aero_, wet_aero_, i);
       team.team_barrier();
     } // operator()
 
     // number of horizontal columns and vertical levels
     int ncol_, nlev_;
 
-    // local atmospheric and aerosol state column variables
-    mam_coupling::AtmosphericState atm_;
-    mam_coupling::AerosolState     aero_;
-
+    // local atmospheric and aerosol state data
+    mam_coupling::WetAtmosphere wet_atm_;
+    mam_coupling::DryAtmosphere dry_atm_;
+    mam_coupling::AerosolState  wet_aero_, dry_aero_;
   }; // MAMMicrophysics::Postprocess
 
   // MAM4 aerosol particle size description
@@ -235,8 +168,9 @@ private_except_cuda:
   Postprocess postprocess_;
 
   // atmospheric and aerosol state variables
-  mam_coupling::AtmosphericState atm_;
-  mam_coupling::AerosolState     aero_;
+  mam_coupling::WetAtmosphere wet_atm_;
+  mam_coupling::DryAtmosphere dry_atm_;
+  mam_coupling::AerosolState  wet_aero_, dry_aero_;
 
   // workspace manager for internal local variables
   //ekat::WorkspaceManager<Real, KT::Device> workspace_mgr_;
