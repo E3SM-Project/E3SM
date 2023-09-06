@@ -143,20 +143,14 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("dtau105"       , scalar3d_layout_mid, nondim, grid_name, "RESTART");
   add_field<Computed>("sunlit"        , scalar2d_layout    , nondim, grid_name, "RESTART");
   // Cloud-top diagnostics following AeroCOM recommendation
-  add_field<Computed>("T_mid_at_cldtop", scalar2d_layout, K, grid_name);
-  add_field<Computed>("p_mid_at_cldtop", scalar2d_layout, Pa, grid_name);
-  add_field<Computed>("cldfrac_ice_at_cldtop", scalar2d_layout, nondim,
-                      grid_name);
-  add_field<Computed>("cldfrac_liq_at_cldtop", scalar2d_layout, nondim,
-                      grid_name);
-  add_field<Computed>("cldfrac_tot_at_cldtop", scalar2d_layout, nondim,
-                      grid_name);
-  add_field<Computed>("cdnc_at_cldtop", scalar2d_layout, 1 / (m * m * m),
-                      grid_name);
-  add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d_layout, micron,
-                      grid_name);
-  add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d_layout, micron,
-                      grid_name);
+  add_field<Computed>("T_mid_at_cldtop", scalar2d_layout, K, grid_name, "RESTART");
+  add_field<Computed>("p_mid_at_cldtop", scalar2d_layout, Pa, grid_name, "RESTART");
+  add_field<Computed>("cldfrac_ice_at_cldtop", scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cldfrac_liq_at_cldtop", scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cldfrac_tot_at_cldtop", scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cdnc_at_cldtop", scalar2d_layout, 1 / (m * m * m), grid_name, "RESTART");
+  add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d_layout, micron, grid_name, "RESTART");
+  add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d_layout, micron, grid_name, "RESTART");
 
   // Translation of variables from EAM
   // --------------------------------------------------------------
