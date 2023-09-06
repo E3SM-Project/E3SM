@@ -85,7 +85,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
   m_time_interp = util::TimeInterpolation(grid_ext, m_datafiles);
 
-  constexpr int ps = 1;  // TODO: I think this could be the regular packsize, right?
+  constexpr int ps = SCREAM_PACK_SIZE;
   const auto& grid_name = m_grid->name();
   if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
     create_helper_field("p_mid_ext", scalar3d_layout_mid, grid_name, ps);
@@ -150,12 +150,10 @@ void Nudging::run_impl (const double dt)
   for (auto name : m_fields_nudge) {
     auto atm_state_field = get_field_out(name);
     auto int_state_field = get_helper_field(name);
-    auto ext_state_field = get_helper_field(name+"_ext").get_view<mPack**>();
+    auto ext_state_view = get_helper_field(name+"_ext").get_view<mPack**>();
     auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
     auto int_state_view  = int_state_field.get_view<mPack**>();
     auto int_mask_view = m_buffer.int_mask_view;
-    const view_Nd<mPack,2> ext_state_view(reinterpret_cast<mPack*>(ext_state_field.data()),
-                                          m_num_cols,m_num_src_levs);
     // Masked values in the source data can lead to strange behavior in the vertical interpolation.
     // We pre-process the data and map any masked values (sometimes called "filled" values) to the
     // nearest un-masked value.
