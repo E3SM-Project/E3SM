@@ -183,20 +183,15 @@ constexpr const char* gas_mmr_field_name(const int gas) {
   return const_cast<const char*>(gas_mmr_names_[gas]);
 }
 
-// This type stores multi-column views related to the wet atmospheric state
-// used by EAMxx.
+// This type stores multi-column views related specifically to the wet
+// atmospheric state used by EAMxx.
 struct WetAtmosphere {
-  const_view_2d T_mid;   // temperature at grid midpoints [K]
-  const_view_2d p_mid;   // total pressure at grid midpoints [Pa]
   const_view_2d qv;      // wet water vapor specific humidity [kg vapor / kg moist air]
   const_view_2d qc;      // wet cloud liquid water mass mixing ratio [kg cloud water/kg moist air]
   const_view_2d nc;      // wet cloud liquid water number mixing ratio [# / kg moist air]
   const_view_2d qi;      // wet cloud ice water mass mixing ratio [kg cloud ice water / kg moist air]
   const_view_2d ni;      // wet cloud ice water number mixing ratio [# / kg moist air]
-  const_view_2d pdel;    // hydrostatic "pressure thickness" at grid interfaces [Pa]
-  const_view_2d cldfrac; // cloud fraction [-]
   const_view_2d omega;   // vertical pressure velocity [Pa/s]
-  const_view_1d pblh;    // planetary boundary layer height [m]
 };
 
 // This type stores multi-column views related to the dry atmospheric state
@@ -213,7 +208,7 @@ struct DryAtmosphere {
   view_2d       z_mid;     // height at layer midpoints [m]
   view_2d       z_iface;   // height at layer interfaces [m]
   view_2d       dz;        // layer thickness [m]
-  const_view_2d pdel;      // hydrostatic "pressure thickness" at grid interfaces [Pa]
+  const_view_2d p_del;     // hydrostatic "pressure thickness" at grid interfaces [Pa]
   const_view_2d cldfrac;   // cloud fraction [-]
   view_2d       w_updraft; // updraft velocity [m/s]
   const_view_1d pblh;      // planetary boundary layer height [m]
@@ -236,13 +231,15 @@ struct AerosolState {
 // storage for variables used within MAM atmosphere processes, initialized with
 // ATMBufferManager
 struct Buffer {
-  // number of local fields stored at column midpoints
-  static constexpr int num_2d_mid = 8 + num_aero_modes() + 2 * num_aero_tracers() +
-                                    num_aero_gases();
-
   // ======================
   // column midpoint fields
   // ======================
+
+  // number of local fields stored at column midpoints
+  static constexpr int num_2d_mid = 8 + // number of dry atm fields
+                                    num_aero_modes() +
+                                2 * num_aero_tracers() + // interstitial + cloudborne
+                                    num_aero_gases();
 
   // (dry) atmospheric state
   uview_2d z_mid;             // height at midpoints
@@ -263,12 +260,12 @@ struct Buffer {
   // aerosol-related dry gas mass mixing ratios
   uview_2d dry_gas_mmr[num_aero_gases()];
 
-  // number of local fields stored at column interfaces
-  static constexpr int num_2d_iface = 1;
-
   // =======================
   // column interface fields
   // =======================
+
+  // number of local fields stored at column interfaces
+  static constexpr int num_2d_iface = 1;
 
   uview_2d z_iface; // height at interfaces
 
@@ -298,8 +295,8 @@ haero::Atmosphere atmosphere_for_column(const DryAtmosphere& dry_atm,
     "ni not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.z_mid.data() != nullptr,
     "z_mid not defined for dry atmosphere state!");
-  EKAT_KERNEL_ASSERT_MSG(dry_atm.pdel.data() != nullptr,
-    "pdel not defined for dry atmosphere state!");
+  EKAT_KERNEL_ASSERT_MSG(dry_atm.p_del.data() != nullptr,
+    "p_del not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.cldfrac.data() != nullptr,
     "cldfrac not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.w_updraft.data() != nullptr,
@@ -313,7 +310,7 @@ haero::Atmosphere atmosphere_for_column(const DryAtmosphere& dry_atm,
                            ekat::subview(dry_atm.qi, column_index),
                            ekat::subview(dry_atm.ni, column_index),
                            ekat::subview(dry_atm.z_mid, column_index),
-                           ekat::subview(dry_atm.pdel, column_index),
+                           ekat::subview(dry_atm.p_del, column_index),
                            ekat::subview(dry_atm.cldfrac, column_index),
                            ekat::subview(dry_atm.w_updraft, column_index),
                            dry_atm.pblh(column_index));
@@ -397,7 +394,7 @@ void compute_updraft_velocities(const Team& team,
 
   int i = column_index;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, mam4::nlev), [&] (const int k) {
-    const auto rho = PF::calculate_density(wet_atm.pdel(i,k), dry_atm.dz(i,k));
+    const auto rho = PF::calculate_density(dry_atm.p_del(i,k), dry_atm.dz(i,k));
     dry_atm.w_updraft(i,k) = PF::calculate_vertical_velocity(wet_atm.omega(i,k), rho);
   });
 }

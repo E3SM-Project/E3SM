@@ -60,7 +60,7 @@ void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("qi", scalar3d_layout_mid, q_unit, grid_name, "tracers"); // ice wet mixing ratio
   add_field<Required>("ni", scalar3d_layout_mid, n_unit, grid_name, "tracers"); // ice number mixing ratio
   add_field<Required>("pbl_height", scalar2d_layout_col, m, grid_name); // planetary boundary layer height
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name); // pdel, hydrostatic pressure
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name); // p_del, hydrostatic pressure
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name); // cloud fraction
 
   // droplet activation can alter cloud liquid and number mixing ratios
@@ -177,60 +177,39 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
 
 void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
-  const auto& T_mid = get_field_in("T_mid").get_view<const Real**>();
-  const auto& p_mid = get_field_in("p_mid").get_view<const Real**>();
-  const auto& qv_wet = get_field_in("qv").get_view<const Real**>();
-  const auto& pblh = get_field_in("pbl_height").get_view<const Real*>();
-  const auto& p_del = get_field_in("pseudo_density").get_view<const Real**>();
-  const auto& cldfrac = get_field_in("cldfrac_tot").get_view<const Real**>(); // FIXME: tot or liq?
-  const auto& qc_wet = get_field_out("qc").get_view<Real**>();
-  const auto& nc_wet = get_field_out("nc").get_view<Real**>();
-  const auto& qi_wet = get_field_in("qi").get_view<const Real**>();
-  const auto& ni_wet = get_field_in("ni").get_view<const Real**>();
-  const auto& omega = get_field_in("omega").get_view<const Real**>();
+  // populate the wet and dry atmosphere states with views from fields and
+  // the buffer
+  wet_atm_.qv = get_field_in("qv").get_view<const Real**>();
+  wet_atm_.qc = get_field_out("qc").get_view<Real**>();
+  wet_atm_.nc = get_field_out("nc").get_view<Real**>();
+  wet_atm_.qi = get_field_in("qi").get_view<const Real**>();
+  wet_atm_.ni = get_field_in("ni").get_view<const Real**>();
+  wet_atm_.omega = get_field_in("omega").get_view<const Real**>();
+
+  dry_atm_.T_mid     = get_field_in("T_mid").get_view<const Real**>();
+  dry_atm_.p_mid     = get_field_in("p_mid").get_view<const Real**>();
+  dry_atm_.p_del     = get_field_in("pseudo_density").get_view<const Real**>();
+  dry_atm_.cldfrac   = get_field_in("cldfrac_tot").get_view<const Real**>(); // FIXME: tot or liq?
+  dry_atm_.pblh      = get_field_in("pbl_height").get_view<const Real*>();
+  dry_atm_.z_mid     = buffer_.z_mid;
+  dry_atm_.dz        = buffer_.dz;
+  dry_atm_.z_iface   = buffer_.z_iface;
+  dry_atm_.qv        = buffer_.qv_dry;
+  dry_atm_.qc        = buffer_.qc_dry;
+  dry_atm_.nc        = buffer_.nc_dry;
+  dry_atm_.qi        = buffer_.qi_dry;
+  dry_atm_.ni        = buffer_.ni_dry;
+  dry_atm_.w_updraft = buffer_.w_updraft;
+  dry_atm_.z_surf = 0.0; // FIXME: for now
 
   const auto& tracers = get_group_out("tracers");
   const auto& tracers_info = tracers.m_info;
 
-  // Alias local variables from temporary buffer
-  auto z_mid = buffer_.z_mid;
-  auto dz    = buffer_.dz;
-  auto z_iface = buffer_.z_iface;
-  auto qv_dry = buffer_.qv_dry;
-  auto qc_dry = buffer_.qc_dry;
-  auto nc_dry = buffer_.nc_dry;
-  auto qi_dry = buffer_.qi_dry;
-  auto ni_dry = buffer_.ni_dry;
-  auto w_updraft = buffer_.w_updraft;
-
-  // Perform any initialization work.
+  // perform any initialization work
   if (run_type==RunType::Initial){
   }
 
-  // set atmosphere state data
-  // TODO: should we set T, p, etc for wet_atm_?
-  wet_atm_.qv = qv_wet;
-  wet_atm_.qv = qv_dry;
-  wet_atm_.qc = qc_wet;
-  wet_atm_.nc = nc_wet;
-  wet_atm_.qi = qi_wet;
-  wet_atm_.ni = ni_wet;
-
-  dry_atm_.T_mid = T_mid;
-  dry_atm_.p_mid = p_mid;
-  dry_atm_.qv = buffer_.qv_dry;
-  dry_atm_.qc = buffer_.qc_dry;
-  dry_atm_.nc = buffer_.nc_dry;
-  dry_atm_.qi = buffer_.qi_dry;
-  dry_atm_.ni = buffer_.ni_dry;
-  dry_atm_.pdel = p_del;
-  dry_atm_.cldfrac = cldfrac;
-  dry_atm_.pblh = pblh;
-
-  // FIXME: For now, set z_surf to zero.
-  dry_atm_.z_surf = 0.0;
-
-  // set aerosol state data (interstitial aerosols only)
+  // set wet/dry aerosol state data (interstitial aerosols only)
   for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
     const char* int_nmr_field_name = mam_coupling::int_aero_nmr_field_name(m);
     wet_aero_.int_aero_nmr[m] = get_field_out(int_nmr_field_name).get_view<Real**>();
@@ -244,7 +223,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
     }
   }
 
-  // set aerosol-related gas state data
+  // set wet/dry aerosol-related gas state data
   for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     const char* mmr_field_name = mam_coupling::gas_mmr_field_name(g);
     wet_aero_.gas_mmr[g] = get_field_out(mmr_field_name).get_view<Real**>();
@@ -255,7 +234,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_, dry_aero_);
   postprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_, dry_aero_);
 
-  // Set field property checks for the fields in this process
+  // set field property checks for the fields in this process
   /* e.g.
   using Interval = FieldWithinIntervalCheck;
   using LowerBound = FieldLowerBoundCheck;
@@ -265,7 +244,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   add_postcondition_check<LowerBound>(get_field_out("tke"),m_grid,0);
   */
 
-  // Setup WSM for internal local variables
+  // set up WSM for internal local variables
   // FIXME: do we need this?
   //const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
   //workspace_mgr_.setup(buffer_.wsm_data, nlev_+1, 13+(n_wind_slots+n_trac_slots), default_policy);
