@@ -1,5 +1,6 @@
 import copy
 
+import e3sm_diags  # noqa: F401
 from e3sm_diags.e3sm_diags_driver import get_default_diags_path, main
 from e3sm_diags.logger import custom_logger, move_log_to_prov_dir
 from e3sm_diags.parameter import SET_TO_PARAMETERS
