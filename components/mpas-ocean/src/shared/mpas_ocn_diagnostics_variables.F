@@ -127,7 +127,7 @@ module ocn_diagnostics_variables
    real(kind=RKIND), dimension(:,:), pointer :: gradDensityEddy
    real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa
    real(kind=RKIND), dimension(:), pointer   :: cGMphaseSpeed
-   real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
+   real(kind=RKIND), dimension(:,:,:), pointer :: limiterUp, limiterDown, slopeTriadUp, slopeTriadDown
 
    integer, dimension(:), pointer :: indMLD
    real(kind=RKIND), dimension(:), pointer :: dThreshMLD
@@ -420,6 +420,10 @@ contains
                    slopeTriadUp)
          call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', &
                    slopeTriadDown)
+         call mpas_pool_get_array(diagnosticsPool, 'limiterUp', &
+                   limiterUp)
+         call mpas_pool_get_array(diagnosticsPool, 'limiterDown', &
+                   limiterDown)
 
          ! GM-related fields
          call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', &
@@ -719,6 +723,7 @@ contains
          !$acc                   SSHGradient,                     &
          !$acc                   circulation,                     &
          !$acc                   slopeTriadUp,                    &
+         !$acc                   limiterUp,                       &
          !$acc                   gradSSHZonal,                    &
          !$acc                   cGMphaseSpeed,                   &
          !$acc                   velocityZonal,                   &
@@ -729,6 +734,7 @@ contains
          !$acc                   layerThickEdgeFlux,              &
          !$acc                   layerThickEdgeMean,              &
          !$acc                   slopeTriadDown,                  &
+         !$acc                   limiterDown,                     &
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
          !$acc                   vertVelocityTop,                 &
@@ -961,6 +967,8 @@ contains
          !$acc                   SSHGradient,                     &
          !$acc                   circulation,                     &
          !$acc                   slopeTriadUp,                    &
+         !$acc                   limiterUp,                       &
+         !$acc                   limiterDown,                     &
          !$acc                   gradSSHZonal,                    &
          !$acc                   cGMphaseSpeed,                   &
          !$acc                   velocityZonal,                   &
@@ -1161,6 +1169,8 @@ contains
                  SSHGradient,                     &
                  circulation,                     &
                  slopeTriadUp,                    &
+                 limiterUp,                       &
+                 limiterDown,                     &
                  gradSSHZonal,                    &
                  cGMphaseSpeed,                   &
                  velocityZonal,                   &
