@@ -515,7 +515,7 @@ TEST_CASE("field_checks", "") {
         if (not allow_failure && (check_pre || check_post)) {
           REQUIRE_THROWS (foo->run(1));
         } else {
-          REQUIRE_NOTHROW (foo->run(1));
+          foo->run(1);
         }
       }
     }

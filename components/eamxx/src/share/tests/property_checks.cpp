@@ -43,7 +43,7 @@ TEST_CASE("property_check_base", "") {
     REQUIRE_THROWS (std::make_shared<FieldLowerBoundCheck>(cf,grid,0,true));
 
     // But ok if no repair is needed
-    REQUIRE_NOTHROW (std::make_shared<FieldLowerBoundCheck>(cf,grid,0,false));
+    std::make_shared<FieldLowerBoundCheck>(cf,grid,0,false);
   }
 }
 
