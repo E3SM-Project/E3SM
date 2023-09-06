@@ -499,11 +499,11 @@ def create_raw_xml_file(case, caseroot):
     # be processed early by treating them as if they were made to the defaults file.
     atmchgs = unbuffer_changes(case)[0]
     with open(src, "r") as fd:
-        defaults = ET.parse(fd)
+        defaults = ET.parse(fd).getroot()
         for change in atmchgs:
             atm_config_chg_impl(defaults, change, all_matches=True, missing_ok=True)
 
-        raw_xml = _create_raw_xml_file_impl(case, defaults.getroot())
+        raw_xml = _create_raw_xml_file_impl(case, defaults)
 
     raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
     if os.path.exists(raw_xml_file) and case.get_value("SCREAM_HACK_XML"):

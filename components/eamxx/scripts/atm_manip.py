@@ -9,7 +9,8 @@ import xml.etree.ElementTree as ET # pylint: disable=unused-import
 
 # Add path to cime_config folder
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
-from eamxx_buildnml_impl import check_value, is_array_type
+from eamxx_buildnml_impl import check_value, is_array_type, has_child, get_child, find_node
+from eamxx_buildnml_impl import gen_atm_proc_group
 from utils import expect, run_cmd_no_fail
 
 ATMCHANGE_SEP = "-ATMCHANGE_SEP-"
@@ -115,9 +116,55 @@ def get_xml_nodes(xml_root, name):
     return result
 
 ###############################################################################
-def apply_change(node, new_value, append_this):
+def modify_ap_list(xml_root, node, ap_list_str, append_this):
+###############################################################################
+    """
+    Modify the atm_procs_list entry of this XML node (which is an atm proc group).
+    This routine can only be used to add an atm proc group OR to remove some
+    atm procs.
+    """
+    curr_apl = get_child(node,"atm_procs_list")
+    if curr_apl.text==ap_list_str:
+        return False
+
+    ap_list = ap_list_str.split(",")
+    expect (len(ap_list)==len(set(ap_list)),
+            "Input list of atm procs contains repetitions")
+
+    # If we're here b/c of a manual call of atmchange from command line, this will be None,
+    # since we don't have this node in the genereated XML file. But in that case, we don't
+    # have to actually add the new nodes, we can simply just modify the atm_procs_list entry
+    # If, however, we're calling this from buildnml, then what we are passed in is the XML
+    # tree from namelists_defaults_scream.xml, so this section *will* be present. And we
+    # need to add the new atm procs group as children, so that buildnml knows how to build
+    # them
+    ap_defaults = find_node(xml_root,"atmosphere_processes_defaults")
+    if ap_defaults is not None:
+
+        # Figure out which aps in the list are new groups and which ones already
+        # exist in the defaults
+        add_aps = [n for n in ap_list if n not in curr_apl.text.split(',')]
+        new_aps = [n for n in add_aps if find_node(ap_defaults,n) is None]
+
+        for ap in new_aps:
+            group = gen_atm_proc_group("", ap_defaults)
+            group.tag = ap
+            
+            ap_defaults.append(group)
+
+    # Update the 'atm_procs_list' in this node
+    curr_apl.text = ','.join(ap_list)
+    return True
+
+###############################################################################
+def apply_change(xml_root, node, new_value, append_this):
 ###############################################################################
     any_change = False
+
+    # User can change the list of atm procs in a group doing ./atmchange group_name=a,b,c
+    # If we detect that this node is an atm proc group, don't modify the text, but do something els
+    if has_child(node,"atm_procs_list"):
+        return modify_ap_list (xml_root,node,new_value,append_this)
 
     if append_this:
         expect ("type" in node.attrib.keys(),
@@ -258,7 +305,7 @@ def atm_config_chg_impl(xml_root, change, all_matches=False, missing_ok=False):
 
     any_change = False
     for node in matches:
-        any_change |= apply_change(node, new_value, append_this)
+        any_change |= apply_change(xml_root, node, new_value, append_this)
 
     return any_change
 

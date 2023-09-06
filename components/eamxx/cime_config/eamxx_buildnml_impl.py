@@ -579,7 +579,8 @@ def gen_group_processes(ap_names_str, atm_procs_defaults):
 
     group = ET.Element("__APG__")
 
-    for ap in ap_names_str.split(','):
+    ap_list = [] if ap_names_str is None or ap_names_str=="" else ap_names_str.split(',')
+    for ap in ap_list:
         # The current ap can be itself a group if ap is declared in the XML defaults
         # as an atm proc group (which must store the 'atm_procs_list' child,
         # with the string representation of the group.
