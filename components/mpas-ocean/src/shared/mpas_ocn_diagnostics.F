@@ -1551,10 +1551,12 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real(kind=RKIND) :: coef, shearSquared, delU2, shearMean
-      integer :: iCell, k, i, iEdge
+      real(kind=RKIND) :: coef, shear, Ri_edge, dz_edge, shearSquared, delU2, shearMean
+      integer :: jCell, iCell, k, i, iEdge
       integer :: nCells
+      real(kind=RKIND), dimension(:), allocatable :: RiTopOfCellNorm
 
+      allocate (RiTopOfCellNorm(nVertLevels))
       !
       ! Brunt-Vaisala frequency (this has units of s^{-2})
       !
@@ -1595,29 +1597,46 @@ contains
       !$acc          private(k, i, iEdge, delU2, shearSquared, shearMean)
 #else
       !$omp parallel
-      !$omp do schedule(runtime) private(k, shearSquared, i, iEdge, delU2, shearMean)
+      !$omp do schedule(runtime) private(k, shearSquared, i, iEdge, delU2, shearMean, &
+      !$omp                              jCell, shear, dz_edge, Ri_edge)
 #endif
       do iCell=1,nCells
          RiTopOfCell(:,iCell) = 100.0_RKIND
-         do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
-           shearSquared = 0.0_RKIND
+         RiTopOfCellNorm(:) = 1.0E-12_RKIND
            do i = 1, nEdgesOnCell(iCell)
              iEdge = edgesOnCell(i, iCell)
-             delU2 = (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2
-             shearSquared = shearSquared + edgeAreaFractionOfCell(i,iCell) * delU2
+            jCell = cellsOnCell(i,iCell)
+            do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
+               delU2 = (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2 + &
+                  ( tangentialVelocity(k-1,iEdge) - tangentialVelocity(k,iEdge))**2
+
+               dz_edge = 0.5_RKIND * ( &
+                  zMid(k-1,iCell) + zMid(k-1,jCell) - &
+                  zMid(k-0,iCell) - zMid(k-0,jCell) )
+
+               shear = delU2 / dz_edge**2
+
+               Ri_edge = max(0.0_RKIND, 0.5_RKIND * ( &
+                  BruntVaisalaFreqTop(k,iCell) + &
+                  BruntVaisalaFreqTop(k,jCell) ) )/ (shear + 1.0E-12_RKIND)
+
+               RiTopOfCellNorm(k) = RiTopOfCellNorm(k) &
+                                    + 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
+
+               RiTopOfCell(k,iCell) = &
+               RiTopOfCell(k,iCell) + 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * Ri_edge
            enddo
-           ! Note that the factor of two is from averaging dot product to cell center on a C-grid
-           shearMean = sqrt(2.0_RKIND*shearSquared )
-           shearMean = shearMean / (zMid(k-1,iCell) - zMid(k,iCell))
-           RiTopOfCell(k,iCell) = BruntVaisalaFreqTop(k,iCell) / (shearMean**2 + 1.0e-10_RKIND)
+           enddo
+         do k = minLevelCell(iCell), maxLevelCell(iCell)
+            RiTopOfCell(k,iCell) = RiTopOfCell(k,iCell) / RiTopOfCellNorm(k)
           end do
-          RiTopOfCell(minLevelCell(iCell),iCell) = RiTopOfCell(minLevelCell(iCell)+1,iCell)
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
 #endif
 
+   deallocate(RiTopOfCellNorm)
    end subroutine ocn_diagnostic_solve_richardson!}}}
 
 !***********************************************************************

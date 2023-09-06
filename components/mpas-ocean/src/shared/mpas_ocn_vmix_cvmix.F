@@ -552,22 +552,26 @@ contains
               do i = 1, nEdgesOnCell(iCell)
                  iEdge = edgesOnCell(i, iCell)
 
-                 deltaVelocitySquared(1:minLevelCell(iCell)) = 0.0_RKIND
+                 deltaVelocitySquared(1:minLevelEdgeBot(iEdge)) = 0.0_RKIND
 
-                 normalVelocitySum(minLevelCell(iCell)) = normalVelocity(minLevelCell(iCell), iEdge)* &
-                                                          layerThickEdgeMean(minLevelCell(iCell),iEdge)
-                 layerThicknessEdgeSum(minLevelCell(iCell)) = layerThickEdgeMean(minLevelCell(iCell),iEdge)
+                 normalVelocitySum(minLevelEdgeBot(iEdge)) = normalVelocity(minLevelEdgeBot(iEdge), iEdge)* &
+                                                          layerThickEdgeMean(minLevelEdgeBot(iEdge),iEdge) &
+                                                          + tangentialVelocity(minLevelEdgeBot(iEdge),iEdge)* &
+                                                          layerThickEdgeMean(minLevelEdgeBot(iEdge),iEdge)
+                 layerThicknessEdgeSum(minLevelEdgeBot(iEdge)) = layerThickEdgeMean(minLevelEdgeBot(iEdge),iEdge)
 
-                 do kIndexOBL = minLevelCell(iCell)+1, maxLevelCell(iCell)
+                 do kIndexOBL = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                     normalVelocitySum(kIndexOBL) = normalVelocitySum(kIndexOBL-1) + &
-                                      layerThickEdgeMean(kIndexOBL, iEdge)*normalVelocity(kIndexOBL, iEdge)
+                                      layerThickEdgeMean(kIndexOBL, iEdge)*(normalVelocity(kIndexOBL, iEdge) + &
+                                      tangentialVelocity(kIndexOBL, iEdge))
                     layerThicknessEdgeSum(kIndexOBL) = layerThicknessEdgeSum(kIndexOBL-1) + layerThickEdgeMean(kIndexOBL, iEdge)
                  end do
 
-                 do kIndexOBL = minLevelCell(iCell), maxLevelCell(iCell)
+                 do kIndexOBL = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                     normalVelocityAv = normalVelocitySum(surfaceAverageIndex(kIndexOBL )) / &
                         layerThicknessEdgeSum(surfaceAverageIndex(kIndexOBL))
-                    delU2 = ( normalVelocityAv - normalVelocity(kIndexOBL, iEdge) )**2
+                    delU2 = ( normalVelocityAv - (tangentialVelocity(kIndexOBL, iEdge) + &
+                                 normalVelocity(kIndexOBL, iEdge)) )**2
                     deltaVelocitySquared(kIndexOBL) = deltaVelocitySquared(kIndexOBL) + edgeAreaFractionOfCell(i,iCell) * delU2
                  end do
               end do
@@ -584,7 +588,7 @@ contains
               do kIndexOBL = minLevelCell(iCell), maxLevelCell(iCell)
                 ! !compute shear contribution assuming BLdepth is cell bottom
                 !Note that the factor of two is from averaging dot products to cell centers on a C-grid
-                bulkRichardsonNumberShear(kIndexOBL,iCell) = max(2.0_RKIND*deltaVelocitySquared(kIndexOBL), 1.0e-15_RKIND)
+                bulkRichardsonNumberShear(kIndexOBL,iCell) = max(deltaVelocitySquared(kIndexOBL), 1.0e-15_RKIND)
 
                 bulkRichardsonNumberBuoy(kIndexOBL,iCell) = gravity * (potentialDensity(kIndexOBL, iCell) &
                                   - potentialDensitySum(surfaceAverageIndex(kIndexOBL)) &
