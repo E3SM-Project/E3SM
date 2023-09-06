@@ -195,7 +195,7 @@ def atm_config_chg_impl(xml_root, change, all_matches=False, missing_ok=False):
     >>> ################ INVALID TYPE #######################
     >>> atm_config_chg_impl(tree,'prop2=two')
     Traceback (most recent call last):
-    ValueError: Could not use 'two' as type 'integer'
+    ValueError: Could not refine 'two' as type 'integer'
     >>> ################ INVALID VALUE #######################
     >>> atm_config_chg_impl(tree,'prop2=3')
     Traceback (most recent call last):

@@ -25,57 +25,6 @@ class MockCase(object):
             return None
 
 ###############################################################################
-def parse_string_as_list(string):
-###############################################################################
-    """
-    Takes a string representation of nested list and creates
-    a nested list of stirng. For instance, with
-        s = "(a,b,(c,d),e)
-        l = parse_string_as_list
-    we would have l = ['a', 'b', '(c,d)', 'e']
-
-    >>> s = '(a,(b,c))'
-    >>> l = parse_string_as_list(s)
-    >>> len(l)
-    2
-    >>> l[0] == 'a'
-    True
-    >>> l[1] == '(b,c)'
-    True
-    >>> ###### NOT STARTING/ENDING WITH PARENTHESES #######
-    >>> s = '(a,b,'
-    >>> l = parse_string_as_list(s)
-    Traceback (most recent call last):
-    ValueError: Input string must start with '(' and end with ')'.
-    >>> ################ UNMATCHED PARENTHESES ##############
-    >>> s = '(a,(b)'
-    >>> l = parse_string_as_list(s)
-    Traceback (most recent call last):
-    ValueError: Unmatched parentheses in input string
-    """
-
-    if string[0]!='(' or string[-1]!=')':
-        raise ValueError ("Input string must start with '(' and end with ')'.")
-
-    sub_open = string.find('(',1)
-    sub_close = string.rfind(')',0,-1)
-    if not (sub_open>=0)==(sub_close>=0):
-        raise ValueError ("Unmatched parentheses in input string")
-
-    # Prevent empty string to pollute s.split()
-    my_split = lambda str : [s for s in str.split(',') if s.strip() != '']
-
-    if sub_open>=0:
-        l = []
-        l.extend(my_split(string[1:sub_open-1]))
-        l.append(string[sub_open:sub_close+1])
-        l.extend(my_split(string[sub_close+2:-1]))
-    else:
-        l = my_split(string[1:-1])
-
-    return l
-
-###############################################################################
 def is_array_type(name):
 ###############################################################################
     """
@@ -86,7 +35,7 @@ def is_array_type(name):
     >>> is_array_type('array(T)')
     True
     """
-    return name[0:6]=="array(" and name[-1]==")"
+    return name is not None and name[0:6]=="array(" and name[-1]==")"
 
 ###############################################################################
 def array_elem_type(name):
@@ -231,75 +180,53 @@ def refine_type(entry, force_type=None):
     >>> refine_type(None, 'array(float)')
     []
     """
-    # We want to preserve strings representing lists
 
-    if entry:
+    # If force type is unspecified, try to deduce it 
+    if force_type is None:
+        expect (entry is not None,
+                "If an entry is None, you must specify the force_type")
+    else:
+        elem_valid = ["logical","integer","real","string","file"]
+        valid = elem_valid + ["array("+e+")" for e in elem_valid]
+        expect (force_type in valid,
+                f"Invalid/unsupported force type '{force_type}'")
 
-        if (entry[0]=="(" and entry[-1]==")") or \
-           (entry[0]=="[" and entry[-1]=="]") :
-            expect (force_type is None or force_type == "string",
-                    "Error! Invalid force type '{}' for a string representing a list"
-                    .format(force_type))
-            return entry
-
-        if "," in entry:
-            expect (force_type is None or is_array_type(force_type),
-                    "Error! Invalid type '{}' for an array.".format(force_type))
-
-            if force_type is None:
-                # Try to derive type from first element
-                elem_type = derive_type([item.strip() for item in entry.split(",")][0])
-            else:
-                elem_type = array_elem_type(force_type)
-
+    if is_array_type(force_type):
+        elem_type = array_elem_type(force_type)
+        if entry:
             try:
                 result = [refine_type(item.strip(), force_type=elem_type) for item in entry.split(",") if item.strip() != ""]
             except ValueError:
-                expect(False, "List '{}' has inconsistent types inside".format(entry))
+                expect(False, "List '{entry}' has items not compatible with requested element type '{elem_type}'")
+        else:
+            result = []
 
-            result = make_array(result, "string" if elem_type is None else elem_type)
-            expected_type = type(result[0])
-            for item in result[1:]:
-                expect(isinstance(item, expected_type),
-                       "List '{}' has inconsistent types inside".format(entry))
+        return make_array(result, elem_type)
 
-            return result
-
-    elif force_type is not None and is_array_type(force_type):
-        etype = array_elem_type(force_type)
-        return make_array([],etype)
-
-    if force_type:
-        try:
-            elem_type = force_type if not is_array_type(force_type) else array_elem_type(force_type)
-
-            if elem_type == "logical":
-                if entry.upper() == "TRUE":
-                    elem = True
-                elif entry.upper() == "FALSE":
-                    elem = False
-                else:
-                    elem = bool(int(entry))
-
-            elif elem_type == "integer":
-                tmp  = float(entry)
-                expect (float(int(tmp))==tmp, "Cannot interpret {} as int".format(entry), exc_type=ValueError)
-                elem = int(tmp)
-            elif elem_type == "real":
-                elem = float(entry)
-            elif elem_type in ["string", "file"]:
-                elem = str(entry)
+    # Not an array (or no force type passed)
+    elem_type = force_type
+    try:
+        if elem_type == "logical":
+            if entry.upper() == "TRUE":
+                return True
+            elif entry.upper() == "FALSE":
+                return False
             else:
-                raise NameError ("Bad force_type: {}".format(force_type))
+                return bool(int(entry))
 
-            if is_array_type(force_type):
-                return [elem]
-            else:
-                return elem
+        elif elem_type == "integer":
+            tmp  = float(entry)
+            expect (float(int(tmp))==tmp, f"Cannot interpret {entry} as int", exc_type=ValueError)
+            return int(tmp)
+        elif elem_type == "real":
+            return float(entry)
+        elif elem_type in ["string", "file"]:
+            return str(entry)
 
-        except ValueError as e:
-            raise ValueError ("Could not use '{}' as type '{}'".format(entry, force_type)) from e
+    except ValueError as e:
+        raise ValueError (f"Could not refine '{entry}' as type '{force_type}'") from e
 
+    # No force type provided. Try to infer from value
     if entry.upper() == "TRUE":
         return True
     elif entry.upper() == "FALSE":
@@ -315,6 +242,7 @@ def refine_type(entry, force_type=None):
         v = float(entry)
         return v
     except ValueError:
+        # We ran out of options. Simply return the entry itself
         return entry
 
 ###############################################################################
@@ -637,35 +565,28 @@ def get_valid_selectors(xml_root):
 def gen_group_processes(ap_names_str, atm_procs_defaults):
 ###############################################################################
     """
-    Given a (possibly nested) string representation of an atm group,
+    Given a comma-separated list of atm procs names,
     generates the corresponding atm processes as XML nodes.
     """
 
     group = ET.Element("__APG__")
 
-    ap_names_list = parse_string_as_list(ap_names_str)
-    for ap in ap_names_list:
-        # The current ap can be itself a group if either:
-        #  - ap = "(ap1,ap2,...,apXYZ)", with each ap possibly itself a group string.
-        #    This group is built on the fly based on the building blocks specs.
-        #  - ap is declared in the XML defaults as an atm proc group (which must store
-        #    the 'atm_procs_list' child, with the string representation of the group.
+    for ap in ap_names_str.split(','):
+        # The current ap can be itself a group if ap is declared in the XML defaults
+        # as an atm proc group (which must store the 'atm_procs_list' child,
+        # with the string representation of the group.
 
-        if ap.startswith("("):
-            # Create the atm proc group
-            proc = gen_atm_proc_group(ap,atm_procs_defaults)
-        else:
-            # Get defaults
-            proc = copy.deepcopy(get_child(atm_procs_defaults,ap))
+        # Get defaults
+        proc = copy.deepcopy(get_child(atm_procs_defaults,ap))
 
-            # Check if this pre-defined proc is itself a group, and, if so,
-            # build all its sub-processes
-            ptype = get_child(proc, "Type", must_exist=False)
-            if ptype is not None and ptype.text=="Group":
-                # This entry of the group is itself a group, with pre-defined
-                # defaults. Let's add its entries to it
-                sub_group_procs = get_child(proc, "atm_procs_list").text
-                proc.extend(gen_group_processes(sub_group_procs, atm_procs_defaults))
+        # Check if this pre-defined proc is itself a group, and, if so,
+        # build all its sub-processes
+        ptype = get_child(proc, "Type", must_exist=False)
+        if ptype is not None and ptype.text=="Group":
+            # This entry of the group is itself a group, with pre-defined
+            # defaults. Let's add its entries to it
+            sub_group_procs = get_child(proc, "atm_procs_list").text
+            proc.extend(gen_group_processes(sub_group_procs, atm_procs_defaults))
 
         # Append subproc to group
         group.append(proc)
@@ -719,12 +640,11 @@ def gen_atm_proc_group(atm_procs_list, atm_procs_defaults):
     # Create processes
     group_procs = gen_group_processes(atm_procs_list, atm_procs_defaults)
 
-    # Append procs and generate name for the group.
-    # NOTE: the name of a 'generic' group is 'group.AP1_AP2_..._APN.'
-    names = []
+    # Append procs
     for c in group_procs:
-        names.append(c.tag)
         group.append(c)
-    group.tag = "group." + '_'.join(names) + '.'
+
+    # Will be set from outside
+    group.tag = "MISSING"
 
     return group
