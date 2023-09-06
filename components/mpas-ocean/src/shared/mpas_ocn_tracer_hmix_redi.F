@@ -369,7 +369,7 @@ contains
                   flux_term3 = rediKappaCell(iCell)*2.0_RKIND* &
                                (fluxRediZTop(iTr, k)  &
                                * invAreaCell -  &
-                               *fluxRediZTop(iTr, k + 1) * invAreaCell)
+                               fluxRediZTop(iTr, k + 1) * invAreaCell)
 
                   redi_term3(iTr, k, iCell) = redi_term3(iTr, k, iCell) + flux_term3
                end do
