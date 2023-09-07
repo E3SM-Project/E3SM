@@ -751,7 +751,7 @@ contains
               call mpi_bcast (smap05_lat, 360, MPI_REAL8, 0, mpicom, ier)
             end if
           end if
-        end if
+        !end if
 
           !figure out which point to get
           if (atm2lnd_vars%loaded_bypassdata == 0) then 
