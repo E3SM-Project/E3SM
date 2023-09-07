@@ -151,33 +151,29 @@ def refine_type(entry, force_type=None):
     >>> refine_type(e)==e
     True
     >>> e = 'a,b'
-    >>> refine_type(e)==['a','b']
+    >>> refine_type(e,'array(string)')==['a','b']
     True
     >>> e = 'true,falsE'
-    >>> refine_type(e)==[True,False]
+    >>> refine_type(e,'array(logical)')==[True,False]
     True
     >>> e = '1'
     >>> refine_type(e,force_type='real')==1.0
     True
-    >>> e = '1,b'
-    >>> refine_type(e)==[1,'b',True]
-    Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: List '1,b' has inconsistent types inside
     >>> e = '1.0'
     >>> refine_type(e,force_type='my_type')
     Traceback (most recent call last):
-    NameError: Bad force_type: my_type
+    NameError: ERROR: Invalid/unsupported force type 'my_type'
     >>> e = 'true,falsE'
     >>> refine_type(e,'logical')
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: Error! Invalid type 'logical' for an array.
+    ValueError: Could not refine 'true,falsE' as type 'logical'
     >>> refine_type(e,'array(logical)')
     [True, False]
     >>> refine_type('', 'array(string)')
     []
-    >>> refine_type('', 'array(float)')
+    >>> refine_type('', 'array(real)')
     []
-    >>> refine_type(None, 'array(float)')
+    >>> refine_type(None, 'array(real)')
     []
     """
 
@@ -188,8 +184,8 @@ def refine_type(entry, force_type=None):
     else:
         elem_valid = ["logical","integer","real","string","file"]
         valid = elem_valid + ["array("+e+")" for e in elem_valid]
-        expect (force_type in valid,
-                f"Invalid/unsupported force type '{force_type}'")
+        expect (force_type in valid, exc_type=NameError,
+                error_msg=f"Invalid/unsupported force type '{force_type}'")
 
     if is_array_type(force_type):
         elem_type = array_elem_type(force_type)
@@ -257,9 +253,9 @@ def derive_type(entry):
     >>> derive_type('one')
     'string'
     >>> derive_type('one,two')
-    'array(string)'
-    >>> derive_type('true,FALSE')
-    'array(logical)'
+    'string'
+    >>> derive_type('truE')
+    'logical'
     """
 
     refined_value = refine_type(entry)
@@ -297,7 +293,7 @@ def check_value(elem, value):
     >>> root = ET.fromstring(xml)
     >>> check_value(root,'1.5')
     Traceback (most recent call last):
-    ValueError: Could not use '1.5' as type 'integer'
+    ValueError: Could not refine '1.5' as type 'integer'
     >>> check_value(root,'3')
     Traceback (most recent call last):
     CIME.utils.CIMEError: ERROR: Invalid value '3' for element 'a'. Value not in the valid list ('[1, 2]')
@@ -614,7 +610,7 @@ def gen_atm_proc_group(atm_procs_list, atm_procs_defaults):
     ... <ap>
     ...   <atm_proc_group>
     ...     <prop1>1</prop1>
-    ...     <atm_procs_list>THE_LIST</atm_procs_list>
+    ...     <atm_procs_list type="array(string)">THE_LIST</atm_procs_list>
     ...   </atm_proc_group>
     ...   <ap1>
     ...   </ap1>
@@ -623,19 +619,17 @@ def gen_atm_proc_group(atm_procs_list, atm_procs_defaults):
     ...     <prop2>3</prop2>
     ...   </ap2>
     ...   <my_group inherit="atm_proc_group">
-    ...     <atm_procs_list>(p1,ap2)</atm_procs_list>
+    ...     <atm_procs_list>p1,ap2</atm_procs_list>
     ...   </my_group>
     ... </ap>
     ... '''
     >>> import xml.etree.ElementTree as ET
     >>> defaults = ET.fromstring(xml)
-    >>> ap_list = '(ap1,(ap2,ap1))'
+    >>> ap_list = 'ap1,ap2,ap1'
     >>> apg = gen_atm_proc_group(ap_list,defaults)
     >>> get_child(apg,'atm_procs_list').text==ap_list
     True
     >>>
-    >>> has_child(apg,'group.ap2_ap1.')
-    True
     >>> get_child(apg,'prop1').text=="1"
     True
     """

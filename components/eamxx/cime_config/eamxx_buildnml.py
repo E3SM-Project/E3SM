@@ -338,7 +338,7 @@ def _create_raw_xml_file_impl(case, xml):
     ...     <selectors/>
     ...     <generated_files/>
     ...     <atmosphere_processes_defaults>
-    ...         <atm_procs_list>(P1,P2)</atm_procs_list>
+    ...         <atm_procs_list type="array(string)">P1,P2</atm_procs_list>
     ...         <atm_proc_base>
     ...             <prop1>zero</prop1>
     ...         </atm_proc_base>
@@ -361,7 +361,7 @@ def _create_raw_xml_file_impl(case, xml):
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', '(P1,P2)'),
+    OrderedDict([   ('atm_procs_list', 'P1,P2'),
                     ('prop2', 'one'),
                     ('prop1', 'zero'),
                     ('P1', OrderedDict([('prop1', 'two')])),
@@ -375,7 +375,7 @@ def _create_raw_xml_file_impl(case, xml):
     ...     </selectors>
     ...     <generated_files/>
     ...     <atmosphere_processes_defaults>
-    ...         <atm_procs_list>(P1,P2)</atm_procs_list>
+    ...         <atm_procs_list type="array(string)">P1,P2</atm_procs_list>
     ...         <atm_proc_base>
     ...             <prop1>zero</prop1>
     ...         </atm_proc_base>
@@ -399,7 +399,7 @@ def _create_raw_xml_file_impl(case, xml):
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', '(P1,P2)'),
+    OrderedDict([   ('atm_procs_list', 'P1,P2'),
                     ('prop2', 'one'),
                     ('prop1', 'zero'),
                     ('P1', OrderedDict([('prop1', 'two_selected')])),
@@ -413,7 +413,7 @@ def _create_raw_xml_file_impl(case, xml):
     ...     </selectors>
     ...     <generated_files/>
     ...     <atmosphere_processes_defaults>
-    ...       <atm_procs_list locked="true">(P1,P2)</atm_procs_list>
+    ...       <atm_procs_list type="array(string)">P1,P2</atm_procs_list>
     ...       <atm_proc_base>
     ...         <number_of_subcycles constraints='gt 0'>1</number_of_subcycles>
     ...         <enable_precondition_checks type='logical'>true</enable_precondition_checks>
@@ -443,7 +443,7 @@ def _create_raw_xml_file_impl(case, xml):
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
-    OrderedDict([   ('atm_procs_list', '(P1,P2)'),
+    OrderedDict([   ('atm_procs_list', 'P1,P2'),
                     ('prop2', 'one'),
                     ('number_of_subcycles', 1),
                     ('enable_precondition_checks', True),
@@ -536,8 +536,8 @@ def convert_to_dict(element):
     ... <my_root>
     ...   <my__int>1</my__int>
     ...   <my__list>
-    ...     <my_ints>2,3</my_ints>
-    ...     <my_strings>two,three</my_strings>
+    ...     <my_ints type="array(integer)">2,3</my_ints>
+    ...     <my_strings type="array(string)">two,three</my_strings>
     ...   </my__list>
     ... </my_root>
     ... '''
