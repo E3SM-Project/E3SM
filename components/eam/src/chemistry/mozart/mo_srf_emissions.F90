@@ -37,7 +37,7 @@ module mo_srf_emissions
   logical :: has_emis(gas_pcnst)
   type(emission), allocatable :: emissions(:)
   integer                     :: n_emis_species 
-  integer :: c10h16_ndx, isop_ndx
+  integer :: c10h16_ndx, isop_ndx, dms_ndx
 
 contains
 
@@ -201,6 +201,7 @@ contains
 
     c10h16_ndx = get_spc_ndx('C10H16')
     isop_ndx = get_spc_ndx('ISOP')
+    dms_ndx = get_spc_ndx('DMS')
 
   end subroutine srf_emissions_inti
 
@@ -275,6 +276,7 @@ contains
 
     real(r8) :: flux(ncol)
     real(r8) :: mfactor
+    real(r8) :: dms_emis_scale
     integer  :: isec
 
     character(len=12),parameter :: mks_units(4) = (/ "kg/m2/s     ", &
@@ -286,6 +288,7 @@ contains
     real(r8), dimension(ncol) :: rlats, rlons 
 
     sflx(:,:) = 0._r8
+    dms_emis_scale = 1._r8
 
     !--------------------------------------------------------
     !	... set non-zero emissions
@@ -298,6 +301,10 @@ contains
        do isec = 1,emissions(m)%nsectors
           flux(:ncol) = flux(:ncol) + emissions(m)%fields(isec)%data(:ncol,1,lchnk)
        enddo
+
+       if ( n == dms_ndx ) then
+          flux(:ncol) = dms_emis_scale * flux(:ncol)
+       endif
 
        units = to_lower(trim(emissions(m)%fields(1)%units(:GLC(emissions(m)%fields(1)%units))))
        
