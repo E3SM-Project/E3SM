@@ -159,10 +159,7 @@ private_except_cuda:
   // MAM4 aerosol particle size description
   mam4::AeroConfig aero_config_;
 
-  // aerosol processes
-  std::unique_ptr<mam4::NucleationProcess> nucleation_;
-
-  // pre- and postprocessing scratch pads
+  // pre- and postprocessing scratch pads (for wet <-> dry conversions)
   Preprocess preprocess_;
   Postprocess postprocess_;
 
@@ -170,6 +167,9 @@ private_except_cuda:
   mam_coupling::WetAtmosphere wet_atm_;
   mam_coupling::DryAtmosphere dry_atm_;
   mam_coupling::AerosolState  wet_aero_, dry_aero_;
+
+  // time step number
+  int step_;
 
   // workspace manager for internal local variables
   //ekat::WorkspaceManager<Real, KT::Device> workspace_mgr_;

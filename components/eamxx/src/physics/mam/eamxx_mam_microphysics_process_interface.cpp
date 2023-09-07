@@ -9,11 +9,33 @@
 namespace scream
 {
 
+namespace impl {
+
+using AeroConfig = ::mam4::AeroConfig;
+static constexpr int gas_pcnst = 30;
+static constexpr int nqtendbb = 4;
+
+// high-level MAM4 microphysics interface function
+KOKKOS_INLINE_FUNCTION
+void modal_aero_amicphys_intr(
+    const int mdo_gasaerexch, const int mdo_rename, const int mdo_newnuc,
+    const int mdo_coag, const int ncol, const int nstep, const Real deltat,
+    const Real t, const Real pmid, const Real pdel, const Real zm,
+    const Real pblh, const Real qv, const Real cld, Real q[gas_pcnst],
+    Real qqcw[gas_pcnst], const Real q_pregaschem[gas_pcnst],
+    const Real q_precldchem[gas_pcnst], const Real qqcw_precldchem[gas_pcnst],
+    Real q_tendbb[gas_pcnst][nqtendbb], Real qqcw_tendbb[gas_pcnst][nqtendbb],
+    Real dgncur_a[AeroConfig::num_modes()],
+    Real dgncur_awet[AeroConfig::num_modes()],
+    Real wetdens_host[AeroConfig::num_modes()],
+    Real qaerwat[AeroConfig::num_modes()]);
+}
+
 MAMMicrophysics::MAMMicrophysics(
     const ekat::Comm& comm,
     const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params),
-    aero_config_(), nucleation_(new mam4::NucleationProcess(aero_config_)) {
+    aero_config_() {
 }
 
 AtmosphereProcessType MAMMicrophysics::type() const {
@@ -122,6 +144,8 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
 
 void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
+  step_ = 0;
+
   // populate the wet and dry atmosphere states with views from fields and
   // the buffer
   wet_atm_.qv = get_field_in("qv").get_view<const Real**>();
@@ -190,11 +214,12 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   */
 
   // set up WSM for internal local variables
-  // FIXME: do we need this?
+  // FIXME: we'll probably need this later, but we'll just use ATMBufferManager for now
   //const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
   //workspace_mgr_.setup(buffer_.wsm_data, nlev_+1, 13+(n_wind_slots+n_trac_slots), default_policy);
 
-  // configure the nucleation parameterization
+  // configure the aerosol microphysics parameterizations
+  // FIXME
   mam4::NucleationProcess::ProcessConfig nuc_config{};
   nuc_config.dens_so4a_host = 1770.0;
   nuc_config.mw_so4a_host = 115.0;
@@ -203,7 +228,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   nuc_config.adjust_factor_pbl_ratenucl = 1.0;
   nuc_config.accom_coef_h2so4 = 1.0;
   nuc_config.newnuc_adjust_factor_dnaitdt = 1.0;
-  nucleation_->init(nuc_config);
 }
 
 void MAMMicrophysics::run_impl(const double dt) {
@@ -238,32 +262,35 @@ void MAMMicrophysics::run_impl(const double dt) {
     // set up diagnostics
     mam4::Diagnostics diags(nlev_);
 
-    // grab views from the buffer to store tendencies
-    mam4::Tendencies tends(nlev_);
-    /*
-    tends.q_gas[ih2so4] = ekat::subview(buffer_.q_h2so4_tend, icol);
-    tends.n_mode_i[iait] = ekat::subview(buffer_.n_aitken_tend, icol);
-    tends.q_aero_i[iait][iso4] = ekat::subview(buffer_.q_aitken_so4_tend, icol);
-    */
-
-    // run the nucleation process to obtain tendencies
-    nucleation_->compute_tendencies(team, t, dt, atm, sfc, progs, diags, tends);
-    /*
-#ifndef NDEBUG
-    const int lev_idx = 0;
-    if (icol == 0) {
-    m_atm_logger->debug("tends.q_gas[ih2so4] = {}, tends.n_mode_i[iait] = {}, tends.q_aero_i[iait][iso4] = {}",
-      tends.q_gas[ih2so4](lev_idx), tends.n_mode_i[iait](lev_idx), tends.q_aero_i[iait][iso4](lev_idx));
-    }
-#endif
-
-    // accumulate tendencies into prognostics
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int klev) {
-      progs.q_gas[ih2so4](klev) += dt * tends.q_gas[ih2so4](klev);
-      progs.n_mode_i[iait](klev) += dt * tends.n_mode_i[iait](klev);
-      progs.q_aero_i[iait][iso4](klev) += dt * tends.q_aero_i[iait][iso4](klev);
+    // here's the call to MAM's microphysics
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int k) {
+      bool do_gasaerexch = true;
+      bool do_rename     = true;
+      bool do_newnuc     = true;
+      bool do_coag       = true;
+      Real pmid = atm.pressure(k);
+      Real pdel = atm.hydrostatic_dp(k);
+      Real zm   = atm.height(k);
+      Real pblh = atm.planetary_boundary_layer_height;
+      Real qv   = atm.vapor_mixing_ratio(k);
+      Real cld  = atm.cloud_fraction(k);
+      Real q[impl::gas_pcnst] = {};
+      Real qqcw[impl::gas_pcnst] = {};
+      Real q_pregaschem[impl::gas_pcnst] = {};
+      Real q_precldchem[impl::gas_pcnst] = {};
+      Real qqcw_precldchem[impl::gas_pcnst] = {};
+      Real q_tendbb[impl::gas_pcnst][impl::nqtendbb] = {};
+      Real qqcw_tendbb[impl::gas_pcnst][impl::nqtendbb] = {};
+      Real dgncur_a[mam4::AeroConfig::num_modes()] = {};
+      Real dgncur_awet[mam4::AeroConfig::num_modes()] = {};
+      Real wetdens_host[mam4::AeroConfig::num_modes()] = {};
+      Real qaerwat[mam4::AeroConfig::num_modes()] = {};
+      impl::modal_aero_amicphys_intr(do_gasaerexch, do_rename, do_newnuc, do_coag,
+                                     ncol_, step_, dt, t, pmid, pdel, zm, pblh,
+                                     qv, cld, q, qqcw, q_pregaschem, q_precldchem,
+                                     qqcw_precldchem, q_tendbb, qqcw_tendbb, dgncur_a,
+                                     dgncur_awet, wetdens_host, qaerwat);
     });
-    */
   });
 
   // postprocess output
