@@ -496,10 +496,11 @@ def resolve_inheritance(root, elem):
                 # Parent may define the type of an entry. We cannot change this
                 if "type" in entry.attrib.keys():
                     parent_type = entry.attrib["type"]
-                    child = get_child(elem,entry.tag)
-                    expect ("type" not in child.attrib.keys(),
-                            "Do not set 'type' attribute when parent node already specifies it.")
-                    child.attrib["type"] = parent_type
+                    for child in elem:
+                        if child.tag==entry.tag:
+                            expect ("type" not in child.attrib.keys(),
+                                    "Do not set 'type' attribute when parent node already specifies it.")
+                            child.attrib["type"] = parent_type
 
     for child in elem:
         resolve_inheritance(root,child)
