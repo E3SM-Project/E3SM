@@ -104,6 +104,7 @@ module li_core_interface
       character (len=StrKIND), pointer :: config_basal_mass_bal_float
       character (len=StrKIND), pointer :: config_front_mass_bal_grounded
       character (len=StrKIND), pointer :: config_thermal_solver
+      logical, pointer :: config_use_3d_thermal_forcing_for_face_melt
       logical, pointer :: config_SGH
       logical, pointer :: config_adaptive_timestep_include_DCFL
       logical, pointer :: config_write_albany_ascii_mesh
@@ -124,6 +125,7 @@ module li_core_interface
       call mpas_pool_get_config(configPool, 'config_write_albany_ascii_mesh', config_write_albany_ascii_mesh)
       call mpas_pool_get_config(configPool, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
       call mpas_pool_get_config(configPool, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
+      call mpas_pool_get_config(configPool, 'config_use_3d_thermal_forcing_for_face_melt', config_use_3d_thermal_forcing_for_face_melt)
       call mpas_pool_get_config(configPool, 'config_thermal_solver', config_thermal_solver)
 
       call mpas_pool_get_package(packagePool, 'SIAvelocityActive', SIAvelocityActive)
@@ -155,10 +157,13 @@ module li_core_interface
               "'config_write_albany_ascii_mesh' is set to .true.")
       endif
 
-      if (trim(config_basal_mass_bal_float) == 'ismip6') then
+      if ( (trim(config_basal_mass_bal_float) == 'ismip6') .or. &
+           ((trim(config_front_mass_bal_grounded) == 'ismip6') .and. &
+            (config_use_3d_thermal_forcing_for_face_melt)) ) then
          ismip6ShelfMeltActive = .true.
          call mpas_log_write("The 'ismip6Melt' package and assocated variables have been enabled because " // &
-              "'config_basal_mass_bal_float' is set to 'ismip6'")
+              "'config_basal_mass_bal_float' is set to 'ismip6' or 'config_front_mass_bal_grounded' is set to 'ismip6' // &
+              and 'config_use_3d_thermal_forcing_for_face_melt' is set to .true.")
       endif
 
       if ((trim(config_front_mass_bal_grounded) == 'ismip6') .or. (trim(config_calving) == 'ismip6_retreat')) then
