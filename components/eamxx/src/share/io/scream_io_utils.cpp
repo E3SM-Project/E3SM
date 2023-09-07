@@ -6,7 +6,7 @@
 namespace scream {
 
 std::string find_filename_in_rpointer (
-    const std::string& casename,
+    const std::string& filename_prefix,
     const bool model_restart,
     const ekat::Comm& comm,
     const util::TimeStamp& run_t0)
@@ -37,8 +37,7 @@ std::string find_filename_in_rpointer (
     while ((rpointer_file >> line) and not found) {
       content += line + "\n";
 
-      found = line.find(casename) != std::string::npos &&
-              line.find(suffix) != std::string::npos &&
+      found = line.find(filename_prefix+suffix) != std::string::npos &&
               extract_ts(line)==run_t0;
       filename = line;
     }
@@ -59,7 +58,7 @@ std::string find_filename_in_rpointer (
     // in the input parameter list
     EKAT_ERROR_MSG (
         "Error! Restart requested, but no restart file found in 'rpointer.atm'.\n"
-        "   restart case name: " + casename + "\n"
+        "   restart filename prefix: " + filename_prefix + "\n"
         "   restart file type: " + std::string(model_restart ? "model restart" : "history restart") + "\n"
         "   run t0           : " + run_t0.to_string() + "\n"
         "   rpointer content:\n" + content);
