@@ -287,7 +287,6 @@ void time_advance (const FieldManager& fm,
 		if (fname == "field_5") {
 		  // field_5 is used to test restarts w/ filled values, so
 		  // we cycle between filled and unfilled states.
-		  const auto tmp = v(i,j,k);
 		  v(i,j,k) = (v(i,j,k)==FillValue) ? dt :
 			  ( (v(i,j,k)==1.0) ? 2.0*dt : FillValue );
 		} else {

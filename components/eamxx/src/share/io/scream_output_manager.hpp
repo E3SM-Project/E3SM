@@ -144,7 +144,7 @@ protected:
   ekat::ParameterList            m_params;
 
   // The output filename root
-  std::string       m_casename;
+  std::string       m_filename_prefix;
 
   std::vector<double> m_time_bnds;
 

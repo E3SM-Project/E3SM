@@ -60,7 +60,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
   // Output control
   EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),
-      "Error! The output control YAML file for " + m_casename + " is missing the sublist 'output_control'");
+      "Error! The output control YAML file for " + m_filename_prefix + " is missing the sublist 'output_control'");
   auto& out_control_pl = m_params.sublist("output_control");
   // Determine which timestamp to use a reference for output frequency.  Two options:
   // 	1. use_case_as_start_reference: TRUE  - implies we want to calculate frequency from the beginning of the whole simulation, even if this is a restarted run.
@@ -199,7 +199,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     // that is different from the filename_prefix of the current output.
     auto& restart_pl = m_params.sublist("Restart");
     bool perform_history_restart = restart_pl.get("Perform Restart",true);
-    auto hist_restart_casename = restart_pl.get("filename_prefix",m_casename);
+    auto hist_restart_filename_prefix = restart_pl.get("filename_prefix",m_filename_prefix);
 
     if (m_is_model_restart_output) {
       // For model restart output, the restart time (which is the start time of this run) is precisely
@@ -208,7 +208,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       m_output_control.nsamples_since_last_write = 0;
     } else if (perform_history_restart) {
       using namespace scorpio;
-      auto rhist_file = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
+      auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0);
 
       // From restart file, get the time of last write, as well as the current size of the avg sample
       m_output_control.timestamp_of_last_write = read_timestamp(rhist_file,"last_write");
@@ -390,7 +390,6 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
     if (m_atm_logger) {
       m_atm_logger->info("[EAMxx::output_manager] - Writing " + file_type + ":");
-      m_atm_logger->info("[EAMxx::output_manager]      CASE: " + m_casename);
       m_atm_logger->info("[EAMxx::output_manager]      FILE: " + filespecs.filename);
     }
   };
@@ -530,7 +529,7 @@ compute_filename (const IOControl& control,
   std::string suffix =
     file_specs.hist_restart_file ? ".rhist"
                        : (m_is_model_restart_output ? ".r" : "");
-  auto filename = m_casename + suffix;
+  auto filename = m_filename_prefix + suffix;
 
   // Always add avg type and frequency info
   filename += "." + e2str(m_avg_type);
@@ -586,7 +585,7 @@ set_params (const ekat::ParameterList& params,
       }
       fields_pl.sublist(it.first).set("Field Names",fnames);
     }
-    m_casename = m_params.get<std::string>("filename_prefix");
+    m_filename_prefix = m_params.get<std::string>("filename_prefix");
     // Match precision of Fields
     m_params.set<std::string>("Floating Point Precision","real");
   } else {
@@ -598,7 +597,7 @@ set_params (const ekat::ParameterList& params,
 
     constexpr auto large_int = 1000000;
     m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",large_int);
-    m_casename = m_params.get<std::string>("filename_prefix");
+    m_filename_prefix = m_params.get<std::string>("filename_prefix");
 
     // Allow user to ask for higher precision for normal model output,
     // but default to single to save on storage
@@ -753,7 +752,7 @@ push_to_logger()
   };
 
   m_atm_logger->info("[EAMxx::output_manager] - New Output stream");
-  m_atm_logger->info("                      Case: " + m_casename);
+  m_atm_logger->info("           Filename prefix: " + m_filename_prefix);
   m_atm_logger->info("                    Run t0: " + m_run_t0.to_string());
   m_atm_logger->info("                   Case t0: " + m_case_t0.to_string());
   m_atm_logger->info("              Reference t0: " + m_output_control.timestamp_of_last_write.to_string());
