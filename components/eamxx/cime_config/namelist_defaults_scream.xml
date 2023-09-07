@@ -250,7 +250,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <!-- Radiatively active gases; surface values set to F2010 settings taken from EAM  -->
       <!-- Note that h2o concentrations are just taken from qv, o3 is prescribed for now, -->
       <!-- o2 is hard-coded as a constant, CFCs are ignored                               -->
-      <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
+      <active_gases type="array(string)">h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
       <ch4vmr      > 1807.851e-9  </ch4vmr>
       <co2vmr      > 388.717e-6   </co2vmr>
       <n2ovmr      > 323.141e-9   </n2ovmr>
