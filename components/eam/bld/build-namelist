@@ -750,7 +750,6 @@ if ($rad_volcaero){
 # Turn this off for PERGRO runs or for WACCM runs
 if ($cfg->get('pergro') or (($chem ne 'none') && ($chem ne 'spa'))) {
     add_default($nl, 'print_energy_errors', 'val'=>'.false.');
-    add_default($nl, 'print_additional_diagn', 'val'=>'.false.');
 }
 
 # Turn on debugging checks
