@@ -5,6 +5,8 @@ _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","
 sys.path.append(_CIMEROOT)
 
 from CIME.utils import expect
+from yaml_utils import make_array
+
 
 ###############################################################################
 class MockCase(object):
@@ -244,18 +246,28 @@ def refine_type(entry, force_type=None):
             expect (force_type is None or is_array_type(force_type),
                     "Error! Invalid type '{}' for an array.".format(force_type))
 
-            elem_type = force_type if force_type is None else array_elem_type(force_type)
-            result = [refine_type(item.strip(), force_type=elem_type) for item in entry.split(",") if item.strip() != ""]
+            if force_type is None:
+                # Try to derive type from first element
+                elem_type = derive_type([item.strip() for item in entry.split(",")][0])
+            else:
+                elem_type = array_elem_type(force_type)
+
+            try:
+                result = [refine_type(item.strip(), force_type=elem_type) for item in entry.split(",") if item.strip() != ""]
+            except ValueError:
+                expect(False, "List '{}' has inconsistent types inside".format(entry))
+
+            result = make_array(result, "string" if elem_type is None else elem_type)
             expected_type = type(result[0])
             for item in result[1:]:
                 expect(isinstance(item, expected_type),
-                      "List '{}' has inconsistent types inside".format(entry))
+                       "List '{}' has inconsistent types inside".format(entry))
 
             return result
 
     elif force_type is not None and is_array_type(force_type):
-
-        return []
+        etype = array_elem_type(force_type)
+        return make_array([],etype)
 
     if force_type:
         try:

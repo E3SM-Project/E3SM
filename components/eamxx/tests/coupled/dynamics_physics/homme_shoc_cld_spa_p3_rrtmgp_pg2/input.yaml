@@ -22,6 +22,7 @@ initial_conditions:
   sfc_alb_dir_nir: 0.0
   sfc_alb_dif_vis: 0.0
   sfc_alb_dif_nir: 0.0
+  landfrac: 0.5
 
 atmosphere_processes:
   atm_procs_list: (homme,physics)
@@ -33,7 +34,7 @@ atmosphere_processes:
     schedule_type: Sequential
     Type: Group
     mac_aero_mic:
-      atm_procs_list: (shoc,CldFraction,spa,p3)
+      atm_procs_list: (tms,shoc,CldFraction,spa,p3)
       Type: Group
       schedule_type: Sequential
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}

@@ -57,6 +57,8 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   m_nlay = m_grid->get_num_vertical_levels();
   m_lat  = m_grid->get_geometry_data("lat");
   m_lon  = m_grid->get_geometry_data("lon");
+  using SmallPack = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
+  m_nlay_w_pack = SCREAM_SMALL_PACK_SIZE*ekat::npack<SmallPack>(m_nlay);
 
   // Figure out radiation column chunks stats
   m_col_chunk_size = std::min(m_params.get("column_chunk_size", m_ncol),m_ncol);
@@ -91,6 +93,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid_name);
   add_field<Required>("sfc_alb_dif_nir", scalar2d_layout, nondim, grid_name);
   add_field<Required>("qc", scalar3d_layout_mid, kgkg, grid_name, ps);
+  add_field<Required>("nc", scalar3d_layout_mid, 1/kg, grid_name, ps);
   add_field<Required>("qi", scalar3d_layout_mid, kgkg, grid_name, ps);
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
   add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid_name, ps);
@@ -135,6 +138,19 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("cldmed"        , scalar2d_layout, nondim, grid_name, "RESTART");
   add_field<Computed>("cldhgh"        , scalar2d_layout, nondim, grid_name, "RESTART");
   add_field<Computed>("cldtot"        , scalar2d_layout, nondim, grid_name, "RESTART");
+  // 0.67 micron and 10.5 micron optical depth (needed for COSP)
+  add_field<Computed>("dtau067"       , scalar3d_layout_mid, nondim, grid_name, "RESTART");
+  add_field<Computed>("dtau105"       , scalar3d_layout_mid, nondim, grid_name, "RESTART");
+  add_field<Computed>("sunlit"        , scalar2d_layout    , nondim, grid_name, "RESTART");
+  // Cloud-top diagnostics following AeroCOM recommendation
+  add_field<Computed>("T_mid_at_cldtop", scalar2d_layout, K, grid_name, "RESTART");
+  add_field<Computed>("p_mid_at_cldtop", scalar2d_layout, Pa, grid_name, "RESTART");
+  add_field<Computed>("cldfrac_ice_at_cldtop", scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cldfrac_liq_at_cldtop", scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cldfrac_tot_at_cldtop", scalar2d_layout, nondim, grid_name, "RESTART");
+  add_field<Computed>("cdnc_at_cldtop", scalar2d_layout, 1 / (m * m * m), grid_name, "RESTART");
+  add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d_layout, micron, grid_name, "RESTART");
+  add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d_layout, micron, grid_name, "RESTART");
 
   // Translation of variables from EAM
   // --------------------------------------------------------------
@@ -215,10 +231,14 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.p_lay.totElems();
   m_buffer.t_lay = decltype(m_buffer.t_lay)("t_lay", mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.t_lay.totElems();
+  m_buffer.z_del = decltype(m_buffer.z_del)("z_del", mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.z_del.totElems();
   m_buffer.p_del = decltype(m_buffer.p_del)("p_del", mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.p_del.totElems();
   m_buffer.qc = decltype(m_buffer.qc)("qc", mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.qc.totElems();
+  m_buffer.nc = decltype(m_buffer.nc)("nc", mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.nc.totElems();
   m_buffer.qi = decltype(m_buffer.qi)("qi", mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.qi.totElems();
   m_buffer.cldfrac_tot = decltype(m_buffer.cldfrac_tot)("cldfrac_tot", mem, m_col_chunk_size, m_nlay);
@@ -237,11 +257,15 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.sw_heating.totElems();
   m_buffer.lw_heating = decltype(m_buffer.lw_heating)("lw_heating", mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.lw_heating.totElems();
-  // 3d arrays
   m_buffer.p_lev = decltype(m_buffer.p_lev)("p_lev", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.p_lev.totElems();
   m_buffer.t_lev = decltype(m_buffer.t_lev)("t_lev", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.t_lev.totElems();
+  m_buffer.d_tint = decltype(m_buffer.d_tint)(mem, m_col_chunk_size, m_nlay+1);
+  mem += m_buffer.d_tint.size();
+  m_buffer.d_dz  = decltype(m_buffer.d_dz )(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.d_dz.size();
+  // 3d arrays
   m_buffer.sw_flux_up = decltype(m_buffer.sw_flux_up)("sw_flux_up", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.sw_flux_up.totElems();
   m_buffer.sw_flux_dn = decltype(m_buffer.sw_flux_dn)("sw_flux_dn", mem, m_col_chunk_size, m_nlay+1);
@@ -295,6 +319,10 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.cld_tau_sw_gpt.totElems();
   m_buffer.cld_tau_lw_gpt = decltype(m_buffer.cld_tau_lw_gpt)("cld_tau_lw_gpt", mem, m_col_chunk_size, m_nlay, m_nlwgpts);
   mem += m_buffer.cld_tau_lw_gpt.totElems();
+  m_buffer.cld_tau_sw_bnd = decltype(m_buffer.cld_tau_sw_bnd)("cld_tau_sw_bnd", mem, m_col_chunk_size, m_nlay, m_nswbands);
+  mem += m_buffer.cld_tau_sw_bnd.totElems();
+  m_buffer.cld_tau_lw_bnd = decltype(m_buffer.cld_tau_lw_bnd)("cld_tau_lw_bnd", mem, m_col_chunk_size, m_nlay, m_nlwbands);
+  mem += m_buffer.cld_tau_lw_bnd.totElems();
 
   size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
@@ -386,6 +414,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_sfc_alb_dif_nir = get_field_in("sfc_alb_dif_nir").get_view<const Real*>();
   auto d_qv = get_field_in("qv").get_view<const Real**>();
   auto d_qc = get_field_in("qc").get_view<const Real**>();
+  auto d_nc = get_field_in("nc").get_view<const Real**>();
   auto d_qi = get_field_in("qi").get_view<const Real**>();
   auto d_cldfrac_tot = get_field_in("cldfrac_tot").get_view<const Real**>();
   auto d_rel = get_field_in("eff_radius_qc").get_view<const Real**>();
@@ -393,23 +422,18 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_surf_lw_flux_up = get_field_in("surf_lw_flux_up").get_view<const Real*>();
   // Output fields
   auto d_tmid = get_field_out("T_mid").get_view<Real**>();
-  using SmallPack = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
-  const int n_lay_w_pack = SCREAM_SMALL_PACK_SIZE*ekat::npack<SmallPack>(m_nlay);
-  view_3d_real d_aero_tau_sw("aero_tau_sw",m_ncol,m_nswbands,n_lay_w_pack);
-  view_3d_real d_aero_ssa_sw("aero_ssa_sw",m_ncol,m_nswbands,n_lay_w_pack);
-  view_3d_real d_aero_g_sw  ("aero_g_sw"  ,m_ncol,m_nswbands,n_lay_w_pack);
-  view_3d_real d_aero_tau_lw("aero_tau_lw",m_ncol,m_nlwbands,n_lay_w_pack);
-  if (m_do_aerosol_rad) {
-    Kokkos::deep_copy(d_aero_tau_sw,get_field_in("aero_tau_sw").get_view<const Real***>());
-    Kokkos::deep_copy(d_aero_ssa_sw,get_field_in("aero_ssa_sw").get_view<const Real***>());
-    Kokkos::deep_copy(d_aero_g_sw  ,get_field_in("aero_g_sw"  ).get_view<const Real***>());
-    Kokkos::deep_copy(d_aero_tau_lw,get_field_in("aero_tau_lw").get_view<const Real***>());
-  } else {
-    Kokkos::deep_copy(d_aero_tau_sw,0.0);
-    Kokkos::deep_copy(d_aero_ssa_sw,0.0);
-    Kokkos::deep_copy(d_aero_g_sw  ,0.0);
-    Kokkos::deep_copy(d_aero_tau_lw,0.0);
 
+  // Aerosol optics only exist if m_do_aerosol_rad is true, so declare views and copy from FM if so
+  using view_3d = Field::view_dev_t<const Real***>;
+  view_3d d_aero_tau_sw;
+  view_3d d_aero_ssa_sw;
+  view_3d d_aero_g_sw;
+  view_3d d_aero_tau_lw;
+  if (m_do_aerosol_rad) {
+    d_aero_tau_sw = get_field_in("aero_tau_sw").get_view<const Real***>();
+    d_aero_ssa_sw = get_field_in("aero_ssa_sw").get_view<const Real***>();
+    d_aero_g_sw   = get_field_in("aero_g_sw"  ).get_view<const Real***>();
+    d_aero_tau_lw = get_field_in("aero_tau_lw").get_view<const Real***>();
   }
   auto d_sw_flux_up = get_field_out("SW_flux_up").get_view<Real**>();
   auto d_sw_flux_dn = get_field_out("SW_flux_dn").get_view<Real**>();
@@ -432,12 +456,34 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_cldmed = get_field_out("cldmed").get_view<Real*>();
   auto d_cldhgh = get_field_out("cldhgh").get_view<Real*>();
   auto d_cldtot = get_field_out("cldtot").get_view<Real*>();
+  // Outputs for COSP
+  auto d_dtau067 = get_field_out("dtau067").get_view<Real**>();
+  auto d_dtau105 = get_field_out("dtau105").get_view<Real**>();
+  auto d_sunlit = get_field_out("sunlit").get_view<Real*>();
+
+  Kokkos::deep_copy(d_dtau067,0.0);
+  Kokkos::deep_copy(d_dtau105,0.0);
+  // Outputs for AeroCOM cloud-top diagnostics
+  auto d_T_mid_at_cldtop = get_field_out("T_mid_at_cldtop").get_view<Real *>();
+  auto d_p_mid_at_cldtop = get_field_out("p_mid_at_cldtop").get_view<Real *>();
+  auto d_cldfrac_ice_at_cldtop =
+      get_field_out("cldfrac_ice_at_cldtop").get_view<Real *>();
+  auto d_cldfrac_liq_at_cldtop =
+      get_field_out("cldfrac_liq_at_cldtop").get_view<Real *>();
+  auto d_cldfrac_tot_at_cldtop =
+      get_field_out("cldfrac_tot_at_cldtop").get_view<Real *>();
+  auto d_cdnc_at_cldtop = get_field_out("cdnc_at_cldtop").get_view<Real *>();
+  auto d_eff_radius_qc_at_cldtop =
+      get_field_out("eff_radius_qc_at_cldtop").get_view<Real *>();
+  auto d_eff_radius_qi_at_cldtop =
+      get_field_out("eff_radius_qi_at_cldtop").get_view<Real *>();
 
   constexpr auto stebol = PC::stebol;
   const auto nlay = m_nlay;
   const auto nlwbands = m_nlwbands;
   const auto nswbands = m_nswbands;
   const auto nlwgpts = m_nlwgpts;
+  const auto do_aerosol_rad = m_do_aerosol_rad;
 
   // Are we going to update fluxes and heating this step?
   auto ts = timestamp();
@@ -497,6 +543,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto p_lay           = subview_2d(m_buffer.p_lay);
       auto t_lay           = subview_2d(m_buffer.t_lay);
       auto p_lev           = subview_2d(m_buffer.p_lev);
+      auto z_del           = subview_2d(m_buffer.z_del);
       auto p_del           = subview_2d(m_buffer.p_del);
       auto t_lev           = subview_2d(m_buffer.t_lev);
       auto mu0             = subview_1d(m_buffer.mu0);
@@ -507,6 +554,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto sfc_alb_dif_vis = subview_1d(m_buffer.sfc_alb_dif_vis);
       auto sfc_alb_dif_nir = subview_1d(m_buffer.sfc_alb_dif_nir);
       auto qc              = subview_2d(m_buffer.qc);
+      auto nc              = subview_2d(m_buffer.nc);
       auto qi              = subview_2d(m_buffer.qi);
       auto cldfrac_tot     = subview_2d(m_buffer.cldfrac_tot);
       auto rel             = subview_2d(m_buffer.eff_radius_qc);
@@ -535,8 +583,13 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto aero_ssa_sw     = subview_3d(m_buffer.aero_ssa_sw);
       auto aero_g_sw       = subview_3d(m_buffer.aero_g_sw);
       auto aero_tau_lw     = subview_3d(m_buffer.aero_tau_lw);
+      auto cld_tau_sw_bnd  = subview_3d(m_buffer.cld_tau_sw_bnd);
+      auto cld_tau_lw_bnd  = subview_3d(m_buffer.cld_tau_lw_bnd);
       auto cld_tau_sw_gpt  = subview_3d(m_buffer.cld_tau_sw_gpt);
       auto cld_tau_lw_gpt  = subview_3d(m_buffer.cld_tau_lw_gpt);
+
+      auto d_tint = m_buffer.d_tint;
+      auto d_dz = m_buffer.d_dz;
 
       // Set gas concs to "view" only the first ncol columns
       m_gas_concs.ncol = ncol;
@@ -562,10 +615,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
           }
         }
         Kokkos::deep_copy(d_mu0,h_mu0);
-
-        // dz and T_int will need to be computed
-        view_2d_real d_tint("T_int", ncol, m_nlay+1);
-        view_2d_real d_dz  ("dz",    ncol, m_nlay);
 
         const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -611,8 +660,10 @@ void RRTMGPRadiation::run_impl (const double dt) {
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
             p_lay(i+1,k+1)       = d_pmid(icol,k);
             t_lay(i+1,k+1)       = d_tmid(icol,k);
+            z_del(i+1,k+1)       = d_dz(i,k);
             p_del(i+1,k+1)       = d_pdel(icol,k);
             qc(i+1,k+1)          = d_qc(icol,k);
+            nc(i+1,k+1)          = d_nc(icol,k);
             qi(i+1,k+1)          = d_qi(icol,k);
             rel(i+1,k+1)         = d_rel(icol,k);
             rei(i+1,k+1)         = d_rei(icol,k);
@@ -624,18 +675,33 @@ void RRTMGPRadiation::run_impl (const double dt) {
           t_lev(i+1,nlay+1) = d_tint(i,nlay);
 
           // Note that RRTMGP expects ordering (col,lay,bnd) but the FM keeps things in (col,bnd,lay) order
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands*nlay), [&] (const int&idx) {
-              auto b = idx / nlay;
-              auto k = idx % nlay;
-              aero_tau_sw(i+1,k+1,b+1) = d_aero_tau_sw(icol,b,k);
-              aero_ssa_sw(i+1,k+1,b+1) = d_aero_ssa_sw(icol,b,k);
-              aero_g_sw  (i+1,k+1,b+1) = d_aero_g_sw  (icol,b,k);
-          });
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands*nlay), [&] (const int&idx) {
-              auto b = idx / nlay;
-              auto k = idx % nlay;
-              aero_tau_lw(i+1,k+1,b+1) = d_aero_tau_lw(icol,b,k);
-          });
+          if (do_aerosol_rad) {
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands*nlay), [&] (const int&idx) {
+                auto b = idx / nlay;
+                auto k = idx % nlay;
+                aero_tau_sw(i+1,k+1,b+1) = d_aero_tau_sw(icol,b,k);
+                aero_ssa_sw(i+1,k+1,b+1) = d_aero_ssa_sw(icol,b,k);
+                aero_g_sw  (i+1,k+1,b+1) = d_aero_g_sw  (icol,b,k);
+            });
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands*nlay), [&] (const int&idx) {
+                auto b = idx / nlay;
+                auto k = idx % nlay;
+                aero_tau_lw(i+1,k+1,b+1) = d_aero_tau_lw(icol,b,k);
+            });
+          } else {
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands*nlay), [&] (const int&idx) {
+                auto b = idx / nlay;
+                auto k = idx % nlay;
+                aero_tau_sw(i+1,k+1,b+1) = 0;
+                aero_ssa_sw(i+1,k+1,b+1) = 0;
+                aero_g_sw  (i+1,k+1,b+1) = 0;
+            });
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands*nlay), [&] (const int&idx) {
+                auto b = idx / nlay;
+                auto k = idx % nlay;
+                aero_tau_lw(i+1,k+1,b+1) = 0;
+            });
+          }
         });
       }
       Kokkos::fence();
@@ -778,6 +844,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         sfc_alb_dir, sfc_alb_dif, mu0,
         lwp, iwp, rel, rei, cldfrac_tot,
         aero_tau_sw, aero_ssa_sw, aero_g_sw, aero_tau_lw,
+        cld_tau_sw_bnd, cld_tau_lw_bnd,
         cld_tau_sw_gpt, cld_tau_lw_gpt,
         sw_flux_up       , sw_flux_dn       , sw_flux_dn_dir       , lw_flux_up       , lw_flux_dn,
         sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dn_dir, lw_clrsky_flux_up, lw_clrsky_flux_dn,
@@ -829,10 +896,10 @@ void RRTMGPRadiation::run_impl (const double dt) {
       );
 
       // Compute diagnostic total cloud area (vertically-projected cloud cover)
-      auto cldlow = real1d("cldlow", ncol);
-      auto cldmed = real1d("cldmed", ncol);
-      auto cldhgh = real1d("cldhgh", ncol);
-      auto cldtot = real1d("cldtot", ncol);
+      real1d cldlow ("cldlow", d_cldlow.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldmed ("cldmed", d_cldmed.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldhgh ("cldhgh", d_cldhgh.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldtot ("cldtot", d_cldtot.data() + m_col_chunk_beg[ic], ncol);
       // NOTE: limits for low, mid, and high clouds are mostly taken from EAM F90 source, with the
       // exception that I removed the restriction on low clouds to be above (numerically lower pressures)
       // 1200 hPa, and on high clouds to be below (numerically high pressures) 50 hPa. This probably
@@ -843,6 +910,27 @@ void RRTMGPRadiation::run_impl (const double dt) {
       rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 400e2,                            700e2, p_lay, cld_tau_lw_gpt, cldmed);
       rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts,     0,                            400e2, p_lay, cld_tau_lw_gpt, cldhgh);
       rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts,     0, std::numeric_limits<Real>::max(), p_lay, cld_tau_lw_gpt, cldtot);
+
+      // Get visible 0.67 micron band for COSP
+      auto idx_067 = rrtmgp::get_wavelength_index_sw(0.67e-6);
+      // Get IR 10.5 micron band for COSP
+      auto idx_105 = rrtmgp::get_wavelength_index_lw(10.5e-6);
+
+      // Compute cloud-top diagnostics following AeroCOM recommendation
+      real1d T_mid_at_cldtop ("T_mid_at_cldtop", d_T_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d p_mid_at_cldtop ("p_mid_at_cldtop", d_p_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldfrac_ice_at_cldtop ("cldfrac_ice_at_cldtop", d_cldfrac_ice_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldfrac_liq_at_cldtop ("cldfrac_liq_at_cldtop", d_cldfrac_liq_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d cldfrac_tot_at_cldtop ("cldfrac_tot_at_cldtop", d_cldfrac_tot_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d cdnc_at_cldtop ("cdnc_at_cldtop", d_cdnc_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d eff_radius_qc_at_cldtop ("eff_radius_qc_at_cldtop", d_eff_radius_qc_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+      real1d eff_radius_qi_at_cldtop ("eff_radius_qi_at_cldtop", d_eff_radius_qi_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+
+      rrtmgp::compute_aerocom_cloudtop(
+          ncol, nlay, t_lay, p_lay, p_del, z_del, qc, qi, rel, rei, cldfrac_tot,
+          nc, T_mid_at_cldtop, p_mid_at_cldtop, cldfrac_ice_at_cldtop,
+          cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+          eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 
       // Copy output data back to FieldManager
       const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
@@ -855,10 +943,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
         d_sfc_flux_dif_vis(icol) = sfc_flux_dif_vis(i+1);
         d_sfc_flux_sw_net(icol)  = sw_flux_dn(i+1,kbot) - sw_flux_up(i+1,kbot);
         d_sfc_flux_lw_dn(icol)   = lw_flux_dn(i+1,kbot);
-        d_cldlow(icol) = cldlow(i+1);
-        d_cldmed(icol) = cldmed(i+1);
-        d_cldhgh(icol) = cldhgh(i+1);
-        d_cldtot(icol) = cldtot(i+1);
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay+1), [&] (const int& k) {
           d_sw_flux_up(icol,k)            = sw_flux_up(i+1,k+1);
           d_sw_flux_dn(icol,k)            = sw_flux_dn(i+1,k+1);
@@ -871,6 +955,16 @@ void RRTMGPRadiation::run_impl (const double dt) {
           d_lw_clrsky_flux_up(icol,k)     = lw_clrsky_flux_up(i+1,k+1);
           d_lw_clrsky_flux_dn(icol,k)     = lw_clrsky_flux_dn(i+1,k+1);
         });
+        // Extract optical properties for COSP
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
+          d_dtau067(icol,k) = cld_tau_sw_bnd(i+1,k+1,idx_067);
+          d_dtau105(icol,k) = cld_tau_lw_bnd(i+1,k+1,idx_105);
+        });
+        if (d_sw_clrsky_flux_dn(icol,0) > 0) {
+            d_sunlit(icol) = 1.0;
+        } else {
+            d_sunlit(icol) = 0.0;
+        }
       });
     } // loop over chunk
 

@@ -5,6 +5,7 @@ driver_options:
   mass_column_conservation_error_tolerance: 1e-3
   energy_column_conservation_error_tolerance: 1e-4
   column_conservation_checks_fail_handling_type: Warning
+  property_check_data_fields: [phis]
 
 time_stepping:
   time_step: ${ATM_TIME_STEP}

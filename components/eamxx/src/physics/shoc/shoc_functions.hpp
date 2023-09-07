@@ -199,6 +199,7 @@ struct Functions
 
     view_2d<Spack> rho_zt;
     view_2d<Spack> shoc_qv;
+    view_2d<Spack> tabs;
     view_2d<Spack> dz_zt;
     view_2d<Spack> dz_zi;
     view_2d<Spack> tkh;
@@ -574,6 +575,24 @@ struct Functions
 #endif
 
   KOKKOS_FUNCTION
+  static void compute_shoc_temperature(
+    const MemberType&            team,
+    const Int&                   nlev,
+    const uview_1d<const Spack>& thetal,
+    const uview_1d<const Spack>& ql,
+    const uview_1d<const Spack>& inv_exner,
+    const uview_1d<Spack>&       tabs);
+#ifdef SCREAM_SMALL_KERNELS
+  static void compute_shoc_temperature_disp(
+    const Int&                  shcol,
+    const Int&                  nlev,
+    const view_2d<const Spack>& thetal,
+    const view_2d<const Spack>& ql,
+    const view_2d<const Spack>& inv_exner,
+    const view_2d<Spack>&       tabs);
+#endif
+
+  KOKKOS_FUNCTION
   static void update_prognostics_implicit(
     const MemberType&            team,
     const Int&                   nlev,
@@ -911,6 +930,7 @@ struct Functions
     const view_1d<Scalar>& wstar,
     const view_2d<Spack>& rho_zt,
     const view_2d<Spack>& shoc_qv,
+    const view_2d<Spack>& tabs,
     const view_2d<Spack>& dz_zt,
     const view_2d<Spack>& dz_zi,
     const view_2d<Spack>& tkh);
@@ -1050,9 +1070,9 @@ struct Functions
   static void eddy_diffusivities(
     const MemberType&            team,
     const Int&                   nlev,
-    const Scalar&                obklen,
     const Scalar&                pblh,
     const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& tabs,
     const uview_1d<const Spack>& shoc_mix,
     const uview_1d<const Spack>& sterm_zt,
     const uview_1d<const Spack>& isotropy,
@@ -1071,10 +1091,10 @@ struct Functions
     const uview_1d<const Spack>& dz_zi,
     const uview_1d<const Spack>& dz_zt,
     const uview_1d<const Spack>& pres,
+    const uview_1d<const Spack>& tabs,
     const uview_1d<const Spack>& u_wind,
     const uview_1d<const Spack>& v_wind,
     const uview_1d<const Spack>& brunt,
-    const Scalar&                obklen,
     const uview_1d<const Spack>& zt_grid,
     const uview_1d<const Spack>& zi_grid,
     const Scalar&                pblh,
@@ -1094,10 +1114,10 @@ struct Functions
     const view_2d<const Spack>&  dz_zi,
     const view_2d<const Spack>&  dz_zt,
     const view_2d<const Spack>&  pres,
+    const view_2d<const Spack>&  tabs,
     const view_2d<const Spack>&  u_wind,
     const view_2d<const Spack>&  v_wind,
     const view_2d<const Spack>&  brunt,
-    const view_1d<const Scalar>& obklen,
     const view_2d<const Spack>&  zt_grid,
     const view_2d<const Spack>&  zi_grid,
     const view_1d<const Scalar>& pblh,
@@ -1115,7 +1135,7 @@ struct Functions
 // If a GPU build, without relocatable device code enabled, make all code available
 // to the translation unit; otherwise, ETI is used.
 #if defined(EAMXX_ENABLE_GPU) && !defined(KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)  \
-                                && !defined(KOKKOS_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)  
+                                && !defined(KOKKOS_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
 
 # include "shoc_calc_shoc_varorcovar_impl.hpp"
 # include "shoc_calc_shoc_vertflux_impl.hpp"
@@ -1158,6 +1178,8 @@ struct Functions
 # include "shoc_grid_impl.hpp"
 # include "shoc_eddy_diffusivities_impl.hpp"
 # include "shoc_tke_impl.hpp"
-#endif // GPU || !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
+# include "shoc_compute_shoc_temperature_impl.hpp"
+
+#endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 
 #endif // SHOC_FUNCTIONS_HPP

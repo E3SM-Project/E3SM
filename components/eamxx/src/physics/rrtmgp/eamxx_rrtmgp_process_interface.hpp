@@ -24,7 +24,9 @@ public:
 
   using KT               = ekat::KokkosTypes<DefaultDevice>;
   template<typename ScalarT>
-  using uview_1d         = Unmanaged<typename KT::template view_1d<ScalarT>>;
+  using uview_1d = Unmanaged<typename KT::template view_1d<ScalarT>>;
+  template<typename ScalarT>
+  using uview_2d = Unmanaged<typename KT::template view_2d<ScalarT>>;
 
   // Constructors
   RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -51,6 +53,7 @@ public:
   int m_col_chunk_size;
   std::vector<int> m_col_chunk_beg;
   int m_nlay;
+  int m_nlay_w_pack;
   Field m_lat;
   Field m_lon;
 
@@ -103,13 +106,13 @@ public:
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     static constexpr int num_1d_ncol        = 10;
-    static constexpr int num_2d_nlay        = 13;
-    static constexpr int num_2d_nlay_p1     = 12;
+    static constexpr int num_2d_nlay        = 16;
+    static constexpr int num_2d_nlay_p1     = 13;
     static constexpr int num_2d_nswbands    = 2;
     static constexpr int num_3d_nlev_nswbands = 4;
     static constexpr int num_3d_nlev_nlwbands = 2;
-    static constexpr int num_3d_nlay_nswbands = 3;
-    static constexpr int num_3d_nlay_nlwbands = 1;
+    static constexpr int num_3d_nlay_nswbands = 4;
+    static constexpr int num_3d_nlay_nlwbands = 2;
     static constexpr int num_3d_nlay_nswgpts = 1;
     static constexpr int num_3d_nlay_nlwgpts = 1;
 
@@ -128,8 +131,10 @@ public:
     // 2d size (ncol, nlay)
     real2d p_lay;
     real2d t_lay;
+    real2d z_del;
     real2d p_del;
     real2d qc;
+    real2d nc;
     real2d qi;
     real2d cldfrac_tot;
     real2d eff_radius_qc;
@@ -139,6 +144,7 @@ public:
     real2d iwp;
     real2d sw_heating;
     real2d lw_heating;
+    uview_2d<Real> d_dz;
 
     // 2d size (ncol, nlay+1)
     real2d p_lev;
@@ -153,6 +159,7 @@ public:
     real2d sw_clrsky_flux_dn_dir;
     real2d lw_clrsky_flux_up;
     real2d lw_clrsky_flux_dn;
+    uview_2d<Real> d_tint;
 
     // 3d size (ncol, nlay+1, nswbands)
     real3d sw_bnd_flux_up;
@@ -174,9 +181,14 @@ public:
     real3d aero_g_sw;
     real3d aero_tau_lw;
 
+    // 3d size (ncol, nlay, n[sw,lw]bnds)
+    real3d cld_tau_sw_bnd;
+    real3d cld_tau_lw_bnd;
+
     // 3d size (ncol, nlay, n[sw,lw]gpts)
     real3d cld_tau_sw_gpt;
     real3d cld_tau_lw_gpt;
+
   };
 
 protected:

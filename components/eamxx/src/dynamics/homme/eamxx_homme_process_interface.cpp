@@ -286,8 +286,10 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
     auto& esf = c.create_if_not_there<EulerStepFunctor>(num_elems);
     fbm.request_size(esf.requested_buffer_size());
   } else {
+#ifdef HOMME_ENABLE_COMPOSE
     auto& ct = c.create_if_not_there<ComposeTransport>(num_elems);
     fbm.request_size(ct.requested_buffer_size());
+#endif
   }
   if (need_dirk) {
     // Create dirk functor only if needed
@@ -423,6 +425,12 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   } else {
     restart_homme_state ();
   }
+
+  // Since we just inited them, ensure p_mid/p_int (dry and wet) timestamps are valid
+  get_field_out("p_int")    .get_header().get_tracking().update_time_stamp(timestamp());
+  get_field_out("p_mid")    .get_header().get_tracking().update_time_stamp(timestamp());
+  get_field_out("p_dry_int").get_header().get_tracking().update_time_stamp(timestamp());
+  get_field_out("p_dry_mid").get_header().get_tracking().update_time_stamp(timestamp());
 
   // Complete homme model initialization
   prim_init_model_f90 ();

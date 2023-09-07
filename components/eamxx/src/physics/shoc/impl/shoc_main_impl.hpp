@@ -124,10 +124,10 @@ void Functions<S,D>::shoc_main_internal(
 {
 
   // Define temporary variables
-  uview_1d<Spack> rho_zt, shoc_qv, dz_zt, dz_zi, tkh;
-  workspace.template take_many_and_reset<5>(
-    {"rho_zt", "shoc_qv", "dz_zt", "dz_zi", "tkh"},
-    {&rho_zt, &shoc_qv, &dz_zt, &dz_zi, &tkh});
+  uview_1d<Spack> rho_zt, shoc_qv, shoc_tabs, dz_zt, dz_zi, tkh;
+  workspace.template take_many_and_reset<6>(
+    {"rho_zt", "shoc_qv", "shoc_tabs", "dz_zt", "dz_zi", "tkh"},
+    {&rho_zt, &shoc_qv, &shoc_tabs, &dz_zt, &dz_zi, &tkh});
 
   // Local scalars
   Scalar se_b{0},   ke_b{0}, wv_b{0},   wl_b{0},
@@ -167,6 +167,11 @@ void Functions<S,D>::shoc_main_internal(
     compute_shoc_vapor(team,nlev,qw,shoc_ql, // Input
                        shoc_qv);             // Output
 
+    // Update SHOC temperature
+    compute_shoc_temperature(team,nlev,thetal,  // Input
+                             shoc_ql,inv_exner, // Input
+                             shoc_tabs);        // Output
+
     team.team_barrier();
     shoc_diag_obklen(uw_sfc,vw_sfc,     // Input
                      wthl_sfc, wqw_sfc, // Input
@@ -191,13 +196,13 @@ void Functions<S,D>::shoc_main_internal(
                 brunt,shoc_mix);       // Output
 
     // Advance the SGS TKE equation
-    shoc_tke(team,nlev,nlevi,dtime,wthv_sec,    // Input
-             shoc_mix,dz_zi,dz_zt,pres,u_wind,  // Input
-             v_wind,brunt,obklen,zt_grid,       // Input
-             zi_grid,pblh,                      // Input
-             workspace,                         // Workspace
-             tke,tk,tkh,                        // Input/Output
-             isotropy);                         // Output
+    shoc_tke(team,nlev,nlevi,dtime,wthv_sec,     // Input
+             shoc_mix,dz_zi,dz_zt,pres,shoc_tabs,// Input
+             u_wind,v_wind,brunt,zt_grid,        // Input
+             zi_grid,pblh,                       // Input
+             workspace,                          // Workspace
+             tke,tk,tkh,                         // Input/Output
+             isotropy);                          // Output
 
     // Update SHOC prognostic variables here
     // via implicit diffusion solver
@@ -284,8 +289,8 @@ void Functions<S,D>::shoc_main_internal(
           pblh);                          // Output
 
   // Release temporary variables from the workspace
-  workspace.template release_many_contiguous<5>(
-    {&rho_zt, &shoc_qv, &dz_zt, &dz_zi, &tkh});
+  workspace.template release_many_contiguous<6>(
+    {&rho_zt, &shoc_qv, &shoc_tabs, &dz_zt, &dz_zi, &tkh});
 }
 #else
 template<typename S, typename D>
@@ -362,6 +367,7 @@ void Functions<S,D>::shoc_main_internal(
   const view_1d<Scalar>& wstar,
   const view_2d<Spack>& rho_zt,
   const view_2d<Spack>& shoc_qv,
+  const view_2d<Spack>& shoc_tabs,
   const view_2d<Spack>& dz_zt,
   const view_2d<Spack>& dz_zi,
   const view_2d<Spack>& tkh)
@@ -399,6 +405,11 @@ void Functions<S,D>::shoc_main_internal(
     compute_shoc_vapor_disp(shcol,nlev,qw,shoc_ql, // Input
                             shoc_qv);             // Output
 
+    // Update SHOC temperature
+    compute_shoc_temperature_disp(shcol,nlev,thetal,  // Input
+                                  shoc_ql,inv_exner, // Input
+                                  shoc_tabs);        // Output
+
     shoc_diag_obklen_disp(shcol, nlev,
                           uw_sfc,vw_sfc,     // Input
                           wthl_sfc, wqw_sfc, // Input
@@ -423,13 +434,13 @@ void Functions<S,D>::shoc_main_internal(
                      brunt,shoc_mix);       // Output
 
     // Advance the SGS TKE equation
-    shoc_tke_disp(shcol,nlev,nlevi,dtime,wthv_sec,   // Input
-                  shoc_mix,dz_zi,dz_zt,pres,u_wind,  // Input
-                  v_wind,brunt,obklen,zt_grid,       // Input
-                  zi_grid,pblh,                      // Input
-                  workspace_mgr,                     // Workspace mgr
-                  tke,tk,tkh,                        // Input/Output
-                  isotropy);                         // Output
+    shoc_tke_disp(shcol,nlev,nlevi,dtime,wthv_sec,    // Input
+                  shoc_mix,dz_zi,dz_zt,pres,shoc_tabs,// Input
+                  u_wind,v_wind,brunt,zt_grid,        // Input
+                  zi_grid,pblh,                       // Input
+                  workspace_mgr,                      // Workspace mgr
+                  tke,tk,tkh,                         // Input/Output
+                  isotropy);                          // Output
 
     // Update SHOC prognostic variables here
     // via implicit diffusion solver
@@ -630,8 +641,8 @@ Int Functions<S,D>::shoc_main(
     shoc_temporaries.se_b, shoc_temporaries.ke_b, shoc_temporaries.wv_b, shoc_temporaries.wl_b,
     shoc_temporaries.se_a, shoc_temporaries.ke_a, shoc_temporaries.wv_a, shoc_temporaries.wl_a,
     shoc_temporaries.ustar, shoc_temporaries.kbfs, shoc_temporaries.obklen, shoc_temporaries.ustar2,
-    shoc_temporaries.wstar, shoc_temporaries.rho_zt, shoc_temporaries.shoc_qv, shoc_temporaries.dz_zt,
-    shoc_temporaries.dz_zi, shoc_temporaries.tkh);
+    shoc_temporaries.wstar, shoc_temporaries.rho_zt, shoc_temporaries.shoc_qv,
+    shoc_temporaries.tabs, shoc_temporaries.dz_zt, shoc_temporaries.dz_zi, shoc_temporaries.tkh);
 #endif
 
   auto finish = std::chrono::steady_clock::now();

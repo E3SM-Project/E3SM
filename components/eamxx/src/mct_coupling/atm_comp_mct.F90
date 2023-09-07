@@ -86,10 +86,13 @@ CONTAINS
     character(CS)                    :: run_type       ! type of run
     type(c_ptr) :: x2a_ptr, a2x_ptr
     character(len=256)               :: atm_log_fname  ! name of ATM log file
+    character(CL)                    :: calendar       ! calendar string
 
     ! TODO: read this from the namelist?
     character(len=256)                :: yaml_fname = "./data/scream_input.yaml"
     character(kind=c_char,len=256), target :: yaml_fname_c, atm_log_fname_c
+    character(len=256) :: caseid, username, hostname
+    character(kind=c_char,len=256), target :: caseid_c, username_c, hostname_c, calendar_c
     logical (kind=c_bool) :: restarted_run
 
     !-------------------------------------------------------------------------------
@@ -101,7 +104,8 @@ CONTAINS
          gsMap=gsmap_atm, &
          dom=dom_atm, &
          infodata=infodata)
-    call seq_infodata_getData(infodata, atm_phase=phase, start_type=run_type)
+    call seq_infodata_getData(infodata, atm_phase=phase, start_type=run_type, &
+                              username=username, case_name=caseid, hostname=hostname)
     call seq_infodata_PutData(infodata, atm_aero=.true.)
     call seq_infodata_PutData(infodata, atm_prognostic=.true.)
 
@@ -142,12 +146,16 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     ! Init the AD
-    call seq_timemgr_EClockGetData(EClock, curr_ymd=cur_ymd, curr_tod=cur_tod, start_ymd=case_start_ymd, start_tod=case_start_tod)
+    call seq_timemgr_EClockGetData(EClock, calendar=calendar, &
+                                   curr_ymd=cur_ymd, curr_tod=cur_tod, &
+                                   start_ymd=case_start_ymd, start_tod=case_start_tod)
     call string_f2c(yaml_fname,yaml_fname_c)
+    call string_f2c(calendar,calendar_c)
     call string_f2c(trim(atm_log_fname),atm_log_fname_c)
     call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c, &
                           INT(cur_ymd,kind=C_INT),  INT(cur_tod,kind=C_INT), &
-                          INT(case_start_ymd,kind=C_INT), INT(case_start_tod,kind=C_INT))
+                          INT(case_start_ymd,kind=C_INT), INT(case_start_tod,kind=C_INT), &
+                          calendar_c)
 
 
     ! Init MCT gsMap
@@ -183,7 +191,10 @@ CONTAINS
                                         c_loc(export_constant_multiple), c_loc(do_export_during_init), &
                                         num_cpl_exports, num_scream_exports, export_field_size)
 
-    call scream_init_atm ()
+    call string_f2c(trim(caseid),caseid_c)
+    call string_f2c(trim(username),username_c)
+    call string_f2c(trim(hostname),hostname_c)
+    call scream_init_atm (caseid_c,hostname_c,username_c)
 
   end subroutine atm_init_mct
 

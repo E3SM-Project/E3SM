@@ -35,6 +35,7 @@ if (NOT EAMXX_ENABLE_GPU)
     eti/shoc_compute_l_inf_shoc_length.cpp
     eti/shoc_compute_shoc_mix_shoc_length.cpp
     eti/shoc_compute_shoc_vapor.cpp
+    eti/shoc_compute_shoc_temperature.cpp
     eti/shoc_compute_shr_prod.cpp
     eti/shoc_compute_tmpi.cpp
     eti/shoc_diag_obklen.cpp
@@ -74,6 +75,7 @@ set(SHOC_SK_SRCS
     disp/shoc_check_tke_disp.cpp
     disp/shoc_grid_disp.cpp
     disp/shoc_compute_shoc_vapor_disp.cpp
+    disp/shoc_compute_shoc_temperature_disp.cpp
     disp/shoc_diag_obklen_disp.cpp
     disp/shoc_pblintd_disp.cpp
     disp/shoc_length_disp.cpp

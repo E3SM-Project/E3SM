@@ -26,3 +26,6 @@ buildlib_cmakec
 
 # Ignore emacs backup files
 *~
+
+# Ignore mkdocs site-generated files in eamxx
+components/eamxx/site/*

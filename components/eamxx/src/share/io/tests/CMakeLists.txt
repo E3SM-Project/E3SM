@@ -5,8 +5,18 @@ include(ScreamUtils)
 include (BuildCprnc)
 BuildCprnc()
 
+## Test io utils
+CreateUnitTest(io_utils "io_utils.cpp" "scream_io" LABELS "io"
+  PROPERTIES RESOURCE_LOCK rpointer_file
+)
+
 ## Test basic output (no packs, no diags, all avg types, all freq units)
 CreateUnitTest(io_basic "io_basic.cpp" "scream_io" LABELS "io"
+  MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+)
+
+## Test basic output (no packs, no diags, all avg types, all freq units)
+CreateUnitTest(io_filled "io_filled.cpp" "scream_io" LABELS "io"
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 

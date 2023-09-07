@@ -13,7 +13,7 @@ namespace scream
 
 /*
  * Abstract interface for property checks
- * 
+ *
  * A property check (PC) object is responsible to check that
  * a certain property holds. The class can (but does not have to)
  * also implement a way to 'repair' the simulation if
@@ -21,13 +21,13 @@ namespace scream
  *
  * PC's are stored in an AtmosphereProcess (AP), and can be
  * run before and/or after the process is executed.
- * 
+ *
  * The typical class deriving from this interface will implement
  * some checks on one or more Field objects, verifying that they
  * satisfy the properties. For instance, we can check that a
  * Field does not contain NaN values, or that it is always within
  * certain bounds.
- * 
+ *
  * More complicate checks can verify that 2+ fields together verify
  * a certain property. For instance, we might want to verify that
  * the sum of certain quantities stay the same (like an energy or
@@ -76,6 +76,10 @@ public:
   void set_fields (const std::list<Field>& fields,
                    const std::list<bool>& repairable);
 
+  // Additional column data fields can be added to output
+  // stream of any property check. 
+  void set_additional_data_field (const Field& data_field);
+
   // Whether this PC is capable of fixing things if the check fails.
   // Defaults to false.
   bool can_repair() const {
@@ -95,6 +99,11 @@ public:
   // returns an empty list.
   const std::list<Field*>& repairable_fields () const {
     return m_repairable_fields;
+  }
+
+  // Return additional data fields used in this property check
+  const std::list<Field>& additional_data_fields () const {
+    return m_additional_data_fields;
   }
 
   // If a check fails, attempt to repair things. Default is to throw.
@@ -117,6 +126,8 @@ protected:
 
   std::list<Field>    m_fields;
   std::list<Field*>   m_repairable_fields;
+
+  std::list<Field> m_additional_data_fields;
 };
 
 } // namespace scream

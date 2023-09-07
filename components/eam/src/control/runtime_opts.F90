@@ -171,6 +171,7 @@ integer, parameter :: max_chars = 128
 character(len=max_chars) iopfile
 logical  :: scm_iop_srf_prop
 logical  :: iop_dosubsidence
+logical  :: iop_coriolis
 logical  :: iop_nudge_tq
 logical  :: iop_nudge_uv
 logical  :: scm_diurnal_avg
@@ -333,7 +334,7 @@ contains
    ! IOP
     namelist /cam_inparm/ iopfile, scm_iop_srf_prop, iop_nudge_tq, iop_nudge_uv, &
                          iop_nudge_tq_low, iop_nudge_tq_high, iop_nudge_tscale, &
-                         scm_observed_aero, precip_off, &
+                         scm_observed_aero, precip_off, iop_coriolis, &
                          scm_zero_non_iop_tracers, iop_perturb_high, dp_crm, &
                          iop_dosubsidence, scm_zero_non_iop_tracers
 
@@ -373,6 +374,8 @@ contains
       call iop_default_opts(scmlat_out=scmlat,scmlon_out=scmlon, &
         single_column_out=single_column, &
         scm_iop_srf_prop_out=scm_iop_srf_prop,&
+        iop_dosubsidence_out=iop_dosubsidence, &
+        iop_coriolis_out=iop_coriolis, &
         iop_nudge_tq_out=iop_nudge_tq, &
         iop_nudge_uv_out=iop_nudge_uv, &
         iop_nudge_tq_low_out=iop_nudge_tq_low, &
@@ -380,7 +383,6 @@ contains
         iop_nudge_tscale_out=iop_nudge_tscale, &
         scm_observed_aero_out=scm_observed_aero, &
         precip_off_out=precip_off, &
-        iop_dosubsidence_out=iop_dosubsidence, &
         iop_perturb_high_out=iop_perturb_high, &
         scm_multcols_out=scm_multcols, &
         dp_crm_out=dp_crm, &
@@ -455,7 +457,8 @@ contains
          call iop_setopts( scmlat_in=scmlat,scmlon_in=scmlon, &
                             iopfile_in=iopfile,single_column_in=single_column,&
                             scm_iop_srf_prop_in=scm_iop_srf_prop,&
-			    iop_dosubsidence_in=iop_dosubsidence,&
+                            iop_dosubsidence_in=iop_dosubsidence,&
+                            iop_coriolis_in=iop_coriolis,&
                             iop_nudge_tq_in=iop_nudge_tq, &
                             iop_nudge_uv_in=iop_nudge_uv, &
                             iop_nudge_tq_low_in=iop_nudge_tq_low, &

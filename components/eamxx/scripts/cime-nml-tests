@@ -286,6 +286,21 @@ class TestBuildnml(unittest.TestCase):
         # above added the necessary atm proc XML block.
         self._chg_atmconfig([("testOnly::number_of_subcycles", "42")], case)
 
+        # Now remove the testOnly proc. Things should still work even though
+        # the buffer will have changes that cannot be applied.
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "(shoc,cldFraction,spa,p3)")], case)
+
+    ###########################################################################
+    def test_atmchanges_for_atm_procs_no_setup(self):
+    ###########################################################################
+        """
+        Test that you can set atm proc fields for an atm proc added by
+        atmchange without having to run case.setup.
+        """
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
+
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "(shoc,cldFraction,spa,p3,testOnly)"), ("testOnly::number_of_subcycles", "42")], case)
+
 ###############################################################################
 def parse_command_line(args, desc):
 ###############################################################################

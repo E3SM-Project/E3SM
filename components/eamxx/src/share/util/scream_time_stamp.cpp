@@ -26,21 +26,18 @@ int days_in_month (const int yy, const int mm) {
 }
 
 bool is_leap_year (const int yy) {
-#ifdef SCREAM_HAS_LEAP_YEAR
-  if (yy%4==0) {
-    // Year is divisible by 4 (minimum requirement)
-    if (yy%100 != 0) {
-      // Not a centennial year => leap.
-      return true;
-    } else if ((yy/100)%4==0) {
-      // Centennial year, AND first 2 digids divisible by 4 => leap
-      return true;
+  if (use_leap_year()) {
+    if (yy%4==0) {
+      // Year is divisible by 4 (minimum requirement)
+      if (yy%100 != 0) {
+        // Not a centennial year => leap.
+        return true;
+      } else if ((yy/100)%4==0) {
+        // Centennial year, AND first 2 digids divisible by 4 => leap
+        return true;
+      }
     }
   }
-#else
-  (void)yy;
-#endif
-  // Either leap year not enabled, or not a leap year at all
   return false;
 }
 
