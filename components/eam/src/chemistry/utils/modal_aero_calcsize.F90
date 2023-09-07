@@ -44,8 +44,6 @@ save
 
 public :: modal_aero_calcsize_init, modal_aero_calcsize_sub, modal_aero_calcsize_diag
 public :: modal_aero_calcsize_reg
-
-
 !Mimic enumerators for aerosol types
 integer, parameter:: inter_aero   = 1 !interstitial aerosols
 integer, parameter:: cld_brn_aero = 2 !cloud borne species
@@ -73,7 +71,6 @@ real(r8), parameter :: r8_huge = huge(1.0_r8)
 integer, parameter :: npair_csizxf = N_DIAG           !total number of possible diagnostic calls
 
 logical :: do_adjust_allowed                          !flag to turn on/off  aerosol size adjustment process
-
 !flag to turn on/off  aerosol aitken<->accumulation transfer process
 logical :: do_aitacc_transfer_allowed(0:npair_csizxf) ! This is an array as it can be different for each radiatio diagnostic call
 
@@ -131,7 +128,6 @@ subroutine modal_aero_calcsize_reg()
 
   !register dgnum field
   call pbuf_add_field('DGNUM', 'global',  dtype_r8, (/pcols, pver, nmodes/), dgnum_idx)
-
 end subroutine modal_aero_calcsize_reg
 
 !===============================================================================
@@ -837,7 +833,6 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
 
    endif!if(update_mmr)
 #endif
-
 return
 end subroutine modal_aero_calcsize_sub
 
@@ -2219,6 +2214,5 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
 
 end subroutine modal_aero_calcsize_diag
 
-!----------------------------------------------------------------------
 
 end module modal_aero_calcsize

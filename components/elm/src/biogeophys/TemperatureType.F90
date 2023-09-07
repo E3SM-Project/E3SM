@@ -376,7 +376,7 @@ contains
     !
     ! !USES 
     use accumulMod       , only : init_accum_field
-    use clm_time_manager , only : get_step_size
+    use elm_time_manager , only : get_step_size
     use shr_const_mod    , only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
     !
     ! !ARGUMENTS:
@@ -403,7 +403,7 @@ contains
     !
     ! !USES 
     use accumulMod       , only : init_accum_field, extract_accum_field
-    use clm_time_manager , only : get_nstep
+    use elm_time_manager , only : get_nstep
     use elm_varctl       , only : nsrest, nsrStartup
     use abortutils       , only : endrun
     !
@@ -426,7 +426,7 @@ contains
     !
     ! USES
     use shr_const_mod    , only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
-    use clm_time_manager , only : get_step_size, get_nstep, is_end_curr_day, get_curr_date
+    use elm_time_manager , only : get_step_size, get_nstep, is_end_curr_day, get_curr_date
     use accumulMod       , only : update_accum_field, extract_accum_field, accumResetVal
     !
     ! !ARGUMENTS:

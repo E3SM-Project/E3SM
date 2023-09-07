@@ -468,22 +468,22 @@ contains
 
     ! Time averaged quantities
     this%fsi24_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FSI24', units='K',  &
+    call hist_addfld1d (fname='FSI24', units='W/m2',  &
          avgflag='A', long_name='indirect radiation (last 24hrs)', &
          ptr_patch=this%fsi24_patch, default='inactive')
 
     this%fsi240_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FSI240', units='K',  &
+    call hist_addfld1d (fname='FSI240', units='W/m2',  &
          avgflag='A', long_name='indirect radiation (last 240hrs)', &
          ptr_patch=this%fsi240_patch, default='inactive')
 
     this%fsd24_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FSD24', units='K',  &
+    call hist_addfld1d (fname='FSD24', units='W/m2',  &
          avgflag='A', long_name='direct radiation (last 24hrs)', &
          ptr_patch=this%fsd24_patch, default='inactive')
 
     this%fsd240_patch(begp:endp) = spval
-    call hist_addfld1d (fname='FSD240', units='K',  &
+    call hist_addfld1d (fname='FSD240', units='W/m2',  &
          avgflag='A', long_name='direct radiation (last 240hrs)', &
          ptr_patch=this%fsd240_patch, default='inactive')
 
@@ -564,7 +564,7 @@ contains
     !
     ! !USES 
     use accumulMod       , only : extract_accum_field
-    use clm_time_manager , only : get_nstep
+    use elm_time_manager , only : get_nstep
     !
     ! !ARGUMENTS:
     class(atm2lnd_type) :: this
@@ -629,7 +629,7 @@ contains
   subroutine UpdateAccVars (this, bounds)
     !
     ! USES
-    use clm_time_manager, only : get_nstep
+    use elm_time_manager, only : get_nstep
     use accumulMod      , only : update_accum_field, extract_accum_field
     !
     ! !ARGUMENTS:

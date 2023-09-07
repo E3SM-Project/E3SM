@@ -25,9 +25,16 @@ set(HAS_F2008_CONTIGUOUS "TRUE")
 string(APPEND LDFLAGS " -Wl,--allow-multiple-definition")
 set(SUPPORTS_CXX "TRUE")
 set(CXX_LINKER "FORTRAN")
+
 set(MPICC "cc")
 set(MPICXX "CC")
 set(MPIFC "ftn")
 set(SCC "cc")
 set(SCXX "CC")
 set(SFC "ftn")
+
+string(APPEND CPPDEFS " -DLINUX")
+if (COMP_NAME STREQUAL gptl)
+    string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY")
+endif()
+
