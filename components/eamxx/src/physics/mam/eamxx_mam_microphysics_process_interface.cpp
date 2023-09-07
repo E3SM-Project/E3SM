@@ -9,13 +9,17 @@
 namespace scream
 {
 
+//=============================================
+// high-level MAM4 microphysics interface code
+// (see impl/mam4_amicphys.cpp)
+//=============================================
+
 namespace impl {
 
 using AeroConfig = ::mam4::AeroConfig;
 static constexpr int gas_pcnst = 30;
 static constexpr int nqtendbb = 4;
 
-// high-level MAM4 microphysics interface function
 KOKKOS_INLINE_FUNCTION
 void modal_aero_amicphys_intr(
     const int mdo_gasaerexch, const int mdo_rename, const int mdo_newnuc,
@@ -29,7 +33,12 @@ void modal_aero_amicphys_intr(
     Real dgncur_awet[AeroConfig::num_modes()],
     Real wetdens_host[AeroConfig::num_modes()],
     Real qaerwat[AeroConfig::num_modes()]);
+
 }
+
+//=================================================
+// end high-level MAM4 microphysics interface code
+//=================================================
 
 MAMMicrophysics::MAMMicrophysics(
     const ekat::Comm& comm,
