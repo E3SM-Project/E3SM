@@ -147,15 +147,18 @@ def modify_ap_list(xml_root, node, ap_list_str, append_this):
         new_aps = [n for n in add_aps if find_node(ap_defaults,n) is None]
 
         for ap in new_aps:
-            expect (ap[0]=="_" and ap[-1]=="_",
-                   f"Unrecognized atm proc name '{ap}'. To declare a new group, prepend and append '_' to the name.")
+            expect (ap[0]=="_" and ap[-1]=="_" and len(ap)>2, exc_type=ValueError,
+                    error_msg=f"Unrecognized atm proc name '{ap}'. To declare a new group, prepend and append '_' to the name.")
             group = gen_atm_proc_group("", ap_defaults)
             group.tag = ap
             
             ap_defaults.append(group)
 
     # Update the 'atm_procs_list' in this node
-    curr_apl.text = ','.join(ap_list)
+    if append_this:
+        curr_apl.text = ','.join(curr_apl.text.split(",")+ap_list)
+    else:
+        curr_apl.text = ','.join(ap_list)
     return True
 
 ###############################################################################
@@ -169,6 +172,7 @@ def apply_change(xml_root, node, new_value, append_this):
         return modify_ap_list (xml_root,node,new_value,append_this)
 
     if append_this:
+
         expect ("type" in node.attrib.keys(),
                 f"Error! Missing type information for {node.tag}")
         type_ = node.attrib["type"]
