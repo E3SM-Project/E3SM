@@ -139,7 +139,23 @@ end do
 
 
   res@cnLevelSelectionMode = "ExplicitLevels"   ; set explicit contour levels
-  res@cnLevels    = (/ 300,301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320/)   ; set levels
+  res@cnLevels    = 0.5+(/ 300,301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320/)   ; set levels
+
+
+;;;;;;;;;; this will control appearance of color bar
+;;;;;;;;;; disable this block first, then wrun witht his block to confirm that LabelStrings are consistent
+  res@lbAutoManage          = False             ; we control label bar
+  res@pmLabelBarDisplayMode = "Always"          ; turns on label bar
+;;;  res@lbOrientation         = "Horizontal"      ; ncl default is vertical
+;;;  res@pmLabelBarSide        = "Bottom"          ; default is right
+;;; stride does not seem to work
+  res@lbLabelStride         = 1                 ; skip every other label
+;;;  res@lbLabelPosition  = "Center"             ; label position
+  res@lbLabelAlignment = "BoxCenters"         ; label orientation
+  res@lbLabelStrings =  (/"300","aa","302","aa","304","aa","306","aa",\
+        "308","aaa","310","aa","312","aa","314","aa","316","aa","318","aa","320"/) 
+
+
 
 ;  res@cnMinLevelValF  = 300.			; set the minimum contour level
 ;  res@cnMaxLevelValF  = 320.			; set the maximum contour level

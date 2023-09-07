@@ -1,7 +1,9 @@
 
 
 ttime=8
-option=cpstarnh
+#option=eamcpstar
+#option=cpstarnh
+option=cv
 ztop=15000
 
 ddt=0.2

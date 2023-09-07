@@ -96,7 +96,9 @@ def plot4arrays(arr1, arr2, arr3, arr4, arr1name, arr2name, arr3name, arr4name, 
 
 latvap=2.501e6
 latice=3.337e5
-Tforcl=300.0
+Tforcl=290.0
+cl=4188.0
+
 
 print 'Number of arguments:', len(sys.argv), 'arguments.'
 print 'Argument List:', str(sys.argv)
@@ -504,11 +506,17 @@ finally:
    plt.figure()
 
    clcolor='blueviolet'
-   plt.plot(ns1,apclen1 - latice*apmass1, color=clcolor)
-   plt.plot(ns1,apclen2 - latice*apmass2, color=clcolor)
-   plt.plot(ns1,apclen3 - latice*apmass3, color=clcolor)
-   plt.plot(ns1,apclen4 - latice*apmass4, color=clcolor)
-   plt.plot(ns1,apclen5 - latice*apmass5, color=clcolor, label='E precipitation')
+   #plt.plot(ns1,apclen1 - latice*apmass1, color=clcolor)
+   #plt.plot(ns1,apclen2 - latice*apmass2, color=clcolor)
+   #plt.plot(ns1,apclen3 - latice*apmass3, color=clcolor)
+   #plt.plot(ns1,apclen4 - latice*apmass4, color=clcolor)
+   #plt.plot(ns1,apclen5 - latice*apmass5, color=clcolor, label='E precipitation')
+
+   plt.plot(ns1,Tforcl*cl*apmass1, color=clcolor)
+   plt.plot(ns1,Tforcl*cl*apmass2, color=clcolor)
+   plt.plot(ns1,Tforcl*cl*apmass3, color=clcolor)
+   plt.plot(ns1,Tforcl*cl*apmass4, color=clcolor)
+   plt.plot(ns1,Tforcl*cl*apmass5, color=clcolor, label='E precipitation')
 
    #apleake = en_leak = E_before - E_after - E_precip
    #apen = E_precip, so together
