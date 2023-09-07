@@ -47,7 +47,7 @@ module physpkg
                                     modal_aero_wateruptake_reg
 #if defined(CLDERA_PROFILING)
   use cldera_interface_mod, only: cldera_compute_stats
-  use time_manager,         only: get_curr_date
+  use time_manager,         only: get_prev_date
 #endif
 
   implicit none
@@ -55,6 +55,8 @@ module physpkg
 
   !  Physics buffer index
   integer ::  teout_idx          = 0  
+  logical, public :: is_atm_init = .true.
+  logical :: first_time_step     = .true.
 
   integer ::  tini_idx           = 0 
   integer ::  qini_idx           = 0 
@@ -1145,6 +1147,7 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     use cam_diagnostics,  only: diag_phys_writeout
     use check_energy,     only: check_energy_fix, check_energy_chng
     use dycore,           only: dycore_is
+    use cam_control_mod,  only: nsrest  ! restart flag
   
     ! adding to allow calling of custom tracer tendencies
     use check_energy,    only: check_tracers_chng, check_tracers_data
@@ -1213,11 +1216,21 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
 #if defined(CLDERA_PROFILING)
    ! Compute stats here, since the first thing that happens in the loop below
    ! (other than initing tendencies to 0) is the writing of physics state to file
-   call get_curr_date( yr, mon, day, tod)
-   ymd = yr*10000 + mon*100 + day
-   call t_startf('cldera_compute_stats')
-   call cldera_compute_stats(ymd,tod)
-   call t_stopf('cldera_compute_stats')
+   if (.not. is_atm_init) then
+     if (first_time_step .and. nsrest .eq. 0) then
+       first_time_step = .false.
+       if (masterproc) then
+         print *, "WARNING! You are using a workaround to issue E3SM-Project/e3sm#5904"
+         print *, "         If that issue has been resolved, remove this hack"
+       endif
+     else
+       call get_prev_date( yr, mon, day, tod)
+       ymd = yr*10000 + mon*100 + day
+       call t_startf('cldera_compute_stats')
+       call cldera_compute_stats(ymd,tod)
+       call t_stopf('cldera_compute_stats')
+     endif
+   endif
 #endif
 
 !$OMP PARALLEL DO SCHEDULE(STATIC,1) &
@@ -2023,6 +2036,7 @@ subroutine tphysbc (ztodt,               &
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
     use lnd_infodata,    only: precip_downscaling_method
+    use cam_control_mod,    only: nsrest  ! restart flag
 
     implicit none
 
@@ -2766,11 +2780,21 @@ end if
 #if defined(CLDERA_PROFILING)
    ! Compute stats here, so that we get the same values for phys state var as
    ! we would get in the EAM history file, right below
-   call get_curr_date( yr, mon, day, tod)
-   ymd = yr*10000 + mon*100 + day
-   call t_startf('cldera_compute_stats')
-   call cldera_compute_stats(ymd,tod)
-   call t_stopf('cldera_compute_stats')
+   if (.not. is_atm_init) then
+     if (first_time_step .and. nsrest .eq. 0) then
+       if (masterproc) then
+         print *, "WARNING! You are using a workaround to issue E3SM-Project/e3sm#5904"
+         print *, "         If that issue has been resolved, remove this hack"
+       endif
+       first_time_step = .false.
+     else
+       call get_prev_date( yr, mon, day, tod)
+       ymd = yr*10000 + mon*100 + day
+       call t_startf('cldera_compute_stats')
+       call cldera_compute_stats(ymd,tod)
+       call t_stopf('cldera_compute_stats')
+     endif
+   endif
 #endif
 
 
