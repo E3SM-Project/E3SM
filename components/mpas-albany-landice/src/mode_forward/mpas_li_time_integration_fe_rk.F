@@ -120,14 +120,14 @@ module li_time_integration_fe_rk
                                                     waterFrac
       real (kind=RKIND), dimension(:), pointer :: thickness, damage, passiveTracer2d
       real (kind=RKIND), dimension(:), pointer :: layerCenterSigma, layerThicknessFractions
-      real (kind=RKIND), dimension(:,:), allocatable :: layerThicknessProv, &
+      real (kind=RKIND), dimension(:,:), allocatable :: layerThicknessPrev, &
                                                         layerThicknessTmp, &
-                                                        temperatureProv, &
-                                                        enthalpyProv, &
+                                                        temperaturePrev, &
+                                                        enthalpyPrev, &
                                                         passiveTracer3d, &
-                                                        passiveTracer3dProv, &
+                                                        passiveTracer3dPrev, &
                                                         damage3d, &
-                                                        damage3dProv
+                                                        damage3dPrev
       integer, pointer :: nVertLevels
       integer, pointer :: nCells
       real (kind=RKIND), pointer :: deltat
@@ -157,22 +157,22 @@ module li_time_integration_fe_rk
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
-      allocate(temperatureProv(nVertLevels, nCells+1))
-      allocate(enthalpyProv(nVertLevels, nCells+1))
-      allocate(layerThicknessProv(nVertLevels, nCells+1))
+      allocate(temperaturePrev(nVertLevels, nCells+1))
+      allocate(enthalpyPrev(nVertLevels, nCells+1))
+      allocate(layerThicknessPrev(nVertLevels, nCells+1))
       allocate(layerThicknessTmp(nVertLevels, nCells+1))
-      allocate(damage3dProv(nVertLevels, nCells+1))
+      allocate(damage3dPrev(nVertLevels, nCells+1))
       allocate(damage3d(nVertLevels, nCells+1))
-      allocate(passiveTracer3dProv(nVertLevels, nCells+1))
+      allocate(passiveTracer3dPrev(nVertLevels, nCells+1))
       allocate(passiveTracer3d(nVertLevels, nCells+1))
 
-      temperatureProv(:,:) = 0.0_RKIND
-      enthalpyProv(:,:) = 0.0_RKIND
-      layerThicknessProv(:,:) = 0.0_RKIND
+      temperaturePrev(:,:) = 0.0_RKIND
+      enthalpyPrev(:,:) = 0.0_RKIND
+      layerThicknessPrev(:,:) = 0.0_RKIND
       layerThicknessTmp(:,:) = 0.0_RKIND
-      damage3dProv(:,:) = 0.0_RKIND
+      damage3dPrev(:,:) = 0.0_RKIND
       damage3d(:,:) = 0.0_RKIND
-      passiveTracer3dProv(:,:) = 0.0_RKIND
+      passiveTracer3dPrev(:,:) = 0.0_RKIND
       passiveTracer3d(:,:) = 0.0_RKIND
 
 ! === Prepare for advection (including CFL checks) ===========
@@ -230,12 +230,12 @@ module li_time_integration_fe_rk
       call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
       call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
       ! Save relevant fields before RK loop, to be used in update at the end
-      temperatureProv(:,:) = temperature(:,:)
-      enthalpyProv(:,:) =  enthalpy(:,:)
-      layerThicknessProv(:,:) = layerThickness(:,:)
+      temperaturePrev(:,:) = temperature(:,:)
+      enthalpyPrev(:,:) =  enthalpy(:,:)
+      layerThicknessPrev(:,:) = layerThickness(:,:)
       do k = 1, nVertLevels
-         damage3dProv(k,:) = damage(:)
-         passiveTracer3dProv(k,:) = passiveTracer2d(:)
+         damage3dPrev(k,:) = damage(:)
+         passiveTracer3dPrev(k,:) = passiveTracer2d(:)
       enddo
       deltatFull = deltat ! Save deltat in order to reset it at end of RK loop
 
@@ -254,7 +254,7 @@ module li_time_integration_fe_rk
          rkSubstepWeights(:) = 1.0_RKIND
       elseif ( (trim(config_time_integration) == 'runge_kutta') .and. &
                (config_rk_order == 2) ) then
-         ! use classical (i.e., endpoint, or Heun's method) RK2. Could also
+         ! use Strong Stability Preserving RK2. Could also
          ! add config option to use standard endpoint or midpoint methods, but
          ! these are algorithmically more complex and less suitable for our domains 
          nRKstages = 2
@@ -280,8 +280,8 @@ module li_time_integration_fe_rk
       endif 
 ! *** Start RK loop ***
       do rkStage = 1, nRKstages
-         call mpas_log_write('beginning rk step $i;  rkSubstepWeight = $r', &
-                             intArgs=(/rkStage/), realArgs=(/rkSubstepWeights(rkStage)/))
+         call mpas_log_write('beginning rk step $i', &
+                             intArgs=(/rkStage/))
          deltat = deltatFull * rkSubstepWeights(rkStage)
 
          ! === calculate damage ===========
@@ -311,13 +311,13 @@ module li_time_integration_fe_rk
             call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
 
             layerThicknessTmp(:,:) = layerThickness(:,:)
-            layerThickness(:,:) = rkSSPweights(rkStage) * layerThicknessProv(:,:) + &
+            layerThickness(:,:) = rkSSPweights(rkStage) * layerThicknessPrev(:,:) + &
                                      (1.0_RKIND - rkSSPweights(rkStage)) * layerThickness(:,:)
             thickness = sum(layerThickness, 1)
 
             if (trim(config_thermal_solver) == 'enthalpy') then
                where (layerThickness(:,:) > 0.0_RKIND)
-                  enthalpy(:,:) = ( rkSSPweights(rkStage) * enthalpyProv(:,:) * layerThicknessProv(:,:) + &
+                  enthalpy(:,:) = ( rkSSPweights(rkStage) * enthalpyPrev(:,:) * layerThicknessPrev(:,:) + &
                                     (1.0_RKIND - rkSSPweights(rkStage)) * enthalpy(:,:) * &
                                     layerThicknessTmp(:,:) ) / layerThickness(:,:)
                ! elsewhere, what?
@@ -336,7 +336,7 @@ module li_time_integration_fe_rk
 
             elseif (trim(config_thermal_solver) == 'temperature') then
                where (layerThickness(:,:) > 0.0_RKIND)
-                  temperature(:,:) = ( rkSSPweights(rkStage) * temperatureProv(:,:) * layerThicknessProv(:,:) + &
+                  temperature(:,:) = ( rkSSPweights(rkStage) * temperaturePrev(:,:) * layerThicknessPrev(:,:) + &
                                        (1.0_RKIND - rkSSPweights(rkStage)) * temperature(:,:) * &
                                        layerThicknessTmp(:,:) ) / layerThickness(:,:)
                ! elsewhere, what?
@@ -347,7 +347,7 @@ module li_time_integration_fe_rk
                do iCell = 1, nCells
                   do k = 1, nVertLevels
                      if (layerThickness(k,iCell) > 0.0_RKIND) then
-                        damage3d(k,iCell) = ( rkSSPweights(rkStage) * damage3dProv(k,iCell) * layerThicknessProv(k,iCell) + &
+                        damage3d(k,iCell) = ( rkSSPweights(rkStage) * damage3dPrev(k,iCell) * layerThicknessPrev(k,iCell) + &
                                               (1.0_RKIND - rkSSPweights(rkStage)) * damage(iCell) * &
                                               layerThicknessTmp(k,iCell) ) / layerThickness(k,iCell)
                      else
@@ -361,7 +361,7 @@ module li_time_integration_fe_rk
             do iCell = 1, nCells
                do k = 1, nVertLevels
                   if (layerThickness(k,iCell) > 0.0_RKIND) then
-                     passiveTracer3d(k,iCell) = ( rkSSPweights(rkStage) * passiveTracer3dProv(k,iCell) * layerThicknessProv(k,iCell) + &
+                     passiveTracer3d(k,iCell) = ( rkSSPweights(rkStage) * passiveTracer3dPrev(k,iCell) * layerThicknessPrev(k,iCell) + &
                                                   (1.0_RKIND - rkSSPweights(rkStage)) * passiveTracer2d(iCell) * &
                                                   layerThicknessTmp(k,iCell) ) / layerThickness(k,iCell)
                   else
@@ -438,13 +438,13 @@ module li_time_integration_fe_rk
           call mpas_log_write("An error has occurred in li_time_integrator_forwardeuler_rungekutta.", MPAS_LOG_ERR)
       endif
 
-      deallocate(temperatureProv)
-      deallocate(enthalpyProv)
-      deallocate(layerThicknessProv)
+      deallocate(temperaturePrev)
+      deallocate(enthalpyPrev)
+      deallocate(layerThicknessPrev)
       deallocate(layerThicknessTmp)
-      deallocate(damage3dProv)
+      deallocate(damage3dPrev)
       deallocate(damage3d)
-      deallocate(passiveTracer3dProv)
+      deallocate(passiveTracer3dPrev)
       deallocate(passiveTracer3d)
    !--------------------------------------------------------------------
    end subroutine li_time_integrator_forwardeuler_rungekutta
