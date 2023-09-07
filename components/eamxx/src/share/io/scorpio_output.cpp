@@ -462,8 +462,8 @@ run (const std::string& filename,
       const auto lookup = m_field_to_avg_cnt_map.at(name);
       avg_cnt_data = m_local_tmp_avg_cnt_views_1d.at(lookup).data();
     } else {
-      for (int ii=0; ii<dims.size(); ii++) {
-        avg_cnt_dims[ii] = 1;
+      for (auto& dim : avg_cnt_dims) {
+        dim = 1;
       }
       avg_cnt_data = nullptr;
     }
