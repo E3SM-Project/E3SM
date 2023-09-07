@@ -1226,9 +1226,20 @@ create_diagnostic (const std::string& diag_field_name) {
     params.set("Field",f);
     params.set("Field Level Location", tokens[1]);
     params.set<double>("mask_value",m_fill_value);
-    // FieldAtLevel         follows convention variable_at_levN (where N is some integer)
+    // FieldAtLevel         follows convention variable_at_lev_N (where N is some integer)
     // FieldAtPressureLevel follows convention variable_at_999XYZ (where 999 is some integer, XYZ string units)
-    diag_name = tokens[1].find_first_of("0123456789.")==0 ? "FieldAtPressureLevel" : "FieldAtLevel";
+    // FieldAtHeight        follows convention variable_at_999XYZ (where 999 is some integer, XYZ string units)
+    if (tokens[1].find_first_of("0123456789.")==0) {
+      auto units_start = tokens[1].find_first_not_of("0123456789.");
+      if (tokens[1].substr(units_start)=="m") {
+        diag_name = "FieldAtHeight";
+      } else {
+        diag_name = "FieldAtPressureLevel";
+      }
+
+    } else {
+      diag_name = "FieldAtLevel";
+    }
   } else if (diag_field_name=="PrecipLiqSurfMassFlux" or
              diag_field_name=="precip_liq_surf_mass_flux") {
     diag_name = "precip_surf_mass_flux";
@@ -1264,6 +1275,16 @@ create_diagnostic (const std::string& diag_field_name) {
   if (diag->name() != diag_field_name) {
     m_fields_alt_name.emplace(diag->name(),diag_field_name);
     m_fields_alt_name.emplace(diag_field_name,diag->name());
+  }
+
+  // If any of the diag req fields is itself a diag, we need to create it
+  const auto sim_field_mgr = get_field_manager("sim");
+  for (const auto& req : diag->get_required_field_requests()) {
+    const auto& fname = req.fid.name();
+    if (!sim_field_mgr->has_field(fname)) {
+      create_diagnostic(fname);
+      m_diag_depends_on_diags.at(diag_field_name).push_back(fname);
+    }
   }
 }
 
