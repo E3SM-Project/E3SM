@@ -18,6 +18,7 @@ module chemistry
   use mo_gas_phase_chemdr, only : map2chm
   use shr_megan_mod,    only : shr_megan_mechcomps, shr_megan_mechcomps_n 
   use tracer_data,      only : MAXTRCRS
+  use module_perturb
 
   implicit none
   private
@@ -41,7 +42,7 @@ module chemistry
   public :: chem_init_restart
   public :: chem_emissions
 
-  integer, public :: imozart = -1       ! index of 1st constituent
+  integer, public :: imozart = -1       ! index of 1st constituentd_init
   
   ! Namelist variables
   
@@ -1685,6 +1686,7 @@ end function chem_is_active
                           cam_out%precc, cam_out%precl, cam_in%snowhland, ghg_chem, state%latmapback, &
                           chem_name, drydepflx, cam_in%cflx, ptend%q, pbuf, ixcldliq, ixcldice, tropFlag=tropFlag, &
                           tropFlagInt=tropFlagInt)
+    if(icolprnt(lchnk) > 0) write(102,*)'ptendq(47):',ptend%q(icolprnt(lchnk),kprnt,47)
 
     call t_stopf( 'chemdr' )
 

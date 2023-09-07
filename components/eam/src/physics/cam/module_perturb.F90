@@ -4,7 +4,7 @@ module module_perturb
 
   implicit none
   
-  integer :: kprnt = 61
+  integer :: kprnt = 65
 contains
 
   function icolprnt(lchnk) result(icol)
@@ -13,6 +13,5 @@ contains
     integer :: icol
     icol = 0
     icol = phys_debug_col(lchnk)
-    !if(icol>0)print*,'BALLI::icol,lchnk',icol,lchnk
   end function icolprnt
 end module module_perturb

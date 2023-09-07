@@ -12,7 +12,7 @@ module mo_gas_phase_chemdr
   use phys_control,     only : phys_getopts
   use cam_logfile,      only : iulog
   use physics_buffer,   only : pbuf_get_index
-
+  use module_perturb
   implicit none
   save
 
@@ -578,7 +578,7 @@ contains
           mmr(:ncol,:,n) = q(:ncol,:,m)
        end if
     end do
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-mmr(2):',mmr(icolprnt(lchnk),kprnt,2)
     call get_short_lived_species( mmr, lchnk, ncol, pbuf )
 
     !-----------------------------------------------------------------------      
@@ -590,7 +590,7 @@ contains
     !        ... Xform from mmr to vmr
     !-----------------------------------------------------------------------      
     call mmr2vmr( mmr, vmr, mbar, ncol )
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr22(2):',vmr(icolprnt(lchnk),kprnt,2)
     if (h2o_ndx>0) then
        !-----------------------------------------------------------------------      
        !        ... store water vapor in wrk variable
@@ -612,19 +612,20 @@ contains
     !        ... force ion/electron balance
     !-----------------------------------------------------------------------      
     call charge_balance( ncol, vmr )
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr21(2):',vmr(icolprnt(lchnk),kprnt,2)
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-invr1:',invariants(icolprnt(lchnk),kprnt,inv_ndx_cnst_oh)
     !-----------------------------------------------------------------------      
     !        ... Set the "invariants"
     !-----------------------------------------------------------------------  
     call setinv( invariants, tfld, h2ovmr, vmr, pmid, ncol, lchnk, pbuf )
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-invr2:',invariants(icolprnt(lchnk),kprnt,inv_ndx_cnst_oh)
     !-----------------------------------------------------------------------      
     !        ... interpolate SAGEII data for surface area
     !-----------------------------------------------------------------------
     strato_sad(:,:) = 0.0_r8
     sad_sage(:,:) = 0.0_r8
     call strato_sad_set( pmid, sad_sage, ncol, lchnk)
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr20(2):',vmr(icolprnt(lchnk),kprnt,2)
     !-----------------------------------------------------------------------      
     !        ... set tropospheric ozone for Linoz_MAM  (pjc, 2015)
     !-----------------------------------------------------------------------
@@ -679,6 +680,7 @@ contains
        call sad_strat_calc( lchnk, invariants(:ncol,:,indexm), pmb, tfld, hno3_gas, &
             hno3_cond, h2o_gas, h2o_cond, strato_sad(:ncol,:), radius_strat, &
             sad_strat, ncol, pbuf )
+            !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-invr3:',invariants(icolprnt(lchnk),kprnt,inv_ndx_cnst_oh)
        do k = 1,pver
           vmr(:,k,hno3_ndx) = hno3_gas(:,k)
           h2ovmr(:,k)       = h2o_gas(:,k)
@@ -701,7 +703,7 @@ contains
        call ratecon_sfstrat( invariants(:,:,indexm), pmid, tfld, &
             radius_strat(:,:,1), sad_strat(:,:,1), sad_strat(:,:,2), &
             sad_strat(:,:,3), h2ovmr, vmr, reaction_rates, ncol )
-
+            !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-invr4:',invariants(icolprnt(lchnk),kprnt,inv_ndx_cnst_oh)
     endif
 
     !-----------------------------------------------------------------------      
@@ -709,11 +711,13 @@ contains
     !-----------------------------------------------------------------------      
     col_delta = 0._r8
     call set_ub_col( col_delta, vmr, invariants, pint(:,1), pdel, ncol, lchnk)
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-invr5:',invariants(icolprnt(lchnk),kprnt,inv_ndx_cnst_oh)
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr19a(2):',vmr(icolprnt(lchnk),kprnt,2)
     !-----------------------------------------------------------------------      
     !       ...  Set rates for "tabular" and user specified reactions
     !-----------------------------------------------------------------------      
     call setrxt( reaction_rates, tfld, invariants(1,1,indexm), ncol )
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-invr6:',invariants(icolprnt(lchnk),kprnt,inv_ndx_cnst_oh)
 
     sulfate(:,:) = 0._r8
     if( so4_ndx < 1 ) then ! get offline so4 field if not prognostic
@@ -751,6 +755,7 @@ contains
     call usrrxt( reaction_rates, tfld, tfld, tfld, invariants, h2ovmr, ps, &
                  pmid, invariants(:,:,indexm), sulfate, mmr, relhum, strato_sad, &
                  troplev, ncol, sad_total, cwat, mbar, pbuf )
+                 !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-invr7:',invariants(icolprnt(lchnk),kprnt,inv_ndx_cnst_oh)
 
     call outfld( 'SAD_TROP', sad_total(:ncol,:), ncol, lchnk )
 
@@ -767,6 +772,7 @@ contains
     enddo
 
     call adjrxt( reaction_rates, invariants, invariants(1,1,indexm), ncol )
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-invr8:',invariants(icolprnt(lchnk),kprnt,inv_ndx_cnst_oh)
 
     !-----------------------------------------------------------------------
     !        ... Compute the photolysis rates at time = t(n+1)
@@ -783,7 +789,7 @@ contains
     esfact = 1._r8
     call shr_orb_decl( calday, eccen, mvelpp, lambm0, obliqr  , &
          delta, esfact )
-
+         !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr19(2):',vmr(icolprnt(lchnk),kprnt,2)
     if ( do_cloudj_photolysis ) then 
 
        !------------------------------------------------------------------
@@ -821,7 +827,7 @@ contains
              call outfld( trim(tag_names(i))//"_aerosol", reaction_rates(:ncol,:,rxt_tag_map(i)), ncol, lchnk )
           enddo
        endif
-
+       !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr18(2):',vmr(icolprnt(lchnk),kprnt,2)
 !!! Photolosys rates from lookup table (Diagnostic sensitivity)
        if ( do_cloudj_lookup_diag ) then
 
@@ -878,7 +884,7 @@ contains
                          col_dens, zen_angle, asdir, cwat, cldfr, &
                          esfact, vmr, invariants, ncol, lchnk, pbuf )
     endif
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr17(2):',vmr(icolprnt(lchnk),kprnt,2)
     do i = 1,phtcnt
        call outfld( pht_names(i), reaction_rates(:ncol,:,i), ncol, lchnk )
        call outfld( tag_names(i), reaction_rates(:ncol,:,rxt_tag_map(i)), ncol, lchnk )
@@ -1015,7 +1021,7 @@ contains
       end do column0_loop
       end do level0_loop
     end if
-    
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr16(2):',vmr(icolprnt(lchnk),kprnt,2)
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
             .or. history_chemdyg_summary) then
        if ( history_gaschmbudget ) then
@@ -1079,7 +1085,7 @@ contains
           enddo
        enddo
     endif
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr15(2):',vmr(icolprnt(lchnk),kprnt,2)
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget  .and. uci1_ndx > 0) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
@@ -1148,7 +1154,7 @@ contains
       end do column_loop
       end do level_loop
     endif !uci1_ndx
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr14(2):',vmr(icolprnt(lchnk),kprnt,2)
     if ( history_UCIgaschmbudget_2D .or. history_UCIgaschmbudget_2D_levels .or. history_chemdyg_summary) then
        if ( history_UCIgaschmbudget_2D .and. uci1_ndx > 0) then
           call gaschmmass_diags( lchnk, ncol, chem_prod(:ncol,:,:), vmr_old(ncol,:,:), &
@@ -1191,6 +1197,8 @@ contains
     if (uci1_ndx > 0) then
        vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
     endif
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr13a(2):',vmr(icolprnt(lchnk),kprnt,2),invariants(icolprnt(lchnk),kprnt,inv_ndx_cnst_oh),invariants(icolprnt(lchnk),kprnt,inv_ndx_m),inv_ndx_cnst_oh,inv_ndx_m
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr13a(2):',vmr(icolprnt(lchnk),kprnt,2),oh_ndx,no3_ndx,inv_ndx_m,inv_ndx_cnst_oh,inv_ndx_cnst_no3
 #if (defined MODAL_AERO_5MODE)
     ! attribute constant OH and NO3 above troppopause
     ! will be set by after exp_sol
@@ -1204,10 +1212,11 @@ contains
         end do
    end do     
 #endif   
-
+!if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr13(2):',vmr(icolprnt(lchnk),kprnt,2)
     call t_startf('exp_sol')
     call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol, &
                   diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss)
+!if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr12a:',vmr(icolprnt(lchnk),kprnt,38)
     call t_stopf('exp_sol')
 
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels .or.&
@@ -1252,7 +1261,7 @@ contains
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr12:',vmr(icolprnt(lchnk),kprnt,38)
     ! reset vmr to pre-exp_sol values for stratospheric boxes
     if (uci1_ndx > 0) then
        ! exclude E90 from resetting
@@ -1316,7 +1325,7 @@ contains
        !RCE - mmr_new = average of mmr values before and after imp_sol
        call het_diags( het_rates(:ncol,:,:), mmr_new(:ncol,:,:), pdel(:ncol,:), lchnk, ncol )  !RCE
     endif
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr11:',vmr(icolprnt(lchnk),kprnt,38)
     ! save h2so4 change by gas phase chem (for later new particle nucleation)
     if (ndx_h2so4 > 0) then
        del_h2so4_gasprod(1:ncol,:) = vmr(1:ncol,:,ndx_h2so4) - del_h2so4_gasprod(1:ncol,:)
@@ -1345,6 +1354,7 @@ contains
                                 vmr0, vmr, pbuf)
 #endif 
     call t_stopf('aero_model_gasaerexch')
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr10:',vmr(icolprnt(lchnk),kprnt,38)
 !
 ! Remove the impact of aerosol processes on gas chemistry tracers ...
 !
@@ -1368,7 +1378,7 @@ contains
           endif
        enddo
     endif
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr9:',vmr(icolprnt(lchnk),kprnt,38)
     if ( has_strato_chem ) then 
 
        wrk(:ncol,:) = (vmr(:ncol,:,h2o_ndx) - wrk(:ncol,:))*delt_inverse
@@ -1415,7 +1425,7 @@ contains
        call outfld( 'QDSETT', wrk(:,:), ncol, lchnk )
 
     endif
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr8:',vmr(icolprnt(lchnk),kprnt,38)
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
             .or. history_chemdyg_summary) then
        if ( history_gaschmbudget ) then
@@ -1442,7 +1452,7 @@ contains
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr8:',vmr(icolprnt(lchnk),kprnt,38)
 !
     ! LINOZ
     ! col_dens(:,:,1) is for O3; col_dens(:,:,2) is for O2; col_dens(:,:,3) is for O3LNZ
@@ -1476,7 +1486,7 @@ contains
        
        call lin_strat_sfcsink(ncol, lchnk, vmr, xsfc, delt,   pdel(:ncol,:) )
     end if
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr7:',vmr(icolprnt(lchnk),kprnt,38)
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
             .or. history_chemdyg_summary) then
        if ( history_gaschmbudget ) then
@@ -1541,7 +1551,7 @@ contains
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr6:',vmr(icolprnt(lchnk),kprnt,38)
     !-----------------------------------------------------------------------      
     !         ... Set upper boundary mmr values
     !-----------------------------------------------------------------------      
@@ -1582,7 +1592,7 @@ contains
     if ( ghg_chem ) then
        call ghg_chem_set_flbc( vmr, ncol )
     endif
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr5:',vmr(icolprnt(lchnk),kprnt,38)
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
             .or. history_chemdyg_summary) then
        if ( history_gaschmbudget ) then
@@ -1609,7 +1619,7 @@ contains
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr4:',vmr(icolprnt(lchnk),kprnt,38)
     !-----------------------------------------------------------------------      
     !         ... Surface emissions
     !----------------------------------------------------------------------- 
@@ -1635,7 +1645,7 @@ contains
           endif
        end do
     endif
-
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr3:',vmr(icolprnt(lchnk),kprnt,38)
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
             .or. history_chemdyg_summary) then
        if ( history_gaschmbudget ) then
@@ -1668,13 +1678,16 @@ contains
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
+    
 
     !-----------------------------------------------------------------------      
     !         ... Xform from vmr to mmr (for dry deposition)
     !-----------------------------------------------------------------------      
     call vmr2mmr( vmr, mmr_tend, mbar, ncol )
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr2:',mmr_tend(icolprnt(lchnk),kprnt,38),vmr(icolprnt(lchnk),kprnt,38)
 
     call set_short_lived_species( mmr_tend, lchnk, ncol, pbuf )
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-short2:',mmr_tend(icolprnt(lchnk),kprnt,38)
 
     !-----------------------------------------------------------------------      
     !         ... Dry deposition
@@ -1819,8 +1832,10 @@ contains
     !         ... Xform from vmr to mmr
     !-----------------------------------------------------------------------      
     call vmr2mmr( vmr, mmr_tend, mbar, ncol )
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-vmr:',mmr_tend(icolprnt(lchnk),kprnt,38)
 
     call set_short_lived_species( mmr_tend, lchnk, ncol, pbuf )
+    !if(icolprnt(lchnk) > 0) write(102,*)'chmdr-short:',mmr_tend(icolprnt(lchnk),kprnt,38)
 
     !-----------------------------------------------------------------------      
     !         ... Form the tendencies
@@ -1833,7 +1848,9 @@ contains
     do m = 1,pcnst
        n = map2chm(m)
        if( n > 0 ) then
-          qtend(:ncol,:,m) = qtend(:ncol,:,m) + mmr_tend(:ncol,:,n) 
+         !if(icolprnt(lchnk) > 0 .and. m==47) write(102,*)'chmdr-qtend-bfr:',qtend(icolprnt(lchnk),kprnt,m),m,n,mmr_tend(icolprnt(lchnk),kprnt,n)
+          qtend(:ncol,:,m) = qtend(:ncol,:,m) + mmr_tend(:ncol,:,n)
+          !if(icolprnt(lchnk) > 0 .and. m==47) write(102,*)'chmdr-qtend-aft:',qtend(icolprnt(lchnk),kprnt,m),m,n,mmr_tend(icolprnt(lchnk),kprnt,n)
        end if
     end do
 

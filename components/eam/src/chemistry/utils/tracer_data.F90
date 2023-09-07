@@ -602,19 +602,23 @@ contains
 !-----------------------------------------------------------------------
 ! Reads more data if needed and interpolates data to current model time 
 !-----------------------------------------------------------------------
-  subroutine advance_trcdata( flds, file, state, pbuf2d )
+  subroutine advance_trcdata( flds, file, state, pbuf2d,v )
     use physics_types,only : physics_state
     use physics_buffer, only : physics_buffer_desc
     use ppgrid, only : pver,pcols
+    use ppgrid,       only : begchunk, endchunk
+    use module_perturb
+    use time_manager
 
     implicit none
+    integer, optional :: v
 
     type(trfile),        intent(inout) :: file
     type(trfld),         intent(inout) :: flds(:)
     type(physics_state), intent(in)    :: state(begchunk:endchunk)
     
     type(physics_buffer_desc), optional, pointer :: pbuf2d(:,:)
-    integer :: ncol
+    integer :: ncol,c
     real(r8) :: data_time
     real(r8) :: t(pcols,pver)          ! input temperature (K)
     real(r8) :: rho(pcols,pver)          ! input temperature (K)
@@ -627,6 +631,8 @@ contains
        call get_model_time(file)
 
        data_time = file%datatimep
+       if(present(v)) write(103,*)'data_time:',data_time, trim(adjustl(file%pathname)), trim(adjustl(file%curr_filename)), trim(adjustl(file%next_filename))
+
 
        if ( file%cyclical .or. file%cyclical_list ) then
           ! wrap around
@@ -634,11 +640,12 @@ contains
              data_time = data_time + file%one_yr 
           endif
        endif
-
+       if(present(v)) write(103,*)'data_time2:',data_time
     ! For stepTime need to advance if the times are equal
     ! Should not impact other runs?
        if ( file%curr_mod_time >= data_time ) then
           call t_startf('read_next_trcdata')
+          if(present(v)) write(103,*)'advance'
           call read_next_trcdata(state, flds, file )
           call t_stopf('read_next_trcdata')
           if(masterproc) write(iulog,*) 'READ_NEXT_TRCDATA ', flds%fldnam
@@ -650,7 +657,13 @@ contains
     ! each mpi task needs to interpolate
     call t_startf('interpolate_trcdata')
     if(present(pbuf2d)) then
+      do c = begchunk,endchunk
+         if (icolprnt(c) > 0 )write(103,*)'advance_trcdata1:',flds(3)%data(icolprnt(c),kprnt,c),get_nstep()
+      enddo
        call interpolate_trcdata( state, flds, file, pbuf2d )
+       do c = begchunk,endchunk
+         if (icolprnt(c) > 0 )write(103,*)'advance_trcdata2:',flds(3)%data(icolprnt(c),kprnt,c),get_nstep()
+      enddo
     else
        call interpolate_trcdata( state, flds, file )
     endif
@@ -659,12 +672,13 @@ contains
     file%initialized = .true.
 
     call t_stopf('advance_trcdata')
+    if(present(v)) write(103,*)'END-advance_trcdata:'
 
   end subroutine advance_trcdata
 
 !-------------------------------------------------------------------
 !-------------------------------------------------------------------
-  subroutine get_fld_data( flds, field_name, data, ncol, lchnk, pbuf )
+  subroutine get_fld_data( flds, field_name, data, ncol, lchnk, pbuf,v )
 
     use physics_buffer, only : physics_buffer_desc, pbuf_get_field
 
@@ -676,6 +690,7 @@ contains
     integer, intent(in) :: lchnk
     integer, intent(in) :: ncol
     type(physics_buffer_desc), pointer :: pbuf(:)
+    integer, optional:: v
     
 
     integer :: f, nflds
@@ -683,13 +698,16 @@ contains
 
     data(:,:) = 0._r8
     nflds = size(flds)
-
+   if(present(v)) write(102,*)'get_fld_data:',nflds
     do f = 1, nflds
+      if(present(v)) write(102,*)'get_fld_data2:',trim(flds(f)%fldnam),trim(field_name),f
        if ( trim(flds(f)%fldnam) == trim(field_name) ) then
           if ( flds(f)%pbuf_ndx>0 ) then
+            if(present(v)) write(102,*)'get_fld_data3:'
              call pbuf_get_field(pbuf, flds(f)%pbuf_ndx, tmpptr)
              data(:ncol,:) = tmpptr(:ncol,:)
           else
+            if(present(v)) write(102,*)'get_fld_data4:'
              data(:ncol,:) = flds(f)%data(:ncol,:,lchnk)
           endif
        endif

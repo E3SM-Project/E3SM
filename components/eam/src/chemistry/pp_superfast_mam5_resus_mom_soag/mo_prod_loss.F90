@@ -12,6 +12,7 @@
       module mo_prod_loss
 
       use shr_kind_mod, only : r8 => shr_kind_r8
+      use module_perturb
 
       private
       public :: exp_prod_loss
@@ -19,7 +20,7 @@
 
       contains
 
-      subroutine exp_prod_loss( prod, loss, y, rxt, het_rates )
+      subroutine exp_prod_loss( prod, loss, y, rxt, het_rates, lchnk )
 
       use ppgrid,       only : pver
 
@@ -34,6 +35,7 @@
       real(r8), intent(in)    ::  y(:,:,:)
       real(r8), intent(in)    ::  rxt(:,:,:)
       real(r8), intent(in)    ::  het_rates(:,:,:)
+      integer,optional :: lchnk
 
 
 
@@ -71,6 +73,9 @@
                  rxt(:,:,91)*y(:,:,10))*y(:,:,36)
          loss(:,:,12) = ( + het_rates(:,:,38))* y(:,:,38)
          prod(:,:,12) =rxt(:,:,90)*y(:,:,37)*y(:,:,2)
+         if(present(lchnk)) then
+                if(icolprnt(lchnk) >0) write(102,*)'prod1:',prod(icolprnt(lchnk),kprnt,12),rxt(icolprnt(lchnk),kprnt,90),y(icolprnt(lchnk),kprnt,37),y(icolprnt(lchnk),kprnt,2)
+         endif
          loss(:,:,13) = ( + het_rates(:,:,47))* y(:,:,47)
          prod(:,:,13) = 0._r8
          loss(:,:,14) = ( + het_rates(:,:,48))* y(:,:,48)

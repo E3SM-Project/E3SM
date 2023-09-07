@@ -582,7 +582,7 @@ end subroutine convect_shallow_init_cnst
    case('off', 'CLUBB_SGS', 'SHOC_SGS') ! None
 
       lq(:) = .TRUE.
-      call physics_ptend_init( ptend_loc, state%psetcols, 'convect_shallow_off', ls=.true., lq=lq ) ! Initialize local ptend type
+      call physics_ptend_init( ptend_loc, state%psetcols, 'conv_sh_off', ls=.true., lq=lq ) ! Initialize local ptend type
 
       cmfmc2      = 0._r8
       ptend_loc%q = 0._r8
@@ -810,7 +810,7 @@ end subroutine convect_shallow_init_cnst
    ! Add tendency from this process to tend from other processes here !
    ! ---------------------------------------------------------------- !
 
-   call physics_ptend_init(ptend_all, state1%psetcols, 'convect_shallow')
+   call physics_ptend_init(ptend_all, state1%psetcols, 'conv_shl')
    call physics_ptend_sum( ptend_loc, ptend_all, ncol )
 
    ! ----------------------------------------------------------------------------- !

@@ -6,6 +6,7 @@ module mo_setinv
   use chem_mods,    only : inv_lst, nfs, gas_pcnst
   use cam_history,  only : addfld, add_default, outfld
   use ppgrid,       only : pcols, pver
+  use module_perturb
 
   implicit none
 
@@ -61,7 +62,7 @@ contains
       
   end subroutine setinv_inti
 
-  subroutine setinv( invariants, tfld, h2ovmr, vmr, pmid, ncol, lchnk, pbuf )
+  subroutine setinv( invariants, tfld, h2ovmr, vmr, pmid, ncol, lchnk, pbuf)
     !-----------------------------------------------------------------
     !        ... set the invariant densities (molecules/cm**3)
     !-----------------------------------------------------------------
@@ -76,7 +77,7 @@ contains
     !-----------------------------------------------------------------
     !        ... dummy arguments
     !-----------------------------------------------------------------
-    integer,  intent(in)  ::      ncol                      ! chunk column count
+    integer,  intent(in)  ::      ncol                     ! chunk column count
     real(r8), intent(in)  ::      tfld(pcols,pver)          ! temperature
     real(r8), intent(in)  ::      h2ovmr(ncol,pver)         ! water vapor vmr
     real(r8), intent(in)  ::      pmid(pcols,pver)          ! pressure
@@ -139,11 +140,19 @@ contains
 
     do i = 1,num_tracer_cnst
 
-       call get_cnst_data( tracer_cnst_flds(i), cnst_offline,  ncol, lchnk, pbuf )
+      if(i==3 .and. icolprnt(lchnk) > 0) then
+       call get_cnst_data( tracer_cnst_flds(i), cnst_offline,  ncol, lchnk, pbuf,1 )
+      else
+         call get_cnst_data( tracer_cnst_flds(i), cnst_offline,  ncol, lchnk, pbuf )
+      endif
        ndx =  get_inv_ndx( tracer_cnst_flds(i) )
 
        do k = 1,pver
+         if (ndx == 9 .and. k==kprnt .and. icolprnt(lchnk) > 0) then
+            write(102,*)'setinv-invr1:',invariants(icolprnt(lchnk),k,ndx),ndx,i, tracer_cnst_flds(i)
+         endif
           invariants(:ncol,k,ndx) = cnst_offline(:ncol,k)*invariants(:ncol,k,m_ndx)
+      if (ndx==9 .and. k==kprnt .and. icolprnt(lchnk) > 0) write(102,*)'setinv-invr2:',invariants(icolprnt(lchnk),k,ndx),cnst_offline(icolprnt(lchnk),k),i
        enddo
 
     enddo

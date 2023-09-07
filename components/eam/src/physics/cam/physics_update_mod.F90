@@ -47,9 +47,17 @@ module physics_update_mod
   !2. If the variable is not present in the constituent array,add a "case" statement for that variable in the "select case" 
   !   construct in get_var function in this module
 
-  integer, public, parameter :: nvars_prtrb_hist = 11
-  character(len=6), public, parameter :: hist_vars(nvars_prtrb_hist) = ['s     ', 't     ', 'Q     ', 'v     ', &
-       'CLDLIQ', 'NUMLIQ', 'CLDICE', 'NUMICE', 'num_a1','num_a2','num_a3']
+  integer, public, parameter :: nvars_prtrb_hist = 95
+  character(len=10), public, parameter :: hist_vars(nvars_prtrb_hist) = ['s     ', 't     ', 'Q     ', 'v     ',  &
+       'omega','pmid','pmiddry','pdel','pdeldry','rpdel','rpdeldry','lnpmid','lnpmiddry','exner', 'zm', &
+       'pint', 'pintdry', 'lnpint', 'lnpintdry', 'zi', &
+       'CLDLIQ', 'NUMLIQ', 'CLDICE', 'NUMICE', 'O3','OH','HO2','H2O2','CH2O','CH3O2', &
+       'CH3OOH','NO','NO2','NO3','N2O5','HNO3','HO2NO2','PAN','CO','C2H6','C3H8','C2H4','ROHO2','CH3COCH3','C2H5O2', &
+       'C2H5OOH','CH3CHO','CH3CO3','ISOP','ISOPO2','MVKMACR','MVKO2','E90','N2OLNZ','NOYLNZ','CH4LNZ','H2OLNZ', &
+       'DMS','SO2','H2SO4','SOAG0', 'SOAG15','SOAG24','SOAG31','SOAG32','SOAG33','SOAG34', 'SOAG35',&
+       'so4_a1','so4_a2','so4_a3', 'so4_a5', 'pom_a1','pom_a3','pom_a4','soa_a1','soa_a2','soa_a3', &
+       'bc_a1','bc_a3','bc_a4','dst_a1','dst_a3','ncl_a1','ncl_a2','ncl_a3','mom_a1','mom_a2','mom_a3','mom_a4', &
+       'num_a1','num_a2','num_a3','num_a4', 'num_a5']
   
 contains 
 
@@ -192,6 +200,38 @@ contains
           prg_var(1:pcols,1:pver) = state%t(1:pcols,1:pver)
        case('v')
           prg_var(1:pcols,1:pver) = state%v(1:pcols,1:pver)
+         case('omega')
+            prg_var(1:pcols,1:pver) = state%omega(1:pcols,1:pver)
+         case('pmid')
+            prg_var(1:pcols,1:pver) = state%pmid(1:pcols,1:pver)
+         case('pmiddry')
+            prg_var(1:pcols,1:pver) = state%pmiddry(1:pcols,1:pver)
+         case('pdel')
+            prg_var(1:pcols,1:pver) = state%pdel(1:pcols,1:pver)
+         case('pdeldry')
+            prg_var(1:pcols,1:pver) = state%pdeldry(1:pcols,1:pver)
+         case('rpdel')
+            prg_var(1:pcols,1:pver) = state%rpdel(1:pcols,1:pver)
+         case('rpdeldry')
+            prg_var(1:pcols,1:pver) = state%rpdeldry(1:pcols,1:pver)
+         case('lnpmid')
+            prg_var(1:pcols,1:pver) = state%lnpmid(1:pcols,1:pver)
+         case('lnpmiddry')
+            prg_var(1:pcols,1:pver) = state%lnpmiddry(1:pcols,1:pver)
+         case('exner')
+            prg_var(1:pcols,1:pver) = state%exner(1:pcols,1:pver)
+         case('zm')
+            prg_var(1:pcols,1:pver) = state%zm(1:pcols,1:pver)
+         case('pint')
+            prg_var(1:pcols,1:pver) = state%pint(1:pcols,1:pver)
+         case('pintdry')
+            prg_var(1:pcols,1:pver) = state%pintdry(1:pcols,1:pver)
+         case('lnpint')
+            prg_var(1:pcols,1:pver) = state%lnpint(1:pcols,1:pver)
+         case('lnpintdry')
+            prg_var(1:pcols,1:pver) = state%lnpintdry(1:pcols,1:pver)
+         case('zi')
+            prg_var(1:pcols,1:pver) = state%zi(1:pcols,1:pver)
        case default
           call endrun('physics_update_mod.F90 - func get_var, unrecognized variable: '// trim(adjustl(hist_var)))
        end select

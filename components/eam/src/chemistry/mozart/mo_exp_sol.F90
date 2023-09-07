@@ -1,5 +1,6 @@
 
 module mo_exp_sol
+   use module_perturb
 
   private
   public :: exp_sol
@@ -84,13 +85,15 @@ contains
     !        ... Put "independent" production in the forcing
     !-----------------------------------------------------------------------      
     base_sol_reset = base_sol
+    if(icolprnt(lchnk) >0 ) write(102,*)'expsol-base_sol(2)_2:',base_sol(icolprnt(lchnk),kprnt,2)
     call indprd( 1, ind_prd, clscnt1, base_sol, extfrc, &
          reaction_rates, ncol )
 
     !-----------------------------------------------------------------------      
     !      	... Form F(y)
-    !-----------------------------------------------------------------------      
-    call exp_prod_loss( prod, loss, base_sol, reaction_rates, het_rates )
+    !-----------------------------------------------------------------------    
+    if(icolprnt(lchnk) >0 ) write(102,*)'expsol-base_sol(2)_1:',base_sol(icolprnt(lchnk),kprnt,2)
+    call exp_prod_loss( prod, loss, base_sol, reaction_rates, het_rates,lchnk )
 
     !-----------------------------------------------------------------------      
     !    	... Solve for the mixing ratio at t(n+1)
@@ -122,7 +125,9 @@ contains
              do k = 1,pver
                 chem_loss(i,k,l) = -loss(i,k,m)
                 chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                if(icolprnt(lchnk) ==i .and. k==kprnt .and. trim(solsym(l)) == 'H2SO4') write(102,*)'expsol-vmr2:',base_sol(i,k,l),l,trim(solsym(l))
                 base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+                if(icolprnt(lchnk) ==i .and. k==kprnt .and. trim(solsym(l)) == 'H2SO4') write(102,*)'expsol-vmr1:',base_sol(i,k,l),l,m,prod(i,k,m),ind_prd(i,k,m),loss(i,k,m)
              end do
          end do
        elseif (trim(solsym(l)) == 'DMS') then

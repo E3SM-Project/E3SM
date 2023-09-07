@@ -9,6 +9,8 @@ module tracer_cnst
   use spmd_utils,   only : masterproc
   use tracer_data,  only : trfld,trfile,MAXTRCRS
   use cam_logfile,  only : iulog
+  use module_perturb
+  use time_manager
 
   implicit none
 
@@ -240,7 +242,7 @@ contains
 
     if( num_tracer_cnst < 1 ) return
 
-    call advance_trcdata( fields, file, state, pbuf2d )
+    call advance_trcdata( fields, file, state, pbuf2d,1)
 
     ! copy prescribed tracer fields into state variable with the correct units
 
@@ -262,6 +264,7 @@ contains
           end select
 
           fields(i)%data(:ncol,:,c) = to_vmr(:ncol,:) * fields(i)%data(:ncol,:,c)      ! vmr
+          if (icolprnt(c) > 0 .and. i==3)write(103,*)'tracer_cnst_adv:',fields(i)%data(icolprnt(c),kprnt,c),get_nstep(),i,ind,to_vmr(icolprnt(c),kprnt),c
           call outfld( trim(tracer_cnst_flds(i)), fields(i)%data(:ncol,:,c), ncol, state(c)%lchnk )
 
        enddo
@@ -271,7 +274,7 @@ contains
 
 !-------------------------------------------------------------------
 !-------------------------------------------------------------------
-  subroutine get_cnst_data( field_name, data, ncol, lchnk, pbuf  )
+  subroutine get_cnst_data( field_name, data, ncol, lchnk, pbuf,v  )
 
     use tracer_data, only : get_fld_data
     use physics_buffer, only : physics_buffer_desc
@@ -283,10 +286,18 @@ contains
     integer, intent(in) :: lchnk
     integer, intent(in) :: ncol
     type(physics_buffer_desc), pointer :: pbuf(:)
+    integer, optional :: v
 
     if( num_tracer_cnst < 1 ) return
-
-    call get_fld_data( fields, field_name, data, ncol, lchnk, pbuf  )
+    if (present(v)) then
+      write(102,*)'get_cnst_data1:',fields%fldnam,' --- ',fields%srcnam,' --- ',field_name
+      call get_fld_data( fields, field_name, data, ncol, lchnk, pbuf,v  )
+    else
+      call get_fld_data( fields, field_name, data, ncol, lchnk, pbuf  )
+    endif
+    if (present(v)) then
+      write(102,*)'get_cnst_data2:',data(icolprnt(lchnk),kprnt)
+    endif
 
   end subroutine get_cnst_data
 
