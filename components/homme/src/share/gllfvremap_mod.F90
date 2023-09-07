@@ -65,6 +65,7 @@ module gllfvremap_mod
        gfr_dyn_to_fv_phys_topo_data, &
        ! Remap potential vorticity
        gfr_dyn_to_fv_phys_potvort, &
+       gfr_dyn_to_fv_phys_pottemp, &
        ! If nphys == 1, reconstruct the field to boost the OOA. If
        ! nphys > 1, returns immediately.
        gfr_pg1_reconstruct_topo, & ! call after the gfr_fv_phys_to_dyn_topo and the DSS
@@ -144,6 +145,11 @@ module gllfvremap_mod
       module procedure gfr_dyn_to_fv_phys_potvort_hybrid
       module procedure gfr_dyn_to_fv_phys_potvort_dom_mt
   end interface
+  interface gfr_dyn_to_fv_phys_pottemp
+      module procedure gfr_dyn_to_fv_phys_pottemp_hybrid
+      module procedure gfr_dyn_to_fv_phys_pottemp_dom_mt
+  end interface
+
 
   interface gfr_fv_phys_to_dyn
      module procedure gfr_fv_phys_to_dyn_hybrid
@@ -617,6 +623,64 @@ contains
             p(nf2*(ie-nets)+1 : nf2*(ie-nets+1)))
     end do
   end subroutine gfr_dyn_to_fv_phys_topo_data
+  subroutine gfr_dyn_to_fv_phys_pottemp_hybrid(hybrid, nt, hvcoord, elem, nets, nete, pottemp)
+    ! Remap potential temperature from GLL to FV grids.
+
+    use dimensions_mod,     only: nlev
+    use hybvcoord_mod,      only: hvcoord_t
+    use element_ops,        only:  get_field
+    use physical_constants, only: p0, kappa
+
+    type (hybrid_t), intent(in) :: hybrid
+    integer, intent(in) :: nt
+    type (hvcoord_t), intent(in) :: hvcoord
+    type (element_t), intent(in) :: elem(:)
+    integer, intent(in) :: nets, nete
+    real(kind=real_kind), intent(out) :: pottemp(:,:,:)
+    real(kind=real_kind), dimension(np,np,nlev) :: pottemp_gll
+    real(kind=real_kind), dimension(np*np,nlev) ::  pottemp_fv
+    integer :: ie, nf, nf2
+
+    nf = gfr%nphys
+    nf2 = nf*nf
+
+    do ie = nets,nete
+       call get_field(elem(ie), 'pottemp', pottemp_gll, hvcoord, nt, -1)
+       call gfr_g2f_scalar(ie, elem(ie)%metdet, pottemp_gll, pottemp_fv)
+       pottemp(:nf2, :, ie) = pottemp_fv(:nf2, :)
+    end do
+
+  end subroutine gfr_dyn_to_fv_phys_pottemp_hybrid
+  
+  subroutine gfr_dyn_to_fv_phys_pottemp_dom_mt(par, dom_mt, nt, hvcoord, elem, pottemp)
+    ! Wrapper to the hybrid-threading main routine for potential temperature remapping 
+    
+    use parallel_mod,  only: parallel_t
+    use domain_mod,    only: domain1d_t
+    use hybvcoord_mod, only: hvcoord_t
+    use thread_mod,    only: hthreads
+
+    type (parallel_t), intent(in) :: par
+    type (domain1d_t), intent(in) :: dom_mt(:)
+    integer, intent(in) :: nt
+    type (hvcoord_t), intent(in) :: hvcoord
+    type (element_t), intent(in) :: elem(:)
+    real(kind=real_kind), intent(out) :: pottemp(:,:,:)
+
+    type (hybrid_t) :: hybrid
+    integer :: nets, nete
+
+    if (.not. par%dynproc) return
+#ifdef HORIZ_OPENMP
+    !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
+#endif
+    call gfr_hybrid_create(par, dom_mt, hybrid, nets, nete)
+    call gfr_dyn_to_fv_phys_pottemp_hybrid(hybrid, nt, hvcoord, elem, nets, nete, pottemp)
+#ifdef HORIZ_OPENMP
+    !$omp end parallel
+#endif
+  end subroutine gfr_dyn_to_fv_phys_pottemp_dom_mt
+
 
   subroutine gfr_dyn_to_fv_phys_topo_data_elem(ie, elem, square, augment_variance, g, p)
     ! Element-level impl of gfr_dyn_to_fv_phys_topo_data.

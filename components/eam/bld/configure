@@ -285,6 +285,7 @@ OPTIONS
      -cldera_profiling  Build EAM with support for CLDERA profiling, linking to cldera-profiling
      -cldera_sai_trcs   Switch on idealized stratospheric aerosol injection tracers. Default: off
      -cldera_passive_trcs Switch on CLDERA passive tracers. Default: off
+     -cldera_dynamic_trcs Switch on CLDERA dynamic tracers. Default: off
 EOF
 }
 
@@ -324,6 +325,7 @@ GetOptions(
     "age_of_air_trcs!"          => \$opts{'age_of_air_trcs'},
     "cldera_sai_trcs!"          => \$opts{'cldera_sai_trcs'},
     "cldera_passive_trcs!"      => \$opts{'cldera_passive_trcs'},
+    "cldera_dynamic_trcs!"      => \$opts{'cldera_dynamic_trcs'},
     "aquaplanet"                => \$opts{'aquaplanet'},
     "cache=s"                   => \$opts{'cache'},
     "cachedir=s"                => \$opts{'cachedir'},
@@ -887,6 +889,13 @@ if (defined $opts{'cldera_passive_trcs'}) {
 }
 my $cldera_passive_trcs = $cfg_ref->get('cldera_passive_trcs') ? "ON" : "OFF";
 if ($print>=2) { print "CLDERA passive tracer package: $cldera_passive_trcs$eol"; }
+
+# Allow user to turn on the cldera dynamic tracers
+if (defined $opts{'cldera_dynamic_trcs'}) {
+    $cfg_ref->set('cldera_dynamic_trcs', $opts{'cldera_dynamic_trcs'});
+}
+my $cldera_dynamic_trcs = $cfg_ref->get('cldera_dynamic_trcs') ? "ON" : "OFF";
+if ($print>=2) { print "CLDERA dynamic tracer package: $cldera_dynamic_trcs$eol"; }
 
 # waccmx option
 if (defined $opts{'waccmx'}) {
@@ -1513,7 +1522,12 @@ else {
 
     if ($cldera_passive_trcs eq "ON") {
 	$nadv += 3;
-        if ($print>=2) { print "Advected constituents added by the CLDERA passive tracers package: 4$eol"; }
+        if ($print>=2) { print "Advected constituents added by the CLDERA passive tracers package: 3$eol"; }
+    }
+    
+    if ($cldera_dynamic_trcs eq "ON") {
+	$nadv += 2;
+        if ($print>=2) { print "Advected constituents added by the CLDERA dynamic tracers package: 2$eol"; }
     }
 
     $cfg_ref->set('nadv', $nadv);

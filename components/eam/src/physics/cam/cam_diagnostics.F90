@@ -189,7 +189,8 @@ subroutine diag_init()
    call addfld ('T',(/ 'lev' /), 'A','K','Temperature',standard_name='air_temperature')
    call addfld ('U',(/ 'lev' /), 'A','m/s','Zonal wind',standard_name='eastward_wind')
    call addfld ('V',(/ 'lev' /), 'A','m/s','Meridional wind',standard_name='northward_wind')
-   call addfld ('PV',(/ 'lev' /),'A','m2 K/kg/s','Ertel Potential Vorticity')
+   call addfld ('PV',(/ 'lev' /),'I','m2 K/kg/s','Ertel Potential Vorticity')
+   call addfld ('PT',(/ 'lev' /),'I','K','Potential Temperature')
    call addfld (cnst_name(1),(/ 'lev' /), 'A','kg/kg',cnst_longname(1))
 
    ! State before physics
@@ -455,6 +456,7 @@ subroutine diag_init()
       call add_default ('U       '  , 1, ' ')
       call add_default ('V       '  , 1, ' ')
       call add_default ('PV      '  , 1, ' ')
+      call add_default ('PT      '  , 1, ' ')
       call add_default (cnst_name(1), 1, ' ')
       call add_default ('Z3      '  , 1, ' ')
       call add_default ('OMEGA   '  , 1, ' ')
@@ -1031,6 +1033,7 @@ end subroutine diag_conv_tend_ini
     call outfld('U       ',state%u , pcols   ,lchnk   )
     call outfld('V       ',state%v , pcols   ,lchnk   )
     call outfld('PV      ',state%pv, pcols   ,lchnk   )
+    call outfld('PT      ',state%pt, pcols   ,lchnk   )
     do m=1,pcnst
        if ( cnst_cam_outfld(m) ) then
           call outfld(cnst_name(m),state%q(1,1,m),pcols ,lchnk )
