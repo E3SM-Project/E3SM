@@ -288,7 +288,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <atm_procs_list>(shoc,cldFraction,spa,p3)</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM.*noAero">(shoc,cldFraction,p3)</atm_procs_list>
       <number_of_subcycles hgrid="ne4np4">24</number_of_subcycles>
-      <number_of_subcycles hgrid="ne30np4">6</number_of_subcycles>
+      <number_of_subcycles hgrid="ne30np4">12</number_of_subcycles>
       <number_of_subcycles hgrid="ne120np4">3</number_of_subcycles>
       <number_of_subcycles hgrid="ne256np4">3</number_of_subcycles>
       <number_of_subcycles hgrid="ne512np4">1</number_of_subcycles>
