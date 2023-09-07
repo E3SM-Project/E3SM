@@ -122,6 +122,44 @@ def modify_ap_list(xml_root, node, ap_list_str, append_this):
     Modify the atm_procs_list entry of this XML node (which is an atm proc group).
     This routine can only be used to add an atm proc group OR to remove some
     atm procs.
+    >>> xml = '''
+    ... <root>
+    ...     <atmosphere_processes_defaults>
+    ...         <atm_proc_group>
+    ...             <atm_procs_list type="array(string)"/>
+    ...         </atm_proc_group>
+    ...         <p1>
+    ...             <my_param>1</my_param>
+    ...         </p1>
+    ...         <p2>
+    ...             <my_param>2</my_param>
+    ...         </p2>
+    ...     </atmosphere_processes_defaults>
+    ... </root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> tree = ET.fromstring(xml)
+    >>> node = ET.Element("my_group")
+    >>> node.append(ET.Element("atm_procs_list"))
+    >>> get_child(node,"atm_procs_list").text = ""
+    >>> modify_ap_list(tree,node,"p1,p2",False)
+    True
+    >>> get_child(node,"atm_procs_list").text
+    'p1,p2'
+    >>> modify_ap_list(tree,node,"p1",True)
+    True
+    >>> get_child(node,"atm_procs_list").text
+    'p1,p2,p1'
+    >>> modify_ap_list(tree,node,"p1,p3",False)
+    Traceback (most recent call last):
+    ValueError: ERROR: Unrecognized atm proc name 'p3'. To declare a new group, prepend and append '_' to the name.
+    >>> modify_ap_list(tree,node,"p1,_my_group_",False)
+    True
+    >>> get_child(node,"atm_procs_list").text
+    'p1,_my_group_'
+    >>> defaults = get_child(tree,'atmosphere_processes_defaults')
+    >>> has_child(defaults,'_my_group_')
+    True
     """
     curr_apl = get_child(node,"atm_procs_list")
     if curr_apl.text==ap_list_str:
