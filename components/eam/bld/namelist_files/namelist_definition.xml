@@ -4941,6 +4941,12 @@ Seasalt aerosol emission tuning factor
 Default: set by build-namelist.
 </entry>
 
+<entry id="dms_emis_scale" type="real" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+DMS emission tuning factor
+Default: set by build-namelist.
+</entry>
+
 <entry id="airpl_emis_file" type="char*256" input_pathname="abs" category="cam_chem"
        group="chem_inparm" valid_values="" >
 Full pathname of boundary dataset for airplane emissions.

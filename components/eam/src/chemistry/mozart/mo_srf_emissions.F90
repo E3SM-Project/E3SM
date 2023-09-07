@@ -232,7 +232,7 @@ contains
   end subroutine set_srf_emissions_time
 
   ! adds surf flux specified in file to sflx
-  subroutine set_srf_emissions( lchnk, ncol, sflx )
+  subroutine set_srf_emissions( lchnk, ncol, dms_emis_scale, sflx )
     !--------------------------------------------------------
     !	... form the surface fluxes for this latitude slice
     !--------------------------------------------------------
@@ -249,6 +249,7 @@ contains
     !--------------------------------------------------------
     integer,  intent(in)  :: ncol                  ! columns in chunk
     integer,  intent(in)  :: lchnk                 ! chunk index
+    real(r8), intent(in)  :: dms_emis_scale        ! scaling dms emissions
     real(r8), intent(out) :: sflx(:,:) ! surface emissions ( kg/m^2/s )
 
     !--------------------------------------------------------
@@ -276,7 +277,6 @@ contains
 
     real(r8) :: flux(ncol)
     real(r8) :: mfactor
-    real(r8) :: dms_emis_scale
     integer  :: isec
 
     character(len=12),parameter :: mks_units(4) = (/ "kg/m2/s     ", &
@@ -288,7 +288,6 @@ contains
     real(r8), dimension(ncol) :: rlats, rlons 
 
     sflx(:,:) = 0._r8
-    dms_emis_scale = 1._r8
 
     !--------------------------------------------------------
     !	... set non-zero emissions
