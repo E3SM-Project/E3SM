@@ -493,14 +493,15 @@ def resolve_inheritance(root, elem):
                 new_entry = copy.deepcopy(entry)
                 elem.append(new_entry)
             else:
-                # Parent may define the type of an entry. We cannot change this
-                if "type" in entry.attrib.keys():
-                    parent_type = entry.attrib["type"]
-                    for child in elem:
-                        if child.tag==entry.tag:
-                            expect ("type" not in child.attrib.keys(),
-                                    "Do not set 'type' attribute when parent node already specifies it.")
-                            child.attrib["type"] = parent_type
+                # Parent may define the type and/or doc of an entry. We cannot change this
+                for att in ["type","doc"]:
+                    if att in entry.attrib.keys():
+                        parent_type = entry.attrib[att]
+                        for child in elem:
+                            if child.tag==entry.tag:
+                                expect (att not in child.attrib.keys(),
+                                        f"Do not set '{att}' attribute when parent node already specifies it.")
+                                child.attrib[att] = parent_type
 
     for child in elem:
         resolve_inheritance(root,child)
