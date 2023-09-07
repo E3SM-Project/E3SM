@@ -7,11 +7,11 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  mpas_tracer_advection_shared
+!  li_tracer_advection_fct_shared
 !
-!> \brief MPAS ocean tracer advection common coefficients and variables
-!> \author Doug Jacobsen
-!> \date   03/09/12
+!> \brief MPAS advection common coefficients and variables
+!> \author Doug Jacobsen, Trevor Hillebrand
+!> \date   03/09/12, ported to MALI Sept 2023
 !> \details
 !>  This module contains the routines and arrays for some common 
 !>  tracer advection quantities.
@@ -71,7 +71,7 @@ module li_tracer_advection_fct_shared
 !> \brief MPAS tracer advection coefficients
 !> \author Doug Jacobsen, Bill Skamarock,
 !>         adapted for MALI by Trevor Hillebrand and Matt Hoffman
-!> \date   03/09/12, adapted for MALI 03/2023
+!> \date   03/09/12, adapted for MALI 09/2023
 !> \details
 !>  This routine precomputes advection coefficients for horizontal
 !>  advection of tracers.

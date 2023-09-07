@@ -11,8 +11,8 @@
 !  li_advection
 !
 !> \brief MPAS land ice advection solver
-!> \author William Lipscomb
-!> \date   December 2015
+!> \author William Lipscomb, Trevor Hillebrand
+!> \date   December 2015, updated Sept 2023 to include FCT
 !> \details
 !>  This module contains the routines for advecting ice thickness
 !>  and tracers for land ice.
@@ -62,8 +62,8 @@ module li_advection
 !  subroutine li_advection_thickness_tracers
 !
 !> \brief   Advection for ice thickness and tracers
-!> \author  William Lipscomb
-!> \date    November 2015
+!> \author  William Lipscomb, Trevor Hillebrand
+!> \date    November 2015, updated Sept 2023 to include FCT
 !> \details
 !>  This routine (1) computes new values of ice thickness and tracers under
 !>  horizontal advection, (2) applies surface and basal mass balance
@@ -417,7 +417,7 @@ module li_advection
             activeTracerHorizontalAdvectionEdgeFlux(:,:,:) = 0.0_RKIND
          endif
 
-         ! Transport thickness and tracers using a first-order upwind scheme
+         ! Transport thickness and tracers
          ! Note:  For the enthalpy scheme, temperature and waterFrac are the primary prognostic
          !        variables to be updated, but enthalpy is the advected tracer (for reasons of
          !        energy conservation).
@@ -461,8 +461,6 @@ module li_advection
                   err)
          elseif ((trim(config_thickness_advection) .eq. 'fo') .and. &
                   trim(config_tracer_advection) .eq. 'fct') then
-             ! TODO: Decide what to do about w (vertical vel).
-             ! For now, just setting it to 0 to try to get this to compile.
              call advect_thickness_tracers_upwind(&
                   dt,                      &
                   meshPool,                &
@@ -1068,8 +1066,8 @@ module li_advection
 !  subroutine tracer_setup
 !
 !> \brief   Assemble a 3D array for tracer advection
-!> \author  William Lipscomb
-!> \date    November 2015
+!> \author  William Lipscomb, Trevor Hillebrand
+!> \date    November 2015, updated Sept 2023 for FCT
 !> \details
 !>  This routine assembles a 3D array for tracer advection.
 !>  Each tracer in the array is transported conservatively, along
