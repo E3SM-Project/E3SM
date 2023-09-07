@@ -3314,12 +3314,12 @@ module li_calving
 
 !-----------------------------------------------------------------------
 
-   subroutine li_calculate_damage(domain, rkTendAccum, rkTend, rkWeight, err)
+   subroutine li_calculate_damage(domain, err)
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-      real (kind=RKIND), intent(in) :: rkWeight
+
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
@@ -3330,7 +3330,7 @@ module li_calving
       ! output variables
       !-----------------------------------------------------------------
       integer, intent(out) :: err !< Output: error flag
-      real (kind=RKIND), dimension(:,:), intent(out) :: rkTend, rkTendAccum
+
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
@@ -3348,7 +3348,6 @@ module li_calving
       real(kind=RKIND), pointer :: config_flowLawExponent
       logical, pointer :: config_print_calving_info
 
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: eMax
       real (kind=RKIND), dimension(:), pointer :: tauMax, tauMin
@@ -3369,8 +3368,8 @@ module li_calving
       real (kind=RKIND), pointer :: deltat !< time step (s)
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
-      integer, pointer :: nCells, nVertLevels
-      integer :: iCell, jCell, iNeighbor, n_damage_downstream, k
+      integer, pointer :: nCells
+      integer :: iCell, jCell, iNeighbor, n_damage_downstream
       real(kind=RKIND) :: damage_downstream
       real(kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY
       real(kind=RKIND), dimension(6) :: localMinInfo, localMaxInfo, globalMinInfo, globalMaxInfo
@@ -3397,13 +3396,11 @@ module li_calving
 
          ! get fields
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
          call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
          call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
          call mpas_pool_get_array(geometryPool, 'damage', damage)
          call mpas_pool_get_array(geometryPool, 'ddamagedt', ddamagedt)
          call mpas_pool_get_array(geometryPool, 's0', s0)
@@ -3458,11 +3455,6 @@ module li_calving
          !    damageSource(:) * (1+exp(-uReconstructX(1,:)*seconds/1000.0)))
 
          ddamagedt(:) = damageSource(:) * damage(:)
-         ! Update damage tendency for RK time integration
-         do k = 1, nVertLevels
-            rkTend(k,:) = ddamagedt(:) * layerThickness(k,:)
-            rkTendAccum(k,:) = rkTendAccum(k,:) + rkTend(k,:) * rkWeight
-         enddo
 
          damage(:) = damage(:) + ddamagedt(:) * deltat
 
@@ -3684,18 +3676,14 @@ module li_calving
          endif
          ! put the damageMax value back to preserve the damage value (no heal)
 
-         ! limit damage to [damageNye, 1.0]
-         do iCell = 1, nCells
-            if (damage(iCell) < 0.0_RKIND) then
-                damage(iCell) = 0.0_RKIND
-            end if
-            if (damage(iCell) < damageNye(iCell)) then
-                damage(iCell) = damageNye(iCell)
-            end if
-            if (damage(iCell) > 1.0_RKIND) then
-                damage(iCell) = 1.0_RKIND
-            end if
-         end do
+         where (damage < 0.0_RKIND)
+             damage = 0.0_RKIND
+         end where
+
+         where (damage > 1.0_RKIND)
+             damage = 1.0_RKIND
+         end where
+
 
          do iCell = 1, nCells
             if (li_mask_is_grounded_ice(cellMask(iCell)) .or. .not. li_mask_is_ice(cellMask(iCell))) then

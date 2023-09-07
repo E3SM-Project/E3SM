@@ -489,8 +489,8 @@
 		            possible_values="'forward_euler' or 'runge_kutta'"
 		/>
                 <nml_option name="config_rk_order" type="integer" default_value="2" units="unitless"
-                            description="Order of Runge-Kutta time integration to use. A value of 1 is equivalent to forward euler."
-                            possible_values="1, 2, 3, 4"
+                            description="Order of Runge-Kutta time integration to use. A value of 1 is equivalent to forward euler. Values of 2 and 3 indicate strong-stability preserving RK2 and RK3. There is currently no support for classical RK2 or RK4 methods."
+                            possible_values="1, 2, 3"
                 />
 		<nml_option name="config_adaptive_timestep" type="logical" default_value=".false." units="unitless"
 			description="Determines if the time step should be adjusted based on the CFL condition or should be steady in time. If true, the config_dt_* options are ignored."
@@ -1186,12 +1186,6 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="dynamicThickening" type="real" dimensions="nCells Time" units="m a^{-1}"
                      description="diagnostic field of dynamic thickening rate (calculated as negative of flux divergence)"
-                />
-                <var name="rkTend" type="real" dimensions="maxTracersAdvect nVertLevels nCells Time" units="none"
-                     description="tendencies for RK time integration at current RK stage"
-                />
-                <var name="rkTendAccum" type="real" dimensions="maxTracersAdvect nVertLevels nCells Time" units="none"
-                     description="accumulated tendencies for RK time integration"
                 />
                 <var name="cellMask" type="integer" dimensions="nCells Time" units="none"
                      description="bitmask indicating various properties about the ice sheet on cells.  cellMask only needs to be a restart field if config_allow_additional_advance = false (to keep the mask of initial ice extent)"
