@@ -7,7 +7,7 @@ time_stepping:
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
 
 atmosphere_processes:
-  atm_procs_list: (SurfaceCouplingImporter,SurfaceCouplingExporter)
+  atm_procs_list: [SurfaceCouplingImporter,SurfaceCouplingExporter]
   schedule_type: Sequential
 
 grids_manager:

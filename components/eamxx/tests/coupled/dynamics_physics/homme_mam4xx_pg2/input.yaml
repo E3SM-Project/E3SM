@@ -15,12 +15,12 @@ initial_conditions:
   pbl_height : 1000.0
 
 atmosphere_processes:
-  atm_procs_list: (homme,physics)
+  atm_procs_list: [homme,physics]
   schedule_type: Sequential
   homme:
     Moisture: moist
   physics:
-    atm_procs_list: (mam4_micro,mam4_optics)
+    atm_procs_list: [mam4_micro,mam4_optics]
     schedule_type: Sequential
     Type: Group
     mam4_micro:
