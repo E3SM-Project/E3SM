@@ -2567,7 +2567,12 @@ contains
     lnx = ng
     ! it is needed to overwrite that for land, ng is too small
     !  ( for ne4pg2 it is 201 instead of 384)
-    if (present(nx)) lnx = nx 
+    if (present(nx)) then
+#ifdef MOABCOMP
+       if (iam==0) write(logunit,*) subname, ' nx present: ', nx  
+#endif
+       lnx = nx 
+    endif
     lny = 1 ! do we need 2 var, or just 1 
     ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
     ns = nvise(1) ! local cells 
@@ -2575,6 +2580,9 @@ contains
     allocate(data_reorder(ns))
     allocate(dof(ns))
     allocate(dof_reorder(ns))
+#ifdef MOABCOMP
+    if (iam==0) write(logunit,*) subname, ' ns, lnx ', ns, lnx, ' dname ', trim(dname)  
+#endif
 
    ! note: size of dof is ns
     tagname = 'GLOBAL_ID'//C_NULL_CHAR
@@ -2584,6 +2592,9 @@ contains
        call shr_sys_abort(subname//'cannot get dofs ')
     endif
 
+#ifdef MOABCOMP
+   if (iam==0) write(logunit,*) subname, ' dofs on iam=0: ', dof  
+#endif
    allocate(indx(ns))
    call IndexSet(ns, indx)
    call IndexSort(ns, indx, dof, descend=.false.)
@@ -2591,9 +2602,12 @@ contains
    do ix=1,ns
       dof_reorder(ix) = dof(indx(ix)) ! 
    enddo
+#ifdef MOABCOMP
+   if (iam==0) write(logunit,*) subname, ' dof_reorder on iam=0: ', dof_reorder
+#endif
    deallocate(dof)
 
-   do k = 1, size_list
+   do index_list = 1, size_list
        call mct_list_get(mctOStr,index_list,temp_list)
        field = mct_string_toChar(mctOStr)
        name1 = trim(lpre)//'_'//trim(field)
@@ -2601,7 +2615,7 @@ contains
        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
        rcode = pio_inq_varid(pioid,trim(name1),varid)
        if (rcode == pio_noerr) then
-          if (k==1) then
+          if (index_list==1) then
              rcode = pio_inq_varndims(pioid, varid, ndims)
              rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
              rcode = pio_inq_dimlen(pioid, dimid(1), lnx)
@@ -2610,11 +2624,11 @@ contains
              else
                 lny = 1
              end if
-             if (lnx*lny /= ng) then
-                write(logunit,*) subname,' ERROR: dimensions do not match',&
-                     lnx,lny, ng
-                call shr_sys_abort(subname//'ERROR: dimensions do not match')
-             end if
+!             if (lnx*lny /= ng) then
+!                write(logunit,*) subname,' ERROR: dimensions do not match',&
+!                     lnx,lny, ng
+!                call shr_sys_abort(subname//'ERROR: dimensions do not match')
+!             end if
              
              call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof_reorder, iodesc)
 
@@ -2625,6 +2639,12 @@ contains
           do ix=1,ns
              data_reorder(indx(ix)) = data1(ix) ! or is it data_reorder(ix) = data1(indx(ix)) ? 
           enddo
+#ifdef MOABCOMP
+          if (iam==0 .and. index_list==1) then
+             write(logunit,*) subname, 'data1   ',  data1
+             write(logunit,*) subname, 'data_reorder   ',  data_reorder
+          endif
+#endif
           if (present(matrix)) then
             matrix(:, index_list)  = data_reorder(:) ! 
           else
@@ -2639,11 +2659,11 @@ contains
          !  do n1 = 1,ni
          !     do n2 = 1,ns
          !        n = n + 1
-         !        avs(n1)%rAttr(k,n2) = data(n)
+         !        avs(:n1)%rAttr(k,n2) = data(n)
          !     enddo
          !  enddo
        else
-          write(logunit,*)'seq_io_readav warning: field ',trim(field),' is not on restart file'
+          write(logunit,*)'seq_io_read_moab_tags warning: field ',trim(field),' is not on restart file'
           write(logunit,*)'for backwards compatibility will set it to 0'
          !  do n1 = 1,ni
          !     avs(n1)%rattr(k,:) = 0.0_r8
@@ -2666,7 +2686,6 @@ contains
 
     deallocate(data1)
     deallocate(data_reorder)
-    deallocate(dof_reorder)
 
    !  !--- zero out fill value, this is somewhat arbitrary
    !  do n1 = 1,ni
