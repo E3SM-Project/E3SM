@@ -10,7 +10,7 @@ initial_conditions:
   Z: "A"
 
 atmosphere_processes:
-  atm_procs_list: (dummy1, dummy2, dummy3)
+  atm_procs_list: [dummy1, dummy2, dummy3]
   schedule_type: Sequential
 
   dummy1:
