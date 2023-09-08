@@ -2450,6 +2450,11 @@ module li_subglacial_hydro
 
                endif
 
+               !avoid negatives, default to original thickness
+               if (iceThicknessHydro(iCell) < 0.0_RKIND) then
+                  iceThicknessHydro(iCell) = thickness(iCell)
+               endif
+            
             endif
          enddo
       endif
