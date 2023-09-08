@@ -9,7 +9,7 @@ time_stepping:
   number_of_steps: ${NUM_STEPS}
 
 atmosphere_processes:
-  atm_procs_list: (cosp)
+  atm_procs_list: [cosp]
 
 grids_manager:
   Type: Mesh Free
