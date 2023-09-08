@@ -4,7 +4,7 @@ driver_options:
   atmosphere_dag_verbosity_level: 5
 
 atmosphere_processes:
-  atm_procs_list: (rrtmgp)
+  atm_procs_list: [rrtmgp]
   rrtmgp:
     column_chunk_size: 123
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]

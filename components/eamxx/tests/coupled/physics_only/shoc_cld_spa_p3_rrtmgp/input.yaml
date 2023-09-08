@@ -9,10 +9,10 @@ time_stepping:
   number_of_steps: ${NUM_STEPS}
 
 atmosphere_processes:
-  atm_procs_list: (mac_mic,rrtmgp)
+  atm_procs_list: [mac_mic,rrtmgp]
   schedule_type: Sequential
   mac_mic:
-    atm_procs_list: (shoc,CldFraction,spa,p3)
+    atm_procs_list: [shoc,CldFraction,spa,p3]
     Type: Group
     schedule_type: Sequential
     number_of_subcycles: ${MAC_MIC_SUBCYCLES}
