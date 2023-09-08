@@ -2663,7 +2663,7 @@ contains
          !     enddo
          !  enddo
        else
-          write(logunit,*)'seq_io_read_moab_tags warning: field ',trim(field),' is not on restart file'
+          write(logunit,*)subname, ' warning: field ',trim(field), ' name1:', trim(name1),  ' is not on restart file'
           write(logunit,*)'for backwards compatibility will set it to 0'
          !  do n1 = 1,ni
          !     avs(n1)%rattr(k,:) = 0.0_r8

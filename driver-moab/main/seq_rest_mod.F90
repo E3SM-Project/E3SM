@@ -522,7 +522,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
       !           tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
       !  arrsize = nxflds * lsize !        allocate (xao_om (lsize, nxflds))
       !  ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om(1,1))
-           call seq_io_read(moab_rest_file, mbofxid, 'xao_om', &
+           call seq_io_read(moab_rest_file, mbofxid, 'xao_ox', &
               trim(seq_flds_xao_fields) )
 !           gsmap         => component_get_gsmap_cx(ocn(1))
 !           x2oacc_ox     => prep_ocn_get_x2oacc_ox()
