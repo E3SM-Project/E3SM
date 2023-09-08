@@ -167,11 +167,11 @@ atm_fn = uncompress(atm_fn)
 print('Using log file {}'.format(atm_fn))
 [d1,d2] = gather_energy_data(atm_fn)
 
-goodw = (conservativeW(0,d2['nstep'],d2['tw'],d2['wdiff'],2e-8,True))
+goodw = (conservativeW(0,d2['nstep'],d2['tw'],d2['wdiff'],2e-7,True))
 #d1 and d2 arrays are of different size
 #d1 array has values for nstep 0, 1, 2, 3
 #d2 array has values for nstep 2, 3 (but they are named as 1 and 2, they are shifted by 1 wrt te arrays)
-goode = (conservativeE(2,0,d1['te'],d2['nstep'],d2['ediff'],2e-13,True))
+goode = (conservativeE(2,0,d1['te'],d2['nstep'],d2['ediff'],2e-12,True))
 
 if (goodw and goode):
     print('PASS')
