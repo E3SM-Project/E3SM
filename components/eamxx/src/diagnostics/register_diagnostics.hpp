@@ -11,11 +11,7 @@
 #include "diagnostics/vertical_layer.hpp"
 #include "diagnostics/dry_static_energy.hpp"
 #include "diagnostics/sea_level_pressure.hpp"
-#include "diagnostics/liquid_water_path.hpp"
-#include "diagnostics/ice_water_path.hpp"
-#include "diagnostics/rime_water_path.hpp"
-#include "diagnostics/vapor_water_path.hpp"
-#include "diagnostics/rain_water_path.hpp"
+#include "diagnostics/water_path.hpp"
 #include "diagnostics/shortwave_cloud_forcing.hpp"
 #include "diagnostics/longwave_cloud_forcing.hpp"
 #include "diagnostics/relative_humidity.hpp"
@@ -43,11 +39,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("dz",&create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
   diag_factory.register_product("DryStaticEnergy",&create_atmosphere_diagnostic<DryStaticEnergyDiagnostic>);
   diag_factory.register_product("SeaLevelPressure",&create_atmosphere_diagnostic<SeaLevelPressureDiagnostic>);
-  diag_factory.register_product("LiqWaterPath",&create_atmosphere_diagnostic<LiqWaterPathDiagnostic>);
-  diag_factory.register_product("IceWaterPath",&create_atmosphere_diagnostic<IceWaterPathDiagnostic>);
-  diag_factory.register_product("VapWaterPath",&create_atmosphere_diagnostic<VapWaterPathDiagnostic>);
-  diag_factory.register_product("RainWaterPath",&create_atmosphere_diagnostic<RainWaterPathDiagnostic>);
-  diag_factory.register_product("RimeWaterPath",&create_atmosphere_diagnostic<RimeWaterPathDiagnostic>);
+  diag_factory.register_product("WaterPath",&create_atmosphere_diagnostic<WaterPathDiagnostic>);
   diag_factory.register_product("ShortwaveCloudForcing",&create_atmosphere_diagnostic<ShortwaveCloudForcingDiagnostic>);
   diag_factory.register_product("LongwaveCloudForcing",&create_atmosphere_diagnostic<LongwaveCloudForcingDiagnostic>);
   diag_factory.register_product("RelativeHumidity",&create_atmosphere_diagnostic<RelativeHumidityDiagnostic>);
