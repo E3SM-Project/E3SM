@@ -34,10 +34,8 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(longwave_cloud_forcing "longwave_cloud_forcing_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test Relative Humidity
   CreateUnitTest(relative_humidity "relative_humidity_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test Zonal Vapor Flux
-  CreateUnitTest(zonal_vapor_flux "zonal_vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test Meridional Vapor Flux
-  CreateUnitTest(meridional_vapor_flux "meridional_vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test Vapor Flux
+  CreateUnitTest(vapor_flux "vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test precipitation ice mass surface flux
   CreateUnitTest(precip_ice_surf_mass_flux "precip_ice_surf_mass_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test precipitation liq mass surface flux

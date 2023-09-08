@@ -15,8 +15,7 @@
 #include "diagnostics/shortwave_cloud_forcing.hpp"
 #include "diagnostics/longwave_cloud_forcing.hpp"
 #include "diagnostics/relative_humidity.hpp"
-#include "diagnostics/zonal_vapor_flux.hpp"
-#include "diagnostics/meridional_vapor_flux.hpp"
+#include "diagnostics/vapor_flux.hpp"
 #include "diagnostics/field_at_pressure_level.hpp"
 #include "diagnostics/precip_surf_mass_flux.hpp"
 #include "diagnostics/surf_upward_latent_heat_flux.hpp"
@@ -43,8 +42,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("ShortwaveCloudForcing",&create_atmosphere_diagnostic<ShortwaveCloudForcingDiagnostic>);
   diag_factory.register_product("LongwaveCloudForcing",&create_atmosphere_diagnostic<LongwaveCloudForcingDiagnostic>);
   diag_factory.register_product("RelativeHumidity",&create_atmosphere_diagnostic<RelativeHumidityDiagnostic>);
-  diag_factory.register_product("ZonalVapFlux",&create_atmosphere_diagnostic<ZonalVapFluxDiagnostic>);
-  diag_factory.register_product("MeridionalVapFlux",&create_atmosphere_diagnostic<MeridionalVapFluxDiagnostic>);
+  diag_factory.register_product("VaporFlux",&create_atmosphere_diagnostic<VaporFluxDiagnostic>);
   diag_factory.register_product("precip_surf_mass_flux",&create_atmosphere_diagnostic<PrecipSurfMassFlux>);
   diag_factory.register_product("surface_upward_latent_heat_flux",&create_atmosphere_diagnostic<SurfaceUpwardLatentHeatFlux>);
 }
