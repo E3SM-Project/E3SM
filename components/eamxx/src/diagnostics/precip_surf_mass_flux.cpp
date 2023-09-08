@@ -13,16 +13,14 @@ PrecipSurfMassFlux (const ekat::Comm& comm, const ekat::ParameterList& params)
   ci_string type = m_params.get<std::string>("precip_type");
   if (type=="ice") {
     m_type = s_ice;
-    m_name = "precip_ice_surf_mass_flux";
-  } else if (type=="liquid") {
+  } else if (type=="liq") {
     m_type = s_liq;
-    m_name = "precip_liq_surf_mass_flux";
   } else if (type=="total") {
     m_type = s_ice + s_liq;
-    m_name = "precip_total_surf_mass_flux";
   } else {
     EKAT_ERROR_MSG ("Error! Invalid choice for 'precip_type': " + type + "\n");
   }
+  m_name = "precip_" + type + "_surf_mass_flux";
 }
 
 // ==============================================================================
