@@ -1993,6 +1993,15 @@ Toggle to turn on the soil erosion and OM pools feedback.
 </entry>
 
 <!-- ========================================================================================  -->
+<!-- Namelist options for using modifed infiltration scheme in h2osfc                          -->
+<!-- ========================================================================================  -->
+
+<entry id="use_modified_infil" type="logical" category="clm_physics"
+       group="elm_inparm" valid_values="" value=".false.">
+Toggle to use modifed infiltration scheme in h2osfc     .
+</entry>
+    
+<!-- ========================================================================================  -->
 <!-- Namelist options for land river coulping                                                  -->
 <!-- ========================================================================================  -->
 <entry id="lnd_rof_coupling_nstep" type="integer" category="elm_physics"
