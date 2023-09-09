@@ -1424,7 +1424,7 @@ void AtmosphereDriver::run (const int dt) {
   m_current_ts += dt;
 
   // Update output streams
-  m_atm_logger->log("EAMxx::run] running output managers...");
+  m_atm_logger->debug("[EAMxx::run] running output managers...");
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
   }
