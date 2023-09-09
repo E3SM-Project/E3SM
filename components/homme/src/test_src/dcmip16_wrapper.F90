@@ -1417,6 +1417,13 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 end subroutine
 
 
+subroutine qsat_kessler(p, T, qsat)
+  real(rl),         intent(out):: qsat
+  real(rl),         intent(in) :: p, T
+  qsat = bubble_const1 / p * exp( bubble_const2 * (T - bubble_const3) / ( T - bubble_const4 ) )
+end subroutine qsat_kessler
+
+
 subroutine qsat_rj(p, T, qsat)
   real(rl),         intent(out):: qsat
   real(rl),         intent(in) :: p, T
