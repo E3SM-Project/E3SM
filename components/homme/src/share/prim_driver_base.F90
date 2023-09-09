@@ -1358,7 +1358,7 @@ contains
     if (apply_forcing) then
        ! Apply tracer forcings over tracer time step.
        do ie = nets,nete
-          call ApplyCAMForcing_tracers(elem(ie),hvcoord,tl%n0,n0_qdp,dt_q,.false.,ie)
+          call ApplyCAMForcing_tracers(elem(ie),hvcoord,tl%n0,n0_qdp,dt_q,.false.)
        enddo
     end if
 
@@ -1505,42 +1505,16 @@ contains
   real (kind=real_kind),  intent(in)    :: dt_remap
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: n0,n0qdp,nets,nete
-  integer                               :: ie,         ii,jj
+  integer                               :: ie
 
   call t_startf("ApplyCAMForcing_remap")
   if (ftype==-1) then
     !do nothing
   elseif (ftype==0) then
     do ie = nets,nete
-       call applyCAMforcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.,ie)
+       call applyCAMforcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.)
     enddo
     call applyCAMforcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
-
-
-!print *, 'new vapor mass', elem%state%Qdp(4,4,ii:jj,1,np1_qdp)
-!print *, 'compute rstar from scratch',elem%state%dp3d(4,4,ii:jj,np1)*(rgas + (rvapor-rgas)*elem%state%Q(4,4,ii:jj,1))
-!print *, 'compute rstar from scratch2',elem%state%dp3d(4,4,ii:jj,np1)*rgas + (rvapor-rgas)*elem%state%Qdp(4,4,ii:jj,1,np1_qdp)
-!print *, 'old phi in routine', elem%state%phinh_i(4,4,ii:jj,np1)
-!print *, 'old vtheta',elem%state%vtheta_dp(4,4,ii:jj,np1)
-
-#if 0
-!at the end what do we see?
-do ie=nets,nete
-if(elem(ie)%globalid==6)then
-ii=110; jj=110;
-print *,'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM'
-print *, 'Qdp1', elem(ie)%state%Qdp(4,4,ii:jj,n0qdp,1)
-print *, 'Qdp2', elem(ie)%state%Qdp(4,4,ii:jj,n0qdp,2)
-print *, 'Qdp3', elem(ie)%state%Qdp(4,4,ii:jj,n0qdp,3)
-print *, 'vtheta_dp', elem(ie)%state%vtheta_dp(4,4,ii:jj,n0)
-print *, 'dp', elem(ie)%state%dp3d(4,4,ii:jj,n0)
-print *, 'phi', elem(ie)%state%phinh_i(4,4,ii:jj,n0)
-stop
-endif
-enddo
-#endif
-
-
   elseif (ftype==1) then
     !do nothing
   elseif (ftype==2) then
@@ -1565,7 +1539,7 @@ enddo
 
 
 
-  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,adjustment, ie)
+  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,adjustment)
   !
   ! Apply forcing to tracers
   !    adjustment=1:  apply forcing as hard adjustment, assume qneg check already done
@@ -1597,7 +1571,7 @@ enddo
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
   use control_mod,        only : theta_hydrostatic_mode
-  use physical_constants, only : cp, g, kappa, Rgas, p0, rvapor=>rwater_vapor
+  use physical_constants, only : cp, g, kappa, Rgas, p0
   use element_ops,        only : get_temperature, get_r_star, get_hydro_pressure
   use eos,                only : pnh_and_exner_from_eos
 #ifdef HOMMEXX_BFB_TESTING
@@ -1609,11 +1583,10 @@ enddo
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,np1_qdp
-  integer,                intent(in), optional    :: ie
   logical,                intent(in)    :: adjustment
 
   ! local
-  integer :: i,j,k,q,    ii,jj
+  integer :: i,j,k,q
   real (kind=real_kind)  :: fq
   real (kind=real_kind)  :: dp(np,np,nlev), ps(np,np), dp_adj(np,np,nlev)
   real (kind=real_kind)  :: phydro(np,np,nlev)  ! hydrostatic pressure
@@ -1629,21 +1602,17 @@ enddo
   real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
 #endif
 
-
-
-
-!disable it
-#if 0
-
-
-
-
 #ifdef HOMMEXX_BFB_TESTING
   ! BFB comparison with C++ requires to perform the reduction
   ! of FQ over the whole column *before* adding to ps
   real (kind=real_kind) :: sum_fq(np,np)
   sum_fq = 0
 #endif
+
+
+#if 0
+
+stop
 
   call t_startf("ApplyCAMForcing_tracers")
 
@@ -1654,11 +1623,11 @@ enddo
 #ifdef SCREAM
      adjust_ps=.false.  ! Lagrangian case can support adjusting dp3d or ps
 #else
-     adjust_ps=.false.   ! Lagrangian case can support adjusting dp3d or ps
+     adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
 #endif
   endif
 #else
-  adjust_ps=.false.      ! preqx requires forcing to stay on reference levels
+  adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
 #endif
 
   dp=elem%state%dp3d(:,:,:,np1)
@@ -1737,8 +1706,7 @@ enddo
                      endif
                   endif
                   elem%state%Qdp(i,j,k,q,np1_qdp) = elem%state%Qdp(i,j,k,q,np1_qdp)+fq
-                  if ( (q==1) .or. (q==2) .or. (q==3)) then
-!print *, 'WL IS ON'
+                  if (q==1) then
                      elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+fq/dt
                      dp_adj(i,j,k)=dp_adj(i,j,k) + fq
                   endif
@@ -1784,8 +1752,6 @@ enddo
       endif
       do k=1,nlev
          pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
-
-!exner is used to compute vtheta
 #ifdef HOMMEXX_BFB_TESTING
          exner(:,:,k)=bfb_pow(pnh(:,:,k)/p0,Rgas/Cp)
 #else
@@ -1814,41 +1780,11 @@ enddo
    
    elem%derived%FPHI(:,:,:) = &
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
-  
-#if 1
-!if( present(ie) .and. ie == 2 ) then
-if(elem%globalid == 6) then
-ii=110; jj=110;
-print *, 'global id ---------------------------------------', elem%globalid
-print *, 'new vapor mass', elem%state%Qdp(4,4,ii:jj,1,np1_qdp)
-print *, 'compute rstar from scratch',elem%state%dp3d(4,4,ii:jj,np1)*(rgas + (rvapor-rgas)*elem%state%Q(4,4,ii:jj,1))
-print *, 'compute rstar from scratch2',elem%state%dp3d(4,4,ii:jj,np1)*rgas + (rvapor-rgas)*elem%state%Qdp(4,4,ii:jj,1,np1_qdp)
-print *, 'old phi in routine', elem%state%phinh_i(4,4,ii:jj,np1)
-print *, 'new phi in routine',  phi_n1(4,4,ii:jj)
-print *, 'old vtheta',elem%state%vtheta_dp(4,4,ii:jj,np1)
-print *, 'new theta in routien', vthn1(4,4,ii:jj)
-print *, 'phi forcing is',elem%derived%FPHI(4,4,ii:jj)
-print *, 'theta forcing is',elem%derived%FVTheta(4,4,ii:jj)
-print *, 'theta forcing pieces',(vthn1(4,4,ii:jj)- elem%state%vtheta_dp(4,4,ii:jj,np1)),dt
-print *,'vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*elem%state%dp3d(:,:,:,np1)/exner(:,:,:)'
-print *, 'its parts',rstarn1(4,4,ii:jj),Rgas,tn1(4,4,ii:jj),elem%state%dp3d(4,4,ii:jj,np1),1.0/exner(4,4,ii:jj)
-print *,'merge rstar',rstarn1(4,4,ii:jj)*elem%state%dp3d(4,4,ii:jj,np1),Rgas,tn1(4,4,ii:jj),1.0/exner(4,4,ii:jj)
-print *, 'new dp3d', elem%state%dp3d(4,4,ii:jj,np1)
-print *, 'new rstar*new_dp ', rstarn1(4,4,ii:jj)*elem%state%dp3d(4,4,ii:jj,np1)
-print *, 'tn1 is', tn1(4,4,ii:jj)
-print *, 'pnh used ', pnh(4,4,ii:jj)
-print *, 'exner used', exner(4,4,ii:jj)
-print *, 'dphi is ', Rgas*vthn1(4,4,ii:jj)*exner(4,4,ii:jj)/pnh(4,4,ii:jj)
-print *, 'FQ1', elem%derived%FQ(4,4,ii:jj,1)
-endif
-
-#endif
-
+   
 #endif
 
   call t_stopf("ApplyCAMForcing_tracers")
 
-!disable if
 #endif
 
   end subroutine applyCAMforcing_tracers

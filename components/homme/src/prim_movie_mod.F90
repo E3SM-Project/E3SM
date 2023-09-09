@@ -596,9 +596,6 @@ contains
 
 
              if(nf_selectedvar('Th', output_varnames)) then
-
-                if (par%masterproc) print *,'writing Th...'
-
                 pr0=1./(p0)
                 st=1
                 do ie=1,nelemd
@@ -623,8 +620,6 @@ contains
              end if
 
              if(nf_selectedvar('u', output_varnames)) then
-
-#if 0
                 if (par%masterproc) print *,'writing u...'
                 st=1
                 do ie=1,nelemd
@@ -635,18 +630,6 @@ contains
                    call UniquePoints(elem(ie)%idxp,nlev,vartmp,var3d(st:en,:))
                    st=en+1
                 enddo
-#else
-                if (par%masterproc) print *,'writing FU...'
-                st=1
-                do ie=1,nelemd
-                   do k=1,nlev
-                      vartmp(:,:,k) = elem(ie)%derived%FM(:,:,1,k)
-                   end do
-                   en=st+elem(ie)%idxp%NumUniquePts-1
-                   call UniquePoints(elem(ie)%idxp,nlev,vartmp,var3d(st:en,:))
-                   st=en+1
-                enddo
-#endif
                 call nf_put_var(ncdf(ios),var3d,start, count, name='u')
              end if
 

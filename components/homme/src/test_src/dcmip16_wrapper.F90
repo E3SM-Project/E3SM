@@ -39,7 +39,7 @@ use newphysics
 implicit none
 
 ! this cannot be made stack variable, nelemd is not compile option
-real(rl),dimension(:,:,:), allocatable :: precl,en_cl_diff ! storage for column precip
+real(rl),dimension(:,:,:), allocatable :: precl ! storage for column precip
 real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
 real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
 real(rl):: tau
@@ -64,9 +64,7 @@ subroutine dcmip2016_init()
 !$OMP MASTER
   if (.not.allocated(precl)) then
     allocate(precl(np,np,nelemd))
-    allocate(en_cl_diff(np,np,nelemd))
     precl(:,:,:) = 0.0
-    en_cl_diff(:,:,:) = 0.0
   else
     call abortmp('ERROR: in dcmip2016_init() precl has already been allocated') 
   endif
@@ -400,10 +398,6 @@ subroutine dcmip2016_append_measurements2(elem,prect_mass_forint,prect_en_forint
     tot_energy = global_integral(elem,tot_energy_forint,hybrid,np,nets,nete)
 
     if (hybrid%masterthread) then
-!      print *," ptt=",time_at(tl%nstep)," max_prcl =",pmax_precl*(1000.0)*(24.0*3600)
-!      print *," pts=",time_at(tl%nstep)," sum_prcl =",globprecl*(1000.0)*(24.0*3600)
-!      print *," cls=",time_at(tl%nstep)," ecl_diff =",en_cl_diff
-
        print *, 'p Mass [kg/m2/sec]',time_at(tl%nstep),prect_mass
        print *, 'p En    [W/m2]',time_at(tl%nstep),prect_en
        print *, 'p cl En [W/m2]',time_at(tl%nstep),cl_en
@@ -417,7 +411,6 @@ subroutine dcmip2016_append_measurements2(elem,prect_mass_forint,prect_en_forint
   endif
 
   end subroutine dcmip2016_append_measurements2
-
 
 
 !_______________________________________________________________________
@@ -456,18 +449,18 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
     next_sample_time = next_sample_time + sample_period
 !$OMP END MASTER
 !$OMP BARRIER
-  !  pmax_w     = parallelMax(max_w,    hybrid)
+    pmax_w     = parallelMax(max_w,    hybrid)
     pmax_precl = parallelMax(max_precl,hybrid)
-  !  pmin_ps    = parallelMin(min_ps,   hybrid)
+    pmin_ps    = parallelMin(min_ps,   hybrid)
 
     if (hybrid%masterthread) then
-  !    print *,"time=",time_at(tl%nstep)," pmax_w (m/s)=",pmax_w
-      print *," ptt=",time_at(tl%nstep)," max_prcl =",pmax_precl*(1000.0)*(24.0*3600)
-  !    print *,"time=",time_at(tl%nstep)," pmin_ps (Pa)=",pmin_ps
+      print *,"time=",time_at(tl%nstep)," pmax_w (m/s)=",pmax_w
+      print *,"time=",time_at(tl%nstep)," pmax_precl (mm/day)=",pmax_precl*(1000.0)*(24.0*3600)
+      print *,"time=",time_at(tl%nstep)," pmin_ps (Pa)=",pmin_ps
 
-  !    open(unit=10,file=w_filename,form="formatted",position="append")
-  !      write(10,'(99E24.15)') pmax_w
-  !    close(10)
+      open(unit=10,file=w_filename,form="formatted",position="append")
+        write(10,'(99E24.15)') pmax_w
+      close(10)
 
       open(unit=11,file=precl_filename,form="formatted",position="append")
         write(11,'(99E24.15)') pmax_precl
@@ -477,23 +470,14 @@ subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
         write(12,'(99E24.15)') time
       close(12)
 
-  !    open(unit=13,file=ps_filename,form="formatted",position="append")
-  !      write(13,'(99E24.15)') pmin_ps
-  !    close(13)
+      open(unit=13,file=ps_filename,form="formatted",position="append")
+        write(13,'(99E24.15)') pmin_ps
+      close(13)
 
     endif
   endif
 
   end subroutine
-
-
-
-
-
-
-
-
-
 
 
 !_______________________________________________________________________
@@ -685,7 +669,6 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   real(rl) :: energy_before, energy_after, en2cp, en2cV, mass_before, mass_after, discrepancy, encl
   real(rl) :: en1glob_cp, en1glob_cv, en2glob_cp, en2glob_cv, mass1global, mass2global, rstar_new, olddphi
-  real(rl) :: en_cl_diff_sum, globprecl_sum
   logical :: wasiactive
 
   real(rl), dimension(np,np,nets:nete)      :: prect_mass_forint,prect_en_forint,cl_en_forint,en_leak_forint,&
@@ -778,11 +761,11 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
           call rj_new_volume(qv_c,qc_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,energy_prect,&
                energy_before,en2cp,en2cv,energy_after,encl,wasiactive)
 
-        elseif(bubble_rj_cpdry) then
+        !elseif(bubble_rj_cpdry) then
 
           !this one conserves with const dp
           !returns new T, new wet qv, prect mass (dp*delta_qv), new dp_c
-          call rj_old(qv_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,wasiactive)
+          !call rj_old(qv_c,T_c,dp_c,p_c,zi_c,ptop,mass_prect,wasiactive)
         endif
 
       elseif(bubble_prec_type == 0) then
@@ -856,12 +839,7 @@ endif
       mass_forint(i,j,ie) = mass1global/gravit/dt
       energy_forint(i,j,ie) = en1glob_cp/gravit/dt
 
-!ver 1 for total en_cl comparison, with L term
-!good only for exact methods -- P and V updates
-!      en_cl_diff(i,j,ie) = (encl-energy_prect)/en1glob_cp
-!ver 2, comparing only cp/cl terms without L terms for exact methods and eam interface methods
       if(wasiactive)then
-        !en_cl_diff(i,j,ie) = (en1glob_cp-en2glob_cp-latice*mass_prect)/(encl-latice*mass_prect)
 
 !regarding en_before, en2, en_after as returned by RJ routines:
 !in case of cpstarHY update, en_before and en2 are HY functionals and wont match en1global.
@@ -880,8 +858,6 @@ endif
         !make sure sign of dM matches sigh of mass_prect
         mass_leak_forint(i,j,ie) = (mass1global - mass2global - mass_prect)/gravit/dt
 
-      else
-        !en_cl_diff(i,j,ie) = 0.0
       endif
 
       !update states assuming cam_ routines are off
@@ -895,8 +871,10 @@ endif
       elem(ie)%state%dp3d(i,j,:,nt) = dp_c
       elem(ie)%state%phinh_i(i,j,:,nt) = gravit*zi_c
 
+      !was used for diagnostics before
       elem(ie)%derived%FM(i,j,1,:) = ttend(:)
 
+      !dpdry_c should be conserved
       rstar = rdry * dpdry_c + rvapor * dp_c*qv_c
 
       !rstar has dp factor in it
@@ -916,12 +894,6 @@ endif
                                       mass_forint, energy_forint, tl,hybrid,nets,nete)
 
 end subroutine bubble_new_forcing
-
-
-
-
-
-
 
 
 
@@ -1444,12 +1416,6 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
 end subroutine
 
-
-subroutine qsat_kessler(p, T, qsat)
-  real(rl),         intent(out):: qsat
-  real(rl),         intent(in) :: p, T
-  qsat = bubble_const1 / p * exp( bubble_const2 * (T - bubble_const3) / ( T - bubble_const4 ) )
-end subroutine qsat_kessler
 
 subroutine qsat_rj(p, T, qsat)
   real(rl),         intent(out):: qsat
