@@ -360,7 +360,6 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
       !set theta on midlevels and then T from theta, exner
       th0m(1:nlev) = (th0(1:nlev) + th0(2:nlevp) ) / 2.0
       t_init(i,j,1:nlev) = th0m(1:nlev) * ( pm(1:nlev)/p0 )**kappa
-   
       !set Q before set_elem_state   
       if (bubble_moist) then
         do k=1,nlev
@@ -370,12 +369,12 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
         elem(ie)%state%Q(i,j,:,1) =   0.0
       end if
 
-      !call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,zm,zi,g,elem,n0,n1,ntQ)
-      call set_elem_state(zero_mid_init,zero_mid_init,zero_mid_init, &
+    enddo; enddo !i,j loop
+
+    call set_elem_state(zero_mid_init,zero_mid_init,zero_mid_init, &
                           zero_int_init,t_init,ps_init,zero_mid_init(:,:,1), &
                           p_init,dp_init,zm_init,zi_init,g,elem(ie),1,3,-1)
 
-    enddo; enddo !i,j loop
   enddo !ie loop
 
   !indexing of Q, Qdp
