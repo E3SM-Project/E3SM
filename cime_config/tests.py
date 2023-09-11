@@ -424,6 +424,7 @@ _TESTS = {
                  "SMS.ne4_oQU240.F2010.eam-thetahy_ftype0",
                  "SMS.ne4_oQU240.F2010.eam-thetahy_ftype1",
                  "SMS.ne4_oQU240.F2010.eam-thetahy_ftype2",
+                 "SMS.ne4_oQU240.F2010.eam-thetahy_ftype2_energy",
                  "SMS.ne4_oQU240.F2010.eam-thetahy_ftype4",
                  "SMS.ne4_oQU240.F2010.eam-thetanh_ftype0",
                  "SMS.ne4_oQU240.F2010.eam-thetanh_ftype1",

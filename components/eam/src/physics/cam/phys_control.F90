@@ -26,6 +26,7 @@ public :: &
    phys_do_flux_avg,  &! return true to average surface fluxes
    cam_physpkg_is,    &! query for the name of the physics package
    cam_chempkg_is,    &! query for the name of the chemistry package
+   set_additional_diagn_in_phys_control, &! set switch for additional diagn
    waccmx_is
 
 ! Private module data
@@ -172,6 +173,9 @@ logical, public, protected :: use_gw_convect = .false.
 
 !GW energy fix
 logical, public, protected :: use_gw_energy_fix = .false.
+
+!additional diagnostics switch
+logical, public, protected :: print_additional_diagn_phys_control = .false.
 
 ! Switches that turn on/off individual parameterizations.
 !
@@ -864,4 +868,14 @@ function phys_do_flux_avg()
 end function phys_do_flux_avg
 
 !===============================================================================
+
+subroutine set_additional_diagn_in_phys_control(print_additional_diagn_in)
+
+  logical, intent(in) :: print_additional_diagn_in
+
+  print_additional_diagn_phys_control = print_additional_diagn_in
+
+end subroutine set_additional_diagn_in_phys_control
+
+
 end module phys_control

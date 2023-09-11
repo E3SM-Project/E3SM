@@ -467,6 +467,12 @@ conservation checks.
 Default: FALSE
 </entry>
 
+<entry id="print_additional_diagn" type="logical"  category="diagnostics"
+       group="cam_inparm" valid_values="" >
+Turn on additional verbose output  for integrated conservation checks.
+Default: FALSE
+</entry>
+
 <!-- Dry Convective Adjustment -->
 
 <entry id="nlvdry" type="integer"  category="dry_conv_adj"
