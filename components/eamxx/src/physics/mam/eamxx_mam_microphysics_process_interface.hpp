@@ -60,6 +60,9 @@ protected_except_cuda:
   AtmosphereProcessType type() const override;
   std::string name() const override;
 
+  // set aerosol microphysics configuration parameters (called by constructor)
+  void configure(const ekat::ParameterList& params);
+
   // grid
   void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
@@ -79,6 +82,16 @@ private_except_cuda:
 
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
+
+  // aerosol microphysics configuration
+  struct Config {
+    // these switches activate various aerosol microphysics processes
+    bool do_gasaerexch; // gas-aerosol exchange (a.k.a. condensation)
+    bool do_rename;     // mode "renaming"
+    bool do_newnuc;     // gas -> aerosol nucleation
+    bool do_coag;       // aerosol coagulation
+  };
+  Config config_;
 
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.

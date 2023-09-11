@@ -45,6 +45,7 @@ MAMMicrophysics::MAMMicrophysics(
     const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params),
     aero_config_() {
+  configure(params);
 }
 
 AtmosphereProcessType MAMMicrophysics::type() const {
@@ -53,6 +54,13 @@ AtmosphereProcessType MAMMicrophysics::type() const {
 
 std::string MAMMicrophysics::name() const {
   return "mam4_micro";
+}
+
+void MAMMicrophysics::configure(const ekat::ParameterList& params) {
+  config_.do_gasaerexch = true;
+  config_.do_rename = true;
+  config_.do_newnuc = true;
+  config_.do_coag = true;
 }
 
 void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -273,10 +281,6 @@ void MAMMicrophysics::run_impl(const double dt) {
 
     // here's the call to MAM's microphysics
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int k) {
-      bool do_gasaerexch = true;
-      bool do_rename     = true;
-      bool do_newnuc     = true;
-      bool do_coag       = true;
       Real pmid = atm.pressure(k);
       Real pdel = atm.hydrostatic_dp(k);
       Real zm   = atm.height(k);
@@ -294,7 +298,8 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real dgncur_awet[mam4::AeroConfig::num_modes()] = {};
       Real wetdens_host[mam4::AeroConfig::num_modes()] = {};
       Real qaerwat[mam4::AeroConfig::num_modes()] = {};
-      impl::modal_aero_amicphys_intr(do_gasaerexch, do_rename, do_newnuc, do_coag,
+      impl::modal_aero_amicphys_intr(config_.do_gasaerexch, config_.do_rename,
+                                     config_.do_newnuc, config_.do_coag,
                                      ncol_, step_, dt, t, pmid, pdel, zm, pblh,
                                      qv, cld, q, qqcw, q_pregaschem, q_precldchem,
                                      qqcw_precldchem, q_tendbb, qqcw_tendbb, dgncur_a,
