@@ -77,6 +77,7 @@ const int
         {5, 13, 18, 26}, {6, 14, 19, 27},  {7, 15, 20, 28}, {8, 16, 21, -6},
         {9, -6, 22, -6}, {10, -6, 23, -6}, {11, -6, 24, -6}};
 
+KOKKOS_INLINE_FUNCTION
 void subarea_partition_factors(
     const Real
         q_int_cell_avg, // in grid cell mean interstitial aerosol mixing ratio
@@ -118,6 +119,7 @@ void subarea_partition_factors(
   part_fac_q_int_cldy = (1.0 - tmp_aa) / fcldy;
 }
 
+KOKKOS_INLINE_FUNCTION
 void construct_subareas_1gridcell(
     const Real cld,                        // in
     const Real relhumgcm,                  // in
@@ -471,6 +473,7 @@ void construct_subareas_1gridcell(
   }
 }
 
+KOKKOS_INLINE_FUNCTION
 void mam_amicphys_1subarea_clear(
     const AmicPhysConfig& config, const int nstep, const Real deltat, const int jsub,
     const int nsubarea, const bool iscldy_subarea, const Real afracsub,
@@ -573,7 +576,7 @@ void mam_amicphys_1subarea_clear(
   if (config.do_cond && config.gaexch_h2so4_uptake_optaa == 2) {
     for (int igas = 0; igas < num_gas_ids; ++igas) {
       if (igas == igas_h2so4 || igas == igas_nh3) {
-        // if gaexch_h2so4_uptake_optaa == 2, then
+        // if config.gaexch_h2so4_uptake_optaa == 2, then
         //    if qgas increases from pre-gaschem to post-cldchem,
         //       start from the pre-gaschem mix-ratio and add in the production
         //       during the integration
@@ -918,6 +921,7 @@ void mam_amicphys_1subarea_clear(
   }
 }
 
+KOKKOS_INLINE_FUNCTION
 void mam_amicphys_1subarea_cloudy(
     const AmicPhysConfig& config, const int nstep, const Real deltat, const int jsub,
     const int nsubarea, const bool iscldy_subarea, const Real afracsub,
@@ -1318,6 +1322,7 @@ void mam_amicphys_1subarea_cloudy(
       qaercw_delaa[i][j][iqqcwtend_rnam] = qaercw_del_rnam[i][j];
 }
 
+KOKKOS_INLINE_FUNCTION
 void mam_amicphys_1gridcell(
     const AmicPhysConfig& config, const int nstep, const Real deltat, const int nsubarea,
     const int ncldy_subarea, const bool iscldy_subarea[maxsubarea],
