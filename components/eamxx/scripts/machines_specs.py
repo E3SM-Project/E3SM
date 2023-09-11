@@ -57,7 +57,7 @@ MACHINE_METADATA = {
                 ["mpicxx","mpifort","mpicc"],
                 "bsub -I -q batch -W 0:30 -P cli115 -nnodes 1",
                 "/gpfs/alpine/cli115/proj-shared/scream/master-baselines"),
-"perlmutter" : (["module load PrgEnv-gnu gcc/10.3.0 cudatoolkit craype-accel-nvidia80 cray-libsci craype cray-mpich cray-hdf5-parallel cray-netcdf-hdf5parallel cray-parallel-netcdf cmake","module unload craype-accel-host perftools-base perftools darshan", "export NVCC_WRAPPER_DEFAULT_COMPILER=CC", "export NVCC_WRAPPER_DEFAULT_ARCH=sm_80"],
+"perlmutter" : (["module load PrgEnv-gnu gcc/10.3.0 cudatoolkit craype-accel-nvidia80 cray-libsci craype cray-mpich cray-hdf5-parallel cray-netcdf-hdf5parallel cray-parallel-netcdf cmake evp-patch","module unload craype-accel-host perftools-base perftools darshan", "export NVCC_WRAPPER_DEFAULT_COMPILER=CC", "export NVCC_WRAPPER_DEFAULT_ARCH=sm_80"],
                 ["CC","ftn","cc"],
                 "srun --time 00:30:00 --nodes=1 --constraint=gpu --exclusive -q regular --account e3sm_g",
                 ""),
