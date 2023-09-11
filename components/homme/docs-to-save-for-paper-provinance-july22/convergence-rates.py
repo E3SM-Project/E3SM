@@ -3,6 +3,7 @@ from string import *
 import os, getopt, sys
 import matplotlib.pyplot as plot
 import numpy as np
+from cmcrameri import cm
 
 ############# run on chrysalis with python 3, python 2 on anvil does not work
 
@@ -13,6 +14,7 @@ seriesPhy=[ 0.00348026000624766,0.003410699232002172,0.002997358686058668,0.0020
 seriesV=[ 0.008099264907336133,0.007440089835241521,0.006131482487330701,0.002154116427663535,0.001026479812111427,0.0007995946160644042,0.0003073213851727845,0.0001987616843327972 ]
 seriesEdry=[ 0.006962328352674943,0.008317725221624302,0.008139471108749049,0.003090257122566238,0.001304576973127931,0.0004519860341391564,0.001263328930838435,0.0003842799495964573 ]
 seriesEstar=[ 0.007059505857799219,0.007972185219984801,0.007853645681927235,0.003082155175314198,0.00152380480096253,0.0004252325971472421,0.00156793355264248,0.0011246447542791 ]
+
 
 #not remapped
 #seriesP=[ 0.003077509496527265,0.002971564287359151,0.00263778452855153,0.001755425382169638,0.001118177876390719,0.0006099010453942045,0.0002608441075285435,0.0001272050274434055 ]
@@ -32,16 +34,27 @@ seriesPerf=np.asarray(ddt)*seriesP[7]*25
 MS=10
 FS=14
 
+bblue='#377eb8'
+oorange='#ff7f00'
+ggreen='#4daf4a'
+ppink='#f781bf'
+bbrown='#a65628'
+ppurple='#984ea3'
+ggray='#999999'
+rred='#e41a1c'
+yyellow='#dede00'
+
+
 #plot.axes().set_aspect('equal','datalim')
 #fig, ax = plot.subplots(1)
 
 plot.loglog(ddt, seriesPhy,  label="CP-VL-HY",      color="black", linewidth=3,marker='s',markersize=MS )
-plot.loglog(ddt, seriesP,    label="CP-VL-NH",     color="red", linewidth=3,marker='^',markersize=MS )
-plot.loglog(ddt, seriesV,    label="CV-VL-NH",       color="limegreen", linewidth=3,marker='^',markersize=MS )
-plot.loglog(ddt, seriesEdry, label="CP-CL-HY", color="orange", linewidth=3,marker='v',markersize=MS )
-plot.loglog(ddt, seriesEstar,label="CP-AL-HY", color="blue", linewidth=3,marker='p',markersize=MS )
-plot.loglog(ddt, seriesPerf, label="1st order scaling", color="gray", linewidth=1.5 )
-plot.loglog(ddt, hline, label="CV-VL-NH vs CP-VL-NH", color="gray", linewidth=1.5, linestyle='--')
+plot.loglog(ddt, seriesP,    label="CP-VL-NH",     color=rred, linewidth=3,marker='o',markersize=MS )
+plot.loglog(ddt, seriesV,    label="CV-VL-NH",       color=ggreen, linewidth=3,marker='^',markersize=MS )
+plot.loglog(ddt, seriesEdry, label="CP-CL-HY", color=yyellow, linewidth=3,marker='v',markersize=MS )
+plot.loglog(ddt, seriesEstar,label="CP-AL-HY", color=bblue, linewidth=3,marker='p',markersize=MS )
+plot.loglog(ddt, seriesPerf, label="1st order scaling", color=ggray, linewidth=1.5 )
+plot.loglog(ddt, hline, label="CV-VL-NH vs CP-VL-NH", color=ggray, linewidth=1.5, linestyle='--')
 
 plot.tick_params(labelsize=FS)
 plot.legend(loc='lower left',fontsize=FS)

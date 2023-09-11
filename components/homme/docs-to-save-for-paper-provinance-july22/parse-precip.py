@@ -325,12 +325,22 @@ finally:
    #legend3=(arr4name+": avg %g , std: %g" % (sum(b4)/len(b4),np.std(b4)) )
    #print(log(abs(b1)))
 
-   plt.plot(ns1,aw1,  color='green',label=label1)
-   plt.plot(ns2,aw2,  color='blue',label=label2)
-   plt.plot(ns3,aw3,  color='cyan',label=label3)
-   plt.plot(ns4,aw4,  color='red',label=label4)
-   plt.plot(ns5,aw5,  color='orange',label=label5)
-   plt.plot(ns6,aw6,  color='purple',label=label6)
+   bblue='#377eb8'
+   oorange='#ff7f00'
+   ggreen='#4daf4a'
+   ppink='#f781bf'
+   bbrown='#a65628'
+   ppurple='#984ea3'
+   ggray='#999999'
+   rred='#e41a1c'
+   yyellow='#dede00'
+
+   plt.plot(ns1,aw1,  color=ggreen,label=label1)
+   plt.plot(ns2,aw2,  color=bblue,label=label2)
+   plt.plot(ns3,aw3,  color=bbrown,label=label3)
+   plt.plot(ns4,aw4,  color=rred,label=label4)
+   plt.plot(ns5,aw5,  color=oorange,label=label5)
+   plt.plot(ns6,aw6,  color='black',label=label6)
 
    FS=14
    plt.legend(fontsize=FS)

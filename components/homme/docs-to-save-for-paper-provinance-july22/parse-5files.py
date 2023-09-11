@@ -437,17 +437,27 @@ finally:
    plotname="mass-for5"
    plt.figure()
 
+   bblue='#377eb8'
+   oorange='#ff7f00'
+   ggreen='#4daf4a'
+   ppink='#f781bf'
+   bbrown='#a65628'
+   ppurple='#984ea3'
+   ggray='#999999'
+   rred='#e41a1c'
+   yyellow='#dede00'
+
    #legend0=(arr1name+": avg %g , std: %g" % (sum(b1)/len(b1),np.std(b1)) )
    #legend1=(arr2name+": avg %g , std: %g" % (sum(b2)/len(b2),np.std(b2)) )
    #legend2=(arr3name+": avg %g , std: %g" % (sum(b3)/len(b3),np.std(b3)) )
    #legend3=(arr4name+": avg %g , std: %g" % (sum(b4)/len(b4),np.std(b4)) )
    #print(log(abs(b1)))
 
-   plt.plot(ns1,apmass1,  color='red',  label=label1, alpha=1, linewidth=3)
+   plt.plot(ns1,apmass1,  color=rred,  label=label1, alpha=1, linewidth=3)
    plt.plot(ns1,apmass2,  color='black',label=label2, alpha=1, linewidth=1)
-   plt.plot(ns1,apmass3,  color='limegreen',label=label3, alpha=1, linewidth=2)
-   plt.plot(ns1,apmass4,  color='orange',label=label4, alpha=1, linewidth=3)
-   plt.plot(ns1,apmass5,  color='blue', label=label5, alpha=1, linewidth=1)
+   plt.plot(ns1,apmass3,  color=ggreen,label=label3, alpha=1, linewidth=2)
+   plt.plot(ns1,apmass4,  color=yyellow,label=label4, alpha=1, linewidth=3)
+   plt.plot(ns1,apmass5,  color=bblue, label=label5, alpha=1, linewidth=1)
 
    FS=14
    plt.legend(fontsize=FS)
@@ -505,7 +515,7 @@ finally:
    plotname="encl-diagn-for5"
    plt.figure()
 
-   clcolor='blueviolet'
+   clcolor=ppurple
    #plt.plot(ns1,apclen1 - latice*apmass1, color=clcolor)
    #plt.plot(ns1,apclen2 - latice*apmass2, color=clcolor)
    #plt.plot(ns1,apclen3 - latice*apmass3, color=clcolor)
@@ -521,11 +531,11 @@ finally:
    #apleake = en_leak = E_before - E_after - E_precip
    #apen = E_precip, so together
    #apleake + apen = E_before - E_after
-   plt.plot(ns1,apleake1+apen1 - latice*apmass1,  color='red',      label=label1, linewidth=3)
+   plt.plot(ns1,apleake1+apen1 - latice*apmass1,  color=rred,      label=label1, linewidth=3)
    plt.plot(ns1,apleake2+apen2 - latice*apmass2,  color='black',    label=label2, linewidth=1)
-   plt.plot(ns1,apleake3+apen3 - latice*apmass3,  color='limegreen',label=label3, linewidth=2)
-   plt.plot(ns1,apleake4+apen4 - latice*apmass4,  color='orange',   label=label4, linewidth=3)
-   plt.plot(ns1,apleake5+apen5 - latice*apmass5,  color='blue',     label=label5, linewidth=1)
+   plt.plot(ns1,apleake3+apen3 - latice*apmass3,  color=ggreen,label=label3, linewidth=2)
+   plt.plot(ns1,apleake4+apen4 - latice*apmass4,  color=yyellow,   label=label4, linewidth=3)
+   plt.plot(ns1,apleake5+apen5 - latice*apmass5,  color=bblue,     label=label5, linewidth=1)
 
    #dE for cpstarhy option
    #need relative error
