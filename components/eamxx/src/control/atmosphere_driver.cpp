@@ -1414,7 +1414,7 @@ void AtmosphereDriver::run (const int dt) {
   // Print current timestamp information
   m_atm_logger->log(ekat::logger::LogLevel::info,
     "Atmosphere step = " + std::to_string(m_current_ts.get_num_steps()) + "\n" +
-    "  model time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
+    "  model start-of-step time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
 
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
@@ -1424,6 +1424,7 @@ void AtmosphereDriver::run (const int dt) {
   m_current_ts += dt;
 
   // Update output streams
+  m_atm_logger->debug("[EAMxx::run] running output managers...");
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
   }
@@ -1503,6 +1504,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_atm_comm.all_reduce(&my_mem_usage,&max_mem_usage,1,MPI_MAX);
   m_atm_logger->debug("[EAMxx::finalize] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
+  m_atm_logger->flush();
 
   m_ad_status = 0;
 

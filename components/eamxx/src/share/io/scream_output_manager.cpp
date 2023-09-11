@@ -319,6 +319,10 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     return;
   }
 
+  if (m_atm_logger) {
+    m_atm_logger->debug("[OutputManager::run] filename_prefix: " + m_filename_prefix + "\n");
+  }
+
   using namespace scorpio;
 
   std::string timer_root = m_is_model_restart_output ? "EAMxx::IO::restart" : "EAMxx::IO::standard";
@@ -415,6 +419,9 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   const auto& fields_write_filename = is_output_step ? m_output_file_specs.filename : m_checkpoint_file_specs.filename;
   for (auto& it : m_output_streams) {
     // Note: filename only matters if is_output_step || is_full_checkpoint_step=true. In that case, it will definitely point to a valid file name.
+    if (m_atm_logger) {
+      m_atm_logger->debug("[OutputManager]: writing fields from grid " + it->get_io_grid()->name() + "...\n");
+    }
     it->run(fields_write_filename,is_output_step,is_full_checkpoint_step,m_output_control.nsamples_since_last_write,is_t0_output);
   }
   stop_timer(timer_root+"::run_output_streams");
@@ -432,6 +439,9 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     }
 
     auto write_global_data = [&](IOControl& control, IOFileSpecs& filespecs) {
+      if (m_atm_logger) {
+        m_atm_logger->debug("[OutputManager]: writing globals...\n");
+      }
       if (m_is_model_restart_output) {
         // Only write nsteps on model restart
         set_attribute(filespecs.filename,"nsteps",timestamp.get_num_steps());
