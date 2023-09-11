@@ -46,6 +46,8 @@ void MAMMicrophysics::configure(const ekat::ParameterList& params) {
   config_.nucleation.newnuc_adjust_factor_dnaitdt = 1.0;
 
   // these parameters guide the coupling between parameterizations
+  // NOTE: mam4xx was ported with these parameters set thus. It's probably not
+  // NOTE: safe to change these without code modifications.
   config_.gaexch_h2so4_uptake_optaa = 2;
   config_.newnuc_h2so4_conc_optaa = 2;
 }
@@ -269,12 +271,19 @@ void MAMMicrophysics::run_impl(const double dt) {
       // (in EAM, this is done in the gas_phase_chemdr subroutine defined within
       //  mozart/mo_gas_phase_chemdr.F90)
 
-      // aerosol/gas species (volume mixing ratios (VMR), in spite of the
-      // variable names used here)
+      // index map for populating work arrays (see the chem_register subroutine
+      // in mozart/chemistry.F90)
+      // FIXME: this mapping is chemistry-mechanism-specific
+      int map2chm[impl::gas_pcnst()];
+
+      // aerosol/gas species (volume mixing ratios (VMR), equivalent to tracer
+      // mixing ratios (TMR), in spite of the variable names used here)
       Real q[impl::gas_pcnst()] = {};
       Real qqcw[impl::gas_pcnst()] = {};
+      for (int i = 0; i < impl::gas_pcnst(); ++i) {
+      }
 
-      // "before gas chemistry" quantities (VMRs)
+      // "before gas chemistry" quantities (VMR)
       // FIXME: Not sure what this means before we add gas-phase chemistry!
       // FIXME: Should we stash these in diagnostics somewhere?
       Real q_pregaschem[impl::gas_pcnst()] = {};

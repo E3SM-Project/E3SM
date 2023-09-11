@@ -1,6 +1,7 @@
 #include <mam4xx/aging.hpp>
 #include <mam4xx/coagulation.hpp>
 #include <mam4xx/gasaerexch.hpp>
+#include <mam4xx/gas_chem_mechanism.hpp>
 #include <mam4xx/mam4.hpp>
 #include <mam4xx/nucleation.hpp>
 
@@ -10,7 +11,10 @@ using namespace mam4;
 
 // number of constituents in gas chemistry "work arrays"
 KOKKOS_INLINE_FUNCTION
-constexpr int gas_pcnst() { return 30; }
+constexpr int gas_pcnst() {
+  constexpr int gas_pcnst_ = mam4::gas_chemistry::gas_pcnst;
+  return gas_pcnst_;
+}
 
 // number of aerosol/gas species tendencies
 KOKKOS_INLINE_FUNCTION
@@ -34,7 +38,7 @@ struct AmicPhysConfig {
   int gaexch_h2so4_uptake_optaa;
 
   // controls how nucleation interprets h2so4 concentrations
-  int newnuc_h2so4_conc_optaa = 2;
+  int newnuc_h2so4_conc_optaa;
 
 };
 
