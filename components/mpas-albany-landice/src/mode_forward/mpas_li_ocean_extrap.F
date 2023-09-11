@@ -153,7 +153,7 @@ contains
                if ( growOceanMaskHoriz(iCell) == 1 ) then
                   do iNeighbor = 1, nEdgesOnCell(iCell)
                      jCell = cellsOnCell(iNeighbor, iCell)
-                     if ( seedOceanMaskHorizOld(iCell) == 0 .and. seedOceanMaskHoriz(jCell) == 1 ) then
+                     if ( seedOceanMaskHorizOld(iCell) == 0 .and. seedOceanMaskHorizOld(jCell) == 1 ) then
                         seedOceanMaskHoriz(iCell) = 1
                      endif
                   enddo
