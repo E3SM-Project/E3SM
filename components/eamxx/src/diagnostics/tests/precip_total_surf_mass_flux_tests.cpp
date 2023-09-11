@@ -66,7 +66,7 @@ void run(std::mt19937_64& engine)
   auto diag_total = diag_factory.create("precip_surf_mass_flux", comm, params);
   params.set<std::string>("precip_type","ice");
   auto diag_ice   = diag_factory.create("precip_surf_mass_flux"  , comm, params);
-  params.set<std::string>("precip_type","liquid");
+  params.set<std::string>("precip_type","liq");
   auto diag_liq   = diag_factory.create("precip_surf_mass_flux"  , comm, params);
   diag_total->set_grids(gm);
   diag_ice->set_grids(gm);

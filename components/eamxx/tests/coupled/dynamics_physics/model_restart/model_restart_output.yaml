@@ -41,7 +41,7 @@ Fields:
       - micro_vap_liq_exchange
       - precip_ice_surf_mass
       - precip_liq_surf_mass
-      - PrecipLiqSurfMassFlux
+      - precip_liq_surf_mass_flux
       # SHOC + HOMME
       - horiz_winds
       # SHOC + P3
