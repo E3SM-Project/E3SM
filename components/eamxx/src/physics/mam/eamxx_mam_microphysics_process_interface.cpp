@@ -6,20 +6,10 @@
 
 #include <ekat/ekat_assert.hpp>
 
+// NOTE: see the impl/ directory for the contents of the impl namespace
+
 namespace scream
 {
-
-namespace impl {
-
-using AeroConfig = mam4::AeroConfig;
-static constexpr int gas_pcnst = 30;
-static constexpr int nqtendbb = 4;
-
-}
-
-//=================================================
-// end high-level MAM4 microphysics interface code
-//=================================================
 
 MAMMicrophysics::MAMMicrophysics(
     const ekat::Comm& comm,
@@ -242,14 +232,13 @@ void MAMMicrophysics::run_impl(const double dt) {
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
   Kokkos::fence();
 
-  // Reset internal WSM variables.
+  // reset internal WSM variables
   //workspace_mgr_.reset_internals();
 
   // FIXME: nothing depends on simulation time (yet), so we can just use zero for now
   double t = 0.0;
 
-  // Compute nucleation tendencies on all local columns and accumulate them
-  // into our tracer state.
+  // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
     const Int icol = team.league_rank(); // column index
 
@@ -265,30 +254,60 @@ void MAMMicrophysics::run_impl(const double dt) {
     // set up diagnostics
     mam4::Diagnostics diags(nlev_);
 
-    // here's the call to MAM's microphysics
+    // compute aerosol microphysics on each vertical level within this column
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int k) {
+
+      // extract atm state variables (input)
       Real pmid = atm.pressure(k);
       Real pdel = atm.hydrostatic_dp(k);
       Real zm   = atm.height(k);
       Real pblh = atm.planetary_boundary_layer_height;
       Real qv   = atm.vapor_mixing_ratio(k);
       Real cld  = atm.cloud_fraction(k);
-      Real q[impl::gas_pcnst] = {};
-      Real qqcw[impl::gas_pcnst] = {};
-      Real q_pregaschem[impl::gas_pcnst] = {};
-      Real q_precldchem[impl::gas_pcnst] = {};
-      Real qqcw_precldchem[impl::gas_pcnst] = {};
-      Real q_tendbb[impl::gas_pcnst][impl::nqtendbb] = {};
-      Real qqcw_tendbb[impl::gas_pcnst][impl::nqtendbb] = {};
+
+      // extract aerosol state variables into "working arrays"
+      // (in EAM, this is done in the gas_phase_chemdr subroutine defined within
+      //  mozart/mo_gas_phase_chemdr.F90)
+
+      // aerosol/gas species (volume mixing ratios (VMR), in spite of the
+      // variable names used here)
+      Real q[impl::gas_pcnst()] = {};
+      Real qqcw[impl::gas_pcnst()] = {};
+
+      // "before gas chemistry" quantities (VMRs)
+      // FIXME: Not sure what this means before we add gas-phase chemistry!
+      // FIXME: Should we stash these in diagnostics somewhere?
+      Real q_pregaschem[impl::gas_pcnst()] = {};
+      Real q_precldchem[impl::gas_pcnst()] = {};
+      Real qqcw_precldchem[impl::gas_pcnst()] = {};
+      // FIXME: For now, we just use the same values as in q and qqcw
+      for (int i = 0; i < impl::gas_pcnst(); ++i) {
+        q_pregaschem[i] = q[i];
+        q_precldchem[i] = q[i];
+        qqcw_precldchem[i] = qqcw[i];
+      }
+
+      // aerosol/gas species tendencies
+      Real q_tendbb[impl::gas_pcnst()][impl::nqtendbb()] = {};
+      Real qqcw_tendbb[impl::gas_pcnst()][impl::nqtendbb()] = {};
+
+      // dry and wet diameters for aerosol modes
       Real dgncur_a[mam4::AeroConfig::num_modes()] = {};
       Real dgncur_awet[mam4::AeroConfig::num_modes()] = {};
+
       Real wetdens_host[mam4::AeroConfig::num_modes()] = {};
       Real qaerwat[mam4::AeroConfig::num_modes()] = {};
+
+      // compute aerosol microphysics
       impl::modal_aero_amicphys_intr(config_, ncol_, step_, dt, t, pmid, pdel,
                                      zm, pblh, qv, cld, q, qqcw, q_pregaschem,
                                      q_precldchem, qqcw_precldchem, q_tendbb,
                                      qqcw_tendbb, dgncur_a, dgncur_awet,
                                      wetdens_host, qaerwat);
+
+      // unpack updated prognostics
+
+      // FIXME: Where do we stash chemistry-related tendencies? Diagnostics?
     });
   });
 
