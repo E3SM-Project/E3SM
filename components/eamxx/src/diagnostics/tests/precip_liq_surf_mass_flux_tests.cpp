@@ -63,7 +63,7 @@ void run(std::mt19937_64& engine)
   // Construct the Diagnostic
   register_diagnostics();
   ekat::ParameterList params;
-  params.set<std::string>("precip_type","liquid");
+  params.set<std::string>("precip_type","liq");
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
   auto diag = diag_factory.create("precip_surf_mass_flux",comm,params);
   diag->set_grids(gm);

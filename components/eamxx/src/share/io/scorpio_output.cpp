@@ -424,7 +424,7 @@ run (const std::string& filename,
   for (auto const& name : m_fields_names) {
     // Get all the info for this field.
           auto  field = get_field(name,"io");
-    const auto& layout = m_layouts.at(name);
+    const auto& layout = m_layouts.at(field.name());
     const auto& dims = layout.dims();
     const auto  rank = layout.rank();
 
@@ -729,7 +729,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
   // Store the field layout
   const auto& fid = get_field(name,"io").get_header().get_identifier();
   const auto& layout = fid.get_layout();
-  m_layouts.emplace(name,layout);
+  m_layouts.emplace(fid.name(),layout);
 
   // Now check taht all the dims of this field are already set to be registered.
   for (int i=0; i<layout.rank(); ++i) {
@@ -784,8 +784,8 @@ void AtmosphereOutput::register_views()
         field.get_header().get_parent().expired() &&
         not is_diagnostic;
 
-    const auto layout = m_layouts.at(name);
-    const auto size = m_layouts.at(name).size();
+    const auto layout = m_layouts.at(field.name());
+    const auto size = layout.size();
     if (can_alias_field_view) {
       // Alias field's data, to save storage.
       m_dev_views_1d.emplace(name,view_1d_dev(field.get_internal_view_data<Real,Device>(),size));
@@ -1240,18 +1240,13 @@ create_diagnostic (const std::string& diag_field_name) {
     } else {
       diag_name = "FieldAtLevel";
     }
-  } else if (diag_field_name=="PrecipLiqSurfMassFlux" or
-             diag_field_name=="precip_liq_surf_mass_flux") {
-    diag_name = "precip_surf_mass_flux";
-    params.set<std::string>("precip_type","liquid");
-  } else if (diag_field_name=="PrecipIceSurfMassFlux" or
-             diag_field_name=="precip_ice_surf_mass_flux") {
-    diag_name = "precip_surf_mass_flux";
-    params.set<std::string>("precip_type","ice");
-  } else if (diag_field_name=="PrecipTotalSurfMassFlux" or
+  } else if (diag_field_name=="precip_liq_surf_mass_flux" or
+             diag_field_name=="precip_ice_surf_mass_flux" or
              diag_field_name=="precip_total_surf_mass_flux") {
     diag_name = "precip_surf_mass_flux";
-    params.set<std::string>("precip_type","total");
+    // split will return [X, ''], with X being whatever is before '_surf_mass_flux'
+    auto type = ekat::split(diag_field_name.substr(7),"_surf_mass_flux").front();
+    params.set<std::string>("precip_type",type);
   } else {
     diag_name = diag_field_name;
   }
