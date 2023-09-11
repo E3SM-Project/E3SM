@@ -86,10 +86,13 @@ private_except_cuda:
   // aerosol microphysics configuration
   struct Config {
     // these switches activate various aerosol microphysics processes
-    bool do_gasaerexch; // gas-aerosol exchange (a.k.a. condensation)
-    bool do_rename;     // mode "renaming"
-    bool do_newnuc;     // gas -> aerosol nucleation
-    bool do_coag;       // aerosol coagulation
+    bool do_cond;   // condensation (a.k.a gas-aerosol exchange)
+    bool do_rename; // mode "renaming"
+    bool do_newnuc; // gas -> aerosol nucleation
+    bool do_coag;   // aerosol coagulation
+
+    // configurations for specific aerosol microphysics
+    mam4::NucleationProcess::ProcessConfig nucleation;
   };
   Config config_;
 

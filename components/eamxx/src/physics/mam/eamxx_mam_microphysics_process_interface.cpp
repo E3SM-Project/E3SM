@@ -2,6 +2,8 @@
 #include <share/property_checks/field_lower_bound_check.hpp>
 #include <share/property_checks/field_within_interval_check.hpp>
 
+#include "impl/mam4_amicphys.cpp" // mam4xx top-level microphysics function(s)
+
 #include "scream_config.h" // for SCREAM_CIME_BUILD
 
 #include <ekat/ekat_assert.hpp>
@@ -9,30 +11,11 @@
 namespace scream
 {
 
-//=============================================
-// high-level MAM4 microphysics interface code
-// (see impl/mam4_amicphys.cpp)
-//=============================================
-
 namespace impl {
 
-using AeroConfig = ::mam4::AeroConfig;
+using AeroConfig = mam4::AeroConfig;
 static constexpr int gas_pcnst = 30;
 static constexpr int nqtendbb = 4;
-
-KOKKOS_INLINE_FUNCTION
-void modal_aero_amicphys_intr(
-    const int mdo_gasaerexch, const int mdo_rename, const int mdo_newnuc,
-    const int mdo_coag, const int ncol, const int nstep, const Real deltat,
-    const Real t, const Real pmid, const Real pdel, const Real zm,
-    const Real pblh, const Real qv, const Real cld, Real q[gas_pcnst],
-    Real qqcw[gas_pcnst], const Real q_pregaschem[gas_pcnst],
-    const Real q_precldchem[gas_pcnst], const Real qqcw_precldchem[gas_pcnst],
-    Real q_tendbb[gas_pcnst][nqtendbb], Real qqcw_tendbb[gas_pcnst][nqtendbb],
-    Real dgncur_a[AeroConfig::num_modes()],
-    Real dgncur_awet[AeroConfig::num_modes()],
-    Real wetdens_host[AeroConfig::num_modes()],
-    Real qaerwat[AeroConfig::num_modes()]);
 
 }
 
@@ -57,10 +40,22 @@ std::string MAMMicrophysics::name() const {
 }
 
 void MAMMicrophysics::configure(const ekat::ParameterList& params) {
-  config_.do_gasaerexch = true;
+  // enable/disable specific parameterizations
+  config_.do_cond = true;
   config_.do_rename = true;
   config_.do_newnuc = true;
   config_.do_coag = true;
+
+  // configure the specific aerosol microphysics parameterizations
+
+  config_.nucleation = {};
+  config_.nucleation.dens_so4a_host = 1770.0;
+  config_.nucleation.mw_so4a_host = 115.0;
+  config_.nucleation.newnuc_method_user_choice = 2;
+  config_.nucleation.pbl_nuc_wang2008_user_choice = 1;
+  config_.nucleation.adjust_factor_pbl_ratenucl = 1.0;
+  config_.nucleation.accom_coef_h2so4 = 1.0;
+  config_.nucleation.newnuc_adjust_factor_dnaitdt = 1.0;
 }
 
 void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -234,17 +229,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // FIXME: we'll probably need this later, but we'll just use ATMBufferManager for now
   //const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
   //workspace_mgr_.setup(buffer_.wsm_data, nlev_+1, 13+(n_wind_slots+n_trac_slots), default_policy);
-
-  // configure the aerosol microphysics parameterizations
-  // FIXME
-  mam4::NucleationProcess::ProcessConfig nuc_config{};
-  nuc_config.dens_so4a_host = 1770.0;
-  nuc_config.mw_so4a_host = 115.0;
-  nuc_config.newnuc_method_user_choice = 2;
-  nuc_config.pbl_nuc_wang2008_user_choice = 1;
-  nuc_config.adjust_factor_pbl_ratenucl = 1.0;
-  nuc_config.accom_coef_h2so4 = 1.0;
-  nuc_config.newnuc_adjust_factor_dnaitdt = 1.0;
 }
 
 void MAMMicrophysics::run_impl(const double dt) {
@@ -298,8 +282,9 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real dgncur_awet[mam4::AeroConfig::num_modes()] = {};
       Real wetdens_host[mam4::AeroConfig::num_modes()] = {};
       Real qaerwat[mam4::AeroConfig::num_modes()] = {};
-      impl::modal_aero_amicphys_intr(config_.do_gasaerexch, config_.do_rename,
+      impl::modal_aero_amicphys_intr(config_.do_cond, config_.do_rename,
                                      config_.do_newnuc, config_.do_coag,
+                                     config_.nucleation,
                                      ncol_, step_, dt, t, pmid, pdel, zm, pblh,
                                      qv, cld, q, qqcw, q_pregaschem, q_precldchem,
                                      qqcw_precldchem, q_tendbb, qqcw_tendbb, dgncur_a,

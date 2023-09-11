@@ -1495,9 +1495,11 @@ void mam_amicphys_1gridcell(
 
 namespace scream::impl {
 
+KOKKOS_INLINE_FUNCTION
 void modal_aero_amicphys_intr(
-    const int mdo_gasaerexch, const int mdo_rename, const int mdo_newnuc,
-    const int mdo_coag, const int ncol, const int nstep, const Real deltat,
+    const bool do_cond, const bool do_rename, const bool do_newnuc,
+    const bool do_coag, const mam4::NucleationProcess::ProcessConfig nuc_config,
+    const int ncol, const int nstep, const Real deltat,
     const Real t, const Real pmid, const Real pdel, const Real zm,
     const Real pblh, const Real qv, const Real cld, Real q[gas_pcnst],
     Real qqcw[gas_pcnst], const Real q_pregaschem[gas_pcnst],
@@ -1580,11 +1582,6 @@ void modal_aero_amicphys_intr(
   //    for different processes, which are output to history
   // the processes are condensation/evaporation (and associated aging),
   //    renaming, coagulation, and nucleation
-
-  const bool do_cond = (mdo_gasaerexch > 0);
-  const bool do_rename = (mdo_rename > 0);
-  const bool do_newnuc = (mdo_newnuc > 0);
-  const bool do_coag = (mdo_coag > 0);
 
   for (int i = 0; i < gas_pcnst; ++i)
     for (int j = 0; j < nqtendbb; ++j)
