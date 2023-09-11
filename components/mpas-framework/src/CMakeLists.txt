@@ -84,7 +84,7 @@ set(COMMON_RAW_SOURCES external/ezxml/ezxml.c)
 include(${CMAKE_CURRENT_SOURCE_DIR}/framework/framework.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/operators/operators.cmake)
 
-add_library(common OBJECT)
+add_library(common)
 target_compile_definitions(common PRIVATE ${CPPDEFS})
 target_include_directories(common PRIVATE ${INCLUDES})
 
