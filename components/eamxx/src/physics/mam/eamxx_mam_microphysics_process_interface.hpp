@@ -5,6 +5,8 @@
 #include <share/atm_process/atmosphere_process.hpp>
 #include <share/util/scream_common_physics_functions.hpp>
 
+#include "impl/mam4_amicphys.cpp" // mam4xx top-level microphysics function(s)
+
 #include <ekat/ekat_parameter_list.hpp>
 #include <ekat/ekat_workspace.hpp>
 #include <mam4xx/mam4.hpp>
@@ -83,18 +85,8 @@ private_except_cuda:
   // number of horizontal columns and vertical levels
   int ncol_, nlev_;
 
-  // aerosol microphysics configuration
-  struct Config {
-    // these switches activate various aerosol microphysics processes
-    bool do_cond;   // condensation (a.k.a gas-aerosol exchange)
-    bool do_rename; // mode "renaming"
-    bool do_newnuc; // gas -> aerosol nucleation
-    bool do_coag;   // aerosol coagulation
-
-    // configurations for specific aerosol microphysics
-    mam4::NucleationProcess::ProcessConfig nucleation;
-  };
-  Config config_;
+  // aerosol microphysics configuration (see impl/mam4_amicphys.cpp)
+  impl::AmicPhysConfig config_;
 
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.

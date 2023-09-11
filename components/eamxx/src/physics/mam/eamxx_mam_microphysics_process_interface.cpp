@@ -2,8 +2,6 @@
 #include <share/property_checks/field_lower_bound_check.hpp>
 #include <share/property_checks/field_within_interval_check.hpp>
 
-#include "impl/mam4_amicphys.cpp" // mam4xx top-level microphysics function(s)
-
 #include "scream_config.h" // for SCREAM_CIME_BUILD
 
 #include <ekat/ekat_assert.hpp>
@@ -56,6 +54,10 @@ void MAMMicrophysics::configure(const ekat::ParameterList& params) {
   config_.nucleation.adjust_factor_pbl_ratenucl = 1.0;
   config_.nucleation.accom_coef_h2so4 = 1.0;
   config_.nucleation.newnuc_adjust_factor_dnaitdt = 1.0;
+
+  // these parameters guide the coupling between parameterizations
+  config_.gaexch_h2so4_uptake_optaa = 2;
+  config_.newnuc_h2so4_conc_optaa = 2;
 }
 
 void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -282,13 +284,11 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real dgncur_awet[mam4::AeroConfig::num_modes()] = {};
       Real wetdens_host[mam4::AeroConfig::num_modes()] = {};
       Real qaerwat[mam4::AeroConfig::num_modes()] = {};
-      impl::modal_aero_amicphys_intr(config_.do_cond, config_.do_rename,
-                                     config_.do_newnuc, config_.do_coag,
-                                     config_.nucleation,
-                                     ncol_, step_, dt, t, pmid, pdel, zm, pblh,
-                                     qv, cld, q, qqcw, q_pregaschem, q_precldchem,
-                                     qqcw_precldchem, q_tendbb, qqcw_tendbb, dgncur_a,
-                                     dgncur_awet, wetdens_host, qaerwat);
+      impl::modal_aero_amicphys_intr(config_, ncol_, step_, dt, t, pmid, pdel,
+                                     zm, pblh, qv, cld, q, qqcw, q_pregaschem,
+                                     q_precldchem, qqcw_precldchem, q_tendbb,
+                                     qqcw_tendbb, dgncur_a, dgncur_awet,
+                                     wetdens_host, qaerwat);
     });
   });
 
