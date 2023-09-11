@@ -16,6 +16,8 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
     m_src_pres_type = TIME_DEPENDENT_3D_PROFILE;
   } else if (src_pres_type=="STATIC_1D_VERTICAL_PROFILE") {
     m_src_pres_type = STATIC_1D_VERTICAL_PROFILE;
+    // Check for a designated source pressure file, default to first nudging data source if not given.
+    m_static_vertical_pressure_file = m_params.get<std::string>("source_pressure_file",m_datafiles[0]);
   } else {
     EKAT_ERROR_MSG("ERROR! Nudging::parameter_list - unsupported source_pressure_type provided.  Current options are [TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE].  Please check");
   }
@@ -55,9 +57,15 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   /* ----------------------- WARNING --------------------------------*/
 
   //Now need to read in the file
-  scorpio::register_file(m_datafiles[0],scorpio::Read);
-  m_num_src_levs = scorpio::get_dimlen(m_datafiles[0],"lev");
-  scorpio::eam_pio_closefile(m_datafiles[0]);
+  if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
+    scorpio::register_file(m_datafiles[0],scorpio::Read);
+    m_num_src_levs = scorpio::get_dimlen(m_datafiles[0],"lev");
+    scorpio::eam_pio_closefile(m_datafiles[0]);
+  } else {
+    scorpio::register_file(m_static_vertical_pressure_file,scorpio::Read);
+    m_num_src_levs = scorpio::get_dimlen(m_static_vertical_pressure_file,"lev");
+    scorpio::eam_pio_closefile(m_static_vertical_pressure_file);
+  }
 }
 // =========================================================================================
 void Nudging::apply_tendency(Field& base, const Field& next, const int dt)
@@ -85,7 +93,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
   m_time_interp = util::TimeInterpolation(grid_ext, m_datafiles);
 
-  constexpr int ps = SCREAM_PACK_SIZE;
+  constexpr int ps = 1;
   const auto& grid_name = m_grid->name();
   if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
     create_helper_field("p_mid_ext", scalar3d_layout_mid, grid_name, ps);
@@ -94,7 +102,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
     // Load p_levs from source data file
     ekat::ParameterList in_params;
-    in_params.set("Filename",m_datafiles[0]);
+    in_params.set("Filename",m_static_vertical_pressure_file);
     in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
     std::map<std::string,view_1d_host<Real>> host_views;
     std::map<std::string,FieldLayout>  layouts;
@@ -141,16 +149,14 @@ void Nudging::run_impl (const double dt)
   view_Nd<mPack,2> p_mid_ext_p;
   view_Nd<mPack,1> p_mid_ext_1d;
   if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
-    const auto& p_mid_ext   = get_helper_field("p_mid_ext").get_view<mPack**>();
-    p_mid_ext_p = view_Nd<mPack,2>(reinterpret_cast<mPack*>(p_mid_ext.data()),
-  				     m_num_cols,m_num_src_levs);
+    p_mid_ext_p = get_helper_field("p_mid_ext").get_view<mPack**>();
   } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
     p_mid_ext_1d   = get_helper_field("p_mid_ext").get_view<mPack*>();
   }
   for (auto name : m_fields_nudge) {
     auto atm_state_field = get_field_out(name);
     auto int_state_field = get_helper_field(name);
-    auto ext_state_view = get_helper_field(name+"_ext").get_view<mPack**>();
+    auto ext_state_view  = get_helper_field(name+"_ext").get_view<mPack**>();
     auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
     auto int_state_view  = int_state_field.get_view<mPack**>();
     auto int_mask_view = m_buffer.int_mask_view;
@@ -159,10 +165,12 @@ void Nudging::run_impl (const double dt)
     // nearest un-masked value.
     // Here we are updating the ext_state_view, which is the time interpolated values taken from the nudging
     // data.
-    Real var_fill_value;
-    // WARNING!!! Assumes that all datafiles use the same FillValue.  It is unlikely that a user will use a mismatch of files
-    // with different defined FillValues, but if they do, this loop won't catch the change.
-    scorpio::get_variable_metadata(m_datafiles[0],name,"_FillValue",var_fill_value);
+    Real var_fill_value = constants::DefaultFillValue<Real>().value;
+    // Query the helper field for the fill value, if not present use default
+    const auto int_extra = int_state_field.get_header().get_extra_data();
+    if (int_extra.count("mask_value")) {
+      var_fill_value = ekat::any_cast<float>(int_extra.at("mask_value"));
+    }
     const int num_cols           = ext_state_view.extent(0);
     const int num_vert_packs     = ext_state_view.extent(1);
     const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);

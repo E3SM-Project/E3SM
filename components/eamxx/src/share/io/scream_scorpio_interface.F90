@@ -575,7 +575,7 @@ contains
     ! Find the pointer for this file
     call lookup_pio_atm_file(trim(filename),pio_file,found)
     if (.not.found ) then
-      call errorHandle("PIO ERROR: error getting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+      call errorHandle("PIO ERROR: error getting metadata for file "//trim(filename)//".\n PIO file not found or not open.",-999)
     endif
 
     ! Find the variable in the file
@@ -626,7 +626,7 @@ contains
     ! Find the pointer for this file
     call lookup_pio_atm_file(trim(filename),pio_file,found)
     if (.not.found ) then
-      call errorHandle("PIO ERROR: error getting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+      call errorHandle("PIO ERROR: error getting metadata for file "//trim(filename)//".\n PIO file not found or not open.",-999)
     endif
 
     ! Find the variable in the file
@@ -1073,7 +1073,7 @@ contains
     integer :: ierr
 
     if (retVal .ne. PIO_NOERR) then
-      write(*,'(I8,2x,A200)') retVal,trim(errMsg)
+      write(*,'(I8,2x,A512)') retVal,trim(errMsg)
       ! Kill run
       call eam_pio_finalize()
       call finalize_scream_session()

@@ -13,6 +13,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/util/scream_vertical_interpolation.hpp"
 #include "share/util/scream_time_stamp.hpp"
+#include "share/util/scream_universal_constants.hpp"
 
 #include <string>
 
@@ -114,6 +115,7 @@ protected:
   int m_num_src_levs;
   int m_timescale;
   std::vector<std::string> m_datafiles;
+  std::string              m_static_vertical_pressure_file;
   SourcePresType m_src_pres_type;
   
 
