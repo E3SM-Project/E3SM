@@ -156,7 +156,8 @@ void Nudging::run_impl (const double dt)
   for (auto name : m_fields_nudge) {
     auto atm_state_field = get_field_out(name);
     auto int_state_field = get_helper_field(name);
-    auto ext_state_view  = get_helper_field(name+"_ext").get_view<mPack**>();
+    auto ext_state_field = get_helper_field(name+"_ext");
+    auto ext_state_view  = ext_state_field.get_view<mPack**>();
     auto atm_state_view  = atm_state_field.get_view<mPack**>();  // TODO: Right now assume whatever field is defined on COLxLEV
     auto int_state_view  = int_state_field.get_view<mPack**>();
     auto int_mask_view = m_buffer.int_mask_view;
@@ -167,9 +168,9 @@ void Nudging::run_impl (const double dt)
     // data.
     Real var_fill_value = constants::DefaultFillValue<Real>().value;
     // Query the helper field for the fill value, if not present use default
-    const auto int_extra = int_state_field.get_header().get_extra_data();
-    if (int_extra.count("mask_value")) {
-      var_fill_value = ekat::any_cast<float>(int_extra.at("mask_value"));
+    const auto ext_extra = ext_state_field.get_header().get_extra_data();
+    if (ext_extra.count("mask_value")) {
+      var_fill_value = ekat::any_cast<float>(ext_extra.at("mask_value"));
     }
     const int num_cols           = ext_state_view.extent(0);
     const int num_vert_packs     = ext_state_view.extent(1);

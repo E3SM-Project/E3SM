@@ -170,6 +170,8 @@ void TimeInterpolation::initialize_data_from_files()
     field0.get_header().set_extra_data("mask_value",var_fill_value);
     auto& field1 = m_fm_time1->get_field(name);
     field1.get_header().set_extra_data("mask_value",var_fill_value);
+    auto& field_out = m_interp_fields.at(name);
+    field_out.get_header().set_extra_data("mask_value",var_fill_value);
   }
   // Read first snap of data and shift to time0
   read_data();
