@@ -3058,7 +3058,7 @@ module li_calving
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
       integer, dimension(:), pointer :: nEdgesOnCell
       type (field1dInteger), pointer :: seedMaskField, growMaskField
-      integer, dimension(:), pointer :: seedMask, growMask
+      integer, dimension(:), pointer :: seedMask, growMask, cellMask
       real (kind=RKIND), dimension(:), pointer :: bedTopography, thickness
       real (kind=RKIND), pointer :: config_sea_level
       integer, pointer :: nCells
@@ -3076,6 +3076,7 @@ module li_calving
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
@@ -3088,8 +3089,8 @@ module li_calving
       seedMask(:) = 0
       growMask(:) = 0
       do iCell = 1, nCells
-         if ((bedTopography(iCell) < config_sea_level) .and. (thickness(iCell) == 0.0_RKIND)) then
-            growMask(iCell) = 1
+         if ((bedTopography(iCell) < config_sea_level) .and. ( .not. li_mask_is_dynamic_ice(cellMask(iCell)) ) ) then
+            growMask(iCell) = 1  ! includes floating non-dynamic cells
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
                if (jCell == nCells + 1) then
