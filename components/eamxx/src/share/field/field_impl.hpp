@@ -375,7 +375,11 @@ update (const Field& x, const ST alpha, const ST beta)
   const auto& xtra_data = x.get_header().get_extra_data();
 
   if (xtra_data.count("mask_value")) {
-    fill_val = ekat::any_cast<float>(xtra_data.at("mask_value"));
+    if (typeid(ST) == typeid(int)) {
+      fill_val = ekat::any_cast<int>(xtra_data.at("mask_value"));
+    } else {
+      fill_val = ekat::any_cast<float>(xtra_data.at("mask_value"));
+    }
   }
 
   // If user passes, say, double alpha/beta for an int field, we should error out, warning about

@@ -1,4 +1,5 @@
 #include "eamxx_nudging_process_interface.hpp"
+#include "share/util/scream_universal_constants.hpp"
 
 namespace scream
 {

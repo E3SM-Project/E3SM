@@ -13,7 +13,6 @@
 #include "share/grid/point_grid.hpp"
 #include "share/util/scream_vertical_interpolation.hpp"
 #include "share/util/scream_time_stamp.hpp"
-#include "share/util/scream_universal_constants.hpp"
 
 #include <string>
 
