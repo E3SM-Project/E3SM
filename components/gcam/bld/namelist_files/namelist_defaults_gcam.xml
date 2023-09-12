@@ -28,6 +28,8 @@ for the iac data in the e3sm distribution
 <num_iac2elm_landtypes>9</num_iac2elm_landtypes>
 <num_emiss_sectors>2</num_emiss_sectors>
 <num_emiss_regions>1</num_emiss_regions>
+<num_emiss_ctys>185</num_emiss_ctys>
+<num_periods>20</num_periods>
 
 <!-- gcam config and init files, relative to inputdata -->
 <gcam_config>iac/giac/gcam/gcam_6_0/configuration/configuration_ref.xml</gcam_config>
@@ -49,6 +51,17 @@ for the iac data in the e3sm distribution
 <gcam2glm_glumap>iac/giac/glm/inputs/gcam2glm_mapping.csv</gcam2glm_glumap>
 <gcam2glm_baselu>iac/giac/glm/inputs/initial/initial_state_LUH2_2015_v3.nc</gcam2glm_baselu>
 <gcam2glm_basebiomass>iac/giac/glm/inputs/vba_LUH1format.nc</gcam2glm_basebiomass>
+
+<!-- Config and input files for emiss downscaling, with relative paths from
+     inputdata directory -->
+<country2grid_map>iac/giac/gcam/gcam_6_0/data/emission_downscaling/elm0.9x1.25tocountry_mapping_iso.csv</country2grid_map>
+<pop_iiasa_file>iac/giac/gcam/gcam_6_0/data/emission_downscaling/IIASAPOPData.csv</pop_iiasa_file>
+<gdp_iiasa_file>iac/giac/gcam/gcam_6_0/data/emission_downscaling/IIASAGDPData.csv</gdp_iiasa_file>
+<pop_gcam_file>iac/giac/gcam/gcam_6_0/data/emission_downscaling/GCAMRegionalPOPData.csv</pop_gcam_file>
+<gdp_gcam_file>iac/giac/gcam/gcam_6_0/data/emission_downscaling/GCAMRegionalGDPData.csv</gdp_gcam_file>
+<co2_gcam_file>iac/giac/gcam/gcam_6_0/data/emission_downscaling/GCAMRegionalCO2Data.csv</co2_gcam_file>
+<surface_co2_downscaling_method>Linear</surface_co2_downscaling_method>
+
 
 <!-- Name of dynamic landuse timeseries file  -->
 <fdyndat_ehc>surfdata_iESM_dyn.nc</fdyndat_ehc>

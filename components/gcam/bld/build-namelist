@@ -323,6 +323,8 @@ add_default($nl, 'num_gcam_land_regions');
 add_default($nl, 'num_iac2elm_landtypes');
 add_default($nl, 'num_emiss_sectors');
 add_default($nl, 'num_emiss_regions');
+add_default($nl, 'num_emiss_ctys');
+add_default($nl, 'num_periods');
 
 # gcam config and init files, relative to inputdata
 add_default($nl, 'gcam_config');
@@ -343,6 +345,15 @@ add_default($nl, 'elm2gcam_mapping_file');
 add_default($nl, 'gcam2glm_glumap');
 add_default($nl, 'gcam2glm_baselu');
 add_default($nl, 'gcam2glm_basebiomass');
+
+! Config and input files for emiss downscaling
+add_default($nl, 'country2grid_map');
+add_default($nl, 'pop_iiasa_file');
+add_default($nl, 'gdp_iiasa_file');
+add_default($nl, 'pop_gcam_file');
+add_default($nl, 'gdp_gcam_file');
+add_default($nl, 'co2_gcam_file');
+add_default($nl, 'surface_co2_downscaling_method');
 
 # name of dynamic landuse timeseries file
 add_default($nl, 'fdyndat_ehc');
