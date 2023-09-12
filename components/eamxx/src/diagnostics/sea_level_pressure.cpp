@@ -4,8 +4,9 @@ namespace scream
 {
 
 // =========================================================================================
-SeaLevelPressureDiagnostic::SeaLevelPressureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
-  : AtmosphereDiagnostic(comm,params)
+SeaLevelPressureDiagnostic::
+SeaLevelPressureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
+ : AtmosphereDiagnostic(comm,params)
 {
   // Nothing to do here
 }
@@ -45,7 +46,6 @@ void SeaLevelPressureDiagnostic::set_grids(const std::shared_ptr<const GridsMana
 // =========================================================================================
 void SeaLevelPressureDiagnostic::compute_diagnostic_impl()
 {
-
   const auto npacks     = ekat::npack<Pack>(m_num_levs);
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols,1);
 

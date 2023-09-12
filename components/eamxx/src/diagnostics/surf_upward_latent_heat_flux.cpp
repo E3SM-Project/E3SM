@@ -5,18 +5,21 @@
 namespace scream {
 
 // ==============================================================================
-SurfaceUpwardLatentHeatFlux::SurfaceUpwardLatentHeatFlux(const ekat::Comm& comm, const ekat::ParameterList& params) : AtmosphereDiagnostic(comm, params), m_name("surface_upward_latent_heat_flux"),
-cf_long_name("surface_upward_latent_heat_flux_due_to_evaporation")
+SurfaceUpwardLatentHeatFlux::
+SurfaceUpwardLatentHeatFlux(const ekat::Comm& comm, const ekat::ParameterList& params)
+ : AtmosphereDiagnostic(comm, params)
+ , m_name("surface_upward_latent_heat_flux")
+ , cf_long_name("surface_upward_latent_heat_flux_due_to_evaporation")
 {
   // In the future we may add options to include latent heat fluxes due to other water species.
   // See precip_surf_mass_flux.hpp and *.cpp for an example.
   // We'll need to change the cf_long_name, too, when this happens.
 }
 
-
 // ==============================================================================
-void SurfaceUpwardLatentHeatFlux::set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
-
+void SurfaceUpwardLatentHeatFlux::
+set_grids (const std::shared_ptr<const GridsManager> grids_manager)
+{
   const auto m2 = ekat::units::m * ekat::units::m;
   const auto W = ekat::units::W;
   const auto surf_evap_units = ekat::units::kg / m2 / ekat::units::s;
@@ -40,8 +43,8 @@ void SurfaceUpwardLatentHeatFlux::set_grids (const std::shared_ptr<const GridsMa
 }
 
 // ==============================================================================
-void SurfaceUpwardLatentHeatFlux::compute_diagnostic_impl() {
-
+void SurfaceUpwardLatentHeatFlux::compute_diagnostic_impl()
+{
   using KT = ekat::KokkosTypes<DefaultDevice>;
   using PC = scream::physics::Constants<Real>;
 
@@ -56,8 +59,7 @@ void SurfaceUpwardLatentHeatFlux::compute_diagnostic_impl() {
     KT::RangePolicy(0, m_num_cols),
     KOKKOS_LAMBDA (const Int& icol) {
       flux_view(icol) = evap_view_d(icol) * latent_heat_evap;
-    });
-
+  });
 }
 
 } // namespace scream

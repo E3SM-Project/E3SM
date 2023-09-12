@@ -3,14 +3,13 @@
 namespace scream
 {
 
-// =========================================================================================
-ShortwaveCloudForcingDiagnostic::ShortwaveCloudForcingDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
-  : AtmosphereDiagnostic(comm,params)
+ShortwaveCloudForcingDiagnostic::
+ShortwaveCloudForcingDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
+ : AtmosphereDiagnostic(comm,params)
 {
   // Nothing to do here
 }
 
-// =========================================================================================
 void ShortwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
@@ -40,7 +39,7 @@ void ShortwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const Grid
   C_ap.request_allocation();
   m_diagnostic_output.allocate_view();
 }
-// =========================================================================================
+
 void ShortwaveCloudForcingDiagnostic::compute_diagnostic_impl()
 {
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols,1);
@@ -59,5 +58,5 @@ void ShortwaveCloudForcingDiagnostic::compute_diagnostic_impl()
   });
   Kokkos::fence();
 }
-// =========================================================================================
+
 } //namespace scream
