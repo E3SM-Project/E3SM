@@ -41,7 +41,7 @@ Fields:
       - micro_vap_liq_exchange
       - precip_ice_surf_mass
       - precip_liq_surf_mass
-      - PrecipLiqSurfMassFlux
+      - precip_liq_surf_mass_flux
       # SHOC + HOMME
       - horiz_winds
       # SHOC + P3
@@ -62,6 +62,15 @@ Fields:
       - rad_heating_pdel
       - sfc_flux_lw_dn
       - sfc_flux_sw_net
+      - ShortwaveCloudForcing
+      - LongwaveCloudForcing
+      - LiqWaterPath
+      - IceWaterPath
+      - RainWaterPath
+      - RimeWaterPath
+      - VapWaterPath
+      - ZonalVapFlux
+      - MeridionalVapFlux
   Dynamics:
     Field Names:
       - Qdp_dyn

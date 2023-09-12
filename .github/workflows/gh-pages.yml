@@ -7,11 +7,25 @@ on:
   # Runs every time master branch is updated
   push:
     branches: [ master ]
+    # Only if docs-related files are touched
+    paths:
+      - components/eamxx/mkdocs.yml
+      - components/eamxx/docs/*
+      - components/eamxx/cime_config/namelist_defaults_scream.xml
   # Runs every time a PR is open against master
   pull_request:
     branches: [ master ]
+    # Only if docs-related files are touched
+    paths:
+      - components/eamxx/mkdocs.yml
+      - components/eamxx/docs/*
+      - components/eamxx/cime_config/namelist_defaults_scream.xml
 
   workflow_dispatch:
+
+concurrency:
+  # Prevent 2+ copies of this workflow from running concurrently
+  group: eamxx-docs-action
 
 jobs:
 
@@ -51,11 +65,18 @@ jobs:
         run: |
           mkdocs build --strict --verbose
 
-      # only deploy when there is a push to master
+      # only deploy to the main github page when there is a push to master
       - if: ${{ github.event_name == 'push' }}
         name: GitHub Pages action
-        uses: peaceiris/actions-gh-pages@v3.9.3
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          # information about GITHUB_TOKEN are in settings
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./components/eamxx/site
+          # Do not remove existing pr-preview pages
+          clean-exclude: pr-preview
+          folder: ./components/eamxx/site
+
+      # If it's a PR from within the same repo, deploy to a preview page
+      - if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        name: Preview docs
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: components/eamxx/site/

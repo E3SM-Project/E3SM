@@ -239,6 +239,7 @@
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
         <command name="load">cray-parallel-netcdf/1.12.3.3</command>
         <command name="load">cmake/3.24.3</command>
+        <command name="load">evp-patch</command>
       </modules>
     </module_system>
 
@@ -373,6 +374,7 @@
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
         <command name="load">cray-parallel-netcdf/1.12.3.3</command>
         <command name="load">cmake/3.24.3</command>
+        <command name="load">evp-patch</command>
       </modules>
     </module_system>
 
@@ -1445,7 +1447,7 @@
         <command name="load">sems-archive-env</command>
         <command name="load">acme-env</command>
         <command name="load">sems-archive-git</command>
-        <command name="load">sems-archive-cmake/3.19.1</command>
+        <command name="load">acme-cmake/3.26.3</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">acme-gcc/8.1.0</command>
@@ -1478,7 +1480,6 @@
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
-      <env name="PATH">/ascldap/users/jgfouca/packages/cmake-3.26.3/bin:$ENV{PATH}</env>
     </environment_variables>
   </machine>
 

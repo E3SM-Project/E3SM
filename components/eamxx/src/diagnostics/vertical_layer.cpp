@@ -45,10 +45,10 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   constexpr int ps = Pack::n;
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid",          scalar3d_layout_mid, K,     grid_name,            ps);
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,    grid_name,            ps);
-  add_field<Required>("p_mid",          scalar3d_layout_mid, Pa,    grid_name,            ps);
-  add_field<Required>("qv",             scalar3d_layout_mid, Q,     grid_name, "tracers", ps);
+  add_field<Required>("T_mid",          scalar3d_layout_mid, K,     grid_name, ps);
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,    grid_name, ps);
+  add_field<Required>("p_mid",          scalar3d_layout_mid, Pa,    grid_name, ps);
+  add_field<Required>("qv",             scalar3d_layout_mid, Q,     grid_name, ps);
 
   // Only need phis if computing geopotential_*
   if (not m_only_compute_dz and not m_from_sea_level) {

@@ -71,7 +71,7 @@ void Functions<S,D>
 
 template <typename S, typename D>
 Int Functions<S,D>
-::p3_main(
+::p3_main_internal(
   const P3PrognosticState& prognostic_state,
   const P3DiagnosticInputs& diagnostic_inputs,
   const P3DiagnosticOutputs& diagnostic_outputs,
@@ -327,6 +327,39 @@ Int Functions<S,D>
   return duration.count();
 }
 
+template <typename S, typename D>
+Int Functions<S,D>
+::p3_main(
+  const P3PrognosticState& prognostic_state,
+  const P3DiagnosticInputs& diagnostic_inputs,
+  const P3DiagnosticOutputs& diagnostic_outputs,
+  const P3Infrastructure& infrastructure,
+  const P3HistoryOnly& history_only,
+  const P3LookupTables& lookup_tables,
+  const WorkspaceManager& workspace_mgr,
+  Int nj,
+  Int nk)
+{
+#ifndef SCREAM_SMALL_KERNELS
+  return p3_main_internal(prognostic_state,
+                         diagnostic_inputs,
+                         diagnostic_outputs,
+                         infrastructure,
+                         history_only,
+                         lookup_tables,
+                         workspace_mgr,
+                         nj, nk);
+#else 
+  return p3_main_internal_disp(prognostic_state,
+                               diagnostic_inputs,
+                               diagnostic_outputs,
+                               infrastructure,
+                               history_only,
+                               lookup_tables,
+                               workspace_mgr,
+                               nj, nk);
+#endif
+}
 } // namespace p3
 } // namespace scream
 

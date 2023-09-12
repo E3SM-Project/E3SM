@@ -1,7 +1,7 @@
 set(TMS_SRCS
   tms_iso_c.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/trb_mtn_stress.F90
-  #eamxx_tms_process_interface.cpp
+  eamxx_tms_process_interface.cpp
 )
 
 if (NOT SCREAM_LIB_ONLY)
@@ -10,9 +10,9 @@ if (NOT SCREAM_LIB_ONLY)
     )
 endif()
 
-#set(TMS_HEADERS
-  #eamxx_tms_process_interface.hpp
-#)
+set(TMS_HEADERS
+  eamxx_tms_process_interface.hpp
+)
 
 # Add ETI source files if not on CUDA/HIP
 if (NOT EAMXX_ENABLE_GPU)

@@ -4,7 +4,7 @@ driver_options:
   atmosphere_dag_verbosity_level: 5
 
 atmosphere_processes:
-  atm_procs_list: (rrtmgp)
+  atm_procs_list: [rrtmgp]
   rrtmgp:
     column_chunk_size: 123
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
@@ -45,6 +45,7 @@ initial_conditions:
   sfc_alb_dif_nir: 0.0
   cos_zenith: 0.0
   qc: 0.0
+  nc: 0.0
   qi: 0.0
   cldfrac_tot: 0.0
   eff_radius_qc: 0.0

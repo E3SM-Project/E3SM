@@ -69,7 +69,7 @@ TEST_CASE("field_tracking", "") {
   FieldTracking track;
   util::TimeStamp time1(2021,10,12,17,8,10);
   util::TimeStamp time2(2021,10,12,17,8,20);
-  REQUIRE_NOTHROW (track.update_time_stamp(time2));
+  track.update_time_stamp(time2);
 
   // Cannot rewind time (yet)
   REQUIRE_THROWS  (track.update_time_stamp(time1));
@@ -114,7 +114,7 @@ TEST_CASE("field", "") {
     // Should not be able to reshape to this data type...
     REQUIRE_THROWS(f1.get_view<P16**>());
     // But this should work
-    REQUIRE_NOTHROW(f1.get_view<P8**>());
+    f1.get_view<P8**>();
 
     // Using packs (of allowable size) of different pack sizes
     // should lead to views with different extents.
@@ -578,9 +578,9 @@ TEST_CASE("tracers_bundle", "") {
   int idx_v, idx_c, idx_r;
 
   // The idx must be stored
-  REQUIRE_NOTHROW (idx_v = group.m_info->m_subview_idx.at("qv"));
-  REQUIRE_NOTHROW (idx_c = group.m_info->m_subview_idx.at("qc"));
-  REQUIRE_NOTHROW (idx_r = group.m_info->m_subview_idx.at("qr"));
+  idx_v = group.m_info->m_subview_idx.at("qv");
+  idx_c = group.m_info->m_subview_idx.at("qc");
+  idx_r = group.m_info->m_subview_idx.at("qr");
 
   // All idx must be in [0,2] and must be different
   REQUIRE ((idx_v>=0 && idx_v<3 &&
