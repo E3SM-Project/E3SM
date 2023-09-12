@@ -74,7 +74,7 @@ void advance_iop_subsidence(AdvanceIopSubsidenceData& d)
 void iop_setinitial(IopSetinitialData& d)
 {
   dp_init(d.plev, true);
-  iop_setinitial_c(d.nelemd, d.elem);
+  //iop_setinitial_c(d.nelemd, d.elem);
 }
 
 void iop_broadcast(IopBroadcastData& d)
@@ -285,10 +285,55 @@ void advance_iop_subsidence_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real
   ekat::device_to_host({q_update}, pcnst, plev, inout_views_2d, true);
 }
 
-void iop_setinitial_f(Int nelemd, element_t* elem)
+void iop_setinitial_f(Int plev, Int pcnst, Int nelemd, Int np, Int nstep, Real psobs, bool use_replay, bool dynproc, bool have_t, bool have_q, bool have_ps, bool have_u, bool have_v, bool have_numliq, bool have_cldliq, bool have_numice, bool have_cldice, bool scm_zero_non_iop_tracers, bool is_first_restart_step, Real* qmin, Real* uobs, Real* vobs, Real* numliqobs, Real* numiceobs, Real* cldliqobs, Real* cldiceobs, Real* dx_short, tracer_t* tracers, element_t* elem, Real* dyn_dx_size, Real* tobs, Real* qobs)
 {
-  // TODO
+  using DPF  = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename DPF::Spack;
+  using Scalarp = ekat::Pack<Real, 1>;
+  using view_1d =  typename DPF::view_1d<Spack>;
+  using view_1ds = typename DPF::view_1d<Scalarp>;
+  using sview_1ds = typename DPF::view_1d<Real>;
+  using KT = typename DPF::KT;
+  using ExeSpace = typename KT::ExeSpace;
+  using MemberType = typename DPF::MemberType;
+
+  // Some of the workspaces need plev+1 items
+  const Int plev_pack = ekat::npack<Spack>(plev);
+
+  // Set up views
+  std::vector<view_1d>  temp_d(8);
+  std::vector<view_1ds> temp2_d(2);
+
+  ekat::host_to_device({uobs, vobs, numliqobs, numiceobs, cldliqobs, cldiceobs, tobs, qobs},
+                       plev, temp_d);
+
+  std::vector<Int> scalar_sizes = {nelemd, pcnst};
+  ekat::host_to_device({dx_short, qmin}, scalar_sizes, temp2_d);
+
+  view_1d
+    uobs_d      (temp_d[0]),
+    vobs_d      (temp_d[1]),
+    numliqobs_d (temp_d[2]),
+    numiceobs_d (temp_d[3]),
+    cldliqobs_d (temp_d[4]),
+    cldiceobs_d (temp_d[5]),
+    tobs_d      (temp_d[6]),
+    qobs_d      (temp_d[7]);
+
+  sview_1ds
+    dx_short_d(reinterpret_cast<Real*>(temp2_d[0].data()), scalar_sizes[0]),
+    qmin_d    (reinterpret_cast<Real*>(temp2_d[1].data()), scalar_sizes[1]);
+
+  // Call core function
+  DPF::iop_setinitial(plev, pcnst, nelemd, np, nstep, use_replay, dynproc, have_t, have_ps, have_q, have_u, have_v, have_numliq, have_cldliq, have_numice, have_cldice, scm_zero_non_iop_tracers, is_first_restart_step, qmin_d, uobs_d, vobs_d, numliqobs_d, numiceobs_d, cldliqobs_d, cldiceobs_d, psobs, dx_short_d, *dyn_dx_size, *tracers, *elem, tobs_d, qobs_d);
+
+  // Sync back to host
+  std::vector<view_1d> inout_views    = {tobs_d, qobs_d};
+
+  ekat::device_to_host({tobs, qobs}, plev, inout_views);
 }
+
 void iop_broadcast_f()
 {
 #if 0

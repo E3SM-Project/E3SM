@@ -10,6 +10,7 @@
 #include "ekat/ekat_workspace.hpp"
 
 #include "Elements.hpp"
+#include "Tracers.hpp"
 
 namespace scream {
 namespace dp {
@@ -24,6 +25,7 @@ namespace dp {
  */
 
 using element_t = Homme::Elements;
+using tracer_t  = Homme::Tracers;
 struct hvcoord_t{};
 struct timelevel_t{};
 struct hybrid_t{};
@@ -50,7 +52,8 @@ struct Functions
   using Mask  = ekat::Mask<Pack::n>;
   using Smask = ekat::Mask<Spack::n>;
 
-  using KT = ekat::KokkosTypes<Device>;
+  using KT       = ekat::KokkosTypes<Device>;
+  using ExeSpace = typename KT::ExeSpace;
 
   using C  = physics::Constants<Scalar>;
   using SC = dp::Constants<Scalar>;
@@ -199,20 +202,41 @@ struct Functions
   // Purpose: Set initial values from IOP files (where available)
   //   when running SCM or DP-CRM.
   //----------------------------------------------------------
-  KOKKOS_FUNCTION
   static void iop_setinitial(
     // Input arguments
-    const Int& plev,                   // number of vertical levels
-    const Int& pcnst,                  // number of advected constituents including cloud water
-    const Int& nelemd,                 // number of elements per MPI task
-    const Int& np,                     // NP
-    const Int& nstep,                  // the timestep number
-    const bool& use_replay,            // use e3sm generated forcing
-    const bool& dynproc,               // Designation of a dynamics processor - AaronDonahue
+    const Int& plev,                        // number of vertical levels
+    const Int& pcnst,                       // number of advected constituents including cloud water
+    const Int& nelemd,                      // number of elements per MPI task
+    const Int& np,                          // NP
+    const Int& nstep,                       // the timestep number
+    const bool& use_replay,                 // use e3sm generated forcing
+    const bool& dynproc,                    // Designation of a dynamics processor - AaronDonahue
+    const bool& have_t,                     // dataset contains t
+    const bool& have_q,                     // dataset contains q
+    const bool& have_ps,                    // dataset contains ps
+    const bool& have_u,                     // dataset contains u
+    const bool& have_v,                     // dataset contains v
+    const bool& have_numliq,                // dataset contains numliq
+    const bool& have_cldliq,                // dataset contains cldliq
+    const bool& have_numice,                // dataset contains numice
+    const bool& have_cldice,                // dataset contains cldice
+    const bool& scm_zero_non_iop_tracers,   // Ignore all tracers from initial conditions file, and default all tracers not specified in IOP to minimum value (usually zero)
+    const bool& is_first_restart_step,      // is first restart step
+    const uview_1d<const Scalar>& qmin,     // minimum permitted constituent concentration (kg/kg) (pcnst)
+    const uview_1d<const Spack>& uobs,      // actual u wind
+    const uview_1d<const Spack>& vobs,      // actual v wind
+    const uview_1d<const Spack>& numliqobs, // actual ???
+    const uview_1d<const Spack>& numiceobs, // actual ???
+    const uview_1d<const Spack>& cldliqobs, // actual ???
+    const uview_1d<const Spack>& cldiceobs, // actual ???
+    const Scalar& psobs,                    // ???
+    const uview_1d<const Scalar>& dx_short, // short length scale in km (nelemd)
     // Input/Output arguments
-    const uview_1d<element_t>& elem,
-    const uview_1d<Spack>& tobs,       // actual temperature, dims=(plev)
-    const uview_1d<Spack>& qobs);      // actual W.V. Mixing ratio
+    Scalar& dyn_dx_size,                    // for use in doubly periodic CRM mode
+    tracer_t& tracers,                      // tracers
+    element_t& elem,                        // elements
+    const uview_1d<Spack>& tobs,            // actual temperature, dims=(plev)
+    const uview_1d<Spack>& qobs);           // actual W.V. Mixing ratio
 
   KOKKOS_FUNCTION
   static void iop_broadcast();

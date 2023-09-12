@@ -20,7 +20,23 @@ struct UnitWrap::UnitTest<D>::TestIopSetinitial {
     auto engine = setup_random_test();
 
     IopSetinitialData f90_data[] = {
-      // TODO
+      //                plev, pcnst, nelemd, np, nstep, psobs, use_replay, dynproc, have_t, have_q, have_ps, have_u, have_v, have_numliq, have_cldliq, have_numice, have_cldice, scm_zero_non_iop_tracers, is_first_restart_step
+      IopSetinitialData(72  , 10   , 100   , 2 , 10,    0.1,   true      , true   , true  , true  , true   , true  , true  , true       , true       , true       , true       , true                    , true),
+      IopSetinitialData(72  , 10   , 100   , 2 , 10,    0.1,   false     , true   , true  , true  , true   , true  , true  , true       , true       , true       , true       , true                    , true),
+      IopSetinitialData(72  , 10   , 100   , 2 , 10,    0.1,   true      , false  , true  , true  , true   , true  , true  , true       , true       , true       , true       , true                    , true),
+      IopSetinitialData(72  , 10   , 100   , 2 , 10,    0.1,   false     , false  , true  , true  , true   , true  , true  , true       , true       , true       , true       , true                    , true),
+      IopSetinitialData(72  , 10   , 100   , 2 , 0 ,    0.1,   true      , true   , true  , true  , true   , true  , true  , true       , true       , true       , true       , true                    , true),
+      IopSetinitialData(72  , 10   , 100   , 2 , 0 ,    0.1,   false     , true   , true  , true  , true   , true  , true  , true       , true       , true       , true       , true                    , true),
+      IopSetinitialData(72  , 10   , 100   , 2 , 0 ,    0.1,   true      , false  , true  , true  , true   , true  , true  , true       , true       , true       , true       , true                    , true),
+      IopSetinitialData(72  , 10   , 100   , 2 , 0 ,    0.1,   false     , false  , true  , true  , true   , true  , true  , true       , true       , true       , true       , true                    , true),
+      IopSetinitialData(72  , 10   , 100   , 2 , 10,    0.1,   true      , true   , true  , true  , true   , true  , true  , true       , true       , true       , true       , false                   , true),
+      IopSetinitialData(72  , 10   , 100   , 2 , 10,    0.1,   false     , true   , true  , true  , true   , true  , true  , true       , true       , true       , true       , false                   , true),
+      IopSetinitialData(72  , 10   , 100   , 2 , 10,    0.1,   true      , false  , true  , true  , true   , true  , true  , true       , true       , true       , true       , false                   , true),
+      IopSetinitialData(72  , 10   , 100   , 2 , 10,    0.1,   false     , false  , true  , true  , true   , true  , true  , true       , true       , true       , true       , false                   , true),
+      IopSetinitialData(72  , 10   , 100   , 2 , 0 ,    0.1,   true      , true   , true  , true  , true   , true  , true  , true       , true       , true       , true       , false                   , true),
+      IopSetinitialData(72  , 10   , 100   , 2 , 0 ,    0.1,   false     , true   , true  , true  , true   , true  , true  , true       , true       , true       , true       , false                   , true),
+      IopSetinitialData(72  , 10   , 100   , 2 , 0 ,    0.1,   true      , false  , true  , true  , true   , true  , true  , true       , true       , true       , true       , false                   , true),
+      IopSetinitialData(72  , 10   , 100   , 2 , 0 ,    0.1,   false     , false  , true  , true  , true   , true  , true  , true       , true       , true       , true       , false                   , true),
     };
 
     static constexpr Int num_runs = sizeof(f90_data) / sizeof(IopSetinitialData);
@@ -34,7 +50,22 @@ struct UnitWrap::UnitTest<D>::TestIopSetinitial {
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
     IopSetinitialData cxx_data[] = {
-      // TODO
+      IopSetinitialData(f90_data[0]),
+      IopSetinitialData(f90_data[1]),
+      IopSetinitialData(f90_data[2]),
+      IopSetinitialData(f90_data[3]),
+      IopSetinitialData(f90_data[4]),
+      IopSetinitialData(f90_data[5]),
+      IopSetinitialData(f90_data[6]),
+      IopSetinitialData(f90_data[7]),
+      IopSetinitialData(f90_data[8]),
+      IopSetinitialData(f90_data[9]),
+      IopSetinitialData(f90_data[10]),
+      IopSetinitialData(f90_data[11]),
+      IopSetinitialData(f90_data[12]),
+      IopSetinitialData(f90_data[13]),
+      IopSetinitialData(f90_data[14]),
+      IopSetinitialData(f90_data[15]),
     };
 
     // Assume all data is in C layout
@@ -47,9 +78,12 @@ struct UnitWrap::UnitTest<D>::TestIopSetinitial {
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      iop_setinitial_f(d.nelemd, d.elem);
+      iop_setinitial_f(d.plev, d.pcnst, d.nelemd, d.np, d.nstep, d.psobs, d.use_replay, d.dynproc, d.have_t, d.have_q, d.have_ps, d.have_u, d.have_v, d.have_numliq, d.have_cldliq, d.have_numice, d.have_cldice, d.scm_zero_non_iop_tracers, d.is_first_restart_step, d.qmin, d.uobs, d.vobs, d.numliqobs, d.numiceobs, d.cldliqobs, d.cldiceobs, d.dx_short, &d.tracers, &d.elem, &d.dyn_dx_size, d.tobs, d.qobs);
     }
 
+    // We can't call into fortran. Due to all the dependencies it has, it's not possible
+    // to build it in standalone eamxx. Without fortran, we cannot do BFB tests.
+#if 0
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING) {
       for (Int i = 0; i < num_runs; ++i) {
@@ -58,6 +92,7 @@ struct UnitWrap::UnitTest<D>::TestIopSetinitial {
 
       }
     }
+#endif
   } // run_bfb
 
 };

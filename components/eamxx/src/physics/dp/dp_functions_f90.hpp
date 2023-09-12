@@ -84,15 +84,36 @@ struct AdvanceIopSubsidenceData : public PhysicsTestData {
 
 struct IopSetinitialData : public PhysicsTestData {
   // Inputs
-  Int plev, nelemd;
+  Int plev, pcnst, nelemd, np, nstep;
+
+  bool use_replay, dynproc, have_t, have_q, have_ps, have_u, have_v, have_numliq, have_cldliq, have_numice, have_cldice, scm_zero_non_iop_tracers, is_first_restart_step;
+
+  Real psobs;
+
+  Real* qmin, *uobs, *vobs, *numliqobs, *numiceobs, *cldliqobs, *cldiceobs, *dx_short;
 
   // Inputs/Outputs
-  element_t *elem;
+  tracer_t tracers;
+  element_t elem;
 
-  IopSetinitialData(Int plev_, Int nelemd_) :
-    PhysicsTestData({}, {}), plev(plev_), nelemd(nelemd_) {}
+  Real dyn_dx_size;
 
-  PTD_STD_DEF(IopSetinitialData, 2, plev, nelemd);
+  Real* tobs, *qobs;
+
+  IopSetinitialData(
+    Int plev_, Int pcnst_, Int nelemd_, Int np_, Int nstep_, Real psobs_,
+    bool use_replay_, bool dynproc_, bool have_t_, bool have_q_, bool have_ps_, bool have_u_, bool have_v_, bool have_numliq_, bool have_cldliq_, bool have_numice_, bool have_cldice_, bool scm_zero_non_iop_tracers_, bool is_first_restart_step_) :
+    PhysicsTestData(
+      {{nelemd_}, {pcnst_}, {plev_}},
+      {
+        {&dx_short},
+        {&qmin},
+        {&uobs, &vobs, &numliqobs, &numiceobs, &cldliqobs, &cldiceobs, &tobs, &qobs}
+      }),
+    plev(plev_), pcnst(pcnst_), nelemd(nelemd_), np(np_), nstep(nstep_), psobs(psobs_),
+    use_replay(use_replay_), dynproc(dynproc_), have_t(have_t_), have_q(have_q_), have_ps(have_ps_), have_u(have_u_), have_v(have_v_), have_numliq(have_numliq_), have_cldliq(have_cldliq_), have_numice(have_numice_), have_cldice(have_cldice_), scm_zero_non_iop_tracers(scm_zero_non_iop_tracers_), is_first_restart_step(is_first_restart_step_) {}
+
+  PTD_STD_DEF(IopSetinitialData, 19, plev, pcnst, nelemd, np, nstep, psobs, use_replay, dynproc, have_t, have_q, have_ps, have_u, have_v, have_numliq, have_cldliq, have_numice, have_cldice, scm_zero_non_iop_tracers, is_first_restart_step);
 };
 
 struct IopBroadcastData : public PhysicsTestData {
@@ -232,9 +253,13 @@ void iop_intht(IopInthtData& d);
 extern "C" { // _f function decls
 
 void advance_iop_forcing_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, bool have_u, bool have_v, bool dp_crm, bool use_3dfrc, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* t_phys_frc, Real* divt3d, Real* divq3d, Real* divt, Real* divq, Real* wfld, Real* uobs, Real* vobs, Real* hyai, Real* hyam, Real* hybi, Real* hybm, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
+
 void advance_iop_nudging_f(Int plev, Real scm_dt, Real ps_in, Real* t_in, Real* q_in, Real* t_update, Real* q_update, Real* relaxt, Real* relaxq);
+
 void advance_iop_subsidence_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real* u_in, Real* v_in, Real* t_in, Real* q_in, Real* hyai, Real* hyam, Real* hybi, Real* hybm, Real* wfld, Real* u_update, Real* v_update, Real* t_update, Real* q_update);
-void iop_setinitial_f(Int nelemd, element_t* elem);
+
+void iop_setinitial_f(Int plev, Int pcnst, Int nelemd, Int np, Int nstep, Real psobs, bool use_replay, bool dynproc, bool have_t, bool have_q, bool have_ps, bool have_u, bool have_v, bool have_numliq, bool have_cldliq, bool have_numice, bool have_cldice, bool scm_zero_non_iop_tracers, bool is_first_restart_step, Real* qmin, Real* uobs, Real* vobs, Real* numliqobs, Real* numiceobs, Real* cldliqobs, Real* cldiceobs, Real* dx_short, tracer_t* tracers, element_t* elem, Real* dyn_dx_size, Real* tobs, Real* qobs);
+
 void iop_broadcast_f();
 void apply_iop_forcing_f(Int nelemd, element_t* elem, hvcoord_t* hvcoord, hybrid_t hybrid, timelevel_t tl, Int n, bool t_before_advance, Int nets, Int nete);
 void iop_domain_relaxation_f(Int nelemd, Int np, Int nlev, element_t* elem, hvcoord_t hvcoord, hybrid_t hybrid, Int t1, Real* dp, Int nelemd_todo, Int np_todo, Real dt);
