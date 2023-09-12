@@ -3904,7 +3904,7 @@ if ($chem =~ /_mam/) {
 add_default($nl, 'seasalt_emis_scale');
 
 #DMS emission scale factor
-add_default($nl, 'dms_emis_scale');
+add_default($nl, 'dms_emis_scale') if (get_default_value('dms_emis_scale')) ;
 
 # Turbulent Mountain Stress
 add_default($nl, 'do_tms');
