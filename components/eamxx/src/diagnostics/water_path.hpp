@@ -1,5 +1,5 @@
-#ifndef EAMXX_EXNER_DIAGNOSTIC_HPP
-#define EAMXX_EXNER_DIAGNOSTIC_HPP
+#ifndef EAMXX_ggWATER_PATH_DIAGNOSTIC_HPP
+#define EAMXX_ggWATER_PATH_DIAGNOSTIC_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
@@ -7,20 +7,20 @@ namespace scream
 {
 
 /*
- * This diagnostic will produce the exner function.
+ * This diagnostic will produce the potential temperature.
  */
 
-class ExnerDiagnostic : public AtmosphereDiagnostic
+class WaterPathDiagnostic : public AtmosphereDiagnostic
 {
 public:
   // Constructors
-  ExnerDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  WaterPathDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // Set type to diagnostic
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
   // The name of the diagnostic
-  std::string name () const { return "Exner"; }
+  std::string name () const;
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -33,11 +33,13 @@ public:
 protected:
 
   // Keep track of field dimensions
-  Int m_num_cols;
-  Int m_num_levs;
+  int m_num_cols;
+  int m_num_levs;
 
-}; // class ExnerDiagnostic
+  std::string m_qname;
+  std::string m_kind;
+}; // class WaterPathDiagnostic
 
 } //namespace scream
 
-#endif // EAMXX_EXNER_DIAGNOSTIC_HPP
+#endif // EAMXX_ggWATER_PATH_DIAGNOSTIC_HPP

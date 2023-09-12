@@ -1247,6 +1247,19 @@ create_diagnostic (const std::string& diag_field_name) {
     // split will return [X, ''], with X being whatever is before '_surf_mass_flux'
     auto type = ekat::split(diag_field_name.substr(7),"_surf_mass_flux").front();
     params.set<std::string>("precip_type",type);
+  } else if (diag_field_name=="IceWaterPath" or
+             diag_field_name=="LiqWaterPath" or
+             diag_field_name=="RainWaterPath" or
+             diag_field_name=="RimeWaterPath" or
+             diag_field_name=="VapWaterPath") {
+    diag_name = "WaterPath";
+    // split will return the list [X, ''], with X being whatever is before 'WaterPath'
+    params.set<std::string>("Water Kind",ekat::split(diag_field_name,"WaterPath").front());
+  } else if (diag_field_name=="MeridionalVapFlux" or
+             diag_field_name=="ZonalVapFlux") {
+    diag_name = "VaporFlux";
+    // split will return the list [X, ''], with X being whatever is before 'VapFlux'
+    params.set<std::string>("Wind Component",ekat::split(diag_field_name,"VapFlux").front());
   } else {
     diag_name = diag_field_name;
   }

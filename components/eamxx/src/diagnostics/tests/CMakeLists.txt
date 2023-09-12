@@ -34,16 +34,10 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(longwave_cloud_forcing "longwave_cloud_forcing_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test Relative Humidity
   CreateUnitTest(relative_humidity "relative_humidity_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test Zonal Vapor Flux
-  CreateUnitTest(zonal_vapor_flux "zonal_vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test Meridional Vapor Flux
-  CreateUnitTest(meridional_vapor_flux "meridional_vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test precipitation ice mass surface flux
-  CreateUnitTest(precip_ice_surf_mass_flux "precip_ice_surf_mass_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test precipitation liq mass surface flux
-  CreateUnitTest(precip_liq_surf_mass_flux "precip_liq_surf_mass_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-  # Test total precipitation mass surface flux
-  CreateUnitTest(precip_total_surf_mass_flux "precip_total_surf_mass_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test Vapor Flux
+  CreateUnitTest(vapor_flux "vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test precipitation mass surface flux
+  CreateUnitTest(precip_surf_mass_flux "precip_surf_mass_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test surface latent heat flux
   CreateUnitTest(surface_upward_latent_heat_flux "surf_upward_latent_heat_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics")
 
