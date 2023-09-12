@@ -55,9 +55,6 @@ void VirtualTemperatureDiagnostic::compute_diagnostic_impl()
       virtualT(icol,jpack) = PF::calculate_virtual_temperature(T_mid(icol,jpack),qv_mid(icol,jpack));
   });
   Kokkos::fence();
-
-  const auto ts = get_field_in("qv").get_header().get_tracking().get_time_stamp();
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream

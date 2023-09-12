@@ -52,9 +52,6 @@ void ExnerDiagnostic::compute_diagnostic_impl()
       exner(icol,jpack) = PF::exner_function(p_mid(icol,jpack));
   });
   Kokkos::fence();
-
-  const auto ts = get_field_in("p_mid").get_header().get_tracking().get_time_stamp();
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream

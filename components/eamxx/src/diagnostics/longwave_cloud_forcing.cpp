@@ -54,9 +54,6 @@ void LongwaveCloudForcingDiagnostic::compute_diagnostic_impl()
     LWCF(icol) =  LW_clrsky_flux_up(icol,0)[0] -  LW_flux_up(icol,0)[0] ;
   });
   Kokkos::fence();
-
-  const auto ts = get_field_in("LW_flux_up").get_header().get_tracking().get_time_stamp();
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream

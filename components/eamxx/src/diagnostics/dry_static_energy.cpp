@@ -94,9 +94,6 @@ void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
     team.team_barrier();
   });
   Kokkos::fence();
-
-  const auto ts = get_field_in("T_mid").get_header().get_tracking().get_time_stamp();
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream

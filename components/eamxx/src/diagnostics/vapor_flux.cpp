@@ -92,9 +92,6 @@ void VaporFluxDiagnostic::compute_diagnostic_impl()
     },diag(icol));
     team.team_barrier();
   });
-
-  const auto ts = get_field_in("qv").get_header().get_tracking().get_time_stamp();
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 
 } //namespace scream

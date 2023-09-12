@@ -58,9 +58,6 @@ void ShortwaveCloudForcingDiagnostic::compute_diagnostic_impl()
     SWCF(icol) = (SW_flux_dn(icol,0)[0] - SW_flux_up(icol,0)[0]) - (SW_clrsky_flux_dn(icol,0)[0] - SW_clrsky_flux_up(icol,0)[0]);
   });
   Kokkos::fence();
-
-  const auto ts = get_field_in("SW_flux_dn").get_header().get_tracking().get_time_stamp();
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream
