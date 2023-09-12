@@ -1720,9 +1720,6 @@ contains
                 !!surface padding
                 wrk2d(:,file%nlev)=wrksrf
                 deallocate(wrksrf)
-                else
-                !!padding for derivative terms
-                wrksrf=0.0_r8
                 endif
                 !!
     endif
