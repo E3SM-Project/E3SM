@@ -50,11 +50,22 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
    * add all fields as "updated" long-term.  A separate stream of work
    * is adapting the infrastructure to allow for a generic "add_field" call
    * to be used here which we can then setup using the m_fields_nudge variable
+   * For now we check if a field is intended to be nudged via the m_fields_nudge
+   * vector, if it is we register it.  For now we are limited to just T_mid, qv,
+   * u and v
    */
-  add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
-  add_field<Updated>("qv",    scalar3d_layout_mid, Q, grid_name, "tracers", ps);
-  add_field<Updated>("u",     scalar3d_layout_mid, m/s, grid_name, ps);
-  add_field<Updated>("v",     scalar3d_layout_mid, m/s, grid_name, ps);
+  if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"T_mid") != m_fields_nudge.end()) {
+    add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
+  }
+  if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"qv") != m_fields_nudge.end()) {
+    add_field<Updated>("qv",    scalar3d_layout_mid, Q, grid_name, "tracers", ps);
+  }
+  if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"u") != m_fields_nudge.end()) {
+    add_field<Updated>("u",     scalar3d_layout_mid, m/s, grid_name, ps);
+  }
+  if (std::find(m_fields_nudge.begin(),m_fields_nudge.end(),"v") != m_fields_nudge.end()) {
+    add_field<Updated>("v",     scalar3d_layout_mid, m/s, grid_name, ps);
+  }
   /* ----------------------- WARNING --------------------------------*/
 
   //Now need to read in the file
