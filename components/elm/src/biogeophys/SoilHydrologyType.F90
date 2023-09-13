@@ -566,10 +566,12 @@ contains
 
     associate(micro_sigma => col_pp%micro_sigma)
       do c = bounds%begc, bounds%endc
-
+         
+         g = col_pp%gridcell(c)
+         
          ! determine h2osfc threshold ("fill & spill" concept)
          ! set to zero for no h2osfc (w/frac_infclust =large)
-
+         
          this%h2osfc_thresh_col(c) = 0._r8
          if (micro_sigma(c) > 1.e-6_r8 .and. (this%h2osfcflag /= 0)) then
             d = 0.0
