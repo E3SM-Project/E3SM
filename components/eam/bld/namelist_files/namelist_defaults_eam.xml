@@ -1892,6 +1892,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <seasalt_emis_scale phys="default" chem="linoz_mam4_resus_mom_soag"> 0.6D0      </seasalt_emis_scale>
 <seasalt_emis_scale phys="default" chem="superfast_mam4_resus_mom_soag"> 0.6D0  </seasalt_emis_scale>
 <seasalt_emis_scale phys="default" chem="superfast_mam5_resus_mom_soag"> 0.55D0 </seasalt_emis_scale>
+<dms_emis_scale phys="default"> 1.0D0 </dms_emis_scale>
 <zmconv_trigdcape_ull phys="default"> .true.     </zmconv_trigdcape_ull>
 <zmconv_c0_lnd phys="default" clubb_sgs="1" microphys="p3"> 0.0020D0   </zmconv_c0_lnd>
 <zmconv_c0_ocn phys="default" clubb_sgs="1" microphys="p3"> 0.0020D0   </zmconv_c0_ocn>
