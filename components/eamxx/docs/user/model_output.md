@@ -85,7 +85,9 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:
     - `RelativeHumidity`
     - `ZonalVapFlux`
     - `MeridionalVapFlux`
-    - `precip_surf_mass_flux`
+    - `precip_liq_surf_mass_flux`
+    - `precip_ice_surf_mass_flux`
+    - `precip_total_surf_mass_flux`
     - `surface_upward_latent_heat_flux`
 
 - lower-dimensional slices of a field. These are hyperslices of an existing field or of
