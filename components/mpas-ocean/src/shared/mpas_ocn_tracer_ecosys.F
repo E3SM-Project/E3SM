@@ -501,6 +501,10 @@ module ocn_tracer_ecosys
       logical :: verbose = .false.
       character(strKIND) :: logMessage
 
+   ! need dt for surface flux limiting--it is accessible in init routine
+
+   real (kind=RKIND) :: dt
+
 !***********************************************************************
 
 contains
@@ -1640,7 +1644,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_ecosys_surface_flux_compute(activeTracers, ecosysTracers, forcingPool,  &
-      nTracers, nCellsSolve, zMid, minLevelCell, indexTemperature, indexSalinity, ecosysSurfaceFlux, err)!{{{
+      nTracers, nCellsSolve, zMid, minLevelCell, indexTemperature, indexSalinity, ecosysSurfaceFlux, &
+       ecosysSurfaceFluxRemoved, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -1652,7 +1657,8 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          zMid
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         ecosysSurfaceFlux
+         ecosysSurfaceFlux,  &
+         ecosysSurfaceFluxRemoved
 
       ! three dimensional arrays
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
@@ -1766,6 +1772,12 @@ contains
          ecosys_diag_dpCO2_ALT_CO2,        &
          ecosys_diag_atmPressure,          &
          ecosys_diag_ifrac
+
+      real (kind=RKIND) :: &
+         maxAllowedFractionalLoss = 0.10_RKIND
+
+      real (kind=RKIND) :: &
+         retainedFlux, removedFlux, topLayerThickness
 
       call mpas_timer_start("ecosys surface flux")
       err = 0
@@ -1897,7 +1909,7 @@ contains
 ! maltrud ignore abort warning
 !     if (marbl_instances(1)%StatusLog%labort_marbl) &
 !       call mpas_log_write("WARNING: problem in MARBL surface_flux_compute", MPAS_LOG_CRIT)
-        call marbl_instances(1)%StatusLog%erase()
+!       call marbl_instances(1)%StatusLog%erase()
 
 ! copy marbl output into mpas arrays
 
@@ -1965,31 +1977,143 @@ contains
 
 ! now add contribution from sea ice fluxes if available (assume MKS)
          if (config_use_ecosysTracers_sea_ice_coupling) then
+            topLayerThickness = abs(zMid(iLevelSurface,iCell))*2.0_RKIND
+
             ecosysSurfaceFlux(no3_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(no3_ind_MPAS,iCell) + iceFluxNO3(iCell)
+            if (ecosysSurfaceFlux(no3_ind_MPAS,iCell) < 0.0_RKIND) then
+              removedFlux  = 0.0_RKIND
+              call fluxLimiter(ecosysTracers(no3_ind_MPAS,iLevelSurface,iCell), &
+                ecosysSurfaceFlux(no3_ind_MPAS,iCell), removedFlux, &
+                topLayerThickness, dt, maxAllowedFractionalLoss)
+              ecosysSurfaceFluxRemoved(no3_ind_MPAS,iCell) =  &
+                ecosysSurfaceFluxRemoved(no3_ind_MPAS,iCell) + removedFlux
+            endif
+
             ecosysSurfaceFlux(don_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(don_ind_MPAS,iCell) + iceFluxDON(iCell)
+            if (ecosysSurfaceFlux(don_ind_MPAS,iCell) < 0.0_RKIND) then
+              removedFlux  = 0.0_RKIND
+              call fluxLimiter(ecosysTracers(don_ind_MPAS,iLevelSurface,iCell), &
+                ecosysSurfaceFlux(don_ind_MPAS,iCell), removedFlux, &
+                topLayerThickness, dt, maxAllowedFractionalLoss)
+              ecosysSurfaceFluxRemoved(don_ind_MPAS,iCell) =  &
+                ecosysSurfaceFluxRemoved(don_ind_MPAS,iCell) + removedFlux
+            endif
+
             ecosysSurfaceFlux(nh4_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(nh4_ind_MPAS,iCell) + iceFluxNH4(iCell)
+            if (ecosysSurfaceFlux(nh4_ind_MPAS,iCell) < 0.0_RKIND) then
+              removedFlux  = 0.0_RKIND
+              call fluxLimiter(ecosysTracers(nh4_ind_MPAS,iLevelSurface,iCell), &
+                ecosysSurfaceFlux(nh4_ind_MPAS,iCell), removedFlux, &
+                topLayerThickness, dt, maxAllowedFractionalLoss)
+              ecosysSurfaceFluxRemoved(nh4_ind_MPAS,iCell) =  &
+                ecosysSurfaceFluxRemoved(nh4_ind_MPAS,iCell) + removedFlux
+            endif
+
             ecosysSurfaceFlux(sio3_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(sio3_ind_MPAS,iCell) + iceFluxSiO3(iCell)
+            if (ecosysSurfaceFlux(sio3_ind_MPAS,iCell) < 0.0_RKIND) then
+              removedFlux  = 0.0_RKIND
+              call fluxLimiter(ecosysTracers(sio3_ind_MPAS,iLevelSurface,iCell), &
+                ecosysSurfaceFlux(sio3_ind_MPAS,iCell), removedFlux, &
+                topLayerThickness, dt, maxAllowedFractionalLoss)
+              ecosysSurfaceFluxRemoved(sio3_ind_MPAS,iCell) =  &
+                ecosysSurfaceFluxRemoved(sio3_ind_MPAS,iCell) + removedFlux
+            endif
+
             ecosysSurfaceFlux(fe_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(fe_ind_MPAS,iCell) + iceFluxFeDissolved(iCell)/parm_Fe_bioavail
+            if (ecosysSurfaceFlux(fe_ind_MPAS,iCell) < 0.0_RKIND) then
+              removedFlux  = 0.0_RKIND
+              call fluxLimiter(ecosysTracers(fe_ind_MPAS,iLevelSurface,iCell), &
+                ecosysSurfaceFlux(fe_ind_MPAS,iCell), removedFlux, &
+                topLayerThickness, dt, maxAllowedFractionalLoss)
+              ecosysSurfaceFluxRemoved(fe_ind_MPAS,iCell) =  &
+                ecosysSurfaceFluxRemoved(fe_ind_MPAS,iCell) + removedFlux
+            endif
+
             ecosysSurfaceFlux(dic_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(dic_ind_MPAS,iCell) + iceFluxDIC(iCell)
+            if (ecosysSurfaceFlux(dic_ind_MPAS,iCell) < 0.0_RKIND) then
+              removedFlux  = 0.0_RKIND
+              call fluxLimiter(ecosysTracers(dic_ind_MPAS,iLevelSurface,iCell), &
+                ecosysSurfaceFlux(dic_ind_MPAS,iCell), removedFlux, &
+                topLayerThickness, dt, maxAllowedFractionalLoss)
+              ecosysSurfaceFluxRemoved(dic_ind_MPAS,iCell) =  &
+                ecosysSurfaceFluxRemoved(dic_ind_MPAS,iCell) + removedFlux
+            endif
+
+! maltrud add ALK flux from ice (equal to DIC flux)
+            ecosysSurfaceFlux(alk_ind_MPAS,iCell) =  &
+               ecosysSurfaceFlux(alk_ind_MPAS,iCell) + iceFluxDIC(iCell)
+            if (ecosysSurfaceFlux(alk_ind_MPAS,iCell) < 0.0_RKIND) then
+              removedFlux  = 0.0_RKIND
+              call fluxLimiter(ecosysTracers(alk_ind_MPAS,iLevelSurface,iCell), &
+                ecosysSurfaceFlux(alk_ind_MPAS,iCell), removedFlux, &
+                topLayerThickness, dt, maxAllowedFractionalLoss)
+              ecosysSurfaceFluxRemoved(alk_ind_MPAS,iCell) =  &
+                ecosysSurfaceFluxRemoved(alk_ind_MPAS,iCell) + removedFlux
+            endif
+
             ecosysSurfaceFlux(dic_alt_co2_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(dic_alt_co2_ind_MPAS,iCell) + iceFluxDIC(iCell)
+            if (ecosysSurfaceFlux(dic_alt_co2_ind_MPAS,iCell) < 0.0_RKIND) then
+              removedFlux  = 0.0_RKIND
+              call fluxLimiter(ecosysTracers(dic_alt_co2_ind_MPAS,iLevelSurface,iCell), &
+                ecosysSurfaceFlux(dic_alt_co2_ind_MPAS,iCell), removedFlux, &
+                topLayerThickness, dt, maxAllowedFractionalLoss)
+              ecosysSurfaceFluxRemoved(dic_alt_co2_ind_MPAS,iCell) =  &
+                ecosysSurfaceFluxRemoved(dic_alt_co2_ind_MPAS,iCell) + removedFlux
+            endif
+
             ecosysSurfaceFlux(doc_ind_MPAS,iCell) =  &
-               ecosysSurfaceFlux(doc_ind_MPAS,iCell) + iceFluxDOC(1,iCell) + iceFluxDOC(2,iCell) &
-               + iceFluxDOC(3,iCell)
+               ecosysSurfaceFlux(doc_ind_MPAS,iCell) + ( iceFluxDOC(1,iCell) + iceFluxDOC(2,iCell) &
+               + iceFluxDOC(3,iCell) )
+            if (ecosysSurfaceFlux(doc_ind_MPAS,iCell) < 0.0_RKIND) then
+              removedFlux  = 0.0_RKIND
+              call fluxLimiter(ecosysTracers(doc_ind_MPAS,iLevelSurface,iCell), &
+                ecosysSurfaceFlux(doc_ind_MPAS,iCell), removedFlux, &
+                topLayerThickness, dt, maxAllowedFractionalLoss)
+              ecosysSurfaceFluxRemoved(doc_ind_MPAS,iCell) =  &
+                ecosysSurfaceFluxRemoved(doc_ind_MPAS,iCell) + removedFlux
+            endif
+
 ! this is just a placeholder
             ecosysSurfaceFlux(donr_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(donr_ind_MPAS,iCell) + iceFluxDOCr(iCell)
+            if (ecosysSurfaceFlux(donr_ind_MPAS,iCell) < 0.0_RKIND) then
+              removedFlux  = 0.0_RKIND
+              call fluxLimiter(ecosysTracers(donr_ind_MPAS,iLevelSurface,iCell), &
+                ecosysSurfaceFlux(donr_ind_MPAS,iCell), removedFlux, &
+                topLayerThickness, dt, maxAllowedFractionalLoss)
+              ecosysSurfaceFluxRemoved(donr_ind_MPAS,iCell) =  &
+                ecosysSurfaceFluxRemoved(donr_ind_MPAS,iCell) + removedFlux
+            endif
 
             ecosysSurfaceFlux(diatC_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(diatC_ind_MPAS,iCell) + iceFluxPhytoC(1,iCell)
+            if (ecosysSurfaceFlux(diatC_ind_MPAS,iCell) < 0.0_RKIND) then
+              removedFlux  = 0.0_RKIND
+              call fluxLimiter(ecosysTracers(diatC_ind_MPAS,iLevelSurface,iCell), &
+                ecosysSurfaceFlux(diatC_ind_MPAS,iCell), removedFlux, &
+                topLayerThickness, dt, maxAllowedFractionalLoss)
+              ecosysSurfaceFluxRemoved(diatC_ind_MPAS,iCell) =  &
+                ecosysSurfaceFluxRemoved(diatC_ind_MPAS,iCell) + removedFlux
+            endif
+
             ecosysSurfaceFlux(spC_ind_MPAS,iCell) =  &
                ecosysSurfaceFlux(spC_ind_MPAS,iCell) + iceFluxPhytoC(2,iCell)
+            if (ecosysSurfaceFlux(spC_ind_MPAS,iCell) < 0.0_RKIND) then
+              removedFlux  = 0.0_RKIND
+              call fluxLimiter(ecosysTracers(spC_ind_MPAS,iLevelSurface,iCell), &
+                ecosysSurfaceFlux(spC_ind_MPAS,iCell), removedFlux, &
+                topLayerThickness, dt, maxAllowedFractionalLoss)
+              ecosysSurfaceFluxRemoved(spC_ind_MPAS,iCell) =  &
+                ecosysSurfaceFluxRemoved(spC_ind_MPAS,iCell) + removedFlux
+            endif
+
          endif
 
 !explicitly set the rest of the fluxes to 0
@@ -2181,6 +2305,8 @@ contains
 
       real (kind=RKIND) :: &
          convertLengthScale = 100.0_RKIND
+
+      type (MPAS_timeInterval_type) :: timeStep
 
       !
       ! get tracers pools
@@ -2605,6 +2731,13 @@ contains
          domain % streamManager,  &
          config_do_restart, &
          .false.)
+
+      !
+      !  get the timestep value for use in surface ice BGC flux limiting
+      !
+
+      timeStep = mpas_get_clock_timestep(domain % clock, ierr=err)
+      call mpas_get_timeInterval(timeStep, dt=dt)
 
       end if  !  config_use_ecosysTracers)
 
@@ -4487,6 +4620,31 @@ contains
  write(*,*) 'ecosys_diag_CaCO3_form_indexInMARBL(3) = ', 	ecosys_diag_CaCO3_form_indexInMARBL(3)
 
     end subroutine ocn_ecosys_echo_indices!}}}
+
+    subroutine fluxLimiter(surfaceTracerValue, surfaceFlux, removedFlux, &
+                topLayerThickness, dt, maxAllowedFractionalLoss)
+
+    real (kind=RKIND), intent(inout) :: &
+      surfaceFlux, removedFlux
+
+    real (kind=RKIND), intent(in) :: &
+      surfaceTracerValue, topLayerThickness, dt, maxAllowedFractionalLoss
+
+    real (kind=RKIND) :: &
+      testVal, fractionalLoss, limitedFlux
+
+!------------------
+
+    testVal = dt/(topLayerThickness*surfaceTracerValue + 1.e-20_RKIND)
+    fractionalLoss = abs(testVal*surfaceFlux)
+    if (fractionalLoss > maxAllowedFractionalLoss) then
+       limitedFlux = -maxAllowedFractionalLoss/testVal
+       removedFlux = surfaceFlux - limitedFlux
+       surfaceFlux = limitedFlux
+    endif
+
+    end subroutine fluxLimiter
+
 
 end module ocn_tracer_ecosys
 
