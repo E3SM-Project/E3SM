@@ -64,13 +64,13 @@
                                                                                           
          prod(:,:,10) = 0._r8
                                                                                           
-         prod(:,:,11) = + extfrc(:,:,2)
+         prod(:,:,11) = + extfrc(:,:,3)
                                                                                           
          prod(:,:,12) = 0._r8
                                                                                           
-         prod(:,:,13) = + extfrc(:,:,3)
+         prod(:,:,13) = + extfrc(:,:,4)
                                                                                           
-         prod(:,:,14) = + extfrc(:,:,4)
+         prod(:,:,14) = + extfrc(:,:,5)
                                                                                           
          prod(:,:,15) = 0._r8
                                                                                           
@@ -80,13 +80,13 @@
                                                                                           
          prod(:,:,18) = 0._r8
                                                                                           
-         prod(:,:,19) = + extfrc(:,:,5)
+         prod(:,:,19) = + extfrc(:,:,6)
                                                                                           
          prod(:,:,20) = 0._r8
                                                                                           
          prod(:,:,21) = 0._r8
                                                                                           
-         prod(:,:,22) = + extfrc(:,:,6)
+         prod(:,:,22) = + extfrc(:,:,7)
                                                                                           
          prod(:,:,23) = 0._r8
                                                                                           
@@ -106,13 +106,13 @@
                                                                                           
          prod(:,:,31) = 0._r8
                                                                                           
-         prod(:,:,32) = + extfrc(:,:,7)
+         prod(:,:,32) = + extfrc(:,:,8)
                                                                                           
-         prod(:,:,33) = + extfrc(:,:,8)
+         prod(:,:,33) = + extfrc(:,:,9)
                                                                                           
          prod(:,:,34) = 0._r8
                                                                                           
-         prod(:,:,35) = + extfrc(:,:,9)
+         prod(:,:,35) = + extfrc(:,:,10)
                                                                                           
          prod(:,:,36) = 0._r8
                                                                                           
@@ -134,9 +134,9 @@
                                                                                           
          prod(:,:,19) = 0._r8
                                                                                           
-         prod(:,:,32) = 0._r8
+         prod(:,:,32) = + extfrc(:,:,1)
                                                                                           
-         prod(:,:,33) = + extfrc(:,:,1)
+         prod(:,:,33) = + extfrc(:,:,2)
                                                                                           
          prod(:,:,34) = 0._r8
                                                                                           
@@ -178,7 +178,7 @@
                                                                                           
          prod(:,:,5) = 0._r8
                                                                                           
-         prod(:,:,6) = + extfrc(:,:,10)
+         prod(:,:,6) = + extfrc(:,:,11)
                                                                                           
          prod(:,:,7) = 0._r8
                                                                                           

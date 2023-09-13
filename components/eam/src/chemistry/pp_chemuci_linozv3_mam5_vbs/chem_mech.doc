@@ -313,16 +313,17 @@ Class List
   vsoag32_oh       ( 82)   SOAG32 + prsd_OH ->  0.46*SOAG31 + 0.5*SOAG35                        rate = 2.00E-11                   (104)
   
 Extraneous prod/loss species
- ( 1)   NO2   (dataset)
- ( 2)   SO2   (dataset)
- ( 3)   so4_a1   (dataset)
- ( 4)   so4_a2   (dataset)
- ( 5)   pom_a4   (dataset)
- ( 6)   bc_a4   (dataset)
- ( 7)   num_a1   (dataset)
- ( 8)   num_a2   (dataset)
- ( 9)   num_a4   (dataset)
- (10)   SOAG0   (dataset)
+ ( 1)   NO
+ ( 2)   NO2   (dataset)
+ ( 3)   SO2   (dataset)
+ ( 4)   so4_a1   (dataset)
+ ( 5)   so4_a2   (dataset)
+ ( 6)   pom_a4   (dataset)
+ ( 7)   bc_a4   (dataset)
+ ( 8)   num_a1   (dataset)
+ ( 9)   num_a2   (dataset)
+ (10)   num_a4   (dataset)
+ (11)   SOAG0   (dataset)
   
   
  Equation Report

@@ -1067,8 +1067,8 @@ contains
     ! reset vmr to pre-imp_sol values for stratospheric boxes
     if (uci1_ndx > 0) then
        diags_reaction_rates(:,:,:) = reaction_rates(:,:,:)
-       do i = 1,ncol
-          do k = 1,pver
+       do k = 1,pver
+          do i = 1,ncol
              if ( .not. tropFlag(i,k) ) then
                 vmr(i,k,:) = vmr_old2(i,k,:)
                 ! Zero out the reaction rates (only for diagnostic purpose) in the stratosphere
@@ -1192,11 +1192,11 @@ contains
        vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
     endif
 #if (defined MODAL_AERO_5MODE)
-    ! attribute constant OH and NO3 above troppopause
+    ! attribute constant OH and NO3 above tropopause
     ! will be set by after exp_sol
     do i = 1,ncol
-        do k = 1,ltrop_sol(i) !above tropppause
-             if (k < ltrop_sol(i)) then !skip troppaupause
+        do k = 1,ltrop_sol(i) !above tropopause
+             if (k < ltrop_sol(i)) then !skip tropopause
                 !write(iulog,*) 'prescribed_OH_NO3'     
                 vmr(i,k,oh_ndx) = invariants(i,k,inv_ndx_cnst_oh)/invariants(i,k,inv_ndx_m)
                 vmr(i,k,no3_ndx) = invariants(i,k,inv_ndx_cnst_no3)/invariants(i,k,inv_ndx_m)
@@ -1263,8 +1263,8 @@ contains
        vmr_old2(:,:,ndx_h2so4) = vmr(:,:,ndx_h2so4) 
        vmr_old2(:,:,dms_ndx) = vmr(:,:,dms_ndx) 
 #endif       
-       do i = 1,ncol
-          do k = 1,pver
+       do k = 1,pver
+          do i = 1,ncol
              if ( .not. tropFlag(i,k) ) then
                 vmr(i,k,:) = vmr_old2(i,k,:)
              endif

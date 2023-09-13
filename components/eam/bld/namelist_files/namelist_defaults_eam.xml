@@ -290,7 +290,7 @@
 <seasalt_emis_scale chem="linoz_mam4_resus_mom"> 1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="linoz_mam4_resus_mom_soag"> 1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="superfast_mam4_resus_mom_soag"> 1.35 </seasalt_emis_scale>
-<seasalt_emis_scale chem="superfast_mam5_resus_mom_soag"> 1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="chemuci_linozv3_mam5_vbs"> 1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam7">         1.62 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_strat_mam7">   1.62 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam9">         1.62 </seasalt_emis_scale>
@@ -705,7 +705,7 @@
 <drydep_method chem="linoz_mam4_resus_mom">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam4_resus_mom_soag">xactive_atm</drydep_method>
 <drydep_method chem="superfast_mam4_resus_mom_soag">xactive_atm</drydep_method>
-<drydep_method chem="superfast_mam5_resus_mom_soag">xactive_atm</drydep_method>
+<drydep_method chem="chemuci_linozv3_mam5_vbs">xactive_atm</drydep_method>
 <drydep_method chem="waccm_mozart_mam3">xactive_atm</drydep_method>
 
 <!-- Dry Dep surface data file needed by prognostic MAM on unstructured grid only. -->
@@ -1891,7 +1891,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <clubb_use_sgv phys="default"> .true.     </clubb_use_sgv>
 <seasalt_emis_scale phys="default" chem="linoz_mam4_resus_mom_soag"> 0.6D0      </seasalt_emis_scale>
 <seasalt_emis_scale phys="default" chem="superfast_mam4_resus_mom_soag"> 0.6D0  </seasalt_emis_scale>
-<seasalt_emis_scale phys="default" chem="superfast_mam5_resus_mom_soag"> 0.55D0 </seasalt_emis_scale>
+<seasalt_emis_scale phys="default" chem="chemuci_linozv3_mam5_vbs"> 0.55D0 </seasalt_emis_scale>
 <dms_emis_scale phys="default"> 1.0D0 </dms_emis_scale>
 <zmconv_trigdcape_ull phys="default"> .true.     </zmconv_trigdcape_ull>
 <zmconv_c0_lnd phys="default" clubb_sgs="1" microphys="p3"> 0.0020D0   </zmconv_c0_lnd>

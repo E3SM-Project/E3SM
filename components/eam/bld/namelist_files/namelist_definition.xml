@@ -3973,7 +3973,7 @@ Default: held-suarez
 					 linoz_mam4_resus_mom_soag,
                                          super_fast_llnl,super_fast_llnl_mam3,
 					 superfast_mam4_resus_mom_soag,
-					 superfast_mam5_resus_mom_soag,
+					 chemuci_linozv3_mam5_vbs,
                                          none " >
 Name of the CAM chemistry package.  N.B. this variable may not be set by
 the user.  It is set by build-namelist via information in the configure

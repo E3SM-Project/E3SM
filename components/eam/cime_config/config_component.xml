@@ -4,7 +4,7 @@
 
 <!DOCTYPE phys_defaults [
   <!ENTITY eam_phys_defaults "-nlev 72 -clubb_sgs -microphys p3">
-  <!ENTITY eam_chem_defaults "-chem superfast_mam5_resus_mom_soag -rain_evap_to_coarse_aero -vbs">
+  <!ENTITY eam_chem_defaults "-chem chemuci_linozv3_mam5_vbs -rain_evap_to_coarse_aero -vbs">
 ]>
 
 <definitions_variables>
@@ -53,7 +53,7 @@
       <value compset="_EAM%AR5sf"      >&eam_phys_defaults; -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero</value>
       <value compset="_EAM%CHEMUCI-LINOZV2"  >-clubb_sgs -microphys mg2 -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -usr_mech_infile $SRCROOT/components/eam/chem_proc/inputs/pp_chemUCI_mam4_resus_mom_soag_tag.in</value>
       <value compset="_EAM%CHEMUCI-LINOZV3"  >-clubb_sgs -microphys mg2 -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -usr_mech_infile $SRCROOT/components/eam/chem_proc/inputs/pp_chemUCI_linozv3_mam4_resus_mom_soag_tag.in</value>
-      <value compset="_EAM%CHEMUCI-LINOZV3-MAM5"  >-clubb_sgs -microphys mg2 -chem superfast_mam5_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -usr_mech_infile $SRCROOT/components/eam/chem_proc/inputs/pp_chemUCI_linozv3_mam5_resus_mom_soag_tag_cnst_no3_oh.in</value>
+      <value compset="_EAM%CHEMUCI-LINOZV3-MAM5"  >-clubb_sgs -microphys mg2 -chem chemuci_linozv3_mam5_vbs -rain_evap_to_coarse_aero -nlev 72 -usr_mech_infile $SRCROOT/components/eam/chem_proc/inputs/pp_chemUCI_linozv3_mam5_resus_mom_soag_tag_cnst_no3_oh.in</value>
       <value compset="_ELM%[^_]*BC"    >-bc_dep_to_snow_updates</value>
       <value compset="_EAM.*_BGC%*"    >-co2_cycle</value>
       <value compset="_EAM%CMIP6-P3_"  >&eam_chem_defaults; -nlev 72 -clubb_sgs -microphys p3</value>
