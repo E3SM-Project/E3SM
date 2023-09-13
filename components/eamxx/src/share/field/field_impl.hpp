@@ -372,13 +372,12 @@ update (const Field& x, const ST alpha, const ST beta)
 
   // Determine if there is a FillValue that requires extra treatment.
   ST fill_val = constants::DefaultFillValue<ST>().value;
-  const auto& xtra_data = x.get_header().get_extra_data();
 
-  if (xtra_data.count("mask_value")) {
+  if (x.get_header().has_extra_data("mask_value")) {
     if (typeid(ST) == typeid(int)) {
-      fill_val = ekat::any_cast<int>(xtra_data.at("mask_value"));
+      fill_val = x.get_header().get_extra_data<int>("mask_value");
     } else {
-      fill_val = ekat::any_cast<float>(xtra_data.at("mask_value"));
+      fill_val = x.get_header().get_extra_data<float>("mask_value");
     }
   }
 

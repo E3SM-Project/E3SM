@@ -180,9 +180,8 @@ void Nudging::run_impl (const double dt)
     // data.
     Real var_fill_value = constants::DefaultFillValue<Real>().value;
     // Query the helper field for the fill value, if not present use default
-    const auto ext_extra = ext_state_field.get_header().get_extra_data();
-    if (ext_extra.count("mask_value")) {
-      var_fill_value = ekat::any_cast<float>(ext_extra.at("mask_value"));
+    if (ext_state_field.get_header().has_extra_data("mask_value")) {
+      var_fill_value = ext_state_field.get_header().get_extra_data<float>("mask_value");
     }
     const int num_cols           = ext_state_view.extent(0);
     const int num_vert_packs     = ext_state_view.extent(1);
