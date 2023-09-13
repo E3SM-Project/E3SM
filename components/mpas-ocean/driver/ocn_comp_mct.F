@@ -2143,7 +2143,9 @@ contains
              riverFluxFe(i)   = x2o_o % rAttr(index_x2o_Foxx_rofFe , n)
 
 ! convert from kgNutrient/(m2-s) to mmol/m3 m/s
-             riverFactor = 1.e6_RKIND
+!maltrud no nutrient flux if runoff < 0
+!            riverFactor = 1.e6_RKIND
+             riverFactor = merge(0.0_RKIND,1.e6_RKIND,riverRunoffFlux(i) < 0.0_RKIND)
              riverFluxNO3(i)  = riverFluxNO3(i)*riverFactor/14.007_RKIND
              riverFluxPO4(i)  = riverFluxPO4(i)*riverFactor/30.974_RKIND
              riverFluxDON(i)  = riverFluxDON(i)*riverFactor/14.007_RKIND
