@@ -10,7 +10,7 @@ on:
     # Only if docs-related files are touched
     paths:
       - components/eamxx/mkdocs.yml
-      - components/eamxx/docs/*
+      - components/eamxx/docs/**
       - components/eamxx/cime_config/namelist_defaults_scream.xml
   # Runs every time a PR is open against master
   pull_request:
@@ -18,7 +18,7 @@ on:
     # Only if docs-related files are touched
     paths:
       - components/eamxx/mkdocs.yml
-      - components/eamxx/docs/*
+      - components/eamxx/docs/**
       - components/eamxx/cime_config/namelist_defaults_scream.xml
 
   workflow_dispatch:
@@ -34,8 +34,9 @@ jobs:
 
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
+          show-progress: false
           # TODO: git rid of dependency on CIME
           # TODO: another option to investigate is a sparse checkout. 
           # In the scream repo, all other components do not need to be checked out. 

@@ -1,14 +1,13 @@
-Model output
-=====================================
+# Model output
 
-EAMxx allows to configure the desired model output via [YAML](https://yaml.org/) files,
+EAMxx allows the user to configure the desired model output via [YAML](https://yaml.org/) files,
 with each YAML file associated to a different output file.
 
-# Basic output YAML file syntax
+## Basic output YAML file syntax
 
 The following is an example of a simple output request.
 
-```
+```yaml
 %YAML 1.1
 ---
 filename_prefix: my_output
@@ -26,19 +25,22 @@ Fields:
 output_control:
   Frequency: 6
   frequency_units: nhours
-...
 ```
+
 Notice that lists can be equivalently specified in YAML as `Field Names: [f1, f2, f3]`.
-The user can specify fields to be outputed from any of the grids used in the simulation.
-In the exampole above, we requested fields from both the Physics and Dynamics grid.
+The user can specify fields to be outputted from any of the grids used in the simulation.
+In the example above, we requested fields from both the Physics and Dynamics grid.
 The other parameters are
+
 - `Averaging Type`: how the fields are integrated in time before being saved. Valid
   options are
-  - Instant: no integration, each time frame saved corresponds to instantaneous values
-    of the fields
-  - Average/Max/Min: the fields undergo the corresponding operation over the time
-    interval specified in the `output_control` section. In the case above, each snapshot
-    saved to file corresponds to an average of the output fields over 6h windows.
+
+    - Instant: no integration, each time frame saved corresponds to instantaneous values
+      of the fields
+    - Average/Max/Min: the fields undergo the corresponding operation over the time
+      interval specified in the `output_control` section. In the case above, each snapshot
+      saved to file corresponds to an average of the output fields over 6h windows.
+
 - `filename_prefix`: the prefix of the output file, which will be created in the run
   directory. The full filename will be `$prefix.$avgtype.$frequnits_x$freq.$timestamp.nc`,
   where $timestamp corresponds to the first snapshot saved in the file for Instant output,
@@ -52,48 +54,54 @@ The other parameters are
   number of atmosphere time steps), `nsecs`, `nmins`, `nhours`, `ndays`, `nmonths`,
   `nyears`.
 
-# Diagnostic output
+## Diagnostic output
 
 In addition to the fields computed by EAMxx as part of the timestep, the user can
 request to output derived quantities, which will be computed on the fly by the
 I/O interface of EAMxx. There are two types of diagnostic outputs:
+
 - quantities computed as a function of EAMxx fields. These are simply physical quantities
   that EAMxx does not keep in persistent storage. As of August 2023, the available
   derived quantities are (case sensitive):
-  - PotentialTemperature
-  - AtmosphereDensity
-  - Exner
-  - VirtualTemperature
-  - z_int
-  - z_mid
-  - geopotential_int
-  - geopotential_mid
-  - dz
-  - DryStaticEnergy
-  - SeaLevelPressure
-  - LiqWaterPath
-  - IceWaterPath
-  - VapWaterPath
-  - RainWaterPath
-  - RimeWaterPath
-  - ShortwaveCloudForcing
-  - LongwaveCloudForcing
-  - RelativeHumidity
-  - ZonalVapFlux
-  - MeridionalVapFlux
-  - precip_surf_mass_flux
-  - surface_upward_latent_heat_flux
+
+    - `PotentialTemperature`
+    - `AtmosphereDensity`
+    - `Exner`
+    - `VirtualTemperature`
+    - `z_int`
+    - `z_mid`
+    - `geopotential_int`
+    - `geopotential_mid`
+    - `dz`
+    - `DryStaticEnergy`
+    - `SeaLevelPressure`
+    - `LiqWaterPath`
+    - `IceWaterPath`
+    - `VapWaterPath`
+    - `RainWaterPath`
+    - `RimeWaterPath`
+    - `ShortwaveCloudForcing`
+    - `LongwaveCloudForcing`
+    - `RelativeHumidity`
+    - `ZonalVapFlux`
+    - `MeridionalVapFlux`
+    - `precip_liq_surf_mass_flux`
+    - `precip_ice_surf_mass_flux`
+    - `precip_total_surf_mass_flux`
+    - `surface_upward_latent_heat_flux`
+
 - lower-dimensional slices of a field. These are hyperslices of an existing field or of
   another diagnostic output. As of August 2023, given a field X, the available options
   are:
-  - X_at_lev_N: subviews the field X at the N-th vertical level index. Recall that
-    in EAMxx N=0 corresponds to the model top.
-  - X_at_model_bot, X_at_model_top: special case for top and bottom of the model.
-  - X_at_Ymb, X_at_YPa, X_at_YhPa: interpolates the field X at a vertical position
-    specified by the give pressure Y. Available units are mb (millibar), Pa, and hPa.
-  - X_at_Ym: interpolates the field X at a vertical height of Y meters.
 
-# Output remap
+    - `X_at_lev_N`: slice the field `X` at the N-th vertical level index. Recall that
+      in EAMxx N=0 corresponds to the model top.
+    - `X_at_model_bot`, `X_at_model_top`: special case for top and bottom of the model.
+    - `X_at_Ymb`, `X_at_YPa`, `X_at_YhPa`: interpolates the field `X` at a vertical position
+      specified by the give pressure `Y`. Available units are `mb` (millibar), `Pa`, and `hPa`.
+    - `X_at_Ym`: interpolates the field `X` at a vertical height of `Y` meters.
+
+## Remapped output
 
 The following options can be used to to save fields on a different grid from the one
 they are computed on.
@@ -112,20 +120,26 @@ they are computed on.
   where `ngp` is the number of Gauss points along each axis in the 2d spectral element.
   Note: this feature cannot be used along with the horizontal/vertical remapper.
 
-# Add output stream to a CIME case
+## Add output stream to a CIME case
 
 In order to tell EAMxx that a new output stream is needed, one must add the name of
 the yaml file to be used to the list of yaml files that EAMxx will process. From the
 case folder, after `case.setup` has run, one can do
+
+```shell
+./atmchange output_yaml_files=/path/to/my/yaml/file
 ```
-$ ./atmchange output_yaml_files=/path/to/my/yaml/file
-```
+
 to specify a single yaml file, or
+
+```shell
+./atmchange output_yaml_files+=/path/to/my/yaml/file
 ```
-$ ./atmchange output_yaml_files+=/path/to/my/yaml/file
-```
+
 to append to the list of yaml files.
-Important notes:
+
+### Important notes
+
 - The user should not specify a path to a file in `$RUNDIR/data`. EAMxx will
 put a copy of the specified yaml files in that directory, pruning any existing copy
 of that file. This happens every time that `buildnml` runs; in particular, it happens
@@ -137,5 +151,3 @@ during `case.submit`.
 - EAMxx will parse the yaml file and expand any string of the form $VAR, by looking
   for the value of the variable VAR in the CIME case. If VAR is not a valid CIME
   variable, an error will be raised.
-
-
