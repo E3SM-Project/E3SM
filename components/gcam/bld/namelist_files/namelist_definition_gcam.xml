@@ -308,7 +308,6 @@ Region-level CO2 emission file from GCAM
 <entry id="surface_co2_downscaling_method"
     type="char*256"
     category="gcam"
-    input_pathname="abs"
     group="gcam_inparm"
     valid_values="">
 Downscaling methods for CO2 emission: 1. Linear; 2: Convergence
