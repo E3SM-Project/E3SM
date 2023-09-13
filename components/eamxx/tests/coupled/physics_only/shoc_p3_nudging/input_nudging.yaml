@@ -15,7 +15,8 @@ atmosphere_processes:
     nudging_filename: [shoc_p3_source_data.INSTANT.nsteps_x${NUM_STEPS}.${RUN_T0}.nc]
     nudging_fields: ["T_mid", "qv"]
     nudging_timescale: 0
-    source_pressure_type: TIME_DEPENDENT_3D_PROFILE
+    source_pressure_type: ${VERT_TYPE}
+    source_pressure_file: vertical_remap.nc ## Only used in the case of STATIC_1D_VERTICAL_PROFILE
 
 grids_manager:
   Type: Mesh Free
