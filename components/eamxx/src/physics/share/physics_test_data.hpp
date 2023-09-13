@@ -39,7 +39,7 @@ struct SHOCGridData : public PhysicsTestData {
 };
 */
 
-// Convenience macros for up to 11 arguments, beyond that, you're on your own :)
+// Convenience macros for up to 20 arguments, beyond that, you're on your own :)
 
 #define PTD_ONES0
 #define PTD_ONES1 1

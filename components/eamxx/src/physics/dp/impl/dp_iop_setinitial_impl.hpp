@@ -56,7 +56,12 @@ void Functions<S,D>::iop_setinitial(
   constexpr Int icldice = 4;
 
   const Int plev_packs = ekat::npack<Spack>(plev);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nelemd, plev_packs);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, plev_packs);
+
+  assert(np <= NP);
+  assert(plev_packs <= Homme::NUM_LEV);
+  assert(tracers.inited());
+  assert(elem.inited());
 
   if (!use_replay && nstep == 0 && dynproc) {
 
@@ -65,19 +70,23 @@ void Functions<S,D>::iop_setinitial(
       policy,
       KOKKOS_LAMBDA(const MemberType& team) {
 
-      const Int ie = team.league_rank();
+      // We cannot support parallelism at the element level when nstep<=1 because the thelev
+      // computation of tobs is dependent on prior iterations that may have alterted tobs
+      for (Int ie = 0; ie < nelemd; ++ie) {
         for (Int j = 0; j < np; ++j) {
           for (Int i = 0; i < np; ++i) {
 
           // Find level where tobs is no longer zero
-          Int thelev=0;
-          Kokkos::parallel_reduce(
-            Kokkos::TeamVectorRange(team, plev_packs), [&] (int plev_pack, Int& pmin) {
-            auto zmask = tobs(plev_pack) != 0;
-            if (zmask.any()) {
-              pmin = plev_pack;
-            }
-          }, Kokkos::Min<Int>(thelev));
+          Int thelev=-1;
+          if (nstep <= 1) {
+            Kokkos::parallel_reduce(
+              Kokkos::TeamVectorRange(team, plev_packs), [&] (int plev_pack, Int& pmin) {
+              auto zmask = tobs(plev_pack) != 0;
+              if (zmask.any()) {
+                pmin = plev_pack;
+              }
+            }, Kokkos::Min<Int>(thelev));
+          }
 
           if (nstep <= 1) {
             Kokkos::parallel_for(
@@ -139,12 +148,12 @@ void Functions<S,D>::iop_setinitial(
               Kokkos::TeamVectorRange(team, plev_packs), [&] (int k) {
               if (have_u) {
                 vector_simd for (Int p = 0; p < Spack::n; ++p) {
-                  elem.m_state.m_v(ie, k, 0, i, j, k)[p] = uobs(k)[p]; // [2] is 0?
+                  elem.m_state.m_v(ie, 0, 0, i, j, k)[p] = uobs(k)[p]; // [2] is 0?
                 }
               }
               if (have_v) {
                 vector_simd for (Int p = 0; p < Spack::n; ++p) {
-                  elem.m_state.m_v(ie, k, 1, i, j, k)[p] = vobs(k)[p]; // [2] is 1?
+                  elem.m_state.m_v(ie, 0, 1, i, j, k)[p] = vobs(k)[p]; // [2] is 1?
                 }
               }
               if (have_numliq) {
@@ -175,6 +184,7 @@ void Functions<S,D>::iop_setinitial(
             });
           }
         }
+      }
       }
     });
   }
