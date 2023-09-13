@@ -296,7 +296,7 @@ static void run_bfb_p3_main_part3()
       d.inv_exner, d.cld_frac_l, d.cld_frac_r, d.cld_frac_i,
       d.rho, d.inv_rho, d.rhofaci, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.latent_heat_vapor, d.latent_heat_sublim,
       d.mu_c, d.nu, d.lamc, d.mu_r, d.lamr, d.vap_liq_exchange,
-      d. ze_rain, d.ze_ice, d.diag_vm_qi, d.diag_eff_radius_qi, d.diag_diam_qi, d.rho_qi, d.diag_equiv_reflectivity, d.diag_eff_radius_qc);
+      d. ze_rain, d.ze_ice, d.diag_vm_qi, d.diag_eff_radius_qi, d.diag_diam_qi, d.rho_qi, d.diag_equiv_reflectivity, d.diag_eff_radius_qc, d.diag_eff_radius_qr);
   }
 
   if (SCREAM_BFB_TESTING) {
@@ -333,6 +333,7 @@ static void run_bfb_p3_main_part3()
         REQUIRE(isds_fortran[i].rho_qi[k]                  == isds_cxx[i].rho_qi[k]);
         REQUIRE(isds_fortran[i].diag_equiv_reflectivity[k] == isds_cxx[i].diag_equiv_reflectivity[k]);
         REQUIRE(isds_fortran[i].diag_eff_radius_qc[k]         == isds_cxx[i].diag_eff_radius_qc[k]);
+        REQUIRE(isds_fortran[i].diag_eff_radius_qr[k]         == isds_cxx[i].diag_eff_radius_qr[k]);
       }
     }
   }
@@ -396,7 +397,7 @@ static void run_bfb_p3_main()
     p3_main_f(
       d.qc, d.nc, d.qr, d.nr, d.th_atm, d.qv, d.dt, d.qi, d.qm, d.ni,
       d.bm, d.pres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.ni_activated, d.inv_qc_relvar, d.it, d.precip_liq_surf,
-      d.precip_ice_surf, d.its, d.ite, d.kts, d.kte, d.diag_eff_radius_qc, d.diag_eff_radius_qi,
+      d.precip_ice_surf, d.its, d.ite, d.kts, d.kte, d.diag_eff_radius_qc, d.diag_eff_radius_qi, d.diag_eff_radius_qr,
       d.rho_qi, d.do_predict_nc, d.do_prescribed_CCN, d.dpres, d.inv_exner, d.qv2qi_depos_tend,
       d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i, 
       d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.qv_prev, d.t_prev);
@@ -421,6 +422,7 @@ static void run_bfb_p3_main()
         REQUIRE(df90.th_atm[t]            == dcxx.th_atm[t]);
         REQUIRE(df90.diag_eff_radius_qc[t]         == dcxx.diag_eff_radius_qc[t]);
         REQUIRE(df90.diag_eff_radius_qi[t]         == dcxx.diag_eff_radius_qi[t]);
+        REQUIRE(df90.diag_eff_radius_qr[t]         == dcxx.diag_eff_radius_qr[t]);
         REQUIRE(df90.rho_qi[t]            == dcxx.rho_qi[t]);
         REQUIRE(df90.mu_c[t]              == dcxx.mu_c[t]);
         REQUIRE(df90.lamc[t]              == dcxx.lamc[t]);

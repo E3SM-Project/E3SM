@@ -239,6 +239,7 @@ public:
         // Rescale effective radius' into microns
         diag_eff_radius_qc(icol,ipack) *= 1e6;
         diag_eff_radius_qi(icol,ipack) *= 1e6;
+        diag_eff_radius_qr(icol,ipack) *= 1e6;
       } // for ipack
 
       // Microphysics can be subcycled together during a single physics timestep,
@@ -281,6 +282,7 @@ public:
     view_2d       qv_prev;
     view_2d       diag_eff_radius_qc;
     view_2d       diag_eff_radius_qi;
+    view_2d       diag_eff_radius_qr;
     view_1d_const precip_liq_surf_flux;
     view_1d_const precip_ice_surf_flux;
     view_1d       precip_liq_surf_mass;
@@ -298,7 +300,7 @@ public:
                     const view_2d& qv_, const view_2d& qc_, const view_2d& nc_, const view_2d& qr_, const view_2d& nr_,
                     const view_2d& qi_, const view_2d& qm_, const view_2d& ni_, const view_2d& bm_,
                     const view_2d& qv_prev_, const view_2d& diag_eff_radius_qc_,
-                    const view_2d& diag_eff_radius_qi_, 
+                    const view_2d& diag_eff_radius_qi_, const view_2d& diag_eff_radius_qr_,
                     const view_1d_const& precip_liq_surf_flux_, const view_1d_const& precip_ice_surf_flux_,
                     const view_1d& precip_liq_surf_mass_, const view_1d& precip_ice_surf_mass_)
     {
@@ -327,6 +329,7 @@ public:
       qv_prev              = qv_prev_;
       diag_eff_radius_qc   = diag_eff_radius_qc_;
       diag_eff_radius_qi   = diag_eff_radius_qi_;
+      diag_eff_radius_qr   = diag_eff_radius_qr_;
       precip_liq_surf_mass = precip_liq_surf_mass_;
       precip_ice_surf_mass = precip_ice_surf_mass_;
       // TODO: This is a list of variables not yet defined for post-processing, but are
@@ -335,7 +338,7 @@ public:
       // qme, vap_liq_exchange
       // ENERGY Conservation: prec_str, snow_str
       // RAD Vars: icinc, icwnc, icimrst, icwmrst
-      // COSP Vars: flxprc, flxsnw, flxprc, flxsnw, cvreffliq, cvreffice, reffrain, reffsnow
+      // COSP Vars: flxprc, flxsnw, flxprc, flxsnw, cvreffliq, cvreffice, reffsnow
     } // set_variables
 
     void set_mass_and_energy_fluxes (const view_1d& vapor_flux_, const view_1d& water_flux_,

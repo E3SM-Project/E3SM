@@ -32,6 +32,7 @@ void Functions<S,D>
   const uview_1d<Spack>& ze_rain,
   const uview_1d<Spack>& diag_eff_radius_qc,
   const uview_1d<Spack>& diag_eff_radius_qi,
+  const uview_1d<Spack>& diag_eff_radius_qr,
   const uview_1d<Spack>& inv_cld_frac_i,
   const uview_1d<Spack>& inv_cld_frac_l,
   const uview_1d<Spack>& inv_cld_frac_r,
@@ -54,6 +55,7 @@ void Functions<S,D>
     ze_rain(k)           = 1.e-22;
     diag_eff_radius_qc(k)         = 10.e-6;
     diag_eff_radius_qi(k)         = 25.e-6;
+    diag_eff_radius_qr(k)         = 500.e-6;
     inv_cld_frac_i(k)    = 1 / cld_frac_i(k);
     inv_cld_frac_l(k)    = 1 / cld_frac_l(k);
     inv_cld_frac_r(k)    = 1 / cld_frac_r(k);
@@ -188,6 +190,7 @@ Int Functions<S,D>
     const auto oth                 = ekat::subview(prognostic_state.th, i);
     const auto odiag_eff_radius_qc = ekat::subview(diagnostic_outputs.diag_eff_radius_qc, i);
     const auto odiag_eff_radius_qi = ekat::subview(diagnostic_outputs.diag_eff_radius_qi, i);
+    const auto odiag_eff_radius_qr = ekat::subview(diagnostic_outputs.diag_eff_radius_qr, i);
     const auto oqv2qi_depos_tend   = ekat::subview(diagnostic_outputs.qv2qi_depos_tend, i);
     const auto orho_qi             = ekat::subview(diagnostic_outputs.rho_qi, i);
     const auto oprecip_liq_flux    = ekat::subview(diagnostic_outputs.precip_liq_flux, i);
@@ -218,8 +221,8 @@ Int Functions<S,D>
     p3_main_init(
       team, nk_pack,
       ocld_frac_i, ocld_frac_l, ocld_frac_r, oinv_exner, oth, odz, diag_equiv_reflectivity,
-      ze_ice, ze_rain, odiag_eff_radius_qc, odiag_eff_radius_qi, inv_cld_frac_i, inv_cld_frac_l,
-      inv_cld_frac_r, exner, T_atm, oqv, inv_dz,
+      ze_ice, ze_rain, odiag_eff_radius_qc, odiag_eff_radius_qi, odiag_eff_radius_qr,
+      inv_cld_frac_i, inv_cld_frac_l, inv_cld_frac_r, exner, T_atm, oqv, inv_dz,
       diagnostic_outputs.precip_liq_surf(i), diagnostic_outputs.precip_ice_surf(i), zero_init);
 
     p3_main_part1(
@@ -300,7 +303,7 @@ Int Functions<S,D>
       rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqi, oni,
       oqm, obm, olatent_heat_vapor, olatent_heat_sublim, mu_c, nu, lamc, mu_r, lamr,
       ovap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, odiag_eff_radius_qi, diag_diam_qi,
-      orho_qi, diag_equiv_reflectivity, odiag_eff_radius_qc);
+      orho_qi, diag_equiv_reflectivity, odiag_eff_radius_qc, odiag_eff_radius_qr);
 
     //
     // merge ice categories with similar properties
