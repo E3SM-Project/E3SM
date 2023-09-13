@@ -13,6 +13,8 @@ module mo_chm_diags
   use cam_logfile,   only : iulog
   use spmd_utils,    only : masterproc
 
+  use interpolate_data,   only: vertinterp
+
   implicit none
   private
 
@@ -59,6 +61,9 @@ module mo_chm_diags
   real(r8), parameter :: DUfac = 2.687e20_r8   ! 1 DU in molecules per m^2
 
   character(len=32) :: chempkg
+
+  integer, parameter :: aerosol_number = 7
+  character(len=3) :: aerosol_name(aerosol_number)
 
 contains
 
@@ -118,6 +123,8 @@ contains
 
     integer :: bulkaero_species(20)
     integer :: e90_ndx
+
+    integer :: aerosol_idx
 
     !-----------------------------------------------------------------------
 
@@ -917,6 +924,28 @@ contains
        call addfld( 'Mass_dst',   (/ 'lev' /), 'A', 'kg/kg ', &
             'sum of dst mass concentration dst_a1+dst_c1+dst_a3+dst_c3')
        call add_default( 'Mass_dst', 1, ' ' )
+       
+       aerosol_name(1) = "bc"
+       aerosol_name(2) = "dst"
+       aerosol_name(3) = "mom"
+       aerosol_name(4) = "ncl"
+       aerosol_name(5) = "pom"
+       aerosol_name(6) = "so4"
+       aerosol_name(7) = "soa"
+
+       do aerosol_idx = 1, aerosol_number
+          call addfld( 'Mass_'//trim(aerosol_name(aerosol_idx))//'_srf',   horiz_only, 'A', 'kg/kg ', &
+               'Mass_'//aerosol_name(aerosol_idx)//' at the surface')
+          call addfld( 'Mass_'//trim(aerosol_name(aerosol_idx))//'_850',   horiz_only, 'A', 'kg/kg ', &
+               'Mass_'//aerosol_name(aerosol_idx)//' at 850 mb')
+          call addfld( 'Mass_'//trim(aerosol_name(aerosol_idx))//'_500',   horiz_only, 'A', 'kg/kg ', &
+               'Mass_'//aerosol_name(aerosol_idx)//' at 500 mb')
+          call addfld( 'Mass_'//trim(aerosol_name(aerosol_idx))//'_330',   horiz_only, 'A', 'kg/kg ', &
+               'Mass_'//aerosol_name(aerosol_idx)//' at 330 mb')
+          call addfld( 'Mass_'//trim(aerosol_name(aerosol_idx))//'_200',   horiz_only, 'A', 'kg/kg ', &
+               'Mass_'//aerosol_name(aerosol_idx)//' at 200 mb')
+       enddo
+
     endif
 
     call addfld( 'MASS', (/ 'lev' /), 'A', 'kg', 'mass of grid box' )
@@ -1025,7 +1054,7 @@ contains
 
   end subroutine chm_diags_inti_ac
 
-  subroutine chm_diags( lchnk, ncol, vmr, mmr, rxt_rates, invariants, depvel, depflx, mmr_tend, pdel, pdeldry, pbuf, ltrop, tropFlag )
+  subroutine chm_diags( lchnk, ncol, vmr, mmr, rxt_rates, invariants, depvel, depflx, mmr_tend, pmid, pdel, pdeldry, pbuf, ltrop, tropFlag )
     !--------------------------------------------------------------------
     !	... utility routine to output chemistry diagnostic variables
     !--------------------------------------------------------------------
@@ -1060,6 +1089,7 @@ contains
     real(r8), intent(in)  :: depvel(ncol, gas_pcnst)
     real(r8), intent(in)  :: depflx(ncol, gas_pcnst)
     real(r8), intent(in)  :: mmr_tend(ncol,pver,gas_pcnst)
+    real(r8), intent(in)  :: pmid(pcols,pver)
     real(r8), intent(in)  :: pdel(ncol,pver)
     real(r8), intent(in)  :: pdeldry(ncol,pver)
     integer,  intent(in)  :: ltrop(pcols)  ! index of the lowest stratospheric level
@@ -1085,10 +1115,14 @@ contains
     character(len=16) :: spc_name
     real(r8), pointer :: fldcw(:,:)  !working pointer to extract data from pbuf for sum of mass for aerosol classes
     real(r8), dimension(ncol,pver) :: mass_bc, mass_dst, mass_mom, mass_ncl, mass_pom, mass_so4, mass_soa
+    real(r8), dimension(ncol,pver) :: mass_3d_tmp
+    real(r8), dimension(ncol) :: mass_at_pressure
 
     logical :: history_aerosol      ! output aerosol variables
     logical :: history_verbose      ! produce verbose history output
     logical :: get_presc_aero_data      ! produce output to drive prescribed aerosol run
+
+    integer :: aerosol_idx
 
     !-----------------------------------------------------------------------
 
@@ -1133,6 +1167,8 @@ contains
        mass_pom(:ncol,:) = 0._r8
        mass_so4(:ncol,:) = 0._r8
        mass_soa(:ncol,:) = 0._r8
+       mass_3d_tmp(:ncol,:) = 0._r8
+       mass_at_pressure(:ncol) = 0.0_r8
     endif
 
     call get_area_all_p(lchnk, ncol, area)
@@ -1422,6 +1458,50 @@ contains
        call outfld( 'Mass_pom', mass_pom(:ncol,:),ncol,lchnk)
        call outfld( 'Mass_so4', mass_so4(:ncol,:),ncol,lchnk)
        call outfld( 'Mass_soa', mass_soa(:ncol,:),ncol,lchnk)
+       
+       aerosol_name(1) = "bc"
+       aerosol_name(2) = "dst"
+       aerosol_name(3) = "mom"
+       aerosol_name(4) = "ncl"
+       aerosol_name(5) = "pom"
+       aerosol_name(6) = "so4"
+       aerosol_name(7) = "soa"
+
+       do aerosol_idx = 1, aerosol_number
+
+          select case (trim(aerosol_name(aerosol_idx)))
+             case ("bc")
+                mass_3d_tmp = mass_bc(:ncol,:)
+             case ("dst")
+                mass_3d_tmp = mass_dst(:ncol,:)            
+             case ("mom")
+                mass_3d_tmp = mass_mom(:ncol,:)
+             case ("ncl")
+                mass_3d_tmp = mass_ncl(:ncol,:)
+             case ("pom")
+                mass_3d_tmp = mass_pom(:ncol,:)
+             case ("so4")
+                mass_3d_tmp = mass_so4(:ncol,:)
+             case ("soa")
+                mass_3d_tmp = mass_soa(:ncol,:)
+          end select
+          
+          call outfld( 'Mass_'//trim(aerosol_name(aerosol_idx))//'_srf',  mass_3d_tmp(:ncol,pver), ncol, lchnk )
+
+          call vertinterp(ncol, pcols, pver, pmid,  85000._r8, mass_3d_tmp, mass_at_pressure)
+          call outfld( 'Mass_'//trim(aerosol_name(aerosol_idx))//'_850',  mass_at_pressure, ncol, lchnk )
+
+          call vertinterp(ncol, pcols, pver, pmid,  50000._r8, mass_3d_tmp, mass_at_pressure)
+          call outfld( 'Mass_'//trim(aerosol_name(aerosol_idx))//'_500',  mass_at_pressure, ncol, lchnk )
+
+          call vertinterp(ncol, pcols, pver, pmid,  33000._r8, mass_3d_tmp, mass_at_pressure)
+          call outfld( 'Mass_'//trim(aerosol_name(aerosol_idx))//'_330',  mass_at_pressure, ncol, lchnk )
+
+          call vertinterp(ncol, pcols, pver, pmid,  20000._r8, mass_3d_tmp, mass_at_pressure)
+          call outfld( 'Mass_'//trim(aerosol_name(aerosol_idx))//'_200',  mass_at_pressure, ncol, lchnk )
+
+       end do
+
     endif
 #endif
 
