@@ -34,11 +34,13 @@ The other parameters are
 
 - `Averaging Type`: how the fields are integrated in time before being saved. Valid
   options are
-  - Instant: no integration, each time frame saved corresponds to instantaneous values
-    of the fields
-  - Average/Max/Min: the fields undergo the corresponding operation over the time
-    interval specified in the `output_control` section. In the case above, each snapshot
-    saved to file corresponds to an average of the output fields over 6h windows.
+
+    - Instant: no integration, each time frame saved corresponds to instantaneous values
+      of the fields
+    - Average/Max/Min: the fields undergo the corresponding operation over the time
+      interval specified in the `output_control` section. In the case above, each snapshot
+      saved to file corresponds to an average of the output fields over 6h windows.
+
 - `filename_prefix`: the prefix of the output file, which will be created in the run
   directory. The full filename will be `$prefix.$avgtype.$frequnits_x$freq.$timestamp.nc`,
   where $timestamp corresponds to the first snapshot saved in the file for Instant output,
@@ -62,40 +64,40 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:
   that EAMxx does not keep in persistent storage. As of August 2023, the available
   derived quantities are (case sensitive):
 
-  - `PotentialTemperature`
-  - `AtmosphereDensity`
-  - `Exner`
-  - `VirtualTemperature`
-  - `z_int`
-  - `z_mid`
-  - `geopotential_int`
-  - `geopotential_mid`
-  - `dz`
-  - `DryStaticEnergy`
-  - `SeaLevelPressure`
-  - `LiqWaterPath`
-  - `IceWaterPath`
-  - `VapWaterPath`
-  - `RainWaterPath`
-  - `RimeWaterPath`
-  - `ShortwaveCloudForcing`
-  - `LongwaveCloudForcing`
-  - `RelativeHumidity`
-  - `ZonalVapFlux`
-  - `MeridionalVapFlux`
-  - `precip_surf_mass_flux`
-  - `surface_upward_latent_heat_flux`
+    - `PotentialTemperature`
+    - `AtmosphereDensity`
+    - `Exner`
+    - `VirtualTemperature`
+    - `z_int`
+    - `z_mid`
+    - `geopotential_int`
+    - `geopotential_mid`
+    - `dz`
+    - `DryStaticEnergy`
+    - `SeaLevelPressure`
+    - `LiqWaterPath`
+    - `IceWaterPath`
+    - `VapWaterPath`
+    - `RainWaterPath`
+    - `RimeWaterPath`
+    - `ShortwaveCloudForcing`
+    - `LongwaveCloudForcing`
+    - `RelativeHumidity`
+    - `ZonalVapFlux`
+    - `MeridionalVapFlux`
+    - `precip_surf_mass_flux`
+    - `surface_upward_latent_heat_flux`
 
 - lower-dimensional slices of a field. These are hyperslices of an existing field or of
   another diagnostic output. As of August 2023, given a field X, the available options
   are:
 
-  - `X_at_lev_N`: slice the field `X` at the N-th vertical level index. Recall that
-    in EAMxx N=0 corresponds to the model top.
-  - `X_at_model_bot`, `X_at_model_top`: special case for top and bottom of the model.
-  - `X_at_Ymb`, `X_at_YPa`, `X_at_YhPa`: interpolates the field `X` at a vertical position
-    specified by the give pressure `Y`. Available units are `mb` (millibar), `Pa`, and `hPa`.
-  - `X_at_Ym`: interpolates the field `X` at a vertical height of `Y` meters.
+    - `X_at_lev_N`: slice the field `X` at the N-th vertical level index. Recall that
+      in EAMxx N=0 corresponds to the model top.
+    - `X_at_model_bot`, `X_at_model_top`: special case for top and bottom of the model.
+    - `X_at_Ymb`, `X_at_YPa`, `X_at_YhPa`: interpolates the field `X` at a vertical position
+      specified by the give pressure `Y`. Available units are `mb` (millibar), `Pa`, and `hPa`.
+    - `X_at_Ym`: interpolates the field `X` at a vertical height of `Y` meters.
 
 ## Remapped output
 
