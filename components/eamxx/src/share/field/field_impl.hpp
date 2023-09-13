@@ -411,9 +411,8 @@ scale (const ST beta)
 
   // Determine if there is a FillValue that requires extra treatment.
   ST fill_val = constants::DefaultFillValue<ST>().value;
-  const auto& xtra_data = get_header().get_extra_data();
-  if (xtra_data.count("mask_value")) {
-    fill_val = ekat::any_cast<ST>(xtra_data.at("mask_value"));
+  if (get_header().has_extra_data("mask_value")) {
+    fill_val = get_header().get_extra_data<ST>("mask_value");
   }
 
   // If user passes, say, double beta for an int field, we should error out, warning about

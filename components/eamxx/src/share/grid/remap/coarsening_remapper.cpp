@@ -281,32 +281,31 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
   m_field_idx_to_mask_idx[ifield] = -1;
 
   if (m_track_mask) {
-    const auto& src_extra = src.get_header().get_extra_data();
-    if (src_extra.count("mask_data")==1) {
+    if (src.get_header().has_extra_data("mask_data")) {
       // First, check that we also have the mask value, to be used if mask_data is too small
-      EKAT_REQUIRE_MSG (src_extra.count("mask_value")==1,
+      EKAT_REQUIRE_MSG (src.get_header().has_extra_data("mask_value"),
           "Error! Field " + src.name() + " stores a mask field but not a mask value.\n");
-      const auto& src_mask_val = src_extra.at("mask_value");
+      const auto& src_mask_val = src.get_header().get_extra_data<Real>("mask_value");
 
       auto& tgt_hdr = m_tgt_fields[ifield].get_header();
-      if (tgt_hdr.get_extra_data().count("mask_value")==1) {
-        const auto& tgt_mask_val = tgt_hdr.get_extra_data().at("mask_value");
+      if (tgt_hdr.has_extra_data("mask_value")) {
+        const auto& tgt_mask_val = tgt_hdr.get_extra_data<Real>("mask_value");
 
-        EKAT_REQUIRE_MSG (ekat::any_cast<Real>(tgt_mask_val)==ekat::any_cast<Real>(src_mask_val),
+        EKAT_REQUIRE_MSG (tgt_mask_val==src_mask_val,
             "Error! Target field stores a mask data different from the src field.\n"
             "  - src field name: " + src.name() + "\n"
             "  - tgt field name: " + tgt.name() + "\n"
-            "  - src mask value: " << ekat::any_cast<Real>(src_mask_val) << "\n"
-            "  - tgt mask value: " << ekat::any_cast<Real>(tgt_mask_val) << "\n");
+            "  - src mask value: " << src_mask_val << "\n"
+            "  - tgt mask value: " << tgt_mask_val << "\n");
       } else {
         tgt_hdr.set_extra_data("mask_value",src_mask_val);
       }
 
       // Then, register the mask field, if not yet registered
-      const auto& src_mask = ekat::any_cast<Field>(src_extra.at("mask_data"));
+      const auto& src_mask = src.get_header().get_extra_data<Field>("mask_data");
       const auto& src_mask_fid = src_mask.get_header().get_identifier();
       // Make sure fields representing masks are not themselves meant to be masked.
-      EKAT_REQUIRE_MSG(src_mask.get_header().get_extra_data().count("mask_data")==0,
+      EKAT_REQUIRE_MSG(not src_mask.get_header().has_extra_data("mask_data"),
           "Error! A mask field cannot be itself masked.\n"
           "  - field name: " + src.name() + "\n"
           "  - mask field name: " + src_mask.name() + "\n");
@@ -442,10 +441,9 @@ rescale_masked_fields (const Field& x, const Field& mask) const
   const auto& layout = x.get_header().get_identifier().get_layout();
   const int rank = layout.rank();
   const int ncols = m_tgt_grid->get_num_local_dofs();
-  const auto x_extra  = x.get_header().get_extra_data();
   Real mask_val = std::numeric_limits<float>::max()/10.0;
-  if (x_extra.count("mask_value")) {
-    mask_val = ekat::any_cast<Real>(x_extra.at("mask_value"));
+  if (x.get_header().has_extra_data("mask_value")) {
+    mask_val = x.get_header().get_extra_data<Real>("mask_value");
   } else {
     EKAT_ERROR_MSG ("ERROR! Field " + x.name() + " is masked, but stores no mask_value extra data.\n");
   }
