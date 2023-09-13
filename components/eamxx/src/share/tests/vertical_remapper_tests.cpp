@@ -97,9 +97,9 @@ void create_remap_file(const std::string& filename, const int nlevs, const std::
 
   scorpio::register_file(filename, scorpio::FileMode::Write);
 
-  scorpio::register_dimension(filename,"nlevs","nlevs",nlevs, false);
+  scorpio::register_dimension(filename,"lev","lev",nlevs, false);
 
-  scorpio::register_variable(filename,"p_levs","p_levs","none",{"nlevs"},"real","real","Real-nlevs");
+  scorpio::register_variable(filename,"p_levs","p_levs","none",{"lev"},"real","real","Real-lev");
 
   scorpio::set_dof(filename,"p_levs",dofs_p.size(),dofs_p.data()); 
   
