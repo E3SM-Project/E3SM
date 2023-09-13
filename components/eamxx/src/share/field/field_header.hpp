@@ -76,7 +76,9 @@ public:
         FieldAllocProp& get_alloc_properties ()       { return m_alloc_prop; }
 
   // Get the extra data
-  const extra_data_type& get_extra_data () const { return m_extra_data; }
+  template<typename T>
+  const T& get_extra_data (const std::string& key) const;
+  bool  has_extra_data (const std::string& key) const;
 
   std::shared_ptr<FieldHeader> alias (const std::string& name) const;
 
@@ -100,6 +102,31 @@ protected:
   // Extra data associated with this field
   extra_data_type                 m_extra_data;
 };
+
+template<typename T>
+inline const T& FieldHeader::
+get_extra_data (const std::string& key) const
+{
+  EKAT_REQUIRE_MSG (has_extra_data(key),
+      "Error! Extra data not found in field header.\n"
+      "  - field name: " + m_identifier.name() + "\n"
+      "  - extra data: " + key + "\n");
+  auto a = m_extra_data.at(key);
+  EKAT_REQUIRE_MSG ( a.isType<T>(),
+      "Error! Attempting to access extra data using the wrong type.\n"
+      "  - field name    : " + m_identifier.name() + "\n"
+      "  - extra data    : " + key + "\n"
+      "  - actual type   : " + std::string(a.content().type().name()) + "\n"
+      "  - requested type: " + std::string(typeid(T).name()) + ".\n");
+
+  return any_cast<T>(a);
+}
+
+inline bool FieldHeader::
+has_extra_data (const std::string& key) const
+{
+  return m_extra_data.find(key)!=m_extra_data.end();
+}
 
 // Use this free function to exploit features of enable_from_this
 template<typename... Args>

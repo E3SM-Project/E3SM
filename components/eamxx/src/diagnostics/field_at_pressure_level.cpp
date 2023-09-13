@@ -126,9 +126,8 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
     perform_vertical_interpolation<Real,1,2>(pres,m_p_tgt,f_data_src,data_tgt_tmp,m_num_levs,1,m_mask_val);
 
     // Track mask
-    auto extra_data = m_diagnostic_output.get_header().get_extra_data().at("mask_data");
-    auto d_mask     = ekat::any_cast<Field>(extra_data);
-    auto d_mask_tgt = d_mask.get_view<Pack1*>();
+    auto mask = m_diagnostic_output.get_header().get_extra_data<Field>("mask_data");
+    auto d_mask_tgt = mask.get_view<Pack1*>();
     view_Nd<Pack1,2> mask_tgt_tmp(d_mask_tgt.data(),d_mask_tgt.extent_int(0),1);  
     perform_vertical_interpolation<Real,1,2>(pres,m_p_tgt,mask_v_tmp,mask_tgt_tmp,m_num_levs,1,0);
   } else if (rank==3) {
@@ -140,9 +139,8 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
     perform_vertical_interpolation<Real,1,3>(pres,m_p_tgt,f_data_src,data_tgt_tmp,m_num_levs,1,m_mask_val);
 
     // Track mask
-    auto extra_data = m_diagnostic_output.get_header().get_extra_data().at("mask_data");
-    auto d_mask     = ekat::any_cast<Field>(extra_data);
-    auto d_mask_tgt = d_mask.get_view<Pack1*>();
+    auto mask = m_diagnostic_output.get_header().get_extra_data<Field>("mask_data");
+    auto d_mask_tgt = mask.get_view<Pack1*>();
     view_Nd<Pack1,2> mask_tgt_tmp(d_mask_tgt.data(),d_mask_tgt.extent_int(0),1);  
     perform_vertical_interpolation<Real,1,2>(pres,m_p_tgt,mask_v_tmp,mask_tgt_tmp,m_num_levs,1,0);
   } else {
