@@ -2111,7 +2111,7 @@ contains
                 !!uci interpolation for 55 out of 57 variables in linoz_v3
                 !!excluding t_clim, o3col_clim
                 !!for linoz_v2 it is simiar with less variables
-                   if (flds(f)%fldnam.ne.'t_clim          '\
+                   if (flds(f)%fldnam.ne.'t_clim          ' &
                   .and.flds(f)%fldnam.ne.'o3col_clim      ') then
                    !!file ilevs is in hPa, while model level in Pa, so times 100
                    call vert_interp_uci(ncol, file%nlev, 100*file%ilevs, state(c)%pint, datain, data_out(:,:) )
