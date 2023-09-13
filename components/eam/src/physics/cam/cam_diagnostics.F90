@@ -320,6 +320,10 @@ subroutine diag_init()
    call addfld ('PSL',horiz_only,    'A','Pa','Sea level pressure', &
       standard_name='air_pressure_at_mean_sea_level')
 
+
+   call addfld ('fixerCLUBB',horiz_only,    'A','J/m2','dTE fixed by CLUBB')
+
+
    call addfld ('T850',horiz_only,    'A','K','Temperature at 850 mbar pressure surface')
    call addfld ('T500',horiz_only,    'A','K','Temperature at 500 mbar pressure surface')
    call addfld ('T300',horiz_only,    'A','K','Temperature at 300 mbar pressure surface')
