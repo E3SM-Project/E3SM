@@ -846,7 +846,7 @@ contains
                                            nTracersGroup, nCellsOwned, &
                                            zMid, minLevelCell, indxTemp, &
                                            indxSalt, tracerGroupSurfaceFlux, &
-                                           err)
+                                           tracerGroupSurfaceFluxRemoved, err)
                                            
          endif ! ecosys tracers
 
