@@ -56,7 +56,6 @@ constexpr int num_aero_tracers() {
   return 7 + 4 + 7 + 3;
 }
 
-
 // Given a MAM aerosol mode index, returns a string denoting the symbolic
 // name of the mode.
 KOKKOS_INLINE_FUNCTION
