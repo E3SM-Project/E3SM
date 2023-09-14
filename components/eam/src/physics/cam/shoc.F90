@@ -228,7 +228,6 @@ subroutine shoc_main ( &
      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, & ! Input
      wtracer_sfc,num_qtracers,w_field, &  ! Input
      inv_exner,phis, &                        ! Input
-     sens_heat,cflx, &                        ! Input
      host_dse, tke, thetal, qw, &         ! Input/Output
      u_wind, v_wind,qtracers,&            ! Input/Output
      wthv_sec,tkh,tk,&                    ! Input/Output
@@ -296,9 +295,6 @@ subroutine shoc_main ( &
   real(rtype), intent(in) :: inv_exner(shcol,nlev)
   ! Host model surface geopotential height
   real(rtype), intent(in) :: phis(shcol)
-
-  real(rtype), intent(in) :: sens_heat(shcol)
-  real(rtype), intent(in) :: cflx(shcol)
 
 ! INPUT/OUTPUT VARIABLES
   ! prognostic temp variable of host model
@@ -566,12 +562,10 @@ subroutine shoc_main ( &
   call shoc_energy_fixer(&
      shcol,nlev,nlevi,dtime,nadv,&         ! Input
      zt_grid,zi_grid,&                     ! Input
-     qw, shoc_ql,u_wind,v_wind,pdel,&
      se_b,ke_b,wv_b,wl_b,&                 ! Input
      se_a,ke_a,wv_a,wl_a,&                 ! Input
      wthl_sfc,wqw_sfc,&                    ! Input
      rho_zt,tke,presi,&                    ! Input
-     sens_heat,cflx,&
      host_dse)                             ! Input/Output
 
   ! Remaining code is to diagnose certain quantities
@@ -3864,12 +3858,10 @@ end subroutine update_host_dse
 subroutine shoc_energy_fixer(&
          shcol,nlev,nlevi,dtime,nadv,&  ! Input
          zt_grid,zi_grid,&              ! Input
-         qw,shoc_ql,u_wind,v_wind,pdel, &
          se_b,ke_b,wv_b,wl_b,&          ! Input
          se_a,ke_a,wv_a,wl_a,&          ! Input
          wthl_sfc,wqw_sfc,&             ! Input
          rho_zt,tke,pint,&              ! Input
-         sens_heat, cflx, &
          host_dse)                      ! Input/Output
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -3919,14 +3911,6 @@ subroutine shoc_energy_fixer(&
   real(rtype), intent(in) :: rho_zt(shcol,nlev)
   !turbulent kinetic energy [m^2/s^2]
   real(rtype), intent(in) :: tke(shcol,nlev)
-  real(rtype), intent(in) :: sens_heat(shcol)
-  real(rtype), intent(in) :: cflx(shcol)
-
-  real(rtype), intent(in) :: qw(shcol,nlev)
-  real(rtype), intent(in) :: shoc_ql(shcol,nlev)
-  real(rtype), intent(in) :: u_wind(shcol,nlev)
-  real(rtype), intent(in) :: v_wind(shcol,nlev)
-  real(rtype), intent(in) :: pdel(shcol,nlev)
 
   ! INPUT VARIABLES
   !host temperature [K]

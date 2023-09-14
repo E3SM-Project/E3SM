@@ -613,7 +613,6 @@ end function shoc_implements_cnst
    real(r8) :: wv_a(pcols), wv_b(pcols), wl_b(pcols), wl_a(pcols)
    real(r8) :: se_dis(pcols), se_a(pcols), se_b(pcols), shoc_s(pcols,pver)
    real(r8) :: shoc_t(pcols,pver)
-   real(r8) :: sens_heat(pcols), cflx(pcols)
    
    ! --------------- !
    ! Pointers        !
@@ -828,9 +827,6 @@ end function shoc_implements_cnst
       wtracer_sfc(i,:) = 0._r8  ! in E3SM tracer fluxes are done elsewhere
    enddo               
    
-   sens_heat(1:ncol) = cam_in%shf(1:ncol)
-   cflx(1:ncol) = cam_in%cflx(1:ncol,1)
-
    !  Do the same for tracers 
    icnt=0
    do ixind=1,pcnst
@@ -855,7 +851,6 @@ end function shoc_implements_cnst
         wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), & ! Input
         wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), & ! Input
         inv_exner(:ncol,:),state1%phis(:ncol), & ! Input
-        sens_heat(:ncol), cflx(:ncol), &
         shoc_s(:ncol,:), tke_zt(:ncol,:), thlm(:ncol,:), rtm(:ncol,:), & ! Input/Ouput
         um(:ncol,:), vm(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
         wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), & ! Input/Output
