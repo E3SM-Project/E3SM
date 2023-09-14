@@ -263,14 +263,8 @@ contains
          nCells = nCellsArray(3)
          !$omp parallel
          !$omp do schedule(runtime)  &
-!         !$omp private(invAreaCell, k33Norm, k, dzTop, dTdzTop, dSdzTop, i, iEdge, cell1, cell2, &
-!         !$omp         iCellSelf, dcEdgeInv, areaEdge, drhoDT, drhoDS, dTdx, dSdx, drhoDx, &
-!         !$omp         slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, sfcTaper)
-         !$omp private(invAreaCell, dzTop, dTdzTop, dSdzTop, &
-         !$omp         k, i, iEdge, cell1, cell2, &
-         !$omp         iCellSelf, dcEdgeInv, drhoDTTop, drhoDTBot, &
-         !$omp         drhoDSTop, drhoDSBot, dTdxTop, dTdxBot, dSdxTop, dSdxBot, &
-         !$omp         drhoDxTop, drhoDxBot, &
+         !$omp private(invAreaCell, k33Norm, k, dzTop, dTdzTop, dSdzTop, i, iEdge, cell1, cell2, &
+         !$omp         iCellSelf, dcEdgeInv, areaEdge, drhoDT, drhoDS, dTdx, dSdx, drhoDx, &
          !$omp         slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, sfcTaper)
          do iCell = 1, nCells
             invAreaCell = 1.0_RKIND/areaCell(iCell)
