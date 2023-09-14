@@ -240,7 +240,11 @@ void scream_finalize (/* args ? */) {
     ad.finalize();
 
     // Clean up the context
-    scream::ScreamContext::singleton().clean_up();
+    // Note: doing the cleanup here via
+    //   scream::ScreamContext::singleton().clean_up();
+    // causes an ICE with C++17 on Summit/Ascent.
+    // Wrapping it in a function seems to work though
+    scream::cleanup_singleton();
 
     // Finalize scream session
     scream::finalize_scream_session();
