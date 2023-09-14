@@ -14,7 +14,7 @@ template <>
 void Functions<Real,DefaultDevice>
 ::p3_main_part2_disp(
   const Int& nj,
-  const Int& nk_pack,
+  const Int& nk,
   const bool& predictNc,
   const bool& do_prescribed_CCN,
   const Scalar& dt,
@@ -91,6 +91,7 @@ void Functions<Real,DefaultDevice>
   const uview_1d<bool>& hydrometeorsPresent)
 {
   using ExeSpace = typename KT::ExeSpace;
+  const Int nk_pack = ekat::npack<Spack>(nk);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
   // p3_cloud_sedimentation loop
   Kokkos::parallel_for(
@@ -120,8 +121,9 @@ void Functions<Real,DefaultDevice>
       ekat::subview(cdist1, i), ekat::subview(cdistr, i), ekat::subview(mu_r, i), ekat::subview(lamr, i), ekat::subview(logn0r, i), 
       ekat::subview(qv2qi_depos_tend, i), ekat::subview(precip_total_tend, i),
       ekat::subview(nevapr, i), ekat::subview(qr_evap_tend, i), ekat::subview(vap_liq_exchange, i), ekat::subview(vap_ice_exchange, i), ekat::subview(liq_ice_exchange, i),
-      ekat::subview(pratot, i), ekat::subview(prctot, i), hydrometeorsPresent(i));
+      ekat::subview(pratot, i), ekat::subview(prctot, i), hydrometeorsPresent(i), nk);
 
+    if (!hydrometeorsPresent(i)) return;
   });
 }
 

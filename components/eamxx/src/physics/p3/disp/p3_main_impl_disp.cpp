@@ -225,7 +225,7 @@ Int Functions<Real,DefaultDevice>
   // main k-loop (for processes):
 
   p3_main_part2_disp(
-      nj, nk_pack, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt, inv_dt,
+      nj, nk, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt, inv_dt,
       lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals, 
       lookup_tables.revap_table_vals, pres, dpres, dz, nc_nuceat_tend, inv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i,

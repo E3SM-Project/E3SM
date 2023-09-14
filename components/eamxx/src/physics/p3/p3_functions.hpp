@@ -1083,12 +1083,12 @@ struct Functions
     const uview_1d<Spack>& pratot,
     const uview_1d<Spack>& prctot,
     bool& is_hydromet_present,
-    const Int& nk=-1);
+    const Int& nk);
 
 #ifdef SCREAM_SMALL_KERNELS
   static void p3_main_part2_disp(
     const Int& nj,
-    const Int& nk_pack,
+    const Int& nk,
     const bool& do_predict_nc,
     const bool& do_prescribed_CCN,
     const Scalar& dt,
