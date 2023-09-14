@@ -4104,8 +4104,11 @@
     </gridmap>
 
     <gridmap atm_grid="TL319" ocn_grid="FRISwISC04to60E3r1">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC04to60E3r1_mono.230912.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC04to60E3r1-nomask_bilin.230912.nc</map>
       <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_FRISwISC04to60E3r1_patch.230912.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/FRISwISC04to60E3r1/map_FRISwISC04to60E3r1_to_TL319_mono.230912.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/FRISwISC04to60E3r1/map_FRISwISC04to60E3r1_to_TL319_mono.230912.nc</map>
     </gridmap>
 
     <gridmap atm_grid="TL319" ocn_grid="ECwISC30to60E2r1">
