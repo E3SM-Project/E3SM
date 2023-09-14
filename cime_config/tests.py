@@ -221,7 +221,7 @@ _TESTS = {
     "e3sm_atm_nbfb" : {
         "tests" : (
             "PGN_P1x1.ne4_oQU240.F2010",
-            "TSC.ne4_oQU240.F2010-CICE",
+            "TSC.ne4_oQU240.F2010",
             "MVK_PS.ne4_oQU240.F2010",
             )
         },
