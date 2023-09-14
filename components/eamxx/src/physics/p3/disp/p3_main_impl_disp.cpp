@@ -15,39 +15,31 @@ namespace p3 {
 template <>
 void Functions<Real,DefaultDevice>
 ::p3_main_init_disp(
-  const Int& nj,
-  const Int& nk_pack,
-  const uview_2d<const Spack>& cld_frac_i,
-  const uview_2d<const Spack>& cld_frac_l,
-  const uview_2d<const Spack>& cld_frac_r,
-  const uview_2d<const Spack>& inv_exner,
-  const uview_2d<const Spack>& th_atm,
-  const uview_2d<const Spack>& dz,
-  const uview_2d<Spack>& diag_equiv_reflectivity,
-  const uview_2d<Spack>& ze_ice,
-  const uview_2d<Spack>& ze_rain,
-  const uview_2d<Spack>& diag_eff_radius_qc,
-  const uview_2d<Spack>& diag_eff_radius_qi,
-  const uview_2d<Spack>& inv_cld_frac_i,
-  const uview_2d<Spack>& inv_cld_frac_l,
-  const uview_2d<Spack>& inv_cld_frac_r,
-  const uview_2d<Spack>& exner,
-  const uview_2d<Spack>& T_atm,
-  const uview_2d<Spack>& qv,
-  const uview_2d<Spack>& inv_dz,
-  const uview_1d<Scalar>& precip_liq_surf,
-  const uview_1d<Scalar>& precip_ice_surf,
-  std::vector<view_2d<Spack>*>& zero_init)
-{
+  const Int& nj, const Int& nk_pack, const uview_2d<const Spack>& cld_frac_i, const uview_2d<const Spack>& cld_frac_l,
+  const uview_2d<const Spack>& cld_frac_r, const uview_2d<const Spack>& inv_exner, const uview_2d<const Spack>& th_atm,
+  const uview_2d<const Spack>& dz, const uview_2d<Spack>& diag_equiv_reflectivity, const uview_2d<Spack>& ze_ice,
+  const uview_2d<Spack>& ze_rain, const uview_2d<Spack>& diag_eff_radius_qc, const uview_2d<Spack>& diag_eff_radius_qi,
+  const uview_2d<Spack>& inv_cld_frac_i, const uview_2d<Spack>& inv_cld_frac_l, const uview_2d<Spack>& inv_cld_frac_r,
+  const uview_2d<Spack>& exner, const uview_2d<Spack>& T_atm, const uview_2d<Spack>& qv, const uview_2d<Spack>& inv_dz,
+  const uview_1d<Scalar>& precip_liq_surf, const uview_1d<Scalar>& precip_ice_surf,
+  const uview_2d<Spack>& mu_r, const uview_2d<Spack>& lamr, const uview_2d<Spack>& logn0r, const uview_2d<Spack>& nu,
+  const uview_2d<Spack>& cdist, const uview_2d<Spack>& cdist1, const uview_2d<Spack>& cdistr,
+  const uview_2d<Spack>& qc_incld, const uview_2d<Spack>& qr_incld, const uview_2d<Spack>& qi_incld,
+  const uview_2d<Spack>& qm_incld, const uview_2d<Spack>& nc_incld, const uview_2d<Spack>& nr_incld, const uview_2d<Spack>& ni_incld,
+  const uview_2d<Spack>& bm_incld, const uview_2d<Spack>& inv_rho, const uview_2d<Spack>& prec, const  uview_2d<Spack>& rho, const uview_2d<Spack>& rhofacr,
+  const uview_2d<Spack>& rhofaci, const uview_2d<Spack>& acn, const uview_2d<Spack>& qv_sat_l, const uview_2d<Spack>& qv_sat_i, const uview_2d<Spack>& sup,
+  const uview_2d<Spack>& qv_supersat_i, const uview_2d<Spack>& qtend_ignore, const uview_2d<Spack>& ntend_ignore, const uview_2d<Spack>& mu_c,
+  const uview_2d<Spack>& lamc, const uview_2d<Spack>& rho_qi, const uview_2d<Spack>& qv2qi_depos_tend, const uview_2d<Spack>& precip_total_tend,
+  const uview_2d<Spack>& nevapr, const uview_2d<Spack>& precip_liq_flux, const uview_2d<Spack>& precip_ice_flux)
+{       
   using ExeSpace = typename KT::ExeSpace;
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
   Kokkos::parallel_for("p3_main_init",
          policy, KOKKOS_LAMBDA(const MemberType& team) {
-
-    const Int i = team.league_rank();
-
-    precip_liq_surf(i) = 0;
-    precip_ice_surf(i) = 0;
+        
+    const Int i = team.league_rank(); 
+    precip_liq_surf(i) = 0;     
+    precip_ice_surf(i) = 0;     
 
     Kokkos::parallel_for(
       Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
@@ -63,22 +55,43 @@ void Functions<Real,DefaultDevice>
         T_atm(i,k)                 = th_atm(i,k) * exner(i,k);
         qv(i,k)                = max(qv(i,k), 0);
         inv_dz(i,k)            = 1 / dz(i,k);
+        mu_r(i,k)               = 0.;
+        lamr(i,k)               = 0.;
+        logn0r(i,k)             = 0.;
+        nu(i,k)                 = 0.;
+        cdist(i,k)              = 0.;
+        cdist1(i,k)             = 0.;
+        cdistr(i,k)             = 0.;
+        qc_incld(i,k)           = 0.;
+        qr_incld(i,k)           = 0.;
+        qi_incld(i,k)           = 0.;
+        qm_incld(i,k)           = 0.;
+        nc_incld(i,k)           = 0.;
+        nr_incld(i,k)           = 0.;
+        ni_incld(i,k)           = 0.;
+        bm_incld(i,k)           = 0.;
+        inv_rho(i,k)            = 0.;
+        prec(i,k)               = 0.;
+        rho(i,k)                = 0.;
+        rhofacr(i,k)            = 0.;
+        rhofaci(i,k)            = 0.;
+        acn(i,k)                = 0.;
+        qv_sat_l(i,k)           = 0.;
+        qv_sat_i(i,k)           = 0.;
+        sup(i,k)                = 0.;
+        qv_supersat_i(i,k)      = 0.;
+        qtend_ignore(i,k)       = 0.;
+        ntend_ignore(i,k)       = 0.;
+        mu_c(i,k)               = 0.;
+        lamc(i,k)               = 0.;
+        rho_qi(i,k)             = 0.;
+        qv2qi_depos_tend(i,k)   = 0.;
+        precip_total_tend(i,k)  = 0.;
+        nevapr(i,k)             = 0.;
+        precip_liq_flux(i,k)    = 0.;
+        precip_ice_flux(i,k)    = 0.;
    });
  });
-
- for (size_t i=0; i < zero_init.size(); ++i) {
-    auto temp_view = zero_init[i];
-    Kokkos::parallel_for("p3_main_init_zero",
-         policy, KOKKOS_LAMBDA(const MemberType& team) {
-
-      const Int j = team.league_rank();
-      Kokkos::parallel_for(
-        Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
-         (*temp_view)(j,k) = 0.;
-     });
-
-   });
- }
 }
 
 template <>
@@ -136,7 +149,7 @@ Int Functions<Real,DefaultDevice>
       inv_dz("inv_dz", nj, nk_pack), inv_rho("inv_rho", nj, nk_pack), ze_ice("ze_ice", nj, nk_pack), ze_rain("ze_rain", nj, nk_pack),
       prec("prec", nj, nk_pack), rho("rho", nj, nk_pack), rhofacr("rhofacr", nj, nk_pack), rhofaci("rhofaci", nj, nk_pack),
       acn("acn", nj, nk_pack), qv_sat_l("qv_sat", nj, nk_pack), qv_sat_i("qv_sat_i", nj, nk_pack), sup("sup", nj, nk_pack),
-      qv_supersat_i("qv_supersat", nj, nk_pack), tmparr1("tmparr1", nj, nk_pack), exner("exner", nj, nk_pack),
+      qv_supersat_i("qv_supersat", nj, nk_pack), tmparr2("tmparr2", nj, nk_pack), exner("exner", nj, nk_pack),
       diag_equiv_reflectivity("diag_equiv_ref", nj, nk_pack), diag_vm_qi("diag_vm_qi", nj, nk_pack), diag_diam_qi("diag_diam_qi", nj, nk_pack),
       pratot("pratot", nj, nk_pack), prctot("prctot", nj, nk_pack),
 
@@ -195,22 +208,17 @@ Int Functions<Real,DefaultDevice>
   // we do not want to measure init stuff
   auto start = std::chrono::steady_clock::now();
 
-  std::vector<view_2d<Spack>*> zero_init = {
-      &mu_r, &lamr, &logn0r, &nu, &cdist, &cdist1, &cdistr,
-      &qc_incld, &qr_incld, &qi_incld, &qm_incld,
-      &nc_incld, &nr_incld, &ni_incld, &bm_incld,
-      &inv_rho, &prec, &rho, &rhofacr, &rhofaci, &acn, &qv_sat_l, &qv_sat_i, &sup, &qv_supersat_i,
-      &tmparr1, &qtend_ignore, &ntend_ignore,
-      &mu_c, &lamc, &rho_qi, &qv2qi_depos_tend, &precip_total_tend, &nevapr, &precip_liq_flux, &precip_ice_flux
-    };
-
   // initialize
   p3_main_init_disp(
-      nj, nk_pack,
-      cld_frac_i, cld_frac_l, cld_frac_r, inv_exner, th, dz, diag_equiv_reflectivity,
+      nj, nk_pack, cld_frac_i, cld_frac_l, cld_frac_r, inv_exner, th, dz, diag_equiv_reflectivity,
       ze_ice, ze_rain, diag_eff_radius_qc, diag_eff_radius_qi, inv_cld_frac_i, inv_cld_frac_l,
       inv_cld_frac_r, exner, T_atm, qv, inv_dz,
-      diagnostic_outputs.precip_liq_surf, diagnostic_outputs.precip_ice_surf, zero_init);
+      diagnostic_outputs.precip_liq_surf, diagnostic_outputs.precip_ice_surf,
+      mu_r, lamr, logn0r, nu, cdist, cdist1, cdistr,
+      qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld,
+      inv_rho, prec, rho, rhofacr, rhofaci, acn, qv_sat_l, qv_sat_i, sup, qv_supersat_i,
+      qtend_ignore, ntend_ignore, mu_c, lamc, rho_qi, qv2qi_depos_tend, precip_total_tend,
+      nevapr, precip_liq_flux, precip_ice_flux);
 
   p3_main_part1_disp(
       nj, nk, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt,
@@ -297,9 +305,9 @@ Int Functions<Real,DefaultDevice>
 #ifndef NDEBUG
   Kokkos::parallel_for(
       Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>>({0, 0}, {nj, nk_pack}), KOKKOS_LAMBDA (int i, int k) {
-      tmparr1(i,k) = th(i,k) * exner(i,k);
+      tmparr2(i,k) = th(i,k) * exner(i,k);
   });
-  check_values_disp(qv, tmparr1, ktop, kbot, infrastructure.it, debug_ABORT, 900, col_location, nj, nk);
+  check_values_disp(qv, tmparr2, ktop, kbot, infrastructure.it, debug_ABORT, 900, col_location, nj, nk);
 #endif
   Kokkos::fence();
 
