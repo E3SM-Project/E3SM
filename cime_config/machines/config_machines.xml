@@ -1038,7 +1038,7 @@
     <OS>CNL</OS>
     <COMPILERS>crayclang-scream</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <PROJECT>CLI115</PROJECT>
+    <PROJECT>cli115</PROJECT>
     <SAVE_TIMING_DIR>/lustre/orion/proj-shared/cli115</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/lustre/orion/cli115/proj-shared/$ENV{USER}/e3sm_scratch</CIME_OUTPUT_ROOT>
@@ -1077,11 +1077,13 @@
         <command name="reset"></command>
         <command name="load">PrgEnv-cray</command>
         <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/5.4.0</command>
+        <command name="load">rocm/5.1.0</command>
         <command name="load">libunwind/1.6.2</command>
       </modules>
       <modules>
-        <command name="load">cce/15.0.0</command>
+        <command name="load">cce/15.0.1</command>
+        <command name="switch">craype craype/2.7.20</command>
+        <command name="switch">cray-mpich cray-mpich/8.1.26</command>
         <command name="load">cray-python/3.9.13.1</command>
         <command name="load">subversion/1.14.1</command>
         <command name="load">git/2.36.1</command>
@@ -1089,6 +1091,7 @@
         <command name="load">cray-hdf5-parallel/1.12.2.1</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
 	<command name="load">cray-parallel-netcdf/1.12.3.1</command>
+        <command name="unload">darshan-runtime</command>
       </modules>
     </module_system>
     
@@ -1099,9 +1102,11 @@
     <environment_variables>
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
-      <env name="MPIR_CVAR_GPU_EAGER_DEVICE_MEM">0</env>
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
-      <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
+      <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_OFI_CXI_COUNTER_REPORT">2</env>
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
+
     </environment_variables>
 
     <environment_variables SMP_PRESENT="TRUE">
