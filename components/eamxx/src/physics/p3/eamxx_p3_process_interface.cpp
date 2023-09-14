@@ -108,6 +108,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Computed>("micro_liq_ice_exchange", scalar3d_layout_mid, Q, grid_name, ps);
   add_field<Computed>("micro_vap_liq_exchange", scalar3d_layout_mid, Q, grid_name, ps);
   add_field<Computed>("micro_vap_ice_exchange", scalar3d_layout_mid, Q, grid_name, ps);
+  add_field<Computed>("rainfrac",               scalar3d_layout_mid, nondim, grid_name, ps);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
@@ -172,8 +173,6 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   s_mem += m_buffer.cld_frac_l.size();
   m_buffer.cld_frac_i = decltype(m_buffer.cld_frac_i)(s_mem, m_num_cols, nk_pack);
   s_mem += m_buffer.cld_frac_i.size();
-  m_buffer.cld_frac_r = decltype(m_buffer.cld_frac_r)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.cld_frac_r.size();
   m_buffer.dz = decltype(m_buffer.dz)(s_mem, m_num_cols, nk_pack);
   s_mem += m_buffer.dz.size();
   m_buffer.qv2qi_depos_tend = decltype(m_buffer.qv2qi_depos_tend)(s_mem, m_num_cols, nk_pack);
@@ -250,13 +249,13 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   auto qv_prev                = get_field_out("qv_prev_micro_step").get_view<Pack**>();
   const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
   const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
+  auto cld_frac_r             = get_field_out("rainfrac").get_view<Pack**>();
 
   // Alias local variables from temporary buffer
   auto inv_exner  = m_buffer.inv_exner;
   auto th_atm     = m_buffer.th_atm;
   auto cld_frac_l = m_buffer.cld_frac_l;
   auto cld_frac_i = m_buffer.cld_frac_i;
-  auto cld_frac_r = m_buffer.cld_frac_r;
   auto dz         = m_buffer.dz;
 
   // -- Set values for the pre-amble structure

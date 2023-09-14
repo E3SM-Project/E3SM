@@ -32,6 +32,7 @@ Field Names:
   - micro_vap_liq_exchange
   - precip_ice_surf_mass
   - precip_liq_surf_mass
+  - rainfrac
   # SHOC + P3
   - qc
   - qv
