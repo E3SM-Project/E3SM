@@ -47,9 +47,6 @@ module scream_scorpio_interface
                           pio_noerr, pio_global, &
                           PIO_int, PIO_real, PIO_double, PIO_float=>PIO_real
   use pio_kinds,    only: PIO_OFFSET_KIND
-  use pio_nf,       only: PIO_enddef, PIO_inq_dimid, PIO_inq_dimlen, PIO_inq_varid, &
-                          PIO_inquire, PIO_inquire_variable
-  use pionfatt_mod, only: PIO_put_att   => put_att
 
   use mpi, only: mpi_abort, mpi_comm_size, mpi_comm_rank
 
@@ -212,6 +209,7 @@ contains
   ! of a new PIO file.  Once this routine is called it is not possible
   ! to add new dimensions or variables to the file.
   subroutine eam_pio_enddef(filename)
+    use pio, only: PIO_enddef
 
     character(len=*), intent(in) :: filename
 
@@ -242,7 +240,7 @@ contains
   ! of a new PIO file.  Once this routine is called it is not possible
   ! to add new dimensions or variables to the file.
   subroutine eam_pio_redef(filename)
-    use pio_nf, only: pio_redef
+    use pio, only: pio_redef
 
     character(len=*), intent(in) :: filename
 
@@ -281,7 +279,7 @@ contains
   !       that the specs match the ones in the file during the C++ wrapper functions
   subroutine register_dimension(filename,shortname,longname,length,is_partitioned)
     use pio_types, only: pio_unlimited
-    use pio_nf,    only: PIO_def_dim
+    use pio,    only: PIO_def_dim
 
     character(len=*), intent(in)        :: filename   ! Name of file to register the dimension on.
     character(len=*), intent(in)        :: shortname,longname ! Short- and long- names for this dimension, short: brief identifier and name for netCDF output, long: longer descriptor sentence to be included as meta-data in file.
@@ -367,7 +365,7 @@ contains
   subroutine register_variable(filename,shortname,longname,units, &
                                numdims,var_dimensions,            &
                                dtype,nc_dtype,pio_decomp_tag)
-    use pio_nf, only: PIO_def_var
+    use pio, only: PIO_def_var, PIO_inq_dimid, PIO_inq_dimlen, PIO_inq_varid, PIO_put_att
 
     character(len=256), intent(in)  :: filename                 ! Name of the file to register this variable with
     character(len=256), intent(in)  :: shortname,longname       ! short and long names for the variable.  Short: variable name in file, Long: more descriptive name
@@ -458,7 +456,7 @@ contains
   end subroutine register_variable
 !=====================================================================!
   subroutine set_variable_metadata_float(filename, varname, metaname, metaval)
-    use pionfatt_mod, only: PIO_put_att => put_att
+    use pio, only: PIO_put_att
 
     character(len=256), intent(in) :: filename
     character(len=256), intent(in) :: varname
@@ -507,7 +505,7 @@ contains
   end subroutine set_variable_metadata_float
 !=====================================================================!
   subroutine set_variable_metadata_double(filename, varname, metaname, metaval)
-    use pionfatt_mod, only: PIO_put_att => put_att
+    use pio, only: PIO_put_att
 
     character(len=256), intent(in) :: filename
     character(len=256), intent(in) :: varname
@@ -556,7 +554,7 @@ contains
   end subroutine set_variable_metadata_double
 !=====================================================================!
   function get_variable_metadata_float(filename, varname, metaname) result(metaval)
-    use pionfatt_mod, only: PIO_get_att => get_att
+    use pio, only: PIO_get_att
 
     character(len=256), intent(in) :: filename
     character(len=256), intent(in) :: varname
@@ -606,7 +604,7 @@ contains
   end function get_variable_metadata_float
 !=====================================================================!
   function get_variable_metadata_double(filename, varname, metaname) result(metaval)
-    use pionfatt_mod, only: PIO_get_att => get_att
+    use pio, only: PIO_get_att
 
     character(len=256), intent(in) :: filename
     character(len=256), intent(in) :: varname
@@ -655,7 +653,7 @@ contains
   end function get_variable_metadata_double
 !=====================================================================!
   subroutine set_variable_metadata_char(filename, varname, metaname, metaval)
-    use pionfatt_mod, only: PIO_put_att => put_att
+    use pio, only: PIO_put_att
 
     character(len=256), intent(in) :: filename
     character(len=256), intent(in) :: varname
@@ -710,7 +708,7 @@ contains
   ! scream decides to allow for other "unlimited" dimensions to be used our
   ! input/output than this routine will need to be adjusted.
   subroutine eam_update_time(filename,time)
-    use pionfput_mod, only: PIO_put_var   => put_var
+    use pio, only: PIO_put_var
 
     character(len=*), intent(in) :: filename       ! PIO filename
     real(c_double), intent(in)   :: time
@@ -729,6 +727,7 @@ contains
 !=====================================================================!
   ! Assign institutions to header metadata for a specific pio output file.
   subroutine eam_pio_createHeader(File)
+    use pio, only: PIO_put_att
 
     type(file_desc_t), intent(in) :: File             ! Pio file Handle
     integer                       :: retval
@@ -760,7 +759,7 @@ contains
                             shr_pio_getiotype, shr_pio_getioformat
 #else
     use pio_types,  only: pio_rearr_subset, PIO_iotype_netcdf, PIO_64BIT_DATA
-    use piolib_mod, only: pio_init
+    use pio, only: pio_init
 
     integer :: ierr, stride, atm_rank, atm_size, num_aggregator
 #endif
@@ -817,7 +816,7 @@ contains
 !=====================================================================!
   ! Create a pio netCDF file with the appropriate name.
   subroutine eam_pio_createfile(File,fname)
-    use piolib_mod, only: pio_createfile
+    use pio, only: pio_createfile
     use pio_types,  only: pio_clobber
 
     type(file_desc_t), intent(inout) :: File             ! Pio file Handle
@@ -834,7 +833,7 @@ contains
 !=====================================================================!
   ! Open an already existing netCDF file.
   subroutine eam_pio_openfile(pio_file,fname)
-    use piolib_mod, only: pio_openfile
+    use pio, only: pio_openfile
     use pio_types,  only: pio_write, pio_nowrite
 
     type(pio_atm_file_t), pointer, intent(in) :: pio_file     ! Pointer to pio file struct associated with this filename
@@ -860,7 +859,7 @@ contains
   ! Close a netCDF file.  To be done as a last step after all input or output
   ! for that file has been finished.
   subroutine eam_pio_closefile(fname)
-    use piolib_mod, only: PIO_syncfile, PIO_closefile
+    use pio, only: PIO_syncfile, PIO_closefile
 
     character(len=*),  intent(in)    :: fname            ! Pio file name
     !--
@@ -984,7 +983,7 @@ contains
   ! trying to keep decomps persistent so they can be reused.  Thus, calling
   ! this routine is optional.
   subroutine free_decomp()
-    use piolib_mod, only: PIO_freedecomp
+    use pio, only: PIO_freedecomp
     type(iodesc_list_t),   pointer :: iodesc_ptr, next
 
     ! Free all decompositions from PIO
@@ -1019,7 +1018,7 @@ contains
   ! Finalize a PIO session within scream.  Close all open files and deallocate
   ! the pio_subsystem session.
   subroutine eam_pio_finalize()
-    use piolib_mod, only: PIO_finalize, pio_freedecomp
+    use pio, only: PIO_finalize, pio_freedecomp
     ! May not be needed, possibly handled by PIO directly.
 
 #if !defined(SCREAM_CIME_BUILD)
@@ -1083,7 +1082,7 @@ contains
  ! Determine the unique pio_decomposition for this output grid, if it hasn't
  ! been defined create a new one.
   subroutine get_decomp(tag,dtype,dimension_len,compdof,iodesc_list)
-    use piolib_mod, only: pio_initdecomp
+    use pio, only: pio_initdecomp
     ! TODO: CAM code creates the decomp tag for the user.  Theoretically it is
     ! unique because it is based on dimensions and datatype.  But the tag ends
     ! up not being very descriptive.  The todo item is to revisit how tags are
@@ -1286,6 +1285,7 @@ contains
 !=====================================================================!
   ! Create a new pio file pointer based on filename.
   subroutine get_pio_atm_file(filename,pio_file,purpose)
+    use pio, only: PIO_inq_dimid, PIO_inq_dimlen
 
     character(len=*),intent(in)   :: filename     ! Name of file to be found
     type(pio_atm_file_t), pointer :: pio_file     ! Pointer to pio_atm_output structure associated with this filename
@@ -1366,8 +1366,7 @@ contains
   ! If the input arg time_index is not provided, then it is assumed the user wants
   ! the last time entry. If time_index is present, it MUST be valid
   function read_time_at_index(filename,time_index) result(val)
-    use pio,          only: PIO_get_var
-    use pio_nf,       only: PIO_inq_varid
+    use pio,          only: PIO_get_var, PIO_inq_varid, PIO_inq_dimid, PIO_inq_dimlen
 
     character(len=*), intent(in)   :: filename
     integer, intent(in), optional  :: time_index
@@ -1423,10 +1422,8 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_float(filename, varname, buf, buf_size)
-    use pionfput_mod, only: PIO_put_var   => put_var
-    use piolib_mod, only: PIO_setframe
+    use pio, only: PIO_put_var, PIO_setframe, PIO_write_darray
     use pio_types, only: PIO_max_var_dims
-    use piodarray,  only: PIO_write_darray
 
     ! Dummy arguments
     character(len=*),    intent(in) :: filename       ! PIO filename
@@ -1472,10 +1469,8 @@ contains
     call errorHandle( 'eam_grid_write_darray_float: Error writing variable '//trim(varname),ierr)
   end subroutine grid_write_darray_float
   subroutine grid_write_darray_double(filename, varname, buf, buf_size)
-    use pionfput_mod, only: PIO_put_var   => put_var
+    use pio, only: PIO_put_var, PIO_setframe, PIO_write_darray
     use pio_types, only: PIO_max_var_dims
-    use piolib_mod, only: PIO_setframe
-    use piodarray,  only: PIO_write_darray
 
     ! Dummy arguments
     character(len=*),    intent(in) :: filename       ! PIO filename
@@ -1521,10 +1516,8 @@ contains
     call errorHandle( 'eam_grid_write_darray_double: Error writing variable '//trim(varname),ierr)
   end subroutine grid_write_darray_double
   subroutine grid_write_darray_int(filename, varname, buf, buf_size)
-    use pionfput_mod, only: PIO_put_var   => put_var
-    use piolib_mod, only: PIO_setframe
+    use pio, only: PIO_put_var, PIO_setframe, PIO_write_darray
     use pio_types, only: PIO_max_var_dims
-    use piodarray,  only: PIO_write_darray
 
     ! Dummy arguments
     character(len=*),    intent(in) :: filename       ! PIO filename
@@ -1587,8 +1580,7 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_read_darray_double(filename, varname, buf, buf_size, time_index)
-    use piolib_mod, only: PIO_setframe
-    use piodarray,  only: PIO_read_darray
+    use pio, only: PIO_setframe, PIO_read_darray
 
     ! Dummy arguments
     character(len=*),     intent(in) :: filename       ! PIO filename
@@ -1623,8 +1615,7 @@ contains
     call errorHandle( 'eam_grid_read_darray_double: Error reading variable '//trim(varname),ierr)
   end subroutine grid_read_darray_double
   subroutine grid_read_darray_float(filename, varname, buf, buf_size, time_index)
-    use piolib_mod, only: PIO_setframe
-    use piodarray,  only: PIO_read_darray
+    use pio, only: PIO_setframe, PIO_read_darray
 
     ! Dummy arguments
     character(len=*),     intent(in) :: filename       ! PIO filename
@@ -1659,8 +1650,7 @@ contains
     call errorHandle( 'eam_grid_read_darray_float: Error reading variable '//trim(varname),ierr)
   end subroutine grid_read_darray_float
   subroutine grid_read_darray_int(filename, varname, buf, buf_size, time_index)
-    use piolib_mod, only: PIO_setframe
-    use piodarray,  only: PIO_read_darray
+    use pio, only: PIO_setframe, PIO_read_darray
 
     ! Dummy arguments
     character(len=*),     intent(in) :: filename       ! PIO filename

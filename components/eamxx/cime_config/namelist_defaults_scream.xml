@@ -142,7 +142,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       NOTE: *CANNOT* be changed.
     -->
     <!-- <atm_procs_list>(sc_import,homme,((shoc,cldFraction,spa,p3),rrtmgp,sc_export))</atm_procs_list> -->
-    <atm_procs_list locked="true">(sc_import,homme,physics,sc_export)</atm_procs_list>
+    <atm_procs_list type="array(strring)">sc_import,homme,physics,sc_export</atm_procs_list>
 
     <!-- Basic options for each atm process -->
     <atm_proc_base>
@@ -161,7 +161,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- Basic options for each atm process group -->
     <atm_proc_group inherit="atm_proc_base">
-      <atm_procs_list>ERROR_NO_ATM_PROCS</atm_procs_list>
+      <atm_procs_list type="array(string)" doc="List of atm processes in this atm process group"/>
       <Type>Group</Type>
       <schedule_type valid_values="Sequential">Sequential</schedule_type>
     </atm_proc_group>
@@ -214,6 +214,12 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
 
+    <!-- ML correction -->
+    <mlcorrection inherit="atm_proc_base">
+      <ML_model_path type="string">NONE</ML_model_path>
+      <ML_output_fields type="array(string)">NONE</ML_output_fields>
+    </mlcorrection>
+
     <!-- For internal testing only -->
     <testOnly inherit="atm_proc_base"/>
 
@@ -244,7 +250,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <!-- Radiatively active gases; surface values set to F2010 settings taken from EAM  -->
       <!-- Note that h2o concentrations are just taken from qv, o3 is prescribed for now, -->
       <!-- o2 is hard-coded as a constant, CFCs are ignored                               -->
-      <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
+      <active_gases type="array(string)">h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
       <ch4vmr      > 1807.851e-9  </ch4vmr>
       <co2vmr      > 388.717e-6   </co2vmr>
       <n2ovmr      > 323.141e-9   </n2ovmr>
@@ -279,11 +285,11 @@ be lost if SCREAM_HACK_XML is not enabled.
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
-      <atm_procs_list>(shoc,cldFraction,spa,p3)</atm_procs_list>
-      <atm_procs_list COMPSET=".*SCREAM.*noAero">(shoc,cldFraction,p3)</atm_procs_list>
+      <atm_procs_list>shoc,cldFraction,spa,p3</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM.*noAero">shoc,cldFraction,p3</atm_procs_list>
       <number_of_subcycles hgrid="ne4np4">24</number_of_subcycles>
-      <number_of_subcycles hgrid="ne30np4">6</number_of_subcycles>
-      <number_of_subcycles hgrid="ne120np4">3</number_of_subcycles>
+      <number_of_subcycles hgrid="ne30np4">12</number_of_subcycles>
+      <number_of_subcycles hgrid="ne120np4">6</number_of_subcycles>
       <number_of_subcycles hgrid="ne256np4">3</number_of_subcycles>
       <number_of_subcycles hgrid="ne512np4">1</number_of_subcycles>
       <number_of_subcycles hgrid="ne1024np4">1</number_of_subcycles>
@@ -298,7 +304,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     </cosp>
 
     <physics inherit="atm_proc_group">
-      <atm_procs_list>(mac_aero_mic,rrtmgp)</atm_procs_list>
+      <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>
     </physics>
   </atmosphere_processes_defaults>
 
@@ -408,6 +414,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <energy_column_conservation_error_tolerance>1e-14</energy_column_conservation_error_tolerance>
     <column_conservation_checks_fail_handling_type>Warning</column_conservation_checks_fail_handling_type>
     <check_all_computed_fields_for_nans type="logical">true</check_all_computed_fields_for_nans >
+    <property_check_data_fields type="array(string)" doc="list of additional data fields to output in property checks (only for physics grid)">phis,landfrac</property_check_data_fields>
   </driver_options>
 
   <!-- E3SM Simulation Settings -->

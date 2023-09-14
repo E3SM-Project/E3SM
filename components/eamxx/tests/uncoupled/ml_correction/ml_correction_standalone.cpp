@@ -42,8 +42,8 @@ TEST_CASE("ml_correction-stand-alone", "") {
 
   ad.initialize(atm_comm, ad_params, t0);
 
-  const auto &grid      = ad.get_grids_manager()->get_grid("Physics");
-  const auto &field_mgr = *ad.get_field_mgr(grid->name());
+  const auto& grid = ad.get_grids_manager()->get_grid("Physics");
+  const auto& field_mgr = *ad.get_field_mgr(grid->name());
 
   int num_cols = grid->get_num_local_dofs();
   int num_levs = grid->get_num_vertical_levels();
@@ -59,16 +59,13 @@ TEST_CASE("ml_correction-stand-alone", "") {
     }
   }
   qv_field.sync_to_dev();
-  Real reference = qv(1, 10);
-  reference += 0.1;
-  Real reference2 = qv(1, 30);
-  reference2 += 0.1;
+  Real reference = 1e-4;
   int fpe_mask = ekat::get_enabled_fpes();
   ekat::disable_all_fpes();  // required for importing numpy
-  pybind11::scoped_interpreter guard{};
-  pybind11::module sys = pybind11::module::import("sys");
+  py::initialize_interpreter();
+  py::module sys = pybind11::module::import("sys");
   sys.attr("path").attr("insert")(1, CUSTOM_SYS_PATH);
-  auto py_correction = pybind11::module::import("test_correction");
+  auto py_correction = py::module::import("test_correction");
   py::object ob1     = py_correction.attr("modify_view")(
       py::array_t<Real, py::array::c_style | py::array::forcecast>(
           num_cols * num_levs, qv.data(), py::str{}),
@@ -76,7 +73,7 @@ TEST_CASE("ml_correction-stand-alone", "") {
   py::gil_scoped_release no_gil;
   ekat::enable_fpes(fpe_mask);
   REQUIRE(qv(1, 10) == reference);   // This is the one that is modified
-  REQUIRE(qv(1, 30) != reference2);  // This one should be unchanged
+  REQUIRE(qv(0, 10) != reference);  // This one should be unchanged
   ad.finalize();
 }
 }  // namespace scream

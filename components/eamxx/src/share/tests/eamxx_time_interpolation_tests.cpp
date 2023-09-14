@@ -419,7 +419,7 @@ std::vector<std::string> create_test_data_files(
   // Jumble the order of files to also test the sorting algorithm
   auto list_of_files_tmp = om.get_list_of_files();
   std::vector<std::string> list_of_files;
-  for (int ii = 1; ii<list_of_files_tmp.size(); ii++) {
+  for (size_t ii = 1; ii<list_of_files_tmp.size(); ii++) {
     list_of_files.push_back(list_of_files_tmp[ii]);
   }
   list_of_files.push_back(list_of_files_tmp[0]);

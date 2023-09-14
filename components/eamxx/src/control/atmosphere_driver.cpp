@@ -232,6 +232,14 @@ void AtmosphereDriver::create_grids()
 
   m_atm_logger->debug("  [EAMxx] Grids created.");
 
+  // If TMS process is enabled, SHOC needs to know to request tms' surface drag coefficient
+  // as a required field during the set_grid() call below, but SHOC does not have knowledge
+  // of other processes. The driver needs propgate this information to SHOC.
+  if(m_atm_process_group->has_process("tms") &&
+     m_atm_process_group->has_process("shoc")) {
+    setup_shoc_tms_links();
+  }
+
   // Set the grids in the processes. Do this by passing the grids manager.
   // Each process will grab what they need
   m_atm_process_group->set_grids(m_grids_manager);
@@ -412,6 +420,37 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   // Pass energy checker to the process group to be added
   // to postcondition checks of appropriate processes.
   m_atm_process_group->setup_column_conservation_checks(conservation_check, fail_handling_type);
+}
+
+void AtmosphereDriver::setup_shoc_tms_links ()
+{
+  EKAT_REQUIRE_MSG(m_atm_process_group->has_process("tms"),
+                   "Error! Attempting to setup link between "
+                   "SHOC and TMS, but TMS is not defined.\n");
+  EKAT_REQUIRE_MSG(m_atm_process_group->has_process("shoc"),
+                   "Error! Attempting to setup link between "
+                   "SHOC and TMS, but SHOC is not defined.\n");
+
+  auto shoc_process = m_atm_process_group->get_process_nonconst("shoc");
+  shoc_process->get_params().set<bool>("apply_tms", true);
+}
+
+void AtmosphereDriver::add_additional_column_data_to_property_checks () {
+  // Get list of additional data fields from driver_options parameters.
+  // If no fields given, return.
+  using vos_t = std::vector<std::string>;
+  auto additional_data_fields = m_atm_params.sublist("driver_options").get<vos_t>("property_check_data_fields",
+                                                                                  {"NONE"});
+  if (additional_data_fields == vos_t{"NONE"}) return;
+
+  // Add requested fields to property checks
+  auto phys_field_mgr = m_field_mgrs[m_grids_manager->get_grid("Physics")->name()];
+  for (auto fname : additional_data_fields) {
+    EKAT_REQUIRE_MSG(phys_field_mgr->has_field(fname), "Error! The field "+fname+" is requested for property check output "
+                                                       "but does not exist in the physics field manager.\n");
+    
+    m_atm_process_group->add_additional_data_fields_to_property_checks(phys_field_mgr->get_field(fname));
+  }
 }
 
 void AtmosphereDriver::create_fields()
@@ -919,10 +958,11 @@ void AtmosphereDriver::set_initial_conditions ()
     const auto& fname = fid.name();
     const auto& grid_name = fid.get_grid_name();
 
-    // First, check if the input file contains constant values for some of the fields
     if (ic_pl.isParameter(fname)) {
-      // The user provided a constant value for this field. Simply use that.
+      // This is the case that the user provided an initialization
+      // for this field in the parameter file.
       if (ic_pl.isType<double>(fname) or ic_pl.isType<std::vector<double>>(fname)) {
+        // Initial condition is a constant
         initialize_constant_field(fid, ic_pl);
         fields_inited[grid_name].push_back(fname);
 
@@ -930,22 +970,20 @@ void AtmosphereDriver::set_initial_conditions ()
         auto f_nonconst = m_field_mgrs.at(grid_name)->get_field(fid.name());
         f_nonconst.get_header().get_tracking().update_time_stamp(m_current_ts);
       } else if (ic_pl.isType<std::string>(fname)) {
+        // Initial condition is a string
         ic_fields_to_copy.push_back(fid);
         fields_inited[grid_name].push_back(fname);
       } else {
-        EKAT_REQUIRE_MSG (false, "ERROR: invalid assignment for variable " + fname + ", only scalar double or string, or vector double arguments are allowed");
+        EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
+                        "double or string, or vector double arguments are allowed");
       }
-    } else if (not (fvphyshack and grid_name == "Physics PG2")) {
-      auto& this_grid_ic_fnames = ic_fields_names[grid_name];
+    } else if (fname == "phis" or fname == "sgh30") {
+      // Both phis and sgh30 need to be loaded from the topography file
       auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
       auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
 
-      auto c = f.get_header().get_children();
-
       if (fname == "phis") {
-        // Topography (phis) is a special case that should
-        // be loaded from the topography file, where the
-        // eamxx field "phis" corresponds to the name
+        // The eamxx field "phis" corresponds to the name
         // "PHIS_d" on the GLL and Point grids and "PHIS"
         // on the PG2 grid in the topography file.
         if (grid_name == "Physics PG2") {
@@ -956,8 +994,23 @@ void AtmosphereDriver::set_initial_conditions ()
         } else {
           EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
         }
-        this_grid_topo_eamxx_fnames.push_back("phis");
-      } else if (c.size()==0) {
+        this_grid_topo_eamxx_fnames.push_back(fname);
+      } else if (fname == "sgh30") {
+        // The eamxx field "sgh30" is called "SGH30" in the
+        // topography file and is only available on the PG2 grid.
+        EKAT_ASSERT_MSG(grid_name == "Physics PG2",
+                        "Error! Requesting sgh30 field on " + grid_name +
+                        " topo file only has sgh30 for Physics PG2.\n");
+        topography_file_fields_names[grid_name].push_back("SGH30");
+        topography_eamxx_fields_names[grid_name].push_back(fname);
+      }
+    } else if (not (fvphyshack and grid_name == "Physics PG2")) {
+      // The IC file is written for the GLL grid, so we only load
+      // fields from there. Any other input fields on the PG2 grid
+      // will be properly computed in the dynamics interface.
+      auto& this_grid_ic_fnames = ic_fields_names[grid_name];
+      auto c = f.get_header().get_children();
+      if (c.size()==0) {
         // If this field is the parent of other subfields, we only read from file the subfields.
         if (not ekat::contains(this_grid_ic_fnames,fname)) {
           this_grid_ic_fnames.push_back(fname);
@@ -1306,6 +1359,9 @@ void AtmosphereDriver::initialize_atm_procs ()
     m_atm_process_group->add_postcondition_nan_checks();
   }
 
+  // Add additional column data fields to pre/postcondition checks (if they exist)
+  add_additional_column_data_to_property_checks();
+
   if (fvphyshack) {
     // [CGLL ICs in pg2] See related notes in atmosphere_dynamics.cpp.
     const auto gn = "Physics GLL";
@@ -1358,7 +1414,7 @@ void AtmosphereDriver::run (const int dt) {
   // Print current timestamp information
   m_atm_logger->log(ekat::logger::LogLevel::info,
     "Atmosphere step = " + std::to_string(m_current_ts.get_num_steps()) + "\n" +
-    "  model time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
+    "  model start-of-step time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
 
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
@@ -1368,6 +1424,7 @@ void AtmosphereDriver::run (const int dt) {
   m_current_ts += dt;
 
   // Update output streams
+  m_atm_logger->debug("[EAMxx::run] running output managers...");
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
   }
@@ -1447,6 +1504,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_atm_comm.all_reduce(&my_mem_usage,&max_mem_usage,1,MPI_MAX);
   m_atm_logger->debug("[EAMxx::finalize] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
+  m_atm_logger->flush();
 
   m_ad_status = 0;
 

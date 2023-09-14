@@ -106,10 +106,8 @@ module shoc_intr
   real(r8) :: shoc_lambda_thresh = unset_r8
   real(r8) :: shoc_Ckh = unset_r8
   real(r8) :: shoc_Ckm = unset_r8
-  real(r8) :: shoc_Ckh_s_min = unset_r8
-  real(r8) :: shoc_Ckm_s_min = unset_r8
-  real(r8) :: shoc_Ckh_s_max = unset_r8
-  real(r8) :: shoc_Ckm_s_max = unset_r8
+  real(r8) :: shoc_Ckh_s = unset_r8
+  real(r8) :: shoc_Ckm_s = unset_r8
 
   integer :: edsclr_dim
   
@@ -230,8 +228,8 @@ end function shoc_implements_cnst
     namelist /shocpbl_diff_nl/ shoc_timestep, shoc_thl2tune, shoc_qw2tune, shoc_qwthl2tune, &
                                shoc_w2tune, shoc_length_fac, shoc_c_diag_3rd_mom, &
                                shoc_lambda_low, shoc_lambda_high, shoc_lambda_slope, &
-                               shoc_lambda_thresh, shoc_Ckh, shoc_Ckm, shoc_Ckh_s_min, &
-                               shoc_Ckm_s_min, shoc_Ckh_s_max, shoc_Ckm_s_max
+                               shoc_lambda_thresh, shoc_Ckh, shoc_Ckm, shoc_Ckh_s, &
+                               shoc_Ckm_s
     
     !  Read namelist to determine if SHOC history should be called
     if (masterproc) then
@@ -265,10 +263,8 @@ end function shoc_implements_cnst
       call mpibcast(shoc_lambda_thresh,      1,   mpir8,   0, mpicom)
       call mpibcast(shoc_Ckh,                1,   mpir8,   0, mpicom)
       call mpibcast(shoc_Ckm,                1,   mpir8,   0, mpicom)
-      call mpibcast(shoc_Ckh_s_min,          1,   mpir8,   0, mpicom)
-      call mpibcast(shoc_Ckm_s_min,          1,   mpir8,   0, mpicom)
-      call mpibcast(shoc_Ckh_s_max,          1,   mpir8,   0, mpicom)
-      call mpibcast(shoc_Ckm_s_max,          1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_Ckh_s,              1,   mpir8,   0, mpicom)
+      call mpibcast(shoc_Ckm_s,              1,   mpir8,   0, mpicom)
 #endif
   
   end subroutine shoc_readnl
@@ -455,8 +451,8 @@ end function shoc_implements_cnst
           shoc_thl2tune, shoc_qw2tune, shoc_qwthl2tune, &
           shoc_w2tune, shoc_length_fac, shoc_c_diag_3rd_mom, &
           shoc_lambda_low, shoc_lambda_high, shoc_lambda_slope, &
-          shoc_lambda_thresh, shoc_Ckh, shoc_Ckm, shoc_Ckh_s_min, &
-          shoc_Ckm_s_min, shoc_Ckh_s_max, shoc_Ckm_s_max )
+          shoc_lambda_thresh, shoc_Ckh, shoc_Ckm, shoc_Ckh_s, &
+          shoc_Ckm_s )
     
     ! --------------- !
     ! End             !

@@ -78,6 +78,7 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
 }
 
 void AtmosphereProcess::run (const double dt) {
+  m_atm_logger->debug("[EAMxx::" + this->name() + "] run...");
   start_timer (m_timer_prefix + this->name() + "::run");
   if (m_params.get("enable_precondition_checks", true)) {
     // Run 'pre-condition' property checks stored in this AP
@@ -354,6 +355,7 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
 void AtmosphereProcess::run_property_check (const prop_check_ptr&       property_check,
                                             const CheckFailHandling     check_fail_handling,
                                             const PropertyCheckCategory property_check_category) const {
+  m_atm_logger->trace("[" + this->name() + "] run_property_check '" + property_check->name() + "'...");
   auto res_and_msg = property_check->check();
 
   // string for output
@@ -445,6 +447,7 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
 }
 
 void AtmosphereProcess::run_precondition_checks () const {
+  m_atm_logger->debug("[" + this->name() + "] run_precondition_checks...");
   // Run all pre-condition property checks
   for (const auto& it : m_precondition_checks) {
     run_property_check(it.second, it.first,
@@ -453,6 +456,7 @@ void AtmosphereProcess::run_precondition_checks () const {
 }
 
 void AtmosphereProcess::run_postcondition_checks () const {
+  m_atm_logger->debug("[" + this->name() + "] run_postcondition_checks...");
   // Run all post-condition property checks
   for (const auto& it : m_postcondition_checks) {
     run_property_check(it.second, it.first,
@@ -461,6 +465,7 @@ void AtmosphereProcess::run_postcondition_checks () const {
 }
 
 void AtmosphereProcess::run_column_conservation_check () const {
+  m_atm_logger->debug("[" + this->name() + "] run_column_conservation_check...");
   // Conservation check is run as a postcondition check
   run_property_check(m_column_conservation_check.second,
                      m_column_conservation_check.first,
@@ -484,6 +489,7 @@ void AtmosphereProcess::init_step_tendencies () {
 
 void AtmosphereProcess::compute_step_tendencies (const double dt) {
   if (m_compute_proc_tendencies) {
+    m_atm_logger->debug("[" + this->name() + "] compuiting tendencies...");
     start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
     for (auto it : m_proc_tendencies) {
       const auto& tname = it.first;

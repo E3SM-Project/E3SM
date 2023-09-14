@@ -33,6 +33,7 @@ void add (const Field& f, const double v) {
   for (int i=0; i<nscalars; ++i) {
     data[i] += v;
   }
+  f.sync_to_dev();
 }
 
 int get_dt (const std::string& freq_units) {

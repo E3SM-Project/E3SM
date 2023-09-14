@@ -56,7 +56,7 @@ struct Functions
   using ExeSpace = typename KT::ExeSpace;
 
   using C  = physics::Constants<Scalar>;
-  using SC = dp::Constants<Scalar>;
+  using DPC = dp::Constants<Scalar>;
 
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
@@ -152,8 +152,39 @@ struct Functions
     const uview_1d<Spack>& t_update,         // updated zonal wind [m/s]
     const uview_2d<Spack>& q_update);        // updated meridional wind [m/s]
 
+  //-----------------------------------------------------------------------
+  // advance_iop_nudging
+  // Purpose:
+  // Option to nudge t and q to observations as specified by the IOP file
+  //
+  // Author:
+  // Original version: Adopted from CAM3.5/CAM5
+  // Updated version for E3SM: Peter Bogenschutz (bogenschutz1@llnl.gov)
+  // CXX version: Conrad Clevenger (tccleve@sandia.gov)
+  //
+  //-----------------------------------------------------------------------
   KOKKOS_FUNCTION
-  static void advance_iop_nudging(const Int& plev, const Spack& scm_dt, const Spack& ps_in, const uview_1d<const Spack>& t_in, const uview_1d<const Spack>& q_in, const uview_1d<Spack>& t_update, const uview_1d<Spack>& q_update, const uview_1d<Spack>& relaxt, const uview_1d<Spack>& relaxq);
+  static void advance_iop_nudging(
+    // Input arguments
+    const Int& plev,                   // number of vertical levels
+    const Scalar& scm_dt,              // model time step [s]
+    const Scalar& ps_in,               // surface pressure [Pa]
+    const uview_1d<const Spack>& t_in, // temperature [K]
+    const uview_1d<const Spack>& q_in, // water vapor mixing ratio [kg/kg]
+    const uview_1d<const Spack>& tobs, // observed temperature [K]
+    const uview_1d<const Spack>& qobs, // observed vapor mixing ratio [kg/kg]
+    const uview_1d<const Spack>& hyai, // ps0 component of hybrid coordinate - interfaces
+    const uview_1d<const Spack>& hyam, // ps0 component of hybrid coordinate - midpoints
+    const uview_1d<const Spack>& hybi, // ps component of hybrid coordinate - interfaces
+    const uview_1d<const Spack>& hybm, // ps component of hybrid coordinate - midpoints
+    // Kokkos stuff
+    const MemberType& team,
+    const Workspace& workspace,
+    // Output arguments
+    const uview_1d<Spack>& t_update,   // updated temperature [K]
+    const uview_1d<Spack>& q_update,   // updated water vapor [kg/kg]
+    const uview_1d<Spack>& relaxt,     // relaxation of temperature [K/s]
+    const uview_1d<Spack>& relaxq);    // relaxation of vapor [kg/kg/s]
 
   KOKKOS_INLINE_FUNCTION
   static void do_advance_iop_subsidence_update(

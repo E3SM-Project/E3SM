@@ -115,7 +115,7 @@ public:
   const ekat::Comm& get_comm () const { return m_comm; }
 
   // Return the parameter list
-  const ekat::ParameterList& get_params () const { return m_params; }
+  ekat::ParameterList& get_params () { return m_params; }
 
   // This method prepares the atm proc for computing the tendency of
   // output fields, as prescribed via parameter list
@@ -152,6 +152,20 @@ public:
   void run_precondition_checks () const;
   void run_postcondition_checks () const;
   void run_column_conservation_check () const;
+
+  // Returns pre/postcondition checks
+  std::list<std::pair<CheckFailHandling,prop_check_ptr>>
+  get_precondition_checks () {
+    return m_precondition_checks;
+  }
+  std::list<std::pair<CheckFailHandling,prop_check_ptr>>
+  get_postcondition_checks() {
+    return m_postcondition_checks;
+  }
+  std::pair<CheckFailHandling,prop_check_ptr>
+  get_column_conservation_check() {
+    return m_column_conservation_check;
+  }
 
 
   void init_step_tendencies ();
@@ -261,7 +275,7 @@ public:
                                const bool out = true, const bool internal = true) const;
   // For BFB tracking in production simulations.
   void print_fast_global_state_hash(const std::string& label) const;
-  
+
 protected:
 
   // Sends a message to the atm log

@@ -221,11 +221,6 @@ if (NOT SCREAM_SMALL_KERNELS)
   set(EKAT_DISABLE_WORKSPACE_SHARING TRUE CACHE STRING "")
 endif()
 
-### The following test only runs on quartz or docker container
-if (NOT DEFINED RUN_ML_CORRECTION_TEST)
-  set(RUN_ML_CORRECTION_TEST FALSE)
-endif()
-
 # Handle input root
 if (SCREAM_MACHINE AND NOT SCREAM_INPUT_ROOT)
     execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/query-cime ${SCREAM_MACHINE} DIN_LOC_ROOT
@@ -477,6 +472,7 @@ if (SCREAM_CIME_BUILD AND SCREAM_DYN_TARGET STREQUAL "theta-l_kokkos")
   set (DEFAULT_SCREAM_DYNAMICS_DYCORE "Homme")
 endif()
 
+option (SCREAM_ENABLE_ML_CORRECTION "Whether to enable ML correction parametrization" OFF)
 set(SCREAM_DYNAMICS_DYCORE ${DEFAULT_SCREAM_DYNAMICS_DYCORE} CACHE STRING
   "The name of the dycore to be used for dynamics. If NONE, then any code/test requiring dynamics is disabled.")
 

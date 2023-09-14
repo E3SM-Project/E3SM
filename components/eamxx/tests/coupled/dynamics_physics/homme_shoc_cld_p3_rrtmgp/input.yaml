@@ -5,6 +5,7 @@ driver_options:
   mass_column_conservation_error_tolerance: 1e-3
   energy_column_conservation_error_tolerance: 1e-4
   column_conservation_checks_fail_handling_type: Warning
+  property_check_data_fields: [phis]
 
 time_stepping:
   time_step: ${ATM_TIME_STEP}
@@ -25,16 +26,16 @@ initial_conditions:
   aero_tau_lw: 0.0
 
 atmosphere_processes:
-  atm_procs_list: (homme,physics)
+  atm_procs_list: [homme,physics]
   schedule_type: Sequential
   homme:
     Moisture: moist
   physics:
-    atm_procs_list: (mac_mic,rrtmgp)
+    atm_procs_list: [mac_mic,rrtmgp]
     schedule_type: Sequential
     Type: Group
     mac_mic:
-      atm_procs_list: (shoc,CldFraction,p3)
+      atm_procs_list: [shoc,CldFraction,p3]
       schedule_type: Sequential
       Type: Group
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}

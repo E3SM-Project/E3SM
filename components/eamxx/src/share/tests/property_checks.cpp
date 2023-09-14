@@ -43,7 +43,7 @@ TEST_CASE("property_check_base", "") {
     REQUIRE_THROWS (std::make_shared<FieldLowerBoundCheck>(cf,grid,0,true));
 
     // But ok if no repair is needed
-    REQUIRE_NOTHROW (std::make_shared<FieldLowerBoundCheck>(cf,grid,0,false));
+    std::make_shared<FieldLowerBoundCheck>(cf,grid,0,false);
   }
 }
 
@@ -83,15 +83,24 @@ TEST_CASE("property_checks", "") {
   // Create a field
   std::vector<FieldTag> tags = {COL, CMP, LEV};
   std::vector<int> dims = {num_lcols, 3, nlevs};
-  FieldIdentifier fid ("field_1",{tags,dims}, m/s,"some_grid");
+  FieldIdentifier fid ("field_1", {tags,dims}, m/s,"some_grid");
   Field f(fid);
   f.allocate_view();
+
+  // Create additional data
+  std::vector<FieldTag> tags_data = {COL};
+  std::vector<int> dims_data = {num_lcols};
+  FieldIdentifier data_fid("data", {tags_data, dims_data}, m/s, "some_grid");
+  Field data(data_fid);
+  data.allocate_view();
+  data.deep_copy(1.0);
 
   // Check that values are not NaN
   SECTION("field_not_nan_check") {
     const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
 
     auto nan_check = std::make_shared<FieldNaNCheck>(f,grid);
+    nan_check->set_additional_data_field(data);
 
     // Assign  values to the field and make sure it passes our test for NaNs.
     auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
@@ -106,11 +115,18 @@ TEST_CASE("property_checks", "") {
     f.sync_to_dev();
     res_and_msg = nan_check->check();
     REQUIRE(res_and_msg.result==CheckResult::Fail);
+    
     std::string expected_msg =
       "FieldNaNCheck failed.\n"
       "  - field id: " + fid.get_id_string() + "\n"
-      "  - entry (1,2,3)\n"
-      "  - lat/lon: (1.000000, -1.000000)\n";
+      "  - indices (w/ global column index): (1,2,3)\n"
+      "  - lat/lon: (1.000000, -1.000000)\n"
+      "  - additional data (w/ local column index):\n\n"
+      "     data<ncol>(2)\n\n"+
+      "  data(1)\n"+
+      "    1, \n\n"+
+      "  END OF ADDITIONAL DATA\n";
+
     REQUIRE( res_and_msg.msg == expected_msg );
   }
 
@@ -120,6 +136,8 @@ TEST_CASE("property_checks", "") {
 
     auto interval_check = std::make_shared<FieldWithinIntervalCheck>(f, grid, 0, 1, true);
     REQUIRE(interval_check->can_repair());
+
+    interval_check->set_additional_data_field(data);
 
     // Assign in-bound values to the field and make sure it passes the within-interval check
     auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
@@ -143,12 +161,22 @@ TEST_CASE("property_checks", "") {
       "  - field id: " + fid.get_id_string() + "\n"
       "  - minimum:\n"
       "    - value: 0\n"
-      "    - entry: (0,1,2)\n"
+      "    - indices (w/ global column index): (0,1,2)\n"
       "    - lat/lon: (0, 0)\n"
+      "    - additional data (w/ local column index):\n\n"
+      "     data<ncol>(2)\n\n"
+      "  data(0)\n"
+      "    1, \n\n"
+      "    END OF ADDITIONAL DATA\n\n"
       "  - maximum:\n"
       "    - value: 2\n"
-      "    - entry: (1,2,3)\n"
-      "    - lat/lon: (1, -1)\n";
+      "    - indices (w/ global column index): (1,2,3)\n"
+      "    - lat/lon: (1, -1)\n"
+      "    - additional data (w/ local column index):\n\n"
+      "     data<ncol>(2)\n\n"
+      "  data(1)\n"
+      "    1, \n\n"
+      "    END OF ADDITIONAL DATA\n";
 
     REQUIRE(res_and_msg.msg == expected_msg);
 
@@ -191,11 +219,11 @@ TEST_CASE("property_checks", "") {
       "  - field id: " + fid.get_id_string() + "\n"
       "  - minimum:\n"
       "    - value: -2\n"
-      "    - entry: (0,0,0)\n"
+      "    - indices (w/ global column index): (0,0,0)\n"
       "    - lat/lon: (0, 0)\n"
       "  - maximum:\n"
       "    - value: 3\n"
-      "    - entry: (1,2,11)\n"
+      "    - indices (w/ global column index): (1,2,11)\n"
       "    - lat/lon: (1, -1)\n";
 
     REQUIRE(res_and_msg.msg == expected_msg);
