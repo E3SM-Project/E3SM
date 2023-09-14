@@ -945,12 +945,8 @@ end function shoc_implements_cnst
    !  Initialize the shallow convective detrainment rate, will always be zero
    dlf2(:,:) = 0.0_r8
 
-
-det_ice(:)=0.0
-det_s(:)=0.0
-
-
-#if 0
+   det_ice(:)=0.0
+   det_s(:)=0.0
 
    lqice(:)        = .false.
    lqice(ixcldliq) = .true.
@@ -997,8 +993,6 @@ det_s(:)=0.0
     call physics_ptend_sum(ptend_loc,ptend_all,ncol)
     call physics_update(state1,ptend_loc,hdtime)
    
-#endif
-
     ! For purposes of this implementation, just set relvar and accre_enhan to 1
     relvar(:,:) = 1.0_r8
     accre_enhan(:,:) = 1._r8  

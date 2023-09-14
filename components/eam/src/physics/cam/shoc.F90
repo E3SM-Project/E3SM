@@ -3729,7 +3729,6 @@ end subroutine vd_shoc_solve
 subroutine shoc_energy_integrals(&
          shcol,nlev,host_dse,pdel,&     ! Input
          rtm,rcm,u_wind,v_wind,&        ! Input
-         !zt_grid, phis, &
          se_int,ke_int,wv_int,wl_int)   ! Output
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -3755,9 +3754,6 @@ subroutine shoc_energy_integrals(&
   real(rtype), intent(in) :: rtm(shcol,nlev)
   ! cloud liquid mixing ratio [kg/kg]
   real(rtype), intent(in) :: rcm(shcol,nlev)
-
-!  real(rtype), intent(in) :: zt_grid(shcol,nlev)
-!  real(rtype), intent(in) :: phis(shcol)
 
 ! OUTPUT VARIABLES
   ! integrated static energy
@@ -3937,9 +3933,8 @@ subroutine shoc_energy_fixer(&
   real(rtype), intent(inout) :: host_dse(shcol,nlev)
 
   ! LOCAL VARIABLES
-  real(rtype) :: se_dis(shcol), te_a(shcol), te_b(shcol),hdtime
-  real(rtype) :: se1(shcol), te1(shcol), ke1(shcol), wl1(shcol),wv1(shcol)
-  integer :: shoctop(shcol), i,k
+  real(rtype) :: se_dis(shcol), te_a(shcol), te_b(shcol)
+  integer :: shoctop(shcol)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
@@ -4055,7 +4050,6 @@ subroutine shoc_energy_total_fixer(&
     lhf=wqw_sfc(i)*rho_zi(i,nlevi)
     te_a(i) = se_a(i) + ke_a(i) + (lcond+lice)*wv_a(i)+lice*wl_a(i)
     te_b(i) = se_b(i) + ke_b(i) + (lcond+lice)*wv_b(i)+lice*wl_b(i)
-
     te_b(i) = te_b(i)+(shf+(lhf)*(lcond+lice))*hdtime
   enddo
 
