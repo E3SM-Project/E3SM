@@ -2,7 +2,6 @@
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/scream_timing.hpp"
 
 namespace scream {
 // =========================================================================================
@@ -88,7 +87,6 @@ void MLCorrection::run_impl(const double dt) {
   Real qv_min_before = field_min<Real>(qv_field);
   int fpe_mask = ekat::get_enabled_fpes();
   ekat::disable_all_fpes();  // required for importing numpy
-  start_timer("EAMxx::ml_correction::python");
   if ( Py_IsInitialized() == 0 ) {
     pybind11::initialize_interpreter();
   }
@@ -108,7 +106,6 @@ void MLCorrection::run_impl(const double dt) {
           m_num_cols, h_lon.data(), pybind11::str{}),                                                
       m_num_cols, m_num_levs, num_tracers, dt, ML_model, datetime_str);
   pybind11::gil_scoped_release no_gil;  
-  stop_timer("EAMxx::ml_correction::python");
   ekat::enable_fpes(fpe_mask);
   Real qv_max_after = field_max<Real>(qv_field);
   Real qv_min_after = field_min<Real>(qv_field);        
