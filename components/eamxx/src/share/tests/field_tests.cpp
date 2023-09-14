@@ -184,6 +184,26 @@ TEST_CASE("field", "") {
     REQUIRE (field_min<Real>(f1)==3.0);
   }
 
+  SECTION ("alias") {
+    Field f1 (fid);
+    f1.allocate_view();
+
+    Field f2 = f1.alias("the_alias");
+
+    REQUIRE(f2.is_allocated());
+    REQUIRE(&f1.get_header().get_tracking()==&f2.get_header().get_tracking());
+    REQUIRE(&f1.get_header().get_alloc_properties()==&f2.get_header().get_alloc_properties());
+    REQUIRE(f1.get_header().get_identifier().get_layout()==f2.get_header().get_identifier().get_layout());
+    REQUIRE(f1.get_internal_view_data<Real>()==f2.get_internal_view_data<Real>());
+
+    // Identifiers are separate objects though
+    REQUIRE(&f1.get_header().get_identifier()!=&f2.get_header().get_identifier());
+
+    // Check extra data is also shared
+    f1.get_header().set_extra_data("foo",1);
+    REQUIRE (f2.get_header().has_extra_data("foo"));
+  }
+
   SECTION ("deep_copy") {
     std::vector<FieldTag> t1 = {COL,CMP,LEV};
     std::vector<int> d1 = {3,2,24};

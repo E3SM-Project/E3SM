@@ -104,8 +104,7 @@ TEST_CASE("field_at_pressure_level_p2")
       diag_f.sync_to_host();
       auto test2_diag_v = diag_f.get_view<const Real*, Host>();
       // Check the mask field inside the diag_f
-      auto mask_tmp = diag_f.get_header().get_extra_data().at("mask_data");
-      auto mask_f   = ekat::any_cast<Field>(mask_tmp);
+      auto mask_f = diag_f.get_header().get_extra_data<Field>("mask_data");
       mask_f.sync_to_host();
       auto test2_mask_v = mask_f.get_view<const Real*, Host>();
       //
@@ -126,12 +125,10 @@ TEST_CASE("field_at_pressure_level_p2")
       diag_f.sync_to_host();
       auto test2_diag_v = diag_f.get_view<const Real*, Host>();
       // Check the mask field inside the diag_f
-      auto mask_tmp = diag_f.get_header().get_extra_data().at("mask_data");
-      auto mask_f   = ekat::any_cast<Field>(mask_tmp);
+      auto mask_f = diag_f.get_header().get_extra_data<Field>("mask_data");
       mask_f.sync_to_host();
       auto test2_mask_v = mask_f.get_view<const Real*, Host>();
-      auto mask_val_tmp = diag_f.get_header().get_extra_data().at("mask_value");
-      Real mask_val = ekat::any_cast<Real>(mask_val_tmp);
+      auto mask_val = diag_f.get_header().get_extra_data<Real>("mask_value");
       //
       for (int icol=0;icol<ncols;icol++) {
         REQUIRE(approx(test2_diag_v(icol),Real(mask_val)));
