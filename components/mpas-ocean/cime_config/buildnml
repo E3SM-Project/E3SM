@@ -273,7 +273,7 @@ def buildnml(case, caseroot, compname):
     elif ocn_grid == 'FRISwISC04to60E3r1':
         decomp_date = '20230817'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC04to60E3r1/partitions
         decomp_prefix = 'partitions/mpas-o.graph.info.'
-        restoring_file = 'sss.PHC2_monthlyClimatology.FRISwISC04to60E3r1_nomask.210120.nc'  # will be generated manually
+        restoring_file = 'sss.PHC2_monthlyClimatology.FRISwISC04to60E3r1.20230817.nc'
         analysis_mask_file = 'FRISwISC04to60E3r1_mocBasinsAndTransects20210623.nc'
         ic_date = '20230817'
         ic_prefix = 'ocean.FRISwISC04to60E3r1'  # from ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC04to60E3r1/mpaso.FRISwISC04to60E3r1.20230817.nc
