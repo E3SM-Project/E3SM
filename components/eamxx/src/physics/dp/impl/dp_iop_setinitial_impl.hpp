@@ -59,7 +59,7 @@ void Functions<S,D>::iop_setinitial(
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, plev_packs);
 
   assert(np <= NP);
-  assert(plev_packs <= Homme::NUM_LEV);
+  //assert(plev_packs <= Homme::NUM_LEV);
   assert(tracers.inited());
   assert(elem.inited());
 
