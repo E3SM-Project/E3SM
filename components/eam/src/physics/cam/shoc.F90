@@ -14,6 +14,7 @@ module shoc
 
   use physics_utils, only: rtype, rtype8, itype, btype
   use scream_abortutils, only: endscreamrun
+  use physconst,     only: rair, cpair
 
 ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -30,6 +31,9 @@ logical :: use_cxx = .true.
 
 real(rtype), parameter, public :: largeneg = -99999999.99_rtype
 real(rtype), parameter, public :: pi = 3.14159265358979323_rtype
+
+!repeated from shoc_intr!
+real(rtype), parameter         :: p0_shoc = 100000._rtype
 
 !=========================================================
 ! Physical constants used in SHOC
@@ -224,6 +228,7 @@ subroutine shoc_main ( &
      wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, & ! Input
      wtracer_sfc,num_qtracers,w_field, &  ! Input
      inv_exner,phis, &                        ! Input
+     sens_heat,cflx, &                        ! Input
      host_dse, tke, thetal, qw, &         ! Input/Output
      u_wind, v_wind,qtracers,&            ! Input/Output
      wthv_sec,tkh,tk,&                    ! Input/Output
@@ -291,6 +296,9 @@ subroutine shoc_main ( &
   real(rtype), intent(in) :: inv_exner(shcol,nlev)
   ! Host model surface geopotential height
   real(rtype), intent(in) :: phis(shcol)
+
+  real(rtype), intent(in) :: sens_heat(shcol)
+  real(rtype), intent(in) :: cflx(shcol)
 
 ! INPUT/OUTPUT VARIABLES
   ! prognostic temp variable of host model
@@ -558,10 +566,12 @@ subroutine shoc_main ( &
   call shoc_energy_fixer(&
      shcol,nlev,nlevi,dtime,nadv,&         ! Input
      zt_grid,zi_grid,&                     ! Input
+     qw, shoc_ql,u_wind,v_wind,pdel,&
      se_b,ke_b,wv_b,wl_b,&                 ! Input
      se_a,ke_a,wv_a,wl_a,&                 ! Input
      wthl_sfc,wqw_sfc,&                    ! Input
      rho_zt,tke,presi,&                    ! Input
+     sens_heat,cflx,&
      host_dse)                             ! Input/Output
 
   ! Remaining code is to diagnose certain quantities
@@ -3719,6 +3729,7 @@ end subroutine vd_shoc_solve
 subroutine shoc_energy_integrals(&
          shcol,nlev,host_dse,pdel,&     ! Input
          rtm,rcm,u_wind,v_wind,&        ! Input
+         !zt_grid, phis, &
          se_int,ke_int,wv_int,wl_int)   ! Output
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -3744,6 +3755,9 @@ subroutine shoc_energy_integrals(&
   real(rtype), intent(in) :: rtm(shcol,nlev)
   ! cloud liquid mixing ratio [kg/kg]
   real(rtype), intent(in) :: rcm(shcol,nlev)
+
+!  real(rtype), intent(in) :: zt_grid(shcol,nlev)
+!  real(rtype), intent(in) :: phis(shcol)
 
 ! OUTPUT VARIABLES
   ! integrated static energy
@@ -3775,6 +3789,9 @@ subroutine shoc_energy_integrals(&
   do k=1,nlev
     do i=1,shcol
        rvm = rtm(i,k) - rcm(i,k) ! compute water vapor
+
+!technically wrong, need to remove gz from geopotential
+!but shoc does not change gz term
        se_int(i) = se_int(i) + host_dse(i,k)*pdel(i,k)/ggr
        ke_int(i) = ke_int(i) + 0.5_rtype*(bfb_square(u_wind(i,k))+bfb_square(v_wind(i,k)))*pdel(i,k)/ggr
        wv_int(i) = wv_int(i) + rvm*pdel(i,k)/ggr
@@ -3851,10 +3868,12 @@ end subroutine update_host_dse
 subroutine shoc_energy_fixer(&
          shcol,nlev,nlevi,dtime,nadv,&  ! Input
          zt_grid,zi_grid,&              ! Input
+         qw,shoc_ql,u_wind,v_wind,pdel, &
          se_b,ke_b,wv_b,wl_b,&          ! Input
          se_a,ke_a,wv_a,wl_a,&          ! Input
          wthl_sfc,wqw_sfc,&             ! Input
          rho_zt,tke,pint,&              ! Input
+         sens_heat, cflx, &
          host_dse)                      ! Input/Output
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -3904,14 +3923,23 @@ subroutine shoc_energy_fixer(&
   real(rtype), intent(in) :: rho_zt(shcol,nlev)
   !turbulent kinetic energy [m^2/s^2]
   real(rtype), intent(in) :: tke(shcol,nlev)
+  real(rtype), intent(in) :: sens_heat(shcol)
+  real(rtype), intent(in) :: cflx(shcol)
+
+  real(rtype), intent(in) :: qw(shcol,nlev)
+  real(rtype), intent(in) :: shoc_ql(shcol,nlev)
+  real(rtype), intent(in) :: u_wind(shcol,nlev)
+  real(rtype), intent(in) :: v_wind(shcol,nlev)
+  real(rtype), intent(in) :: pdel(shcol,nlev)
 
   ! INPUT VARIABLES
   !host temperature [K]
   real(rtype), intent(inout) :: host_dse(shcol,nlev)
 
   ! LOCAL VARIABLES
-  real(rtype) :: se_dis(shcol), te_a(shcol), te_b(shcol)
-  integer :: shoctop(shcol)
+  real(rtype) :: se_dis(shcol), te_a(shcol), te_b(shcol),hdtime
+  real(rtype) :: se1(shcol), te1(shcol), ke1(shcol), wl1(shcol),wv1(shcol)
+  integer :: shoctop(shcol), i,k
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
@@ -3931,7 +3959,7 @@ subroutine shoc_energy_fixer(&
          zt_grid,zi_grid,&              ! Input
          se_b,ke_b,wv_b,wl_b,&          ! Input
          se_a,ke_a,wv_a,wl_a,&          ! Input
-         wthl_sfc,wqw_sfc,rho_zt,&      ! Input
+         wthl_sfc,wqw_sfc,rho_zt,pint,& ! Input
          te_a, te_b)                    ! Output
 
   call shoc_energy_threshold_fixer(&
@@ -3956,7 +3984,7 @@ subroutine shoc_energy_total_fixer(&
          zt_grid,zi_grid,&              ! Input
          se_b,ke_b,wv_b,wl_b,&          ! Input
          se_a,ke_a,wv_a,wl_a,&          ! Input
-         wthl_sfc,wqw_sfc,rho_zt,&      ! Input
+         wthl_sfc,wqw_sfc,rho_zt,pint,& ! Input
          te_a, te_b)                    ! Output
 
   implicit none
@@ -3998,6 +4026,8 @@ subroutine shoc_energy_total_fixer(&
   real(rtype), intent(in) :: zi_grid(shcol,nlevi)
   ! density on midpoint grid [kg/m^3]
   real(rtype), intent(in) :: rho_zt(shcol,nlev)
+  ! pressure on interface grid [Pa]
+  real(rtype), intent(in) :: pint(shcol,nlevi)
 
   ! OUTPUT VARIABLES
   real(rtype), intent(out) :: te_a(shcol)
@@ -4007,7 +4037,7 @@ subroutine shoc_energy_total_fixer(&
   ! density on interface grid [kg/m^3]
   real(rtype) :: rho_zi(shcol,nlevi)
   ! sensible and latent heat fluxes [W/m^2]
-  real(rtype) :: shf, lhf, hdtime
+  real(rtype) :: shf, lhf, hdtime, exner_surf
   integer :: i
 
   ! compute the host timestep
@@ -4018,11 +4048,14 @@ subroutine shoc_energy_total_fixer(&
   ! Based on these integrals, compute the total energy before and after SHOC
   ! call
   do i=1,shcol
-    ! convert shf and lhf to W/m^2
-    shf=wthl_sfc(i)*cp*rho_zi(i,nlevi)
+    ! convert shf and lhf
+    exner_surf = (pint(i,nlevi)/p0_shoc)**(rair/cpair)
+    shf=wthl_sfc(i)*cp*rho_zi(i,nlevi)*exner_surf
+
     lhf=wqw_sfc(i)*rho_zi(i,nlevi)
     te_a(i) = se_a(i) + ke_a(i) + (lcond+lice)*wv_a(i)+lice*wl_a(i)
     te_b(i) = se_b(i) + ke_b(i) + (lcond+lice)*wv_b(i)+lice*wl_b(i)
+
     te_b(i) = te_b(i)+(shf+(lhf)*(lcond+lice))*hdtime
   enddo
 

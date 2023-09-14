@@ -613,6 +613,7 @@ end function shoc_implements_cnst
    real(r8) :: wv_a(pcols), wv_b(pcols), wl_b(pcols), wl_a(pcols)
    real(r8) :: se_dis(pcols), se_a(pcols), se_b(pcols), shoc_s(pcols,pver)
    real(r8) :: shoc_t(pcols,pver)
+   real(r8) :: sens_heat(pcols), cflx(pcols)
    
    ! --------------- !
    ! Pointers        !
@@ -827,6 +828,9 @@ end function shoc_implements_cnst
       wtracer_sfc(i,:) = 0._r8  ! in E3SM tracer fluxes are done elsewhere
    enddo               
    
+   sens_heat(1:ncol) = cam_in%shf(1:ncol)
+   cflx(1:ncol) = cam_in%cflx(1:ncol,1)
+
    !  Do the same for tracers 
    icnt=0
    do ixind=1,pcnst
@@ -846,15 +850,16 @@ end function shoc_implements_cnst
 
    call shoc_main( &
         ncol, pver, pverp, dtime, nadv, & ! Input
-	host_dx_in(:ncol), host_dy_in(:ncol), thv(:ncol,:),& ! Input
+        host_dx_in(:ncol), host_dy_in(:ncol), thv(:ncol,:),& ! Input
         zt_g(:ncol,:), zi_g(:ncol,:), state%pmid(:ncol,:pver), state%pint(:ncol,:pverp), state1%pdel(:ncol,:pver),& ! Input
-	wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), & ! Input
-	wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), & ! Input
-	inv_exner(:ncol,:),state1%phis(:ncol), & ! Input
-	shoc_s(:ncol,:), tke_zt(:ncol,:), thlm(:ncol,:), rtm(:ncol,:), & ! Input/Ouput
-	um(:ncol,:), vm(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
-	wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), & ! Input/Output
-	rcm(:ncol,:),cloud_frac(:ncol,:), & ! Input/Output
+        wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), & ! Input
+        wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), & ! Input
+        inv_exner(:ncol,:),state1%phis(:ncol), & ! Input
+        sens_heat(:ncol), cflx(:ncol), &
+        shoc_s(:ncol,:), tke_zt(:ncol,:), thlm(:ncol,:), rtm(:ncol,:), & ! Input/Ouput
+        um(:ncol,:), vm(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
+        wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), & ! Input/Output
+        rcm(:ncol,:),cloud_frac(:ncol,:), & ! Input/Output
         pblh(:ncol), & ! Output
         shoc_mix_out(:ncol,:), isotropy_out(:ncol,:), & ! Output (diagnostic)
         w_sec_out(:ncol,:), thl_sec_out(:ncol,:), qw_sec_out(:ncol,:), qwthl_sec_out(:ncol,:), & ! Output (diagnostic)   
@@ -940,6 +945,13 @@ end function shoc_implements_cnst
    !  Initialize the shallow convective detrainment rate, will always be zero
    dlf2(:,:) = 0.0_r8
 
+
+det_ice(:)=0.0
+det_s(:)=0.0
+
+
+#if 0
+
    lqice(:)        = .false.
    lqice(ixcldliq) = .true.
    lqice(ixcldice) = .true.
@@ -985,6 +997,8 @@ end function shoc_implements_cnst
     call physics_ptend_sum(ptend_loc,ptend_all,ncol)
     call physics_update(state1,ptend_loc,hdtime)
    
+#endif
+
     ! For purposes of this implementation, just set relvar and accre_enhan to 1
     relvar(:,:) = 1.0_r8
     accre_enhan(:,:) = 1._r8  

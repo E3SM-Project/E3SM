@@ -2703,6 +2703,11 @@ end if
     end if
 !!== KZ_WATCON 
 
+print *, 'lchnk', lchnk
+
+dlf= 0.0_r8
+rliq=0.0_r8
+
              ! =====================================================
              !    CLUBB call (PBL, shallow convection, macrophysics)
              ! =====================================================  
@@ -2723,6 +2728,14 @@ end if
                 flx_cnd(:ncol) = -1._r8*rliq(:ncol) 
                 flx_heat(:ncol) = cam_in%shf(:ncol) + det_s(:ncol)
 
+print *, 'flx_cnd(1)',flx_cnd(1)
+print *, 'flx_heat(1)',flx_heat(1)
+print *, 'det_s(1)', det_s(1)
+print *, 'det_ice(1)', det_ice(1)
+print *, 'cflx(1)', cam_in%cflx(1,1)
+print *, 'shflx(1)', cam_in%shf(1)
+
+
                 ! Unfortunately, physics_update does not know what time period
                 ! "tend" is supposed to cover, and therefore can't update it
                 ! with substeps correctly. For now, work around this by scaling
@@ -2735,8 +2748,8 @@ end if
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
                      cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
                      det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
-		     
-	
+!stop
+
  
           endif
 
