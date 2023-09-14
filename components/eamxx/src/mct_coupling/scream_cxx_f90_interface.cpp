@@ -280,7 +280,7 @@ void scream_get_local_cols_gids (void* const ptr) {
   using namespace scream;
   using gid_t = AbstractGrid::gid_type;
   fpe_guard_wrapper([&]() {
-    auto gids_f = reinterpret_cast<int* const>(ptr);
+    auto gids_f = reinterpret_cast<int*>(ptr);
     const auto& ad = get_ad();
     const auto& phys_grid = ad.get_grids_manager()->get_grid("Physics");
 
