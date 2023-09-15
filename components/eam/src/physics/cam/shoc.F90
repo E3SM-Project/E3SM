@@ -14,7 +14,6 @@ module shoc
 
   use physics_utils, only: rtype, rtype8, itype, btype
   use scream_abortutils, only: endscreamrun
-  use physconst,     only: rair, cpair
 
 ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -4028,7 +4027,7 @@ subroutine shoc_energy_total_fixer(&
   ! call
   do i=1,shcol
     ! convert shf and lhf
-    exner_surf = (pint(i,nlevi)/p0_shoc)**(rair/cpair)
+    exner_surf = bfb_pow(pint(i,nlevi)/p0, rgas/cp)
     shf=wthl_sfc(i)*cp*rho_zi(i,nlevi)*exner_surf
 
     lhf=wqw_sfc(i)*rho_zi(i,nlevi)
