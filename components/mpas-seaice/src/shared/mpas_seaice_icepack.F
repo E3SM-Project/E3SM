@@ -2423,7 +2423,6 @@ contains
                fresh=oceanFreshWaterFlux(iCell), &
                fsalt=oceanSaltFlux(iCell), &
                fhocn=oceanHeatFlux(iCell), &
-               update_ocn_f=config_update_ocean_fluxes,  &
                bgrid=biologyGrid(:), &
                cgrid=verticalGrid(:), &
                igrid=interfaceBiologyGrid(:),  &
@@ -12540,10 +12539,12 @@ contains
     character(len=strKIND) :: tmp_config_shortwave
     character(len=strKIND) :: tmp_config_snw_ssp_table
     character(len=strKIND) :: snw_aging_table = 'snicar'
+    character(len=strKIND) :: tmp_config_cpl_frazil !echmod - temporary
 
     ! debugging
     integer :: itmp1, itmp2
     real(kind=RKIND) :: rtmp1, rtmp2
+    character(len=strKIND) :: ctmp1, ctmp2
 
     call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
     call MPAS_pool_get_config(domain % configs, "config_heat_conductivity_type", config_heat_conductivity_type)
@@ -12773,6 +12774,7 @@ contains
        tmp_config_shortwave     = config_shortwave_type
        tmp_config_snw_ssp_table = 'test'
     endif
+    tmp_config_cpl_frazil = 'external' ! echmod set this somewhere else
 
 !echmod debugging
     call mpas_log_write(' ')
@@ -12907,6 +12909,10 @@ contains
     call icepack_query_parameters(snowpatch_out=rtmp2)
     if (rtmp1 /= rtmp2) call mpas_log_write('snowpatch differs $r $r',realArgs=(/rtmp1,rtmp2/))
 
+    ctmp1 = tmp_config_cpl_frazil
+    call icepack_query_parameters(cpl_frazil_out=ctmp2)
+    if (trim(ctmp1) /= trim(ctmp2)) call mpas_log_write('cpl_frazil differs')
+
 !    rtmp1 = skeletalLayerThickness
 !    call icepack_query_parameters(sk_l_out=rtmp2)
 !    if (rtmp1 /= rtmp2) call mpas_log_write('sk_l differs $r $r',realArgs=(/rtmp1,rtmp2/))
@@ -12980,6 +12986,7 @@ contains
          fbot_xfer_type_in       = config_ocean_heat_transfer_type, &
          calc_Tsfc_in            = config_calc_surface_temperature, &
          !dts_b_in                = , &        ! brine, zsalinity
+         cpl_frazil_in           = tmp_config_cpl_frazil, &
          update_ocn_f_in         = config_update_ocean_fluxes, &
          ustar_min_in            = config_min_friction_velocity, &
          a_rapid_mode_in         = config_rapid_mode_channel_radius, &
@@ -13133,6 +13140,10 @@ contains
     rtmp1 = seaiceSnowPatchiness
     call icepack_query_parameters(snowpatch_out=rtmp2)
     if (rtmp1 /= rtmp2) call mpas_log_write('snowpatch differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    ctmp1 = tmp_config_cpl_frazil
+    call icepack_query_parameters(cpl_frazil_out=ctmp2)
+    if (trim(ctmp1) /= trim(ctmp2)) call mpas_log_write('cpl_frazil differs')
 
     call mpas_log_write(" ----- end debugging parameters -----")
     call mpas_log_write(' ')
