@@ -115,8 +115,13 @@ void TurbulentMountainStress::run_impl (const double /* dt */)
   });
 
   // Compute TMS
-  TMSFunctions::compute_tms(ncols, nlevs, horiz_winds, T_mid, p_mid,
-                            exner, z_mid, sgh30, landfrac,
+  TMSFunctions::compute_tms(ncols, nlevs,
+                            ekat::scalarize(horiz_winds),
+                            ekat::scalarize(T_mid),
+                            ekat::scalarize(p_mid),
+                            ekat::scalarize(exner),
+                            ekat::scalarize(z_mid),
+                            sgh30, landfrac,
                             surf_drag_coeff_tms, wind_stress_tms);
 }
 
