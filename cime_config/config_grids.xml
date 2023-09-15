@@ -1456,6 +1456,16 @@
       <mask>EC30to60E2r2</mask>
     </model_grid>
 
+    <model_grid alias="ne120pg2_r05_ECwISC30to60E3r2">
+      <grid name="atm">ne120np4.pg2</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">ECwISC30to60E3r2</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>ECwISC30to60E3r2</mask>
+    </model_grid>
+
     <model_grid alias="ne240_ne240" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne240np4</grid>
       <grid name="lnd">ne240np4</grid>
@@ -2556,6 +2566,8 @@
       <file grid="ice|ocn" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120pg2_EC30to60E2r2.210312.nc</file>
       <file grid="atm|lnd" mask="ICOS10">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120pg2_ICOS10.230120.nc</file>
       <file grid="ice|ocn" mask="ICOS10">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120pg2_ICOS10.230120.nc</file>
+      <file grid="atm|lnd" mask="ECwISC30to60E3r2">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120pg2_ECwISC30to60E3r2.230915.nc</file>
+      <file grid="ice|ocn" mask="ECwISC30to60E3r2">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120pg2_ECwISC30to60E3r2.230915.nc</file>
       <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120pg2_gx1v6.190819.nc</file>
       <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120pg2_gx1v6.190819.nc</file>
       <desc>ne120np4 is Spectral Elem 1/4-deg grid w/ 2x2 FV physics grid</desc>
@@ -3464,6 +3476,14 @@
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne120pg2/map_ne120pg2_to_EC30to60E2r2_bilin.210311.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_ne120pg2_mono.210311.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_ne120pg2_mono.210311.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne120np4.pg2" ocn_grid="ECwISC30to60E3r2">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne120pg2/map_ne120pg2_to_ECwISC30to60E3r2_mono.230915.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne120pg2/map_ne120pg2_to_ECwISC30to60E3r2_bilin.230915.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne120pg2/map_ne120pg2_to_ECwISC30to60E3r2-nomask_bilin.230915.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/ECwISC30to60E3r2/map_EC30to60E2r2_to_ne120pg2_mono.230915.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/ECwISC30to60E3r2/map_EC30to60E2r2_to_ne120pg2_mono.230915.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne120np4.pg2" lnd_grid="r05">
