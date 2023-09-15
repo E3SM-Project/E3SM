@@ -2281,7 +2281,7 @@ contains
 
       ! Compute tangential velocity
 
-      nEdges = nEdgesHalo(2)
+      nEdges = nEdgesAll
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
