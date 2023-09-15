@@ -49,11 +49,10 @@ set_target_properties(dp PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
 target_include_directories(dp PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/../share
+  ${CMAKE_CURRENT_SOURCE_DIR}/../physics/share
   ${CMAKE_CURRENT_BINARY_DIR}/modules
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/impl
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam
 )
 target_link_libraries(dp physics_share scream_share ${dynLibName})
 

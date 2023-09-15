@@ -2,7 +2,7 @@
 #define DP_FUNCTIONS_HPP
 
 #include "physics/share/physics_constants.hpp"
-#include "physics/dp/dp_constants.hpp"
+#include "dp_constants.hpp"
 
 #include "share/scream_types.hpp"
 
