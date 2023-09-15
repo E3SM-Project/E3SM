@@ -485,7 +485,7 @@ Default: Defined in namelist_defaults.xml
 	category="forcing" group="forcing">
 Duration of the forcing cycle.
 
-Valid values: 'YYYY-MM-DD_HH:MM:SS
+Valid values: 'YYYY-MM-DD_HH:MM:SS'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -507,9 +507,17 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_update_ocean_fluxes" type="logical"
 	category="forcing" group="forcing">
-
+Include frazil ice fluxes in ocean flux fields.
 
 Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_frazil_coupling_type" type="char*1024"
+	category="forcing" group="forcing">
+Type of frazil ice coupling.
+
+Valid values: 'external', 'internal', 'fresh_ice_correction'
 Default: Defined in namelist_defaults.xml
 </entry>
 

@@ -12333,6 +12333,7 @@ contains
          config_pond_refreezing_type, &
          config_salt_flux_coupling_type, &
          config_ocean_heat_transfer_type, &
+         config_frazil_coupling_type, &
          config_sea_freezing_temperature_type, &
          config_skeletal_bgc_flux_type, &
          config_snow_redistribution_scheme
@@ -12539,7 +12540,6 @@ contains
     character(len=strKIND) :: tmp_config_shortwave
     character(len=strKIND) :: tmp_config_snw_ssp_table
     character(len=strKIND) :: snw_aging_table = 'snicar'
-    character(len=strKIND) :: tmp_config_cpl_frazil !echmod - temporary
 
     ! debugging
     integer :: itmp1, itmp2
@@ -12551,6 +12551,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_ocean_heat_transfer_type", config_ocean_heat_transfer_type)
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
     call MPAS_pool_get_config(domain % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
+    call MPAS_pool_get_config(domain % configs, "config_frazil_coupling_type", config_frazil_coupling_type)
     call MPAS_pool_get_config(domain % configs, "config_min_friction_velocity", config_min_friction_velocity)
     call MPAS_pool_get_config(domain % configs, "config_rapid_mode_channel_radius", config_rapid_mode_channel_radius)
     call MPAS_pool_get_config(domain % configs, "config_rapid_model_critical_Ra", config_rapid_model_critical_Ra)
@@ -12774,7 +12775,6 @@ contains
        tmp_config_shortwave     = config_shortwave_type
        tmp_config_snw_ssp_table = 'test'
     endif
-    tmp_config_cpl_frazil = 'external' ! echmod set this somewhere else
 
 !echmod debugging
     call mpas_log_write(' ')
@@ -12909,7 +12909,7 @@ contains
     call icepack_query_parameters(snowpatch_out=rtmp2)
     if (rtmp1 /= rtmp2) call mpas_log_write('snowpatch differs $r $r',realArgs=(/rtmp1,rtmp2/))
 
-    ctmp1 = tmp_config_cpl_frazil
+    ctmp1 = config_frazil_coupling_type
     call icepack_query_parameters(cpl_frazil_out=ctmp2)
     if (trim(ctmp1) /= trim(ctmp2)) call mpas_log_write('cpl_frazil differs')
 
@@ -12986,7 +12986,7 @@ contains
          fbot_xfer_type_in       = config_ocean_heat_transfer_type, &
          calc_Tsfc_in            = config_calc_surface_temperature, &
          !dts_b_in                = , &        ! brine, zsalinity
-         cpl_frazil_in           = tmp_config_cpl_frazil, &
+         cpl_frazil_in           = config_frazil_coupling_type, &
          update_ocn_f_in         = config_update_ocean_fluxes, &
          ustar_min_in            = config_min_friction_velocity, &
          a_rapid_mode_in         = config_rapid_mode_channel_radius, &
@@ -13141,7 +13141,7 @@ contains
     call icepack_query_parameters(snowpatch_out=rtmp2)
     if (rtmp1 /= rtmp2) call mpas_log_write('snowpatch differs $r $r',realArgs=(/rtmp1,rtmp2/))
 
-    ctmp1 = tmp_config_cpl_frazil
+    ctmp1 = config_frazil_coupling_type
     call icepack_query_parameters(cpl_frazil_out=ctmp2)
     if (trim(ctmp1) /= trim(ctmp2)) call mpas_log_write('cpl_frazil differs')
 
