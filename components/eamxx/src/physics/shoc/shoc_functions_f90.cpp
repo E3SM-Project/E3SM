@@ -52,7 +52,7 @@ void shoc_energy_total_fixer_c(Int shcol, Int nlev, Int nlevi, Real dtime, Int n
                                Real *zt_grid, Real *zi_grid,
                                Real *se_b, Real *ke_b, Real *wv_b, Real *wl_b,
                                Real *se_a, Real *ke_a, Real *wv_a, Real *wl_a,
-                               Real *wthl_sfc, Real *wqw_sfc, Real *rho_zt,
+                               Real *wthl_sfc, Real *wqw_sfc, Real *rho_zt, Real *pint,
                                Real *te_a, Real *te_b);
 
 void shoc_energy_threshold_fixer_c(Int shcol, Int nlev, Int nlevi,
@@ -347,7 +347,10 @@ void shoc_energy_total_fixer(ShocEnergyTotalFixerData& d)
 {
   shoc_init(d.nlev, true);
   d.transpose<ekat::TransposeDirection::c2f>();
-  shoc_energy_total_fixer_c(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, d.zt_grid, d.zi_grid, d.se_b, d.ke_b, d.wv_b, d.wl_b, d.se_a, d.ke_a, d.wv_a, d.wl_a, d.wthl_sfc, d.wqw_sfc, d.rho_zt, d.te_a, d.te_b);
+  shoc_energy_total_fixer_c(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv,
+                            d.zt_grid, d.zi_grid, d.se_b, d.ke_b, d.wv_b,
+                            d.wl_b, d.se_a, d.ke_a, d.wv_a, d.wl_a, d.wthl_sfc,
+                            d.wqw_sfc, d.rho_zt, d.pint, d.te_a, d.te_b);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 

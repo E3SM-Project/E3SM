@@ -503,7 +503,7 @@ contains
                                 zt_grid,zi_grid,&
                                 se_b,ke_b,wv_b,wl_b,&
                                 se_a,ke_a,wv_a,wl_a,&
-                                wthl_sfc,wqw_sfc,rho_zt,&
+                                wthl_sfc,wqw_sfc,rho_zt,pint,&
                                 te_a,te_b) bind (C)
     use shoc, only: shoc_energy_total_fixer
 
@@ -526,6 +526,7 @@ contains
     real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
     real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
     real(kind=c_real), intent(in) :: rho_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: pint(shcol,nlevi)
 
     real(kind=c_real), intent(out) :: te_a(shcol)
     real(kind=c_real), intent(out) :: te_b(shcol)
@@ -534,7 +535,7 @@ contains
                                  zt_grid,zi_grid,&
                                  se_b,ke_b,wv_b,wl_b,&
                                  se_a,ke_a,wv_a,wl_a,&
-                                 wthl_sfc,wqw_sfc,rho_zt,&
+                                 wthl_sfc,wqw_sfc,rho_zt,pint,&
                                  te_a,te_b)
 
   end subroutine shoc_energy_total_fixer_c
