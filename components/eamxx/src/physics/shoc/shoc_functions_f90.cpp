@@ -22,7 +22,7 @@ extern "C" {
 
 // Special shoc_init function for shoc_main_bfb test
 void shoc_init_for_main_bfb_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
-                              Real zvir, Real latvap, Real latice, Real karman,
+                              Real zvir, Real latvap, Real latice, Real karman, Real p0,
                               Real* pref_mid, int nbot_shoc, int ntop_shoc);
 void shoc_use_cxx_c(bool use_cxx);
 
@@ -754,7 +754,7 @@ void shoc_main_with_init(ShocMainData& d)
   using C = scream::physics::Constants<Real>;
 
   d.transpose<ekat::TransposeDirection::c2f>();
-  shoc_init_for_main_bfb_c(d.nlev, C::gravit, C::Rair, C::RH2O, C::Cpair, C::ZVIR, C::LatVap, C::LatIce, C::Karman,
+  shoc_init_for_main_bfb_c(d.nlev, C::gravit, C::Rair, C::RH2O, C::Cpair, C::ZVIR, C::LatVap, C::LatIce, C::Karman, C::P0,
                            d.pref_mid, d.nbot_shoc, d.ntop_shoc+1);
   shoc_use_cxx_c(false);
 

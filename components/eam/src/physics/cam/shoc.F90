@@ -31,9 +31,6 @@ logical :: use_cxx = .true.
 real(rtype), parameter, public :: largeneg = -99999999.99_rtype
 real(rtype), parameter, public :: pi = 3.14159265358979323_rtype
 
-!repeated from shoc_intr!
-real(rtype), parameter         :: p0_shoc = 100000._rtype
-
 !=========================================================
 ! Physical constants used in SHOC
 !=========================================================
@@ -49,6 +46,7 @@ real(rtype) :: lcond ! latent heat of vaporization [J/kg]
 real(rtype) :: lice  ! latent heat of fusion [J/kg]
 real(rtype) :: eps   ! rh2o/rair - 1 [-]
 real(rtype) :: vk    ! von karmann constant [-]
+real(rtype) :: p0    ! Reference pressure, Pa
 
 !=========================================================
 ! Tunable parameters used in SHOC
@@ -128,7 +126,7 @@ contains
 
 subroutine shoc_init( &
          nlev, gravit, rair, rh2o, cpair, &
-         zvir, latvap, latice, karman, &
+         zvir, latvap, latice, karman, p0_shoc, &
          pref_mid, nbot_shoc, ntop_shoc, &
          thl2tune_in, qw2tune_in, qwthl2tune_in, &
          w2tune_in, length_fac_in, c_diag_3rd_mom_in, &
@@ -151,6 +149,7 @@ subroutine shoc_init( &
   real(rtype), intent(in)  :: latvap ! latent heat of vaporization
   real(rtype), intent(in)  :: latice ! latent heat of fusion
   real(rtype), intent(in)  :: karman ! Von Karman's constant
+  real(rtype), intent(in)  :: p0_shoc! Reference pressure, Pa
 
   real(rtype), intent(in) :: pref_mid(nlev) ! reference pressures at midpoints
 
@@ -183,6 +182,7 @@ subroutine shoc_init( &
   lcond = latvap ! [J/kg]
   lice = latice  ! [J/kg]
   vk = karman    ! [-]
+  p0 = p0_shoc   ! [Pa]
 
   ! Tunable parameters, all unitless
   !  override default values if value is present
@@ -2920,8 +2920,8 @@ subroutine shoc_assumed_pdf_compute_s(&
       qn=s
     endif
   endif
-  
-  ! Prevent possibility of empty clouds or rare occurence of 
+
+  ! Prevent possibility of empty clouds or rare occurence of
   !  cloud liquid less than zero
   if (qn .le. 0._rtype) then
     C=0._rtype
