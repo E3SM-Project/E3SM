@@ -108,6 +108,7 @@ void TurbulentMountainStress::run_impl (const double /* dt */)
     // Calculate z_mid
     PF::calculate_dz(team, pseudo_density_i, p_mid_i, T_mid_i, qv_i, dz_i);
     const Real z_surf = 0.0; // For now, set z_int(i,nlevs) = z_surf = 0
+    team.team_barrier();
     PF::calculate_z_int(team, nlevs, dz_i, z_surf, z_int_i);
     team.team_barrier();
     PF::calculate_z_mid(team, nlevs, z_int_i, z_mid_i);
