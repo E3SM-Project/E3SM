@@ -15,16 +15,12 @@ void Functions<S,D>
   constexpr Scalar lapvap  = C::LatVap;
   constexpr Scalar latice  = C::LatIce;
 
-  auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk);
-  Kokkos::parallel_for("get_latent_heat", policy, KOKKOS_LAMBDA(const MemberType& team) {
-    int i = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nk), [&] (const int& k) {
+  Kokkos::parallel_for(
+      Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>>({0, 0}, {nj, nk}), KOKKOS_LAMBDA (int i, int k) {
       v(i,k) = lapvap;
       s(i,k) = lapvap + latice;
       f(i,k) = latice;
-    });
   });
-
 }
 
 } // namespace p3
