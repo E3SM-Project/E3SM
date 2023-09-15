@@ -67,7 +67,7 @@ void Functions<S,D>::iop_setinitial(
   assert(elem.inited());
 
   // Get time info
-  const Int n0 = Homme::Context::singleton().get<Homme::TimeLevel>().n0;
+  const Int n0 = 0; //Homme::Context::singleton().get<Homme::TimeLevel>().n0;
 
   if (!use_replay && nstep == 0 && dynproc) {
 
