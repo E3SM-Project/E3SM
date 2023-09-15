@@ -120,7 +120,7 @@ struct IopSetinitialData : public PhysicsTestData {
 
   void init()
   {
-    tracers.init(nelemd, 10); // what is num tracers?
+    tracers.init(nelemd, QSIZE_D);
     elem.init(nelemd, true, true, 2);
   }
 

@@ -3,6 +3,9 @@
 
 #include "dp_functions.hpp" // for ETI only but harmless for GPU
 
+#include "Context.hpp"
+#include "TimeLevel.hpp"
+
 namespace scream {
 namespace dp {
 
@@ -63,6 +66,9 @@ void Functions<S,D>::iop_setinitial(
   assert(tracers.inited());
   assert(elem.inited());
 
+  // Get time info
+  const Int n0 = Homme::Context::singleton().get<Homme::TimeLevel>().n0;
+
   if (!use_replay && nstep == 0 && dynproc) {
 
     Kokkos::parallel_for(
@@ -70,15 +76,14 @@ void Functions<S,D>::iop_setinitial(
       policy,
       KOKKOS_LAMBDA(const MemberType& team) {
 
-      // We cannot support parallelism at the element level when nstep<=1 because the thelev
+      // We cannot support parallelism at the element level because the thelev
       // computation of tobs is dependent on prior iterations that may have alterted tobs
       for (Int ie = 0; ie < nelemd; ++ie) {
         for (Int j = 0; j < np; ++j) {
           for (Int i = 0; i < np; ++i) {
 
-          // Find level where tobs is no longer zero
-          Int thelev=-1;
-          if (nstep <= 1) {
+            // Find level where tobs is no longer zero
+            Int thelev=-1;
             Kokkos::parallel_reduce(
               Kokkos::TeamVectorRange(team, plev_packs), [&] (int plev_pack, Int& pmin) {
               auto zmask = tobs(plev_pack) != 0;
@@ -86,9 +91,7 @@ void Functions<S,D>::iop_setinitial(
                 pmin = plev_pack;
               }
             }, Kokkos::Min<Int>(thelev));
-          }
 
-          if (nstep <= 1) {
             Kokkos::parallel_for(
               Kokkos::TeamVectorRange(team, thelev+1), [&] (int k) {
               auto zmask = k < thelev ? Smask(true) : tobs(k) == 0;
@@ -99,19 +102,7 @@ void Functions<S,D>::iop_setinitial(
                 }
               }
             });
-          }
-          else {
-            Kokkos::parallel_for(
-              Kokkos::TeamVectorRange(team, plev_packs), [&] (int k) {
-              // Ekat packs don't know how to assign themselves to KokkosKernels::Batched::Experimental::SIMD
-              vector_simd for (Int p = 0; p < Spack::n; ++p) {
-                tobs(k)[p] = elem.m_forcing.m_ft(ie,i,j,k)[p];
-                qobs(k)[p] = tracers.Q(ie,0,i,j,k)[p];
-              }
-            });
-          }
 
-          if (nstep == 0) {
             if (scm_zero_non_iop_tracers) {
               for (Int cix = 0; cix < pcnst; ++cix) {
                 Kokkos::parallel_for(
@@ -141,19 +132,19 @@ void Functions<S,D>::iop_setinitial(
             });
 
             if (have_ps) {
-              elem.m_state.m_ps_v(ie, 0, i, j) = psobs; // what is [NUM_TIME_LEVELS]?
+              elem.m_state.m_ps_v(ie, n0, i, j) = psobs;
             }
 
             Kokkos::parallel_for(
               Kokkos::TeamVectorRange(team, plev_packs), [&] (int k) {
               if (have_u) {
                 vector_simd for (Int p = 0; p < Spack::n; ++p) {
-                  elem.m_state.m_v(ie, 0, 0, i, j, k)[p] = uobs(k)[p]; // [2] is 0?
+                  elem.m_state.m_v(ie, 0, 0, i, j, k)[p] = uobs(k)[p]; // [2] is 0 for u
                 }
               }
               if (have_v) {
                 vector_simd for (Int p = 0; p < Spack::n; ++p) {
-                  elem.m_state.m_v(ie, 0, 1, i, j, k)[p] = vobs(k)[p]; // [2] is 1?
+                  elem.m_state.m_v(ie, 0, 1, i, j, k)[p] = vobs(k)[p]; // [2] is 1 for v
                 }
               }
               if (have_numliq) {
@@ -184,7 +175,6 @@ void Functions<S,D>::iop_setinitial(
             });
           }
         }
-      }
       }
     });
   }
