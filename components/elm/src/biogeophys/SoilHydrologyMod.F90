@@ -1891,17 +1891,17 @@ contains
              enddo
              T2 = 1.e-3_r8*hksat(c,nlevbed)*f
           else
-             ! SSH is below the soil column
+             ! SSH or ZWT is below the soil column
              if (ldomain%topo(g)-zwt(c) > ocn2lnd_vars%ssh_grc(g)) then
-                T2 = 1.e-3_r8*hksat(c,nlevbed)*f*exp((ocn2lnd_vars%ssh_grc(g)-(ldomain%topo(g)-80._r8))/f)
+                T2 = 1.e-3_r8*hksat(c,nlevbed)*f*exp(-((ldomain%topo(g)-zi(c,nlevbed))-ocn2lnd_vars%ssh_grc(g))/f)
              else
-                T2 = 1.e-3_r8*hksat(c,nlevbed)*f*exp((80._r8 - zwt(c))/f)
+                T2 = 1.e-3_r8*hksat(c,nlevbed)*f*exp(-(zwt(c)-zi(c,nlevbed))/f)
              endif
           endif
           ! positive: lnd->ocn, negative: ocn->lnd
           if (ldomain%topo(g) - ocn2lnd_vars%ssh_grc(g) < 80._r8) then
              head = ldomain%topo(g) - zwt(c) - ocn2lnd_vars%ssh_grc(g);
-             qflx_lnd2ocn(c) = imped*2._r8*(T1+T2)*(head)/ (ldomain%frac(g) * ldomain%area(g) * 1.e6_r8) * 1.e3_r8
+             qflx_lnd2ocn(c) = imped*2._r8*(T1+T2)*(head)/ (ldomain%frac(g) * ldomain%area(g) * 1.e6_r8) * 1.e3_r8 ! [mm H2O/s]
           else
              ! Land surface is much higher than the SSH, then there is no lateral flow
              qflx_lnd2ocn(c) = 0._r8
