@@ -12,15 +12,19 @@ void Functions<S,D>
 {
   using ExeSpace = typename KT::ExeSpace;
 
-  constexpr Scalar lapvap  = C::LatVap;
+  constexpr Scalar latvap  = C::LatVap;
   constexpr Scalar latice  = C::LatIce;
 
-  Kokkos::parallel_for(
-      Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>>({0, 0}, {nj, nk}), KOKKOS_LAMBDA (int i, int k) {
-      v(i,k) = lapvap;
-      s(i,k) = lapvap + latice;
-      f(i,k) = latice;
-  });
+  Kokkos::deep_copy(v, latvap);
+  Kokkos::deep_copy(s, latvap + latice);
+  Kokkos::deep_copy(f, latice);
+
+//  Kokkos::parallel_for(
+//      Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>>({0, 0}, {nj, nk}), KOKKOS_LAMBDA (int i, int k) {
+//      v(i,k) = latvap;
+//      s(i,k) = latvap + latice;
+//      f(i,k) = latice;
+//  });
 }
 
 } // namespace p3
