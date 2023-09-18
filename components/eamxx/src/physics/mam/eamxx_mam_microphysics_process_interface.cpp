@@ -244,13 +244,13 @@ void MAMMicrophysics::run_impl(const double dt) {
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ThreadTeam& team) {
     const Int icol = team.league_rank(); // column index
 
-    // extract column-specific atmosphere state data
+    // fetch column-specific atmosphere state data
     auto atm = mam_coupling::atmosphere_for_column(dry_atm_, icol);
 
     // set surface state data
     haero::Surface sfc{};
 
-    // extract column-specific subviews into aerosol prognostics
+    // fetch column-specific subviews into aerosol prognostics
     mam4::Prognostics progs = mam_coupling::interstitial_aerosols_for_column(dry_aero_, icol);
 
     // set up diagnostics
@@ -258,6 +258,9 @@ void MAMMicrophysics::run_impl(const double dt) {
 
     // compute aerosol microphysics on each vertical level within this column
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int k) {
+
+      constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+      constexpr int nqtendbb = mam_coupling::nqtendbb();
 
       // extract atm state variables (input)
       Real pmid = atm.pressure(k);
@@ -267,111 +270,36 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real qv   = atm.vapor_mixing_ratio(k);
       Real cld  = atm.cloud_fraction(k);
 
+      // aerosol/gas species work arrays (volume mixing ratios (VMR), equivalent
+      // to tracer mixing ratios (TMR))
+      Real q[gas_pcnst] = {};
+      Real qqcw[gas_pcnst] = {};
+
       // extract aerosol state variables into "working arrays"
       // (in EAM, this is done in the gas_phase_chemdr subroutine defined within
       //  mozart/mo_gas_phase_chemdr.F90)
-
-      // index mappings for populating work arrays
-      // FIXME: we should find a better home for this data
-      // NOTE: this mapping is chemistry-mechanism-specific (see mo_sim_dat.F90
-      // NOTE: in the relevant preprocessed chemical mechanism)
-      // NOTE: see mam4xx/aero_modes.hpp to interpret these mode/aerosol/gas
-      // NOTE: indices
-
-      // mapping of constituent indices to aerosol modes
-      const auto Accum = mam4::ModeIndex::Accumulation;
-      const auto Aitken = mam4::ModeIndex::Aitken;
-      const auto Coarse = mam4::ModeIndex::Coarse;
-      const auto PC = mam4::ModeIndex::PrimaryCarbon;
-      const auto NoMode = mam4::ModeIndex::None;
-      static const mam4::ModeIndex mode_for_cnst[impl::gas_pcnst()] = {
-        NoMode, NoMode, NoMode, NoMode, NoMode, NoMode, // gases (not aerosols)
-        Accum, Accum, Accum, Accum, Accum, Accum, Accum, Accum,         // 7 aero species + NMR
-        Aitken, Aitken, Aitken, Aitken, Aitken,                         // 4 aero species + NMR
-        Coarse, Coarse, Coarse, Coarse, Coarse, Coarse, Coarse, Coarse, // 7 aero species + NMR
-        PC, PC, PC, PC,                                                 // 3 aero species + NMR
-      };
-
-      // mapping of constituent indices to aerosol species
-      const auto SOA = mam4::AeroId::SOA;
-      const auto SO4 = mam4::AeroId::SO4;
-      const auto POM = mam4::AeroId::POM;
-      const auto BC = mam4::AeroId::BC;
-      const auto NaCl = mam4::AeroId::NaCl;
-      const auto DST = mam4::AeroId::DST;
-      const auto MOM = mam4::AeroId::MOM;
-      const auto NoAero = mam4::AeroId::None;
-      static const mam4::AeroId aero_for_cnst[impl::gas_pcnst()] = {
-        NoAero, NoAero, NoAero, NoAero, NoAero, NoAero, // gases (not aerosols)
-        SO4, POM, SOA, BC, DST, NaCl, MOM, NoAero,      // accumulation mode
-        SO4, SOA, NaCl, MOM, NoAero,                    // aitken mode
-        DST, NaCl, SO4, BC, POM, SOA, MOM, NoAero,      // coarse mode
-        POM, BC, MOM, NoAero,                           // primary carbon mode
-      };
-
-      // mapping of constituent indices to gases
-      const auto O3 = mam4::GasId::O3;
-      const auto H2O2 = mam4::GasId::H2O2;
-      const auto H2SO4 = mam4::GasId::H2SO4;
-      const auto SO2 = mam4::GasId::SO2;
-      const auto DMS = mam4::GasId::DMS;
-      const auto SOAG = mam4::GasId::SOAG;
-      const auto NoGas = mam4::GasId::None;
-      static const mam4::GasId gas_for_cnst[impl::gas_pcnst()] = {
-        O3, H2O2, H2SO4, SO2, DMS, SOAG,
-        NoGas, NoGas, NoGas, NoGas, NoGas, NoGas, NoGas, NoGas,
-        NoGas, NoGas, NoGas, NoGas, NoGas,
-        NoGas, NoGas, NoGas, NoGas, NoGas, NoGas, NoGas, NoGas,
-        NoGas, NoGas, NoGas, NoGas,
-      };
-
-      // aerosol/gas species (volume mixing ratios (VMR), equivalent to tracer
-      // mixing ratios (TMR), in spite of the variable names used here)
-      Real q[impl::gas_pcnst()] = {};
-      Real qqcw[impl::gas_pcnst()] = {};
-
-      // copy number/mass mixing ratios from progs to q and qqcw at level k,
-      // converting them to VMR
-      for (int i = 0; i < impl::gas_pcnst(); ++i) {
-        auto mode_index = mode_for_cnst[i];
-        auto aero_id = aero_for_cnst[i];
-        auto gas_id = gas_for_cnst[i];
-        if (gas_id != NoGas) { // constituent is a gas
-          int g = static_cast<int>(gas_id);
-          q[i] = progs.q_gas[g](k);
-          qqcw[i] = progs.q_gas[g](k);
-        } else {
-          int m = static_cast<int>(mode_index);
-          if (aero_id != NoAero) { // constituent is an aerosol species
-            int a = aerosol_index_for_mode(mode_index, aero_id);
-            q[i] = progs.q_aero_i[m][a](k);
-            qqcw[i] = progs.q_aero_c[m][a](k);
-          } else { // constituent is a modal number mixing ratio
-            int m = static_cast<int>(mode_index);
-            q[i] = progs.n_mode_i[m](k);
-            qqcw[i] = progs.n_mode_c[m](k);
-          }
-        }
-      }
+      mam_coupling::transfer_prognostics_to_work_arrays(progs, k, q, qqcw);
 
       // "before gas chemistry" quantities (VMR)
       // FIXME: Not sure what this means before we add gas-phase chemistry!
       // FIXME: Should we stash these in diagnostics somewhere?
-      Real q_pregaschem[impl::gas_pcnst()] = {};
-      Real q_precldchem[impl::gas_pcnst()] = {};
-      Real qqcw_precldchem[impl::gas_pcnst()] = {};
+      Real q_pregaschem[gas_pcnst] = {};
+      Real q_precldchem[gas_pcnst] = {};
+      Real qqcw_precldchem[gas_pcnst] = {};
       // FIXME: For now, we just use the same values as in q and qqcw
-      for (int i = 0; i < impl::gas_pcnst(); ++i) {
+      for (int i = 0; i < gas_pcnst; ++i) {
         q_pregaschem[i] = q[i];
         q_precldchem[i] = q[i];
         qqcw_precldchem[i] = qqcw[i];
       }
 
       // aerosol/gas species tendencies (output)
-      Real q_tendbb[impl::gas_pcnst()][impl::nqtendbb()] = {};
-      Real qqcw_tendbb[impl::gas_pcnst()][impl::nqtendbb()] = {};
+      Real q_tendbb[gas_pcnst][nqtendbb] = {};
+      Real qqcw_tendbb[gas_pcnst][nqtendbb] = {};
 
       // dry and wet diameters for aerosol modes
+      // FIXME: are we supposed to use the "total" dry/wet diameters, or the
+      // FIXME: interstitial dry/wet diameters?
       Real dgncur_a[mam4::AeroConfig::num_modes()] = {};
       Real dgncur_awet[mam4::AeroConfig::num_modes()] = {};
 
@@ -385,9 +313,8 @@ void MAMMicrophysics::run_impl(const double dt) {
                                      qqcw_tendbb, dgncur_a, dgncur_awet,
                                      wetdens_host, qaerwat);
 
-      // unpack updated prognostics
-
-      // FIXME: Where do we stash chemistry-related tendencies? Diagnostics?
+      // unpack updated prognostics from work arrays
+      mam_coupling::transfer_work_arrays_to_prognostics(q, qqcw, progs, k);
     });
   });
 
