@@ -3,8 +3,8 @@
 #include "share/scream_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "physics/dp/dp_functions.hpp"
-#include "physics/dp/dp_functions_f90.hpp"
+#include "doubly-periodic/dp_functions.hpp"
+#include "doubly-periodic/dp_functions_f90.hpp"
 
 #include "dp_unit_tests_common.hpp"
 
@@ -13,17 +13,17 @@ namespace dp {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestReadiopdata {
+struct UnitWrap::UnitTest<D>::TestCrmResolvedTurb {
 
   static void run_bfb()
   {
     auto engine = setup_random_test();
 
-    ReadiopdataData f90_data[] = {
+    CrmResolvedTurbData f90_data[] = {
       // TODO
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(ReadiopdataData);
+    static constexpr Int num_runs = sizeof(f90_data) / sizeof(CrmResolvedTurbData);
 
     // Generate random input data
     // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
@@ -33,7 +33,7 @@ struct UnitWrap::UnitTest<D>::TestReadiopdata {
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
-    ReadiopdataData cxx_data[] = {
+    CrmResolvedTurbData cxx_data[] = {
       // TODO
     };
 
@@ -42,19 +42,19 @@ struct UnitWrap::UnitTest<D>::TestReadiopdata {
     // Get data from fortran
     for (auto& d : f90_data) {
       // expects data in C layout
-      readiopdata(d);
+      crm_resolved_turb(d);
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      readiopdata_f(d.plev, d.iop_update_phase1, d.hyam, d.hybm);
+      crm_resolved_turb_f(d.nelemd, d.elem, d.hvcoord, d.hybrid, d.t1, d.nelemd_todo, d.np_todo);
     }
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING) {
       for (Int i = 0; i < num_runs; ++i) {
-        ReadiopdataData& d_f90 = f90_data[i];
-        ReadiopdataData& d_cxx = cxx_data[i];
+        CrmResolvedTurbData& d_f90 = f90_data[i];
+        CrmResolvedTurbData& d_cxx = cxx_data[i];
 
       }
     }
@@ -68,9 +68,9 @@ struct UnitWrap::UnitTest<D>::TestReadiopdata {
 
 namespace {
 
-TEST_CASE("readiopdata_bfb", "[dp]")
+TEST_CASE("crm_resolved_turb_bfb", "[dp]")
 {
-  using TestStruct = scream::dp::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestReadiopdata;
+  using TestStruct = scream::dp::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCrmResolvedTurb;
 
   TestStruct::run_bfb();
 }

@@ -50,7 +50,7 @@ namespace dp {
 
 void advance_iop_forcing(AdvanceIopForcingData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   d.transpose<ekat::TransposeDirection::c2f>();
   advance_iop_forcing_c(d.plev, d.pcnst, d.scm_dt, d.ps_in, d.u_in, d.v_in, d.t_in, d.q_in, d.t_phys_frc, d.u_update, d.v_update, d.t_update, d.q_update);
   d.transpose<ekat::TransposeDirection::f2c>();
@@ -59,13 +59,13 @@ void advance_iop_forcing(AdvanceIopForcingData& d)
 
 void advance_iop_nudging(AdvanceIopNudgingData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   advance_iop_nudging_c(d.plev, d.scm_dt, d.ps_in, d.t_in, d.q_in, d.t_update, d.q_update, d.relaxt, d.relaxq);
 }
 
 void advance_iop_subsidence(AdvanceIopSubsidenceData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   d.transpose<ekat::TransposeDirection::c2f>();
   advance_iop_subsidence_c(d.plev, d.pcnst, d.scm_dt, d.ps_in, d.u_in, d.v_in, d.t_in, d.q_in, d.u_update, d.v_update, d.t_update, d.q_update);
   d.transpose<ekat::TransposeDirection::f2c>();
@@ -73,25 +73,25 @@ void advance_iop_subsidence(AdvanceIopSubsidenceData& d)
 
 void iop_setinitial(IopSetinitialData& d)
 {
-  dp_init(d.plev, true);
-  iop_setinitial_c(d.nelemd, d.elem);
+  dp_init();
+  //iop_setinitial_c(d.nelemd, d.elem);
 }
 
 void iop_broadcast(IopBroadcastData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   iop_broadcast_c();
 }
 
 void apply_iop_forcing(ApplyIopForcingData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   apply_iop_forcing_c(d.nelemd, d.elem, &d.hvcoord, &d.hybrid, &d.tl, d.n, d.t_before_advance, d.nets, d.nete);
 }
 
 void iop_domain_relaxation(IopDomainRelaxationData& d)
 {
-  dp_init(d.nlev, true);
+  dp_init();
   d.transpose<ekat::TransposeDirection::c2f>();
   iop_domain_relaxation_c(d.nelemd, d.np, d.nlev, d.elem, d.hvcoord, d.hybrid, d.t1, d.dp, d.nelemd_todo, d.np_todo, d.dt);
   d.transpose<ekat::TransposeDirection::f2c>();
@@ -99,13 +99,13 @@ void iop_domain_relaxation(IopDomainRelaxationData& d)
 
 void crm_resolved_turb(CrmResolvedTurbData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   crm_resolved_turb_c(d.nelemd, d.elem, d.hvcoord, d.hybrid, d.t1, d.nelemd_todo, d.np_todo);
 }
 
 void iop_default_opts(IopDefaultOptsData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   char cbuff[512] = "";
   char* buffptr = cbuff;
   iop_default_opts_c(&d.scmlat_out, &d.scmlon_out, &buffptr, &d.single_column_out, &d.scm_iop_srf_prop_out, &d.iop_nudge_tq_out, &d.iop_nudge_uv_out, &d.iop_nudge_tq_low_out, &d.iop_nudge_tq_high_out, &d.iop_nudge_tscale_out, &d.scm_observed_aero_out, &d.iop_dosubsidence_out, &d.scm_multcols_out, &d.dp_crm_out, &d.iop_perturb_high_out, &d.precip_off_out, &d.scm_zero_non_iop_tracers_out);
@@ -114,32 +114,32 @@ void iop_default_opts(IopDefaultOptsData& d)
 
 void iop_setopts(IopSetoptsData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   const char* cptr = d.iopfile_in.c_str();
   iop_setopts_c(d.scmlat_in, d.scmlon_in, &cptr, d.single_column_in, d.scm_iop_srf_prop_in, d.iop_nudge_tq_in, d.iop_nudge_uv_in, d.iop_nudge_tq_low_in, d.iop_nudge_tq_high_in, d.iop_nudge_tscale_in, d.scm_observed_aero_in, d.iop_dosubsidence_in, d.scm_multcols_in, d.dp_crm_in, d.iop_perturb_high_in, d.precip_off_in, d.scm_zero_non_iop_tracers_in);
 }
 
 void setiopupdate_init(SetiopupdateInitData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   setiopupdate_init_c();
 }
 
 void setiopupdate(SetiopupdateData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   setiopupdate_c();
 }
 
 void readiopdata(ReadiopdataData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   readiopdata_c(d.plev, d.iop_update_phase1, d.hyam, d.hybm);
 }
 
 void iop_intht(IopInthtData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   iop_intht_c();
 }
 
@@ -334,10 +334,55 @@ void advance_iop_subsidence_f(Int plev, Int pcnst, Real scm_dt, Real ps_in, Real
   ekat::device_to_host({q_update}, pcnst, plev, inout_views_2d, true);
 }
 
-void iop_setinitial_f(Int nelemd, element_t* elem)
+void iop_setinitial_f(Int plev, Int pcnst, Int nelemd, Int np, Int nstep, Real psobs, bool use_replay, bool dynproc, bool have_t, bool have_q, bool have_ps, bool have_u, bool have_v, bool have_numliq, bool have_cldliq, bool have_numice, bool have_cldice, bool scm_zero_non_iop_tracers, bool is_first_restart_step, Real* qmin, Real* uobs, Real* vobs, Real* numliqobs, Real* numiceobs, Real* cldliqobs, Real* cldiceobs, Real* dx_short, tracer_t* tracers, element_t* elem, Real* dyn_dx_size, Real* tobs, Real* qobs)
 {
-  // TODO
+  using DPF  = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename DPF::Spack;
+  using Scalarp = ekat::Pack<Real, 1>;
+  using view_1d =  typename DPF::view_1d<Spack>;
+  using view_1ds = typename DPF::view_1d<Scalarp>;
+  using sview_1ds = typename DPF::view_1d<Real>;
+  using KT = typename DPF::KT;
+  using ExeSpace = typename KT::ExeSpace;
+  using MemberType = typename DPF::MemberType;
+
+  // Some of the workspaces need plev+1 items
+  const Int plev_pack = ekat::npack<Spack>(plev);
+
+  // Set up views
+  std::vector<view_1d>  temp_d(8);
+  std::vector<view_1ds> temp2_d(2);
+
+  ekat::host_to_device({uobs, vobs, numliqobs, numiceobs, cldliqobs, cldiceobs, tobs, qobs},
+                       plev, temp_d);
+
+  std::vector<Int> scalar_sizes = {nelemd, pcnst};
+  ekat::host_to_device({dx_short, qmin}, scalar_sizes, temp2_d);
+
+  view_1d
+    uobs_d      (temp_d[0]),
+    vobs_d      (temp_d[1]),
+    numliqobs_d (temp_d[2]),
+    numiceobs_d (temp_d[3]),
+    cldliqobs_d (temp_d[4]),
+    cldiceobs_d (temp_d[5]),
+    tobs_d      (temp_d[6]),
+    qobs_d      (temp_d[7]);
+
+  sview_1ds
+    dx_short_d(reinterpret_cast<Real*>(temp2_d[0].data()), scalar_sizes[0]),
+    qmin_d    (reinterpret_cast<Real*>(temp2_d[1].data()), scalar_sizes[1]);
+
+  // Call core function
+  DPF::iop_setinitial(plev, pcnst, nelemd, np, nstep, use_replay, dynproc, have_t, have_ps, have_q, have_u, have_v, have_numliq, have_cldliq, have_numice, have_cldice, scm_zero_non_iop_tracers, is_first_restart_step, qmin_d, uobs_d, vobs_d, numliqobs_d, numiceobs_d, cldliqobs_d, cldiceobs_d, psobs, dx_short_d, *dyn_dx_size, *tracers, *elem, tobs_d, qobs_d);
+
+  // Sync back to host
+  std::vector<view_1d> inout_views    = {tobs_d, qobs_d};
+
+  ekat::device_to_host({tobs, qobs}, plev, inout_views);
 }
+
 void iop_broadcast_f()
 {
 #if 0
