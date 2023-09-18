@@ -18,7 +18,7 @@ namespace dp {
 void dp_init(const bool force_reinit) {
   static bool is_init = false;
   if (!is_init || force_reinit) {
-    init_time_level_c(10, 9, 11, 5, 4);
+    init_time_level_c(10, 3, 11, 5, 4);
     is_init = true;
   }
 }

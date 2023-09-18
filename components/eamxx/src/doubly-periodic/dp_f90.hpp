@@ -9,7 +9,6 @@
 namespace scream {
 namespace dp {
 
-
 // Initialize DP. This is only for standalone DP testing.
 void dp_init(const bool force_reinit=false);
 
