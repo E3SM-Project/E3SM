@@ -142,7 +142,7 @@ contains
             if ( .not. li_mask_is_grounded_ice(cellMask(iCell)) .and. bedTopography(iCell) < config_sea_level ) then
                seedOceanMaskHoriz(iCell) = 1
             endif
-            if ( li_mask_is_grounded_ice(cellMask(iCell)) .and. bedTopography(iCell) < config_sea_level ) then
+            if ( bedTopography(iCell) < config_sea_level ) then
                growOceanMaskHoriz(iCell) = 1
                call mpas_log_write('growOceanMaskHoriz = 1')
             endif
@@ -154,10 +154,10 @@ contains
          ! go through the loop to get nCells extra into grounded ice
          do iter = 1, nCellsExtra
             do iCell = 1, nCellsSolve
-               if ( growOceanMaskHoriz(iCell) == 1 ) then
+               if ( growOceanMaskHoriz(iCell) == 1 .and. seedOceanMaskHorizOld(iCell) == 0 ) then
                   do iNeighbor = 1, nEdgesOnCell(iCell)
                      jCell = cellsOnCell(iNeighbor, iCell)
-                     if ( seedOceanMaskHorizOld(iCell) == 0 .and. seedOceanMaskHorizOld(jCell) == 1 ) then
+                     if ( seedOceanMaskHorizOld(jCell) == 1 ) then
                         seedOceanMaskHoriz(iCell) = 1
                         call mpas_log_write('seedOceanMaskHoriz = 1')
                      endif
