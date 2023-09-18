@@ -545,8 +545,12 @@
 			possible_values="'ncar'"
 		/>
 		<nml_option name="config_update_ocean_fluxes" type="logical" default_value="false" units="unitless"
-			description=""
+			description="Include frazil ice in ocean flux fields."
 			possible_values="true or false"
+		/>
+		<nml_option name="config_frazil_coupling_type" type="character" default_value="external" units="unitless"
+			description="Type of frazil ice coupling."
+			possible_values="'external', 'internal', 'fresh_ice_correction'"
 		/>
 		<nml_option name="config_include_pond_freshwater_feedback" type="logical" default_value="false" units="unitless"
 			description="Reduce the ocean fresh water flux by the pond fresh water flux for coupling."

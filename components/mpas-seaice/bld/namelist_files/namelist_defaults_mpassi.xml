@@ -108,6 +108,7 @@
 <config_forcing_precipitation_units>'mm_per_sec'</config_forcing_precipitation_units>
 <config_forcing_sst_type>'ncar'</config_forcing_sst_type>
 <config_update_ocean_fluxes>true</config_update_ocean_fluxes>
+<config_frazil_coupling_type>'external'</config_frazil_coupling_type>
 <config_include_pond_freshwater_feedback>false</config_include_pond_freshwater_feedback>
 
 <!-- testing -->
