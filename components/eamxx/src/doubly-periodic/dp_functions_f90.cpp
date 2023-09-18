@@ -50,7 +50,7 @@ namespace dp {
 
 void advance_iop_forcing(AdvanceIopForcingData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   d.transpose<ekat::TransposeDirection::c2f>();
   advance_iop_forcing_c(d.plev, d.pcnst, d.scm_dt, d.ps_in, d.u_in, d.v_in, d.t_in, d.q_in, d.t_phys_frc, d.u_update, d.v_update, d.t_update, d.q_update);
   d.transpose<ekat::TransposeDirection::f2c>();
@@ -59,13 +59,13 @@ void advance_iop_forcing(AdvanceIopForcingData& d)
 
 void advance_iop_nudging(AdvanceIopNudgingData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   advance_iop_nudging_c(d.plev, d.scm_dt, d.ps_in, d.t_in, d.q_in, d.t_update, d.q_update, d.relaxt, d.relaxq);
 }
 
 void advance_iop_subsidence(AdvanceIopSubsidenceData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   d.transpose<ekat::TransposeDirection::c2f>();
   advance_iop_subsidence_c(d.plev, d.pcnst, d.scm_dt, d.ps_in, d.u_in, d.v_in, d.t_in, d.q_in, d.u_update, d.v_update, d.t_update, d.q_update);
   d.transpose<ekat::TransposeDirection::f2c>();
@@ -73,25 +73,25 @@ void advance_iop_subsidence(AdvanceIopSubsidenceData& d)
 
 void iop_setinitial(IopSetinitialData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   //iop_setinitial_c(d.nelemd, d.elem);
 }
 
 void iop_broadcast(IopBroadcastData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   iop_broadcast_c();
 }
 
 void apply_iop_forcing(ApplyIopForcingData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   apply_iop_forcing_c(d.nelemd, d.elem, &d.hvcoord, &d.hybrid, &d.tl, d.n, d.t_before_advance, d.nets, d.nete);
 }
 
 void iop_domain_relaxation(IopDomainRelaxationData& d)
 {
-  dp_init(d.nlev, true);
+  dp_init();
   d.transpose<ekat::TransposeDirection::c2f>();
   iop_domain_relaxation_c(d.nelemd, d.np, d.nlev, d.elem, d.hvcoord, d.hybrid, d.t1, d.dp, d.nelemd_todo, d.np_todo, d.dt);
   d.transpose<ekat::TransposeDirection::f2c>();
@@ -99,13 +99,13 @@ void iop_domain_relaxation(IopDomainRelaxationData& d)
 
 void crm_resolved_turb(CrmResolvedTurbData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   crm_resolved_turb_c(d.nelemd, d.elem, d.hvcoord, d.hybrid, d.t1, d.nelemd_todo, d.np_todo);
 }
 
 void iop_default_opts(IopDefaultOptsData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   char cbuff[512] = "";
   char* buffptr = cbuff;
   iop_default_opts_c(&d.scmlat_out, &d.scmlon_out, &buffptr, &d.single_column_out, &d.scm_iop_srf_prop_out, &d.iop_nudge_tq_out, &d.iop_nudge_uv_out, &d.iop_nudge_tq_low_out, &d.iop_nudge_tq_high_out, &d.iop_nudge_tscale_out, &d.scm_observed_aero_out, &d.iop_dosubsidence_out, &d.scm_multcols_out, &d.dp_crm_out, &d.iop_perturb_high_out, &d.precip_off_out, &d.scm_zero_non_iop_tracers_out);
@@ -114,32 +114,32 @@ void iop_default_opts(IopDefaultOptsData& d)
 
 void iop_setopts(IopSetoptsData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   const char* cptr = d.iopfile_in.c_str();
   iop_setopts_c(d.scmlat_in, d.scmlon_in, &cptr, d.single_column_in, d.scm_iop_srf_prop_in, d.iop_nudge_tq_in, d.iop_nudge_uv_in, d.iop_nudge_tq_low_in, d.iop_nudge_tq_high_in, d.iop_nudge_tscale_in, d.scm_observed_aero_in, d.iop_dosubsidence_in, d.scm_multcols_in, d.dp_crm_in, d.iop_perturb_high_in, d.precip_off_in, d.scm_zero_non_iop_tracers_in);
 }
 
 void setiopupdate_init(SetiopupdateInitData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   setiopupdate_init_c();
 }
 
 void setiopupdate(SetiopupdateData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   setiopupdate_c();
 }
 
 void readiopdata(ReadiopdataData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   readiopdata_c(d.plev, d.iop_update_phase1, d.hyam, d.hybm);
 }
 
 void iop_intht(IopInthtData& d)
 {
-  dp_init(d.plev, true);
+  dp_init();
   iop_intht_c();
 }
 

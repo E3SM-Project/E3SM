@@ -23,7 +23,6 @@ set_target_properties(zm PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
 target_include_directories(zm PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/../common
   ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
 target_link_libraries(zm physics_share scream_share)

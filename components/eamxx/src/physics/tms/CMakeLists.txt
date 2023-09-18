@@ -30,7 +30,6 @@ foreach (TMS_LIB IN LISTS TMS_LIBS)
     Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${TMS_LIB}_modules
   )
   target_include_directories(${TMS_LIB} PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../share
     ${CMAKE_CURRENT_BINARY_DIR}/${TMS_LIB}_modules
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/impl
