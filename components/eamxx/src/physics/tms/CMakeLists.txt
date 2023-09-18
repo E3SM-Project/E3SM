@@ -1,43 +1,30 @@
-set(TMS_SRCS
-  tms_iso_c.f90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/trb_mtn_stress.F90
-  eamxx_tms_process_interface.cpp
-)
-
-if (NOT SCREAM_LIB_ONLY)
-  list(APPEND TMS_SRCS
-    tms_functions_f90.cpp
-    )
-endif()
-
-set(TMS_HEADERS
-  eamxx_tms_process_interface.hpp
+# Create tms library
+add_library(tms eamxx_tms_process_interface.cpp)
+target_link_libraries(tms physics_share scream_share)
+target_compile_definitions(tms PUBLIC EAMXX_HAS_TMS)
+target_include_directories(tms PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/impl
 )
 
 # Add ETI source files if not on CUDA/HIP
 if (NOT EAMXX_ENABLE_GPU)
-  list(APPEND TMS_SRCS
-    eti/compute_tms.cpp
-  ) # TMS ETI SRCS
+  target_sources(tms PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/eti/compute_tms.cpp
+  )
 endif()
 
-set(TMS_LIBS "tms")
-add_library(tms ${TMS_SRCS})
-target_compile_definitions(tms PUBLIC EAMXX_HAS_TMS)
-
-foreach (TMS_LIB IN LISTS TMS_LIBS)
-  set_target_properties(${TMS_LIB} PROPERTIES
-    Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${TMS_LIB}_modules
-  )
-  target_include_directories(${TMS_LIB} PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../share
-    ${CMAKE_CURRENT_BINARY_DIR}/${TMS_LIB}_modules
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/impl
-  )
-  target_link_libraries(${TMS_LIB} physics_share scream_share)
-endforeach()
-
 if (NOT SCREAM_LIB_ONLY)
+  # For testing, add some more sources and modules directory
+  target_sources (tms PUBLIC
+    ${SCREAM_BASE_DIR}/../eam/src/physics/cam/trb_mtn_stress.F90
+    ${CMAKE_CURRENT_SOURCE_DIR}/tms_iso_c.f90
+    ${CMAKE_CURRENT_SOURCE_DIR}/tms_functions_f90.cpp
+  )
+  set_target_properties(tms PROPERTIES
+    Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tms_modules
+  )
+  target_include_directories (tms PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/tms_modules)
+
   add_subdirectory(tests)
 endif()

@@ -28,21 +28,7 @@ struct Functions
   using Scalar = ScalarT;
   using Device = DeviceT;
 
-  template <typename S>
-  using BigPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
-  template <typename S>
-  using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
-
-  using IntSmallPack = SmallPack<Int>;
-  using Pack = BigPack<Scalar>;
-  using Spack = SmallPack<Scalar>;
-
-  using Mask  = ekat::Mask<Pack::n>;
-  using Smask = ekat::Mask<Spack::n>;
-
   using KT = ekat::KokkosTypes<Device>;
-
-  using C  = physics::Constants<Scalar>;
 
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
@@ -51,20 +37,17 @@ struct Functions
   template <typename S>
   using view_3d = typename KT::template view_3d<S>;
 
-  using MemberType = typename KT::MemberType;
-
-
   //
   // --------- Functions ---------
   //
   static void compute_tms(
     const int&                   ncols,
     const int&                   nlevs,
-    const view_3d<const Spack>&  horiz_wind,
-    const view_2d<const Spack>&  t_mid,
-    const view_2d<const Spack>&  p_mid,
-    const view_2d<const Spack>&  exner,
-    const view_2d<const Spack>&  z_mid,
+    const view_3d<const Scalar>& horiz_wind,
+    const view_2d<const Scalar>& t_mid,
+    const view_2d<const Scalar>& p_mid,
+    const view_2d<const Scalar>& exner,
+    const view_2d<const Scalar>& z_mid,
     const view_1d<const Scalar>& sgh,
     const view_1d<const Scalar>& landfrac,
     const view_1d<Scalar>&       ksrf,

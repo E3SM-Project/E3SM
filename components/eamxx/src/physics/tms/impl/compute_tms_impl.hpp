@@ -10,16 +10,18 @@ template<typename S, typename D>
 void Functions<S,D>::compute_tms(
   const int&                   ncols,
   const int&                   nlevs,
-  const view_3d<const Spack>&  horiz_wind,
-  const view_2d<const Spack>&  t_mid,
-  const view_2d<const Spack>&  p_mid,
-  const view_2d<const Spack>&  exner,
-  const view_2d<const Spack>&  z_mid,
+  const view_3d<const Scalar>& horiz_wind,
+  const view_2d<const Scalar>& t_mid,
+  const view_2d<const Scalar>& p_mid,
+  const view_2d<const Scalar>& exner,
+  const view_2d<const Scalar>& z_mid,
   const view_1d<const Scalar>& sgh,
   const view_1d<const Scalar>& landfrac,
   const view_1d<Scalar>&       ksrf,
   const view_2d<Scalar>&       tau_tms)
 {
+  using C  = physics::Constants<Scalar>;
+
   // Define some constants used
   const Scalar horomin = 1;          // Minimum value of subgrid orographic height for mountain stress [ m ]
   const Scalar z0max   = 100;        // Maximum value of z_0 for orography [ m ]
@@ -31,18 +33,15 @@ void Functions<S,D>::compute_tms(
   const Scalar rair    = C::Rair;    // Gas constant for dry air
 
   // Loop over columns
-  const auto nlev_packs = ekat::npack<Spack>(nlevs);
-  const auto policy = ekat::ExeSpaceUtils<typename KT::ExeSpace>::get_default_team_policy(ncols, nlev_packs);
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const int i = team.league_rank();
-
+  const typename KT::RangePolicy policy (0,ncols);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int& i) {
     // Subview on column, scalarize since we only care about last 2 levels (never loop over levels)
-    const auto u_wind_i = ekat::scalarize(Kokkos::subview(horiz_wind, i, 0, Kokkos::ALL()));
-    const auto v_wind_i = ekat::scalarize(Kokkos::subview(horiz_wind, i, 1, Kokkos::ALL()));
-    const auto t_mid_i  = ekat::scalarize(ekat::subview(t_mid, i));
-    const auto p_mid_i  = ekat::scalarize(ekat::subview(p_mid, i));
-    const auto exner_i  = ekat::scalarize(ekat::subview(exner, i));
-    const auto z_mid_i  = ekat::scalarize(ekat::subview(z_mid, i));
+    const auto u_wind_i = ekat::subview(horiz_wind, i, 0);
+    const auto v_wind_i = ekat::subview(horiz_wind, i, 1);
+    const auto t_mid_i  = ekat::subview(t_mid, i);
+    const auto p_mid_i  = ekat::subview(p_mid, i);
+    const auto exner_i  = ekat::subview(exner, i);
+    const auto z_mid_i  = ekat::subview(z_mid, i);
 
     // Determine subgrid orgraphic height (mean to peak)
     const auto horo = orocnst*sgh(i);
