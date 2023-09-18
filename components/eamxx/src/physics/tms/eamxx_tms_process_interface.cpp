@@ -108,14 +108,20 @@ void TurbulentMountainStress::run_impl (const double /* dt */)
     // Calculate z_mid
     PF::calculate_dz(team, pseudo_density_i, p_mid_i, T_mid_i, qv_i, dz_i);
     const Real z_surf = 0.0; // For now, set z_int(i,nlevs) = z_surf = 0
+    team.team_barrier();
     PF::calculate_z_int(team, nlevs, dz_i, z_surf, z_int_i);
     team.team_barrier();
     PF::calculate_z_mid(team, nlevs, z_int_i, z_mid_i);
   });
 
   // Compute TMS
-  TMSFunctions::compute_tms(ncols, nlevs, horiz_winds, T_mid, p_mid,
-                            exner, z_mid, sgh30, landfrac,
+  TMSFunctions::compute_tms(ncols, nlevs,
+                            ekat::scalarize(horiz_winds),
+                            ekat::scalarize(T_mid),
+                            ekat::scalarize(p_mid),
+                            ekat::scalarize(exner),
+                            ekat::scalarize(z_mid),
+                            sgh30, landfrac,
                             surf_drag_coeff_tms, wind_stress_tms);
 }
 
