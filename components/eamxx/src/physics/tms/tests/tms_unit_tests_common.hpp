@@ -42,14 +42,7 @@ struct UnitWrap {
 
     using Functions          = scream::tms::Functions<Real, Device>;
     using Scalar             = typename Functions::Scalar;
-    using Spack              = typename Functions::Spack;
-    using Pack               = typename Functions::Pack;
-    using IntSmallPack       = typename Functions::IntSmallPack;
-    using Smask              = typename Functions::Smask;
-    using C                  = typename Functions::C;
-
-    static constexpr int max_pack_size = 16;
-    static constexpr int num_test_itrs = max_pack_size / Spack::n;
+    using Spack              = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
 
     // Put struct decls here
     struct TestComputeTMS;

@@ -23,7 +23,7 @@ class TurbulentMountainStress : public AtmosphereProcess
 {
   using PF           = scream::PhysicsFunctions<DefaultDevice>;
   using TMSFunctions = tms::Functions<Real, DefaultDevice>;
-  using Spack        = TMSFunctions::Spack;
+  using Spack        = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using view_2d      = TMSFunctions::view_2d<Spack>;
   using uview_2d     = ekat::Unmanaged<view_2d>;
 
