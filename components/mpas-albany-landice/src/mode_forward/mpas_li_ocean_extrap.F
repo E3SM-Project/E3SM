@@ -87,7 +87,7 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: scratchPool, geometryPool, meshPool, extrapOceanDataPool
       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing, TFoceanOld, TFoceanNew
-      real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_zBndsOcean
+      real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_zOcean
       integer, dimension(:), pointer :: origOceanMaskHoriz
       integer, dimension(:,:), pointer :: validOceanMask, availOceanMask !masks to pass to flood-fill routine
       integer, dimension(:,:), allocatable :: validOceanMaskOld
@@ -144,7 +144,6 @@ contains
             endif
             if ( bedTopography(iCell) < config_sea_level ) then
                growOceanMaskHoriz(iCell) = 1
-               call mpas_log_write('growOceanMaskHoriz = 1')
             endif
          enddo
 
@@ -159,7 +158,6 @@ contains
                      jCell = cellsOnCell(iNeighbor, iCell)
                      if ( seedOceanMaskHorizOld(jCell) == 1 ) then
                         seedOceanMaskHoriz(iCell) = 1
-                        call mpas_log_write('seedOceanMaskHoriz = 1')
                      endif
                   enddo
                endif
@@ -175,21 +173,17 @@ contains
 
          ! make it a 3D mask based on the topography (loop through nISMIP6OceanLayers)
          call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
-         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', ismip6shelfMelt_zBndsOcean)
-
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', ismip6shelfMelt_zOcean)
          availOceanMask(:,:) = 0
          validOceanMask(:,:) = 0
          do iCell = 1, nCellsSolve
             do iLayer = 1, nISMIP6OceanLayers
-               layerTop = ismip6shelfMelt_zBndsOcean(1, iLayer)
-!               call mpas_log_write('==ismip6shelfMelt zBnds $r', realArgs=(/layerTop/))
+               layerTop = ismip6shelfMelt_zOcean(iLayer)
                if ( (seedOceanMaskHoriz(iCell) == 1) .and. (bedTopography(iCell) <  layerTop) ) then
                   availOceanMask(iLayer,iCell) = 1
-                  call mpas_log_write('availOceanMask = 1')
                endif
                if ( (origOceanMaskHoriz(iCell) == 1) .and. (bedTopography(iCell) <  layerTop) ) then
                   validOceanMask(iLayer,iCell) = 1
-                  call mpas_log_write('validOceanMask = 1')
                endif
             enddo
          enddo
@@ -204,40 +198,42 @@ contains
          allocate(validOceanMaskOld(nISMIP6OceanLayers,nCells+1))
          validOceanMaskOld(:,:) = 0.0
 
-!         ! get initial 3D valid data based on the original ISMIP6 field
-!         !TFoceanOld(:,:) = ismip6shelfMelt_3dThermalForcing(:,:) * validOceanMask(:,:)
+         ! get initial 3D valid data based on the original ISMIP6 field
+         !TFoceanOld(:,:) = ismip6shelfMelt_3dThermalForcing(:,:) * validOceanMask(:,:)
 
-!         ! initialize the local loop and count for validOceanMask
-!         localLoopCount = 0
-!         newMaskCountLocal = 1
-!         newMaskCountLocalAccum = 0
-!         do while ( newMaskCountLocal > 0 )
-!            localLoopCount = localLoopCount + 1
-!            newMaskCountLocal = 0
-!            do iCell = 1, nCellsSolve
-!               do iLayer = 1, nISMIP6OceanLayers
-!                  if ( (availOceanMask(iLayer,iCell) == 1) .and. (validOceanMaskOld(iLayer,iCell) == 0) ) then
-!                     do iNeighbor = 1, nEdgesOnCell(iCell)
-!                        jCell = cellsOnCell(iNeighbor, iCell)
-!                        if ( validOceanMaskOld(iLayer,jCell) == 1 ) then
-!                           ! =========place holder for horizontal averaging=========
-!                            !TFoceanNew = average over valid cells using the TFoceanOld
-!                           ! update the validOceanMask and new mask count
-!                           validOceanMask(iLayer,iCell) = 1
-!                           newMaskCountLocal = newMaskCountLocal + 1
-!                        endif
-!                     enddo
-!!                  endif
-!                  validOceanMaskOld(iLayer,iCell) = validOceanMask(iLayer,iCell)
-!               enddo
-!            enddo
-!!            ! Accumulate cells added locally until we do the next global reduce
- !           newMaskCountLocalAccum = newMaskCountLocalAccum + newMaskCountLocal
- !           ! update halo for validOceanMask and ocean data
- !           call mpas_timer_start("halo updates")
- !           call mpas_dmpar_field_halo_exch(domain, 'validOceanMask')
- !!           call mpas_timer_stop("halo updates")
-!         enddo
+         ! initialize the local loop and count for validOceanMask
+         localLoopCount = 0
+         newMaskCountLocal = 1
+         newMaskCountLocalAccum = 0
+         do while ( newMaskCountLocal > 0 )
+            localLoopCount = localLoopCount + 1
+            newMaskCountLocal = 0
+            do iCell = 1, nCellsSolve
+               do iLayer = 1, nISMIP6OceanLayers
+                  if ( (availOceanMask(iLayer,iCell) == 1) .and. (validOceanMaskOld(iLayer,iCell) == 0) ) then
+                     do iNeighbor = 1, nEdgesOnCell(iCell)
+                        jCell = cellsOnCell(iNeighbor, iCell)
+                        if ( validOceanMaskOld(iLayer,jCell) == 1 ) then
+                           ! =========place holder for horizontal averaging=========
+                            !TFoceanNew = average over valid cells using the TFoceanOld
+                           ! update the validOceanMask and new mask count
+                           validOceanMask(iLayer,iCell) = 1
+                           newMaskCountLocal = newMaskCountLocal + 1
+                        endif
+                     enddo
+                  endif
+               enddo
+            enddo
+            validOceanMaskOld(:,:) = validOceanMask(:,:)
+            ! Accumulate cells added locally until we do the next global reduce
+            newMaskCountLocalAccum = newMaskCountLocalAccum + newMaskCountLocal
+            call mpas_log_write('==HH: Added $i new cells to local validOceanMask', intArgs=(/newMaskCountLocal/))
+            ! update halo for validOceanMask and ocean data
+            call mpas_timer_start("halo updates")
+            call mpas_dmpar_field_halo_exch(domain, 'availOceanMask')
+            call mpas_dmpar_field_halo_exch(domain, 'validOceanMask')
+            call mpas_timer_stop("halo updates")
+         enddo
 
 !         ! Algorithm 4: perform vertical extrapolation of the ocean data
 !         validOceanMaskOld(:,:) = validOceanMask(:,:)
