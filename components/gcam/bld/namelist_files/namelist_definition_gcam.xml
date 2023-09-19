@@ -142,6 +142,15 @@ Baseline gcam lu and wh file
 Initial co2 surface emissions file
 </entry>
 
+<entry id="base_co2_shipment_file"
+    type="char*256"
+    category="gcam"
+    input_pathname="abs"
+    group="gcam_inparm"
+    valid_values="">
+Initial co2 international shipment emissions file
+</entry>
+
 <entry id="base_co2_aircraft_file"
 	type="char*256"
 	category="gcam"
@@ -258,6 +267,15 @@ Glm base biomass file
     group="gcam_inparm"
     valid_values="">
 Mapping file from Country to Grid level
+</entry>
+
+<entry id="country2region_map"
+    type="char*256"
+    category="gcam"
+    input_pathname="abs"
+    group="gcam_inparm"
+    valid_values="">
+Mapping file from Country to Regional level
 </entry>
 
 <entry id="pop_iiasa_file"

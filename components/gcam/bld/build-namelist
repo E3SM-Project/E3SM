@@ -331,6 +331,7 @@ add_default($nl, 'gcam_config');
 add_default($nl, 'base_gcam_co2_file');
 add_default($nl, 'base_gcam_lu_wh_file');
 add_default($nl, 'base_co2_surface_file');
+add_default($nl, 'base_co2_shipment_file');
 add_default($nl, 'base_co2_aircraft_file');
 add_default($nl, 'base_npp_file');
 add_default($nl, 'base_hr_file');
@@ -348,6 +349,7 @@ add_default($nl, 'gcam2glm_basebiomass');
 
 # Config and input files for emiss downscaling
 add_default($nl, 'country2grid_map');
+add_default($nl, 'country2region_map');
 add_default($nl, 'pop_iiasa_file');
 add_default($nl, 'gdp_iiasa_file');
 add_default($nl, 'pop_gcam_file');
