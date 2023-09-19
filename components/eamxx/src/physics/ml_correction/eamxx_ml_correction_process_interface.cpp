@@ -1,9 +1,3 @@
-#define PYBIND11_DETAILED_ERROR_MESSAGES
-#include <pybind11/embed.h>
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
-#include <array>
-
 #include "eamxx_ml_correction_process_interface.hpp"
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -57,12 +51,17 @@ void MLCorrection::set_grids(
 }
 
 void MLCorrection::initialize_impl(const RunType /* run_type */) {
-  // Do nothing
+  if ( Py_IsInitialized() == 0 ) {
+    pybind11::initialize_interpreter();
+  }  
+  pybind11::module sys = pybind11::module::import("sys");
+  sys.attr("path").attr("insert")(1, ML_CORRECTION_CUSTOM_PATH);
+  py_correction = pybind11::module::import("ml_correction");
+  ML_model = py_correction.attr("get_ML_model")(m_ML_model_path);
 }
 
 // =========================================================================================
 void MLCorrection::run_impl(const double dt) {
-  namespace py      = pybind11;
   // use model time to infer solar zenith angle for the ML prediction
   auto current_ts = timestamp();
   std::string datetime_str = current_ts.get_date_string() + " " + current_ts.get_time_string();
@@ -89,28 +88,24 @@ void MLCorrection::run_impl(const double dt) {
   int fpe_mask = ekat::get_enabled_fpes();
   ekat::disable_all_fpes();  // required for importing numpy
   if ( Py_IsInitialized() == 0 ) {
-    py::initialize_interpreter();
+    pybind11::initialize_interpreter();
   }
-  py::module sys = pybind11::module::import("sys");
-  sys.attr("path").attr("insert")(1, ML_CORRECTION_CUSTOM_PATH);
-  auto py_correction = py::module::import("ml_correction");
-
   // for qv, we need to stride across number of tracers
-  py::object ob1     = py_correction.attr("update_fields")(
-      py::array_t<Real, py::array::c_style | py::array::forcecast>(
-          m_num_cols * m_num_levs, T_mid.data(), py::str{}),
-      py::array_t<Real, py::array::c_style | py::array::forcecast>(
-          m_num_cols * m_num_levs * num_tracers, qv.data(), py::str{}),          
-      py::array_t<Real, py::array::c_style | py::array::forcecast>(
-          m_num_cols * m_num_levs, u.data(), py::str{}),        
-      py::array_t<Real, py::array::c_style | py::array::forcecast>(
-          m_num_cols * m_num_levs, v.data(), py::str{}),       
-      py::array_t<Real, py::array::c_style | py::array::forcecast>(
-          m_num_cols, h_lat.data(), py::str{}),       
-      py::array_t<Real, py::array::c_style | py::array::forcecast>(
-          m_num_cols, h_lon.data(), py::str{}),                                                
-      m_num_cols, m_num_levs, num_tracers, dt, m_ML_model_path, datetime_str);
-  py::gil_scoped_release no_gil;  
+  pybind11::object ob1     = py_correction.attr("update_fields")(
+      pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
+          m_num_cols * m_num_levs, T_mid.data(), pybind11::str{}),
+      pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
+          m_num_cols * m_num_levs * num_tracers, qv.data(), pybind11::str{}),          
+      pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
+          m_num_cols * m_num_levs, u.data(), pybind11::str{}),        
+      pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
+          m_num_cols * m_num_levs, v.data(), pybind11::str{}),       
+      pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
+          m_num_cols, h_lat.data(), pybind11::str{}),       
+      pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
+          m_num_cols, h_lon.data(), pybind11::str{}),                                                
+      m_num_cols, m_num_levs, num_tracers, dt, ML_model, datetime_str);
+  pybind11::gil_scoped_release no_gil;  
   ekat::enable_fpes(fpe_mask);
   Real qv_max_after = field_max<Real>(qv_field);
   Real qv_min_after = field_min<Real>(qv_field);        

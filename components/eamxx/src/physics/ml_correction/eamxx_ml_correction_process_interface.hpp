@@ -1,6 +1,11 @@
 #ifndef SCREAM_ML_CORRECTION_HPP
 #define SCREAM_ML_CORRECTION_HPP
 
+#define PYBIND11_DETAILED_ERROR_MESSAGES
+#include <pybind11/embed.h>
+#include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
+#include <array>
 #include <string>
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
@@ -53,6 +58,8 @@ class MLCorrection : public AtmosphereProcess {
   Field m_lon;
   std::string m_ML_model_path;
   std::vector<std::string> m_fields_ml_output_variables;
+  pybind11::module py_correction;
+  pybind11::object ML_model;
 };  // class MLCorrection
 
 }  // namespace scream
