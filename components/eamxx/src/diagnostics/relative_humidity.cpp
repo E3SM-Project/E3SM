@@ -17,7 +17,8 @@ void RelativeHumidityDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  auto Q = kg/kg;
+  auto nondim = Units::nondimensional();
+  auto Q = nondim;
   Q.set_string("kg/kg");
 
   auto grid  = grids_manager->get_grid("Physics");
@@ -35,7 +36,7 @@ void RelativeHumidityDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   add_field<Required>("pseudo_density_dry", scalar3d_layout_mid, Pa, grid_name, SCREAM_PACK_SIZE);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar3d_layout_mid, K, grid_name);
+  FieldIdentifier fid (name(), scalar3d_layout_mid, nondim, grid_name);
   m_diagnostic_output = Field(fid);
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation(SCREAM_PACK_SIZE);
