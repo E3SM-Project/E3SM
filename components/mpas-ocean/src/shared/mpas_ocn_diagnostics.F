@@ -1589,7 +1589,7 @@ contains
       ! Gradient Richardson number
       !
 
-      nCells = nCellsHalo( 3 )
+      nCells = nCellsHalo( 2 )
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
       !$acc          present(RiTopOfCell, maxLevelCell, nEdgesOnCell, edgesOnCell, normalVelocity, &
@@ -2281,7 +2281,7 @@ contains
 
       ! Compute tangential velocity
 
-      nEdges = nEdgesAll
+      nEdges = nEdgesHalo(2)
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
