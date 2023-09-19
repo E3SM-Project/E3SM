@@ -160,7 +160,7 @@
     <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/global/cfs/cdirs/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -288,7 +288,7 @@
     <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/global/cfs/cdirs/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -423,7 +423,7 @@
     <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/global/cfs/cdirs/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -1042,7 +1042,7 @@
     <DIN_LOC_ROOT_CLMFORC>$ENV{SCRATCH}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{SCRATCH}/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>$ENV{SCRATCH}/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>$ENV{SCRATCH}/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
