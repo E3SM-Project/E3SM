@@ -104,6 +104,16 @@ elseif(USE_HIP)
   enable_language(HIP)
 endif()
 
+# Any changes to SourceMods will require us to reconfigure
+file(GLOB COMPONENT_SOURCE_MOD_DIRS "${CASEROOT}/SourceMods/src.*")
+foreach(COMPONENT_SOURCE_MOD_DIR IN LISTS COMPONENT_SOURCE_MOD_DIRS)
+  set_property(
+    DIRECTORY
+    APPEND
+    PROPERTY CMAKE_CONFIGURE_DEPENDS
+    ${COMPONENT_SOURCE_MOD_DIR})
+endforeach()
+
 # Include function definitions
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_mpas_model.cmake)
