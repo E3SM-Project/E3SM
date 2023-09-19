@@ -16,6 +16,7 @@ use physics_buffer, only: physics_buffer_desc, pbuf_add_field, dtype_r8, dyn_tim
 use cam_history,   only: outfld, write_inithist, hist_fld_active
 
 #if defined(CLDERA_PROFILING)
+use spmd_utils, only: iam
 use cam_logfile,    only: iulog
 use ppgrid,         only: begchunk
 use cldera_interface_mod, only: cldera_set_field_part_data
@@ -1533,7 +1534,9 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%t, p_surf)
        call outfld('T200    ', p_surf, pcols, lchnk )
 #if defined(CLDERA_PROFILING)
+       print *, iam, "T200beg"
     call cldera_set_field_part_data("T200" ,lchnk-begchunk+1,p_surf)
+       print *, iam, "T200end"
 #endif    
     end if
     if (hist_fld_active('T100')) then
@@ -1600,7 +1603,9 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 100000._r8, state%u, p_surf)
        call outfld('U1000   ', p_surf, pcols, lchnk )
 #if defined(CLDERA_PROFILING)
+       print *, iam, "U1000beg"
        call cldera_set_field_part_data("U1000" ,lchnk-begchunk+1,p_surf)
+       print *, iam, "U1000end"
 #endif
     end if
     if (hist_fld_active('U975')) then
@@ -1655,7 +1660,9 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%u, p_surf)
        call outfld('U200    ', p_surf, pcols, lchnk )
 #if defined(CLDERA_PROFILING)
+       print *, iam, "U200beg"
        call cldera_set_field_part_data("U200" ,lchnk-begchunk+1,p_surf)
+       print *, iam, "U200end"
 #endif
     end if
     if (hist_fld_active('U100')) then
@@ -1666,7 +1673,9 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid,  5000._r8, state%u, p_surf)
        call outfld('U050    ', p_surf, pcols, lchnk )
 #if defined(CLDERA_PROFILING)
+       print *, iam, "U050beg"
        call cldera_set_field_part_data("U050" ,lchnk-begchunk+1,p_surf)
+       print *, iam, "U050end"
 #endif
     end if
     if (hist_fld_active('U010')) then
@@ -1677,7 +1686,9 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 100000._r8, state%v, p_surf)
        call outfld('V1000   ', p_surf, pcols, lchnk )
 #if defined(CLDERA_PROFILING)
+       print *, iam, "V1000beg"
        call cldera_set_field_part_data("V1000" ,lchnk-begchunk+1,p_surf)
+       print *, iam, "V1000end"
 #endif
     end if
     if (hist_fld_active('V975')) then
@@ -1732,7 +1743,9 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%v, p_surf)
        call outfld('V200    ', p_surf, pcols, lchnk )
 #if defined(CLDERA_PROFILING)
+       print *, iam, "V200beg"
        call cldera_set_field_part_data("V200" ,lchnk-begchunk+1,p_surf)
+       print *, iam, "V200end"
 #endif
     end if
     if (hist_fld_active('V100')) then
@@ -1743,7 +1756,9 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 5000._r8, state%v, p_surf)
        call outfld('V050    ', p_surf, pcols, lchnk )
 #if defined(CLDERA_PROFILING)
+       print *, iam, "V0500beg"
        call cldera_set_field_part_data("V050" ,lchnk-begchunk+1,p_surf)
+       print *, iam, "V050end"
 #endif
     end if
     if (hist_fld_active('V010')) then
@@ -1825,7 +1840,9 @@ end subroutine diag_conv_tend_ini
     if (hist_fld_active('T1000')) then
        call outfld('T1000    ', p_surf_t1, pcols, lchnk )
 #if defined(CLDERA_PROFILING)
+       print *, iam, "T1000beg"
        call cldera_set_field_part_data("T1000" ,lchnk-begchunk+1,p_surf_t1)
+       print *, iam, "T1000end"
 #endif
     end if
 
@@ -1923,7 +1940,9 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 5000._r8, state%t, p_surf)
        call outfld('T050           ', p_surf, pcols, lchnk )
 #if defined(CLDERA_PROFILING)
+       print *, iam, "T050beg"
        call cldera_set_field_part_data("T050" ,lchnk-begchunk+1,p_surf)
+       print *, iam, "T050end"
 #endif
     end if
     if (hist_fld_active('T025')) then
@@ -2148,13 +2167,17 @@ subroutine diag_surf (cam_in, cam_out, ps, trefmxav, trefmnav )
     call outfld('LHFLX',    cam_in%lhf,       pcols, lchnk)
     call outfld('QFLX',     cam_in%cflx(1,1), pcols, lchnk)
 #if defined(CLDERA_PROFILING)
-    call cldera_set_field_part_data("QFLX" ,lchnk-begchunk+1,cam_in%cflx)
+    print *, iam, "QFLXbeg"
+!    call cldera_set_field_part_data("QFLX" ,lchnk-begchunk+1,cam_in%cflx)
+    print *, iam, "QFLXend"
 #endif
     call outfld('TAUX',     cam_in%wsx,       pcols, lchnk)
     call outfld('TAUY',     cam_in%wsy,       pcols, lchnk)
     call outfld('TREFHT  ', cam_in%tref,      pcols, lchnk)
 #if defined(CLDERA_PROFILING)
+    print *, iam, "TREFHTbeg"
     call cldera_set_field_part_data("TREFHT" ,lchnk-begchunk+1,cam_in%tref)
+    print *, iam, "TREFHTend"
 #endif
     call outfld('TREFHTMX', cam_in%tref,      pcols, lchnk)
     call outfld('TREFHTMN', cam_in%tref,      pcols, lchnk)
@@ -2202,7 +2225,9 @@ subroutine diag_surf (cam_in, cam_out, ps, trefmxav, trefmnav )
     call outfld('TBOT',     cam_out%tbot,     pcols, lchnk)
     call outfld('TS',       cam_in%ts,        pcols, lchnk)
 #if defined(CLDERA_PROFILING)
+    print*, iam, "TSbeg"
     call cldera_set_field_part_data("TS" ,lchnk-begchunk+1,cam_in%ts)
+    print *, iam, "TSend"
 #endif
     call outfld('TSMN',     cam_in%ts,        pcols, lchnk)
     call outfld('TSMX',     cam_in%ts,        pcols, lchnk)

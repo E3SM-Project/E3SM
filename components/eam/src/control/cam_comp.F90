@@ -98,6 +98,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    use cam_pio_utils,    only: init_pio_subsystem
    use cam_instance,     only: inst_suffix
 #if defined(CLDERA_PROFILING)
+   use spmd_utils, only: iam
    use iso_c_binding, only: c_loc
    use cldera_interface_mod, only: cldera_add_partitioned_field, max_str_len, &
                                    cldera_set_field_part_size, &
@@ -228,6 +229,8 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 
 #if defined(CLDERA_PROFILING)
    call t_startf('cldera_add_fields')
+
+   print *, iam, "the pbuf section"
    nparts = endchunk - begchunk + 1
 
    ! All fields are partitioned over cols index, which is the first
@@ -324,6 +327,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
        call cldera_set_field_part_data(fname,ipart,field2d)
      enddo
    enddo
+   print *, iam, "end pbuf section"
 
    ! STATE fields
    dims(1) = nlcols
@@ -336,15 +340,37 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    call cldera_add_partitioned_field("psdry",1,dims,dimnames,nparts,part_dim)
    call cldera_add_partitioned_field("phis",1,dims,dimnames,nparts,part_dim)
 
+   print *, iam, "starting before aerod_v"
    ! Last arg is view=false, since AOD fields are *not* views of EAM persistent data.
    call cldera_add_partitioned_field("AEROD_v", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("AODALL", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("ABSORB", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("AODVIS", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("AODABS", 1,dims,dimnames,nparts,part_dim,.false.)
+!   call cldera_add_partitioned_field("QFLX", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod"    , 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod_so2", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod_ash", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("aod_sulf",1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("FLNS", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("FLDS", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("FLUT", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("FLNT", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("FSDS", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("FSDSC", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("FLUTC", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("T050", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("T200", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("T1000", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("U050", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("U200", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("U1000", 1,dims,dimnames,nparts,part_dim,.false.)  
+   call cldera_add_partitioned_field("V050", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("V200", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("V1000", 1,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("TS", 1,dims,dimnames,nparts,part_dim,.false.)
    call cldera_add_partitioned_field("BURDENSO4", 1,dims,dimnames,nparts,part_dim,.false.)
-
+   print *, iam, "ending aerod_v"
 
    !2d, mid points
    dims(2) = pver
@@ -462,17 +488,68 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
      call cldera_set_field_part_size("tw",ipart,ncols)
      call cldera_set_field_part_data("tw",ipart,field1d)
 
+     print *, iam, "AOD guys 1"
      ! Copied field (AOD)
      call cldera_set_field_part_size("AEROD_v", ipart,ncols)
+     print *, iam, "AOD guys 2"
+     call cldera_set_field_part_size("AODALL", ipart,ncols)
+     print *, iam, "AOD guys 3"
+     call cldera_set_field_part_size("ABSORB", ipart,ncols)
+     print *, iam, "AOD guys 4"
+     call cldera_set_field_part_size("AODVIS", ipart,ncols)
+     print *, iam, "AOD guys 5"
+     call cldera_set_field_part_size("AODABS", ipart,ncols)
+     print *, iam, "AOD guys 6"
+!     call cldera_set_field_part_size("QFLX", ipart,ncols)
+     print *, iam, "AOD guys 6.2"
      call cldera_set_field_part_size("aod"    , ipart,ncols)
+     print *, iam, "AOD guys 7"
      call cldera_set_field_part_size("aod_so2", ipart,ncols)
+     print *, iam, "AOD guys 8"
      call cldera_set_field_part_size("aod_ash", ipart,ncols)
+     print *, iam, "AOD guys 9"
      call cldera_set_field_part_size("aod_sulf",ipart,ncols)
+     print *, iam, "AOD guys 10"
+     call cldera_set_field_part_size("FLNS"   , ipart,ncols)
+     print *, iam, "AOD guys 11"
+     call cldera_set_field_part_size("FLDS"   , ipart,ncols)
+     print *, iam, "AOD guys 12"
+     call cldera_set_field_part_size("FLUT"   , ipart,ncols)
+     print *, iam, "AOD guys 13"
      call cldera_set_field_part_size("FLNT"   , ipart,ncols)
+     print *, iam, "AOD guys 14"
+     call cldera_set_field_part_size("FSDS"   , ipart,ncols)
+     print *, iam, "AOD guys 15"
+     call cldera_set_field_part_size("FSDSC"   , ipart,ncols)
+     print *, iam, "AOD guys 16"
+     call cldera_set_field_part_size("FLUTC"   , ipart,ncols)
+     print *, iam, "AOD guys 17"
+     call cldera_set_field_part_size("T050"   , ipart,ncols)
+     print *, iam, "AOD guys 18"
+     call cldera_set_field_part_size("T200"   , ipart,ncols)
+     print *, iam, "AOD guys 19"
+     call cldera_set_field_part_size("T1000"   , ipart,ncols)
+     print *, iam, "AOD guys 20"
+     call cldera_set_field_part_size("U050"   , ipart,ncols)
+     print *, iam, "AOD guys 21"
+     call cldera_set_field_part_size("U200"   , ipart,ncols)
+     print *, iam, "AOD guys 22"
+     call cldera_set_field_part_size("U1000"   , ipart,ncols)
+     print *, iam, "AOD guys 23"
+     call cldera_set_field_part_size("V050"   , ipart,ncols)
+     print *, iam, "AOD guys 24"
+     call cldera_set_field_part_size("V200"   , ipart,ncols)
+     print *, iam, "AOD guys 25"
+     call cldera_set_field_part_size("V1000"   , ipart,ncols)
+     print *, iam, "AOD guys 26"
+     call cldera_set_field_part_size("TS"   , ipart,ncols)
+     print *, iam, "AOD guys 27"
      call cldera_set_field_part_size("BURDENSO4"   , ipart,ncols)
+     print *, iam, "AOD guys 28"
    enddo
-
+   print *, iam, "before commiting all fields"
    call cldera_commit_all_fields()
+   print *, iam, "after commting all fields"
    call t_stopf('cldera_add_fields')
 #endif
 

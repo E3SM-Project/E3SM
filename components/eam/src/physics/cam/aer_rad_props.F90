@@ -26,6 +26,7 @@ use cam_abortutils,       only: endrun
 use tropopause,           only : tropopause_find
 use cam_logfile,          only: iulog
 #if defined(CLDERA_PROFILING)
+use spmd_utils, only: iam
 use ppgrid,         only: begchunk
 use cldera_interface_mod, only: cldera_set_field_part_data
 #endif
@@ -901,7 +902,9 @@ subroutine aer_vis_diag_out(lchnk, ncol, nnite, idxnite, iaer, tau, diag_idx)
 
 #if defined(CLDERA_PROFILING)
    if (iaer <= 0) then
+     print *, iam, "AEROD_vbeg"
      call cldera_set_field_part_data("AEROD_v" ,lchnk-begchunk+1,tmp)
+     print *, iam, "AEROD_vend"
    end if
 #endif
 
