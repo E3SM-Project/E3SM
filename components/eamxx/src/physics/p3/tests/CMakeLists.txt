@@ -1,6 +1,7 @@
 include(ScreamUtils)
 
 set(NEED_LIBS p3 physics_share scream_share)
+set(SK_NEED_LIBS p3_sk physics_share scream_share)
 set(P3_TESTS_SRCS
     p3_tests.cpp
     p3_unit_tests.cpp
@@ -58,6 +59,19 @@ if (NOT SCREAM_BASELINES_ONLY)
                  THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
                  PROPERTIES WILL_FAIL ${FORCE_RUN_DIFF_FAILS}
                  LABELS "p3;physics;fail")
+
+  if (NOT SCREAM_SMALL_KERNELS) 
+     CreateUnitTest(p3_sk_tests "${P3_TESTS_SRCS}" "${SK_NEED_LIBS}"
+                    THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+                    LABELS "p3_sk;physics")
+
+  # Make sure that a diff in the two implementation triggers a failed test (in debug only)
+     CreateUnitTest (p3_sk_tests_fail p3_rain_sed_unit_tests.cpp "${SK_NEED_LIBS}"
+                    COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
+                    THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+                    PROPERTIES WILL_FAIL ${FORCE_RUN_DIFF_FAILS}
+                    LABELS "p3_sk;physics;fail")
+  endif()
 endif()
 
 if (SCREAM_ENABLE_BASELINE_TESTS)
