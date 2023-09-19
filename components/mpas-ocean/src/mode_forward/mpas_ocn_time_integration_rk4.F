@@ -1656,6 +1656,8 @@ module ocn_time_integration_rk4
       endif
 #endif
       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 2)
+      call mpas_dmpar_field_halo_exch(domain, 'tangentialVelocity')
+
 #ifdef MPAS_OPENACC
       !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
       !$acc update host(relativeVorticity, circulation)
