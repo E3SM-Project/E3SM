@@ -603,7 +603,7 @@ module ocn_time_integration_rk4
       ! Rescale tracers
       block => domain % blocklist
       do while(associated(block))
-        call ocn_time_integrator_rk4_cleanup(block, dt, err)
+        call ocn_time_integrator_rk4_cleanup(domain, block, dt, err)
 
         block => block % next
       end do
@@ -1549,7 +1549,8 @@ module ocn_time_integration_rk4
 
    end subroutine ocn_time_integrator_rk4_accumulate_update!}}}
 
-   subroutine ocn_time_integrator_rk4_cleanup(block, dt, err)!{{{
+   subroutine ocn_time_integrator_rk4_cleanup(domain, block, dt, err)!{{{
+      type (domain_type), intent(inout) :: domain !< Input/Output: domain information
       type (block_type), intent(in) :: block
       real (kind=RKIND), intent(in) :: dt
       integer, intent(out) :: err
