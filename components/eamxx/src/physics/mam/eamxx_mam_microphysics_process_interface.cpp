@@ -280,38 +280,47 @@ void MAMMicrophysics::run_impl(const double dt) {
       //  mozart/mo_gas_phase_chemdr.F90)
       mam_coupling::transfer_prognostics_to_work_arrays(progs, k, q, qqcw);
 
-      // "before gas chemistry" quantities (VMR)
-      // FIXME: Not sure what this means before we add gas-phase chemistry!
-      // FIXME: Should we stash these in diagnostics somewhere?
+      // aerosol/gas species tendencies (output)
+      Real q_tendbb[gas_pcnst][nqtendbb] = {};
+      Real qqcw_tendbb[gas_pcnst][nqtendbb] = {};
+
+      //-------------------------------------------------------------------
+      // Chemistry (doesn't belong here, but it's here for now to minimize
+      // necessary additional tracers like the work array copies below)
+      //-------------------------------------------------------------------
+
+      // create work array copies to retain "pre-chemistry" values
       Real q_pregaschem[gas_pcnst] = {};
       Real q_precldchem[gas_pcnst] = {};
       Real qqcw_precldchem[gas_pcnst] = {};
-      // FIXME: For now, we just use the same values as in q and qqcw
       for (int i = 0; i < gas_pcnst; ++i) {
         q_pregaschem[i] = q[i];
         q_precldchem[i] = q[i];
         qqcw_precldchem[i] = qqcw[i];
       }
 
-      // aerosol/gas species tendencies (output)
-      Real q_tendbb[gas_pcnst][nqtendbb] = {};
-      Real qqcw_tendbb[gas_pcnst][nqtendbb] = {};
-
-      // dry and wet diameters for aerosol modes
-      // FIXME: are we supposed to use the "total" dry/wet diameters, or the
-      // FIXME: interstitial dry/wet diameters?
+      // extract the following modal quantities from diagnostics:
+      // * dry and wet diameters [m]
+      // * wet densities [kg/m3]
+      // * aerosol water mass mixing ratio [kg/kg]
       Real dgncur_a[mam4::AeroConfig::num_modes()] = {};
       Real dgncur_awet[mam4::AeroConfig::num_modes()] = {};
-
-      Real wetdens_host[mam4::AeroConfig::num_modes()] = {};
+      Real wetdens[mam4::AeroConfig::num_modes()] = {};
       Real qaerwat[mam4::AeroConfig::num_modes()] = {};
+      for (int m = 0; m < mam4::AeroConfig::num_modes(); ++m) {
+        // FIXME: We're using interstitial diameters. Is this right?
+        dgncur_a[m]= diags.dry_geometric_mean_diameter_i[m](k);
+        dgncur_awet[m]= diags.wet_geometric_mean_diameter_i[m](k);
+        wetdens[m] = diags.wet_density[m](k);
+        //FIXME: qaerwat[m] = diags.aerosol_water_mass_mixing_ratio[m](k);
+      }
 
       // compute aerosol microphysics
       impl::modal_aero_amicphys_intr(config_, ncol_, step_, dt, t, pmid, pdel,
                                      zm, pblh, qv, cld, q, qqcw, q_pregaschem,
                                      q_precldchem, qqcw_precldchem, q_tendbb,
                                      qqcw_tendbb, dgncur_a, dgncur_awet,
-                                     wetdens_host, qaerwat);
+                                     wetdens, qaerwat);
 
       // unpack updated prognostics from work arrays
       mam_coupling::transfer_work_arrays_to_prognostics(q, qqcw, progs, k);
