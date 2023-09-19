@@ -6,12 +6,20 @@
 
 # linting
 pre-commit
+
+# c++ linting
 clang-format
 clang-tools
 cppcheck
 cpplint
 lizard
 include-what-you-use
+
+# python linting
+isort
+flynt
+flake8
+mypy
 
 # documentation
 sphinx
