@@ -3,7 +3,6 @@ module seaice_core
    use mpas_framework
    use mpas_timekeeping
    use seaice_analysis_driver
-   use seaice_column
    use mpas_threading
    use mpas_timer, only: mpas_timer_start, mpas_timer_stop
    use mpas_log, only: mpas_log_write

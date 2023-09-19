@@ -999,7 +999,7 @@ contains
 
     type(domain_type), intent(inout) :: domain
 
-    call finalize_column_non_activated_pointers(domain)
+    call finalize_icepack_non_activated_pointers(domain)
 
   end subroutine seaice_icepack_finalize
 
@@ -14119,7 +14119,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  finalize_column_non_activated_pointers
+!  finalize_icepack_non_activated_pointers
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -14129,7 +14129,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine finalize_column_non_activated_pointers(domain)
+  subroutine finalize_icepack_non_activated_pointers(domain)
 
     type(domain_type) :: domain
 
@@ -14441,7 +14441,7 @@ contains
        block => block % next
     end do
 
-  end subroutine finalize_column_non_activated_pointers
+  end subroutine finalize_icepack_non_activated_pointers
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
