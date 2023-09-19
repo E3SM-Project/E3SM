@@ -35,7 +35,7 @@ $$
 \hspace{1cm}   (3)
 $$
 
-The first two equations are from [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780), equations 2 and 7, with additional viscosity, bottom drag, and wind forcing (see equation 1 in [Lilly et al. 2023](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2022MS003327)). 
+The first two equations are from [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780), equations 2 and 7, with additional viscosity, bottom drag, and wind forcing (see equation 1 in [Lilly et al. 2023](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2022MS003327)).
 This equation set does not include any vertical advection or diffusion. Omega-0 will have a vertical index for performance testing and future expansion, but vertical layers will be simply redundant.
 Additional information on governing equations may be found in chapter 8 of the MPAS User's Guide ([Petersen et al. 2018](https://zenodo.org/record/1246893)).
 
@@ -66,7 +66,7 @@ Boundary conditions will include both no-slip and free-slip. The original MPAS-O
 
 ### 2.2 Requirement: Numerical method will be the TRiSK formulation
 
-The horizontal discretization will be taken from 
+The horizontal discretization will be taken from
 [Thuburn et al. 2009](https://www.sciencedirect.com/science/article/pii/S0021999109004434) and [Ringler et al. 2010](https://www.sciencedirect.com/science/article/pii/S0021999109006780), as described in the algorithmic formulation in Section 3 below. This is the same base formulation as in MPAS-Ocean. In addition, we will consider small alterations from the original MPAS-Ocean horizontal discretization and include them as options if they are of minimal additional effort. This includes the recent AUST formulation in [Calandrini et al. 2021](https://www.sciencedirect.com/science/article/pii/S146350032100161X) and simple vorticity averaging considered by the Omega team this past year.
 
 ### 2.3 Requirement: Omega-0 will use MPAS format unstructured-mesh domains
@@ -148,7 +148,7 @@ to do: Describe any public data types and/or the class definition
 
 ### 4.2 Methods
 
-to do: List and describe all public methods and their interfaces (actual code for 
+to do: List and describe all public methods and their interfaces (actual code for
 interface that would be in header file). Describe typical use cases.
 
 ## 5 Verification and Testing

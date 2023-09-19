@@ -10,5 +10,5 @@ target_include_directories(
 	"${OMEGA_SOURCE_DIR}/src/infra"
 )
 add_test(NAME LOGGING_TEST COMMAND testLogging.exe)
-set_tests_properties(LOGGING_TEST 
+set_tests_properties(LOGGING_TEST
     PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL")

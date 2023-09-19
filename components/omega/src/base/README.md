@@ -6,4 +6,3 @@ Applications (OMEGA). These include routines that
 are closest to the machine model, including message
 passing routines, domain decomposition and basic
 data types used by the model.
-

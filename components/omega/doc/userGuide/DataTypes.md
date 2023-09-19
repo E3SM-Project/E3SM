@@ -11,4 +11,3 @@ double precision (8 bytes/64-bit) but if the code is built with a
 the default Real becomes single precision (4-byte/32-bit). Users are
 encouraged to use the default double precision unless exploring the
 performance or accuracy characteristics of single precision.
-

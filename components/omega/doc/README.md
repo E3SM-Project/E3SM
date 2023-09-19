@@ -7,4 +7,3 @@ design (design), a User's Guide (userGuide) and a reference manual or
 developer's guide (devGuide). These sources are generally built for
 display through ReadTheDocs or other mechanisms but are often in
 restructuredText format so can be readable individually.
-

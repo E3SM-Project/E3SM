@@ -16,7 +16,7 @@ data. These reductions are described here.
 ### 2.1 Requirement: Global sums
 
 The ability to perform the sum of all elements of a distributed array
-is required 
+is required
 
 ### 2.2 Requirement: Global min/max
 
@@ -39,7 +39,7 @@ is required.
 
 ### 2.5 Requirement: Restricted address space
 
-In order to compute reductions over only owned and active 
+In order to compute reductions over only owned and active
 cells/edges or for regional diagnostics, there must be an option
 to restrict the address space over which the local portion of sums
 are computed.
@@ -86,7 +86,7 @@ For integers, the sum is straightforward. For single-precision floating
 point, we will perform sums in double precision and convert back to
 single before returning. In each of the above cases, the local YAKL
 versions of sum, minval, maxval will be used for the local sum before
-accumulating the MPI sum across ranks. 
+accumulating the MPI sum across ranks.
 
 For double-precision sums, we will begin with
 a version of the double-double (DDPDD) algorithm of Donald Knuth,
@@ -98,7 +98,7 @@ the more robust version by Pat Worley in the E3SM reprosum routines.
 
 ### 4.1 Data types and parameters
 
-#### 4.1.1 Parameters 
+#### 4.1.1 Parameters
 
 In the future, if we support multiple reproducible algorithms,
 we will need an enum to define choice of algorithm.
@@ -118,8 +118,8 @@ or supported scalar data type, there will be a sum function
 aliased to the globalSum interface:
 
 ```c++
-    sum = globalSum(const ArrayTTDD array, 
-                    const I4 mpiComm, 
+    sum = globalSum(const ArrayTTDD array,
+                    const I4 mpiComm,
                     const std::vector<I4> indxRange);
 ```
 
@@ -133,11 +133,11 @@ the `indxRange{0, nCellsOwned-1, 0, nVertLevels-1}`. Note
 that the indxRange supports a constant scalar values only so
 does not support a variable index range like
 minLevelCell/maxLevelCell. That is best managed either
-by masking with the sum-product interface below or 
+by masking with the sum-product interface below or
 ensuring the array has been set to zero in non-active
 entries.
 
-For scalar sums, the interface is the same with the 
+For scalar sums, the interface is the same with the
 indxRange argument absent.
 
 We will assume that YAKL host arrays will be summed on the
@@ -149,8 +149,8 @@ There will be a similar interface for a sum with product:
 
 ```c++
     sum = globalSum(const ArrayTTDD array1,
-                    const ArrayTTDD array2, 
-                    const I4 mpiComm, 
+                    const ArrayTTDD array2,
+                    const I4 mpiComm,
                     const std::vector<I4> indxRange);
 ```
 
@@ -169,7 +169,7 @@ arrays must be constructed and the result will be
 stored in a `std::vector` of appropriate type:
 
 ```c++
-    std::vector<type> sum = 
+    std::vector<type> sum =
          globalSum(const std::vector<ArrayTTDD> arrays,
                    const I4 mpiComm,
                    const std::vector<I4> indxRange)
@@ -187,7 +187,7 @@ The multi-field sum with product is still to be determined, but
 should have an interface like:
 
 ```c++
-    std::vector<type> sum = 
+    std::vector<type> sum =
          globalSum(const std::vector<ArrayTTDD> arrays1,
                    const std::vector<ArrayTTDD> arrays2,
                    const I4 mpiComm,
@@ -202,7 +202,7 @@ array product has a different array for both operands.
 Because YAKL arrays contain metadata and a pointer to
 the data, it may be possible to create a std::vector of
 the same array, allowing both the case of a fixed array
-to be used for all or for all the array products to have 
+to be used for all or for all the array products to have
 different arrays. This requires some testing of approaches.
 
 #### 4.2.5 Global minval
@@ -211,16 +211,16 @@ The global minval will support interfaces similar to the
 global sums, but will return the minimum value instead.
 
 ```c++
-    varMin = globalMinval(const ArrayTTDD array, 
-                          const I4 mpiComm, 
+    varMin = globalMinval(const ArrayTTDD array,
+                          const I4 mpiComm,
                           const std::vector<I4> indxRange);
 
     varMin = globalMinval(const ArrayTTDD array1,
-                          const ArrayTTDD array2, 
-                          const I4 mpiComm, 
+                          const ArrayTTDD array2,
+                          const I4 mpiComm,
                           const std::vector<I4> indxRange);
 
-    std::vector<type> varMin = 
+    std::vector<type> varMin =
          globalMinval(const std::vector<ArrayTTDD> arrays,
                       const I4 mpiComm,
                       const std::vector<I4> indxRange)
@@ -241,13 +241,13 @@ on special values apply.
 ### 5.1 Test basics
 
 For each data type, a set of reference arrays will be created
-with random numbers that extend across the entire range of that 
+with random numbers that extend across the entire range of that
 type (for later reproducibility tests). A reference sum will
 be computed serially using the same reproducible algorithm
 as the global implementation. The basic test will compare the
 global sum with the reference serial sum. Because the data types
 include both host and device arrays, this will also test reductions
-on either location. 
+on either location.
   - tests requirement 2.1, 2.3, part of 2.8, 2.9
 
 ### 5.2 Reproducibility
@@ -263,7 +263,7 @@ on will test reproducibility under threading.
 ### 5.3 Restricted index range
 
 The sums will be tested with a reduced index range on the same
-reference arrays from above and compared with the 
+reference arrays from above and compared with the
 similarly-restricted serial reference sums.
   - tests requirement 2.5
 
@@ -286,9 +286,3 @@ be tested against these reference sums.
 A similar approach to the sums above will be used to test the
 min and max functions in all combinations of interfaces.
   - tests requirement 2.2
-
-
-
-
-
-

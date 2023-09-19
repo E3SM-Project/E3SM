@@ -8,8 +8,8 @@
 For parallel execution, OMEGA will utilize a hierarchical parallelism with the
 coarse-grained parallelism achieved via message passing. An OMEGA mesh will be
 decomposed into subdomains so that computations on each sub domain can proceed
-in parallel and messages will be passed to communicate data between domains. 
-This document describes the requirements and design of this domain 
+in parallel and messages will be passed to communicate data between domains.
+This document describes the requirements and design of this domain
 decomposition.
 
 
@@ -30,7 +30,7 @@ with MPAS, at least one partition option must use the Metis library.
 
 ### 2.3 Required: Online partitioning
 
-We require the partitioning to occur online (ie as part of model 
+We require the partitioning to occur online (ie as part of model
 initialization rather than a separate pre-processing step).
 This is meant to avoid the past difficulties in maintaining a large
 number of partition input files for each MPI configuration. Experience
@@ -43,11 +43,11 @@ off-line step.
 As input into the partitioning, we require a file with information
 on cell adjacency. There are at least two potential design approaches
 for this.  The first option is to use the global `graph.info` file
-which is already in Metis input format with a line for each cell 
-listing the global indices of that cell's neighbors. A second option 
+which is already in Metis input format with a line for each cell
+listing the global indices of that cell's neighbors. A second option
 is to use the input mesh netCDF file which has the same information
 in the global cellsOnCell array. This second option would enable us to
-eliminate all graph.info files after the mesh file has been created. 
+eliminate all graph.info files after the mesh file has been created.
 
 ### 2.5 Required: All mesh locations
 
@@ -93,12 +93,12 @@ mesh initialization.
 ### 2.10 Desired: Weighted partitioning option
 
 For better load-balancing, support for supplying or computing weights
-for each cell index based on estimated workload is desireable. 
+for each cell index based on estimated workload is desireable.
 
 ### 2.11 Desired: Multiple partitions of same mesh
 
 In the future, it may be desireable to perform parts of the calculation
-(eg the communication-dominated barotropic mode) on a smaller 
+(eg the communication-dominated barotropic mode) on a smaller
 partition. We may need to support multiple partitions of the
 same mesh on different numbers of MPI ranks.
 
@@ -116,7 +116,7 @@ of the mesh may be helpful.
 ## 3 Algorithmic Formulation
 
 Most of the algorithms required are embedded and documented in the
-relevant packages (eg Metis multi-level k-way partitioning). 
+relevant packages (eg Metis multi-level k-way partitioning).
 
 ## 4 Design
 
@@ -139,7 +139,7 @@ any related setup of halos and other infrastructure.
 
 ### 4.1 Data types and parameters
 
-#### 4.1.1 Parameters 
+#### 4.1.1 Parameters
 
 The decomposition includeds a public enum to define the
 supported partitioning method. Initially, this will support
@@ -162,7 +162,7 @@ this initial implementation.
 Another parameter is the `haloWidth` that defines the width
 of the halo needed to provide neighbor information for all
 local operators. The minimum is typically 3 for current
-algorithms. 
+algorithms.
 
 These parameters and the mesh input file will be read as part of
 the input configuration file in a decomp configuration group:
@@ -180,7 +180,7 @@ will initially default to 3.
 #### 4.1.2 Class/structs/data types
 
 There will be a Decomp class that stores and defines a partitioning
-of the address space. 
+of the address space.
 
 ```c++
 
@@ -216,7 +216,7 @@ of the address space.
           std::vector<I4>[] nbrLocCell   ///< list of nbr addresses
 
           [ repeat identical variables for edge and vertex index spaces ]
- 
+
 
           // methods described below
 
@@ -261,8 +261,8 @@ we will supply a destructor to release the space in memory.
 
 ### 5.1 Test Metis
 
-We will create a small sample graph/mesh for partitioning, 
-similar to examples in Metis documention and create a partition. 
+We will create a small sample graph/mesh for partitioning,
+similar to examples in Metis documention and create a partition.
 The resulting partition will be compared to that generated
 by the standalone gpmetis partition.
   * tests requirement 2.1, 2.2, 2.3, 2.4
@@ -272,7 +272,7 @@ by the standalone gpmetis partition.
 We will create a decomposition based on an MPAS input mesh
 and verify that the decomposition is the same as the older
 MPAS Fortran code. This test should only be needed after initial
-development and will not need to be repeated as part of 
+development and will not need to be repeated as part of
 routine testing
 
 ### 5.3 Check global IDs
@@ -280,7 +280,3 @@ routine testing
 To make sure all cells, etc. are accounted for, we can do a global
 sum of the number of cells as well as a sum of global IDs across
 the partition and ensure they the expected sum.
-
-
-
-

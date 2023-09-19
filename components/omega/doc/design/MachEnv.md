@@ -4,7 +4,7 @@
 ## 1 Overview
 
 On startup, OMEGA will need to initialize the message-passing and other
-environments and set up parameters related to machine layout, messaging, 
+environments and set up parameters related to machine layout, messaging,
 and hardware for use throughout OMEGA.
 
 
@@ -12,8 +12,8 @@ and hardware for use throughout OMEGA.
 
 ### 2.1 Requirement: Initialize MPI in Standalone
 
-In standalone mode, OMEGA will need to initialize the MPI environment 
-and define a default communicator. 
+In standalone mode, OMEGA will need to initialize the MPI environment
+and define a default communicator.
 
 ### 2.2 Requirement: Create MPI communicator in coupled mode
 
@@ -24,7 +24,7 @@ communicator based on a parent communicator sent by the calling routine
 ### 2.3 Requirement: Define MPI layouts
 
 Each MPI rank will need to know its own rank id, number of ranks and
-define a master rank. 
+define a master rank.
 
 ### 2.4 Requirement: YAKL initialization
 
@@ -37,7 +37,7 @@ needed for coupled simulations.
 To achieve the best CPU performance, especially when using
 GPU-friendly loop forms, it is useful to explicitly size inner
 loops based on a compile-time length (chunk size) that is a multiple
-of the vector length. 
+of the vector length.
 
 ### 2.6 Desired: Set alternative master task
 
@@ -50,7 +50,7 @@ when running in coupled mode with other components also using the same rank.
 In OMEGA, we may wish to run sub-components on different partitions. For
 example, we might want to rearrange the communication-dominated
 barotropic solve to run on fewer nodes or within a single node. We will
-need to be able to create new environments based on a subset of an 
+need to be able to create new environments based on a subset of an
 existing environment. In setting up multiple environments, it will
 be desireable to have some awareness of network topology for optimal
 task placement.
@@ -80,11 +80,11 @@ retrieval.
 
 ### 4.1 Data types and parameters
 
-#### 4.1.1 Parameters 
+#### 4.1.1 Parameters
 
 For improved vector performance on CPU and perhaps match thread block
 sizes on GPU, we wish to block the inner loops with a compile-time
-parameter. We define a CPP parameter: `OMEGA_VECTOR_SIZE`. This is 
+parameter. We define a CPP parameter: `OMEGA_VECTOR_SIZE`. This is
 dependent on the machine and on whether GPU acceleration is enabled.
 It will typically take on values like 16, 32, 64 for CPU-only builds
 and 1 for GPU builds to maximize parallelism.
@@ -92,7 +92,7 @@ and 1 for GPU builds to maximize parallelism.
 #### 4.1.2 Class/structs/data types
 
 There will be a simple class MachEnv. We use a class here rather than
-a struct so that we can make members private to prevent overwriting 
+a struct so that we can make members private to prevent overwriting
 these variables.
 
 ```c++
@@ -114,7 +114,7 @@ class MachEnv {
 
 #### 4.1.3 Default environment
 
-We will keep a default environment `OMEGA::defaultEnv` as a public 
+We will keep a default environment `OMEGA::defaultEnv` as a public
 static instantiation that will be used by most of the OMEGA infrastructure.
 If other environments are created, they must be maintained by the
 defining routines or sub-components.
@@ -123,7 +123,7 @@ defining routines or sub-components.
 
 #### 4.2.1 Initialization
 
-There will be two forms of the initialization routines. One of 
+There will be two forms of the initialization routines. One of
 these two must be called as early as possible in OMEGA initialization
 (typically the first call). Both forms will return an integer
 error code and will define the default environment `OMEGA::defaultEnv`.
@@ -133,7 +133,7 @@ error code and will define the default environment `OMEGA::defaultEnv`.
 int MachEnvInit();
 
 // Initialization - coupled
-int MachEnvInit(int inCommunicator, ///< [in] parent MPI communicator 
+int MachEnvInit(int inCommunicator, ///< [in] parent MPI communicator
                 );
 ```
 
@@ -181,7 +181,7 @@ MachEnv omegaEnv(); // Initialize MPI and machine environment
 
 and would define `MPI_COMM_WORLD` as the communicator as well
 as initialize various other environments as needed.  In coupled mode,
-the second form would be used with the coupler passing the 
+the second form would be used with the coupler passing the
 appropriate communicator to be used.
 
 To satisfy requirement 2.7, we provide three forms to create a new
@@ -191,7 +191,7 @@ creates a strided subset (every "n" ranks starting from a specified
 beginning rank). A third is the most general and creates a subset from
 a vector of specific ranks of the parent to include in the new environment.
 
-#### 4.2.2 Get/Retrieval 
+#### 4.2.2 Get/Retrieval
 
 We provide specific retrieval functions for each class member to mimic
 using this environment as a struct:
@@ -199,7 +199,7 @@ using this environment as a struct:
 ```c++
 int Comm() const;      ///< returns MPI communicator for this environment
 int MyRank() const;    ///< returns local MPI rank
-int NumRanks() const;  ///< total number of MPI ranks 
+int NumRanks() const;  ///< total number of MPI ranks
 ```
 
 In typical use, these would look like:
@@ -237,13 +237,13 @@ YAKL functions will determine whether this has been successful.
 
 The test driver will call the standalone initialization, then
 verify by retrieving the members and comparing to the equivalent
-native MPI calls on `MPI_COMM_WORLD` 
+native MPI calls on `MPI_COMM_WORLD`
   * tests requirement 2.1, 2.3 and retrieval functions
 
 ### 5.2 Test changing master task
 
 After the above test, use the set function to change the master
-task to 1 and then verify using the retrieval function 
+task to 1 and then verify using the retrieval function
   * tests requirement 2.6
 
 ### 5.3 Test multiple environments

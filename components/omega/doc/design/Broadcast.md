@@ -13,12 +13,12 @@ configuration from the master rank to all others.
 ### 2.1 Requirement: Broadcast all supported data types
 
 We must be able to broadcast variables of I4, I8, R4, R8, Real,
-boolean, std::string. 
+boolean, std::string.
 
 ### 2.2 Requirement: Broadcast scalars and vectors
 
 Generally we will be broadcasting scalar values, but will require
-vectors of values in some cases. 
+vectors of values in some cases.
 
 ### 2.3 Requirement: Broadcast from any rank
 
@@ -63,7 +63,7 @@ interfaces cleaner.
 
 #### 4.2.1 Broadcast from master task in default environment
 
-The first form is the simplest for a broadcast within the default 
+The first form is the simplest for a broadcast within the default
 environment and from the master task:
 
 ```c++
@@ -90,7 +90,7 @@ for the source rank to broadcast from.
 ```c++
 int Broadcast([data type] value,  ///< [in] value to be broadcast
               const int srcRank   ///< [in] rank to broadcast from
-              );      // 
+              );      //
 ```
 
 #### 4.2.3 Broadcast from master rank within a different environment
@@ -116,14 +116,14 @@ int Broadcast([data type] value,     ///< [in] value to be broadcast
 
 #### 4.2.5 Broadcast of vector variables
 
-There will be interfaces identical to the above with the value argument 
+There will be interfaces identical to the above with the value argument
 replaced by `std::vector<type> value` to broadcast a vector of values.
 
 #### 4.2.6 Non-blocking broadcasts
 
 Non-blocking forms of the above for all options will exist that
 return a request id. Following the MPI standard, this will all
-be named IBroadcast. In addition, an IBroadcastWait will be 
+be named IBroadcast. In addition, an IBroadcastWait will be
 included to wait for the request to complete. A non-blocking
 sequence would look like:
 
@@ -140,13 +140,13 @@ int err = IBroadcastWait(myReqID);
 A multi-processor test driver will initialize variables of all supported
 types to zero or empty values. The master rank will then set a non-zero
 value and broadcast to the remaining ranks. Each rank will verify the
-new value is the expected one.  
+new value is the expected one.
   - tests requirement 2.1
 
 ### 5.2 Test vectors of all types
 
 Repeat the above with vectors of all types using a set of non-zero
-values. 
+values.
   - tests requirement 2.2
 
 ### 5.3 Test broadcast from other ranks

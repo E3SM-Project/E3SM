@@ -24,7 +24,7 @@ file, serves as a pivotal component for initializing the Omega logging system.
 The function establishes the default logger configuration, ensuring that
 logging messages are effectively saved to a designated file. The path to
 this file is determined by utilizing the `OMEGA_LOG_FILEPATH` macro, which
-allows users to specify the desired file location for logging purposes. 
+allows users to specify the desired file location for logging purposes.
 
 ## Creating Logging Macros
 
@@ -44,5 +44,5 @@ logger types.
 Within the same header file, you will encounter specialized spdlog formatter
 structs designed to accommodate YAKL data types.
 
-For further information on customizing the spdlog formatter, refer to 
+For further information on customizing the spdlog formatter, refer to
 [Custom formatting](https://github.com/gabime/spdlog/wiki/3.-Custom-formatting).

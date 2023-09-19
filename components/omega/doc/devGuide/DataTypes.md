@@ -6,7 +6,7 @@ OMEGA supports all standard data types and uses some additional defined
 types to guarantee a specific level of precision. In particular, we
 define I4, I8, R4 and R8 types for 4-byte (32-bit) and 8-byte (64-bit)
 integer and floating point variables. Note that these exist in the
-OMEGA namespace so use the scoped form OMEGA::I4, etc. 
+OMEGA namespace so use the scoped form OMEGA::I4, etc.
 In addition, we define a Real data type that is, by default,
 double precision (8 bytes/64-bit) but if the code is built with a
 `-DSINGLE_PRECISION` (see insert link to build system) preprocessor flag,
@@ -22,7 +22,7 @@ accuracy in single precision mode.
 
 The C++ language does not have native support for multi-dimensional
 arrays as part of the language standard, though there are a number
-of implementations as part of the Standard Template Library and 
+of implementations as part of the Standard Template Library and
 elsewhere. OMEGA uses the [YAKL](https://github.com/mrnorman/YAKL)
 framework for defining and allocating arrays on both the CPU host and
 any accelerator device that may be present. Because the syntax for
@@ -38,7 +38,7 @@ As an example, we can define and allocate a device and host array using:
 ```c++
    Array3dReal Temperature("Temperature",nTimeLevels, nCells, nVertLevels);
    ArrayHost3dReal TemperatureHost("Temperature",nTimeLevels, nCells, nVertLevels);
-``` 
+```
 Alternatively, you can use the copy functions to create a host copy
 from the device or vice versa.
 ```c++
@@ -49,4 +49,3 @@ deallocate method, eg `Temperature.deallocate();` or if they are local
 to a routine, they will be automatically deallocated when they fall out
 of scope on exit. More details on YAKL arrays are available in the YAKL
 documentation.
-

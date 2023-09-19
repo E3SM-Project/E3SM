@@ -17,8 +17,7 @@ quantities are derived from either the job launch command
 (eg mpirun or srun) that defines the number of MPI tasks and tasks
 layouts or from machine parameters enforced during the build based
 on supported machine xml configurations.
-The latter include the pre-processing parameters 
+The latter include the pre-processing parameters
 `-DOMEGA_VECTOR_LENGTH=xx` and `-DOMEGA_THREADED` that define an
 optimal vector length for CPU code and turn on OpenMP threading
 if desired.
-

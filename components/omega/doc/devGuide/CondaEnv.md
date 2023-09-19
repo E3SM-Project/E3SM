@@ -2,24 +2,24 @@
 
 # Development Conda Environment
 
-As a developer, if you want to build the documentation locally or lint the 
-code, you will need your own 
-[conda](https://conda.io/projects/conda/en/latest/index.html) environment with 
+As a developer, if you want to build the documentation locally or lint the
+code, you will need your own
+[conda](https://conda.io/projects/conda/en/latest/index.html) environment with
 the necessary packages.
 
 (omega-dev-install-mambaforge)=
 
 ## Installing Mambaforge
 
-If you have not already done so, you will install 
+If you have not already done so, you will install
 [Mambaforge](https://github.com/conda-forge/miniforge#mambaforge), preferably
 somewhere in your home directory but possibly somewhere in your scratch space.
-In what follows, we assume you have Mambaforge installed in 
-`${HOME}/mambaforge`. 
+In what follows, we assume you have Mambaforge installed in
+`${HOME}/mambaforge`.
 
-You may wish to skip the step in the Mambaforge installation where it 
+You may wish to skip the step in the Mambaforge installation where it
 wants to modify your `.bashrc`.  If you allow it to, it will add
-activation of the `mamba` and `conda` commands and the `base` conda 
+activation of the `mamba` and `conda` commands and the `base` conda
 environment, and this may not be something you want.
 
 If you opt not to allow Mambforge to update your `.bashrc`, it may be helpful
