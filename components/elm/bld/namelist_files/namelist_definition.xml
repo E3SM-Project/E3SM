@@ -308,6 +308,18 @@ Allowed values are:
  5 : use gross domestic production and population datasets to simulate anthropogenic fire supression
 </entry>
 
+<entry id="fates_harvest_mode" type="char*13" category="physics"
+        group="elm_inparm"
+        valid_values="no_harvest,event_code,surfdata_file,luhdata_area,luhdata_mass" >
+Set FATES harvesting mode by setting fates_harvest_mode
+Allowed values are:
+ no_harvest   : no fates harvesting of any kind
+ event_code   : fates logging via fates logging event codes only (via fates parameter file)
+ surfdata_file: fates harvest driven by HLM landuse timeseries data (dynHarvestMod)
+ luhdata_area : fates harvest driven by LUH2 raw harvest data, area-based (dynFATESLandUseChangeMod)
+ luhdata_mass : fates harvest driven by LUH2 raw harvest data, mass-based (dynFATESLandUseChangeMod)
+</entry>
+
 <entry id="fates_parteh_mode" type="integer" category="physics"
        group="elm_inparm" valid_values="1,2">
 Switch deciding which nutrient model to use in FATES.
@@ -337,11 +349,6 @@ Toggle to turn on FATES no competition mode (only relevant if FATES is being use
 <entry id="use_fates_sp" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on FATES satellite phenology mode (only relevant if FATES is being used).
-</entry>
-
-<entry id="use_fates_logging" type="logical" category="physics"
-        group="elm_inparm" valid_values="" value=".false.">
-Toggle to turn on the logging module (only relevant if FATES is being used).
 </entry>
 
 <entry id="use_fates_planthydro" type="logical" category="physics"
@@ -382,10 +389,24 @@ Full pathname to the inventory initialization control file.
 
 <!-- This may eventually migrate to the dynamic_subgrid group-->
 <entry id="use_fates_luh" type="logical" category="physics"
-       group="elm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" value=".false.">
 If TRUE, enable use of land use state and transition data from luh_timeseries file.
+This is enabled by default if fates_harvest_mode is set to use the raw LUH2 harvest
+data (fates_harvest_mode >= 3) or if use_fates_lupft is true.
 (Only valid for fates land use change runs, where there is a luh_timeseries file.)
 (Also, only valid for use_fates = true and is incompatible with transient runs currently.)
+</entry>
+
+<entry id="use_fates_lupft" type="logical" category="physics"
+       group="elm_inparm" valid_values="" value=".false.">
+If TRUE, enable use of fates land use x pft mapping data file.
+(Only valid for use_fates = true and is incompatible with transient runs currently.)
+</entry>
+
+<entry id="use_fates_potentialveg" type="logical" category="physics"
+       group="elm_inparm" valid_values="" value=".false.">
+If TRUE, ignore the land-use state vector and transitions, and assert that all lands
+are primary, and that there is no harvest.
 </entry>
 
 <!-- This could eventually be included in the "dynamic_subgrid" -->
@@ -406,6 +427,11 @@ output level is not enabled.
 1 = only time x space (3d) fates history variables allowed
 2 = multiplexed dimensioned fates history is also allowed
 (Only relevant if FATES is on)
+</entry>
+
+<entry id="flandusepftdat" type="char*256" category="datasets"
+       input_pathname="abs" group="elm_inparm" valid_values="" >
+Full pathname of fates landuse x pft data map.
 </entry>
 
 <entry id="use_hydrstress" type="logical" category="physics"
