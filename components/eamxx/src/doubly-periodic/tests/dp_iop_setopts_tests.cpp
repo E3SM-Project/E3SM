@@ -3,8 +3,8 @@
 #include "share/scream_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "physics/dp/dp_functions.hpp"
-#include "physics/dp/dp_functions_f90.hpp"
+#include "doubly-periodic/dp_functions.hpp"
+#include "doubly-periodic/dp_functions_f90.hpp"
 
 #include "dp_unit_tests_common.hpp"
 

@@ -9,8 +9,8 @@
 namespace scream {
 namespace dp {
 
-// Initialize DP with the given number of levels.
-void dp_init(Int nlev, bool use_fortran=false, bool force_reinit=false);
+// Initialize DP. This is only for standalone DP testing.
+void dp_init(const bool force_reinit=false);
 
 }  // namespace dp
 }  // namespace scream

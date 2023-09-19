@@ -44,13 +44,13 @@ void compute_tms_f(int ncols, int nlevs,
   using TMSFunc  = Functions<Real, DefaultDevice>;
 
   using Scalar     = typename TMSFunc::Scalar;
-  using Spack      = typename TMSFunc::Spack;
+  using Spack      = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
   using view_1d    = typename TMSFunc::view_1d<Scalar>;
   using view_2d    = typename TMSFunc::view_2d<Spack>;
   using view_2d_s  = typename TMSFunc::view_2d<Scalar>;
   using view_3d    = typename TMSFunc::view_3d<Spack>;
   using ExeSpace   = typename TMSFunc::KT::ExeSpace;
-  using MemberType = typename TMSFunc::MemberType;
+  using MemberType = typename TMSFunc::KT::MemberType;
 
   // Initialize Kokkos views, sync to device
   std::vector<view_1d> temp_d_1d(2);
@@ -90,7 +90,12 @@ void compute_tms_f(int ncols, int nlevs,
   });
 
   // C++ compute_tms function implementation
-  TMSFunc::compute_tms(ncols, nlevs, horiz_wind_d, t_mid_d, p_mid_d, exner_d, z_mid_d,
+  TMSFunc::compute_tms(ncols, nlevs,
+                       ekat::scalarize(horiz_wind_d),
+                       ekat::scalarize(t_mid_d),
+                       ekat::scalarize(p_mid_d),
+                       ekat::scalarize(exner_d),
+                       ekat::scalarize(z_mid_d),
                        sgh_d, landfrac_d, ksrf_d, tau_d);
 
   // Transfer data back to individual arrays (only for output variables)

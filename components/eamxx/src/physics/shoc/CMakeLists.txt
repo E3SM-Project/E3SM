@@ -122,7 +122,6 @@ foreach (SHOC_LIB IN LISTS SHOC_LIBS)
     Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${SHOC_LIB}_modules
   )
   target_include_directories(${SHOC_LIB} PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../share
     ${CMAKE_CURRENT_BINARY_DIR}/${SHOC_LIB}_modules
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/impl

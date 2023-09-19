@@ -11,7 +11,6 @@ set(CLDFRAC_HEADERS
 
 add_library(cld_fraction ${CLDFRAC_SRCS})
 target_compile_definitions(cld_fraction PUBLIC EAMXX_HAS_CLD_FRACTION)
-target_include_directories(cld_fraction PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
 target_link_libraries(cld_fraction physics_share scream_share)
 target_compile_options(cld_fraction PUBLIC)
 
