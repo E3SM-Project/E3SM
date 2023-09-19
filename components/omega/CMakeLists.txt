@@ -15,7 +15,7 @@
 include(${CMAKE_CURRENT_SOURCE_DIR}/OmegaBuild.cmake)
 
 
-# handle build modes 
+# handle build modes
 if (NOT DEFINED PROJECT_NAME)
   # enter standalone build
 

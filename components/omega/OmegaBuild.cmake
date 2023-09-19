@@ -18,7 +18,7 @@ set(OMEGA_DEFAULT_BUILD_TYPE      Release) # Debug or Release
 # Public variables        #
 ###########################
 macro(setup_common_variables)
- 
+
   option(OMEGA_DEBUG "Turn on error message throwing (default OFF)." OFF)
 
   if(NOT DEFINED OMEGA_CXX_FLAGS )
@@ -32,7 +32,7 @@ endmacro()
 # Preset Standalone build #
 ###########################
 macro(preset)
- 
+
   # set CMAKE_CXX_COMPILER from OMEGA_CXX_COMPILER
   if(OMEGA_CXX_COMPILER)
     execute_process(COMMAND which ${OMEGA_CXX_COMPILER}
@@ -68,7 +68,7 @@ macro(setup_standalone_build)
   endif()
 
   set(OMEGA_BUILD_MODE "STANDALONE")
-  set(OMEGA_BUILD_EXECUTABLE ON) 
+  set(OMEGA_BUILD_EXECUTABLE ON)
 
 endmacro()
 
@@ -114,7 +114,7 @@ macro(update_variables)
 
     else()
       set(YAKL_ARCH ${OMEGA_ARCH})
- 
+
       if(OMEGA_${YAKL_ARCH}_FLAGS)
         set(YAKL_${YAKL_ARCH}_FLAGS ${OMEGA_${YAKL_ARCH}_FLAGS})
       endif()
@@ -171,7 +171,7 @@ macro(wrap_outputs)
   if(OMEGA_INSTALL_PREFIX)
 
     install(TARGETS ${OMEGA_LIB_NAME} LIBRARY DESTINATION "${OMEGA_INSTALL_PREFIX}/lib")
-  
+
     if(OMEGA_BUILD_EXECUTABLE)
       install(TARGETS ${OMEGA_EXE_NAME} RUNTIME DESTINATION "${OMEGA_INSTALL_PREFIX}/bin")
     endif()

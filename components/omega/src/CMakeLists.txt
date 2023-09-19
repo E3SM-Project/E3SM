@@ -18,7 +18,7 @@ target_link_libraries(${OMEGA_LIB_NAME} spdlog "${OMEGA_LDFLAGS}")
 # add include directories
 target_include_directories(
 		${OMEGA_LIB_NAME}
-		PRIVATE 
+		PRIVATE
 		"${OMEGA_SOURCE_DIR}/src/base"
 		"${OMEGA_SOURCE_DIR}/src/infra"
 )

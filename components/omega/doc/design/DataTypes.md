@@ -4,7 +4,7 @@
 ## 1 Overview
 
 Data type aliases are a useful means for managing precision within OMEGA and
-to improve readability for for YAKL array data types. This header file 
+to improve readability for for YAKL array data types. This header file
 defines a number of aliases to common data types used throughout OMEGA.
 
 
@@ -14,9 +14,9 @@ defines a number of aliases to common data types used throughout OMEGA.
 ### 2.1 Requirement: Both flexible and fixed floating point
 
 We wish to explore mixed precision and lower precision floating point within
-OMEGA so require both a generic floating point type that can be switched at 
-compile time as well as explicit single and double-precision (32-bit, 64-bit) 
-types to enforce precision where needed.  
+OMEGA so require both a generic floating point type that can be switched at
+compile time as well as explicit single and double-precision (32-bit, 64-bit)
+types to enforce precision where needed.
 
 ### 2.2 Desired: Readability for array types
 
@@ -31,14 +31,14 @@ fixed-width integer data types rather than the generic int, long.
 ### 2.4 Desired: Interoperability
 
 As much as possible, data types should not inhibit interoperability
-with other codes (eg E3SM coupler, 3rd-party libs) or frameworks 
+with other codes (eg E3SM coupler, 3rd-party libs) or frameworks
 (eg other portability or AI/ML frameworks).
 
 ### 2.5 Future: Floating point conversion
 
 Currently, language standard floating point conversion should be adequate,
 but future mixed-precision implementations may require more reproducible
-methods for implementation-dependent conversion. 
+methods for implementation-dependent conversion.
 
 ## 3 Algorithmic Formulation
 
@@ -56,17 +56,17 @@ interfaces with other codes.
 
 ### 4.1 Data types and parameters
 
-#### 4.1.1 Parameters 
+#### 4.1.1 Parameters
 
-We will use a global cpp define -D SINGLE_PRECISION at compile time as a 
-global switch for using single precision as the default real data type. 
-Otherwise, the default real will be double precision. 
+We will use a global cpp define -D SINGLE_PRECISION at compile time as a
+global switch for using single precision as the default real data type.
+Otherwise, the default real will be double precision.
 
 
 #### 4.1.2 Class/structs/data types
 
-The data types will be defined using type aliases within a single header 
-file DataTypes.h We will use the "using" syntax rather than 
+The data types will be defined using type aliases within a single header
+file DataTypes.h We will use the "using" syntax rather than
 the older typedef. For YAKL arrays, we require both device arrays (default)
 and host array types and will use C-ordering.
 
@@ -118,14 +118,14 @@ For the fixed types, verify the expected size using sizeof
 
 ### 5.2 Test global switch for default real size
 
-Build test code with and without -D SINGLE_PRECISION and 
+Build test code with and without -D SINGLE_PRECISION and
 verify size is as expected using sizeof
   * tests requirement 2.1
 
 ### 5.3 YAKL array test
 
-Create YAKL arrays of each type on device. Create host arrays to 
-mirror each. Initialize YAKL arrays on device and copy to host 
+Create YAKL arrays of each type on device. Create host arrays to
+mirror each. Initialize YAKL arrays on device and copy to host
 using YAKL. Create a non-YAKL array on host initialized the same
 way and compare values from each on the host.
   * tests requirement 2.2

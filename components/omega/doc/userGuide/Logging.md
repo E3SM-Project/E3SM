@@ -50,7 +50,7 @@ Here is a table that summarizes the different log severities and their meanings:
    developers to track down issues or analyze behavior.
 6. `LOG_TRACE`: Used to provide the most detailed level of information,
    including function calls and variable values, and is typically used for deep
-   analysis and debugging. 
+   analysis and debugging.
 
 
 You can replace the string "World" with any variable whose type is

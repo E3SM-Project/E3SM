@@ -2,7 +2,7 @@
 
 # Building the Documentation
 
-As long as you have followed the procedure in {ref}`omega-dev-conda-env` for 
+As long as you have followed the procedure in {ref}`omega-dev-conda-env` for
 setting up your conda environment, you will already have the packages available
 that you need to build the documentation.
 

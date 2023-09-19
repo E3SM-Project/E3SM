@@ -7,7 +7,7 @@ the parallel machine environment. These include message-passing parameters
 like MPI communicators and task information, the number of threads
 if threaded, vector length for CPUs, and GPU and node information as
 needed. Multiple environments can be defined to support running portions
-of the model on subsets of tasks. 
+of the model on subsets of tasks.
 
 On model initiation, the initialization routine `OMEGA::MachEnv::init()`
 is called to set up the default MachEnv, which can be retrieved at
@@ -65,5 +65,4 @@ As a class that is basically a container for the environment parameters,
 the implementation is a simple class with several scalar data members and
 the retrieval/creation functions noted above. To track all defined
 environments, a c++ map container is used to pair a name with each
-defined environment.  
-
+defined environment.

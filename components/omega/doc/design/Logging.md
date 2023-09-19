@@ -97,7 +97,7 @@ additional E3SM and Omega specific requirements must be addressed.
 
 ### 4.1 Data types and parameters
 
-#### 4.1.1 Parameters 
+#### 4.1.1 Parameters
 
 The software design will implement a global switch for setting the minimum log
 severity and message format using predefined global C++ defines. The severity
@@ -142,7 +142,7 @@ with different severity levels:
    application instability or incorrect behavior.
 3. `LOG_WARN`: Used to indicate a warning or potential issue that should be
    addressed but does not necessarily require immediate attention.
-4. `LOG_INFO`: Used to provide general informational messages about the 
+4. `LOG_INFO`: Used to provide general informational messages about the
    application's operation or progress.
 5. `LOG_DEBUG`: Used to provide detailed debugging information for
    developers to track down issues or analyze behavior.

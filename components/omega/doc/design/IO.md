@@ -44,7 +44,7 @@ The model must support reading from and writing to an
 arbitrary number of files with different properties
 (eg precision, time frequencies, contents). There will
 be a Streams capability described in a separate
-design document that will manage many of these properties, 
+design document that will manage many of these properties,
 but the underlying I/O layer here must be able to
 support multiple open files, each with unique
 properties.
@@ -54,7 +54,7 @@ properties.
 Performance at high resolution requires a parallel I/O
 solution in which multiple processors can be writing/reading
 data to maximize bandwidth to the filesystem and minimize
-time spent in I/O. 
+time spent in I/O.
 
 ### 2.6 Requirement: parallel I/O tuning
 
@@ -121,7 +121,7 @@ associated file contents.
 
 ### 4.1 Data types and parameters
 
-#### 4.1.1 Parameters 
+#### 4.1.1 Parameters
 
 There will be a section in the input OMEGA configuration file
 for managing overall parallel IO options. Currently, this
@@ -207,7 +207,7 @@ array decompositions for each data type, mesh location and array size.
          IOFormat format;
          IORearranger rearranger;
 
-         /// ptr to defined Scorpio IO system with MPI communicator info 
+         /// ptr to defined Scorpio IO system with MPI communicator info
          int* iosystem;
 
          /// pointers to defined decompositions for every multi-dim
@@ -234,7 +234,7 @@ array decompositions for each data type, mesh location and array size.
 
       friend class IOStreams;
    }
-``` 
+```
 
 There will also be an IOField class to combine the Metadata
 and a pointer to the array holding data. This will be used
@@ -262,7 +262,7 @@ to specify the fields in an IOStream.
 
       friend class IOStreams;
    }
-``` 
+```
 
 
 ### 4.2 Methods
@@ -284,7 +284,7 @@ and rearranger can be overridden on a per-file basis.
          const int ioStride,     /// stride in MPI ranks for io tasks
          const IOFormat format,  /// default IO format
          const IORearranger rearranger, /// default rearranger method
-         ); 
+         );
 ```
 
 #### 4.2.2 File open/close
@@ -360,8 +360,5 @@ Then a pointer to the array is attached using an attach function
 ### 5.1 Test via IOStreams
 
 Because the functions here are only accessed via the IOStreams interfaces,
-the testing of these routines will be part of the IOStreams unit test. 
+the testing of these routines will be part of the IOStreams unit test.
   - tests requirement 2.1-2.9
-
-
-

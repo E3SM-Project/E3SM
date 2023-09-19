@@ -33,7 +33,7 @@ attached to particular fields or variables.
 ### 2.3 Requirement: Metadata conventions
 
 Where possible, all metadata must conform to the climate/forecast (CF)
-metadata conventions at https://cfconventions.org. 
+metadata conventions at https://cfconventions.org.
 
 ### 2.4 Requirement: Required metadata
 
@@ -84,13 +84,13 @@ Note that this requires most initialization to occur before processing
 output streams so that the requested contents can be checked against
 the list of defined fields.
 
-Internally, the metadata class will make use of the C++ 
+Internally, the metadata class will make use of the C++
 `std::map` that provides a useful capability for name, value
 pairs of each data type.
 
 ### 4.1 Data types and parameters
 
-#### 4.1.1 Parameters 
+#### 4.1.1 Parameters
 
 To enable general metadata associated with the code,
 simulation or file, we define standard names for these
@@ -123,11 +123,11 @@ retrieved from anywhere.
       std::map<std::string, std::any> metaMap;
 
       /// for arrays or vectors, the rank of the array
-      int nDims; 
+      int nDims;
 
       /// for arrays or vectors, the dimensions
       std::vector<std::shared_ptr<MetaDim>> dimensions;
-      
+
       /// Store and maintain all defined metadata in this vector
       static std::vector<std::shared_ptr<Metadata>> defFields;
 
@@ -140,7 +140,7 @@ retrieved from anywhere.
 Another class is needed to describe dimensions for arrays
 and vectors. Each is a name, length pair. Like the metadata
 above, all defined dimensions are stored and maintained as a
-static vector. 
+static vector.
 
 ```c++
    class MetaDim{
@@ -210,7 +210,7 @@ in cases where input arguments don't make sense.
           const std::string stdName,     /// CF standard name
           const std::any    validMin,    /// min valid field value
           const std::any    validMax,    /// max valid field value
-          const std::any    fillValue,   /// scalar used for undefined entries 
+          const std::any    fillValue,   /// scalar used for undefined entries
           const int         nDims,       /// number of dimensions
           const std::vector<std::shared_ptr<MetaDims>> // dim pointers
           );
@@ -225,7 +225,7 @@ persistent through a given simulation.
 An interface for adding new metadata to a previously defined Metadata
 instance will be provided. This can be used to add global metadata to
 the code, simulation, file metadata, but also for variables if additional
-metadata is desired.  
+metadata is desired.
 
 ```c++
    int Metadata::Add(const std::string varName, /// name of field to add data to
@@ -248,7 +248,7 @@ use case is likely rare.
    int Metadata::Remove(
             const std::string varName, /// name of field
             const std::string name.    /// name of metadata to remove
-            ); 
+            );
 ```
 
 #### 4.2.3 Retrieve metadata
@@ -326,7 +326,7 @@ have already been defined:
 
 ```c++
    bool Metadata::isDefined(const std::string name);
-   bool MetaDim::isDefined (const std::string name); 
+   bool MetaDim::isDefined (const std::string name);
 ```
 
 #### 4.2.7 Metadata groups
@@ -365,7 +365,7 @@ Finally, we will need to be able to extract the names of all
 fields that have been added to a group:
 
 ```c++
-   std::vector<std::string> fieldList = 
+   std::vector<std::string> fieldList =
        MetaGroup::get(std::string groupName);
 ```
 ## 5 Verification and Testing

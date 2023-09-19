@@ -4,9 +4,9 @@
 ## 1 Overview
 
 When simulating the Earth System, a model must track the simulation time
-as it steps forward with a given time step. Time must be kept in the 
-appropriate calendar system, accounting for leap years and other 
-adjustments as needed. Because these simulations may extend over 
+as it steps forward with a given time step. Time must be kept in the
+appropriate calendar system, accounting for leap years and other
+adjustments as needed. Because these simulations may extend over
 millions of time steps or more, time must be accumulated without roundoff
 so that accumulated time does not drift and events will occur at precise
 time intervals. This document describes various classes needed to track the
@@ -79,7 +79,7 @@ The requirement for no roundoff accumulation implies the need to
 use an integer fraction representation as in the ESMF time
 manager. Similarly, calendar days are best tracked using the
 Julian Day that counts days since a specified start time
-(Noon UTC on 1 Jan, 4713 BCE in the Gregorian calendar - 
+(Noon UTC on 1 Jan, 4713 BCE in the Gregorian calendar -
 a beautiful Monday by most accounts) with conversion to
 various calendars following the algorithms in:
 
@@ -110,7 +110,7 @@ The time manager will consist of a number of classes/modules:
 
 ### 4.1 Data types and parameters
 
-#### 4.1.1 Parameters 
+#### 4.1.1 Parameters
 
 A number of parameters are defined among the above classes. For
 all classes, it will be useful to define times and intervals with
@@ -146,20 +146,20 @@ enum CalendarKind {
    CalendarUnknown};      ///< uninitialized or invalid
 
 const std::string CalendarKindName[CALENDAR_KIND_COUNT] = {
-     "Gregorian", 
+     "Gregorian",
      "No Leap",
      "Julian",
-     "Julian Day", 
+     "Julian Day",
      "Modified Julian Day",
-     "360 Day", 
-     "Custom", 
+     "360 Day",
+     "Custom",
      "No Calendar",
      "Invalid" };
 ```
 
 #### 4.1.2 Class/structs/data types
 
-There are six classes that will make up the time interval. 
+There are six classes that will make up the time interval.
 
 ##### 4.1.2.1 TimeFrac class
 
@@ -481,7 +481,7 @@ calendar time are supplied for use by other time manager routines.
 
 ```c++
 // accessor functions
-// this is (mostly) an immutable class so use constructors 
+// this is (mostly) an immutable class so use constructors
 // and provide only one set accessor for renaming
 
 // the only set function is for renaming
@@ -722,7 +722,7 @@ std::string getString(
 
 The time interval class manages differences or increments in time.
 The user can create or set a time interval with a value and units.
-Retrieval functions for the time interval in various forms are 
+Retrieval functions for the time interval in various forms are
 also supplied. A number of operators are defined for a variety
 of mathematical operations on time intervals (add, subtract,
 multiply, equivalence, absolute value). Finally, the time instant
@@ -734,7 +734,7 @@ by subtracting two time instants.
 // constructors/destructors
 /// Default time interval constructor
 TimeInterval(void);
-        
+
 /// Construct time interval from base time fractional integer seconds
 TimeInterval(const long long whole, ///< Whole integer seconds
              const long long numer, ///< Fractional seconds numerator
@@ -985,7 +985,7 @@ exactly represented by a float (eg 1/3 seconds). Constructors and
 set functions will be paired with get functions to make sure both
 set/get are working. All operators (equivalence, relational,
 algebraic) operators will be tested with known values. We will
-try to anticipate values that could fail. 
+try to anticipate values that could fail.
   - tests parts of requirement 2.2, 2.5, 2.6
 
 ### 5.2 Test TimeInstant
@@ -994,7 +994,7 @@ Similar to TimeFrac, create reference times in each of the
 supported calendars using constructor and set functions. Test
 retrievals (get) to verify they return the reference value.
 Test all the supported TimeInstant operators with known values
-in each of the calendars. 
+in each of the calendars.
   - tests parts of requirement 2.1, 2.3
 
 ### 5.3 Test Calendar

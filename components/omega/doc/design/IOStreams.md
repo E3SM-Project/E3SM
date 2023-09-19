@@ -19,7 +19,7 @@ YAKL arrays.
 ### 2.1 Requirement: Multiple streams
 
 An arbitrary number of input and output streams, each with its own
-properties and precision, must be supported. 
+properties and precision, must be supported.
 
 ### 2.2 Requirement: Reduced precision
 
@@ -111,7 +111,7 @@ template should describe the averaging interval in some format.
 
 In the future, it may be possible to apply lossy or loss-less
 compression on data to save space. An option to compress
-data would be desirable if it can be supported. Like 
+data would be desirable if it can be supported. Like
 reduced-precision, this option would probably be on a per-stream
 basis.
 
@@ -139,12 +139,12 @@ to denote lists, etc., filenames should be in quotes. For example:
          contents:
          - GRPmesh
          - [other fields?]
-            
+
       restart-read:
          mode: read
          name: '/mypath/omega-restart.$Y-$M-$D_$h.$m.$s.nc'
          pointerFilename: '/mypath/pointerFileName'
-         freqUnits: initial 
+         freqUnits: initial
          freq: 1
          precision: double
          contents:
@@ -200,7 +200,7 @@ the capitalized IOStreams will be used to distinguish the two.
 ### 4.1 Data types and parameters
 
 
-#### 4.1.1 Parameters 
+#### 4.1.1 Parameters
 
 There are no parameters specific to the IOStreams, though they will
 utilize some parameters (like precision and other options) from a
@@ -303,7 +303,7 @@ However, if the user needs to write a stream from elsewhere in
 the code, there will be an interface to write a single stream
 by either streamID or by stream name after checking the alarm to
 see if it's time to write. The alarm will be reset once the writing
-is complete. 
+is complete.
 
 ```c++
    int IOStreams::Write(const int streamID, /// id of stream to be modified
@@ -335,9 +335,7 @@ A test driver and configuration file will create a number of streams
 with fields, frequencies and other options that attempt to span all
 possible configurations (though may not be able to test all file
 formats). This driver will march in time to write streams at the
-requested frequencies. At the end of the driver, input streams that 
+requested frequencies. At the end of the driver, input streams that
 mirror the output streams will be read and the fields compared to
-determine if they match. 
+determine if they match.
   - tests requirements 2.1-2.9
-
-

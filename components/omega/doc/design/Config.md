@@ -27,7 +27,7 @@ include YAML, JSON, XML.
 ### 2.3 Requirement: Archiving and provenance
 
 The entire model configuration must be able to be saved and archived to
-act as model provenance. 
+act as model provenance.
 
 ### 2.4 Requirement: Internal accessibility
 
@@ -61,7 +61,7 @@ or includes in the main configuration file to make the dependency clear.
 
 ### 2.9 Required: Hierarchy or grouping
 
-For both readability and for easier encapsulation by modules/classes, the 
+For both readability and for easier encapsulation by modules/classes, the
 configuration should be organized in a logical way to make it clear where
 specific configuration variables are to be used. Parameters primarily or
 specifically associated with a module or class should be in a grouping
@@ -71,7 +71,7 @@ of those parameters with the configuration.
 
 Because the configuration will also be used for provenance, it is likely
 that the configuration input file will need to be read by other languages
-outside of the OMEGA C++ model. This requires an ability to parse a 
+outside of the OMEGA C++ model. This requires an ability to parse a
 configuration input file from other common languages (eg python).
 
 ### 2.11 Requirement: Optional or missing values
@@ -89,7 +89,7 @@ If extra or unexpected values are encountered, they will be ignored.
 ### 2.13 Desired: Automated generation of default input and error checking
 
 While the source code defines the configuration variables, it would
-be desirable to have a means to extract from the source code what the 
+be desirable to have a means to extract from the source code what the
 code is expecting into a default input config file. This would also
 enable some external error checking for missing or extra entries.
 
@@ -97,7 +97,7 @@ enable some external error checking for missing or extra entries.
 
 For users modifying an input configuration, it would be desirable
 to document the acceptable values or range of values that each
-variable can be assigned. 
+variable can be assigned.
 
 ## 3 Algorithmic Formulation
 
@@ -120,9 +120,9 @@ Because extracting variables from a large and complex config
 structure is less efficient, we plan for a single reading of the
 full configuration. Each initialization routine in OMEGA will then
 extract needed variables and manipulate them as needed for the later
-forward integration. In this implementation, we will read/write the 
+forward integration. In this implementation, we will read/write the
 configuration from a master rank and each initialization routine
-within OMEGA will manipulate and broadcast necessary variables 
+within OMEGA will manipulate and broadcast necessary variables
 across ranks for parallel execution. Because not all variables will
 need to be broadcast and many others will be converted to more
 efficient types (eg string options to logical or enums), we believe
@@ -131,7 +131,7 @@ structure and manipulating afterward.
 
 ### 4.1 Data types and parameters
 
-#### 4.1.1 Parameters 
+#### 4.1.1 Parameters
 
 There are no global parameters or shared constants.
 
@@ -143,15 +143,15 @@ We define a Config type, which is actually an alias of YAML::node:
 using Config = YAML::node;
 ```
 
-from the yaml-cpp library. A YAML node is more fully and accurately 
-defined in the YAML specification, but for the purposes of this 
-document, our configuration is represented in YAML as a set of nested 
-map nodes, where a map is simply a keyword-value pair. At the lowest 
-level, these nodes are the simple `variable-name: value` maps. The next 
-level up is a map of the module name to the collection of maps associated 
-with the module. The root node corresponds to the full model configuration 
+from the yaml-cpp library. A YAML node is more fully and accurately
+defined in the YAML specification, but for the purposes of this
+document, our configuration is represented in YAML as a set of nested
+map nodes, where a map is simply a keyword-value pair. At the lowest
+level, these nodes are the simple `variable-name: value` maps. The next
+level up is a map of the module name to the collection of maps associated
+with the module. The root node corresponds to the full model configuration
 and is simply a collection of all those module maps. I/O stream/file
-configuration will be part of this configuration in a design TBD later 
+configuration will be part of this configuration in a design TBD later
 but will be a similar hierarchy under the full omega config node.
 
 An example YAML input file might then look like:
@@ -211,7 +211,7 @@ to be associated with Config.
 #### 4.2.1 File read and master config
 
 The most common use case should be creating a Config by reading a
-YAML configuration file using: 
+YAML configuration file using:
 
 ```c++
 Config omegaConfig = ConfigRead("omega.yml");
@@ -241,7 +241,7 @@ useRefWidth = ConfigGet(hmixConfig, "hmixUseRefWidth", iErr);
 where there is a retrieval function for all supported Omega data types:
 bool, I4, I8, R4, R8, Real, std::string. These retrievals are just
 overloaded wrappers around the YAML form: `configName["varName"].as<type>`
-with some error checking and reporting. Rather than a templated form, 
+with some error checking and reporting. Rather than a templated form,
 we use simple overloading to keep a cleaner interface. If the variable
 or config is missing, these functions will print an error message and
 return with a non-zero error argument.
@@ -263,7 +263,7 @@ being used because the entry is missing.
 
 While the intent is for all config variables to be set using the config
 file read interface above, the capability modify a value is also
-required. The syntax is essentially the inverse of the get/retrieval 
+required. The syntax is essentially the inverse of the get/retrieval
 above. Similar to that case, the sub-group will need to be retrieved first.
 
 ```c++
@@ -272,7 +272,7 @@ ConfigSet(hmixConfig, "hmixRefWidth", 10.0e3, iErr);
 ConfigSet(hmixConfig, "hmixUseRefWidth", true, iErr);
 ```
 
-There will be overloaded interfaces for each supported type. For 
+There will be overloaded interfaces for each supported type. For
 literals (as in the example above), they will be cast to an appropriate
 type according to C++ default type conversion and will be converted
 to the desired type on retrieval (YAML internal storage is ignorant of
@@ -297,7 +297,7 @@ ConfigAdd(hmixConfig, "hmixUseRefWidth", true, iErr);
 ConfigAdd(omegaConfig, hmixConfig); // add new subgroup to parent
 ```
 
-There will be overloaded interfaces for each supported type. For 
+There will be overloaded interfaces for each supported type. For
 literals (as in the example above), they will be cast to an appropriate
 type according to C++ default type conversion and will be converted
 to the desired type on retrieval (YAML internal storage is ignorant of
@@ -306,7 +306,7 @@ the type and only performs the type cast on retrieval).
 #### 4.2.4 Existence
 
 It is not expected that a user would test the existence since the
-Get/Set functions will perform the test internally. However, to 
+Get/Set functions will perform the test internally. However, to
 satisfy requirement 2.11, we will add a function to test the
 existence of an entry, given a config or sub-config.
 Using the hmix example again:
@@ -373,8 +373,8 @@ This block would follow Doxygen-like format and look something like:
 ```
 
 The block between the ConfigInput lines could be extracted verbatim
-and written (with proper indenting) into a fully documented yaml 
-default input file or could be extracted and the `#`-delimited 
+and written (with proper indenting) into a fully documented yaml
+default input file or could be extracted and the `#`-delimited
 comments stripped for a more concise yaml input file.
 In addition, we may be able to similarly extract the same info for
 the User and Developer Guides.
@@ -384,7 +384,7 @@ the User and Developer Guides.
 The selection of YAML automatically satisfies Requirements 2.1, 2.2 and
 2.10. Requirement 2.8 will be enforced by Omega development. The other
 requirements will be tested with a parallel unit test driver that performs
-the following tests in order and will output the test name and a 
+the following tests in order and will output the test name and a
 PASS/FAIL for use with CTest or other testing frameworks.
 
 
@@ -396,7 +396,7 @@ Create an empty config on master rank using default constructor.
 ### 5.2 Test Set function
 
 Add configuration variables to the empty config with at least one of
-each supported type with a few extras to test behavior for other 
+each supported type with a few extras to test behavior for other
 requirements. Also add multiple levels of hierarchy and a large
 enough number of subgroups and parameters to simulate a full omega
 config.
