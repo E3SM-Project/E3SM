@@ -105,7 +105,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
   m_time_interp = util::TimeInterpolation(grid_ext, m_datafiles);
 
-  constexpr int ps = 1;
+  constexpr int ps = SCREAM_PACK_SIZE;
   const auto& grid_name = m_grid->name();
   if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
     create_helper_field("p_mid_ext", scalar3d_layout_mid, grid_name, ps);

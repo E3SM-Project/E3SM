@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: shoc_p3_${POSTFIX}_remapped
+filename_prefix: shoc_p3_${POSTFIX}_nudged_remapped
 Averaging Type: Instant
 Max Snapshots Per File: 2
 vertical_remap_file: vertical_remap.nc

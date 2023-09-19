@@ -12,7 +12,7 @@ atmosphere_processes:
   schedule_type: Sequential
   atm_procs_list: [shoc,p3,nudging]
   nudging:
-    nudging_filename: [shoc_p3_source_data.INSTANT.nsteps_x${NUM_STEPS}.${RUN_T0}.nc]
+    nudging_filename: [shoc_p3_source_data_${POSTFIX}.INSTANT.nsteps_x${NUM_STEPS}.${RUN_T0}.nc]
     nudging_fields: ["T_mid", "qv"]
     nudging_timescale: 0
     source_pressure_type: ${VERT_TYPE}
@@ -26,11 +26,11 @@ grids_manager:
     aliases: [Physics]
     type: point_grid
     number_of_global_columns:   218
-    number_of_vertical_levels:  128
+    number_of_vertical_levels:  72
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_128lev}
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   surf_evap: 0.0
   surf_sens_flux: 0.0

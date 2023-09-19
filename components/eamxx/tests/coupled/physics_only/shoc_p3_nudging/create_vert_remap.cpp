@@ -13,7 +13,7 @@ TEST_CASE("create_vert_remap","create_vert_remap")
   MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
   scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
 
-  int nlevs = 5*SCREAM_PACK_SIZE;
+  int nlevs = 5*SCREAM_PACK_SIZE+1;
   std::vector<std::int64_t> dofs_levs(nlevs);
   std::iota(dofs_levs.begin(),dofs_levs.end(),0);
   std::vector<Real> p_tgt;
