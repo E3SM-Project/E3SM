@@ -1589,7 +1589,7 @@ contains
       ! Gradient Richardson number
       !
 
-      nCells = nCellsHalo( 2 )
+      nCells = nCellsHalo( 3 )
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
       !$acc          present(RiTopOfCell, maxLevelCell, nEdgesOnCell, edgesOnCell, normalVelocity, &

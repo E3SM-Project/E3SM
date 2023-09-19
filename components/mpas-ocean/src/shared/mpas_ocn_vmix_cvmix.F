@@ -159,12 +159,13 @@ contains
       integer, dimension(:), allocatable :: surfaceAverageIndex
 
       real (kind=RKIND) :: x, bulkRichardsonNumberStop, sfc_layer_depth
-      real (kind=RKIND) :: normalVelocityAv, delU2, areaSum, blTemp
+      real (kind=RKIND) :: normalVelocityAv, delU2, areaSum, blTemp,tangentialVelocityAv
       real (kind=RKIND) :: sigma
       real (kind=RKIND), dimension(:), allocatable :: Nsqr_iface, turbulentScalarVelocityScale, &
                                                       deltaVelocitySquared, normalVelocitySum, &
                                                       potentialDensitySum, RiTemp,              &
-                                                      layerThicknessSum, layerThicknessEdgeSum
+                                                      layerThicknessSum, layerThicknessEdgeSum, &
+                                                      tangentialVelocitySum
       real (kind=RKIND), dimension(:), allocatable, target :: RiSmoothed, BVFSmoothed, OBLDepths, interfaceForcings
       logical :: bulkRichardsonFlag
 
@@ -308,6 +309,7 @@ contains
       allocate(RiTemp(nVertLevels+1))
 
       allocate(normalVelocitySum(nVertLevels))
+      allocate(tangentialVelocitySum(nVertLevels))
       allocate(potentialDensitySum(nVertLevels))
       allocate(surfaceAverageIndex(nVertLevels))
       allocate(deltaVelocitySquared(nVertLevels))
@@ -333,9 +335,10 @@ contains
 !      !$omp private(k, RiSmoothed, RiTemp, nsmooth, BVFSmoothed, alphaAngle, &
 !      !$omp         langmuirEnhancementFactor, bulkRichardsonNumberStop, bulkRichardsonFlag, &
 !      !$omp         topIndex, kIndexOBL, deltaVelocitySquared, sigma, OBLDepths, interfaceForcings, &
-!      !$omp         surfaceAverageIndex, sfc_layer_depth, kav, i, iEdge, &
+!      !$omp         surfaceAverageIndex, sfc_layer_depth, kav, i, iEdge, tangentialVelocitySum, &
 !      !$omp         normalVelocitySum, layerThicknessEdgeSum, normalVelocityAv, delU2, potentialDensitySum, &
-!      !$omp         layerThicknessSum, blTemp, zonalWavenumberCoeff, meridionalWavenumberCoeff) &
+!      !$omp         layerThicknessSum, blTemp, zonalWavenumberCoeff, meridionalWavenumberCoeff, &
+!      !$omp         tangentialVelocityAv) &
 !      !$omp firstprivate(cvmix_variables, Nsqr_iface, turbulentScalarVelocityScale)
       do iCell = 1, nCells
 
@@ -555,23 +558,26 @@ contains
                  deltaVelocitySquared(1:minLevelEdgeBot(iEdge)) = 0.0_RKIND
 
                  normalVelocitySum(minLevelEdgeBot(iEdge)) = normalVelocity(minLevelEdgeBot(iEdge), iEdge)* &
-                                                          layerThickEdgeMean(minLevelEdgeBot(iEdge),iEdge) &
-                                                          + tangentialVelocity(minLevelEdgeBot(iEdge),iEdge)* &
+                                                          layerThickEdgeMean(minLevelEdgeBot(iEdge),iEdge)
+                 tangentialVelocitySum(minLevelEdgeBot(iEdge)) = tangentialVelocity(minLevelEdgeBot(iEdge),iEdge)* &
                                                           layerThickEdgeMean(minLevelEdgeBot(iEdge),iEdge)
                  layerThicknessEdgeSum(minLevelEdgeBot(iEdge)) = layerThickEdgeMean(minLevelEdgeBot(iEdge),iEdge)
 
                  do kIndexOBL = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                     normalVelocitySum(kIndexOBL) = normalVelocitySum(kIndexOBL-1) + &
-                                      layerThickEdgeMean(kIndexOBL, iEdge)*(normalVelocity(kIndexOBL, iEdge) + &
-                                      tangentialVelocity(kIndexOBL, iEdge))
+                                      layerThickEdgeMean(kIndexOBL, iEdge)*normalVelocity(kIndexOBL, iEdge)
+                    tangentialVelocitySum(kIndexOBL) = tangentialVelocitySum(kIndexOBL-1) + &
+                                      layerThickEdgeMean(kIndexOBL, iEdge)*tangentialVelocity(kIndexOBL, iEdge)
                     layerThicknessEdgeSum(kIndexOBL) = layerThicknessEdgeSum(kIndexOBL-1) + layerThickEdgeMean(kIndexOBL, iEdge)
                  end do
 
                  do kIndexOBL = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                     normalVelocityAv = normalVelocitySum(surfaceAverageIndex(kIndexOBL )) / &
                         layerThicknessEdgeSum(surfaceAverageIndex(kIndexOBL))
-                    delU2 = ( normalVelocityAv - (tangentialVelocity(kIndexOBL, iEdge) + &
-                                 normalVelocity(kIndexOBL, iEdge)) )**2
+                    tangentialVelocityAv = tangentialVelocitySum(surfaceAverageIndex(kIndexOBL)) / &
+                        layerThicknessEdgeSum(surfaceAverageIndex(kIndexOBL))
+                    delU2 = (normalVelocityAv - normalVelocity(kIndexOBL, iEdge))**2 + &
+                            (tangentialVelocityAv - tangentialVelocity(kIndexOBL, iEdge))**2
                     deltaVelocitySquared(kIndexOBL) = deltaVelocitySquared(kIndexOBL) + edgeAreaFractionOfCell(i,iCell) * delU2
                  end do
               end do
@@ -836,6 +842,7 @@ contains
       deallocate(RiTemp)
       deallocate(BVFSmoothed)
       deallocate(normalVelocitySum)
+      deallocate(tangentialVelocitySum)
       deallocate(potentialDensitySum)
       deallocate(surfaceAverageIndex)
       deallocate(deltaVelocitySquared)
