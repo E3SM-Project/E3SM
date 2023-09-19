@@ -823,6 +823,9 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="pondAlbedoCell"/>')
             lines.append('    <var name="bareIceAlbedoCell"/>')
             lines.append('    <var name="pondAreaCell"/>')
+            lines.append('    <var name="verticalAerosolsIceCell"/>')
+            lines.append('    <var name="verticalAerosolsSnowCell"/>')
+            lines.append('    <var name="netBrineHeight"/>')
             if iceberg_mode != 'none':
                 lines.append('    <var name="bergFreshwaterFlux"/>')
                 lines.append('    <var name="bergLatentHeatFlux"/>')
@@ -832,7 +835,6 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="totalChlorophyll"/>')
                 lines.append('    <var name="primaryProduction"/>')
                 lines.append('    <var name="bioShortwaveFlux"/>')
-                lines.append('    <var name="netBrineHeight"/>')
                 lines.append('    <var name="newlyFormedIce"/>')
                 lines.append('    <var name="snowThicknessChange"/>')
                 lines.append('    <var name="verticalAlgaeIceCell"/>')

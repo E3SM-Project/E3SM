@@ -315,12 +315,14 @@ module seaice_core_interface
 
      call MPAS_pool_get_config(configPool, "config_use_column_package", config_use_column_package)
      call MPAS_pool_get_config(configPool, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+     call MPAS_pool_get_config(configPool, "config_use_zaerosols", config_use_zaerosols)
 
      call MPAS_pool_get_package(packagePool, "pkgColumnPackageActive", pkgColumnPackageActive)
      call MPAS_pool_get_package(packagePool, "pkgColumnBiogeochemistryActive", pkgColumnBiogeochemistryActive)
 
      pkgColumnPackageActive         = config_use_column_package
-     pkgColumnBiogeochemistryActive = (config_use_column_biogeochemistry .and. config_use_column_package)
+     pkgColumnBiogeochemistryActive = ((config_use_column_biogeochemistry .or. config_use_zaerosols) &
+        .and. config_use_column_package)
 
      !pkgColumnPackageActive         = .true.
      !pkgColumnBiogeochemistryActive = .true.
@@ -492,10 +494,8 @@ module seaice_core_interface
         pkgColumnTracerEffectiveSnowDensityActive = .false.
         pkgColumnTracerSnowGrainRadiusActive      = .false.
      endif
-
+ 
      if (.not. config_use_column_biogeochemistry .and. config_use_column_package) then
-        pkgTracerBrineActive                = .false.
-        pkgTracerMobileFractionActive       = .false.
         pkgTracerSkeletalAlgaeActive        = .false.
         pkgTracerSkeletalNitrateActive      = .false.
         pkgTracerSkeletalCarbonActive       = .false.
@@ -516,7 +516,6 @@ module seaice_core_interface
         pkgTracerVerticalHumicsActive       = .false.
         pkgTracerVerticalDONActive          = .false.
         pkgTracerVerticalIronActive         = .false.
-        pkgTracerZAerosolsActive            = .false.
         pkgTracerZSalinityActive            = .false.
      endif
 

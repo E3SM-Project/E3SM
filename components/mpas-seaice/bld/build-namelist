@@ -675,8 +675,6 @@ if ($ice_bgc eq 'ice_bgc') {
         add_default($nl, 'config_use_iron', 'val'=>".true.");
 } else {
         add_default($nl, 'config_use_vertical_biochemistry', 'val'=>".false.");
-        add_default($nl, 'config_use_vertical_tracers', 'val'=>".false.");
-        add_default($nl, 'config_use_brine', 'val'=>".false.");
         add_default($nl, 'config_use_nitrate', 'val'=>".false.");
         add_default($nl, 'config_use_carbon', 'val'=>".false.");
         add_default($nl, 'config_use_ammonium', 'val'=>".false.");
@@ -687,6 +685,8 @@ if ($ice_bgc eq 'ice_bgc') {
         add_default($nl, 'config_use_DON', 'val'=>".false.");
         add_default($nl, 'config_use_iron', 'val'=>".false.");
 }
+add_default($nl, 'config_use_brine');
+add_default($nl, 'config_use_vertical_tracers');
 add_default($nl, 'config_use_chlorophyll');
 add_default($nl, 'config_use_macromolecules');
 add_default($nl, 'config_use_modal_aerosols');
