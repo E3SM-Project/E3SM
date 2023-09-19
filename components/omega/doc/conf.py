@@ -6,10 +6,8 @@
 
 import os
 from datetime import date
-import sphinx_rtd_theme
 
-from sphinx.application import Sphinx
-from sphinx.transforms.post_transforms import SphinxPostTransform
+import sphinx_rtd_theme
 
 # -- Project information -----------------------------------------------------
 
