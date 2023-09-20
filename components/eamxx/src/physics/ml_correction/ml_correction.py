@@ -9,6 +9,8 @@ from scream_run.steppers.machine_learning import (
 )
 
 def get_ML_model(model_path):
+    if model_path == "NONE":
+        return None
     config = MachineLearningConfig(models=[model_path])
     model = open_model(config)
     return model    

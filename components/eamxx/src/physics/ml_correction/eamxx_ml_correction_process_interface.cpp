@@ -51,13 +51,16 @@ void MLCorrection::set_grids(
 }
 
 void MLCorrection::initialize_impl(const RunType /* run_type */) {
+  fpe_mask = ekat::get_enabled_fpes();
+  ekat::disable_all_fpes();  // required for importing numpy  
   if ( Py_IsInitialized() == 0 ) {
     pybind11::initialize_interpreter();
-  }  
+  }
   pybind11::module sys = pybind11::module::import("sys");
   sys.attr("path").attr("insert")(1, ML_CORRECTION_CUSTOM_PATH);
   py_correction = pybind11::module::import("ml_correction");
   ML_model = py_correction.attr("get_ML_model")(m_ML_model_path);
+  ekat::enable_fpes(fpe_mask);
 }
 
 // =========================================================================================
@@ -85,7 +88,6 @@ void MLCorrection::run_impl(const double dt) {
   Int num_tracers = tracers_info->size();
   Real qv_max_before = field_max<Real>(qv_field);
   Real qv_min_before = field_min<Real>(qv_field);
-  int fpe_mask = ekat::get_enabled_fpes();
   ekat::disable_all_fpes();  // required for importing numpy
   if ( Py_IsInitialized() == 0 ) {
     pybind11::initialize_interpreter();
