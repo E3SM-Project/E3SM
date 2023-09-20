@@ -192,6 +192,18 @@ contains
       ! in that case, RediKappa is updated every time step in mpas_ocn_gm.F
       ! For static RediKappa, it is set on init and remains unchanged.
 
+      !$omp parallel
+      !$omp do schedule(runtime) private(k,iTr)
+      do iCell=1,nCells
+         do k=1,nVertLevels
+            do iTr = 1,nTracers
+               redi_flux_scale(iTr,k,iCell) = 1.0_RKIND
+            end do
+         end do
+      end do
+      !$omp end do
+      !$omp end parallel
+
       nCells = nCellsArray(2)
       !$omp parallel
       !$omp do schedule(runtime) private(i, iEdge)
@@ -449,7 +461,6 @@ contains
       !$omp do schedule(runtime) &
       !$omp private(k, iTr, tempTracer, iEdge, over, scal, diff)
       do iCell = 1, nCells
-         redi_flux_scale(:, :, iCell) = 1.0_RKIND
          do k = minLevelCell(iCell), maxLevelCell(iCell)
             do iTr = 1, ntracers
                tempTracer = tracers(iTr, k, iCell) + dt*( &
