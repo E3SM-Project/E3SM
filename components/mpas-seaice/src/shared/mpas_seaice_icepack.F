@@ -160,7 +160,7 @@ module seaice_icepack
           index_nonreactiveConcLayer, &  ! nlt_bgc_PON
           index_humicsConcLayer          ! nlt_bgc_hum
 
-     ! indexes of bio tracers with types in tracer array
+     ! indices of bio tracers with types in tracer array
      integer, dimension(:), allocatable :: &
           index_algaeConc, &                       ! nt_bgc_N
           index_algalCarbon, &                     ! nt_bgc_C
@@ -233,7 +233,6 @@ contains
        call init_column_tracer_object(domain, ciceTracerObject)
 
        ! initialize the column package parameters
-       call init_column_package_parameters(domain, ciceTracerObject)
        call init_icepack_package_parameters(domain, ciceTracerObject)
 
     endif
@@ -1000,7 +999,7 @@ contains
 
     type(domain_type), intent(inout) :: domain
 
-    call finalize_column_non_activated_pointers(domain)
+    call finalize_icepack_non_activated_pointers(domain)
 
   end subroutine seaice_icepack_finalize
 
@@ -9442,42 +9441,6 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_package_parameters
-!
-!> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 2nd Feburary 2015
-!> \details
-!>
-!
-!-----------------------------------------------------------------------
-
-  subroutine init_column_package_parameters(domain, tracerObject)
-
-    type(domain_type), intent(inout) :: domain
-
-    type(ciceTracerObjectType), intent(in) :: &
-         tracerObject
-
-    ! check column configs
-    call check_column_package_configs(domain)
-
-    ! set the tracer flags
-    call init_column_package_tracer_flags(domain)
-
-    ! set the tracer numbers
-    call init_column_package_tracer_numbers(tracerObject)
-
-    ! set the tracers indices
-    call init_column_package_tracer_indices(tracerObject)
-
-    ! set the column parameters
-    call init_column_package_configs(domain)
-
-  end subroutine init_column_package_parameters
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
 !  init_icepack_package_parameters
 !
 !> \brief
@@ -9508,6 +9471,7 @@ contains
     call init_icepack_package_tracer_indices(tracerObject)
 
     ! set the column parameters
+    call init_column_package_configs(domain) !echmod - temporary until colpkg_constants are moved
     call init_icepack_package_configs(domain)
 
   end subroutine init_icepack_package_parameters
@@ -9950,150 +9914,6 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_package_tracer_flags
-!
-!> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 2nd Feburary 2015
-!> \details
-!>
-!
-!-----------------------------------------------------------------------
-
-  subroutine init_column_package_tracer_flags(domain)
-
-    !use ice_colpkg_tracers, only: &
-    !     tr_iage      , & ! if .true., use age tracer
-    !     tr_FY        , & ! if .true., use first-year area tracer
-    !     tr_lvl       , & ! if .true., use level ice tracer
-    !     tr_pond      , & ! if .true., use melt pond tracer
-    !     tr_pond_cesm , & ! if .true., use cesm pond tracer
-    !     tr_pond_lvl  , & ! if .true., use level-ice pond tracer
-    !     tr_pond_topo , & ! if .true., use explicit topography-based ponds
-    !     tr_aero      , & ! if .true., use aerosol tracers
-    !     tr_brine         ! if .true., brine height differs from ice thickness
-
-    use ice_colpkg, only: &
-         colpkg_init_tracer_flags
-
-    type(domain_type), intent(inout) :: domain
-
-    logical, pointer :: &
-         config_use_ice_age, &
-         config_use_first_year_ice, &
-         config_use_level_ice, &
-         config_use_cesm_meltponds, &
-         config_use_level_meltponds, &
-         config_use_topo_meltponds, &
-         config_use_aerosols, &
-         config_use_brine, &
-         config_use_vertical_zsalinity, &
-         config_use_zaerosols, &
-         config_use_nitrate, &
-         config_use_DON, &
-         config_use_carbon, &
-         config_use_chlorophyll, &
-         config_use_ammonium, &
-         config_use_silicate, &
-         config_use_DMS, &
-         config_use_iron, &
-         config_use_humics, &
-         config_use_nonreactive, &
-         config_use_vertical_biochemistry, &
-         config_use_skeletal_biochemistry, &
-         config_use_effective_snow_density, &
-         config_use_snow_grain_radius
-
-    logical :: &
-         use_snow, &
-         use_meltponds, &
-         use_nitrogen
-
-    call MPAS_pool_get_config(domain % configs, "config_use_ice_age", config_use_ice_age)
-    call MPAS_pool_get_config(domain % configs, "config_use_first_year_ice", config_use_first_year_ice)
-    call MPAS_pool_get_config(domain % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
-    call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
-    call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
-    call MPAS_pool_get_config(domain % configs, "config_use_aerosols", config_use_aerosols)
-    call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
-    call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
-    call MPAS_pool_get_config(domain % configs, "config_use_nitrate", config_use_nitrate)
-    call MPAS_pool_get_config(domain % configs, "config_use_DON", config_use_DON)
-    call MPAS_pool_get_config(domain % configs, "config_use_carbon", config_use_carbon)
-    call MPAS_pool_get_config(domain % configs, "config_use_chlorophyll", config_use_chlorophyll)
-    call MPAS_pool_get_config(domain % configs, "config_use_ammonium", config_use_ammonium)
-    call MPAS_pool_get_config(domain % configs, "config_use_silicate", config_use_silicate)
-    call MPAS_pool_get_config(domain % configs, "config_use_DMS", config_use_DMS)
-    call MPAS_pool_get_config(domain % configs, "config_use_iron", config_use_iron)
-    call MPAS_pool_get_config(domain % configs, "config_use_humics", config_use_humics)
-    call MPAS_pool_get_config(domain % configs, "config_use_nonreactive", config_use_nonreactive)
-    call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-    call MPAS_pool_get_config(domain % configs, "config_use_effective_snow_density", config_use_effective_snow_density)
-    call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
-
-    use_nitrogen = .false.
-    if (config_use_skeletal_biochemistry .or. config_use_vertical_biochemistry) &
-         use_nitrogen = .true.
-
-    use_meltponds = (config_use_cesm_meltponds .or. config_use_level_meltponds .or. config_use_topo_meltponds)
-
-    call colpkg_init_tracer_flags(&
-         config_use_ice_age, &
-         config_use_first_year_ice, &
-         config_use_level_ice, &
-         use_meltponds, &
-         config_use_cesm_meltponds, &
-         config_use_level_meltponds, &
-         config_use_topo_meltponds, &
-         config_use_effective_snow_density, &
-         config_use_snow_grain_radius, &
-         config_use_aerosols, &
-         config_use_brine, &
-         config_use_vertical_zsalinity, &
-         config_use_zaerosols, &
-         config_use_nitrate, &
-         use_nitrogen, &
-         config_use_DON, &
-         config_use_carbon, &
-         config_use_chlorophyll, &
-         config_use_ammonium, &
-         config_use_silicate, &
-         config_use_DMS, &
-         config_use_iron, &
-         config_use_humics, &
-         config_use_nonreactive)
-
-    !tr_iage      = config_use_ice_age
-    !tr_FY        = config_use_first_year_ice
-    !tr_lvl       = config_use_level_ice
-    !tr_pond      = use_meltponds
-    !tr_pond_cesm = config_use_cesm_meltponds
-    !tr_pond_lvl  = config_use_level_meltponds
-    !tr_pond_topo = config_use_topo_meltponds
-    !tr_rsnw      = config_use_snow_grain_radius
-    !tr_aero      = config_use_aerosols
-    !tr_brine     = config_use_brine
-    !tr_bgc_S     = config_use_vertical_zsalinity
-    !tr_zaero     = config_use_zaerosols
-    !tr_bgc_Nit   = config_use_nitrate
-    !tr_bgc_N     = use_nitrogen
-    !tr_bgc_DON   = config_use_DON
-    !tr_bgc_C     = config_use_carbon
-    !tr_bgc_chl   = config_use_chlorophyll
-    !tr_bgc_Am    = config_use_ammonium
-    !tr_bgc_Sil   = config_use_silicate
-    !tr_bgc_DMS   = config_use_DMS
-    !tr_bgc_Fe    = config_use_iron
-    !tr_bgc_hum   = config_use_humics
-    !tr_bgc_PON   = config_use_nonreactive
-
-  end subroutine init_column_package_tracer_flags
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
 !  init_icepack_package_tracer_flags
 !
 !> \brief
@@ -10203,43 +10023,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_package_tracer_numbers
-!
-!> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 9th Feburary 2015
-!> \details
-!>
-!
-!-----------------------------------------------------------------------
-
-  subroutine init_column_package_tracer_numbers(tracerObject)
-
-    !use ice_colpkg_tracers, only: &
-    !     ntrcr, &
-    !     nbtrcr, &
-    !     nbtrcr_sw
-
-    use ice_colpkg, only: &
-         colpkg_init_tracer_numbers
-
-    type(ciceTracerObjectType), intent(in) :: &
-         tracerObject
-
-    call colpkg_init_tracer_numbers(&
-         tracerObject % nTracers, &
-         tracerObject % nBioTracers, &
-         tracerObject % nBioTracersShortwave)
-
-    !ntrcr     = tracerObject % nTracers
-    !nbtrcr    = tracerObject % nBioTracers
-    !nbtrcr_sw = tracerObject % nBioTracersShortwave
-
-  end subroutine init_column_package_tracer_numbers
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  init_icepack_package_tracer_numbers
+!  init_icepack_package_tracer_sizes
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -10296,224 +10080,6 @@ contains
     call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
   end subroutine init_icepack_package_tracer_sizes
-
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-!
-!  init_column_package_tracer_indices
-!
-!> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 5th Feburary 2015
-!> \details
-!>
-!
-!-----------------------------------------------------------------------
-
-  subroutine init_column_package_tracer_indices(tracerObject)
-
-    !use ice_colpkg_tracers, only: &
-    !     nt_Tsfc, &       ! ice/snow temperature
-    !     nt_qice, &       ! volume-weighted ice enthalpy (in layers)
-    !     nt_qsno, &       ! volume-weighted snow enthalpy (in layers)
-    !     nt_sice, &       ! volume-weighted ice bulk salinity (CICE grid layers)
-    !     nt_fbri, &       ! volume fraction of ice with dynamic salt (hinS/vicen*aicen)
-    !     nt_iage, &       ! volume-weighted ice age
-    !     nt_FY, &         ! area-weighted first-year ice area
-    !     nt_alvl, &       ! level ice area fraction
-    !     nt_vlvl, &       ! level ice volume fraction
-    !     nt_apnd, &       ! melt pond area fraction
-    !     nt_hpnd, &       ! melt pond depth
-    !     nt_ipnd, &       ! melt pond refrozen lid thickness
-    !     nt_aero, &       ! starting index for aerosols in ice
-    !     nt_smice, &      ! snow ice mass
-    !     nt_smliq, &      ! snow liquid mass
-    !     nt_rsnw, &       ! snow grain radius
-    !     nt_rhos, &       ! snow density tracer
-    !     nt_fbri, &       ! volume fraction of ice with dynamic salt (hinS/vicen*aicen)
-    !     nt_bgc_Nit, &    ! nutrients
-    !     nt_bgc_Am, &     !
-    !     nt_bgc_Sil, &    !
-    !     nt_bgc_DMSPp, &  ! trace gases (skeletal layer)
-    !     nt_bgc_DMSPd, &  !
-    !     nt_bgc_DMS, &    !
-    !     nt_bgc_PON, &    ! zooplankton and detritus
-    !     nt_bgc_hum, &    ! humic material
-    !                      ! bio layer indicess
-    !     nlt_bgc_Nit, &   ! nutrients
-    !     nlt_bgc_Am, &    !
-    !     nlt_bgc_Sil, &   !
-    !     nlt_bgc_DMSPp, & ! trace gases (skeletal layer)
-    !     nlt_bgc_DMSPd, & !
-    !     nlt_bgc_DMS, &   !
-    !     nlt_bgc_PON, &   ! zooplankton and detritus
-    !     nlt_bgc_hum, &   ! humic material
-    !     nlt_chl_sw, &    ! points to total chla in trcrn_sw
-    !     nt_zbgc_frac, &  ! fraction of tracer in the mobile phase
-    !     nt_bgc_S, &      ! Bulk salinity in fraction ice with dynamic salinity (Bio grid)
-    !     nt_bgc_N, &      ! diatoms, phaeocystis, pico/small
-    !     nt_bgc_C, &      ! diatoms, phaeocystis, pico/small
-    !     nt_bgc_chl, &    ! diatoms, phaeocystis, pico/small
-    !     nlt_bgc_N, &     ! diatoms, phaeocystis, pico/small
-    !     nlt_bgc_C, &     ! diatoms, phaeocystis, pico/small
-    !     nlt_bgc_chl, &   ! diatoms, phaeocystis, pico/small
-    !     nt_bgc_DOC, &    ! dissolved organic carbon
-    !     nlt_bgc_DOC, &   ! dissolved organic carbon
-    !     nt_bgc_DON, &    ! dissolved organic nitrogen
-    !     nlt_bgc_DON, &   ! dissolved organic nitrogen
-    !     nt_bgc_DIC, &    ! dissolved inorganic carbon
-    !     nlt_bgc_DIC, &   ! dissolved inorganic carbon
-    !     nt_bgc_Fed, &    ! dissolved iron
-    !     nt_bgc_Fep, &    ! particulate iron
-    !     nlt_bgc_Fed, &   ! dissolved iron
-    !     nlt_bgc_Fep, &   ! particulate iron
-    !     nt_zaero, &      ! black carbon and other aerosols
-    !     nlt_zaero, &     ! black carbon and other aerosols
-    !     nlt_zaero_sw     ! black carbon and other aerosols
-
-    use ice_colpkg, only: &
-         colpkg_init_tracer_indices
-
-    type(ciceTracerObjectType), intent(in) :: &
-         tracerObject
-
-    call colpkg_init_tracer_indices(&
-         tracerObject % index_surfaceTemperature, &
-         tracerObject % index_iceEnthalpy, &
-         tracerObject % index_snowEnthalpy, &
-         tracerObject % index_iceSalinity, &
-         tracerObject % index_brineFraction, &
-         tracerObject % index_iceAge, &
-         tracerObject % index_firstYearIceArea, &
-         tracerObject % index_levelIceArea, &
-         tracerObject % index_levelIceVolume, &
-         tracerObject % index_pondArea, &
-         tracerObject % index_pondDepth, &
-         tracerObject % index_pondLidThickness, &
-         tracerObject % index_aerosols, &
-         tracerObject % index_snowIceMass, &
-         tracerObject % index_snowLiquidMass, &
-         tracerObject % index_snowGrainRadius, &
-         tracerObject % index_snowDensity, &
-         tracerObject % index_verticalAerosolsConc, &
-         tracerObject % index_algaeConc, &
-         tracerObject % index_algalCarbon, &
-         tracerObject % index_algalChlorophyll, &
-         tracerObject % index_DOCConc, &
-         tracerObject % index_DONConc, &
-         tracerObject % index_DICConc, &
-         tracerObject % index_dissolvedIronConc, &
-         tracerObject % index_particulateIronConc, &
-         tracerObject % index_nitrateConc, &
-         tracerObject % index_ammoniumConc, &
-         tracerObject % index_silicateConc, &
-         tracerObject % index_DMSPpConc, &
-         tracerObject % index_DMSPdConc, &
-         tracerObject % index_DMSConc, &
-         tracerObject % index_humicsConc, &
-         tracerObject % index_nonreactiveConc, &
-         tracerObject % index_verticalAerosolsConcLayer, &
-         tracerObject % index_algaeConcLayer, &
-         tracerObject % index_algalCarbonLayer, &
-         tracerObject % index_algalChlorophyllLayer, &
-         tracerObject % index_DOCConcLayer, &
-         tracerObject % index_DONConcLayer, &
-         tracerObject % index_DICConcLayer, &
-         tracerObject % index_dissolvedIronConcLayer, &
-         tracerObject % index_particulateIronConcLayer, &
-         tracerObject % index_nitrateConcLayer, &
-         tracerObject % index_ammoniumConcLayer, &
-         tracerObject % index_silicateConcLayer, &
-         tracerObject % index_DMSPpConcLayer, &
-         tracerObject % index_DMSPdConcLayer, &
-         tracerObject % index_DMSConcLayer, &
-         tracerObject % index_humicsConcLayer, &
-         tracerObject % index_nonreactiveConcLayer, &
-         tracerObject % index_mobileFraction, &
-         tracerObject % index_verticalSalinity, &
-         tracerObject % index_chlorophyllShortwave, &
-         tracerObject % index_verticalAerosolsConcShortwave, &
-         tracerObject % nAlgaeIndex, &
-         tracerObject % nAlgalCarbonIndex, &
-         tracerObject % nAlgalChlorophyllIndex, &
-         tracerObject % nDOCIndex, &
-         tracerObject % nDONIndex, &
-         tracerObject % nDICIndex, &
-         tracerObject % nDissolvedIronIndex, &
-         tracerObject % nParticulateIronIndex, &
-         tracerObject % nzAerosolsIndex, &
-         tracerObject % index_LayerIndexToDataArray, &
-         tracerObject % index_LayerIndexToBioIndex, &
-         tracerObject % nBioTracers)
-
-    !nt_Tsfc       = tracerObject % index_surfaceTemperature
-    !nt_qice       = tracerObject % index_iceEnthalpy
-    !nt_qsno       = tracerObject % index_snowEnthalpy
-    !nt_sice       = tracerObject % index_iceSalinity
-    !nt_iage       = tracerObject % index_iceAge
-    !nt_FY         = tracerObject % index_firstYearIceArea
-    !nt_alvl       = tracerObject % index_levelIceArea
-    !nt_vlvl       = tracerObject % index_levelIceVolume
-    !nt_apnd       = tracerObject % index_pondArea
-    !nt_hpnd       = tracerObject % index_pondDepth
-    !nt_ipnd       = tracerObject % index_pondLidThickness
-    !nt_aero       = tracerObject % index_aerosols
-    !nt_smice      = tracerObject % index_snowIceMass
-    !nt_rsnw       = tracerObject % index_snowGrainRadius
-    !nt_rhos       = tracerObject % index_snowDensity
-    !nt_smliq      = tracerObject % index_snowLiquidMass
-    !nt_fbri       = tracerObject % index_brineFraction
-    !nt_zaeros     = tracerObject % index_verticalAerosolsConc
-    !nt_bgc_N      = tracerObject % index_algaeConc
-    !nt_bgc_C      = tracerObject % index_algalCarbon
-    !nt_bgc_chl    = tracerObject % index_algalChlorophyll
-    !nt_bgc_DOC    = tracerObject % index_DOCConc
-    !nt_bgc_DON    = tracerObject % index_DONConc
-    !nt_bgc_DIC    = tracerObject % index_DICConc
-    !nt_bgc_Fed    = tracerObject % index_dissolvedIronConc
-    !nt_bgc_Fep    = tracerObject % index_particulateIronConc
-    !nt_bgc_Nit    = tracerObject % index_nitrateConc
-    !nt_bgc_Am     = tracerObject % index_ammoniumConc
-    !nt_bgc_Sil    = tracerObject % index_silicateConc
-    !nt_bgc_DMSPp  = tracerObject % index_DMSPpConc
-    !nt_bgc_DMSPd  = tracerObject % index_DMSPdConc
-    !nt_bgc_DMS    = tracerObject % index_DMSConc
-    !nt_bgc_hum    = tracerObject % index_humicsConc
-    !nt_bgc_PON    = tracerObject % index_nonreactiveConc
-    !nlt_zaero     = tracerObject % index_verticalAerosolsConcLayer
-    !nlt_bgc_N     = tracerObject % index_algaeConcLayer
-    !nlt_bgc_C     = tracerObject % index_algalCarbonLayer
-    !nlt_bgc_chl   = tracerObject % index_algalChlorophyllLayer
-    !nlt_bgc_DOC   = tracerObject % index_DOCConcLayer
-    !nlt_bgc_DON   = tracerObject % index_DONConcLayer
-    !nlt_bgc_DIC   = tracerObject % index_DICConcLayer
-    !nlt_bgc_Fed   = tracerObject % index_dissolvedIronConcLayer
-    !nlt_bgc_Fep   = tracerObject % index_particulateIronConcLayer
-    !nlt_bgc_Nit   = tracerObject % index_nitrateConcLayer
-    !nlt_bgc_Am    = tracerObject % index_ammoniumConcLayer
-    !nlt_bgc_Sil   = tracerObject % index_silicateConcLayer
-    !nlt_bgc_DMSPp = tracerObject % index_DMSPpConcLayer
-    !nlt_bgc_DMSPd = tracerObject % index_DMSPdConcLayer
-    !nlt_bgc_DMS   = tracerObject % index_DMSConcLayer
-    !nlt_bgc_hum   = tracerObject % index_humicsConcLayer
-    !nlt_bgc_PON   = tracerObject % index_nonreactiveConcLayer
-    !nt_zbgc_frac  = tracerObject % index_mobileFraction
-    !nt_zbgc_S     = tracerObject % index_verticalSalinity
-    !nlt_chl_sw    = tracerObject % index_chlorophyllShortwave
-    !nlt_zaero_sw  = tracerObject % index_verticalAerosolsConcShortwave
-    !max_algae     = tracerObject % nAlgaeIndex
-    !max_algae     = tracerObject % nAlgalCarbonIndex
-    !max_algae     = tracerObject % nAlgalChlorophyllIndex
-    !max_doc       = tracerObject % nDOCIndex
-    !max_don       = tracerObject % nDONIndex
-    !max_dic       = tracerObject % nDICIndex
-    !max_fe        = tracerObject % nDissolvedIronIndex
-    !max_fe        = tracerObject % nParticulateIronIndex
-    !max_aero      = tracerObject % nzAerosolsIndex
-    !bio_index_o   = tracerObject % index_LayerIndexToDataArray
-    !bio_index     = tracerObject % index_LayerIndexToBioIndex
-    !nbtrcr        = tracerObject % nBioTracers
-
-  end subroutine init_column_package_tracer_indices
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -10633,7 +10199,7 @@ contains
          nt_bgc_hum_in    = tracerObject % index_humicsConc, &
          nt_bgc_PON_in    = tracerObject % index_nonreactiveConc, &
          nlt_zaero_in     = tracerObject % index_verticalAerosolsConcLayer, &
-         !nlt_bgc_C_in     = tracerObject % index_algalCarbonLayer, & ! not supported
+!         nlt_bgc_C_in     = tracerObject % index_algalCarbonLayer, &                !echmod: not fully supported
          nlt_bgc_N_in     = tracerObject % index_algaeConcLayer, &
          nlt_bgc_chl_in   = tracerObject % index_algalChlorophyllLayer, &
          nlt_bgc_DOC_in   = tracerObject % index_DOCConcLayer, &
@@ -14553,7 +14119,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  finalize_column_non_activated_pointers
+!  finalize_icepack_non_activated_pointers
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -14563,7 +14129,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine finalize_column_non_activated_pointers(domain)
+  subroutine finalize_icepack_non_activated_pointers(domain)
 
     type(domain_type) :: domain
 
@@ -14875,7 +14441,7 @@ contains
        block => block % next
     end do
 
-  end subroutine finalize_column_non_activated_pointers
+  end subroutine finalize_icepack_non_activated_pointers
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
