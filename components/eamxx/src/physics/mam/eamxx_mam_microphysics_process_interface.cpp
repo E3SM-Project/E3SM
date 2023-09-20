@@ -301,6 +301,8 @@ void MAMMicrophysics::run_impl(const double dt) {
         qqcw_precldchem[i] = qqcw[i];
       }
 
+      // FIXME: Chemistry goes here
+
       //----------------------
       // Aerosol microphysics
       //----------------------
@@ -314,14 +316,13 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real wetdens[num_modes]     = {};
       Real qaerwat[num_modes]     = {};
       {
-        Real rh = conversions::relative_humidity_from_vapor_mixing_ratio(qv, temp, pmid);
+        Real rh = mam4::conversions::relative_humidity_from_vapor_mixing_ratio(qv, temp, pmid);
         constexpr int maxd_aspectype = water_uptake::maxdaspec_type;
         constexpr int nvars = water_uptake::nvars;
         int nspec_amode[num_modes], lspectype_amode[maxd_aspectype][num_modes];
         Real specdens_amode[maxd_aspectype], spechygro[maxd_aspectype],
-             state_q[nvars], dgncur_a[num_modes], hygro[num_modes],
-             naer[num_modes], dryrad[num_modes], dryvol[num_modes],
-             drymass[num_modes], rhcrystal[num_modes], rhdeliques[num_modes],
+             state_q[nvars], hygro[num_modes], naer[num_modes], dryrad[num_modes],
+             dryvol[num_modes], drymass[num_modes], rhcrystal[num_modes], rhdeliques[num_modes],
              specdens_1[num_modes]);
         // FIXME: Where do we obtain state_q, dgncur_a?
         mam4::water_uptake::get_e3sm_parameters(nspec_amode, lspectype_amode,
