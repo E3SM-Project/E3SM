@@ -62,6 +62,7 @@ TEST_CASE("nudging") {
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
 
   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
+  const int packsize = SCREAM_PACK_SIZE;
   Int num_levs = 34;
 
   // Initialize the pio_subsystem for this test:
@@ -119,11 +120,11 @@ TEST_CASE("nudging") {
 
     // Register fields with fm
     fm->registration_begins();
-    fm->register_field(FR{fid1,"output"});
-    fm->register_field(FR{fid2,"output"});
-    fm->register_field(FR{fid3,"output"});
-    fm->register_field(FR{fid4,"output"});
-    fm->register_field(FR{fid5,"output"});
+    fm->register_field(FR{fid1,"output",packsize});
+    fm->register_field(FR{fid2,"output",packsize});
+    fm->register_field(FR{fid3,"output",packsize});
+    fm->register_field(FR{fid4,"output",packsize});
+    fm->register_field(FR{fid5,"output",packsize});
     fm->registration_ends();
 
     // Initialize these fields
@@ -241,7 +242,7 @@ TEST_CASE("nudging") {
   for (const auto& req : nudging_mid->get_required_field_requests()) {
     Field f(req.fid);
     auto & f_ap = f.get_header().get_alloc_properties();
-    f_ap.request_allocation(1);
+    f_ap.request_allocation(packsize);
     f.allocate_view();
     const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
