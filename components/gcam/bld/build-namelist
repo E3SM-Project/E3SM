@@ -336,6 +336,7 @@ add_default($nl, 'base_pft_file');
 add_default($nl, 'gcam2elm_co2_mapping_file');
 add_default($nl, 'gcam2elm_luc_mapping_file');
 add_default($nl, 'gcam2elm_woodharvest_mapping_file');
+add_default($nl, 'gcam2elm_cdensity_mapping_file');
 
 # grid mapping and initialization, relative to inputdata
 add_default($nl, 'gcam_gridfile');
@@ -351,8 +352,9 @@ add_default($nl, 'fdyndat_ehc');
 add_default($nl, 'read_scalars');
 add_default($nl, 'write_scalars');
 add_default($nl, 'write_co2');
-add_default($nl, 'elm_iac_carbon_scaling');
-add_default($nl, 'iac_elm_co2_emissions');
+add_default($nl, 'elm_ehc_agyield_scaling');
+add_default($nl, 'elm_ehc_carbon_scaling');
+add_default($nl, 'ehc_elm_co2_emissions');
 add_default($nl, 'gcam_spinup');
 add_default($nl, 'run_gcam');
 

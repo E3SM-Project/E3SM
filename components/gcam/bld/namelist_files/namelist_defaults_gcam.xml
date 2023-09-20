@@ -41,6 +41,7 @@ for the iac data in the e3sm distribution
 <gcam2elm_co2_mapping_file>iac/giac/gcam/gcam_6_0/mappings/co2.xml</gcam2elm_co2_mapping_file>
 <gcam2elm_luc_mapping_file>iac/giac/gcam/gcam_6_0/mappings/luc.xml</gcam2elm_luc_mapping_file>
 <gcam2elm_woodharvest_mapping_file>iac/giac/gcam/gcam_6_0/mappings/woodharvest.xml</gcam2elm_woodharvest_mapping_file>
+<gcam2elm_cdensity_mapping_file>iac/giac/gcam/gcam_6_0/mappings/cdensity.xml</gcam2elm_cdensity_mapping_file>
 
 <!-- Grid and mapping and initialization files with relative paths from
      inputdata directory -->
@@ -57,8 +58,9 @@ for the iac data in the e3sm distribution
 <read_scalars>.false.</read_scalars>
 <write_scalars>.true.</write_scalars>
 <write_co2>.true.</write_co2>
-<elm_iac_carbon_scaling>.true.</elm_iac_carbon_scaling>
-<iac_elm_co2_emissions>.false.</iac_elm_co2_emissions>
+<elm_ehc_agyield_scaling>.true.</elm_ehc_agyield_scaling>
+<elm_ehc_carbon_scaling>.true.</elm_ehc_carbon_scaling>
+<ehc_elm_co2_emissions>.false.</ehc_elm_co2_emissions>
 <gcam_spinup>.false.</gcam_spinup>
 <run_gcam>.true.</run_gcam>
 </namelist_defaults>
