@@ -112,7 +112,7 @@ module li_time_integration_fe_rk
       character (len=StrKIND), pointer :: config_thickness_advection
       character (len=StrKIND), pointer :: config_thermal_solver
       character (len=StrKIND), pointer :: config_time_integration
-      integer, pointer :: config_rk_order
+      integer, pointer :: config_rk_order, config_rk3_stages
       integer :: rkStage, iCell, iTracer, k
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, &
                                                     temperature, &
@@ -133,7 +133,7 @@ module li_time_integration_fe_rk
       real (kind=RKIND), pointer :: deltat
       real (kind=RKIND) :: deltatFull
       real (kind=RKIND), dimension(4) :: rkSubstepWeights
-      real (kind=RKIND), dimension(3) :: rkSSPweights
+      real (kind=RKIND), dimension(4) :: rkSSPweights
       integer :: nRKstages
 
       err = 0
@@ -145,6 +145,7 @@ module li_time_integration_fe_rk
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
       call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
       call mpas_pool_get_config(liConfigs, 'config_rk_order', config_rk_order)
+      call mpas_pool_get_config(liConfigs, 'config_rk3_stages', config_rk3_stages)
       call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
@@ -262,16 +263,33 @@ module li_time_integration_fe_rk
 
          rkSSPweights(1) = 1.0_RKIND
          rkSSPweights(2) = 0.5_RKIND
+         rkSSPweights(3) = 0.0_RKIND
+         rkSSPweights(4) = 0.0_RKIND
       elseif ( (trim(config_time_integration) == 'runge_kutta') .and. &
                (config_rk_order == 3) ) then
-         ! use Strong Stability Preserving RK3
-         nRKstages = 3
-         rkSubstepWeights(:) = 1.0_RKIND
+         if (config_rk3_stages == 3) then
+            ! use Strong Stability Preserving RK3
+            nRKstages = 3
+            rkSubstepWeights(:) = 1.0_RKIND
 
-         rkSSPweights(1) = 1.0_RKIND
-         rkSSPweights(2) = 3.0_RKIND / 4.0_RKIND
-         rkSSPweights(3) = 1.0_RKIND / 3.0_RKIND
-        ! Add option for 4-stage SSP-RK3? Allows for CFL=2.
+            rkSSPweights(1) = 1.0_RKIND
+            rkSSPweights(2) = 3.0_RKIND / 4.0_RKIND
+            rkSSPweights(3) = 1.0_RKIND / 3.0_RKIND
+            rkSSPweights(4) = 0.0_RKIND
+        ! 4-stage SSP-RK3? Allows for CFL=2.
+        elseif (config_rk3_stages == 4) then
+            nRKstages = 4
+            rkSubstepWeights(:) = 0.5_RKIND
+
+            rkSSPweights(1) = 1.0_RKIND
+            rkSSPweights(2) = 0.0_RKIND
+            rkSSPweights(3) = 2.0_RKIND / 3.0_RKIND
+            rkSSPweights(4) = 0.0_RKIND
+        else
+            err = 1
+            call mpas_log_write('config_rk3_stages must 3 or 4', &
+                                messageType=MPAS_LOG_ERR)
+        endif
       else
          err = 1
          call mpas_log_write('config_time_integration = ' // trim(config_time_integration) &
@@ -299,8 +317,9 @@ module li_time_integration_fe_rk
          call mpas_timer_stop("advect thickness and tracers")
 
          ! If using SSP RK, then update thickness and tracers incrementally.
-         ! For first RK stage, thickness and tracer updates above are sufficient
-         if ( rkStage > 1 )  then
+         ! For first RK stage, thickness and tracer updates above are sufficient.
+         ! Likewise, for the 4-stage SSP RK3 the last stage is just a forward euler update.
+         if ( (rkStage > 1) .and. (rkStage < 4) )  then
             call mpas_pool_get_array(geometryPool, 'thickness', thickness)
             call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
             call mpas_pool_get_array(geometryPool, 'passiveTracer2d', passiveTracer2d)
@@ -507,7 +526,7 @@ module li_time_integration_fe_rk
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
       real (kind=RKIND), dimension(:,:), pointer :: layerNormalVelocity
       real (kind=RKIND), pointer :: calvingCFLdt, faceMeltingCFLdt
-      integer, pointer :: processLimitingTimestep
+      integer, pointer :: processLimitingTimestep, config_rk_order, config_rk3_stages
       integer, dimension(:), pointer :: edgeMask
 
       logical, pointer :: config_print_thickness_advection_info
@@ -515,7 +534,8 @@ module li_time_integration_fe_rk
       logical, pointer :: config_adaptive_timestep_include_DCFL
 
       character (len=StrKIND), pointer :: &
-           config_thickness_advection   ! method for advecting thickness and tracers
+           config_thickness_advection, &  ! method for advecting thickness and tracers
+           config_time_integration
 
       integer :: &
            allowableAdvecDtProcNumberHere, &
@@ -567,6 +587,9 @@ module li_time_integration_fe_rk
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
+      call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
+      call mpas_pool_get_config(liConfigs, 'config_rk_order', config_rk_order)
+      call mpas_pool_get_config(liConfigs, 'config_rk3_stages', config_rk3_stages)
 
       if (trim(config_thickness_advection) == 'none') then
          if (config_adaptive_timestep) then
@@ -612,7 +635,6 @@ module li_time_integration_fe_rk
          err = ior(err, err_tmp)
 
          allowableAdvecDtOnProc = min(allowableAdvecDtOnProc, allowableAdvecDt)
-
          ! Calculate diffusive CFL timestep, if needed
          ! This used to be only calculated if (config_adaptive_timestep_include_DCFL) but for simplicity,
          ! now it is always calculated.  That allows assessment of the DCFL even when it is not being obeyed
@@ -637,6 +659,12 @@ module li_time_integration_fe_rk
          block => block % next
       end do
 
+      ! If using 4-stage SSPRK3, CFL number of 2 is theoretically allowed
+      if ( (trim(config_time_integration) == 'runge_kutta') .and. &
+         (config_rk_order == 3) .and. (config_rk3_stages == 4) ) then
+          allowableAdvecDtOnProc = allowableAdvecDtOnProc * 2.0_RKIND
+          allowableDiffDtOnProc = allowableDiffDtOnProc * 2.0_RKIND
+      endif
 
       ! Local advective CFL info
       call mpas_set_timeInterval(allowableAdvecDtOnProcInterval, dt=allowableAdvecDtOnProc, ierr=err_tmp)
