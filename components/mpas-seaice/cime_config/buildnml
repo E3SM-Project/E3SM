@@ -244,13 +244,13 @@ def buildnml(case, caseroot, compname):
             grid_prefix = 'mpassi.SOwISC12to60E2r4.rstFromG-anvil'
 
     elif ice_grid == 'FRISwISC04to60E3r1':
-        decomp_date = '20230817'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-seaice/FRISwISC04to60E3r1/partitions
+        decomp_date = '20230913'  # changed to date of partiotions in ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-seaice/FRISwISC04to60E3r1/partitions
         decomp_prefix = 'partitions/mpas-seaice.graph.info.'
-        grid_date = '20230817'  # changed to same as decomp_date
-        grid_prefix = 'mpassi.FRISwISC04to60E3r1'  # name from ../files_for_e3sm/assembled_files/inputdata/ice/mpas-seaice/FRISwISC04to60E3r1/mpassi.FRISwISC04to60E3r1.20230817.nc
+        grid_date = '20230913'  # changed to same as decomp_date
+        grid_prefix = 'mpassi.FRISwISC04to60E3r1'  # name from ../files_for_e3sm/assembled_files/inputdata/ice/mpas-seaice/FRISwISC04to60E3r1/mpassi.FRISwISC04to60E3r1.20230913.nc
         data_iceberg_file += 'Iceberg_Interannual_Merino_FRISwISC04to60E3r1.nc'
         if ice_ic_mode == 'spunup':
-            grid_date = '20230817'  # changed to same as decomp_date, but the spun up file does not yet exist
+            grid_date = '20230913'  # changed to same as decomp_date, but the spun up file does not yet exist
             grid_prefix = 'mpassi.FRISwISC04to60E3r1.rstFromG-anvil'  #the spun up file does not yet exist
 
     elif ice_grid == 'ECwISC30to60E2r1':
