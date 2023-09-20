@@ -386,7 +386,6 @@ module seaice_core_interface
      call MPAS_pool_get_config(configPool, "config_use_humics", config_use_humics)
      call MPAS_pool_get_config(configPool, "config_use_DON", config_use_DON)
      call MPAS_pool_get_config(configPool, "config_use_iron", config_use_iron)
-     call MPAS_pool_get_config(configPool, "config_use_zaerosols", config_use_zaerosols)
      call MPAS_pool_get_config(configPool, "config_use_effective_snow_density", config_use_effective_snow_density)
      call MPAS_pool_get_config(configPool, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
