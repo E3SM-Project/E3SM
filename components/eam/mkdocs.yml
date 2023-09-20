@@ -1,7 +1,7 @@
 site_name: EAM
 
 nav:
- - Intro: 'index.md'
+ - Introduction: 'index.md'
  - Users's Guide: user-guide/index.md
  - Developers's Guide: dev-guide/index.md
  - Technical Guide: tech-guide/index.md

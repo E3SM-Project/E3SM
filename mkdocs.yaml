@@ -1,7 +1,7 @@
 site_name: E3SM
 
 nav:
-  - Intro: 'index.md'
+  - Introduction: 'index.md'
   - Components: '*include ./components/*/mkdocs.yml'
 
 theme:
