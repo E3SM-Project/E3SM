@@ -276,7 +276,7 @@ def buildnml(case, caseroot, compname):
         restoring_file = 'sss.PHC2_monthlyClimatology.FRISwISC04to60E3r1.20230913.nc'
         analysis_mask_file = 'FRISwISC04to60E3r1_mocBasinsAndTransects20210623.nc'
         ic_date = '20230913'
-        ic_prefix = 'ocean.FRISwISC04to60E3r1'  # from ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC04to60E3r1/mpaso.FRISwISC04to60E3r1.20230913.nc
+        ic_prefix = 'mpaso.FRISwISC04to60E3r1'  # from ../files_for_e3sm/assembled_files/inputdata/ocn/mpas-o/FRISwISC04to60E3r1/mpaso.FRISwISC04to60E3r1.20230913.nc
         if ocn_ic_mode == 'spunup':
             ic_date = '20230913'  # changed to same as decomp_date, but the spun up file does not yet exist
             ic_prefix = 'mpaso.FRISwISC04to60E3r1.rstFromG-anvil'   # the spun up file does not yet exist
