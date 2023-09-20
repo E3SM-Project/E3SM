@@ -2,4 +2,6 @@ site_name: ELM
 
 nav:
  - Intro: 'index.md'
- - Users's Guide: users-guide/index.md
+ - Users's Guide: user-guide/index.md
+ - Developers's Guide: dev-guide/index.md
+ - Technical Guide: tech-guide/index.md
