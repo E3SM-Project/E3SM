@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          repository: rljacob/e3sm
+          repository: e3sm-project/e3sm
           ref: master
           fetch-depth: 0 # Needed, or else gh-pages won't be fetched, and push rejected
           submodules: recursive
