@@ -102,9 +102,12 @@ const char* aero_species_name(const int species_id) {
 KOKKOS_INLINE_FUNCTION
 const char* gas_species_name(const int gas_id) {
   static const char *species_names[num_aero_gases()] = {
-    "soag",
+    "o3",
+    "h2o2",
     "h2so4",
-    "nh3",
+    "so2",
+    "dms",
+    "soag"
   };
   return species_names[gas_id];
 }
@@ -379,8 +382,12 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
     // aerosol gases
     &buffer.dry_gas_mmr[0],
     &buffer.dry_gas_mmr[1],
-    &buffer.dry_gas_mmr[2]
+    &buffer.dry_gas_mmr[2],
+    &buffer.dry_gas_mmr[3],
+    &buffer.dry_gas_mmr[4],
+    &buffer.dry_gas_mmr[5]
   };
+
   for (int i = 0; i < Buffer::num_2d_mid; ++i) {
     *view_2d_mid_ptrs[i] = view_2d(mem, ncol, nlev);
     mem += view_2d_mid_ptrs[i]->size();
@@ -455,8 +462,8 @@ haero::Atmosphere atmosphere_for_column(const DryAtmosphere& dry_atm,
                            dry_atm.pblh(column_index));
 }
 
-// Given an AerosolState with views for wet and dry quantities,
-// creates a mam4::Prognostics object for the column with the given index with
+// Given an AerosolState with views for dry aerosol quantities, creates a
+// mam4::Prognostics object for the column with the given index with
 // ONLY INTERSTITIAL AEROSOL VIEWS DEFINED. This object can be provided to
 // mam4xx for the column.
 KOKKOS_INLINE_FUNCTION

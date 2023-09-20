@@ -259,10 +259,12 @@ void MAMMicrophysics::run_impl(const double dt) {
     // compute aerosol microphysics on each vertical level within this column
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int k) {
 
+      constexpr int num_modes = mam4::AeroConfig::num_modes();
       constexpr int gas_pcnst = mam_coupling::gas_pcnst();
       constexpr int nqtendbb = mam_coupling::nqtendbb();
 
       // extract atm state variables (input)
+      Real temp = atm.temperature(k);
       Real pmid = atm.pressure(k);
       Real pdel = atm.hydrostatic_dp(k);
       Real zm   = atm.height(k);
@@ -299,20 +301,39 @@ void MAMMicrophysics::run_impl(const double dt) {
         qqcw_precldchem[i] = qqcw[i];
       }
 
-      // extract the following modal quantities from diagnostics:
+      //----------------------
+      // Aerosol microphysics
+      //----------------------
+
+      // calculate aerosol water content using water uptake treatment
       // * dry and wet diameters [m]
       // * wet densities [kg/m3]
       // * aerosol water mass mixing ratio [kg/kg]
-      Real dgncur_a[mam4::AeroConfig::num_modes()] = {};
-      Real dgncur_awet[mam4::AeroConfig::num_modes()] = {};
-      Real wetdens[mam4::AeroConfig::num_modes()] = {};
-      Real qaerwat[mam4::AeroConfig::num_modes()] = {};
-      for (int m = 0; m < mam4::AeroConfig::num_modes(); ++m) {
-        // FIXME: We're using interstitial diameters. Is this right?
-        dgncur_a[m]= diags.dry_geometric_mean_diameter_i[m](k);
-        dgncur_awet[m]= diags.wet_geometric_mean_diameter_i[m](k);
-        wetdens[m] = diags.wet_density[m](k);
-        //FIXME: qaerwat[m] = diags.aerosol_water_mass_mixing_ratio[m](k);
+      Real dgncur_a[num_modes]    = {};
+      Real dgncur_awet[num_modes] = {};
+      Real wetdens[num_modes]     = {};
+      Real qaerwat[num_modes]     = {};
+      {
+        Real rh = conversions::relative_humidity_from_vapor_mixing_ratio(qv, temp, pmid);
+        constexpr int maxd_aspectype = water_uptake::maxdaspec_type;
+        constexpr int nvars = water_uptake::nvars;
+        int nspec_amode[num_modes], lspectype_amode[maxd_aspectype][num_modes];
+        Real specdens_amode[maxd_aspectype], spechygro[maxd_aspectype],
+             state_q[nvars], dgncur_a[num_modes], hygro[num_modes],
+             naer[num_modes], dryrad[num_modes], dryvol[num_modes],
+             drymass[num_modes], rhcrystal[num_modes], rhdeliques[num_modes],
+             specdens_1[num_modes]);
+        // FIXME: Where do we obtain state_q, dgncur_a?
+        mam4::water_uptake::get_e3sm_parameters(nspec_amode, lspectype_amode,
+          specdens_amode, spechygro); // FIXME: Not great! Replace this call
+        mam4::water_uptake::modal_aero_wateruptake_dryaer(nspec_amode, specdens_amode,
+          spechygro, lspectype_amode, state_q, dgncur_a, hygro,
+          naer, dryrad, dryvol, drymass, rhcrystal, rhdeliques, specdens_1);
+        mam4::water_uptake::modal_aero_wateruptake_wetaer(rhcrystal, rhdeliques, dgncur_a,
+          dryrad, hygro, rh, naer, dryvol, wetrad, wetvol, wtrvol, dgncur_awet,
+          qaerwat);
+        mam4::water_update::modal_aero_wateruptake_wetdens(wetvol, wtrvol,
+          drymass, specdens_1, wetdens);
       }
 
       // compute aerosol microphysics
