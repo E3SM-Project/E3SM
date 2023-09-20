@@ -180,6 +180,7 @@ MODULE MOSART_physics_mod
 
        call t_startf('mosartr_subnetwork')    
        TRunoff%erlateral(:,:) = 0._r8
+	   if (heatflag) THeat%ha_lateral(:) = 0._r8
        TRunoff%etexchange = 0._r8
        do nt=nt_nliq,nt_nice ! water transport
        if (TUnit%euler_calc(nt)) then
