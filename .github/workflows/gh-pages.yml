@@ -19,6 +19,6 @@ jobs:
       - name: Show action trigger
         run: echo "= The job was automatically triggered by a ${{github.event_name}} event."
       - name: Install python deps
-        run: python3 -m pip install mkdocs-monorepo-plugin 
+        run: python3 -m pip install mkdocs-material pymdown-extensions mkdocs-monorepo-plugin mdutils
       - name: Build and deploy
         run: mkdocs build && mkdocs gh-deploy
