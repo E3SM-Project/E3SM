@@ -1518,15 +1518,6 @@
 <dt_tracer_factor    use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </dt_tracer_factor>
 <hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </hypervis_subcycle_q>
 
-<!-- temporarily disable compose for PAM -->
-<transport_alg       use_MMF="1" crm="pam" dyn_target="theta-l" > 0 </transport_alg>
-<hypervis_subcycle_q use_MMF="1" crm="pam" dyn_target="theta-l" hgrid="ne4np4" > 1 </hypervis_subcycle_q>
-<dt_tracer_factor    use_MMF="1" crm="pam" dyn_target="theta-l" hgrid="ne4np4" > 1 </dt_tracer_factor>
-
-<hypervis_subcycle_q use_MMF="1" crm="pam" dyn_target="theta-l" hgrid="ne30np4"> 1 </hypervis_subcycle_q>
-<dt_tracer_factor    use_MMF="1" crm="pam" dyn_target="theta-l" hgrid="ne30np4"> 1 </dt_tracer_factor>
-
-
 <!-- ================================================================== -->
 <!-- 
 Defaults for SE preqx dycore.  preqx can run with theta-l settings 
