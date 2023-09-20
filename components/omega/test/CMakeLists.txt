@@ -15,13 +15,13 @@ target_include_directories(
 
 target_link_directories(
     ${_TestDataTypesName}
-    PRIVATE 
+    PRIVATE
     ${OMEGA_LINK_DIRECTORIES}
 )
 
 target_link_options(
     ${_TestDataTypesName}
-    PRIVATE 
+    PRIVATE
     ${OMEGA_LINK_OPTIONS}
 )
 
@@ -55,5 +55,5 @@ add_test(NAME LOGGING_TEST COMMAND testLogging.exe)
 set_tests_properties(
 	DATA_TYPES_TEST
 #	MACHINE_ENV_TEST
-	LOGGING_TEST 
+	LOGGING_TEST
     PROPERTIES FAIL_REGULAR_EXPRESSION "FAIL")

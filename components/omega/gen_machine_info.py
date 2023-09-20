@@ -1,4 +1,9 @@
-import os, sys, shutil, argparse, re, subprocess
+import argparse
+import os
+import re
+import shutil
+import subprocess
+import sys
 
 # TODO: print basic info on screen and verbose info too
 
@@ -20,7 +25,7 @@ def parse_cmdline():
     parser.add_argument('-v', '--verbose') # verbose output
 
     args = parser.parse_args()
-   
+
     return (args.cimepath, args.outpath, args.compiler, args.verbose)
 
 def main():
@@ -39,7 +44,7 @@ def main():
 
             self.cimepath = cimepath
             self.outpath = outpath
- 
+
             if compiler is None:
                 self.compiler = self.get_default_compiler().strip()
             else:
@@ -53,13 +58,13 @@ def main():
 
         def get_modules(self, outvar):
 
-            module_system_node = self.get_child("module_system") 
+            module_system_node = self.get_child("module_system")
             module_system_type = self.get(module_system_node, "type")
             check  = (True if self.get(module_system_node,
                             "allow_error")=="true" else False)
 
             if module_system_type != "module":
-                print("ERROR: '%s' module system is not supported." % module_system_type)
+                print(f"ERROR: '{module_system_type}' module system is not supported.")
                 exit(-1)
 
             out1 = subprocess.check_output("env", shell=True)
@@ -81,9 +86,9 @@ def main():
                         name = self.get(command_node, "name")
                         module = self.text(command_node)
                         if module is None:
-                            shcmds.append("%s %s" % (modcmd, name))
+                            shcmds.append(f"{modcmd} {name}")
                         else:
-                            shcmds.append("%s %s %s" % (modcmd, name, module))
+                            shcmds.append(f"{modcmd} {name} {module}")
 
             shcmds.append("env")
 
@@ -141,12 +146,12 @@ def main():
 
                 for key, value in outvar.items():
                     f.write("set(ENV{%s} \"%s\")\n" % (key, value))
-                    
-                f.write("set(MACH %s)\n" % self.machname)
-                f.write("set(OS %s)\n" % self.machos)
-                f.write("set(COMPILER %s)\n" % self.compiler)
-                f.write("set(CASEROOT %s)\n" % os.path.realpath(self.machpath))
-                f.write("include(%s)\n" % os.path.realpath(self.macrospath))
+
+                f.write(f"set(MACH {self.machname})\n")
+                f.write(f"set(OS {self.machos})\n")
+                f.write(f"set(COMPILER {self.compiler})\n")
+                f.write(f"set(CASEROOT {os.path.realpath(self.machpath)})\n")
+                f.write(f"include({os.path.realpath(self.macrospath)})\n")
 
                 f.write("message(STATUS \"End of reading E3SM machine info\")\n")
 
