@@ -62,7 +62,9 @@ TEST_CASE("ml_correction-stand-alone", "") {
   Real reference = 1e-4;
   int fpe_mask = ekat::get_enabled_fpes();
   ekat::disable_all_fpes();  // required for importing numpy
-  py::initialize_interpreter();
+  if ( Py_IsInitialized() == 0 ) {
+    py::initialize_interpreter();
+  }  
   py::module sys = pybind11::module::import("sys");
   sys.attr("path").attr("insert")(1, CUSTOM_SYS_PATH);
   auto py_correction = py::module::import("test_correction");
