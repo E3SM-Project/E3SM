@@ -321,8 +321,8 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   auto crm_ni            = dm_device.get<real,4>("ice_num");
   auto crm_qm            = dm_device.get<real,4>("ice_rime");
   auto crm_bm            = dm_device.get<real,4>("ice_rime_vol");
-  auto crm_t_prev        = dm_device.get<real,4>("qv_prev");
-  auto crm_q_prev        = dm_device.get<real,4>("t_prev");
+  auto crm_t_prev        = dm_device.get<real,4>("t_prev");
+  auto crm_q_prev        = dm_device.get<real,4>("q_prev");
   auto crm_shoc_tk       = dm_device.get<real,4>("tk");
   auto crm_shoc_tkh      = dm_device.get<real,4>("tkh");
   auto crm_shoc_wthv     = dm_device.get<real,4>("wthv_sec");
@@ -432,8 +432,8 @@ inline void pam_state_copy_to_host( pam::PamCoupler &coupler ) {
   auto crm_num_i                = dm_device.get<real,4>("ice_num");
   auto crm_qm                   = dm_device.get<real,4>("ice_rime");
   auto crm_bm                   = dm_device.get<real,4>("ice_rime_vol");
-  auto crm_t_prev               = dm_device.get<real,4>("qv_prev");
-  auto crm_q_prev               = dm_device.get<real,4>("t_prev");
+  auto crm_t_prev               = dm_device.get<real,4>("t_prev");
+  auto crm_q_prev               = dm_device.get<real,4>("q_prev");
   auto crm_shoc_tk              = dm_device.get<real,4>("tk");
   auto crm_shoc_tkh             = dm_device.get<real,4>("tkh");
   auto crm_shoc_wthv            = dm_device.get<real,4>("wthv_sec");
