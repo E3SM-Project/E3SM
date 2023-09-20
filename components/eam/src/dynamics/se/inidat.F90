@@ -18,9 +18,11 @@ module inidat
   use element_mod, only : element_t
   use shr_kind_mod, only: r8 => shr_kind_r8
   use spmd_utils,   only: iam, masterproc
-  use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
+  use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, &
+                              seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
-  use scamMod, only: single_column, precip_off, scmlat, scmlon, scm_multcols, dp_crm, iop_perturb_high
+  use iop_data_mod, only: single_column, precip_off, scmlat, scmlon, &
+                          scm_multcols, dp_crm, iop_perturb_high
   use perf_mod, only: t_startf, t_stopf
 
   implicit none
@@ -57,8 +59,8 @@ contains
     use cam_grid_support,        only: cam_grid_get_local_size, cam_grid_get_gcid
     use cam_map_utils,           only: iMap
     use shr_const_mod,           only: SHR_CONST_PI
-    use scamMod,                 only: setiopupdate, readiopdata
-    use se_single_column_mod,    only: scm_setinitial, scm_broadcast
+    use iop_data_mod,            only: setiopupdate, setiopupdate_init, readiopdata
+    use se_iop_intr_mod,         only: iop_setinitial, iop_broadcast
     use element_ops,             only: set_thermostate
     use gllfvremap_mod,          only: gfr_fv_phys_to_dyn_topo
 
@@ -68,11 +70,11 @@ contains
 
     real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
     type(element_t), pointer :: elem(:)
-    real(r8), allocatable :: tmp(:,:,:)    ! (npsp,nlev,nelemd)
-    real(r8), allocatable :: tmp_point(:,:)! (npsp,nlev)
-    real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
+    real(r8), allocatable :: tmp(:,:,:)    ! (npsq,nlev,nelemd)
+    real(r8), allocatable :: tmp_point(:,:)! (npsq,nlev)
+    real(r8), allocatable :: qtmp(:,:)     ! (npsq*nelemd,nlev)
     real(r8) :: ps(np,np)     
-    logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
+    logical,  allocatable :: tmpmask(:,:)  ! (npsq,nlev,nelemd) unique grid val
     real(r8), allocatable :: phis_tmp(:,:) ! (nphys_sq,nelemd)
     integer :: nphys_sq                    ! # of fv physics columns per element
     integer :: ie, k, t
@@ -120,8 +122,6 @@ contains
     end if
     allocate(tmp(npsq,nlev,nelemd))
     allocate(tmp_point(1,nlev)) ! To find input at a single location
-    tmp = 0.0_r8
-    tmp_point = 0.0_r8
     allocate(qtmp(npsq*nelemd,nlev))
 
     if (fv_nphys>0) then
@@ -440,8 +440,10 @@ contains
        call endrun('Problem reading ps field')
     end if
 
-    if (scm_multcols .and. tmp(1,1,1) < 10000._r8) then
-      call endrun('Problem reading ps field')
+    if (scm_multcols) then
+      if (tmp(1,1,1) < 10000._r8) then
+        call endrun('Problem reading ps field')
+      endif
     endif
 
     deallocate(tmpmask)
@@ -529,10 +531,10 @@ contains
     
     if (single_column) then
       iop_update_surface = .false.
-      if (masterproc) call setiopupdate()
+      if (masterproc) call setiopupdate_init()
       if (masterproc) call readiopdata(iop_update_surface,hyam,hybm)
-      if (scm_multcols) call scm_broadcast()
-      call scm_setinitial(elem)
+      if (scm_multcols) call iop_broadcast()
+      call iop_setinitial(elem)
     endif
 
     if (pertlim .ne. D0_0) then
@@ -678,6 +680,11 @@ contains
     end do
 
     deallocate(tmp)
+    deallocate(tmp_point)
+    deallocate(qtmp)
+    if (fv_nphys>0) then
+      deallocate(phis_tmp)
+    end if
 
   end subroutine read_inidat
 

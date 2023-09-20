@@ -2,7 +2,7 @@ include (ScreamUtils)
 
 # Create the test
 set (TEST_LABELS "shoc;cld;spa;p3;rrtmgp;physics;driver")
-set (NEED_LIBS shoc cld_fraction spa p3 scream_rrtmgp scream_control scream_share diagnostics physics_share)
+set (NEED_LIBS shoc nudging cld_fraction spa p3 scream_rrtmgp scream_control scream_share diagnostics physics_share)
 CreateUnitTest(shoc_cld_spa_p3_rrtmgp shoc_cld_spa_p3_rrtmgp.cpp "${NEED_LIBS}" LABELS ${TEST_LABELS}
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   PROPERTIES FIXTURES_SETUP shoc_cld_spa_p3_rrtmgp_generate_output_nc_files
@@ -11,6 +11,7 @@ CreateUnitTest(shoc_cld_spa_p3_rrtmgp shoc_cld_spa_p3_rrtmgp.cpp "${NEED_LIBS}" 
 # Set AD configurable options
 set (ATM_TIME_STEP 1800)
 SetVarDependingOnTestSize(NUM_STEPS 2 5 48)  # 1h 4h 24h
+set (RUN_T0 2021-10-12-45000)
 
 # Determine num subcycles needed to keep shoc dt<=300s
 set (SHOC_MAX_DT 300)
@@ -20,9 +21,9 @@ math (EXPR MAC_MIC_SUBCYCLES "(${ATM_TIME_STEP} + ${SHOC_MAX_DT} - 1) / ${SHOC_M
 set (TEST_INPUT_FILES
   scream/init/${EAMxx_tests_IC_FILE_72lev}
   scream/init/spa_init_ne2np4.nc
-  scream/init/map_ne4np4_to_ne2np4_mono.nc
+  scream/maps/map_ne4np4_to_ne2np4_mono.nc
   scream/init/spa_file_unified_and_complete_ne4_20220428.nc
-  cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc
+  cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(${file})
@@ -42,9 +43,11 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   BuildCprnc()
 
   set (BASE_TEST_NAME "shoc_cld_spa_p3_rrtmgp")
-  foreach (MPI_RANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
-    set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
-    set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
+  math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
+  foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
+
+    set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.${RUN_T0}.nc")
+    set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.${RUN_T0}.nc")
     set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}

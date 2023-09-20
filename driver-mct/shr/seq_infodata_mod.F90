@@ -171,6 +171,7 @@ MODULE seq_infodata_mod
      real(SHR_KIND_R8)       :: eps_oarea       ! ocn area error tolerance
      logical                 :: mct_usealltoall ! flag for mct alltoall
      logical                 :: mct_usevector   ! flag for mct vector
+     integer                 :: nlmaps_verbosity    ! see seq_nlmap_mod
 
      logical                 :: reprosum_use_ddpdd  ! use ddpdd algorithm
      logical                 :: reprosum_allow_infnan ! allow INF and NaN summands
@@ -431,6 +432,7 @@ CONTAINS
     logical                :: mct_usevector      ! flag for mct vector
     real(shr_kind_r8)      :: max_cplstep_time   ! abort if cplstep time exceeds this value
     character(SHR_KIND_CL) :: model_doi_url
+    integer(SHR_KIND_IN)   :: nlmaps_verbosity   ! see seq_nlmap_mod
 
     namelist /seq_infodata_inparm/  &
          cime_model, case_desc, case_name, start_type, tchkpt_dir,     &
@@ -470,7 +472,8 @@ CONTAINS
          eps_oarea, esmf_map_flag,                         &
          reprosum_use_ddpdd, reprosum_allow_infnan,        &
          reprosum_diffmax, reprosum_recompute,             &
-         mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url
+         mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url, &
+         nlmaps_verbosity
 
     !-------------------------------------------------------------------------------
 
@@ -591,6 +594,7 @@ CONTAINS
        mct_usevector         = .false.
        max_cplstep_time      = 0.0
        model_doi_url        = 'unset'
+       nlmaps_verbosity      = 0
 
        !---------------------------------------------------------------------------
        ! Read in namelist
@@ -725,6 +729,7 @@ CONTAINS
        infodata%reprosum_recompute    = reprosum_recompute
        infodata%mct_usealltoall       = mct_usealltoall
        infodata%mct_usevector         = mct_usevector
+       infodata%nlmaps_verbosity      = nlmaps_verbosity
 
        infodata%info_debug            = info_debug
        infodata%bfbflag               = bfbflag
@@ -1028,7 +1033,7 @@ CONTAINS
        reprosum_use_ddpdd, reprosum_allow_infnan,                         &
        reprosum_diffmax, reprosum_recompute,                              &
        mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url,   &
-       glc_valid_input)
+       glc_valid_input, nlmaps_verbosity)
 
 
     implicit none
@@ -1145,6 +1150,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: reprosum_recompute      ! recompute if tolerance exceeded
     logical,                optional, intent(OUT) :: mct_usealltoall         ! flag for mct alltoall
     logical,                optional, intent(OUT) :: mct_usevector           ! flag for mct vector
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: nlmaps_verbosity
 
     integer(SHR_KIND_IN),   optional, intent(OUT) :: info_debug
     logical,                optional, intent(OUT) :: bfbflag
@@ -1329,6 +1335,7 @@ CONTAINS
     if ( present(reprosum_recompute)) reprosum_recompute = infodata%reprosum_recompute
     if ( present(mct_usealltoall)) mct_usealltoall = infodata%mct_usealltoall
     if ( present(mct_usevector)  ) mct_usevector  = infodata%mct_usevector
+    if ( present(nlmaps_verbosity)) nlmaps_verbosity = infodata%nlmaps_verbosity
 
     if ( present(info_debug)     ) info_debug     = infodata%info_debug
     if ( present(bfbflag)        ) bfbflag        = infodata%bfbflag
@@ -1577,7 +1584,7 @@ CONTAINS
        eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,             &
        reprosum_use_ddpdd, reprosum_allow_infnan,                         &
        reprosum_diffmax, reprosum_recompute,                              &
-       mct_usealltoall, mct_usevector, glc_valid_input)
+       mct_usealltoall, mct_usevector, glc_valid_input, nlmaps_verbosity)
 
 
     implicit none
@@ -1693,6 +1700,7 @@ CONTAINS
     logical,                optional, intent(IN)    :: reprosum_recompute ! recompute if tolerance exceeded
     logical,                optional, intent(IN)    :: mct_usealltoall    ! flag for mct alltoall
     logical,                optional, intent(IN)    :: mct_usevector      ! flag for mct vector
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: nlmaps_verbosity
 
     integer(SHR_KIND_IN),   optional, intent(IN)    :: info_debug
     logical,                optional, intent(IN)    :: bfbflag
@@ -1876,6 +1884,7 @@ CONTAINS
     if ( present(reprosum_recompute)) infodata%reprosum_recompute = reprosum_recompute
     if ( present(mct_usealltoall)) infodata%mct_usealltoall = mct_usealltoall
     if ( present(mct_usevector)  ) infodata%mct_usevector  = mct_usevector
+    if ( present(nlmaps_verbosity)) infodata%nlmaps_verbosity = nlmaps_verbosity
 
     if ( present(info_debug)     ) infodata%info_debug     = info_debug
     if ( present(bfbflag)        ) infodata%bfbflag        = bfbflag
@@ -2182,6 +2191,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%reprosum_recompute,      mpicom)
     call shr_mpi_bcast(infodata%mct_usealltoall,         mpicom)
     call shr_mpi_bcast(infodata%mct_usevector,           mpicom)
+    call shr_mpi_bcast(infodata%nlmaps_verbosity,        mpicom)
 
     call shr_mpi_bcast(infodata%info_debug,              mpicom)
     call shr_mpi_bcast(infodata%bfbflag,                 mpicom)
@@ -2891,6 +2901,8 @@ CONTAINS
 
     write(logunit,F0L) subname,'mct_usealltoall          = ', infodata%mct_usealltoall
     write(logunit,F0L) subname,'mct_usevector            = ', infodata%mct_usevector
+
+    write(logunit,F0I) subname,'nlmaps_verbosity         = ', infodata%nlmaps_verbosity
 
     write(logunit,F0S) subname,'info_debug               = ', infodata%info_debug
     write(logunit,F0L) subname,'bfbflag                  = ', infodata%bfbflag

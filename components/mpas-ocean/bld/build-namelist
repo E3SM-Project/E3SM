@@ -53,7 +53,7 @@ OPTIONS
                            Options are: false, true
      -ocn_ismf             variable for defining how the ocn model will handle ice shelf melt
                            fluxes
-                           Options are: false, true
+                           Options are: none, data, internal, coupled
      -decomp_prefix        decomp_prefix variable
      -date_stamp           date_stamp variable
      -cfg_grid             Directory containing MPASO configuration scripts.
@@ -507,6 +507,7 @@ add_default($nl, 'config_proc_decomp_file_prefix');
 
 add_default($nl, 'config_dt');
 add_default($nl, 'config_time_integrator');
+add_default($nl, 'config_number_of_time_levels');
 
 ########################
 # Namelist group: hmix #
@@ -606,16 +607,6 @@ add_default($nl, 'config_eddyMLD_dens_threshold');
 add_default($nl, 'config_eddyMLD_reference_depth');
 add_default($nl, 'config_eddyMLD_reference_pressure');
 add_default($nl, 'config_eddyMLD_use_old');
-
-####################################
-# Namelist group: Rayleigh_damping #
-####################################
-
-add_default($nl, 'config_Rayleigh_friction');
-add_default($nl, 'config_Rayleigh_damping_coeff');
-add_default($nl, 'config_Rayleigh_damping_depth_variable');
-add_default($nl, 'config_Rayleigh_bottom_friction');
-add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
 
 #########################
 # Namelist group: cvmix #
@@ -781,6 +772,8 @@ if ($OCN_ISMF eq 'coupled') {
 	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"coupled");
 } elsif ($OCN_ISMF eq 'internal') {
 	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"standalone");
+} elsif ($OCN_ISMF eq 'data') {
+	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"data");
 } else {
 	add_default($nl, 'config_land_ice_flux_mode');
 }
@@ -809,22 +802,41 @@ add_default($nl, 'config_horiz_tracer_adv_order');
 add_default($nl, 'config_coef_3rd_order');
 add_default($nl, 'config_flux_limiter');
 add_default($nl, 'config_remap_limiter');
+add_default($nl, 'config_thickness_flux_type');
 
 ###############################
 # Namelist group: bottom_drag #
 ###############################
 
-add_default($nl, 'config_use_implicit_bottom_drag');
-add_default($nl, 'config_implicit_bottom_drag_coeff');
+add_default($nl, 'config_bottom_drag_mode');
+add_default($nl, 'config_implicit_bottom_drag_type');
+add_default($nl, 'config_implicit_constant_bottom_drag_coeff');
 add_default($nl, 'config_use_implicit_top_drag');
 add_default($nl, 'config_implicit_top_drag_coeff');
-add_default($nl, 'config_use_implicit_bottom_roughness');
-add_default($nl, 'config_use_implicit_bottom_drag_variable');
-add_default($nl, 'config_use_implicit_bottom_drag_variable_mannings');
-add_default($nl, 'config_use_explicit_bottom_drag');
+add_default($nl, 'config_loglaw_bottom_roughness');
+add_default($nl, 'config_loglaw_layer_depth_max');
+add_default($nl, 'config_loglaw_bottom_drag_min');
+add_default($nl, 'config_loglaw_bottom_drag_max');
 add_default($nl, 'config_explicit_bottom_drag_coeff');
 add_default($nl, 'config_use_topographic_wave_drag');
 add_default($nl, 'config_topographic_wave_drag_coeff');
+add_default($nl, 'config_thickness_drag_type');
+
+####################################
+# Namelist group: Rayleigh_damping #
+####################################
+
+add_default($nl, 'config_Rayleigh_damping_coeff');
+add_default($nl, 'config_Rayleigh_damping_depth_variable');
+add_default($nl, 'config_Rayleigh_bottom_friction');
+add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
+
+###################################
+# Namelist group: vegetation_drag #
+###################################
+
+add_default($nl, 'config_use_vegetation_drag');
+add_default($nl, 'config_vegetation_drag_coefficient');
 
 ###################################
 # Namelist group: ocean_constants #
@@ -944,6 +956,7 @@ add_default($nl, 'config_disable_thick_hadv');
 add_default($nl, 'config_disable_thick_vadv');
 add_default($nl, 'config_disable_thick_sflux');
 add_default($nl, 'config_disable_vel_all_tend');
+add_default($nl, 'config_disable_vel_hadv');
 add_default($nl, 'config_disable_vel_coriolis');
 add_default($nl, 'config_disable_vel_pgrad');
 add_default($nl, 'config_disable_vel_hmix');
@@ -983,6 +996,15 @@ add_default($nl, 'config_transport_tests_flow_id');
 #########################################
 
 add_default($nl, 'config_vert_levels');
+
+#########################################
+# Namelist group: manufactured_solution #
+#########################################
+
+add_default($nl, 'config_use_manufactured_solution');
+add_default($nl, 'config_manufactured_solution_wavelength_x');
+add_default($nl, 'config_manufactured_solution_wavelength_y');
+add_default($nl, 'config_manufactured_solution_amplitude');
 
 ################################################
 # Namelist group: tracer_forcing_activeTracers #
@@ -1725,7 +1747,6 @@ my @groups = qw(run_modes
                 submesoscale_eddy_parameterization
                 gm_eddy_parameterization
                 eddy_parameterization
-                rayleigh_damping
                 cvmix
                 wave_coupling
                 gotm
@@ -1738,6 +1759,8 @@ my @groups = qw(run_modes
                 land_ice_fluxes
                 advection
                 bottom_drag
+                rayleigh_damping
+                vegetation_drag
                 ocean_constants
                 pressure_gradient
                 eos
@@ -1752,6 +1775,7 @@ my @groups = qw(run_modes
                 testing
                 transport_tests
                 init_mode_vert_levels
+                manufactured_solution
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers

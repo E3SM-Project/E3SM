@@ -15,7 +15,8 @@ interface
                                        disable_diagnostics, use_cpstar, transport_alg,               &
                                        theta_hydrostatic_mode, test_case_name, dt_remap_factor,      &
                                        dt_tracer_factor, scale_factor, laplacian_rigid_factor,       &
-                                       nsplit, pgrad_correction, dp3d_thresh, vtheta_thresh) bind(c)
+                                       nsplit, pgrad_correction, dp3d_thresh, vtheta_thresh,         &
+                                       internal_diagnostics_level) bind(c)
 
     use iso_c_binding, only: c_int, c_bool, c_double, c_ptr
     !
@@ -23,7 +24,7 @@ interface
     !
     integer(kind=c_int),  intent(in) :: remap_alg, limiter_option, rsplit, qsplit, time_step_type, nsplit
     integer(kind=c_int),  intent(in) :: dt_remap_factor, dt_tracer_factor, transport_alg
-    integer(kind=c_int),  intent(in) :: state_frequency, qsize
+    integer(kind=c_int),  intent(in) :: state_frequency, qsize, internal_diagnostics_level
     real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, dcmip16_mu, &
                                         scale_factor, laplacian_rigid_factor, dp3d_thresh, vtheta_thresh
     integer(kind=c_int),  intent(in) :: hypervis_order, hypervis_subcycle, hypervis_subcycle_tom

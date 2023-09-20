@@ -467,6 +467,12 @@ conservation checks.
 Default: FALSE
 </entry>
 
+<entry id="print_additional_diagn" type="logical"  category="diagnostics"
+       group="cam_inparm" valid_values="" >
+Turn on additional verbose output  for integrated conservation checks.
+Default: FALSE
+</entry>
+
 <!-- Dry Convective Adjustment -->
 
 <entry id="nlvdry" type="integer"  category="dry_conv_adj"
@@ -2335,7 +2341,9 @@ detrainment into the stratiform cloud scheme.
 Default: .true.
 </entry>
 
+
 <!-- general microphysics -->
+
 <entry id="micro_p3_tableversion" type="char*16" category="microphys"
        group="micro_nl" valid_values="" >
 Version number for P3 microphysics tables.
@@ -2346,6 +2354,7 @@ Default: 1
        group="micro_nl" valid_values="" >
 Directory where P3 initialization files are located.
 </entry>
+
 
 <entry id="spa_datapath" type="char*256" input_pathname="abs" category="cam_chem"
        group="spa_nl" valid_values="" >
@@ -2389,8 +2398,58 @@ Default: TRUE
 <entry id="micro_tend_output" type="logical" category="microphys"
        group="micro_nl" valid_values="" >
 Output microphysics tendencies in standard atm output file.
-Default: TRUE
+Default: FALSE
 </entry>
+
+<!-- micro_p3 -->
+<entry id="p3_qc_autocon_expon" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Exponent of power function fit used by P3 qc in autoconversion 
+Default: 2.47_rtype
+</entry>
+
+<entry id="p3_qc_accret_expon" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Exponent of power function fit used by P3 qc in accretion 
+Default: 1.15_rtype
+</entry>
+
+<entry id="p3_nc_autocon_expon" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Exponent of power function fit used by P3 nc in autoconversion 
+Default: -1.79_rtype
+</entry>
+
+<entry id="p3_accret_coeff" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Coefficient fit used by P3 in accretion 
+Default: 67._rtype
+</entry>
+
+<entry id="p3_autocon_coeff" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Coefficient fit used by P3 in autoconversion 
+Default: 1350._rtype
+</entry>
+
+<entry id="p3_wbf_coeff" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Coefficient for Wegener-Bergeron-Findeisen process in P3 
+Default: 0.7_rtype
+</entry>
+
+<entry id="p3_max_mean_rain_size" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Maximal mean rain size in P3
+Default: 0.005_rtype
+</entry>
+
+<entry id="p3_embryonic_rain_size" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Embryonic rain size from autoconversion in P3
+Default: 0.000025_rtype
+</entry>
+
 
 <!-- micro_p3 -->
 <entry id="p3_qc_autoCon_Expon" type="real" category="microphysics"
@@ -2405,9 +2464,16 @@ Exponent of power function fit used by P3 qc in accretion
 Default: 1.15_rtype
 </entry>
 
+
 <entry id="do_prescribed_CCN" type="logical" category="microphys"
        group="micro_nl" valid_values="" >
 Specify if CCN concentration is read in from ncdf file within p3.
+Default: FALSE
+</entry>
+
+<entry id="do_Cooper_inP3" type="logical" category="microphys"
+       group="micro_nl" valid_values="" >
+Specify if ice nucleation is done using the Cooper scheme within p3.
 Default: FALSE
 </entry>
 
@@ -2439,6 +2505,12 @@ Default: set by build-namelist
 <entry id="micro_mincdnc" type="real" category="microphys"
        group="micro_mg_nl" valid_values="" >
 Minimum droplet number conc (#/m3) imposed when micro_mincdnc > 0.
+Default: -999.
+</entry>
+
+<entry id="p3_mincdnc" type="real" category="microphys"
+       group="micro_nl" valid_values="" >
+Minimum droplet number conc (#/m3) imposed when p3_mincdnc > 0.
 Default: -999.
 </entry>
 
@@ -2856,6 +2928,68 @@ Tpert scale factor in ZM deep convection scheme.
 Default: 0.D0
 </entry>
 
+<entry id="zmconv_microp" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+Microphysics option in ZM deep convection scheme.
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_clos_dyn_adj" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+Apply dynamics adjustment to CAPE closure
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_tpert_fix" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+logical switch for tpert impacts in ZM deep convection scheme
+Default: set by build-namelist
+</entry>
+
+
+<entry id="zmconv_auto_fac" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >    
+cloud droplet-rain autoconversion enhancement factor in convective microphysics scheme.
+Default: set by build-namelist  
+</entry>
+
+<entry id="zmconv_accr_fac" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >    
+cloud droplet-rain accretion enhancement factor in convective microphysics scheme.      
+Default: set by build-namelist  
+</entry>
+
+<entry id="zmconv_micro_dcs" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >    
+Autoconversion size threshold for cloud ice to snow (m)     
+Default: set by build-namelist 
+</entry>
+
+<!-- MCSP -->
+<entry id="zmconv_MCSP_heat_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), heating coefficient
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_MCSP_moisture_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), moisture coefficient
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_MCSP_uwind_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), zonal wind coefficient
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_MCSP_vwind_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), meridional wind coefficient
+Default: set by build-namelist
+</entry>
+
 
 <!-- Cloud sedimentation -->
 
@@ -3047,8 +3181,8 @@ Default: 'ZM'
        group="phys_ctl_nl" valid_values="RK,MG,P3,off" >
 Type of microphysics scheme employed.  'RK' for Rasch and Kristjansson
 (1998); 'MG' for Morrison and Gettelman (2008), Gettelman et al (2010)
-two moment scheme for CAM5.1; P3 for the P3 microphysics scheme,
-Morrison et al (2015)
+two moment scheme for CAM5.1, P3 for the P3 microphysics scheme, 
+Morrison and Milbrandt (2015),Milbrandt and Morrison (2016)
 Default: set by build-namelist (depends on value set in configure).
 </entry>
 
@@ -3838,7 +3972,9 @@ Default: held-suarez
 					 linoz_mam4_resus_soag,linoz_mam4_resus_mom,
 					 linoz_mam4_resus_mom_soag,
                                          super_fast_llnl,super_fast_llnl_mam3,
-					 superfast_mam4_resus_mom_soag,none " >
+					 superfast_mam4_resus_mom_soag,
+					 chemuci_linozv3_mam5_vbs,
+                                         none " >
 Name of the CAM chemistry package.  N.B. this variable may not be set by
 the user.  It is set by build-namelist via information in the configure
 cache file to be consistent with how CAM was built.
@@ -4038,6 +4174,12 @@ Switch for diagnostic output of the aerosol optics
 Default: .false.
 </entry>
 
+<entry id="is_output_interactive_volc" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for diagnostic output of the aerosol optics
+Default: .false.
+</entry>
+
 <entry id="history_eddy" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Switch for diagnostic output of eddy variables
@@ -4054,6 +4196,96 @@ Default: .false.
        group="phys_ctl_nl" valid_values="1,2,3,4,5,6" >
 History tape number T/Q budget output is written to.
 Default: 1
+</entry>
+
+<entry id="history_gaschmbudget" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for gas chemistry tracers budget diagnostic output
+Default: .false.
+</entry>
+
+<entry id="history_gaschmbudget_2D" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for gas chemistry tracers 2D budget diagnostic output
+Default: .false.
+</entry>
+
+<entry id="history_gaschmbudget_num" type="integer"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15" >
+History tape number instantaneous gas chemistry budget output is written to.
+Default: 2
+</entry>
+
+<entry id="history_gaschmbudget_2D_levels" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for gas chemistry tracers 2D budget diagnostic output within certain levels
+Default: .false.
+</entry>
+
+<entry id="gaschmbudget_2D_L1_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L1 for gas chemistry tracers 2D budget diagnostic output
+Default: 1
+</entry>
+
+<entry id="gaschmbudget_2D_L1_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L1 for gas chemistry tracers 2D budget diagnostic output
+Default: 26
+</entry>
+
+<entry id="gaschmbudget_2D_L2_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L2 for gas chemistry tracers 2D budget diagnostic output
+Default: 27
+</entry>
+
+<entry id="gaschmbudget_2D_L2_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L2 for gas chemistry tracers 2D budget diagnostic output
+Default: 38
+</entry>
+
+<entry id="gaschmbudget_2D_L3_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L3 for gas chemistry tracers 2D budget diagnostic output
+Default: 39
+</entry>
+
+<entry id="gaschmbudget_2D_L3_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L3 for gas chemistry tracers 2D budget diagnostic output
+Default: 58
+</entry>
+
+<entry id="gaschmbudget_2D_L4_s" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Start layer of L4 for gas chemistry tracers 2D budget diagnostic output
+Default: 59
+</entry>
+
+<entry id="gaschmbudget_2D_L4_e" type="integer" category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+End layer of L4 for gas chemistry tracers 2D budget diagnostic output
+Default: 72
+</entry>
+
+<entry id="history_UCIgaschmbudget_2D" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for gas chemistry tracers 2D budget diagnostic output
+Default: .false.
+</entry>
+
+<entry id="history_UCIgaschmbudget_2D_levels" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for gas chemistry tracers 2D budget diagnostic output within certain levels
+Default: .false.
+</entry>
+
+<entry id="history_chemdyg_summary" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for gas chemistry tracers in the ChemDyg package
+Default: .false.
 </entry>
 
 <entry id="history_waccm" type="logical"  category="diagnostics"
@@ -4370,29 +4602,16 @@ Full pathname of IOP dataset.
 Default: set by build-namelist.
 </entry>
 
-<entry id="scm_crm_mode" type="logical" category="scam"
-       group="cam_inparm" valid_values="">
-Column radiation mode.
-Default: FALSE
-</entry>
-
-<entry id="scm_diurnal_avg" type="logical" category="scam"
-       group="cam_inparm" valid_values="">
-If using diurnal averaging or not.
-Default: FALSE
-</entry>
-
 <entry id="scm_iop_srf_prop" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Use the specified surface properties.
 Default: FALSE
 </entry>
 
-<entry id="scm_clubb_iop_name" type="char*200" category="scam"
+<entry id="iop_nudge_tscale" type="real" category="scam"
        group="cam_inparm" valid_values="">
-IOP name for CLUBB running in single column mode
-Default: ""
-</entry>
+Time scale to nudge to IOP forcing file.
+Default: 10800 (s)
 
 <entry id="dp_crm" type="logical" category="scam"
        group="cam_inparm" valid_values="">
@@ -4637,6 +4856,18 @@ Full pathname of boundary dataset for tropopause climatology.
 Default: set by build-namelist.
 </entry>
 
+<entry id="tropopause_output_all" type="logical" category="tropo"
+       group="tropopause_nl" valid_values="" >
+Flag to output optional tropopause variables.
+Default: FALSE
+</entry>
+
+<entry id="tropopause_E90_thrd" type="real" category="tropo"
+       group="tropopause_nl" valid_values="" >
+E90 tropopause vmr threshold.
+Default: 100.e-9
+</entry>
+
 <!-- CAM-CHEM -->
 
 <entry id="ipcc_aircraft_emis" type="logical" category="cam_chem"
@@ -4696,6 +4927,13 @@ Default: set by build-namelist.
 In-cloud scav for cloud-borne aerosol tuning factor
 Default: set by build-namelist.
 </entry>
+
+<entry id="modal_strat_sulfate_aod_treatment" type="logical"  category="cam_chem"
+       group="phys_ctl_nl" valid_values="" >
+Flag for H2SO4 specific stratospheric wateruptake treatment
+Default: .false.
+</entry>
+
 <!-- Flags for implementing code modifications under polar project -->
 <entry id="sscav_tuning" type="logical"  category="cam_chem"
        group="aerosol_nl" valid_values="" >
@@ -4706,6 +4944,12 @@ Default: .false.
 <entry id="seasalt_emis_scale" type="real" category="cam_chem"
        group="aerosol_nl" valid_values="" >
 Seasalt aerosol emission tuning factor
+Default: set by build-namelist.
+</entry>
+
+<entry id="dms_emis_scale" type="real" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+DMS emission tuning factor
 Default: set by build-namelist.
 </entry>
 
@@ -4937,6 +5181,12 @@ Default: set by build-namelist.
 <entry id="fstrat_list" type="char*16(1000)" category="cam_chem"
        group="chem_inparm" valid_values="" >
 List of species that are constrained in the stratosphere.
+Default: set by build-namelist.
+</entry>
+
+<entry id="fstrat_efold_list" type="char*16(1000)" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+List of species from ChemUCI that e-fold decay in 30 days in the stratosphere.
 Default: set by build-namelist.
 </entry>
 
@@ -5679,6 +5929,8 @@ Tunable Linoz PSC ozone loss temperature (K) threshold
 Default: 193.0
 </entry>
 
+
+
 <entry id="tracer_cnst_datapath" type="char*256" input_pathname="abs" category="cam_chem"
        group="chem_inparm" valid_values="" >
 Full pathname of the directory that contains the files specified in
@@ -5809,6 +6061,46 @@ Default: 0 seconds
        group="chem_inparm" valid_values="" >
 If TRUE then use the FTUV method to calculate the photolysis reactions rates,
 otherwise use the look up table method.
+Default: FALSE
+</entry>
+
+<entry id="do_cloudj_photolysis" type="logical" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+If TRUE then use the Cloud-J method to calculate the photolysis reactions rates,
+otherwise use the lookup table method.
+Default: FALSE
+</entry>
+
+<entry id="do_cloudj_clouds" type="logical" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+If TRUE then use cloud opacities in the Cloud-J calculation of photolysis reactions rates,
+Default: TRUE
+</entry>
+
+<entry id="do_cloudj_aerosols" type="logical" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+If TRUE then use aerosol opacities in the Cloud-J calculation of photolysis reactions rates,
+Default: FALSE
+</entry>
+
+<entry id="do_cloudj_lookup_diag" type="logical" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+If TRUE then output the photolysis rates calculated by the lookup table.
+This is diagnostic only, since these rates won't be used in the simulation.  
+Default: FALSE
+</entry>
+
+<entry id="do_cloudj_aerosol_diag" type="logical" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+If TRUE then output the photolysis rates calculated by Cloud-J using aerosol opacities.
+This is diagnostic only, since these rates won't be used in the simulation.  
+Default: FALSE
+</entry>
+
+<entry id="do_cloudj_nocloud_diag" type="logical" category="cam_chem"
+       group="chem_inparm" valid_values="" >
+If TRUE then output the photolysis rates calculated by Cloud-J for a cloud-free column.
+This is diagnostic only, since these rates won't be used in the simulation.  
 Default: FALSE
 </entry>
 

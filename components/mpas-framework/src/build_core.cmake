@@ -30,6 +30,7 @@ function(build_core CORE)
   add_library(${COMPONENT})
   target_compile_definitions(${COMPONENT} PRIVATE ${CPPDEFS})
   target_include_directories(${COMPONENT} PRIVATE ${INCLUDES})
+  target_link_libraries(${COMPONENT} PUBLIC ${LIBRARIES} common)
 
   # Make .inc files
   add_custom_command (
@@ -62,6 +63,6 @@ function(build_core CORE)
   endif()
 
   genf90_targets("${RAW_SOURCES}" "${INCLUDES}" "${CPPDEFS}" "${NO_PREPROCESS}" "${INC_DIR}")
-  target_sources(${COMPONENT} PRIVATE ${SOURCES} $<TARGET_OBJECTS:common>)
+  target_sources(${COMPONENT} PRIVATE ${SOURCES})
 
 endfunction(build_core)

@@ -1,0 +1,51 @@
+input_data_dir=`./xmlquery DIN_LOC_ROOT --value`
+
+./xmlchange LND_DOMAIN_FILE=domain.lnd.nldas2_0224x0464_c110415.nc
+./xmlchange LND_DOMAIN_PATH=${input_data_dir}/share/domains/domain.clm
+
+./xmlchange DLND_MODE=CLMNLDAS
+./xmlchange DLND_CPLHIST_CASE=NLDAS
+
+./xmlchange -file env_run.xml -id DLND_CPLHIST_YR_END -val 1979
+./xmlchange -file env_run.xml -id DLND_CPLHIST_YR_START -val 1979
+./xmlchange -file env_run.xml -id DLND_CPLHIST_YR_ALIGN -val 1
+
+cat >> user_dlnd.streams.txt.clm.nldas << EOF
+<?xml version="1.0"?>
+<file id="stream" version="1.0">
+<dataSource>
+   GENERIC
+</dataSource>
+<domainInfo>
+  <variableNames>
+     time     time
+        lon      lon
+        lat      lat
+        area     area
+        landfrac mask
+  </variableNames>
+  <filePath>
+     $input_data_dir/lnd/dlnd7/NLDAS
+  </filePath>
+  <fileNames>
+     sy_new1_Livneh_NLDAS_1970_2011.nc
+  </fileNames>
+</domainInfo>
+<fieldInfo>
+   <variableNames>
+     sy        rofmud
+        QDRAI     rofsub
+        QOVER     rofsur
+   </variableNames>
+   <filePath>
+     $input_data_dir/lnd/dlnd7/NLDAS
+   </filePath>
+   <fileNames>
+    Sediment_runoff_e3sm_daily_nldas_1979_09.nc
+   </fileNames>
+   <offset>
+      0
+   </offset>
+</fieldInfo>
+</file>
+EOF

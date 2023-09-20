@@ -46,7 +46,7 @@ TEST_CASE("field_at_level")
   // Create input fields
   const auto units = ekat::units::Units::invalid();
 
-  FieldIdentifier fid_mid ("M",FL({COL,LEV},{ncols,nlevs}),units,grid->name());
+  FieldIdentifier fid_mid ("M",FL({COL,CMP,LEV},{ncols,2,nlevs}),units,grid->name());
   FieldIdentifier fid_int ("I",FL({COL,LEV},{ncols,nlevs}),units,grid->name());
 
   Field f_mid (fid_mid);
@@ -68,10 +68,12 @@ TEST_CASE("field_at_level")
   randomize(f_mid,engine,pdf);
   randomize(f_int,engine,pdf);
 
+  auto f_mid_1 = f_mid.get_component(1);
+
   ekat::ParameterList params_mid, params_int;
-  params_mid.set("Field Name",f_mid.name());
+  params_mid.set("Field Name",f_mid_1.name());
   params_mid.set("Field Units",fid_mid.get_units());
-  params_mid.set("Field Layout",fid_mid.get_layout());
+  params_mid.set("Field Layout",fid_mid.get_layout().strip_dim(CMP));
   params_mid.set("Grid Name",fid_mid.get_grid_name());
   params_int.set("Field Name",f_int.name());
   params_int.set("Field Units",fid_int.get_units());
@@ -104,7 +106,7 @@ TEST_CASE("field_at_level")
     diag_mid->set_grids(gm);
     diag_int->set_grids(gm);
 
-    diag_mid->set_required_field(f_mid);
+    diag_mid->set_required_field(f_mid_1);
     diag_int->set_required_field(f_int);
 
     diag_mid->initialize(t0,RunType::Initial);
@@ -120,7 +122,7 @@ TEST_CASE("field_at_level")
     d_mid.sync_to_host();
     d_int.sync_to_host();
 
-    auto f_mid_v = f_mid.get_view<const Real**,Host>();
+    auto f_mid_v = f_mid_1.get_view<const Real**,Host>();
     auto f_int_v = f_int.get_view<const Real**,Host>();
     auto d_mid_v = d_mid.get_view<const Real*,Host>();
     auto d_int_v = d_int.get_view<const Real*,Host>();

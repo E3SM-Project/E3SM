@@ -346,6 +346,7 @@
       <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testmods_dirs</value>
       <value component="scream"   >$COMP_ROOT_DIR_ATM/cime_config/testdefs/testmods_dirs</value>
       <value component="mpaso"    >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
+      <value component="mpassi"   >$COMP_ROOT_DIR_ICE/cime_config/testdefs/testmods_dirs</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

@@ -38,6 +38,9 @@
 		<dim name="FOUR" definition="4"
 			 description="The number four as a dimension."
 		/>
+		<dim name="FIVE" definition="5"
+			 description="The number five as a dimension."
+		/>
 		<dim name="SIX" definition="6"
 			 description="The number six as a dimension."
 		/>
@@ -199,7 +202,11 @@
 		/>
 		<nml_option name="config_time_integrator" type="character" default_value="split_explicit"
 					description="Time integration method."
-					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit'"
+					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS'"
+		/>
+		<nml_option name="config_number_of_time_levels" type="integer" default_value="2"
+					description="The number of time levels in the time-stepping scheme. This is used for array allocation."
+					possible_values="Any integer greater than or equal to 2."
 		/>
 	</nml_record>
 	<nml_record name="hmix" mode="forward">
@@ -451,28 +458,6 @@
 		<nml_option name="config_eddyMLD_use_old" type="logical" default_value=".true."
 					description="switches from old dThreshMLD calculation to new (fixed one)"
 					possible_values=".true. or .false."
-		/>
-	</nml_record>
-	<nml_record name="Rayleigh_damping" mode="forward">
-		<nml_option name="config_Rayleigh_friction" type="logical" default_value=".false."
-					description="If true, Rayleigh friction is included in the momentum equation at every depth level."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Rayleigh_damping_coeff" type="real" default_value="1.0e-4" units="s^-1"
-					description="Inverse-time coefficient for the Rayleigh damping term, $c_R$, applied at every depth level."
-					possible_values="Any positive real value."
-		/>
-		<nml_option name="config_Rayleigh_damping_depth_variable" type="logical" default_value=".false."
-					description="If true applies r h^-1 instead of just r."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Rayleigh_bottom_friction" type="logical" default_value=".false."
-					description="If true, Rayleigh friction is only applied to the bottom"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Rayleigh_bottom_damping_coeff" type="real" default_value="1.0e-4" units="s^-1"
-					description="Inverse-time coefficient for the Rayleigh damping term, $c_R$, only applied at the bottom."
-					possible_values="Any positive real value."
 		/>
 	</nml_record>
 	<nml_record name="cvmix" mode="forward">
@@ -927,20 +912,6 @@
 					possible_values="0.0 to turn off, 0.09 is typical value to use for scalar approximation"
 		/>
 	</nml_record>
-	<nml_record name="vegetation_drag" mode="init;forward">
-		<nml_option name="config_use_vegetation_drag" type="logical" default_value=".false."
-					description="Controls if vegetation_drag is used."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_use_vegetation_manning_equation" type="logical" default_value=".false."
-					description="Compute vegetation drag force using vegetation-induced Manning roughness coefficient."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_vegetation_drag_coefficient" type="real" default_value="1.09"
-					description="Vegetation drag coefficient"
-					possible_values="O(1)"
-		/>
-	</nml_record>
 	<nml_record name="frazil_ice" mode="forward">
 		<nml_option name="config_use_frazil_ice_formation" type="logical" default_value=".false."
 					description="Controls if fluxes related to frazil ice process are computed."
@@ -994,7 +965,7 @@
 	<nml_record name="land_ice_fluxes" mode="init;forward">
 		<nml_option name="config_land_ice_flux_mode" type="character" default_value="off"
 					description="Selects the mode in which land-ice fluxes are computed."
-					possible_values="'off','pressure_only','standalone','coupled'"
+					possible_values="'off','pressure_only', 'data', 'standalone','coupled'"
 		/>
 		<nml_option name="config_land_ice_flux_formulation" type="character" default_value="Jenkins"
 					description="Name of land-ice flux formulation."
@@ -1079,13 +1050,21 @@
 					description="Slope limiter for the vertical remap advection scheme."
 					possible_values="'none','monotonic','weno'"
 		/>
+		<nml_option name="config_thickness_flux_type" type="character" default_value="centered"
+					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThickEdgeFlux.  The standard MPAS-O approach is 'centered'. For 'constant', uses constant thickness in time from restingThickness, for linear test problems. Note that these two flags are set together for linearized test cases: config_thickness_flux_type = 'constant' linearizes the thickness equation, and config_disable_vel_hadv = .true. linearizes the momentum equation if there is no assumed mean background velocity."
+					possible_values="'upwind', 'centered', 'constant'"
+		/>
 	</nml_record>
 	<nml_record name="bottom_drag" mode="forward">
-		<nml_option name="config_use_implicit_bottom_drag" type="logical" default_value=".true."
-					description="If true, implicit bottom drag is used on the momentum equation."
-					possible_values=".true. or .false."
+		<nml_option name="config_bottom_drag_mode" type="character" default_value="implicit"
+					description="Formulation of the bottom drag."
+					possible_values="'implicit','explicit'"
 		/>
-		<nml_option name="config_implicit_bottom_drag_coeff" type="real" default_value="1.0e-3"
+		<nml_option name="config_implicit_bottom_drag_type" type="character" default_value="constant"
+					description="Type of implicit bottom drag used."
+					possible_values="'constant','constant_and_rayleigh','loglaw','spatially-variable','mannings'"
+		/>
+		<nml_option name="config_implicit_constant_bottom_drag_coeff" type="real" default_value="1.0e-3"
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
@@ -1097,24 +1076,24 @@
 					description="Dimensionless top drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
-		<nml_option name="config_use_implicit_bottom_roughness" type="logical" default_value=".false."
-					description="If true, depends on bottom roughness z0"
-					possible_values=".true. or .false."
+		<nml_option name="config_loglaw_bottom_roughness" type="real" default_value="1.0e-3" units="m"
+					description="Bottom roughness, $z_0$, in meters."
+					possible_values="any positive real, typically 1.0e-3"
 		/>
-		<nml_option name="config_use_implicit_bottom_drag_variable" type="logical" default_value=".false."
-					description="If true, spatially-variable implicit bottom drag is used on the momentum equation."
-					possible_values=".true. or .false."
+		<nml_option name="config_loglaw_layer_depth_max" type="real" default_value="10.0" units="m"
+					description="Maximum distance above the seafloor at which log-law drag is applied."
+					possible_values="any positive real, typically 10m"
 		/>
-		<nml_option name="config_use_implicit_bottom_drag_variable_mannings" type="logical" default_value=".false."
-					description="If true, uses Mannings' n values for the computation of Cd=g*n^2*h^{-1/3}."
-					possible_values=".true. or .false."
+		<nml_option name="config_loglaw_bottom_drag_min" type="real" default_value="2.5e-3"
+					description="Dimensionless bottom drag minimum used in log-law parameterization."
+					possible_values="any positive real, typically 2.5e-3"
 		/>
-		<nml_option name="config_use_explicit_bottom_drag" type="logical" default_value=".false."
-					description="If true, explicit bottom drag is used on the momentum equation."
-					possible_values=".true. or .false."
+		<nml_option name="config_loglaw_bottom_drag_max" type="real" default_value="1.0e-1"
+					description="Dimensionless bottom drag maximum used in log-law parameterization."
+					possible_values="any positive real, typically 1.0e-1"
 		/>
 		<nml_option name="config_explicit_bottom_drag_coeff" type="real" default_value="1.0e-3"
-					description="Dimensionless bottom drag coefficient, $c_{drag}$."
+					description="Dimensionless explicit bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
 		<nml_option name="config_use_topographic_wave_drag" type="logical" default_value=".false."
@@ -1125,8 +1104,40 @@
 					description="Dimensionless topographic wave drag coefficient, $c_{topo}$."
 					possible_values="any positive real, typically 5.0e-4"
 		/>
-
+		<nml_option name="config_thickness_drag_type" type="character" default_value="centered"
+					description="The type of layerThickness averaging to use on the drag term. The standard MPAS-O approach is 'centered'."
+					possible_values="'harmonic-mean', 'centered'"
+		/>
 	</nml_record>
+	<nml_record name="Rayleigh_damping" mode="forward">
+		<nml_option name="config_Rayleigh_damping_coeff" type="real" default_value="1.0e-4" units="s^-1"
+					description="Inverse-time coefficient for the Rayleigh damping term, $c_R$, applied at every depth level."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_Rayleigh_damping_depth_variable" type="logical" default_value=".false."
+					description="If true applies r h^-1 instead of just r."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Rayleigh_bottom_friction" type="logical" default_value=".false."
+					description="If true, Rayleigh friction is only applied to the bottom"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Rayleigh_bottom_damping_coeff" type="real" default_value="1.0e-4" units="s^-1"
+					description="Inverse-time coefficient for the Rayleigh damping term, $c_R$, only applied at the bottom."
+					possible_values="Any positive real value."
+		/>
+	</nml_record>
+	<nml_record name="vegetation_drag" mode="init;forward">
+		<nml_option name="config_use_vegetation_drag" type="logical" default_value=".false."
+					description="Controls if vegetation_drag is used to compute Manning's roughness coefficient."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_vegetation_drag_coefficient" type="real" default_value="1.09"
+					description="Vegetation drag coefficient"
+					possible_values="O(1)"
+		/>
+	</nml_record>
+
 	<nml_record name="wetting_drying" mode="init;forward">
 		<nml_option name="config_use_wetting_drying" type="logical" default_value=".false."
 					description="If true, use wetting and drying algorithm to allow for dry cells to config_min_cell_height."
@@ -1137,20 +1148,28 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_drying_min_cell_height" type="real" default_value="1.0e-3" units="m"
-					description="Minimum allowable cell height under drying.  Cell to be kept wet to at least this thickness."
+					description="Minimum allowable cell height under drying.  Cell to be kept wet to at least this thickness. When ramp is applied this is the min edge height"
 					possible_values="any positive real, typically 1.0e-3"
 		/>
 		<nml_option name="config_zero_drying_velocity" type="logical" default_value=".false."
 					description="If true, just zero out velocity that is contributing to drying for cell that is drying.  This option can be used to estimate acceptable minimum thicknesses for a run."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_verify_not_dry" type="logical" default_value=".false."
-					description="If true, verify that cells are at least config_min_cell_height thick."
+		<nml_option name="config_zero_drying_velocity_ramp" type="logical" default_value=".false."
+					description="If true, ramp velocities and tendencies to zero rather than applying a simple on/off switch."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_thickness_flux_type" type="character" default_value="centered"
-					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThickEdgeFlux.  The standard MPAS-O approach is 'centered'."
-					possible_values="'upwind', 'centered'"
+		<nml_option name="config_zero_drying_velocity_ramp_hmin" type="real" default_value="1e-3"
+					description="Minimum layer thickness at which velocities and tendencies are ramped toward zero. Recommended value equal to config_drying_min_cell_height."
+					possible_values="Any positive real"
+		/>
+		<nml_option name="config_zero_drying_velocity_ramp_hmax" type="real" default_value="2e-3"
+					description="Maximum layer thickness at which velocities and tendencies are ramped toward zero. Recommended values between 2x and 10x config_drying_min_cell_height."
+					possible_values="Any positive real"
+		/>
+		<nml_option name="config_verify_not_dry" type="logical" default_value=".false." units="unitless"
+					description="If true, verify that cells are at least config_min_cell_height thick."
+					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_drying_safety_height" type="real" default_value="1.0e-10" units="m"
 					description="Safety factor on minimum cell height to ensure the minimum height is not violated due to round-off."
@@ -1161,6 +1180,12 @@
 		<nml_option name="config_density0" type="real" default_value="1026.0" units="kg m^-3"
 					description="Density used as a coefficient of the pressure gradient terms, $\rho_0$. This is a constant due to the Boussinesq approximation."
 					possible_values="any positive real, but typically 1000-1035"
+		/>
+	</nml_record>
+	<nml_record name="lts" mode="forward">
+		<nml_option name="config_dt_scaling_LTS" type="integer" default_value="1"
+					description="The ratio between the dt on the coarse region and the dt on the fine region. Specifically, it is the positive integer M that defines dtFine for LTS, dtFine = dt / M."
+					possible_values="Any positive integer greater than or equal to one. A value of one employs the same dt in all regions."
 		/>
 	</nml_record>
 	<nml_record name="pressure_gradient" mode="forward">
@@ -1434,8 +1459,12 @@
 					description="Disables all tendencies on the velocity field."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_disable_vel_hadv" type="logical" default_value=".false."
+					description="Disables tendencies on the velocity field from the horizontal momentum advection. Note that these two flags are set together for linearized test cases: config_thickness_flux_type = 'constant' linearizes the thickness equation, and config_disable_vel_hadv = .true. linearizes the momentum equation if there is no assumed mean background velocity."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_disable_vel_coriolis" type="logical" default_value=".false."
-					description="Disables tendencies on the velocity field from the Coriolis force and momentum advection."
+					description="Disables tendencies on the velocity field from the Coriolis force."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_disable_vel_pgrad" type="logical" default_value=".false."
@@ -1537,6 +1566,24 @@
 					possible_values="Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition."
 		/>
 	</nml_record>
+	<nml_record name="manufactured_solution">
+		<nml_option name="config_use_manufactured_solution" type="logical" default_value=".false."
+					description="This flag includes additional thickness and velocity tendencies necessary for testing with a manufactured solution."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_manufactured_solution_wavelength_x" type="real" default_value="2000000.0" units="m"
+					description="Wavelength of manufactured solution in the x direction"
+					possible_values="Any positive real number"
+		/>
+		<nml_option name="config_manufactured_solution_wavelength_y" type="real" default_value="2000000.0" units="m"
+					description="Wavelength of manufactured solution in the y direction"
+					possible_values="Any positive real number"
+		/>
+		<nml_option name="config_manufactured_solution_amplitude" type="real" default_value="1" units="m"
+					description="Amplitude of the manufactured solution"
+					possible_values="Any positive real number"
+		/>
+	</nml_record>
 	<packages>
 		<package name="timeVaryingAtmosphericForcingPKG" description="This package includes variables required for time varying atmospheric forcing"/>
 		<package name="timeVaryingLandIceForcingPKG" description="This package includes variavles required for time varying land-ice forcing"/>
@@ -1551,6 +1598,7 @@
 		<package name="landIcePressurePKG" description="This package includes variables needed for runs with the sea surface depressed by land-ice pressure."/>
 		<package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
 		<package name="landIceCouplingPKG" description="This package includes varibles required for land ice coupling but not land ice fluxes in standalone mode."/>
+		<package name="dataLandIceFluxesPKG" description="This package includes varibles related to prescribed freshwater and heat fluxes from land ice."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
 		<package name="tidalForcing" description="This package includes variables required for tidal forcing on a boundary."/>
 		<package name="vegetationDragPKG" description="This package includes vegetation properties used for computing vegetation drag"/>
@@ -1617,6 +1665,7 @@
 			<var name="fVertex"/>
 			<var name="fCell"/>
 			<var name="bed_elevation"/>
+			<var name="LTSRegion"/>
 		</stream>
 
 		<stream name="output_init"
@@ -1650,6 +1699,7 @@
 			<var name="landIceDraft"/>
 			<var name="landIceFloatingMask"/>
 			<var name="landIceFloatingFraction"/>
+			<var name="LTSRegion"/>
 		</stream>
 
 		<stream name="forcing_data_init"
@@ -2193,7 +2243,7 @@
 
 	</streams>
 
-	<var_struct name="state" time_levs="2">
+	<var_struct name="state" time_levs="namelist:config_number_of_time_levels">
 		<var name="normalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="horizontal velocity, normal component to an edge"
 			 missing_value="FILLVAL" missing_value_mask="edgeMask"
@@ -2789,6 +2839,11 @@
 			 missing_value="FILLVAL" missing_value_mask="edgeMask"
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="layerThicknessEdgeDrag" type="real" dimensions="nVertLevels nEdges Time" units="m"
+			 description="layer thickness to be used for drag terms"
+			 missing_value="FILLVAL" missing_value_mask="edgeMask"
+			 packages="forwardMode;analysisMode"
+		/>
 		<var name="layerThicknessEdgeMean" type="real" dimensions="nVertLevels nEdges Time" units="m"
 			 description="layer thickness averaged from cell center to edges"
 			 missing_value="FILLVAL" missing_value_mask="edgeMask"
@@ -3161,11 +3216,11 @@
 		/>
 		<var name="topDrag" type="real" dimensions="nEdges Time" units="N m^-2"
 			description="Top drag at the surface of the ocean defined at edge midpoints. Magnitude in direction of edge normal."
-			packages="landIceFluxesPKG"
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
 		<var name="topDragMagnitude" type="real" dimensions="nCells Time" units="N m^-2"
 			description="Magnitude of top drag at the surface of the ocean, at cell centers."
-			packages="landIceFluxesPKG"
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
 		<var_array name="landIceBoundaryLayerTracers" type="real" dimensions="nCells Time" packages="landIceFluxesPKG">
 			<var name="landIceBoundaryLayerTemperature" array_group="landIceBoundaryLayerValues" units="C"
@@ -3661,11 +3716,11 @@
 		</var_array>
 		<var name="landIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
 			description="Flux of mass through the ocean surface. Positive into ocean."
-			packages="landIceFluxesPKG"
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
 		<var name="landIceHeatFlux"  type="real" dimensions="nCells Time" units="W m^-2"
 			description="Flux of heat into the ocean at land ice-ocean interface. Positive into ocean."
-			packages="landIceFluxesPKG"
+			packages="landIceFluxesPKG;dataLandIceFluxesPKG"
 		/>
 		<!-- Output fields from standalone land-ice flux computaiton -->
 		<var name="heatFluxToLandIce"  type="real" dimensions="nCells Time" units="W m^-2"
@@ -3692,6 +3747,15 @@
 		<var name="avgEffectiveDensityInLandIce" type="real" dimensions="nCells Time" units="kg m^-3"
 			description="The time-averaged effective ocean density within ice shelves based on Archimedes' principle."
 			packages="landIceCouplingPKG"
+		/>
+		<!-- Input fields for data (prescribed) land-ice fluxes -->
+		<var name="dataLandIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+			description="Flux of mass through the ocean surface, as read in from a forcing file. Positive into ocean."
+			packages="dataLandIceFluxesPKG"
+		/>
+		<var name="dataLandIceHeatFlux"  type="real" dimensions="nCells Time" units="W m^-2"
+			description="Flux of heat into the ocean at land ice-ocean interface, as read in from a forcing file. Positive into ocean."
+			packages="dataLandIceFluxesPKG"
 		/>
 
 		<!-- Input fields for forcing due to tides -->
@@ -3756,10 +3820,6 @@
 			description="Equilibrium tidal potential"
 			packages="forwardMode"
 		/>
-		<var name="nTidalPotentialConstituents" type="integer" dimensions="Time"
-			description="Number of tidal constituents"
-			packages="tidalPotentialForcingPKG"
-		/>
 		<var name="tidalPotentialConstituentFrequency" type="real" dimensions="maxTidalConstituents Time" units="s^-1"
 			description="Frequency of tidal constituents"
 			packages="tidalPotentialForcingPKG"
@@ -3792,10 +3852,6 @@
 			description="Latitude function for tidal constituents: long-period = 3\sin^2(\phi)-1, diurnal = \sin(2\phi), semi-diurnal = \cos^2(\phi)"
 			packages="tidalPotentialForcingPKG"
 		/>
-		<var name="tidalPotentialZMid" type="real" dimensions="nVertLevels nCells Time" units="m"
-			description="zMid - Equilibrium tidal potential in RK4"
-			packages="tidalPotentialForcingPKG"
-		/>
 		<var name="sshSubcycleCurWithTides" type="real" dimensions="nCells Time" units="m"
 			description="SSH - tidal potential in split explicit "
 			packages="tidalPotentialForcingPKG"
@@ -3807,10 +3863,6 @@
 		<var name="coastalSmoothingFactor" type="real" dimensions="nCells" units="1"
 			 description="Multiplication factors to smooth ssh at coastlines for SAL caculation"
 			 packages="tidalPotentialForcingPKG"
-		/>
-		<var name="RediKappaData" type="real" dimensions="nCells" units="m^2 s^-1"
-			 description="Redi isopycnal mixing Kappa value. This is the data field specified at init."
-			 packages="gm"
 		/>
 	</var_struct>
 	<var_struct name="timeVaryingForcing" time_levs="1">
@@ -4058,6 +4110,23 @@
 			type="text"
 			dimensions="nTransectGroups"
 			description="The name for each transect group."
+			/>
+	</var_struct>
+	<var_struct name="LTS" time_levs="1">
+		<var name="LTSRegion" type="integer" dimensions="nCells"
+			description="Definition of LTS regions. This is read from the initial condition file (typically named init.nc), and set up with a pre-processing step. The values are: 1 = fine; 2 = coarse; 3 = interface layer one; 4 = interface layer two; 5 = fine close to interface layer one."
+			/>
+		<var name="cellsInLTSRegion" type="integer" dimensions="TWO R3 nCells"
+			description="Cell mask for each region. For the first two dimensions, the regions in the array are defined as follows: (1,1): fine, (1,2) interface layer one, (1,3) fine close to interface layer one, (2,2) interface layer two, (2,1) coarse."
+			/>
+		<var name="nCellsInLTSRegion" type="integer" dimensions="TWO R3"
+			description="Number of cells in each region of cellsInLTSRegion."
+			/>
+		<var name="edgesInLTSRegion" type="integer" dimensions="TWO R3 nEdges"
+			description="Edge mask for each region. For the first two dimensions, the regions in the array are defined as follows: (1,1): fine, (1,2) interface layer one, (1,3) fine close to interface layer one, (2,2) interface layer two, (2,1) coarse."
+			/>
+		<var name="nEdgesInLTSRegion" type="integer" dimensions="TWO R3"
+			description="Number of edges in each region of edgesInLTSRegion."
 			/>
 	</var_struct>
 

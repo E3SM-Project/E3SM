@@ -1,0 +1,1 @@
+./xmlchange --append SCREAM_ATMCHANGE_BUFFER='BfbHash=6'

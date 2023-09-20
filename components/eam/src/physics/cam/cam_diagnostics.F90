@@ -23,7 +23,7 @@ use wv_saturation, only: qsat, qsat_water, svp_ice
 use time_manager,  only: is_first_step
 use physconst,     only: cpair, rair, gravit, latvap, epsilo
 
-use scamMod,       only: single_column, wfld
+use iop_data_mod,  only: single_column, wfld
 use cam_abortutils,    only: endrun
 
 implicit none
@@ -319,6 +319,10 @@ subroutine diag_init()
    call addfld ('RHCFMIP',(/ 'lev' /), 'A','percent' ,'Relative humidity with respect to water above 273 K, ice below 273 K')
    call addfld ('PSL',horiz_only,    'A','Pa','Sea level pressure', &
       standard_name='air_pressure_at_mean_sea_level')
+
+
+   call addfld ('fixerCLUBB',horiz_only,    'A','J/m2','dTE fixed by CLUBB')
+
 
    call addfld ('T850',horiz_only,    'A','K','Temperature at 850 mbar pressure surface')
    call addfld ('T500',horiz_only,    'A','K','Temperature at 500 mbar pressure surface')

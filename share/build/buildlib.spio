@@ -200,8 +200,10 @@ def buildlib(bldroot, installpath, case):
         globs_to_copy = [
             os.path.join("src", "clib", "libpioc.*"),
             os.path.join("src", "flib", "libpiof.*"),
+            os.path.join("src", "flib_legacy", "libpiof.*"),
             os.path.join("src", "clib", "*.h"),
             os.path.join("src", "flib", "*.mod"),
+            os.path.join("src", "flib_legacy", "*.mod"),
         ]
         # ADIOS requires an ADIOS to NetCDF conversion library/exe
         if adios_found:

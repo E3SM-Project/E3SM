@@ -368,7 +368,7 @@ contains
     !
     ! !USES
     use accumulMod       , only : extract_accum_field
-    use clm_time_manager , only : get_nstep
+    use elm_time_manager , only : get_nstep
     !
     ! !ARGUMENTS:
     class(canopystate_type) :: this
@@ -414,7 +414,7 @@ contains
   subroutine UpdateAccVars (this, bounds)
     !
     ! USES
-    use clm_time_manager, only : get_nstep
+    use elm_time_manager, only : get_nstep
     use accumulMod      , only : update_accum_field, extract_accum_field
     use abortutils      , only : endrun
     !
@@ -499,12 +499,12 @@ contains
        l = col_pp%landunit(c)
 
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
-          this%alt_col(c)               = 0._r8 !iniitialized to spval for all columns
-          this%altmax_col(c)            = 0._r8 !iniitialized to spval for all columns
-          this%altmax_lastyear_col(c)   = 0._r8 !iniitialized to spval for all columns
-          this%alt_indx_col(c)          = 0     !initiialized to huge  for all columns
-          this%altmax_indx_col(c)       = 0     !initiialized to huge  for all columns
-          this%altmax_lastyear_indx_col = 0     !initiialized to huge  for all columns
+          this%alt_col(c)                  = 0._r8
+          this%altmax_col(c)               = 0._r8
+          this%altmax_lastyear_col(c)      = 0._r8
+          this%alt_indx_col(c)             = 0
+          this%altmax_indx_col(c)          = 0
+          this%altmax_lastyear_indx_col(c) = 0
        end if
     end do
 

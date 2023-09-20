@@ -27,8 +27,9 @@ module physpkg
   use constituents,            only: pcnst, cnst_name, cnst_get_ind, setup_moist_indices
   use camsrfexch,              only: cam_out_t, cam_in_t
   use phys_control,            only: phys_do_flux_avg, phys_getopts
-  use scamMod,                 only: single_column, scm_crm_mode
+  use iop_data_mod,            only: single_column
   use cam_logfile,             only: iulog
+  use check_energy,            only: check_energy_set_print_additional_diagn
   implicit none
   private
 
@@ -509,7 +510,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   use ref_pres,           only: pref_edge, pref_mid
   use cloud_rad_props,    only: cloud_rad_props_init
   use cam_control_mod,    only: nsrest  ! restart flag
-  use check_energy,       only: check_energy_init
+  use check_energy,       only: check_energy_init, print_additional_diagn
   use chemistry,          only: chem_init
   use prescribed_ozone,   only: prescribed_ozone_init
   use prescribed_ghg,     only: prescribed_ghg_init
@@ -589,7 +590,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
   call setup_moist_indices()
 
-  call check_energy_init()
+  call check_energy_init(phys_state)
 
   call tracers_init()
 
@@ -682,6 +683,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   
  !BSINGH - addfld and adddefault calls for perturb growth testing    
   if(pergro_test_active)call add_fld_default_calls()
+
+  !disable additional diagn for crm
+  call check_energy_set_print_additional_diagn(.false.)
 
 end subroutine phys_init
 
@@ -878,8 +882,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
 
-  if(single_column.and.scm_crm_mode) return ! Don't call the rest in CRM mode
-
 #ifdef TRACER_CHECK
   call gmean_mass ('between DRY', phys_state)
 #endif
@@ -924,8 +926,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d, cam_out, cam_in )
   integer(i8) :: beg_count, end_count, irtc_rate ! for measuring chunk cost
   real(r8):: chunk_cost
   type(physics_buffer_desc),pointer, dimension(:)     :: phys_buffer_chunk
-
-  if(single_column.and.scm_crm_mode) return
 
   call t_barrierf('sync_ac_physics', mpicom)
   call t_startf ('ac_physics')

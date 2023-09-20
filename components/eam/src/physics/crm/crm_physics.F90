@@ -1090,8 +1090,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          ! Set surface flux variables
          !------------------------------------------------------------------------------------------
          if (phys_do_flux_avg()) then
-            call pbuf_get_field(pbuf_chunk, pbuf_get_index('LHFLX'), shf_ptr)
-            call pbuf_get_field(pbuf_chunk, pbuf_get_index('SHFLX'), lhf_ptr)
+            call pbuf_get_field(pbuf_chunk, pbuf_get_index('SHFLX'), shf_ptr)
+            call pbuf_get_field(pbuf_chunk, pbuf_get_index('LHFLX'), lhf_ptr)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('TAUX'),  wsx_ptr)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('TAUY'),  wsy_ptr)
             shf_tmp = shf_ptr

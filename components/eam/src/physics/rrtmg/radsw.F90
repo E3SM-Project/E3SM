@@ -9,9 +9,7 @@ use shr_kind_mod,    only: r8 => shr_kind_r8
 use ppgrid,          only: pcols, pver, pverp
 use cam_abortutils,      only: endrun
 use cam_history,     only: outfld
-use scamMod,         only: single_column,scm_crm_mode,have_asdir, &
-                           asdirobs, have_asdif, asdifobs, have_aldir, &
-                           aldirobs, have_aldif, aldifobs
+use iop_data_mod,    only: single_column
 use cam_logfile,     only: iulog
 use parrrsw,         only: nbndsw, ngptsw
 use rrtmg_sw_init,   only: rrtmg_sw_ini
@@ -308,12 +306,6 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    qrsc(1:ncol,1:pver) = 0.0_r8
    fns(1:ncol,1:pverp) = 0.0_r8
    fcns(1:ncol,1:pverp) = 0.0_r8
-   if (single_column.and.scm_crm_mode) then 
-      fus(1:ncol,1:pverp) = 0.0_r8
-      fds(1:ncol,1:pverp) = 0.0_r8
-      fusc(:ncol,:pverp) = 0.0_r8
-      fdsc(:ncol,:pverp) = 0.0_r8
-   endif
 
    if (associated(su)) su(1:ncol,:,:) = 0.0_r8
    if (associated(sd)) sd(1:ncol,:,:) = 0.0_r8
@@ -382,14 +374,6 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
          enddo
       enddo
    enddo
-
-   if (scm_crm_mode) then
-      ! overwrite albedos for CRM
-      if(have_asdir) asdir = asdirobs(1)
-      if(have_asdif) asdif = asdifobs(1)
-      if(have_aldir) aldir = aldirobs(1)
-      if(have_aldif) aldif = aldifobs(1)
-   endif
 
    ! Define solar incident radiation
    do i = 1, Nday
@@ -647,19 +631,6 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    if (associated(sd)) then
       call ExpDayNite(sd,	Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp, 1, nbndsw)
    end if
-
-   !  these outfld calls don't work for spmd only outfield in scm mode (nonspmd)
-   if (single_column .and. scm_crm_mode) then 
-      ! Following outputs added for CRM
-      call ExpDayNite(fus,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-      call ExpDayNite(fds,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-      call ExpDayNite(fusc,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-      call ExpDayNite(fdsc,Nday, IdxDay, Nnite, IdxNite, 1, pcols, 1, pverp)
-      call outfld('FUS     ',fus * 1.e-3_r8 ,pcols,lchnk)
-      call outfld('FDS     ',fds * 1.e-3_r8 ,pcols,lchnk)
-      call outfld('FUSC    ',fusc,pcols,lchnk)
-      call outfld('FDSC    ',fdsc,pcols,lchnk)
-   endif
 
 end subroutine rad_rrtmg_sw
 

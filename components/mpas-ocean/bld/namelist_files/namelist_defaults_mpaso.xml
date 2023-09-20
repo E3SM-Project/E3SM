@@ -49,6 +49,7 @@
 <config_dt ocn_grid="SOwISC12to60E2r4">'00:10:00'</config_dt>
 <config_dt ocn_grid="ECwISC30to60E2r1">'00:30:00'</config_dt>
 <config_time_integrator>'split_explicit'</config_time_integrator>
+<config_number_of_time_levels>2</config_number_of_time_levels>
 
 <!-- hmix -->
 <config_hmix_scaleWithMesh ocn_grid="oQU480">.false.</config_hmix_scaleWithMesh>
@@ -209,13 +210,6 @@
 <config_eddyMLD_reference_pressure>1.0e5</config_eddyMLD_reference_pressure>
 <config_eddyMLD_use_old>.true.</config_eddyMLD_use_old>
 
-<!-- Rayleigh_damping -->
-<config_Rayleigh_friction>.false.</config_Rayleigh_friction>
-<config_Rayleigh_damping_coeff>0.0</config_Rayleigh_damping_coeff>
-<config_Rayleigh_damping_depth_variable>.false.</config_Rayleigh_damping_depth_variable>
-<config_Rayleigh_bottom_friction>.false.</config_Rayleigh_bottom_friction>
-<config_Rayleigh_bottom_damping_coeff>1.0e-4</config_Rayleigh_bottom_damping_coeff>
-
 <!-- cvmix -->
 <config_use_cvmix>.true.</config_use_cvmix>
 <config_cvmix_prandtl_number>1.0</config_cvmix_prandtl_number>
@@ -373,23 +367,36 @@
 <config_coef_3rd_order>0.25</config_coef_3rd_order>
 <config_flux_limiter>'monotonic'</config_flux_limiter>
 <config_remap_limiter>'monotonic'</config_remap_limiter>
+<config_thickness_flux_type>'centered'</config_thickness_flux_type>
 
 <!-- bottom_drag -->
-<config_use_implicit_bottom_drag>.true.</config_use_implicit_bottom_drag>
-<config_implicit_bottom_drag_coeff>1.0e-3</config_implicit_bottom_drag_coeff>
+<config_bottom_drag_mode>'implicit'</config_bottom_drag_mode>
+<config_implicit_bottom_drag_type>'constant'</config_implicit_bottom_drag_type>
+<config_implicit_constant_bottom_drag_coeff>1.0e-3</config_implicit_constant_bottom_drag_coeff>
 <config_use_implicit_top_drag>.false.</config_use_implicit_top_drag>
 <config_implicit_top_drag_coeff>2.5e-3</config_implicit_top_drag_coeff>
 <config_implicit_top_drag_coeff ocn_grid="oEC60to30v3wLI">4.48e-3</config_implicit_top_drag_coeff>
 <config_implicit_top_drag_coeff ocn_grid="ECwISC30to60E1r2">4.48e-3</config_implicit_top_drag_coeff>
 <config_implicit_top_drag_coeff ocn_grid="SOwISC12to60E2r4">4.48e-3</config_implicit_top_drag_coeff>
 <config_implicit_top_drag_coeff ocn_grid="ECwISC30to60E2r1">4.48e-3</config_implicit_top_drag_coeff>
-<config_use_implicit_bottom_roughness>.false.</config_use_implicit_bottom_roughness>
-<config_use_implicit_bottom_drag_variable>.false.</config_use_implicit_bottom_drag_variable>
-<config_use_implicit_bottom_drag_variable_mannings>.false.</config_use_implicit_bottom_drag_variable_mannings>
-<config_use_explicit_bottom_drag>.false.</config_use_explicit_bottom_drag>
+<config_loglaw_bottom_roughness>1.0e-3</config_loglaw_bottom_roughness>
+<config_loglaw_layer_depth_max>10.0</config_loglaw_layer_depth_max>
+<config_loglaw_bottom_drag_min>2.5e-3</config_loglaw_bottom_drag_min>
+<config_loglaw_bottom_drag_max>1.0e-1</config_loglaw_bottom_drag_max>
 <config_explicit_bottom_drag_coeff>1.0e-3</config_explicit_bottom_drag_coeff>
 <config_use_topographic_wave_drag>.false.</config_use_topographic_wave_drag>
 <config_topographic_wave_drag_coeff>5.0e-4</config_topographic_wave_drag_coeff>
+<config_thickness_drag_type>'centered'</config_thickness_drag_type>
+
+<!-- Rayleigh_damping -->
+<config_Rayleigh_damping_coeff>0.0</config_Rayleigh_damping_coeff>
+<config_Rayleigh_damping_depth_variable>.false.</config_Rayleigh_damping_depth_variable>
+<config_Rayleigh_bottom_friction>.false.</config_Rayleigh_bottom_friction>
+<config_Rayleigh_bottom_damping_coeff>1.0e-4</config_Rayleigh_bottom_damping_coeff>
+
+<!-- vegetation_drag -->
+<config_use_vegetation_drag>.false.</config_use_vegetation_drag>
+<config_vegetation_drag_coefficient>1.09</config_vegetation_drag_coefficient>
 
 <!-- ocean_constants -->
 <config_density0>1026.0</config_density0>
@@ -500,6 +507,7 @@
 <config_disable_thick_vadv>.false.</config_disable_thick_vadv>
 <config_disable_thick_sflux>.false.</config_disable_thick_sflux>
 <config_disable_vel_all_tend>.false.</config_disable_vel_all_tend>
+<config_disable_vel_hadv>.false.</config_disable_vel_hadv>
 <config_disable_vel_coriolis>.false.</config_disable_vel_coriolis>
 <config_disable_vel_pgrad>.false.</config_disable_vel_pgrad>
 <config_disable_vel_hmix>.false.</config_disable_vel_hmix>
@@ -530,6 +538,12 @@
 
 <!-- init_mode_vert_levels -->
 <config_vert_levels>-1</config_vert_levels>
+
+<!-- manufactured_solution -->
+<config_use_manufactured_solution>.false.</config_use_manufactured_solution>
+<config_manufactured_solution_wavelength_x>2000000.0</config_manufactured_solution_wavelength_x>
+<config_manufactured_solution_wavelength_y>2000000.0</config_manufactured_solution_wavelength_y>
+<config_manufactured_solution_amplitude>1</config_manufactured_solution_amplitude>
 
 <!-- tracer_forcing_activeTracers -->
 <config_use_activeTracers>.true.</config_use_activeTracers>

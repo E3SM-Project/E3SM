@@ -10,7 +10,7 @@ module restFileMod
   use spmdMod              , only : masterproc, mpicom
   use abortutils           , only : endrun
   use shr_log_mod          , only : errMsg => shr_log_errMsg
-  use clm_time_manager     , only : timemgr_restart_io, get_nstep
+  use elm_time_manager     , only : timemgr_restart_io, get_nstep
   use subgridRestMod       , only : SubgridRest
   use accumulMod           , only : accumulRest
   use histFileMod          , only : hist_restart_ncd
@@ -783,7 +783,7 @@ contains
     ! in write mode, otherwise just close restart file if in read mode
     !
     ! !USES:
-    use clm_time_manager, only : is_last_step
+    use elm_time_manager, only : is_last_step
     !
     ! !ARGUMENTS:
     character(len=*) , intent(in) :: file  ! local output filename
@@ -843,7 +843,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine restFile_open( flag, file, ncid )
 
-    use clm_time_manager, only : get_nstep
+    use elm_time_manager, only : get_nstep
 
     character(len=*),  intent(in) :: flag ! flag to specify read or write
     character(len=*),  intent(in) :: file ! filename
@@ -905,7 +905,7 @@ contains
     ! Read/Write initial data from/to netCDF instantaneous initial data file
     !
     ! !USES:
-    use clm_time_manager     , only : get_nstep
+    use elm_time_manager     , only : get_nstep
     use elm_varctl           , only : caseid, ctitle, version, username, hostname, fsurdat
     use elm_varctl           , only : conventions, source, use_hydrstress
     use elm_varpar           , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full, nmonth, nvegwcs
@@ -944,7 +944,9 @@ contains
     call ncd_defdim(ncid , namel      , numl           ,  dimid)
     call ncd_defdim(ncid , namec      , numc           ,  dimid)
     call ncd_defdim(ncid , namep      , nump           ,  dimid)
-    call ncd_defdim(ncid , nameCohort , numCohort      ,  dimid)
+    if ( use_fates ) then
+       call ncd_defdim(ncid , nameCohort , numCohort      ,  dimid)
+    endif
 
     call ncd_defdim(ncid , 'levgrnd' , nlevgrnd       ,  dimid)
     call ncd_defdim(ncid , 'levurb'  , nlevurb        ,  dimid)
@@ -1346,7 +1348,7 @@ contains
     ! Make sure year on the restart file is consistent with the current model year
     !
     ! !USES:
-    use clm_time_manager     , only : get_curr_date, get_rest_date
+    use elm_time_manager     , only : get_curr_date, get_rest_date
     use elm_varctl           , only : fname_len
     use dynSubgridControlMod , only : get_flanduse_timeseries
     !

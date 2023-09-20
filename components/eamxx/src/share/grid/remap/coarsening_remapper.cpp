@@ -14,22 +14,11 @@ namespace scream
 CoarseningRemapper::
 CoarseningRemapper (const grid_ptr_type& src_grid,
                     const std::string& map_file,
-                    const std::vector<Field>& mask_fields,
-                    const std::map<std::string,int>& mask_map)
-  : CoarseningRemapper(src_grid,map_file)
-{
-  m_track_mask  = true;
-  m_mask_fields_src = mask_fields;
-  m_mask_map_src    = mask_map;
-}
-
-CoarseningRemapper::
-CoarseningRemapper (const grid_ptr_type& src_grid,
-                    const std::string& map_file)
+                    const bool track_mask)
  : AbstractRemapper()
  , m_comm (src_grid->get_comm())
+ , m_track_mask (track_mask)
 {
-  m_track_mask = false;
   using namespace ShortFieldTagsNames;
 
   // Sanity checks
@@ -296,6 +285,69 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
   m_src_fields[ifield] = src;
   m_tgt_fields[ifield] = tgt;
 
+  // Assume no mask tracking for this field. Can correct below
+  m_field_idx_to_mask_idx[ifield] = -1;
+
+  if (m_track_mask) {
+    const auto& src_extra = src.get_header().get_extra_data();
+    if (src_extra.count("mask_data")==1) {
+      // First, check that we also have the mask value, to be used if mask_data is too small
+      EKAT_REQUIRE_MSG (src_extra.count("mask_value")==1,
+          "Error! Field " + src.name() + " stores a mask field but not a mask value.\n");
+      const auto& src_mask_val = src_extra.at("mask_value");
+
+      auto& tgt_hdr = m_tgt_fields[ifield].get_header();
+      if (tgt_hdr.get_extra_data().count("mask_value")==1) {
+        const auto& tgt_mask_val = tgt_hdr.get_extra_data().at("mask_value");
+
+        EKAT_REQUIRE_MSG (ekat::any_cast<Real>(tgt_mask_val)==ekat::any_cast<Real>(src_mask_val),
+            "Error! Target field stores a mask data different from the src field.\n"
+            "  - src field name: " + src.name() + "\n"
+            "  - tgt field name: " + tgt.name() + "\n"
+            "  - src mask value: " << ekat::any_cast<Real>(src_mask_val) << "\n"
+            "  - tgt mask value: " << ekat::any_cast<Real>(tgt_mask_val) << "\n");
+      } else {
+        tgt_hdr.set_extra_data("mask_value",src_mask_val);
+      }
+
+      // Then, register the mask field, if not yet registered
+      const auto& src_mask = ekat::any_cast<Field>(src_extra.at("mask_data"));
+      const auto& src_mask_fid = src_mask.get_header().get_identifier();
+      // Make sure fields representing masks are not themselves meant to be masked.
+      EKAT_REQUIRE_MSG(src_mask.get_header().get_extra_data().count("mask_data")==0,
+          "Error! A mask field cannot be itself masked.\n"
+          "  - field name: " + src.name() + "\n"
+          "  - mask field name: " + src_mask.name() + "\n");
+
+      const auto tgt_mask_fid = create_tgt_fid(src_mask_fid);
+      if (not has_src_field (src_mask_fid)) {
+        Field tgt_mask(tgt_mask_fid);
+        tgt_mask.get_header().get_alloc_properties().request_allocation(src_mask.get_header().get_alloc_properties().get_largest_pack_size());
+        tgt_mask.allocate_view();
+        register_field(src_mask,tgt_mask);
+      }
+
+      // Store position of the mask for this field
+      const int mask_idx = find_field(src_mask_fid,tgt_mask_fid);
+      m_field_idx_to_mask_idx[ifield] = mask_idx;
+
+      // Check that the mask field has the correct layout
+      const auto& f_lt = src.get_header().get_identifier().get_layout();
+      const auto& m_lt = src_mask.get_header().get_identifier().get_layout();
+      using namespace ShortFieldTagsNames;
+      EKAT_REQUIRE_MSG(f_lt.has_tag(COL) == m_lt.has_tag(COL),
+          "Error! Incompatible field and mask layouts.\n"
+          "  - field name: " + src.name() + "\n"
+          "  - field layout: " + to_string(f_lt) + "\n"
+          "  - mask layout: " + to_string(m_lt) + "\n");
+      EKAT_REQUIRE_MSG(f_lt.has_tag(LEV) == m_lt.has_tag(LEV),
+          "Error! Incompatible field and mask layouts.\n"
+          "  - field name: " + src.name() + "\n"
+          "  - field layout: " + to_string(f_lt) + "\n"
+          "  - mask layout: " + to_string(m_lt) + "\n");
+    }
+  }
+
   // If this was the last field to be bound, we can setup the MPI schedule
   if (this->m_state==RepoState::Closed &&
       (this->m_num_bound_fields+1)==this->m_num_registered_fields) {
@@ -306,50 +358,6 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 
 void CoarseningRemapper::do_registration_ends ()
 {
-  // Before finishing the registration we need to also register the set of masks, if needed.
-  // NOTE: Every time `register_field` is called the `m_num_registered_fields` value is
-  //       updated.  So we can use that to point to the appropriate mask field in the
-  //       m_mask_map_tgt map by taking `m_num_registered_fields-1`.
-  if (m_track_mask) {
-    for (int idx=0; idx<m_mask_fields_src.size(); ++idx) {
-      auto f   = m_mask_fields_src[idx];
-      auto fid = f.get_header().get_identifier();
-      register_field_from_src(fid);
-      m_mask_map_tgt.emplace(idx,m_num_registered_fields-1);
-      auto f_mask_extra = f.get_header().get_extra_data();
-      // Make sure fields representing masks are not themselves meant to be masked.
-      EKAT_REQUIRE(!f_mask_extra.count("mask_data"));
-    }
-    // Update the number of fields.
-    // NOTE: We need to do this again because the `registration_ends()` call in the abstract
-    //       remapper base class set the `m_num_fields` value before calling
-    //       `do_registration_ends()`.
-    m_num_fields = m_num_registered_fields;
-
-    // Make sure that all fields registered so far are represented in the mask map, if missing
-    // flag to not be masked at all.
-    for (auto f : m_src_fields) {
-      auto name = f.name();
-      if (!m_mask_map_src.count(name)) {
-        m_mask_map_src.emplace(name,-1);
-      } else {
-        // If there is a mask attached to this add a check that it is compatible with the field layout,
-        // i.e. if layout = COL then mask should equal COL.  If layout is COL,LEV then mask is COL,LEV and anything
-        // with higher dimensionality will use a mask of COL,LEV (for now).
-        using namespace ShortFieldTagsNames;
-        auto m_idx = m_mask_map_src.at(name);
-        if (m_idx >-1) {
-        auto m_fld = m_mask_fields_src[m_idx];
-        auto m_lt = m_fld.get_header().get_identifier().get_layout();
-        auto f_lt = f.get_header().get_identifier().get_layout();
-        EKAT_REQUIRE(f_lt.has_tag(COL) == m_lt.has_tag(COL));
-        EKAT_REQUIRE(f_lt.has_tag(LEV) == m_lt.has_tag(LEV));
-        }
-      }
-    }
-
-  }
-
   if (this->m_num_bound_fields==this->m_num_registered_fields) {
     create_ov_tgt_fields ();
     setup_mpi_data_structures ();
@@ -377,14 +385,10 @@ void CoarseningRemapper::do_remap_fwd ()
     const auto& f_src    = m_src_fields[i];
     const auto& f_ov_tgt = m_ov_tgt_fields[i];
 
-    int mask_idx = -1;
-    if (m_track_mask) {
-      mask_idx = m_mask_map_src.at(f_src.name());
-    }
-
-    if (mask_idx != -1) {
+    const int mask_idx = m_field_idx_to_mask_idx[i];
+    if (mask_idx>0) {
       // Pass the mask to the local_mat_vec routine
-      auto mask = m_mask_fields_src[mask_idx];
+      auto mask = m_src_fields[mask_idx];
       // Dispatch kernel with the largest possible pack size
       const auto& src_ap = f_src.get_header().get_alloc_properties();
       const auto& ov_tgt_ap = f_ov_tgt.get_header().get_alloc_properties();
@@ -425,12 +429,10 @@ void CoarseningRemapper::do_remap_fwd ()
   if (m_track_mask) {
     for (int i=0; i<m_num_fields; ++i) {
       const auto& f_tgt = m_tgt_fields[i];
-      const int   mask_idx = m_mask_map_src.at(f_tgt.name());
-      if (mask_idx != -1) {
+      const int mask_idx = m_field_idx_to_mask_idx[i];
+      if (mask_idx>0) {
         // Then this field did use a mask
-        const int mask_f_idx = m_mask_map_tgt.at(mask_idx);
-        const auto& mask = m_tgt_fields[mask_f_idx];
-        const auto  rank = f_tgt.get_header().get_identifier().get_layout().rank();
+        const auto& mask = m_tgt_fields[mask_idx];
         const auto& tgt_ap = f_tgt.get_header().get_alloc_properties();
         if (can_pack && tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
           rescale_masked_fields<SCREAM_PACK_SIZE>(f_tgt,mask);
@@ -459,6 +461,8 @@ rescale_masked_fields (const Field& x, const Field& mask) const
   Real mask_val = std::numeric_limits<float>::max()/10.0;
   if (x_extra.count("mask_value")) {
     mask_val = ekat::any_cast<Real>(x_extra.at("mask_value"));
+  } else {
+    EKAT_ERROR_MSG ("ERROR! Field " + x.name() + " is masked, but stores no mask_value extra data.\n");
   }
   const Real mask_threshold = std::numeric_limits<Real>::epsilon();  // TODO: Should we not hardcode the threshold for simply masking out the column.
   switch (rank) {
@@ -900,7 +904,7 @@ get_my_triplets_gids (const std::string& map_file,
   scorpio::register_file(map_file,scorpio::FileMode::Read);
   // 1. Create a "helper" grid, with as many dofs as the number
   //    of triplets in the map file, and divided linearly across ranks
-  const int ngweights = scorpio::get_dimlen_c2f(map_file.c_str(),"n_s");
+  const int ngweights = scorpio::get_dimlen(map_file,"n_s");
   const auto io_grid_linear = create_point_grid ("helper",ngweights,1,m_comm);
   const int nlweights = io_grid_linear->get_num_local_dofs();
 

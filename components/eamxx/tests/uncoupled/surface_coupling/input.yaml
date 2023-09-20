@@ -3,9 +3,8 @@
 driver_options:
   atmosphere_dag_verbosity_level: 5
 
-Time Stepping:
-  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
-  Start Date: [2021, 10, 12]    # Year, Month, Day
+time_stepping:
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
 
 atmosphere_processes:
   atm_procs_list: (SurfaceCouplingImporter,SurfaceCouplingExporter)
@@ -19,7 +18,7 @@ grids_manager:
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
-  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4_16x.c20160612.nc
+  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc
   # Some fields needed for the exports (not in ic file)
   precip_ice_surf_mass: 1.0
   precip_liq_surf_mass: 2.0

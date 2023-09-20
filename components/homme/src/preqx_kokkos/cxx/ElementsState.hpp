@@ -8,6 +8,7 @@
 #define HOMMEXX_ELEMENTS_STATE_HPP
 
 #include "Types.hpp"
+#include "utilities/Hash.hpp"
 
 namespace Homme {
 
@@ -48,6 +49,8 @@ public:
 
   // Push the results from the exec space views to the F90 pointers
   void push_to_f90_pointers(F90Ptr& state_v, F90Ptr& state_t, F90Ptr& state_dp) const;
+
+  HashType hash(const int time_level) const;
 
 private:
   int m_num_elems;
