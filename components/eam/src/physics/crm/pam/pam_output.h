@@ -37,6 +37,8 @@ inline void pam_output_compute_means( pam::PamCoupler &coupler ) {
   dm_device.register_and_allocate<real>("nr_mean", "domain mean nr", {gcm_nlev,nens},{"gcm_lev","nens"});
   dm_device.register_and_allocate<real>("qm_mean", "domain mean qm", {gcm_nlev,nens},{"gcm_lev","nens"});
   dm_device.register_and_allocate<real>("bm_mean", "domain mean bm", {gcm_nlev,nens},{"gcm_lev","nens"});
+  dm_device.register_and_allocate<real>("rho_d_mean", "domain mean rho_d", {gcm_nlev,nens},{"gcm_lev","nens"});
+  dm_device.register_and_allocate<real>("rho_v_mean", "domain mean rho_v", {gcm_nlev,nens},{"gcm_lev","nens"});
   auto qv_mean = dm_device.get<real,2>("qv_mean");
   auto qc_mean = dm_device.get<real,2>("qc_mean");
   auto qi_mean = dm_device.get<real,2>("qi_mean");
@@ -46,6 +48,8 @@ inline void pam_output_compute_means( pam::PamCoupler &coupler ) {
   auto nr_mean = dm_device.get<real,2>("nr_mean");
   auto qm_mean = dm_device.get<real,2>("qm_mean");
   auto bm_mean = dm_device.get<real,2>("bm_mean");
+  auto rho_d_mean = dm_device.get<real,2>("rho_d_mean");
+  auto rho_v_mean = dm_device.get<real,2>("rho_v_mean");
   //------------------------------------------------------------------------------------------------
   // We will be essentially reducing a summation to these variables, so initialize them to zero
   parallel_for("Initialize horzontal means", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
@@ -58,6 +62,8 @@ inline void pam_output_compute_means( pam::PamCoupler &coupler ) {
     nr_mean(k_gcm,iens) = 0;
     qm_mean(k_gcm,iens) = 0;
     bm_mean(k_gcm,iens) = 0;
+    rho_d_mean(k_gcm,iens) = 0;
+    rho_v_mean(k_gcm,iens) = 0;
   });
   //------------------------------------------------------------------------------------------------
   // Compute horizontal means
@@ -74,6 +80,8 @@ inline void pam_output_compute_means( pam::PamCoupler &coupler ) {
     atomicAdd( nr_mean(k_gcm,iens),  crm_nr   (k_crm,j,i,iens)              * r_nx_ny );
     atomicAdd( qm_mean(k_gcm,iens),  crm_qm   (k_crm,j,i,iens)              * r_nx_ny );
     atomicAdd( bm_mean(k_gcm,iens),  crm_bm   (k_crm,j,i,iens)              * r_nx_ny );
+    atomicAdd( rho_d_mean(k_gcm,iens), crm_rho_d(k_crm,j,i,iens)              * r_nx_ny );
+    atomicAdd( rho_v_mean(k_gcm,iens), crm_rho_v(k_crm,j,i,iens)              * r_nx_ny );
   });
   //------------------------------------------------------------------------------------------------
 }
@@ -100,6 +108,8 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   auto nr_mean                = dm_device.get<real const,2>("nr_mean");
   auto qm_mean                = dm_device.get<real const,2>("qm_mean");
   auto bm_mean                = dm_device.get<real const,2>("bm_mean");
+  auto rho_d_mean = dm_device.get<real const,2>("rho_d_mean");
+  auto rho_v_mean = dm_device.get<real const,2>("rho_v_mean");
   auto gcm_forcing_tend_temp  = dm_device.get<real const,2>("gcm_forcing_tend_temp" );
   auto gcm_forcing_tend_rho_d = dm_device.get<real const,2>("gcm_forcing_tend_rho_d");
   auto gcm_forcing_tend_rho_v = dm_device.get<real const,2>("gcm_forcing_tend_rho_v");
@@ -172,6 +182,8 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   auto output_nr_mean   = dm_host.get<real,2>("output_nr_mean");
   auto output_qm_mean   = dm_host.get<real,2>("output_qm_mean");
   auto output_bm_mean   = dm_host.get<real,2>("output_bm_mean");
+  auto output_rho_d_mean   = dm_host.get<real,2>("output_rho_d_mean");
+  auto output_rho_v_mean   = dm_host.get<real,2>("output_rho_v_mean");
   auto output_t_ls      = dm_host.get<real,2>("output_t_ls");
   auto output_rho_v_ls  = dm_host.get<real,2>("output_rho_v_ls");
   auto output_rho_d_ls  = dm_host.get<real,2>("output_rho_d_ls");
@@ -189,6 +201,8 @@ inline void pam_output_copy_to_host( pam::PamCoupler &coupler ) {
   nr_mean                 .deep_copy_to(output_nr_mean);
   qm_mean                 .deep_copy_to(output_qm_mean);
   bm_mean                 .deep_copy_to(output_bm_mean);
+  rho_d_mean                 .deep_copy_to(output_rho_d_mean);
+  rho_v_mean                 .deep_copy_to(output_rho_v_mean);
   forcing_tend_out_temp   .deep_copy_to(output_t_ls);
   forcing_tend_out_rho_d  .deep_copy_to(output_rho_d_ls);
   forcing_tend_out_rho_v  .deep_copy_to(output_rho_v_ls);

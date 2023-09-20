@@ -138,6 +138,8 @@ subroutine crm_history_init(species_class)
       call addfld('MMF_NC  ',(/'lev'/),   'A', '/kg',  'Cloud water dropet number from CRM')
       call addfld('MMF_NI  ',(/'lev'/),   'A', '/kg',  'Cloud ice crystal number from CRM')
       call addfld('MMF_NR  ',(/'lev'/),   'A', '/kg',  'Rain particle number from CRM')
+      call addfld('MMF_RHOD',(/'lev'/),   'A', '/kg',  'Dry density from CRM')
+      call addfld('MMF_RHOV',(/'lev'/),   'A', '/kg',  'Vapor density from CRM')
       call addfld('CRM_QR  ',dims_crm_3D, 'A', 'kg/kg','Rain mixing ratio from CRM' )
       call addfld('CRM_NC  ',dims_crm_3D, 'A', '/kg',  'Cloud water dropet number from CRM' )
       call addfld('CRM_NI  ',dims_crm_3D, 'A', '/kg',  'Cloud ice crystal number from CRM' )
@@ -503,6 +505,8 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
       call outfld('MMF_NC    ',crm_output%nc_mean(icol_beg:icol_end,:), ncol, lchnk )
       call outfld('MMF_NI    ',crm_output%ni_mean(icol_beg:icol_end,:), ncol, lchnk )
       call outfld('MMF_NR    ',crm_output%nr_mean(icol_beg:icol_end,:), ncol, lchnk )
+      call outfld('MMF_RHOD    ',crm_output%rho_d_mean(icol_beg:icol_end,:), ncol, lchnk )
+      call outfld('MMF_RHOV    ',crm_output%rho_v_mean(icol_beg:icol_end,:), ncol, lchnk )
    endif
 
    !----------------------------------------------------------------------------
