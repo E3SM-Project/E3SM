@@ -436,6 +436,11 @@ void AtmosphereInput::set_degrees_of_freedom()
 std::vector<scorpio::offset_t>
 AtmosphereInput::get_var_dof_offsets(const FieldLayout& layout)
 {
+  // It may be that this MPI ranks owns no chunk of the field
+  if (layout.size()==0) {
+    return {};
+  }
+
   std::vector<scorpio::offset_t> var_dof(layout.size());
 
   // Gather the offsets of the dofs of this variable w.r.t. the *global* array.
