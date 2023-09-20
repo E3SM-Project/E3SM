@@ -14,12 +14,9 @@ AtmosphereProcessGroup::
 AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
-
-  // Get the string representation of the group
-  auto group_list_str = m_params.get<std::string>("atm_procs_list");
-  auto group_plist = ekat::parse_nested_list(group_list_str);
-
-  m_group_size = group_plist.get<int>("Num Entries");
+  // Get the list of procs in the group
+  auto group_list = m_params.get<std::vector<std::string>>("atm_procs_list");
+  m_group_size = group_list.size();
   EKAT_REQUIRE_MSG (m_group_size>0, "Error! Invalid group size.\n");
 
   if (m_group_size>1) {
@@ -48,7 +45,7 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
   // so we can recursively create groups. Groups are an impl detail,
   // so we don't expect users to register the APG in the factory.
   apf.register_product("group",&create_atmosphere_process<AtmosphereProcessGroup>);
-  for (int i=0; i<m_group_size; ++i) {
+  for (const auto& ap_name : group_list) {
     // The comm to be passed to the processes construction is
     //  - the same as the comm of this APG, if num_entries=1 or sched_type=Sequential
     //  - a sub-comm of this APG's comm otherwise
@@ -66,48 +63,14 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
       //  - this class is then responsible of 'combining' the results togehter,
       //    including remapping input/output fields to/from the sub-comm
       //    distribution.
-      ekat::error::runtime_abort("Error! Parallel schedule type not yet implemented.\n");
-    }
-
-    // Check if the i-th entry is a "named" atm proc or a group defined on the fly.
-    // In the first case, the i-th entry of the string list is just a string,
-    // like "my_atm_proc", while in the latter it is of the form "(a, b, ...)"
-    const auto& type_i = group_plist.get<std::string>(ekat::strint("Type",i));
-    std::string ap_name, ap_type;
-    if (type_i=="Value") {
-      // This is a "named" atm proc.
-      ap_name = group_plist.get<std::string>(ekat::strint("Entry",i));
-    } else {
-      // This is a group defined "on the fly". Get its string representation
-      ap_name = group_plist.sublist(ekat::strint("Entry",i)).get<std::string>("String");
-      // Due to XML limitations, in CIME runs we need to create a name for atm proc groups
-      // that are defined via nested list string, and we do it by replacing ',' with '_',
-      // '(' with 'group.', and ')' with '.'
-      auto pos = ap_name.find(",");
-      while (pos!=std::string::npos) {
-        ap_name[pos] = '_';
-        pos = ap_name.find(",");
-      }
-      pos = ap_name.find("(");
-      while (pos!=std::string::npos) {
-        ap_name[pos] = '.';
-        ap_name.insert(pos,"group");
-        pos = ap_name.find("(");
-      }
-      pos = ap_name.find(")");
-      while (pos!=std::string::npos) {
-        ap_name[pos] = '.';
-        pos = ap_name.find(")");
-      }
-      ap_type = "Group";
+      EKAT_ERROR_MSG("Error! Parallel schedule type not yet implemented.\n");
     }
 
     // Get the params of this atm proc
     auto& params_i = m_params.sublist(ap_name);
 
     // Get type (defaults to name)
-    ap_type = type_i=="List" ? "Group"
-                             : params_i.get<std::string>("Type",ap_name);
+    const auto& ap_type = params_i.get<std::string>("Type",ap_name);
 
     // Set logger in this ap params
     params_i.set("Logger",this->m_atm_logger);

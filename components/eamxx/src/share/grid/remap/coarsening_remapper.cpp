@@ -793,6 +793,9 @@ void CoarseningRemapper::pack_and_send ()
     }
   }
 
+  // Ensure all threads are done packing before firing off the sends
+  Kokkos::fence();
+
   // If MPI does not use dev pointers, we need to deep copy from dev to host
   if (not MpiOnDev) {
     Kokkos::deep_copy (m_mpi_send_buffer,m_send_buffer);

@@ -9,7 +9,7 @@ time_stepping:
   number_of_steps: ${NUM_STEPS}
 
 atmosphere_processes:
-  atm_procs_list: (CldFraction)
+  atm_procs_list: [CldFraction]
   CldFraction:
     ice_cloud_threshold: 1e-12
     ice_cloud_for_analysis_threshold: 1e-5

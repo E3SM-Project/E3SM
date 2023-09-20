@@ -13,7 +13,7 @@ initial_conditions:
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
 
 atmosphere_processes:
-  atm_procs_list: (Dynamics)
+  atm_procs_list: [Dynamics]
   Dynamics:
     Type: Homme
     Moisture: moist
