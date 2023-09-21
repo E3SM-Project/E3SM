@@ -47,10 +47,11 @@ void time_advance (const FieldManager& fm,
 
 TEST_CASE("output_restart","io")
 {
-  // Note to AaronDonahue:  You are trying to figure out why you can't change the number of cols and levs for this test.  
-  // Something having to do with freeing up and then resetting the io_decompositions.
   ekat::Comm comm(MPI_COMM_WORLD);
-  int num_gcols = 2*comm.size();
+
+  // If running with 2+ ranks, this will check that restart works correctly
+  // even if some ranks own no dofs
+  int num_gcols = std::max(comm.size()-1,1);
   int num_levs = 3;
   int dt = 1;
 

@@ -973,6 +973,11 @@ register_variables(const std::string& filename,
 std::vector<scorpio::offset_t>
 AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
 {
+  // It may be that this MPI rank owns no chunk of the field
+  if (layout.size()==0) {
+    return {};
+  }
+
   std::vector<scorpio::offset_t> var_dof(layout.size());
 
   // Gather the offsets of the dofs of this variable w.r.t. the *global* array.
@@ -994,9 +999,6 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
   auto dofs_h = m_io_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
   if (layout.has_tag(ShortFieldTagsNames::COL)) {
     const int num_cols = m_io_grid->get_num_local_dofs();
-    if (num_cols==0) {
-      return var_dof;
-    }
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
@@ -1021,9 +1023,6 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
     const int num_my_elems = layout2d.dim(0);
     const int ngp = layout2d.dim(1);
     const int num_cols = num_my_elems*ngp*ngp;
-    if (num_cols==0) {
-      return var_dof;
-    }
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
