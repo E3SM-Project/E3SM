@@ -9,17 +9,9 @@
 #
 #===============================================================================
 
-# bmpersch
-# - Read modern cmake docs, use modern features
-# - Use find_package for trilinos and other TPLS
-
 cmake_minimum_required(VERSION 3.9)
 cmake_policy(SET CMP0057 NEW)
 set(CMAKE_CXX_STANDARD 17)
-
-# Store caseroot in the cache, so that, if cmake re-runs,
-# we can still access ${CASEROOT}/Macros.cmake
-set (CASEROOT "" CACHE STRING "The case root directory.")
 
 # Turn on wrapper
 set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "python3 ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
@@ -27,7 +19,7 @@ set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "python3 ${CASEROOT}/Tools/e3sm
 
 # We need to set the compilers *before* calling `project`.
 # The only way to get the compiler name, is to load Macros.cmake
-# However, we do *not* want to pollut the environment with other
+# However, we do *not* want to pollute the environment with other
 # vars coming from Macros.cmake, so we encapsulate its inclusion
 # in a new scope.
 # Additionally, we also set CMAKE_BUILD_TYPE=DEBUG if Macros.cmake
@@ -127,16 +119,14 @@ list(APPEND CMAKE_MODULE_PATH ${CIMEROOT}/CIME/non_py/src/CMake)
 
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
-if(USE_CUDA)
-  enable_language(CUDA)
-endif()
-
 # Scream manages its own flags
 build_eamxx()
 
 # We do want CMAKE_BUILD_TYPE to be set, but we do NOT want CMake to
 # decide what optimization flags to append, based on build type,
 # for components who rely on CIME for build flags, so make all the following empty.
+# JGF: I think we can remove this once proper CMake names are being used in the
+# macros.
 set (CMAKE_C_FLAGS_RELEASE "")
 set (CMAKE_CXX_FLAGS_RELEASE "")
 set (CMAKE_Fortran_FLAGS_RELEASE "")
@@ -172,4 +162,5 @@ foreach(COMP_NAME IN LISTS COMP_NAMES)
   math(EXPR IDX "${IDX} + 1")
 endforeach()
 
+# Build the E3SM coupler and exe
 add_subdirectory(cmake/cpl)
