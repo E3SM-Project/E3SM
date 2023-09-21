@@ -6,8 +6,9 @@
 !> \author Adrian K. Turner, LANL
 !> \date 2013-2014
 !> \details
-!>
-!
+!> Values in this module have been copied from the two ice_constants_colpkg.F90 
+!  modules in the column physics package (colpkg, in column/).  They will remain 
+!  duplicates until the column physic package is deprecated.
 !-----------------------------------------------------------------------
 
 module seaice_constants
@@ -22,72 +23,11 @@ module seaice_constants
 #ifdef addconstants
 #ifdef CCSMCOUPLED
       real (kind=RKIND), parameter :: &
-         secday    = SHR_CONST_CDAY   ,&! seconds in calendar day
-         rhoi      = SHR_CONST_RHOICE ,&! density of ice (kg/m^3)
-         rhow      = SHR_CONST_RHOSW  ,&! density of seawater (kg/m^3)
-         cp_air    = SHR_CONST_CPDAIR ,&! specific heat of air (J/kg/K)
-
-         ! Emissivity has been changed to unity here so that coupling is
-         ! physically correct - instantaneous radiative coupling in CIME
-         emissivity= 1.0_RKIND     ,&! emissivity of snow and ice
-
-         cp_ice    = SHR_CONST_CPICE  ,&! specific heat of fresh ice (J/kg/K)
-         cp_ocn    = SHR_CONST_CPSW   ,&! specific heat of ocn    (J/kg/K)
-                                        ! freshwater value needed for enthalpy
-#ifdef RASM_MODS
-         dragio    = 0.00962_RKIND ,&! ice-ocn drag coefficient for RASM as temporary measure
-#else
-         dragio    = 0.00536_RKIND ,&! ice-ocn drag coefficient
-#endif
-         gravit    = SHR_CONST_G      ,&! gravitational acceleration (m/s^2)
-         rhofresh  = SHR_CONST_RHOFW  ,&! density of fresh water (kg/m^3)
-         zvir      = SHR_CONST_ZVIR   ,&! rh2o/rair - 1.0
-         vonkar    = SHR_CONST_KARMAN ,&! von Karman constant
-         cp_wv     = SHR_CONST_CPWV   ,&! specific heat of water vapor (J/kg/K)
-         stefan_boltzmann = SHR_CONST_STEBOL ,&!  W/m^2/K^4
-         Tffresh   = SHR_CONST_TKFRZ  ,&! freezing temp of fresh ice (K)
-         Lsub      = SHR_CONST_LATSUB ,&! latent heat, sublimation freshwater (J/kg)
-         Lvap      = SHR_CONST_LATVAP ,&! latent heat, vaporization freshwater (J/kg)
-         Lfresh    = SHR_CONST_LATICE ,&! latent heat of melting of fresh ice (J/kg)
-         Timelt    = SHR_CONST_TKFRZ-SHR_CONST_TKFRZ ,&! melting temp. ice top surface  (C)
-         Tsmelt    = SHR_CONST_TKFRZ-SHR_CONST_TKFRZ ,&! melting temp. snow top surface (C)
-         ice_ref_salinity = SHR_CONST_ICE_REF_SAL ,&! (psu)
-!        ocn_ref_salinity = SHR_CONST_OCN_REF_SAL ,&! (psu)
-
-         snowpatch = 0.005_RKIND   ,&! parameter for fractional snow area (m)
          R_gC2molC = SHR_CONST_MWC    ,&! molar mass of carbon
          pi        = SHR_CONST_PI       ! pi
-
 #else
 
       real (kind=RKIND), parameter, public :: &
-         secday    = 86400.0_RKIND ,&! seconds in calendar day
-         rhoi      = 917.0_RKIND   ,&! density of ice (kg/m^3)
-         rhow      = 1026.0_RKIND  ,&! density of seawater (kg/m^3)
-         cp_air    = 1005.0_RKIND  ,&! specific heat of air (J/kg/K)
-         ! (Briegleb JGR 97 11475-11485  July 1992)
-         emissivity= 0.95_RKIND    ,&! emissivity of snow and ice
-!echmod         emissivity= 0.985_RKIND    ,&! emissivity of snow and ice
-         cp_ice    = 2106._RKIND   ,&! specific heat of fresh ice (J/kg/K)
-         cp_ocn    = 4218._RKIND   ,&! specific heat of ocn    (J/kg/K)
-                                        ! freshwater value needed for enthalpy
-         dragio    = 0.00536_RKIND ,&! ice-ocn drag coefficient
-         gravit    = 9.80616_RKIND ,&! gravitational acceleration (m/s^2)
-         rhofresh  = 1000.0_RKIND  ,&! density of fresh water (kg/m^3)
-         zvir      = 0.606_RKIND   ,&! rh2o/rair - 1.0
-         vonkar    = 0.4_RKIND     ,&! von Karman constant
-         cp_wv     = 1.81e3_RKIND  ,&! specific heat of water vapor (J/kg/K)
-         stefan_boltzmann = 567.0e-10_RKIND,&!  W/m^2/K^4
-         Tffresh   = 273.15_RKIND  ,&! freezing temp of fresh ice (K)
-         Lsub      = 2.835e6_RKIND ,&! latent heat, sublimation freshwater (J/kg)
-         Lvap      = 2.501e6_RKIND ,&! latent heat, vaporization freshwater (J/kg)
-         Lfresh    = Lsub-Lvap        ,&! latent heat of melting of fresh ice (J/kg)
-         Timelt    = 0.0_RKIND     ,&! melting temperature, ice top surface  (C)
-         Tsmelt    = 0.0_RKIND     ,&! melting temperature, snow top surface (C)
-         ice_ref_salinity = 4._RKIND ,&! (ppt)
-         ! ocn_ref_salinity = 34.7_RKIND,&! (ppt)
-
-         snowpatch = 0.02_RKIND, & ! parameter for fractional snow area (m)
          R_gC2molC = 12.0107_RKIND, & ! molar mass of carbon
          pi     = 3.14159265358979323846_RKIND
 #endif
@@ -97,24 +37,16 @@ module seaice_constants
       !-----------------------------------------------------------------
 
       real (kind=RKIND), parameter, public :: &
-         rhos      = 330.0_RKIND  ,&! density of snow (kg/m^3)
-         depressT  = 0.054_RKIND   ,&! Tf:brine salinity ratio (C/ppt)
-         albocn    = 0.06_RKIND    ,&! ocean albedo
          viscosity_dyn = 1.79e-3_RKIND, & ! dynamic viscosity of brine (kg/m/s)
          Tocnfrz   = -1.8_RKIND    ,&! freezing temp of seawater (C), used 
                                         ! as Tsfcn for open water only when 
                                         ! tfrz_option is 'minus1p8' or null
 
-         iceruf   = 0.0005_RKIND   ,&! ice surface roughness (m)
          cprho    = cp_ocn*rhow       ,&! for ocean mixed layer (J kg / K m^3)
 
          ! for ice strength
          Cf       = 17._RKIND      ,&! ratio of ridging work to PE change in ridging 
          Cp       = 0.5_RKIND*gravit*(rhow-rhoi)*rhoi/rhow ,&! proport const for PE 
-         Pstar    = 2.75e4_RKIND   ,&! constant in Hibler strength formula 
-                                        ! (kstrength = 0) 
-         Cstar    = 20._RKIND      ,&! constant in Hibler strength formula 
-                                        ! (kstrength = 0) 
 
          ! (Ebert, Schramm and Curry JGR 100 15965-15975 Aug 1995)
          kappav = 1.4_RKIND ,&! vis extnctn coef in ice, wvlngth<700nm (1/m)
@@ -126,7 +58,6 @@ module seaice_constants
          kseaice= 2.00_RKIND  ,&! thermal conductivity of sea ice (W/m/deg)
                                    ! (used in zero layer thermodynamics option)
          ksno   = 0.30_RKIND  ,&! thermal conductivity of snow  (W/m/deg)
-         zref   = 10._RKIND   ,&! reference height for stability (m)
          hs_min = 1.e-4_RKIND ,&! min snow thickness for computing zTsn (m)
 
          ! biogeochemistry
@@ -204,7 +135,7 @@ module seaice_constants
         p75  = 0.75_RKIND, &
         p333 = c1/c3, &
         p666 = c2/c3, &
-        puny   = 1.0e-11_RKIND, &
+        puny   
         bignum = 1.0e+30_RKIND, &
         pih    = p5*pi
 #endif
@@ -212,14 +143,15 @@ module seaice_constants
 #ifdef CCSMCOUPLED
       real (kind=RKIND), parameter, public :: &
   ! fundamental constants
-       seaiceSecondsPerDay  = SHR_CONST_CDAY     ! seconds in calendar day
+       seaiceSecondsPerDay             = SHR_CONST_CDAY     ! seconds in calendar day
 
       real (kind=RKIND), public :: &
-       seaiceGravity        = SHR_CONST_G      ,&! gravitational acceleration (m/s^2)
+       seaiceGravity                   = SHR_CONST_G      ,&! gravitational acceleration (m/s^2)
 
   ! physical constants
-       seaiceDensityIce     = SHR_CONST_RHOICE ,&! density of ice (kg/m^3)
-       seaiceDensitySeaWater= SHR_CONST_RHOSW  ,&! density of seawater (kg/m^3)
+       seaiceDensityIce                = SHR_CONST_RHOICE ,&! density of ice (kg/m^3)
+       seaiceDensitySeaWater           = SHR_CONST_RHOSW  ,&! density of seawater (kg/m^3)
+       seaiceDensityFreshwater         = SHR_CONST_RHOFW  ,&! density of fresh water (kg/m^3)
 
   ! thermodynamic constants
        seaiceStefanBoltzmann           = SHR_CONST_STEBOL ,&!  W/m^2/K^4
@@ -236,6 +168,7 @@ module seaice_constants
        seaiceSeaWaterSpecificHeat      = SHR_CONST_CPSW   ,&! specific heat of ocn    (J/kg/K)
                                                             ! freshwater value needed for enthalpy
        seaiceLatentHeatVaporization    = SHR_CONST_LATVAP ,&! latent heat, vaporization freshwater (J/kg)
+       seaiceLatentHeatMelting         = SHR_CONST_LATICE ,&! latent heat of melting of fresh ice (J/kg)
        seaiceReferenceSalinity         = SHR_CONST_ICE_REF_SAL,&! ice reference salinity (ppt)
        seaiceSnowPatchiness            = 0.005_RKIND      ,&! parameter for fractional snow area (m)
 
@@ -244,22 +177,22 @@ module seaice_constants
 #else
        seaiceIceOceanDragCoefficient   = 0.00536_RKIND      ! ice-ocn drag coefficient
 #endif
-!         rhofresh  = SHR_CONST_RHOFW  ,&! density of fresh water (kg/m^3)
-!         Lfresh    = SHR_CONST_LATICE ,&! latent heat of melting of fresh ice (J/kg)
+
 !         R_gC2molC = SHR_CONST_MWC    ,&! molar mass of carbon
 !         pi        = SHR_CONST_PI       ! pi
 
 #else
       real (kind=RKIND), parameter, public :: &
   ! fundamental constants
-       seaiceSecondsPerDay  = 24.0_RKIND * 3600.0_RKIND
+       seaiceSecondsPerDay             = 24.0_RKIND * 3600.0_RKIND
  
       real (kind=RKIND), public :: &
-       seaiceGravity        = 9.80616_RKIND            ,&! gravitational acceleration (m/s^2)
+       seaiceGravity                   = 9.80616_RKIND ,&! gravitational acceleration (m/s^2)
 
   ! physical constants
        seaiceDensityIce                = 917.0_RKIND   ,&! density of ice (kg/m^3)
        seaiceDensitySeaWater           = 1026.0_RKIND  ,&! density of seawater (kg/m^3)
+       seaiceDensityFreshwater         = 1000.0_RKIND  ,&! density of fresh water (kg/m^3)
 
   ! thermodynamic constants
        seaiceStefanBoltzmann           = 567.0e-10_RKIND,&! W/m^2/K^4
@@ -278,20 +211,20 @@ module seaice_constants
        seaiceSeaWaterSpecificHeat      = 4218._RKIND   ,&! specific heat of ocn    (J/kg/K)
                                                          ! freshwater value needed for enthalpy
        seaiceLatentHeatVaporization    = 2.501e6_RKIND ,&! latent heat, vaporization freshwater (J/kg)
+       seaiceLatentHeatMelting         = seaiceLatentHeatSublimation & ! latent heat of melting of fresh ice (J/kg)
+                                       - seaiceLatentHeatVaporization, &
        seaiceReferenceSalinity         = 4._RKIND      ,&! ice reference salinity (ppt)
        seaiceSnowPatchiness            = 0.02_RKIND    ,&! parameter for fractional snow area (m)
 
        seaiceIceOceanDragCoefficient   = 0.00536_RKIND   ! ice-ocn drag coefficient
 
-!         rhofresh  = 1000.0_RKIND  ,&! density of fresh water (kg/m^3)
-!         Lfresh    = Lsub-Lvap        ,&! latent heat of melting of fresh ice (J/kg)
 !         R_gC2molC = 12.0107_RKIND, & ! molar mass of carbon
 !         pi     = 3.14159265358979323846_RKIND
 #endif
 
   ! fundamental constants
   real (kind=RKIND), parameter, public :: &
-       pii = 3.141592653589793_RKIND, &          ! echmod - why is this different from pi above?
+       pii = 3.141592653589793_RKIND, & ! echmod - why is this different from pi above?
        seaiceDegreesToRadians = pii / 180.0_RKIND, &
        seaiceRadiansToDegrees = 180.0_RKIND / pii, &
        seaiceSecondsPerYear = 24.0_RKIND * 3600.0_RKIND * 365.0_RKIND, &
@@ -302,32 +235,30 @@ module seaice_constants
 
   ! Earth constants
   real (kind=RKIND), parameter, public :: &
-       omega         = 7.29212e-5_RKIND   ! angular rotation rate of the Earth [s-1]
+       omega                              = 7.29212e-5_RKIND ! angular rotation rate of the Earth [s-1]
 
   character (len=*), public, parameter :: &
        coupleAlarmID = 'coupling'
 
   real(kind=RKIND), public :: &
-       seaicePuny
+       seaicePuny                         = 1.0e-11_RKIND   ! a small value
 
   ! physical constants
   real(kind=RKIND), public :: &
-       seaiceDensitySnow, &     ! density of snow (kg/m^3)
-       seaiceDensityFreshwater  ! density of freshwater (kg/m^3)
+       seaiceDensitySnow                  = 330.0_RKIND     ! density of snow (kg/m^3)
 
   ! thermodynamic constants
   real(kind=RKIND), public :: &
-       seaiceLatentHeatMelting, &       ! latent heat of melting of fresh ice (J/kg)
-       seaiceMeltingTemperatureDepression, &  ! melting temp. depression factor (C/ppt)
-       seaiceOceanAlbedo, &             ! Ocean albedo
-       seaiceIceSurfaceRoughness, &     ! ice surface roughness (m)
-       seaiceMaximumSalinity, &         ! ice maximum salinity (ppt)
-       seaiceStabilityReferenceHeight   ! stability reference height (m)
+       seaiceMeltingTemperatureDepression = 0.054_RKIND   ,&! melting temp. depression factor (C/ppt)
+       seaiceOceanAlbedo                  = 0.06_RKIND    ,&! ocean albedo
+       seaiceIceSurfaceRoughness          = 0.0005_RKIND  ,&! ice surface roughness (m)
+       seaiceMaximumSalinity              = 3.2_RKIND     ,&! max salinity at ice base for BL99 (ppt)
+       seaiceStabilityReferenceHeight     = 10._RKIND       ! reference height for stability (m)
 
   ! dynamics constants
   real(kind=RKIND), public :: &
-       seaiceIceStrengthConstantHiblerP, & ! P* constant in Hibler strength formulation
-       seaiceIceStrengthConstantHiblerC    ! C* constant in Hibler strength formulation
+       seaiceIceStrengthConstantHiblerP   = 2.75e4_RKIND   ,&! P* constant in Hibler strength formula
+       seaiceIceStrengthConstantHiblerC   = 20._RKIND        ! C* constant in Hibler strength formula
 
   ! minimum sea ice area
   real(kind=RKIND), public :: &

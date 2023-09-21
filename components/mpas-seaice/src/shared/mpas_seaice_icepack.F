@@ -5887,9 +5887,9 @@ contains
          pi, &
 !         gravit, &
 !         rhoi, &
-         rhos, &
+!         rhos, &
 !         rhow, &
-         puny, &
+!         puny, &
 !         stefan_boltzmann, &
 !         emissivity, &
 !         Tffresh, &
@@ -5899,38 +5899,34 @@ contains
 !         cp_wv, &
 !         Lvap, &
 !         Lsub, &
-         Lfresh, &
+!         Lfresh, &
 !         Timelt, &
 !         Tsmelt, &
 !         zvir, &
 !         ice_ref_salinity, &
-         depressT, &
-         Pstar, &
-         Cstar, &
+!         depressT, &
+!         Pstar, &
+!         Cstar, &
 !         dragio, &
-         albocn, &
-         rhofresh, &
+!         albocn, &
+!         rhofresh, &
 !         vonkar, &
-         iceruf, &
-         zref, &
+!         iceruf, &
+!         zref, &
 !         snowpatch, &
          sk_l!, &
          !R_gC2molC
-
-!echmod - move this somewhere else!
-      real (kind=RKIND) :: &
-         saltmax = 3.2_RKIND  ! max salinity at ice base for BL99 (ppt)
 
     call icepack_configure()
     call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
     seaicePi                         = pi
 !    seaiceGravity                    = gravit
-    seaicePuny                       = puny
+!    seaicePuny                       = puny
 !    seaiceDensityIce                 = rhoi
-    seaiceDensitySnow                = rhos
+!    seaiceDensitySnow                = rhos
 !    seaiceDensitySeaWater            = rhow
-    seaiceDensityFreshwater          = rhofresh
+!    seaiceDensityFreshwater          = rhofresh
 !    seaiceStefanBoltzmann            = stefan_boltzmann
 !    seaiceIceSnowEmissivity          = emissivity
 !    seaiceFreshWaterFreezingPoint    = Tffresh
@@ -5940,20 +5936,20 @@ contains
 !    seaiceWaterVaporSpecificHeat     = cp_wv
 !    seaiceLatentHeatVaporization     = Lvap
 !    seaiceLatentHeatSublimation      = Lsub
-    seaiceLatentHeatMelting          = Lfresh
+!    seaiceLatentHeatMelting          = Lfresh
 !    seaiceIceSurfaceMeltingTemperature  = Timelt
 !    seaiceSnowSurfaceMeltingTemperature = Tsmelt
 !    seaiceZvir                       = zvir
 !    seaiceReferenceSalinity          = ice_ref_salinity
-    seaiceMaximumSalinity            = saltmax
-    seaiceMeltingTemperatureDepression = depressT
-    seaiceOceanAlbedo                = albocn
+!    seaiceMaximumSalinity            = saltmax
+!    seaiceMeltingTemperatureDepression = depressT
+!    seaiceOceanAlbedo                = albocn
 !    seaiceVonKarmanConstant          = vonkar
-    seaiceIceSurfaceRoughness        = iceruf
-    seaiceStabilityReferenceHeight   = zref
+!    seaiceIceSurfaceRoughness        = iceruf
+!    seaiceStabilityReferenceHeight   = zref
 !    seaiceSnowPatchiness             = snowpatch
-    seaiceIceStrengthConstantHiblerP = Pstar
-    seaiceIceStrengthConstantHiblerC = Cstar
+!    seaiceIceStrengthConstantHiblerP = Pstar
+!    seaiceIceStrengthConstantHiblerC = Cstar
 !    seaiceIceOceanDragCoefficient    = dragio
     skeletalLayerThickness           = sk_l
     !gramsCarbonPerMolCarbon          = R_gC2molC
