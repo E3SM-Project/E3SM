@@ -240,7 +240,11 @@ void scream_finalize (/* args ? */) {
     ad.finalize();
 
     // Clean up the context
-    scream::ScreamContext::singleton().clean_up();
+    // Note: doing the cleanup here via
+    //   scream::ScreamContext::singleton().clean_up();
+    // causes an ICE with C++17 on Summit/Ascent.
+    // Wrapping it in a function seems to work though
+    scream::cleanup_singleton();
 
     // Finalize scream session
     scream::finalize_scream_session();
@@ -280,7 +284,7 @@ void scream_get_local_cols_gids (void* const ptr) {
   using namespace scream;
   using gid_t = AbstractGrid::gid_type;
   fpe_guard_wrapper([&]() {
-    auto gids_f = reinterpret_cast<int* const>(ptr);
+    auto gids_f = reinterpret_cast<int*>(ptr);
     const auto& ad = get_ad();
     const auto& phys_grid = ad.get_grids_manager()->get_grid("Physics");
 
