@@ -119,6 +119,16 @@ module li_time_integration_fe_rk
                                                     enthalpy, &
                                                     waterFrac
       real (kind=RKIND), dimension(:), pointer :: thickness, damage, passiveTracer2d
+      real (kind=RKIND), dimension(:), pointer :: sfcMassBalApplied, &
+                                                  basalMassBalApplied, &
+                                                  groundedSfcMassBalApplied, &
+                                                  groundedBasalMassBalApplied, &
+                                                  floatingBasalMassBalApplied
+      real (kind=RKIND), dimension(:), allocatable :: sfcMassBalAccum, &
+                                                      basalMassBalAccum, &
+                                                      groundedSfcMassBalAccum, &
+                                                      groundedBasalMassBalAccum, &
+                                                      floatingBasalMassBalAccum
       real (kind=RKIND), dimension(:), pointer :: layerCenterSigma, layerThicknessFractions
       real (kind=RKIND), dimension(:,:), allocatable :: layerThicknessPrev, &
                                                         layerThicknessTmp, &
@@ -134,6 +144,7 @@ module li_time_integration_fe_rk
       real (kind=RKIND) :: deltatFull
       real (kind=RKIND), dimension(4) :: rkSubstepWeights
       real (kind=RKIND), dimension(4) :: rkSSPweights
+      real (kind=RKIND), dimension(4) :: rkTendWeights ! Weights used for calculating budget terms
       integer :: nRKstages
 
       err = 0
@@ -167,6 +178,12 @@ module li_time_integration_fe_rk
       allocate(passiveTracer3dPrev(nVertLevels, nCells+1))
       allocate(passiveTracer3d(nVertLevels, nCells+1))
 
+      allocate(sfcMassBalAccum(nCells+1))
+      allocate(basalMassBalAccum(nCells+1))
+      allocate(groundedSfcMassBalAccum(nCells+1))
+      allocate(groundedBasalMassBalAccum(nCells+1))
+      allocate(floatingBasalMassBalAccum(nCells+1))
+
       temperaturePrev(:,:) = 0.0_RKIND
       enthalpyPrev(:,:) = 0.0_RKIND
       layerThicknessPrev(:,:) = 0.0_RKIND
@@ -175,6 +192,12 @@ module li_time_integration_fe_rk
       damage3d(:,:) = 0.0_RKIND
       passiveTracer3dPrev(:,:) = 0.0_RKIND
       passiveTracer3d(:,:) = 0.0_RKIND
+
+      sfcMassBalAccum(:) = 0.0_RKIND
+      basalMassBalAccum(:) = 0.0_RKIND
+      groundedSfcMassBalAccum(:) = 0.0_RKIND
+      groundedBasalMassBalAccum(:) = 0.0_RKIND
+      floatingBasalMassBalAccum(:) = 0.0_RKIND
 
 ! === Prepare for advection (including CFL checks) ===========
 ! This has to come first currently, because it sets the time step!
@@ -246,7 +269,8 @@ module li_time_integration_fe_rk
       ! by one index. e.g., the coefficients for RK4 are usually written
       ! (0, 1/2, 1/2, 1), while we use (1/2, 1/2, 1). The last entry of 1.0
       ! is simply for ease of implementation.
-      rkSSPweights(:) = 1.0_RKIND
+      rkSSPweights(:) = 1.0_RKIND ! updated for each case below
+      rkTendWeights(:) = 0.0_RKIND ! updated for each case below
       if ( (trim(config_time_integration) == 'forward_euler') .or. &
            ((trim(config_time_integration) == 'runge_kutta') .and. &
            (config_rk_order == 1)) ) then
@@ -265,6 +289,9 @@ module li_time_integration_fe_rk
          rkSSPweights(2) = 0.5_RKIND
          rkSSPweights(3) = 0.0_RKIND
          rkSSPweights(4) = 0.0_RKIND
+
+         rkTendWeights(1) = 0.5_RKIND
+         rkTendWeights(2) = 0.5_RKIND
       elseif ( (trim(config_time_integration) == 'runge_kutta') .and. &
                (config_rk_order == 3) ) then
          if (config_rk3_stages == 3) then
@@ -276,6 +303,10 @@ module li_time_integration_fe_rk
             rkSSPweights(2) = 3.0_RKIND / 4.0_RKIND
             rkSSPweights(3) = 1.0_RKIND / 3.0_RKIND
             rkSSPweights(4) = 0.0_RKIND
+
+            rkTendWeights(1) = 1.0_RKIND / 6.0_RKIND
+            rkTendWeights(2) = 1.0_RKIND / 6.0_RKIND
+            rkTendWeights(3) = 2.0_RKIND / 3.0_RKIND
         ! 4-stage SSP-RK3? Allows for CFL=2.
         elseif (config_rk3_stages == 4) then
             nRKstages = 4
@@ -285,6 +316,11 @@ module li_time_integration_fe_rk
             rkSSPweights(2) = 0.0_RKIND
             rkSSPweights(3) = 2.0_RKIND / 3.0_RKIND
             rkSSPweights(4) = 0.0_RKIND
+
+            rkTendWeights(1) = 1.0_RKIND / 6.0_RKIND
+            rkTendWeights(2) = 1.0_RKIND / 6.0_RKIND
+            rkTendWeights(3) = 1.0_RKIND / 6.0_RKIND
+            rkTendWeights(4) = 1.0_RKIND / 2.0_RKIND
         else
             err = 1
             call mpas_log_write('config_rk3_stages must 3 or 4', &
@@ -390,16 +426,28 @@ module li_time_integration_fe_rk
                passiveTracer2d(iCell) = sum(passiveTracer3d(:,iCell) * layerThicknessFractions)
             enddo
 
-         endif  ! if config_rk_order == 3
+         endif
         
-         ! === Ensure damage is within bounds after full time integration ===
-         if ( (rkStage .eq. nRKstages) .and. (config_finalize_damage_after_advection) ) then
+         ! === Ensure damage is within bounds before velocity solve ===
+         if ( config_finalize_damage_after_advection ) then
              call mpas_timer_start("finalize damage")
              call li_finalize_damage_after_advection(domain, err_tmp)
              err = ior(err, err_tmp)
              call mpas_timer_stop("finalize damage")
          endif
- 
+
+         call mpas_pool_get_array(geometryPool, 'sfcMassBalApplied', sfcMassBalApplied)
+         call mpas_pool_get_array(geometryPool, 'groundedSfcMassBalApplied', groundedSfcMassBalApplied)
+         call mpas_pool_get_array(geometryPool, 'basalMassBalApplied', basalMassBalApplied)
+         call mpas_pool_get_array(geometryPool, 'floatingBasalMassBalApplied', floatingBasalMassBalApplied)
+         call mpas_pool_get_array(geometryPool, 'groundedBasalMassBalApplied', groundedBasalMassBalApplied)
+         ! update budgets
+         sfcMassBalAccum = sfcMassBalAccum + rkTendWeights(rkStage) * sfcMassBalApplied
+         groundedSfcMassBalAccum = groundedSfcMassBalAccum + rkTendWeights(rkStage) * groundedSfcMassBalApplied
+         basalMassBalAccum = basalMassBalAccum + rkTendWeights(rkStage) * basalMassBalApplied
+         groundedBasalMassBalAccum = groundedBasalMassBalAccum + rkTendWeights(rkStage) * groundedBasalMassBalApplied
+         floatingBasalMassBalAccum = floatingBasalMassBalAccum + rkTendWeights(rkStage) * floatingBasalMassBalApplied
+         
          ! Update velocity for each RK step
          ! === Solve Velocity =====================
          call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
@@ -408,8 +456,16 @@ module li_time_integration_fe_rk
 ! *** end RK loop ***
       enddo
 
+! Finalize budget updates
+      sfcMassBalApplied(:) = sfcMassBalAccum(:)
+      groundedSfcMassBalApplied(:) = sfcMassBalAccum(:)
+      basalMassBalApplied(:) = basalMassBalAccum(:)
+      groundedBasalMassBalApplied(:) = groundedBasalMassBalAccum(:)
+      floatingBasalMassBalApplied(:) = floatingBasalMassBalAccum(:)
+      
 ! Reset time step to full length after RK loop
       deltat = deltatFull
+
 ! === Calve ice ========================
       call mpas_timer_start("calve_ice")
 
@@ -465,6 +521,11 @@ module li_time_integration_fe_rk
       deallocate(damage3d)
       deallocate(passiveTracer3dPrev)
       deallocate(passiveTracer3d)
+      deallocate(sfcMassBalAccum)
+      deallocate(basalMassBalAccum)
+      deallocate(groundedSfcMassBalAccum)
+      deallocate(groundedBasalMassBalAccum)
+      deallocate(floatingBasalMassBalAccum)
    !--------------------------------------------------------------------
    end subroutine li_time_integrator_forwardeuler_rungekutta
 
