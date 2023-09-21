@@ -61,9 +61,6 @@ include(${CASEROOT}/Macros.cmake)
 set(CPPDEFS "${CPPDEFS} ${USER_CPPDEFS} -D${OS}")
 
 # SLIBS comes from Macros, so this append must come after Macros are included
-if (USE_FMS)
-  set(SLIBS "${SLIBS} -lfms")
-endif()
 
 if (DEBUG)
   # e3sm still has components that cannot build with -DDEBUG
