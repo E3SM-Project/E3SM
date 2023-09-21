@@ -1636,24 +1636,6 @@ module li_subglacial_hydro
       end select
 
       waterPressure = max(0.0_RKIND, waterPressure)
-      waterPressure = min(waterPressure, rhoi * gravity * iceThicknessHydro)
-      
-      do iCell = 1, nCells
-        onMarineMargin = .false.
-        do iEdge = 1, nEdgesOnCell(iCell)
-           if (hydroMarineMarginMask(edgesOnCell(iEdge, iCell)) == 1) then
-              onMarineMargin = .true.
-              exit
-           endif
-        enddo
-        if (onMarineMargin) then
-           ! At marine margin, don't let water pressure fall below ocean pressure
-           ! TODO: Not sure if this should include the water layer thickness term.  Leaving it off.
-           if (waterPressure(iCell) < rho_water * gravity * (config_sea_level - bedTopography(iCell))) then
-               waterPressure(iCell) = rho_water * gravity * (config_sea_level - bedTopography(iCell))
-           endif
-        endif
-      enddo
 
       waterPressureTendency = (waterPressure - waterPressureOld) / deltatSGH
 
