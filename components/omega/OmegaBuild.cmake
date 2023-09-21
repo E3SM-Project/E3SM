@@ -79,6 +79,7 @@ macro(preset)
 
   set(CMAKE_CXX_COMPILER ${OMEGA_CXX_COMPILER})
   message(STATUS "OMEGA_CXX_COMPILER = ${OMEGA_CXX_COMPILER}")
+  message(STATUS "MPI_EXEC = ${MPI_EXEC}")
 
 endmacro()
 
