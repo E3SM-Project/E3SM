@@ -22,7 +22,7 @@ jobs:
           repository: e3sm-project/e3sm
           ref: master
           fetch-depth: 0 # Needed, or else gh-pages won't be fetched, and push rejected
-          submodules: recursive
+          submodules: false # speeds up clone and not building anything in submodules
       - name: Show action trigger
         run: echo "= The job was automatically triggered by a ${{github.event_name}} event."
       - name: Set up Python 3.10
