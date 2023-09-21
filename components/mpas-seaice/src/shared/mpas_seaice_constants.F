@@ -85,9 +85,9 @@ module seaice_constants
        snowThicknessMinimum
 
    ! biogeochemistry constants
-   real(kind=RKIND), parameter, public :: &
-        skeletalLayerThickness = sk_l      , &
-        gramsCarbonPerMolCarbon = R_gC2molC    ! g carbon per mol carbon
+   real(kind=RKIND), public :: &
+        skeletalLayerThickness, &
+        gramsCarbonPerMolCarbon   ! g carbon per mol carbon
 
    ! ocean biogeochemistry ISPOL values
    real(kind=RKIND), parameter, public :: &
