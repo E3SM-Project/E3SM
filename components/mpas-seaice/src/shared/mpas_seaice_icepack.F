@@ -5885,35 +5885,35 @@ contains
 !echmod: them with the icepack_init_parameters call is unnecessary.
     use ice_constants_colpkg, only: &  ! for E3SM runs this is currently in src/column/constants/cesm/
          pi, &
-         gravit, &
-         rhoi, &
+!         gravit, &
+!         rhoi, &
          rhos, &
-         rhow, &
+!         rhow, &
          puny, &
-         stefan_boltzmann, &
-         emissivity, &
-         Tffresh, &
-         cp_ice, &
-         cp_air, &
-         cp_ocn, &
-         cp_wv, &
-         Lvap, &
-         Lsub, &
+!         stefan_boltzmann, &
+!         emissivity, &
+!         Tffresh, &
+!         cp_ice, &
+!         cp_air, &
+!         cp_ocn, &
+!         cp_wv, &
+!         Lvap, &
+!         Lsub, &
          Lfresh, &
-         Timelt, &
-         Tsmelt, &
-         zvir, &
-         ice_ref_salinity, &
+!         Timelt, &
+!         Tsmelt, &
+!         zvir, &
+!         ice_ref_salinity, &
          depressT, &
          Pstar, &
          Cstar, &
-         dragio, &
+!         dragio, &
          albocn, &
          rhofresh, &
-         vonkar, &
+!         vonkar, &
          iceruf, &
          zref, &
-         snowpatch, &
+!         snowpatch, &
          sk_l!, &
          !R_gC2molC
 
@@ -5925,36 +5925,36 @@ contains
     call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
     seaicePi                         = pi
-    seaiceGravity                    = gravit
+!    seaiceGravity                    = gravit
     seaicePuny                       = puny
-    seaiceDensityIce                 = rhoi
+!    seaiceDensityIce                 = rhoi
     seaiceDensitySnow                = rhos
-    seaiceDensitySeaWater            = rhow
+!    seaiceDensitySeaWater            = rhow
     seaiceDensityFreshwater          = rhofresh
-    seaiceStefanBoltzmann            = stefan_boltzmann
-    seaiceIceSnowEmissivity          = emissivity
-    seaiceFreshWaterFreezingPoint    = Tffresh
-    seaiceSeaWaterSpecificHeat       = cp_ocn
-    seaiceFreshIceSpecificHeat       = cp_ice
-    seaiceAirSpecificHeat            = cp_air
-    seaiceWaterVaporSpecificHeat     = cp_wv
-    seaiceLatentHeatVaporization     = Lvap
-    seaiceLatentHeatSublimation      = Lsub
+!    seaiceStefanBoltzmann            = stefan_boltzmann
+!    seaiceIceSnowEmissivity          = emissivity
+!    seaiceFreshWaterFreezingPoint    = Tffresh
+!    seaiceSeaWaterSpecificHeat       = cp_ocn
+!    seaiceFreshIceSpecificHeat       = cp_ice
+!    seaiceAirSpecificHeat            = cp_air
+!    seaiceWaterVaporSpecificHeat     = cp_wv
+!    seaiceLatentHeatVaporization     = Lvap
+!    seaiceLatentHeatSublimation      = Lsub
     seaiceLatentHeatMelting          = Lfresh
-    seaiceIceSurfaceMeltingTemperature  = Timelt
-    seaiceSnowSurfaceMeltingTemperature = Tsmelt
-    seaiceZvir                       = zvir
-    seaiceReferenceSalinity          = ice_ref_salinity
+!    seaiceIceSurfaceMeltingTemperature  = Timelt
+!    seaiceSnowSurfaceMeltingTemperature = Tsmelt
+!    seaiceZvir                       = zvir
+!    seaiceReferenceSalinity          = ice_ref_salinity
     seaiceMaximumSalinity            = saltmax
     seaiceMeltingTemperatureDepression = depressT
     seaiceOceanAlbedo                = albocn
-    seaiceVonKarmanConstant          = vonkar
+!    seaiceVonKarmanConstant          = vonkar
     seaiceIceSurfaceRoughness        = iceruf
     seaiceStabilityReferenceHeight   = zref
-    seaiceSnowPatchiness             = snowpatch
+!    seaiceSnowPatchiness             = snowpatch
     seaiceIceStrengthConstantHiblerP = Pstar
     seaiceIceStrengthConstantHiblerC = Cstar
-    seaiceIceOceanDragCoefficient    = dragio
+!    seaiceIceOceanDragCoefficient    = dragio
     skeletalLayerThickness           = sk_l
     !gramsCarbonPerMolCarbon          = R_gC2molC
 

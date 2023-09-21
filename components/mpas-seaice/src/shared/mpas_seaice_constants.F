@@ -236,7 +236,7 @@ module seaice_constants
        seaiceSeaWaterSpecificHeat      = SHR_CONST_CPSW   ,&! specific heat of ocn    (J/kg/K)
                                                             ! freshwater value needed for enthalpy
        seaiceLatentHeatVaporization    = SHR_CONST_LATVAP ,&! latent heat, vaporization freshwater (J/kg)
-       seaiceReferenceSalinity= SHR_CONST_ICE_REF_SAL     ,&! ice reference salinity (ppt)
+       seaiceReferenceSalinity         = SHR_CONST_ICE_REF_SAL,&! ice reference salinity (ppt)
        seaiceSnowPatchiness            = 0.005_RKIND      ,&! parameter for fractional snow area (m)
 
 #ifdef RASM_MODS
