@@ -88,6 +88,7 @@ contains
       type (mpas_pool_type), pointer :: scratchPool, geometryPool, meshPool, extrapOceanDataPool
       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing, TFoceanOld, TFoceanNew
       real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_zOcean
+      real (kind=RKIND), dimension(:,:,:), pointer :: ismip6shelfMelt_zBndsOcean
       integer, dimension(:), pointer :: origOceanMaskHoriz
       integer, dimension(:,:), pointer :: validOceanMask, availOceanMask !masks to pass to flood-fill routine
       integer, dimension(:,:), allocatable :: validOceanMaskOld
@@ -174,11 +175,14 @@ contains
          ! make it a 3D mask based on the topography (loop through nISMIP6OceanLayers)
          call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', ismip6shelfMelt_zOcean)
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', ismip6shelfMelt_zBndsOcean)
+
          availOceanMask(:,:) = 0
          validOceanMask(:,:) = 0
          do iCell = 1, nCellsSolve
             do iLayer = 1, nISMIP6OceanLayers
-               layerTop = ismip6shelfMelt_zOcean(iLayer)
+               layerTop = ismip6shelfMelt_zOcean(iLayer) + 30.0 !ismip6shelfMelt_zBndsOcean(1,iLayer,1)
+               call mpas_log_write('==HH: layertop depth $r ', realArgs=(/layerTop/))
                if ( (seedOceanMaskHoriz(iCell) == 1) .and. (bedTopography(iCell) <  layerTop) ) then
                   availOceanMask(iLayer,iCell) = 1
                endif
