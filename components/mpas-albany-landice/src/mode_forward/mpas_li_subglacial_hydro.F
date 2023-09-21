@@ -1732,7 +1732,7 @@ module li_subglacial_hydro
       end where
       
       hydropotentialBase = rho_water * gravity * bedTopography + waterPressure
-      where (.not. (li_mask_is_grounded_ice(cellMask))) 
+      where ((.not. li_mask_is_grounded_ice(cellMask)) .and. (bedTopography < 0.0_RKIND)) 
          hydropotentialBase = 0.0_RKIND !zero hydropotential where no grounded ice
       end where      
 
