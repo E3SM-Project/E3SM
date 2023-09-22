@@ -163,10 +163,11 @@ protected:
   void set_degrees_of_freedom(const std::string& filename);
   std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
-  Field get_field(const std::string& name, const std::string mode) const;
+  Field get_field(const std::string& name, const std::string& mode) const;
   void compute_diagnostic (const std::string& name, const bool allow_invalid_fields = false);
   void set_diagnostics();
-  void create_diagnostic (const std::string& diag_name);
+  std::shared_ptr<AtmosphereDiagnostic>
+  create_diagnostic (const std::string& diag_name);
 
   // --- Internal variables --- //
   ekat::Comm                          m_comm;
@@ -189,7 +190,6 @@ protected:
   std::vector<std::string>                              m_fields_names;
   std::vector<std::string>                              m_avg_cnt_names;
   std::map<std::string,std::string>                     m_field_to_avg_cnt_map;
-  std::map<std::string,std::string>                     m_fields_alt_name;
   std::map<std::string,FieldLayout>                     m_layouts;
   std::map<std::string,int>                             m_dofs;
   std::map<std::string,std::pair<int,bool>>             m_dims;
