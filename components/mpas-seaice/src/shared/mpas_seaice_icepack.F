@@ -5877,82 +5877,16 @@ contains
          iceAreaMinimum, &
          iceThicknessMinimum, &
          snowThicknessMinimum
+    !gramsCarbonPerMolCarbon          = R_gC2molC
 
-!echmod: These constants will need to be defined in the MPAS-SI driver (or a shared E3SM constants file) 
-!echmod: eventually, rather than in the old column package. For now, use the column package's values.
-!echmod: If E3SM/MPAS-SI wants to use icepack's default values (not recommended), then they should be 
-!echmod: obtained using icepack_query_parameters instead of 'using' them.  In that case, initializing 
-!echmod: them with the icepack_init_parameters call is unnecessary.
     use ice_constants_colpkg, only: &  ! for E3SM runs this is currently in src/column/constants/cesm/
-         pi, &
-!         gravit, &
-!         rhoi, &
-!         rhos, &
-!         rhow, &
-!         puny, &
-!         stefan_boltzmann, &
-!         emissivity, &
-!         Tffresh, &
-!         cp_ice, &
-!         cp_air, &
-!         cp_ocn, &
-!         cp_wv, &
-!         Lvap, &
-!         Lsub, &
-!         Lfresh, &
-!         Timelt, &
-!         Tsmelt, &
-!         zvir, &
-!         ice_ref_salinity, &
-!         depressT, &
-!         Pstar, &
-!         Cstar, &
-!         dragio, &
-!         albocn, &
-!         rhofresh, &
-!         vonkar, &
-!         iceruf, &
-!         zref, &
-!         snowpatch, &
-         sk_l!, &
-         !R_gC2molC
+         pi
 
     call icepack_configure()
     call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
+!echmod - BFB but 20% slower when this is set in seaice_constants instead???
     seaicePi                         = pi
-!    seaiceGravity                    = gravit
-!    seaicePuny                       = puny
-!    seaiceDensityIce                 = rhoi
-!    seaiceDensitySnow                = rhos
-!    seaiceDensitySeaWater            = rhow
-!    seaiceDensityFreshwater          = rhofresh
-!    seaiceStefanBoltzmann            = stefan_boltzmann
-!    seaiceIceSnowEmissivity          = emissivity
-!    seaiceFreshWaterFreezingPoint    = Tffresh
-!    seaiceSeaWaterSpecificHeat       = cp_ocn
-!    seaiceFreshIceSpecificHeat       = cp_ice
-!    seaiceAirSpecificHeat            = cp_air
-!    seaiceWaterVaporSpecificHeat     = cp_wv
-!    seaiceLatentHeatVaporization     = Lvap
-!    seaiceLatentHeatSublimation      = Lsub
-!    seaiceLatentHeatMelting          = Lfresh
-!    seaiceIceSurfaceMeltingTemperature  = Timelt
-!    seaiceSnowSurfaceMeltingTemperature = Tsmelt
-!    seaiceZvir                       = zvir
-!    seaiceReferenceSalinity          = ice_ref_salinity
-!    seaiceMaximumSalinity            = saltmax
-!    seaiceMeltingTemperatureDepression = depressT
-!    seaiceOceanAlbedo                = albocn
-!    seaiceVonKarmanConstant          = vonkar
-!    seaiceIceSurfaceRoughness        = iceruf
-!    seaiceStabilityReferenceHeight   = zref
-!    seaiceSnowPatchiness             = snowpatch
-!    seaiceIceStrengthConstantHiblerP = Pstar
-!    seaiceIceStrengthConstantHiblerC = Cstar
-!    seaiceIceOceanDragCoefficient    = dragio
-    skeletalLayerThickness           = sk_l
-    !gramsCarbonPerMolCarbon          = R_gC2molC
 
     iceAreaMinimum       = seaicePuny
     iceThicknessMinimum  = seaicePuny

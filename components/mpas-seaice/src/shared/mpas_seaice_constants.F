@@ -21,16 +21,6 @@ module seaice_constants
 
 !echmod move constants in gradually
 #ifdef addconstants
-#ifdef CCSMCOUPLED
-      real (kind=RKIND), parameter :: &
-         R_gC2molC = SHR_CONST_MWC    ,&! molar mass of carbon
-         pi        = SHR_CONST_PI       ! pi
-#else
-
-      real (kind=RKIND), parameter, public :: &
-         R_gC2molC = 12.0107_RKIND, & ! molar mass of carbon
-         pi     = 3.14159265358979323846_RKIND
-#endif
 
       !-----------------------------------------------------------------
       ! physical constants
@@ -61,7 +51,7 @@ module seaice_constants
          hs_min = 1.e-4_RKIND ,&! min snow thickness for computing zTsn (m)
 
          ! biogeochemistry
-         sk_l = 0.03_RKIND      ! (m) skeletal layer thickness
+!         sk_l = 0.03_RKIND      ! (m) skeletal layer thickness
 
       integer, parameter, public :: & 
          nspint = 3              ,& ! number of solar spectral intervals
@@ -143,6 +133,7 @@ module seaice_constants
 #ifdef CCSMCOUPLED
       real (kind=RKIND), parameter, public :: &
   ! fundamental constants
+       pi                              = SHR_CONST_PI     ,&! pi
        seaiceSecondsPerDay             = SHR_CONST_CDAY     ! seconds in calendar day
 
       real (kind=RKIND), public :: &
@@ -179,11 +170,11 @@ module seaice_constants
 #endif
 
 !         R_gC2molC = SHR_CONST_MWC    ,&! molar mass of carbon
-!         pi        = SHR_CONST_PI       ! pi
 
 #else
       real (kind=RKIND), parameter, public :: &
   ! fundamental constants
+       pi                              = 3.14159265358979323846_RKIND
        seaiceSecondsPerDay             = 24.0_RKIND * 3600.0_RKIND
  
       real (kind=RKIND), public :: &
@@ -219,7 +210,6 @@ module seaice_constants
        seaiceIceOceanDragCoefficient   = 0.00536_RKIND   ! ice-ocn drag coefficient
 
 !         R_gC2molC = 12.0107_RKIND, & ! molar mass of carbon
-!         pi     = 3.14159265358979323846_RKIND
 #endif
 
   ! fundamental constants
@@ -227,11 +217,17 @@ module seaice_constants
        pii = 3.141592653589793_RKIND, & ! echmod - why is this different from pi above?
        seaiceDegreesToRadians = pii / 180.0_RKIND, &
        seaiceRadiansToDegrees = 180.0_RKIND / pii, &
-       seaiceSecondsPerYear = 24.0_RKIND * 3600.0_RKIND * 365.0_RKIND, &
+!echmod - BFB but 20% slower???
+!       pii = pi, &
+!       seaiceDegreesToRadians = pi / 180.0_RKIND, &
+!       seaiceRadiansToDegrees = 180.0_RKIND / pi, &
+       seaiceSecondsPerYear = 24.0_RKIND * 3600.0_RKIND * 365.0_RKIND, & !echmod - incorrect for leap years
        seaiceDaysPerSecond = 1.0_RKIND/seaiceSecondsPerDay
 
   real (kind=RKIND), public :: &
-       seaicePi                           ! pi
+       seaicePi
+!echmod - BFB but 20% slower???
+!       seaicePi                           = pi ! pi
 
   ! Earth constants
   real (kind=RKIND), parameter, public :: &
@@ -257,8 +253,8 @@ module seaice_constants
 
   ! dynamics constants
   real(kind=RKIND), public :: &
-       seaiceIceStrengthConstantHiblerP   = 2.75e4_RKIND   ,&! P* constant in Hibler strength formula
-       seaiceIceStrengthConstantHiblerC   = 20._RKIND        ! C* constant in Hibler strength formula
+       seaiceIceStrengthConstantHiblerP   = 2.75e4_RKIND  ,&! P* constant in Hibler strength formula
+       seaiceIceStrengthConstantHiblerC   = 20._RKIND       ! C* constant in Hibler strength formula
 
   ! minimum sea ice area
   real(kind=RKIND), public :: &
@@ -268,7 +264,7 @@ module seaice_constants
 
   ! biogeochemistry constants
   real(kind=RKIND), public :: &
-       skeletalLayerThickness, &
+       skeletalLayerThickness             = 0.03_RKIND    ,&! (m) skeletal layer thickness
        gramsCarbonPerMolCarbon   ! g carbon per mol carbon
 
 end module seaice_constants
