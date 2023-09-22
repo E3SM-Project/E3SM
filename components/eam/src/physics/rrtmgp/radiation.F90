@@ -42,10 +42,6 @@ module radiation
                               handle_error, fluxes_t, &
                               initialize_fluxes, reset_fluxes, free_fluxes, expand_day_fluxes, &
                               get_gas_vmr
-#if defined(CLDERA_PROFILING)
-use ppgrid,         only: begchunk
-use cldera_interface_mod, only: cldera_set_field_part_data
-#endif
 
    implicit none
    private
@@ -2299,33 +2295,9 @@ contains
       ! NOTE: sign change on net fluxes because internally net fluxes are assumed
       ! to down minus up, but for longwave outputs we want upward positive
       call outfld('FLNT'//diag(icall), -flux_all%flux_net(1:ncol,ktop), ncol, state%lchnk)
-#if defined(CLDERA_PROFILING)
-      print *, iam, "FLNTbeg"
-      call cldera_set_field_part_data('FLNT'//diag(icall) ,state%lchnk-begchunk+1,-flux_all%flux_net(1:ncol,ktop))   
-      print *, iam, "FLNTend"
-#endif
       call outfld('FLNS'//diag(icall), -flux_all%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
-#if defined(CLDERA_PROFILING)
-      print *, iam, "FLNTbeg"
-      call cldera_set_field_part_data('FLNS'//diag(icall) ,state%lchnk-begchunk+1,-flux_all%flux_net(1:ncol,kbot+1))   
-      print *, iam, "FLNSend"
-#endif
       call outfld('FLUT'//diag(icall), flux_all%flux_up(1:ncol,ktop), ncol, state%lchnk)
-#if defined(CLDERA_PROFILING)
-      print *, iam, "FLUTbeg"
-      call cldera_set_field_part_data('FLUT'//diag(icall) ,state%lchnk-begchunk+1, flux_all%flux_up(1:ncol,ktop))   
-      print *, iam, "FLUTend"
-#endif
       call outfld('FLDS'//diag(icall), flux_all%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
-#if defined(CLDERA_PROFILING)
-      print *, iam, "FLDSbeg"
-      call cldera_set_field_part_data('FLDS'//diag(icall) ,state%lchnk-begchunk+1,flux_all%flux_dn(1:ncol,kbot+1)   
-      print *, iam, "FLDSend"
-#endif
-
-
-
-
 
       ! Clear-sky fluxes
       ! NOTE: sign change on net fluxes because internally net fluxes are assumed
@@ -2333,11 +2305,6 @@ contains
       call outfld('FLNTC'//diag(icall), -flux_clr%flux_net(1:ncol,ktop), ncol, state%lchnk)
       call outfld('FLNSC'//diag(icall), -flux_clr%flux_net(1:ncol,kbot+1), ncol, state%lchnk)
       call outfld('FLUTC'//diag(icall), flux_clr%flux_up(1:ncol,ktop), ncol, state%lchnk)
-#if defined(CLDERA_PROFILING)
-      print *, iam, "FLUTCbeg"
-      call cldera_set_field_part_data('FLUTC',state%lchnk-begchunk+1,flux_clr%flux_up(1:ncol,ktop))   
-      print *, iam, "FLNTend"
-#endif
       call outfld('FLDSC'//diag(icall), flux_clr%flux_dn(1:ncol,kbot+1), ncol, state%lchnk)
 
       ! Calculate and output the cloud radiative effect (LWCF in history)

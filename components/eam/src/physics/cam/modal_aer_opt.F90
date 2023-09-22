@@ -29,10 +29,6 @@ use cam_pio_utils,     only: cam_pio_openfile
 use cam_history,       only:  addfld, horiz_only, add_default, outfld
 use cam_history_support, only: fillvalue
 use cam_logfile,       only: iulog
-#if defined(CLDERA_PROFILING)
-use ppgrid,         only: begchunk
-use cldera_interface_mod, only: cldera_set_field_part_data
-#endif
 use perf_mod,          only: t_startf, t_stopf
 use cam_abortutils,        only: endrun
 
@@ -40,7 +36,6 @@ use modal_aero_wateruptake, only: modal_aero_wateruptake_dr
 use modal_aero_calcsize,    only: modal_aero_calcsize_diag,modal_aero_calcsize_sub
 use shr_log_mod ,           only: errmsg => shr_log_errmsg
 #if defined(CLDERA_PROFILING)
-use spmd_utils, only: iam 
 use ppgrid,         only: begchunk
 use cldera_interface_mod, only: cldera_set_field_part_data
 #endif
@@ -1134,29 +1129,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    call outfld('EXTINCT'//diag(list_idx),  extinct, pcols, lchnk)
    call outfld('tropopause_m', tropopause_m, pcols, lchnk)
    call outfld('ABSORB'//diag(list_idx),   absorb,  pcols, lchnk)
-#if defined(CLDERA_PROFILING)
-   print *, iam, "ABSORBbeg"
-   call cldera_set_field_part_data("ABSORB" ,lchnk-begchunk+1,absorb)
-   print *, iam, "ABSORBend"
-#endif
    call outfld('AODVIS'//diag(list_idx),   aodvis,  pcols, lchnk)
-#if defined(CLDERA_PROFILING)
-   print *, iam, "AODVISbeg"
-   call cldera_set_field_part_data("AODVIS" ,lchnk-begchunk+1,aodvis)
-   print *, iam, "AODVISend"
-#endif
    call outfld('AODALL'//diag(list_idx),   aodall,  pcols, lchnk)
-#if defined(CLDERA_PROFILING)
-   print *, iam, "AODALLbeg"
-   call cldera_set_field_part_data("AODALL" ,lchnk-begchunk+1,aodall)
-   print *, iam, "AODALLend"
-#endif
    call outfld('AODABS'//diag(list_idx),   aodabs,  pcols, lchnk)
-#if defined(CLDERA_PROFILING)
-   print *, iam, "AODABSbeg"
-   call cldera_set_field_part_data("AODABS" ,lchnk-begchunk+1,aodabs)
-   print *, iam, "AODABSend"
-#endif
 
    ! These diagnostics are output only for climate list
    if (list_idx == 0) then
@@ -1212,12 +1187,6 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
       call outfld('BURDENDUST',    burdendust,    pcols, lchnk)
       call outfld('BURDENSO4' ,    burdenso4,     pcols, lchnk)
-#if defined(CLDERA_PROFILING)
-      print *, iam, "BURDENSO4beg"
-      call cldera_set_field_part_data("BURDENSO4" ,lchnk-begchunk+1,burdenso4)
-      print *, iam, "BURDENSO4end"
-#endif
-
       call outfld('BURDENPOM' ,    burdenpom,     pcols, lchnk)
       call outfld('BURDENSOA' ,    burdensoa,     pcols, lchnk)
       call outfld('BURDENBC'  ,    burdenbc,      pcols, lchnk)
@@ -1247,6 +1216,15 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       call outfld('AODPROT',         protaod,    pcols, lchnk)
       call outfld('AODLIP',         lipaod,    pcols, lchnk)
 #endif
+
+#if defined(CLDERA_PROFILING)
+      call cldera_set_field_part_data("ABSORB" ,lchnk-begchunk+1,absorb)
+      call cldera_set_field_part_data("AODVIS" ,lchnk-begchunk+1,aodvis)
+      call cldera_set_field_part_data("AODALL" ,lchnk-begchunk+1,aodall)
+      call cldera_set_field_part_data("AODABS" ,lchnk-begchunk+1,aodabs)
+      call cldera_set_field_part_data("BURDENSO4" ,lchnk-begchunk+1,burdenso4)
+#endif
+
    end if
 
 end subroutine modal_aero_sw

@@ -37,10 +37,6 @@ use scamMod,         only: scm_crm_mode, single_column,have_cld,cldobs,&
                            have_clwp,clwpobs,have_tg,tground
 use perf_mod,        only: t_startf, t_stopf
 use cam_logfile,     only: iulog
-#if defined(CLDERA_PROFILING)
-use ppgrid,         only: begchunk
-use cldera_interface_mod, only: cldera_set_field_part_data
-#endif
 
 use rad_constituents, only: N_DIAG, rad_cnst_get_call_list, rad_cnst_get_info
 use radconstants,     only: rrtmg_sw_cloudsim_band, rrtmg_lw_cloudsim_band, nswbands, nlwbands
@@ -1926,16 +1922,10 @@ end function radiation_nextsw_cday
                 if ( (use_MMF .and. last_column) .or. .not. use_MMF) then
                   ftem(:ncol,:pver) = qrs(:ncol,:pver)/cpair
                   call outfld('QRS'//diag(icall),ftem  ,pcols,lchnk)
-#if defined(CLDERA_PROFILING)
-                  call cldera_set_field_part_data("QRS" ,lchnk-begchunk+1,qrs)
-#endif
                   ftem(:ncol,:pver) = qrsc(:ncol,:pver)/cpair
                   call outfld('QRSC'//diag(icall),ftem  ,pcols,lchnk)
                   call outfld('SOLIN'//diag(icall),solin ,pcols,lchnk)
                   call outfld('FSDS'//diag(icall),fsds  ,pcols,lchnk)
-#if defined(CLDERA_PROFILING)
-                  call cldera_set_field_part_data("FSDS" ,lchnk-begchunk+1,fsds)
-#endif
                   call outfld('FSNIRTOA'//diag(icall),fsnirt,pcols,lchnk)
                   call outfld('FSNRTOAC'//diag(icall),fsnrtc,pcols,lchnk)
                   call outfld('FSNRTOAS'//diag(icall),fsnirtsq,pcols,lchnk)
@@ -1944,9 +1934,6 @@ end function radiation_nextsw_cday
                   call outfld('FSNTC'//diag(icall),fsntc ,pcols,lchnk)
                   call outfld('FSNSC'//diag(icall),fsnsc ,pcols,lchnk)
                   call outfld('FSDSC'//diag(icall),fsdsc ,pcols,lchnk)
-#if defined(CLDERA_PROFILING)
-                  call cldera_set_field_part_data("FSDSC" ,lchnk-begchunk+1,fsdsc)
-#endif
                   call outfld('FSNTOA'//diag(icall),fsntoa,pcols,lchnk)
                   call outfld('FSUTOA'//diag(icall),fsutoa,pcols,lchnk)
                   call outfld('FSNTOAC'//diag(icall),fsntoac,pcols,lchnk)
@@ -2194,33 +2181,19 @@ end function radiation_nextsw_cday
                 ! Dump longwave radiation information to history tape buffer (diagnostics)
                 if ( (use_MMF .and. last_column ) .or. .not. use_MMF) then
                   call outfld('QRL'//diag(icall),qrl (:ncol,:)/cpair,ncol,lchnk)
-#if defined(CLDERA_PROFILING)
-                  call cldera_set_field_part_data("QRL" ,lchnk-begchunk+1,qrl)
-#endif
                   call outfld('QRLC'//diag(icall),qrlc(:ncol,:)/cpair,ncol,lchnk)
                   call outfld('FLNT'//diag(icall),flnt  ,pcols,lchnk)
-#if defined(CLDERA_PROFILING)
-                  call cldera_set_field_part_data("FLNT" ,lchnk-begchunk+1,flnt)
-#endif
                   call outfld('FLUT'//diag(icall),flut  ,pcols,lchnk)
-#if defined(CLDERA_PROFILING)
-                  call cldera_set_field_part_data("FLUT" ,lchnk-begchunk+1,flut)
-#endif
                   call outfld('FLUTC'//diag(icall),flutc ,pcols,lchnk)
                   call outfld('FLNTC'//diag(icall),flntc ,pcols,lchnk)
                   call outfld('FLNS'//diag(icall),flns  ,pcols,lchnk)
-#if defined(CLDERA_PROFILING)
-                  call cldera_set_field_part_data("FLNS" ,lchnk-begchunk+1,flns)
-#endif              
+              
                   call outfld('FLDSC'//diag(icall),fldsc ,pcols,lchnk)
                   call outfld('FLNSC'//diag(icall),flnsc ,pcols,lchnk)
                   call outfld('LWCF'//diag(icall),lwcf  ,pcols,lchnk)
                   call outfld('FLN200'//diag(icall),fln200,pcols,lchnk)
                   call outfld('FLN200C'//diag(icall),fln200c,pcols,lchnk)
                   call outfld('FLDS'//diag(icall),cam_out%flwds ,pcols,lchnk)
-#if defined(CLDERA_PROFILING)
-                  call cldera_set_field_part_data("FLDS" ,lchnk-begchunk+1,flds)
-#endif
                 end if
                 if (use_MMF .and. last_column ) then
                   if(icall.eq.0) then  ! the climate call
