@@ -667,6 +667,8 @@ private:
   void run_tracer_phase (const KernelVariables& kv) const {
     compute_qtens(kv);
     kv.team_barrier();
+
+#if 0
     if (m_data.limiter_option == 8) {
       limiter_optim_iter_full(kv);
       kv.team_barrier();
@@ -674,6 +676,8 @@ private:
       limiter_clip_and_sum(kv);
       kv.team_barrier();
     }
+#endif
+
     apply_spheremp(kv);
   }
 
