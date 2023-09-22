@@ -270,7 +270,7 @@ module li_time_integration_fe_rk
       ! (0, 1/2, 1/2, 1), while we use (1/2, 1/2, 1). The last entry of 1.0
       ! is simply for ease of implementation.
       rkSSPweights(:) = 1.0_RKIND ! updated for each case below
-      rkTendWeights(:) = 0.0_RKIND ! updated for each case below
+      rkTendWeights(:) = 1.0_RKIND ! updated for each case below
       if ( (trim(config_time_integration) == 'forward_euler') .or. &
            ((trim(config_time_integration) == 'runge_kutta') .and. &
            (config_rk_order == 1)) ) then
