@@ -423,23 +423,7 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_Redi_N2_based_taper_enable" type="logical"
-	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-If true apply the N2 limiting of Danabasoglu and Marshall 2007
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Redi_N2_based_taper_min" type="real"
-	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-minimum taper value for the N2 limiting of Danabasoglu and Marshall 2007
-
-Valid values: greater than zero and less than 1
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Redi_N2_based_taper_limit_term1" type="logical"
+<entry id="config_Redi_limit_term1" type="logical"
 	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
 If true, the N2 limiting is applied to the horizontal diffusion term
 
