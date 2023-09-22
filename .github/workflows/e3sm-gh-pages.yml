@@ -1,0 +1,39 @@
+name: Build and deploy gh-pages branch with Mkdocs
+
+on:
+  # Runs every time master branch is updated
+  push:
+    branches: ["master"]
+  # Runs every time a PR is open against master
+  pull_request:
+    branches: ["master"]
+  workflow_dispatch:
+
+concurrency:
+  # Prevent 2+ copies of this workflow from running concurrently
+  group: e3sm-docs-action
+  
+jobs:
+  Build-and-Deploy-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+          fetch-depth: 0 # Needed, or else gh-pages won't be fetched, and push rejected
+          submodules: false # speeds up clone and not building anything in submodules
+      - name: Show action trigger
+        run: echo "= The job was automatically triggered by a ${{github.event_name}} event."
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4.7.0
+        with:
+          python-version: "3.10"
+      - name: Install python deps
+        run: python3 -m pip install mkdocs-material pymdown-extensions mkdocs-monorepo-plugin mdutils
+      # build every time (PR or push to master)
+      - name: Build
+        run: mkdocs build --strict --verbose
+      # deploy only when it is a push
+      - if: ${{ github.event_name == 'push' }}
+        name: Deploy
+        run: mkdocs gh-deploy
