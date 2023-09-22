@@ -1,8 +1,0 @@
-hist_fincl1 += 'QIRRIG'
-hist_fincl2 += 'QIRRIG'
-hist_dov2xy = .true.,.false.
-hist_nhtfrq = 0, -8760
-hist_mfilt  = 1,1
-
-! In contrast to the standard reduceOutput, use double-precision
-hist_ndens  = 1,1

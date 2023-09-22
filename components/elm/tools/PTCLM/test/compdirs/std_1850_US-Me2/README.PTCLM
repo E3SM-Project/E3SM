@@ -1,1 +1,0 @@
-../PTCLMmkdata --verbose --clmnmlusecase=1850_control --cesm_root ../../../../../../.. -s US-Me2 -d /glade/p/cesmdata/cseg/inputdata --debug --sdate 140204 --map_gdate 140204 --mydatadir testing_dir/std1850_file_creation 

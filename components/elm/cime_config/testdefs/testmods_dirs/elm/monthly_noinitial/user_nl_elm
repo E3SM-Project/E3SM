@@ -1,4 +1,0 @@
-! This is useful for testing cases that are not set up with
-! out-of-the-box initial conditions files, and would fail if finidat
-! were not explicitly set to blank here.
-finidat        = ' '

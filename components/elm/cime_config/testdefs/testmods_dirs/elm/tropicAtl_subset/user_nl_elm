@@ -1,4 +1,0 @@
-flanduse_timeseries = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/landuse.timeseries_1x1_tropicAtl_TEST_simyr1939-1943_c141219.nc'
-
-! Need to set this to false because the landuse_timeseries file starts in 1939, disagreeing with the 1850 surface dataset
-check_dynpft_consistency = .false.

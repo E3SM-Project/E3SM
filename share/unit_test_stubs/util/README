@@ -1,3 +1,0 @@
-This directory contains some fake modules that should generally be used in place
-of their real counterparts by ALL unit tests. So this directory generally should
-be added by unit tests of other components.

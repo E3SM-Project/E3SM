@@ -1,1 +1,0 @@
-../../CTestConfig.cmake

@@ -1,6 +1,0 @@
- hist_nhtfrq    =0,0
- hist_mfilt     = 1,12
-
-! Set max snow persistence to a small number so that smb from bare land can potentially be triggered
-! (since this testmods directory is set up for long runs, use 1 year rather than just a couple of days)
- glc_snow_persistence_max_days = 365

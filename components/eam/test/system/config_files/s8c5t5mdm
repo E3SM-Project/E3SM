@@ -1,8 +1,0 @@
--spmd -nosmp
--dyn sld
--res 8x16
--debug
--nadv_tt 5
--cppdefs -DTRACER_CHECK
--phys cam5
--s

@@ -1,7 +1,0 @@
--spmd -nosmp
--chem super_fast_llnl
--dyn fv
--res 4x5
--phys cam4
--debug
--s

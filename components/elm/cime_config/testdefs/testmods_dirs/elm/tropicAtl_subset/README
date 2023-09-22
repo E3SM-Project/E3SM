@@ -1,7 +1,0 @@
-This testmods directory is meant to be used in conjunction with a 20th
-century transient case at resolution 1x1_tropicAtl. 
-
-However, it generally should not be used directly. Instead, it should be
-extended (i.e., included) by a testmods directory that sets the start date to a
-desired year, either just before, in the middle of, or after the starting date
-on this file.

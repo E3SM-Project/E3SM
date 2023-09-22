@@ -1,2 +1,0 @@
- glcmec_downscale_rain_snow_convert = .true.
- glcmec_downscale_longwave = .false.

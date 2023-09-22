@@ -1,4 +1,0 @@
-This directory contains mock/stub modules that are just built as part of select
-unit tests of the share code. This directory should *NOT* generally be added by
-unit tests of other components.
-

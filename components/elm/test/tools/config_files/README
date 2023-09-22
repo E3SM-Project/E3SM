@@ -1,9 +1,0 @@
-_do   => debug on, omp only on
-_ds   => debug on, serial mode (neither mpi nor omp)
-
-_o    => debug off, omp only on
-_s    => debug off, serial mode (neither mpi nor omp)
-
-tools__ds => options for tools, debug on, serial mode
-tools__do => options for tools, debug on, omp only on
-tools__o  => options for tools, debug off, omp only on

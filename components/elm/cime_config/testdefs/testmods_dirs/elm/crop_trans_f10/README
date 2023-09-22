@@ -1,9 +1,0 @@
-This directory points to datasets needed to test transient crops at f10
-resolution.
-
-Eventually, this testmods directory can be removed. However, it is needed for
-now because we do not have an 1850 surface dataset for crops - see comment 3 in
-<http://bugs.cgd.ucar.edu/show_bug.cgi?id=2010>. So, for now, we are pointing to
-a year-2000 surface dataset for the transient run. This is a perfectly
-acceptable thing to do, but making it work out-of-the-box would require
-introducing some ugly one-off logic that I wanted to avoid.

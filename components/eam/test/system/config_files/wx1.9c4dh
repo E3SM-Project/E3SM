@@ -1,8 +1,0 @@
--spmd -smp
--phys cam4
--chem waccm_mozart
--waccmx
--dyn fv
--res 1.9x2.5
--debug
--s

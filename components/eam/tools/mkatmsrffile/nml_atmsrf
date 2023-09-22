@@ -1,8 +1,0 @@
-&input
-srfFileName =  '1x1d.nc'
-atmFileName = 'ne30np4_pentagons.091226.nc'
-landFileName = 'regrid_vegetation.nc' 
-soilwFileName = 'clim_soilw.nc'
-srf2atmFmapname = 'map_1x1_to_ne30np4_aave.nc'
-outputFileName = 'atmsrf_ne30np4_101206.nc'
-/

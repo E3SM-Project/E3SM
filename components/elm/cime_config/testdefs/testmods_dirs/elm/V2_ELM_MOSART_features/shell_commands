@@ -1,2 +1,0 @@
-#!/bin/bash
-./xmlchange --id ELM_BLDNML_OPTS --val "-bgc cn -irrig .true."

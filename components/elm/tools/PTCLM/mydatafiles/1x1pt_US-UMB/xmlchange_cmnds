@@ -1,7 +1,0 @@
-# xmlchange commands written by PTCLMmkdata:
-# ../PTCLMmkdata -d /glade/p/cesmdata/cseg/inputdata -s US-UMB --clmnmlusecase=20thC_transient --debug --cesm_root ../../../../../../.. 
-./xmlchange CLM_USRDAT_NAME=1x1pt_US-UMB
-./xmlchange DATM_CLMNCEP_YR_START=1999
-./xmlchange DATM_CLMNCEP_YR_END=2006
-./xmlchange CLM_BLDNML_OPTS='-mask navy'
-./xmlchange MPILIB=mpi-serial

@@ -1,9 +1,0 @@
--spmd -nosmp
--dyn se
--hgrid ne30np4
--phys cam4
--ice sice
--lnd slnd
--debug
--ocn aquaplanet
--s

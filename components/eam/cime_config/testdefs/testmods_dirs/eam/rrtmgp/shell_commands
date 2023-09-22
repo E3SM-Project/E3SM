@@ -1,2 +1,0 @@
-#!/bin/bash
-./xmlchange --append CAM_CONFIG_OPTS='-rad rrtmgp'

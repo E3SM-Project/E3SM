@@ -1,1 +1,0 @@
--i CFGDIR/clm4054_ne30g16_I2000.clm2.h0.2000-01_c121107.nc -o ne30output_onf19grid.nc -m CFGDIR/map_ne30np4_nomask_to_fv1.9x2.5_nomask_aave_da_c121107.nc -t CFGDIR/clm4054_f19g16_I2000.clm2.h0.2000-01_c121107.nc -e EXEDIR

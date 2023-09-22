@@ -1,3 +1,0 @@
- anoxia          = .true.
- use_vertsoilc   = .false.
- hist_wrtch4diag = .true.

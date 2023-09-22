@@ -1,4 +1,0 @@
-This testmods directory switches some glc_mec-related flags in CLM, in order to
-test different branches than are tested with the default options.
-
-It also turns off the feedback from CISM to CLM, to test that option.

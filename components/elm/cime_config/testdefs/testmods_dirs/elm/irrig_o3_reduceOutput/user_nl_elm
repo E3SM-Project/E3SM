@@ -1,6 +1,0 @@
-! explicitly include stuff needed for o3 here rather than including the o3 directory,
-! since the o3 directory includes default, and we don't want that for this
-! reducedOutput testmod
-use_ozone = .true.
-hist_fincl1 += 'O3UPTAKESUN', 'O3UPTAKESHA'
-hist_fincl2 += 'O3UPTAKESUN', 'O3UPTAKESHA'

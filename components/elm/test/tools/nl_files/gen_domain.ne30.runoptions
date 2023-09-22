@@ -1,1 +1,0 @@
--m /glade/p/cesm/cseg/inputdata/cpl/cpl6/map_gx1v6_to_ne30np4_aave_da_091227.nc -o domain.ocn.gx1v6_test.nc -l domain.lnd.ne30np4_gx1v6.test.nc

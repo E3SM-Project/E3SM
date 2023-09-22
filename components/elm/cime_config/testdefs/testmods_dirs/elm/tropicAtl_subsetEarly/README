@@ -1,6 +1,0 @@
-This testmods directory is meant to be used in conjunction with a 20th
-century transient case at resolution 1x1_tropicAtl. 
-
-This starts the simulation prior to the first year defined on that
-file, in order to test the logic for starting before the first landuse_timeseries
-year.

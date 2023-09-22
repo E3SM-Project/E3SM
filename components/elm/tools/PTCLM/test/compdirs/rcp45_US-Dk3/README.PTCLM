@@ -1,1 +1,0 @@
-../PTCLMmkdata --verbose --pftgrid --clmnmlusecase=1850-2100_rcp4.5_transient --cesm_root ../../../../../../.. -s US-Dk3 -d /glade/p/cesmdata/cseg/inputdata --debug --sdate 140204 --map_gdate 140204 --mydatadir testing_dir/rcp45grd_file_creation 
