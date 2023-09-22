@@ -1212,6 +1212,7 @@ CONTAINS
     use mod_cosp,             only: cosp_simulator
     use mod_quickbeam_optics, only: size_distribution
 #endif
+    use shr_infnan_mod,       only: shr_infnan_isnan
 
     ! ######################################################################################
     ! Inputs
@@ -1971,8 +1972,8 @@ CONTAINS
     reff_cosp(1:ncol,1:pver,2) = rei(1:ncol,1:pver)*1.e-6_r8          !! LSCICE  (same as effi and effice in stratiform.F90)
     reff_cosp(1:ncol,1:pver,3) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  !! LSRAIN  (calculated in cldwat2m_micro.F90, passed to stratiform.F90)
     reff_cosp(1:ncol,1:pver,4) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  !! LSSNOW  (calculated in cldwat2m_micro.F90, passed to stratiform.F90)
-    reff_cosp(1:ncol,1:pver,5) = cv_reffliq(1:ncol,1:pver)*1.e-6_r8   !! CVCLIQ (calculated in stratiform.F90, not actually used in radiation)
-    reff_cosp(1:ncol,1:pver,6) = cv_reffice(1:ncol,1:pver)*1.e-6_r8   !! CVCICE (calculated in stratiform.F90, not actually used in radiation)
+    !reff_cosp(1:ncol,1:pver,5) = cv_reffliq(1:ncol,1:pver)*1.e-6_r8   !! CVCLIQ (calculated in stratiform.F90, not actually used in radiation)
+    !reff_cosp(1:ncol,1:pver,6) = cv_reffice(1:ncol,1:pver)*1.e-6_r8   !! CVCICE (calculated in stratiform.F90, not actually used in radiation)
     reff_cosp(1:ncol,1:pver,7) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  !! CVRAIN (same as stratiform per Andrew)
     reff_cosp(1:ncol,1:pver,8) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  !! CVSNOW (same as stratiform per Andrew)
     reff_cosp(1:ncol,1:pver,9) = 0._r8                                !! LSGRPL (using radar default reff)
@@ -1991,11 +1992,15 @@ CONTAINS
     where (ls_reffsnow(1:ncol,1:pver) .eq. R_UNDEF)
        reff_cosp(1:ncol,1:pver,4) = 0._r8
     end where
-    where (cv_reffliq(1:ncol,1:pver) .eq. R_UNDEF)
+    where (shr_infnan_isnan(cv_reffliq(1:ncol,1:pver)) .or. (cv_reffliq(1:ncol,1:pver) .eq. R_UNDEF))
        reff_cosp(1:ncol,1:pver,5) = 0._r8
+    elsewhere
+       reff_cosp(1:ncol,1:pver,5) = cv_reffliq(1:ncol,1:pver)*1.e-6_r8
     end where
-    where (cv_reffice(1:ncol,1:pver) .eq. R_UNDEF)
+    where (shr_infnan_isnan(cv_reffice(1:ncol,1:pver)) .or. (cv_reffice(1:ncol,1:pver) .eq. R_UNDEF))
        reff_cosp(1:ncol,1:pver,6) = 0._r8
+    elsewhere
+       reff_cosp(1:ncol,1:pver,6) = cv_reffice(1:ncol,1:pver)*1.e-6_r8
     end where
     where (ls_reffrain(1:ncol,1:pver) .eq. R_UNDEF)
        reff_cosp(1:ncol,1:pver,7) = 0._r8

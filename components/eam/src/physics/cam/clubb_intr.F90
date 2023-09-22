@@ -2572,7 +2572,7 @@ end subroutine clubb_init_cnst
    call t_stopf('adv_clubb_core_col_loop')
 
 
-   call outfld('fixerCLUBB', te_a(:)-te_b(:), pcols, lchnk )
+   call outfld('fixerCLUBB', te_a(:ncol)-te_b(:ncol), ncol, lchnk )
 
 
    ! Add constant to ghost point so that output is not corrupted
