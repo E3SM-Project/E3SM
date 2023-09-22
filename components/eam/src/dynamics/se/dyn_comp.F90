@@ -168,7 +168,6 @@ CONTAINS
     nthreads = omp_get_max_threads()
 #endif
 
-    if(par%dynproc) then
 
 #ifdef HAVE_MOAB
        appname="HM_COARSE"//C_NULL_CHAR
@@ -213,6 +212,7 @@ CONTAINS
 
 #endif
 
+    if(par%dynproc) then
        call t_startf('prim_init1')
        call prim_init1(elem,par,dom_mt,TimeLevel)
        call t_stopf('prim_init1')

@@ -135,201 +135,226 @@ contains
 
     ! character*100 outfile, wopts, localmeshfile, lnum, tagname
     ! integer  tagtype, numco, tag_sto_len, ent_type, tagindex
-     do j=1,np-1
-       do i =1, np-1
-         ix = (j-1)*(np-1)+i-1
-         local_map(i,j) = ix*4 + 1
-       enddo
-     enddo
-     do j=1, np-1
-       i = j
-       local_map(np, j) = ((np-1)*j-1)*4 + 2
-       local_map(i, np) = ( (np-1)*(np-2)+i-1)*4 + 4
-     enddo
-     local_map(np, np) = ((np-1)*(np-1)-1)*4 + 3
+    do j=1,np-1
+      do i =1, np-1
+        ix = (j-1)*(np-1)+i-1
+        local_map(i,j) = ix*4 + 1
+      enddo
+    enddo
+    do j=1, np-1
+      i = j
+      local_map(np, j) = ((np-1)*j-1)*4 + 2
+      local_map(i, np) = ( (np-1)*(np-2)+i-1)*4 + 4
+    enddo
+    local_map(np, np) = ((np-1)*(np-1)-1)*4 + 3
 
-     nelemd2 = (nelemd)*(np-1)*(np-1)
-     moab_dim_cquads = (nelemd)*4*(np-1)*(np-1)
+    nelemd2 = (nelemd)*(np-1)*(np-1)
+    moab_dim_cquads = (nelemd)*4*(np-1)*(np-1)
 
-     if(par%masterproc) then
-       write (iulog, *) " MOAB: semoab_mod module: create_moab_mesh_fine;  on processor " , par%rank ," elements: " ,  1, nelemd
-     endif
+    if(par%masterproc) then
+      write (iulog, *) " MOAB: semoab_mod module: create_moab_mesh_fine;  on processor " , par%rank ," nelemd: " , nelemd
+    endif
 
-     allocate(gdofv(moab_dim_cquads))
-     allocate(elemids(nelemd2))
+    if ( nelemd > 0 ) then
+      allocate(gdofv(moab_dim_cquads))
+      allocate(elemids(nelemd2))
+    endif
 
-     k=0 !   will be the index for element global dofs
-     do ie=1,nelemd
-       do j=1,np-1
-         do i=1,np-1
-           ix = (ie-1)*(np-1)*(np-1)+(j-1)*(np-1)+i-1
-           gdofv(ix*4+1) = elem(ie)%gdofP(i,j)
-           gdofv(ix*4+2) = elem(ie)%gdofP(i+1,j)
-           gdofv(ix*4+3) = elem(ie)%gdofP(i+1,j+1)
-           gdofv(ix*4+4) = elem(ie)%gdofP(i,j+1)
-           elemids(ix+1) = (elem(ie)%GlobalId-1)*(np-1)*(np-1)+(j-1)*(np-1)+i
-         enddo
-       enddo
-     enddo
+    k=0 !   will be the index for element global dofs
+    do ie=1,nelemd
+      do j=1,np-1
+        do i=1,np-1
+          ix = (ie-1)*(np-1)*(np-1)+(j-1)*(np-1)+i-1
+          gdofv(ix*4+1) = elem(ie)%gdofP(i,j)
+          gdofv(ix*4+2) = elem(ie)%gdofP(i+1,j)
+          gdofv(ix*4+3) = elem(ie)%gdofP(i+1,j+1)
+          gdofv(ix*4+4) = elem(ie)%gdofP(i,j+1)
+          elemids(ix+1) = (elem(ie)%GlobalId-1)*(np-1)*(np-1)+(j-1)*(np-1)+i
+        enddo
+      enddo
+    enddo
 
 !     order according to global dofs
 
-     allocate(moabvh(moab_dim_cquads))
-     allocate(indx(moab_dim_cquads))
+    if ( nelemd > 0 ) then
+      allocate(moabvh(moab_dim_cquads))
+      allocate(indx(moab_dim_cquads))
 
-     allocate(moabconn(moab_dim_cquads))
-     call IndexSet(moab_dim_cquads, indx)
-     call IndexSort(moab_dim_cquads, indx, gdofv, descend=.false.)
-!      after sort, gdofv( indx(i)) < gdofv( indx(i+1) )
+      allocate(moabconn(moab_dim_cquads))
+      call IndexSet(moab_dim_cquads, indx)
+      call IndexSort(moab_dim_cquads, indx, gdofv, descend=.false.)
+!     after sort, gdofv( indx(i)) < gdofv( indx(i+1) )
+    endif 
+    idx=0
+    currentval = 0
+    if ( nelemd > 0 ) then
+      currentval = gdofv( indx(1))
+      idx = 1
+    endif
+     
+    do ix=1,moab_dim_cquads
+      if (gdofv(indx(ix)) .ne. currentval ) then
+        idx=idx+1
+        currentval = gdofv(indx(ix))
+      endif
+      moabvh(ix) = idx  ! the vertex in connectivity array will be at this local index
+      ! this will be the moab connectivity
+      moabconn(indx(ix)) = idx
+    enddo
 
-     idx=1
-     currentval = gdofv( indx(1))
-     do ix=1,moab_dim_cquads
-        if (gdofv(indx(ix)) .ne. currentval ) then
-          idx=idx+1
-          currentval = gdofv(indx(ix))
-        endif
-        moabvh(ix) = idx  ! the vertex in connectivity array will be at this local index
-        ! this will be the moab connectivity
-        moabconn(indx(ix)) = idx
+    nverts = idx
+    if(par%masterproc) then
+      write (iulog, *) " MOAB: there are ", nverts, " local vertices on master task ", currentval, " is the max local gdof"
+    endif
+    if ( nelemd > 0 ) then
+      allocate(moab_vert_coords(3*nverts) )
+      allocate(vdone(nverts))
+      vdone = 0;
+    endif
+    if ( nelemd > 0 ) currentval = gdofv( indx(1)) ! start over to identify coordinates of the vertices
+
+    do ix=1,moab_dim_cquads
+      idx = indx(ix)   ! index in initial array, vertices in all fine quads
+      k = (idx-1)/(4*(np-1)*(np-1))  ! index of coarse quad, locally, starts at 0
+      ie = 1 + k  ! this is the element number; starts at nets=1
+      je = ( idx -1 -k*(np-1)*(np-1)*4 ) / 4 + 1 ! local fine quad in coarse, 1 to (np-1) ^ 2
+      irow = (je-1)/(np-1)+1
+      icol = je - (np-1)*(irow-1)
+      linx = idx - k*(np-1)*(np-1)*4 -(je-1)*4  ! this should be 1, 2, 3, 4
+      if( linx == 1) then
+        j = irow
+        i = icol
+      else if (linx == 2) then
+        j = irow
+        i = icol + 1
+      else if (linx == 3) then
+        j = irow + 1
+        i = icol + 1
+      else ! linx == 4
+        j = irow + 1
+        i = icol
+      endif
+
+      iv = moabvh(ix)
+      if (vdone(iv) .eq. 0) then
+        cart = spherical_to_cart (elem(ie)%spherep(i,j) )
+        moab_vert_coords ( 3*(iv-1)+1 ) = cart%x
+        moab_vert_coords ( 3*(iv-1)+2 ) = cart%y
+        moab_vert_coords ( 3*(iv-1)+3 ) = cart%z
+        vdone(iv) = gdofv(indx(ix)) ! this will be now our tag used for resolving shared entities ! convert to int, from long int
+      endif
+
      enddo
 
-     nverts = idx
-     if(par%masterproc) then
-       write (iulog, *) " MOAB: there are ", nverts, " local vertices on master task ", currentval, " is the max local gdof"
+     dimcoord = nverts*3
+     dimen = 3
+     if ( nelemd > 0 ) then
+       ierr = iMOAB_CreateVertices(MHFID, dimcoord, dimen, moab_vert_coords)
+       if (ierr > 0 )  &
+         call endrun('Error: fail to create MOAB vertices ')
      endif
-     allocate(moab_vert_coords(3*nverts) )
-     allocate(vdone(nverts))
-     vdone = 0;
-     currentval = gdofv( indx(1)) ! start over to identify coordinates of the vertices
-
-     do ix=1,moab_dim_cquads
-        idx = indx(ix)   ! index in initial array, vertices in all fine quads
-        k = (idx-1)/(4*(np-1)*(np-1))  ! index of coarse quad, locally, starts at 0
-        ie = 1 + k  ! this is the element number; starts at nets=1
-        je = ( idx -1 -k*(np-1)*(np-1)*4 ) / 4 + 1 ! local fine quad in coarse, 1 to (np-1) ^ 2
-        irow = (je-1)/(np-1)+1
-        icol = je - (np-1)*(irow-1)
-        linx = idx - k*(np-1)*(np-1)*4 -(je-1)*4  ! this should be 1, 2, 3, 4
-        if( linx == 1) then
-          j = irow
-          i = icol
-        else if (linx == 2) then
-          j = irow
-          i = icol + 1
-        else if (linx == 3) then
-          j = irow + 1
-          i = icol + 1
-        else ! linx == 4
-          j = irow + 1
-          i = icol
-        endif
-
-        iv = moabvh(ix)
-        if (vdone(iv) .eq. 0) then
-            cart = spherical_to_cart (elem(ie)%spherep(i,j) )
-            moab_vert_coords ( 3*(iv-1)+1 ) = cart%x
-            moab_vert_coords ( 3*(iv-1)+2 ) = cart%y
-            moab_vert_coords ( 3*(iv-1)+3 ) = cart%z
-            vdone(iv) = gdofv(indx(ix)) ! this will be now our tag used for resolving shared entities ! convert to int, from long int
-        endif
-
-     enddo
-
-      dimcoord = nverts*3
-      dimen = 3
-      ierr = iMOAB_CreateVertices(MHFID, dimcoord, dimen, moab_vert_coords)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to create MOAB vertices ')
-
-      !!num_el = nelemd2
-      mbtype = 3 !  quadrilateral
-      nve = 4;
-      block_ID = 200 ! this will be for coarse mesh
-
-      ierr = iMOAB_CreateElements( MHFID, nelemd2, mbtype, nve, moabconn, block_ID );
-      if (ierr > 0 )  &
-        call endrun('Error: fail to create MOAB elements')
+     !!num_el = nelemd2
+     mbtype = 3 !  quadrilateral
+     nve = 4;
+     block_ID = 200 ! this will be for coarse mesh
+     
+     if ( nelemd > 0 ) then
+       ierr = iMOAB_CreateElements( MHFID, nelemd2, mbtype, nve, moabconn, block_ID );
+       if (ierr > 0 )  &
+         call endrun('Error: fail to create MOAB elements')
+     endif
       ! nverts: num vertices; vdone will store now the markers used in global resolve
       ! for this particular problem, markers are the global dofs at corner nodes
 ! set the global id for vertices
 !   first, retrieve the tag
-      tagname='GDOF'//C_NULL_CHAR
-      tagtype = 0  ! dense, integer
-      numco = 1
-      ierr = iMOAB_DefineTagStorage(MHFID, tagname, tagtype, numco,  tagindex )
-      if (ierr > 0 )  &
-        call endrun('Error: fail to retrieve global id tag')
-      ! now set the values
-      ent_type = 0 ! vertex type
-      ierr = iMOAB_SetIntTagStorage ( MHFID, tagname, nverts , ent_type, vdone)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to set marker id tag for vertices')
+     tagname='GDOF'//C_NULL_CHAR
+     tagtype = 0  ! dense, integer
+     numco = 1
+     ierr = iMOAB_DefineTagStorage(MHFID, tagname, tagtype, numco,  tagindex )
+     if (ierr > 0 )  &
+       call endrun('Error: fail to retrieve global id tag')
+     ! now set the values
+     ent_type = 0 ! vertex type
+     if ( nverts > 0 ) then
+       ierr = iMOAB_SetIntTagStorage ( MHFID, tagname, nverts , ent_type, vdone)
+       if (ierr > 0 )  &
+         call endrun('Error: fail to set marker id tag for vertices')
+     endif 
 
-      ierr = iMOAB_ResolveSharedEntities( MHFID, nverts, vdone );
-      if (ierr > 0 )  &
-        call endrun('Error: fail to resolve shared entities')
+     ierr = iMOAB_ResolveSharedEntities( MHFID, nverts, vdone );
+     if (ierr > 0 )  &
+       call endrun('Error: fail to resolve shared entities')
 
-      vdone = -1 !  reuse vdone for the new tag, GLOBAL_ID (actual tag that we want to store global dof )
+     if ( nelemd > 0) then
+       vdone = -1 !  reuse vdone for the new tag, GLOBAL_ID (actual tag that we want to store global dof )
+     endif
 ! use element offset for actual global dofs
-      ! tagtype = 0  ! dense, integer
-      ! numco = 1
-      newtagg='GLOBAL_ID'//C_NULL_CHAR
-      ierr = iMOAB_DefineTagStorage(MHFID, newtagg, tagtype, numco,  tagindex )
-      if (ierr > 0 )  &
-        call endrun('Error: fail to create new GDOF tag')
-      do ie=1,nelemd
-        do ii=1,elem(ie)%idxp%NumUniquePts
-          i=elem(ie)%idxp%ia(ii)
-          j=elem(ie)%idxp%ja(ii)
-          igcol = elem(ie)%idxp%UniquePtoffset+ii-1
-          ix = local_map(i,j)
-          idx = moabconn((ie-1)*(np-1)*(np-1)*4 + ix) ! should
-          vdone ( idx ) = igcol
-        end do
-      end do
-      ! now set the values
-      ent_type = 0 ! vertex type
-      ierr = iMOAB_SetIntTagStorage ( MHFID, newtagg, nverts , ent_type, vdone)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to set global dof tag for vertices')
+     ! tagtype = 0  ! dense, integer
+     ! numco = 1
+     newtagg='GLOBAL_ID'//C_NULL_CHAR
+     ierr = iMOAB_DefineTagStorage(MHFID, newtagg, tagtype, numco,  tagindex )
+     if (ierr > 0 )  &
+       call endrun('Error: fail to create new GDOF tag')
+     do ie=1,nelemd
+       do ii=1,elem(ie)%idxp%NumUniquePts
+         i=elem(ie)%idxp%ia(ii)
+         j=elem(ie)%idxp%ja(ii)
+         igcol = elem(ie)%idxp%UniquePtoffset+ii-1
+         ix = local_map(i,j)
+         idx = moabconn((ie-1)*(np-1)*(np-1)*4 + ix) ! should
+         vdone ( idx ) = igcol
+       end do
+     end do
+     ! now set the values
+     ent_type = 0 ! vertex type
+     if ( nverts > 0 ) then
+       ierr = iMOAB_SetIntTagStorage ( MHFID, newtagg, nverts , ent_type, vdone)
+       if (ierr > 0 )  &
+         call endrun('Error: fail to set global dof tag for vertices')
+     endif
 
-      ierr = iMOAB_ReduceTagsMax ( MHFID, tagindex, ent_type)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to reduce max tag')
+     ierr = iMOAB_ReduceTagsMax ( MHFID, tagindex, ent_type)
+     if (ierr > 0 )  &
+       call endrun('Error: fail to reduce max tag')
 
-      ! set global id tag for elements
-      ent_type = 1 ! now set the global id tag on elements
-      ierr = iMOAB_SetIntTagStorage ( MHFID, newtagg, nelemd2 , ent_type, elemids)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to set global id tag for elements')
+     ! set global id tag for elements
+     ent_type = 1 ! now set the global id tag on elements
+     if ( nelemd2 > 0 ) then
+       ierr = iMOAB_SetIntTagStorage ( MHFID, newtagg, nelemd2 , ent_type, elemids)
+       if (ierr > 0 )  &
+         call endrun('Error: fail to set global id tag for elements')
+     endif
 
 !  now, after reduction, we can get the actual global ids for each vertex in the fine mesh
 !  before, some vertices that were owned in MOAB but not owned in CAM did not have the right global ID tag
 !  so vdone will be now correct on every task (no -1 anymore )
-      ent_type = 0 ! vertex type
-      allocate(vgids(nverts))
-      ierr = iMOAB_GetIntTagStorage ( MHFID, newtagg, nverts , ent_type, vgids)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to retrieve GLOBAL ID on each task')
-      ierr = iMOAB_UpdateMeshInfo(MHFID)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to update mesh info')
+     ent_type = 0 ! vertex type
+     if ( nverts > 0 ) then
+       allocate(vgids(nverts))
+       ierr = iMOAB_GetIntTagStorage ( MHFID, newtagg, nverts , ent_type, vgids)
+       if (ierr > 0 )  &
+         call endrun('Error: fail to retrieve GLOBAL ID on each task')
+     endif
+     ierr = iMOAB_UpdateMeshInfo(MHFID)
+     if (ierr > 0 )  &
+       call endrun('Error: fail to update mesh info')
 #ifdef MOABDEBUG
 !     write out the mesh file to disk, in parallel
-      outfile = 'wholeFineATM.h5m'//C_NULL_CHAR
-      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-      ierr = iMOAB_WriteMesh(MHFID, outfile, wopts)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to write the mesh file')
+     outfile = 'wholeFineATM.h5m'//C_NULL_CHAR
+     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+     ierr = iMOAB_WriteMesh(MHFID, outfile, wopts)
+     if (ierr > 0 )  &
+       call endrun('Error: fail to write the mesh file')
 #endif
 
 
 !    now create the coarse mesh, but the global dofs will come from fine mesh, after solving
-     ! nelemd2 = nelemd
-     moab_dim_cquads = (nelemd)*4
+    ! nelemd2 = nelemd
+    moab_dim_cquads = (nelemd)*4
 
-     allocate(gdofel(nelemd*np*np))
+     if ( nelemd > 0 ) then
+       allocate(gdofel(nelemd*np*np))
+     endif
      k=0 !   will be the index for element global dofs
      do ie=1,nelemd
        ix = ie-1
@@ -344,15 +369,20 @@ contains
 
 !     order according to global dofs
 !     allocate(indx(moab_dim_cquads))
-     call IndexSet(moab_dim_cquads, indx)
-     call IndexSort(moab_dim_cquads, indx, gdofv, descend=.false.)
+     if ( nelemd > 0 ) then
+       call IndexSet(moab_dim_cquads, indx)
+       call IndexSort(moab_dim_cquads, indx, gdofv, descend=.false.)
 !      after sort, gdofv( indx(i)) < gdofv( indx(i+1) )
 
-     allocate(moabvh_c(moab_dim_cquads))
+       allocate(moabvh_c(moab_dim_cquads))
 
-     allocate(moabconn_c(moab_dim_cquads))
-     idx=1
-     currentval = gdofv( indx(1))
+       allocate(moabconn_c(moab_dim_cquads))
+     endif
+     idx = 0
+     if ( nelemd > 0 ) then
+       idx=1
+       currentval = gdofv( indx(1))
+     endif
      do ix=1,moab_dim_cquads
         if (gdofv(indx(ix)) .ne. currentval ) then
           idx=idx+1
@@ -367,9 +397,11 @@ contains
        write (iulog, *) " MOAB: there are ", nverts_c, " local vertices on master task, coarse mesh"
      endif
 !     allocate(moab_vert_coords(3*idx) )
-     allocate(vdone_c(nverts_c))
-     vdone_c = 0;
-     currentval = gdofv( indx(1)) ! start over to identify coordinates of the vertices
+     if ( nelemd > 0 ) then 
+       allocate(vdone_c(nverts_c))
+       vdone_c = 0;
+       currentval = gdofv( indx(1)) ! start over to identify coordinates of the vertices
+     endif
 
      do ix=1,moab_dim_cquads
         i = indx(ix)   ! index in initial array
@@ -385,99 +417,109 @@ contains
 
      enddo
 
-      dimcoord = nverts_c*3
-      dimen = 3
-      ierr = iMOAB_CreateVertices(MHID, dimcoord, dimen, moab_vert_coords)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to create MOAB vertices ')
+     dimcoord = nverts_c*3
+     dimen = 3
+     if ( nverts_c > 0 ) then
+       ierr = iMOAB_CreateVertices(MHID, dimcoord, dimen, moab_vert_coords)
+       if (ierr > 0 )  &
+         call endrun('Error: fail to create MOAB vertices ')
+     endif
+     ! num_el = nelemd
+     mbtype = 3 !  quadrilateral
+     nve = 4;
+     block_ID = 100 ! this will be for coarse mesh
 
-      ! num_el = nelemd
-      mbtype = 3 !  quadrilateral
-      nve = 4;
-      block_ID = 100 ! this will be for coarse mesh
-
-      ierr = iMOAB_CreateElements( MHID, nelemd, mbtype, nve, moabconn_c, block_ID );
-      if (ierr > 0 )  &
-        call endrun('Error: fail to create MOAB elements')
+     if ( nelemd > 0 ) then 
+       ierr = iMOAB_CreateElements( MHID, nelemd, mbtype, nve, moabconn_c, block_ID );
+       if (ierr > 0 )  &
+         call endrun('Error: fail to create MOAB elements')
+     endif
       ! idx: num vertices; vdone will store now the markers used in global resolve
       ! for this particular problem, markers are the global dofs at corner nodes
 ! set the global id for vertices
 !   first, retrieve the tag
-      tagname='GDOFV'//C_NULL_CHAR
-      tagtype = 0  ! dense, integer
-      numco = 1
-      ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
-      if (ierr > 0 )  &
-        call endrun('Error: fail to retrieve GDOFV id tag')
-      ierr = iMOAB_DefineTagStorage(MHID, newtagg, tagtype, numco,  tagindex )
-      if (ierr > 0 )  &
-        call endrun('Error: fail to retrieve GLOBAL_ID tag on coarse mesh')
-      ! now set the values
-      ent_type = 0 ! vertex type
-      ierr = iMOAB_SetIntTagStorage ( MHID, tagname, nverts_c , ent_type, vdone_c)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to set GDOFV tag for vertices')
+     tagname='GDOFV'//C_NULL_CHAR
+     tagtype = 0  ! dense, integer
+     numco = 1
+     ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
+     if (ierr > 0 )  &
+       call endrun('Error: fail to retrieve GDOFV id tag')
+     ierr = iMOAB_DefineTagStorage(MHID, newtagg, tagtype, numco,  tagindex )
+     if (ierr > 0 )  &
+       call endrun('Error: fail to retrieve GLOBAL_ID tag on coarse mesh')
+     ! now set the values
+     ent_type = 0 ! vertex type
+     if ( nverts_c > 0 ) then
+       ierr = iMOAB_SetIntTagStorage ( MHID, tagname, nverts_c , ent_type, vdone_c)
+       if (ierr > 0 )  &
+         call endrun('Error: fail to set GDOFV tag for vertices')
+     endif
       ! set global id tag for coarse elements, too; they will start at nets=1, end at nete=nelemd
-      ent_type = 1 ! now set the global id tag on elements
-      ierr = iMOAB_SetIntTagStorage ( MHID, newtagg, nelemd , ent_type, elemids)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to set global id tag for vertices')
+     ent_type = 1 ! now set the global id tag on elements
+     if ( nelemd > 0 ) then 
+       ierr = iMOAB_SetIntTagStorage ( MHID, newtagg, nelemd , ent_type, elemids)
+       if (ierr > 0 )  &
+         call endrun('Error: fail to set global id tag for vertices')
+     endif 
 
-      ierr = iMOAB_ResolveSharedEntities( MHID, idx, vdone_c );
-      if (ierr > 0 )  &
-        call endrun('Error: fail to resolve shared entities')
+     ierr = iMOAB_ResolveSharedEntities( MHID, idx, vdone_c );
+     if (ierr > 0 )  &
+       call endrun('Error: fail to resolve shared entities')
 
 !   global dofs are the GLL points are set for each element
-      tagname='GLOBAL_DOFS'//C_NULL_CHAR
-      tagtype = 0  ! dense, integer
-      numco = np*np !  usually, it is 16; each element will have the dofs in order
-      ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
-      if (ierr > 0 )  &
-        call endrun('Error: fail to create global DOFS tag')
-      ! now set the values
-      ! set global dofs tag for coarse elements, too; they will start at nets=1, end at nete=nelemd
-      ent_type = 1 ! now set the global id tag on elements
-      numvals = nelemd*np*np ! input is the total number of values
-      ! form gdofel from vgids
-      do ie=1, nelemd
-        ix = (ie-1)*np*np ! ie: index in coarse element
-        je = (ie-1) * 4 * (np-1) * (np -1) !  index in moabconn array
-        ! vgids are global ids for fine vertices (1,nverts)
-        iv = 1
-        do j=1,np
-          do i=1,np
-            k = local_map(i,j)
-            gdofel(ix+iv) = vgids( moabconn( je + k ) )
-            iv = iv + 1
-          enddo
-        enddo
-        !  extract global ids
-        vdone_c( moabconn_c( (ie-1)*4+1) ) = vgids ( moabconn(je+1 ))
-        vdone_c( moabconn_c( (ie-1)*4+2) ) = vgids ( moabconn(je+ 4*(np-2)+2 )) ! valid for np = 4, 10
-        vdone_c( moabconn_c( (ie-1)*4+3) ) = vgids ( moabconn(je+ 4*((np-1)*(np-1)-1) + 3 )) ! for np = 4,  35
-        vdone_c( moabconn_c( (ie-1)*4+4) ) = vgids ( moabconn(je+ 4*(np-2)*(np-1) + 4 ))  !  28 for np = 4
-      enddo
-      ierr = iMOAB_SetIntTagStorage ( MHID, tagname, numvals, ent_type, gdofel)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to set globalDOFs tag for coarse elements')
-
+     tagname='GLOBAL_DOFS'//C_NULL_CHAR
+     tagtype = 0  ! dense, integer
+     numco = np*np !  usually, it is 16; each element will have the dofs in order
+     ierr = iMOAB_DefineTagStorage(MHID, tagname, tagtype, numco,  tagindex )
+     if (ierr > 0 )  &
+       call endrun('Error: fail to create global DOFS tag')
+     ! now set the values
+     ! set global dofs tag for coarse elements, too; they will start at nets=1, end at nete=nelemd
+     ent_type = 1 ! now set the global id tag on elements
+     numvals = nelemd*np*np ! input is the total number of values
+     ! form gdofel from vgids
+     do ie=1, nelemd
+       ix = (ie-1)*np*np ! ie: index in coarse element
+       je = (ie-1) * 4 * (np-1) * (np -1) !  index in moabconn array
+       ! vgids are global ids for fine vertices (1,nverts)
+       iv = 1
+       do j=1,np
+         do i=1,np
+           k = local_map(i,j)
+           gdofel(ix+iv) = vgids( moabconn( je + k ) )
+           iv = iv + 1
+         enddo
+       enddo
+       !  extract global ids
+       vdone_c( moabconn_c( (ie-1)*4+1) ) = vgids ( moabconn(je+1 ))
+       vdone_c( moabconn_c( (ie-1)*4+2) ) = vgids ( moabconn(je+ 4*(np-2)+2 )) ! valid for np = 4, 10
+       vdone_c( moabconn_c( (ie-1)*4+3) ) = vgids ( moabconn(je+ 4*((np-1)*(np-1)-1) + 3 )) ! for np = 4,  35
+       vdone_c( moabconn_c( (ie-1)*4+4) ) = vgids ( moabconn(je+ 4*(np-2)*(np-1) + 4 ))  !  28 for np = 4
+     enddo
+     if ( nelemd > 0 ) then
+       ierr = iMOAB_SetIntTagStorage ( MHID, tagname, numvals, ent_type, gdofel)
+       if (ierr > 0 )  &
+         call endrun('Error: fail to set globalDOFs tag for coarse elements')
+     endif 
 
       ! set the global ids for coarse vertices the same as corresponding fine vertices
-      ent_type = 0 ! vertex type
-      ierr = iMOAB_SetIntTagStorage ( MHID, newtagg, nverts_c , ent_type, vdone_c)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to set GLOBAL_DOFS tag values')
+     ent_type = 0 ! vertex type
+     if ( nverts_c > 0 ) then
+       ierr = iMOAB_SetIntTagStorage ( MHID, newtagg, nverts_c , ent_type, vdone_c)
+       if (ierr > 0 )  &
+         call endrun('Error: fail to set GLOBAL_DOFS tag values')
+     endif 
 
-      ierr = iMOAB_UpdateMeshInfo(MHID)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to update mesh info')
+     ierr = iMOAB_UpdateMeshInfo(MHID)
+     if (ierr > 0 )  &
+       call endrun('Error: fail to update mesh info')
 #ifdef MOABDEBUG
-!     write out the mesh file to disk, in parallel
-      outfile = 'wholeATM.h5m'//C_NULL_CHAR
-      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-      ierr = iMOAB_WriteMesh(MHID, outfile, wopts)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to write the mesh file')
+!    write out the mesh file to disk, in parallel
+     outfile = 'wholeATM.h5m'//C_NULL_CHAR
+     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+     ierr = iMOAB_WriteMesh(MHID, outfile, wopts)
+     if (ierr > 0 )  &
+       call endrun('Error: fail to write the mesh file')
 #endif
 
      if (fv_nphys > 0 ) then
@@ -486,6 +528,7 @@ contains
        ! first count the number of edges in the coarse mesh;
        ! use euler: v-m+f = 2 => m = v + f - 2
        nedges_c = nverts_c + nelemd - 1 ! could be more, if unconnected regions ?
+       if ( nedges_c < 0 ) nedges_c = 0 ! it cannot be negative
        internal_edges = 0
        boundary_edges = 0
        reverse_edges = 0
@@ -493,20 +536,23 @@ contains
        !
        ! there are new vertices on each coarse edge (fv_phys - 1) , and (fv_nphys - 1) * (fv_nphys - 1)
        !   new vertices on each coarse cell
-
-       allocate (local_cell_gids(nelemd))
-       allocate (indx_cell(nelemd))
-       allocate (edge(2,nedges_c)) !
+       if ( nelemd > 0 ) then 
+         allocate (local_cell_gids(nelemd))
+         allocate (indx_cell(nelemd))
+         allocate (edge(2,nedges_c)) !
+       endif
        do ie=1, nelemd !
-           local_cell_gids(ie) = elem(ie)%GlobalID
+         local_cell_gids(ie) = elem(ie)%GlobalID
        enddo
-       call IndexSet(nelemd, indx_cell)
-       call IndexSort(nelemd, indx_cell, local_cell_gids, descend=.false.)
+       if ( nelemd > 0 ) then
+         call IndexSet(nelemd, indx_cell)
+         call IndexSort(nelemd, indx_cell, local_cell_gids, descend=.false.)
        ! print *, ' local_cell_gids ', local_cell_gids
        ! print *, ' indx_cell ', indx_cell
-       allocate( elem_edge (4, nelemd) )
+         allocate( elem_edge (4, nelemd) )
        ! print *, '------------------------------- '
        ! print *, "RANK:", par%rank
+       endif
        edge_index = 0
        do ie=1, nelemd !
            ! we need to check if neighbor is with id smaller; that means it was already created ?
@@ -578,10 +624,12 @@ contains
        ! now generate phys grid, uniform FV type mesh;
        ! 2 cases: fv_nphys is 1 or 2; when 2, we need new nodes; will use the same id as
        ! the gdof on edge is used, with the smaller id chosen, among
-       allocate(moabconn_pg(4*nelem_pg)) ! connectivity
-       ! reuse moab_vert_coords for coordinates of pg mesh
-       ! the first nverts_c coords are the same as coarse mesh; but we do create new
-       allocate(vdone_pg(nverts_pg))
+       if ( nelemd > 0 ) then
+         allocate(moabconn_pg(4*nelem_pg)) ! connectivity
+         ! reuse moab_vert_coords for coordinates of pg mesh
+         ! the first nverts_c coords are the same as coarse mesh; but we do create new
+         allocate(vdone_pg(nverts_pg))
+       endif
        do iv = 1, nverts_c
           vdone_pg(iv) = vdone_c(iv) ! also the coordinates will be the same !!
        enddo
@@ -686,19 +734,21 @@ contains
 
           dimcoord = nverts_pg*3
           dimen = 3
-          ierr = iMOAB_CreateVertices(MHPGID, dimcoord, dimen, moab_vert_coords)
-          if (ierr > 0 )  &
+          if ( nverts_pg > 0 ) then
+            ierr = iMOAB_CreateVertices(MHPGID, dimcoord, dimen, moab_vert_coords)
+            if (ierr > 0 )  &
               call endrun('Error: fail to create MOAB vertices ')
-
+          endif 
          ! num_el = nelem_pg  *
           mbtype = 3 !  quadrilateral
           nve = 4;
           block_ID = 300 ! this will be for pg mesh
 
-          ierr = iMOAB_CreateElements( MHPGID, nelem_pg, mbtype, nve, moabconn_pg, block_ID );
-          if (ierr > 0 )  &
-             call endrun('Error: fail to create MOAB elements')
-
+          if ( nelem_pg > 0 ) then 
+            ierr = iMOAB_CreateElements( MHPGID, nelem_pg, mbtype, nve, moabconn_pg, block_ID );
+            if (ierr > 0 )  &
+              call endrun('Error: fail to create MOAB elements')
+          endif
           tagname='GLOBAL_ID'//C_NULL_CHAR
           tagtype = 0  ! dense, integer
           numco = 1
@@ -708,16 +758,22 @@ contains
 
           ! now set the values
           ent_type = 0 ! vertex type
-          ierr = iMOAB_SetIntTagStorage ( MHPGID, tagname, nverts_pg , ent_type, vdone_pg)
-          if (ierr > 0 )  &
+          if ( nverts_pg > 0 ) then 
+            ierr = iMOAB_SetIntTagStorage ( MHPGID, tagname, nverts_pg , ent_type, vdone_pg)
+            if (ierr > 0 )  &
               call endrun('Error: fail to set global id tag for vertices')
+          endif
           ! set global id tag for pg2 elements, too; they will start at nets=1, end at nete=nelemd*4
           ent_type = 1 ! now set the global id tag on elements
-          ierr = iMOAB_SetIntTagStorage ( MHPGID, tagname, nelem_pg , ent_type, elemids)
-          if (ierr > 0 )  &
-             call endrun('Error: fail to set global id tag for edges')
+          if ( nelem_pg > 0 ) then
+            ierr = iMOAB_SetIntTagStorage ( MHPGID, tagname, nelem_pg , ent_type, elemids)
+            if (ierr > 0 )  &
+              call endrun('Error: fail to set global id tag for edges')
+          endif 
 
           ierr = iMOAB_ResolveSharedEntities( MHPGID, nverts_pg, vdone_pg );
+          if (ierr > 0 )  &
+             call endrun('Error: fail to resolve shared ents for pg2 mesh')
 
           ierr = iMOAB_UpdateMeshInfo(MHPGID)
           if (ierr > 0 )  &
@@ -731,20 +787,29 @@ contains
             call endrun('Error: fail to write the mesh file')
 #endif
        endif  ! only valid for pg == 2
+       if ( nelemd > 0 ) then 
+         deallocate (local_cell_gids)
+         deallocate (indx_cell)
+         deallocate (edge) !
+         deallocate(moabconn_pg) ! connectivity
+         deallocate(vdone_pg)
+       endif
 
      endif
 
      ! deallocate
-     deallocate(moabvh)
-!     deallocate(moabconn) keep it , it is useful to set the tag on fine mesh
-     deallocate(vdone)
-     deallocate(gdofel)
-     deallocate(indx)
-     deallocate(elemids)
-     deallocate(gdofv)
-     deallocate(moabvh_c)
-     deallocate(moabconn_c)
-     deallocate(vdone_c)
+     if ( nelemd > 0 ) then
+       deallocate(moabvh)
+       deallocate(moabconn) ! do not keep it anymore, we are not setting another tag on fine mesh
+       deallocate(vdone)
+       deallocate(gdofel)
+       deallocate(indx)
+       deallocate(elemids)
+       deallocate(gdofv)
+       deallocate(moabvh_c)
+       deallocate(moabconn_c)
+       deallocate(vdone_c)
+     endif
 !    end copy
 
   end subroutine create_moab_meshes
