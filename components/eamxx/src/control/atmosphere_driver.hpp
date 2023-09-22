@@ -48,8 +48,10 @@ public:
   AtmosphereDriver (const ekat::Comm& atm_comm,
                     const ekat::ParameterList& params);
 
-  // The default dtor is fine.
-  ~AtmosphereDriver () = default;
+  // Must call finalize, so that, if AD is destroyed as part of uncaught
+  // exception stack unwinding, we will still perform some cleanup ops,
+  // among which, for instance, closing any open output file.
+  ~AtmosphereDriver ();
 
   // ---- Begin initialization methods ---- //
 
@@ -89,7 +91,7 @@ public:
   void setup_surface_coupling_processes() const;
 
   // Zero out precipitation flux
-  void set_precipitation_fields_to_zero();
+  void reset_accummulated_fields();
 
   // Create and add mass and energy conservation checks
   // and pass to m_atm_process_group.
@@ -130,8 +132,9 @@ public:
   // Note: dt is assumed to be in seconds
   void run (const int dt);
 
-  // Clean up the driver (includes cleaning up the parameterizations and the fm's);
-  void finalize ( /* inputs */ );
+  // Clean up the driver (finalizes and cleans up all internals)
+  // NOTE: if already finalized, this is a no-op
+  void finalize ();
 
   field_mgr_ptr get_ref_grid_field_mgr () const;
   field_mgr_ptr get_field_mgr (const std::string& grid_name) const;
@@ -164,13 +167,13 @@ protected:
   // different naming conventions for phis.
   void read_fields_from_file (const std::vector<std::string>& field_names_nc,
                               const std::vector<std::string>& field_names_eamxx,
-                              const std::string& grid_name,
+                              const std::shared_ptr<const AbstractGrid>& grid,
                               const std::string& file_name,
                               const util::TimeStamp& t0);
   // Read fields from a file when the names of the fields in
   // EAMxx match with the .nc file.
   void read_fields_from_file (const std::vector<std::string>& field_names,
-                              const std::string& grid_name,
+                              const std::shared_ptr<const AbstractGrid>& grid,
                               const std::string& file_name,
                               const util::TimeStamp& t0);
   void register_groups ();

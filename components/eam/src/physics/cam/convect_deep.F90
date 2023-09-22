@@ -56,6 +56,9 @@ module convect_deep
 
    integer     ::  ttend_dp_idx        = 0
 
+   integer     ::  lambdadpcu_idx   = 0
+   integer     ::  mudpcu_idx       = 0
+   integer     ::  icimrdp_idx      = 0
 !=========================================================================================
   contains 
 
@@ -124,6 +127,10 @@ subroutine convect_deep_register
   call pbuf_add_field('PREC_DP',    'physpkg',dtype_r8,(/pcols/),     prec_dp_idx)
   call pbuf_add_field('SNOW_DP',   'physpkg',dtype_r8,(/pcols/),      snow_dp_idx)
 
+  call pbuf_add_field('LAMBDADPCU', 'physpkg', dtype_r8,(/pcols,pver/), lambdadpcu_idx)
+  call pbuf_add_field('MUDPCU',     'physpkg', dtype_r8,(/pcols,pver/), mudpcu_idx)
+  call pbuf_add_field('ICIMRDP',    'physpkg', dtype_r8,(/pcols,pver/), icimrdp_idx)
+
   ! If WACCM gravity waves are on, output this field.
   if (use_gw_convect) then
      call pbuf_add_field('TTEND_DP','physpkg',dtype_r8,(/pcols,pver/),ttend_dp_idx)
@@ -156,6 +163,7 @@ subroutine convect_deep_init(pref_edge,pbuf2d)
 
   dp_frac_idx = pbuf_get_index('DP_FRAC')
   icwmrdp_idx = pbuf_get_index('ICWMRDP')
+  icimrdp_idx = pbuf_get_index('ICIMRDP')
 
   select case ( deep_scheme )
   case('off') !     ==> no deep convection
@@ -166,6 +174,7 @@ subroutine convect_deep_init(pref_edge,pbuf2d)
      call pbuf_set_field(pbuf2d, dp_flxsnw_idx, 0._r8)
      call pbuf_set_field(pbuf2d, dp_frac_idx, 0._r8)
      call pbuf_set_field(pbuf2d, icwmrdp_idx, 0._r8)
+     call pbuf_set_field(pbuf2d, icimrdp_idx, 0._r8)
      call pbuf_set_field(pbuf2d, rprddp_idx, 0._r8)
      call pbuf_set_field(pbuf2d, nevapr_dpcu_idx, 0._r8)
   case('CLUBB_SGS')
@@ -194,7 +203,7 @@ end subroutine convect_deep_init
 subroutine convect_deep_tend( &
      mcon    ,cme     ,          &
      dlf     ,pflx    ,zdu      , &
-     rliq    , &
+     rliq    ,rice     , &
      ztodt   , &
      state   ,ptend   ,landfrac ,pbuf, mu, eu, &
      du, md, ed, dp, dsubcld, jt, maxg, ideep,lengath ) 
@@ -227,6 +236,8 @@ subroutine convect_deep_tend( &
    real(r8), intent(out) :: zdu(pcols,pver)    ! detraining mass flux
 
    real(r8), intent(out) :: rliq(pcols) ! reserved liquid (not yet in cldliq) for energy integrals
+   real(r8), intent(out) :: rice(pcols) ! reserved ice (not yet in cldice) for energy integrals
+
    real(r8), intent(out):: mu(pcols,pver)
    real(r8), intent(out):: eu(pcols,pver) 
    real(r8), intent(out):: du(pcols,pver) 
@@ -252,12 +263,17 @@ subroutine convect_deep_tend( &
    real(r8), pointer :: prec(:)   ! total precipitation
    real(r8), pointer :: snow(:)   ! snow from ZM convection 
 
-   real(r8), pointer, dimension(:) :: jctop
-   real(r8), pointer, dimension(:) :: jcbot
+   real(r8), pointer, dimension(:) :: jctop_r8
+   real(r8), pointer, dimension(:) :: jcbot_r8
    real(r8), pointer, dimension(:,:,:) :: cld        
    real(r8), pointer, dimension(:,:) :: ql        ! wg grid slice of cloud liquid water.
    real(r8), pointer, dimension(:,:) :: rprd      ! rain production rate
    real(r8), pointer, dimension(:,:,:) :: fracis  ! fraction of transported species that are insoluble
+
+   real(r8), pointer, dimension(:,:) :: mudpcu       ! Droplet size distribution shape parameter for radiation
+   real(r8), pointer, dimension(:,:) :: lambdadpcu   ! Droplet size distribution shape parameter for radiation
+   real(r8), pointer, dimension(:,:) :: qi           ! wg grid slice of cloud ice.
+
 
    real(r8), pointer, dimension(:,:) :: evapcdp   ! Evaporation of deep convective precipitation
 
@@ -269,10 +285,11 @@ subroutine convect_deep_tend( &
 
    real(r8) zero(pcols, pver)
 
+   integer :: jctop(pcols), jcbot(pcols)
    integer i, k
 
-   call pbuf_get_field(pbuf, cldtop_idx,  jctop )
-   call pbuf_get_field(pbuf, cldbot_idx,  jcbot )
+   call pbuf_get_field(pbuf, cldtop_idx,  jctop_r8 )
+   call pbuf_get_field(pbuf, cldbot_idx,  jcbot_r8 )
    call pbuf_get_field(pbuf, icwmrdp_idx, ql    )
 
   select case ( deep_scheme )
@@ -284,6 +301,7 @@ subroutine convect_deep_tend( &
     cme = 0
     zdu = 0
     rliq = 0
+    rice = 0   
 
     call physics_ptend_init(ptend, state%psetcols, 'convect_deep')
 
@@ -297,6 +315,9 @@ subroutine convect_deep_tend( &
     call pbuf_get_field(pbuf, nevapr_dpcu_idx, evapcdp )
     call pbuf_get_field(pbuf, prec_dp_idx,     prec )
     call pbuf_get_field(pbuf, snow_dp_idx,     snow )
+    call pbuf_get_field(pbuf, mudpcu_idx,      mudpcu)
+    call pbuf_get_field(pbuf, lambdadpcu_idx,  lambdadpcu)
+    call pbuf_get_field(pbuf, icimrdp_idx,     qi    )
 
    !cld = 0  !!HuiWan 2014-05. Bugfix. cld is an input variable to zm_conv_tend.
     ql = 0
@@ -305,9 +326,13 @@ subroutine convect_deep_tend( &
     evapcdp = 0
     prec=0
     snow=0
+    mudpcu     = 0.0_r8
+    lambdadpcu = 0.0_r8
+    qi = 0._r8
+
 
     jctop = pver
-    jcbot = 1._r8
+    jcbot = 1
 
   case('ZM') !    1 ==> Zhang-McFarlane (default)
      call pbuf_get_field(pbuf, pblh_idx,  pblh)
@@ -316,7 +341,7 @@ subroutine convect_deep_tend( &
      call t_startf('zm_conv_tend')
      call zm_conv_tend( pblh    ,mcon    ,cme     , &
           tpert   ,dlf     ,pflx    ,zdu      , &
-          rliq    , &
+          rliq    ,rice    , &
           ztodt   , &
           jctop, jcbot , &
           state   ,ptend   ,landfrac, pbuf, mu, eu, &
@@ -325,6 +350,11 @@ subroutine convect_deep_tend( &
 
 
   end select
+
+  do i = 1,pcols
+     jctop_r8(i) = real(jctop(i), r8)
+     jcbot_r8(i) = real(jcbot(i), r8)
+  end do
 
   ! If we added this, set it.
   if (ttend_dp_idx > 0) then

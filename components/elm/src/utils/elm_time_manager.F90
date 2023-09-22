@@ -1,4 +1,4 @@
-module clm_time_manager
+module elm_time_manager
 
    use shr_kind_mod, only: r8 => shr_kind_r8
    use shr_sys_mod , only: shr_sys_abort
@@ -1883,4 +1883,4 @@ contains
 
   end subroutine for_test_set_curr_date
 
-end module clm_time_manager
+end module elm_time_manager

@@ -31,8 +31,8 @@ module ColumnDataType
   use ch4varcon       , only : allowlakeprod
   use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr, pinit_beta1, pinit_beta2
   use soilorder_varcon, only : smax, ks_sorption
-  use clm_time_manager, only : is_restart, get_nstep
-  use clm_time_manager, only : is_first_step, get_step_size
+  use elm_time_manager, only : is_restart, get_nstep
+  use elm_time_manager, only : is_first_step, get_step_size
   use landunit_varcon , only : istice, istwet, istsoil, istdlak, istcrop, istice_mec
   use column_varcon   , only : icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall, icol_shadewall
   use histFileMod     , only : hist_addfld1d, hist_addfld2d, no_snow_normal
@@ -2019,14 +2019,18 @@ contains
        this%decomp_cpools(begc:endc,:) = spval
        do l  = 1, ndecomp_pools
           if(trim(decomp_cascade_con%decomp_pool_name_history(l))=='')exit
+
+          ! Do not define history variables for CWD when fates is active
+          if( decomp_cascade_con%is_cwd(l) .and. use_fates ) cycle
+          
           if ( nlevdecomp_full > 1 ) then
              data2dptr => this%decomp_cpools_vr(:,:,l)
              fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
              longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C (vertically resolved)'
 
-              call hist_addfld2d (fname=fieldname, units='gC/m^3',  type2d='levdcmp', &
-                    avgflag='A', long_name=longname, &
-                     ptr_col=data2dptr)
+             call hist_addfld2d (fname=fieldname, units='gC/m^3',  type2d='levdcmp', &
+                  avgflag='A', long_name=longname, &
+                  ptr_col=data2dptr)
           endif
 
           data1dptr => this%decomp_cpools(:,l)
@@ -3215,6 +3219,9 @@ contains
     end if
     this%decomp_npools(begc:endc,:) = spval
     do l  = 1, ndecomp_pools
+
+       if( decomp_cascade_con%is_cwd(l) .and. use_fates ) cycle
+       
        if ( nlevdecomp_full > 1 ) then
           data2dptr => this%decomp_npools_vr(:,:,l)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'N_vr'
@@ -4189,6 +4196,10 @@ contains
     end if
     this%decomp_ppools(begc:endc,:) = spval
     do l  = 1, ndecomp_pools
+
+       ! Do not define history variables for CWD when fates is active
+       if( decomp_cascade_con%is_cwd(l) .and. use_fates ) cycle
+
        if ( nlevdecomp_full > 1 ) then
           data2dptr => this%decomp_ppools_vr(:,:,l)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'P_vr'
@@ -5801,16 +5812,18 @@ contains
                ptr_col=this%fphr)
        end if
 
-       this%cwdc_hr(begc:endc) = spval
-        call hist_addfld1d (fname='CWDC_HR', units='gC/m^2/s', &
-             avgflag='A', long_name='coarse woody debris C heterotrophic respiration', &
-              ptr_col=this%cwdc_hr)
-
-       this%cwdc_loss(begc:endc) = spval
-        call hist_addfld1d (fname='CWDC_LOSS', units='gC/m^2/s', &
-             avgflag='A', long_name='coarse woody debris C loss', &
-              ptr_col=this%cwdc_loss)
-
+       if(.not.use_fates)then
+          this%cwdc_hr(begc:endc) = spval
+          call hist_addfld1d (fname='CWDC_HR', units='gC/m^2/s', &
+               avgflag='A', long_name='coarse woody debris C heterotrophic respiration', &
+               ptr_col=this%cwdc_hr)
+          
+          this%cwdc_loss(begc:endc) = spval
+          call hist_addfld1d (fname='CWDC_LOSS', units='gC/m^2/s', &
+               avgflag='A', long_name='coarse woody debris C loss', &
+               ptr_col=this%cwdc_loss)
+       end if
+          
        this%lithr(begc:endc) = spval
         call hist_addfld1d (fname='LITTERC_HR', units='gC/m^2/s', &
              avgflag='A', long_name='litter C heterotrophic respiration', &
@@ -5882,7 +5895,7 @@ contains
        this%m_decomp_cpools_to_fire(begc:endc,:)      = spval
        this%m_decomp_cpools_to_fire_vr(begc:endc,:,:) = spval
        do k = 1, ndecomp_pools
-          if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
+          if ( decomp_cascade_con%is_litter(k) .or. (decomp_cascade_con%is_cwd(k).and.(.not.use_fates))) then
              data1dptr => this%m_decomp_cpools_to_fire(:,k)
              fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'
              longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' C fire loss'
@@ -6212,26 +6225,27 @@ contains
              avgflag='A', long_name='annual sum of column-level NPP', &
               ptr_col=this%annsum_npp, default='inactive')
 
-
+        if(.not.use_fates)then 
         ! C4MIP output variable, plant carbon flux to cwd (a part of fVegLitter)
-        this%plant_c_to_cwdc(begc:endc) = spval
-        call hist_addfld1d (fname='VEGC_TO_CWDC', units='gC/m^2/s', &
-             avgflag='A', long_name='plant carbon flux to cwd', &
-             ptr_col=this%plant_c_to_cwdc, default='inactive')
-
-       ! C4MIP output variable, plant phosphorus flux to cwd (a part of fVegLitter)
-        this%plant_p_to_cwdp(begc:endc) = spval
-        call hist_addfld1d (fname='VEGP_TO_CWDP', units='gP/m^2/s', &
-           avgflag='A', long_name='plant phosphorus flux to cwd', &
-           ptr_col=this%plant_p_to_cwdp, default='inactive')
-
+           this%plant_c_to_cwdc(begc:endc) = spval
+           call hist_addfld1d (fname='VEGC_TO_CWDC', units='gC/m^2/s', &
+                avgflag='A', long_name='plant carbon flux to cwd', &
+                ptr_col=this%plant_c_to_cwdc, default='inactive')
+           
+           ! C4MIP output variable, plant phosphorus flux to cwd (a part of fVegLitter)
+           this%plant_p_to_cwdp(begc:endc) = spval
+           call hist_addfld1d (fname='VEGP_TO_CWDP', units='gP/m^2/s', &
+                avgflag='A', long_name='plant phosphorus flux to cwd', &
+                ptr_col=this%plant_p_to_cwdp, default='inactive')
+        end if
+           
        ! end of C12 block
 
     else if ( carbon_type == 'c13' ) then
        this%m_decomp_cpools_to_fire(begc:endc,:) = spval
        this%m_decomp_cpools_to_fire_vr(begc:endc,:,:) = spval
        do k = 1, ndecomp_pools
-          if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
+          if ( decomp_cascade_con%is_litter(k) .or. (decomp_cascade_con%is_cwd(k).and.(.not.use_fates)) ) then
              data1dptr => this%m_decomp_cpools_to_fire(:,k)
              fieldname = 'C13_M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'
              longname =  'C13 '//trim(decomp_cascade_con%decomp_pool_name_long(k))//' C fire loss'
@@ -6433,7 +6447,7 @@ contains
        this%m_decomp_cpools_to_fire(begc:endc,:)      = spval
        this%m_decomp_cpools_to_fire_vr(begc:endc,:,:) = spval
        do k = 1, ndecomp_pools
-          if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
+          if ( decomp_cascade_con%is_litter(k) .or. (decomp_cascade_con%is_cwd(k).and.(.not.use_fates)) ) then
              data1dptr => this%m_decomp_cpools_to_fire(:,k)
              fieldname = 'C14_M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'
              longname =  'C14 '//trim(decomp_cascade_con%decomp_pool_name_long(k))//' C fire loss'
@@ -7967,11 +7981,13 @@ contains
            ptr_col=this%nfix_to_sminn)
 
     ! C4MIP output variable, plant nitrogen flux to cwd (a part of fVegLitter)
-    this%plant_n_to_cwdn(begc:endc) = spval
-    call hist_addfld1d (fname='VEGN_TO_CWDN', units='gN/m^2/s', &
-        avgflag='A', long_name='plant nitrogen flux to cwd', &
-        ptr_col=this%plant_n_to_cwdn, default='inactive')
-
+    if(.not.use_fates)then 
+       this%plant_n_to_cwdn(begc:endc) = spval
+       call hist_addfld1d (fname='VEGN_TO_CWDN', units='gN/m^2/s', &
+            avgflag='A', long_name='plant nitrogen flux to cwd', &
+            ptr_col=this%plant_n_to_cwdn, default='inactive')
+    end if
+       
     do k = 1, ndecomp_pools
        if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
           this%m_decomp_npools_to_fire(begc:endc,k) = spval
@@ -9696,7 +9712,7 @@ contains
 
 
     do k = 1, ndecomp_pools
-       if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
+       if ( decomp_cascade_con%is_litter(k) .or. (decomp_cascade_con%is_cwd(k) .and. (.not.use_fates))) then
           this%m_decomp_ppools_to_fire(begc:endc,k) = spval
           data1dptr => this%m_decomp_ppools_to_fire(:,k)
           fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'P_TO_FIRE'

@@ -72,16 +72,14 @@ namespace scream
 class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess>
 {
 public:
-  using TimeStamp   = util::TimeStamp;
-  using ci_string   = ekat::CaseInsensitiveString;
-  using logger_t    = ekat::logger::LoggerBase;
-  using LogLevel    = ekat::logger::LogLevel;
-  using str_any_pair_t = std::pair<std::string,ekat::any>;
-  template<typename T>
-  using strmap_t = std::map<std::string,T>;
+  using TimeStamp = util::TimeStamp;
+  using ci_string = ekat::CaseInsensitiveString;
+  using logger_t  = ekat::logger::LoggerBase;
+  using LogLevel  = ekat::logger::LogLevel;
+  using any_ptr_t = std::shared_ptr<ekat::any>;
 
   template<typename T>
-  using str_map = std::map<std::string,T>;
+  using strmap_t = std::map<std::string,T>;
 
   using prop_check_ptr = std::shared_ptr<PropertyCheck>;
 
@@ -119,6 +117,10 @@ public:
   // Return the parameter list
   const ekat::ParameterList& get_params () const { return m_params; }
 
+  // This method prepares the atm proc for computing the tendency of
+  // output fields, as prescribed via parameter list
+  virtual void setup_tendencies_requests ();
+
   // Note: if we are being subcycled from the outside, the host will set
   //       do_update=false, and we will not update the timestamp of the AP
   //       or that of the output fields.
@@ -150,6 +152,10 @@ public:
   void run_precondition_checks () const;
   void run_postcondition_checks () const;
   void run_column_conservation_check () const;
+
+
+  void init_step_tendencies ();
+  void compute_step_tendencies (const double dt);
 
   // These methods allow the AD to figure out what each process needs, with very fine
   // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
@@ -241,14 +247,20 @@ public:
   // For restarts, it is possible that some atm proc need to write/read some ad-hoc data.
   // E.g., some atm proc might need to read/write certain scalar values.
   // Assumptions:
-  //  - these maps are: data_name -> (data_type, data_value)
+  //  - these maps are: data_name -> ekat::any
   //  - the data_name is unique across the whole atm
   // The AD will take care of ensuring these are written/read to/from restart files.
-  const strmap_t<str_any_pair_t>& get_restart_extra_data () const { return m_restart_extra_data; }
+  const strmap_t<any_ptr_t>& get_restart_extra_data () const { return m_restart_extra_data; }
+        strmap_t<any_ptr_t>& get_restart_extra_data ()       { return m_restart_extra_data; }
 
   // Boolean that dictates whether or not the conservation checks are run for this process
   bool has_column_conservation_check () { return m_column_conservation_check_data.has_check; }
 
+  // For internal diagnostics and debugging.
+  void print_global_state_hash(const std::string& label) const;
+  // For BFB tracking in production simulations.
+  void print_fast_global_state_hash(const std::string& label) const;
+  
 protected:
 
   // Sends a message to the atm log
@@ -431,7 +443,7 @@ protected:
   std::shared_ptr<logger_t>  m_atm_logger;
 
   // Extra data needed for restart
-  strmap_t<str_any_pair_t>  m_restart_extra_data;
+  strmap_t<any_ptr_t>  m_restart_extra_data;
 
   // Use at your own risk. Motivation: Free up device memory for a field that is
   // no longer used, such as a field read in the ICs used only to initialize
@@ -479,14 +491,18 @@ private:
   std::list<Field>        m_fields_out;
   std::list<Field>        m_internal_fields;
 
+  // Data structures necessary to compute tendencies of updated fields
+  strmap_t<std::string>    m_tend_to_field;
+  strmap_t<Field>          m_proc_tendencies;
+
   // These maps help to retrieve a field/group stored in the lists above. E.g.,
   //   auto ptr = m_field_in_pointers[field_name][grid_name];
   // then *ptr is a field in m_fields_in, with name $field_name, on grid $grid_name.
-  str_map<str_map<FieldGroup*>> m_groups_in_pointers;
-  str_map<str_map<FieldGroup*>> m_groups_out_pointers;
-  str_map<str_map<Field*>> m_fields_in_pointers;
-  str_map<str_map<Field*>> m_fields_out_pointers;
-  str_map<str_map<Field*>> m_internal_fields_pointers;
+  strmap_t<strmap_t<FieldGroup*>> m_groups_in_pointers;
+  strmap_t<strmap_t<FieldGroup*>> m_groups_out_pointers;
+  strmap_t<strmap_t<Field*>> m_fields_in_pointers;
+  strmap_t<strmap_t<Field*>> m_fields_out_pointers;
+  strmap_t<strmap_t<Field*>> m_internal_fields_pointers;
 
   // The list of in/out field/group requests.
   std::set<FieldRequest>   m_required_field_requests;
@@ -524,6 +540,9 @@ private:
 
   // Whether we need to update time stamps at the end of the run method
   bool m_update_time_stamps = true;
+
+  // Whether this atm proc should compute tendencies for any of its updated fields
+  bool m_compute_proc_tendencies = false;
 
   // Log level for when property checks perform a repair
   ekat::logger::LogLevel  m_repair_log_level;

@@ -89,4 +89,21 @@ module seaice_constants
         skeletalLayerThickness, &
         gramsCarbonPerMolCarbon   ! g carbon per mol carbon
 
+   ! ocean biogeochemistry ISPOL values
+   real(kind=RKIND), parameter, public :: &
+         oceanAmmoniumISPOL        = 1.0_RKIND, & ! mmol N m-3
+         oceanDMSISPOL             = 0.1_RKIND, & ! mmol S m-3
+         oceanDMSPISPOL            = 0.1_RKIND, & ! mmol S m-3
+         oceanDiatomsISPOL         = 1.0_RKIND, & ! mmol N m-3
+         oceanSmallAlgaeISPOL      = 0.0057_RKIND, & ! mmol N m-3
+         oceanPhaeocystisISPOL     = 0.0027_RKIND, & ! mmol N m-3
+         oceanPolysaccharidsISPOL  = 16.2_RKIND, & ! mmol C m-3
+         oceanLipidsISPOL          = 9.0_RKIND, & ! mmol C m-3
+         oceanProteinsCarbonISPOL  = 9.0_RKIND, & ! mmol C m-3
+         oceanDICISPOL             = 1.0_RKIND, & ! mmol C m-3
+         oceanProteinsISPOL        = 12.9_RKIND, & ! mmol N m-3
+         oceanDissolvedIronISPOL   = 0.4_RKIND, & ! mmol Fe m-3
+         oceanParticulateIronISPOL = 2.0_RKIND,& ! mmol Fe m-3
+         oceanHumicsISPOL          = 1.0_RKIND ! mmol C m-3
+
 end module seaice_constants

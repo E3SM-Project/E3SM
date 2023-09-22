@@ -722,8 +722,13 @@ void FieldManager::add_field (const Field& f) {
   EKAT_REQUIRE_MSG (not has_field(f.get_header().get_identifier().name()),
       "Error! The method 'add_field' requires the input field to not be already existing.\n"
       "  - field name: " + f.get_header().get_identifier().name() + "\n");
-  EKAT_REQUIRE_MSG (f.get_header().get_tracking().get_groups_info().size()==0,
-      "Error! The method 'add_field' requires the input field to not be part of any group.\n");
+  EKAT_REQUIRE_MSG (f.get_header().get_tracking().get_groups_info().size()==0 ||
+                    m_group_requests.size()==0,
+      "Error! When calling 'add_field', one of the following must be true:\n"
+      "  - the input field is not be part of any group,\n"
+      "  - there were no group requests for this field manager.\n"
+      "The reason for this is that otherwise we *might* have missed some inclusion dependency\n"
+      "when we allocated the fields for one of those groups.\n");
 
   // All good, add the field to the repo
   m_fields[f.get_header().get_identifier().name()] = std::make_shared<Field>(f);

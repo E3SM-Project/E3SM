@@ -122,7 +122,7 @@ OPTIONS
 			  trop_mam7 | trop_mam9 | super_fast_llnl | super_fast_llnl_mam3 |
                           linoz_mam3 | linoz_mam4_resus | linoz_mam4_resus_soag |
 			  linoz_mam4_resus_mom | linoz_mam4_resus_mom_soag |
-                          trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | superfast_mam4_resus_mom_soag |
+                          trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | superfast_mam4_resus_mom_soag | chemuci_linozv3_mam5_vbs |
 			  none ].  Default: trop_mam3.
      -clubb_sgs         Turns on CLUBB_SGS
      -shoc_sgs          Turns on SHOC_SGS
@@ -143,6 +143,7 @@ OPTIONS
      -mach <name>       Name of target system, for setting system-specific namelist defaults
      -max_n_rad_cnst <n> Maximum number of constituents that are either radiatively
                         active, or in any single diagnostic list for the radiation.
+     -vbs               Activate vbs soa processes in the modal aerosol model.
      -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | rk | p3].
      -nadv <n>          Set total number of advected species to <n>.
      -nadv_tt <n>       Set number of advected test tracers <n>.
@@ -388,6 +389,7 @@ GetOptions(
     "lnd=s"                     => \$opts{'lnd'},
     "mach=s"                    => \$opts{'mach'},
     "max_n_rad_cnst=s"          => \$opts{'max_n_rad_cnst'},
+    "vbs"                       => \$opts{'vbs'},
     "microphys=s"               => \$opts{'microphys'},
     "mpi_inc=s"                 => \$opts{'mpi_inc'},
     "mpi_lib=s"                 => \$opts{'mpi_lib'},
@@ -847,6 +849,12 @@ if ($print>=2) { print "Maximum radiatively active tracers: $max_n_rad_cnst$eol"
 # So add it to the config object now.
 $cfg_ref->set('chem', $chem_pkg);
 
+# vbs option in mam
+if (defined $opts{'vbs'}) {
+   $cfg_ref->set('vbs', $opts{'vbs'});
+}
+my $vbs = $cfg_ref->get('vbs');
+
 # waccm physics
 if (defined $opts{'waccm_phys'}) {
     $cfg_ref->set('waccm_phys', $opts{'waccm_phys'});
@@ -978,7 +986,7 @@ my $clubb_sgs = $cfg_ref->get('clubb_sgs');
 
 # consistency checks...
 
-# CLUBB_SGS only works with mg or p3 microphysics
+# CLUBB_SGS only works with MG or P3 microphysics
 if ($clubb_sgs and $microphys_pkg !~ m/^mg/ and $microphys_pkg !~ m/^p3/) {
     die <<"EOF";
 **    ERROR: microphysics package set to: $microphys_pkg
@@ -1423,6 +1431,8 @@ if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
 } elsif ($chem_pkg =~ '_mam4_mom' || $chem_pkg =~ '_mam4_resus_mom' ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
+} elsif ($chem_pkg =~ '_mam5' ) {
+    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_5MODE ';
 } elsif ($chem_pkg =~ '_mam4' ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
 } elsif ($chem_pkg =~ '_mam7') {
@@ -1434,11 +1444,9 @@ if ($chem_pkg =~ '_mam3') {
 if ($bc_dep_to_snow_updates == 1) {
     $chem_cppdefs = "$chem_cppdefs  -DMODAL_AER"
 }
-
-if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_mam4' || $chem_pkg eq 'trop_mam4_resus' || $chem_pkg eq 'trop_mam4_resus_soag' || $chem_pkg eq 'trop_mam4_resus_mom')) {
+if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_mam4' || $chem_pkg eq 'trop_mam4_resus' || $chem_pkg eq 'trop_mam4_resus_soag' || $chem_pkg eq 'trop_mam4_resus_mom' || $chem_pkg =~ 'linoz_mam7_resus_mom' ||  $chem_pkg =~ 'trop_strat_mam7_resus_mom'||  $chem_pkg =~ '_mam5')) {
     $chem_cppdefs = "$chem_cppdefs  -DRAIN_EVAP_TO_COARSE_AERO "
 }
-
 #-----------------------------------------------------------------------------------------------
 # Number of advected constituents
 my $nadv;
@@ -1475,7 +1483,7 @@ else {
         elsif ($microphys_pkg =~/^p3/) {
             $nadv += 8;
             if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
-        }
+	}
 
         if ($clubb_do_adv) {
             $nadv += 9;
@@ -1855,7 +1863,7 @@ if (!$ccsm_seq){
 # on some older compilers used by HOMME standalone.
 if ($dyn_pkg eq 'se') {
     my $csnp = $cfg_ref->get('csnp');
-    $cfg_cppdefs .= " -DNP=$csnp -DNC=4 -DHAVE_F2003_PTR_BND_REMAP";
+    $cfg_cppdefs .= " -DNP=$csnp -DHAVE_F2003_PTR_BND_REMAP";
     if ($smp eq 'ON') {
       $cfg_cppdefs .= " -DHORIZ_OPENMP"
     }
@@ -1902,6 +1910,9 @@ if ( ($ccsm_seq) and ($spmd eq 'ON') ) { $cfg_cppdefs .= " -DSPMD"; }
 
 # Chem CPP defs
 $cfg_cppdefs .= $chem_cppdefs;
+
+#vbs option in mam
+if ($vbs) { $cfg_cppdefs .= ' -DVBS_SOA'; }
 
 #WACCM-X extended thermosphere/ionosphere model
 if ($waccmx) { $cfg_cppdefs .= ' -DWACCMX'; }
@@ -2740,6 +2751,7 @@ sub write_filepath
       elsif ($opts{'dyn_target'} eq 'preqx_kokkos') {
         print $fh "$camsrcdir/homme/src/share/cxx\n";
         print $fh "$camsrcdir/homme/src/share/cxx/mpi\n";
+        print $fh "$camsrcdir/homme/src/share/cxx/utilities\n";
         print $fh "$camsrcdir/homme/src/preqx_kokkos\n";
         print $fh "$camsrcdir/homme/src/preqx_kokkos/cxx\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
@@ -2748,6 +2760,7 @@ sub write_filepath
       elsif ($opts{'dyn_target'} eq 'theta-l_kokkos') {
         print $fh "$camsrcdir/homme/src/share/cxx\n";
         print $fh "$camsrcdir/homme/src/share/cxx/mpi\n";
+        print $fh "$camsrcdir/homme/src/share/cxx/utilities\n";
         print $fh "$camsrcdir/homme/src/theta-l_kokkos\n";
         print $fh "$camsrcdir/homme/src/theta-l_kokkos/cxx\n";
         print $fh "$camsrcdir/homme/src/theta-l/share\n";

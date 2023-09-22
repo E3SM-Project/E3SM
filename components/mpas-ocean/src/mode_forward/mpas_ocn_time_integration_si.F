@@ -2365,7 +2365,7 @@ module ocn_time_integration_si
             ! layerThickEdgeFlux, density, pressure, and SSH
             ! in this diagnostics solve.
             call ocn_diagnostic_solve(dt, statePool, forcingPool, &
-                                      meshPool, scratchPool, &
+                                      meshPool, verticalMeshPool, scratchPool, &
                                       tracersPool, 2, full=.false.)
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2836,7 +2836,7 @@ module ocn_time_integration_si
          !$acc enter data copyin(landIceDraft)
       endif
 #endif
-      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, &
+      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, &
                                 scratchPool, tracersPool, 2)
 
       call mpas_dmpar_field_halo_exch(domain, 'surfaceFrictionVelocity')
@@ -3021,7 +3021,7 @@ module ocn_time_integration_si
 #endif
       end if
 
-      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, &
+      call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, &
                                 scratchPool, tracersPool, 2)
 
       ! Update the effective desnity in land ice if we're coupling to
@@ -4324,7 +4324,7 @@ module ocn_time_integration_si
 #endif
 
 !#######################################################################
-#else
+#elif defined(USE_LAPACK)
 
          ! LAPACK on CPU 
          !    (also if no MAGMA & CUBLAS for GPU ; Data staging)
@@ -4332,7 +4332,6 @@ module ocn_time_integration_si
          call DSPMV('U', nPrecVec, 1.0_RKIND, prec_ivmat(:,1), &
                          SIvec_in(1:nPrecVec) , 1, 0.0_RKIND,  &
                          SIvec_out(1:nPrecVec), 1)
-
 #endif
 
       elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then

@@ -1,0 +1,5 @@
+frivinp_rtm = '$DIN_LOC_ROOT/rof/mosart/MOSART_NLDAS_8th_20160426_20210609d_rslp.nc'
+sediflag = .true.
+parafile = '$DIN_LOC_ROOT/rof/mosart/US_reservoir_8th_NLDAS3_updated.nc'
+routingmethod = 2
+dlevelh2r = 100

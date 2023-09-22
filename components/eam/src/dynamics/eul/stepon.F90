@@ -16,9 +16,6 @@ module stepon
   use ppgrid,           only: begchunk, endchunk
   use physics_types,    only: physics_state, physics_tend
   use time_manager,     only: is_first_step, is_last_step, get_step_size
-  use scamMod,          only: setiopupdate, readiopdata, &   
-                              use_iop, doiopupdate, use_pert_frc, &
-			      wfld, wfldh, single_column
   use perf_mod
 
   implicit none
@@ -54,10 +51,6 @@ module stepon
   real(r8) :: pmid(plon,plev)           ! Pressure at midpoint
   type(advection_state) :: adv_state    ! Advection state data
 
-  real(r8) :: etamid(plev)              ! vertical coords at midpoints or pmid if single_column
-
-  logical :: iop_update_surface         ! update surface properties in IOP forcing
-
 !======================================================================= 
 contains
 !======================================================================= 
@@ -75,9 +68,6 @@ subroutine stepon_init(dyn_in, dyn_out)
    use physconst,      only: gravit
    use rgrid,          only: nlon
    use eul_control_mod,only: eul_nsplit
-#if ( defined BFB_CAM_SCAM_IOP )
-   use iop,            only:init_iop_fields
-#endif
 !-----------------------------------------------------------------------
 ! Arguments
 !
@@ -101,12 +91,10 @@ subroutine stepon_init(dyn_in, dyn_out)
    !
    if (is_first_step()) then
       do lat=beglat,endlat
-	 if (.not. single_column) then
-            do i=1,nlon(lat)
-               coslat(i) = cos(clat(lat))
-               rcoslat(i) = 1._r8/coslat(i)
-            end do
-         endif
+         do i=1,nlon(lat)
+            coslat(i) = cos(clat(lat))
+            rcoslat(i) = 1._r8/coslat(i)
+         end do
          !     
          ! Set current time pressure arrays for model levels etc.
          !
@@ -118,17 +106,12 @@ subroutine stepon_init(dyn_in, dyn_out)
             end do
          end do
 
-	 if (.not. single_column) then
          !
          ! Calculate vertical motion field
          !
-            call omcalc (rcoslat, div(1,1,lat,n3), u3(1,1,lat,n3), v3(1,1,lat,n3), dpsl(1,lat), &
-                      dpsm(1,lat), pmid, pdel, rpmid   ,pint(1,plevp), &
-                      omga(1,1,lat), nlon(lat))
-         else
-         
-            omga(1,:,lat)=wfld(:)
-         endif
+          call omcalc (rcoslat, div(1,1,lat,n3), u3(1,1,lat,n3), v3(1,1,lat,n3), dpsl(1,lat), &
+                    dpsm(1,lat), pmid, pdel, rpmid   ,pint(1,plevp), &
+                    omga(1,1,lat), nlon(lat))
       end do
    end if
 
@@ -148,11 +131,6 @@ subroutine stepon_init(dyn_in, dyn_out)
    call t_stopf ('stepon_startup')
 
 
-#if ( defined BFB_CAM_SCAM_IOP )
-   if (is_first_step()) then
-      call init_iop_fields()
-   endif
-#endif
 end subroutine stepon_init
 
 !
@@ -198,17 +176,6 @@ subroutine stepon_run1( ztodt, phys_state, phys_tend , pbuf2d, dyn_in, dyn_out)
   call diag_dynvar_ic (phis, ps(:,beglat:endlat,n3m1), t3(:,:,beglat:endlat,n3m1), u3(:,:,beglat:endlat,n3m1), &
                        v3(:,:,beglat:endlat,n3m1), q3(:,:,:,beglat:endlat,n3m1) )
   call t_stopf ('diag_dynvar_ic')
-
-  ! Determine whether it is time for an IOP update;
-  ! doiopupdate set to true if model time step > next available IOP 
-  if (use_iop .and. .not. is_last_step()) then
-    call setiopupdate
-  end if
-  
-  if (single_column) then
-    iop_update_surface = .true. 
-    if (doiopupdate) call readiopdata( iop_update_surface,hyam,hybm )
-  endif
   
   !
   !----------------------------------------------------------
@@ -258,7 +225,6 @@ subroutine stepon_run3( ztodt, cam_out, phys_state, dyn_in, dyn_out )
 !----------------------------------------------------------------------- 
   use dyn_comp,       only: dyn_import_t, dyn_export_t
   use eul_control_mod,only: eul_nsplit
-  use eul_single_column_mod, only: scm_setinitial, scm_setfields
   use hycoef,         only: hyam, hybm
   real(r8), intent(in) :: ztodt            ! twice time step unless nstep=0
   type(cam_out_t), intent(inout) :: cam_out(begchunk:endchunk)
@@ -267,19 +233,6 @@ subroutine stepon_run3( ztodt, cam_out, phys_state, dyn_in, dyn_out )
   type(dyn_export_t) :: dyn_out                      ! included for compatibility
   real(r8) :: dt_dyn0,dt_dyn 
   integer :: stage
-  if (single_column) then
-     
-     ! Update IOP properties e.g. omega, divT, divQ
-     
-     iop_update_surface = .false.
-     if (doiopupdate) then
-       call scm_setinitial()
-       call readiopdata( iop_update_surface,hyam,hybm )
-       call scm_setfields()
-     endif
-     
-     
-  endif
 
   !----------------------------------------------------------
   ! DYNPKG Call the Dynamics Package

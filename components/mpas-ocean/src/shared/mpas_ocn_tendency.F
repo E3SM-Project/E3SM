@@ -67,6 +67,7 @@ module ocn_tendency
    use ocn_wetting_drying
    use ocn_vel_tidal_potential
    use ocn_vel_self_attraction_loading
+   use ocn_manufactured_solution
 
    implicit none
    private
@@ -224,6 +225,9 @@ contains
       ! Compute thickness change due to tidal forcing
       call ocn_tidal_forcing_layer_thickness(forcingPool, &
                                              tendThick, err)
+
+      ! Compute thickness tendency to manufactured solution
+      call ocn_manufactured_solution_tend_thick(tendThick, err)
 
 #ifdef MPAS_OPENACC
       !$acc exit data copyout(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff)
@@ -430,11 +434,10 @@ contains
           call ocn_compute_self_attraction_loading(domain, forcingPool, dminfo, ssh, err)
           call mpas_reset_clock_alarm(domain % clock, 'salComputeAlarm', ierr=err)
       endif
-      !$acc update device(ssh_sal)
 
       ! Add tidal potential (if needed) 
       call ocn_compute_tidal_potential_forcing(err)
-      if (config_time_integrator == 'RK4') then
+      if ((config_time_integrator == 'RK4') .or. (config_time_integrator =='LTS')) then
         ! for split explicit, tidal forcing is added in barotropic subcycles
         call ocn_vel_tidal_potential_tend(ssh,surfacePressure, tendVel, err)
       endif
@@ -445,7 +448,11 @@ contains
       ! Add forcing and bottom drag
       call ocn_vel_forcing_tend(normalVelocity, sfcFlxAttCoeff, &
                                 sfcStress, kineticEnergyCell, &
+                                layerThickEdgeDrag, &
                                 layerThickEdgeMean, tendVel, err)
+ 
+      ! Compute tendency term for manufactured solution
+      call ocn_manufactured_solution_tend_vel(tendVel, err)
 
       ! vertical mixing treated implicitly in a later routine
       ! adjust total velocity tendency based on wetting/drying

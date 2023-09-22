@@ -11,7 +11,6 @@ my @groups = qw(run_modes
                 submesoscale_eddy_parameterization
                 gm_eddy_parameterization
                 eddy_parameterization
-                rayleigh_damping
                 cvmix
                 wave_coupling
                 gotm
@@ -24,6 +23,8 @@ my @groups = qw(run_modes
                 land_ice_fluxes
                 advection
                 bottom_drag
+                rayleigh_damping
+                vegetation_drag
                 ocean_constants
                 pressure_gradient
                 eos
@@ -38,6 +39,7 @@ my @groups = qw(run_modes
                 testing
                 transport_tests
                 init_mode_vert_levels
+                manufactured_solution
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers

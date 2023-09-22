@@ -76,7 +76,7 @@ contains
     use shr_file_mod     , only : shr_file_setLogUnit, shr_file_setLogLevel
     use shr_file_mod     , only : shr_file_getLogUnit, shr_file_getLogLevel
     use shr_file_mod     , only : shr_file_getUnit, shr_file_setIO
-    use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
+    use elm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
     use elm_initializeMod, only : initialize1, initialize2, initialize3
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
     use elm_varctl       , only : finidat,single_column, elm_varctl_set, noland
@@ -461,8 +461,8 @@ contains
     use elm_instMod       , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
     use elm_driver        , only : elm_drv
     use elm_varorb        , only : eccen, obliqr, lambm0, mvelpp
-    use clm_time_manager  , only : get_curr_date, get_nstep, get_curr_calday, get_step_size
-    use clm_time_manager  , only : advance_timestep, set_nextsw_cday,update_rad_dtime
+    use elm_time_manager  , only : get_curr_date, get_nstep, get_curr_calday, get_step_size
+    use elm_time_manager  , only : advance_timestep, set_nextsw_cday,update_rad_dtime
     use seq_timemgr_mod   , only : seq_timemgr_EClockGetData, seq_timemgr_StopAlarmIsOn
     use seq_timemgr_mod   , only : seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockDateInSync
     use spmdMod           , only : masterproc, mpicom

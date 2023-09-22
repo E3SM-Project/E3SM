@@ -26,6 +26,7 @@ public :: &
    phys_do_flux_avg,  &! return true to average surface fluxes
    cam_physpkg_is,    &! query for the name of the physics package
    cam_chempkg_is,    &! query for the name of the chemistry package
+   set_additional_diagn_in_phys_control, &! set switch for additional diagn
    waccmx_is
 
 ! Private module data
@@ -82,10 +83,34 @@ logical           :: history_vdiag        = .false.    ! output the variables us
 logical           :: get_presc_aero_data  = .false.    ! output MAM variables needed for prescribed run
 logical           :: history_aerosol      = .false.    ! output the MAM aerosol variables and tendencies
 logical           :: history_aero_optics  = .false.    ! output the aerosol
+logical           ::  is_output_interactive_volc = .false.    ! output the stratosphere optics
 logical           :: history_eddy         = .false.    ! output the eddy variables
 logical           :: history_budget       = .false.    ! output tendencies and state variables for CAM4
                                                        ! temperature, water vapor, cloud ice and cloud
                                                        ! liquid budgets.
+logical           :: history_gaschmbudget = .false.    ! output gas chemistry tracer concentrations and tendencies
+logical           :: history_gaschmbudget_2D = .false. ! output 2D gas chemistry tracer concentrations and tendencies
+logical           :: history_gaschmbudget_2D_levels = .false. ! output 2D gas chemistry tracer concentrations and tendencies within certain layers
+integer           :: history_gaschmbudget_num = 2      ! Tape number for instantaneous gas chemistry budget output
+integer           :: gaschmbudget_2D_L1_s = 1          ! Start layer of L1 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L1_e = 26         ! End layer of L1 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L2_s = 27         ! Start layer of L2 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L2_e = 38         ! End layer of L2 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L3_s = 39         ! Start layer of L3 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L3_e = 58         ! End layer of L3 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L4_s = 59         ! Start layer of L4 for 2D gas chemistry tracer budget 
+integer           :: gaschmbudget_2D_L4_e = 72         ! End layer of L4 for 2D gas chemistry tracer budget 
+logical           :: history_UCIgaschmbudget_2D = .false. ! output 2D UCI gas chemistry tracer concentrations and tendencies
+logical           :: history_UCIgaschmbudget_2D_levels = .false. ! output 2D UCI gas chemistry tracer concentrations and tendencies within certain layers
+logical           :: history_chemdyg_summary = .false.    ! output necessary variables for ChemDyg 
+integer           :: UCIgaschmbudget_2D_L1_s = 1          ! Start layer of L1 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L1_e = 26         ! End layer of L1 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L2_s = 27         ! Start layer of L2 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L2_e = 38         ! End layer of L2 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L3_s = 39         ! Start layer of L3 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L3_e = 58         ! End layer of L3 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L4_s = 59         ! Start layer of L4 for 2D UCI gas chemistry tracer budget 
+integer           :: UCIgaschmbudget_2D_L4_e = 72         ! End layer of L4 for 2D UCI gas chemistry tracer budget 
 logical           :: ssalt_tuning         = .false.    ! sea salt tuning flag for progseasalts_intr.F90
 logical           :: resus_fix            = .false.    ! to address resuspension bug fix in wetdep.F90 
 logical           :: convproc_do_aer      = .false.    ! to apply unified convective transport/removal for aerosols
@@ -149,6 +174,9 @@ logical, public, protected :: use_gw_convect = .false.
 !GW energy fix
 logical, public, protected :: use_gw_energy_fix = .false.
 
+!additional diagnostics switch
+logical, public, protected :: print_additional_diagn_phys_control = .false.
+
 ! Switches that turn on/off individual parameterizations.
 !
 ! Comment by Hui Wan (PNNL, 2014-12):
@@ -172,7 +200,7 @@ logical :: l_dry_adj       = .true.
 logical :: l_st_mac        = .true.
 logical :: l_st_mic        = .true.
 logical :: l_rad           = .true.
-
+logical :: modal_strat_sulfate_aod_treatment = .false.
 ! Numerical schemes for process coupling
 
 integer :: cflx_cpl_opt = 1  ! When to apply surface tracer fluxes (not including water vapor).
@@ -204,11 +232,19 @@ subroutine phys_ctl_readnl(nlfile)
       use_crm_accel, crm_accel_factor, crm_accel_uv, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
       get_presc_aero_data,history_aerosol, history_aero_optics, &
+      is_output_interactive_volc, &
       history_eddy, history_budget,  history_budget_histfile_num, history_waccm, &
       conv_water_in_rad, history_clubb, do_clubb_sgs, do_shoc_sgs, do_tms, state_debug_checks, &
       linearize_pbl_winds, export_gustiness, &
       use_mass_borrower, do_aerocom_ind3, &
       ieflx_opt, &
+      history_gaschmbudget, history_gaschmbudget_2D, history_gaschmbudget_2D_levels, &
+      gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e, gaschmbudget_2D_L2_s, gaschmbudget_2D_L2_e, & 
+      gaschmbudget_2D_L3_s, gaschmbudget_2D_L3_e, gaschmbudget_2D_L4_s, gaschmbudget_2D_L4_e, & 
+      history_UCIgaschmbudget_2D, history_UCIgaschmbudget_2D_levels, history_chemdyg_summary, &
+      UCIgaschmbudget_2D_L1_s, UCIgaschmbudget_2D_L1_e, UCIgaschmbudget_2D_L2_s, UCIgaschmbudget_2D_L2_e, & 
+      UCIgaschmbudget_2D_L3_s, UCIgaschmbudget_2D_L3_e, UCIgaschmbudget_2D_L4_s, UCIgaschmbudget_2D_L4_e, & 
+      history_gaschmbudget_num, &
       use_qqflx_fixer, & 
       print_fixer_message, & 
       use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
@@ -220,7 +256,8 @@ subroutine phys_ctl_readnl(nlfile)
       cflx_cpl_opt, &
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
-      rrtmg_temp_fix, ideal_phys_option
+      rrtmg_temp_fix, ideal_phys_option, &
+      modal_strat_sulfate_aod_treatment
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -243,6 +280,15 @@ subroutine phys_ctl_readnl(nlfile)
         history_aerosol = .true.
       endif
 
+   end if
+   if (history_chemdyg_summary) then
+        if (history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
+            history_chemdyg_summary = .false.
+            history_gaschmbudget_2D = .true.
+            history_UCIgaschmbudget_2D = .true.
+            history_gaschmbudget_2D_levels = .true.
+            if (masterproc) write(iulog,*) 'phys_ctl_readnl: history_chemdyg_summary is in conflict with history_gaschmbudget_2D and history_gaschmbudget_2D_levels. Turn history_chemdyg_summary off and turn on both history_gaschmbudget_2D and history_gaschmbudget_2D_levels, as well as history_UCIgaschmbudget_2D to get full outputs.'
+        end if
    end if
 
 #ifdef SPMD
@@ -277,7 +323,31 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(get_presc_aero_data,             1 , mpilog,  0, mpicom)
    call mpibcast(history_aerosol,                 1 , mpilog,  0, mpicom)
    call mpibcast(history_aero_optics,             1 , mpilog,  0, mpicom)
+   call mpibcast(is_output_interactive_volc,      1 , mpilog,  0, mpicom)
    call mpibcast(history_budget,                  1 , mpilog,  0, mpicom)
+   call mpibcast(history_gaschmbudget,            1 , mpilog,  0, mpicom)
+   call mpibcast(history_gaschmbudget_2D,         1 , mpilog,  0, mpicom)
+   call mpibcast(history_gaschmbudget_2D_levels,  1 , mpilog,  0, mpicom)
+   call mpibcast(gaschmbudget_2D_L1_s,            1 , mpiint,  0, mpicom)
+   call mpibcast(gaschmbudget_2D_L1_e,            1 , mpiint,  0, mpicom)
+   call mpibcast(gaschmbudget_2D_L2_s,            1 , mpiint,  0, mpicom)
+   call mpibcast(gaschmbudget_2D_L2_e,            1 , mpiint,  0, mpicom)
+   call mpibcast(gaschmbudget_2D_L3_s,            1 , mpiint,  0, mpicom)
+   call mpibcast(gaschmbudget_2D_L3_e,            1 , mpiint,  0, mpicom)
+   call mpibcast(gaschmbudget_2D_L4_s,            1 , mpiint,  0, mpicom)
+   call mpibcast(gaschmbudget_2D_L4_e,            1 , mpiint,  0, mpicom)
+   call mpibcast(history_UCIgaschmbudget_2D,         1 , mpilog,  0, mpicom)
+   call mpibcast(history_UCIgaschmbudget_2D_levels,  1 , mpilog,  0, mpicom)
+   call mpibcast(history_chemdyg_summary,            1 , mpilog,  0, mpicom)
+   call mpibcast(UCIgaschmbudget_2D_L1_s,            1 , mpiint,  0, mpicom)
+   call mpibcast(UCIgaschmbudget_2D_L1_e,            1 , mpiint,  0, mpicom)
+   call mpibcast(UCIgaschmbudget_2D_L2_s,            1 , mpiint,  0, mpicom)
+   call mpibcast(UCIgaschmbudget_2D_L2_e,            1 , mpiint,  0, mpicom)
+   call mpibcast(UCIgaschmbudget_2D_L3_s,            1 , mpiint,  0, mpicom)
+   call mpibcast(UCIgaschmbudget_2D_L3_e,            1 , mpiint,  0, mpicom)
+   call mpibcast(UCIgaschmbudget_2D_L4_s,            1 , mpiint,  0, mpicom)
+   call mpibcast(UCIgaschmbudget_2D_L4_e,            1 , mpiint,  0, mpicom)
+   call mpibcast(history_gaschmbudget_num,           1 , mpiint,  0, mpicom)
    call mpibcast(history_budget_histfile_num,     1 , mpiint,  0, mpicom)
    call mpibcast(history_waccm,                   1 , mpilog,  0, mpicom)
    call mpibcast(history_clubb,                   1 , mpilog,  0, mpicom)
@@ -331,6 +401,8 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(mg_prc_coeff_fix,                1 , mpilog,  0, mpicom)
    call mpibcast(rrtmg_temp_fix,                  1 , mpilog,  0, mpicom)
    call mpibcast(cld_sed,                         1 , mpir8,   0, mpicom)
+   call mpibcast(modal_strat_sulfate_aod_treatment, 1 , mpilog,  0, mpicom)
+
 #endif
 
    call cam_ctrl_set_physics_type(cam_physpkg)
@@ -378,9 +450,10 @@ subroutine phys_ctl_readnl(nlfile)
       call endrun('PBL and Microphysics schemes incompatible')
    endif
    
-   ! Add a check to make sure CLUBB and MG are used together
-   if ( do_clubb_sgs .and. ( microp_scheme .ne. 'MG' .and. microp_scheme .ne. 'P3')) then
-      write(iulog,*)'CLUBB is only compatible with MG microphysics.  Quiting'
+
+   ! Add a check to make sure CLUBB and MG / P3 are used together
+   if ( do_clubb_sgs .and. ( microp_scheme .ne. 'MG' .and. microp_scheme .ne. 'P3' )) then
+      write(iulog,*)'CLUBB is only compatible with MG or P3 microphysics.  Quiting'
       call endrun('CLUBB and microphysics schemes incompatible')
    endif
    
@@ -453,9 +526,11 @@ subroutine phys_ctl_readnl(nlfile)
                       .or. cam_chempkg_is('linoz_mam4_resus_mom') &
                       .or. cam_chempkg_is('linoz_mam4_resus_mom_soag') &
                       .or. cam_chempkg_is('superfast_mam4_resus_mom_soag') &
+                      .or. cam_chempkg_is('chemuci_linozv3_mam5_vbs') &
                       .or. cam_chempkg_is('super_fast_llnl_mam3') &
                       .or. cam_chempkg_is('trop_mozart_mam3') &
                       .or. cam_chempkg_is('trop_strat_mam3') &
+                      .or. cam_chempkg_is('trop_strat_mam4_resus_mom_soag') &
                       .or. cam_chempkg_is('trop_strat_mam7') &
                       .or. cam_chempkg_is('waccm_mozart_mam3'))
 
@@ -509,8 +584,16 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         radiation_scheme_out, use_subcol_microp_out, atm_dep_flux_out, &
                         history_amwg_out, history_verbose_out, history_vdiag_out, &
                         get_presc_aero_data_out,&
+                        is_output_interactive_volc_out,&        
                         history_aerosol_out, history_aero_optics_out, history_eddy_out, &
-                        history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
+                        history_budget_out, history_gaschmbudget_out, history_gaschmbudget_2D_out, &
+                        history_gaschmbudget_num_out, history_gaschmbudget_2D_levels_out, &
+                        gaschmbudget_2D_L1_s_out, gaschmbudget_2D_L1_e_out, gaschmbudget_2D_L2_s_out, gaschmbudget_2D_L2_e_out, &
+                        gaschmbudget_2D_L3_s_out, gaschmbudget_2D_L3_e_out, gaschmbudget_2D_L4_s_out, gaschmbudget_2D_L4_e_out, &
+                        history_UCIgaschmbudget_2D_out, history_UCIgaschmbudget_2D_levels_out, history_chemdyg_summary_out, &
+                        UCIgaschmbudget_2D_L1_s_out, UCIgaschmbudget_2D_L1_e_out, UCIgaschmbudget_2D_L2_s_out, UCIgaschmbudget_2D_L2_e_out, &
+                        UCIgaschmbudget_2D_L3_s_out, UCIgaschmbudget_2D_L3_e_out, UCIgaschmbudget_2D_L4_s_out, UCIgaschmbudget_2D_L4_e_out, &
+                        history_budget_histfile_num_out, history_waccm_out, &
                         history_clubb_out, ieflx_opt_out, conv_water_in_rad_out, cam_chempkg_out, &
                         prog_modal_aero_out, macrop_scheme_out, ideal_phys_option_out, &
                         use_MMF_out, use_ECPP_out, MMF_microphysics_scheme_out, &
@@ -530,7 +613,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                        ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
                        ,l_bc_energy_fix_out, l_dry_adj_out, l_st_mac_out, l_st_mic_out, l_rad_out  &
                        ,prc_coef1_out,prc_exp_out,prc_exp1_out, cld_sed_out,mg_prc_coeff_fix_out,rrtmg_temp_fix_out &
-                       )
+                       ,modal_strat_sulfate_aod_treatment_out)
 
 !-----------------------------------------------------------------------
 ! Purpose: Return runtime settings
@@ -567,7 +650,31 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: get_presc_aero_data_out
    logical,           intent(out), optional :: history_aerosol_out
    logical,           intent(out), optional :: history_aero_optics_out
+   logical,           intent(out), optional :: is_output_interactive_volc_out
    logical,           intent(out), optional :: history_budget_out
+   logical,           intent(out), optional :: history_gaschmbudget_out
+   logical,           intent(out), optional :: history_gaschmbudget_2D_out
+   integer,           intent(out), optional :: history_gaschmbudget_num_out
+   logical,           intent(out), optional :: history_gaschmbudget_2D_levels_out
+   integer,           intent(out), optional :: gaschmbudget_2D_L1_s_out
+   integer,           intent(out), optional :: gaschmbudget_2D_L1_e_out
+   integer,           intent(out), optional :: gaschmbudget_2D_L2_s_out
+   integer,           intent(out), optional :: gaschmbudget_2D_L2_e_out
+   integer,           intent(out), optional :: gaschmbudget_2D_L3_s_out
+   integer,           intent(out), optional :: gaschmbudget_2D_L3_e_out
+   integer,           intent(out), optional :: gaschmbudget_2D_L4_s_out
+   integer,           intent(out), optional :: gaschmbudget_2D_L4_e_out
+   logical,           intent(out), optional :: history_UCIgaschmbudget_2D_out
+   logical,           intent(out), optional :: history_UCIgaschmbudget_2D_levels_out
+   logical,           intent(out), optional :: history_chemdyg_summary_out
+   integer,           intent(out), optional :: UCIgaschmbudget_2D_L1_s_out
+   integer,           intent(out), optional :: UCIgaschmbudget_2D_L1_e_out
+   integer,           intent(out), optional :: UCIgaschmbudget_2D_L2_s_out
+   integer,           intent(out), optional :: UCIgaschmbudget_2D_L2_e_out
+   integer,           intent(out), optional :: UCIgaschmbudget_2D_L3_s_out
+   integer,           intent(out), optional :: UCIgaschmbudget_2D_L3_e_out
+   integer,           intent(out), optional :: UCIgaschmbudget_2D_L4_s_out
+   integer,           intent(out), optional :: UCIgaschmbudget_2D_L4_e_out
    integer,           intent(out), optional :: history_budget_histfile_num_out
    logical,           intent(out), optional :: history_waccm_out
    logical,           intent(out), optional :: history_clubb_out
@@ -614,6 +721,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: l_rad_out
    logical,           intent(out), optional :: mg_prc_coeff_fix_out
    logical,           intent(out), optional :: rrtmg_temp_fix_out
+   logical,           intent(out), optional :: modal_strat_sulfate_aod_treatment_out
    integer,           intent(out), optional :: cld_macmic_num_steps_out
    real(r8),          intent(out), optional :: prc_coef1_out
    real(r8),          intent(out), optional :: prc_exp_out
@@ -643,8 +751,32 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(ideal_phys_option_out   ) ) ideal_phys_option_out    = ideal_phys_option
    if ( present(atm_dep_flux_out        ) ) atm_dep_flux_out         = atm_dep_flux
    if ( present(history_aerosol_out     ) ) history_aerosol_out      = history_aerosol
+   if ( present(is_output_interactive_volc_out    ) ) is_output_interactive_volc_out      = is_output_interactive_volc
    if ( present(history_aero_optics_out ) ) history_aero_optics_out  = history_aero_optics
    if ( present(history_budget_out      ) ) history_budget_out       = history_budget
+   if ( present(history_gaschmbudget_out) ) history_gaschmbudget_out = history_gaschmbudget
+   if ( present(history_gaschmbudget_2D_out) ) history_gaschmbudget_2D_out = history_gaschmbudget_2D
+   if ( present(history_gaschmbudget_num_out) ) history_gaschmbudget_num_out = history_gaschmbudget_num
+   if ( present(history_gaschmbudget_2D_levels_out) ) history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels
+   if ( present(gaschmbudget_2D_L1_s_out) ) gaschmbudget_2D_L1_s_out = gaschmbudget_2D_L1_s
+   if ( present(gaschmbudget_2D_L1_e_out) ) gaschmbudget_2D_L1_e_out = gaschmbudget_2D_L1_e
+   if ( present(gaschmbudget_2D_L2_s_out) ) gaschmbudget_2D_L2_s_out = gaschmbudget_2D_L2_s
+   if ( present(gaschmbudget_2D_L2_e_out) ) gaschmbudget_2D_L2_e_out = gaschmbudget_2D_L2_e
+   if ( present(gaschmbudget_2D_L3_s_out) ) gaschmbudget_2D_L3_s_out = gaschmbudget_2D_L3_s
+   if ( present(gaschmbudget_2D_L3_e_out) ) gaschmbudget_2D_L3_e_out = gaschmbudget_2D_L3_e
+   if ( present(gaschmbudget_2D_L4_s_out) ) gaschmbudget_2D_L4_s_out = gaschmbudget_2D_L4_s
+   if ( present(gaschmbudget_2D_L4_e_out) ) gaschmbudget_2D_L4_e_out = gaschmbudget_2D_L4_e
+   if ( present(history_UCIgaschmbudget_2D_out) ) history_UCIgaschmbudget_2D_out = history_UCIgaschmbudget_2D
+   if ( present(history_UCIgaschmbudget_2D_levels_out) ) history_UCIgaschmbudget_2D_levels_out = history_UCIgaschmbudget_2D_levels
+   if ( present(history_chemdyg_summary_out) ) history_chemdyg_summary_out = history_chemdyg_summary
+   if ( present(UCIgaschmbudget_2D_L1_s_out) ) UCIgaschmbudget_2D_L1_s_out = UCIgaschmbudget_2D_L1_s
+   if ( present(UCIgaschmbudget_2D_L1_e_out) ) UCIgaschmbudget_2D_L1_e_out = UCIgaschmbudget_2D_L1_e
+   if ( present(UCIgaschmbudget_2D_L2_s_out) ) UCIgaschmbudget_2D_L2_s_out = UCIgaschmbudget_2D_L2_s
+   if ( present(UCIgaschmbudget_2D_L2_e_out) ) UCIgaschmbudget_2D_L2_e_out = UCIgaschmbudget_2D_L2_e
+   if ( present(UCIgaschmbudget_2D_L3_s_out) ) UCIgaschmbudget_2D_L3_s_out = UCIgaschmbudget_2D_L3_s
+   if ( present(UCIgaschmbudget_2D_L3_e_out) ) UCIgaschmbudget_2D_L3_e_out = UCIgaschmbudget_2D_L3_e
+   if ( present(UCIgaschmbudget_2D_L4_s_out) ) UCIgaschmbudget_2D_L4_s_out = UCIgaschmbudget_2D_L4_s
+   if ( present(UCIgaschmbudget_2D_L4_e_out) ) UCIgaschmbudget_2D_L4_e_out = UCIgaschmbudget_2D_L4_e
    if ( present(history_amwg_out        ) ) history_amwg_out         = history_amwg
    if ( present(history_verbose_out     ) ) history_verbose_out         = history_verbose
    if ( present(history_vdiag_out       ) ) history_vdiag_out        = history_vdiag
@@ -701,6 +833,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(cld_sed_out             ) ) cld_sed_out              = cld_sed
    if ( present(mg_prc_coeff_fix_out    ) ) mg_prc_coeff_fix_out     = mg_prc_coeff_fix
    if ( present(rrtmg_temp_fix_out      ) ) rrtmg_temp_fix_out       = rrtmg_temp_fix
+   if ( present(modal_strat_sulfate_aod_treatment_out      ) ) modal_strat_sulfate_aod_treatment_out &
+                                                               = modal_strat_sulfate_aod_treatment
 
 end subroutine phys_getopts
 
@@ -734,4 +868,14 @@ function phys_do_flux_avg()
 end function phys_do_flux_avg
 
 !===============================================================================
+
+subroutine set_additional_diagn_in_phys_control(print_additional_diagn_in)
+
+  logical, intent(in) :: print_additional_diagn_in
+
+  print_additional_diagn_phys_control = print_additional_diagn_in
+
+end subroutine set_additional_diagn_in_phys_control
+
+
 end module phys_control

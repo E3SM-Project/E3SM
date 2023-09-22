@@ -298,9 +298,12 @@ struct CaarFunctorImpl {
   }
 
   void init_boundary_exchanges (const std::shared_ptr<MpiBuffersManager>& bm_exchange) {
+    const auto& sp = Context::singleton().get<SimulationParams>();
     for (int tl=0; tl<NUM_TIME_LEVELS; ++tl) {
       m_bes[tl] = std::make_shared<BoundaryExchange>();
       auto& be = *m_bes[tl];
+      be.set_label(std::string("CAAR-") + std::to_string(tl));
+      be.set_diagnostics_level(sp.internal_diagnostics_level);
       be.set_buffers_manager(bm_exchange);
       if (m_theta_hydrostatic_mode) {
         be.set_num_fields(0,0,4);

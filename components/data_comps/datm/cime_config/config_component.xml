@@ -329,6 +329,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value   compset="2010.*_DATM%NLDAS2">2014</value>
       <value   compset="2003.*_DATM%NLDAS2">2003</value>
       <value   compset="2000_DATM%JRA">2016</value>
+      <value   compset="2000_DATM%JRA-1p5">2020</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>

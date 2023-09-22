@@ -17,7 +17,7 @@
           An abbreviation of the fortran declaration for the variable.
       Valid declarations are:
 
-          char*n  
+          char*n
           integer
           logical
           real
@@ -31,7 +31,7 @@
      input_pathname
           Only include this attribute to indicate that the variable
           contains the pathname of an input dataset that resides in the
-          CESM inputdata directory tree.  
+          CESM inputdata directory tree.
 
       The recognized values are "abs" to indicate that an absolute
           pathname is required, or "rel:var_name" to indicate that the
@@ -204,7 +204,15 @@ Default: Defined in namelist_defaults.xml
 	category="time_integration" group="time_integration">
 Time integration method.
 
-Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit'
+Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_number_of_time_levels" type="integer"
+	category="time_integration" group="time_integration">
+The number of time levels in the time-stepping scheme. This is used for array allocation.
+
+Valid values: Any integer greater than or equal to 2.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -701,49 +709,6 @@ Default: Defined in namelist_defaults.xml
 switches from old dThreshMLD calculation to new (fixed one)
 
 Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- Rayleigh_damping -->
-
-<entry id="config_Rayleigh_friction" type="logical"
-	category="Rayleigh_damping" group="Rayleigh_damping">
-If true, Rayleigh friction is included in the momentum equation at every depth level.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Rayleigh_damping_coeff" type="real"
-	category="Rayleigh_damping" group="Rayleigh_damping">
-Inverse-time coefficient for the Rayleigh damping term, $c_R$, applied at every depth level.
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Rayleigh_damping_depth_variable" type="logical"
-	category="Rayleigh_damping" group="Rayleigh_damping">
-If true applies r h^-1 instead of just r.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Rayleigh_bottom_friction" type="logical"
-	category="Rayleigh_damping" group="Rayleigh_damping">
-If true, Rayleigh friction is only applied to the bottom
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Rayleigh_bottom_damping_coeff" type="real"
-	category="Rayleigh_damping" group="Rayleigh_damping">
-Inverse-time coefficient for the Rayleigh damping term, $c_R$, only applied at the bottom.
-
-Valid values: Any positive real value.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1557,7 +1522,7 @@ Default: Defined in namelist_defaults.xml
 	category="land_ice_fluxes" group="land_ice_fluxes">
 Selects the mode in which land-ice fluxes are computed.
 
-Valid values: 'off','pressure_only','standalone','coupled'
+Valid values: 'off','pressure_only', 'data', 'standalone','coupled'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1724,18 +1689,34 @@ Valid values: 'none','monotonic','weno'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_thickness_flux_type" type="char*1024"
+	category="advection" group="advection">
+If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThickEdgeFlux.  The standard MPAS-O approach is 'centered'. For 'constant', uses constant thickness in time from restingThickness, for linear test problems. Note that these two flags are set together for linearized test cases: config_thickness_flux_type = 'constant' linearizes the thickness equation, and config_disable_vel_hadv = .true. linearizes the momentum equation if there is no assumed mean background velocity.
 
-<!-- bottom_drag -->
-
-<entry id="config_use_implicit_bottom_drag" type="logical"
-	category="bottom_drag" group="bottom_drag">
-If true, implicit bottom drag is used on the momentum equation.
-
-Valid values: .true. or .false.
+Valid values: 'upwind', 'centered', 'constant'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_implicit_bottom_drag_coeff" type="real"
+
+<!-- bottom_drag -->
+
+<entry id="config_bottom_drag_mode" type="char*1024"
+	category="bottom_drag" group="bottom_drag">
+Formulation of the bottom drag.
+
+Valid values: 'implicit','explicit'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_implicit_bottom_drag_type" type="char*1024"
+	category="bottom_drag" group="bottom_drag">
+Type of implicit bottom drag used.
+
+Valid values: 'constant','constant_and_rayleigh','loglaw','spatially-variable','mannings'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_implicit_constant_bottom_drag_coeff" type="real"
 	category="bottom_drag" group="bottom_drag">
 Dimensionless bottom drag coefficient, $c_{drag}$.
 
@@ -1759,41 +1740,41 @@ Valid values: any positive real, typically 1.0e-3
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_implicit_bottom_roughness" type="logical"
+<entry id="config_loglaw_bottom_roughness" type="real"
 	category="bottom_drag" group="bottom_drag">
-If true, depends on bottom roughness z0
+Bottom roughness, $z_0$, in meters.
 
-Valid values: .true. or .false.
+Valid values: any positive real, typically 1.0e-3
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_implicit_bottom_drag_variable" type="logical"
+<entry id="config_loglaw_layer_depth_max" type="real"
 	category="bottom_drag" group="bottom_drag">
-If true, spatially-variable implicit bottom drag is used on the momentum equation.
+Maximum distance above the seafloor at which log-law drag is applied.
 
-Valid values: .true. or .false.
+Valid values: any positive real, typically 10m
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_implicit_bottom_drag_variable_mannings" type="logical"
+<entry id="config_loglaw_bottom_drag_min" type="real"
 	category="bottom_drag" group="bottom_drag">
-If true, uses Mannings' n values for the computation of Cd=g*n^2*h^{-1/3}.
+Dimensionless bottom drag minimum used in log-law parameterization.
 
-Valid values: .true. or .false.
+Valid values: any positive real, typically 2.5e-3
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_explicit_bottom_drag" type="logical"
+<entry id="config_loglaw_bottom_drag_max" type="real"
 	category="bottom_drag" group="bottom_drag">
-If true, explicit bottom drag is used on the momentum equation.
+Dimensionless bottom drag maximum used in log-law parameterization.
 
-Valid values: .true. or .false.
+Valid values: any positive real, typically 1.0e-1
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_explicit_bottom_drag_coeff" type="real"
 	category="bottom_drag" group="bottom_drag">
-Dimensionless bottom drag coefficient, $c_{drag}$.
+Dimensionless explicit bottom drag coefficient, $c_{drag}$.
 
 Valid values: any positive real, typically 1.0e-3
 Default: Defined in namelist_defaults.xml
@@ -1812,6 +1793,68 @@ Default: Defined in namelist_defaults.xml
 Dimensionless topographic wave drag coefficient, $c_{topo}$.
 
 Valid values: any positive real, typically 5.0e-4
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_thickness_drag_type" type="char*1024"
+	category="bottom_drag" group="bottom_drag">
+The type of layerThickness averaging to use on the drag term. The standard MPAS-O approach is 'centered'.
+
+Valid values: 'harmonic-mean', 'centered'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- Rayleigh_damping -->
+
+<entry id="config_Rayleigh_damping_coeff" type="real"
+	category="Rayleigh_damping" group="Rayleigh_damping">
+Inverse-time coefficient for the Rayleigh damping term, $c_R$, applied at every depth level.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Rayleigh_damping_depth_variable" type="logical"
+	category="Rayleigh_damping" group="Rayleigh_damping">
+If true applies r h^-1 instead of just r.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Rayleigh_bottom_friction" type="logical"
+	category="Rayleigh_damping" group="Rayleigh_damping">
+If true, Rayleigh friction is only applied to the bottom
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Rayleigh_bottom_damping_coeff" type="real"
+	category="Rayleigh_damping" group="Rayleigh_damping">
+Inverse-time coefficient for the Rayleigh damping term, $c_R$, only applied at the bottom.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- vegetation_drag -->
+
+<entry id="config_use_vegetation_drag" type="logical"
+	category="vegetation_drag" group="vegetation_drag">
+Controls if vegetation_drag is used to compute Manning's roughness coefficient.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vegetation_drag_coefficient" type="real"
+	category="vegetation_drag" group="vegetation_drag">
+Vegetation drag coefficient
+
+Valid values: O(1)
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2360,9 +2403,17 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_disable_vel_hadv" type="logical"
+	category="debug" group="debug">
+Disables tendencies on the velocity field from the horizontal momentum advection. Note that these two flags are set together for linearized test cases: config_thickness_flux_type = 'constant' linearizes the thickness equation, and config_disable_vel_hadv = .true. linearizes the momentum equation if there is no assumed mean background velocity.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_disable_vel_coriolis" type="logical"
 	category="debug" group="debug">
-Disables tendencies on the velocity field from the Coriolis force and momentum advection.
+Disables tendencies on the velocity field from the Coriolis force.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2558,6 +2609,41 @@ Default: Defined in namelist_defaults.xml
 Number of vertical levels to create within the configuration.
 
 Valid values: Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- manufactured_solution -->
+
+<entry id="config_use_manufactured_solution" type="logical"
+	category="manufactured_solution" group="manufactured_solution">
+This flag includes additional thickness and velocity tendencies necessary for testing with a manufactured solution.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_manufactured_solution_wavelength_x" type="real"
+	category="manufactured_solution" group="manufactured_solution">
+Wavelength of manufactured solution in the x direction
+
+Valid values: Any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_manufactured_solution_wavelength_y" type="real"
+	category="manufactured_solution" group="manufactured_solution">
+Wavelength of manufactured solution in the y direction
+
+Valid values: Any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_manufactured_solution_amplitude" type="real"
+	category="manufactured_solution" group="manufactured_solution">
+Amplitude of the manufactured solution
+
+Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 

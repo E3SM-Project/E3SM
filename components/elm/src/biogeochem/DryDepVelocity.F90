@@ -47,7 +47,7 @@ Module DryDepVelocity
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use abortutils           , only : endrun
-  use clm_time_manager     , only : get_nstep, get_curr_date, get_curr_time
+  use elm_time_manager     , only : get_nstep, get_curr_date, get_curr_time
   use spmdMod              , only : masterproc
   use seq_drydep_mod       , only : n_drydep, drydep_list
   use seq_drydep_mod       , only : drydep_method, DD_XLND
@@ -465,8 +465,19 @@ CONTAINS
                else
 
                   !Following Emmons et al (2020, JAMES), the stomatal resistances for shaded and sunlit
-                  !leaves should be added in parallel
-                  rs = 1.0_r8 / ( fsun(pi)/rssun(pi) + (1.0_r8 - fsun(pi))/rssha(pi) )
+                  !leaves should be added in parallel.  Also need to account for the conditions of
+                  !rssun=0.0 and/or rssha=0.0, for which only fsun=0 or fsun=1 is considered, respectively.
+
+                  if (rssun(pi) > 0._r8 .and. rssha(pi) > 0._r8) then
+                     rs = 1.0_r8 / ( fsun(pi)/rssun(pi) + (1.0_r8 - fsun(pi))/rssha(pi) )
+                  else if (rssun(pi) > 0._r8 .and. fsun(pi) == 1._r8) then
+                    rs = rssun(pi)
+                  else if (rssha(pi) > 0._r8 .and. fsun(pi) == 0._r8) then
+                    rs = rssha(pi)
+                  else
+                     rs = 1.e36_r8
+                  endif
+
                   if (rs==0._r8) then ! fvitt -- what to do when rs is zero ???
                      rsmx(ispec) = 1.e36_r8
                   else

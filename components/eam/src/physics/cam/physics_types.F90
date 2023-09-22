@@ -14,7 +14,7 @@ module physics_types
   use phys_grid,    only: get_ncols_p, get_rlon_all_p, get_rlat_all_p, get_gcol_all_p
   use cam_logfile,  only: iulog
   use cam_abortutils,   only: endrun
-  use phys_control, only: waccmx_is, use_mass_borrower
+  use phys_control, only: waccmx_is, use_mass_borrower, print_additional_diagn_phys_control
   use shr_const_mod,only: shr_const_rwv
   use perf_mod,     only: t_startf, t_stopf
 
@@ -100,10 +100,20 @@ module physics_types
           zi        ! geopotential height above surface at interfaces (m)
 
      real(r8), dimension(:),allocatable          :: &
-          te_ini,  &! vertically integrated total (kinetic + static) energy of initial state
-          te_cur,  &! vertically integrated total (kinetic + static) energy of current state
-          tw_ini,  &! vertically integrated total water of initial state
-          tw_cur,  &! vertically integrated total water of new state
+          te_ini,  &! vertically integrated total energy of initial state
+          te_cur,  &! vertically integrated total energy of current state
+          te_before_physstep,  &! total column energy before step
+          delta_te,            &! te_after_physstep - te_before_physstep
+          rr,                  &! restom - ressurf, computed at the end of tphysbc from fluxes
+          tw_ini,     &! vertically integrated total water of initial state
+          tw_before,  &! vertically integrated total water of state before step
+          cflx_raw,   &! vapor flux as received by atm
+          cflx_diff,  &! diff in vapor flux after qneg4
+          shf_raw,    &! heat flux as received by atm
+          shf_diff,   &! diff in heat flux after qneg4
+          deltaw_flux,  &! vertically integrated total water flux
+          deltaw_step,  &! diff tw_after_physstep - tw_before_physstep
+          tw_cur,     &! vertically integrated total water of current state
           tc_curr,    &! vertically integrated total carbon of current state
           tc_init,    &! vertically integrated total carbon at start of run
           tc_mnst,    &! vertically integrated total carbon at start of month
@@ -225,7 +235,7 @@ contains
 !-----------------------------------------------------------------------
     use shr_sys_mod,  only: shr_sys_flush
     use constituents, only: cnst_get_ind, cnst_mw
-    use scamMod,      only: scm_crm_mode, single_column
+    use iop_data_mod, only: single_column
     use phys_control, only: phys_getopts
     use physconst,    only: physconst_update ! Routine which updates physconst variables (WACCM-X)
     use ppgrid,       only: begchunk, endchunk
@@ -263,12 +273,6 @@ contains
 
     ! Whether to do validation of state on each call.
     logical :: state_debug_checks
-
-    !-----------------------------------------------------------------------
-
-    ! The column radiation model does not update the state
-    if(single_column.and.scm_crm_mode) return
-
 
     !-----------------------------------------------------------------------
     ! If no fields are set, then return
@@ -518,10 +522,36 @@ contains
          varname="state%te_ini",    msg=msg)
     call shr_assert_in_domain(state%te_cur(:ncol),      is_nan=.false., &
          varname="state%te_cur",    msg=msg)
+
     call shr_assert_in_domain(state%tw_ini(:ncol),      is_nan=.false., &
          varname="state%tw_ini",    msg=msg)
     call shr_assert_in_domain(state%tw_cur(:ncol),      is_nan=.false., &
          varname="state%tw_cur",    msg=msg)
+
+    if(print_additional_diagn_phys_control)then
+       call shr_assert_in_domain(state%te_before_physstep(:ncol), is_nan=.false., &
+            varname="state%te_before_physstep",    msg=msg)
+       call shr_assert_in_domain(state%delta_te(:ncol),           is_nan=.false., &
+            varname="state%delta_te",    msg=msg)
+       call shr_assert_in_domain(state%rr(:ncol),          is_nan=.false., &
+            varname="state%rr",    msg=msg)
+
+       call shr_assert_in_domain(state%tw_before(:ncol),      is_nan=.false., &
+            varname="state%tw_before",    msg=msg)
+       call shr_assert_in_domain(state%deltaw_flux(:ncol),      is_nan=.false., &
+            varname="state%deltaw_flux",    msg=msg)
+       call shr_assert_in_domain(state%deltaw_step(:ncol),      is_nan=.false., &
+            varname="state%deltaw_step",    msg=msg)
+       call shr_assert_in_domain(state%cflx_raw(:ncol),      is_nan=.false., &
+            varname="state%cflx_raw",    msg=msg)
+       call shr_assert_in_domain(state%cflx_diff(:ncol),      is_nan=.false., &
+            varname="state%cflx_diff",    msg=msg)
+       call shr_assert_in_domain(state%shf_raw(:ncol),      is_nan=.false., &
+            varname="state%shf_raw",    msg=msg)
+       call shr_assert_in_domain(state%shf_diff(:ncol),      is_nan=.false., &
+            varname="state%shf_diff",    msg=msg)
+    endif
+
     call shr_assert_in_domain(state%tc_curr(:ncol),      is_nan=.false., &
          varname="state%tc_curr",    msg=msg)
     call shr_assert_in_domain(state%tc_init(:ncol),      is_nan=.false., &
@@ -624,10 +654,36 @@ contains
          varname="state%te_ini",    msg=msg)
     call shr_assert_in_domain(state%te_cur(:ncol),      lt=posinf_r8, gt=neginf_r8, &
          varname="state%te_cur",    msg=msg)
+
     call shr_assert_in_domain(state%tw_ini(:ncol),      lt=posinf_r8, gt=neginf_r8, &
          varname="state%tw_ini",    msg=msg)
     call shr_assert_in_domain(state%tw_cur(:ncol),      lt=posinf_r8, gt=neginf_r8, &
          varname="state%tw_cur",    msg=msg)
+
+    if(print_additional_diagn_phys_control)then
+       call shr_assert_in_domain(state%te_before_physstep(:ncol),  lt=posinf_r8, gt=neginf_r8, &
+            varname="state%te_before_physstep",    msg=msg)
+       call shr_assert_in_domain(state%delta_te(:ncol),    lt=posinf_r8, gt=neginf_r8, &
+            varname="state%delta_te",  msg=msg)
+       call shr_assert_in_domain(state%rr(:ncol),          lt=posinf_r8, gt=neginf_r8, &
+            varname="state%rr",        msg=msg)
+
+       call shr_assert_in_domain(state%tw_before(:ncol),      lt=posinf_r8, gt=neginf_r8, &
+           varname="state%tw_before",    msg=msg)
+       call shr_assert_in_domain(state%deltaw_flux(:ncol),      lt=posinf_r8, gt=neginf_r8, &
+            varname="state%deltaw_flux",    msg=msg)
+       call shr_assert_in_domain(state%deltaw_step(:ncol),      lt=posinf_r8, gt=neginf_r8, &
+            varname="state%deltaw_step",    msg=msg)
+       call shr_assert_in_domain(state%cflx_raw(:ncol),      lt=posinf_r8, gt=neginf_r8, &
+            varname="state%cflx_raw",    msg=msg)
+       call shr_assert_in_domain(state%cflx_diff(:ncol),      lt=posinf_r8, gt=neginf_r8, &
+            varname="state%cflx_diff",    msg=msg)
+       call shr_assert_in_domain(state%cflx_raw(:ncol),      lt=posinf_r8, gt=neginf_r8, &
+            varname="state%shf_raw",    msg=msg)
+       call shr_assert_in_domain(state%cflx_diff(:ncol),      lt=posinf_r8, gt=neginf_r8, &
+            varname="state%shf_diff",    msg=msg)
+    endif
+
     call shr_assert_in_domain(state%tc_curr(:ncol),     lt=posinf_r8, gt=neginf_r8, &
          varname="state%tc_curr",     msg=msg)
     call shr_assert_in_domain(state%tc_init(:ncol),     lt=posinf_r8, gt=neginf_r8, &
@@ -1317,9 +1373,26 @@ end subroutine physics_ptend_copy
        state_out%ps(i)     = state_in%ps(i)
        state_out%phis(i)   = state_in%phis(i)
        state_out%te_ini(i) = state_in%te_ini(i) 
-       state_out%te_cur(i) = state_in%te_cur(i) 
+       state_out%te_cur(i) = state_in%te_cur(i)
+
        state_out%tw_ini(i) = state_in%tw_ini(i) 
        state_out%tw_cur(i) = state_in%tw_cur(i) 
+
+       if(print_additional_diagn_phys_control)then
+          state_out%te_before_physstep(i) = state_in%te_before_physstep(i)
+          state_out%delta_te(i)           = state_in%delta_te(i)
+          state_out%rr(i)     = state_in%rr(i)
+
+          state_out%tw_before(i)   = state_in%tw_before(i) 
+          state_out%deltaw_flux(i) = state_in%deltaw_flux(i) 
+          state_out%deltaw_step(i) = state_in%deltaw_step(i) 
+
+          state_out%cflx_raw(i)  = state_in%cflx_raw(i)
+          state_out%cflx_diff(i) = state_in%cflx_diff(i)
+          state_out%shf_raw(i)   = state_in%shf_raw(i)
+          state_out%shf_diff(i)  = state_in%shf_diff(i)
+       endif
+
        state_out%tc_curr(i)    = state_in%tc_curr(i)
        state_out%tc_init(i)    = state_in%tc_init(i)
        state_out%tc_mnst(i)    = state_in%tc_mnst(i)
@@ -1661,13 +1734,46 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   
   allocate(state%te_cur(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_cur')
-  
+
   allocate(state%tw_ini(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tw_ini')
   
   allocate(state%tw_cur(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tw_cur')
-  
+
+  if(print_additional_diagn_phys_control)then
+     allocate(state%te_before_physstep(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_before_pstep')
+
+     allocate(state%delta_te(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%delta_te')
+
+     allocate(state%rr(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%rr')
+
+     allocate(state%tw_before(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tw_before')
+
+     allocate(state%deltaw_flux(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%deltaw_flux')
+
+     allocate(state%deltaw_step(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%deltaw_step')
+
+     allocate(state%cflx_raw(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%cflx_raw')
+
+     allocate(state%cflx_diff(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%cflx_diff')
+
+     allocate(state%shf_raw(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%shf_raw')
+     
+     allocate(state%shf_diff(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%shf_diff')
+  endif
+
+  !alloc indep of diagnostics flag co2_transport()
   allocate(state%tc_curr(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tc_curr')
 
@@ -1759,6 +1865,22 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   state%te_cur(:) = inf
   state%tw_ini(:) = inf
   state%tw_cur(:) = inf
+
+  if(print_additional_diagn_phys_control)then
+     state%te_before_physstep(:) = inf
+     state%delta_te(:)           = inf
+     state%rr(:)                 = inf
+
+     state%cflx_raw(:)  = inf
+     state%cflx_diff(:) = inf
+
+     state%shf_raw(:)  = inf
+     state%shf_diff(:) = inf
+
+     state%deltaw_step(:) = inf
+     state%deltaw_flux(:) = inf
+     state%tw_before(:)   = inf
+  endif
 
   state%tc_curr(:)    = inf
   state%tc_init(:)    = inf
@@ -1883,6 +2005,38 @@ subroutine physics_state_dealloc(state)
   
   deallocate(state%tw_cur, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tw_cur')
+
+  if(print_additional_diagn_phys_control)then
+     deallocate(state%te_before_physstep, stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%te_before_pstep')
+
+     deallocate(state%delta_te, stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%delta_te')
+
+     deallocate(state%rr, stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%rr')
+
+     deallocate(state%tw_before, stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tw_before')
+
+     deallocate(state%deltaw_flux, stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%deltaw_flux')
+
+     deallocate(state%deltaw_step, stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%deltaw_step')
+
+     deallocate(state%cflx_raw, stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%cflx_raw')
+
+     deallocate(state%cflx_diff, stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%cflx_diff')
+
+     deallocate(state%shf_raw, stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%shf_raw')
+
+     deallocate(state%shf_diff, stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%shf_diff')
+  endif
 
   deallocate(state%tc_curr, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%tc_curr')

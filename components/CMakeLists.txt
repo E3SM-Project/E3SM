@@ -56,12 +56,18 @@ function(set_compilers_e3sm)
     set(E3SM_DEFAULT_BUILD_TYPE "RELEASE" CACHE STRING "Default build type, inferred from ${DEBUG}")
   endif()
 
-  # USE_CUDA is set through Macros.cmake / config_compilers.xml
+  # USE_CUDA or USE_HIP is set through Macros.cmake
+  # For instance: cime_config/machines/cmake_macros/gnugpu_summit.cmake
   # If it exists, then set parent's scope to true; otherwise to false
+  # At this point, we use either CUDA or HIP.
+  # Revisit as needed for future systems.
   if (USE_CUDA)
     set(USE_CUDA TRUE PARENT_SCOPE)
+  elseif (USE_HIP)
+    set(USE_HIP TRUE PARENT_SCOPE)
   else()
     set(USE_CUDA FALSE PARENT_SCOPE)
+    set(USE_HIP FALSE PARENT_SCOPE)
   endif()
 endfunction()
 set_compilers_e3sm()
@@ -92,11 +98,32 @@ endif()
 
 project(E3SM C CXX Fortran)
 
+if(USE_CUDA)
+  enable_language(CUDA)
+elseif(USE_HIP)
+  enable_language(HIP)
+endif()
+
+# Any changes to SourceMods will require us to reconfigure
+file(GLOB COMPONENT_SOURCE_MOD_DIRS "${CASEROOT}/SourceMods/src.*")
+foreach(COMPONENT_SOURCE_MOD_DIR IN LISTS COMPONENT_SOURCE_MOD_DIRS)
+  set_property(
+    DIRECTORY
+    APPEND
+    PROPERTY CMAKE_CONFIGURE_DEPENDS
+    ${COMPONENT_SOURCE_MOD_DIR})
+endforeach()
+
 # Include function definitions
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_mpas_model.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_eamxx.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_model.cmake)
+
+# Set up CMAKE_MODULE_PATH so any component can use E3SM
+# and CIME cmake modules if they want.
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+list(APPEND CMAKE_MODULE_PATH ${CIMEROOT}/CIME/non_py/src/CMake)
 
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
@@ -123,7 +150,6 @@ set(BUILDCONF ${CASEROOT}/Buildconf)
 build_mpas_models()
 
 # Set global cmake settings
-set(CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 
 # Set global targets

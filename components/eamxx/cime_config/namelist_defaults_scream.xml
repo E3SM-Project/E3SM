@@ -5,8 +5,9 @@
 The file that defines all parameter input files for SCREAM. This file
 will be processed by SCREAM's buildnml script and produces the
 $case/namelist_scream.xml which is the fully resolved/processed
-info from this file. We recommend users use atm-config-chg for
-tweaking their $case/namelist_scream.xml file.
+info from this file. We highly recommend users use atmchange for
+tweaking their $case/namelist_scream.xml file. Direct edits will
+be lost if SCREAM_HACK_XML is not enabled.
 
 -->
 
@@ -149,6 +150,7 @@ tweaking their $case/namelist_scream.xml file.
       <enable_precondition_checks type="logical">true</enable_precondition_checks>
       <enable_postcondition_checks type="logical">true</enable_postcondition_checks>
       <repair_log_level type="string" valid_values="trace,debug,info,warn">trace</repair_log_level>
+      <compute_tendencies type="array(string)">NONE</compute_tendencies>
     </atm_proc_base>
 
     <!-- Basic options for each atm process group -->
@@ -160,12 +162,20 @@ tweaking their $case/namelist_scream.xml file.
 
     <!-- Surface coupling (import and export) -->
     <sc_import inherit="atm_proc_base"/>
-    <sc_export inherit="atm_proc_base"/>
+    <sc_export inherit="atm_proc_base">
+      <prescribed_constants>
+        <fields type="array(string)">NONE</fields>
+        <values type="array(real)">0</values>
+      </prescribed_constants>
+    </sc_export>
 
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
       <Grid>Dynamics</Grid>
       <Moisture>moist</Moisture>
+      <!-- Frequency in physics steps to output a global hash over the dycore's
+           in fields. <= 0 disables hashing. -->
+      <BfbHash>0</BfbHash>
     </homme>
 
     <!-- P3 microphysics -->
@@ -293,31 +303,26 @@ tweaking their $case/namelist_scream.xml file.
     <Filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</Filename>
     <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</Filename>
     <Filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20220914.nc</Filename>
-    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-1_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20160801-topoadj16x_20221011.nc</Filename>
-    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-1-X6T_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20160801-topoadjx6t_20221011.nc</Filename>
-    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadj16x_20221012.nc</Filename>
-    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2-X6T_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20221011.nc</Filename>
+    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-1_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20160801-topoadjx6t_20221011.nc</Filename>
+    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20221011.nc</Filename>
     <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</Filename>
     <Filename hgrid="ne30np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne30np4L128_20220823.nc</Filename> <!-- This will need to be updated to the new nccn name -->
     <Filename hgrid="ne0np4_conus_x4v1_lowcon" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_conusx4v1np4L72-topo12x_013023.nc</Filename>
 
+    <!-- List of default topography files on specific grids -->
     <topography_filename type="file">UNSET</topography_filename>
-    <topography_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc</topography_filename>
-    <topography_filename hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</topography_filename>
-    <topography_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc</topography_filename>
-    <topography_filename hgrid="ne30np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_16xdel2.c20200108.nc</topography_filename>
-    <topography_filename hgrid="ne30np4.pg2" COMPSET=".*X6T*">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.nc</topography_filename>
-    <topography_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4_16xdel2-PFC-consistentSGH.nc</topography_filename>
-    <topography_filename hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4pg2_16xdel2.nc</topography_filename>
-    <topography_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4_16xdel2_consistentSGH_20220429.nc</topography_filename>
-    <topography_filename hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4pg2_16xdel2_20200213.nc</topography_filename>
-    <topography_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4_16xconsistentSGH_20190212.nc</topography_filename>
-    <topography_filename hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</topography_filename>
-    <topography_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4_16xconsistentSGH_20190528.nc</topography_filename>
-    <topography_filename hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_16xconsistentSGH_20190528_converted.nc</topography_filename>
-    <topography_filename hgrid="ne1024np4.pg2" COMPSET=".*X6T*">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_x6t-SGH.nc</topography_filename>
-    <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
+    <!-- Rough topography available for ne30, ne256, and ne1024 -->
+    <topography_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.c20210614.nc</topography_filename>
+    <topography_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4pg2_x6t-SGH.c20210614.nc</topography_filename>
+    <topography_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_x6t-SGH.c20210614.nc</topography_filename>
+    <!-- Currently no rough topography for ne4, ne120, or ne512. Use smooth topography file -->
+    <topography_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</topography_filename>
+    <topography_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4pg2_16xdel2.nc</topography_filename>
+    <topography_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</topography_filename>
+    <!-- Special case with non x6t or 16x topography file -->
     <topography_filename hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</topography_filename>
+    <!-- For aquaplanet run, unset the topography_filename and set phis=0 -->
+    <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
     <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
 
     <restart_casename>${CASE}.scream</restart_casename>
@@ -360,12 +365,10 @@ tweaking their $case/namelist_scream.xml file.
   <Scorpio>
     <output_yaml_files type="array(string)">${SRCROOT}/components/eamxx/data/scream_default_output.yaml</output_yaml_files>
     <model_restart>
-      <Casename>./${CASE}.scream</Casename>
+      <filename_prefix>./${CASE}.scream</filename_prefix>
       <output_control>
         <Frequency>${REST_N}</Frequency>
         <frequency_units>${REST_OPTION}</frequency_units>
-        <avg_type_in_filename>false</avg_type_in_filename>
-        <frequency_in_filename>false</frequency_in_filename>
       </output_control>
     </model_restart>
   </Scorpio>
@@ -392,6 +395,12 @@ tweaking their $case/namelist_scream.xml file.
     <disable_diagnostics>False</disable_diagnostics>
     <dt_remap_factor constraints="ge 1">2</dt_remap_factor>
     <dt_tracer_factor constraints="ge 1">1</dt_tracer_factor>
+    <hv_ref_profiles>6</hv_ref_profiles>                <!-- Default (rough topography) -->
+    <hv_ref_profiles hgrid="ne4np4">0</hv_ref_profiles> <!-- Value for smooth topography/aquaplanet -->
+    <hv_ref_profiles hgrid="ne120np4">0</hv_ref_profiles>
+    <hv_ref_profiles hgrid="ne512np4">0</hv_ref_profiles>
+    <hv_ref_profiles hgrid="ne0np4_conus_x4v1_lowcon">0</hv_ref_profiles>
+    <hv_ref_profiles COMPSET=".*SCREAM%AQUA.*">0</hv_ref_profiles>
     <hypervis_order>2</hypervis_order>
     <hypervis_scaling>3.0</hypervis_scaling>
     <hypervis_subcycle>1</hypervis_subcycle>
@@ -406,7 +415,12 @@ tweaking their $case/namelist_scream.xml file.
     <nu_top hgrid="ne512np4">2.0e4</nu_top>
     <nu_top hgrid="ne1024np4">1.0e4</nu_top>
     <nu_top hgrid="ne0np4_conus_x4v1_lowcon">100000.0</nu_top>
-    <pgrad_correction COMPSET=".*X6T*">1</pgrad_correction>
+    <pgrad_correction>1</pgrad_correction>                <!-- Default (rough topography) -->
+    <pgrad_correction hgrid="ne4np4">0</pgrad_correction> <!-- Value for smooth topography/aquaplanet -->
+    <pgrad_correction hgrid="ne120np4">0</pgrad_correction>
+    <pgrad_correction hgrid="ne512np4">0</pgrad_correction>
+    <pgrad_correction hgrid="ne0np4_conus_x4v1_lowcon">0</pgrad_correction>
+    <pgrad_correction COMPSET=".*SCREAM%AQUA.*">0</pgrad_correction>
     <se_ftype valid_values="0,2">0</se_ftype>
     <se_geometry>sphere</se_geometry>
     <se_limiter_option>9</se_limiter_option>
@@ -437,6 +451,7 @@ tweaking their $case/namelist_scream.xml file.
     <tstep_type>9</tstep_type>
     <vert_remap_q_alg>10</vert_remap_q_alg>
     <transport_alg>0</transport_alg>
+    <vtheta_thresh>100.0</vtheta_thresh>
     <!-- pg2 settings -->
     <cubed_sphere_map hgrid=".*pg2">2</cubed_sphere_map>
     <!-- SL transport settings. SL defaults to on for pg2 configs. -->

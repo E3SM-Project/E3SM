@@ -1,13 +1,11 @@
 %YAML 1.1
 ---
-Casename: homme_shoc_cld_spa_p3_rrtmgp_128levels_output
+filename_prefix: homme_shoc_cld_spa_p3_rrtmgp_128levels_output
 Averaging Type: Instant
-Max Snapshots Per File: 1
 Fields:
   Physics GLL:
     Field Names:
       # HOMME
-      - horiz_winds
       - ps
       - pseudo_density
       - omega
@@ -16,7 +14,6 @@ Fields:
       # SHOC
       - cldfrac_liq
       - eddy_diff_mom
-      - horiz_winds
       - sgs_buoy_flux
       - tke
       - inv_qc_relvar
@@ -47,6 +44,8 @@ Fields:
       - micro_vap_liq_exchange
       - precip_ice_surf_mass
       - precip_liq_surf_mass
+      # SHOC + HOMME
+      - horiz_winds
       # SHOC + P3
       - qc
       - qv
@@ -65,10 +64,11 @@ Fields:
       - rad_heating_pdel
       - sfc_flux_lw_dn
       - sfc_flux_sw_net
+      - EAMxx_T_mid_tend
+      - EAMxx_qv_tend
  
 output_control:
-  Frequency: ${NUM_STEPS}
+  Frequency: 1
   frequency_units: nsteps
-  Timestamp in Filename: false
   MPI Ranks in Filename: true
 ...

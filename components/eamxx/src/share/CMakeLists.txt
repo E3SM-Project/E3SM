@@ -4,6 +4,7 @@ set(SHARE_SRC
   scream_config.cpp
   scream_session.cpp
   atm_process/atmosphere_process.cpp
+  atm_process/atmosphere_process_hash.cpp
   atm_process/atmosphere_process_group.cpp
   atm_process/atmosphere_process_dag.cpp
   atm_process/atmosphere_diagnostic.cpp

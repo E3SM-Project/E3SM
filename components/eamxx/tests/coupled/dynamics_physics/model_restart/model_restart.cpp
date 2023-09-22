@@ -32,7 +32,7 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   const auto& session = ekat::TestSession::get();
   std::string fname = session.params.at("ifile");
   ekat::ParameterList ad_params("Atmosphere Driver");
-  REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
+  parse_yaml_file(fname,ad_params);
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
   // which rely on factory for process creation. The initialize method of the AD does that.
@@ -52,15 +52,13 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   ekat::Comm atm_comm (MPI_COMM_WORLD);
 
   // Time stepping parameters
-  auto& ts_pl = ad_params.sublist("Time Stepping");
-  const auto dt = ts_pl.get<int>("Time Step");
-  const auto run_start_date = ts_pl.get<std::vector<int>>("Run Start Date");
-  const auto run_start_time = ts_pl.get<std::vector<int>>("Run Start Time");
-  const auto case_start_date = ts_pl.get<std::vector<int>>("Case Start Date");
-  const auto case_start_time = ts_pl.get<std::vector<int>>("Case Start Time");
-
-  util::TimeStamp run_t0 (run_start_date, run_start_time);
-  util::TimeStamp case_t0 (case_start_date, case_start_time);
+  const auto& ts     = ad_params.sublist("time_stepping");
+  const auto  dt     = ts.get<int>("time_step");
+  const auto  nsteps = ts.get<int>("number_of_steps");
+  const auto  run_t0_str  = ts.get<std::string>("run_t0");
+  const auto  run_t0      = util::str_to_time_stamp(run_t0_str);
+  const auto  case_t0_str = ts.get<std::string>("case_t0");
+  const auto  case_t0     = util::str_to_time_stamp(case_t0_str);
 
   // Create the driver
   AtmosphereDriver ad;
@@ -74,7 +72,6 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   if (atm_comm.am_i_root()) {
     printf("Start time stepping loop...       [  0%%]\n");
   }
-  const auto nsteps = ts_pl.get<int>("Number of Steps");
   for (int i=0; i<nsteps; ++i) {
     ad.run(dt);
     if (atm_comm.am_i_root()) {

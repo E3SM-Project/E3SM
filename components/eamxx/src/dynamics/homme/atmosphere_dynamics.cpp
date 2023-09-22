@@ -52,9 +52,8 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   // This class needs Homme's context, so register as a user
   HommeContextUser::singleton().add_user();
 
-  ekat::any homme_nsteps;
-  homme_nsteps.reset<int>(-1);
-  m_restart_extra_data["homme_nsteps"] = std::make_pair(std::string("int"),homme_nsteps);
+  auto homme_nsteps = std::make_shared<ekat::any>(-1);
+  m_restart_extra_data["homme_nsteps"] = homme_nsteps;
 
   if (!is_parallel_inited_f90()) {
     // While we're here, we can init homme's parallel session
@@ -65,6 +64,10 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   // Set the log filename in the F90 interface
   const char* logname = m_atm_logger->get_logfile_name().c_str();
   set_homme_log_file_name_f90 (&logname);
+
+  m_bfb_hash_nstep = 0;
+  if (params.isParameter("BfbHash"))
+    m_bfb_hash_nstep = std::max(0, params.get<int>("BfbHash"));
 }
 
 HommeDynamics::~HommeDynamics ()
@@ -253,11 +256,12 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
   auto& params  = c.get<SimulationParams>();
 
   const auto num_elems = c.get<Elements>().num_elems();
+  const auto num_tracers = c.get<Tracers>().num_tracers();
 
   auto& caar = c.create_if_not_there<CaarFunctor>(num_elems,params);
   auto& hvf  = c.create_if_not_there<HyperviscosityFunctor>(num_elems, params);
   auto& ff   = c.create_if_not_there<ForcingFunctor>(num_elems, num_elems, params.qsize);
-  auto& diag = c.create_if_not_there<Diagnostics> (num_elems,params.theta_hydrostatic_mode);
+  auto& diag = c.create_if_not_there<Diagnostics> (num_elems, num_tracers, params.theta_hydrostatic_mode);
   auto& vrm  = c.create_if_not_there<VerticalRemapManager>(num_elems);
 
   const bool need_dirk = (params.time_step_type==TimeStepType::ttype7_imex ||
@@ -469,6 +473,9 @@ void HommeDynamics::run_impl (const double dt)
         "  - input dt : " << dt << "\n"
         "  - tolerance: " << std::numeric_limits<double>::epsilon()*10 << "\n");
 
+    if (m_bfb_hash_nstep > 0 && timestamp().get_num_steps() % m_bfb_hash_nstep == 0)
+      print_fast_global_state_hash("Hommexx");
+
     const int dt_int = static_cast<int>(std::round(dt));
 
     const int nsplit = get_homme_nsplit_f90(dt_int);
@@ -486,7 +493,7 @@ void HommeDynamics::run_impl (const double dt)
 
     // Update nstep in the restart extra data, so it can be written to restart if needed.
     const auto& tl = c.get<Homme::TimeLevel>();
-    auto& nstep = ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"].second);
+    auto& nstep = ekat::any_cast<int>(*m_restart_extra_data["homme_nsteps"]);
     nstep = tl.nstep;
 
     // Post process Homme's output, to produce what the rest of Atm expects
@@ -777,14 +784,22 @@ void HommeDynamics::init_homme_views () {
   constexpr int QSZ  = HOMMEXX_QSIZE_D;
   constexpr int NVL  = HOMMEXX_NUM_LEV;
   constexpr int NVLI = HOMMEXX_NUM_LEV_P;
+  constexpr int N    = HOMMEXX_PACK_SIZE;
 
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const int qsize = tracers.num_tracers();
 
+  const auto ncols = m_phys_grid->get_num_local_dofs();
+  const auto nlevs = m_phys_grid->get_num_vertical_levels();
+  const auto npacks= ekat::PackInfo<N>::num_packs(nlevs);
+
+  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  const auto default_policy = ESU::get_default_team_policy(ncols,npacks);
+
   // Print homme's parameters, so user can see whether something wasn't set right.
   // TODO: make Homme::SimulationParams::print accept an ostream.
   std::stringstream msg;
-  msg << "\n************** CXX SimulationParams **********************\n\n";
+  msg << "\n************** HOMMEXX SimulationParams **********************\n\n";
   msg << "   time_step_type: " << Homme::etoi(params.time_step_type) << "\n";
   msg << "   moisture: " << (params.moisture==Homme::MoistDry::DRY ? "dry" : "moist") << "\n";
   msg << "   remap_alg: " << Homme::etoi(params.remap_alg) << "\n";
@@ -814,7 +829,17 @@ void HommeDynamics::init_homme_views () {
   msg << "   disable_diagnostics: " << (params.disable_diagnostics ? "yes" : "no") << "\n";
   msg << "   theta_hydrostatic_mode: " << (params.theta_hydrostatic_mode ? "yes" : "no") << "\n";
   msg << "   prescribed_wind: " << (params.prescribed_wind ? "yes" : "no") << "\n";
-  msg << "   rearth: " << params.rearth << "\n";
+
+  msg << "\n************** General run info **********************\n\n";
+  msg << "   ncols: " << ncols << "\n";
+  msg << "   nlevs: " << nlevs << "\n";
+  msg << "   npacks: " << npacks << "\n";
+  msg << "   league_size: " << default_policy.league_size() << "\n";
+  msg << "   team_size: " << default_policy.team_size() << "\n";
+  msg << "   concurrent teams: " << KT::ExeSpace().concurrency() / default_policy.team_size() << "\n";
+
+  // TODO: Replace with scale_factor and laplacian_rigid_factor when available.
+  //msg << "   rearth: " << params.rearth << "\n";
   msg << "\n**********************************************************\n" << "\n";
   this->log(LogLevel::info,msg.str());
 
@@ -911,9 +936,9 @@ void HommeDynamics::restart_homme_state () {
         auto& tl = c.get<Homme::TimeLevel>();
 
   // For BFB restarts, set nstep counter in Homme's TimeLevel to match the restarted value.
-  const auto& nstep = ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"].second);
-  tl.nstep = nstep;
-  set_homme_param("num_steps",nstep);
+  const auto& nstep = ekat::any_ptr_cast<int>(*m_restart_extra_data["homme_nsteps"]);
+  tl.nstep = *nstep;
+  set_homme_param("num_steps",*nstep);
 
   constexpr int NGP = HOMMEXX_NP;
   const int nlevs = m_phys_grid->get_num_vertical_levels();
@@ -1093,7 +1118,7 @@ void HommeDynamics::initialize_homme_state () {
   const int n0  = tl.n0;
   const int n0_qdp  = tl.n0_qdp;
 
-  ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"].second) = tl.nstep;
+  ekat::any_cast<int>(*m_restart_extra_data["homme_nsteps"]) = tl.nstep;
 
   const auto phis_dyn_view = m_helper_fields.at("phis_dyn").get_view<const Real***>();
   const auto phi_int_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();

@@ -471,7 +471,7 @@ contains
               do k=minLevelCell(iCell),maxLevelCell(iCell)
                   Nsqr_iface(k) = BVFSmoothed(k)
               enddo
-              Nsqr_iface(minLevelCell(iCell):minLevelCell(iCell)-1) = Nsqr_iface(minLevelCell(iCell))
+              Nsqr_iface(1:minLevelCell(iCell)-1) = Nsqr_iface(minLevelCell(iCell))
               k=min(maxLevelCell(iCell)+1,nVertLevels)
               Nsqr_iface(k:maxLevelCell(iCell)+1) = Nsqr_iface(k-1)
 

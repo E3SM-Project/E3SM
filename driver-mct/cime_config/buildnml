@@ -401,6 +401,10 @@ def buildnml(case, caseroot, component):
         if "aquaplanet" in cam_config_opts:
             infile_text = "aqua_planet = .true. \n aqua_planet_sst = 1"
 
+    # add dust_emis_scheme 
+    dust_emis_scheme = case.get_value('dust_emis_scheme')
+    infile_text += " dust_emis_scheme = {}".format(dust_emis_scheme)
+
     user_nl_file = os.path.join(caseroot, "user_nl_cpl")
     namelist_infile = os.path.join(confdir, "namelist_infile")
     create_namelist_infile(case, user_nl_file, namelist_infile, infile_text)

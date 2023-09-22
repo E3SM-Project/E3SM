@@ -87,6 +87,9 @@
                 <var name="regionalSumCalvingFlux" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
                         description="area-integrated calving flux within region"
                 />
+                <var name="regionalSumFaceMeltingFlux" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
+                        description="area-integrated face-melting flux within region"
+                />
                 <var name="regionalSumGroundingLineFlux" type="real" dimensions="nRegions Time" units="kg yr^{-1}"
                         description="total mass flux across all grounding lines (note that flux from floating to grounded ice makes a negative contribution to this metric)"
                 />

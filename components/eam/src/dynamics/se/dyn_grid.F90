@@ -49,7 +49,7 @@ module dyn_grid
   use dimensions_mod,          only: nelem, nelemd, nelemdmax, ne, np, npsq
   use spmd_utils,              only: iam, mpi_integer, mpi_real8, mpicom, npes, masterproc
   use parallel_mod,            only: par
-  use scamMod,                 only: single_column, scm_multcols
+  use iop_data_mod,            only: single_column, scm_multcols
 
   implicit none
   private

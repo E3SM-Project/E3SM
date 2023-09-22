@@ -3,8 +3,8 @@
 <?xml-stylesheet type="text/xsl" href="definitions_variables" ?>
 
 <!DOCTYPE phys_defaults [
-  <!ENTITY eam_phys_defaults "-nlev 72 -clubb_sgs -microphys mg2">
-  <!ENTITY eam_chem_defaults "-chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero">
+  <!ENTITY eam_phys_defaults "-nlev 72 -clubb_sgs -microphys p3">
+  <!ENTITY eam_chem_defaults "-chem chemuci_linozv3_mam5_vbs -rain_evap_to_coarse_aero -vbs">
 ]>
 
 <definitions_variables>
@@ -51,14 +51,18 @@
       <value compset="_EAM%CMIP6-1pctCO2" >&eam_phys_defaults; &eam_chem_defaults;</value>
       <value compset="_EAM%CMIP6-4xCO2"   >&eam_phys_defaults; &eam_chem_defaults;</value>
       <value compset="_EAM%AR5sf"      >&eam_phys_defaults; -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero</value>
+      <value compset="_EAM%CHEMUCI-LINOZV2"  >-clubb_sgs -microphys mg2 -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -usr_mech_infile $SRCROOT/components/eam/chem_proc/inputs/pp_chemUCI_mam4_resus_mom_soag_tag.in</value>
+      <value compset="_EAM%CHEMUCI-LINOZV3"  >-clubb_sgs -microphys mg2 -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -usr_mech_infile $SRCROOT/components/eam/chem_proc/inputs/pp_chemUCI_linozv3_mam4_resus_mom_soag_tag.in</value>
+      <value compset="_EAM%CHEMUCI-LINOZV3-MAM5"  >-clubb_sgs -microphys mg2 -chem chemuci_linozv3_mam5_vbs -rain_evap_to_coarse_aero -nlev 72 -usr_mech_infile $SRCROOT/components/eam/chem_proc/inputs/pp_chemUCI_linozv3_mam5_resus_mom_soag_tag_cnst_no3_oh.in</value>
       <value compset="_ELM%[^_]*BC"    >-bc_dep_to_snow_updates</value>
       <value compset="_EAM.*_BGC%*"    >-co2_cycle</value>
+      <value compset="_EAM%CMIP6-P3_"  >&eam_chem_defaults; -nlev 72 -clubb_sgs -microphys p3</value>
 
       <!-- Single column model (SCM) -->
       <value compset="_EAM%SCM_"       >&eam_phys_defaults; &eam_chem_defaults; -scam</value>
 
       <!-- idealized configurations -->
-      <value compset="_EAM%AQP_"       >&eam_phys_defaults; &eam_chem_defaults; -aquaplanet</value>
+      <value compset="_EAM%AQP_"       >-nlev 72 -clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -aquaplanet</value>
       <value compset="_EAM%RCE_"       >&eam_phys_defaults; -chem none -aquaplanet -rce -rad rrtmgp</value>
       <value compset="_EAM%IDEAL"      >-phys ideal</value>
       <value compset="_EAM%ADIAB"      >-phys adiabatic</value>
@@ -103,23 +107,29 @@
       <value compset="RCP4_EAM"                         >2006-2100_cam5_rcp45</value>
       <value compset="RCP6_EAM"                         >2006-2100_cam5_rcp60</value>
       <value compset="RCP8_EAM"                         >2006-2100_cam5_rcp85</value>
-      <value compset="1850(?:SOI)?_EAM.*CMIP6"          >1850_eam_CMIP6</value>
-      <value compset="1850(?:SOI)?_EAM.*CMIP6-1pctCO2"  >1850_eam_CMIP6-1pctCO2</value>
-      <value compset="1950(?:SOI)?_EAM.*CMIP6"          >1950_eam_CMIP6</value>
-      <value compset="1850(?:SOI)?_EAM.*CMIP6.*_BGC%*"  >1850_eam_CMIP6_bgc</value>
-      <value compset="2010(?:SOI)?_EAM.*CMIP6"          >2010_eam_CMIP6</value>
+      <value compset="1850(?:SOI)?_EAM.*CMIP6"          >1850_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="1850(?:SOI)?_EAM.*CMIP6-1pctCO2"  >1850_eam_CMIP6_chemUCI-Linoz-mam5-vbs-1pctCO2</value>
+      <value compset="1850(?:SOI)?_EAM.*CHEMUCI.*LINOZ"  >1850_eam_chemUCI-Linoz</value>
+      <value compset="1850(?:SOI)?_EAM.*CHEMUCI.*LINOZ.*MAM5"  >1850_eam_chemUCI-Linoz-mam5</value>
+      <value compset="1950(?:SOI)?_EAM.*CMIP6"          >1950_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="1850(?:SOI)?_EAM.*CMIP6.*_BGC%*"  >1850_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="2010(?:SOI)?_EAM.*CMIP6"          >2010_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="2010(?:SOI)?_EAM.*CHEMUCI.*LINOZ"  >2010_eam_chemUCI-Linoz</value>
+      <value compset="2010(?:SOI)?_EAM.*CHEMUCI.*LINOZ.*MAM5"  >2010_eam_chemUCI-Linoz-mam5</value>
       <value compset="1850(?:SOI)?_EAM.*AR5sf"          >1850_E3SMv1_superfast_ar5-emis</value>
       <value compset="1850S_EAM.*AR5sf"                 >1850S_E3SMv1_superfast_ar5-emis</value>
-      <value compset="20TR(?:SOI)?_EAM.*CMIP6"          >20TR_eam_CMIP6</value>
-      <value compset="20TR(?:SOI)?_EAM.*CMIP6.*_BGC*"   >20TR_eam_CMIP6_bgc</value>
-      <value compset="SSP585(?:SOI)?_EAM.*CMIP6"        >SSP585_eam_CMIP6</value>
-      <value compset="SSP370(?:SOI)?_EAM.*CMIP6"        >SSP370_eam_CMIP6</value>
+      <value compset="20TR(?:SOI)?_EAM.*CMIP6"          >20TR_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="20TR(?:SOI)?_EAM.*CMIP6.*_BGC*"   >20TR_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="SSP585(?:SOI)?_EAM.*CMIP6"        >SSP585_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="SSP370(?:SOI)?_EAM.*CMIP6"        >SSP370_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6.*_BGC%B">SSP585_cam5_CMIP6_bgc</value>
       <value compset="20TR(?:SOI)?_EAM.*AR5sf"          >20TR_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TRS_EAM.*AR5sf"                 >20TRS_E3SMv1_superfast_ar5-emis</value>
+      <value compset="20TR(?:SOI)?_EAM.*CHEMUCI.*LINOZ"  >20TR_eam_chemUCI-Linoz</value>
+      <value compset="20TR(?:SOI)?_EAM.*CHEMUCI.*LINOZ.*MAM5"  >20TR_eam_chemUCI-Linoz-mam5</value>
       <value compset="ARM95_EAM"                        >scam_arm95</value>
-      <value compset="ARM97_EAM"                        >scam_arm97</value>
-      <value compset="SCM_EAM"                          >scam_generic</value>
+      <value compset="ARM97_EAM"                        >scm_arm97_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="SCM_EAM"                          >scm_generic_chemUCI-Linoz-mam5-vbs</value>
       <value compset="PIPD_EAM"                         >1850-PD_cam5</value>
       <value compset="_EAM%AQP_"                        >aquaplanet_EAMv1</value>
       <value compset="_EAM%RCE_"                        >RCEMIP_EAMv1</value>
@@ -131,13 +141,14 @@
       <value compset="_EAM%SCREAM-LR-AQUA"              >aquaplanet_SCREAM-LR</value>
       <value compset="_EAM%SCREAM-HR-AQUA"              >aquaplanet_SCREAM-HR</value>
       <!-- MMF / Super-Parameterization -->
-      <value compset="2010(?:SOI)?_EAM%MMF1"            >2010_mmf_1mom</value>
-      <value compset="2010(?:SOI)?_EAM%MMF2"            >2010_mmf_2mom</value>
+      <value compset="20TR(?:SOI)?_EAM%.*MMF1"          >20TR_MMF-1mom_CMIP6</value>
+      <value compset="1950(?:SOI)?_EAM%.*MMF1"          >1950_MMF-1mom_CMIP6</value>
+      <value compset="2010(?:SOI)?_EAM%.*MMF1"          >2010_mmf_1mom</value>
+      <value compset="2010(?:SOI)?_EAM%.*MMF2"          >2010_mmf_2mom</value>
       <value compset="_EAM%AQP.*MMF"                    >aquaplanet_MMF-1mom</value>
       <value compset="_EAM%RCE.*MMF"                    >RCEMIP_EAMv1</value>
       <value compset="ARM97_EAM%SCM.*MMF"               >scam_arm97_MMF-1mom</value>
       <value compset="RICO_EAM%SCM.*MMF"                >scam_rico_MMF-1mom</value>
-      <value compset="20TR_EAM%CMIP6.*MMF"              >20TR_MMF-1mom_CMIP6</value>
     </values>
 
     <group>run_component_cam</group>
@@ -177,7 +188,7 @@
 
   <description>
     <desc compset="_EAM"  >cam5 physics:</desc>
-    <desc compset="_EAM.*CMIP6"    >EAM with complete set of E3SM atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- CMIP6-DECK:</desc>
+    <desc compset="_EAM.*CMIP6"    >EAM with complete set of E3SM atmospheric mods for V3 (72 layers model) with chemUCI, Linozv3, MAM5 and VBS SOA - CMIP6-DECK:</desc>
     <desc compset="_EAM.*CMIP6-HR" >high-res (ne120 w/ 18to6 ocn) 72 layer E3SM v1 atmos model with CMIP6 forcings </desc>
     <desc compset="_EAM.*CMIP6-LR" >low-res (ne30 w/ oECv3 ocn) 72 layer E3SM v1 atmos model with CMIP6 forcings </desc>
     <desc compset="_EAM.*AR5sf"    >E3SM plus super-fast chemistry with AR5 emissions:</desc>

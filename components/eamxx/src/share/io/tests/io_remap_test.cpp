@@ -96,7 +96,6 @@ TEST_CASE("io_remap_test","io_remap_test")
   // For vertical remapping we will prokject onto a set of equally
   // spaced pressure levels from p_top to b_bot that is nearly half
   // the number of source columns.
-  const Real dp_tgt = (p_bot - p_top) / (nlevs_tgt-1);
   std::vector<std::int64_t> dofs_levs(nlevs_tgt);
   std::iota(dofs_levs.begin(),dofs_levs.end(),0);
   std::vector<Real> p_tgt;
@@ -133,20 +132,22 @@ TEST_CASE("io_remap_test","io_remap_test")
   scorpio::eam_pio_closefile(remap_filename);
   print (" -> Create remap file ... done\n",io_comm);
 
-  // Construct source data to be used for remapped output.
-  // We want to test cases where some values may be masked, to accomplish
-  // this we let the pressure profile at each column be a linear progression
-  // between p_top to p_surf where p_surf is defined as:
-  //
-  //            /  p_bot                        for |x| > 4
-  //   p_surf = |  0.5*(p_top+p_bot)            for |x| < 2
-  //            \  p_bot - (-sign(x)*m + b)     otherwise, where m = (p_top+p_bot)/4.0 and b = p_top+p_bot
-  //
-  //            
-  //                             ----
-  //                            /    \
-  //                           /      \
-  //                   --------        ----------
+  /*
+   * Construct source data to be used for remapped output.
+   * We want to test cases where some values may be masked, to accomplish
+   * this we let the pressure profile at each column be a linear progression
+   * between p_top to p_surf where p_surf is defined as:
+   * 
+   *            /  p_bot                        for |x| > 4
+   *   p_surf = |  0.5*(p_top+p_bot)            for |x| < 2
+   *            \  p_bot - (-sign(x)*m + b)     otherwise, where m = (p_top+p_bot)/4.0 and b = p_top+p_bot
+   * 
+   *            
+   *                             ----
+   *                            /    \
+   *                           /      \
+   *                   --------        ----------
+   */
   print (" -> Create pressure data ... \n",io_comm);
   print ("    -> setup x_src ... \n",io_comm);
   std::vector<Real> x_src;
@@ -268,11 +269,12 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   // Confirm that remapped fields are correct.
   print (" -> Test Remapped Output ... \n",io_comm);
-  // Note, the vertical remapper defaults to a mask value of std numeric limits scaled by 0.1;
-  const Real mask_val = std::numeric_limits<float>::max()/10.0;
   // ------------------------------------------------------------------------------------------------------
   //                                    ---  Vertical Remapping ---
   {
+    // Note, the vertical remapper defaults to a mask value of std numeric limits scaled by 0.1;
+    const float mask_val = vert_remap_control.isParameter("Fill Value")
+                         ? vert_remap_control.get<double>("Fill Value") : DEFAULT_FILL_VALUE;
     print ("    -> vertical remap ... \n",io_comm);
     auto gm_vert   = get_test_gm(io_comm,ncols_src,nlevs_tgt);
     auto grid_vert = gm_vert->get_grid("Point Grid");
@@ -326,6 +328,9 @@ TEST_CASE("io_remap_test","io_remap_test")
   // ------------------------------------------------------------------------------------------------------
   //                                    ---  Horizontal Remapping ---
   {
+    // Note, the vertical remapper defaults to a mask value of std numeric limits scaled by 0.1;
+    const float mask_val = horiz_remap_control.isParameter("Fill Value")
+                         ? horiz_remap_control.get<double>("Fill Value") : DEFAULT_FILL_VALUE;
     print ("    -> horizontal remap ... \n",io_comm);
     auto gm_horiz   = get_test_gm(io_comm,ncols_tgt,nlevs_src);
     auto grid_horiz = gm_horiz->get_grid("Point Grid");
@@ -397,6 +402,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   // ------------------------------------------------------------------------------------------------------
   //                                ---  Vertical + Horizontal Remapping ---
   {
+    const float mask_val = vert_horiz_remap_control.isParameter("Fill Value")
+                         ? vert_horiz_remap_control.get<double>("Fill Value") : DEFAULT_FILL_VALUE;
     print ("    -> vertical + horizontal remap ... \n",io_comm);
     auto gm_vh   = get_test_gm(io_comm,ncols_tgt,nlevs_tgt);
     auto grid_vh = gm_vh->get_grid("Point Grid");
@@ -618,7 +625,7 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
   using vos_type = std::vector<std::string>;
   ekat::ParameterList output_yaml;
 
-  output_yaml.set<std::string>("Casename",name);
+  output_yaml.set<std::string>("filename_prefix",name);
   output_yaml.set<std::string>("Averaging Type","Instant");
   output_yaml.set<int>("Max Snapshots Per File",1);
   output_yaml.set<std::string>("Floating Point Precision","real");

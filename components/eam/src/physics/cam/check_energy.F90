@@ -35,7 +35,7 @@ module check_energy
   use physics_types,   only: physics_state, physics_tend, physics_ptend, physics_ptend_init
   use constituents,    only: cnst_get_ind, pcnst, cnst_name, cnst_get_type_byind, &
                              icldliq, icldice, irain, isnow
-  use time_manager,    only: is_first_step
+  use time_manager,    only: is_first_step, is_first_restart_step
   use cam_logfile,     only: iulog
   use cam_abortutils,  only: endrun 
   use phys_control,    only: ieflx_opt
@@ -55,10 +55,12 @@ module check_energy
   public :: check_energy_timestep_init  ! timestep initialization of energy integrals and cumulative boundary fluxes
   public :: check_energy_chng      ! check changes in integrals against cumulative boundary fluxes
   public :: check_energy_gmean     ! global means of physics input and output total energy
+  public :: check_energy_gmean_additional_diagn  ! global means for energy/mass diagn
   public :: check_energy_fix       ! add global mean energy difference as a heating
   public :: check_tracers_init      ! initialize tracer integrals and cumulative boundary fluxes
   public :: check_tracers_chng      ! check changes in integrals against cumulative boundary fluxes
   public :: check_tracers_fini      ! free memory associated with check_tracers_data type variable
+  public :: check_energy_set_print_additional_diagn
 
   public :: qflx_gmean              ! calculate global mean of qflx for water conservation check 
   public :: check_qflx              ! output qflx at certain locations for water conservation check  
@@ -69,6 +71,11 @@ module check_energy
   public :: check_ieflx_fix         ! add ieflx to sensible heat flux 
 
   public :: energy_helper_eam_def
+
+  logical, public, protected ::  print_additional_diagn = .false.
+
+  integer, public ::  nstep_ignore_diagn1 = -10
+  integer, public ::  nstep_ignore_diagn2 = -10
 
 ! Private module data
 
@@ -94,22 +101,25 @@ module check_energy
      integer :: count(pcnst)               ! count of values with significant imbalances
   end type check_tracers_data
 
-
 !===============================================================================
 contains
 !===============================================================================
 
 subroutine check_energy_defaultopts( &
-   print_energy_errors_out)
+   print_energy_errors_out, print_additional_diagn_out)
 !----------------------------------------------------------------------- 
 ! Purpose: Return default runtime options
 !-----------------------------------------------------------------------
 
    logical,          intent(out), optional :: print_energy_errors_out
+   logical,          intent(out), optional :: print_additional_diagn_out
 !-----------------------------------------------------------------------
 
    if ( present(print_energy_errors_out) ) then
       print_energy_errors_out = print_energy_errors
+   endif
+   if ( present(print_additional_diagn_out) ) then
+      print_additional_diagn_out = print_additional_diagn
    endif
 
 end subroutine check_energy_defaultopts
@@ -117,19 +127,33 @@ end subroutine check_energy_defaultopts
 !================================================================================================
 
 subroutine check_energy_setopts( &
-   print_energy_errors_in)
+   print_energy_errors_in, print_additional_diagn_in)
 !----------------------------------------------------------------------- 
 ! Purpose: Return default runtime options
 !-----------------------------------------------------------------------
 
    logical,          intent(in), optional :: print_energy_errors_in
+   logical,          intent(in), optional :: print_additional_diagn_in
 !-----------------------------------------------------------------------
 
    if ( present(print_energy_errors_in) ) then
       print_energy_errors = print_energy_errors_in
    endif
+   if ( present(print_additional_diagn_in) ) then
+      print_additional_diagn = print_additional_diagn_in
+   endif
 
 end subroutine check_energy_setopts
+
+!================================================================================================
+
+subroutine check_energy_set_print_additional_diagn(print_additional_diagn_in)
+
+   logical,          intent(in), optional :: print_additional_diagn_in
+
+   print_additional_diagn = print_additional_diagn_in
+
+end subroutine check_energy_set_print_additional_diagn 
 
 !================================================================================================
 
@@ -181,7 +205,7 @@ end subroutine check_energy_get_integrals
 
 !================================================================================================
 
-  subroutine check_energy_init()
+  subroutine check_energy_init(state)
 !
 ! Initialize the energy conservation module
 ! 
@@ -191,8 +215,11 @@ end subroutine check_energy_get_integrals
 
     implicit none
 
+    type(physics_state), intent(inout) :: state(begchunk:endchunk)
+
     logical          :: history_budget
     integer          :: history_budget_histfile_num ! output history file number for budget fields
+    integer          :: ncol,lchnk
 
 !-----------------------------------------------------------------------
 
@@ -225,9 +252,8 @@ end subroutine check_energy_get_integrals
     call addfld('AC02QFLX', horiz_only,    'A', 'kg/m2/s', 'total water change due to water flux ')
     call addfld('BC01QFLX', horiz_only,    'A', 'kg/m2/s', 'total water change due to water flux ')
 
-
     if (masterproc) then
-       write (iulog,*) ' print_energy_errors is set', print_energy_errors
+       write (iulog,*) ' print_energy_errors is set to', print_energy_errors
     endif
 
     if ( history_budget ) then
@@ -240,6 +266,21 @@ end subroutine check_energy_get_integrals
        call add_default ('IEFLX', 1, ' ') 
     end if 
 
+    if(print_additional_diagn)then
+       do lchnk = begchunk, endchunk
+          ncol = state(lchnk)%ncol
+          state(lchnk)%te_before_physstep(:ncol) = 0._r8
+          state(lchnk)%tw_before(:ncol)          = 0._r8
+          state(lchnk)%deltaw_flux(:ncol)        = 0._r8
+          state(lchnk)%deltaw_step(:ncol)        = 0._r8
+          state(lchnk)%delta_te(:ncol)           = 0._r8
+          state(lchnk)%rr(:ncol)                 = 0._r8
+          state(lchnk)%cflx_raw(:ncol)           = 0._r8
+          state(lchnk)%cflx_diff(:ncol)          = 0._r8
+          state(lchnk)%shf_raw(:ncol)            = 0._r8
+          state(lchnk)%shf_diff(:ncol)           = 0._r8
+       enddo
+    endif
   end subroutine check_energy_init
 
 !===============================================================================
@@ -491,6 +532,7 @@ end subroutine check_energy_get_integrals
        teinp_glob = te_glob(1)
        teout_glob = te_glob(2)
        psurf_glob = te_glob(3)
+
        ptopb_glob = state(begchunk)%pint(1,1)
 
        ! Global mean total energy difference
@@ -498,6 +540,7 @@ end subroutine check_energy_get_integrals
        heat_glob  = -tedif_glob/dtime * gravit / (psurf_glob - ptopb_glob)
 
        if (masterproc) then
+          ! integrated state%te_cur is J/m2
           write(iulog,'(1x,a9,1x,i8,4(1x,e25.17))') "nstep, te", nstep, teinp_glob, teout_glob, heat_glob, psurf_glob
        end if
     else
@@ -505,6 +548,101 @@ end subroutine check_energy_get_integrals
     end if  !  (begchunk .le. endchunk)
     
   end subroutine check_energy_gmean
+
+
+
+!===============================================================================
+  subroutine check_energy_gmean_additional_diagn(state, pbuf2d, dtime, nstep)
+
+    use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_get_chunk
+
+!-----------------------------------------------------------------------
+! Compute global mean total energy of physics input and output states
+!-----------------------------------------------------------------------
+!------------------------------Arguments--------------------------------
+
+    type(physics_state), intent(in   ), dimension(begchunk:endchunk) :: state
+    type(physics_buffer_desc),    pointer    :: pbuf2d(:,:)
+
+    real(r8), intent(in) :: dtime        ! physics time step
+    integer , intent(in) :: nstep        ! current timestep number
+
+!---------------------------Local storage-------------------------------
+    integer :: ncol                      ! number of active columns
+    integer :: lchnk                     ! chunk index
+
+    real(r8) :: te(pcols,begchunk:endchunk,7)
+                                         ! total energy of input/output states (copy)
+    real(r8) :: te_glob(7)               ! global means of total energy
+    real(r8), pointer :: teout(:)
+
+    real(r8) :: dflux, dstep
+    real(r8) :: delta_te_glob, rr_glob, cflxdiff, shfdiff, totalw
+!-----------------------------------------------------------------------
+
+    ! Copy total energy out of input and output states
+#ifdef CPRCRAY
+!DIR$ CONCURRENT
+#endif
+    do lchnk = begchunk, endchunk
+       ncol = state(lchnk)%ncol
+
+       !water changes
+       te(:ncol,lchnk,1) = state(lchnk)%deltaw_flux(:ncol)
+       te(:ncol,lchnk,2) = state(lchnk)%deltaw_step(:ncol)
+
+       !energy change versus restom-ressurf
+       te(:ncol,lchnk,3) = state(lchnk)%delta_te(:ncol)
+       te(:ncol,lchnk,4) = state(lchnk)%rr(:ncol)
+
+       !qneg4 diagnostics values
+       te(:ncol,lchnk,5) = state(lchnk)%cflx_diff(:ncol)
+       te(:ncol,lchnk,6) = state(lchnk)%shf_diff(:ncol)
+
+       te(:ncol,lchnk,7) = state(lchnk)%tw_cur(:ncol)
+
+    end do
+
+    ! Compute global means of input and output energies and of
+    ! surface pressure for heating rate (assume uniform ptop)
+    call gmean(te, te_glob, 7)
+
+    if (begchunk .le. endchunk) then
+
+       dflux = te_glob(1)
+       dstep = te_glob(2)
+
+       delta_te_glob = te_glob(3)
+       rr_glob       = te_glob(4)
+       cflxdiff      = te_glob(5)
+       shfdiff       = te_glob(6)
+       totalw        = te_glob(7)
+
+       if (masterproc) then
+          ! integrated state%tw_cur is kg/m2
+          ! integrated dflux, dstep are kg/m2
+          ! integrated cflx is kg/m2/sec
+          ! this diagnostics is from the previous time step
+
+          !these are not relative errors, but te_cur is globally intergated in the other gmean call,
+          !and we will integrate tw_cur [kg/m2] here. 
+          !rel errors can be obtained in post processing
+          write(iulog,'(1x,a25,1x,i8,2(1x,e25.17))') "n, dt, W tot mass [kg/m2]", nstep-1, dtime, totalw
+          write(iulog,'(1x,a25,1x,i8,2(1x,e25.17))') "n, W flux, dWater [kg/m2]", nstep-1, dflux, dstep
+          write(iulog,'(1x,a24,1x,i8,1(1x,e25.17))') "n, W flux-dWater [kg/m2]",   nstep-1, dflux - dstep
+          write(iulog,'(1x,a25,1x,i8,2(1x,e25.17))') "n, W cflx*dt loss [kg/m2]", nstep-1, cflxdiff*dtime
+
+          ! integrated delta_te_glob is J/m2, rr_glob is W/m2
+          ! integrated shf is W/m2
+          ! this diagnostics is from the previous time step
+          write(iulog,'(1x,a24,1x,i8,2(1x,e25.17))') "n, E d(TE)/dt, RR [W/m2]", nstep-1, delta_te_glob/dtime, rr_glob
+          write(iulog,'(1x,a22,1x,i8,1(1x,e25.17))') "n, E difference [W/m2]",   nstep-1, delta_te_glob/dtime-rr_glob
+          write(iulog,'(1x,a20,1x,i8,2(1x,e25.17))') "n, E shf loss [W/m2]",     nstep-1, shfdiff
+
+       end if
+    end if  !  (begchunk .le. endchunk)
+
+  end subroutine check_energy_gmean_additional_diagn
 
 !===============================================================================
 
@@ -701,7 +839,7 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 !------------------------------Arguments--------------------------------
 
     use cam_history, only: outfld
-    use scamMod, only: heat_glob_scm, single_column, use_replay
+    use iop_data_mod, only: heat_glob_scm, single_column, use_replay
 
     type(physics_state), intent(in   ) :: state
     type(physics_ptend), intent(out)   :: ptend

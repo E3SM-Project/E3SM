@@ -49,7 +49,13 @@ void fpe_guard_wrapper (const Lambda& f) {
   ekat::enable_fpes(get_default_fpes());
 
   // Execute wrapped function
-  f();
+  try {
+    f();
+  } catch (...) {
+    auto& c = ScreamContext::singleton();
+    c.clean_up();
+    throw;
+  }
 
   // Restore the FPE flag as it was when control was handed to us.
   ekat::disable_all_fpes();
@@ -196,8 +202,8 @@ void scream_init_atm (const int run_start_ymd,
 
     // Init all fields, atm processes, and output streams
     ad.initialize_fields ();
-    ad.initialize_output_managers ();
     ad.initialize_atm_procs ();
+    ad.initialize_output_managers ();
   });
 }
 
