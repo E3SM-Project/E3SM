@@ -46,9 +46,18 @@ module ice_comp_mct
 
    ! MPASSI modules
    use seaice_analysis_driver
-   use seaice_column, only: seaice_column_reinitialize_fluxes, &
+   use seaice_column, only: seaice_column_reinitialize_fluxes, & !colpkg
                             seaice_column_coupling_prep
-   use seaice_constants
+   use seaice_constants, only: coupleAlarmID, &
+                               seaiceFreshWaterFreezingPoint, &
+                               seaiceDensityIce, &
+                               seaiceDensitySnow, &
+                               seaiceDensitySeaWater, &
+                               seaiceGravity, &
+                               seaiceLatentHeatMelting, &
+                               seaiceReferenceSalinity, &
+                               pii
+
    use seaice_core
    use seaice_core_interface
    use seaice_forcing
@@ -56,8 +65,6 @@ module ice_comp_mct
    use seaice_mesh, only: seaice_latlon_vector_rotation_backward
    use seaice_time_integration
    use seaice_error, only: seaice_check_critical_error
-
-   use ice_constants_colpkg, only: Tffresh, ice_ref_salinity, p001
 
    use ice_colpkg, only: colpkg_sea_freezing_temperature
 
@@ -2571,7 +2578,7 @@ contains
             i2x_i % rAttr(index_i2x_Fioi_melth,n) = oceanHeatFlux(i)
             i2x_i % rAttr(index_i2x_Fioi_swpen,n) = oceanShortwaveFlux(i)
             i2x_i % rAttr(index_i2x_Fioi_meltw,n) = oceanFreshWaterFlux(i) + frazilMassAdjust(i)/ailohi
-            i2x_i % rAttr(index_i2x_Fioi_salt ,n) = oceanSaltFlux(i) + ice_ref_salinity*p001*frazilMassAdjust(i)/ailohi
+            i2x_i % rAttr(index_i2x_Fioi_salt ,n) = oceanSaltFlux(i) + seaiceReferenceSalinity*0.001_RKIND*frazilMassAdjust(i)/ailohi
             i2x_i % rAttr(index_i2x_Fioi_taux ,n) = tauxo
             i2x_i % rAttr(index_i2x_Fioi_tauy ,n) = tauyo
 
