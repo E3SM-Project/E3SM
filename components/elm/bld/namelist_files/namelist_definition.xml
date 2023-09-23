@@ -298,7 +298,7 @@ Toggle to turn on the FATES
 </entry>
 
 <entry id="fates_spitfire_mode" type="integer" category="physics"
-        group="elm_inparm" valid_values="0,1,2,3,4,5", value="0" >
+        group="elm_inparm" valid_values="0,1,2,3,4,5" value="0" >
 Turn on spitfire module to simulate fire by setting fates_spitfire_mode > 0.
 Allowed values are:
  0 : Simulations of fire are off
@@ -340,7 +340,7 @@ Toggle to turn on plant hydraulics (only relevant if FATES is on).
 </entry>
 
 <entry id="use_fates_tree_damage" type="logical" category="physics"
-        group="elm_inparm" valid_values="" value=".false."> 
+        group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on the tree damage module in FATES
 (Only relevant if FATES is on)
 </entry>
@@ -1022,7 +1022,7 @@ by getco2_historical.ncl
 <!--                                                   -->
 <!-- files needed for tools/ncl_scripts                -->
 <!--                                                   -->
-<entry id="faerdep" type="char*256"  category="tools" 
+<entry id="faerdep" type="char*256"  category="tools"
        input_pathname="abs" group="elmexp" valid_values="" >
 Aerosol deposition file name (only used for aerdepregrid.ncl)
 </entry>
@@ -1309,8 +1309,8 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 </entry>
 
 <entry id="mask" type="char*20" category="default_settings"
-       group="default_settings"  
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10">
+       group="default_settings"
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,ECwISC30to60E3r2">
 Land mask description
 </entry>
 
@@ -1823,6 +1823,7 @@ Type of saturation function used in VSFM.
 <entry id="vsfm_use_dynamic_linesearch"  type="logical" category="default_settings"
        group="elm_inparm" valid_values="">
 Runtime flag to dynamically modify PETSc SNES linesearch option when VSFM fails to converge before cutting the timestep.
+</entry>
 
 <entry id="vsfm_lateral_model_type" type="char*32" category="elm_physics"
        group="elm_inparm"
@@ -1854,13 +1855,13 @@ Runtime flag to turn on/off PETSc based thermal model.
 <entry id="use_var_soil_thick" type="logical" category="default_settings"
         group="elm_inparm" valid_values="">
 Runtime flag to turn on/off variable soil thickness.
-</entry
+</entry>
 
 <!-- ======================================================================================== -->
 <!-- Namelist options for lake water storage                                                  -->
 <!-- ======================================================================================== -->
 
-<entry id="use_lake_wat_storage" type="logical" category="default_settings" 
+<entry id="use_lake_wat_storage" type="logical" category="default_settings"
         group="elm_inparm" valid_values="">
 Runtime flag to turn on/off lake water storage.
 </entry>
@@ -1869,21 +1870,21 @@ Runtime flag to turn on/off lake water storage.
 <!-- Namelist options for downscaling from grid to topounit                                    -->
 <!-- ========================================================================================  -->
 
-<entry id="use_atm_downscaling_to_topunit" 
-       type="logical" 
+<entry id="use_atm_downscaling_to_topunit"
+       type="logical"
        category="physics"
        group="elm_inparm"
-       valid_values=".true.,.false." 
+       valid_values=".true.,.false."
        value=".false.">
 Runtime flag to turn on/off downscaling of atmosphric forcing from grid to topounit.
 </entry>
-<entry id="precip_downscaling_method" 
-       type="char*32" 
+<entry id="precip_downscaling_method"
+       type="char*32"
        category="physics"
-       group="elm_inparm"       
-       valid_values="ERMM,FNM" 
+       group="elm_inparm"
+       valid_values="ERMM,FNM"
        value="ERMM" >
-Flag to switch between ERMM (Elevation Range with Maximum Elevation Method) and FNM (Froude Number Method) precipitation downscaling methods. 
+Flag to switch between ERMM (Elevation Range with Maximum Elevation Method) and FNM (Froude Number Method) precipitation downscaling methods.
 </entry>
 
 <!-- ========================================================================================  -->
@@ -2010,14 +2011,14 @@ Type of snow grain shape
 
 <entry id="snicar_atm_type" type="char*256" category="elm_physics"
        group="elm_inparm" valid_values="default,mid-latitude_winter,mid-latitude_summer,sub-Arctic_winter,sub-Arctic_summer,summit_Greenland,high_mountain">
-Atmospheric types: 'default' represents the default mid-latitude winter type 
-without considering SZA dependenece of direct irradiance, and the other types 
+Atmospheric types: 'default' represents the default mid-latitude winter type
+without considering SZA dependenece of direct irradiance, and the other types
 explain the SZA dependence of direct irradiance.
 </entry>
 
 <entry id="use_dust_snow_internal_mixing" type="logical" category="elm_physics"
        group="elm_inparm" valid_values="" value=".false.">
-Toggle to turn on the internal mixing of dust-snow. 
+Toggle to turn on the internal mixing of dust-snow.
 </entry>
 
 <!-- ========================================================================================  -->
