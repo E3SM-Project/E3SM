@@ -33,7 +33,18 @@ jobs:
       # build every time (PR or push to master)
       - name: Build
         run: mkdocs build --strict --verbose
-      # deploy only when it is a push
+      # Only deploy to the main github page when there is a push to master
       - if: ${{ github.event_name == 'push' }}
-        name: Deploy
-        run: mkdocs gh-deploy
+        name: GitHub Pages action
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          # Do not remove existing pr-preview pages
+          clean-exclude: pr-preview
+          folder: ./site/
+      # If it's a PR from within the same repo, deploy to a preview page
+      # For security reasons, PRs from forks cannot write into gh-pages for now
+      - if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        name: Preview docs
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: ./site/
