@@ -215,11 +215,11 @@ contains
 
    subroutine seaice_compute_miscellaneous(domain, instance, timeLevel, err)!{{{
 
-     use ice_constants_colpkg, only: &
-          awtvdr, &
-          awtidr, &
-          awtvdf, &
-          awtidf
+      use seaice_constants, only: &
+          seaiceAlbedoWtVisibleDirect, &
+          seaiceAlbedoWtNearIRDirect, &
+          seaiceAlbedoWtVisibleDiffuse, &
+          seaiceAlbedoWtNearIRDiffuse
 
       !-----------------------------------------------------------------
       !
@@ -345,10 +345,10 @@ contains
             do iCell = 1, nCellsSolve
 
                broadbandAlbedo(iCell) = &
-                    (awtvdr * albedoVisibleDirectCell(iCell) + &
-                    awtidr * albedoIRDirectCell(iCell) + &
-                    awtvdf * albedoVisibleDiffuseCell(iCell) + &
-                    awtidf * albedoIRDiffuseCell(iCell)) * &
+                   (seaiceAlbedoWtVisibleDirect * albedoVisibleDirectCell(iCell) + &
+                    seaiceAlbedoWtNearIRDirect * albedoIRDirectCell(iCell) + &
+                    seaiceAlbedoWtVisibleDiffuse * albedoVisibleDiffuseCell(iCell) + &
+                    seaiceAlbedoWtNearIRDiffuse * albedoIRDiffuseCell(iCell)) * &
                     iceAreaCellInitial(iCell)
 
             enddo ! iCell

@@ -11709,16 +11709,10 @@ contains
          icepack_configure, &
          icepack_query_parameters ! debugging
 
-!echmod: These constants will need to be defined in the MPAS-SI driver (or a shared E3SM constants file) 
-!echmod: eventually, rather than in the old column package. For now, use the column package's values.
-!    use ice_colpkg_shared, only: &
-!         dSin0_frazil,             &
-!         phi_init, &
-!         hs_ssl
-
     use seaice_constants, only: &
          pii, &                              ! pi                     !echmod: use SHR value instead?
          seaicePuny, &                       ! a small number
+         seaiceBigNumber, &                     ! a large number
          seaiceSecondsPerDay, &              ! number of seconds in 1 day
          seaiceDensityIce, &                 ! density of ice (kg/m^3)
          seaiceDensitySnow, &                ! density of snow (kg/m^3)
@@ -11753,7 +11747,23 @@ contains
          seaiceSnowPatchiness, &             ! snow patchiness parameter
          seaiceIceStrengthConstantHiblerP, & ! P* constant in Hibler strength formulation
          seaiceIceStrengthConstantHiblerC, & ! C* constant in Hibler strength formulation
-         skeletalLayerThickness              ! skeletal layer thickness
+         skeletalLayerThickness, &           ! skeletal layer thickness
+         seaiceSnowMinimumDensity, &         ! minimum snow density (kg/m^3)
+         seaiceBrineDynamicViscosity, &      ! dynamic viscosity of brine (kg/m/s)
+         seaiceFreezingTemperatureConstant, &! constant freezing temp of seawater (C)
+         seaiceExtinctionCoef, &             ! vis extnctn coef in ice, wvlngth<700nm (1/m)
+         seaiceFreshIceConductivity, &       ! thermal conductivity of fresh ice(W/m/deg)
+         seaiceSnowConductivity, &           ! thermal conductivity of snow  (W/m/deg)
+         seaiceSnowMinimumThickness, &       ! min snow thickness for computing zTsn (m)
+         seaiceFrazilMinimumThickness, &     ! min thickness of new frazil ice
+         seaiceAlbedoWtVisibleDirect, &      ! visible, direct
+         seaiceAlbedoWtNearIRDirect, &       ! near IR, direct
+         seaiceAlbedoWtVisibleDiffuse, &     ! visible, diffuse
+         seaiceAlbedoWtNearIRDiffuse, &      ! near IR, diffuse
+         seaiceQsatQiceConstant, &           ! constant for saturation humidity over ice
+         seaiceQsatTiceConstant, &           ! constant for saturation humidity over ice
+         seaiceQsatQocnConstant, &           ! constant for saturation humidity over ocean
+         seaiceQsatTocnConstant              ! constant for saturation humidity over ocean
 
     type(domain_type), intent(inout) :: &
          domain
@@ -12363,7 +12373,7 @@ contains
     call icepack_init_parameters(&
          !argcheck_in             = , &               ! may not be needed in the driver
          puny_in                 = seaicePuny, &
-         !bignum_in               = , &
+         bignum_in               = seaiceBigNumber, &
 !         pi_in                   = pii, &            ! use SHR value instead
          pi_in                   = seaicePi, &
          secday_in               = seaiceSecondsPerDay, &
@@ -12374,7 +12384,7 @@ contains
          emissivity_in           = seaiceIceSnowEmissivity, & !
          cp_ice_in               = seaiceFreshIceSpecificHeat, & !
          cp_ocn_in               = seaiceSeaWaterSpecificHeat, &
-         !hfrazilmin_in           = , &
+         hfrazilmin_in           = seaiceFrazilMinimumThickness, &
          !floediam_in             = , &
          depressT_in             = seaiceMeltingTemperatureDepression, &
          dragio_in               = seaiceIceOceanDragCoefficient, & ! note calc_dragio not implemented
@@ -12382,8 +12392,8 @@ contains
          !iceruf_ocn_in           = , &        ! under-ice roughness, not yet implemented
          albocn_in               = seaiceOceanAlbedo, &
          gravit_in               = seaiceGravity, &
-         !viscosity_dyn_in        = , &
-         !Tocnfrz_in              = , &
+         viscosity_dyn_in        = seaiceBrineDynamicViscosity, &
+         Tocnfrz_in              = seaiceFreezingTemperatureConstant, &
          rhofresh_in             = seaiceDensityFreshwater, &
          zvir_in                 = seaiceZvir, &
          vonkar_in               = seaiceVonKarmanConstant, &
@@ -12399,32 +12409,29 @@ contains
          Cf_in                   = config_ratio_ridging_work_to_PE, &
          Pstar_in                = seaiceIceStrengthConstantHiblerP, &
          Cstar_in                = seaiceIceStrengthConstantHiblerC, &
-         !kappav_in               = , &
-         !kice_in                 = , &
-         !ksno_in                 = , &
+         kappav_in               = seaiceExtinctionCoef, &
+         kice_in                 = seaiceFreshIceConductivity, &
+         ksno_in                 = seaiceSnowConductivity, &
          zref_in                 = seaiceStabilityReferenceHeight, &
-         !hs_min_in               = , &
+         hs_min_in               = seaiceSnowMinimumThickness, &
          snowpatch_in            = seaiceSnowPatchiness, & ! ccsm3 radiation scheme
          !rhosi_in                = , &        ! brine, zbgc, zsalinity
          sk_l_in                 = skeletalLayerThickness, & !
          saltmax_in              = seaiceMaximumSalinity, &
-!         phi_init_in             = phi_init, &        ! therm_itd  config_frazil_ice_porosity
          phi_init_in             = seaiceFrazilIcePorosity, &
          !min_salin_in            = , &        ! ktherm=1, brine, zsalinity
          !salt_loss_in            = , &        ! brine, zsalinity
          !min_bgc_in              = , &        ! shortwave
-!         dSin0_frazil_in         = dSin0_frazil, & !config_frazil_salinity_reduction, &        ! therm_itd
          dSin0_frazil_in         = seaiceFrazilSalinityReduction, &
-!         hs_ssl_in               = hs_ssl, &  !config_snow_surface_scattering_layer_depth, &        ! shortwave, aerosol, itd, therm_itd, bgc
          hs_ssl_in               = seaiceSnowSurfaceScatteringLayer, &
-         !awtvdr_in               = , &        ! shortwave
-         !awtidr_in               = , &        ! shortwave
-         !awtvdf_in               = , &        ! shortwave
-         !awtidf_in               = , &        ! shortwave
-         !qqqice_in               = , &        ! atmo, therm_shared
-         !TTTice_in               = , &        ! atmo, therm_shared
-         !qqqocn_in               = , &        ! atmo
-         !TTTocn_in               = , &        ! atmo
+         awtvdr_in               = seaiceAlbedoWtVisibleDirect, &
+         awtidr_in               = seaiceAlbedoWtNearIRDirect, &
+         awtvdf_in               = seaiceAlbedoWtVisibleDiffuse, &
+         awtidf_in               = seaiceAlbedoWtNearIRDiffuse, &
+         qqqice_in               = seaiceQsatQiceConstant, &
+         TTTice_in               = seaiceQsatTiceConstant, &
+         qqqocn_in               = seaiceQsatQocnConstant, &
+         TTTocn_in               = seaiceQsatTocnConstant, &
          ktherm_in               = config_thermodynamics_type_int, &
          conduct_in              = config_heat_conductivity_type, &
          fbot_xfer_type_in       = config_ocean_heat_transfer_type, &
