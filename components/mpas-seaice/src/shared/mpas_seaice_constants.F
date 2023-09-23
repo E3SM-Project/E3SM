@@ -245,11 +245,15 @@ module seaice_constants
 
   ! thermodynamic constants
   real(kind=RKIND), public :: &
+       seaiceStabilityReferenceHeight     = 10._RKIND     ,&! reference height for stability (m)
+       seaiceSnowSurfaceScatteringLayer   = 0.040_RKIND   ,&! snow surface scattering layer thickness (m)
        seaiceMeltingTemperatureDepression = 0.054_RKIND   ,&! melting temp. depression factor (C/ppt)
        seaiceOceanAlbedo                  = 0.06_RKIND    ,&! ocean albedo
        seaiceIceSurfaceRoughness          = 0.0005_RKIND  ,&! ice surface roughness (m)
        seaiceMaximumSalinity              = 3.2_RKIND     ,&! max salinity at ice base for BL99 (ppt)
-       seaiceStabilityReferenceHeight     = 10._RKIND       ! reference height for stability (m)
+                                                            ! for mushy thermo:
+       seaiceFrazilSalinityReduction      = 3.0_RKIND     ,&! bulk salinity reduction of newly formed frazil (ppt)
+       seaiceFrazilIcePorosity            = 0.75_RKIND      ! initial liquid fraction of frazil 
 
   ! dynamics constants
   real(kind=RKIND), public :: &

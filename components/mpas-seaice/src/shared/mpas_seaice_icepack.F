@@ -23,8 +23,8 @@ module seaice_icepack
 
   use seaice_error
 
-  use ice_kinds_mod, only: &
-      char_len_long
+!  use ice_kinds_mod, only: &      !colpkg
+!      char_len_long
 
   implicit none
 
@@ -196,7 +196,8 @@ module seaice_icepack
        tracerArrayCell
 
   ! warnings string kind
-  integer, parameter :: strKINDWarnings = char_len_long
+!  integer, parameter :: strKINDWarnings = char_len_long
+  integer, parameter :: strKINDWarnings = strKIND
 
 contains
 
@@ -621,7 +622,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_shortwave
+!  init_icepack_shortwave
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -5770,6 +5771,7 @@ contains
   function seaice_icepack_enthalpy_ice(iceTemperature, iceSalinity) result(iceEnthalpy)
 
 !echmod - this function will be needed for the prescribed ice configuration - not tested
+!echmod - call enthalpy_mush from icepack_mushy_physics via icepack_intfc (not yet available)
 
     use ice_mushy_physics, only: enthalpy_mush
 
@@ -10025,65 +10027,6 @@ contains
 
   subroutine init_icepack_package_tracer_indices(tracerObject)
 
-    !use ice_colpkg_tracers, only: &
-    !     nt_Tsfc, &       ! ice/snow temperature
-    !     nt_qice, &       ! volume-weighted ice enthalpy (in layers)
-    !     nt_qsno, &       ! volume-weighted snow enthalpy (in layers)
-    !     nt_sice, &       ! volume-weighted ice bulk salinity (CICE grid layers)
-    !     nt_fbri, &       ! volume fraction of ice with dynamic salt (hinS/vicen*aicen)
-    !     nt_iage, &       ! volume-weighted ice age
-    !     nt_FY, &         ! area-weighted first-year ice area
-    !     nt_alvl, &       ! level ice area fraction
-    !     nt_vlvl, &       ! level ice volume fraction
-    !     nt_apnd, &       ! melt pond area fraction
-    !     nt_hpnd, &       ! melt pond depth
-    !     nt_ipnd, &       ! melt pond refrozen lid thickness
-    !     nt_aero, &       ! starting index for aerosols in ice
-    !     nt_smice, &      ! snow ice mass
-    !     nt_smliq, &      ! snow liquid mass
-    !     nt_rsnw, &       ! snow grain radius
-    !     nt_rhos, &       ! snow density tracer
-    !     nt_fbri, &       ! volume fraction of ice with dynamic salt (hinS/vicen*aicen)
-    !     nt_bgc_Nit, &    ! nutrients
-    !     nt_bgc_Am, &     !
-    !     nt_bgc_Sil, &    !
-    !     nt_bgc_DMSPp, &  ! trace gases (skeletal layer)
-    !     nt_bgc_DMSPd, &  !
-    !     nt_bgc_DMS, &    !
-    !     nt_bgc_PON, &    ! zooplankton and detritus
-    !     nt_bgc_hum, &    ! humic material
-    !                      ! bio layer indicess
-    !     nlt_bgc_Nit, &   ! nutrients
-    !     nlt_bgc_Am, &    !
-    !     nlt_bgc_Sil, &   !
-    !     nlt_bgc_DMSPp, & ! trace gases (skeletal layer)
-    !     nlt_bgc_DMSPd, & !
-    !     nlt_bgc_DMS, &   !
-    !     nlt_bgc_PON, &   ! zooplankton and detritus
-    !     nlt_bgc_hum, &   ! humic material
-    !     nlt_chl_sw, &    ! points to total chla in trcrn_sw
-    !     nt_zbgc_frac, &  ! fraction of tracer in the mobile phase
-    !     nt_bgc_S, &      ! Bulk salinity in fraction ice with dynamic salinity (Bio grid)
-    !     nt_bgc_N, &      ! diatoms, phaeocystis, pico/small
-    !     nt_bgc_C, &      ! diatoms, phaeocystis, pico/small
-    !     nt_bgc_chl, &    ! diatoms, phaeocystis, pico/small
-    !     nlt_bgc_N, &     ! diatoms, phaeocystis, pico/small
-    !     nlt_bgc_C, &     ! diatoms, phaeocystis, pico/small
-    !     nlt_bgc_chl, &   ! diatoms, phaeocystis, pico/small
-    !     nt_bgc_DOC, &    ! dissolved organic carbon
-    !     nlt_bgc_DOC, &   ! dissolved organic carbon
-    !     nt_bgc_DON, &    ! dissolved organic nitrogen
-    !     nlt_bgc_DON, &   ! dissolved organic nitrogen
-    !     nt_bgc_DIC, &    ! dissolved inorganic carbon
-    !     nlt_bgc_DIC, &   ! dissolved inorganic carbon
-    !     nt_bgc_Fed, &    ! dissolved iron
-    !     nt_bgc_Fep, &    ! particulate iron
-    !     nlt_bgc_Fed, &   ! dissolved iron
-    !     nlt_bgc_Fep, &   ! particulate iron
-    !     nt_zaero, &      ! black carbon and other aerosols
-    !     nlt_zaero, &     ! black carbon and other aerosols
-    !     nlt_zaero_sw     ! black carbon and other aerosols
-
     use icepack_intfc, only: &
          icepack_init_tracer_indices
 
@@ -11768,10 +11711,10 @@ contains
 
 !echmod: These constants will need to be defined in the MPAS-SI driver (or a shared E3SM constants file) 
 !echmod: eventually, rather than in the old column package. For now, use the column package's values.
-    use ice_colpkg_shared, only: &
-         dSin0_frazil,             &
-         phi_init, &
-         hs_ssl
+!    use ice_colpkg_shared, only: &
+!         dSin0_frazil,             &
+!         phi_init, &
+!         hs_ssl
 
     use seaice_constants, only: &
          pii, &                              ! pi                     !echmod: use SHR value instead?
@@ -11793,6 +11736,7 @@ contains
          seaiceSnowSurfaceMeltingTemperature, & ! melting temp. snow top surface  (C)
          seaiceStefanBoltzmann, &            ! J m-2 K-4 s-1
          seaiceIceSnowEmissivity, &          ! emissivity of snow and ice
+         seaiceSnowSurfaceScatteringLayer, & ! snow surface scattering layer thickness (m)
          seaiceStabilityReferenceHeight, &   ! stability reference height (m)
          seaiceFreshWaterFreezingPoint, &    ! freezing temp of fresh ice (K)
          seaiceIceOceanDragCoefficient, &    ! ice ocean drag coefficient
@@ -11802,6 +11746,8 @@ contains
          seaiceReferenceSalinity, &          ! ice reference salinity (ppt)
          seaiceMaximumSalinity, &            ! ice maximum salinity (ppt)
          seaiceMeltingTemperatureDepression, &  ! melting temperature depression factor (C/ppt)
+         seaiceFrazilSalinityReduction, &    ! bulk salinity reduction of newly formed frazil (ppt)
+         seaiceFrazilIcePorosity, &          ! initial liquid fraction of frazil
          seaicePi, &                         ! pi
          seaiceGravity, &                    ! gravitational acceleration (m/s^2)
          seaiceSnowPatchiness, &             ! snow patchiness parameter
@@ -12462,13 +12408,15 @@ contains
          !rhosi_in                = , &        ! brine, zbgc, zsalinity
          sk_l_in                 = skeletalLayerThickness, & !
          saltmax_in              = seaiceMaximumSalinity, &
-         phi_init_in             = phi_init, &        ! therm_itd  config_frazil_ice_porosity
+!         phi_init_in             = phi_init, &        ! therm_itd  config_frazil_ice_porosity
+         phi_init_in             = seaiceFrazilIcePorosity, &
          !min_salin_in            = , &        ! ktherm=1, brine, zsalinity
          !salt_loss_in            = , &        ! brine, zsalinity
          !min_bgc_in              = , &        ! shortwave
-         dSin0_frazil_in         = dSin0_frazil, & !config_frazil_salinity_reduction, &        ! therm_itd
-         !hi_ssl_in               = , &        ! shortwave, aerosol
-         hs_ssl_in               = hs_ssl, &  !config_snow_surface_scattering_layer_depth, &        ! shortwave, aerosol, itd, therm_itd, bgc
+!         dSin0_frazil_in         = dSin0_frazil, & !config_frazil_salinity_reduction, &        ! therm_itd
+         dSin0_frazil_in         = seaiceFrazilSalinityReduction, &
+!         hs_ssl_in               = hs_ssl, &  !config_snow_surface_scattering_layer_depth, &        ! shortwave, aerosol, itd, therm_itd, bgc
+         hs_ssl_in               = seaiceSnowSurfaceScatteringLayer, &
          !awtvdr_in               = , &        ! shortwave
          !awtidr_in               = , &        ! shortwave
          !awtvdf_in               = , &        ! shortwave
@@ -12822,15 +12770,13 @@ contains
     ! liquid fraction of congelation ice
     !phi_i_mushy = config_congelation_ice_porosity
 
-!echmod - fix as needed
-!    ! phi_init:
-!    ! initial liquid fraction of frazil ice
-!    !phi_init = config_frazil_ice_porosity
+    ! phi_init:
+    ! initial liquid fraction of frazil ice
+    !phi_init = seaiceFrazilIcePorosity
 
-!echmod - fix as needed
-!    ! dSin0_frazil:
-!    ! initial frazil salinity reduction
-!    !dSin0_frazil = config_frazil_salinity_reduction
+    ! dSin0_frazil:
+    ! initial frazil salinity reduction
+    !dSin0_frazil = seaiceFrazilSalinityReduction
 
     !-----------------------------------------------------------------------
     ! Parameters for radiation
@@ -12869,10 +12815,9 @@ contains
 
     ! dEdd tuning parameters, set in namelist
 
-!echmod - fix as needed
-!    ! hs_ssl:
-!    ! snow surface scattering layer depth
-!    !hs_ssl = config_snow_surface_scattering_layer_depth
+    ! hs_ssl:
+    ! snow surface scattering layer depth
+    !hs_ssl = seaiceSnowSurfaceScatteringLayer
 
     ! R_ice:
     ! sea ice tuning parameter; +1 > 1sig increase in albedo

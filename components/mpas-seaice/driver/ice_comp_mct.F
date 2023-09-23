@@ -56,6 +56,8 @@ module ice_comp_mct
                                seaiceGravity, &
                                seaiceLatentHeatMelting, &
                                seaiceReferenceSalinity, &
+                               seaiceFrazilSalinityReduction, &
+                               seaiceFrazilIcePorosity, &
                                pii
 
    use seaice_core
@@ -2767,10 +2769,6 @@ contains
          liquidus_temperature_mush, &
          enthalpy_mush
 
-      use ice_colpkg_shared, only: &
-         dSin0_frazil,             &
-         phi_init
-
 ! !INPUT PARAMETERS:
       real (kind=RKIND),      intent(in)   :: freezingPotential
       real (kind=RKIND),      intent(in)   :: seaSurfaceSalinity
@@ -2796,12 +2794,12 @@ contains
    if (freezingPotential > 0.0_RKIND) then
 
       if (trim(config_thermodynamics_type) == "mushy") then  ! mushy
-         if (seaSurfaceSalinity > 2.0_RKIND * dSin0_frazil) then
-             Si0new = seaSurfaceSalinity - dSin0_frazil
+         if (seaSurfaceSalinity > 2.0_RKIND * seaiceFrazilSalinityReduction) then
+             Si0new = seaSurfaceSalinity - seaiceFrazilSalinityReduction
          else
-             Si0new = seaSurfaceSalinity**2 / (4.0_RKIND*dSin0_frazil)
+             Si0new = seaSurfaceSalinity**2 / (4.0_RKIND*seaiceFrazilSalinityReduction)
          endif
-         Ti = liquidus_temperature_mush(Si0new/phi_init)
+         Ti = liquidus_temperature_mush(Si0new/seaiceFrazilIcePorosity)
          qi0new = enthalpy_mush(Ti, Si0new)
       else
          qi0new = -seaiceDensityIce*seaiceLatentHeatMelting
