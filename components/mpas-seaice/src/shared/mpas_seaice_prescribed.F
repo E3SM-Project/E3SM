@@ -135,9 +135,18 @@ contains
          colpkg_enthalpy_ice, &
          colpkg_salinity_profile
 
-    use seaice_column, only: &
+!    use icepack_intfc, only: &
+!         icepack_enthalpy_snow, &
+!         colpkg_enthalpy_ice, &   !echmod - in icepack_init_trcr
+!         colpkg_salinity_profile  !echmod - in icepack_init_thermo
+
+    use seaice_column, only: &     ! colpkg
          seaice_column_reinitialize_fluxes, &
          seaice_column_aggregate
+
+    use seaice_icepack, only: &
+         seaice_icepack_reinitialize_fluxes, &
+         seaice_icepack_aggregate
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -145,6 +154,9 @@ contains
     logical, pointer :: &
          config_use_prescribed_ice, &
          config_use_prescribed_ice_forcing
+
+    character(len=strKIND), pointer :: &
+         config_column_physics_type
 
     type(block_type), pointer :: &
          blockPtr
@@ -199,6 +211,7 @@ contains
          iIceLayer, &
          iSnowLayer
 
+    call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)            
     call mpas_pool_get_config(domain % configs, "config_use_prescribed_ice", config_use_prescribed_ice)
     if (config_use_prescribed_ice) then
 
@@ -288,6 +301,7 @@ contains
 
                          temperatureGradient = seaFreezingTemperature(iCell) - surfaceTemperature(1,iCategory,iCell)
 
+!echmod - add icepack option for ice and snow quantities
                          ! ice quantities
                          do iIceLayer = 1, nIceLayers
 
@@ -338,7 +352,11 @@ contains
        enddo
 
        ! aggregate tracers
-       call seaice_column_aggregate(domain)
+       if (trim(config_column_physics_type) == "icepack") then
+          call seaice_icepack_aggregate(domain)
+       else if (trim(config_column_physics_type) == "column_package") then
+          call seaice_column_aggregate(domain)
+       endif ! config_column_physics_type
 
        ! set non-computed fluxes, ice velocities, ice-ocn stresses to zero
        blockPtr => domain % blocklist
@@ -363,7 +381,11 @@ contains
        enddo
 
        ! reinitialize fluxes
-       call seaice_column_reinitialize_fluxes(domain)
+       if (trim(config_column_physics_type) == "icepack") then
+          call seaice_icepack_reinitialize_fluxes(domain)
+       else if (trim(config_column_physics_type) == "column_package") then
+          call seaice_column_reinitialize_fluxes(domain)
+       endif ! config_column_physics_type
 
     endif ! prescribed ice mode
 
