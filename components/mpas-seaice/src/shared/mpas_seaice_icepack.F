@@ -23,9 +23,6 @@ module seaice_icepack
 
   use seaice_error
 
-!  use ice_kinds_mod, only: &      !colpkg
-!      char_len_long
-
   implicit none
 
   private
@@ -195,8 +192,6 @@ module seaice_icepack
   real(kind=RKIND), dimension(:), allocatable :: &
        tracerArrayCell
 
-  ! warnings string kind
-!  integer, parameter :: strKINDWarnings = char_len_long
   integer, parameter :: strKINDWarnings = strKIND
 
 contains
@@ -3160,8 +3155,9 @@ contains
        ! snow grain radius array
        allocate(snow_grain_radius(nSnowLayers,nCategories))
 
-       !$omp parallel do default(shared) firstprivate(aerosolsArray,index_shortwaveAerosol) &
-       !$omp&                                 private(iCategory,iAerosol,lonCellColumn)
+       !$omp parallel do default(shared) &
+       !$omp&   firstprivate(aerosolsArray,index_shortwaveAerosol,snow_grain_radius) &
+       !$omp&   private(iCategory,iAerosol,lonCellColumn,iSnowLayer)
        do iCell = 1, nCellsSolve
 
           ! set aerosols array
@@ -5887,7 +5883,7 @@ contains
     call icepack_configure()
     call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
-!echmod - BFB but 20% slower when this is set in seaice_constants instead???
+!echmod - set this in seaice_constants instead
     seaicePi                         = pi
 
     iceAreaMinimum       = seaicePuny

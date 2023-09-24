@@ -48,6 +48,8 @@ module ice_comp_mct
    use seaice_analysis_driver
    use seaice_column, only: seaice_column_reinitialize_fluxes, & !colpkg
                             seaice_column_coupling_prep
+   use seaice_icepack, only: seaice_icepack_reinitialize_fluxes, &
+                             seaice_icepack_coupling_prep
    use seaice_constants, only: coupleAlarmID, &
                                seaiceFreshWaterFreezingPoint, &
                                seaiceDensityIce, &
@@ -69,6 +71,7 @@ module ice_comp_mct
    use seaice_error, only: seaice_check_critical_error
 
    use ice_colpkg, only: colpkg_sea_freezing_temperature
+   use icepack_intfc, only: icepack_sea_freezing_temperature
 
 !
 ! !PUBLIC MEMBER FUNCTIONS:
@@ -745,8 +748,12 @@ contains
     call mpas_reset_clock_alarm(domain % clock, coupleAlarmID, ierr=ierr)
 
     ! Coupling prep
-    call seaice_column_coupling_prep(domain)
-
+    call MPAS_pool_get_config(domain % configs, "config_column_physics_type", tempCharConfig)
+    if (trim(tempCharConfig) == "icepack") then
+      call seaice_icepack_coupling_prep(domain)
+    else if (trim(tempCharConfig) == "column_package") then
+      call seaice_column_coupling_prep(domain)
+    endif ! config_column_physics_type
 
 !-----------------------------------------------------------------------
 !
@@ -1053,7 +1060,9 @@ contains
       logical :: streamActive, debugOn
       logical, pointer :: config_write_output_on_startup
       logical, save :: first=.true.
-      character (len=StrKIND), pointer :: config_restart_timestamp_name
+      character (len=StrKIND), pointer :: &
+            config_restart_timestamp_name, &
+            config_column_physics_type
       real(kind=RKIND), pointer :: &
             dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
 
@@ -1069,6 +1078,7 @@ contains
       if (debugOn) call mpas_log_write("=== Beginning ice_run_mct ===")
 
       call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
+      call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)
 
       ! Setup log information.
       call shr_file_getLogUnit (shrlogunit)
@@ -1076,7 +1086,11 @@ contains
       call shr_file_setLogUnit (iceLogUnit)
 
       ! reinitialize fluxes
-      call seaice_column_reinitialize_fluxes(domain)
+      if (trim(config_column_physics_type) == "icepack") then
+         call seaice_icepack_reinitialize_fluxes(domain)
+      else if (trim(config_column_physics_type) == "column_package") then
+         call seaice_column_reinitialize_fluxes(domain)
+      endif ! config_column_physics_type
 
       ! Import state from coupler
       call ice_import_mct(x2i_i, ierr)
@@ -1803,6 +1817,7 @@ contains
       config_use_column_biogeochemistry
 
    character(len=strKIND), pointer ::   &
+      config_column_physics_type,       &
       config_thermodynamics_type,       &
       config_ocean_surface_type
 
@@ -1913,6 +1928,7 @@ contains
    do while(associated(block_ptr))
 
       configs => block_ptr % configs
+      call mpas_pool_get_config(configs, "config_column_physics_type", config_column_physics_type)
       call mpas_pool_get_config(configs, "config_thermodynamics_type", config_thermodynamics_type)
       call mpas_pool_get_config(configs, "config_ocean_surface_type", config_ocean_surface_type)
       call mpas_pool_get_config(configs, "config_use_aerosols", config_use_aerosols)
@@ -1988,7 +2004,11 @@ contains
         seaSurfaceTemperature(i)       = x2i_i % rAttr(index_x2i_So_t, n)
         seaSurfaceSalinity(i)          = x2i_i % rAttr(index_x2i_So_s, n)
 
-        seaFreezingTemperature(i) = colpkg_sea_freezing_temperature(seaSurfaceSalinity(i))
+        if (trim(config_column_physics_type) == "icepack") then
+           seaFreezingTemperature(i) = icepack_sea_freezing_temperature(seaSurfaceSalinity(i))
+        else if (trim(config_column_physics_type) == "column_package") then
+           seaFreezingTemperature(i) = colpkg_sea_freezing_temperature(seaSurfaceSalinity(i))
+        endif ! config_column_physics_type
 
         uOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_u, n)
         vOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_v, n)
@@ -2012,8 +2032,7 @@ contains
            ! coupling step as a freshwater and salt flux. This step is required to balance mass
            ! and heat with the ocean.
 
-           call frazil_mass(freezingMeltingPotential(i), frazilMassFluxRev, seaSurfaceSalinity(i), &
-                                   config_thermodynamics_type)
+           call frazil_mass(freezingMeltingPotential(i), frazilMassFluxRev, seaSurfaceSalinity(i))
 
            frazilMassAdjust(i) = frazilMassFlux-frazilMassFluxRev
 
@@ -2754,8 +2773,7 @@ contains
 ! !IROUTINE: frazil_mass
 !
 ! !INTERFACE
-   subroutine frazil_mass(freezingPotential, frazilMassFlux, seaSurfaceSalinity, &
-                                 config_thermodynamics_type)
+   subroutine frazil_mass(freezingPotential, frazilMassFlux, seaSurfaceSalinity)
 !
 ! !DESCRIPTION:
 ! Calculate frazil mass based on on the sea surface salinity, and frazil heat flux
@@ -2769,13 +2787,20 @@ contains
          liquidus_temperature_mush, &
          enthalpy_mush
 
+!echmod - not implemented yet
+!      use icepack_intfc, only:  &
+!         icepack_liquidus_temperature_mush, &
+!         icepack_enthalpy_mush
+
 ! !INPUT PARAMETERS:
       real (kind=RKIND),      intent(in)   :: freezingPotential
       real (kind=RKIND),      intent(in)   :: seaSurfaceSalinity
-      character(len=strKIND), intent(in)   :: config_thermodynamics_type
 
 ! !OUTPUT PARAMETERS:
       real (kind=RKIND),      intent(out)  :: frazilMassFlux
+
+      character(len=strKIND), pointer   :: config_thermodynamics_type
+      character(len=strKIND), pointer   :: config_column_physics_type
 
 !EOP
 !BOC
@@ -2790,6 +2815,8 @@ contains
       qi0new,          &
       vi0new
 
+   call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)             
+   call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)             
 
    if (freezingPotential > 0.0_RKIND) then
 
@@ -2799,8 +2826,15 @@ contains
          else
              Si0new = seaSurfaceSalinity**2 / (4.0_RKIND*seaiceFrazilSalinityReduction)
          endif
+!echmod - not yet implemented in icepack - add these functions to icepack_intfc with prefix icepack_
+!      if (trim(config_column_physics_type) == "icepack") then
+!         Ti = icepack_liquidus_temperature_mush(Si0new/seaiceFrazilIcePorosity)
+!         qi0new = icepack_enthalpy_mush(Ti, Si0new)
+!      else if (trim(config_column_physics_type) == "column_package") then
          Ti = liquidus_temperature_mush(Si0new/seaiceFrazilIcePorosity)
          qi0new = enthalpy_mush(Ti, Si0new)
+!      endif ! config_column_physics_type
+
       else
          qi0new = -seaiceDensityIce*seaiceLatentHeatMelting
       endif    ! ktherm
