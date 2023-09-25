@@ -230,7 +230,6 @@ contains
 
       !$omp do schedule(runtime)
       do iCell = 1, nCells
-         RediKappaScaling(:, iCell) = 1.0_RKIND
          RediKappaSfcTaper(:, iCell) = 1.0_RKIND
       end do
       !$omp end do
@@ -379,8 +378,6 @@ contains
             end do ! nEdgesOnCell(iCell)
 
 !            ! Normalize k33
-            RediKappaScaling(1:minLevelCell(iCell),iCell) = 0.0_RKIND
-            RediKappaScaling(maxLevelCell(iCell):nVertLevels,iCell) = 0.0_RKIND
             do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
                k33(k, iCell) = k33(k, iCell)/k33Norm(k)
             end do
