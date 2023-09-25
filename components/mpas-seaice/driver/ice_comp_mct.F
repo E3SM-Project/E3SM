@@ -2787,10 +2787,9 @@ contains
          liquidus_temperature_mush, &
          enthalpy_mush
 
-!echmod - not implemented yet
-!      use icepack_intfc, only:  &
-!         icepack_liquidus_temperature_mush, &
-!         icepack_enthalpy_mush
+      use icepack_intfc, only:  &
+         icepack_liquidus_temperature, &
+         icepack_enthalpy_mush
 
 ! !INPUT PARAMETERS:
       real (kind=RKIND),      intent(in)   :: freezingPotential
@@ -2826,14 +2825,14 @@ contains
          else
              Si0new = seaSurfaceSalinity**2 / (4.0_RKIND*seaiceFrazilSalinityReduction)
          endif
-!echmod - not yet implemented in icepack - add these functions to icepack_intfc with prefix icepack_
-!      if (trim(config_column_physics_type) == "icepack") then
-!         Ti = icepack_liquidus_temperature_mush(Si0new/seaiceFrazilIcePorosity)
-!         qi0new = icepack_enthalpy_mush(Ti, Si0new)
-!      else if (trim(config_column_physics_type) == "column_package") then
-         Ti = liquidus_temperature_mush(Si0new/seaiceFrazilIcePorosity)
-         qi0new = enthalpy_mush(Ti, Si0new)
-!      endif ! config_column_physics_type
+
+         if (trim(config_column_physics_type) == "icepack") then
+            Ti = icepack_liquidus_temperature(Si0new/seaiceFrazilIcePorosity)
+            qi0new = icepack_enthalpy_mush(Ti, Si0new)
+         else if (trim(config_column_physics_type) == "column_package") then
+            Ti = liquidus_temperature_mush(Si0new/seaiceFrazilIcePorosity)
+            qi0new = enthalpy_mush(Ti, Si0new)
+         endif ! config_column_physics_type
 
       else
          qi0new = -seaiceDensityIce*seaiceLatentHeatMelting

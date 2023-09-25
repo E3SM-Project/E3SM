@@ -135,16 +135,16 @@ contains
          colpkg_enthalpy_ice, &
          colpkg_salinity_profile
 
-!    use icepack_intfc, only: &
-!         icepack_enthalpy_snow, &
-!         colpkg_enthalpy_ice, &   !echmod - in icepack_init_trcr
-!         colpkg_salinity_profile  !echmod - in icepack_init_thermo
-
     use seaice_column, only: &     ! colpkg
          seaice_column_reinitialize_fluxes, &
          seaice_column_aggregate
 
+    use icepack_intfc, only: &
+         icepack_enthalpy_snow, &
+         icepack_salinity_profile
+
     use seaice_icepack, only: &
+         seaice_icepack_enthalpy_ice, &
          seaice_icepack_reinitialize_fluxes, &
          seaice_icepack_aggregate
 
@@ -302,6 +302,25 @@ contains
                          temperatureGradient = seaFreezingTemperature(iCell) - surfaceTemperature(1,iCategory,iCell)
 
 !echmod - add icepack option for ice and snow quantities
+                         if (trim(config_column_physics_type) == "icepack") then
+
+                         ! ice quantities
+                         do iIceLayer = 1, nIceLayers
+
+                            depth = (real(iIceLayer,kind=RKIND) - 0.5_RKIND) / real(nIceLayers,kind=RKIND)
+                            iceTemperature = surfaceTemperature(1,iCategory,iCell) + temperatureGradient * depth
+                            iceSalinity(iIceLayer,iCategory,iCell) = icepack_salinity_profile(depth)
+                            iceEnthalpy(iIceLayer,iCategory,iCell) = seaice_icepack_enthalpy_ice(iceTemperature,iceSalinity(iIceLayer,iCategory,iCell))
+
+                         enddo ! iIceLayer
+
+                         ! snow quantities
+                         do iSnowLayer = 1, nSnowLayers
+                            snowEnthalpy(iSnowLayer,iCategory,iCell) = icepack_enthalpy_snow(surfaceTemperature(1,iCategory,iCell))
+                         enddo ! iSnowLayer
+
+                         else if (trim(config_column_physics_type) == "column_package") then
+
                          ! ice quantities
                          do iIceLayer = 1, nIceLayers
 
@@ -318,6 +337,8 @@ contains
                          enddo ! iSnowLayer
 
                       endif
+
+                      endif ! config_column_physics_type
 
                    else
 

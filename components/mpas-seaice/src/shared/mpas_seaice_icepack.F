@@ -48,11 +48,7 @@ module seaice_icepack
        seaice_icepack_init_itd, &
        seaice_icepack_init_ocean_conc, &
        seaice_icepack_ice_strength, &
-       seaice_icepack_sea_freezing_temperature, &
-       seaice_icepack_liquidus_temperature, &
-       seaice_icepack_enthalpy_snow, &
        seaice_icepack_enthalpy_ice, &
-       seaice_icepack_salinity_profile, &
        seaice_init_icepack_constants
 
   ! tracer object
@@ -5722,54 +5718,9 @@ contains
 
   !-----------------------------------------------------------------------
 
-  function seaice_icepack_sea_freezing_temperature(seaSurfaceSalinity) result(seaFreezingTemperature)
-
-    use icepack_intfc, only: &
-         icepack_sea_freezing_temperature
-
-    real(kind=RKIND), intent(in) :: seaSurfaceSalinity
-    real(kind=RKIND) :: seaFreezingTemperature
-
-    seaFreezingTemperature = icepack_sea_freezing_temperature(seaSurfaceSalinity)
-
-  end function seaice_icepack_sea_freezing_temperature
-
-  !-----------------------------------------------------------------------
-
-  function seaice_icepack_liquidus_temperature(salinity) result(liquidusTemperature)
-
-    use icepack_intfc, only: &
-         icepack_liquidus_temperature
-
-    real(kind=RKIND), intent(in) :: salinity
-    real(kind=RKIND) :: liquidusTemperature
-
-    liquidusTemperature = icepack_liquidus_temperature(salinity)
-
-  end function seaice_icepack_liquidus_temperature
-
-  !-----------------------------------------------------------------------
-
-  function seaice_icepack_enthalpy_snow(snowTemperature) result(snowEnthalpy)
-
-    use icepack_intfc, only: &
-         icepack_enthalpy_snow
-
-    real(kind=RKIND), intent(in) :: snowTemperature
-    real(kind=RKIND) :: snowEnthalpy
-
-    snowEnthalpy = icepack_enthalpy_snow(snowTemperature)
-
-  end function seaice_icepack_enthalpy_snow
-
-  !-----------------------------------------------------------------------
-
   function seaice_icepack_enthalpy_ice(iceTemperature, iceSalinity) result(iceEnthalpy)
 
-!echmod - this function will be needed for the prescribed ice configuration - not tested
-!echmod - call enthalpy_mush from icepack_mushy_physics via icepack_intfc (not yet available)
-
-    use ice_mushy_physics, only: enthalpy_mush
+    use icepack_intfc, only: icepack_enthalpy_mush
 
     use seaice_constants, only: &
         seaiceMeltingTemperatureDepression, & ! melting temperature depression factor (C/ppt)
@@ -5793,7 +5744,7 @@ contains
 
     if (trim(config_thermodynamics_type) == "mushy") then
 
-       qin = enthalpy_mush(iceTemperature, iceSalinity)
+       qin = icepack_enthalpy_mush(iceTemperature, iceSalinity)
 
     else
 
@@ -5804,30 +5755,6 @@ contains
     endif
 
   end function seaice_icepack_enthalpy_ice
-
-  !-----------------------------------------------------------------------
-
-  function seaice_icepack_salinity_profile(depth) result(iceSalinity)
-
-!echmod - this function will be needed for the prescribed ice configuration - not tested
-
-    use seaice_constants, only: &
-       pii, &        !echmod - use SHR_CONST_PI
-       seaiceMaximumSalinity         ! ice maximum salinity (ppt)
-
-    real(kind=RKIND), intent(in) :: &
-         depth ! depth
-
-    real(kind=RKIND) :: &
-         iceSalinity ! initial salinity profile
-
-    real (kind=RKIND), parameter :: &
-         nsal    = 0.407_RKIND, &
-         msal    = 0.573_RKIND
-
-    iceSalinity = (seaiceMaximumSalinity/2.0_RKIND)*(1.0_RKIND-cos(pii*depth**(nsal/(msal+depth))))
-
-  end function seaice_icepack_salinity_profile
 
 !-----------------------------------------------------------------------
 ! initialize constants
