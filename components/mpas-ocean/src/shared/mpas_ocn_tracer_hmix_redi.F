@@ -528,9 +528,7 @@ contains
 
                   tend(iTr, k, iCell) = tend(iTr, k, iCell) + &
                      rediKappaCell(iCell) * ( &
-                        RediKappaScaling(k, iCell)* &
                         scalUp*redi_term3_topOfCell(iTr, k, iCell) - &
-                        RediKappaScaling(k + 1, iCell)* &
                         scalDn*redi_term3_topOfCell(iTr, k + 1, iCell))
                end do
             end do
