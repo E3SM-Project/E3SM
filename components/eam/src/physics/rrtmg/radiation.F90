@@ -879,6 +879,10 @@ end function radiation_nextsw_cday
     use rrtmg_state, only: rrtmg_state_create, rrtmg_state_update, rrtmg_state_destroy, rrtmg_state_t, num_rrtmg_levs
     use orbit,            only: zenith
     use output_aerocom_aie , only: do_aerocom_ind3
+#if defined(CLDERA_PROFILING)
+    use ppgrid,         only: begchunk
+    use cldera_interface_mod, only: cldera_set_field_part_data
+#endif
 
     ! Arguments
     logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
@@ -1394,6 +1398,13 @@ end function radiation_nextsw_cday
                   call outfld('FSN200C'//diag(icall),fsn200c,pcols,lchnk)
                   call outfld('SWCF'//diag(icall),swcf  ,pcols,lchnk)
 
+#if defined(CLDERA_PROFILING)
+                  if (icall == 0) then ! profile climate calculation
+                     call cldera_set_field_part_data('FSDS',lchnk-begchunk+1,fsds)
+                     call cldera_set_field_part_data('FSDSC',lchnk-begchunk+1,fsdsc)
+                  endif
+#endif
+
               end if ! (active_calls(icall))
           end do ! icall
           call t_stopf ('rad_sw_loop')
@@ -1491,6 +1502,15 @@ end function radiation_nextsw_cday
                   call outfld('FLN200'//diag(icall),fln200,pcols,lchnk)
                   call outfld('FLN200C'//diag(icall),fln200c,pcols,lchnk)
                   call outfld('FLDS'//diag(icall),cam_out%flwds ,pcols,lchnk)
+
+#if defined(CLDERA_PROFILING)
+                  if (icall == 0) then ! profile climate calculation
+                     call cldera_set_field_part_data('FLNT',lchnk-begchunk+1,flnt)
+                     call cldera_set_field_part_data('FLUT',lchnk-begchunk+1,flut)
+                     call cldera_set_field_part_data('FLUTC',lchnk-begchunk+1,flutc)
+                     call cldera_set_field_part_data('FLNS',lchnk-begchunk+1,flns)
+                  endif
+#endif
 
               end if
           end do
