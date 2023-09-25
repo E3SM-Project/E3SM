@@ -317,13 +317,14 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real qaerwat[num_modes]     = {};
       {
         Real rh = mam4::conversions::relative_humidity_from_vapor_mixing_ratio(qv, temp, pmid);
-        constexpr int maxd_aspectype = water_uptake::maxdaspec_type;
-        constexpr int nvars = water_uptake::nvars;
+        constexpr int maxd_aspectype = mam4::water_uptake::maxd_aspectype;
+        constexpr int nvars = mam4::water_uptake::nvars;
         int nspec_amode[num_modes], lspectype_amode[maxd_aspectype][num_modes];
         Real specdens_amode[maxd_aspectype], spechygro[maxd_aspectype],
              state_q[nvars], hygro[num_modes], naer[num_modes], dryrad[num_modes],
-             dryvol[num_modes], drymass[num_modes], rhcrystal[num_modes], rhdeliques[num_modes],
-             specdens_1[num_modes]);
+             dryvol[num_modes], drymass[num_modes], wetrad[num_modes],
+             wetvol[num_modes], wtrvol[num_modes],
+             rhcrystal[num_modes], rhdeliques[num_modes], specdens_1[num_modes];
         // FIXME: Where do we obtain state_q, dgncur_a?
         mam4::water_uptake::get_e3sm_parameters(nspec_amode, lspectype_amode,
           specdens_amode, spechygro); // FIXME: Not great! Replace this call
@@ -333,7 +334,7 @@ void MAMMicrophysics::run_impl(const double dt) {
         mam4::water_uptake::modal_aero_wateruptake_wetaer(rhcrystal, rhdeliques, dgncur_a,
           dryrad, hygro, rh, naer, dryvol, wetrad, wetvol, wtrvol, dgncur_awet,
           qaerwat);
-        mam4::water_update::modal_aero_wateruptake_wetdens(wetvol, wtrvol,
+        mam4::water_uptake::modal_aero_wateruptake_wetdens(wetvol, wtrvol,
           drymass, specdens_1, wetdens);
       }
 
