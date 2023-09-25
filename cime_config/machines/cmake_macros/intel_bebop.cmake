@@ -1,4 +1,3 @@
-set(ALBANY_PATH "/soft/climate/AlbanyTrilinos_06262017/Albany/buildintel/install")
 if (COMP_NAME STREQUAL gptl)
   string(APPEND CPPDEFS " -DHAVE_SLASHPROC")
 endif()
