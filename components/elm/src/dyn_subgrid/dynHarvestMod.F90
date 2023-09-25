@@ -201,7 +201,7 @@ contains
     ! !USES:
     use pftvarcon       , only : noveg, nbrdlf_evr_shrub, pprodharv10
     use elm_varcon      , only : secspday
-    use clm_time_manager, only : get_days_per_year
+    use elm_time_manager, only : get_days_per_year
     use GridcellType   , only : grc_pp
     
     ! !ARGUMENTS:

@@ -81,10 +81,10 @@ module ELMFatesInterfaceMod
    use SurfaceAlbedoType , only : surfalb_type
    use SolarAbsorbedType , only : solarabs_type
    use FrictionVelocityType , only : frictionvel_type
-   use clm_time_manager  , only : is_restart
+   use elm_time_manager  , only : is_restart
    use ncdio_pio         , only : file_desc_t, ncd_int, ncd_double
    use restUtilMod,        only : restartvar
-   use clm_time_manager  , only : get_days_per_year, &
+   use elm_time_manager  , only : get_days_per_year, &
                                   get_curr_date,     &
                                   get_ref_date,      &
                                   timemgr_datediff,  &
@@ -109,7 +109,7 @@ module ELMFatesInterfaceMod
    use shr_log_mod       , only : errMsg => shr_log_errMsg
    use elm_varcon        , only : dzsoi_decomp
    use FuncPedotransferMod, only: get_ipedof
-
+   use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
 
    ! Used FATES Modules
    use FatesConstantsMod     , only : ifalse
@@ -131,7 +131,7 @@ module ELMFatesInterfaceMod
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
 
    use PRTGenericMod         , only : num_elements
-   use EDTypesMod            , only : ed_patch_type
+   use FatesPatchMod         , only : fates_patch_type
    use FatesInterfaceTypesMod, only : hlm_stepsize
    use EDMainMod             , only : ed_ecosystem_dynamics
    use EDMainMod             , only : ed_update_site
@@ -154,6 +154,10 @@ module ELMFatesInterfaceMod
    use FatesPlantHydraulicsMod, only : HydrSiteColdStart
    use FatesPlantHydraulicsMod, only : InitHydrSites
    use FatesPlantHydraulicsMod, only : RestartHydrStates
+   
+   use FATESFireBase          , only : fates_fire_base_type
+   use FATESFireFactoryMod    , only : no_fire, scalar_lightning, successful_ignitions,&
+                                       anthro_ignitions, anthro_suppression
 
    use dynHarvestMod          , only : num_harvest_vars, harvest_varnames, wood_harvest_units
    use dynHarvestMod          , only : harvest_rates ! these are dynamic in space and time
@@ -165,6 +169,8 @@ module ELMFatesInterfaceMod
 
    use FatesInterfaceTypesMod , only : bc_in_type, bc_out_type
    use CLMFatesParamInterfaceMod         , only : FatesReadParameters
+   
+   use perf_mod          , only : t_startf, t_stopf
 
    implicit none
 
@@ -199,6 +205,9 @@ module ELMFatesInterfaceMod
 
       ! fates_restart is the inteface calss for restarting the model
       type(fates_restart_interface_type) :: fates_restart
+      
+      ! fates_fire_data_method determines the fire data passed from HLM to FATES
+      class(fates_fire_base_type), allocatable :: fates_fire_data_method
 
    contains
 
@@ -216,6 +225,11 @@ module ELMFatesInterfaceMod
       procedure, public :: wrap_WoodProducts
       procedure, public :: wrap_update_hifrq_hist
       procedure, public :: TransferZ0mDisp
+      procedure, public :: InterpFileInputs  ! Interpolate inputs from files
+      procedure, public :: Init2  ! Initialization after determining subgrid weights
+      procedure, public :: InitAccBuffer ! Initialize any accumulation buffers
+      procedure, public :: InitAccVars   ! Initialize any accumulation variables
+      procedure, public :: UpdateAccVars ! Update any accumulation variables
       procedure, public :: UpdateLitterFluxes
       procedure, private :: init_history_io
       procedure, private :: wrap_update_hlmfates_dyn
@@ -367,6 +381,10 @@ contains
      integer, parameter :: successful_ignitions = 3
      integer, parameter :: anthro_ignitions= 4
   
+     ! We will use this switch temporarily, until  we complete
+     ! the ELM-FATES harvest integration
+     logical, parameter :: do_elm_fates_harvest = .false.
+
      if (use_fates) then
 
         ! Send parameters individually
@@ -567,6 +585,7 @@ contains
       use FatesInterfaceTypesMod,   only : numpft_fates => numpft
       use elm_varsur,               only : wt_nat_patch
       use topounit_varcon           , only: max_topounits, has_topounit
+      use FATESFireFactoryMod       , only: create_fates_fire_data_method
 
       implicit none
 
@@ -772,6 +791,9 @@ contains
 
       ! Report Fates Parameters (debug flag in lower level routines)
       call FatesReportParameters(masterproc)
+      
+      ! Fire data to send to FATES
+      call create_fates_fire_data_method( this%fates_fire_data_method )
 
     end subroutine init
 
@@ -814,8 +836,8 @@ contains
    ! ------------------------------------------------------------------------------------
 
    subroutine dynamics_driv(this, bounds_clump, top_as_inst,          &
-         top_af_inst, atm2lnd_inst, soilstate_inst, temperature_inst, &
-         canopystate_inst, frictionvel_inst )
+         top_af_inst, atm2lnd_inst, soilstate_inst, &
+         canopystate_inst, frictionvel_inst, soil_water_retention_curve )
 
       use FatesConstantsMod     , only : m2_per_km2
 
@@ -831,13 +853,14 @@ contains
       type(topounit_atmospheric_flux),  intent(in)   :: top_af_inst
       type(atm2lnd_type)      , intent(in)           :: atm2lnd_inst
       type(soilstate_type)    , intent(in)           :: soilstate_inst
-      type(temperature_type)  , intent(in)           :: temperature_inst
       type(canopystate_type)  , intent(inout)        :: canopystate_inst
       type(frictionvel_type)  , intent(inout)        :: frictionvel_inst
-
+      class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
+      
       ! !LOCAL VARIABLES:
       integer  :: s                        ! site index
       integer  :: c                        ! column index (HLM)
+      integer  :: j                        ! Soil layer index
       integer  :: t                        ! topounit index (HLM)
       integer  :: ifp                      ! patch index
       integer  :: ft                       ! patch functional type index
@@ -845,6 +868,11 @@ contains
       integer  :: g                        ! HLM grid index
       integer  :: nc                       ! clump index
       integer  :: nlevsoil                 ! number of soil layers at the site
+      integer  :: ier                      ! allocate status code
+      real(r8) :: s_node, smp_node         ! local for relative water content and potential
+      
+      real(r8), pointer :: lnfm24(:)       ! 24-hour averaged lightning data
+      real(r8), pointer :: gdp_lf_col(:)          ! gdp data
 
       !-----------------------------------------------------------------------
 
@@ -867,11 +895,47 @@ contains
 
       ! Set the FATES global time and date variables
       call GetAndSetTime
+      
+      if (fates_spitfire_mode > scalar_lightning) then
+         allocate(lnfm24(bounds_clump%begg:bounds_clump%endg), stat=ier)
+         if (ier /= 0) then
+            call endrun(msg="allocation error for lnfm24"//&
+                 errmsg(sourcefile, __LINE__))
+         endif
+         lnfm24 = this%fates_fire_data_method%GetLight24()
+      end if
+      
+      if (fates_spitfire_mode .eq. anthro_suppression) then
+         allocate(gdp_lf_col(bounds_clump%begc:bounds_clump%endc), stat=ier)
+         if (ier /= 0) then
+            call endrun(msg="allocation error for gdp"//&
+                 errmsg(sourcefile, __LINE__))
+         endif
+         gdp_lf_col = this%fates_fire_data_method%GetGDP()
+      end if
 
       do s=1,this%fates(nc)%nsites
 
          c = this%f2hmap(nc)%fcolumn(s)
+         g = col_pp%gridcell(c)
          t = col_pp%topounit(c)
+         
+         if (fates_spitfire_mode > scalar_lightning) then
+            do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
+               
+               this%fates(nc)%bc_in(s)%lightning24(ifp) = lnfm24(g) * 24._r8  ! #/km2/hr to #/km2/day
+               
+               if (fates_spitfire_mode .ge. anthro_ignitions) then
+                  this%fates(nc)%bc_in(s)%pop_density(ifp) = this%fates_fire_data_method%forc_hdm(g)
+               end if
+
+            end do ! ifp
+
+            if (fates_spitfire_mode .eq. anthro_suppression) then
+               ! Placeholder for future fates use of gdp - comment out before integration
+               !this%fates(nc)%bc_in(s)%gdp = gdp_lf_col(c) ! k US$/capita(g)
+            end if
+         end if
 
          nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
 
@@ -886,6 +950,26 @@ contains
          this%fates(nc)%bc_in(s)%max_rooting_depth_index_col = &
               min(nlevsoil, canopystate_inst%altmax_lastyear_indx_col(c))
 
+         do j = 1,nlevsoil
+            this%fates(nc)%bc_in(s)%tempk_sl(j) = col_es%t_soisno(c,j)
+         end do
+
+         call get_active_suction_layers(this%fates(nc)%nsites, &
+             this%fates(nc)%sites,  &
+             this%fates(nc)%bc_in,  &
+             this%fates(nc)%bc_out)
+
+         do j = 1,nlevsoil
+            if(this%fates(nc)%bc_out(s)%active_suction_sl(j)) then
+               s_node = max(col_ws%h2osoi_liqvol(c,j)/soilstate_inst%eff_porosity_col(c,j) ,0.01_r8)
+               call soil_water_retention_curve%soil_suction(soilstate_inst%sucsat_col(c,j), &
+                       s_node, &
+                       soilstate_inst%bsw_col(c,j), &
+                       smp_node)
+               this%fates(nc)%bc_in(s)%smp_sl(j) = smp_node
+            end if
+         end do
+         
          do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
             p = ifp+col_pp%pfti(c)
 
@@ -926,7 +1010,6 @@ contains
          ! for now there is one veg column per gridcell, so store all harvest data in each site
          ! this will eventually change
          ! the harvest data are zero if today is before the start of the harvest time series
-         g = col_pp%gridcell(c)
          if (get_do_harvest()) then
             this%fates(nc)%bc_in(s)%hlm_harvest_rates = harvest_rates(:,g)
             this%fates(nc)%bc_in(s)%hlm_harvest_catnames = harvest_varnames
@@ -984,7 +1067,7 @@ contains
       call fates_hist%update_history_dyn( nc,                    &
            this%fates(nc)%nsites, &
            this%fates(nc)%sites,  &
-           this%fates(nc)%bc_in)
+           this%fates(nc)%bc_in) 
 
       if (masterproc) then
          write(iulog, *) 'FATES dynamics complete'
@@ -1538,6 +1621,7 @@ contains
                   ! This call sends internal fates variables into the
                   ! output boundary condition structures. Note: this is called
                   ! internally in fates dynamics as well.
+
                   call FluxIntoLitterPools(this%fates(nc)%sites(s), &
                        this%fates(nc)%bc_in(s), &
                        this%fates(nc)%bc_out(s))
@@ -1594,9 +1678,6 @@ contains
                        this%fates(nc)%bc_out)
                end if
 
-
-
-
                ! ------------------------------------------------------------------------
                ! Update diagnostics of FATES ecosystem structure used in HLM.
                ! ------------------------------------------------------------------------
@@ -1614,15 +1695,17 @@ contains
                ! Update history IO fields that depend on ecosystem dynamics
                ! ------------------------------------------------------------------------
                call fates_hist%flush_hvars(nc,upfreq_in=1)
+               call fates_hist%flush_hvars(nc,upfreq_in=5)
                do s = 1,this%fates(nc)%nsites
                   call fates_hist%zero_site_hvars(this%fates(nc)%sites(s),     &
                        upfreq_in=1)
+                  call fates_hist%zero_site_hvars(this%fates(nc)%sites(s),     &
+                       upfreq_in=5)
                end do
                call fates_hist%update_history_dyn( nc, &
                     this%fates(nc)%nsites,                 &
                     this%fates(nc)%sites,  &
                     this%fates(nc)%bc_in)
-
 
             end if
          end do
@@ -1756,6 +1839,7 @@ contains
               ! This call sends internal fates variables into the
               ! output boundary condition structures. Note: this is called
               ! internally in fates dynamics as well.
+
               call FluxIntoLitterPools(this%fates(nc)%sites(s), &
                    this%fates(nc)%bc_in(s), &
                    this%fates(nc)%bc_out(s))
@@ -1772,16 +1856,17 @@ contains
            ! ------------------------------------------------------------------------
 
            call fates_hist%flush_hvars(nc,upfreq_in=1)
+           call fates_hist%flush_hvars(nc,upfreq_in=5)
            do s = 1,this%fates(nc)%nsites
               call fates_hist%zero_site_hvars(this%fates(nc)%sites(s),     &
                    upfreq_in=1)
+              call fates_hist%zero_site_hvars(this%fates(nc)%sites(s),     &
+                   upfreq_in=5)
            end do
            call fates_hist%update_history_dyn( nc, &
                 this%fates(nc)%nsites,                 &
-                this%fates(nc)%sites,  &
-                this%fates(nc)%bc_in)
-
-
+                this%fates(nc)%sites, &
+                this%fates(nc)%bc_in) 
 
         end if
      end do
@@ -1823,7 +1908,7 @@ contains
                                               ! on the site
       integer  :: nc                          ! clump index
 
-      type(ed_patch_type), pointer :: cpatch  ! c"urrent" patch  INTERF-TODO: SHOULD
+      type(fates_patch_type), pointer :: cpatch  ! c"urrent" patch  INTERF-TODO: SHOULD
                                               ! BE HIDDEN AS A FATES PRIVATE
 
       associate( forc_solad => top_af_inst%solad, &
@@ -1915,7 +2000,7 @@ contains
    ! ====================================================================================
 
    subroutine wrap_btran(this,bounds_clump,fn,filterc,soilstate_inst, &
-                         temperature_inst, energyflux_inst,  &
+                         energyflux_inst,  &
                          soil_water_retention_curve)
 
       ! ---------------------------------------------------------------------------------
@@ -1926,7 +2011,7 @@ contains
       !
       ! ---------------------------------------------------------------------------------
 
-      use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
+      
 
       implicit none
 
@@ -1937,7 +2022,6 @@ contains
       integer                , intent(in)            :: filterc(fn) ! This is a list of
                                                                         ! columns with exposed veg
       type(soilstate_type)   , intent(inout)         :: soilstate_inst
-      type(temperature_type) , intent(in)            :: temperature_inst
       type(energyflux_type)  , intent(inout)         :: energyflux_inst
       class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
 
@@ -2097,16 +2181,14 @@ contains
 
    subroutine wrap_photosynthesis(this, bounds_clump, fn, filterp, &
          esat_tv, eair, oair, cair, rb, dayl_factor,             &
-         atm2lnd_inst, temperature_inst, canopystate_inst, photosyns_inst)
+         atm2lnd_inst, canopystate_inst, photosyns_inst)
 
     use shr_log_mod       , only : errMsg => shr_log_errMsg
     use abortutils        , only : endrun
     use decompMod         , only : bounds_type
     use elm_varcon        , only : rgas, tfrz, namep
     use elm_varctl        , only : iulog
-    use perf_mod          , only : t_startf, t_stopf
     use quadraticMod      , only : quadratic
-    use EDtypesMod        , only : ed_patch_type, ed_cohort_type, ed_site_type
 
     !
     ! !ARGUMENTS:
@@ -2121,7 +2203,6 @@ contains
     real(r8)               , intent(in)            :: rb( bounds_clump%begp: )          ! boundary layer resistance (s/m)
     real(r8)               , intent(in)            :: dayl_factor( bounds_clump%begp: ) ! scalar (0-1) for daylength
     type(atm2lnd_type)     , intent(in)            :: atm2lnd_inst
-    type(temperature_type) , intent(in)            :: temperature_inst
     type(canopystate_type) , intent(inout)         :: canopystate_inst
     type(photosyns_type)   , intent(inout)         :: photosyns_inst
 
@@ -2478,6 +2559,156 @@ end subroutine wrap_update_hifrq_hist
     return
  end subroutine TransferZ0mDisp
 
+  !-----------------------------------------------------------------------
+
+ subroutine InterpFileInputs(this, bounds)
+   !
+   ! !DESCRIPTION:
+   ! Interpolate inputs from files
+   !
+   ! NOTE(wjs, 2016-02-23) Stuff done here could probably be done at the end of
+   ! InitEachTimeStep, rather than in this separate routine, except for the
+   ! fact that
+   ! (currently) this Interp stuff is done with proc bounds rather thna clump
+   ! bounds. I
+   ! think that is needed so that you don't update a given stream multiple
+   ! times. If we
+   ! rework the handling of threading / clumps so that there is a separate
+   ! object for
+   ! each clump, then I think this problem would disappear - at which point we
+   ! could
+   ! remove this Interp routine, moving its body to the end of
+   ! InitEachTimeStep.
+   !
+   ! !USES:
+   !
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type), intent(in) :: bounds
+   !
+   ! !LOCAL VARIABLES:
+
+   character(len=*), parameter :: subname = 'InterpFileInputs'
+   !-----------------------------------------------------------------------
+
+   call t_startf('fates_interpfileinputs')
+
+   call this%fates_fire_data_method%FireInterp(bounds)
+
+   call t_stopf('fates_interpfileinputs')
+
+ end subroutine InterpFileInputs
+
+ ! ======================================================================================
+ 
+ subroutine Init2(this, bounds, NLFilename)
+   !
+   ! !DESCRIPTION:
+   ! Initialization after subgrid weights are determined
+   !
+   ! This copy should only be called if use_fates is .true.
+   !
+   ! !USES:
+   ! use CNStateType, only : cnstate_type
+   !
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type), intent(in)                   :: bounds
+   character(len=*), intent(in) :: NLFilename ! Namelist filename
+   ! type(cnstate_type), intent(in)                 :: cnstate_vars
+
+   !
+   ! !LOCAL VARIABLES:
+
+   character(len=*), parameter :: subname = 'Init2'
+   !-----------------------------------------------------------------------
+
+   call t_startf('fates_init2')
+
+   write(iulog,*) 'Init2: calling FireInit'
+   call this%fates_fire_data_method%FireInit(bounds, NLFilename)
+
+   call t_stopf('fates_init2')
+
+ end subroutine Init2
+
+ ! ======================================================================================
+ 
+ subroutine InitAccBuffer(this, bounds)
+   !
+   ! !DESCRIPTION:
+   ! Initialized any accumulation buffers needed for FATES
+   !
+   ! !USES:
+   !
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type), intent(in)                  :: bounds
+   !
+   ! !LOCAL VARIABLES:
+
+   character(len=*), parameter :: subname = 'InitAccBuffer'
+   !-----------------------------------------------------------------------
+
+   call t_startf('fates_initaccbuff')
+
+   call this%fates_fire_data_method%InitAccBuffer( bounds )
+
+   call t_stopf('fates_initaccbuff')
+
+ end subroutine InitAccBuffer
+
+! ======================================================================================
+ 
+ subroutine InitAccVars(this, bounds)
+   !
+   ! !DESCRIPTION:
+   ! Initialized any accumulation variables needed for FATES
+   !
+   ! !USES:
+   !
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type), intent(in) :: bounds
+   !
+   ! !LOCAL VARIABLES:
+
+   character(len=*), parameter :: subname = 'InitAccVars'
+   !-----------------------------------------------------------------------
+
+   call t_startf('fates_initaccvars')
+
+   call this%fates_fire_data_method%InitAccVars( bounds )
+
+   call t_stopf('fates_initaccvars')
+
+ end subroutine InitAccVars
+
+ ! ======================================================================================
+ 
+ subroutine UpdateAccVars(this, bounds_proc)
+  
+   ! !DESCRIPTION:
+   ! Update any accumulation variables needed for FATES
+   !
+   ! !USES:
+   !
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type), intent(in)                  :: bounds_proc
+   !
+ 
+   character(len=*), parameter :: subname = 'UpdateAccVars'
+   !-----------------------------------------------------------------------
+
+   call t_startf('fates_updateaccvars')
+
+   call this%fates_fire_data_method%UpdateAccVars( bounds_proc )
+   
+   call t_stopf('fates_updateaccvars')
+
+ end subroutine UpdateAccVars
+ 
  ! ======================================================================================
 
  subroutine WrapUpdateFatesRmean(this, nc)
@@ -2500,7 +2731,6 @@ end subroutine wrap_update_hifrq_hist
    
   end subroutine WrapUpdateFatesRmean
 
- 
  ! ======================================================================================
  
  subroutine init_history_io(this,bounds_proc)
@@ -2876,10 +3106,10 @@ end subroutine wrap_update_hifrq_hist
    use FatesInterfaceTypesMod, only : nlevage_fates    => nlevage
    use FatesInterfaceTypesMod, only : nlevheight_fates => nlevheight
    use FatesInterfaceTypesMod, only : nlevdamage_fates => nlevdamage
-   use EDtypesMod,        only : nfsc_fates       => nfsc
+   use FatesLitterMod,        only : nfsc_fates       => nfsc
    use FatesLitterMod,    only : ncwd_fates       => ncwd
-   use EDtypesMod,        only : nlevleaf_fates   => nlevleaf
-   use EDtypesMod,        only : nclmax_fates     => nclmax
+   use EDParamsMod,       only : nlevleaf_fates   => nlevleaf
+   use EDParamsMod,       only : nclmax_fates     => nclmax
    use FatesInterfaceTypesMod, only : numpft_fates     => numpft
    use FatesInterfaceTypesMod, only : nlevcoage
 
@@ -2973,7 +3203,7 @@ end subroutine wrap_update_hifrq_hist
  subroutine GetAndSetTime()
 
    ! CLM MODULES
-   use clm_time_manager  , only : get_days_per_year, &
+   use elm_time_manager  , only : get_days_per_year, &
                                   get_curr_date,     &
                                   get_ref_date,      &
                                   timemgr_datediff

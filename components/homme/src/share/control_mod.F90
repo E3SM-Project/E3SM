@@ -203,6 +203,8 @@ module control_mod
   ! Physgrid parameters
   integer, public :: se_fv_phys_remap_alg = 1
 
+  ! Hommexx-specific parameters
+  integer, public :: internal_diagnostics_level = 0
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

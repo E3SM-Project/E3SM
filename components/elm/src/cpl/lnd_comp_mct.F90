@@ -41,11 +41,12 @@ contains
     ! !USES:
     use abortutils       , only : endrun
     use shr_kind_mod     , only : SHR_KIND_CL
-    use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
+    use elm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
     use elm_initializeMod, only : initialize1, initialize2, initialize3
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
     use elm_instance     , only : elm_instance_init
-    use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland
+    use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland, &
+                                  scm_multcols, scm_nx, scm_ny
     use elm_varctl       , only : inst_index, inst_suffix, inst_name, precip_downscaling_method
     use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
@@ -214,6 +215,7 @@ contains
                                    calendar=calendar )
     call seq_infodata_GetData(infodata, case_name=caseid,    &
                               case_desc=ctitle, single_column=single_column,    &
+                              scm_multcols=scm_multcols,scm_nx=scm_nx,scm_ny=scm_ny,    &
                               scmlat=scmlat, scmlon=scmlon,                     &
                               brnch_retain_casename=brnch_retain_casename,      &
                               start_type=starttype, model_version=version,      &
@@ -231,10 +233,14 @@ contains
        call endrun( sub//' ERROR: unknown starttype' )
     end if
 
-    call elm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                     &
-                        brnch_retain_casename_in=brnch_retain_casename,         &
-                        single_column_in=single_column, scmlat_in=scmlat,       &
-                        scmlon_in=scmlon, nsrest_in=nsrest, version_in=version, &
+    ! If SCM domain mode, force single_column flag to be false for this
+    !  block of code, as special treatment is needed
+    if (scm_multcols) single_column = .false.
+    call elm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                      &
+                        brnch_retain_casename_in=brnch_retain_casename,          &
+                        scm_multcols_in=scm_multcols, scm_nx_in=scm_nx, scm_ny_in=scm_ny,&
+                        single_column_in=single_column, scmlat_in=scmlat,        &
+                        scmlon_in=scmlon, nsrest_in=nsrest, version_in=version,  &
                         hostname_in=hostname, username_in=username)
 
     use_lnd_rof_two_way = lnd_rof_two_way
@@ -346,8 +352,8 @@ contains
     use shr_kind_mod    ,  only : r8 => shr_kind_r8
     use elm_instMod     , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
     use elm_driver      ,  only : elm_drv
-    use clm_time_manager,  only : get_curr_date, get_nstep, get_curr_calday, get_step_size
-    use clm_time_manager,  only : advance_timestep, set_nextsw_cday,update_rad_dtime
+    use elm_time_manager,  only : get_curr_date, get_nstep, get_curr_calday, get_step_size
+    use elm_time_manager,  only : advance_timestep, set_nextsw_cday,update_rad_dtime
     use decompMod       ,  only : get_proc_bounds
     use abortutils      ,  only : endrun
     use elm_varctl      ,  only : iulog

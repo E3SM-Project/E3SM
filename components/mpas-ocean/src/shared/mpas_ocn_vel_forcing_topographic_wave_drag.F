@@ -28,6 +28,7 @@ module ocn_vel_forcing_topographic_wave_drag
    use ocn_mesh
    use ocn_diagnostics_variables
    use ocn_forcing
+   use ocn_config
 
    implicit none
    private
@@ -161,15 +162,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_disable_vel_topographic_wave_drag
-      logical, pointer :: config_use_topographic_wave_drag
-      real (kind=RKIND), pointer :: config_topographic_wave_drag_coeff
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_use_topographic_wave_drag', config_use_topographic_wave_drag)
-      call mpas_pool_get_config(ocnConfigs, 'config_topographic_wave_drag_coeff', config_topographic_wave_drag_coeff)
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_topographic_wave_drag', config_disable_vel_topographic_wave_drag)
 
       topographicWaveDragCoeff = 0.0_RKIND
 

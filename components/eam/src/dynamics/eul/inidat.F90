@@ -21,8 +21,6 @@ module inidat
    use spmd_utils,          only: masterproc, mpicom, mpir8
    use cam_control_mod,     only: ideal_phys, aqua_planet, moist_physics, adiabatic
    use cam_initfiles,       only: initial_file_get_id, topo_file_get_id
-   use scamMod,             only: single_column, use_replay, have_u, have_v, &
-                                  have_cldliq, have_cldice,loniop,latiop,scmlat,scmlon
    use cam_logfile,         only: iulog
    use pio,                 only: file_desc_t, pio_noerr, pio_inq_varid, pio_get_att, &
         pio_inq_attlen, pio_inq_dimid, pio_inq_dimlen, pio_get_var,var_desc_t, &
@@ -72,12 +70,10 @@ contains
     
     use constituents,     only: pcnst, cnst_name, cnst_read_iv, cnst_get_ind
     use commap,           only: clat,clon
-    use scamMod,          only: readiopdata, setiopupdate
     use dyn_comp ,        only: dyn_import_t
     use physconst,        only: pi
     use cam_pio_utils,    only: cam_pio_get_var
     use hycoef,           only: hyam, hybm
-    use eul_single_column_mod, only: scm_setinitial
     
 !
 ! Arguments
@@ -105,7 +101,6 @@ contains
     real(r8) :: clat2d(plon,plat),clon2d(plon,plat)
     integer :: ierr
 
-    logical :: iop_update_surface
     integer londimid,dimlon,latdimid,dimlat,latvarid,lonvarid
     integer strt(3),cnt(3)
     character(len=3), parameter :: arraydims3(3) = (/ 'lon', 'lev', 'lat' /)
@@ -214,102 +209,15 @@ contains
     if(.not. readvar) call endrun('PS not found in init file')
 
     call process_inidat('PS')
-
-    
-    if (single_column) then
-       !$omp parallel do private(lat)
-       do lat = 1,plat
-          ps(:nlon(lat),lat,1) = ps_tmp(:nlon(lat),lat)
-       end do
-    else	
+	
 !
 ! Integrals of mass, moisture and geopotential height
 ! (fix mass of moisture as well)
 !
-       call global_int
-    endif
+    call global_int
 
     deallocate ( ps_tmp   )
     deallocate ( phis_tmp )
-
-    if (single_column) then
-       if ( use_replay ) then
-          fieldname = 'CLAT1'
-          call infld(fieldname, fh_ini, 'lon', 'lat', 1, pcols, begchunk, endchunk, &
-               clat2d, readvar, gridname='physgrid')
-          if(.not. readvar) then
-             call endrun('CLAT not on iop initial file')
-          else
-             clat(:) = clat2d(1,:)
-             clat_p(:)=clat(:)
-          end if
-          
-          fieldname = 'CLON1'
-          call infld(fieldname, fh_ini, 'lon', 'lat', 1, pcols, begchunk, endchunk, &
-               clon2d, readvar, gridname='physgrid')
-          if(.not. readvar) then
-             call endrun('CLON not on iop initial file')
-          else
-             clon = clon2d
-             clon_p(:)=clon(:,1)
-          end if
-          
-          !
-          ! Get latdeg/londeg from initial file for bfb calculations
-          ! needed for dyn_grid to determine bounding area and verticies
-          !
-          ierr = pio_inq_dimid  (fh_ini, 'lon'  , londimid)
-          ierr = pio_inq_dimlen (fh_ini, londimid, dimlon)
-          ierr = pio_inq_dimid  (fh_ini, 'lat'  , latdimid)
-          ierr = pio_inq_dimlen (fh_ini, latdimid, dimlat)
-          strt(:)=1
-          cnt(1)=dimlon
-          cnt(2)=dimlat
-          cnt(3)=1
-          allocate(latiop(dimlat))
-          allocate(loniop(dimlon))
-          allocate(tmp2d(dimlon,dimlat))
-          ierr = pio_inq_varid (fh_ini,'CLAT1', varid)
-          ierr = pio_get_var(fh_ini,varid,strt,cnt,tmp2d)
-          latiop(:)=tmp2d(1,:)
-          ierr = pio_inq_varid (fh_ini,'CLON1', varid)
-          ierr = pio_get_var(fh_ini,varid,strt,cnt,tmp2d)
-          loniop(:)=tmp2d(:,1)
-          deallocate(tmp2d)
-       else
-          ! Using a standard iop - make the default grid size is
-          ! 4x4 degree square for mo_drydep deposition.(standard ARM IOP area)
-          allocate(latiop(2))
-          allocate(loniop(2))
-          latiop(1)=(scmlat-2._r8)*pi/180_r8
-          latiop(2)=(scmlat+2._r8)*pi/180_r8
-          loniop(1)=(mod(scmlon-2.0_r8+360.0_r8,360.0_r8))*pi/180.0_r8
-          loniop(2)=(mod(scmlon+2.0_r8+360.0_r8,360.0_r8))*pi/180.0_r8
-          call setiopupdate()
-          ! No need to initialize surface properties here
-          !  at this point
-          iop_update_surface = .false.
-          call readiopdata( iop_update_surface, hyam, hybm )
-	  call scm_setinitial()
-          ps(:,:,1)     = ps(:,:,n3)
-          if (have_u) u3(:,:,:,1)   = u3(:,:,:,n3)
-          if (have_v) v3(:,:,:,1)   = v3(:,:,:,n3)
-          t3(:,:,:,1)   = t3(:,:,:,n3)
-          q3(:,:,1,:,1) = q3(:,:,1,:,n3)
-          if (have_cldliq) then 
-             call cnst_get_ind('CLDLIQ', ixcldliq)
-             q3(:,:,ixcldliq,:,1) = q3(:,:,ixcldliq,:,n3)
-          end if
-          if (have_cldice) then
-             call cnst_get_ind('CLDICE', ixcldice)
-             q3(:,:,ixcldice,:,1) = q3(:,:,ixcldice,:,n3)
-          end if
-          vort(:,:,:,1) = vort(:,:,:,n3)
-          div(:,:,:,1)  = div(:,:,:,n3)
-
-       endif
-
-    endif
 
     deallocate ( q3_tmp  )
     deallocate ( t3_tmp  )
@@ -376,12 +284,6 @@ contains
     real(r8), pointer, dimension(:,:,:) :: tmp3d_a, tmp3d_b, tmp3d_extend
     real(r8), pointer, dimension(:,:  ) :: tmp2d_a, tmp2d_b
 
-#if ( defined BFB_CAM_SCAM_IOP )
-    real(r8), allocatable :: ps_sav(:,:)
-    real(r8), allocatable :: u3_sav(:,:,:)
-    real(r8), allocatable :: v3_sav(:,:,:)
-#endif
-
 #if ( defined SPMD )
     integer :: numperlat                   ! number of values per latitude band
     integer :: numsend(0:npes-1)           ! number of items to be sent
@@ -406,22 +308,7 @@ contains
 ! Spectral truncation
 !
 
-       if (single_column) then
-          tmp3d_a(:,:,:) = 0._r8
-          tmp3d_b(:,:,:) = 0._r8
-       else
-#if (( defined BFB_CAM_SCAM_IOP )  && ( ! defined DO_SPETRU ))
-          allocate ( u3_sav (plon,plev,plat) )             
-          allocate ( v3_sav (plon,plev,plat) )             
-          u3_sav(:plon,:plev,:plat) = arr3d_a(:plon,:plev,:plat)
-          v3_sav(:plon,:plev,:plat) = arr3d_b(:plon,:plev,:plat)
-          call spetru_uv(u3_sav  ,v3_sav  ,vort=tmp3d_a, div=tmp3d_b)
-          deallocate ( u3_sav )
-          deallocate ( v3_sav )
-#else
-          call spetru_uv(arr3d_a ,arr3d_b ,vort=tmp3d_a, div=tmp3d_b)
-#endif
-       endif
+       call spetru_uv(arr3d_a ,arr3d_b ,vort=tmp3d_a, div=tmp3d_b)
 
 #if ( defined SPMD )
        numperlat = plnlv
@@ -466,11 +353,10 @@ contains
 !
 ! Spectral truncation
 !
-       if (.not. single_column) then
-#if ( ( ! defined BFB_CAM_SCAM_IOP ) || ( defined DO_SPETRU ) )
-          call spetru_3d_scalar(t3_tmp)
+
+#if ( defined DO_SPETRU )
+       call spetru_3d_scalar(t3_tmp)
 #endif 
-       endif ! single_column
 #if ( defined SPMD )
        numperlat = plnlv
        call compute_gsfactors (numperlat, numrecv, numsend, displs)
@@ -584,19 +470,8 @@ contains
 ! Spectral truncation
 !
 
-       if (single_column) then
-          tmp2d_a(:,:) = 0._r8
-          tmp2d_b(:,:) = 0._r8
-       else
-#if (( defined BFB_CAM_SCAM_IOP ) && ( ! defined DO_SPETRU ))
-          allocate ( ps_sav(plon,plat) )                   
-          ps_sav(:plon,:plat)=ps_tmp(:plon,:plat)
-          call spetru_ps(ps_sav, tmp2d_a, tmp2d_b)
-          deallocate ( ps_sav )
-#else
-          call spetru_ps(ps_tmp, tmp2d_a, tmp2d_b)
-#endif
-       endif
+
+       call spetru_ps(ps_tmp, tmp2d_a, tmp2d_b)
 
 #if ( defined SPMD )
        numperlat = plon
@@ -646,11 +521,11 @@ contains
 !
 ! Spectral truncation
 !
-       if (.not. single_column) then
-#if  (( ! defined BFB_CAM_SCAM_IOP ) || ( defined DO_SPETRU ))
-          call spetru_phis  (phis_tmp, phis_hires)
+
+#if  (defined DO_SPETRU )
+       call spetru_phis  (phis_tmp, phis_hires)
 #endif
-       endif
+
 
 #if ( defined SPMD )
        numperlat = plon
@@ -714,7 +589,7 @@ contains
     real(r8) qmassf_tmp        ! Global moisture mass integral
     real(r8) zgsint_tmp        ! Geopotential integral
 
-    integer platov2            ! plat/2 or plat (if in scm mode)
+    integer platov2            ! plat/2
 #if ( defined SPMD )
     integer :: numperlat         ! number of values per latitude band
     integer :: numsend(0:npes-1) ! number of items to be sent
@@ -748,11 +623,9 @@ contains
 !
 ! Compute integrals of mass, moisture, and geopotential height
 !
-       if (single_column) then
-          platov2 = 1
-       else
-          platov2 = plat/2
-       endif
+
+       platov2 = plat/2
+
        do irow = 1,platov2
           do ihem = 1,2
              if (ihem.eq.1) then
@@ -873,13 +746,12 @@ contains
    real(r8) pmid(plon,plev)     !
 
 
-   if (.not. single_column) then
 ! Recover space used for ALP and DALP arrays
 ! (no longer needed after spectral truncations
 ! inside of read_inidat)
-      deallocate ( alp )
-      deallocate ( dalp )
-   endif
+   deallocate ( alp )
+   deallocate ( dalp )
+
 !
 ! If dry-type tracers are present, initialize pdeld
 ! First, set current time pressure arrays for model levels etc. to get pdel

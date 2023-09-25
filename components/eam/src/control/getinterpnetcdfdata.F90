@@ -20,7 +20,7 @@ module getinterpnetcdfdata
 contains
 
 subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
-   varName, have_surfdat, surfdat, fill_ends, scm_crm_mode, &
+   varName, have_surfdat, surfdat, fill_ends, &
    press, npress, ps, hyam, hybm, outData, STATUS )
 
 !     getinterpncdata: extracts the entire level dimension for a 
@@ -42,7 +42,6 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
    real(r8), intent(in) :: camlat,camlon ! target lat and lon to be extracted  
    logical, intent(in)  :: have_surfdat  ! is surfdat provided
    logical, intent(in)  :: fill_ends ! extrapolate the end values
-   logical, intent(in)  :: scm_crm_mode
    integer, intent(in)  :: npress        ! number of dataset pressure levels
    real(r8), intent(in) :: press(npress) ! dataset pressure levels
    real(r8), intent(in) :: ps ! dataset pressure levels
@@ -198,21 +197,21 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
 !     fill in missing surface data by extrapolation
 !
 
-      if(.not.scm_crm_mode) then
-         if ( have_surfdat ) then
-            tmp(npress) = surfdat
-         else
-            dy = press(npress-1) - press(npress-2)
-            dx = tmp(npress-1) - tmp(npress-2)
-            if ( dx .ne. 0.0_r8 ) then
-               m = dy/dx
-               tmp(npress) = ((press(npress) - press(npress-1)) / m ) + tmp(npress-1)
-            else
-               tmp(npress) = tmp(npress-1)
-            endif
-            surfdat = tmp(npress)
-         endif
+
+   if ( have_surfdat ) then
+      tmp(npress) = surfdat
+   else
+      dy = press(npress-1) - press(npress-2)
+      dx = tmp(npress-1) - tmp(npress-2)
+      if ( dx .ne. 0.0_r8 ) then
+         m = dy/dx
+         tmp(npress) = ((press(npress) - press(npress-1)) / m ) + tmp(npress-1)
+      else
+         tmp(npress) = tmp(npress-1)
       endif
+         surfdat = tmp(npress)
+   endif
+
 
 #if DEBUG > 1
 !

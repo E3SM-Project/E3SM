@@ -118,26 +118,26 @@ contains
 
     allocate(this%frac_veg_nosno_patch     (begp:endp))           ; this%frac_veg_nosno_patch     (:)   = ispval
     allocate(this%frac_veg_nosno_alb_patch (begp:endp))           ; this%frac_veg_nosno_alb_patch (:)   = 0
-    allocate(this%tlai_patch               (begp:endp))           ; this%tlai_patch               (:)   = nan
-    allocate(this%tsai_patch               (begp:endp))           ; this%tsai_patch               (:)   = nan
-    allocate(this%tlai_hist_patch          (begp:endp))           ; this%tlai_hist_patch          (:)   = nan
-    allocate(this%tsai_hist_patch          (begp:endp))           ; this%tsai_hist_patch          (:)   = nan
-    allocate(this%htop_hist_patch          (begp:endp))           ; this%htop_hist_patch          (:)   = nan
-    allocate(this%elai_patch               (begp:endp))           ; this%elai_patch               (:)   = nan
-    allocate(this%elai240_patch            (begp:endp))           ; this%elai240_patch            (:)   = nan
-    allocate(this%esai_patch               (begp:endp))           ; this%esai_patch               (:)   = nan
-    allocate(this%laisun_patch             (begp:endp))           ; this%laisun_patch             (:)   = nan
-    allocate(this%laisha_patch             (begp:endp))           ; this%laisha_patch             (:)   = nan
-    allocate(this%laisun_z_patch           (begp:endp,1:nlevcan)) ; this%laisun_z_patch           (:,:) = nan
-    allocate(this%laisha_z_patch           (begp:endp,1:nlevcan)) ; this%laisha_z_patch           (:,:) = nan
-    allocate(this%mlaidiff_patch           (begp:endp))           ; this%mlaidiff_patch           (:)   = nan
-    allocate(this%annlai_patch          (12,begp:endp))           ; this%annlai_patch             (:,:) = nan
-    allocate(this%htop_patch               (begp:endp))           ; this%htop_patch               (:)   = nan
-    allocate(this%hbot_patch               (begp:endp))           ; this%hbot_patch               (:)   = nan
-    allocate(this%displa_patch             (begp:endp))           ; this%displa_patch             (:)   = nan
-    allocate(this%fsun_patch               (begp:endp))           ; this%fsun_patch               (:)   = nan
-    allocate(this%fsun24_patch             (begp:endp))           ; this%fsun24_patch             (:)   = nan
-    allocate(this%fsun240_patch            (begp:endp))           ; this%fsun240_patch            (:)   = nan
+    allocate(this%tlai_patch               (begp:endp))           ; this%tlai_patch               (:)   = spval
+    allocate(this%tsai_patch               (begp:endp))           ; this%tsai_patch               (:)   = spval
+    allocate(this%tlai_hist_patch          (begp:endp))           ; this%tlai_hist_patch          (:)   = spval
+    allocate(this%tsai_hist_patch          (begp:endp))           ; this%tsai_hist_patch          (:)   = spval
+    allocate(this%htop_hist_patch          (begp:endp))           ; this%htop_hist_patch          (:)   = spval
+    allocate(this%elai_patch               (begp:endp))           ; this%elai_patch               (:)   = spval
+    allocate(this%elai240_patch            (begp:endp))           ; this%elai240_patch            (:)   = spval
+    allocate(this%esai_patch               (begp:endp))           ; this%esai_patch               (:)   = spval
+    allocate(this%laisun_patch             (begp:endp))           ; this%laisun_patch             (:)   = spval
+    allocate(this%laisha_patch             (begp:endp))           ; this%laisha_patch             (:)   = spval
+    allocate(this%laisun_z_patch           (begp:endp,1:nlevcan)) ; this%laisun_z_patch           (:,:) = spval
+    allocate(this%laisha_z_patch           (begp:endp,1:nlevcan)) ; this%laisha_z_patch           (:,:) = spval
+    allocate(this%mlaidiff_patch           (begp:endp))           ; this%mlaidiff_patch           (:)   = spval
+    allocate(this%annlai_patch          (12,begp:endp))           ; this%annlai_patch             (:,:) = spval
+    allocate(this%htop_patch               (begp:endp))           ; this%htop_patch               (:)   = spval
+    allocate(this%hbot_patch               (begp:endp))           ; this%hbot_patch               (:)   = spval
+    allocate(this%displa_patch             (begp:endp))           ; this%displa_patch             (:)   = spval
+    allocate(this%fsun_patch               (begp:endp))           ; this%fsun_patch               (:)   = spval
+    allocate(this%fsun24_patch             (begp:endp))           ; this%fsun24_patch             (:)   = spval
+    allocate(this%fsun240_patch            (begp:endp))           ; this%fsun240_patch            (:)   = spval
 
     allocate(this%alt_col                  (begc:endc))           ; this%alt_col                  (:)   = spval;
     allocate(this%altmax_col               (begc:endc))           ; this%altmax_col               (:)   = spval
@@ -368,7 +368,7 @@ contains
     !
     ! !USES
     use accumulMod       , only : extract_accum_field
-    use clm_time_manager , only : get_nstep
+    use elm_time_manager , only : get_nstep
     !
     ! !ARGUMENTS:
     class(canopystate_type) :: this
@@ -414,7 +414,7 @@ contains
   subroutine UpdateAccVars (this, bounds)
     !
     ! USES
-    use clm_time_manager, only : get_nstep
+    use elm_time_manager, only : get_nstep
     use accumulMod      , only : update_accum_field, extract_accum_field
     use abortutils      , only : endrun
     !
@@ -499,12 +499,12 @@ contains
        l = col_pp%landunit(c)
 
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
-          this%alt_col(c)               = 0._r8 !iniitialized to spval for all columns
-          this%altmax_col(c)            = 0._r8 !iniitialized to spval for all columns
-          this%altmax_lastyear_col(c)   = 0._r8 !iniitialized to spval for all columns
-          this%alt_indx_col(c)          = 0     !initiialized to huge  for all columns
-          this%altmax_indx_col(c)       = 0     !initiialized to huge  for all columns
-          this%altmax_lastyear_indx_col = 0     !initiialized to huge  for all columns
+          this%alt_col(c)                  = 0._r8
+          this%altmax_col(c)               = 0._r8
+          this%altmax_lastyear_col(c)      = 0._r8
+          this%alt_indx_col(c)             = 0
+          this%altmax_indx_col(c)          = 0
+          this%altmax_lastyear_indx_col(c) = 0
        end if
     end do
 

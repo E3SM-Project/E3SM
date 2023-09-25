@@ -16,7 +16,7 @@ module radiation
    use shr_kind_mod,     only: r8=>shr_kind_r8, cl=>shr_kind_cl
    use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
    use cam_abortutils,   only: endrun
-   use scamMod,          only: scm_crm_mode, single_column
+   use iop_data_mod,     only: single_column
    use rad_constituents, only: N_DIAG
    use radconstants,     only: &
       nswbands, nlwbands, &
@@ -112,6 +112,10 @@ module radiation
    ! angle (cosz) calculations.
    ! TODO: How does this differ if value is .false.?
    logical :: use_rad_dt_cosz  = .false. 
+
+   ! Flag to indicate whether to read optics from spa netcdf file
+   ! NOTE: added for consistency with RRTMGP; this is non-functioning for RRTMG!
+   logical :: do_spa_optics = .false.
 
    ! Flag to indicate whether to do aerosol optical calculations. This
    ! zeroes out the aerosol optical properties if False
@@ -227,6 +231,7 @@ contains
                               iradsw, iradlw, irad_always,     &
                               use_rad_dt_cosz, spectralflux,   &
                               do_aerosol_rad,                  &
+                              do_spa_optics,                   &
                               fixed_total_solar_irradiance,    &
                               rrtmgp_enable_temperature_warnings
 
@@ -256,9 +261,15 @@ contains
       call mpibcast(use_rad_dt_cosz, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(do_aerosol_rad, 1, mpi_logical, mstrid, mpicom, ierr)
+      call mpibcast(do_spa_optics, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(fixed_total_solar_irradiance, 1, mpi_real8, mstrid, mpicom, ierr)
       call mpibcast(rrtmgp_enable_temperature_warnings, 1, mpi_logical, mstrid, mpicom, ierr)
 #endif
+
+      ! Make sure nobody tries to use SPA optics with MMF
+      if (do_spa_optics) then
+         call endrun(trim(subroutine_name) // ':: SPA optics is not supported with MMF')
+      end if
 
       ! Convert iradsw, iradlw and irad_always from hours to timesteps if necessary
       if (present(dtime_in)) then
@@ -727,13 +738,6 @@ contains
                   'Cosine of solar zenith angle', &
                   sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
-      if (single_column .and. scm_crm_mode) then
-         call add_default ('FUS     ', 1, ' ')
-         call add_default ('FUSC    ', 1, ' ')
-         call add_default ('FDS     ', 1, ' ')
-         call add_default ('FDSC    ', 1, ' ')
-      end if
-
       ! Longwave radiation
       do icall = 0,N_DIAG
          if (active_calls(icall)) then
@@ -831,14 +835,6 @@ contains
                   sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
       call addfld('EMIS', (/ 'lev' /), 'A', '1', 'Cloud longwave emissivity')
-
-      ! Add default fields for single column mode
-      if (single_column.and.scm_crm_mode) then
-         call add_default ('FUL     ', 1, ' ')
-         call add_default ('FULC    ', 1, ' ')
-         call add_default ('FDL     ', 1, ' ')
-         call add_default ('FDLC    ', 1, ' ')
-      endif
 
       ! HIRS/MSU diagnostic brightness temperatures
       if (dohirs) then

@@ -11,6 +11,7 @@ module mo_extfrc
   use cam_history,  only : addfld, horiz_only, outfld, add_default
   use cam_logfile,  only : iulog
   use tracer_data,  only : trfld,trfile
+  use mo_constants, only : avogadro
 
   implicit none
 
@@ -90,11 +91,15 @@ contains
     logical         , parameter :: rmv_file = .false.
     logical  :: history_aerosol      ! Output the MAM aerosol tendencies
     logical  :: history_verbose      ! produce verbose history output
-
+! chem diags
+    logical  :: history_gaschmbudget_2D
+    logical  :: history_chemdyg_summary
     !-----------------------------------------------------------------------
  
     call phys_getopts( history_aerosol_out        = history_aerosol, &
-                       history_verbose_out        = history_verbose   )
+                       history_verbose_out        = history_verbose, &
+                       history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
+                       history_chemdyg_summary_out = history_chemdyg_summary   )
 
     do i = 1, gas_pcnst
        has_extfrc(i) = .false.
@@ -177,6 +182,12 @@ contains
           endif
        end if has_forcing
     end do species_loop
+
+    if (history_gaschmbudget_2D .or. history_chemdyg_summary) then
+       call addfld( 'NO2_TDAcf', (/ 'lev' /), 'A',  'kg N/m2/s', &
+                       'external forcing for NO2 aircraft emission' )
+       call add_default( 'NO2_TDAcf', 1, ' ' )
+    endif
 
     if (masterproc) then
        !-----------------------------------------------------------------------
@@ -291,7 +302,7 @@ contains
   end subroutine extfrc_timestep_init
 
   subroutine extfrc_set( lchnk, zint, frcing, ncol )
-
+    use phys_control,  only : phys_getopts
     !--------------------------------------------------------
     !	... form the external forcing
     !--------------------------------------------------------
@@ -311,9 +322,15 @@ contains
     !--------------------------------------------------------
     integer  ::  i, m, n
     character(len=16) :: xfcname
-    real(r8) :: frcing_col(1:ncol)
+    real(r8) :: frcing_col(1:ncol), frcing_tmp(ncol,pver), no2_tdacf(ncol,pver)
     integer  :: k, isec
     real(r8),parameter :: km_to_cm = 1.e5_r8
+    !chem diags
+    logical  :: history_gaschmbudget_2D
+    logical  :: history_chemdyg_summary
+
+    call phys_getopts(history_gaschmbudget_2D_out = history_gaschmbudget_2D,&
+                      history_chemdyg_summary_out = history_chemdyg_summary   )
 
     if( extfrc_cnt < 1 .or. extcnt < 1 ) then
        return
@@ -339,9 +356,32 @@ contains
        call outfld( xfcname, frcing(:ncol,:,n), ncol, lchnk )
 
        frcing_col(:ncol) = 0._r8
+       frcing_tmp(:ncol,:) = 0._r8
+       if (trim(forcings(m)%species) == 'NO2') then
+       if (history_gaschmbudget_2D .or. history_chemdyg_summary) then
+            no2_tdacf(:ncol,:) = 0._r8
+       endif
+       endif
        do k = 1,pver
-          frcing_col(:ncol) = frcing_col(:ncol) + frcing(:ncol,k,n)*(zint(:ncol,k)-zint(:ncol,k+1))*km_to_cm
+          frcing_tmp(:ncol,k) = frcing(:ncol,k,n)*(zint(:ncol,k)-zint(:ncol,k+1))*km_to_cm
+          frcing_col(:ncol) = frcing_col(:ncol) + frcing_tmp(:ncol,k)
+          !frcing_col(:ncol) = frcing_col(:ncol) + frcing(:ncol,k,n)*(zint(:ncol,k)-zint(:ncol,k+1))*km_to_cm
+
+          if (trim(forcings(m)%species) == 'NO2') then
+          if (history_gaschmbudget_2D .or. history_chemdyg_summary) then
+          !kgn per m2 per second: 1/avogadro * 14.00674 * 1.e-3 * 1.e4
+               no2_tdacf(:ncol,k) = frcing_tmp(:ncol,k)/avogadro * 14.00674_r8  * 10._r8 
+
+          endif
+          endif
        enddo
+
+       if (trim(forcings(m)%species) == 'NO2') then
+       if (history_gaschmbudget_2D .or. history_chemdyg_summary) then
+            call outfld('NO2_TDAcf', no2_tdacf(:ncol,:), ncol, lchnk )
+       endif
+       endif
+
        xfcname = trim(forcings(m)%species)//'_CLXF'
        call outfld( xfcname, frcing_col(:ncol), ncol, lchnk )
 

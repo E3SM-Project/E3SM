@@ -115,7 +115,7 @@ contains
     ! Initialize CLM run control information
     
     ! !USES:
-    use clm_time_manager          , only : set_timemgr_init, get_timemgr_defaults
+    use elm_time_manager          , only : set_timemgr_init, get_timemgr_defaults
     use fileutils                 , only : getavu, relavu
     use shr_string_mod            , only : shr_string_getParentDir
     use elm_interface_pflotranMod , only : elm_pf_readnl
@@ -225,7 +225,8 @@ contains
     namelist /elm_inparm/  &
          clump_pproc, wrtdia, &
          create_crop_landunit, nsegspc, co2_ppmv, override_nsrest, &
-         albice, more_vertlayers, subgridflag, irrigate, tw_irr, extra_gw_irr, firrig_data, all_active
+         albice, more_vertlayers, subgridflag, irrigate, tw_irr, extra_gw_irr, firrig_data, all_active, &
+         mpi_sync_nstep_freq
     ! Urban options
 
     namelist /elm_inparm/  &
@@ -318,7 +319,7 @@ contains
 		 
     namelist /elm_inparm/ &
          snow_shape, snicar_atm_type, use_dust_snow_internal_mixing 
-    
+
     ! ----------------------------------------------------------------------
     ! Default values
     ! ----------------------------------------------------------------------
@@ -938,6 +939,8 @@ contains
     call mpi_bcast (snicar_atm_type, len(snicar_atm_type), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (use_dust_snow_internal_mixing, 1, MPI_LOGICAL, 0, mpicom, ier)
 	
+    call mpi_bcast (mpi_sync_nstep_freq, 1, MPI_INTEGER, 0, mpicom, ier)
+
   end subroutine control_spmd
 
   !------------------------------------------------------------------------
@@ -1195,6 +1198,7 @@ contains
     ! land river two way coupling
     write(iulog,*) '    use_lnd_rof_two_way    = ', use_lnd_rof_two_way
     write(iulog,*) '    lnd_rof_coupling_nstep = ', lnd_rof_coupling_nstep
+    write(iulog,*) '    mpi_sync_nstep_freq    = ', mpi_sync_nstep_freq
 
   end subroutine control_print
 

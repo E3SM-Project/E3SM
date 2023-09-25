@@ -5,6 +5,7 @@ module dust_model
   use shr_kind_mod, only: r8 => shr_kind_r8, cl => shr_kind_cl
   use spmd_utils,   only: masterproc
   use cam_abortutils,   only: endrun
+  use shr_dust_mod,     only: dust_emis_scheme
 
   implicit none
   private
@@ -27,6 +28,10 @@ module dust_model
 ! Zender03: fractions of bin (0.1-1) and bin (1-10) in size 0.1-10
 !  real(r8),         parameter :: dust_emis_sclfctr(dust_nbin) = (/ 0.032_r8,0.968_r8 /)
 ! Kok11: fractions of bin (0.1-1) and bin (1-10) in size 0.1-10
+  real(r8),         parameter :: dust_emis_sclfctr(dust_nbin) = (/ 0.011_r8,0.989_r8 /)
+#elif ( defined MODAL_AERO_5MODE )
+  character(len=6), parameter :: dust_names(dust_nbin+dust_nnum) = (/ 'dst_a1', 'dst_a3', 'num_a1', 'num_a3' /)
+  real(r8),         parameter :: dust_dmt_grd(dust_nbin+1) = (/ 0.1e-6_r8, 1.0e-6_r8, 10.0e-6_r8/)
   real(r8),         parameter :: dust_emis_sclfctr(dust_nbin) = (/ 0.011_r8,0.989_r8 /)
 #elif ( defined MODAL_AERO_7MODE || defined MODAL_AERO_9MODE )
   character(len=6), parameter :: dust_names(dust_nbin+dust_nnum) = (/ 'dst_a5', 'dst_a7', 'num_a5', 'num_a7' /)
@@ -93,6 +98,7 @@ module dust_model
     use soil_erod_mod, only: soil_erod_init
     use constituents,  only: cnst_get_ind
     use dust_common,   only: dust_set_params
+    use cam_logfile,   only: iulog
 
     integer :: n
 
@@ -108,6 +114,8 @@ module dust_model
     call  soil_erod_init( dust_emis_fact, soil_erod_file )
 
     call dust_set_params( dust_nbin, dust_dmt_grd, dust_dmt_vwr, dust_stk_crc )
+
+    if (masterproc) write(iulog,*) "modal_aero, dust_init: dust_emis_scheme = ",dust_emis_scheme
 
   end subroutine dust_init
 
@@ -135,6 +143,8 @@ module dust_model
     col_loop: do i =1,ncol
 
        soil_erod(i) = soil_erodibility( i, lchnk )
+
+       if (dust_emis_scheme == 2) soil_erod(i) = 1._r8
 
        if( soil_erod(i) .lt. soil_erod_threshold ) soil_erod(i) = 0._r8
 

@@ -160,6 +160,9 @@ module cime_comp_mod
   use seq_flds_mod, only : seq_flds_set
   use seq_flds_mod, only : seq_flds_z2x_fluxes, seq_flds_x2z_fluxes
 
+  ! nonlinear maps
+  use seq_nlmap_mod, only : seq_nlmap_setopts
+
   ! component type and accessor functions
   use component_type_mod, only: component_get_iamin_compid, component_get_suffix
   use component_type_mod, only: component_get_iamroot_compid
@@ -1022,6 +1025,7 @@ contains
     integer(i8) :: beg_count          ! start time
     integer(i8) :: end_count          ! end time
     integer(i8) :: irtc_rate          ! factor to convert time to seconds
+    integer :: nlmaps_verbosity
 
     !----------------------------------------------------------
     !| Timer initialization (has to be after mpi init)
@@ -1171,7 +1175,8 @@ contains
          reprosum_allow_infnan=reprosum_allow_infnan, &
          reprosum_diffmax=reprosum_diffmax         , &
          reprosum_recompute=reprosum_recompute     , &
-         max_cplstep_time=max_cplstep_time)
+         max_cplstep_time=max_cplstep_time         , &
+         nlmaps_verbosity=nlmaps_verbosity)
 
     ! above - cpl_decomp is set to pass the cpl_decomp value to seq_mctext_decomp
     ! (via a use statement)
@@ -1183,6 +1188,8 @@ contains
          repro_sum_allow_infnan_in = reprosum_allow_infnan, &
          repro_sum_rel_diff_max_in = reprosum_diffmax, &
          repro_sum_recompute_in    = reprosum_recompute)
+
+    call seq_nlmap_setopts(nlmaps_verbosity_in = nlmaps_verbosity)
 
     ! Check cpl_seq_option
 

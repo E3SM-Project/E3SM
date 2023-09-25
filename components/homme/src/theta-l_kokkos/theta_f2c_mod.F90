@@ -14,8 +14,9 @@ interface
                                        dcmip16_mu, ftype, theta_adv_form, prescribed_wind, moisture, &
                                        disable_diagnostics, use_cpstar, transport_alg,               &
                                        theta_hydrostatic_mode, test_case_name, dt_remap_factor,      &
-                                       dt_tracer_factor, rearth, nsplit, pgrad_correction,           &
-                                       dp3d_thresh, vtheta_thresh) bind(c)
+                                       dt_tracer_factor, scale_factor, laplacian_rigid_factor,       &
+                                       nsplit, pgrad_correction, dp3d_thresh, vtheta_thresh,         &
+                                       internal_diagnostics_level) bind(c)
 
     use iso_c_binding, only: c_int, c_bool, c_double, c_ptr
     !
@@ -23,9 +24,9 @@ interface
     !
     integer(kind=c_int),  intent(in) :: remap_alg, limiter_option, rsplit, qsplit, time_step_type, nsplit
     integer(kind=c_int),  intent(in) :: dt_remap_factor, dt_tracer_factor, transport_alg
-    integer(kind=c_int),  intent(in) :: state_frequency, qsize
+    integer(kind=c_int),  intent(in) :: state_frequency, qsize, internal_diagnostics_level
     real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, dcmip16_mu, &
-                                        rearth, dp3d_thresh, vtheta_thresh
+                                        scale_factor, laplacian_rigid_factor, dp3d_thresh, vtheta_thresh
     integer(kind=c_int),  intent(in) :: hypervis_order, hypervis_subcycle, hypervis_subcycle_tom
     integer(kind=c_int),  intent(in) :: ftype, theta_adv_form
     logical(kind=c_bool), intent(in) :: prescribed_wind, moisture, disable_diagnostics, use_cpstar
@@ -198,9 +199,13 @@ interface
        ! derived
        eta_dot_dpdn, vn0) bind(c)
     use iso_c_binding, only: c_ptr
-    
+
     type (c_ptr), intent(in) :: ps_v, dp3d, vtheta_dp, phinh_i, v, w_i, eta_dot_dpdn, vn0
   end subroutine push_test_state_to_c
+
+  ! Sync diagnostics computed on device to host
+  subroutine sync_diagnostics_to_host_c() bind(c)
+  end subroutine sync_diagnostics_to_host_c
 end interface
 
 end module theta_f2c_mod

@@ -67,6 +67,7 @@ module ocn_tendency
    use ocn_wetting_drying
    use ocn_vel_tidal_potential
    use ocn_vel_self_attraction_loading
+   use ocn_manufactured_solution
 
    implicit none
    private
@@ -225,6 +226,9 @@ contains
       call ocn_tidal_forcing_layer_thickness(forcingPool, &
                                              tendThick, err)
 
+      ! Compute thickness tendency to manufactured solution
+      call ocn_manufactured_solution_tend_thick(tendThick, err)
+
 #ifdef MPAS_OPENACC
       !$acc exit data copyout(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff)
 #endif
@@ -351,7 +355,7 @@ contains
       !$acc               density, normRelVortEdge, montgomeryPotential, pressure, &
       !$acc               thermExpCoeff, salineContractCoeff, tangentialVelocity, &
       !$acc               layerThickEdgeFlux, kineticEnergyCell, sfcFlxAttCoeff, potentialDensity, &
-      !$acc               vertAleTransportTop, vertViscTopOfEdge, wettingVelocity)
+      !$acc               vertAleTransportTop, vertViscTopOfEdge, wettingVelocityFactor)
       !$acc enter data &
       !$acc    copyin(tendVel, sfcStress, sfcStressMag, &
       !$acc    ssh, normalVelocity, &
@@ -430,11 +434,10 @@ contains
           call ocn_compute_self_attraction_loading(domain, forcingPool, dminfo, ssh, err)
           call mpas_reset_clock_alarm(domain % clock, 'salComputeAlarm', ierr=err)
       endif
-      !$acc update device(ssh_sal)
 
       ! Add tidal potential (if needed) 
       call ocn_compute_tidal_potential_forcing(err)
-      if (config_time_integrator == 'RK4') then
+      if ((config_time_integrator == 'RK4') .or. (config_time_integrator =='LTS')) then
         ! for split explicit, tidal forcing is added in barotropic subcycles
         call ocn_vel_tidal_potential_tend(ssh,surfacePressure, tendVel, err)
       endif
@@ -445,22 +448,25 @@ contains
       ! Add forcing and bottom drag
       call ocn_vel_forcing_tend(normalVelocity, sfcFlxAttCoeff, &
                                 sfcStress, kineticEnergyCell, &
+                                layerThickEdgeDrag, &
                                 layerThickEdgeMean, tendVel, err)
+ 
+      ! Compute tendency term for manufactured solution
+      call ocn_manufactured_solution_tend_vel(tendVel, err)
 
       ! vertical mixing treated implicitly in a later routine
       ! adjust total velocity tendency based on wetting/drying
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop collapse(2) &
-      !$acc    present(tendVel, wettingVelocity)
+      !$acc    present(tendVel, wettingVelocityFactor)
 #else
       !$omp parallel
       !$omp do schedule(runtime) private(k)
 #endif
       do iEdge = 1, nEdgesAll
       do k=1,nVertLevels
-         tendVel(k,iEdge) = tendVel(k,iEdge)* &
-                            (1.0_RKIND - wettingVelocity(k,iEdge))
+         tendVel(k,iEdge) = tendVel(k,iEdge) * (1.0_RKIND - wettingVelocityFactor(k,iEdge))
       end do
       end do
 #ifndef MPAS_OPENACC

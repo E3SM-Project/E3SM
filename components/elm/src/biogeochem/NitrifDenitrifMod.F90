@@ -146,6 +146,7 @@ contains
     real(r8) :: rij_kro_gamma         !  Arah and Vinten 1995
     real(r8) :: rij_kro_delta         !  Arah and Vinten 1995
     real(r8) :: rho_w  = 1.e3_r8                   ! (kg/m3)
+    real(r8), parameter :: smallparameter = 1.E-20_r8
     real(r8) :: r_max
     real(r8) :: r_min(bounds%begc:bounds%endc,1:nlevdecomp)
     real(r8) :: ratio_diffusivity_water_gas(bounds%begc:bounds%endc,1:nlevdecomp)
@@ -263,7 +264,7 @@ contains
                     ((d_con_w(2,1) + d_con_w(2,2)*t_soisno(c,j) + d_con_w(2,3)*t_soisno(c,j)**2) * 1.e-9_r8)
 
                if (o2_decomp_depth_unsat(c,j) /= spval .and. conc_o2_unsat(c,j) /= spval .and.  &
-                    o2_decomp_depth_unsat(c,j) > 0._r8) then
+                    o2_decomp_depth_unsat(c,j) > smallparameter) then
                   anaerobic_frac(c,j) = exp(-rij_kro_a * r_psi(c,j)**(-rij_kro_alpha) * &
                        o2_decomp_depth_unsat(c,j)**(-rij_kro_beta) * &
                        conc_o2_unsat(c,j)**rij_kro_gamma * (h2osoi_vol(c,j) + ratio_diffusivity_water_gas(c,j) * &
@@ -276,7 +277,7 @@ contains
                   r_min_sat = 2._r8 * surface_tension_water / (rho_w * grav * abs(grav * 1.e-6_r8 * sucsat(c,j)))
                   r_psi_sat = sqrt(r_min_sat * r_max)
                   if (o2_decomp_depth_sat(c,j) /= spval .and. conc_o2_sat(c,j) /= spval .and. &
-                       o2_decomp_depth_sat(c,j) > 0._r8) then
+                       o2_decomp_depth_sat(c,j) > smallparameter) then
                      anaerobic_frac_sat = exp(-rij_kro_a * r_psi_sat**(-rij_kro_alpha) * &
                           o2_decomp_depth_sat(c,j)**(-rij_kro_beta) * &
                           conc_o2_sat(c,j)**rij_kro_gamma * (watsat(c,j) + ratio_diffusivity_water_gas(c,j) * &

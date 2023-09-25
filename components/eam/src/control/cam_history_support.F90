@@ -25,7 +25,7 @@ module cam_history_support
 
   integer, parameter, public :: max_string_len = 256   ! Length of strings
   integer, parameter, public :: max_chars = shr_kind_cl         ! max chars for char variables
-  integer, parameter, public :: fieldname_len = 24   ! max chars for field name
+  integer, parameter, public :: fieldname_len = 34   ! max chars for field name
   integer, parameter, public :: fieldname_suffix_len =  3 ! length of field name suffix ("&IC")
   integer, parameter, public :: fieldname_lenp2      = fieldname_len + 2 ! allow for extra characters
   ! max_fieldname_len = max chars for field name (including suffix)

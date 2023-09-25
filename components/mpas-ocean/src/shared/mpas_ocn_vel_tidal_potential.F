@@ -60,12 +60,13 @@ module ocn_vel_tidal_potential
    !--------------------------------------------------------------------
 
    logical :: &
-      tidalPotentialOff   ! on/off switch for tidal potential
+      tidalPotentialOff, &! on/off switch for tidal potential
+      timeIntegratorLTS   ! flag for Local Time Stepping
 
    !*** physical constants
    real (kind=RKIND) ::  &
       betaSelfAttrLoad,  &! self-attraction and loading beta
-      tidalPotRamp, &     ! scale for ramping tidal potential
+      tidalPotRamp,      &! scale for ramping tidal potential
       rho0gInv            ! 1 / rho0 / gravity
 
    !*** eventually these will be private module arrays and 
@@ -157,35 +158,69 @@ contains
       err = 0
       if (tidalPotentialOff) return
 
+      if (timeIntegratorLTS) then
 #ifdef MPAS_OPENACC
-      !$acc parallel loop &
-      !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, edgeMask, &
-      !$acc            tidalPotEta, ssh, surfacePressure, tend, ssh_sal) &
-      !$acc    private(cell1, cell2, invdcEdge, potentialGrad, k, kMax)
+         !$acc parallel loop &
+         !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, edgeMask, &
+         !$acc            tidalPotEta, ssh, surfacePressure, tend, ssh_sal) &
+         !$acc    private(cell1, cell2, invdcEdge, potentialGrad, k, kMax)
 #else
-      !$omp parallel do schedule(runtime) &
-      !$omp    private(cell1, cell2, invdcEdge, potentialGrad, k, kMax)
+         !$omp parallel do schedule(runtime) &
+         !$omp    private(cell1, cell2, invdcEdge, potentialGrad, k, kMax)
 #endif
-      do iEdge=1,nEdgesOwned
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         invdcEdge = 1.0_RKIND / dcEdge(iEdge)
-         kMax = maxLevelEdgeTop(iEdge)
+         do iEdge=1,nEdgesOwned
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            invdcEdge = 1.0_RKIND / dcEdge(iEdge)
+            kMax = maxLevelEdgeTop(iEdge)
 
-         potentialGrad = - gravity*invdcEdge* &
-            (  tidalPotEta(cell2) - tidalPotEta(cell1) &
-             + (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad *( (ssh(cell2) - ssh(cell1)) & 
-                                                      + rho0gInv*(surfacePressure(cell2) - surfacePressure(cell1))) &
-             + ssh_sal_on * (ssh_sal(cell2) - ssh_sal(cell1)) )
+            potentialGrad = - gravity*invdcEdge* &
+               ( tidalPotEta(cell2) - tidalPotEta(cell1) &
+                + (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * ( rho0gInv*(surfacePressure(cell2) - surfacePressure(cell1))) &
+                + ssh_sal_on * (ssh_sal(cell2) - ssh_sal(cell1)) )
 
-         do k=1,kMax
-            tend(k,iEdge) = tend(k,iEdge) - &
-                            edgeMask(k,iEdge)*potentialGrad
+            do k=1,kMax
+               tend(k,iEdge) = tend(k,iEdge) - &
+                               edgeMask(k,iEdge)*potentialGrad
+            end do
          end do
-      end do
 #ifndef MPAS_OPENACC
-      !$omp end parallel do
+         !$omp end parallel do
 #endif
+
+      else ! not LTS
+
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, edgeMask, &
+         !$acc            tidalPotEta, ssh, surfacePressure, tend, ssh_sal) &
+         !$acc    private(cell1, cell2, invdcEdge, potentialGrad, k, kMax)
+#else
+         !$omp parallel do schedule(runtime) &
+         !$omp    private(cell1, cell2, invdcEdge, potentialGrad, k, kMax)
+#endif
+         do iEdge=1,nEdgesOwned
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            invdcEdge = 1.0_RKIND / dcEdge(iEdge)
+            kMax = maxLevelEdgeTop(iEdge)
+
+            potentialGrad = - gravity*invdcEdge* &
+               (  tidalPotEta(cell2) - tidalPotEta(cell1) &
+                + (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad *( (ssh(cell2) - ssh(cell1)) &
+                                                         + rho0gInv*(surfacePressure(cell2) - surfacePressure(cell1))) &
+                + ssh_sal_on * (ssh_sal(cell2) - ssh_sal(cell1)) )
+
+            do k=1,kMax
+               tend(k,iEdge) = tend(k,iEdge) - &
+                               edgeMask(k,iEdge)*potentialGrad
+            end do
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end parallel do
+#endif
+
+   endif
 
    end subroutine ocn_vel_tidal_potential_tend!}}}
 
@@ -313,7 +348,6 @@ contains
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: meshPool
       integer, pointer :: nCells
-      integer, pointer :: nTidalPotentialConstituents
       real (kind=RKIND), dimension(:), pointer :: latCell
 
       ! End preamble
@@ -358,9 +392,6 @@ contains
          call mpas_pool_get_array(forcingPool, 'tidalPotentialEta', &
                                                 tidalPotEta)
 
-         call mpas_pool_get_array(forcingPool, &
-                            'nTidalPotentialConstituents', &
-                             nTidalPotentialConstituents)
          call mpas_pool_get_array(forcingPool, &
                             'tidalPotentialConstituentAmplitude', & 
                              tidalConstituentAmplitude)
@@ -434,9 +465,6 @@ contains
             constituentList(nTidalConstituents)%constituent = 'P1'
          end if 
 
-         ! set point value in forcing pool just in case
-         nTidalPotentialConstituents = nTidalConstituents
-
          call tidal_constituent_factors(constituentList, &
                                        nTidalConstituents, refTime, &
                                        tidalConstituentFrequency, &
@@ -474,6 +502,12 @@ contains
                  intArgs=(/ tidalConstituentType(iCon) /))
             call mpas_log_write(' ')
          end do
+
+         if (config_time_integrator == 'LTS') then
+            timeIntegratorLTS = .true.
+         else
+            timeIntegratorLTS = .false.
+         endif
 
       end if ! tidal potential on
 

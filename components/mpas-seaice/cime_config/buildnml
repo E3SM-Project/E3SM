@@ -36,6 +36,7 @@ def buildnml(case, caseroot, compname):
     surface_mode     = case.get_value("MPASSI_SURFACE_MODE")
     iceberg_mode     = case.get_value("MPASSI_ICEBERG_MODE")
     prognostic_mode  = case.get_value("MPASSI_PROGNOSTIC_MODE")
+    column_mode      = case.get_value("MPASSI_COLUMN_MODE")
     ice_pio_typename = case.get_value("ICE_PIO_TYPENAME")
     ninst_ice        = case.get_value("NINST_ICE")
     ntasks_ice       = case.get_value("NTASKS_PER_INST_ICE")
@@ -73,8 +74,8 @@ def buildnml(case, caseroot, compname):
     points_file = ''
 
     if ice_grid == 'oEC60to30v3':
-        decomp_date = '161222'
-        decomp_prefix = 'mpas-cice.graph.info.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '161222'
         grid_prefix = 'seaice.EC60to30v3'
         if ice_ic_mode == 'spunup':
@@ -106,8 +107,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oQU120':
-        decomp_date = '151209'
-        decomp_prefix = 'mpas-cice.graph.info.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '151209'
         grid_prefix = 'seaice.oQU120km'
         if ice_ic_mode == 'spunup':
@@ -115,8 +116,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oQU240':
-        decomp_date = '151209'
-        decomp_prefix = 'mpas-cice.graph.info.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '151209'
         grid_prefix = 'seaice.oQU240km'
         if ice_ic_mode == 'spunup':
@@ -124,8 +125,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oQU240wLI':
-        decomp_date = '160929'
-        decomp_prefix = 'mpas-cice.graph.info.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '160929'
         grid_prefix = 'cice.QU240wLI'
         if ice_ic_mode == 'spunup':
@@ -133,8 +134,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oQU480':
-        decomp_date = '180705'
-        decomp_prefix = 'mpas-seaice.graph.legacy.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '180705'
         grid_prefix = 'seaice.oQU480'
         if ice_ic_mode == 'spunup':
@@ -161,8 +162,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oRRS18to6v3':
-        decomp_date = '180214'
-        decomp_prefix = 'mpas-seaice.v2.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '170111'
         grid_prefix = 'seaice.RRS18to6v3'
         if ice_ic_mode == 'spunup':
@@ -206,8 +207,8 @@ def buildnml(case, caseroot, compname):
             grid_prefix = 'mpassi.ARRM10to60E2r1.rstFrom1monthG-chrys'
 
     elif ice_grid == 'EC30to60E2r2':
-        decomp_date = '200908'
-        decomp_prefix = 'mpas-seaice.graph.info.'
+        decomp_date = '230313'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '210210'
         grid_prefix = 'seaice.EC30to60E2r2'
         if ice_ic_mode == 'spunup':
@@ -215,8 +216,8 @@ def buildnml(case, caseroot, compname):
             grid_prefix = 'mpassi.EC30to60E2r2.rstFromG-anvil'
 
     elif ice_grid == 'WC14to60E2r3':
-        decomp_date = '200714'
-        decomp_prefix = 'mpas-seaice.graph.info.'
+        decomp_date = '230313'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '210210'
         grid_prefix = 'seaice.WC14to60E2r3'
         if ice_ic_mode == 'spunup':
@@ -233,8 +234,8 @@ def buildnml(case, caseroot, compname):
             grid_prefix = 'mpassi.WCAtl12to45E2r4.rstFromG-anvil'
 
     elif ice_grid == 'SOwISC12to60E2r4':
-        decomp_date = '210107'
-        decomp_prefix = 'mpas-seaice.graph.info.'
+        decomp_date = '230314'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         grid_date = '210107'
         grid_prefix = 'seaice.SOwISC12to60E2r4'
         data_iceberg_file += 'Iceberg_Interannual_Merino_SOwISC12to60E2r4.nc'
@@ -245,19 +246,29 @@ def buildnml(case, caseroot, compname):
     elif ice_grid == 'ECwISC30to60E2r1':
         grid_date = '210413'
         grid_prefix = 'seaice.ECwISC30to60E2r1'
-        decomp_date = '200916'
-        decomp_prefix = 'mpas-seaice.graph.info.'
+        decomp_date = '230314'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         data_iceberg_file += 'Iceberg_Interannual_Merino_ECwISC30to60E2r1.nc'
         if ice_ic_mode == 'spunup':
             grid_date = '210414'
             grid_prefix = 'mpassi.ECwISC30to60E2r1.rstFromG-anvil'
+
+    elif ice_grid == 'ICOS10':
+        grid_date = '211015'
+        grid_prefix = 'seaice.ICOS10'
+        decomp_date = '220110'
+        decomp_prefix = 'mpas-seaice.graph.info.'
+        if ice_ic_mode == 'spunup':
+            grid_date = '211015'
+            # Below is just a placeholder
+            grid_prefix = 'seaice.ICOS10_80Layer.restartFromChrysalis'
 
 
     #--------------------------------------------------------------------
     # Set the initial file
     #--------------------------------------------------------------------
 
-    input_file = "{}/ice/mpas-cice/{}/{}.{}.nc".format(din_loc_root, ice_mask, grid_prefix, grid_date)
+    input_file = "{}/ice/mpas-seaice/{}/{}.{}.nc".format(din_loc_root, ice_mask, grid_prefix, grid_date)
 
     #--------------------------------------------------------------------
     # Generate input data file with stream-specified files
@@ -265,12 +276,12 @@ def buildnml(case, caseroot, compname):
 
     with open(os.path.join(casebuild, "mpassi.input_data_list"), "w") as input_list:
         input_list.write("mesh = {}\n".format(input_file))
-        input_list.write("snow_data = {}/ice/mpas-cice/general/snicar_drdt_bst_fit_60_c04262019.nc\n".format(din_loc_root))
-        input_list.write("snicar_data = {}/ice/mpas-cice/general/snicar_optics_5bnd_snow_and_aerosols.nc\n".format(din_loc_root))
+        input_list.write("snow_data = {}/ice/mpas-seaice/general/snicar_drdt_bst_fit_60_c04262019.nc\n".format(din_loc_root))
+        input_list.write("snicar_data = {}/ice/mpas-seaice/general/snicar_optics_5bnd_snow_and_aerosols.nc\n".format(din_loc_root))
         if points_file != '':
-            input_list.write("points = {}/ice/mpas-cice/{}/{}\n".format(din_loc_root, ice_mask, points_file))
+            input_list.write("points = {}/ice/mpas-seaice/{}/{}\n".format(din_loc_root, ice_mask, points_file))
         if iceberg_mode == 'data':
-            input_list.write("data_iceberg = {}/ice/mpas-cice/{}/{}\n".format(din_loc_root, ice_mask, data_iceberg_file))
+            input_list.write("data_iceberg = {}/ice/mpas-seaice/{}/{}\n".format(din_loc_root, ice_mask, data_iceberg_file))
 
     #--------------------------------------------------------------------
     # Invoke mpas build-namelist - output will go in $CASEBUILD/mpassiconf
@@ -346,6 +357,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -surface_mode '{}'".format(surface_mode)
         sysmod += " -iceberg_mode '{}'".format(iceberg_mode)
         sysmod += " -prognostic_mode '{}'".format(prognostic_mode)
+        sysmod += " -column_mode '{}'".format(column_mode)
         sysmod += " -ntasks_ice '{}'".format(ntasks_ice)
         sysmod += " -ninst_ice '{}'".format(ninst_ice)
 
@@ -497,16 +509,23 @@ def buildnml(case, caseroot, compname):
             lines.append('<immutable_stream name="SnowAgingPropertiesInput"')
             lines.append('                  type="input"')
             lines.append('                  io_type="{}"'.format(ice_pio_typename))
-            lines.append('                  filename_template="{}/ice/mpas-cice/general/snicar_drdt_bst_fit_60_c04262019.nc"'.format(din_loc_root))
+            lines.append('                  filename_template="{}/ice/mpas-seaice/general/snicar_drdt_bst_fit_60_c04262019.nc"'.format(din_loc_root))
             lines.append('                  filename_interval="none"')
             lines.append('                  input_interval="initial_only" />')
             lines.append('')
             lines.append('<immutable_stream name="SnicarInput"')
             lines.append('                  type="input"')
             lines.append('                  io_type="{}"'.format(ice_pio_typename))
-            lines.append('                  filename_template="{}/ice/mpas-cice/general/snicar_optics_5bnd_snow_and_aerosols.nc"'.format(din_loc_root))
+            lines.append('                  filename_template="{}/ice/mpas-seaice/general/snicar_optics_5bnd_snow_and_aerosols.nc"'.format(din_loc_root))
             lines.append('                  filename_interval="none"')
             lines.append('                  input_interval="initial_only" />')
+            lines.append('')
+            lines.append('<immutable_stream name="ISPOLDailyWOAForcing"')
+            lines.append('                  type="input"')
+            lines.append('                  io_type="{}"'.format(ice_pio_typename))
+            lines.append('                  filename_template="{}/ice/mpas-cice/general/ISPOLDailyWOAForcing_10132022.nc"')
+            lines.append('                  filename_interval="none"')
+            lines.append('                  input_interval="none" />')
             lines.append('')
             lines.append('<immutable_stream name="abort_contents"')
             lines.append('                  type="none"')
@@ -541,7 +560,7 @@ def buildnml(case, caseroot, compname):
             if iceberg_mode == 'data':
                 lines.append('<stream name="dataIcebergForcing"')
                 lines.append('                  type="input"')
-                lines.append('                  filename_template="{}/ice/mpas-cice/{}/{}"'.format(din_loc_root, ice_mask, data_iceberg_file))
+                lines.append('                  filename_template="{}/ice/mpas-seaice/{}/{}"'.format(din_loc_root, ice_mask, data_iceberg_file))
                 lines.append('                  filename_interval="none"')
                 lines.append('                  input_interval="none" >')
                 lines.append('')
@@ -709,7 +728,6 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="snowVolumeCell"/>')
             lines.append('    <var name="uVelocityGeo"/>')
             lines.append('    <var name="vVelocityGeo"/>')
-            lines.append('    <var name="icePressure"/>')
             lines.append('</stream>')
             lines.append('')
             lines.append('<stream name="timeSeriesStatsDailyRestart"')
@@ -841,7 +859,7 @@ def buildnml(case, caseroot, compname):
                 if points_file != '':
                     lines.append('<immutable_stream name="pointLocationsInput"')
                     lines.append('                  type="input"')
-                    lines.append('                  filename_template="{}/ice/mpas-cice/{}/{}"'.format(din_loc_root, ice_mask, points_file))
+                    lines.append('                  filename_template="{}/ice/mpas-seaice/{}/{}"'.format(din_loc_root, ice_mask, points_file))
                     lines.append('                  input_interval="initial_only"')
                     lines.append('                  runtime_format="single_file" />')
 
@@ -961,7 +979,7 @@ def buildnml(case, caseroot, compname):
             lines.append('        type="input"')
             lines.append('        io_type="{}"'.format(ice_pio_typename))
             lines.append('        input_interval="initial_only"')
-            lines.append('        filename_template="{}/ice/mpas-cice/{}/{}.{}.nc">'.format(din_loc_root, ice_mask, grid_prefix, grid_date))
+            lines.append('        filename_template="{}/ice/mpas-seaice/{}/{}.{}.nc">'.format(din_loc_root, ice_mask, grid_prefix, grid_date))
             lines.append('')
             lines.append('       <var name="landIceMask"/>')
             lines.append('</stream>')

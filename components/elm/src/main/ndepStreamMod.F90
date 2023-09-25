@@ -16,7 +16,6 @@ module ndepStreamMod
   use mct_mod
   use spmdMod     , only: mpicom, masterproc, comp_id, iam
   use elm_varctl  , only: iulog
-  use controlMod  , only: NLFilename
   use abortutils  , only: endrun
   use fileutils   , only: getavu, relavu
   use decompMod   , only: bounds_type, ldecomp, gsmap_lnd_gdc2glo 
@@ -43,13 +42,13 @@ contains
 
   !==============================================================================
 
-  subroutine ndep_init(bounds)
+  subroutine ndep_init(bounds, NLFilename)
    !    
    ! Initialize data stream information.  
    !
    ! Uses:
    use elm_varctl       , only : inst_name
-   use clm_time_manager , only : get_calendar
+   use elm_time_manager , only : get_calendar
    use ncdio_pio        , only : pio_subsystem
    use shr_pio_mod      , only : shr_pio_getiotype
    use shr_nl_mod       , only : shr_nl_find_group_name
@@ -58,6 +57,7 @@ contains
    ! arguments
    implicit none
    type(bounds_type), intent(in) :: bounds  
+   character(len=*),  intent(in) :: NLFilename   ! Namelist filename
    !
    ! local variables
    integer            :: nu_nml    ! unit for namelist file
@@ -151,7 +151,7 @@ contains
  subroutine ndep_interp(bounds, atm2lnd_vars)
 
    !-----------------------------------------------------------------------
-   use clm_time_manager, only : get_curr_date, get_days_per_year
+   use elm_time_manager, only : get_curr_date, get_days_per_year
    use elm_varcon      , only : secspday
    use atm2lndType     , only : atm2lnd_type
    !

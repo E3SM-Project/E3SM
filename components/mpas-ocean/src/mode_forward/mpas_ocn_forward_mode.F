@@ -78,6 +78,7 @@ module ocn_forward_mode
    use ocn_gm
    use ocn_submesoscale_eddies
    use ocn_stokes_drift 
+   use ocn_manufactured_solution
 
    use ocn_high_freq_thickness_hmix_del2
 
@@ -499,6 +500,8 @@ module ocn_forward_mode
          call ocn_vertical_remap_init(err_tmp)
       call ocn_stokes_drift_init(err_tmp)
       ierr = ior(ierr,err_tmp)
+      call ocn_manufactured_solution_init(domain, err_tmp)
+      ierr = ior(ierr,err_tmp)
 
       if (ierr /= 0) then
          call mpas_log_write( &
@@ -708,8 +711,12 @@ module ocn_forward_mode
 
            call ocn_eddy_compute_mixed_layer_depth(statePool, forcingPool)
            if (config_use_GM .or. config_submesoscale_enable) then
-               call mpas_timer_start("submesoscale eddy velocity compute", .false.)
                call ocn_eddy_compute_buoyancy_gradient()
+           end if
+
+           if (config_submesoscale_enable) then
+               call mpas_timer_start("submesoscale eddy velocity compute", .false.)
+               call ocn_submesoscale_compute_velocity()
                call mpas_timer_stop("submesoscale eddy velocity compute")
            end if
 

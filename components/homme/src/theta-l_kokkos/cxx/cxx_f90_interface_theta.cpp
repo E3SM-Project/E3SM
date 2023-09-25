@@ -41,13 +41,13 @@ extern "C"
 void init_simulation_params_c (const int& remap_alg, const int& limiter_option, const int& rsplit, const int& qsplit,
                                const int& time_step_type, const int& qsize, const int& state_frequency,
                                const Real& nu, const Real& nu_p, const Real& nu_q, const Real& nu_s, const Real& nu_div, const Real& nu_top,
-                               const int& hypervis_order, const int& hypervis_subcycle, const int& hypervis_subcycle_tom, 
+                               const int& hypervis_order, const int& hypervis_subcycle, const int& hypervis_subcycle_tom,
                                const double& hypervis_scaling, const double& dcmip16_mu,
                                const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
                                const bool& use_cpstar, const int& transport_alg, const bool& theta_hydrostatic_mode, const char** test_case,
                                const int& dt_remap_factor, const int& dt_tracer_factor,
-                               const double& rearth, const int& nsplit, const bool& pgrad_correction,
-                               const double& dp3d_thresh, const double& vtheta_thresh)
+                               const double& scale_factor, const double& laplacian_rigid_factor, const int& nsplit, const bool& pgrad_correction,
+                               const double& dp3d_thresh, const double& vtheta_thresh, const int& internal_diagnostics_level)
 {
   // Check that the simulation options are supported. This helps us in the future, since we
   // are currently 'assuming' some option have/not have certain values. As we support for more
@@ -58,7 +58,10 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   Errors::check_option("init_simulation_params_c","time_step_type",time_step_type,{1,4,5,6,7,9,10});
   Errors::check_option("init_simulation_params_c","qsize",qsize,0,Errors::ComparisonOp::GE);
   Errors::check_option("init_simulation_params_c","qsize",qsize,QSIZE_D,Errors::ComparisonOp::LE);
-  Errors::check_option("init_simulation_params_c","limiter_option",limiter_option,{8,9});
+  if (qsize > 0) {
+    // limiter_option is irrelevant if qsize = 0.
+    Errors::check_option("init_simulation_params_c","limiter_option",limiter_option,{8,9});
+  }
   Errors::check_option("init_simulation_params_c","ftype",ftype, {-1, 0, 2});
   Errors::check_option("init_simulation_params_c","nu_p",nu_p,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","nu",nu,0.0,Errors::ComparisonOp::GT);
@@ -115,10 +118,12 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.theta_hydrostatic_mode        = theta_hydrostatic_mode;
   params.dcmip16_mu                    = dcmip16_mu;
   params.nsplit                        = nsplit;
-  params.rearth                        = rearth;
+  params.scale_factor                  = scale_factor;
+  params.laplacian_rigid_factor        = laplacian_rigid_factor;
   params.pgrad_correction              = pgrad_correction;
   params.dp3d_thresh                   = dp3d_thresh;
   params.vtheta_thresh                 = vtheta_thresh;
+  params.internal_diagnostics_level    = internal_diagnostics_level;
 
   if (time_step_type==5) {
     //5 stage, 3rd order, explicit
@@ -136,7 +141,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
     //2nd order implicit table
     params.time_step_type = TimeStepType::ttype10_imex;
   } else if ( ! params.prescribed_wind) {
-    Errors::runtime_abort("Invalid time_step_type" 
+    Errors::runtime_abort("Invalid time_step_type"
                           + std::to_string(time_step_type), Errors::err_not_implemented);
   }
 
@@ -275,7 +280,7 @@ void init_elements_c (const int& num_elems)
 
   const bool consthv = (params.hypervis_scaling==0.0);
   e.init (num_elems, consthv, /* alloc_gradphis = */ true,
-          params.rearth,
+          params.scale_factor, params.laplacian_rigid_factor,
           /* alloc_sphere_coords = */ params.transport_alg > 0);
 
   // Init also the tracers structure
@@ -353,7 +358,8 @@ void init_functors_c (const bool& allocate_buffer)
 #endif
   auto& hvf     = c.create_if_not_there<HyperviscosityFunctor>();
   auto& ff      = c.create_if_not_there<ForcingFunctor>();
-  auto& diag    = c.create_if_not_there<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
+  auto& diag    = c.create_if_not_there<Diagnostics> (elems.num_elems(),tracers.num_tracers(),
+                                                      params.theta_hydrostatic_mode);
   auto& vrm     = c.create_if_not_there<VerticalRemapManager>(elems.num_elems());
 
   auto& fbm     = c.create_if_not_there<FunctorsBuffersManager>();
@@ -370,10 +376,10 @@ void init_functors_c (const bool& allocate_buffer)
     auto& esf = c.get<EulerStepFunctor>();
     if (esf.setup_needed()) esf.setup();
   } else {
-#ifdef HOMME_ENABLE_COMPOSE	  
+#ifdef HOMME_ENABLE_COMPOSE
     auto& ct = c.get<ComposeTransport>();
     if (ct.setup_needed()) ct.setup();
-#endif    
+#endif
   }
   if (hvf.setup_needed()) {
     hvf.setup(geometry, state, derived);
@@ -385,7 +391,7 @@ void init_functors_c (const bool& allocate_buffer)
     vrm.setup();
   }
 
-  const bool need_dirk = (params.time_step_type==TimeStepType::ttype7_imex ||   
+  const bool need_dirk = (params.time_step_type==TimeStepType::ttype7_imex ||
                           params.time_step_type==TimeStepType::ttype9_imex ||
                           params.time_step_type==TimeStepType::ttype10_imex  );
 
@@ -402,7 +408,7 @@ void init_functors_c (const bool& allocate_buffer)
     if (params.transport_alg == 0)
       fbm.request_size(c.get<EulerStepFunctor>().requested_buffer_size());
 #ifdef HOMME_ENABLE_COMPOSE
-    else	    
+    else
       fbm.request_size(c.get<ComposeTransport>().requested_buffer_size());
 #endif
     fbm.request_size(hvf.requested_buffer_size());
@@ -523,7 +529,7 @@ void init_elements_states_c (CF90Ptr& elem_state_v_ptr,       CF90Ptr& elem_stat
   });
 }
 
-void init_reference_states_c (CF90Ptr& elem_theta_ref_ptr, 
+void init_reference_states_c (CF90Ptr& elem_theta_ref_ptr,
                               CF90Ptr& elem_dp_ref_ptr,
                               CF90Ptr& elem_phi_ref_ptr)
 {
@@ -551,8 +557,9 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
   Diagnostics&      diags    = Context::singleton().get<Diagnostics> ();
 
   auto& hvcoord = Context::singleton().get<HybridVCoord>();
-  
-  diags.init(state, geometry, hvcoord,
+  const auto& tracers = Context::singleton().get<Tracers>();
+
+  diags.init(state, geometry, hvcoord, tracers,
              elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr,
              elem_accum_iener_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr);
 }
@@ -580,11 +587,11 @@ void init_boundary_exchanges_c ()
     esf.reset(params);
     esf.init_boundary_exchanges();
   } else {
-#ifdef HOMME_ENABLE_COMPOSE	  
+#ifdef HOMME_ENABLE_COMPOSE
     auto& ct = c.get<ComposeTransport>();
     ct.reset(params);
     ct.init_boundary_exchanges();
-#endif    
+#endif
   }
 
   // RK stages BE's
@@ -616,6 +623,11 @@ void push_test_state_to_c (
     vn0_h(vn0_ptr, derived.num_elems());
   sync_to_device(eta_dot_dpdn_h, derived.m_eta_dot_dpdn);
   sync_to_device(vn0_h, derived.m_vn0);
+}
+
+void sync_diagnostics_to_host_c ()
+{
+  Context::singleton().get<Diagnostics>().sync_diagnostics_to_host();
 }
 
 } // extern "C"
