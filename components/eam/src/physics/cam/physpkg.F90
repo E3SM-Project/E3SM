@@ -1025,6 +1025,9 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     integer(i8) :: sysclock_max                  ! system clock max value
     real(r8)    :: chunk_cost                    ! measured cost per chunk
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
+#if defined(CLDERA_PROFILING)
+    integer :: yr, mon, day, tod       ! components of a date
+#endif
 
     call t_startf ('physpkg_st1')
     nstep = get_nstep()
@@ -1120,6 +1123,28 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
        !call t_adj_detailf(-1)
        call t_stopf ('bc_physics')
+
+#if defined(CLDERA_PROFILING)
+      ! Note: we need to compute stats *after* EAM has completed the physics calculations above
+      ! The tphysbc call will update tendencies (for the BC physics), and call outfld for all
+      ! diags/state vars. So computing stats here should get *the same* values that we get from
+      ! regular EAM output.
+      if (.not. is_atm_init) then
+        if (first_time_step .and. nsrest .eq. 0) then
+          if (masterproc) then
+            print *, "WARNING! You are using a workaround to issue E3SM-Project/e3sm#5904"
+            print *, "         If that issue has been resolved, remove this hack"
+          endif
+          first_time_step = .false.
+        else
+          call get_prev_date( yr, mon, day, tod)
+          ymd = yr*10000 + mon*100 + day
+          call t_startf('cldera_compute_stats')
+          call cldera_compute_stats(ymd,tod)
+          call t_stopf('cldera_compute_stats')
+        endif
+      endif
+#endif
 
        ! Don't call the rest in CRM mode
        if(single_column.and.scm_crm_mode) return
@@ -1573,7 +1598,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     integer :: lchnk                                ! chunk identifier
     integer :: ncol                                 ! number of atmospheric columns
     integer i,k,m                 ! Longitude, level indices
-    integer :: yr, mon, day, tod       ! components of a date
     integer :: ixcldice, ixcldliq      ! constituent indices for cloud liquid and ice water.
 
     logical :: labort                            ! abort flag
@@ -2777,26 +2801,6 @@ end if
     ! Moist physical parameteriztions complete: 
     ! send dynamical variables, and derived variables to history file
     !===================================================
-#if defined(CLDERA_PROFILING)
-   ! Compute stats here, so that we get the same values for phys state var as
-   ! we would get in the EAM history file, right below
-   if (.not. is_atm_init) then
-     if (first_time_step .and. nsrest .eq. 0) then
-       if (masterproc) then
-         print *, "WARNING! You are using a workaround to issue E3SM-Project/e3sm#5904"
-         print *, "         If that issue has been resolved, remove this hack"
-       endif
-       first_time_step = .false.
-     else
-       call get_prev_date( yr, mon, day, tod)
-       ymd = yr*10000 + mon*100 + day
-       call t_startf('cldera_compute_stats')
-       call cldera_compute_stats(ymd,tod)
-       call t_stopf('cldera_compute_stats')
-     endif
-   endif
-#endif
-
 
     call t_startf('bc_history_write')
     call diag_phys_writeout(state, cam_out%psl)
