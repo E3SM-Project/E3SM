@@ -22,9 +22,6 @@ module seaice_initialize
   use mpas_log, only: mpas_log_write
   use mpas_timer, only: mpas_timer_start, mpas_timer_stop
 
-  use icepack_intfc, only: &
-      icepack_warnings_aborted
-
   implicit none
 
   private
@@ -805,7 +802,11 @@ contains
 
     use icepack_intfc, only: &
          icepack_init_trcr, &
-         icepack_enthalpy_snow
+         icepack_enthalpy_snow, &
+         icepack_warnings_aborted
+
+    use seaice_icepack, only: &
+         seaice_icepack_write_warnings
 
     use seaice_column, only: &
          seaice_column_init_trcr, &
@@ -942,6 +943,7 @@ contains
                      nSnowLayers, &
                      iceEnthalpy(:,iCategory,iCell), &
                      snowEnthalpy(:,iCategory,iCell))
+                call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
              enddo ! iCategory
           else if (trim(config_column_physics_type) == "column_package") then
@@ -1026,8 +1028,13 @@ contains
     use seaice_constants, only: &
          seaicePuny
 
+    use icepack_intfc, only: &
+         icepack_init_itd, &
+         icepack_warnings_aborted
+
     use seaice_icepack, only: &
-         seaice_icepack_init_itd
+         seaice_icepack_write_warnings
+
     use seaice_column, only: &
          seaice_column_init_itd
 
@@ -1089,9 +1096,10 @@ contains
     if (.not. config_use_column_package) then
 
        if (trim(config_column_physics_type) == "icepack") then
-          call seaice_icepack_init_itd(&
+          call icepack_init_itd(&
                nCategories, &
                categoryThicknessLimits)
+          call seaice_icepack_write_warnings(icepack_warnings_aborted())
        else if (trim(config_column_physics_type) == "column_package") then
           call seaice_column_init_itd(&
                nCategories, &
@@ -1312,7 +1320,11 @@ contains
 
     use icepack_intfc, only: &
          icepack_init_trcr, &
-         icepack_enthalpy_snow
+         icepack_enthalpy_snow, &
+         icepack_warnings_aborted
+
+    use seaice_icepack, only: &
+         seaice_icepack_write_warnings
 
     use seaice_column, only: &
          seaice_column_init_trcr, &
@@ -1464,6 +1476,7 @@ contains
                      nSnowLayers, &
                      iceEnthalpy(:,iCategory,iCell), &
                      snowEnthalpy(:,iCategory,iCell))
+                call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
              enddo ! iCategory
 

@@ -45,11 +45,10 @@ module seaice_icepack
        seaice_icepack_coupling_prep, &
        seaice_icepack_finalize, &
        seaice_icepack_init_trcr, &
-       seaice_icepack_init_itd, &
        seaice_icepack_init_ocean_conc, &
-       seaice_icepack_ice_strength, &
        seaice_icepack_enthalpy_ice, &
-       seaice_init_icepack_constants
+       seaice_init_icepack_constants, &
+       seaice_icepack_write_warnings
 
   ! tracer object
   type, private :: ciceTracerObjectType
@@ -1213,7 +1212,7 @@ contains
 
        call mpas_timer_start("Column snow")
        if (config_use_column_snow_tracers) &
-            call icepack_snow(domain)
+            call column_snow(domain)
        call mpas_timer_stop("Column snow")
 
        !-----------------------------------------------------------------
@@ -2650,7 +2649,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  icepack_snow
+!  column_snow
 !
 !> \brief Enable snow grain aging, effective snow density, wind compaction and redistribution
 !>
@@ -2669,7 +2668,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine icepack_snow(domain)
+  subroutine column_snow(domain)
 
     use icepack_intfc, only: &
          icepack_step_snow, &
@@ -2870,7 +2869,7 @@ contains
        block => block % next
     end do
 
-  end subroutine icepack_snow
+  end subroutine column_snow
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -5577,29 +5576,6 @@ contains
 
   !-----------------------------------------------------------------------
 
-  subroutine seaice_icepack_init_itd(&
-       nCategories, &
-       categoryThicknessLimits)
-
-       use icepack_intfc, only: &
-         icepack_init_itd
-
-    integer, intent(in) :: &
-         nCategories ! number of thickness categories
-
-    real(kind=RKIND), intent(out) :: &
-         categoryThicknessLimits(0:nCategories)  ! category limits (m)
-
-    call icepack_init_itd(&
-         nCategories, &
-         categoryThicknessLimits)
-
-    call seaice_icepack_write_warnings(icepack_warnings_aborted())
-
-  end subroutine seaice_icepack_init_itd
-
-  !-----------------------------------------------------------------------
-
   subroutine seaice_icepack_init_ocean_conc(&
        oceanAmmoniumConc, &
        oceanDMSPConc, &
@@ -5673,48 +5649,6 @@ contains
          carbonToNitrogenRatioDON)
 
   end subroutine seaice_icepack_init_ocean_conc
-
-  !-----------------------------------------------------------------------
-
-  subroutine seaice_icepack_ice_strength(&
-       nCategories, &
-       iceAreaCell, &
-       iceVolumeCell, &
-       openWaterArea, &
-       iceAreaCategory, &
-       iceVolumeCategory, &
-       icePressure)
-
-    use icepack_intfc, only: &
-         icepack_ice_strength
-
-    integer, intent(in) :: &
-         nCategories ! number of thickness categories
-
-    real(kind=RKIND), intent(in) :: &
-         iceAreaCell, &   ! concentration of ice
-         iceVolumeCell, & ! volume per unit area of ice (m)
-         openWaterArea    ! concentration of open water
-
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         iceAreaCategory, & ! concentration of ice
-         iceVolumeCategory  ! volume per unit area of ice (m)
-
-    real(kind=RKIND), intent(inout) :: &
-         icePressure ! ice strength (N/m)
-
-    call icepack_ice_strength(&
-         nCategories, &
-         iceAreaCell, &
-         iceVolumeCell, &
-         openWaterArea, &
-         iceAreaCategory, &
-         iceVolumeCategory, &
-         icePressure)
-
-    call seaice_icepack_write_warnings(icepack_warnings_aborted())
-
-  end subroutine seaice_icepack_ice_strength
 
   !-----------------------------------------------------------------------
 
