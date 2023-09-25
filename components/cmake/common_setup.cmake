@@ -63,11 +63,6 @@ set(CPPDEFS "${CPPDEFS} ${USER_CPPDEFS} -D${OS}")
 # SLIBS comes from Macros, so this append must come after Macros are included
 
 if (DEBUG)
-  # e3sm still has components that cannot build with -DDEBUG
-  if (CIME_MODEL STREQUAL "cesm")
-    set(CPPDEFS "${CPPDEFS} -DDEBUG")
-  endif()
-else()
   set(CPPDEFS "${CPPDEFS} -DNDEBUG")
 endif()
 
@@ -183,43 +178,6 @@ else()
   endif()
 endif()
 
-# Set PETSc info if it is being used
-if (USE_PETSC)
-  if (PETSC_PATH)
-    if (NOT INC_PETSC)
-      set(INC_PETSC ${PETSC_PATH}/include)
-    endif()
-    if (NOT LIB_PETSC)
-      set(LIB_PETSC ${PETSC_PATH}/lib)
-    endif()
-  else()
-    message(FATAL_ERROR "PETSC_PATH must be defined when USE_PETSC is TRUE")
-  endif()
-
-  # Get the "PETSC_LIB" list an env var
-  set(PETSC_DIR ${PETSC_PATH})
-  find_package(PETSc)
-  set(PETSC_LIB ${PETSC_LIBRARIES})
-endif()
-
-# JGF: No one seems to be using this
-# if (USE_MOAB)
-#   if (MOAB_PATH)
-#     set(CPPDEFS "${CPPDEFS} -DHAVE_MOAB")
-#     if (NOT INC_MOAB)
-#       set(INC_MOAB ${MOAB_PATH}/include)
-#     endif()
-#     if (NOT LIB_MOAB)
-#       set(LIB_MOAB ${MOAB_PATH}/lib)
-#     endif()
-#   else()
-#     message(FATAL_ERROR "MOAB_PATH must be defined when USE_MOAB is TRUE")
-#   endif()
-
-#   # # get the "IMESH_LIBS" list as an env var
-#   #include $(LIB_MOAB)/iMesh-Defs.inc
-# endif()
-
 # Set HAVE_SLASHPROC on LINUX systems which are not bluegene or Darwin (OSx)
 string(FIND "${CPPDEFS}" "-DLINUX" HAS_DLINUX)
 string(FIND "${CPPDEFS}" "DBG" HAS_DBG)
@@ -239,30 +197,6 @@ endif()
 if (LIB_PNETCDF)
   set(CPPDEFS "${CPPDEFS} -D_PNETCDF")
   set(SLIBS "${SLIBS} -L${LIB_PNETCDF} -lpnetcdf")
-endif()
-
-# Set esmf.mk location with ESMF_LIBDIR having precedent over ESMFMKFILE
-set(CIME_ESMFMKFILE "undefined_ESMFMKFILE")
-if (ESMFMKFILE)
-  set(CIME_ESMFMKFILE ${ESMFMKFILE})
-endif()
-if (ESMF_LIBDIR)
-  set(CIME_ESMFMKFILE ${ESMF_LIBDIR}/esmf.mk)
-endif()
-
-# For compiling and linking with external ESMF.
-# If linking to external ESMF library then include esmf.mk
-# ESMF_F90COMPILEPATHS
-# ESMF_F90LINKPATHS
-# ESMF_F90LINKRPATHS
-# ESMF_F90ESMFLINKLIBS
-if (USE_ESMF_LIB)
-  # include(${CIME_ESMFMKFILE}) # JGF SKIPPING FOR NOW
-  # Will need something like 'make -f esmf.mk  -p 2> /dev/null | grep ESMF_F90COMPILEPATHS'
-  #set(CPPDEFS "${CPPDEFS} -DESMF_VERSION_MAJOR=${ESMF_VERSION_MAJOR} -DESMF_VERSION_MINOR=${ESMF_VERSION_MINOR}")
-  #set(FFLAGS "${FFLAGS} ${ESMF_F90COMPILEPATHS}")
-  #set(SLIBS "${SLIBS} ${ESMF_F90LINKPATHS} ${ESMF_F90LINKRPATHS} ${ESMF_F90ESMFLINKLIBS}")
-  message(FATAL_ERROR "ESMF not supported in CMake yet")
 endif()
 
 #===============================================================================
@@ -307,7 +241,7 @@ else()
   list(APPEND INCLDIR "${INC_NETCDF_C}" "${INC_NETCDF_FORTRAN}")
 endif()
 
-foreach(ITEM MOD_NETCDF INC_MPI INC_PNETCDF INC_PETSC) # INC_MOAB)
+foreach(ITEM MOD_NETCDF INC_MPI INC_PNETCDF)
   if (${ITEM})
     list(APPEND INCLDIR "${${ITEM}}")
   endif()
@@ -375,16 +309,6 @@ if (LIB_MPI)
     set(SLIBS "${SLIBS} -L${LIB_MPI} -l${MPI_LIB_NAME}")
   endif()
 endif()
-
-# Add PETSc libraries
-if (USE_PETSC)
-  set(SLIBS "${SLIBS} ${PETSC_LIB}")
-endif()
-
-# Add MOAB libraries.  These are defined in the MOAB_LINK_LIBS env var that was included above
-# if (USE_MOAB)
-#   set(SLIBS "${SLIBS} ${IMESH_LIBS}")
-# endif()
 
 # Add libraries and flags that we need on the link line when C++ code is included
 if (USE_CXX)

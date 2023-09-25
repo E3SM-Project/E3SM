@@ -34,3 +34,6 @@ if (USE_ALBANY)
   find_package(Albany REQUIRED)
 endif()
 
+if (USE_PETSC)
+  find_package(PETSc REQUIRED)
+endif()
