@@ -260,6 +260,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int k) {
 
       constexpr int num_modes = mam4::AeroConfig::num_modes();
+      constexpr int num_aero_ids = mam4::AeroConfig::num_aerosol_ids();
       constexpr int gas_pcnst = mam_coupling::gas_pcnst();
       constexpr int nqtendbb = mam_coupling::nqtendbb();
 
@@ -316,21 +317,52 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real wetdens[num_modes]     = {};
       Real qaerwat[num_modes]     = {};
       {
-        Real rh = mam4::conversions::relative_humidity_from_vapor_mixing_ratio(qv, temp, pmid);
+        // get some information about aerosol species
+        // FIXME: this isn't great!
         constexpr int maxd_aspectype = mam4::water_uptake::maxd_aspectype;
-        constexpr int nvars = mam4::water_uptake::nvars;
         int nspec_amode[num_modes], lspectype_amode[maxd_aspectype][num_modes];
-        Real specdens_amode[maxd_aspectype], spechygro[maxd_aspectype],
-             state_q[nvars], hygro[num_modes], naer[num_modes], dryrad[num_modes],
-             dryvol[num_modes], drymass[num_modes], wetrad[num_modes],
-             wetvol[num_modes], wtrvol[num_modes],
-             rhcrystal[num_modes], rhdeliques[num_modes], specdens_1[num_modes];
-        // FIXME: Where do we obtain state_q, dgncur_a?
+        Real specdens_amode[maxd_aspectype], spechygro[maxd_aspectype];
         mam4::water_uptake::get_e3sm_parameters(nspec_amode, lspectype_amode,
-          specdens_amode, spechygro); // FIXME: Not great! Replace this call
+          specdens_amode, spechygro);
+
+        // extract aerosol tracers for this level into state_q, which is needed
+        // for computing dry aerosol properties below
+        // FIXME: we should eliminate this index translation stuff
+        constexpr int nvars = mam4::water_uptake::nvars;
+        Real state_q[nvars]; // aerosol tracers for level k
+        for (int imode = 0; imode < num_modes; ++imode) {
+          int la, lc; // interstitial and cloudborne indices within state_q
+
+          // number mixing ratios
+          mam4::convproc::assign_la_lc(imode, -1, la, lc);
+          state_q[la] = progs.n_mode_i[imode](k);
+          state_q[lc] = progs.n_mode_c[imode](k);
+          // aerosol mass mixing ratios
+          for (int iaero = 0; iaero < num_aero_ids; ++iaero) {
+            mam4::convproc::assign_la_lc(imode, iaero, la, lc);
+            auto mode = static_cast<mam4::ModeIndex>(imode);
+            auto aero = static_cast<mam4::AeroId>(iaero);
+            int ispec = mam4::aerosol_index_for_mode(mode, aero);
+            if (ispec != -1) {
+              state_q[la] = progs.q_aero_i[imode][ispec](k);
+              state_q[lc] = progs.q_aero_c[imode][ispec](k);
+            }
+          }
+        }
+
+        // FIXME: Where do we obtain dgncur_a? Do we need to compute it here?
+
+        // calculate dry aerosol properties
+        Real hygro[num_modes], naer[num_modes], dryrad[num_modes],
+             dryvol[num_modes], drymass[num_modes],
+             rhcrystal[num_modes], rhdeliques[num_modes], specdens_1[num_modes];
         mam4::water_uptake::modal_aero_wateruptake_dryaer(nspec_amode, specdens_amode,
           spechygro, lspectype_amode, state_q, dgncur_a, hygro,
           naer, dryrad, dryvol, drymass, rhcrystal, rhdeliques, specdens_1);
+
+        // calculate wet aerosol properties
+        Real rh = mam4::conversions::relative_humidity_from_vapor_mixing_ratio(qv, temp, pmid);
+        Real wetrad[num_modes], wetvol[num_modes], wtrvol[num_modes];
         mam4::water_uptake::modal_aero_wateruptake_wetaer(rhcrystal, rhdeliques, dgncur_a,
           dryrad, hygro, rh, naer, dryvol, wetrad, wetvol, wtrvol, dgncur_awet,
           qaerwat);
