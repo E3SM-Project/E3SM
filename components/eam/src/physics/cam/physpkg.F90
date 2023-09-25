@@ -993,6 +993,9 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #if ( defined OFFLINE_DYN )
      use metdata,       only: get_met_srf1
 #endif
+#if defined(CLDERA_PROFILING)
+    use cam_control_mod,    only: nsrest  ! restart flag
+#endif
 
     !
     ! Input arguments
@@ -1026,7 +1029,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     real(r8)    :: chunk_cost                    ! measured cost per chunk
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
 #if defined(CLDERA_PROFILING)
-    integer :: yr, mon, day, tod       ! components of a date
+    integer :: ymd, yr, mon, day, tod            ! components of a date
 #endif
 
     call t_startf ('physpkg_st1')
@@ -2060,7 +2063,6 @@ subroutine tphysbc (ztodt,               &
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
     use lnd_infodata,    only: precip_downscaling_method
-    use cam_control_mod,    only: nsrest  ! restart flag
 
     implicit none
 
