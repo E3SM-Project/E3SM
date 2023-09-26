@@ -927,6 +927,8 @@ contains
 
     ! Reconstruct eta_dot_dpdn over the time interval.
 #ifdef SL_ADVECTION_TRAJ_OLD
+    p1r(:,:,1) = zero
+    p1r(:,:,nlevp) = zero
     eta_dot_dpdn(:,:,:,1) = (p1r - pref)/dt
 #endif
     ! Boundary points are always 0.

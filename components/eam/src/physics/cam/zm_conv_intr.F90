@@ -1012,9 +1012,9 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
                     lambdadpcu,  microp_st, wuc)
 
    if (zm_microp) then
-     dlftot(:,:) = dlf(:,:) + dif(:,:) + dsf(:,:)
+     dlftot(:ncol,:pver) = dlf(:ncol,:pver) + dif(:ncol,:pver) + dsf(:ncol,:pver)
    else
-     dlftot(:,:) = dlf(:,:)  
+     dlftot(:ncol,:pver) = dlf(:ncol,:pver)
    end if
 
    
