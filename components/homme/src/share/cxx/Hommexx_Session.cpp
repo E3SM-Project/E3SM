@@ -83,12 +83,16 @@ void initialize_hommexx_session ()
       initialize_kokkos();
     }
 
+#ifndef TESTER_NOMPI
     // Note: at this point, the Comm *should* already be created.
     const auto& comm = Context::singleton().get<Comm>();
     if (comm.root()) {
       ExecSpace().print_configuration(std::cout, true);
       print_homme_config_settings ();
     }
+#else
+    ExecSpace().print_configuration(std::cout, true);
+#endif
 
     Session::m_inited = true;
   }
