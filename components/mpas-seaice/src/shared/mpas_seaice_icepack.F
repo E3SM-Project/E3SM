@@ -218,7 +218,7 @@ contains
     if (config_use_column_package) then
 
        ! set non activated variable pointers to other memory
-       call init_column_non_activated_pointers(domain)
+       call init_icepack_non_activated_pointers(domain)
 
        ! initialize the column package tracer object
        call init_column_tracer_object(domain, ciceTracerObject)
@@ -13518,7 +13518,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_non_activated_pointers
+!  init_icepack_non_activated_pointers
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -13528,7 +13528,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_column_non_activated_pointers(domain)
+  subroutine init_icepack_non_activated_pointers(domain)
 
     type(domain_type) :: domain
 
@@ -13854,7 +13854,7 @@ contains
        block => block % next
     end do
 
-  end subroutine init_column_non_activated_pointers
+  end subroutine init_icepack_non_activated_pointers
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
