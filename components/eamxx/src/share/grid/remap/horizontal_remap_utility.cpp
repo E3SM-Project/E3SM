@@ -40,6 +40,12 @@ HorizontalMap::HorizontalMap(const ekat::Comm& comm, const std::string& map_name
 //   S   - will be used to populate a segment's "weights"
 void HorizontalMap::set_remap_segments_from_file(const std::string& remap_filename)
 {
+  // Ensure each horiz remap file gets a unique decomp tag
+  static std::map<std::string,int> file2idx;
+  if (file2idx.find(remap_filename)==file2idx.end()) {
+    file2idx[remap_filename] = file2idx.size();
+  }
+
   start_timer("EAMxx::HorizontalMap::set_remap_segments_from_file");
   // Open remap file and determine the amount of data to be read
   scorpio::register_file(remap_filename,scorpio::Read);
@@ -75,7 +81,7 @@ void HorizontalMap::set_remap_segments_from_file(const std::string& remap_filena
   view_1d<int>  tgt_col("row",my_chunk); 
   auto tgt_col_h = Kokkos::create_mirror_view(tgt_col);
   std::vector<std::string> vec_of_dims = {"n_s"};
-  std::string i_decomp = std::string("int-row-n_s-") + std::to_string(my_chunk);
+  std::string i_decomp = "HR::srsff,phase1,dt=int,n_s=" + std::to_string(my_chunk) + ",file-idx=" + std::to_string(file2idx[remap_filename]);
   scorpio::register_variable(remap_filename, "row", "row", vec_of_dims, "int", i_decomp);
   std::vector<int64_t> var_dof(my_chunk);
   std::iota(var_dof.begin(),var_dof.end(),my_start);
@@ -145,8 +151,8 @@ void HorizontalMap::set_remap_segments_from_file(const std::string& remap_filena
   auto col_h = Kokkos::create_mirror_view(col);
   auto S_h = Kokkos::create_mirror_view(S);
   vec_of_dims = {"n_s"};
-  i_decomp = std::string("int-col-n_s-") + std::to_string(var_dof.size());
-  std::string r_decomp = std::string("Real-S-n_s-") + std::to_string(var_dof.size());
+  i_decomp = "HR::srsff,phase2,dt=int,n_s=" + std::to_string(var_dof.size()) + ",file-idx=" + std::to_string(file2idx[remap_filename]);
+  std::string r_decomp = "HR::srsff,phase2,dt=real,n_s=" + std::to_string(var_dof.size()) + ",file-idx=" + std::to_string(file2idx[remap_filename]);
   scorpio::register_file(remap_filename,scorpio::Read);
   scorpio::register_variable(remap_filename, "col", "col", vec_of_dims, "int", i_decomp);
   scorpio::register_variable(remap_filename, "S", "S", vec_of_dims, "real", r_decomp);

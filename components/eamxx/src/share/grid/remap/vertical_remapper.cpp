@@ -145,7 +145,13 @@ create_tgt_layout (const FieldLayout& src_layout) const
 }
 
 void VerticalRemapper::
-set_pressure_levels(const std::string& map_file) {
+set_pressure_levels(const std::string& map_file)
+{
+  // Ensure each map file gets a different decomp name
+  static std::map<std::string,int> file2idx;
+  if (file2idx.find(map_file)==file2idx.end()) {
+    file2idx[map_file] = file2idx.size();
+  }
 
   using namespace ShortFieldTagsNames;
   std::vector<FieldTag> tags = {LEV};
@@ -160,8 +166,8 @@ set_pressure_levels(const std::string& map_file) {
 
   std::vector<scorpio::offset_t> dofs_offsets(m_num_remap_levs);
   std::iota(dofs_offsets.begin(),dofs_offsets.end(),0);
-  const std::string idx_decomp_tag = "vertical_remapper::" + std::to_string(m_num_remap_levs);
-  scorpio::register_variable(map_file, "p_levs", "p_levs", {"lev"}, "real", idx_decomp_tag);
+  const std::string decomp_tag = "VR::spl,nlev=" + std::to_string(m_num_remap_levs) + ",file-idx=" + std::to_string(file2idx[map_file]);
+  scorpio::register_variable(map_file, "p_levs", "p_levs", {"lev"}, "real", decomp_tag);
   scorpio::set_dof(map_file,"p_levs",m_num_remap_levs,dofs_offsets.data());
   scorpio::set_decomp(map_file);
   scorpio::grid_read_data_array(map_file,"p_levs",-1,remap_pres_scal.data(),remap_pres_scal.size());

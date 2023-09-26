@@ -404,21 +404,18 @@ AtmosphereInput::get_vec_of_dims(const FieldLayout& layout)
 std::string AtmosphereInput::
 get_io_decomp(const FieldLayout& layout)
 {
-  // Given a vector of dimensions names, create a unique decomp string to register with I/O
-  // Note: We are hard-coding for only REAL input here.
-  // TODO: would be to allow for other dtypes
-  std::string io_decomp_tag = (std::string("Real-") + m_io_grid->name() + "-" +
-                               std::to_string(m_io_grid->get_num_global_dofs()));
-  auto dims_names = get_vec_of_dims(layout);
-  for (size_t i=0; i<dims_names.size(); ++i) {
-    io_decomp_tag += "-" + dims_names[i];
-    // If tag==CMP, we already attached the length to the tag name
-    if (layout.tag(i)!=ShortFieldTagsNames::CMP) {
-      io_decomp_tag += "_" + std::to_string(layout.dim(i));
-    }
-  }
+  std::string decomp_tag = "dt=real,grid-idx=" + std::to_string(m_io_grid->get_unique_grid_id()) + ",layout=";
 
-  return io_decomp_tag;
+  std::vector<int> range(layout.rank());
+  std::iota(range.begin(),range.end(),0);
+  auto tag_and_dim = [&](int i) {
+    return m_io_grid->get_dim_name(layout.tag(i)) +
+           std::to_string(layout.dim(i));
+  };
+
+  decomp_tag += ekat::join (range, tag_and_dim,"-");
+
+  return decomp_tag;
 }
 
 /* ---------------------------------------------------------- */
