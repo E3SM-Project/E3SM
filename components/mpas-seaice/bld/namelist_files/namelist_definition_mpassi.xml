@@ -304,6 +304,13 @@ Valid values: Any positive integer.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_nFloeCategories" type="integer"
+	category="dimensions" group="dimensions">
+The number of ice floe categories to use.
+
+Valid values: 1(default), 12, 16, 24.
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- initialize -->
 
