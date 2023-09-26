@@ -861,27 +861,23 @@ register_variables(const std::string& filename,
 
   // Helper lambdas
   auto set_decomp_tag = [&](const FieldLayout& layout) {
-    std::string io_decomp_tag = (std::string("Real-") + m_io_grid->name() + "-" +
-                                 std::to_string(m_io_grid->get_num_global_dofs()));
-    for (int i=0; i<layout.rank(); ++i) {
-      auto tag_name = m_io_grid->get_dim_name(layout.tag(i));
-      if (layout.tag(i)==CMP) {
-        tag_name += std::to_string(layout.dim(i));
-      }
-      io_decomp_tag += "-" + tag_name;
-      // If tag==CMP, we already attached the length to the tag name
-      if (layout.tag(i)!=ShortFieldTagsNames::CMP) {
-        io_decomp_tag += "_" + std::to_string(layout.dim(i));
-      }
-    }
+    std::string decomp_tag = "dt=real,grid-idx=" + std::to_string(m_io_grid->get_unique_grid_id()) + ",layout=";
+
+    std::vector<int> range(layout.rank());
+    std::iota(range.begin(),range.end(),0);
+    auto tag_and_dim = [&](int i) {
+      return m_io_grid->get_dim_name(layout.tag(i)) +
+             std::to_string(layout.dim(i));
+    };
+
+    decomp_tag += ekat::join (range, tag_and_dim,"-");
+
     if (m_add_time_dim) {
-      io_decomp_tag += "-time";
-    } else {
-      io_decomp_tag += "-notime";
+      decomp_tag += "-time";
     }
-    return io_decomp_tag;
+    return decomp_tag;
   };
-  //
+
   auto set_vec_of_dims = [&](const FieldLayout& layout) {
     std::vector<std::string> vec_of_dims;
     for (int i=0; i<layout.rank(); ++i) {
@@ -899,6 +895,7 @@ register_variables(const std::string& filename,
     }
     return vec_of_dims;
   };
+
   // Cycle through all fields and register.
   for (auto const& name : m_fields_names) {
     auto field = get_field(name,"io");
