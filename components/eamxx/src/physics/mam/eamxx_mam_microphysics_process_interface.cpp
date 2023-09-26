@@ -350,7 +350,38 @@ void MAMMicrophysics::run_impl(const double dt) {
           }
         }
 
-        // FIXME: Where do we obtain dgncur_a? Do we need to compute it here?
+        // compute the dry volume for each mode, and from it the current dry
+        // geometric nominal particle diameter.
+        // FIXME: We have to do some gymnastics here to set up the calls to
+        // FIXME: calcsize. This could be improved.
+        Real inv_densities[num_modes][num_aero_ids] = {};
+        for (int imode = 0; imode < num_modes; ++imode) {
+          const int n_spec = num_species_mode(imode);
+          for (int ispec = 0; ispec < n_spec; ++ispec) {
+            const int iaer = static_cast<int>(mode_aero_species(imode, ispec));
+            const Real density = aero_species(iaer).density;
+            inv_densities[imode][ispec] = 1.0 / density;
+          }
+        }
+        for (int imode = 0; imode < num_modes; ++imode) {
+          Real dryvol_i, dryvol_c; // interstitial and cloudborne dry volumes
+          mam4::calcsize::compute_dry_volume_k(k, imode, inv_densities, progs,
+            dryvol_i, dryvol_c);
+
+          // NOTE: there's some disagreement over whether vol2num should be called
+          // NOTE: num2vol here, so I'm just adopting the nomenclature used by
+          // NOTE: the following call to calcsize)
+          const mam4::Mode& mode = mam4::modes(imode);
+          Real vol2num_min = 1.0/mam4::conversions::mean_particle_volume_from_diameter(
+              mode.max_diameter, mode.mean_std_dev);
+          Real vol2num_max = 1.0/mam4::conversions::mean_particle_volume_from_diameter(
+              mode.min_diameter, mode.mean_std_dev);
+          Real vol2num;
+          mam4::calcsize::update_diameter_and_vol2num(dryvol_i,
+            progs.n_aero_i[imode], vol2num_min, vol2num_max,
+            mode.min_diameter, mode.max_diameter, mode.mean_std_dev,
+            dgncur_a[imode], vol2num);
+        }
 
         // calculate dry aerosol properties
         Real hygro[num_modes], naer[num_modes], dryrad[num_modes],
