@@ -11,6 +11,7 @@
 
 cmake_minimum_required(VERSION 3.9)
 cmake_policy(SET CMP0057 NEW)
+cmake_policy(SET CMP0074 NEW)
 set(CMAKE_CXX_STANDARD 17)
 
 # Turn on wrapper
@@ -118,6 +119,9 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 list(APPEND CMAKE_MODULE_PATH ${CIMEROOT}/CIME/non_py/src/CMake)
 
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
+
+# Find dependencies
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/find_dep_packages.cmake)
 
 # Scream manages its own flags
 build_eamxx()

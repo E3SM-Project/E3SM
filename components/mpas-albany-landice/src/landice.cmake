@@ -3,6 +3,8 @@
 list(APPEND CPPDEFS "-DCORE_LANDICE")
 list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_landice/shared" "${CMAKE_BINARY_DIR}/core_landice/analysis_members" "${CMAKE_BINARY_DIR}/core_landice/mode_forward")
 
+list(APPEND LIBRARIES ${Albany_LIBRARIES})
+
 #
 # Check if building with LifeV, Albany, and/or PHG external libraries
 #

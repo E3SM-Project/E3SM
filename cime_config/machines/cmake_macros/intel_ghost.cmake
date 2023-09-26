@@ -1,4 +1,3 @@
-set(ALBANY_PATH "/projects/ccsm/AlbanyTrilinos_20190904/albany-build/install")
 set(ESMF_LIBDIR "/projects/ccsm/esmf-6.3.0rp1/lib/libO/Linux.intel.64.openmpi.default")
 if (MPILIB STREQUAL openmpi)
   set(MPI_PATH "/opt/openmpi-1.8-intel")

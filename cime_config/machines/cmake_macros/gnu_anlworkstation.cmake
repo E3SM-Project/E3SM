@@ -1,4 +1,3 @@
-set(ALBANY_PATH "/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install")
 if (NOT DEBUG)
   string(APPEND CFLAGS " -O2")
 endif()
