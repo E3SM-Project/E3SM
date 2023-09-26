@@ -943,6 +943,13 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_floe_size_distribution" type="logical"
+	category="column_tracers" group="column_tracers">
+Use floe size distribution. Requires Icepack column package.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- biogeochemistry -->
 
