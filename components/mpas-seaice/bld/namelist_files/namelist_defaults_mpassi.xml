@@ -61,6 +61,7 @@
 <config_nCategories>5</config_nCategories>
 <config_nIceLayers>7</config_nIceLayers>
 <config_nSnowLayers>5</config_nSnowLayers>
+<config_nFloeCategories>1</config_nFloeCategories>
 
 <!-- initialize -->
 <config_earth_radius>6371229.0</config_earth_radius>
@@ -189,6 +190,7 @@
 <config_use_effective_snow_density>true</config_use_effective_snow_density>
 <config_use_snow_grain_radius>true</config_use_snow_grain_radius>
 <config_use_special_boundaries_tracers>false</config_use_special_boundaries_tracers>
+<config_use_floe_size_distribution>false</config_use_floe_size_distribution>
 
 <!-- biogeochemistry -->
 <config_use_brine>false</config_use_brine>
