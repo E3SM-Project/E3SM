@@ -410,6 +410,7 @@ end function shoc_implements_cnst
     call addfld('PRECIPITATING_ICE_FRAC',(/'lev'/), 'A', 'fraction', 'Precipitating ice fraction')
     call addfld('LIQ_CLOUD_FRAC',(/'lev'/), 'A', 'fraction', 'Liquid cloud fraction')
     call addfld('TOT_CLOUD_FRAC',(/'lev'/), 'A', 'fraction', 'total cloud fraction')
+    call addfld('PBLH',horiz_only,'A','m','PBL height')
 
     call add_default('SHOC_TKE', 1, ' ')
     call add_default('WTHV_SEC', 1, ' ')
@@ -1155,6 +1156,7 @@ end function shoc_implements_cnst
     call outfld('PRECIPITATING_ICE_FRAC',precipitating_ice_frac,pcols,lchnk)
     call outfld('LIQ_CLOUD_FRAC',liq_cloud_frac,pcols,lchnk)
     call outfld('TOT_CLOUD_FRAC',tot_cloud_frac,pcols,lchnk)
+    call outfld('PBLH',pblh,pcols,lchnk)
 
 #endif    
     return         
