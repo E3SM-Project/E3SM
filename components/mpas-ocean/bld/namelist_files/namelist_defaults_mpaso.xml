@@ -145,7 +145,7 @@
 <config_Redi_N2_based_taper_min>0.1</config_Redi_N2_based_taper_min>
 <config_Redi_N2_based_taper_limit_term1>.true.</config_Redi_N2_based_taper_limit_term1>
 <config_Redi_use_quasi_monotone_limiter>.true.</config_Redi_use_quasi_monotone_limiter>
-<config_Redi_quasi_monotone_safety_factor>1.0</config_Redi_quasi_monotone_safety_factor>
+<config_Redi_quasi_monotone_safety_factor>0.9</config_Redi_quasi_monotone_safety_factor>
 <config_Redi_min_layers_diag_terms>6</config_Redi_min_layers_diag_terms>
 <config_Redi_min_layers_diag_terms ocn_grid="ARRM10to60E2r1">15</config_Redi_min_layers_diag_terms>
 <config_Redi_horizontal_taper>'ramp'</config_Redi_horizontal_taper>

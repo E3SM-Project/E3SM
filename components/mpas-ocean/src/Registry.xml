@@ -326,11 +326,11 @@
 					description="If true, the N2 limiting is applied to the horizontal diffusion term"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_Redi_use_quasi_monotone_limiter" type="logical" default_value=".false."
+		<nml_option name="config_Redi_use_quasi_monotone_limiter" type="logical" default_value=".true."
 					description="If true, fluxes are reduced to prevent tracers from violating monotonicity. Cross-term fluxes are scaled toward zero to prevent tracers from under/overshooting the min/max values in adjacent cells and layers"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_Redi_quasi_monotone_safety_factor" type="real" default_value="1.0"
+		<nml_option name="config_Redi_quasi_monotone_safety_factor" type="real" default_value="0.9"
 					description="A safety factor applied to flux scaling when monotonicity is violated. Smaller values scale fluxes toward zero more aggressively."
 					possible_values="A value between 0 and 1"
 		/>
