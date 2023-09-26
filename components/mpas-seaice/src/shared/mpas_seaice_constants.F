@@ -50,13 +50,7 @@ module seaice_constants
        seaiceLatentHeatVaporization    = SHR_CONST_LATVAP ,&! latent heat, vaporization freshwater (J/kg)
        seaiceLatentHeatMelting         = SHR_CONST_LATICE ,&! latent heat of melting of fresh ice (J/kg)
        seaiceReferenceSalinity         = SHR_CONST_ICE_REF_SAL,&! ice reference salinity (ppt)
-       seaiceSnowPatchiness            = 0.005_RKIND      ,&! parameter for fractional snow area (m)
-
-#ifdef RASM_MODS
-       seaiceIceOceanDragCoefficient   = 0.00962_RKIND      ! ice-ocn drag coefficient for RASM as temporary measure
-#else
-       seaiceIceOceanDragCoefficient   = 0.00536_RKIND      ! ice-ocn drag coefficient
-#endif
+       seaiceSnowPatchiness            = 0.005_RKIND        ! parameter for fractional snow area (m)
 
 !         R_gC2molC = SHR_CONST_MWC    ,&! molar mass of carbon
 
@@ -92,9 +86,7 @@ module seaice_constants
        seaiceLatentHeatMelting         = seaiceLatentHeatSublimation & ! latent heat of melting of fresh ice (J/kg)
                                        - seaiceLatentHeatVaporization, &
        seaiceReferenceSalinity         = 4._RKIND      ,&! ice reference salinity (ppt)
-       seaiceSnowPatchiness            = 0.02_RKIND    ,&! parameter for fractional snow area (m)
-
-       seaiceIceOceanDragCoefficient   = 0.00536_RKIND   ! ice-ocn drag coefficient
+       seaiceSnowPatchiness            = 0.02_RKIND      ! parameter for fractional snow area (m)
 
 !         R_gC2molC = 12.0107_RKIND, & ! molar mass of carbon
 #endif
@@ -144,7 +136,8 @@ module seaice_constants
 
   ! dynamics constants
   real(kind=RKIND), public :: &
-       seaiceIceStrengthConstantHiblerP   = 2.75e4_RKIND  ,&! P* constant in Hibler strength formula
+       seaiceIceOceanDragCoefficient      = 0.00536_RKIND, &! ice-ocn drag coefficient
+       seaiceIceStrengthConstantHiblerP   = 2.75e4_RKIND , &! P* constant in Hibler strength formula
        seaiceIceStrengthConstantHiblerC   = 20._RKIND       ! C* constant in Hibler strength formula
 
   ! minimum sea ice area

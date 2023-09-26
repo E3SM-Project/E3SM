@@ -800,9 +800,14 @@ contains
     use seaice_constants, only: &
          seaiceDegreesToRadians
 
+    use icepack_intfc, only: &
+         icepack_init_trcr, &
+         icepack_enthalpy_snow, &
+         icepack_warnings_aborted
+
     use seaice_icepack, only: &
-         seaice_icepack_init_trcr, &
-         seaice_icepack_enthalpy_snow
+         seaice_icepack_write_warnings
+
     use seaice_column, only: &
          seaice_column_init_trcr, &
          seaice_column_enthalpy_snow
@@ -928,7 +933,7 @@ contains
                 snowVolumeCategory(1,iCategory,iCell) = min(iceAreaCategory(1,iCategory,iCell) * initialCategorySnowThickness, &
                      0.2_RKIND * iceVolumeCategory(1,iCategory,iCell))
 
-                call seaice_icepack_init_trcr(&
+                call icepack_init_trcr(&
                      airTemperature(iCell), &
                      seaFreezingTemperature(iCell), &
                      initialSalinityProfile(:,iCell), &
@@ -938,6 +943,7 @@ contains
                      nSnowLayers, &
                      iceEnthalpy(:,iCategory,iCell), &
                      snowEnthalpy(:,iCategory,iCell))
+                call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
              enddo ! iCategory
           else if (trim(config_column_physics_type) == "column_package") then
@@ -972,7 +978,7 @@ contains
           surfaceTemperature(1,:,iCell) = seaFreezingTemperature(iCell)
           if (trim(config_column_physics_type) == "icepack") then
              do iSnowLayer = 1, nSnowLayers
-                snowEnthalpy(iSnowLayer,:,iCell) = seaice_icepack_enthalpy_snow(0.0_RKIND)
+                snowEnthalpy(iSnowLayer,:,iCell) = icepack_enthalpy_snow(0.0_RKIND)
              end do
           else if (trim(config_column_physics_type) == "column_package") then
              do iSnowLayer = 1, nSnowLayers
@@ -1022,8 +1028,13 @@ contains
     use seaice_constants, only: &
          seaicePuny
 
+    use icepack_intfc, only: &
+         icepack_init_itd, &
+         icepack_warnings_aborted
+
     use seaice_icepack, only: &
-         seaice_icepack_init_itd
+         seaice_icepack_write_warnings
+
     use seaice_column, only: &
          seaice_column_init_itd
 
@@ -1085,9 +1096,10 @@ contains
     if (.not. config_use_column_package) then
 
        if (trim(config_column_physics_type) == "icepack") then
-          call seaice_icepack_init_itd(&
+          call icepack_init_itd(&
                nCategories, &
                categoryThicknessLimits)
+          call seaice_icepack_write_warnings(icepack_warnings_aborted())
        else if (trim(config_column_physics_type) == "column_package") then
           call seaice_column_init_itd(&
                nCategories, &
@@ -1306,9 +1318,14 @@ contains
     use seaice_constants, only: &
          seaiceDegreesToRadians
 
+    use icepack_intfc, only: &
+         icepack_init_trcr, &
+         icepack_enthalpy_snow, &
+         icepack_warnings_aborted
+
     use seaice_icepack, only: &
-         seaice_icepack_init_trcr, &
-         seaice_icepack_enthalpy_snow
+         seaice_icepack_write_warnings
+
     use seaice_column, only: &
          seaice_column_init_trcr, &
          seaice_column_enthalpy_snow
@@ -1449,7 +1466,7 @@ contains
                 snowVolumeCategory(1,iCategory,iCell) = min(iceAreaCategory(1,iCategory,iCell) * initialCategorySnowThickness, &
                      0.2_RKIND * iceVolumeCategory(1,iCategory,iCell))
 
-                call seaice_icepack_init_trcr(&
+                call icepack_init_trcr(&
                      airTemperature(iCell), &
                      seaFreezingTemperature(iCell), &
                      initialSalinityProfile(:,iCell), &
@@ -1459,6 +1476,7 @@ contains
                      nSnowLayers, &
                      iceEnthalpy(:,iCategory,iCell), &
                      snowEnthalpy(:,iCategory,iCell))
+                call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
              enddo ! iCategory
 
@@ -1471,7 +1489,7 @@ contains
 
              surfaceTemperature(1,:,iCell) = seaFreezingTemperature(iCell)
              do iSnowLayer = 1, nSnowLayers
-                snowEnthalpy(iSnowLayer,:,iCell) = seaice_icepack_enthalpy_snow(0.0_RKIND)
+                snowEnthalpy(iSnowLayer,:,iCell) = icepack_enthalpy_snow(0.0_RKIND)
              end do
 
           endif
@@ -2400,8 +2418,9 @@ contains
 
   subroutine initialize_coupler_fields(domain)
 
-    use seaice_icepack, only: &
-         seaice_icepack_liquidus_temperature, &
+    use icepack_intfc, only: &
+         icepack_liquidus_temperature
+    use seaice_icepack, only: &             !echmod - use icepack_intfc directly
          seaice_icepack_init_ocean_conc, &
          seaice_icepack_initial_air_drag_coefficient
     use seaice_column, only: &
@@ -2524,7 +2543,7 @@ contains
 
        if (trim(config_column_physics_type) == "icepack") then
           do iCell = 1, nCells
-             seaFreezingTemperature(iCell) = seaice_icepack_liquidus_temperature(seaSurfaceSalinity(iCell))
+             seaFreezingTemperature(iCell) = icepack_liquidus_temperature(seaSurfaceSalinity(iCell))
           enddo ! iCell
        else if (trim(config_column_physics_type) == "column_package") then
           do iCell = 1, nCells

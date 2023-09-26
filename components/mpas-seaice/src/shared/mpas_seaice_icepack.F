@@ -23,9 +23,6 @@ module seaice_icepack
 
   use seaice_error
 
-!  use ice_kinds_mod, only: &      !colpkg
-!      char_len_long
-
   implicit none
 
   private
@@ -48,15 +45,10 @@ module seaice_icepack
        seaice_icepack_coupling_prep, &
        seaice_icepack_finalize, &
        seaice_icepack_init_trcr, &
-       seaice_icepack_init_itd, &
        seaice_icepack_init_ocean_conc, &
-       seaice_icepack_ice_strength, &
-       seaice_icepack_sea_freezing_temperature, &
-       seaice_icepack_liquidus_temperature, &
-       seaice_icepack_enthalpy_snow, &
        seaice_icepack_enthalpy_ice, &
-       seaice_icepack_salinity_profile, &
-       seaice_init_icepack_constants
+       seaice_init_icepack_constants, &
+       seaice_icepack_write_warnings
 
   ! tracer object
   type, private :: ciceTracerObjectType
@@ -195,8 +187,6 @@ module seaice_icepack
   real(kind=RKIND), dimension(:), allocatable :: &
        tracerArrayCell
 
-  ! warnings string kind
-!  integer, parameter :: strKINDWarnings = char_len_long
   integer, parameter :: strKINDWarnings = strKIND
 
 contains
@@ -228,7 +218,7 @@ contains
     if (config_use_column_package) then
 
        ! set non activated variable pointers to other memory
-       call init_column_non_activated_pointers(domain)
+       call init_icepack_non_activated_pointers(domain)
 
        ! initialize the column package tracer object
        call init_column_tracer_object(domain, ciceTracerObject)
@@ -1222,7 +1212,7 @@ contains
 
        call mpas_timer_start("Column snow")
        if (config_use_column_snow_tracers) &
-            call icepack_snow(domain)
+            call column_snow(domain)
        call mpas_timer_stop("Column snow")
 
        !-----------------------------------------------------------------
@@ -2659,7 +2649,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  icepack_snow
+!  column_snow
 !
 !> \brief Enable snow grain aging, effective snow density, wind compaction and redistribution
 !>
@@ -2678,7 +2668,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine icepack_snow(domain)
+  subroutine column_snow(domain)
 
     use icepack_intfc, only: &
          icepack_step_snow, &
@@ -2879,7 +2869,7 @@ contains
        block => block % next
     end do
 
-  end subroutine icepack_snow
+  end subroutine column_snow
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -3160,8 +3150,9 @@ contains
        ! snow grain radius array
        allocate(snow_grain_radius(nSnowLayers,nCategories))
 
-       !$omp parallel do default(shared) firstprivate(aerosolsArray,index_shortwaveAerosol) &
-       !$omp&                                 private(iCategory,iAerosol,lonCellColumn)
+       !$omp parallel do default(shared) &
+       !$omp&   firstprivate(aerosolsArray,index_shortwaveAerosol,snow_grain_radius) &
+       !$omp&   private(iCategory,iAerosol,lonCellColumn,iSnowLayer)
        do iCell = 1, nCellsSolve
 
           ! set aerosols array
@@ -5585,29 +5576,6 @@ contains
 
   !-----------------------------------------------------------------------
 
-  subroutine seaice_icepack_init_itd(&
-       nCategories, &
-       categoryThicknessLimits)
-
-       use icepack_intfc, only: &
-         icepack_init_itd
-
-    integer, intent(in) :: &
-         nCategories ! number of thickness categories
-
-    real(kind=RKIND), intent(out) :: &
-         categoryThicknessLimits(0:nCategories)  ! category limits (m)
-
-    call icepack_init_itd(&
-         nCategories, &
-         categoryThicknessLimits)
-
-    call seaice_icepack_write_warnings(icepack_warnings_aborted())
-
-  end subroutine seaice_icepack_init_itd
-
-  !-----------------------------------------------------------------------
-
   subroutine seaice_icepack_init_ocean_conc(&
        oceanAmmoniumConc, &
        oceanDMSPConc, &
@@ -5684,96 +5652,9 @@ contains
 
   !-----------------------------------------------------------------------
 
-  subroutine seaice_icepack_ice_strength(&
-       nCategories, &
-       iceAreaCell, &
-       iceVolumeCell, &
-       openWaterArea, &
-       iceAreaCategory, &
-       iceVolumeCategory, &
-       icePressure)
-
-    use icepack_intfc, only: &
-         icepack_ice_strength
-
-    integer, intent(in) :: &
-         nCategories ! number of thickness categories
-
-    real(kind=RKIND), intent(in) :: &
-         iceAreaCell, &   ! concentration of ice
-         iceVolumeCell, & ! volume per unit area of ice (m)
-         openWaterArea    ! concentration of open water
-
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         iceAreaCategory, & ! concentration of ice
-         iceVolumeCategory  ! volume per unit area of ice (m)
-
-    real(kind=RKIND), intent(inout) :: &
-         icePressure ! ice strength (N/m)
-
-    call icepack_ice_strength(&
-         nCategories, &
-         iceAreaCell, &
-         iceVolumeCell, &
-         openWaterArea, &
-         iceAreaCategory, &
-         iceVolumeCategory, &
-         icePressure)
-
-    call seaice_icepack_write_warnings(icepack_warnings_aborted())
-
-  end subroutine seaice_icepack_ice_strength
-
-  !-----------------------------------------------------------------------
-
-  function seaice_icepack_sea_freezing_temperature(seaSurfaceSalinity) result(seaFreezingTemperature)
-
-    use icepack_intfc, only: &
-         icepack_sea_freezing_temperature
-
-    real(kind=RKIND), intent(in) :: seaSurfaceSalinity
-    real(kind=RKIND) :: seaFreezingTemperature
-
-    seaFreezingTemperature = icepack_sea_freezing_temperature(seaSurfaceSalinity)
-
-  end function seaice_icepack_sea_freezing_temperature
-
-  !-----------------------------------------------------------------------
-
-  function seaice_icepack_liquidus_temperature(salinity) result(liquidusTemperature)
-
-    use icepack_intfc, only: &
-         icepack_liquidus_temperature
-
-    real(kind=RKIND), intent(in) :: salinity
-    real(kind=RKIND) :: liquidusTemperature
-
-    liquidusTemperature = icepack_liquidus_temperature(salinity)
-
-  end function seaice_icepack_liquidus_temperature
-
-  !-----------------------------------------------------------------------
-
-  function seaice_icepack_enthalpy_snow(snowTemperature) result(snowEnthalpy)
-
-    use icepack_intfc, only: &
-         icepack_enthalpy_snow
-
-    real(kind=RKIND), intent(in) :: snowTemperature
-    real(kind=RKIND) :: snowEnthalpy
-
-    snowEnthalpy = icepack_enthalpy_snow(snowTemperature)
-
-  end function seaice_icepack_enthalpy_snow
-
-  !-----------------------------------------------------------------------
-
   function seaice_icepack_enthalpy_ice(iceTemperature, iceSalinity) result(iceEnthalpy)
 
-!echmod - this function will be needed for the prescribed ice configuration - not tested
-!echmod - call enthalpy_mush from icepack_mushy_physics via icepack_intfc (not yet available)
-
-    use ice_mushy_physics, only: enthalpy_mush
+    use icepack_intfc, only: icepack_enthalpy_mush
 
     use seaice_constants, only: &
         seaiceMeltingTemperatureDepression, & ! melting temperature depression factor (C/ppt)
@@ -5797,7 +5678,7 @@ contains
 
     if (trim(config_thermodynamics_type) == "mushy") then
 
-       qin = enthalpy_mush(iceTemperature, iceSalinity)
+       qin = icepack_enthalpy_mush(iceTemperature, iceSalinity)
 
     else
 
@@ -5808,30 +5689,6 @@ contains
     endif
 
   end function seaice_icepack_enthalpy_ice
-
-  !-----------------------------------------------------------------------
-
-  function seaice_icepack_salinity_profile(depth) result(iceSalinity)
-
-!echmod - this function will be needed for the prescribed ice configuration - not tested
-
-    use seaice_constants, only: &
-       pii, &        !echmod - use SHR_CONST_PI
-       seaiceMaximumSalinity         ! ice maximum salinity (ppt)
-
-    real(kind=RKIND), intent(in) :: &
-         depth ! depth
-
-    real(kind=RKIND) :: &
-         iceSalinity ! initial salinity profile
-
-    real (kind=RKIND), parameter :: &
-         nsal    = 0.407_RKIND, &
-         msal    = 0.573_RKIND
-
-    iceSalinity = (seaiceMaximumSalinity/2.0_RKIND)*(1.0_RKIND-cos(pii*depth**(nsal/(msal+depth))))
-
-  end function seaice_icepack_salinity_profile
 
 !-----------------------------------------------------------------------
 ! initialize constants
@@ -5887,7 +5744,7 @@ contains
     call icepack_configure()
     call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
-!echmod - BFB but 20% slower when this is set in seaice_constants instead???
+!echmod - set this in seaice_constants instead
     seaicePi                         = pi
 
     iceAreaMinimum       = seaicePuny
@@ -13661,7 +13518,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_non_activated_pointers
+!  init_icepack_non_activated_pointers
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -13671,7 +13528,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_column_non_activated_pointers(domain)
+  subroutine init_icepack_non_activated_pointers(domain)
 
     type(domain_type) :: domain
 
@@ -13997,7 +13854,7 @@ contains
        block => block % next
     end do
 
-  end subroutine init_column_non_activated_pointers
+  end subroutine init_icepack_non_activated_pointers
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

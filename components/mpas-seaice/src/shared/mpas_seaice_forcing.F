@@ -2495,8 +2495,8 @@ contains
 
   subroutine prepare_oceanic_coupling_variables_ncar(block, firstTimeStep)
 
-    use seaice_icepack, only: &
-         seaice_icepack_sea_freezing_temperature
+    use icepack_intfc, only: &
+         icepack_sea_freezing_temperature
     use seaice_column, only: &
          seaice_column_sea_freezing_temperature
 
@@ -2552,7 +2552,7 @@ contains
           oceanMixedLayerDepth(iCell) = max(oceanMixedLayerDepth(iCell), 0.0_RKIND)
 
           ! sea freezing temperature
-          seaFreezingTemperature(iCell) = seaice_icepack_sea_freezing_temperature(seaSurfaceSalinity(iCell))
+          seaFreezingTemperature(iCell) = icepack_sea_freezing_temperature(seaSurfaceSalinity(iCell))
 
        enddo ! iCell
     else if (trim(config_column_physics_type) == "column_package") then

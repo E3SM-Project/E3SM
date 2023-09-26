@@ -1307,8 +1307,13 @@ contains
 
   subroutine ice_strength(domain)
 
+    use icepack_intfc, only: &
+         icepack_ice_strength, &
+         icepack_warnings_aborted
+
     use seaice_icepack, only: &
-         seaice_icepack_ice_strength
+         seaice_icepack_write_warnings
+
     use seaice_column, only: &
          seaice_column_ice_strength
 
@@ -1417,7 +1422,7 @@ contains
                 if (solveStress(iCell) == 1) then
 
                    ! this routine doesnt reset icePressure
-                   call seaice_icepack_ice_strength(&
+                   call icepack_ice_strength(&
                         nCategories, &
                         iceAreaCell(iCell), &
                         iceVolumeCell(iCell), &
@@ -1425,6 +1430,7 @@ contains
                         iceAreaCategory(1,:,iCell), &
                         iceVolumeCategory(1,:,iCell), &
                         icePressure(iCell))
+                   call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
                 endif ! solveStress
 
