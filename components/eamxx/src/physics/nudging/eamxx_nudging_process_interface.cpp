@@ -127,6 +127,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     AtmosphereInput src_input(in_params,grid_ext,host_views,layouts);
     src_input.read_variables(-1);
     src_input.finalize();
+    pmid_ext.sync_to_dev();
   }
   for (auto name : m_fields_nudge) {
     std::string name_ext = name + "_ext";
@@ -185,6 +186,7 @@ void Nudging::run_impl (const double dt)
     }
     const int num_cols           = ext_state_view.extent(0);
     const int num_vert_packs     = ext_state_view.extent(1);
+    const int num_src_levs       = m_num_src_levs;
     const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
     Kokkos::parallel_for("correct_for_masked_values", policy,
        	       KOKKOS_LAMBDA(MemberType const& team) {
@@ -193,7 +195,7 @@ void Nudging::run_impl (const double dt)
       Real fill_value;
       int  fill_idx = -1;
       // Scan top to surf and backfill all values near TOM that are masked.
-      for (int kk=0; kk<m_num_src_levs; ++kk) {
+      for (int kk=0; kk<num_src_levs; ++kk) {
         const auto ipack = kk / mPack::n;
 	const auto iidx  = kk % mPack::n;
         // Check if this index is masked
@@ -210,7 +212,7 @@ void Nudging::run_impl (const double dt)
       }
       // Now fill the rest, the fill_idx should be non-negative.  If it isn't that means
       // we have a column that is fully masked 
-      for (int kk=fill_idx+1; kk<m_num_src_levs; ++kk) {
+      for (int kk=fill_idx+1; kk<num_src_levs; ++kk) {
         const auto ipack = kk / mPack::n;
 	const auto iidx  = kk % mPack::n;
         // Check if this index is masked
@@ -221,7 +223,6 @@ void Nudging::run_impl (const double dt)
 	}
       }
     });
-
 
     // Vertical Interpolation onto atmosphere state pressure levels
     if (m_src_pres_type == TIME_DEPENDENT_3D_PROFILE) {
@@ -252,6 +253,7 @@ void Nudging::run_impl (const double dt)
     //       surface.
     // Here we change the int_state_view which represents the vertically interpolated fields onto
     // the simulation grid.
+    const int num_levs = m_num_levs;
     Kokkos::parallel_for("correct_for_masked_values", policy,
        	       KOKKOS_LAMBDA(MemberType const& team) {
       const int icol = team.league_rank();
@@ -260,14 +262,14 @@ void Nudging::run_impl (const double dt)
       Real fill_value;
       int  fill_idx = -1;
       // Scan top to surf and backfill all values near TOM that are masked.
-      for (int kk=0; kk<m_num_levs; ++kk) {
+      for (int kk=0; kk<num_levs; ++kk) {
         const auto ipack = kk / mPack::n;
 	const auto iidx  = kk % mPack::n;
         // Check if this index is masked
 	if (!int_mask_view_1d(ipack)[iidx]) {
 	  fill_value = int_state_view_1d(ipack)[iidx];
 	  fill_idx = kk;
-	  for (int jj=0; jj<kk; ++jj) {
+	  for (int jj=0; jj<fill_idx; ++jj) {
             const auto jpack = jj / mPack::n;
 	    const auto jidx  = jj % mPack::n;
 	    int_state_view_1d(jpack)[jidx] = fill_value;
@@ -276,8 +278,8 @@ void Nudging::run_impl (const double dt)
 	}
       }
       // Now fill the rest, the fill_idx should be non-negative.  If it isn't that means
-      // we have a column that is fully masked 
-      for (int kk=fill_idx+1; kk<m_num_levs; ++kk) {
+      // we have a column that is fully masked
+      for (int kk=fill_idx+1; kk<num_levs; ++kk) {
         const auto ipack = kk / mPack::n;
 	const auto iidx  = kk % mPack::n;
         // Check if this index is masked
