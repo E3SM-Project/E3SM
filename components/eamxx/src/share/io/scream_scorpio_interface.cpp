@@ -39,6 +39,7 @@ extern "C" {
   void set_variable_metadata_double_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name, const double meta_val);
   float get_variable_metadata_float_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name);
   double get_variable_metadata_double_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name);
+  void get_variable_metadata_char_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name, char*&& meta_val);
   void eam_pio_redef_c2f(const char*&& filename);
   void eam_pio_enddef_c2f(const char*&& filename);
   bool is_enddef_c2f(const char*&& filename);
@@ -403,6 +404,16 @@ void get_variable_metadata (const std::string& filename, const std::string& varn
 /* ----------------------------------------------------------------- */
 void get_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, double& meta_val) {
   meta_val = get_variable_metadata_double_c2f(filename.c_str(),varname.c_str(),meta_name.c_str());
+}
+/* ----------------------------------------------------------------- */
+void get_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, std::string& meta_val) {
+  meta_val.resize(256);
+  get_variable_metadata_char_c2f(filename.c_str(),varname.c_str(),meta_name.c_str(),&meta_val[0]);
+
+  // If terminating char is not found, meta_val simply uses all 256 chars
+  if (meta_val.find('\0')!=std::string::npos) {
+    meta_val.resize(meta_val.find('\0'));
+  }
 }
 /* ----------------------------------------------------------------- */
 ekat::any get_any_attribute (const std::string& filename, const std::string& att_name) {
