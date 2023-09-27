@@ -99,6 +99,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,     kg/m2,  grid_name, "ACCUMULATED");
   add_field<Computed>("eff_radius_qc",       scalar3d_layout_mid, micron, grid_name, ps);
   add_field<Computed>("eff_radius_qi",       scalar3d_layout_mid, micron, grid_name, ps);
+  add_field<Computed>("eff_radius_qr",       scalar3d_layout_mid, micron, grid_name, ps);
 
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
   // TODO: These should be averaged over subcycle as well.  But there is no simple mechanism
@@ -107,6 +108,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Computed>("micro_liq_ice_exchange", scalar3d_layout_mid, Q, grid_name, ps);
   add_field<Computed>("micro_vap_liq_exchange", scalar3d_layout_mid, Q, grid_name, ps);
   add_field<Computed>("micro_vap_ice_exchange", scalar3d_layout_mid, Q, grid_name, ps);
+  add_field<Computed>("rainfrac",               scalar3d_layout_mid, nondim, grid_name, ps);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
@@ -171,8 +173,6 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   s_mem += m_buffer.cld_frac_l.size();
   m_buffer.cld_frac_i = decltype(m_buffer.cld_frac_i)(s_mem, m_num_cols, nk_pack);
   s_mem += m_buffer.cld_frac_i.size();
-  m_buffer.cld_frac_r = decltype(m_buffer.cld_frac_r)(s_mem, m_num_cols, nk_pack);
-  s_mem += m_buffer.cld_frac_r.size();
   m_buffer.dz = decltype(m_buffer.dz)(s_mem, m_num_cols, nk_pack);
   s_mem += m_buffer.dz.size();
   m_buffer.qv2qi_depos_tend = decltype(m_buffer.qv2qi_depos_tend)(s_mem, m_num_cols, nk_pack);
@@ -220,6 +220,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_ice_surf_mass"),m_grid,0.0,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qc"),m_grid,0.0,1.0e2,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qi"),m_grid,0.0,5.0e3,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qr"),m_grid,0.0,5.0e3,false);
 
   // Initialize p3
   p3::p3_init(/* write_tables = */ false,
@@ -248,13 +249,13 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   auto qv_prev                = get_field_out("qv_prev_micro_step").get_view<Pack**>();
   const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
   const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
+  auto cld_frac_r             = get_field_out("rainfrac").get_view<Pack**>();
 
   // Alias local variables from temporary buffer
   auto inv_exner  = m_buffer.inv_exner;
   auto th_atm     = m_buffer.th_atm;
   auto cld_frac_l = m_buffer.cld_frac_l;
   auto cld_frac_i = m_buffer.cld_frac_i;
-  auto cld_frac_r = m_buffer.cld_frac_r;
   auto dz         = m_buffer.dz;
 
   // -- Set values for the pre-amble structure
@@ -297,6 +298,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   // --Diagnostic Outputs
   diag_outputs.diag_eff_radius_qc = get_field_out("eff_radius_qc").get_view<Pack**>();
   diag_outputs.diag_eff_radius_qi = get_field_out("eff_radius_qi").get_view<Pack**>();
+  diag_outputs.diag_eff_radius_qr = get_field_out("eff_radius_qr").get_view<Pack**>();
 
   diag_outputs.precip_liq_surf  = m_buffer.precip_liq_surf_flux;
   diag_outputs.precip_ice_surf  = m_buffer.precip_ice_surf_flux;
@@ -317,6 +319,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
                             prog_state.qv, prog_state.qc, prog_state.nc, prog_state.qr,prog_state.nr,
                             prog_state.qi, prog_state.qm, prog_state.ni,prog_state.bm,qv_prev,
                             diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi,
+                            diag_outputs.diag_eff_radius_qr,
                             diag_outputs.precip_liq_surf,diag_outputs.precip_ice_surf,
                             precip_liq_surf_mass,precip_ice_surf_mass);
 

@@ -39,11 +39,13 @@ Fields:
       - qv_prev_micro_step
       - eff_radius_qc
       - eff_radius_qi
+      - eff_radius_qr
       - micro_liq_ice_exchange
       - micro_vap_ice_exchange
       - micro_vap_liq_exchange
       - precip_ice_surf_mass
       - precip_liq_surf_mass
+      - rainfrac
       # SHOC + HOMME
       - horiz_winds
       # SHOC + P3
