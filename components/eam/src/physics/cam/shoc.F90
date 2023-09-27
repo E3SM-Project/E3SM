@@ -46,6 +46,7 @@ real(rtype) :: lcond ! latent heat of vaporization [J/kg]
 real(rtype) :: lice  ! latent heat of fusion [J/kg]
 real(rtype) :: eps   ! rh2o/rair - 1 [-]
 real(rtype) :: vk    ! von karmann constant [-]
+real(rtype) :: p0    ! Reference pressure, Pa
 
 !=========================================================
 ! Tunable parameters used in SHOC
@@ -125,7 +126,7 @@ contains
 
 subroutine shoc_init( &
          nlev, gravit, rair, rh2o, cpair, &
-         zvir, latvap, latice, karman, &
+         zvir, latvap, latice, karman, p0_shoc, &
          pref_mid, nbot_shoc, ntop_shoc, &
          thl2tune_in, qw2tune_in, qwthl2tune_in, &
          w2tune_in, length_fac_in, c_diag_3rd_mom_in, &
@@ -148,6 +149,7 @@ subroutine shoc_init( &
   real(rtype), intent(in)  :: latvap ! latent heat of vaporization
   real(rtype), intent(in)  :: latice ! latent heat of fusion
   real(rtype), intent(in)  :: karman ! Von Karman's constant
+  real(rtype), intent(in)  :: p0_shoc! Reference pressure, Pa
 
   real(rtype), intent(in) :: pref_mid(nlev) ! reference pressures at midpoints
 
@@ -180,6 +182,7 @@ subroutine shoc_init( &
   lcond = latvap ! [J/kg]
   lice = latice  ! [J/kg]
   vk = karman    ! [-]
+  p0 = p0_shoc   ! [Pa]
 
   ! Tunable parameters, all unitless
   !  override default values if value is present
@@ -2917,8 +2920,8 @@ subroutine shoc_assumed_pdf_compute_s(&
       qn=s
     endif
   endif
-  
-  ! Prevent possibility of empty clouds or rare occurence of 
+
+  ! Prevent possibility of empty clouds or rare occurence of
   !  cloud liquid less than zero
   if (qn .le. 0._rtype) then
     C=0._rtype
@@ -3775,6 +3778,9 @@ subroutine shoc_energy_integrals(&
   do k=1,nlev
     do i=1,shcol
        rvm = rtm(i,k) - rcm(i,k) ! compute water vapor
+
+!technically wrong, need to remove gz from geopotential
+!but shoc does not change gz term
        se_int(i) = se_int(i) + host_dse(i,k)*pdel(i,k)/ggr
        ke_int(i) = ke_int(i) + 0.5_rtype*(bfb_square(u_wind(i,k))+bfb_square(v_wind(i,k)))*pdel(i,k)/ggr
        wv_int(i) = wv_int(i) + rvm*pdel(i,k)/ggr
@@ -3931,7 +3937,7 @@ subroutine shoc_energy_fixer(&
          zt_grid,zi_grid,&              ! Input
          se_b,ke_b,wv_b,wl_b,&          ! Input
          se_a,ke_a,wv_a,wl_a,&          ! Input
-         wthl_sfc,wqw_sfc,rho_zt,&      ! Input
+         wthl_sfc,wqw_sfc,rho_zt,pint,& ! Input
          te_a, te_b)                    ! Output
 
   call shoc_energy_threshold_fixer(&
@@ -3956,7 +3962,7 @@ subroutine shoc_energy_total_fixer(&
          zt_grid,zi_grid,&              ! Input
          se_b,ke_b,wv_b,wl_b,&          ! Input
          se_a,ke_a,wv_a,wl_a,&          ! Input
-         wthl_sfc,wqw_sfc,rho_zt,&      ! Input
+         wthl_sfc,wqw_sfc,rho_zt,pint,& ! Input
          te_a, te_b)                    ! Output
 
   implicit none
@@ -3998,6 +4004,8 @@ subroutine shoc_energy_total_fixer(&
   real(rtype), intent(in) :: zi_grid(shcol,nlevi)
   ! density on midpoint grid [kg/m^3]
   real(rtype), intent(in) :: rho_zt(shcol,nlev)
+  ! pressure on interface grid [Pa]
+  real(rtype), intent(in) :: pint(shcol,nlevi)
 
   ! OUTPUT VARIABLES
   real(rtype), intent(out) :: te_a(shcol)
@@ -4007,7 +4015,7 @@ subroutine shoc_energy_total_fixer(&
   ! density on interface grid [kg/m^3]
   real(rtype) :: rho_zi(shcol,nlevi)
   ! sensible and latent heat fluxes [W/m^2]
-  real(rtype) :: shf, lhf, hdtime
+  real(rtype) :: shf, lhf, hdtime, exner_surf
   integer :: i
 
   ! compute the host timestep
@@ -4018,8 +4026,10 @@ subroutine shoc_energy_total_fixer(&
   ! Based on these integrals, compute the total energy before and after SHOC
   ! call
   do i=1,shcol
-    ! convert shf and lhf to W/m^2
-    shf=wthl_sfc(i)*cp*rho_zi(i,nlevi)
+    ! convert shf and lhf
+    exner_surf = bfb_pow(pint(i,nlevi)/p0, rgas/cp)
+    shf=wthl_sfc(i)*cp*rho_zi(i,nlevi)*exner_surf
+
     lhf=wqw_sfc(i)*rho_zi(i,nlevi)
     te_a(i) = se_a(i) + ke_a(i) + (lcond+lice)*wv_a(i)+lice*wl_a(i)
     te_b(i) = se_b(i) + ke_b(i) + (lcond+lice)*wv_b(i)+lice*wl_b(i)

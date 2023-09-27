@@ -24,7 +24,7 @@ contains
   end subroutine append_precision
 
   subroutine shoc_init_c(nlev, gravit, rair, rh2o, cpair, &
-                         zvir, latvap, latice, karman) bind(c)
+                         zvir, latvap, latice, karman, p0) bind(c)
     use shoc, only: shoc_init, npbl
 
     integer(kind=c_int), value, intent(in) :: nlev ! number of levels
@@ -37,20 +37,21 @@ contains
     real(kind=c_real), value, intent(in)  :: latvap ! latent heat of vaporization
     real(kind=c_real), value, intent(in)  :: latice ! latent heat of fusion
     real(kind=c_real), value, intent(in)  :: karman ! Von Karman's constant
+    real(kind=c_real), value, intent(in)  :: p0     ! Reference pressure
 
     real(kind=c_real) :: pref_mid(nlev) ! unused values
 
     pref_mid = 0
     call shoc_init(nlev, gravit, rair, rh2o, cpair, &
-                   zvir, latvap, latice, karman, &
+                   zvir, latvap, latice, karman, p0, &
                    pref_mid, nlev, 1)
     npbl = nlev ! set pbl layer explicitly so we don't need pref_mid.
   end subroutine shoc_init_c
 
   ! shoc_init for shoc_main_bfb testing
   subroutine shoc_init_for_main_bfb_c(nlev, gravit, rair, rh2o, cpair, &
-                                      zvir, latvap, latice, karman,pref_mid,&
-                                      nbot_shoc, ntop_shoc) bind(c)
+                                      zvir, latvap, latice, karman, p0, &
+                                      pref_mid, nbot_shoc, ntop_shoc) bind(c)
     use shoc, only: shoc_init
 
     integer(kind=c_int), value, intent(in) :: nlev ! number of levels
@@ -65,10 +66,11 @@ contains
     real(kind=c_real), value, intent(in)  :: latvap ! latent heat of vaporization
     real(kind=c_real), value, intent(in)  :: latice ! latent heat of fusion
     real(kind=c_real), value, intent(in)  :: karman ! Von Karman's constant
+    real(kind=c_real), value, intent(in)  :: p0     ! Reference pressure
 
     real(kind=c_real), intent(in), dimension(nlev) :: pref_mid ! reference pressures at midpoints
     call shoc_init(nlev, gravit, rair, rh2o, cpair, &
-                   zvir, latvap, latice, karman, &
+                   zvir, latvap, latice, karman, p0, &
                    pref_mid, nbot_shoc, ntop_shoc)
   end subroutine shoc_init_for_main_bfb_c
 
@@ -501,7 +503,7 @@ contains
                                 zt_grid,zi_grid,&
                                 se_b,ke_b,wv_b,wl_b,&
                                 se_a,ke_a,wv_a,wl_a,&
-                                wthl_sfc,wqw_sfc,rho_zt,&
+                                wthl_sfc,wqw_sfc,rho_zt,pint,&
                                 te_a,te_b) bind (C)
     use shoc, only: shoc_energy_total_fixer
 
@@ -524,6 +526,7 @@ contains
     real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
     real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
     real(kind=c_real), intent(in) :: rho_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: pint(shcol,nlevi)
 
     real(kind=c_real), intent(out) :: te_a(shcol)
     real(kind=c_real), intent(out) :: te_b(shcol)
@@ -532,7 +535,7 @@ contains
                                  zt_grid,zi_grid,&
                                  se_b,ke_b,wv_b,wl_b,&
                                  se_a,ke_a,wv_a,wl_a,&
-                                 wthl_sfc,wqw_sfc,rho_zt,&
+                                 wthl_sfc,wqw_sfc,rho_zt,pint,&
                                  te_a,te_b)
 
   end subroutine shoc_energy_total_fixer_c
