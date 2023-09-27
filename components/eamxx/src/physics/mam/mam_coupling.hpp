@@ -199,6 +199,8 @@ const char* cld_aero_nmr_field_name(const int mode) {
   return const_cast<const char*>(cld_aero_nmr_names(mode));
 }
 
+} // end anonymous namespace
+
 // Given a MAM aerosol mode index and the index of the MAM aerosol species
 // within it, returns the name of the relevant interstitial mass mixing ratio
 // field in EAMxx. The form of the field name is "int_aero_mmr_<mode>_<species>".
@@ -238,7 +240,7 @@ const char* cld_aero_mmr_field_name(const int mode, const int species) {
 // Given a MAM aerosol-related gas identifier, returns the name of its mass
 // mixing ratio field in EAMxx ("aero_gas_mmr_<gas>")
 KOKKOS_INLINE_FUNCTION
-constexpr const char* gas_mmr_field_name(const int gas) {
+const char* gas_mmr_field_name(const int gas) {
   if (!gas_mmr_names(gas)) {
     concat_2_strings("aero_gas_mmr_", gas_species_name(gas), gas_mmr_names(gas));
   }
