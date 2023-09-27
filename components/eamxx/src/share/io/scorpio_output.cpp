@@ -202,6 +202,18 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   // Register any diagnostics needed by this output stream
   set_diagnostics();
 
+  // Helper lambda, to copy io string attributes. This will be used if any
+  // remapper is created, to ensure atts set by atm_procs are not lost
+  const std::string io_string_atts_key ="io: string attributes";
+  auto transfer_io_str_atts = [&] (const Field& src, Field& tgt) {
+    using stratts_t = std::map<std::string,std::string>;
+    const auto& src_atts = src.get_header().get_extra_data<stratts_t>(io_string_atts_key);
+          auto& dst_atts = tgt.get_header().get_extra_data<stratts_t>(io_string_atts_key);
+    for (const auto& [name,val] : src_atts) {
+      dst_atts[name] = val;
+    }
+  };
+
   // Setup remappers - if needed
   if (use_vertical_remap_from_file) {
     // When vertically remapping there is a chance that filled values will be present, so be sure to track these
@@ -225,6 +237,11 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       io_fm->register_field(FieldRequest(tgt_fid,packsize));
     }
     io_fm->registration_ends();
+    for (const auto& fname : m_fields_names) {
+      const auto& src = get_field(fname,"sim");
+            auto& tgt = io_fm->get_field(fname);
+      transfer_io_str_atts (src,tgt);
+    }
 
     // Register all output fields in the remapper.
     m_vert_remapper->registration_begins();
@@ -277,6 +294,11 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       io_fm->register_field(FieldRequest(tgt_fid,packsize));
     }
     io_fm->registration_ends();
+    for (const auto& fname : m_fields_names) {
+      const auto& src = get_field(fname,"before_horizontal_remap");
+            auto& tgt = io_fm->get_field(fname);
+      transfer_io_str_atts (src,tgt);
+    }
 
     // Register all output fields in the remapper.
     m_horiz_remapper->registration_begins();
@@ -946,10 +968,18 @@ register_variables(const std::string& filename,
         children_list += " ]";
         set_variable_metadata(filename,name,"sub_fields",children_list);
       }
+
       // If tracking average count variables then add the name of the tracking variable for this variable
       if (m_track_avg_cnt && m_add_time_dim) {
         const auto lookup = m_field_to_avg_cnt_map.at(name);
         set_variable_metadata(filename,name,"averaging_count_tracker",lookup);
+      }
+
+      // Atm procs may have set some request for metadata.
+      using stratts_t = std::map<std::string,std::string>;
+      const auto& str_atts = field.get_header().get_extra_data<stratts_t>("io: string attributes");
+      for (const auto& [att_name,att_val] : str_atts) {
+        set_variable_metadata(filename,name,att_name,att_val);
       }
     }
   }

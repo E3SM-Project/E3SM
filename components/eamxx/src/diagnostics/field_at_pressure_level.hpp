@@ -37,6 +37,7 @@ public:
 #endif
   void compute_diagnostic_impl ();
 protected:
+  void initialize_impl (const RunType /*run_type*/);
 
   using Pack1 = ekat::Pack<Real,1>;
 

@@ -100,6 +100,19 @@ FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_mask_field.allocate_view();
 }
 
+void FieldAtPressureLevel::initialize_impl (const RunType /*run_type*/)
+{
+  using stratts_t = std::map<std::string,std::string>;
+
+  // Propagate any io string attribute from input field to diag field
+  const auto& src = get_fields_in().front();
+  const auto& src_atts = src.get_header().get_extra_data<stratts_t>("io: string attributes");
+        auto& dst_atts = m_diagnostic_output.get_header().get_extra_data<stratts_t>("io: string attributes");
+  for (const auto& [name, val] : src_atts) {
+    dst_atts[name] = val;
+  }
+}
+
 // =========================================================================================
 void FieldAtPressureLevel::compute_diagnostic_impl()
 {
