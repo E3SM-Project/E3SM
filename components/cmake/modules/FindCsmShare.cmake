@@ -24,7 +24,7 @@ find_library(CSM_SHARE_LIB csm_share REQUIRED PATHS ${CSM_SHARE})
 
 # Create the interface library, and set target properties
 add_library (csm_share INTERFACE)
-target_link_libraries (csm_share INTERFACE ${CSM_SHARE_LIB};${PIOLIBS})
+target_link_libraries (csm_share INTERFACE ${CSM_SHARE_LIB};mct;${PIOLIBS})
 target_include_directories(csm_share INTERFACE ${CSM_SHARE})
 
 # Link against piof. Don't worry about this for now. Fix once spio

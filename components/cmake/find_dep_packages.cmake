@@ -50,5 +50,5 @@ else()
   set(PIOLIBS "${PIO_LIBDIR}/libpio.a")
 endif()
 
-find_package(CsmShare REQUIRED)
 find_package(MCT REQUIRED)
+find_package(CsmShare REQUIRED)

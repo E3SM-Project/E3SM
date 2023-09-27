@@ -20,6 +20,3 @@ add_library(mct INTERFACE)
 target_link_libraries(mct INTERFACE ${MCT_LIB} ${MPEU_LIB})
 target_include_directories(mct INTERFACE ${INSTALL_SHAREDPATH}/include)
 target_compile_definitions(mct INTERFACE "MCT_INTERFACE")
-
-# Link against csm_share
-target_link_libraries(mct INTERFACE csm_share)
