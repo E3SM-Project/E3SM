@@ -724,6 +724,45 @@ this mask will have smb calculated over the entire global land surface
 <pdepmapalgo use_cn=".true."   hgrid="1x1_tropicAtl"       >nn</pdepmapalgo>
 <pdepmapalgo use_cn=".true."   hgrid="5x5_amazon"          >nn</pdepmapalgo>
 
++<!-- FAN Nitrogen (manure) deposition streams namelist defaults -->
+<stream_year_first_fan use_cn=".true."   sim_year="2000" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="2000" >2010</stream_year_last_fan>
+
+<stream_year_first_fan use_cn=".true."   sim_year="1850" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="1850" >2010</stream_year_last_fan>
+
+<stream_year_first_fan use_cn=".true."   sim_year="1000" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="1000" >2010</stream_year_last_fan>
+
+<stream_year_first_fan use_cn=".true."   sim_year="constant" sim_year_range="1000-1002" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="constant" sim_year_range="1000-1002" >2010</stream_year_last_fan>
+
+<stream_year_first_fan use_cn=".true."   sim_year="constant" sim_year_range="1000-1004" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="constant" sim_year_range="1000-1004" >2010</stream_year_last_fan>
+
+<stream_year_first_fan use_cn=".true."   sim_year="constant" sim_year_range="1850-2000" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="constant" sim_year_range="1850-2000" >2010</stream_year_last_fan>
+
+<stream_year_first_fan use_cn=".true."   sim_year="constant" sim_year_range="1850-2100" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="constant" sim_year_range="1850-2100" >2010</stream_year_last_fan>
+
+<stream_year_first_fan use_cn=".true."   sim_year="constant" sim_year_range="2000-2100" >2010</stream_year_first_fan>
+<stream_year_last_fan  use_cn=".true."   sim_year="constant" sim_year_range="2000-2100" >2010</stream_year_last_fan>
+
+<stream_fldfilename_fan>lnd/clm2/ndepdata/fan_nitrogen_e3sm_f19_c20191010.nc</stream_fldfilename_fan>
+
+<fanmapalgo use_cn=".true."                               >bilinear</fanmapalgo>
+
+<fanmapalgo use_cn=".true."   hgrid="1x1_brazil"          >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="1x1_mexicocityMEX"   >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="1x1_vancouverCAN"    >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="1x1_urbanc_alpha"    >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="1x1_camdenNJ"        >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="1x1_asphaltjungleNJ" >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="1x1_tropicAtl"       >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="5x5_amazon"          >nn</fanmapalgo>
+<fanmapalgo use_cn=".true."   hgrid="1x1_smallvilleIA"    >nn</fanmapalgo>
+
 <!-- LAI streams namelist defaults -->
 <use_lai_streams        >.false.</use_lai_streams>
 <stream_year_first_lai  >2001</stream_year_first_lai>
@@ -2099,5 +2138,11 @@ this mask will have smb calculated over the entire global land surface
 <use_vertsoilc                 bgc_mode="fates"  >.true.</use_vertsoilc>
 <use_century_decomp            bgc_mode="fates"  >.true.</use_century_decomp>
 <use_lch4                      bgc_mode="fates"  >.false.</use_lch4>
+
+<!-- flow of agricultural nitrogen (fan) model -->
+<use_fan use_cn=".true.">.false.</use_fan>
+<use_fan use_cn=".false.">.false.</use_fan>
+<use_fan use_fates=".true." >.false.</use_fan>
+<use_fan fan_mode='disable'>.false.</use_fan>
 
 </namelist_defaults>

@@ -11,7 +11,7 @@ module NitrogenDynamicsMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use decompMod           , only : bounds_type
   use elm_varcon          , only : dzsoi_decomp, zisoi
-  use elm_varctl          , only : use_vertsoilc
+  use elm_varctl          , only : use_vertsoilc, use_fan
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
   use CNStateType         , only : cnstate_type
@@ -26,7 +26,10 @@ module NitrogenDynamicsMod
   use elm_varctl          , only : NFIX_PTASE_plant
   use elm_varctl          , only : use_fates
   use ELMFatesInterfaceMod  , only : hlm_fates_interface_type
-  
+  use FrictionVelocityType, only : frictionvel_type
+  use SoilStateType       , only : soilstate_type
+  use FanUpdateMod        , only : fan_eval
+
   !
   implicit none
   save
@@ -51,6 +54,8 @@ module NitrogenDynamicsMod
 
   type(CNNDynamicsParamsType), public ::  CNNDynamicsParamsInst
   !$acc declare create(CNNDynamicsParamsInst)
+
+  logical, private, parameter :: debug_fan = .false.
 
   !-----------------------------------------------------------------------
 
@@ -113,7 +118,8 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine NitrogenDeposition( bounds, &
-       atm2lnd_vars, dt )
+       atm2lnd_vars, frictionvel_vars,  &
+       soilstate_vars, filter_soilc, num_soilc, dt )
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update the nitrogen deposition rate
@@ -126,6 +132,10 @@ contains
       !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
+    type(frictionvel_type)   , intent(in)    :: frictionvel_vars
+    type(soilstate_type)     , intent(in)    :: soilstate_vars
+    integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     real(r8),   intent(in) :: dt
     !
     ! !LOCAL VARIABLES:
@@ -144,6 +154,11 @@ contains
       end do
 
     end associate
+
+    if (use_fan) then
+      call fan_eval(bounds, num_soilc, filter_soilc, &
+           atm2lnd_vars, soilstate_vars, frictionvel_vars)
+    end if
 
   end subroutine NitrogenDeposition
 
