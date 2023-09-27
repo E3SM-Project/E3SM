@@ -454,9 +454,7 @@ void construct_subareas_1gridcell(
     }
     // *************************************************************************************************
   } else { // this should not happen
-    std::cout << "*** modal_aero_amicphys - bad jclea, jcldy, nsubarea" << jclea
-              << " " << jcldy << " " << nsubarea << std::endl;
-    exit(1);
+    EKAT_KERNEL_REQUIRE_MSG(false, "*** modal_aero_amicphys - bad jclea, jcldy, nsubarea!");
   }
   // *************************************************************************************************
 
