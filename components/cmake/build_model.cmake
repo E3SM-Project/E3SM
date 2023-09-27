@@ -228,7 +228,7 @@ function(build_model COMP_CLASS COMP_NAME)
     set(ALL_LIBS "${GPTLLIB} ${SLIBS} ${MLIBS}")
     separate_arguments(ALL_LIBS_LIST UNIX_COMMAND "${ALL_LIBS}")
 
-    target_link_libraries(${TARGET_NAME} ${MCT_LIBRARIES})
+    target_link_libraries(${TARGET_NAME} mct)
 
     foreach(ITEM IN LISTS COMP_CLASSES)
       if (NOT ITEM STREQUAL "cpl")
