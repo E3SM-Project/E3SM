@@ -72,6 +72,11 @@ void Functions<S,D>::shoc_main_internal(
   const Int&                   nadv,         // Number of times to loop SHOC
   const Int&                   num_qtracers, // Number of tracers
   const Scalar&                dtime,        // SHOC timestep [s]
+  // Runtime Parameters
+  const Scalar&                lambda_low,
+  const Scalar&                lambda_high,
+  const Scalar&                lambda_slope,
+  const Scalar&                lambda_thresh,
   // Input Variables
   const Scalar&                dx,
   const Scalar&                dy,
@@ -196,10 +201,6 @@ void Functions<S,D>::shoc_main_internal(
                 brunt,shoc_mix);       // Output
 
     // Advance the SGS TKE equation
-    const Scalar lambda_low    = 0.001;  //ASD
-    const Scalar lambda_high   = 0.04;
-    const Scalar lambda_slope  = 2.65;
-    const Scalar lambda_thresh = 0.02;
     shoc_tke(team,nlev,nlevi,dtime,              // Input
 	     lambda_low,lambda_high,lambda_slope,lambda_thresh, // Runtime options
 	     wthv_sec,                           // Input
@@ -308,6 +309,11 @@ void Functions<S,D>::shoc_main_internal(
   const Int&                   nadv,         // Number of times to loop SHOC
   const Int&                   num_qtracers, // Number of tracers
   const Scalar&                dtime,        // SHOC timestep [s]
+  // Runtime Parameters
+  const Scalar&                lambda_low,
+  const Scalar&                lambda_high,
+  const Scalar&                lambda_slope,
+  const Scalar&                lambda_thresh,
   // Input Variables
   const view_1d<const Scalar>& dx,
   const view_1d<const Scalar>& dy,
@@ -558,6 +564,12 @@ Int Functions<S,D>::shoc_main(
   // Start timer
   auto start = std::chrono::steady_clock::now();
 
+  // Runtime options
+  const Scalar lambda_low    = 0.001;  //ASD
+  const Scalar lambda_high   = 0.04;
+  const Scalar lambda_slope  = 2.65;
+  const Scalar lambda_thresh = 0.02;
+
 #ifndef SCREAM_SMALL_KERNELS
   using ExeSpace = typename KT::ExeSpace;
 
@@ -616,6 +628,7 @@ Int Functions<S,D>::shoc_main(
     const auto qtracers_s = Kokkos::subview(shoc_input_output.qtracers, i, Kokkos::ALL(), Kokkos::ALL());
 
     shoc_main_internal(team, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
+	               lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
                        dx_s, dy_s, zt_grid_s, zi_grid_s,                      // Input
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,             // Input
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,             // Input
@@ -637,6 +650,7 @@ Int Functions<S,D>::shoc_main(
   const auto v_wind_s   = Kokkos::subview(shoc_input_output.horiz_wind, Kokkos::ALL(), 1, Kokkos::ALL());
 
   shoc_main_internal(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
+    lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
     shoc_input.dx, shoc_input.dy, shoc_input.zt_grid, shoc_input.zi_grid, // Input
     shoc_input.pres, shoc_input.presi, shoc_input.pdel, shoc_input.thv, shoc_input.w_field, // Input
     shoc_input.wthl_sfc, shoc_input.wqw_sfc, shoc_input.uw_sfc, shoc_input.vw_sfc, // Input

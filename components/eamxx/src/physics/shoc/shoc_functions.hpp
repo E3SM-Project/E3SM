@@ -811,6 +811,11 @@ struct Functions
     const Int&                   nadv,         // Number of times to loop SHOC
     const Int&                   num_qtracers, // Number of tracers
     const Scalar&                dtime,        // SHOC timestep [s]
+    // Runtime Parameters
+    const Scalar&                lambda_low,
+    const Scalar&                lambda_high,
+    const Scalar&                lambda_slope,
+    const Scalar&                lambda_thresh,
     // Input Variables
     const Scalar&                host_dx,
     const Scalar&                host_dy,
@@ -869,6 +874,11 @@ struct Functions
     const Int&                   nadv,         // Number of times to loop SHOC
     const Int&                   num_qtracers, // Number of tracers
     const Scalar&                dtime,        // SHOC timestep [s]
+    // Runtime Parameters
+    const Scalar&                lambda_low,
+    const Scalar&                lambda_high,
+    const Scalar&                lambda_slope,
+    const Scalar&                lambda_thresh,
     // Input Variables
     const view_1d<const Scalar>& host_dx,
     const view_1d<const Scalar>& host_dy,
