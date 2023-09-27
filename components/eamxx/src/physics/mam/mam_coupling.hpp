@@ -588,8 +588,9 @@ void compute_updraft_velocities(const Team& team,
   EKAT_KERNEL_ASSERT_MSG(column_index == team.league_rank(),
     "Given column index does not correspond to given team!");
 
+  constexpr int nlev = mam4::nlev;
   int i = column_index;
-  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, mam4::nlev), [&] (const int k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&] (const int k) {
     const auto rho = PF::calculate_density(dry_atm.p_del(i,k), dry_atm.dz(i,k));
     dry_atm.w_updraft(i,k) = PF::calculate_vertical_velocity(wet_atm.omega(i,k), rho);
   });
@@ -606,8 +607,9 @@ void compute_dry_mixing_ratios(const Team& team,
   EKAT_KERNEL_ASSERT_MSG(column_index == team.league_rank(),
     "Given column index does not correspond to given team!");
 
+  constexpr int nlev = mam4::nlev;
   int i = column_index;
-  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, mam4::nlev), [&] (const int k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&] (const int k) {
     const auto qv_ik = wet_atm.qv(i,k);
     dry_atm.qv(i,k) = PF::calculate_drymmr_from_wetmmr(wet_atm.qv(i,k), qv_ik);
     dry_atm.qc(i,k) = PF::calculate_drymmr_from_wetmmr(wet_atm.qc(i,k), qv_ik);
@@ -629,8 +631,9 @@ void compute_dry_mixing_ratios(const Team& team,
   EKAT_KERNEL_ASSERT_MSG(column_index == team.league_rank(),
     "Given column index does not correspond to given team!");
 
+  constexpr int nlev = mam4::nlev;
   int i = column_index;
-  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, mam4::nlev), [&] (const int k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&] (const int k) {
     const auto qv_ik = wet_atm.qv(i,k);
     for (int m = 0; m < num_aero_modes(); ++m) {
       dry_aero.int_aero_nmr[m](i,k) = PF::calculate_drymmr_from_wetmmr(wet_aero.int_aero_nmr[m](i,k), qv_ik);
@@ -664,8 +667,9 @@ void compute_wet_mixing_ratios(const Team& team,
   EKAT_KERNEL_ASSERT_MSG(column_index == team.league_rank(),
     "Given column index does not correspond to given team!");
 
+  constexpr int nlev = mam4::nlev;
   int i = column_index;
-  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, mam4::nlev), [&] (const int k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&] (const int k) {
     const auto qv_ik = dry_atm.qv(i,k);
     for (int m = 0; m < num_aero_modes(); ++m) {
       wet_aero.int_aero_nmr[m](i,k) = PF::calculate_wetmmr_from_drymmr(dry_aero.int_aero_nmr[m](i,k), qv_ik);
