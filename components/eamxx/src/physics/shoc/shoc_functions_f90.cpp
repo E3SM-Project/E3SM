@@ -2861,6 +2861,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
                                              qwthl_sec_d, wthl_sec_d, wqw_sec_d, wtke_sec_d,
                                              uw_sec_d,    vw_sec_d,   w3_d,      wqls_sec_d,
                                              brunt_d,     isotropy_d};
+  SHF::SHOCRuntime shoc_runtime_options;
 
   const auto nlevi_packs = ekat::npack<Spack>(nlevi);
 
@@ -2899,7 +2900,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
   ekat::WorkspaceManager<Spack, SHF::KT::Device> workspace_mgr(nlevi_packs, 14+(n_wind_slots+n_trac_slots), policy);
 
   const auto elapsed_microsec = SHF::shoc_main(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
-                                               workspace_mgr,
+                                               workspace_mgr, shoc_runtime_options,
                                                shoc_input, shoc_input_output, shoc_output, shoc_history_output
 #ifdef SCREAM_SMALL_KERNELS
                                                , shoc_temporaries

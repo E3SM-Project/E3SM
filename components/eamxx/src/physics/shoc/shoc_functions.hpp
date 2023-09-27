@@ -69,6 +69,16 @@ struct Functions
   using WorkspaceMgr = typename ekat::WorkspaceManager<Spack,  Device>;
   using Workspace    = typename WorkspaceMgr::Workspace;
 
+  // This struct stores runtime options for shoc_main
+ struct SHOCRuntime {
+   SHOCRuntime() = default;
+   // Runtime options for isotropic_ts
+   Scalar lambda_low    = 0.001;
+   Scalar lambda_high   = 0.04;
+   Scalar lambda_slope  = 2.65;
+   Scalar lambda_thresh = 0.02;
+ };
+
   // This struct stores input views for shoc_main.
   struct SHOCInput {
     SHOCInput() = default;
@@ -960,6 +970,7 @@ struct Functions
     const Int&               num_q_tracers,        // Number of tracers
     const Scalar&            dtime,                // SHOC timestep [s]
     WorkspaceMgr&            workspace_mgr,        // WorkspaceManager for local variables
+    const SHOCRuntime&       shoc_runtime,         // Runtime options
     const SHOCInput&         shoc_input,           // Input
     const SHOCInputOutput&   shoc_input_output,    // Input/Output
     const SHOCOutput&        shoc_output,          // Output

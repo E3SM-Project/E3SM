@@ -230,6 +230,11 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void SHOCMacrophysics::initialize_impl (const RunType run_type)
 {
+  // Gather runtime options
+  runtime_options.lambda_low    = m_params.get<Real>("lambda_low",0.001);
+  runtime_options.lambda_high   = m_params.get<Real>("lambda_high",0.04);
+  runtime_options.lambda_slope  = m_params.get<Real>("lambda_slope",2.65);
+  runtime_options.lambda_thresh = m_params.get<Real>("lambda_thresh",0.02);
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
@@ -457,7 +462,7 @@ void SHOCMacrophysics::run_impl (const double dt)
 
   // Run shoc main
   SHF::shoc_main(m_num_cols, m_num_levs, m_num_levs+1, m_npbl, m_nadv, m_num_tracers, dt,
-                 workspace_mgr,input,input_output,output,history_output
+                 workspace_mgr,runtime_options,input,input_output,output,history_output
 #ifdef SCREAM_SMALL_KERNELS
                  , temporaries
 #endif

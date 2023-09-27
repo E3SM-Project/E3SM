@@ -552,6 +552,7 @@ Int Functions<S,D>::shoc_main(
   const Int&               num_qtracers,        // Number of tracers
   const Scalar&            dtime,               // SHOC timestep [s]
   WorkspaceMgr&            workspace_mgr,       // WorkspaceManager for local variables
+  const SHOCRuntime&       shoc_runtime,        // Runtime Options
   const SHOCInput&         shoc_input,          // Input
   const SHOCInputOutput&   shoc_input_output,   // Input/Output
   const SHOCOutput&        shoc_output,         // Output
@@ -565,10 +566,10 @@ Int Functions<S,D>::shoc_main(
   auto start = std::chrono::steady_clock::now();
 
   // Runtime options
-  const Scalar lambda_low    = 0.001;  //ASD
-  const Scalar lambda_high   = 0.04;
-  const Scalar lambda_slope  = 2.65;
-  const Scalar lambda_thresh = 0.02;
+  const Scalar lambda_low    = shoc_runtime.lambda_low;    
+  const Scalar lambda_high   = shoc_runtime.lambda_high;   
+  const Scalar lambda_slope  = shoc_runtime.lambda_slope;  
+  const Scalar lambda_thresh = shoc_runtime.lambda_thresh; 
 
 #ifndef SCREAM_SMALL_KERNELS
   using ExeSpace = typename KT::ExeSpace;
