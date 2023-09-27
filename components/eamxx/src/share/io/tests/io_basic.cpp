@@ -63,9 +63,10 @@ util::TimeStamp get_t0 () {
 std::shared_ptr<const GridsManager>
 get_gm (const ekat::Comm& comm)
 {
-  const int nlcols = 3;
+  // For 2+ ranks tests, this will check IO works correctly
+  // even if one rank owns 0 dofs
+  const int ngcols = std::max(comm.size()-1,1);
   const int nlevs = 4;
-  const int ngcols = nlcols*comm.size();
   auto gm = create_mesh_free_grids_manager(comm,0,0,nlevs,ngcols);
   gm->build_grids();
   return gm;
@@ -106,13 +107,15 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   auto fm = std::make_shared<FieldManager>(grid);
   
   const auto units = ekat::units::Units::nondimensional();
+  int count=0;
   for (const auto& fl : layouts) {
-    FID fid("f_"+std::to_string(fl.size()),fl,units,grid->name());
+    FID fid("f_"+std::to_string(count),fl,units,grid->name());
     Field f(fid);
     f.allocate_view();
     randomize (f,engine,my_pdf);
     f.get_header().get_tracking().update_time_stamp(t0);
     fm->add_field(f);
+    ++count;
   }
 
   return fm;
