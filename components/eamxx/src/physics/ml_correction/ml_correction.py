@@ -8,10 +8,14 @@ from scream_run.steppers.machine_learning import (
     predict,
 )
 
-
-def get_ML_correction(model_path, T_mid, qv, cos_zenith, dt):
+def get_ML_model(model_path):
+    if model_path == "NONE":
+        return None
     config = MachineLearningConfig(models=[model_path])
     model = open_model(config)
+    return model    
+
+def get_ML_correction(model, T_mid, qv, cos_zenith, dt):
     ds = xr.Dataset(
         data_vars=dict(
             T_mid=(["ncol", "z"], T_mid),
@@ -33,7 +37,7 @@ def update_fields(
     Nlev,
     num_tracers,
     dt,
-    model_path,
+    model,
     current_time,
 ):
     T_mid = np.reshape(T_mid, (-1, Nlev))
@@ -46,6 +50,6 @@ def update_fields(
         lon,
         lat,
     )
-    correction = get_ML_correction(model_path, T_mid, qv[:, 0, :], cos_zenith, dt)
+    correction = get_ML_correction(model, T_mid, qv[:, 0, :], cos_zenith, dt)
     T_mid[:, :] += correction["dQ1"].values * dt
     qv[:, 0, :] += correction["dQ2"].values * dt

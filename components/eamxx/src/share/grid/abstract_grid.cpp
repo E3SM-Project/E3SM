@@ -28,6 +28,11 @@ AbstractGrid (const std::string& name,
 
   // This grid name is also an alias
   m_aliases.push_back(m_name);
+
+  // Ensure each grid object gets a different id
+  static int counter = 0;
+  m_unique_grid_id = counter;
+  ++counter;
 }
 
 AbstractGrid::

@@ -857,7 +857,7 @@
     <DIN_LOC_ROOT_CLMFORC>/lustre/orion/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/lustre/orion/cli133/world-shared/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lustre/orion/cli133/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/lustre/orion/cli115/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -957,7 +957,7 @@
     <DIN_LOC_ROOT_CLMFORC>/lustre/orion/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/lustre/orion/cli133/world-shared/e3sm/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/lustre/orion/cli133/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/lustre/orion/cli115/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
