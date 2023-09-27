@@ -37,3 +37,18 @@ endif()
 if (USE_PETSC)
   find_package(PETSc REQUIRED)
 endif()
+
+# Placeholder code until spio gets a proper config.cmake
+if (NOT PIO_LIBDIR)
+  set(PIO_LIBDIR "${INSTALL_SHAREDPATH}/lib")
+endif()
+if (PIO_VERSION STREQUAL 2)
+  # This is a pio2 library
+  set(PIOLIBS "${PIO_LIBDIR}/libpiof.a;${PIO_LIBDIR}/libpioc.a")
+else()
+  # This is a pio1 library
+  set(PIOLIBS "${PIO_LIBDIR}/libpio.a")
+endif()
+
+find_package(CsmShare REQUIRED)
+find_package(MCT REQUIRED)

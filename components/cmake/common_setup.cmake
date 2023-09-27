@@ -70,12 +70,6 @@ if (USE_ESMF_LIB)
   set(CPPDEFS "${CPPDEFS} -DUSE_ESMF_LIB")
 endif()
 
-if (COMP_INTERFACE STREQUAL "nuopc")
-  set(CPPDEFS "${CPPDEFS} -DNUOPC_INTERFACE")
-else()
-  set(CPPDEFS "${CPPDEFS} -DMCT_INTERFACE")
-endif()
-
 if (COMPARE_TO_NUOPC)
   set(CPPDEFS "${CPPDEFS} -DCOMPARE_TO_NUOPC")
 endif()
@@ -186,14 +180,6 @@ if (NOT HAS_DLINUX EQUAL -1 AND HAS_DBG EQUAL -1 AND HAS_DARWIN EQUAL -1)
   set(CPPDEFS "${CPPDEFS} -DHAVE_SLASHPROC")
 endif()
 
-# Atleast on Titan+cray mpi, MPI_Irsends() are buggy, causing hangs during I/O
-# Force PIO to use MPI_Isends instead of the default, MPI_Irsends
-if (PIO_VERSION STREQUAL 2)
-  set(EXTRA_PIO_CPPDEFS "-DUSE_MPI_ISEND_FOR_FC")
-else()
-  set(EXTRA_PIO_CPPDEFS "-D_NO_MPI_RSEND")
-endif()
-
 if (LIB_PNETCDF)
   set(CPPDEFS "${CPPDEFS} -D_PNETCDF")
   set(SLIBS "${SLIBS} -L${LIB_PNETCDF} -lpnetcdf")
@@ -228,7 +214,6 @@ else()
     set(LIB_MPI ${MPI_PATH}/lib)
   endif()
 endif()
-set(CSM_SHR_INCLUDE ${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/include)
 
 #===============================================================================
 # Set include paths (needed after override for any model specific builds below)
@@ -246,23 +231,6 @@ foreach(ITEM MOD_NETCDF INC_MPI INC_PNETCDF)
     list(APPEND INCLDIR "${${ITEM}}")
   endif()
 endforeach()
-
-if (NOT MCT_LIBDIR)
-  set(MCT_LIBDIR "${INSTALL_SHAREDPATH}/lib")
-endif()
-
-if (PIO_LIBDIR)
-  if (PIO_VERSION STREQUAL ${PIO_VERSION_MAJOR})
-    list(APPEND INCLDIR "${PIO_INCDIR}")
-    set(SLIBS "${SLIBS} -L${PIO_LIBDIR}")
-  else()
-    # If PIO_VERSION_MAJOR doesnt match, build from source
-    unset(PIO_LIBDIR)
-  endif()
-endif()
-if (NOT PIO_LIBDIR)
-  set(PIO_LIBDIR "${INSTALL_SHAREDPATH}/lib")
-endif()
 
 if (NOT GPTL_LIBDIR)
   set(GPTL_LIBDIR "${INSTALL_SHAREDPATH}/lib")
@@ -330,29 +298,6 @@ else()
   # Remove arch flag if it exists, it break fortran linking
   string(REGEX REPLACE "-arch[^ ]+" "" LDFLAGS "${LDFLAGS}")
 endif()
-
-if (NOT IO_LIB_SRCROOT)
-  if (PIO_VERSION STREQUAL 2)
-    # This is a pio2 library
-    set(PIOLIB "${PIO_LIBDIR}/libpiof.a ${PIO_LIBDIR}/libpioc.a")
-    set(PIOLIBNAME "-lpiof -lpioc")
-    set(PIO_SRC_DIR "${CIMEROOT}/src/externals/pio2")
-  else()
-    # This is a pio1 library
-    set(PIOLIB "${PIO_LIBDIR}/libpio.a")
-    set(PIOLIBNAME "-lpio")
-    if (NOT EXISTS "${CIMEROOT}/src/externals/pio1/pio")
-      set(PIO_SRC_DIR "${CIMEROOT}/src/externals/pio1")
-    else()
-      set(PIO_SRC_DIR "${CIMEROOT}/src/externals/pio1/pio")
-    endif()
-  endif()
-else()
-  set(IO_LIB_SRC_DIR "IO_LIB_v${PIO_VERSION}_SRCDIR")
-  set(PIO_SRC_DIR "${IO_LIB_SRCROOT}/${IO_LIB_SRC_DIR}")
-endif()
-
-set(MCTLIBS "${MCT_LIBDIR}/libmct.a ${MCT_LIBDIR}/libmpeu.a")
 
 set(GPTLLIB "${GPTL_LIBDIR}/libgptl.a")
 
