@@ -196,7 +196,13 @@ void Functions<S,D>::shoc_main_internal(
                 brunt,shoc_mix);       // Output
 
     // Advance the SGS TKE equation
-    shoc_tke(team,nlev,nlevi,dtime,wthv_sec,     // Input
+    const Scalar lambda_low    = 0.001;  //ASD
+    const Scalar lambda_high   = 0.04;
+    const Scalar lambda_slope  = 2.65;
+    const Scalar lambda_thresh = 0.02;
+    shoc_tke(team,nlev,nlevi,dtime,              // Input
+	     lambda_low,lambda_high,lambda_slope,lambda_thresh, // Runtime options
+	     wthv_sec,                           // Input
              shoc_mix,dz_zi,dz_zt,pres,shoc_tabs,// Input
              u_wind,v_wind,brunt,zt_grid,        // Input
              zi_grid,pblh,                       // Input
@@ -434,7 +440,13 @@ void Functions<S,D>::shoc_main_internal(
                      brunt,shoc_mix);       // Output
 
     // Advance the SGS TKE equation
-    shoc_tke_disp(shcol,nlev,nlevi,dtime,wthv_sec,    // Input
+    const Scalar lambda_low    = 0.001;  //ASD
+    const Scalar lambda_high   = 0.04;
+    const Scalar lambda_slope  = 2.65;
+    const Scalar lambda_thresh = 0.02;
+    shoc_tke_disp(shcol,nlev,nlevi,dtime,             // Input
+	          lambda_low,lambda_high,lambda_slope,lambda_thresh, // Runtime options
+                  wthv_sec,                           // Input
                   shoc_mix,dz_zi,dz_zt,pres,shoc_tabs,// Input
                   u_wind,v_wind,brunt,zt_grid,        // Input
                   zi_grid,pblh,                       // Input

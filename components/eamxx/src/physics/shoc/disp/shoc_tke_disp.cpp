@@ -12,6 +12,10 @@ void Functions<Real,DefaultDevice>
   const Int&                   nlev,
   const Int&                   nlevi,
   const Scalar&                dtime,
+  const Scalar&                lambda_low,
+  const Scalar&                lambda_high,
+  const Scalar&                lambda_slope,
+  const Scalar&                lambda_thresh,
   const view_2d<const Spack>&  wthv_sec,
   const view_2d<const Spack>&  shoc_mix,
   const view_2d<const Spack>&  dz_zi,
@@ -39,7 +43,12 @@ void Functions<Real,DefaultDevice>
 
     auto workspace       = workspace_mgr.get_workspace(team);
 
+    const Scalar lambda_low    = 0.001;  //ASD
+    const Scalar lambda_high   = 0.04;
+    const Scalar lambda_slope  = 2.65;
+    const Scalar lambda_thresh = 0.02;
     shoc_tke(team, nlev, nlevi, dtime,
+             lambda_low, lambda_high, lambda_slope, lambda_thresh,
              ekat::subview(wthv_sec, i),
              ekat::subview(shoc_mix, i),
              ekat::subview(dz_zi, i),

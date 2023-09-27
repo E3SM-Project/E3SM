@@ -3453,7 +3453,12 @@ void shoc_tke_f(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, Real
     const auto tkh_s = ekat::subview(tkh_d, i);
     const auto isotropy_s = ekat::subview(isotropy_d, i);
 
-    SHF::shoc_tke(team,nlev,nlevi,dtime,wthv_sec_s,shoc_mix_s,dz_zi_s,dz_zt_s,pres_s,
+    const Real lambda_low    = 0.001;  //ASD
+    const Real lambda_high   = 0.04;
+    const Real lambda_slope  = 2.65;
+    const Real lambda_thresh = 0.02;
+    SHF::shoc_tke(team,nlev,nlevi,dtime,lambda_low,lambda_high,lambda_slope,lambda_thresh,
+		  wthv_sec_s,shoc_mix_s,dz_zi_s,dz_zt_s,pres_s,
                   tabs_s,u_wind_s,v_wind_s,brunt_s,zt_grid_s,zi_grid_s,pblh_s,
                   workspace,
                   tke_s,tk_s,tkh_s,isotropy_s);
