@@ -778,6 +778,10 @@ struct Functions
   static void isotropic_ts(
     const MemberType&            team,
     const Int&                   nlev,
+    const Scalar&                lambda_low,
+    const Scalar&                lambda_high,
+    const Scalar&                lambda_slope,
+    const Scalar&                lambda_thresh,
     const Scalar&                brunt_int,
     const uview_1d<const Spack>& tke,
     const uview_1d<const Spack>& a_diss,

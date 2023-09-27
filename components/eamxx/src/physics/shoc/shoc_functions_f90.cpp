@@ -2645,7 +2645,12 @@ void isotropic_ts_f(Int nlev, Int shcol, Real* brunt_int, Real* tke,
       //outputs
       const auto isotropy_s = ekat::subview(isotropy_d, i); //output
 
-      SHF::isotropic_ts(team, nlev, brunt_int_s, tke_s, a_diss_s, brunt_s, isotropy_s);
+      const Real lambda_low = 0.001; //ASD
+      const Real lambda_high   = 0.04;
+      const Real lambda_slope  = 2.65;
+      const Real lambda_thresh = 0.02;
+      SHF::isotropic_ts(team, nlev, lambda_low, lambda_high, lambda_slope, lambda_thresh,
+		      brunt_int_s, tke_s, a_diss_s, brunt_s, isotropy_s);
     });
 
   // Sync back to host
