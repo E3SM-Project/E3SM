@@ -356,10 +356,10 @@ void MAMMicrophysics::run_impl(const double dt) {
         // FIXME: calcsize. This could be improved.
         Real inv_densities[num_modes][num_aero_ids] = {};
         for (int imode = 0; imode < num_modes; ++imode) {
-          const int n_spec = num_species_mode(imode);
+          const int n_spec = mam4::num_species_mode(imode);
           for (int ispec = 0; ispec < n_spec; ++ispec) {
-            const int iaer = static_cast<int>(mode_aero_species(imode, ispec));
-            const Real density = aero_species(iaer).density;
+            const int iaer = static_cast<int>(mam4::mode_aero_species(imode, ispec));
+            const Real density = mam4::aero_species(iaer).density;
             inv_densities[imode][ispec] = 1.0 / density;
           }
         }
@@ -378,7 +378,7 @@ void MAMMicrophysics::run_impl(const double dt) {
               mode.min_diameter, mode.mean_std_dev);
           Real vol2num;
           mam4::calcsize::update_diameter_and_vol2num(dryvol_i,
-            progs.n_aero_i[imode], vol2num_min, vol2num_max,
+            progs.n_mode_i[imode](k), vol2num_min, vol2num_max,
             mode.min_diameter, mode.max_diameter, mode.mean_std_dev,
             dgncur_a[imode], vol2num);
         }
