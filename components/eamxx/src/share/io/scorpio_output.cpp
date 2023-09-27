@@ -918,41 +918,39 @@ register_variables(const std::string& filename,
     register_variable(filename, name, name, units, vec_of_dims,
                       "real",fp_precision, io_decomp_tag);
 
-    // Add FillValue as an attribute of each variable
-    // FillValue is a protected metadata, do not add it if it already existed
+    // Add any extra attributes for this variable
     if (mode != FileMode::Append ) {
-     if (fp_precision == "real") {
-       Real fill_value = m_fill_value;
-       set_variable_metadata(filename, name, "_FillValue",fill_value);
-     } else {
-       float fill_value = m_fill_value;
-       set_variable_metadata(filename, name, "_FillValue",fill_value);
-     }
-    }
-
-    // Add any extra attributes for this variable, examples include:
-    //   1. A list of subfields associated with a field group output
-    //   2. A CF longname (TODO)
-    // First check if this is a field group w/ subfields.
-    const auto& children = field.get_header().get_children();
-    if (children.size()>0) {
-      // This field is a parent to a set of subfields
-      std::string children_list;
-      children_list += "[ ";
-      for (const auto& ch_w : children) {
-        auto child = ch_w.lock();
-        children_list += child->get_identifier().name() + ", ";
+      // Add FillValue as an attribute of each variable
+      // FillValue is a protected metadata, do not add it if it already existed
+      if (fp_precision == "real") {
+        Real fill_value = m_fill_value;
+        set_variable_metadata(filename, name, "_FillValue",fill_value);
+      } else {
+        float fill_value = m_fill_value;
+        set_variable_metadata(filename, name, "_FillValue",fill_value);
       }
-      // Replace last "," with "]"
-      children_list.pop_back();
-      children_list.pop_back();
-      children_list += " ]";
-      set_variable_metadata(filename,name,"sub_fields",children_list);
-    }
-    // If tracking average count variables then add the name of the tracking variable for this variable
-    if (m_track_avg_cnt && m_add_time_dim) {
-      const auto lookup = m_field_to_avg_cnt_map.at(name);
-      set_variable_metadata(filename,name,"averaging_count_tracker",lookup);
+
+      // If this is has subfields, add list of its children
+      const auto& children = field.get_header().get_children();
+      if (children.size()>0) {
+        // This field is a parent to a set of subfields
+        std::string children_list;
+        children_list += "[ ";
+        for (const auto& ch_w : children) {
+          auto child = ch_w.lock();
+          children_list += child->get_identifier().name() + ", ";
+        }
+        // Replace last "," with "]"
+        children_list.pop_back();
+        children_list.pop_back();
+        children_list += " ]";
+        set_variable_metadata(filename,name,"sub_fields",children_list);
+      }
+      // If tracking average count variables then add the name of the tracking variable for this variable
+      if (m_track_avg_cnt && m_add_time_dim) {
+        const auto lookup = m_field_to_avg_cnt_map.at(name);
+        set_variable_metadata(filename,name,"averaging_count_tracker",lookup);
+      }
     }
   }
   // Now register the average count variables
