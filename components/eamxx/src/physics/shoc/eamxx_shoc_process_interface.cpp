@@ -425,7 +425,7 @@ void SHOCMacrophysics::run_impl (const double dt)
 {
   EKAT_REQUIRE_MSG (dt<=300,
       "Error! SHOC is intended to run with a timestep no longer than 5 minutes.\n"
-      "       Please, reduce timestep (perhaps increasing subcycling iteratinos).\n");
+      "       Please, reduce timestep (perhaps increasing subcycling iterations).\n");
 
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
   const auto scan_policy    = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, nlev_packs);

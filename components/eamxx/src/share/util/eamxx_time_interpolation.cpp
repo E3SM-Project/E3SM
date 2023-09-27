@@ -161,6 +161,18 @@ void TimeInterpolation::initialize_data_from_files()
   input_params.set("Field Names",m_field_names);
   input_params.set("Filename",triplet_curr.filename);
   m_file_data_atm_input = AtmosphereInput(input_params,m_fm_time1);
+  // Assign the mask value gathered from the FillValue found in the source file.
+  // TODO: Should we make it possible to check if FillValue is in the metadata and only assign mask_value if it is?
+  float var_fill_value;
+  for (auto& name : m_field_names) {
+    scorpio::get_variable_metadata(triplet_curr.filename,name,"_FillValue",var_fill_value);
+    auto& field0 = m_fm_time0->get_field(name);
+    field0.get_header().set_extra_data("mask_value",var_fill_value);
+    auto& field1 = m_fm_time1->get_field(name);
+    field1.get_header().set_extra_data("mask_value",var_fill_value);
+    auto& field_out = m_interp_fields.at(name);
+    field_out.get_header().set_extra_data("mask_value",var_fill_value);
+  }
   // Read first snap of data and shift to time0
   read_data();
   shift_data();
@@ -307,6 +319,14 @@ void TimeInterpolation::read_data()
     input_params.set("Field Names",m_field_names);
     input_params.set("Filename",triplet_curr.filename);
     m_file_data_atm_input = AtmosphereInput(input_params,m_fm_time1);
+    // Also determine the FillValue, if used
+    // TODO: Should we make it possible to check if FillValue is in the metadata and only assign mask_value if it is?
+    float var_fill_value;
+    for (auto& name : m_field_names) {
+      scorpio::get_variable_metadata(triplet_curr.filename,name,"_FillValue",var_fill_value);
+      auto& field = m_fm_time1->get_field(name);
+      field.get_header().set_extra_data("mask_value",var_fill_value);
+    }
   }
   m_file_data_atm_input.read_variables(triplet_curr.time_idx);
   m_time1 = triplet_curr.timestamp;
