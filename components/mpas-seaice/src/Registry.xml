@@ -44,6 +44,10 @@
 			definition="namelist:config_nCategories"
 			description="The number of ice thickness categories."
 		/>
+		<dim name="nFloeCategories"
+			definition="namelist:config_nFloeCategories"
+			description="The number of floe size categories."
+		/>
 		<dim name="nIceLayers"
 			definition="namelist:config_nIceLayers"
 			description="The number of ice layers in the vertical direction."
@@ -434,6 +438,10 @@
 			description="The number of ice thickness categories to use."
 			possible_values="Any positive integer."
 		/>
+		<nml_option name="config_nFloeCategories" type="integer" default_value="1" units="unitless"
+			description="The number of floe size categories to use."
+			possible_values="Any positive integer."
+		/>
 		<nml_option name="config_nIceLayers" type="integer" default_value="7" units="unitless"
 			description="The number of ice layers in the vertical direction to use."
 			possible_values="Any positive integer."
@@ -774,6 +782,11 @@
 		<nml_option name="config_use_special_boundaries_tracers" type="logical" default_value="false" units="unitless"
 			description="Modify tracers in given boundary cells."
 			possible_values="true or false"
+		/>
+		<nml_option name="config_use_floe_size_distribution" type="logical" default_value="false" units="unitless"
+			description="Use prognostic floe size distribution"
+			possible_values="true or false"
+			icepack_name="tr_fsd"
 		/>
 	</nml_record>
 

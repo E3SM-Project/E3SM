@@ -70,6 +70,7 @@ add_default($nl, 'config_do_restart_snow_grain_radius');
 add_default($nl, 'config_nCategories');
 add_default($nl, 'config_nIceLayers');
 add_default($nl, 'config_nSnowLayers');
+add_default($nl, 'config_nFloeCategories');
 
 ##############################
 # Namelist group: initialize #
@@ -186,6 +187,7 @@ add_default($nl, 'config_use_aerosols');
 add_default($nl, 'config_use_effective_snow_density');
 add_default($nl, 'config_use_snow_grain_radius');
 add_default($nl, 'config_use_special_boundaries_tracers');
+add_default($nl, 'config_use_floe_size_distribution');
 
 ###################################
 # Namelist group: biogeochemistry #

@@ -288,6 +288,22 @@ Valid values: Any positive integer.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_nFloeCategories" type="integer"
+	category="dimensions" group="dimensions">
+The number of floe size categories to use.
+
+Valid values: Any positive integer.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_nCategories" type="integer"
+	category="dimensions" group="dimensions">
+The number of ice thickness categories to use.
+
+Valid values: Any positive integer.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_nIceLayers" type="integer"
 	category="dimensions" group="dimensions">
 The number of ice layers in the vertical direction to use.
@@ -304,6 +320,13 @@ Valid values: Any positive integer.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_nFloeCategories" type="integer"
+	category="dimensions" group="dimensions">
+The number of ice floe categories to use.
+
+Valid values: 1(default), 12, 16, 24.
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- initialize -->
 
@@ -936,6 +959,13 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_floe_size_distribution" type="logical"
+	category="column_tracers" group="column_tracers">
+Use floe size distribution. Requires Icepack column package.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- biogeochemistry -->
 

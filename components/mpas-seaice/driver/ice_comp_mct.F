@@ -754,7 +754,11 @@ contains
     else if (trim(tempCharConfig) == "column_package") then
       call seaice_column_coupling_prep(domain)
     endif ! config_column_physics_type
-
+    
+    call MPAS_pool_get_config(domain % configs, "config_use_floe_size_distribution", tempLogicalConfig)
+    if (tempLogicalConfig) then
+      call mpas_log_write('FloeSizeDistribution coming online soon. Turn FSD off for now.', MPAS_LOG_CRIT)    
+    endif
 !-----------------------------------------------------------------------
 !
 !   send intial state to driver
