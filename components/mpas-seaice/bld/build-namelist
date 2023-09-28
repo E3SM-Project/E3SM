@@ -528,6 +528,7 @@ add_default($nl, 'config_restart_timestamp_name');
 ##############################
 
 add_default($nl, 'config_nCategories');
+add_default($nl, 'config_nFloeCategories');
 add_default($nl, 'config_nIceLayers');
 add_default($nl, 'config_nSnowLayers');
 add_default($nl, 'config_nFloeCategories');
