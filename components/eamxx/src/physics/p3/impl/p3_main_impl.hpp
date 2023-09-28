@@ -244,7 +244,7 @@ Int Functions<S,D>
     // main k-loop (for processes):
 
     p3_main_part2(
-      team, nk_pack, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt, inv_dt,
+      team, nk_pack, runtime_options.max_total_ni, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt, inv_dt,
       lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals, lookup_tables.revap_table_vals, opres, odpres, odz, onc_nuceat_tend, oinv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, oni_activated, oinv_qc_relvar, ocld_frac_i,
       ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
@@ -300,7 +300,7 @@ Int Functions<S,D>
     // and compute diagnostic fields for output
     //
     p3_main_part3(
-      team, nk_pack, lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, oinv_exner, ocld_frac_l, ocld_frac_r, ocld_frac_i,
+      team, nk_pack, runtime_options.max_total_ni, lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, oinv_exner, ocld_frac_l, ocld_frac_r, ocld_frac_i,
       rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqi, oni,
       oqm, obm, olatent_heat_vapor, olatent_heat_sublim, mu_c, nu, lamc, mu_r, lamr,
       ovap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, odiag_eff_radius_qi, diag_diam_qi,
@@ -347,7 +347,7 @@ Int Functions<S,D>
 {
 #ifndef SCREAM_SMALL_KERNELS
   return p3_main_internal(runtime_options,
-		         prognostic_state,
+                         prognostic_state,
                          diagnostic_inputs,
                          diagnostic_outputs,
                          infrastructure,
@@ -357,7 +357,7 @@ Int Functions<S,D>
                          nj, nk);
 #else 
   return p3_main_internal_disp(runtime_options,
-		               prognostic_state,
+                               prognostic_state,
                                diagnostic_inputs,
                                diagnostic_outputs,
                                infrastructure,

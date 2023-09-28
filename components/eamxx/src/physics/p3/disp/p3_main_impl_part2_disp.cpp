@@ -15,6 +15,7 @@ void Functions<Real,DefaultDevice>
 ::p3_main_part2_disp(
   const Int& nj,
   const Int& nk,
+  const Scalar& max_total_ni,
   const bool& predictNc,
   const bool& do_prescribed_CCN,
   const Scalar& dt,

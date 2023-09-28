@@ -1016,6 +1016,7 @@ struct Functions
   static void p3_main_part2(
     const MemberType& team,
     const Int& nk_pack,
+    const Scalar& max_total_ni,
     const bool& do_predict_nc,
     const bool& do_prescribed_CCN,
     const Scalar& dt,
@@ -1095,6 +1096,7 @@ struct Functions
   static void p3_main_part2_disp(
     const Int& nj,
     const Int& nk,
+    const Scalar& max_total_ni,
     const bool& do_predict_nc,
     const bool& do_prescribed_CCN,
     const Scalar& dt,
@@ -1175,6 +1177,7 @@ struct Functions
   static void p3_main_part3(
     const MemberType& team,
     const Int& nk_pack,
+    const Scalar& max_total_ni,
     const view_dnu_table& dnu,
     const view_ice_table& ice_table_vals,
     const uview_1d<const Spack>& inv_exner,
@@ -1216,6 +1219,7 @@ struct Functions
   static void p3_main_part3_disp(
     const Int& nj,
     const Int& nk_pack,
+    const Scalar& max_total_ni,
     const view_dnu_table& dnu,
     const view_ice_table& ice_table_vals,
     const uview_2d<const Spack>& inv_exner,

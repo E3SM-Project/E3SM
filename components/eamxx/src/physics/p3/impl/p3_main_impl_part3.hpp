@@ -21,6 +21,7 @@ void Functions<S,D>
 ::p3_main_part3(
   const MemberType& team,
   const Int& nk_pack,
+  const Scalar& max_total_ni,
   const view_dnu_table& dnu,
   const view_ice_table& ice_table_vals,
   const uview_1d<const Spack>& inv_exner,
@@ -60,7 +61,6 @@ void Functions<S,D>
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar inv_cp       = C::INV_CP;
-  constexpr Scalar max_total_ni = C::max_total_ni;
   constexpr Scalar nsmall       = C::NSMALL;
 
   Kokkos::parallel_for(

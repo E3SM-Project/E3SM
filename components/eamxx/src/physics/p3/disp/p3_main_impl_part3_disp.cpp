@@ -18,6 +18,7 @@ void Functions<Real,DefaultDevice>
 ::p3_main_part3_disp(
   const Int& nj,
   const Int& nk_pack,
+  const Scalar& max_total_ni,
   const view_dnu_table& dnu_table_vals,
   const view_ice_table& ice_table_vals,
   const uview_2d<const Spack>& inv_exner,
@@ -74,7 +75,7 @@ void Functions<Real,DefaultDevice>
     // and compute diagnostic fields for output
     //
     p3_main_part3(
-      team, nk_pack, dnu_table_vals, ice_table_vals, ekat::subview(inv_exner, i), ekat::subview(cld_frac_l, i), ekat::subview(cld_frac_r, i),
+      team, nk_pack, max_total_ni, dnu_table_vals, ice_table_vals, ekat::subview(inv_exner, i), ekat::subview(cld_frac_l, i), ekat::subview(cld_frac_r, i),
       ekat::subview(cld_frac_i, i), ekat::subview(rho, i), ekat::subview(inv_rho, i), ekat::subview(rhofaci, i), ekat::subview(qv, i), 
       ekat::subview(th_atm, i), ekat::subview(qc, i), ekat::subview(nc, i), ekat::subview(qr, i), ekat::subview(nr, i), ekat::subview(qi, i), 
       ekat::subview(ni, i), ekat::subview(qm, i), ekat::subview(bm, i), ekat::subview(latent_heat_vapor, i), ekat::subview(latent_heat_sublim, i), 
