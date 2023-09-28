@@ -3237,7 +3237,6 @@ contains
                rsnow=snow_grain_radius(:,:), &
                l_print_point=.false., &
                initonly=lInitialization)
-          call column_write_warnings(.false.)
 
           ! set the category tracer array
           call get_cice_tracer_array_category(block, ciceTracerObject, &
@@ -5700,6 +5699,7 @@ contains
          icepack_configure
 
     use seaice_constants, only: &
+         pi, &          !echmod - do we need this here, or can we set seaicePi in seaice_constants?
          seaicePi, &
          seaiceGravity, &
          seaicePuny, &
@@ -5737,9 +5737,6 @@ contains
          iceThicknessMinimum, &
          snowThicknessMinimum
     !gramsCarbonPerMolCarbon          = R_gC2molC
-
-    use ice_constants_colpkg, only: &  ! for E3SM runs this is currently in src/column/constants/cesm/
-         pi
 
     call icepack_configure()
     call seaice_icepack_write_warnings(icepack_warnings_aborted())
@@ -9293,7 +9290,6 @@ contains
          config_nIceLayers
 
     character(len=strKIND), pointer :: &
-         config_column_physics_type, &
          config_thermodynamics_type, &
          config_heat_conductivity_type, &
          config_shortwave_type, &
@@ -9356,8 +9352,6 @@ contains
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nSnowLayers", nSnowLayers)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nIceLayers", nIceLayers)
-
-    call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)
 
     call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
     call MPAS_pool_get_config(domain % configs, "config_heat_conductivity_type", config_heat_conductivity_type)
@@ -9968,7 +9962,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_column_package_configs(domain)
+  subroutine init_column_package_configs(domain)   !colpkg routine - remove
 
     !use ice_colpkg_shared, only: &
     !     ktherm, &
