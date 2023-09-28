@@ -17,6 +17,11 @@ atmosphere_processes:
     nudging_timescale: 0
     source_pressure_type: ${VERT_TYPE}
     source_pressure_file: vertical_remap.nc ## Only used in the case of STATIC_1D_VERTICAL_PROFILE
+  shoc:
+    lambda_low: 0.001
+    lambda_high: 0.04
+    lambda_slope: 2.65
+    lambda_thresh: 0.02
 
 grids_manager:
   Type: Mesh Free
