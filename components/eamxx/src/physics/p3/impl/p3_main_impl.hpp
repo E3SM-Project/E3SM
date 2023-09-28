@@ -74,6 +74,7 @@ void Functions<S,D>
 template <typename S, typename D>
 Int Functions<S,D>
 ::p3_main_internal(
+  const P3Runtime& runtime_options,
   const P3PrognosticState& prognostic_state,
   const P3DiagnosticInputs& diagnostic_inputs,
   const P3DiagnosticOutputs& diagnostic_outputs,
@@ -345,7 +346,8 @@ Int Functions<S,D>
   Int nk)
 {
 #ifndef SCREAM_SMALL_KERNELS
-  return p3_main_internal(prognostic_state,
+  return p3_main_internal(runtime_options,
+		         prognostic_state,
                          diagnostic_inputs,
                          diagnostic_outputs,
                          infrastructure,
@@ -354,7 +356,8 @@ Int Functions<S,D>
                          workspace_mgr,
                          nj, nk);
 #else 
-  return p3_main_internal_disp(prognostic_state,
+  return p3_main_internal_disp(runtime_options,
+		               prognostic_state,
                                diagnostic_inputs,
                                diagnostic_outputs,
                                infrastructure,

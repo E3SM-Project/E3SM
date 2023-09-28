@@ -1270,6 +1270,7 @@ struct Functions
     Int nk); // number of vertical cells per column
 
   static Int p3_main_internal(
+    const P3Runtime& runtime_options,
     const P3PrognosticState& prognostic_state,
     const P3DiagnosticInputs& diagnostic_inputs,
     const P3DiagnosticOutputs& diagnostic_outputs,
@@ -1282,6 +1283,7 @@ struct Functions
 
 #ifdef SCREAM_SMALL_KERNELS
   static Int p3_main_internal_disp(
+    const P3Runtime& runtime_options,
     const P3PrognosticState& prognostic_state,
     const P3DiagnosticInputs& diagnostic_inputs,
     const P3DiagnosticOutputs& diagnostic_outputs,

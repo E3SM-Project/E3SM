@@ -99,6 +99,7 @@ void Functions<Real,DefaultDevice>
 template <>
 Int Functions<Real,DefaultDevice>
 ::p3_main_internal_disp(
+  const P3Runtime& runtime_options,
   const P3PrognosticState& prognostic_state,
   const P3DiagnosticInputs& diagnostic_inputs,
   const P3DiagnosticOutputs& diagnostic_outputs,
