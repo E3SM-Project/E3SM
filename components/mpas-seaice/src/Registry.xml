@@ -775,6 +775,11 @@
 			description="Modify tracers in given boundary cells."
 			possible_values="true or false"
 		/>
+		<nml_option name="config_use_floe_size_distribution" type="logical" default_value="false" units="unitless"
+			description="Use prognostic floe size distribution"
+			possible_values="true or false"
+			icepack_name="tr_fsd"
+		/>
 	</nml_record>
 
 	<nml_record name="biogeochemistry" in_defaults="true">
