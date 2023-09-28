@@ -7,8 +7,12 @@
 #include "Config.hpp"
 #include "Hommexx_Session.hpp"
 #include "ExecSpaceDefs.hpp"
+#include "Types.hpp"
+
+#ifndef TESTER_NOMPI
 #include "profiling.hpp"
 #include "mpi/Comm.hpp"
+#endif
 
 #include "Context.hpp"
 
@@ -75,7 +79,10 @@ void initialize_hommexx_session ()
   // If hommexx session is not currently inited, then init it.
   if (!Session::m_inited) {
     /* Make certain profiling is only done for code we're working on */
+
+#ifndef TESTER_NOMPI     
     profiling_pause();
+#endif
 
     /* Set Environment variables to control how many
      * threads/processors Kokkos uses */

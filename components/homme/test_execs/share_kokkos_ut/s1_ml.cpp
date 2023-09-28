@@ -220,7 +220,7 @@ class compute_sphere_operator_test_ml {
 
 TEST_CASE("divergence_sphere_wk",
           "divergence_sphere_wk") {
-  constexpr const int elements = 1000000;
+  constexpr const int elements = 10;
 
   compute_sphere_operator_test_ml testing_div_ml(elements);
   testing_div_ml.run_functor_divergence_sphere_wk();

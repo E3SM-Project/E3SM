@@ -30,5 +30,7 @@ int main(int argc, char **argv) {
 
   int result = Catch::Session().run(argc, argv);
 
+  Homme::finalize_hommexx_session();
+
   return result;
 }
