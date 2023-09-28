@@ -132,7 +132,7 @@ contains
     use CropType          , only : crop_type
     use landunit_varcon   , only : istcrop
     use elm_varpar        , only : cft_lb, cft_ub
-    use surfrdUtilsMod    , only : collapse_crop_types
+    use surfrdUtilsMod    , only : collapse_crop_types, collapse_crop_var
     use subgridWeightsMod , only : set_landunit_weight
     use subgridWeightsMod , only : get_landunit_weight
     use GridcellType      , only : grc_pp
@@ -179,7 +179,9 @@ contains
     allocate(pfertcft_cur(bounds%begg:bounds%endg, max_topounits, cft_lb:cft_ub))
     call pfertcft%get_current_data(pfertcft_cur)
 
-    call collapse_crop_types(wtcft_cur, fertcft_cur, bounds%begg, bounds%endg, verbose = .false.)
+    call collapse_crop_types(wtcft_cur, nfertcft_cur, pfertcft_cur, bounds%begg, bounds%endg, verbose = .false.)
+    call collapse_crop_var(nfertcft_cur(bounds%begg:bounds%endg,:,:), bounds%begg, bounds%endg)
+    call collapse_crop_var(pfertcft_cur(bounds%begg:bounds%endg,:,:), bounds%begg, bounds%endg)
 
     allocate(col_set(bounds%begc:bounds%endc))
     col_set(:) = .false.

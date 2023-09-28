@@ -38,6 +38,7 @@ module PhenologyMod
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFluxType  , only : phosphorusflux_type
+  use SolarAbsorbedType   , only : solarabs_type
   !!!Added for gpu timing info
   use timeinfoMod
 
@@ -260,7 +261,7 @@ contains
   subroutine Phenology (num_soilc, filter_soilc, num_soilp, filter_soilp, &
        num_pcropp, filter_pcropp, num_ppercropp, filter_ppercropp, doalb, atm2lnd_vars, &
        crop_vars, canopystate_vars, soilstate_vars, &
-       cnstate_vars)
+       cnstate_vars, solarabs_vars)
     !
     ! !DESCRIPTION:
     ! Dynamic phenology routine for coupled carbon-nitrogen code (CN)
@@ -282,6 +283,7 @@ contains
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
+    type(solarabs_type)      , intent(in)    :: solarabs_vars
     !-----------------------------------------------------------------------
 
     ! each of the following phenology type routines includes a filter
@@ -301,7 +303,7 @@ contains
 
    if (num_pcropp > 0 ) then
        call CropPlantDate(num_soilp, filter_soilp, num_pcropp, filter_pcropp,&
-            cnstate_vars, crop_vars)
+            cnstate_vars, crop_vars, solarabs_vars)
    end if
 
     if (doalb .and. num_pcropp > 0 ) then
@@ -2389,7 +2391,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CropPlantDate (num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
-        cnstate_vars, crop_vars)
+        cnstate_vars, crop_vars, solarabs_vars)
     !
     ! !DESCRIPTION:
     ! For determining the plant month for crops, plant day is established in
@@ -2410,7 +2412,7 @@ contains
     integer                , intent(in)    :: filter_pcropp(:)! filter for prognostic crop patches
     type(cnstate_type)     , intent(inout) :: cnstate_vars
     type(crop_type)        , intent(inout) :: crop_vars
-
+    type(solarabs_type)    , intent(in)    :: solarabs_vars
     !
     ! !LOCAL VARIABLES:
     integer :: p,c,m,t,n,h          ! indices
@@ -2423,7 +2425,7 @@ contains
     real(r8), parameter :: alpha = 0.05_r8  ! coefficient representing degree of weighting decrease
     real(r8), parameter :: mon = 12._r8     ! used for some calculations (number of days in month)
     real(r8) :: mu_p, mu_t, sigmasum_t, sigmasum_p, sigma_t, sigma_p
-    real(r8) :: es, ETout
+    real(r8) :: ETout, netrad
     integer, dimension(12) :: ndaypm= &
          (/31,28,31,30,31,30,31,31,30,31,30,31/) !days per month
     real(r8) :: dt
@@ -2438,7 +2440,8 @@ contains
          forc_wind      => top_as%windbot                   , & ! Input: [real(r8) (:) ]  atmospheric wind speed (m/s)
          forc_pbot      => top_as%pbot                      , & ! Input: [real(r8) (:) ]  downscaled surface pressure (Pa)
          eflx_soil_grnd => veg_ef%eflx_soil_grnd            , & ! Input: [real(r8) (:) ]  soil heat flux (W/m**2) [+ = into soil]
-         netrad         => veg_ef%netrad                    , & ! Input: [real(r8) (:) ]  net radiation (positive downward) (W/m**2)
+         eflx_lwrad_net => veg_ef%eflx_lwrad_net            , & ! Input: [real(r8) (:) ]  net infrared (longwave) rad (W/m**2) [+ = to atm]
+         fsa            => solarabs_vars%fsa_patch           , & ! Input: [real(r8) (:) ]  solar radiation absorbed (total) (W/m**2)
          nyrs_crop_active => crop_vars%nyrs_crop_active_patch,   & ! InOut:  [integer (:)  ]  number of years this crop patch has been active
          cvt            => crop_vars%cvt_patch              , & ! Output: [real(r8) (:) ]  coefficient of variance temperature
          cvp            => crop_vars%cvp_patch              , & ! Output: [real(r8) (:) ]     "     "    "    "    precipitation
@@ -2551,8 +2554,9 @@ contains
 
          xt(p,kmo) = xt(p,kmo) + t_ref2m(p) * fracday/ndaypm(kmo) ! monthly average temperature
          xp(p,kmo) = xp(p,kmo) + (forc_rain(t)+forc_snow(t))*dt   ! monthly average precipitation
-         ! calculate the potential evapotranspiration
-         call calculate_eto(t_ref2m(p), netrad(p), eflx_soil_grnd(p), forc_pbot(t), forc_rh(t), forc_wind(t), es, dt, ETout)
+         ! calculate the potential evapotranspiration 
+         netrad = fsa(p) + eflx_lwrad_net(p) ! moved this here because it is calculated too late
+         call calculate_eto(t_ref2m(p), netrad(p), eflx_soil_grnd(p), forc_pbot(t), forc_rh(t), forc_wind(t), dt, ETout)
          ! monthly ETo
          ETo(p,kmo) = ETo(p,kmo) + ETout
          ! calculate the P:PET for each month

@@ -15,6 +15,7 @@ module surfrdMod
   use elm_varctl      , only : iulog, scmlat, scmlon, single_column, firrig_data
   use elm_varctl      , only : create_glacier_mec_landunit
   use surfrdUtilsMod  , only : check_sums_equal_1_2d, check_sums_equal_1_3d
+  use surfrdUtilsMod  , only : collapse_crop_types, collapse_crop_var
   use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
   use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
   use pio
@@ -1238,8 +1239,23 @@ contains
           end do
        end do
 
-       !call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname,ntpu)
        call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname)
+    end if
+    if (crop_prog) then
+       ! Call collapse_crop_types: allows need to maintain only 50-pft input data
+       ! For use_crop = .false. collapsing 50->16 pfts or 16->16 or some new
+       !    configuration
+       ! For use_crop = .true. most likely collapsing 78 to the list of crops for
+       !    which the CLM includes parameterizations
+       ! The call collapse_crop_types also appears in subroutine dyncrop_interp
+       call collapse_crop_types(wt_cft(begg:endg,:,:), fert_cft(begg:endg,:,:), fert_p_cft(begg:endg,:,:), begg, endg, verbose=.true.)
+
+       ! Collapse crop variables as needed
+       ! The call to collapse_crop_var also appears in subroutine dyncrop_interp
+       ! - fert_cft TODO Is this call redundant because it simply sets the crop
+       !                 variable to 0 where is_pft_known_to_model = .false.?
+       call collapse_crop_var(fert_cft(begg:endg,:,:), begg, endg)
+       call collapse_crop_var(fert_p_cft(begg:endg,:,:), begg, endg)
     end if
 
   end subroutine surfrd_veg_all

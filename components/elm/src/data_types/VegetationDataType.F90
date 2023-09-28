@@ -4109,6 +4109,10 @@ module VegetationDataType
        call restartvar(ncid=ncid, flag=flag,  varname='grainn_xfer', xtype=ncd_double,  &
             dim1name='pft',    long_name='grain N transfer', units='gN/m2', &
             interpinic_flag='interp', readvar=readvar, data=this%grainn_xfer)
+
+       call restartvar(ncid=ncid, flag=flag, varname='cropseedn_deficit', xtype=ncd_double,  &
+            dim1name='pft', long_name='pool for seeding new crop growth', units='gN/m2', &
+            interpinic_flag='interp', readvar=readvar, data=this%cropseedn_deficit)
     end if
 
     call restartvar(ncid=ncid, flag=flag,  varname='npimbalance_patch', xtype=ncd_double,  &
@@ -4789,6 +4793,10 @@ module VegetationDataType
        call restartvar(ncid=ncid, flag=flag,  varname='grainp_xfer', xtype=ncd_double,  &
             dim1name='pft',    long_name='grain P transfer', units='gP/m2', &
             interpinic_flag='interp', readvar=readvar, data=this%grainp_xfer)
+
+       call restartvar(ncid=ncid, flag=flag, varname='cropseedp_deficit', xtype=ncd_double,  &
+            dim1name='pft', long_name='pool for seeding new crop growth', units='gP/m2', &
+            interpinic_flag='interp', readvar=readvar, data=this%cropseedp_deficit)
     end if
 
     !--------------------------------
