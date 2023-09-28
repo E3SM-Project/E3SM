@@ -4,7 +4,7 @@
 # own find module.
 #
 # This can be controlled by setting the MCT_DIR (or, equivalently, the
-# MCT_ROOT environment variable)
+# mct_ROOT environment variable)
 #
 # Once done, this will define:
 #

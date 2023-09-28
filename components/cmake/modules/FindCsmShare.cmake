@@ -4,7 +4,7 @@
 # own find module.
 #
 # This can be controlled by setting the CsmShare_DIR (or, equivalently, the
-# CsmShare_ROOT environment variable)
+# csm_share_ROOT environment variable)
 #
 # Once done, this will define:
 #
@@ -21,6 +21,11 @@ set(CSM_SHARE "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}
 
 # Look for libcsm_share in the complex path we built above
 find_library(CSM_SHARE_LIB csm_share REQUIRED PATHS ${CSM_SHARE})
+
+# Grab mct if we don't already have it
+if (NOT TARGET mct)
+  find_package(MCT REQUIRED)
+endif()
 
 # Create the interface library, and set target properties
 add_library (csm_share INTERFACE)
