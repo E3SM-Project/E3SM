@@ -61,6 +61,51 @@
 			description="edge based product of normal velocity and temperature"
 			 packages="gm"
 		/>
+		<var name="velocityZonalTimesSalinity" type="real" dimensions="nVertLevels nCells Time" units="1.e-3 m s^-1"
+			description="cell-wise product of component of horizontal velocity in the eastward direction and salinity"
+		/>
+		<var name="velocityMeridionalTimesSalinity" type="real" dimensions="nVertLevels nCells Time" units="1.e-3 m s^-1"
+			description="cell-wise product of component of horizontal velocity in the northward direction and salinity"
+		/>
+		<var name="normalVelocityTimesSalinity" type="real" dimensions="nVertLevels nEdges Time" units="1.e-3 m s^-1"
+			description="edge based product of normal velocity and salinity"
+		/>
+		<var name="velocityZonalTimesSalinity_GM" type="real" dimensions="nVertLevels nCells Time" units="1.e-3 m s^-1"
+			description="cell-wise product of component of horizontal bolus velocity in the eastward direction and salinity"
+			 packages="gm"
+		/>
+		<var name="velocityMeridionalTimesSalinity_GM" type="real" dimensions="nVertLevels nCells Time" units="1.e-3 m s^-1"
+			description="cell-wise product of component of horizontal bolus velocity in the northward direction and salinity"
+			 packages="gm"
+		/>
+		<var name="normalGMBolusVelocityTimesSalinity" type="real" dimensions="nVertLevels nEdges Time" units="1.e-3 m s^-1"
+			description="edge based product of normal velocity and salinity"
+			 packages="gm"
+		/>
+		<var name="velocityZonalTimesTemperature_MLE" type="real" dimensions="nVertLevels nCells Time" units="m s^-1 C"
+			description="cell-wise product of component of horizontal submeso velocity in the eastward direction and temperature"
+			 packages="submeso"
+		/>
+		<var name="velocityMeridionalTimesTemperature_MLE" type="real" dimensions="nVertLevels nCells Time" units="m s^-1 C"
+			description="cell-wise product of component of horizontal submeso velocity in the northward direction and temperature"
+			 packages="submeso"
+		/>
+		<var name="normalMLEVelocityTimesTemperature" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1 C"
+			description="edge based product of normal velocity and temperature"
+			 packages="submeso"
+		/>
+		<var name="velocityZonalTimesSalinity_MLE" type="real" dimensions="nVertLevels nCells Time" units="1.e-3 m s^-1"
+			description="cell-wise product of component of horizontal submeso velocity in the eastward direction and salinity"
+			 packages="submeso"
+		/>
+		<var name="velocityMeridionalTimesSalinity_MLE" type="real" dimensions="nVertLevels nCells Time" units="1.e-3 m s^-1"
+			description="cell-wise product of component of horizontal submeso velocity in the northward direction and salinity"
+			 packages="submeso"
+		/>
+		<var name="normalMLEVelocityTimesSalinity" type="real" dimensions="nVertLevels nEdges Time" units="1.e-3 m s^-1"
+			description="edge based product of normal velocity and salinity"
+			 packages="submeso"
+		/>
 	</var_struct>
 	<streams>
 		<stream name="eddyProductVariablesOutput" type="output"
@@ -83,5 +128,10 @@
 			<var name="velocityMeridionalTimesTemperature_GM"/>
 			<var name="normalVelocityTimesTemperature"/>
 			<var name="normalVelocitySquared"/>
+			<var name="velocityZonalTimesSalinity"/>
+			<var name="velocityMeridionalTimesSalinity"/>
+			<var name="normalVelocityTimesSalinity"/>
+			<var name="velocityZonalTimesSalinity_GM"/>
+			<var name="velocityMeridionalTimesSalinity_GM"/>
 		</stream>
 	</streams>

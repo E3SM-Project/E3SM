@@ -28,7 +28,7 @@ module UrbanFluxesMod
   use ColumnDataType       , only : col_es, col_ef, col_ws
   use VegetationType       , only : veg_pp
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
-  use clm_time_manager    , only : get_curr_date, get_step_size, get_nstep
+  use elm_time_manager    , only : get_curr_date, get_step_size, get_nstep
 
   use timeinfoMod  , only : nstep_mod, year_curr, mon_curr, day_curr, secs_curr
   use timeinfoMod  , only : dtime_mod

@@ -60,7 +60,7 @@ contains
     ! runoff.
     !
     ! !USES:
-    use clm_time_manager, only : get_step_size
+    use elm_time_manager, only : get_step_size
     use landunit_varcon , only : istcrop, istsoil, istice
     use pftvarcon       , only : gcbc_p, gcbc_q, gcbr_p, gcbr_q 
     use pftvarcon       , only : nc4_grass

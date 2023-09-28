@@ -57,7 +57,8 @@ module zm_conv_intr
       dnifzm_idx,    &     ! detrained convective cloud ice num concen.
       dnsfzm_idx,    &     ! detrained convective snow num concen.
       prec_dp_idx,   &
-      snow_dp_idx
+      snow_dp_idx,   &
+      wuc_idx
 
 ! DCAPE-ULL
    integer :: t_star_idx       !t_star index in physics buffer
@@ -115,6 +116,9 @@ subroutine zm_conv_register
 
 ! deep gbm cloud liquid water (kg/kg)    
    call pbuf_add_field('DP_CLDICE','global',dtype_r8,(/pcols,pver/), dp_cldice_idx)  
+
+! vertical velocity (m/s)
+   call pbuf_add_field('WUC','global',dtype_r8,(/pcols,pver/), wuc_idx)
 
 ! DCAPE-UPL
 
@@ -440,6 +444,7 @@ subroutine zm_conv_init(pref_edge)
     nevapr_dpcu_idx = pbuf_get_index('NEVAPR_DPCU')
     prec_dp_idx     = pbuf_get_index('PREC_DP')
     snow_dp_idx     = pbuf_get_index('SNOW_DP')
+    wuc_idx         = pbuf_get_index('WUC')
 
     lambdadpcu_idx  = pbuf_get_index('LAMBDADPCU')
     mudpcu_idx      = pbuf_get_index('MUDPCU')
@@ -684,7 +689,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    
    ! w holds position of gathered points vs longitude index   
    integer, intent(out)  :: lengath
-
    ! Local variables
 
     type(zm_microp_st)        :: microp_st 
@@ -720,6 +724,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    real(r8), pointer, dimension(:,:) :: flxsnow      ! Convective-scale flux of snow   at interfaces (kg/m2/s)
    real(r8), pointer, dimension(:,:) :: dp_cldliq
    real(r8), pointer, dimension(:,:) :: dp_cldice
+   real(r8), pointer, dimension(:,:) :: wuc
 
    ! DCAPE-ULL
    real(r8), pointer, dimension(:,:) :: t_star ! intermediate T between n and n-1 time step
@@ -738,8 +743,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    real(r8), pointer :: mudpcu(:,:)     ! width parameter of droplet size distr
    real(r8), pointer :: qi(:,:)         ! wg grid slice of cloud ice.
 
-   real(r8) :: jctop(pcols)  ! o row of top-of-deep-convection indices passed out.
-   real(r8) :: jcbot(pcols)  ! o row of base of cloud indices passed out.
+   integer :: jctop(pcols)  ! o row of top-of-deep-convection indices passed out.
+   integer :: jcbot(pcols)  ! o row of base of cloud indices passed out.
 
    real(r8) :: pcont(pcols), pconb(pcols), freqzm(pcols)
 
@@ -747,6 +752,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    real(r8) :: cape(pcols)        ! w  convective available potential energy.
    real(r8) :: mu_out(pcols,pver)
    real(r8) :: md_out(pcols,pver)
+
 
    ! used in momentum transport calculation
    real(r8) :: winds(pcols, pver, 2)
@@ -950,9 +956,12 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
       call pbuf_get_field(pbuf, dnifzm_idx, dnif)
       call pbuf_get_field(pbuf, dsfzm_idx,  dsf)
       call pbuf_get_field(pbuf, dnsfzm_idx, dnsf)
+      call pbuf_get_field(pbuf, wuc_idx, wuc  )
    else
       allocate(dnlf(pcols,pver), dnif(pcols,pver),dsf(pcols,pver), dnsf(pcols,pver))
+      allocate(wuc(pcols,pver))
    end if
+   wuc(:,:) = 0._r8
 
    call pbuf_get_field(pbuf, lambdadpcu_idx, lambdadpcu)
    call pbuf_get_field(pbuf, mudpcu_idx,     mudpcu)
@@ -1000,7 +1009,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
                     lengath ,ql      ,rliq  ,landfrac,  &
                     t_star, q_star, dcape, &  
                     aero(lchnk), qi, dif, dnlf, dnif, dsf, dnsf, sprd, rice, frz, mudpcu, &
-                    lambdadpcu,  microp_st)
+                    lambdadpcu,  microp_st, wuc)
 
    if (zm_microp) then
      dlftot(:,:) = dlf(:,:) + dif(:,:) + dsf(:,:)

@@ -78,6 +78,7 @@ module ocn_forward_mode
    use ocn_gm
    use ocn_submesoscale_eddies
    use ocn_stokes_drift 
+   use ocn_manufactured_solution
 
    use ocn_high_freq_thickness_hmix_del2
 
@@ -498,6 +499,8 @@ module ocn_forward_mode
       if ( configVertAdvMethod == vertAdvRemap ) &
          call ocn_vertical_remap_init(err_tmp)
       call ocn_stokes_drift_init(err_tmp)
+      ierr = ior(ierr,err_tmp)
+      call ocn_manufactured_solution_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
 
       if (ierr /= 0) then

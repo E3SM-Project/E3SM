@@ -1475,9 +1475,9 @@
   <grid name="a%ne30np4.pg.+_oi%EC30to60E2r2">
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="XS">
-        <comment> -compset A_WCYCL* -res ne30pg*EC30to60* on 14 nodes pure-MPI, ~8.1 sypd </comment>
+        <comment> -compset WCYCL* -res ne30pg2_EC30to60E2r2 on 14 nodes pure-MPI, ~6 sypd </comment>
         <ntasks>
-          <ntasks_atm>675</ntasks_atm>
+          <ntasks_atm>704</ntasks_atm>
           <ntasks_lnd>64</ntasks_lnd>
           <ntasks_rof>64</ntasks_rof>
           <ntasks_ice>640</ntasks_ice>
@@ -1494,13 +1494,13 @@
         </rootpe>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="S">
-        <comment> -compset A_WCYCL* -res ne30pg*EC30to60* on 28 nodes pure-MPI, ~15.3 sypd </comment>
+        <comment> -compset WCYCL* -res ne30pg2_EC30to60E2r2 on 27 nodes pure-MPI, ~12 sypd </comment>
         <ntasks>
-          <ntasks_atm>1350</ntasks_atm>
+          <ntasks_atm>1408</ntasks_atm>
           <ntasks_lnd>64</ntasks_lnd>
           <ntasks_rof>64</ntasks_rof>
           <ntasks_ice>1344</ntasks_ice>
-          <ntasks_ocn>384</ntasks_ocn>
+          <ntasks_ocn>320</ntasks_ocn>
           <ntasks_cpl>1408</ntasks_cpl>
         </ntasks>
         <rootpe>
@@ -1513,7 +1513,7 @@
         </rootpe>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="M">
-        <comment> -compset A_WCYCL* -res ne30pg*EC30to60* on 53 nodes pure-MPI, ~26.4 sypd </comment>
+        <comment> -compset WCYCL* -res ne30pg2_EC30to60E2r2 on 53 nodes pure-MPI, ~21 sypd </comment>
         <ntasks>
           <ntasks_atm>2752</ntasks_atm>
           <ntasks_lnd>192</ntasks_lnd>
@@ -1532,13 +1532,13 @@
         </rootpe>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="ML">
-        <comment> -compset A_WCYCL* -res ne30pg*EC30to60* on 71 nodes pure-MPI, ~31.5 sypd </comment>
+        <comment> -compset WCYCL* -res ne30pg2_EC30to60E2r2 on 70 nodes pure-MPI, ~24 sypd </comment>
         <ntasks>
           <ntasks_atm>3648</ntasks_atm>
           <ntasks_lnd>192</ntasks_lnd>
           <ntasks_rof>192</ntasks_rof>
           <ntasks_ice>3456</ntasks_ice>
-          <ntasks_ocn>896</ntasks_ocn>
+          <ntasks_ocn>832</ntasks_ocn>
           <ntasks_cpl>3648</ntasks_cpl>
         </ntasks>
         <rootpe>
@@ -1551,13 +1551,13 @@
         </rootpe>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="L">
-        <comment> -compset A_WCYCL* -res ne30pg*EC30to60* on 105 nodes pure-MPI, ~42.3 sypd </comment>
+        <comment> -compset WCYCL* -res ne30pg2EC30to60E2r2 on 100 nodes pure-MPI, ~30 sypd </comment>
         <ntasks>
-          <ntasks_atm>5400</ntasks_atm>
+          <ntasks_atm>5440</ntasks_atm>
           <ntasks_lnd>320</ntasks_lnd>
           <ntasks_rof>320</ntasks_rof>
           <ntasks_ice>5120</ntasks_ice>
-          <ntasks_ocn>1280</ntasks_ocn>
+          <ntasks_ocn>960</ntasks_ocn>
           <ntasks_cpl>5440</ntasks_cpl>
         </ntasks>
         <rootpe>

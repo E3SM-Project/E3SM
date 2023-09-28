@@ -207,9 +207,6 @@ contains
     logical, pointer :: config_use_surface_salinity_monthly_restoring
     character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
-    real (kind=RKIND) :: dt
-    type (MPAS_timeInterval_type) :: timeStep
-
     ! Added for coupling interval initialization
     integer, pointer :: index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
     real (kind=RKIND), dimension(:),   pointer :: filteredSSHGradientZonal, filteredSSHGradientMeridional
@@ -677,8 +674,8 @@ contains
 
         call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
         call mpas_timer_start("land_ice_build_arrays", .false.)
-        call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
-                                                      forcingPool, scratchPool, statePool, dt, ierr)
+        call ocn_surface_land_ice_fluxes_build_arrays(meshPool, forcingPool, scratchPool, &
+                                                      statePool, dt=0.0_RKIND, err=ierr)
         call mpas_timer_stop("land_ice_build_arrays")
 
         call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
@@ -808,9 +805,6 @@ contains
 !   get initial state from driver
 !
 !-----------------------------------------------------------------------
-
-    timeStep = mpas_get_clock_timestep(domain_ptr % clock, ierr=ierr)
-    call mpas_get_timeInterval(timeStep, dt=dt)
 
     call ocn_import_mct(x2o_o, errorCode)
     if (errorCode /= 0) then

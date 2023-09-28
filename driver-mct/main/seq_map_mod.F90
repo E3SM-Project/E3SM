@@ -20,11 +20,13 @@ module seq_map_mod
   use seq_comm_mct
   use component_type_mod
   use seq_map_type_mod
+  use seq_nlmap_mod
 
   implicit none
   save
   private  ! except
-
+#include <mpif.h>
+  
   !--------------------------------------------------------------------------
   ! Public interfaces
   !--------------------------------------------------------------------------
@@ -80,9 +82,12 @@ contains
     type(mct_gsmap), pointer    :: gsmap_s ! temporary pointers
     type(mct_gsmap), pointer    :: gsmap_d ! temporary pointers
     integer(IN)                 :: mpicom
-    character(CX)               :: mapfile
+    character(CX)               :: mapfile, nl_mapfile
     character(CL)               :: maptype
     integer(IN)                 :: mapid
+    character(len=128)          :: nl_label
+    logical                     :: nl_found, nl_conservative
+    character(len=*),parameter  :: nl_strategy = 'X'
     character(len=*),parameter  :: subname = "(seq_map_init_rcfile) "
     !-----------------------------------------------------
 
@@ -106,6 +111,7 @@ contains
           mapper%strategy = "copy"
           mapper%gsmap_s => component_get_gsmap_cx(comp_s)
           mapper%gsmap_d => component_get_gsmap_cx(comp_d)
+          mapper%nl_available = .false.
        endif
 
     elseif (samegrid) then
@@ -122,6 +128,7 @@ contains
           mapper%gsmap_d => component_get_gsmap_cx(comp_d)
           call seq_map_gsmapcheck(gsmap_s, gsmap_d)
           call mct_rearr_init(gsmap_s, gsmap_d, mpicom, mapper%rearr)
+          mapper%nl_available = .false.
        endif
 
     else
@@ -129,7 +136,15 @@ contains
        ! --- Initialize Smatp
        call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
 
-       call seq_map_mapmatch(mapid,gsMap_s=gsMap_s,gsMap_d=gsMap_d,mapfile=mapfile,strategy=maptype)
+       nl_label = maprcname(1:len(maprcname)-1)//'_nonlinear:'
+       call shr_mct_queryConfigFile(mpicom, maprcfile, trim(nl_label), nl_mapfile, &
+            Label1Found=nl_found)
+       if (nl_found) nl_found = nl_mapfile /= "idmap_ignore"
+       nl_conservative = .false.
+       if (nl_found) nl_conservative = seq_map_should_nonlinear_map_conserve(maprcname)
+
+       call seq_map_mapmatch(mapid,gsMap_s=gsMap_s,gsMap_d=gsMap_d,mapfile=mapfile,strategy=maptype, &
+            nl_available=nl_found,nl_mapfile=nl_mapfile,nl_conservative=nl_conservative)
 
        if (mapid > 0) then
           call seq_map_mappoint(mapid,mapper)
@@ -145,16 +160,37 @@ contains
 
           if (mapper%esmf_map) then
              call shr_sys_abort(subname//' ERROR: esmf SMM not supported')
-          endif  ! esmf_map
+          endif  ! esmf_map          
 
+          ! Optional high-order map
+          mapper%nl_available = nl_found
+          if (nl_found) then
+             mapper%nl_available = .true.
+             mapper%nl_conservative = nl_conservative
+             mapper%nl_mapfile = trim(nl_mapfile)
+             call shr_mct_sMatPInitnc(mapper%nl_sMatp, mapper%gsMap_s, mapper%gsMap_d, &
+                  trim(nl_mapfile), nl_strategy, mpicom)
+          end if
        endif  ! mapid >= 0
     endif
 
     if (seq_comm_iamroot(CPLID)) then
        write(logunit,'(2A,I6,4A)') subname,' mapper counter, strategy, mapfile = ', &
             mapper%counter,' ',trim(mapper%strategy),' ',trim(mapper%mapfile)
+       if (mapper%nl_available) then
+          write(logunit,'(2A,I6,3A,L1,2A)') subname, &
+               ' mapper counter, nl_strategy, nl_conservative, nl_mapfile = ', &
+               mapper%counter,' ',nl_strategy,' ',nl_conservative,' ',trim(mapper%nl_mapfile)
+       end if
        call shr_sys_flush(logunit)
     endif
+
+    if (mapper%nl_available) then
+       call seq_nlmap_check_matrices(mapper)
+    end if
+
+    mapper%dom_cx_s => comp_s%dom_cx
+    mapper%dom_cx_d => comp_d%dom_cx
 
   end subroutine seq_map_init_rcfile
 
@@ -201,6 +237,7 @@ contains
           mapper%strategy = "copy"
           mapper%gsmap_s => component_get_gsmap_cx(comp_s)
           mapper%gsmap_d => component_get_gsmap_cx(comp_d)
+          mapper%nl_available = .false.
        endif
 
     else
@@ -215,6 +252,7 @@ contains
           mapper%strategy = "rearrange"
           mapper%gsmap_s => component_get_gsmap_cx(comp_s)
           mapper%gsmap_d => component_get_gsmap_cx(comp_d)
+          mapper%nl_available = .false.
           call seq_map_gsmapcheck(gsmap_s, gsmap_d)
           call mct_rearr_init(gsmap_s, gsmap_d, mpicom, mapper%rearr)
        endif
@@ -232,7 +270,7 @@ contains
   !=======================================================================
 
   subroutine seq_map_map( mapper, av_s, av_d, fldlist, norm, avwts_s, avwtsfld_s, &
-       string, msgtag )
+       string, msgtag, omit_nonlinear )
 
     implicit none
     !-----------------------------------------------------
@@ -248,10 +286,11 @@ contains
     character(len=*),intent(in),optional :: avwtsfld_s
     character(len=*),intent(in),optional :: string
     integer(IN)     ,intent(in),optional :: msgtag
+    logical         ,intent(in),optional :: omit_nonlinear
     !
     ! Local Variables
     !
-    logical :: lnorm
+    logical :: lnorm, lomit_nonlinear
     integer(IN),save :: ltag    ! message tag for rearrange
     character(len=*),parameter :: subname = "(seq_map_map) "
     !-----------------------------------------------------
@@ -263,6 +302,11 @@ contains
     lnorm = .true.
     if (present(norm)) then
        lnorm = norm
+    endif
+
+    lomit_nonlinear = .false.
+    if (present(omit_nonlinear)) then
+       lomit_nonlinear = omit_nonlinear
     endif
 
     if (present(msgtag)) then
@@ -309,16 +353,18 @@ contains
        if (present(avwts_s)) then
           if (present(fldlist)) then
              call seq_map_avNorm(mapper, av_s, av_d, avwts_s, trim(avwtsfld_s), &
-                  rList=fldlist, norm=lnorm)
+                  rList=fldlist, norm=lnorm, omit_nonlinear=lomit_nonlinear)
           else
              call seq_map_avNorm(mapper, av_s, av_d, avwts_s, trim(avwtsfld_s), &
-                  norm=lnorm)
+                  norm=lnorm, omit_nonlinear=lomit_nonlinear)
           endif
        else
           if (present(fldlist)) then
-             call seq_map_avNorm(mapper, av_s, av_d, rList=fldlist, norm=lnorm)
+             call seq_map_avNorm(mapper, av_s, av_d, rList=fldlist, norm=lnorm, &
+                  omit_nonlinear=lomit_nonlinear)
           else
-             call seq_map_avNorm(mapper, av_s, av_d, norm=lnorm)
+             call seq_map_avNorm(mapper, av_s, av_d, norm=lnorm, &
+                  omit_nonlinear=lomit_nonlinear)
           endif
        endif
     end if
@@ -743,7 +789,8 @@ contains
 
   !=======================================================================
 
-  subroutine seq_map_avNormAvF(mapper, av_i, av_o, avf_i, avfifld, rList, norm)
+  subroutine seq_map_avNormAvF(mapper, av_i, av_o, avf_i, avfifld, rList, norm, &
+       omit_nonlinear)
 
     implicit none
     !-----------------------------------------------------
@@ -757,16 +804,22 @@ contains
     character(len=*), intent(in)          :: avfifld ! field name in avf_i
     character(len=*), intent(in),optional :: rList   ! fields list
     logical         , intent(in),optional :: norm    ! normalize at end
+    logical         , intent(in),optional :: omit_nonlinear
     !
     integer(IN) :: lsize_i, lsize_f, kf, j
     real(r8),allocatable :: frac_i(:)
-    logical :: lnorm
+    logical :: lnorm, lomit_nonlinear
     character(*),parameter :: subName = '(seq_map_avNormAvF) '
     !-----------------------------------------------------
 
     lnorm = .true.
     if (present(norm)) then
        lnorm = norm
+    endif
+
+    lomit_nonlinear = .false.
+    if (present(omit_nonlinear)) then
+       lomit_nonlinear = omit_nonlinear
     endif
 
     lsize_i = mct_aVect_lsize(av_i)
@@ -785,9 +838,11 @@ contains
     enddo
 
     if (present(rList)) then
-       call seq_map_avNormArr(mapper, av_i, av_o, frac_i, rList=rList, norm=lnorm)
+       call seq_map_avNormArr(mapper, av_i, av_o, frac_i, rList=rList, norm=lnorm, &
+            omit_nonlinear=lomit_nonlinear)
     else
-       call seq_map_avNormArr(mapper, av_i, av_o, frac_i, norm=lnorm)
+       call seq_map_avNormArr(mapper, av_i, av_o, frac_i, norm=lnorm, &
+            omit_nonlinear=lomit_nonlinear)
     endif
 
     deallocate(frac_i)
@@ -796,7 +851,7 @@ contains
 
   !=======================================================================
 
-  subroutine seq_map_avNormArr(mapper, av_i, av_o, norm_i, rList, norm)
+  subroutine seq_map_avNormArr(mapper, av_i, av_o, norm_i, rList, norm, omit_nonlinear)
 
     implicit none
     !-----------------------------------------------------
@@ -809,6 +864,7 @@ contains
     real(r8)        , intent(in), optional :: norm_i(:)  ! source "weight"
     character(len=*), intent(in), optional :: rList ! fields list
     logical         , intent(in), optional :: norm  ! normalize at end
+    logical         , intent(in), optional :: omit_nonlinear ! use nonlinear map if available
     !
     ! Local variables
     !
@@ -817,10 +873,18 @@ contains
     integer(IN)            :: lsize_i,lsize_o
     real(r8)               :: normval
     character(CX)          :: lrList,appnd
-    logical                :: lnorm
+    logical                :: lnorm, use_nonlinear_map
     character(*),parameter :: subName = '(seq_map_avNormArr) '
     character(len=*),parameter :: ffld = 'norm8wt'  ! want something unique
     !-----------------------------------------------------
+
+    use_nonlinear_map = .false.
+    if (mapper%nl_available) then
+       use_nonlinear_map = .true.
+       if (present(omit_nonlinear)) then
+          if (omit_nonlinear) use_nonlinear_map = .false.
+       end if
+    end if
 
     lsize_i = mct_aVect_lsize(av_i)
     lsize_o = mct_aVect_lsize(av_o)
@@ -877,7 +941,11 @@ contains
        call shr_sys_abort(subname//' ERROR: esmf SMM not supported')
     else
        ! MCT based SMM
-       call mct_sMat_avMult(avp_i, mapper%sMatp, avp_o, VECTOR=mct_usevector)
+       if (use_nonlinear_map) then
+          call seq_nlmap_avNormArr(mapper, avp_i, avp_o, norm)
+       else
+          call mct_sMat_avMult(avp_i, mapper%sMatp, avp_o, VECTOR=mct_usevector)
+       end if
     endif
 
     !--- renormalize avp_o by mapped norm_i  ---
