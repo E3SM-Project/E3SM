@@ -403,32 +403,61 @@ contains
   end subroutine NitrogenLeaching
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenFert(bounds, num_soilc, filter_soilc )
+  subroutine NitrogenFert(bounds, num_soilc, filter_soilc, &
+       num_pcropp, filter_pcropp )
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update the nitrogen fertilizer for crops
     ! All fertilizer goes into the soil mineral N pool.
     !
     ! !USES:
+    use FanUpdateMod, only : fan_to_sminn
+    use elm_varctl,   only : fan_to_bgc_crop
     !
     ! !ARGUMENTS:
       !$acc routine seq
     type(bounds_type)       , intent(in)    :: bounds
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer , intent(in) :: num_pcropp       ! number of prog. crop patches in filter
+    integer , intent(in) :: filter_pcropp(:) ! filter for prognostic crop patches
     !
     ! !LOCAL VARIABLES:
-    integer :: c,fc                 ! indices
+    integer :: c,fc,p, fp                 ! indices
+    real(r8) :: manure_col(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
 
     associate(&
-         fert          =>    veg_nf%fert          , & ! Input:  [real(r8) (:)]  nitrogen fertilizer rate (gN/m2/s)
+         synthfert     =>    veg_nf%synthfert,      & ! Input:  [real(r8) (:)] nitrogen fertilizer rate (gN/m2/s)
+         manure        =>    veg_nf%manure,         & ! Input:  [real(r8) (:)] manure nitrogen rate (gN/m2/s)
+         totalfert     =>    veg_nf%nfertilization, & ! Input:  [real(r8) (:)] manure nitrogen rate (gN/m2/s) 
          fert_to_sminn =>    col_nf%fert_to_sminn   & ! Output: [real(r8) (:)]
          )
-
-      call p2c(bounds, num_soilc, filter_soilc, &
-           fert(bounds%begp:bounds%endp), &
-           fert_to_sminn(bounds%begc:bounds%endc))
+      if (.not. fan_to_bgc_crop) then
+         ! => Crop columns/patches are not handled by FAN. Use synthfert directly and add
+         ! the default CLM manure. No N input to non-crop columns in this case.
+         call p2c(bounds, num_soilc, filter_soilc, &
+              synthfert(bounds%begp:bounds%endp), &
+              fert_to_sminn(bounds%begc:bounds%endc))
+         call p2c(bounds, num_soilc, filter_soilc, &
+              manure(bounds%begp:bounds%endp), &
+              manure_col(bounds%begc:bounds%endc))
+         ! Add the manure N processed above:
+         do fc = 1, num_soilc
+            c = filter_soilc(fc)
+            fert_to_sminn(c) = fert_to_sminn(c) + manure_col(c)
+         end do
+         ! Add up synthetic fertilizer and manure to the nfertilization output
+         ! variable.
+         do fp = 1, num_pcropp
+            p = filter_pcropp(fp)
+            totalfert(p) = synthfert(p) + manure(p)
+         end do
+      end if
+ 
+      ! if fan_to_bgc_crop == .true., FAN fills in the fert_to_sminn and totalfert for
+      ! crops. It might also fill in the non-crop columns if enabled.
+      call fan_to_sminn(bounds, filter_soilc, num_soilc, totalfert)
 
     end associate
   end subroutine NitrogenFert

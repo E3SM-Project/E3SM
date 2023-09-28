@@ -800,7 +800,9 @@ module VegetationDataType
     real(r8), pointer :: deadstemn_storage_to_xfer           (:)   => null()  ! dead stem N shift storage to transfer (gN/m2/s)
     real(r8), pointer :: livecrootn_storage_to_xfer          (:)   => null()  ! live coarse root N shift storage to transfer (gN/m2/s)
     real(r8), pointer :: deadcrootn_storage_to_xfer          (:)   => null()  ! dead coarse root N shift storage to transfer (gN/m2/s)
-    real(r8), pointer :: fert                                (:)   => null()  ! applied fertilizer (gN/m2/s)
+    real(r8), pointer :: synthfert                           (:)   => null()  ! applied fertilizer (gN/m2/s)
+    real(r8), pointer :: manure                              (:)   => null()  ! applied manure (gN/m2/s)
+    real(r8), pointer :: nfertilization                      (:)   => null()  ! patch applied total (synth. + manure) fertilizer (gN/m2/s)
     real(r8), pointer :: fert_counter                        (:)   => null()  ! >0 fertilize; <=0 not
     real(r8), pointer :: soyfixn                             (:)   => null()  ! soybean fixed N (gN/m2/s)
     ! turnover of livewood to deadwood, with retranslocation
@@ -8959,7 +8961,9 @@ module VegetationDataType
     allocate(this%grainn_to_food                      (begp:endp)) ; this%grainn_to_food                      (:) = spval
     allocate(this%grainn_xfer_to_grainn               (begp:endp)) ; this%grainn_xfer_to_grainn               (:) = spval
     allocate(this%grainn_storage_to_xfer              (begp:endp)) ; this%grainn_storage_to_xfer              (:) = spval
-    allocate(this%fert                                (begp:endp)) ; this%fert                                (:) = spval
+    allocate(this%synthfert                           (begp:endp)) ; this%synthfert                           (:) = nan
+    allocate(this%manure                              (begp:endp)) ; this%manure                              (:) = nan
+    allocate(this%nfertilization                      (begp:endp)) ; this%nfertilization                      (:) = nan
     allocate(this%fert_counter                        (begp:endp)) ; this%fert_counter                        (:) = spval
     allocate(this%soyfixn                             (begp:endp)) ; this%soyfixn                             (:) = spval
     allocate(this%nfix_to_plantn                      (begp:endp)) ; this%nfix_to_plantn                      (:) = spval
@@ -9391,11 +9395,24 @@ module VegetationDataType
          ptr_patch=this%fire_nloss)
 
     if (crop_prog) then
-       this%fert(begp:endp) = spval
-       call hist_addfld1d (fname='FERT', units='gN/m^2/s', &
-            avgflag='A', long_name='fertilizer added', &
-            ptr_patch=this%fert)
+       this%synthfert(begp:endp) = spval
+       call hist_addfld1d (fname='NSYNTHFERT', units='gN/m^2/s', &
+            avgflag='A', long_name='Synthetic fertilizer N added', &
+            ptr_patch=this%synthfert)
+    end if
 
+    if (crop_prog) then
+       this%manure(begp:endp) = spval
+       call hist_addfld1d (fname='NMANURE', units='gN/m^2/s', &
+            avgflag='A', long_name='Manure added according to the ELM default', &
+            ptr_patch=this%manure)
+    end if
+
+    if (crop_prog) then
+       this%nfertilization(begp:endp) = spval
+       call hist_addfld1d (fname='NFERTILIZATION', units='gN/m^2/s', &
+            avgflag='A', long_name='Total fertilizer N added', &
+            ptr_patch=this%nfertilization)
     end if
 
     if (crop_prog) then
@@ -9403,7 +9420,6 @@ module VegetationDataType
        call hist_addfld1d (fname='SOYFIXN', units='gN/m^2/s', &
             avgflag='A', long_name='soybean fixation', &
             ptr_patch=this%soyfixn)
-
     end if
 
     if (crop_prog) then
@@ -9512,7 +9528,9 @@ module VegetationDataType
 
        if ( crop_prog )then
           this%fert_counter(p)  = spval
-          this%fert(p)          = 0._r8
+          this%synthfert(p)     = 0._r8 
+          this%manure(p)        = 0._r8
+          this%nfertilization(p) = 0._r8
           this%soyfixn(p)       = 0._r8
        end if
 
@@ -9552,10 +9570,20 @@ module VegetationDataType
             long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%fert_counter)
 
-       call restartvar(ncid=ncid, flag=flag, varname='fert', xtype=ncd_double,  &
+       call restartvar(ncid=ncid, flag=flag, varname='synthfert', xtype=ncd_double,  &
             dim1name='pft', &
             long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%fert)
+            interpinic_flag='interp', readvar=readvar, data=this%synthfert)
+
+       call restartvar(ncid=ncid, flag=flag, varname='manure', xtype=ncd_double,  &
+             dim1name='pft', &
+             long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%manure)
+
+       call restartvar(ncid=ncid, flag=flag, varname='nfertilization', xtype=ncd_double,  &
+             dim1name='pft', &
+             long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%nfertilization)
 
        call restartvar(ncid=ncid, flag=flag,  varname='grainn_xfer_to_grainn', xtype=ncd_double,  &
             dim1name='pft', &

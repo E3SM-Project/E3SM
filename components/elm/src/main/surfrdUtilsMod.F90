@@ -121,7 +121,7 @@ contains
     !        Convert generic crop types that were read in as seperate CFT's on
     !        a crop landunit, and put them on the vegetated landunit.
     ! !USES:
-    use elm_varsur      , only : wt_lunit, wt_nat_patch, fert_cft
+    use elm_varsur      , only : wt_lunit, wt_nat_patch
     use elm_varpar      , only : cft_size, surfpft_size
     use pftvarcon       , only : nc3crop
     use landunit_varcon , only : istsoil, istcrop
@@ -247,7 +247,7 @@ contains
  end subroutine convert_pft_to_cft
 
  !-----------------------------------------------------------------------
-  subroutine collapse_crop_types(wt_cft, fert_cft, begg, endg, verbose)
+  subroutine collapse_crop_types(wt_cft, fert_cft, fert_p_cft, begg, endg, verbose)
     !
     ! !DESCRIPTION:
     ! Collapse unused crop types into types used in this run.
@@ -258,6 +258,7 @@ contains
     use elm_varctl , only : irrigate
     use elm_varpar , only : cft_lb, cft_ub, cft_size
     use pftvarcon  , only : nc3crop, nc3irrig, npcropmax, mergetoelmpft
+    use pftvarcon  , only: is_pft_known_to_model
     use topounit_varcon      , only : max_topounits   ! TKT
     use GridcellType   , only : grc_pp                ! TKT
     !
@@ -272,6 +273,7 @@ contains
     ! This array is modified in-place
     real(r8), intent(inout) :: wt_cft(begg:,1:, cft_lb:)  !TKT
     real(r8), intent(inout) :: fert_cft(begg:,1:, cft_lb:)  !TKT
+    real(r8), intent(inout) :: fert_p_cft(begg:, 1:, cft_lb:)
 
     logical, intent(in) :: verbose  ! If true, print some extra information
     !
@@ -287,6 +289,9 @@ contains
     !-----------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(wt_cft) == (/endg,max_topounits, cft_ub/)), errMsg(__FILE__, __LINE__))    ! TKT
+    SHR_ASSERT_ALL((ubound(fert_cft) == (/endg,max_topounits, cft_ub/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(fert_p_cft) == (/endg,max_topounits, cft_ub/)), errMsg(__FILE__, __LINE__))
+
 
     if (cft_size <= 0) then
        call endrun(msg = subname//' can only be called if cft_size > 0' // &
@@ -311,12 +316,11 @@ contains
           ! plus             irrigated crop pfts from nc3irrig to npcropmax,
           !                  stride 2
           ! where stride 2 means "every other"
-          do t = grc_pp%topi(g), grc_pp%topf(g)    ! TKT
-             t2 = t - grc_pp%topi(g) + 1
-          
-             wt_cft(g,t2, nc3crop:npcropmax-1:2) = &
-               wt_cft(g,t2, nc3crop:npcropmax-1:2) + wt_cft(g,t2, nc3irrig:npcropmax:2)     ! TKT
-             wt_cft(g,t2, nc3irrig:npcropmax:2)  = 0._r8   
+
+          do t = 1,max_topounits
+             wt_cft(g,t, nc3crop:npcropmax-1:2) = &
+               wt_cft(g,t, nc3crop:npcropmax-1:2) + wt_cft(g,t, nc3irrig:npcropmax:2)     ! TKT
+             wt_cft(g,t, nc3irrig:npcropmax:2)  = 0._r8   
           end do                                                                            ! TKT
        end do
 
@@ -334,9 +338,7 @@ contains
     end if
 
     do g = begg, endg
-       !ntpu(g) = grc_pp%ntopounits(g)
-       do t = grc_pp%topi(g), grc_pp%topf(g)    ! TKT
-          t2 = t - grc_pp%topi(g) + 1
+       do t2 = 1,max_topounits
           do m = 1, npcropmax
              if (m /= mergetoelmpft(m)) then
                 wt_cft_to                   = wt_cft(g,t2, mergetoelmpft(m))
@@ -347,9 +349,13 @@ contains
                 if (wt_cft_merge > 0._r8) then
                    fert_cft(g,t2,mergetoelmpft(m)) = (wt_cft_to * fert_cft(g,t2,mergetoelmpft(m)) + &
                                                    wt_cft_from * fert_cft(g,t2,m)) / wt_cft_merge
-                end if
+                   fert_p_cft(g,t2,mergetoelmpft(m)) = (wt_cft_to * fert_p_cft(g,t2,mergetoelmpft(m)) + &
+                                                   wt_cft_from * fert_p_cft(g,t2,m)) / wt_cft_merge
+                 end if
+                is_pft_known_to_model(m) = .false.
              end if
           end do
+          t2 = t - grc_pp%topi(g) + 1
        end do
     end do
 

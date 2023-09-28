@@ -299,7 +299,7 @@ contains
     !
     ! !USES:
     use NitrogenDynamicsMod         , only: NitrogenDeposition,NitrogenFixation, NitrogenFert, CNSoyfix
-    use PhosphorusDynamicsMod       , only: PhosphorusDeposition
+    use PhosphorusDynamicsMod       , only: PhosphorusDeposition, PhosphorusFert
     use MaintenanceRespMod          , only: MaintenanceResp
     use DecompCascadeBGCMod   , only: decomp_rate_constants_bgc
     use DecompCascadeCNMod    , only: decomp_rate_constants_cn
@@ -320,6 +320,8 @@ contains
     integer                  , intent(in)    :: filter_soilc(:)   ! filter for soil columns
     integer                  , intent(in)    :: num_soilp         ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:)   ! filter for soil patches
+    integer                  , intent(in)    :: num_pcropp        ! number of prog. crop patches in filter
+    integer                  , intent(in)    :: filter_pcropp(:)  ! filter for prognostic crop patches
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
@@ -395,7 +397,8 @@ contains
        event = 'MaintenanceResp'
        call t_start_lnd(event)
        if (crop_prog) then
-          call NitrogenFert(bounds, num_soilc,filter_soilc )
+          call NitrogenFert(bounds, num_soilc,filter_soilc, num_pcropp, filter_pcropp )
+          call PhosphorusFert(bounds, num_soilc, filter_soilc )
 
           call CNSoyfix(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
                          crop_vars, cnstate_vars )

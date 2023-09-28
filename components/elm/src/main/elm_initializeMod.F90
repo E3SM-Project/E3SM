@@ -14,7 +14,7 @@ module elm_initializeMod
   use elm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14
   use elm_varctl       , only : use_fates, use_betr, use_fates_sp, use_fan
   use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec,firrig,f_surf,f_grd 
-  use elm_varsur       , only : fert_cft
+  use elm_varsur       , only : fert_cft, fert_p_cft
   use elm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
   use perf_mod         , only : t_startf, t_stopf
   !use readParamsMod    , only : readParameters
@@ -271,6 +271,7 @@ contains
     allocate (wt_nat_patch (begg:endg,1:max_topounits, surfpft_lb:surfpft_ub ))
     allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
     allocate (fert_cft     (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
+    allocate (fert_p_cft   (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
     if (create_glacier_mec_landunit) then
        allocate (wt_glc_mec  (begg:endg,1:max_topounits, maxpatch_glcmec))
        allocate (topo_glc_mec(begg:endg,1:max_topounits, maxpatch_glcmec))
