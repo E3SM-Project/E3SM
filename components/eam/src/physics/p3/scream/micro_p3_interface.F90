@@ -833,7 +833,6 @@ end subroutine micro_p3_readnl
     real(rtype) :: icimrst(pcols,pver) ! stratus ice mixing ratio - on grid
     real(rtype) :: icwmrst(pcols,pver) ! stratus water mixing ratio - on grid
     real(rtype) :: rho(pcols,pver)
-    real(rtype) :: drout2(pcols,pver)
     real(rtype) :: reff_rain(pcols,pver)
     real(rtype) :: col_location(pcols,3),tmp_loc(pcols)  ! Array of column lon (index 1) and lat (index 2)
     integer     :: tmpi_loc(pcols) ! Global column index temp array
@@ -1113,6 +1112,7 @@ end subroutine micro_p3_readnl
          kte,                         & ! IN     vertical index upper bound       -
          rel(its:ite,kts:kte),        & ! OUT    effective radius, cloud          m
          rei(its:ite,kts:kte),        & ! OUT    effective radius, ice            m
+         reff_rain(its:ite,kts:kte),  & ! OUT    effective radius, rain           m
          rho_qi(its:ite,kts:kte),  & ! OUT    bulk density of ice              kg m-3
          do_predict_nc,               & ! IN     .true.=prognostic Nc, .false.=specified Nc
          do_prescribed_CCN,           & ! IN
@@ -1355,23 +1355,15 @@ end subroutine micro_p3_readnl
    !!
    !! Rain/Snow effective diameter
    !!
-   drout2    = 0._rtype
-   reff_rain = 0._rtype
    aqrain    = 0._rtype
    anrain    = 0._rtype
    freqr     = 0._rtype
    ! Prognostic precipitation
    where (rain(:ncol,top_lev:) >= 1.e-7_rtype)
-      drout2(:ncol,top_lev:) = avg_diameter( &
-           rain(:ncol,top_lev:), &
-           numrain(:ncol,top_lev:) * rho(:ncol,top_lev:), &
-           rho(:ncol,top_lev:), rho_h2o)
-
       aqrain(:ncol,top_lev:) = rain(:ncol,top_lev:) * cld_frac_r(:ncol,top_lev:)
       anrain(:ncol,top_lev:) = numrain(:ncol,top_lev:) * cld_frac_r(:ncol,top_lev:)
       freqr(:ncol,top_lev:) = cld_frac_r(:ncol,top_lev:)
-      reff_rain(:ncol,top_lev:) = drout2(:ncol,top_lev:) * &
-           1.5_rtype * 1.e6_rtype
+      reff_rain(:ncol,top_lev:) = reff_rain(:ncol,top_lev:) * 1.e6_rtype
    end where
 
 !====================== COSP Specific Outputs START ======================!

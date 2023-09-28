@@ -372,8 +372,13 @@ update (const Field& x, const ST alpha, const ST beta)
 
   // Determine if there is a FillValue that requires extra treatment.
   ST fill_val = constants::DefaultFillValue<ST>().value;
-  if (get_header().has_extra_data("mask_value")) {
-    fill_val = get_header().get_extra_data<ST>("mask_value");
+
+  if (x.get_header().has_extra_data("mask_value")) {
+    if (typeid(ST) == typeid(int)) {
+      fill_val = x.get_header().get_extra_data<int>("mask_value");
+    } else {
+      fill_val = x.get_header().get_extra_data<float>("mask_value");
+    }
   }
 
   // If user passes, say, double alpha/beta for an int field, we should error out, warning about

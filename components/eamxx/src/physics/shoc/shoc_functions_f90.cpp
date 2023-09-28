@@ -22,7 +22,7 @@ extern "C" {
 
 // Special shoc_init function for shoc_main_bfb test
 void shoc_init_for_main_bfb_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
-                              Real zvir, Real latvap, Real latice, Real karman,
+                              Real zvir, Real latvap, Real latice, Real karman, Real p0,
                               Real* pref_mid, int nbot_shoc, int ntop_shoc);
 void shoc_use_cxx_c(bool use_cxx);
 
@@ -52,7 +52,7 @@ void shoc_energy_total_fixer_c(Int shcol, Int nlev, Int nlevi, Real dtime, Int n
                                Real *zt_grid, Real *zi_grid,
                                Real *se_b, Real *ke_b, Real *wv_b, Real *wl_b,
                                Real *se_a, Real *ke_a, Real *wv_a, Real *wl_a,
-                               Real *wthl_sfc, Real *wqw_sfc, Real *rho_zt,
+                               Real *wthl_sfc, Real *wqw_sfc, Real *rho_zt, Real *pint,
                                Real *te_a, Real *te_b);
 
 void shoc_energy_threshold_fixer_c(Int shcol, Int nlev, Int nlevi,
@@ -347,7 +347,10 @@ void shoc_energy_total_fixer(ShocEnergyTotalFixerData& d)
 {
   shoc_init(d.nlev, true);
   d.transpose<ekat::TransposeDirection::c2f>();
-  shoc_energy_total_fixer_c(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv, d.zt_grid, d.zi_grid, d.se_b, d.ke_b, d.wv_b, d.wl_b, d.se_a, d.ke_a, d.wv_a, d.wl_a, d.wthl_sfc, d.wqw_sfc, d.rho_zt, d.te_a, d.te_b);
+  shoc_energy_total_fixer_c(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv,
+                            d.zt_grid, d.zi_grid, d.se_b, d.ke_b, d.wv_b,
+                            d.wl_b, d.se_a, d.ke_a, d.wv_a, d.wl_a, d.wthl_sfc,
+                            d.wqw_sfc, d.rho_zt, d.pint, d.te_a, d.te_b);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
@@ -754,7 +757,7 @@ void shoc_main_with_init(ShocMainData& d)
   using C = scream::physics::Constants<Real>;
 
   d.transpose<ekat::TransposeDirection::c2f>();
-  shoc_init_for_main_bfb_c(d.nlev, C::gravit, C::Rair, C::RH2O, C::Cpair, C::ZVIR, C::LatVap, C::LatIce, C::Karman,
+  shoc_init_for_main_bfb_c(d.nlev, C::gravit, C::Rair, C::RH2O, C::Cpair, C::ZVIR, C::LatVap, C::LatIce, C::Karman, C::P0,
                            d.pref_mid, d.nbot_shoc, d.ntop_shoc+1);
   shoc_use_cxx_c(false);
 

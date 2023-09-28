@@ -12,5 +12,4 @@ include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
 
 include (${EKAT_MACH_FILES_PATH}/mpi/srun.cmake)
 
-set(CMAKE_EXE_LINKER_FLAGS "-L/usr/tce/packages/gcc/gcc-10.3.1-magic/lib/gcc/x86_64-redhat-linux/10/ -qmkl" CACHE STRING "" FORCE)
 set(SCREAM_INPUT_ROOT "/usr/gdata/climdat/ccsm3data/inputdata" CACHE STRING "")

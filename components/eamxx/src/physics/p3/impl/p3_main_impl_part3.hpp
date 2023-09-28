@@ -55,7 +55,8 @@ void Functions<S,D>
   const uview_1d<Spack>& diag_diam_qi,
   const uview_1d<Spack>& rho_qi,
   const uview_1d<Spack>& diag_equiv_reflectivity,
-  const uview_1d<Spack>& diag_eff_radius_qc)
+  const uview_1d<Spack>& diag_eff_radius_qc,
+  const uview_1d<Spack>& diag_eff_radius_qr)
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar inv_cp       = C::INV_CP;
@@ -116,6 +117,7 @@ void Functions<S,D>
         ze_rain(k).set(qr_gt_small, nr(k)*(mu_r(k)+6)*(mu_r(k)+5)*(mu_r(k)+4)*
                        (mu_r(k)+3)*(mu_r(k)+2)*(mu_r(k)+1)/pow(lamr(k), sp(6.0))); // once f90 is gone, 6 can be int
         ze_rain(k).set(qr_gt_small, max(ze_rain(k), sp(1.e-22)));
+        diag_eff_radius_qr(k).set(qr_gt_small, sp(1.5) / lamr(k));
       }
 
       if (qr_small.any()) {

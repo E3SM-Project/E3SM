@@ -723,7 +723,7 @@ struct P3MainPart2Data : public PhysicsTestData
 
 struct P3MainPart3Data : public PhysicsTestData
 {
-  static constexpr size_t NUM_ARRAYS = 33;
+  static constexpr size_t NUM_ARRAYS = 34;
 
   // Inputs
   Int kts, kte, kbot, ktop, kdir;
@@ -734,7 +734,8 @@ struct P3MainPart3Data : public PhysicsTestData
     *qv, *th_atm, *qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *latent_heat_vapor, *latent_heat_sublim,
     *mu_c, *nu, *lamc, *mu_r,
     *lamr, *vap_liq_exchange,
-    *ze_rain, *ze_ice, *diag_vm_qi, *diag_eff_radius_qi, *diag_diam_qi, *rho_qi, *diag_equiv_reflectivity, *diag_eff_radius_qc;
+    *ze_rain, *ze_ice, *diag_vm_qi, *diag_eff_radius_qi, *diag_diam_qi, *rho_qi,
+    *diag_equiv_reflectivity, *diag_eff_radius_qc, *diag_eff_radius_qr;
 
   P3MainPart3Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_);
 
@@ -747,7 +748,7 @@ struct P3MainPart3Data : public PhysicsTestData
 
 struct P3MainData : public PhysicsTestData
 {
-  static constexpr size_t NUM_ARRAYS = 34;
+  static constexpr size_t NUM_ARRAYS = 35;
   static constexpr size_t NUM_INPUT_ARRAYS = 24;
 
   // Inputs
@@ -760,7 +761,7 @@ struct P3MainData : public PhysicsTestData
   Real* qc, *nc, *qr, *nr, *qi, *qm, *ni, *bm, *qv, *th_atm;
 
   // Out
-  Real *diag_eff_radius_qc, *diag_eff_radius_qi, *rho_qi, *mu_c, *lamc, *qv2qi_depos_tend, *precip_total_tend, *nevapr,
+  Real *diag_eff_radius_qc, *diag_eff_radius_qi, *diag_eff_radius_qr, *rho_qi, *mu_c, *lamc, *qv2qi_depos_tend, *precip_total_tend, *nevapr,
        *qr_evap_tend, *liq_ice_exchange, *vap_liq_exchange, *vap_ice_exchange,
        *precip_liq_flux, *precip_ice_flux, *precip_liq_surf, *precip_ice_surf;
   Real elapsed_s;
@@ -940,14 +941,14 @@ void p3_main_part3_f(
   Real* inv_exner, Real* cld_frac_l, Real* cld_frac_r, Real* cld_frac_i,
   Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim,
   Real* mu_c, Real* nu, Real* lamc, Real* mu_r, Real* lamr, Real* vap_liq_exchange,
-  Real*  ze_rain, Real* ze_ice, Real* diag_vm_qi, Real* diag_eff_radius_qi, Real* diag_diam_qi, Real* rho_qi, Real* diag_equiv_reflectivity, Real* diag_eff_radius_qc);
+  Real*  ze_rain, Real* ze_ice, Real* diag_vm_qi, Real* diag_eff_radius_qi, Real* diag_diam_qi, Real* rho_qi, Real* diag_equiv_reflectivity, Real* diag_eff_radius_qc, Real* diag_eff_radius_qr);
 
 Int p3_main_f(
   Real* qc, Real* nc, Real* qr, Real* nr, Real* th_atm, Real* qv, Real dt,
   Real* qi, Real* qm, Real* ni, Real* bm, Real* pres, Real* dz,
   Real* nc_nuceat_tend, Real* nccn_prescribed, Real* ni_activated, Real* inv_qc_relvar, Int it, Real* precip_liq_surf,
   Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
-  Real* diag_eff_radius_qi, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, Real* dpres, Real* inv_exner,
+  Real* diag_eff_radius_qi, Real* diag_eff_radius_qr, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, Real* dpres, Real* inv_exner,
   Real* qv2qi_depos_tend, Real* precip_liq_flux, Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i,
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev);
 

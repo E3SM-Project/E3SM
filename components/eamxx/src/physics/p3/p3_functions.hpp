@@ -176,6 +176,8 @@ struct Functions
     view_2d<Spack> diag_eff_radius_qc;
     // Effective ice radius [m]
     view_2d<Spack> diag_eff_radius_qi;
+    // Effective rain radius [m]
+    view_2d<Spack> diag_eff_radius_qr;
     // Bulk density of ice [kg m-3]
     view_2d<Spack> rho_qi;
     // Grid-box average rain flux [kg m^-2 s^-1] pverp
@@ -867,6 +869,7 @@ struct Functions
     const uview_1d<Spack>& ze_rain,
     const uview_1d<Spack>& diag_eff_radius_qc,
     const uview_1d<Spack>& diag_eff_radius_qi,
+    const uview_1d<Spack>& diag_eff_radius_qr,
     const uview_1d<Spack>& inv_cld_frac_i,
     const uview_1d<Spack>& inv_cld_frac_l,
     const uview_1d<Spack>& inv_cld_frac_r,
@@ -886,7 +889,7 @@ struct Functions
     const uview_2d<const Spack>& th_atm, const uview_2d<const Spack>& dz,
     const uview_2d<Spack>& diag_equiv_reflectivity, const uview_2d<Spack>& ze_ice,
     const uview_2d<Spack>& ze_rain, const uview_2d<Spack>& diag_eff_radius_qc,
-    const uview_2d<Spack>& diag_eff_radius_qi, const uview_2d<Spack>& inv_cld_frac_i,
+    const uview_2d<Spack>& diag_eff_radius_qi, const uview_2d<Spack>& diag_eff_radius_qr, const uview_2d<Spack>& inv_cld_frac_i,
     const uview_2d<Spack>& inv_cld_frac_l, const uview_2d<Spack>& inv_cld_frac_r,
     const uview_2d<Spack>& exner, const uview_2d<Spack>& T_atm, const uview_2d<Spack>& qv,
     const uview_2d<Spack>& inv_dz, const uview_1d<Scalar>& precip_liq_surf, const uview_1d<Scalar>& precip_ice_surf,
@@ -1199,7 +1202,8 @@ struct Functions
     const uview_1d<Spack>& diag_diam_qi,
     const uview_1d<Spack>& rho_qi,
     const uview_1d<Spack>& diag_equiv_reflectivity,
-    const uview_1d<Spack>& diag_eff_radius_qc);
+    const uview_1d<Spack>& diag_eff_radius_qc,
+    const uview_1d<Spack>& diag_eff_radius_qr);
 
 #ifdef SCREAM_SMALL_KERNELS
   static void p3_main_part3_disp(
@@ -1240,6 +1244,7 @@ struct Functions
     const uview_2d<Spack>& rho_qi,
     const uview_2d<Spack>& diag_equiv_reflectivity,
     const uview_2d<Spack>& diag_eff_radius_qc,
+    const uview_2d<Spack>& diag_eff_radius_qr,
     const uview_1d<bool>& is_nucleat_possible,
     const uview_1d<bool>& is_hydromet_present);
 #endif

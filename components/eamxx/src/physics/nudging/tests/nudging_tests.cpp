@@ -62,6 +62,7 @@ TEST_CASE("nudging") {
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
 
   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
+  const int packsize = SCREAM_PACK_SIZE;
   Int num_levs = 34;
 
   // Initialize the pio_subsystem for this test:
@@ -119,11 +120,11 @@ TEST_CASE("nudging") {
 
     // Register fields with fm
     fm->registration_begins();
-    fm->register_field(FR{fid1,"output"});
-    fm->register_field(FR{fid2,"output"});
-    fm->register_field(FR{fid3,"output"});
-    fm->register_field(FR{fid4,"output"});
-    fm->register_field(FR{fid5,"output"});
+    fm->register_field(FR{fid1,"output",packsize});
+    fm->register_field(FR{fid2,"output",packsize});
+    fm->register_field(FR{fid3,"output",packsize});
+    fm->register_field(FR{fid4,"output",packsize});
+    fm->register_field(FR{fid5,"output",packsize});
     fm->registration_ends();
 
     // Initialize these fields
@@ -230,8 +231,9 @@ TEST_CASE("nudging") {
   ekat::ParameterList params_mid;
   std::string nudging_f = "io_output_test.INSTANT.nsteps_x1."\
                           "np1.2000-01-01-00000.nc";
-  params_mid.set<std::string>("Nudging_Filename",nudging_f);
-  auto nudging_mid = std::make_shared<Nudging>(io_comm,params_mid);
+  params_mid.set<std::vector<std::string>>("nudging_filename",{nudging_f});
+  params_mid.set<std::vector<std::string>>("nudging_fields",{"T_mid","qv","u","v"});
+  std::shared_ptr<AtmosphereProcess> nudging_mid = std::make_shared<Nudging>(io_comm,params_mid);
 
   nudging_mid->set_grids(gm);
 
@@ -240,7 +242,7 @@ TEST_CASE("nudging") {
   for (const auto& req : nudging_mid->get_required_field_requests()) {
     Field f(req.fid);
     auto & f_ap = f.get_header().get_alloc_properties();
-    f_ap.request_allocation(1);
+    f_ap.request_allocation(packsize);
     f.allocate_view();
     const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
@@ -263,6 +265,11 @@ TEST_CASE("nudging") {
   Field qv_mid_o = output_fields["qv"];
   Field u_o = output_fields["u"];
   Field v_o = output_fields["v"];
+  // Initialize memory buffer for all atm processes
+  auto memory_buffer = std::make_shared<ATMBufferManager>();
+  memory_buffer->request_bytes(nudging_mid->requested_buffer_size_in_bytes());
+  memory_buffer->allocate();
+  nudging_mid->init_buffers(*memory_buffer);
 
   //fill data
   //Don't fill T,qv,u,v because they will be nudged anyways
@@ -303,12 +310,14 @@ TEST_CASE("nudging") {
         //If destination pressure is 0 than it will use pressure value of 1
 	//from external file since that is the lowest value. A time interpolation
 	//is performed but there is no interpolation between levels necessary
+	//NOTE: The nearest unmasked value will be the average between ilev=1 and 
+	//      ilev=2 so the vertical contribution will be 200*((1-1) + (2-1))/2 = 100
 	if (ilev == 0){
-	  double val_before  = 10000*(icol-1) + 10*int(time_index-1);
-	  double val_after   = 10000*(icol-1) + 10*int(time_index);
-	  double w_aft       = time_s*100.-time_index*250.;
-	  double w_bef       = (time_index+1)*250-time_s*100.;
-	  double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
+	  Real val_before  = 10000*(icol-1) + 100.0 + 10*int(time_index-1);
+	  Real val_after   = 10000*(icol-1) + 100.0 + 10*int(time_index);
+	  Real w_aft       = time_s*100.-time_index*250.;
+	  Real w_bef       = (time_index+1)*250-time_s*100.;
+	  Real val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
           REQUIRE(abs(T_mid_v_h_o(icol,ilev) - val_tim_avg)<0.001);
           REQUIRE(abs(qv_h_o(icol,ilev) - val_tim_avg)<0.001);
           REQUIRE(abs(u_h_o(icol,ilev) - val_tim_avg)<0.001);
@@ -319,12 +328,18 @@ TEST_CASE("nudging") {
         //If destination pressure is 68 than it will use highest pressure value
 	//from external file. A time interpolation is performed but there is
 	//no interpolation between levels necessary
+	//NOTE: The nearest unmasked value will be the average between ilev=num_levs-1 and 
+	//      ilev=num_levs-2 so the vertical contribution will be 
+	//      200*((num_levs-1) + (num_levs-2))/2 = 100*(2*num_levs-3)
+	//NOTE: The use of num_levs instead of nlevs.  In this test num_levs is the number
+	//      of levels in the source data and nlevs is the number of levels on the test
+	//      atm. state.
 	if (ilev == (nlevs-1)){
-	  double val_before  = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index-1);
-	  double val_after   = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index);
-	  double w_aft       = time_s*100.-time_index*250.;
-	  double w_bef       = (time_index+1)*250-time_s*100.;
-	  double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
+	  Real val_before  = 10000*(icol-1) + 100*(2*num_levs-3) + 10*int(time_index-1);
+	  Real val_after   = 10000*(icol-1) + 100*(2*num_levs-3) + 10*int(time_index);
+	  Real w_aft       = time_s*100.-time_index*250.;
+	  Real w_bef       = (time_index+1)*250-time_s*100.;
+	  Real val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
           REQUIRE(abs(T_mid_v_h_o(icol,ilev) - val_tim_avg)<0.001);
           REQUIRE(abs(qv_h_o(icol,ilev) - val_tim_avg)<0.001);
           REQUIRE(abs(u_h_o(icol,ilev) - val_tim_avg)<0.001);
@@ -332,18 +347,18 @@ TEST_CASE("nudging") {
 	  continue;
 	}
 
-        double val_before = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index-1);
-        double val_after = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index);
-        double w_aft = time_s*100.-time_index*250.;
-        double w_bef = (time_index+1)*250-time_s*100.;
-	double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
+        Real val_before = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index-1);
+        Real val_after = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index);
+        Real w_aft = time_s*100.-time_index*250.;
+        Real w_bef = (time_index+1)*250-time_s*100.;
+	Real val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
 
-        double val_before_n = 10000*(icol-1) + 200*(ilev) + 10*int(time_index-1);
-        double val_after_n = 10000*(icol-1) + 200*(ilev) + 10*int(time_index);
-        double w_aft_n = time_s*100.-time_index*250.;
-        double w_bef_n = (time_index+1)*250-time_s*100.;
-	double val_tim_avg_next = (val_before_n*w_bef_n + val_after_n*w_aft_n) / 250.;
-	double val_avg = (val_tim_avg_next + val_tim_avg)/2.;
+        Real val_before_n = 10000*(icol-1) + 200*(ilev) + 10*int(time_index-1);
+        Real val_after_n = 10000*(icol-1) + 200*(ilev) + 10*int(time_index);
+        Real w_aft_n = time_s*100.-time_index*250.;
+        Real w_bef_n = (time_index+1)*250-time_s*100.;
+	Real val_tim_avg_next = (val_before_n*w_bef_n + val_after_n*w_aft_n) / 250.;
+	Real val_avg = (val_tim_avg_next + val_tim_avg)/2.;
 
 	REQUIRE(abs(T_mid_v_h_o(icol,ilev) - val_avg)<0.001);
 	REQUIRE(abs(qv_h_o(icol,ilev) - val_avg)<0.001);

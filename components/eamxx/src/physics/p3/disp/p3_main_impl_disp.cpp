@@ -19,6 +19,7 @@ void Functions<Real,DefaultDevice>
   const uview_2d<const Spack>& cld_frac_r, const uview_2d<const Spack>& inv_exner, const uview_2d<const Spack>& th_atm,
   const uview_2d<const Spack>& dz, const uview_2d<Spack>& diag_equiv_reflectivity, const uview_2d<Spack>& ze_ice,
   const uview_2d<Spack>& ze_rain, const uview_2d<Spack>& diag_eff_radius_qc, const uview_2d<Spack>& diag_eff_radius_qi,
+  const uview_2d<Spack>& diag_eff_radius_qr,
   const uview_2d<Spack>& inv_cld_frac_i, const uview_2d<Spack>& inv_cld_frac_l, const uview_2d<Spack>& inv_cld_frac_r,
   const uview_2d<Spack>& exner, const uview_2d<Spack>& T_atm, const uview_2d<Spack>& qv, const uview_2d<Spack>& inv_dz,
   const uview_1d<Scalar>& precip_liq_surf, const uview_1d<Scalar>& precip_ice_surf,
@@ -48,6 +49,7 @@ void Functions<Real,DefaultDevice>
         ze_rain(i,k)           = 1.e-22;
         diag_eff_radius_qc(i,k)         = 10.e-6;
         diag_eff_radius_qi(i,k)         = 25.e-6;
+        diag_eff_radius_qr(i,k)         = 500.e-6;
         inv_cld_frac_i(i,k)    = 1 / cld_frac_i(i,k);
         inv_cld_frac_l(i,k)    = 1 / cld_frac_l(i,k);
         inv_cld_frac_r(i,k)    = 1 / cld_frac_r(i,k);
@@ -195,6 +197,7 @@ Int Functions<Real,DefaultDevice>
   auto th                 = prognostic_state.th;
   auto diag_eff_radius_qc = diagnostic_outputs.diag_eff_radius_qc;
   auto diag_eff_radius_qi = diagnostic_outputs.diag_eff_radius_qi;
+  auto diag_eff_radius_qr = diagnostic_outputs.diag_eff_radius_qr;
   auto qv2qi_depos_tend   = diagnostic_outputs.qv2qi_depos_tend;
   auto rho_qi             = diagnostic_outputs.rho_qi;
   auto precip_liq_flux    = diagnostic_outputs.precip_liq_flux;
@@ -211,8 +214,8 @@ Int Functions<Real,DefaultDevice>
   // initialize
   p3_main_init_disp(
       nj, nk_pack, cld_frac_i, cld_frac_l, cld_frac_r, inv_exner, th, dz, diag_equiv_reflectivity,
-      ze_ice, ze_rain, diag_eff_radius_qc, diag_eff_radius_qi, inv_cld_frac_i, inv_cld_frac_l,
-      inv_cld_frac_r, exner, T_atm, qv, inv_dz,
+      ze_ice, ze_rain, diag_eff_radius_qc, diag_eff_radius_qi, diag_eff_radius_qr,
+      inv_cld_frac_i, inv_cld_frac_l, inv_cld_frac_r, exner, T_atm, qv, inv_dz,
       diagnostic_outputs.precip_liq_surf, diagnostic_outputs.precip_ice_surf,
       mu_r, lamr, logn0r, nu, cdist, cdist1, cdistr,
       qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld,
@@ -292,7 +295,7 @@ Int Functions<Real,DefaultDevice>
       rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qi, ni,
       qm, bm, latent_heat_vapor, latent_heat_sublim, mu_c, nu, lamc, mu_r, lamr,
       vap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi,
-      rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc, nucleationPossible, hydrometeorsPresent);
+      rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc, diag_eff_radius_qr, nucleationPossible, hydrometeorsPresent);
 
   //
   // merge ice categories with similar properties
