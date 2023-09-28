@@ -50,12 +50,12 @@ else()
   message(FATAL_ERROR "NETCDF not found: Define NETCDF_PATH or NETCDF_C_PATH and NETCDF_FORTRAN_PATH in config_machines.xml or config_compilers.xml")
 endif()
 
-set (pnetcdf_lib ${pnetcdf_lib} PARENT_SCOPE)
-set (netcdf_c_lib ${netcdf_c_lib} PARENT_SCOPE)
-set (netcdf_f_lib ${netcdf_f_lib} PARENT_SCOPE)
-set (pnetcdf_incdir ${pnetcdf_incdir} PARENT_SCOPE)
-set (netcdf_c_incdir ${netcdf_c_incdir} PARENT_SCOPE)
-set (netcdf_f_incdir ${netcdf_f_incdir} PARENT_SCOPE)
+set (pnetcdf_lib ${pnetcdf_lib})
+set (netcdf_c_lib ${netcdf_c_lib})
+set (netcdf_f_lib ${netcdf_f_lib})
+set (pnetcdf_incdir ${pnetcdf_incdir})
+set (netcdf_c_incdir ${netcdf_c_incdir})
+set (netcdf_f_incdir ${netcdf_f_incdir})
 
 # Create the interface library, and set target properties
 add_library(netcdf INTERFACE)
