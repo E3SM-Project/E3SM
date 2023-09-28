@@ -42,13 +42,15 @@ real(r8), parameter :: km_inv_to_m_inv = 0.001_r8      !1/km to 1/m
 character(len=fieldname_len), pointer :: odv_names(:)  ! outfld names for visible OD
 integer  :: idx_ext_sw, idx_ssa_sw, idx_af_sw, idx_ext_lw !pbuf indices for volcanic cmip6 file
 integer  :: ihuge ! a huge integer
+
+logical  :: is_output_interactive_volc = .false.
 !==============================================================================
 contains
 !==============================================================================
 
 subroutine aer_rad_props_init()
    use phys_control, only: phys_getopts
-
+   use cam_history_support, only: add_hist_coord 
    !Local variables
    integer                    :: i, ierr
    integer                    :: numaerosols  ! number of aerosols
@@ -63,11 +65,11 @@ subroutine aer_rad_props_init()
 
    call phys_getopts( history_aero_optics_out    = history_aero_optics, &
                       history_amwg_out           = history_amwg,    &
-                      prog_modal_aero_out        = prog_modal_aero )
+                      prog_modal_aero_out        = prog_modal_aero, &
+                      is_output_interactive_volc_out = is_output_interactive_volc)
 
    ! Limit modal aerosols with top_lev here.
    if (prog_modal_aero) top_lev = clim_modal_aero_top_lev
-
    call addfld ('AEROD_v', horiz_only, 'A', '1', &
       'Total Aerosol Optical Depth in visible band', flag_xyfill=.true.)
 
@@ -77,7 +79,21 @@ subroutine aer_rad_props_init()
         'EXTINCT LW H2O window band 7 output directly read from prescribed input file', flag_xyfill=.true.)
    call addfld ('extinct_sw_inp',(/ 'lev' /),    'A','1/km',&
         'Aerosol extinction directly read from prescribed input file', flag_xyfill=.true.)
-
+   ! add full bands radiation output
+   ! longwave: ext_sao_lw (pcols,pver,nlwbands)
+   ! ext_sao_sw, ssa_sao, af_sao (pcols,pver,nswbands)
+   !if (is_output_interactive_volc) then
+   !call add_hist_coord('nlwbands',    nlwbands,    'NLWBANDS')  
+   !call add_hist_coord('nswbands',    nswbands,    'NSWBANDS')   
+   !call addfld ('ext_sao_lw',(/ 'lev     ', 'nlwbands' /),    'A','1/m',&
+   !     'Aerosol LW radiation properties comparable to prescribed input ext_earth', flag_xyfill=.true.) 
+   !call addfld ('ext_sao_sw',(/ 'lev     ', 'nswbands' /),    'A','1/m',&
+   !     'Aerosol SW radiation properties comparable to prescribed input ext_sun', flag_xyfill=.true.) 
+   !call addfld ('ssa_sao',(/ 'lev     ', 'nswbands' /),    'A','1/m',&
+   !     'Aerosol SW radiation properties comparable to prescribed input omega_sun', flag_xyfill=.true.) 
+   !call addfld ('af_sao',(/ 'lev     ', 'nswbands' /),    'A','1/m',&
+   !     'Aerosol SW radiation properties comparable to prescribed input g_sun', flag_xyfill=.true.) 
+   !endif
    ! Contributions to AEROD_v from individual aerosols (climate species).
 
    ! number of bulk aerosols in climate list
@@ -197,6 +213,12 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
    real(r8), pointer :: ext_cmip6_sw(:,:,:)
    real(r8) :: ext_cmip6_sw_inv_m(pcols,pver,nswbands)! short wave extinction in the units of 1/m
 
+   ! for Strat. AOD output
+   !if (is_output_interactive_volc) then 
+   !real(r8) :: ext_sao_sw(pcols,0:pver,nswbands) !
+   !real(r8) :: ssa_sao   (pcols,0:pver,nswbands) !
+   !real(r8) :: af_sao    (pcols,0:pver,nswbands) !
+   !endif
    !-----------------------------------------------------------------------------
 
    ncol  = state%ncol
@@ -236,14 +258,22 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
    !This is done to avoid having optional arguments in modal_aero_sw call
    ext_cmip6_sw => null()
    trop_level(:) = ihuge
+   call tropopause_find(state, trop_level)
+   if (any(trop_level(1:ncol) == -1)) then
+         do icol = 1, ncol
+            write(iulog,*)'tropopause level,state%lchnk,column:',trop_level(icol),lchnk,icol
+         enddo
+         call endrun('aer_rad_props.F90: subr aer_rad_props_sw: tropopause not found')
+   endif
+
    if (is_cmip6_volc) then
       !get extinction so as to supply to modal_aero_sw routine for computing EXTINCT variable
       !converting it from 1/km to 1/m
 
       call pbuf_get_field(pbuf, idx_ext_sw, ext_cmip6_sw)
       call outfld('extinct_sw_inp',ext_cmip6_sw(:,:,idx_sw_diag), pcols, lchnk)
+      !ext_cmip6_sw_inv_m = ext_cmip6_sw * km_inv_to_m_inv !convert from 1/km to 1/m
       ext_cmip6_sw_inv_m(1:ncol,1:pver,1:nswbands) = ext_cmip6_sw(1:ncol,1:pver,1:nswbands) * km_inv_to_m_inv !convert from 1/km to 1/m
-
       !Find tropopause as extinction should be applied only above tropopause
       !trop_level has value for tropopause for each column
       call tropopause_find(state, trop_level)
@@ -275,7 +305,16 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
       !update tau, tau_w, tau_w_g, and tau_w_f with the read in values of extinction, ssa and asymmetry factors
       call volcanic_cmip_sw(state, pbuf, trop_level, ext_cmip6_sw_inv_m, tau, tau_w, tau_w_g, tau_w_f)
    endif
+   !if (is_output_interactive_volc) then
+     !prepare strat. aerosol sw optic properties for output: ext_sao_sw, ssa_sao, af_sao
+     !call get_strat_aer_optics_sw(state, pbuf, trop_level, tau, tau_w, tau_w_g, tau_w_f, ext_sao_sw, ssa_sao, af_sao)
+     ! note: outputs work, but could cause restart issue because can't be read for current restart interface
+     ! there is an extra dimension (wavelength) here
+     !call outfld('ext_sao_sw',ext_sao_sw(:,:,:), pcols, lchnk)
+     !call outfld('ssa_sao',ssa_sao(:,:,:), pcols, lchnk)
+     !call outfld('af_sao',af_sao(:,:,:), pcols, lchnk)
 
+   !endif
    ! Contributions from bulk aerosols.
    do iaerosol = 1, numaerosols
 
@@ -412,6 +451,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, dt, state, pbuf,  odap_aer,
    real(r8) :: lyr_thk
    real(r8), pointer :: ext_cmip6_lw(:,:,:)
    real(r8) :: ext_cmip6_lw_inv_m(pcols,pver,nlwbands)!long wave extinction in the units of 1/m
+   real(r8) :: ext_sao_lw(pcols,pver,nlwbands)! output for SAO  
    !-----------------------------------------------------------------------------
 
    ncol = state%ncol
@@ -491,7 +531,17 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, dt, state, pbuf,  odap_aer,
       enddo
       call outfld('extinct_lw_bnd7',odap_aer(:,:,idx_lw_diag), pcols, lchnk)
    endif
-
+   !if (is_output_interactive_volc) then
+   !  ext_sao_lw(:,:,:) = 0.0_r8
+     !prepare strat. aerosol sw optic properties for output: 
+   !  do ipver = 1 , pver
+   !      do icol = 1, ncol
+   !         lyr_thk = state%zi(icol,ipver) - state%zi(icol,ipver+1)
+   !         ext_sao_lw(icol,ipver,:) = odap_aer(icol,ipver,:)/lyr_thk ! unit m
+   !      enddo
+   !  enddo    
+   !  call outfld('ext_sao_lw',ext_sao_lw(:,:,:), pcols, lchnk)
+   !endif
    ! Loop over bulk aerosols in list.
    do iaerosol = 1, numaerosols
 
@@ -822,7 +872,56 @@ subroutine volcanic_cmip_sw (state, pbuf, trop_level, ext_cmip6_sw_inv_m, tau, t
   enddo
 
 end subroutine volcanic_cmip_sw
+!=============================================================================
 
+subroutine get_strat_aer_optics_sw (state, pbuf, trop_level, tau, tau_w, tau_w_g, tau_w_f, ext_sao_sw, ssa_sao, af_sao)
+
+  !Intent-in
+  type(physics_state), intent(in), target :: state
+  type(physics_buffer_desc), pointer :: pbuf(:)
+
+  integer,  intent(in) :: trop_level(pcols)
+
+  real(r8), intent(in) :: tau    (pcols,0:pver,nswbands) ! aerosol extinction optical depth
+  real(r8), intent(in) :: tau_w  (pcols,0:pver,nswbands) ! aerosol single scattering albedo * tau
+  real(r8), intent(in) :: tau_w_g(pcols,0:pver,nswbands) ! aerosol assymetry parameter * tau * w
+  real(r8), intent(in) :: tau_w_f(pcols,0:pver,nswbands) ! aerosol forward scattered fraction * tau * w
+  
+  !Intent-out
+  !ext_sao_sw, ssa_sao, af_sao (pcols,0:pver,nswbands)
+  real(r8), intent(inout) :: ext_sao_sw(pcols,0:pver,nswbands) ! 
+  real(r8), intent(inout) :: ssa_sao   (pcols,0:pver,nswbands) ! 
+  real(r8), intent(inout) :: af_sao    (pcols,0:pver,nswbands) ! 
+
+  !Local variables
+  integer   :: ncol, icol, ipver, ilev_tropp
+  real(r8)  :: lyr_thk, ext_unitless(nswbands)! asym_unitless(nswbands)
+  !real(r8)  :: ext_ssa(nswbands),ext_ssa_asym(nswbands)
+
+  !real(r8), pointer :: ssa_cmip6_sw(:,:,:),af_cmip6_sw(:,:,:)
+
+  ncol = state%ncol
+  
+
+  !As it will be more efficient for FORTRAN to loop over levels and then columns, the following loops
+  !are nested keeping that in mind
+  do ipver = 1 , pver
+     do icol = 1, ncol
+      !  ilev_tropp = trop_level(icol) !tropopause level
+
+           lyr_thk = state%zi(icol,ipver) - state%zi(icol,ipver+1)
+           ext_unitless(:)  = tau(icol,ipver,:)
+           
+           ext_sao_sw(icol,ipver,:) = ext_unitless(:)/lyr_thk 
+
+           ssa_sao(icol,ipver,:) = tau_w  (icol,ipver,:)/ext_unitless(:)
+
+           af_sao(icol,ipver,:)  = tau_w_g(icol,ipver,:)/tau_w  (icol,ipver,:)          
+
+     enddo
+  enddo
+
+end subroutine get_strat_aer_optics_sw  
 !==============================================================================
 
 subroutine get_volcanic_rad_props(ncol, mass, ext, scat, ascat, &

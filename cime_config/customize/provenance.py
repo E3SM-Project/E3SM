@@ -410,7 +410,10 @@ def _record_timing(case, lid):
     with open(os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), "w") as fd:
         fd.write(desc)
 
-    # What this block does is mysterious to me (JGF)
+    # Collect syslog if enabled on machine. (Sarat)
+    # Ref: https://github.com/ESMCI/cime/blob/655de638182ba9381a5d6607cdbade3b0a70a040/CIME/case/case.py#L1696
+    # If machines_dir has a syslog.<machine_name> script, it is copied as caseroot/Tools/mach_syslog and run.
+    # Otherwise, syslog.noop is used and no output is produced.
     if job_id is not None:
         _record_syslog(case, lid, job_id, caseroot, rundir, full_timing_dir)
 
@@ -422,10 +425,13 @@ def _record_queue_info(mach, job_id, lid, full_timing_dir):
         _record_nersc_queue(job_id, lid, full_timing_dir)
     elif mach in ["anvil", "chrysalis", "compy"]:
         _record_anl_queue(job_id, lid, full_timing_dir)
+#TODO: Add Perlmutter
+    elif mach in ["frontier", "crusher"]:
+        _record_slurm_queue(job_id, lid, full_timing_dir)
     elif mach == "summit":
         _record_olcf_queue(job_id, lid, full_timing_dir)
 
-
+# TODO: Switch to generic Slurm routine
 def _record_nersc_queue(job_id, lid, full_timing_dir):
     for cmd, filename in [
         ("sinfo -a -l", "sinfol"),
@@ -441,7 +447,24 @@ def _record_nersc_queue(job_id, lid, full_timing_dir):
         utils.run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
         utils.gzip_existing_file(os.path.join(full_timing_dir, filename))
 
+# Generic Slurm queue info (Frontier)
+# TODO: Consolidate _record routines based on batch system if generalization is adequate
+def _record_slurm_queue(job_id, lid, full_timing_dir):
+    for cmd, filename in [
+        ("sinfo -a -l", "sinfol"),
+        ("scontrol show jobid %s" % job_id, "scontrol_jobid"),
+        (
+            "squeue -o '%.10i %.15P %.20j %.10u %.7a %.2t %.6D %.8C %.10M %.10l %.20S %.20V'",
+            "squeuef",
+        ),
+        ("squeue -t R -o '%.10i %R'", "squeues"),
+    ]:
+        filename = "%s.%s" % (filename, lid)
+        utils.run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
+        utils.gzip_existing_file(os.path.join(full_timing_dir, filename))
 
+
+# TODO: Switch to generic Slurm routine
 def _record_anl_queue(job_id, lid, full_timing_dir):
     for cmd, filename in [
         ("sinfo -l", "sinfol"),
@@ -763,7 +786,8 @@ def _get_batch_job_id_for_syslog(case):
     """
     mach = case.get_value("MACH")
     try:
-        if mach in ["anvil", "chrysalis", "compy", "cori-haswell", "cori-knl", "pm-cpu", "pm-gpu", "alvarez"]:
+        if mach in ["anvil", "chrysalis", "compy", "cori-haswell", "cori-knl", "pm-cpu", "pm-gpu", "alvarez","frontier","crusher"]:
+            # Note: Besides, SLURM_JOB_ID, equivalent SLURM_JOBID is also present on some systems (Frontier).
             return os.environ["SLURM_JOB_ID"]
         elif mach in ["theta"]:
             return os.environ["COBALT_JOBID"]

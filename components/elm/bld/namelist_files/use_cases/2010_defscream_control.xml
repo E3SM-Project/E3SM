@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<use_case_desc>Conditions to simulate 2010 land-use for default scream</use_case_desc>
+
+<sim_year>2010</sim_year>
+
+<!-- Temporary until fsurdat files for ne4pg2 and ne30pg2 are produced for F2010 simulations  -->
+<fsurdat hgrid="ne4np4.pg2" >lnd/clm2/surfdata_map/surfdata_ne4pg2_simyr2000_c190620.nc</fsurdat>
+<fsurdat hgrid="ne30np4.pg2" >lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr2000_c190408.nc</fsurdat>
+
+<sim_year_range>constant</sim_year_range>
+
+<stream_year_first_ndep phys="clm4_5" use_cn=".true." ndepsrc="stream" >2010</stream_year_first_ndep>
+<stream_year_last_ndep  phys="clm4_5" use_cn=".true." ndepsrc="stream" >2010</stream_year_last_ndep>
+
+<stream_year_first_pdep phys="clm4_5" use_cn=".true." ndepsrc="stream" >2010</stream_year_first_pdep>
+<stream_year_last_pdep  phys="clm4_5" use_cn=".true." ndepsrc="stream" >2010</stream_year_last_pdep>
+
+<stream_year_first_popdens phys="clm4_5" use_cn=".true." ndepsrc="stream" >2010</stream_year_first_popdens>
+<stream_year_last_popdens  phys="clm4_5" use_cn=".true." ndepsrc="stream" >2010</stream_year_last_popdens>
+
+</namelist_defaults>

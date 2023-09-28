@@ -214,7 +214,7 @@ module convect_shallow
        'Moist shallow convection liquid water static energy flux'   )
   call addfld( 'CMFLQ'     ,  (/ 'ilev' /),  'A' , 'W/m2', &
        'Moist shallow convection total water flux'                  )
-  call addfld( 'CIN'     ,  horiz_only    ,  'A' , 'J/kg', &
+  call addfld( 'CIN_SH'    ,  horiz_only    ,  'A' , 'J/kg', &
        'Convective inhibition'                                      )
   call addfld( 'CBMF'     ,  horiz_only    ,  'A' , 'kg/m2/s', &
        'Cloud base mass flux'                                       )
@@ -471,6 +471,7 @@ end subroutine convect_shallow_init_cnst
 
    real(r8) :: ntprprd(pcols,pver)                                       ! Net precip production in layer
    real(r8) :: ntsnprd(pcols,pver)                                       ! Net snow   production in layer
+   real(r8) :: sprd(pcols,pver)                                          ! evap infld only for deep conv
    real(r8) :: tend_s_snwprd(pcols,pver)                                 ! Heating rate of snow production
    real(r8) :: tend_s_snwevmlt(pcols,pver)                               ! Heating rate of evap/melting of snow
    real(r8) :: slflx(pcols,pverp)                                        ! Shallow convective liquid water static energy flux
@@ -578,7 +579,7 @@ end subroutine convect_shallow_init_cnst
 
    select case (shallow_scheme)
 
-   case('off', 'CLUBB_SGS') ! None
+   case('off', 'CLUBB_SGS', 'SHOC_SGS') ! None
 
       lq(:) = .TRUE.
       call physics_ptend_init( ptend_loc, state%psetcols, 'convect_shallow_off', ls=.true., lq=lq ) ! Initialize local ptend type
@@ -904,6 +905,8 @@ end subroutine convect_shallow_init_cnst
     call pbuf_get_field(pbuf, sh_cldliq_idx, sh_cldliq  )
     call pbuf_get_field(pbuf, sh_cldice_idx, sh_cldice  )
 
+    sprd = 0._r8
+
     !! clouds have no water... :)
     sh_cldliq(:ncol,:) = 0._r8
     sh_cldice(:ncol,:) = 0._r8
@@ -913,7 +916,7 @@ end subroutine convect_shallow_init_cnst
                        ptend_loc%s, tend_s_snwprd, tend_s_snwevmlt,                  & 
                        ptend_loc%q(:pcols,:pver,1),                                  &
                        rprdsh, cld, ztodt,                                           &
-                       precc, snow, ntprprd, ntsnprd , flxprec, flxsnow )
+                       precc, snow, ntprprd, ntsnprd , flxprec, flxsnow, sprd, .true.)
 
    ! ------------------------------------------ !
    ! record history variables from zm_conv_evap !

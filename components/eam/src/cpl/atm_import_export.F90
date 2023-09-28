@@ -52,7 +52,19 @@ contains
        ! NOTE:overwrite_flds is .FALSE. for the first restart
        ! time step making cflx(:,1)=0.0 for the first restart time step.
        ! cflx(:,1) should not be zeroed out, start the second index of cflx from 2.
-       cam_in(c)%cflx(:,2:) = 0._r8 
+
+       ! +++ Update from 2022-09 +++
+       ! For some of the new process coupling options in EAM, some of the constituents'
+       ! cam_in%cflx are used not in tphysac but in the tphysbc call of the next time step. 
+       ! This means for an exact restart, we also need to write out cam_in%cflx(:,2:)
+       ! and then read them back in. Because the present subroutine is called after 
+       ! the cflx variables are read in in the subroutine read_restart_physics 
+       ! in physics/cam/restart_physics.F90, we need to move the following line 
+       ! to that read_restart_physics to avoid incorrectly zeroing out the needed values.
+       !
+       !cam_in(c)%cflx(:,2:) = 0._r8 
+       !
+       ! === Update from 2022-09 ===
                                                
        do i =1,ncols                                                               
           if (overwrite_flds) then

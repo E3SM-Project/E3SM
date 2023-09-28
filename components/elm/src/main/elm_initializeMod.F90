@@ -78,6 +78,7 @@ contains
     use surfrdMod                 , only: surfrd_get_grid_conn, surfrd_topounit_data
     use elm_varctl                , only: lateral_connectivity, domain_decomp_type
     use decompInitMod             , only: decompInit_lnd_using_gp, decompInit_ghosts
+    use decompInitMod             , only: decompInit_lnd_simple
     use domainLateralMod          , only: ldomain_lateral, domainlateral_init
     use SoilTemperatureMod        , only: init_soil_temperature
     use ExternalModelInterfaceMod , only: EMI_Determine_Active_EMs
@@ -191,7 +192,10 @@ contains
        deallocate(amask)
     case ("graph_partitioning")
        call decompInit_lnd_using_gp(ni, nj, cellsOnCell, nCells_loc, maxEdges, amask)
-    case default
+    case ("simple")
+      call decompInit_lnd_simple(ni, nj, amask)
+      deallocate(amask)
+   case default
        call endrun(msg='ERROR elm_initializeMod: '//&
             'Unsupported domain_decomp_type = ' // trim(domain_decomp_type))
     end select
@@ -459,9 +463,9 @@ contains
     use elm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
     use elm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn
     use elm_varorb            , only : eccen, mvelpp, lambm0, obliqr
-    use clm_time_manager      , only : get_step_size, get_curr_calday
-    use clm_time_manager      , only : get_curr_date, get_nstep, advance_timestep
-    use clm_time_manager      , only : timemgr_init, timemgr_restart_io, timemgr_restart
+    use elm_time_manager      , only : get_step_size, get_curr_calday
+    use elm_time_manager      , only : get_curr_date, get_nstep, advance_timestep
+    use elm_time_manager      , only : timemgr_init, timemgr_restart_io, timemgr_restart
     use controlMod            , only : nlfilename
     use decompMod             , only : get_proc_clumps, get_proc_bounds, get_clump_bounds, bounds_type
     use domainMod             , only : ldomain
@@ -495,11 +499,13 @@ contains
     use lnd2glcMod            , only : lnd2glc_type
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
     use elm_varctl                          , only : use_elm_interface, use_pflotran
+    use elm_varctl                          , only : fates_spitfire_mode
     use elm_interface_pflotranMod           , only : elm_pf_interface_init !, elm_pf_set_restart_stamp
     use tracer_varcon         , only : is_active_betr_bgc
-    use clm_time_manager      , only : is_restart
+    use elm_time_manager      , only : is_restart
     use ELMbetrNLMod          , only : betr_namelist_buffer
     use ELMFatesInterfaceMod  , only: ELMFatesTimesteps
+    use FATESFireFactoryMod   , only : scalar_lightning
     !
     ! !ARGUMENTS
     implicit none
@@ -706,6 +712,10 @@ contains
     end if
 
     call cnstate_vars%initAccBuffer(bounds_proc)
+    
+    if (use_fates) then
+      call alm_fates%InitAccBuffer(bounds_proc)
+   end if
 
     call print_accum_fields()
 
@@ -732,8 +742,15 @@ contains
        call SatellitePhenologyInit(bounds_proc)
     end if
 
-    if (use_fates_sp) then
-       call SatellitePhenologyInit(bounds_proc)
+    if (use_fates) then
+       if (use_fates_sp) then
+          call SatellitePhenologyInit(bounds_proc)
+       end if
+       ! fates_spitfire_mode is assigned an integer value in the namelist
+       ! see bld/namelist_files/namelist_definitio.xml for details
+       if(fates_spitfire_mode > scalar_lightning) then
+         call alm_fates%Init2(bounds_proc, NLFilename)
+       end if
     end if
 
     if (use_cn .and. n_drydep > 0 .and. drydep_method == DD_XLND) then
@@ -741,6 +758,7 @@ contains
        ! differences in LAI can be computed
        call SatellitePhenologyInit(bounds_proc)
     end if
+
 
     ! ------------------------------------------------------------------------
     ! On restart only - process the history namelist.
@@ -867,7 +885,7 @@ contains
 
     if (use_cn .or. use_fates) then
        call t_startf('init_ndep')
-       call ndep_init(bounds_proc)
+       call ndep_init(bounds_proc, NLFilename)
        call ndep_interp(bounds_proc, atm2lnd_vars)
        call t_stopf('init_ndep')
     end if
@@ -911,6 +929,9 @@ contains
     call canopystate_vars%initAccVars(bounds_proc)
     if (crop_prog) then
        call crop_vars%initAccVars(bounds_proc)
+    end if
+    if (use_fates) then
+       call alm_fates%initAccVars(bounds_proc)
     end if
     call cnstate_vars%initAccVars(bounds_proc)
 

@@ -239,29 +239,28 @@ if (USE_ALBANY)
 endif()
 
 if (USE_KOKKOS)
-  # LB 09/04/20
-  #  The best thing to do would be to simply use ${INSTALL_SHAREDPATH}, and
-  #  let cmake search the proper subfolder based on system/cmake configuration.
-  #  True. HOWEVER, the subfolder `kokkos` in that directory (where kokkos is
-  #  built) happens to contain KokkosConfig.cmake, and this is picked up by
-  #  cmake. It would be ok, but this file says to include the cmake file
-  #  ${Kokkos_CMAKE_DIR}/KokkosTargets.cmake, where Kokkos_CMAKE_DIR is that
-  #  same directory, which, unfortunately, does NOT contain that file.
-  #  If we could somehow force cmake to look FIRST in ${INSTALL_SHAREDPATH}/lib64/cmake
-  #  (and similar), then it would be great. The reason why I'm not a huge fan
-  #  of this is that I'm hardcoding the suffix where kokkos puts its cmake configs,
-  #  which can be highly OS and cmake-version dependent. If for some reason kokkos
-  #  does not put its pkg config stuff in lib/cmake/ or lib64/cmkae, then the search
-  #  will fall back on ${INSTALL_SHAREDPATH} (and its subfolders), which will again
-  #  cause the problem described above.
-  #  For more info, see cmake details on this subject at
-  #   https://cmake.org/cmake/help/latest/command/find_package.html#search-procedure
-  # NOTE: a possible solution would be to name the kokkos build folder differently,
-  #       like 'kokkos-bld', so that cmake won't pick it up.
+  # LB 01/23
+  # CMake's find_package, when used with multiple PATHS and PATH_SUFFIXES,
+  # follows the following rule when looking in paths:
+  #  1. look in all the path suffixes of the first PATHS entry, in the order provided
+  #  2. look in the first PATH provided
+  #  3. repeat 1-2 with the following entry of PATHS
+  #  4. look in cmake/system default paths (unless told not to).
+  # So the following cmd will fist look in the KOKKOS_PATH folder and subfolders,
+  # if KOKKOS_PATH is non-empty. Then will proceed to look in the lib, lib/cmake,
+  # and lib64/cmake subfolders of the INSTALL_SHAREDPATH. If all of these fail,
+  # it will look in INSTALL_SHAREDPATH.
+
+  if (KOKKOS_PATH)
+    set (PATHS ${KOKKOS_PATH} ${INSTALL_SHAREDPATH})
+  elseif(DEFINED ENV{KOKKOS_PATH})
+    set (PATHS $ENV{KOKKOS_PATH} ${INSTALL_SHAREDPATH})
+  else()
+    set (PATHS ${INSTALL_SHAREDPATH})
+  endif()
   find_package(Kokkos REQUIRED
-               PATHS ${INSTALL_SHAREDPATH}/lib/cmake
-                     ${INSTALL_SHAREDPATH}/lib64/cmake
-                     ${INSTALL_SHAREDPATH}
+               PATHS ${PATHS}
+               PATH_SUFFIXES lib lib/cmake lib64/cmake
                NO_DEFAULT_PATH)
 endif()
 

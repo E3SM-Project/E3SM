@@ -129,7 +129,8 @@ class compute_sphere_operator_test_ml {
         scalar_output_host(
             Kokkos::create_mirror_view(scalar_output_d)),
         vector_output_host(
-            Kokkos::create_mirror_view(vector_output_d))
+            Kokkos::create_mirror_view(vector_output_d)),
+        sphere_ops(PhysicalConstants::rearth0, 1/PhysicalConstants::rearth0)
   {
     std::random_device rd;
     const unsigned int catchRngSeed = Catch::rngSeed();
@@ -306,7 +307,7 @@ class compute_sphere_operator_test_ml {
   ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]>::HostMirror
       vector_output_host;
 
-  SphereOperators     sphere_ops{PhysicalConstants::rearth0};
+  SphereOperators     sphere_ops;
 
   Real nu_ratio;
   Real alpha;

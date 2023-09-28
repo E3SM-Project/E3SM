@@ -61,6 +61,12 @@ module chemistry
   ! photolysis
 
   logical            :: xactive_prates = .false.
+  logical            :: do_cloudj_photolysis    = .false.
+  logical            :: do_cloudj_clouds        = .true.
+  logical            :: do_cloudj_aerosols      = .false.
+  logical            :: do_cloudj_lookup_diag   = .false.
+  logical            :: do_cloudj_aerosol_diag  = .false.
+  logical            :: do_cloudj_nocloud_diag  = .false.
   character(len=shr_kind_cl) :: rsf_file = 'rsf_file'
   character(len=shr_kind_cl) :: exo_coldens_file = ''
   character(len=shr_kind_cl) :: tuv_xsect_file = 'tuv_xsect_file'
@@ -100,10 +106,15 @@ module chemistry
   integer            :: ext_frc_fixed_ymd = 0
   integer            :: ext_frc_fixed_tod = 0
 
+  real(r8)           :: dms_emis_scale = 1._r8
+
   ! fixed stratosphere
   
   character(len=shr_kind_cl) :: fstrat_file = 'fstrat_file'
   character(len=16)  :: fstrat_list(pcnst)  = ''
+
+  !30 day efold in stratosphere for chemUCI (following the logic of fstrat_list for programming !!!)
+    character(len=16)  :: fstrat_efold_list(gas_pcnst)  = ''
 
   ! stratospheric aerosols
 
@@ -410,7 +421,7 @@ end function chem_is
     use tracer_srcs,      only: tracer_srcs_defaultopts, tracer_srcs_setopts
     use aero_model,       only: aero_model_readnl
     use dust_model,       only: dust_readnl
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM ||  defined MODAL_AERO_5MODE)
     use seasalt_model,    only: ocean_data_readnl
 #endif
     use gas_wetdep_opts,  only: gas_wetdep_readnl
@@ -498,10 +509,13 @@ end function chem_is
          exo_coldens_file, tuv_xsect_file, o2_xsect_file, &
          xs_long_file, rsf_file, &
          lght_no_prd_factor, xactive_prates, &
+         do_cloudj_photolysis, do_cloudj_clouds, do_cloudj_aerosols, &
+         do_cloudj_lookup_diag, do_cloudj_aerosol_diag, do_cloudj_nocloud_diag, &
          depvel_lnd_file, clim_soilw_file, season_wes_file, drydep_srf_file, &
          srf_emis_type, srf_emis_cycle_yr, srf_emis_fixed_ymd, srf_emis_fixed_tod, srf_emis_specifier,  &
-         fstrat_file, fstrat_list, &
-         ext_frc_specifier, ext_frc_type, ext_frc_cycle_yr, ext_frc_fixed_ymd, ext_frc_fixed_tod
+         fstrat_file, fstrat_list, fstrat_efold_list, &
+         ext_frc_specifier, ext_frc_type, ext_frc_cycle_yr, ext_frc_fixed_ymd, ext_frc_fixed_tod, &
+         dms_emis_scale
 
     namelist /chem_inparm/ chem_rad_passive
 
@@ -638,7 +652,13 @@ end function chem_is
     call mpibcast (xs_coef_file,      len(xs_coef_file),               mpichar, 0, mpicom)
     call mpibcast (xs_short_file,     len(xs_short_file),              mpichar, 0, mpicom)
     call mpibcast (xs_long_file,      len(xs_long_file),               mpichar, 0, mpicom)
-    call mpibcast (xactive_prates,    1,                               mpilog,  0, mpicom)
+    call mpibcast (xactive_prates,         1,                          mpilog,  0, mpicom)
+    call mpibcast (do_cloudj_photolysis,   1,                          mpilog,  0, mpicom)
+    call mpibcast (do_cloudj_clouds,       1,                          mpilog,  0, mpicom)
+    call mpibcast (do_cloudj_aerosols,     1,                          mpilog,  0, mpicom)
+    call mpibcast (do_cloudj_lookup_diag,  1,                          mpilog,  0, mpicom)
+    call mpibcast (do_cloudj_aerosol_diag, 1,                          mpilog,  0, mpicom)
+    call mpibcast (do_cloudj_nocloud_diag, 1,                          mpilog,  0, mpicom)
     call mpibcast (electron_file,     len(electron_file),              mpichar, 0, mpicom)
     call mpibcast (euvac_file,        len(euvac_file),                 mpichar, 0, mpicom)
     call mpibcast (euvacdat_file,     len(euvacdat_file),              mpichar, 0, mpicom)
@@ -670,11 +690,14 @@ end function chem_is
     call mpibcast (ext_frc_fixed_ymd, 1,                               mpiint,  0, mpicom)
     call mpibcast (ext_frc_fixed_tod, 1,                               mpiint,  0, mpicom)
 
+    call mpibcast (dms_emis_scale,    1,                               mpir8,   0, mpicom)
 
     ! fixed stratosphere
 
     call mpibcast (fstrat_file,       len(fstrat_file),                mpichar, 0, mpicom)
     call mpibcast (fstrat_list,       len(fstrat_list(1))*pcnst,       mpichar, 0, mpicom)
+    ! species with 30-day efold decay in stratosphere
+    call mpibcast (fstrat_efold_list,       len(fstrat_efold_list(1))*gas_pcnst, mpichar, 0, mpicom)
 
     ! stratospheric aerosols
 
@@ -809,7 +832,7 @@ end function chem_is
 
    call aero_model_readnl(nlfile)
    call dust_readnl(nlfile)     
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM ||  defined MODAL_AERO_5MODE)
    call ocean_data_readnl(nlfile)
 #endif
 !
@@ -906,7 +929,7 @@ end function chem_is_active
     use aero_model,            only : aero_model_init
     use mo_setsox,             only : sox_inti
     use constituents,          only : sflxnam
-
+    use UCI_cloudJ_interface,  only : cloudJ_init
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
     type(physics_state), intent(in):: phys_state(begchunk:endchunk)
 
@@ -999,6 +1022,7 @@ end function chem_is_active
        , rsf_file &
        , fstrat_file &
        , fstrat_list &
+       , fstrat_efold_list &
        , srf_emis_specifier &
        , srf_emis_type &
        , srf_emis_cycle_yr &
@@ -1030,6 +1054,10 @@ end function chem_is_active
                                  ymd = chlorine_loading_fixed_ymd, &
                                  tod = chlorine_loading_fixed_tod )
 
+     if ( do_cloudj_photolysis ) then
+        call cloudJ_init()     ! Initialize Cloud-J, which includes Fast-J
+     endif
+     
      if ( chem_is('waccm_mozart') .or. chem_is('waccm_mozart_mam3') ) then
         call init_cfc11star(pbuf2d)
      endif
@@ -1121,7 +1149,7 @@ end function chem_is_active
     !-----------------------------------------------------------------------      
     !        ... Set surface emissions
     !-----------------------------------------------------------------------      
-    call set_srf_emissions( lchnk, ncol, sflx(:,:) )
+    call set_srf_emissions( lchnk, ncol, dms_emis_scale, sflx(:,:) )
 
     do m = 1,pcnst
        n = map2chm(m)
@@ -1346,27 +1374,33 @@ end function chem_is_active
 ! 
 !-----------------------------------------------------------------------
 
-    use physics_buffer,      only : physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx
+    use physics_buffer,      only : physics_buffer_desc, pbuf_get_field, pbuf_get_index, pbuf_old_tim_idx
     use cam_history,         only : outfld
-    use time_manager,        only : get_curr_calday
+    use time_manager,        only : get_curr_calday, get_nstep
     use chem_mods,           only : gas_pcnst
-    use mo_gas_phase_chemdr, only : gas_phase_chemdr
+    use mo_gas_phase_chemdr, only : gas_phase_chemdr, gas_ac_name, gas_ac_name_2D
     
     use spmd_utils,          only : iam
     use camsrfexch,          only : cam_in_t, cam_out_t     
     use perf_mod,            only : t_startf, t_stopf
-    use tropopause,          only : tropopause_find, TROP_ALG_HYBSTOB, TROP_ALG_CLIMATE
+    use tropopause,          only : tropopause_find, TROP_ALG_HYBSTOB, TROP_ALG_CLIMATE, TROP_ALG_E90, tropopause_e90_3d
     use mo_drydep,           only : drydep_update
     use mo_neu_wetdep,       only : neu_wetdep_tend, do_neu_wetdep
     use aerodep_flx,         only : aerodep_flx_prescribed
-    
+    use mo_chm_diags,        only : aer_species
+    use mo_tracname,         only : solsym
+    use physconst,           only : rga
+    use phys_control,        only : phys_getopts
+    use mo_chem_utls,        only : get_spc_ndx
+    use cam_abortutils,      only: endrun
+ 
     implicit none
 
 !-----------------------------------------------------------------------
 ! Dummy arguments
 !-----------------------------------------------------------------------
     real(r8),            intent(in)    :: dt              ! time step
-    type(physics_state), intent(in)    :: state           ! Physics state variables
+    type(physics_state), intent(inout) :: state           ! Physics state variables
     type(physics_ptend), intent(out)   :: ptend           ! indivdual parameterization tendencies
     type(cam_in_t),      intent(inout) :: cam_in
     type(cam_out_t),     intent(inout) :: cam_out
@@ -1384,9 +1418,13 @@ end function chem_is_active
     integer  :: ncol                               ! number of atmospheric columns
     real(r8) :: calday                             ! current calendar day of year
     real(r8) :: cldw(pcols,pver)                   ! cloud water (kg/kg)
+    real(r8) :: cldw_liq(pcols,pver)               ! cloud liquid (kg/kg)
     real(r8) :: chem_dt              ! time step
     real(r8) :: drydepflx(pcols,pcnst)             ! dry deposition fluxes (kg/m2/s)
     integer  :: tropLev(pcols)
+    integer  :: tmp_tropLev(pcols)
+    logical  :: tropFlag(pcols,pver)      ! 3D tropospheric level flag
+    real(r8) :: tropFlagInt(pcols,pver)   ! 3D tropospheric level flag integer, troposphere 1, others 0
     real(r8) :: ncldwtr(pcols,pver)                ! droplet number concentration (#/kg)
     real(r8), pointer :: pblh(:)
     real(r8), pointer :: prain(:,:)
@@ -1394,12 +1432,49 @@ end function chem_is_active
     real(r8), pointer :: cmfdqr(:,:)
     real(r8), pointer :: nevapr(:,:)
     real(r8), pointer :: cldtop(:)
+    real(r8), pointer, dimension(:) :: gas_ac_2D
+    real(r8), pointer, dimension(:,:) :: gas_ac
+    real(r8) :: gas_ac_layers(pcols,4)
+    real(r8) :: Diff(pcols,pver) ! tmp space
+    real(r8) :: Diff_layers(pcols,4) ! tmp space
+    real(r8) :: ftem(pcols,pver) ! tmp space
+    real(r8) :: ftem_layers(pcols,4) ! tmp space
+    logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
+    logical :: history_gaschmbudget_2D
+    logical :: history_gaschmbudget_2D_levels
+    logical :: history_chemdyg_summary
+    integer :: gaschmbudget_2D_L1_s
+    integer :: gaschmbudget_2D_L1_e
+    integer :: gaschmbudget_2D_L2_s
+    integer :: gaschmbudget_2D_L2_e
+    integer :: gaschmbudget_2D_L3_s
+    integer :: gaschmbudget_2D_L3_e
+    integer :: gaschmbudget_2D_L4_s
+    integer :: gaschmbudget_2D_L4_e
+    integer ::  gas_ac_idx
+    integer :: nstep
 
     integer :: tim_ndx
+    integer :: e90_ndx
 
     logical :: lq(pcnst)
 
     if ( .not. chem_step ) return
+
+    nstep = get_nstep()
+
+    call phys_getopts(history_gaschmbudget_out = history_gaschmbudget, &
+                   history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
+            history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels, &
+                   history_chemdyg_summary_out = history_chemdyg_summary, &
+                      gaschmbudget_2D_L1_s_out = gaschmbudget_2D_L1_s, &
+                      gaschmbudget_2D_L1_e_out = gaschmbudget_2D_L1_e, &
+                      gaschmbudget_2D_L2_s_out = gaschmbudget_2D_L2_s, &
+                      gaschmbudget_2D_L2_e_out = gaschmbudget_2D_L2_e, &
+                      gaschmbudget_2D_L3_s_out = gaschmbudget_2D_L3_s, &
+                      gaschmbudget_2D_L3_e_out = gaschmbudget_2D_L3_e, &
+                      gaschmbudget_2D_L4_s_out = gaschmbudget_2D_L4_s, &
+                      gaschmbudget_2D_L4_e_out = gaschmbudget_2D_L4_e )
 
     chem_dt = chem_freq*dt
 
@@ -1427,7 +1502,17 @@ end function chem_is_active
 !-----------------------------------------------------------------------
 ! get tropopause level
 !-----------------------------------------------------------------------
-    call tropopause_find(state, tropLev, primary=TROP_ALG_HYBSTOB, backup=TROP_ALG_CLIMATE)
+
+! initialize tropospheric level flags
+    tropFlag = .false.
+    tropFlagInt = 0._r8
+
+    e90_ndx = get_spc_ndx('E90')
+    if (e90_ndx <= 0) then
+      call tropopause_find(state, tropLev, primary=TROP_ALG_HYBSTOB, backup=TROP_ALG_CLIMATE)
+    else
+      call tropopause_e90_3d(state, tmp_tropLev, tropLev, tropFlag, tropFlagInt)
+    end if
 
     tim_ndx = pbuf_old_tim_idx()
     call pbuf_get_field(pbuf, ndx_pblh,       pblh)
@@ -1438,16 +1523,156 @@ end function chem_is_active
     call pbuf_get_field(pbuf, ndx_cldtop,     cldtop )
 
 !-----------------------------------------------------------------------
+! output gas concentration and tendency
+!-----------------------------------------------------------------------
+    if (history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
+            .or. history_chemdyg_summary) then
+      do m = 1,pcnst
+         n = map2chm(m)
+         if (n > 0 .and. (.not. any( aer_species == n ))) then
+           ftem(:ncol,:) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)*rga
+
+           if (history_gaschmbudget) then
+             call outfld(trim(solsym(n))//'_MSB', ftem, pcols, lchnk )
+
+             gas_ac_idx = pbuf_get_index(gas_ac_name(n))
+             call pbuf_get_field(pbuf, gas_ac_idx, gas_ac )
+             if (nstep == 0) then
+                Diff(:ncol,:) = 0.0_r8
+                !if (masterproc) then
+                !  write(iulog,*) 'chem_timestep_tend: m = ',m,' n = ',n,' gas_ac_name=',gas_ac_name(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
+                !end if
+
+             else
+                Diff(:ncol,:) = (ftem(:ncol,:) - gas_ac(:ncol,:))/dt
+             end if
+             call outfld(trim(solsym(n))//'_TDO', Diff, pcols, lchnk )
+           end if
+           !
+           if (history_gaschmbudget_2D .or. history_chemdyg_summary) then
+             ftem_layers = 0.0_r8
+             do k=1,pver
+               ftem_layers(:ncol,1) = ftem_layers(:ncol,1) + ftem(:ncol,k)
+             end do
+             if (history_gaschmbudget_2D ) then
+             call outfld(trim(solsym(n))//'_2DMSB', ftem_layers(:ncol,1), pcols, lchnk )
+             endif            
+             gas_ac_idx = pbuf_get_index(gas_ac_name_2D(n))
+             call pbuf_get_field(pbuf, gas_ac_idx, gas_ac_2D )
+             if( nstep == 0 ) then
+                Diff(:ncol,1) = 0.0_r8
+                !if (masterproc) then
+                !  write(iulog,*) 'chem_timestep_tend: m = ',m,' n = ',n,' gas_ac_name_2D=',gas_ac_name_2D(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
+                !end if
+
+             else
+                Diff(:ncol,1) = (ftem_layers(:ncol,1) - gas_ac_2D(:ncol))/dt
+             end if
+             if (history_gaschmbudget_2D ) then
+             call outfld(trim(solsym(n))//'_2DTDO', Diff(:ncol,1), pcols, lchnk )
+             end if
+           end if
+           ! HHLEE 20210923
+           if (history_gaschmbudget_2D_levels .or. history_chemdyg_summary) then
+             ftem_layers = 0.0_r8
+             gas_ac_layers = 0.0_r8
+
+             gas_ac_idx = pbuf_get_index(gas_ac_name(n))
+             call pbuf_get_field(pbuf, gas_ac_idx, gas_ac )
+
+             if (gaschmbudget_2D_L1_e .lt. gaschmbudget_2D_L1_s .or. gaschmbudget_2D_L2_e .lt. gaschmbudget_2D_L2_s .or. &
+                 gaschmbudget_2D_L3_e .lt. gaschmbudget_2D_L3_s .or. gaschmbudget_2D_L4_e .lt. gaschmbudget_2D_L4_s ) then
+                   call endrun('chem_readnl: ERROR 2D chem diags layers, layer ending index is less than starting index')
+             end if
+
+             do k= gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e ! 0-90 hPa
+               ftem_layers(:ncol,1) = ftem_layers(:ncol,1) + ftem(:ncol,k)
+               gas_ac_layers(:ncol,1) = gas_ac_layers(:ncol,1) + gas_ac(:ncol,k)
+             end do
+             do k= gaschmbudget_2D_L2_s, gaschmbudget_2D_L2_e ! 90-300 hPa
+               ftem_layers(:ncol,2) = ftem_layers(:ncol,2) + ftem(:ncol,k)
+               gas_ac_layers(:ncol,2) = gas_ac_layers(:ncol,2) + gas_ac(:ncol,k)
+             end do
+             do k= gaschmbudget_2D_L3_s, gaschmbudget_2D_L3_e ! 300-850 hPa
+               ftem_layers(:ncol,3) = ftem_layers(:ncol,3) + ftem(:ncol,k)
+               gas_ac_layers(:ncol,3) = gas_ac_layers(:ncol,3) + gas_ac(:ncol,k)
+             end do
+             do k= gaschmbudget_2D_L4_s, gaschmbudget_2D_L4_e ! 850 hPa - surface
+               ftem_layers(:ncol,4) = ftem_layers(:ncol,4) + ftem(:ncol,k)
+               gas_ac_layers(:ncol,4) = gas_ac_layers(:ncol,4) + gas_ac(:ncol,k)
+             end do
+             if (history_gaschmbudget_2D_levels ) then
+             call outfld(trim(solsym(n))//'_2DMSB_L1', ftem_layers(:ncol,1), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DMSB_L2', ftem_layers(:ncol,2), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DMSB_L3', ftem_layers(:ncol,3), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DMSB_L4', ftem_layers(:ncol,4), pcols, lchnk)
+             endif
+
+             if( nstep == 0 ) then
+                Diff_layers(:ncol,:) = 0.0_r8
+             else
+                Diff_layers(:ncol,:) = 0.0_r8
+                Diff_layers(:ncol,1) = (ftem_layers(:ncol,1) - gas_ac_layers(:ncol,1))/dt
+                Diff_layers(:ncol,2) = (ftem_layers(:ncol,2) - gas_ac_layers(:ncol,2))/dt
+                Diff_layers(:ncol,3) = (ftem_layers(:ncol,3) - gas_ac_layers(:ncol,3))/dt
+                Diff_layers(:ncol,4) = (ftem_layers(:ncol,4) - gas_ac_layers(:ncol,4))/dt
+             end if
+             if (history_gaschmbudget_2D_levels ) then
+             call outfld(trim(solsym(n))//'_2DTDO_L1', Diff_layers(:ncol,1), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DTDO_L2', Diff_layers(:ncol,2), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DTDO_L3', Diff_layers(:ncol,3), pcols, lchnk)
+             call outfld(trim(solsym(n))//'_2DTDO_L4', Diff_layers(:ncol,4), pcols, lchnk)
+             endif
+
+             ! for the tropospheric budget diagnostics
+             if (trim(solsym(n))=='O3' .or. trim(solsym(n))=='O3LNZ' .or. &
+                 trim(solsym(n))=='N2OLNZ' .or. trim(solsym(n))=='CH4LNZ') then
+                ftem_layers = 0.0_r8
+                gas_ac_layers = 0.0_r8
+                do k=1,pver
+                   ftem_layers(:ncol,1) = ftem_layers(:ncol,1) + ftem(:ncol,k) * tropFlagInt(:ncol,k)
+                   gas_ac_layers(:ncol,1) = gas_ac_layers(:ncol,1) + gas_ac(:ncol,k) * tropFlagInt(:ncol,k)
+                end do
+                if (history_gaschmbudget_2D_levels ) then
+                call outfld(trim(solsym(n))//'_2DMSB_trop', ftem_layers(:ncol,1), pcols, lchnk )
+                endif
+
+                if( nstep == 0 ) then
+                   Diff_layers(:ncol,:) = 0.0_r8
+                else
+                   Diff_layers(:ncol,:) = 0.0_r8
+                   Diff_layers(:ncol,1) = (ftem_layers(:ncol,1) - gas_ac_layers(:ncol,1))/dt
+                end if
+                        
+                if (history_gaschmbudget_2D_levels ) then
+                call outfld(trim(solsym(n))//'_2DTDO_trop', Diff_layers(:ncol,1), pcols, lchnk)
+                else
+                   if (trim(solsym(n))=='O3' ) then
+                      call outfld(trim(solsym(n))//'_2DTDO_trop', Diff_layers(:ncol,1), pcols, lchnk)
+                   end if
+                end if
+             end if
+
+           end if ! history_gaschmbudget_2D_levels
+
+         end if
+      end do
+    end if
+
+!-----------------------------------------------------------------------
 ! call Neu wet dep scheme
 !-----------------------------------------------------------------------
-    call neu_wetdep_tend(lchnk,ncol,state%q,state%pmid,state%pdel,state%zi,state%t,dt, &
-         prain, nevapr, cldfr, cmfdqr, ptend%q)
+    call neu_wetdep_tend(lchnk,ncol,state%q,state%pmid,state%pdeldry,state%zi,state%t,dt, &
+         prain, nevapr, cldfr, cmfdqr, ptend%q, history_gaschmbudget_2D_levels, &
+         gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e, gaschmbudget_2D_L2_s, gaschmbudget_2D_L2_e, &
+         gaschmbudget_2D_L3_s, gaschmbudget_2D_L3_e, gaschmbudget_2D_L4_s, gaschmbudget_2D_L4_e )
 
 !-----------------------------------------------------------------------
 ! compute tendencies and surface fluxes
 !-----------------------------------------------------------------------
     do k = 1,pver
        cldw(:ncol,k) = state%q(:ncol,k,ixcldliq) + state%q(:ncol,k,ixcldice)
+       cldw_liq(:ncol,k) = state%q(:ncol,k,ixcldliq)
        if (ixndrop>0) &
             ncldwtr(:ncol,k) = state%q(:ncol,k,ixndrop)
     end do
@@ -1456,11 +1681,14 @@ end function chem_is_active
     call gas_phase_chemdr(lchnk, ncol, imozart, state%q, &
                           state%phis, state%zm, state%zi, calday, &
                           state%t, state%pmid, state%pdel, state%pdeldry, state%pint, &
-                          cldw, tropLev, ncldwtr, state%u, state%v, &
+                          cldw, cldw_liq, tropLev, ncldwtr, state%u, state%v, &
                           chem_dt, state%ps, xactive_prates, &
+                          do_cloudj_photolysis, do_cloudj_clouds, do_cloudj_aerosols, &
+                          do_cloudj_lookup_diag, do_cloudj_aerosol_diag, do_cloudj_nocloud_diag, &
                           fsds, cam_in%ts, cam_in%asdir, cam_in%ocnfrac, cam_in%icefrac, &
                           cam_out%precc, cam_out%precl, cam_in%snowhland, ghg_chem, state%latmapback, &
-                          chem_name, drydepflx, cam_in%cflx, ptend%q, pbuf)
+                          chem_name, drydepflx, cam_in%cflx, ptend%q, pbuf, ixcldliq, ixcldice, tropFlag=tropFlag, &
+                          tropFlagInt=tropFlagInt)
 
     call t_stopf( 'chemdr' )
 

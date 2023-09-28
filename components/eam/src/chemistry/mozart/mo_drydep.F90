@@ -21,7 +21,7 @@ module mo_drydep
   use cam_pio_utils,only : cam_pio_openfile
   use cam_logfile,  only : iulog
   use dyn_grid,     only : get_dyn_grid_parm, get_horiz_grid_d
-  use scamMod,      only:  single_column
+  use iop_data_mod, only:  single_column
 
   use seq_drydep_mod, only : nddvels =>  n_drydep, drydep_list, mapping
   use physconst,    only : karman
@@ -87,6 +87,10 @@ module mo_drydep
 
   integer :: o3a_ndx,xpan_ndx,xmpan_ndx,xno2_ndx,xhno3_ndx,xonit_ndx,xonitr_ndx,xno_ndx,xho2no2_ndx,xnh4no3_ndx
   logical :: o3a_dd, xpan_dd, xmpan_dd, xno2_dd, xhno3_dd, xonit_dd, xonitr_dd, xno_dd, xho2no2_dd, xnh4no3_dd
+
+! chemUCI
+  integer :: no3_ndx, n2o5_ndx
+  logical :: no3_dd,  n2o5_dd
 
   integer :: cohc_ndx=-1, come_ndx=-1, co01_ndx=-1, co02_ndx=-1, co03_ndx=-1, co04_ndx=-1, co05_ndx=-1
   integer :: co06_ndx=-1, co07_ndx=-1, co08_ndx=-1, co09_ndx=-1, co10_ndx=-1
@@ -1678,6 +1682,12 @@ contains
     hcn_ndx     = get_spc_ndx( 'HCN')
     ch3cn_ndx   = get_spc_ndx( 'CH3CN')
 
+! chemUCI
+    no3_ndx     = get_spc_ndx( 'NO3')
+    n2o5_ndx    = get_spc_ndx( 'N2O5')
+    no3_dd      = has_drydep( 'NO3' )
+    n2o5_dd     = has_drydep( 'N2O5' )
+
   ! for the cotags kludge..
       cohc_ndx     = get_spc_ndx( 'COhc' )
       come_ndx     = get_spc_ndx( 'COme' )
@@ -2035,7 +2045,7 @@ contains
                          wetland, vegetation_map, soilw_map, do_soilw )
 
     use mo_constants, only : r2d
-    use scamMod, only : latiop,loniop,scmlat,scmlon,use_replay
+    use iop_data_mod, only : latiop,loniop,scmlat,scmlon,use_replay
     use shr_scam_mod  , only: shr_scam_getCloseLatLon  ! Standardized system subroutines
     use filenames, only: ncdata
     use dycore, only : dycore_is

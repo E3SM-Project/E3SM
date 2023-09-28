@@ -1228,10 +1228,11 @@
             if (Ts > c0) then
                dhs = cp_ice*Ts*dzs(k) / Lfresh  ! melt
                smice_precs = c0
-               if (abs(dzs(k)) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
+               if (dzs(k) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
                smicetot(k) = max(c0,smicetot(k) - smice_precs) ! dhs << dzs
                smliqtot(k) = max(c0,smliqtot(k) + smice_precs)
                dzs (k) = dzs(k) - dhs
+               melts = melts + dhs
                zqsn(k) = -rhos*Lfresh
             endif
          enddo
@@ -1282,7 +1283,7 @@
          dzi(1) = dzi(1) + dhi
          evapn = evapn + dhi*rhoi
          ! enthalpy of melt water
-         emlt_atm = emlt_atm - qmlt(1) * dhi 
+         emlt_atm = emlt_atm - qmlt(1) * dhi
       endif
 
       !--------------------------------------------------------------
@@ -1349,15 +1350,15 @@
       do k = 1, nslyr
 
          !--------------------------------------------------------------
-         ! Remove internal snow melt 
+         ! Remove internal snow melt
          !--------------------------------------------------------------
-         
+
          if (ktherm == 2 .and. zqsn(k) > -rhos * Lfresh) then
 
             dhs = max(-dzs(k), &
-                -((zqsn(k) + rhos*Lfresh) / (rhos*Lfresh)) * dzs(k)) ! dhs < 0 
+                -((zqsn(k) + rhos*Lfresh) / (rhos*Lfresh)) * dzs(k)) ! dhs < 0
             smice_precs = c0
-            if (abs(dzs(k)) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
+            if (dzs(k) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
             smicetot(k) = max(c0,smicetot(k) + smice_precs) ! -dhs <= dzs
             smliqtot(k) = max(c0,smliqtot(k) - smice_precs)
             dzs (k) = dzs(k) + dhs
@@ -1701,6 +1702,11 @@
                                     zs1(:),   zs2(:),   &
                                     hslyr,    hsn,      &
                                     smliq(:))
+
+              do k = 1, nslyr
+                 smicetot(k) = smice(k) * hslyr
+                 smliqtot(k) = smliq(k) * hslyr
+              end do
         endif
 
       endif   ! nslyr > 1
@@ -1710,19 +1716,22 @@
       !-----------------------------------------------------------------
 
       if (ktherm == 2) then
-         do k = 1, nslyr
-            if (hsn <= puny) then
+         if (hsn <= puny .or. hin <= c0) then
+            do k = 1, nslyr
                fhocnn = fhocnn &
                       + zqsn(k)*hsn/(real(nslyr,kind=dbl_kind)*dt)
                zqsn(k) = -rhos*Lfresh
                if (tr_snow) then
                  meltsliq = meltsliq + smicetot(k)  ! add to meltponds
-                 smice(k) = c0
+                 smice(k) = rhos
                  smliq(k) = c0
                endif
-               hslyr = c0
-            endif
-         enddo
+               if (tr_rsnw) rsnw(k) = rsnw_fall
+            enddo
+            melts = melts + hsn
+            hsn = c0
+            hslyr = c0
+         endif
       endif
 
       !-----------------------------------------------------------------
@@ -1903,7 +1912,8 @@
          hovlp           ! overlap between old and new layers (m)
 
       real (kind=dbl_kind) :: &
-         rhlyr           ! 1./hlyr
+         rhlyr,        & ! 1./hlyr
+         qtot            ! total h*q in the column
 
       real (kind=dbl_kind), dimension (nlyr) :: &
          hq              ! h * q for a layer
@@ -1913,36 +1923,53 @@
       !-----------------------------------------------------------------
 
       rhlyr = c0
-      if (hn > puny) rhlyr = c1 / hlyr
+      if (hn > puny) then
+         rhlyr = c1 / hlyr
 
       !-----------------------------------------------------------------
       ! Compute h*q for new layers (k2) given overlap with old layers (k1)
       !-----------------------------------------------------------------
 
-      do k2 = 1, nlyr
-         hq(k2) = c0
-      enddo                     ! k
-      k1 = 1
-      k2 = 1
-      do while (k1 <= nlyr .and. k2 <= nlyr)
-         hovlp = min (z1(k1+1), z2(k2+1)) &
-               - max (z1(k1),   z2(k2))
-         hovlp = max (hovlp, c0)
-         hq(k2) = hq(k2) + hovlp*qn(k1)
-         if (z1(k1+1) > z2(k2+1)) then
-            k2 = k2 + 1
-         else
-            k1 = k1 + 1
-         endif
-      enddo                  ! while
+         do k2 = 1, nlyr
+            hq(k2) = c0
+         enddo                     ! k
+         k1 = 1
+         k2 = 1
+         do while (k1 <= nlyr .and. k2 <= nlyr)
+            hovlp = min (z1(k1+1), z2(k2+1)) &
+                  - max (z1(k1),   z2(k2))
+            hovlp = max (hovlp, c0)
+            hq(k2) = hq(k2) + hovlp*qn(k1)
+            if (z1(k1+1) > z2(k2+1)) then
+               k2 = k2 + 1
+            else
+               k1 = k1 + 1
+            endif
+         enddo                  ! while
 
       !-----------------------------------------------------------------
       ! Compute new enthalpies.
       !-----------------------------------------------------------------
 
-      do k = 1, nlyr
-         qn(k) = hq(k) * rhlyr
-      enddo                     ! k
+         do k = 1, nlyr
+            qn(k) = hq(k) * rhlyr
+         enddo                     ! k
+      else
+         qtot = c0
+         do k = 1, nlyr
+            qtot = qtot + qn(k) * (z1(k+1)-z1(k))
+         enddo
+         if (hn > c0) then
+            do k = 1, nlyr
+               qn(k) = qtot/hn
+            enddo
+         else
+            do k = 1, nlyr
+               qn(k) = c0
+            enddo
+         endif
+
+      endif
 
       end subroutine adjust_enthalpy
 

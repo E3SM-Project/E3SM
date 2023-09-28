@@ -82,6 +82,7 @@ list(APPEND RAW_SOURCES
   core_seaice/analysis_members/mpas_seaice_analysis_driver.F
   core_seaice/analysis_members/mpas_seaice_high_frequency_output.F
   core_seaice/analysis_members/mpas_seaice_temperatures.F
+  core_seaice/analysis_members/mpas_seaice_thicknesses.F
   core_seaice/analysis_members/mpas_seaice_regional_statistics.F
   core_seaice/analysis_members/mpas_seaice_ridging_diagnostics.F
   core_seaice/analysis_members/mpas_seaice_conservation_check.F

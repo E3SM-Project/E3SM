@@ -147,7 +147,7 @@ type MGPostProc
    procedure, private :: MGPostProc_copy
 ! Sarat: Following results in a segfault with PGI(17.7) compilers on Summitdev.
 ! This workaround is still needed for Intel compilers (v16 etc.) as of 12/19/2017.
-#if !defined(SUMMITDEV_PGI)   
+#if !defined(SUMMITDEV_PGI)
    generic :: assignment(=) => MGPostProc_copy
 #endif
 end type MGPostProc
@@ -190,7 +190,7 @@ function pack_1D(self, unpacked) result(packed)
 
   real(r8) :: packed(self%mgncol)
 
-  SHR_ASSERT(size(unpacked) == self%pcols, errMsg(__FILE__, __LINE__))
+  SHR_ASSERT_FL(size(unpacked) == self%pcols, __FILE__, __LINE__)
 
   packed = unpacked(self%mgcols)
 
@@ -203,7 +203,7 @@ function pack_2D(self, unpacked) result(packed)
 
   real(r8) :: packed(self%mgncol,self%nlev)
 
-  SHR_ASSERT(size(unpacked, 1) == self%pcols, errMsg(__FILE__, __LINE__))
+  SHR_ASSERT_FL(size(unpacked, 1) == self%pcols, __FILE__, __LINE__)
 
   packed = unpacked(self%mgcols,self%top_lev:)
 
@@ -225,7 +225,7 @@ function pack_3D(self, unpacked) result(packed)
 
   real(r8) :: packed(self%mgncol,self%nlev,size(unpacked, 3))
 
-  SHR_ASSERT(size(unpacked,1) == self%pcols, errMsg(__FILE__, __LINE__))
+  SHR_ASSERT_FL(size(unpacked,1) == self%pcols, __FILE__, __LINE__)
 
   packed = unpacked(self%mgcols,self%top_lev:,:)
 
@@ -238,7 +238,7 @@ function unpack_1D(self, packed, fill) result(unpacked)
 
   real(r8) :: unpacked(self%pcols)
 
-  SHR_ASSERT(size(packed) == self%mgncol, errMsg(__FILE__, __LINE__))
+  SHR_ASSERT_FL(size(packed) == self%mgncol, __FILE__, __LINE__)
 
   unpacked = fill
   unpacked(self%mgcols) = packed
@@ -252,7 +252,7 @@ function unpack_1D_array_fill(self, packed, fill) result(unpacked)
 
   real(r8) :: unpacked(self%pcols)
 
-  SHR_ASSERT(size(packed) == self%mgncol, errMsg(__FILE__, __LINE__))
+  SHR_ASSERT_FL(size(packed) == self%mgncol, __FILE__, __LINE__)
 
   unpacked = fill
   unpacked(self%mgcols) = packed
@@ -266,7 +266,7 @@ function unpack_2D(self, packed, fill) result(unpacked)
 
   real(r8) :: unpacked(self%pcols,self%pver+size(packed, 2)-self%nlev)
 
-  SHR_ASSERT(size(packed, 1) == self%mgncol, errMsg(__FILE__, __LINE__))
+  SHR_ASSERT_FL(size(packed, 1) == self%mgncol, __FILE__, __LINE__)
 
   unpacked = fill
   unpacked(self%mgcols,self%top_lev:) = packed
@@ -280,7 +280,7 @@ function unpack_2D_array_fill(self, packed, fill) result(unpacked)
 
   real(r8) :: unpacked(self%pcols,self%pver+size(packed, 2)-self%nlev)
 
-  SHR_ASSERT(size(packed, 1) == self%mgncol, errMsg(__FILE__, __LINE__))
+  SHR_ASSERT_FL(size(packed, 1) == self%mgncol, __FILE__, __LINE__)
 
   unpacked = fill
   unpacked(self%mgcols,self%top_lev:) = packed
@@ -294,7 +294,7 @@ function unpack_3D(self, packed, fill) result(unpacked)
 
   real(r8) :: unpacked(self%pcols,self%pver,size(packed, 3))
 
-  SHR_ASSERT(size(packed, 1) == self%mgncol, errMsg(__FILE__, __LINE__))
+  SHR_ASSERT_FL(size(packed, 1) == self%mgncol, __FILE__, __LINE__)
 
   unpacked = fill
   unpacked(self%mgcols,self%top_lev:,:) = packed
@@ -308,7 +308,7 @@ function unpack_3D_array_fill(self, packed, fill) result(unpacked)
 
   real(r8) :: unpacked(self%pcols,self%pver,size(packed, 3))
 
-  SHR_ASSERT(size(packed, 1) == self%mgncol, errMsg(__FILE__, __LINE__))
+  SHR_ASSERT_FL(size(packed, 1) == self%mgncol, __FILE__, __LINE__)
 
   unpacked = fill
   unpacked(self%mgcols,self%top_lev:,:) = packed
@@ -382,14 +382,14 @@ subroutine MGFieldPostProc_accumulate(self)
      self%num_steps = self%num_steps + 1
      select case (self%rank)
      case (1)
-        SHR_ASSERT(associated(self%packed_1D), errMsg(__FILE__, __LINE__))
+        SHR_ASSERT_FL(associated(self%packed_1D), __FILE__, __LINE__)
         if (.not. allocated(self%buffer_1D)) then
            allocate(self%buffer_1D(size(self%packed_1D)))
            self%buffer_1D = 0._r8
         end if
         self%buffer_1D = self%buffer_1D + self%packed_1D
      case (2)
-        SHR_ASSERT(associated(self%packed_2D), errMsg(__FILE__, __LINE__))
+        SHR_ASSERT_FL(associated(self%packed_2D), __FILE__, __LINE__)
         if (.not. allocated(self%buffer_2D)) then
            ! Awkward; in F2008 can be replaced by source/mold.
            allocate(self%buffer_2D(&
@@ -419,10 +419,10 @@ subroutine MGFieldPostProc_process_and_unpack(self, packer)
   case (accum_mean)
      select case (self%rank)
      case (1)
-        SHR_ASSERT(associated(self%packed_1D), errMsg(__FILE__, __LINE__))
+        SHR_ASSERT_FL(associated(self%packed_1D), __FILE__, __LINE__)
         self%packed_1D = self%buffer_1D/self%num_steps
      case (2)
-        SHR_ASSERT(associated(self%packed_2D), errMsg(__FILE__, __LINE__))
+        SHR_ASSERT_FL(associated(self%packed_2D), __FILE__, __LINE__)
         self%packed_2D = self%buffer_2D/self%num_steps
      case default
         call shr_sys_abort(errMsg(__FILE__, __LINE__) // &
@@ -443,10 +443,10 @@ subroutine MGFieldPostProc_unpack_only(self, packer)
 
   select case (self%rank)
   case (1)
-     SHR_ASSERT(associated(self%unpacked_1D), errMsg(__FILE__, __LINE__))
+     SHR_ASSERT_FL(associated(self%unpacked_1D), __FILE__, __LINE__)
      self%unpacked_1D = packer%unpack(self%packed_1D, self%fillvalue)
   case (2)
-     SHR_ASSERT(associated(self%unpacked_2D), errMsg(__FILE__, __LINE__))
+     SHR_ASSERT_FL(associated(self%unpacked_2D), __FILE__, __LINE__)
      self%unpacked_2D = packer%unpack(self%packed_2D, self%fillvalue)
   case default
      call shr_sys_abort(errMsg(__FILE__, __LINE__) // &

@@ -176,4 +176,6 @@ void check_print_abort_on_bad_elems (const std::string& label, const int time_le
   return;
 }
 
+HashType ElementsState::hash (const int) const { return 0; }
+
 } // namespace Homme

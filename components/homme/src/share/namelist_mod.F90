@@ -93,6 +93,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     debug_level,   &
     theta_advect_form,   &
     vtheta_thresh,   &
+    dp3d_thresh,   &
     pgrad_correction,    &
     hv_ref_profiles,     &
     hv_theta_correction, &
@@ -100,6 +101,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     vert_remap_q_alg, &
     vert_remap_u_alg, &
     se_fv_phys_remap_alg, &
+    internal_diagnostics_level, &
     timestep_make_subcycle_parameters_consistent
 
 
@@ -218,9 +220,11 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     character(len=80) :: errstr, arg
     real(kind=real_kind) :: dt_max, se_tstep
 #if defined(CAM) || defined(SCREAM)
-    character(len=MAX_STRING_LEN) :: se_topology
+    character(len=MAX_STRING_LEN) :: se_topology, se_geometry
     integer :: se_partmethod
     integer :: se_ne
+    integer :: se_ne_x, se_ne_y
+    real(kind=real_kind) :: se_lx, se_ly
     integer :: unitn
     character(len=*), parameter ::  subname = "homme:namelist_mod"
 #endif
@@ -236,7 +240,12 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 #if defined(CAM) || defined(SCREAM)
       se_partmethod,     &
       se_topology,       &
+      se_geometry,       &
       se_ne,             &
+      se_ne_x,           &
+      se_ne_y,           &
+      se_lx,             &
+      se_ly,             &
       se_limiter_option, &
 #else
       qsize,             &         ! number of SE tracers
@@ -300,13 +309,15 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       mesh_file,     &               ! Name of mesh file
       theta_advect_form,     &
       vtheta_thresh,         &
+      dp3d_thresh,         &
       pgrad_correction,      &
       hv_ref_profiles,       &
       hv_theta_correction,   &
       hv_theta_thresh,   &
       vert_remap_q_alg, &
       vert_remap_u_alg, &
-      se_fv_phys_remap_alg
+      se_fv_phys_remap_alg, &
+      internal_diagnostics_level
 
 
 #if defined(CAM) || defined(SCREAM)
@@ -437,6 +448,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     semi_lagrange_nearest_point_lev = 256
     disable_diagnostics = .false.
     se_fv_phys_remap_alg = 1
+    internal_diagnostics_level = 0
     planar_slice = .false.
 
     theta_hydrostatic_mode = .true.    ! for preqx, this must be .true.
@@ -696,7 +708,12 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        limiter_option=se_limiter_option
        partmethod = se_partmethod
        ne         = se_ne
+       ne_x       = se_ne_x
+       ne_y       = se_ne_y
+       Lx         = se_lx
+       Ly         = se_ly
        topology   = se_topology
+       geometry   = se_geometry
        qsize      = qsize_d
        nsplit     = se_nsplit
        tstep      = se_tstep
@@ -767,6 +784,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(se_ftype,        1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(theta_advect_form,1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(vtheta_thresh,    1, MPIreal_t, par%root,par%comm,ierr)
+    call MPI_bcast(dp3d_thresh,    1, MPIreal_t, par%root,par%comm,ierr)
     call MPI_bcast(pgrad_correction,   1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(hv_ref_profiles,    1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(hv_theta_correction,1, MPIinteger_t, par%root,par%comm,ierr)
@@ -848,6 +866,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(prescribed_wind,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(moisture,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(se_fv_phys_remap_alg,1,MPIinteger_t ,par%root,par%comm,ierr)
+    call MPI_bcast(internal_diagnostics_level,1,MPIinteger_t ,par%root,par%comm,ierr)
 
     call MPI_bcast(restartfile,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(restartdir,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
@@ -948,7 +967,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     if(par%masterproc) write(iulog,*)'-DCOLUMN_OPENMP disabled'
 #endif
 
-if (topology == "plane" .and. mesh_file /= "none") then
+if (topology == "plane" .and. (mesh_file /= "/dev/null" .and. mesh_file /= "none")) then
   call abortmp("RRM grids not yet supported for plane")
 end if
 
@@ -1002,6 +1021,11 @@ end if
       dy = Ly/ne_y
       dx_ref = 1.0D0/ne_x
       dy_ref = 1.0D0/ne_y
+
+      if (Lx==0.0 .or. Ly==0.0) then
+         print *, 'For planar homme Lx and Ly cannot be zero'
+         call abortmp("Error Lx or Ly = 0")
+      endif
 
     else if (geometry == "sphere") then
       scale_factor = rearth
@@ -1150,6 +1174,7 @@ end if
        write(iulog,*)"readnl: tstep_type    = ",tstep_type
        write(iulog,*)"readnl: theta_advect_form = ",theta_advect_form
        write(iulog,*)"readnl: vtheta_thresh     = ",vtheta_thresh
+       write(iulog,*)"readnl: dp3d_thresh     = ",dp3d_thresh
        write(iulog,*)"readnl: pgrad_correction  = ",pgrad_correction
        write(iulog,*)"readnl: hv_ref_profiles   = ",hv_ref_profiles
        write(iulog,*)"readnl: hv_theta_correction= ",hv_theta_correction
@@ -1177,6 +1202,7 @@ end if
 
        write(iulog,*)"readnl: runtype       = ",runtype
        write(iulog,*)"readnl: se_fv_phys_remap_alg = ",se_fv_phys_remap_alg
+       write(iulog,*)"readnl: internal_diagnostics_level = ",internal_diagnostics_level
 
        if(hypervis_scaling /=0)then
           write(iulog,*)"Tensor hyperviscosity:  hypervis_scaling=",hypervis_scaling

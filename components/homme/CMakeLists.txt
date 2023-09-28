@@ -2,7 +2,7 @@ IF (NOT DEFINED PROJECT_NAME)
   SET (HOMME_STANDALONE TRUE CACHE BOOL "Whether Homme is built in standalone mode" FORCE)
 
   # Best practice to put cmake required version at the top
-  CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
+  CMAKE_MINIMUM_REQUIRED(VERSION 3.16)
 
   # Print the sha of the last commit,
   # useful to double check which version was build in the build folder.
@@ -50,8 +50,16 @@ IF (HOMME_BUILD_EXECS OR BUILD_HOMME_TOOL)
 ELSE ()
   SET(BUILD_HOMME_WITHOUT_PIOLIBRARY ON CACHE BOOL "")
 ENDIF ()
+
+SET(HOMME_BUILD_SCORPIO ON)
 IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
   MESSAGE(STATUS "This configuration builds without PIO library and NetCDF calls")
+  SET(HOMME_BUILD_SCORPIO OFF)
+ELSE()
+  IF (TARGET pioc OR TARGET piof)
+    message(STATUS "pioc and/or piof are already defined; skipping SCORPIO build in HOMME")
+    SET(HOMME_BUILD_SCORPIO OFF)
+  ENDIF()
 ENDIF()
 
 #option to discard forcings call and push to/from F
@@ -129,7 +137,7 @@ IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
   SET (HOMME_USE_TRILINOS TRUE)
 ENDIF ()
 #if trilinos is needed, we need cxx
-IF (${HOMME_USE_TRILINOS})
+IF (HOMME_USE_TRILINOS)
   SET (HOMME_USE_CXX TRUE)
 ENDIF()
 #if kokkos is needed, then so is cxx
@@ -189,7 +197,7 @@ IF (${HOMME_USE_ARKODE})
   ADD_DEFINITIONS(-DARKODE)
 ENDIF ()
 
-IF (${HOMME_USE_KOKKOS})
+IF (HOMME_USE_KOKKOS)
   ############################################
   # Selection of Kokkos execution space
   ############################################
@@ -203,15 +211,15 @@ IF (${HOMME_USE_KOKKOS})
     SET (HOMMEXX_SYCL_SPACE ON)
   ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "HIP")
     SET (HOMMEXX_HIP_SPACE ON)
-  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "CUDA")
+  ELSEIF (HOMMEXX_EXEC_SPACE_UPPER STREQUAL "CUDA")
     SET (HOMMEXX_CUDA_SPACE ON)
-  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "OPENMP")
+  ELSEIF (HOMMEXX_EXEC_SPACE_UPPER STREQUAL "OPENMP")
     SET (HOMMEXX_OPENMP_SPACE ON)
-  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "THREADS")
+  ELSEIF (HOMMEXX_EXEC_SPACE_UPPER STREQUAL "THREADS")
     SET (HOMMEXX_THREADS_SPACE ON)
-  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "SERIAL")
+  ELSEIF (HOMMEXX_EXEC_SPACE_UPPER STREQUAL "SERIAL")
     SET (HOMMEXX_SERIAL_SPACE ON)
-  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "DEFAULT")
+  ELSEIF (HOMMEXX_EXEC_SPACE_UPPER STREQUAL "DEFAULT")
     SET (HOMMEXX_DEFAULT_SPACE ON)
   ELSE()
     MESSAGE (ABORT "Invalid choice for 'HOMMEXX_EXEC_SPACE'. Valid options (case insensitive) are 'Cuda', 'OpenMP', 'Threads', 'Serial', 'Default'")
@@ -295,7 +303,7 @@ MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
 SET (HOMMEXX_ENABLE_GPU FALSE) 
 
-IF (${HOMME_USE_KOKKOS})
+IF (HOMME_USE_KOKKOS)
 
   IF (CUDA_BUILD OR HIP_BUILD OR SYCL_BUILD)
     SET (DEFAULT_VECTOR_SIZE 1)
@@ -314,7 +322,8 @@ IF (${HOMME_USE_KOKKOS})
     SET (HOMMEXX_DEBUG ON)
   ENDIF()
 
-  CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/src/share/cxx/Hommexx_config.h.in ${HOMME_BINARY_DIR}/src/share/cxx/Hommexx_config.h)
+  CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/src/share/cxx/Hommexx_config.h.in
+                  ${HOMME_BINARY_DIR}/src/share/cxx/Hommexx_config.h)
 
 ENDIF ()
 
@@ -361,9 +370,9 @@ ADD_SUBDIRECTORY(utils/cime/CIME/non_py/src/timing)
 # CMAKE_CURRENT_SOURCE_DIR == homme
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/CMake" ${CMAKE_MODULE_PATH})
-SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/externals/scorpio/cmake" ${CMAKE_MODULE_PATH})
-
-
+if (HOMME_BUILD_SCORPIO)
+  SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/externals/scorpio/cmake" ${CMAKE_MODULE_PATH})
+endif ()
 
 #
 # Scorpio
@@ -375,28 +384,28 @@ SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/externals/scorpio/cmak
 #
 ADD_DEFINITIONS(-D_NO_MPI_RSEND)
 
-if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
-SET(NetCDF_PATH ${NETCDF_DIR})
-SET(PnetCDF_PATH ${PNETCDF_DIR})
-message("** Configuring SCORPIO with:")
-message("-- NetCDF_PATH = ${NetCDF_PATH}")
-message("-- PnetCDF_PATH = ${PnetCDF_PATH}")
-message("-- NetCDF_Fortran_PATH = ${NetCDF_Fortran_PATH}")
-message("-- NetCDF_C_PATH = ${NetCDF_C_PATH}")
-message("-- PnetCDF_Fortran_PATH = ${PnetCDF_Fortran_PATH}")
-message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
-# pio needs cime/externals/genf90/genf90.pl
-if (HOMME_USE_SCORPIO)
-  # Need to use scorpio's older genf90 for now
-  SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/utils/externals/scorpio/src/genf90)
-  SET(PIO_ENABLE_TOOLS OFF CACHE BOOL "Disabling Scorpio tool build")
-  ADD_SUBDIRECTORY(utils/externals/scorpio)
-else ()
-  # The default I/O library used in "Scorpio classic"
-  ADD_SUBDIRECTORY(utils/externals/scorpio_classic)
-  SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/externals/genf90)
+if (HOMME_BUILD_SCORPIO)
+  SET(NetCDF_PATH ${NETCDF_DIR})
+  SET(PnetCDF_PATH ${PNETCDF_DIR})
+  message("-- NetCDF_PATH = ${NetCDF_PATH}")
+  message("-- PnetCDF_PATH = ${PnetCDF_PATH}")
+  message("-- NetCDF_Fortran_PATH = ${NetCDF_Fortran_PATH}")
+  message("-- NetCDF_C_PATH = ${NetCDF_C_PATH}")
+  message("-- PnetCDF_Fortran_PATH = ${PnetCDF_Fortran_PATH}")
+  message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
+  message("** Configuring SCORPIO")
+  # pio needs cime/externals/genf90/genf90.pl
+  if (HOMME_USE_SCORPIO)
+    # Need to use scorpio's older genf90 for now
+    SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/utils/externals/scorpio/src/genf90)
+    SET(PIO_ENABLE_TOOLS OFF CACHE BOOL "Disabling Scorpio tool build")
+    ADD_SUBDIRECTORY(utils/externals/scorpio)
+  else ()
+    # The default I/O library used in "Scorpio classic"
+    ADD_SUBDIRECTORY(utils/externals/scorpio_classic)
+    SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/externals/genf90)
+  endif ()
 endif ()
-ENDIF()
 
 
 # CPRNC locations
@@ -413,7 +422,7 @@ IF (CPRNC_DIR)
 ENDIF ()
 
 #compile cprnc only if pio is built
-if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
+if(HOMME_BUILD_EXECS AND NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
   IF (NOT (CPRNC_DIR))
     # compile CPRNC from CIME source code. Requires CIME support for machine
     message("-- CPRNC_BINARY = will compile from source")
@@ -442,8 +451,18 @@ if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
   ENDIF ()
 ENDIF ()
 
-IF (${HOMME_USE_KOKKOS})
-  INCLUDE(Kokkos)
+# If we don't need kokkos we don't need EKAT, and if
+# Homme is built in EAMxx EKAT is already built
+IF (HOMME_USE_KOKKOS AND HOMME_STANDALONE)
+  # Add ekat's cmake/pkg_build folder to cmake path
+  set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
+  set (EKAT_CMAKE_PATH ${EKAT_SOURCE_DIR}/cmake)
+  list(APPEND CMAKE_MODULE_PATH
+       ${EKAT_CMAKE_PATH}
+       ${EKAT_CMAKE_PATH}/pkg_build
+  )
+  include (EkatBuildKokkos)
+  BuildKokkos()
 ENDIF ()
 
 # This folder contains the CMake macro used to build cxx unit tests
@@ -530,9 +549,3 @@ ADD_CUSTOM_TARGET(clean-all
    COMMAND ${CMAKE_BUILD_TOOL} clean
    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
 )
-
-IF (${HOMME_USE_KOKKOS})
-  # Put this last so that tribits.cmake's 'check' target doesn't conflict with
-  # Homme's.
-  install_kokkos_if_needed()
-ENDIF ()

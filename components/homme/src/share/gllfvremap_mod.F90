@@ -1071,6 +1071,7 @@ contains
     !     g = inv(M_sgsg) M_sgf inv(S) M_ff f
     wrk = reshape(gfr%w_ff(:nf2), (/nf,nf/))*f(:nf,:nf)
     if (nf == npi) then
+
 !       call dtrsm('l', 'u', 't', 'n', nf2, 1, one, R, size(R,1), wrk, nf2)
 !       call dormqr('l', 'n', nf2, 1, nf2, R, size(R,1), tau, wrk, nf2, wr, np2, info)
        g(:npi,:npi) =  wrk

@@ -306,7 +306,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 >lnd/clm2/rawdata/mksrf_slope_10p_0.5x0.5.c190603.nc</mksrf_fslp10>
 
 <mksrf_fero hgrid="0.5x0.5" lmask="AVHRR"
->lnd/clm2/rawdata/mksrf_soilero_0.5x0.5.c190603.nc</mksrf_fero>
+>lnd/clm2/rawdata/mksrf_soilero_0.5x0.5.c220523.nc</mksrf_fero>
 
 <!-- mksrf_fvegtyp -->
 

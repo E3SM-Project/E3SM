@@ -18,18 +18,19 @@ module stepon
    use physics_types,  only: physics_state, physics_tend
    use dyn_comp,       only: dyn_import_t, dyn_export_t
    use perf_mod,       only: t_startf, t_stopf, t_barrierf
-   use time_manager,   only: get_step_size
+   use time_manager,   only: get_step_size, is_first_restart_step
 ! from SE
    use derivative_mod, only: derivinit, derivative_t
    use viscosity_mod, only : compute_zeta_C0, compute_div_C0
    use quadrature_mod, only: gauss, gausslobatto, quadrature_t
    use edge_mod,       only: edge_g, edgeVpack_nlyr, edgeVunpack_nlyr
    use parallel_mod,   only : par
-   use scamMod,        only: use_iop, doiopupdate, single_column, &
-                             setiopupdate, readiopdata
+   use iop_data_mod,   only: use_iop, doiopupdate, single_column, dp_crm, &
+                             setiopupdate, setiopupdate_init, readiopdata
    use element_mod,    only: element_t
    use element_ops,    only: get_field, get_field_i
    use shr_const_mod,       only: SHR_CONST_PI
+   use se_iop_intr_mod, only: iop_broadcast
 
    implicit none
    private
@@ -131,7 +132,7 @@ subroutine stepon_init(dyn_in, dyn_out )
   call addfld ('U&IC', (/'lev'/), 'I','m/s','Zonal wind',      gridname=grid_name)
   call addfld ('V&IC', (/'lev'/), 'I','m/s','Meridional wind', gridname=grid_name)
   call addfld ('T&IC', (/'lev'/), 'I','K',  'Temperature',     gridname=grid_name)
-  do m = 1,pcnst
+  do m = 1,pcnst   
     call addfld (trim(cnst_name(m))//'&IC',(/'lev'/),'I','kg/kg',cnst_longname(m),gridname=grid_name)
   end do
   
@@ -142,6 +143,13 @@ subroutine stepon_init(dyn_in, dyn_out )
   do m = 1,pcnst
     call add_default(trim(cnst_name(m))//'&IC',0, 'I')
   end do
+
+  if (dp_crm) then
+    call addfld('crm_grid_x'   ,horiz_only,  'A', 'm',   'Grid in x-direction',   gridname='GLL')
+    call addfld('crm_grid_y'   ,horiz_only,  'A', 'm',   'Grid in y-direction',   gridname='GLL')
+    call add_default('crm_grid_x', 1, ' ')
+    call add_default('crm_grid_y', 1, ' ')
+  endif
 
   call addfld('DYN_T'    ,(/ 'lev' /), 'A', 'K',    'Temperature (dyn grid)', gridname='GLL')
   call addfld('DYN_Q'    ,(/ 'lev' /), 'A', 'kg/kg','Water Vapor (dyn grid',  gridname='GLL' )
@@ -167,11 +175,12 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   
   use dp_coupling, only: d_p_coupling
   use time_mod,    only: tstep      ! dynamics timestep
-  use time_manager, only: is_last_step
+  use time_manager, only: is_last_step, is_first_step
   use control_mod, only: ftype
   use physics_buffer, only : physics_buffer_desc
   use hycoef,      only: hyam, hybm
-  use se_single_column_mod, only: scm_setfield, scm_setinitial
+  use se_iop_intr_mod, only: iop_setfield, iop_setinitial
+  use mpishorthand
   implicit none
 !
 ! !OUTPUT PARAMETERS:
@@ -200,17 +209,35 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
    ! Move data into phys_state structure.
    !----------------------------------------------------------
    
-  ! Determine whether it is time for an IOP update;
-  ! doiopupdate set to true if model time step > next available IOP 
-  if (use_iop .and. .not. is_last_step()) then
-    call setiopupdate
-  end if
-  
-  if (single_column) then
-    iop_update_phase1 = .true. 
-    if (doiopupdate) call readiopdata( iop_update_phase1,hyam,hybm )
-    call scm_setfield(elem,iop_update_phase1)       
-  endif 
+   ! Determine whether it is time for an IOP update;
+   ! doiopupdate set to true if model time step > next available IOP 
+
+   if (use_iop .and. masterproc) then
+     if (is_first_step()) then 
+       call setiopupdate_init()
+     else
+       call setiopupdate
+     endif
+   end if
+
+   if (single_column) then
+
+     ! If first restart step then ensure that IOP data is read
+     if (is_first_restart_step()) then
+       iop_update_phase1 = .false.
+       call iop_setinitial(elem)
+       if (masterproc) call readiopdata( iop_update_phase1,hyam,hybm )
+       call iop_broadcast()
+     endif
+
+     iop_update_phase1 = .true. 
+     if ((is_first_restart_step() .or. doiopupdate) .and. masterproc) then
+       call readiopdata( iop_update_phase1,hyam,hybm )
+     endif
+     call iop_broadcast()
+
+     if (.not. dp_crm) call iop_setfield(elem,iop_update_phase1)
+   endif
   
    call t_barrierf('sync_d_p_coupling', mpicom)
    call t_startf('d_p_coupling')
@@ -266,7 +293,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
    call t_startf('stepon_bndry_exch')
    ! do boundary exchange
-   if (.not. single_column) then 
+   if (.not. single_column .or. dp_crm) then
       do ie=1,nelemd
 
          if (fv_nphys>0) then
@@ -297,7 +324,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          call edgeVpack_nlyr(edge_g,dyn_in%elem(ie)%desc,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,nlev_tot)
 
       end do ! ie
-   endif ! .not. single_column
+   endif ! single column check
 
    call bndry_exchangeV(par, edge_g)
 
@@ -306,7 +333,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    rec2dt = 1._r8/dtime
 
    do ie=1,nelemd
-      if (.not. single_column) then
+  
+      if (.not. single_column .or. dp_crm) then
 
          kptr=0
 
@@ -337,8 +365,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
                end do
             end do ! k = 1, nlev
          end if ! fv_nphys>0
-         
-      endif ! .not. single_column
+      
+      endif ! single_column check   
 
       tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
 
@@ -404,8 +432,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    ! we will output dycore variables here to ensure they are always at the same
    ! time as what the physics is writing.  
    ! in single_column mode, dycore is not fully initialized so dont use
-   ! outfld() on dycore decompositions
-   if (.not. single_column) then 
+   ! outfld() on dycore decompositions, but allow it for doubly periodic CRM
+   if (.not. single_column .or. dp_crm) then
    if (hist_fld_active('VOR')) then
       call compute_zeta_C0(tmp_dyn,dyn_in%elem,par,tl_f)
       do ie=1,nelemd
@@ -497,16 +525,17 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    use time_mod,    only: tstep
    use hycoef,      only: hyam, hybm
    use dimensions_mod, only: nlev, nelemd, np, npsq
-   use se_single_column_mod, only: scm_setfield, scm_setinitial
+   use se_iop_intr_mod, only: iop_setfield, iop_setinitial
    use dyn_comp, only: TimeLevel
    use cam_history,     only: outfld   
    use cam_logfile, only: iulog
+   use mpishorthand
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
    real(r8) :: out_temp(npsq,nlev), out_q(npsq,nlev), out_u(npsq,nlev), &
-               out_v(npsq,nlev), out_psv(npsq)  
+               out_v(npsq,nlev), out_psv(npsq)  , out_gridx(np,np), out_gridy(np,np)
    real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
-   real(r8), parameter :: fac = 1000._r8	     
+   real(r8), parameter :: fac = 1000._r8     
    type(cam_out_t),     intent(inout) :: cam_out(:) ! Output from CAM to surface
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
@@ -535,19 +564,34 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
      
      ! Update IOP properties e.g. omega, divT, divQ
      
+#ifdef SPMD
+    call mpibcast(doiopupdate,1,mpilog,0,mpicom)
+#endif     
      iop_update_phase1 = .false. 
      if (doiopupdate) then
-       call scm_setinitial(elem)
-       call readiopdata(iop_update_phase1,hyam,hybm)
-       call scm_setfield(elem,iop_update_phase1)
-     endif   
+       call iop_setinitial(elem)
+       if (masterproc) call readiopdata(iop_update_phase1,hyam,hybm)
+       call iop_broadcast()
+       if (.not. dp_crm) call iop_setfield(elem,iop_update_phase1)
+     endif  
 
-   endif   
+   endif
 
    call t_barrierf('sync_dyn_run', mpicom)
    call t_startf ('dyn_run')
-   call dyn_run(dyn_out,rc)	
+   call dyn_run(dyn_out,rc)
    call t_stopf  ('dyn_run')
+
+   if (dp_crm) then
+
+     do ie=1,nelemd
+       out_gridx(:,:) = dyn_in%elem(ie)%spherep(:,:)%lat
+       out_gridy(:,:) = dyn_in%elem(ie)%spherep(:,:)%lon
+       call outfld('crm_grid_x', out_gridx, npsq, ie)
+       call outfld('crm_grid_y', out_gridy, npsq, ie)
+     enddo
+
+   endif
    
    ! Update to get tendency 
 #if (defined E3SM_SCM_REPLAY) 
@@ -558,24 +602,24 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
      do k=1,nlev
        do j=1,np
          do i=1,np
-	 
+ 
            ! Note that this calculation will not provide b4b results with 
-	   !  an E3SM because the dynamics tendency is not computed in the exact
-	   !  same way as an E3SM run, introducing error with roundoff 
-	   forcing_temp(i+(j-1)*np,k) = (dyn_in%elem(ie)%state%T(i,j,k,tl_f) - &
-	        ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)	
+           !  an E3SM because the dynamics tendency is not computed in the exact
+           !  same way as an E3SM run, introducing error with roundoff 
+           forcing_temp(i+(j-1)*np,k) = (dyn_in%elem(ie)%state%T(i,j,k,tl_f) - &
+             ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)
            out_temp(i+(j-1)*np,k) = dyn_in%elem(ie)%state%T(i,j,k,tl_f)
-	   out_u(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,1,k,tl_f)
-	   out_v(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,2,k,tl_f)
-	   out_q(i+(j-1)*np,k) = dyn_in%elem(ie)%state%Q(i,j,k,1)
-	   out_psv(i+(j-1)*np) = dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
+           out_u(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,1,k,tl_f)
+           out_v(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,2,k,tl_f)
+           out_q(i+(j-1)*np,k) = dyn_in%elem(ie)%state%Q(i,j,k,1)
+           out_psv(i+(j-1)*np) = dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
 
-	   do p=1,pcnst	 	
-	     forcing_q(i+(j-1)*np,k,p) = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
-	        ftmp_q(i,j,k,p,ie))/dtime
-	   enddo
-	   
-	 enddo
+           do p=1,pcnst
+             forcing_q(i+(j-1)*np,k,p) = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
+               ftmp_q(i,j,k,p,ie))/dtime
+           enddo
+   
+         enddo
        enddo
      enddo
      

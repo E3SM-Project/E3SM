@@ -1,0 +1,39 @@
+	<nml_record name="AM_thicknesses">
+		<nml_option name="config_AM_thicknesses_enable" type="logical" default_value="false" units="unitless"
+			description="If true, ocean analysis member thicknesses is called."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_thicknesses_compute_interval" type="character" default_value="dt" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_thicknesses_output_stream" type="character" default_value="none" units="unitless"
+			description="Name of the stream that the thicknesses analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_thicknesses_compute_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_thicknesses_write_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values="true or false"
+		/>
+	</nml_record>
+	<packages>
+		<package name="thicknessesAMPKG" description="This package includes variables required for the thicknesses analysis member."/>
+	</packages>
+	<var_struct name="thicknessesAM" time_levs="1" packages="thicknessesAMPKG">
+		<var name="iceThicknessCell" type="real" dimensions="nCells Time" units="m"
+			description="Ice aggregate thickness"
+		/>
+		<var name="snowThicknessCell" type="real" dimensions="nCells Time" units="m"
+			description="Snow aggregate thickness"
+		/>
+		<var name="iceThicknessCategory" type="real" dimensions="nCategories nCells Time" units="m"
+			description="Ice category thickness"
+		/>
+		<var name="snowThicknessCategory" type="real" dimensions="nCategories nCells Time" units="m"
+			description="Snow category thickness"
+		/>
+	</var_struct>

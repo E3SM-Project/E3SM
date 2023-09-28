@@ -249,7 +249,7 @@ module TopounitDataType
     !
     ! !USES
      use accumulMod       , only : extract_accum_field
-     use clm_time_manager , only : get_nstep
+     use elm_time_manager , only : get_nstep
     !
     ! !ARGUMENTS:
     class(topounit_atmospheric_state) :: this
@@ -290,7 +290,7 @@ module TopounitDataType
    subroutine update_acc_vars_top_as (this, bounds)
      !
      ! USES
-      use clm_time_manager, only : get_nstep
+      use elm_time_manager, only : get_nstep
      use accumulMod      , only : update_accum_field, extract_accum_field
      !
      ! !ARGUMENTS:
@@ -472,7 +472,7 @@ module TopounitDataType
     !
     ! !USES
      use accumulMod       , only : extract_accum_field
-     use clm_time_manager , only : get_nstep
+     use elm_time_manager , only : get_nstep
     !
     ! !ARGUMENTS:
     class(topounit_atmospheric_flux) :: this
@@ -530,7 +530,7 @@ module TopounitDataType
   subroutine update_acc_vars_top_af (this, bounds)
     !
     ! USES
-    use clm_time_manager, only : get_nstep
+    use elm_time_manager, only : get_nstep
     use accumulMod      , only : update_accum_field, extract_accum_field
     !
     ! !ARGUMENTS:
@@ -605,9 +605,9 @@ module TopounitDataType
     integer, intent(in) :: begt   ! beginning topographic unit index
     integer, intent(in) :: endt   ! ending topographic unit index
 
-    allocate(this%t_rad   (begt:endt)) ; this%t_rad   (:) = nan
-    allocate(this%eflx_lwrad_out_topo   (begt:endt)) ; this%eflx_lwrad_out_topo   (:) = nan
-    allocate(this%t_grnd  (begt:endt)) ; this%t_grnd  (:) = nan    
+    allocate(this%t_rad   (begt:endt)) ; this%t_rad   (:) = spval
+    allocate(this%eflx_lwrad_out_topo   (begt:endt)) ; this%eflx_lwrad_out_topo   (:) = spval
+    allocate(this%t_grnd  (begt:endt)) ; this%t_grnd  (:) = spval
   end subroutine init_top_es
 
   !-----------------------------------------------------------------------

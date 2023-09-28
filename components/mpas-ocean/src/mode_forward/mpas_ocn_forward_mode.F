@@ -78,6 +78,7 @@ module ocn_forward_mode
    use ocn_gm
    use ocn_submesoscale_eddies
    use ocn_stokes_drift 
+   use ocn_manufactured_solution
 
    use ocn_high_freq_thickness_hmix_del2
 
@@ -499,6 +500,8 @@ module ocn_forward_mode
          call ocn_vertical_remap_init(err_tmp)
       call ocn_stokes_drift_init(err_tmp)
       ierr = ior(ierr,err_tmp)
+      call ocn_manufactured_solution_init(domain, err_tmp)
+      ierr = ior(ierr,err_tmp)
 
       if (ierr /= 0) then
          call mpas_log_write( &
@@ -853,6 +856,8 @@ module ocn_forward_mode
 
       if ( config_time_integrator == 'split_explicit') then
          call mpas_dmpar_exch_group_destroy_reusable_buffers(domain, 'subcycleFields')
+      else if ( config_time_integrator == 'split_implicit') then
+         call ocn_time_integrator_si_variable_destroy()
       end if
 
       call ocn_analysis_finalize(domain, ierr)

@@ -14,7 +14,7 @@
 !> \date   September 2011
 !> \details
 !>  This module contains the routine for computing
-!>  tendencie from the horizontal pressure gradient.
+!>  tendencies from the horizontal pressure gradient.
 !>
 !
 !-----------------------------------------------------------------------
@@ -55,7 +55,8 @@ module ocn_vel_pressure_grad
    !--------------------------------------------------------------------
 
    logical :: &
-      pGradOff    ! flag for turning pressure gradient on/off
+      pGradOff,         &! flag for turning pressure gradient on/off
+      timeIntegratorLTS  ! flag for Local Time Stepping
 
    integer :: &
       pGradType   ! id for pressure gradient method selected
@@ -177,7 +178,7 @@ contains
       !*** start timer if turned on
 
       err = 0
-      if (pgradOff) return
+      if (pGradOff) return
       call mpas_timer_start("pressure grad")
 
       meridSshGrad = config_meridional_ssh_grad
@@ -190,35 +191,66 @@ contains
 
          ! pressure for sea surface height = - g grad ssh
 
+         if (timeIntegratorLTS) then
 #ifdef MPAS_OPENACC
-         !$acc parallel loop &
-         !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, dcEdge, &
-         !$acc            tend, edgeMask, ssh,surfacePressure) &
-         !$acc    private(cell1, cell2, invdcEdge, k, kMin, kMax)
+            !$acc parallel loop &
+            !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, dcEdge, &
+            !$acc            tend, edgeMask, ssh,surfacePressure) &
+            !$acc    private(cell1, cell2, invdcEdge, k, kMin, kMax)
 #else
-         !$omp parallel
-         !$omp do schedule(runtime) &
-         !$omp    private(cell1, cell2, invdcEdge, k, kMin, kMax)
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp    private(cell1, cell2, invdcEdge, k, kMin, kMax)
 #endif
-         do iEdge=1,nEdgesOwned
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            invdcEdge = 1.0_RKIND / dcEdge(iEdge)
-            kMin = minLevelEdgeBot(iEdge)
-            kMax = maxLevelEdgeTop(iEdge)
+            do iEdge=1,nEdgesOwned
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               invdcEdge = 1.0_RKIND / dcEdge(iEdge)
+               kMin = minLevelEdgeBot(iEdge)
+               kMax = maxLevelEdgeTop(iEdge)
 
-            do k=kMin,kMax
-               tend(k,iEdge) = tend(k,iEdge) - &
-                               edgeMask(k,iEdge)*invdcEdge* &
-                               (  gravity*(ssh(cell2) - ssh(cell1)) &
-                                + density0Inv*(  surfacePressure(cell2) &
-                                               - surfacePressure(cell1)) )
+               do k=kMin,kMax
+                  tend(k,iEdge) = tend(k,iEdge) - &
+                                  edgeMask(k,iEdge)*invdcEdge* &
+                                  (density0Inv*(  surfacePressure(cell2) - surfacePressure(cell1)) )
+               end do
             end do
-         end do
 #ifndef MPAS_OPENACC
-         !$omp end do
-         !$omp end parallel
+            !$omp end do
+            !$omp end parallel
 #endif
+         else ! not LTS
+
+#ifdef MPAS_OPENACC
+            !$acc parallel loop &
+            !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, dcEdge, &
+            !$acc            tend, edgeMask, ssh,surfacePressure) &
+            !$acc    private(cell1, cell2, invdcEdge, k, kMin, kMax)
+#else
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp    private(cell1, cell2, invdcEdge, k, kMin, kMax)
+#endif
+            do iEdge=1,nEdgesOwned
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               invdcEdge = 1.0_RKIND / dcEdge(iEdge)
+               kMin = minLevelEdgeBot(iEdge)
+               kMax = maxLevelEdgeTop(iEdge)
+
+               do k=kMin,kMax
+                  tend(k,iEdge) = tend(k,iEdge) - &
+                                  edgeMask(k,iEdge)*invdcEdge* &
+                                  (  gravity*(ssh(cell2) - ssh(cell1)) &
+                                   + density0Inv*(  surfacePressure(cell2) &
+                                                  - surfacePressure(cell1)) )
+               end do
+            end do
+#ifndef MPAS_OPENACC
+            !$omp end do
+            !$omp end parallel
+#endif
+         endif ! LTS
 
       case (pGradTypePZmid)
 
@@ -677,6 +709,11 @@ contains
 
       end select
 
+      if (config_time_integrator == 'LTS') then
+         timeIntegratorLTS = .true.
+      else
+         timeIntegratorLTS = .false.
+      endif
    !--------------------------------------------------------------------
 
    end subroutine ocn_vel_pressure_grad_init!}}}

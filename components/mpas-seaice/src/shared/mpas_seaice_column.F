@@ -542,7 +542,7 @@ contains
 
           if (.not. config_do_restart_snow_density) then
 
-             snowIceMass(:,:,:)          = 0.0_RKIND
+             snowIceMass(:,:,:)          = seaiceDensitySnow
              snowLiquidMass(:,:,:)       = 0.0_RKIND
              snowDensity(:,:,:)          = 0.0_RKIND
              snowDensityViaContent(:)    = 0.0_RKIND

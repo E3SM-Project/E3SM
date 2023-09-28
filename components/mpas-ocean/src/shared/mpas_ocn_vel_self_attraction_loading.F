@@ -184,6 +184,9 @@ contains
 
         endif
 
+        ! ssh_sal currently computed on host but must be transferred
+        ! to device for later tendency calculations
+        !$acc update device(ssh_sal)
 
         call mpas_timer_stop('SAL Calculation')
 
@@ -612,7 +615,6 @@ contains
         integer :: fromNcId, fromNsDimId, fromRowId, fromColId, fromSId
         integer:: nMpasDimId, nGridDimId, toNsLen, fromNsLen
         character (len = NF90_MAX_NAME) :: toNsName, fromNsName, nMpasName, nGridName
-        integer, pointer :: n_s
         character(len=StrKIND) :: mpasToGridFile, gridToMpasFile
 
         ! SHTns routine variables

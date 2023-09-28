@@ -237,7 +237,9 @@ contains
 
         real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
-        integer, pointer :: nCells, nCellsSolve, indexSalinity, indexSalinitySurfaceRestoringValue
+        integer, pointer :: nCells, nCellsSolve
+        integer, pointer :: indexSalinityPtr, indexSalinitySurfaceRestoringValuePtr
+        integer :: indexSalinity, indexSalinitySurfaceRestoringValue
         integer :: iCell, timeLevel
         integer, dimension(:), pointer :: landIceMask
 
@@ -317,9 +319,14 @@ contains
 
         call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
         call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
-        call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
-        call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinitySurfaceRestoringValue',  &
-                                                                         indexSalinitySurfaceRestoringValue)
+        call mpas_pool_get_dimension(tracersPool, 'index_salinity', &
+                                                   indexSalinityPtr)
+        call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, &
+                                'index_salinitySurfaceRestoringValue',  &
+                                 indexSalinitySurfaceRestoringValuePtr)
+        indexSalinity = indexSalinityPtr
+        indexSalinitySurfaceRestoringValue = &
+                                 indexSalinitySurfaceRestoringValuePtr
         call mpas_pool_get_subpool(block % structs, 'surfaceSalinityMonthlyForcing',  &
                                                                   surfaceSalinityMonthlyForcing)
         call mpas_pool_get_array(surfaceSalinityMonthlyForcing, 'surfaceSalinityMonthlyClimatologyValue',   &
@@ -440,8 +447,11 @@ contains
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields',tracersSurfaceRestoringFieldsPool)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersSurfaceRestoringValue', &
            activeTracersSurfaceRestoringValue)
-        call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, 'index_salinitySurfaceRestoringValue',  &
-                                                                         indexSalinitySurfaceRestoringValue)
+        call mpas_pool_get_dimension(tracersSurfaceRestoringFieldsPool, &
+                                'index_salinitySurfaceRestoringValue',  &
+                                 indexSalinitySurfaceRestoringValuePtr)
+        indexSalinitySurfaceRestoringValue = &
+                                 indexSalinitySurfaceRestoringValuePtr
 
         do iCell = 1, nCells
           deltaS = activeTracersSurfaceRestoringValue(indexSalinitySurfaceRestoringValue,iCell)

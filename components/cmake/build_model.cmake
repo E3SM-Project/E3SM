@@ -68,11 +68,22 @@ function(build_model COMP_CLASS COMP_NAME)
     # If YAKL is needed, then set YAKL CMake vars
     if (USE_YAKL)
       # YAKL_ARCH can be CUDA, HIP, SYCL, OPENMP45, or empty
-      # USE_CUDA is set through Macros.cmake / config_compilers.xml
+      # USE_CUDA or USE_HIP are set through Macros.cmake
       if (USE_CUDA)
         set(YAKL_ARCH "CUDA")
-        # CUDA_FLAGS is set through Macros.cmake / config_compilers.xml
+        # CUDA_FLAGS is set through Macros.cmake
+        # For instance: cime_config/machines/cmake_macros/gnugpu_summit.cmake
         set(YAKL_CUDA_FLAGS "${CPPDEFS} ${CUDA_FLAGS}")
+      elseif (USE_HIP)
+        set(YAKL_ARCH "HIP")
+        # HIP_FLAGS are set through Macros.cmake
+        # For instance: cime_config/machines/cmake_macros/crayclanggpu_frontier.cmake
+        set(YAKL_HIP_FLAGS "${CPPDEFS} ${HIP_FLAGS}")
+      elseif (USE_SYCL)
+        set(YAKL_ARCH "SYCL")
+        # SYCL_FLAGS is set through Macros.cmake
+        # For instance: cime_config/machines/cmake_macros/oneapi-ifxgpu_sunspot.cmake
+        set(YAKL_SYCL_FLAGS "${CPPDEFS} ${SYCL_FLAGS}")
       else()
         # For CPU C++ compilers duplicate flags are fine, the last ones win typically
         set(YAKL_CXX_FLAGS "${CPPDEFS} ${CXXFLAGS}")

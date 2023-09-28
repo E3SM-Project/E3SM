@@ -68,21 +68,21 @@
       rhos_eff = c0
       rhos_cmp = c0
 
-      if (vsno > puny) then
-
       !-----------------------------------------------------------------
       ! Initialize effective snow density (compaction) for new snow
       !-----------------------------------------------------------------
 
-         do n = 1, ncat
-               do k = 1, nslyr
-                  if (rhos_cmpn(k,n) < rhosmin) rhos_cmpn(k,n) = rhosnew
-               enddo
-         enddo
+      do n = 1, ncat
+            do k = 1, nslyr
+               if (rhos_cmpn(k,n) < rhosmin) rhos_cmpn(k,n) = rhosnew
+            enddo
+      enddo
 
       !-----------------------------------------------------------------
       ! Compute average effective density of snow
       !-----------------------------------------------------------------
+
+      if (vsno > puny) then
 
          do n = 1, ncat
             if (vsnon(n) > c0) then
@@ -815,7 +815,7 @@
           zrhos(k) = smice(k) + smliq(k)
 
           ! best-fit table indecies:
-          T_idx    = nint(abs(zTsn(k)+ Tffresh - 223.0_dbl_kind) / 5.0_dbl_kind, kind=int_kind)
+          T_idx    = nint(abs(zTsn(k)+ Tffresh - 223.15_dbl_kind) / 5.0_dbl_kind, kind=int_kind)
           Tgrd_idx = nint(zdTdz(k) / 10.0_dbl_kind, kind=int_kind)
           !rhos_idx = nint(zrhos(k)-50.0_dbl_kind) / 50.0_dbl_kind, kind=int_kind)   ! variable density
           rhos_idx = nint((rhos-50.0_dbl_kind) / 50.0_dbl_kind, kind=int_kind)        ! fixed density

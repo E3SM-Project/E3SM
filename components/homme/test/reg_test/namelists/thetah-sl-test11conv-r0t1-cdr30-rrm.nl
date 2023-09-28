@@ -18,6 +18,7 @@
   smooth = 0
   nu                = 1.585e13
   nu_s              = 1.585e13
+  nu_p              = 1                         ! unused; silence hommexx error
   se_ftype          = -1
   limiter_option    = 9
   hypervis_order    = 2                         ! 2 = hyperviscosity
@@ -35,6 +36,7 @@
   vert_remap_q_alg   = 10
   semi_lagrange_hv_q = 1
   nu_q = 0
+  internal_diagnostics_level = 2
 /
 &vert_nl
   vanalytic         = 1

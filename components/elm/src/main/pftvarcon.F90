@@ -854,7 +854,11 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_NIT'//errMsg(__FILE__, __LINE__))
         call ncd_io('KM_DEN',KM_DEN, 'read', ncid, readvar=readv)  
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in KM_DEN'//errMsg(__FILE__, __LINE__))
-
+        call ncd_io('pinit_beta1',pinit_beta1, 'read', ncid, readvar=readv)
+        if ( .not. readv ) pinit_beta1(:) = 0.5_r8
+        call ncd_io('pinit_beta2',pinit_beta2, 'read', ncid, readvar=readv)
+        if ( .not. readv ) pinit_beta2(:) = 0.1_r8
+        
         if(.not.use_fates) then
         
         call ncd_io('VMAX_PLANT_NH4',VMAX_PLANT_NH4, 'read', ncid, readvar=readv)  
@@ -901,10 +905,6 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in s_vc'//errMsg(__FILE__, __LINE__))
         call ncd_io('nsc_rtime',nsc_rtime, 'read', ncid, readvar=readv)
         if ( .not. readv ) nsc_rtime(:) = 1.0_r8
-        call ncd_io('pinit_beta1',pinit_beta1, 'read', ncid, readvar=readv)
-        if ( .not. readv ) pinit_beta1(:) = 0.5_r8
-        call ncd_io('pinit_beta2',pinit_beta2, 'read', ncid, readvar=readv)
-        if ( .not. readv ) pinit_beta2(:) = 0.1_r8
         ! new stoichiometry
         call ncd_io('leafcn_obs',leafcn_obs, 'read', ncid, readvar=readv, posNOTonfile=.true.)
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))

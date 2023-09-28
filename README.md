@@ -9,7 +9,7 @@ the most challenging and demanding climate-change research problems and
 Department of Energy mission needs while efficiently using DOE Leadership
 Computing Facilities.  
 
-DOI: [10.11578/E3SM/dc.20210927.1](http://dx.doi.org/10.11578/E3SM/dc.20210927.1)
+DOI: [10.11578/E3SM/dc.20230110.5](http://dx.doi.org/10.11578/E3SM/dc.20230110.5)
 
 Please visit the [project website](https://e3sm.org) or our [Confluence site](https://acme-climate.atlassian.net/wiki/spaces/DOC/overview)
 for further details.
@@ -64,11 +64,11 @@ the following BibTeX entry is provided.
 	author = {{E3SM Project}},
 	abstractNote = {{E3SM} is a state-of-the-art fully coupled model of the {E}arth's 
 		climate including important biogeochemical and cryospheric processes.},
-	howpublished = {[Computer Software] \url{https://dx.doi.org/10.11578/E3SM/dc.20210927.1}},
-	url = {https://dx.doi.org/10.11578/E3SM/dc.20210927.1},
-	doi = {10.11578/E3SM/dc.20210927.1},
-	year = 2021,
-	month = sep,
+	howpublished = {[Computer Software] \url{https://dx.doi.org/10.11578/E3SM/dc.20230110.5}},
+	url = {https://dx.doi.org/10.11578/E3SM/dc.20230110.5},
+	doi = {10.11578/E3SM/dc.20230110.5},
+	year = 2023,
+	month = jan,
 }
 ```
 
