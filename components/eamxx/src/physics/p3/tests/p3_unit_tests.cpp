@@ -996,7 +996,7 @@ template <typename D>
 struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
 {
   static void impose_max_total_ni_bfb_test(){
-    constexpr Scalar max_total_ni = C::max_total_ni;
+    constexpr Scalar max_total_ni = 740.0e3;
 
     ImposeMaxTotalNiData dc[max_pack_size]= {
       // ni_local, max_total_ni, inv_rho_local
