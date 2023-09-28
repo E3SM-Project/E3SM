@@ -1258,6 +1258,7 @@ struct Functions
 
   // Return microseconds elapsed
   static Int p3_main(
+    const P3Runtime& runtime_options,
     const P3PrognosticState& prognostic_state,
     const P3DiagnosticInputs& diagnostic_inputs,
     const P3DiagnosticOutputs& diagnostic_outputs,

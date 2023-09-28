@@ -2063,13 +2063,14 @@ Int p3_main_f(
 
   P3F::P3LookupTables lookup_tables{mu_r_table_vals, vn_table_vals, vm_table_vals, revap_table_vals,
                                     ice_table_vals, collect_table_vals, dnu_table_vals};
+  P3F::P3Runtime runtime_options{740.0e3};
 
   // Create local workspace
   const Int nk_pack = ekat::npack<Spack>(nk);
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(nj, nk_pack);
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nk_pack, 52, policy);
 
-  auto elapsed_microsec = P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
+  auto elapsed_microsec = P3F::p3_main(runtime_options, prog_state, diag_inputs, diag_outputs, infrastructure,
                                        history_only, lookup_tables, workspace_mgr, nj, nk);
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
