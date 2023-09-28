@@ -11,6 +11,10 @@
 #   The "mct" target
 #
 
+if (TARGET mct)
+  return()
+endif()
+
 # Look for libmct in INSTALL_SHAREDPATH/lib
 find_library(MCT_LIB  mct  REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
 find_library(MPEU_LIB mpeu REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib $ENV{mct_ROOT})

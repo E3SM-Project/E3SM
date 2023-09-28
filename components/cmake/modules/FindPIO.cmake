@@ -7,6 +7,10 @@
 #   The "spio" target
 #
 
+if (TARGET spio)
+  return()
+endif()
+
 if (NOT PIO_LIBDIR)
   set(PIO_LIBDIR "${INSTALL_SHAREDPATH}/lib")
 endif()

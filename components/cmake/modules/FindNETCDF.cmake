@@ -7,6 +7,10 @@
 #   The "netcdf" target
 #
 
+if (TARGET netcdf)
+  return()
+endif()
+
 # Pnetcdf is optional, and only if not running serial
 if (NOT MPILIB STREQUAL mpi-serial)
   if (PNETCDF_PATH)

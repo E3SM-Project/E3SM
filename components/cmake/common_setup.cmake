@@ -110,10 +110,8 @@ endif()
 # Have to do this here for now because the macros must be loaded in order for
 # the netcdf cmake variables to be set. Once scorpio has a good package-config,
 # this won't be necessary
-if (NOT TARGET netcdf)
-  find_package(NETCDF REQUIRED)
-  target_link_libraries(spio INTERFACE netcdf)
-endif()
+find_package(NETCDF REQUIRED)
+target_link_libraries(spio INTERFACE netcdf)
 
 # Set HAVE_SLASHPROC on LINUX systems which are not bluegene or Darwin (OSx)
 string(FIND "${CPPDEFS}" "-DLINUX" HAS_DLINUX)
