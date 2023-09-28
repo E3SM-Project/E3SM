@@ -56,11 +56,11 @@ KOKKOS_INLINE_FUNCTION constexpr int iqqcwtend_rnam() { return 0; }
 KOKKOS_INLINE_FUNCTION constexpr int maxsubarea() { return 2; }
 
 // conversion factors
-KOKKOS_INLINE_FUNCTION const Real fcvt_gas(int gas_id) {
+KOKKOS_INLINE_FUNCTION Real fcvt_gas(int gas_id) {
   static const Real fcvt_gas_[AeroConfig::num_gas_ids()] = {1, 1, 1};
   return fcvt_gas_[gas_id];
 }
-KOKKOS_INLINE_FUNCTION const Real fcvt_aer(int aero_id) {
+KOKKOS_INLINE_FUNCTION Real fcvt_aer(int aero_id) {
   static const Real fcvt_aer_[AeroConfig::num_aerosol_ids()] = {1, 1, 1, 1, 1, 1, 1};
   return fcvt_aer_[aero_id];
 }
