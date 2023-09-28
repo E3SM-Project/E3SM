@@ -196,6 +196,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <do_predict_nc>true</do_predict_nc>
       <do_predict_nc COMPSET=".*SCREAM.*noAero">false</do_predict_nc>
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
+      <max_total_ni type="real" doc="maximum total ice concentration (sum of all categories) (m)">740.0e3</max_total_ni>
       <tables type="array(file)">
         ${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1,
         ${DIN_LOC_ROOT}/atm/scream/tables/mu_r_table_vals.dat8,

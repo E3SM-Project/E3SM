@@ -27,6 +27,7 @@ atmosphere_processes:
       schedule_type: Sequential
       number_of_subcycles: 1
       p3:
+        max_total_ni: 740.0e3
         do_prescribed_ccn: false
       shoc:
         lambda_low: 0.001

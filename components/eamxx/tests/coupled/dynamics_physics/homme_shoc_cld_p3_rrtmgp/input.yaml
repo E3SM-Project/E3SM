@@ -42,6 +42,7 @@ atmosphere_processes:
       p3:
         do_prescribed_ccn: false
         enable_column_conservation_checks: true
+        max_total_ni: 740.0e3
       shoc:
         enable_column_conservation_checks: true
         lambda_low: 0.001

@@ -107,6 +107,13 @@ struct Functions
   using WorkspaceManager = typename ekat::WorkspaceManager<Spack, Device>;
   using Workspace        = typename WorkspaceManager::Workspace;
 
+  // Structure to store p3 runtime options
+  struct P3Runtime {
+    P3Runtime() = default;
+    // maximum total ice concentration (sum of all categories) (m)
+    Scalar max_total_ni;
+  };
+
   // This struct stores prognostic variables evolved by P3.
   struct P3PrognosticState {
     P3PrognosticState() = default;

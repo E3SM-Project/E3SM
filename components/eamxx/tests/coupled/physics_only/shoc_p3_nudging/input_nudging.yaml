@@ -11,6 +11,8 @@ time_stepping:
 atmosphere_processes:
   schedule_type: Sequential
   atm_procs_list: [shoc,p3,nudging]
+  p3:
+    max_total_ni: 740.0e3
   nudging:
     nudging_filename: [shoc_p3_source_data_${POSTFIX}.INSTANT.nsteps_x${NUM_STEPS}.${RUN_T0}.nc]
     nudging_fields: ["T_mid", "qv"]
