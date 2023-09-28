@@ -387,17 +387,17 @@ void MAMMicrophysics::run_impl(const double dt) {
         Real hygro[num_modes], naer[num_modes], dryrad[num_modes],
              dryvol[num_modes], drymass[num_modes],
              rhcrystal[num_modes], rhdeliques[num_modes], specdens_1[num_modes];
-        mam4::water_uptake::modal_aero_wateruptake_dryaer(nspec_amode, specdens_amode,
+        mam4::water_uptake::modal_aero_water_uptake_dryaer(nspec_amode, specdens_amode,
           spechygro, lspectype_amode, state_q, dgncur_a, hygro,
           naer, dryrad, dryvol, drymass, rhcrystal, rhdeliques, specdens_1);
 
         // calculate wet aerosol properties
         Real rh = mam4::conversions::relative_humidity_from_vapor_mixing_ratio(qv, temp, pmid);
         Real wetrad[num_modes], wetvol[num_modes], wtrvol[num_modes];
-        mam4::water_uptake::modal_aero_wateruptake_wetaer(rhcrystal, rhdeliques, dgncur_a,
+        mam4::water_uptake::modal_aero_water_uptake_wetaer(rhcrystal, rhdeliques, dgncur_a,
           dryrad, hygro, rh, naer, dryvol, wetrad, wetvol, wtrvol, dgncur_awet,
           qaerwat);
-        mam4::water_uptake::modal_aero_wateruptake_wetdens(wetvol, wtrvol,
+        mam4::water_uptake::modal_aero_water_uptake_wetdens(wetvol, wtrvol,
           drymass, specdens_1, wetdens);
       }
 
