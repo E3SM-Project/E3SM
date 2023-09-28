@@ -340,11 +340,6 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   // Setup WSM for internal local variables
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
   workspace_mgr.setup(m_buffer.wsm_data, nk_pack_p1, 52, policy);
-
-
-  using stratts_t = std::map<std::string,std::string>;
-  auto& io_atts = get_field_out("T_mid").get_header().get_extra_data<stratts_t>("io: string attributes");
-  io_atts["test"] = "blah";
 }
 
 // =========================================================================================
