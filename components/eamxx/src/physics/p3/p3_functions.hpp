@@ -109,7 +109,6 @@ struct Functions
 
   // Structure to store p3 runtime options
   struct P3Runtime {
-    P3Runtime() = default;
     // maximum total ice concentration (sum of all categories) (m)
     Scalar max_total_ni;
   };

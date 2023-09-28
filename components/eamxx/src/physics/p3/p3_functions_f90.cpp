@@ -1685,7 +1685,7 @@ void p3_main_part2_f(
 
   const Int nk = (kte - kts) + 1;
   const Int nk_pack = ekat::npack<Spack>(nk);
-  const Real max_total_ni = 740.0e3;
+  const Real max_total_ni = 740.0e3;  // Hard-code this value for F90 comparison
 
   // Set up views
   std::vector<view_1d> temp_d(P3MainPart2Data::NUM_ARRAYS);
@@ -1841,7 +1841,7 @@ void p3_main_part3_f(
 
   const Int nk = (kte - kts) + 1;
   const Int nk_pack = ekat::npack<Spack>(nk);
-  const Real max_total_ni = 740.0e3;
+  const Real max_total_ni = 740.0e3;  // Hard-code this value for F90 comparison
 
   // Set up views
   std::vector<view_1d> temp_d(P3MainPart3Data::NUM_ARRAYS);
