@@ -204,8 +204,8 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   // Helper lambda, to copy io string attributes. This will be used if any
   // remapper is created, to ensure atts set by atm_procs are not lost
-  const std::string io_string_atts_key ="io: string attributes";
   auto transfer_io_str_atts = [&] (const Field& src, Field& tgt) {
+    const std::string io_string_atts_key ="io: string attributes";
     using stratts_t = std::map<std::string,std::string>;
     const auto& src_atts = src.get_header().get_extra_data<stratts_t>(io_string_atts_key);
           auto& dst_atts = tgt.get_header().get_extra_data<stratts_t>(io_string_atts_key);
