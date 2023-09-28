@@ -13,6 +13,10 @@ atmosphere_processes:
   shoc:
     number_of_subcycles: ${NUM_SUBCYCLES}
     compute_tendencies: [all]
+    lambda_low: 0.001
+    lambda_high: 0.04
+    lambda_slope: 2.65
+    lambda_thresh: 0.02
 
 grids_manager:
   Type: Mesh Free

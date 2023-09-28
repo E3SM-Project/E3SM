@@ -73,10 +73,10 @@ struct Functions
  struct SHOCRuntime {
    SHOCRuntime() = default;
    // Runtime options for isotropic_ts
-   Scalar lambda_low    = 0.001;
-   Scalar lambda_high   = 0.04;
-   Scalar lambda_slope  = 2.65;
-   Scalar lambda_thresh = 0.02;
+   Scalar lambda_low;
+   Scalar lambda_high;
+   Scalar lambda_slope;
+   Scalar lambda_thresh;
  };
 
   // This struct stores input views for shoc_main.

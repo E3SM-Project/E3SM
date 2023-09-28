@@ -2861,7 +2861,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
                                              qwthl_sec_d, wthl_sec_d, wqw_sec_d, wtke_sec_d,
                                              uw_sec_d,    vw_sec_d,   w3_d,      wqls_sec_d,
                                              brunt_d,     isotropy_d};
-  SHF::SHOCRuntime shoc_runtime_options;
+  SHF::SHOCRuntime shoc_runtime_options{0.001,0.04,2.65,0.02};
 
   const auto nlevi_packs = ekat::npack<Spack>(nlevi);
 
