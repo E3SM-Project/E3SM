@@ -1819,7 +1819,7 @@ contains
                fcondbotn=bottomConductiveFluxCategory(:,iCell), &
                fswsfcn=surfaceShortwaveFlux(:,iCell), &
                fswintn=interiorShortwaveFlux(:,iCell), &
-               fswthrun=penetratingShortwaveFlux(:,iCell), & ! Wrong dimensions? echmod check this
+               fswthrun=penetratingShortwaveFlux(:,iCell), &
                fswabs=absorbedShortwaveFlux(iCell), &
                flwout=longwaveUp(iCell), &
                Sswabsn=absorbedShortwaveSnowLayer(:,:,iCell), &
@@ -5838,7 +5838,7 @@ contains
          config_use_aerosols, &
          config_use_brine, &
          config_use_column_biogeochemistry, &
-!         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &      !echmod deprecate
          config_use_vertical_biochemistry, &
          config_use_vertical_tracers, &
          config_use_skeletal_biochemistry, &
@@ -5886,7 +5886,7 @@ contains
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-!    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)  !echmod deprecate
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
@@ -5983,7 +5983,7 @@ contains
        if (config_use_brine) &
             tracerObject % nTracers = tracerObject % nTracers + 1
 
-       ! vertical zSalinity
+       ! vertical zSalinity                               !echmod deprecate
 !       if (config_use_vertical_zsalinity) then
 !          tracerObject % nTracers = tracerObject % nTracers + nBioLayers
 !          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1
@@ -7431,7 +7431,7 @@ contains
     logical, pointer :: &
          config_use_skeletal_biochemistry, &
          config_use_vertical_biochemistry, &
-!         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &      !echmod deprecate
          config_use_vertical_tracers, &
          config_use_brine, &
          config_use_nitrate, &
@@ -7499,7 +7499,7 @@ contains
          iLayers
 
     call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
-!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)      !echmod deprecate
     call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
@@ -7763,7 +7763,7 @@ contains
           enddo
        endif
 
-       ! salinity used with BL99 thermodynamics
+       ! salinity used with BL99 thermodynamics        !echmod deprecate
 !       if (config_use_vertical_zsalinity) then
 !          do iLayers = 1, nBioLayers
 !             tracerArrayCategory(tracerObject % index_verticalSalinity+iLayers-1,:) = &
@@ -7803,7 +7803,7 @@ contains
     logical, pointer :: &
          config_use_skeletal_biochemistry, &
          config_use_vertical_biochemistry, &
-!         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &      !echmod deprecate
          config_use_vertical_tracers, &
          config_use_brine, &
          config_use_nitrate, &
@@ -7872,7 +7872,7 @@ contains
 
     call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)       !echmod deprecate
     call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
     call MPAS_pool_get_config(block % configs, "config_use_nitrate", config_use_nitrate)
@@ -8143,7 +8143,7 @@ contains
           enddo
        endif
 
-       ! salinity used with BL99 thermodynamics
+       ! salinity used with BL99 thermodynamics        !echmod deprecate
 !       if (config_use_vertical_zsalinity) then
 !          do iLayers = 1, nBioLayers
 !             verticalSalinity(iLayers,:,iCell) = &
@@ -8183,7 +8183,7 @@ contains
     logical, pointer :: &
          config_use_skeletal_biochemistry, &
          config_use_vertical_biochemistry, &
-!         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &       !echmod deprecate
          config_use_vertical_tracers, &
          config_use_brine, &
          config_use_nitrate, &
@@ -8272,7 +8272,7 @@ contains
 
     call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)      !echmod deprecate
     call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
     call MPAS_pool_get_config(block % configs, "config_use_nitrate", config_use_nitrate)
@@ -8636,7 +8636,7 @@ contains
           enddo
        endif
 
-       ! salinity for use with BL99 thermodynamics
+       ! salinity used with BL99 thermodynamics        !echmod deprecate
 !       if (config_use_vertical_zsalinity) then
 !          do iLayers = 1, nBioLayers
 !             tracerArrayCell(tracerObject % index_verticalSalinity+iLayers-1)  = verticalSalinityCell(iLayers,iCell)
@@ -8675,7 +8675,7 @@ contains
     logical, pointer :: &
          config_use_skeletal_biochemistry, &
          config_use_vertical_biochemistry, &
-!         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &       !echmod deprecate
          config_use_vertical_tracers, &
          config_use_brine, &
          config_use_nitrate, &
@@ -8764,7 +8764,7 @@ contains
 
     call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)       !echmod deprecate
     call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
     call MPAS_pool_get_config(block % configs, "config_use_nitrate", config_use_nitrate)
@@ -9132,7 +9132,7 @@ contains
           enddo
        endif
 
-       ! salinity for use with BL99 thermodynamics
+       ! salinity used with BL99 thermodynamics        !echmod deprecate
 !       if (config_use_vertical_zsalinity) then
 !          do iLayers = 1, nBioLayers
 !             verticalSalinityCell(iLayers,iCell) = tracerArrayCell(tracerObject % index_verticalSalinity+iLayers-1)
@@ -9235,7 +9235,7 @@ contains
          config_use_cesm_meltponds, &  ! deprecated
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
-         config_use_vertical_zsalinity, &
+         config_use_vertical_zsalinity, &      ! deprecated
          config_use_brine, &
          config_use_vertical_tracers, &
          config_use_vertical_biochemistry, &
@@ -9299,7 +9299,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_ocean_heat_transfer_type", config_ocean_heat_transfer_type)
     call MPAS_pool_get_config(domain % configs, "config_sea_freezing_temperature_type", config_sea_freezing_temperature_type)
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)      ! deprecated
     call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
@@ -9331,7 +9331,9 @@ contains
 
     ! check config_thermodynamics_type value
     if (trim(config_thermodynamics_type) == "zero layer") then
-       call config_error("config_thermodynamics_type", config_thermodynamics_type, "'zero-layer' has been deprecated")
+       call mpas_log_write(&
+            "check_column_package_configs: config_thermodynamics_type) = zero layer but 0-layer thermo has been deprecated", &
+            messageType=MPAS_LOG_WARN)
     endif
 
     if (.not. (trim(config_thermodynamics_type) == "BL99" .or. &
@@ -9573,15 +9575,9 @@ contains
     endif
 
     ! deprecate vertical zSalinity
-!    if (config_use_vertical_zsalinity .and. ((.not. config_use_brine) .or. &
-!         (.not. (trim(config_thermodynamics_type) == "BL99")))) then
-!       call mpas_log_write(&
-!            "check_column_package_configs: vertical zSalinity requires config_use_brine = true and 'BL99' ", &
-!            messageType=MPAS_LOG_CRIT)
-!    endif
     if (config_use_vertical_zsalinity) then
        call mpas_log_write(&
-            "check_column_package_configs: vertical zSalinity has been deprecated", &
+            "check_column_package_configs: config_use_vertical_zsalinity = .true. but vertical zSalinity has been deprecated", &
             messageType=MPAS_LOG_CRIT)
     endif
 
@@ -9644,7 +9640,7 @@ contains
          config_use_topo_meltponds, &
          config_use_aerosols, &
          config_use_brine, &
-!         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &      !echmod deprecate
          config_use_zaerosols, &
          config_use_nitrate, &
          config_use_DON, &
@@ -9672,7 +9668,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_aerosols", config_use_aerosols)
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-!    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)   !echmod deprecate
     call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
     call MPAS_pool_get_config(domain % configs, "config_use_nitrate", config_use_nitrate)
     call MPAS_pool_get_config(domain % configs, "config_use_DON", config_use_DON)
@@ -13470,7 +13466,7 @@ contains
          pkgTracerVerticalDONActive, &
          pkgTracerVerticalIronActive, &
          pkgTracerZAerosolsActive, &
-!         pkgTracerZSalinityActive, &
+!         pkgTracerZSalinityActive, &           !echmod deprecate
          pkgColumnTracerEffectiveSnowDensityActive, &
          pkgColumnTracerSnowGrainRadiusActive
 
@@ -13809,7 +13805,7 @@ contains
          pkgTracerVerticalDONActive, &
          pkgTracerVerticalIronActive, &
          pkgTracerZAerosolsActive, &
-!         pkgTracerZSalinityActive, &
+!         pkgTracerZSalinityActive, &                   !echmod deprecate
          pkgColumnTracerEffectiveSnowDensityActive, &
          pkgColumnTracerSnowGrainRadiusActive
 
@@ -13868,7 +13864,7 @@ contains
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalDONActive", pkgTracerVerticalDONActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalIronActive", pkgTracerVerticalIronActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerZAerosolsActive", pkgTracerZAerosolsActive)
-!       call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)
+!       call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)      !echmod deprecate
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerEffectiveSnowDensityActive", pkgColumnTracerEffectiveSnowDensityActive)
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerSnowGrainRadiusActive", pkgColumnTracerSnowGrainRadiusActive)
 
@@ -14015,7 +14011,7 @@ contains
           call finalize_stand_in_tracer_array(block, "verticalAerosolsSnow")
           call finalize_stand_in_tracer_array(block, "verticalAerosolsIce")
        endif
-!       if (.not. pkgTracerZSalinityActive) then
+!       if (.not. pkgTracerZSalinityActive) then                            !echmod deprecate
 !          call finalize_stand_in_tracer_array(block, "verticalSalinity")
 !       endif
 
@@ -14962,7 +14958,7 @@ contains
     use ice_colpkg, only: &
          colpkg_init_bgc, &
          colpkg_init_hbrine!, &
-!         colpkg_init_zsalinity
+!         colpkg_init_zsalinity        !echmod deprecate
 
     type(domain_type), intent(inout) :: domain
 
@@ -14980,10 +14976,10 @@ contains
 
     logical, pointer :: &
          config_use_brine, &
-!         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &      !echmod deprecate
          config_use_vertical_tracers, &
          config_use_skeletal_biochemistry, &
-!         config_do_restart_zsalinity, &
+!         config_do_restart_zsalinity, &        !echmod deprecate
          config_do_restart_bgc, &
          config_do_restart_hbrine, &
          config_use_macromolecules
@@ -15062,10 +15058,10 @@ contains
          abortMessage
 
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-!    call MPAS_pool_get_config(domain % configs, "config_do_restart_zsalinity", config_do_restart_zsalinity)
+!    call MPAS_pool_get_config(domain % configs, "config_do_restart_zsalinity", config_do_restart_zsalinity)  !echmod deprecate
     call MPAS_pool_get_config(domain % configs, "config_do_restart_bgc", config_do_restart_bgc)
     call MPAS_pool_get_config(domain % configs, "config_do_restart_hbrine", config_do_restart_hbrine)
-!    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity) !echmod deprecate
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
@@ -15160,7 +15156,7 @@ contains
           call set_cice_tracer_array_category(block, tracerObject, &
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-!          if (config_use_vertical_zsalinity) then
+!          if (config_use_vertical_zsalinity) then        !echmod deprecate
 !             call colpkg_init_zsalinity(&
 !                  nBioLayers, &
 !                  tracerObject % nTracersNotBio, &
@@ -15708,8 +15704,8 @@ contains
          primaryProduction, &
          netSpecificAlgalGrowthRate, &
          netBrineHeight, &
-!         zSalinityFlux, &
-!         zSalinityGDFlux, &
+!         zSalinityFlux, &        !echmod deprecate
+!         zSalinityGDFlux, &      !echmod deprecate
          totalChlorophyll, &
          totalCarbonContentCell
 
@@ -15731,7 +15727,7 @@ contains
          config_use_column_shortwave, &
          config_use_column_package, &
          config_use_vertical_biochemistry!, &
-!         config_use_vertical_zsalinity
+!         config_use_vertical_zsalinity         !echmod deprecate
 
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
 
@@ -15743,7 +15739,7 @@ contains
           ! biogeochemistry
           call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
           call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-!          call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!          call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)    !echmod deprecate
 
           if (config_use_column_biogeochemistry) then
 
@@ -15767,7 +15763,7 @@ contains
 
              end if
 
-!             if (config_use_vertical_zsalinity) then
+!             if (config_use_vertical_zsalinity) then          !echmod deprecate
 !                call MPAS_pool_get_array(biogeochemistryPool, "zSalinityFlux", zSalinityFlux)
 !                call MPAS_pool_get_array(biogeochemistryPool, "zSalinityGDFlux", zSalinityGDFlux)
 

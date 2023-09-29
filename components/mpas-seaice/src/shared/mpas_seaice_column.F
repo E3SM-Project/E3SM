@@ -10027,7 +10027,9 @@ contains
 
     ! check config_thermodynamics_type value
     if (trim(config_thermodynamics_type) == "zero layer") then
-       call config_error("config_thermodynamics_type", config_thermodynamics_type, "'zero-layer' is being deprecated")
+       call mpas_log_write(&
+            "check_column_package_configs: config_thermodynamics_type) = zero layer but 0-layer thermo is being deprecated", &
+            messageType=MPAS_LOG_WARN)
     endif
 
     if (.not. (trim(config_thermodynamics_type) == "BL99" .or. &
