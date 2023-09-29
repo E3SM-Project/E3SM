@@ -11,11 +11,11 @@ time_stepping:
 atmosphere_processes:
   schedule_type: Sequential
   atm_procs_list: [shoc,p3]
-    shoc:
-      lambda_low: 0.001
-      lambda_high: 0.04
-      lambda_slope: 2.65
-      lambda_thresh: 0.02
+  shoc:
+    lambda_low: 0.001
+    lambda_high: 0.04
+    lambda_slope: 2.65
+    lambda_thresh: 0.02
 
 grids_manager:
   Type: Mesh Free
