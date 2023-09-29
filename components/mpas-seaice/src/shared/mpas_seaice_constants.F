@@ -60,7 +60,7 @@ module seaice_constants
 #else
       real (kind=RKIND), parameter, public :: &
   ! fundamental constants
-       pi                              = 3.14159265358979323846_RKIND
+       pi                              = 3.14159265358979323846_RKIND, &
        seaiceSecondsPerDay             = 24.0_RKIND * 3600.0_RKIND
  
       real (kind=RKIND), public :: &
