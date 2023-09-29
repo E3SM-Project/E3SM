@@ -23,6 +23,8 @@ else()
   set(PIOLIBS "${PIO_LIBDIR}/libpio.a")
 endif()
 
+find_package(NETCDF REQUIRED)
+
 # Create the interface library, and set target properties
 add_library(spio INTERFACE)
-target_link_libraries(spio INTERFACE ${PIOLIBS})
+target_link_libraries(spio INTERFACE ${PIOLIBS};netcdf)
