@@ -86,8 +86,9 @@ module seaice_constants
        seaiceSeaWaterSpecificHeat      = 4218._RKIND   ,&! specific heat of ocn    (J/kg/K)
                                                          ! freshwater value needed for enthalpy
        seaiceLatentHeatVaporization    = 2.501e6_RKIND ,&! latent heat, vaporization freshwater (J/kg)
-       seaiceLatentHeatMelting         = seaiceLatentHeatSublimation & ! latent heat of melting of fresh ice (J/kg)
-                                       - seaiceLatentHeatVaporization, &
+!       seaiceLatentHeatMelting         = seaiceLatentHeatSublimation & ! latent heat of melting of fresh ice (J/kg)
+!                                       - seaiceLatentHeatVaporization, &
+       seaiceLatentHeatMelting         = 3.34e5_RKIND  ,&! latent heat of melting of fresh ice (J/kg)
        seaiceReferenceSalinity         = 4._RKIND      ,&! ice reference salinity (ppt)
        seaiceSnowPatchiness            = 0.02_RKIND      ! parameter for fractional snow area (m)
 
