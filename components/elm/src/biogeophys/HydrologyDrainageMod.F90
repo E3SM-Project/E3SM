@@ -24,6 +24,7 @@ module HydrologyDrainageMod
   use WaterFluxType , only : waterflux_vars
 
   use timeinfoMod
+  use elm_instMod , only : ep_betr 
   !
   ! !PUBLIC TYPES:
   implicit none

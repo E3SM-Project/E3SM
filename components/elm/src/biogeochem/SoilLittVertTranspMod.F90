@@ -51,9 +51,6 @@ module SoilLittVertTranspMod
   real(r8) :: som_diffus                   ! [m^2/sec] = 1 cm^2 / yr
   real(r8) :: cryoturb_diffusion_k         ! [m^2/sec] = 5 cm^2 / yr = 1m^2 / 200 yr
   real(r8) :: max_altdepth_cryoturbation   ! (m) maximum active layer thickness for cryoturbation to occur
-  !$acc declare create(som_diffus                )
-  !$acc declare create(cryoturb_diffusion_k      )
-  !$acc declare create(max_altdepth_cryoturbation)
   !-----------------------------------------------------------------------
 
 contains
@@ -209,7 +206,8 @@ contains
     real(r8) :: c_tri(num_soilc,0:nlevdecomp+1,ndecomp_pools)      ! "c" vector for tridiagonal matrix
     real(r8) :: r_tri(num_soilc,0:nlevdecomp+1,ndecomp_pools)      ! "r" vector for tridiagonal solution
     real(r8) :: conc_trcr(num_soilc,0:nlevdecomp+1,ndecomp_pools)                  !
-    real(r8) :: bet, gam(0:nlevdecomp+1)
+    real(r8) :: bet
+    real(r8) :: gam(0:nlevdecomp+1)
     real :: startt, stopt
     !-----------------------------------------------------------------------
 
@@ -223,14 +221,19 @@ contains
          altmax_lastyear  => canopystate_vars%altmax_lastyear_col , & ! Input:  [real(r8) (:)   ]  prior year maximum annual depth of thaw
 
          som_adv_coef     => cnstate_vars%som_adv_coef_col       , & ! Output: [real(r8) (:,:) ]  SOM advective flux (m/s)
-         som_diffus_coef  => cnstate_vars%som_diffus_coef_col      & ! Output: [real(r8) (:,:) ]  SOM diffusivity due to bio/cryo-turbation (m2/s)
+         som_diffus_coef  => cnstate_vars%som_diffus_coef_col    ,  & ! Output: [real(r8) (:,:) ]  SOM diffusivity due to bio/cryo-turbation (m2/s)
          ! !Set parameters of vertical mixing of SOM
-         ! som_diffus                 => SoilLittVertTranspParamsInst%som_diffus   , &
-         ! cryoturb_diffusion_k       => SoilLittVertTranspParamsInst%cryoturb_diffusion_k  , &
-         ! max_altdepth_cryoturbation => SoilLittVertTranspParamsInst%max_altdepth_cryoturbation &
+          som_diffus                 => SoilLittVertTranspParamsInst%som_diffus   , &
+          cryoturb_diffusion_k       => SoilLittVertTranspParamsInst%cryoturb_diffusion_k  , &
+          max_altdepth_cryoturbation => SoilLittVertTranspParamsInst%max_altdepth_cryoturbation &
          )
-
-
+      
+      call cpu_time(startt)
+      !$acc enter data create(a_tri(:,:,:),b_tri(:,:,:),&
+      !$acc     c_tri(:,:,:),r_tri(:,:,:), &
+      !$acc     conc_trcr(:,:,:), gam(:) )
+      call cpu_time(stopt) 
+      write(iulog,*) "TIMING SoilLittVertTransp::data",(stopt-startt)*1.E+3,"ms" 
       ntype = 3
       if ( use_c13 ) then
          ntype = ntype+1
@@ -238,8 +241,10 @@ contains
       if ( use_c14 ) then
          ntype = ntype+1
       endif
-
+   
+      !$acc enter data create(spinup_term, i_type) 
       spinup_term = 1._r8
+      !$acc update device(spinup_term)
 
       if (use_vertsoilc) then
          !------ first get diffusivity / advection terms -------!
@@ -273,14 +278,11 @@ contains
             end do
          end do
       endif
-
+   
       !------ loop over litter/som types
-      !$acc enter data create(a_tri(1:num_soilc,0:nlevdecomp+1,1:ndecomp_pools),b_tri(1:num_soilc,0:nlevdecomp+1,1:ndecomp_pools),&
-      !$acc                   c_tri(1:num_soilc,0:nlevdecomp+1,1:ndecomp_pools),r_tri(1:num_soilc,0:nlevdecomp+1,1:ndecomp_pools), &
-      !$acc                   gam(0:nlevdecomp+1), conc_trcr(1:num_soilc,0:nlevdecomp+1,1:ndecomp_pools))
       do i_type = 1, ntype
 
-         !$acc enter data copyin(i_type)
+         !$acc update device(i_type)
 
          if (use_vertsoilc) then
             ! Set Pe (Peclet #) and D/dz throughout column
@@ -308,23 +310,19 @@ contains
                end if
             end do
 
-            !$acc parallel loop independent gang collapse(2) default(present) private(spinup_term)
+            !$acc parallel loop independent gang worker vector collapse(3) default(present) 
             do s = 1, ndecomp_pools
                do j = 1,nlevdecomp
-                  if(.not. is_cwd(s)) then
+                  do fc = 1, num_soilc
+                     c = filter_soilc (fc)
+                     if(.not. is_cwd(s)) then
 
-                     if ( spinup_state .eq. 1 ) then
-                        ! increase transport (both advection and diffusion) by the same factor as accelerated decomposition for a given pool
-                        spinup_term = spinup_factor(s)
-                     else
-                        spinup_term = 1.
-                     endif
-                     !$acc loop worker vector &
-                     !$acc           private(c,adv_flux_j, diffus_j, adv_flux_jp1, diffus_jp1, dz_nodep1, w_p1, d_p1,&
-                     !$acc            d_p1_zp1, pe_m1, pe_p1, a_p_0, adv_flux_jm1, diffus_jm1, w_m1, d_m1 ,d_m1_zm1)
-                     do fc = 1, num_soilc
-                        c = filter_soilc (fc)
-
+                        if ( spinup_state .eq. 1 ) then
+                           ! increase transport (both advection and diffusion) by the same factor as accelerated decomposition for a given pool
+                           spinup_term = spinup_factor(s)
+                        else
+                           spinup_term = 1.
+                        endif
                         conc_trcr(fc,j,s) = transport_ptr_list(i_type)%conc_ptr(c,j,s)
                         ! dz_tracer below is the difference between gridcell edges  (dzsoi_decomp)
                         ! dz_node_tracer is difference between cell centers
@@ -388,28 +386,27 @@ contains
                            b_tri(fc,j,s) = -a_tri(fc,j,s) - c_tri(fc,j,s) + a_p_0
                            r_tri(fc,j,s) = transport_ptr_list(i_type)%src_ptr(c,j,s) * dzsoi_decomp(j) /dtime_mod + a_p_0 * conc_trcr(fc,j,s)
                         end if
-                     enddo ! fc
-                  end if
+                     end if
+                  enddo ! fc
                enddo ! j; nlevdecomp
             end do ! s: ndecomp_pools
 
             ! subtract initial concentration and source terms for tendency calculation
-            !$acc parallel loop independent collapse(2) gang default(present)
+            !$acc parallel loop independent collapse(3) gang vector default(present)
             do s = 1, ndecomp_pools
                do j = 1, nlevdecomp
-                  if(.not. is_cwd(s)) then
-                     !$acc loop vector independent private(c)
-                     do fc = 1, num_soilc
-                        c = filter_soilc (fc)
-                        transport_ptr_list(i_type)%trcr_tend_ptr(c,j,s) = 0.-(conc_trcr(fc,j,s) + transport_ptr_list(i_type)%src_ptr(c,j,s))
-                     end do
-                  end if
+                  do fc = 1, num_soilc
+                     c = filter_soilc (fc)
+                     if(.not. is_cwd(s)) then
+                        transport_ptr_list(i_type)%trcr_tend_ptr(c,j,s) = 0._r8 - (conc_trcr(fc,j,s) + transport_ptr_list(i_type)%src_ptr(c,j,s))
+                     end if
+                  end do
                end do
             end do
 
             ! Solve for the concentration profile for this time step
 
-            !$acc parallel loop independent gang worker vector collapse(2) default(present) private(bet,gam)
+            !$acc parallel loop independent gang worker vector collapse(2) default(present) private(bet, gam(0:nlevdecomp+1))
             do s = 1, ndecomp_pools
                do fc = 1,num_soilc
                   if(.not. is_cwd(s)) then
@@ -498,9 +495,10 @@ contains
          endif
 
       end do  ! i_type
-      !$acc exit data delete(a_tri(1:num_soilc,0:nlevdecomp+1,1:ndecomp_pools),b_tri(1:num_soilc,0:nlevdecomp+1,1:ndecomp_pools),&
-      !$acc                   c_tri(1:num_soilc,0:nlevdecomp+1,1:ndecomp_pools),r_tri(1:num_soilc,0:nlevdecomp+1,1:ndecomp_pools), &
-      !$acc                   gam(0:nlevdecomp+1), conc_trcr(1:num_soilc,0:nlevdecomp+1,1:ndecomp_pools))
+   
+      !$acc exit data delete(a_tri(:,:,:),b_tri(:,:,:),&
+      !$acc     c_tri(:,:,:),r_tri(:,:,:), gam(:), &
+      !$acc     conc_trcr(:,:,:), spinup_term, i_type)
     end associate
 
   end subroutine SoilLittVertTransp

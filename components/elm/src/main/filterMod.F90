@@ -720,23 +720,28 @@ contains
     ! LOCAL VARAIBLES:
     integer :: nc        ! clump index
     integer :: c,l,p, t  ! column, landunit, pft indices
-    integer :: fl        ! lake filter index
-    integer :: fnl, fnlu,flp,fnlp ! non-lake filter index
-    integer :: fs,fsp,fpc    ! soil filter index
-    integer :: fu, fnu,fuc,fnup   ! urban indices
     integer :: g         ! gridcell index
+    integer :: flc        ! lake filter index
+    integer :: fnlc, fnlu,flp,fnlp ! non-lake filter index
+    integer :: fsc,fsp,fpc    ! soil filter index
+    integer :: ful, fnul,fuc,fup,fnup  ! urban indices
     integer :: fsmb 
+    integer :: fhydroc, fhydronosoic
+    integer :: fcropp 
     integer :: fidx1, fidx2, fidx3, fidx4, fidx5, fidx6 
+    integer :: begc,endc,begp,endp,begl,endl
+
     !------------------------------------------------------------------------
     fidx1 = 0; fidx2 = 0; fidx3 = 0; fidx4 = 0; fidx5 = 0; fidx6 =0;
     this_filter%num_soilc  = 0   
     this_filter%num_soilp  = 0   
-    this_filter%num_pcropp = 0  
+    this_filter%num_pcropp = 0 
+
     this_filter%num_urbanp = 0
     this_filter%num_nourbanp = 0
     this_filter%num_urbanc = 0
     this_filter%num_urbanl = 0 
-    this_filter%nourbanl   = 0
+    this_filter%num_nourbanl = 0
     this_filter%num_lakep  = 0
     this_filter%num_nolakep  = 0
 
@@ -744,75 +749,82 @@ contains
     this_filter%num_nolakec= 0
     
     this_filter%num_do_smb_c = 0 
+    begl = bounds%begl; endl = bounds%endl 
+    begc = bounds%begc; endc = bounds%endc 
+    begp = bounds%begp; endp = bounds%endp
 
     !$acc enter data copyin(include_inactive) 
-   fl  = 0
-   fnl = 0
+   
+   flc = 0
+   fnlc = 0 
    !$acc parallel loop independent gang vector default(present) &
-   !$acc      private(fidx1,fidx2,l) copy(fl,fnl) present(this_filter%lakec(:),this_filter%nolakec(:))
-    do c = bounds%begc,bounds%endc
+   !$acc      private(fidx1,fidx2,l) copy(flc,fnlc) present(this_filter%lakec(:),this_filter%nolakec(:))
+    do c = begc, endc
        if( col_pp%active(c) .or. include_inactive ) then
           l = col_pp%landunit(c)
           if (lun_pp%lakpoi(l)) then
             !$acc atomic capture 
-            fl = fl + 1
-            fidx1 = fl 
+            flc = flc + 1
+            fidx1 = flc 
             !$acc end atomic 
             this_filter%lakec(fidx1) = c
           else
             !$acc atomic capture  
-            fnl = fnl + 1
-            fidx2 = fnl 
+            fnlc = fnlc + 1
+            fidx2 = fnlc 
             !$acc end atomic 
             this_filter%nolakec(fidx2) = c
           end if
        end if 
    end do 
-   this_filter%num_lakec = fl
-   this_filter%num_nolakec = fnl
+   this_filter%num_lakec = flc
+   this_filter%num_nolakec = fnlc
    
-   fs = 0
-   fuc = 0
-   !$acc parallel loop independent gang vector &
-   !$acc      private(fidx1,fidx2,fidx3,fidx4) copy(fs,fuc) &
-   !$acc   present(this_filter%lakec(:),this_filter%nolakec(:),this_filter%soilc(:),this_filter%urbanc(:)) default(present)
-    do c = bounds%begc,bounds%endc
+   fsc = 0; 
+   fuc = 0;  
+   !$acc parallel loop independent gang vector private(fidx1) copy(fsc) &
+   !$acc   present(this_filter%soilc(:)) default(present)
+    do c = begc, endc
        if (col_pp%active(c) .or. include_inactive) then
           l =col_pp%landunit(c)
          ! Create soil filter at column-level
           if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
             !$acc atomic capture  
-            fs = fs + 1
-            fidx3 = fs 
+            fsc = fsc + 1
+            fidx1 = fsc 
             !$acc end atomic 
-             this_filter%soilc(fidx3) = c
+            this_filter%soilc(fidx1) = c
           end if
-           ! Create column-level urban and non-urban filters
+       end if
+    end do
+    this_filter%num_soilc = fsc
+
+   !$acc parallel loop independent gang vector private(fidx2) copy(fuc) &
+   !$acc present(this_filter%urbanc(:),lun_pp%urbpoi(:),col_pp%landunit(:),col_pp%active(:) ) default(present)
+    do c = begc, endc
+       if (col_pp%active(c) .or. include_inactive) then
+          l =col_pp%landunit(c)
+          ! Create column-level urban and non-urban filters
           if (lun_pp%urbpoi(l)) then
-            !$acc atomic capture 
+             !$acc atomic capture 
             fuc = fuc + 1
-            fidx4 = fuc 
+            fidx2 = fuc 
             !$acc end atomic 
-            this_filter%urbanc(fidx4) = c
+            this_filter%urbanc(fidx2) = c
          end if
        end if
     end do
-    this_filter%num_soilc = fs
-    this_filter%num_urbanc = fuc
-    
-    ! Create soil filter at pft-level
 
-    fpc = 0;
-    fsp = 0; 
-    fu  = 0;
-    flp = 0;
-    fnlp = 0; 
-    fnup = 0;
+    this_filter%num_urbanc = fuc
+    ! Create soil filter at pft-level
+    fsp = 0 
+    fcropp = 0
+    fup = 0
+    fnup = 0
+   
     !$acc parallel loop independent gang vector default(present) &
-    !$acc   private(fidx1,fidx2,fidx3,fidx4,fidx5,fidx6) copy(fsp,fpc,fu,flp,fnlp,fnup) &
-    !$acc   present(this_filter%soilp(:),this_filter%pcropp(:),this_filter%urbanp(:),this_filter%lakep(:), &
-    !$acc            this_filter%nolakep(:), this_filter%nourbanp(:))
-    do p = bounds%begp,bounds%endp
+    !$acc   private(fidx1,fidx2) copy(fsp,fcropp) present(this_filter%soilp(:),this_filter%pcropp(:) )
+    do p = begp, endp
       if (veg_pp%active(p) .or. include_inactive) then
           l =veg_pp%landunit(p)
           if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
@@ -824,107 +836,121 @@ contains
           end if
           if (veg_pp%itype(p) >= npcropmin) then !skips 2 generic crop types
             !$acc atomic capture 
-            fpc   = fpc + 1
-            fidx2 = fpc 
+            fcropp   = fcropp + 1
+            fidx2 = fcropp 
             !$acc end atomic 
             this_filter%pcropp(fidx2) = p
-         end if
+         end if 
+      end if 
+    end do 
+    !$acc parallel loop independent gang vector default(present) &
+    !$acc   private(fidx1,fidx2 ) copy(fup,fnup) present(this_filter%urbanp(:), this_filter%nourbanp(:))
+    do p = begp, endp
+      if (veg_pp%active(p) .or. include_inactive) then
+          l =veg_pp%landunit(p)
          if (lun_pp%urbpoi(l)) then
             !$acc atomic capture 
-            fu = fu + 1
-            fidx3 = fu 
+            fup = fup + 1
+            fidx1 = fup 
             !$acc end atomic 
-            this_filter%urbanp(fidx3) = p
+            this_filter%urbanp(fidx1) = p
          else 
             !$acc atomic capture 
             fnup = fnup + 1
-            fidx6 = fnup 
+            fidx2 = fnup 
             !$acc end atomic 
-            this_filter%nourbanp(fidx6) = p
-         end if
-         if (lun_pp%lakpoi(l) ) then
-            !$acc atomic capture 
-            flp = flp + 1
-            fidx4 = flp 
-            !$acc end atomic 
-            this_filter%lakep(fidx4) = p
-         else 
-            !$acc atomic capture
-            fnlp = fnlp + 1 
-            fidx5 = fnlp 
-            !$acc end atomic 
-            this_filter%nolakep(fidx5) = p 
+            this_filter%nourbanp(fidx2) = p
          end if
       end if
     end do
    this_filter%num_soilp  = fsp
-   this_filter%num_pcropp = fpc
-   this_filter%num_urbanp = fu 
+   this_filter%num_pcropp = fcropp
+   this_filter%num_urbanp = fup
    this_filter%num_nourbanp = fnup 
+   
+   flp = 0 
+   fnlp = 0 
+   !$acc parallel loop independent gang vector default(present) &
+   !$acc   private(fidx1,fidx2) copy(flp,fnlp) present(this_filter%lakep(:), this_filter%nolakep(:))
+    do p = begp, endp
+      if (veg_pp%active(p) .or. include_inactive) then
+          l =veg_pp%landunit(p)
+         if (lun_pp%lakpoi(l) ) then
+            !$acc atomic capture 
+            flp = flp + 1
+            fidx1 = flp 
+            !$acc end atomic 
+            this_filter%lakep(fidx1) = p
+         else 
+           !$acc atomic capture
+            fnlp = fnlp + 1 
+            fidx2 = fnlp 
+            !$acc end atomic 
+            this_filter%nolakep(fidx2) = p 
+         end if
+      end if 
+   end do 
 
    this_filter%num_lakep = flp
    this_filter%num_nolakep = fnlp    
-
-    ! Create landunit-level urban and non-urban filters
-
-    fu = 0
-    fnu = 0
-    !$acc parallel loop independent gang vector default(present) &
-    !$acc   private(fidx1,fidx2) copy(fu,fnu) present(this_filter%urbanl(:),this_filter%nourbanl(:))
-    do l = bounds%begl,bounds%endl
+   ful = 0 
+   fnul = 0 
+   ! Create landunit-level urban and non-urban filters
+   !$acc parallel loop independent gang vector default(present) &
+   !$acc   private(fidx1,fidx2) copy(ful,fnul) present(this_filter%urbanl(:),this_filter%nourbanl(:))
+    do l = begl, endl
        if (lun_pp%active(l) .or. include_inactive) then
           if (lun_pp%urbpoi(l)) then
             !$acc atomic capture 
-             fu = fu + 1
-             fidx1 = fu 
+             ful = ful + 1
+             fidx1 = ful 
              !$acc end atomic 
              this_filter%urbanl(fidx1) = l
           else
-            !$acc atomic capture 
-             fnu = fnu + 1
-             fidx2 = fnu 
-            !$acc end atomic 
+             !$acc atomic capture 
+             fnul = fnul + 1
+             fidx2 = fnul 
+             !$acc end atomic 
              this_filter%nourbanl(fidx2) = l
           end if
        end if
     end do
-    this_filter%num_urbanl = fu
-    this_filter%num_nourbanl = fnu
+    this_filter%num_urbanl = ful
+    this_filter%num_nourbanl = fnul
 
     ! Create column-level hydrology filter (soil and Urban pervious road cols)
-
-    fu = 0
-    fnu = 0
-    !$acc parallel loop independent gang vector default(present) &
-    !$acc   private(fidx1,fidx2) copy(fu,fnu) present(this_filter%hydrologyc(:),this_filter%hydrononsoic(:))
-    do c = bounds%begc,bounds%endc
-          if (col_pp%active(c) .or. include_inactive) then
-             l =col_pp%landunit(c)
-             if (lun_pp%itype(l) == istsoil .or. col_pp%itype(c) == icol_road_perv .or. &
-                  lun_pp%itype(l) == istcrop) then
-                  !$acc atomic capture 
-                  fu = fu + 1
-                  fidx1 = fu 
-                  !$acc end atomic 
-                  this_filter%hydrologyc(fidx1) = c
-               if (col_pp%itype(c) == icol_road_perv) then
-                  !$acc atomic capture  
-                  fnu = fnu + 1
-                  fidx2 = fnu 
-                  !$acc end atomic 
-                   this_filter%hydrononsoic(fidx2) = c
-               end if
-
-             end if
-          end if
+    fhydroc = 0 
+    fhydronosoic = 0 
+   !$acc parallel loop independent gang vector default(present) &
+   !$acc   private(fidx1,fidx2) copy(fhydroc, fhydronosoic) present(this_filter%hydrologyc(:),this_filter%hydrononsoic(:))
+    do c = begc, endc
+      if (col_pp%active(c) .or. include_inactive) then
+         l =col_pp%landunit(c)
+         if (lun_pp%itype(l) == istsoil .or. col_pp%itype(c) == icol_road_perv .or. &
+              lun_pp%itype(l) == istcrop) then
+             !$acc atomic capture 
+              fhydroc = fhydroc + 1
+              fidx1 = fhydroc 
+             !$acc end atomic 
+              this_filter%hydrologyc(fidx1) = c
+           if (col_pp%itype(c) == icol_road_perv) then
+             !$acc atomic capture  
+              fhydronosoic = fhydronosoic + 1
+              fidx2 = fhydronosoic 
+             !$acc end atomic 
+               this_filter%hydrononsoic(fidx2) = c
+           end if
+         end if
+      end if
     end do
-    this_filter%num_hydrologyc = fu
-    this_filter%num_hydrononsoic = fnu
+    this_filter%num_hydrologyc = fhydroc
+    this_filter%num_hydrononsoic = fhydronosoic
     print *, "include inactive:", include_inactive
     print *, "icemask_grc:" 
-    !$acc parallel loop independent gang vector default(present) &
-    !$acc   private(fidx1) copy(fsmb) present(this_filter%do_smb_c(:))
-    do c = bounds%begc, bounds%endc
+    fsmb = 0 
+   !$acc parallel loop independent gang vector default(present) &
+   !$acc   private(fidx1) copy(fsmb) present(this_filter%do_smb_c(:))
+    do c = begc, endc
        t =col_pp%topounit(c)
        if (top_pp%active(t)) then
           if (col_pp%active(c) .or. include_inactive) then
@@ -932,7 +958,6 @@ contains
              g = col_pp%gridcell(c)
              if ( lun_pp%itype(l) == istice_mec .or. &
                 (lun_pp%itype(l) == istsoil .and. icemask_grc(g) > 0.)) then
-                print *, icemask_grc(g) 
                 !$acc atomic capture 
                 fsmb = fsmb + 1
                 fidx1 = fsmb
@@ -944,10 +969,19 @@ contains
     end do
     this_filter%num_do_smb_c = fsmb
       
+    print *, "setProcFilters:soilc", this_filter%num_soilc
+    print *, "setProcFilters:soilp", this_filter%num_soilp
+    print *, "setProcFilters:pcropp", this_filter%num_pcropp 
+    print *, "setProcFilters:urbanp", this_filter%num_urbanp
+    print *, "setProcFilters:nourbanp", this_filter%num_nourbanp
+    print *, "setProcFilters:urbanc", this_filter%num_urbanc
+    print *, "setProcFilters:urbanl", this_filter%num_urbanl
+    print *, "setProcFilters:nourbanl", this_filter%num_nourbanl
+
     print *, "setProcFilters:lakec", this_filter%num_lakec
     print *, "setProcFilters:nolakec", this_filter%num_nolakec
-    print *, "setProcFilters:soilc", this_filter%num_soilc
-    print *, "setProcFilters:urbanc", this_filter%num_urbanc
+    print *, "setProcFilters:num_lakep :",this_filter%num_lakep 
+    print *, "setProcFilters:nolakep", this_filter%num_nolakep
     print *,"num_do_smb_c : ", this_filter%num_do_smb_c 
 
    !$acc exit data delete(include_inactive) 

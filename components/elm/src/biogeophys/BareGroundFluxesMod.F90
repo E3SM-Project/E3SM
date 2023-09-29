@@ -178,7 +178,6 @@ contains
       ! Filter patches where frac_veg_nosno IS ZERO
       !---------------------------------------------------
 
-
       ! Compute sensible and latent fluxes and their derivatives with respect
       ! to ground temperature using ground temperatures from previous time step
       !$acc parallel loop independent gang vector default(present) 

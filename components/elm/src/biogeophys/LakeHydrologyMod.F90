@@ -821,9 +821,6 @@ contains
             qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp - &
                 (endwb(c)-begwb(c))/dtime_mod + qflx_floodg(g)
             
-            !qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp - &
-            !    (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
-         
             qflx_runoff(c) = qflx_drain(c) + qflx_qrgwl(c)
          enddo
 

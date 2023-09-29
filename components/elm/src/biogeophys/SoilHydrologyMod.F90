@@ -929,16 +929,15 @@ contains
      real(r8), intent(in)  :: dtime
      !
      ! !LOCAL VARIABLES:
-     !character(len=32) :: subname = 'Drainage'           ! subroutine name
-     integer  :: c,j,fc,i                                ! indices
-     integer  :: nlevbed                                 ! # layers to bedrock
-     real(r8) :: xs(1:num_hydrologyc)             ! water needed to bring soil moisture to watmin (mm)
+     character(len=32) :: subname = 'Drainage'     ! subroutine name
+     integer  :: c,j,fc,i                          ! indices
+     integer  :: nlevbed                           ! # layers to bedrock
+     real(r8) :: xs(1:num_hydrologyc)              ! water needed to bring soil moisture to watmin (mm)
      real(r8) :: dzmm(1:num_hydrologyc,1:nlevgrnd) ! layer thickness (mm)
      integer  :: jwt(1:num_hydrologyc)            ! index of the soil layer right above the water table (-)
      real(r8) :: rsub_top(1:num_hydrologyc)       ! subsurface runoff - topographic control (mm/s)
      real(r8) :: fff(1:num_hydrologyc)            ! decay factor (m-1)
      real(r8) :: xsi(1:num_hydrologyc)            ! excess soil water above saturation at layer i (mm)
-     real(r8) :: xsia(bounds%begc:bounds%endc)           ! available pore space at layer i (mm)
      real(r8) :: xs1(1:num_hydrologyc)            ! excess soil water above saturation at layer 1 (mm)
      real(r8) :: wtsub                                   ! summation of hk*dzmm for layers below water table (mm**2/s)
      real(r8) :: rous                                    ! aquifer yield (-)
@@ -1035,7 +1034,6 @@ contains
      !$acc rsub_top(:), &
      !$acc fff(:), &
      !$acc xsi(:), &
-     !$acc xsia(:), &
      !$acc xs1(:), &
      !$acc fracice_rsub(:), &
      !$acc dsmax_tmp(:))
@@ -1572,7 +1570,6 @@ contains
      !$acc rsub_top(:), &
      !$acc fff(:), &
      !$acc xsi(:), &
-     !$acc xsia(:), &
      !$acc xs1(:), &
      !$acc fracice_rsub(:), &
      !$acc dsmax_tmp(:))

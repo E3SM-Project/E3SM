@@ -284,8 +284,8 @@ contains
                  +frac_h2osfc(c)*t_h2osfc_bef(c)**4)
 
             eflx_soil_grnd(p) = ((1._r8- frac_sno_eff(c))*sabg_soil(p) + frac_sno_eff(c)*sabg_snow(p)) + dlrad(p) &
-                 + (1-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
-                 - emg(c)*sb*lw_grnd - emg(c)*sb*t_grnd0(c)**3*(4._r8*tinc(c)) &
+                 + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
+                 - emg(c)*sb*lw_grnd - emg(c)*sb*t_grnd0(c)**3._r8*(4._r8*tinc(c)) &
                  - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
 
             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
@@ -422,14 +422,14 @@ contains
          j = col_pp%snl(c)+1
 
          if (.not. lun_pp%urbpoi(l)) then
-            lw_grnd=(frac_sno_eff(c)*tssbef(c,col_pp%snl(c)+1)**4 &
-                 +(1._r8-frac_sno_eff(c)-frac_h2osfc(c))*tssbef(c,1)**4 &
-                 +frac_h2osfc(c)*t_h2osfc_bef(c)**4)
+            lw_grnd=(frac_sno_eff(c)*tssbef(c,col_pp%snl(c)+1)**4._r8 &
+                 +(1._r8-frac_sno_eff(c)-frac_h2osfc(c))*tssbef(c,1)**4._r8 &
+                 +frac_h2osfc(c)*t_h2osfc_bef(c)**4._r8)
 
             eflx_lwrad_out(p) = ulrad(p) &
-                 + (1-frac_veg_nosno(p))*(1.-emg(c))*forc_lwrad(t) &
-                 + (1-frac_veg_nosno(p))*emg(c)*sb*lw_grnd &
-                 + 4._r8*emg(c)*sb*t_grnd0(c)**3*tinc(c)
+                 + (1._r8-frac_veg_nosno(p))*(1._r8-emg(c))*forc_lwrad(t) &
+                 + (1._r8-frac_veg_nosno(p))*emg(c)*sb*lw_grnd &
+                 + 4._r8*emg(c)*sb*t_grnd0(c)**3._r8*tinc(c)
 
             eflx_lwrad_net(p) = eflx_lwrad_out(p) - forc_lwrad(t)
             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then

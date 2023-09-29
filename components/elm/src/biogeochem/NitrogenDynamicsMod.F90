@@ -110,8 +110,7 @@ contains
   end subroutine readNitrogenDynamicsParams
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenDeposition( num_soilc, filter_soilc, &
-       atm2lnd_vars, dt )
+  subroutine NitrogenDeposition( bounds, atm2lnd_vars )
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update the nitrogen deposition rate
@@ -121,24 +120,26 @@ contains
     ! directly into the canopy and mineral N entering the soil pool.
     !
     ! !ARGUMENTS:
-    integer , intent(in) :: num_soilc
-    integer , intent(in) :: filter_soilc(:)
-    type(atm2lnd_type) , intent(in)    :: atm2lnd_vars
-    real(r8),   intent(in) :: dt
+    type(bounds_type)  , intent(in)  :: bounds 
+    type(atm2lnd_type) , intent(in)  :: atm2lnd_vars
     !
     ! !LOCAL VARIABLES:
     integer :: g,c,fc                  ! indices
+    integer :: begc, endc 
     !-----------------------------------------------------------------------
 
     associate(&
          forc_ndep     =>  atm2lnd_vars%forc_ndep_grc           , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)
          ndep_to_sminn =>  col_nf%ndep_to_sminn   & ! Output: [real(r8) (:)]
          )
+      
+      begc = bounds%begc 
+      endc = bounds%endc
 
       ! Loop through columns
-      !$acc parallel loop independent gang worker vector private(g,c) default(present)
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
+      ! Note: why loop through all columns? adjusting to filter is nonBFB due to averaging.
+      !$acc parallel loop independent gang vector default(present)
+      do c = begc, endc 
          g = col_pp%gridcell(c)
          ndep_to_sminn(c) = forc_ndep(g)
       end do

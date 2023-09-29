@@ -198,13 +198,15 @@ contains
 
       ! column loop to calculate potential decomp rates and total immobilization
       ! demand.
-      !$acc enter data create(cn_decomp_pools(num_soilc,1:nlevdecomp,1:ndecomp_pools), &
-      !$acc                                     p_decomp_cpool_loss(num_soilc,1:nlevdecomp,1:ndecomp_cascade_transitions))
-      !$acc enter data create(cp_decomp_pools(num_soilc,1:nlevdecomp,1:ndecomp_pools),&
-      !$acc                   immob(num_soilc,1:nlevdecomp) ,immob_p(num_soilc,1:nlevdecomp)  ) 
-      !$acc enter data create(cp_decomp_pools_new(num_soilc,1:nlevdecomp,1:ndecomp_pools)) 
+      call cpu_time(startt) 
+      !$acc enter data create(cn_decomp_pools(:num_soilc,1:nlevdecomp,1:ndecomp_pools), &
+      !$acc                                     p_decomp_cpool_loss(:num_soilc,1:nlevdecomp,1:ndecomp_cascade_transitions))
+      !$acc enter data create(cp_decomp_pools(:num_soilc,1:nlevdecomp,1:ndecomp_pools),&
+      !$acc                   immob(:num_soilc,1:nlevdecomp) ,immob_p(:num_soilc,1:nlevdecomp)  ) 
+      !$acc enter data create(cp_decomp_pools_new(:num_soilc,1:nlevdecomp,1:ndecomp_pools)) 
+      call cpu_time(stopt) 
+      write(iulog,*) "SoilLittDecompAlloc1 :: create",(stopt-startt)*1.E+3,"ms" 
       !! calculate c:n ratios of applicable pools
-      print *, "Launching loop:", ndecomp_pools, nlevdecomp, num_soilc
 
       !$acc parallel loop gang independent collapse(2) default(present)
       do l = 1, ndecomp_pools
@@ -251,8 +253,8 @@ contains
                 if (decomp_cpools_vr(c,j,k_donor_pool) > 0._r8 .and. &
                      decomp_k(c,j,k_donor_pool) > 0._r8 ) then
 
-                  p_decomp_cpool_loss(fc,j,k) = decomp_cpools_vr(c,j,k_donor_pool) &
-                        * decomp_k(c,j,k_donor_pool)  * pathfrac_decomp_cascade(c,j,k)
+                   p_decomp_cpool_loss(fc,j,k) = decomp_cpools_vr(c,j,k_donor_pool) &
+                            * decomp_k(c,j,k_donor_pool)  * pathfrac_decomp_cascade(c,j,k)
                    if ( .not. floating_cn_ratio_decomp_pools(cascade_receiver_pool(k)) ) then  !! not transition of cwd to litter
 
                       if (cascade_receiver_pool(k) /= i_atm ) then  ! not 100% respiration
@@ -289,18 +291,18 @@ contains
              end do
           end do
        end do
-
+       
       !$acc enter data create(sum_1,sum_2,sum_3,sum_4)
-      !$acc  parallel loop independent gang worker collapse(2) default(present) private(c,sum_1,sum_2,sum_3,sum_4)
+      !$acc  parallel loop independent gang collapse(2) default(present) private(c,sum_1,sum_2,sum_3,sum_4)
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            !$acc loop vector  reduction(+:sum_1,sum_2,sum_3,sum_4)
+            sum_1 = 0._r8
+            sum_2 = 0._r8
+            sum_3 = 0._r8
+            sum_4 = 0._r8
+            !$acc loop vector reduction(+:sum_1,sum_2,sum_3,sum_4)
             do k = 1, ndecomp_cascade_transitions
-               sum_1 = 0._r8
-               sum_2 = 0._r8
-               sum_3= 0._r8
-               sum_4 = 0._r8
                if (pmnf_decomp_cascade(c,j,k) > 0._r8) then
                   sum_1 = sum_1 + pmnf_decomp_cascade(c,j,k)
                else
@@ -331,7 +333,7 @@ contains
             phr_vr(c,j) = sum_1
          end do
       end do
-
+      
       !$acc parallel loop independent gang  vector collapse(2) default(present) 
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
@@ -615,9 +617,7 @@ contains
       !------------------------------------------------------------------
 
       ! MUST have already updated needed bgc variables from PFLOTRAN by this point
-#ifndef OPENACC
       if(use_elm_interface.and.use_pflotran.and.pf_cmode) then
-
          smin_nh4_to_plant_vr_loc(1:num_soilc,:) = 0._r8
          smin_no3_to_plant_vr_loc(1:num_soilc,:) = 0._r8
 
@@ -715,7 +715,6 @@ contains
          end do
 
       end if !if(use_elm_interface.and.use_pflotran.and.pf_cmode)
-#endif
       !------------------------------------------------------------------
       ! phase-3 Allocation for plants
       if(.not.use_fates)then
@@ -728,7 +727,6 @@ contains
         !call t_stop_lnd(event)
       end if
       !------------------------------------------------------------------
-#ifndef OPENACC
     if(use_pflotran.and.pf_cmode) then
       ! in Allocation3_PlantCNPAlloc():
       ! smin_nh4_to_plant_vr(c,j), smin_no3_to_plant_vr(c,j), sminn_to_plant_vr(c,j) may be adjusted
@@ -743,7 +741,6 @@ contains
             end do
       end do
     end if !(use_pflotran.and.pf_cmode)
-#endif
     !------------------------------------------------------------------
       ! vertically integrate net and gross mineralization fluxes for diagnostic output
       !$acc enter data create(sum1,sum2,sum3,sum4)
@@ -766,6 +763,7 @@ contains
          net_pmin(c)   = sum3
          gross_pmin(c) = sum4
       end do
+      !$acc exit data delete(sum1,sum2,sum3,sum4) 
     end associate
 
   end subroutine SoilLittDecompAlloc2

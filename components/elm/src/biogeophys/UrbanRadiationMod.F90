@@ -446,13 +446,12 @@ contains
       if (abs(err) > 0.10_r8 ) then
 #ifndef _OPENACC
          write(iulog,*) 'urban incident atmospheric longwave radiation balance error',err
-         write(iulog,*) 'l          = ',l
          write(iulog,*) 'lwdown     = ',lwdown
-         write(iulog,*) 'vf_sr      = ',vf_sr(l)
-         write(iulog,*) 'vf_sw      = ',vf_sw(l)
+         write(iulog,*) 'vf_sr      = ',vf_sr
+         write(iulog,*) 'vf_sw      = ',vf_sw
          write(iulog,*) 'canyon_hwr = ',canyon_hwr
          write(iulog,*) 'elm model is stopping'
-         call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+         call endrun()
 #endif
       endif
 
@@ -626,7 +625,7 @@ contains
 #ifndef _OPENACC
            write (iulog,*) 'urban net longwave radiation error: no convergence'
            write (iulog,*) 'elm model is stopping'
-           call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+           call endrun()
 #endif
         endif
 
@@ -653,7 +652,7 @@ contains
 #ifndef _OPENACC
             write (iulog,*) 'urban net longwave radiation balance error',err
             write (iulog,*) 'elm model is stopping'
-            call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            call endrun()
 #endif
          end if
 

@@ -237,15 +237,7 @@ contains
     ! Allocate scratch space for ECA and FATES/ECA
 
     if (nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') then
-       !!allocate(decompmicc(1:nlevdecomp)); decompmicc(1:nlevdecomp) = nan
        if (use_fates) then
-          !allocate(filter_pcomp(max_comps))
-          !do f = 1,max_comps
-          !   filter_pcomp(f) = f
-          !end do
-         ! allocate(plant_nh4demand_vr_fates(max_comps,nlevdecomp)); plant_nh4demand_vr_fates(:,:) = nan
-         ! allocate(plant_no3demand_vr_fates(max_comps,nlevdecomp)); plant_no3demand_vr_fates(:,:) = nan
-         ! allocate(plant_pdemand_vr_fates(max_comps,nlevdecomp));   plant_pdemand_vr_fates(:,:) = nan
        else
           max_comps = bounds%endp-bounds%begp+1
           !allocate(filter_pcomp(max_comps)); filter_pcomp(:) = -1
@@ -338,6 +330,10 @@ contains
     if (spinup_state == 1 .and. yr .le. nyears_ad_carbon_only) then
       Carbon_only = .true.
      end if
+     write(iulog,*) "CNP variables: "
+     write(iulog,*) "carbon only:",carbon_only 
+     write(iulog,*) "CP only: ", carbonphosphorus_only
+     write(iulog,*) "CN only :", carbonnitrogen_only 
      !$acc update device(carbon_only, carbonnitrogen_only,&
      !$acc carbonphosphorus_only)
 
@@ -920,8 +916,8 @@ contains
    real(r8)  ,  intent(in)  :: dt
    !
    ! !LOCAL VARIABLES:
-   real(r8) :: fpi_no3_vr(1:nlevdecomp) ! fraction of potential immobilization supplied by no3(no units)
-   real(r8) :: fpi_nh4_vr(1:nlevdecomp) ! fraction of potential immobilization supplied by nh4 (no units)
+   real(r8) :: fpi_no3_vr(num_soilc,1:nlevdecomp) ! fraction of potential immobilization supplied by no3(no units)
+   real(r8) :: fpi_nh4_vr(num_soilc,1:nlevdecomp) ! fraction of potential immobilization supplied by nh4 (no units)
 
    integer :: c,p,l,j,k ! indices
    integer :: fp        ! lake filter pft index
@@ -931,7 +927,7 @@ contains
    real(r8):: nuptake_prof(num_soilc,1:nlevdecomp)
    real(r8):: puptake_prof(num_soilc,1:nlevdecomp)
 
-   real(r8) :: sum,sum2,sum3,sum4,sum5,sum6
+   real(r8) :: sum1,sum2,sum3,sum4,sum5,sum6
    real  :: startt, stopt
    integer :: begc, endc 
    !-----------------------------------------------------------------------
@@ -1048,7 +1044,7 @@ contains
       begc = bounds%begc 
       endc = bounds%endc 
       !$acc enter data create(nuptake_prof(1:num_soilc,1:nlevdecomp),puptake_prof(1:num_soilc,1:nlevdecomp),&
-      !$acc fpi_no3_vr(1:nlevdecomp),fpi_nh4_vr(1:nlevdecomp))
+      !$acc fpi_no3_vr(:,1:nlevdecomp),fpi_nh4_vr(:,1:nlevdecomp))
 
       call calc_nuptake_prof(num_soilc, filter_soilc, cnstate_vars, nuptake_prof)
       call calc_puptake_prof(num_soilc, filter_soilc, cnstate_vars, puptake_prof)
@@ -1069,46 +1065,40 @@ contains
            col_plant_pdemand_vr(c,j) = plant_pdemand_col(c) * puptake_prof(fc,j)
         end do
       end do
-      
+   
    if (nu_com .eq. 'RD') then
    ! Estimate actual allocation rates via Relative Demand
    ! approach (RD)
-     !$acc parallel loop independent gang vector default(present)
-     do j = 1, nlevdecomp
-        do fc=1,num_soilc !col_loop
-           c = filter_soilc(fc)
-           ! Starting resolving N limitation !!!
-           ! =============================================================
-           ! This section is modified, Aug 2015 by Q. Zhu
-           ! (1) add nitrogen and phosphorus competition
-           ! (2) nitrogen and phosphorus uptake is based on root kinetics
-           ! (3) no second pass nutrient uptake for plants
-           ! =============================================================
-            call NAllocationRD(col_plant_ndemand_vr(c,j), & ! IN
-                potential_immob_vr(c,j),                 & ! IN
-                AllocParamsInst%compet_plant_nh4,        & ! IN
-                AllocParamsInst%compet_decomp_nh4,       & ! IN
-                dt,                                      & ! IN
-                smin_nh4_vr(c,j),                        & ! IN
-                fpi_nh4_vr(j),                           & ! OUT
-                actual_immob_nh4_vr(c,j),                & ! OUT
-                smin_nh4_to_plant_vr(c,j),               & ! OUT
-                smin_no3_vr(c,j),                        & ! IN
-                AllocParamsInst%compet_plant_no3,        & ! IN
-                AllocParamsInst%compet_decomp_no3,       & ! IN
-                AllocParamsInst%compet_nit,              & ! IN
-                AllocParamsInst%compet_denit,            & ! IN
-                pot_f_nit_vr(c,j),                       & ! IN
-                pot_f_denit_vr(c,j),                     & ! IN
-                fpi_no3_vr(j),                           & ! OUT
-                actual_immob_no3_vr(c,j),                & ! OUT
-                smin_no3_to_plant_vr(c,j),               & ! OUT
-                f_nit_vr(c,j),                           & ! OUT
-                f_denit_vr(c,j))                           ! OUT
-               end do
-            end do
-      end if
-
+      ! Starting resolving N limitation !!!
+      ! =============================================================
+      ! This section is modified, Aug 2015 by Q. Zhu
+      ! (1) add nitrogen and phosphorus competition
+      ! (2) nitrogen and phosphorus uptake is based on root kinetics
+      ! (3) no second pass nutrient uptake for plants
+      ! =============================================================
+       call NAllocationRD(num_soilc, filter_soilc, &
+           col_plant_ndemand_vr(begc:endc,1:nlevdecomp), & ! IN
+           potential_immob_vr(begc:endc,1:nlevdecomp),   & ! IN
+           AllocParamsInst%compet_plant_nh4,        & ! IN
+           AllocParamsInst%compet_decomp_nh4,       & ! IN
+           dt,                               & ! IN
+           smin_nh4_vr(begc:endc,1:nlevdecomp),     & ! IN
+           fpi_nh4_vr(1:num_soilc,1:nlevdecomp),    & ! OUT
+           actual_immob_nh4_vr(begc:endc,1:nlevdecomp), & ! OUT
+           smin_nh4_to_plant_vr(begc:endc,1:nlevdecomp),& ! OUT
+           smin_no3_vr(begc:endc,1:nlevdecomp),     & ! IN
+           AllocParamsInst%compet_plant_no3,        & ! IN
+           AllocParamsInst%compet_decomp_no3,       & ! IN
+           AllocParamsInst%compet_nit,              & ! IN
+           AllocParamsInst%compet_denit,            & ! IN
+           pot_f_nit_vr(begc:endc,1:nlevdecomp),    & ! IN
+           pot_f_denit_vr(begc:endc,1:nlevdecomp),  & ! IN
+           fpi_no3_vr(1:num_soilc,1:nlevdecomp),    & ! OUT
+           actual_immob_no3_vr(begc:endc,1:nlevdecomp),& ! OUT
+           smin_no3_to_plant_vr(begc:endc,1:nlevdecomp),&! OUT
+           f_nit_vr(begc:endc,1:nlevdecomp),           & ! OUT
+           f_denit_vr(begc:endc,1:nlevdecomp))           ! OUT
+   end if
      !$acc parallel loop independent collapse(2) gang vector default(present)
       do j = 1, nlevdecomp
          do fc=1,num_soilc !col_loop
@@ -1127,9 +1117,9 @@ contains
 
            if (carbon_only .or. carbonphosphorus_only) then
 
-              if ( fpi_no3_vr(j) + fpi_nh4_vr(j) < 1._r8 ) then
+              if ( fpi_no3_vr(fc,j) + fpi_nh4_vr(fc,j) < 1._r8 ) then
                  fpi_vr(c,j) = 1._r8
-                 fpi_nh4_vr(j) = 1.0_r8 - fpi_no3_vr(j)
+                 fpi_nh4_vr(fc,j) = 1.0_r8 - fpi_no3_vr(fc,j)
                  supplement_to_sminn_vr(c,j) = (potential_immob_vr(c,j) - actual_immob_no3_vr(c,j)) - actual_immob_nh4_vr(c,j)
                  ! update to new values that satisfy demand
                  actual_immob_nh4_vr(c,j) = potential_immob_vr(c,j) -  actual_immob_no3_vr(c,j)
@@ -1148,7 +1138,7 @@ contains
            end if
 
            ! sum up nitrogen limitation to decomposition
-           fpi_vr(c,j) = fpi_nh4_vr(j) + fpi_no3_vr(j)
+           fpi_vr(c,j) = fpi_nh4_vr(fc,j) + fpi_no3_vr(fc,j)
 
            ! sum up no3 and nh4 fluxes
            sminn_to_plant_vr(c,j) = smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j)
@@ -1180,44 +1170,43 @@ contains
                          .not.carbonphosphorus_only .and. &
                          .not.carbonnitrogen_only ) then
 
-            !$acc enter data create(sum,sum2,sum3,sum4,sum5,sum6)
+            !$acc enter data create(sum1,sum2,sum3,sum4,sum5,sum6)
 
            !if (nu_com .eq. 'RD') then
-           call cpu_time(startt)
-           !$acc parallel loop independent collapse(2) gang worker private(c,sum,sum2) default(present)
+           !$acc parallel loop independent collapse(2) gang worker private(c,sum1,sum2) default(present)
            do fc = 1, num_soilc
               do j = 1, nlevdecomp
                  c= filter_soilc(fc)
-                 sum = 0._r8
+                 sum1 = 0._r8
                  sum2 = 0._r8
                  if( fpi_vr(c,j) <= fpi_p_vr(c,j) )then ! more N limited
-                    !$acc loop vector reduction(+:sum)
+                    !$acc loop vector reduction(+:sum1)
                     do k = 1, ndecomp_cascade_transitions
                        if (pmnf_decomp_cascade(c,j,k) > 0.0_r8 .and. pmpf_decomp_cascade(c,j,k) > 0.0_r8) then
-                           sum = sum - pmpf_decomp_cascade(c,j,k) *(fpi_p_vr(c,j)-fpi_vr(c,j))
+                           sum1 = sum1 - pmpf_decomp_cascade(c,j,k) *(fpi_p_vr(c,j)-fpi_vr(c,j))
                        end if
                     end do
-                    actual_immob_p_vr(c,j) = actual_immob_p_vr(c,j) + sum
+                    actual_immob_p_vr(c,j) = actual_immob_p_vr(c,j) + sum1
                  else
-                    if (fpi_nh4_vr(j) > fpi_p_vr(c,j)) then ! more P limited
-                       !$acc loop vector reduction(+:sum,sum2)
+                    if (fpi_nh4_vr(fc,j) > fpi_p_vr(fc,j)) then ! more P limited
+                       !$acc loop vector reduction(+:sum1,sum2)
                        do k = 1, ndecomp_cascade_transitions
                           if (pmnf_decomp_cascade(c,j,k) > 0.0_r8 .and. pmpf_decomp_cascade(c,j,k) > 0.0_r8) then
-                              sum = sum - pmnf_decomp_cascade(c,j,k) * (fpi_nh4_vr(j) - fpi_p_vr(c,j))
-                             sum2 = sum2 - pmnf_decomp_cascade(c,j,k) * fpi_no3_vr(j)
+                              sum1 = sum1 - pmnf_decomp_cascade(c,j,k) * (fpi_nh4_vr(fc,j) - fpi_p_vr(c,j))
+                              sum2 = sum2 - pmnf_decomp_cascade(c,j,k) * fpi_no3_vr(fc,j)
                           end if
                        end do
-                       actual_immob_nh4_vr(c,j) = actual_immob_nh4_vr(c,j)+ sum
+                       actual_immob_nh4_vr(c,j) = actual_immob_nh4_vr(c,j)+ sum1
                        actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j)+ sum2
                     else
-                       !$acc loop vector reduction(+:sum)
+                       !$acc loop vector reduction(+:sum1)
                        do k = 1, ndecomp_cascade_transitions
                           if (pmnf_decomp_cascade(c,j,k) > 0.0_r8 .and. pmpf_decomp_cascade(c,j,k) > 0.0_r8) then
-                             sum  = actual_immob_no3_vr(c,j) - pmnf_decomp_cascade(c,j,k) * &
-                                  (fpi_nh4_vr(j) + fpi_no3_vr(j) - fpi_p_vr(c,j) )
+                             sum1  = actual_immob_no3_vr(c,j) - pmnf_decomp_cascade(c,j,k) * &
+                                  (fpi_nh4_vr(fc,j) + fpi_no3_vr(fc,j) - fpi_p_vr(c,j) )
                           end if
                        end do
-                       actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) + sum
+                       actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) + sum1
                     end if
                  endif
                  ! sum up no3 and nh4 fluxes
@@ -1250,38 +1239,37 @@ contains
 
       ! sum up plant N/P uptake at column level and patch level
       ! sum up N fluxes to plant after initial competition
-      !$acc parallel loop independent gang worker private(c,sum,sum2) default(present)
+      !$acc parallel loop independent gang worker private(c,sum1,sum2) default(present)
       do fc = 1, num_soilc
         c = filter_soilc(fc)
-        sum = 0._r8
+        sum1 = 0._r8
         sum2 = 0._r8
-        !$acc loop vector reduction(+:sum,sum2)
+        !$acc loop vector reduction(+:sum1,sum2)
         do j = 1, nlevdecomp
-           sum  = sum  + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
+           sum1 = sum1  + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
            sum2 = sum2 + sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
         end do
-        sminn_to_plant(c) = sum
+        sminn_to_plant(c) = sum1
         sminp_to_plant(c) = sum2
      end do !col_loop
 
      ! sum up N fluxes to immobilization
-     !$acc parallel loop independent gang worker private(c,sum,sum2,sum3,sum4,sum5,sum6) default(present)
+     !$acc parallel loop independent gang worker private(c,sum1,sum2,sum3,sum4,sum5,sum6) default(present)
      do fc=1,num_soilc
         c = filter_soilc(fc)
-        sum = 0._r8; sum2 = 0._r8;
+        sum1 = 0._r8; sum2 = 0._r8;
         sum3 = 0._r8;sum4 = 0._r8;
         sum5 = 0._r8;sum6 = 0._r8;
-        !$acc loop vector reduction(+:sum,sum2,sum3,sum4,sum5,sum6)
+        !$acc loop vector reduction(+:sum1,sum2,sum3,sum4,sum5,sum6)
         do j = 1, nlevdecomp
-           c = filter_soilc(fc)
-           sum  = sum  + actual_immob_vr(c,j) * dzsoi_decomp(j)
+           sum1 = sum1 + actual_immob_vr(c,j) * dzsoi_decomp(j)
            sum2 = sum2 + potential_immob_vr(c,j) * dzsoi_decomp(j)
            sum3 = sum3 + actual_immob_no3_vr(c,j) * dzsoi_decomp(j)
            sum4 = sum4 + actual_immob_nh4_vr(c,j) * dzsoi_decomp(j)
            sum5 = sum5 + actual_immob_p_vr(c,j) * dzsoi_decomp(j)
            sum6 = sum6 + potential_immob_p_vr(c,j) * dzsoi_decomp(j)
         end do
-        actual_immob(c)     = sum
+        actual_immob(c)     = sum1
         potential_immob(c)  = sum2
         actual_immob_no3(c) = sum3
         actual_immob_nh4(c) = sum4
@@ -1325,10 +1313,7 @@ contains
            fpi_p(c) = 1.0_r8
         end if
      end do
-     call cpu_time(stopt)
-    print *, "Final updates and reductions for Allocation2: ",(stopt-startt)*1.E+3,"ms"
-
-     !$acc exit data delete(nuptake_prof,puptake_prof,fpi_no3_vr,fpi_nh4_vr,sum,sum2,&
+     !$acc exit data delete(nuptake_prof(:,:),puptake_prof(:,:),fpi_no3_vr(:,:),fpi_nh4_vr(:,:),sum1,sum2,&
      !$acc  sum3, sum4, sum5, sum6)
     end associate
  end subroutine Allocation2_ResolveNPLimit
@@ -1620,7 +1605,8 @@ contains
         ppool_to_deadcrootp_storage  => veg_pf%ppool_to_deadcrootp_storage , & ! Output: [real(r8) (:)   ]
         p_allometry                  => cnstate_vars%p_allometry_patch      & ! Output: [real(r8) (:)   ]  P allocation index (DIM)
         )
-
+      
+     print *, "num_soilp:", num_soilp 
       !$acc parallel loop independent gang vector default(present)
       do fp = 1, num_soilp 
          p= filter_soilp(fp) 
@@ -1929,7 +1915,8 @@ contains
 
   ! ======================================================================================
 
-  subroutine NAllocationRD(col_plant_ndemand_vr,   &! IN (j)
+  subroutine NAllocationRD( num_soilc, filter_soilc, &
+       col_plant_ndemand_vr,   &! IN (j)
        potential_immob_vr,  &    ! IN (j)
        compet_plants_nh4,   &    ! IN
        compet_decomp_nh4,   &    ! IN
@@ -1951,135 +1938,137 @@ contains
        f_nit_vr,             &   ! OUT (j)
        f_denit_vr)               ! OUT (j)
 
-   !$acc routine seq
     use elm_varpar, only : nlevdecomp
     ! Arguments
-    real(r8), intent(in)  :: col_plant_ndemand_vr    ! How much N all plants demand as group [g/m3]
-    real(r8), intent(in)  :: potential_immob_vr      ! potential N immobilization [g/m3/s]
+    integer , intent(in)  :: num_soilc 
+    integer , intent(in)  :: filter_soilc(:) 
+    real(r8), intent(in)  :: col_plant_ndemand_vr(:,:)    ! How much N all plants demand as group [g/m3]
+    real(r8), intent(in)  :: potential_immob_vr(:,:)      ! potential N immobilization [g/m3/s]
     real(r8), intent(in)  :: compet_plants_nh4       ! relative competability of plants (unitless)
     real(r8), intent(in)  :: compet_decomp_nh4       ! relative competability of decomposers (unitless)
     real(r8), intent(in)  :: dt                      ! timestep [seconds]
-    real(r8), intent(in)  :: smin_nh4_vr             ! mineralized nh4 [g/m3]
-    real(r8), intent(inout) :: fpi_nh4_vr              ! fraction of potential immobilization supplied by nh4 (no units)
-    real(r8), intent(inout) :: actual_immob_nh4_vr     ! actual nh4 immobilization [g/m3/s]
-    real(r8), intent(inout) :: smin_nh4_to_plant_vr    ! nh4 flux to plant competitors [g/m3/s]
+    real(r8), intent(in)  :: smin_nh4_vr(:,:)             ! mineralized nh4 [g/m3]
+    real(r8), intent(inout) :: fpi_nh4_vr (:,:)             ! fraction of potential immobilization supplied by nh4 (no units)
+    real(r8), intent(inout) :: actual_immob_nh4_vr(:,:)     ! actual nh4 immobilization [g/m3/s]
+    real(r8), intent(inout) :: smin_nh4_to_plant_vr(:,:)    ! nh4 flux to plant competitors [g/m3/s]
 
     ! Optional (for NO3)
-    real(r8), intent(in)  :: smin_no3_vr             ! mineralized no3 [g/m3]
+    real(r8), intent(in)  :: smin_no3_vr(:,:)             ! mineralized no3 [g/m3]
     real(r8), intent(in)  :: compet_plants_no3       ! relative competability of plants (unitless)
     real(r8), intent(in)  :: compet_decomp_no3       ! relative competability of decomposers (unitless)
     real(r8), intent(in)  :: compet_nit              ! relative competitiveness of nitrifiers for NH4
     real(r8), intent(in)  :: compet_denit            ! relative competitiveness of denitrifiers for NO3
-    real(r8), intent(in)  :: pot_f_nit_vr            ! potential soil nitrification flux [g/m3/s]
-    real(r8), intent(in)  :: pot_f_denit_vr          ! potential soil denitrification flux [g/m3/s]
-    real(r8), intent(inout) :: fpi_no3_vr            ! fraction of potential immobilization supplied by NO3
-    real(r8), intent(inout) :: actual_immob_no3_vr   ! actual no3 immobilization [g/m3/s]
-    real(r8), intent(inout) :: smin_no3_to_plant_vr  ! no3 flux to plant competitors [g/m3/s]
-    real(r8), intent(inout) :: f_nit_vr              ! soil nitrification flux [g/m3/s]
-    real(r8), intent(inout) :: f_denit_vr            ! soil denitrification flux [g/m3/s]
+    real(r8), intent(in)  :: pot_f_nit_vr(:,:)            ! potential soil nitrification flux [g/m3/s]
+    real(r8), intent(in)  :: pot_f_denit_vr(:,:)          ! potential soil denitrification flux [g/m3/s]
+    real(r8), intent(inout) :: fpi_no3_vr(:,:)            ! fraction of potential immobilization supplied by NO3
+    real(r8), intent(inout) :: actual_immob_no3_vr(:,:)   ! actual no3 immobilization [g/m3/s]
+    real(r8), intent(inout) :: smin_no3_to_plant_vr(:,:)  ! no3 flux to plant competitors [g/m3/s]
+    real(r8), intent(inout) :: f_nit_vr(:,:)              ! soil nitrification flux [g/m3/s]
+    real(r8), intent(inout) :: f_denit_vr(:,:)            ! soil denitrification flux [g/m3/s]
 
     ! Locals
     real(r8) :: sum_nh4_demand        ! Total nh4 demand over all competitors
     real(r8) :: sum_nh4_demand_scaled ! Total nh4 demand, but scaled by competitivness
     real(r8) :: sum_no3_demand        ! "" no3
     real(r8) :: sum_no3_demand_scaled ! "" no3
-    !integer  :: j                     ! soil decomp layer loop
+    integer  :: j,fc,c                ! soil decomp layer loop
 
+    !$acc parallel loop independent gang vector default(present) collapse(2) 
+    do j = 1, nlevdecomp
+       do fc=1,num_soilc !col_loop
+         c = filter_soilc(fc)
 
-    !do j = 1, nlevdecomp
+         sum_nh4_demand        = col_plant_ndemand_vr(c,j) + potential_immob_vr(c,j) + pot_f_nit_vr(c,j)
+         sum_nh4_demand_scaled = col_plant_ndemand_vr(c,j) * compet_plants_nh4 + &
+                                     potential_immob_vr(c,j)*compet_decomp_nh4 + pot_f_nit_vr(c,j)*compet_nit
 
-       sum_nh4_demand        = col_plant_ndemand_vr + potential_immob_vr + pot_f_nit_vr
-       sum_nh4_demand_scaled = col_plant_ndemand_vr * compet_plants_nh4 + &
-            potential_immob_vr*compet_decomp_nh4 + pot_f_nit_vr*compet_nit
+         if (sum_nh4_demand*dt < smin_nh4_vr(c,j)) then
+             ! NH4 availability is not limiting immobilization or plant
+             ! uptake, and all can proceed at their potential rates
+             fpi_nh4_vr(fc,j) = 1.0_r8
+             actual_immob_nh4_vr(c,j) = potential_immob_vr(c,j)
+             smin_nh4_to_plant_vr(c,j) = col_plant_ndemand_vr(c,j)
+             f_nit_vr(c,j) = pot_f_nit_vr(c,j)
 
-       if (sum_nh4_demand*dt < smin_nh4_vr) then
-          ! NH4 availability is not limiting immobilization or plant
-          ! uptake, and all can proceed at their potential rates
-          fpi_nh4_vr = 1.0_r8
-          actual_immob_nh4_vr = potential_immob_vr
-          smin_nh4_to_plant_vr = col_plant_ndemand_vr
-          f_nit_vr = pot_f_nit_vr
+         else
 
-       else
+            ! NH4 availability can not satisfy the sum of immobilization, nitrification, and
+            ! plant growth demands, so these three demands compete for available
+            ! soil mineral NH4 resource.
+            if (sum_nh4_demand > 0.0_r8 .and. smin_nh4_vr(c,j) > 0.0_r8 &
+                 .and. sum_nh4_demand_scaled > 0.0_r8) then
+               actual_immob_nh4_vr(c,j) = min((smin_nh4_vr(c,j)/dt)*(potential_immob_vr(c,j)* &
+                    compet_decomp_nh4 / sum_nh4_demand_scaled), potential_immob_vr(c,j))
+               smin_nh4_to_plant_vr(c,j) = min((smin_nh4_vr(c,j)/dt)*&
+                    (col_plant_ndemand_vr(c,j)*compet_plants_nh4 / sum_nh4_demand_scaled), &
+                    col_plant_ndemand_vr(c,j))
+               f_nit_vr(c,j) =  min((smin_nh4_vr(c,j)/dt)*(pot_f_nit_vr(c,j)*compet_nit / &
+                    sum_nh4_demand_scaled), pot_f_nit_vr(c,j))
+            else
+               actual_immob_nh4_vr(c,j) = 0.0_r8
+               smin_nh4_to_plant_vr(c,j) = 0.0_r8
+               f_nit_vr(c,j) = 0.0_r8
+            end if
 
-          ! NH4 availability can not satisfy the sum of immobilization, nitrification, and
-          ! plant growth demands, so these three demands compete for available
-          ! soil mineral NH4 resource.
-          if (sum_nh4_demand > 0.0_r8 .and. smin_nh4_vr > 0.0_r8 &
-               .and. sum_nh4_demand_scaled > 0.0_r8) then
-             actual_immob_nh4_vr = min((smin_nh4_vr/dt)*(potential_immob_vr* &
-                  compet_decomp_nh4 / sum_nh4_demand_scaled), potential_immob_vr)
-             smin_nh4_to_plant_vr = min((smin_nh4_vr/dt)*&
-                  (col_plant_ndemand_vr*compet_plants_nh4 / sum_nh4_demand_scaled), &
-                  col_plant_ndemand_vr)
-             f_nit_vr =  min((smin_nh4_vr/dt)*(pot_f_nit_vr*compet_nit / &
-                  sum_nh4_demand_scaled), pot_f_nit_vr)
-          else
-             actual_immob_nh4_vr = 0.0_r8
-             smin_nh4_to_plant_vr = 0.0_r8
-             f_nit_vr = 0.0_r8
-          end if
+            if (potential_immob_vr(c,j) > 0.0_r8) then
+               fpi_nh4_vr(fc,j) = actual_immob_nh4_vr(c,j) / potential_immob_vr(c,j)
+            else
+               fpi_nh4_vr(fc,j)= 0.0_r8
+            end if
 
-          if (potential_immob_vr > 0.0_r8) then
-             fpi_nh4_vr = actual_immob_nh4_vr / potential_immob_vr
-          else
-             fpi_nh4_vr = 0.0_r8
-          end if
-
-       end if    ! if (sum_nh4_demand*dt < smin_nh4_vr) then
-
+         end if    ! if (sum_nh4_demand*dt < smin_nh4_vr) then
+       !
        ! If we passed in parameters and mineralized no3, then
        ! we are free to calculate competitive allocation rates on it
        ! ------------------------------------------------------------------------
-
+       
        ! next compete for no3
-       sum_no3_demand = (col_plant_ndemand_vr-smin_nh4_to_plant_vr) + &
-            (potential_immob_vr-actual_immob_nh4_vr) + pot_f_denit_vr
+       sum_no3_demand = (col_plant_ndemand_vr(c,j)-smin_nh4_to_plant_vr(c,j)) + &
+            (potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j)) + pot_f_denit_vr(c,j)
 
-       sum_no3_demand_scaled = (col_plant_ndemand_vr-smin_nh4_to_plant_vr) &
-            * compet_plants_no3 + (potential_immob_vr-actual_immob_nh4_vr)*compet_decomp_no3 &
-            + pot_f_denit_vr*compet_denit
+       sum_no3_demand_scaled = (col_plant_ndemand_vr(c,j)-smin_nh4_to_plant_vr(c,j)) &
+            * compet_plants_no3 + (potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j))*compet_decomp_no3 &
+            + pot_f_denit_vr(c,j)*compet_denit
 
-       if (sum_no3_demand*dt < smin_no3_vr) then
+       if (sum_no3_demand*dt < smin_no3_vr(c,j)) then
 
           ! NO3 availability is not limiting immobilization or plant
           ! uptake, and all can proceed at their potential rates
-          fpi_no3_vr = 1.0_r8 -  fpi_nh4_vr
-          actual_immob_no3_vr = (potential_immob_vr-actual_immob_nh4_vr)
-          smin_no3_to_plant_vr = (col_plant_ndemand_vr-smin_nh4_to_plant_vr)
-          f_denit_vr = pot_f_denit_vr
+          fpi_no3_vr(fc,j) = 1.0_r8 -  fpi_nh4_vr(fc,j)
+          actual_immob_no3_vr(c,j) = (potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j))
+          smin_no3_to_plant_vr(c,j) = (col_plant_ndemand_vr(c,j)-smin_nh4_to_plant_vr(c,j))
+          f_denit_vr(c,j) = pot_f_denit_vr(c,j)
 
        else
 
           ! NO3 availability can not satisfy the sum of immobilization, denitrification, and
           ! plant growth demands, so these three demands compete for available
           ! soil mineral NO3 resource.
-          if (sum_no3_demand > 0.0_r8 .and. smin_no3_vr > 0.0_r8 &
+          if (sum_no3_demand > 0.0_r8 .and. smin_no3_vr(c,j) > 0.0_r8 &
                .and. sum_no3_demand_scaled > 0.0_r8) then
-             actual_immob_no3_vr = min((smin_no3_vr/dt)*((potential_immob_vr- &
-                  actual_immob_nh4_vr)*compet_decomp_no3 / sum_no3_demand_scaled), &
-                  potential_immob_vr-actual_immob_nh4_vr)
-             smin_no3_to_plant_vr = min((smin_no3_vr/dt) * &
-                  ((col_plant_ndemand_vr-smin_nh4_to_plant_vr) * &
+             actual_immob_no3_vr(c,j) = min((smin_no3_vr(c,j)/dt)*((potential_immob_vr(c,j)- &
+                  actual_immob_nh4_vr(c,j))*compet_decomp_no3 / sum_no3_demand_scaled), &
+                  potential_immob_vr(c,j)-actual_immob_nh4_vr(c,j))
+             smin_no3_to_plant_vr(c,j) = min((smin_no3_vr(c,j)/dt) * &
+                  ((col_plant_ndemand_vr(c,j)-smin_nh4_to_plant_vr(c,j)) * &
                   compet_plants_no3 / sum_no3_demand_scaled), &
-                  col_plant_ndemand_vr-smin_nh4_to_plant_vr)
-             f_denit_vr =  min((smin_no3_vr/dt)*(pot_f_denit_vr*compet_denit / &
-                  sum_no3_demand_scaled), pot_f_denit_vr)
+                  col_plant_ndemand_vr(c,j)-smin_nh4_to_plant_vr(c,j))
+             f_denit_vr(c,j) =  min((smin_no3_vr(c,j)/dt)*(pot_f_denit_vr(c,j)*compet_denit / &
+                  sum_no3_demand_scaled), pot_f_denit_vr(c,j))
           else
-             actual_immob_no3_vr = 0.0_r8
-             smin_no3_to_plant_vr = 0.0_r8
-             f_denit_vr = 0.0_r8
+             actual_immob_no3_vr(c,j) = 0.0_r8
+             smin_no3_to_plant_vr(c,j) = 0.0_r8
+             f_denit_vr (c,j)= 0.0_r8
           end if
 
-          if (potential_immob_vr > 0.0_r8) then
-             fpi_no3_vr = actual_immob_no3_vr / potential_immob_vr
+          if (potential_immob_vr(c,j) > 0.0_r8) then
+             fpi_no3_vr(fc,j) = actual_immob_no3_vr(c,j) / potential_immob_vr(c,j)
           else
-             fpi_no3_vr = 0.0_r8
+             fpi_no3_vr(fc,j) = 0.0_r8
           end if
        end if ! if sum_no3_demand*dt < smin_no3_vr
-    !end do    ! j = 1,nlevdecomp
-
-    return
+     end do    ! j = 1,nlevdecomp
+    end do 
   end subroutine NAllocationRD
 
   ! ======================================================================================

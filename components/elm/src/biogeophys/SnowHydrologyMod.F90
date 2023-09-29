@@ -975,7 +975,7 @@ contains
           h2osoi_ice       => col_ws%h2osoi_ice      , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)
           h2osoi_liq       => col_ws%h2osoi_liq      , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
           snw_rds          => col_ws%snw_rds         , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
-          mflx_snowlyr_col => col_wf%mflx_snowlyr     , & ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
+          mflx_snowlyr_col => col_wf%mflx_snowlyr    , & ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
 
           qflx_sl_top_soil => col_wf%qflx_sl_top_soil , & ! Output: [real(r8) (:)   ] liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
           qflx_snow2topsoi => col_wf%qflx_snow2topsoi , & ! Output: [real(r8) (:)   ] liquid water merged into top soil from snow
@@ -986,21 +986,14 @@ contains
           z                => col_pp%z                                 & ! Output: [real(r8) (:,:) ] layer thickness (m)
           )
      !$acc enter data create(&
-     !$acc msn_old(:), &
-     !$acc mssi(:), &
-     !$acc zwice(:), &
-     !$acc zwliq(:), &
-     !$acc dzmin(:), &
+     !$acc msn_old(:) , &
+     !$acc mssi(:)    , &
+     !$acc zwice(:)   , &
+     !$acc zwliq(:)   , &
+     !$acc dzmin(:)   , &
      !$acc dzminloc(:), &
      !$acc dzminloc16(:), &
-     !$acc sum1, &
-     !$acc sum2, &
-     !$acc sum3, &
-     !$acc sum4)
-
-
-
-
+     !$acc sum1, sum2, sum3, sum4)
 
        ! Check the mass of ice lens of snow, when the total is less than a small value,
        ! combine it with the underlying neighbor.
@@ -1039,11 +1032,11 @@ contains
        end do
 
        ! The following loop is NOT VECTORIZED
-       !$acc parallel loop independent gang worker default(present)
+       !$acc parallel loop independent gang vector default(present)
        do fc = 1, num_snowc
           c = filter_snowc(fc)
           l = col_pp%landunit(c)
-          !$acc loop vector independent 
+          !$acc loop seq
           do j = msn_old(fc)+1,0
              ! use 0.01 to avoid runaway ice buildup
              if (h2osoi_ice(c,j) <= .01_r8) then
@@ -1119,9 +1112,7 @@ contains
                       dz(c,i)         = dz(c,i-1)
                    end do
                 end if
-                !$acc atomic update 
                 snl(c) = snl(c) + 1
-                !$acc end atomic
              end if
           end do
        end do
@@ -1358,34 +1349,34 @@ contains
      logical                , intent(in)    :: is_lake  !TODO - this should be examined and removed in the future
      !
      ! !LOCAL VARIABLES:
-     integer  :: j, c, fc, k                              ! indices
-     real(r8) :: drr                                      ! thickness of the combined [m]
-     integer  :: msno                                     ! number of snow layer 1 (top) to msno (bottom)
+     integer  :: j, c, fc, k                  ! indices
+     real(r8) :: drr                          ! thickness of the combined [m]
+     integer  :: msno                         ! number of snow layer 1 (top) to msno (bottom)
      real(r8) :: dzsno(1:num_snowc,nlevsno)   ! Snow layer thickness [m]
      real(r8) :: swice(1:num_snowc,nlevsno)   ! Partial volume of ice [m3/m3]
      real(r8) :: swliq(1:num_snowc,nlevsno)   ! Partial volume of liquid water [m3/m3]
      real(r8) :: tsno(1:num_snowc ,nlevsno)   ! Nodel temperature [K]
-     real(r8) :: zwice                                    ! temporary
-     real(r8) :: zwliq                                    ! temporary
-     real(r8) :: propor                                   ! temporary
-     real(r8) :: dtdz                                     ! temporary
+     real(r8) :: zwice                        ! temporary
+     real(r8) :: zwliq                        ! temporary
+     real(r8) :: propor                       ! temporary
+     real(r8) :: dtdz                         ! temporary
      ! temporary variables mimicking the structure of other layer division variables
      real(r8) :: mbc_phi(1:num_snowc,nlevsno) ! mass of BC in each snow layer
-     real(r8) :: zmbc_phi                                 ! temporary
+     real(r8) :: zmbc_phi                     ! temporary
      real(r8) :: mbc_pho(1:num_snowc,nlevsno) ! mass of BC in each snow layer
-     real(r8) :: zmbc_pho                                 ! temporary
+     real(r8) :: zmbc_pho                     ! temporary
      real(r8) :: moc_phi(1:num_snowc,nlevsno) ! mass of OC in each snow layer
-     real(r8) :: zmoc_phi                                 ! temporary
+     real(r8) :: zmoc_phi                     ! temporary
      real(r8) :: moc_pho(1:num_snowc,nlevsno) ! mass of OC in each snow layer
-     real(r8) :: zmoc_pho                                 ! temporary
+     real(r8) :: zmoc_pho                     ! temporary
      real(r8) :: mdst1(1:num_snowc,nlevsno)   ! mass of dust 1 in each snow layer
-     real(r8) :: zmdst1                                   ! temporary
+     real(r8) :: zmdst1                       ! temporary
      real(r8) :: mdst2(1:num_snowc,nlevsno)   ! mass of dust 2 in each snow layer
-     real(r8) :: zmdst2                                   ! temporary
+     real(r8) :: zmdst2                       ! temporary
      real(r8) :: mdst3(1:num_snowc,nlevsno)   ! mass of dust 3 in each snow layer
-     real(r8) :: zmdst3                                   ! temporary
+     real(r8) :: zmdst3                       ! temporary
      real(r8) :: mdst4(1:num_snowc,nlevsno)   ! mass of dust 4 in each snow layer
-     real(r8) :: zmdst4                                   ! temporary
+     real(r8) :: zmdst4                       ! temporary
      real(r8) :: rds(1:num_snowc,nlevsno)
      ! Variables for consistency check
      real(r8) :: dztot(1:num_snowc)
@@ -1404,19 +1395,19 @@ contains
           frac_sno   => col_ws%frac_sno_eff , & ! Output: [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
           snw_rds    => col_ws%snw_rds      , & ! Output: [real(r8) (:,:) ] effective snow grain radius (col,lyr) [microns, m^-6]
 
-          mss_bcphi  => aerosol_vars%mss_bcphi_col       , & ! Output: [real(r8) (:,:) ] hydrophilic BC mass in snow (col,lyr) [kg]
-          mss_bcpho  => aerosol_vars%mss_bcpho_col       , & ! Output: [real(r8) (:,:) ] hydrophobic BC mass in snow (col,lyr) [kg]
-          mss_ocphi  => aerosol_vars%mss_ocphi_col       , & ! Output: [real(r8) (:,:) ] hydrophilic OC mass in snow (col,lyr) [kg]
-          mss_ocpho  => aerosol_vars%mss_ocpho_col       , & ! Output: [real(r8) (:,:) ] hydrophobic OC mass in snow (col,lyr) [kg]
-          mss_dst1   => aerosol_vars%mss_dst1_col        , & ! Output: [real(r8) (:,:) ] dust species 1 mass in snow (col,lyr) [kg]
-          mss_dst2   => aerosol_vars%mss_dst2_col        , & ! Output: [real(r8) (:,:) ] dust species 2 mass in snow (col,lyr) [kg]
-          mss_dst3   => aerosol_vars%mss_dst3_col        , & ! Output: [real(r8) (:,:) ] dust species 3 mass in snow (col,lyr) [kg]
-          mss_dst4   => aerosol_vars%mss_dst4_col        , & ! Output: [real(r8) (:,:) ] dust species 4 mass in snow (col,lyr) [kg]
+          mss_bcphi  => aerosol_vars%mss_bcphi_col  , & ! Output: [real(r8) (:,:) ] hydrophilic BC mass in snow (col,lyr) [kg]
+          mss_bcpho  => aerosol_vars%mss_bcpho_col  , & ! Output: [real(r8) (:,:) ] hydrophobic BC mass in snow (col,lyr) [kg]
+          mss_ocphi  => aerosol_vars%mss_ocphi_col  , & ! Output: [real(r8) (:,:) ] hydrophilic OC mass in snow (col,lyr) [kg]
+          mss_ocpho  => aerosol_vars%mss_ocpho_col  , & ! Output: [real(r8) (:,:) ] hydrophobic OC mass in snow (col,lyr) [kg]
+          mss_dst1   => aerosol_vars%mss_dst1_col   , & ! Output: [real(r8) (:,:) ] dust species 1 mass in snow (col,lyr) [kg]
+          mss_dst2   => aerosol_vars%mss_dst2_col   , & ! Output: [real(r8) (:,:) ] dust species 2 mass in snow (col,lyr) [kg]
+          mss_dst3   => aerosol_vars%mss_dst3_col   , & ! Output: [real(r8) (:,:) ] dust species 3 mass in snow (col,lyr) [kg]
+          mss_dst4   => aerosol_vars%mss_dst4_col   , & ! Output: [real(r8) (:,:) ] dust species 4 mass in snow (col,lyr) [kg]
 
-          snl        => col_pp%snl                          , & ! Output: [integer  (:)   ] number of snow layers
-          dz         => col_pp%dz                           , & ! Output: [real(r8) (:,:) ] layer depth (m)
-          zi         => col_pp%zi                           , & ! Output: [real(r8) (:,:) ] interface level below a "z" level (m)
-          z          => col_pp%z                              & ! Output: [real(r8) (:,:) ] layer thickness (m)
+          snl        => col_pp%snl                  , & ! Output: [integer  (:)   ] number of snow layers
+          dz         => col_pp%dz                   , & ! Output: [real(r8) (:,:) ] layer depth (m)
+          zi         => col_pp%zi                   , & ! Output: [real(r8) (:,:) ] interface level below a "z" level (m)
+          z          => col_pp%z                      & ! Output: [real(r8) (:,:) ] layer thickness (m)
           )
      !$acc enter data create(&
      !$acc dzsno(:,:), &
@@ -1438,8 +1429,6 @@ contains
      !$acc sum1, &
      !$acc sum2, &
      !$acc sum3)
-
-
 
        if ( is_lake ) then
           ! Initialize for consistency check
@@ -1480,7 +1469,7 @@ contains
                 end if
                 swice(fc,j) = h2osoi_ice(c,snl_idx)
                 swliq(fc,j) = h2osoi_liq(c,snl_idx)
-                tsno(fc,j)  = t_soisno(c,snl_idx)
+                tsno (fc,j) = t_soisno(c,snl_idx)
 
                 mbc_phi(fc,j) = mss_bcphi(c,snl_idx)
                 mbc_pho(fc,j) = mss_bcpho(c,snl_idx)
@@ -1490,7 +1479,7 @@ contains
                 mdst2(fc,j)   = mss_dst2(c,snl_idx)
                 mdst3(fc,j)   = mss_dst3(c,snl_idx)
                 mdst4(fc,j)   = mss_dst4(c,snl_idx)
-                rds(fc,j)     = snw_rds(fc,snl_idx)
+                rds(fc,j)     = snw_rds(c,snl_idx)
              end if
           end do
        end do
@@ -1600,8 +1589,10 @@ contains
               !mgf++ bugfix
               rds(fc,2) = (rds(fc,2)*(swliq(fc,2)+swice(fc,2)) + rds(fc,1)*(zwliq+zwice))/(swliq(fc,2)+swice(fc,2)+zwliq+zwice)
                 if ((rds(fc,2) < 30.) .or. (rds(fc,2) > 1500.)) then
-                   write (iulog,*) "2. SNICAR ERROR: snow grain radius of",rds(c,2),rds(c,1)
-                   write (iulog,*) "swliq, swice, zwliq, zwice", swliq(c,2), swice(c,2),zwliq, zwice
+                   write (iulog,*) "2. SNICAR ERROR: snow grain radius of",rds(fc,2),rds(fc,1)
+                   write (iulog,*) "swliq, swice, zwliq, zwice", swliq(fc,2), swice(fc,2),zwliq, zwice
+                   write (iulog,*) "propor: ", propor
+                   write (iulog,*) "dzsno : ", dzsno(fc,1)
                    write (iulog,*) "layers ", msno
                 endif
               !mgf--
@@ -1717,8 +1708,8 @@ contains
               rds(fc,3) = (rds(fc,3)*(swliq(fc,3)+swice(fc,3)) + rds(fc,2)*(zwliq+zwice))/(swliq(fc,3)+swice(fc,3)+zwliq+zwice)
                 if ((rds(fc,3) < 30.) .or. (rds(fc,3) > 1500.)) then
 #ifndef _OPENACC
-                   write (iulog,*) "3. SNICAR ERROR: snow grain radius of",rds(c,3),rds(c,2)
-                   write (iulog,*) "swliq, swice, zwliq, zwice", swliq(c,3), swice(c,3),zwliq, zwice
+                   write (iulog,*) "3. SNICAR ERROR: snow grain radius of",rds(fc,3),rds(fc,2)
+                   write (iulog,*) "swliq, swice, zwliq, zwice", swliq(fc,3), swice(fc,3),zwliq, zwice
                    write (iulog,*) "layers ", msno
 #endif
                 endif
@@ -1834,8 +1825,8 @@ contains
               !mgf++ bugfix
               rds(fc,4) = (rds(fc,4)*(swliq(fc,4)+swice(fc,4)) + rds(fc,3)*(zwliq+zwice))/(swliq(fc,4)+swice(fc,4)+zwliq+zwice)
                 if ((rds(fc,4) < 30.) .or. (rds(fc,4) > 1500.)) then
-                   write (iulog,*) "4. SNICAR ERROR: snow grain radius of",rds(c,4),rds(c,3)
-                   write (iulog,*) "swliq, swice, zwliq, zwice", swliq(c,4), swice(c,4),zwliq, zwice
+                   write (iulog,*) "4. SNICAR ERROR: snow grain radius of",rds(fc,4),rds(fc,3)
+                   write (iulog,*) "swliq, swice, zwliq, zwice", swliq(fc,4), swice(fc,4),zwliq, zwice
                    write (iulog,*) "layers ", msno
                 endif
               !mgf--
@@ -1989,7 +1980,7 @@ contains
                 mss_dst2(c,j)    = mdst2(fc,j-snl(c))
                 mss_dst3(c,j)    = mdst3(fc,j-snl(c))
                 mss_dst4(c,j)    = mdst4(fc,j-snl(c))
-                snw_rds(fc,j)     = rds(fc,j-snl(c))
+                snw_rds(c,j)     = rds(fc,j-snl(c))
 
              end if
           end do
@@ -2203,7 +2194,7 @@ contains
                 mdst2(fc,j)   = mss_dst2(c,j+snl(c))
                 mdst3(fc,j)   = mss_dst3(c,j+snl(c))
                 mdst4(fc,j)   = mss_dst4(c,j+snl(c))
-                rds(fc,j)     = snw_rds(fc,j+snl(c))
+                rds(fc,j)     = snw_rds(c,j+snl(c))
              end if
           end do
        end do
@@ -2363,7 +2354,7 @@ contains
                 mss_dst2(c,j)    = mdst2(fc,j-snl(c))
                 mss_dst3(c,j)    = mdst3(fc,j-snl(c))
                 mss_dst4(c,j)    = mdst4(fc,j-snl(c))
-                snw_rds(fc,j)     = rds(fc,j-snl(c))
+                snw_rds(c,j)     = rds(fc,j-snl(c))
              end if
           end do
        end do

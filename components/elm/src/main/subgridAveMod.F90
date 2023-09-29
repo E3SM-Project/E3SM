@@ -1174,6 +1174,7 @@ end subroutine p2c_1d_filter_parallel
    !$acc parallel loop independent gang worker default(present) private(sumwt,sum_g) copyin(c2l_scale_type)
    do g = bounds%begg,bounds%endg
       sumwt = 0._r8
+      sum_g = 0._r8
       !$acc loop reduction(+:sumwt,sum_g) private(l,scale_l2g,scale_c2l,c)
       do fc = 1, grc_pp%ncolumns(g)
          c = grc_pp%cols(g,fc)  

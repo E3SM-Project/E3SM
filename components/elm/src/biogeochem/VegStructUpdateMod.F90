@@ -113,6 +113,7 @@ contains
          )
 
       ! patch loop
+      !$acc parallel loop independent gang vector default(present) 
       do fp = 1,num_soilp
          p = filter_soilp(fp)
          c = veg_pp%column(p)

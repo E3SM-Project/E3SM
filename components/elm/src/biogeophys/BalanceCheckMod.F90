@@ -26,7 +26,7 @@ module BalanceCheckMod
   use ColumnDataType     , only : col_ef, col_ws, col_wf
   use VegetationType     , only : veg_pp
   use VegetationDataType , only : veg_ef, veg_ws
-
+  use verificationMod 
   use timeinfoMod
   !
   ! !PUBLIC TYPES:
@@ -660,6 +660,9 @@ contains
           write(iulog,*)'WARNING: BalanceCheck: longwave energy balance error (W/m2)'
           write(iulog,*)'nstep        = ',nstep
           write(iulog,*)'errlon       = ',errlon(indexp)
+          write(iulog,*) "lwrad_out:",eflx_lwrad_out(indexp)
+          write(iulog,*) "lwrad_net: ",eflx_lwrad_net(indexp)
+          write(iulog,*) "forc_lwrad:", forc_lwrad(veg_pp%topounit(indexp))
           if (abs(errlon(indexp)) > 1.e-5_r8 ) then
              write(iulog,*)'elm model is stopping - error is greater than 1e-5 (W/m2)'
              call endrun(decomp_index=indexp, elmlevel=namep, msg=errmsg(__FILE__, __LINE__))
@@ -722,11 +725,11 @@ contains
           end if
        end do
        if ( found ) then
-#ifndef _OPENACC 
+#ifndef _OPENACC
           write(iulog,*)'WARNING: BalanceCheck: soil balance error (W/m2)'
           write(iulog,*)'nstep         = ',nstep
           write(iulog,*)'errsoi_col    = ',errsoi_col(indexc)
-          write(iulog,*)'colum number  = ',col_pp%gridcell(indexc)
+          write(iulog,*)'gridcell number  = ',col_pp%gridcell(indexc)
           write(iulog,*)'itype         = ',col_pp%itype(indexc)
           if (abs(errsoi_col(indexc)) > 1.e-4_r8  .and. (nstep > 2) ) then
              write(iulog,*)'elm model is stopping'

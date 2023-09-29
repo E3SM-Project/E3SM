@@ -163,8 +163,6 @@ contains
     !call ncd_io(ncid=ncid, varname='mxsoil_color', flag='read', data=mxsoil_color, readvar=readvar)
     !if ( .not. readvar ) mxsoil_color = 8
     mxsoil_color = 20
-    write(iulog, *) "DEBUG: SurfAlb::alloc soic2d"
-    call shr_sys_flush(iulog) 
 
     !allocate(soic2d(bounds%begg:bounds%endg,max_topounits))
     allocate(soic2d(bounds%begg:bounds%endg) ) 
