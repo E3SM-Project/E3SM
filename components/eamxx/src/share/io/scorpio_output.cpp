@@ -931,7 +931,7 @@ register_variables(const std::string& filename,
     const auto& layout = fid.get_layout();
     const auto& io_decomp_tag = set_decomp_tag(layout);
     auto vec_of_dims   = set_vec_of_dims(layout);
-    std::string units = to_string(fid.get_units());
+    std::string units = fid.get_units().get_string();
 
     // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
