@@ -55,7 +55,6 @@ contains
      ! DESCRIPTIONS
      ! compute the stress factor for soil evaporation calculation
      !
-      !$acc routine seq
      use shr_kind_mod  , only : r8 => shr_kind_r8
      use shr_const_mod , only : SHR_CONST_PI
      use decompMod     , only : bounds_type
@@ -68,12 +67,11 @@ contains
      integer               , intent(in)    :: num_nolakec
      integer               , intent(in)    :: filter_nolakec(:)
      type(soilstate_type)  , intent(inout) :: soilstate_vars
-
-     !character(len=32) :: subname = 'calc_soilevap_stress'  ! subroutine name
-     associate(                &
+     character(len=32) :: subname = 'calc_soilevap_stress'  ! subroutine name
+     associate(  &
           soilbeta =>  soilstate_vars%soilbeta_col  & ! Output: [real(r8) (:)] factor that reduces ground evaporation
           )
-
+       
        !select the right method and do the calculation
        select case (soil_stress_method)
 
@@ -82,9 +80,7 @@ contains
                soilstate_vars, soilbeta(bounds%begc:bounds%endc))
 
        case default
-#ifndef _OPENACC
           call endrun('calc_soilevap_stress' //':: a soilevap stress function must be specified!')
-#endif
        end select
 
      end associate
@@ -99,7 +95,6 @@ contains
      ! compute the lee-pielke beta factor to scal actual soil evaporation from potential evaporation
      !
      ! USES
-      !$acc routine seq
      use shr_kind_mod    , only : r8 => shr_kind_r8
      use shr_const_mod   , only : SHR_CONST_PI
      use decompMod       , only : bounds_type
@@ -119,41 +114,41 @@ contains
      real(r8)              , intent(inout) :: soilbeta(bounds%begc:bounds%endc)
 
      !local variables
-     real(r8) :: fac, fac_fc, wx      !temporary variables
-     integer  :: c, l, fc     !indices
+     real(r8) :: fac, fac_fc, wx  ! temporary variables
+     integer  :: c, l, fc         ! indices
+     
+     associate(  &
+         watsat      =>  soilstate_vars%watsat_col , & ! Input: [real(r8) (:,:)] volumetric soil water at saturation (porosity)
+         watfc       =>  soilstate_vars%watfc_col  , & ! Input: [real(r8) (:,:)] volumetric soil water at field capacity
+         watmin      =>  soilstate_vars%watmin_col , & ! Input: [real(r8) (:,:)] min volumetric soil water
+         sucmin      =>  soilstate_vars%sucmin_col , & ! Input: [real(r8) (:,:)] min volumetric soil water
+         soilp_col   =>  col_ws%soilp              , & ! Input: [real(r8) (:,:)] soil water pressure (Pa)
 
+         h2osoi_ice  =>  col_ws%h2osoi_ice , & ! Input: [real(r8) (:,:)] ice lens (kg/m2)
+         h2osoi_liq  =>  col_ws%h2osoi_liq , & ! Input: [real(r8) (:,:)] liquid water (kg/m2)
+         frac_sno    =>  col_ws%frac_sno   , & ! Input: [real(r8) (:)] fraction of ground covered by snow (0 to 1)
+         frac_h2osfc =>  col_ws%frac_h2osfc  & ! Input: [real(r8) (:)] fraction of ground covered by surface water (0 to 1)
+         )
 
-     associate(                                              &
-          watsat      =>    soilstate_vars%watsat_col      , & ! Input:  [real(r8) (:,:)] volumetric soil water at saturation (porosity)
-          watfc       =>    soilstate_vars%watfc_col       , & ! Input:  [real(r8) (:,:)] volumetric soil water at field capacity
-          watmin      =>    soilstate_vars%watmin_col      , & ! Input:  [real(r8) (:,:)] min volumetric soil water
-          sucmin      =>    soilstate_vars%sucmin_col      , & ! Input:  [real(r8) (:,:)] min volumetric soil water
-          soilp_col   =>    col_ws%soilp      , & ! Input:  [real(r8) (:,:)] soil water pressure (Pa)
-
-          h2osoi_ice  =>    col_ws%h2osoi_ice , & ! Input:  [real(r8) (:,:)] ice lens (kg/m2)
-          h2osoi_liq  =>    col_ws%h2osoi_liq , & ! Input:  [real(r8) (:,:)] liquid water (kg/m2)
-          frac_sno    =>    col_ws%frac_sno   , & ! Input:  [real(r8) (:)] fraction of ground covered by snow (0 to 1)
-          frac_h2osfc =>    col_ws%frac_h2osfc  & ! Input:  [real(r8) (:)]  fraction of ground covered by surface water (0 to 1)
-          )
-
+       !$acc parallel loop independent gang vector default(present)
        do fc = 1,num_nolakec
           c = filter_nolakec(fc)
           l = col_pp%landunit(c)
           if (lun_pp%itype(l)/=istwet .AND. lun_pp%itype(l)/=istice  &
                .AND. lun_pp%itype(l)/=istice_mec) then
              if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
-                wx   = (h2osoi_liq(c,1)/denh2o+h2osoi_ice(c,1)/denice)/col_pp%dz(c,1)
+                wx   = (h2osoi_liq(c,1)/denh2o + h2osoi_ice(c,1)/denice)/col_pp%dz(c,1)
                 fac  = min(1._r8, wx/watsat(c,1))
                 fac  = max( fac, 0.01_r8 )
-                !! Lee and Pielke 1992 beta, added by K.Sakaguchi
-                if (wx < watfc(c,1) ) then  !when water content of ths top layer is less than that at F.C.
-                   fac_fc  = min(1._r8, wx/watfc(c,1))  !eqn5.66 but divided by theta at field capacity
+                ! Lee and Pielke 1992 beta, added by K.Sakaguchi
+                if (wx < watfc(c,1) ) then  ! when water content of ths top layer is less than that at F.C.
+                   fac_fc  = min(1._r8, wx/watfc(c,1)) ! eqn5.66 but divided by theta at field capacity
                    fac_fc  = max( fac_fc, 0.01_r8 )
                    ! modify soil beta by snow cover. soilbeta for snow surface is one
                    soilbeta(c) = (1._r8-frac_sno(c)-frac_h2osfc(c)) &
                         *0.25_r8*(1._r8 - cos(SHR_CONST_PI*fac_fc))**2._r8 &
-                        + frac_sno(c)+ frac_h2osfc(c)
-                else   !when water content of ths top layer is more than that at F.C.
+                        + frac_sno(c) + frac_h2osfc(c)
+                else   ! when water content of ths top layer is more than that at F.C.
                    soilbeta(c) = 1._r8
                 end if
                 if ( use_vsfm ) then
@@ -171,10 +166,10 @@ contains
                    if (wx < watfc(c,1) ) then  !when water content of ths top layer is less than that at F.C.
                       if (wx >= watmin(c,1) .and. soilp_col(c,1) >= sucmin(c,1) ) then
                          fac_fc  = min(1._r8, wx/watfc(c,1))  !eqn5.66 but divided by theta at field capacity
-                         fac_fc  = max( fac_fc, 0.01_r8 )
+                         fac_fc  = max(fac_fc, 0.01_r8)
                          ! modify soil beta by snow cover. soilbeta for snow surface is one
                          soilbeta(c) = (1._r8-frac_sno(c)-frac_h2osfc(c)) &
-                              *0.25_r8*(1._r8 - cos(SHR_CONST_PI*fac_fc))**2._r8 &
+                              *0.25_r8*(1._r8-cos(SHR_CONST_PI*fac_fc))**2._r8 &
                               + frac_sno(c)+ frac_h2osfc(c)
                       else
                          soilbeta(c) = 0._r8

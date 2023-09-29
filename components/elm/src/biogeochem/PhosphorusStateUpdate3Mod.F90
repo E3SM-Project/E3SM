@@ -113,7 +113,6 @@ contains
              flux_mineralization(fc,j) = flux_mineralization(fc,j) + col_pf%biochem_pmin_vr(c,j)*dt
            end do
         end do
-
       if (nu_com .eq. 'RD') then
 
         !$acc parallel loop independent gang vector collapse(2) default(present)
@@ -222,8 +221,8 @@ contains
                col_ps%primp_vr_prev(c,j)   = col_ps%primp_vr(c,j)
 
                col_ps%secondp_vr(c,j) = col_ps%secondp_vr(c,j) + ( col_pf%labilep_to_secondp_vr(c,j) &
-                    - col_pf%secondp_to_labilep_vr(c,j) &
-                                     - col_pf%secondp_to_occlp_vr(c,j) )*dt
+                    - col_pf%secondp_to_labilep_vr(c,j) - col_pf%secondp_to_occlp_vr(c,j) )*dt
+               
                col_ps%occlp_vr(c,j)   = col_ps%occlp_vr(c,j) + ( col_pf%secondp_to_occlp_vr(c,j) ) * dt
                col_ps%primp_vr(c,j)   = col_ps%primp_vr(c,j) - ( col_pf%primp_to_labilep_vr(c,j) )*dt + col_pf%pdep_to_sminp(c)*dt &
                     * pdep_prof(c,j)
@@ -361,6 +360,7 @@ contains
           veg_ps%ppool(p)              =  veg_ps%ppool(p) - veg_pf%m_ppool_to_litter_fire(p)       * dt
        end do
     end if
+      !$acc exit data delete(flux_mineralization(:,:),sum1)
 
     end associate
 

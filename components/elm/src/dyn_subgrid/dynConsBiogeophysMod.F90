@@ -1,6 +1,6 @@
 module dynConsBiogeophysMod
 
-!#py #include "shr_assert.h"
+#include "shr_assert.h"
 
   !---------------------------------------------------------------------------
   !
@@ -10,7 +10,7 @@ module dynConsBiogeophysMod
   !
   ! !USES:
   use shr_kind_mod      , only : r8 => shr_kind_r8
-  !#py !#py use shr_log_mod       , only : errMsg => shr_log_errMsg
+  use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
   use UrbanParamsType   , only : urbanparams_type
   use EnergyFluxType    , only : energyflux_type
@@ -151,13 +151,13 @@ contains
          heat_grc = heat2(bounds%begg:bounds%endg), &
          liquid_water_temp_grc = liquid_water_temp2(bounds%begg:bounds%endg))
 
-   !  if (get_for_testing_zero_dynbal_fluxes()) then
-   !     do g = begg, endg
-   !        delta_liq(g) = 0._r8
-   !        delta_ice(g) = 0._r8
-   !        delta_heat(g) = 0._r8
-   !    end do
-   !  else
+   ! if (get_for_testing_zero_dynbal_fluxes()) then
+   !    do g = begg, endg
+   !       delta_liq(g) = 0._r8
+   !       delta_ice(g) = 0._r8
+   !       delta_heat(g) = 0._r8
+   !   end do
+   ! else
     !$acc parallel loop independent gang vector default(present)
     do g = begg, endg
        delta_liq  = liq2(g) - liq1(g)
@@ -167,7 +167,7 @@ contains
        grc_wf%qflx_ice_dynbal (g) = delta_ice/dtime
        grc_ef%eflx_dynbal    (g) = delta_heat/dtime
     end do
-   !  end if
+   !end if
 
     end associate
   end subroutine dyn_hwcontent_final

@@ -607,13 +607,6 @@ contains
    !$acc enter data create(sum1, sum2, sum3) 
 
    ! vertically integrate each of the decomposing C pools
-   !$acc parallel loop independent gang vector collapse(2) default(present)
-   do l = 1, ndecomp_pools
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%decomp_cpools(c,l) = 0._r8
-      end do
-   end do
    
    !$acc parallel loop independent gang worker collapse(2) default(present) private(sum1) 
    do l = 1, ndecomp_pools
@@ -624,7 +617,7 @@ contains
          do j = 1, nlev
             sum1 = sum1 + this%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
          end do
-         this%decomp_cpools(c,l) = this%decomp_cpools(c,l) + sum1 
+         this%decomp_cpools(c,l) = sum1 
       end do
    end do
 
@@ -637,7 +630,7 @@ contains
             !$acc loop vector reduction(+:sum1) 
             do j = 1, nlevdecomp
                if ( zisoi(j) <= maxdepth ) then
-                  sum1 = this%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
+                  sum1 = sum1 + this%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
                elseif ( zisoi(j-1) < maxdepth ) then
                   sum1 = sum1 + this%decomp_cpools_vr(c,j,l) * (maxdepth - zisoi(j-1))
                endif
@@ -662,7 +655,6 @@ contains
             if(decomp_cascade_con%is_soil(l) ) then 
                sum2 = sum2 + this%decomp_cpools_1m(c,l)
             end if 
-
          end do
          this%totlitc_1m(c) = sum1
          this%totsomc_1m(c) = sum2 
@@ -772,6 +764,9 @@ contains
    !$acc parallel loop gang worker independent default(present) private(sum1,sum2,sum3)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
+      sum1 = 0._r8 
+      sum2 = 0._r8 
+      sum3 = 0._r8 
       !$acc loop vector reduction(+:sum1,sum2,sum3)
       do j = 1, nlev
          sum1 = sum1 + this%smin_no3_vr(c,j) * dzsoi_decomp(j)
@@ -787,12 +782,11 @@ contains
    end do
 
    ! vertically integrate each of the decomposing N pools
-
    !$acc parallel loop independent gang worker collapse(2) default(present) private(sum1)
    do l = 1, ndecomp_pools
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         
+         sum1 = 0._r8 
          !$acc loop vector reduction(+:sum1)
          do j = 1, nlev
             sum1 = sum1 + this%decomp_npools_vr(c,j,l) * dzsoi_decomp(j)
@@ -808,6 +802,7 @@ contains
       do l = 1, ndecomp_pools
          do fc = 1,num_soilc
             c = filter_soilc(fc)
+            sum1 = 0._r8 
             !$acc loop vector reduction(+:sum1) 
             do j = 1, nlevdecomp
                if ( zisoi(j) <= maxdepth ) then
@@ -819,11 +814,6 @@ contains
             this%decomp_npools_1m(c,l) = sum1  
          end do
       end do
-
-      ! do fc = 1,num_soilc
-      !    c = filter_soilc(fc)
-      !    this%totlitn_1m(c) = 0._r8
-      ! end do
       
       !$acc parallel loop independent gang worker  default(present) private(sum1,sum2)
       do fc = 1,num_soilc
@@ -878,7 +868,8 @@ contains
    do fc = 1,num_soilc
       c = filter_soilc(fc)
       sum1 = 0.0_r8
-      sum2 = 0.0_r8 
+      sum2 = 0.0_r8
+     !$acc loop vector reduction(+:sum1,sum2)  
       do j = 1, nlev
          sum1 = sum1 + this%sminn_vr(c,j) * dzsoi_decomp(j)
          sum2 = sum2 + this%ntrunc_vr(c,j) * dzsoi_decomp(j)
@@ -994,7 +985,6 @@ contains
   ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
   if ( nlevdecomp > 1) then
 
-
      ! vertically integrate each of the decomposing n pools to 1 meter
       !$acc parallel loop independent gang worker default(present) private(sum1)
       do l = 1, ndecomp_pools
@@ -1054,7 +1044,6 @@ contains
          if ( decomp_cascade_con%is_soil(l) ) then 
             sum2 = sum2 + this%decomp_ppools(c,l) 
          end if 
-
          ! total cwdn
          if ( decomp_cascade_con%is_cwd(l) ) then
             sum3 = sum3 + this%decomp_ppools(c,l)
@@ -1227,7 +1216,6 @@ contains
              sum1 = sum1 + this%decomp_cascade_hr_vr(c,j,k) * dzsoi_decomp(j)
 
          end do
-         !this%decomp_cascade_hr(c,k) is zeroed out above
          this%decomp_cascade_hr(c,k) = sum1; 
       end do
    end do
@@ -1243,7 +1231,6 @@ contains
          if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) .or. is_cwd((decomp_cascade_con%cascade_donor_pool(k)))) then
             sum1 = sum1 + this%decomp_cascade_hr(c,k)
          end if
-         
          ! soil organic matter heterotrophic respiration (SOMHR)
          if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
             sum2 = sum2  + this%decomp_cascade_hr(c,k)
@@ -1498,17 +1485,7 @@ contains
    !$acc enter data create(sum1,sum2,sum3,sum4,sum5,sum6,sum7,sum8)
    nlev = nlevdecomp
    if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
-
-   ! do fc = 1,num_soilc
-      ! c = filter_soilc(fc)
-      ! this%denit(c) = 0._r8
-      ! this%supplement_to_sminn(c) = 0._r8
-      ! this%som_n_leached(c)       = 0._r8
-      ! this%somn_erode(c)          = 0._r8
-      ! this%somn_deposit(c)        = 0._r8
-      ! this%somn_yield(c)          = 0._r8
-   ! end do
-
+   
    if (  (.not. (use_pflotran .and. pf_cmode)) ) then
       ! BeTR is off AND PFLOTRAN's pf_cmode is false
       ! vertically integrate decomposing N cascade fluxes and
@@ -1746,7 +1723,7 @@ contains
    end if !if (.not.(use_pflotran .and. pf_cmode))
 
    ! vertically integrate inorganic P flux
-   !$acc parallel loop independent gang worker default(present) private(c,sum1) async(1)
+   !$acc parallel loop independent gang worker default(present) private(c,sum1)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
       sum1 = 0._r8
@@ -1757,7 +1734,7 @@ contains
       this%primp_to_labilep(c) = this%primp_to_labilep(c) + sum1 
    end do
 
-   !$acc parallel loop independent gang worker default(present) private(c,sum2) async(2)
+   !$acc parallel loop independent gang worker default(present) private(c,sum2)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
       sum2 = 0._r8
@@ -1768,7 +1745,7 @@ contains
       this%labilep_to_secondp(c) = this%labilep_to_secondp(c) + sum2 
    end do
 
-   !$acc parallel loop independent gang worker default(present) private(c,sum3) async(3)
+   !$acc parallel loop independent gang worker default(present) private(c,sum3)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
       sum3 = 0._r8
@@ -1779,7 +1756,7 @@ contains
       this%secondp_to_labilep(c) = this%secondp_to_labilep(c) + sum3 
    end do
 
-   !$acc parallel loop independent gang worker default(present) private(c,sum4) async(4)
+   !$acc parallel loop independent gang worker default(present) private(c,sum4)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
       sum4 = 0._r8
@@ -1791,7 +1768,7 @@ contains
    end do
 
    ! vertically integrate leaching flux
-  !$acc parallel loop independent gang worker default(present) private(c,sum5) async(5)
+  !$acc parallel loop independent gang worker default(present) private(c,sum5)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
       sum5 = 0._r8
@@ -1801,7 +1778,6 @@ contains
       end do
       this%sminp_leached(c) = this%sminp_leached(c) + sum5 
    end do
-   !$acc wait 
 
    ! vertically integrate column-level fire P losses
    !$acc parallel loop independent gang worker default(present) private(c,sum1)

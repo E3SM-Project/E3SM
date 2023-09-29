@@ -140,12 +140,6 @@ contains
     type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
 
-    !!
-    real(r8)  :: dt       ! time step variable (s)
-    real(r8)  :: dayspyr  ! days per year
-    integer  :: kyr, kmo, kda, mcsec, nstep
-
-    !
     ! !LOCAL VARIABLES:
     real(r8), parameter  :: lfuel=75._r8    ! lower threshold of fuel mass (gC/m2) for ignition, Li et al.(2014)
     real(r8), parameter  :: ufuel=1050._r8  ! upper threshold of fuel mass(gC/m2) for ignition
@@ -179,7 +173,7 @@ contains
     real(r8) :: ig       ! total ignitions (count/km2/hr)
     real(r8) :: hdmlf    ! human density
     real(r8) :: sum1,sum2,sum3,sum4
-    real(r8) :: btran_col(1:num_soilc)
+    real(r8) :: btran_col(num_soilc)
     logical  :: transient_landcover  ! whether this run has any prescribed transient landcover
     real :: startt,stopt
     !-----------------------------------------------------------------------
@@ -260,16 +254,6 @@ contains
       transient_landcover = (dyn_subgrid_control_inst%do_transient_pfts .or. &
                   dyn_subgrid_control_inst%do_transient_crops)
 
-      ! find which pool is the cwd pool
-      i_cwd = 0
-      do l = 1, ndecomp_pools
-         if ( is_cwd(l) ) then
-            i_cwd = l
-         endif
-      end do
-      !$acc enter data copyin(i_cwd )
-      !$acc enter data create(sum1,sum2,sum3,sum4,btran_col(1:num_soilc))
-
       !pft to column average
       call p2c_1d_filter_parallel( num_soilc, filter_soilc, &
            totvegc(:), totvegc_col(:))
@@ -278,15 +262,9 @@ contains
       call p2c_1d_filter_parallel(num_soilc, filter_soilc, &
            deadstemc(:), deadstemc_col(:))
 
-      dt = dtime_mod        ! time step variable (s)
-      dayspyr = dayspyr_mod ! days per year
-      kyr = year_curr   ; kmo   = mon_curr;
-      kda = day_curr    ; mcsec = secs_curr;
-      nstep = nstep_mod
-     !
      ! On first time-step, just set area burned to zero and exit
      !
-     if ( nstep == 0 )then
+     if ( nstep_mod == 0 )then
         !$acc parallel loop independent gang vector private(c) default(present)
         do fc = 1,num_soilc
            c = filter_soilc(fc)
@@ -298,7 +276,17 @@ contains
            cropf_col(c)    = 0._r8
         end do
         return
-     end if
+      end if
+      
+     !$acc enter data create(sum1,sum2,sum3,sum4,btran_col(:), i_cwd, transient_landcover)
+     ! find which pool is the cwd pool
+     i_cwd = 0
+     do l = 1, ndecomp_pools
+        if ( is_cwd(l) ) then
+           i_cwd = l
+        endif
+     end do
+     !$acc update device(i_cwd, transient_landcover)
      !
      ! Calculate fraction of crop (cropf_col) and non-crop and non-bare-soil
      ! vegetation (lfwt) in vegetated column
@@ -310,13 +298,15 @@ contains
          !$acc loop vector reduction(+:sum1,sum2)
          do p = col_pp%pfti(c), col_pp%pftf(c)
             ! For crop veg types
-            if( veg_pp%itype(p) > nc4_grass )then
-               sum1 = sum1 + veg_pp%wtcol(p)
-            end if
-            ! For natural vegetation (non-crop and non-bare-soil)
-            if( veg_pp%itype(p) >= ndllf_evr_tmp_tree .and. veg_pp%itype(p) <= nc4_grass )then
-               sum2 = sum2 + veg_pp%wtcol(p)
-            end if
+            if(veg_pp%wtcol(p)  >  0._r8) then 
+               if( veg_pp%itype(p) > nc4_grass )then
+                  sum1 = sum1 + veg_pp%wtcol(p)
+               end if
+               ! For natural vegetation (non-crop and non-bare-soil)
+               if( veg_pp%itype(p) >= ndllf_evr_tmp_tree .and. veg_pp%itype(p) <= nc4_grass )then
+                  sum2 = sum2 + veg_pp%wtcol(p)
+               end if
+            end if 
         end do
         cropf_col(c) = sum1
         lfwt(c)      = sum2
@@ -335,7 +325,7 @@ contains
              ! column-level litter carbon
              ! is available, so we use leaf carbon to estimate the
              ! litter carbon for crop PFTs
-             if( veg_pp%itype(p) > nc4_grass .and. veg_pp%wtcol(p) > 0._r8   )then
+             if( veg_pp%itype(p) > nc4_grass .and. veg_pp%wtcol(p) > 0._r8  .and. veg_pp%wtcol(p)  >  0._r8 )then
                 sum1 = sum1 + (leafc(p) + leafc_storage(p) + &
                      leafc_xfer(p))*veg_pp%wtcol(p)/cropf_col(c)     + &
                      totlitc(c)*leafc(p)/leafc_col(c)*veg_pp%wtcol(p)/cropf_col(c)
@@ -349,17 +339,16 @@ contains
      ! 5/22/2018, PET: switched the use of column-weight-on-gridcell, to column-weight-on-topounit
      ! in the calculation of summed weight for tropical trees
      !
-     !!
-
+     !
      !$acc parallel loop gang worker default(present) private(c,sum1,sum2,sum4,sum4)
      do fc = 1,num_soilc
         c = filter_soilc(fc)
-        sum1 = 0._r8;sum2=0.0_r8;
-        sum3 = 0.0_r8;sum4=0._r8;
+        sum1 = 0._r8; sum2=0._r8;
+        sum3 = 0._r8; sum4=0._r8;
         !$acc loop vector reduction(+:sum1,sum2,sum3,sum4)
         do p = col_pp%pfti(c), col_pp%pftf(c)
               ! For non-crop -- natural vegetation and bare-soil
-              if( veg_pp%itype(p)  <  nc3crop .and. cropf_col(c)  <  1.0_r8 )then
+              if( veg_pp%itype(p)  <  nc3crop .and. cropf_col(c)  <  1.0_r8 .and. veg_pp%wtcol(p)  >  0._r8 )then
                  if( .not. (btran2(p) .ne. btran2(p)))then !check if btran2 is NaN
                     if (btran2(p)  <=  1._r8 ) then
                       sum1 = sum1 + btran2(p)*veg_pp%wtcol(p)
@@ -388,7 +377,7 @@ contains
             !$acc loop vector reduction(+:sum1)
             do p = col_pp%pfti(c), col_pp%pftf(c)
                ! For non-crop -- natural vegetation and bare-soil
-               if( veg_pp%itype(p)  <  nc3crop .and. cropf_col(c)  <  1.0_r8 )then
+               if( veg_pp%itype(p)  <  nc3crop .and. cropf_col(c)  <  1.0_r8 .and. veg_pp%wtcol(p)  >  0._r8 )then
                   if( veg_pp%itype(p) == nbrdlf_evr_trp_tree .or. veg_pp%itype(p) == nbrdlf_dcd_trp_tree )then
                      if(lfpftd(p) > 0._r8)then
                         sum1 = sum1 + lfpftd(p)*col_pp%wttopounit(c)
@@ -407,7 +396,7 @@ contains
         !$acc loop vector reduction(+:sum1,sum2)
         do p = col_pp%pfti(c), col_pp%pftf(c)
               ! For non-crop -- natural vegetation and bare-soil
-              if( veg_pp%itype(p)  <  nc3crop .and. cropf_col(c)  <  1.0_r8 )then
+              if( veg_pp%itype(p)  <  nc3crop .and. cropf_col(c)  <  1.0_r8 .and. veg_pp%wtcol(p)  >  0._r8 )then
                   sum1 = sum1 + (frootc(p) + frootc_storage(p) + &
                       frootc_xfer(p) + deadcrootc(p) +                &
                       deadcrootc_storage(p) + deadcrootc_xfer(p) +    &
@@ -427,10 +416,10 @@ contains
         g = col_pp%gridcell(c)
         sum1 = 0._r8;sum2=0.0_r8;
         sum3 = 0._r8;sum4=0.0_r8;
-        !$acc loop vector reduction(+:sum1,sum2,sum3,sum4) private(hdmlf)
+        !$acc loop vector reduction(+:sum1,sum2,sum3,sum4)
         do p = col_pp%pfti(c), col_pp%pftf(c)
               ! For non-crop -- natural vegetation and bare-soil
-              if( veg_pp%itype(p)  <  nc3crop .and. cropf_col(c)  <  1.0_r8 )then
+              if( veg_pp%itype(p)  <  nc3crop .and. cropf_col(c)  <  1.0_r8 .and. veg_pp%wtcol(p)  >  0._r8 )then
                  if( lfwt(c)  /=  0.0_r8 )then
                     hdmlf=forc_hdm(g)
                     ! all these constants are in Li et al. BG (2012a,b;2013)
@@ -496,7 +485,7 @@ contains
                  lfc(c) = 0._r8
               end if
               if( mon_curr == 1 .and. day_curr == 1 .and. secs_curr == dtime_mod)then
-                 lfc(c) = dtrotr_col(c)*dayspyr*secspday/dt
+                 lfc(c) = dtrotr_col(c)*dayspyr_mod*secspday/dtime_mod
               end if
            else
               lfc(c)=0._r8
@@ -524,7 +513,7 @@ contains
         do p = col_pp%pfti(c),col_pp%pftf(c)
            ! For crop
            if( forc_t(t)  >=  SHR_CONST_TKFRZ .and. veg_pp%itype(p)  >  nc4_grass .and.  &
-                   kmo == abm_lf(c) .and. forc_rain(t)+forc_snow(t) == 0._r8  .and. &
+                   mon_curr == abm_lf(c) .and. forc_rain(t)+forc_snow(t) == 0._r8  .and. &
                    burndate(p) >= 999 .and. veg_pp%wtcol(p)  >  0._r8 )then ! catch  crop burn time
               ! calculate human density impact on ag. fire
               fhd = 0.04_r8+0.96_r8*exp(-1._r8*SHR_CONST_PI*(hdmlf/350._r8)**0.5_r8)
@@ -535,7 +524,7 @@ contains
               ! crop fire only for generic crop types at this time
               ! managed crops are treated as grasses if crop model is turned on
               sum1 = sum1 + cropfire_a1/secsphr*fb*fhd*fgdp*veg_pp%wtcol(p)
-              if( fb*fhd*fgdp*veg_pp%wtcol(p)  >  0._r8) burndate(p)=kda
+              if( fb*fhd*fgdp*veg_pp%wtcol(p)  >  0._r8) burndate(p) = day_curr
            end if
         end do
         baf_crop(c) = sum1
@@ -599,8 +588,7 @@ contains
      end do
 
 
-     !$acc parallel loop independent gang vector default(present) private(c,g,t,hdmlf,&
-     !$acc  fb, m, fire_m, lh, fs, ig, Lb_lf, spread_m,cri,cli)
+     !$acc parallel loop independent gang vector default(present)
      do fc = 1, num_soilc
         c = filter_soilc(fc)
         g = col_pp%gridcell(c)
@@ -646,12 +634,12 @@ contains
                     cri = (4.0_r8*trotr1_col(c)+1.8_r8*trotr2_col(c))/(trotr1_col(c)+trotr2_col(c))
                     cli = (max(0._r8,min(1._r8,(cri-prec60(t)*secspday)/cri))**0.5)* &
                           (max(0._r8,min(1._r8,(cri-prec10(t)*secspday)/cri))**0.5)* &
-                          max(0.0005_r8,min(1._r8,19._r8*dtrotr_col(c)*dayspyr*secspday/dt-0.001_r8))* &
+                          max(0.0005_r8,min(1._r8,19._r8*dtrotr_col(c)*dayspyr_mod*secspday/dtime_mod-0.001_r8))* &
                           max(0._r8,min(1._r8,(0.25_r8-(forc_rain(t)+forc_snow(t))*secsphr)/0.25_r8))
 
                     farea_burned(c) = cli*(cli_scale/secspday)+baf_crop(c)+baf_peatf(c)
                     ! burned area out of conversion region due to land use fire
-                    fbac1(c) = max(0._r8,cli*(cli_scale/secspday) - 2.0_r8*lfc(c)/dt)
+                    fbac1(c) = max(0._r8,cli*(cli_scale/secspday) - 2.0_r8*lfc(c)/dtime_mod)
                  end if
                  ! total burned area out of conversion
                  fbac(c) = fbac1(c)+baf_crop(c)+baf_peatf(c)
@@ -678,7 +666,7 @@ contains
 
      end do  ! end of column loop
      !$acc exit data delete(i_cwd, &
-     !$acc       sum1,sum2,sum3,sum4,btran_col(:))
+     !$acc       sum1,sum2,sum3,sum4,btran_col(:), transient_landcover)
 
    end associate
 
@@ -712,9 +700,6 @@ contains
    integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
    integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
    type(cnstate_type)       , intent(inout) :: cnstate_vars
-   real(r8)  :: dt                   ! time step variable (s)
-   real(r8)  :: dayspyr              ! days per year
-   integer   :: kyr, kmo, kda, mcsec
    !
    ! !LOCAL VARIABLES:
    integer  :: g,c,p,j,l,pi   ! indices
@@ -986,16 +971,10 @@ contains
      transient_landcover = (dyn_subgrid_control_inst%do_transient_pfts .or. &
                dyn_subgrid_control_inst%do_transient_crops)
 
-     ! Get model step size
-     dt = dtime_mod        ! time step variable (s)
-     dayspyr = dayspyr_mod ! days per year
-     kyr = year_curr   ; kmo   = mon_curr;
-     kda = day_curr    ; mcsec = secs_curr;
-
      m_veg = 1.0_r8
      if (spinup_state == 1) m_veg = spinup_mortality_factor
      !$acc enter data copyin (m_veg,transient_landcover)
-     !$acc enter data create(sum1,sum2,sum3, f,cc_other_sc, wt_col,itype,lprof_pj,fr_prof_pj,cr_prof_pj,st_prof_pj,baf_crop_sc)
+     !$acc enter data create(sum1,sum2,sum3)
      ! calculate burned area fraction per sec
      !
      ! patch loop
@@ -1497,7 +1476,7 @@ contains
      ! carbon loss due to deforestation fires
      if (transient_landcover) then    !true when landuse data is used
         if( .not. (mon_curr == 1 .and. day_curr == 1 .and. secs_curr == 0) )then
-           !$acc parallel loop gang vector independent default(present) private(c)
+           !$acc parallel loop gang vector independent default(present)
            do fc = 1,num_soilc
              c = filter_soilc(fc)
              lfc2(c)=0._r8
@@ -1505,7 +1484,7 @@ contains
                    lfc(c) > 0._r8 .and. fbac1(c) == 0._r8) then
                  !
                  lfc2(c) = max(0._r8, min(lfc(c), (farea_burned(c)-baf_crop(c) - &
-                      baf_peatf(c))/2.0*dtime_mod))/(dtrotr_col(c)*dayspyr*secspday/dtime_mod)/dtime_mod
+                      baf_peatf(c))/2.0*dtime_mod))/(dtrotr_col(c)*dayspyr_mod*secspday/dtime_mod)/dtime_mod
                  lfc(c)  = lfc(c) - max(0._r8, min(lfc(c), (farea_burned(c)-baf_crop(c) - &
                       baf_peatf(c))*dtime_mod/2.0_r8))
              end if
@@ -1533,7 +1512,7 @@ contains
      ! They will be added here in proportion to the carbon emission
      ! Emission factors differ for various fire types
 
-     !$acc exit data delete (m_veg,sum1,sum2,sum3,f,cc_other_sc, wt_col,itype,lprof_pj,fr_prof_pj,cr_prof_pj,st_prof_pj,baf_crop_sc)
+     !$acc exit data delete(m_veg,transient_landcover,sum1,sum2,sum3)
 
    end associate
 

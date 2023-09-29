@@ -197,7 +197,6 @@ contains
     !$acc parallel loop gang vector collapse(2) independent default(present) private(nc,f,hp,numdims,num2d,bounds)
     do nc = 1, nclumps
       do f = 1, total_flds
-        !call get_proc_bounds(bounds)
         call get_clump_bounds_gpu(nc, bounds)
 
         numdims = tape_gpu(f)%numdims
@@ -214,10 +213,10 @@ contains
     end do
 
     !TODO: change inc to be end of hist interval?
-    if(transfer_tapes .and. step .ne. 0) then
+    if(transfer_tapes) then
         print *, "transfering tape to cpu:"
         call transfer_tape_to_cpu()
-        !call set_gpu_tape
+        call set_gpu_tape
     endif
   end subroutine hist_update_hbuf_gpu
 
@@ -825,6 +824,7 @@ end subroutine hist_update_hbuf_field_1d_gpu
     print *, "update tape on cpu"
     do field = 1, total_flds
       t = map_tapes(field) ; f = map_fields(field);
+      if(tape(t)%hlist(f)%field%name  == "ALTMAX") print *, "ALTMAX is field # ",field 
       tape(t)%hlist(f)%hbuf(:,:) = tape_gpu(f)%hbuf(:,:)
       tape(t)%hlist(f)%nacs(:,:) = tape_gpu(f)%nacs(:,:)
     end do
