@@ -32,17 +32,6 @@ void Functions<S,D>::diag_second_moments(
   //  u, v, TKE, and tracers are computed here as well as the
   //  correlation of qw and thetal.
 
-//ASD  const auto thl2tune = 1;
-
-  // moisture variance
-//ASD  const auto qw2tune = 1;
-
-  // temp moisture covariance
-//ASD  const auto qwthl2tune = 1;
-
-  // vertical velocity variance
-//ASD  const auto w2tune = 1;
-
   // Interpolate some variables from the midpoint grid to the interface grid
   linear_interp(team, zt_grid, zi_grid, isotropy, isotropy_zi, nlev, nlevi, 0);
   linear_interp(team, zt_grid, zi_grid, tkh,      tkh_zi,      nlev, nlevi, 0);

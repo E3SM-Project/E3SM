@@ -12,13 +12,17 @@ atmosphere_processes:
   schedule_type: Sequential
   atm_procs_list: [shoc,p3]
   number_of_subcycles: ${NUM_SUBCYCLES}
+  p3:
+    max_total_ni: 740.0e3
   shoc:
     lambda_low: 0.001
     lambda_high: 0.04
     lambda_slope: 2.65
     lambda_thresh: 0.02
-  p3:
-    max_total_ni: 740.0e3
+    thl2tune: 1.0
+    qw2tune: 1.0
+    qwthl2tune: 1.0
+    w2tune: 1.0
 
 grids_manager:
   Type: Mesh Free

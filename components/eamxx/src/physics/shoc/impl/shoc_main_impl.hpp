@@ -77,6 +77,10 @@ void Functions<S,D>::shoc_main_internal(
   const Scalar&                lambda_high,
   const Scalar&                lambda_slope,
   const Scalar&                lambda_thresh,
+  const Scalar&                thl2tune,
+  const Scalar&                qw2tune,
+  const Scalar&                qwthl2tune,
+  const Scalar&                w2tune,
   // Input Variables
   const Scalar&                dx,
   const Scalar&                dy,
@@ -221,11 +225,6 @@ void Functions<S,D>::shoc_main_internal(
                                 thetal,qw,qtracers,tke,u_wind,v_wind);   // Input/Output
 
     // Diagnose the second order moments
-    // ASD
-    const Real thl2tune = 1.0;
-    const Real qw2tune = 1.0;
-    const Real qwthl2tune = 1.0;
-    const Real w2tune = 1.0;
     diag_second_shoc_moments(team,nlev,nlevi,
                              thl2tune, qw2tune, qwthl2tune, w2tune,     // Runtime options
                              thetal,qw,u_wind,v_wind,                   // Input
@@ -321,6 +320,10 @@ void Functions<S,D>::shoc_main_internal(
   const Scalar&                lambda_high,
   const Scalar&                lambda_slope,
   const Scalar&                lambda_thresh,
+  const Scalar&                thl2tune,
+  const Scalar&                qw2tune,
+  const Scalar&                qwthl2tune,
+  const Scalar&                w2tune,
   // Input Variables
   const view_1d<const Scalar>& dx,
   const view_1d<const Scalar>& dy,
@@ -472,11 +475,6 @@ void Functions<S,D>::shoc_main_internal(
                                      thetal,qw,qtracers,tke,u_wind,v_wind);      // Input/Output
 
     // Diagnose the second order moments
-    // ASD
-    const Real thl2tune = 1.0;
-    const Real qw2tune = 1.0;
-    const Real qwthl2tune = 1.0;
-    const Real w2tune = 1.0;
     diag_second_shoc_moments_disp(shcol,nlev,nlevi,
                                   thl2tune, qw2tune, qwthl2tune, w2tune,     // Runtime options
                                   thetal,qw,u_wind,v_wind,                   // Input
@@ -580,6 +578,10 @@ Int Functions<S,D>::shoc_main(
   const Scalar lambda_high   = shoc_runtime.lambda_high;   
   const Scalar lambda_slope  = shoc_runtime.lambda_slope;  
   const Scalar lambda_thresh = shoc_runtime.lambda_thresh; 
+  const Scalar thl2tune      = shoc_runtime.thl2tune;
+  const Scalar qw2tune       = shoc_runtime.qw2tune;
+  const Scalar qwthl2tune    = shoc_runtime.qwthl2tune;
+  const Scalar w2tune        = shoc_runtime.w2tune;
 
 #ifndef SCREAM_SMALL_KERNELS
   using ExeSpace = typename KT::ExeSpace;
@@ -640,6 +642,7 @@ Int Functions<S,D>::shoc_main(
 
     shoc_main_internal(team, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
 	               lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
+                       thl2tune, qw2tune, qwthl2tune, w2tune,                 // Runtime options
                        dx_s, dy_s, zt_grid_s, zi_grid_s,                      // Input
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,             // Input
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,             // Input
@@ -662,6 +665,7 @@ Int Functions<S,D>::shoc_main(
 
   shoc_main_internal(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
     lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
+    thl2tune, qw2tune, qwthl2tune, w2tune,                 // Runtime options
     shoc_input.dx, shoc_input.dy, shoc_input.zt_grid, shoc_input.zi_grid, // Input
     shoc_input.pres, shoc_input.presi, shoc_input.pdel, shoc_input.thv, shoc_input.w_field, // Input
     shoc_input.wthl_sfc, shoc_input.wqw_sfc, shoc_input.uw_sfc, shoc_input.vw_sfc, // Input

@@ -24,6 +24,10 @@ atmosphere_processes:
       lambda_high: 0.04
       lambda_slope: 2.65
       lambda_thresh: 0.02
+      thl2tune: 1.0
+      qw2tune: 1.0
+      qwthl2tune: 1.0
+      w2tune: 1.0
   rrtmgp:
     column_chunk_size: 123
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]

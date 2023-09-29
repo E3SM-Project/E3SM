@@ -77,6 +77,10 @@ struct Functions
    Scalar lambda_high;
    Scalar lambda_slope;
    Scalar lambda_thresh;
+   Scalar thl2tune;
+   Scalar qw2tune;
+   Scalar qwthl2tune;
+   Scalar w2tune;
  };
 
   // This struct stores input views for shoc_main.
@@ -832,6 +836,10 @@ struct Functions
     const Scalar&                lambda_high,
     const Scalar&                lambda_slope,
     const Scalar&                lambda_thresh,
+    const Scalar&                thl2tune,
+    const Scalar&                qw2tune,
+    const Scalar&                qwthl2tune,
+    const Scalar&                w2tune,
     // Input Variables
     const Scalar&                host_dx,
     const Scalar&                host_dy,
@@ -895,6 +903,10 @@ struct Functions
     const Scalar&                lambda_high,
     const Scalar&                lambda_slope,
     const Scalar&                lambda_thresh,
+    const Scalar&                thl2tune,
+    const Scalar&                qw2tune,
+    const Scalar&                qwthl2tune,
+    const Scalar&                w2tune,
     // Input Variables
     const view_1d<const Scalar>& host_dx,
     const view_1d<const Scalar>& host_dy,

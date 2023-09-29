@@ -2660,7 +2660,8 @@ void isotropic_ts_f(Int nlev, Int shcol, Real* brunt_int, Real* tke,
       //outputs
       const auto isotropy_s = ekat::subview(isotropy_d, i); //output
 
-      const Real lambda_low = 0.001; //ASD
+      // Hard code these runtime options for F90
+      const Real lambda_low = 0.001; 
       const Real lambda_high   = 0.04;
       const Real lambda_slope  = 2.65;
       const Real lambda_thresh = 0.02;
@@ -2876,7 +2877,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
                                              qwthl_sec_d, wthl_sec_d, wqw_sec_d, wtke_sec_d,
                                              uw_sec_d,    vw_sec_d,   w3_d,      wqls_sec_d,
                                              brunt_d,     isotropy_d};
-  SHF::SHOCRuntime shoc_runtime_options{0.001,0.04,2.65,0.02};
+  SHF::SHOCRuntime shoc_runtime_options{0.001,0.04,2.65,0.02,1.0,1.0,1.0,1.0};
 
   const auto nlevi_packs = ekat::npack<Spack>(nlevi);
 
