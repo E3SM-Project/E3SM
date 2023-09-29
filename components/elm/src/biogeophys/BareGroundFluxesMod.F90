@@ -51,7 +51,7 @@ contains
     use FrictionVelocityMod  , only : FrictionVelocity, MoninObukIni, implicit_stress
     use QSatMod              , only : QSat
     use SurfaceResistanceMod , only : do_soilevap_beta
-    use clm_time_manager     , only : get_nstep
+    use elm_time_manager     , only : get_nstep
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds

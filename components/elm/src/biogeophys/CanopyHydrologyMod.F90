@@ -122,9 +122,9 @@ contains
      use atm2lndType        , only : atm2lnd_type
      !use domainMod          , only : ldomain
      use TopounitType       , only : top_pp
-     use clm_time_manager   , only : get_step_size
+     use elm_time_manager   , only : get_step_size
      use subgridAveMod      , only : p2c,p2g
-     use clm_time_manager   , only : get_step_size, get_prev_date, get_nstep
+     use elm_time_manager   , only : get_step_size, get_prev_date, get_nstep
      use SnowHydrologyMod   , only : NewSnowBulkDensity
      !
      ! !ARGUMENTS:

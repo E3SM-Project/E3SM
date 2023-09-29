@@ -75,11 +75,11 @@
 	<var_struct name="tend" time_levs="1">
 		<var_struct name="tracersTend" time_levs="1">
 			<var_array name="activeTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="activeTracersPKG" missing_value="FILLVAL" missing_value_mask="cellMask">
-				<var name="temperatureTend" array_group="activeGRP" units="C s^-1"
-			 description="time tendency of potential temperature"
+				<var name="temperatureTend" array_group="activeGRP" units="C m s^-1"
+			 description="time tendency of potential temperature measured as change in degrees times layerThickness per second"
 				/>
-				<var name="salinityTend" array_group="activeGRP" units="1.e-3 s^-1"
-			 description="time tendency of salinity measured as change in practical salinity units per second"
+				<var name="salinityTend" array_group="activeGRP" units="m 1.e-3 s^-1"
+			 description="time tendency of salinity measured as change in practical salinity units times layerThickness per second"
 				/>
 			</var_array>
 		</var_struct>

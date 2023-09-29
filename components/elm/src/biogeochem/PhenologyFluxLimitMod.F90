@@ -9,7 +9,7 @@ module PhenologyFLuxLimitMod
   use shr_kind_mod                , only : r8 => shr_kind_r8
   use VegetationType              , only : veg_pp
   use VegetationPropertiesType    , only : veg_vp
-  use clm_time_manager            , only : get_step_size
+  use elm_time_manager            , only : get_step_size
   use pftvarcon                   , only : npcropmin
   use elm_varctl                  , only : iulog
   use abortutils                  , only : endrun

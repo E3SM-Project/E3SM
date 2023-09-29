@@ -145,7 +145,7 @@ module FireDataBaseType
       ! Initialize data stream information for population density.
       !
       ! !USES:
-      use clm_time_manager , only : get_calendar
+      use elm_time_manager , only : get_calendar
       use ncdio_pio        , only : pio_subsystem
       use shr_pio_mod      , only : shr_pio_getiotype
       use elm_nlUtilsMod   , only : find_nlgroup_name
@@ -265,7 +265,7 @@ module FireDataBaseType
      ! Interpolate data stream information for population density.
      !
      ! !USES:
-     use clm_time_manager, only : get_curr_date
+     use elm_time_manager, only : get_curr_date
      !
      ! !ARGUMENTS:
      class(fire_base_type)       :: this
@@ -301,7 +301,7 @@ module FireDataBaseType
      ! Initialize data stream information for Lightning.
      !
      ! !USES:
-     use clm_time_manager , only : get_calendar
+     use elm_time_manager , only : get_calendar
      use ncdio_pio        , only : pio_subsystem
      use shr_pio_mod      , only : shr_pio_getiotype
      use elm_nlUtilsMod   , only : find_nlgroup_name
@@ -421,7 +421,7 @@ module FireDataBaseType
      ! Interpolate data stream information for Lightning.
      !
      ! !USES:
-     use clm_time_manager, only : get_curr_date
+     use elm_time_manager, only : get_curr_date
      !
      ! !ARGUMENTS:
      class(fire_base_type)       :: this

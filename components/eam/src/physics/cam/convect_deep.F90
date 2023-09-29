@@ -263,8 +263,8 @@ subroutine convect_deep_tend( &
    real(r8), pointer :: prec(:)   ! total precipitation
    real(r8), pointer :: snow(:)   ! snow from ZM convection 
 
-   real(r8), pointer, dimension(:) :: jctop
-   real(r8), pointer, dimension(:) :: jcbot
+   real(r8), pointer, dimension(:) :: jctop_r8
+   real(r8), pointer, dimension(:) :: jcbot_r8
    real(r8), pointer, dimension(:,:,:) :: cld        
    real(r8), pointer, dimension(:,:) :: ql        ! wg grid slice of cloud liquid water.
    real(r8), pointer, dimension(:,:) :: rprd      ! rain production rate
@@ -285,11 +285,11 @@ subroutine convect_deep_tend( &
 
    real(r8) zero(pcols, pver)
 
-
+   integer :: jctop(pcols), jcbot(pcols)
    integer i, k
 
-   call pbuf_get_field(pbuf, cldtop_idx,  jctop )
-   call pbuf_get_field(pbuf, cldbot_idx,  jcbot )
+   call pbuf_get_field(pbuf, cldtop_idx,  jctop_r8 )
+   call pbuf_get_field(pbuf, cldbot_idx,  jcbot_r8 )
    call pbuf_get_field(pbuf, icwmrdp_idx, ql    )
 
   select case ( deep_scheme )
@@ -332,7 +332,7 @@ subroutine convect_deep_tend( &
 
 
     jctop = pver
-    jcbot = 1._r8
+    jcbot = 1
 
   case('ZM') !    1 ==> Zhang-McFarlane (default)
      call pbuf_get_field(pbuf, pblh_idx,  pblh)
@@ -350,6 +350,11 @@ subroutine convect_deep_tend( &
 
 
   end select
+
+  do i = 1,pcols
+     jctop_r8(i) = real(jctop(i), r8)
+     jcbot_r8(i) = real(jcbot(i), r8)
+  end do
 
   ! If we added this, set it.
   if (ttend_dp_idx > 0) then

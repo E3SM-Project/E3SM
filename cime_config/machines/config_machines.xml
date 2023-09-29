@@ -148,7 +148,7 @@
     <DESC>Perlmutter CPU-only nodes at NERSC.  Phase2 only: Each node has 2 AMD EPYC 7713 64-Core (Milan) 512GB</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:perlmutter</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnu,intel,nvidia,amdclang</COMPILERS>
+    <COMPILERS>intel,gnu,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -216,7 +216,7 @@
 
       <modules compiler="intel">
         <command name="load">PrgEnv-intel/8.3.3</command>
-        <command name="load">intel/2023.0.0</command>
+        <command name="load">intel/2023.1.0</command>
       </modules>
 
       <modules compiler="nvidia">
@@ -233,8 +233,8 @@
 
       <modules>
         <command name="load">craype-accel-host</command>
-        <command name="load">craype/2.7.19</command>
-        <command name="load">cray-mpich/8.1.24</command>
+        <command name="load">craype/2.7.20</command>
+        <command name="load">cray-mpich/8.1.25</command>
         <command name="load">cray-hdf5-parallel/1.12.2.3</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
         <command name="load">cray-parallel-netcdf/1.12.3.3</command>
@@ -368,8 +368,8 @@
 
       <modules>
         <command name="load">cray-libsci/23.02.1.1</command>
-        <command name="load">craype/2.7.19</command>
-        <command name="load">cray-mpich/8.1.24</command>
+        <command name="load">craype/2.7.20</command>
+        <command name="load">cray-mpich/8.1.25</command>
         <command name="load">cray-hdf5-parallel/1.12.2.3</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
         <command name="load">cray-parallel-netcdf/1.12.3.3</command>
@@ -520,7 +520,7 @@
   <machine MACH="spock">
     <DESC>Spock. NCCS moderate-security system that contains similar hardware and software as the upcoming Frontier system at ORNL.</DESC>
     <NODENAME_REGEX>.*spock.*</NODENAME_REGEX>
-    <OS>CNL</OS>
+    <OS>Linux</OS>
     <COMPILERS>gnu,cray</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cli133</PROJECT>
@@ -601,8 +601,8 @@
   <machine MACH="frontier">
     <DESC>Frontier exascale supercomputer at ORNL. 9408 nodes, Node: 4 AMD MI250X GPUs (2 GCDs) ~ 8 GPUs, 512 GB HDB2E, AMD EPYC 64 cores, 512GB DDR4 </DESC>
     <NODENAME_REGEX>.*frontier.*</NODENAME_REGEX>
-    <OS>CNL</OS>
-    <COMPILERS>gnu,crayclang,amdclang,gnugpu,crayclanggpu,amdclanggpu</COMPILERS>
+    <OS>Linux</OS>
+    <COMPILERS>crayclang,gnu,amdclang,gnugpu,crayclanggpu,amdclanggpu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <SAVE_TIMING_DIR>/lustre/orion/cli115/world-shared/frontier</SAVE_TIMING_DIR>
@@ -725,8 +725,8 @@
   <machine MACH="crusher">
     <DESC>Crusher. NCCS moderate-security system that contains similar hardware and software as the upcoming Frontier system at ORNL. 192 AMD EPYC 7A53 64C nodes, 128 hwthreads, 512GB DDR4, 4 MI250X GPUs</DESC>
     <NODENAME_REGEX>.*crusher.*</NODENAME_REGEX>
-    <OS>CNL</OS>
-    <COMPILERS>gnu,crayclang,amdclang,gnugpu,crayclanggpu,amdclanggpu</COMPILERS>
+    <OS>Linux</OS>
+    <COMPILERS>crayclang,gnu,amdclang,gnugpu,crayclanggpu,amdclanggpu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <SAVE_TIMING_DIR>/lustre/orion/cli115/world-shared/crusher</SAVE_TIMING_DIR>
@@ -848,7 +848,7 @@
   <machine MACH="crusher-scream-cpu">
     <DESC>Crusher. NCCS moderate-security system that contains similar hardware and software as the upcoming Frontier system at ORNL. 192 AMD EPYC 7A53 64C nodes, 128 hwthreads, 512GB DDR4, 4 MI250X GPUs</DESC>
     <NODENAME_REGEX>.*crusher.*</NODENAME_REGEX>
-    <OS>CNL</OS>
+    <OS>Linux</OS>
     <COMPILERS>crayclang-scream</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>CLI115</PROJECT>
@@ -948,7 +948,7 @@
   <machine MACH="crusher-scream-gpu">
     <DESC>Crusher. NCCS moderate-security system that contains similar hardware and software as the upcoming Frontier system at ORNL. 192 AMD EPYC 7A53 64C nodes, 128 hwthreads, 512GB DDR4, 4 MI250X GPUs</DESC>
     <NODENAME_REGEX>.*crusher.*</NODENAME_REGEX>
-    <OS>CNL</OS>
+    <OS>Linux</OS>
     <COMPILERS>crayclang-scream</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>CLI115</PROJECT>
@@ -3068,15 +3068,16 @@
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>104</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifx">104</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>208</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifx">208</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">104</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>104</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifx">52</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifx">104</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
        <executable>mpiexec</executable>
+       <!--executable>numactl -m 2-3 mpiexec</executable--><!--for HBM runs-->
        <arguments>
           <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
           <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
@@ -3157,6 +3158,7 @@
         <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
+        <env name="MPIR_CVAR_ENABLE_GPU">0</env>
         <env name="GPU_TILE_COMPACT"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="!gnu">

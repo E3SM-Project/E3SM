@@ -1,5 +1,5 @@
 set(SUPPORTS_CXX "TRUE")
-string(APPEND FFLAGS " -fallow-argument-mismatch -Wno-implicit-interface -fallow-invalid-boz ")
+string(APPEND FFLAGS " -Wno-implicit-interface ")
 string(APPEND CXX_LIBS " -lstdc++")
 if (NOT DEBUG)
   string(APPEND FFLAGS " -O2")

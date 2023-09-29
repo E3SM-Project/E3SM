@@ -76,8 +76,8 @@ def buildnml(case, caseroot, compname):
     eco_forcing_file = ''
 
     if ocn_grid == 'oEC60to30v3':
-        decomp_date = '161222'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc'
         analysis_mask_file = 'oEC60to30v3_Atlantic_region_and_southern_transect.nc'
         ic_date = '170905'
@@ -109,8 +109,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oQU480':
-        decomp_date = '151209'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         ic_date = '151209'
         ic_prefix = 'ocean.QU.480km'
         if ocn_ic_mode == 'spunup':
@@ -118,8 +118,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oQU240':
-        decomp_date = '151209'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         ic_date = '151209'
         ic_prefix = 'ocean.QU.240km'
         if ocn_ic_mode == 'spunup':
@@ -127,8 +127,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oQU240wLI':
-        decomp_date = '160929'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230422'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         ic_date = '230220'
         ic_prefix = 'ocean.QU.240wLI'
         if ocn_ic_mode == 'spunup':
@@ -136,8 +136,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oQU120':
-        decomp_date = '160318'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         ic_date = '160318'
         ic_prefix = 'ocean.QU.120km'
         if ocn_ic_mode == 'spunup':
@@ -167,8 +167,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oRRS18to6v3':
-        decomp_date = '170111'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '230424'
+        decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oRRS18to6v3.nc'
         analysis_mask_file = 'oRRS18to6v3_mocBasinsAndTransects20210623.nc'
         ic_date = '171116'
@@ -762,6 +762,9 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="velocityZonalTimesTemperature"/>')
             lines.append('    <var name="velocityMeridionalTimesTemperature"/>')
             lines.append('    <var name="normalVelocityTimesTemperature"/>')
+            lines.append('    <var name="velocityZonalTimesSalinity"/>')
+            lines.append('    <var name="velocityMeridionalTimesSalinity"/>')
+            lines.append('    <var name="normalVelocityTimesSalinity"/>')
             lines.append('</stream>')
             lines.append('')
             lines.append('<stream name="highFrequencyOutput"')
@@ -1166,6 +1169,10 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="atmosphericPressure"/>')
             lines.append('    <var name="normalMLEvelocity"/>')
             lines.append('    <var name="vertMLEBolusVelocityTop"/>')
+            lines.append('    <var name="velocityZonalTimesTemperature_MLE"/>')
+            lines.append('    <var name="velocityMeridionalTimesTemperature_MLE"/>')
+            lines.append('    <var name="velocityZonalTimesSalinity_MLE"/>')
+            lines.append('    <var name="velocityMeridionalTimesSalinity_MLE"/>')
             if not ocn_grid.startswith("oRRS1"):
                 lines.append('    <var name="normalGMBolusVelocity"/>')
                 lines.append('    <var name="vertGMBolusVelocityTop"/>')
@@ -1176,6 +1183,9 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="velocityMeridionalTimesTemperature_GM"/>')
                 lines.append('    <var name="normalGMBolusVelocityTimesTemperature"/>')
                 lines.append('    <var name="normalGMBolusVelocitySquared"/>')
+                lines.append('    <var name="velocityZonalTimesSalinity_GM"/>')
+                lines.append('    <var name="velocityMeridionalTimesSalinity_GM"/>')
+                lines.append('    <var name="normalGMBolusVelocityTimesSalinity"/>')
                 lines.append('    <var name="gmKappaScaling"/>')
                 lines.append('    <var name="gmBolusKappa"/>')
                 lines.append('    <var name="mocStreamvalLatAndDepthGM"/>')
@@ -1241,6 +1251,9 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="velocityZonalTimesTemperature"/>')
             lines.append('    <var name="velocityMeridionalTimesTemperature"/>')
             lines.append('    <var name="normalVelocityTimesTemperature"/>')
+            lines.append('    <var name="velocityZonalTimesSalinity"/>')
+            lines.append('    <var name="velocityMeridionalTimesSalinity"/>')
+            lines.append('    <var name="normalVelocityTimesSalinity"/>')
             lines.append('    <var name="oceanHeatContentSfcToBot"/>')
             lines.append('    <var name="oceanHeatContentSfcTo700m"/>')
             lines.append('    <var name="oceanHeatContent700mTo2000m"/>')

@@ -287,7 +287,7 @@ contains
     ! initialized, and after ecophyscon file is read in.
     !
     ! !USES:
-    use clm_time_manager, only: get_step_size
+    use elm_time_manager, only: get_step_size
     use elm_varpar      , only: crop_prog
     use elm_varcon      , only: secspday
     !
@@ -355,8 +355,8 @@ contains
     ! For coupled carbon-nitrogen code (CN).
     !
     ! !USES:
-    use clm_time_manager , only : get_days_per_year
-    use clm_time_manager , only : get_curr_date, is_first_step
+    use elm_time_manager , only : get_days_per_year
+    use elm_time_manager , only : get_curr_date, is_first_step
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -445,7 +445,7 @@ contains
     !
     ! !USES:
     use elm_varcon       , only : secspday
-    use clm_time_manager , only : get_days_per_year
+    use elm_time_manager , only : get_days_per_year
     !
     ! !ARGUMENTS:
     integer           , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -843,7 +843,7 @@ contains
     ! per year.
     !
     ! !USES:
-    use clm_time_manager , only : get_days_per_year
+    use elm_time_manager , only : get_days_per_year
     use elm_varcon       , only : secspday
     use shr_const_mod    , only : SHR_CONST_TKFRZ, SHR_CONST_PI
     !
@@ -1317,7 +1317,7 @@ contains
     ! handle CN fluxes during the phenological onset                       & offset periods.
 
     ! !USES:
-    use clm_time_manager , only : get_curr_date, get_curr_calday, get_days_per_year
+    use elm_time_manager , only : get_curr_date, get_curr_calday, get_days_per_year
     use pftvarcon        , only : ncorn, nscereal, nwcereal, nsoybean, gddmin, hybgdd
     use pftvarcon        , only : nwcerealirrig, nsoybeanirrig, ncornirrig, nscerealirrig
     use pftvarcon        , only : lfemerg, grnfill, mxmat, minplanttemp, planttemp
@@ -1858,7 +1858,7 @@ contains
     use pftvarcon       , only: npcropmin, npcropmax, mnNHplantdate
     use pftvarcon       , only: mnSHplantdate, mxNHplantdate
     use pftvarcon       , only: mxSHplantdate
-    use clm_time_manager, only: get_calday
+    use elm_time_manager, only: get_calday
     !
     ! !ARGUMENTS:
     implicit none
@@ -2067,8 +2067,8 @@ contains
     ! CropPhenologyMod
     !
     ! !USES:
-    use clm_time_manager , only : get_curr_date
-    use clm_time_manager , only : get_step_size
+    use elm_time_manager , only : get_curr_date
+    use elm_time_manager , only : get_step_size
     use elm_varcon       , only : secspday
     use elm_varpar       , only : numpft
     use pftvarcon        , only : planttemp
