@@ -10026,10 +10026,13 @@ contains
     !-----------------------------------------------------------------------
 
     ! check config_thermodynamics_type value
-    if (.not. (trim(config_thermodynamics_type) == "zero layer" .or. &
-               trim(config_thermodynamics_type) == "BL99" .or. &
+    if (trim(config_thermodynamics_type) == "zero layer") then
+       call config_error("config_thermodynamics_type", config_thermodynamics_type, "'zero-layer' is being deprecated")
+    endif
+
+    if (.not. (trim(config_thermodynamics_type) == "BL99" .or. &
                trim(config_thermodynamics_type) == "mushy")) then
-       call config_error("config_thermodynamics_type", config_thermodynamics_type, "'zero layer', 'BL99' or 'mushy'")
+       call config_error("config_thermodynamics_type", config_thermodynamics_type, "'BL99' or 'mushy'")
     endif
 
     ! check config_heat_conductivity_type value
@@ -10260,6 +10263,13 @@ contains
        call mpas_log_write(&
             "check_column_package_configs: config_thermodynamics_type == 'mushy' and "//&
             "config_sea_freezing_temperature_type /= 'mushy'", &
+            messageType=MPAS_LOG_CRIT)
+    endif
+
+    ! deprecate zsalinity
+    if (config_use_vertical_zsalinity) then
+       call mpas_log_write(&
+            "check_column_package_configs: vertical zSalinity has been deprecated", &
             messageType=MPAS_LOG_CRIT)
     endif
 

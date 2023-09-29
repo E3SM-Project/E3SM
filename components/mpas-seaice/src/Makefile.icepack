@@ -13,7 +13,6 @@ OBJS =  icepack_aerosol.o \
 	icepack_itd.o \
 	icepack_kinds.o \
 	icepack_mechred.o \
-	icepack_meltpond_cesm.o \
 	icepack_meltpond_lvl.o \
 	icepack_meltpond_topo.o \
 	icepack_mushy_physics.o \
@@ -23,7 +22,6 @@ OBJS =  icepack_aerosol.o \
 	icepack_shortwave.o \
         icepack_shortwave_data.o \
 	icepack_snow.o \
-	icepack_therm_0layer.o \
 	icepack_therm_bl99.o \
 	icepack_therm_itd.o \
 	icepack_therm_mushy.o \
@@ -33,8 +31,7 @@ OBJS =  icepack_aerosol.o \
 	icepack_warnings.o \
 	icepack_wavefracspec.o \
 	icepack_zbgc.o \
-	icepack_zbgc_shared.o \
-	icepack_zsalinity.o
+	icepack_zbgc_shared.o
 
 
 all: $(OBJS)
@@ -110,9 +107,6 @@ icepack_mechred.o:icepack_kinds.o
 icepack_mechred.o:icepack_parameters.o
 icepack_mechred.o:icepack_tracers.o
 icepack_mechred.o:icepack_warnings.o
-icepack_meltpond_cesm.o:icepack_kinds.o
-icepack_meltpond_cesm.o:icepack_parameters.o
-icepack_meltpond_cesm.o:icepack_warnings.o
 icepack_meltpond_lvl.o:icepack_kinds.o
 icepack_meltpond_lvl.o:icepack_parameters.o
 icepack_meltpond_lvl.o:icepack_therm_shared.o
@@ -146,10 +140,6 @@ icepack_snow.o:icepack_kinds.o
 icepack_snow.o:icepack_parameters.o
 icepack_snow.o:icepack_therm_shared.o
 icepack_snow.o:icepack_warnings.o
-icepack_therm_0layer.o:icepack_kinds.o
-icepack_therm_0layer.o:icepack_parameters.o
-icepack_therm_0layer.o:icepack_therm_bl99.o
-icepack_therm_0layer.o:icepack_warnings.o
 icepack_therm_bl99.o:icepack_kinds.o
 icepack_therm_bl99.o:icepack_parameters.o
 icepack_therm_bl99.o:icepack_therm_shared.o
@@ -181,13 +171,11 @@ icepack_therm_vertical.o:icepack_firstyear.o
 icepack_therm_vertical.o:icepack_flux.o
 icepack_therm_vertical.o:icepack_isotope.o
 icepack_therm_vertical.o:icepack_kinds.o
-icepack_therm_vertical.o:icepack_meltpond_cesm.o
 icepack_therm_vertical.o:icepack_meltpond_lvl.o
 icepack_therm_vertical.o:icepack_meltpond_topo.o
 icepack_therm_vertical.o:icepack_mushy_physics.o
 icepack_therm_vertical.o:icepack_parameters.o
 icepack_therm_vertical.o:icepack_snow.o
-icepack_therm_vertical.o:icepack_therm_0layer.o
 icepack_therm_vertical.o:icepack_therm_bl99.o
 icepack_therm_vertical.o:icepack_therm_mushy.o
 icepack_therm_vertical.o:icepack_therm_shared.o
@@ -211,19 +199,10 @@ icepack_zbgc.o:icepack_therm_shared.o
 icepack_zbgc.o:icepack_tracers.o
 icepack_zbgc.o:icepack_warnings.o
 icepack_zbgc.o:icepack_zbgc_shared.o
-icepack_zbgc.o:icepack_zsalinity.o
 icepack_zbgc_shared.o:icepack_kinds.o
 icepack_zbgc_shared.o:icepack_parameters.o
 icepack_zbgc_shared.o:icepack_tracers.o
 icepack_zbgc_shared.o:icepack_warnings.o
-icepack_zsalinity.o:icepack_brine.o
-icepack_zsalinity.o:icepack_kinds.o
-icepack_zsalinity.o:icepack_parameters.o
-icepack_zsalinity.o:icepack_therm_shared.o
-icepack_zsalinity.o:icepack_tracers.o
-icepack_zsalinity.o:icepack_warnings.o
-icepack_zsalinity.o:icepack_zbgc_shared.o
-
 
 .F90.o:
 	$(RM) $@ $*.mod

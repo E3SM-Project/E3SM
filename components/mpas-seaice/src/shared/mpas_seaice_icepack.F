@@ -2151,7 +2151,6 @@ contains
          biologyGrid, &
          verticalGrid, &
          interfaceBiologyGrid, &
-         zSalinityFlux, &
          frazilGrowthDiagnostic
 !         frazilGrowthDiagnostic, &
 !         WaveFrequency,      &
@@ -2316,7 +2315,6 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "biologyGrid", biologyGrid)
        call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
        call MPAS_pool_get_array(biogeochemistry, "interfaceBiologyGrid", interfaceBiologyGrid)
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux", zSalinityFlux)
 
        call MPAS_pool_get_array(initial, "initialSalinityProfile", initialSalinityProfile)
        call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
@@ -2418,7 +2416,6 @@ contains
                igrid=interfaceBiologyGrid(:),  &
                faero_ocn=oceanAerosolFlux(:,iCell), &
                first_ice=newlyFormedIceLogical(:), & 
-               fzsal=zSalinityFlux(iCell), &
                flux_bio=oceanBioFluxesTemp(:), &
                ocean_bio=oceanBioConcentrationsUsed(:), &
                frazil_diag=frazilGrowthDiagnostic(iCell), &
@@ -3328,8 +3325,7 @@ contains
          areaGainRidge, &
          iceVolumeRidged, &
          openingRateRidge, &
-         categoryThicknessLimits, &
-         zSalinityFlux
+         categoryThicknessLimits
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          oceanAerosolFlux, &
@@ -3436,7 +3432,6 @@ contains
 
        call MPAS_pool_get_array(biogeochemistry, "newlyFormedIce", newlyFormedIce)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux", zSalinityFlux)
 
        call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
 
@@ -3497,7 +3492,6 @@ contains
                aice=iceAreaCell(iCell), &
                fsalt=oceanSaltFlux(iCell), &
                first_ice=newlyFormedIceLogical(:), &
-               fzsal=zSalinityFlux(iCell), &
                flux_bio=oceanBioFluxes(:,iCell), & ! DC no closing argument
                Tf=seaFreezingTemperature(iCell))
 
@@ -3615,8 +3609,8 @@ contains
          seaSurfaceSalinity, &
          seaFreezingTemperature, &
          snowfallRate, &
-         zSalinityFlux, &
-         zSalinityGDFlux, &
+         zSalinityFlux, &      !echmod deprecate
+         zSalinityGDFlux, &    !echmod deprecate
          oceanMixedLayerDepth, &
          totalSkeletalAlgae, &
          oceanNitrateConc, &
@@ -3642,7 +3636,7 @@ contains
          totalVerticalBiologyIce, &
          totalVerticalBiologySnow, &
          penetratingShortwaveFlux, &
-         zSalinityIceDensity, &
+         zSalinityIceDensity, &    !echmod deprecate
          basalIceMeltCategory, &
          surfaceIceMeltCategory, &
          congelationCategory, &
@@ -3814,9 +3808,9 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanBioConcentrations", oceanBioConcentrations)
        call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologyIce", totalVerticalBiologyIce)
        call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologySnow", totalVerticalBiologySnow)
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityIceDensity", zSalinityIceDensity)
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux", zSalinityFlux)
-       call MPAS_pool_get_array(biogeochemistry, "zSalinityGDFlux", zSalinityGDFlux)
+       call MPAS_pool_get_array(biogeochemistry, "zSalinityIceDensity", zSalinityIceDensity)  !echmod deprecate
+       call MPAS_pool_get_array(biogeochemistry, "zSalinityFlux", zSalinityFlux)              !echmod deprecate
+       call MPAS_pool_get_array(biogeochemistry, "zSalinityGDFlux", zSalinityGDFlux)          !echmod deprecate
        call MPAS_pool_get_array(biogeochemistry, "atmosBioFluxes", atmosBioFluxes)
        call MPAS_pool_get_array(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
        call MPAS_pool_get_array(biogeochemistry, "atmosDustFlux", atmosDustFlux)
@@ -3987,9 +3981,9 @@ contains
                totalChlorophyll(iCell), &
                penetratingShortwaveFlux(:,iCell), &
                rayleighCriteria, &
-               zSalinityIceDensity(:,iCell), &
-               zSalinityFlux(iCell), &
-               zSalinityGDFlux(iCell), &
+               zSalinityIceDensity(:,iCell), &      !echmod deprecate
+               zSalinityFlux(iCell), &              !echmod deprecate
+               zSalinityGDFlux(iCell), &            !echmod deprecate
                biologyGrid, &
                interfaceBiologyGrid, &
                interfaceGrid, &
@@ -5843,7 +5837,7 @@ contains
          config_use_aerosols, &
          config_use_brine, &
          config_use_column_biogeochemistry, &
-         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &
          config_use_vertical_biochemistry, &
          config_use_vertical_tracers, &
          config_use_skeletal_biochemistry, &
@@ -5891,7 +5885,7 @@ contains
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
@@ -5989,10 +5983,10 @@ contains
             tracerObject % nTracers = tracerObject % nTracers + 1
 
        ! vertical zSalinity
-       if (config_use_vertical_zsalinity) then
-          tracerObject % nTracers = tracerObject % nTracers + nBioLayers
-          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1
-       endif
+!       if (config_use_vertical_zsalinity) then
+!          tracerObject % nTracers = tracerObject % nTracers + nBioLayers
+!          tracerObject % nBioTracersLayer = tracerObject % nBioTracersLayer + 1
+!       endif
        nMobileTracers = 0
 
        ! Skeletal Biogeochemistry
@@ -7436,7 +7430,7 @@ contains
     logical, pointer :: &
          config_use_skeletal_biochemistry, &
          config_use_vertical_biochemistry, &
-         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &
          config_use_vertical_tracers, &
          config_use_brine, &
          config_use_nitrate, &
@@ -7504,7 +7498,7 @@ contains
          iLayers
 
     call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
-    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
@@ -7769,12 +7763,12 @@ contains
        endif
 
        ! salinity used with BL99 thermodynamics
-       if (config_use_vertical_zsalinity) then
-          do iLayers = 1, nBioLayers
-             tracerArrayCategory(tracerObject % index_verticalSalinity+iLayers-1,:) = &
-                  verticalSalinity(iLayers,:,iCell)
-          enddo
-       endif
+!       if (config_use_vertical_zsalinity) then
+!          do iLayers = 1, nBioLayers
+!             tracerArrayCategory(tracerObject % index_verticalSalinity+iLayers-1,:) = &
+!                  verticalSalinity(iLayers,:,iCell)
+!          enddo
+!       endif
     endif
 
   end subroutine set_cice_biogeochemistry_tracer_array_category
@@ -7808,7 +7802,7 @@ contains
     logical, pointer :: &
          config_use_skeletal_biochemistry, &
          config_use_vertical_biochemistry, &
-         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &
          config_use_vertical_tracers, &
          config_use_brine, &
          config_use_nitrate, &
@@ -7877,7 +7871,7 @@ contains
 
     call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
     call MPAS_pool_get_config(block % configs, "config_use_nitrate", config_use_nitrate)
@@ -8149,12 +8143,12 @@ contains
        endif
 
        ! salinity used with BL99 thermodynamics
-       if (config_use_vertical_zsalinity) then
-          do iLayers = 1, nBioLayers
-             verticalSalinity(iLayers,:,iCell) = &
-                  tracerArrayCategory(tracerObject % index_verticalSalinity+iLayers-1,:)
-          enddo
-       endif
+!       if (config_use_vertical_zsalinity) then
+!          do iLayers = 1, nBioLayers
+!             verticalSalinity(iLayers,:,iCell) = &
+!                  tracerArrayCategory(tracerObject % index_verticalSalinity+iLayers-1,:)
+!          enddo
+!       endif
     endif
 
   end subroutine get_cice_biogeochemistry_tracer_array_category
@@ -8188,7 +8182,7 @@ contains
     logical, pointer :: &
          config_use_skeletal_biochemistry, &
          config_use_vertical_biochemistry, &
-         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &
          config_use_vertical_tracers, &
          config_use_brine, &
          config_use_nitrate, &
@@ -8277,7 +8271,7 @@ contains
 
     call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
     call MPAS_pool_get_config(block % configs, "config_use_nitrate", config_use_nitrate)
@@ -8642,11 +8636,11 @@ contains
        endif
 
        ! salinity for use with BL99 thermodynamics
-       if (config_use_vertical_zsalinity) then
-          do iLayers = 1, nBioLayers
-             tracerArrayCell(tracerObject % index_verticalSalinity+iLayers-1)  = verticalSalinityCell(iLayers,iCell)
-          enddo
-       endif
+!       if (config_use_vertical_zsalinity) then
+!          do iLayers = 1, nBioLayers
+!             tracerArrayCell(tracerObject % index_verticalSalinity+iLayers-1)  = verticalSalinityCell(iLayers,iCell)
+!          enddo
+!       endif
     endif
 
   end subroutine set_cice_biogeochemistry_tracer_array_cell
@@ -8680,7 +8674,7 @@ contains
     logical, pointer :: &
          config_use_skeletal_biochemistry, &
          config_use_vertical_biochemistry, &
-         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &
          config_use_vertical_tracers, &
          config_use_brine, &
          config_use_nitrate, &
@@ -8769,7 +8763,7 @@ contains
 
     call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
     call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(block % configs, "config_use_brine", config_use_brine)
     call MPAS_pool_get_config(block % configs, "config_use_nitrate", config_use_nitrate)
@@ -9138,11 +9132,11 @@ contains
        endif
 
        ! salinity for use with BL99 thermodynamics
-       if (config_use_vertical_zsalinity) then
-          do iLayers = 1, nBioLayers
-             verticalSalinityCell(iLayers,iCell) = tracerArrayCell(tracerObject % index_verticalSalinity+iLayers-1)
-          enddo
-       endif
+!       if (config_use_vertical_zsalinity) then
+!          do iLayers = 1, nBioLayers
+!             verticalSalinityCell(iLayers,iCell) = tracerArrayCell(tracerObject % index_verticalSalinity+iLayers-1)
+!          enddo
+!       endif
     endif
 
   end subroutine get_cice_biogeochemistry_tracer_array_cell
@@ -9335,10 +9329,13 @@ contains
     !-----------------------------------------------------------------------
 
     ! check config_thermodynamics_type value
-    if (.not. (trim(config_thermodynamics_type) == "zero layer" .or. &
-               trim(config_thermodynamics_type) == "BL99" .or. &
+    if (trim(config_thermodynamics_type) == "zero layer") then
+       call config_error("config_thermodynamics_type", config_thermodynamics_type, "'zero-layer' has been deprecated")
+    endif
+
+    if (.not. (trim(config_thermodynamics_type) == "BL99" .or. &
                trim(config_thermodynamics_type) == "mushy")) then
-       call config_error("config_thermodynamics_type", config_thermodynamics_type, "'zero layer', 'BL99' or 'mushy'")
+       call config_error("config_thermodynamics_type", config_thermodynamics_type, "'BL99' or 'mushy'")
     endif
 
     ! check config_heat_conductivity_type value
@@ -9562,7 +9559,8 @@ contains
     endif
 
     ! check biogeochemistry flags:
-    if (.not. config_use_column_biogeochemistry .and. (config_use_brine .or. config_use_vertical_zsalinity .or. &
+!    if (.not. config_use_column_biogeochemistry .and. (config_use_brine .or. config_use_vertical_zsalinity .or. &
+    if (.not. config_use_column_biogeochemistry .and. (config_use_brine .or. &
         config_use_vertical_biochemistry .or. config_use_shortwave_bioabsorption .or. config_use_vertical_tracers .or. &
         config_use_skeletal_biochemistry .or. config_use_nitrate .or. config_use_carbon .or. config_use_chlorophyll .or. &
         config_use_ammonium .or. config_use_silicate .or. config_use_DMS .or. config_use_nonreactive .or. config_use_humics .or. &
@@ -9573,11 +9571,16 @@ contains
             messageType=MPAS_LOG_CRIT)
     endif
 
-    ! check vertical zSalinity requirements
-    if (config_use_vertical_zsalinity .and. ((.not. config_use_brine) .or. &
-         (.not. (trim(config_thermodynamics_type) == "BL99")))) then
+    ! deprecate vertical zSalinity
+!    if (config_use_vertical_zsalinity .and. ((.not. config_use_brine) .or. &
+!         (.not. (trim(config_thermodynamics_type) == "BL99")))) then
+!       call mpas_log_write(&
+!            "check_column_package_configs: vertical zSalinity requires config_use_brine = true and 'BL99' ", &
+!            messageType=MPAS_LOG_CRIT)
+!    endif
+    if (config_use_vertical_zsalinity) then
        call mpas_log_write(&
-            "check_column_package_configs: vertical zSalinity requires config_use_brine = true and 'BL99' ", &
+            "check_column_package_configs: vertical zSalinity has been deprecated", &
             messageType=MPAS_LOG_CRIT)
     endif
 
@@ -9640,7 +9643,7 @@ contains
          config_use_topo_meltponds, &
          config_use_aerosols, &
          config_use_brine, &
-         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &
          config_use_zaerosols, &
          config_use_nitrate, &
          config_use_DON, &
@@ -9668,7 +9671,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_aerosols", config_use_aerosols)
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
     call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
     call MPAS_pool_get_config(domain % configs, "config_use_nitrate", config_use_nitrate)
     call MPAS_pool_get_config(domain % configs, "config_use_DON", config_use_DON)
@@ -10655,7 +10658,6 @@ contains
 
     ! ktherm:
     ! type of thermodynamics
-    ! 0 = 0-layer approximation
     ! 1 = Bitz and Lipscomb 1999
     ! 2 = mushy layer theory
     !ktherm = config_cice_int("config_thermodynamics_type", config_thermodynamics_type)
@@ -10916,9 +10918,10 @@ contains
     ! if true, solve skeletal biochemistry
     !skl_bgc = config_use_skeletal_biochemistry
 
-    ! solve_zsal:
-    ! if true, update salinity profile from solve_S_dt
-    !solve_zsal = config_use_vertical_zsalinity
+! zsalinity has been deprecated
+!    ! solve_zsal:
+!    ! if true, update salinity profile from solve_S_dt
+!    !solve_zsal = config_use_vertical_zsalinity
 
     ! modal_aero:
     ! if true, use modal aerosal optical properties
@@ -11405,13 +11408,13 @@ contains
     ! ratio of C to N in proteins (mol/mol)
     ! ratio_C2N_proteins = config_ratio_C_to_N_proteins
 
-    ! grid_oS:
-    ! for bottom flux (zsalinity)
-    !grid_oS = config_zsalinity_molecular_sublayer
+!    ! grid_oS:
+!    ! for bottom flux (zsalinity)
+!    !grid_oS = config_zsalinity_molecular_sublayer
 
     ! l_skS:
-    ! 0.02 characteristic skeletal layer thickness (m) (zsalinity)
-    !l_skS = config_zsalinity_gravity_drainage_scale
+!    ! 0.02 characteristic skeletal layer thickness (m) (zsalinity)
+!    !l_skS = config_zsalinity_gravity_drainage_scale
 
     !-----------------------------------------------------------------------
     ! Parameters for snow
@@ -11568,7 +11571,6 @@ contains
          config_use_vertical_biochemistry, &
          config_use_shortwave_bioabsorption, &
          config_use_skeletal_biochemistry, &
-         config_use_vertical_zsalinity, &
          config_use_modal_aerosols, &
          config_use_snow_liquid_ponds, &
          config_use_snow_grain_radius
@@ -11609,8 +11611,6 @@ contains
          config_biogrid_top_molecular_sublayer, &
          config_new_ice_fraction_biotracer, &
          config_fraction_biotracer_in_frazil, &
-         config_zsalinity_molecular_sublayer, &
-         config_zsalinity_gravity_drainage_scale, &
          config_snow_porosity_at_ice_surface, &
          config_ratio_Si_to_N_diatoms, &
          config_ratio_Si_to_N_small_plankton, &
@@ -11825,16 +11825,13 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
     call MPAS_pool_get_config(domain % configs, "config_use_modal_aerosols", config_use_modal_aerosols)
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
     call MPAS_pool_get_config(domain % configs, "config_biogrid_bottom_molecular_sublayer", &
                                                  config_biogrid_bottom_molecular_sublayer)
     call MPAS_pool_get_config(domain % configs, "config_bio_gravity_drainage_length_scale", &
                                                  config_bio_gravity_drainage_length_scale)
     call MPAS_pool_get_config(domain % configs, "config_biogrid_top_molecular_sublayer", config_biogrid_top_molecular_sublayer)
-    call MPAS_pool_get_config(domain % configs, "config_zsalinity_gravity_drainage_scale", config_zsalinity_gravity_drainage_scale)
     call MPAS_pool_get_config(domain % configs, "config_new_ice_fraction_biotracer", config_new_ice_fraction_biotracer)
     call MPAS_pool_get_config(domain % configs, "config_fraction_biotracer_in_frazil", config_fraction_biotracer_in_frazil)
-    call MPAS_pool_get_config(domain % configs, "config_zsalinity_molecular_sublayer", config_zsalinity_molecular_sublayer)
     call MPAS_pool_get_config(domain % configs, "config_snow_porosity_at_ice_surface", config_snow_porosity_at_ice_surface)
     call MPAS_pool_get_config(domain % configs, "config_ratio_Si_to_N_diatoms", config_ratio_Si_to_N_diatoms)
     call MPAS_pool_get_config(domain % configs, "config_ratio_Si_to_N_small_plankton", config_ratio_Si_to_N_small_plankton)
@@ -12253,12 +12250,11 @@ contains
          solve_zbgc_in           = config_use_vertical_biochemistry, &
          modal_aero_in           = config_use_modal_aerosols, &
          skl_bgc_in              = config_use_skeletal_biochemistry, &
-         solve_zsal_in           = config_use_vertical_zsalinity, &
          grid_o_in               = config_biogrid_bottom_molecular_sublayer, &
          l_sk_in                 = config_bio_gravity_drainage_length_scale, &
          initbio_frac_in         = config_new_ice_fraction_biotracer, &
-         grid_oS_in              = config_zsalinity_molecular_sublayer, &
-         l_skS_in                = config_zsalinity_gravity_drainage_scale, &
+!         grid_oS_in              = config_zsalinity_molecular_sublayer, &
+!         l_skS_in                = config_zsalinity_gravity_drainage_scale, &
          dEdd_algae_in           = config_use_shortwave_bioabsorption, &
          phi_snow_in             = config_snow_porosity_at_ice_surface, &
          !T_max_in                = , &         ! BGC
@@ -12488,7 +12484,6 @@ contains
 
     ! ktherm:
     ! type of thermodynamics
-    ! 0 = 0-layer approximation
     ! 1 = Bitz and Lipscomb 1999
     ! 2 = mushy layer theory
     !ktherm = config_cice_int("config_thermodynamics_type", config_thermodynamics_type)
@@ -12765,9 +12760,10 @@ contains
     ! if true, solve skeletal biochemistry
     !skl_bgc = config_use_skeletal_biochemistry
 
-    ! solve_zsal:
-    ! if true, update salinity profile from solve_S_dt
-    !solve_zsal = config_use_vertical_zsalinity
+! zsalinity has been deprecated
+!    ! solve_zsal:
+!    ! if true, update salinity profile from solve_S_dt
+!    !solve_zsal = config_use_vertical_zsalinity
 
     ! modal_aero:
     ! if true, use modal aerosal optical properties
@@ -12779,7 +12775,7 @@ contains
     !grid_o = config_biogrid_bottom_molecular_sublayer
 
     ! l_sk:
-    ! characteristic diffusive scale (zsalinity) (m)
+    ! characteristic diffusive scale (brine) (m)
     !l_sk =config_bio_gravity_drainage_length_scale
 
     ! grid_o_t:
@@ -13254,13 +13250,13 @@ contains
     ! ratio of C to N in proteins (mol/mol)
     ! ratio_C2N_proteins = config_ratio_C_to_N_proteins
 
-    ! grid_oS:
-    ! for bottom flux (zsalinity)
-    !grid_oS = config_zsalinity_molecular_sublayer
+!    ! grid_oS:
+!    ! for bottom flux (zsalinity)
+!    !grid_oS = config_zsalinity_molecular_sublayer
 
-    ! l_skS:
-    ! 0.02 characteristic skeletal layer thickness (m) (zsalinity)
-    !l_skS = config_zsalinity_gravity_drainage_scale
+!    ! l_skS:
+!    ! 0.02 characteristic skeletal layer thickness (m) (zsalinity)
+!    !l_skS = config_zsalinity_gravity_drainage_scale
 
     !-----------------------------------------------------------------------
     ! Parameters for snow
@@ -13351,8 +13347,6 @@ contains
     case ("config_thermodynamics_type")
 
        select case (trim(configValue))
-       case ("zero layer")
-          configValueCice = 0
        case ("BL99")
           configValueCice = 1
        case ("mushy")
@@ -13475,7 +13469,7 @@ contains
          pkgTracerVerticalDONActive, &
          pkgTracerVerticalIronActive, &
          pkgTracerZAerosolsActive, &
-         pkgTracerZSalinityActive, &
+!         pkgTracerZSalinityActive, &
          pkgColumnTracerEffectiveSnowDensityActive, &
          pkgColumnTracerSnowGrainRadiusActive
 
@@ -13542,7 +13536,7 @@ contains
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalDONActive", pkgTracerVerticalDONActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalIronActive", pkgTracerVerticalIronActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerZAerosolsActive", pkgTracerZAerosolsActive)
-       call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)
+!       call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive) !echmod - deprecate
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerEffectiveSnowDensityActive", pkgColumnTracerEffectiveSnowDensityActive)
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerSnowGrainRadiusActive", pkgColumnTracerSnowGrainRadiusActive)
 
@@ -13690,9 +13684,9 @@ contains
           call set_stand_in_tracer_array(block, "verticalAerosolsSnow")
           call set_stand_in_tracer_array(block, "verticalAerosolsIce")
        endif
-       if (.not. pkgTracerZSalinityActive) then
-          call set_stand_in_tracer_array(block, "verticalSalinity")
-       endif
+!       if (.not. pkgTracerZSalinityActive) then                          !echmod - deprecate
+!          call set_stand_in_tracer_array(block, "verticalSalinity")
+!       endif
 
        ! snow density tracer
        if (.not. pkgColumnTracerEffectiveSnowDensityActive) then
@@ -13814,7 +13808,7 @@ contains
          pkgTracerVerticalDONActive, &
          pkgTracerVerticalIronActive, &
          pkgTracerZAerosolsActive, &
-         pkgTracerZSalinityActive, &
+!         pkgTracerZSalinityActive, &
          pkgColumnTracerEffectiveSnowDensityActive, &
          pkgColumnTracerSnowGrainRadiusActive
 
@@ -13873,7 +13867,7 @@ contains
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalDONActive", pkgTracerVerticalDONActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerVerticalIronActive", pkgTracerVerticalIronActive)
        call MPAS_pool_get_package(block % packages, "pkgTracerZAerosolsActive", pkgTracerZAerosolsActive)
-       call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)
+!       call MPAS_pool_get_package(block % packages, "pkgTracerZSalinityActive", pkgTracerZSalinityActive)
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerEffectiveSnowDensityActive", pkgColumnTracerEffectiveSnowDensityActive)
        call MPAS_pool_get_package(block % packages, "pkgColumnTracerSnowGrainRadiusActive", pkgColumnTracerSnowGrainRadiusActive)
 
@@ -14020,9 +14014,9 @@ contains
           call finalize_stand_in_tracer_array(block, "verticalAerosolsSnow")
           call finalize_stand_in_tracer_array(block, "verticalAerosolsIce")
        endif
-       if (.not. pkgTracerZSalinityActive) then
-          call finalize_stand_in_tracer_array(block, "verticalSalinity")
-       endif
+!       if (.not. pkgTracerZSalinityActive) then
+!          call finalize_stand_in_tracer_array(block, "verticalSalinity")
+!       endif
 
        ! snow density tracer
        if (.not. pkgColumnTracerEffectiveSnowDensityActive) then
@@ -14428,7 +14422,7 @@ contains
 
     logical, pointer :: &
          config_use_brine, &
-         config_use_vertical_zsalinity, &
+         config_use_vertical_zsalinity, &      !echmod deprecate
          config_use_vertical_biochemistry, &
          config_use_vertical_tracers, &
          config_use_skeletal_biochemistry, &
@@ -14576,7 +14570,7 @@ contains
     tracerObject % nTracers = tracerObject % nTracersNotBio
 
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)  !echmod deprecate
     call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
@@ -14801,7 +14795,7 @@ contains
          config_use_silicate, &
          config_use_DMS, &
          config_use_nonreactive, &
-         config_use_vertical_zsalinity, &
+         config_use_vertical_zsalinity, &      !echmod deprecate
          use_nitrogen, &
          config_use_carbon, &
          config_use_chlorophyll, &
@@ -14829,7 +14823,7 @@ contains
          tracerObject % index_humicsConc, &
          tracerObject % index_humicsConcLayer, &
          config_use_humics, &
-         config_use_vertical_zsalinity, &
+         config_use_vertical_zsalinity, &            !echmod deprecate
          config_use_skeletal_biochemistry, &
          config_use_vertical_tracers, &
          config_use_shortwave_bioabsorption, &
@@ -14966,8 +14960,8 @@ contains
 
     use ice_colpkg, only: &
          colpkg_init_bgc, &
-         colpkg_init_hbrine, &
-         colpkg_init_zsalinity
+         colpkg_init_hbrine!, &
+!         colpkg_init_zsalinity
 
     type(domain_type), intent(inout) :: domain
 
@@ -14985,10 +14979,10 @@ contains
 
     logical, pointer :: &
          config_use_brine, &
-         config_use_vertical_zsalinity, &
+!         config_use_vertical_zsalinity, &
          config_use_vertical_tracers, &
          config_use_skeletal_biochemistry, &
-         config_do_restart_zsalinity, &
+!         config_do_restart_zsalinity, &
          config_do_restart_bgc, &
          config_do_restart_hbrine, &
          config_use_macromolecules
@@ -15067,10 +15061,10 @@ contains
          abortMessage
 
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
-    call MPAS_pool_get_config(domain % configs, "config_do_restart_zsalinity", config_do_restart_zsalinity)
+!    call MPAS_pool_get_config(domain % configs, "config_do_restart_zsalinity", config_do_restart_zsalinity)
     call MPAS_pool_get_config(domain % configs, "config_do_restart_bgc", config_do_restart_bgc)
     call MPAS_pool_get_config(domain % configs, "config_do_restart_hbrine", config_do_restart_hbrine)
-    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!    call MPAS_pool_get_config(domain % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
     call MPAS_pool_get_config(domain % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
@@ -15165,18 +15159,18 @@ contains
           call set_cice_tracer_array_category(block, tracerObject, &
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          if (config_use_vertical_zsalinity) then
-             call colpkg_init_zsalinity(&
-                  nBioLayers, &
-                  tracerObject % nTracersNotBio, &
-                  config_do_restart_zsalinity, &
-                  rayleighCriteria, &
-                  rayleighCriteriaReal(iCell), &
-                  tracerArrayCategory(tracerObject % nTracersNotBio+1:tracerObject % nTracers,:), &
-                  tracerObject % index_verticalSalinity, &
-                  nCategories, &
-                  seaSurfaceSalinity(iCell))
-          endif
+!          if (config_use_vertical_zsalinity) then
+!             call colpkg_init_zsalinity(&
+!                  nBioLayers, &
+!                  tracerObject % nTracersNotBio, &
+!                  config_do_restart_zsalinity, &
+!                  rayleighCriteria, &
+!                  rayleighCriteriaReal(iCell), &
+!                  tracerArrayCategory(tracerObject % nTracersNotBio+1:tracerObject % nTracers,:), &
+!                  tracerObject % index_verticalSalinity, &
+!                  nCategories, &
+!                  seaSurfaceSalinity(iCell))
+!          endif
 
           if (config_use_vertical_tracers .or. config_use_skeletal_biochemistry) then
              call colpkg_init_bgc(&
@@ -15713,8 +15707,8 @@ contains
          primaryProduction, &
          netSpecificAlgalGrowthRate, &
          netBrineHeight, &
-         zSalinityFlux, &
-         zSalinityGDFlux, &
+!         zSalinityFlux, &
+!         zSalinityGDFlux, &
          totalChlorophyll, &
          totalCarbonContentCell
 
@@ -15735,8 +15729,8 @@ contains
          config_use_column_biogeochemistry, &
          config_use_column_shortwave, &
          config_use_column_package, &
-         config_use_vertical_biochemistry, &
-         config_use_vertical_zsalinity
+         config_use_vertical_biochemistry!, &
+!         config_use_vertical_zsalinity
 
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
 
@@ -15748,7 +15742,7 @@ contains
           ! biogeochemistry
           call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
           call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
-          call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
+!          call MPAS_pool_get_config(block % configs, "config_use_vertical_zsalinity", config_use_vertical_zsalinity)
 
           if (config_use_column_biogeochemistry) then
 
@@ -15772,14 +15766,14 @@ contains
 
              end if
 
-             if (config_use_vertical_zsalinity) then
-                call MPAS_pool_get_array(biogeochemistryPool, "zSalinityFlux", zSalinityFlux)
-                call MPAS_pool_get_array(biogeochemistryPool, "zSalinityGDFlux", zSalinityGDFlux)
+!             if (config_use_vertical_zsalinity) then
+!                call MPAS_pool_get_array(biogeochemistryPool, "zSalinityFlux", zSalinityFlux)
+!                call MPAS_pool_get_array(biogeochemistryPool, "zSalinityGDFlux", zSalinityGDFlux)
 
-                zSalinityFlux              = 0.0_RKIND
-                zSalinityGDFlux            = 0.0_RKIND
+!                zSalinityFlux              = 0.0_RKIND
+!                zSalinityGDFlux            = 0.0_RKIND
 
-             end if
+!             end if
 
              call MPAS_pool_get_array(biogeochemistryPool, "netBrineHeight", netBrineHeight)
              call MPAS_pool_get_array(biogeochemistryPool, "oceanBioFluxes", oceanBioFluxes)
