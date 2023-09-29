@@ -3,9 +3,10 @@
 !  seaice_icepack
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 2022
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
+!> This module was derived from the original column physics driver by Adrian K. Turner and modified by the Icepack merge team.
 !>
 !
 !-----------------------------------------------------------------------
@@ -200,8 +201,8 @@ contains
 !  seaice_init_icepack_physics_package_parameters
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 18th March 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -235,8 +236,8 @@ contains
 !  seaice_init_icepack_physics_package_variables
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 18th March 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -301,8 +302,8 @@ contains
 !  init_column_itd
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 5th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -349,11 +350,11 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_thermo
+!  init_column_thermodynamic_profiles
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 5th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -615,8 +616,8 @@ contains
 !  init_icepack_shortwave
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 5th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -823,8 +824,8 @@ contains
 !  init_column_thermodynamic_tracers
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 5th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -923,8 +924,8 @@ contains
 !  init_column_level_ice_tracers
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -979,8 +980,8 @@ contains
 !  seaice_icepack_finalize
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 29th October 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -1002,8 +1003,8 @@ contains
 !  seaice_icepack_predynamics_time_integration
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -1103,8 +1104,8 @@ contains
 !  seaice_icepack_dynamics_time_integration
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -1178,8 +1179,8 @@ contains
 !  seaice_icepack_postdynamics_time_integration
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -1241,8 +1242,8 @@ contains
 !  column_vertical_thermodynamics
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 20th January 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -1818,7 +1819,7 @@ contains
                fcondbotn=bottomConductiveFluxCategory(:,iCell), &
                fswsfcn=surfaceShortwaveFlux(:,iCell), &
                fswintn=interiorShortwaveFlux(:,iCell), &
-               fswthrun=penetratingShortwaveFlux(:,iCell), & ! Wrong dimensions?
+               fswthrun=penetratingShortwaveFlux(:,iCell), & ! Wrong dimensions? echmod check this
                fswabs=absorbedShortwaveFlux(iCell), &
                flwout=longwaveUp(iCell), &
                Sswabsn=absorbedShortwaveSnowLayer(:,:,iCell), &
@@ -2075,8 +2076,8 @@ contains
 !  column_itd_thermodynamics
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 21th January 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -2509,8 +2510,8 @@ contains
 !  column_prep_radiation
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 21th January 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -2873,8 +2874,8 @@ contains
 !  column_radiation
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 21th January 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -3261,8 +3262,8 @@ contains
 !  column_ridging
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 21th January 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -4245,8 +4246,8 @@ contains
 !  seaice_column_update_state
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 31st March 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -4357,8 +4358,8 @@ contains
 !  seaice_icepack_aggregate
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th March 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -4476,8 +4477,8 @@ contains
 !  seaice_icepack_aggregate_simple
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 29th August 2021
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -4561,8 +4562,8 @@ contains
 !  seaice_icepack_coupling_prep
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th April
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -5017,8 +5018,8 @@ contains
 !  seaice_column_scale_fluxes
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th April
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -5282,8 +5283,8 @@ contains
 !  seaice_icepack_ocean_mixed_layer
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 6th April
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -9150,8 +9151,8 @@ contains
 !  init_icepack_package_parameters
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 2nd Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -9187,8 +9188,8 @@ contains
 !  check_column_package_configs
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 5th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -9621,8 +9622,8 @@ contains
 !  init_icepack_package_tracer_flags
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 2nd Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -9727,8 +9728,8 @@ contains
 !  init_icepack_package_tracer_sizes
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 9th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -9787,8 +9788,8 @@ contains
 !  init_icepack_package_tracer_indices
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 5th Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -11463,8 +11464,8 @@ contains
 !  init_icepack_package_configs
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 2nd Feburary 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -13326,8 +13327,8 @@ contains
 !  config_cice_int
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 20th January 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -13418,8 +13419,8 @@ contains
 !  init_icepack_non_activated_pointers
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 5th March 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -13758,8 +13759,8 @@ contains
 !  finalize_icepack_non_activated_pointers
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 29th October 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -14156,8 +14157,8 @@ contains
 !  init_column_history_variables
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 3rd April 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -14193,8 +14194,8 @@ contains
 !  seaice_icepack_initial_air_drag_coefficient
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -14220,8 +14221,8 @@ contains
 !  seaice_icepack_reinitialize_fluxes
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 31st August 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>
 !
@@ -14400,7 +14401,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_column_tracer_object_bio_tracer_number
+!  init_column_tracer_object_for_biogeochemistry
 !
 !> \brief
 !> \author Nicole Jeffery, LANL
@@ -15236,8 +15237,8 @@ contains
 !  seaice_icepack_reinitialize_diagnostics_thermodynamics
 !
 !> \brief Reinitialize thermodynamics diagnostics
-!> \author Adrian K. Turner, LANL
-!> \date 27th September 2015
+!> \author Adrian K. Turner, Elizabeth Hunke, Darin Comeau, Nicole Jeffery, Andrew Roberts, Erin Thomas, Jon Wolfe, LANL, Anthony Craig, NOAA (cntr), David Bailey, NCAR
+!> \date 2022-2023
 !> \details
 !>  Reinitialize thermodynamics diagnostics
 !
@@ -15612,7 +15613,7 @@ contains
           surfaceTiltForceU   = 0.0_RKIND
           surfaceTiltForceV   = 0.0_RKIND
 
-          if (config_use_velocity_solver .and. trim(config_stress_divergence_scheme) == "weak") then
+          if (config_use_velocity_solver .and. trim(config_stress_divergence_scheme) == "weak") then !echmod BUG? - why is this here and wrapped in a config_use_column_package conditional?
 
              call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocityWeakPool)
 
@@ -15685,8 +15686,8 @@ contains
 !  seaice_icepack_reinitialize_diagnostics_bgc
 !
 !> \brief Reinitialize BGC diagnostics
-!> \author Adrian K. Turner, LANL
-!> \date 27th September 2015
+!> \author Adrian K. Turner, Nicole Jeffery, LANL
+!> \date 2022-2023
 !> \details
 !>  Reinitialize BGC diagnostics
 !

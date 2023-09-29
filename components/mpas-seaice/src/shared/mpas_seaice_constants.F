@@ -3,12 +3,13 @@
 !  seaice_constants
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
+!> \author Adrian K. Turner and Elizabeth Hunke, LANL
+!> \date 2013-2014, 2023
 !> \details
 !> Values in this module have been copied from the two ice_constants_colpkg.F90 
-!  modules in the column physics package (colpkg, in column/).  They will remain 
-!  duplicates until the column physic package is deprecated.
+!> modules in the column physics package (in column/).  They will remain 
+!> duplicates until the column physics package is deprecated.
+!
 !-----------------------------------------------------------------------
 
 module seaice_constants

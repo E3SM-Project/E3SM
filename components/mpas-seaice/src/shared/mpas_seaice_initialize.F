@@ -171,6 +171,9 @@ contains
     ! special boundaries tracers
     call seaice_set_special_boundaries_tracers(domain)
 
+    ! check constants
+    call seaice_check_constants
+
   end subroutine seaice_init!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -2875,5 +2878,32 @@ contains
   end subroutine init_test_ice_shelf_mask
 
 !-----------------------------------------------------------------------
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_check_constants
+!
+!> \brief
+!> \author Elizabeth Hunke, LANL
+!> \date 29 September 2023
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_check_constants
+
+    use seaice_constants, only: &
+         seaiceIceSnowEmissivity
+
+#ifdef CCSMCOUPLED
+    if (seaiceIceSnowEmissivity /= 1._RKIND) then
+      call mpas_log_write(&
+           'seaice_check_constants: seaiceIceSnowEmissivity out of bounds', &
+           messageType=MPAS_LOG_CRIT)
+    endif
+#endif
+
+  end subroutine seaice_check_constants
 
 end module seaice_initialize
