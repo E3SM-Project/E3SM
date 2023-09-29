@@ -15,7 +15,9 @@
 module seaice_constants
 
   use mpas_derived_types
+#ifdef CCSMCOUPLED
   use shr_const_mod
+#endif
 
   private
   save
