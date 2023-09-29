@@ -304,8 +304,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <number_of_subcycles hgrid="ne4np4">24</number_of_subcycles>
       <number_of_subcycles hgrid="ne30np4">12</number_of_subcycles>
       <number_of_subcycles hgrid="ne120np4">6</number_of_subcycles>
-      <number_of_subcycles hgrid="ne256np4">3</number_of_subcycles>
-      <number_of_subcycles hgrid="ne512np4">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne256np4">6</number_of_subcycles>
+      <number_of_subcycles hgrid="ne512np4">2</number_of_subcycles>
       <number_of_subcycles hgrid="ne1024np4">1</number_of_subcycles>
       <number_of_subcycles hgrid="ne0np4_conus_x4v1_lowcon">5</number_of_subcycles>
     </mac_aero_mic>
