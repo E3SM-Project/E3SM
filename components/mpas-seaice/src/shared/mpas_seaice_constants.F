@@ -93,23 +93,17 @@ module seaice_constants
 
   ! fundamental constants
   real (kind=RKIND), parameter, public :: &
-       pii = 3.141592653589793_RKIND, & ! echmod - why is this different from pi above?
-       seaiceDegreesToRadians = pii / 180.0_RKIND, &
-       seaiceRadiansToDegrees = 180.0_RKIND / pii, &
-!echmod - BFB but slower???
-!       pii = pi, &
-!       seaiceDegreesToRadians = pi / 180.0_RKIND, &
-!       seaiceRadiansToDegrees = 180.0_RKIND / pi, &
-       seaiceSecondsPerYear = 24.0_RKIND * 3600.0_RKIND * 365.0_RKIND, & !echmod - incorrect for leap years
-       seaiceDaysPerSecond = 1.0_RKIND/seaiceSecondsPerDay
+       pii                                = pi, &    !echmod - replace pii with seaicePi elsewhere
+       seaiceDegreesToRadians             = pi / 180.0_RKIND, &
+       seaiceRadiansToDegrees             = 180.0_RKIND / pi, &
+       seaiceSecondsPerYear               = 24.0_RKIND * 3600.0_RKIND * 365.0_RKIND, & !echmod - incorrect for leap years
+       seaiceDaysPerSecond                = 1.0_RKIND/seaiceSecondsPerDay
 
   real (kind=RKIND), public :: &
-       seaicePi
-!echmod - BFB but slower???
-!       seaicePi                           = pi ! pi
+       seaicePi                           = pi ! pi
 
   character (len=*), public, parameter :: &
-       coupleAlarmID = 'coupling'
+       coupleAlarmID                      = 'coupling'
 
   real(kind=RKIND), public :: &
        seaicePuny                         = 1.0e-11_RKIND   ! a small value

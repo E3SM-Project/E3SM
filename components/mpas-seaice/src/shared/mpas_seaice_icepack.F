@@ -2888,7 +2888,7 @@ contains
     use icepack_intfc, only: &
          icepack_step_radiation
     use seaice_constants, only: &
-         pii
+         seaicePi
 
     type(domain_type), intent(inout) :: domain
 
@@ -3177,7 +3177,7 @@ contains
           endif
 
           lonCellColumn = lonCell(iCell)
-          if (lonCellColumn > pii) lonCellColumn = lonCellColumn - 2.0_RKIND * pii
+          if (lonCellColumn > seaicePi) lonCellColumn = lonCellColumn - 2.0_RKIND * seaicePi
 
           ! set the category tracer array
           call set_cice_tracer_array_category(block, ciceTracerObject, &
@@ -5699,7 +5699,6 @@ contains
          icepack_configure
 
     use seaice_constants, only: &
-         pi, &          !echmod - do we need this here, or can we set seaicePi in seaice_constants?
          seaicePi, &
          seaiceGravity, &
          seaicePuny, &
@@ -5740,9 +5739,6 @@ contains
 
     call icepack_configure()
     call seaice_icepack_write_warnings(icepack_warnings_aborted())
-
-!echmod - set this in seaice_constants instead
-    seaicePi                         = pi
 
     iceAreaMinimum       = seaicePuny
     iceThicknessMinimum  = seaicePuny
@@ -11561,7 +11557,6 @@ contains
          icepack_query_parameters ! debugging
 
     use seaice_constants, only: &
-         pii, &                              ! pi                     !echmod: use SHR value instead?
          seaicePuny, &                       ! a small number
          seaiceBigNumber, &                     ! a large number
          seaiceSecondsPerDay, &              ! number of seconds in 1 day
@@ -12088,10 +12083,6 @@ contains
     call icepack_query_parameters(puny_out=rtmp2)
     if (rtmp1 /= rtmp2) call mpas_log_write('puny differs $r $r',realArgs=(/rtmp1,rtmp2/))
 
-    rtmp1 = pii       ! defined in mpas_seaice_constants.F
-    call icepack_query_parameters(pi_out=rtmp2)
-    if (rtmp1 /= rtmp2) call mpas_log_write('pii differs $r $r',realArgs=(/rtmp1,rtmp2/))
-
     rtmp1 = seaicePi  ! defined above using pi from ice_constants_colpkg.F90
     call icepack_query_parameters(pi_out=rtmp2)
     if (rtmp1 /= rtmp2) call mpas_log_write('pi differs $r $r',realArgs=(/rtmp1,rtmp2/))
@@ -12225,7 +12216,6 @@ contains
          !argcheck_in             = , &               ! may not be needed in the driver
          puny_in                 = seaicePuny, &
          bignum_in               = seaiceBigNumber, &
-!         pi_in                   = pii, &            ! use SHR value instead
          pi_in                   = seaicePi, &
          secday_in               = seaiceSecondsPerDay, &
          rhos_in                 = seaiceDensitySnow, &
