@@ -38,6 +38,8 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   auto Q = kg/kg;
   Q.set_string("kg/kg");
   auto nondim = Units::nondimensional();
+  auto percent = Units::nondimensional();
+  percent.set_string("%");
   auto micron = m / 1000000;
 
   m_grid = grids_manager->get_grid("Physics");
@@ -79,8 +81,8 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("eff_radius_qc",     scalar3d_layout_mid, micron,      grid_name);
   add_field<Required>("eff_radius_qi",     scalar3d_layout_mid, micron,      grid_name);
   // Set of fields used strictly as output
-  add_field<Computed>("isccp_cldtot", scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("isccp_ctptau", scalar4d_layout_ctptau, nondim, grid_name, 1);
+  add_field<Computed>("isccp_cldtot", scalar2d_layout, percent, grid_name);
+  add_field<Computed>("isccp_ctptau", scalar4d_layout_ctptau, percent, grid_name, 1);
   add_field<Computed>("isccp_mask"  , scalar2d_layout, nondim, grid_name);
 }
 
