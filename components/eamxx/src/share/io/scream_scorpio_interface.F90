@@ -67,6 +67,7 @@ module scream_scorpio_interface
             set_variable_metadata_char,  & ! Sets a variable metadata (char data)
             set_variable_metadata_float, & ! Sets a variable metadata (float data)
             set_variable_metadata_double,& ! Sets a variable metadata (double data)
+            get_variable_metadata_char,  & ! Gets a variable metadata (char data)
             get_variable_metadata_float, & ! Gets a variable metadata (float data)
             get_variable_metadata_double,& ! Gets a variable metadata (double data)
             register_dimension,          & ! Register a dimension with a particular pio output file
@@ -702,6 +703,56 @@ contains
     endif
 
   end subroutine set_variable_metadata_char
+!=====================================================================!
+  function get_variable_metadata_char(filename, varname, metaname) result(metaval)
+    use pio, only: PIO_get_att
+
+    character(len=256), intent(in) :: filename
+    character(len=256), intent(in) :: varname
+    character(len=256), intent(in) :: metaname
+    character(len=256)             :: metaval
+
+    ! Local variables
+    type(pio_atm_file_t),pointer :: pio_file
+    type(hist_var_t),    pointer :: var
+    integer                      :: ierr
+    logical                      :: found
+
+    type(hist_var_list_t), pointer :: curr
+
+    ! Find the pointer for this file
+    call lookup_pio_atm_file(trim(filename),pio_file,found)
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: PIO file not open.\nError getting metadata for variable "//trim(varname)//" in file "//trim(filename)//".",-999)
+    endif
+
+    ! Find the variable in the file
+    curr => pio_file%var_list_top
+
+    found = .false.
+    do while (associated(curr))
+      if (associated(curr%var)) then
+        if (trim(curr%var%name)==trim(varname) .and. curr%var%is_set) then
+          found = .true.
+          var => curr%var
+          exit
+        endif
+      endif
+      curr => curr%next
+    end do
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: PIO file not open.\nError getting metadata for variable "//trim(varname)//" in file "//trim(filename)//".",-999)
+    endif
+
+    ! TODO: Maybe we shouldn't throw an error when the metadata isn't there, maybe we provide an output like ierr as an integer?
+    ! That way we can query for a metadata and on the EAMxx side decide what to do if the metadata is missing.
+    ierr = PIO_get_att(pio_file%pioFileDesc, var%piovar, metaname, metaval)
+    if (ierr .ne. 0) then
+      call errorHandle("Error getting attribute '" // trim(metaname) &
+                       // "' on variable '" // trim(varname) &
+                       // "' in pio file " // trim(filename) // ".", -999)
+    endif
+  end function get_variable_metadata_char
 !=====================================================================!
   ! Update the time dimension for a specific PIO file.  This is needed when
   ! reading or writing multiple time levels.  Unlimited dimensions are treated

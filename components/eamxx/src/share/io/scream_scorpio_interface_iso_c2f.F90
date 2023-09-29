@@ -275,6 +275,39 @@ contains
 
   end function get_variable_metadata_double_c2f
 !=====================================================================!
+  subroutine get_variable_metadata_char_c2f(filename_in, varname_in, metaname_in, metaval_out) bind(c)
+    use scream_scorpio_interface, only : get_variable_metadata_char
+    use iso_c_binding, only: C_NULL_CHAR, c_char, c_f_pointer
+    type(c_ptr), intent(in) :: filename_in
+    type(c_ptr), intent(in) :: varname_in
+    type(c_ptr), intent(in) :: metaname_in
+    type(c_ptr), intent(in) :: metaval_out
+
+    character(len=256) :: filename
+    character(len=256) :: varname
+    character(len=256) :: metaname
+    character(len=256) :: metaval
+    character(len=256, kind=c_char), pointer :: temp_string
+    integer :: slen
+
+    call c_f_pointer(metaval_out,temp_string)
+
+    call convert_c_string(filename_in,filename)
+    call convert_c_string(varname_in,varname)
+    call convert_c_string(metaname_in,metaname)
+
+    metaval = get_variable_metadata_char(filename,varname,metaname)
+
+    slen = len(trim(metaval))
+    ! If string is 255 or less, add terminating char. If not, it's still
+    ! ok (the C++ string will have length=max_length=256)
+    if (slen .le. 255) then
+      temp_string = trim(metaval) // C_NULL_CHAR
+    else
+      temp_string = metaval
+    endif
+  end subroutine get_variable_metadata_char_c2f
+!=====================================================================!
   subroutine register_dimension_c2f(filename_in, shortname_in, longname_in, length, partitioned) bind(c)
     use scream_scorpio_interface, only : register_dimension
 

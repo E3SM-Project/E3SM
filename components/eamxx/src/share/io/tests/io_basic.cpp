@@ -108,10 +108,13 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   
   const auto units = ekat::units::Units::nondimensional();
   int count=0;
+  using stratts_t = std::map<std::string,std::string>;
   for (const auto& fl : layouts) {
     FID fid("f_"+std::to_string(count),fl,units,grid->name());
     Field f(fid);
     f.allocate_view();
+    auto& str_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
+    str_atts["test"] = f.name();
     randomize (f,engine,my_pdf);
     f.get_header().get_tracking().update_time_stamp(t0);
     fm->add_field(f);
@@ -248,11 +251,15 @@ void read (const std::string& avg_type, const std::string& freq_units,
     }
   }
 
-  // Check that the fill value gets appropriately set for each variable
+  // Check that the expected metadata was appropriately set for each variable
   Real fill_out;
+  std::string att_test;
   for (const auto& fn: fnames) {
     scorpio::get_variable_metadata(filename,fn,"_FillValue",fill_out);
     REQUIRE(fill_out==constants::DefaultFillValue<float>().value);
+
+    scorpio::get_variable_metadata(filename,fn,"test",att_test);
+    REQUIRE (att_test==fn);
   }
 }
 

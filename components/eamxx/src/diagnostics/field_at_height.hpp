@@ -29,6 +29,7 @@ public:
 #endif
   void compute_diagnostic_impl ();
 protected:
+  void initialize_impl (const RunType /*run_type*/);
 
   std::string         m_z_name;
   std::string         m_field_name;

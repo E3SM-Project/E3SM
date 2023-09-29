@@ -78,6 +78,8 @@ public:
   // Get the extra data
   template<typename T>
   const T& get_extra_data (const std::string& key) const;
+  template<typename T>
+        T& get_extra_data (const std::string& key);
   bool  has_extra_data (const std::string& key) const;
 
   std::shared_ptr<FieldHeader> alias (const std::string& name) const;
@@ -110,6 +112,25 @@ protected:
 template<typename T>
 inline const T& FieldHeader::
 get_extra_data (const std::string& key) const
+{
+  EKAT_REQUIRE_MSG (has_extra_data(key),
+      "Error! Extra data not found in field header.\n"
+      "  - field name: " + m_identifier.name() + "\n"
+      "  - extra data: " + key + "\n");
+  auto a = m_extra_data->at(key);
+  EKAT_REQUIRE_MSG ( a.isType<T>(),
+      "Error! Attempting to access extra data using the wrong type.\n"
+      "  - field name    : " + m_identifier.name() + "\n"
+      "  - extra data    : " + key + "\n"
+      "  - actual type   : " + std::string(a.content().type().name()) + "\n"
+      "  - requested type: " + std::string(typeid(T).name()) + ".\n");
+
+  return ekat::any_cast<T>(a);
+}
+
+template<typename T>
+inline T& FieldHeader::
+get_extra_data (const std::string& key)
 {
   EKAT_REQUIRE_MSG (has_extra_data(key),
       "Error! Extra data not found in field header.\n"

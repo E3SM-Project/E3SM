@@ -11,6 +11,11 @@ FieldHeader::FieldHeader (const identifier_type& id)
 {
   m_alloc_prop = std::make_shared<FieldAllocProp>(get_type_size(id.data_type()));
   m_extra_data = std::make_shared<extra_data_type>();
+
+  // Let's add immediately this att, so that users don't need to check
+  // if it already exist before adding string attributes for io.
+  using stratts_t = std::map<std::string,std::string>;
+  set_extra_data("io: string attributes",stratts_t());
 }
 
 void FieldHeader::

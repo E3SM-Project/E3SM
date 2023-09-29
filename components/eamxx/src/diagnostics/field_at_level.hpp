@@ -32,6 +32,7 @@ public:
 #endif
   void compute_diagnostic_impl ();
 protected:
+  void initialize_impl (const RunType /*run_type*/);
 
   Field         m_field;
   int           m_field_level;
