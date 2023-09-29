@@ -221,7 +221,14 @@ void Functions<S,D>::shoc_main_internal(
                                 thetal,qw,qtracers,tke,u_wind,v_wind);   // Input/Output
 
     // Diagnose the second order moments
-    diag_second_shoc_moments(team,nlev,nlevi,thetal,qw,u_wind,v_wind,   // Input
+    // ASD
+    const Real thl2tune = 1.0;
+    const Real qw2tune = 1.0;
+    const Real qwthl2tune = 1.0;
+    const Real w2tune = 1.0;
+    diag_second_shoc_moments(team,nlev,nlevi,
+                             thl2tune, qw2tune, qwthl2tune, w2tune,     // Runtime options
+                             thetal,qw,u_wind,v_wind,                   // Input
                              tke,isotropy,tkh,tk,dz_zi,zt_grid,zi_grid, // Input
                              shoc_mix,wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,   // Input
                              ustar2,wstar,                              // Input/Output
@@ -465,7 +472,14 @@ void Functions<S,D>::shoc_main_internal(
                                      thetal,qw,qtracers,tke,u_wind,v_wind);      // Input/Output
 
     // Diagnose the second order moments
-    diag_second_shoc_moments_disp(shcol,nlev,nlevi,thetal,qw,u_wind,v_wind,  // Input
+    // ASD
+    const Real thl2tune = 1.0;
+    const Real qw2tune = 1.0;
+    const Real qwthl2tune = 1.0;
+    const Real w2tune = 1.0;
+    diag_second_shoc_moments_disp(shcol,nlev,nlevi,
+                                  thl2tune, qw2tune, qwthl2tune, w2tune,     // Runtime options
+                                  thetal,qw,u_wind,v_wind,                   // Input
                                   tke,isotropy,tkh,tk,dz_zi,zt_grid,zi_grid, // Input
                                   shoc_mix,wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,   // Input
                                   ustar2,wstar,                              // Input/Output

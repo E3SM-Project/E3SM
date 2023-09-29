@@ -374,6 +374,7 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void diag_second_moments(const MemberType& team, const Int& nlev, const Int& nlevi,
+     const Real& thl2tune, const Real& qw2tune, const Real& qwthl2tune, const Real& w2tune,
      const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
      const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
      const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
@@ -385,6 +386,7 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void diag_second_shoc_moments(const MemberType& team, const Int& nlev, const Int& nlevi,
+     const Scalar& thl2tune, const Scalar& qw2tune, const Scalar& qwthl2tune, const Scalar& w2tune,
      const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
      const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
      const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
@@ -396,6 +398,10 @@ struct Functions
 #ifdef SCREAM_SMALL_KERNELS
   static void diag_second_shoc_moments_disp(
     const Int& shcol, const Int& nlev, const Int& nlevi,
+    const Scalar& thl2tune, 
+    const Scalar& qw2tune, 
+    const Scalar& qwthl2tune, 
+    const Scalar& w2tune,
     const view_2d<const Spack>& thetal,
     const view_2d<const Spack>& qw,
     const view_2d<const Spack>& u_wind,

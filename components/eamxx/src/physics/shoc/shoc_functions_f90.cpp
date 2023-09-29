@@ -1525,6 +1525,11 @@ void diag_second_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* q
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
+    // Hardcode runtime options for F90
+    const Real thl2tune = 1.0;
+    const Real qw2tune = 1.0;
+    const Real qwthl2tune = 1.0;
+    const Real w2tune = 1.0;
 
     const auto thetal_1d      = ekat::subview(thetal_2d, i);
     const auto qw_1d          = ekat::subview(qw_2d, i);
@@ -1551,7 +1556,8 @@ void diag_second_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* q
     const auto tkh_zi_1d      = ekat::subview(tkh_zi_2d, i);
     const auto tk_zi_1d       = ekat::subview(tk_zi_2d, i);
 
-    SHOC::diag_second_moments(team, nlev, nlevi, thetal_1d, qw_1d, u_wind_1d, v_wind_1d, tke_1d, isotropy_1d, tkh_1d, tk_1d,
+    SHOC::diag_second_moments(team, nlev, nlevi, thl2tune, qw2tune, qwthl2tune, w2tune,
+                     thetal_1d, qw_1d, u_wind_1d, v_wind_1d, tke_1d, isotropy_1d, tkh_1d, tk_1d,
                      dz_zi_1d, zt_grid_1d, zi_grid_1d, shoc_mix_1d, isotropy_zi_1d, tkh_zi_1d, tk_zi_1d,
                      thl_sec_1d, qw_sec_1d, wthl_sec_1d, wqw_sec_1d,
                      qwthl_sec_1d, uw_sec_1d, vw_sec_1d, wtke_sec_1d, w_sec_1d);
@@ -1632,6 +1638,11 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
+    // Hardcode runtime options for F90
+    const Real thl2tune = 1.0;
+    const Real qw2tune = 1.0;
+    const Real qwthl2tune = 1.0;
+    const Real w2tune = 1.0;
 
     auto workspace = workspace_mgr.get_workspace(team);
 
@@ -1665,6 +1676,7 @@ void diag_second_shoc_moments_f(Int shcol, Int nlev, Int nlevi, Real* thetal, Re
     Scalar wstar_s  = wstar_1d(i);
 
     SHOC::diag_second_shoc_moments(team, nlev, nlevi,
+       thl2tune, qw2tune, qwthl2tune, w2tune,
        thetal_1d, qw_1d, u_wind_1d, v_wind_1d, tke_1d, isotropy_1d, tkh_1d, tk_1d, dz_zi_1d, zt_grid_1d, zi_grid_1d, shoc_mix_1d,
        wthl_s, wqw_s, uw_s, vw_s, ustar2_s, wstar_s,
        workspace, thl_sec_1d, qw_sec_1d, wthl_sec_1d, wqw_sec_1d, qwthl_sec_1d,
