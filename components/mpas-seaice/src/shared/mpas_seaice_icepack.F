@@ -5699,43 +5699,10 @@ contains
          icepack_configure
 
     use seaice_constants, only: &
-         seaicePi, &
-         seaiceGravity, &
          seaicePuny, &
-         seaiceDensityIce, &
-         seaiceDensitySnow, &
-         seaiceDensitySeaWater, &
-         seaiceDensityFreshwater, &
-         seaiceStefanBoltzmann, &
-         seaiceIceSnowEmissivity, &
-         seaiceFreshWaterFreezingPoint, &
-         seaiceSeaWaterSpecificHeat, &
-         seaiceFreshIceSpecificHeat, &
-         seaiceAirSpecificHeat, &
-         seaiceWaterVaporSpecificHeat, &
-         seaiceLatentHeatVaporization, &
-         seaiceLatentHeatSublimation, &
-         seaiceLatentHeatMelting, &
-         seaiceIceSurfaceMeltingTemperature, &
-         seaiceSnowSurfaceMeltingTemperature, &
-         seaiceZvir, &
-         seaiceReferenceSalinity, &
-         seaiceMaximumSalinity, &
-         seaiceMeltingTemperatureDepression, &
-         seaiceOceanAlbedo, &
-         seaiceVonKarmanConstant, &
-         seaiceIceSurfaceRoughness, &
-         seaiceStabilityReferenceHeight, &
-         seaiceSnowPatchiness, &
-         seaiceIceStrengthConstantHiblerP, &
-         seaiceIceStrengthConstantHiblerC, &
-         seaiceIceOceanDragCoefficient, &
-         skeletalLayerThickness, &
-         gramsCarbonPerMolCarbon, &
          iceAreaMinimum, &
          iceThicknessMinimum, &
          snowThicknessMinimum
-    !gramsCarbonPerMolCarbon          = R_gC2molC
 
     call icepack_configure()
     call seaice_icepack_write_warnings(icepack_warnings_aborted())
@@ -5871,7 +5838,6 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
@@ -5917,7 +5883,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(domain % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(domain % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_aerosols", config_use_aerosols)
@@ -5984,8 +5949,7 @@ contains
          tracerObject % nTracers = tracerObject % nTracers + 2
 
     ! pond tracers
-    if (config_use_cesm_meltponds .or. &
-        config_use_level_meltponds .or. &
+    if (config_use_level_meltponds .or. &
         config_use_topo_meltponds) &
          tracerObject % nTracers = tracerObject % nTracers + 2
 
@@ -6162,7 +6126,6 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
@@ -6181,7 +6144,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(domain % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(domain % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_aerosols", config_use_aerosols)
@@ -6236,8 +6198,7 @@ contains
     tracerObject % index_pondDepth        = indexMissingValue
     tracerObject % index_pondLidThickness = indexMissingValue
 
-    if (config_use_cesm_meltponds .or. &
-        config_use_level_meltponds .or. &
+    if (config_use_level_meltponds .or. &
         config_use_topo_meltponds) then
        nTracers = nTracers + 1
        tracerObject % index_pondArea = nTracers
@@ -6309,7 +6270,6 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
@@ -6329,7 +6289,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(domain % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(domain % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_aerosols", config_use_aerosols)
@@ -6366,12 +6325,6 @@ contains
     if (config_use_level_ice) then
        tracerObject % parentIndex(tracerObject % index_levelIceArea)   = 0
        tracerObject % parentIndex(tracerObject % index_levelIceVolume) = 1
-    endif
-
-    ! cesm melt ponds
-    if (config_use_cesm_meltponds) then
-       tracerObject % parentIndex(tracerObject % index_pondArea)  = 0
-       tracerObject % parentIndex(tracerObject % index_pondDepth) = 2 + tracerObject % index_pondArea
     endif
 
     ! level ice ponds
@@ -6500,26 +6453,15 @@ contains
          tracerObject
 
     logical, pointer :: &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds
 
-    call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
 
     ! initialize
     tracerObject % ancestorNumber = 0
     tracerObject % ancestorIndices = 0
-
-    ! cesm meltponds
-    if (config_use_cesm_meltponds) then
-
-       ! melt pond depth
-       tracerObject % ancestorNumber (tracerObject % index_pondDepth)   = 1
-       tracerObject % ancestorIndices(tracerObject % index_pondDepth,1) = tracerObject % index_pondArea ! on melt pond area
-
-    endif
 
     ! level melt ponds
     if (config_use_level_meltponds) then
@@ -6747,7 +6689,6 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
@@ -6790,7 +6731,6 @@ contains
     call MPAS_pool_get_config(block % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(block % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(block % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(block % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
@@ -6862,8 +6802,7 @@ contains
     endif
 
     ! pond tracers
-    if (config_use_cesm_meltponds .or. &
-        config_use_level_meltponds .or. &
+    if (config_use_level_meltponds .or. &
         config_use_topo_meltponds) then
        tracerArrayCategory(nTracers,:) = pondArea(1,:,iCell)
        nTracers = nTracers + 1
@@ -6935,7 +6874,6 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
@@ -6979,7 +6917,6 @@ contains
     call MPAS_pool_get_config(block % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(block % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(block % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(block % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
@@ -7051,8 +6988,7 @@ contains
     endif
 
     ! pond tracers
-    if (config_use_cesm_meltponds .or. &
-        config_use_level_meltponds .or. &
+    if (config_use_level_meltponds .or. &
         config_use_topo_meltponds) then
        pondArea(1,:,iCell) = tracerArrayCategory(nTracers,:)
        nTracers = nTracers + 1
@@ -7124,7 +7060,6 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
@@ -7169,7 +7104,6 @@ contains
     call MPAS_pool_get_config(block % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(block % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(block % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(block % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
@@ -7241,8 +7175,7 @@ contains
     endif
 
     ! pond tracers
-    if (config_use_cesm_meltponds .or. &
-        config_use_level_meltponds .or. &
+    if (config_use_level_meltponds .or. &
         config_use_topo_meltponds) then
        tracerArrayCell(nTracers) = pondAreaCell(iCell)
        nTracers = nTracers + 1
@@ -7314,7 +7247,6 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
@@ -7359,7 +7291,6 @@ contains
     call MPAS_pool_get_config(block % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(block % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(block % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(block % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
@@ -7431,8 +7362,7 @@ contains
     endif
 
     ! pond tracers
-    if (config_use_cesm_meltponds .or. &
-        config_use_level_meltponds .or. &
+    if (config_use_level_meltponds .or. &
         config_use_topo_meltponds) then
        pondAreaCell(iCell) = tracerArrayCell(nTracers)
        nTracers = nTracers + 1
@@ -9307,7 +9237,7 @@ contains
          config_calc_surface_temperature, &
          config_use_form_drag, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
+         config_use_cesm_meltponds, &  ! deprecated
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_vertical_zsalinity, &
@@ -9368,7 +9298,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_snow_to_ice_transition_depth", config_snow_to_ice_transition_depth)
     call MPAS_pool_get_config(domain % configs, "config_use_form_drag", config_use_form_drag)
     call MPAS_pool_get_config(domain % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
+    call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds) ! deprecated
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_ocean_heat_transfer_type", config_ocean_heat_transfer_type)
@@ -9495,13 +9425,19 @@ contains
             'Check for inconsistencies in restart file: config_nIceLayers /= nIceLayers', &
             messageType=MPAS_LOG_CRIT)
 
+    ! deprecate cesm ponds
+    if (config_use_cesm_meltponds) then
+       call mpas_log_write(&
+            "check_column_package_configs: config_use_cesm_meltponds = .true. but cesm ponds have been deprecated", &
+            messageType=MPAS_LOG_CRIT)
+    endif
+
     !-----------------------------------------------------------------------
     ! Check combinations
     !-----------------------------------------------------------------------
 
     ! check only single meltpond option on
     nPondSchemesActive = 0
-    if (config_use_cesm_meltponds)  nPondSchemesActive = nPondSchemesActive + 1
     if (config_use_level_meltponds) nPondSchemesActive = nPondSchemesActive + 1
     if (config_use_topo_meltponds)  nPondSchemesActive = nPondSchemesActive + 1
     if (nPondSchemesActive > 1) then
@@ -9551,15 +9487,8 @@ contains
             messageType=MPAS_LOG_CRIT)
     endif
 
-    ! check cesm ponds and freezing lids inconsistency
-    if (config_use_cesm_meltponds .and. trim(config_pond_refreezing_type) /= "cesm") then
-       call mpas_log_write(&
-            "check_column_package_configs: config_use_cesm_meltponds = .true. and config_pond_refreezing_type /= 'cesm'", &
-            messageType=MPAS_LOG_CRIT)
-    endif
-
     ! check dEdd shortwave if using ponds
-    use_meltponds = (config_use_cesm_meltponds .or. config_use_level_meltponds .or. config_use_topo_meltponds)
+    use_meltponds = (config_use_level_meltponds .or. config_use_topo_meltponds)
     if (trim(config_shortwave_type(1:4)) /= 'dEdd' .and. use_meltponds .and. config_calc_surface_temperature) then
        call mpas_log_write(&
             "check_column_package_configs: config_shortwave_type(1:4)) /= 'dEdd' .and. use_meltponds = .true.", &
@@ -9601,13 +9530,6 @@ contains
     if (config_use_form_drag .and. .not. config_calc_surface_stresses) then
        call mpas_log_write(&
             "check_column_package_configs: config_use_form_drag = .true. and config_calc_surface_stresses = .false.", &
-            messageType=MPAS_LOG_CRIT)
-    endif
-
-    ! check am not using form drag with cesm ponds
-    if (config_use_form_drag .and. config_use_cesm_meltponds) then
-       call mpas_log_write(&
-            "check_column_package_configs: config_use_form_drag = .true. and config_use_cesm_meltponds = .true.", &
             messageType=MPAS_LOG_CRIT)
     endif
 
@@ -9714,7 +9636,6 @@ contains
          config_use_ice_age, &
          config_use_first_year_ice, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_aerosols, &
@@ -9743,7 +9664,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_ice_age", config_use_ice_age)
     call MPAS_pool_get_config(domain % configs, "config_use_first_year_ice", config_use_first_year_ice)
     call MPAS_pool_get_config(domain % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_aerosols", config_use_aerosols)
@@ -9769,14 +9689,13 @@ contains
     if (config_use_skeletal_biochemistry .or. config_use_vertical_biochemistry) &
          use_nitrogen = .true.
 
-    use_meltponds = (config_use_cesm_meltponds .or. config_use_level_meltponds .or. config_use_topo_meltponds)
+    use_meltponds = (config_use_level_meltponds .or. config_use_topo_meltponds)
 
     call icepack_init_tracer_flags(&
          tr_iage_in      = config_use_ice_age, &
          tr_FY_in        = config_use_first_year_ice, &
          tr_lvl_in       = config_use_level_ice, &
          tr_pond_in      = use_meltponds, &
-         !tr_pond_cesm_in = config_use_cesm_meltponds, & ! deprecated
          tr_pond_lvl_in  = config_use_level_meltponds, &
          tr_pond_topo_in = config_use_topo_meltponds, &
          !tr_fsd_in       = , &
