@@ -2648,7 +2648,12 @@ void isotropic_ts_f(Int nlev, Int shcol, Real* brunt_int, Real* tke,
       //outputs
       const auto isotropy_s = ekat::subview(isotropy_d, i); //output
 
-      SHF::isotropic_ts(team, nlev, brunt_int_s, tke_s, a_diss_s, brunt_s, isotropy_s);
+      const Real lambda_low = 0.001; //ASD
+      const Real lambda_high   = 0.04;
+      const Real lambda_slope  = 2.65;
+      const Real lambda_thresh = 0.02;
+      SHF::isotropic_ts(team, nlev, lambda_low, lambda_high, lambda_slope, lambda_thresh,
+		      brunt_int_s, tke_s, a_diss_s, brunt_s, isotropy_s);
     });
 
   // Sync back to host
@@ -2859,6 +2864,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
                                              qwthl_sec_d, wthl_sec_d, wqw_sec_d, wtke_sec_d,
                                              uw_sec_d,    vw_sec_d,   w3_d,      wqls_sec_d,
                                              brunt_d,     isotropy_d};
+  SHF::SHOCRuntime shoc_runtime_options{0.001,0.04,2.65,0.02};
 
   const auto nlevi_packs = ekat::npack<Spack>(nlevi);
 
@@ -2897,7 +2903,7 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
   ekat::WorkspaceManager<Spack, SHF::KT::Device> workspace_mgr(nlevi_packs, 14+(n_wind_slots+n_trac_slots), policy);
 
   const auto elapsed_microsec = SHF::shoc_main(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
-                                               workspace_mgr,
+                                               workspace_mgr, shoc_runtime_options,
                                                shoc_input, shoc_input_output, shoc_output, shoc_history_output
 #ifdef SCREAM_SMALL_KERNELS
                                                , shoc_temporaries
@@ -3451,7 +3457,12 @@ void shoc_tke_f(Int shcol, Int nlev, Int nlevi, Real dtime, Real* wthv_sec, Real
     const auto tkh_s = ekat::subview(tkh_d, i);
     const auto isotropy_s = ekat::subview(isotropy_d, i);
 
-    SHF::shoc_tke(team,nlev,nlevi,dtime,wthv_sec_s,shoc_mix_s,dz_zi_s,dz_zt_s,pres_s,
+    const Real lambda_low    = 0.001;  //ASD
+    const Real lambda_high   = 0.04;
+    const Real lambda_slope  = 2.65;
+    const Real lambda_thresh = 0.02;
+    SHF::shoc_tke(team,nlev,nlevi,dtime,lambda_low,lambda_high,lambda_slope,lambda_thresh,
+		  wthv_sec_s,shoc_mix_s,dz_zi_s,dz_zt_s,pres_s,
                   tabs_s,u_wind_s,v_wind_s,brunt_s,zt_grid_s,zi_grid_s,pblh_s,
                   workspace,
                   tke_s,tk_s,tkh_s,isotropy_s);

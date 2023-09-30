@@ -12,7 +12,7 @@ namespace scream {
 namespace physics {
 
 /*
- * Mathematical constants used by p3.
+ * Mathematical constants used by atmosphere processes.
  *
  * Note that a potential optimization could be to change the type of
  * Scalar constants that have integer values to int.

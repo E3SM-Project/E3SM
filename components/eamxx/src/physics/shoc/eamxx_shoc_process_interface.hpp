@@ -517,6 +517,7 @@ protected:
   SHF::SHOCInputOutput input_output;
   SHF::SHOCOutput output;
   SHF::SHOCHistoryOutput history_output;
+  SHF::SHOCRuntime runtime_options;
 #ifdef SCREAM_SMALL_KERNELS
   SHF::SHOCTemporaries temporaries;
 #endif

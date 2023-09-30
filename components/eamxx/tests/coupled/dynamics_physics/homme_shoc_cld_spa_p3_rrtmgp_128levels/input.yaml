@@ -34,6 +34,11 @@ atmosphere_processes:
       spa:
         spa_remap_file: ${SCREAM_DATA_DIR}/maps/map_ne4np4_to_ne2np4_mono.nc
         spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
+      shoc:
+        lambda_low: 0.001
+        lambda_high: 0.04
+        lambda_slope: 2.65
+        lambda_thresh: 0.02
     rrtmgp:
       column_chunk_size: 123
       active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
