@@ -3,18 +3,21 @@
 !  seaice_constants
 !
 !> \brief
-!> \author Adrian K. Turner, LANL
-!> \date 2013-2014
+!> \author Adrian K. Turner and Elizabeth Hunke, LANL
+!> \date 2013-2014, 2023
 !> \details
 !> Values in this module have been copied from the two ice_constants_colpkg.F90 
-!  modules in the column physics package (colpkg, in column/).  They will remain 
-!  duplicates until the column physic package is deprecated.
+!> modules in the column physics package (in column/).  They will remain 
+!> duplicates until the column physics package is deprecated.
+!
 !-----------------------------------------------------------------------
 
 module seaice_constants
 
   use mpas_derived_types
+#ifdef CCSMCOUPLED
   use shr_const_mod
+#endif
 
   private
   save
@@ -57,7 +60,7 @@ module seaice_constants
 #else
       real (kind=RKIND), parameter, public :: &
   ! fundamental constants
-       pi                              = 3.14159265358979323846_RKIND
+       pi                              = 3.14159265358979323846_RKIND, &
        seaiceSecondsPerDay             = 24.0_RKIND * 3600.0_RKIND
  
       real (kind=RKIND), public :: &
@@ -83,8 +86,9 @@ module seaice_constants
        seaiceSeaWaterSpecificHeat      = 4218._RKIND   ,&! specific heat of ocn    (J/kg/K)
                                                          ! freshwater value needed for enthalpy
        seaiceLatentHeatVaporization    = 2.501e6_RKIND ,&! latent heat, vaporization freshwater (J/kg)
-       seaiceLatentHeatMelting         = seaiceLatentHeatSublimation & ! latent heat of melting of fresh ice (J/kg)
-                                       - seaiceLatentHeatVaporization, &
+!       seaiceLatentHeatMelting         = seaiceLatentHeatSublimation & ! latent heat of melting of fresh ice (J/kg)
+!                                       - seaiceLatentHeatVaporization, &
+       seaiceLatentHeatMelting         = 3.34e5_RKIND  ,&! latent heat of melting of fresh ice (J/kg)
        seaiceReferenceSalinity         = 4._RKIND      ,&! ice reference salinity (ppt)
        seaiceSnowPatchiness            = 0.02_RKIND      ! parameter for fractional snow area (m)
 
@@ -93,23 +97,17 @@ module seaice_constants
 
   ! fundamental constants
   real (kind=RKIND), parameter, public :: &
-       pii = 3.141592653589793_RKIND, & ! echmod - why is this different from pi above?
-       seaiceDegreesToRadians = pii / 180.0_RKIND, &
-       seaiceRadiansToDegrees = 180.0_RKIND / pii, &
-!echmod - BFB but slower???
-!       pii = pi, &
-!       seaiceDegreesToRadians = pi / 180.0_RKIND, &
-!       seaiceRadiansToDegrees = 180.0_RKIND / pi, &
-       seaiceSecondsPerYear = 24.0_RKIND * 3600.0_RKIND * 365.0_RKIND, & !echmod - incorrect for leap years
-       seaiceDaysPerSecond = 1.0_RKIND/seaiceSecondsPerDay
+       pii                                = pi, &    !echmod - replace pii with seaicePi elsewhere
+       seaiceDegreesToRadians             = pi / 180.0_RKIND, &
+       seaiceRadiansToDegrees             = 180.0_RKIND / pi, &
+       seaiceSecondsPerYear               = 24.0_RKIND * 3600.0_RKIND * 365.0_RKIND, & !echmod - incorrect for leap years
+       seaiceDaysPerSecond                = 1.0_RKIND/seaiceSecondsPerDay
 
   real (kind=RKIND), public :: &
-       seaicePi
-!echmod - BFB but slower???
-!       seaicePi                           = pi ! pi
+       seaicePi                           = pi ! pi
 
   character (len=*), public, parameter :: &
-       coupleAlarmID = 'coupling'
+       coupleAlarmID                      = 'coupling'
 
   real(kind=RKIND), public :: &
        seaicePuny                         = 1.0e-11_RKIND   ! a small value

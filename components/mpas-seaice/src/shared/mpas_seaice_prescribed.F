@@ -301,44 +301,43 @@ contains
 
                          temperatureGradient = seaFreezingTemperature(iCell) - surfaceTemperature(1,iCategory,iCell)
 
-!echmod - add icepack option for ice and snow quantities
                          if (trim(config_column_physics_type) == "icepack") then
 
-                         ! ice quantities
-                         do iIceLayer = 1, nIceLayers
+                            ! ice quantities
+                            do iIceLayer = 1, nIceLayers
 
-                            depth = (real(iIceLayer,kind=RKIND) - 0.5_RKIND) / real(nIceLayers,kind=RKIND)
-                            iceTemperature = surfaceTemperature(1,iCategory,iCell) + temperatureGradient * depth
-                            iceSalinity(iIceLayer,iCategory,iCell) = icepack_salinity_profile(depth)
-                            iceEnthalpy(iIceLayer,iCategory,iCell) = seaice_icepack_enthalpy_ice(iceTemperature,iceSalinity(iIceLayer,iCategory,iCell))
+                               depth = (real(iIceLayer,kind=RKIND) - 0.5_RKIND) / real(nIceLayers,kind=RKIND)
+                               iceTemperature = surfaceTemperature(1,iCategory,iCell) + temperatureGradient * depth
+                               iceSalinity(iIceLayer,iCategory,iCell) = icepack_salinity_profile(depth)
+                               iceEnthalpy(iIceLayer,iCategory,iCell) = seaice_icepack_enthalpy_ice(iceTemperature,iceSalinity(iIceLayer,iCategory,iCell))
 
-                         enddo ! iIceLayer
+                            enddo ! iIceLayer
 
-                         ! snow quantities
-                         do iSnowLayer = 1, nSnowLayers
-                            snowEnthalpy(iSnowLayer,iCategory,iCell) = icepack_enthalpy_snow(surfaceTemperature(1,iCategory,iCell))
-                         enddo ! iSnowLayer
+                            ! snow quantities
+                            do iSnowLayer = 1, nSnowLayers
+                               snowEnthalpy(iSnowLayer,iCategory,iCell) = icepack_enthalpy_snow(surfaceTemperature(1,iCategory,iCell))
+                            enddo ! iSnowLayer
 
                          else if (trim(config_column_physics_type) == "column_package") then
 
-                         ! ice quantities
-                         do iIceLayer = 1, nIceLayers
+                            ! ice quantities
+                            do iIceLayer = 1, nIceLayers
 
-                            depth = (real(iIceLayer,kind=RKIND) - 0.5_RKIND) / real(nIceLayers,kind=RKIND)
-                            iceTemperature = surfaceTemperature(1,iCategory,iCell) + temperatureGradient * depth
-                            iceSalinity(iIceLayer,iCategory,iCell) = colpkg_salinity_profile(depth)
-                            iceEnthalpy(iIceLayer,iCategory,iCell) = colpkg_enthalpy_ice(iceTemperature,iceSalinity(iIceLayer,iCategory,iCell))
+                               depth = (real(iIceLayer,kind=RKIND) - 0.5_RKIND) / real(nIceLayers,kind=RKIND)
+                               iceTemperature = surfaceTemperature(1,iCategory,iCell) + temperatureGradient * depth
+                               iceSalinity(iIceLayer,iCategory,iCell) = colpkg_salinity_profile(depth)
+                               iceEnthalpy(iIceLayer,iCategory,iCell) = colpkg_enthalpy_ice(iceTemperature,iceSalinity(iIceLayer,iCategory,iCell))
 
-                         enddo ! iIceLayer
+                            enddo ! iIceLayer
 
-                         ! snow quantities
-                         do iSnowLayer = 1, nSnowLayers
-                            snowEnthalpy(iSnowLayer,iCategory,iCell) = colpkg_enthalpy_snow(surfaceTemperature(1,iCategory,iCell))
-                         enddo ! iSnowLayer
+                            ! snow quantities
+                            do iSnowLayer = 1, nSnowLayers
+                               snowEnthalpy(iSnowLayer,iCategory,iCell) = colpkg_enthalpy_snow(surfaceTemperature(1,iCategory,iCell))
+                            enddo ! iSnowLayer
+
+                         endif ! config_column_physics_type
 
                       endif
-
-                      endif ! config_column_physics_type
 
                    else
 

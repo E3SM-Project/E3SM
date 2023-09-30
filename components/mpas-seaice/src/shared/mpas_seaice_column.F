@@ -9929,7 +9929,7 @@ contains
          config_calc_surface_temperature, &
          config_use_form_drag, &
          config_use_level_ice, &
-         config_use_cesm_meltponds, &
+         config_use_cesm_meltponds, &  ! deprecated
          config_use_level_meltponds, &
          config_use_topo_meltponds, &
          config_use_vertical_zsalinity, &
@@ -9989,7 +9989,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_snow_to_ice_transition_depth", config_snow_to_ice_transition_depth)
     call MPAS_pool_get_config(domain % configs, "config_use_form_drag", config_use_form_drag)
     call MPAS_pool_get_config(domain % configs, "config_use_level_ice", config_use_level_ice)
-    call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
+    call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds) ! deprecated
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_ocean_heat_transfer_type", config_ocean_heat_transfer_type)
@@ -10026,10 +10026,15 @@ contains
     !-----------------------------------------------------------------------
 
     ! check config_thermodynamics_type value
-    if (.not. (trim(config_thermodynamics_type) == "zero layer" .or. &
-               trim(config_thermodynamics_type) == "BL99" .or. &
+    if (trim(config_thermodynamics_type) == "zero layer") then
+       call mpas_log_write(&
+            "check_column_package_configs: config_thermodynamics_type) = zero layer but 0-layer thermo is being deprecated", &
+            messageType=MPAS_LOG_WARN)
+    endif
+
+    if (.not. (trim(config_thermodynamics_type) == "BL99" .or. &
                trim(config_thermodynamics_type) == "mushy")) then
-       call config_error("config_thermodynamics_type", config_thermodynamics_type, "'zero layer', 'BL99' or 'mushy'")
+       call config_error("config_thermodynamics_type", config_thermodynamics_type, "'BL99' or 'mushy'")
     endif
 
     ! check config_heat_conductivity_type value
@@ -10110,6 +10115,13 @@ contains
        call mpas_log_write(&
             'Check for inconsistencies in restart file: config_nIceLayers /= nIceLayers', &
             messageType=MPAS_LOG_CRIT)
+
+    ! deprecate cesm ponds
+    if (config_use_cesm_meltponds) then
+       call mpas_log_write(&
+            "check_column_package_configs: config_use_cesm_meltponds = .true. but cesm ponds are being deprecated", &
+            messageType=MPAS_LOG_CRIT)
+    endif
 
     !-----------------------------------------------------------------------
     ! Check combinations
@@ -10253,6 +10265,13 @@ contains
        call mpas_log_write(&
             "check_column_package_configs: config_thermodynamics_type == 'mushy' and "//&
             "config_sea_freezing_temperature_type /= 'mushy'", &
+            messageType=MPAS_LOG_CRIT)
+    endif
+
+    ! deprecate zsalinity
+    if (config_use_vertical_zsalinity) then
+       call mpas_log_write(&
+            "check_column_package_configs: vertical zSalinity has been deprecated", &
             messageType=MPAS_LOG_CRIT)
     endif
 

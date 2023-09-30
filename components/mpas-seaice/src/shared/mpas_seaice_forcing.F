@@ -2599,6 +2599,9 @@ contains
     use ice_colpkg, only: &
          colpkg_sea_freezing_temperature
 
+    use icepack_intfc, only: &
+         icepack_sea_freezing_temperature
+
     type (block_type), pointer :: block
 
     logical, intent(in) :: &
@@ -2615,7 +2618,8 @@ contains
          seaFreezingTemperature
 
     character(len=strKIND), pointer :: &
-         config_sea_freezing_temperature_type
+         config_sea_freezing_temperature_type, &
+         config_column_physics_type
 
     logical, pointer :: &
          config_do_restart
@@ -2641,16 +2645,29 @@ contains
     call MPAS_pool_get_array(ocean_coupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
     call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
 
-    do iCell = 1, nCellsSolve
+    if (trim(config_column_physics_type) == "icepack") then
+       do iCell = 1, nCellsSolve
 
-       ! ensure physical realism
-       seaSurfaceSalinity(iCell)   = max(seaSurfaceSalinity(iCell), 0.0_RKIND)
-       oceanMixedLayerDepth(iCell) = max(oceanMixedLayerDepth(iCell), 0.0_RKIND)
+          ! ensure physical realism
+          seaSurfaceSalinity(iCell)   = max(seaSurfaceSalinity(iCell), 0.0_RKIND)
+          oceanMixedLayerDepth(iCell) = max(oceanMixedLayerDepth(iCell), 0.0_RKIND)
 
-       ! sea freezing temperature
-       seaFreezingTemperature(iCell) = colpkg_sea_freezing_temperature(seaSurfaceSalinity(iCell))
+          ! sea freezing temperature
+          seaFreezingTemperature(iCell) = icepack_sea_freezing_temperature(seaSurfaceSalinity(iCell))
 
-    enddo ! iCell
+       enddo ! iCell
+    else if (trim(config_column_physics_type) == "column_package") then
+       do iCell = 1, nCellsSolve
+
+          ! ensure physical realism
+          seaSurfaceSalinity(iCell)   = max(seaSurfaceSalinity(iCell), 0.0_RKIND)
+          oceanMixedLayerDepth(iCell) = max(oceanMixedLayerDepth(iCell), 0.0_RKIND)
+
+          ! sea freezing temperature
+          seaFreezingTemperature(iCell) = colpkg_sea_freezing_temperature(seaSurfaceSalinity(iCell))
+
+       enddo ! iCell
+    endif ! config_column_physics_type
 
     ! only update sea surface temperature on first non-restart timestep
     if (firstTimeStep .and. .not. config_do_restart) then
