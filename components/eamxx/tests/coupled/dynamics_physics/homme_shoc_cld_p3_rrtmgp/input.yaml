@@ -44,6 +44,10 @@ atmosphere_processes:
         enable_column_conservation_checks: true
       shoc:
         enable_column_conservation_checks: true
+        lambda_low: 0.001
+        lambda_high: 0.04
+        lambda_slope: 2.65
+        lambda_thresh: 0.02
     rrtmgp:
       column_chunk_size: 123
       active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]

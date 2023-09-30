@@ -28,6 +28,11 @@ atmosphere_processes:
       number_of_subcycles: 1
       p3:
         do_prescribed_ccn: false
+      shoc:
+        lambda_low: 0.001
+        lambda_high: 0.04
+        lambda_slope: 2.65
+        lambda_thresh: 0.02
     rrtmgp:
       active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
       do_aerosol_rad: false

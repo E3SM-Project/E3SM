@@ -69,6 +69,16 @@ struct Functions
   using WorkspaceMgr = typename ekat::WorkspaceManager<Spack,  Device>;
   using Workspace    = typename WorkspaceMgr::Workspace;
 
+  // This struct stores runtime options for shoc_main
+ struct SHOCRuntime {
+   SHOCRuntime() = default;
+   // Runtime options for isotropic_ts
+   Scalar lambda_low;
+   Scalar lambda_high;
+   Scalar lambda_slope;
+   Scalar lambda_thresh;
+ };
+
   // This struct stores input views for shoc_main.
   struct SHOCInput {
     SHOCInput() = default;
@@ -778,6 +788,10 @@ struct Functions
   static void isotropic_ts(
     const MemberType&            team,
     const Int&                   nlev,
+    const Scalar&                lambda_low,
+    const Scalar&                lambda_high,
+    const Scalar&                lambda_slope,
+    const Scalar&                lambda_thresh,
     const Scalar&                brunt_int,
     const uview_1d<const Spack>& tke,
     const uview_1d<const Spack>& a_diss,
@@ -807,6 +821,11 @@ struct Functions
     const Int&                   nadv,         // Number of times to loop SHOC
     const Int&                   num_qtracers, // Number of tracers
     const Scalar&                dtime,        // SHOC timestep [s]
+    // Runtime Parameters
+    const Scalar&                lambda_low,
+    const Scalar&                lambda_high,
+    const Scalar&                lambda_slope,
+    const Scalar&                lambda_thresh,
     // Input Variables
     const Scalar&                host_dx,
     const Scalar&                host_dy,
@@ -865,6 +884,11 @@ struct Functions
     const Int&                   nadv,         // Number of times to loop SHOC
     const Int&                   num_qtracers, // Number of tracers
     const Scalar&                dtime,        // SHOC timestep [s]
+    // Runtime Parameters
+    const Scalar&                lambda_low,
+    const Scalar&                lambda_high,
+    const Scalar&                lambda_slope,
+    const Scalar&                lambda_thresh,
     // Input Variables
     const view_1d<const Scalar>& host_dx,
     const view_1d<const Scalar>& host_dy,
@@ -946,6 +970,7 @@ struct Functions
     const Int&               num_q_tracers,        // Number of tracers
     const Scalar&            dtime,                // SHOC timestep [s]
     WorkspaceMgr&            workspace_mgr,        // WorkspaceManager for local variables
+    const SHOCRuntime&       shoc_runtime,         // Runtime options
     const SHOCInput&         shoc_input,           // Input
     const SHOCInputOutput&   shoc_input_output,    // Input/Output
     const SHOCOutput&        shoc_output,          // Output
@@ -1086,6 +1111,10 @@ struct Functions
     const Int&                   nlev,
     const Int&                   nlevi,
     const Scalar&                dtime,
+    const Scalar&                lambda_low,
+    const Scalar&                lambda_high,
+    const Scalar&                lambda_slope,
+    const Scalar&                lambda_thresh,
     const uview_1d<const Spack>& wthv_sec,
     const uview_1d<const Spack>& shoc_mix,
     const uview_1d<const Spack>& dz_zi,
@@ -1109,6 +1138,10 @@ struct Functions
     const Int&                   nlev,
     const Int&                   nlevi,
     const Scalar&                dtime,
+    const Scalar&                lambda_low,
+    const Scalar&                lambda_high,
+    const Scalar&                lambda_slope,
+    const Scalar&                lambda_thresh,
     const view_2d<const Spack>&  wthv_sec,
     const view_2d<const Spack>&  shoc_mix,
     const view_2d<const Spack>&  dz_zi,
