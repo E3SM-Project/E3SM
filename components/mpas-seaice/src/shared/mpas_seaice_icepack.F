@@ -17232,7 +17232,7 @@ contains
          icepack_warnings_clear, &
          icepack_warnings_getall
 
-    character(len=strKINDWarnings), dimension(:), allocatable :: &
+    character(len=256), dimension(:), allocatable :: & ! icepack char_len_long=256
          warnings
 
     logical, intent(in) :: &
