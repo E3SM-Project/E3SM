@@ -2330,9 +2330,9 @@ Valid values: 'cesm' or 'hlid'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_pond_flushing_timescale" type="real"
+<entry id="config_pond_flushing_factor" type="real"
 	category="meltponds" group="meltponds">
-Alter e-folding time scale for flushing.?????
+Alters e-folding time scale for flushing with BL99 thermodynamics.
 
 Valid values:
 Default: Defined in namelist_defaults.xml
@@ -2508,7 +2508,7 @@ Valid values: 'Hibler80' or 'exponential'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_ridiging_efolding_scale" type="real"
+<entry id="config_ridging_efolding_scale" type="real"
 	category="ridging" group="ridging">
 E-folding scale of ridged ice (krdg_redist = 1)
 

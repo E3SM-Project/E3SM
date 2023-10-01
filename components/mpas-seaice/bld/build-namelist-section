@@ -377,7 +377,7 @@ add_default($nl, 'config_max_dry_snow_radius');
 
 add_default($nl, 'config_snow_to_ice_transition_depth');
 add_default($nl, 'config_pond_refreezing_type');
-add_default($nl, 'config_pond_flushing_timescale');
+add_default($nl, 'config_pond_flushing_factor');
 add_default($nl, 'config_min_meltwater_retained_fraction');
 add_default($nl, 'config_max_meltwater_retained_fraction');
 add_default($nl, 'config_pond_depth_to_fraction_ratio');
@@ -418,7 +418,7 @@ add_default($nl, 'config_floediam');
 add_default($nl, 'config_ice_strength_formulation');
 add_default($nl, 'config_ridging_participation_function');
 add_default($nl, 'config_ridging_redistribution_function');
-add_default($nl, 'config_ridiging_efolding_scale');
+add_default($nl, 'config_ridging_efolding_scale');
 add_default($nl, 'config_ratio_ridging_work_to_PE');
 
 ##############################

@@ -369,7 +369,7 @@
 <!-- meltponds -->
 <config_snow_to_ice_transition_depth>0.0</config_snow_to_ice_transition_depth>
 <config_pond_refreezing_type>'hlid'</config_pond_refreezing_type>
-<config_pond_flushing_timescale>1.0e-3</config_pond_flushing_timescale>
+<config_pond_flushing_factor>1.0e-3</config_pond_flushing_factor>
 <config_min_meltwater_retained_fraction>0.15</config_min_meltwater_retained_fraction>
 <config_max_meltwater_retained_fraction>1.0</config_max_meltwater_retained_fraction>
 <config_pond_depth_to_fraction_ratio>0.8</config_pond_depth_to_fraction_ratio>
@@ -398,7 +398,7 @@
 <config_ice_strength_formulation>'Rothrock75'</config_ice_strength_formulation>
 <config_ridging_participation_function>'exponential'</config_ridging_participation_function>
 <config_ridging_redistribution_function>'exponential'</config_ridging_redistribution_function>
-<config_ridiging_efolding_scale>3.0</config_ridiging_efolding_scale>
+<config_ridging_efolding_scale>3.0</config_ridging_efolding_scale>
 <config_ratio_ridging_work_to_PE>17.0</config_ratio_ridging_work_to_PE>
 
 <!-- atmosphere -->
