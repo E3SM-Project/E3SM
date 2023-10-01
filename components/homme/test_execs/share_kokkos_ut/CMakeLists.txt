@@ -2,7 +2,7 @@ SET(SRC_DIR          ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR    ${HOMME_SOURCE_DIR}/src/share)
 SET(SRC_PREQX_DIR    ${HOMME_SOURCE_DIR}/src/preqx_kokkos)
 SET(SHARE_UT_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
-SET(UTILS_TIMING_DIR ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
+SET(UTILS_TIMING_DIR ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing ${CMAKE_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 
 # Place common CPP definitions here.
 # Note: need CUDA_BUILD and HOMMEXX_BFB_TESTING here, since the share
