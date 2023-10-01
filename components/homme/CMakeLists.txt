@@ -453,6 +453,7 @@ ENDIF ()
 
 # If we don't need kokkos we don't need EKAT, and if
 # Homme is built in EAMxx EKAT is already built
+if("${E3SM_KOKKOS_PATH}" STREQUAL "")
 IF (HOMME_USE_KOKKOS AND HOMME_STANDALONE)
   # Add ekat's cmake/pkg_build folder to cmake path
   set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
@@ -463,6 +464,11 @@ IF (HOMME_USE_KOKKOS AND HOMME_STANDALONE)
   )
   include (EkatBuildKokkos)
   BuildKokkos()
+ENDIF ()
+ELSE ()
+  IF (${HOMME_USE_KOKKOS})
+  INCLUDE(Kokkos)
+  ENDIF ()
 ENDIF ()
 
 # This folder contains the CMake macro used to build cxx unit tests
