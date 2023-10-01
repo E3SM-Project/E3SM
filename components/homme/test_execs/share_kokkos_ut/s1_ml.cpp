@@ -14,6 +14,8 @@
 #include <stdio.h>
 #include <random>
 
+#define HOWMANY 200
+
 using namespace Homme;
 
 using rngAlg = std::mt19937_64;
@@ -208,8 +210,9 @@ class compute_sphere_operator_test_ml {
     auto policy = Homme::get_default_team_policy<ExecSpace, TagDivergenceSphereWkML>(_num_elems);
     sphere_ops.allocate_buffers(policy);
 
-    //for (int i = 0; i < 1000000; i++)   
+    for(int iii = 0; iii < HOWMANY ; iii++){
     Kokkos::parallel_for(policy, *this);
+    }
 
     Kokkos::fence();
     Kokkos::deep_copy(scalar_output_host, scalar_output_d);

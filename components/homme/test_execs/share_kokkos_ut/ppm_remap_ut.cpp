@@ -9,6 +9,8 @@
 
 #include <random>
 
+#define HOWMANY 200
+
 using namespace Homme;
 
 extern "C" {
@@ -317,8 +319,10 @@ public:
 
     initialize_layers(engine);
 
+    for(int iii = 0; iii < HOWMANY ; iii++){
     Kokkos::parallel_for(
         Homme::get_default_team_policy<ExecSpace, TagRemapTest>(ne), *this);
+    }
     Kokkos::fence();
 
     const int remap_alg = boundary_cond::fortran_remap_alg;
