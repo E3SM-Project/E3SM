@@ -11570,7 +11570,8 @@ contains
          config_use_skeletal_biochemistry, &
          config_use_modal_aerosols, &
          config_use_snow_liquid_ponds, &
-         config_use_snow_grain_radius
+         config_use_snow_grain_radius, &
+         config_use_shortwave_redistribution
 
     real(kind=RKIND), pointer :: &
          config_min_friction_velocity, &
@@ -11591,6 +11592,8 @@ contains
          config_ice_shortwave_tuning_parameter, &
          config_pond_shortwave_tuning_parameter, &
          config_snow_shortwave_tuning_parameter, &
+         config_shortwave_redistribution_fraction, &
+         config_shortwave_redistribution_threshold, &
          config_temp_change_snow_grain_radius_change, &
          config_max_melting_snow_grain_radius, &
          config_algae_absorption_coefficient, &
@@ -11751,7 +11754,7 @@ contains
          config_itd_conversion_type_int, &
          config_category_bounds_type_int
 
-    character(len=strKIND) :: tmp_config_shortwave
+    character(len=strKIND) :: tmp_config_shortwave_type
     character(len=strKIND) :: tmp_config_snw_ssp_table
     character(len=strKIND) :: snw_aging_table = 'snicar'
 
@@ -11787,6 +11790,9 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_ice_shortwave_tuning_parameter", config_ice_shortwave_tuning_parameter)
     call MPAS_pool_get_config(domain % configs, "config_pond_shortwave_tuning_parameter", config_pond_shortwave_tuning_parameter)
     call MPAS_pool_get_config(domain % configs, "config_snow_shortwave_tuning_parameter", config_snow_shortwave_tuning_parameter)
+    call MPAS_pool_get_config(domain % configs, "config_use_shortwave_redistribution", config_use_shortwave_redistribution)
+    call MPAS_pool_get_config(domain % configs, "config_shortwave_redistribution_fraction", config_shortwave_redistribution_fraction)
+    call MPAS_pool_get_config(domain % configs, "config_shortwave_redistribution_threshold", config_shortwave_redistribution_threshold)
     call MPAS_pool_get_config(domain % configs, "config_temp_change_snow_grain_radius_change", &
                                                  config_temp_change_snow_grain_radius_change)
     call MPAS_pool_get_config(domain % configs, "config_max_melting_snow_grain_radius", config_max_melting_snow_grain_radius)
@@ -11980,11 +11986,11 @@ contains
     config_category_bounds_type_int = config_cice_int("config_category_bounds_type", config_category_bounds_type)
 
     if (config_use_snicar_ad .and. (trim(config_shortwave_type(1:4)) == "dEdd")) then
-       tmp_config_shortwave     = 'dEdd_snicar_ad'
-       tmp_config_snw_ssp_table = 'snicar'
+       tmp_config_shortwave_type = 'dEdd_snicar_ad'
+       tmp_config_snw_ssp_table  = 'snicar'
     else
-       tmp_config_shortwave     = config_shortwave_type
-       tmp_config_snw_ssp_table = 'test'
+       tmp_config_shortwave_type = config_shortwave_type
+       tmp_config_snw_ssp_table  = 'test'
     endif
 
 !echmod debugging
@@ -12201,7 +12207,7 @@ contains
          phi_c_slow_mode_in      = config_slow_mode_critical_porosity, &
          phi_i_mushy_in          = config_congelation_ice_porosity, &
 !         shortwave_in            = config_shortwave_type, &
-         shortwave_in            = tmp_config_shortwave, &
+         shortwave_in            = tmp_config_shortwave_type, &
          albedo_type_in          = config_albedo_type, &
          albsnowi_in             = config_infrared_snow_albedo, &
          albicev_in              = config_visible_ice_albedo, &
@@ -12275,9 +12281,9 @@ contains
          !t_sk_conv_in            = , &
          !t_sk_ox_in              = , &
          !frazil_scav_in          = , &
-         !sw_redist_in            = , &        ! not yet implemented in MPAS-SI (stealth feature)
-         !sw_frac_in              = , &        ! not yet implemented in MPAS-SI (stealth feature)
-         !sw_dtemp_in             = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         sw_redist_in            = config_use_shortwave_redistribution, &
+         sw_frac_in              = config_shortwave_redistribution_fraction, &
+         sw_dtemp_in             = config_shortwave_redistribution_threshold, &
          snwgrain_in             = config_use_snow_grain_radius, &
          snwredist_in            = config_snow_redistribution_scheme, &
          use_smliq_pnd_in        = config_use_snow_liquid_ponds, &
@@ -12589,6 +12595,18 @@ contains
     ! R_snw:
     ! snow tuning parameter; +1 > ~.01 change in broadband albedo
     !R_snw = config_snow_shortwave_tuning_parameter
+
+    ! sw_redist
+    ! Redistribute shortwave from layers near the melting temperature to the surface
+    !sw_redist = config_use_shortwave_redistribution
+
+    ! sw_frac
+    ! Fraction of shortwave moved from layers near the melting temperature to the surface
+    !sw_frac = config_shortwave_redistribution_fraction
+
+    ! sw_dtemp
+    ! Temperature threshold for moving shortwave to the surface
+    !sw_dtemp = config_shortwave_redistribution_threshold
 
     ! dT_mlt:
     ! change in temp for non-melt to melt snow grain radius change (C)

@@ -354,6 +354,9 @@
 <config_temp_change_snow_grain_radius_change>1.5</config_temp_change_snow_grain_radius_change>
 <config_max_melting_snow_grain_radius>1500.0</config_max_melting_snow_grain_radius>
 <config_algae_absorption_coefficient>0.6</config_algae_absorption_coefficient>
+<config_use_shortwave_redistribution>false</config_use_shortwave_redistribution>
+<config_shortwave_redistribution_fraction>0.9</config_shortwave_redistribution_fraction>
+<config_shortwave_redistribution_threshold>0.02</config_shortwave_redistribution_threshold>
 
 <!-- snow -->
 <config_snow_redistribution_scheme>'ITDrdg'</config_snow_redistribution_scheme>

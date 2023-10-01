@@ -2236,6 +2236,30 @@ Valid values:
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_shortwave_redistribution" type="logical"
+	category="shortwave" group="shortwave">
+Redistribute shortwave from layers near the melting temperature to the surface.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_shortwave_redistribution_fraction" type="real"
+	category="shortwave" group="shortwave">
+Fraction of shortwave moved from a layer near the melting temperature to the surface.
+
+Valid values: fraction between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_shortwave_redistribution_threshold" type="real"
+	category="shortwave" group="shortwave">
+Temperature threshold for moving shortwave to the surface.
+
+Valid values:
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- snow -->
 

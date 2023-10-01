@@ -1583,6 +1583,21 @@
 			possible_values=""
 			icepack_name="kalg"
 		/>
+		<nml_option name="config_use_shortwave_redistribution" type="logical" default_value="false" units="none"
+			description="redistribution shortwave from layers near the melting temperature"
+			possible_values="true or false"
+			icepack_name="sw_redist"
+		/>
+		<nml_option name="config_shortwave_redistribution_fraction" type="real" default_value="0.9" units="none"
+			description="Fraction of shortwave moved from a layer near the melting temperature to the surface."
+			possible_values="fraction between 0 and 1"
+			icepack_name="sw_frac"
+		/>
+		<nml_option name="config_shortwave_redistribution_threshold" type="real" default_value="0.02" units="C"
+			description="Temperature threshold for moving shortwave to the surface."
+			possible_values=""
+			icepack_name="sw_dtemp"
+		/>
 	</nml_record>
 
 	<nml_record name="snow" in_defaults="true">

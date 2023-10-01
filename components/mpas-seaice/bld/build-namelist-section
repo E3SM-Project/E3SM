@@ -356,6 +356,9 @@ add_default($nl, 'config_snow_shortwave_tuning_parameter');
 add_default($nl, 'config_temp_change_snow_grain_radius_change');
 add_default($nl, 'config_max_melting_snow_grain_radius');
 add_default($nl, 'config_algae_absorption_coefficient');
+add_default($nl, 'config_use_shortwave_redistribution');
+add_default($nl, 'config_shortwave_redistribution_fraction');
+add_default($nl, 'config_shortwave_redistribution_threshold');
 
 ########################
 # Namelist group: snow #
