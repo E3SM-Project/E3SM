@@ -9,6 +9,8 @@
 
 #include <random>
 
+#define HOWMANY 200
+
 using namespace Homme;
 using namespace Remap;
 using namespace Ppm;
@@ -65,9 +67,12 @@ public:
     genRandArray(remap.m_dpo, engine,
                  std::uniform_real_distribution<Real>(0.125, 1000),
                  nan_boundaries);
+
+    for(int iii = 0; iii < HOWMANY ; iii++){
     Kokkos::parallel_for(
         Homme::get_default_team_policy<ExecSpace, TagGridTest>(ne), *this);
     Kokkos::fence();
+    }
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -105,9 +110,11 @@ public:
                    std::uniform_real_distribution<Real>(0.125, 1000),
                    nan_boundaries);
     }
+    for(int iii = 0; iii < HOWMANY ; iii++){
     Kokkos::parallel_for(
         Homme::get_default_team_policy<ExecSpace, TagPPMTest>(ne), *this);
     Kokkos::fence();
+    }
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -206,9 +213,11 @@ public:
 
     initialize_layers(engine);
 
+    for(int iii = 0; iii < HOWMANY ; iii++){
     Kokkos::parallel_for(
         Homme::get_default_team_policy<ExecSpace, TagRemapTest>(ne), *this);
     Kokkos::fence();
+    }
   }
 
   KOKKOS_INLINE_FUNCTION
