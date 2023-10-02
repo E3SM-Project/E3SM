@@ -26,8 +26,9 @@ endif()
 find_package(NETCDF REQUIRED)
 
 if (NOT MPILIB STREQUAL mpi-serial)
-  find_package(ADIOS2 REQUIRED)
-  list(APPEND PIOLIBS adios2::adios2 adios2pio-nm-lib)
+  find_package(MPI REQUIRED COMPONENTS C)
+  find_package(ADIOS2 REQUIRED COMPONENTS C)
+  list(APPEND PIOLIBS adios2::adios2)
 endif()
 
 list(APPEND PIOLIBS netcdf)
