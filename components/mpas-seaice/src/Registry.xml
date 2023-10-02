@@ -1727,6 +1727,11 @@
 			possible_values="Any real number between 0 and 1."
 			icepack_name="phi_c_slow_mode"
 		/>
+		<nml_option name="config_macro_drainage_timescale" type="real" default_value="10." units="days"
+			description="Timescale for macroscopic drainage."
+			possible_values="Any positive real number."
+			icepack_name="tscale_pnd_drain"
+		/>
 		<nml_option name="config_congelation_ice_porosity" type="real" default_value="0.85" units="unitless"
 			description="Liquid fraction of congelation ice."
 			possible_values="Any real number between 0 and 1."

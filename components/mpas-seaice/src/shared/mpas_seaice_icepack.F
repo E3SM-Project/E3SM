@@ -11580,6 +11580,7 @@ contains
          config_rapid_mode_aspect_ratio, &
          config_slow_mode_drainage_strength, &
          config_slow_mode_critical_porosity, &
+         config_macro_drainage_timescale, &
          config_congelation_ice_porosity, &
 !         config_frazil_ice_porosity, &
 !         config_frazil_salinity_reduction, &
@@ -11775,6 +11776,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_rapid_mode_aspect_ratio", config_rapid_mode_aspect_ratio)
     call MPAS_pool_get_config(domain % configs, "config_slow_mode_drainage_strength", config_slow_mode_drainage_strength)
     call MPAS_pool_get_config(domain % configs, "config_slow_mode_critical_porosity", config_slow_mode_critical_porosity)
+    call MPAS_pool_get_config(domain % configs, "config_macro_drainage_timescale", config_macro_drainage_timescale)
     call MPAS_pool_get_config(domain % configs, "config_congelation_ice_porosity", config_congelation_ice_porosity)
 !    call MPAS_pool_get_config(domain % configs, "config_frazil_ice_porosity", config_frazil_ice_porosity)
 !    call MPAS_pool_get_config(domain % configs, "config_frazil_salinity_reduction", config_frazil_salinity_reduction)
@@ -12206,6 +12208,7 @@ contains
          dSdt_slow_mode_in       = config_slow_mode_drainage_strength, &
          phi_c_slow_mode_in      = config_slow_mode_critical_porosity, &
          phi_i_mushy_in          = config_congelation_ice_porosity, &
+         tscale_pnd_drain_in     = config_macro_drainage_timescale, &
 !         shortwave_in            = config_shortwave_type, &
          shortwave_in            = tmp_config_shortwave_type, &
          albedo_type_in          = config_albedo_type, &
@@ -12530,6 +12533,10 @@ contains
     ! phi_c_slow_mode:
     ! liquid fraction porosity cutoff for slow mode
     !phi_c_slow_mode = config_slow_mode_critical_porosity
+
+    ! tscale_pnd_drain:
+    ! Timescale for macroscopic drainage
+    !tscale_pnd_drain = config_macro_drainage_timescale
 
     ! phi_i_mushy:
     ! liquid fraction of congelation ice

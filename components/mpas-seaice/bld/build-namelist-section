@@ -398,6 +398,7 @@ add_default($nl, 'config_rapid_model_critical_Ra');
 add_default($nl, 'config_rapid_mode_aspect_ratio');
 add_default($nl, 'config_slow_mode_drainage_strength');
 add_default($nl, 'config_slow_mode_critical_porosity');
+add_default($nl, 'config_macro_drainage_timescale');
 add_default($nl, 'config_congelation_ice_porosity');
 
 #######################
