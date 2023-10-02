@@ -17,6 +17,7 @@
 using namespace Homme;
 
 #define HOWMANY 200
+#define ELEMS 10000
 
 using rngAlg = std::mt19937_64;
 
@@ -625,7 +626,7 @@ TEST_CASE("gradient_sphere", "gradient_sphere") {
 
 TEST_CASE("divergence_sphere_wk",
           "divergence_sphere_wk") {
-  constexpr const int elements = 10;
+  constexpr const int elements = ELEMS;
 
   compute_sphere_operator_test_ml testing_div_ml(elements);
   testing_div_ml.run_functor_divergence_sphere_wk();
