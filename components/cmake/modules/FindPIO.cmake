@@ -25,6 +25,13 @@ endif()
 
 find_package(NETCDF REQUIRED)
 
+if (NOT MPILIB STREQUAL mpi-serial)
+  find_package(ADIOS2 REQUIRED)
+  list(APPEND PIOLIBS adios2::adios2 adios2pio-nm-lib)
+endif()
+
+list(APPEND PIOLIBS netcdf)
+
 # Create the interface library, and set target properties
 add_library(spio INTERFACE)
-target_link_libraries(spio INTERFACE ${PIOLIBS};netcdf)
+target_link_libraries(spio INTERFACE ${PIOLIBS})
