@@ -5,7 +5,7 @@ Script containing python test suite for SCREAM's CIME
 namelist-related infrastructure.
 """
 
-from utils import check_minimum_python_version, expect, ensure_pylint, run_cmd_assert_result, get_timestamp
+from utils import check_minimum_python_version, expect, ensure_pylint, run_cmd_assert_result, get_timestamp, run_cmd_no_fail
 
 check_minimum_python_version(3, 6)
 
@@ -193,6 +193,22 @@ class TestBuildnml(unittest.TestCase):
 
         # An unbuffered atmchange is semantically the same as a manual edit
         self._chg_atmconfig([("atm_log_level", "trace")], case, buff=False)
+
+    ###########################################################################
+    def test_append(self):
+    ###########################################################################
+        """
+        Test that var+=value syntax behaves as expected
+        """
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build")
+
+        # Append to an existing entry
+        name = 'output_yaml_files'
+        out = run_cmd_no_fail(f"./atmchange {name}+=a.yaml", from_dir=case)
+
+        # Get the yaml files
+        expected =f'{EAMXX_DIR / "data/scream_default_output.yaml"}, a.yaml'
+        self._get_values(case, name, value=expected, expect_equal=True)
 
     ###########################################################################
     def test_reset_atmchanges_are_lost(self):
