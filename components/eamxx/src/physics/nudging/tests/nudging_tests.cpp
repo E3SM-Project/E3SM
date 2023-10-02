@@ -115,8 +115,8 @@ TEST_CASE("nudging") {
     FieldIdentifier fid1("p_mid",FL{tag_2d,dims_2d},Pa,gn);
     FieldIdentifier fid2("T_mid",FL{tag_2d,dims_2d},K,gn);
     FieldIdentifier fid3("qv",FL{tag_2d,dims_2d},kg/kg,gn);
-    FieldIdentifier fid4("u",FL{tag_2d,dims_2d},m/s,gn);
-    FieldIdentifier fid5("v",FL{tag_2d,dims_2d},m/s,gn);
+    FieldIdentifier fid4("U",FL{tag_2d,dims_2d},m/s,gn);
+    FieldIdentifier fid5("V",FL{tag_2d,dims_2d},m/s,gn);
 
     // Register fields with fm
     fm->registration_begins();
@@ -164,7 +164,7 @@ TEST_CASE("nudging") {
     params.set<std::string>("filename_prefix","io_output_test");
     params.set<std::string>("Averaging Type","Instant");
     params.set<int>("Max Snapshots Per File",15);
-    std::vector<std::string> fnames = {"T_mid","p_mid","qv","u","v"};
+    std::vector<std::string> fnames = {"T_mid","p_mid","qv","U","V"};
     params.set<std::vector<std::string>>("Field Names",fnames);
     auto& params_sub = params.sublist("output_control");
     params_sub.set<std::string>("frequency_units","nsteps");
@@ -232,7 +232,7 @@ TEST_CASE("nudging") {
   std::string nudging_f = "io_output_test.INSTANT.nsteps_x1."\
                           "np1.2000-01-01-00000.nc";
   params_mid.set<std::vector<std::string>>("nudging_filename",{nudging_f});
-  params_mid.set<std::vector<std::string>>("nudging_fields",{"T_mid","qv","u","v"});
+  params_mid.set<std::vector<std::string>>("nudging_fields",{"T_mid","qv","U","V"});
   std::shared_ptr<AtmosphereProcess> nudging_mid = std::make_shared<Nudging>(io_comm,params_mid);
 
   nudging_mid->set_grids(gm);
@@ -259,12 +259,12 @@ TEST_CASE("nudging") {
   Field p_mid       = input_fields["p_mid"];
   Field T_mid       = input_fields["T_mid"];
   Field qv          = input_fields["qv"];
-  Field u          = input_fields["u"];
-  Field v          = input_fields["v"];
+  Field u          = input_fields["U"];
+  Field v          = input_fields["V"];
   Field T_mid_o = output_fields["T_mid"];
   Field qv_mid_o = output_fields["qv"];
-  Field u_o = output_fields["u"];
-  Field v_o = output_fields["v"];
+  Field u_o = output_fields["U"];
+  Field v_o = output_fields["V"];
   // Initialize memory buffer for all atm processes
   auto memory_buffer = std::make_shared<ATMBufferManager>();
   memory_buffer->request_bytes(nudging_mid->requested_buffer_size_in_bytes());
