@@ -33,7 +33,6 @@ module cam_comp
    public cam_run3      ! CAM run method phase 3
    public cam_run4      ! CAM run method phase 4
    public cam_final     ! CAM Finalization
-
    !
    ! Private module data
    !

@@ -42,7 +42,6 @@ module prim_driver_base
   public :: prim_init1_no_cam
 #endif
 
-
   public :: smooth_topo_datasets, deriv1
 
   public :: applyCAMforcing_tracers
@@ -693,8 +692,6 @@ contains
     use dimensions_mod,     only : max_corner_elem
     use compose_mod,        only : compose_query_bufsz, compose_set_bufs
 #endif
-
-
     !
     ! Inputs
     !

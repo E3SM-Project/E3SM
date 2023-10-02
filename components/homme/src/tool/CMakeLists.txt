@@ -34,7 +34,6 @@ SET(TOOL_SRCS_F90
   ${SRC_DIR}/test_mod.F90
 )
 
-
 # Make SRCS global so the tests can access it
 SET(EXEC_SOURCES ${TOOL_SRCS_F90})
 
