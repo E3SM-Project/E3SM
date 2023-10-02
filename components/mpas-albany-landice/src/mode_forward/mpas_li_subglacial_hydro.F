@@ -951,13 +951,25 @@ module li_subglacial_hydro
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
             if (li_mask_is_grounded_ice(cellMask(cell1))) then ! cell2 is the cell outside the hydro domain
-               hydropotentialBaseSlopeNormal(iEdge) = min(0.0_RKIND, hydropotentialBaseSlopeNormal(iEdge))
-               hydropotentialSlopeNormal(iEdge) = min(0.0_RKIND, hydropotentialSlopeNormal(iEdge))
+                    if (hydroMarineMarginMask(iEdge) == 1) then
+                            if (hydropotentialBaseSlopeNormal(iEdge) > -1.0_RKIND) then
+                                 hydropotentialBaseSlopeNormal(iEdge) = -1.0_RKIND
+                            endif
+                            if (hydropotentialSlopeNormal(iEdge) > -1.0_RKIND) then
+                                 hydropotentialSlopeNormal(iEdge) = -1.0_RKIND
+                            endif
+                    endif
 
             else ! cell1 is the cell outside the hydro domain
 
-               hydropotentialBaseSlopeNormal(iEdge) = max(0.0_RKIND, hydropotentialBaseSlopeNormal(iEdge))
-               hydropotentialSlopeNormal(iEdge) = max(0.0_RKIND, hydropotentialSlopeNormal(iEdge))
+                    if (hydroMarineMarginMask(iEdge) == 1) then
+                            if (hydropotentialBaseSlopeNormal(iEdge) < 1.0_RKIND) then
+                                 hydropotentialBaseSlopeNormal(iEdge) = 1.0_RKIND
+                            endif
+                            if (hydropotentialSlopeNormal(iEdge) < 1.0_RKIND) then
+                                 hydropotentialSlopeNormal(iEdge) = 1.0_RKIND
+                            endif
+                    endif
 
             endif ! which cell is icefree
          endif ! if edge of grounded ice
