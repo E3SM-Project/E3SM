@@ -929,22 +929,6 @@ contains
         if (ierr > 0 )  &
           call endrun('Error: fail to set GLOBAL_ID tag ')
 
-!        ierr = iMOAB_ResolveSharedEntities( mlnid, lsz, vgids );
-!        if (ierr > 0 )  &
-!          call endrun('Error: fail to resolve shared entities')
-
-!        !there are no shared entities, but we will set a special partition tag, in order to see the
-!        ! partitions ; it will be visible with a Pseudocolor plot in VisIt
-!        tagname='partition'//C_NULL_CHAR
-!        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
-!        if (ierr > 0 )  &
-!          call endrun('Error: fail to create new partition tag ')
-!
-!        vgids = iam
-!        ierr = iMOAB_SetIntTagStorage ( mlnid, tagname, lsz , ent_type, vgids)
-!        if (ierr > 0 )  &
-!          call endrun('Error: fail to set partition tag ')
-
         ! use moab_vert_coords as a data holder for a frac tag and area tag that we will create
         !   on the vertices; do not allocate other data array
         tagname='frac'//C_NULL_CHAR
@@ -979,9 +963,6 @@ contains
         ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
         if (ierr > 0 )  &
           call endrun('Error: fail to create aream tag ')
-        ! ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
-        ! if (ierr > 0 )  &
-        !   call endrun('Error: fail to set aream tag ')
 
         deallocate(moabconn)
         ! use merge vertices new imoab method to fix cells
@@ -1000,9 +981,6 @@ contains
         ierr = iMOAB_UpdateMeshInfo( mlnid )
         if (ierr > 0 )  &
           call endrun('Error: fail to update mesh info ')
-        !ierr = iMOAB_MergeVertices(mlnid)
-        !if (ierr > 0 )  &
-        !  call endrun('Error: fail to fix vertices in land mesh ')
 
     else ! old point cloud mesh
         allocate(moab_vert_coords(lsz*dims))
@@ -1308,8 +1286,6 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type)  , intent(in)    :: bounds   ! bounds
-    ! real(r8)           , intent(in)    :: x2l(:,:) ! driver import state to land model
-    ! this is moab version, will be replaced with x2l_lm from mlnid  
     type(atm2lnd_type) , intent(inout) :: atm2lnd_vars      ! clm internal input data type
     type(glc2lnd_type) , intent(inout) :: glc2lnd_vars      ! clm internal input data type
     !
@@ -1354,10 +1330,6 @@ contains
     real(r8) :: tbot, tempndep(1,1,158), thiscalday, wt1(14), wt2(14), thisdoy
     real(r8) :: site_metdata(14,12)
     real(r8) :: var_month_mean(12)
-    !real(r8) :: hdm1(720,360,1), hdm2(720,360,1) 
-    !real(r8) :: lnfm1(192,94,2920)
-    !real(r8) :: ndep1(144,96,1), ndep2(144,96,1)
-    !real(r8) :: aerodata(14,144,96,14)
     integer  :: lnfmind(2)
     integer  :: var_month_count(12)
     integer*2 :: temp(1,500000)

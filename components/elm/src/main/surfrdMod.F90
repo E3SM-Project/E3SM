@@ -270,11 +270,9 @@ contains
           local = begg
           do iseg = 1, gsMap%ngseg
              if (gsMap%pe_loc(iseg) .eq. iam) then
-                !write(iulog,*), iseg, gsMap%pe_loc(iseg), gsMap%start(iseg), gsMap%length(iseg)
                 do ig = gsMap%start(iseg), gsMap%start(iseg) + gsMap%length(iseg) - 1
                    j = (ig-1)/ni + 1
                    i = ig - ni*(j-1)
-                   ! print *, iam, ig, j, i, rdata3d(1, i, j), rdata3d(2, i, j), rdata3d(3, i, j)
                    do iv = 1, nv
                       if (local .le. endg) then
                          ldomain%lonv(local, iv ) = rdata3d(iv, i, j)
@@ -308,14 +306,6 @@ contains
           enddo
           ! deallocate what is not needed anymore (for half degree land model, ~8Mb)
           deallocate(rdata3d)
-          ! fill ldomain%lonv data , in a loop
-!          call ncd_io(ncid=ncid, varname='xv', flag='read', data=ldomain%lonv, &
-!            dim1name=grlnd, readvar=readvar)
-!          if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: xv  NOT on file'//errMsg(__FILE__, __LINE__))
-!
-!          call ncd_io(ncid=ncid, varname='yv', flag='read', data=ldomain%latv, &
-!            dim1name=grlnd, readvar=readvar)
-!          if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: yv  NOT on file'//errMsg(__FILE__, __LINE__))
 
        end if
 #endif

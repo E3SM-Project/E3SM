@@ -461,8 +461,6 @@ CONTAINS
        call seq_timemgr_EClockGetData(EClock,curr_ymd=CurrentYMD, StepNo=StepNo, dtime=DTime_Sync )
        if (StepNo == 0) then
 #ifdef MOABCOMP
-  !compare_to_moab_tag(mpicom_atm_moab, attrVect, field, imoabApp, tag_name, ent_type, difference)
-    !x2o_o => component_get_x2c_cx(ocn(1))
     ! loop over all fields in seq_flds_x2a_fields
     call mct_list_init(temp_list ,seq_flds_x2a_fields)
     size_list=mct_list_nitem (temp_list)
@@ -639,8 +637,7 @@ CONTAINS
 #ifdef HAVE_MOAB
 
 #ifdef MOABCOMP
-    !x2o_o => component_get_x2c_cx(ocn(1))
-    ! loop over all fields in seq_flds_a2x_fields
+    ! loop over all fields in seq_flds_x2a_fields
     call mct_list_init(temp_list ,seq_flds_x2a_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 0 ! entity type is vertex for phys atm
@@ -942,7 +939,7 @@ CONTAINS
     do c = begchunk, endchunk
        ncols = get_ncols_p(c)
        do i=1,ncols
-          n = n+1
+          n e n+1
           data(n) = 1._r8 ! mask
        end do
     end do
@@ -1255,12 +1252,6 @@ CONTAINS
     ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, areavals)
     if (ierr > 0 )  &
       call endrun('Error: fail to set area tag ')
-
-      ! comment this out now
-   !  tagname='aream'//C_NULL_CHAR
-   !  ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, areavals)
-   !  if (ierr > 0 )  &
-   !    call endrun('Error: fail to set aream tag ')
 
     areavals = 1._r8 ! double
     tagname='mask'//C_NULL_CHAR
