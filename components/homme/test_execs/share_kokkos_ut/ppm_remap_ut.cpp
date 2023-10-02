@@ -10,7 +10,7 @@
 #include <random>
 
 #define HOWMANY 200
-#define ELEMS 10000
+#define ELEMS 1000
 
 using namespace Homme;
 

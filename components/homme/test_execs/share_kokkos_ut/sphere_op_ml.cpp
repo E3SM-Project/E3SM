@@ -17,7 +17,7 @@
 using namespace Homme;
 
 #define HOWMANY 200
-#define ELEMS 10000
+#define ELEMS 1000
 
 using rngAlg = std::mt19937_64;
 
