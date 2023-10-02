@@ -1,7 +1,7 @@
 include (ScreamUtils)
 
 # Create the test
-CreateADUnitTest(mam4_nucleation_standalone
+CreateADUnitTest(mam4_microphysics_standalone
   LABELS mam4 physics
   LIBS mam
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
