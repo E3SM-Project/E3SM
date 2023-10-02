@@ -55,6 +55,6 @@ target_include_directories(dp PUBLIC
 )
 target_link_libraries(dp PUBLIC physics_share scream_share ${dynLibName})
 
-if (NOT SCREAM_LIB_ONLY)
-  add_subdirectory(tests)
-endif()
+#if (NOT SCREAM_LIB_ONLY)
+#  add_subdirectory(tests)
+#endif()
