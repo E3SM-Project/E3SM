@@ -63,9 +63,6 @@ def atm_config_chg(changes, no_buffer=False, reset=False, all_matches=False, buf
             this_changed = atm_config_chg_impl(root, change, all_matches, missing_ok=no_buffer)
             any_change |= this_changed
 
-        if any_change:
-            tree.write("namelist_scream.xml")
-
     if not no_buffer:
         buffer_changes(changes, all_matches=all_matches)
 
