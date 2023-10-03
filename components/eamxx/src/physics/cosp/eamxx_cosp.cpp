@@ -38,6 +38,8 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   auto Q = kg/kg;
   Q.set_string("kg/kg");
   auto nondim = Units::nondimensional();
+  auto percent = Units::nondimensional();
+  percent.set_string("%");
   auto micron = m / 1000000;
 
   m_grid = grids_manager->get_grid("Physics");
@@ -79,9 +81,10 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("eff_radius_qc",     scalar3d_layout_mid, micron,      grid_name);
   add_field<Required>("eff_radius_qi",     scalar3d_layout_mid, micron,      grid_name);
   // Set of fields used strictly as output
-  add_field<Computed>("isccp_cldtot", scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("isccp_ctptau", scalar4d_layout_ctptau, nondim, grid_name, 1);
+  add_field<Computed>("isccp_cldtot", scalar2d_layout, percent, grid_name);
+  add_field<Computed>("isccp_ctptau", scalar4d_layout_ctptau, percent, grid_name, 1);
   add_field<Computed>("isccp_mask"  , scalar2d_layout, nondim, grid_name);
+
 }
 
 // =========================================================================================
@@ -89,6 +92,17 @@ void Cosp::initialize_impl (const RunType /* run_type */)
 {
   // Set property checks for fields in this process
   CospFunc::initialize(m_num_cols, m_num_subcols, m_num_levs);
+
+
+  // Add note to output files about processing ISCCP fields that are only valid during
+  // daytime. This can go away once I/O can handle masked time averages.
+  using stratts_t = std::map<std::string,std::string>;
+  std::list<std::string> vnames = {"isccp_cldtot", "isccp_ctptau"};
+  for (const auto field_name : {"isccp_cldtot", "isccp_ctptau"}) {
+      auto& f = get_field_out(field_name);
+      auto& atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
+      atts["note"] = "Night values are zero; divide by isccp_mask to get daytime mean";
+  }
 }
 
 // =========================================================================================
