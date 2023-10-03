@@ -81,6 +81,7 @@ struct Functions
    Scalar qw2tune;
    Scalar qwthl2tune;
    Scalar w2tune;
+   Scalar length_fac;
  };
 
   // This struct stores input views for shoc_main.
@@ -303,6 +304,7 @@ struct Functions
   static void compute_shoc_mix_shoc_length(
     const MemberType&            team,
     const Int&                   nlev,
+    const Scalar&                length_fac,
     const uview_1d<const Spack>& tke,
     const uview_1d<const Spack>& brunt,
     const uview_1d<const Spack>& zt_grid,
@@ -501,6 +503,7 @@ struct Functions
     const MemberType&            team,
     const Int&                   nlev,
     const Int&                   nlevi,
+    const Scalar&                length_fac,
     const Scalar&                dx,
     const Scalar&                dy,
     const uview_1d<const Spack>& zt_grid,
@@ -516,6 +519,7 @@ struct Functions
     const Int&                   shcol,
     const Int&                   nlev,
     const Int&                   nlevi,
+    const Scalar&                length_fac,
     const view_1d<const Scalar>& dx,
     const view_1d<const Scalar>& dy,
     const view_2d<const Spack>&  zt_grid,
@@ -840,6 +844,7 @@ struct Functions
     const Scalar&                qw2tune,
     const Scalar&                qwthl2tune,
     const Scalar&                w2tune,
+    const Scalar&                length_fac,
     // Input Variables
     const Scalar&                host_dx,
     const Scalar&                host_dy,
@@ -907,6 +912,7 @@ struct Functions
     const Scalar&                qw2tune,
     const Scalar&                qwthl2tune,
     const Scalar&                w2tune,
+    const Scalar&                length_fac,
     // Input Variables
     const view_1d<const Scalar>& host_dx,
     const view_1d<const Scalar>& host_dy,

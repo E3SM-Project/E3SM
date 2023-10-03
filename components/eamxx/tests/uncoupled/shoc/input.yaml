@@ -21,6 +21,7 @@ atmosphere_processes:
     qw2tune: 1.0
     qwthl2tune: 1.0
     w2tune: 1.0
+    length_fac: 0.5
 
 grids_manager:
   Type: Mesh Free

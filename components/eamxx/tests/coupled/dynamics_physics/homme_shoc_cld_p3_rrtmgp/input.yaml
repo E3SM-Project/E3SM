@@ -53,6 +53,7 @@ atmosphere_processes:
         qw2tune: 1.0
         qwthl2tune: 1.0
         w2tune: 1.0
+        length_fac: 0.5
     rrtmgp:
       column_chunk_size: 123
       active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
