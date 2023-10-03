@@ -295,7 +295,7 @@ module li_time_integration_fe_rk
       elseif ( (trim(config_time_integration) == 'runge_kutta') .and. &
                (config_rk_order == 3) ) then
          if (config_rk3_stages == 3) then
-            ! use Strong Stability Preserving RK3
+            ! use three-stage Strong Stability Preserving RK3
             nRKstages = 3
             rkSubstepWeights(:) = 1.0_RKIND
 
@@ -307,8 +307,8 @@ module li_time_integration_fe_rk
             rkTendWeights(1) = 1.0_RKIND / 6.0_RKIND
             rkTendWeights(2) = 1.0_RKIND / 6.0_RKIND
             rkTendWeights(3) = 2.0_RKIND / 3.0_RKIND
-        ! 4-stage SSP-RK3? Allows for CFL=2.
         elseif (config_rk3_stages == 4) then
+            ! use four-stage Strong Stability Preserving RK3
             nRKstages = 4
             rkSubstepWeights(:) = 0.5_RKIND
 
@@ -334,8 +334,8 @@ module li_time_integration_fe_rk
       endif 
 ! *** Start RK loop ***
       do rkStage = 1, nRKstages
-         call mpas_log_write('beginning rk step $i', &
-                             intArgs=(/rkStage/))
+         call mpas_log_write('beginning rk stage $i of $i', &
+                             intArgs=(/rkStage, nRKstages/))
          deltat = deltatFull * rkSubstepWeights(rkStage)
 
          ! === calculate damage ===========
@@ -493,12 +493,6 @@ module li_time_integration_fe_rk
 ! is complete.  Putting it after.
       call li_bedtopo_solve(domain, err=err_tmp)
       err = ior(err, err_tmp)
-
-! TODO: Determine whether we need to update velocities again
-! === Solve Velocity =====================
-!      ! During time-stepping, we always solveVelo
-!      call li_velocity_solve(domain, solveVelo=.true., err=err_tmp)
-!      err = ior(err, err_tmp)
 
 ! === Calculate diagnostic variables for new state =====================
 

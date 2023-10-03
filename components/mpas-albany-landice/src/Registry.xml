@@ -485,7 +485,7 @@
 		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS', but limited by CFL condition."
 		/>
 		<nml_option name="config_time_integration" type="character" default_value="forward_euler" units="unitless"
-		            description="Time integration method (currently, only forward Euler is supported)."
+		            description="Time integration method."
 		            possible_values="'forward_euler' or 'runge_kutta'"
 		/>
                 <nml_option name="config_rk_order" type="integer" default_value="2" units="unitless"
