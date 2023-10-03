@@ -90,32 +90,17 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
 
     gcm_pmid(k_crm,iens) = input_pmid(k_gcm,iens);
 
-    // #ifdef MMF_PAM_FORCE_ALL_WATER_SPECIES
-      // force vapor/liquid/ice species separately
-      gcm_rho_v(k_crm,iens) = input_ql(k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
-      gcm_rho_c(k_crm,iens) = input_qccl(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
-      gcm_rho_i(k_crm,iens) = input_qiil(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
-      gcm_temp(k_crm,iens)  = input_tl(k_gcm,iens);
-    // #endif
-
-    // #ifdef MMF_PAM_FORCE_TOTAL_WATER
-      // // use total water from GCM to force CRM water vapor
-      // // set each density separately - they will be combined when the forcing is calculated
-      // gcm_rho_v(k_crm,iens) = input_ql(k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
-      // gcm_rho_c(k_crm,iens) = input_qccl(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
-      // gcm_rho_i(k_crm,iens) = input_qiil(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
-      // // adjust temperature to account for evaporating and sublimating condensate
-      // real liq_adj = input_qccl(k_gcm,iens)* Lv     / cp_d;
-      // real ice_adj = input_qiil(k_gcm,iens)*(Lv+Lf) / cp_d;
-      // gcm_temp(k_crm,iens) = input_tl(k_gcm,iens) - liq_adj - ice_adj;
-    // #endif
+    gcm_rho_v(k_crm,iens) = input_ql(k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
+    gcm_rho_c(k_crm,iens) = input_qccl(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
+    gcm_rho_i(k_crm,iens) = input_qiil(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
+    gcm_temp(k_crm,iens)  = input_tl(k_gcm,iens);
 
   });
   //------------------------------------------------------------------------------------------------
 }
 
 
-// update anelastic reference state
+// update anelastic reference state using horizontal mean of CRM state
 inline void pam_state_set_reference_state( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
