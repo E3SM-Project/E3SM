@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET # pylint: disable=unused-import
 
 # Add path to cime_config folder
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
-from eamxx_buildnml_impl import check_value, is_array_type, has_child, get_child, find_node
+from eamxx_buildnml_impl import check_value, is_array_type, get_child, find_node
 from eamxx_buildnml_impl import gen_atm_proc_group, resolve_all_inheritances
 from utils import expect, run_cmd_no_fail
 
@@ -146,6 +146,7 @@ def modify_ap_list(xml_root, group, ap_list_str, append_this):
     ...     </atmosphere_processes_defaults>
     ... </root>
     ... '''
+    >>> from eamxx_buildnml_impl import has_child
     >>> import xml.etree.ElementTree as ET
     >>> tree = ET.fromstring(xml)
     >>> node = ET.Element("my_group")
