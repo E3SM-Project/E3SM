@@ -268,6 +268,18 @@
     </values>
   </entry>
 
+  <entry id="rof_sed">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true., adds fields needed to calculate sediment in the river model
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
   <!-- =========================== -->
   <!-- -group seq_cplflds_custom   -->
   <!-- =========================== -->
@@ -1501,6 +1513,9 @@
     <values>
       <value>$EPS_AGRID</value>
       <value atm_grid="ne0np4_northamericax4v1">3.e-10</value>
+      <value atm_grid="ne1024np4.pg2" lnd_grid="ne1024np4.pg2">1.e-10</value>
+      <value atm_grid="ne120np4.pg2" lnd_grid="ne120np4.pg2">1.e-10</value>
+      <value atm_grid="ne256np4.pg2" lnd_grid="ne256np4.pg2">1.e-10</value>
     </values>
   </entry>
 
@@ -1689,6 +1704,20 @@
     </desc>
     <values>
       <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="nlmaps_verbosity">
+    <type>integer</type>
+    <category>nlmaps</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Measure and print information about nonlinearly mapped fields. 0 means no
+      analysis is done or printed. >= 1 triggers analysis written to cpl.log.
+      default: 0
+    </desc>
+    <values>
+      <value>0</value>
     </values>
   </entry>
 
@@ -3684,6 +3713,19 @@
     </values>
   </entry>
 
+  <entry id="atm2ocn_fmapname_nonlinear"    modify_via_xml="ATM2OCN_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to ocn flux mapping file for fluxes
+    </desc>
+    <values>
+      <value>$ATM2OCN_FMAPNAME_NONLINEAR</value>
+    </values>
+  </entry>
+
   <entry id="atm2ocn_smapname"    modify_via_xml="ATM2OCN_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -3774,6 +3816,19 @@
     </values>
   </entry>
 
+  <entry id="ocn2atm_fmapname_nonlinear"    modify_via_xml="OCN2ATM_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to atm mapping file for fluxes
+    </desc>
+    <values>
+      <value>$OCN2ATM_FMAPNAME_NONLINEAR</value>
+    </values>
+  </entry>
+
   <entry id="ocn2atm_smapname"    modify_via_xml="OCN2ATM_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -3804,6 +3859,19 @@
     </values>
   </entry>
 
+  <entry id="ocn2atm_smapname_nonlinear"    modify_via_xml="OCN2ATM_SMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to atm mapping file for states
+    </desc>
+    <values>
+      <value>$OCN2ATM_SMAPNAME_NONLINEAR</value>
+    </values>
+  </entry>
+
   <entry id="atm2ice_fmapname"    modify_via_xml="ATM2ICE_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -3831,6 +3899,19 @@
     <values>
       <value>$ATM2OCN_FMAPTYPE</value>
       <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="atm2ice_fmapname_nonlinear"    modify_via_xml="ATM2ICE_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to ice flux mapping file for fluxes
+    </desc>
+    <values>
+      <value>$ATM2OCN_FMAPNAME_NONLINEAR</value>
     </values>
   </entry>
 
@@ -3924,6 +4005,19 @@
     </values>
   </entry>
 
+  <entry id="ice2atm_fmapname_nonlinear"    modify_via_xml="ICE2ATM_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ice to atm mapping file for fluxes
+    </desc>
+    <values>
+      <value>$OCN2ATM_FMAPNAME_NONLINEAR</value>
+    </values>
+  </entry>
+
   <entry id="ice2atm_smapname"    modify_via_xml="ICE2ATM_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -3954,6 +4048,19 @@
     </values>
   </entry>
 
+  <entry id="ice2atm_smapname_nonlinear"    modify_via_xml="ICE2ATM_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ice to atm mapping file for states
+    </desc>
+    <values>
+      <value>$OCN2ATM_SMAPNAME_NONLINEAR</value>
+    </values>
+  </entry>
+
   <entry id="atm2lnd_fmapname"    modify_via_xml="ATM2LND_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -3981,6 +4088,19 @@
     <values>
       <value>$ATM2LND_FMAPTYPE</value>
       <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="atm2lnd_fmapname_nonlinear"    modify_via_xml="ATM2LND_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to land mapping file for fluxes
+    </desc>
+    <values>
+      <value>$ATM2LND_FMAPNAME_NONLINEAR</value>
     </values>
   </entry>
 
@@ -4044,6 +4164,19 @@
     </values>
   </entry>
 
+  <entry id="lnd2atm_fmapname_nonlinear"    modify_via_xml="LND2ATM_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      land to atm mapping file for fluxes
+    </desc>
+    <values>
+      <value>$LND2ATM_FMAPNAME_NONLINEAR</value>
+    </values>
+  </entry>
+
   <entry id="lnd2atm_smapname"    modify_via_xml="LND2ATM_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -4071,6 +4204,19 @@
     <values>
       <value>$LND2ATM_SMAPTYPE</value>
       <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="lnd2atm_smapname_nonlinear"    modify_via_xml="LND2ATM_SMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      land to atm mapping file for states
+    </desc>
+    <values>
+      <value>$LND2ATM_SMAPNAME_NONLINEAR</value>
     </values>
   </entry>
 
@@ -4161,6 +4307,19 @@
     <values>
       <value>$ATM2ROF_FMAPTYPE</value>
       <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="atm2rof_fmapname_nonlinear"    modify_via_xml="ATM2ROF_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to runoff flux mapping file
+    </desc>
+    <values>
+      <value>$ATM2ROF_FMAPNAME_NONLINEAR</value>
     </values>
   </entry>
 
@@ -5105,6 +5264,24 @@
       <value>0.5D0</value>
       <value aqua_planet_sst_type="sst_aquap_constant">1.0D0</value>
     </values>
+  </entry>
+
+  <!-- ========================================================================================  -->
+  <!-- Dust-related setups                                                                       -->
+  <!-- ========================================================================================  -->
+
+  <entry id="dust_emis_scheme">
+    <type>integer</type>
+    <category>shr_dust</category>
+    <group>shr_dust_nl</group>
+    <desc>
+      Dust emission scheme.
+      1 = Zender et al. (2003) as in E3SMv1 and v2.
+      2 = Kok et al. (2014) for E3SMv3
+    </desc>
+	  <values>
+		  <value>1</value>
+	  </values>
   </entry>
 
 </entry_id>

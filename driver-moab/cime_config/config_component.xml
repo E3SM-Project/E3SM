@@ -1367,6 +1367,14 @@
     <desc>atm2ocn flux mapping file decomp type</desc>
   </entry>
 
+  <entry id="ATM2OCN_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2ocn flux mapping file</desc>
+  </entry>
+
   <entry id="ATM2OCN_SMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
@@ -1418,6 +1426,14 @@
     <desc>atm2lnd flux mapping file decomp type</desc>
   </entry>
 
+  <entry id="ATM2LND_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2lnd flux mapping file</desc>
+  </entry>
+
   <entry id="ATM2LND_SMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
@@ -1450,6 +1466,14 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>atm2rof flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="ATM2ROF_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2rof flux mapping file</desc>
   </entry>
 
   <entry id="ATM2ROF_SMAPNAME">
@@ -1503,6 +1527,14 @@
     <desc>ocn2atm flux mapping file decomp type</desc>
   </entry>
 
+  <entry id="OCN2ATM_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2atm flux mapping file</desc>
+  </entry>
+
   <entry id="OCN2ATM_SMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
@@ -1518,6 +1550,14 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>ocn2atm state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="OCN2ATM_SMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2atm state mapping file</desc>
   </entry>
 
   <entry id="LND2ATM_FMAPNAME">
@@ -1537,6 +1577,14 @@
     <desc>lnd2atm flux mapping file decomp type</desc>
   </entry>
 
+  <entry id="LND2ATM_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd2atm flux mapping file</desc>
+  </entry>
+
   <entry id="LND2ATM_SMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
@@ -1552,6 +1600,14 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>lnd2atm state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="LND2ATM_SMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>lnd2atm state mapping file</desc>
   </entry>
 
   <entry id="LND2GLC_FMAPNAME">
@@ -2009,7 +2065,7 @@
   <entry id="VECT_MAP">
     <type>char</type>
     <valid_values>none,npfix,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag</valid_values>
-    <default_value>none</default_value>
+    <default_value>cart3d</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>vector mapping option</desc>
