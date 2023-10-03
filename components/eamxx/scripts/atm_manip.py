@@ -14,6 +14,7 @@ from eamxx_buildnml_impl import gen_atm_proc_group
 from utils import expect, run_cmd_no_fail
 
 ATMCHANGE_SEP = "-ATMCHANGE_SEP-"
+ATMCHANGE_ALL = "__ALL__"
 ATMCHANGE_BUFF_XML_NAME = "SCREAM_ATMCHANGE_BUFFER"
 
 ###############################################################################
@@ -24,9 +25,12 @@ def buffer_changes(changes, all_matches=False):
     are what goes to atm_config_chg_impl.
     """
     # Commas confuse xmlchange and so need to be escaped.
-    changes_str = ATMCHANGE_SEP.join(changes).replace(",",r"\,")
     if all_matches:
-        changes_str += f"{ATMCHANGE_SEP}--all"
+        changes_temp = [c + ATMCHANGE_ALL for c in changes]
+        changes_str = ATMCHANGE_SEP.join(changes_temp).replace(",",r"\,")
+    else:
+        #  changes_str += f"{ATMCHANGE_SEP}--all"
+        changes_str = ATMCHANGE_SEP.join(changes).replace(",",r"\,")
 
     run_cmd_no_fail(f"./xmlchange --append {ATMCHANGE_BUFF_XML_NAME}='{changes_str}{ATMCHANGE_SEP}'")
 
@@ -37,27 +41,28 @@ def unbuffer_changes(case):
     From a case, get a list of raw changes. Returns (changes, all_matches_flag)
     """
     atmchg_buffer = case.get_value(ATMCHANGE_BUFF_XML_NAME)
-    atmchgs = [item.replace(r"\,", ",").strip() for item in atmchg_buffer.split(ATMCHANGE_SEP) if item.strip()]
-    all_matches = "--all" in atmchgs
-    if all_matches:
-        atmchgs.remove("--all")
+    atmchgs = []
+    atmchgs_all = []
+    for item in atmchg_buffer.split(ATMCHANGE_SEP):
+        if item.strip():
+            atmchgs_all.append(ATMCHANGE_ALL in item)
+            atmchgs.append(item.replace(ATMCHANGE_ALL,"").replace(r"\,", ",").strip())
 
-    return atmchgs, all_matches
+    return atmchgs, atmchgs_all
 
 ###############################################################################
-def apply_buffer(case):
+def apply_buffer(case,xml_root):
 ###############################################################################
     """
     From a case, retrieve the buffered changes and re-apply them via atmchange
     """
     atmchg_buffer = case.get_value(ATMCHANGE_BUFF_XML_NAME)
-    caseroot      = case.get_value("CASEROOT")
     if atmchg_buffer:
-        atmchgs, all_matches = unbuffer_changes(case)
-        # Put single quotes around changes to avoid shell processing syntax
-        atmchg_args = " ".join([f"'{item.strip()}'" for item in atmchgs])
+        atmchgs, atmchgs_all = unbuffer_changes(case)
 
-        run_cmd_no_fail("{}/atmchange {} {} --no-buffer".format(caseroot, atmchg_args, "--all" if all_matches else ""))
+        expect (len(atmchgs)==len(atmchgs_all),"Failed to unbuffer changes from SCREAM_ATMCHANGE_BUFFER")
+        for chg, to_all in zip(atmchgs,atmchgs_all):
+            atm_config_chg_impl(xml_root, chg, all_matches=to_all)
 
 ###############################################################################
 def reset_buffer():
@@ -258,7 +263,7 @@ def parse_change(change):
     return node_name,new_value,append_this
 
 ###############################################################################
-def atm_config_chg_impl(xml_root, change, all_matches=False, missing_ok=False):
+def atm_config_chg_impl(xml_root, change, all_matches=False):
 ###############################################################################
     """
     >>> xml = '''
@@ -334,8 +339,7 @@ def atm_config_chg_impl(xml_root, change, all_matches=False, missing_ok=False):
     node_name, new_value, append_this = parse_change(change)
     matches = get_xml_nodes(xml_root, node_name)
 
-    if not missing_ok:
-        expect(len(matches) > 0, f"{node_name} did not match any items")
+    expect(len(matches) > 0, f"{node_name} did not match any items")
 
     if len(matches) > 1 and not all_matches:
         parent_map = create_parent_map(xml_root)

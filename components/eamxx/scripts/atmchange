@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 from eamxx_buildnml_impl import check_value, is_array_type
 from eamxx_buildnml import create_raw_xml_file
-from atm_manip import atm_config_chg_impl, buffer_changes, reset_buffer
+from atm_manip import atm_config_chg_impl, buffer_changes, reset_buffer, get_xml_nodes
 from utils import run_cmd_no_fail, expect
 
 # Add path to cime
@@ -31,13 +31,12 @@ def recreate_raw_xml_file():
         create_raw_xml_file(case, caseroot)
 
 ###############################################################################
-def atm_config_chg(changes, no_buffer=False, reset=False, all_matches=False, buffer_only=False):
+def atm_config_chg(changes, reset=False, all_matches=False, buffer_only=False):
 ###############################################################################
     if not buffer_only:
         expect(os.path.exists("namelist_scream.xml"),
                "No pwd/namelist_scream.xml file is present. Please run from a case dir that has been set up")
     else:
-        expect(not no_buffer, "Makes no sense for buffer_only and no_buffer to both be on")
         expect(not reset, "Makes no sense for buffer_only and reset to both be on")
 
     if reset:
@@ -60,13 +59,12 @@ def atm_config_chg(changes, no_buffer=False, reset=False, all_matches=False, buf
 
         any_change = False
         for change in changes:
-            this_changed = atm_config_chg_impl(root, change, all_matches, missing_ok=no_buffer)
+            this_changed = atm_config_chg_impl(root, change, all_matches)
             any_change |= this_changed
 
-    if not no_buffer:
-        buffer_changes(changes, all_matches=all_matches)
+    buffer_changes(changes, all_matches=all_matches)
 
-    if not no_buffer and not buffer_only:
+    if not buffer_only:
         recreate_raw_xml_file()
 
     return True
@@ -91,13 +89,6 @@ OR
 """.format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    parser.add_argument(
-        "-n", "--no-buffer",
-        default=False,
-        action="store_true",
-        help="Used by buildnml to replay buffered commands",
     )
 
     parser.add_argument(

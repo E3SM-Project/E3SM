@@ -16,7 +16,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 # SCREAM imports
 from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
         resolve_all_inheritances, gen_atm_proc_group, check_all_values
-from atm_manip import atm_config_chg_impl, unbuffer_changes, apply_buffer
+from atm_manip import apply_buffer
 
 from utils import ensure_yaml # pylint: disable=no-name-in-module
 ensure_yaml()
@@ -489,31 +489,32 @@ def _create_raw_xml_file_impl(case, xml):
 def create_raw_xml_file(case, caseroot):
 ###############################################################################
     """
-    Create the raw $case/namelist_scream.xml file. This file is intended to be
-    modified by users via the atmchange script if they want
+    Create the $case/namelist_scream.xml file. This file is intended to be
+    modified by users via the atmchange script if they want,
     to make tweaks to input files (yaml and/or nml).
+    Note: users calls to atmchange do two things: 1) they add the change
+          to the SCREAM_ATMCHANGE_BUFFER case variable, and 2) they
+          call this function, which regenerates the scream xml file from
+          the defaults, applyin all buffered changes.
     """
-    src = os.path.join(case.get_value("SRCROOT"), "components/eamxx/cime_config/namelist_defaults_scream.xml")
-
-    # Some atmchanges will require structural changes to the XML file and must
-    # be processed early by treating them as if they were made to the defaults file.
-    atmchgs = unbuffer_changes(case)[0]
-    with open(src, "r") as fd:
-        defaults = ET.parse(fd).getroot()
-        for change in atmchgs:
-            atm_config_chg_impl(defaults, change, all_matches=True, missing_ok=True)
-
-        raw_xml = _create_raw_xml_file_impl(case, defaults)
-
     raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
     if os.path.exists(raw_xml_file) and case.get_value("SCREAM_HACK_XML"):
         print("{} already exists and SCREAM_HACK_XML is on, will not overwrite. Remove to regenerate".format(raw_xml_file))
 
     else:
-        if os.path.exists(raw_xml_file):
-            print("Regenerating {}. Manual edits will be lost.".format(raw_xml_file))
+        print("Regenerating {}. Manual edits will be lost.".format(raw_xml_file))
+
+        src = os.path.join(case.get_value("SRCROOT"), "components/eamxx/cime_config/namelist_defaults_scream.xml")
+
+        # Generate from defaults
+        with open(src, "r") as fd:
+            defaults = ET.parse(fd).getroot()
+            raw_xml = _create_raw_xml_file_impl(case, defaults)
 
         check_all_values(raw_xml)
+
+        # Apply any user-requested change
+        apply_buffer(case,raw_xml)
 
         with open(raw_xml_file, "w") as fd:
             # dom has better pretty printing than ET in older python versions < 3.9
@@ -522,10 +523,6 @@ def create_raw_xml_file(case, caseroot):
             pretty_xml = os.linesep.join([s for s in pretty_xml.splitlines()
                                           if s.strip()])
             fd.write(pretty_xml)
-
-        # Now that we have our namelist_scream.xml file, we can apply buffered
-        # atmchange requests.
-        apply_buffer(case)
 
 ###############################################################################
 def convert_to_dict(element):
@@ -820,7 +817,6 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
 
     # Now update the output yaml files entry, and dump the new content
     # of the scream input to YAML file
-    print ("out list: {}".format(",".join(output_yaml_files)))
     scream_input["Scorpio"]["output_yaml_files"] = refine_type(",".join(output_yaml_files),"array(string)")
     with open(scream_input_file, "w") as fd:
         fd.write(
